@@ -29,4 +29,22 @@ public static partial class Program
             g.SandboxSendMend(hit.Body.Id, hit.Part);
         return true; // (the line stays: nothing else the attach tool does here overwrites it)
     }
+
+    /// <summary>
+    /// The attach tool at a standing Robot Shell with wear (Game/GameShellWear.cs): the look line says what is worn, and Fire fits a
+    /// spare part from the inventory or services the worst work. True: the tool does nothing else this frame. A spare held in the
+    /// hands is fitted too (so the tool may hold one here).
+    /// </summary>
+    private static bool SandboxShellWearLook(Game g, ref SandboxHand h, bool aimed, in ConstructHit hit)
+    {
+        if (!aimed || h.Seated || h.Tool != ConstructTool.Welder || ConnectorModeOn(in h) || hit.RoutePlus1 != 0
+            || g.ShellWearLook(hit.Body, hit.Part) is not { } line)
+            return false;
+        if (h.Held != ConstructParts.None && !Game.IsShellSpare(h.Held))
+            return false;
+        g.SandboxLookText = line;
+        if (Pressed(GameAction.Fire) && !_swallowClick)
+            g.SandboxSendMend(hit.Body.Id, hit.Part);
+        return true;
+    }
 }

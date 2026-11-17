@@ -450,6 +450,8 @@ public sealed partial class Game
             return "too far away";
         if (CrewDisarm(p, c, part) is { } disarm)
             return disarm.Length > 0 ? disarm : null; // (a crew's scuttle charge on it: the attach tool disarms it, GameCrewBoard.cs)
+        if (c.DefOf(part).ShellBody && c.PartCount == 1)
+            return ShellServiceAct(p, c, part); // (a standing robot shell: a new part or a service, GameShellWear.cs)
         if (IsBreakdownPanel(c, part))
         {
             // (from the engine room: a warning on a works piece inside; the rest is reported, and seen to at the part)

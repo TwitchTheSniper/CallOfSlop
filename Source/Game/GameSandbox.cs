@@ -451,6 +451,7 @@ public sealed partial class Game
         OpeningTick(now); // (the survival opening's beats: GameSandboxOpening.cs)
         BreakdownTick(); // (the rust bucket's breakdowns: GameSandboxBreakdowns.cs)
         ShellTick(); // (worn robot shells keep their link: GameRobotShell.cs)
+        ShellWearTick(); // (...and wear a little: GameShellWear.cs)
         FirstsTick(); // (a first flight in a craft of your own: GameMilestones.cs)
         PlayAreaTick(now); // (the tutorial's play areas: out of one, the step waits; GameTutorialBounds.cs)
         QuarryTick(now); // (the first Ministry duty, the quarry: GameQuarry.cs)

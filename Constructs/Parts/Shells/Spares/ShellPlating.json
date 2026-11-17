@@ -1,0 +1,68 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Shell Plating",
+  "description": "A set of a robot shell's armour plates, bolted on over the old. Fit it to a standing Robot Shell with the attach tool: the worn work is new again.",
+  "group": "Logic",
+  "section": "Shells",
+  "role": "frame",
+  "tool": "wrench",
+  "mass": 8.0,
+  "health": 40,
+  "armour": 1,
+  "material": "steel",
+  "color": "#56606a",
+  "attachSeconds": 1,
+  "boxes": [
+    {
+      "min": [
+        -0.22,
+        0.0,
+        -0.16
+      ],
+      "max": [
+        0.22,
+        0.05,
+        0.16
+      ]
+    },
+    {
+      "min": [
+        -0.2,
+        0.053,
+        -0.14
+      ],
+      "max": [
+        0.2,
+        0.09,
+        0.14
+      ],
+      "color": "#8b949c",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.18,
+        0.093,
+        -0.12
+      ],
+      "max": [
+        0.18,
+        0.12,
+        0.12
+      ],
+      "color": "#56606a",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

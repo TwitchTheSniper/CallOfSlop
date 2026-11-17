@@ -34,6 +34,9 @@ public sealed partial class Game
         public byte Owner;
         public double SatAt, WhyAt; // seated in a chair since (0: not); when the last refusal was said
         public bool Spent; // this sitting has linked once (or came back from a shell): stand up to link again
+        public ShellWearAcc Acc; // wear not yet a whole step, per work (GameShellWear.cs)
+        public double FaultAt; // when a work's fault was last said to them
+        public ShellCond Sent; // the wear peers last heard (a 5 % step sends it again)
     }
 
     private readonly ShellRun[] _sh = new ShellRun[256];
@@ -118,6 +121,9 @@ public sealed partial class Game
         run.ShellDef = sp.D;
         run.Channel = ConstructShell.ChannelOf(sp);
         run.Owner = shell.Owner;
+        ShellWear.Read(sp, sp.D, ref p.ShellWear); // (its works' wear goes with them: GameShellWear.cs)
+        run.Acc = default;
+        run.Sent = p.ShellWear;
         var pack = SandboxHands.Packs[p.Id];
         var fresh = new CStore { Handle = pack.Handle, Live = pack.Live };
         fresh.Reset(pack.SlotCount);
@@ -130,7 +136,9 @@ public sealed partial class Game
         var feet = shell.ToWorld(Vector3.Zero) + GravityFrames.UpAt(shell.WorldCom) * 0.03f;
         var fwd = Vector3.Transform(-Vector3.UnitZ, shell.Rot * Rot24.Quat(sp.Rot));
         ShellWoke(p, shell);
+        var firstShell = !HasFirst(p.Id, Milestone.Shell);
         FirstReached(p, Milestone.Shell); // (GameMilestones.cs)
+        var kit = firstShell && ShellSparesKit(p); // (a few spare works for the first shell: GameShellWear.cs)
         Constructs.Remove(shell);
         p.Teleport(feet);
         p.Yaw = MathF.Atan2(fwd.X, -fwd.Z);
@@ -139,7 +147,8 @@ public sealed partial class Game
         p.InShell = true;
         (p.ShellChair, p.ShellSeat) = (chair.Id, (ushort)seat); // (their body is drawn sitting there: ShellBodyOf)
         ShellBroadcast(p);
-        SandboxHands.Notices.Add((p.Id, "You wake in the robot shell. Your body is safe in the chair: Esc menu > Leave the shell."));
+        SandboxHands.Notices.Add((p.Id, kit ? "You wake in the robot shell, a pouch of shell spares in your inventory (fit them with the attach tool). Esc menu > Leave the shell."
+            : "You wake in the robot shell. Your body is safe in the chair: Esc menu > Leave the shell."));
         Log($"[shell] {p.Name} wakes in a shell (chair {chair.Id}, channel {run.Channel})");
     }
 
@@ -167,6 +176,7 @@ public sealed partial class Game
         if (!lost && run.ShellDef != null && ConstructBuild.PlaceNew(Constructs, run.ShellDef, feet, yaw) is { } stood)
         {
             ConstructConfig.Put(ref stood.Parts[0], run.ShellDef, CfgKey.Channel, run.Channel);
+            ShellWear.Write(ref stood.Parts[0], run.ShellDef, p.ShellWear); // (it stands as worn as they left it)
             stood.Owner = run.Owner;
             stood.Frozen = true; // (it stands as it was left until someone moves it)
             stood.Rebuild();
@@ -201,6 +211,7 @@ public sealed partial class Game
         p.Health = Math.Clamp(run.Health, 1, World.MaxHealth);
         p.InShell = false;
         p.ShellChair = p.ShellSeat = 0;
+        p.ShellWear = default;
         run.On = false;
         run.Spent = true; // (still in the chair: they stand up before it links again)
         run.Pack = null;
@@ -281,13 +292,15 @@ public sealed partial class Game
 
     // ---- The wire ---------------------------------------------------------------------------------------------------
 
-    /// <summary>Server: who wears a shell, to everyone (<see cref="Msg.Shell"/>: u8 player, u8 on, u16 chair, u16 seat).</summary>
+    /// <summary>Server: who wears a shell, to everyone (<see cref="Msg.Shell"/>: u8 player, u8 on, u16 chair, u16 seat, 8 x u8 the works' wear).</summary>
     private void ShellBroadcast(Player p)
     {
         if (Net.IsOffline)
             return;
         var w = SbW;
         w.Begin(Msg.Shell).U8(p.Id).U8(p.InShell ? (byte)1 : (byte)0).U16(p.ShellChair).U16(p.ShellSeat);
+        for (var k = 0; k < ShellWear.Works; k++)
+            w.U8(p.ShellWear[k]);
         Net.Broadcast(w.Span, PacketReliability.ReliableOrdered);
     }
 
@@ -299,6 +312,8 @@ public sealed partial class Game
             {
                 var w = SbW;
                 w.Begin(Msg.Shell).U8(p.Id).U8(1).U16(p.ShellChair).U16(p.ShellSeat);
+                for (var k = 0; k < ShellWear.Works; k++)
+                    w.U8(p.ShellWear[k]);
                 Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
             }
     }
@@ -310,10 +325,14 @@ public sealed partial class Game
         var on = r.U8() != 0;
         var chair = r.U16();
         var seat = r.U16();
+        ShellCond wear = default;
+        for (var k = 0; k < ShellWear.Works; k++)
+            wear[k] = r.U8();
         if (Players.TryGetValue(id, out var p))
         {
             p.InShell = on;
             (p.ShellChair, p.ShellSeat) = on ? (chair, seat) : ((ushort)0, (ushort)0);
+            p.ShellWear = on ? wear : default;
         }
     }
 
@@ -451,5 +470,6 @@ public sealed partial class Game
         if (_sbShell.Stale(me.Health))
             _sbShell.Text = $"ROBOT SHELL  {me.Health}%  -  your body waits in the chair (Esc menu: leave the shell)";
         lines.Add(new HudLine(_sbShell.Text, orange));
+        ShellWearHud(me, lines, orange, dim); // (its worn works: GameShellWear.cs)
     }
 }

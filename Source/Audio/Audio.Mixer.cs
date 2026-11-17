@@ -79,6 +79,7 @@ public sealed partial class Audio
         >= Sfx.BuildSnap and <= Sfx.BuildDrop => MixBus.Building,
         Sfx.Babble => MixBus.Speech,
         Sfx.HullCreak or Sfx.PartFail => MixBus.PropBreak,
+        Sfx.ShellServoGrind => MixBus.PropBreak,
         _ => world ? MixBus.Tactical : MixBus.Ui,
     };
 

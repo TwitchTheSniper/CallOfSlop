@@ -1,0 +1,20 @@
+{
+  // Robot shell wear (Source/Constructs/ShellWear.cs, Game/GameShellWear.cs; docs/sandbox/constructs/joints-and-logic.md "Robot shell wear"; Karl, 2026-11-17):
+  // mild wear while someone wears a shell in Survival, so that over a long session a shell wants a little maintenance. Each of a
+  // shell's eight works (two leg actuators, two arm actuators, its power cell, processor, optics and plating) has a condition; below
+  // "worn" it shows (a limp, a sluggish cell, a glitch now and then), at 0 it has failed (a leg lost: the shell hops).
+  "format": "call-of-slop-shell-wear/1",
+  // Hours worn from new to failed. Legs and arms count only while they work (walking, a tool in use); the rest all the time worn.
+  "legHours": 5,
+  "armHours": 7,
+  "powerHours": 6,
+  "processorHours": 9,
+  "opticsHours": 8,
+  "platingHours": 12,
+  "worn": 40, // % condition below which a part shows its fault
+  "serviceTo": 70, // % the attach tool's service (or a crew engineer) brings a worn or failed part back to; only a new part makes it 100
+  "serviceMaterial": "metal", // what a service costs (Recycling.json's materials)
+  "serviceCost": 1,
+  "hitPlating": 0.25, // % of the plating's condition a point of damage takes
+  "hitOther": 0.12 // % of one other part's (picked at random) a point of damage takes
+}

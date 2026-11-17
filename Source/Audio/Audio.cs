@@ -98,6 +98,10 @@ public enum Sfx
     Tannoy, // a loudspeaker on a pole: two chimes and a garbled announcement (SynthAlarm.cs, played by PartAmbience)
     HullCreak, // a ship's part about to go: a long metal groan and a few ticks (SynthBreakdown.cs, played by Game.BreakdownHeard)
     PartFail, // the part going: a bang, a clatter and a hiss of escaping fuel (SynthBreakdown.cs)
+    ShellGlitch, // a worn robot shell's processor glitching: a short digital stutter (SynthShell.cs, played by Game.ShellWearFrame)
+    ShellStatic, // its optics: a soft crackle of static
+    ShellBrownout, // its power cell browning out: a falling whine and a click
+    ShellServoGrind, // a worn leg actuator: a short grinding servo (3D, nearby players hear it)
     COUNT,
 }
 
@@ -1035,6 +1039,8 @@ public static partial class Synth
             return babble; // SynthBabble.cs
         if (BreakdownFoley(sfx, variant) is { } breakdown)
             return breakdown; // SynthBreakdown.cs
+        if (ShellFoley(sfx, variant) is { } shell)
+            return shell; // SynthShell.cs
         var rng = new Random(77 + (int)sfx + variant * 1000);
         Buf b;
         switch (sfx)

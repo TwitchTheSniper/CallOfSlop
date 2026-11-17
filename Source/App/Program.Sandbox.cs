@@ -474,6 +474,8 @@ public static unsafe partial class Program
         SandboxCellPatch(g, ref h, aimed, hit); // (the attach tool on a holed lift cell: Program.SandboxCells.cs)
         if (SandboxBreakdownLook(g, ref h, aimed, hit))
             return true; // (the attach tool on a groaning or broken-down part: Program.SandboxCells.cs)
+        if (SandboxShellWearLook(g, ref h, aimed, hit))
+            return true; // (the attach tool on a worn robot shell: Program.SandboxCells.cs)
         // The linking tool: routing links node by node, the edit modes, settings (Program.SandboxLinks.cs).
         if (h.Tool == ConstructTool.Linker)
         {

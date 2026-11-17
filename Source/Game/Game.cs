@@ -368,11 +368,11 @@ public sealed partial class Game : IDisposable
     internal float LocalMoveSpeed(WeaponDef def)
     {
         var tool = SandboxOn && Local is { } me && SandboxHands.Hand(me.Id).Tool != ConstructTool.None; // (the attach, link and paint tools, the physics gun: the gun's away)
-        return Perks.MoveSpeed(Local?.Perks ?? PerkSet.Empty, tool ? 1f : FrenzyBuffs.Mobility(Local, def), Aiming && !tool) * LocalStunMove() * LocalStreakMove() * ZombieMoveMult(Local); // Lightweight, Stalker; the LMG frenzy buff; a stun slows you (GameTactical.cs); Zombies' Fleetfoot Fizz
+        return Perks.MoveSpeed(Local?.Perks ?? PerkSet.Empty, tool ? 1f : FrenzyBuffs.Mobility(Local, def), Aiming && !tool) * LocalStunMove() * LocalStreakMove() * ZombieMoveMult(Local) * ShellMoveMult(Local); // Lightweight, Stalker; the LMG frenzy buff; a stun slows you (GameTactical.cs); Zombies' Fleetfoot Fizz
     }
 
     /// <summary>The fastest a client's input may ask for: its fastest gun, and full in the Sandbox, where a tool can be out (it isn't tied to the tool, so a switch on its way doesn't pull the player back).</summary>
-    internal byte MaxMoveSpeed(Player p) => (byte)Math.Clamp((int)MathF.Round(Perks.MoveSpeed(p.Perks, MathF.Max(SandboxOn ? 1f : 0f, MathF.Max(FrenzyAllowedMobility(p, p.DefFor(p.Primary)), FrenzyAllowedMobility(p, p.DefFor(p.Secondary)))), false) * ZombieMoveMult(p) * 100), 1, 200);
+    internal byte MaxMoveSpeed(Player p) => (byte)Math.Clamp((int)MathF.Round(Perks.MoveSpeed(p.Perks, MathF.Max(SandboxOn ? 1f : 0f, MathF.Max(FrenzyAllowedMobility(p, p.DefFor(p.Primary)), FrenzyAllowedMobility(p, p.DefFor(p.Secondary)))), false) * ZombieMoveMult(p) * ShellMoveMult(p) * 100), 1, 200);
 
     private InputCmd SampleLocalInput(uint seq)
     {
@@ -1589,6 +1589,7 @@ public sealed partial class Game : IDisposable
         amount = StreakArmorAbsorb(victim, amount, head, kind, now); // Ballistic Vests and the Juggernaut suit (KillStreaksMore.cs)
         if (amount <= 0)
             return false;
+        amount = ShellHit(victim, amount); // (a robot shell's plating, and the hit's wear: GameShellWear.cs)
         var healthBefore = victim.Health;
         victim.Health -= amount;
         var hitPart = BloodOnHit(victim, attacker, kind, from); // the blood marks: body part and direction (BodyBlood.cs)

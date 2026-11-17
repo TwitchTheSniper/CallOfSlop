@@ -1,0 +1,55 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Shell Optics",
+  "description": "A robot shell's visor unit: the camera bar and its lenses. Fit it to a standing Robot Shell with the attach tool: the worn work is new again.",
+  "group": "Logic",
+  "section": "Shells",
+  "role": "frame",
+  "tool": "wrench",
+  "mass": 0.9,
+  "health": 40,
+  "armour": 1,
+  "material": "steel",
+  "color": "#56606a",
+  "attachSeconds": 1,
+  "boxes": [
+    {
+      "min": [
+        -0.11,
+        0.0,
+        -0.04
+      ],
+      "max": [
+        0.11,
+        0.08,
+        0.04
+      ],
+      "color": "#30363d"
+    },
+    {
+      "min": [
+        -0.09,
+        0.02,
+        -0.044
+      ],
+      "max": [
+        0.09,
+        0.06,
+        -0.03
+      ],
+      "color": "#38d0e8",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}
