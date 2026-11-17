@@ -2,7 +2,54 @@
 
 Notes kept by the builders of `factory-generator.md` (the design and the user's answers of 2026-11-17). Newest state first.
 
-## State (2026-11-17, first builder): phase 1 part done
+## State (2026-11-17, second builder): phase 1 done but the whole-site spawn in play
+
+### What came in
+
+- **The drill deck** (Open 1 fixed): an extraction's back row in the drill zone carries four Concrete Floor 2x2 m slabs a tile (each by its b7_7 corner on
+  the tile's top33 socket, so it stands 0.125 m west and back: over the back edge, never on a neighbour's top), the top at 1.30 m; a Workshop Drill's
+  tower hangs 1.2 m under its foot to 0.10 m over the ground past the back edge, inside `GroundSlack`. Three step tiles (one, two, three slabs: 0.25 m
+  rises) in the row in front climb to it at either end (the seed's). Drills stand on the slabs' corner sockets (`FactoryPlan.DeckX`). Cables, chutes
+  and lamp wires are lifted over whatever they cross (`FactoryScript.Lift`: a node pair 0.15 m on the low side of each step). `--check-building` passes.
+- **Ore bunkers** (part kit `factory_shell`, `Constructs/Parts/Factory`, inventory Production > Bunkers): Ore Bunker 2 m, 3 m and the low Tipping
+  Bunker 3 m (top 1 m up), open concrete bins with chute ports on the rim. They replace every Storage Volume the kit laid: **a sized Storage Volume in
+  the open spills over its open sides once it is past a quarter full** (ConstructSeal: an open face's lowest corner under the level pours), so the
+  refinery's heaps and loading bay ran out as Material Bundles (the haul check found 3 bundles at the loading bay, and "made -480").
+- **The Tipper Body** (part kit `scoop_parts`): a scoop with its mouth up, 2 x 0.6 x 2.5 m, 600 units whatever its air, sockets `hingeL`/`hingeR`
+  under each side wall; on a Motor Hinge 3x3 Medium it tips sideways and pours over that rim into the store under it (ConstructScoops' tipping).
+- **The Militia Ore Hauler** (vehicle kit, `Generators/OreHauler.cs`, an Extra; Militia isn't a shipped style, so `MilitiaOreHauler1.json` is written by
+  `--gen-vehicle "Militia Ore Hauler" --seed 1`): a heavy chassis, a Tipper Body on a Motor Hinge on the hinge sill's left wing (min 0, max 75: a
+  positive angle swings it out to the left), a TIP switch on the right wing's end, the drum on a sill behind. 12 of 12 seeds pass the vehicle check.
+- **The loading skip** (`FactoryScript.Skip`): the extraction's loading object is a Tipper Body on a Motor Hinge on a 2 m Frame Beam post just behind
+  the road; the buffer's chute fills it; LOAD on the post tips it over the road into a hauler's bed (lip about 3.2 m up).
+- **The haul check** `--haul-check [--post N] [--refinery N] [--hauler N]`: post, refinery and hauler on one headless world placed by the site; buffer
+  fed, skip filled by chute (600), hauler set under the skip, LOAD (600 into the bed), hauler moved to the Tipping Bunker (**teleported: the drive is
+  a player's, not simulated**), TIP (600 out, 0 spilt), refinery makes steel (298 in 60 s; the stone a Foundry wants is creative stock). It passes.
+- **Site files** `Constructs/Factories/Sites/MilitiaOreLoop1-3.json` (`call-of-slop-factory-site/1`), written by `--gen-factory site` from the plans:
+  the post at 0, the refinery its length plus 12 m east on the same road line, an Ore Hauler's bed middle under the skip.
+- **Variety**: extraction posts roll the deck's steps at either end, the plant at the west or east end (40 %), and up to twice the style's spare in
+  drills (a third drill makes some seeds 34 m long: past the post class, so they fail the plan stage, which is the design's way; seed 4 of 1-12).
+- **`--seeds N`** on `--gen-factory` (seeds 1 to N, a sweep). The work run's tick leaves first-call compiling out (`JitInfo`), and prints a slow
+  tick's collections and allocation.
+
+### Measured (2-core box, alone)
+
+- Refinery 1 work run: 0.06 ms mean, 1.42 ms worst. Refinery 3: three runs 0.28-0.64 ms worst, no tick over 8 ms; one earlier run (before the JIT
+  split) had one 19.9 ms tick at 6 s with no collection in the run's own count. **The 9-18 ms ticks are not seen since the bunkers**: the likely cause
+  was the Storage Volumes spilling (each spill a new Material Bundle body: allocation, a body joining the world) plus first-call compiling; not proven.
+- Window run (xvfb, `--window-shot --blueprint "Militia Refinery 1" --net host`): it spawns ("is down"), runs from the start, 1000 ore filled into
+  the Tipping Bunker made 240 steel in 20 s; a **joined client** (second process, `--net join:127.0.0.1`) reads the post's skip (600 ore), bunker and
+  Line Console screens as the host has them.
+
+### Open (in order)
+
+1. **A whole site spawned in play** from the Blueprints tab (the site file is data and the haul check reads it; each blueprint still spawns alone, as
+   the Militia Ore Loop file's `about` tells a player where to put them). Needs a small game-side change in the spawn path (GroundJob joins several bodies).
+2. The drive between them is untested by any check (the haul check teleports). A window run that sits a player in the hauler and drives the road
+   (`sit`, `hold MoveForward`) would cover it.
+3. The refinery's loading bay is an Ore Bunker 2 m: the steel waits there for a player (F) until the factory function or a Cargo Dock takes it.
+
+## State (2026-11-17, first builder): phase 1 part done (history)
 
 ### What is in
 
