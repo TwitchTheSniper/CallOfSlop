@@ -1,0 +1,32 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Militia Genset Small",
+  "group": "Engine Kit",
+  "description": "An engine generator set made by the Engine Kit for 120 kW, tier 1, Auto, boost Auto, Small, seed 1: a Small W3 turning a Small Generator Head. It runs as the circuit asks.",
+  "steps": [
+    {"part": "Foundation"},
+    {"part": "Foundation", "on": 0, "socket": "x-0", "by": "x+0"},
+    {"part": "Foundation", "on": 1, "socket": "z+0", "by": "z-0"},
+    {"part": "Foundation", "on": 0, "socket": "z-0", "by": "z+0"},
+    {"part": "Foundation", "on": 0, "socket": "z+0", "by": "z-0"},
+    {"part": "Foundation", "on": 3, "socket": "x+0", "by": "x-0"},
+    {"part": "Foundation", "on": 0, "socket": "x+0", "by": "x-0"},
+    {"part": "Foundation", "on": 4, "socket": "x+0", "by": "x-0"},
+    {"part": "Foundation", "on": 1, "socket": "z-0", "by": "z+0"},
+    {"part": "Small Generator Head", "on": 0, "socket": "top22", "by": "bottom", "paint": "#5c6644"},
+    {"part": "Small Flywheel", "on": 9, "socket": "drive", "by": "+z", "paint": "#2f3236"},
+    {"part": "Small Crank Section", "on": 10, "socket": "crank", "by": "front", "paint": "#2f3236"},
+    {"part": "Small Cylinder", "on": 11, "socket": "-x", "by": "base"},
+    {"part": "Small Carburettor", "on": 12, "socket": "head", "by": "base"},
+    {"part": "Small Cylinder", "on": 11, "socket": "+y", "by": "base"},
+    {"part": "Small Carburettor", "on": 14, "socket": "head", "by": "base"},
+    {"part": "Small Cylinder", "on": 11, "socket": "+x", "by": "base"},
+    {"part": "Small Carburettor", "on": 16, "socket": "head", "by": "base"},
+    {"part": "Large Fuel Tank", "on": 4, "socket": "top10", "by": "-y", "paint": "#8a3a28"},
+    {"part": "Battery", "on": 4, "socket": "top02", "by": "-y"},
+    {"part": "Battery", "on": 4, "socket": "top12", "by": "-y"}
+  ],
+  "links": [
+    {"type": "pipe", "from": 18, "to": 10, "laid": true}
+  ]
+}

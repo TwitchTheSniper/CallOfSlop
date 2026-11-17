@@ -50,7 +50,8 @@ public static class ConstructGenset
     public const float StartSeconds = 60f; // ...or when the draw would flatten them within this
     public const float IdleStop = 20f; // seconds at full charge with no draw before it stops
     public const float IdleShare = 0.02f; // "no draw": under this share of what the set gives
-    public const float KeepUp = 0.98f; // the head comes up only while the engine carries this share of its load
+    public const float KeepUp = 0.98f; // the head comes up only while the engine carries this share of its load (under it, it sheds load)
+    public const float Headroom = 0.95f; // a set gives at most this share of its engine's power (times the heads' efficiency): the governor's margin
 
     /// <summary>The engine's power at its peak, kW (the curve is 1 there).</summary>
     public static float EngineKw(ConstructPartDef e) => e.EngineTorque * e.PeakRpm / ConstructDrive.RpmPerRadS / 1000f;
@@ -96,7 +97,7 @@ public static class ConstructGenset
         var e = c.Engine >= 0 && c.Engine < c.PartCount && c.HasPowertrain ? c.EngineDef : null;
         var state = !any || e == null ? GenState.NoEngine : e.FuelKind != EngineFuel.Fuel ? GenState.NotFuel : heldOff ? GenState.HeldOff : !c.HasFuel ? GenState.NoFuel : GenState.Running;
         var eff = rate > 0 ? effSum / rate : 0;
-        c.GenMax = state is GenState.Running or GenState.NoFuel && e != null ? MathF.Min(rate, EngineKw(e) * eff) : 0;
+        c.GenMax = state is GenState.Running or GenState.NoFuel && e != null ? MathF.Min(rate, EngineKw(e) * eff * Headroom) : 0;
         var was = c.GenRuns;
         if (state != GenState.Running)
             c.GenRuns = false;
@@ -129,7 +130,10 @@ public static class ConstructGenset
         var want = turning && c.GenMax > 0 ? Math.Clamp(need / c.GenMax, 0, 1) : 0f;
         var up = spool > 0 ? dt / spool : 1f;
         if (c.ShaftShare < KeepUp)
+        {
             up = 0;
+            c.GenLevel *= MathF.Max(c.ShaftShare, 0.9f); // (sheds load until the engine carries it: an engine pulled down would only fall further)
+        }
         c.GenLevel = Math.Clamp(c.GenLevel + Math.Clamp(want - c.GenLevel, -1f, up), 0, 1);
         var output = turning ? c.GenLevel * c.GenMax * c.ShaftShare : 0f;
         c.GenOut = output;

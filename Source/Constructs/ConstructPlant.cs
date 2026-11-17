@@ -185,8 +185,8 @@ public static class ConstructPlant
         }
         if (c.GenHeads > 0)
             ConstructGenset.Step(c, drawKw, ref need, ref rated, dt); // (engine generator sets: what is still needed, off the engine's shaft)
-        if (c.EngineRunning && c.Engine >= 0 && c.Engine < c.PartCount && c.DefOf(c.Engine) is { FuelKind: EngineFuel.Fuel } e)
-            smoke = MathF.Max(smoke, 0.2f + 0.8f * Math.Clamp(MathF.Max(c.DriveTorque, c.GenLoad * c.ShaftShare) / e.EngineTorque, 0, 1)); // (a genset smokes with its load)
+        if (c.EngineRunning && c.Engine >= 0 && c.Engine < c.PartCount && c.EngineDef is { FuelKind: EngineFuel.Fuel } e) // (a modular engine's sums: its flywheel's own file has no torque)
+            smoke = MathF.Max(smoke, 0.2f + 0.8f * Math.Clamp(MathF.Max(c.DriveTorque, c.GenLoad * c.ShaftShare) / MathF.Max(1, e.EngineTorque), 0, 1)); // (a genset smokes with its load)
         c.SmokeLevel = smoke;
         c.PlantShow = rated > 0 ? Math.Clamp(c.PlantOut / rated, 0, 1) : 0;
     }

@@ -7,7 +7,8 @@ namespace CallOfSlop.EngineKit;
 /// <c>--gen-engine [--preset small|medium|large|huge] [--power KW] [--torque NM] [--rpm R] [--fit LxWxH] [--mass KG] [--fuel F] [--layout inline|v|flat|w|radial]
 /// [--boost none|supercharger|turbo] [--size small|medium|large|capital] [--tier 1-5] [--seed S] [--plans N] [--out FILE]</c>: the Engine Kit on the command line
 /// (docs/vehiclekit/ENGINEKIT.md). Prints the plan it chose, the numbers the game works out for what it built, and why it falls short when it does; --out writes
-/// the blueprint; --plans N lists the N best plans too.
+/// the blueprint; --plans N lists the N best plans too. --genset makes an engine generator set (EngineKitGenset.cs; --style militia paints it), --genset-ship [--check]
+/// writes the shipped sets, --genset-run FILE [--seconds N] runs one headless against a load that rises and falls (GensetRun.cs).
 /// </summary>
 public static class EngineKitCli
 {
@@ -20,6 +21,10 @@ public static class EngineKitCli
         float F(string name) => Arg(name) is { } v && float.TryParse(v, NumberStyles.Float, CultureInfo.InvariantCulture, out var f) ? f : 0;
         if (Arg("--read") is { } readFile)
             return Read(readFile);
+        if (args.Any(a => a.Equals("--genset-ship", StringComparison.OrdinalIgnoreCase)))
+            return EngineKitGenset.Ship(args.Any(a => a.Equals("--check", StringComparison.OrdinalIgnoreCase))); // (the shipped engine generator sets: EngineKitGenset.cs)
+        if (Arg("--genset-run") is { } runFile)
+            return GensetRun.Cli(runFile, args); // (a set run headless against a load that rises and falls: GensetRun.cs)
         var power = F("--power");
         if (power <= 0 && Arg("--preset") is { } preset)
             power = Presets.FirstOrDefault(p => p.Name.Equals(preset, StringComparison.OrdinalIgnoreCase)).Kw;
@@ -55,6 +60,17 @@ public static class EngineKitCli
             foreach (var p in EngineKit.Plans(r).Take((int)np))
                 Console.WriteLine(string.Create(CultureInfo.InvariantCulture,
                     $"  plan {EngineKit.SizeWords[p.Size]} {EngineKit.LayoutName(p.Layout, p.Cylinders)} x{p.Cranks}: {p.Kw:0} kW, {p.TorqueNm:0} N m at {p.PeakRpm:0} rpm (stroke {p.Stroke:0.00}), {p.Mass:0} kg, ~{p.Dims.X:0.00}x{p.Dims.Y:0.00}x{p.Dims.Z:0.00} m, {p.Cylinder} / {p.FuelPart} / {p.BoostPart ?? "-"}, score {p.Score:0.000}{(p.Feasible ? "" : " (over: " + p.Why + ")")}"));
+        if (args.Any(a => a.Equals("--genset", StringComparison.OrdinalIgnoreCase)))
+        {
+            var set = EngineKitGenset.Make(r, Arg("--style") ?? "");
+            Console.WriteLine(set.ToString());
+            if (set.Built && Arg("--out") is { } setFile)
+            {
+                File.WriteAllText(setFile, set.Text);
+                Console.WriteLine($"  wrote {setFile}");
+            }
+            return set.Built ? 0 : 1;
+        }
         var res = EngineKit.Request(r);
         Console.WriteLine(res.ToString());
         Console.WriteLine($"  {System.Diagnostics.Stopwatch.GetElapsedTime(start).TotalMilliseconds:0} ms");

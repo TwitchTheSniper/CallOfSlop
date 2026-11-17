@@ -255,7 +255,7 @@ public static class ConstructDrillDrive
             return;
         }
         var demand = MathF.Abs(throttle);
-        var want = (ConstructGenset.Governs(c) ? c.GenRpm : e.IdleRpm + demand * (e.MaxRpm * 0.95f - e.IdleRpm)) * c.ShaftShare; // (a generator set governs its speed)
+        var want = ConstructGenset.Governs(c) ? c.GenRpm : (e.IdleRpm + demand * (e.MaxRpm * 0.95f - e.IdleRpm)) * c.ShaftShare; // (a generator set governs its speed: it sheds load rather than be pulled down)
         if (c.RpmGovern > 0)
             want = MathF.Min(want, c.RpmGovern); // (a rotor's hub: ConstructRotor.cs)
         c.Rpm += Math.Clamp(want - c.Rpm, -e.MaxRpm * 2 * dt, e.MaxRpm * 2 * dt);
