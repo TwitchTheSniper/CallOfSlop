@@ -7,7 +7,7 @@ Python part generators are meant to follow.
 
 ## Why cars are slow
 
-`--speed-test FILE... [--seconds N]` drives blueprints flat out on the drive check's flat floor (default 40 s) and prints what
+`--speed-test FILE... [--seconds N] [--gravity G]` (G in g, default 1) drives blueprints flat out on the drive check's flat floor (default 40 s) and prints what
 they are and what tops them out (`Source/EngineKit/EngineKitSpeed.cs`). Measured 2026-11-11 on the committed blueprints:
 
 | Vehicle | Mass kg | Engine | Peak kW | Gears x final | Wheel r m | Top m/s | 0-10 s | 0-20 s | Gear at top | rpm at top | Gearing's top m/s | Drag kW at top |

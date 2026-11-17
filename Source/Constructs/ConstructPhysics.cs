@@ -486,17 +486,17 @@ public static partial class ConstructPhysics
 
     /// <summary>
     /// Drive grip from 1 g (user, 2026-11-16): what a grounded tyre can push and brake with along the ground, and its rolling
-    /// resistance, are its real load scaled to <see cref="World.Gravity"/> (the game's 1 g): <c>N * max(1, 1 g / g here)</c>,
-    /// capped at <see cref="DriveLoadCap"/> times the wheel's weight share at 1 g. So power gives the same speed on a small moon as
-    /// at home; a wheel only grazing the ground (little real load) still pushes little, one in the air not at all, and a heavy
-    /// world keeps its real, larger load. Side grip (cornering, sliding) keeps the real load, so low gravity still feels floaty.
-    /// At exactly 1 g every number is what it was. <see cref="CWheel.LastGrip"/> is the drive budget (differentials, tracks).
+    /// resistance, take its load as if the world pulled at <see cref="World.Gravity"/> (the game's 1 g) when it pulls less: the
+    /// real load N plus the weight the world doesn't give, <c>share * (1 g - g here)</c>, in the share of its resting load the tyre
+    /// carries now (<c>min(1, N / (share * g here))</c>). Resting, a tyre pushes as at 1 g; weight thrown onto it (pulling away,
+    /// braking, a bump) adds as at 1 g; one only grazing the ground pushes little, one in the air not at all. A heavy world keeps
+    /// its real, larger load. Side grip (cornering, sliding) keeps the real load, so low gravity still feels floaty in turns.
+    /// At 1 g and above every number is what it was. <see cref="CWheel.LastGrip"/> is the drive budget (differentials, tracks).
     /// </summary>
-    public const float DriveLoadCap = 2f;
-
     private static void Wheels(Construct c, IWorldQuery query, in Matrix4x4 invI, float gHere, float dt)
     {
-        var lift1g = gHere < World.Gravity ? World.Gravity / MathF.Max(gHere, World.Gravity * 0.01f) : 1f; // (drive grip from 1 g: Wheels' summary)
+        var missing = MathF.Max(0, World.Gravity - gHere); // (drive grip from 1 g: the summary)
+        var gRest = MathF.Max(gHere, World.Gravity * 0.01f);
         var up = Vector3.Transform(Vector3.UnitY, c.Rot);
         var fwdBody = Vector3.Transform(c.DriveFwd, c.Rot);
         var com = c.WorldCom;
@@ -677,7 +677,7 @@ public static partial class ConstructPhysics
                 surface *= ConstructTracks.GradeGrip(n.Y);
             var maxFriction = normalImpulse * surface; // (side grip: the real load)
             // (drive grip: the load as at 1 g, never under the real one; a light touch stays light)
-            var driveLoad = lift1g > 1 ? MathF.Max(normalImpulse, MathF.Min(normalImpulse * lift1g, DriveLoadCap * load * World.Gravity * dt)) : normalImpulse;
+            var driveLoad = missing > 0 ? normalImpulse + MathF.Min(1, normalImpulse / MathF.Max(1e-6f, load * gRest * dt)) * load * missing * dt : normalImpulse;
             var maxDrive = driveLoad * surface;
             w.LastGrip = maxDrive;
             var vSide = Vector3.Dot(vp, side);

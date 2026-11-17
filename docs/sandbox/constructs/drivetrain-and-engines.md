@@ -88,6 +88,10 @@ a diesel needs a battery for its starter; "shifting" and "spooling up" in grey.
 - **Starting**: a diesel or a turbine (`"starter": true`) needs a battery: without one, "It won't start". An electric
   motor runs while a working battery's links reach it with charge. An engine with nothing to drive still runs (a power
   take-off).
+- **Drive grip from 1 g** (user, 2026-11-16): on a world that pulls less than 1 g (`World.Gravity`), a grounded tyre or track
+  drives, brakes and rolls as if it carried its 1 g weight: its real load plus the missing weight, in the share of its resting
+  load it carries now (a grazing tyre pushes little, one in the air nothing). Side grip keeps the real load, so a moon still
+  corners and jumps floaty; at 1 g and above nothing changes (`ConstructPhysics.Wheels`). `--speed-test ... --gravity G` measures it.
 - **Wheels**: grip on terrain (dirt) is 85% of hard ground times the tyre's `offroad`; `side` scales the sideways grip
   (an omni wheel slides, a track unit turns on the spot); `roll` is a share of the load; a wrecked tyre with `flat` stays on
   at three quarters of its radius with half its grip. A **track** unit is one part with several contact rays along its
