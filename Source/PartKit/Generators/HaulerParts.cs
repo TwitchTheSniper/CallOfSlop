@@ -1085,7 +1085,7 @@ public sealed class HaulerParts : IPartGenerator
         return p.Stats(12000, 30000, 40, 15.0);
     }
 
-    // ---- the stern: the hull's last band, the upper band over the drive room, the transom with four drive mounts
+    // ---- the stern: the hull's last band, the upper band over the drive room, the transom with two drive seats on shrouds and the bulkhead their engines bolt to
 
     private static Part SternPart()
     {
@@ -1574,7 +1574,7 @@ public sealed class HaulerParts : IPartGenerator
 
     private static PyDict Blueprint(Dictionary<string, PyDict> defs)
     {
-        var bp = new BuildingParts.Blueprint(ShipName, "A container hauler: a long hold for fourteen 20-foot containers with an overhead crane down its length and a well in its belly to lift them through, a small crew section forward and a drive room aft. Four torch nozzles push it, their works in the drive room. (No legs, lamps or fittings yet.)", defs, maxSteps: 400);
+        var bp = new BuildingParts.Blueprint(ShipName, "A container hauler: a long hold for fourteen 20-foot containers with an overhead crane down its length and a well in its belly to lift them through, a small crew section forward and a drive room aft. Two big torch drives push it, each with its own engine in the drive room behind it, and attitude jets at the bow and stern move it about. (No legs, lamps or fittings yet.)", defs, maxSteps: 400);
         bp.Conduit = true;
         double[] zero = [0, 0, 0];
         var placed = new Dictionary<string, int>();

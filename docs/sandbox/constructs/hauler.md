@@ -12,8 +12,8 @@ blueprint-only (`Categories.json`'s name rule has "Dray").
 ## The shape
 
 About 58 m long, 14 m across and 10 m tall, 157 t. A low, narrow cab forward (the crew section) steps out through a raked
-shoulder to the wide hold, which runs straight to the drive room, where the stern pinches in to a transom with four drive
-mounts. Heavy ring frames stand proud of the hull at every container row; between them the hold's sides are ribbed like a
+shoulder to the wide hold, which runs straight to the drive room, where the stern pinches in to a transom with two big
+drives on shrouds. Heavy ring frames stand proud of the hull at every container row; between them the hold's sides are ribbed like a
 container's walls, alternating pale and freight blue row by row. Freight blue armour on the cab, a strongback (two box
 girders) along the hold's roof, a sensor mast, radiators over the drive room.
 

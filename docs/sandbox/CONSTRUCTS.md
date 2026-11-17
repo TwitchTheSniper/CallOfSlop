@@ -30,7 +30,7 @@ The IT Department's warship: a faceted lofted hull, two decks the length of the 
 
 ## [The Dray container hauler](constructs/hauler.md), 3 KB
 
-A cargo ship round a hold of fourteen container slots, an overhead crane on rails and a belly well with sliding doors; frame, walls and doors so far.
+A cargo ship round a hold of fourteen container slots, an overhead crane on rails and a belly well with sliding doors, two big drives with their engines in a drive room aft, and attitude jets; no legs, lamps or fittings yet.
 
 ## [Ship works](design/ship-works.md), 48 KB (the design)
 
