@@ -126,6 +126,29 @@ public sealed partial class Game : ICrewHost
         ApplyCmd(p, new InputCmd { Seq = p.LastInput.Seq + 1, Yaw = yaw, Pitch = Math.Clamp(pitch, -1.5f, 1.5f), Weapon = p.Weapon, SpeedPct = 100 });
     }
 
+    /// <summary>Lines for a tool (allocates): each crew's roster, its driver's shots, its body's height and speed.</summary>
+    public List<string> CrewLines()
+    {
+        var lines = new List<string>();
+        for (var i = 0; i < Crew.ShipHigh; i++)
+            if (Crew.Ships[i] is { } s && Constructs.Get(s.Body) is { } c)
+                lines.Add($"construct {s.Body} at height {ConstructPhysics.HoldHeight(c.WorldCom):0} m, {c.Vel.Length():0.0} m/s, {(s.Ai != null ? $"{s.Ai.State}, shots {s.Ai.Shots} (gunners {s.Ai.GunnerShots})" : "no driver")}; {Crew.Describe(s)}");
+        return lines;
+    }
+
+    /// <summary>A tool: <paramref name="by"/> shoots the first crew body whose job is <paramref name="job"/> through the players' damage. Null: none.</summary>
+    public string? CrewShoot(Player by, string job)
+    {
+        for (var m = 0; m < Crew.High; m++)
+            if (Crew.Ship[m] >= 0 && Crew.Player[m] != 0 && Crew.State[m] == CrewState.Station && Crew.Job[m].ToString().Equals(job, StringComparison.OrdinalIgnoreCase)
+                && Players.TryGetValue((byte)(Crew.Player[m] - 1), out var p) && p.Alive)
+            {
+                DamagePlayer(by, p, 1000, false, 0, SandboxNow);
+                return $"crew member {Crew.Uid[m]} ({p.Name}) shot: {(p.Alive ? "alive" : "dead")}";
+            }
+        return null;
+    }
+
     // ---- Targets ------------------------------------------------------------------------------------------------------------------
 
     /// <summary>

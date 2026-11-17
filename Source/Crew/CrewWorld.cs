@@ -79,6 +79,7 @@ public sealed class CrewShip
     public int Stamp = -1, PartsSeen = -1; // (the construct's RebuildStamp and part count when its stations were scanned)
     public long GraceUntil; // the tick an empty helm stops keeping its last input
     public bool FromSetting; // made by its Flight Stabilizer's AI crew setting: it stands down when the setting goes off
+    public bool BodiesShort; // the last try for a body found none (logged once)
     public bool AirOff; // an aircraft's autopilot was let go for want of a pilot (GameSandboxAircraft.cs)
     public bool HelmLost; // the helm emptied and nobody has taken it (an aircraft's pilot let go of the autopilot once)
     public bool SeatsDirty = true; // the stand-ins clients draw changed (GameCrew.cs sends them)
@@ -656,6 +657,7 @@ public sealed class CrewWorld
         {
             if (s.Tier == CrewTier.Bodied)
                 Unbody(s, host);
+            Events.Add($"construct {c.Id}: its crew is {tier.ToString().ToLowerInvariant()} ({(near < float.MaxValue ? $"{near:0} m from the nearest person" : "nobody about")})");
             s.Tier = tier;
             s.SeatsDirty = true;
         }
@@ -815,9 +817,16 @@ public sealed class CrewWorld
                 continue;
             var id = host.Promote(this, m, c, part);
             if (id == 0)
+            {
+                if (!s.BodiesShort)
+                    Events.Add($"construct {c.Id}: no body free for crew member {Uid[m]} (a record at its seat)");
+                s.BodiesShort = true;
                 return;
+            }
+            s.BodiesShort = false;
             Player[m] = (byte)(id + 1);
             IsBody[id] = true;
+            Events.Add($"construct {c.Id}: crew member {Uid[m]} has a body (player {id}) at seat {part}");
             _bodied[_bodiedCount++] = m;
             s.SeatsDirty = true;
         }

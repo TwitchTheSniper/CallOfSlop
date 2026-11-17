@@ -23,6 +23,15 @@ public static partial class Program
         var ci = System.Globalization.CultureInfo.InvariantCulture;
         switch (verb)
         {
+            case "crew": // "crew": every crew's roster and its driver's shots, the body's height and speed (the host's: GameCrew.cs)
+                if (g.IsServer)
+                    foreach (var line in g.CrewLines())
+                        Console.WriteLine($"[windowshot] crew: {line}");
+                return true;
+            case "crewshoot": // "crewshoot pilot|gunner|spare": the host shoots the first crew body with that job, as a player's round does (DamagePlayer)
+                if (g.IsServer && g.CrewShoot(me, arg) is { } shot)
+                    Console.WriteLine($"[windowshot] crewshoot: {shot}");
+                return true;
             case "sit": // "sit PART[#n]": the use key on that seat (a Seat, a Lifter Cab, a gunner's seat): the host stands by it first; a client is brought by the host ("bring PART")
             {
                 var (c, part) = WsFind(g, arg);
