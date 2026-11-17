@@ -257,13 +257,45 @@ public sealed class FactoryScript : BlueprintScript
             case "heap":
                 return Heap(o.Material, c.X, c.Z, o.Size);
             case "tipping":
-                return Store(c.X, c.Z, o.Size, 1.5f, Style.Colour(_paint, "hazard"));
+                return Store(c.X, c.Z, o.Size, TippingHeight, Style.Colour(_paint, "hazard"));
+            case "loading" when o.Part == "Tipper Body":
+                return Skip(c.X);
             case "buffer" or "bin" or "loading":
                 return Store(c.X, c.Z, o.Size, 1.5f, Style.Colour(_paint.Fork("stock"), "stock"));
             default:
                 throw new VehicleKitException($"no cell for role {o.Role}");
         }
     }
+
+    /// <summary>The tipping hopper's height: under an Ore Hauler's tipped lip (about 1.85 m over the ground), the floor's 0.3 m and a margin.</summary>
+    public const float TippingHeight = 1.0f;
+
+    /// <summary>The loading skip's leaf height over the floor: an Ore Hauler's bed rim (about 2.3 m over the floor on the road) under its tipped lip.</summary>
+    public const float SkipLeaf = 2.75f;
+
+    /// <summary>
+    /// The extraction post's loading skip (the ore loop, phase 1): a Tipper Body on a Motor Hinge 3x3 Medium on a 2 m post just behind the road's back edge, its
+    /// pivot under its road-side wall. The buffer's chute fills it; the LOAD switch on the post tips it towards the road, and it pours into the bed of an
+    /// Ore Hauler stopped under it (its lip about 3.2 m up, 1 m out over the road).
+    /// </summary>
+    private VPart Skip(float x)
+    {
+        var z = -(FactoryPlan.RoadDepth + 0.25f);
+        var colour = Style.Colour(_paint.Fork("stock"), "stock");
+        var post = On("Frame Beam", x, z, Post, "end-", Style.Colour(_paint, "frame"), "painted plating");
+        var hinge = Put("Motor Hinge 3x3 Medium", V(x, FloorY + 2.375f, z), new Orient(Vector3.UnitX, Vector3.UnitY, Vector3.UnitY, SkipAxis), 0.05f, post, "base");
+        Paint(hinge, Style.Colour(_paint, "frame"));
+        var skip = Put("Tipper Body", V(x, FloorY + SkipLeaf + 0.3f, z - 0.875f), new Orient(Vector3.UnitX, -Vector3.UnitZ, Vector3.UnitY, Vector3.UnitY), 0.05f, hinge, "hingeL");
+        Paint(skip, colour);
+        Config(hinge, ("min", 0.0), ("max", 75.0));
+        var load = Onto(post, "x+1", "Switch", null);
+        Paint(load, Style.Colour(_paint, "hazard"));
+        Wire(load, hinge);
+        return skip;
+    }
+
+    /// <summary>The skip hinge's axis (its own y) along the road, the way that makes a positive angle tip it towards the road.</summary>
+    private static readonly Vector3 SkipAxis = Vector3.UnitX;
 
     // ---- Chutes ---------------------------------------------------------------------------------------------------------------------
 

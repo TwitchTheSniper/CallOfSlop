@@ -1678,6 +1678,7 @@
     {"output": "Rock Bucket Capital", "materials": {"steel": 2000, "rubber": 500}, "seconds": 600.0, "minTier": 4},
     {"output": "Rock Bucket Large", "materials": {"steel": 2000, "rubber": 500}, "seconds": 600.0, "minTier": 3},
     {"output": "Rock Bucket Medium", "materials": {"steel": 601, "rubber": 120}, "seconds": 92.1, "minTier": 2},
+    {"output": "Tipper Body", "materials": {"steel": 75, "rubber": 15}, "seconds": 13.2},
     {"output": "Trenching Bucket", "materials": {"steel": 25, "rubber": 5}, "seconds": 5.8},
     {"output": "Trenching Bucket Capital", "materials": {"steel": 2000, "rubber": 500}, "seconds": 600.0, "minTier": 4},
     {"output": "Trenching Bucket Large", "materials": {"steel": 2000, "rubber": 500}, "seconds": 600.0, "minTier": 3},

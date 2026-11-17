@@ -81,8 +81,8 @@ public sealed class FactoryProgramme
         var drills = Enumerable.Range(0, n).Select(_ => Add("drill", drill.Name, "intake", ore, rate / n, 0)).ToList();
         var buffer = Add("buffer", "Storage Volume", "storage", ore, rate);
         buffer.Size = 2.5f;
-        var load = Add("loading", "Storage Volume", "output", ore, rate);
-        load.Size = 2.0f;
+        var load = Add("loading", "Tipper Body", "output", ore, rate); // (the loading skip over the road: FactoryScript.Skip)
+        load.Size = 2.5f;
         foreach (var dr in drills)
             Edges.Add(new FactoryEdge(dr.Id, buffer.Id, ore, "chute", dr.Rate, true));
         Edges.Add(new FactoryEdge(buffer.Id, load.Id, ore, "chute", rate, true));
