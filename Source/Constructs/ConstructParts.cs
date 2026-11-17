@@ -546,6 +546,7 @@ public sealed partial class ConstructPartDef
     public float MotorTorque, MotorPower, MotorTop; // suspension: a hub motor in the mount (N m at the wheel, kW, m/s it fades out at): drives its wheel from the circuit, no shaft (ConstructThrust.cs)
     public float PlantRate, PlantBurn, PlantSpool, PlantBuffer; // generator: kW, litres a second at full output, seconds to come up, kJ it holds
     public EngineFuel PlantFuel; // generator: Fuel, or None (a reactor)
+    public float PlantShaft; // generator: a Generator Head's efficiency, shaft to circuit (0: a plant that makes its own power); an engine on its Drive in turns it (ConstructGenset.cs)
     public float ThrustForce, ThrustBurn, ThrustPower, ThrustSpool; // thruster: N, litres a second and kW at full thrust, seconds from nothing to full
     public EngineFuel ThrustFuel; // thruster: Fuel or Electric
     public ThrustKind ThrustKind; // thruster: what makes its push (ConstructBoost.cs)
@@ -813,7 +814,7 @@ public sealed partial class ConstructPartDef
     public RotorDef? Rotor; // a propeller or a rotor (ConstructRotor.cs)
     public LegDef? Leg; // a walker leg (ConstructWalk.cs)
     public float Steady; // kg of walker a stabiliser steadies (ConstructWalkFeel.cs)
-    public bool ShaftIn => GatherRpm > 0 || RailDrive == RailDriveKind.Shaft || Hyd == HydKind.Pump || Rotor is { Shaft: true } || Leg is { Shaft: > 0 }; // a part with a "Drive in" shaft port: ConstructDrillDrive.cs
+    public bool ShaftIn => GatherRpm > 0 || RailDrive == RailDriveKind.Shaft || Hyd == HydKind.Pump || Rotor is { Shaft: true } || Leg is { Shaft: > 0 } || PlantShaft > 0; // a part with a "Drive in" shaft port: ConstructDrillDrive.cs
 
     /// <summary>Has a signal output (wires start here): seats (someone sits there) and every logic part but lamps, horns and brakes.</summary>
     public PanelDef[] Panels = []; // flat display surfaces (DisplayPanel.cs)
@@ -838,7 +839,7 @@ public sealed partial class ConstructPartDef
     public string DieFamily = ""; // a die: its rows in Pressing.json
 
     public MonitorKind Monitor; // a production monitor's source: its "Data out" link makes a display show it (ProductionLines.Monitors.cs)
-    public bool HasOutput => Role == PartRole.Seat || IsExtruder || IsRouter || IsMedia || Monitor != MonitorKind.None || (Role == PartRole.Logic && Logic is not (CLogic.Lamp or CLogic.Horn or CLogic.Brake or CLogic.GravityWell or CLogic.GravityGen or CLogic.Display or CLogic.Instrument or CLogic.RadioTx))
+    public bool HasOutput => Role == PartRole.Seat || IsExtruder || IsRouter || IsMedia || Monitor != MonitorKind.None || PlantShaft > 0 || (Role == PartRole.Logic && Logic is not (CLogic.Lamp or CLogic.Horn or CLogic.Brake or CLogic.GravityWell or CLogic.GravityGen or CLogic.Display or CLogic.Instrument or CLogic.RadioTx))
                              || Role == PartRole.Hose && HoseCarry == HoseCarry.Data && HoseEnd == HoseEnd.Inlet; // (a data lead's inlet puts out what the lead carries)
 
     /// <summary>

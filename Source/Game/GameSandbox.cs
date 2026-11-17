@@ -109,7 +109,7 @@ public enum CActKind : byte
     NavOrder, // u16 body, u8 NavKind (0 cancels), u8 the star system's body, 3 x f64 point, f64 radius: an order for a ship from the command view (protocol 323; GameNav.cs)
     Link, // u16 body, u16 part, u8 LinkOp, u32 a, u32 b, str text: a linked logistics part's panel, or a route from the command view (protocol 328; GameSandboxLinked.cs)
     Crew, // u16 body, u32 member uid, u8 CrewOrder: a crew order from the Crew window (protocol 332; GameCrewHire.cs)
-    Dampeners, // u16 body (the seat's): the seated player flips that ship's inertia dampeners (protocol 339; ConstructFlight.ToggleDampeners)
+    Dampeners, // u16 body (the seat's): the seated player flips that ship's inertia dampeners (protocol 340; ConstructFlight.ToggleDampeners)
 }
 
 /// <summary>
