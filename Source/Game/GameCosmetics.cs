@@ -102,6 +102,8 @@ public sealed partial class Game
     private static void ApplyCosmetics(Player p, in PlayerCosmetics c)
     {
         p.Uniform = c.Uniform;
+        if ((c.Eva & ~p.Eva & Eva.Suit) != 0)
+            p.SuitAir = Eva.SuitSeconds; // (a suit just put on is full: a joined client's HUD keeps with the server's locker)
         p.Eva = c.Eva;
         if (p.Bot != null)
             return;

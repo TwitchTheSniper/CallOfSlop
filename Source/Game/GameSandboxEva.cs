@@ -28,10 +28,17 @@ public static class Eva
     public const ushort MmuFull = 3600; // the pack's tank: a minute of thrust (ticks; MoveState.JetFuel while worn)
     public const float MmuLitres = 6f; // fuel a full tank takes from the ship
     public const int MmuFillTicks = 4; // tank a tick on a fed dock: full in 15 s
+    public const uint IssueTicks = 10 * World.TickRate; // a spawn this recent out in vacuum is given a suit (the ship starts, a world rejoined in orbit)
 
     /// <summary>Is the air at this point too thin to breathe: past the space bubble's edge round a star system's body (where ships orbit), or thinner than <see cref="VacuumBelow"/>?</summary>
     public static bool Vacuum(Vector3 at) =>
         GravityFrames.Point is { OrbitFrom: > 0 } pg && Vector3.DistanceSquared(at, pg.Center) > pg.OrbitFrom * pg.OrbitFrom || ConstructAir.Density(at) < VacuumBelow;
+
+    /// <summary>
+    /// Is the suit fed this tick: seated in any seat, or standing aboard a construct (the ship's air line, until pressurised
+    /// rooms exist). The server and a joined client judge it by the same rule, so the HUD keeps with the host.
+    /// </summary>
+    public static bool Fed(Player p, bool seated) => seated || p.Sim.RideBody != 0;
 
     /// <summary>Does this player breathe: a person, not a robot shell, not an NPC, alive, not flying in creative's noclip.</summary>
     public static bool Breathes(Player p) => p.Bot == null && !p.InShell && p.Alive && !p.Sim.Noclip;
@@ -210,6 +217,8 @@ public sealed partial class Game
         Constructs.RemovePart(c, mmu); // (the pack comes off the dock with them)
         p.Eva |= Eva.Mmu;
         SandboxStand(p, teleport: true);
+        if (p.Sim.RideBody != 0)
+            ConstructRide.Leave(ref p.Sim, Constructs.Get(p.Sim.RideBody), momentum: true); // (stood on a deck out in space: off it, or the pack can't fire)
         p.Sim.JetFuel = p.MmuFuel = fuel;
         p.Sim.Gear = SandboxWorn(p);
         // A gentle push off the dock, forward out of it, with whatever the ship was doing.
@@ -224,10 +233,9 @@ public sealed partial class Game
     /// <summary>Server, each tick for every player: breath, and the worn MMU's gear bit.</summary>
     private void SandboxEvaTick(Player p, double now)
     {
-        var topUp = false;
-        ref var h = ref SandboxHands.Hand(p.Id);
-        if (h.Seated && Constructs.Get(h.SeatBody) is { } sc && sc.SeatOf(p.Id) is var si and >= 0 && sc.DefOf(si).Eva == EvaPart.Dock)
-            topUp = true;
+        var topUp = Eva.Fed(p, SandboxHands.Hand(p.Id).Seated);
+        if ((p.Eva & Eva.Suit) == 0 && p.Bot == null && !p.InShell && p.Alive && ServerTick - p.SpawnTick < Eva.IssueTicks && Eva.Vacuum(p.Position))
+            SandboxEvaIssue(p); // (woken or respawned out in vacuum, as the ship starts do: in a suit, not choking)
         ref var choke = ref _evaChoke[p.Id];
         if (!Eva.Step(p, topUp))
         {
@@ -242,6 +250,15 @@ public sealed partial class Game
         choke = World.TickRate;
         if (DamagePlayer(p, p, Eva.ChokeDamage, false, SuicideKillId, now, DamageKind.Melee))
             ServerSystemChat($"{p.Name} suffocated", now);
+    }
+
+    /// <summary>Server: a person who comes into play out in vacuum wears a space suit, full.</summary>
+    private void SandboxEvaIssue(Player p)
+    {
+        p.Eva |= Eva.Suit;
+        p.SuitAir = Eva.SuitSeconds;
+        p.Breath = Eva.BreathSeconds;
+        BroadcastRoster();
     }
 
     /// <summary>Server, a death: the suit comes off, and a worn MMU floats where they died as a loose part.</summary>
