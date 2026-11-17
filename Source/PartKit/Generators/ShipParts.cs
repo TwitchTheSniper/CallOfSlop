@@ -328,7 +328,7 @@ public sealed class ShipParts : IPartGenerator
 
     private const double LowFront = -0.3, UpFront = 1.4, Back = 16.06; // the rooms' ends
 
-    private static readonly double[] StairCuts = [8.25, 11.75];
+    private static readonly double[] StairCuts = [8.15, 11.05]; // (StairHole's ends: declared here, before it, for the initialisation order)
 
     /// <summary>A storey's floor (the lower one to its walls' inner faces, the upper one out to the deck line), less the holes.</summary>
     private static void FloorOf(Part p, int level, double y0, double y1, string color, (double X0, double Z0, double X1, double Z1)[] holes)
@@ -798,7 +798,7 @@ public sealed class ShipParts : IPartGenerator
         // Sockets: the ramp's hinge line, the stair's foot, the engine, the pods and saddle tanks (on the skin), the legs, the fittings.
         Sock(p, "ramp", Cx, 0.1, RampHingeZ, "-z");
         Hidden(p, Cx - 0.1, -0.1, RampHingeZ, Cx + 0.1, F0, LowFront); // (what the ramp's socket is on)
-        Sock(p, "stair", StairHole.X0 + 0.175, F0, 8.375, "+y");
+        Sock(p, "stair", StairHole.X0 + 0.175, F0, StairHole.Z0 - StairLead + 0.125, "+y"); // (its head, 3.5 m on, at the opening's aft end)
         Sock(p, "engine", Cx, F0, 14.2, "+y");
         foreach (var (z, i) in new[] { (4.5, 0), (7.5, 1), (10.5, 2) })
             Sock(p, $"shelfL{i}", Cx - Lw, F0 + 0.125, z, "+x");
@@ -887,7 +887,12 @@ public sealed class ShipParts : IPartGenerator
 
     // ---- the deck: the upper deck, the canopy and the bridge front, the upper hull, the tail's upper half
 
-    private static readonly (double X0, double Z0, double X1, double Z1) StairHole = (6.55, 8.25, Cx + Uw, 11.75); // (the stair hall, inside the rooms' starboard wall)
+    // The stair hall, inside the rooms' starboard wall: the opening runs from just aft of the bathroom's wall to the Wide Stair's head,
+    // and the floor is whole from there to the galley's wall, a landing level with the deck to step off onto (Karl, 2026-11-17: the
+    // flight ran on to the far wall past where the floor was open beside it). The stair's foot is StairLead fore of the opening, under
+    // the deck, low enough there that a standing head clears the opening's edge.
+    private static readonly (double X0, double Z0, double X1, double Z1) StairHole = (6.55, 8.15, Cx + Uw, 11.05);
+    private const double StairLead = 0.6; // (the Wide Stair's 12 steps rise 3 m over 3.5 m: 8.15 - 0.6 + 3.5 = 11.05)
 
     /// <summary>A frame bar from a to b: a thin plate 8 cm wide, moved by <paramref name="shift"/> to stand proud of the glass.</summary>
     private static void Bar(Part p, double[] a, double[] b, double[] shift)
@@ -1060,9 +1065,9 @@ public sealed class ShipParts : IPartGenerator
             for (var z = 5.0; z < 15.9; z += 1.5)
                 Detail(p, 4.13, 5.58, z - 0.03, 4.27, 5.9, z + 0.03, Frame, "dirty steel");
         });
-        // The stair's rail along the opening's inboard side, open at its head (aft) to step off into the hall.
-        Solid(p, StairHole.X0 - 0.06, F1T, 8.25, StairHole.X0, F1T + 1.0, 10.6, Frame, "steel");
-        Detail(p, StairHole.X0 - 0.1, F1T + 0.95, 8.25, StairHole.X0 + 0.04, F1T + 1.05, 10.6, Stripe, "hazard paint");
+        // The stair's rail along the opening's inboard side; at its head (aft) the landing, then the hall.
+        Solid(p, StairHole.X0 - 0.06, F1T, StairHole.Z0, StairHole.X0, F1T + 1.0, StairHole.Z1, Frame, "steel");
+        Detail(p, StairHole.X0 - 0.1, F1T + 0.95, StairHole.Z0, StairHole.X0 + 0.04, F1T + 1.05, StairHole.Z1, Stripe, "hazard paint");
         // Sockets: the seats, the cabins' furniture, the doors' jambs, the lamps.
         Sock(p, "seatL", 4.0, F1T, 2.45, "+y");
         Sock(p, "seatR", 6.0, F1T, 2.45, "+y");
