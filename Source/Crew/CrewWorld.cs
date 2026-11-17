@@ -106,6 +106,7 @@ public sealed class CrewShip
     public bool BodiesShort; // the last try for a body found none (logged once)
     public bool AirOff; // an aircraft's autopilot was let go for want of a pilot (GameSandboxAircraft.cs)
     public bool HelmLost; // the helm emptied and nobody has taken it (an aircraft's pilot let go of the autopilot once)
+    public bool RosterDirty = true; // an own crew's or a prize's roster changed (GameCrewHire.cs sends it)
     public bool SeatsDirty = true; // the stand-ins clients draw changed (GameCrew.cs sends them)
     public float Near = float.MaxValue; // m to the nearest person, last look
     public byte Contact = 255; // the player its look picked (255: none)
@@ -118,6 +119,7 @@ public sealed class CrewShip
     public CrewGoal Goal;
     // Boarding (phase 5, GameCrewBoard.cs).
     public BoardAct Act;
+    public bool Own, HoldFire; // phase 6: a player's own hired crew (the Player Crew kind: never the helm unless a player orders it, never in the way); told to hold fire
     public bool Boarded, Prize, CalledHelp; // Prize: taken by a player, its crew are prisoners
     public short ScPart = -1; // the scuttle point (-1: none); ScStage 1 on the way, 2 arming, 3 counting down; ScAt the stage's end
     public byte ScStage, ScDisarmBy = 255;
@@ -155,7 +157,7 @@ public sealed class CrewShip
         HelmLost = false;
         AirOff = false;
         FromSetting = false;
-        SeatsDirty = true;
+        SeatsDirty = RosterDirty = true;
         Near = float.MaxValue;
         Contact = 255;
         ContactBody = 0;
@@ -171,7 +173,7 @@ public sealed class CrewShip
         EngPart = -1;
         EngDone = LoadAt = 0;
         Act = BoardAct.Hold;
-        Boarded = Prize = CalledHelp = false;
+        Boarded = Prize = CalledHelp = Own = HoldFire = false;
         ScPart = -1;
         ScStage = 0;
         ScDisarmBy = 255;
@@ -221,6 +223,7 @@ public sealed class CrewWorld
     public long[] Ready = []; // a walk's end, or a dead body's going (tick)
     public ushort[] Name = [];
     public int[] Ship = []; // its ship's slot in Ships
+    public byte[] Fac = []; // the NPC faction kind it came from (a prisoner's or a hired hand's: standing goes to them)
     /// <summary>Player ids that are crew bodies (a seat they sit in is still the crew's).</summary>
     public readonly bool[] IsBody = new bool[256];
     private int[] _free = [];
@@ -273,6 +276,7 @@ public sealed class CrewWorld
         Array.Resize(ref Ready, n);
         Array.Resize(ref Name, n);
         Array.Resize(ref Ship, n);
+        Array.Resize(ref Fac, n);
         Array.Resize(ref _free, n);
         for (var i = was; i < n; i++)
             Ship[i] = -1;
@@ -287,13 +291,18 @@ public sealed class CrewWorld
     // ---- Making and losing crews ---------------------------------------------------------------------------------------------------
 
     /// <summary>A roster for <paramref name="c"/> (none yet): one member per station it can work now, and spares (<paramref name="spares"/>; -1: by its couches).</summary>
-    public CrewShip? Crew(Construct c, ShipAiMode mode, bool air = false, int spares = -1, byte faction = 0)
+    public CrewShip? Crew(Construct c, ShipAiMode mode, bool air = false, int spares = -1, byte faction = 0, bool empty = false)
     {
         if (_shipOf.ContainsKey(c.Id))
             return ShipOf(c.Id);
         var s = NewShip(c.Id, mode, air);
         SetFaction(c, s, faction);
         Scan(c, s);
+        if (empty)
+        {
+            Events.Add($"construct {c.Id}: a roster with nobody on it yet ({CrewFactions.Of(faction)?.Name ?? "no faction"})");
+            return s; // (hired hands join it one at a time: GameCrewHire.cs)
+        }
         var def = CrewFactions.Of(faction);
         if (spares < 0 && def != null)
             spares = def.SparesMin + (int)(c.Id * 2654435761u % (uint)(def.SparesMax - def.SparesMin + 1));
@@ -327,7 +336,8 @@ public sealed class CrewWorld
     public static void SetFaction(Construct c, CrewShip s, byte faction)
     {
         s.Faction = faction;
-        c.NpcFaction = faction;
+        s.Own = faction != 0 && faction == CrewFactions.Find("Player Crew");
+        c.NpcFaction = s.Own ? (byte)0 : faction; // (a player's own crew: the body stays theirs, no NPC faction)
         s.Morale = CrewFactions.Of(faction)?.MoraleStart ?? 1;
         s.HullMax = HullOf(c);
         s.Hull = 1;
@@ -389,6 +399,7 @@ public sealed class CrewWorld
             _nextUid = Uid[m] + 1;
         Body[m] = s.Body;
         Ship[m] = s.Slot;
+        Fac[m] = s.Faction;
         Job[m] = job;
         Health[m] = health;
         Skill[m] = skill;
@@ -937,12 +948,12 @@ public sealed class CrewWorld
             var kind = pass switch { 0 => CrewStationKind.Helm, 1 => CrewStationKind.Gun, 2 => CrewStationKind.Works, 3 => CrewStationKind.Magazine, _ => CrewStationKind.Rest };
             for (var st = 0; st < s.StCount; st++)
             {
-                if (s.StKind[st] != kind || s.StMember[st] >= 0 || Sitter(c, s.StPart[st]) != 0 || (Standing(kind) ? c.Parts[s.StPart[st]].Health <= 0 : c.Parts[s.StPart[st]].Broken) || Coming(s, st))
+                if (s.StKind[st] != kind || s.Own && kind == CrewStationKind.Helm || s.StMember[st] >= 0 || Sitter(c, s.StPart[st]) != 0 || (Standing(kind) ? c.Parts[s.StPart[st]].Health <= 0 : c.Parts[s.StPart[st]].Broken) || Coming(s, st))
                     continue;
                 var m = Nearest(c, s, st, kind);
                 if (m < 0)
                 {
-                    if (kind == CrewStationKind.Helm && !s.HelmLost && !s.InGrace(Tick))
+                    if (kind == CrewStationKind.Helm && !s.Own && !s.HelmLost && !s.InGrace(Tick))
                     {
                         s.HelmLost = true;
                         Events.Add($"construct {c.Id}: nobody left to take the helm");
@@ -1096,7 +1107,7 @@ public sealed class CrewWorld
         {
             if (Ships[i] is not { Ai: { } ai } s || w.Get(s.Body) is not { } c || c.Wreck)
                 continue;
-            if (ai.Boarded(c, this))
+            if (!s.Own && ai.Boarded(c, this))
             {
                 if (c.CrewAims || c.CrewDrives)
                     ai.Release(c); // (a person has the helm: their stabilizer's own Mouse aim setting, not the crew's)
@@ -1110,6 +1121,8 @@ public sealed class CrewWorld
             }
             ShipAiTarget t = default;
             var has = host != null ? host.Target(c, s, look, out t) : CheckTarget(c, out t);
+            if (s.HoldFire)
+                has = false; // (its owner's order: Hold fire)
             if (host == null)
                 s.Contact = has ? (byte)0 : (byte)255; // (a check's fixed target is the captain's contact)
             ai.Step(w, c, q, has, t);

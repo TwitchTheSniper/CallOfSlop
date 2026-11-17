@@ -30,6 +30,8 @@ public sealed partial class Game : ICrewHost
             CrewLog();
         CrewWorkTick();
         CrewSendSeats();
+        CrewHireTick();
+        CrewRosterSend();
     }
 
     /// <summary>
@@ -164,6 +166,7 @@ public sealed partial class Game : ICrewHost
     {
         var lines = new List<string>();
         var bodies = Players.Values.Count(p => p.CrewSlot >= 0 || !IsServer && p.Name.StartsWith('['));
+        lines.Add($"{(IsServer ? "host" : "client")}: {CreditsLine}; rosters known: {string.Join("; ", CrewRosters.Values.Select(v => $"{v.Body} owner {v.Owner}{(v.Own ? " own" : "")}{(v.Prize ? " prize" : "")}: {string.Join(", ", v.Members.Select(m => $"{m.Name} {m.Job} {m.State}"))}"))}");
         lines.Add($"{(IsServer ? "host" : "client")}: {bodies} crew bodies among the players, stand-ins on {CrewStandIns.Count} bodies ({CrewStandIns.Values.Sum(a => a.Length)} seats: {string.Join(", ", CrewStandIns.Select(kv => $"{kv.Key}: {string.Join("/", kv.Value)}"))})");
         for (var i = 0; i < Crew.ShipHigh; i++)
             if (Crew.Ships[i] is { } s && Constructs.Get(s.Body) is { } c)
@@ -215,7 +218,8 @@ public sealed partial class Game : ICrewHost
             if (def != null)
                 for (var i = 0; i < Crew.ShipHigh; i++)
                 {
-                    if (Crew.Ships[i] is not { Tier: not CrewTier.Asleep, Faction: not 0 } o || o == s || o.MemberCount == 0 || def.ToFactions[o.Faction] != CrewStance.Hostile
+                    if (Crew.Ships[i] is not { Tier: not CrewTier.Asleep, Faction: not 0, Own: false, Prize: false } o || o == s || o.MemberCount == 0
+                        || (s.Own ? c.Owner == 255 || CrewStanding(o.Faction, c.Owner) >= 0 && !o.Foe(c.Owner) : def.ToFactions[o.Faction] != CrewStance.Hostile)
                         || Constructs.Get(o.Body) is not { Wreck: false } oc)
                         continue;
                     var d2 = Vector3.DistanceSquared(oc.WorldCom, com);
@@ -257,6 +261,8 @@ public sealed partial class Game : ICrewHost
             return false;
         if (s.Faction == 0)
             return !(s.Mode == ShipAiMode.Strangers && c.Owner != 255 && Factions.Shares(c.Owner, p.Id));
+        if (s.Own)
+            return p.Id != c.Owner && !Factions.Shares(c.Owner, p.Id) && (s.Foe(p.Id) || FactionTable.RelationOf(c.Owner, p.Id) == FactionTable.Relations.War); // (a player's own crew: who hit it, or a faction at war with its owner's)
         return s.Foe(p.Id) || CrewStanding(s.Faction, p.Id) < 0;
     }
 
@@ -289,7 +295,10 @@ public sealed partial class Game : ICrewHost
     private void CrewSendSeats()
     {
         foreach (var gone in Crew.GoneBodies)
+        {
             CrewSeatsOut(gone, 0, 0, 0, -1, 0);
+            CrewRosterGone(gone);
+        }
         Crew.GoneBodies.Clear();
         var sent = 0;
         var refresh = ++_crewSendAt % (5 * World.TickRate) == 0;
@@ -298,6 +307,7 @@ public sealed partial class Game : ICrewHost
             if (Crew.Ships[i] is not { } s || !s.SeatsDirty && !refresh)
                 continue;
             s.SeatsDirty = false;
+            s.RosterDirty = true; // (the Crew window's roster too, for an own crew or a prize)
             CrewSeatsOut(s.Body, s.Tier == CrewTier.Asleep && s.Near > CrewStandInFar ? 0 : Crew.StandIns(s, _crewParts), s.Faction, Crew.Alive(s), s.ScPart, s.ScStage);
             sent++;
         }

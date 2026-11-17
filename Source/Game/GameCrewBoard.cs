@@ -26,6 +26,8 @@ public sealed partial class Game
     {
         if (s.Prize)
             return true;
+        if (s.Own)
+            return false; // (a player's own crew: their faction aboard is welcome; a hostile boarder is a foe the guns can't see, phase 6 leaves it)
         var def = CrewFactions.Of(s.Faction);
         byte first = 255;
         var boarders = 0;
@@ -192,6 +194,8 @@ public sealed partial class Game
                 prisoners++;
         if (def != null && by != 255)
             ((ICrewHost)this).Deed(s.Faction, by, -20);
+        CrewBounty(by, prisoners); // (credits: GameCrewHire.cs)
+        s.RosterDirty = true;
         Console.WriteLine($"[crew] construct {c.Id}: taken by player {by}{(c.Owner == by ? "" : " (who can't own another: it stays nobody's)")}, {prisoners} prisoners");
         CrewNotice(c, prisoners > 0
             ? $"You took the ship. Its {prisoners} crew are your prisoners: release them, put them off once landed, hire them or hold them (Crew window)."
@@ -401,7 +405,8 @@ public sealed partial class Game
         var m = CrewByUid(s, uid);
         if (m < 0 || Crew.State[m] != CrewState.Surrendered)
             return "no such prisoner";
-        var faction = s.Faction;
+        var faction = Crew.Fac[m];
+        s.RosterDirty = true;
         switch (op)
         {
             case "release":
@@ -442,6 +447,8 @@ public sealed partial class Game
             if (Crew.Ships[i] is { } s && Constructs.Get(s.Body) is { } c)
             {
                 CrewWorld.SetFaction(c, s, f);
+                for (var k = 0; k < s.MemberCount; k++)
+                    Crew.Fac[s.Members[k]] = f;
                 s.SeatsDirty = true;
                 return $"construct {c.Id}: {name}, morale {s.Morale * 100:0}%";
             }
@@ -472,6 +479,4 @@ public sealed partial class Game
         return "no prisoner";
     }
 
-    /// <summary>Hiring a prisoner (phase 6: GameCrewHire.cs).</summary>
-    public string? CrewHire(Player me, ushort body, uint uid) => "hiring comes with credits";
 }

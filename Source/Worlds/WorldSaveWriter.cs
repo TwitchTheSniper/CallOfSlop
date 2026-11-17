@@ -188,15 +188,15 @@ public static class WorldSaveWriter
                 foreach (var p in those)
                     w.U64(p.Key).U64(p.SteamId).U16(p.Firsts);
             });
-        if (s.CrewFactions != null || Array.Exists(s.Players, p => p.Credits != 0 || p.NpcStanding.Length > 0))
+        if (s.CrewFactions != null || Array.Exists(s.Players, p => p.Credits != 0 || p.CreditsStarted || p.NpcStanding.Length > 0))
             w.Section(CrewTag, () =>
             {
                 // The crews' world (Game/GameCrewFactions.cs): each person's credits and standings, then the player factions' standings.
-                var those = Array.FindAll(s.Players, p => p.Credits != 0 || p.NpcStanding.Length > 0);
+                var those = Array.FindAll(s.Players, p => p.Credits != 0 || p.CreditsStarted || p.NpcStanding.Length > 0);
                 w.U8(1).I32(those.Length);
                 foreach (var p in those)
                 {
-                    w.U64(p.Key).U64(p.SteamId).I64(p.Credits).U8((byte)Math.Min(p.NpcStanding.Length, 255));
+                    w.U64(p.Key).U64(p.SteamId).I64(p.Credits).U8((byte)(p.CreditsStarted ? 1 : 0)).U8((byte)Math.Min(p.NpcStanding.Length, 255));
                     for (var k = 0; k < p.NpcStanding.Length && k < 255; k++)
                         w.Str(p.NpcStanding[k].Faction).U8((byte)p.NpcStanding[k].Standing);
                 }

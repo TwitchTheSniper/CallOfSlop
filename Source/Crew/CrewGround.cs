@@ -39,6 +39,8 @@ public sealed partial class ShipAi
     private void GroundStop(Construct c)
     {
         c.CrewDrives = false;
+        if (Ship is { Own: true })
+            return; // (a player's own crew never brakes it: its owner's remote, logic and autopilot drive it as ever)
         if (_pilot < 0 || _pilot >= c.PartCount || !SeatFree(c, _pilot))
             return;
         ref var p = ref c.Parts[_pilot];

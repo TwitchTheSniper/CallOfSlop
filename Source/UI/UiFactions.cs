@@ -33,7 +33,10 @@ public sealed partial class Ui
             if (game is not { SandboxOn: true } || game.Local is not { } me)
                 ImGuiSafe.TextWrapped("Factions are a Sandbox thing: start or join a Sandbox game.");
             else
+            {
+                DrawCrewSection(game, me); // (your credits, crew and prisoners: UiCrew.cs)
                 DrawFactionBody(game, me);
+            }
             ImGuiSafe.TextColored(Dim, $"{Keybinds.Name(bind)} or Esc closes this window.");
         }
         ImGui.End();

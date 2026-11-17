@@ -137,6 +137,7 @@ public sealed partial class Game
     private void CrewCatch(Player p, WorldPlayer rec)
     {
         rec.Credits = _credits[p.Id];
+        rec.CreditsStarted = _creditsStarted[p.Id];
         var list = new List<(string, sbyte)>();
         if (CrewStandingOn)
             for (var f = 0; f < CrewFactions.Count; f++)
@@ -149,6 +150,8 @@ public sealed partial class Game
     private void CrewArrive(Player p, WorldPlayer rec)
     {
         _credits[p.Id] = rec.Credits;
+        _creditsDirty[p.Id] = true;
+        CreditsFirst(p, rec);
         for (var f = 0; f < FactionTable.MaxStory; f++)
             _npcMetPlayer[p.Id * FactionTable.MaxStory + f] = false;
         if (!CrewStandingOn)
@@ -196,12 +199,13 @@ public sealed partial class Game
             Console.WriteLine($"[crew] the world's crew section is of version {v} (this build reads 1): left off");
             return;
         }
-        var n = r.Count(25);
+        var n = r.Count(26);
         for (var k = 0; k < n; k++)
         {
             var key = r.U64();
             var steam = r.U64();
             var credits = r.I64();
+            var started = r.U8() != 0;
             int sn = r.U8();
             var list = new (string, sbyte)[sn];
             for (var j = 0; j < sn; j++)
@@ -210,6 +214,7 @@ public sealed partial class Game
                 if (rec.Key == key && rec.SteamId == steam)
                 {
                     rec.Credits = credits;
+                    rec.CreditsStarted = started;
                     rec.NpcStanding = list;
                     break;
                 }
@@ -239,5 +244,7 @@ public sealed partial class Game
         Array.Clear(_npcMetFaction);
         Array.Clear(_npcMetPlayer);
         Array.Clear(_credits);
+        Array.Clear(_creditsStarted);
+        Array.Clear(_creditsSeen);
     }
 }

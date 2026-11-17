@@ -158,6 +158,30 @@ another run, `crewdisarm`: "player 0 disarmed the scuttle charge", the crew went
 Unverified: Repel with bodies fighting a boarder (no run with spares on couches and a boarder on foot); a joined client's look line on
 a charge; Call for help; Abandon; boarding a ground vehicle.
 
+## Done (phase 6: your own crew, credits)
+
+- Credits (`Game/GameCrewHire.cs`): a balance per player, saved in the world's Crew section with their record (credits, a "start
+  given" flag); Creative unlimited; a new person in a Survival world gets 500 once; taking a ship pays 100 + 25 a prisoner. `Msg.Credits`
+  (u64 as i64, -1 unlimited) to its owner on change; the HUD's held line shows "Credits: N" and the Faction window's Crew section too.
+- Hiring (the user's answers 4 and 6): a prisoner on a ship you took (their kind's `hire.cost`), or (body 0) the nearest member of a
+  friendly crew (standing 20 or more, bodied, within 15 m), who joins the ship you're aboard, else your nearest own ship within 60 m
+  (an empty Player Crew roster is made for it). A prize's first hire turns its roster into your crew (the rest stay prisoners). Each hand
+  keeps the kind it came from (`CrewWorld.Fac`) for wages and standing; every 10 minutes each is paid their kind's wage, unpaid they leave.
+- Own crews (`CrewShip.Own`, the Player Crew kind; the body keeps no NPC faction): they man guns, engine room and magazine, never the
+  helm; never brake, aim or stand down the ship's own driving (no `CrewAims`, no `GroundStop`, a person at the helm doesn't stand them
+  down); they fight foes of the ship, players of a faction at war with the owner's, and NPC crews whose kind's standing with the owner is
+  below 0. Boarding acts don't run on them.
+- The Crew section (top of the Faction window, `UI/UiCrew.cs`): credits; each own crew and prize: members (name, kind, job, doing,
+  health) with Dismiss, Hold fire / Fire at will, and for prisoners Release, Put off, Hire; "Hire a hand nearby". Orders go as
+  `CActKind.Crew` (u16 body, u32 uid, u8 `CrewOrder`); rosters as `Msg.CrewRoster` to all (own crews and prizes only). Protocol 331 still.
+
+Verified (2026-11-16): Survival start 500 credits, 500 again after a save and load (not 1000). Creative "unlimited". The crewed Zero
+Day as Traders, boarded, surrendered, taken; two prisoners hired: the roster became Player Crew, both walked to the gun seats; the
+host's roster view showed 2 at work and 3 prisoners.
+
+Unverified: the Crew section drawn (no picture); a joined client's roster, credits and orders; wages and leaving unpaid; hiring from a
+friendly crew nearby; own gunners firing at a hostile.
+
 ## Next
 
 - Phase 1 is done (below). Phase 2 next: the ground `HelmDriver` from the brief, convoys and faction vehicles spawned crewed.
