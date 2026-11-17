@@ -1037,7 +1037,7 @@ public sealed partial class Game : IDisposable
         LastCorrection = error.Length();
         me.Sim = state;
 
-        if (respawned || LastCorrection > (state.Noclip ? MathF.Max(2f, state.Velocity.Length() * 0.2f) : state.RideBody != 0 ? RideEaseMax : 2f)) // (flying fast, one tick's turn is metres: eased like any other, not a jump; landing on a moving deck, this client's copy is a round trip behind: eased too)
+        if (respawned || LastCorrection > (state.RideBody != 0 ? RideEaseMax : state.Noclip ? MathF.Max(2f, state.Velocity.Length() * 0.2f) : 2f)) // (flying fast, one tick's turn is metres: eased like any other, not a jump; landing on a moving deck or caught into its frame in noclip, this client's copy is a round trip behind: eased too)
         {
             me.PrevPosition = state.Position;
             _correction = Vector3.Zero;
