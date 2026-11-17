@@ -462,7 +462,7 @@ server), `GameSandboxTexture.cs` (the request), `Program.SandboxTexture.cs` (inp
 - Tried by hand (2026-11-07): a host and a client over RakNet with 100 ms and 3% loss on the client: part, whole construct,
   reset and a late joiner agree; the save, blueprint and Full round trips; the merged pictures with textures changing every
   frame match the unmerged ones (1 pixel of 230,400, one level); the list and swatches in a real window on both GL paths.
-  The smoke test textures its row of parts with every offered material and opens the list.
+  (The old smoke test, removed 2026-11-17, textured a row of parts with every offered material and opened the list.)
 
 ### Choices made (the developer may change them)
 
@@ -527,7 +527,7 @@ and the wire), `ConstructEditsMaterial.cs` (the server), `GameSandboxMaterial.cs
   segment would move every tool off its compass point): add it in Settings > Tool wheel, or take it from Tab > Tools.
 - Tried by hand (2026-11-07): `--bench-material 120 3` (a host and a client over RakNet, 120 ms and 3% loss on the client: one
   part, a swept row, Own material and the whole sheet agree on both; blueprint, Full and world save round trips keep every
-  part's name; the survival cost, a refusal and the salvage back); the smoke test remakes its fused row of 80 parts in wood
+  part's name; the survival cost, a refusal and the salvage back); the old smoke test (removed 2026-11-17) remade its fused row of 80 parts in wood
   (19,200 kg to 5,376 kg) and back, with the unit still whole.
 
 ### Choices made (the developer may change them)

@@ -42,10 +42,7 @@ public static class LoadoutStore
     /// <summary>Last attachments used on each weapon (the starting kit when a gun goes into a slot).</summary>
     private static readonly Dictionary<byte, uint> LastKit = new();
 
-    /// <summary>Smoke test only: hands out full kits regardless of progress (nothing is saved).</summary>
-    public static Func<byte, uint>? SmokeKit;
-
-    /// <summary>The smoke test sets this so it never writes your loadout.txt.</summary>
+    /// <summary>A test sets this so it never writes your loadout.txt.</summary>
     public static bool ReadOnly;
 
     public static string DefaultName(int slot) => $"Custom Loadout {slot + 1}";

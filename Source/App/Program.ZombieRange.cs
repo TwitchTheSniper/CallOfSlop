@@ -356,7 +356,7 @@ public static unsafe partial class Program
         {
             _zrShot++;
             _shotFull = true;
-            SmokeShot($"zrange_{(_zr == 1 ? "host" : "client")}_{_zrShot}");
+            ShotNext($"zrange_{(_zr == 1 ? "host" : "client")}_{_zrShot}");
         }
         if (_zr == 1 && t > 36)
             ZrQuit(null);
