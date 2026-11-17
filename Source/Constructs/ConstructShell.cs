@@ -37,9 +37,11 @@ public static class ConstructShell
 
     /// <summary>
     /// The nearest shell a sitter of this chair may wake in: on its channel, within its range, theirs or nobody's (or their
-    /// faction's). Null: none (<paramref name="why"/> says why).
+    /// faction's). A shell standing alone (<paramref name="part"/> 0 of its own construct), or one clamped on a Robot Shell Dock
+    /// (Karl, 2026-11-17: <paramref name="part"/> is the shell's part in the ship; the caller cuts it free). Null: none
+    /// (<paramref name="why"/> says why).
     /// </summary>
-    public static Construct? Find(ConstructWorld world, Construct chair, int seat, byte player, out string why)
+    public static Construct? Find(ConstructWorld world, Construct chair, int seat, byte player, out int part, out string why)
     {
         ref var cp = ref chair.Parts[seat];
         var range = cp.D.ShellRange;
@@ -47,33 +49,71 @@ public static class ConstructShell
         chair.WorldFrame(cp.Seg, out var q, out var t);
         var at = t + Vector3.Transform(cp.Pos, q);
         Construct? best = null;
+        part = -1;
         var near = range * range;
         var fitted = false;
         foreach (var d in world.Bodies)
         {
-            if (d == chair || d.PartCount == 0)
+            if (d.PartCount == 0 || d.Owner != 255 && d.Owner != player && !Factions.Shares(d.Owner, player))
                 continue;
             if (d.PartCount > 1)
             {
-                if (!fitted && Vector3.DistanceSquared(d.WorldCom, at) < near && HasShellPart(d))
-                    fitted = true;
+                // A ship's docked shells: only a ship in reach is looked through, and only when it holds a shell at all.
+                if (Vector3.DistanceSquared(d.WorldCom, at) > (range + d.Radius) * (range + d.Radius) || !HasShellPart(d))
+                    continue;
+                if (d.Dirty)
+                    d.Rebuild();
+                for (var i = 0; i < d.PartCount; i++)
+                {
+                    ref var sp = ref d.Parts[i];
+                    if (!sp.D.ShellBody)
+                        continue;
+                    if (sp.Broken || ChannelOf(sp) != channel || !Docked(d, i))
+                    {
+                        fitted |= !Docked(d, i);
+                        continue;
+                    }
+                    d.WorldFrame(sp.Seg, out var sq, out var st);
+                    var f = Vector3.DistanceSquared(st + Vector3.Transform(sp.Pos, sq), at);
+                    if (f < near)
+                        (near, best, part) = (f, d, i);
+                }
                 continue;
             }
             ref var p = ref d.Parts[0];
-            if (!p.D.ShellBody || p.Broken || ChannelOf(p) != channel)
+            if (d == chair || !p.D.ShellBody || p.Broken || ChannelOf(p) != channel)
                 continue;
-            if (d.Owner != 255 && d.Owner != player && !Factions.Shares(d.Owner, player))
-                continue;
-            var f = Vector3.DistanceSquared(d.WorldCom, at);
-            if (f < near)
-            {
-                near = f;
-                best = d;
-            }
+            var g = Vector3.DistanceSquared(d.WorldCom, at);
+            if (g < near)
+                (near, best, part) = (g, d, 0);
         }
-        why = best != null ? "" : fitted ? "a Robot Shell fitted onto something can't be woken: stand it on its own"
+        why = best != null ? "" : fitted ? "a Robot Shell fitted onto something can't be woken: stand it on its own or hang it on a Robot Shell Dock"
             : $"no free Robot Shell on channel {channel} within {range / 1000:0.#} km";
         return best;
+    }
+
+    /// <summary>Does dock part <paramref name="dock"/> of <paramref name="c"/> hold something on its dock socket?</summary>
+    public static bool DockHolds(Construct c, int dock)
+    {
+        var d = c.DefOf(dock);
+        for (var s = 0; s < d.Sockets.Length; s++)
+            if (d.Sockets[s].Name == "dock")
+                return c.SocketUsed(dock, s);
+        return false;
+    }
+
+    /// <summary>Is shell part <paramref name="shell"/> of <paramref name="c"/> clamped on a Robot Shell Dock and on nothing else?</summary>
+    public static bool Docked(Construct c, int shell)
+    {
+        var dock = false;
+        for (var e = c.FirstLink(shell); e >= 0; e = c.NextLink(e))
+        {
+            var o = c.DefOf(c.OtherEnd(e));
+            if (!o.ToolDock || !o.ShellBodyFits)
+                return false;
+            dock = true;
+        }
+        return dock;
     }
 
     private static bool HasShellPart(Construct d)

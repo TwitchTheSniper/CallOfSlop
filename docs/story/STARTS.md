@@ -30,7 +30,9 @@ saved world keep. Text is ASCII.
 An opening (Story/Opening) whose `"ship"` names a blueprint (and whose `"colony"` is `""`) builds it in orbit over the start
 (`"orbit"`: m over the ground, at least the sky's edge plus 400 m), going round at a circular orbit's speed, and everyone
 wakes standing in its frame at the `"wake"` spots (`[x, y, z]` in the ship's own metres from its first part's middle, one
-each in turn). The next space tick makes it a ship (docs/space/SPACE.md). The save keeps the ship where a colony start keeps
+each in turn). The next space tick makes it a ship (docs/space/SPACE.md). An opening's `"company"`
+(`[{ "ship": BLUEPRINT, "faction": KIND, "behind": M }]`) adds a nobody's ship on the same circular orbit, `behind` m back
+along it (negative: ahead; 150 m to 5 km), crewed by that NPC faction kind (Crew/Factions): `GameSpaceStart.OpeningCompanion`. The save keeps the ship where a colony start keeps
 the colony, so friends who join later wake aboard it too. A ship start works in Creative too (no kit; the parts menu has
 everything; stock guns kept): `SandboxStartKit` builds only the ship there. Code: `Source/Game/GameSpaceStart.cs`.
 
@@ -52,6 +54,10 @@ everything; stock guns kept): `SandboxStartKit` builds only the ship there. Code
 - `Magpie`: a prospector waking in a cabin aboard the Magpie Mining Ship (docs/sandbox/constructs/miner.md) 1.8 km over
   Crumb, Mille's 600 m moonlet in Frostreach (gravity 1.5, iron, stone and sand: docs/planets/WORLDS.md), so the first job is
   to set down and drill. No colony, no tutorial, no faction, the kit aboard. Survival and Creative.
+- `ZeroDay`: a captain waking in a cabin aboard their own Zero Day Frigate (docs/sandbox/constructs/torpedo-frigate.md)
+  over Crumb, where the Magpie start wakes, its magazines full and its banks charged (as every ship the game spawns). A
+  Traders' Zero Day, crewed, goes round 400 m behind on the same orbit (Karl, 2026-11-17: an NPC Zero Day of another faction,
+  neutral and nearby; the Traders are neutral to players and fly the IT style). Survival and Creative.
 - `Ground`: the map picked on the menu, the shipped start kit round its parts rack in Survival, no opening: what every
   Sandbox world was before the openings.
 - `PenalColony` (default, the Survival tutorial): Ministry convict on Glacier, the crash card, waking in the colony, the

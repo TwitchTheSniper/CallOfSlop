@@ -164,14 +164,6 @@ public sealed partial class Ui
         LoadoutStore.Save();
     }
 
-    // Smoke-test hooks (see Program.SmokeTick)
-
-    public void SmokeRespawn(Game game, double now)
-    {
-        ApplySelection(game, now);
-        game.RequestRespawn();
-        MenuOpen = false;
-    }
 
     // ---- Entry points ----------------------------------------------------------------------
 

@@ -90,6 +90,18 @@ public static partial class ConstructParts
                 "jetpack" => PilotGear.Jet,
                 var w => throw new ConstructPartException($"{file}: \"wear\" is parachute, glider or jetpack, not \"{w}\""),
             };
+        if (Opt(root, "eva") is { } eb)
+        {
+            d.Eva = Str(eb, file, "eva") switch
+            {
+                "locker" => EvaPart.Locker,
+                "dock" => EvaPart.Dock,
+                "mmu" => EvaPart.Mmu,
+                var e => throw new ConstructPartException($"{file}: \"eva\" is locker, dock or mmu, not \"{e}\""),
+            };
+            if (d.Eva == EvaPart.Dock && (d.Role != PartRole.Seat || !d.Sockets.Any(s => s.Name == "mmu")))
+                throw new ConstructPartException($"{file}: an MMU dock is a seat with an \"mmu\" socket");
+        }
         if (Opt(root, "jump") is { } jb)
         {
             if (d.Logic != CLogic.JumpDrive)

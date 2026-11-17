@@ -478,6 +478,7 @@ public sealed partial class ConstructPartDef
     public bool Stage; // a damage stage of another part ("stage": true): what a wall turns into as it loses chunks; not offered in the parts menu or on a rack
     public bool ToolDock; // a tool dock ("toolDock": the part name its piece must start with): F lets go of what is on its "dock" socket or clips a loose one on (ConstructEditsDock.cs)
     public string ToolDockFits = "";
+    public bool ShellBodyFits => ToolDock && ToolDockFits == "Robot Shell"; // (a Robot Shell Dock: its shell is woken where it hangs, ConstructShell.Docked)
     public bool Boarding; // a preferred boarding point ("boarding": true): Use near it grabs on and climbs aboard (ConstructRide.GrabOn)
     public float LadderTop; // a vertical ladder ("ladder": its landing's height in the part's frame, m; 0: not one): Use climbs it up or down (ConstructRide.ClimbLadder)
     public WalkKind Walk; // building pieces: walked on ("walk": floor, stairs, ramp, ladder): players step up onto it, bots may path over it
@@ -760,6 +761,7 @@ public sealed partial class ConstructPartDef
     public byte MastRope = 2; // ...and the rope's size
     public bool SeatEject; // an ejection seat ("seat"."eject"): a key or signal throws its rider clear on a parachute (PilotGear.cs)
     public byte Wear; // worn from the backpack ("wear"): PilotGear's bit
+    public EvaPart Eva; // spacewalk gear ("eva"): a suit locker, an MMU dock or the MMU itself (GameSandboxEva.cs)
     public float LaunchSpeed, LaunchReach; // a launch rail's speed off it over the deck (0: its accel runs to the end of the rail), and how far past its ends an arrestor catches
     public float LaunchWidth, LaunchHeight, LaunchAccel, LaunchMaxMass = float.MaxValue; // a catapult or arrestor ("launch"): its zone over its top, m/s2, the heaviest body it takes
     public float JumpRange, JumpCharge, JumpEnergy; // a jump drive ("jump"): its reach (light-years), seconds to charge, kJ a tonne of ship a light-year
@@ -1248,6 +1250,7 @@ public static partial class ConstructParts
         "fuel hose reel" or "water hose reel" => "Fluid Hose Reel",
         "fuel hose inlet" or "water hose inlet" => "Fluid Hose Inlet",
         "flight panel" => "Flight Control Panel",
+        "robot charging cradle" => "Robot Shell Dock", // (rebuilt as a shell dock, 2026-11-17)
         "medium flight panel" => "Medium Flight Control Panel",
         "large flight panel" => "Large Flight Control Panel",
         "long missile fuel tank" => "Missile Fuel Tank", // (folded: a design's tank has a length now, OrdnanceDesign.Folded; a stored one is a 0.5 m tank)
@@ -1331,7 +1334,7 @@ public static partial class ConstructParts
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "finish", "friction", "collider",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "fluidTank", "seat", "hinge", "joint", "logic",
         "transmission", "battery", "capacitor", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "yield", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "retired", "hydraulics", "toolOnly", "tray", "walk", "boarding", "ladder", "toolDock", "damaged", "stage", "faces", "faceAxis", "router",
-        "sight", "ordnance", "mooring", "wear", "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "dieExtension", "runOut", "enginePiece", "sizeClass", "generator", "thruster", "burner", "flame", "rotor", "surface", "smoke", "dock", "breach", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "shell", "office", "requisition", "media", "speaker", "leg", "stabiliser", "door", "lifter", "craneRail", "lifterCab", "radar", "works", "worksPiece", "logiLink",
+        "sight", "ordnance", "mooring", "wear", "eva", "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "dieExtension", "runOut", "enginePiece", "sizeClass", "generator", "thruster", "burner", "flame", "rotor", "surface", "smoke", "dock", "breach", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "shell", "office", "requisition", "media", "speaker", "leg", "stabiliser", "door", "lifter", "craneRail", "lifterCab", "radar", "works", "worksPiece", "logiLink",
     ];
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, a contoured shape with its settings (index 8 up to the last), and the glass flag (last).</summary>
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, and a contoured shape with its settings.</summary>

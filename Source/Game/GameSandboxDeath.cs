@@ -128,6 +128,7 @@ public sealed partial class Game
     /// <summary>Server, the tick a person is seen dead: the backpack, permadeath, and where they will wake.</summary>
     private void SandboxDied(Player p)
     {
+        SandboxEvaDied(p); // (the suit comes off, a worn MMU floats free: GameSandboxEva.cs)
         var fallen = p.Bot == null && SandboxPermadeath && !OpeningHas(p.Id); // (a death in the opening is the story's, not theirs)
         if (fallen || !SandboxKeepPack || SandboxInfiniteParts || p.Bot != null)
             SandboxHands.DropPack(Constructs, p.Id, p.Position, p.Yaw); // (a death drops the backpack's contents as pickups; dead for good, always)

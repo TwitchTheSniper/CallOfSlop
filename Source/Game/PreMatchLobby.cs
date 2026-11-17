@@ -547,9 +547,9 @@ public sealed partial class Game
     /// <summary>Client: the map the host's last lobby state named (the self-test checks a map change arrives).</summary>
     public string LobbyMapName => _lobbyMapName;
 
-    // ---- Smoke and self-test hooks ------------------------------------------------------------------------------
+    // ---- Test hooks ------------------------------------------------------------------------------
 
-    /// <summary>Smoke test / self-test (server): open the lobby room now, or (false) leave it for the warmup.</summary>
+    /// <summary>Tool runs and the self-test (server): open the lobby room now, or (false) leave it for the warmup.</summary>
     public void DebugLobby(bool open, double now)
     {
         if (!IsServer)

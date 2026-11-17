@@ -236,6 +236,9 @@ public sealed class Assembling : IPartGenerator
         Rec("Backpack Glider", 4, 2, m: [("rubber", 3), ("steel", 2)]),
         Rec("Jetpack", 8, 4, m: [("steel", 6), ("copper", 3)], p: [("Control Unit", 1), ("Wiring Loom", 2)]),
         Rec("Ejection Seat", 5, 2, m: [("steel", 6), ("rubber", 2)], p: [("Wiring Loom", 1)]),
+        Rec("Space Suit Locker", 20, 3, m: [("steel", 14), ("glass", 4), ("rubber", 8), ("cloth", 6)], p: [("Control Unit", 1)]), // (spacewalk gear: docs/sandbox/EVA.md)
+        Rec("MMU Dock", 15, 3, m: [("steel", 24), ("rubber", 2)], p: [("Wiring Loom", 1)]),
+        Rec("Manned Manoeuvring Unit", 30, 4, m: [("steel", 18), ("copper", 4)], p: [("Control Unit", 2), ("Wiring Loom", 2)]),
         Rec("Mirror Table", 30, 3, m: [("steel", 24), ("glass", 12)], p: [("Control Unit", 2), ("Lens", 2)]),
         Rec("Line Layer", 30, 3, m: [("steel", 30), ("copper", 6)], p: [("Control Unit", 2), ("Servo Motor", 2)]),
         Rec("Replacer", 30, 3, m: [("steel", 26), ("copper", 6)], p: [("Control Unit", 2), ("Servo Motor", 3)]),

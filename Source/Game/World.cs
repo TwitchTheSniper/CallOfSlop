@@ -685,6 +685,14 @@ public sealed class Player
     public byte Prestige, Level; // as the player reported them in their Hello (untrusted, only shown and used to validate the hat); in the roster
     public HatId Hat; // the hat they wear (set from the loadout once Cosmetics.IsUnlocked(hat, Prestige) and human); in the roster
     public PlayerLook Look; // the look picked on the APPEARANCE screen (Source/Cosmetics/Appearance.cs; bots: Auto); in the roster
+    [MatchState]
+    public byte Eva; // spacewalk gear (Eva's bits: a space suit, an MMU on it; GameSandboxEva.cs); the server's, in the roster
+    [MatchState]
+    public ushort MmuFuel; // the worn MMU's tank as the server last stepped it: put back when a teleport wipes MoveState (GameSandboxEva.cs)
+    [MatchState]
+    public float Breath = CallOfSlop.Eva.BreathSeconds, SuitAir = CallOfSlop.Eva.SuitSeconds; // seconds of breath held and of the suit's air (Eva.Step: the server's; a client works out its own for the HUD)
+    /// <summary>The uniform drawn: a space suit while one is worn (Uniforms.SpaceSuit), else <see cref="Uniform"/>.</summary>
+    public byte DrawnUniform => (Eva & CallOfSlop.Eva.Suit) != 0 && Uniforms.SpaceSuit is { } s ? s.Index : Uniform;
     public byte Uniform; // the uniform the server dresses them in (Source/Cosmetics/Uniforms.cs; 0 none, bots too: staff by name); in the roster
     public ulong SteamId; // the Steam ID they reported (0: not on Steam); cosmetic (Steam name and avatar in the menus), never trusted (GameSteam.cs)
     public bool SteamVerified; // host: SteamId came from the Steam connection itself or passed Steam's ticket check (Game.TrustedSteamId); only then does it find a saved world's record
@@ -758,6 +766,10 @@ public sealed class Player
         Sim.Gear = Sim.Canopy = Sim.GearDelay = 0;
         SbSpawned = false;
         InShell = false; // (the server ends any shell run at a new match: ShellResetAll)
+        Eva = 0;
+        MmuFuel = 0;
+        Breath = CallOfSlop.Eva.BreathSeconds;
+        SuitAir = CallOfSlop.Eva.SuitSeconds;
         ShellChair = ShellSeat = 0;
         SbOwner = 255;
         SbBody = SbTag = SbBoarding = 0;

@@ -181,7 +181,7 @@ public static unsafe partial class Program
                 break;
             case 1 when t > 9 + h: // (10 s of graph would be nicer; 5 s keeps it quick)
                 _shotFull = true;
-                SmokeShot("perf_window");
+                ShotNext("perf_window");
                 LogPerfLine("[perf-shot] window");
                 _perfShotStep = 2;
                 break;
@@ -191,7 +191,7 @@ public static unsafe partial class Program
                 break;
             case 3 when t > 10.5 + h:
                 _shotFull = true;
-                SmokeShot("perf_overlay");
+                ShotNext("perf_overlay");
                 LogPerfLine("[perf-shot] overlay");
                 _perfShotStep = 4;
                 break;

@@ -25,7 +25,7 @@ public static unsafe partial class Program
             };
         }
         _watchParts ??= Environment.GetCommandLineArgs().Any(a => a.Equals("--watch-parts", StringComparison.OrdinalIgnoreCase));
-        if (_watchParts != true || _smoke || now < _partsNextCheck)
+        if (_watchParts != true || now < _partsNextCheck)
             return;
         _partsNextCheck = now + 0.5;
         var stamp = PartsStamp();

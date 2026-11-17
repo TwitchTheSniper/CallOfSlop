@@ -462,7 +462,7 @@ server), `GameSandboxTexture.cs` (the request), `Program.SandboxTexture.cs` (inp
 - Tried by hand (2026-11-07): a host and a client over RakNet with 100 ms and 3% loss on the client: part, whole construct,
   reset and a late joiner agree; the save, blueprint and Full round trips; the merged pictures with textures changing every
   frame match the unmerged ones (1 pixel of 230,400, one level); the list and swatches in a real window on both GL paths.
-  The smoke test textures its row of parts with every offered material and opens the list.
+  (The old smoke test, removed 2026-11-17, textured a row of parts with every offered material and opened the list.)
 
 ### Choices made (the developer may change them)
 
@@ -527,7 +527,7 @@ and the wire), `ConstructEditsMaterial.cs` (the server), `GameSandboxMaterial.cs
   segment would move every tool off its compass point): add it in Settings > Tool wheel, or take it from Tab > Tools.
 - Tried by hand (2026-11-07): `--bench-material 120 3` (a host and a client over RakNet, 120 ms and 3% loss on the client: one
   part, a swept row, Own material and the whole sheet agree on both; blueprint, Full and world save round trips keep every
-  part's name; the survival cost, a refusal and the salvage back); the smoke test remakes its fused row of 80 parts in wood
+  part's name; the survival cost, a refusal and the salvage back); the old smoke test (removed 2026-11-17) remade its fused row of 80 parts in wood
   (19,200 kg to 5,376 kg) and back, with the unit still whole.
 
 ### Choices made (the developer may change them)
@@ -595,6 +595,14 @@ nothing handed back); the batch's time; no allocation; and a real host with a se
 ## Building sounds
 
 Every sound is synthesised at start-up (`Source/Audio/SynthBuild.cs`) and plays on the mixer's **Building** row (F8, key `build`), on 8 one-shot and 3 loop voices of its own (`Audio.Build.cs`), so building never takes a gun's voice. `BuildSounds.Play(kind, position, size)` is the one call: it plays on this peer only and nothing goes over the wire. Same-kind hits within 0.3 s and 7 m merge into a burst of at most 5 hits, so a paste of 200 parts is a short rattle. A clunk's size class comes from the part's mass (small under 40 kg, medium under 1.6 t, large under 63 t, else capital) and its flavour from `material`. Ticks for the ghost, node clicks and refusals play where the input knows them. Everything else comes from `Game.SandboxBuildSounds` (once a frame, the same on host and client), which watches what every peer already has: part and link counts per body, bodies appearing and going (`ConstructWorld.GoneRing`), and the hands in the state tail (edits in progress give the attach tool's arc and the attach tool's ratchet, an attachment that ends near its finish a tick, the physics gun's hold its cues). A change only sounds with a player near it holding a tool other than the physics gun, so a part shot off, a joiner's world and machines stay quiet. New bulk actions need no call. `size` is a mass in kg.
+
+## Machine sounds
+
+Karl, 2026-11-17. Synthesised at start-up like the rest (`Source/Audio/SynthMachine.cs`), on the mixer's **Tactical** row. `Game.MachineFrameSounds` (`Game/GameMachineSounds.cs`, once a frame on host and client) plays them from what every peer has:
+- **Reactors** hum: any power plant that burns nothing, of 100 kW or more (`MachineSounds.Hums`; a hamster wheel doesn't). The three nearest each get two loops on 6 voices of their own (`Audio.Machine.cs`), a light hum and a heavy, pulsing one faded across by how hard the body's plants work (`Construct.PlantShow`, a byte in the pose since protocol 335), a little higher with load; a ship with its mains off is quiet.
+- **Shell Control Chair**: the sitter hears the helmet come down and seal, the link take as their eyes open as the robot, the link spin down when they come back, and the helmet lift when no shell answers (`ShellLinkView` cues them, at the ear). Others hear the link at the chair.
+- **Robot shells** start up (relays, a capacitor whine, each joint's servo, a fan) when someone wakes in one, and power down where it is left standing (from each player's shell flag changing).
+- **Robot Shell Dock** clamps closing and letting go: `Game.DockSound(clamp, at)` on the server plays it and sends `Msg.MachineSound` to every client. Called from the dock's clamp and release points once the docks are in (PR 259).
 
 ## Snappy building (decision 24, board item sb01)
 

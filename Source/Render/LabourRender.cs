@@ -291,7 +291,7 @@ public static class LabourRender
                 continue;
             ref readonly var s = ref game.LabourScenes[k];
             var f = Hands[h] ??= new Figure();
-            var look = HashCode.Combine(p.Id, p.Name, p.Look, p.Uniform, p.Color, k);
+            var look = HashCode.Combine(p.Id, p.Name, p.Look, p.DrawnUniform, p.Color, k);
             if (!ReferenceEquals(HandOf[h], p) || HandLook[h] != look || f.Scene != k)
             {
                 HandOf[h] = p;

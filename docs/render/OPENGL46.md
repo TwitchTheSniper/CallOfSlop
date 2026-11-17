@@ -40,11 +40,11 @@ feature off; it runs headless, without a context. A compute shader (`GlCompute`)
 - **KHR_debug output** (`GlDebug.Install`, dev builds): the driver reports errors, undefined behaviour and performance
   hints as they happen, synchronously, so a `[gl] error` log line carries the failing call's stack trace (the first
   five) instead of a later `glGetError` finding a flag someone set frames ago. Notifications are muted; each message
-  id prints at most three times, 200 messages in all. `GlDebug.Error()` is what the renderers' set-up lines and the
-  smoke test print: the `glGetError` flag (both paths) or, failing that, the first error the callback caught. The
+  id prints at most three times, 200 messages in all. `GlDebug.Error()` is what the renderers' set-up lines
+  print: the `glGetError` flag (both paths) or, failing that, the first error the callback caught. The
   first run found a real bug: `SightLens.Timer.Collect` read a timestamp query that had never been stamped
   (`GL_INVALID_OPERATION`: not a query object yet), which `glGetError` had been reporting as a stray `0x502` in the
-  decals' smoke line for who knows how long.
+  decals' set-up line for who knows how long.
 - **Object labels** (`GlDebug.Label`): every renderer names its programs, vertex arrays and buffers (`PropRenderer.
   animProgram`, `Renderer.batchRing`, ...), so debug messages and GPU capture tools say what a buffer is.
 - **GPU timer queries** were already there (`Source/Render/GpuStampRing.cs`, 3.3 `ARB_timer_query`), and the bench
@@ -92,7 +92,7 @@ posed by the real animation code, drawn through the real batch) in front of the 
 drawn with every experiment on, each one off in turn and all off, the configurations taking turns frame by frame so
 load from the rest of the machine falls on all alike, and the log gets per configuration the median CPU time to
 submit the frame, the median frame time with `glFinish` and the median GPU time (timestamp queries), the prop draw
-calls and runs, and a per-pass CPU/GPU split. Run it as is and with `--gl41`. It uses the smoke test's throwaway save
+calls and runs, and a per-pass CPU/GPU split. Run it as is and with `--gl41`. It uses a throwaway save
 copy, no debug context and vsync off. `--bench-size 320x180` keeps the pixels cheap so submission shows.
 
 ### Numbers (2026-10-28)
@@ -124,8 +124,8 @@ little differently).
 
 - **Headless:** the "GL 4.6" self-test section (every push, CI Linux).
 - **With a window, no GPU:** `xvfb-run -a -s "-screen 0 1280x720x24" dotnet bin/Release/net10.0/CallOfSlop.dll
-  --smoketest` (or `--light-shots`, `--gl-bench`). Mesa llvmpipe makes a 4.5 core context at most, so the game takes
+  --window-shot OUT.png` (or `--light-shots`, `--gl-bench`). Mesa llvmpipe makes a 4.5 core context at most, so the game takes
   the 4.1 path by default there; `MESA_GL_VERSION_OVERRIDE=4.6 MESA_GLSL_VERSION_OVERRIDE=460` makes it give 4.6 and
-  the game runs the 4.6 path with every feature on (KHR_debug included: the smoke test passes clean). Test both.
+  the game runs the 4.6 path with every feature on (KHR_debug included: a window shot logs no `[gl] error`). Test both.
 - **On a real GPU:** `--gl-bench` as is and with `--gl41`; `--bench-shots` to compare the pictures.
 - CI does not open a window; the Linux and Windows self-tests cover the code that needs no context.

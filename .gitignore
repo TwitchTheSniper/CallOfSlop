@@ -37,7 +37,6 @@ crash.txt
 breadcrumb*
 crash-*.dmp
 crash-*.json
-tools/run_smoke.flag
 tools/run_selftest.flag
 __pycache__/
 *.pyc

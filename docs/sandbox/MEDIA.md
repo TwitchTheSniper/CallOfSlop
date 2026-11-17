@@ -41,7 +41,7 @@ no text from another player can point anyone's browser anywhere. A playlist link
 
 `tools/browser` is an exe of its own, CefSharp's offscreen build of stock CEF, published to `Browser/` next to the game by `tools/package.ps1` and, once, by `Start.bat`. CI's build and self-test jobs never touch it. The game's process never loads
 CEF: `MediaBrowser` starts it for the first page and quits it 20 s after the last. Before that the game has paid one file check. If it fails or crashes, `MediaBrowser.Problem` says why on the panel and the look
-line, it gets three goes a session, and game tracks don't notice. Self-tests and `--smoketest` leave `MediaBrowser.Allowed` off and never start one. CefSharp needs the Visual C++ 2022 runtime; a PC without one gets "the browser closed" on the panel, and only links are affected.
+line, it gets three goes a session, and game tracks don't notice. Self-tests and the window tools leave `MediaBrowser.Allowed` off and never start one. CefSharp needs the Visual C++ 2022 runtime; a PC without one gets "the browser closed" on the panel, and only links are affected.
 
 - **At most 4 pages** (`MediaDirector.MaxPages`). Others say so on their panels. A page is 720p VP9 decoded in software, so more would be felt on the CPU, though in another process.
 - **Commands** go in on stdin, **reports** come out on stdout, a line each, on threads of their own. Stdin closing, which is also what a game crash looks like, ends the browser; it has 5 s to close or it exits anyway.

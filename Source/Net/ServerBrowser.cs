@@ -572,7 +572,14 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 333: faction relations through play (docs/sandbox/design/faction-controllers.md phase 1; GameCrewFactions.cs, Crew/CrewRelations.cs):
     //   Msg.Factions ends with u8 powers n, n x n x i8 (how each power sees each), u8 pacts k, k x (u8 kind, u8 a, u8 b, u16 minutes held,
     //   u16 minutes left: 0xFFFF none); Msg.PowerNews at the end of Msg. The NPC rows (and CrewSeats' faction byte) are powers, not kinds.
-    public const ushort ProtocolVersion = 333;
+    // 334: no wire change: the factory kit's parts (Constructs/Parts/Factory: ore bunkers, Tipper Body, portal columns, rafters,
+    //   roof sheets) move part ids, which both peers must share (docs/sandbox/design/factory-generator.md).
+    // 335: machine sounds (SynthMachine.cs, GameMachineSounds.cs): a CPose whose asleep byte has bit 3 (PosePlant) ends with a u8 after
+    //   the capacitors' byte, the share of its power plants' whole output they make (a reactor's hum follows it); Msg.MachineSound
+    //   at the end of Msg (u8 Sfx, 3 x f32 where: a Robot Shell Dock's clamps).
+    // 336: spacewalk gear (docs/sandbox/EVA.md, GameSandboxEva.cs): the roster carries a byte a player after the uniform, their
+    //   Eva bits (a space suit, an MMU on it).
+    public const ushort ProtocolVersion = 336;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

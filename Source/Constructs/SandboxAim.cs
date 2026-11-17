@@ -288,6 +288,8 @@ public static class SandboxAim
         }
         if (d.ToolDock)
             return p.Broken ? AimCall.Refuse($"the {d.Name} is wrecked") : AimCall.Ok;
+        if (d.Eva == EvaPart.Locker)
+            return p.Broken ? AimCall.Refuse($"the {d.Name} is wrecked") : AimCall.Ok; // (a suit on or off: GameSandboxEva.cs)
         if (d.Role == PartRole.Seat)
         {
             if (d.RemoteReceiver)

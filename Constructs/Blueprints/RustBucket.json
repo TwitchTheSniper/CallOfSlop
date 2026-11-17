@@ -444,6 +444,18 @@
       "finish": "worn paint"
     },
     {
+      "part": "Robot Shell Dock",
+      "on": 4,
+      "socket": "shellDock",
+      "by": "wall"
+    },
+    {
+      "part": "Robot Shell",
+      "on": 72,
+      "socket": "dock",
+      "by": "back"
+    },
+    {
       "part": "Requisition Crate",
       "on": 0,
       "socket": "crate0",
@@ -594,6 +606,12 @@
       "on": 20,
       "socket": "chart",
       "by": "back"
+    },
+    {
+      "part": "Shell Control Chair",
+      "on": 14,
+      "socket": "linkChair",
+      "by": "bottom"
     },
     {
       "part": "Iron Bed",
@@ -816,64 +834,64 @@
   ],
   "wires": [
     [
-      81,
-      79
+      83,
+      81
     ],
     [
-      81,
-      80
-    ],
-    [
-      84,
+      83,
       82
     ],
     [
-      84,
-      83
+      86,
+      84
     ],
     [
-      87,
+      86,
       85
     ],
     [
-      87,
-      86
+      89,
+      87
     ],
     [
-      88,
-      90
+      89,
+      88
     ],
     [
-      115,
-      111
+      90,
+      92
     ],
     [
-      115,
-      112
-    ],
-    [
-      115,
-      113
-    ],
-    [
-      115,
+      118,
       114
     ],
     [
-      120,
+      118,
+      115
+    ],
+    [
+      118,
       116
     ],
     [
-      120,
+      118,
       117
     ],
     [
-      120,
-      118
+      123,
+      119
     ],
     [
-      120,
-      119
+      123,
+      120
+    ],
+    [
+      123,
+      121
+    ],
+    [
+      123,
+      122
     ]
   ],
   "conduit": true
