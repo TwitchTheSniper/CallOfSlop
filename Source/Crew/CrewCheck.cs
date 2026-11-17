@@ -18,6 +18,8 @@ public static class CrewCheck
     public static int Cli(string[] args)
     {
         string? Arg(string name) => args.SkipWhile(a => !a.Equals(name, StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault();
+        if (args.Any(a => a.Equals("--crew-relations", StringComparison.OrdinalIgnoreCase)))
+            return CrewRelationsCheck.Run(args); // (relations that change through play: CrewRelationsCheck.cs)
         var at = Array.FindIndex(args, a => a.Equals("--crew-check", StringComparison.OrdinalIgnoreCase));
         var shipName = at >= 0 && at + 1 < args.Length && !args[at + 1].StartsWith("--") ? args[at + 1] : "Zero Day Frigate";
         var targetName = Arg("--target") ?? "Zero Day Frigate";
@@ -32,14 +34,14 @@ public static class CrewCheck
             Console.WriteLine($"no blueprint named \"{(shipBp == null ? shipName : targetName)}\" among {ConstructBuild.Blueprints.Count} ({ConstructBuild.RefusedBlueprints.Count} refused: {string.Join("; ", ConstructBuild.RefusedBlueprints.Take(3))})");
             return 1;
         }
-        _faction = Arg("--crew-faction") is { } cf ? CrewFactions.Find(cf) : (byte)0;
+        _faction = Arg("--crew-faction") is { } cf ? CrewPowers.Find(cf) : (byte)0;
         if (args.Any(a => a.Equals("--crew-work", StringComparison.OrdinalIgnoreCase)))
-            return Work(shipBp, _faction != 0 ? _faction : CrewFactions.Find("Traders")) ? 0 : 1;
+            return Work(shipBp, _faction != 0 ? _faction : CrewPowers.Find("Traders")) ? 0 : 1;
         if (args.Any(a => a.Equals("--crew-walk", StringComparison.OrdinalIgnoreCase)))
             return Walks(shipBp, float.TryParse(Arg("--speed"), System.Globalization.CultureInfo.InvariantCulture, out var sp) ? sp : 0, float.TryParse(Arg("--turn"), System.Globalization.CultureInfo.InvariantCulture, out var tn) ? tn * MathF.PI / 180f : 0) ? 0 : 1;
         if (Arg("--crew-convoy") is { } convoy)
             return Convoy(convoy.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries), seconds > 0 && Arg("--seconds") != null ? seconds : 60) ? 0 : 1;
-        _faction = Arg("--crew-faction") is { } fn ? CrewFactions.Find(fn) : (byte)0;
+        _faction = Arg("--crew-faction") is { } fn ? CrewPowers.Find(fn) : (byte)0;
         if (Arg("--crew-faction") is { } fname && _faction == 0)
         {
             Console.WriteLine($"no faction \"{fname}\" in Crew/Factions");
@@ -528,7 +530,7 @@ public static class CrewCheck
             if (s.StKind[k] is CrewStationKind.Spot or CrewStationKind.Crane or CrewStationKind.Dock or CrewStationKind.Build)
                 works++;
         Console.WriteLine($"  guns' reach: {string.Join(", ", Enumerable.Range(0, c.GunCount).Select(k => $"{c.Parts[c.Guns[k].Part].D.Name} {Size(c, c.Guns[k].Part):0.00} m3"))}");
-        Console.WriteLine($"crew work: {bp.Name} ({c.PartCount} parts) as {CrewFactions.Of(faction)?.Name}: {works} work stations; {crew.Describe(s)}");
+        Console.WriteLine($"crew work: {bp.Name} ({c.PartCount} parts) as {CrewPowers.Of(faction)?.Name}: {works} work stations; {crew.Describe(s)}");
         for (var k = 0; k < s.StCount; k++)
         {
             var kind = s.StKind[k];

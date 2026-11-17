@@ -1298,8 +1298,10 @@ public static class ConstructWeapons
             MuzzleWorld(c, k, mz, out var muzzle, out var sfwd);
             var dir = Scatter(sfwd, g.Spread, (uint)(c.Id * 73856093) ^ (uint)(g.Part * 19349663) ^ (seq * 83492791u) ^ (uint)(s * 2654435761u));
             world.DamageBy = c.Owner; // (a construct's gun: its owner's doing, for the story)
+            world.DamageBody = c.Id; // (and its body's: a crew's power, Crew/CrewRelations.cs)
             var hit = Round(world, c, g, query, muzzle, dir, damage, out var end);
             world.DamageBy = 255;
+            world.DamageBody = 0;
             world.AddFire(new CFireEvent { Kind = CFireKind.Shot, Body = c.Id, Part = g.Part, Muzzle = (byte)mz, At = end, Hit = hit });
         }
         world.ShotsFired++;

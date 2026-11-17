@@ -50,6 +50,7 @@ public sealed partial class ConstructWorld
 
     /// <summary>The player whose shot or blast is doing damage now (255: nobody known). The game sets it and puts it back.</summary>
     public byte DamageBy = 255;
+    public ushort DamageBody; // the body whose gun deals the damage now (0: none): a hit's credit for crews of nobody's craft (Construct.LastHitBody)
 
     public void Note(CNoteKind kind, ushort body, byte by = 255, ushort other = 0, byte tier = 0)
     {

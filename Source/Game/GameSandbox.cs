@@ -805,6 +805,7 @@ public sealed partial class Game
         ConstructNet.WriteClear(w);
         Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
         SendFactions(to); // (before the constructs: who shares what, GameSandboxFactions.cs)
+        SendPowerNewsTo(to); // (the NPC powers' news: GameCrewFactions.cs)
         if (Constructs.Designs.Count > 0)
         {
             PanelDesigns.Write(w, Constructs); // (the shared panel designs, before any order that names one)

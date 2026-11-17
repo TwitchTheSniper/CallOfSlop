@@ -1572,8 +1572,8 @@ public sealed partial class Game : IDisposable
             return false;
         if (!CanDamage(attacker, victim))
             return false; // no friendly fire in team modes (your own grenade still hurts you)
-        if (victim.CrewSlot >= 0 && attacker.CrewSlot < 0 && attacker != victim)
-            CrewBodyHit(victim, attacker); // (a deed against the crew's faction: GameCrewFactions.cs)
+        if (victim.CrewSlot >= 0 && attacker != victim)
+            CrewBodyHit(victim, attacker); // (a deed against the crew's power, by a person or another crew: GameCrewFactions.cs)
         victim.LastCombatTime = now;
         attacker.LastCombatTime = now;
         victim.LastHurtTime = now; // health regen waits (Health.cs)
@@ -2434,6 +2434,9 @@ public sealed partial class Game : IDisposable
                 break;
             case (byte)Msg.Credits when !IsServer:
                 ReadCredits(ref r); // this player's credits (GameCrewHire.cs)
+                break;
+            case (byte)Msg.PowerNews when !IsServer:
+                ReadPowerNews(ref r); // the NPC powers' news lines (GameCrewFactions.cs)
                 break;
             case (byte)Msg.ShieldHit when !IsServer && r.Has(2):
                 OnShieldHitPacket(ref r, now); // Last Stand's shield blocked a hit (Health.cs)

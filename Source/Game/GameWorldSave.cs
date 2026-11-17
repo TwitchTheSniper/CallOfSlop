@@ -209,7 +209,8 @@ public sealed partial class Game
         s.FactionStances = (sbyte[])FactionTable.Stance.Clone();
         s.Opening = OpeningCapture(); // (GameSandboxOpening.cs)
         s.Start = StartCapture(); // (GameStoryStart.cs)
-        s.CrewFactions = CrewFactionBytes(); // (the NPC kinds' standings with player factions: GameCrewFactions.cs)
+        s.CrewFactions = CrewFactionBytes(); // (the NPC powers' standings with player factions: GameCrewFactions.cs)
+        s.Powers = PowersBytes(); // (the powers' relations among themselves, pacts and news: GameCrewFactions.cs)
         s.LinkLedger = Keep == null && stashFolder == null && (LinkLedger.Ends.Count > 0 || LinkLedger.Lines.Count > 0) ? LinkLedger.SaveBytes() : null; // (the host's main world keeps the ledger: linked-logistics.md section 8)
         s.OpCount = 0;
         s.GroundOnPlanet = World.Map.Planetoid != null;
@@ -611,6 +612,9 @@ public sealed partial class Game
                 break;
             case WorldSaveWriter.CrewTag:
                 WorldReadCrew(r, ws); // (credits and NPC standings: GameCrewFactions.cs)
+                break;
+            case WorldSaveWriter.PowersTag:
+                WorldReadPowers(r); // (the NPC powers' relations, pacts and news: GameCrewFactions.cs)
                 break;
             case WorldSaveWriter.FirstsTag:
                 WorldReadFirsts(r, ws); // (milestones for firsts: GameMilestones.cs)
