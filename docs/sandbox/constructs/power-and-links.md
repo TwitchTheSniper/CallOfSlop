@@ -95,7 +95,7 @@ Three things keep links tidy.
 - Construct guns don't draw power (yet): a gun part could, by giving it a `"power"` draw and checking
   `ConstructPower.On(construct, part)`.
 
-**Capacitor Banks** (docs/sandbox/design/ship-works.md 8) are a pool of their own beside the batteries (`Construct.Cap`): energy guns (`gun.energy`: railguns, lasers) fire from them only, never from batteries (Karl, 2026-11-17). The circuit refills the working banks it reaches at their `capacitor.rate`, out of the batteries, as a draw, never taking the last quarter of the batteries (`ConstructPower.CapReserve`: then they fill only as fast as the plants make power); a broken bank takes its share of the charge. The pool rides the pose as a byte (protocol 330).
+**Capacitor Banks** (docs/sandbox/design/ship-works.md 8) are a pool of their own beside the batteries (`Construct.Cap`): energy guns (`gun.energy`: railguns, lasers) fire from them only, never from batteries (Karl, 2026-11-17). The circuit refills the working banks it reaches at their `capacitor.rate`, out of the batteries, as a draw, never taking the last quarter of the batteries (`ConstructPower.CapReserve`: then they fill only as fast as the plants make power); a broken bank takes its share of the charge. The pool rides the pose as a byte (protocol 331).
 
 ### Joint reactions
 

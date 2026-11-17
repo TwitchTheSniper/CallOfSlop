@@ -74,6 +74,34 @@ What a commander wants to know about a ship without boarding it (`CmdCardRead`, 
 Buttons: CANCEL ORDER, a one-click "ORBIT <BODY> LOW", CENTRE. A picked body has a small card of its own (what it is a
 planet or moon of, radius, gravity at the ground, how far out it is and its time round, whether it can be landed on).
 
+## The logistics layer
+
+The user (TwitchTheSniper), 2026-11-16: linked logistics (docs/sandbox/design/linked-logistics.md) as a layer of its own
+over the map, which the **LOGISTICS** button (top middle, right of the zoom presets) turns on and off. It stays as it was
+when the view is closed and opened again. Code: `Source/UI/UiCommandLinks.cs`.
+
+- **Only what is linked now is drawn.** A factory (a body) is a node when one of its link ends (Transmitter, Receiver,
+  Relay) is answered by a partner. Unpaired ends, ends whose pair doesn't answer (unpowered, out of reach), wrecks and the
+  bodies of players outside your faction are not drawn. "NO LINKED NETWORKS HERE" under the button says the layer is on
+  and empty.
+- **A node** is a green square with a dot (amber with a turning ring when lines wait for a ship; a Relay has a ring of its
+  own). Its label: the factory's name (its link end's name, else "CONSTRUCT 12") and a line: the pair's code, LINK or
+  RELAY, how many partners answer, DOCK or NO DOCK, and WAITING FOR A SHIP. Labels of factories closer than 26 px to one
+  already labelled are left out (factories round one world at a planet's zoom).
+- **Links:** two nodes of this world are joined by a green line with a dot running along it. A Relay's partner on another
+  world is a dashed line towards that world's planet (cut at the screen's reach), labelled with the far end's name and
+  world ("ASLEEP" when nobody is there); a partner seen nowhere (another player's body) is a short stub with its name.
+- **Route legs:** a ship with a Route Computer on a running route has an amber dashed leg to the stop it flies to (its
+  body here, or that world's planet), labelled "ROUTE: TO <STOP>".
+- **Data:** the parts' own state (`LinkPart`, which the host makes and CBodyKind.Link sends). Protocol 330 added
+  `LinkPart.Far` (`LinkFar`: an end's answering partners, a Route Computer's stops, with world, body, name and flags), made
+  by `LinkLedger.FarOf` and `LinkRoutes.FarOf` in the 1 Hz publish, an array only when it changed. A client has only its
+  own world's bodies, so another world's end is known by this alone. The layer's own filter is the owner check
+  (`Factions.Shares`, or nobody's); link parts' panel state still goes to every client, as before.
+- **Cost:** off, one bool check. On, the bodies with link parts are gathered four times a second into fixed arrays (64
+  factories, 128 links, 32 legs; `LinkedLogistics.PartCount` is kept per rebuild); a label string is made only when its
+  key changes. A frame projects the nodes and draws lines.
+
 ## Orders
 
 Five kinds (`NavKind`), each for one ship, given by any player to any ship that takes orders. **A ship takes orders
@@ -254,7 +282,7 @@ The window tool (README.md "Testing without playing") has verbs for it (`Source/
 the Nth craft, `order orbit BODY KM`, `order goto BODY KM`, `order ground M` (a spot M metres along the ground),
 `order land M` (a spot M metres along the ground to set down on; from space, along from under the ship), `order come`,
 `spacewalk KM [SIDE]` (host: you out KM km over the ground under the picked craft, SIDE m beside it, at rest) and
-`order cancel` give the picked craft an order as the menu would (an orbit of another planet is a trip), `rclick X,Y` is a right click (the menu itself), `nav` prints every craft and its order, `hoist KM` (host) puts
+`order cancel` give the picked craft an order as the menu would; `linked layer [on|off]` (Program.WindowShotLinked.cs) turns the logistics layer on or off and prints its factories, links and legs, (an orbit of another planet is a trip), `rclick X,Y` is a right click (the menu itself), `nav` prints every craft and its order, `hoist KM` (host) puts
 the picked craft that high, at rest, `speed N` asks for a time speed (host), and `travel FUEL SHARE` sets Settings >
 Gameplay's Fuel use in space and Trip fuel for the run (percents). The `nav` line has each craft's acceleration and dV. For example, a Magpie into orbit and on to the
 moon:

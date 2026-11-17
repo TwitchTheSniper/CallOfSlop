@@ -559,9 +559,12 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   Building Station's Sub-jobs setting is a choice (Off, Auto, Linked).
     // 329: the bot brain's crews (docs/sandbox/design/bot-brain.md, phase 1; GameCrew.cs): Msg.CrewSeats at the end of Msg (u16 construct,
     //   u8 n, n x u16 seat part), the seats a crew member works with no body, drawn as stand-ins.
-    // 330: ship works phase 5 (docs/sandbox/design/ship-works.md 8): a body's Full gains f32 Cap (its capacitors' kJ) after the charge; a pose's
+    // 330: the command view's logistics layer (docs/space/COMMAND.md "The logistics layer"): CBodyKind.Link gains, per part after its
+    //   docks, u8 n then n x (u32 id, str world, u16 body, str name, u8 flags): an end's answering partners, a Route Computer's stops
+    //   (LinkFar).
+    // 331: ship works phase 5 (docs/sandbox/design/ship-works.md 8): a body's Full gains f32 Cap (its capacitors' kJ) after the charge; a pose's
     //   asleep byte gains bit 4 (PoseCap), and with it a u8 share of the capacitors after the walk block; GunFx gains Beam at its end.
-    public const ushort ProtocolVersion = 330;
+    public const ushort ProtocolVersion = 331;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

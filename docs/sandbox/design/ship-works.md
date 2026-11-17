@@ -445,11 +445,11 @@ the shot is fired (`ConstructPower.Draw`); short of it, the gun waits with its r
 - **Laser Generator S/M/L** (Turret works): serves 500, 1,800 and 6,000 kW; it bolts to a Turret Ring's trunk (the
   Autoloader's sockets and sizes) or behind a mount.
 - **Laser Pod**: emitter and generator in one housing, 80 kW (a fifth of the S), no works, for a turntable or a deck.
-- **The beam** is `GunFx.Beam` (protocol 330, at the end of the enum): a hitscan pulse through `Round` like any round, no
+- **The beam** is `GunFx.Beam` (protocol 331, at the end of the enum): a hitscan pulse through `Round` like any round, no
   lead (`RoundV` 0), drawn as a red line from the muzzle to the hit for 0.12 s with the Trophy zap.
 - **The Zero Day's railgun** takes 15 MJ a slug (`TorpedoFrigateParts.RailEnergy`); a Capacitor Bank M stands in
   engineering aft of the reactor: 40 MJ, two full slugs and a bit, and it refills one in 10 s, the gun's own rate of fire.
-- On the wire (protocol 330) a body's Full carries `Cap`; a pose carries the pool's share as a byte when the body has
+- On the wire (protocol 331) a body's Full carries `Cap`; a pose carries the pool's share as a byte when the body has
   banks (bit 4 of the asleep byte), and a still body sends a pose when it changes (`StateDue`).
 - `--check-vehicle` prints a `capacitors:` line (what they hold, the refill, shots per gun) and fails an energy gun with
   no bank on its circuit; a laser on a ring reports its generators with the heads, not a feed.
