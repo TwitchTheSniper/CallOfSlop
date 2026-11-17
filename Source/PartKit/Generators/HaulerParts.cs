@@ -44,7 +44,7 @@ public sealed class HaulerParts : IPartGenerator
     private const double Ft0 = 0.25, Ceil0 = 3.25, Ft1 = 3.5, Ceil1 = 6.5, Roof = 6.75; // the crew decks' floor tops and ceilings
     private const double HCeil = 7.25, HRoof = 7.5; // the hold's ceiling and roof
     private const double ZFront = 5.0, ZHold = 14.0, ZHoldEnd = 46.0, ZEngEnd = 49.5, Stern = 54.0;
-    private const double Lw = 4.0, UwF = 3.0, UwA = Lw, Hw = 5.75, Ew = 4.5; // inner half widths: the crew decks, the bridge, the upper aft hall, the hold, the drive room
+    private const double Lw = 4.0, UwF = 3.0, UwA = Lw, Hw = 5.75; // inner half widths: the crew decks, the bridge, the upper aft hall, the hold
     private const double ZCab = 9.0, ZAftHall = 11.5; // the bridge's back wall; the cabins' back wall, where the upper deck widens
     private const double DoorH = 2.25;
 
@@ -63,11 +63,16 @@ public sealed class HaulerParts : IPartGenerator
     private const double TrackY = -1.26; // the well doors' tracks' underside
 
     /// <summary>The side doors beside the well (row 3), one a side: the opening's ends along the ship, its head, and the hinge socket.</summary>
-    /// <summary>The drives (ship-works.md): four Drive Nozzle S through the transom, a hull drive whose works stand on the drive room's
-    /// aft wall (welded to the stern, both mounts): three Drive Core S (cylinders on saddles, running forward off the wall) serve the 6 MN, side by side with over a metre clear in front
-    /// of each one's gauge (on its starboard side), the Engineer's Panel on the port wall by the door.</summary>
-    private const string DriveNozzle = "Drive Nozzle S", DriveCore = "Drive Core S";
-    private static readonly double[] CoreX = [-2.4, 0.0, 2.4]; // (in line with the nozzles' columns and the door; over a metre clear by each gauge)
+    /// <summary>The drives (ship-works.md 15; Karl, 2026-11-17: two large thrusters that look substantial from behind, the drive room
+    /// slim and long enough to meet the stern so every piece can be reached): two Drive Nozzle L (10 MN each) on shrouds through the
+    /// transom, a mount. Behind each, bolted to the transom bulkhead's inner face on its axis, its own engine: a Drive Core L, a Fuel
+    /// Pump L and a Coolant Exchanger L, one cylinder on saddles on the drive room's deck, running forward. A walkway down the middle
+    /// between them and one outboard of each; the Engineer's Panel on the port wall forward of them.</summary>
+    private static readonly double[] DriveX = [-2.0, 2.0];
+    private static double DriveY => Ft0 + ShipWorksParts.AxisOver(2); // (the engines' saddles stand on the deck)
+    private const double Ew = 4.2; // the drive room's inner half width
+    private const double StIn = 53.4; // the transom bulkhead's inner face, where the engines' front flanges bolt
+    private const double ShroudR = 1.85; // a nozzle's shroud on the transom
     private const double PanelZ = 47.0;
 
     /// <summary>Attitude jets (Karl, 2026-11-16: it flips and burns on its drives, with small jets every way for small moves): a
@@ -120,7 +125,7 @@ public sealed class HaulerParts : IPartGenerator
         new(11.25, [(3.1, -1.0), (4.8, 0.2), (5.1, 3.0), (4.8, 6.9), (3.0, 7.7)]),
         new(13.75, Mid), new(ZHoldEnd, Mid),
         new(ZEngEnd, [(3.4, -1.0), (5.6, 0.2), (6.0, 3.2), (5.2, 6.4), (3.0, 7.3)]),
-        new(Stern, [(2.4, -0.3), (4.4, 0.5), (4.8, 3.1), (4.2, 5.6), (2.4, 6.4)]),
+        new(Stern, [(3.6, -0.8), (4.8, 0.2), (5.0, 3.1), (4.4, 5.6), (2.4, 6.4)]), // (full at the bottom: the drive room runs to the transom, the shrouds fill it)
     ];
 
     private static (double H, double Y)[] At(double z)
@@ -927,16 +932,15 @@ public sealed class HaulerParts : IPartGenerator
     {
         WallCol = Wall;
         DadoCol = WallLow;
-        var p = Big("Dray Drive Room", "The Dray's drive room, aft of the hold under the stern: the drives' works stand against its aft wall, and the Engineer's Panel by the door.");
-        var plan = new Rect(Cx - Ew - 0.25, ZHoldEnd + 0.125, Cx + Ew + 0.25, ZEngEnd + 0.25);
+        var p = Big("Dray Drive Room", "The Dray's drive room, aft of the hold to the transom: the two drives' engines run forward off the transom bulkhead along it, with a walkway each side of them, and the Engineer's Panel by the door.");
+        var plan = new Rect(Cx - Ew - 0.25, ZHoldEnd + 0.125, Cx + Ew + 0.25, StIn);
         Floor(p, [plan], 0, Ft0, Deck, "painted deck plate");
         Floor(p, [plan], Ceil0, Ft1, Ceil, "painted plating");
         Room(p, plan, 0, Ft1);
         Ceils[p] = Ceil0;
-        Detail(p, Cx - Ew + 0.1, Ft0, ZHoldEnd + 1.0, Cx + Ew - 0.1, Ft0 + 0.012, ZEngEnd - 0.1, Grate, "painted grating");
+        Detail(p, Cx - Ew + 0.1, Ft0, ZHoldEnd + 1.0, Cx + Ew - 0.1, Ft0 + 0.012, StIn - 0.1, Grate, "painted grating");
         foreach (var s in new[] { -1, 1 })
-            WallRun(p, false, ZHoldEnd + 0.125, ZEngEnd, Cx + s * (Ew + 0.125), Ft0, Ceil0);
-        WallRun(p, true, Cx - Ew - 0.25, Cx + Ew + 0.25, ZEngEnd + 0.125, Ft0, Ceil0);
+            WallRun(p, false, ZHoldEnd + 0.125, StIn, Cx + s * (Ew + 0.125), Ft0, Ceil0);
         foreach (var s in new[] { -1, 1 })
         {
             Band(p, 2, s, ZHoldEnd, ZEngEnd, Skin, 9);
@@ -944,14 +948,11 @@ public sealed class HaulerParts : IPartGenerator
         }
         Ribs(p, ZHoldEnd, ZEngEnd, 2);
         foreach (var (ya, yb) in new[] { (0.0, 0.7), (0.7, Ft1) })
-            VoidT(p, plan.Z0, plan.Z1, ya, yb, Ew + 0.25, 0.004, 0.004);
-        // The drive's works stand against the aft wall, each hung at its half height so it stands on the deck; the panel by the door.
-        for (var i = 0; i < CoreX.Length; i++)
-            Sock(p, $"core{i}", Cx + CoreX[i], Ft0 + ShipWorksParts.AxisOver(0), ZEngEnd, "-z"); // (its axis at its saddles' height over the deck)
+            VoidT(p, plan.Z0, ZEngEnd, ya, yb, Ew + 0.25, 0.004, 0.004); // (aft of the station the stern's void goes on)
         Sock(p, "panel", Cx - Ew, Ft0 + 0.6, PanelZ, "+x");
         foreach (var y in new[] { 0.0, Ft1 })
             MustFit("drive room", plan.Z1, Ew + 0.25, y);
-        return p.Stats(8000, 24000, 30, 15.0);
+        return p.Stats(9000, 24000, 30, 15.0);
     }
 
     // ---- the bow: a blunt, armoured cab nose over the crew section, sealed (no glass)
@@ -1069,8 +1070,8 @@ public sealed class HaulerParts : IPartGenerator
 
     private static Part SternPart()
     {
-        var p = Big("Dray Stern", "The Dray's stern: the hull closing over the drive room, the drives' tankage, and the transom its four nozzles bolt to. Their works stand on the drive room's aft wall, welded to it.", color: Armour);
-        Works.Mount(p); // (the nozzles' mount: their works stand on the drive room's aft wall, welded to it)
+        var p = Big("Dray Stern", "The Dray's stern: the hull closing over the drive room, and the transom its two big nozzles bolt to, on shrouds. Behind each, on the transom bulkhead's inner face, its engine runs forward into the drive room.", color: Armour);
+        Works.Mount(p); // (the nozzles' mount: each one's engine bolts to the bulkhead's inner face on its axis)
         foreach (var s in new[] { -1, 1 })
         {
             Band(p, 3, s, ZHoldEnd, ZEngEnd, Skin2, 7);
@@ -1090,15 +1091,31 @@ public sealed class HaulerParts : IPartGenerator
             Chine(p, 4, s, ZEngEnd, Stern, 0.2, 0.1, Armour2);
         }
         Ribs(p, ZEngEnd, Stern, 0, 1, 2, 3, 4, 5);
-        // The transom: a sooty plate across the stern, four drive mounts on it (squat collars), hazard ticks between.
+        // The transom: a sooty plate across the stern, a shroud round each drive (a broad collar, its bolts, a hazard band), and
+        // inside, the bulkhead across the drive room's end that the engines bolt to.
         var q = At(Stern);
         Plate(p, [.. Enumerable.Range(0, 5).Select(k => P(Cx + q[k].H, q[k].Y, Stern)).Concat(Enumerable.Range(0, 5).Reverse().Select(k => P(Cx - q[k].H, q[k].Y, Stern)))], Frame, "soot");
-        foreach (var (dx, dy) in new[] { (-2.4, 1.3), (2.4, 1.3), (-2.4, 4.3), (2.4, 4.3) })
-            Prism(p, RingZ(Cx + dx - H, dy - H, 0.78, 0.78, Stern + 0.02 - H, 10), RingZ(Cx + dx - H, dy - H, 0.7, 0.7, Stern + 0.1 - H, 10), Bare, "dirty steel"); // (a doubler round each nozzle)
-        Detail(p, Cx - 0.6, 2.7, Stern + 0.02, Cx + 0.6, 2.9, Stern + 0.05, Hazard, "hazard paint");
-        foreach (var (ya, yb) in new[] { (-0.9, -0.3), (-0.3, 1.0), (1.0, 3.3), (3.3, 5.6), (5.6, 6.7) })
-            VoidT(p, ZEngEnd + 0.25, Stern, ya, yb, 0, 0.0, 0.004); // (flush with the drive room's back wall: they weld)
-        VoidT(p, ZHoldEnd + 0.125, ZEngEnd + 0.25, Ft1, 6.65, 0, 0.004, 0.004); // (up to the spine's void over the drive room)
+        foreach (var dx in DriveX)
+        {
+            var (x, y) = (Cx + dx, DriveY);
+            Prism(p, RingZ(x - H, y - H, ShroudR, ShroudR, Stern + 0.02 - H, 16), RingZ(x - H, y - H, ShroudR - 0.1, ShroudR - 0.1, Stern + 0.3 - H, 16), Bare, "dirty steel");
+            Prism(p, RingZ(x - H, y - H, ShroudR - 0.25, ShroudR - 0.25, Stern + 0.28 - H, 16), RingZ(x - H, y - H, ShroudR - 0.4, ShroudR - 0.4, Stern + 0.42 - H, 16), Frame, "soot");
+            for (var k = 0; k < 12; k++)
+            {
+                var a = Math.PI / 12 + k * Math.PI / 6;
+                var (bx, by) = (x + (ShroudR - 0.17) * Math.Cos(a), y + (ShroudR - 0.17) * Math.Sin(a));
+                Detail(p, bx - 0.05, by - 0.05, Stern + 0.29, bx + 0.05, by + 0.05, Stern + 0.36, "#9a9c98", "steel"); // (its bolts)
+            }
+        }
+        Detail(p, Cx - 0.12, 0.4, Stern + 0.02, Cx + 0.12, 2.4, Stern + 0.05, Hazard, "hazard paint");
+        Solid(p, Cx - Ew - 0.25, 0, StIn, Cx + Ew + 0.25, Ft1, Stern - 0.03, Bare, "dirty steel"); // (the bulkhead: its inner face is the engines')
+        foreach (var dx in DriveX)
+            Detail(p, Cx + dx - 1.3, DriveY + 1.4, StIn - 0.02, Cx + dx + 1.3, DriveY + 1.5, StIn - 0.003, Hazard, "hazard paint"); // (a keep-clear band over each engine)
+        foreach (var (ya, yb) in new[] { (-0.7, 0.0), (Ft1, 5.6), (5.6, 6.3) })
+            VoidT(p, ZEngEnd, Stern, ya, yb, 0, 0.004, 0.03);
+        foreach (var (ya, yb) in new[] { (0.0, 0.7), (0.7, Ft1) })
+            VoidT(p, ZEngEnd, Stern, ya, yb, Ew + 0.25, 0.004, 0.03);
+        VoidT(p, ZHoldEnd + 0.125, ZEngEnd, Ft1, 6.65, 0, 0.004, 0.004); // (up to the spine's void over the drive room)
         // The stern's attitude jets: up and down on the spine and the flat, out on the upper sides, two forward jets on the transom.
         var sq = At(SternRcsZ);
         foreach (var s in new[] { -1, 1 })
@@ -1109,10 +1126,12 @@ public sealed class HaulerParts : IPartGenerator
             RcsPad(p, "rcsOut" + n, FacetX(3, s, SternRcsZ, 4.2), 4.2, SternRcsZ, s < 0 ? "-x" : "+x", 0.25);
             RcsPad(p, "rcsAlong" + n, Cx + s * 3.9, 3.0, Stern, "+z", 0.05);
         }
-        foreach (var (n, dx, dy) in new[] { ("drive0", -2.4, 1.3), ("drive1", 2.4, 1.3), ("drive2", -2.4, 4.3), ("drive3", 2.4, 4.3) })
+        for (var i = 0; i < DriveX.Length; i++)
         {
-            Solid(p, Cx + dx - 0.4, dy - 0.4, Stern - 0.3, Cx + dx + 0.4, dy + 0.4, Stern, Frame, "dirty steel");
-            Sock(p, n, Cx + dx, dy, Stern, "+z");
+            var x = Cx + DriveX[i];
+            Solid(p, x - 0.7, DriveY - 0.7, Stern - 0.3, x + 0.7, DriveY + 0.7, Stern + 0.43, Frame, "dirty steel"); // (the nozzle's seat, inside its flange)
+            Sock(p, $"drive{i}", x, DriveY, Stern + 0.43, "+z");
+            Sock(p, $"engine{i}", x, DriveY, StIn, "-z");
         }
         return p.Stats(12000, 32000, 45, 20.0);
     }
@@ -1552,13 +1571,14 @@ public sealed class HaulerParts : IPartGenerator
         Door(bp, fore, "doorHold");
         Door(bp, aft, "doorDrive");
         Hang(bp, "Dray Ladder", lower, "ladder", "bottom");
-        // The drives: nozzles on the transom, their cores on the drive room's aft wall, the Engineer's Panel by the door.
+        // The drives: a big nozzle on each shroud, and behind it on the bulkhead its own engine (core, pump, exchanger, one cylinder).
         var stern = placed["Dray Stern"];
-        foreach (var d in new[] { "drive0", "drive1", "drive2", "drive3" })
-            Hang(bp, DriveNozzle, stern, d, "mount");
         var drive = placed["Dray Drive Room"];
-        for (var i = 0; i < CoreX.Length; i++)
-            Hang(bp, DriveCore, drive, $"core{i}", "front");
+        for (var i = 0; i < DriveX.Length; i++)
+        {
+            Hang(bp, "Drive Nozzle L", stern, $"drive{i}", "mount");
+            Hang(bp, "Coolant Exchanger L", Hang(bp, "Fuel Pump L", Hang(bp, "Drive Core L", stern, $"engine{i}", "front"), "back", "front"), "back", "front");
+        }
         Hang(bp, "Engineer's Panel", drive, "panel", "back");
         // The attitude jets, at the bow and the stern.
         foreach (var piece in new[] { placed["Dray Bow"], stern })
@@ -1600,10 +1620,6 @@ public sealed class HaulerParts : IPartGenerator
         structure.AddRange(SplitDeck(DriveRoom(), "Drive Room"));
         structure.AddRange(SplitBands(Spine(), "Spine", 30.0));
         structure.AddRange([Bow(), SternPart()]);
-        // The works' mounts (ship-works.md): the stern, and the drive room's aft wall the works stand on, welded to it.
-        foreach (var q in structure)
-            if (q.Sockets.Any(k => (string)k["name"]! == "core0"))
-                Works.Mount(q);
         Connect(structure);
         Structure = PlaceOrder(structure, "Dray Keel");
         List<Part> parts =

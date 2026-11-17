@@ -1,12 +1,12 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Dray Drive Room",
-  "description": "The Dray's drive room, aft of the hold under the stern: the drives' works stand against its aft wall, and the Engineer's Panel by the door.",
+  "description": "The Dray's drive room, aft of the hold to the transom: the two drives' engines run forward off the transom bulkhead along it, with a walkway each side of them, and the Engineer's Panel by the door.",
   "group": "Ship",
   "section": "Dray hauler",
   "role": "frame",
   "tool": "welder",
-  "mass": 3200.0,
+  "mass": 3600.0,
   "health": 12000,
   "armour": 30,
   "material": "steel",
@@ -15,28 +15,28 @@
   "boxes": [
     {
       "min": [
-        2.125,
+        2.425,
         -0.125,
         46.0
       ],
       "max": [
-        11.625,
+        11.325,
         0.125,
-        49.625
+        53.275
       ],
       "color": "#4b4f51",
       "finish": "painted deck plate"
     },
     {
       "min": [
-        2.475,
+        2.775,
         0.125,
         46.875
       ],
       "max": [
-        11.275,
+        10.975,
         0.137,
-        49.275
+        53.175
       ],
       "color": "#3a3d3f",
       "detail": true,
@@ -65,56 +65,47 @@
     {
       "name": "j2",
       "at": [
-        2.255,
+        2.555,
         0.125,
-        47.685
+        49.635
       ],
       "dir": "+y"
     },
     {
       "name": "j3",
       "at": [
-        11.495,
+        11.195,
         0.125,
-        47.685
+        49.635
       ],
       "dir": "+y"
     },
     {
       "name": "j4",
       "at": [
-        6.875,
-        0.125,
-        49.495
-      ],
-      "dir": "+y"
-    },
-    {
-      "name": "j5",
-      "at": [
-        2.125,
+        2.425,
         -0.005,
-        47.815
+        47.685
       ],
       "dir": "-x"
     },
     {
-      "name": "j6",
+      "name": "j5",
       "at": [
-        11.625,
+        11.325,
         -0.005,
-        47.815
+        47.685
       ],
       "dir": "+x"
     },
     {
-      "name": "j7",
+      "name": "j6",
       "at": [
         6.875,
-        -0.005,
-        49.625
+        -0.125,
+        51.325
       ],
-      "dir": "+z"
+      "dir": "-y"
     }
   ]
 }

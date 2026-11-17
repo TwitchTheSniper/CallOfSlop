@@ -325,6 +325,18 @@
       "by": "j0"
     },
     {
+      "part": "Dray Drive Room Hull Port 8",
+      "on": 22,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Dray Drive Room Hull Stbd 8",
+      "on": 22,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
       "part": "Dray Hold Aft Hull Port 7",
       "on": 23,
       "socket": "j4",
@@ -355,27 +367,9 @@
       "by": "j0"
     },
     {
-      "part": "Dray Drive Room Wall 3",
-      "on": 26,
-      "socket": "j4",
-      "by": "j0"
-    },
-    {
-      "part": "Dray Drive Room Hull Port 8",
-      "on": 26,
-      "socket": "j5",
-      "by": "j0"
-    },
-    {
-      "part": "Dray Drive Room Hull Stbd 8",
-      "on": 26,
-      "socket": "j6",
-      "by": "j0"
-    },
-    {
       "part": "Dray Stern",
       "on": 26,
-      "socket": "j7",
+      "socket": "j6",
       "by": "j0"
     },
     {
@@ -500,8 +494,8 @@
     },
     {
       "part": "Dray Spine 8",
-      "on": 62,
-      "socket": "j3",
+      "on": 61,
+      "socket": "j6",
       "by": "j0"
     },
     {
@@ -538,7 +532,7 @@
     },
     {
       "part": "Bulkhead Door 1.5x2.25 m",
-      "on": 72,
+      "on": 71,
       "socket": "doorBridge",
       "by": "hang",
       "paint": "#dd6a1e",
@@ -546,7 +540,7 @@
     },
     {
       "part": "Bulkhead Door 1.5x2.25 m",
-      "on": 73,
+      "on": 72,
       "socket": "doorCabinA",
       "by": "hang",
       "paint": "#dd6a1e",
@@ -554,7 +548,7 @@
     },
     {
       "part": "Bulkhead Door 1.5x2.25 m",
-      "on": 74,
+      "on": 73,
       "socket": "doorCabinB",
       "by": "hang",
       "paint": "#dd6a1e",
@@ -591,50 +585,56 @@
       "by": "bottom"
     },
     {
-      "part": "Drive Nozzle S",
-      "on": 62,
+      "part": "Drive Nozzle L",
+      "on": 61,
       "socket": "drive0",
       "by": "mount"
     },
     {
-      "part": "Drive Nozzle S",
-      "on": 62,
+      "part": "Drive Core L",
+      "on": 61,
+      "socket": "engine0",
+      "by": "front"
+    },
+    {
+      "part": "Fuel Pump L",
+      "on": 95,
+      "socket": "back",
+      "by": "front"
+    },
+    {
+      "part": "Coolant Exchanger L",
+      "on": 96,
+      "socket": "back",
+      "by": "front"
+    },
+    {
+      "part": "Drive Nozzle L",
+      "on": 61,
       "socket": "drive1",
       "by": "mount"
     },
     {
-      "part": "Drive Nozzle S",
-      "on": 62,
-      "socket": "drive2",
-      "by": "mount"
-    },
-    {
-      "part": "Drive Nozzle S",
-      "on": 62,
-      "socket": "drive3",
-      "by": "mount"
-    },
-    {
-      "part": "Drive Core S",
-      "on": 59,
-      "socket": "core0",
+      "part": "Drive Core L",
+      "on": 61,
+      "socket": "engine1",
       "by": "front"
     },
     {
-      "part": "Drive Core S",
-      "on": 59,
-      "socket": "core1",
+      "part": "Fuel Pump L",
+      "on": 99,
+      "socket": "back",
       "by": "front"
     },
     {
-      "part": "Drive Core S",
-      "on": 59,
-      "socket": "core2",
+      "part": "Coolant Exchanger L",
+      "on": 100,
+      "socket": "back",
       "by": "front"
     },
     {
       "part": "Engineer's Panel",
-      "on": 56,
+      "on": 58,
       "socket": "panel",
       "by": "back"
     },
@@ -704,7 +704,7 @@
     },
     {
       "part": "Heavy RCS Thruster",
-      "on": 62,
+      "on": 61,
       "socket": "rcsUpL",
       "by": "base",
       "paint": "#202326",
@@ -712,7 +712,7 @@
     },
     {
       "part": "Heavy RCS Thruster",
-      "on": 62,
+      "on": 61,
       "socket": "rcsUpR",
       "by": "base",
       "paint": "#202326",
@@ -720,7 +720,7 @@
     },
     {
       "part": "Heavy RCS Thruster",
-      "on": 62,
+      "on": 61,
       "socket": "rcsDownL",
       "by": "base",
       "paint": "#202326",
@@ -728,7 +728,7 @@
     },
     {
       "part": "Heavy RCS Thruster",
-      "on": 62,
+      "on": 61,
       "socket": "rcsDownR",
       "by": "base",
       "paint": "#202326",
@@ -736,7 +736,7 @@
     },
     {
       "part": "Heavy RCS Thruster",
-      "on": 62,
+      "on": 61,
       "socket": "rcsOutL",
       "by": "base",
       "paint": "#202326",
@@ -744,7 +744,7 @@
     },
     {
       "part": "Heavy RCS Thruster",
-      "on": 62,
+      "on": 61,
       "socket": "rcsOutR",
       "by": "base",
       "paint": "#202326",
@@ -752,7 +752,7 @@
     },
     {
       "part": "Heavy RCS Thruster",
-      "on": 62,
+      "on": 61,
       "socket": "rcsAlongL",
       "by": "base",
       "paint": "#202326",
@@ -760,7 +760,7 @@
     },
     {
       "part": "Heavy RCS Thruster",
-      "on": 62,
+      "on": 61,
       "socket": "rcsAlongR",
       "by": "base",
       "paint": "#202326",
