@@ -61,6 +61,7 @@ public sealed partial class ShipAi
         6 => $"holding at {_stateDist:0} m",
         7 => $"following, {_stateDist:0} m behind its place",
         8 => $"patrolling, {_stateDist:0} m to go",
+        9 => $"fleeing, {_stateDist:0} m",
         _ => "standing by",
     };
     private int _state;
@@ -275,11 +276,12 @@ public sealed partial class ShipAi
         }
         _state = gap > StandBand ? 4 : gap < -StandBand ? 5 : 6;
         _stateDist = dist;
+        var fleeing = Fleeing(ref pilot); // (its captain runs: nose away, full ahead; Source/Crew/CrewGround.cs)
 
         // The guns: each seat looks at where its guns' rounds meet the target, and fires when a gun on it bears and reaches.
         if (pilotOn)
         {
-            var (pilotLook, pilotFire) = Gunnery(world, c, _pilot, t, dist, fixedGuns: true);
+            var (pilotLook, pilotFire) = fleeing ? (GravityFrames.Angles(com, -dir * 100), false) : Gunnery(world, c, _pilot, t, dist, fixedGuns: true);
             if (pilotFire)
                 pilot |= ConstructParts.KeyFire;
             PilotSeat(c, pilot, pilotLook.Yaw, pilotLook.Pitch);
@@ -298,7 +300,7 @@ public sealed partial class ShipAi
             return; // (the racks and flares are the pilot's buttons)
 
         // The racks: one launch at a time, taking turns, at a ship or a car (a seeker wants something that moves), with the target off the nose.
-        if (_rackCount > 0 && t.Body != 0 && dist is > LaunchMin and < LaunchMax && _tick >= _launchAt)
+        if (!fleeing && _rackCount > 0 && t.Body != 0 && dist is > LaunchMin and < LaunchMax && _tick >= _launchAt)
         {
             var nose = Vector3.Transform(-Vector3.UnitZ, c.Rot); // (the racks' ports face forward)
             if (Vector3.Dot(nose, dir) > MathF.Cos(LaunchCone * MathF.PI / 180))

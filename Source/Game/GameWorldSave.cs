@@ -209,6 +209,7 @@ public sealed partial class Game
         s.FactionStances = (sbyte[])FactionTable.Stance.Clone();
         s.Opening = OpeningCapture(); // (GameSandboxOpening.cs)
         s.Start = StartCapture(); // (GameStoryStart.cs)
+        s.CrewFactions = CrewFactionBytes(); // (the NPC kinds' standings with player factions: GameCrewFactions.cs)
         s.LinkLedger = Keep == null && stashFolder == null && (LinkLedger.Ends.Count > 0 || LinkLedger.Lines.Count > 0) ? LinkLedger.SaveBytes() : null; // (the host's main world keeps the ledger: linked-logistics.md section 8)
         s.OpCount = 0;
         s.GroundOnPlanet = World.Map.Planetoid != null;
@@ -316,6 +317,7 @@ public sealed partial class Game
         QuarryCatch(p, rec); // (the first Ministry duty: GameQuarry.cs)
         UpgradesCatch(p, rec); // (tool upgrades: GameSandboxUpgrades.cs)
         FirstsCatch(p, rec); // (milestones for firsts: GameMilestones.cs)
+        CrewCatch(p, rec); // (credits and NPC standings: GameCrewFactions.cs)
         rec.Builds = ZPlayers.TryGetValue(p.Id, out var zp) ? zp.Slots.Select(b => b?.ToText() ?? "").ToArray() : [];
     }
 
@@ -558,6 +560,7 @@ public sealed partial class Game
                 break;
             case WorldSaveWriter.Players:
             {
+                CrewFactionsClear(); // (nobody has met the NPC kinds: GameCrewFactions.cs)
                 FactionTable.Clear(); // (a world's own factions, if it has any, follow: WorldReadFactions)
                 var n = r.Count(8);
                 for (var k = 0; k < n; k++)
@@ -605,6 +608,9 @@ public sealed partial class Game
                 break;
             case WorldSaveWriter.ToolsTag:
                 WorldReadUpgrades(r, ws); // (tool upgrades: GameSandboxUpgrades.cs)
+                break;
+            case WorldSaveWriter.CrewTag:
+                WorldReadCrew(r, ws); // (credits and NPC standings: GameCrewFactions.cs)
                 break;
             case WorldSaveWriter.FirstsTag:
                 WorldReadFirsts(r, ws); // (milestones for firsts: GameMilestones.cs)
@@ -902,6 +908,7 @@ public sealed partial class Game
         QuarryArrive(p, rec); // (where they were on the first Ministry duty: GameQuarry.cs)
         UpgradesArrive(p, rec); // (their tool upgrades: GameSandboxUpgrades.cs)
         FirstsArrive(p, rec); // (their firsts: GameMilestones.cs)
+        CrewArrive(p, rec); // (their credits and NPC standings: GameCrewFactions.cs)
         var inv = SandboxInv.Of(p.Id);
         inv.Clear();
         foreach (var (def, count) in rec.Parts)

@@ -74,6 +74,39 @@ the second's driver shot, its gunner takes the wheel 2 s later; everyone aboard 
 
 Unverified: walkers through the Driving Module (the same keys); a convoy's own gunners hit their own convoy (no friends yet: phase 3).
 
+## Done (phase 3: factions and the captain)
+
+- `Crew/Factions/*.json` ("call-of-slop-npc-faction/1", `Source/Crew/CrewFactions.cs`): Traders, Mercenaries, Raiders, Militia,
+  Salvagers, Player Crew, Test Hostile; numbered in name order (`CrewFactions.Find` by name: saves keep the name). Keys: name, about,
+  styles, stance (players; factions), engage (sight, range, chase, onFoot), crew (spares, skill), morale, flee, boarding (weights per
+  `BoardAct`, surrenderMorale, scuttleDesperation), scuttle (when, arm 15, countdown 90, disarm 5, points), capture (release, drop, hire,
+  brig), hire (cost, wage), needs/wants (read by nothing). A bad file is REFUSED with its reason.
+- `Construct.NpcFaction` (server, saved with the crew block, v2: the kind's name, morale, losses). Who gets one: a nobody's generated
+  vehicle by its style (`CrewFactions.ForStyle`, else Raiders), a nobody's aircraft the same, a stabilizer set to Fights everyone is
+  Test Hostile, to Fights strangers on a nobody's ship Mercenaries; an owned ship's crew has none (the old rule: spares its faction).
+- The captain (`CrewWorld.Captain`, 1 Hz bodied, every 5 s seated): who hit the body (`Construct.LastHitBy`, set in `DamagePart` from
+  `DamageBy`) becomes a foe and a deed; hull share and losses make morale; goal Engage with a contact, Flee under the faction's hull or
+  morale line, else Hold (the drivers hold, patrol or follow). Flee: ships turn their nose away at full ahead (no racks), ground vehicles
+  drive away at speed, convoy place or not.
+- Hostility (`Game.Fights`): a foe, or standing below 0. Standing (`Game/GameCrewFactions.cs`) sits in the factions table's NPC rows
+  (`StoryNames` filled from Crew/Factions while the story is off; `StoryStanding` per player faction, `PlayerStanding` for someone in
+  none), already sent by `Msg.Factions`, so the Factions window shows "How the world's factions see you". Starts: hostile -50, wary 0,
+  neutral 20. A hit on a body -5 (once per captain look), on a crew body -3; the kind's enemies +1. Crews also fight other kinds'
+  awake crewed bodies they are hostile to (`Target`'s look).
+- Saves: the world's Crew section (`WorldSaveWriter.CrewTag`, "CREW"): each record's credits and own standings (by kind name), then the
+  player factions' standings. No new save file.
+- Protocol 331: `Msg.CrewSeats` gains u8 faction kind and u8 crew alive; the look line adds "(Militia, crew of 3)"; crew bodies are
+  named "[Militia] Name".
+- Tools: `--crew-check --crew-faction NAME` (with `--crew-convoy` too); window verbs `crewhit` (a server shortcut: 1 hp off a crewed
+  body as this player's shot), `npcstanding`.
+
+Verified (2026-11-16): `--crew-check --seconds 30 --crew-faction Traders`: the frigate turns and runs (172-179 degrees off its nose,
+1107 m to 1624 m), no shots. `--crew-faction Mercenaries`: fights as before (2762 shots, every act OK, 32 us a tick, 0 bytes). Window
+run, `crewconvoy Militia 2`: 25 s side by side, 0 shots; `crewhit`: "Militia now fight player 0 (standing -5)", both captains fight, 102
+shots in 6 s.
+
+Unverified: standing after a save and load; the Factions window's rows (no picture); two hostile NPC crews meeting.
+
 ## Next
 
 - Phase 1 is done (below). Phase 2 next: the ground `HelmDriver` from the brief, convoys and faction vehicles spawned crewed.

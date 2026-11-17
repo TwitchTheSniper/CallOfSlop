@@ -1572,6 +1572,8 @@ public sealed partial class Game : IDisposable
             return false;
         if (!CanDamage(attacker, victim))
             return false; // no friendly fire in team modes (your own grenade still hurts you)
+        if (victim.CrewSlot >= 0 && attacker.CrewSlot < 0 && attacker != victim)
+            CrewBodyHit(victim, attacker); // (a deed against the crew's faction: GameCrewFactions.cs)
         victim.LastCombatTime = now;
         attacker.LastCombatTime = now;
         victim.LastHurtTime = now; // health regen waits (Health.cs)

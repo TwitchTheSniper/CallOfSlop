@@ -44,6 +44,13 @@ public static partial class Program
                     Console.WriteLine($"[windowshot] crewconvoy: {asked ?? "asked"}");
                 }
                 return true;
+            case "crewhit": // "crewhit": host, a server shortcut: this player's shot (DamageBy) takes 1 hp off a part of the first crewed body, as a round would
+                if (g.IsServer)
+                    Console.WriteLine($"[windowshot] crewhit: {g.CrewHitFirst(me)}");
+                return true;
+            case "npcstanding": // "npcstanding": how each NPC faction kind sees this player, as this peer's factions table has it
+                Console.WriteLine($"[windowshot] npcstanding: {g.CrewStandingLine(me)}");
+                return true;
             case "crewshoot": // "crewshoot pilot|gunner|spare": the host shoots the first crew body with that job, as a player's round does (DamagePlayer)
                 if (g.IsServer && g.CrewShoot(me, arg) is { } shot)
                     Console.WriteLine($"[windowshot] crewshoot: {shot}");

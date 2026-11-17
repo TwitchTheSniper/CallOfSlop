@@ -24,6 +24,7 @@ public sealed partial class Game : ICrewHost
         foreach (var p in Players.Values)
             if (p.Alive && p.Bot == null)
                 _crewPeople[n++] = p.Position;
+        CrewFactionsTick();
         Crew.Step(Constructs, World.Query, this, _crewPeople.AsSpan(0, n));
         if (Crew.Events.Count > 0)
             CrewLog();
@@ -38,9 +39,12 @@ public sealed partial class Game : ICrewHost
     {
         if (!IsServer || c.Owner != 255 || c.Wreck || c.StabCount > 0 || c.DriveSeat < 0 || Crew.Has(c.Id))
             return;
-        Crew.Crew(c, ShipAiMode.Strangers);
+        Crew.Crew(c, ShipAiMode.Strangers, faction: CrewFactionFor(c));
         CrewLog();
     }
+
+    /// <summary>A nobody's generated craft's faction kind: the one its style belongs to, else Raiders.</summary>
+    public static byte CrewFactionFor(Construct c) => c.Brief is { } b && CrewFactions.ForStyle(b.Style) is var f and > 0 ? f : CrewFactions.Find("Raiders");
 
     private void CrewLog()
     {
@@ -62,9 +66,9 @@ public sealed partial class Game : ICrewHost
         var bot = new Player
         {
             Id = id,
-            Name = $"[CREW] {CrewNames.Of(crew.Name[m])}",
+            Name = $"[{(CrewFactions.Of(ship?.Faction ?? 0)?.Name ?? "CREW")}] {CrewNames.Of(crew.Name[m])}",
             Bot = new BotBrain(BotDifficulty.Normal, BotPersonality.Tactician, (int)crew.Uid[m]),
-            Team = ship?.Mode == ShipAiMode.Strangers && c.Owner != 255 ? SbFriendlyTeam : SbHostileTeam,
+            Team = ship?.Mode == ShipAiMode.Strangers && c.Owner != 255 && ship.Faction == 0 ? SbFriendlyTeam : SbHostileTeam,
             CrewSlot = m,
         };
         Players[id] = bot;
@@ -158,7 +162,7 @@ public sealed partial class Game : ICrewHost
     public List<string> CrewLines()
     {
         var lines = new List<string>();
-        var bodies = Players.Values.Count(p => p.Name.StartsWith("[CREW]", StringComparison.Ordinal));
+        var bodies = Players.Values.Count(p => p.CrewSlot >= 0 || !IsServer && p.Name.StartsWith('['));
         lines.Add($"{(IsServer ? "host" : "client")}: {bodies} crew bodies among the players, stand-ins on {CrewStandIns.Count} bodies ({CrewStandIns.Values.Sum(a => a.Length)} seats: {string.Join(", ", CrewStandIns.Select(kv => $"{kv.Key}: {string.Join("/", kv.Value)}"))})");
         for (var i = 0; i < Crew.ShipHigh; i++)
             if (Crew.Ships[i] is { } s && Constructs.Get(s.Body) is { } c)
@@ -182,41 +186,78 @@ public sealed partial class Game : ICrewHost
     // ---- Targets ------------------------------------------------------------------------------------------------------------------
 
     /// <summary>
-    /// The crew's contact: the nearest living person or bot it fights within <see cref="ShipAi.EngageRange"/>, as what it shoots at (the body
-    /// they sit or ride in, else themselves). Looked for again when <paramref name="look"/> (every half second, staggered); between looks the
-    /// same contact is followed. Crew bodies are never contacts (crews fighting crews is phase 3's factions).
+    /// The crew's contact: the nearest living person or bot it fights within its faction's sight (<see cref="ShipAi.EngageRange"/> with none), as
+    /// what it shoots at (the body they sit or ride in, else themselves), or the nearest awake crewed body of a faction its own is hostile to.
+    /// Looked for again when <paramref name="look"/> (every half second, staggered); between looks the same contact is followed.
     /// </summary>
-    bool ICrewHost.Target(Construct c, ShipAiMode mode, ref byte contact, bool look, out ShipAiTarget t)
+    bool ICrewHost.Target(Construct c, CrewShip s, bool look, out ShipAiTarget t)
     {
         t = default;
         var com = c.WorldCom;
+        var def = CrewFactions.Of(s.Faction);
+        var sight = def?.Sight ?? ShipAi.EngageRange;
         if (look)
         {
-            contact = 255;
-            var best = ShipAi.EngageRange * ShipAi.EngageRange;
+            s.Contact = 255;
+            s.ContactBody = 0;
+            var best = sight * sight;
             foreach (var p in Players.Values)
             {
-                if (!Fights(c, mode, p) || !CrewAim(c, p, out var at, out _, out _))
+                if (!Fights(c, s, p) || !CrewAim(c, p, out var at, out _, out _))
                     continue;
                 var d2 = Vector3.DistanceSquared(at, com);
                 if (d2 >= best)
                     continue;
                 best = d2;
-                contact = p.Id;
+                s.Contact = p.Id;
             }
+            if (def != null)
+                for (var i = 0; i < Crew.ShipHigh; i++)
+                {
+                    if (Crew.Ships[i] is not { Tier: not CrewTier.Asleep, Faction: not 0 } o || o == s || o.MemberCount == 0 || def.ToFactions[o.Faction] != CrewStance.Hostile
+                        || Constructs.Get(o.Body) is not { Wreck: false } oc)
+                        continue;
+                    var d2 = Vector3.DistanceSquared(oc.WorldCom, com);
+                    if (d2 >= best)
+                        continue;
+                    best = d2;
+                    s.Contact = 255;
+                    s.ContactBody = o.Body;
+                }
         }
-        if (contact == 255 || !Players.TryGetValue(contact, out var q) || !Fights(c, mode, q) || !CrewAim(c, q, out var where, out var vel, out var body)
-            || Vector3.DistanceSquared(where, com) > ShipAi.EngageRange * ShipAi.EngageRange * 1.21f)
+        if (s.ContactBody != 0)
         {
-            contact = 255;
+            if (Constructs.Get(s.ContactBody) is { Wreck: false } oc && Crew.ShipOf(s.ContactBody) is { MemberCount: > 0 } && Vector3.DistanceSquared(oc.WorldCom, com) < sight * sight * 1.21f)
+            {
+                t = new ShipAiTarget { At = oc.WorldCom, Vel = oc.Vel, Body = oc.Id, Player = 255 };
+                return true;
+            }
+            s.ContactBody = 0;
             return false;
         }
-        t = new ShipAiTarget { At = where, Vel = vel, Body = body, Player = contact };
+        if (s.Contact == 255 || !Players.TryGetValue(s.Contact, out var q) || !Fights(c, s, q) || !CrewAim(c, q, out var where, out var vel, out var body)
+            || Vector3.DistanceSquared(where, com) > sight * sight * 1.21f)
+        {
+            s.Contact = 255;
+            return false;
+        }
+        t = new ShipAiTarget { At = where, Vel = vel, Body = body, Player = s.Contact };
         return true;
     }
 
-    private bool Fights(Construct c, ShipAiMode mode, Player p) =>
-        p.Alive && p.CrewSlot < 0 && !(mode == ShipAiMode.Strangers && c.Owner != 255 && Factions.Shares(c.Owner, p.Id));
+    /// <summary>
+    /// Whether crew <paramref name="s"/> fights <paramref name="p"/>: with a faction kind, anyone who has hit its body or whose standing with the
+    /// kind is below 0 (a hostile kind starts there, a wary or neutral one above: bot-brain.md section 7); with none, the Flight Stabilizer's
+    /// settings (Fights strangers spares its owner's faction).
+    /// </summary>
+    private bool Fights(Construct c, CrewShip s, Player p)
+    {
+        if (!p.Alive || p.CrewSlot >= 0)
+            return false;
+        if (s.Faction == 0)
+            return !(s.Mode == ShipAiMode.Strangers && c.Owner != 255 && Factions.Shares(c.Owner, p.Id));
+        return s.Foe(p.Id) || CrewStanding(s.Faction, p.Id) < 0;
+    }
 
     /// <summary>Where a crew shoots at <paramref name="p"/>: the body they sit or ride in, else themselves. False: aboard this one (a boarder is the crew's business, not its guns').</summary>
     private bool CrewAim(Construct c, Player p, out Vector3 at, out Vector3 vel, out ushort body)
@@ -247,7 +288,7 @@ public sealed partial class Game : ICrewHost
     private void CrewSendSeats()
     {
         foreach (var gone in Crew.GoneBodies)
-            CrewSeatsOut(gone, 0);
+            CrewSeatsOut(gone, 0, 0, 0);
         Crew.GoneBodies.Clear();
         var sent = 0;
         var refresh = ++_crewSendAt % (5 * World.TickRate) == 0;
@@ -256,7 +297,7 @@ public sealed partial class Game : ICrewHost
             if (Crew.Ships[i] is not { } s || !s.SeatsDirty && !refresh)
                 continue;
             s.SeatsDirty = false;
-            CrewSeatsOut(s.Body, s.Tier == CrewTier.Asleep && s.Near > CrewStandInFar ? 0 : Crew.StandIns(s, _crewParts));
+            CrewSeatsOut(s.Body, s.Tier == CrewTier.Asleep && s.Near > CrewStandInFar ? 0 : Crew.StandIns(s, _crewParts), s.Faction, Crew.Alive(s));
             sent++;
         }
     }
@@ -264,35 +305,38 @@ public sealed partial class Game : ICrewHost
     /// <summary>Stand-ins aren't sent for an asleep crew this far from everyone (m).</summary>
     public const float CrewStandInFar = 4000;
 
-    private void CrewSeatsOut(ushort body, int n)
+    private void CrewSeatsOut(ushort body, int n, byte faction, int alive)
     {
         var w = _w;
         w.Begin(Msg.CrewSeats).U16(body).U8((byte)n);
         for (var k = 0; k < n; k++)
             w.U16(_crewParts[k]);
+        w.U8(faction).U8((byte)alive);
         if (!Net.IsOffline)
             Net.Broadcast(w.Span, PacketReliability.ReliableOrdered);
-        CrewSeatsSet(body, _crewParts.AsSpan(0, n)); // (the host draws them too)
+        CrewSeatsSet(body, _crewParts.AsSpan(0, n), faction, alive); // (the host draws them too)
     }
 
     /// <summary>A joiner hears every crewed body's stand-ins.</summary>
     private void SendCrewSeats(RakNetGUID to)
     {
-        foreach (var (body, parts) in CrewStandIns)
+        foreach (var (body, info) in CrewInfo)
         {
+            var parts = CrewStandIns.TryGetValue(body, out var ps) ? ps : [];
             _w.Begin(Msg.CrewSeats).U16(body).U8((byte)parts.Length);
             foreach (var p in parts)
                 _w.U16(p);
+            _w.U8(info.Faction).U8(info.Alive);
             Net.SendTo(to, _w.Span, PacketReliability.ReliableOrdered);
         }
     }
 
-    /// <summary>Client: Msg.CrewSeats (u16 body, u8 n, n x u16 seat part).</summary>
+    /// <summary>Client: Msg.CrewSeats (u16 body, u8 n, n x u16 seat part, u8 faction kind, u8 crew alive: protocol 331).</summary>
     private void ReadCrewSeats(ref PacketReader r)
     {
         var body = r.U16();
         int n = r.U8();
-        if (n > CrewWorld.MaxCrewPerBody || !r.Has(n * 2))
+        if (n > CrewWorld.MaxCrewPerBody || !r.Has(n * 2 + 2))
         {
             Console.WriteLine($"[crew] a stand-in list of {n} seats for construct {body} didn't read: dropped");
             return;
@@ -300,11 +344,24 @@ public sealed partial class Game : ICrewHost
         Span<ushort> parts = stackalloc ushort[n];
         for (var k = 0; k < n; k++)
             parts[k] = r.U16();
-        CrewSeatsSet(body, parts);
+        var faction = r.U8();
+        var alive = r.U8();
+        CrewSeatsSet(body, parts, faction, alive);
     }
 
-    private void CrewSeatsSet(ushort body, ReadOnlySpan<ushort> parts)
+    /// <summary>Client (and the host): per crewed body, its faction kind and crew alive (the look line's). Never read by the simulation.</summary>
+    public readonly Dictionary<ushort, (byte Faction, byte Alive)> CrewInfo = new();
+
+    /// <summary>The look line's crew note for a body ("Raiders, crew of 4"), or null.</summary>
+    public string? CrewLook(ushort body) => CrewInfo.TryGetValue(body, out var i) && i.Alive > 0
+        ? $"{CrewFactions.Of(i.Faction)?.Name ?? "crewed"}, crew of {i.Alive}" : null;
+
+    private void CrewSeatsSet(ushort body, ReadOnlySpan<ushort> parts, byte faction, int alive)
     {
+        if (alive > 0 || !parts.IsEmpty)
+            CrewInfo[body] = (faction, (byte)Math.Min(alive, 255));
+        else
+            CrewInfo.Remove(body);
         if (parts.IsEmpty)
         {
             CrewStandIns.Remove(body);

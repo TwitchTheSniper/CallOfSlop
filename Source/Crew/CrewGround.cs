@@ -97,6 +97,13 @@ public sealed partial class ShipAi
         var com = c.WorldCom;
         var up = GravityFrames.UpAt(com);
         var brief = c.Brief;
+        if (has && Ship is { Goal: CrewGoal.Flee })
+        {
+            // Its captain runs: away from the target at full speed, whatever its place in a convoy.
+            _state = 9;
+            _stateDist = dist;
+            return Drive(world, c, com + Level(com - t.At, up) * 60, GroundClose * 2, up, stopAt: false);
+        }
         var leader = brief is { ConvoyIndex: > 0, Leader: not 0 } && world.Get(brief.Leader) is { Wreck: false } l && l.Id != c.Id ? l : null;
         if (leader != null)
         {
@@ -166,6 +173,16 @@ public sealed partial class ShipAi
                 return (ushort)(Buttons.Forward | (side == 1 ? Buttons.Left : side == 3 ? Buttons.Right : 0));
         }
         return (ushort)Buttons.Jump;
+    }
+
+    /// <summary>Its captain runs (CrewGoal.Flee): full ahead, no sliding about (the nose is turned away by the look). False: it fights.</summary>
+    private bool Fleeing(ref ushort pilot)
+    {
+        if (Ship is not { Goal: CrewGoal.Flee })
+            return false;
+        pilot = (ushort)((pilot & ~(ConstructParts.KeyRollLeft | ConstructParts.KeyRollRight | (ushort)Buttons.Back)) | (ushort)Buttons.Forward);
+        _state = 9;
+        return true;
     }
 
     /// <summary>W, S, A, D and the brake to go towards <paramref name="to"/> at about <paramref name="speed"/> m/s; a vehicle stuck with its throttle open backs off a moment.</summary>

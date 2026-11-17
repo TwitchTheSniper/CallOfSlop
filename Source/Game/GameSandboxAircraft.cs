@@ -77,7 +77,7 @@ public sealed partial class Game
         AircraftAutopilot.Launch(Constructs, c, speed);
         var pilot = new AircraftPilot(c, order, over, radius, height) { CrewBodies = Crew.IsBody };
         _pilots.Add(pilot);
-        Crew.Crew(c, ShipAiMode.Strangers, air: true); // (its pilot sits at the helm: killed, the craft holds or glides; GameCrew.cs)
+        Crew.Crew(c, ShipAiMode.Strangers, air: true, faction: c.Owner == 255 ? CrewFactionFor(c) : (byte)0); // (its pilot sits at the helm: killed, the craft holds or glides; GameCrew.cs)
         CrewLog();
         Console.WriteLine($"[aircraft] {name} as construct {c.Id} launched {height:0} m up{(plane ? $" at {speed:0} m/s" : "")}; pilot: {order} about ({over.X:0}, {over.Z:0}), radius {pilot.Radius:0}");
         done?.Invoke(c, pilot, "");

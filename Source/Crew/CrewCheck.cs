@@ -32,13 +32,22 @@ public static class CrewCheck
             Console.WriteLine($"no blueprint named \"{(shipBp == null ? shipName : targetName)}\" among {ConstructBuild.Blueprints.Count} ({ConstructBuild.RefusedBlueprints.Count} refused: {string.Join("; ", ConstructBuild.RefusedBlueprints.Take(3))})");
             return 1;
         }
+        _faction = Arg("--crew-faction") is { } cf ? CrewFactions.Find(cf) : (byte)0;
         if (Arg("--crew-convoy") is { } convoy)
             return Convoy(convoy.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries), seconds > 0 && Arg("--seconds") != null ? seconds : 60) ? 0 : 1;
+        _faction = Arg("--crew-faction") is { } fn ? CrewFactions.Find(fn) : (byte)0;
+        if (Arg("--crew-faction") is { } fname && _faction == 0)
+        {
+            Console.WriteLine($"no faction \"{fname}\" in Crew/Factions");
+            return 1;
+        }
         var ok = seconds <= 0 || Fight(shipBp, targetBp, shipName, targetName, range, seconds, still);
         if (scale > 0)
             ok &= Scale(scale, Arg("--crew-scale-ship") ?? "Bandit Helicopter 1");
         return ok ? 0 : 1;
     }
+
+    private static byte _faction;
 
     private static Construct Build(ConstructWorld w, ConstructBuild.Blueprint bp, Vector3 ground, float yaw, VehicleDriveCheck.CheckPlace place)
     {
@@ -58,7 +67,7 @@ public static class CrewCheck
         var ship = Build(w, shipBp, Vector3.Zero, MathF.PI, place); // (facing south, away from the target: it must turn to fight)
         var target = Build(w, targetBp, new Vector3(0, 0, -range), 0, place);
         var crew = new CrewWorld();
-        var cs = crew.Crew(ship, ShipAiMode.Everyone)!;
+        var cs = crew.Crew(ship, ShipAiMode.Everyone, faction: _faction)!;
         var tSeat = target.StabCount > 0 ? ConstructFlight.SeatFor(target, target.Stabs[0].Part) : -1;
         var hp0 = Health(target);
         var shots0 = w.ShotsFired;
@@ -252,7 +261,7 @@ public static class CrewCheck
             if (brief.Attach(c) is { } why)
                 Console.WriteLine($"convoy: {name}'s brief doesn't fit ({why})");
             back += c.LocalMax.Z - c.LocalMin.Z + VehicleConvoys.Gap + 4;
-            var cs = crew.Crew(c, ShipAiMode.Everyone);
+            var cs = crew.Crew(c, ShipAiMode.Everyone, faction: _faction);
             Console.WriteLine($"convoy: {name} as {c.Id} ({c.PartCount} parts, {c.Mass / 1000:0.0} t, drive seat {c.DriveSeat}, {c.GunCount} guns): {(cs != null ? crew.Describe(cs) : "NO CREW")}");
             bodies.Add(c);
         }
