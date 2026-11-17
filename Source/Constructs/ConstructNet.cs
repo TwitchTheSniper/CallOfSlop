@@ -1650,7 +1650,7 @@ public static partial class ConstructNet
     /// <summary>A joint's load against its rating in a byte: hundredths, up to 2.55 (the bar's end).</summary>
     public static byte OverByte(float over) => (byte)Math.Clamp(MathF.Round(over * 100), 0, 255);
 
-    private static int PoseSize(Construct c) => PoseBytes + Math.Min(c.JointCount, PoseJoints) * 5 + 4 + (c.HasLogic ? Math.Min(SignalParts(c), PoseSignals) : 0) + 3 + Math.Min(c.RotorCount + c.ControlCount, PoseAir) + WalkSize(c) + (c.CapCapacity > 0 ? 1 : 0) + (c.PlantCount > 0 ? 1 : 0); // (+ 1: the capacitors' share, protocol 331; + 1: the plants', 335)
+    private static int PoseSize(Construct c) => PoseBytes + Math.Min(c.JointCount, PoseJoints) * 5 + 4 + (c.HasLogic ? Math.Min(SignalParts(c), PoseSignals) : 0) + 3 + Math.Min(c.RotorCount + c.ControlCount, PoseAir) + WalkSize(c) + (c.CapCapacity > 0 ? 1 : 0) + (c.PlantCount > 0 ? 2 + (c.Gen != GenState.None ? 6 : 0) : 0); // (+ 1: the capacitors' share, protocol 331; + 1: the plants', 335; + 1 the generator set's state, + 6 with a set, 339)
 
     /// <summary>Rotors and control surfaces a pose carries at most: a window that turns (protocol 120).</summary>
     public const int PoseAir = 24;
@@ -2150,7 +2150,7 @@ public static partial class ConstructNet
                 SampleFeet(c, double.NaN); // (as last heard)
             }
             var fwd = Vector3.Transform(c.DriveFwd, c.Rot);
-            var anchoredDrive = c.Anchored && c.EngineRunning && c.HasPowertrain; // (cs03: an anchored base's wheels turn at the engine's speed, from the rpm in its pose)
+            var anchoredDrive = c.Anchored && c.EngineRunning && c.HasPowertrain && ConstructPhysics.PtoLive(c); // (cs03: an anchored base's wheels turn at the engine's speed, from the rpm in its pose; not when only a generator set runs it)
             for (var k = 0; k < c.WheelCount; k++)
             {
                 ref var wh = ref c.Wheels[k];

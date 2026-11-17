@@ -17,7 +17,7 @@ public static class ConstructPower
 
     /// <summary>Does part <paramref name="i"/> work as far as power goes (always, on a construct that isn't electrical, or for a part that needs none)?</summary>
     public static bool On(Construct c, int i) =>
-        i >= 0 && i < c.PartCount && c.PtoDriven[i] ? c.EngineRunning // (a joint on a power take-off runs from the engine)
+        i >= 0 && i < c.PartCount && c.PtoDriven[i] ? ConstructPhysics.PtoLive(c) // (a joint on a power take-off runs from the engine; not one a generator set alone runs)
         : !c.Electrical || i < 0 || i >= c.PartCount || !c.Parts[i].D.Electric || c.PowerOn && c.Parts[i].Powered;
 
     /// <summary>With the caches: which parts a working battery's links reach, what the batteries hold, the alternators on the engine.</summary>

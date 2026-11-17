@@ -18,8 +18,8 @@ ENGINEKIT.md "Generator sets".
 4. **Engine Kit**: `EngineKitGenset` (`--genset`, `--genset-ship`, `--genset-run`, `--genset-for`), two shipped Militia sets.
 5. **Factory kit hook**: `Source/FactoryKit/FactoryGenset.cs`, additive (the kit's rework is on `claude/cargo-parts-factory`).
 
-Also fixed on the way: a running engine's stack smoke divided by the flywheel file's torque, not the modular engine's sums
-(`ConstructPlant.Step` now reads `EngineDef`), so every modular engine smoked flat out.
+A set's smoke share (`Construct.SmokeLevel`) follows the head's load, from the engine's own sums (`EngineDef`); a modular engine that no set
+runs keeps the old rule (its flywheel file burns no fuel, so it gives no stack smoke share: the engine's own puffs are EngineFx's).
 
 ## Measured (`--genset-run`, 2026-11-17, cloud box)
 

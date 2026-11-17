@@ -196,8 +196,8 @@ public static class ConstructDrillDrive
         if (feed >= 0)
         {
             ref var f = ref c.ShaftFeeds![feed];
-            if (!ConstructPhysics.DriveOn(c))
-                state = ShaftState.EngineOff;
+            if (!ConstructPhysics.DriveAsked(c))
+                state = ShaftState.EngineOff; // (an engine a generator set runs turns no drill)
             else if ((f.GateMask & ~c.GateOpen) != 0)
                 state = ShaftState.ClutchOut;
             else
