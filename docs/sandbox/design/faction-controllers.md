@@ -426,3 +426,14 @@ These override section 6 where they differ.
 7. **Captured admirals and captains, interrogation:** a captured admiral is a valuable prisoner (credit ransom; capture -25 relations, release +15) and can reveal intelligence: their group of captains and the admirals they coordinate with (positions shown for a while). Captains too, to a lesser extent: their ship, crew, and where disembarked crew are and what they are doing. **Interrogation** is how players gain it; admirals' and captains' resistance varies. **Add an Interrogator crew role.**
 8. **Convoys are led by an admiral.**
 9. **Names for both admirals and captains**, on the look line, in news and in interrogation results.
+
+## Karl's answers (2026-11-17, via the user in a call with Karl)
+
+These settle section 12 and override sections 4, 5 and 7 where they differ.
+
+1. **Holding a planet: majority control, weighted by key sites.** A power that holds a majority of a planet's control takes ownership; key sites (spaceports, refineries, mines, outposts) add control by what they are and how rare they are on that planet: if a planetoid has one spaceport, taking and holding it means a lot; if it has fifty, one means very little. Player factions hold planets the same way.
+2. **Diplomacy: phase 1's model, plus more pact types** (trade agreements, tribute, vassalage and others), and a **wider relations scale**: from **blood enemies who can never make peace** at the bottom to **wants to join and merge with you** at the top (merging powers is a real outcome). Rework the bands accordingly.
+3. **Command view: both** the FACTIONS layer (fog of war, threats flagged) and later fleet orders for a player's own ships; Karl reviews changes to his command view.
+4. **Ships: use the existing ships as placeholders** per role for now so the systems can be tested; vehicle and ship generation is in progress and undecided, and the role lists and generation tools are to be filled out later.
+5. **SURVIVAL.md:** faction politics moves from ideas to decided, with powers made from kinds and a pointer here (done 2026-11-17).
+6. **Scale: go for 1,000 faction ships as real bodies near players now** (design for it from the start, measure as you go).
