@@ -172,6 +172,8 @@ public static unsafe partial class Program
             }
             SeatedFinger(g, me, in h, now); // (a pilot's finger on a Flight Panel: Program.SandboxFlight.cs)
             SeatedRadar(g, me); // (the radar key: Program.SandboxRadar.cs)
+            if (Pressed(GameAction.SeatDampeners) && g.Constructs.Get(h.SeatBody) is { } ship && ConstructFlight.HasDampeners(ship))
+                g.SandboxSend(CActKind.Dampeners, body: h.SeatBody); // (a ship's inertia dampeners off or on: ConstructFlight.ToggleDampeners)
             return true;
         }
         if (_sbSeatKeys > 0)

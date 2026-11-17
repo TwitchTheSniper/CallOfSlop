@@ -86,6 +86,7 @@ public sealed class FlightParts : IPartGenerator
         Hidden("homeY"),
         Hidden("homeX"),
         Hidden("homeZ"),
+        Toggle("dampeners", "Inertia dampeners", "Control", true, "Ship keys: on, it cancels its drift and stops when let go. Off, it coasts and the keys only burn: match a ship by hand. The seat's dampener key flips it. The autopilot and orders fly with them on."),
         Choice("aiCrew", "AI crew", "Crew", ["Off", "Fights strangers", "Fights everyone"], 0, "A crew flies and fights it from its seats: it closes on the nearest target in 2.5 km, keeps its guns' range and fires. Strangers: outside its owner's faction. A player at the helm takes over."),
     ];
 
