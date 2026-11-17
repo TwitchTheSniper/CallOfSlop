@@ -20,7 +20,7 @@ public static class SandboxKeys
     public static string Drive = "", DriveStart = "", DriveShift = "", Fly = "", FlyPlane = "", FlyRotor = "", FlyRocket = "", FlyShip = "", FlyShipKeys = "", Gunner = "", GunnerTurrets = "", GetOut = "";
 
     /// <summary>The pilot's key lines on a rail or in a dock, and an ejection seat's (ConstructCarrier.Hint).</summary>
-    public static string PilotHook = "", PilotLaunch = "", PilotUndock = "", PilotEject = "", PilotOpenChute = "", PilotOpenGlider = "", PilotCut = "", PilotGlide = "";
+    public static string EvaDock = "", EvaFly = "", PilotHook = "", PilotLaunch = "", PilotUndock = "", PilotEject = "", PilotOpenChute = "", PilotOpenGlider = "", PilotCut = "", PilotGlide = "";
 
     /// <summary>The physics gun's keys.</summary>
     public static string PhysGun = "";
@@ -115,6 +115,8 @@ public static class SandboxKeys
         PilotLaunch = $"{K(GameAction.SeatHook)}: launch";
         PilotUndock = $"{K(GameAction.SeatHook)}: undock";
         PilotEject = $"{K(GameAction.SeatEject)}: eject";
+        EvaDock = $"{K(GameAction.SeatEject)}: detach and fly the MMU, {Use}: get out (it stays docked)";
+        EvaFly = $"MMU: {K(GameAction.MoveForward)}/{K(GameAction.MoveBack)}: along the look, {K(GameAction.MoveLeft)}/{K(GameAction.MoveRight)}: across, {K(GameAction.Jump)}/{K(GameAction.CrouchHold)}: up/down";
         PilotOpenChute = $"{K(GameAction.Jump)}: parachute";
         PilotOpenGlider = $"{K(GameAction.Jump)}: glider";
         PilotCut = $"{K(GameAction.Jump)}: cut away";

@@ -350,7 +350,11 @@ public sealed partial class Game
                 SandboxRiderGrab(p); // (the held thing follows the look)
             else if (Constructs.PlayerSpotCount < Constructs.PlayerSpots.Length)
                 Constructs.PlayerSpots[Constructs.PlayerSpotCount++] = p.Position; // (proximity sensors)
+            if ((p.Eva & Eva.Mmu) != 0 && (p.Sim.Gear & PilotGear.Mmu) == 0)
+                p.Sim.JetFuel = p.MmuFuel; // (a teleport made a new MoveState: the pack's tank is still the pack's)
             p.Sim.Gear = SandboxWorn(p);
+            p.MmuFuel = p.Sim.JetFuel;
+            SandboxEvaTick(p, now); // (breath in vacuum, a suit's air: GameSandboxEva.cs)
             if (!h.Seated)
             {
                 if (h.RemoteBody != 0)
@@ -381,6 +385,8 @@ public sealed partial class Game
             c.Parts[seat].Keys = (ushort)((ushort)b | (h.SeatKeys & 0x7F00) | CPart.Occupied); // (input readers; ConstructLogic.cs)
             if ((c.Parts[seat].Keys & ~keysWere & ConstructParts.KeyHook) != 0)
                 ConstructCarrier.PilotKey(Constructs, c); // (the rail, the clamp, the bay)
+            if (c.Parts[seat].D.Eva == EvaPart.Dock && SandboxEvaSeated(p, c, seat, c.Parts[seat].Keys, keysWere))
+                continue; // (an MMU dock: refuelling, or they flew off on the pack: GameSandboxEva.cs)
             if (c.Parts[seat].D.SeatEject && ((c.Parts[seat].Keys & ~keysWere & ConstructParts.KeyEject) != 0 || c.Parts[seat].InCount > 0 && c.Parts[seat].In >= 0.5f))
             {
                 SandboxEject(p, c, seat);
@@ -1188,6 +1194,8 @@ public sealed partial class Game
                 var part = r.U16();
                 if (LoreUse(p, body, part, eye))
                     return null; // (a lore item: looked at, GameStoryLore.cs)
+                if (SandboxEvaUse(p, body, part, out var evaHandled) is var evaWhy && evaHandled)
+                    return evaWhy; // (a suit locker or an MMU dock: GameSandboxEva.cs)
                 if (ConstructAmmo.FillInHand(Constructs, ref hands.Hand(p.Id), eye, body, part, hands.InfiniteParts) is { } filled)
                     return filled; // (a magazine in hand at a store: filled from it, or swapped for a fitted one, ConstructAmmo.cs)
                 if (SandboxHoseUse(p, body, part, out var hoseWhy))
@@ -2677,6 +2685,8 @@ public sealed partial class Game
     {
         ref var h = ref SandboxHands.Hand(me.Id);
         ShellHud(me, lines, orange, dim); // (wearing a robot shell: GameRobotShell.cs)
+        if (SandboxEvaHud(me, in h, lines, white, dim, orange, red))
+            return; // (strapped into an MMU dock: GameSandboxEva.cs)
         if (h.Seated && SandboxRemoteHud(me, in h, lines, white, dim, red))
             return;
         if (h.Seated && Constructs.Get(h.SeatBody) is { } gunship && gunship.SeatKindOf(h.SeatPart) == SeatKind.Gunner && GunOfSeat(gunship, h.SeatPart) is var gk and >= 0)

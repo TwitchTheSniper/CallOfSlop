@@ -577,7 +577,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 335: machine sounds (SynthMachine.cs, GameMachineSounds.cs): a CPose whose asleep byte has bit 3 (PosePlant) ends with a u8 after
     //   the capacitors' byte, the share of its power plants' whole output they make (a reactor's hum follows it); Msg.MachineSound
     //   at the end of Msg (u8 Sfx, 3 x f32 where: a Robot Shell Dock's clamps).
-    public const ushort ProtocolVersion = 335;
+    // 336: spacewalk gear (docs/sandbox/EVA.md, GameSandboxEva.cs): the roster carries a byte a player after the uniform, their
+    //   Eva bits (a space suit, an MMU on it).
+    public const ushort ProtocolVersion = 336;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

@@ -212,6 +212,10 @@ public sealed class PlayerRig
             _packDraw.Frame = BackpackRender.OnBack(p) * upper;
         _packDraw.Canopy = seated ? (byte)0 : p.Sim.Canopy;
         _packDraw.BodyFrame = upper;
+        _packDraw.Mmu = EvaRender.Wears(p); // (a spacewalker's pack: EvaRender.cs)
+        if (_packDraw.Mmu)
+            _packDraw.MmuFrame = EvaRender.OnBack(p) * upper;
+        _packDraw.Time = time;
         var tool = ToolRender.ThirdPerson(p, gunPose, upper, time, ref _toolDraw.Frame);
         _tool.Visible = tool;
         Gun.Root.Visible = !tool;
