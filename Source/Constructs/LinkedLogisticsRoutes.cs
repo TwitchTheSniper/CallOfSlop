@@ -398,6 +398,27 @@ public static class LinkRoutes
         return false;
     }
 
+    /// <summary>A route's stops as the command view's layer draws its legs (<see cref="LinkFar"/>, the one it flies to now flagged Next), or
+    /// null when they are as <paramref name="had"/> says.</summary>
+    public static LinkFar[]? FarOf(LinkRoute? r, LinkFar[] had)
+    {
+        var n = r?.N ?? 0;
+        var same = n == had.Length;
+        for (var i = 0; i < n && same; i++)
+        {
+            ref var st = ref r!.Stops[i];
+            same = had[i].World == st.World && had[i].Body == st.Body && had[i].Name == st.Name && had[i].Flags == StopFlags(r, i);
+        }
+        if (same)
+            return null;
+        var far = new LinkFar[n];
+        for (var i = 0; i < n; i++)
+            far[i] = new LinkFar { World = r!.Stops[i].World, Body = r.Stops[i].Body, Name = r.Stops[i].Name, Flags = StopFlags(r, i) };
+        return far;
+    }
+
+    private static byte StopFlags(LinkRoute r, int i) => (byte)(i == r.At && !r.Suspended && r.Phase is not (RoutePhase.Idle or RoutePhase.Done) ? LinkFar.Next : 0);
+
     /// <summary>A stop it can't land at: the trade is settled at the dock's rates, the cargo moved by the manifest (the user's answer 5).</summary>
     private static void Settle(ConstructWorld world, string key, Construct c, LinkPart lp, LinkRoute r, in LinkStop stop)
     {
