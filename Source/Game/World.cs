@@ -655,6 +655,8 @@ public sealed class Player
     public bool InShell; // wearing a robot shell: drawn as a robot (GameRobotShell.cs; every peer hears it)
     [MatchState]
     public ushort ShellChair, ShellSeat; // in a shell: the chair's construct and seat part, where their own body is drawn sitting (0: none)
+    [MatchState]
+    public ShellCond ShellWear; // in a shell: its works' wear (ShellWear.cs; the server's, every peer hears it with Msg.Shell)
     public ushort Kills;
     public ushort Deaths;
     public byte Team = Game.NoTeam; // team modes: 0 (Blue) or 1 (Red); replicated in the mode state
@@ -771,6 +773,7 @@ public sealed class Player
         Breath = CallOfSlop.Eva.BreathSeconds;
         SuitAir = CallOfSlop.Eva.SuitSeconds;
         ShellChair = ShellSeat = 0;
+        ShellWear = default;
         SbOwner = 255;
         SbBody = SbTag = SbBoarding = 0;
         SbPart = 0;

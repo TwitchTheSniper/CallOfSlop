@@ -579,7 +579,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   at the end of Msg (u8 Sfx, 3 x f32 where: a Robot Shell Dock's clamps).
     // 336: spacewalk gear (docs/sandbox/EVA.md, GameSandboxEva.cs): the roster carries a byte a player after the uniform, their
     //   Eva bits (a space suit, an MMU on it).
-    public const ushort ProtocolVersion = 336;
+    // 337: robot shell wear (GameShellWear.cs, ShellWear.cs): Msg.Shell ends with 8 x u8, the shell's works' wear; CfgKey gains ShellWear0..3
+    //   (a Robot Shell's hidden settings) at its end, and the six Shell spare parts move part ids.
+    public const ushort ProtocolVersion = 337;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

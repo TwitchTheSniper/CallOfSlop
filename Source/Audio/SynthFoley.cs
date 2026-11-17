@@ -23,6 +23,7 @@ public static partial class Synth
         Sfx.BuildUnbolt or Sfx.BuildPop => 2,
         Sfx.Babble => BabbleVariants,
         Sfx.HullCreak => 3,
+        Sfx.ShellGlitch or Sfx.ShellServoGrind or Sfx.ShellStatic => 3,
         _ => 1,
     };
 

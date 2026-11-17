@@ -71,6 +71,8 @@ public sealed partial class Game
             s.EngTag = 0; // (nobody: whatever they were at waits)
             return;
         }
+        if (CrewShellBusy(c, s, eng))
+            return; // (going over a robot shell: GameShellWear.cs)
         var tick = Crew.Tick;
         if (s.EngTag != 0)
         {
@@ -118,7 +120,12 @@ public sealed partial class Game
                     (job, secs) = (c.WorksPieces[k], EngMend);
                     break;
                 }
-        if (job < 0 || c.Parts[job].Tag == 0)
+        if (job < 0)
+        {
+            CrewShellStart(c, s, eng); // (nothing on the ship: a robot shell aboard that wants a service, GameShellWear.cs)
+            return;
+        }
+        if (c.Parts[job].Tag == 0)
             return;
         var st = CrewStationOf(s, CrewStationKind.Works);
         var walk = st >= 0 ? Vector3.Distance(ConstructRender.PartCentre(c, s.StPart[st]), ConstructRender.PartCentre(c, job)) * 1.4f / CrewWorld.WalkSpeed : 0;

@@ -144,3 +144,22 @@ Notes kept by the builders of `factory-generator.md` (the design and the user's 
 - Lanes are interval-coloured, not A*; overhead runs and crossings of the aisle are not planned yet (nothing crosses it in `rows`).
 
 - Open (coordinator, 2026-11-17): `--gen-vehicles` does not compare the committed `MilitiaOreHauler1.json`, because Militia is not in `Styles.Shipped` (only shipped styles are compared). A generator change can leave the hauler stale silently; give the factory kit its own compare (e.g. `--gen-factory hauler --check`) or a way to list a non-shipped style's committed vehicles.
+
+## The user's grading of the first Militia sheet (2026-11-17)
+
+No seed ships yet: the user doesn't love any of them. The layouts are okay, but:
+- **Spacing is a weird mix:** gaps between machines, banks, walkways and walls vary for no reason. Use one consistent spacing system (module grid, fixed aisle widths, set clearances by purpose) so a building reads as planned.
+- **Signposts are unnecessarily large and all over the buildings:** far fewer signs, smaller, placed where they inform (a zone entrance, a machine's own label), never as filler.
+
+New parts the user wants for cargo and storage (they also simplify the kit's buildings):
+1. **Larger bin sizes** (more sizes of storage bins/bunkers).
+2. **A walled cargo volume option:** the custom cargo volume can have walls by default (a setting), giving up some of the allowed space, so storage no longer needs to be enclosed by hand.
+3. **A large flat grate:** cargo tipped onto it goes into the chute network (an intake for tipping trucks, buckets and players' dumps).
+4. **An output spigot like a combine harvester's unloading auger:** a station can unload into an open-top truck or bin (swings out, pours loose material and small pieces).
+
+## Extraction must follow the ore (user, 2026-11-17)
+
+Drills deplete the ground under them, so a fixed drill on a deck stops working. Every extraction post must move its drills over the deposit:
+- **Arms or cranes** (robotic arms, gantry/bridge cranes) that carry drill heads across the deposit; or
+- **Tool racks** where NPC crew (the bot brain's work crews) pick up portable drills and carry them to fresh ground.
+- **A mining vehicle shaped like an excavator** (a vehicle-kit generator: tracked or wheeled base, boom, a digging or drilling head, a bucket or chute to a hauler) helps extraction too.

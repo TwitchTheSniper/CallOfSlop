@@ -1001,6 +1001,7 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         Detail(p, ShuttleShaft.X0 - 0.1, y1 - 0.012, ShuttleShaft.Z0 - 0.1, ShuttleShaft.X1 + 0.1, y1, ShuttleShaft.Z0, Hazard, "hazard paint");
         Detail(p, ShuttleShaft.X0 - 0.1, y1 - 0.012, ShuttleShaft.Z1, ShuttleShaft.X1 + 0.1, y1, ShuttleShaft.Z1 + 0.1, Hazard, "hazard paint");
         Detail(p, ShuttleShaft.X0 + 0.2, y1 - 0.02, ShuttleShaft.Z0 - 0.22, ShuttleShaft.X1 - 0.2, y1 - 0.012, ShuttleShaft.Z0 - 0.12, Red, glow: true);
+        Sock(p, "director", Cx + 2.9, Ft1, 41.3, "+y"); // (the Fire Director in the starboard aft corner, under the mast's radar: a wire reaches 8 m)
         DoorSock(p, "doorCabinB", false, 25.9, Cx - 1.0, Ft1);
         DoorSock(p, "doorHead", false, 31.9, Cx - 1.0, Ft1);
         DoorSock(p, "doorMed", false, 25.9, Cx + 1.0, Ft1);
@@ -1203,6 +1204,9 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         Sock(p, "upper", Cx - 1.5, Roof, 12.0, "-y");
         Sock(p, "railgun", Cx, Top(20) + 0.06, 32.0, "+y");
         p.Sock("shuttleClamp", P(Cx - 1.3, CradleY, CradleZ1 - 0.6), "+y", Medium); // (a medium socket: the Docking Clamp Medium)
+        // The Long Range Sensor (the radar, wired to the Fire Director in the mess below) on the cradle deck aft of the shuttle, between its
+        // drive and the mast: a wire reaches 8 m.
+        p.Sock("sensor", P(Cx + 0.75, CradleY, CradleZ1 - 0.35), "+y");
         foreach (var (s, z, n) in new[] { (-1, 17.6, "flaresFL"), (1, 17.6, "flaresFR"), (-1, 21.4, "flaresBL"), (1, 21.4, "flaresBR") })
             Sock(p, n, Cx + s * 1.75, Top(z) - 0.02, z, "+y");
         return p.Stats(8000, 24000, 45, 15.0);
@@ -2251,6 +2255,9 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         // Flare launchers behind the bridge, on ops' flare button.
         foreach (var n in new[] { "flaresFL", "flaresFR", "flaresBL", "flaresBR" })
             bp.Wires.Add((flareButton, Hang(bp, "Zero Day Countermeasure Launcher", spine, n, "back")));
+        // The radar: the Long Range Sensor by the mast wired into the Fire Director in the mess below it, so the middle mouse locks a contact in any
+        // seat and the torpedoes take that lock at launch (ConstructRadar.CanLock; Karl, 2026-11-17). No guns are wired out of it.
+        bp.Wires.Add((Hang(bp, "Long Range Sensor", spine, "sensor", "-y"), Hang(bp, "Fire Director", ua, "director", "-y")));
         var json = bp.Json();
         json["carry"] = Py.L(Kw(("blueprint", ShuttleName), ("at", Py.L(Cx, CradleY + ShuttleLift, ShuttleZ)), ("turn", 0))); // (built on its cradle, held by the clamp: ConstructCargo.BuildCarry)
         // The torpedo magazines (a rack's shape is made by the game, so its steps go last, by socket name) and their torpedoes; each

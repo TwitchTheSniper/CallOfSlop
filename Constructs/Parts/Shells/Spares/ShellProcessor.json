@@ -1,0 +1,111 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Shell Processor",
+  "description": "A robot shell's brain: a sealed board in a finned case. Fit it to a standing Robot Shell with the attach tool: the worn work is new again.",
+  "group": "Logic",
+  "section": "Shells",
+  "role": "frame",
+  "tool": "wrench",
+  "mass": 1.2,
+  "health": 40,
+  "armour": 1,
+  "material": "steel",
+  "color": "#56606a",
+  "attachSeconds": 1,
+  "boxes": [
+    {
+      "min": [
+        -0.1,
+        0.0,
+        -0.07
+      ],
+      "max": [
+        0.1,
+        0.04,
+        0.07
+      ],
+      "color": "#2f8f4e"
+    },
+    {
+      "min": [
+        -0.06,
+        0.043,
+        -0.045
+      ],
+      "max": [
+        0.06,
+        0.07,
+        0.045
+      ],
+      "color": "#30363d",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.056,
+        0.073,
+        -0.04
+      ],
+      "max": [
+        -0.042,
+        0.09,
+        0.04
+      ],
+      "color": "#8b949c",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.026,
+        0.073,
+        -0.04
+      ],
+      "max": [
+        -0.012,
+        0.09,
+        0.04
+      ],
+      "color": "#8b949c",
+      "detail": true
+    },
+    {
+      "min": [
+        0.004,
+        0.073,
+        -0.04
+      ],
+      "max": [
+        0.018,
+        0.09,
+        0.04
+      ],
+      "color": "#8b949c",
+      "detail": true
+    },
+    {
+      "min": [
+        0.034,
+        0.073,
+        -0.04
+      ],
+      "max": [
+        0.048,
+        0.09,
+        0.04
+      ],
+      "color": "#8b949c",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

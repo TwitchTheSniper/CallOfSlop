@@ -114,6 +114,65 @@ public sealed class ShellParts : IPartGenerator
         return p;
     }
 
+    // ---- Spare works (Karl, 2026-11-17: "think about all of the parts such as actuators, shell, processor etc. and add them as robot
+    // parts which you fit with the current set of tools"): carried items that put one of a Robot Shell's worn works back to new, fitted
+    // with the attach tool at a standing shell (Game/GameShellWear.cs). Made with the production system, not on the Assembler
+    // (Assembling.cs skips the Shells/Spares folder; which machines make them is for TwitchTheSniper's system). Names are read by
+    // ShellWear.SpareName.
+
+    private static Part Spare(string name, string desc, double mass, Action<Part> look)
+    {
+        var p = new Part(name, Small, Section, desc + " Fit it to a standing Robot Shell with the attach tool: the worn work is new again.", tool: "wrench", group: "Logic", color: Joint);
+        look(p);
+        p.Sock("bottom", [0, 0, 0], "-y");
+        p.Stats(mass, 40, 1, 1);
+        return p;
+    }
+
+    private static IEnumerable<(string, Part)> Spares()
+    {
+        const string Copper = "#b87333", Green = "#2f8f4e";
+        yield return ("Spares", Spare("Shell Leg Actuator", "A robot shell's knee and hip drive: a motor, a gearbox and the shin's push rod.", 4.5, p =>
+        {
+            p.Add(Box([-0.05, 0, -0.05], [0.05, 0.36, 0.05])); // the push rod's housing
+            p.Add(Box([-0.075, 0.3, -0.075], [0.075, 0.44, 0.075], Dark)); // the motor
+            p.Add(Box([-0.08, 0.04, -0.06], [0.08, 0.12, 0.06], Dark, detail: true)); // the gearbox
+            p.Add(Box([-0.02, 0.443, -0.02], [0.02, 0.47, 0.02], Copper, detail: true)); // its terminal
+        }));
+        yield return ("Spares", Spare("Shell Arm Actuator", "A robot shell's shoulder and elbow drive: a slim motor and its gear train.", 2.5, p =>
+        {
+            p.Add(Box([-0.04, 0, -0.04], [0.04, 0.3, 0.04]));
+            p.Add(Box([-0.055, 0.24, -0.055], [0.055, 0.34, 0.055], Dark));
+            p.Add(Box([-0.06, 0.03, -0.045], [0.06, 0.09, 0.045], Dark, detail: true));
+            p.Add(Box([-0.015, 0.343, -0.015], [0.015, 0.365, 0.015], Copper, detail: true));
+        }));
+        yield return ("Spares", Spare("Shell Power Cell", "A robot shell's internal battery pack, the size of a lunch box.", 6, p =>
+        {
+            p.Add(Box([-0.14, 0, -0.08], [0.14, 0.2, 0.08], Dark));
+            p.Add(Box([-0.12, 0.203, -0.06], [-0.07, 0.23, -0.01], Copper, detail: true)); // the terminals
+            p.Add(Box([0.07, 0.203, -0.06], [0.12, 0.23, -0.01], Copper, detail: true));
+            p.Add(Box([-0.1, 0.06, -0.084], [0.1, 0.1, -0.07], Lamp, detail: true)); // its charge band
+        }));
+        yield return ("Spares", Spare("Shell Processor", "A robot shell's brain: a sealed board in a finned case.", 1.2, p =>
+        {
+            p.Add(Box([-0.1, 0, -0.07], [0.1, 0.04, 0.07], Green));
+            p.Add(Box([-0.06, 0.043, -0.045], [0.06, 0.07, 0.045], Dark, detail: true)); // the case
+            for (var k = 0; k < 4; k++)
+                p.Add(Box([-0.056 + 0.03 * k, 0.073, -0.04], [-0.042 + 0.03 * k, 0.09, 0.04], Steel, detail: true)); // fins
+        }));
+        yield return ("Spares", Spare("Shell Optics", "A robot shell's visor unit: the camera bar and its lenses.", 0.9, p =>
+        {
+            p.Add(Box([-0.11, 0, -0.04], [0.11, 0.08, 0.04], Dark));
+            p.Add(Box([-0.09, 0.02, -0.044], [0.09, 0.06, -0.03], Visor, detail: true)); // the lens strip
+        }));
+        yield return ("Spares", Spare("Shell Plating", "A set of a robot shell's armour plates, bolted on over the old.", 8, p =>
+        {
+            p.Add(Box([-0.22, 0, -0.16], [0.22, 0.05, 0.16]));
+            p.Add(Box([-0.2, 0.053, -0.14], [0.2, 0.09, 0.14], Steel, detail: true));
+            p.Add(Box([-0.18, 0.093, -0.12], [0.18, 0.12, 0.12], Joint, detail: true));
+        }));
+    }
+
     /// <summary>The Orbiter without its Driving Module or wires: the depot's challenge is to fit and link one.</summary>
     private static PyDict Lander(PartOutput o)
     {
@@ -158,7 +217,7 @@ public sealed class ShellParts : IPartGenerator
 
     public void Make(PartOutput o)
     {
-        WriteParts(o, Out, [("", Shell()), ("", Chair())]);
+        WriteParts(o, Out, [("", Shell()), ("", Chair()), .. Spares()]);
         o.File("Constructs/Blueprints/DepotLander.json", PyJson.Dumps(Lander(o), 2) + "\n");
         o.File("Constructs/Blueprints/MinistryCourier.json", PyJson.Dumps(Courier(o), 2) + "\n");
     }

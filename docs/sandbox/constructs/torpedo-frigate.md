@@ -50,7 +50,7 @@ Two decks run fore and aft (floors at 0.25 and 3.5 m, ship frame), each in a for
 | Zero Day Lower Deck Fore | the server room (Server Racks), the armoury, the fore end of the torpedo room with a bay door each side, the fire buttons; the ladder up to ops |
 | Zero Day Lower Deck Aft | the rest of the torpedo room, the airlock over the boarding shaft (starboard), the suit bay (port), engineering (the drive's works as one cylinder forward from the aft wall, the lift jets' Drive Core M, reactor, board, batteries) and the ladder up to the mess |
 | Zero Day Upper Deck Fore | the sealed bridge (no glass: a view screen over the dashboard, camera screens each side; two Flight Couches, the flight computer), ops (the forward gun station, a plot table, the flares button), cabin A and the captain's cabin |
-| Zero Day Upper Deck Aft | cabin B, the head, the med bay, the mess with the aft gun station |
+| Zero Day Upper Deck Aft | cabin B, the head, the med bay, the mess with the aft gun station and the Fire Director (starboard aft corner) |
 
 Around them: the Keel (14,000 l of fuel, legs, lift jets, the boarding shaft), the Bow (armoured over the bridge, retro jets), the Spine
 (roof, the railgun's trough, the shuttle's cradle with its Docking Clamp, mast, antennae, flare launchers), the Stern (the engine bay: 9,000 l, fins), the Drive
@@ -90,6 +90,10 @@ inside the hull, in one room with engineering.
   enemy frigate must be able to fire); one a player's Building Station fits comes empty and is filled by hand
   (`ConstructBuild.SetConfig`, `ConstructWorld.PlayerBuild`).
 - Four Zero Day Countermeasure Launchers (flare guns) on the spine, all fired by the flares button in ops.
+- Radar and lock (Karl, 2026-11-17): a Long Range Sensor on a pad on the spine's step, to port of the mast, wired into a
+  Fire Director in the mess's starboard aft corner below it (a wire reaches 8 m, so the director sits under the sensor, not
+  in ops). Every seat gets the scope, and the middle mouse locks a contact (`ConstructRadar.CanLock`); a torpedo launched
+  from either bay takes the lock while the contact is within its seeker's 2 km. Shoot either part and it is a scope again.
 
 ## Getting aboard
 
@@ -120,7 +124,8 @@ bodies have one, who each is after; server only).
   one way and then the other every few seconds. The gunners' seats look where their rounds meet the target (led for its
   speed) and fire when a gun bears within 4 degrees (2.5 for a fixed gun such as the railgun) and nothing of its own hull is
   in the way. The Buttons wired to Ordnance Racks launch one torpedo every 8 s, taking turns, from 350 m to 2 km with the
-  target within 15 degrees of the nose, at a ship or a car only (a seeker wants something that moves); the Button wired to
+  target within 15 degrees of the nose, at a ship or a car only (a seeker wants something that moves), each on a radar
+  lock of the target first when the ship can lock; the Button wired to
   the flare launchers goes when a missile steers for it inside a kilometre.
 - **Targets.** The nearest living player within 2.5 km: the body they sit or ride in, else themselves. Fights strangers
   leaves out the ship owner's faction (a nobody's ship fights everyone). Anyone aboard it is not a target.
@@ -128,8 +133,7 @@ bodies have one, who each is after; server only).
 - **Boarding.** A player in the pilot's seat has the helm: the crew stands down and Mouse aim goes back as it was. A player
   in a gunner's seat has that seat. Setting it Off stands the crew down for good.
 - **Not yet:** saving a crew's state (it is the setting, so a loaded ship has its crew again), flying in space past the sky's
-  edge (a ship there is a SpaceFlight particle; the crew stops), the radar lock (PR #211: racks launch on what their
-  seekers see), defending anything, fleets or factions.
+  edge (a ship there is a SpaceFlight particle; the crew stops), defending anything, fleets or factions.
 - **Seated crew (2026-11-16, the bot brain: docs/sandbox/design/bot-brain.md, Source/Crew/).** The setting now puts a crew in
   the seats: a pilot at the helm, a gunner at each gun seat, spares on the couches. The flying and gunnery above work a seat only
   while a living member sits at it: shoot the pilot and the helm keeps its last input for 3 s, then a spare walks over and takes
