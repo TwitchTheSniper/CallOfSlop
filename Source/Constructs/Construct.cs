@@ -427,6 +427,8 @@ public sealed partial class Construct
     public bool Electrical; // this tick: it has a battery, or the map requires power
     public float Charge; // kJ in its working batteries (burners and draws go through UseCharge: ConstructPlant.cs)
     public float ChargeCapacity; // kJ they hold
+    public float Cap, CapCapacity, CapRate; // its Capacitor Banks (ship-works.md 8, Karl 2026-11-17: energy guns fire from these only): kJ in them, kJ the working ones the circuit reaches hold, kW the circuit refills them at
+    public byte CapSent; // the capacitors' share last sent (ConstructNet.StateDue)
     public bool PowerOn = true; // the batteries have charge (or it isn't electrical)
     public bool MainsOff; // every battery is wired and its wire says off: machines get nothing from the circuit, controls stay live (ConstructPower.Mains; on the wire in the gear byte's top bit)
     public bool MainsWired; // some battery has a wire in (with the caches): only then is MainsOff looked at

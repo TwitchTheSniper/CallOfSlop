@@ -1,0 +1,901 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Capacitor Bank L",
+  "description": "Holds 150 MJ for the ship's energy guns, refilled from the circuit at 4000 kW: railguns and lasers fire from capacitors only, never from batteries. Link it to the ship's circuit. Broken, it loses its charge. A generic ship fitting: it fits any ship.",
+  "group": "Ship",
+  "section": "Ship fittings",
+  "role": "frame",
+  "tool": "welder",
+  "capacitor": {
+    "capacity": 150000.0,
+    "rate": 4000.0
+  },
+  "onBreak": "disable",
+  "ports": [
+    {
+      "name": "Power in",
+      "type": "power",
+      "dir": "in",
+      "noEffect": true,
+      "at": [
+        -1.0,
+        0.66,
+        0.0
+      ],
+      "face": "-x"
+    }
+  ],
+  "mass": 12000.0,
+  "health": 7000,
+  "armour": 20,
+  "material": "steel",
+  "color": "#34373a",
+  "attachSeconds": 2.5,
+  "boxes": [
+    {
+      "min": [
+        -1.0,
+        0.0,
+        -0.7
+      ],
+      "max": [
+        1.0,
+        0.08,
+        0.7
+      ],
+      "color": "#5c6057",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.97,
+        0.083,
+        -0.67
+      ],
+      "max": [
+        0.97,
+        2.14,
+        0.67
+      ],
+      "color": "#34373a",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -0.99,
+        2.143,
+        -0.69
+      ],
+      "max": [
+        0.99,
+        2.197,
+        0.69
+      ],
+      "color": "#7b8186",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.8268,
+        0.1932,
+        0.65
+      ],
+      "max": [
+        -0.5532,
+        0.4668,
+        0.75
+      ],
+      "color": "#2c5a8a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -0.7652,
+        0.2548,
+        0.745
+      ],
+      "max": [
+        -0.6148,
+        0.4052,
+        0.765
+      ],
+      "color": "#7b8186",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.8268,
+        0.5732,
+        0.65
+      ],
+      "max": [
+        -0.5532,
+        0.8468,
+        0.75
+      ],
+      "color": "#2c5a8a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -0.7652,
+        0.6348,
+        0.745
+      ],
+      "max": [
+        -0.6148,
+        0.7852,
+        0.765
+      ],
+      "color": "#7b8186",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.8268,
+        0.9532,
+        0.65
+      ],
+      "max": [
+        -0.5532,
+        1.2268,
+        0.75
+      ],
+      "color": "#2c5a8a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -0.7652,
+        1.0148,
+        0.745
+      ],
+      "max": [
+        -0.6148,
+        1.1652,
+        0.765
+      ],
+      "color": "#7b8186",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.8268,
+        1.3332,
+        0.65
+      ],
+      "max": [
+        -0.5532,
+        1.6068,
+        0.75
+      ],
+      "color": "#2c5a8a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -0.7652,
+        1.3948,
+        0.745
+      ],
+      "max": [
+        -0.6148,
+        1.5452,
+        0.765
+      ],
+      "color": "#7b8186",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.8268,
+        1.7132,
+        0.65
+      ],
+      "max": [
+        -0.5532,
+        1.9868,
+        0.75
+      ],
+      "color": "#2c5a8a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -0.7652,
+        1.7748,
+        0.745
+      ],
+      "max": [
+        -0.6148,
+        1.9252,
+        0.765
+      ],
+      "color": "#7b8186",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.3668,
+        0.1932,
+        0.65
+      ],
+      "max": [
+        -0.0932,
+        0.4668,
+        0.75
+      ],
+      "color": "#2c5a8a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -0.3052,
+        0.2548,
+        0.745
+      ],
+      "max": [
+        -0.1548,
+        0.4052,
+        0.765
+      ],
+      "color": "#7b8186",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.3668,
+        0.5732,
+        0.65
+      ],
+      "max": [
+        -0.0932,
+        0.8468,
+        0.75
+      ],
+      "color": "#2c5a8a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -0.3052,
+        0.6348,
+        0.745
+      ],
+      "max": [
+        -0.1548,
+        0.7852,
+        0.765
+      ],
+      "color": "#7b8186",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.3668,
+        0.9532,
+        0.65
+      ],
+      "max": [
+        -0.0932,
+        1.2268,
+        0.75
+      ],
+      "color": "#2c5a8a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -0.3052,
+        1.0148,
+        0.745
+      ],
+      "max": [
+        -0.1548,
+        1.1652,
+        0.765
+      ],
+      "color": "#7b8186",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.3668,
+        1.3332,
+        0.65
+      ],
+      "max": [
+        -0.0932,
+        1.6068,
+        0.75
+      ],
+      "color": "#2c5a8a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -0.3052,
+        1.3948,
+        0.745
+      ],
+      "max": [
+        -0.1548,
+        1.5452,
+        0.765
+      ],
+      "color": "#7b8186",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.3668,
+        1.7132,
+        0.65
+      ],
+      "max": [
+        -0.0932,
+        1.9868,
+        0.75
+      ],
+      "color": "#2c5a8a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -0.3052,
+        1.7748,
+        0.745
+      ],
+      "max": [
+        -0.1548,
+        1.9252,
+        0.765
+      ],
+      "color": "#7b8186",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.0932,
+        0.1932,
+        0.65
+      ],
+      "max": [
+        0.3668,
+        0.4668,
+        0.75
+      ],
+      "color": "#2c5a8a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        0.1548,
+        0.2548,
+        0.745
+      ],
+      "max": [
+        0.3052,
+        0.4052,
+        0.765
+      ],
+      "color": "#7b8186",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.0932,
+        0.5732,
+        0.65
+      ],
+      "max": [
+        0.3668,
+        0.8468,
+        0.75
+      ],
+      "color": "#2c5a8a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        0.1548,
+        0.6348,
+        0.745
+      ],
+      "max": [
+        0.3052,
+        0.7852,
+        0.765
+      ],
+      "color": "#7b8186",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.0932,
+        0.9532,
+        0.65
+      ],
+      "max": [
+        0.3668,
+        1.2268,
+        0.75
+      ],
+      "color": "#2c5a8a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        0.1548,
+        1.0148,
+        0.745
+      ],
+      "max": [
+        0.3052,
+        1.1652,
+        0.765
+      ],
+      "color": "#7b8186",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.0932,
+        1.3332,
+        0.65
+      ],
+      "max": [
+        0.3668,
+        1.6068,
+        0.75
+      ],
+      "color": "#2c5a8a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        0.1548,
+        1.3948,
+        0.745
+      ],
+      "max": [
+        0.3052,
+        1.5452,
+        0.765
+      ],
+      "color": "#7b8186",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.0932,
+        1.7132,
+        0.65
+      ],
+      "max": [
+        0.3668,
+        1.9868,
+        0.75
+      ],
+      "color": "#2c5a8a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        0.1548,
+        1.7748,
+        0.745
+      ],
+      "max": [
+        0.3052,
+        1.9252,
+        0.765
+      ],
+      "color": "#7b8186",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.5532,
+        0.1932,
+        0.65
+      ],
+      "max": [
+        0.8268,
+        0.4668,
+        0.75
+      ],
+      "color": "#2c5a8a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        0.6148,
+        0.2548,
+        0.745
+      ],
+      "max": [
+        0.7652,
+        0.4052,
+        0.765
+      ],
+      "color": "#7b8186",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.5532,
+        0.5732,
+        0.65
+      ],
+      "max": [
+        0.8268,
+        0.8468,
+        0.75
+      ],
+      "color": "#2c5a8a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        0.6148,
+        0.6348,
+        0.745
+      ],
+      "max": [
+        0.7652,
+        0.7852,
+        0.765
+      ],
+      "color": "#7b8186",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.5532,
+        0.9532,
+        0.65
+      ],
+      "max": [
+        0.8268,
+        1.2268,
+        0.75
+      ],
+      "color": "#2c5a8a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        0.6148,
+        1.0148,
+        0.745
+      ],
+      "max": [
+        0.7652,
+        1.1652,
+        0.765
+      ],
+      "color": "#7b8186",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.5532,
+        1.3332,
+        0.65
+      ],
+      "max": [
+        0.8268,
+        1.6068,
+        0.75
+      ],
+      "color": "#2c5a8a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        0.6148,
+        1.3948,
+        0.745
+      ],
+      "max": [
+        0.7652,
+        1.5452,
+        0.765
+      ],
+      "color": "#7b8186",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.5532,
+        1.7132,
+        0.65
+      ],
+      "max": [
+        0.8268,
+        1.9868,
+        0.75
+      ],
+      "color": "#2c5a8a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        0.6148,
+        1.7748,
+        0.745
+      ],
+      "max": [
+        0.7652,
+        1.9252,
+        0.765
+      ],
+      "color": "#7b8186",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.95,
+        2.0,
+        0.674
+      ],
+      "max": [
+        0.95,
+        2.08,
+        0.72
+      ],
+      "color": "#8a5a3a",
+      "detail": true,
+      "finish": "copper"
+    },
+    {
+      "min": [
+        -0.95,
+        0.085,
+        0.674
+      ],
+      "max": [
+        0.95,
+        0.12,
+        0.715
+      ],
+      "color": "#d8a020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        0.88,
+        2.09,
+        0.674
+      ],
+      "max": [
+        0.94,
+        2.12,
+        0.725
+      ],
+      "color": "#40c8ff",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.55,
+        2.19,
+        -0.05
+      ],
+      "max": [
+        -0.45,
+        2.28,
+        0.05
+      ],
+      "color": "#8a5a3a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10,
+      "front": "+y",
+      "finish": "copper"
+    },
+    {
+      "min": [
+        0.45,
+        2.19,
+        -0.05
+      ],
+      "max": [
+        0.55,
+        2.28,
+        0.05
+      ],
+      "color": "#8a5a3a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10,
+      "front": "+y",
+      "finish": "copper"
+    },
+    {
+      "min": [
+        -1.0,
+        0.08,
+        -0.7
+      ],
+      "max": [
+        1.0,
+        2.2,
+        0.765
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "deck",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        2.2,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        1.1,
+        -0.7
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+x",
+      "at": [
+        1.0,
+        1.1,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -1.0,
+        1.1,
+        0.0
+      ],
+      "dir": "-x"
+    }
+  ]
+}

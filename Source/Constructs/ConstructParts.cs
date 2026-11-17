@@ -97,6 +97,7 @@ public enum GunFx : byte
     Rocket, // a slow smoke trail and a blast at the end
     Flame, // a short gout of fire
     Harpoon, // a barbed head flying out on its line
+    Beam, // a laser's line from the muzzle to the hit, for a moment (ship-works.md 5.4)
 }
 
 /// <summary>What a construct gun's rounds do (the weapon builder's ammo flags that count against constructs).</summary>
@@ -531,6 +532,7 @@ public sealed partial class ConstructPartDef
     // Milestone 3: power, couplings, gauges (docs/sandbox/CONSTRUCTS.md, "Milestone 3")
     public float PowerDraw; // watts while it works (a lamp lit, a horn sounding, a logic part on; a motor: idling, on top of its work)
     public float BatteryCapacity; // battery: kJ (comes full)
+    public float CapacitorKJ, CapacitorKW; // "capacitor": {"capacity", "rate"}: a Capacitor Bank's kJ and the kW the circuit refills it at (ship-works.md 8: energy guns fire from these only)
     public float AlternatorRate; // alternator: kW into the batteries while the engine it touches runs
     public float StarterKJ = ConstructPower.StarterKJ; // engine: what its starter takes from the batteries
     public bool PathArc; // suspension: its wheel swings on an arm ("path": arc) instead of sliding straight (docs/sandbox/CONSTRUCTS.md "Suspension types")
@@ -639,6 +641,7 @@ public sealed partial class ConstructPartDef
     public string[] GunFlags = [];
     public Vector3 GunMuzzle; // a heavy gun's muzzle (part frame); a receiver's comes from its barrels
     public GunFx GunFx;
+    public float GunEnergy; // "gun": {"energy"}: kJ a shot takes from the construct's capacitors (ship-works.md 8; 0: none). With no "mag", a gun of energy alone (a laser)
     public string GunSound = ""; // the weapon file whose report it uses
     public string GunPartName = ""; // a gun part: the weapon builder part it is
     public PartDef? GunSized; // a pressed gun part: its own sized builder part, named by its key (SizedGunParts; Parts.Find finds it)
@@ -1325,7 +1328,7 @@ public static partial class ConstructParts
     [
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "finish", "friction", "collider",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "fluidTank", "seat", "hinge", "joint", "logic",
-        "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "yield", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "retired", "hydraulics", "toolOnly", "tray", "walk", "boarding", "ladder", "toolDock", "damaged", "stage", "faces", "faceAxis", "router",
+        "transmission", "battery", "capacitor", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "yield", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "retired", "hydraulics", "toolOnly", "tray", "walk", "boarding", "ladder", "toolDock", "damaged", "stage", "faces", "faceAxis", "router",
         "sight", "ordnance", "mooring", "wear", "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "dieExtension", "runOut", "enginePiece", "sizeClass", "generator", "thruster", "burner", "flame", "rotor", "surface", "smoke", "dock", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "shell", "office", "requisition", "media", "speaker", "leg", "stabiliser", "door", "lifter", "craneRail", "lifterCab", "radar", "works", "worksPiece", "logiLink",
     ];
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, a contoured shape with its settings (index 8 up to the last), and the glass flag (last).</summary>
@@ -1494,6 +1497,16 @@ public static partial class ConstructParts
             Range(br.ExplodeKnockback, 0f, 200f, file, "explosive.knockback");
             d.Explosive = br;
             d.Warhead = true; // (a bomb part's own charge: it goes off when it is broken)
+        }
+        if (Opt(root, "capacitor") is { } capBlock)
+        {
+            Known(capBlock, ["capacity", "rate"], $"{file}, capacitor");
+            d.CapacitorKJ = Num(Need(capBlock, "capacity", $"{file}, capacitor"), file, "capacitor.capacity");
+            Range(d.CapacitorKJ, 1, 100_000_000, file, "capacitor.capacity");
+            d.CapacitorKW = Num(Need(capBlock, "rate", $"{file}, capacitor"), file, "capacitor.rate");
+            Range(d.CapacitorKW, 1, 1_000_000, file, "capacitor.rate");
+            if (d.Role == PartRole.Battery)
+                throw new ConstructPartException($"{file}: a capacitor isn't a battery (energy guns fire from capacitors, the circuit from batteries)");
         }
         d.Yield = Opt(root, "yield") is { } yl ? (int)MathF.Round(Num(yl, file, "yield")) : 0;
         Range(d.Yield, 0f, 10000f, file, "yield");
@@ -2146,7 +2159,7 @@ public static partial class ConstructParts
             throw new ConstructPartException($"{file}: a joint part needs boxes tagged \"side\": \"base\" (the fixed side) and \"side\": \"leaf\" (the moving side)");
     }
 
-    private static readonly string[] GunFxNames = ["bullet", "cannon", "rocket", "flame"];
+    private static readonly string[] GunFxNames = ["bullet", "cannon", "rocket", "flame", "", "beam"]; // (by GunFx: a harpoon is set by its effect, never by name)
 
     /// <summary>
     /// A gun's block: either a weapon builder receiver (<c>"receiver"</c>, its <c>"action"</c> optional: the barrels, feed,
@@ -2155,7 +2168,7 @@ public static partial class ConstructParts
     /// </summary>
     private static void ParseGun(ConstructPartDef d, JsonElement b, string file, string bw)
     {
-        Known(b, ["shell", "thrust", "burn", "turn", "prox", "crater", "receiver", "action", "damage", "rpm", "spread", "range", "maxRange", "mag", "reload", "pellets", "speed", "flags", "blast", "blastDamage", "muzzle", "fx", "kick", "soundOf"], bw);
+        Known(b, ["shell", "thrust", "burn", "turn", "prox", "crater", "receiver", "action", "damage", "rpm", "spread", "range", "maxRange", "mag", "reload", "pellets", "speed", "flags", "blast", "blastDamage", "muzzle", "fx", "kick", "soundOf", "energy"], bw);
         d.GunMaxRange = Opt(b, "maxRange") is { } mr ? Num(mr, file, "gun.maxRange") : 300f;
         Range(d.GunMaxRange, 1, 1000, file, "gun.maxRange");
         d.GunKick = Opt(b, "kick") is { } kick ? Num(kick, file, "gun.kick") : 0f;
@@ -2163,9 +2176,10 @@ public static partial class ConstructParts
         d.GunFx = GunFx.Bullet;
         if (Opt(b, "fx") is { } fx)
         {
-            var fi = Array.IndexOf(GunFxNames, Str(fx, file, "gun.fx").ToLowerInvariant());
+            var fxName = Str(fx, file, "gun.fx").ToLowerInvariant();
+            var fi = fxName.Length == 0 ? -1 : Array.IndexOf(GunFxNames, fxName);
             if (fi < 0)
-                throw new ConstructPartException($"{file}: \"gun.fx\" is one of {string.Join(", ", GunFxNames)}");
+                throw new ConstructPartException($"{file}: \"gun.fx\" is one of {string.Join(", ", GunFxNames.Where(n => n.Length > 0))}");
             d.GunFx = (GunFx)fi;
         }
         d.GunSound = Opt(b, "soundOf") is { } so ? Str(so, file, "gun.soundOf") : "";
@@ -2194,8 +2208,15 @@ public static partial class ConstructParts
         Range(d.GunSpread, 0, 45, file, "gun.spread");
         d.GunRange = Opt(b, "range") is { } rg ? Num(rg, file, "gun.range") : 60f;
         Range(d.GunRange, 1, 1000, file, "gun.range");
-        d.GunMag = (int)Num(Need(b, "mag", bw), file, "gun.mag");
-        Range(d.GunMag, 1, 5000, file, "gun.mag");
+        d.GunEnergy = Opt(b, "energy") is { } en ? Num(en, file, "gun.energy") : 0f;
+        Range(d.GunEnergy, 0, 10_000_000, file, "gun.energy");
+        if (d.GunEnergy > 0 && Opt(b, "mag") == null)
+            d.GunMag = 0; // (a gun of energy alone: no rounds, the capacitors are its magazine)
+        else
+        {
+            d.GunMag = (int)Num(Need(b, "mag", bw), file, "gun.mag");
+            Range(d.GunMag, 1, 5000, file, "gun.mag");
+        }
         d.GunReload = Opt(b, "reload") is { } rl ? Num(rl, file, "gun.reload") : 2f;
         Range(d.GunReload, 0.05f, 30, file, "gun.reload");
         d.GunPellets = Opt(b, "pellets") is { } pe ? (int)Num(pe, file, "gun.pellets") : 1;

@@ -1,0 +1,240 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Laser Generator M",
+  "description": "Makes a laser's beam, up to 1800 kW: bolt it to the trunk of the Turret Ring a Laser Emitter stands on, or behind the Hull Mount it goes through. A generic ship fitting: it fits any ship.",
+  "group": "Ship",
+  "section": "Ship fittings",
+  "role": "frame",
+  "tool": "welder",
+  "onBreak": "disable",
+  "worksPiece": {
+    "kind": "lasergen",
+    "serves": 1800.0
+  },
+  "mass": 1100.0,
+  "health": 3000,
+  "armour": 20,
+  "material": "steel",
+  "color": "#5a6065",
+  "attachSeconds": 2.5,
+  "boxes": [
+    {
+      "min": [
+        -0.4,
+        -0.4,
+        -0.9
+      ],
+      "max": [
+        0.4,
+        -0.32,
+        -0.02
+      ],
+      "color": "#5c6057",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.256,
+        -0.31,
+        -0.84
+      ],
+      "max": [
+        0.256,
+        0.202,
+        -0.065
+      ],
+      "color": "#3a6fa8",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -0.2765,
+        -0.3305,
+        -0.8
+      ],
+      "max": [
+        0.2765,
+        0.2225,
+        -0.76
+      ],
+      "color": "#8a5a3a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "finish": "copper"
+    },
+    {
+      "min": [
+        -0.2765,
+        -0.3305,
+        -0.58
+      ],
+      "max": [
+        0.2765,
+        0.2225,
+        -0.54
+      ],
+      "color": "#8a5a3a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "finish": "copper"
+    },
+    {
+      "min": [
+        -0.2765,
+        -0.3305,
+        -0.36
+      ],
+      "max": [
+        0.2765,
+        0.2225,
+        -0.32
+      ],
+      "color": "#8a5a3a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "finish": "copper"
+    },
+    {
+      "min": [
+        -0.2765,
+        -0.3305,
+        -0.14
+      ],
+      "max": [
+        0.2765,
+        0.2225,
+        -0.1
+      ],
+      "color": "#8a5a3a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "finish": "copper"
+    },
+    {
+      "min": [
+        -0.38,
+        -0.317,
+        -0.06
+      ],
+      "max": [
+        0.38,
+        0.397,
+        -0.02
+      ],
+      "color": "#7b8186",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.33,
+        0.16,
+        -0.1
+      ],
+      "max": [
+        0.36,
+        0.28,
+        -0.064
+      ],
+      "color": "#ff4030",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.32,
+        -0.326,
+        -0.162
+      ],
+      "max": [
+        0.32,
+        -0.31,
+        -0.064
+      ],
+      "color": "#d8a020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.4,
+        -0.32,
+        -0.9
+      ],
+      "max": [
+        0.4,
+        0.4,
+        -0.02
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.2,
+        -0.2,
+        -0.02
+      ],
+      "max": [
+        0.2,
+        0.2,
+        0.0
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "front",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.0,
+        -0.9
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+x",
+      "at": [
+        0.4,
+        0.0,
+        -0.45
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.4,
+        0.0,
+        -0.45
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "deck",
+      "at": [
+        0.0,
+        -0.4,
+        -0.45
+      ],
+      "dir": "-y"
+    }
+  ]
+}

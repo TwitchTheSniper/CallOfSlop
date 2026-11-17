@@ -19,7 +19,7 @@ public static partial class ConstructNet
     public const int FeetRefresh = 3; // feet a pose carries in turn besides the ones that moved
     public const int PoseFeet = 24; // feet a pose carries at most (a body with more legs takes turns)
     private const int WalkHeadBytes = 1 + 1 + 1 + 2 + 4 + 1, FootBytes = 2 + 1 + 6;
-    private const byte PoseAsleep = 1, PoseWalker = 2; // the pose's asleep byte: bit 1 says a walk block follows (protocol 229)
+    private const byte PoseAsleep = 1, PoseWalker = 2, PoseCap = 4; // the pose's asleep byte: bit 1 says a walk block follows (protocol 229), bit 2 the capacitors' share (331)
     private const byte WalkingBit = 1, SteppingBit = 2, FeetSetBit = 4, PowerHeldBit = 8; // (8: protocol 241)
 
     // The walk problems the server sets (ConstructWalk.cs), by number on the wire; 1 + their count: "N working legs".

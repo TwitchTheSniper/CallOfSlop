@@ -27,6 +27,9 @@ public static class ConstructPower
         c.MainsWired = false;
         c.ChargeCapacity = 0;
         c.AlternatorRate = 0;
+        var capWas = c.CapCapacity;
+        c.CapCapacity = c.CapRate = 0;
+        var caps = false;
         using var scratch = Scratch.Begin();
         Span<ushort> queue = scratch.Take<ushort>(c.PartCount);
         int head = 0, tail = 0;
@@ -34,6 +37,7 @@ public static class ConstructPower
         {
             ref var p = ref c.Parts[i];
             p.Powered = false;
+            caps |= p.D.CapacitorKJ > 0;
             if (p.D.Role is not (PartRole.Battery or PartRole.Generator))
                 continue;
             c.HasBattery = true;
@@ -103,6 +107,10 @@ public static class ConstructPower
                 queue[tail++] = (ushort)other;
             }
         }
+        if (caps)
+            Capacitors(c, capWas);
+        else
+            c.Cap = 0;
         if (c.Engine >= 0)
             for (var i = c.ModActive >= 0 ? 0 : c.Engine; i < (c.ModActive >= 0 ? c.PartCount : c.Engine + 1); i++) // (a modular engine: any of its pieces)
             {
@@ -123,6 +131,55 @@ public static class ConstructPower
                 if (other >= 0 && c.Parts[other].D.Role == PartRole.Alternator && c.Parts[other].Working)
                     c.AlternatorRate += c.Parts[other].D.AlternatorRate;
             }
+    }
+
+    /// <summary>
+    /// The Capacitor Banks the circuit reaches (ship-works.md 8): what they hold and how fast it refills them. A bank lost (broken, cut off)
+    /// takes its share of the charge with it; a new one comes empty.
+    /// </summary>
+    private static void Capacitors(Construct c, float capWas)
+    {
+        for (var i = 0; i < c.PartCount; i++)
+        {
+            ref var p = ref c.Parts[i];
+            if (p.D.CapacitorKJ <= 0 || p.Broken || !p.Powered)
+                continue;
+            c.CapCapacity += p.D.CapacitorKJ;
+            c.CapRate += p.D.CapacitorKW;
+        }
+        if (c.CapCapacity < capWas && capWas > 0)
+            c.Cap *= c.CapCapacity / capWas;
+        c.Cap = Math.Clamp(c.Cap, 0, c.CapCapacity);
+    }
+
+    /// <summary>The share of the batteries the capacitors never take: the starter, the lamps and the logic keep it.</summary>
+    public const float CapReserve = 0.25f;
+
+    /// <summary>
+    /// kJ the circuit puts into the capacitors this tick: their rate, up to what they lack and what the batteries hold over
+    /// <see cref="CapReserve"/> of their size (and the engine's starter), so a bank never flattens the batteries: once they are
+    /// down to it, the banks fill only as fast as the plants and alternators make more.
+    /// </summary>
+    private static float Refill(Construct c, float dt)
+    {
+        if (c.CapRate <= 0 || c.Cap >= c.CapCapacity)
+            return 0;
+        var spare = c.Charge - MathF.Max(c.ChargeCapacity * CapReserve, StarterKJ * 2);
+        return MathF.Max(0, MathF.Min(c.CapRate * dt, MathF.Min(c.CapCapacity - c.Cap, spare)));
+    }
+
+    /// <summary>The capacitors' charge as a share of what they hold (0 without any).</summary>
+    public static float CapShare(Construct c) => c.CapCapacity > 0 ? Math.Clamp(c.Cap / c.CapCapacity, 0, 1) : 0;
+
+    /// <summary>Takes a shot's <paramref name="kj"/> from the capacitors: false (and nothing taken) when they hold less (in creative too, as batteries).</summary>
+    public static bool Draw(Construct c, float kj)
+    {
+        if (kj <= 0)
+            return true;
+        if (c.Cap < kj)
+            return false;
+        c.Cap -= kj;
+        return true;
     }
 
     /// <summary>
@@ -217,6 +274,12 @@ public static class ConstructPower
                     watts += d.PowerDraw;
             }
             watts += c.MotorWork / MotorEfficiency;
+            var refill = Refill(c, dt);
+            if (refill > 0)
+            {
+                c.Cap += refill; // (the circuit refills the capacitors at their rate: a draw like any other, so the plants spool up for it)
+                watts += refill / dt * 1000f;
+            }
         }
         c.MotorWork = 0;
         c.PowerUse = watts;

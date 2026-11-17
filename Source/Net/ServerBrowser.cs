@@ -562,7 +562,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 330: the command view's logistics layer (docs/space/COMMAND.md "The logistics layer"): CBodyKind.Link gains, per part after its
     //   docks, u8 n then n x (u32 id, str world, u16 body, str name, u8 flags): an end's answering partners, a Route Computer's stops
     //   (LinkFar).
-    public const ushort ProtocolVersion = 330;
+    // 331: ship works phase 5 (docs/sandbox/design/ship-works.md 8): a body's Full gains f32 Cap (its capacitors' kJ) after the charge; a pose's
+    //   asleep byte gains bit 4 (PoseCap), and with it a u8 share of the capacitors after the walk block; GunFx gains Beam at its end.
+    public const ushort ProtocolVersion = 331;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;
