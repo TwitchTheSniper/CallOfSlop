@@ -210,6 +210,18 @@ A part's contoured shapes are detail boxes over hidden solid boxes. Per shape (`
 | Rounded, bevel | its solid box: nearly the same shape |
 | A wheel on a suspension | a sixteen-sided prism at the hub ([Wheels](drivetrain-and-engines.md#wheels-the-rim-and-the-cylinder)) |
 | More than 32 corners (the Small Nuke's smooth cylinders) | the hidden boxes |
+| Hull (a convex plate or prism from its points: ships' skins, armour slabs, chine rails) | a convex hull from its points, **over nothing**: the part's solid boxes all stay colliders |
+
+**Ship skins** (2026-11-17). The ships' generators draw their skin as "hull" plates that stand off the rooms' hidden boxes by up
+to metres, so until then shots, other bodies and players went through the skin to the rooms. Now each plate collides as
+itself; it replaces no hidden box (a tilted plate's box can hold one of the void behind it). The part's reach takes the skin in
+(`ConstructPartDef.SkinMin/SkinMax`, `Construct.ReachBounds`: the part tree, the body's bounds and radius), while
+`BoundsMin/BoundsMax` stay the solid boxes' for sockets and snaps. **Players stand on skins too**, unlike the other shapes:
+in a ship's frame its plates are gathered as triangles (`ConstructRide.AddSkin` from `ConstructRideMove.Gather`), and
+outside it `ConstructWorld.SkinBlock` lands them on a plate (a cast along the tick's move, so a fall faster than a plate is
+thick still meets it) or pushes them off its side, then the ride frame takes them. `--skin-check [SHIPS] [--speed V]` measures
+it on every ship: rays against what is drawn and what collides, a player stood on the top, a plate dropped on it, and the
+Zero Day's Shuttle let go in its cradle.
 
 A hull replaces the hidden solid boxes inside its detail box for **collision and ray hits** (bullets, the look ray:
 `ConstructWorld.Raycast` tests the hull, so a bullet over a slope passes). **Mass, inertia, building overlap, ghosts, the outline and
