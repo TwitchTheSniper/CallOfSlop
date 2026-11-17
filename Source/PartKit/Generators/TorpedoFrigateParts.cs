@@ -1330,7 +1330,7 @@ public sealed class TorpedoFrigateParts : IPartGenerator
             p.Sock($"bell{i}", [BellX[i], BellY, CollarFace], "+z");
             p.Sock($"engine{i}", [BellX[i], BellY, CollarPlate], "-z");
         }
-        p.Set(("fuelTank", Kw(("capacity", 600))), ("ports", Py.L(BigDriveParts.PipePort("Fuel in", "in", [0, 1.0, 0], "-z", "fuel"))));
+        p.Set(("fuelTank", Kw(("capacity", 600))), ("ports", Py.L(BigDriveParts.PipePort("Fuel out", "out", [0, 1.0, 0], "-z", "fuel"))));
         Works.Mount(p);
         return p.Stats(6000, 30000, 45, 20.0);
     }

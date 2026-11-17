@@ -11,9 +11,9 @@
   },
   "ports": [
     {
-      "name": "Fuel in",
+      "name": "Fuel out",
       "type": "pipe",
-      "dir": "in",
+      "dir": "out",
       "fluid": "fuel",
       "at": [
         0,
