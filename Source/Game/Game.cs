@@ -1277,7 +1277,7 @@ public sealed partial class Game : IDisposable
                 }
                 SprintSpread.Tick(p, cmd.Buttons); // sprint inaccuracy (SprintSpread.cs)
             }
-            else if (p.CrewSlot >= 0)
+            else if (p.CrewSlot >= 0 && !CrewBodyFights(p))
             {
                 using var _ = Perf.Measure(PerfArea.Bots);
                 CrewBodyTick(p); // (a crew member's body: its crew drives its seat, GameCrew.cs)

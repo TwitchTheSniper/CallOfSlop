@@ -56,6 +56,18 @@ public static partial class Program
                 if (g.IsServer)
                     Console.WriteLine($"[windowshot] crewkill: {g.CrewKillJob(arg)}");
                 return true;
+            case "crewfaction": // "crewfaction NAME": host, a test state: the first crewed body's crew is of that NPC faction kind
+                if (g.IsServer)
+                    Console.WriteLine($"[windowshot] crewfaction: {g.CrewSetFaction(arg)}");
+                return true;
+            case "crewdisarm": // "crewdisarm": host, a server shortcut: this player is put by the first crewed body's scuttle charge and starts its disarm (the Mend act's server path)
+                if (g.IsServer)
+                    Console.WriteLine($"[windowshot] crewdisarm: {g.CrewDisarmFirst(me)}");
+                return true;
+            case "crewprisoner": // "crewprisoner release|drop|hold|hire": host: this player's order for the first prisoner on the first crewed body
+                if (g.IsServer)
+                    Console.WriteLine($"[windowshot] crewprisoner: {g.CrewPrisonerFirst(me, arg)}");
+                return true;
             case "npcstanding": // "npcstanding": how each NPC faction kind sees this player, as this peer's factions table has it
                 Console.WriteLine($"[windowshot] npcstanding: {g.CrewStandingLine(me)}");
                 return true;

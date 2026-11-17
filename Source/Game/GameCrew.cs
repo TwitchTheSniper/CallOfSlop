@@ -289,7 +289,7 @@ public sealed partial class Game : ICrewHost
     private void CrewSendSeats()
     {
         foreach (var gone in Crew.GoneBodies)
-            CrewSeatsOut(gone, 0, 0, 0);
+            CrewSeatsOut(gone, 0, 0, 0, -1, 0);
         Crew.GoneBodies.Clear();
         var sent = 0;
         var refresh = ++_crewSendAt % (5 * World.TickRate) == 0;
@@ -298,7 +298,7 @@ public sealed partial class Game : ICrewHost
             if (Crew.Ships[i] is not { } s || !s.SeatsDirty && !refresh)
                 continue;
             s.SeatsDirty = false;
-            CrewSeatsOut(s.Body, s.Tier == CrewTier.Asleep && s.Near > CrewStandInFar ? 0 : Crew.StandIns(s, _crewParts), s.Faction, Crew.Alive(s));
+            CrewSeatsOut(s.Body, s.Tier == CrewTier.Asleep && s.Near > CrewStandInFar ? 0 : Crew.StandIns(s, _crewParts), s.Faction, Crew.Alive(s), s.ScPart, s.ScStage);
             sent++;
         }
     }
@@ -306,16 +306,16 @@ public sealed partial class Game : ICrewHost
     /// <summary>Stand-ins aren't sent for an asleep crew this far from everyone (m).</summary>
     public const float CrewStandInFar = 4000;
 
-    private void CrewSeatsOut(ushort body, int n, byte faction, int alive)
+    private void CrewSeatsOut(ushort body, int n, byte faction, int alive, int scuttle, byte stage)
     {
         var w = _w;
         w.Begin(Msg.CrewSeats).U16(body).U8((byte)n);
         for (var k = 0; k < n; k++)
             w.U16(_crewParts[k]);
-        w.U8(faction).U8((byte)alive);
+        w.U8(faction).U8((byte)alive).U16((ushort)(scuttle < 0 ? 0xFFFF : scuttle)).U8(stage);
         if (!Net.IsOffline)
             Net.Broadcast(w.Span, PacketReliability.ReliableOrdered);
-        CrewSeatsSet(body, _crewParts.AsSpan(0, n), faction, alive); // (the host draws them too)
+        CrewSeatsSet(body, _crewParts.AsSpan(0, n), faction, alive, scuttle, stage); // (the host draws them too)
     }
 
     /// <summary>A joiner hears every crewed body's stand-ins.</summary>
@@ -327,17 +327,17 @@ public sealed partial class Game : ICrewHost
             _w.Begin(Msg.CrewSeats).U16(body).U8((byte)parts.Length);
             foreach (var p in parts)
                 _w.U16(p);
-            _w.U8(info.Faction).U8(info.Alive);
+            _w.U8(info.Faction).U8(info.Alive).U16((ushort)(info.Scuttle < 0 ? 0xFFFF : info.Scuttle)).U8(info.Stage);
             Net.SendTo(to, _w.Span, PacketReliability.ReliableOrdered);
         }
     }
 
-    /// <summary>Client: Msg.CrewSeats (u16 body, u8 n, n x u16 seat part, u8 faction kind, u8 crew alive: protocol 331).</summary>
+    /// <summary>Client: Msg.CrewSeats (u16 body, u8 n, n x u16 seat part, u8 faction kind, u8 crew alive, u16 scuttle point (0xFFFF: none), u8 its stage: protocol 331).</summary>
     private void ReadCrewSeats(ref PacketReader r)
     {
         var body = r.U16();
         int n = r.U8();
-        if (n > CrewWorld.MaxCrewPerBody || !r.Has(n * 2 + 2))
+        if (n > CrewWorld.MaxCrewPerBody || !r.Has(n * 2 + 5))
         {
             Console.WriteLine($"[crew] a stand-in list of {n} seats for construct {body} didn't read: dropped");
             return;
@@ -347,20 +347,22 @@ public sealed partial class Game : ICrewHost
             parts[k] = r.U16();
         var faction = r.U8();
         var alive = r.U8();
-        CrewSeatsSet(body, parts, faction, alive);
+        var scuttle = r.U16();
+        var stage = r.U8();
+        CrewSeatsSet(body, parts, faction, alive, scuttle == 0xFFFF ? -1 : scuttle, stage);
     }
 
     /// <summary>Client (and the host): per crewed body, its faction kind and crew alive (the look line's). Never read by the simulation.</summary>
-    public readonly Dictionary<ushort, (byte Faction, byte Alive)> CrewInfo = new();
+    public readonly Dictionary<ushort, (byte Faction, byte Alive, int Scuttle, byte Stage)> CrewInfo = new();
 
     /// <summary>The look line's crew note for a body ("Raiders, crew of 4"), or null.</summary>
     public string? CrewLook(ushort body) => CrewInfo.TryGetValue(body, out var i) && i.Alive > 0
         ? $"{CrewFactions.Of(i.Faction)?.Name ?? "crewed"}, crew of {i.Alive}" : null;
 
-    private void CrewSeatsSet(ushort body, ReadOnlySpan<ushort> parts, byte faction, int alive)
+    private void CrewSeatsSet(ushort body, ReadOnlySpan<ushort> parts, byte faction, int alive, int scuttle, byte stage)
     {
-        if (alive > 0 || !parts.IsEmpty)
-            CrewInfo[body] = (faction, (byte)Math.Min(alive, 255));
+        if (alive > 0 || !parts.IsEmpty || scuttle >= 0)
+            CrewInfo[body] = (faction, (byte)Math.Min(alive, 255), scuttle, stage);
         else
             CrewInfo.Remove(body);
         if (parts.IsEmpty)

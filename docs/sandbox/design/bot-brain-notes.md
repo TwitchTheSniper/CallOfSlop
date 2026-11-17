@@ -129,6 +129,35 @@ the building check's walker in the rest frame, built in slices, patched on a par
 member can't reach. Walks are still timers (straight-line distance) and bodies still move seat to seat by `CrewSit`. Loaders untried in
 a run (the Zero Day has no ammo box).
 
+## Done (phase 5: boarding)
+
+- `Game/GameCrewBoard.cs`, run from the captain's look (`ICrewHost.Board`): boarders are players riding the body or sitting in it; each
+  becomes a foe (-10 standing). Acts weighed from the faction's `boarding.weights` against boarders/defenders, morale (falls 0.15 x the
+  ratio a look), hull and the helm: Hold, Repel (bodied spares on couches stand up, `CrewState.Fighting`, and their bodies' bot brains
+  fight: `CrewBodyFights` in Game.cs's tick), Flee, Call for help (once: the same faction's awake crews within 3 km mark the boarder a
+  foe), Abandon (the crew goes, a derelict), Surrender (every member `Surrendered`, off their stations: rule 1 stops the ship), Scuttle.
+  Lock down and Dump weigh nothing (no locks, no cargo dump yet). Surrender, Abandon and a running scuttle hold once chosen.
+- Scuttle: only an engineer (job Engineer, alive, not surrendered: the user's answer 7) walks to the faction's first point kind with a
+  whole part (`magazine`: an ammo box with rounds or an ammo store; `fuel`: a fuel tank or tank volume; `reactor`: a big battery), arms
+  it (15 s; killed meanwhile, no charge), counts down (90 s, notices every 30 s then 10 s), then the point is shot to nothing (a cook-off
+  or fuel blast; else a blast of 8 m, 900). Disarm: the attach tool's Fire at the point (the Mend act; the look line says SCUTTLE CHARGE)
+  starts 5 s that need the player alive within 5 m; the point destroyed first, no blast. A disarmed point isn't tried again; another may be.
+- Capture: boarders aboard and no member left who isn't dead or surrendered: `CrewShip.Prize`, owner the first boarder (if they may own
+  another), `NpcFaction` 0, -20 standing, a notice. Prisoners (`CrewPrisoner`): release (+5), drop (the ship below 1 m/s, +3), hold;
+  hire is phase 6. Saved: the crew block's flags bit 4 (a prize) and a job's 0x80 bit (surrendered).
+- Notices go by `SandboxHands.Notices` to everyone aboard or within 200 m (no new message). `Msg.CrewSeats` (still 331 on this branch)
+  also carries the scuttle point and its stage, for the client's look line.
+- Window verbs: `crewfaction NAME` (a test state), `crewdisarm` (a server shortcut: stands the player by the charge and starts the
+  disarm through the Mend act's server path), `crewprisoner release|drop|hold|hire`.
+
+Verified (2026-11-16, window runs on the crewed Zero Day, the player sat in a Crash Couch): as Traders, surrender at once (morale 47%),
+taken by player 0 with 5 prisoners, one released. As Raiders with gunners and pilot shot: Scuttle; the gunner-turned-spare had become
+the engineer... (a spare who walks to the engine room takes the job); armed at the Ammo Crate, went off 90 s later (the crate cooked off);
+another run, `crewdisarm`: "player 0 disarmed the scuttle charge", the crew went for another crate.
+
+Unverified: Repel with bodies fighting a boarder (no run with spares on couches and a boarder on foot); a joined client's look line on
+a charge; Call for help; Abandon; boarding a ground vehicle.
+
 ## Next
 
 - Phase 1 is done (below). Phase 2 next: the ground `HelmDriver` from the brief, convoys and faction vehicles spawned crewed.

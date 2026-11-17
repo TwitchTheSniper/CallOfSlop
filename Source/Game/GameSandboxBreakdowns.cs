@@ -314,6 +314,11 @@ public sealed partial class Game
     /// <summary>The look line on a groaning or broken-down thruster, or on the engine room's panel while one is (null: nothing to say).</summary>
     public string? BreakdownLook(Construct c, int part, out bool failed)
     {
+        if (CrewInfo.TryGetValue(c.Id, out var crew) && crew.Scuttle == part && crew.Stage >= 2)
+        {
+            failed = false;
+            return crew.Stage == 2 ? $"{c.DefOf(part).Name}: SCUTTLE CHARGE ARMING - {SandboxKeys.Fire}: disarm (stay 5 s)" : $"{c.DefOf(part).Name}: SCUTTLE CHARGE - {SandboxKeys.Fire}: disarm (stay 5 s)"; // (a crew's charge: GameCrewBoard.cs)
+        }
         // (made again only when what it says changes: the look line is asked for every frame)
         var slot = BreakdownSeenSlot(c);
         var seen = slot >= 0 ? _bdSeen[slot].Part : -1;
@@ -433,6 +438,8 @@ public sealed partial class Game
             return "that part is gone";
         if (Vector3.Distance(p.Eye, ConstructRender.PartCentre(c, part)) > ConstructBuild.Reach + 2.5f)
             return "too far away";
+        if (CrewDisarm(p, c, part) is { } disarm)
+            return disarm.Length > 0 ? disarm : null; // (a crew's scuttle charge on it: the attach tool disarms it, GameCrewBoard.cs)
         if (IsBreakdownPanel(c, part))
         {
             // (from the engine room: a warning on a works piece inside; the rest is reported, and seen to at the part)
