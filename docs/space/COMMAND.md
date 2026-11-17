@@ -102,6 +102,28 @@ when the view is closed and opened again. Code: `Source/UI/UiCommandLinks.cs`.
   factories, 128 links, 32 legs; `LinkedLogistics.PartCount` is kept per rebuild); a label string is made only when its
   key changes. A frame projects the nodes and draws lines.
 
+## The missiles layer
+
+Karl, 2026-11-17: "Missiles show up on command view. Add a tickbox to show missiles, their target and their projected
+trajectory/flight path". The **MISSILES** tickbox (top middle, left of the zoom presets) turns it on and off; like the
+logistics layer it stays as it was when the view is closed and opened again. Code: `Source/UI/UiCommandMissiles.cs`.
+
+- **What is drawn:** every missile in flight (`ShellKind.Missile`: a Missile Rail's, and any designed missile or torpedo
+  off an Ordnance Bench, MIRV warheads too) as a dart along its way; a fine dotted line to what it steers for, with a
+  turning ring on a body (a small ring on a flare that drew it or on a point); and its path ahead as a solid line fading
+  with distance, with a cross where it meets its target. Red when the target is yours or your faction's ("INCOMING"),
+  orange otherwise. The label: what it goes for (the craft's call sign, FLARE, POINT or NO LOCK), how far, and how soon at
+  its closing speed. Under the tickbox: how many are in flight.
+- **The path** (`CmdMissilePath`) is the missile's own flight stepped forward in 40 steps of whole ticks: gravity, its push
+  while burn is left (after its wait), a designed weapon's drag and its turn rate (fins by the air, gimbal while burning),
+  turning towards its target where that will be, the target moving on at its velocity now, with the same 3 s lead the
+  flight uses. It looks 1.3 times its time to target ahead (3 to 90 s, never past its life). Stages still to come and wings
+  aren't stepped: it is what the missile would do as it is now, so a target that turns makes it bend.
+- **Multiplayer:** nothing new on the wire. Every PC already flies every shell from the launch event and ShellSteer (push,
+  turn, burn, target, aim, a flare drawing it), so a joined client draws the same missiles from its own copy.
+- **Cost:** off, one bool check a frame. On, at most 96 missiles a frame, each 40 steps (a gravity and an air read a
+  step); a label's text is made at most four times a second.
+
 ## Orders
 
 Five kinds (`NavKind`), each for one ship, given by any player to any ship that takes orders. **A ship takes orders
@@ -282,7 +304,7 @@ The window tool (README.md "Testing without playing") has verbs for it (`Source/
 the Nth craft, `order orbit BODY KM`, `order goto BODY KM`, `order ground M` (a spot M metres along the ground),
 `order land M` (a spot M metres along the ground to set down on; from space, along from under the ship), `order come`,
 `spacewalk KM [SIDE]` (host: you out KM km over the ground under the picked craft, SIDE m beside it, at rest) and
-`order cancel` give the picked craft an order as the menu would; `linked layer [on|off]` (Program.WindowShotLinked.cs) turns the logistics layer on or off and prints its factories, links and legs, (an orbit of another planet is a trip), `rclick X,Y` is a right click (the menu itself), `nav` prints every craft and its order, `hoist KM` (host) puts
+`order cancel` give the picked craft an order as the menu would; `linked layer [on|off]` (Program.WindowShotLinked.cs) turns the logistics layer on or off and prints its factories, links and legs, `missiles [on|off]` the missiles layer (and how many it drew), `missile M [SPEED]` (host) a test missile M metres off the picked craft, locked on it, (an orbit of another planet is a trip), `rclick X,Y` is a right click (the menu itself), `nav` prints every craft and its order, `hoist KM` (host) puts
 the picked craft that high, at rest, `speed N` asks for a time speed (host), and `travel FUEL SHARE` sets Settings >
 Gameplay's Fuel use in space and Trip fuel for the run (percents). The `nav` line has each craft's acceleration and dV. For example, a Magpie into orbit and on to the
 moon:

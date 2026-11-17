@@ -881,6 +881,7 @@ public sealed partial class Game : IDisposable
         if (size < 0)
             size = def.BulletSize; // other players' shots: the weapon's (mean) round size
         TracerSounds(from, to, def, hitFlags); // impacts, whizzes, hits heard in the world (GameSounds.cs)
+        ShellOilFx(from, to, hitFlags); // a hit on a robot shell sprays oil, not blood (GameRobotShell.cs)
         ImpactDecals.OnTracer(World.Map, from, to, shooter?.Id ?? (byte)255, now, def.Pellets > 1, ImpactDecals.CalibreScale(def) * SizeLook(size)); // a bullet-impact decal where it ends on a surface (Source/Decals); bigger rounds leave bigger marks
         PenetrationMarks(through, to, def, shooter?.Id ?? (byte)255, now); // went through walls on the way: marks on both sides (GamePenetration.cs)
         var color = def.Sound switch

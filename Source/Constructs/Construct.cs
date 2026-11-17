@@ -337,6 +337,9 @@ public sealed partial class Construct
     internal const int MaxRecoils = 64; // segments with a shot's recoil in one tick; past this the last entry takes the rest (AddRecoil)
     internal int RecoilCount;
     internal Vector3 VelBefore, VelThen; // (its velocity at this step's start, and at the one before)
+    // Server: the speed it came into the world with, past the physics' speed limit (cut off a fast ship, it keeps the ship's
+    // speed; ConstructRide.SpawnIntoMotion sets it, ConstructPhysics.Integrate lets it slow and never speed up past it). 0: none.
+    internal float SpeedKept;
 
     // Mass properties (rebuilt with the caches)
     public float Mass, InvMass;

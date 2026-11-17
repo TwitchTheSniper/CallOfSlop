@@ -26,6 +26,6 @@ public static unsafe partial class Program
         var frac = local != null ? local.Health / (float)World.MaxHealth : 1f;
         _bloodOverlay.Update(frac, alive, local != null ? BloodMarks.Sector(local.Blood) : 0, now, (float)FrameDt);
         var (spanLeft, spanW) = HudLayout.Span(w, h, _settings.HudWidth);
-        BloodOverlayRenderer.Draw(Gfx, _bloodOverlay, w, h, spanLeft, spanW, _settings.BloodOverlay, _settings.BloodColour);
+        BloodOverlayRenderer.Draw(Gfx, _bloodOverlay, w, h, spanLeft, spanW, _settings.BloodOverlay, _settings.BloodColour, oil: local is { InShell: true }); // (a robot shell: oil on the visor)
     }
 }
