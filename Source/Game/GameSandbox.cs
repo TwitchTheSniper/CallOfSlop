@@ -295,7 +295,7 @@ public sealed partial class Game
             {
                 p.Teleport(spot);
                 p.Sim.Velocity = vel;
-                ConstructRide.End(ref p.Sim, null, deck, seg, Vector3.Zero, frame: p.Bot == null); // (as landing on it: the same frame)
+                ConstructRide.End(ref p.Sim, null, deck, seg, Vector3.Zero, frame: p.FramedRider); // (as landing on it: the same frame)
                 return;
             }
         }
@@ -2080,7 +2080,7 @@ public sealed partial class Game
             ConstructRide.Clear(ref s); // (a seat is its own frame)
             return;
         }
-        Constructs.BlockPlayer(ref s, World.HeightOf(s.Stance), IsServer, p.Id, frame: p.Bot == null, doors: p.Bot == null || NavGraph.Current.SiteOf(s.Position, 2f) < 0);
+        Constructs.BlockPlayer(ref s, World.HeightOf(s.Stance), IsServer, p.Id, frame: p.FramedRider, doors: p.Bot == null || NavGraph.Current.SiteOf(s.Position, 2f) < 0);
         if (Constructs.LiftBodies.Count > 0 && p.Bot == null)
             ConstructLifterPush.Block(Constructs, ref s, World.HeightOf(s.Stance), _sepAtTick != 0 ? _sepAtTick : MoverPhysics.Clock, IsServer); // (a Loader Arm's piece in the air pushes them aside, or waits for them: ConstructLifterPush.cs)
         if (IsServer && Constructs.LastHitSpeed > RunOverSpeed && Constructs.LastHitBody is { } car)
@@ -2114,8 +2114,8 @@ public sealed partial class Game
             return "not while noclipping";
         // (it moved on since the player aimed: a little more reach the faster it goes)
         var slack = c.Anchored || c.Asleep ? 0 : MathF.Min((c.Vel - p.Sim.Velocity).Length(), 12f) * 0.15f;
-        var why = ladder ? ConstructRide.ClimbLadder(ref p.Sim, c, part, World.HeightOf(Stance.Stand), frame: p.Bot == null)
-            : ConstructRide.GrabOn(ref p.Sim, c, part, World.HeightOf(p.Sim.Stance), slack, frame: p.Bot == null);
+        var why = ladder ? ConstructRide.ClimbLadder(ref p.Sim, c, part, World.HeightOf(Stance.Stand), frame: p.FramedRider)
+            : ConstructRide.GrabOn(ref p.Sim, c, part, World.HeightOf(p.Sim.Stance), slack, frame: p.FramedRider);
         if (why == null)
             Constructs.Events.Add($"player {p.Id} grabbed on to construct {c.Id}");
         return why;

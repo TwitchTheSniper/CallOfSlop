@@ -58,7 +58,7 @@ public sealed partial class Game : ICrewHost
 
     // ---- Bodies ---------------------------------------------------------------------------------------------------------------------
 
-    byte ICrewHost.Promote(CrewWorld crew, int m, Construct c, int part)
+    byte ICrewHost.Promote(CrewWorld crew, int m, Construct c, int part, Vector3? stand)
     {
         if (SandboxBotCount() + crew.Bodied >= Math.Clamp(SandboxBotCap, 0, SpawnBotCapMax))
             return 0; // (the spawned bots' cap is shared: bot-brain.md section 4)
@@ -76,7 +76,9 @@ public sealed partial class Game : ICrewHost
         };
         Players[id] = bot;
         Spawn(bot, ServerTick, SandboxNow);
-        if (!CrewSit(bot, c, part))
+        if (stand is { } at)
+            CrewStandAt(bot, c, at); // (an engineer or a loader stands at its place)
+        else if (!CrewSit(bot, c, part))
         {
             Players.Remove(id);
             OnModePlayerLeave(bot);
@@ -134,6 +136,42 @@ public sealed partial class Game : ICrewHost
 
     bool ICrewHost.Sit(byte player, Construct c, int part) => Players.TryGetValue(player, out var p) && CrewSit(p, c, part);
 
+    void ICrewHost.StandAt(byte player, Construct c, Vector3 rest)
+    {
+        if (Players.TryGetValue(player, out var p))
+            CrewStandAt(p, c, rest);
+    }
+
+    bool ICrewHost.Feet(byte player, out Vector3 feet)
+    {
+        feet = default;
+        if (!Players.TryGetValue(player, out var p) || !p.Alive)
+            return false;
+        feet = p.Position;
+        return true;
+    }
+
+    /// <summary>A crew body up out of any seat and on its feet at <paramref name="rest"/> (the body's rest frame), riding the body (CrewNav's walks start here).</summary>
+    private void CrewStandAt(Player p, Construct c, Vector3 rest)
+    {
+        ref var h = ref SandboxHands.Hand(p.Id);
+        if (h.Seated)
+        {
+            var was = Constructs.Get(h.SeatBody);
+            SandboxHands.Stand(Constructs, p.Id);
+            if (was != null && was.Driver == p.Id)
+                SandboxHands.StopDriving(was);
+        }
+        h.Edit = EditKind.None;
+        var at = c.ToWorld(rest + new Vector3(0, 0.03f, 0));
+        p.Teleport(at);
+        p.Sim.Velocity = c.PointVel(at);
+        ConstructRide.End(ref p.Sim, null, c, 0, Vector3.Zero, frame: true); // (the ship's own frame, as a person rides it: CrewNav's walks need it)
+        for (var i = 0; i < Player.HistorySize; i++)
+            p.History[i] = new HistoryEntry { Position = p.Position, Yaw = p.Yaw };
+        c.Wake();
+    }
+
     /// <summary>A crew body into a seat, out of any it was in (no reach: the crew's timed walk got it there).</summary>
     private bool CrewSit(Player p, Construct c, int part)
     {
@@ -165,6 +203,8 @@ public sealed partial class Game : ICrewHost
     {
         if (!p.Alive)
             return;
+        if (CrewWalkTick(p))
+            return;
         ref var h = ref SandboxHands.Hand(p.Id);
         var yaw = p.Yaw;
         var pitch = p.Pitch;
@@ -174,6 +214,31 @@ public sealed partial class Game : ICrewHost
             pitch = c.Parts[h.SeatPart].AimPitch;
         }
         ApplyCmd(p, new InputCmd { Seq = p.LastInput.Seq + 1, Yaw = yaw, Pitch = Math.Clamp(pitch, -1.5f, 1.5f), Weapon = p.Weapon, SpeedPct = 100 });
+    }
+
+    /// <summary>A crew body walking CrewNav's path presses the keys that follow it (true), and says when it is there or gives up.</summary>
+    private bool CrewWalkTick(Player p)
+    {
+        var w = Crew.Nav.WalkerOf(p.CrewSlot);
+        if (w < 0 || Constructs.Get(Crew.Nav.WBody[w]) is not { Wreck: false } c)
+            return false;
+        if (SandboxHands.Hand(p.Id).Seated)
+            return false; // (sat down meanwhile)
+        var phase = Crew.Nav.Steer(w, c, Constructs, ref p.Sim, out var cmd);
+        if (phase >= 2)
+        {
+            Crew.Nav.End(w);
+            Crew.Arrived(p.CrewSlot, phase == 2);
+            cmd = new InputCmd { SpeedPct = 100, RideBody = p.Sim.RideBody, Yaw = p.Yaw };
+        }
+        else if (phase == 0)
+            cmd = new InputCmd { SpeedPct = 100, RideBody = p.Sim.RideBody, Yaw = p.Yaw }; // (the way is being searched: it waits)
+        cmd.Seq = p.LastInput.Seq + 1;
+        cmd.Weapon = p.Weapon;
+        if (cmd.Buttons == Buttons.None)
+            cmd.RideYaw = p.Sim.RideBody != 0 ? cmd.RideYaw : 0;
+        ApplyCmd(p, cmd);
+        return true;
     }
 
     /// <summary>Lines for a tool (allocates): each crew's roster, its driver's shots, its body's height and speed.</summary>

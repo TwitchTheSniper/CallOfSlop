@@ -630,6 +630,8 @@ public sealed class Player
     // died, and since when a construct has held it up.
     [MatchState]
     public bool SbSpawned;
+    /// <summary>Rides a construct's own frame (contraption space) as a person does: people and crew bodies (CrewNav walks them inside); spawned bots ride the plain way.</summary>
+    public bool FramedRider => Bot == null || CrewSlot >= 0;
     public int CrewSlot = -1; // server: a crew member's body (its record in Game.Crew: Source/Crew/CrewWorld.cs), -1: not crew. A crew body has no bot brain at work and never respawns
     [MatchState]
     public byte SbOwner = 255;
