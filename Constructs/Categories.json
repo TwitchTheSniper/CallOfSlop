@@ -23,7 +23,7 @@
     { "group": "Ship", "notSection": "Ship fittings", "unlisted": true },
     { "group": "Ship", "name": ["Magpie", "Zero Day", "Rust Bucket"], "unlisted": true },
     { "group": "Ship", "section": "Ship fittings", "name": ["Hull Mount", "Drive Core", "Fuel Pump", "Coolant Exchanger", "Turbopump", "Mixing Manifold", "Power Conditioner"], "to": ["Drivetrain and Engines", "Drive works"] },
-    { "group": "Ship", "section": "Ship fittings", "name": ["Turret Ring", "Autoloader"], "to": ["Weapons", "Turret works"] },
+    { "group": "Ship", "section": "Ship fittings", "name": ["Turret Ring", "Autoloader", "Reload Hoist"], "to": ["Weapons", "Turret works"] },
     { "section": "Wings", "to": ["Flight", "Wings"] },
     { "section": "Control surfaces", "to": ["Flight", "Control surfaces"] },
     { "section": "Rotors", "to": ["Flight", "Rotors"] },

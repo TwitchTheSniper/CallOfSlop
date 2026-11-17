@@ -348,7 +348,7 @@ public static class ConstructOrdnance
         public string? Why; // the nearest hook it can't go on: why (null when it can)
     }
 
-    private static int LugOf(ConstructPartDef d) => Array.FindIndex(d.Sockets, s => s.Name.Equals("lug", StringComparison.OrdinalIgnoreCase));
+    public static int LugOf(ConstructPartDef d) => Array.FindIndex(d.Sockets, s => s.Name.Equals("lug", StringComparison.OrdinalIgnoreCase));
 
     /// <summary>Is this a thing a hook takes: one loose explosive part with a lug?</summary>
     public static bool Hangs(Construct c) => c.PartCount == 1 && !c.Dirty && c.Parts[0].Working && c.DefOf(0) is { Explosive: not null } d && LugOf(d) >= 0;
@@ -450,6 +450,63 @@ public static class ConstructOrdnance
                 return false;
         }
         return true;
+    }
+
+    /// <summary>
+    /// Where a weapon of <paramref name="d"/> would hang on rack <paramref name="rack"/>'s first free station it fits (a Reload Hoist's move,
+    /// ConstructHoists.cs): the station's socket and the place and turn in the rack's segment, as <see cref="FindSnap"/> would put it,
+    /// nose along an Ordnance Rack's forward. False: no free station takes it (its limits, the rack's load, the room, a full construct).
+    /// </summary>
+    public static bool StationFor(Construct c, int rack, ConstructPartDef d, out int socket, out Vector3 at, out byte rot)
+    {
+        (socket, at, rot) = (-1, default, 0);
+        var lug = LugOf(d);
+        if (lug < 0 || c.PartCount >= Construct.MaxParts)
+            return false;
+        var rd = c.DefOf(rack);
+        ref var rp = ref c.Parts[rack];
+        var carried = 0f;
+        for (var e = c.FirstLink(rack); e >= 0; e = c.NextLink(e))
+            if (c.DefOf(c.OtherEnd(e)).Explosive != null)
+                carried += c.DefOf(c.OtherEnd(e)).Mass;
+        if (rd.IsModularRack ? LoadWhy(rd, carried, d) != null : rd.RackLoad > 0 && carried + d.Mass > rd.RackLoad)
+            return false;
+        var mine = ConstructParts.DirVector(d.Sockets[lug].Dir);
+        var ahead = Rot24.Apply(rp.Rot, -Vector3.UnitZ);
+        var up = Rot24.Apply(rp.Rot, Vector3.UnitY);
+        for (var s = 0; s < rd.Sockets.Length; s++)
+        {
+            if (!rd.Sockets[s].Name.StartsWith("lug", StringComparison.Ordinal))
+                continue;
+            var free = true;
+            for (var e = c.FirstLink(rack); e >= 0 && free; e = c.NextLink(e))
+                free = ((e & 1) == 0 ? c.Links[e >> 1].SA : c.Links[e >> 1].SB) != s;
+            if (!free)
+                continue;
+            var theirs = ConstructParts.DirVector(Rot24.ApplyDir(rp.Rot, rd.Sockets[s].Dir));
+            var best = -9f;
+            byte r = 0;
+            for (byte k = 0; k < Rot24.Count; k++)
+            {
+                if (Vector3.Dot(Rot24.Apply(k, mine), theirs) > -0.9f)
+                    continue;
+                var fwd = Vector3.Dot(Rot24.Apply(k, -Vector3.UnitZ), ahead);
+                if (rd.IsModularRack && fwd < 0.9f)
+                    continue;
+                var score = fwd * 2 + Vector3.Dot(Rot24.Apply(k, Vector3.UnitY), up);
+                if (score > best)
+                    (best, r) = (score, k);
+            }
+            if (best < -8f)
+                continue;
+            var sAt = rp.Pos + Rot24.Apply(rp.Rot, rd.Sockets[s].At);
+            var place = ConstructWorld.Quantise(sAt - Rot24.Apply(r, d.Sockets[lug].At));
+            if (!Room(c, rack, d, place, r, rp.Seg, rd.IsModularRack))
+                continue;
+            (socket, at, rot) = (s, place, r);
+            return true;
+        }
+        return false;
     }
 
     /// <summary>Server, each tick for a held bomb: pushed to a hook, it goes on. True when it did: the body it was is gone.</summary>

@@ -2091,6 +2091,7 @@ public sealed partial class ConstructWorld
     public bool PlayerBuild; // a Building Station fits a step: a player's build, whose stores come empty in survival (ConstructBuild.SetConfig)
 
     public int RecyclerTicks;
+    public int HoistTicks; // (ConstructHoists.cs: ticks to the hoists' next look)
 
     /// <summary>The world's raw resources (the game sets it from the map; null: gathering modules idle).</summary>
     public ResourceField? Resources;
@@ -2144,6 +2145,7 @@ public sealed partial class ConstructWorld
             ConstructLogic.Step(this, c, dt);
         ConstructBoost.Separate(this); // (decouplers that fired: bodies change only out here)
         ConstructOrdnance.Release(this, query); // (bomb racks that let go: the same)
+        ConstructHoists.Step(this); // (reload hoists move a weapon from their magazines onto their launchers, a few times a second)
         ConstructLauncher.Step(this, dt); // (catapults and arrestor gear, on the logic's signals: ConstructLauncher.cs)
         ConstructDoors.Step(this); // (event doors: the wired ones' edges and the moving ones, nothing for an idle door)
         ConstructRide.SpawnIntoMotion(this); // (bodies made since the last step: into the motion of the frame they were made in)

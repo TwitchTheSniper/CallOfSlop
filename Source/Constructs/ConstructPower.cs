@@ -201,6 +201,12 @@ public static class ConstructPower
                         watts += d.PowerDraw; // (a lifter draws its wattage while it moves, nothing idle: its Busy output, ConstructLifters.Ports)
                     continue;
                 }
+                if (d.WorksKind == WorksKind.Hoist)
+                {
+                    if (p.Cool > 0)
+                        watts += d.PowerDraw; // (a reload hoist draws its wattage while it moves a weapon, nothing idle: ConstructHoists.cs)
+                    continue;
+                }
                 var machine = d.IsRecycler || d.IsGatherer || d.IsRefiner || d.IsAssembler || d.IsPress || d.IsBeacon || d.IsTerminal || d.IsExtruder;
                 if (machine && world.StoreOf(c, i) is not { Busy: true, Held: false, Drive: ShaftState.None })
                     continue; // (a Recycler, gathering module, production machine or beacon draws only while it works; one a wire holds off doesn't, even with a job in hand; a drill on a drive shaft never does)
