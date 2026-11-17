@@ -996,6 +996,7 @@ public sealed class TorpedoFrigateParts : IPartGenerator
         Sock(p, "table", Cx - 2.0, Ft1, 38.4, "+y");
         Sock(p, "gun", Cx - 0.3, Ft1, 39.6, "+y");
         Sock(p, "gunSeat", Cx - 0.3, Ft1, 40.6, "+y");
+        Sock(p, "director", Cx + 2.9, Ft1, 41.3, "+y"); // (the Fire Director in the starboard aft corner, under the mast's radar: a wire reaches 8 m)
         DoorSock(p, "doorCabinB", false, 25.9, Cx - 1.0, Ft1);
         DoorSock(p, "doorHead", false, 31.9, Cx - 1.0, Ft1);
         DoorSock(p, "doorMed", false, 25.9, Cx + 1.0, Ft1);
@@ -1148,6 +1149,10 @@ public sealed class TorpedoFrigateParts : IPartGenerator
             Void(p, zs[i], zs[i + 1], Roof, Math.Min(Top(zs[i]), Top(zs[i + 1])) - 0.02, 0);
         Sock(p, "upper", Cx - 1.5, Roof, 12.0, "-y");
         Sock(p, "railgun", Cx, Top(20) + 0.06, 32.0, "+y");
+        // The Long Range Sensor's pad on the step to port of the mast (the radar, wired to the Fire Director in the mess below): its foot in the step.
+        var sy = Top(38.41) + (Top(41.8) - Top(38.41)) * (41.0 - 38.41) / (41.8 - 38.41) + 1.488 + 0.05;
+        Solid(p, Cx - 0.78, sy - 0.08, 40.82, Cx - 0.42, sy, 41.18, Frame, "painted steel");
+        Sock(p, "sensor", Cx - 0.6, sy, 41.0, "+y");
         foreach (var (s, z, n) in new[] { (-1, 17.6, "flaresFL"), (1, 17.6, "flaresFR"), (-1, 21.4, "flaresBL"), (1, 21.4, "flaresBR") })
             Sock(p, n, Cx + s * 1.75, Top(z) - 0.02, z, "+y");
         return p.Stats(8000, 24000, 45, 15.0);
@@ -2191,6 +2196,9 @@ public sealed class TorpedoFrigateParts : IPartGenerator
         // Flare launchers behind the bridge, on ops' flare button.
         foreach (var n in new[] { "flaresFL", "flaresFR", "flaresBL", "flaresBR" })
             bp.Wires.Add((flareButton, Hang(bp, "Zero Day Countermeasure Launcher", spine, n, "back")));
+        // The radar: the Long Range Sensor by the mast wired into the Fire Director in the mess below it, so the middle mouse locks a contact in any
+        // seat and the torpedoes take that lock at launch (ConstructRadar.CanLock; Karl, 2026-11-17). No guns are wired out of it.
+        bp.Wires.Add((Hang(bp, "Long Range Sensor", spine, "sensor", "-y"), Hang(bp, "Fire Director", ua, "director", "-y")));
         var json = bp.Json();
         // The torpedo magazines (a rack's shape is made by the game, so its steps go last, by socket name) and their torpedoes; each
         // bay's fire button lets one go.
