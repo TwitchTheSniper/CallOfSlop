@@ -134,7 +134,12 @@ public static class CrewRelationsCheck
         back.Load(bytes);
         var same = back.Rel.AsSpan().SequenceEqual(rel.Rel) && back.PactOf(north, south) == PactKind.Ceasefire && back.NewsTotal == Math.Min(rel.NewsTotal, PowerRelations.MaxNews);
         Check(same, $"the grid, pacts and news survive a save ({bytes.Length} bytes)");
+        var sw = Stopwatch.StartNew();
+        var bytes0 = GC.GetAllocatedBytesForCurrentThread();
+        var news0 = rel.NewsTotal;
         Run(rel.Rules.CeasefireMinutes * 60 + 10);
+        var ticks = (rel.Rules.CeasefireMinutes * 60 + 10) * T;
+        Say($"{ticks} ticks of the powers thinking: {sw.Elapsed.TotalMilliseconds * 1000 / ticks:0.00} us a tick, {GC.GetAllocatedBytesForCurrentThread() - bytes0} bytes allocated ({rel.NewsTotal - news0} news lines)");
         Check(rel.PactOf(north, south) == PactKind.None, "the ceasefire runs out");
         Say("end:\n" + rel.GridText());
         Say("news: " + string.Join(" | ", Enumerable.Range(Math.Max(0, rel.NewsTotal - PowerRelations.MaxNews), Math.Min(rel.NewsTotal, PowerRelations.MaxNews)).Select(rel.NewsLine)));

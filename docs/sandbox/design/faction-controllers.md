@@ -1,6 +1,6 @@
 # Faction controllers and admirals: the two top tiers of the bot brain (design)
 
-Design only (2026-11-17). No code changed, nothing built, nothing run. Written for builders who each take a whole phase
+Design (2026-11-17). **Phase 1 (living relations) is built**: what, where and what is left in `faction-controllers-notes.md`. Written for builders who each take a whole phase
 (section 10), a WIP commit after each step. Section 11 holds the open questions for the user (recommendation first),
 section 12 what must be agreed with Karl. An answer there overrides the text above it.
 
