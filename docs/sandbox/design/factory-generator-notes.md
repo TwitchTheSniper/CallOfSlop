@@ -2,6 +2,27 @@
 
 Notes kept by the builders of `factory-generator.md` (the design and the user's answers of 2026-11-17). Newest state first.
 
+## State (2026-11-17, second builder): phase 2 begun
+
+- **The shed shell** (part kit `factory_shell`): Portal Column 8 m (an H column), Portal Rafter 5.5/7.5/9.5/11.5/13.5 m (seats under each end, top
+  sockets over them), Roof Sheet 4 x (span + 0.5) m (corrugated, 3 mm over the rafters). `FactoryScript.Shed` frames each process zone: columns along
+  the road's edge and the band's back, 4 m bays from a metre in (the zone board stands at the west edge; its Medium Text Sign is 4 m wide along z), a
+  rafter across each pair, a sheet over each bay; open sided, 8 m eaves over the 6.3 m refiners. Militia rolls yard 40 %, shed 60 %. Refineries 1-12
+  build with 0 coplanar faces; `--check-building` passes; the haul check still runs. Inventory: Buildings > Roofs.
+- **The grading sheet** (the user grades it, answer 7): `/home/claude/factory-grading/index.html` (with `models/`), from `--preview-gallery
+  /home/claude/factory-grading --only "..."` over Militia Extraction Posts 1-3, 5-13 (seed 4 is past the post class) and Militia Refineries 1-12,
+  generated into `bin/.../Constructs/Blueprints` with `--gen-factory FUNCTION --seeds 12 --out` first, plus the Ore Hauler. The top three of each ship
+  (`FactoryStyle.Seeds`). Not opened in a browser here.
+
+### Phase 2 still to do (in order)
+
+1. Halls: cladding (4 x 4 m corrugated, plated, window and louvre), hangar doors, crane rails, galleries and platforms, berms (3.5); a shed's
+   gable ends; lamps under a roof.
+2. Arrangements past `rows`: `ring`, `road`, `L` (3.4). `FactoryPlan.Make` throws for anything but rows.
+3. Quality tools: `--sweep-factory` (failure rate, commonest refusal, times; `--gen-factory F --seeds N` is a start), `--factory-diversity`,
+   `--grade-factory` and `docs/factorykit/grades.json`, and the Factory gallery as a republished Artifact (`--preview-gallery --only` works today).
+4. A second style. Then phases 3 (factory, depot, cells as sub-blueprints, `stacked`) and 4 (outposts and defence).
+
 ## State (2026-11-17, second builder): phase 1 done but the whole-site spawn in play
 
 ### What came in
