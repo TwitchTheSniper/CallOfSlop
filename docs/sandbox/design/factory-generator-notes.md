@@ -142,3 +142,5 @@ Notes kept by the builders of `factory-generator.md` (the design and the user's 
 - Variety is thin: margins, power at the end or behind, heap order, mast end, older machines and paint. Extraction seeds 2, 3, 4 and 6
   build alike (142 parts). More arrangements (`ring`, `road`, `L`) and shells are phase 2's.
 - Lanes are interval-coloured, not A*; overhead runs and crossings of the aisle are not planned yet (nothing crosses it in `rows`).
+
+- Open (coordinator, 2026-11-17): `--gen-vehicles` does not compare the committed `MilitiaOreHauler1.json`, because Militia is not in `Styles.Shipped` (only shipped styles are compared). A generator change can leave the hauler stale silently; give the factory kit its own compare (e.g. `--gen-factory hauler --check`) or a way to list a non-shipped style's committed vehicles.
