@@ -37,6 +37,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
 #tip { position: fixed; pointer-events: none; padding: 4px 8px; font: 12px var(--body); background: var(--panel); border: 1px solid var(--line); border-radius: 4px; }
 #tip b { font-weight: 600; } #tip small { color: var(--muted); display: block; }
 .hint { color: var(--muted); font-size: 11px; margin: 0; }
+.picked { margin: 0; font: 600 12px var(--body); color: var(--accent); }
 @media (min-width: 641px) { #view { left: calc(332px + env(safe-area-inset-left, 0px)); } }
 @media (max-width: 640px) {
   #view { bottom: 42%; }
@@ -64,7 +65,8 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
   <div class="toggles views"><button data-v="iso">3/4</button><button data-v="side">Side</button><button data-v="top">Top</button><button data-v="front">Bow</button></div>
   <input id="search" type="search" placeholder="Find a part" aria-label="Find a part">
   <ul id="parts"></ul>
-  <p class="hint">Drag to turn, right-drag to pan, wheel to zoom. Click a part to pick it; click empty space to clear.</p>
+  <p class="picked" id="picked" hidden></p>
+  <p class="hint">Drag to turn, right-drag to pan, wheel to zoom (on a phone: one finger turns, two pan and pinch). Click or tap a part to pick it; click empty space to clear.</p>
 </aside>
 <div id="tip" hidden></div>
 
@@ -164,7 +166,7 @@ function makeLinks() {
   scene.add(links);
 }
 function show(model) {
-  dispose(); M = model; picked = -1;
+  dispose(); M = model; picked = -1; document.getElementById("picked").hidden = true; tip.hidden = true;
   const pos16 = new Int16Array(b64(M.pos).buffer), nrm8 = new Int8Array(b64(M.nrm).buffer);
   look16 = new Uint16Array(b64(M.look).buffer);
   triPart = new Int32Array(look16.length);
@@ -228,7 +230,10 @@ function fillList() {
   }
 }
 search.oninput = fillList;
-function pick(i) { picked = i; paint(); fillList(); }
+function pick(i) {
+  picked = i; paint(); fillList();
+  const el = document.getElementById("picked"); el.hidden = !(M && i >= 0); if (!el.hidden) el.textContent = `Picked: ${M.parts[i][0]}  #${i}`;
+}
 
 // Hover and click: a ray against the solids (and glass), the triangle's part and look.
 const ray = new THREE.Raycaster(), mouse = new THREE.Vector2(), tip = document.getElementById("tip");
@@ -241,15 +246,27 @@ function hit(ev) {
 }
 let down = null;
 renderer.domElement.addEventListener("pointerdown", e => down = [e.clientX, e.clientY]);
-renderer.domElement.addEventListener("pointerup", e => { if (down && Math.hypot(e.clientX - down[0], e.clientY - down[1]) < 4) { const h = hit(e); pick(h ? h.part : -1); } down = null; });
-renderer.domElement.addEventListener("pointermove", e => {
-  if (e.buttons) { tip.hidden = true; return; } const h = hit(e); if (!h) { tip.hidden = true; return; }
+// A tap on a phone has no hover: the tap itself shows the part's name and look in the tip, and the panel names the pick.
+function showTip(h, x, y) {
   const [n] = M.parts[h.part]; const L = h.look;
   tip.innerHTML = `<b></b><small></small>`; tip.firstChild.textContent = `${n}  #${h.part}`;
   tip.lastChild.textContent = `${L[0]}${L[3] ? " · " + L[3] : ""}${L[1] > 0 ? " · glass" : ""}${L[2] ? " · glow" : ""}`;
-  tip.style.left = Math.min(e.clientX + 14, innerWidth - 220) + "px"; tip.style.top = (e.clientY + 14) + "px"; tip.hidden = false;
+  tip.style.left = Math.max(8, Math.min(x + 14, innerWidth - 220)) + "px"; tip.style.top = Math.min(y + 14, innerHeight - 60) + "px"; tip.hidden = false;
+}
+renderer.domElement.addEventListener("pointerup", e => {
+  const touch = e.pointerType !== "mouse";
+  if (down && Math.hypot(e.clientX - down[0], e.clientY - down[1]) < (touch ? 12 : 4)) {
+    const h = hit(e); pick(h ? h.part : -1);
+    if (touch) { if (h) showTip(h, e.clientX, e.clientY); else tip.hidden = true; }
+  }
+  down = null;
 });
-renderer.domElement.addEventListener("pointerleave", () => tip.hidden = true);
+renderer.domElement.addEventListener("pointermove", e => {
+  if (e.pointerType !== "mouse") return;
+  if (e.buttons) { tip.hidden = true; return; } const h = hit(e); if (!h) { tip.hidden = true; return; }
+  showTip(h, e.clientX, e.clientY);
+});
+renderer.domElement.addEventListener("pointerleave", e => { if (e.pointerType === "mouse") tip.hidden = true; });
 renderer.setAnimationLoop(() => { controls.update(); renderer.render(scene, camera); });
 
 // One model in the page, or a gallery: models/index.json lists the ships, the parts they use and parts in no ship. The first picker

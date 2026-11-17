@@ -49,6 +49,7 @@ public static class PartKit
     public static readonly IPartGenerator[] All =
     [
         new Generators.FreeParts(),
+        new Generators.FactoryShellParts(), // (the factory kit's parts: ore bunkers, later the shell)
         new Generators.BanditParts(),
         new Generators.MediaParts(),
         new Generators.AmmoParts(),

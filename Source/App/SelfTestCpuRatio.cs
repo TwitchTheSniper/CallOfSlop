@@ -200,7 +200,7 @@ public static partial class SelfTest
     /// The calling thread's CPU time: CLOCK_THREAD_CPUTIME_ID on Linux and macOS, the thread's cycle counter on Windows; falls
     /// back to the wall clock where neither works (then the interleaving and medians still do most of the job).
     /// </summary>
-    private static class ThreadCpu
+    internal static class ThreadCpu
     {
         private static int _mode = -1; // -1 unknown, 0 wall clock, 1 posix thread clock, 2 Windows thread cycles
 
