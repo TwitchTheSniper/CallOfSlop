@@ -73,7 +73,12 @@ public static class PlayerRender
             var po = new ToolGfxOut(g);
             BackpackRender.Emit(ref po, pack!, BackpackRender.OnBack(p) * up); // Sandbox: the backpack and what it holds (before the gun and arms, as the rig orders it)
         }
-        if (p.Sim.Canopy != 0 && p.RenderSeat == SeatKind.None)
+        if (EvaRender.Wears(p))
+        {
+            var eo = new ToolGfxOut(g);
+            EvaRender.Emit(ref eo, EvaRender.OnBack(p) * up, p.Sim.Canopy == PilotGear.Burning, time); // Sandbox: a spacewalker's MMU on the suit's back
+        }
+        else if (p.Sim.Canopy != 0 && p.RenderSeat == SeatKind.None)
         {
             var co = new ToolGfxOut(g);
             CanopyRender.Emit(ref co, p.Sim.Canopy, up); // Sandbox: a pilot's gear in the air

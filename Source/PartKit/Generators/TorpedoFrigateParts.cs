@@ -49,6 +49,7 @@ public sealed class TorpedoFrigateParts : IPartGenerator
     private const double MagCube = 3.296; // the magazine's Ammo Container (a 0.4 m cube) stands against the side wall inside: its middle this far out
     private const double Lw = 4.5, LwF = 3.5, Uw = 3.5, UwF = 2.5; // the rooms' inner half widths: lower aft, lower fore, upper aft, the bridge
     private const double DoorH = 2.25;
+    private static readonly (int I, double X, double Z)[] LinkChairs = [(0, Cx - Uw + 0.5, 16.5), (1, Cx - Uw + 1.1, 18.15), (2, Cx - Uw + 1.1, 19.05), (3, Cx + Uw - 0.5, 17.6)];
 
     private static double[] P(double x, double y, double z) => [x - H, y - H, z - H];
 
@@ -777,6 +778,8 @@ public sealed class TorpedoFrigateParts : IPartGenerator
         for (var i = 0; i < 4; i++)
             Sock(p, $"suit{i}", Cx - Lw, Ft0 + 0.125, 30.6 + i * 0.7, "+x");
         Sock(p, "airlockLocker", Cx + Lw, Ft0 + 0.125, 33.3, "-x");
+        for (var i = 0; i < 4; i++) // (the Robot Shell Docks along the engineering bulkhead's forward face, port of its door: Karl, 2026-11-17)
+            Sock(p, $"shellDock{i}", Cx - Lw + 0.2 + CrewFittingsParts.DockHalf + i * (2 * CrewFittingsParts.DockHalf + 0.01), Ft0 + 0.125, 34.0, "-z");
         Sock(p, "reactor", Cx + 3.1, Ft0, 35.5, "+y");
         Sock(p, "board", Cx + Lw, Ft0 + 0.9, 40.6, "-x");
         Sock(p, "panel", Cx - Lw, Ft0 + 0.6, 38.0, "+x");
@@ -896,6 +899,10 @@ public sealed class TorpedoFrigateParts : IPartGenerator
         Sock(p, "plot", Cx + 1.6, Ft1, 18.85, "+y");
         Sock(p, "flares", Cx - 2.4, Ft1 + 1.3, 19.875, "-z");
         // The cabins.
+        // The Shell Control Chairs (Karl, 2026-11-17): one with its back to ops' port wall, two at the ops console facing it, one with
+        // its back to the starboard wall clear of the hatch and the plot.
+        foreach (var (i, x, z) in LinkChairs)
+            Sock(p, $"linkChair{i}", x, Ft1, z, "+y");
         Sock(p, "couchA", Cx - Uw, Ft1 + 0.125, 21.4, "+x");
         Sock(p, "lockerA", Cx - 1.125, Ft1 + 0.125, 21.0, "-x");
         Sock(p, "couchCaptain", Cx + Uw, Ft1 + 0.125, 21.4, "-x");
@@ -2091,6 +2098,8 @@ public sealed class TorpedoFrigateParts : IPartGenerator
         for (var i = 0; i < 4; i++)
             Paint(bp, Hang(bp, "Zero Day Locker", la, $"suit{i}", "wall"), Hazard, "worn paint");
         Paint(bp, Hang(bp, "Zero Day Locker", la, "airlockLocker", "wall"), Hazard, "worn paint");
+        for (var i = 0; i < 4; i++)
+            Hang(bp, "Robot Shell", Hang(bp, "Robot Shell Dock", la, $"shellDock{i}", "wall"), "dock", "back");
         foreach (var d in new[] { "doorBayL", "doorBayR", "doorAirlock", "doorEngine" })
             Door(bp, la, d);
         Hang(bp, "Zero Day Reactor", la, "reactor", "bottom");
@@ -2115,6 +2124,8 @@ public sealed class TorpedoFrigateParts : IPartGenerator
         bp.Wires.Add((pilot, fc));
         var railModule = Hang(bp, "Turret Module", uf, "gunModule", "-y");
         Hang(bp, "Chart Table", uf, "chart", "back");
+        foreach (var (i, x, _) in LinkChairs)
+            bp.HangTurned("Shell Control Chair", Holder(bp, uf, $"linkChair{i}"), $"linkChair{i}", "bottom", i == 0 ? BuildingParts.RY270 : BuildingParts.RY90);
         Paint(bp, Hang(bp, "Zero Day Locker", uf, "bridgeLocker", "wall"), Armour, "worn paint");
         Hang(bp, "Chart Table", uf, "plot", "bottom");
         Paint(bp, Hang(bp, "Crash Couch", uf, "couchA", "wall"), "#2c3e58", "fabric");

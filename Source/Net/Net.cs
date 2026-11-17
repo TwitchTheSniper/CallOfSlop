@@ -107,7 +107,7 @@ public enum Msg : byte
     Fate, // server -> one client: Sandbox survival, where that player wakes after a death and whether they are dead for good (u8: 0x80 | 0x40 dead for good | RespawnSpot) when it changes (reliable ordered; GameSandboxDeath.cs, protocol 207)
     ColonyAlarm, // server -> all, Sandbox: the penal colony's lockdown alarm (u8 on, vec where it sounds) when it changes (reliable ordered), and again every 3 s while on (unreliable) for anyone who joined (GameColonyLockdown.cs, protocol 208)
     Corpse, // server -> all and each joiner: a body the host's ragdolls settled (u8 1, u16 its number, u8 owner, u16 zombie id, u8 look, vec, 14 x 3 i16 mm), or bodies that went (u8 2, u8 n, u16 each) (reliable ordered; GameCorpses.cs, protocol 210)
-    Shell, // server -> all and each joiner, Sandbox: a player wakes in a robot shell or is back in their body (u8 player, u8 on, u16 chair, u16 seat: where their body sits, protocol 315; 8 x u8 the shell's works' wear, protocol 334) (reliable ordered; GameRobotShell.cs, protocol 213)
+    Shell, // server -> all and each joiner, Sandbox: a player wakes in a robot shell or is back in their body (u8 player, u8 on, u16 chair, u16 seat: where their body sits, protocol 315; 8 x u8 the shell's works' wear, protocol 337) (reliable ordered; GameRobotShell.cs, protocol 213)
     Depot, // server -> one client, Sandbox story: that player's Orbital Depot state (u8 state, u8 has a target, vec the target) when it changes (reliable ordered; GameDepot.cs, protocol 214)
     TalkChoices, // server -> one client, Sandbox story: the answers a storylet offers in their talk panel (u8 the body's player, u8 n, n texts) when they change (reliable ordered; GameStoryStorylets.cs, protocol 222)
     Fragments, // server -> one client, Sandbox story: what they hold of the old records and their leads (u8 sites, u16 each site's construct; u8 held, (u8 fragment, str source) each; u8 leads, (str name, u8 found) each) when it changes (reliable ordered; GameStoryFragments.cs, protocol 227)
@@ -128,6 +128,7 @@ public enum Msg : byte
     CrewRoster, // server -> all and each joiner, Sandbox: an own crew's or a prize's roster (u16 construct, u8 owner, u8 flags, u8 n, n x (u32 uid, u16 name, u8 job, u8 state, u8 health, u8 kind)) when it changes (reliable ordered; GameCrewHire.cs, protocol 332)
     Credits, // server -> one client, Sandbox: their credits (u64 as i64; -1 unlimited) when they change (reliable ordered; GameCrewHire.cs, protocol 332)
     PowerNews, // server -> all and each joiner, Sandbox: the NPC powers' news (u8 n, n x text: wars, pacts, friends) as lines are posted, and the last 32 to a joiner (reliable ordered; GameCrewFactions.cs, protocol 333)
+    MachineSound, // server -> all, Sandbox: a machine's one-shot that only the server sees happen, such as a Robot Shell Dock's clamps (u8 Sfx, f32 x 3 where; unreliable; GameMachineSounds.cs, protocol 335)
 }
 
 /// <summary>Tiny little-endian packet writer.</summary>

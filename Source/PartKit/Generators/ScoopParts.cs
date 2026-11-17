@@ -151,12 +151,62 @@ public sealed class ScoopParts : IPartGenerator
         return p;
     }
 
+    /// <summary>
+    /// The Tipper Body (the factory kit's ore loop, docs/sandbox/design/factory-generator.md): a truck bed or a loading skip that is a scoop with its mouth
+    /// straight up, 2 m across, 2.5 m long, 0.6 m deep. On a Motor Hinge by its <c>hingeL</c> or <c>hingeR</c> socket (under one side wall, the axis along its
+    /// length) it tips sideways: past <c>spillDegrees</c> its load runs over the low side wall's middle (the scoop's edge or rim) into the store under it, as
+    /// any scoop's does. It holds a bin's 600 units however much air the box has, so a full one stays inside a 30 kN m Motor Hinge 3x3's torque.
+    /// Its edge is along the top of the left wall, so it never meets the ground the way a bucket's does.
+    /// </summary>
+    private static Part MakeTipper()
+    {
+        var c = Small;
+        double w = 2.0, high = 0.6, lng = 2.5, t = 0.05;
+        double xl = -w / 2, xh = w / 2, z0 = -lng / 2, z1 = lng / 2, y0 = 0, y1 = high;
+        var p = new Part("Tipper Body", c, "Scoops", "A truck bed or loading skip that tips sideways: hang it on a Motor Hinge by a hinge socket under one side and turn it past 55 degrees to pour its load over that side into whatever store is under it.", role: "storage", material: "steel", color: Shell, group: "Gathering");
+        p.Add(Box([xl, y0, z0], [xh, y0 + t, z1])); // the floor
+        foreach (var (a, b) in new[] { (xl, xl + t), (xh - t, xh) })
+            p.Add(Box([a, y0 + t, z0], [b, y1, z1])); // the side walls
+        foreach (var (a, b) in new[] { (z0, z0 + t), (z1 - t, z1) })
+            p.Add(Box([xl + t, y0 + t, a], [xh - t, y1 - 0.004, b])); // the end walls (a few mm under the side walls' tops)
+        foreach (var x in new[] { xl, xh })
+            p.Add(Box([x - 0.02, y1 - 0.06, z0 + 0.003], [x + 0.02, y1 + 0.02, z1 - 0.003], Wear, detail: true)); // the rims, drawn
+        for (var k = 0; k < 4; k++)
+        {
+            var z = z0 + lng * (k + 0.5) / 4;
+            foreach (var (x, s) in new[] { (xl, -1.0), (xh, 1.0) })
+                p.Add(Box([s < 0 ? x - 0.038 : x + 0.003, y0 + 0.003, z - 0.04], [s < 0 ? x - 0.003 : x + 0.038, y1 - 0.08, z + 0.04], Bar, detail: true)); // ribs on the sides
+        }
+        p.Sock("hingeL", [xl + 0.125, y0, 0], "-y");
+        p.Sock("hingeR", [xh - 0.125, y0, 0], "-y");
+        p.Sock("under", [0, y0, 0], "-y");
+        var area = w * lng + 2 * lng * high + 2 * w * high;
+        var mass = area * c.KgM2 * Math.Pow(t / c.Plate, 0.5) * 0.9;
+        var scoop = new PyDict
+        {
+            ["edge"] = Py.L(Vec(xl + 0.01, y1, z1 - 0.01), Vec(xl + 0.01, y1, z0 + 0.01)), // (the left rim: its middle is a lip)
+            ["rim"] = Py.L(Vec(xh - 0.01, y1, z1 - 0.01), Vec(xh - 0.01, y1, z0 + 0.01)), // (the right rim)
+            ["cuts"] = Py.L(-1, 0, 0),
+            ["mouth"] = Py.L(0, 1, 0),
+            ["reach"] = 0.05,
+            ["cutForce"] = (long)Py.Round(Math.Max(1e5, 2.5 * mass * 9.81), -1),
+            ["biteRadius"] = 0.3,
+            ["spillDegrees"] = 55,
+            ["pourSeconds"] = 6.0,
+        };
+        List<object?> fmin = [R(xl + t + 0.005), R(y0 + t + 0.005), R(z0 + t + 0.005)], fmax = [R(xh - t - 0.005), R(y1 - 0.05), R(z1 - t - 0.005)];
+        p.Set(("storage", Kw(("bulk", Kw(("material", "any"), ("capacity", 600), ("min", fmin), ("max", fmax))), ("scoop", scoop))));
+        p.Stats(mass, area * c.HealthM2 * 1.5, c.Armour);
+        return p;
+    }
+
     public void Make(PartOutput o)
     {
         var parts = new List<(string, Part)>();
         foreach (var c in new[] { Small, Medium, Large, Capital })
             foreach (var s in Styles)
                 parts.Add(("", Make(s, c)));
+        parts.Add(("", MakeTipper()));
         WriteParts(o, Out, parts);
     }
 }

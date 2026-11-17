@@ -49,7 +49,13 @@ reaches), `Source/Game/GameRobotShell.cs` (the swap, the link, the wire, the sav
 (docs/story/DEPOT.md).
 
 - **Robot Shell**: a standing robot, its own construct of one part (`"shell": {"body": true}`), with a channel. A shell fitted
-  onto something else can't be woken (stand it on its own).
+  onto something else can't be woken (stand it on its own), unless it hangs on a Robot Shell Dock.
+- **Robot Shell Dock** (Karl, 2026-11-17; `CrewFittingsParts.cs`): a wall fitting, a tool dock (`"toolDock": "Robot Shell"`,
+  ConstructEditsDock.cs) that holds a shell by its back. Every ship carries some (Zero Day 4, Magpie 3, Dray 3, the rust bucket
+  1), each with a Shell Control Chair. A chair wakes a docked shell too (`ConstructShell.Docked`): the dock unclamps it
+  (`CutOut`) and you stand where it hung. Inside a shell, F on a free dock (`ShellDockUse`) clamps the shell on (`ClipOnDock`)
+  and sends you back to your body; only that button does it, never walking past one (Karl). F on a dock from your own body
+  lets its shell go as a loose one, or clips a loose one on, as the drill dock does.
 - **Shell Control Chair**: a seat with `"shell": {"range": 3000}` and a channel. Sit in it for 2 s (`ShellLinkSeconds`) and you
   wake in the nearest Robot Shell on its channel within range that is yours, nobody's or your faction's.
 - **The swap.** The player is moved onto the shell and the shell's construct is taken away while they wear it, so a shell is
@@ -80,7 +86,7 @@ looks `Source/UI/UiShellWear.cs`, `Source/Render/LegAnimator.cs` (`ShellLegs`); 
   of wear (0 new, 255 failed). Worn ones wear only in Survival, while someone wears the shell: legs by how much they walk, arms
   with a tool out (a little without), the rest all the time. The file gives each family's hours from new to failed (5 to 12).
   A hit's damage takes a little from the plating and from one other work.
-- **Where it is kept.** While worn: `Player.ShellWear`, the server's, sent to every peer in `Msg.Shell` (8 bytes, protocol 334)
+- **Where it is kept.** While worn: `Player.ShellWear`, the server's, sent to every peer in `Msg.Shell` (8 bytes, protocol 337)
   on a 5 % step or a failure. Standing: four hidden Mask settings of the shell's part (`ShellWear0..3`, two works each), so it
   rides saves, blueprints and CBody.
 - **What shows.** Below `worn` (40 %) a work shows its fault, more strongly towards failure; at 0 it has failed.

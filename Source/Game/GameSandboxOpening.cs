@@ -537,6 +537,9 @@ public sealed class OpeningScript
     public string Ship = ""; // a ship start: the blueprint everyone wakes aboard, in orbit (GameSpaceStart.cs)
     public float Orbit = 3000; // its height over the ground (m; at least past the sky's edge)
     public Vector3[] Wake = []; // where people wake in it, in the ship's own metres (from its first part's middle), one each in turn
+    /// <summary>A crewed ship of an NPC faction kind going round with the start's ship, <c>Behind</c> m back along its orbit (GameSpaceStart.cs).</summary>
+    public readonly record struct Companion(string Ship, string Faction, float Behind);
+    public Companion[] Company = [];
     public readonly BeatDef[] Beats = new BeatDef[(int)OpeningStage.Wake + 1];
     public string Problem = "";
 
@@ -580,6 +583,10 @@ public sealed class OpeningScript
                 t.Orbit = Math.Clamp(ob.GetSingle(), 500, 50000);
             if (root.TryGetProperty("wake", out var wk))
                 t.Wake = [.. wk.EnumerateArray().Select(v => v.GetArrayLength() == 3 ? new Vector3(v[0].GetSingle(), v[1].GetSingle(), v[2].GetSingle()) : throw new FormatException("\"wake\": [x, y, z] spots"))];
+            if (root.TryGetProperty("company", out var co))
+                t.Company = [.. co.EnumerateArray().Select(ReadCompanion)];
+            if (t.Company.Length > 0 && t.Ship.Length == 0)
+                throw new FormatException("\"company\" goes with a ship start (\"ship\")");
             var beats = root.GetProperty("beats");
             foreach (var (key, stage) in new[] { ("placeholder", OpeningStage.Out), ("wake", OpeningStage.Wake) })
             {
@@ -601,6 +608,21 @@ public sealed class OpeningScript
             t.Problem = $"{Path.GetFileName(path)}: {ex.Message}";
         }
         return t;
+    }
+
+    private static Companion ReadCompanion(JsonElement e)
+    {
+        var ship = Text(e, "ship", "");
+        var faction = Text(e, "faction", "");
+        if (ConstructBuild.FindBlueprint(ship) == null)
+            throw new FormatException($"company: no blueprint named \"{ship}\"");
+        if (CrewFactions.Find(faction) == 0)
+            throw new FormatException($"company: no NPC faction kind named \"{faction}\" (Crew/Factions)");
+        // (at least 150 m clear either way, so two frigates never build into each other; at most 5 km, still in sight)
+        var behind = Math.Clamp(e.TryGetProperty("behind", out var b) ? b.GetSingle() : 400f, -5000f, 5000f);
+        if (MathF.Abs(behind) < 150f)
+            behind = behind < 0 ? -150f : 150f;
+        return new Companion(ship, faction, behind);
     }
 
     private static string Text(JsonElement e, string key, string fallback) =>

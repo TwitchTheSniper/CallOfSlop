@@ -1,0 +1,217 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Tipping Bunker 3 m",
+  "description": "A low open bin a tipper pours into from the road beside it: its top is 1 m up. Chute it on to the stock.",
+  "group": "Production",
+  "section": "Factory",
+  "role": "storage",
+  "tool": "welder",
+  "storage": {
+    "bulk": {
+      "material": "any",
+      "capacity": 2301,
+      "chuteLoad": 160,
+      "min": [
+        -1.345,
+        0.155,
+        -1.345
+      ],
+      "max": [
+        1.345,
+        0.95,
+        1.345
+      ]
+    }
+  },
+  "ports": [
+    {
+      "name": "Chute in",
+      "type": "chute",
+      "dir": "in",
+      "at": [
+        -1.425,
+        1.0,
+        0.0
+      ],
+      "face": "+y"
+    },
+    {
+      "name": "Chute out",
+      "type": "chute",
+      "dir": "out",
+      "at": [
+        1.425,
+        1.0,
+        0.0
+      ],
+      "face": "+y"
+    }
+  ],
+  "mass": 3780.0,
+  "health": 18900,
+  "armour": 20,
+  "material": "concrete",
+  "color": "#8e8a80",
+  "attachSeconds": 2.5,
+  "boxes": [
+    {
+      "min": [
+        -1.5,
+        0.0,
+        -1.5
+      ],
+      "max": [
+        1.5,
+        0.15,
+        1.5
+      ]
+    },
+    {
+      "min": [
+        -1.5,
+        0.15,
+        -1.5
+      ],
+      "max": [
+        -1.35,
+        1.0,
+        1.5
+      ]
+    },
+    {
+      "min": [
+        1.35,
+        0.15,
+        -1.5
+      ],
+      "max": [
+        1.5,
+        1.0,
+        1.5
+      ]
+    },
+    {
+      "min": [
+        -1.35,
+        0.15,
+        -1.5
+      ],
+      "max": [
+        1.35,
+        0.996,
+        -1.35
+      ]
+    },
+    {
+      "min": [
+        -1.35,
+        0.15,
+        1.35
+      ],
+      "max": [
+        1.35,
+        0.996,
+        1.5
+      ]
+    },
+    {
+      "min": [
+        -1.512,
+        0.997,
+        -1.512
+      ],
+      "max": [
+        -1.338,
+        1.03,
+        1.512
+      ],
+      "color": "#5c5a55",
+      "detail": true
+    },
+    {
+      "min": [
+        1.338,
+        0.997,
+        -1.512
+      ],
+      "max": [
+        1.512,
+        1.03,
+        1.512
+      ],
+      "color": "#5c5a55",
+      "detail": true
+    },
+    {
+      "min": [
+        -1.337,
+        0.997,
+        -1.509
+      ],
+      "max": [
+        1.337,
+        1.027,
+        -1.341
+      ],
+      "color": "#5c5a55",
+      "detail": true
+    },
+    {
+      "min": [
+        -1.337,
+        0.997,
+        1.341
+      ],
+      "max": [
+        1.337,
+        1.027,
+        1.509
+      ],
+      "color": "#5c5a55",
+      "detail": true
+    },
+    {
+      "min": [
+        -1.45,
+        0.35,
+        1.498
+      ],
+      "max": [
+        1.45,
+        0.65,
+        1.514
+      ],
+      "color": "#f2b01e",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+x",
+      "at": [
+        1.5,
+        0.5,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -1.5,
+        0.5,
+        0.0
+      ],
+      "dir": "-x"
+    }
+  ]
+}

@@ -21,7 +21,7 @@ public static class BackpackRender
     public static bool Wears(Player p, out CStore? pack)
     {
         pack = null;
-        if (ToolRender.Hands is not { } hands || !hands.WearsPack(p.Id) || !p.Alive || p.RenderSeat != SeatKind.None)
+        if (ToolRender.Hands is not { } hands || !hands.WearsPack(p.Id) || !p.Alive || p.RenderSeat != SeatKind.None || (p.Eva & Eva.Suit) != 0) // (a space suit's life-support pack takes its place: EvaRender.cs)
             return false;
         pack = hands.Pack(p.Id);
         return true;
@@ -66,11 +66,16 @@ public sealed class PackNode : IRenderable
     public Matrix4x4 Frame;
     public byte Canopy; // a pilot's gear in the air (CanopyRender.cs)
     public Matrix4x4 BodyFrame;
+    public bool Mmu; // a Manned Manoeuvring Unit on their suit's back (EvaRender.cs)
+    public Matrix4x4 MmuFrame;
+    public double Time;
 
     public void Emit(DrawList list, SceneNode node)
     {
         var o = new ToolListOut(list);
-        if (Canopy != 0)
+        if (Mmu)
+            EvaRender.Emit(ref o, MmuFrame, Canopy == PilotGear.Burning, Time);
+        else if (Canopy != 0)
             CanopyRender.Emit(ref o, Canopy, BodyFrame);
         if (Pack == null)
             return;

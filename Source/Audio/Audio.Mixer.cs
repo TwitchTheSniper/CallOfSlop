@@ -79,6 +79,7 @@ public sealed partial class Audio
         >= Sfx.BuildSnap and <= Sfx.BuildDrop => MixBus.Building,
         Sfx.Babble => MixBus.Speech,
         Sfx.HullCreak or Sfx.PartFail => MixBus.PropBreak,
+        >= Sfx.ShellHelmetDown and <= Sfx.DockRelease => MixBus.Tactical, // (machines, at your ear too: SynthMachine.cs)
         Sfx.ShellServoGrind => MixBus.PropBreak,
         _ => world ? MixBus.Tactical : MixBus.Ui,
     };
@@ -259,8 +260,8 @@ public sealed class AudioMeters
     /// <summary>Samples per envelope block (about 11.6 ms).</summary>
     public const int Block = 512;
 
-    /// <summary>Voice slots: 48 effect voices, 12 footstep voices, 10 frenzy-layer voices, 16 zombie voices, crowds, engines, 11 building voices (and a little spare).</summary>
-    public const int MaxVoices = 112;
+    /// <summary>Voice slots: 48 effect voices, 12 footstep voices, 10 frenzy-layer voices, 16 zombie voices, crowds, engines, 11 building voices, 6 machine hums (and a little spare).</summary>
+    public const int MaxVoices = 128;
 
     private const int Buses = (int)MixBus.COUNT;
 

@@ -66,6 +66,7 @@ The configure tool, fusing, free placement, painting, the remover, snappy/socket
 - The material painter
 - The remover tool (board item rt01)
 - Building sounds
+- Machine sounds
 - Snappy building (decision 24, board item sb01)
 - Centre sockets (board item cs02)
 - Joint sides (board item js01)
@@ -132,7 +133,7 @@ Construct weapons (a craft's radar and lock among them), merged receivers, weapo
 
 ## [Flight](constructs/flight.md), 37 KB
 
-Air and lift, flight control, jets, rockets, repulsors, wings, propellers, the Fan and Airframe Formers, flight in survival, pilot safety.
+Air and lift, flight control, jets, rockets, repulsors, wings, propellers, the Fan and Airframe Formers, flight in survival, pilot safety. Spacewalks (space suit, MMU and its dock, breath in vacuum) are [EVA.md](EVA.md).
 
 - Pilot safety
 - Air and lift

@@ -76,6 +76,8 @@ public sealed partial class ConstructEdits
 
     /// <summary>A line per completed edit (the self-test reads them; the game logs them).</summary>
     public readonly List<string> Done = new(16);
+    /// <summary>Robot Shell Dock clamps (true) and releases (false) this tick, at the dock: the game plays them (Game.DockSound) and clears the list.</summary>
+    public readonly List<(bool Clamp, Vector3 At)> DockSounds = new(4);
 
     /// <summary>
     /// Every player's inventory (milestone 3: salvage; the game's, set by it). Null: no inventories (a bare construct

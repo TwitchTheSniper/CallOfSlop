@@ -589,7 +589,7 @@ public static class Ragdolls
         var p = game.Players.GetValueOrDefault(owner);
         body.Hat = p != null ? HatRender.HatFor(p) : null;
         if (p != null)
-            BuildSoldierLook(body, p.Name, p.Id, p.Color, p.Look, p.InShell ? (byte)0 : p.Uniform);
+            BuildSoldierLook(body, p.Name, p.Id, p.Color, p.Look, p.InShell ? (byte)0 : p.DrawnUniform);
         else
             BuildSoldierLook(body, "Body", owner, new Vector3(0.45f, 0.45f, 0.42f));
     }
@@ -662,7 +662,7 @@ public static class Ragdolls
         body.Look = RagdollLook.Soldier;
         body.Owner = p.Id;
         body.Hat = HatRender.HatFor(p);
-        BuildSoldierLook(body, p.Name, p.Id, p.Color, p.Look, p.InShell ? (byte)0 : p.Uniform);
+        BuildSoldierLook(body, p.Name, p.Id, p.Color, p.Look, p.InShell ? (byte)0 : p.DrawnUniform);
         SetBlood(body, p.Id, p.Blood); // the body keeps its final blood marks (Source/Render/BodyBloodRender.cs)
         Spawn(body, d, now, PlayerLife);
     }
@@ -770,7 +770,7 @@ public static class Ragdolls
         });
         GibbedBodies++;
         if (HatRender.HatFor(p) is { } hat)
-            SpawnHatGib(hat, d, now, p.Id, p.Name, p.Color, p.Look, p.Uniform);
+            SpawnHatGib(hat, d, now, p.Id, p.Name, p.Color, p.Look, p.DrawnUniform);
         return true;
     }
 

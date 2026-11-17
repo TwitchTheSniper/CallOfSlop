@@ -17,6 +17,8 @@ public sealed partial class Construct
     public readonly bool[] PlantFed = new bool[MaxPlants]; // on fuel: a tank reaches it
     public int PlantCount;
     public float PlantOut; // kW this tick
+    public float PlantShow; // 0..1: the share of its plants' whole output they make (server; clients get it in the pose, protocol 335: a reactor's hum)
+    public float HumShow; // this PC's eased PlantShow, for the hum (MachineSounds.cs)
     public float SmokeLevel; // 0..1: how hard its stacks smoke (server; clients get it in the pose)
     public bool[] SmokeFed = []; // a part with a "smoke" block that a burning plant reaches (made when there is one)
     public bool HasSmoke;
@@ -140,6 +142,7 @@ public static class ConstructPlant
     {
         c.PlantOut = 0;
         var smoke = 0f;
+        var rated = 0f;
         var need = drawKw + (c.ChargeCapacity - c.Charge) / dt;
         for (var k = 0; k < c.PlantCount; k++)
         {
@@ -155,6 +158,7 @@ public static class ConstructPlant
             if (on && wired)
                 want = MathF.Max(want, BankedFire);
             ref var level = ref c.PlantLevel[k];
+            rated += d.PlantRate;
             var rate = d.PlantSpool > 0 ? dt / d.PlantSpool : 1f;
             level = Math.Clamp(level + Math.Clamp(want - level, -2 * rate, rate), 0, 1);
             if (level <= 0)
@@ -171,5 +175,6 @@ public static class ConstructPlant
         if (c.EngineRunning && c.Engine >= 0 && c.Engine < c.PartCount && c.DefOf(c.Engine) is { FuelKind: EngineFuel.Fuel } e)
             smoke = MathF.Max(smoke, 0.2f + 0.8f * Math.Clamp(c.DriveTorque / e.EngineTorque, 0, 1));
         c.SmokeLevel = smoke;
+        c.PlantShow = rated > 0 ? Math.Clamp(c.PlantOut / rated, 0, 1) : 0;
     }
 }

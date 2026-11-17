@@ -1,7 +1,7 @@
 namespace CallOfSlop;
 
 /// <summary>A player's cosmetic profile as it travels in the roster: prestige, account level, hat and look (Appearance.cs).</summary>
-public readonly record struct PlayerCosmetics(byte Prestige, byte Level, HatId Hat, PlayerLook Look = default, byte Uniform = 0);
+public readonly record struct PlayerCosmetics(byte Prestige, byte Level, HatId Hat, PlayerLook Look = default, byte Uniform = 0, byte Eva = 0);
 
 /// <summary>
 /// Prestige and hats on the network (Source/Cosmetics/Cosmetics.cs). Cosmetic only: nothing here touches gameplay.
@@ -78,6 +78,7 @@ public sealed partial class Game
             w.U8(p.Prestige).U8(p.Level).U8((byte)p.Hat);
         (p.Bot != null ? default : p.Look).Pack(w); // protocol 45: the look (Appearance.cs; bots: Auto)
         w.U8(p.Uniform); // protocol 257: the uniform the server dresses them in (GameUniforms.cs; bots too: the colony's staff)
+        w.U8(p.Eva); // protocol 336: their spacewalk gear (a space suit, an MMU on it: GameSandboxEva.cs)
     }
 
     private static PlayerCosmetics ReadRosterCosmetics(ref PacketReader r, bool isBot)
@@ -89,17 +90,21 @@ public sealed partial class Game
         var uniform = r.Has(1) ? r.U8() : (byte)0;
         if (Uniforms.Get(uniform) == null)
             uniform = 0; // (a uniform this build doesn't have: plain clothes)
+        var eva = r.Has(1) ? (byte)(r.U8() & (Eva.Suit | Eva.Mmu)) : (byte)0;
         if (isBot)
-            return new PlayerCosmetics(0, 0, HatId.None, default, uniform);
+            return new PlayerCosmetics(0, 0, HatId.None, default, uniform, eva);
         prestige = (byte)Math.Min((int)prestige, Cosmetics.MaxPrestige);
         if (!Cosmetics.IsUnlocked(hat, prestige))
             hat = HatId.None; // unknown id or not earned: draw nothing
-        return new PlayerCosmetics(prestige, level, hat, look, uniform);
+        return new PlayerCosmetics(prestige, level, hat, look, uniform, eva);
     }
 
     private static void ApplyCosmetics(Player p, in PlayerCosmetics c)
     {
         p.Uniform = c.Uniform;
+        if ((c.Eva & ~p.Eva & Eva.Suit) != 0)
+            p.SuitAir = Eva.SuitSeconds; // (a suit just put on is full: a joined client's HUD keeps with the server's locker)
+        p.Eva = c.Eva;
         if (p.Bot != null)
             return;
         p.Prestige = c.Prestige;

@@ -953,6 +953,8 @@ public sealed partial class Game : IDisposable
         _sepAtTick = cmd.Tick;
         SepBuild(); // the other players' and bots' bodies as last heard (PlayerSeparation.cs)
         ClientTickTerrainStream(); // streamed ground made ready round the local player (GameTerrainStream.cs)
+        if (SandboxOn && !IsServer)
+            Eva.Step(me, Eva.Fed(me, SandboxHands.Hand(me.Id).Seated)); // (the HUD's air on a joined client; the host hurts: GameSandboxEva.cs)
         if (me.Alive)
         {
             World.Simulate(ref me.Sim, cmd);
@@ -2438,6 +2440,9 @@ public sealed partial class Game : IDisposable
                 break;
             case (byte)Msg.PowerNews when !IsServer:
                 ReadPowerNews(ref r); // the NPC powers' news lines (GameCrewFactions.cs)
+                break;
+            case (byte)Msg.MachineSound when !IsServer && r.Has(13):
+                ReadMachineSound(ref r); // a dock's clamps and the like (GameMachineSounds.cs)
                 break;
             case (byte)Msg.ShieldHit when !IsServer && r.Has(2):
                 OnShieldHitPacket(ref r, now); // Last Stand's shield blocked a hit (Health.cs)
