@@ -53,7 +53,7 @@ Two decks run fore and aft (floors at 0.25 and 3.5 m, ship frame), each in a for
 | Zero Day Upper Deck Aft | cabin B, the head, the med bay, the mess with the aft gun station |
 
 Around them: the Keel (14,000 l of fuel, legs, lift jets, the boarding shaft), the Bow (armoured over the bridge, retro jets), the Spine
-(roof, the railgun's trough, the Limpet's cradle with its Docking Clamp, mast, antennae, flare launchers), the Stern (the engine bay: 9,000 l, fins), the Drive
+(roof, the railgun's trough, the shuttle's cradle with its Docking Clamp, mast, antennae, flare launchers), the Stern (the engine bay: 9,000 l, fins), the Drive
 Collar (600 l, the shroud and plate the width of the stern) and four Drive Bells (2.25 MN each, 9 MN in all).
 
 ## Drives and their works
@@ -67,7 +67,7 @@ inside the hull, in one room with engineering.
   bay** (the Stern piece: no aft wall to engineering, a stepped floor, gratings, a fuel header overhead). Engineering's aft
   wall is open, so engineering and the bay are one room and every core is reached standing from its door. Nothing is shared:
   wreck one core and only its bell falls to a quarter.
-- The four **Lift Jets** (1.7 MN, from 1.5 since the Limpet rides on the spine) on the keel and the two **Retro Jets** (1.2 MN) in the bow's cheeks are whole parts with
+- The four **Lift Jets** (1.7 MN, from 1.5 since the shuttle rides on the spine) on the keel and the two **Retro Jets** (1.2 MN) in the bow's cheeks are whole parts with
   no works (Karl, 2026-11-16: main drives only). A breakdown on a lift jet is mended at the jet, outside.
 - With its works whole a hull drive burns 2 l/s a MN (each bell 4.5 l/s). Shoot out a works piece and its bell's cap falls:
   the look line, the Engineer's Panel and `--check-vehicle`'s `works:` lines say which piece. Breakdowns pick the works
@@ -96,8 +96,8 @@ inside the hull, in one room with engineering.
 The boarding ladder climbs from the ground up the belly shaft into the airlock; its inner door is aft of the shaft so
 both landings are clear. `--check-building "Zero Day Frigate"` passes (327 m2 a standing person can reach and leave,
 from the ground up the boarding ladder and the two ladders between the decks). The legs leave 2.5 m under the keel so
-people can walk beneath it to the shaft. A ladder in the mess climbs through the spine into the Limpet boarding pod on its
-cradle ([limpet.md](limpet.md)).
+people can walk beneath it to the shaft. A ladder in the mess climbs through the spine into the Shuttle on its
+cradle ([shuttle.md](shuttle.md)).
 
 ## Flames
 

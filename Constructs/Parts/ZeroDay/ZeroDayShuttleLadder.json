@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
-  "name": "Zero Day Limpet Ladder",
-  "description": "The ladder from the Zero Day's mess up through the roof into the Limpet's belly hatch: F climbs it.",
+  "name": "Zero Day Shuttle Ladder",
+  "description": "The ladder from the Zero Day's mess up through the roof into the shuttle's belly hatch: F climbs it.",
   "group": "Ship",
   "section": "Zero Day frigate",
   "role": "frame",

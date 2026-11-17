@@ -1,9 +1,9 @@
 {
   "format": "call-of-slop-construct-part/1",
-  "name": "Limpet Nose",
-  "description": "The Limpet's nose: the armoured chisel bow, the sensor blister under its chin and the cockpit's front bulkhead with its view screen.",
+  "name": "Shuttle Nose",
+  "description": "The shuttle's nose: the armoured chisel bow, the sensor blister under its chin and the cockpit's front bulkhead with its view screen.",
   "group": "Ship",
-  "section": "Limpet boarding pod",
+  "section": "Shuttle",
   "role": "frame",
   "tool": "welder",
   "mass": 900.0,

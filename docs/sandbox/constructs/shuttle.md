@@ -1,25 +1,27 @@
-# The Limpet boarding pod (the Zero Day's boarding craft)
+# The Shuttle (the Zero Day's boarding craft)
 
-Karl, 2026-11-17: the Zero Day carries a boarding shuttle; of four looks he picked the Limpet hull-cutter. An 11 m faceted
+Karl, 2026-11-17: the Zero Day carries a boarding shuttle; of four looks he picked a hull-cutting pod (then called the
+Limpet), and on seeing it said it reads as a shuttle: renamed the Shuttle, kept, and a simpler 8-person boarding pod (the new
+Limpet, flown from the ship's flight controller, cutting from the front) is designed apart. An 11 m faceted
 wedge for a pilot and four boarders rides a Docking Clamp cradle on the frigate's spine, flies to an enemy ship, sets down
 on its hull, grips it, burns a hole through it with a ring cutter in its belly, and the boarders drop through into the room
 below, where the boarding itself (Twitch's crews that hold, surrender, fight or scuttle: Game/GameCrewBoard.cs) starts.
 
-Generator: `Source/PartKit/Generators/TorpedoFrigateLimpet.cs` (a partial of `TorpedoFrigateParts`, so
-`--gen-parts torpedo_frigate_parts` writes the pod with the frigate). Pieces in `Constructs/Parts/Limpet`, the two boarding
-fittings in `Constructs/Parts/Boarding`, the blueprint `Constructs/Blueprints/LimpetBoardingPod.json`.
+Generator: `Source/PartKit/Generators/TorpedoFrigateShuttle.cs` (a partial of `TorpedoFrigateParts`, so
+`--gen-parts torpedo_frigate_parts` writes the pod with the frigate). Pieces in `Constructs/Parts/Shuttle`, the two boarding
+fittings in `Constructs/Parts/Boarding`, the blueprint `Constructs/Blueprints/Shuttle.json`.
 
 ## The pod
 
 A lofted hull like the frigate's (five stations from the nose at z -5 to the stern at 5, x across, y up from the grapple soles),
-in welded pieces: Limpet Belly (the floor with the hatch, the keel, skids, the four grapples' mounts, the cutter's socket),
-Limpet Hull Port and Starboard (beam facets and walls, 450 l of fuel each, the lift sponsons with their jets and RCS), Limpet
-Roof, Limpet Nose (sensor blister, a view screen in the front bulkhead), Limpet Stern (300 l, the drive), Limpet Bulkhead
+in welded pieces: Shuttle Belly (the floor with the hatch, the keel, skids, the four grapples' mounts, the cutter's socket),
+Shuttle Hull Port and Starboard (beam facets and walls, 450 l of fuel each, the lift sponsons with their jets and RCS), Shuttle
+Roof, Shuttle Nose (sensor blister, a view screen in the front bulkhead), Shuttle Stern (300 l, the drive), Shuttle Bulkhead
 (open frame between the cockpit and the cabin).
 
 Inside: the pilot's Flight Couch in the cockpit with the flight computer ahead of it; the cabin behind with two seats a side
 facing in, lockers, four Batteries; the hatch in the middle of the cabin floor with hazard lips and rails round it. It weighs
-about 11.3 t and flies on its own (`--flight-check Constructs/Blueprints/LimpetBoardingPod.json`: lift about 2.2x).
+about 11.3 t and flies on its own (`--flight-check Constructs/Blueprints/Shuttle.json`: lift about 2.2x).
 
 Switches on the port wall: **A** runs the cutter, **B** the grapples; the starboard switches are the lamps.
 
@@ -39,11 +41,11 @@ can't be gripped. Damage is billed to the pod's driver (or owner).
 ## On the Zero Day
 
 The dorsal block, step and mast aft of the railgun gave way to a cradle deck (y 7.75, z 34 to 45.2) with raked flank plates and
-hazard edges; the new mast stands aft of it to starboard. A Docking Clamp Medium under the deck (`LimpetClampConfig`: starts
+hazard edges; the new mast stands aft of it to starboard. A Docking Clamp Medium under the deck (`ShuttleClampConfig`: starts
 holding, its box round the pod) holds the pod, which the blueprint's new `"carry"` list builds there
 (`ConstructCargo.BuildCarry`: `{"blueprint", "at", "turn"}` in the carrier's frame; a carried blueprint carries nothing of its
 own; a Building Station's build carries none). The pod's hatch sits over a shaft through the spine into the mess ceiling, and
-the Zero Day Limpet Ladder climbs from the mess up into the pod. The pilot's key lets go of the clamp, as for any docked craft.
+the Zero Day Shuttle Ladder climbs from the mess up into the pod. The pilot's key lets go of the clamp, as for any docked craft.
 
 ## Not done yet
 
@@ -52,7 +54,7 @@ the Zero Day Limpet Ladder climbs from the mess up into the pod. The pilot's key
 - No air: the hole doesn't vent the room below.
 - Cutting into a part that goes up when wrecked (the Zero Day's Bow holds fuel) sets it off as any other damage does, and can
   take the pod with it.
-- `--check-building` walks the carrier alone, so it says the Zero Day Limpet Ladder has no room at its top; checked by hand
+- `--check-building` walks the carrier alone, so it says the Zero Day Shuttle Ladder has no room at its top; checked by hand
   (rays in a built world): the foot stands under the open shaft in the mess, the top lands on the pod's floor aft of the hatch
   with 1.9 m of head room.
 - The Zero Day's lift jets went from 1.5 to 1.7 MN for the pod's 11 t (at 1.5 the hover hold overshot the flight check's metre).

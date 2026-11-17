@@ -476,7 +476,7 @@ public static class ConstructBuild
         public List<uint> StepPaint = new(); // each step's paint colour ("paint": "#rrggbb"; 0: its own colours; ConstructPaint.cs)
         public List<int> StepFuse = new(); // each step's fused unit ("fuse": 1, 2, ...: the steps with one number are one unit, under a new tag when built; 0: none; ConstructFuse.cs)
         public List<byte> StepFinish = new(); // each step's texture ("finish": a material's name, Materials/Surfaces.json; 0: its own materials, or a name this build doesn't have; ConstructFinish.cs)
-        public List<ConstructCargo.CarrySpec> Carry = new(); // craft it is built carrying in its docks ("carry": [{"blueprint", "at", "turn"}]: the Zero Day's Limpet; ConstructCargo.BuildCarry)
+        public List<ConstructCargo.CarrySpec> Carry = new(); // craft it is built carrying in its docks ("carry": [{"blueprint", "at", "turn"}]: the Zero Day's Shuttle; ConstructCargo.BuildCarry)
         public string Tow = ""; // a blueprint it spawns coupled behind it ("tow"): its first eye on this one's first ball (BuildOnGround)
         public List<(int Step, string Table)> Loot = new(); // containers that fill from a loot table when it is spawned ("loot": [{"step": n, "table": "bandit"}]; ConstructLoot.cs)
         public List<(int Step, int Slot, string Part, int Count)> Stored = new(); // parts set in a container's slot when it is spawned, before its loot ("stored": [{"step": n, "slot": k, "part": "Box Mag", "count": 2}]; ConstructLoot.Stow)

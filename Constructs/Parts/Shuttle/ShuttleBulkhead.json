@@ -1,9 +1,9 @@
 {
   "format": "call-of-slop-construct-part/1",
-  "name": "Limpet Bulkhead",
-  "description": "The frame between the Limpet's cockpit and its cabin, open in the middle.",
+  "name": "Shuttle Bulkhead",
+  "description": "The frame between the shuttle's cockpit and its cabin, open in the middle.",
   "group": "Ship",
-  "section": "Limpet boarding pod",
+  "section": "Shuttle",
   "role": "frame",
   "tool": "welder",
   "mass": 150.0,

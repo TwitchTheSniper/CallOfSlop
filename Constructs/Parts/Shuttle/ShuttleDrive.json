@@ -1,9 +1,9 @@
 {
   "format": "call-of-slop-construct-part/1",
-  "name": "Limpet Drive",
-  "description": "The Limpet's drive on its stern: 120 kN.",
+  "name": "Shuttle Drive",
+  "description": "The shuttle's drive on its stern: 120 kN.",
   "group": "Ship",
-  "section": "Limpet boarding pod",
+  "section": "Shuttle",
   "role": "thruster",
   "tool": "wrench",
   "thruster": {

@@ -1,9 +1,9 @@
 {
   "format": "call-of-slop-construct-part/1",
-  "name": "Limpet Stern",
-  "description": "The Limpet's stern: the cabin's aft wall, the stern plate and the drive's mount, with the fuel the drive draws.",
+  "name": "Shuttle Stern",
+  "description": "The shuttle's stern: the cabin's aft wall, the stern plate and the drive's mount, with the fuel the drive draws.",
   "group": "Ship",
-  "section": "Limpet boarding pod",
+  "section": "Shuttle",
   "role": "fueltank",
   "tool": "welder",
   "fuelTank": {

@@ -1,9 +1,9 @@
 {
   "format": "call-of-slop-construct-part/1",
-  "name": "Limpet Lift Jet",
-  "description": "A lift jet under one of the Limpet's sponsons: 110 kN straight down.",
+  "name": "Shuttle Lift Jet",
+  "description": "A lift jet under one of the shuttle's sponsons: 110 kN straight down.",
   "group": "Ship",
-  "section": "Limpet boarding pod",
+  "section": "Shuttle",
   "role": "thruster",
   "tool": "wrench",
   "thruster": {

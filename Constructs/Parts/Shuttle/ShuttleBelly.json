@@ -1,9 +1,9 @@
 {
   "format": "call-of-slop-construct-part/1",
-  "name": "Limpet Belly",
-  "description": "The Limpet's belly: the cabin's and the cockpit's floor, the keel, the skids between its hull grapples and the belly hatch its breaching cutter rings.",
+  "name": "Shuttle Belly",
+  "description": "The shuttle's belly: the cabin's and the cockpit's floor, the keel, the skids between its hull grapples and the belly hatch its breaching cutter rings.",
   "group": "Ship",
-  "section": "Limpet boarding pod",
+  "section": "Shuttle",
   "role": "frame",
   "tool": "welder",
   "mass": 1600.0,
@@ -1983,7 +1983,7 @@
     {
       "name": "seatL0",
       "at": [
-        -1.015,
+        -0.865,
         0.525,
         1.375
       ],
@@ -1992,7 +1992,7 @@
     {
       "name": "seatL1",
       "at": [
-        -1.015,
+        -0.865,
         0.525,
         2.375
       ],
@@ -2001,7 +2001,7 @@
     {
       "name": "seatR0",
       "at": [
-        0.765,
+        0.615,
         0.525,
         1.375
       ],
@@ -2010,7 +2010,7 @@
     {
       "name": "seatR1",
       "at": [
-        0.765,
+        0.615,
         0.525,
         2.375
       ],

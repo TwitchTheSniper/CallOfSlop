@@ -1742,7 +1742,7 @@
     {
       "part": "Docking Clamp Medium",
       "on": 66,
-      "socket": "limpetClamp",
+      "socket": "shuttleClamp",
       "by": "-y",
       "config": {
         "startOn": true,
@@ -1755,9 +1755,9 @@
       }
     },
     {
-      "part": "Zero Day Limpet Ladder",
+      "part": "Zero Day Shuttle Ladder",
       "on": 31,
-      "socket": "limpetLadder",
+      "socket": "shuttleLadder",
       "by": "bottom"
     },
     {
@@ -2144,7 +2144,7 @@
   "conduit": true,
   "carry": [
     {
-      "blueprint": "Limpet Boarding Pod",
+      "blueprint": "Shuttle",
       "at": [
         6.5,
         7.755,

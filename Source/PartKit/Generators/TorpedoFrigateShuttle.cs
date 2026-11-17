@@ -3,8 +3,8 @@ using static CallOfSlop.PartKit.PartKitMath;
 namespace CallOfSlop.PartKit.Generators;
 
 /// <summary>
-/// The Limpet, the Zero Day's boarding pod (Karl, 2026-11-17: "Add a boarding shuttle to the Day Zero", his pick of four: a
-/// reusable hull-cutting pod on the spine; docs/sandbox/constructs/limpet.md). About 10 m long and 4 m across: a faceted wedge in
+/// The shuttle, the Zero Day's boarding pod (Karl, 2026-11-17: "Add a boarding shuttle to the Day Zero", his pick of four: a
+/// reusable hull-cutting pod on the spine, first called the Limpet and renamed the Shuttle when he saw it; docs/sandbox/constructs/shuttle.md). About 10 m long and 4 m across: a faceted wedge in
 /// the IT Department's paint, a cockpit for its pilot and a cabin for four boarders. It rides a Docking Clamp in a cradle on the
 /// Zero Day's roof, its belly hatch over the ladder up from the mess. It flies to a ship, sets its four hull grapples down on the
 /// hull and grips it (ConstructBreach.cs: it rides on that body from then on), and the breaching cutter ringing its belly hatch
@@ -18,8 +18,8 @@ namespace CallOfSlop.PartKit.Generators;
 /// </summary>
 public sealed partial class TorpedoFrigateParts
 {
-    public const string LimpetName = "Limpet Boarding Pod";
-    private const string LSection = "Limpet boarding pod";
+    public const string ShuttleName = "Shuttle";
+    private const string LSection = "Shuttle";
 
     // The plan (pod frame).
     private const double LFt = 0.65, LFloor0 = 0.4, LCeil = 2.7, LCeilTop = 2.8; // the floor's top and underside, the ceiling and its top
@@ -70,7 +70,7 @@ public sealed partial class TorpedoFrigateParts
     {
         var s = LSkinHalf(z, y);
         if (s < hx + 0.06)
-            throw new InvalidOperationException($"Limpet: {what} at z {z}, y {y} is {hx:0.00} from the centreline and the skin {s:0.00}");
+            throw new InvalidOperationException($"Shuttle: {what} at z {z}, y {y} is {hx:0.00} from the centreline and the skin {s:0.00}");
     }
 
     private static (double[] A, double[] B) LEdge(int k, int s, double z)
@@ -205,7 +205,7 @@ public sealed partial class TorpedoFrigateParts
     /// <summary>The belly: the floor (with the hatch the cutter rings), the keel and the lower chines, the skids and the void under the floor.</summary>
     private static Part LBelly()
     {
-        var p = LBig("Limpet Belly", "The Limpet's belly: the cabin's and the cockpit's floor, the keel, the skids between its hull grapples and the belly hatch its breaching cutter rings.", color: Armour);
+        var p = LBig("Shuttle Belly", "The shuttle's belly: the cabin's and the cockpit's floor, the keel, the skids between its hull grapples and the belly hatch its breaching cutter rings.", color: Armour);
         // The floor, round the hatch: the cockpit's narrower than the cabin's (the hull narrows forward).
         var floorW = Math.Floor((Math.Min(LSkinHalf(LNoseZ, LFloor0), LSkinHalf(LNoseZ, LFt)) - 0.07) * 100) / 100;
         var cabW = Math.Floor((Math.Min(LSkinHalf(LAftZ, LFloor0), LSkinHalf(LAftZ, LFt)) - 0.07) * 100) / 100;
@@ -275,8 +275,9 @@ public sealed partial class TorpedoFrigateParts
         }
         Sock(p, "pilot", 0, LFt, -1.5, "+y");
         Sock(p, "computer", 0, LFt, -2.3, "+y");
+        // (facing in, a couch's back stands 0.4 m out from its middle: 0.74 keeps it off the cabin's side wall and leaves a 0.8 m aisle)
         foreach (var (s, z, n) in new[] { (-1, 1.5, "seatL0"), (-1, 2.5, "seatL1"), (1, 1.5, "seatR0"), (1, 2.5, "seatR1") })
-            Sock(p, n, s * 0.89, LFt, z, "+y");
+            Sock(p, n, s * 0.74, LFt, z, "+y");
         Sock(p, "lockerL", -0.4, LFt, LAftZ - 0.25, "+y");
         Sock(p, "lockerR", 0.4, LFt, LAftZ - 0.25, "+y");
         foreach (var (s, n) in new[] { (-1, "batteryL0"), (1, "batteryR0") })
@@ -295,7 +296,7 @@ public sealed partial class TorpedoFrigateParts
     private static Part LSide(int s)
     {
         var n = s < 0 ? "Port" : "Starboard";
-        var p = LBig($"Limpet Hull {n}", $"The Limpet's {n.ToLowerInvariant()} side: the beam's armour, the side wall of the cockpit and the cabin, a lift sponson fore and aft and the fuel tank in the void between.", "fueltank");
+        var p = LBig($"Shuttle Hull {n}", $"The shuttle's {n.ToLowerInvariant()} side: the beam's armour, the side wall of the cockpit and the cabin, a lift sponson fore and aft and the fuel tank in the void between.", "fueltank");
         foreach (var (za, zb) in LBody)
         {
             LFacet(p, 2, s, za, zb, Skin, "painted plating");
@@ -372,7 +373,7 @@ public sealed partial class TorpedoFrigateParts
     /// armour and the lifting eyes.</summary>
     private static Part LRoof()
     {
-        var p = LBig("Limpet Roof", "The Limpet's roof: the upper armour and the top, the ceiling over the cockpit and the cabin and its light strip.", color: Armour);
+        var p = LBig("Shuttle Roof", "The shuttle's roof: the upper armour and the top, the ceiling over the cockpit and the cabin and its light strip.", color: Armour);
         foreach (var (za, zb) in LBody)
         {
             LFacet(p, 5, 1, za, zb, Armour, "plated steel");
@@ -432,7 +433,7 @@ public sealed partial class TorpedoFrigateParts
     /// chin and the cockpit's view screen on the bulkhead's inner face.</summary>
     private static Part LNose()
     {
-        var p = LBig("Limpet Nose", "The Limpet's nose: the armoured chisel bow, the sensor blister under its chin and the cockpit's front bulkhead with its view screen.", color: Armour);
+        var p = LBig("Shuttle Nose", "The shuttle's nose: the armoured chisel bow, the sensor blister under its chin and the cockpit's front bulkhead with its view screen.", color: Armour);
         foreach (var (za, zb) in new[] { (LTip, -3.4), (-3.4, LNoseZ) })
         {
             LFacet(p, 0, 1, za, zb, Armour, "plated steel");
@@ -471,7 +472,7 @@ public sealed partial class TorpedoFrigateParts
     /// <summary>The stern: the last band of the hull, the cabin's aft wall, the stern plate and the drive's mount on it.</summary>
     private static Part LSternPart()
     {
-        var p = LBig("Limpet Stern", "The Limpet's stern: the cabin's aft wall, the stern plate and the drive's mount, with the fuel the drive draws.", "fueltank", Armour);
+        var p = LBig("Shuttle Stern", "The shuttle's stern: the cabin's aft wall, the stern plate and the drive's mount, with the fuel the drive draws.", "fueltank", Armour);
         var (za, zb) = (LAftZ, LStern);
         LFacet(p, 0, 1, za, zb, Armour, "plated steel");
         LFacet(p, 5, 1, za, zb, Armour, "plated steel");
@@ -502,7 +503,7 @@ public sealed partial class TorpedoFrigateParts
     /// <summary>The cockpit's bulkhead: the frame between the cockpit and the cabin, open in the middle (no door: a pod this small seals as one).</summary>
     private static Part LBulkhead()
     {
-        var p = LBig("Limpet Bulkhead", "The frame between the Limpet's cockpit and its cabin, open in the middle.", color: Wall);
+        var p = LBig("Shuttle Bulkhead", "The frame between the shuttle's cockpit and its cabin, open in the middle.", color: Wall);
         foreach (var s in new[] { -1, 1 })
             Solid(p, Math.Min(s * 0.5, s * LCockW), LFt, LBulkZ - LWallT, Math.Max(s * 0.5, s * LCockW), LCeil, LBulkZ, Wall, "painted plating");
         Solid(p, -0.5, LFt + 1.95, LBulkZ - LWallT, 0.5, LCeil, LBulkZ, Wall, "painted plating");
@@ -514,7 +515,7 @@ public sealed partial class TorpedoFrigateParts
 
     // ---- fittings of its own
 
-    /// <summary>A hull grapple: a magnetic pad on a short ram, its sole the Limpet's footing. On (its input), it grips the hull under it.</summary>
+    /// <summary>A hull grapple: a magnetic pad on a short ram, its sole the shuttle's footing. On (its input), it grips the hull under it.</summary>
     private static Part LGrapple()
     {
         var p = new Part("Hull Grapple", Small, "Ship fittings", "A magnetic hull grapple for a boarding craft (any ship can carry them): wire a switch to it; while it is on and a hull is within half a metre under its pad, the craft grips that hull and rides on it. Turning every grapple off lets go. Fit it under the craft, pad down, as its footing.", role: "logic", tool: "wrench", material: "steel", color: Frame, group: Group);
@@ -550,10 +551,10 @@ public sealed partial class TorpedoFrigateParts
         return p.Stats(260, 3000, 30, 6.0);
     }
 
-    /// <summary>The Limpet's flight computer: a low console ahead of the pilot, a flight stabilizer with a small craft's gyro.</summary>
+    /// <summary>The shuttle's flight computer: a low console ahead of the pilot, a flight stabilizer with a small craft's gyro.</summary>
     private static Part LFlightComputer()
     {
-        var p = new Part("Limpet Flight Computer", Small, LSection, "The Limpet's flight computer: a flight stabilizer in a console ahead of the pilot. Fit it level, its arrow forward.", role: "logic", tool: "wrench", material: "steel", color: Console, group: Group);
+        var p = new Part("Shuttle Flight Computer", Small, LSection, "The shuttle's flight computer: a flight stabilizer in a console ahead of the pilot. Fit it level, its arrow forward.", role: "logic", tool: "wrench", material: "steel", color: Console, group: Group);
         p.Add(Box([-0.4, 0, -0.25], [0.4, 0.8, 0.2], Console, shape: Kw(("finish", "plastic"))));
         p.Add(Box([-0.4, 0.8, -0.25], [0.4, 0.95, -0.05], Console, shape: Kw(("finish", "plastic"))));
         p.Add(Box([-0.32, 0.6, 0.2], [0.32, 0.78, 0.212], Screen, detail: true, shape: Kw(("glow", true))));
@@ -565,7 +566,7 @@ public sealed partial class TorpedoFrigateParts
         return p.Stats(120, 600, 6, 3.0);
     }
 
-    /// <summary>The Limpet's jets, from the Zero Day's: a lift jet under each sponson and the drive on the stern.</summary>
+    /// <summary>The shuttle's jets, from the Zero Day's: a lift jet under each sponson and the drive on the stern.</summary>
     private static Part LJet(string name, string desc, double force, double scale)
     {
         var p = Jet(name, desc, force, scale);
@@ -573,12 +574,12 @@ public sealed partial class TorpedoFrigateParts
         return p;
     }
 
-    /// <summary>The ladder from the Zero Day's mess up into the docked Limpet: its rails stop at the roof (so it never stands in the
-    /// pod's way), its landing is the Limpet's cabin floor over the hatch (behind its top).</summary>
-    private static Part LimpetLadder()
+    /// <summary>The ladder from the Zero Day's mess up into the docked Shuttle: its rails stop at the roof (so it never stands in the
+    /// pod's way), its landing is the shuttle's cabin floor over the hatch (behind its top).</summary>
+    private static Part ShuttleLadder()
     {
         var rise = LadderRise;
-        var p = new Part("Zero Day Limpet Ladder", Small, Section, "The ladder from the Zero Day's mess up through the roof into the Limpet's belly hatch: F climbs it.", role: "frame", tool: "welder", material: "steel", color: Frame, group: Group);
+        var p = new Part("Zero Day Shuttle Ladder", Small, Section, "The ladder from the Zero Day's mess up through the roof into the shuttle's belly hatch: F climbs it.", role: "frame", tool: "welder", material: "steel", color: Frame, group: Group);
         var top = LadderRails;
         p.Add(Box([-0.3, 0, -0.19], [0.3, top, -0.005], hidden: true));
         foreach (var x in new[] { -0.25, 0.25 })
@@ -597,45 +598,45 @@ public sealed partial class TorpedoFrigateParts
 
 public sealed partial class TorpedoFrigateParts
 {
-    private const string LOut = "Constructs/Parts/Limpet", BoardingOut = "Constructs/Parts/Boarding";
+    private const string LOut = "Constructs/Parts/Shuttle", BoardingOut = "Constructs/Parts/Boarding";
 
-    /// <summary>The Limpet's pieces, welded (one pair a touching pair), in the order they are placed out from the belly.</summary>
-    private static (List<Part> Pieces, List<string> Order) LimpetStructure()
+    /// <summary>The shuttle's pieces, welded (one pair a touching pair), in the order they are placed out from the belly.</summary>
+    private static (List<Part> Pieces, List<string> Order) ShuttleStructure()
     {
         List<Part> pieces = [LBelly(), LSide(-1), LSide(1), LRoof(), LNose(), LSternPart(), LBulkhead()];
         Connect(pieces);
-        return (pieces, PlaceOrder(pieces, "Limpet Belly"));
+        return (pieces, PlaceOrder(pieces, "Shuttle Belly"));
     }
 
-    /// <summary>The Limpet's own parts (its pieces, jets, flight computer) and the boarding fittings any ship can carry.</summary>
-    private static List<(Part Part, string Folder)> LimpetParts(List<Part> pieces) =>
+    /// <summary>The shuttle's own parts (its pieces, jets, flight computer) and the boarding fittings any ship can carry.</summary>
+    private static List<(Part Part, string Folder)> ShuttleParts(List<Part> pieces) =>
     [
         .. pieces.Select(x => (x, LOut)),
-        (LJet("Limpet Lift Jet", "A lift jet under one of the Limpet's sponsons: 110 kN straight down.", 110000, 0.5), LOut),
-        (LJet("Limpet Drive", "The Limpet's drive on its stern: 120 kN.", 120000, 0.55), LOut),
+        (LJet("Shuttle Lift Jet", "A lift jet under one of the shuttle's sponsons: 110 kN straight down.", 110000, 0.5), LOut),
+        (LJet("Shuttle Drive", "The shuttle's drive on its stern: 120 kN.", 120000, 0.55), LOut),
         (LFlightComputer(), LOut),
         (LGrapple(), BoardingOut),
         (LCutter(), BoardingOut),
     ];
 
-    private static PyDict LimpetBlueprint(Dictionary<string, PyDict> defs, List<string> order)
+    private static PyDict ShuttleBlueprint(Dictionary<string, PyDict> defs, List<string> order)
     {
-        var bp = new BuildingParts.Blueprint(LimpetName, "The Zero Day's boarding pod: it flies a pilot and four boarders to a ship, grips its hull with four magnetic grapples and burns a way in through the hull under its belly hatch with its breaching cutter. Port switches in the cockpit: the grapples (aft) and the cutter (fore).", defs, maxSteps: 120);
+        var bp = new BuildingParts.Blueprint(ShuttleName, "The Zero Day's boarding pod: it flies a pilot and four boarders to a ship, grips its hull with four magnetic grapples and burns a way in through the hull under its belly hatch with its breaching cutter. Port switches in the cockpit: the grapples (aft) and the cutter (fore).", defs, maxSteps: 120);
         bp.Conduit = true;
         double[] zero = [0, 0, 0];
         var st = new Dictionary<string, int>();
         foreach (var name in order)
             st[name] = st.Count == 0 ? bp.First(name) : bp.Put(name, zero, 0);
-        int belly = st["Limpet Belly"], port = st["Limpet Hull Port"], stbd = st["Limpet Hull Starboard"], stern = st["Limpet Stern"];
+        int belly = st["Shuttle Belly"], port = st["Shuttle Hull Port"], stbd = st["Shuttle Hull Starboard"], stern = st["Shuttle Stern"];
         // Flight: a lift jet under each sponson, attitude jets round them, the drive on the stern.
         foreach (var side in new[] { port, stbd })
             foreach (var tag in new[] { "F", "B" })
             {
-                bp.Hang("Limpet Lift Jet", side, $"lift{tag}", "top");
+                bp.Hang("Shuttle Lift Jet", side, $"lift{tag}", "top");
                 foreach (var r in new[] { "rcsUp", "rcsOut", "rcsEnd" })
                     bp.Hang("RCS Thruster", side, r + tag, "base");
             }
-        bp.Hang("Limpet Drive", stern, "drive", "top");
+        bp.Hang("Shuttle Drive", stern, "drive", "top");
         // The grapples and the cutter, each on a cockpit switch to port (grapples aft, the cutter fore).
         var grips = new[] { "gripFL", "gripFR", "gripBL", "gripBR" }.Select(n => bp.Hang("Hull Grapple", belly, n, "top")).ToArray();
         var cutter = bp.Hang("Breaching Cutter", belly, "cutter", "top");
@@ -647,13 +648,14 @@ public sealed partial class TorpedoFrigateParts
         // The pilot and the flight computer; the boarders' four seats facing in along the cabin's walls; lockers and batteries aft.
         var pilot = bp.Hang("Flight Couch", belly, "pilot", "bottom");
         Paint(bp, pilot, "#2c3e58", "fabric");
-        var fc = bp.Hang("Limpet Flight Computer", belly, "computer", "bottom");
+        var fc = bp.Hang("Shuttle Flight Computer", belly, "computer", "bottom");
         bp.Steps[fc]["config"] = ShipParts.ShipFlight();
         bp.Wires.Add((pilot, fc));
+        // (a couch faces its -z: RY270 turns that to +x, so the port pair faces in to starboard, and RY90 the starboard pair to port)
         foreach (var n in new[] { "seatL0", "seatL1" })
-            Paint(bp, bp.HangTurned("Flight Couch", belly, n, "bottom", BuildingParts.RY90), "#2c3e58", "fabric");
-        foreach (var n in new[] { "seatR0", "seatR1" })
             Paint(bp, bp.HangTurned("Flight Couch", belly, n, "bottom", BuildingParts.RY270), "#2c3e58", "fabric");
+        foreach (var n in new[] { "seatR0", "seatR1" })
+            Paint(bp, bp.HangTurned("Flight Couch", belly, n, "bottom", BuildingParts.RY90), "#2c3e58", "fabric");
         foreach (var n in new[] { "lockerL", "lockerR" })
             Paint(bp, bp.HangTurned("Zero Day Locker", belly, n, "bottom", BuildingParts.RY180), Hazard, "worn paint");
         foreach (var n in new[] { "batteryL0", "batteryR0", "batteryL1", "batteryR1" })

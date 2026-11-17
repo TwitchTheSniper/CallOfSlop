@@ -11,7 +11,7 @@ public enum BreachKind : byte
 }
 
 /// <summary>
-/// Boarding craft (Karl, 2026-11-17: the Zero Day's Limpet, docs/sandbox/constructs/limpet.md): a craft with **hull grapples**
+/// Boarding craft (Karl, 2026-11-17: the Zero Day's Shuttle, docs/sandbox/constructs/shuttle.md): a craft with **hull grapples**
 /// (lamp-kind parts with a <c>"breach": {"kind": "grapple", "reach"}</c> block) sets down on another body's hull and, while a
 /// grapple's input is on and the hull is within its reach under the grapple's face (its -y), rides on that body: it is carried as
 /// a docking clamp carries a craft (<see cref="ConstructCargo"/>: <c>CarriedBy</c> that body, no volume, its pose in the frame of

@@ -1,49 +1,49 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
-  "name": "Limpet Boarding Pod",
+  "name": "Shuttle",
   "description": "The Zero Day's boarding pod: it flies a pilot and four boarders to a ship, grips its hull with four magnetic grapples and burns a way in through the hull under its belly hatch with its breaching cutter. Port switches in the cockpit: the grapples (aft) and the cutter (fore).",
   "steps": [
     {
-      "part": "Limpet Belly"
+      "part": "Shuttle Belly"
     },
     {
-      "part": "Limpet Hull Port",
+      "part": "Shuttle Hull Port",
       "on": 0,
       "socket": "j0",
       "by": "j0"
     },
     {
-      "part": "Limpet Hull Starboard",
+      "part": "Shuttle Hull Starboard",
       "on": 0,
       "socket": "j1",
       "by": "j0"
     },
     {
-      "part": "Limpet Nose",
+      "part": "Shuttle Nose",
       "on": 0,
       "socket": "j2",
       "by": "j0"
     },
     {
-      "part": "Limpet Stern",
+      "part": "Shuttle Stern",
       "on": 0,
       "socket": "j3",
       "by": "j0"
     },
     {
-      "part": "Limpet Bulkhead",
+      "part": "Shuttle Bulkhead",
       "on": 0,
       "socket": "j4",
       "by": "j0"
     },
     {
-      "part": "Limpet Roof",
+      "part": "Shuttle Roof",
       "on": 1,
       "socket": "j1",
       "by": "j0"
     },
     {
-      "part": "Limpet Lift Jet",
+      "part": "Shuttle Lift Jet",
       "on": 1,
       "socket": "liftF",
       "by": "top"
@@ -67,7 +67,7 @@
       "by": "base"
     },
     {
-      "part": "Limpet Lift Jet",
+      "part": "Shuttle Lift Jet",
       "on": 1,
       "socket": "liftB",
       "by": "top"
@@ -91,7 +91,7 @@
       "by": "base"
     },
     {
-      "part": "Limpet Lift Jet",
+      "part": "Shuttle Lift Jet",
       "on": 2,
       "socket": "liftF",
       "by": "top"
@@ -115,7 +115,7 @@
       "by": "base"
     },
     {
-      "part": "Limpet Lift Jet",
+      "part": "Shuttle Lift Jet",
       "on": 2,
       "socket": "liftB",
       "by": "top"
@@ -139,7 +139,7 @@
       "by": "base"
     },
     {
-      "part": "Limpet Drive",
+      "part": "Shuttle Drive",
       "on": 4,
       "socket": "drive",
       "by": "top"
@@ -195,7 +195,7 @@
       "finish": "fabric"
     },
     {
-      "part": "Limpet Flight Computer",
+      "part": "Shuttle Flight Computer",
       "on": 0,
       "socket": "computer",
       "by": "bottom",
@@ -209,7 +209,7 @@
       "on": 0,
       "socket": "seatL0",
       "by": "bottom",
-      "spin": 1,
+      "spin": 2,
       "paint": "#2c3e58",
       "finish": "fabric"
     },
@@ -218,7 +218,7 @@
       "on": 0,
       "socket": "seatL1",
       "by": "bottom",
-      "spin": 1,
+      "spin": 2,
       "paint": "#2c3e58",
       "finish": "fabric"
     },
@@ -227,7 +227,7 @@
       "on": 0,
       "socket": "seatR0",
       "by": "bottom",
-      "spin": 2,
+      "spin": 1,
       "paint": "#2c3e58",
       "finish": "fabric"
     },
@@ -236,7 +236,7 @@
       "on": 0,
       "socket": "seatR1",
       "by": "bottom",
-      "spin": 2,
+      "spin": 1,
       "paint": "#2c3e58",
       "finish": "fabric"
     },

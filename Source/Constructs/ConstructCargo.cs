@@ -602,7 +602,7 @@ public static class ConstructCargo
     /// <c>Turn</c> (Rot24), held by the dock it is in.</summary>
     public readonly record struct CarrySpec(string Blueprint, Vector3 At, byte Turn);
 
-    /// <summary>A blueprint's <c>"carry"</c> list: <c>[{ "blueprint": "Limpet Boarding Pod", "at": [x, y, z], "turn": 0 }]</c>.</summary>
+    /// <summary>A blueprint's <c>"carry"</c> list: <c>[{ "blueprint": "Shuttle", "at": [x, y, z], "turn": 0 }]</c>.</summary>
     public static CarrySpec ParseCarry(JsonElement e, string file, int k)
     {
         if (e.ValueKind != JsonValueKind.Object)

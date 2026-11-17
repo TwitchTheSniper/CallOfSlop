@@ -1,9 +1,9 @@
 {
   "format": "call-of-slop-construct-part/1",
-  "name": "Limpet Roof",
-  "description": "The Limpet's roof: the upper armour and the top, the ceiling over the cockpit and the cabin and its light strip.",
+  "name": "Shuttle Roof",
+  "description": "The shuttle's roof: the upper armour and the top, the ceiling over the cockpit and the cabin and its light strip.",
   "group": "Ship",
-  "section": "Limpet boarding pod",
+  "section": "Shuttle",
   "role": "frame",
   "tool": "welder",
   "mass": 1000.0,

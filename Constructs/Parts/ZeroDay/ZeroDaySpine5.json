@@ -1594,7 +1594,7 @@
   ],
   "sockets": [
     {
-      "name": "limpetClamp",
+      "name": "shuttleClamp",
       "at": [
         5.075,
         7.625,
