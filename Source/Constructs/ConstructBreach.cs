@@ -123,7 +123,7 @@ public static class ConstructBreach
     }
 
     /// <summary>Is the gripped body's hull still under a grapple that is on (its reach and a little more: the grip holds it there), or
-    /// is a cutter on (cutting, or through and wedged in its hole)?</summary>
+    /// was it sealed on by a Board order?</summary>
     private static bool OnHull(ConstructWorld world, Construct b, Construct c)
     {
         if (b.BreachSealed)
@@ -131,8 +131,6 @@ public static class ConstructBreach
         for (var i = 0; i < b.PartCount; i++)
         {
             var kind = b.DefOf(i).Breach;
-            if (kind == BreachKind.Cutter && On(b, i))
-                return true; // (a cutter at work, or through, is wedged in its cut: it holds as a grapple does, a pod's nose on a narrow spine with its locks over the edges)
             if (kind != BreachKind.Grapple || !On(b, i))
                 continue;
             Face(b, i, out var at, out var down);
@@ -178,6 +176,9 @@ public static class ConstructBreach
         b.CarryPos = Vector3.Transform(b.Pos - tt, inv);
         b.CarryRot = Quaternion.Normalize(inv * b.Rot);
         b.Asleep = true;
+        for (var i = 0; i < b.PartCount; i++)
+            if (b.DefOf(i).Breach == BreachKind.Cutter)
+                b.Parts[i].State = (byte)(b.Parts[i].State & ~8); // (a new grip is a new cut: a cutter left on through the last hull isn't through this one)
         world.StructureDirty.Add(b.Id);
         world.CargoChanged = true;
         world.Events.Add($"construct {b.Id}: its grapples took hold of construct {t.Id}");

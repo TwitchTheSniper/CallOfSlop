@@ -34,15 +34,10 @@ public sealed partial class Game
     /// <summary>The boarding pod docked on <paramref name="carrier"/> (any peer: the copy's carry is told), or null.</summary>
     public static Construct? BoardPodOf(ConstructWorld world, Construct carrier)
     {
-        Construct? any = null;
         foreach (var b in world.Bodies)
-            if (b.CarriedBy == carrier.Id && b.CarryTag != 0 && ConstructBreach.IsPod(b))
-            {
-                if (NoseCutter(b))
-                    return b; // (a pod that cuts with its nose, the Limpet, before a craft that grips and cuts through its floor)
-                any ??= b;
-            }
-        return any;
+            if (b.CarriedBy == carrier.Id && b.CarryTag != 0 && ConstructBreach.IsPod(b) && NoseCutter(b))
+                return b; // (only a pod that cuts with its nose, the Limpet: a craft that grips and cuts through its floor isn't flown nose-in)
+        return null;
     }
 
     /// <summary>Does <paramref name="b"/>'s cutter face forward (its face, the part's -y, along the body's -z)?</summary>
