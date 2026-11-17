@@ -417,6 +417,7 @@ public static class Keybinds
         Key(GlfwKey.Backspace), // Join another player's talk (Sandbox): binds version 26
         Mouse(GlfwMouseButton.Middle), // Radar lock, in a seat: binds version 27 (shares the tool wheel's button, which a seat doesn't read)
         Key(GlfwKey.Home), // Command view (Sandbox): binds version 28
+        Key(GlfwKey.Z), // Inertia dampeners, in a seat: binds version 29 (shares Prone's Z, which a seat doesn't read)
     ];
 
     /// <summary>
