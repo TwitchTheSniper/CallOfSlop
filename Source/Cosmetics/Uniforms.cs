@@ -70,6 +70,23 @@ public static class Uniforms
     /// <summary>The uniform with this wire number, or null for 0 or an unknown one.</summary>
     public static UniformDef? Get(byte index) => index == 0 || index > All.Count ? null : All[index - 1];
 
+    private static UniformDef? _spaceSuit;
+    private static bool _spaceSuitLooked;
+
+    /// <summary>The space suit (the "space_suit" uniform: docs/sandbox/EVA.md), drawn over whatever a player wears while they have one on; null when the file has none.</summary>
+    public static UniformDef? SpaceSuit
+    {
+        get
+        {
+            if (!_spaceSuitLooked)
+            {
+                _spaceSuit = Find("space_suit");
+                _spaceSuitLooked = true;
+            }
+            return _spaceSuit;
+        }
+    }
+
     /// <summary>The uniform with this key ("ministry_warden"), or null.</summary>
     public static UniformDef? Find(string key)
     {
@@ -199,8 +216,8 @@ public static class Uniforms
                     throw new FormatException($"{where}: {hb.Count} hat boxes is more than the limit of 48");
                 var def = new HatDef { Key = u.Key, Name = u.Name, Boxes = hb };
                 Cosmetics.Measure(def);
-                if (def.Max.Y > 1f || def.Min.Y < -0.3f || MathF.Max(def.Max.X, -def.Min.X) > 0.6f || MathF.Max(def.Max.Z, -def.Min.Z) > 0.6f)
-                    throw new FormatException($"{where}: the hat must stay within 0.6 m of the head sideways, 0.3 m below its top and 1 m above it");
+                if (def.Max.Y > 1f || def.Min.Y < -0.55f || MathF.Max(def.Max.X, -def.Min.X) > 0.6f || MathF.Max(def.Max.Z, -def.Min.Z) > 0.6f)
+                    throw new FormatException($"{where}: the hat must stay within 0.6 m of the head sideways, 0.55 m below its top (a helmet over the face) and 1 m above it");
                 u.Hat = def;
             }
             list.Add(u);

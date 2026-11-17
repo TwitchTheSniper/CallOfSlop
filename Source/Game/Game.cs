@@ -953,6 +953,8 @@ public sealed partial class Game : IDisposable
         _sepAtTick = cmd.Tick;
         SepBuild(); // the other players' and bots' bodies as last heard (PlayerSeparation.cs)
         ClientTickTerrainStream(); // streamed ground made ready round the local player (GameTerrainStream.cs)
+        if (SandboxOn && !IsServer)
+            Eva.Step(me, topUp: SandboxHands.Hand(me.Id).Seated); // (the HUD's air on a joined client; the host hurts: GameSandboxEva.cs)
         if (me.Alive)
         {
             World.Simulate(ref me.Sim, cmd);

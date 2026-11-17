@@ -373,7 +373,7 @@ public static class BodyModel
         p.InShell ? BodyColors.Robot(p.Color) : UniformOf(p) is { } u ? u.Colors(v) : BodyColors.For(p.Color, v);
 
     /// <summary>The uniform a player is drawn in (the server's pick, in the roster), or null: none, or in a robot shell.</summary>
-    public static UniformDef? UniformOf(Player p) => p.InShell ? null : Uniforms.Get(p.Uniform);
+    public static UniformDef? UniformOf(Player p) => p.InShell ? null : Uniforms.Get(p.DrawnUniform); // (a space suit over the uniform: GameSandboxEva.cs)
 
     /// <summary>A player's leg colours: their uniform's trousers and boots, or the player colour's.</summary>
     public static LegColors LegsFor(Player p) => UniformOf(p) is { } u ? u.Legs : LegColors.For(p.Color);

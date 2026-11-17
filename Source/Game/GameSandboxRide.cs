@@ -282,6 +282,8 @@ public sealed partial class Game
     {
         if (p.Bot != null)
             return 0;
+        if ((p.Eva & Eva.Mmu) != 0)
+            return PilotGear.Mmu; // (a spacewalker's pack: it stands in for the rest, GameSandboxEva.cs)
         if (SandboxInfiniteParts)
             return PilotGear.Chute | PilotGear.Glider | PilotGear.Jet;
         var pack = SandboxHands.Pack(p.Id);

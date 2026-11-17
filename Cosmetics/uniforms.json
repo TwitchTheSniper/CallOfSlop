@@ -308,6 +308,40 @@
         { "shape": "round", "sides": 4, "at": [0, 0.03, 0.0], "size": [0.45, 0.03, 0.45], "color": "#0c0c0d" },
         { "shape": "round", "sides": 4, "at": [0, 0.17, 0.0], "size": [0.36, 0.04, 0.36], "color": "#1c1c20" }
       ]
+        },
+    {
+      "id": "space_suit",
+      "name": "Space Suit",
+      "about": "A pressure suit with 30 minutes of air, a chest control unit and a life-support pack with an attach point for a Manned Manoeuvring Unit (docs/sandbox/EVA.md). Worn from a Space Suit Locker, never issued.",
+      "colors": { "coat": "#e6e6de", "coatDark": "#c9ccc6", "sleeve": "#e4e4dc", "collar": "#9aa0a6", "trim": "#c43a2e", "trousers": "#e2e2da", "hips": "#d9d9d1", "boots": "#cfd2cf", "gloves": "#d7dad6", "cuff": "#7f8c9a" },
+      "torso": [
+        { "at": [0, 0.03, 0.0], "size": [0.84, 0.42, 0.46], "color": "#e6e6de" },
+        { "at": [0, -0.2, 0.0], "size": [0.78, 0.05, 0.47], "color": "#9aa0a6" },
+        { "at": [0, 0.262, 0.0], "size": [0.46, 0.04, 0.462], "color": "#7f8c9a" },
+        { "at": [0, -0.05, -0.255], "size": [0.36, 0.16, 0.05], "color": "#c9ccc9" },
+        { "at": [0, -0.035, -0.283], "size": [0.26, 0.07, 0.006], "color": "#2a2c2f", "detail": true },
+        { "at": [-0.1, -0.105, -0.2825], "size": [0.04, 0.03, 0.006], "color": "#d8642a", "detail": true },
+        { "at": [0.0, -0.105, -0.2825], "size": [0.04, 0.03, 0.006], "color": "#c9a24a", "detail": true },
+        { "at": [0.1, -0.105, -0.2825], "size": [0.04, 0.03, 0.006], "color": "#4f8fd8", "detail": true },
+        { "at": [0.417, 0.12, 0.0], "size": [0.012, 0.06, 0.3], "color": "#c43a2e" },
+        { "at": [-0.417, 0.12, 0.0], "size": [0.012, 0.06, 0.3], "color": "#c43a2e" },
+        { "at": [0.24, 0.15, -0.2335], "size": [0.12, 0.07, 0.006], "color": "#d8642a", "detail": true },
+        { "at": [0, 0.0, 0.33], "size": [0.64, 0.6, 0.22], "color": "#e6e6de" },
+        { "at": [0, 0.0, 0.33], "size": [0.66, 0.5, 0.18], "color": "#b9bdbd" },
+        { "at": [0, 0.31, 0.33], "size": [0.6, 0.026, 0.2], "color": "#9aa0a6" },
+        { "at": [0, -0.24, 0.4425], "size": [0.5, 0.03, 0.006], "color": "#d8642a", "detail": true },
+        { "at": [0, -0.02, 0.4455], "size": [0.22, 0.16, 0.013], "color": "#3a3e42" },
+        { "at": [0.07, -0.02, 0.4545], "size": [0.03, 0.03, 0.006], "color": "#c9a24a", "detail": true },
+        { "at": [-0.07, -0.02, 0.4545], "size": [0.03, 0.03, 0.006], "color": "#c9a24a", "detail": true },
+        { "at": [0.425, -0.1, 0.05], "size": [0.03, 0.03, 0.4], "color": "#c9a24a", "detail": true }
+      ],
+      "hat": [
+        { "shape": "round", "sides": 4, "at": [0, -0.2, 0], "size": [0.56, 0.5, 0.56], "color": "#e8e8e0" },
+        { "shape": "round", "sides": 4, "at": [0, -0.17, -0.045], "size": [0.5, 0.26, 0.5], "color": "#c9a24a" },
+        { "shape": "round", "sides": 4, "at": [0, -0.47, 0], "size": [0.44, 0.06, 0.44], "color": "#7f8c9a" },
+        { "shape": "box", "at": [0.12, 0.08, -0.12], "size": [0.06, 0.05, 0.1], "color": "#2a2c2f" },
+        { "shape": "box", "at": [0.12, 0.08, -0.173], "size": [0.04, 0.03, 0.006], "color": "#fff2c0" }
+      ]
     }
   ]
 }

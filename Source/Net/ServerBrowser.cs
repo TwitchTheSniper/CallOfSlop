@@ -572,7 +572,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 333: faction relations through play (docs/sandbox/design/faction-controllers.md phase 1; GameCrewFactions.cs, Crew/CrewRelations.cs):
     //   Msg.Factions ends with u8 powers n, n x n x i8 (how each power sees each), u8 pacts k, k x (u8 kind, u8 a, u8 b, u16 minutes held,
     //   u16 minutes left: 0xFFFF none); Msg.PowerNews at the end of Msg. The NPC rows (and CrewSeats' faction byte) are powers, not kinds.
-    public const ushort ProtocolVersion = 333;
+    // 334: spacewalk gear (docs/sandbox/EVA.md, GameSandboxEva.cs): the roster carries a byte a player after the uniform, their
+    //   Eva bits (a space suit, an MMU on it).
+    public const ushort ProtocolVersion = 334;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

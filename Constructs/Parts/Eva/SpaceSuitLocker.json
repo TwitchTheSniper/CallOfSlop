@@ -1,0 +1,302 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Space Suit Locker",
+  "description": "A space suit on a rack behind glass. F puts the suit on (its air full) or hangs it back up. A robot shell needs no suit.",
+  "group": "Flight",
+  "section": "Pilot gear",
+  "role": "frame",
+  "tool": "wrench",
+  "eva": "locker",
+  "mass": 70.0,
+  "health": 250,
+  "armour": 4,
+  "material": "steel",
+  "color": "#a7abab",
+  "attachSeconds": 2.0,
+  "boxes": [
+    {
+      "min": [
+        -0.4,
+        0.0,
+        0.22
+      ],
+      "max": [
+        0.4,
+        2.0,
+        0.3
+      ],
+      "color": "#5c6166",
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -0.4,
+        0.0,
+        -0.3
+      ],
+      "max": [
+        0.4,
+        0.3,
+        0.22
+      ],
+      "color": "#5c6166",
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -0.4,
+        1.9,
+        -0.3
+      ],
+      "max": [
+        0.4,
+        2.0,
+        0.22
+      ],
+      "color": "#5c6166",
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -0.4,
+        0.3,
+        -0.3
+      ],
+      "max": [
+        -0.33,
+        1.9,
+        0.22
+      ],
+      "color": "#5c6166",
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        0.33,
+        0.3,
+        -0.3
+      ],
+      "max": [
+        0.4,
+        1.9,
+        0.22
+      ],
+      "color": "#5c6166",
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -0.33,
+        0.3,
+        -0.295
+      ],
+      "max": [
+        0.33,
+        1.9,
+        -0.28
+      ],
+      "color": "#9fc8d8",
+      "glass": true
+    },
+    {
+      "min": [
+        -0.36,
+        1.78,
+        -0.3105
+      ],
+      "max": [
+        0.36,
+        1.86,
+        -0.2945
+      ],
+      "color": "#d8642a",
+      "detail": true,
+      "finish": "worn paint"
+    },
+    {
+      "min": [
+        -0.2,
+        1.0,
+        -0.12
+      ],
+      "max": [
+        0.2,
+        1.45,
+        0.12
+      ],
+      "color": "#e4e4dc",
+      "detail": true,
+      "finish": "fabric"
+    },
+    {
+      "min": [
+        -0.14,
+        1.48,
+        -0.13
+      ],
+      "max": [
+        0.14,
+        1.75,
+        0.13
+      ],
+      "color": "#e4e4dc",
+      "detail": true,
+      "finish": "gloss paint"
+    },
+    {
+      "min": [
+        -0.1,
+        1.55,
+        -0.14
+      ],
+      "max": [
+        0.1,
+        1.68,
+        -0.13
+      ],
+      "color": "#c9a24a",
+      "detail": true,
+      "finish": "chrome"
+    },
+    {
+      "min": [
+        -0.08,
+        1.15,
+        -0.135
+      ],
+      "max": [
+        0.08,
+        1.25,
+        -0.12
+      ],
+      "color": "#a7abab",
+      "detail": true,
+      "finish": "plastic"
+    },
+    {
+      "min": [
+        -0.29,
+        0.95,
+        -0.08
+      ],
+      "max": [
+        -0.2,
+        1.42,
+        0.08
+      ],
+      "color": "#e4e4dc",
+      "detail": true,
+      "finish": "fabric"
+    },
+    {
+      "min": [
+        -0.18,
+        0.4,
+        -0.09
+      ],
+      "max": [
+        -0.02,
+        1.0,
+        0.07
+      ],
+      "color": "#e4e4dc",
+      "detail": true,
+      "finish": "fabric"
+    },
+    {
+      "min": [
+        -0.18,
+        0.3,
+        -0.12
+      ],
+      "max": [
+        -0.02,
+        0.4,
+        0.08
+      ],
+      "color": "#a7abab",
+      "detail": true,
+      "finish": "rubber"
+    },
+    {
+      "min": [
+        0.2,
+        0.95,
+        -0.08
+      ],
+      "max": [
+        0.29,
+        1.42,
+        0.08
+      ],
+      "color": "#e4e4dc",
+      "detail": true,
+      "finish": "fabric"
+    },
+    {
+      "min": [
+        0.02,
+        0.4,
+        -0.09
+      ],
+      "max": [
+        0.18,
+        1.0,
+        0.07
+      ],
+      "color": "#e4e4dc",
+      "detail": true,
+      "finish": "fabric"
+    },
+    {
+      "min": [
+        0.02,
+        0.3,
+        -0.12
+      ],
+      "max": [
+        0.18,
+        0.4,
+        0.08
+      ],
+      "color": "#a7abab",
+      "detail": true,
+      "finish": "rubber"
+    },
+    {
+      "min": [
+        -0.03,
+        1.45,
+        0.13
+      ],
+      "max": [
+        0.03,
+        1.5,
+        0.2
+      ],
+      "color": "#5c6166",
+      "detail": true,
+      "finish": "steel"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "wall",
+      "at": [
+        0.0,
+        0.125,
+        0.3
+      ],
+      "dir": "+z"
+    }
+  ]
+}

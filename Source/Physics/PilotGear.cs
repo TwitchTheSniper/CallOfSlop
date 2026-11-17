@@ -12,13 +12,14 @@ namespace CallOfSlop;
 /// </summary>
 public static class PilotGear
 {
-    public const byte Chute = 1, Glider = 2, Jet = 4; // MoveState.Gear's bits
+    public const byte Chute = 1, Glider = 2, Jet = 4, Mmu = 8; // MoveState.Gear's bits (Mmu: a Manned Manoeuvring Unit on a space suit, docs/sandbox/EVA.md; it stands in for the rest)
     public const byte OpenChute = 1, OpenGlider = 2, Burning = 3; // MoveState.Canopy
     public const float OpenFall = 5f; // m/s down before a canopy will open: a jump isn't a fall
     public const float ChuteSink = 5.5f, ChuteSteer = 5f;
     public const float GlideSpeed = 17f, GlideDive = 25f, GlideFlare = 10f, GlideSink = 3f, GlideDiveSink = 7f, GlideFlareSink = 2.2f, GlideTurn = 1.2f;
     public const float JetClimb = 12f, JetAccel = 34f, JetSteer = 10f;
     public const ushort JetFull = 720, JetBurn = 3; // a full tank: four seconds alight, twelve on the ground to fill
+    public const float MmuAccel = 2.5f; // m/s2 the pack gives a spacewalker, any way (a tick of it burns one of JetFuel's ticks: Eva.MmuFull)
 
     /// <summary>The ticks from an ejection seat's throw until its parachute opens.</summary>
     public const byte EjectDelay = 45;
@@ -28,6 +29,11 @@ public static class PilotGear
         var jump = (cmd.Buttons & Buttons.Jump) != 0;
         var press = jump && !s.GearJump;
         s.GearJump = jump;
+        if ((s.Gear & Mmu) != 0)
+        {
+            MmuStep(ref s, cmd);
+            return;
+        }
         if (s.Grounded && s.JetFuel < JetFull)
             s.JetFuel++;
         if (s.Grounded || s.RideBody != 0 || s.MantleTicks > 0)
@@ -91,5 +97,31 @@ public static class PilotGear
                 break;
         }
         s.Velocity = across + up * climb;
+    }
+
+    /// <summary>
+    /// A Manned Manoeuvring Unit (docs/sandbox/EVA.md): off the ground and out of any ride frame, the move keys push along
+    /// the look (W and S along it, pitch and all; A and D across), jump up and crouch down along the look's own up, at
+    /// <see cref="MmuAccel"/> while its tank lasts. Nothing slows them: what they have, they keep. Its fuel is its own (the
+    /// dock fills it), so the ground doesn't refill it.
+    /// </summary>
+    private static void MmuStep(ref MoveState s, in InputCmd cmd)
+    {
+        s.Canopy = 0;
+        if (s.Grounded || s.RideBody != 0 || s.MantleTicks > 0 || s.JetFuel == 0)
+            return;
+        var b = cmd.Buttons;
+        float f = ((b & Buttons.Forward) != 0 ? 1 : 0) - ((b & Buttons.Back) != 0 ? 1 : 0);
+        float r = ((b & Buttons.Right) != 0 ? 1 : 0) - ((b & Buttons.Left) != 0 ? 1 : 0);
+        float u = ((b & Buttons.Jump) != 0 ? 1 : 0) - ((b & Buttons.Crouch) != 0 ? 1 : 0);
+        if (f == 0 && r == 0 && u == 0)
+            return;
+        var fwd = GravityFrames.Forward(s.Position, cmd.Yaw, cmd.Pitch); // (the look in the gravity frame there: a planet's or an orbit's)
+        var right = GravityFrames.FlatRight(s.Position, cmd.Yaw);
+        var upLook = Vector3.Cross(right, fwd);
+        var wish = fwd * f + right * r + upLook * u;
+        s.Velocity += Vector3.Normalize(wish) * (MmuAccel * World.TickDt);
+        s.JetFuel--;
+        s.Canopy = Burning; // (others see its puffs)
     }
 }
