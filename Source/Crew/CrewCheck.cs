@@ -4,13 +4,13 @@ using CallOfSlop.VehicleKit;
 namespace CallOfSlop;
 
 /// <summary>
-/// <c>--crew-check [SHIP] [--target NAME] [--range M] [--seconds S] [--still] [--scale N]</c> (was <c>--ship-ai-check</c>; docs/sandbox/design/bot-brain.md):
+/// <c>--crew-check [SHIP] [--target NAME] [--range M] [--seconds S] [--still] [--crew-scale N]</c> (was <c>--ship-ai-check</c>; docs/sandbox/design/bot-brain.md):
 /// a crewed ship (default "Zero Day Frigate") flown by its seated crew (CrewWorld, Karl's ShipAi drivers behind the rule-1 gate) against a target ship
 /// <c>--range</c> m north (1200; flown by script unless <c>--still</c>), on the flight check's flat floor, in a world of its own with no game (so no
 /// bodies: every member is a record at its seat). 120 s by default, in acts: it fights; at 40 s its pilot is killed (the helm keeps its last input for
 /// <see cref="CrewWorld.HelmGraceTicks"/>, then a spare walks over and takes it); at 70 s its gunners are killed (their guns fall silent); at 90 s
 /// everyone left at the helm or spare is killed (the ship stops: it holds). A line every two seconds and a summary; exit 0 when each act did what it
-/// should. <c>--scale N</c> then times the crew alone with N members on many copies of a small crewed craft, most far from the people (asleep),
+/// should. <c>--crew-scale N</c> then times the crew alone with N members on many copies of a small crewed craft, most far from the people (asleep),
 /// some near (driven): ms per tick and bytes. Allocates (a tool, never on a tick).
 /// </summary>
 public static class CrewCheck
@@ -24,7 +24,7 @@ public static class CrewCheck
         var range = float.TryParse(Arg("--range"), System.Globalization.CultureInfo.InvariantCulture, out var r) ? r : 1200;
         var seconds = int.TryParse(Arg("--seconds"), out var s) ? s : 120;
         var still = args.Any(a => a.Equals("--still", StringComparison.OrdinalIgnoreCase));
-        var scale = int.TryParse(Arg("--scale"), out var sc) ? sc : 0;
+        var scale = int.TryParse(Arg("--crew-scale"), out var sc) ? sc : 0;
         var shipBp = ConstructBuild.FindBlueprint(shipName);
         var targetBp = ConstructBuild.FindBlueprint(targetName);
         if (shipBp == null || targetBp == null)
@@ -34,7 +34,7 @@ public static class CrewCheck
         }
         var ok = seconds <= 0 || Fight(shipBp, targetBp, shipName, targetName, range, seconds, still);
         if (scale > 0)
-            ok &= Scale(scale, Arg("--scale-ship") ?? "Bandit Helicopter 1");
+            ok &= Scale(scale, Arg("--crew-scale-ship") ?? "Bandit Helicopter 1");
         return ok ? 0 : 1;
     }
 
@@ -122,8 +122,8 @@ public static class CrewCheck
                         crew.Kill(cs.StMember[k], null);
                 Console.WriteLine($"  70 s: every gunner is shot; {crew.Describe(cs)}");
             }
-            if (t == 72 * World.TickRate)
-                gunShotsLate = ai?.GunnerShots ?? 0;
+            if (t == 71 * World.TickRate)
+                gunShotsLate = ai?.GunnerShots ?? 0; // (a second on: no spare is in a gun seat yet, the walk takes two at least)
             if (t == 90 * World.TickRate)
             {
                 allKilledAt = t;
@@ -131,9 +131,9 @@ public static class CrewCheck
                     crew.Kill(cs.Members[i], null);
                 Console.WriteLine($"  90 s: everyone left is shot: {crew.Describe(cs)}");
             }
-            if (allKilledAt >= 0 && t == allKilledAt + CrewWorld.HelmGraceTicks + World.TickRate)
-                stopAt = ship.WorldCom;
-            if (allKilledAt >= 0 && t > allKilledAt + CrewWorld.HelmGraceTicks + World.TickRate)
+            if (t == ticks - 10 * World.TickRate)
+                stopAt = ship.WorldCom; // (the last ten seconds: with nobody aboard it holds where its stabilizer leaves it)
+            if (allKilledAt >= 0 && t > ticks - 10 * World.TickRate)
                 driftAfterStop = Vector3.Distance(stopAt, ship.WorldCom);
             var d = Vector3.Distance(ship.WorldCom, target.WorldCom);
             closest = MathF.Min(closest, d);
@@ -150,13 +150,13 @@ public static class CrewCheck
         var hit = Health(target) < hp0 - 1;
         var fought = closest < ShipAi.StandOff + ShipAi.StandBand * 3 && hit;
         var retaken = pilotKilledAt < 0 || helmRetakenAt >= 0;
-        var silenced = gunnersKilledAt < 0 || (cs.Ai?.GunnerShots ?? 0) == gunShotsLate;
-        var stopped = allKilledAt < 0 || driftAfterStop < 40;
+        var silenced = gunnersKilledAt < 0 || gunShotsLate == gunShotsAtKill;
+        var stopped = allKilledAt < 0 || driftAfterStop < 15;
         Console.WriteLine($"crew: closest {closest:0} m, {w.ShotsFired - shots0} shots, target health {Health(target):0} of {hp0:0} ({hpAtPilotKill:0} when the pilot was shot): {(fought ? "fought" : "DIDN'T FIGHT")}; " +
                           $"helm {(helmRetakenAt >= 0 ? $"taken again {(helmRetakenAt - pilotKilledAt) / (float)World.TickRate:0.0} s after the pilot died" : "NEVER TAKEN AGAIN")}; " +
-                          $"gunners' shots {gunShotsAtKill} when shot, {gunShotsLate} two seconds on, {cs.Ai?.GunnerShots ?? 0} at the end: {(silenced ? "silenced" : "STILL FIRING")}; " +
-                          $"with nobody left it moved {driftAfterStop:0} m: {(stopped ? "stopped" : "DIDN'T STOP")}");
-        Console.WriteLine($"crew: the crew's own cost {crew.CpuMs / Math.Max(1, crew.Ticks) * 1000:0.0} us a tick (worst {crew.WorstMs * 1000:0} us), {crew.Bytes} bytes allocated in {crew.Ticks} ticks");
+                          $"gunners' shots {gunShotsAtKill} when shot, {gunShotsLate} a second on, {cs.Ai?.GunnerShots ?? 0} at the end (spares took the seats): {(silenced ? "silenced" : "STILL FIRING")}; " +
+                          $"with nobody left it moved {driftAfterStop:0} m in its last 10 s, at {ship.Vel.Length():0.0} m/s: {(stopped ? "stopped" : "DIDN'T STOP")}");
+        Console.WriteLine($"crew: the crew's own cost {crew.CpuMs / Math.Max(1, crew.Ticks) * 1000:0.0} us a tick (worst {crew.WorstMs * 1000:0} us at {crew.WorstTick / (float)World.TickRate:0.0} s), {crew.Bytes} bytes allocated in {crew.Ticks} ticks");
         var ok = fought && retaken && silenced && stopped;
         Console.WriteLine($"crew: {(ok ? "OK" : "FAILED")}");
         return ok;
@@ -175,15 +175,15 @@ public static class CrewCheck
         var w = new ConstructWorld();
         var q = new SelfTest.DriveWorld();
         var crew = new CrewWorld();
-        const int perBody = 24;
+        const int perBody = 24, Near = 20;
         var bodies = (members + perBody - 1) / perBody;
         var mem0 = GC.GetTotalMemory(true);
         var made = 0;
         for (var i = 0; i < bodies; i++)
         {
-            // A ring 5 km out, the first eight within a kilometre of the people (awake: driven), the rest asleep.
+            // A ring 6 km out, the first Near (20) within two kilometres of the people (awake: driven), the rest asleep.
             var a = i * MathF.Tau / bodies;
-            var rad = i < 8 ? 400f + i * 60 : 6000f;
+            var rad = i < Near ? 400f + i * 80 : 6000f;
             var c = Build(w, bp, new Vector3(MathF.Cos(a) * rad, 0, MathF.Sin(a) * rad), a, place);
             var cs = crew.Crew(c, ShipAiMode.Everyone, spares: Math.Max(0, Math.Min(perBody, members - made) - 2))!;
             made += cs.MemberCount;

@@ -27,7 +27,7 @@ Working notes for docs/sandbox/design/bot-brain.md, kept current after every ste
 - Protocol 328: `Msg.CrewSeats` (u16 body, u8 n, n x u16 seat part).
 - Data: `Crew/Names.json` (`CrewNames`).
 - `--crew-check` replaces `--ship-ai-check` (Source/Crew/CrewCheck.cs): fights, then kills the pilot (40 s), the gunners (70 s)
-  and the rest (90 s); `--scale N` times the crew alone at N members.
+  and the rest (90 s); `--crew-scale N` times the crew alone at N members.
 
 ## Next
 

@@ -78,6 +78,7 @@ public sealed class CrewShip
     public int Helm = -1; // the helm's station index
     public int Stamp = -1, PartsSeen = -1; // (the construct's RebuildStamp and part count when its stations were scanned)
     public long GraceUntil; // the tick an empty helm stops keeping its last input
+    public bool FromSetting; // made by its Flight Stabilizer's AI crew setting: it stands down when the setting goes off
     public bool AirOff; // an aircraft's autopilot was let go for want of a pilot (GameSandboxAircraft.cs)
     public bool HelmLost; // the helm emptied and nobody has taken it (an aircraft's pilot let go of the autopilot once)
     public bool SeatsDirty = true; // the stand-ins clients draw changed (GameCrew.cs sends them)
@@ -106,6 +107,7 @@ public sealed class CrewShip
         GraceUntil = 0;
         HelmLost = false;
         AirOff = false;
+        FromSetting = false;
         SeatsDirty = true;
         Near = float.MaxValue;
         Contact = 255;
@@ -180,6 +182,7 @@ public sealed class CrewWorld
 
     /// <summary>What the crew's ticks have cost: CPU (ms), bytes allocated, ticks.</summary>
     public double CpuMs, WorstMs;
+    public long WorstTick;
     public long Bytes;
     public int Ticks;
 
@@ -542,8 +545,11 @@ public sealed class CrewWorld
             Bytes += b1 - b0;
         var ms = (System.Diagnostics.Stopwatch.GetTimestamp() - t0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
         CpuMs += ms;
-        if (Ticks > 10)
-            WorstMs = Math.Max(WorstMs, ms);
+        if (Ticks > 10 && ms > WorstMs)
+        {
+            WorstMs = ms;
+            WorstTick = Tick;
+        }
         Ticks++;
     }
 
@@ -568,8 +574,8 @@ public sealed class CrewWorld
             if (c.StabCount == 0 || c.Wreck || c.SpaceShip != 0 || _shipOf.ContainsKey(c.Id))
                 continue;
             var mode = ShipAi.ModeOf(c);
-            if (mode != ShipAiMode.Off)
-                Crew(c, mode);
+            if (mode != ShipAiMode.Off && Crew(c, mode) is { } made)
+                made.FromSetting = true;
         }
     }
 
@@ -596,9 +602,9 @@ public sealed class CrewWorld
             Disband(s, w, host, c == null ? "went with its body" : "died with its ship");
             return;
         }
-        if (!s.Air && c.StabCount > 0 && ShipAi.ModeOf(c) is var mode && mode != s.Mode)
+        if (s.FromSetting && c.StabCount > 0 && ShipAi.ModeOf(c) is var mode && mode != s.Mode)
         {
-            if (mode == ShipAiMode.Off && c.CrewLoad == null)
+            if (mode == ShipAiMode.Off)
             {
                 Disband(s, w, host, "stood down");
                 return;
@@ -886,7 +892,7 @@ public sealed class CrewWorld
         if (ShipOf(body) is not { } s)
             return null;
         var wr = new SaveWriter(64 + s.MemberCount * 12);
-        wr.U8(SaveVersion).U8((byte)s.Mode).U8((byte)(s.Air ? 1 : 0));
+        wr.U8(SaveVersion).U8((byte)s.Mode).U8((byte)((s.Air ? 1 : 0) | (s.FromSetting ? 2 : 0)));
         var n = 0;
         for (var i = 0; i < s.MemberCount; i++)
             if (State[s.Members[i]] != CrewState.Dead)
@@ -916,9 +922,10 @@ public sealed class CrewWorld
                 return;
             }
             var mode = (ShipAiMode)Math.Min((int)r.U8(), 2);
-            var air = r.U8() != 0;
+            var flags = r.U8();
             int n = r.U8();
-            var s = NewShip(c.Id, mode, air);
+            var s = NewShip(c.Id, mode, (flags & 1) != 0);
+            s.FromSetting = (flags & 2) != 0;
             Scan(c, s);
             for (var i = 0; i < n && i < MaxCrewPerBody; i++)
             {
