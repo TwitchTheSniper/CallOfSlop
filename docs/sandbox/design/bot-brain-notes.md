@@ -182,6 +182,33 @@ host's roster view showed 2 at work and 3 prisoners.
 Unverified: the Crew section drawn (no picture); a joined client's roster, credits and orders; wages and leaving unpaid; hiring from a
 friendly crew nearby; own gunners firing at a hostile.
 
+## Review fixes (2026-11-17)
+
+- Boarders are only those the crew's rules call hostile (`Game.BoardFoe`: `Fights`, a foe or standing below 0), never the ship's owner or
+  anyone in the owner's faction; own crews run no boarding acts. A friendly player on a Traders deck is no boarder (standing stays 20).
+- A player-owned ship is never captured by killing its crew (`CrewCapture` only for a nobody's ship).
+- Credits and NPC standings travel: the landing reads the Crew section with the Players section (`GameSpaceLanding`), and a traveller's
+  record from another game takes its Crew section's entry (`WorldReadCrewRecords`, `WorldTravellerCopy`). Hired hands travel in their
+  ship's crew block, as before.
+- One breakdown step per body per `BdStep` (`BdDue`), whether the riders' look or the NPC crew's work tick steps it.
+- Crew bodies' side (`CrewTeam`): a hired crew and an owned ship's Fights strangers crew are friendly bots; a prize's roster hired turns
+  its bodies friendly (`CrewTeamsFollow`).
+- `CrewHire` checks every refusal (crew not yours, full, credits) before it makes an empty Own roster or turns a prize.
+- `CrewFactions.All` and `CrewNames.All` load at a world's start (`CrewFactionsClear`), not in a tick.
+- The scuttle charge's look line is cached; the charge follows its part by tag (`CrewShip.ScTag`, `CrewWorld.ScuttleFollow`, on each
+  rebuild scan and each scuttle step): gone with a split's other piece, the point is lost and no charge goes off.
+- Window verbs: `crewprisoner OP` on a joined client sends the Crew window's order for the first prisoner in its rosters; `crewhit [PLAYER]`.
+
+Verified (2026-11-17): a joined client (two xvfb windows, Proving Ground with `inv survival on`): brought onto a Traders frigate's deck,
+not a boarder (Traders 20); as Militia, after `crewhit 1`, boarded, the last crew surrendered, taken by player 1 with 1 prisoner, credits
+500 to 625 (bounty); a hire with 125 credits refused ("that costs 200 credits: you have 125") and the prize stayed a prize; with 625,
+hired (425 left), the roster turned own and the hand took a gun seat. `--crew-check` OK (40 us a tick, worst 0.47 ms); `--linked-check`
+passed; sections Sandbox spawns, Mode switch reset, Construct drivetrain, Standalone powertrain, Large drive, Construct weapons, Seated
+riders, Save folder, Packets, Space launch pass after merging main (protocol 332, above main's 331).
+
+Unverified: a landing on another planet with credits (no run); hired bodies beside the player's spawned friendly bots; an owner aboard
+their own Fights everyone ship (by reading only); a scuttle point split off; `EngPart` (the engineer's part) is still an index, not a tag.
+
 ## Next (for a successor, branch `claude/bot-brain-2`)
 
 - Phase 4's rest: CrewNav (see the phase 4 note above), bodied crew walking it, unreachable stations, Lock down (locked doors) and

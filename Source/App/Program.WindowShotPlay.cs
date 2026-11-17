@@ -44,9 +44,9 @@ public static partial class Program
                     Console.WriteLine($"[windowshot] crewconvoy: {asked ?? "asked"}");
                 }
                 return true;
-            case "crewhit": // "crewhit": host, a server shortcut: this player's shot (DamageBy) takes 1 hp off a part of the first crewed body, as a round would
+            case "crewhit": // "crewhit [PLAYER]": host, a server shortcut: this player's (or that player id's: a joined client's) shot (DamageBy) takes 1 hp off a part of the first crewed body, as a round would
                 if (g.IsServer)
-                    Console.WriteLine($"[windowshot] crewhit: {g.CrewHitFirst(me)}");
+                    Console.WriteLine($"[windowshot] crewhit: {g.CrewHitFirst(byte.TryParse(arg, out var hitBy) && g.Players.TryGetValue(hitBy, out var hp) ? hp : me)}");
                 return true;
             case "crewbreak": // "crewbreak [fail]": host, a server shortcut: the first crewed body's breakdown clock runs out now (a warning; "fail": the part breaks down at once)
                 if (g.IsServer)
@@ -64,9 +64,24 @@ public static partial class Program
                 if (g.IsServer)
                     Console.WriteLine($"[windowshot] crewdisarm: {g.CrewDisarmFirst(me)}");
                 return true;
-            case "crewprisoner": // "crewprisoner release|drop|hold|hire": host: this player's order for the first prisoner on the first crewed body
+            case "crewprisoner": // "crewprisoner release|drop|hold|hire": host: this player's order for the first prisoner on the first crewed body; a client sends it as the Crew window's button does (CActKind.Crew), to the first prisoner of a prize it has the roster of
                 if (g.IsServer)
                     Console.WriteLine($"[windowshot] crewprisoner: {g.CrewPrisonerFirst(me, arg)}");
+                else
+                {
+                    var op = arg switch { "release" => CrewOrder.Release, "drop" => CrewOrder.Drop, "hire" => CrewOrder.Hire, _ => (CrewOrder)255 };
+                    var sent = false;
+                    foreach (var v in g.CrewRosters.Values)
+                        foreach (var m in v.Members)
+                            if (!sent && op != (CrewOrder)255 && m.State == CrewState.Surrendered)
+                            {
+                                g.SandboxSendCrewOrder(v.Body, m.Uid, op);
+                                Console.WriteLine($"[windowshot] crewprisoner: sent {op} for {m.Name} on {v.Body}");
+                                sent = true;
+                            }
+                    if (!sent)
+                        Console.WriteLine("[windowshot] crewprisoner: no prisoner in this client's rosters");
+                }
                 return true;
             case "npcstanding": // "npcstanding": how each NPC faction kind sees this player, as this peer's factions table has it
                 Console.WriteLine($"[windowshot] npcstanding: {g.CrewStandingLine(me)}");
