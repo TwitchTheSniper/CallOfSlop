@@ -378,7 +378,7 @@ public static class ConstructLinear
         if (jt.ShaftRail)
         {
             speed = ShaftOf(c, jt.Drive, out _, out _) == ShaftState.Turning ? MathF.Max(ShaftSpeed(c, jt, out _), 0.1f) : 0;
-            if (speed == 0 && c.Asleep && ConstructPhysics.DriveOn(c))
+            if (speed == 0 && c.Asleep && ConstructPhysics.DriveAsked(c))
                 speed = 0.1f; // (an engine started on a sleeping body: it has to turn over)
         }
         return sense * speed;
@@ -405,8 +405,8 @@ public static class ConstructLinear
         if (k < 0)
             return ShaftState.NoEngine;
         ref var f = ref c.ShaftFeeds![k];
-        if (!ConstructPhysics.DriveOn(c))
-            return ShaftState.EngineOff;
+        if (!ConstructPhysics.DriveAsked(c))
+            return ShaftState.EngineOff; // (an engine a generator set runs turns no shaft rail)
         if ((f.GateMask & ~c.GateOpen) != 0)
             return ShaftState.ClutchOut;
         var gear = f.Geared ? MathF.Max(0.01f, MathF.Abs(c.GearRatio)) : 1f;

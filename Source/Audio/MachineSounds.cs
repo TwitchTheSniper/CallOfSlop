@@ -30,7 +30,7 @@ public static class MachineSounds
     private static readonly float[] Dist = new float[Reactors];
 
     /// <summary>Does this part hum?</summary>
-    public static bool Hums(ConstructPartDef d) => d.Role == PartRole.Generator && d.PlantFuel == EngineFuel.None && d.PlantRate >= MinKw;
+    public static bool Hums(ConstructPartDef d) => d.Role == PartRole.Generator && d.PlantFuel == EngineFuel.None && d.PlantShaft <= 0 && d.PlantRate >= MinKw; // (a Generator Head is heard as its engine: ConstructGenset.cs)
 
     /// <summary>Every Sandbox frame, host and clients: the nearest reactors' hums.</summary>
     public static void Frame(ConstructWorld world, Audio audio, Vector3 listener, float dt)

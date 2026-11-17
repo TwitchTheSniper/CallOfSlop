@@ -241,6 +241,28 @@ note says what was added. At tier 5 (36 m/s, all-wheel drive):
 | Bandit War Bus 1 | 0.406 | 400 | 3 behind (hull skirts between the axles) | 16.4 min |
 | Highland Giant Truck 8 | 0.406 | 400 | 2 between, 1 behind | 16.4 min |
 
+## Generator sets
+
+`Source/EngineKit/EngineKitGenset.cs` (2026-11-17; power-and-links.md "Engine generators"): a kit engine turning a Generator Head, on a skid of
+2 m Foundations (it anchors where it is set down), with Large Fuel Tanks in a row ahead (30 minutes at full throttle, at most 6; the first
+piped to the flywheel) and Batteries beyond them (five seconds of full output, at most 6). The engine is Small pieces with nothing pointing
+down (`EngineKitGenset.Request`: the heads' shafts stand 0.5 m over the floor); the head is the smallest that takes the engine's power.
+
+- `--gen-engine --genset [--preset small|medium|large|huge] [--power KW] [--tier N] [--style militia] [--seed S] [--out FILE]` makes one.
+- `--gen-engine --genset-ship [--check]` writes (or compares) the shipped sets: `Constructs/Blueprints/MilitiaGensetSmall.json` (120 kW W3,
+  tier 1, 102.6 kW out) and `MilitiaGensetMedium.json` (307 kW I4, tier 2, 268.5 kW out), in the Militia factory palette.
+- `--gen-engine --genset-run FILE|NAME [--seconds N]` runs one headless for 150 s of game time against a stand-in draw that rises and falls
+  (none, half, full, 130%, a fifth), runs it dry and fills it again, prints the set every 2 s, the fuel a kWh at each step, the tick's CPU,
+  and a joined client's look line (a pose written and read back). All four presets pass (tier 1, 2, 3, 5); the tick stays under 0.5 ms.
+- `--gen-engine --genset-for KW [--tier N]`: the set the factory kit's hook would make for a power block of KW (`FactoryKit/FactoryGenset.cs`).
+
+| Preset | Built (tier) | Head | kW into the circuit | l a kWh at full / half / a fifth |
+| --- | --- | --- | --- | --- |
+| small 120 kW | W3 (1) | Small | 102.6 | 1.54 / 2.14 / 2.27 |
+| medium 300 kW | V4 307 kW (2) | Medium | 268.5 | 1.21 / 1.67 / 1.76 |
+| large 800 kW | B16 (3) | Large | 714 | 1.85 / 2.53 / 2.68 |
+| huge 3000 kW | B16 2966 kW (5) | Huge | 2677 | 1.68 / 2.27 / 2.63 |
+
 ## Next steps
 
 1. **Fast shapes.** All-wheel drive: the kit asks for it by itself over 200 kW a tonne (proposed; tiers 3-5 with no acceleration asked),

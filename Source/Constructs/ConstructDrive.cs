@@ -818,7 +818,7 @@ public static class ConstructDrive
             rpm = MathF.Max(e.IdleRpm + (e.PeakRpm - e.IdleRpm) * 0.7f * demandNow, speed * avgSpin * gearRatio * ConstructDrive.RpmPerRadS); // (pulling away the clutch slips: the engine revs up towards its peak)
         else
         {
-            var want = (e.IdleRpm + MathF.Abs(throttle) * (e.MaxRpm * 0.95f - e.IdleRpm)) * c.ShaftShare; // (drills it can't carry pull it down)
+            var want = ConstructGenset.Governs(c) ? c.GenRpm : (e.IdleRpm + MathF.Abs(throttle) * (e.MaxRpm * 0.95f - e.IdleRpm)) * c.ShaftShare; // (drills it can't carry pull it down; a generator set governs its speed and sheds load)
             if (c.RpmGovern > 0)
                 want = MathF.Min(want, c.RpmGovern); // (a rotor's hub: ConstructRotor.cs)
             rpm = c.Rpm + Math.Clamp(want - c.Rpm, -e.MaxRpm * 2 * dt, e.MaxRpm * 2 * dt);
