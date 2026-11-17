@@ -1764,6 +1764,22 @@
       "by": "bottom"
     },
     {
+      "part": "Docking Clamp Medium",
+      "on": 2,
+      "socket": "limpetClamp",
+      "by": "-y",
+      "spin": 3,
+      "config": {
+        "startOn": true,
+        "sizeX": 4.4,
+        "sizeY": 2.8,
+        "sizeZ": 6.8,
+        "atX": 2.1,
+        "atY": 0.79,
+        "atZ": -0.05
+      }
+    },
+    {
       "part": "Zero Day Railgun",
       "on": 64,
       "socket": "railgun",
@@ -1771,7 +1787,7 @@
     },
     {
       "part": "Ammo Box",
-      "on": 254,
+      "on": 255,
       "socket": "ammo",
       "by": "bottom"
     },
@@ -1819,37 +1835,37 @@
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 262,
+      "on": 263,
       "socket": "lug0",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 262,
+      "on": 263,
       "socket": "lug1",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 262,
+      "on": 263,
       "socket": "lug2",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 262,
+      "on": 263,
       "socket": "lug3",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 262,
+      "on": 263,
       "socket": "lug4",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 262,
+      "on": 263,
       "socket": "lug5",
       "by": "lug"
     },
@@ -1861,37 +1877,37 @@
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 269,
+      "on": 270,
       "socket": "lug0",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 269,
+      "on": 270,
       "socket": "lug1",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 269,
+      "on": 270,
       "socket": "lug2",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 269,
+      "on": 270,
       "socket": "lug3",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 269,
+      "on": 270,
       "socket": "lug4",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 269,
+      "on": 270,
       "socket": "lug5",
       "by": "lug"
     }
@@ -2027,11 +2043,7 @@
     ],
     [
       173,
-      254
-    ],
-    [
-      190,
-      256
+      255
     ],
     [
       190,
@@ -2046,16 +2058,20 @@
       259
     ],
     [
-      260,
-      261
+      190,
+      260
     ],
     [
-      119,
+      261,
       262
     ],
     [
+      119,
+      263
+    ],
+    [
       120,
-      269
+      270
     ]
   ],
   "links": [
@@ -2168,6 +2184,15 @@
         6.5,
         7.755,
         39.0
+      ],
+      "turn": 0
+    },
+    {
+      "blueprint": "Limpet",
+      "at": [
+        6.5,
+        -4.05,
+        29.349999999999998
       ],
       "turn": 0
     }

@@ -33,6 +33,22 @@ public sealed partial class TorpedoFrigateParts
     // Docked under the Zero Day's keel (its frame): the pod's roof just under the keel's docking hatch, its receiver on the centreline.
     private const double LimpetRoofY = -1.7, LimpetBaseY = LimpetRoofY - PH, LimpetRecvZ = 31.4;
     private const double LimpetLadderRise = Ft0 - (LimpetBaseY + PFt + 0.013); // (from the pod's deck up to the lower deck's floor)
+    private const double LimpetOriginZ = LimpetRecvZ - 2.05; // (the pod's middle: its receiver is 2.05 m aft of it)
+    private const double LimpetClampX = Cx - 2.1, LimpetClampZ = 29.3; // the Docking Clamp under the keel to port of the pod
+
+    /// <summary>The Limpet's Docking Clamp, upside down under the keel beside the pod: holding from the start, its box round the pod.</summary>
+    private static PyDict LimpetClampConfig()
+    {
+        double cx = LimpetClampX, cy = -1.58 - 0.5, cz = LimpetClampZ; // (the clamp's middle: half a metre under the keel's underside)
+        double bx = Cx, by = LimpetBaseY + PH / 2, bz = LimpetOriginZ; // (the box's middle: the pod's)
+        // (the clamp hangs upside down, turned half a turn about x: its frame's y and z are the ship's -y and -z)
+        return new PyDict
+        {
+            ["startOn"] = true,
+            ["sizeX"] = 4.4, ["sizeY"] = 2.8, ["sizeZ"] = 6.8,
+            ["atX"] = Py.Round(bx - cx, 2), ["atY"] = Py.Round(-(by - cy), 2), ["atZ"] = Py.Round(-(bz - cz), 2),
+        };
+    }
 
     private static Part PBig(string name, string desc, string role = "frame", string color = Skin) =>
         new(name, Small, PSection, desc, role: role, tool: "welder", material: "steel", color: color, group: Group);
