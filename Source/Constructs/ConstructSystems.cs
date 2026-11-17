@@ -33,6 +33,24 @@ public static partial class ConstructParts
             d.DockEject = Opt(dock, "eject") is { } ej ? Num(ej, file, "dock.eject") : 0f;
             Range(d.DockEject, 0, 60, file, "dock.eject");
         }
+        if (Opt(root, "breach") is { } br)
+        {
+            if (d.Logic != CLogic.Lamp)
+                throw new ConstructPartException($"{file}: only a lamp logic part has a \"breach\" block (its input works it, its light shows it on)");
+            Known(br, ["kind", "reach", "rate"], $"{file}, breach");
+            d.Breach = Opt(br, "kind")?.GetString() switch
+            {
+                "grapple" => BreachKind.Grapple,
+                "cutter" => BreachKind.Cutter,
+                var k => throw new ConstructPartException($"{file}: \"breach.kind\" is grapple or cutter, not \"{k}\""),
+            };
+            d.BreachReach = Num(Need(br, "reach", $"{file}, breach"), file, "breach.reach");
+            Range(d.BreachReach, 0.05f, 8, file, "breach.reach");
+            d.BreachRate = Opt(br, "rate") is { } rt ? Num(rt, file, "breach.rate") : 0f;
+            Range(d.BreachRate, 0, 100000, file, "breach.rate");
+            if (d.Breach == BreachKind.Cutter && d.BreachRate <= 0)
+                throw new ConstructPartException($"{file}: a cutter's \"breach.rate\" is its damage a second, more than 0");
+        }
         var launch = Opt(root, "launch");
         if (launch is { } lb)
         {
