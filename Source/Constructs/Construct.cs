@@ -475,6 +475,7 @@ public sealed partial class Construct
 
     /// <summary>The next time this copy looks for where its wheels meet the ground, for the springs drawn (ConstructRender.FitWheels).</summary>
     public double FitAt;
+    public int BreachStamp = -1, BreachParts; // (ConstructBreach.cs: the hull grapples and cutters counted at this RebuildStamp)
     public int LampStamp = -1; // (phase 7b: LampParts was gathered at this RebuildStamp; ConstructLamps.cs)
     public int[] LampParts = []; // the parts that light the space round them (a lined bay's lamps, a Lamp logic part)
     public int AmbStamp = -1; // (PartAmbience.cs: AmbParts was gathered at this RebuildStamp)

@@ -2205,6 +2205,7 @@ public sealed partial class ConstructWorld
         AllocProfile.Mark("machines: ConstructLift");
         ConstructLift.Step(this, query, ref _liftTicks); // (the gas in lift cells, burners, what wakes a craft asleep)
         LoadStep(server: true); // (what the bins hold counts in their bodies' mass: before the cargo step, which reads a carried body's)
+        ConstructBreach.Step(this); // (boarding craft's hull grapples take hold or let go, their cutters burn: before the cargo step, which carries what they hold)
         ConstructCargo.Step(this); // (what frozen cargo volumes carry follows them; what entered is caught, what left is let go)
         perf.Dispose();
         ConstructGravity.Refresh(this); // (gravity wells and generators as they are now: ConstructGravity.cs)

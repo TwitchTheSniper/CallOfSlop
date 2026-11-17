@@ -81,6 +81,8 @@ public static class ConstructCargo
 
     private static int VolumeOf(Construct carrier, Construct b)
     {
+        if (b.CarryTag == 0)
+            return -1; // (gripped by its own grapples: no volume holds it, and a server's tags start at 1, so no walk of the carrier's parts)
         if (b.CarryPart < carrier.PartCount && carrier.Parts[b.CarryPart].Tag == b.CarryTag && IsVolume(carrier.Parts[b.CarryPart].D))
             return b.CarryPart;
         for (var i = 0; i < carrier.PartCount; i++)
@@ -230,6 +232,13 @@ public static class ConstructCargo
                 continue;
             var c = world.Get(b.CarriedBy);
             var part = c == null || c.CarriedBy != 0 ? -1 : VolumeOf(c, b);
+            if (part < 0 && c != null && c.CarriedBy == 0 && ConstructBreach.Holds(b))
+            {
+                Follow(c, b); // (gripped on its hull by its own grapples, no volume of the carrier's: ConstructBreach.cs)
+                b.Asleep = true;
+                b.SleepTicks = 0;
+                continue;
+            }
             if (c == null || part < 0 || !IsFrozen(c.Parts[part]))
             {
                 ConstructCarrier.LetGo(world, b); // (a hangar bay's signal launches: out along its front)
@@ -365,18 +374,32 @@ public static class ConstructCargo
     private static readonly List<Construct> _near = new(256), _carried = new(64);
 
     /// <summary>Every carrier's cargo list (its mass and where it sits, body frame); a carrier whose list changed rebuilds its mass.</summary>
+    /// <summary>Is a craft gripped (by its own grapples) on <paramref name="c"/>? Walks only the carried bodies.</summary>
+    private static bool GripsOn(Construct c)
+    {
+        foreach (var b in _carried)
+            if (b.CarriedBy == c.Id && b.CarryTag == 0)
+                return true;
+        return false;
+    }
+
     private static void Refresh(ConstructWorld world)
     {
         world.CargoChanged = false;
         var bodies = world.Bodies;
         // The carried bodies once (in list order), so each carrier walks only them, not every body.
         _carried.Clear();
+        var gripped = 0;
         foreach (var b in bodies)
             if (b.CarriedBy != 0)
+            {
                 _carried.Add(b);
+                if (b.CarryTag == 0)
+                    gripped++; // (a craft gripped by its grapples: any body can carry one, logic or not)
+            }
         foreach (var c in bodies)
         {
-            if (c.CargoCount == 0 && (_carried.Count == 0 || !c.HasLogic))
+            if (c.CargoCount == 0 && (_carried.Count == 0 || !c.HasLogic && (gripped == 0 || !GripsOn(c))))
                 continue; // (carries nothing, and can't: nothing to refresh)
             var n = 0;
             var mass = 0f;
@@ -575,6 +598,79 @@ public static class ConstructCargo
         return null;
     }
 
+    /// <summary>A craft a blueprint carries: another blueprint, built with its origin at <c>At</c> (the carrier's frame), turned by
+    /// <c>Turn</c> (Rot24), held by the dock it is in.</summary>
+    public readonly record struct CarrySpec(string Blueprint, Vector3 At, byte Turn);
+
+    /// <summary>A blueprint's <c>"carry"</c> list: <c>[{ "blueprint": "Shuttle", "at": [x, y, z], "turn": 0 }]</c>.</summary>
+    public static CarrySpec ParseCarry(JsonElement e, string file, int k)
+    {
+        if (e.ValueKind != JsonValueKind.Object)
+            throw new ConstructPartException($"{file}: carry[{k}] is {{\"blueprint\", \"at\", \"turn\"}}");
+        string name = "";
+        var at = Vector3.Zero;
+        byte turn = 0;
+        foreach (var f in e.EnumerateObject())
+            switch (f.Name)
+            {
+                case "blueprint": name = f.Value.GetString() ?? ""; break;
+                case "at":
+                    if (f.Value.ValueKind != JsonValueKind.Array || f.Value.GetArrayLength() != 3)
+                        throw new ConstructPartException($"{file}: carry[{k}].at is [x, y, z]");
+                    at = new Vector3(f.Value[0].GetSingle(), f.Value[1].GetSingle(), f.Value[2].GetSingle());
+                    break;
+                case "turn":
+                    var tn = f.Value.GetInt32();
+                    if (tn < 0 || tn >= Rot24.Count)
+                        throw new ConstructPartException($"{file}: carry[{k}].turn is 0 to {Rot24.Count - 1}");
+                    turn = (byte)tn;
+                    break;
+                default:
+                    throw new ConstructPartException($"{file}: carry[{k}]: unknown key \"{f.Name}\" (blueprint, at, turn)");
+            }
+        if (name.Length == 0)
+            throw new ConstructPartException($"{file}: carry[{k}] names no blueprint");
+        if (!float.IsFinite(at.X + at.Y + at.Z) || at.Length() > 200)
+            throw new ConstructPartException($"{file}: carry[{k}].at is more than 200 m out");
+        return new CarrySpec(name, at, turn);
+    }
+
+    /// <summary>
+    /// A blueprint's carried craft, built: each one its blueprint at its place on construct <paramref name="c"/>, held by the dock
+    /// (a docking clamp a blueprint step sets to start holding) whose box its centre of mass is in. Null, or why not (the caller
+    /// removes the lot). A blueprint never carries itself.
+    /// </summary>
+    public static string? BuildCarry(ConstructWorld world, Construct c, IReadOnlyList<CarrySpec> carry, List<Construct> made)
+    {
+        c.Rebuild();
+        for (var i = 0; i < c.PartCount; i++)
+            if (IsVolume(c.Parts[i].D))
+                c.Parts[i].Out = c.Parts[i].OutNext = (c.Parts[i].State & 1) != 0 ? 1 : 0; // (its state now, before the first logic step)
+        for (var k = 0; k < carry.Count; k++)
+        {
+            var spec = carry[k];
+            if (ConstructBuild.FindCarried(spec.Blueprint) is not { } sub || sub.Carry.Count > 0)
+                return $"carry[{k}]: no blueprint \"{spec.Blueprint}\" (or it carries craft of its own)";
+            var rot = Quaternion.Normalize(c.Rot * Rot24.Quat(spec.Turn));
+            if (ConstructBuild.Build(world, sub, c.ToWorld(spec.At), rot, out var why) is not { } b)
+                return $"carry[{k}]: {spec.Blueprint}: {why}";
+            made.Add(b);
+            b.Owner = c.Owner;
+            b.NpcFaction = c.NpcFaction;
+            b.Rebuild();
+            var vol = -1;
+            for (var i = 0; i < c.PartCount && vol < 0; i++)
+                if (IsVolume(c.Parts[i].D) && c.Parts[i].D.IsDock && IsFrozen(c.Parts[i]) && MostlyInside(c, i, b))
+                    vol = i;
+            if (vol < 0)
+                return $"carry[{k}]: the {spec.Blueprint} isn't in a dock that starts holding";
+            Catch(world, c, vol, b);
+        }
+        Refresh(world);
+        c.Rebuild();
+        return null;
+    }
+
     /// <summary>Construct <paramref name="c"/>'s cargo as a blueprint's <c>"cargo"</c> list (the loose single parts it carries; null: none).</summary>
     public static string? ToJson(ConstructWorld world, Construct c)
     {
@@ -599,6 +695,7 @@ public static class ConstructCargo
 public sealed partial class ConstructWorld
 {
     internal int CargoTicks;
+    internal int BreachTicks; // (ConstructBreach.Step's count to its next look: one a world, as two worlds may tick in turn)
     public uint CarrierClock; // server: ticks, for what a dock or arrestor leaves alone a while (ConstructCarrier.cs)
     /// <summary>A volume changed state (frozen or not): the cargo step looks at once rather than at its next 10 Hz look.</summary>
     public bool CargoScanNow;
