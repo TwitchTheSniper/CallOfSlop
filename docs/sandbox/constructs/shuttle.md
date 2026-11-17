@@ -3,12 +3,13 @@
 Karl, 2026-11-17: the Zero Day carries a boarding shuttle; of four looks he picked a hull-cutting pod (then called the
 Limpet), and on seeing it said it reads as a shuttle: renamed the Shuttle, kept, and a simpler 8-person boarding pod (the new
 Limpet, flown from the ship's flight controller, cutting from the front) is designed apart. An 11 m faceted
-wedge for a pilot and four boarders rides a Docking Clamp cradle on the frigate's spine. Its docking hatch under the belly
+wedge for a pilot and four boarders rides a Docking Clamp cradle on the frigate's spine. Its docking hatch in the cabin floor
 and the Zero Day's on the cradle open together while the clamp holds it. It can set down on a ship's hull and grip it with
 four grapples; the boarders open the hatch by hand and go down (the boarding itself, Twitch's crews that hold, surrender,
 fight or scuttle: Game/GameCrewBoard.cs). Karl's changes the same evening: two drives on the stern, each with a small
 cylinder engine (Drive Core XS) in the cabin, which now runs to the stern so they can be worked on; the lockers moved to the
-side walls; the belly's breaching cutter gave way to a Docking Hatch (on the Zero Day too). The Breaching Cutter part is
+side walls; the belly's breaching cutter gave way to a Docking Hatch (on the Zero Day too), and the rails round the opening to a
+hatch that slides shut flush with the floor, so it is walked over. The Breaching Cutter part is
 still made, for any craft that wants one.
 
 Generator: `Source/PartKit/Generators/TorpedoFrigateShuttle.cs` (a partial of `TorpedoFrigateParts`, so
@@ -19,7 +20,7 @@ fittings in `Constructs/Parts/Boarding`, the blueprint `Constructs/Blueprints/Sh
 
 A lofted hull like the frigate's (five stations from the nose at z -5 to the stern at 5, x across, y up from the grapple soles),
 in welded pieces: Shuttle Belly (the floor with the hatch opening, the keel, skids, the four grapples' mounts, the docking
-hatch's rim), Shuttle Hull Port and Starboard (beam facets and walls, 600 l of fuel each, the lift sponsons with their jets and
+hatch's pocket in the floor), Shuttle Hull Port and Starboard (beam facets and walls, 600 l of fuel each, the lift sponsons with their jets and
 RCS), Shuttle Roof, Shuttle Nose (sensor blister, a view screen in the front bulkhead), Shuttle Stern (a 0.3 m mount plate, the
 cabin's end wall: `Works.Mount`), Shuttle Bulkhead (open frame between the cockpit and the cabin).
 
@@ -28,7 +29,7 @@ facing in, a locker against each side wall ahead of them, four Batteries between
 the two engines: a Drive Core XS each (0.6 m across, 1.1 m long, 300 kN; ShipWorksParts' fourth Core size) bolted to the
 stern's plate on its drive's axis, standing on the floor with a 0.8 m aisle between them. The two Shuttle Drives (60 kN each)
 ask for a core although the table's 500 kN would let them go without (Karl wanted the engines), so a shot-out engine leaves its
-drive at a quarter. The hatch opening is in the middle of the cabin floor with hazard lips and rails round it. It weighs about
+drive at a quarter. The hatch opening is in the middle of the cabin floor with hazard lips round it, no rails: shut, its lid is the floor. It weighs about
 12.2 t and flies on its own (`--flight-check Constructs/Blueprints/Shuttle.json`: lift 2.0x).
 
 Switches on the port wall: **B** the grapples (A is spare); the starboard switches are the lamps.

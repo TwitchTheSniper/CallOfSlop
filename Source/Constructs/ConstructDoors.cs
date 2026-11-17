@@ -234,8 +234,15 @@ public static class ConstructDoors
         }
         foreach (var b in world.Bodies)
         {
-            if (b.DoorDockCount == 0 || b.CarriedBy == 0 || b.CarryTag == 0 || b.Dirty || world.Get(b.CarriedBy) is not { } c || !c.EnsureDoors() || c.DoorDockCount == 0)
+            if (b.DoorDockCount == 0 || b.CarriedBy == 0 || b.CarryTag == 0 || world.Get(b.CarriedBy) is not { } c || c.DoorDockCount == 0)
                 continue;
+            if (b.Dirty || !c.EnsureDoors())
+            {
+                // (a body waiting for its rebuild can't be looked at: both keep what they had, or an edit or a hit would flap them shut)
+                KeepMates(b);
+                KeepMates(c);
+                continue;
+            }
             for (var i = 0; i < b.DoorCount; i++)
             {
                 ref var di = ref b.Doors[i];
@@ -262,14 +269,33 @@ public static class ConstructDoors
                     continue;
                 if (!dr.DockSeen || dr.MateNow != dr.Mated)
                 {
-                    // (the first look opens a hatch already mated, as a ship built docked; one not mated is left as it settled)
-                    if (dr.DockSeen || dr.MateNow)
+                    // (the first look opens a hatch already mated, as a ship built docked; one not mated is left as it settled;
+                    // a locked one is left as it is, so a craft caught by a clamp can't open a ship's locked hatch)
+                    if ((dr.DockSeen || dr.MateNow) && !Locked(c, dr.Part))
+                    {
                         Command(world, c, k, dr.MateNow);
+                        dr.ShutDue = !dr.MateNow;
+                    }
                     dr.DockSeen = true;
                     dr.Mated = dr.MateNow;
                 }
+                else if (dr.ShutDue && !IsMoving(c, dr.Part))
+                {
+                    // (shut on undocking, it opened again for a player in the way: shut it once they are out; done once it has shut)
+                    if (SettledOpen(c, dr.Part) && !Locked(c, dr.Part))
+                        Command(world, c, k, false);
+                    else
+                        dr.ShutDue = false;
+                }
             }
         }
+    }
+
+    /// <summary>A body that can't be looked at this time: its docking hatches keep the mate they had.</summary>
+    private static void KeepMates(Construct c)
+    {
+        for (var k = 0; k < c.DoorCount; k++)
+            c.Doors[k].MateNow |= c.Doors[k].Mated;
     }
 
     /// <summary>Where door part <paramref name="part"/> is when shut, in the body frame (a slid-open hatch's place less its travel).</summary>

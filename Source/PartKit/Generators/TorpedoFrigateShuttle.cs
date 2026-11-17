@@ -7,7 +7,7 @@ namespace CallOfSlop.PartKit.Generators;
 /// reusable hull-cutting pod on the spine, first called the Limpet and renamed the Shuttle when he saw it; docs/sandbox/constructs/shuttle.md). About 10 m long and 4 m across: a faceted wedge in
 /// the IT Department's paint, a cockpit for its pilot and a cabin for four boarders that runs to the stern, where its two drives'
 /// engines (a Drive Core XS each) stand on the floor. It rides a Docking Clamp in a cradle on the Zero Day's roof, its docking
-/// hatch under the belly over the Zero Day's own on the cradle: both open while the clamp holds it (ConstructDoors.StepDocks).
+/// hatch in the cabin floor over the Zero Day's own on the cradle: both open while the clamp holds it (ConstructDoors.StepDocks).
 /// It can also set its four hull grapples down on a ship's hull and grip it (ConstructBreach.cs: it rides on that body from then
 /// on); the boarders open the hatch by hand. (Karl, 2026-11-17: the breaching cutter came out for the docking hatch.)
 ///
@@ -212,8 +212,15 @@ public sealed partial class TorpedoFrigateParts
         // The floor, round the hatch: the cockpit's narrower than the cabin's (the hull narrows forward).
         var floorW = Math.Floor((Math.Min(LSkinHalf(LNoseZ, LFloor0), LSkinHalf(LNoseZ, LFt)) - 0.07) * 100) / 100;
         var cabW = Math.Floor((Math.Min(LSkinHalf(LAftZ, LFloor0), LSkinHalf(LAftZ, LFt)) - 0.07) * 100) / 100;
-        foreach (var r in Minus([new Rect(-floorW, LNoseZ, floorW, LBulkZ), new Rect(-cabW, LBulkZ, cabW, LAftZ)], LHole))
+        // (the docking hatch's pocket: the floor there is a plate under it and a skin over it, the lid sliding aft between them)
+        var pocket = new Rect(-DockHatchHalf - 0.01, -DockHatchHalf - 0.01, DockHatchHalf + 0.01, DockHatchHalf + DockHatchTravel + 0.01);
+        foreach (var r in Minus(Minus([new Rect(-floorW, LNoseZ, floorW, LBulkZ), new Rect(-cabW, LBulkZ, cabW, LAftZ)], LHole), pocket))
             Solid(p, r.X0, LFloor0, r.Z0, r.X1, LFt, r.Z1, Deck, "painted deck plate");
+        foreach (var r in Minus([pocket], LHole))
+        {
+            Solid(p, r.X0, LFloor0, r.Z0, r.X1, LFt - DockHatchTop, r.Z1, Deck, "painted deck plate");
+            Solid(p, r.X0, LFt - DockSkin, r.Z0, r.X1, LFt, r.Z1, Deck, "painted deck plate");
+        }
         // The keel's flat and the lower chines (facets 0 and 1), with the hatch's mouth cut through the flat.
         foreach (var (za, zb) in LBody)
         {
@@ -251,11 +258,7 @@ public sealed partial class TorpedoFrigateParts
         Detail(p, LHole.X0 - 0.1, LFt, LHole.Z0 - 0.1, LHole.X1 + 0.1, LFt + 0.012, LHole.Z0, Hazard, "hazard paint");
         Detail(p, LHole.X0 - 0.1, LFt, LHole.Z0, LHole.X0, LFt + 0.012, LHole.Z1, Hazard, "hazard paint");
         Detail(p, LHole.X1, LFt, LHole.Z0, LHole.X1 + 0.1, LFt + 0.012, LHole.Z1, Hazard, "hazard paint");
-        // A rail round the hatch on three sides (fore, port, starboard), open aft where people step off the ladder.
-        Solid(p, LHole.X0 - 0.06, LFt, LHole.Z0 - 0.06, LHole.X1 + 0.06, LFt + 0.95, LHole.Z0 - 0.0, Frame, "painted steel");
-        Solid(p, LHole.X0 - 0.06, LFt, LHole.Z0, LHole.X0, LFt + 0.95, LHole.Z1 - 0.35, Frame, "painted steel");
-        Solid(p, LHole.X1, LFt, LHole.Z0, LHole.X1 + 0.06, LFt + 0.95, LHole.Z1 - 0.35, Frame, "painted steel");
-        Detail(p, LHole.X0 - 0.075, LFt + 0.91, LHole.Z0 - 0.075, LHole.X1 + 0.075, LFt + 0.99, LHole.Z0 + 0.015, Hazard, "hazard paint");
+        // (no rail round it: Karl, 2026-11-17, the docking hatch slides shut in the floor, flush, and is walked over)
         // The runner down the cabin and the cockpit.
         Detail(p, -0.4, LFt, LHole.Z1 + 0.05, 0.4, LFt + 0.01, LAftZ - 0.05, "#30353b", "rubber matting");
         Detail(p, -0.4, LFt, LNoseZ + 0.05, 0.4, LFt + 0.01, LHole.Z0 - 0.12, "#30353b", "rubber matting");
@@ -265,14 +268,12 @@ public sealed partial class TorpedoFrigateParts
             Solid(p, s * 0.95, 0.02, -1.9, s * 0.75, hy, 3.3, Frame, "dirty steel");
             Detail(p, s * 0.96, 0.12, -1.85, s * 0.74, 0.16, 3.25, Hazard, "hazard paint");
         }
-        // Sockets: the docking hatch under the keel, the grapples' pads at the skids' ends, the pilot and the flight computer, the
+        // Sockets: the docking hatch in the floor, the grapples' pads at the skids' ends, the pilot and the flight computer, the
         // boarders' seats, the lockers and the batteries.
-        // The docking hatch's rim round the opening, 1 cm proud of the keel plate (the hatch hangs upside down from its fore strip, under
-        // the opening, and slides aft between the skids).
-        var (ri, ro, ry) = (0.67, 0.71, hy - DockRim);
-        foreach (var (x0, z0, x1, z1) in new[] { (-ro, -ro, ro, -ri), (-ro, ri, ro, ro), (-ro, -ri, -ri, ri), (ri, -ri, ro, ri) })
-            Solid(p, x0, ry, z0, x1, hy + 0.012, z1, Frame, "dirty steel");
-        Sock(p, "hatch", 0, ry, -DockHatchHang, "-y");
+        // The docking hatch lies in the floor (Karl, 2026-11-17: "a sliding hatch underneath so that you can walk over it"): its lid
+        // 4 mm under the floor's top over the opening, sliding aft inside the floor plate. It hangs by its shoe on a block in the
+        // floor ahead of the opening.
+        Sock(p, "hatch", 0, LFt - DockHatchTop, -DockHatchHang, "+y"); // (on the pocket's floor plate ahead of the opening)
         foreach (var (s, z, n) in new[] { (-1, -2.2, "gripFL"), (1, -2.2, "gripFR"), (-1, 3.6, "gripBL"), (1, 3.6, "gripBR") })
         {
             // Each grapple's mount: a block under the keel between the void and the pad (the keel rises toward the nose).
@@ -597,7 +598,7 @@ public sealed partial class TorpedoFrigateParts
     /// armoured lid 1.44 m square that slides 1.5 m along its +z off the opening it closes. It is an event door with
     /// <c>"dock": true</c>: while a dock holds the craft and its hatch lies over another docking hatch on the body holding it, both
     /// slide open; when the dock lets go both shut (ConstructDoors.StepDocks). F opens and shuts it by hand as well. It hangs by its
-    /// base (its underside) on the deck round the opening, or upside down under a keel.
+    /// base (its underside) on the deck round the opening, or in a pocket in a floor (the Shuttle's), its top just under the floor's.
     /// </summary>
     private static Part LDockHatch()
     {
@@ -613,13 +614,14 @@ public sealed partial class TorpedoFrigateParts
         p.Add(Box([-0.2, t - 0.006, -h + 0.18], [0.2, t + 0.06, -h + 0.22], "#9aa0a4", detail: true, shape: Kw(("finish", "steel"))));
         p.Add(Box([h - 0.14, t - 0.006, -0.05], [h - 0.06, t + 0.025, 0.05], "#40e070", detail: true, shape: Kw(("glow", true))));
         p.Sock("base", [0, 0, -DockHatchHang], "-y");
-        p.Set(("door", Kw(("kind", "slide"), ("axis", "+z"), ("travel", 1.5), ("seconds", 2.0), ("hang", "base"), ("dock", true))));
+        p.Set(("door", Kw(("kind", "slide"), ("axis", "+z"), ("travel", DockHatchTravel), ("seconds", 2.0), ("hang", "base"), ("dock", true))));
         return p.Stats(250, 3000, 30, 4.0);
     }
 
     public const double DockHatchHalf = 0.72; // the docking hatch's half width (it covers an opening up to 1.3 m across)
     public const double DockHatchHang = 0.69; // its hanging shoe (its "base" socket) this far ahead of its middle, on its fore edge
-    private const double DockRim = 0.03; // the Shuttle's hatch rim under the keel (1 cm past the keel plate's underside, which is 2 cm under its middle)
+    private const double DockHatchTop = 0.066, DockSkin = 0.004; // the docking hatch's top over its shoe plus 6 mm (its lid's top 6 mm under the floor it lies flush with), and the floor's skin over its pocket
+    public const double DockHatchTravel = 1.5; // how far it slides open
 
     /// <summary>The shuttle's flight computer: a low console ahead of the pilot, a flight stabilizer with a small craft's gyro.</summary>
     private static Part LFlightComputer()
@@ -713,8 +715,8 @@ public sealed partial class TorpedoFrigateParts
             bp.HangTurned("Shuttle Drive", stern, $"drive{n}", "mount", 0);
             bp.HangTurned("Drive Core XS", stern, $"engine{n}", "front", 0);
         }
-        // The docking hatch under the keel, upside down (its base up), sliding aft; the grapples on a cockpit switch to port.
-        bp.HangTurned("Docking Hatch", belly, "hatch", "base", BuildingParts.Turn("-x", "-y"));
+        // The docking hatch in the floor, sliding aft; the grapples on a cockpit switch to port.
+        bp.HangTurned("Docking Hatch", belly, "hatch", "base", BuildingParts.R0);
         var grips = new[] { "gripFL", "gripFR", "gripBL", "gripBR" }.Select(n => bp.Hang("Hull Grapple", belly, n, "top")).ToArray();
         var gripSwitch = bp.Hang("Bakelite Switch", port, "switchB", "back");
         foreach (var g in grips)

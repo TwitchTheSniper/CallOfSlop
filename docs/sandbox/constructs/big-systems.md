@@ -52,7 +52,8 @@ body frame as an ordinary part, shut or open, and changes only when a player or 
   opens both; when the dock lets go both shut. Only a change commands them, so F still works one by hand between. The part is
   the **Docking Hatch** (`Constructs/Parts/Boarding`, made by `TorpedoFrigateShuttle.cs`): a 1.44 m armoured lid that slides
   1.5 m along its +z off an opening up to 1.3 m across, hung by a shoe on its fore edge (`base`). The Zero Day has one on its
-  cradle over the shaft, the Shuttle one upside down under its keel; both slide aft.
+  cradle over the shaft, the Shuttle one in a pocket in its cabin floor (its lid 6 mm under the deck, walked over when shut,
+  sliding aft between a plate and a 4 mm skin); both slide aft.
 - **Settling.** At the end its parts are put at the new pose (whole quarter turns and centimetres, so they stay on the grid),
   and only what the leaf touches changes (`Construct.DoorPartMoved`): its boxes move in the collider (`ConstructCollider.MovePart`)
   and its bounds in the part tree (`Construct.TreeMove`), each found under the part's old bounds, the nodes over them refitted

@@ -21,7 +21,7 @@ public struct CDoor
     public bool Wired; // a wire runs into one of its ports: the server reads them each tick (edges only)
     public bool Seen; // the ports below hold a reading (no edge on the first)
     public bool LastOpen, LastToggle;
-    public bool DockSeen, Mated, MateNow; // a docking hatch ("dock": true): looked at once, mated at the last look, and at this one (ConstructDoors.StepDocks)
+    public bool DockSeen, Mated, MateNow, ShutDue; // a docking hatch ("dock": true): looked at once, mated at the last look, at this one, and to shut once nobody is in it (ConstructDoors.StepDocks)
     public float StartF; // how far open it was drawn when it last started moving (0 shut, 1 open)
     public double StartAt; // and when, on ConstructRender.Now's clock
 }
@@ -109,6 +109,7 @@ public sealed partial class Construct
                 dr.LastToggle = _doorOld[o].LastToggle;
                 dr.DockSeen = _doorOld[o].DockSeen;
                 dr.Mated = _doorOld[o].Mated;
+                dr.ShutDue = _doorOld[o].ShutDue;
             }
             else
             {
