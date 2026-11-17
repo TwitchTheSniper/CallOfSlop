@@ -72,6 +72,10 @@ Each update unzips into its own folder (`CallOfSlop-<version>`) with a small `.c
 
 The game's built-in sound levels are now the **SeabMix2** mix: your own gun, other players' guns, explosions, bullet whizz and the hit sounds are louder, footsteps a little quieter (README, "Audio mixer", lists every level). If you never saved a mix, you get it straight away. If you have an `audio_mix.json` (or presets in `AudioMixes`), every level you changed in the F8 mixer stays as you set it, and every level you left at its old default moves to the new one the first time the file loads; press **Save** in the mixer to keep the result. To start over from the new defaults, use **Revert to defaults** and Save, or delete `audio_mix.json`.
 
+### Ship engines (2026-11-17)
+
+Every ship's main drive now has its own engine in line behind it (a Drive Core, and on big drives a Fuel Pump), and the drive runs at a quarter without it. Ships in a world saved before this build were saved without those engines: the **Rust Bucket** and **Magpie** in an old Survival world push at a quarter (their look line says "no engine in line behind this bell"). Start a new world, or build a Drive Core S on the inner face of each nacelle's tail plate. The **Zero Day Drive Array** and the **Drive Pod S/M** are gone (the Zero Day now has a drive collar and four bells); a saved Zero Day or a blueprint that used them loads without its main drive.
+
 ### Map packs removed (2026-11-12)
 
 The **Legacy**, **Cluttered**, **World Tour** and **Space** map packs were removed: the game is Sandbox now. **Proto Box** and **Pocket Planet** moved to the **Dev** pack. A `settings.txt` that still picks random maps from a removed pack picks from **Sandbox** instead; one that names a removed map plays Proto Box. Co-op had its only mission on the World Tour map Silo, so it has none now. If you unzip a new build over an old one, delete `Maps\Legacy`, `Maps\Cluttered`, `Maps\World` and `Maps\Space` from the game folder.
@@ -138,6 +142,13 @@ A pressed cylinder's **stroke** (its length against its width) now adds power as
   world loads with no uses on its bodies; a build started before this version goes on as a plain build.
 - **Building Stations** gain a **Sub-jobs** setting (Auto by default): an idle station on the same construct takes other stations'
   uses. Set it Off on a station you keep for your own builds.
+
+### Linked logistics (2026-11-16)
+
+- **Worlds.** A world keeps its link ends' codes and pairs, ships' manifests, Route Computers' routes and Dispatchers' fleets on
+  their parts, and the host's link ledger (what was asked of linked factories, and what a closed world owes) in the main world's
+  save. An older build skips them; an older world loads with none. No new save file.
+- **Building Stations' Sub-jobs** is now a choice: Off, Auto (as before) or **Linked** (also takes uses sent over a logistics link).
 
 ### Keeping saves on a USB stick (portable mode)
 

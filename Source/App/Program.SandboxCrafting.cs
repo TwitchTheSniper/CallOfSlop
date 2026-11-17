@@ -12,6 +12,11 @@ public static partial class Program
     {
         if (MenusOpen)
             return;
+        if (c.DefOf(part).LinkKind == LinkKind.Dock)
+        {
+            OpenLinkedPanel(c, part); // (a Cargo Dock's panel is its own: its trade, its name; its orders are the linked networks')
+            return;
+        }
         if (c.DefOf(part).IsBuildStation && c.Parts[part].Station is { State: StationState.Building } && _game is { Local: { } me } sg && sg.SandboxHands.Hand(me.Id).Held != ConstructParts.None)
         {
             sg.SandboxStation(c.Id, part, StationOp.Give); // (a Building Station that is building, a part in the hands: it goes to the build)

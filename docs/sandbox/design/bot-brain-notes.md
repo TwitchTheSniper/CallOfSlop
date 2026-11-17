@@ -24,7 +24,7 @@ Working notes for docs/sandbox/design/bot-brain.md, kept current after every ste
   `Player.CrewSlot`: a crew body skips the bot brain, never respawns, and its seat's keys come from its crew.
 - Aircraft pilots are seated crew: `PilotHeld` gates `AircraftPilot` (grace, then the autopilot is let go once).
 - Saves: the CREW tagged block, last in a body's bytes (`CrewWorld.SaveBytes`/`Load`, `Construct.CrewLoad` until picked up).
-- Protocol 328: `Msg.CrewSeats` (u16 body, u8 n, n x u16 seat part).
+- Protocol 329: `Msg.CrewSeats` (u16 body, u8 n, n x u16 seat part).
 - Data: `Crew/Names.json` (`CrewNames`).
 - `--crew-check` replaces `--ship-ai-check` (Source/Crew/CrewCheck.cs): fights, then kills the pilot (40 s), the gunners (70 s)
   and the rest (90 s); `--crew-scale N` times the crew alone at N members.

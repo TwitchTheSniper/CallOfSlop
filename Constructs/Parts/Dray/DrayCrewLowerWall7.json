@@ -1,0 +1,84 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Dray Crew Lower Wall 7",
+  "description": "A wall of the Dray's crew lower, with its door frames and what is fixed to it.",
+  "group": "Ship",
+  "section": "Dray hauler",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 486.0,
+  "health": 3500,
+  "armour": 25,
+  "material": "steel",
+  "color": "#b9bdb5",
+  "attachSeconds": 6.0,
+  "boxes": [
+    {
+      "min": [
+        8.25,
+        0.125,
+        9.625
+      ],
+      "max": [
+        10.875,
+        3.125,
+        9.875
+      ],
+      "color": "#b9bdb5",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        8.3,
+        0.128,
+        9.613
+      ],
+      "max": [
+        10.825,
+        0.875,
+        9.887
+      ],
+      "color": "#3d5569",
+      "detail": true,
+      "finish": "painted plating"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "j0",
+      "at": [
+        9.565,
+        0.125,
+        9.755
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j1",
+      "at": [
+        10.875,
+        1.625,
+        9.755
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "j2",
+      "at": [
+        8.25,
+        1.625,
+        9.755
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j3",
+      "at": [
+        9.565,
+        3.125,
+        9.755
+      ],
+      "dir": "+y"
+    }
+  ]
+}

@@ -53,26 +53,25 @@ Two decks run fore and aft (floors at 0.25 and 3.5 m, ship frame), each in a for
 | Zero Day Upper Deck Aft | cabin B, the head, the med bay, the mess with the aft gun station |
 
 Around them: the Keel (14,000 l of fuel, legs, lift jets, the boarding shaft), the Bow (armoured over the bridge, retro jets), the Spine
-(roof, the railgun's trough, a dorsal block, mast, antennae, flare launchers), the Stern (9,000 l, fins) and the Drive
-Array (four bells in one collar the width of the stern, 9 MN).
+(roof, the railgun's trough, a dorsal block, mast, antennae, flare launchers), the Stern (the engine bay: 9,000 l, fins), the Drive
+Collar (600 l, the shroud and plate the width of the stern) and four Drive Bells (2.25 MN each, 9 MN in all).
 
 ## Drives and their works
 
-The Zero Day is the reference ship for ship works (docs/sandbox/design/ship-works.md): a class 3 hull drive with its works
-inside, and pods where nothing walkable is near.
+The Zero Day is the reference ship for ship works (docs/sandbox/design/ship-works.md, section 15): one engine a bell, all
+inside the hull, in one room with engineering.
 
-- The **Drive Array** (9 MN torch) needs a Drive Core, a Fuel Pump and a Coolant Exchanger (ShipWorks.json's `drives`
-  table). Its mount is the Stern, welded to engineering's aft wall, which is a mount too: from that wall one cylinder runs
-  forward down the middle of the room, a **Drive Core L** (12 MN), then a **Fuel Pump L** and a **Coolant Exchanger L**
-  bolted on behind it, 5.6 m in all. The reactor stands forward to starboard and the tool rack on the starboard wall.
-- The four **Lift Jets** (1.5 MN each) hang on the keel. Every keel length is a mount, and so are the lower decks' floors
-  over it, so the keel's jets, the floors and engineering's wall are one assembly: the lift jets' **Drive Core M** stands on
-  engineering's floor, lying forward to port, and its 6 MN pools with the Core L (18 MN of cores for 15 MN of drives).
-- The two **Retro Jets** (1.2 MN) in the bow's cheeks are **pods**: their works in their housings, seen to only from
-  outside.
-- With its works whole a hull drive burns 2 l/s a MN (the array 18 l/s); a pod 2.4. Shoot out a works piece and the cap
-  falls: the look line, the Engineer's Panel and `--check-vehicle`'s `works:` lines say which piece. Breakdowns pick the
-  works pieces and the retro pods, not the nozzles (ship.md "Breakdowns").
+- The four **Zero Day Drive Bells** (2.25 MN torches) hang on the **Drive Collar**, a mount on the Stern's aft face. Each bell
+  needs a Drive Core and a Fuel Pump (ShipWorks.json's `drives` table), and its own engine is bolted to the collar plate's
+  inner face on that bell's axis: a **Drive Core M** with a **Fuel Pump M** behind it, running forward into the **engine
+  bay** (the Stern piece: no aft wall to engineering, a stepped floor, gratings, a fuel header overhead). Engineering's aft
+  wall is open, so engineering and the bay are one room and every core is reached standing from its door. Nothing is shared:
+  wreck one core and only its bell falls to a quarter.
+- The four **Lift Jets** (1.5 MN) on the keel and the two **Retro Jets** (1.2 MN) in the bow's cheeks are whole parts with
+  no works (Karl, 2026-11-16: main drives only). A breakdown on a lift jet is mended at the jet, outside.
+- With its works whole a hull drive burns 2 l/s a MN (each bell 4.5 l/s). Shoot out a works piece and its bell's cap falls:
+  the look line, the Engineer's Panel and `--check-vehicle`'s `works:` lines say which piece. Breakdowns pick the works
+  pieces, not the bells (ship.md "Breakdowns").
 
 ## Weapons and countermeasures
 

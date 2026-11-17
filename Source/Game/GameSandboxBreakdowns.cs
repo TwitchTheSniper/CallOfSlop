@@ -17,9 +17,9 @@ public enum BreakdownStage : byte
 /// the numbers are Constructs/Breakdowns.json), on every crewed player ship in Survival (Karl, 2026-11-16: ship works,
 /// docs/sandbox/design/ship-works.md 7). A ship's clock runs only while somebody alive is aboard it. Every so often one of
 /// its drive parts starts to go: a works piece of a hull drive (its Drive Core, Fuel Pump, Coolant Exchanger), or a thruster
-/// with no works inside (a pod, a whole jet). It creaks and groans, louder and closer together, for
+/// with no works inside (a whole lift jet or retro). It creaks and groans, louder and closer together, for
 /// <see cref="Breakdowns.WarnSeconds"/>. The attach tool's Fire at it sees to it in that time for nothing; a works piece
-/// inside can also be seen to from the engine room's <see cref="BreakdownPanel"/>, while a pod or a jet hangs outside and is
+/// inside can also be seen to from the engine room's <see cref="BreakdownPanel"/>, while a jet or an engine in a nacelle is outside the hull and is
 /// only reported there (a space walk, or land). Left alone, it fails with a bang: it stops working (Broken, with its health
 /// kept, which is how a breakdown is told from a part shot to pieces, even in a save) until the attach tool repairs it at
 /// the part for a little metal. Server-side state is each ship's own (<see cref="Construct.BdNext"/> and the rest); clients
@@ -115,8 +115,8 @@ public sealed partial class Game
     }
 
     /// <summary>
-    /// The k-th part a breakdown may pick (k over thrusters, then works pieces), or -1: a works piece of a drive, or a thruster
-    /// with no works behind it (a pod or a whole jet). A hull drive's nozzle is not picked: its works are.
+    /// The k-th part a breakdown may pick (k over thrusters, then works pieces), or -1: a piece of a drive's engine, or a thruster
+    /// with no engine (a whole lift jet or retro). A main drive's nozzle is not picked: its engine is.
     /// </summary>
     private static int BreakdownCandidate(Construct c, int k)
     {
@@ -131,8 +131,8 @@ public sealed partial class Game
 
     private static int BreakdownCandidates(Construct c) => c.ThrusterCount + c.WorksPieceCount;
 
-    /// <summary>A part that hangs outside the hull, so it is seen to at the part only: a thruster (a pod, a whole jet), not a works piece.</summary>
-    private static bool BreakdownOutside(Construct c, int part) => c.DefOf(part).Role == PartRole.Thruster;
+    /// <summary>A part seen to outside the hull, at the part only: a whole jet, or a piece of an engine in a nacelle (through its hatch).</summary>
+    private static bool BreakdownOutside(Construct c, int part) => c.DefOf(part).Role == PartRole.Thruster || ConstructWorks.PieceOutside(c, part);
 
     private void BreakdownStart(Construct c, Breakdowns t)
     {
@@ -279,6 +279,7 @@ public sealed partial class Game
         var outside = BreakdownOutside(c, part);
         SandboxSay(stage switch
         {
+            BreakdownStage.Warning when outside && c.DefOf(part).Role != PartRole.Thruster => $"The {where} is groaning. It is in a nacelle, outside the hull: open the nacelle's hatch and see to it with the attach tool, on a space walk or landed, before it gives.",
             BreakdownStage.Warning when outside => $"The {where} is groaning. It hangs outside the hull: see to it with the attach tool at the part, on a space walk or landed, before it gives.",
             BreakdownStage.Warning => $"Something in the {where} is groaning. See to it with the attach tool, at the {BreakdownPanel.ToLowerInvariant()} or the part, before it gives.",
             BreakdownStage.Failed when outside => $"The {where} has failed. Repair it with the attach tool at the part, outside ({BreakdownCost()}).",
@@ -290,7 +291,7 @@ public sealed partial class Game
 
     /// <summary>
     /// The engine room's panel: it reports every breakdown on its ship (which part, where), and the attach tool at it sees to
-    /// a warning on a works piece inside the hull. A pod or a jet hangs outside and is seen to only at the part, and a part
+    /// a warning on a works piece inside the hull. A jet or an engine in a nacelle is outside the hull and is seen to only at the part, and a part
     /// that has failed is repaired at the part (docs/sandbox/design/ship-works.md 7, the panel rule).
     /// </summary>
     public const string BreakdownPanel = "Engineer's Panel";
@@ -343,7 +344,7 @@ public sealed partial class Game
                 var w = _bdSeen[slot].Part;
                 var secs = Math.Max(0, (int)(_bdSeen[slot].Fails - SandboxNow));
                 return BreakdownOutside(c, w)
-                    ? $"{BreakdownPanel}: the {BreakdownWhere(c, w)} is groaning ({secs} s) - it hangs outside: see to it at the part"
+                    ? $"{BreakdownPanel}: the {BreakdownWhere(c, w)} is groaning ({secs} s) - it is outside the hull: see to it at the part"
                     : $"{BreakdownPanel}: the {BreakdownWhere(c, w)} is groaning ({secs} s) - {SandboxKeys.Fire}: see to it";
             }
             if (BreakdownFailed(c) is var f and >= 0)
@@ -437,7 +438,7 @@ public sealed partial class Game
             // (from the engine room: a warning on a works piece inside; the rest is reported, and seen to at the part)
             var warn = BreakdownPart(c);
             if (warn >= 0 && BreakdownOutside(c, warn))
-                return $"the {BreakdownWhere(c, warn)} hangs outside the hull: see to it at the part, on a space walk or landed";
+                return $"the {BreakdownWhere(c, warn)} is outside the hull (a jet, or an engine in a nacelle): see to it at the part, on a space walk or landed";
             if (warn < 0)
                 return BreakdownFailed(c) is var f and >= 0 ? $"repair the {BreakdownWhere(c, f)} at the part" : "nothing on this ship needs seeing to";
             part = warn;

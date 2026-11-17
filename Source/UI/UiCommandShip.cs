@@ -160,7 +160,9 @@ public sealed partial class Ui
                 ImDrawListExtensions.AddPolyline(dl, _cmdPts.AsSpan(i, 4), col, ImDrawFlags.None, 1.4f * _scale);
             return;
         }
-        var to = o.Kind == NavKind.Ground ? _cvPose.ToEcliptic(o.Point) : bp + o.Point;
+        var to = o.Kind == NavKind.Come && g.Players.GetValueOrDefault(o.By) is { Alive: true } who && o.Phase != NavPhase.Landing
+            ? _cvPose.ToEcliptic(Vec3d.From(who.Position)) // (it comes to them where they are now)
+            : o.Kind is NavKind.Ground or NavKind.Land or NavKind.Come ? _cvPose.ToEcliptic(o.Point) : bp + o.Point;
         var at = CmdP(to);
         var d = 7 * _scale;
         CmdGlow(dl, at + new float2(0, -d), at + new float2(d, 0), CmdAmber, fade);
@@ -635,6 +637,8 @@ public sealed partial class Ui
                 NavPhase.Brake => "FLIPPED: BRAKING",
                 NavPhase.Short => string.Create(inv, $"OUT OF REACH: THE LEAST A TRIP TAKES IS {o2.DvNeed / 1000:0.0} KM/S"),
                 NavPhase.Wait => "IN ORBIT, WAITING FOR ITS WINDOW",
+                NavPhase.Descend => "COMING DOWN INTO THE SKY",
+                NavPhase.Landing => "SETTING DOWN",
                 _ => "STARTING",
             };
             k.Order = Game.NavText(sys, o2).ToUpperInvariant();
@@ -724,6 +728,16 @@ public sealed partial class Ui
         Row(dl, "CARGO", k.Cargo, CmdCyan, ref y);
         Row(dl, "CREW", k.Crew, CmdCyan, ref y);
         Row(dl, "SYSTEMS", k.Systems, CmdCyan, ref y);
+        if (CmdLinked(c, out var routePart, out var manifest) is { } routeText)
+        {
+            // Linked logistics (LinkedLogisticsRoutes.cs): its route's state and its manifest, and ROUTE opens its Route Computer's panel.
+            if (manifest.Length > 0)
+                Row(dl, "MANIFEST", manifest, CmdCyan, ref y);
+            Row(dl, "ROUTE", routeText, routeText.StartsWith("ROUTE: SUSP", StringComparison.Ordinal) ? CmdAmber : CmdCyan, ref y);
+            if (routePart >= 0 && CmdButton(dl, new float2(x + col, y), new float2(x + col + 150 * _scale, y + 24 * _scale), "ROUTE...", CmdCyan, fade))
+                OpenLinked(c.Id, routePart, remote: true);
+            y += 30 * _scale;
+        }
         y += 6 * _scale;
         CmdLine(dl, new float2(x, y), new float2(p1.X - 16 * _scale, y), edge, 0.4f * fade);
         y += 8 * _scale;
@@ -751,6 +765,9 @@ public sealed partial class Ui
                 if (CmdButton(dl, new float2(x + col, y), new float2(x + col + 190 * _scale, y + 24 * _scale), label, CmdCyan, fade))
                     g.NavSend(c.Id, NavKind.Orbit, cr.Primary, Vec3d.Zero, Game.NavMinOrbit(s.System, cr.Primary) + 300);
             }
+            // And to come to you, when you are on this world's ground (bottom left, beside CENTRE).
+            if (CmdCanCome(g, c) && CmdButton(dl, new float2(x + col, p1.Y - 32 * _scale), new float2(x + col + 120 * _scale, p1.Y - 10 * _scale), "COME TO ME", CmdGreen, fade, false, 11))
+                g.NavSend(c.Id, NavKind.Come, s.Bubble.Body, Vec3d.Zero, 0);
             y += 30 * _scale;
         }
         // Centre it, bottom right of the card.
@@ -807,5 +824,46 @@ public sealed partial class Ui
             _cmdFocusShip = 0;
             _cmdPan = Vec3d.Zero;
         }
+    }
+
+    private int _cmdLinkVer = -1;
+    private ushort _cmdLinkShip;
+    private string _cmdLinkRoute = "", _cmdLinkManifest = "";
+
+    /// <summary>A ship's linked logistics for its card: its route's first line and its manifest in short (null: no Route Computer or Cargo Port). Made only when they change.</summary>
+    private string? CmdLinked(Construct c, out int routePart, out string manifest)
+    {
+        routePart = -1;
+        manifest = "";
+        if (c.LinkParts == 0)
+            return null;
+        var port = -1;
+        var ver = 0;
+        for (var i = 0; i < c.PartCount; i++)
+            if (c.DefOf(i).LinkKind is LinkKind.Route or LinkKind.Port)
+            {
+                if (c.DefOf(i).LinkKind == LinkKind.Route)
+                    routePart = i;
+                else
+                    port = i;
+                ver = ver * 31 + (c.Parts[i].Link?.Version ?? 0) + i;
+            }
+        if (routePart < 0 && port < 0)
+            return null;
+        if (ver != _cmdLinkVer || c.Id != _cmdLinkShip)
+        {
+            (_cmdLinkVer, _cmdLinkShip) = (ver, c.Id);
+            var st = routePart >= 0 ? c.Parts[routePart].Link?.Status ?? "" : "NO ROUTE COMPUTER";
+            var cut = st.IndexOf('\n');
+            _cmdLinkRoute = (cut >= 0 ? st[..cut] : st).ToUpperInvariant();
+            var sb = new System.Text.StringBuilder();
+            if (port >= 0 && c.Parts[port].Link is { } plp)
+                foreach (var m in plp.Manifest)
+                    if (m.Aboard > 0 && sb.Length < 120)
+                        sb.Append(sb.Length > 0 ? ", " : "").Append(m.Aboard).Append(' ').Append(m.Use != 0 ? "MODULE" : (ConstructParts.Get(m.Kind)?.Name ?? "PART").ToUpperInvariant()).Append(" FOR ").Append((m.Dest ?? "").ToUpperInvariant());
+            _cmdLinkManifest = sb.ToString();
+        }
+        manifest = _cmdLinkManifest;
+        return _cmdLinkRoute;
     }
 }

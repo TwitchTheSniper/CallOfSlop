@@ -628,7 +628,7 @@ public sealed partial class ConstructPartDef
     public float RadarRange; // "radar": {"range"}: its craft's seats get the radar scope out to this far (m), and a contact locked on it goes to the craft's missiles (ConstructRadar.cs)
     // Ship works (ConstructWorks.cs, docs/sandbox/design/ship-works.md): a head's needs and a works piece's kind
     public ushort WorksNeeds; // "works": {"needs"}: the kinds of works it must have behind it (bits by WorksKind)
-    public bool WorksOutside; // "works": {"service": "outside"}: a pod, its works in its cowl, serviced at the part
+    public bool WorksOutside; // "service": "outside" on a head ("works") or a mount ("worksPiece"): an engine in a nacelle, mended through its hatch from outside
     public float WorksRating; // "works": {"rating"}: what a head that isn't a thruster asks of its works (a thruster asks its force)
     public WorksKind WorksKind; // "worksPiece": {"kind"}: a mount, or the kind of works it is
     public float WorksServes; // "worksPiece": {"serves"}: what it carries, in its kind's unit (N of thrust, kW of beam, kg of ordnance)
@@ -1326,7 +1326,7 @@ public static partial class ConstructParts
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "finish", "friction", "collider",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "fluidTank", "seat", "hinge", "joint", "logic",
         "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "yield", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "retired", "hydraulics", "toolOnly", "tray", "walk", "boarding", "ladder", "toolDock", "damaged", "stage", "faces", "faceAxis", "router",
-        "sight", "ordnance", "mooring", "wear", "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "dieExtension", "runOut", "enginePiece", "sizeClass", "generator", "thruster", "burner", "flame", "rotor", "surface", "smoke", "dock", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "shell", "office", "requisition", "media", "speaker", "leg", "stabiliser", "door", "lifter", "craneRail", "lifterCab", "radar", "works", "worksPiece",
+        "sight", "ordnance", "mooring", "wear", "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "dieExtension", "runOut", "enginePiece", "sizeClass", "generator", "thruster", "burner", "flame", "rotor", "surface", "smoke", "dock", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "shell", "office", "requisition", "media", "speaker", "leg", "stabiliser", "door", "lifter", "craneRail", "lifterCab", "radar", "works", "worksPiece", "logiLink",
     ];
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, a contoured shape with its settings (index 8 up to the last), and the glass flag (last).</summary>
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, and a contoured shape with its settings.</summary>
@@ -1913,6 +1913,7 @@ public static partial class ConstructParts
         ConstructMedia.Parse(d, root, file);
         ConstructSpeakers.Parse(d, root, file);
         ConstructPhysics.ParseStabiliser(d, root, file); // (a walker stabiliser: ConstructWalkFeel.cs)
+        LinkedLogistics.Parse(d, root, file); // (linked logistics: link ends, the Cargo Dock and Port, the Route Computer, the Dispatcher)
         OfficeParts.Parse(d, root, file); // (the fax and the computer, after their panels: OfficeParts.cs)
         ConstructPress.ParseDie(d, root, file);
         ProductionLines.MonitorPorts(d); // (after the panels and the machines: a console's, a machine's or a rack's Data out)

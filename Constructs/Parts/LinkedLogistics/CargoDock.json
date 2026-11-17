@@ -1,0 +1,253 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Cargo Dock",
+  "description": "A factory's staging hold with a hatch. A ship held by a Docking Clamp on this construct with its Cargo Port over the hatch is loaded with what linked networks ordered here, and unloads what it brings. Needs power.",
+  "group": "Production",
+  "section": "Linked logistics",
+  "role": "storage",
+  "tool": "welder",
+  "mass": 600.0,
+  "health": 1500,
+  "armour": 4,
+  "material": "steel",
+  "color": "#3a6f8f",
+  "attachSeconds": 6.0,
+  "power": 1000,
+  "onBreak": "disable",
+  "logiLink": {
+    "kind": "dock"
+  },
+  "storage": {
+    "pieces": {
+      "section": [
+        2.0,
+        2.0
+      ],
+      "length": 6.0,
+      "count": 600,
+      "crafting": true,
+      "hold": [
+        [
+          -1.12,
+          0.010000000000000009,
+          -3.12
+        ],
+        [
+          1.12,
+          0.855,
+          3.23
+        ]
+      ]
+    }
+  },
+  "ports": [
+    {
+      "name": "Piece in",
+      "type": "conveyor",
+      "dir": "in",
+      "at": [
+        0,
+        0.375,
+        3.25
+      ],
+      "face": "+z",
+      "opening": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "name": "Piece out",
+      "type": "conveyor",
+      "dir": "out",
+      "at": [
+        0,
+        0.375,
+        -3.25
+      ],
+      "face": "-z",
+      "opening": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "name": "Chute in",
+      "type": "chute",
+      "dir": "in",
+      "at": [
+        -0.95,
+        0.875,
+        -2.65
+      ],
+      "face": "+y"
+    },
+    {
+      "name": "Chute out",
+      "type": "chute",
+      "dir": "out",
+      "at": [
+        0.95,
+        0.875,
+        -2.65
+      ],
+      "face": "+y"
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -1.25,
+        -0.125,
+        -3.248
+      ],
+      "max": [
+        1.25,
+        -0.005,
+        3.248
+      ],
+      "color": "#22262b"
+    },
+    {
+      "min": [
+        -1.248,
+        -0.01,
+        -3.246
+      ],
+      "max": [
+        -1.13,
+        0.875,
+        3.25
+      ]
+    },
+    {
+      "min": [
+        1.13,
+        -0.01,
+        -3.246
+      ],
+      "max": [
+        1.248,
+        0.875,
+        3.25
+      ]
+    },
+    {
+      "min": [
+        -1.135,
+        -0.01,
+        -3.25
+      ],
+      "max": [
+        1.135,
+        0.873,
+        -3.13
+      ]
+    },
+    {
+      "min": [
+        -1.23,
+        0.865,
+        -1.0
+      ],
+      "max": [
+        -1.12,
+        0.887,
+        1.0
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        1.12,
+        0.865,
+        -1.0
+      ],
+      "max": [
+        1.23,
+        0.887,
+        1.0
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.6,
+        -0.007,
+        -0.6
+      ],
+      "max": [
+        0.6,
+        0.007,
+        0.6
+      ],
+      "color": "#ecebe4",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -1.12,
+        -0.007,
+        2.95
+      ],
+      "max": [
+        1.12,
+        0.007,
+        3.23
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.4,
+        0.475,
+        -3.258
+      ],
+      "max": [
+        0.4,
+        0.775,
+        -3.246
+      ],
+      "color": "#f07818",
+      "detail": true,
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -0.125,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.f",
+      "at": [
+        0.0,
+        -0.125,
+        2.5
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.b",
+      "at": [
+        0.0,
+        -0.125,
+        -2.5
+      ],
+      "dir": "-y"
+    }
+  ]
+}

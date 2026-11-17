@@ -76,7 +76,7 @@ planet or moon of, radius, gravity at the ground, how far out it is and its time
 
 ## Orders
 
-Three kinds (`NavKind`), each for one ship, given by any player to any ship that takes orders. **A ship takes orders
+Five kinds (`NavKind`), each for one ship, given by any player to any ship that takes orders. **A ship takes orders
 when it has a working Flight Stabilizer** (the "flight computer"; `Game.NavProblem` says why not: a wreck, none fitted,
 wrecked, or held down). Orders are the host's (`Game.NavOrders`); they are not saved and end when the map changes.
 
@@ -85,6 +85,8 @@ wrecked, or held down). Orders are the host's (`Game.NavOrders`); they are not s
 | Orbit a body at a height | Right click a world, set "km up", ORBIT | Climbs out of its sky if it is in one, crosses to the body, matches a circular orbit there and shuts its drive |
 | Go to a place | Right click empty space | Flies to that point (fixed against the body that rules there), stops and holds it |
 | Fly to a spot over the ground | Right click the ground of the world it is flying over | The Flight Stabilizer's own waypoint autopilot, at the ship's present height |
+| Land on a spot | Right click the ground of the world you are on, LAND HERE (from its sky or from space) | Comes down into the sky over the spot if it is in space, flies over it and sets down on it ("Landing", below) |
+| Come to me | Right click your own marker (YOU), COME TO ME, or COME TO ME on the card | You on the ground or in the sky: as a landing, on a spot beside you on the side it comes from, which follows you until it starts down. You out in space (over the sky's edge, on a spacewalk or another ship): it flies to you and holds beside you, matching your motion, until cancelled |
 
 The lowest orbit (`Game.NavMinOrbit`) is `NavEdgeMargin` (400 m) over a mapped world's sky edge, since inside the sky a
 ship is a physics body again; round a body with no map it is a little clear of the ground. The highest is 0.8 of the
@@ -117,7 +119,39 @@ ORBIT, DRIVE OFF") and burns again only if the ship has drifted well off its cir
   stabilizer on Ship keys, whose jets would otherwise turn the hull.
 
 Phases (`NavPhase`): Climb, Transfer, Insert, Orbiting, Hold, Flying, Arrived, NoDrive (no fuel or no thruster that
-works in a vacuum: the card says so in red); between planets Wait, Depart, Coast, Correct, Brake and Short (below).
+works in a vacuum: the card says so in red); between planets Wait, Depart, Coast, Correct, Brake and Short (below);
+for a landing Descend and Landing.
+
+### Landing (`Game/GameNavLand.cs`)
+
+A Land order's point is a spot on the ground of the bubble's world (World coordinates, on the ball's radius: only the
+way to it along the ground counts); a Come order's spot is worked out on the host from the player who gave it
+(`NavBeside`: the ship's own radius plus `NavComeBeside`, 8 m, from them, on the side it comes from), again each tick
+until it starts down (or until they come aboard it: a player riding it can't order it to come to them). A plane or a
+rocket refuses both (they land on their own), and so does a ship in another system or one too heavy for the world's
+landing limit.
+
+- **From space** the order's `GoTo` law aims at a point `NavDescendUnder` (300 m) under the sky's edge over the spot
+  (`NavSkyOver`, turning with the ground; on a thin sky half way down it), with nothing left of its speed there, so it
+  crosses the line where it is a physics body again (200 m under the edge) slowly (phase `Descend`; time runs at 1x).
+  A landing on another planet first flies the trip there.
+- **In the sky** the autopilot's Waypoint mode flies it over the spot at its present height (`Flying`; off the ground
+  first if it sits there, at the stabilizer's own climb limit). Within `NavLandNear` (20 m) and drifting under 4 m/s it
+  comes down (`Landing`): `Construct.NavLand` (`NavLandSpeed`, 40 m/s) takes over the stabilizer's height loop, which
+  looks down `NavLandLook` (600 m) every 6 ticks and comes down at a fifth of the gap a second, and no faster than half
+  its spare lift could stop in the gap (0.6 m/s at the least), until the gap is gone.
+- **Come to a player in space** (`NavBesideInSpace`): when its player is over the sky's edge (`NavPlayerInSpace`; they
+  count as back in the sky 150 m under it, so the line doesn't flip the order), the ship climbs out of its sky if it is
+  in one and flies the `GoTo` law in the player's own frame: to its radius plus `NavComeBeside` plus `NavComeStandoff`
+  (40 m) from them, on the side it comes from, planned on no more than `NavComeAccel` (5 m/s2) since it turns to brake
+  and an overshoot would run them down; only the difference in gravity between it and them is cancelled. It holds there
+  (phase Hold) as they drift; a player just under the edge has it hold over them, so it stays out of the sky. A player
+  who rides it, dies or leaves ends it ("You are aboard it" when the order is given). A player who goes back down has it
+  land beside them, if it can land there (the plane, rocket and weight checks are made again then, `NavCantLand`).
+- **Down:** it has sat still while asked down for a second within 4 m of the ground: the order ends, its autopilot off and its stabilizer at rest (`ConstructFlight.NavSetDown`), as a pilot leaves
+  a ship that landed. Still for ten seconds higher up (a repulsor field or its gas holding it, or something the ray
+  doesn't see) the order gives up and leaves it hovering, since let go in the air it would fall. Cancelling a landing
+  leaves it hovering too, as any order in a sky does.
 
 ## Time speed
 
@@ -191,13 +225,15 @@ offers no jump. When the cost is decided: what pays it (power, a fuel, wear on t
 JUMP for a ship with a working drive when it gives a cost, and the jump arrives as `Galaxy.Arrive` does, in orbit round
 the target.
 
-### On the wire (protocols 323 and 326)
+### On the wire (protocols 323, 326 and 327)
 
 - Client to host: `Msg.CAct` with `CActKind.NavOrder`: construct, kind, body, point (three doubles), radius. The host
   checks it (`NavOrderAct`) and answers a refusal in words.
 - Host to all: `Msg.Nav`, the whole order list (construct, kind, body, point, radius, phase, and a trip's arrival and
   departure in space ns and its dV: 326), sent when an order starts, changes phase or its plan, or ends, and to each
   joiner (`SendNavState`). Clients draw from it; they fly nothing.
+- 327: `NavKind` Land and Come, `NavPhase` Descend and Landing. A Come order's point on the wire is where the host first
+  put it; the view draws its mark on the player while it follows them.
 - The space clock (`SpaceMsg.Clock`) carries the host's Fuel use in space (a u8 percent, 326), so a client's card works
   out the same dV.
 
@@ -215,7 +251,9 @@ the target.
 
 The window tool (README.md "Testing without playing") has verbs for it (`Source/App/Program.WindowShotNav.cs`):
 `command [SPAN]` opens the view (SPAN: metres up the screen), `cmdview YAW PITCH` turns it (degrees), `cmdpick N` picks
-the Nth craft, `order orbit BODY KM`, `order goto BODY KM`, `order ground M` (a spot M metres along the ground) and
+the Nth craft, `order orbit BODY KM`, `order goto BODY KM`, `order ground M` (a spot M metres along the ground),
+`order land M` (a spot M metres along the ground to set down on; from space, along from under the ship), `order come`,
+`spacewalk KM [SIDE]` (host: you out KM km over the ground under the picked craft, SIDE m beside it, at rest) and
 `order cancel` give the picked craft an order as the menu would (an orbit of another planet is a trip), `rclick X,Y` is a right click (the menu itself), `nav` prints every craft and its order, `hoist KM` (host) puts
 the picked craft that high, at rest, `speed N` asks for a time speed (host), and `travel FUEL SHARE` sets Settings >
 Gameplay's Fuel use in space and Trip fuel for the run (percents). The `nav` line has each craft's acceleration and dV. For example, a Magpie into orbit and on to the

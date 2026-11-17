@@ -551,9 +551,15 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 326: trips between planets (docs/space/COMMAND.md "Between planets", GameNavTrip.cs): Msg.Nav gains u64 arrival and u64 departure (space ns)
     //   and f32 dV after the radius, and NavPhase gains Depart, Coast, Correct, Brake, Short and Wait at its end; SpaceMsg.Clock gains a u8
     //   at its end, the host's fuel use in space (percent: ConstructPhysics.SpaceFuelScale).
-    // 328: the bot brain's crews (docs/sandbox/design/bot-brain.md, phase 1; GameCrew.cs): Msg.CrewSeats at the end of Msg (u16 construct,
-    //   u8 n, n x u16 seat part), the seats a crew member works with no body, drawn as stand-ins. (327 is linked logistics': the merger renumbers.)
-    public const ushort ProtocolVersion = 328;
+    // 327: landing from the command view (docs/space/COMMAND.md "Landing", GameNavLand.cs): NavKind gains Land and Come, and NavPhase
+    //   Descend and Landing, at their ends (CActKind.NavOrder and Msg.Nav carry them).
+    // 328: linked logistics (docs/sandbox/design/linked-logistics.md): CBodyKind.Link at the end of CBodyKind (a body's link parts: ids,
+    //   names, status lines as a u8 count then a str each, offers by PartRef, a port's manifest, a Route Computer's docks:
+    //   LinkedLogistics.Write); CActKind.Link at the end of CActKind (u16 body, u16 part, u8 LinkOp, u32 a, u32 b, str text); the
+    //   Building Station's Sub-jobs setting is a choice (Off, Auto, Linked).
+    // 329: the bot brain's crews (docs/sandbox/design/bot-brain.md, phase 1; GameCrew.cs): Msg.CrewSeats at the end of Msg (u16 construct,
+    //   u8 n, n x u16 seat part), the seats a crew member works with no body, drawn as stand-ins.
+    public const ushort ProtocolVersion = 329;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

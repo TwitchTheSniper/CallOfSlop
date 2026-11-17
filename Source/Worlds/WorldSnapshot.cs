@@ -24,6 +24,7 @@ public struct BodySnap
     public byte[]? Uses; // its sub-blueprint uses (SubBlueprints.SaveBytes; the USES block, after SIDE)
     public byte[]? Crew; // its crew (CrewWorld.SaveBytes; the CREW block, last)
     public byte[]? SubJobs; // its stations' sub-blueprint jobs (ConstructStationTree.SaveBytes; the SUBJ block, after USES)
+    public byte[]? LinkParts; // its linked logistics parts' state (LinkedLogistics.SaveBytes; the LLNK block, after SUBJ)
     public (ushort Lifter, LiftOrder Order)[]? LiftOrders; // its lifters' hand orders (ConstructLifters.SnapshotOrders; the LIFT block's second half, phase 7)
     public VehicleKit.VehicleBrief? Brief; // a generated faction vehicle's behaviour data (written after the tracks; the tick doesn't change a brief once it is on its construct)
 }
@@ -91,6 +92,7 @@ public sealed class WorldSnapshot
     public int SpaceSpeed;
     public string SpaceSystem = "";
     public OpeningSave? Opening; // the survival opening's colony and crash site (GameSandboxOpening.cs), or null
+    public byte[]? LinkLedger; // the host's link ledger (LinkLedger.SaveBytes; the LINK section), the main world's only
     public string Start = ""; // the story start the world was made with (GameStoryStart.cs; "": the default)
     public string[] FactionNames = []; // player factions by id ("": free; the players' records say who is in which)
     public uint[] FactionColours = []; // by id, with FactionTags, FactionOpen and FactionStances: the FCT2 section (GameSandboxFactions.cs)

@@ -391,3 +391,5 @@ These override the text above where they differ.
 The "To agree with Karl" list stands: raise it with him before phase 1 changes his crew.
 
 **Karl agreed (2026-11-16, via the user)** to the "To agree with Karl" list: seated crew replace his bodiless crew, NPC ships get breakdowns once engineers exist, `--ship-ai-check` becomes `--crew-check`, scuttling as the design proposes, and his crew fittings become stations.
+
+**Hiring and credits (user, 2026-11-16):** hired NPC crew are paid in a placeholder currency, **credits**, added to the game for now (name may change). In Creative the player has unlimited credits. Hiring, wages and prisoners for ransom use credits; the trade design comes later.

@@ -111,9 +111,14 @@
       "key": "subJobs",
       "label": "Sub-jobs",
       "group": "Bay",
-      "type": "toggle",
-      "default": true,
-      "tooltip": "On (Auto): it builds parts of other stations' blueprints (their sub-blueprint uses) when it is idle. Off: it keeps to your own builds."
+      "type": "choice",
+      "options": [
+        "Off",
+        "Auto",
+        "Linked"
+      ],
+      "default": 1,
+      "tooltip": "Auto: when idle it builds other stations' sub-blueprint uses on this construct. Linked: also uses sent over a logistics link (the module goes by cargo ship). Off: only your own builds."
     }
   ],
   "storage": {

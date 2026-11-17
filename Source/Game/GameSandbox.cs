@@ -107,6 +107,7 @@ public enum CActKind : byte
     Breakdown, // server -> every client: u16 body, u16 part, u8 BreakdownStage, u8 seconds left, u8 1: say it to those aboard (protocol 321; GameSandboxBreakdowns.cs)
     Mend, // u16 body, u16 part: the attach tool sees to a groaning part or repairs a broken-down one (protocol 321; GameSandboxBreakdowns.cs)
     NavOrder, // u16 body, u8 NavKind (0 cancels), u8 the star system's body, 3 x f64 point, f64 radius: an order for a ship from the command view (protocol 323; GameNav.cs)
+    Link, // u16 body, u16 part, u8 LinkOp, u32 a, u32 b, str text: a linked logistics part's panel, or a route from the command view (protocol 328; GameSandboxLinked.cs)
 }
 
 /// <summary>
@@ -538,6 +539,11 @@ public sealed partial class Game
             ConstructStation.Write(w, c);
             Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
         }
+        if (LinkedLogistics.Any(c))
+        {
+            LinkedLogistics.Write(w, c); // (after its structure: its link parts' panels)
+            Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
+        }
         ConstructLifters.WriteAll(Constructs, c.Id, w, out var lifts);
         if (lifts)
             Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
@@ -571,6 +577,8 @@ public sealed partial class Game
                     Constructs.CraftChanged(c); // (the same: its terminals' parts may have been renumbered)
                 if (ConstructStation.Any(c))
                     Constructs.StationChanged(c);
+                if (LinkedLogistics.Any(c) && !Constructs.LinkDirty.Contains(c.Id))
+                    Constructs.LinkDirty.Add(c.Id); // (the same: a Full leaves a client's link parts without their panels' state, "no state heard", until the next change)
             }
         Constructs.StructureDirty.Clear();
         foreach (var id in Constructs.RidersDirty)
@@ -601,6 +609,13 @@ public sealed partial class Game
                 Net.Broadcast(w.Span, PacketReliability.ReliableOrdered);
             }
         Constructs.StationDirty.Clear();
+        foreach (var id in Constructs.LinkDirty)
+            if (Constructs.Get(id) is { } c)
+            {
+                LinkedLogistics.Write(w, c);
+                Net.Broadcast(w.Span, PacketReliability.ReliableOrdered);
+            }
+        Constructs.LinkDirty.Clear();
         foreach (var id in Constructs.LiftDirty)
             if (Constructs.LiftSeen.TryGetValue(id, out var lb) && lb.N > 0)
             {
@@ -1258,6 +1273,8 @@ public sealed partial class Game
             }
             case CActKind.Station:
                 return SandboxStationAct(ref r, p, eye);
+            case CActKind.Link:
+                return SandboxLinkAct(ref r, p); // (GameSandboxLinked.cs)
             case CActKind.Lifter:
                 return SandboxLifterAct(ref r, p, eye); // (GameSandboxLifter.cs)
             case CActKind.WebState:

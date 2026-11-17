@@ -11,6 +11,8 @@ public enum NavKind : byte
     GoTo, // fly to a point in space (metres from a body's centre, the ecliptic's axes) and stay there
     Orbit, // a circle round a body, a radius from its centre
     Ground, // fly to a point over the ground of the world it is on (World coordinates), on its autopilot
+    Land, // fly to a spot on the ground of the bubble's world (World coordinates), from its sky or from space, and set down on it
+    Come, // fly to the player who gave it (Point: the spot beside them, World coordinates, as last worked out): set down there, or in space hold beside them
 }
 
 /// <summary>How far an order has got (a wire byte: add at the end).</summary>
@@ -31,6 +33,8 @@ public enum NavPhase : byte
     Brake, // between planets: flipped over, braking into the target's neighbourhood
     Short, // between planets: no trip in reach fits the dV a trip may spend (NavOrder.DvNeed says what it would take)
     Wait, // between planets: in orbit, drive off, until its launch window (NavOrder.DepartNs)
+    Descend, // in space, coming down into the sky over its spot (a Land or Come order)
+    Landing, // over its spot, coming down onto it on its autopilot (the order ends when it is down)
 }
 
 /// <summary>One ship's order (the host's; clients hear a copy for the command view).</summary>
@@ -74,6 +78,15 @@ public sealed class NavOrder
     internal int ParkBody = -1;
     internal double ParkRadius;
     internal bool Parked;
+
+    /// <summary>Host: ticks a landing ship has sat still while asked down (it is down at <see cref="Game.NavDownTicks"/>).</summary>
+    internal int Still;
+
+    /// <summary>Host: the waypoint its autopilot was last given (a Come order moves it after its player).</summary>
+    internal Vector3 WaypointSent;
+
+    /// <summary>Host: a Come order's player was out in space when last seen (it holds beside them there, not lands).</summary>
+    internal bool ComeSpace;
 }
 
 /// <summary>
@@ -83,8 +96,10 @@ public sealed class NavOrder
 /// fuel or power through <see cref="ConstructPhysics.SpaceThrust"/>, and is a test particle as ever); inside a world's sky the
 /// stabilizer's own autopilot flies it (a waypoint over the ground, or a climb to the sky's edge on the way to space).
 /// A driver who touches the controls takes the ship back. Orders aren't saved, and a move to another world drops them.
+/// A Land or Come order sets the ship down: from space it comes down into the sky over its spot, flies there on its
+/// autopilot and comes down on it (<see cref="Construct.NavLand"/>), and the order ends once it is down, its stabilizer at rest.
 /// <para>
-/// The wire (protocol 326): <c>CActKind.NavOrder</c> from a client, and <see cref="Msg.Nav"/> from the host to everyone
+/// The wire (protocol 327): <c>CActKind.NavOrder</c> from a client, and <see cref="Msg.Nav"/> from the host to everyone
 /// when an order starts, changes phase or ends, and to each joiner.
 /// </para>
 /// </summary>
@@ -104,6 +119,15 @@ public sealed partial class Game
 
     /// <summary>How fast an order climbs a ship out of a sky (m/s) when its stabilizer's own climb limit is lower: nobody is aboard to mind, and at a ship's 10 m/s Glacier's sky took four minutes.</summary>
     public const float NavClimbSpeed = 60;
+
+    /// <summary>How fast an ordered landing comes down (m/s) until the ground is near, and how far down it looks for the ground (m).</summary>
+    public const float NavLandSpeed = 40, NavLandLook = 600;
+
+    /// <summary>How near its spot a landing starts to come down (m along the ground), and how far from the player a ship that comes to them sets down (m past its own size).</summary>
+    public const float NavLandNear = 20, NavComeBeside = 8;
+
+    /// <summary>How long a landing ship sits still near the ground while asked down before it counts as down, and how long anywhere before the order gives up and leaves it hovering (ticks).</summary>
+    public const int NavDownTicks = 60, NavStuckTicks = 600;
 
     private const Buttons NavManualKeys = Buttons.Forward | Buttons.Back | Buttons.Left | Buttons.Right;
 
@@ -231,8 +255,19 @@ public sealed partial class Game
                 NavEnd(had, c, "cancelled");
             return null;
         }
-        if (kind > NavKind.Ground || !double.IsFinite(point.X + point.Y + point.Z + radius))
+        if (kind > NavKind.Come || !double.IsFinite(point.X + point.Y + point.Z + radius))
             return null;
+        return NavApply(s, c, kind, body, point, radius, p.Id, p.Name, p, out _);
+    }
+
+    /// <summary>
+    /// Host: an order set on a ship (a player's from the command view, or a Route Computer's leg: GameSandboxLinked.cs), checked as a
+    /// player's is, with everything a new order starts from reset (a cruise, a hand-over, a trip's plan). Null, or why it takes none.
+    /// </summary>
+    internal string? NavApply(SpaceSession s, Construct c, NavKind kind, int body, Vec3d point, double radius, byte by, string who, Player? p, out NavOrder? order)
+    {
+        order = null;
+        var id = c.Id;
         if (NavProblem(c) is { } why)
             return "It takes no orders: " + why;
         var sys = c.SpaceAway != 0 ? Galaxy.System(c.SpaceAway - 1) : s.System;
@@ -242,6 +277,23 @@ public sealed partial class Game
         {
             if (c.SpaceShip != 0 || body != s.Bubble.Body)
                 return "It is in space: fly it down into the sky first, or give it an orbit";
+        }
+        else if (kind is NavKind.Land or NavKind.Come)
+        {
+            if (c.SpaceAway != 0 || body != s.Bubble.Body)
+                return "It can land only on the world you are on";
+            if (kind == NavKind.Come)
+            {
+                if (p == null)
+                    return "Only a player can call it to come"; // (a route leg never asks it: GameSandboxLinked.cs)
+                if (!p.Alive)
+                    return "You are dead: it has nobody to come to";
+                if (p.Sim.RideBody == c.Id)
+                    return "You are aboard it";
+                point = NavBeside(c, p.Position, Vector3.Zero);
+            }
+            if ((kind == NavKind.Land || p == null || !NavPlayerInSpace(p)) && NavCantLand(c) is { } cant) // (a player out in space: it comes and holds beside them)
+                return cant;
         }
         else
         {
@@ -264,7 +316,7 @@ public sealed partial class Game
         o.Body = (byte)body;
         o.Point = point;
         o.Radius = radius;
-        o.By = p.Id;
+        o.By = by;
         o.Phase = NavPhase.None;
         o.PhaseSent = NavPhase.None;
         o.Engaged = false;
@@ -272,7 +324,11 @@ public sealed partial class Game
         o.ParkBody = -1;
         o.ArriveNs = o.DepartNs = 0;
         o.DvNeed = 0;
-        Console.WriteLine($"[nav] {p.Name} ordered construct {id}: {NavText(sys, o)}");
+        o.Still = 0;
+        o.ComeSpace = kind == NavKind.Come && p != null && NavPlayerInSpace(p);
+        c.NavLand = 0; // (any new order, a player's or a route leg's, ends a landing's hold)
+        order = o;
+        Console.WriteLine($"[nav] {who} ordered construct {id}: {NavText(sys, o)}");
         return null;
     }
 
@@ -285,6 +341,8 @@ public sealed partial class Game
             NavKind.Orbit => FormattableString.Invariant($"orbit {name} at {(o.Radius - sys.Bodies[Math.Min(o.Body, sys.Count - 1)].Radius) / 1000:0.0} km"),
             NavKind.GoTo => "go to a point " + NavFar(Math.Max(0, o.Point.Length - sys.Bodies[Math.Min(o.Body, sys.Count - 1)].Radius)) + " from " + name, // (from its surface, as heights are told)
             NavKind.Ground => "go to a waypoint on " + name,
+            NavKind.Land => "land on a spot on " + name,
+            NavKind.Come => "come to its player",
             _ => "none",
         };
     }
@@ -294,16 +352,19 @@ public sealed partial class Game
         : m >= 1e7 ? FormattableString.Invariant($"{m / 1e6:0.0} thousand km") : FormattableString.Invariant($"{m / 1000:0.0} km");
 
     /// <summary>Host: an order is over (done with, cancelled, or its ship is gone): the drive is let go and everyone hears.</summary>
-    private void NavEnd(NavOrder o, Construct? c, string why)
+    private void NavEnd(NavOrder o, Construct? c, string why, bool down = false)
     {
         if (c != null)
         {
             c.NavThrottle = -1;
             c.NavClimb = 0;
+            c.NavLand = 0;
             c.NavAim = Vector3.Zero;
             if (c.SpaceShip != 0)
                 c.AngVel = Vector3.Zero; // (the order's turn isn't a spin to hand to a ship that turns by its jets)
-            if (c.SpaceShip == 0 && o.Engaged)
+            if (down)
+                ConstructFlight.NavSetDown(Constructs, c); // (down: its autopilot off and its stabilizer at rest, as a pilot leaves it)
+            else if (c.SpaceShip == 0 && o.Engaged)
                 ConstructFlight.NavEngage(Constructs, c, FlightMode.Hover, default, 0); // (it stays where it is, hovering, until someone takes it)
             Console.WriteLine($"[nav] construct {c.Id}'s order ended: {why}");
         }
@@ -340,10 +401,17 @@ public sealed partial class Game
             }
             if (c.Dirty)
                 c.Rebuild();
+            if (o.Kind == NavKind.Come && NavComeMode(o, c) is { } comeEnds)
+            {
+                NavEnd(o, c, comeEnds);
+                continue;
+            }
             if (c.SpaceShip == 0)
                 NavInSky(s, o, c);
             else
                 NavInSpace(s, o, c);
+            if (o.Kind == NavKind.None)
+                continue; // (it ended there: a landing is down)
             if (o.Phase != o.PhaseSent || o.ArriveNs != o.ArriveSent || o.DvNeed != o.DvSent)
             {
                 o.PhaseSent = o.Phase;
@@ -359,18 +427,19 @@ public sealed partial class Game
     private void NavInSky(SpaceSession s, NavOrder o, Construct c)
     {
         c.NavThrottle = -1;
-        c.NavClimb = o.Kind == NavKind.Ground ? 0 : NavClimbSpeed;
+        var climbs = o.Kind is NavKind.GoTo or NavKind.Orbit || o.Kind == NavKind.Come && o.ComeSpace;
+        c.NavClimb = climbs ? NavClimbSpeed : 0; // (only a climb out to space hurries)
         var here = c.WorldCom;
+        if (!climbs && o.Kind is NavKind.Land or NavKind.Come)
+        {
+            NavLandSky(o, c);
+            return;
+        }
         if (o.Kind == NavKind.Ground)
         {
             var to = o.Point.ToVector3();
             if (!o.Engaged)
-            {
-                // Off the ground first when it sits still on it, so it doesn't drag itself along (the height is a guess: it can't see the hills).
-                var shown = ConstructPhysics.HoldShown(ConstructPhysics.HoldHeight(here));
-                var resting = !c.HoverOn && c.Vel.LengthSquared() < 1f;
-                o.Engaged = ConstructFlight.NavEngage(Constructs, c, FlightMode.Waypoint, to, resting ? shown + 80f : 0f);
-            }
+                o.Engaged = NavWaypoint(c, to);
             var up = ConstructPhysics.HoldUp(here);
             var off = to - here;
             off -= up * Vector3.Dot(off, up);
@@ -403,6 +472,7 @@ public sealed partial class Game
             o.Engaged = false;
             ConstructFlight.NavRelease(Constructs, c);
         }
+        c.NavLand = 0;
         if (o.Kind == NavKind.Ground || NavFlightOf(s, c) is not { } f || f.Ships.IndexOfId(c.SpaceShip) is var i && i < 0 || o.Body >= f.System.Count)
         {
             c.NavThrottle = -1;
@@ -431,6 +501,8 @@ public sealed partial class Game
         {
             // Between planets: the trip's own burns (GameNavTrip.cs).
         }
+        else if (o.Kind == NavKind.Come && o.ComeSpace && Players.GetValueOrDefault(o.By) is { Alive: true } who)
+            a = NavBesideInSpace(s, sys, o, c, who, pos, f.Ships.VelocityOf(i), t, aMax); // (its player is out in space: it comes and holds beside them)
         else if (o.Kind == NavKind.Orbit && (o.Body == 0 || r.Length < 0.9 * SpaceShips.SphereOfInfluence(sys, o.Body)))
         {
             var was = o.Phase == NavPhase.Orbiting;
@@ -446,7 +518,9 @@ public sealed partial class Game
         {
             var to = o.Point;
             var arrive = 0.0;
-            if (o.Kind == NavKind.Orbit)
+            if (o.Kind is NavKind.Land or NavKind.Come)
+                to = NavSkyOver(s, o, t) - bp;
+            else if (o.Kind == NavKind.Orbit)
             {
                 // From afar: at the circle's edge as seen from here, going round the way an orbit does.
                 var side = Vec3d.Cross(Vec3d.UnitZ, -r);
@@ -463,12 +537,14 @@ public sealed partial class Game
             }
             var gravity = NavGuidance.Gravity(sys, pos, t) - NavGuidance.Gravity(sys, bp, t, o.Body);
             a = NavGuidance.GoTo(r, v, to, way, arrive, gravity, aMax, out o.Distance, out o.SpeedError);
-            o.Phase = o.Kind == NavKind.GoTo && o.Distance < 30 && o.SpeedError < 1.5 ? NavPhase.Hold : o.Handed ? NavPhase.Brake : NavPhase.Transfer;
+            o.Phase = o.Kind == NavKind.GoTo && o.Distance < 30 && o.SpeedError < 1.5 ? NavPhase.Hold
+                : o.Kind is NavKind.Land or NavKind.Come && o.Distance < NavDescendNear ? NavPhase.Descend
+                : o.Handed ? NavPhase.Brake : NavPhase.Transfer;
         }
         var ask = a.Length;
         // Near the target everything is real time: an insertion's push dips while the ship turns or between its
         // corrections, and one sped-up tick there (half an hour at 100,000x) flings the ship out of the planet's reach.
-        if (ask >= 1e-4 || o.Phase is NavPhase.Insert or NavPhase.Transfer or NavPhase.Brake or NavPhase.Hold)
+        if (ask >= 1e-4 || o.Phase is NavPhase.Insert or NavPhase.Transfer or NavPhase.Brake or NavPhase.Hold or NavPhase.Descend)
             NavSpeedCap = 1;
         if (ask < 1e-4)
         {
@@ -534,7 +610,7 @@ public sealed partial class Game
         var departNs = (long)r.U64();
         var dvNeed = r.F32();
         var o = NavOf(id);
-        if (kind == NavKind.None || kind > NavKind.Ground)
+        if (kind == NavKind.None || kind > NavKind.Come)
         {
             if (o != null)
                 NavOrders.Remove(o);
@@ -565,6 +641,7 @@ public sealed partial class Game
             {
                 c.NavThrottle = -1;
                 c.NavClimb = 0;
+                c.NavLand = 0;
                 c.NavAim = Vector3.Zero;
             }
         NavOrders.Clear();

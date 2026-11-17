@@ -1,0 +1,356 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Dray Hold Well Wall 1",
+  "description": "A wall of the Dray's hold well, with its door frames and what is fixed to it.",
+  "group": "Ship",
+  "section": "Dray hauler",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 609.7,
+  "health": 3500,
+  "armour": 25,
+  "material": "steel",
+  "color": "#71787c",
+  "attachSeconds": 6.0,
+  "boxes": [
+    {
+      "min": [
+        0.875,
+        0.125,
+        26.675
+      ],
+      "max": [
+        1.125,
+        7.125,
+        27.275
+      ],
+      "color": "#71787c",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        0.875,
+        2.925,
+        27.275
+      ],
+      "max": [
+        1.125,
+        7.125,
+        32.475
+      ],
+      "color": "#71787c",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        0.863,
+        0.128,
+        26.725
+      ],
+      "max": [
+        1.137,
+        0.875,
+        27.225
+      ],
+      "color": "#c08a1c",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        0.855,
+        0.127,
+        27.205
+      ],
+      "max": [
+        1.145,
+        2.995,
+        27.272
+      ],
+      "color": "#2a2e31",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        0.855,
+        0.127,
+        32.478
+      ],
+      "max": [
+        1.145,
+        2.995,
+        32.545
+      ],
+      "color": "#2a2e31",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        0.855,
+        2.928,
+        27.275
+      ],
+      "max": [
+        1.145,
+        2.995,
+        32.475
+      ],
+      "color": "#e0a020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        0.875,
+        0.125,
+        32.475
+      ],
+      "max": [
+        1.125,
+        7.125,
+        33.075
+      ],
+      "color": "#71787c",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        0.863,
+        0.128,
+        32.525
+      ],
+      "max": [
+        1.137,
+        0.875,
+        33.025
+      ],
+      "color": "#c08a1c",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        2.375,
+        4.125,
+        26.675
+      ],
+      "max": [
+        3.375,
+        4.625,
+        33.075
+      ],
+      "color": "#202326",
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        3.363,
+        4.175,
+        26.679
+      ],
+      "max": [
+        3.379,
+        4.575,
+        33.071
+      ],
+      "color": "#e0a020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        1.125,
+        3.725,
+        26.925
+      ],
+      "max": [
+        3.375,
+        4.125,
+        27.225
+      ],
+      "color": "#202326",
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        1.129,
+        2.725,
+        26.975
+      ],
+      "max": [
+        2.275,
+        3.715,
+        27.175
+      ],
+      "color": "#202326",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          1.129,
+          2.725,
+          26.975
+        ],
+        [
+          1.129,
+          2.725,
+          27.175
+        ],
+        [
+          1.139,
+          3.715,
+          27.175
+        ],
+        [
+          1.139,
+          3.715,
+          26.975
+        ],
+        [
+          2.275,
+          3.715,
+          26.975
+        ],
+        [
+          2.275,
+          3.715,
+          27.175
+        ]
+      ],
+      "paintable": false,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        1.125,
+        3.725,
+        32.525
+      ],
+      "max": [
+        3.375,
+        4.125,
+        32.825
+      ],
+      "color": "#202326",
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        1.129,
+        2.725,
+        32.575
+      ],
+      "max": [
+        2.275,
+        3.715,
+        32.775
+      ],
+      "color": "#202326",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          1.129,
+          2.725,
+          32.575
+        ],
+        [
+          1.129,
+          2.725,
+          32.775
+        ],
+        [
+          1.139,
+          3.715,
+          32.775
+        ],
+        [
+          1.139,
+          3.715,
+          32.575
+        ],
+        [
+          2.275,
+          3.715,
+          32.575
+        ],
+        [
+          2.275,
+          3.715,
+          32.775
+        ]
+      ],
+      "paintable": false,
+      "finish": "painted steel"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "railL3",
+      "at": [
+        2.875,
+        4.625,
+        28.375
+      ],
+      "dir": "+y",
+      "class": "medium"
+    },
+    {
+      "name": "railL4",
+      "at": [
+        2.875,
+        4.625,
+        32.375
+      ],
+      "dir": "+y",
+      "class": "medium"
+    },
+    {
+      "name": "j0",
+      "at": [
+        0.995,
+        3.625,
+        26.675
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j1",
+      "at": [
+        0.995,
+        0.125,
+        32.775
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j2",
+      "at": [
+        0.995,
+        7.125,
+        29.875
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j3",
+      "at": [
+        0.875,
+        4.625,
+        29.875
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j4",
+      "at": [
+        0.995,
+        3.625,
+        33.075
+      ],
+      "dir": "+z"
+    }
+  ]
+}
