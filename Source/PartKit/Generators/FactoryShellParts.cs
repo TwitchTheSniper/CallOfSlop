@@ -48,7 +48,10 @@ public sealed class FactoryShellParts : IPartGenerator
                 Kw(("name", "Chute in"), ("type", "chute"), ("dir", "in"), ("at", Vec(x0 + t * 0.5, h, 0)), ("face", "+y")),
                 Kw(("name", "Chute out"), ("type", "chute"), ("dir", "out"), ("at", Vec(x1 - t * 0.5, h, 0)), ("face", "+y")))));
         var area = w * w + 4 * w * h;
-        p.Stats(area * t * 2400 * 0.5, area * 900, 20);
+        // The mass (and so the recipe): the 2 and 3 m ones as they were; past 3 m it grows more slowly than the concrete, so every size costs more
+        // than the one below and the 8 m one stays under the recipes' cap (Assembling's MaxUnits, 2000).
+        var mass = w <= 3 ? area * t * 2400 * 0.5 : 5940 * Math.Pow(w / 3, 0.69);
+        p.Stats(mass, area * 900, 20);
         return p;
     }
 

@@ -13,10 +13,16 @@ namespace CallOfSlop;
 public static class ConstructDrillFollow
 {
     private const float Arrived = 0.05f; // metres: a carriage this near its target has got there
+    private const float Still = 0.01f; // m/s: a carriage short of its target and slower than this is held up
     private const int MaxRails = 2;
 
-    /// <summary>The drill on part <paramref name="part"/> is on a worked-out spot: step the rails that carry it. True while it is being moved on (or was just sent).</summary>
-    public static bool Advance(ConstructWorld world, Construct c, int part)
+    /// <summary>
+    /// The drill on part <paramref name="part"/> is on a worked-out spot: step the rails that carry it. What it says: <see cref="GatherStall.Moving"/>
+    /// while a carriage is on its way (or was just sent), <see cref="GatherStall.RailJammed"/> or <see cref="GatherStall.RailPower"/> when one is
+    /// held up short of its step, <see cref="GatherStall.WorkedOut"/> with no rail to move it or every rail at its end. The drill isn't busy in any
+    /// of them, so it draws nothing while it waits.
+    /// </summary>
+    public static GatherStall Advance(ConstructWorld world, Construct c, int part)
     {
         Span<int> rails = stackalloc int[MaxRails];
         var n = 0;
@@ -29,10 +35,16 @@ public static class ConstructDrillFollow
             seg = j.ParentSeg;
         }
         if (n == 0)
-            return false;
+            return GatherStall.WorkedOut;
         for (var k = 0; k < n; k++)
-            if (MathF.Abs(c.Joints[rails[k]].Angle - ConstructLinear.Target(c.Joints[rails[k]])) > Arrived)
-                return true; // (still on its way to the last step)
+        {
+            ref var j = ref c.Joints[rails[k]];
+            if (MathF.Abs(j.Angle - ConstructLinear.Target(j)) <= Arrived)
+                continue;
+            if (!ConstructPower.On(c, j.Drive))
+                return GatherStall.RailPower; // (no power at the rail's motor: it can't move the drill on)
+            return MathF.Abs(j.Vel) < Still && j.Over > 0.5f ? GatherStall.RailJammed : GatherStall.Moving; // (short of its step, not moving and pushing: something is in the way)
+        }
         for (var k = 0; k < n; k++)
         {
             ref var j = ref c.Joints[rails[k]];
@@ -43,10 +55,10 @@ public static class ConstructDrillFollow
                 SetRest(world, c, rails[k], j.RestAt + step);
                 for (var i = 0; i < k; i++)
                     SetRest(world, c, rails[i], 0f); // (the inner rails back to their start: a new row)
-                return true;
+                return GatherStall.Moving;
             }
         }
-        return false; // (every rail at its end: the patch is worked out)
+        return GatherStall.WorkedOut; // (every rail at its end: the patch is worked out)
     }
 
     /// <summary>A rail that moves a drill on by itself: an Electric run in Position mode with nothing wired into its Set.</summary>

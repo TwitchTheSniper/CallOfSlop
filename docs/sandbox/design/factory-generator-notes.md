@@ -6,7 +6,7 @@ Notes kept by the builders of `factory-generator.md` (the design and the user's 
 
 - **Cargo parts** (storage-and-cargo.md "Cargo parts for works"): Ore Bunkers 4, 5, 6 and 8 m; the Storage Volume's **Walls** setting (on by default:
   floor and walls inside the box, solid, sealing all but the top); **Tipping Grates** 4 and 6 m; **Unloading Augers** 4 and 6 m on a Turntable 1x1
-  Medium (`ConstructAugers.cs`). Protocol 338 (CfgKey.Walls, new part files).
+  Medium (`ConstructAugers.cs`). Protocol 340 (CfgKey.Walls after ShellDamage, new part files). Walls are stored off (old saves and blueprints load open); the inventory's new ones and the kit's stores are walled.
 - **One spacing system** (`FactoryPlan`, "The spacing system"): a 4 m module; across the spine the road (vehicle lane) 4 m, the aisle (walkway) 2 m,
   the machine band in whole modules, the service strip 2 m; along it every cell is whole modules: footprint plus a clearance by purpose (1 m round a
   machine, 0.5 m round a store), centred. The style's random margins are gone; zones are runs of cells. Shed frames stand on module lines,
@@ -32,7 +32,8 @@ Notes kept by the builders of `factory-generator.md` (the design and the user's 
 ### Open (third builder)
 
 1. **Tool racks and NPC crews** (the user's second way to follow the ore): not built. Arms and gantries only.
-2. A post spawned in a window at 50,0,-50 on Proving Ground came up with a flat battery at once (charge 0 before the first look; the MAIN
+2. (Merge review) The flat battery is not the drill rails: the charge is 0 at the first look after the spawn, with no draw and no motor work
+   (the rails never moved). Not traced further. A post spawned in a window at 50,0,-50 on Proving Ground came up with a flat battery at once (charge 0 before the first look; the MAIN
    SWITCH needs power to put out, so the plant never starts). At 20,0,-40 and on the flat it starts. Not traced: the guess is the rails
    driving drills buried in sloping ground (motor work). A plant that starts without the switch, or a post that levels its drills, would fix it.
 3. A rail at its ends leaves the drill worked out; nothing moves the post. The whole-site spawn and relocation are still open.

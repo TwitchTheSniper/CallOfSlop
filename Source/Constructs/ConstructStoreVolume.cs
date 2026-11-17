@@ -36,7 +36,17 @@ public static class ConstructStoreVolume
     private const float Inset = 0.004f; // the floor and four walls: solid boxes past the part file's own (Construct.SolidBox)
     public const byte WalledFaces = ConstructSeal.AllSealed & ~(1 << 2); // its own walls close every face but the top (+y, face 2)
 
-    /// <summary>Is this Storage Volume walled (its Walls setting, on by default; the user, 2026-11-17: storage needs no hand-built walls)?</summary>
+    /// <summary>
+    /// A Storage Volume the player places new (from the inventory: <see cref="ConstructBuild.Attach"/>, <see cref="ConstructBuild.PlaceNew(ConstructWorld, ConstructPartDef, in FreePlacement)"/>)
+    /// comes walled. The setting's stored default is off, so a world save or a blueprint that names no Walls (everything from before it) loads open, as it was built.
+    /// </summary>
+    public static void NewPlacement(ref CPart p, ConstructPartDef d)
+    {
+        if (d.IsVolumeStore && d.CfgSlot[(int)CfgKey.Walls] is var s and >= 0)
+            ConstructConfig.Set(ref p, d, (byte)s, 1);
+    }
+
+    /// <summary>Is this Storage Volume walled (its Walls setting: off as stored, on for one placed new; the user, 2026-11-17: storage needs no hand-built walls)?</summary>
     public static bool Walled(in CPart p, ConstructPartDef d) => d.IsVolumeStore && !p.Broken && ConstructConfig.Get(p, d, CfgKey.Walls, 0) >= 0.5f;
 
     /// <summary>

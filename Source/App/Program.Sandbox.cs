@@ -1025,6 +1025,12 @@ public static unsafe partial class Program
             return " - bin full: empty it (chute or F)";
         if ((GatherStall)st.Blocked == GatherStall.WorkedOut)
             return " - this spot is worked out: move the bit on (3 m) to fresh ground";
+        if ((GatherStall)st.Blocked == GatherStall.Moving)
+            return " - its rail is carrying it on to fresh ground";
+        if ((GatherStall)st.Blocked == GatherStall.RailJammed)
+            return " - carriage jammed short of fresh ground: clear its way";
+        if ((GatherStall)st.Blocked == GatherStall.RailPower)
+            return " - no rail power: its rail can't carry it on";
         if ((GatherStall)st.Blocked == GatherStall.OtherMaterial)
             return $" - its bin holds {RecyclingTable.Current.NameOf(st.Material)}: empty it";
         if (g != null && hit.Body != null && st.Drive == ShaftState.None && !ConstructRecycler.Powered(g.Constructs, hit.Body, hit.Part))

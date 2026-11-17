@@ -581,8 +581,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   Eva bits (a space suit, an MMU on it).
     // 337: robot shell wear (GameShellWear.cs, ShellWear.cs): Msg.Shell ends with 8 x u8, the shell's works' wear; CfgKey gains ShellWear0..3
     //   (a Robot Shell's hidden settings) at its end, and the six Shell spare parts move part ids.
-    // 338: cargo parts (factory-generator-notes.md): CfgKey.Walls, a Storage Volume's walls setting; new part files (bunkers, the Tipping Grate, the Unloading Auger) shift part ids.
-    public const ushort ProtocolVersion = 338;
+    // 338: robot shells keep their damage (no self-heal): CfgKey gains ShellDamage at its end, a Robot Shell's hidden setting.
+    // 340: cargo parts (factory-generator-notes.md): CfgKey.Walls after ShellDamage, a Storage Volume's walls setting; new part files (bunkers, the Tipping Grate, the Unloading Auger) shift part ids.
+    public const ushort ProtocolVersion = 340;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

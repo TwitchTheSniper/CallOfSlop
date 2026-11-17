@@ -149,7 +149,7 @@ A pressed cylinder's **stroke** (its length against its width) now adds power as
   their parts, and the host's link ledger (what was asked of linked factories, and what a closed world owes) in the main world's
   save. An older build skips them; an older world loads with none. No new save file.
 - **Building Stations' Sub-jobs** is now a choice: Off, Auto (as before) or **Linked** (also takes uses sent over a logistics link).
-- **Storage Volumes have walls by default.** A new Walls setting (on unless you turn it off) gives the box its own concrete walls and floor, 0.15 m inside it, and leaves the top open. A Storage Volume in an older world or blueprint comes in with its walls on too: if you built your own walls round it, turn Walls off in the configure tool to get the space back.
+- **Storage Volumes can have walls.** A new Walls setting gives the box its own concrete walls and floor, 0.15 m inside it, and leaves the top open. A Storage Volume you place new from the inventory comes walled; the ones in your older worlds and blueprints stay open as you built them (turn Walls on in the configure tool if you want it).
 - **A drill works out its spot.** Each 3 m spot of a deposit gives 1,200 units, then the drill says "this spot is worked out". Move it on, or carry it on a Linear Actuator rail with nothing wired into Set: it moves itself on.
 
 ### Keeping saves on a USB stick (portable mode)

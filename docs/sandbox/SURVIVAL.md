@@ -108,3 +108,5 @@ A world saved while the story was on keeps loading, and its story is kept: the S
 back unread on every save (`GameStory.StoryRead`), so `--story` later finds it whole. The tutorial's crew bus is a
 stand-in craft and is still kept up and sent to friends who join without the story (`StandInsKeep`). A world saved with
 a start that is gone (the archived Castaway) plays the On the ground start.
+
+**Faction politics (decided, agreed by Karl 2026-11-17).** NPC factions are kinds; powers (the factions that act) are made from kinds, up to 16. Relations between powers and with players run from blood enemies who never make peace to wanting to merge, moved by events and fading over time, with pacts (ceasefire, non-aggression, alliance, trade, tribute, vassalage). A planet belongs to the power with majority control, key sites weighted by how rare they are there. Admirals coordinate groups of captains, combat or civilian. Design: `docs/sandbox/design/faction-controllers.md`.

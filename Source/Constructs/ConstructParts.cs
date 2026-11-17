@@ -754,6 +754,8 @@ public sealed partial class ConstructPartDef
     public float DockSide, DockSettle = ConstructCargo.SettleSpeed, DockMaxMass = float.MaxValue, DockCharge, DockFuel; // a docking clamp or magnetic lock ("dock"): its longest box side, the speed it catches under, the heaviest body, kW and litres a second into what it holds
     public bool DockChute; // ...and its bins unload into the bins of the construct it is docked to
     public bool IsDock => DockSide > 0;
+    public BreachKind Breach; // a boarding craft's hull grapple or breaching cutter ("breach": ConstructBreach.cs): a lamp-kind part worked by its input
+    public float BreachReach, BreachRate; // how far below its face it grips or cuts (m); a cutter's damage a second to what is under it
     public float DockPull, DockEject; // a dock's tractor reach past its box (m), and how fast it throws what it lets go along its front (m/s): ConstructCarrier.cs
     public float MastReach = 12; // a mooring mast: how far from its top it ties (m)
     public byte MastRope = 2; // ...and the rope's size
@@ -1332,7 +1334,7 @@ public static partial class ConstructParts
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "finish", "friction", "collider",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "fluidTank", "seat", "hinge", "joint", "logic",
         "transmission", "battery", "capacitor", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "yield", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "retired", "hydraulics", "toolOnly", "tray", "walk", "boarding", "ladder", "toolDock", "damaged", "stage", "faces", "faceAxis", "router",
-        "sight", "ordnance", "mooring", "wear", "eva", "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "dieExtension", "runOut", "enginePiece", "sizeClass", "generator", "thruster", "burner", "flame", "rotor", "surface", "smoke", "dock", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "shell", "office", "requisition", "media", "speaker", "leg", "stabiliser", "door", "lifter", "craneRail", "lifterCab", "radar", "works", "worksPiece", "logiLink",
+        "sight", "ordnance", "mooring", "wear", "eva", "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "dieExtension", "runOut", "enginePiece", "sizeClass", "generator", "thruster", "burner", "flame", "rotor", "surface", "smoke", "dock", "breach", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "shell", "office", "requisition", "media", "speaker", "leg", "stabiliser", "door", "lifter", "craneRail", "lifterCab", "radar", "works", "worksPiece", "logiLink",
     ];
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, a contoured shape with its settings (index 8 up to the last), and the glass flag (last).</summary>
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, and a contoured shape with its settings.</summary>

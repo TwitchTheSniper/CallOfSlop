@@ -476,6 +476,7 @@ public static class ConstructBuild
         public List<uint> StepPaint = new(); // each step's paint colour ("paint": "#rrggbb"; 0: its own colours; ConstructPaint.cs)
         public List<int> StepFuse = new(); // each step's fused unit ("fuse": 1, 2, ...: the steps with one number are one unit, under a new tag when built; 0: none; ConstructFuse.cs)
         public List<byte> StepFinish = new(); // each step's texture ("finish": a material's name, Materials/Surfaces.json; 0: its own materials, or a name this build doesn't have; ConstructFinish.cs)
+        public List<ConstructCargo.CarrySpec> Carry = new(); // craft it is built carrying in its docks ("carry": [{"blueprint", "at", "turn"}]: the Zero Day's Shuttle; ConstructCargo.BuildCarry)
         public string Tow = ""; // a blueprint it spawns coupled behind it ("tow"): its first eye on this one's first ball (BuildOnGround)
         public List<(int Step, string Table)> Loot = new(); // containers that fill from a loot table when it is spawned ("loot": [{"step": n, "table": "bandit"}]; ConstructLoot.cs)
         public List<(int Step, int Slot, string Part, int Count)> Stored = new(); // parts set in a container's slot when it is spawned, before its loot ("stored": [{"step": n, "slot": k, "part": "Box Mag", "count": 2}]; ConstructLoot.Stow)
@@ -509,10 +510,21 @@ public static class ConstructBuild
 
     public static Blueprint? FindBlueprint(string name) => Blueprints.FirstOrDefault(b => b.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
 
+    /// <summary>The blueprints being read now (LoadBlueprints' list while it fills, else null): a carried craft is found among those
+    /// read before it while the list is checked, never through <see cref="Blueprints"/>, whose loader is running (constructs.md, 2026-11-10).</summary>
+    [ThreadStatic] private static List<Blueprint>? _loading;
+
+    /// <summary>A blueprint a carrier carries: from the list being read while the blueprints load, else the loaded ones.</summary>
+    internal static Blueprint? FindCarried(string name) => _loading is { } l
+        ? l.FirstOrDefault(b => b.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
+        : FindBlueprint(name);
+
     /// <summary>Every blueprint of a folder (by file name), then the mods' changes and new ones (docs/mods/MODS.md); each must build.</summary>
     public static List<Blueprint> LoadBlueprints(string folder, List<string> refused, IReadOnlyList<Mods.Mod>? mods = null)
     {
         var list = new List<Blueprint>();
+        var outer = _loading;
+        _loading = list;
         var usesLater = new List<(Blueprint, string, int)>(); // (and where it stands in the list: it goes back there, in file order)
         var remember = BlueprintCheckCache.Enabled(mods); // (dev builds skip the build check of a file that passed it unchanged: BlueprintCheckCache.cs)
         ConstructConduit.BeginLoad(); // (a pre-built's wires are routed as it is built here, not later in a server tick)
@@ -583,6 +595,7 @@ public static class ConstructBuild
         finally
         {
             ConstructConduit.EndLoad();
+            _loading = outer;
         }
         return list;
     }
@@ -728,6 +741,12 @@ public static class ConstructBuild
                 case "frozenJoints":
                     foreach (var fj in p.Value.EnumerateArray())
                         bp.FrozenJoints.Add(fj.GetInt32());
+                    break;
+                case "carry":
+                    if (p.Value.ValueKind != JsonValueKind.Array || p.Value.GetArrayLength() > 8)
+                        throw new ConstructPartException($"{file}: \"carry\" lists up to 8 craft");
+                    foreach (var cy in p.Value.EnumerateArray())
+                        bp.Carry.Add(ConstructCargo.ParseCarry(cy, file, bp.Carry.Count));
                     break;
                 case "tow":
                     bp.Tow = p.Value.GetString() ?? "";
@@ -1101,6 +1120,19 @@ public static class ConstructBuild
                 return;
             }
         }
+        // The craft it carries in its docks (a Building Station's build carries none: a player builds those apart).
+        if (bp.Carry.Count > 0 && !linked)
+        {
+            var made = new List<Construct>(bp.Carry.Count);
+            if (ConstructCargo.BuildCarry(world, c, bp.Carry, made) is { } bad)
+            {
+                run.Why = bad;
+                foreach (var m in made)
+                    world.Remove(m);
+                world.Remove(c);
+                return;
+            }
+        }
         for (var k = 0; k < bp.Loot.Count; k++)
             if (bp.Loot[k].Step < 0 || bp.Loot[k].Step >= bp.Steps.Count || c.DefOf(partOf[bp.Loot[k].Step]).Slots.Length == 0)
             {
@@ -1232,7 +1264,7 @@ public static class ConstructBuild
         c.Pos = ground - Vector3.Transform(new Vector3(0, low - 0.02f, 0), rot);
         c.PrevPos = c.NetPos = c.NetFromPos = c.Pos;
         c.NetHistReset();
-        if (bp.Cargo.Count > 0)
+        if (bp.Cargo.Count > 0 || bp.Carry.Count > 0)
             ConstructCargo.FollowAll(world); // (its cargo moves with it)
     }
 

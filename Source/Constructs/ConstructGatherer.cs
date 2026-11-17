@@ -19,6 +19,9 @@ public enum GatherStall : byte
     BinFull,
     OtherMaterial, // its bin holds another material
     WorkedOut, // the spot under its bit has given all it has (ResourceField.SpotUnits): move it on (a rail it rides moves it: ConstructDrillFollow)
+    Moving, // its rail is carrying it on to fresh ground
+    RailJammed, // its rail is held up short of the next spot (something in the way)
+    RailPower, // its rail has no power to carry it on
 }
 
 public static class ConstructGatherer
@@ -224,7 +227,7 @@ public static class ConstructGatherer
         if (!DrillShaft.Touches(field, at, bottom) || field.TappableAt(at.X, at.Z) is not { } kind)
             return Stall(world, st, GatherStall.NoDeposit);
         if (field.WorkedOut(at))
-            return ConstructDrillFollow.Advance(world, c, part) ? true : Stall(world, st, GatherStall.WorkedOut);
+            return Stall(world, st, ConstructDrillFollow.Advance(world, c, part));
         if (d.Tier < kind.MinTier)
             return Stall(world, st, GatherStall.TierLow);
         var want = RecyclingTable.Current.IdOf(kind.Material);
@@ -270,7 +273,7 @@ public static class ConstructGatherer
         if (!DrillShaft.Touches(pl, tip) || field.TappableAt(at) is not { } kind)
             return Stall(world, st, GatherStall.NoDeposit);
         if (field.WorkedOut(at))
-            return ConstructDrillFollow.Advance(world, c, part) ? true : Stall(world, st, GatherStall.WorkedOut);
+            return Stall(world, st, ConstructDrillFollow.Advance(world, c, part));
         if (d.Tier < kind.MinTier)
             return Stall(world, st, GatherStall.TierLow);
         var want = RecyclingTable.Current.IdOf(kind.Material);

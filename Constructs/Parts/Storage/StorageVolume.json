@@ -214,8 +214,8 @@
       "key": "walls",
       "label": "Walls",
       "group": "Box",
-      "default": true,
-      "tooltip": "On: the box is a walled bin, open at the top (its walls and floor take 0.15 m inside it). Off: you build the walls."
+      "default": false,
+      "tooltip": "On: the box is a walled bin, open at the top (its walls and floor take 0.15 m inside it). Off: you build the walls. A new one from the inventory comes walled."
     },
     {
       "key": "material",

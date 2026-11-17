@@ -1,0 +1,417 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Shuttle",
+  "description": "The Zero Day's shuttle: a pilot and four boarders, two drives on its stern with their engines in the cabin, and a docking hatch under its belly that opens by itself while it is docked over another. It can grip a ship's hull with four magnetic grapples (the port cockpit switch).",
+  "steps": [
+    {
+      "part": "Shuttle Belly"
+    },
+    {
+      "part": "Shuttle Hull Port",
+      "on": 0,
+      "socket": "j0",
+      "by": "j0"
+    },
+    {
+      "part": "Shuttle Hull Starboard",
+      "on": 0,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Shuttle Nose",
+      "on": 0,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Shuttle Stern",
+      "on": 0,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Shuttle Bulkhead",
+      "on": 0,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Shuttle Roof",
+      "on": 1,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Shuttle Lift Jet",
+      "on": 1,
+      "socket": "liftF",
+      "by": "top"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 1,
+      "socket": "rcsUpF",
+      "by": "base"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 1,
+      "socket": "rcsOutF",
+      "by": "base"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 1,
+      "socket": "rcsEndF",
+      "by": "base"
+    },
+    {
+      "part": "Shuttle Lift Jet",
+      "on": 1,
+      "socket": "liftB",
+      "by": "top"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 1,
+      "socket": "rcsUpB",
+      "by": "base"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 1,
+      "socket": "rcsOutB",
+      "by": "base"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 1,
+      "socket": "rcsEndB",
+      "by": "base"
+    },
+    {
+      "part": "Shuttle Lift Jet",
+      "on": 2,
+      "socket": "liftF",
+      "by": "top"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 2,
+      "socket": "rcsUpF",
+      "by": "base"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 2,
+      "socket": "rcsOutF",
+      "by": "base"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 2,
+      "socket": "rcsEndF",
+      "by": "base"
+    },
+    {
+      "part": "Shuttle Lift Jet",
+      "on": 2,
+      "socket": "liftB",
+      "by": "top"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 2,
+      "socket": "rcsUpB",
+      "by": "base"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 2,
+      "socket": "rcsOutB",
+      "by": "base"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 2,
+      "socket": "rcsEndB",
+      "by": "base"
+    },
+    {
+      "part": "Shuttle Drive",
+      "on": 4,
+      "socket": "driveL",
+      "by": "mount"
+    },
+    {
+      "part": "Drive Core XS",
+      "on": 4,
+      "socket": "engineL",
+      "by": "front"
+    },
+    {
+      "part": "Shuttle Drive",
+      "on": 4,
+      "socket": "driveR",
+      "by": "mount"
+    },
+    {
+      "part": "Drive Core XS",
+      "on": 4,
+      "socket": "engineR",
+      "by": "front"
+    },
+    {
+      "part": "Docking Hatch",
+      "on": 0,
+      "socket": "hatch",
+      "by": "base"
+    },
+    {
+      "part": "Hull Grapple",
+      "on": 0,
+      "socket": "gripFL",
+      "by": "top"
+    },
+    {
+      "part": "Hull Grapple",
+      "on": 0,
+      "socket": "gripFR",
+      "by": "top"
+    },
+    {
+      "part": "Hull Grapple",
+      "on": 0,
+      "socket": "gripBL",
+      "by": "top"
+    },
+    {
+      "part": "Hull Grapple",
+      "on": 0,
+      "socket": "gripBR",
+      "by": "top"
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 1,
+      "socket": "switchB",
+      "by": "back"
+    },
+    {
+      "part": "Flight Couch",
+      "on": 0,
+      "socket": "pilot",
+      "by": "bottom",
+      "paint": "#2c3e58",
+      "finish": "fabric"
+    },
+    {
+      "part": "Shuttle Flight Computer",
+      "on": 0,
+      "socket": "computer",
+      "by": "bottom",
+      "config": {
+        "keys": "Ship",
+        "mouseAim": true
+      }
+    },
+    {
+      "part": "Flight Couch",
+      "on": 0,
+      "socket": "seatL0",
+      "by": "bottom",
+      "spin": 2,
+      "paint": "#2c3e58",
+      "finish": "fabric"
+    },
+    {
+      "part": "Flight Couch",
+      "on": 0,
+      "socket": "seatL1",
+      "by": "bottom",
+      "spin": 2,
+      "paint": "#2c3e58",
+      "finish": "fabric"
+    },
+    {
+      "part": "Flight Couch",
+      "on": 0,
+      "socket": "seatR0",
+      "by": "bottom",
+      "spin": 1,
+      "paint": "#2c3e58",
+      "finish": "fabric"
+    },
+    {
+      "part": "Flight Couch",
+      "on": 0,
+      "socket": "seatR1",
+      "by": "bottom",
+      "spin": 1,
+      "paint": "#2c3e58",
+      "finish": "fabric"
+    },
+    {
+      "part": "Zero Day Locker",
+      "on": 0,
+      "socket": "lockerL",
+      "by": "bottom",
+      "spin": 1,
+      "paint": "#e0b020",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Zero Day Locker",
+      "on": 0,
+      "socket": "lockerR",
+      "by": "bottom",
+      "spin": 2,
+      "paint": "#e0b020",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Battery",
+      "on": 0,
+      "socket": "batteryL0",
+      "by": "-y"
+    },
+    {
+      "part": "Battery",
+      "on": 0,
+      "socket": "batteryR0",
+      "by": "-y"
+    },
+    {
+      "part": "Battery",
+      "on": 0,
+      "socket": "batteryL1",
+      "by": "-y"
+    },
+    {
+      "part": "Battery",
+      "on": 0,
+      "socket": "batteryR1",
+      "by": "-y"
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 2,
+      "socket": "switchA",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 1,
+      "socket": "lampCockpit",
+      "by": "back",
+      "config": {
+        "colour": "#ff6050"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 2,
+      "socket": "lampCockpit",
+      "by": "back",
+      "config": {
+        "colour": "#ff6050"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 2,
+      "socket": "switchCabin",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 1,
+      "socket": "lampCabinF",
+      "by": "back",
+      "config": {
+        "colour": "#ffb070"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 1,
+      "socket": "lampCabinB",
+      "by": "back",
+      "config": {
+        "colour": "#e8f4ff"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 2,
+      "socket": "lampCabinF",
+      "by": "back",
+      "config": {
+        "colour": "#ffb070"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 2,
+      "socket": "lampCabinB",
+      "by": "back",
+      "config": {
+        "colour": "#e8f4ff"
+      }
+    }
+  ],
+  "wires": [
+    [
+      32,
+      28
+    ],
+    [
+      32,
+      29
+    ],
+    [
+      32,
+      30
+    ],
+    [
+      32,
+      31
+    ],
+    [
+      33,
+      34
+    ],
+    [
+      45,
+      46
+    ],
+    [
+      45,
+      47
+    ],
+    [
+      48,
+      49
+    ],
+    [
+      48,
+      50
+    ],
+    [
+      48,
+      51
+    ],
+    [
+      48,
+      52
+    ]
+  ],
+  "conduit": true
+}
