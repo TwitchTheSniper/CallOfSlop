@@ -20,7 +20,7 @@ public sealed partial class Ui
     private bool _cmdOrderHasGround, _cmdOrderHasLand, _cmdOrderCome;
     private float _cmdOrderKm, _cmdOrderKmMin, _cmdOrderKmMax;
     private float2 _cmdOrderAt;
-    private string _cmdOrderTitle = "", _cmdOrderOrbit = "", _cmdOrderGo = "", _cmdOrderNote = "";
+    private string _cmdOrderComeText = "", _cmdOrderTitle = "", _cmdOrderOrbit = "", _cmdOrderGo = "", _cmdOrderNote = "";
     private double _cmdOrderNoteUntil;
 
     /// <summary>A right click on the map: what could the picked ship do there?</summary>
@@ -49,6 +49,7 @@ public sealed partial class Ui
         _cmdOrderPointBody = -1;
         _cmdOrderHasGround = _cmdOrderHasLand = false;
         _cmdOrderCome = come;
+        _cmdOrderComeText = come && g.Local is { } who && CmdOutInSpace(g, who) ? "COME TO ME AND HOLD BESIDE ME" : "COME TO ME AND LAND";
         if (come)
             body = s.Bubble.Body;
         if (body > 0)
@@ -139,7 +140,7 @@ public sealed partial class Ui
                     ImGui.SliderFloat("km up##cmdorbit"u8, ref _cmdOrderKm, _cmdOrderKmMin, _cmdOrderKmMax, "%.1f"u8, ImGuiSliderFlags.Logarithmic);
                     if (ImGui.Button(_cmdOrderOrbit, new float2(300 * _scale, 0)))
                         send = NavKind.Orbit;
-                    if (_cmdOrderCome && ImGui.Button("COME TO ME AND LAND"u8, new float2(300 * _scale, 0)))
+                    if (_cmdOrderCome && ImGui.Button(_cmdOrderComeText, new float2(300 * _scale, 0)))
                         send = NavKind.Come;
                     if (_cmdOrderHasLand && ImGui.Button("LAND HERE"u8, new float2(300 * _scale, 0)))
                         send = NavKind.Land;
@@ -183,7 +184,10 @@ public sealed partial class Ui
 
     /// <summary>Can this ship be told to come to the local player: they are on foot on the bubble's world, and it can land?</summary>
     private static bool CmdCanCome(Game g, Construct c) =>
-        g.Local is { Alive: true } me && !g.SandboxHands.Hand(me.Id).Seated && me.Sim.RideBody != c.Id && c.SpaceAway == 0 && CmdCanLand(c);
+        g.Local is { Alive: true } me && !g.SandboxHands.Hand(me.Id).Seated && me.Sim.RideBody != c.Id && Vector3.DistanceSquared(me.Position, c.WorldCom) >= c.Radius * c.Radius * 0.6f && c.SpaceAway == 0 && (CmdCanLand(c) || CmdOutInSpace(g, me));
+
+    /// <summary>Is a player out in space (over the sky's edge)? A ship told to come to them holds beside them there (Game/GameNavLand.cs).</summary>
+    private static bool CmdOutInSpace(Game g, Player p) => g.SpaceEdge > 0 && ConstructPhysics.HoldHeight(p.Position) > g.SpaceEdge;
 
     /// <summary>Can it set down on a spot (not a plane or a rocket, which land on their own)?</summary>
     private static bool CmdCanLand(Construct c)

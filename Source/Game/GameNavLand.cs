@@ -21,6 +21,12 @@ public sealed partial class Game
     /// <summary>In space, within this of its point over the spot a landing is coming down (m), not on its way.</summary>
     public const double NavDescendNear = 50_000;
 
+    /// <summary>
+    /// In space a ship that comes to a player holds this far further off than it would land (m), and plans its approach on
+    /// no more than <see cref="NavComeAccel"/> (m/s2): it turns to brake, and a ship that overshot would run them down.
+    /// </summary>
+    public const double NavComeStandoff = 40, NavComeAccel = 5;
+
     /// <summary>How far a Come order's spot may drift (m) before the ship's waypoint is moved after its player.</summary>
     private const float NavComeMove = 6;
 
@@ -29,7 +35,7 @@ public sealed partial class Game
     {
         var here = c.WorldCom;
         var up = ConstructPhysics.HoldUp(here);
-        if (o.Kind == NavKind.Come && o.Phase != NavPhase.Landing && Players.GetValueOrDefault(o.By) is { Alive: true } p && p.Sim.RideBody != c.Id)
+        if (o.Kind == NavKind.Come && o.Phase != NavPhase.Landing && Players.GetValueOrDefault(o.By) is { Alive: true } p)
             o.Point = NavBeside(c, p.Position, here); // (a player who walks off is followed; once it is coming down, or they have come aboard, the spot stays)
         var spot = o.Point.ToVector3();
         if (!o.Engaged)
@@ -70,6 +76,61 @@ public sealed partial class Game
             NavEnd(o, c, "it has landed", down: true);
         else if (o.Still >= NavStuckTicks)
             NavEnd(o, c, "it can't come down any further here");
+    }
+
+    /// <summary>
+    /// Is a player out in space: over the sky's edge (and, once out, until 150 m back under it, so a player at the line
+    /// doesn't flip the order to and fro)? A Come order then holds beside them there instead of landing.
+    /// </summary>
+    private bool NavPlayerInSpace(Player p, bool was = false)
+    {
+        var edge = SpaceEdge;
+        return edge > 0 && ConstructPhysics.HoldHeight(p.Position) > edge - (was ? 150f : 0f);
+    }
+
+    /// <summary>Is a player aboard this ship: riding it, or within its hull (on a spacewalk the ride may not hold them)?</summary>
+    private static bool NavAboard(Player p, Construct c) =>
+        p.Sim.RideBody == c.Id || Vector3.DistanceSquared(p.Position, c.WorldCom) < c.Radius * c.Radius * 0.6f;
+
+    /// <summary>Host: does a Come order hold beside its player in space now (else it lands beside them)? A change resets the autopilot's mode.</summary>
+    private bool NavComeSpace(NavOrder o, Construct c)
+    {
+        if (o.Phase == NavPhase.Landing)
+            return false; // (coming down: it finishes)
+        if (Players.GetValueOrDefault(o.By) is { Alive: true } p && NavPlayerInSpace(p, o.ComeSpace) is var space && space != o.ComeSpace)
+        {
+            o.ComeSpace = space;
+            c.NavLand = 0;
+            if (c.SpaceShip == 0)
+                o.Engaged = false; // (in a sky: a climb out, or a waypoint to land at, set again next)
+            Console.WriteLine($"[nav] construct {c.Id}'s player is {(space ? "out in space: it holds beside them" : "back in the sky: it lands beside them")}");
+        }
+        return o.ComeSpace;
+    }
+
+    /// <summary>
+    /// Host: in space, beside a player who is out there (on a spacewalk, or on another ship): the push that brings the ship
+    /// to its own size plus <see cref="NavComeBeside"/> from them and holds it there, matching their motion (both fall
+    /// alike, so only the difference in gravity is cancelled). Ecliptic axes.
+    /// </summary>
+    private Vec3d NavBesideInSpace(SpaceSession s, StarSystem sys, NavOrder o, Construct c, Player p, SpacePos pos, Vec3d vel, SpaceTime t, double aMax)
+    {
+        var pose = s.Bubble.PoseAt(t);
+        var at = Vec3d.From(p.Position);
+        var moving = p.Sim.Velocity + (p.Sim.RideBody != 0 && Constructs.Get(p.Sim.RideBody) is { } ride ? ConstructRide.RiderSurfaceVel(ride, p.Sim, p.Position) : Vector3.Zero); // (a rider's own is in what they ride)
+        var pp = pose.ToEcliptic(at);
+        var r = pos - pp;
+        var v = vel - pose.VelocityToEcliptic(at, Vec3d.From(moving));
+        var to = (r.Length > 1 ? r.Normalized() : Vec3d.UnitX) * (c.Radius + NavComeBeside + NavComeStandoff); // (on the side it comes from)
+        var gap = to - r;
+        var way = gap.Length > 0.5 ? gap.Normalized() : Vec3d.Zero;
+        sys.StateOf(o.Body, t, out var bp, out _);
+        var centre = bp - pp;
+        way = NavGuidance.Avoid(r, to, way, centre, Math.Min(NavMinOrbit(sys, o.Body) - NavEdgeMargin * 0.5, 0.92 * (to - centre).Length));
+        var gravity = NavGuidance.Gravity(sys, pos, t) - NavGuidance.Gravity(sys, pp, t);
+        var a = NavGuidance.GoTo(r, v, to, way, 0, gravity, Math.Min(aMax, NavComeAccel), out o.Distance, out o.SpeedError);
+        o.Phase = o.Distance < 30 && o.SpeedError < 1.5 ? NavPhase.Hold : NavPhase.Transfer;
+        return a;
     }
 
     /// <summary>Host: the autopilot set to fly to a point at its own height (lifting off first when it sits on the ground). False: it has no working stabilizer.</summary>
