@@ -85,3 +85,7 @@ production.md "Linked logistics".
   frame after it opens; its panel isn't read through the tool.
 - After every fix above: `--linked-check` all passed; sections by name passed: Mode switch reset, Assembling, Assembling network,
   Construct storage, Packets, Sandbox body sync, Space launch, Frame allocations, Large systems, No z-fighting.
+- Merge review 2 (main's landing from the command view): protocol 328 after main's 327; `NavApply` takes the player (a route leg passes
+  none, and Come refuses without one); any new order clears `NavLand`. A docked ship whose charge stops rising for 30 s
+  (`LinkRoutes.ChargeStall`) leaves anyway and its status says why. `--linked-check` and Large systems (+ network), Sandbox cargo
+  volumes, Sandbox cargo network, Launchers, Mode switch reset, Space launch passed. A player's Land/Come not tried in a window.
