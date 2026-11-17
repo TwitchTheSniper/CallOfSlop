@@ -9,8 +9,9 @@ namespace CallOfSlop.PartKit.Generators;
 /// A hull drive is a <b>Drive Nozzle</b> on the outer face of a <b>Hull Mount</b> (a piece of armoured hull a head goes
 /// through), with its works inside: a <b>Drive Core</b>, a long cylinder bolted to the mount's inner face on the nozzle's axis
 /// and running into the ship, then a <b>Fuel Pump</b> and a <b>Coolant Exchanger</b> as the drive grows, each a section of
-/// the same cylinder bolted on behind it (Karl, 2026-11-16: the engine goes on inside as one large cylindrical piece). A <b>Drive Pod</b> is the same drive with its works
-/// in its cowl: hung outside on a pylon, a wide gimbal, serviced at the pod. Each head's "needs" come from
+/// the same cylinder bolted on behind it (Karl, 2026-11-16: the engine goes on inside as one large cylindrical piece). A <b>Drive Nacelle</b> is a hollow housing hung
+/// outside on a pylon with the same engine inside, behind its tail plate, mended through its <b>Service Hatch</b> (ship-works.md 15:
+/// one engine a bell, joined to its plate, nothing shared, in hulls and in nacelles alike). Each head's "needs" come from
 /// Constructs/ShipWorks.json's "drives" table (<see cref="Works.NeedsFor"/>), never picked by hand, and none of these
 /// parts gets an Assembling recipe (Karl, 2026-11-16: they are made with the new production system).
 ///
@@ -24,7 +25,7 @@ public sealed class ShipWorksParts : IPartGenerator
 
     public const string Out = "Constructs/Parts/ShipWorks", Section = "Ship fittings", Group = "Ship";
 
-    private const string Steel = "#5a6065", Trim = "#7b8186", Dark = "#34373a", Hazard = "#d8a020", Copper = "#8a5a3a", Glow = "#ffb060", Gauge = "#40e070", Bed = "#5c6057", Chamber = "#98a1a9";
+    private const string Clad = "#6c7378", Cable = "#262829", Steel = "#5a6065", Trim = "#7b8186", Dark = "#34373a", Hazard = "#d8a020", Copper = "#8a5a3a", Glow = "#ffb060", Gauge = "#40e070", Bed = "#5c6057", Chamber = "#98a1a9";
     private const double Plate = 0.3; // a mount's thickness
 
     /// <summary>The three sizes: a letter, and per size the numbers below.</summary>
@@ -48,10 +49,7 @@ public sealed class ShipWorksParts : IPartGenerator
     /// <summary>Where a size's works stack stands: its axis this high over the deck its saddles stand on.</summary>
     public static double AxisOver(int s) => CoreR[s] + Saddle;
 
-    // Drive Pod (S, M): thrust, cowl radius, cowl length, mass, health.
-    private static readonly double[] PodForce = [1.5e6, 5e6], PodR = [0.7, 1.1], PodLen = [3.0, 4.5], PodMass = [1800, 5200], PodHealth = [3000, 5000];
-
-    public const double HullBurn = 2.0, PodBurn = 2.4; // l/s a MN: a hull drive with its works whole, and a pod's smaller core
+    public const double HullBurn = 2.0, NacelleBurn = 2.4; // l/s a MN: a hull drive with its works whole, and one in a nacelle (its smaller core)
 
     private static double[] P(double x, double y, double z) => [x, y, z];
 
@@ -150,41 +148,51 @@ public sealed class ShipWorksParts : IPartGenerator
         return p.Stats(NozMass[s], NozHealth[s], 25);
     }
 
-    /// <summary>A Drive Pod: nozzle and works in one armoured cowl on a pylon, a 12 degree gimbal, a service hatch on its side.</summary>
-    private static Part Pod(int s)
+    // ---- the nacelles: a hollow clad housing round the same engine, mended through a hatch --------------------------
+
+    // Drive Nacelle (S, M): the housing's flat distance and the flats' half length, its length (tail plate to nose), mass, health.
+    private static readonly double[] NacF = [0.9, 1.15], NacLen = [3.0, 4.8], NacMass = [1400, 3200], NacHealth = [3000, 5000];
+
+    /// <summary>
+    /// A Drive Nacelle (ship-works.md 15, rule 5): a hollow, clad housing hung outside on a pylon (its top), its tail plate a mount.
+    /// A Drive Nozzle bolts to the tail plate outside; inside, behind it, is the same engine a hull drive has: a Drive Core (S), or a
+    /// Drive Core and a Fuel Pump (M), bolted to the plate's inner face on the nozzle's axis. Only the cowl's thin armour is round
+    /// it, and it is mended from outside, through the service hatch on its starboard flank.
+    /// </summary>
+    private static Part Nacelle(int s)
     {
-        var (f, r, len) = (PodForce[s], PodR[s], PodLen[s]);
-        var bell = r * 1.1;
-        var p = new Part($"Drive Pod {SizeName[s]}", Small, Section, Desc($"A drive pod, {f / 1e6:0.#} MN: nozzle and works in one cowl, hung outside on a pylon (its top) or a nacelle's tail (its front). It turns the ship with its 12 degree gimbal and takes no room inside, but it has only the cowl's armour and is mended at the pod: on a space walk, or landed."),
-            role: "thruster", tool: "wrench", material: "steel", color: Steel, group: Group);
-        var nose = len * 0.18;
-        Cyl(p, 0, 0, r, 0, nose, Steel, "worn paint", taper: 0.72, segments: 16); // (the nose)
-        Cyl(p, 0, 0, r, nose, len, Steel, "worn paint", segments: 16); // (the cowl)
-        Cyl(p, 0, 0, r + 0.03, len * 0.55, len * 0.6, Hazard, "hazard paint", inner: Math.Round(r / (r + 0.03), 3), segments: 16); // (a band)
-        Cyl(p, 0, 0, r * 0.62, len - 0.06, len + 0.12, Trim, "dirty steel", segments: 16); // (the collar)
-        var bl = len + 0.12 + bell * 1.3;
-        Cyl(p, 0, 0, bell * 0.9, len + 0.12, bl, "#2a2c2e", "soot", taper: 0.5, inner: 0.9, segments: 16); // (the bell, on its gimbal)
-        Cyl(p, 0, 0, bell * 0.4, len + 0.14, len + 0.16, Glow, "", segments: 12, glow: true);
-        // The service hatch on its starboard side, its handles, and a handrail along the top.
-        var hz0 = len * 0.3;
-        var hz1 = len * 0.52;
-        Look(p, r - 0.03, -r * 0.35, hz0, r + 0.03, r * 0.35, hz1, Trim, "painted plating");
-        Look(p, r + 0.03, -r * 0.35, hz0, r + 0.05, r * 0.35, hz0 + 0.05, Hazard, "hazard paint");
-        Look(p, r + 0.03, -r * 0.35, hz1 - 0.05, r + 0.05, r * 0.35, hz1, Hazard, "hazard paint");
-        Look(p, r + 0.05, -0.06, (hz0 + hz1) / 2 - 0.12, r + 0.11, 0.06, (hz0 + hz1) / 2 + 0.12, "#9a9c98", "steel"); // (its handle)
-        foreach (var z in new[] { len * 0.25, len * 0.75 })
-            Look(p, -r - 0.16, -0.03, z - 0.03, -r + 0.02, 0.03, z + 0.03, "#9a9c98", "steel"); // (the handrail's posts, on its port side)
-        Look(p, -r - 0.19, -0.025, len * 0.25 - 0.03, -r - 0.14, 0.025, len * 0.75 + 0.03, Hazard, "worn paint"); // (the handrail)
-        Look(p, -r * 0.5, -r - 0.01, len * 0.2, r * 0.5, -r + 0.05, len * 0.4, Dark, "soot"); // (an intake grille under it)
-        var top = Math.Floor(r * 0.98 * 100) / 100; // (a 16-sided cowl's flat top)
-        Hidden(p, -r * 0.7, -r * 0.7, 0, r * 0.7, top, len);
-        p.Sock("front", P(0, 0, 0), "-z");
-        p.Sock("pylon", P(0, top, Math.Round(len / 2, 2)), "+y");
-        p.Set(("thruster", Kw(("force", f), ("spool", s == 0 ? 1.2 : 1.5), ("exhaust", "+z"), ("at", Py.L(0, 0, Py.Round(bl, 3))), ("burnRate", Py.Round(f / 1e6 * PodBurn, 4)), ("gimbal", 12), ("gimbalRate", 20))),
-            ("ports", Py.L(BigDriveParts.PipePort("Fuel in", "in", [0, top, Py.Round(len * 0.85, 3)], "+y", "fuel"))));
-        p.Set(("flame", Py.L(Kw(("at", Py.L(0, 0, Py.Round(bl, 3))), ("dir", "+z"), ("radius", Py.Round(bell * 0.85, 3)), ("length", Py.Round(bell * 4, 3)), ("kind", "Rocket")))));
-        p.Set(("works", Kw(("service", "outside"))));
-        return p.Stats(PodMass[s], PodHealth[s], 12);
+        var (f, len) = (NacF[s], NacLen[s]);
+        var p = new Part($"Drive Nacelle {SizeName[s]}", Small, Section, Desc($"A drive nacelle: a hollow armoured housing hung outside a ship on a pylon (its top). Its tail plate is a Hull Mount: a Drive Nozzle {SizeName[s]} bolts to it outside, and its engine ({(s == 0 ? "a Drive Core S" : "a Drive Core M and a Fuel Pump M")}) to the plate's inner face, inside. It takes no room in the hull, but has only the cowl's armour, and is mended through its hatch from outside: on a space walk, or landed."),
+            role: "frame", tool: "welder", material: "steel", color: Steel, group: Group);
+        var c = EngineHousing.HalfFlat(f);
+        var z0 = -len + 0.6; // (the bulkhead behind the nose)
+        EngineHousing.Draw(p, (x, y, z) => P(x, y, z), 0, 0, f, c, z0, 0, 1, Steel, Clad, Dark, Hazard, "worn paint", CoreR[s], CoreD[s], s == 0 ? CoreD[0] : CoreD[1] + PumpD[1]);
+        // The nose: a short cone forward of the bulkhead.
+        EngineHousing.Ring(p, (x, y, z) => P(x, y, z), 0, 0, f * 0.45, c * 0.45, -len, f, c, z0 - 0.004, Steel, "worn paint");
+        // A grab rail along the top, a band of hazard paint round the tail.
+        foreach (var z in new[] { -len * 0.7, -len * 0.3 })
+            Look(p, -0.03, f + 0.02, z - 0.03, 0.03, f + 0.2, z + 0.03, "#9a9c98", "steel");
+        Look(p, -0.025, f + 0.18, -len * 0.7 - 0.04, 0.025, f + 0.23, -len * 0.3 + 0.04, Hazard, "worn paint");
+        p.Sock("pylon", P(0, f + 0.03, Math.Round(-len / 2, 2)), "+y");
+        Solid(p, -0.3, f - 0.06, -len / 2 - 0.4, 0.3, f + 0.03, -len / 2 + 0.4, Dark, "dirty steel"); // (the pylon's pad, through the shell and 10 mm proud of it)
+        p.Set(("worksPiece", Kw(("kind", "mount"), ("service", "outside"))), ("collider", "boxes"));
+        return p.Stats(NacMass[s], NacHealth[s], 15);
+    }
+
+    /// <summary>The Service Hatch: a hinged armoured lid for a nacelle's service opening (1 by 0.8 m), opened with F from outside.</summary>
+    private static Part Hatch()
+    {
+        var (w, h) = (EngineHousing.HatchW - 0.04, EngineHousing.HatchH - 0.04);
+        var p = new Part(EngineHousing.HatchPart, Small, Section, Desc("A hinged armoured lid for a drive nacelle's service opening, 1 by 0.8 m: F opens it from outside, to reach the engine behind it."),
+            role: "door", tool: "wrench", material: "steel", color: Clad, group: Group);
+        p.Add(Box([-0.02, -h / 2, -0.02], [w, h / 2, 0.02], Clad, shape: Kw(("finish", "painted plating"))));
+        p.Add(Box([0.06, -h / 2 + 0.06, -0.026], [w - 0.06, h / 2 - 0.06, 0.026], Trim, detail: true, shape: Kw(("finish", "painted plating"))));
+        p.Add(Box([w - 0.16, -0.12, -0.06], [w - 0.1, 0.12, -0.026], "#9a9c98", detail: true, shape: Kw(("finish", "steel"), ("use", true), ("paintable", false)))); // (its handle, outside)
+        foreach (var y in new[] { -h / 2 + 0.1, h / 2 - 0.1 })
+            p.Add(Box([0.02, y - 0.04, -0.035], [0.1, y + 0.04, -0.02], Dark, detail: true, shape: Kw(("finish", "dirty steel")))); // (hinge straps)
+        p.Sock("hang", [-0.02, 0, 0], "-x");
+        p.Set(("door", Kw(("kind", "swing"), ("axis", "+y"), ("pivot", Py.L(0, 0, -0.02)), ("angle", 90), ("seconds", 0.8), ("hang", "hang"))));
+        return p.Stats(90, 1500, 25, 2.0);
     }
 
     // ---- the works: sections of one cylinder behind the nozzle ------------------------------------------------------
@@ -220,6 +228,41 @@ public sealed class ShipWorksParts : IPartGenerator
     /// <summary>The flange where a section meets the mount or the section before it: the mount ring's own size on a core, else the section's.</summary>
     private static double FlangeR(int s) => Math.Min(NozCollar[s] + 0.24, CoreR[s] + Saddle - 0.01); // (no lower than its saddles' feet)
 
+    /// <summary>Bolt heads round a flange or ring: n of them at radius rr, on the band from z0 to z1 (a cylinder's joint).</summary>
+    private static void Bolts(Part p, double rr, double z0, double z1, int n, double phase = 0)
+    {
+        for (var k = 0; k < n; k++)
+        {
+            var a = phase + Math.PI / n + k * 2 * Math.PI / n;
+            var (x, y) = (rr * Math.Cos(a), rr * Math.Sin(a));
+            Look(p, x - 0.022, y - 0.022, z0, x + 0.022, y + 0.022, z1, "#9a9c98", "steel");
+        }
+    }
+
+    /// <summary>
+    /// A band of cladding round a section from z0 to z1 (z0 nearer the front): two panels with a seam between them, a row of
+    /// fasteners along each end (rule 2 of ship-works.md 15: a detailed, clad cylinder, never a bare tube).
+    /// </summary>
+    private static void Cladding(Part p, double r, double z0, double z1, string color = Clad)
+    {
+        var rc = Math.Round(Math.Max(r + 0.014, r / 0.975), 3); // (a tube's bore is at most 0.98 of it)
+        var seam = (z0 + z1) / 2;
+        Cyl(p, 0, 0, rc, z1, seam - 0.012, color, "painted plating", inner: Math.Round(r / rc, 3), segments: 24);
+        Cyl(p, 0, 0, rc, seam + 0.012, z0, color, "painted plating", inner: Math.Round(r / rc, 3), segments: 24);
+        foreach (var z in new[] { z0 - 0.05, z1 + 0.05 })
+            Bolts(p, rc + 0.006, z - 0.02, z + 0.02, 6, Math.PI / 6); // (fasteners off the top and the sides, where the pipes and boards are)
+    }
+
+    /// <summary>A service panel on a section's side (sx -1 port, +1 starboard): a hatch plate a person opens to work on it, hazard edges, a handle.</summary>
+    private static void ServicePanel(Part p, double r, double sx, double z0, double z1)
+    {
+        var (h, x0, x1) = (Math.Min(0.24, r * 0.4), r * 0.93, r + 0.04);
+        Look(p, sx * x0, -h, z1, sx * x1, h, z0, Trim, "painted plating");
+        Look(p, sx * x1, -h, z1, sx * (x1 + 0.012), h, z1 + 0.04, Hazard, "hazard paint");
+        Look(p, sx * x1, -h, z0 - 0.04, sx * (x1 + 0.012), h, z0, Hazard, "hazard paint");
+        Look(p, sx * x1, -0.04, (z0 + z1) / 2 - 0.08, sx * (x1 + 0.05), 0.04, (z0 + z1) / 2 + 0.08, "#9a9c98", "steel"); // (its handle)
+    }
+
     /// <summary>A Drive Core: the reaction chamber, a long armoured cylinder bolted to the mount's inner face on the nozzle's
     /// axis, running into the ship: field coils round it, feed pipes along its top, a gauge on its side, saddles under it.</summary>
     private static Part Core(int s)
@@ -247,12 +290,24 @@ public sealed class ShipWorksParts : IPartGenerator
             foreach (var z in new[] { -d + 0.4, -0.6 })
                 Look(p, x - pr * 0.7, r * 0.85, z - pr * 0.7, x + pr * 0.7, py - pr * 0.5, z + pr * 0.7, Copper, "copper");
         }
-        var (gz, gh) = (-d * 0.4, d * 0.1); // (between the first two coils)
+        var (gz, gh) = (-d * 0.825, d * 0.075); // (on the clad band behind the last coil: the service panels are forward)
         Look(p, r * 0.9, -0.25, gz - gh, r + 0.1, 0.25, gz + gh, Dark, "painted plating"); // (the gauge board)
         Look(p, r + 0.1, -0.05, gz - gh * 0.6, r + 0.115, 0.17, gz + gh * 0.6, Gauge, "", glow: true);
         Look(p, r + 0.1, -0.17, gz - gh * 0.6, r + 0.115, -0.1, gz + gh * 0.6, Glow, "", glow: true);
         foreach (var z in new[] { -d * 0.25, -d * 0.8 })
             SaddleAt(p, r, z);
+        // The cladding (ship-works.md 15, rule 2): a band between the first two coils and one behind the last, each two panels
+        // with a seam and their fasteners; bolts round the front ring and the back flange; a service panel to port, opposite the
+        // gauge; a cable run along its port side under the panel.
+        Cladding(p, r, -d * 0.25 - 0.07, -d * 0.55 + 0.07);
+        Cladding(p, r, -d * 0.7 - 0.07, -d + 0.14);
+        Bolts(p, r * 1.04 + 0.012, -0.4, -0.32, 10);
+        Bolts(p, r * 1.04 + 0.012, -d + 0.03, -d + 0.1, 10);
+        foreach (var sx in new[] { -1, 1 })
+            ServicePanel(p, r, sx, -d * 0.31, -d * 0.49); // (one each side: whichever a person reaches, through a nacelle's hatch or from a walkway)
+        var cy = -r * 0.62;
+        var cx = -Math.Sqrt(r * r - cy * cy) - 0.02;
+        Look(p, cx - 0.035, cy - 0.035, -d + 0.16, cx + 0.035, cy + 0.035, -0.44, Cable, "rubber");
         SectionHull(p, r, d);
         PieceSockets(p, r, d);
         p.Set(("onBreak", "disable"), ("worksPiece", Kw(("kind", "core"), ("serves", CoreServes[s]))));
@@ -280,6 +335,9 @@ public sealed class ShipWorksParts : IPartGenerator
         Look(p, -pr * 0.7, rb * 0.9, -d * 0.5 - pr * 0.7, pr * 0.7, rb + 0.06, -d * 0.5 + pr * 0.7, Copper, "copper"); // (its riser)
         Look(p, rb + mr * 1.6 - 0.02, -r * 0.2 - 0.08, -d * 0.55 - 0.1, rb + mr * 1.6 + 0.01, -r * 0.2 + 0.12, -d * 0.55 + 0.1, Gauge, "", glow: true);
         SaddleAt(p, r, -d * 0.5);
+        Bolts(p, r * 1.02 + 0.012, -0.09, -0.012, 10);
+        Bolts(p, r * 1.02 + 0.012, -d + 0.012, -d + 0.09, 10);
+        ServicePanel(p, r, -1, -d * 0.3, -d * 0.7);
         SectionHull(p, r, d);
         PieceSockets(p, r, d);
         p.Set(("onBreak", "disable"), ("worksPiece", Kw(("kind", "pump"), ("serves", PumpServes[s]))));
@@ -304,6 +362,7 @@ public sealed class ShipWorksParts : IPartGenerator
         Look(p, r * 0.9, 0.1, -d * 0.5 - 0.12, r + 0.06, 0.4, -d * 0.5 + 0.12, Dark, "painted plating"); // (its gauge board)
         Look(p, r + 0.06, 0.15, -d * 0.5 - 0.08, r + 0.075, 0.35, -d * 0.5 + 0.08, Gauge, "", glow: true);
         SaddleAt(p, r, -d * 0.5, 0.15);
+        Bolts(p, r * 1.02 + 0.012, -0.09, -0.012, 10);
         SectionHull(p, r, d);
         PieceSockets(p, r, d);
         p.Set(("onBreak", "disable"), ("worksPiece", Kw(("kind", "exchanger"), ("serves", 20e6))));
@@ -323,8 +382,9 @@ public sealed class ShipWorksParts : IPartGenerator
         parts.Add(Pump(1));
         parts.Add(Pump(2));
         parts.Add(Exchanger());
-        parts.Add(Pod(0));
-        parts.Add(Pod(1));
+        parts.Add(Nacelle(0));
+        parts.Add(Nacelle(1));
+        parts.Add(Hatch());
         WriteParts(o, Out, parts.Select(p => ("", p)));
     }
 }
@@ -351,15 +411,173 @@ public static class Works
     /// <summary>The kinds a drive of this type and thrust needs, as the part file names them.</summary>
     public static List<object?> NeedsFor(ShipWorks t, string type, double force) => [.. t.NeedsFor(type, (float)force).Select(k => (object?)ConstructWorks.KindNames[(int)k])];
 
-    /// <summary>A head's "works" block: what it needs behind it (a hull drive), or serviced outside (a pod).</summary>
-    public static void Head(Part p, ShipWorks t, string type, double force, bool pod = false)
+    /// <summary>A main drive's "works" block: the engine parts it needs behind its bell, and for a drive on a nacelle's tail
+    /// (<paramref name="nacelle"/>) that they are serviced outside, through the nacelle's hatch. Lift jets and retros get none
+    /// (ship-works.md 15, rule 6: only main drives have engines).</summary>
+    public static void Head(Part p, ShipWorks t, string type, double force, bool nacelle = false)
     {
-        if (pod)
-            p.Set(("works", Kw(("service", "outside"))));
+        if (nacelle)
+            p.Set(("works", Kw(("needs", NeedsFor(t, type, force)), ("service", "outside"))));
         else
             p.Set(("works", Kw(("needs", NeedsFor(t, type, force)))));
     }
 
-    /// <summary>Flags a ship's own piece (a stern, a keel length, a wall) as a mount: its heads' works bolt to it.</summary>
-    public static void Mount(Part p) => p.Set(("worksPiece", Kw(("kind", "mount"))));
+    /// <summary>Flags a ship's own piece (a stern, a collar, a nacelle) as a mount: each drive through it has its engine bolted to
+    /// its inner face, on the drive's axis. <paramref name="outside"/>: a nacelle's, mended through its hatch from outside.</summary>
+    public static void Mount(Part p, bool outside = false) =>
+        p.Set(("worksPiece", outside ? Kw(("kind", "mount"), ("service", "outside")) : Kw(("kind", "mount"))));
+
+    /// <summary>
+    /// The Service Hatch on a nacelle's <c>"hatch"</c> socket (EngineHousing), turned so it is upright in the opening and swings
+    /// outwards: its far edge goes aft, its inner face (its +z) faces the engine. <paramref name="side"/>: the flat it is in (+1: +x).
+    /// </summary>
+    public static int HangHatch(BuildingParts.Blueprint bp, int on, int side)
+    {
+        for (var r = 0; r < 24; r++)
+            if (BuildingParts.Apply(r, [1, 0, 0]) is [0, 0, 1] && BuildingParts.Apply(r, [0, 0, 1]) is var z && z[0] == -side && z[1] == 0 && z[2] == 0)
+                return bp.HangTurned(EngineHousing.HatchPart, on, "hatch", "hang", r);
+        throw new InvalidOperationException("no turn hangs a Service Hatch that way");
+    }
+}
+
+/// <summary>
+/// An engine housing (ship-works.md 15, rule 5): the tail of a nacelle or a pod made hollow round the same engine a hull drive has.
+/// An octagon of clad plates (flats <c>f</c> from its axis, each flat <c>2c</c> wide) from a bulkhead at <c>z0</c> back to its tail
+/// at <c>z1</c>; the tail plate (0.3 m, the last of it) is what the drive bolts to outside and the engine's front flange inside; a
+/// 1 by 0.8 m service opening in the flat on side <c>side</c> (+1: +x), beside the engine's service panel, with a hatch socket on
+/// its forward jamb; rails under the engine's saddles. Every generator that makes a nacelle calls this, so they agree.
+/// Coordinates go through <c>at</c> (a generator's own half-cell shift); +z is aft.
+/// </summary>
+public static class EngineHousing
+{
+    public const double HatchW = 1.0, HatchH = 0.8, Wall = 0.04, TailPlate = 0.3;
+    public const string HatchPart = "Service Hatch 1x0.8 m";
+
+    /// <summary>The flats' half width for flat distance f: a regular octagon's, or wider so the service opening fits in one.</summary>
+    public static double HalfFlat(double f) => Math.Round(Math.Max(f * Math.Tan(Math.PI / 8), HatchH / 2 + 0.06), 3);
+
+    /// <summary>The octagon's corners at z (flat f, half width c), round (cx, cy), starting on +x above the axis and going round.</summary>
+    public static double[][] Octagon(Func<double, double, double, double[]> at, double cx, double cy, double f, double c, double z) =>
+        [at(cx + f, cy + c, z), at(cx + c, cy + f, z), at(cx - c, cy + f, z), at(cx - f, cy + c, z), at(cx - f, cy - c, z), at(cx - c, cy - f, z), at(cx + c, cy - f, z), at(cx + f, cy - c, z)];
+
+    /// <summary>A convex polygon as a drawn plate <paramref name="thick"/> thick about it (a "hull" shape).</summary>
+    public static void Sheet(Part p, double[][] pts, string color, string finish, double thick = Wall)
+    {
+        double[]? n = null;
+        for (var i = 2; i < pts.Length && n == null; i++)
+        {
+            var a = pts[1].Zip(pts[0], (u, v) => u - v).ToArray();
+            var b = pts[i].Zip(pts[0], (u, v) => u - v).ToArray();
+            double[] cr = [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+            var l = Math.Sqrt(cr[0] * cr[0] + cr[1] * cr[1] + cr[2] * cr[2]);
+            if (l > 1e-4)
+                n = [cr[0] / l, cr[1] / l, cr[2] / l];
+        }
+        if (n == null)
+            return;
+        var both = new List<double[]>();
+        foreach (var q in pts)
+            foreach (var sg in new[] { -1, 1 })
+                both.Add([.. Enumerable.Range(0, 3).Select(k => Py.Round(q[k] + sg * n[k] * thick / 2, 4))]);
+        double[] mn = [.. Enumerable.Range(0, 3).Select(k => both.Min(q => q[k]))];
+        double[] mx = [.. Enumerable.Range(0, 3).Select(k => both.Max(q => q[k]))];
+        p.Add(Box(mn, mx, color, detail: true, shape: Kw(("shape", "hull"), ("points", both.Select(q => (object?)q.Select(x => (object?)x).ToList()).ToList()), ("paintable", false), ("finish", finish))));
+    }
+
+    /// <summary>A solid between two octagons (a nose cone, a collar): drawn only.</summary>
+    public static void Ring(Part p, Func<double, double, double, double[]> at, double cx, double cy, double fa, double ca, double za, double fb, double cb, double zb, string color, string finish)
+    {
+        var both = Octagon(at, cx, cy, fa, ca, za).Concat(Octagon(at, cx, cy, fb, cb, zb)).Select(q => q.Select(x => Py.Round(x, 4)).ToArray()).ToList();
+        double[] mn = [.. Enumerable.Range(0, 3).Select(k => both.Min(q => q[k]))];
+        double[] mx = [.. Enumerable.Range(0, 3).Select(k => both.Max(q => q[k]))];
+        p.Add(Box(mn, mx, color, detail: true, shape: Kw(("shape", "hull"), ("points", both.Select(q => (object?)q.Select(x => (object?)x).ToList()).ToList()), ("paintable", false), ("finish", finish))));
+    }
+
+    private static void Hid(Part p, Func<double, double, double, double[]> at, double x0, double y0, double z0, double x1, double y1, double z1)
+    {
+        if (Math.Abs(x1 - x0) < 0.05 || Math.Abs(y1 - y0) < 0.05 || Math.Abs(z1 - z0) < 0.05)
+            return;
+        var a = at(Math.Min(x0, x1), Math.Min(y0, y1), Math.Min(z0, z1));
+        var b = at(Math.Max(x0, x1), Math.Max(y0, y1), Math.Max(z0, z1));
+        p.Add(Box(a, b, hidden: true));
+    }
+
+    private static void Solid(Part p, Func<double, double, double, double[]> at, double x0, double y0, double z0, double x1, double y1, double z1, string color, string finish, bool detail = false)
+    {
+        var (a, b) = (at(x0, y0, z0), at(x1, y1, z1)); // (at may mirror: the corners are sorted after it)
+        p.Add(Box([.. a.Zip(b, Math.Min)], [.. a.Zip(b, Math.Max)], color, detail: detail, shape: Kw(("finish", finish))));
+    }
+
+    /// <summary>Where the service opening's forward edge is: centred on the engine's service panels (its Drive Core's, coreD long, bolted at z1 less the tail plate).</summary>
+    public static double HatchZ(double z1, double coreD) => Math.Round(z1 - TailPlate - coreD * 0.4 - HatchW / 2, 3);
+
+    /// <summary>
+    /// Draws the housing (see the class) and its sockets: <c>"core"</c> on the tail plate's inner face (a Drive Core's front, on the
+    /// axis), <c>"drive"</c> on its outer face (the drive's front), <c>"hatch"</c> on the opening's forward jamb (the Service Hatch's
+    /// hang). <paramref name="coreR"/> and <paramref name="stackLen"/>: the engine's radius and length, for the rails under its saddles.
+    /// </summary>
+    public static void Draw(Part p, Func<double, double, double, double[]> at, double cx, double cy, double f, double c, double z0, double z1, int side,
+        string shell, string shell2, string frame, string hazard, string finish, double coreR, double coreD, double stackLen)
+    {
+        var zt = z1 - TailPlate;
+        var hz0 = HatchZ(z1, coreD);
+        var hz1 = hz0 + HatchW;
+        var hy = HatchH / 2;
+        if (hz0 < z0 + 0.1 || hz1 > zt - 0.05)
+            throw new InvalidOperationException($"{p.D["name"]}: the service opening ({hz0:0.00} to {hz1:0.00}) doesn't fit between the bulkhead ({z0:0.00}) and the tail plate ({zt:0.00})");
+        if (coreR + 0.12 > f - Wall)
+            throw new InvalidOperationException($"{p.D["name"]}: an engine {coreR:0.00} m round doesn't fit in a housing {f:0.00} m to its flats");
+        // The shell: eight clad plates, the one on the hatch's side cut round the opening (strips over and under it).
+        double[] V(int i, double z) => Octagon(at, cx, cy, f, c, z)[i & 7];
+        double[] Q(double x, double y, double z) => at(cx + side * x, cy + y, z);
+        var flat = side > 0 ? 7 : 3; // (the facet from corner 7 to 0 is the +x flat; from 3 to 4 the -x flat)
+        for (var i = 0; i < 8; i++)
+        {
+            var col = i % 2 == 0 ? shell : shell2;
+            var e = i % 2 == 0 ? 0 : 0.0025; // (neighbouring plates meet at their edges: their ends are staggered, so no two end caps share a plane)
+            var (za, zs) = (z0 + e, z1 - 0.003 - e);
+            if (i != flat)
+            {
+                Sheet(p, [V(i, za), V(i + 1, za), V(i + 1, zs), V(i, zs)], col, finish);
+                continue;
+            }
+            // (the cut plate stops 4 mm short of the jambs, which cover its ends)
+            Sheet(p, [Q(f, -c, za), Q(f, c, za), Q(f, c, hz0 - 0.004), Q(f, -c, hz0 - 0.004)], col, finish);
+            Sheet(p, [Q(f, -c, hz1 + 0.004), Q(f, c, hz1 + 0.004), Q(f, c, zs), Q(f, -c, zs)], col, finish);
+            if (c - hy > 0.015)
+                foreach (var sy in new[] { -1, 1 })
+                    Sheet(p, [Q(f, sy * hy, hz0 + 0.004), Q(f, sy * c, hz0 + 0.004), Q(f, sy * c, hz1 - 0.004), Q(f, sy * hy, hz1 - 0.004)], col, finish);
+        }
+        // The opening's frame on the outside: dark jambs, hazard over and under it.
+        var xo = f + Wall / 2;
+        // (the forward jamb is solid: the hatch hangs on its aft face, through the shell's thickness)
+        Solid(p, Q, f - 0.06, -hy - 0.05, hz0 - 0.05, xo + 0.02, hy + 0.05, hz0, frame, "painted steel");
+        Solid(p, Q, xo - 0.003, -hy - 0.05, hz1, xo + 0.02, hy + 0.05, hz1 + 0.05, frame, "painted steel", detail: true);
+        foreach (var sy in new[] { -1, 1 })
+            Solid(p, Q, xo - 0.003, sy * (hy + 0.003), hz0, xo + 0.02, sy * (hy + 0.048), hz1, hazard, "hazard paint", detail: true);
+        // The bulkhead, and a collar round the tail.
+        Sheet(p, [.. Octagon(at, cx, cy, f - 0.01, c - 0.004, z0 + 0.026)], frame, "dirty steel"); // (its face 6 mm in from the plates' ends)
+        Ring(p, at, cx, cy, f + 0.03, c + 0.012, zt + 0.06, f + 0.03, c + 0.012, z1 - 0.06, frame, "dirty steel");
+        // The tail plate: the mount, as thick as the hull there, its inner face where the engine bolts on.
+        Ring(p, at, cx, cy, f - Wall / 2 - 0.006, c - 0.003, zt, f - Wall / 2 - 0.006, c - 0.003, z1 - 0.008, frame, "plated steel");
+        var a = Math.Round(Math.Min(f - Wall, (f + c) / 2) * 0.96, 3);
+        Hid(p, at, cx - a, cy - a, zt, cx + a, cy + a, z1);
+        // The walls a player stands against (the corners' gaps are too small to pass), the opening left clear; the bulkhead.
+        var (wi, wo) = (f - 0.085, f - Wall / 2 - 0.005);
+        Hid(p, at, cx - c, cy + wi, z0 + 0.06, cx + c, cy + wo, zt);
+        Hid(p, at, cx - c, cy - wo, z0 + 0.06, cx + c, cy - wi, zt);
+        Hid(p, at, cx - side * wo, cy - c, z0 + 0.06, cx - side * wi, cy + c, zt);
+        Hid(p, at, cx + side * wi, cy - c, z0 + 0.06, cx + side * wo, cy + c, hz0);
+        Hid(p, at, cx + side * wi, cy - c, hz1, cx + side * wo, cy + c, zt);
+        var b = Math.Round((f + c) / 2 * 0.96, 3);
+        Hid(p, at, cx - b, cy - b, z0, cx + b, cy + b, z0 + 0.06);
+        // Rails under the engine's saddles, from the shell's floor up to its feet.
+        var feet = coreR + ShipWorksParts.Saddle;
+        if (wi - feet > 0.06)
+            foreach (var sx in new[] { -1, 1 })
+                Solid(p, at, cx + sx * coreR * 0.62 - 0.05, cy - wi, zt - stackLen + 0.1, cx + sx * coreR * 0.62 + 0.05, cy - feet - 0.003, zt - 0.1, frame, "dirty steel");
+        p.Sock("core", at(cx, cy, zt), "-z");
+        p.Sock("drive", at(cx, cy, z1), "+z");
+        p.Sock("hatch", at(cx + side * f, cy, hz0), "+z");
+    }
 }
