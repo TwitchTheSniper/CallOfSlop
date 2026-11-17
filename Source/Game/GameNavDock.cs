@@ -56,8 +56,8 @@ public sealed partial class Game
         if (!d.IsDock || ship.Mass > d.DockMaxMass)
             return false;
         foreach (var b in world.Bodies)
-            if (b != ship && b.CarriedBy == target.Id && ConstructCargo.CarriedIn(target, b) == part)
-                return false;
+            if (b != ship && b.CarriedBy == target.Id && (b.CarryTag != 0 ? ConstructCargo.CarriedIn(target, b) == part : ConstructCargo.MostlyInside(target, part, b)))
+                return false; // (a client isn't told the carry's tag, nor is a grapple's grip one: the craft in the port's box)
         return true;
     }
 
@@ -86,6 +86,8 @@ public sealed partial class Game
             return "They are too far apart: bring them to the same world first";
         if (c.SpaceShip != 0 && t.SpaceShip == 0)
             return "It is out in space and the other is in the sky: bring it down into the sky first";
+        if (c.CargoCount > 0)
+            return "It carries a craft or cargo of its own: no port takes it so"; // (ConstructCargo.Catchable: no cargo in cargo)
         port = NavDockFor(Constructs, t, c);
         return port < 0 ? "No port available on " + t.DisplayName() : null;
     }
@@ -106,6 +108,8 @@ public sealed partial class Game
             NavEnd(o, c, "the ship it was to dock with went down into the sky");
             return false;
         }
+        if (o.TargetPart >= t.PartCount || !t.DefOf(o.TargetPart).IsDock)
+            o.DockLook = World.TickRate; // (the other ship was edited: its port is looked for again now, before anything reads it)
         if (++o.DockLook >= World.TickRate)
         {
             o.DockLook = 0;
@@ -172,6 +176,27 @@ public sealed partial class Game
         int part = o.TargetPart;
         var centre = NavDockCentre(t, part, out var axis, out var along);
         var armed = ConstructCargo.IsFrozen(t.Parts[part]) && ConstructPower.On(t, part);
+        if (armed && o.Phase == NavPhase.Docking && t.Parts[part].D.DockPull > 0 && (ushort)t.Parts[part].Mem == c.Id) // (only once lined up over it: drawn in from the side or below, a craft is dragged against the other ship's hull and tips)
+        {
+            // The clamp's tractor has it: the autopilot only keeps it level and on its heading (it would hold the ship off the
+            // middle the tractor draws it to; let go altogether, the stabilizer stops levelling and the craft can tip onto its back).
+            if (!o.DockTractor)
+            {
+                ConstructFlight.NavEngage(Constructs, c, FlightMode.Heading, default, 0);
+                o.DockTractor = true;
+                o.Engaged = false;
+            }
+            o.Phase = NavPhase.Docking;
+            o.Distance = Vector3.Distance(centre, c.WorldCom);
+            if (++o.Still >= NavDockGiveUp)
+                NavEnd(o, c, "the port didn't take it (is the ship too big for its box?)");
+            return;
+        }
+        if (o.DockTractor)
+        {
+            o.DockTractor = false; // (the tractor let it go: the autopilot flies it in again)
+            o.Engaged = false;
+        }
         var here = c.WorldCom;
         var aim = centre + axis * (o.Phase is NavPhase.Docking or NavPhase.DockWait ? o.DockAlt : along + NavDockOver);
         var up = ConstructPhysics.HoldUp(here);
@@ -181,8 +206,12 @@ public sealed partial class Game
         aim = centre + axis * NavDockStep(o, armed, along, flat.Length(), slip); // (lined up over the ground: a craft on repulsors holds its own height, and the port's pull reaches it)
         o.Distance = Vector3.Distance(aim, here);
         o.SpeedError = slip;
-        // The autopilot's point and height, written only when they have moved (each write rebuilds the ship).
-        if (!o.Engaged || Vector3.DistanceSquared(aim, o.WaypointSent) > 1f)
+        if (o.Phase == NavPhase.Flying)
+            c.DockAway = Math.Max(c.DockAway, Constructs.CarrierClock + 2); // (until it is lined up no port's tractor takes it: drawn in from the side or below, a craft is dragged against the other ship's hull and tips over)
+        // The autopilot's point and height, written only when they have moved a few metres, and at most twice a second (each
+        // write rebuilds the ship and sends its structure): lining up it follows a moving ship by 6 m, closing in by 2 m.
+        var move = o.Phase == NavPhase.Docking ? 2f : NavComeMove;
+        if (!o.Engaged || o.DockLook % 30 == 0 && Vector3.DistanceSquared(aim, o.WaypointSent) > move * move)
         {
             o.Engaged = ConstructFlight.NavEngage(Constructs, c, FlightMode.Waypoint, aim, ConstructPhysics.HoldShown(ConstructPhysics.HoldHeight(aim)));
             o.WaypointSent = aim;
@@ -204,7 +233,7 @@ public sealed partial class Game
         var d = t.DefOf(part);
         var com = c.WorldCom;
         var slip = (c.Vel - t.PointVel(com)).Length();
-        if (armed && slip < MathF.Max(NavDockSlow, d.DockSettle)
+        if (armed && slip < MathF.Max(NavDockSlow, d.DockSettle) && ConstructCargo.Catchable(Constructs, t, c, d)
             && (d.DockPull > 0 ? Vector3.Distance(com, centre) < MathF.Min(along + NavDockOver * 0.5f, along + d.DockPull) : ConstructCargo.MostlyInside(t, part, c)))
         {
             NavDockCatch(f, i, o, c, t, part, centre);

@@ -60,6 +60,7 @@ public sealed class NavOrder
     internal float DockAlt;
     internal int DockLook;
     internal ushort TargetPartSent;
+    internal bool DockTractor; // (a Dock order in a sky: the clamp's tractor has it, the autopilot only levels it)
 
     /// <summary>Host: what clients were last told, and whether the autopilot was set for the phase it is in.</summary>
     internal NavPhase PhaseSent;
@@ -356,6 +357,7 @@ public sealed partial class Game
         o.TargetPart = o.TargetPartSent = (ushort)Math.Max(0, port);
         o.DockAlt = 0;
         o.DockLook = 0;
+        o.DockTractor = false;
         c.NavLand = 0; // (any new order, a player's or a route leg's, ends a landing's hold)
         order = o;
         Console.WriteLine($"[nav] {who} ordered construct {id}: {NavText(sys, o)}");

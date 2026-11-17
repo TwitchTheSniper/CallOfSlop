@@ -222,8 +222,11 @@ docs/sandbox/design/faction-controllers.md section 6.2, so he chose docking alon
   gives up and says why.
 - **In a sky** the stabilizer's autopilot flies it (Waypoint mode, written only when the point has moved a metre), and
   the port takes it as it takes any craft: a clamp's tractor from its pull's reach, a bay or a lock once it is in the box
-  and slow. A craft on repulsors holds its own height whatever the autopilot asks, so it lines up over the ground only
-  and the clamp's pull does the rest.
+  and slow. While it lines up no tractor takes it (`Construct.DockAway` held a tick ahead): a Shuttle drawn in by the
+  Zero Day's clamp from beside and below was dragged up the frigate's side and turned over. Once the tractor has it
+  the autopilot only holds it level and on its heading (Heading mode), since a position hold keeps it 2 m off the middle
+  the clamp snaps to, and let go altogether a craft stops levelling and can tip onto its back. A craft on repulsors holds
+  its own height whatever the autopilot asks, so it lines up over the ground only and the clamp's pull does the rest.
 - **In space** both ships are particles and their physics sleeps, so no tractor works: the nav computer flies the
   `GoTo` law in the other ship's moving frame (at no more than `NavComeAccel`), and once the ship is in the port's
   reach (a pull dock's: half the stand-off; a bay's or lock's: in its box) and under `NavDockSlow` (3 m/s) against it,
