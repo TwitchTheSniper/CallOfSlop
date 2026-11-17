@@ -190,7 +190,6 @@ public static class LinkedCheck
             ConstructCarrier.LetGo(wa, ha);
             ha.Pos = LinkDocks.PartAt(wk, clampW) + new Vector3(0, 1.2f, 0);
             ha.Rot = Quaternion.Identity;
-            ha.Charge = ha.ChargeCapacity; // (its fans ran the battery flat in the waits above: the showcase's works have no battery to charge it at the clamp)
             ha.Vel = ha.AngVel = Vector3.Zero;
             ha.DockAway = 0;
             ha.Wake();
@@ -229,8 +228,54 @@ public static class LinkedCheck
         }
         Say(unloaded, $"the run flew for real: off the works' dock by its rule, 120 m to the yard, down into its clamp, unloaded: {(unloaded ? "yes" : "no")}");
         var flew = sent is { Phase: RoutePhase.Done } && unloaded && ha.CarriedBy == wk.Id;
-        Console.WriteLine($"  {(flew ? "ok  " : "GAP ")} (not counted: the Fan Quad hauler can tip as the yard's clamp lets it go, linked-logistics-notes.md) and back to the works: route {sent?.Phase}, held by {ha.CarriedBy}, up {Vector3.Transform(Vector3.UnitY, ha.Rot).Y:0.00}");
+        Say(flew, $"and back to the works: route {sent?.Phase}, held by {ha.CarriedBy}, up {Vector3.Transform(Vector3.UnitY, ha.Rot).Y:0.00}, charge {ConstructPower.Share(ha) * 100:0}%");
         Console.WriteLine($"     the yard's order: {Order(yd, term)}");
+
+        // A standing route (level b), works -> yard -> works and round again: loads at the works, leaves by its rules, flies, docks,
+        // unloads, comes back and charges at the works' clamp (its Battery Packs), twice over.
+        wk.Parts[dispPart].Broken = true; // (the Dispatcher's one-off runs out of the way)
+        for (var k = 0; k < 4; k++)
+            wa.PutPart(wk, store, gear);
+        Run(wa, placeA, 3); // (the works' next stock report: every 2 s)
+        using (placeA.In())
+            why = ConstructCrafting.Place(wa, yd, term, new WorkOrder { Part = (ushort)gear.Id, Count = 3 });
+        Console.WriteLine($"     an order for 3 more at the yard: {why ?? "placed"}; {Order(yd, term)}");
+        Run(wa, placeA, 4);
+        var rl = ha.Parts[rcp].Link!;
+        var wRef = rl.Docks.FirstOrDefault(d => d.Body == wk.Id && d.Part == wDock);
+        var yRef = rl.Docks.FirstOrDefault(d => d.Body == yd.Id && d.Part == yDock);
+        var rules = LinkRoutes.LeaveFill | LinkRoutes.LeaveTime | LinkRoutes.LeaveDone | 1u << 8 | 95u << 24;
+        using (placeA.In())
+        {
+            LinkedLogistics.Act(wa, ha, rcp, LinkOp.RouteClear, 0, 0, "");
+            why = LinkedLogistics.Act(wa, ha, rcp, LinkOp.RouteAdd, (uint)wRef.Body << 16 | wRef.Part, rules, wRef.World ?? "");
+            why ??= LinkedLogistics.Act(wa, ha, rcp, LinkOp.RouteAdd, (uint)yRef.Body << 16 | yRef.Part, rules, yRef.World ?? "");
+            why ??= LinkedLogistics.Act(wa, ha, rcp, LinkOp.RouteStart, 0, 0, "");
+        }
+        Say(why == null, $"a standing route, works -> yard, set and started on the Route Computer: {why ?? "started"}");
+        var standing = ha.Parts[rcp].Link?.Route;
+        int atYard = 0, atWorks = 0;
+        var heldBy = ha.CarriedBy;
+        var lowest = 1f;
+        var line4 = LinkLedger.Lines.LastOrDefault(l => l.Count == 3 && l.Kind == gear.Id);
+        for (var k = 0; k < 900 && atWorks < 2; k++)
+        {
+            Run(wa, placeA, 1);
+            lowest = MathF.Min(lowest, Vector3.Transform(Vector3.UnitY, ha.Rot).Y);
+            if (ha.CarriedBy != heldBy)
+            {
+                heldBy = ha.CarriedBy;
+                atYard += heldBy == yd.Id ? 1 : 0;
+                atWorks += heldBy == wk.Id ? 1 : 0;
+                Console.WriteLine($"     {k + 1} s: held by {(heldBy == yd.Id ? "the yard" : heldBy == wk.Id ? "the works" : heldBy.ToString())}; charge {ConstructPower.Share(ha) * 100:0}%; stop {standing?.At + 1} {standing?.Phase}: {standing?.Why}");
+            }
+            else if (k % 30 == 0)
+                Console.WriteLine($"     {k + 1} s: up {Vector3.Transform(Vector3.UnitY, ha.Rot).Y:0.00} at {ha.WorldCom.X:0},{ha.WorldCom.Y:0},{ha.WorldCom.Z:0} charge {ConstructPower.Share(ha) * 100:0}%; stop {standing?.At + 1} {standing?.Phase}: {standing?.Why}");
+        }
+        Say(atYard >= 2 && atWorks >= 2 && lowest > 0.7f, $"the route ran works -> yard -> works twice: docked at the yard {atYard}, at the works {atWorks}, never tipped (least up {lowest:0.00}); charge {ConstructPower.Share(ha) * 100:0}%");
+        Say(line4 is { State: LinkLineState.Closed, Delivered: 3 }, $"its order of 3 delivered by the route: {(line4 == null ? "no line" : $"line {line4.Id}: {line4.State}, delivered {line4.Delivered}, {line4.Note}")}");
+        using (placeA.In())
+            LinkedLogistics.Act(wa, ha, rcp, LinkOp.RouteClear, 0, 0, "");
 
         // A sub-blueprint job over the link: the yard's station builds the Submodule Skiff; its pods go to the works' station (Sub-jobs Linked).
         var ySt = PartOf(yd, d => d.IsBuildStation);

@@ -252,6 +252,11 @@ public static class LinkRoutes
                     r.Why = $"fuel short: needs about {need:0} l, has {c.Fuel:0}{(r.Phase == RoutePhase.Docked ? " - refuelling at the dock" : "")}";
                     break;
                 }
+                if (r.Phase == RoutePhase.Docked && ChargeWait(world, c))
+                {
+                    r.Why = $"charging at the dock: {ConstructPower.Share(c) * 100:0}%, leaves at {ChargeLeave * 100:0}%";
+                    break;
+                }
                 Depart(world, c, r);
                 break;
             }
@@ -310,6 +315,18 @@ public static class LinkRoutes
             Phase(r, RoutePhase.Flying);
         r.Why = $"leaving for {r.Stops[r.At].Name}";
         Console.WriteLine($"[linked] {c.DisplayName()}: leaves for stop {r.At + 1} ({r.Stops[r.At].Name})");
+    }
+
+    /// <summary>The share of its batteries a ship held by a clamp that charges waits for before it leaves (its lift fans or rotors run on them).</summary>
+    public const float ChargeLeave = 0.5f;
+
+    /// <summary>Does a docked ship wait to charge? Only under its share, with batteries, held by a construct whose clamp charges and that has charge to give.</summary>
+    private static bool ChargeWait(ConstructWorld world, Construct c)
+    {
+        if (c.ChargeCapacity <= 0 || ConstructPower.Share(c) >= ChargeLeave || world.Get(c.CarriedBy) is not { } holder || holder.Charge <= 1f)
+            return false;
+        var clamp = ConstructCargo.CarriedIn(holder, c);
+        return clamp >= 0 && holder.Parts[clamp].D.DockCharge > 0 && ConstructPower.On(holder, clamp);
     }
 
     /// <summary>Fuel a leg needs: 25% over the most its last trips used (none known: no wait).</summary>
