@@ -22,7 +22,8 @@ public sealed partial class ShipAi
     private bool _gHomeSet, _gOffsetSet;
     private Vector3 _gHome, _gWay, _gOffset; // its patrol's start and way (world, level); its place in its leader's frame
     private sbyte _gLeg = 1;
-    private int _gStuck, _gReverseUntil;
+    private int _gStuck, _gReverseUntil, _gDodgeUntil;
+    private sbyte _gDodge = 1;
 
     /// <summary>It drives a ground vehicle (no stabilizer): for the check's lines.</summary>
     public bool OnGround => _onGround;
@@ -31,7 +32,7 @@ public sealed partial class ShipAi
     {
         _onGround = _gHomeSet = _gOffsetSet = false;
         _gLeg = 1;
-        _gStuck = _gReverseUntil = 0;
+        _gStuck = _gReverseUntil = _gDodgeUntil = 0;
     }
 
     /// <summary>Nobody at the helm: throttle 0, brakes on (rule 1). A player's seat is theirs.</summary>
@@ -116,7 +117,7 @@ public sealed partial class ShipAi
             var want = Math.Clamp(lv + behind * 0.35f, 0, GroundClose * 1.5f);
             _state = 7;
             _stateDist = behind;
-            return Drive(c, spot + lf * (FollowAhead + MathF.Max(0, lv)), want, up, stopAt: false);
+            return Drive(world, c, spot + lf * (FollowAhead + MathF.Max(0, lv)), want, up, stopAt: false);
         }
         if (!_gHomeSet)
         {
@@ -129,11 +130,11 @@ public sealed partial class ShipAi
         {
             // The leader drives out and back; its gunners and the followers' fight what comes, the convoy doesn't stop for it.
             var end = _gLeg > 0 ? _gHome + _gWay * PatrolLeg : _gHome;
-            if (Vector3.Distance(Level(end - com, up), Vector3.Zero) < 25)
+            if (Flat(end - com, up).Length() < 25)
                 _gLeg = (sbyte)-_gLeg;
             _state = 8;
             _stateDist = Vector3.Distance(end, com);
-            return Drive(c, end, has ? GroundCruise * 0.8f : GroundCruise, up, stopAt: false);
+            return Drive(world, c, end, has ? GroundCruise * 0.8f : GroundCruise, up, stopAt: false);
         }
         if (!has)
         {
@@ -146,13 +147,13 @@ public sealed partial class ShipAi
         if (dist > band + GroundBand)
         {
             _state = 4;
-            return Drive(c, t.At, GroundClose, up, stopAt: false);
+            return Drive(world, c, t.At, GroundClose, up, stopAt: false);
         }
         if (dist < band - GroundBand * 2)
         {
             _state = 5;
             var away = Level(com - t.At, up);
-            return Drive(c, com + away * 40, GroundClose * 0.7f, up, stopAt: false);
+            return Drive(world, c, com + away * 40, GroundClose * 0.7f, up, stopAt: false);
         }
         _state = 6;
         if (brief is { KeepAway: < 4 } && Vector3.Dot(c.Vel, c.Vel) < 4)
@@ -168,7 +169,7 @@ public sealed partial class ShipAi
     }
 
     /// <summary>W, S, A, D and the brake to go towards <paramref name="to"/> at about <paramref name="speed"/> m/s; a vehicle stuck with its throttle open backs off a moment.</summary>
-    private ushort Drive(Construct c, Vector3 to, float speed, Vector3 up, bool stopAt)
+    private ushort Drive(ConstructWorld world, Construct c, Vector3 to, float speed, Vector3 up, bool stopAt)
     {
         var com = c.WorldCom;
         var fwd = Level(Vector3.Transform(c.DriveFwd, c.Rot), up);
@@ -179,6 +180,19 @@ public sealed partial class ShipAi
         if (dist < 1 || speed <= 0.2f && MathF.Abs(vf) < 0.5f)
             return (ushort)Buttons.Jump;
         var dir = d / dist;
+        // A body in its way (a stopped truck ahead in the column, a wreck): it steers round it for a few seconds, to the side it chose.
+        if ((_tick + c.Id) % 10 == 0 && vf > -0.5f)
+        {
+            var reach = MathF.Max(8, vf * 2.5f) + (c.LocalMax.Z - c.LocalMin.Z) * 0.5f;
+            if (world.Raycast(com + up * 0.4f, fwd, reach, out _, ignore: c) && dist > 6)
+            {
+                if (_tick >= _gDodgeUntil)
+                    _gDodge = Vector3.Dot(Vector3.Cross(fwd, dir), up) >= 0 ? (sbyte)1 : (sbyte)-1; // (+: round its left, the way it wants to go)
+                _gDodgeUntil = _tick + 3 * World.TickRate;
+            }
+        }
+        if (_tick < _gDodgeUntil)
+            dir = Vector3.Normalize(dir + Vector3.Cross(up, fwd) * (1.4f * _gDodge)); // (Cross(up, fwd) is its left)
         var ang = MathF.Atan2(Vector3.Dot(Vector3.Cross(fwd, dir), up), Vector3.Dot(fwd, dir)); // (+: to its left)
         Buttons keys = 0;
         if (_tick < _gReverseUntil)
@@ -205,6 +219,8 @@ public sealed partial class ShipAi
             _gStuck = 0;
         return (ushort)keys;
     }
+
+    private static Vector3 Flat(Vector3 v, Vector3 up) => v - up * Vector3.Dot(v, up);
 
     private static Vector3 Level(Vector3 v, Vector3 up)
     {
