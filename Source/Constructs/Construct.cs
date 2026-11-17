@@ -337,6 +337,9 @@ public sealed partial class Construct
     internal const int MaxRecoils = 64; // segments with a shot's recoil in one tick; past this the last entry takes the rest (AddRecoil)
     internal int RecoilCount;
     internal Vector3 VelBefore, VelThen; // (its velocity at this step's start, and at the one before)
+    // Server: the speed it came into the world with, past the physics' speed limit (cut off a fast ship, it keeps the ship's
+    // speed; ConstructRide.SpawnIntoMotion sets it, ConstructPhysics.Integrate lets it slow and never speed up past it). 0: none.
+    internal float SpeedKept;
 
     // Mass properties (rebuilt with the caches)
     public float Mass, InvMass;
@@ -475,6 +478,7 @@ public sealed partial class Construct
 
     /// <summary>The next time this copy looks for where its wheels meet the ground, for the springs drawn (ConstructRender.FitWheels).</summary>
     public double FitAt;
+    public int BreachStamp = -1, BreachParts; // (ConstructBreach.cs: the hull grapples and cutters counted at this RebuildStamp)
     public int LampStamp = -1; // (phase 7b: LampParts was gathered at this RebuildStamp; ConstructLamps.cs)
     public int[] LampParts = []; // the parts that light the space round them (a lined bay's lamps, a Lamp logic part)
     public int AmbStamp = -1; // (PartAmbience.cs: AmbParts was gathered at this RebuildStamp)

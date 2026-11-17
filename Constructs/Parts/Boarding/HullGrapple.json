@@ -1,0 +1,119 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Hull Grapple",
+  "description": "A magnetic hull grapple for a boarding craft (any ship can carry them): wire a switch to it; while it is on and a hull is within half a metre under its pad, the craft grips that hull and rides on it. Turning every grapple off lets go. Fit it under the craft, pad down, as its footing.",
+  "group": "Ship",
+  "section": "Ship fittings",
+  "role": "logic",
+  "tool": "wrench",
+  "logic": {
+    "kind": "lamp"
+  },
+  "breach": {
+    "kind": "grapple",
+    "reach": 0.6
+  },
+  "power": 300,
+  "config": [
+    {
+      "key": "colour",
+      "type": "colour",
+      "label": "Colour",
+      "group": "Light",
+      "default": "#ff9040",
+      "tooltip": "The colour its lamp glows while it grips."
+    }
+  ],
+  "mass": 120.0,
+  "health": 1500,
+  "armour": 25,
+  "material": "steel",
+  "color": "#1f2226",
+  "attachSeconds": 4.0,
+  "boxes": [
+    {
+      "min": [
+        -0.22,
+        -0.3,
+        -0.22
+      ],
+      "max": [
+        0.22,
+        -0.06,
+        0.22
+      ],
+      "color": "#1f2226",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.12,
+        -0.06,
+        -0.12
+      ],
+      "max": [
+        0.12,
+        0.0,
+        0.12
+      ],
+      "color": "#9aa0a4",
+      "finish": "chrome"
+    },
+    {
+      "min": [
+        -0.24,
+        -0.298,
+        -0.24
+      ],
+      "max": [
+        0.24,
+        -0.27,
+        0.24
+      ],
+      "color": "#202326",
+      "detail": true,
+      "finish": "rubber"
+    },
+    {
+      "min": [
+        -0.225,
+        -0.2,
+        -0.225
+      ],
+      "max": [
+        0.225,
+        -0.16,
+        0.225
+      ],
+      "color": "#e0b020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.06,
+        -0.12,
+        0.222
+      ],
+      "max": [
+        0.06,
+        -0.08,
+        0.236
+      ],
+      "color": "#ff8030",
+      "detail": true,
+      "glow": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+y"
+    }
+  ]
+}

@@ -1,13 +1,13 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Zero Day Lift Jet",
-  "description": "A lift jet under the Zero Day's keel: 1.5 MN straight down.",
+  "description": "A lift jet under the Zero Day's keel: 1.7 MN straight down.",
   "group": "Ship",
   "section": "Zero Day frigate",
   "role": "thruster",
   "tool": "wrench",
   "thruster": {
-    "force": 1500000.0,
+    "force": 1700000.0,
     "spool": 0.5,
     "exhaust": "-y",
     "at": [
@@ -15,7 +15,7 @@
       -1.47,
       0
     ],
-    "burnRate": 3.75
+    "burnRate": 4.25
   },
   "ports": [
     {

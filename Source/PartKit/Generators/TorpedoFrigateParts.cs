@@ -19,7 +19,7 @@ namespace CallOfSlop.PartKit.Generators;
 /// hidden boxes that stand for the void between the skin and the rooms. A hull facet is drawn only; solid boxes of different parts
 /// never overlap (the build refuses "something is in the way").
 /// </summary>
-public sealed class TorpedoFrigateParts : IPartGenerator
+public sealed partial class TorpedoFrigateParts : IPartGenerator
 {
     public string Name => "torpedo_frigate_parts";
 
@@ -932,7 +932,7 @@ public sealed class TorpedoFrigateParts : IPartGenerator
         var p = Big("Zero Day Upper Deck Aft", "The Zero Day's upper deck, aft: the crew cabin, the head and the med bay off the corridor, then the mess with the aft gunnery station.");
         double y0 = Ft1, y1 = Ceil1;
         Floor(p, [new Rect(Cx - Lw - 0.25, 25.0, Cx + Lw + 0.25, ZAft + 0.25)], Ceil0, Ft1, Deck, "painted deck plate", AftHatch);
-        Floor(p, [new Rect(Cx - Uw - 0.25, 25.0, Cx + Uw + 0.25, ZAft + 0.25)], Ceil1, Roof, Ceil, "painted plating");
+        Floor(p, [new Rect(Cx - Uw - 0.25, 25.0, Cx + Uw + 0.25, ZAft + 0.25)], Ceil1, Roof, Ceil, "painted plating", ShuttleShaft);
         Detail(p, Cx + 1.2, Ft1, 25.15, Cx + Uw - 0.05, Ft1 + 0.012, 33.8, "#b9c4c2", "gloss paint"); // (the med bay's floor, wipe-clean)
         Detail(p, Cx - 0.8, Ft1, 25.0, Cx + 0.8, Ft1 + 0.012, 33.9, "#30353b", "rubber matting"); // (the corridor's runner)
         HatchRail(p, AftHatch, Ft1);
@@ -994,8 +994,13 @@ public sealed class TorpedoFrigateParts : IPartGenerator
         Sock(p, "coffee", Cx - Uw, Ft1 + 0.125, 36.6, "+x");
         Sock(p, "messLocker", Cx + Uw, Ft1 + 0.125, 36.2, "-x"); // (starboard: the port magazine's container stands where it was)
         Sock(p, "table", Cx - 2.0, Ft1, 38.4, "+y");
-        Sock(p, "gun", Cx - 0.3, Ft1, 39.6, "+y");
-        Sock(p, "gunSeat", Cx - 0.3, Ft1, 40.6, "+y");
+        Sock(p, "gun", Cx - 0.3, Ft1, 40.1, "+y"); // (aft of the shuttle's ladder)
+        Sock(p, "gunSeat", Cx - 0.3, Ft1, 41.1, "+y");
+        Sock(p, "shuttleLadder", Cx, Ft1, ShuttleShaft.Z1 - 0.15, "+y"); // (the ladder up into the shuttle: its back on the shaft's aft edge)
+        // The shaft's lip in the ceiling: hazard round it, a red light on its fore edge.
+        Detail(p, ShuttleShaft.X0 - 0.1, y1 - 0.012, ShuttleShaft.Z0 - 0.1, ShuttleShaft.X1 + 0.1, y1, ShuttleShaft.Z0, Hazard, "hazard paint");
+        Detail(p, ShuttleShaft.X0 - 0.1, y1 - 0.012, ShuttleShaft.Z1, ShuttleShaft.X1 + 0.1, y1, ShuttleShaft.Z1 + 0.1, Hazard, "hazard paint");
+        Detail(p, ShuttleShaft.X0 + 0.2, y1 - 0.02, ShuttleShaft.Z0 - 0.22, ShuttleShaft.X1 - 0.2, y1 - 0.012, ShuttleShaft.Z0 - 0.12, Red, glow: true);
         Sock(p, "director", Cx + 2.9, Ft1, 41.3, "+y"); // (the Fire Director in the starboard aft corner, under the mast's radar: a wire reaches 8 m)
         DoorSock(p, "doorCabinB", false, 25.9, Cx - 1.0, Ft1);
         DoorSock(p, "doorHead", false, 31.9, Cx - 1.0, Ft1);
@@ -1076,13 +1081,53 @@ public sealed class TorpedoFrigateParts : IPartGenerator
 
     // ---- the spine: the roof, the railgun's housing, the sensor mast, the flare launchers' mounts
 
+    // The shuttle (TorpedoFrigateShuttle.cs) on its cradle: the pod's middle and nose (z), the cradle's top and aft end, the shaft from the
+    // mess up through the ceiling, the roof and the cradle into the pod's belly hatch; the ladder's landing is the pod's floor.
+    private const double ShuttleZ = 39.0, ShuttleZ0 = ShuttleZ - 5.0, CradleY = 7.75, CradleZ1 = 45.2, ShuttleLift = 0.005;
+    private static readonly Rect ShuttleShaft = new(Cx - 0.6, ShuttleZ - 0.65, Cx + 0.6, ShuttleZ + 0.65);
+    private static Rect ShuttleShaftWide => ShuttleShaft;
+    private static readonly (double, double)[] CradleBands = [(ShuttleZ0 - 0.6, 37.996), (38.004, 41.996), (42.004, CradleZ1)];
+    private const double LadderRise = CradleY + ShuttleLift + LFt - Ft1, LadderRails = CradleY - Ft1;
+
+    /// <summary>The shuttle's Docking Clamp: holding from the start, its box round the pod on the cradle (its centre of mass in it).</summary>
+    private static PyDict ShuttleClampConfig()
+    {
+        double cx = Cx - 1.3, cy = CradleY + 0.5, cz = CradleZ1 - 0.6; // (the clamp's middle: half a metre over its foot)
+        return new PyDict
+        {
+            ["startOn"] = true,
+            ["sizeX"] = 4.5, ["sizeY"] = 3.5, ["sizeZ"] = 10.5,
+            ["atX"] = Py.Round(Cx - cx, 2), ["atY"] = Py.Round(CradleY + ShuttleLift + ShuttleCom.Y - cy, 2), ["atZ"] = Py.Round(ShuttleZ + ShuttleCom.Z - cz, 2),
+        };
+    }
+
+    /// <summary>The shuttle's centre of mass in its own frame (as built: a pull dock holds a craft with this over its box's middle).</summary>
+    private static readonly (double Y, double Z) ShuttleCom = (1.3, 0.3);
+
+    /// <summary>The spine's top (facet 5) from za to zb with a rectangular hole cut in it: four plates round the hole.</summary>
+    private static void FacetHole(Part p, int k, double za, double zb, Rect h, string color, string finish)
+    {
+        var dz = FacetStagger;
+        double Y(double z) => At(za)[4].Y + (At(zb)[4].Y - At(za)[4].Y) * (z - za) / (zb - za);
+        double Hw(double z) => At(za)[4].H + (At(zb)[4].H - At(za)[4].H) * (z - za) / (zb - za);
+        double[] Q(double x, double z) => P(x, Y(z), z + dz);
+        double z0 = za + FacetTrim, z1 = zb - FacetTrim;
+        Plate(p, [Q(Cx - Hw(z0), z0), Q(Cx + Hw(z0), z0), Q(Cx + Hw(h.Z0), h.Z0), Q(Cx - Hw(h.Z0), h.Z0)], color, finish);
+        Plate(p, [Q(Cx - Hw(h.Z1), h.Z1), Q(Cx + Hw(h.Z1), h.Z1), Q(Cx + Hw(z1), z1), Q(Cx - Hw(z1), z1)], color, finish);
+        Plate(p, [Q(Cx - Hw(h.Z0), h.Z0), Q(h.X0, h.Z0), Q(h.X0, h.Z1), Q(Cx - Hw(h.Z1), h.Z1)], color, finish);
+        Plate(p, [Q(h.X1, h.Z0), Q(Cx + Hw(h.Z0), h.Z0), Q(Cx + Hw(h.Z1), h.Z1), Q(h.X1, h.Z1)], color, finish);
+    }
+
     private static Part Spine()
     {
         var p = Big("Zero Day Spine", "The Zero Day's spine: the flat roof, the railgun's armoured housing, the sensor mast and the flare launchers' mounts.", color: Armour);
         double[] zs = [8.0, 14.0, 20.0, 30.0, 38.0, 42.0];
         for (var i = 0; i < zs.Length - 1; i++)
         {
-            Facet(p, 5, 1, zs[i], zs[i + 1], Armour, "plated steel");
+            if (zs[i] <= ShuttleShaftWide.Z0 && zs[i + 1] >= ShuttleShaftWide.Z1)
+                FacetHole(p, 5, zs[i], zs[i + 1], ShuttleShaftWide, Armour, "plated steel"); // (the shuttle's shaft through the roof plate)
+            else
+                Facet(p, 5, 1, zs[i], zs[i + 1], Armour, "plated steel");
             Slab(p, 5, 1, zs[i], zs[i + 1], 0.04, 0.96, 0.05, 0.3, 0.02, 0.1, 0.05, Armour2);
             Slab(p, 5, 1, zs[i], zs[i + 1], 0.04, 0.96, 0.7, 0.95, 0.02, 0.1, 0.05, Armour2);
             foreach (var s in new[] { -1, 1 })
@@ -1111,48 +1156,57 @@ public sealed class TorpedoFrigateParts : IPartGenerator
         Solid(p, Cx - 0.55, Top(20) - 0.01, hz0, Cx + 0.55, Top(20) + 0.06, hz1, Frame, "dirty steel"); // (the trough's floor, which the gun lies on)
         Hidden(p, Cx - 1.15, Top(20), hz0 + 0.2, Cx - 0.6, Top(20) + 0.5, hz1 - 0.2);
         Hidden(p, Cx + 0.6, Top(20), hz0 + 0.2, Cx + 1.15, Top(20) + 0.5, hz1 - 0.2);
-        // The dorsal block aft of the housing (the electronics: it is the IT Department's ship): a faceted mass that rises out of the
-        // railgun's housing, steps up again over the mess and rakes down to the drive, so the roofline isn't one flat line.
         double[][] Blk(double z, double w, double h, double wt)
         {
             var y = Top(z) - 0.012;
             return [P(Cx - w, y, z), P(Cx - wt - (w - wt) * 0.25, y + h * 0.7, z), P(Cx - wt, y + h, z), P(Cx + wt, y + h, z), P(Cx + wt + (w - wt) * 0.25, y + h * 0.7, z), P(Cx + w, y, z)];
         }
-        Prism(p, Blk(hz1, 1.2, 0.55, 0.95), Blk(36.0, 2.3, 1.05, 1.5), Armour, "plated steel");
-        Prism(p, Blk(36.0 + 0.01, 2.3, 1.05, 1.5), Blk(43.0, 2.3, 1.05, 1.5), Armour2, "plated steel");
-        Prism(p, Blk(43.0 + 0.01, 2.3, 1.05, 1.5), Blk(46.0, 1.6, 0.35, 1.2), Armour, "plated steel");
-        // (the step over it: a second, narrower block with a corporate blue band, and vents)
-        Prism(p, Blk(37.2, 1.2, 1.05, 1.0), Blk(38.4, 1.5, 1.5, 1.05), Armour, "plated steel");
-        Prism(p, Blk(38.4 + 0.01, 1.5, 1.5, 1.05), Blk(41.8, 1.5, 1.5, 1.05), Armour, "plated steel");
-        Prism(p, Blk(41.8 + 0.01, 1.5, 1.5, 1.05), Blk(42.9, 1.2, 1.05, 1.0), Armour2, "plated steel");
-        foreach (var sd in new[] { -1, 1 })
+        // Aft of the housing, the shuttle's cradle (Karl, 2026-11-17: the boarding pod rides on the spine): a low raked block out of the
+        // railgun's housing, then a flat deck standing on the roof the length of the pod, its hazard edges and guide lips, the shaft
+        // down to the mess through it, the pod's Docking Clamp on its aft port corner and the sensor mast on its aft starboard one.
+        Prism(p, Blk(hz1, 1.2, 0.55, 0.95), Blk(ShuttleZ0 - 0.6, 1.9, CradleY - Top(ShuttleZ0 - 0.6) + 0.012, 1.6), Armour, "plated steel");
+        foreach (var (za, zb) in CradleBands)
         {
-            Plate(p, [P(Cx + sd * 1.4, Top(40) + 1.05, 38.6), P(Cx + sd * 1.4, Top(40) + 1.05, 41.6), P(Cx + sd * 1.43, Top(40) + 1.3, 41.6), P(Cx + sd * 1.43, Top(40) + 1.3, 38.6)], Blue, "painted plating");
-            for (var z = 36.6; z < 42.6; z += 0.5)
-                Detail(p, Cx + sd * 1.9 - 0.25, Top(z) + 0.62, z, Cx + sd * 1.9 + 0.25, Top(z) + 0.66, z + 0.25, Frame, "soot");
-            Detail(p, Cx + sd * 2.0 - 0.02, Top(40) + 0.25, 36.4, Cx + sd * 2.0 + 0.02, Top(40) + 0.29, 42.9, Glow, glow: true);
+            // The deck plate (solid), round the shaft; under it hidden boxes down to the roof.
+            foreach (var r in Minus([new Rect(Cx - 1.9, za, Cx + 1.9, zb)], ShuttleShaftWide))
+                Solid(p, r.X0, CradleY - 0.08, r.Z0, r.X1, CradleY, r.Z1, Armour2, "plated steel");
+            var low = Math.Max(Top(za), Top(zb)) + 0.004;
+            foreach (var r in Minus([new Rect(Cx - 1.8, za + 0.05, Cx + 1.8, zb - 0.05)], ShuttleShaftWide))
+                Hidden(p, r.X0, low, r.Z0, r.X1, CradleY - 0.08, r.Z1);
+            foreach (var sd in new[] { -1, 1 })
+            {
+                Plate(p, [P(Cx + sd * 1.9, CradleY - 0.08, za + 0.02), P(Cx + sd * 1.9, CradleY - 0.08, zb - 0.02), P(Cx + sd * 1.55, Top(zb) - 0.01, zb - 0.02), P(Cx + sd * 1.55, Top(za) - 0.01, za + 0.02)], Armour, "plated steel"); // (its raked flanks down to the roof)
+                Detail(p, Cx + sd * 1.9 - 0.18, CradleY, za + 0.03, Cx + sd * 1.9 - 0.02, CradleY + 0.012, zb - 0.03, Hazard, "hazard paint");
+                Detail(p, Cx + sd * 1.9 - 0.02, CradleY, za + 0.03, Cx + sd * 1.9 + 0.03, CradleY + 0.1, zb - 0.03, Frame, "painted steel");
+            }
         }
-        Hidden(p, Cx - 1.6, Top(40) - 0.01, 36.2, Cx + 1.6, Top(40) + 1.0, 42.0);
-        // The sensor mast on top: a raked blade, a dish to starboard, red tips; two whip antennae aft.
-        double mz = 39.2, my = Top(39.2) + 1.48;
-        Prism(p, [P(Cx - 0.12, my, mz - 1.2), P(Cx + 0.12, my, mz - 1.2), P(Cx + 0.12, my, mz + 1.0), P(Cx - 0.12, my, mz + 1.0)], [P(Cx - 0.06, my + 2.2, mz + 0.2), P(Cx + 0.06, my + 2.2, mz + 0.2), P(Cx + 0.06, my + 2.2, mz + 0.9), P(Cx - 0.06, my + 2.2, mz + 0.9)], Armour, "plated steel");
-        Detail(p, Cx - 0.07, my + 2.2, mz + 0.45, Cx + 0.07, my + 2.34, mz + 0.65, Red, glow: true);
-        Prism(p, Ngon(Cx + 0.75, my + 0.5, mz + 1.9, 0.08, 8), Ngon(Cx + 0.75, my + 0.75, mz + 1.9, 0.55, 8), "#c8ccc8", "painted steel");
-        Detail(p, Cx + 0.7, my - 0.02, mz + 1.85, Cx + 0.8, my + 0.5, mz + 1.95, Frame, "painted steel");
-        foreach (var sd in new[] { -1, 1 })
-        {
-            Detail(p, Cx + sd * 1.25 - 0.03, Top(42.5) + 1.03, 42.4, Cx + sd * 1.25 + 0.03, Top(42.5) + 2.3, 42.46, Frame, "steel");
-            Detail(p, Cx + sd * 1.25 - 0.04, Top(42.5) + 2.3, 42.39, Cx + sd * 1.25 + 0.04, Top(42.5) + 2.38, 42.47, Red, glow: true);
-        }
-        // Hidden: the roof void.
+        // The shaft's lining down through the roof, hazard round its mouth on the cradle.
+        var sh = ShuttleShaftWide;
+        foreach (var (x0, z0, x1, z1) in new[] { (sh.X0, sh.Z0, sh.X1, sh.Z0), (sh.X0, sh.Z1, sh.X1, sh.Z1), (sh.X0, sh.Z0 + 0.02, sh.X0, sh.Z1 - 0.02), (sh.X1, sh.Z0 + 0.02, sh.X1, sh.Z1 - 0.02) })
+            Plate(p, [P(x0, CradleY - 0.09, z0), P(x1, CradleY - 0.09, z1), P(x1, Roof + 0.01, z1), P(x0, Roof + 0.01, z0)], Grate, "dirty steel");
+        Detail(p, sh.X0 - 0.12, CradleY, sh.Z0 - 0.12, sh.X1 + 0.12, CradleY + 0.012, sh.Z0, Hazard, "hazard paint");
+        Detail(p, sh.X0 - 0.12, CradleY, sh.Z1, sh.X1 + 0.12, CradleY + 0.012, sh.Z1 + 0.12, Hazard, "hazard paint");
+        // The sensor mast on the cradle's aft starboard corner: a raked blade, a dish, red tips; a whip antenna to port.
+        double mx = Cx + 1.3, mz = CradleZ1 - 0.6, my = CradleY;
+        Prism(p, [P(mx - 0.12, my, mz - 0.5), P(mx + 0.12, my, mz - 0.5), P(mx + 0.12, my, mz + 0.4), P(mx - 0.12, my, mz + 0.4)], [P(mx - 0.06, my + 2.0, mz + 0.05), P(mx + 0.06, my + 2.0, mz + 0.05), P(mx + 0.06, my + 2.0, mz + 0.35), P(mx - 0.06, my + 2.0, mz + 0.35)], Armour, "plated steel");
+        Detail(p, mx - 0.07, my + 2.0, mz + 0.12, mx + 0.07, my + 2.14, mz + 0.3, Red, glow: true);
+        Prism(p, Ngon(mx + 0.35, my + 0.7, mz - 0.1, 0.06, 8), Ngon(mx + 0.35, my + 0.9, mz - 0.1, 0.4, 8), "#c8ccc8", "painted steel");
+        Detail(p, mx + 0.31, my + 0.004, mz - 0.14, mx + 0.39, my + 0.7, mz - 0.06, Frame, "painted steel");
+        Detail(p, Cx - 1.75 - 0.03, my + 0.004, CradleZ1 - 0.25, Cx - 1.75 + 0.03, my + 1.6, CradleZ1 - 0.19, Frame, "steel");
+        Detail(p, Cx - 1.75 - 0.04, my + 1.6, CradleZ1 - 0.26, Cx - 1.75 + 0.04, my + 1.68, CradleZ1 - 0.18, Red, glow: true);
+        // A low fairing aft of the cradle down to the drive.
+        Prism(p, Blk(CradleZ1 + 0.01, 1.7, CradleY - Top(CradleZ1) - 0.1, 1.4), Blk(46.0, 1.2, 0.2, 1.0), Armour, "plated steel");
+        // Hidden: the roof void, the shuttle's shaft cut out of it.
+        VoidHoles.Add([ShuttleShaftWide.X0, Roof, ShuttleShaftWide.Z0, ShuttleShaftWide.X1, 8.0, ShuttleShaftWide.Z1]);
         for (var i = 0; i < zs.Length - 1; i++)
             Void(p, zs[i], zs[i + 1], Roof, Math.Min(Top(zs[i]), Top(zs[i + 1])) - 0.02, 0);
+        VoidHoles.Clear();
         Sock(p, "upper", Cx - 1.5, Roof, 12.0, "-y");
         Sock(p, "railgun", Cx, Top(20) + 0.06, 32.0, "+y");
-        // The Long Range Sensor's pad on the step to port of the mast (the radar, wired to the Fire Director in the mess below): its foot in the step.
-        var sy = Top(38.41) + (Top(41.8) - Top(38.41)) * (41.0 - 38.41) / (41.8 - 38.41) + 1.488 + 0.05;
-        Solid(p, Cx - 0.78, sy - 0.08, 40.82, Cx - 0.42, sy, 41.18, Frame, "painted steel");
-        Sock(p, "sensor", Cx - 0.6, sy, 41.0, "+y");
+        p.Sock("shuttleClamp", P(Cx - 1.3, CradleY, CradleZ1 - 0.6), "+y", Medium); // (a medium socket: the Docking Clamp Medium)
+        // The Long Range Sensor (the radar, wired to the Fire Director in the mess below) on the cradle deck aft of the shuttle, between its
+        // drive and the mast: a wire reaches 8 m.
+        p.Sock("sensor", P(Cx + 0.75, CradleY, CradleZ1 - 0.35), "+y");
         foreach (var (s, z, n) in new[] { (-1, 17.6, "flaresFL"), (1, 17.6, "flaresFR"), (-1, 21.4, "flaresBL"), (1, 21.4, "flaresBR") })
             Sock(p, n, Cx + s * 1.75, Top(z) - 0.02, z, "+y");
         return p.Stats(8000, 24000, 45, 15.0);
@@ -1371,7 +1425,8 @@ public sealed class TorpedoFrigateParts : IPartGenerator
 
     // ---- the drive (four bells on the collar, each with its own engine), the lift and retro jets, the legs
 
-    private const double DriveForce = 9000000, LiftForce = 1500000, RetroForce = 1200000;
+    // (lift 1.7 MN a jet, from 1.5, since the shuttle came: the carried pod is 11 t on 233 t, and at 1.5 the hover hold overshot past the flight check's metre)
+    private const double DriveForce = 9000000, LiftForce = 1700000, RetroForce = 1200000;
 
     // The main drive is four bells of a quarter of it each, every one a hull drive with its own engine behind it (ship-works.md 15:
     // a Drive Core M and a Fuel Pump M), so they burn a hull drive's 2 l/s a MN. The lift jets and retros are whole parts with
@@ -2188,6 +2243,10 @@ public sealed class TorpedoFrigateParts : IPartGenerator
             foreach (var g in pair)
                 bp.Wires.Add((module, g));
         }
+        // The shuttle's Docking Clamp on the cradle (holding from the start, its box round the pod) and the ladder up into it from the mess.
+        var clamp = Hang(bp, "Docking Clamp Medium", spine, "shuttleClamp", "-y");
+        bp.Steps[clamp]["config"] = ShuttleClampConfig();
+        Hang(bp, "Zero Day Shuttle Ladder", ua, "shuttleLadder", "bottom");
         // The railgun along the spine, fired by the pilot; its slug box on the breech.
         var rail = Hang(bp, "Zero Day Railgun", spine, "railgun", "back");
         Hang(bp, "Ammo Box", rail, "ammo", "bottom");
@@ -2200,6 +2259,7 @@ public sealed class TorpedoFrigateParts : IPartGenerator
         // seat and the torpedoes take that lock at launch (ConstructRadar.CanLock; Karl, 2026-11-17). No guns are wired out of it.
         bp.Wires.Add((Hang(bp, "Long Range Sensor", spine, "sensor", "-y"), Hang(bp, "Fire Director", ua, "director", "-y")));
         var json = bp.Json();
+        json["carry"] = Py.L(Kw(("blueprint", ShuttleName), ("at", Py.L(Cx, CradleY + ShuttleLift, ShuttleZ)), ("turn", 0))); // (built on its cradle, held by the clamp: ConstructCargo.BuildCarry)
         // The torpedo magazines (a rack's shape is made by the game, so its steps go last, by socket name) and their torpedoes; each
         // bay's fire button lets one go.
         var steps = (List<object?>)json["steps"]!;
@@ -2242,14 +2302,18 @@ public sealed class TorpedoFrigateParts : IPartGenerator
         ];
         var defs = new Dictionary<string, PyDict>();
         o.Own(Out);
-        foreach (var p in parts)
+        o.Own(LOut);
+        o.Own(BoardingOut);
+        var (shuttle, shuttleOrder) = ShuttleStructure();
+        foreach (var (p, folder) in parts.Select(x => (x, Out)).Append((ShuttleLadder(), Out)).Concat(ShuttleParts(shuttle)))
         {
             var d = p.Json();
             var name = (string)d["name"]!;
             defs.Add(name, d);
-            o.File($"{Out}/{FileName(name)}", PyJson.Dumps(d, 2) + "\n");
+            o.File($"{folder}/{FileName(name)}", PyJson.Dumps(d, 2) + "\n");
         }
         BuildingParts.AddPartDefs(o, defs, Out);
+        o.File($"{BpOut}/Shuttle.json", PyJson.Dumps(ShuttleBlueprint(defs, shuttleOrder), 2) + "\n");
         o.File($"{BpOut}/ZeroDayFrigate.json", PyJson.Dumps(Blueprint(defs), 2) + "\n");
         o.File($"{BpOut}/ZeroDayFrigateCrewed.json", PyJson.Dumps(Blueprint(defs, crewed: true), 2) + "\n");
     }

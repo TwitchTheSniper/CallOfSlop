@@ -1,0 +1,373 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Breaching Cutter",
+  "description": "A boarding craft's breaching cutter (any ship can carry one): a ring of thermal lances round its belly hatch. Wire a switch to it; while the craft's hull grapples grip a hull and it is on, it burns through what is under the hatch, part after part, until the way is open. Fit it in the hatch, its ring down.",
+  "group": "Ship",
+  "section": "Ship fittings",
+  "role": "logic",
+  "tool": "wrench",
+  "logic": {
+    "kind": "lamp"
+  },
+  "breach": {
+    "kind": "cutter",
+    "reach": 2.0,
+    "rate": 900
+  },
+  "power": 2500,
+  "config": [
+    {
+      "key": "colour",
+      "type": "colour",
+      "label": "Colour",
+      "group": "Light",
+      "default": "#ff6a20",
+      "tooltip": "The colour its lances glow while it burns."
+    }
+  ],
+  "mass": 260.0,
+  "health": 3000,
+  "armour": 30,
+  "material": "steel",
+  "color": "#1f2226",
+  "attachSeconds": 6.0,
+  "boxes": [
+    {
+      "min": [
+        -0.62,
+        -0.12,
+        -0.62
+      ],
+      "max": [
+        0.62,
+        0.1,
+        -0.5
+      ],
+      "color": "#30353b",
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -0.62,
+        -0.12,
+        0.5
+      ],
+      "max": [
+        0.62,
+        0.1,
+        0.62
+      ],
+      "color": "#30353b",
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -0.62,
+        -0.12,
+        -0.5
+      ],
+      "max": [
+        -0.5,
+        0.1,
+        0.5
+      ],
+      "color": "#30353b",
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        0.5,
+        -0.12,
+        -0.5
+      ],
+      "max": [
+        0.62,
+        0.1,
+        0.5
+      ],
+      "color": "#30353b",
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -0.45,
+        -0.16,
+        -0.45
+      ],
+      "max": [
+        -0.39,
+        -0.1,
+        -0.39
+      ],
+      "color": "#3a3d40",
+      "detail": true,
+      "finish": "soot"
+    },
+    {
+      "min": [
+        -0.44,
+        -0.175,
+        -0.44
+      ],
+      "max": [
+        -0.4,
+        -0.16,
+        -0.4
+      ],
+      "color": "#ff7020",
+      "detail": true,
+      "glow": true
+    },
+    {
+      "min": [
+        -0.03,
+        -0.16,
+        -0.47
+      ],
+      "max": [
+        0.03,
+        -0.1,
+        -0.41
+      ],
+      "color": "#3a3d40",
+      "detail": true,
+      "finish": "soot"
+    },
+    {
+      "min": [
+        -0.02,
+        -0.175,
+        -0.46
+      ],
+      "max": [
+        0.02,
+        -0.16,
+        -0.42
+      ],
+      "color": "#ff7020",
+      "detail": true,
+      "glow": true
+    },
+    {
+      "min": [
+        0.39,
+        -0.16,
+        -0.45
+      ],
+      "max": [
+        0.45,
+        -0.1,
+        -0.39
+      ],
+      "color": "#3a3d40",
+      "detail": true,
+      "finish": "soot"
+    },
+    {
+      "min": [
+        0.4,
+        -0.175,
+        -0.44
+      ],
+      "max": [
+        0.44,
+        -0.16,
+        -0.4
+      ],
+      "color": "#ff7020",
+      "detail": true,
+      "glow": true
+    },
+    {
+      "min": [
+        0.41,
+        -0.16,
+        -0.03
+      ],
+      "max": [
+        0.47,
+        -0.1,
+        0.03
+      ],
+      "color": "#3a3d40",
+      "detail": true,
+      "finish": "soot"
+    },
+    {
+      "min": [
+        0.42,
+        -0.175,
+        -0.02
+      ],
+      "max": [
+        0.46,
+        -0.16,
+        0.02
+      ],
+      "color": "#ff7020",
+      "detail": true,
+      "glow": true
+    },
+    {
+      "min": [
+        0.39,
+        -0.16,
+        0.39
+      ],
+      "max": [
+        0.45,
+        -0.1,
+        0.45
+      ],
+      "color": "#3a3d40",
+      "detail": true,
+      "finish": "soot"
+    },
+    {
+      "min": [
+        0.4,
+        -0.175,
+        0.4
+      ],
+      "max": [
+        0.44,
+        -0.16,
+        0.44
+      ],
+      "color": "#ff7020",
+      "detail": true,
+      "glow": true
+    },
+    {
+      "min": [
+        -0.03,
+        -0.16,
+        0.41
+      ],
+      "max": [
+        0.03,
+        -0.1,
+        0.47
+      ],
+      "color": "#3a3d40",
+      "detail": true,
+      "finish": "soot"
+    },
+    {
+      "min": [
+        -0.02,
+        -0.175,
+        0.42
+      ],
+      "max": [
+        0.02,
+        -0.16,
+        0.46
+      ],
+      "color": "#ff7020",
+      "detail": true,
+      "glow": true
+    },
+    {
+      "min": [
+        -0.45,
+        -0.16,
+        0.39
+      ],
+      "max": [
+        -0.39,
+        -0.1,
+        0.45
+      ],
+      "color": "#3a3d40",
+      "detail": true,
+      "finish": "soot"
+    },
+    {
+      "min": [
+        -0.44,
+        -0.175,
+        0.4
+      ],
+      "max": [
+        -0.4,
+        -0.16,
+        0.44
+      ],
+      "color": "#ff7020",
+      "detail": true,
+      "glow": true
+    },
+    {
+      "min": [
+        -0.47,
+        -0.16,
+        -0.03
+      ],
+      "max": [
+        -0.41,
+        -0.1,
+        0.03
+      ],
+      "color": "#3a3d40",
+      "detail": true,
+      "finish": "soot"
+    },
+    {
+      "min": [
+        -0.46,
+        -0.175,
+        -0.02
+      ],
+      "max": [
+        -0.42,
+        -0.16,
+        0.02
+      ],
+      "color": "#ff7020",
+      "detail": true,
+      "glow": true
+    },
+    {
+      "min": [
+        -0.6,
+        -0.131,
+        -0.6
+      ],
+      "max": [
+        0.6,
+        -0.115,
+        -0.54
+      ],
+      "color": "#e0b020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.6,
+        -0.131,
+        0.54
+      ],
+      "max": [
+        0.6,
+        -0.115,
+        0.6
+      ],
+      "color": "#e0b020",
+      "detail": true,
+      "finish": "hazard paint"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        0.1,
+        0.56
+      ],
+      "dir": "+y"
+    }
+  ]
+}
