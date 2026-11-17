@@ -1073,7 +1073,6 @@ public sealed class CrewWorld
             }
             var mode = (ShipAiMode)Math.Min((int)r.U8(), 2);
             var flags = r.U8();
-            int n = r.U8();
             var faction = (byte)0;
             float morale = -1;
             byte lost = 0;
@@ -1086,6 +1085,7 @@ public sealed class CrewWorld
                 morale = r.U8() / 255f;
                 lost = r.U8();
             }
+            int n = r.U8();
             var s = NewShip(c.Id, mode, (flags & 1) != 0);
             s.FromSetting = (flags & 2) != 0;
             SetFaction(c, s, faction);
