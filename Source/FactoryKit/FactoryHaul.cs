@@ -37,9 +37,17 @@ public static class FactoryHaul
             using (place.In())
                 return job.Join(at, yaw, out var why) ?? throw new FactoryKitException($"{bp.Name} doesn't build: {why}");
         }
+        // Where the site file puts them (FactorySite.OreLoop: the same plans, so the same numbers), the post's plan origin at the world's.
+        var site = FactorySite.OreLoop("Militia", Num("--post", 1));
         var pc = Spawn(post.Text(), "post.json", Vector3.Zero, 0);
         var rc = Spawn(refinery.Text(), "refinery.json", new Vector3(120, 0, 0), 0);
         var tc = Spawn(truckText, "hauler.json", new Vector3(60, 0, 40), MathF.PI / 2);
+        Vector3 PlanOrigin(Construct c, FactoryScript f) => ConstructCargo.FromPart(c, 0, Vector3.Zero) - f.RootAt;
+        var origin = PlanOrigin(pc, post);
+        var refAt = origin + FactorySite.OnSite(site.Bodies[1], Vector3.Zero);
+        rc.Pos += (refAt - PlanOrigin(rc, refinery)) with { Y = 0 };
+        rc.Wake();
+        Console.WriteLine($"  site {site.Name}: the refinery's plan origin {FactoryData.N(site.Bodies[1].X)} m east of the post's");
         var table = RecyclingTable.Current;
         var ore = table.IdOf("iron ore");
         var skip = post.IndexOf(post.Programme.Of("loading").First());
@@ -83,7 +91,8 @@ public static class FactoryHaul
         // 2. The hauler under the skip, LOAD on: the skip tips over the road into its bed.
         var s0 = At(pc, skip);
         var truckY = tc.Pos.Y + FactoryScript.FloorY + 0.05f;
-        Park(s0.X, s0.Z + 0.875f + 1.05f, truckY); // (the skip's lip lands about 1 m out from its pivot, which is 0.875 m from its middle)
+        var spot = origin + new Vector3(site.Bodies[2].X, 0, site.Bodies[2].Z); // (the site's hauler spot: its bed's middle under the skip's lip)
+        Park(spot.X, spot.Z, truckY);
         var before = Amount(tc, bed);
         Flip(pc, loadSwitch);
         Run(15);

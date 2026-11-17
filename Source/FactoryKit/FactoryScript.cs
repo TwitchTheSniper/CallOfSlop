@@ -47,6 +47,9 @@ public sealed class FactoryScript : BlueprintScript
         Group = "Factories";
     }
 
+    /// <summary>Where the first part (the root Foundation, part 0) stands on the plan, its origin at the ground: a spawned body's plan origin is part 0's place less this.</summary>
+    public Vector3 RootAt { get; private set; }
+
     /// <summary>The built part of a programme object (its index in the body as the blueprint builds it), or -1.</summary>
     public int IndexOf(FactoryObject o) => _of.TryGetValue(o.Id, out var v) ? v.Index : -1;
 
@@ -100,6 +103,7 @@ public sealed class FactoryScript : BlueprintScript
         var cols = (int)MathF.Ceiling(Plan.Length / FactoryPlan.Tile);
         var rows = (int)MathF.Ceiling(Plan.Depth / FactoryPlan.Tile);
         var (ri, rj) = (cols / 2, rows / 2);
+        RootAt = V(1 + 2 * ri, 0, -1 - 2 * rj);
         var root = Root("Foundation", V(1 + 2 * ri, 0.15f, -1 - 2 * rj), Front);
         TilePaint(root, ri, rj);
         _tiles[(ri, rj)] = root;

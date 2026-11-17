@@ -33,6 +33,32 @@ public static class FactoryCli
         return style.Seeds.TryGetValue(b.Function, out var seeds) ? seeds.Select(s => b with { Seed = s }).ToList() : [b];
     }
 
+    /// <summary><c>--gen-factory site [--style S] [--seed N] [--check]</c>: the ore loop's site file from the plans (default: the style's shipped refinery seeds).</summary>
+    private static int GenSite(string[] args)
+    {
+        var style = Flag(args, "--style") ?? "Militia";
+        var seeds = int.TryParse(Flag(args, "--seed"), out var one) ? [one] : FactoryStyles.Find(style).Seeds.TryGetValue("refinery", out var s) ? s.ToList() : [1];
+        var dir = Flag(args, "--out") ?? FactorySite.RepoFolder;
+        var failed = 0;
+        foreach (var seed in seeds)
+        {
+            var site = FactorySite.OreLoop(style, seed);
+            var path = Path.Combine(dir, FactorySite.FileName(site.Name));
+            var text = site.Text();
+            if (Has(args, "--check"))
+            {
+                var same = File.Exists(path) && File.ReadAllText(path).Replace("\r\n", "\n") == text;
+                Console.WriteLine($"{FactorySite.FileName(site.Name)}: {(same ? "identical" : "DIFFERS")}");
+                failed += same ? 0 : 1;
+                continue;
+            }
+            Directory.CreateDirectory(dir);
+            File.WriteAllText(path, text);
+            Console.WriteLine($"wrote {path}");
+        }
+        return failed;
+    }
+
     /// <summary>The vehicle check's options for a building: it stands, it doesn't drive; parts within the size class.</summary>
     public static VehicleCheckOptions CheckOptions(FactoryBrief b) => new()
     {
@@ -48,6 +74,8 @@ public static class FactoryCli
 
     public static int GenFactory(string function, string[] args)
     {
+        if (function.Equals("site", StringComparison.OrdinalIgnoreCase))
+            return GenSite(args);
         List<FactoryBrief> briefs;
         try
         {
