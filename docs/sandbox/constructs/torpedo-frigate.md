@@ -90,7 +90,7 @@ inside the hull, in one room with engineering.
   enemy frigate must be able to fire); one a player's Building Station fits comes empty and is filled by hand
   (`ConstructBuild.SetConfig`, `ConstructWorld.PlayerBuild`).
 - Four Zero Day Countermeasure Launchers (flare guns) on the spine, all fired by the flares button in ops.
-- Radar and lock (Karl, 2026-11-17): a Long Range Sensor on a pad on the spine's step, to port of the mast, wired into a
+- Radar and lock (Karl, 2026-11-17): a Long Range Sensor on the shuttle's cradle deck aft of the pod, by the mast, wired into a
   Fire Director in the mess's starboard aft corner below it (a wire reaches 8 m, so the director sits under the sensor, not
   in ops). Every seat gets the scope, and the middle mouse locks a contact (`ConstructRadar.CanLock`); a torpedo launched
   from either bay takes the lock while the contact is within its seeker's 2 km. Shoot either part and it is a scope again.
