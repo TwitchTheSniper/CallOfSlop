@@ -70,7 +70,7 @@ public sealed partial class Game
     /// </summary>
     private bool BreakdownShip(Construct c)
     {
-        if (c.Wreck || _shipAi.ContainsKey(c.Id))
+        if (c.Wreck || Crew.Has(c.Id))
             return false;
         if (c.StabCount > 0)
             return true;

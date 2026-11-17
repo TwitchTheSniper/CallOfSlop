@@ -336,7 +336,7 @@ public sealed partial class Game
         }
         else
         {
-            var room = Math.Min(Math.Clamp(SandboxBotCap, 0, SpawnBotCapMax) - SandboxBotCount(), FreeBotIds());
+            var room = Math.Min(Math.Clamp(SandboxBotCap, 0, SpawnBotCapMax) - SandboxBotCount() - Crew.Bodied, FreeBotIds());
             if (room <= 0)
                 return $"the bot cap is reached ({SandboxBotCap})";
             if (by.Id != LocalId)
@@ -880,7 +880,7 @@ public sealed partial class Game
                     want = Math.Min(want, total - (int)p.SpawnTotal);
                 var bots = d.Logic == CLogic.BotSpawner;
                 want = Math.Min(want, bots
-                    ? Math.Min(Math.Clamp(SandboxBotCap, 0, SpawnBotCapMax) - SandboxBotCount(), FreeBotIds())
+                    ? Math.Min(Math.Clamp(SandboxBotCap, 0, SpawnBotCapMax) - SandboxBotCount() - Crew.Bodied, FreeBotIds())
                     : Math.Min(SandboxZombieCap, SpawnZombieMax) - SandboxZombieCount());
                 if (want > 0 && SandboxInfiniteParts && c.Owner != LocalId && Players.ContainsKey(c.Owner))
                 {

@@ -394,7 +394,7 @@ public sealed partial class Game
                 NavEnd(o, c, "the ship can't fly it any more");
                 continue;
             }
-            if (c.Driver != 255 && ((c.DriveKeys & NavManualKeys) != 0 || c.LiftInput != 0) && o.Phase != NavPhase.None)
+            if (Constructs.HumanDriver(c) && ((c.DriveKeys & NavManualKeys) != 0 || c.LiftInput != 0) && o.Phase != NavPhase.None)
             {
                 NavEnd(o, c, "its driver took the controls");
                 continue;

@@ -160,6 +160,8 @@ public sealed class AircraftPilot
     public bool Plane;
     public int Leg; // the patrol corner it flies to
     public bool Landed; // the craft is down and let go: the pilot is done
+    /// <summary>Player ids that are crew bodies (CrewWorld.IsBody): one at the controls is this pilot's own, not a player taking over.</summary>
+    public bool[]? CrewBodies;
     private int _tick;
     private float _landAlt = float.NaN;
     private Vector3 _landAt;
@@ -202,7 +204,7 @@ public sealed class AircraftPilot
         _tick = Every;
         if (w.Get(Id) is not { } c || AircraftAutopilot.Stab(c) < 0)
             return false;
-        if (c.Driver != 255)
+        if (c.Driver != 255 && (CrewBodies == null || !CrewBodies[c.Driver]))
         {
             AircraftAutopilot.Off(c, w); // (a player has the seat: theirs now)
             return false;

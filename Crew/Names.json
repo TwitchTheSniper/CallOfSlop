@@ -1,0 +1,9 @@
+{
+  "format": "call-of-slop-crew-names/1",
+  "about": "Crew members' names (docs/sandbox/design/bot-brain.md). ASCII. A member keeps its number for life; its name is names[number % count]. Per faction lists come with phase 3.",
+  "names": [
+    "Abel", "Ada", "Anders", "Bea", "Boris", "Cato", "Cleo", "Dag", "Dina", "Edda", "Emil", "Fenna", "Flint", "Greta", "Gus",
+    "Hale", "Hilde", "Ike", "Ines", "Jory", "Juno", "Kai", "Kit", "Lars", "Lena", "Milo", "Mira", "Nils", "Nora", "Odo", "Olga",
+    "Pim", "Pia", "Quill", "Rafe", "Rhea", "Sven", "Suki", "Tam", "Tova", "Ulf", "Una", "Vik", "Vera", "Wren", "Yuri", "Zara", "Zed"
+  ]
+}
