@@ -83,3 +83,5 @@ production.md "Linked logistics".
   lost a route's end: now its lines, protocol 328), and a structure rebroadcast left a client's link parts empty until the next change
   ("no state heard" while docking: it sends them again). The window tool's input verbs grab the mouse back, which closes a panel a
   frame after it opens; its panel isn't read through the tool.
+- After every fix above: `--linked-check` all passed; sections by name passed: Mode switch reset, Assembling, Assembling network,
+  Construct storage, Packets, Sandbox body sync, Space launch, Frame allocations, Large systems, No z-fighting.
