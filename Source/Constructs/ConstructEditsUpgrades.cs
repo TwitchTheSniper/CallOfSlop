@@ -42,7 +42,7 @@ public sealed partial class ConstructEdits
     public float CatchOf(byte player, bool creative) => ReachOf(player, creative) * (Has(player, ToolStat.Tractor, creative) ? 2 : 1);
 
     /// <summary>A timed edit's seconds for this player (the attach tool's fitting speed divides them).</summary>
-    public double FitSeconds(byte player, double seconds) => seconds <= 0 ? 0 : seconds / Math.Max(0.1f, Stat(player, ToolStat.Fitter));
+    public double FitSeconds(byte player, double seconds) => seconds <= 0 ? 0 : seconds * ShellFitSlow[player] / Math.Max(0.1f, Stat(player, ToolStat.Fitter)); // (a robot shell's worn arms: GameShellWear.cs)
 
     /// <summary>Every level back to the base (a new match, a mode switch; a saved world's record brings theirs back).</summary>
     public void ResetLevels(byte player) => LevelsOf(player).Clear();

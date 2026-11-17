@@ -74,7 +74,42 @@ reaches), `Source/Game/GameRobotShell.cs` (the swap, the link, the wire, the sav
 - **Saves.** A world saved while someone wears a shell records their body (in the chair) and its things (`ShellCatch`). A shell
   being worn is not a construct, so a game closed with someone in a shell loses that shell (leaving the game first stands it).
 
-Not yet: a body drawn in the chair while you are away; a shell's damage kept between visits.
+Not yet: a body drawn in the chair while you are away; a shell's damage kept between visits (its wear is: below).
+
+## Robot shell wear
+
+Karl (2026-11-17): "mild, but over time they wear down and need maintenance". Data `Constructs/ShellWear.json` (refused with a
+reason, and then shells don't wear); rules `Source/Constructs/ShellWear.cs`; the game's side `Source/Game/GameShellWear.cs`; the
+looks `Source/UI/UiShellWear.cs`, `Source/Render/LegAnimator.cs` (`ShellLegs`); the sounds `Source/Audio/SynthShell.cs`.
+
+- **Eight works.** Two leg actuators, two arm actuators, the power cell, the processor, the optics and the plating, each a byte
+  of wear (0 new, 255 failed). Worn ones wear only in Survival, while someone wears the shell: legs by how much they walk, arms
+  with a tool out (a little without), the rest all the time. The file gives each family's hours from new to failed (5 to 12).
+  A hit's damage takes a little from the plating and from one other work.
+- **Where it is kept.** While worn: `Player.ShellWear`, the server's, sent to every peer in `Msg.Shell` (8 bytes, protocol 337)
+  on a 5 % step or a failure. Standing: four hidden Mask settings of the shell's part (`ShellWear0..3`, two works each), so it
+  rides saves, blueprints and CBody.
+- **What shows.** Below `worn` (40 %) a work shows its fault, more strongly towards failure; at 0 it has failed.
+  - Legs: a worn leg limps (the swing foot drags, pace down to 80 %); a lost leg is folded away and the shell hops (50 %, both 30 %),
+    with the servo grind heard by everyone near.
+  - Arms: shaky arms fit parts slower (up to 1.35x the time, one lost 1.6x, both 2.2x: `ShellFitSlow`).
+  - Power: sluggish (pace down to 80 %, flat 65 %) and a brown-out now and then (the screen dims, a whine falls and comes back).
+  - Processor: a glitch now and then (a torn band across the view, a bit-crushed stutter). Optics: static over the view, a soft crackle.
+  - Plating: thin plating lets more of a hit through (up to 1.4x, cracked 1.5x).
+  - The HUD's shell line lists what is worn; a notice says when a work turns worn (at most once a minute) or fails.
+  The faults come seldom when just worn (about a minute apart) and closer as the work nears failure; every sound is short and soft.
+- **Maintenance.** Aim the attach tool at a standing shell (its look line says what each work is at and what LMB does), or a
+  crew engineer does it:
+  - With the work's spare part held or in the inventory (`Constructs/Parts/Shells/Spares`: Shell Leg Actuator, Shell Arm
+    Actuator, Shell Power Cell, Shell Processor, Shell Optics, Shell Plating), LMB fits it: that work is new.
+  - Without one, LMB services the most worn work that hasn't failed, back to `serviceTo` (70 %), for `serviceCost` of
+    `serviceMaterial` (one metal), through the same pay as mending a breakdown. A failed work needs its spare.
+  - A crew engineer on a ship services, free, a shell standing aboard or near, and a crewmate or the owner wearing one aboard,
+    down to the service mark (`CrewShellStart`, 15 s a shell).
+  - The first time someone wakes in a shell in a Survival world, a spares pouch is put in their inventory (two leg actuators,
+    one of each other spare).
+- **Not yet:** the spares have no recipe (the Assembler skips `Shells/Spares`; they are meant for the new production system).
+  Window-shot verbs for trying it: `shellwear [WORK PCT]`, `shellleave`, `shellfix`.
 
 ## Touch panels
 

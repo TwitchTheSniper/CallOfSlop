@@ -108,6 +108,10 @@ public enum Sfx
     ReactorHumHeavy, // a reactor working hard: a deeper, pulsing hum (a loop, faded in over the light one by load)
     DockClamp, // a Robot Shell Dock's clamps closing on a shell: servo, magnetic thunk, locking pins
     DockRelease, // the dock's clamps letting a shell go: a chirp, pins out, a hydraulic hiss
+    ShellGlitch, // a worn robot shell's processor glitching: a short digital stutter (SynthShell.cs, played by Game.ShellWearFrame)
+    ShellStatic, // its optics: a soft crackle of static
+    ShellBrownout, // its power cell browning out: a falling whine and a click
+    ShellServoGrind, // a worn leg actuator: a short grinding servo (3D, nearby players hear it)
     COUNT,
 }
 
@@ -1050,6 +1054,8 @@ public static partial class Synth
             return breakdown; // SynthBreakdown.cs
         if (MachineFoley(sfx) is { } machine)
             return machine; // SynthMachine.cs
+        if (ShellFoley(sfx, variant) is { } shell)
+            return shell; // SynthShell.cs
         var rng = new Random(77 + (int)sfx + variant * 1000);
         Buf b;
         switch (sfx)

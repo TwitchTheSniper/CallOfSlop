@@ -332,6 +332,8 @@ public static class LegAnimator
             Span<float> needW = stackalloc float[2]; // how much each foot pulls the pelvis down (a swing foot mid-air: not at all)
             var walkHipX = crouch ? 0.17f : 0.15f;
             var idleHipX = crouch ? 0.19f : 0.17f;
+            ShellLegs(p, out var limp0, out var limp1, out var lost0, out var lost1); // (a worn robot shell: GameShellWear.cs)
+            var hopLeg = lost0 && !lost1 ? 1 : lost1 && !lost0 ? 0 : -1;
             for (var i = 0; i < 2; i++)
             {
                 var side = i == 0 ? 1f : -1f;
@@ -353,8 +355,13 @@ public static class LegAnimator
                     pitch = -0.45f * run * arc;
                     pull = 0.5f + 0.5f * MathF.Cos(MathF.Tau * s);
                     planted = false;
+                    if (i == 0 ? limp0 : limp1)
+                    {
+                        up *= 0.2f; // (a worn actuator: the foot drags, toes down)
+                        pitch = -0.35f * MathF.Sin(MathF.PI * s);
+                    }
                 }
-                var gait = new Vector3(side * walkHipX + dir.X * along, AnkleHeight + up, -dir.Y * along);
+                var gait = new Vector3((hopLeg == i ? 0.07f : walkHipX) * side + dir.X * along, AnkleHeight + up, -dir.Y * along);
                 // Idle: feet stay where they were planted (world) and shuffle back under the body when it turns or drifts.
                 var idleZ = IdleZ(crouch, i);
                 var idleLocal = Vector3.Transform((i == 0 ? st.Plant0 : st.Plant1) - pos, rotYaw);
@@ -536,6 +543,19 @@ public static class LegAnimator
                 var pole = Vector3.Normalize(new Vector3(side * 0.15f, 0.1f * st.Air, -1f));
                 Solve(pose, i, hip, target[i], pole, FootFrame(footYaw[i], footPitch[i], normal[i]));
             }
+            if (hopLeg >= 0 && st.Air < 0.5f)
+            {
+                // One leg lost: the shell hops on the other, up while its foot swings, down as it plants.
+                var u = st.Phase + hopLeg * 0.5f;
+                u -= MathF.Floor(u);
+                var arc = u < duty ? 0 : MathF.Sin(MathF.PI * (u - duty) / (1 - duty));
+                var hop = Matrix4x4.CreateTranslation(0, 0.13f * arc * moving, 0);
+                pose.Pelvis *= hop;
+                pose.Upper *= hop;
+                pose.Thigh[hopLeg] *= hop;
+                pose.Shin[hopLeg] *= hop;
+                pose.Foot[hopLeg] *= hop;
+            }
         }
 
         // ---- Locals for the scene graph / immediate path ----
@@ -549,6 +569,21 @@ public static class LegAnimator
             pose.FootLocal[i] = pose.Foot[i] * ArmNodes.RigidInverse(pose.Shin[i]);
             pose.AnkleWorld[i] = Vector3.Transform(pose.Ankle[i], body);
         }
+        if (!seated && p.InShell)
+        {
+            ShellLegs(p, out _, out _, out var gone0, out var gone1);
+            for (var i = 0; i < 2; i++)
+                if (i == 0 ? gone0 : gone1)
+                {
+                    // A lost leg: drawn as nothing, folded into the hip (its children follow the thigh's frame).
+                    var none = Matrix4x4.CreateScale(0.001f);
+                    pose.ThighLocal[i] = none * pose.ThighLocal[i];
+                    pose.Thigh[i] = none * pose.Thigh[i];
+                    pose.Shin[i] = none * pose.Thigh[i];
+                    pose.Foot[i] = none * pose.Thigh[i];
+                    pose.ShinLocal[i] = pose.FootLocal[i] = Matrix4x4.Identity;
+                }
+        }
         pose.Phase = st.Phase;
         pose.Speed = speed;
         pose.Run = run;
@@ -559,6 +594,21 @@ public static class LegAnimator
         _calls++;
         _ticks += Stopwatch.GetTimestamp() - t0;
         return pose;
+    }
+
+    /// <summary>A robot shell's legs (index 0 the right leg, 1 the left): worn (it drags) or lost (failed: not drawn, the shell hops).</summary>
+    private static void ShellLegs(Player p, out bool limp0, out bool limp1, out bool lost0, out bool lost1)
+    {
+        limp0 = limp1 = lost0 = lost1 = false;
+        if (!p.InShell)
+            return;
+        var t = ShellWear.Current;
+        var r = p.ShellWear[(int)ShellWork.LegR];
+        var l = p.ShellWear[(int)ShellWork.LegL];
+        lost0 = r >= ShellWear.Failed;
+        lost1 = l >= ShellWear.Failed;
+        limp0 = t.Worn(r);
+        limp1 = t.Worn(l);
     }
 
     /// <summary>

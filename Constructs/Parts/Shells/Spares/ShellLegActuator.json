@@ -1,0 +1,81 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Shell Leg Actuator",
+  "description": "A robot shell's knee and hip drive: a motor, a gearbox and the shin's push rod. Fit it to a standing Robot Shell with the attach tool: the worn work is new again.",
+  "group": "Logic",
+  "section": "Shells",
+  "role": "frame",
+  "tool": "wrench",
+  "mass": 4.5,
+  "health": 40,
+  "armour": 1,
+  "material": "steel",
+  "color": "#56606a",
+  "attachSeconds": 1,
+  "boxes": [
+    {
+      "min": [
+        -0.05,
+        0.0,
+        -0.05
+      ],
+      "max": [
+        0.05,
+        0.36,
+        0.05
+      ]
+    },
+    {
+      "min": [
+        -0.075,
+        0.3,
+        -0.075
+      ],
+      "max": [
+        0.075,
+        0.44,
+        0.075
+      ],
+      "color": "#30363d"
+    },
+    {
+      "min": [
+        -0.08,
+        0.04,
+        -0.06
+      ],
+      "max": [
+        0.08,
+        0.12,
+        0.06
+      ],
+      "color": "#30363d",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.02,
+        0.443,
+        -0.02
+      ],
+      "max": [
+        0.02,
+        0.47,
+        0.02
+      ],
+      "color": "#b87333",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

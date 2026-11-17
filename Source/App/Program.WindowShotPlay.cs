@@ -16,7 +16,7 @@ public static partial class Program
     private static int _wsClipBodies, _wsClipLoose;
     private static bool _wsClipToolAsked;
 
-    private static bool WsPlayKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "sit" or "seated" or "getout" or "recycle" or "clip" or "partinfo" or "partlook" or "hands" or "cabto" or "damage" or "makeengine" or "standon" or "aimintake" or "feetup" or "cave" or "spawnbp" or "bringon" or "dropmotion";
+    private static bool WsPlayKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "sit" or "seated" or "getout" or "recycle" or "clip" or "partinfo" or "partlook" or "hands" or "cabto" or "damage" or "makeengine" or "standon" or "aimintake" or "feetup" or "cave" or "spawnbp" or "bringon" or "dropmotion" or "shellwear" or "shellleave" or "shellfix";
 
     private static bool WsPlayVerb(Game g, Player me, string verb, string arg)
     {
@@ -47,6 +47,37 @@ public static partial class Program
             case "crewhit": // "crewhit [PLAYER]": host, a server shortcut: this player's (or that player id's: a joined client's) shot (DamageBy) takes 1 hp off a part of the first crewed body, as a round would
                 if (g.IsServer)
                     Console.WriteLine($"[windowshot] crewhit: {g.CrewHitFirst(byte.TryParse(arg, out var hitBy) && g.Players.TryGetValue(hitBy, out var hp) ? hp : me)}");
+                return true;
+            case "shellwear": // "shellwear WORK PCT": host, a test state: that work (LegL, LegR, ArmL, ArmR, Power, Cpu, Optics, Plating or all) of the worn shell, or of the nearest standing one, at PCT % (GameShellWear.cs); "shellwear": the worn shell's works and its pace as this peer has them
+            {
+                var bits = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                if (bits.Length >= 2 && float.TryParse(bits[1], System.Globalization.NumberStyles.Float, ci, out var pct))
+                    WsSay($"shellwear: {g.ShellWearSet(me, bits[0], pct)}");
+                var line = $"in shell {me.InShell}, pace x{Game.ShellMoveMult(me):0.00}, fit x{Game.ShellFitShare(me.ShellWear):0.00}:";
+                for (var k = 0; k < ShellWear.Works; k++)
+                    line += $" {ShellWear.ShortOf((ShellWork)k)} {ShellWear.Pct(me.ShellWear[k])}%";
+                foreach (var d in g.Constructs.Bodies)
+                    if (d.PartCount == 1 && d.Parts[0].D.ShellBody)
+                    {
+                        ShellCond sc = default;
+                        ShellWear.Read(d.Parts[0], d.Parts[0].D, ref sc);
+                        WsSay($"shellwear: standing shell {d.Id} at {d.WorldCom}: L leg {ShellWear.Pct(sc[0])}%, plating {ShellWear.Pct(sc[7])}%, look {g.ShellWearLook(d, 0) ?? "(none)"}");
+                    }
+                var legs = Game.ShellSpare(ShellWork.LegL) is { } spare ? g.SandboxInventory(me.Id).Count(spare.Id) : -1;
+                WsSay($"shellwear: {line}; spare leg actuators {legs}; look \"{g.SandboxLookText}\"");
+                return true;
+            }
+            case "shellfix": // "shellfix": the attach tool's Fire at the nearest standing Robot Shell, as its look line sends it (CActKind.Mend), whatever the crosshair is on
+                foreach (var d in g.Constructs.Bodies)
+                    if (d.PartCount == 1 && d.Parts[0].D.ShellBody)
+                    {
+                        WsSay($"shellfix: shell {d.Id}, {System.Numerics.Vector3.Distance(me.Eye, d.WorldCom):0.0} m from the eye");
+                        g.SandboxSendMend(d.Id, 0);
+                        break;
+                    }
+                return true;
+            case "shellleave": // "shellleave": the Esc menu's Leave the shell
+                g.ShellAskLeave();
                 return true;
             case "crewbreak": // "crewbreak [fail]": host, a server shortcut: the first crewed body's breakdown clock runs out now (a warning; "fail": the part breaks down at once)
                 if (g.IsServer)
