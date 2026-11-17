@@ -445,11 +445,11 @@ the shot is fired (`ConstructPower.Draw`); short of it, the gun waits with its r
 - **Laser Generator S/M/L** (Turret works): serves 500, 1,800 and 6,000 kW; it bolts to a Turret Ring's trunk (the
   Autoloader's sockets and sizes) or behind a mount.
 - **Laser Pod**: emitter and generator in one housing, 80 kW (a fifth of the S), no works, for a turntable or a deck.
-- **The beam** is `GunFx.Beam` (protocol 329, at the end of the enum): a hitscan pulse through `Round` like any round, no
+- **The beam** is `GunFx.Beam` (protocol 330, at the end of the enum): a hitscan pulse through `Round` like any round, no
   lead (`RoundV` 0), drawn as a red line from the muzzle to the hit for 0.12 s with the Trophy zap.
 - **The Zero Day's railgun** takes 15 MJ a slug (`TorpedoFrigateParts.RailEnergy`); a Capacitor Bank M stands in
   engineering aft of the reactor: 40 MJ, two full slugs and a bit, and it refills one in 10 s, the gun's own rate of fire.
-- On the wire (protocol 329) a body's Full carries `Cap`; a pose carries the pool's share as a byte when the body has
+- On the wire (protocol 330) a body's Full carries `Cap`; a pose carries the pool's share as a byte when the body has
   banks (bit 4 of the asleep byte), and a still body sends a pose when it changes (`StateDue`).
 - `--check-vehicle` prints a `capacitors:` line (what they hold, the refill, shots per gun) and fails an energy gun with
   no bank on its circuit; a laser on a ring reports its generators with the heads, not a feed.
@@ -563,11 +563,11 @@ then `--selftest-only`). If something fails that a command can't catch, one sect
 | --- | --- | --- |
 | **0. The mechanism** | `ShipWorks.json` and its table; the `works` and `worksPiece` blocks; `ConstructWorks.Build` at the rebuild; the look lines; `--check-vehicle`'s `works:` lines. No part uses it yet, so no ship changes | `--check-construct-parts` clean; a hand-written test blueprint (a nozzle, a mount, a core) reports 100%, and 25% with the core taken out; rebuild time on the Zero Day and the Titan Walker unchanged |
 | **1. Drives** | `ship_works` generator: Hull Mount, Drive Nozzle, Drive Core, Fuel Pump, Coolant Exchanger, Drive Pod. The cap in every thrust reader (3.3). Burn figures. The panel's report, the service flag, mending a broken piece | A demo blueprint of each class flown in a window: full thrust; shoot the pump, half or a quarter; mend it; a pod's failure refuses at the panel. A joined client sees the same look lines and flames. `--flight-check` on the demos |
-| **2. The ships' drives** | Rust Bucket, Magpie, Halberd, Zero Day as section 11 (drives only). Breakdowns onto works and onto every crewed player ship (section 7). The skill's new section. The four ship docs | Each: `--gen-parts`, `--check-vehicle` (works 100%, 0 coplanar), `--selftest-only "No z-fighting"`, `--check-building`, `--flight-check` against the old figures, `--conduit-check`. The rust bucket start in a window to a first breakdown, mended outside at the pod; a second ship (a Halberd from the Blueprints tab, boarded) to its own first breakdown, seen to inside; a host and a joined client aboard different ships. `--ship-ai-check` for the Zero Day. The gallery republished |
+| **2. The ships' drives** | Rust Bucket, Magpie, Halberd, Zero Day as section 11 (drives only). Breakdowns onto works and onto every crewed player ship (section 7). The skill's new section. The four ship docs | Each: `--gen-parts`, `--check-vehicle` (works 100%, 0 coplanar), `--selftest-only "No z-fighting"`, `--check-building`, `--flight-check` against the old figures, `--conduit-check`. The rust bucket start in a window to a first breakdown, mended outside at the pod; a second ship (a Halberd from the Blueprints tab, boarded) to its own first breakdown, seen to inside; a host and a joined client aboard different ships. `--crew-check` for the Zero Day. The gallery republished |
 | **2b. The engine correction** (section 15) | A thruster's own stack in `ConstructWorks.Build`; nacelle heads with `needs`; Drive Nacelle S/M in place of the Drive Pod; the Zero Day's four bells and engine bay, the Magpie's and the Rust Bucket's nacelle engines; lift jets and retros back to whole parts; the skill's 1d and the ship docs | Section 15.5, all seven points |
 | **3. Turret Rings and autoloaders** | Turret Ring (the joint and its trunk), the ring feed in `ConstructAmmo`, Autoloader. The Halberd's and Zero Day's PDCs as section 11 | A ring fed from a container fires through 360 degrees with the store emptying; cut the feed, 3 s of rounds left; an autoloaded cannon's reload against a bare one; host and client. The two ships' checks again |
 | **4. Reload Hoists** | Reload Hoist, its magazine racks, the move. Optionally the Zero Day's second drums | A launcher of four with a magazine of eight fires twelve with nobody outside; power off, it stops; a magazine hit cooks off inside (`--bench-cookoff` for the cost); a client sees each reload arrive |
-| **5. Energy and lasers** | `gun.energy`, Capacitor Bank, the railguns' draw; then Laser Emitter, Laser Generator, Laser Pod, the beam's look | A railgun fires its burst and waits on the reactor; a trunked laser against a Laser Pod on the same target; capacitors shot out, no fire. `--ship-ai-check` (its railgun still fires) |
+| **5. Energy and lasers** | `gun.energy`, Capacitor Bank, the railguns' draw; then Laser Emitter, Laser Generator, Laser Pod, the beam's look | A railgun fires its burst and waits on the reactor; a trunked laser against a Laser Pod on the same target; capacitors shot out, no fire. `--crew-check` (its railgun still fires) |
 | **6. The other types and Overdrive** | Rocket and Ion works and nozzles; the Overdrive setting; the Dray if it is waiting; docs folded into `docs/sandbox/constructs/` (a new `ship-works.md` there, indexed in CONSTRUCTS.md) and this file marked history | A demo of each type; overdrive's thrust, burn and breakdown clock |
 
 Phases 0 to 2b are the engines and stand alone; 2b is done before 3 goes on (section 15.6). 3 and 4 are independent of each other. 5 is the largest and newest.
@@ -581,7 +581,7 @@ sheets of the changed rooms.
 - **Readers of thrust.** A reader left on the full `ThrustForce` makes a stabilizer count on a dead drive. Grep it
   again at the end of phase 1.
 - **The AI crew and the autopilot** (`ConstructShipAi`, `GameNav`) fly by `NavDrive` and the stabilizer: both go
-  through the cap once 3.3 is done. Fly `--ship-ai-check` after phase 2.
+  through the cap once 3.3 is done. Fly `--crew-check` after phase 2.
 - **Room in the hulls.** The Halberd's engineering deck and the Zero Day's stern are tight. Expect to move rooms.
 - **A reload is a structure change** and renumbers parts: the hoist finds its parts again by def and place after each
   move, as the breakdown does.
@@ -781,7 +781,7 @@ views, and where one is tight use the order given here; never move a cylinder of
 - The four 1.5 MN lift jets under the keel and the two 1.2 MN retros in the bow's cheeks become whole parts again
   (rule 6): take the `works` block off both, and nothing stands in the lower deck for them.
 - Four thrusters across the stern can now push unevenly, which the mixes will use for yaw. Fly `--flight-check` and
-  `--ship-ai-check` and compare with the figures before.
+  `--crew-check` and compare with the figures before.
 
 **Magpie** (`MinerParts.cs`; nacelles at x = 6.95, radius 1.15 m, z 19.4 to 29.2).
 

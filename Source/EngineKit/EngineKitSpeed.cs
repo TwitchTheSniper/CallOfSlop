@@ -3,7 +3,7 @@ using System.Numerics;
 namespace CallOfSlop.EngineKit;
 
 /// <summary>
-/// <c>--speed-test FILE... [--seconds N]</c> (docs/vehiclekit/ENGINEKIT.md, "Why cars are slow"): a blueprint built on the drive check's flat floor and driven on
+/// <c>--speed-test FILE... [--seconds N] [--gravity G] [--anti S]</c> (G: the world's gravity in g, 1 by default; S: a share of its weight held off as an Anti-Grav field would, 0 to 0.99) (docs/vehiclekit/ENGINEKIT.md, "Why cars are slow"): a blueprint built on the drive check's flat floor and driven on
 /// full throttle for N seconds (default 40): its mass, engine, gearing, wheel and what tops it out, the top speed and the times to 10, 20 m/s and 95 % of its top.
 /// What limits it: <b>gearing</b> when its top gear reaches the limiter, <b>grip</b> when the engine asks more of the driven tyres at the top speed than they
 /// hold (their friction limits; a two-wheel drive on Off-Road Wheels tops out near 27 m/s whatever the engine), else <b>power against drag</b> (the arcade air drag, <see cref="ConstructPhysics.AirDrag"/>,
@@ -18,19 +18,34 @@ public static class EngineKitSpeed
     public static int Cli(string[] args)
     {
         var seconds = 40f;
+        var gravity = 1f;
+        var anti = 0f;
         var files = new List<string>();
         for (var i = 0; i < args.Length; i++)
         {
             if (args[i].Equals("--seconds", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
                 seconds = float.Parse(args[++i], System.Globalization.CultureInfo.InvariantCulture);
+            else if (args[i].Equals("--gravity", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
+                gravity = float.Parse(args[++i], System.Globalization.CultureInfo.InvariantCulture);
+            else if (args[i].Equals("--anti", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
+                anti = Math.Clamp(float.Parse(args[++i], System.Globalization.CultureInfo.InvariantCulture), 0, 0.99f);
             else if (!args[i].StartsWith("--", StringComparison.Ordinal) && (args[i].EndsWith(".json", StringComparison.OrdinalIgnoreCase)))
                 files.Add(args[i]);
         }
         Console.WriteLine("name | mass kg | engine | peak kW | N m | gears x final | wheel r m | top m/s | 0-10 s | 0-20 s | 0-95% s | gear at top | rpm at top | gearing top m/s | drag kW at top | limit");
-        foreach (var f in files)
+        var was = World.GravityScale;
+        World.GravityScale = gravity;
+        try
         {
-            var r = Measure(File.ReadAllText(f), Path.GetFileNameWithoutExtension(f), seconds);
-            Console.WriteLine(Line(r));
+            foreach (var f in files)
+            {
+                var r = Measure(File.ReadAllText(f), Path.GetFileNameWithoutExtension(f), seconds, anti);
+                Console.WriteLine(Line(r));
+            }
+        }
+        finally
+        {
+            World.GravityScale = was;
         }
         return 0;
     }
@@ -41,7 +56,7 @@ public static class EngineKitSpeed
     private static string T(float t) => t < 0 ? "-" : t.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture);
 
     /// <summary>Builds <paramref name="text"/> on a flat floor, settles it, and drives it on full throttle for <paramref name="seconds"/>. Allocates: a tool, never on a tick.</summary>
-    public static Run Measure(string text, string name, float seconds)
+    public static Run Measure(string text, string name, float seconds, float anti = 0)
     {
         var bp = ConstructBuild.ParseBlueprint(text, name);
         var q = new SelfTest.DriveWorld();
@@ -49,6 +64,8 @@ public static class EngineKitSpeed
         var c = ConstructBuild.BuildOnGround(w, bp, Vector3.Zero, 0, out var why, VehicleKit.VehicleChecks.TowOf(bp));
         if (c == null)
             return new Run(name, 0, "-", 0, 0, 0, "-", 0, 0, 0, -1, -1, -1, 0, 0, 0, 0, 0, "doesn't build", why);
+        if (anti > 0 && c.AntiCount == 0)
+            c.AntiShare = anti; // (as a powered generator's field would: no generator part, so the logic step leaves it be)
         for (var t = 0; t < 30; t++)
             w.Step(q, World.TickDt);
         c.Driver = 1;

@@ -24,6 +24,9 @@ public struct ShipAiTarget
 /// the pilot looks; Shift and Ctrl for height; W and S for range; Q and E to slide about), the gunners' seats lay and fire their turrets,
 /// and the Buttons wired to Ordnance Racks launch them. It closes on its target, keeps its guns' range, and holds where it is with
 /// nothing to fight. A player in a seat has that seat: in the pilot's, the helm is theirs and the crew stands down.
+/// Since the bot brain (docs/sandbox/design/bot-brain.md, phase 1) it drives only what its crew mans (<see cref="Crew"/>): the helm
+/// with a living pilot at it (or for <see cref="CrewWorld.HelmGraceTicks"/> after one is lost, its last input held), and each gun
+/// seat with a living gunner. With no crew set (a tool) it works every seat.
 /// </summary>
 public sealed class ShipAi
 {
@@ -42,8 +45,11 @@ public sealed class ShipAi
     private const int ScanTicks = 120, LookTicks = 30; // (its seats, guns and racks again; the ground under it and ahead)
     private const int MaxSeats = 16, MaxRacks = 16;
 
-    public readonly ushort Body;
+    public ushort Body;
     public ShipAiMode Mode;
+    /// <summary>The crew that mans its seats (the rule-1 gate), and its roster on this body; null: every seat is worked (a tool).</summary>
+    public CrewWorld? Crew;
+    public CrewShip? Ship;
     /// <summary>What it is doing, for the check's lines and a log (made when read: nothing on the tick).</summary>
     public string State => _state switch
     {
@@ -57,7 +63,7 @@ public sealed class ShipAi
     };
     private int _state;
     private float _stateDist;
-    public int Shots, Launches, Flares; // (fired, for the check)
+    public int Shots, GunnerShots, Launches, Flares; // (fired, for the check; GunnerShots: from gunners' seats)
 
     private int _stab = -1, _pilot = -1;
     private readonly short[] _seats = new short[MaxSeats]; // gunners' seats (the pilot's is _pilot)
@@ -71,11 +77,43 @@ public sealed class ShipAi
     private int _launchAt, _strafeUntil, _idle;
     private sbyte _strafe = 1;
 
+    // What each seat was last told (Replay holds it on the ticks a far crew doesn't think).
+    private ushort _pilotKeys;
+    private float _pilotYaw, _pilotPitch;
+    private readonly ushort[] _seatKeys = new ushort[MaxSeats];
+    private readonly float[] _seatYaw = new float[MaxSeats], _seatPitch = new float[MaxSeats];
+    private bool _pilotWas;
+
     public ShipAi(ushort body, ShipAiMode mode)
     {
         Body = body;
         Mode = mode;
     }
+
+    /// <summary>Back to new, for another body (the crew's pool of drivers).</summary>
+    public void Reset(ushort body, ShipAiMode mode)
+    {
+        Body = body;
+        Mode = mode;
+        _state = 0;
+        _stab = _pilot = -1;
+        _seatCount = _rackCount = _flareCount = _nextRack = 0;
+        _tick = 0;
+        _structure = -1;
+        _ground = _ahead = float.MaxValue;
+        _launchAt = _strafeUntil = _idle = _flaresAt = 0;
+        _pilotKeys = 0;
+        _pilotWas = false;
+        Shots = GunnerShots = Launches = Flares = 0;
+        Crew = null;
+        Ship = null;
+    }
+
+    /// <summary>Its crew works seat <paramref name="seat"/> (no crew: a tool's, every seat is worked).</summary>
+    private bool Manned(int seat) => Crew == null || Ship == null || Ship.Manned(Crew, seat);
+
+    /// <summary>The helm is empty but keeps its last input a little while (the user's answer 2).</summary>
+    private bool Grace => Crew != null && Ship != null && _pilotWas && Ship.InGrace(Crew.Tick);
 
     /// <summary>The crew a Flight Stabilizer's setting asks for on this construct (its first stabilizer: the one that flies it).</summary>
     public static ShipAiMode ModeOf(Construct c)
@@ -96,7 +134,7 @@ public sealed class ShipAi
     }
 
     /// <summary>Its pilot's seat has a player in it: the helm is theirs.</summary>
-    public bool Boarded(Construct c) => _pilot >= 0 && _pilot < c.PartCount && c.Parts[_pilot].SitterPlus1 != 0;
+    public bool Boarded(Construct c, CrewWorld? crew = null) => _pilot >= 0 && _pilot < c.PartCount && c.Parts[_pilot].SitterPlus1 is var s && s != 0 && (crew == null || !crew.IsBody[s - 1]);
 
     /// <summary>Its seats, guns and racks, from the construct as it is now.</summary>
     private void Scan(Construct c)
@@ -169,6 +207,10 @@ public sealed class ShipAi
             var far = way.Length() * LookAhead;
             _ahead = far > 10 ? Clearance(world, c, query, com, way / way.Length(), far) : float.MaxValue;
         }
+        var pilotOn = Manned(_pilot);
+        if (pilotOn)
+            _pilotWas = true;
+        var grace = !pilotOn && Grace;
         ushort pilot = CPart.Occupied;
         if (!has)
         {
@@ -177,9 +219,13 @@ public sealed class ShipAi
             if (_idle > 30 * World.TickRate && _ground < 400)
                 pilot |= (ushort)Buttons.Crouch;
             _state = _idle > 30 * World.TickRate ? 3 : 2;
-            Seat(c, _pilot, pilot, c.Parts[_pilot].AimYaw, c.Parts[_pilot].AimPitch);
+            if (pilotOn)
+                PilotSeat(c, pilot, c.Parts[_pilot].AimYaw, c.Parts[_pilot].AimPitch);
+            else if (grace)
+                Seat(c, _pilot, _pilotKeys, _pilotYaw, _pilotPitch);
             for (var s = 0; s < _seatCount; s++)
-                Seat(c, _seats[s], CPart.Occupied, c.Parts[_seats[s]].AimYaw, c.Parts[_seats[s]].AimPitch);
+                if (Manned(_seats[s]))
+                    GunSeat(c, s, CPart.Occupied, c.Parts[_seats[s]].AimYaw, c.Parts[_seats[s]].AimPitch);
             return;
         }
         _idle = 0;
@@ -220,18 +266,25 @@ public sealed class ShipAi
         _stateDist = dist;
 
         // The guns: each seat looks at where its guns' rounds meet the target, and fires when a gun on it bears and reaches.
-        var (pilotLook, pilotFire) = Gunnery(world, c, _pilot, t, dist, fixedGuns: true);
-        if (pilotFire)
-            pilot |= ConstructParts.KeyFire;
-        Seat(c, _pilot, pilot, pilotLook.Yaw, pilotLook.Pitch);
+        if (pilotOn)
+        {
+            var (pilotLook, pilotFire) = Gunnery(world, c, _pilot, t, dist, fixedGuns: true);
+            if (pilotFire)
+                pilot |= ConstructParts.KeyFire;
+            PilotSeat(c, pilot, pilotLook.Yaw, pilotLook.Pitch);
+        }
+        else if (grace)
+            Seat(c, _pilot, (ushort)(_pilotKeys & ~ConstructParts.KeyFire), _pilotYaw, _pilotPitch); // (the last input held; nobody fires)
         for (var s = 0; s < _seatCount; s++)
         {
             int seat = _seats[s];
-            if (seat >= c.PartCount || c.Parts[seat].SitterPlus1 != 0 || c.Parts[seat].Broken)
-                continue; // (a player's seat is theirs)
+            if (seat >= c.PartCount || !SeatFree(c, seat) || c.Parts[seat].Broken || !Manned(seat))
+                continue; // (a player's seat is theirs; an empty gunner's seat fires nothing)
             var (look, fire) = Gunnery(world, c, seat, t, dist, fixedGuns: false);
-            Seat(c, seat, (ushort)(CPart.Occupied | (fire ? ConstructParts.KeyFire : 0)), look.Yaw, look.Pitch);
+            GunSeat(c, s, (ushort)(CPart.Occupied | (fire ? ConstructParts.KeyFire : 0)), look.Yaw, look.Pitch);
         }
+        if (!pilotOn)
+            return; // (the racks and flares are the pilot's buttons)
 
         // The racks: one launch at a time, taking turns, at a ship or a car (a seeker wants something that moves), with the target off the nose.
         if (_rackCount > 0 && t.Body != 0 && dist is > LaunchMin and < LaunchMax && _tick >= _launchAt)
@@ -308,7 +361,11 @@ public sealed class ShipAi
                 fire = true;
         }
         if (fire)
+        {
             Shots++;
+            if (!fixedGuns)
+                GunnerShots++;
+        }
         return (look, fire);
     }
 
@@ -324,10 +381,47 @@ public sealed class ShipAi
         return t.At + rel * secs;
     }
 
-    private static void Seat(Construct c, int seat, ushort keys, float yaw, float pitch)
+    /// <summary>The seat has nobody in it, or one of the crew's bodies.</summary>
+    private bool SeatFree(Construct c, int seat) => c.Parts[seat].SitterPlus1 is var s && (s == 0 || Crew != null && Crew.IsBody[s - 1]);
+
+    private void PilotSeat(Construct c, ushort keys, float yaw, float pitch)
+    {
+        _pilotKeys = keys;
+        _pilotYaw = yaw;
+        _pilotPitch = pitch;
+        Seat(c, _pilot, keys, yaw, pitch);
+    }
+
+    private void GunSeat(Construct c, int s, ushort keys, float yaw, float pitch)
+    {
+        _seatKeys[s] = keys;
+        _seatYaw[s] = yaw;
+        _seatPitch[s] = pitch;
+        Seat(c, _seats[s], keys, yaw, pitch);
+    }
+
+    /// <summary>
+    /// A tick a far crew doesn't think (CrewWorld: a seated crew thinks every other tick): each manned seat is told what it was last time,
+    /// so the helm and guns carry on. Allocates nothing.
+    /// </summary>
+    public void Replay(Construct c)
+    {
+        if (_structure != c.PartCount || _pilot < 0 || _pilot >= c.PartCount || c.Parts[_pilot].Broken)
+            return;
+        _tick++;
+        if (Manned(_pilot))
+            Seat(c, _pilot, _pilotKeys, _pilotYaw, _pilotPitch);
+        else if (Grace)
+            Seat(c, _pilot, (ushort)(_pilotKeys & ~ConstructParts.KeyFire), _pilotYaw, _pilotPitch);
+        for (var s = 0; s < _seatCount; s++)
+            if (_seats[s] < c.PartCount && Manned(_seats[s]))
+                Seat(c, _seats[s], _seatKeys[s], _seatYaw[s], _seatPitch[s]);
+    }
+
+    private void Seat(Construct c, int seat, ushort keys, float yaw, float pitch)
     {
         ref var p = ref c.Parts[seat];
-        if (p.SitterPlus1 != 0)
+        if (!SeatFree(c, seat))
             return;
         p.Keys = keys;
         p.AimYaw = yaw;

@@ -75,7 +75,7 @@ public sealed partial class Game
                 r.Why = $"{LinkLedger.Title(stop.World)} isn't in this star system: the route waits";
                 continue;
             }
-            if (o == null && r.OrderSet && c.Driver != 255)
+            if (o == null && r.OrderSet && Constructs.HumanDriver(c))
             {
                 // (its order ended because its pilot took the controls, GameNav: hands on the controls win; RESUME takes it up again)
                 r.OrderSet = false;

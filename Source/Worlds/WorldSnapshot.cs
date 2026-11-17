@@ -22,6 +22,7 @@ public struct BodySnap
     public (ushort Part, StationJob Job)[]? Station; // its Building Stations' jobs, copied (ConstructStation.cs; written after the crafting orders)
     public (ushort Part, ushort Def, uint Paint)[]? Lifts; // its lifters' hands that hold a piece (ConstructLifters.Snapshot; the LIFT block, after LOGI)
     public byte[]? Uses; // its sub-blueprint uses (SubBlueprints.SaveBytes; the USES block, after SIDE)
+    public byte[]? Crew; // its crew (CrewWorld.SaveBytes; the CREW block, last)
     public byte[]? SubJobs; // its stations' sub-blueprint jobs (ConstructStationTree.SaveBytes; the SUBJ block, after USES)
     public byte[]? LinkParts; // its linked logistics parts' state (LinkedLogistics.SaveBytes; the LLNK block, after SUBJ)
     public (ushort Lifter, LiftOrder Order)[]? LiftOrders; // its lifters' hand orders (ConstructLifters.SnapshotOrders; the LIFT block's second half, phase 7)

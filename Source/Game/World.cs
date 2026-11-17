@@ -630,6 +630,7 @@ public sealed class Player
     // died, and since when a construct has held it up.
     [MatchState]
     public bool SbSpawned;
+    public int CrewSlot = -1; // server: a crew member's body (its record in Game.Crew: Source/Crew/CrewWorld.cs), -1: not crew. A crew body has no bot brain at work and never respawns
     [MatchState]
     public byte SbOwner = 255;
     [MatchState]

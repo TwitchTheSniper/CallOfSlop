@@ -87,6 +87,12 @@ public sealed partial class ConstructWorld
 
     public readonly List<Construct> Bodies = new(256);
 
+    /// <summary>Server: player ids that are crew bodies (Game.Crew.IsBody), whose seat at the controls isn't a person taking over.</summary>
+    public bool[]? CrewBodies;
+
+    /// <summary>A person (not a crew body) is at <paramref name="c"/>'s controls.</summary>
+    public bool HumanDriver(Construct c) => c.Driver != 255 && (CrewBodies == null || !CrewBodies[c.Driver]);
+
     public ConstructWorld() => RuntimeParts.Track(this); // (what its bodies and stores hold keeps a run-time part: RuntimeParts.cs)
     private readonly Dictionary<ushort, Construct> _byId = new(256);
     private ushort _nextId = 1;
