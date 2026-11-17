@@ -92,12 +92,36 @@ public sealed class FactoryPlan
     /// <summary>A part's footprint on the floor (x, z extents), standing as the builder stands it (machines turned with their back to the back).</summary>
     public static (float W, float D) Footprint(FactoryObject o)
     {
-        if (o.Part == "Storage Volume" || o.Part.Contains("Bunker"))
+        if (o.Part == "Storage Volume" || o.Part.Contains("Bunker") || o.Part.Contains("Grate") || o.Role == "loading")
             return (o.Size, o.Size);
         var def = ConstructParts.Find(o.Part) ?? throw new FactoryKitException($"no part {o.Part}");
         var s = def.BoundsMax - def.BoundsMin;
         return (s.X, s.Z);
     }
+
+    // ---- The spacing system (the user's grading, 2026-11-17: "one consistent spacing system, so a building reads as planned") ------------
+    //
+    // Everything stands on a 4 m module (two floor tiles). Across the spine the bands are fixed: the vehicle lane (the road, 4 m), the walkway
+    // (the aisle, 2 m), the machine band (whole modules), the service strip behind it (2 m, the chutes' lanes). Along the spine every cell is a
+    // whole number of modules: its object's footprint plus a clearance by purpose each side (a machine's service room, a store's), the object
+    // centred in it. Zones are runs of cells, so they start and end on the module too; nothing between them but their cells. The seed changes
+    // what stands where, never a gap.
+
+    public const float Module = 4f;
+    public const float Service = 1f; // clear round a machine (buildings.md "Laying out a building": 1 m before its screen)
+    public const float StoreClear = 0.5f; // clear round a store or a grate (walked past, not worked at)
+
+    /// <summary>The clearance an object keeps each side, by what it is for.</summary>
+    public static float Clearance(FactoryObject o) => o.Role is "process" or "drill" ? Service : StoreClear;
+
+    /// <summary>A cell's width along the spine: the footprint and its clearance, up to whole modules.</summary>
+    public static float CellWidth(FactoryObject o) => MathF.Ceiling((Footprint(o).W + 2 * Clearance(o)) / Module - 1e-4f) * Module;
+
+    /// <summary>An extraction's drill run (FactoryScript.DrillRun): the rail along the back edge is 6 m (a 4 m and a 2 m section), its cell two modules.</summary>
+    public const float RunLength = 6f, RunCell = 2 * Module;
+
+    /// <summary>How an extraction post moves its drills over the ground (FactoryScript.DrillRun): an arm on a rail, or a gantry (a cross rail on the rail).</summary>
+    public string Follow = "arm";
 
     public static FactoryPlan Make(FactoryProgramme p, FactoryFunction f, FactorySize size, FactoryStyle style, VehicleKit.Dice d)
     {
@@ -105,39 +129,36 @@ public sealed class FactoryPlan
         if (plan.Arrangement != "rows")
             throw new FactoryKitException($"arrangement {plan.Arrangement}: phase 1 lays rows only");
         var dz = d.Fork("zones");
-        var margin = (float)dz.Between(style.MarginMin, style.MarginMax);
-        // The machine band's depth: the deepest machine with its margin, on whole tiles.
-        var band = p.Objects.Where(o => o.Zone is "process" or "intake" && o.Role != "tipping").Select(o => Footprint(o).D).DefaultIfEmpty(2).Max();
-        if (f.Name == "extraction")
-            band = MathF.Max(band, 3f);
-        var bandDepth = MathF.Ceiling((band + 2 * margin) / Tile) * Tile;
+        // The machine band: the deepest object in it and its clearance, on whole modules.
+        var band = p.Objects.Where(o => o.Zone is "process" or "intake" or "storage" && o.Role is not ("tipping" or "drill")).Select(o => Footprint(o).D + 2 * Clearance(o)).DefaultIfEmpty(Module).Max();
+        var bandDepth = MathF.Ceiling(band / Module - 1e-4f) * Module;
         plan.BandBack = -(RoadDepth + AisleDepth + bandDepth);
         plan.Back = plan.BandBack - StripDepth;
         plan.StripBack = plan.Back;
         plan.PowerBehind = f.Name != "extraction" && dz.Chance(0.5); // (an extraction's back edge is its drills')
+        if (f.Name == "extraction")
+            plan.Follow = style.Pick(d.Fork("follow"), style.Follow);
         var x = 0f;
         var number = 1;
+        var bandMid = (plan.BandBack - RoadDepth - AisleDepth) * 0.5f;
 
-        void Block(char zone, string name, IReadOnlyList<FactoryObject> objs, Func<FactoryObject, int, float, (float X, float Z)> at, Func<FactoryObject, float> width)
+        void Block(char zone, string name, IReadOnlyList<FactoryObject> objs, Func<FactoryObject, float, float> zOf, Func<FactoryObject, float>? width = null)
         {
             if (objs.Count == 0)
                 return;
-            // A bank packs its cells at their own widths (a machine and its margin each side) and the block ends on a whole tile.
             var x0 = x;
-            for (var k = 0; k < objs.Count; k++)
+            foreach (var o in objs)
             {
-                var w = width(objs[k]) + 2 * margin;
-                var (cx, cz) = at(objs[k], k, x + w * 0.5f);
-                plan.Cells.Add(new PlanCell(objs[k], new PlanRect(x, x + w, -(RoadDepth + AisleDepth), plan.BandBack), zone == 'I' && f.Name == "extraction" ? cx : Snap(cx), zone == 'I' && f.Name == "extraction" ? cz : Snap(cz), number++));
+                var w = width?.Invoke(o) ?? CellWidth(o);
+                var cx = x + w * 0.5f;
+                plan.Cells.Add(new PlanCell(o, new PlanRect(x, x + w, -(RoadDepth + AisleDepth), plan.BandBack), Snap(cx), zOf(o, cx), number++));
                 x += w;
             }
-            x = x0 + MathF.Ceiling((x - x0) / Tile) * Tile;
             plan.Zones.Add((zone, new PlanRect(x0, x, -RoadDepth, plan.Back), name));
         }
 
-        var bandMid = (plan.BandBack - RoadDepth - AisleDepth) * 0.5f;
         var power = p.Of("power").ToList();
-        var pw = MathF.Max(6f, MathF.Ceiling((power.Count * 2.5f + 3f) / Tile) * Tile);
+        var pw = MathF.Max(2 * Module, MathF.Ceiling((power.Count * 2.5f + 3f) / Module) * Module);
         var powerFirst = f.Name == "extraction" && dz.Chance(0.4); // (a post's plant at the west end, before the drills, or at the east end: the seed's)
         if (powerFirst)
         {
@@ -146,71 +167,31 @@ public sealed class FactoryPlan
         }
         if (f.Name == "extraction")
         {
-            // Drills on the floor's back edge, their bits out over the ground (the deposit is behind the post); the buffer in front of them.
-            var drills = p.Of("drill").ToList();
-            // On the drill deck's slab sockets (2k or 2k + 1.75 along x; the back edge's z), the deck at least four tiles long (three steps and a tile).
-            Block('I', "DRILLS", drills, (o, k, cx) => (DeckX(cx), plan.Back), o => MathF.Max(Footprint(o).W, 2.5f));
-            var di = plan.Zones.Count - 1;
-            if (plan.Zones[di].Rect.W < 4 * Tile)
-            {
-                x = plan.Zones[di].Rect.X0 + 4 * Tile;
-                plan.Zones[di] = plan.Zones[di] with { Rect = plan.Zones[di].Rect with { X1 = x } };
-            }
-            plan.HasDeck = true;
-            plan.DeckStepsWest = dz.Chance(0.5);
-            (plan.DeckI0, plan.DeckI1, plan.DeckJ) = ((int)(plan.Zones[di].Rect.X0 / Tile), (int)MathF.Round(plan.Zones[di].Rect.X1 / Tile), (int)MathF.Round(-plan.Back / Tile) - 1);
-            var buffer = p.Of("buffer").ToList();
-            Block('S', "ORE BUFFER", buffer, (o, k, cx) => (cx, bandMid), o => Footprint(o).W);
+            // A drill run a cell (two modules) along the back edge: its rail on the floor's last row, the drill carried out over the ground behind.
+            Block('I', "DRILLS", p.Of("drill").ToList(), (o, cx) => plan.Back + 0.25f, o => RunCell);
+            Block('S', "ORE BUFFER", p.Of("buffer").ToList(), (o, cx) => Snap(bandMid));
         }
         else
         {
-            // The intake block (no aisle: the road runs up to it): slots two to a column, the tipping bay's hopper first by the road, the
-            // hauler's ore heap straight behind it, the other heaps on in the seed's order.
+            // The intake: the tipping grate flush with the road's back edge (no walkway: the hauler tips onto it), then the raw stores in the band.
+            Block('I', "TIPPING", p.Of("tipping").ToList(), (o, cx) => -(RoadDepth + 0.25f + o.Size * 0.5f));
             var heaps = p.Of("heap").ToList();
-            var items = p.Of("tipping").Concat(heaps.Take(1)).Concat(heaps.Skip(1).OrderBy(_ => dz.Next())).ToList();
-            var x0 = x;
-            var w = MathF.Ceiling((items.Select(h => h.Size).DefaultIfEmpty(2).Max() + 2 * margin) / Tile) * Tile;
-            var top = -RoadDepth;
-            var rowH = (top - plan.BandBack) * 0.5f;
-            for (var k = 0; k < items.Count; k++)
-            {
-                var cx = x + w * (k / 2 + 0.5f);
-                var rect = new PlanRect(cx - w * 0.5f, cx + w * 0.5f, top - rowH * (k % 2), top - rowH * (k % 2 + 1));
-                var cz = k == 0 && items[0].Role == "tipping" ? -(RoadDepth + 0.25f + items[0].Size * 0.5f) : rect.Cz;
-                if (k % 2 == 1)
-                    cx += 0.5f; // (the back slot sits half a metre over: the front one's chute to the back strip passes beside its anchor)
-                plan.Cells.Add(new PlanCell(items[k], rect, Snap(cx), Snap(cz), number++));
-            }
-            x += w * Math.Max(1, (items.Count + 1) / 2);
-            plan.Zones.Add(('I', new PlanRect(x0, x, -RoadDepth, plan.Back), "RAW STOCK"));
-            // The banks in flow order, each bank's machines side by side, older or not.
+            Block('I', "RAW STOCK", heaps.Take(1).Concat(heaps.Skip(1).OrderBy(_ => dz.Next())).ToList(), (o, cx) => Snap(bandMid));
             foreach (var bank in p.Of("process").GroupBy(o => o.Bank).OrderBy(g => g.Key))
-                Block('P', bank.First().Material.ToUpperInvariant(), bank.ToList(), (o, k, cx) => (cx, bandMid), o => Footprint(o).W);
-            Block('S', "REFINED STOCK", p.Of("bin").ToList(), (o, k, cx) => (cx, bandMid), o => Footprint(o).W);
+                Block('P', bank.First().Material.ToUpperInvariant(), bank.ToList(), (o, cx) => Snap(bandMid));
+            Block('S', "REFINED STOCK", p.Of("bin").ToList(), (o, cx) => Snap(bandMid));
         }
         plan.ConsoleX = Snap(plan.Zones.First(z => z.Zone is not ('I' or 'W')).Rect.X0 + 1.0f);
-        // The output: the loading hopper by the road at the end of the spine.
-        var loading = p.Of("loading").ToList();
-        if (loading.Count > 0)
-        {
-            var x0 = x;
-            var w = MathF.Ceiling((loading.Max(l => l.Size) + 2 * margin) / Tile) * Tile;
-            for (var k = 0; k < loading.Count; k++)
-            {
-                var cx = x + w * (k + 0.5f);
-                plan.Cells.Add(new PlanCell(loading[k], new PlanRect(cx - w * 0.5f, cx + w * 0.5f, -RoadDepth, -(RoadDepth + AisleDepth + MathF.Ceiling(loading[k].Size / Tile) * Tile)), Snap(cx), Snap(-(RoadDepth + 0.25f + loading[k].Size * 0.5f)), number++));
-            }
-            x += w * loading.Count;
-            plan.Zones.Add(('O', new PlanRect(x0, x, -RoadDepth, plan.Back), "LOADING BAY"));
-        }
+        // The output: the loading auger's post, a module's cell at the end of the spine, its spout over the road's middle.
+        Block('O', "LOADING", p.Of("loading").ToList(), (o, cx) => LoadingPostZ, _ => Module);
         // Power: apart and fenced, at the end of the spine or behind the storage (the seed's), never by the control corner.
         if (powerFirst)
         {
         }
         else if (plan.PowerBehind && plan.Zones.FirstOrDefault(z => z.Zone == 'S') is { Name: not null } storage && storage.Rect.W >= pw - 0.01f)
         {
-            plan.PowerRect = new PlanRect(storage.Rect.X1 - pw, storage.Rect.X1, plan.Back, plan.Back - 6f);
-            plan.Back -= 6f;
+            plan.PowerRect = new PlanRect(storage.Rect.X1 - pw, storage.Rect.X1, plan.Back, plan.Back - 2 * Module);
+            plan.Back -= 2 * Module;
         }
         else
         {
@@ -221,17 +202,17 @@ public sealed class FactoryPlan
         plan.Zones.Add(('W', plan.PowerRect, "POWER"));
         plan.Length = x;
         plan.Depth = -plan.Back;
-        // The mast: the signature, at the end the power isn't (asymmetry on purpose: rule 9).
+        // The mast: the signature, at the end the power isn't (asymmetry on purpose: rule 9), in the service strip.
         plan.MastX = powerFirst ? Snap(plan.Length - 1.25f) : dz.Chance(0.5) ? 0.75f : Snap(plan.PowerRect.X0 - 1.0f);
-        plan.MastZ = plan.StripBack + 0.75f;
-        if (plan.HasDeck && plan.MastX > plan.DeckI0 * Tile && plan.MastX < plan.DeckI1 * Tile)
-            plan.MastZ = plan.BandBack + (plan.DeckStepsWest && plan.MastX < (plan.DeckI0 + 3) * Tile ? 2.75f : 0.75f); // (off the deck and its steps, whose slabs carry sockets at their corners only)
+        plan.MastZ = plan.BandBack - 0.75f;
+        if (f.Name == "extraction" && plan.Cells.Any(c => c.Obj.Role == "drill" && plan.MastX > c.Rect.X0 - 0.5f && plan.MastX < c.Rect.X1 + 0.5f))
+            plan.MastZ = plan.BandBack + 0.75f; // (off the drill runs' row)
         if (plan.Length > size.Length || plan.Depth > size.Depth)
             throw new FactoryKitException($"plan: {FactoryData.N(plan.Length)} x {FactoryData.N(plan.Depth)} m is past the {size.Name} class's {FactoryData.N(size.Length)} x {FactoryData.N(size.Depth)} m");
         var machines = p.Objects.Count(o => o.Role is "process" or "drill");
         if (machines > size.MaxMachines)
             throw new FactoryKitException($"programme: {machines} machines is past the {size.Name} class's {size.MaxMachines}");
-        // Lanes: every chute rides the back strip on a line of its own where it overlaps another along the spine (lines 0.15 m apart, the main line
+        // Lanes: every chute rides the service strip on a line of its own where it overlaps another along the spine (lines 0.15 m apart, the main line
         // nearest the machines); chutes whose spans don't overlap share a line (interval colouring, spans from the cells' centres, 3 m either side).
         var spans = new List<(float X0, float X1)>[11];
         for (var k = 0; k < spans.Length; k++)
@@ -250,6 +231,9 @@ public sealed class FactoryPlan
         }
         return plan;
     }
+
+    /// <summary>The loading auger's post (FactoryScript.Loading): 3.85 m behind its spout, which hangs over the road's middle (z -2).</summary>
+    public const float LoadingPostZ = -5.75f, SpoutZ = -1.9f;
 
     /// <summary>The plan as ASCII, a character a 2 m tile (3.4): zones as letters, cells as numbers, the aisle '.', the road '=', the back strip '-'.</summary>
     public string Ascii()

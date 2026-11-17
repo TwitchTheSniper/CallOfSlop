@@ -1293,7 +1293,7 @@ public sealed partial class Construct
             RestBounds(i, out var mn, out var mx);
             LocalMin = Vector3.Min(LocalMin, mn);
             LocalMax = Vector3.Max(LocalMax, mx);
-            if (MergeOf[i] != 0 || Parts[i].D.IsEnvelope)
+            if (MergeOf[i] != 0 || Parts[i].D.IsEnvelope || ConstructStoreVolume.Walled(Parts[i], Parts[i].D)) // (and a walled Storage Volume's walls: its box)
             {
                 ShapeBounds(i, out var smn, out var smx); // (a merged receiver's drawn box reaches further than its members, and a lift cell's envelope than its block)
                 LocalMin = Vector3.Min(LocalMin, smn);
