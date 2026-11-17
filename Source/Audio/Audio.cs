@@ -98,6 +98,16 @@ public enum Sfx
     Tannoy, // a loudspeaker on a pole: two chimes and a garbled announcement (SynthAlarm.cs, played by PartAmbience)
     HullCreak, // a ship's part about to go: a long metal groan and a few ticks (SynthBreakdown.cs, played by Game.BreakdownHeard)
     PartFail, // the part going: a bang, a clatter and a hiss of escaping fuel (SynthBreakdown.cs)
+    ShellHelmetDown, // machine sounds (SynthMachine.cs, played by Game.MachineSounds): a Shell Control Chair's helmet coming down and sealing (at your ear)
+    ShellLinkWake, // the neural link taking: a rising sweep and data chirps as you open your eyes as the robot (at your ear; others hear it at the chair)
+    ShellUnlink, // back to your body: the link spinning down and the helmet lifting (at your ear; others hear it at the chair)
+    ShellHelmetUp, // the helmet lifting with no link made (at your ear)
+    ShellBoot, // a robot shell starting up: relays, a capacitor whine, servos testing each joint, a fan spinning up
+    ShellPowerDown, // a robot shell left standing: servos relaxing, the whine falling, the fan winding down
+    ReactorHumLight, // a reactor at light load (a loop)
+    ReactorHumHeavy, // a reactor working hard: a deeper, pulsing hum (a loop, faded in over the light one by load)
+    DockClamp, // a Robot Shell Dock's clamps closing on a shell: servo, magnetic thunk, locking pins
+    DockRelease, // the dock's clamps letting a shell go: a chirp, pins out, a hydraulic hiss
     COUNT,
 }
 
@@ -175,6 +185,7 @@ public sealed partial class Audio : IDisposable
             InitCrowdSources(); // Audio.Crowd.cs
             InitEngineSources(); // Audio.Engine.cs
             InitBuildSources(); // Audio.Build.cs
+            InitMachineSources(); // Audio.Machine.cs
 
             var sw = Stopwatch.StartNew();
             var pcm = SynthesiseAll();
@@ -648,6 +659,7 @@ public sealed partial class Audio : IDisposable
     {
         EngineLoopsCheck(now);
         BuildLoopsCheck(now);
+        MachineLoopsCheck(now);
         if (!Enabled)
             return;
         if (double.IsNaN(_statsSince))
@@ -687,6 +699,7 @@ public sealed partial class Audio : IDisposable
         DisposeStorm(); // Audio.Storm.cs
         DisposeEngineSources();
         DisposeBuildSources();
+        DisposeMachineSources();
         Al.DeleteBuffers(_shots.SelectMany(v => v).Concat(_shotsSuppressed.SelectMany(v => v)).Distinct().ToArray());
         Al.DeleteBuffers(_shotsFar.Where(b => !b.IsNull()).ToArray());
         Al.DeleteBuffers(_reloads);
@@ -1035,6 +1048,8 @@ public static partial class Synth
             return babble; // SynthBabble.cs
         if (BreakdownFoley(sfx, variant) is { } breakdown)
             return breakdown; // SynthBreakdown.cs
+        if (MachineFoley(sfx) is { } machine)
+            return machine; // SynthMachine.cs
         var rng = new Random(77 + (int)sfx + variant * 1000);
         Buf b;
         switch (sfx)
