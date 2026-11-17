@@ -91,11 +91,13 @@ public sealed partial class Game
             // A shell on a Robot Shell Dock (Karl, 2026-11-17): the dock unclamps it, and it is woken as one standing alone.
             var marks = new bool[shell.PartCount];
             marks[shellPart] = true;
+            var at = ConstructRender.PartCentre(shell, shellPart);
             if (Constructs.CutOut(shell, marks, shell.Owner) is not { } piece)
             {
                 SandboxHands.Notices.Add((p.Id, "No link: the world is full"));
                 return;
             }
+            DockSound(false, at);
             Log($"[shell] a docked shell unclamps from construct {shell.Id} (-> {piece.Id})");
             shell = piece;
             seat = c.SeatOf(p.Id); // (the chair may be on the same ship: its parts moved up)

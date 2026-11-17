@@ -38,9 +38,12 @@ public sealed partial class ConstructEdits
             if (!MarkPiece(c, dock, held, marks))
                 return "it is welded to more than the dock: take it off with the attach tool";
             var name = c.DefOf(held).Name;
+            var at = ConstructRender.PartCentre(c, dock);
             if (world.CutOut(c, marks, player) is not { } piece)
                 return "the world is full";
             piece.Wake();
+            if (d.ShellBodyFits)
+                DockSounds.Add((false, at));
             Done.Add($"player {player}: let the {name} go from the {d.Name} (construct {c.Id} -> {piece.Id})");
             return null;
         }
@@ -111,8 +114,11 @@ public sealed partial class ConstructEdits
         if (!ConstructPlace.FindJoin(world, c, dock, out var plan, only: best) || plan.PartB != bestPart)
             return "it won't sit square on the dock";
         var from = best.Id;
+        var dockAt = ConstructRender.PartCentre(c, dock);
         if (!world.Merge(c, plan))
             return "it can't be clipped on";
+        if (d.ShellBodyFits)
+            DockSounds.Add((true, dockAt));
         Done.Add($"player {player}: clipped construct {from} onto the {d.Name} (construct {c.Id})");
         return null;
     }

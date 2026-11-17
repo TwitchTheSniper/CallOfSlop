@@ -739,6 +739,9 @@ public sealed partial class Game
         foreach (var e in SandboxHands.Done)
             Console.WriteLine($"[sandbox] {e}");
         SandboxHands.Done.Clear();
+        foreach (var (clamp, at) in SandboxHands.DockSounds)
+            DockSound(clamp, at); // (Robot Shell Dock clamps and releases: GameMachineSounds.cs)
+        SandboxHands.DockSounds.Clear();
         SandboxNoticesFlush();
         SandboxFactionsFlush(); // (the faction table, when it changed: GameSandboxFactions.cs)
     }
