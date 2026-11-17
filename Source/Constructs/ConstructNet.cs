@@ -1639,7 +1639,7 @@ public static partial class ConstructNet
     /// <summary>A joint's load against its rating in a byte: hundredths, up to 2.55 (the bar's end).</summary>
     public static byte OverByte(float over) => (byte)Math.Clamp(MathF.Round(over * 100), 0, 255);
 
-    private static int PoseSize(Construct c) => PoseBytes + Math.Min(c.JointCount, PoseJoints) * 5 + 4 + (c.HasLogic ? Math.Min(SignalParts(c), PoseSignals) : 0) + 3 + Math.Min(c.RotorCount + c.ControlCount, PoseAir) + WalkSize(c) + (c.CapCapacity > 0 ? 1 : 0) + (c.PlantCount > 0 ? 1 : 0); // (+ 1: the capacitors' share, protocol 331; + 1: the plants', 334)
+    private static int PoseSize(Construct c) => PoseBytes + Math.Min(c.JointCount, PoseJoints) * 5 + 4 + (c.HasLogic ? Math.Min(SignalParts(c), PoseSignals) : 0) + 3 + Math.Min(c.RotorCount + c.ControlCount, PoseAir) + WalkSize(c) + (c.CapCapacity > 0 ? 1 : 0) + (c.PlantCount > 0 ? 1 : 0); // (+ 1: the capacitors' share, protocol 331; + 1: the plants', 335)
 
     /// <summary>Rotors and control surfaces a pose carries at most: a window that turns (protocol 120).</summary>
     public const int PoseAir = 24;
@@ -1709,7 +1709,7 @@ public static partial class ConstructNet
             .U16(S16(Mrad(c.AngVel.X))).U16(S16(Mrad(c.AngVel.Y))).U16(S16(Mrad(c.AngVel.Z))) // (protocol 102: riders leave with the deck's turning speed too; ConstructRide.cs)
             .U8(unchecked((byte)(sbyte)Math.Clamp(MathF.Round(c.Steer * 100), -127, 127)))
             .U8(c.Driver)
-            .U8((byte)((c.Asleep ? PoseAsleep : 0) | (c.LegCount > 0 ? PoseWalker : 0) | (c.CapCapacity > 0 ? PoseCap : 0) | (c.PlantCount > 0 ? PosePlant : 0))) // (protocol 229: a walk block follows the rotors; 331: the capacitors' share after it; 334: the plants' share after that)
+            .U8((byte)((c.Asleep ? PoseAsleep : 0) | (c.LegCount > 0 ? PoseWalker : 0) | (c.CapCapacity > 0 ? PoseCap : 0) | (c.PlantCount > 0 ? PosePlant : 0))) // (protocol 229: a walk block follows the rotors; 331: the capacitors' share after it; 335: the plants' share after that)
             .U8((byte)MathF.Round(ConstructPower.Share(c) * 255)).U8(PowerFlags(c)).U8(GearOut(c)).F32(c.Fuel) // (protocol 83; 117: a float, a capital tank holds millions of litres)
             .U16(RpmOut(c)).U8((byte)c.Note) // (protocol 86)
             .U8(ShareOut(c.ThrustShow)).U8(ShareOut(MathF.Max(c.SmokeLevel, c.BurnShow))); // (protocol 117)
@@ -1731,7 +1731,7 @@ public static partial class ConstructNet
         if (c.CapCapacity > 0)
             w.U8(CapByte(c)); // (protocol 331: the capacitors' share, ship-works.md 8)
         if (c.PlantCount > 0)
-            w.U8(ShareOut(c.PlantShow)); // (protocol 334: how hard the power plants work, for a reactor's hum)
+            w.U8(ShareOut(c.PlantShow)); // (protocol 335: how hard the power plants work, for a reactor's hum)
         // The signal parts' values, in part order (only with logic: the client knows which parts they are): the first
         // ordinal (u16) and how many (u16): all of them, or a window that turns (protocol 117).
         var at = w.Length;

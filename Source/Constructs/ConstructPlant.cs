@@ -17,7 +17,7 @@ public sealed partial class Construct
     public readonly bool[] PlantFed = new bool[MaxPlants]; // on fuel: a tank reaches it
     public int PlantCount;
     public float PlantOut; // kW this tick
-    public float PlantShow; // 0..1: the share of its plants' whole output they make (server; clients get it in the pose, protocol 334: a reactor's hum)
+    public float PlantShow; // 0..1: the share of its plants' whole output they make (server; clients get it in the pose, protocol 335: a reactor's hum)
     public float HumShow; // this PC's eased PlantShow, for the hum (MachineSounds.cs)
     public float SmokeLevel; // 0..1: how hard its stacks smoke (server; clients get it in the pose)
     public bool[] SmokeFed = []; // a part with a "smoke" block that a burning plant reaches (made when there is one)

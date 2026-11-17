@@ -8,7 +8,7 @@ namespace CallOfSlop;
 /// robot shell starts up when someone wakes in it and powers down when they leave it standing, and the Shell Control
 /// Chair's link is heard at the chair by everyone near it. The chair's own player hears the helmet and the link at their
 /// ear, with the helmet's picture (<see cref="ShellLinkView"/> calls <see cref="LinkCue"/>). All worked out on each
-/// peer from what it already has (the shell flag every peer hears; the plant share is a byte in the pose, protocol 334).
+/// peer from what it already has (the shell flag every peer hears; the plant share is a byte in the pose, protocol 335).
 /// Fixed arrays by player id: nothing allocates.
 /// </summary>
 public sealed partial class Game

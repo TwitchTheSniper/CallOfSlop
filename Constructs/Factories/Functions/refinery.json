@@ -1,0 +1,21 @@
+{
+  "format": "call-of-slop-factory-function/1",
+  "name": "refinery",
+  "about": "A refinery (factory-generator.md 3.1): a tipping bay on the road and raw heaps at the intake end, refiners in banks along the spine (the chain walked back from the target through Constructs/Refining.json), refined bins and a loading bin at the output end, a plant apart. The target is refined material an hour.",
+  "size": "works",
+  "target": { "steel": 21600 },
+  "spare": 0.0,
+  "intakeMinutes": 30,
+  "outputMinutes": 60,
+  "powerMargin": 0.25,
+  "dock": "road",
+  "roles": [
+    { "role": "tipping", "zone": "intake" },
+    { "role": "heap", "zone": "intake" },
+    { "role": "process", "zone": "process" },
+    { "role": "bin", "zone": "storage" },
+    { "role": "loading", "zone": "output" },
+    { "role": "power", "zone": "power" },
+    { "role": "control", "zone": "control" }
+  ]
+}
