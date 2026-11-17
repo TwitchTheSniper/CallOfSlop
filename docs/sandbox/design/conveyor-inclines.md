@@ -199,3 +199,10 @@ its spacing.
    Or: 3 m over walkways for a roomier look, at the cost of longer climbs.
 7. **Lifts and power.** Recommend Piece Lifts and Bucket Elevators draw power while moving and stop without it (a raid target).
    Or: unpowered, like conveyors today.
+
+## The user's answer (2026-11-17): visual routing only
+
+"Don't modify transfer rate or transfer behaviour. I'm talking purely about the visualisation and the visual routing of a conveyor." This overrides the text above:
+- **No behaviour change:** no slope limits by bed, no refusal of rising chutes, no speed or capacity change on a slope, no new lift parts that change how material moves, no power for lifts. Links move pieces and material exactly as today.
+- **What changes is how a link is laid out and drawn:** the router and the link tool lay a rise as one straight inclined run with smooth curved transitions, not flat, vertical, flat; runs can go up and over an aisle at a set clearance (2.4 m walkways, 4.5 m vehicle lanes) on drawn supports (trestles, bridges as looks or simple structural parts); the factory kit routes its links overhead so aisles stay clear.
+- Keep the link's path data compatible (saves and wire bump only if the stored path changes shape); old links draw as before.
