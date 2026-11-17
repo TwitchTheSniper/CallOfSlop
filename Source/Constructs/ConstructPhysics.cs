@@ -201,7 +201,7 @@ public static partial class ConstructPhysics
                 if (c.HasPowertrain)
                     Powertrain(c, true, dt); // (the engine: gear, rpm, torque, each wheel's share; before the wheels use them)
                 if (c.WheelCount > 0)
-                    Wheels(c, query, _invI[i], dt);
+                    Wheels(c, query, _invI[i], weight.Length() * (1 - c.AntiShare), dt);
                 if (c.CellCount > 0)
                     Lift(c, _invI[i], weight, dt); // (before the thrusters: the hover hold carries what the cells don't)
                 if (c.SurfaceCount > 0 || c.RotorCount > 0)
@@ -484,8 +484,19 @@ public static partial class ConstructPhysics
 
     // ---- Wheels -------------------------------------------------------------------------------------------------
 
-    private static void Wheels(Construct c, IWorldQuery query, in Matrix4x4 invI, float dt)
+    /// <summary>
+    /// Drive grip from 1 g (user, 2026-11-16): what a grounded tyre can push and brake with along the ground, and its rolling
+    /// resistance, are its real load scaled to <see cref="World.Gravity"/> (the game's 1 g): <c>N * max(1, 1 g / g here)</c>,
+    /// capped at <see cref="DriveLoadCap"/> times the wheel's weight share at 1 g. So power gives the same speed on a small moon as
+    /// at home; a wheel only grazing the ground (little real load) still pushes little, one in the air not at all, and a heavy
+    /// world keeps its real, larger load. Side grip (cornering, sliding) keeps the real load, so low gravity still feels floaty.
+    /// At exactly 1 g every number is what it was. <see cref="CWheel.LastGrip"/> is the drive budget (differentials, tracks).
+    /// </summary>
+    public const float DriveLoadCap = 2f;
+
+    private static void Wheels(Construct c, IWorldQuery query, in Matrix4x4 invI, float gHere, float dt)
     {
+        var lift1g = gHere < World.Gravity ? World.Gravity / MathF.Max(gHere, World.Gravity * 0.01f) : 1f; // (drive grip from 1 g: Wheels' summary)
         var up = Vector3.Transform(Vector3.UnitY, c.Rot);
         var fwdBody = Vector3.Transform(c.DriveFwd, c.Rot);
         var com = c.WorldCom;
@@ -661,10 +672,14 @@ public static partial class ConstructPhysics
             var vp = vel0 + Vector3.Cross(spin0, at - com) - deckVel;
             // (the tyre's settings, as shares of its part's own: all 1 until the configure tool changes them)
             var grip = w.Grip * ConstructConfig.Ratio(tyre, tyreDef, CfgKey.Friction);
-            var maxFriction = normalImpulse * grip * (hit.Kind == ShapeKind.Terrain ? DirtGrip * w.Offroad * ConstructConfig.Ratio(tyre, tyreDef, CfgKey.DirtGrip) : 1f); // (terrain is dirt: looser than hard ground; off-road tyres grip it, slicks don't)
+            var surface = grip * (hit.Kind == ShapeKind.Terrain ? DirtGrip * w.Offroad * ConstructConfig.Ratio(tyre, tyreDef, CfgKey.DirtGrip) : 1f); // (terrain is dirt: looser than hard ground; off-road tyres grip it, slicks don't)
             if (w.Track)
-                maxFriction *= ConstructTracks.GradeGrip(n.Y);
-            w.LastGrip = maxFriction;
+                surface *= ConstructTracks.GradeGrip(n.Y);
+            var maxFriction = normalImpulse * surface; // (side grip: the real load)
+            // (drive grip: the load as at 1 g, never under the real one; a light touch stays light)
+            var driveLoad = lift1g > 1 ? MathF.Max(normalImpulse, MathF.Min(normalImpulse * lift1g, DriveLoadCap * load * World.Gravity * dt)) : normalImpulse;
+            var maxDrive = driveLoad * surface;
+            w.LastGrip = maxDrive;
             var vSide = Vector3.Dot(vp, side);
             var shareOf = 1f / MathF.Max(1, touching); // each wheel takes its share of stopping the body (not all of it)
             var jSide = -vSide / InvMassAt(c, invI, r, side) * 0.9f * shareOf * w.Side * ConstructConfig.Ratio(tyre, tyreDef, CfgKey.SideGrip);
@@ -684,7 +699,7 @@ public static partial class ConstructPhysics
                     jDrive = MathF.Min(jDrive, c.GroupGrip[w.Group] * (kind == DiffKind.Limited ? 1.5f : 1f));
                 jFwd += MathF.Sign(dir) * jDrive;
             }
-            var hub = w.Loop != 0 ? TrackPush(c, in w, maxFriction) : w.MotorTorque > 0 ? HubDrive(c, ref w, vFwd, dt) * (w.Track ? w.UnitScale * climbDrive : 1f) : 0f;
+            var hub = w.Loop != 0 ? TrackPush(c, in w, maxDrive) : w.MotorTorque > 0 ? HubDrive(c, ref w, vFwd, dt) * (w.Track ? w.UnitScale * climbDrive : 1f) : 0f;
             jFwd += hub;
             var stop = -vFwd / InvMassAt(c, invI, r, fwd) * shareOf;
             var held = brake || ((!driving || want == 0) && hub == 0 && MathF.Abs(vFwd) < 1.5f && !c.Towed && c.RotorThrust < 1); // (a propeller pulling is a tow)
@@ -694,7 +709,7 @@ public static partial class ConstructPhysics
                 jFwd = brake || !w.Track ? stop : stop * ConstructTracks.Settle(vFwd, Vector3.Dot(fwd, Vector3.UnitY) * g, dt); // brakes (and a car left in neutral stays put, unless something drives it on a tow; a track runs down to it)
             else
             {
-                jFwd += MathF.Sign(stop) * MathF.Min(MathF.Abs(stop), MathF.Max(0, w.Roll + ConstructConfig.Delta(tyre, tyreDef, CfgKey.Rolling) * 0.01f) * normalImpulse); // rolling resistance (a share of the load: a knobbly or flat tyre drags more)
+                jFwd += MathF.Sign(stop) * MathF.Min(MathF.Abs(stop), MathF.Max(0, w.Roll + ConstructConfig.Delta(tyre, tyreDef, CfgKey.Rolling) * 0.01f) * driveLoad); // rolling resistance (a share of the load: a knobbly or flat tyre drags more)
                 if (partBrake > 0)
                     jFwd = float.Lerp(jFwd, stop, partBrake);
                 if (c.SteerDiff && (w.SideDrive || w.Loop != 0))
@@ -709,16 +724,34 @@ public static partial class ConstructPhysics
                 var slide = maxFriction * MathF.Min(1, (w.Track ? ConstructTracks.TurnGrip : w.Driven ? ConstructTracks.TurnGripWheel : ConstructTracks.TurnGripFree) + MathF.Abs(vFwd) / (withPivots ? ConstructTracks.TurnSpeedPivots : ConstructTracks.TurnSpeed)); // (a skid turn: the pads slide sideways more easily than they drive; at speed they bite again, an arc, not a spin)
                 jSide = Math.Clamp(jSide, -slide, slide);
             }
-            // Friction circle.
-            var total = MathF.Sqrt(jSide * jSide + jFwd * jFwd);
-            if (total > maxFriction && total > 0)
+            // Friction circle (an ellipse when drive grip is from 1 g: side to the real load, along to the drive load; a circle at 1 g).
+            float used;
+            if (maxDrive == maxFriction)
             {
-                var k2 = maxFriction / total;
-                jSide *= k2;
-                jFwd *= k2;
+                var total = MathF.Sqrt(jSide * jSide + jFwd * jFwd);
+                if (total > maxFriction && total > 0)
+                {
+                    var k2 = maxFriction / total;
+                    jSide *= k2;
+                    jFwd *= k2;
+                }
+                used = MathF.Sqrt(jSide * jSide + jFwd * jFwd);
+            }
+            else
+            {
+                var es = maxFriction > 0 ? jSide / maxFriction : jSide == 0 ? 0 : float.PositiveInfinity;
+                var ef = maxDrive > 0 ? jFwd / maxDrive : 0;
+                var e = MathF.Sqrt(es * es + ef * ef);
+                if (e > 1)
+                {
+                    jSide = float.IsFinite(e) ? jSide / e : 0;
+                    jFwd = float.IsFinite(e) ? jFwd / e : 0;
+                    e = 1;
+                }
+                used = e * maxDrive;
             }
             parked++;
-            spare += MathF.Max(0, maxFriction - MathF.Sqrt(jSide * jSide + jFwd * jFwd));
+            spare += MathF.Max(0, maxDrive - used);
             ground += n;
             // Grip pushes at a point raised most of the way to the centre of mass: much less roll (an arcade anti-roll bar).
             var rGrip = r + up * (Vector3.Dot(-r, up) * AntiRoll);

@@ -3,7 +3,7 @@ using System.Numerics;
 namespace CallOfSlop.EngineKit;
 
 /// <summary>
-/// <c>--speed-test FILE... [--seconds N]</c> (docs/vehiclekit/ENGINEKIT.md, "Why cars are slow"): a blueprint built on the drive check's flat floor and driven on
+/// <c>--speed-test FILE... [--seconds N] [--gravity G]</c> (G: the world's gravity in g, 1 by default) (docs/vehiclekit/ENGINEKIT.md, "Why cars are slow"): a blueprint built on the drive check's flat floor and driven on
 /// full throttle for N seconds (default 40): its mass, engine, gearing, wheel and what tops it out, the top speed and the times to 10, 20 m/s and 95 % of its top.
 /// What limits it: <b>gearing</b> when its top gear reaches the limiter, <b>grip</b> when the engine asks more of the driven tyres at the top speed than they
 /// hold (their friction limits; a two-wheel drive on Off-Road Wheels tops out near 27 m/s whatever the engine), else <b>power against drag</b> (the arcade air drag, <see cref="ConstructPhysics.AirDrag"/>,
@@ -18,19 +18,31 @@ public static class EngineKitSpeed
     public static int Cli(string[] args)
     {
         var seconds = 40f;
+        var gravity = 1f;
         var files = new List<string>();
         for (var i = 0; i < args.Length; i++)
         {
             if (args[i].Equals("--seconds", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
                 seconds = float.Parse(args[++i], System.Globalization.CultureInfo.InvariantCulture);
+            else if (args[i].Equals("--gravity", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
+                gravity = float.Parse(args[++i], System.Globalization.CultureInfo.InvariantCulture);
             else if (!args[i].StartsWith("--", StringComparison.Ordinal) && (args[i].EndsWith(".json", StringComparison.OrdinalIgnoreCase)))
                 files.Add(args[i]);
         }
         Console.WriteLine("name | mass kg | engine | peak kW | N m | gears x final | wheel r m | top m/s | 0-10 s | 0-20 s | 0-95% s | gear at top | rpm at top | gearing top m/s | drag kW at top | limit");
-        foreach (var f in files)
+        var was = World.GravityScale;
+        World.GravityScale = gravity;
+        try
         {
-            var r = Measure(File.ReadAllText(f), Path.GetFileNameWithoutExtension(f), seconds);
-            Console.WriteLine(Line(r));
+            foreach (var f in files)
+            {
+                var r = Measure(File.ReadAllText(f), Path.GetFileNameWithoutExtension(f), seconds);
+                Console.WriteLine(Line(r));
+            }
+        }
+        finally
+        {
+            World.GravityScale = was;
         }
         return 0;
     }
