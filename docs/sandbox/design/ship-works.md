@@ -342,6 +342,21 @@ Nothing of this exists, so it is the biggest piece of new work and comes last.
   a second drum as reloads (section 11).
 - The AI crew needs nothing: it presses the same buttons, and the hoist refills by itself.
 
+**Built (phase 4, 2026-11-17).** `ShipWorksParts.Hoist`: Reload Hoist S lifts 400 kg (0.8 x 1.0 x 1.2 m, 1.5 kW), L
+3,000 kg (1.4 x 1.8 x 2.0 m, 4 kW); its `back` bolts to a mount's inner face, Ordnance Racks bolt to its `under`, `top`,
+`+x`, `-x` or `front`. `ConstructWorks.Build` finds each launcher (a rack whose mount, down its joints, is in a
+hoist's assembly) and keeps `Construct.Hoists` (one launcher a hoist; a rack bolted to the hoist is magazine, never
+launcher). `ConstructHoists.Step` (server, every quarter second, after the racks let go) moves the magazine's first
+weapon that the hoist lifts and that fits a free station (`ConstructOrdnance.StationFor`: the snap's limits and room,
+nose along the rack) after `hoistSeconds` (6) times the square root of its mass over `hoistMass` (80 kg): add the new
+part on the launcher, then remove the old one, one move a body a look. The move's ticks are the hoist's `CPart.Cool`, so
+they live through the rebuild; it draws its power only while it moves (`ConstructPower`). A hoist with no power, broken,
+or with nothing that fits waits and starts again. The look line says what it lifts, what is in its magazine and why it
+waits; `--check-vehicle` prints a `works:` line a hoist. Tried on a rig (/mnt/project-files/ship-works/hoist-rig.json: a
+launcher of four, Reload Hoist L, a magazine of eight): with the launcher's input on it fired all twelve with nobody
+outside; on a joined client the launcher kept firing past its own four; a flat battery stopped it ("no power"). The Zero
+Day's second drums are not fitted.
+
 ## 7. Crew, damage and servicing
 
 What a crew member can now do, and where:
