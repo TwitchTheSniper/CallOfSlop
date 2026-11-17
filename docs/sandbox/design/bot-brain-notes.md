@@ -29,6 +29,20 @@ Working notes for docs/sandbox/design/bot-brain.md, kept current after every ste
 - `--crew-check` replaces `--ship-ai-check` (Source/Crew/CrewCheck.cs): fights, then kills the pilot (40 s), the gunners (70 s)
   and the rest (90 s); `--crew-scale N` times the crew alone at N members.
 
+## Verified (2026-11-16)
+
+- `--crew-check`: the crewed Zero Day lifts off, closes to 236 m and hits the target; its pilot shot at 40 s, a spare takes the
+  helm 2.0 s later; its gunners shot at 70 s, no gunner fires for the next second (spares then take the seats); everyone shot
+  at 90 s, it holds (3 m in its last 10 s, 0.1 m/s). The crew's own cost 36 us a tick for one fighting frigate.
+- `--crew-check --seconds 0 --crew-scale 5000 --crew-scale-ship "Zero Day Frigate"`: 5027 crew on 209 frigates, 20 awake within
+  2 km: 47 us a tick on average, worst 0.95 ms, 0 bytes in 600 ticks; records 8192 slots (about 344 KB). On 209 helicopters:
+  21 us average, worst 48 us.
+- A window run (`--window-shot --blueprint "Zero Day Frigate (crewed)" --do "...; crew; crewshoot gunner; ..."`): six bodies
+  sit in their seats within 300 m; a gunner's body shot through `DamagePlayer` dies, a spare walks over (5 m) and takes the gun;
+  the pilot shot, a spare takes the helm and the ship flies and fights on. A joined client sees the six crew bodies.
+- Window-shot verbs for this: `crew` (rosters, shots; on a client the bodies and stand-ins it has), `crewshoot pilot|gunner|spare`,
+  `crewbodies N` (cap the host's bodies; the rest go back to records and are drawn as stand-ins).
+
 ## Next
 
 - Phase 1 by hand: a window run with a crewed ship (bodies within 300 m, shoot a gunner from outside), a joined client's view

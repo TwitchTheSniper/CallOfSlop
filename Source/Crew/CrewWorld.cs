@@ -832,6 +832,14 @@ public sealed class CrewWorld
         }
     }
 
+    /// <summary>Every body goes back to a record (a tool, or the cap lowered); the next looks give bodies again up to <see cref="MaxBodied"/>.</summary>
+    public void UnbodyAll(ICrewHost? host)
+    {
+        for (var i = 0; i < ShipHigh; i++)
+            if (Ships[i] is { } s)
+                Unbody(s, host);
+    }
+
     private void Unbody(CrewShip s, ICrewHost? host)
     {
         for (var i = 0; i < s.MemberCount; i++)

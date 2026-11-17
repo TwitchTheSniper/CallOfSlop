@@ -24,9 +24,15 @@ public static partial class Program
         switch (verb)
         {
             case "crew": // "crew": every crew's roster and its driver's shots, the body's height and speed (the host's: GameCrew.cs)
-                if (g.IsServer)
-                    foreach (var line in g.CrewLines())
-                        Console.WriteLine($"[windowshot] crew: {line}");
+                foreach (var line in g.CrewLines())
+                    Console.WriteLine($"[windowshot] crew: {line}");
+                return true;
+            case "crewbodies": // "crewbodies N": the host's crews have at most N bodies (the rest are records at their seats, drawn as stand-ins)
+                if (g.IsServer && int.TryParse(arg, out var crewMax))
+                {
+                    g.Crew.MaxBodied = Math.Clamp(crewMax, 0, CrewWorld.MaxBodiedCap);
+                    g.Crew.UnbodyAll(g);
+                }
                 return true;
             case "crewshoot": // "crewshoot pilot|gunner|spare": the host shoots the first crew body with that job, as a player's round does (DamagePlayer)
                 if (g.IsServer && g.CrewShoot(me, arg) is { } shot)
