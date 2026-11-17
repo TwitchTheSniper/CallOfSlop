@@ -3,13 +3,10 @@ using static CallOfSlop.PartKit.PartKitMath;
 namespace CallOfSlop.PartKit.Generators;
 
 /// <summary>
-/// The penal colony's site (docs/sandbox/constructs/buildings.md "The site"; Game/GameColonySite.cs lays it,
-/// Story/Opening/ColonyBuildings.json says where): what the Ministry's buildings stand on and what joins them. A camp on
-/// frozen ground is founded on a levelled bench and served above ground, so the site is road slabs on the bench (the
-/// street, the muster square, the way to the gate under a covered way), heating mains on trestles from a boiler house
-/// with the tallest stack in the colony, lifted over the road on a portal, and the furniture of a place run by notice:
-/// gate piers, a flag, notice boards. All in the Ministry's concrete; nothing here is a building somebody works in but
-/// the boiler house.
+/// Site works (docs/sandbox/constructs/buildings.md "The site"): what concrete buildings stand on and what joins them on
+/// frozen ground. Road slabs, heating mains on trestles, a portal over a road, a stack, and the furniture of a place run
+/// by notice: gate piers, a flag, notice boards. (The penal colony's site blueprints that used them went with the colony,
+/// 2026-11-17; the parts stay as generic concrete pieces.)
 /// </summary>
 public sealed partial class BuildingParts
 {
@@ -289,145 +286,5 @@ public sealed partial class BuildingParts
         yield return (folder, FlagMast(true));
         yield return (folder, NoticeBoard());
         yield return (folder, LancashireBoiler());
-    }
-
-    private static List<Blueprint> SiteBlueprints(Dictionary<string, PyDict> defs)
-    {
-        var o = new List<Blueprint>();
-        const string Slab = "Concrete Road Slab 4x4 m", Main4 = "Heating Main 4 m";
-
-        // The street: six slabs in a row. Two of them are the street in front of the Ministry's buildings.
-        var bp = new Blueprint("Colony Road 24 m", "Twenty-four metres of concrete road.", defs);
-        bp.First(Slab);
-        for (var i = 1; i < 6; i++)
-            bp.Put(Slab, Cell(16 * i, 0, 0), R0);
-        o.Add(bp);
-
-        // The way from the street to the yard's gate: 10 m of slabs, the 8 m nearest the gate under a covered way (six columns,
-        // a flat roof with its lid, a lamp each side), so the inmates marched to the canteen and back start and end the walk out
-        // of the weather and whoever waits at the gate waits dry. The 2 m at the street's end is left open for the crew bus.
-        bp = new Blueprint("Colony Gate Path", "The way from the street to the penal colony's gate, under a covered way.", defs);
-        bp.First(Slab);
-        bp.Put(Slab, Cell(0, 0, 16), R0);
-        bp.Put("Concrete Road Slab 4x2 m", Cell(0, 0, -8), R0);
-        var cols = new List<int>();
-        foreach (var z in new[] { 0, 15, 30 })
-            foreach (var x in new[] { 0, 14 })
-                cols.Add(bp.Put("Concrete Column 2.75 m", Cell(x, 1, z), R0));
-        Concrete(bp, cols, MinWeathered);
-        var wayRoof = 1 + WallH;
-        Roof(bp, 0, 0, 16, 32, wayRoof);
-        var lid = Lid(bp, 0, 0, 16, 32, wayRoof);
-        Sign(bp, lid[0], "f8", "INMATES KEEP LEFT. STAFF KEEP INMATES LEFT.", BoardSize.Narrow);
-        Outside(bp, cols[2], "r0_10");
-        Outside(bp, cols[3], "l0_10");
-        Look(bp, bp.Hang("Battery", cols[4], "r0_10", "-z"), MinSlate);
-        o.Add(bp);
-
-        // The muster square: 12 by 8 m of slabs in front of the barracks, where the colony is counted. The flag in the middle,
-        // two notice boards along the back facing the street.
-        bp = new Blueprint("Colony Muster Square", "The penal colony's muster square: slabs, the flag and the notices.", defs);
-        bp.First(Slab);
-        foreach (var (i, j) in new[] { (1, 0), (2, 0), (0, 1), (1, 1), (2, 1) })
-            bp.Put(Slab, Cell(16 * i, 0, 16 * j), R0);
-        var foot = Look(bp, bp.Put("Flagpole Base", Cell(23, 1, 15), R0), MinWeathered, "concrete");
-        var mast = Look(bp, bp.Hang("Flagpole Mast 3.75 m", foot, "mast", "b"), "#d9dcd6", "worn paint");
-        Look(bp, bp.Hang("Flagpole Top 3.75 m", mast, "t", "b"), "#d9dcd6", "worn paint");
-        var board = Look(bp, bp.Put("Concrete Notice Board 2 m", Cell(0, 1, 31), R0), MinWeathered, "concrete");
-        Sign(bp, board, "n0", "MUSTER 0600. LATENESS IS THEFT OF MINISTRY TIME.", BoardSize.Narrow);
-        Sign(bp, board, "n1", "STANDING ORDERS: 1. STAND.", BoardSize.Narrow);
-        board = Look(bp, bp.Put("Concrete Notice Board 2 m", Cell(40, 1, 31), R0), MinWeathered, "concrete");
-        Sign(bp, board, "n0", "HEATING: ON (SEE FORM 9 FOR EXEMPTIONS)", BoardSize.Narrow);
-        Sign(bp, board, "n1", "LOST PROPERTY IS MINISTRY PROPERTY", BoardSize.Narrow);
-        o.Add(bp);
-
-        // The heating mains, in the lengths the site plan lays end to end.
-        foreach (var (name, part, count) in new[] { ("Heating Main 24 m", Main4, 6), ("Heating Main 12 m", Main4, 3), ("Heating Main 2 m", "Heating Main 2 m", 1) })
-        {
-            bp = new Blueprint(name, "A run of the colony's heating mains.", defs);
-            var last = bp.First(part);
-            for (var i = 1; i < count; i++)
-                last = bp.Hang(part, last, "ra", "la");
-            o.Add(bp);
-        }
-
-        // The branches: from the mains behind the street to each building's back wall, in the lengths the plan needs.
-        foreach (var (name, parts) in new (string, string[])[]
-        {
-            ("Heating Branch 2 m", ["Heating Main 2 m"]), ("Heating Branch 3 m", ["Heating Main 2 m", "Heating Main 1 m"]),
-            ("Heating Branch 6 m", [Main4, "Heating Main 2 m"]), ("Heating Branch 6.5 m", [Main4, "Heating Main 2 m", "Heating Main 0.5 m"]),
-        })
-        {
-            bp = new Blueprint(name, "A branch of the colony's heating mains to one building.", defs);
-            var last = bp.First(parts[0]);
-            foreach (var part in parts.Skip(1))
-                last = bp.Hang(part, last, "ra", "la");
-            o.Add(bp);
-        }
-
-        // The outer fence, in the runs the plan lays round the bench, and the sliding gate (two leaves on their kerbs).
-        foreach (var n in new[] { 4, 5, 6, 7 })
-        {
-            bp = new Blueprint($"Colony Fence {4 * n} m", "A run of the penal colony's outer fence.", defs);
-            var last = Look(bp, bp.First("Concrete Fence Panel 4 m"), MinConcrete, "concrete");
-            for (var i = 1; i < n; i++)
-                last = Look(bp, bp.Hang("Concrete Fence Panel 4 m", last, "r", "l"), MinConcrete, "concrete");
-            o.Add(bp);
-        }
-        bp = new Blueprint("Colony Sliding Gate", "The penal colony's sliding gate: two leaves, 8 m.", defs);
-        bp.Hang("Sliding Gate Leaf 4 m", bp.First("Sliding Gate Leaf 4 m"), "r", "l");
-        o.Add(bp);
-
-        // The portal: the mains lifted over the road on two risers, 8 m apart and 3 m clear.
-        bp = new Blueprint("Heating Main Portal", "The heating mains carried over a road on two risers.", defs);
-        var riser = bp.First("Heating Main Riser");
-        var span = bp.Hang("Heating Main Span 4 m", riser, "ha", "la");
-        span = bp.Hang("Heating Main Span 4 m", span, "ra", "la");
-        bp.Hang("Heating Main Riser", span, "ra", "hb"); // (turned about: its other pipe's socket lines the pair up)
-        o.Add(bp);
-
-        bp = new Blueprint("Heating Valve Chamber", "A valve chamber on the colony's heating mains.", defs);
-        Sign(bp, bp.First("Heating Valve Chamber"), "f", "VALVE. DO NOT TURN. DO NOT ASK WHO DID.", BoardSize.Narrow);
-        o.Add(bp);
-
-        // A gate pier: the lamp, the colony's name and the Ministry's welcome on the side a visitor comes from.
-        bp = new Blueprint("Colony Gate Pier", "A pier at the way in to the penal colony.", defs);
-        var pier = bp.First("Concrete Gate Pier");
-        Outside(bp, pier, "lamp");
-        Sign(bp, pier, "sign", "MINISTRY OF SLOP - PENAL COLONY 7", BoardSize.Narrow);
-        Sign(bp, pier, "sign2", "NO WAY OUT. NO WAY IN EITHER.", BoardSize.Narrow);
-        Look(bp, bp.Hang("Battery", pier, "back", "-z"), MinSlate);
-        o.Add(bp);
-
-        // Colony Boiler House: one boiler heats every building, so it is a tall single hall (4 by 8 m, two storeys with no
-        // floor between: the boiler is 3 m and the heat goes up) with a ribbon of clerestory each side, and beside it at the
-        // back the stack, the tallest thing in the colony, at the head of the mains. A steel door on the street side behind a
-        // forecourt for the coal; a blank buttressed wall to the west, where the weather comes from. Nobody but the stoker
-        // goes in.
-        bp = new Blueprint("Colony Boiler House", "The penal colony's boiler house: one boiler, a tall hall and the stack.", defs);
-        Pads(bp, [(0, 1), (1, 1)]);
-        var rc = RoomCorners(bp, "Concrete", 0, G, 0, 16, 32, door: 0);
-        var west = bp.Put("Concrete Wall 4 m", Cell(0, G, 23), RY90);
-        var east = bp.Put("Concrete Wall 4 m", Cell(15, G, 8), RY270);
-        Concrete(bp, rc.Concat([west, east]));
-        var uc = RoomCorners(bp, "Concrete", 0, Slab1, 0, 16, 32);
-        var clere = new[] { bp.Put("Concrete Ribbon Wall 4 m", Cell(0, Slab1, 23), RY90), bp.Put("Concrete Ribbon Wall 4 m", Cell(15, Slab1, 8), RY270) };
-        Concrete(bp, uc.Concat(clere));
-        var roof = Slab1 + WallH;
-        Roof(bp, 0, 0, 16, 32, roof);
-        Lid(bp, 0, 0, 16, 32, roof);
-        Door(bp, rc[0], "Steel Flush Door 1.5x2.25 m", MinSlate);
-        Porch(bp, rc[0], "BOILER HOUSE");
-        Steps(bp, 0, 0);
-        Piers(bp, ButtressPart, (west, "f0_5"), (west, "f8_5"));
-        Sign(bp, rc[1], "fb7_5", "HEAT IS ISSUED, NOT DUE");
-        for (var k = 0; k < 4; k++)
-            Look(bp, bp.Put("Concrete Chimney 2.75 m", Cell(23, G + WallH * k, 23), R0), k == 3 ? MinSoot : MinWeathered, k == 3 ? "soot" : "concrete");
-        bp.Put("Lancashire Boiler", Cell(2, G, 18), R0); // (its fire doors to the door, the stack beside its far end)
-        bp.Hang("Wall Clock", rc[1], "ka7_5", "back");
-        Switch(bp, rc[0], "kb7_5", Strip(bp, rc[1], "ka7_10"));
-        Look(bp, bp.Hang("Battery", rc[1], "kb7_10", "-z"), MinSlate);
-        o.Add(bp);
-        return o;
     }
 }

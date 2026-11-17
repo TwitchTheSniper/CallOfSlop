@@ -108,11 +108,10 @@ public static unsafe partial class Program
         if (args.SkipWhile(a => !a.Equals("--size", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault()?.Split('x') is [var w, var h] && int.TryParse(w, out var wi) && int.TryParse(h, out var hi))
             (_settings.Width, _settings.Height) = (Math.Clamp(wi, 320, 3840), Math.Clamp(hi, 240, 2160));
         _settings.Mode = GameMode.Sandbox;
-        _settings.SandboxSurvival = args.Any(a => a.Equals("--survival", StringComparison.OrdinalIgnoreCase)); // (creative by default; --survival: a survival world, the penal colony's on Glacier unless --start names another)
+        _settings.SandboxSurvival = args.Any(a => a.Equals("--survival", StringComparison.OrdinalIgnoreCase)); // (creative by default; --survival: a survival world on the map as it is, unless --start names a start)
         _settings.MapRandom = false;
         var start = args.SkipWhile(a => !a.Equals("--start", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() ?? ""; // (a start by id, on its own planetoid: GameStoryStart.cs)
-        // No --start: as the tools always had it, Survival plays the penal colony (the tutorial's start) and Creative the map as it is.
-        _settings.SurvivalTutorial = _settings.SandboxSurvival && (start.Length == 0 || StoryStarts.Tutorial is { } tut && start.Equals(tut.Id, StringComparison.OrdinalIgnoreCase));
+        // No --start: the any-map start, so the map is the one asked for (Survival played the penal colony until 2026-11-17).
         _settings.StoryStart = start.Length > 0 ? start : Array.Find(StoryStarts.All, a => a.AnyMap)?.Id ?? "";
         _settings.Bots = 0;
         _settings.ShowFps = false;

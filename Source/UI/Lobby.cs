@@ -232,11 +232,10 @@ public sealed partial class Ui
                 {
                     Title("Single player");
                     PlayStylePicker(s);
-                    var tutorial = TutorialPicker(s);
-                    var savedWorld = !tutorial && DrawSinglePlayerWorld(s); // (a saved world brings its own map, mode and start: UiWorlds.cs)
-                    if (!tutorial && !savedWorld)
+                    var savedWorld = DrawSinglePlayerWorld(s); // (a saved world brings its own map, mode and start: UiWorlds.cs)
+                    if (!savedWorld)
                         StartPicker(s);
-                    if (s.SandboxSurvival && !savedWorld && !tutorial)
+                    if (s.SandboxSurvival && !savedWorld)
                         DeathPicker(ref s.SandboxDeath, ref s.SandboxKeepPack); // (survival's death rules: GameSandboxDeath.cs)
                     s.Bots = 0;
                     ImGui.Spacing();
@@ -250,8 +249,6 @@ public sealed partial class Ui
                     {
                         if (!savedWorld)
                             ApplyStartMap(s);
-                        if (tutorial)
-                            DropSinglePlayerWorld(); // (the tutorial is a world of its own, never the one picked: UiWorlds.cs)
                         s.Save();
                         action = LobbyAction.SinglePlayer;
                     }
@@ -264,8 +261,7 @@ public sealed partial class Ui
                 {
                     Title($"Multiplayer - up to {Game.MaxPeople} players over LAN or the internet (each map has its own limit)");
                     PlayStylePicker(s);
-                    if (!TutorialPicker(s))
-                        StartPicker(s);
+                    StartPicker(s);
                     var problem = StartMapProblem(s);
                     if (problem != null)
                         ImGuiSafe.TextColored(Orange, problem);
@@ -381,28 +377,6 @@ public sealed partial class Ui
     }
 
     /// <summary>
-    /// Survival's Tutorial tickbox (Karl, 2026-11-14): the Ministry's penal colony and the warden's induction, in a world of
-    /// its own that is never saved (StoryStarts.Tutorial). True: ticked, so the start, the map and the world are the tutorial's.
-    /// </summary>
-    private bool TutorialPicker(Settings s)
-    {
-        if (!s.SandboxSurvival || StoryStarts.Tutorial is not { } tut)
-            return false;
-        ImGui.Checkbox("Tutorial: the Ministry's penal colony"u8, ref s.SurvivalTutorial);
-        if (ImGui.IsItemHovered())
-            ImGui.SetItemTooltip("Learn the keys and the tools from the warden's induction, in the penal colony on Glacier. It is a world of its own and isn't saved: untick it to play your own world."u8);
-        if (s.SurvivalTutorial)
-        {
-            ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + 640 * _scale);
-            ImGuiSafe.TextColored(Dim, tut.About);
-            ImGui.TextColored(Dim, "A world of its own, not saved: untick it to play your own world."u8);
-            ImGui.PopTextWrapPos();
-        }
-        ImGui.Spacing();
-        return s.SurvivalTutorial;
-    }
-
-    /// <summary>
     /// A new world's start (Story/Starts, docs/story/STARTS.md), as radio buttons in the menus' order (the rust bucket
     /// first), and what it is; an any-map start picks its map here.
     /// </summary>
@@ -431,7 +405,7 @@ public sealed partial class Ui
             MapPicker(s);
     }
 
-    /// <summary>The start a new game plays (Settings.PlayedStartId: the tutorial's with its tickbox).</summary>
+    /// <summary>The start a new game plays (Settings.PlayedStartId).</summary>
     private static StoryStart PlayedStart(Settings s) => StoryStarts.Find(s.PlayedStartId) ?? StoryStarts.Default;
 
     /// <summary>Why START can't play the start picked (no Sandbox map for it), or null.</summary>

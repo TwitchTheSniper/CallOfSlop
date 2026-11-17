@@ -2,7 +2,6 @@
   // The Zero Day start's opening (Story/Starts/ZeroDay.json, docs/story/STARTS.md "A ship start"): no colony, no cast, no wreck;
   // the Zero Day Frigate is built over Crumb and everyone wakes aboard, standing in its frame (GameSpaceStart.cs).
   "format": "call-of-slop-opening/1",
-  "colony": "",
   "cast": "",
   "warden": "",
   "wreck": "",

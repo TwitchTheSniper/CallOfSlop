@@ -588,15 +588,7 @@ public sealed partial class Game
                 }
                 break;
             }
-            case WorldSaveWriter.TutorialTag:
-                WorldReadTutorial(r, ws); // (GameTutorial.cs)
-                break;
-            case WorldSaveWriter.DepotTag:
-                WorldReadDepot(r, ws); // (the Orbital Depot: GameDepot.cs)
-                break;
-            case WorldSaveWriter.QuarryTag:
-                WorldReadQuarry(r, ws); // (the first Ministry duty: GameQuarry.cs)
-                break;
+            // (TutorialTag, DepotTag and QuarryTag, the penal colony's, are skipped like any unknown section since 2026-11-17)
             case WorldSaveWriter.StartTag:
                 StartLoad(r.Str()); // (the story start it was made with: GameStoryStart.cs)
                 break;
@@ -637,26 +629,8 @@ public sealed partial class Game
                         if (key != 0 && rec.Key == key || steam != 0 && rec.SteamId == steam)
                             rec.Opened = true;
                 }
-                if (r.Has(2))
-                    op.Barracks = r.U16(); // (a world from before the barracks has none: GameColonyLockdown.cs builds one)
-                if (r.Has(4))
-                    (op.Works, op.Depot) = (r.U16(), r.U16()); // (a world from before the depot has none: GameDepot.cs builds one)
-                if (r.Has(1))
-                {
-                    var sites = new List<(string, ushort)>();
-                    for (int k = 0, sn = r.U8(); k < sn; k++)
-                        sites.Add((r.Str(), r.U16()));
-                    op.Sites = [.. sites]; // (a world from before the data centres has none: GameStoryFragments.cs builds them)
-                }
-                if (r.Has(2))
-                    op.Quarry = r.U16(); // (a world from before the quarry has none: GameQuarry.cs builds one)
-                if (r.Has(1))
-                {
-                    var built = new List<(string, ushort)>();
-                    for (int k = 0, bn = r.U8(); k < bn; k++)
-                        built.Add((r.Str(), r.U16()));
-                    (op.Buildings, op.BuildingsListed) = ([.. built], true); // (a world from before the buildings: GameColonyBuildings.cs builds them)
-                }
+                // (a world from before 2026-11-17 has the penal colony's barracks, depot, data centres, quarry and buildings
+                // after this: the colony is gone, so the rest is left unread and those bodies stay as plain constructs)
                 if (float.IsFinite(op.Crash.X + op.Crash.Y + op.Crash.Z))
                     _opLoaded = op; // (applied once the constructs are in: GameSandboxOpening.cs)
                 break;

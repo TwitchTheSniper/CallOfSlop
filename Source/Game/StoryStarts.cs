@@ -4,28 +4,27 @@ namespace CallOfSlop;
 
 /// <summary>
 /// A way to begin a new world (docs/story/STARTS.md; Story/Starts/*.json, format call-of-slop-start/1): the planetoid it
-/// begins on (or any map), who the player is and their background, the opening they go through (Story/Opening), whether
-/// the warden's induction follows, the faction and standing they start with, and the start kit. The menus offer them in
-/// order for Survival and Creative, the rust bucket first (Karl, 2026-11-14); the start with the induction (the Ministry's
-/// penal colony on Glacier) is the Survival tutorial's own world, behind its tickbox. A start belongs to its planetoid: a
-/// new world on another map plays the any-map start, and a world saved without a start plays the default (the colony).
+/// begins on (or any map), who the player is and their background, the opening they go through (Story/Opening), the
+/// faction and standing they start with, and the start kit. The menus offer them in order for Survival and Creative, the
+/// rust bucket first (Karl, 2026-11-14). A start belongs to its planetoid: a new world on another map plays the any-map
+/// start, and a world saved without a start (one from before starts: an old penal colony world, the colony removed
+/// 2026-11-17) plays <see cref="StoryStarts.Legacy"/>, which has no opening.
 /// </summary>
 public sealed class StoryStart
 {
     public const string Format = "call-of-slop-start/1";
 
-    public string Id = ""; // the file's name (Story/Starts/PenalColony.json: "PenalColony"); what a save and the settings keep
+    public string Id = ""; // the file's name (Story/Starts/RustBucket.json: "RustBucket"); what a save and the settings keep
     public string Name = ""; // on the Story page's chooser
     public int Order; // the chooser's order (low first)
-    public bool Default; // the start a world saved without one plays (old saves: the penal colony)
+    public bool Default; // the start the menus fall back to (the rust bucket); a world saved without one plays StoryStarts.Legacy
     public bool Placeholder; // a rough start that only shows starts work (the chooser says so)
-    public string Character = ""; // who you are ("Convict")
+    public string Character = ""; // who you are ("Spacer")
     public string Background = ""; // a line on who you were
     public string About = ""; // the Story page's paragraph
     public string Map = ""; // the planetoid it begins on (a Sandbox map), or "any": the map picked on the menu
     public bool AnyMap => Map.Equals("any", StringComparison.OrdinalIgnoreCase);
-    public string Opening = ""; // a file in Story/Opening ("" none: no card, no wake, no colony)
-    public bool Induction; // the warden's induction (Story/Tutorial/Induction.json) follows the opening
+    public string Opening = ""; // a file in Story/Opening ("" none: no card, no wake)
     public string Faction = ""; // a faction (Story/Factions, by name) whose standing...
     public int Standing; // ...each player starts with, when it isn't 0 (else as the faction rules leave it)
     public string[]? Kit; // the start kit by name, or null: the shipped one (Constructs/SurvivalStart.json)
@@ -38,12 +37,12 @@ public sealed class StoryStart
         ? new OpeningScript { Problem = $"the {Name} start has no opening" }
         : OpeningScript.Load(Path.Combine(AppFolders.Data, "Story", "Opening", Opening));
 
-    /// <summary>Today's start, built in: what plays when Story/Starts has nothing usable.</summary>
+    /// <summary>Today's start, built in: what plays when Story/Starts has nothing usable (the rust bucket).</summary>
     public static StoryStart BuiltIn() => new()
     {
-        Id = "PenalColony", Name = "Ministry convict", Default = true, Character = "Convict", Map = "Glacier",
-        Opening = "Opening.json", Induction = true, Faction = "Ministry of Slop",
-        About = "You crash on Glacier and wake in the Ministry of Slop's penal colony.",
+        Id = "RustBucket", Name = "Rust bucket", Default = true, Character = "Spacer", Map = "Glacier",
+        Opening = "RustBucket.json",
+        About = "You wake aboard the Rust Bucket, a patched two-deck freighter coasting round Glacier.",
     };
 
     public static StoryStart Load(string path)
@@ -68,12 +67,8 @@ public sealed class StoryStart
                 t.Opening = "";
             if (t.Opening.Length > 0 && (t.Opening.IndexOfAny(['/', '\\']) >= 0 || !File.Exists(Path.Combine(AppFolders.Data, "Story", "Opening", t.Opening))))
                 throw new FormatException($"\"opening\": no file Story/Opening/{t.Opening}");
-            var tut = Text(root, "tutorial", "none");
-            t.Induction = tut.Equals("Induction", StringComparison.OrdinalIgnoreCase)
-                ? true
-                : tut.Equals("none", StringComparison.OrdinalIgnoreCase)
-                    ? false
-                    : throw new FormatException($"\"tutorial\": \"Induction\" or \"none\" (the induction is the one tutorial so far; another would have to reach clients too)");
+            if (!Text(root, "tutorial", "none").Equals("none", StringComparison.OrdinalIgnoreCase))
+                throw new FormatException("\"tutorial\": \"none\" (the warden's induction went with the penal colony, 2026-11-17)");
             t.Faction = Text(root, "faction", "");
             if (root.TryGetProperty("standing", out var st))
                 t.Standing = Math.Clamp(st.GetInt32(), -100, 100);
@@ -158,25 +153,29 @@ public static class StoryStarts
         id.Length == 0 ? null : Array.Find(All, s => s.Id.Equals(id, StringComparison.OrdinalIgnoreCase));
 
     /// <summary>
+    /// What a world saved without a start plays (Id ""): one from before starts, which was a penal colony world (the
+    /// colony and its induction were removed, 2026-11-17). It has no opening: the world's constructs stay as they were,
+    /// and a late friend wakes where a new player spawns.
+    /// </summary>
+    public static readonly StoryStart Legacy = new() { Id = "", Name = "Old world", Map = "any" };
+
+    /// <summary>
     /// The start a world on <paramref name="map"/> plays when <paramref name="id"/> was asked for: that one on its own
     /// planetoid (or any map's), else the any-map start (a new world taken to another map, or a world saved with a start
-    /// that is gone: the archived Castaway), else the default. Nothing asked (a world saved before starts) plays the default.
+    /// that is gone: the archived Castaway and the penal colony), else the default. Nothing asked (a world saved before
+    /// starts) plays <see cref="Legacy"/>.
     /// </summary>
     public static StoryStart For(string id, string map) =>
-        Find(id) is not { } s ? (id.Length == 0 ? Default : Array.Find(All, a => a.AnyMap) ?? Default)
+        id.Length == 0 ? Legacy
+        : Find(id) is not { } s ? Array.Find(All, a => a.AnyMap) ?? Default
         : s.AnyMap || s.Map.Equals(map, StringComparison.OrdinalIgnoreCase) ? s
         : Array.Find(All, a => a.AnyMap) ?? Default;
 
-    /// <summary>The Survival tutorial's start (the one the warden's induction follows: the penal colony), or null.</summary>
-    public static StoryStart? Tutorial => Array.Find(All, s => s.Induction);
-
-    /// <summary>The starts the menus offer for a new world, in order (the tutorial's is behind its own tickbox).</summary>
-    public static StoryStart[] Offered => _offered ??= [.. All.Where(s => !s.Induction)];
-    private static StoryStart[]? _offered;
+    /// <summary>The starts the menus offer for a new world, in order.</summary>
+    public static StoryStart[] Offered => All;
 
     /// <summary>The start the menus show picked for <paramref name="id"/>: that one when it is offered, else the first offered.</summary>
-    public static StoryStart Picked(string id) =>
-        Find(id) is { Induction: false } s ? s : Offered.Length > 0 ? Offered[0] : Default;
+    public static StoryStart Picked(string id) => Find(id) ?? All[0];
 
     /// <summary><c>--check-starts</c>: every start, what it holds, and the refused files. Exit code: the problems found.</summary>
     public static int Check()
@@ -187,7 +186,7 @@ public static class StoryStarts
         foreach (var s in All)
         {
             Console.WriteLine($"{s.Id}: \"{s.Name}\"{(s.Default ? " (default)" : "")}{(s.Placeholder ? " (placeholder)" : "")} on {s.Map}, {s.Character}; "
-                              + $"opening {(s.Opening.Length > 0 ? s.Opening : "none")}, {(s.Induction ? "the induction" : "no tutorial")}"
+                              + $"opening {(s.Opening.Length > 0 ? s.Opening : "none")}"
                               + (s.Faction.Length > 0 ? $", {s.Faction} {s.Standing}" : "") + (s.Kit != null ? $", kit of {s.Kit.Length}" : ""));
             if (!s.AnyMap && Maps.Find(s.Map) is not { Sandbox: not null })
             {

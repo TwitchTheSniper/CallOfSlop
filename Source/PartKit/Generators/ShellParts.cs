@@ -3,9 +3,8 @@ using static CallOfSlop.PartKit.PartKitMath;
 namespace CallOfSlop.PartKit.Generators;
 
 /// <summary>
-/// The robot shells: Constructs/Parts/Shells (the Robot Shell and the Shell Control Chair that wakes you in one), and the Depot Lander
-/// blueprint, the Orbiter without its Driving Module (the Orbital Depot's challenge is to fit and link one). Was
-/// tools/constructs/shell_parts.py. The lander follows Constructs/Blueprints/Orbiter.json: run this after changing it.
+/// The robot shells: Constructs/Parts/Shells (the Robot Shell and the Shell Control Chair that wakes you in one). Was
+/// tools/constructs/shell_parts.py. (The Depot Lander and Ministry Courier blueprints went with the penal colony, 2026-11-17.)
 /// </summary>
 public sealed class ShellParts : IPartGenerator
 {
@@ -14,7 +13,7 @@ public sealed class ShellParts : IPartGenerator
     private const string Out = "Constructs/Parts/Shells";
     private const string Section = "Shells";
     private const string Steel = "#8b949c", Dark = "#30363d", Joint = "#56606a", Visor = "#38d0e8", Lamp = "#f2a93b", Seat = "#3b4652";
-    private const int Range = 3000; // m: the chair's reach (the story's depot hangs 1.5 km over its chairs)
+    private const int Range = 3000; // m: the chair's reach 
 
     private static PyDict Channel() => new()
     {
@@ -173,52 +172,8 @@ public sealed class ShellParts : IPartGenerator
         }));
     }
 
-    /// <summary>The Orbiter without its Driving Module or wires: the depot's challenge is to fit and link one.</summary>
-    private static PyDict Lander(PartOutput o)
-    {
-        var orbiter = (PyDict)o.ReadJson("Constructs/Blueprints/Orbiter.json")!;
-        var all = (List<object?>)orbiter["steps"]!;
-        var steps = all.Cast<PyDict>().Where(s => (string?)s["part"] != "Driving Module").Cast<object?>().ToList();
-        if (steps.Count != all.Count - 1 || !steps.Cast<PyDict>().All(s => Py.D(s.Get("on") ?? 0) < steps.Count))
-            throw new InvalidOperationException("Orbiter.json: expected one Driving Module that nothing else stands on");
-        return new PyDict
-        {
-            ["format"] = "call-of-slop-construct-blueprint/1",
-            ["name"] = "Depot Lander",
-            ["description"] = "An Orbiter from the Ministry's Orbital Depot with no Driving Module: fit one on the pilot's seat and link seat, module and jets to fly it.",
-            ["steps"] = steps,
-        };
-    }
-
-    /// <summary>The Orbiter in the Ministry's colours (navy tanks, a green band, slate jets): the Ministry Courier parked on the
-    /// spaceport's first pad (docs/story/SPACEPORT.md), the same ship to fly, its seats and wires as they are.</summary>
-    private static PyDict Courier(PartOutput o)
-    {
-        var orbiter = (PyDict)o.ReadJson("Constructs/Blueprints/Orbiter.json")!;
-        var steps = ((List<object?>)orbiter["steps"]!).Cast<PyDict>().ToList();
-        for (var k = 0; k < steps.Count; k++)
-        {
-            var part = (string?)steps[k]["part"];
-            var paint = part switch { "Fuel Tank" => k is 0 or 1 or 2 ? "#2f5a3c" : "#1f2b45", "Small Jet" => "#4b5157", _ => null };
-            if (paint == null)
-                continue;
-            steps[k]["paint"] = paint;
-            steps[k]["finish"] = "worn paint";
-        }
-        return new PyDict
-        {
-            ["format"] = "call-of-slop-construct-blueprint/1",
-            ["name"] = "Ministry Courier",
-            ["description"] = "The Ministry of Slop's courier ship from the Frostreach spaceport: an Orbiter for two in navy and green, that climbs out of the sky into orbit.",
-            ["steps"] = steps.Cast<object?>().ToList(),
-            ["wires"] = orbiter["wires"],
-        };
-    }
-
     public void Make(PartOutput o)
     {
         WriteParts(o, Out, [("", Shell()), ("", Chair()), .. Spares()]);
-        o.File("Constructs/Blueprints/DepotLander.json", PyJson.Dumps(Lander(o), 2) + "\n");
-        o.File("Constructs/Blueprints/MinistryCourier.json", PyJson.Dumps(Courier(o), 2) + "\n");
     }
 }
