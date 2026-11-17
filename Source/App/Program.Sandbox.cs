@@ -1231,7 +1231,7 @@ public static unsafe partial class Program
     /// <summary>An energy gun's capacitors: "capacitors 80%", "capacitors flat: N kJ a shot", "no Capacitor Bank on its circuit".</summary>
     private static string EnergyLine(Construct c, in CGun g) =>
         g.Energy <= 0 ? "" : c.CapCapacity <= 0 ? $"no Capacitor Bank on its circuit ({MegaJoules(g.Energy)} a shot)"
-        : c.Cap < g.Energy && !(_game?.Constructs.Creative ?? false) ? $"capacitors flat: {MegaJoules(g.Energy)} a shot, {MegaJoules(c.Cap)} held"
+        : c.Cap < g.Energy ? $"capacitors flat: {MegaJoules(g.Energy)} a shot, {MegaJoules(c.Cap)} held"
         : $"capacitors {ConstructPower.CapShare(c) * 100:0}%, {(int)MathF.Min(999, c.Cap / g.Energy)} shots";
 
     private static string GunLook(Construct c, int k, in CPart hitPart)

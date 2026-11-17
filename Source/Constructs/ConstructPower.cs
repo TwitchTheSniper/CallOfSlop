@@ -159,10 +159,10 @@ public static class ConstructPower
     /// <summary>The capacitors' charge as a share of what they hold (0 without any).</summary>
     public static float CapShare(Construct c) => c.CapCapacity > 0 ? Math.Clamp(c.Cap / c.CapCapacity, 0, 1) : 0;
 
-    /// <summary>Takes a shot's <paramref name="kj"/> from the capacitors: false (and nothing taken) when they hold less. Creative's are never flat.</summary>
-    public static bool Draw(ConstructWorld world, Construct c, float kj)
+    /// <summary>Takes a shot's <paramref name="kj"/> from the capacitors: false (and nothing taken) when they hold less (in creative too, as batteries).</summary>
+    public static bool Draw(Construct c, float kj)
     {
-        if (kj <= 0 || world.Creative && c.CapCapacity > 0)
+        if (kj <= 0)
             return true;
         if (c.Cap < kj)
             return false;

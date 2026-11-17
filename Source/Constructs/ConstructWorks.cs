@@ -633,6 +633,9 @@ public static class ConstructWorks
     /// <summary>A head's rating for people: "9.0 MN", "600 kN", "40 kW".</summary>
     public static string Rating(ConstructPartDef d) => d.Role == PartRole.Thruster ? Force(d.ThrustForce) : $"{NeedOf(d):0} kW";
 
+    /// <summary>What a head's works serve, in its own unit: a thruster's newtons, else kW (a laser's beam).</summary>
+    public static string Amount(ConstructPartDef head, float v) => head.Role == PartRole.Thruster ? Force(v) : $"{v:0} kW";
+
     public static string Force(float n) => n >= 1e6f ? (n / 1e6f).ToString("0.0", CultureInfo.InvariantCulture) + " MN" : (n / 1000f).ToString("0", CultureInfo.InvariantCulture) + " kN";
 
     /// <summary>Why a head is held back, or "" when it isn't: "no Drive Core behind it", "Fuel Pump 1 of 2 working".</summary>
@@ -652,7 +655,7 @@ public static class ConstructWorks
             return $"no {KindPiece(h.Short)} behind it";
         if (have < all)
             return $"{KindPiece(h.Short)} {have} of {all} working";
-        return $"{KindPiece(h.Short)} too small: serves {Force(c.WorksServed[cell])} of {Force(c.WorksNeed[cell])}";
+        return $"{KindPiece(h.Short)} too small: serves {Amount(d, c.WorksServed[cell])} of {Amount(d, c.WorksNeed[cell])}";
     }
 
     /// <summary>A head's state: "works 100%", "works 25%".</summary>
@@ -877,7 +880,7 @@ public static class ConstructWorks
                 if (h.Asm >= 0)
                 {
                     var cell = h.Asm * KindCount + kind;
-                    sb.Append($" ({c.WorksHave[cell]} of {c.WorksAll[cell]} working, {Force(c.WorksServed[cell])} for {Force(c.WorksNeed[cell])})");
+                    sb.Append($" ({c.WorksHave[cell]} of {c.WorksAll[cell]} working, {Amount(d, c.WorksServed[cell])} for {Amount(d, c.WorksNeed[cell])})");
                 }
             }
             if (h.Asm >= 0)
@@ -917,8 +920,8 @@ public static class ConstructWorks
         for (var k = 0; k < c.GunCount; k++)
         {
             ref var g = ref c.Guns[k];
-            if (g.Ring < 0 || g.Part >= c.PartCount)
-                continue;
+            if (g.Ring < 0 || g.Part >= c.PartCount || g.NoAmmo)
+                continue; // (a laser on a ring needs no feed: its generators are its works, reported with the heads)
             var line = $"works: {c.Parts[g.Part].D.Name} (part {g.Part}) on {c.Parts[g.Ring].D.Name} (part {g.Ring})";
             if (!g.RingFed)
             {

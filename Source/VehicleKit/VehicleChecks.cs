@@ -214,6 +214,7 @@ public static class VehicleChecks
         if (c.Engine >= 0 && c.DefOf(c.Engine).FuelKind != EngineFuel.Electric && (c.Fuel <= 0 || !ConstructRoutes.PipeFeeds(c, c.Engine))) // (an Electric Motor runs on its battery: a spawn context off world, VehicleContext.cs)
             r.Failures.Add($"no fuel reaches the engine ({c.Fuel:0} l aboard): pipe a tank to its Fuel in");
         r.Notes.Add($"fuel {c.Fuel:0.0} l; power: {(c.ChargeCapacity > 0 ? $"{c.ChargeCapacity:0} of battery" : "no electrics")}");
+        EnergyNotes(c, r);
         var driven = 0;
         var steered = 0;
         float trackL = 0, trackR = 0, zF = float.MaxValue, zB = float.MinValue;
@@ -913,5 +914,23 @@ public static class VehicleChecks
             Aim(c, w, q, g, seat, name, r);
             c.Parts[seat].Keys = 0;
         }
+    }
+    /// <summary>The capacitors and the energy guns that fire from them (ship-works.md 8): what they hold, how fast the circuit refills them, shots a gun has in them.</summary>
+    private static void EnergyNotes(Construct c, VehicleReport r)
+    {
+        var line = "";
+        for (var k = 0; k < c.GunCount; k++)
+        {
+            ref var g = ref c.Guns[k];
+            if (g.Energy <= 0 || g.Part >= c.PartCount)
+                continue;
+            var name = c.Parts[g.Part].D.Name;
+            if (c.CapCapacity <= 0)
+                r.Failures.Add($"the {name} fires from capacitors ({g.Energy:0} kJ a shot) and no Capacitor Bank is on its circuit");
+            else
+                line += $"{(line.Length > 0 ? ", " : "")}{name} {g.Energy:0} kJ a shot ({c.CapCapacity / g.Energy:0} shots full, one every {g.Energy / c.CapRate:0.0} s on the refill)";
+        }
+        if (c.CapCapacity > 0)
+            r.Notes.Add($"capacitors: {c.CapCapacity:0} kJ, refilled at {c.CapRate:0} kW{(line.Length > 0 ? $"; {line}" : "")}");
     }
 }

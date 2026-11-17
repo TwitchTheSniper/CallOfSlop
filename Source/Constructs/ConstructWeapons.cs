@@ -676,7 +676,7 @@ public static class ConstructWeapons
     private static void Finish(Construct c, ref CGun g, WeaponDef w)
     {
         g.RoundV = (g.Effects & GunEffect.Shell) != 0 ? g.Speed
-            : (g.Effects & GunEffect.Flame) != 0 || g.Fx is GunFx.Rocket or GunFx.Flame ? 0
+            : (g.Effects & GunEffect.Flame) != 0 || g.Fx is GunFx.Rocket or GunFx.Flame or GunFx.Beam ? 0 // (a beam is there at once: no lead, no flight)
             : g.Speed > 0 ? g.Speed
             : ConstructWeaponParts.Current.RoundSpeed * MathF.Max(0.25f, w.BulletSpeed);
         if (g.RoundV > 0 && (g.Effects & GunEffect.Shell) == 0)
@@ -958,7 +958,7 @@ public static class ConstructWeapons
                 continue;
             if ((g.Effects & GunEffect.Shell) != 0 && !world.ShellRoom)
                 continue; // (as many shells in the air as the world holds: it waits, the round not spent)
-            if (g.Energy > 0 && (Beam(c, g.Part) <= 0 || !ConstructPower.Draw(world, c, g.Energy)))
+            if (g.Energy > 0 && (Beam(c, g.Part) <= 0 || !ConstructPower.Draw(c, g.Energy)))
                 continue; // (an energy gun fires from the capacitors only, and an emitter with no generator serving it not at all: the round, if any, kept)
             if (!g.NoAmmo)
                 p.Rounds -= per;

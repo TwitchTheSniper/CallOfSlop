@@ -78,7 +78,7 @@ inside the hull, in one room with engineering.
 - Two torpedo sponsons (Zero Day Torpedo Bay L/R), each a room off the torpedo room through a bulkhead door, with a
   six-round drum Ordnance Rack loaded with designed torpedoes (radar seeker, HE warhead) that leave through the launch
   port in the sponson's front face. The fire buttons are on the torpedo room's walls.
-- The Zero Day Railgun along the spine, fixed forward and aimed by the ship (the pilot fires it).
+- The Zero Day Railgun along the spine, fixed forward and aimed by the ship (the pilot fires it). Each slug takes 15 MJ from the Capacitor Bank M in engineering, aft of the reactor (ship-works.md 8; energy guns fire from capacitors only): two full slugs and a bit, one refilled in 10 s.
 - Four Zero Day PDCs on barbettes on the beam, run from the two gun stations (ops and the mess). Each turns on a **Turret
   Ring S** whose trunk goes down the barbette's well, fed from its own **magazine** (ship-works.md 5.2): an Ammo
   Container standing inside against ops' or the mess's side wall by its barbette, its 0.7 m3 box (2,400 rounds as

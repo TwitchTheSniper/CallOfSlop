@@ -366,12 +366,13 @@ public sealed partial class Game : IConstructTargets
             GunFx.Cannon => (new Vector3(1f, 0.8f, 0.45f), 0.09f),
             GunFx.Rocket => (new Vector3(0.85f, 0.82f, 0.78f), 0.12f),
             GunFx.Harpoon => (new Vector3(0.55f, 0.57f, 0.6f), 0.05f),
+            GunFx.Beam => (new Vector3(1f, 0.22f, 0.16f), MathF.Min(0.3f, 0.04f + (float)def.Damage * 0.0004f)), // (a laser's beam: red, wider with its pulse)
             _ => (new Vector3(1f, 0.85f, 0.5f), 0.025f + def.Caliber * 0.02f),
         };
-        var speed = g.Speed > 0 ? g.Speed : g.Fx == GunFx.Flame ? 22f : g.RoundV is > 0 and < TracerBaseSpeed * 0.95f ? g.RoundV : 0f; // (a slow charge's round is seen to fly)
+        var speed = g.Fx == GunFx.Beam ? 0f : g.Speed > 0 ? g.Speed : g.Fx == GunFx.Flame ? 22f : g.RoundV is > 0 and < TracerBaseSpeed * 0.95f ? g.RoundV : 0f; // (a slow charge's round is seen to fly)
         var life = speed > 0 ? 0.25f + Vector3.Distance(muzzle, e.At) / speed : 0f;
         var bow = speed > 0 && g.RoundV > 0 ? PowderCharge.Bow(g.RoundV, Vector3.Distance(muzzle, e.At)) : 0f;
-        Tracers.Add(new Tracer { From = muzzle, To = e.At, Color = colour, Width = width, Born = now, Speed = speed, Life = MathF.Min(life, bow > 0 ? 4f : 1.5f), Bow = bow });
+        Tracers.Add(new Tracer { From = muzzle, To = e.At, Color = colour, Width = width, Born = now, Speed = speed, Life = g.Fx == GunFx.Beam ? BeamLife : MathF.Min(life, bow > 0 ? 4f : 1.5f), Bow = bow });
         ConstructRender.AddFlash(muzzle, fwd, now, g.Fx);
         // One report a pull (the first pellet's event), not one per pellet.
         if (_cwLastReport.Body != e.Body || _cwLastReport.Part != e.Part || now - _cwLastReport.At > 0.03)
@@ -386,12 +387,16 @@ public sealed partial class Game : IConstructTargets
             }
             if (g.Fx == GunFx.Flame)
                 Audio.Effect3D(Sfx.NapalmIgnite, muzzle, 0.5f);
+            else if (g.Fx == GunFx.Beam)
+                Audio.Effect3D(Sfx.TrophyZap, muzzle, 0.6f);
             else
                 Audio.Shot(def, muzzle, mergeN: g.MergeN); // a merged receiver reports lower and bassier (ReceiverMerge.json "sound")
         }
     }
 
     private (ushort Body, ushort Part, double At) _cwLastReport;
+
+    private const float BeamLife = 0.12f; // s a laser's beam is drawn (an instant streak's fade is 0.25 s)
 
     /// <summary>The largest gunner's recoil shake this peer has felt (the self-test).</summary>
     public float ConstructGunnerShake;
