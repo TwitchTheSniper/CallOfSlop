@@ -78,7 +78,8 @@
         0.4,
         1.2
       ],
-      "hidden": true
+      "hidden": true,
+      "side": "base"
     },
     {
       "min": [
@@ -91,7 +92,8 @@
         0.0,
         0.75
       ],
-      "hidden": true
+      "hidden": true,
+      "side": "base"
     },
     {
       "min": [
@@ -142,13 +144,14 @@
         0.397,
         1.008
       ],
-      "color": "#5a6065",
+      "color": "#4d5866",
       "detail": true,
       "shape": "cylinder",
       "segments": 24,
       "front": "+y",
       "finish": "painted plating",
-      "side": "leaf"
+      "side": "leaf",
+      "paintable": false
     },
     {
       "min": [

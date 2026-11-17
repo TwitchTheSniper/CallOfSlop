@@ -25,7 +25,7 @@ public sealed class ShipWorksParts : IPartGenerator
 
     public const string Out = "Constructs/Parts/ShipWorks", Section = "Ship fittings", Group = "Ship";
 
-    private const string Clad = "#6c7378", Cable = "#262829", Steel = "#5a6065", Trim = "#7b8186", Dark = "#34373a", Hazard = "#d8a020", Copper = "#8a5a3a", Glow = "#ffb060", Gauge = "#40e070", Bed = "#5c6057", Chamber = "#98a1a9";
+    private const string Clad = "#6c7378", Cable = "#262829", Steel = "#5a6065", Trim = "#7b8186", Dark = "#34373a", Hazard = "#d8a020", Copper = "#8a5a3a", Glow = "#ffb060", Gauge = "#40e070", Bed = "#5c6057", Chamber = "#98a1a9", RingPlate = "#4d5866"; // (RingPlate: a Turret Ring's turning plate, a blue-grey no fixed box uses)
     private const double Plate = 0.3; // a mount's thickness
 
     /// <summary>The three sizes: a letter, and per size the numbers below.</summary>
@@ -120,8 +120,9 @@ public sealed class ShipWorksParts : IPartGenerator
         Hidden(p, -tr, -td, -tr, tr, 0, tr); // (the trunk)
         Up(p, 0, 0, r, 0.003, 0.08, Dark, "dirty steel", segments: 24); // (the flange on the deck)
         Up(p, 0, 0, r * 0.9, 0.075, h - 0.045, Trim, "dirty steel", segments: 24); // (the race)
-        Up(p, 0, 0, r * 0.84, h - 0.05, h - 0.003, Steel, "painted plating", segments: 24); // (the turning plate)
+        Up(p, 0, 0, r * 0.84, h - 0.05, h - 0.003, RingPlate, "painted plating", segments: 24); // (the turning plate: the joint's leaf, its own colour and not paintable, as every joint's moving side)
         p.Boxes[^1]!["side"] = "leaf";
+        p.Boxes[^1]!["paintable"] = false;
         Up(p, 0, 0, r * 0.91, h * 0.45, h * 0.45 + 0.04, Hazard, "hazard paint", inner: Math.Round(r * 0.88 / (r * 0.91), 3), segments: 24); // (a hazard band round the race)
         for (var k = 0; k < 12; k++)
         {
@@ -135,8 +136,8 @@ public sealed class ShipWorksParts : IPartGenerator
         Up(p, 0, 0, tr * 1.06, -td + 0.003, -td + 0.085, Dark, "dirty steel"); // (its foot)
         Look(p, -0.12, -td - 0.08, -0.12, 0.12, -td + 0.003, 0.12, Hazard, "worn paint"); // (the Ammo in's mouth)
         foreach (var b in p.Boxes)
-            if (Py.Truthy(b.Get("detail")) && !b.Has("side"))
-                b["side"] = "base"; // (everything but the turning plate stands still with the deck)
+            if (!b.Has("side"))
+                b["side"] = "base"; // (everything but the turning plate stands still with the deck, the hidden race and trunk too)
         p.Sock("base", P(0, 0, 0), "-y");
         p.Sock("top", P(0, h, 0), "+y");
         var mid = Math.Round(-td / 2, 2);
