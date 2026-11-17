@@ -57,6 +57,17 @@ ids now; the kind is `CrewPowers.KindOf(id)`. Saves keep names, and a name that 
 A generated craft is crewed by the first power of its style's kind (as many powers of one kind as you like, the spawner
 picks the first until phase 3 gives powers their own ships).
 
+### Merge review fixes (2026-11-17)
+
+- Stray fire: a hit on a power by a power it holds a pact with or counts as a friend is forgiven (no deed, no pact broken, no
+  fire back) up to `pacts.friendlyFireHits` (8) hits in a minute; a minute with none starts the count again; past it the fire
+  is deliberate and an attack (`PowerRelations.StrayFire`, gated in `Game.Deed`).
+- A body a player owns, or a prize, is its owner's doing whatever crew works it (`Game.CrewDoer`).
+- A powers section that doesn't read resets only the grid, pacts and news; standings with players (the Crew section) stay.
+- Landing: `Land` saves the whole world (`WorldSaveNow(wait: true)`, POWR included) before reading the people's sections
+  back, so nothing is lost. A kept place for travel (`GameTravelPlace`) starts from the ship file's copy and keeps its own
+  relations from then on: the host's main game and a kept place don't share them yet (phase 3's single controller layer).
+
 ### Saves and network
 
 - Saves: a `POWR` section (`WorldSaveWriter.PowersTag`, version 1): powers by name, the grid, pacts (seconds held and

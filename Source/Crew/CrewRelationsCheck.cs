@@ -112,12 +112,35 @@ public static class CrewRelationsCheck
         Check(rel.ShipFights(red, south, 0, 7) && !rel.ShipFights(red, south, 0, 255), "... even at peace with South (+30) it fights South's crew that fights its friend, and leaves South alone otherwise");
         rel.Move(red, south, -60 - rel.Get(red, south));
 
-        // 6. The alliance broken by an attack; South's crew saw it.
+        // 6. Stray fire between allies is forgiven (as GameCrewFactions' Deed gates it); fire kept up past the line breaks the alliance, and South's crew saw it.
+        var rn0 = rel.Get(red, north);
+        var forgiven = 0;
+        bool Hit()
+        {
+            if (rel.StrayFire(red, north, out _))
+            {
+                forgiven++;
+                return false;
+            }
+            rel.Post(RelEvent.HitBody, red, north, 255, Vector3.Zero);
+            return true;
+        }
+        for (var k = 0; k < rel.Rules.FriendlyFireHits; k++)
+        {
+            Hit();
+            Run(5);
+        }
+        Check(forgiven == rel.Rules.FriendlyFireHits && rel.PactOf(north, red) == PactKind.Alliance && rel.Get(red, north) == rn0,
+            $"an ally's splash and stray rounds ({forgiven} hits in a minute) are forgiven: the alliance holds, Red Hand still sees North at {rel.Get(red, north)}");
+        Run(61);
+        Check(!Hit() && rel.PactOf(north, red) == PactKind.Alliance, "a minute's quiet starts the count again");
         sight.Sees[south] = true;
         var sn0 = rel.Get(south, north);
-        rel.Post(RelEvent.HitBody, red, north, 255, Vector3.Zero);
+        var hits = 0;
+        while (!Hit() && hits < 64)
+            hits++;
         sight.Sees[south] = false;
-        Check(rel.PactOf(north, red) == PactKind.None && rel.Get(red, north) < 40, $"North hits Red Hand: the alliance is broken, Red Hand sees North at {rel.Get(red, north)}");
+        Check(rel.PactOf(north, red) == PactKind.None && rel.Get(red, north) < 40, $"North keeps firing on Red Hand ({hits + 2} hits in a minute): deliberate, the alliance is broken, Red Hand sees North at {rel.Get(red, north)}");
         Check(rel.Get(south, north) < sn0, $"the word spreads: South, who saw it, {sn0} -> {rel.Get(south, north)}");
 
         // 7. A ceasefire after losses, and its end.
@@ -134,6 +157,11 @@ public static class CrewRelationsCheck
         back.Load(bytes);
         var same = back.Rel.AsSpan().SequenceEqual(rel.Rel) && back.PactOf(north, south) == PactKind.Ceasefire && back.NewsTotal == Math.Min(rel.NewsTotal, PowerRelations.MaxNews);
         Check(same, $"the grid, pacts and news survive a save ({bytes.Length} bytes)");
+        back.MovePlayer(north, 7, -10);
+        var kept = back.Peek(north, 7);
+        back.Load([PowerRelations.SaveVersion, 200]); // (a section cut short)
+        Check(back.MetPlayer[7 * FactionTable.MaxStory + north - 1] && back.Peek(north, 7) == kept && back.PactOf(north, south) == PactKind.None,
+            $"a powers section that doesn't read starts the grid and pacts again but keeps standings with players ({kept})");
         var sw = Stopwatch.StartNew();
         var bytes0 = GC.GetAllocatedBytesForCurrentThread();
         var news0 = rel.NewsTotal;

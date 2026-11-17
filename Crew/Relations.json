@@ -28,6 +28,7 @@
     "staleWarMinutes": 30,
     "answerCooldownMinutes": 5,
     "allianceLoyalty": 0.5,
-    "ceasefireRefuseAggression": 0.8
+    "ceasefireRefuseAggression": 0.8,
+    "friendlyFireHits": 8
   }
 }

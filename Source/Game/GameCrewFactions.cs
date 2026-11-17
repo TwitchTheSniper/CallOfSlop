@@ -112,23 +112,28 @@ public sealed partial class Game : IPowerSight
 
     /// <summary>
     /// Who did it: a person, or, for a crew member's own hands or a crewed body's guns, the power they serve (<paramref name="power"/>, with its
-    /// ship). False: nobody to hold to account.
+    /// ship). A body a player owns, or a prize, is its owner's doing whatever crew works it (a player's "Fights everyone" ship, a taken
+    /// ship's prisoners): their standing moves, as <c>DamageBy = c.Owner</c> always said. False: nobody to hold to account.
     /// </summary>
     private bool CrewDoer(byte byPlayer, ushort byBody, out byte power, out byte player, out CrewShip? ship)
     {
         (power, player, ship) = (0, 255, null);
-        if (byBody != 0 && Crew.ShipOf(byBody) is { Faction: not 0, Own: false } bs)
-            (power, ship) = (bs.Faction, bs);
-        else if (byPlayer != 255 && Players.TryGetValue(byPlayer, out var p))
+        if (byBody == 0 && byPlayer != 255 && Players.TryGetValue(byPlayer, out var bot) && bot.CrewSlot >= 0)
         {
-            if (p.CrewSlot >= 0)
-            {
-                if (p.CrewSlot < Crew.High && Crew.Ship[p.CrewSlot] >= 0 && Crew.Ships[Crew.Ship[p.CrewSlot]] is { Faction: not 0, Own: false } ms)
-                    (power, ship) = (ms.Faction, ms);
-            }
-            else if (p.Bot == null)
-                player = byPlayer;
+            // A crew member's own hands: its ship's doing.
+            if (bot.CrewSlot < Crew.High && Crew.Ship[bot.CrewSlot] >= 0 && Crew.Ships[Crew.Ship[bot.CrewSlot]] is { } ms)
+                byBody = ms.Body;
+            byPlayer = 255;
         }
+        if (byBody != 0 && Constructs.Get(byBody) is { } bc)
+        {
+            if (bc.Owner != 255)
+                byPlayer = bc.Owner; // (a player's body: theirs)
+            else if (Crew.ShipOf(byBody) is { Faction: not 0, Own: false, Prize: false } bs)
+                (power, ship) = (bs.Faction, bs);
+        }
+        if (power == 0 && byPlayer != 255 && Players.TryGetValue(byPlayer, out var p) && p.CrewSlot < 0 && p.Bot == null)
+            player = byPlayer;
         return power != 0 || player != 255;
     }
 
@@ -142,13 +147,21 @@ public sealed partial class Game : IPowerSight
         if (!CrewStandingOn || s.Faction == 0 || !CrewDoer(byPlayer, byBody, out var power, out var player, out var ship) || power == s.Faction)
             return;
         var at = Constructs.Get(s.Body)?.WorldCom ?? default;
+        var rel = Relations;
+        if (power != 0 && e <= RelEvent.Capture && rel.StrayFire(s.Faction, power, out var first))
+        {
+            // A friend's or a pact partner's stray round or splash: no deed, no broken pact, no fire back (deliberate fire, past
+            // RelationRules.FriendlyFireHits hits in a minute, counts).
+            if (first)
+                Console.WriteLine($"[crew] construct {s.Body} ({CrewPowers.Of(s.Faction)!.Name}) hit by {CrewPowers.Of(power)!.Name}'s fire: stray, forgiven");
+            return;
+        }
         if (e <= RelEvent.Capture)
         {
             (s.DoerPlayer, s.DoerBody, s.DoerAt) = (byPlayer, byBody, Crew.Tick);
             if (ship != null)
                 (s.FoeBody, s.FoeBodyAt) = (ship.Body, Crew.Tick); // (it answers fire, whatever its view: GameCrew.cs)
         }
-        var rel = Relations;
         rel.Post(e, s.Faction, power, player, at);
         if (e is RelEvent.HitBody or RelEvent.HitCrew or RelEvent.KillCrew or RelEvent.DestroyShip && s.ContactBody != 0
             && Crew.ShipOf(s.ContactBody) is { Faction: not 0, Own: false } friend && friend.Faction != s.Faction)

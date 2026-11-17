@@ -59,6 +59,7 @@ public sealed class RelationRules
     public int HelpMax = 10, HelpEverySeconds = 60, FightGapSeconds = 300;
     public int CeasefireMinutes = 30, CeasefireRelation = -40, CeasefireLosses = 10, StaleWarMinutes = 30, AnswerCooldownMinutes = 5;
     public float AllianceLoyalty = 0.5f, CeasefireRefuseAggression = 0.8f;
+    public int FriendlyFireHits = 8; // a friend's or a pact partner's hits forgiven in a minute (stray rounds, splash); past it, deliberate
 
     private static RelationRules? _current;
     public static RelationRules Current => _current ??= Load(Path.Combine(AppFolders.Data, "Crew", "Relations.json"));
@@ -123,6 +124,7 @@ public sealed class RelationRules
                 r.AnswerCooldownMinutes = Int(p, "answerCooldownMinutes", r.AnswerCooldownMinutes, 0, 1440);
                 r.AllianceLoyalty = Num(p, "allianceLoyalty", r.AllianceLoyalty, 0, 1);
                 r.CeasefireRefuseAggression = Num(p, "ceasefireRefuseAggression", r.CeasefireRefuseAggression, 0, 1.01f);
+                r.FriendlyFireHits = Int(p, "friendlyFireHits", r.FriendlyFireHits, 0, 255);
             }
         }
         catch (Exception ex) when (ex is IOException or JsonException or InvalidDataException or UnauthorizedAccessException or InvalidOperationException or FormatException or KeyNotFoundException)
@@ -220,6 +222,14 @@ public sealed class PowerRelations
     /// <summary>A new world: every relation from the power files, no pacts, nobody met, no news.</summary>
     public void Reset()
     {
+        Array.Clear(MetFaction);
+        Array.Clear(MetPlayer);
+        ResetPowers();
+    }
+
+    /// <summary>The powers among themselves from their files: the grid, no pacts, wars, help or news (who has met whom is kept).</summary>
+    public void ResetPowers()
+    {
         Array.Clear(Rel);
         for (var a = 1; a <= Count; a++)
             for (var b = 1; b <= Count; b++)
@@ -228,9 +238,9 @@ public sealed class PowerRelations
                 Rel[k] = Def(a)!.StartTo[b];
                 Band[k] = Rules.Raw(Rel[k]);
             }
-        Array.Clear(MetFaction);
-        Array.Clear(MetPlayer);
         Array.Clear(PactK);
+        Array.Clear(_strayAt);
+        Array.Clear(_strayHits);
         Array.Clear(_proposed);
         Array.Clear(_answerAfter);
         Array.Clear(_warSince);
@@ -289,6 +299,31 @@ public sealed class PowerRelations
         if (theirPower != 0 && theirPower != b && Helps(a, theirPower))
             return true;
         return theirPerson != 255 && Peek(a, theirPerson) >= Rules.FriendlyLine;
+    }
+
+    private readonly long[] _strayAt = new long[N * N];
+    private readonly byte[] _strayHits = new byte[N * N];
+
+    /// <summary>
+    /// An attack by <paramref name="doer"/> on <paramref name="victim"/> while a pact holds between them or the victim counts the doer a friend:
+    /// true while it is stray fire to forgive (a round or splash in a fight they share), up to <see cref="RelationRules.FriendlyFireHits"/> hits
+    /// in a minute (a minute with none starts the count again); past that it is deliberate, and an attack. <paramref name="first"/>: the first of a run.
+    /// </summary>
+    public bool StrayFire(byte victim, byte doer, out bool first)
+    {
+        first = false;
+        if (victim == doer || !HoldsFire(victim, doer) && BandOf(victim, doer) != RelBand.Friendly)
+            return false;
+        var k = (victim - 1) * N + doer - 1;
+        if (Tick - _strayAt[k] > 60L * T)
+            _strayHits[k] = 0;
+        _strayAt[k] = Tick;
+        if (_strayHits[k] < 255)
+            _strayHits[k]++;
+        first = _strayHits[k] == 1;
+        if (_strayHits[k] == Rules.FriendlyFireHits + 1)
+            Console.WriteLine($"[crew] {Name(doer)} keeps firing on {Name(victim)}: deliberate");
+        return _strayHits[k] <= Rules.FriendlyFireHits;
     }
 
     /// <summary><paramref name="a"/> helps <paramref name="f"/> in a fight it sees: allied, or friendly.</summary>
@@ -851,8 +886,8 @@ public sealed class PowerRelations
         }
         catch (Exception ex) when (ex is WorldFileException or ArgumentException or IndexOutOfRangeException or InvalidDataException)
         {
-            Console.WriteLine($"[crew] the world's powers section doesn't read ({ex.Message}): relations start from the power files");
-            Reset();
+            Console.WriteLine($"[crew] the world's powers section doesn't read ({ex.Message}): the powers' relations among themselves, pacts and news start from the power files (standings with players are kept)");
+            ResetPowers();
         }
     }
 }
