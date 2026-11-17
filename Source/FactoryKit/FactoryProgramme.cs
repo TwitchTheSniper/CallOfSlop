@@ -11,7 +11,7 @@ public sealed class FactoryObject
     public string Recipe = ""; // (a mixed machine's recipe, by its output)
     public double Rate; // units a second through it
     public int Bank = -1; // (machines of one recipe stand together facing one feed)
-    public float Size; // (a Storage Volume's box: metres square)
+    public float Size; // (a store's footprint: metres square)
     public override string ToString() => $"{Id,2} {Zone,-8} {Role,-8} {Part}{(Material.Length > 0 ? $" ({Material})" : "")} {FactoryData.N(Rate * 3600)}/h";
 }
 
@@ -61,6 +61,10 @@ public sealed class FactoryProgramme
             default:
                 throw new FactoryKitException($"function {f.Name}: phase 1 solves extraction and refinery only");
         }
+        // Stock goes in bunkers (factory_shell parts: open concrete bins that hold what they are rated, where a Storage Volume in the open spilt past a
+        // quarter full), the size the store asked for rounded to a bunker's; the tipping bay's is the low one a hauler pours over.
+        foreach (var o in p.Objects.Where(o => o.Part == "Storage Volume"))
+            (o.Part, o.Size) = o.Role == "tipping" ? ("Tipping Bunker 3 m", 3f) : o.Size <= 2.25f ? ("Ore Bunker 2 m", 2f) : ("Ore Bunker 3 m", 3f);
         // Power: every machine's draw plus the margin, in gensets of the style's plant.
         var draw = p.Objects.Sum(o => (ConstructParts.Find(o.Part)?.PowerDraw ?? 0)) / 1000.0;
         p.PowerKw = draw * (1 + f.PowerMargin);

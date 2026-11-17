@@ -244,6 +244,8 @@ public static unsafe partial class Program
             return FactoryKit.FactoryCli.GenFactory(genFactory, args); // the factory kit (Source/FactoryKit, docs/sandbox/design/factory-generator.md): a factory building from a brief
         if (args.SkipWhile(a => !a.Equals("--factory-check", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } factoryCheck)
             return FactoryKit.FactoryCheck.Cli(factoryCheck, args); // a generated factory spawned headless, fed and run: every machine works, the tick stays in budget
+        if (args.Any(a => a.Equals("--haul-check", StringComparison.OrdinalIgnoreCase)))
+            return FactoryKit.FactoryHaul.Cli(args); // the ore loop headless: post, skip, Ore Hauler, tipping bay, refinery
         if (args.SkipWhile(a => !a.Equals("--gen-vehicle", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } genVehicle)
             return VehicleKit.VehicleKitCli.GenVehicle(genVehicle, args); // the vehicle kit (Source/VehicleKit): run a generator, write and check its blueprints
         if (args.SkipWhile(a => !a.Equals("--slice-vehicle", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } sliceVehicle)

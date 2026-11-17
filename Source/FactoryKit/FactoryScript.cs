@@ -255,19 +255,19 @@ public sealed class FactoryScript : BlueprintScript
                 return m;
             }
             case "heap":
-                return Heap(o.Material, c.X, c.Z, o.Size);
+                return Heap(o, c.X, c.Z);
             case "tipping":
-                return Store(c.X, c.Z, o.Size, TippingHeight, Style.Colour(_paint, "hazard"));
+                return Store(o, c.X, c.Z, Style.Colour(_paint, "hazard"));
             case "loading" when o.Part == "Tipper Body":
                 return Skip(c.X);
             case "buffer" or "bin" or "loading":
-                return Store(c.X, c.Z, o.Size, 1.5f, Style.Colour(_paint.Fork("stock"), "stock"));
+                return Store(o, c.X, c.Z, Style.Colour(_paint.Fork("stock"), "stock"));
             default:
                 throw new VehicleKitException($"no cell for role {o.Role}");
         }
     }
 
-    /// <summary>The tipping hopper's height: under an Ore Hauler's tipped lip (about 1.85 m over the ground), the floor's 0.3 m and a margin.</summary>
+    /// <summary>The Tipping Bunker's height: under an Ore Hauler's tipped lip (about 1.9 m over the ground), with the floor's 0.3 m and a margin.</summary>
     public const float TippingHeight = 1.0f;
 
     /// <summary>The loading skip's leaf height over the floor: an Ore Hauler's bed rim (about 2.3 m over the floor on the road) under its tipped lip.</summary>
@@ -468,26 +468,16 @@ public sealed class FactoryScript : BlueprintScript
         return p;
     }
 
-    /// <summary>Raw stock: a Storage Volume's box, a quarter full in a creative world (a survival world builds it empty).</summary>
-    private VPart Heap(string material, float x, float z, float size, float height = 2.0f)
-    {
-        var v = On("Storage Volume", x, z, Front, "-y", HeapPaint(material));
-        Config(v, ("sizeX", (double)size), ("sizeY", (double)height), ("sizeZ", (double)size), ("atY", height / 2.0 - 0.15), ("material", material), ("fill", 24));
-        return v;
-    }
+    /// <summary>Raw stock: an ore bunker painted for what it holds (a bin: it builds empty, creative or not).</summary>
+    private VPart Heap(FactoryObject o, float x, float z) => On(o.Part, x, z, Front, "bottom", HeapPaint(o.Material), "concrete");
 
     private static string HeapPaint(string material) => material switch
     {
         "iron ore" => "#8a4a32", "copper ore" => "#3f8f7a", "stone" => "#9a9a94", "wood" => "#6b4a26", _ => "#d8c48a",
     };
 
-    /// <summary>An empty store: a Storage Volume's box <paramref name="size"/> square and <paramref name="height"/> high.</summary>
-    private VPart Store(float x, float z, float size, float height, string paint)
-    {
-        var v = On("Storage Volume", x, z, Front, "-y", paint);
-        Config(v, ("sizeX", (double)size), ("sizeY", (double)height), ("sizeZ", (double)size), ("atY", height / 2.0 - 0.15));
-        return v;
-    }
+    /// <summary>An empty store: the object's bunker, its road side (own +z) to the road.</summary>
+    private VPart Store(FactoryObject o, float x, float z, string paint) => On(o.Part, x, z, Front, "bottom", paint, "concrete");
 
     /// <summary>A refiner's Recipe setting for the recipe that makes <paramref name="output"/>: its option's number (0 is Auto).</summary>
     private static int RecipeOf(VPart refiner, string output)

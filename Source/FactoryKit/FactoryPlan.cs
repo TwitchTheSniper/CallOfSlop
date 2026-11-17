@@ -88,7 +88,7 @@ public sealed class FactoryPlan
     /// <summary>A part's footprint on the floor (x, z extents), standing as the builder stands it (machines turned with their back to the back).</summary>
     public static (float W, float D) Footprint(FactoryObject o)
     {
-        if (o.Part == "Storage Volume")
+        if (o.Part == "Storage Volume" || o.Part.Contains("Bunker"))
             return (o.Size, o.Size);
         var def = ConstructParts.Find(o.Part) ?? throw new FactoryKitException($"no part {o.Part}");
         var s = def.BoundsMax - def.BoundsMin;

@@ -35,7 +35,7 @@ public sealed class OreHauler(FactionStyle style) : HeavyShape(style)
         var hinge = v.Put("Motor Hinge 3x3 Medium", hingeAt, new Orient(Vector3.UnitX, Vector3.UnitY, Vector3.UnitY, Vector3.UnitZ), 0.2f, null, "base");
         // The Tipper Body (a scoop with its mouth up) on the hinge's leaf by its hingeL socket: centred on the frame, the pivot under its left wall.
         var bed = v.Put("Tipper Body", new Vector3(0, top + 0.75f + 0.3f, mid), Orient.Forward, 0.2f, hinge, "hingeL");
-        v.Config(hinge, ("min", -(double)TipDegrees), ("max", 0.0));
+        v.Config(hinge, ("min", 0.0), ("max", (double)TipDegrees)); // (its axis to the front: a positive angle swings the bed out to the left)
         // The TIP switch, wired to the hinge: on, the bed swings out to the left.
         var tip = v.Put("Switch", new Vector3(-side * 1.225f, Vehicle.Half * 2, mid), Orient.Any, 0.2f); // (on the end of the hinge sill's right wing: reached from the ground)
         v.Wire(tip, hinge);
