@@ -1,6 +1,6 @@
 # Bot brain: builder's notes
 
-Working notes for docs/sandbox/design/bot-brain.md, kept current after every step so a successor can finish. Branch `claude/bot-brain`.
+Working notes for docs/sandbox/design/bot-brain.md, kept current after every step so a successor can finish. Branch `claude/bot-brain` (phase 1, merged), then `claude/bot-brain-2` (phases 2 on).
 
 ## Done (phase 1: crew in seats)
 
@@ -51,6 +51,28 @@ Working notes for docs/sandbox/design/bot-brain.md, kept current after every ste
   its record when it goes; crew at the controls don't count as a person taking over (`ConstructWorld.HumanDriver`, in GameNav,
   linked routes); bodies are made two a tick. `--crew-check` after them: worst crew tick 1.25 ms (in Karl's driving, its rays),
   worst thinking 86 us; the earlier 5.7 ms spike didn't come back (taken for a one-off JIT or GC).
+
+## Done (phase 2: ground crews)
+
+- `Source/Crew/CrewGround.cs` (a partial of Karl's `ShipAi`): with no Flight Stabilizer the helm is the drive seat and it is driven by keys
+  (W, S, A, D, Space). A convoy follower keeps the place it was set down in, in its leader's frame (`brief.Leader`, `ConvoyIndex`, `Lane`);
+  the leader drives out and back 600 m along the way it was set down facing; a lone vehicle holds, and with a target closes to the brief's
+  `Engage` (80 m without one) and holds there, its `KeepAway` side turned off. A body in its way (a ray ahead every 10 ticks) is steered round;
+  throttle open and not moving for 3 s, it backs off 2 s. Gunners are Karl's gunnery unchanged.
+- Rule 1 on the ground: no member at the helm (after the grace) and its seat free, the drive gets Space (throttle 0, brakes on).
+- `Construct.CrewDrives` / `Construct.Driven`: a seated (bodiless) crew member at the drive seat drives as a sitter would; every
+  `c.Driver != 255` read in the drive code (Physics, Power, Drive, Thrust, Walk) now reads `c.Driven`. Server only, never saved or sent.
+- A nobody's vehicle set down by the vehicle spawner (`GameSandboxVehicles.Brief`) gets a crew (`Game.CrewFactionVehicle`). The parts menu's
+  convoy is now a nobody's crewed convoy (its asker still hears of each member); a single faction vehicle from the menu stays the asker's.
+- `--crew-check --crew-convoy "A,B,C,D" [--seconds S]`; window verb `crewconvoy STYLE N`.
+
+Verified (2026-11-16): `--crew-convoy "Bandit Gun Wagon 1,Bandit Buggy 1,Bandit Car 1,Bandit Monster Truck 1"`: the leader drives 400 m in
+60 s, followers 14 m off their places on average (the two behind the stopped one steer round it and catch up), 518 shots at the target;
+the second's driver shot, its gunner takes the wheel 2 s later; everyone aboard shot, it stops (0.0 m/s). Crew cost 39 us a tick, worst
+4.1 ms once (driving, at 17 s: not seen again; taken for JIT), 0 bytes. `--crew-scale 5000` on Bandit Buggy 1: 92 us a tick, worst 0.86 ms,
+0 bytes. A window run (`crewconvoy Bandit 3`): three generated vehicles crewed, eight bodies in seats, the convoy drives and fires.
+
+Unverified: walkers through the Driving Module (the same keys); a convoy's own gunners hit their own convoy (no friends yet: phase 3).
 
 ## Next
 

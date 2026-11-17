@@ -34,6 +34,16 @@ public static partial class Program
                     g.Crew.UnbodyAll(g);
                 }
                 return true;
+            case "crewconvoy": // "crewconvoy STYLE N": the host sets down a nobody's crewed convoy of N, 60 m ahead of the player, heading across its view
+                if (g.IsServer)
+                {
+                    var bits = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                    var fwd = GravityFrames.FlatForward(me.Position, me.Yaw);
+                    var at = g.SandboxGroundAt(me.Position + fwd * 60);
+                    var asked = g.VehicleSpawn.RequestConvoy(bits.Length > 0 ? bits[0] : "Bandit", bits.Length > 1 && int.TryParse(bits[1], out var cn) ? cn : 3, 1, null, at, me.Yaw + MathF.PI * 0.5f);
+                    Console.WriteLine($"[windowshot] crewconvoy: {asked ?? "asked"}");
+                }
+                return true;
             case "crewshoot": // "crewshoot pilot|gunner|spare": the host shoots the first crew body with that job, as a player's round does (DamagePlayer)
                 if (g.IsServer && g.CrewShoot(me, arg) is { } shot)
                     Console.WriteLine($"[windowshot] crewshoot: {shot}");

@@ -774,9 +774,9 @@ public sealed partial class Game
         var n = Math.Clamp(count == 0 ? 5 : count, VehicleConvoys.MinCount, VehicleConvoys.MaxCount);
         var at = p.Position + fwd * 22f + along * (n * 6f); // (about half the column's length ahead along the way it heads: the convoy passes in front)
         var anchor = ConstructWorld.Ground(World.Query, at);
-        if (VehicleSpawn.RequestConvoy(style, n, tier, seed > 0 ? seed : null, anchor, heading, id, _vehicleSpawned ??= VehicleSpawned, context: SpawnContexts.At(anchor)) is { } busy)
+        if (VehicleSpawn.RequestConvoy(style, n, tier, seed > 0 ? seed : null, anchor, heading, 255, (c, name, why, _) => VehicleSpawned(c, name, why, id), context: SpawnContexts.At(anchor)) is { } busy) // (a nobody's convoy, crewed: it drives and fights, bot-brain.md phase 2; the asker hears of each member)
             return busy;
-        SandboxHands.Notices.Add((id, $"making a {style} convoy of {n}, tier {tier}"));
+        SandboxHands.Notices.Add((id, $"making a {style} convoy of {n}, tier {tier}: crewed, it drives and fights"));
         SandboxConvoyAir(style, anchor, heading, seed); // (now and then an air escort over it: GameSandboxAircraft.cs)
         return null;
     }
