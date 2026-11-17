@@ -115,6 +115,7 @@ public static class FactoryCheck
                         worked[o.Id] |= Working(w, c, PartOf(o));
                     }
             }
+        Console.WriteLine($"  power: on {c.PowerOn}, mains off {c.MainsOff}, charge {c.Charge:0} kJ, draw {c.PowerUse:0} W, plant {c.PlantOut:0.0} kW");
         Console.WriteLine($"  ran {seconds} s of game time: tick CPU less first-call compiling ({SelfTest.ThreadCpu.Kind}) {total / Math.Max(1, ticks):0.00} ms mean, {worst:0.00} ms worst (tick {worstAt}), {over} tick(s) over 8 ms");
         Say(over <= 1, $"the tick stays under 8 ms (one-off JIT aside: {over} over)");
         foreach (var e in script.Programme.Edges.Where(e => e.Main))

@@ -260,7 +260,7 @@ public sealed class FactoryScript : BlueprintScript
             case "heap":
                 return WalledStore(o, c.X, c.Z, HeapPaint(o.Material));
             case "tipping":
-                return On(o.Part, c.X, c.Z, Front, "bottom", Style.Colour(_paint, "hazard"));
+                return On(o.Part, c.X, c.Z, Front, "bottom"); // (its own steel grid and hazard strips: a grate painted all over reads as a hazard block)
             case "loading":
                 return Loading(o, c.X);
             case "buffer" or "bin":
