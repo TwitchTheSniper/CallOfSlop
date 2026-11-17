@@ -372,3 +372,20 @@ Value lands early: phase 1 alone gives rule 1 on ships and aircraft with bodies 
   the fuel and the reactor, never the Drive Core; or a Scuttle Charge fitting in the crew fittings.
 - **Crew fittings as stations:** the Crash Couch and Charging Cradle as where spare crew wait, the Gunnery Console as a
   gunner's station, the Galley for morale later.
+
+## The user's answers (2026-11-16)
+
+These override the text above where they differ.
+
+1. **Every faction gun needs crew,** no exceptions (fixed base guns and small turrets too). Auto-targeting parts stay a later, player-built option.
+2. **Empty helm:** the ship keeps its last commanded input for a short while (a few seconds), and if another pilot aboard is free, that crew member goes to the seat and takes the helm if they can reach it. Only with no replacement does the ship fall back to holding (if it can hover) or gliding down.
+3. **Hits on far crew:** a crew record goes down with its station part (killed or hurt when the part is destroyed or badly hit, and by damage near it).
+4. **First own crew: hired NPC crew** (not Robot Shells first). Hiring needs a way to pay or recruit before currency is decided: propose one (for example recruiting surrendered or rescued crew, or a placeholder cost in materials) as an open question, and keep Robot Shells as the next kind.
+5. **Capture: all crew gone.** A boarded ship becomes the player's once every hostile crew member aboard is dead, fled or surrendered (not a helm timer).
+6. **Prisoners: all three options.** The player can release surrendered crew or drop them at a dock, hire them (ties to answer 4), or hold them as prisoners (a brig part; ransom or trade later, once trade exists).
+7. **Scuttle: longer and more tense.** 15 s to arm, a 90 s countdown, 5 s for a player to disarm at the scuttle point. Killing the engineer first still prevents it.
+8. **Scale: thousands of crew across all ships.** The budget is no longer 200: design for thousands of crew in the world at once. Only crew near players are bodies (keep the body cap tight); everyone else is a record, ships far from players think in coarse batches on a slow clock (sliced across ticks, a fixed cost per tick whatever the count), and sleeping ships cost nothing. Data layout for that many (structs in arrays, no per-crew objects or allocation on the hot path). Measure at several thousand before calling a phase done.
+9. **Far crew are drawn as cheap stand-ins:** simple low-detail figures at their stations, no animation or physics, batched in one draw, so a ship flying past or seen through a scope shows its crew.
+10. **Data lives in a new top-level `Crew/` folder:** `Crew/Factions/*.json`, `Crew/Jobs.json`, moddable like the rest.
+
+The "To agree with Karl" list stands: raise it with him before phase 1 changes his crew.
