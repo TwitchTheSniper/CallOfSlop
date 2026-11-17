@@ -6,7 +6,8 @@ namespace CallOfSlop;
 public struct CHoist
 {
     public ushort Part; // the hoist
-    public ushort Launcher; // the rack it loads: one whose mount is in the hoist's assembly
+    public ushort Launcher; // the rack it loads: the nearest one whose mount is in the hoist's assembly
+    public byte Idle; // looks left to skip after one found nothing to move (a rebuild makes a new entry, so a change looks at once)
 }
 
 public sealed partial class Construct
@@ -25,6 +26,7 @@ public sealed partial class Construct
 public static class ConstructHoists
 {
     public const int LookEvery = World.TickRate / 4; // ticks between a hoist's looks
+    public const int IdleLooks = 8; // looks a hoist skips after one that found nothing to move (2 s)
 
     /// <summary>Server, each tick: every few ticks, each body's hoists look and move.</summary>
     public static void Step(ConstructWorld world)
@@ -41,7 +43,7 @@ public static class ConstructHoists
             if (c.Dirty)
                 c.Rebuild();
             for (var k = 0; k < c.HoistCount; k++)
-                if (StepHoist(world, c, c.Hoists[k]))
+                if (StepHoist(world, c, ref c.Hoists[k]))
                     break; // (the parts were renumbered: the rest look next time)
         }
     }
@@ -50,12 +52,23 @@ public static class ConstructHoists
     public static bool Powered(Construct c, int part) => c.Parts[part].Working && ConstructPower.On(c, part);
 
     /// <summary>One hoist's look. True when it moved a weapon (the body's parts changed).</summary>
-    private static bool StepHoist(ConstructWorld world, Construct c, CHoist h)
+    private static bool StepHoist(ConstructWorld world, Construct c, ref CHoist h)
     {
         ref var hp = ref c.Parts[h.Part];
-        if (!Powered(c, h.Part) || !c.Parts[h.Launcher].Working || !Next(c, h, out var weapon, out var socket, out var at, out var rot))
+        if (h.Idle > 0)
         {
-            hp.Cool = 0; // (nothing to move, or it can't: a move under way starts again)
+            h.Idle--; // (the magazine, the launcher and what's in its way change through a rebuild, which makes a new entry: a repair or a re-powered rack waits this long)
+            return false;
+        }
+        if (!Powered(c, h.Part) || !c.Parts[h.Launcher].Working)
+        {
+            hp.Cool = 0; // (it can't: a move under way starts again)
+            return false;
+        }
+        if (!Next(c, h, out var weapon, out var socket, out var at, out var rot))
+        {
+            hp.Cool = 0;
+            h.Idle = IdleLooks; // (nothing to move: the search is a room check a weapon a station, so it waits for a change)
             return false;
         }
         if (hp.Cool == 0)

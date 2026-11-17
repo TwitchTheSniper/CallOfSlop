@@ -129,6 +129,18 @@ public static class ConstructOrdnance
         return len <= rack.Rack.Length + SizeSlack && dia <= rack.Rack.Diameter + SizeSlack;
     }
 
+    /// <summary>Will an Ordnance Rack take one more of this on top of <paramref name="carried"/> kg? <see cref="LoadWhy"/>'s limits with no text (a hoist asks on the tick).</summary>
+    public static bool Takes(ConstructPartDef rack, float carried, ConstructPartDef bomb)
+    {
+        if (rack.IsModularRack && !rack.Rack.IsLegacy)
+        {
+            Dims(bomb, out var len, out var dia);
+            if (len > rack.Rack.Length + SizeSlack || dia > rack.Rack.Diameter + SizeSlack)
+                return false;
+        }
+        return bomb.Mass <= rack.RackStation && carried + bomb.Mass <= rack.RackLoad;
+    }
+
     /// <summary>Why an Ordnance Rack won't take one more of this on top of <paramref name="carried"/> kg, or null: which limit.</summary>
     public static string? LoadWhy(ConstructPartDef rack, float carried, ConstructPartDef bomb)
     {
@@ -469,7 +481,7 @@ public static class ConstructOrdnance
         for (var e = c.FirstLink(rack); e >= 0; e = c.NextLink(e))
             if (c.DefOf(c.OtherEnd(e)).Explosive != null)
                 carried += c.DefOf(c.OtherEnd(e)).Mass;
-        if (rd.IsModularRack ? LoadWhy(rd, carried, d) != null : rd.RackLoad > 0 && carried + d.Mass > rd.RackLoad)
+        if (rd.IsModularRack ? !Takes(rd, carried, d) : rd.RackLoad > 0 && carried + d.Mass > rd.RackLoad)
             return false;
         var mine = ConstructParts.DirVector(d.Sockets[lug].Dir);
         var ahead = Rot24.Apply(rp.Rot, -Vector3.UnitZ);

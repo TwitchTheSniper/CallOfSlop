@@ -495,7 +495,7 @@ public static class ConstructWorks
         return -1;
     }
 
-    /// <summary>The hoists of assembly <paramref name="asm"/> that load rack <paramref name="rack"/>: each hoist loads the first launcher found, and a rack bolted to the hoist is its magazine, never its launcher.</summary>
+    /// <summary>The hoists of assembly <paramref name="asm"/> that load rack <paramref name="rack"/>: each hoist loads the launcher nearest it (two drums on one mount, a hoist behind each), and a rack bolted to the hoist is its magazine, never its launcher.</summary>
     private static void Hoists(Construct c, int rack, short asm)
     {
         for (var k = 0; k < c.WorksPieceCount; k++)
@@ -503,13 +503,22 @@ public static class ConstructWorks
             if (c.WorksPieceAsm[k] != asm || c.Parts[c.WorksPieces[k]].D.WorksKind != WorksKind.Hoist)
                 continue;
             var hoist = c.WorksPieces[k];
-            var taken = false;
-            for (var h = 0; h < c.HoistCount && !taken; h++)
-                taken = c.Hoists[h].Part == hoist;
-            for (var e = c.FirstLink(hoist); e >= 0 && !taken; e = c.NextLink(e))
-                taken = c.OtherEnd(e) == rack;
-            if (taken)
+            var magazine = false;
+            for (var e = c.FirstLink(hoist); e >= 0 && !magazine; e = c.NextLink(e))
+                magazine = c.OtherEnd(e) == rack;
+            if (magazine)
                 continue;
+            var had = -1;
+            for (var h = 0; h < c.HoistCount && had < 0; h++)
+                if (c.Hoists[h].Part == hoist)
+                    had = h;
+            if (had >= 0)
+            {
+                var at = c.Parts[hoist].Pos;
+                if (Vector3.DistanceSquared(at, c.Parts[rack].Pos) < Vector3.DistanceSquared(at, c.Parts[c.Hoists[had].Launcher].Pos))
+                    c.Hoists[had].Launcher = (ushort)rack;
+                continue;
+            }
             if (c.Hoists.Length == c.HoistCount)
                 Array.Resize(ref c.Hoists, Math.Max(2, c.HoistCount * 2));
             c.Hoists[c.HoistCount++] = new CHoist { Part = hoist, Launcher = (ushort)rack };
