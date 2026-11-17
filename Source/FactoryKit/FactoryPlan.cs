@@ -55,9 +55,9 @@ public sealed class FactoryPlan
     /// <summary>
     /// An extraction's drill deck (Open 1): the back row's tiles under the drills carry <see cref="DeckSlabs"/> concrete slabs (0.25 m each, the top at 1.30 m) so a
     /// Drill Module's tower, 1.2 m under its foot, hangs to the ground past the back edge while the floor stays on it; three step tiles in the row in front climb to
-    /// it at its east end (0.25 m rises, a person walks them). Tiles are columns <see cref="DeckI0"/> to <see cref="DeckI1"/> (exclusive), row <see cref="DeckJ"/>.
+    /// it at one end (the seed's) (0.25 m rises, a person walks them). Tiles are columns <see cref="DeckI0"/> to <see cref="DeckI1"/> (exclusive), row <see cref="DeckJ"/>.
     /// </summary>
-    public bool HasDeck;
+    public bool HasDeck, DeckStepsWest;
     public int DeckI0, DeckI1, DeckJ;
     public const int DeckSlabs = 4;
     public const float SlabThick = 0.25f;
@@ -69,7 +69,11 @@ public sealed class FactoryPlan
             return 0;
         if (j == DeckJ)
             return DeckSlabs;
-        return j == DeckJ - 1 && i >= DeckI1 - 3 ? i - (DeckI1 - 3) + 1 : 0;
+        if (j != DeckJ - 1)
+            return 0;
+        if (DeckStepsWest)
+            return i < DeckI0 + 3 ? DeckI0 + 3 - i : 0;
+        return i >= DeckI1 - 3 ? i - (DeckI1 - 3) + 1 : 0;
     }
 
     public PlanCell? CellOf(FactoryObject o) => Cells.FirstOrDefault(c => c.Obj == o);
@@ -132,6 +136,14 @@ public sealed class FactoryPlan
         }
 
         var bandMid = (plan.BandBack - RoadDepth - AisleDepth) * 0.5f;
+        var power = p.Of("power").ToList();
+        var pw = MathF.Max(6f, MathF.Ceiling((power.Count * 2.5f + 3f) / Tile) * Tile);
+        var powerFirst = f.Name == "extraction" && dz.Chance(0.4); // (a post's plant at the west end, before the drills, or at the east end: the seed's)
+        if (powerFirst)
+        {
+            plan.PowerRect = new PlanRect(x, x + pw, -(RoadDepth + AisleDepth), plan.Back);
+            x += pw;
+        }
         if (f.Name == "extraction")
         {
             // Drills on the floor's back edge, their bits out over the ground (the deposit is behind the post); the buffer in front of them.
@@ -145,6 +157,7 @@ public sealed class FactoryPlan
                 plan.Zones[di] = plan.Zones[di] with { Rect = plan.Zones[di].Rect with { X1 = x } };
             }
             plan.HasDeck = true;
+            plan.DeckStepsWest = dz.Chance(0.5);
             (plan.DeckI0, plan.DeckI1, plan.DeckJ) = ((int)(plan.Zones[di].Rect.X0 / Tile), (int)MathF.Round(plan.Zones[di].Rect.X1 / Tile), (int)MathF.Round(-plan.Back / Tile) - 1);
             var buffer = p.Of("buffer").ToList();
             Block('S', "ORE BUFFER", buffer, (o, k, cx) => (cx, bandMid), o => Footprint(o).W);
@@ -175,7 +188,7 @@ public sealed class FactoryPlan
                 Block('P', bank.First().Material.ToUpperInvariant(), bank.ToList(), (o, k, cx) => (cx, bandMid), o => Footprint(o).W);
             Block('S', "REFINED STOCK", p.Of("bin").ToList(), (o, k, cx) => (cx, bandMid), o => Footprint(o).W);
         }
-        plan.ConsoleX = Snap(plan.Zones.First(z => z.Zone != 'I').Rect.X0 + 1.0f);
+        plan.ConsoleX = Snap(plan.Zones.First(z => z.Zone is not ('I' or 'W')).Rect.X0 + 1.0f);
         // The output: the loading hopper by the road at the end of the spine.
         var loading = p.Of("loading").ToList();
         if (loading.Count > 0)
@@ -191,9 +204,10 @@ public sealed class FactoryPlan
             plan.Zones.Add(('O', new PlanRect(x0, x, -RoadDepth, plan.Back), "LOADING BAY"));
         }
         // Power: apart and fenced, at the end of the spine or behind the storage (the seed's), never by the control corner.
-        var power = p.Of("power").ToList();
-        var pw = MathF.Max(6f, MathF.Ceiling((power.Count * 2.5f + 3f) / Tile) * Tile);
-        if (plan.PowerBehind && plan.Zones.FirstOrDefault(z => z.Zone == 'S') is { Name: not null } storage && storage.Rect.W >= pw - 0.01f)
+        if (powerFirst)
+        {
+        }
+        else if (plan.PowerBehind && plan.Zones.FirstOrDefault(z => z.Zone == 'S') is { Name: not null } storage && storage.Rect.W >= pw - 0.01f)
         {
             plan.PowerRect = new PlanRect(storage.Rect.X1 - pw, storage.Rect.X1, plan.Back, plan.Back - 6f);
             plan.Back -= 6f;
@@ -208,10 +222,10 @@ public sealed class FactoryPlan
         plan.Length = x;
         plan.Depth = -plan.Back;
         // The mast: the signature, at the end the power isn't (asymmetry on purpose: rule 9).
-        plan.MastX = dz.Chance(0.5) ? 0.75f : Snap(plan.PowerRect.X0 - 1.0f);
+        plan.MastX = powerFirst ? Snap(plan.Length - 1.25f) : dz.Chance(0.5) ? 0.75f : Snap(plan.PowerRect.X0 - 1.0f);
         plan.MastZ = plan.StripBack + 0.75f;
-        if (plan.HasDeck && plan.MastX < plan.DeckI1 * Tile)
-            plan.MastZ = plan.BandBack + 0.75f; // (off the deck, whose slabs carry sockets at their corners only)
+        if (plan.HasDeck && plan.MastX > plan.DeckI0 * Tile && plan.MastX < plan.DeckI1 * Tile)
+            plan.MastZ = plan.BandBack + (plan.DeckStepsWest && plan.MastX < (plan.DeckI0 + 3) * Tile ? 2.75f : 0.75f); // (off the deck and its steps, whose slabs carry sockets at their corners only)
         if (plan.Length > size.Length || plan.Depth > size.Depth)
             throw new FactoryKitException($"plan: {FactoryData.N(plan.Length)} x {FactoryData.N(plan.Depth)} m is past the {size.Name} class's {FactoryData.N(size.Length)} x {FactoryData.N(size.Depth)} m");
         var machines = p.Objects.Count(o => o.Role is "process" or "drill");

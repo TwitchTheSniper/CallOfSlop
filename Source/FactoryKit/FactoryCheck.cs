@@ -75,14 +75,21 @@ public static class FactoryCheck
             for (var t = 0; t < seconds * World.TickRate; t++)
             {
                 var c0 = SelfTest.ThreadCpu.NowMs(); // (CPU time: another build on the box mustn't count against the tick)
+                var j0 = System.Runtime.JitInfo.GetCompilationTime(true);
+                var g0 = GC.CollectionCount(0);
+                var a0 = GC.GetAllocatedBytesForCurrentThread();
                 w.Step(q, World.TickDt);
                 var ms = SelfTest.ThreadCpu.NowMs() - c0;
+                var jit = (System.Runtime.JitInfo.GetCompilationTime(true) - j0).TotalMilliseconds; // (a first call's compile: one-off, CLAUDE.md's 8 ms rule leaves it out)
+                ms -= jit;
                 if (t >= 3 * World.TickRate) // (the first 3 s: JIT, the first pours and seals)
                 {
                     if (ms > worst)
                         (worst, worstAt) = (ms, t);
+                    if (jit > 4)
+                        Console.WriteLine($"  tick {t}: {jit:0.0} ms compiling code met for the first time (left out of the tick)");
                     if (ms > 8 && over++ < 8)
-                        Console.WriteLine($"  tick {t}: {ms:0.0} ms CPU, GC gen0/1/2 so far {GC.CollectionCount(0)}/{GC.CollectionCount(1)}/{GC.CollectionCount(2)}");
+                        Console.WriteLine($"  tick {t}: {ms:0.0} ms CPU, {GC.CollectionCount(0) - g0} collection(s) in it, {GC.GetAllocatedBytesForCurrentThread() - a0} bytes allocated in it");
                     total += ms;
                     ticks++;
                 }
@@ -93,7 +100,7 @@ public static class FactoryCheck
                         worked[o.Id] |= Working(w, c, PartOf(o));
                     }
             }
-        Console.WriteLine($"  ran {seconds} s of game time: tick CPU ({SelfTest.ThreadCpu.Kind}) {total / Math.Max(1, ticks):0.00} ms mean, {worst:0.00} ms worst (tick {worstAt}), {over} tick(s) over 8 ms");
+        Console.WriteLine($"  ran {seconds} s of game time: tick CPU less first-call compiling ({SelfTest.ThreadCpu.Kind}) {total / Math.Max(1, ticks):0.00} ms mean, {worst:0.00} ms worst (tick {worstAt}), {over} tick(s) over 8 ms");
         Say(over <= 1, $"the tick stays under 8 ms (one-off JIT aside: {over} over)");
         foreach (var e in script.Programme.Edges.Where(e => e.Main))
         {

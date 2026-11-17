@@ -81,7 +81,8 @@ public sealed class FactoryProgramme
         var drill = MachinePart(def => def.IsGatherer && !def.GatherSaw, Tier, "drill");
         var (ore, perHour) = target.First();
         var rate = perHour / 3600.0;
-        var n = Math.Max(1, (int)Math.Ceiling(rate / drill.GatherRate * (1 + Spare)));
+        // (spare drills: up to twice the style's spare, since a post's drills come one at a time and a dry vein stops one)
+        var n = Math.Max(1, (int)Math.Ceiling(rate / drill.GatherRate * (1 + 2 * Spare) - 1e-6));
         var drills = Enumerable.Range(0, n).Select(_ => Add("drill", drill.Name, "intake", ore, rate / n, 0)).ToList();
         var buffer = Add("buffer", "Storage Volume", "storage", ore, rate);
         buffer.Size = 2.5f;
