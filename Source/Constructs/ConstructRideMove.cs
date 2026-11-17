@@ -584,7 +584,7 @@ public static partial class ConstructRide
         c.SegPose(s.RideSeg, out var qs, out var ts);
         if (InFrame(c, ts + Vector3.Transform(s.RideLocal, qs), Vector3.Transform(s.RideUp, qs)))
             return true;
-        var v = s.Velocity;
+        var v = s.Velocity + SurfaceVel(c, 0, s.Position); // (their speed in the world: the flight eases it to their keys)
         Clear(ref s);
         s.Velocity = v;
         return false;
@@ -592,14 +592,14 @@ public static partial class ConstructRide
 
     /// <summary>
     /// A noclip flyer out of any frame: inside a moving construct's bounds (no padding: flying past a hull doesn't catch) takes
-    /// them into its frame, their speed then relative to it (caught, not hit; <see cref="NoclipMoved"/> lets them go again).
+    /// them into its frame, their speed through it kept (caught, not hit; <see cref="NoclipMoved"/> lets them go again).
     /// </summary>
     public static void NoclipCatch(ref MoveState s)
     {
         var w = Bodies;
         if (w == null || FrameAt(w, s.Position + GravityFrames.UpAt(s.Position) * 0.9f, pad: 0f, top: 0f) is not { } f)
             return;
-        Join(ref s, f, 0, UpFor(f, GravityFrames.UpAt(s.Position)), s.Velocity);
+        Join(ref s, f, 0, UpFor(f, GravityFrames.UpAt(s.Position)), s.Velocity - SurfaceVel(f, 0, s.Position)); // (their speed through it, which the flight eases away: a ship that overtakes a still flyer carries them a few metres in, no more)
         s.Grounded = false;
     }
 
