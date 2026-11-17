@@ -378,7 +378,7 @@ public static partial class ConstructLifters
                 // A crane whose rails went, or no longer reach either end of the move it is in: it stops where it is, its piece in its hand,
                 // as without power, and goes on when the rails are back.
                 var railless = ld.Bridge && (ld.RailWhy != 0 || l.State is LiftState.Carry or LiftState.Return && (l.State == LiftState.Carry && OffRails(ld, l, false) || OffRails(ld, l, true))); // (an empty hook going back starts where its last piece was put, tested then)
-                if (railless || !ConstructRecycler.Powered(world, c, l.Part))
+                if (railless || !ConstructRecycler.Powered(world, c, l.Part) || !CrewGate.Works(c, l.Part)) // (an NPC crew's crane with nobody at it: as without power)
                 {
                     Why(world, l, !railless ? LiftWhy.NoPower : ld.RailWhy == 1 ? LiftWhy.NoRail : ld.RailWhy == 2 ? LiftWhy.NoFarRail : LiftWhy.RailsShort); // (it stops where it is, and goes on when power returns; a client poses it there too)
                     if (l.State is LiftState.Carry or LiftState.Return && !l.PowerWait)

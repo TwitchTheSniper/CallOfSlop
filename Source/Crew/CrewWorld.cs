@@ -10,6 +10,10 @@ public enum CrewJob : byte
     Gunner,
     Engineer, // phase 4: sees to breakdowns and mends works pieces (Game/GameCrewWork.cs)
     Loader, // phase 4: carries rounds to an emptying ammo box
+    Spotter, // phase 7: beside a capital gun, its gunners lay it closer (ShipAi.SpotBear)
+    Crane, // phase 7: works a lifter (an arm or a bridge crane) from beside it: an NPC body's lifter runs only while one stands there (CrewGate)
+    Hauler, // phase 7: works a cargo dock's exchange (linked logistics)
+    Builder, // phase 7: works a Building Station's bay (its job steps only while one stands there)
 }
 
 /// <summary>What a crew member is doing.</summary>
@@ -48,6 +52,10 @@ public enum CrewStationKind : byte
     Rest,
     Works, // the Engineer's Panel, else a drive's works piece or a jet (an engineer stands there)
     Magazine, // an ammo box or magazine (a loader stands there)
+    Spot, // phase 7: beside the capital gun (the biggest gun, CrewWorld.CapitalSize or more)
+    Crane, // a lifter's base
+    Dock, // a cargo dock
+    Build, // a Building Station
 }
 
 /// <summary>The game's side of the crew (Game/GameCrew.cs): bot bodies, people's targets. Null in a check with no game: nobody is bodied.</summary>
@@ -219,6 +227,9 @@ public sealed class CrewShip
 /// </summary>
 public sealed class CrewWorld
 {
+    /// <summary>Work stations (lifters, docks, Building Stations) a roster takes, at most: room is kept for its seats.</summary>
+    public const int WorkStations = 12;
+
     public const int MaxCrewPerBody = 32, MaxDrivers = 64, ShipsPerTick = 48, FindPerTick = 64, MaxBodiedCap = 64;
     public const float BodyRange = 300, BodyDrop = 380, SeatedRange = 3000, SeatedDrop = 3200;
     /// <summary>An empty helm keeps its last input this long (ticks); a seated crew member's walk to a station, in m/s, and at least this long (ticks).</summary>
@@ -339,7 +350,7 @@ public sealed class CrewWorld
                 rest++;
                 continue;
             }
-            Add(s, s.StKind[k] switch { CrewStationKind.Helm => CrewJob.Pilot, CrewStationKind.Gun => CrewJob.Gunner, CrewStationKind.Works => CrewJob.Engineer, _ => CrewJob.Loader }, k);
+            Add(s, JobFor(s.StKind[k]), k);
         }
         var want = spares >= 0 ? spares : Math.Max(1, Math.Min(rest, 2 + (s.StCount - rest) / 2));
         for (var k = 0; k < s.StCount && want > 0 && s.MemberCount < MaxCrewPerBody; k++)
@@ -614,6 +625,15 @@ public sealed class CrewWorld
             AddStation(c, s, works, CrewStationKind.Works);
         if (s.StCount < MaxCrewPerBody && c.GunCount > 0 && MagazineStation(c) is var mag and >= 0 && IndexOf(s, mag) < 0)
             AddStation(c, s, mag, CrewStationKind.Magazine);
+        // Work crews (phase 7): a spotter beside the capital gun, then each lifter, cargo dock and Building Station (at most WorkStations).
+        if (s.StCount < MaxCrewPerBody && CapitalGun(c) is var cap and >= 0 && IndexOf(s, cap) < 0)
+            AddStation(c, s, cap, CrewStationKind.Spot);
+        for (int i = 0, n = 0; i < c.PartCount && s.StCount < MaxCrewPerBody && n < WorkStations; i++)
+            if (c.Parts[i].Health > 0 && WorkKind(c.Parts[i].D) is var wk and not CrewStationKind.Rest && IndexOf(s, i) < 0)
+            {
+                AddStation(c, s, i, wk);
+                n++;
+            }
         for (var i = 0; i < c.PartCount && s.StCount < MaxCrewPerBody; i++)
             if (i != helm && c.Parts[i].D.Role == PartRole.Seat && Usable(c, i) && IndexOf(s, i) < 0)
                 AddStation(c, s, i, CrewStationKind.Rest);
@@ -708,7 +728,69 @@ public sealed class CrewWorld
         return best;
     }
 
-    private static bool Standing(CrewStationKind k) => k is CrewStationKind.Works or CrewStationKind.Magazine;
+    private static bool Standing(CrewStationKind k) => k is not (CrewStationKind.Helm or CrewStationKind.Gun or CrewStationKind.Rest);
+
+    /// <summary>A gun part this big (m3 of its bounds) or more is a capital gun: the biggest gets a spotter's place.</summary>
+    public const float CapitalSize = 1.5f;
+
+    /// <summary>The station kinds of phase 7 (work crews), their jobs, and a part's: a lifter, a cargo dock, a Building Station.</summary>
+    public static CrewJob JobFor(CrewStationKind k) => k switch
+    {
+        CrewStationKind.Helm => CrewJob.Pilot,
+        CrewStationKind.Gun => CrewJob.Gunner,
+        CrewStationKind.Works => CrewJob.Engineer,
+        CrewStationKind.Magazine => CrewJob.Loader,
+        CrewStationKind.Spot => CrewJob.Spotter,
+        CrewStationKind.Crane => CrewJob.Crane,
+        CrewStationKind.Dock => CrewJob.Hauler,
+        CrewStationKind.Build => CrewJob.Builder,
+        _ => CrewJob.Spare,
+    };
+
+    public static CrewStationKind WorkKind(ConstructPartDef d) =>
+        d.Lifter != null ? CrewStationKind.Crane : d.IsDock ? CrewStationKind.Dock : d.IsBuildStation ? CrewStationKind.Build : CrewStationKind.Rest;
+
+    /// <summary>The part of the body's capital gun, its biggest (-1: none is <see cref="CapitalSize"/> or more).</summary>
+    public static int CapitalGun(Construct c)
+    {
+        var best = -1;
+        var size = CapitalSize;
+        for (var k = 0; k < c.GunCount; k++)
+        {
+            int part = c.Guns[k].Part;
+            if (c.Guns[k].Def == null || part >= c.PartCount)
+                continue;
+            c.PartBounds(part, out var mn, out var mx);
+            var v = (mx.X - mn.X) * (mx.Y - mn.Y) * (mx.Z - mn.Z);
+            if (v >= size)
+                (best, size) = (part, v + 1e-4f);
+        }
+        return best;
+    }
+
+    /// <summary>
+    /// Phase 7's gate (bot-brain.md rule 1 for machines): on a crewed NPC body (a faction kind, not a player's own crew or a prize), a lifter, a
+    /// cargo dock or a Building Station works only while a living member stands at its station. Players' bodies, route ships and uncrewed
+    /// bodies are never held. Set as <see cref="CrewGate.Works"/> by the game's crew.
+    /// </summary>
+    public bool Works(Construct c, int part)
+    {
+        if (!_shipOf.TryGetValue(c.Id, out var slot) || Ships[slot] is not { } s || s.Faction == 0 || s.Own || s.Prize || c.Owner != 255)
+            return true;
+        for (var k = 0; k < s.StCount; k++)
+            if (s.StPart[k] == part && s.StKind[k] is CrewStationKind.Crane or CrewStationKind.Dock or CrewStationKind.Build)
+                return s.StMember[k] is var m and >= 0 && State[m] == CrewState.Station;
+        return true; // (a machine that isn't a station: past the roster's places)
+    }
+
+    /// <summary>Spotters at their places on <paramref name="s"/>: its capital gun's part (-1: none).</summary>
+    public int Spotted(CrewShip s)
+    {
+        for (var k = 0; k < s.StCount; k++)
+            if (s.StKind[k] == CrewStationKind.Spot && s.StMember[k] is var m and >= 0 && State[m] == CrewState.Station)
+                return s.StPart[k];
+        return -1;
+    }
 
     private static bool Usable(Construct c, int part) => !c.Parts[part].Broken && c.Parts[part].D.Role == PartRole.Seat && !c.Parts[part].D.RemoteReceiver && !c.Parts[part].D.LifterCab;
 
@@ -1014,9 +1096,13 @@ public sealed class CrewWorld
                 State[m0] = CrewState.Free;
             }
         }
-        for (var pass = 0; pass < 5; pass++)
+        for (var pass = 0; pass < 9; pass++)
         {
-            var kind = pass switch { 0 => CrewStationKind.Helm, 1 => CrewStationKind.Gun, 2 => CrewStationKind.Works, 3 => CrewStationKind.Magazine, _ => CrewStationKind.Rest };
+            var kind = pass switch
+            {
+                0 => CrewStationKind.Helm, 1 => CrewStationKind.Gun, 2 => CrewStationKind.Works, 3 => CrewStationKind.Magazine, 4 => CrewStationKind.Spot,
+                5 => CrewStationKind.Crane, 6 => CrewStationKind.Dock, 7 => CrewStationKind.Build, _ => CrewStationKind.Rest,
+            };
             for (var st = 0; st < s.StCount; st++)
             {
                 if (s.StKind[st] != kind || s.Own && kind == CrewStationKind.Helm || s.StMember[st] >= 0 || Sitter(c, s.StPart[st]) != 0 || (Standing(kind) ? c.Parts[s.StPart[st]].Health <= 0 : c.Parts[s.StPart[st]].Broken) || Coming(s, st))
@@ -1037,14 +1123,8 @@ public sealed class CrewWorld
                 if (Station[m] >= 0)
                     Unseat(s, m);
                 var walked = Player[m] != 0 && host != null && WalkBody(c, s, m, fromNode, st, host);
-                if (kind == CrewStationKind.Helm)
-                    Job[m] = CrewJob.Pilot;
-                else if (kind == CrewStationKind.Gun)
-                    Job[m] = CrewJob.Gunner;
-                else if (kind == CrewStationKind.Works)
-                    Job[m] = CrewJob.Engineer;
-                else if (kind == CrewStationKind.Magazine)
-                    Job[m] = CrewJob.Loader;
+                if (kind != CrewStationKind.Rest)
+                    Job[m] = JobFor(kind);
                 State[m] = CrewState.Walking;
                 Station[m] = (short)st;
                 Tag[m] = s.StTag[st];
@@ -1173,6 +1253,10 @@ public sealed class CrewWorld
         CrewStationKind.Gun => "gun seat",
         CrewStationKind.Works => "engine room",
         CrewStationKind.Magazine => "magazine",
+        CrewStationKind.Spot => "spotter's place",
+        CrewStationKind.Crane => "crane",
+        CrewStationKind.Dock => "cargo dock",
+        CrewStationKind.Build => "building station",
         _ => "couch",
     };
 
@@ -1203,7 +1287,7 @@ public sealed class CrewWorld
             var penalty = curKind switch
             {
                 CrewStationKind.Rest => 0f,
-                CrewStationKind.Gun or CrewStationKind.Works or CrewStationKind.Magazine when kind == CrewStationKind.Helm => 1000f, // (a gunner, an engineer or a loader leaves for the helm only with no spare)
+                not CrewStationKind.Rest when kind == CrewStationKind.Helm => 1000f, // (a gunner, an engineer, a loader or a work hand leaves for the helm only with no spare)
                 _ => -1f,
             };
             if (penalty < 0)

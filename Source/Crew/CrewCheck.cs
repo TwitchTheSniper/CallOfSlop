@@ -33,6 +33,8 @@ public static class CrewCheck
             return 1;
         }
         _faction = Arg("--crew-faction") is { } cf ? CrewFactions.Find(cf) : (byte)0;
+        if (args.Any(a => a.Equals("--crew-work", StringComparison.OrdinalIgnoreCase)))
+            return Work(shipBp, _faction != 0 ? _faction : CrewFactions.Find("Traders")) ? 0 : 1;
         if (args.Any(a => a.Equals("--crew-walk", StringComparison.OrdinalIgnoreCase)))
             return Walks(shipBp, float.TryParse(Arg("--speed"), System.Globalization.CultureInfo.InvariantCulture, out var sp) ? sp : 0, float.TryParse(Arg("--turn"), System.Globalization.CultureInfo.InvariantCulture, out var tn) ? tn * MathF.PI / 180f : 0) ? 0 : 1;
         if (Arg("--crew-convoy") is { } convoy)
@@ -523,6 +525,73 @@ public static class CrewCheck
         }
         Console.WriteLine($"  nav cost: {nav.CpuMs / Math.Max(1, nav.Tick):0.000} ms a tick on average, worst {nav.WorstMs:0.00} ms");
         return ok;
+    }
+
+    /// <summary>
+    /// <c>--crew-check BLUEPRINT --crew-work [--crew-faction NAME]</c> (phase 7): the blueprint built on the ground and crewed as a nobody's of that kind
+    /// (Traders by default); its work stations (the capital gun's spotter, lifters, cargo docks, Building Stations) and who works them; the gate
+    /// (<see cref="CrewWorld.Works"/>) open while each is manned, shut once its hand is killed, open again when a spare walks over. Exit 0 when so.
+    /// </summary>
+    private static bool Work(ConstructBuild.Blueprint bp, byte faction)
+    {
+        var w = new ConstructWorld();
+        var c = ConstructBuild.BuildOnGround(w, bp, ConstructWorld.Ground(World.Query, 0, 0), 0, out var why);
+        if (c == null)
+        {
+            Console.WriteLine($"{bp.Name}: doesn't build: {why}");
+            return false;
+        }
+        c.Rebuild();
+        c.Owner = 255;
+        var crew = new CrewWorld();
+        var s = crew.Crew(c, ShipAiMode.Strangers, faction: faction, spares: 2)!;
+        Flush(crew);
+        var people = new[] { c.WorldCom + new Vector3(0, 0, 50) };
+        for (var t = 0; t < 30; t++)
+            crew.Step(w, World.Query, null, people, crewOn: false);
+        Flush(crew);
+        var works = 0;
+        var ok = true;
+        for (var k = 0; k < s.StCount; k++)
+            if (s.StKind[k] is CrewStationKind.Spot or CrewStationKind.Crane or CrewStationKind.Dock or CrewStationKind.Build)
+                works++;
+        Console.WriteLine($"  guns' reach: {string.Join(", ", Enumerable.Range(0, c.GunCount).Select(k => $"{c.Parts[c.Guns[k].Part].D.Name} {Size(c, c.Guns[k].Part):0.00} m3"))}");
+        Console.WriteLine($"crew work: {bp.Name} ({c.PartCount} parts) as {CrewFactions.Of(faction)?.Name}: {works} work stations; {crew.Describe(s)}");
+        for (var k = 0; k < s.StCount; k++)
+        {
+            var kind = s.StKind[k];
+            if (kind is not (CrewStationKind.Spot or CrewStationKind.Crane or CrewStationKind.Dock or CrewStationKind.Build))
+                continue;
+            int part = s.StPart[k];
+            var m = s.StMember[k];
+            var open = crew.Works(c, part);
+            var line = $"  {CrewWorld.StationName(kind)} at {c.Parts[part].D.Name} ({part}): {(m >= 0 ? $"{crew.Job[m]} {crew.Uid[m]}" : "nobody")}, works {open}";
+            if (m >= 0)
+            {
+                crew.Kill(m, null);
+                var shut = !crew.Works(c, part) || kind == CrewStationKind.Spot;
+                var spotGone = kind != CrewStationKind.Spot || crew.Spotted(s) < 0;
+                var back = false;
+                for (var t = 0; t < 60 * 30 && !back; t++)
+                {
+                    crew.Step(w, World.Query, null, people, crewOn: false);
+                    back = s.StMember[k] >= 0 && crew.State[s.StMember[k]] == CrewState.Station;
+                }
+                line += $"; its hand killed: works {crew.Works(c, part)}{(kind == CrewStationKind.Spot ? $" (spotted {(spotGone ? "no" : "yes")})" : "")}, {(back ? $"a spare took it: works {crew.Works(c, part)}" : "nobody left to take it")}";
+                ok &= open && shut && spotGone && (!back || crew.Works(c, part));
+            }
+            else
+                ok &= kind == CrewStationKind.Spot || !open;
+            Console.WriteLine(line);
+            Flush(crew, quiet: true);
+        }
+        return ok && works > 0;
+    }
+
+    private static float Size(Construct c, int part)
+    {
+        c.PartBounds(part, out var mn, out var mx);
+        return (mx.X - mn.X) * (mx.Y - mn.Y) * (mx.Z - mn.Z);
     }
 
     private static void WalkPose(ConstructWorld w, Construct c, Vector3 pos, Quaternion rot, Vector3 vel, Vector3 ang)

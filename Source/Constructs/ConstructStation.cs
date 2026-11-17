@@ -1623,7 +1623,7 @@ public static partial class ConstructStation
             if (world.Get(world.StationOpen[bi]) is { } c)
                 for (var t = 0; t < c.PartCount; t++)
                     if (c.Parts[t].Station is { } j && c.Parts[t].D.IsBuildStation)
-                        any |= StepJob(world, c, t, j);
+                        any |= !CrewGate.Works(c, t) || StepJob(world, c, t, j); // (an NPC crew's station waits for its builder, still open)
             if (!any)
                 world.StationOpen.RemoveAt(bi);
         }

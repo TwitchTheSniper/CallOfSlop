@@ -16,10 +16,12 @@ public sealed partial class Game : ICrewHost
     private readonly Vector3[] _crewPeople = new Vector3[MaxPlayers];
     private readonly ushort[] _crewParts = new ushort[CrewWorld.MaxCrewPerBody];
     private int _crewSendAt;
+    private Func<Construct, int, bool>? _crewGate;
 
     /// <summary>A tick, after the people's seats and before the constructs step: the crews think, man their seats and drive.</summary>
     private void SandboxCrewTick()
     {
+        CrewGate.Check = _crewGate ??= Crew.Works; // (this world's crew: the delegate made once)
         var n = 0;
         foreach (var p in Players.Values)
             if (p.Alive && p.Bot == null)
@@ -40,10 +42,19 @@ public sealed partial class Game : ICrewHost
     /// </summary>
     public void CrewFactionVehicle(Construct c)
     {
-        if (!IsServer || c.Owner != 255 || c.Wreck || c.StabCount > 0 || c.DriveSeat < 0 || Crew.Has(c.Id))
+        if (!IsServer || c.Owner != 255 || c.Wreck || c.StabCount > 0 || c.DriveSeat < 0 && !CrewWorks(c) || Crew.Has(c.Id))
             return;
         Crew.Crew(c, ShipAiMode.Strangers, faction: CrewFactionFor(c));
         CrewLog();
+    }
+
+    /// <summary>A body with a machine a work crew works (a lifter, a cargo dock, a Building Station: phase 7).</summary>
+    private static bool CrewWorks(Construct c)
+    {
+        for (var i = 0; i < c.PartCount; i++)
+            if (CrewWorld.WorkKind(c.Parts[i].D) != CrewStationKind.Rest)
+                return true;
+        return false;
     }
 
     /// <summary>A nobody's generated craft's faction kind: the one its style belongs to, else Raiders.</summary>

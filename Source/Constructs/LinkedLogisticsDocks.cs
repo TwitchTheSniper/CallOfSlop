@@ -64,7 +64,7 @@ public static class LinkDocks
             if (ship.Parts[part].Broken || ship.CarriedBy == 0)
                 continue;
             var dock = DockFor(world, ship, part, out var holder);
-            if (dock >= 0 && holder != null && ConstructRecycler.Powered(world, holder, dock))
+            if (dock >= 0 && holder != null && ConstructRecycler.Powered(world, holder, dock) && CrewGate.Works(holder, dock)) // (an NPC crew's dock needs its hauler)
                 Docked.Add((ship.Id, part, holder.Id, (ushort)dock));
         }
         foreach (var (sid, port, hid, dock) in Docked)

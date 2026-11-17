@@ -42,6 +42,9 @@ public sealed partial class ShipAi
     /// <summary>How far off a gun may point and still fire (degrees): a fixed gun the ship lays, a turret its gunner lays.</summary>
     public const float FixedBear = 2.5f, TurretBear = 4f;
 
+    /// <summary>A spotter beside the capital gun (bot-brain.md phase 7) shares the target's range and lead: its gunner fires only this share as far off.</summary>
+    public const float SpotBear = 0.5f;
+
     private const int ScanTicks = 120, LookTicks = 30; // (its seats, guns and racks again; the ground under it and ahead)
     private const int MaxSeats = 16, MaxRacks = 16;
 
@@ -359,6 +362,7 @@ public sealed partial class ShipAi
         var at = Lead(c, eye, t, speed);
         var look = GravityFrames.Angles(c.WorldCom, at - eye);
         var fire = false;
+        var spotted = Ship != null && Crew != null ? Crew.Spotted(Ship) : -1; // (phase 7: a spotter at the capital gun)
         for (var k = 0; k < c.GunCount && !fire; k++)
         {
             ref var g = ref c.Guns[k];
@@ -367,7 +371,7 @@ public sealed partial class ShipAi
             ConstructWeapons.MuzzleWorld(c, k, out var muzzle, out var fwd);
             var to = Lead(c, muzzle, t, g.RoundV > 0 ? g.RoundV : g.Speed) - muzzle;
             var bear = MathF.Acos(Math.Clamp(Vector3.Dot(Vector3.Normalize(fwd), Vector3.Normalize(to)), -1, 1)) * 180 / MathF.PI;
-            if (bear > (g.AimJoints > 0 ? TurretBear : FixedBear))
+            if (bear > (g.AimJoints > 0 ? TurretBear : FixedBear) * (g.Part == spotted ? SpotBear : 1))
                 continue;
             // Never through its own hull: a turret on the far beam holds.
             if (!world.Raycast(muzzle + fwd * 0.5f, Vector3.Normalize(fwd), MathF.Min(to.Length(), 60), out _, only: c))
