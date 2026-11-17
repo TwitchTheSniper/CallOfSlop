@@ -1,6 +1,6 @@
 # Linked logistics: builder's notes (status)
 
-Branch `claude/linked-logistics`, protocol 326. Spec: `linked-logistics.md` (the user's answers at its end win). What a player gets:
+Branch `claude/linked-logistics`, protocol 328. Spec: `linked-logistics.md` (the user's answers at its end win). What a player gets:
 production.md "Linked logistics".
 
 ## Leftovers from the sub-blueprints review (done)
@@ -28,6 +28,9 @@ production.md "Linked logistics".
 - Linked sub-jobs: Sub-jobs Off/Auto/Linked; offer before the 30 s fallback (10 s for the far end to start); remote build; the body is
   handed to the root when its ship docks at the root's construct or it is set down within 60 m of the root's bay.
 - Showcase (`linked_logistics_showcase`): Linked Works, Linked Yard, Linked Hauler. Headless: `--linked-check`. Window verb `linked`.
+  The hauler flies on four Light Lift Fans (electric jets, 8 kN each: 2.85x its weight) on 1 m legs, which are its feet (it stands
+  level, `--flight-check` flies); both factories have four Battery Packs (80 MJ) on a Foundation 6 m from the clamp, which charges a
+  held ship (20 kW). A docked route ship under half charge waits ("charging at the dock", `LinkRoutes.ChargeLeave`), as for fuel.
 
 ## Tried
 - `--linked-check` (all pass): pair, offers, order, dock fills by chute, clamp holds the hauler, load 4 / unload 4 into the yard's dock
@@ -47,14 +50,11 @@ production.md "Linked logistics".
   between Games isn't there). A route ship in a planetoid's own Game climbing out to space: not tried.
 - Cranes and arms putting into a docked ship's Cargo Volume as a put point (lifter integration): not built; a submodule goes into the
   volume by hand (physics gun) or a carry the lifter already does.
-- Route flight (merge review, 2026-11-16): the hauler that "didn't lift" was overweight for four ducted fans (386 kg: its rotors
-  saturated and it flipped) and, in the check, flat (its battery ran down in earlier waits; the showcase's works have no battery to
-  charge it at the clamp). Lighter now (Port 20 kg, Route Computer 15 kg under the port); a departure engages the autopilot and lets go at
-  once with a 4 m lift-off, and leaves the dock behind by distance before a clamp's pull retakes it. Headless (`--linked-check`) a
-  Dispatcher run flew for real: off the works' dock by its rule, 120 m to the yard, down into its clamp, unloaded. The return leg is not
-  reliable: as the yard's clamp let it go the hauler tipped over (a marginal rotorcraft near the ground). Not a bug found on main; a
-  thruster hauler with margin would be the robust showcase. A trip to another planet on the trip planner: not tried.
-- A joined client's view: not tried over `--net`.
+- A route ship landing for real on another planet of a star system, through the trip planner (low-orbit trade on the ledger): not tried
+  in a window (it needs a ship that reaches orbit and factories on two planets of a Frostreach world; more than the 20 minutes it was
+  given). `--linked-check` covers the ledger's side (Relays across two worlds, the stop settled from orbit, the stores debited on wake).
+- At the works in the window run the hauler hovered about a minute in the clamp's reach before it was taken, at each arrival (the works
+  stood on a slope there: a held hauler read up 0.97 against the level; the yard, on the flat, took it at once). Not chased further.
 - No measurement of tick cost at the design's sizes (4 links, 128-kind reports, 32 route ships).
 
 ## Merge review (2026-11-16, after main's trips between planets)
@@ -66,3 +66,20 @@ production.md "Linked logistics".
   inventory, No z-fighting, Mods, Sandbox cargo volumes, Interaction sweep: passed. Mode switch reset failed on Player fields this
   branch doesn't touch (Uniform, RenderRideBody, RenderRideRel, RenderRideFeet: from main).
 - Not done: the joined client's two-window run.
+
+## Finishing (2026-11-16)
+- "Mode switch reset" failed on Player fields main added (Uniform, the RenderRide fields): the section is in `SelfTest.Archived`, so
+  main's green suite never ran it. They are listed in `MsrPersistent` now (a lesson in .claude/rules/tests-and-ci.md).
+- The showcase hauler is a lift-fan quad (above). A pull dock (Docking Clamp) now rights a craft past a right angle (its righting
+  term was the cross of the two ups, nothing on its back) and holds one only within 37 degrees of upright (`ConstructCarrier.SnapUpright`):
+  a hauler caught on its side was held so, left so and flipped.
+- `--linked-check` also runs a standing route (works -> yard -> works, twice, an order of 3 delivered); the return leg counts now.
+- Window run (Proving Ground, host): the route flown from the air into the works' clamp, loaded, left by its rule, flown to the yard,
+  docked, unloaded (line closed), charged at the yard's clamp ("charging at the dock: 46%, leaves at 50%"), back, and round again; the
+  hauler never tipped (least up 0.91).
+- Joined client (two windows, `--net host` / `join`): the client saw every link part's state through the run (paired, "Coming: 4 on
+  ship", the route's phases, docked, delivered) and opened the Cargo Dock's and the Route Computer's panels. Two faults found and fixed:
+  a status went over the wire as one str, which strips the newlines and stops at 255 bytes (a client's panel ran its lines together and
+  lost a route's end: now its lines, protocol 328), and a structure rebroadcast left a client's link parts empty until the next change
+  ("no state heard" while docking: it sends them again). The window tool's input verbs grab the mouse back, which closes a panel a
+  frame after it opens; its panel isn't read through the tool.

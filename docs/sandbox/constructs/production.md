@@ -1567,7 +1567,7 @@ Design: docs/sandbox/design/linked-logistics.md (the user's answers at its end w
 - **Linked sub-jobs.** A Building Station set to Sub-jobs **Linked** takes sub-blueprint uses offered over a link, before the root's 30 s
   fallback. The finished module is carried into a ship's Cargo Volume; docked at the root's construct (or set down within 60 m of the
   root's bay) it is handed to the root's delivery.
-- Showcase: Linked Works, Linked Yard, Linked Hauler (`linked_logistics_showcase`). Headless check: `--linked-check`; window verb `linked`.
+- Showcase: Linked Works, Linked Yard, Linked Hauler (`linked_logistics_showcase`): the hauler flies on four electric lift fans, and each factory's clamp charges it from four Battery Packs (a docked route ship under half charge waits to charge). Headless check: `--linked-check`; window verb `linked`.
 
 ## Lifters
 
