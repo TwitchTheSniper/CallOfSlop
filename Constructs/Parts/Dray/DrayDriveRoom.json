@@ -1,0 +1,434 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Dray Drive Room",
+  "description": "The Dray's drive room, aft of the hold to the transom: the two drives' engines stand on a raised floor and run forward off the transom bulkhead, with a walkway each side of them; a stair flight up from the door, and the Engineer's Panel beside it.",
+  "group": "Ship",
+  "section": "Dray hauler",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 4800.0,
+  "health": 12000,
+  "armour": 30,
+  "material": "steel",
+  "color": "#a3a8a6",
+  "attachSeconds": 15.0,
+  "boxes": [
+    {
+      "min": [
+        2.425,
+        -0.125,
+        46.0
+      ],
+      "max": [
+        11.325,
+        0.125,
+        53.275
+      ],
+      "color": "#4b4f51",
+      "finish": "painted deck plate"
+    },
+    {
+      "min": [
+        2.679,
+        0.125,
+        47.875
+      ],
+      "max": [
+        11.071,
+        1.625,
+        53.275
+      ],
+      "color": "#4b4f51",
+      "finish": "painted deck plate"
+    },
+    {
+      "min": [
+        2.775,
+        0.125,
+        46.475
+      ],
+      "max": [
+        10.975,
+        0.137,
+        47.775
+      ],
+      "color": "#3a3d3f",
+      "detail": true,
+      "finish": "painted grating"
+    },
+    {
+      "min": [
+        2.775,
+        1.625,
+        48.175
+      ],
+      "max": [
+        10.975,
+        1.637,
+        53.175
+      ],
+      "color": "#3a3d3f",
+      "detail": true,
+      "finish": "painted grating"
+    },
+    {
+      "min": [
+        2.775,
+        1.621,
+        47.878
+      ],
+      "max": [
+        10.975,
+        1.637,
+        48.025
+      ],
+      "color": "#e0a020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        2.679,
+        1.629,
+        52.375
+      ],
+      "max": [
+        2.815,
+        4.373,
+        52.575
+      ],
+      "color": "#202326",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        10.935,
+        1.629,
+        52.375
+      ],
+      "max": [
+        11.071,
+        4.373,
+        52.575
+      ],
+      "color": "#202326",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        4.235,
+        3.635,
+        52.425
+      ],
+      "max": [
+        4.315,
+        4.377,
+        52.525
+      ],
+      "color": "#666d71",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        5.435,
+        3.635,
+        52.425
+      ],
+      "max": [
+        5.515,
+        4.377,
+        52.525
+      ],
+      "color": "#666d71",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        8.235,
+        3.635,
+        52.425
+      ],
+      "max": [
+        8.315,
+        4.377,
+        52.525
+      ],
+      "color": "#666d71",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        9.435,
+        3.635,
+        52.425
+      ],
+      "max": [
+        9.515,
+        4.377,
+        52.525
+      ],
+      "color": "#666d71",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        2.679,
+        1.629,
+        49.325
+      ],
+      "max": [
+        2.815,
+        4.373,
+        49.525
+      ],
+      "color": "#202326",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        10.935,
+        1.629,
+        49.325
+      ],
+      "max": [
+        11.071,
+        4.373,
+        49.525
+      ],
+      "color": "#202326",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        4.235,
+        3.635,
+        49.375
+      ],
+      "max": [
+        4.315,
+        4.377,
+        49.475
+      ],
+      "color": "#666d71",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        5.435,
+        3.635,
+        49.375
+      ],
+      "max": [
+        5.515,
+        4.377,
+        49.475
+      ],
+      "color": "#666d71",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        8.235,
+        3.635,
+        49.375
+      ],
+      "max": [
+        8.315,
+        4.377,
+        49.475
+      ],
+      "color": "#666d71",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        9.435,
+        3.635,
+        49.375
+      ],
+      "max": [
+        9.515,
+        4.377,
+        49.475
+      ],
+      "color": "#666d71",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        2.679,
+        1.629,
+        48.125
+      ],
+      "max": [
+        2.815,
+        4.373,
+        48.325
+      ],
+      "color": "#202326",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        10.935,
+        1.629,
+        48.125
+      ],
+      "max": [
+        11.071,
+        4.373,
+        48.325
+      ],
+      "color": "#202326",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        4.235,
+        3.635,
+        48.175
+      ],
+      "max": [
+        4.315,
+        4.377,
+        48.275
+      ],
+      "color": "#666d71",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        5.435,
+        3.635,
+        48.175
+      ],
+      "max": [
+        5.515,
+        4.377,
+        48.275
+      ],
+      "color": "#666d71",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        8.235,
+        3.635,
+        48.175
+      ],
+      "max": [
+        8.315,
+        4.377,
+        48.275
+      ],
+      "color": "#666d71",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        9.435,
+        3.635,
+        48.175
+      ],
+      "max": [
+        9.515,
+        4.377,
+        48.275
+      ],
+      "color": "#666d71",
+      "detail": true,
+      "finish": "dirty steel"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "stair",
+      "at": [
+        6.5,
+        0.125,
+        46.5
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j0",
+      "at": [
+        6.875,
+        -0.125,
+        47.685
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j1",
+      "at": [
+        6.875,
+        -0.005,
+        46.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j2",
+      "at": [
+        2.555,
+        0.125,
+        49.635
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j3",
+      "at": [
+        11.195,
+        0.125,
+        49.635
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j4",
+      "at": [
+        2.425,
+        -0.005,
+        47.685
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j5",
+      "at": [
+        11.325,
+        -0.005,
+        47.685
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "j6",
+      "at": [
+        6.875,
+        -0.125,
+        51.325
+      ],
+      "dir": "-y"
+    }
+  ]
+}

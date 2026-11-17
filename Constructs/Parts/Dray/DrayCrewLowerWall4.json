@@ -1,0 +1,287 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Dray Crew Lower Wall 4",
+  "description": "A wall of the Dray's crew lower, with its door frames and what is fixed to it.",
+  "group": "Ship",
+  "section": "Dray hauler",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 486.0,
+  "health": 3500,
+  "armour": 25,
+  "material": "steel",
+  "color": "#b9bdb5",
+  "attachSeconds": 6.0,
+  "boxes": [
+    {
+      "min": [
+        5.75,
+        0.125,
+        4.875
+      ],
+      "max": [
+        6.0,
+        3.125,
+        7.875
+      ],
+      "color": "#b9bdb5",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        5.75,
+        2.375,
+        7.875
+      ],
+      "max": [
+        6.0,
+        3.125,
+        9.375
+      ],
+      "color": "#b9bdb5",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        5.738,
+        0.128,
+        4.925
+      ],
+      "max": [
+        6.012,
+        0.875,
+        7.825
+      ],
+      "color": "#3d5569",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        5.73,
+        0.127,
+        7.805
+      ],
+      "max": [
+        6.02,
+        2.445,
+        7.872
+      ],
+      "color": "#2a2e31",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        5.73,
+        0.127,
+        9.378
+      ],
+      "max": [
+        6.02,
+        2.445,
+        9.445
+      ],
+      "color": "#2a2e31",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        5.73,
+        2.378,
+        7.875
+      ],
+      "max": [
+        6.02,
+        2.445,
+        9.375
+      ],
+      "color": "#e0a020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        5.75,
+        0.125,
+        9.375
+      ],
+      "max": [
+        6.0,
+        3.125,
+        11.475
+      ],
+      "color": "#b9bdb5",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        5.75,
+        2.375,
+        11.475
+      ],
+      "max": [
+        6.0,
+        3.125,
+        12.975
+      ],
+      "color": "#b9bdb5",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        5.738,
+        0.128,
+        9.425
+      ],
+      "max": [
+        6.012,
+        0.875,
+        11.425
+      ],
+      "color": "#3d5569",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        5.73,
+        0.127,
+        11.405
+      ],
+      "max": [
+        6.02,
+        2.445,
+        11.472
+      ],
+      "color": "#2a2e31",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        5.73,
+        0.127,
+        12.978
+      ],
+      "max": [
+        6.02,
+        2.445,
+        13.045
+      ],
+      "color": "#2a2e31",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        5.73,
+        2.378,
+        11.475
+      ],
+      "max": [
+        6.02,
+        2.445,
+        12.975
+      ],
+      "color": "#e0a020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        5.75,
+        0.125,
+        12.975
+      ],
+      "max": [
+        6.0,
+        3.125,
+        13.75
+      ],
+      "color": "#b9bdb5",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        5.738,
+        0.128,
+        13.025
+      ],
+      "max": [
+        6.012,
+        0.875,
+        13.7
+      ],
+      "color": "#3d5569",
+      "detail": true,
+      "finish": "painted plating"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "doorMess",
+      "at": [
+        5.875,
+        1.25,
+        7.875
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "doorSuit",
+      "at": [
+        5.875,
+        1.25,
+        11.475
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "j0",
+      "at": [
+        5.875,
+        0.125,
+        6.375
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j1",
+      "at": [
+        5.875,
+        1.625,
+        4.875
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j2",
+      "at": [
+        5.75,
+        1.625,
+        10.375
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j3",
+      "at": [
+        5.875,
+        3.125,
+        6.375
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j4",
+      "at": [
+        5.875,
+        1.625,
+        13.75
+      ],
+      "dir": "+z"
+    }
+  ]
+}
