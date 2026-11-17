@@ -28,6 +28,7 @@ public sealed class UseRow
     public int Looks; // the root's looks while Waiting: 60 (30 s) and it builds it itself
     public bool Touch; // its sub-station's bay touches this one's: handed over
     public bool Delivered; // fitted from a delivered body: its own links were laid by its own build
+    public ushort Linked; // offered over a link: its ledger line (LinkedLogisticsSub.cs; 0: none)
     public string Note = "";
     public readonly HashSet<ushort> Skipped = new(); // stations whose sub-job failed for it
 }
@@ -70,7 +71,7 @@ public static partial class ConstructStationTree
     public const float HandReach = 8f; // a body set down this near the root's bay is taken
     public const int MaxCandidates = 16;
     public const int MaxRowsSent = 64;
-    private const ushort None = ushort.MaxValue;
+    internal const ushort None = ushort.MaxValue;
     private static uint _stamp;
 
     public static uint NewStamp() => Interlocked.Increment(ref _stamp) is var s and not 0 ? s : Interlocked.Increment(ref _stamp);
@@ -146,7 +147,7 @@ public static partial class ConstructStationTree
                     break;
                 case UseState.Building:
                 case UseState.Done:
-                    changed |= Watch(world, c, t, j, r);
+                    changed |= row.Linked != 0 ? LinkSub.Watch(world, c, t, j, r) : Watch(world, c, t, j, r); // (a use built over a link: its line says where it is)
                     break;
             }
             if (j.BigRow >= 0)
@@ -252,7 +253,7 @@ public static partial class ConstructStationTree
         {
             var carryWhy = "";
             var spotted = Spot(world, j, r, body, out var toPos, out var toRot, out var spotWhy);
-            if (spotted && ConstructLifters.CarryBody(world, c, body, toPos, toRot, out var who, out carryWhy))
+            if (spotted && ConstructLifters.CarryBody(world, c, t, body, toPos, toRot, out var who, out carryWhy))
                 Note(row, $"done - a {who} brings it", ref changed);
             else
                 Note(row, $"done: {(spotted ? carryWhy : spotWhy)}: move {row.Name} #{row.Number} into this bay", ref changed);
@@ -372,6 +373,8 @@ public static partial class ConstructStationTree
             score[n] = (touch ? 0 : 1e9f) + bay.X * bay.Y * bay.Z * 1000f + Vector3.Distance(floor, rootFloor);
             cand[n++] = s;
         }
+        if (n == 0 && LinkSub.Offer(world, c, t, j, r, tag))
+            return true; // (a linked network's idle Linked station, before the 30 s fallback: linked-logistics.md 4.4)
         if (n == 0)
         {
             row.Note = $"no station free{(busy > 0 ? $": {busy} busy" : "")}{(small > 0 ? $", {small} with a bay too small" : "")}{(off > 0 ? $", {off} with Sub-jobs Off" : "")}";

@@ -24,6 +24,15 @@ public static class UseFrameRender
     }
 
     private static readonly Dictionary<ushort, BodyFrames> Cache = new();
+    private static ConstructWorld? _cacheWorld; // (the world the cache's body ids belong to: ids are reused in another world)
+
+    /// <summary>Forgets every body's frames (a world switch or leaving Sandbox: Program.SandboxLocalReset).</summary>
+    public static void Reset()
+    {
+        Cache.Clear();
+        Labels.Clear();
+        _cacheWorld = null;
+    }
 
     /// <summary>This frame's labels (the ImGui pass draws them: <c>Ui.DrawUseLabels</c>).</summary>
     public static readonly List<(Vector3 At, string Text, bool Changed)> Labels = new(MaxFrames);
@@ -31,6 +40,11 @@ public static class UseFrameRender
     public static void Draw(Renderer gfx, ConstructWorld world, Vector3 eye)
     {
         Labels.Clear();
+        if (!ReferenceEquals(world, _cacheWorld))
+        {
+            Cache.Clear(); // (another world's body 12 is another body: travel, a planetoid entered, a new session)
+            _cacheWorld = world;
+        }
         if (ConstructConveyor.Clock - ShownAt > 0.3)
             return;
         var n = 0;

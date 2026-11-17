@@ -248,6 +248,8 @@ public static unsafe partial class Program
             return VehicleKit.VehicleDriveCheck.Report(VehicleKit.VehicleKitCli.SweepVehicle(sweepVehicle, args)); // many seeds of a shape, built and checked, nothing written
         if (args.Any(a => a.Equals("--preview-construct", StringComparison.OrdinalIgnoreCase) || a.Equals("--preview-gallery", StringComparison.OrdinalIgnoreCase) || a.Equals("--preview-shot", StringComparison.OrdinalIgnoreCase)))
             return ConstructPreview.Cli(args); // a blueprint or part as a turnable web page for an agent to publish (Source/DevTools/ConstructPreview.cs, tools/preview/)
+        if (args.Any(a => a.Equals("--linked-check", StringComparison.OrdinalIgnoreCase)))
+            return LinkedCheck.Cli(args); // linked logistics tried headless on the showcase (Source/DevTools/LinkedCheck.cs)
         if (args.Any(a => a.Equals("--ship-ai-check", StringComparison.OrdinalIgnoreCase)))
             return VehicleKit.ShipAiCheck.Cli(args); // an AI crew flown against a target ship in a world of its own (ShipAiCheck.cs)
         if (args.SkipWhile(a => !a.Equals("--sub-blueprint", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } subBlueprint)
@@ -1227,7 +1229,7 @@ public static unsafe partial class Program
     // Input
     // =====================================================================
 
-    private static bool MenusOpen => DimmingMenusOpen || Ui.WeatherMapOpen || Ui.StoryOpen || Ui.FactionsOpen || Ui.JobBoardOpen || Ui.LogbookOpen || Ui.CommandOpen || Ui.SandboxPartsOpen || Ui.SandboxConfigOpen || Ui.ConnectorPanelOpen || Ui.ToolWheelEditorOpen || Ui.SandboxTrackOpen || Ui.SandboxPaintPickerOpen || Ui.SandboxTexturePickerOpen || Ui.SandboxMaterialPickerOpen || Ui.ReplacePickerOpen || Ui.BlueprintSaveOpen || Ui.OrdnanceBenchOpen || Ui.RecipePickerOpen || Ui.CraftingOpen || Ui.DesignerOpen || Ui.LifterOpen; // (and the Sandbox parts menu and settings panel, which free the mouse but don't dim the scene)
+    private static bool MenusOpen => DimmingMenusOpen || Ui.WeatherMapOpen || Ui.StoryOpen || Ui.FactionsOpen || Ui.JobBoardOpen || Ui.LogbookOpen || Ui.CommandOpen || Ui.SandboxPartsOpen || Ui.SandboxConfigOpen || Ui.ConnectorPanelOpen || Ui.ToolWheelEditorOpen || Ui.SandboxTrackOpen || Ui.SandboxPaintPickerOpen || Ui.SandboxTexturePickerOpen || Ui.SandboxMaterialPickerOpen || Ui.ReplacePickerOpen || Ui.BlueprintSaveOpen || Ui.OrdnanceBenchOpen || Ui.RecipePickerOpen || Ui.CraftingOpen || Ui.DesignerOpen || Ui.LifterOpen || Ui.LinkedOpen; // (and the Sandbox parts menu and settings panel, which free the mouse but don't dim the scene)
 
     /// <summary>The menus that dim the scene behind them (Ui.SceneDim): a Zombies workbench too; the lobby room; the Audio mixer, weapon tweak, perf and prop editor windows.</summary>
     private static bool DimmingMenusOpen => Ui.MenuOpen || Ui.PauseOpen || Ui.BenchRun != null || Ui.InventoryOpen || InLobbyRoom || Ui.AudioMixerOpen || Ui.WeaponTweaksOpen || Ui.PerfWindowOpen || Ui.PropEditorOpen;
@@ -1293,6 +1295,13 @@ public static unsafe partial class Program
         if (key == GlfwKey.Escape && Ui.DesignerOpen)
         {
             Ui.CloseDesigner(); // Esc closes the Panel Designer's panel (back to the desk)
+            if (!MenusOpen)
+                SetMouseCaptured(true);
+            return;
+        }
+        if (key == GlfwKey.Escape && Ui.LinkedOpen)
+        {
+            Ui.CloseLinked(); // Esc closes a linked logistics part's panel
             if (!MenusOpen)
                 SetMouseCaptured(true);
             return;

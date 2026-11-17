@@ -95,8 +95,8 @@ public sealed class BuildStationParts : IPartGenerator
             Fill("fillCharge", "Battery charge", "Batteries: charged from the station's own power, which takes time."),
             Kw(("key", "fillWait"), ("label", "Wait until filled"), ("group", "Fill"), ("type", "toggle"), ("default", false),
                 ("tooltip", "On: a build stays in the bay until it is filled. Off: it finishes with what it got and says what is short.")),
-            Kw(("key", "subJobs"), ("label", "Sub-jobs"), ("group", "Bay"), ("type", "toggle"), ("default", true),
-                ("tooltip", "On (Auto): it builds parts of other stations' blueprints (their sub-blueprint uses) when it is idle. Off: it keeps to your own builds.")))));
+            Kw(("key", "subJobs"), ("label", "Sub-jobs"), ("group", "Bay"), ("type", "choice"), ("options", Py.L("Off", "Auto", "Linked")), ("default", 1),
+                ("tooltip", "Auto: when idle it builds other stations' sub-blueprint uses on this construct. Linked: also uses sent over a logistics link (the module goes by cargo ship). Off: only your own builds.")))));
         p.Set(("storage", Kw(("pieces", Kw(("section", Py.L(section, 1.25)), ("length", length), ("count", 400), ("crafting", true), ("station", true),
             ("hold", Py.L(Py.L(Py.Round(xm + 0.1, 3), Py.Round(y0 + 0.133, 3), Py.Round(z0 + 0.074, 3)), Py.L(Py.Round(x1 - 0.1, 3), Py.Round(y0 + top - 0.01, 3), Py.Round(z1 - 0.06, 3)))))))));
         p.Set(("ports", Py.L(

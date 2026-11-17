@@ -78,6 +78,7 @@ public sealed partial class Game
         ConstructPhysics.SpaceFuelScale = Math.Clamp(SpaceFuelPercent, SpaceFuelLeast, 100) / 100f; // (the host's: clients hear it with the clock)
         f.AnyoneBusy = SpaceAnyoneBusy();
         ServerTickNav(Space); // (ships under orders: where their drives point and how hard they push, GameNav.cs)
+        ServerTickLinkRoutes(Space); // (route ships' legs through space: GameSandboxLinked.cs)
         SpaceLaunchBefore(f); // (ships that are constructs: their thrust and turn, GameSpaceLaunch.cs)
         SpaceAwayBefore(Space); // (and those in other systems: GameSpaceJump.cs)
         foreach (var af in Space.Away)

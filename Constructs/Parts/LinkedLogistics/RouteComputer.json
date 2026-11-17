@@ -1,0 +1,116 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Route Computer",
+  "description": "Flies its ship on a standing route between Cargo Docks (set in the command view), with the leaving rules you set at each stop. Needs a working Flight Stabilizer.",
+  "group": "Production",
+  "section": "Linked logistics",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 15.0,
+  "health": 300,
+  "armour": 2,
+  "material": "steel",
+  "color": "#3a6f8f",
+  "attachSeconds": 3.0,
+  "power": 150,
+  "onBreak": "disable",
+  "logiLink": {
+    "kind": "route"
+  },
+  "boxes": [
+    {
+      "min": [
+        -0.3,
+        -0.125,
+        -0.3
+      ],
+      "max": [
+        0.3,
+        0.0,
+        0.3
+      ],
+      "color": "#22262b"
+    },
+    {
+      "min": [
+        -0.28,
+        -0.005,
+        -0.28
+      ],
+      "max": [
+        0.28,
+        0.6,
+        0.28
+      ]
+    },
+    {
+      "min": [
+        -0.26,
+        0.595,
+        -0.26
+      ],
+      "max": [
+        0.26,
+        0.9,
+        -0.12
+      ],
+      "color": "#22262b"
+    },
+    {
+      "min": [
+        -0.23,
+        0.62,
+        -0.124
+      ],
+      "max": [
+        0.23,
+        0.88,
+        -0.11
+      ],
+      "color": "#10161c",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.22,
+        0.598,
+        0.1
+      ],
+      "max": [
+        -0.12,
+        0.615,
+        0.22
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.08,
+        0.598,
+        0.1
+      ],
+      "max": [
+        0.02,
+        0.615,
+        0.22
+      ],
+      "color": "#d02a1e",
+      "detail": true,
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -0.125,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

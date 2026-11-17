@@ -1,0 +1,141 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Logistics Receiver",
+  "description": "Links this construct's logistics network with a Transmitter on the same planetoid: type its code in this one's panel. Orders and stock go both ways; goods go by cargo ship. Needs power.",
+  "group": "Production",
+  "section": "Linked logistics",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 120.0,
+  "health": 400,
+  "armour": 2,
+  "material": "steel",
+  "color": "#3a6f8f",
+  "attachSeconds": 4.0,
+  "power": 200,
+  "onBreak": "disable",
+  "logiLink": {
+    "kind": "receiver"
+  },
+  "boxes": [
+    {
+      "min": [
+        -0.5,
+        -0.125,
+        -0.5
+      ],
+      "max": [
+        0.5,
+        0.075,
+        0.5
+      ],
+      "color": "#22262b"
+    },
+    {
+      "min": [
+        -0.3,
+        0.07,
+        -0.3
+      ],
+      "max": [
+        0.3,
+        0.3,
+        0.3
+      ]
+    },
+    {
+      "min": [
+        -0.06,
+        0.295,
+        -0.06
+      ],
+      "max": [
+        0.06,
+        1.7,
+        0.06
+      ],
+      "color": "#98a1a9"
+    },
+    {
+      "min": [
+        -0.3,
+        1.7,
+        -0.3
+      ],
+      "max": [
+        0.3,
+        1.76,
+        -0.24
+      ],
+      "color": "#d8dde2",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.3,
+        1.7,
+        0.24
+      ],
+      "max": [
+        0.3,
+        1.76,
+        0.3
+      ],
+      "color": "#d8dde2",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.3,
+        1.704,
+        -0.237
+      ],
+      "max": [
+        -0.24,
+        1.756,
+        0.237
+      ],
+      "color": "#d8dde2",
+      "detail": true
+    },
+    {
+      "min": [
+        0.24,
+        1.704,
+        -0.237
+      ],
+      "max": [
+        0.3,
+        1.756,
+        0.237
+      ],
+      "color": "#d8dde2",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.1,
+        1.2,
+        -0.1
+      ],
+      "max": [
+        0.1,
+        1.28,
+        0.1
+      ],
+      "color": "#f2b01e",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -0.125,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}
