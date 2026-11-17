@@ -33,6 +33,10 @@ public static class CrewCheck
             return 1;
         }
         _faction = Arg("--crew-faction") is { } cf ? CrewFactions.Find(cf) : (byte)0;
+        if (args.Any(a => a.Equals("--crew-work", StringComparison.OrdinalIgnoreCase)))
+            return Work(shipBp, _faction != 0 ? _faction : CrewFactions.Find("Traders")) ? 0 : 1;
+        if (args.Any(a => a.Equals("--crew-walk", StringComparison.OrdinalIgnoreCase)))
+            return Walks(shipBp, float.TryParse(Arg("--speed"), System.Globalization.CultureInfo.InvariantCulture, out var sp) ? sp : 0, float.TryParse(Arg("--turn"), System.Globalization.CultureInfo.InvariantCulture, out var tn) ? tn * MathF.PI / 180f : 0) ? 0 : 1;
         if (Arg("--crew-convoy") is { } convoy)
             return Convoy(convoy.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries), seconds > 0 && Arg("--seconds") != null ? seconds : 60) ? 0 : 1;
         _faction = Arg("--crew-faction") is { } fn ? CrewFactions.Find(fn) : (byte)0;
@@ -331,6 +335,248 @@ public static class CrewCheck
         var ok = moved && kept && stopped;
         Console.WriteLine($"convoy: {(ok ? "OK" : "FAILED")}");
         return ok;
+    }
+
+    /// <summary>
+    /// <c>--crew-check [SHIP] --crew-walk [--speed V] [--turn DEG/S]</c>: the ship's walk graph (CrewNav) built as the game builds it (in slices,
+    /// timed), then a standing body walked by CrewNav's follower through the real movement step (<c>World.Simulate</c>, <c>BlockPlayer</c>) from its
+    /// first couch to every other station (the helm, each gun seat, the engine room, the magazine), the ship 30 m up over the Proving Ground and
+    /// moving at <c>--speed</c> m/s, turning <c>--turn</c> degrees a second. Each walk: there or not, its path, the time. Exit 0 when every walk
+    /// to a station on the graph got there.
+    /// </summary>
+    private static bool Walks(ConstructBuild.Blueprint bp, float speed, float turn)
+    {
+        if (Maps.Find("Proving Ground") is not { } yard)
+        {
+            Console.WriteLine("no Proving Ground map");
+            return false;
+        }
+        yard.RestoreProps();
+        World.SetMap(yard);
+        var w = new ConstructWorld();
+        var c = ConstructBuild.BuildOnGround(w, bp, ConstructWorld.Ground(World.Query, 0, 0), 0, out var why);
+        if (c == null)
+        {
+            Console.WriteLine($"{bp.Name}: doesn't build: {why}");
+            return false;
+        }
+        c.Rebuild();
+        var home = c.Pos + new Vector3(0, 30f, 0);
+        WalkPose(w, c, home, c.Rot, Vector3.Zero, Vector3.Zero);
+        var nav = new CrewNav();
+        CrewNavGraph? g = null;
+        var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+        var ticks = 0;
+        while (g == null && ticks < 6000)
+        {
+            g = nav.Want(c);
+            nav.Step(w);
+            ticks++;
+        }
+        var buildMs = (System.Diagnostics.Stopwatch.GetTimestamp() - t0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+        if (g != null)
+        {
+            // Again, timed warm (the first build's slices carry the JIT).
+            foreach (var e in nav.Events)
+                Console.WriteLine($"  [nav] (cold) {e}");
+            nav.Events.Clear();
+            nav.Drop(c.Id);
+            nav.WorstMs = 0;
+            g = null;
+            t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+            ticks = 0;
+            while (g == null && ticks < 6000)
+            {
+                g = nav.Want(c);
+                nav.Step(w);
+                ticks++;
+            }
+            buildMs = (System.Diagnostics.Stopwatch.GetTimestamp() - t0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+        }
+        foreach (var e in nav.Events)
+            Console.WriteLine($"  [nav] {e}");
+        nav.Events.Clear();
+        if (g == null)
+        {
+            Console.WriteLine($"{bp.Name}: no walk graph after {ticks} ticks");
+            return false;
+        }
+        Console.WriteLine($"crew walk: {bp.Name} ({c.PartCount} parts), graph {g.NodeCount} spots in {g.Comps} parts, {g.Nx}x{g.Nz} columns; built in {ticks} ticks, {buildMs:0.0} ms in all, worst tick {nav.WorstMs:0.00} ms; moving {speed:0.#} m/s turning {turn * 180 / MathF.PI:0.#} deg/s");
+        // The stations as the crew scans them: seats (feet) and the standing places.
+        var spots = new List<(string What, int Node)>();
+        var stab = c.StabCount > 0 ? c.Stabs[0].Part : -1;
+        var helm = stab >= 0 ? ConstructFlight.SeatFor(c, stab) : c.DriveSeat;
+        for (var i = 0; i < c.PartCount; i++)
+            if (c.Parts[i].D.Role == PartRole.Seat && !c.Parts[i].Broken)
+                spots.Add(($"{(i == helm ? "helm" : c.SeatKindOf(i) == SeatKind.Gunner ? "gun seat" : "seat")} {i} ({c.Parts[i].D.Name})", CrewNav.NearestNode(g, c.ToLocal(ConstructEdits.SeatFeet(c, i)))));
+        foreach (var (what, part) in new[] { ("engine room", CrewWorld.WorksStation(c)), ("magazine", CrewWorld.MagazineStation(c)) })
+            if (part >= 0)
+            {
+                c.PartBounds(part, out var mn, out var mx);
+                c.SegPose(c.Parts[part].Seg, out var sq, out var sp);
+                spots.Add(($"{what} {part} ({c.Parts[part].D.Name})", CrewNav.NearestNode(g, sp + Vector3.Transform(new Vector3((mn.X + mx.X) * 0.5f, mn.Y + 0.1f, (mn.Z + mx.Z) * 0.5f), sq), CrewNav.Reach + 1)));
+            }
+        var start = spots.FindIndex(s => s.What.StartsWith("seat") && s.Node >= 0);
+        if (start < 0)
+            start = spots.FindIndex(s => s.Node >= 0);
+        if (start < 0)
+        {
+            Console.WriteLine("  no station has a standing spot on the graph");
+            return false;
+        }
+        Console.WriteLine($"  from {spots[start].What}");
+        if (Environment.GetEnvironmentVariable("CREW_NAV_DEBUG") == "2")
+        {
+            c.EnsureDoors();
+            for (var k = 0; k < c.DoorCount; k++)
+            {
+                int dp = c.Doors[k].Part;
+                Console.WriteLine($"  dbg door {dp} {c.Parts[dp].D.Name} at {c.ToLocal(ConstructRender.PartCentre(c, dp))} upright {CrewNav.Upright(c, dp)} open {ConstructDoors.TargetOpen(c, dp)} locked {ConstructDoors.Locked(c, dp)}");
+            }
+        }
+        var ok = true;
+        var clock = 0;
+        var ms = new MoveState();
+        for (var k = 0; k < spots.Count; k++)
+        {
+            if (k == start)
+                continue;
+            var (what, node) = spots[k];
+            if (node < 0)
+            {
+                Console.WriteLine($"  {what}: no standing spot near it (a timed walk in the game)");
+                continue;
+            }
+            if (g.Comp[node] != g.Comp[spots[start].Node])
+            {
+                Console.WriteLine($"  {what}: cut off (another part of the graph): not walked");
+                continue;
+            }
+            var walker = nav.Walk(g, 1, spots[start].Node, node);
+            var at = c.ToWorld(g.NodePos(spots[start].Node) + new Vector3(0, 0.03f, 0));
+            ms = new MoveState { Position = at, Velocity = c.PointVel(at) };
+            ConstructRide.End(ref ms, null, c, 0, Vector3.Zero, frame: true); // (crew bodies ride the ship's own frame, as people do)
+            byte phase = 0;
+            var t = 0;
+            var travelled = 0f;
+            var last = c.ToLocal(ms.Position);
+            for (; t < 60 * 60 && phase < 2; t++)
+            {
+                var kk = MathF.Min(1f, clock++ / 120f);
+                var fwd = Vector3.Transform(-Vector3.UnitZ, c.Rot);
+                var vel = fwd * speed * kk;
+                var ang = new Vector3(0, turn * kk, 0);
+                WalkPose(w, c, c.Pos + vel * World.TickDt, Quaternion.CreateFromAxisAngle(Vector3.UnitY, ang.Y * World.TickDt) * c.Rot, vel, ang);
+                nav.Step(w);
+                ConstructDoors.Step(w);
+                phase = nav.Steer(walker, c, w, ref ms, out var cmd);
+                if (phase >= 2)
+                    break;
+                cmd.Seq = (uint)t;
+                World.Simulate(ref ms, cmd);
+                w.BlockPlayer(ref ms, World.HeightOf(ms.Stance), server: true, who: 1);
+                var now = c.ToLocal(ms.Position);
+                if (Environment.GetEnvironmentVariable("CREW_NAV_DEBUG") == "2" && (t % 30 == 0 || !ms.Grounded))
+                    Console.WriteLine($"    t{t}: at {now}, leg {nav.WAt[walker]}/{nav.WCount[walker]} to {(nav.WAt[walker] < nav.WCount[walker] ? nav.WPts[walker * CrewNav.MaxPts + nav.WAt[walker]] : default)}, grounded {ms.Grounded}, climb {ms.RideClimb} mantle {ms.MantleTicks} ride {ms.RideBody}, ladder {nav.WLadder[walker * CrewNav.MaxPts + Math.Min(nav.WAt[walker], CrewNav.MaxPts - 1)]}, vel {ms.Velocity}");
+                travelled += Vector3.Distance(now, last);
+                last = now;
+            }
+            var end = c.ToLocal(ms.Position);
+            var there = phase == 2 && Vector3.Distance(end, g.NodePos(node)) < 1.2f;
+            ok &= there;
+            Console.WriteLine($"  {what}: {(there ? "there" : phase == 3 ? "GAVE UP" : "NOT THERE")} in {t / (float)World.TickRate:0.0} s, path {nav.WLength[walker]:0.0} m in {nav.WCount[walker]} legs, walked {travelled:0.0} m, ended {Vector3.Distance(end, g.NodePos(node)):0.00} m off, riding {(ms.RideBody == c.Id ? "it" : ms.RideBody == 0 ? "nothing" : $"body {ms.RideBody}")}");
+            nav.End(walker);
+            if (k == (start == 0 ? 1 : 0))
+            {
+                Console.WriteLine($"  (first walk's worst nav tick {nav.WorstMs:0.00} ms: JIT and the search arrays' first growth; timed afresh from here)");
+                nav.WorstMs = 0;
+            }
+            foreach (var e in nav.Events)
+                Console.WriteLine($"  [nav] {e}");
+            nav.Events.Clear();
+        }
+        Console.WriteLine($"  nav cost: {nav.CpuMs / Math.Max(1, nav.Tick):0.000} ms a tick on average, worst {nav.WorstMs:0.00} ms");
+        return ok;
+    }
+
+    /// <summary>
+    /// <c>--crew-check BLUEPRINT --crew-work [--crew-faction NAME]</c> (phase 7): the blueprint built on the ground and crewed as a nobody's of that kind
+    /// (Traders by default); its work stations (the capital gun's spotter, lifters, cargo docks, Building Stations) and who works them; the gate
+    /// (<see cref="CrewWorld.Works"/>) open while each is manned, shut once its hand is killed, open again when a spare walks over. Exit 0 when so.
+    /// </summary>
+    private static bool Work(ConstructBuild.Blueprint bp, byte faction)
+    {
+        var w = new ConstructWorld();
+        var c = ConstructBuild.BuildOnGround(w, bp, ConstructWorld.Ground(World.Query, 0, 0), 0, out var why);
+        if (c == null)
+        {
+            Console.WriteLine($"{bp.Name}: doesn't build: {why}");
+            return false;
+        }
+        c.Rebuild();
+        c.Owner = 255;
+        var crew = new CrewWorld();
+        var s = crew.Crew(c, ShipAiMode.Strangers, faction: faction, spares: 2)!;
+        Flush(crew);
+        var people = new[] { c.WorldCom + new Vector3(0, 0, 50) };
+        for (var t = 0; t < 30; t++)
+            crew.Step(w, World.Query, null, people, crewOn: false);
+        Flush(crew);
+        var works = 0;
+        var ok = true;
+        for (var k = 0; k < s.StCount; k++)
+            if (s.StKind[k] is CrewStationKind.Spot or CrewStationKind.Crane or CrewStationKind.Dock or CrewStationKind.Build)
+                works++;
+        Console.WriteLine($"  guns' reach: {string.Join(", ", Enumerable.Range(0, c.GunCount).Select(k => $"{c.Parts[c.Guns[k].Part].D.Name} {Size(c, c.Guns[k].Part):0.00} m3"))}");
+        Console.WriteLine($"crew work: {bp.Name} ({c.PartCount} parts) as {CrewFactions.Of(faction)?.Name}: {works} work stations; {crew.Describe(s)}");
+        for (var k = 0; k < s.StCount; k++)
+        {
+            var kind = s.StKind[k];
+            if (kind is not (CrewStationKind.Spot or CrewStationKind.Crane or CrewStationKind.Dock or CrewStationKind.Build))
+                continue;
+            int part = s.StPart[k];
+            var m = s.StMember[k];
+            var open = crew.Works(c, part);
+            var line = $"  {CrewWorld.StationName(kind)} at {c.Parts[part].D.Name} ({part}): {(m >= 0 ? $"{crew.Job[m]} {crew.Uid[m]}" : "nobody")}, works {open}";
+            if (m >= 0)
+            {
+                crew.Kill(m, null);
+                var shut = !crew.Works(c, part) || kind == CrewStationKind.Spot;
+                var spotGone = kind != CrewStationKind.Spot || crew.Spotted(s) < 0;
+                var back = false;
+                for (var t = 0; t < 60 * 30 && !back; t++)
+                {
+                    crew.Step(w, World.Query, null, people, crewOn: false);
+                    back = s.StMember[k] >= 0 && crew.State[s.StMember[k]] == CrewState.Station;
+                }
+                line += $"; its hand killed: works {crew.Works(c, part)}{(kind == CrewStationKind.Spot ? $" (spotted {(spotGone ? "no" : "yes")})" : "")}, {(back ? $"a spare took it: works {crew.Works(c, part)}" : "nobody left to take it")}";
+                ok &= open && shut && spotGone && (!back || crew.Works(c, part));
+            }
+            else
+                ok &= kind == CrewStationKind.Spot || !open;
+            Console.WriteLine(line);
+            Flush(crew, quiet: true);
+        }
+        return ok && works > 0;
+    }
+
+    private static float Size(Construct c, int part)
+    {
+        c.PartBounds(part, out var mn, out var mx);
+        return (mx.X - mn.X) * (mx.Y - mn.Y) * (mx.Z - mn.Z);
+    }
+
+    private static void WalkPose(ConstructWorld w, Construct c, Vector3 pos, Quaternion rot, Vector3 vel, Vector3 ang)
+    {
+        c.PrevPos = c.Pos;
+        c.PrevRot = c.Rot;
+        c.Pos = pos;
+        c.Rot = Quaternion.Normalize(rot);
+        c.Vel = vel;
+        c.AngVel = ang;
+        c.Asleep = false;
+        c.Anchored = false;
+        ConstructRide.BeforePhysics(w);
     }
 
     private static void Flush(CrewWorld crew, bool quiet = false)

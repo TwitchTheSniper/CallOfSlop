@@ -403,7 +403,7 @@ public sealed partial class Game
         (v.Owner, v.Own, v.Prize, v.HoldFire) = (owner, (flags & 1) != 0, (flags & 2) != 0, (flags & 4) != 0);
         v.Members.Clear();
         for (var k = 0; k < n; k++)
-            v.Members.Add((r.U32(), CrewNames.Of(r.U16()), (CrewJob)Math.Min((int)r.U8(), (int)CrewJob.Loader), (CrewState)Math.Min((int)r.U8(), (int)CrewState.Scuttling), r.U8(), r.U8()));
+            v.Members.Add((r.U32(), CrewNames.Of(r.U16()), (CrewJob)Math.Min((int)r.U8(), (int)CrewJob.Builder), (CrewState)Math.Min((int)r.U8(), (int)CrewState.Scuttling), r.U8(), r.U8()));
     }
 
     /// <summary>Host: a roster that went (the crew disbanded): clients drop it.</summary>

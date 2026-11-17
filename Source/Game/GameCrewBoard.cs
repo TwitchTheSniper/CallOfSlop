@@ -105,6 +105,7 @@ public sealed partial class Game
             Console.WriteLine($"[crew] construct {c.Id}: boarded by {boarders} ({defenders} crew left, morale {s.Morale * 100:0}%, desperation {desperation:0.00}): {best}");
         var was = s.Act;
         s.Act = best;
+        CrewRepelWalk(c, s, first);
         switch (best)
         {
             case BoardAct.Repel:
@@ -402,6 +403,29 @@ public sealed partial class Game
     }
 
     /// <summary>A crew body repelling boarders fights by its own bot brain (Game.cs's tick).</summary>
+    /// <summary>Repellers further than this (m) from the boarder they go for walk to them inside (CrewNav); closer, their bot brains fight.</summary>
+    public const float RepelClose = 6;
+
+    /// <summary>Each look at a boarding: crew up to fight (Repel) walk through the ship to the first boarder, by CrewNav's path.</summary>
+    private void CrewRepelWalk(Construct c, CrewShip s, byte boarder)
+    {
+        if (s.Nav == null || !Players.TryGetValue(boarder, out var b) || !b.Alive)
+            return;
+        var to = c.ToLocal(b.Position);
+        for (var i = 0; i < s.MemberCount; i++)
+        {
+            var m = s.Members[i];
+            if (Crew.State[m] != CrewState.Fighting || Crew.Player[m] == 0 || !Players.TryGetValue((byte)(Crew.Player[m] - 1), out var bp) || !bp.Alive)
+                continue;
+            if (Vector3.Distance(c.ToLocal(bp.Position), to) < RepelClose)
+            {
+                Crew.Nav.End(Crew.Nav.WalkerOf(m)); // (close: its bot brain fights)
+                continue;
+            }
+            Crew.Errand(c, s, m, to, this, 2.5f);
+        }
+    }
+
     private bool CrewBodyFights(Player p) => p.CrewSlot >= 0 && p.CrewSlot < Crew.High && Crew.State[p.CrewSlot] == CrewState.Fighting;
 
     // ---- Prisoners ----------------------------------------------------------------------------------------------------------------------

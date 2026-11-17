@@ -10,6 +10,10 @@ public enum CrewJob : byte
     Gunner,
     Engineer, // phase 4: sees to breakdowns and mends works pieces (Game/GameCrewWork.cs)
     Loader, // phase 4: carries rounds to an emptying ammo box
+    Spotter, // phase 7: beside a capital gun, its gunners lay it closer (ShipAi.SpotBear)
+    Crane, // phase 7: works a lifter (an arm or a bridge crane) from beside it: an NPC body's lifter runs only while one stands there (CrewGate)
+    Hauler, // phase 7: works a cargo dock's exchange (linked logistics)
+    Builder, // phase 7: works a Building Station's bay (its job steps only while one stands there)
 }
 
 /// <summary>What a crew member is doing.</summary>
@@ -48,13 +52,24 @@ public enum CrewStationKind : byte
     Rest,
     Works, // the Engineer's Panel, else a drive's works piece or a jet (an engineer stands there)
     Magazine, // an ammo box or magazine (a loader stands there)
+    Spot, // phase 7: beside the capital gun (the biggest gun, CrewWorld.CapitalSize or more)
+    Crane, // a lifter's base
+    Dock, // a cargo dock
+    Build, // a Building Station
 }
 
 /// <summary>The game's side of the crew (Game/GameCrew.cs): bot bodies, people's targets. Null in a check with no game: nobody is bodied.</summary>
 public interface ICrewHost
 {
-    /// <summary>A bot <see cref="Player"/> for member <paramref name="m"/>, sitting in seat <paramref name="part"/> of <paramref name="c"/>; 0: no body free.</summary>
-    byte Promote(CrewWorld crew, int m, Construct c, int part);
+    /// <summary>A bot <see cref="Player"/> for member <paramref name="m"/>, sitting in seat <paramref name="part"/> of <paramref name="c"/>, or standing at
+    /// <paramref name="stand"/> (rest frame) when it is no seat (an engineer's or a loader's place); 0: no body free.</summary>
+    byte Promote(CrewWorld crew, int m, Construct c, int part, Vector3? stand);
+
+    /// <summary>The body stands up at <paramref name="rest"/> (the body's rest frame), on its deck, to walk (CrewNav).</summary>
+    void StandAt(byte player, Construct c, Vector3 rest);
+
+    /// <summary>Where a body's feet are (world); false: no such body.</summary>
+    bool Feet(byte player, out Vector3 feet);
 
     /// <summary>The body goes (the record stays).</summary>
     void Demote(byte player);
@@ -98,6 +113,10 @@ public sealed class CrewShip
     public readonly CrewStationKind[] StKind = new CrewStationKind[CrewWorld.MaxCrewPerBody];
     public readonly int[] StMember = new int[CrewWorld.MaxCrewPerBody];
     public readonly float[] StHealth = new float[CrewWorld.MaxCrewPerBody];
+    /// <summary>Each station's standing spot on the body's walk graph (CrewNav; -1: none), for graph build <see cref="NavBuild"/>.</summary>
+    public readonly int[] StNode = new int[CrewWorld.MaxCrewPerBody];
+    public int NavBuild = -1;
+    public CrewNavGraph? Nav; // (its walk graph while bodied and built; null else)
     public int StCount;
     public int Helm = -1; // the helm's station index
     public int Stamp = -1, PartsSeen = -1; // (the construct's RebuildStamp and part count when its stations were scanned)
@@ -127,8 +146,12 @@ public sealed class CrewShip
     public long ScAt, ScDisarmAt, ScSaidAt;
     public ushort ScTried; // the last point disarmed (by tag), not tried again
     public ushort ScTag; // the scuttle point's part tag: ScPart follows it through a rebuild or a split (ScuttleFollow)
-    public short EngPart = -1; // the part its engineer is seeing to (-1: none), done at EngDone; the loader's next carry at LoadAt
+    public ushort EngTag; // the part its engineer is seeing to, by tag (0: none: an index moves with a rebuild), done at EngDone; the loader's next carry at LoadAt
     public long EngDone, LoadAt;
+    public ushort LoadFrom, LoadTo; // a bodied loader's carry under way (tags; 0: none): to the source (LoadStage 1), then the box (2)
+    public byte LoadStage;
+    public bool EngWalks; // its engineer's body set off for EngTag
+    public int LoadCarry; // rounds in its arms
     public byte Lost; // members lost since it was crewed
     public long CaptainAt; // the tick it thinks next
     public readonly ulong[] Foes = new ulong[4]; // players who have hit it (a bit each)
@@ -171,8 +194,11 @@ public sealed class CrewShip
         Goal = CrewGoal.Hold;
         Lost = 0;
         CaptainAt = 0;
-        EngPart = -1;
+        EngTag = 0;
         EngDone = LoadAt = 0;
+        LoadFrom = LoadTo = 0;
+        LoadStage = 0;
+        LoadCarry = 0;
         Act = BoardAct.Hold;
         Boarded = Prize = CalledHelp = Own = HoldFire = false;
         ScPart = -1;
@@ -183,6 +209,8 @@ public sealed class CrewShip
         ScAt = ScDisarmAt = ScSaidAt = 0;
         ScTried = 0;
         Array.Clear(Foes);
+        NavBuild = -1;
+        Nav = null;
     }
 }
 
@@ -199,6 +227,9 @@ public sealed class CrewShip
 /// </summary>
 public sealed class CrewWorld
 {
+    /// <summary>Work stations (lifters, docks, Building Stations) a roster takes, at most: room is kept for its seats.</summary>
+    public const int WorkStations = 12;
+
     public const int MaxCrewPerBody = 32, MaxDrivers = 64, ShipsPerTick = 48, FindPerTick = 64, MaxBodiedCap = 64;
     public const float BodyRange = 300, BodyDrop = 380, SeatedRange = 3000, SeatedDrop = 3200;
     /// <summary>An empty helm keeps its last input this long (ticks); a seated crew member's walk to a station, in m/s, and at least this long (ticks).</summary>
@@ -243,6 +274,9 @@ public sealed class CrewWorld
     private int _bodiedCount;
     private int _findAt, _shipAt;
     public long Tick;
+
+    /// <summary>The walk graphs inside bodies and the crew bodies walking them (phase 4: CrewNav.cs).</summary>
+    public readonly CrewNav Nav = new();
 
     /// <summary>Gone bodies' records, for the stand-ins' network to clear (GameCrew.cs reads and empties it).</summary>
     public readonly List<ushort> GoneBodies = new(64);
@@ -316,7 +350,7 @@ public sealed class CrewWorld
                 rest++;
                 continue;
             }
-            Add(s, s.StKind[k] switch { CrewStationKind.Helm => CrewJob.Pilot, CrewStationKind.Gun => CrewJob.Gunner, CrewStationKind.Works => CrewJob.Engineer, _ => CrewJob.Loader }, k);
+            Add(s, JobFor(s.StKind[k]), k);
         }
         var want = spares >= 0 ? spares : Math.Max(1, Math.Min(rest, 2 + (s.StCount - rest) / 2));
         for (var k = 0; k < s.StCount && want > 0 && s.MemberCount < MaxCrewPerBody; k++)
@@ -468,6 +502,7 @@ public sealed class CrewWorld
     {
         if (State[m] == CrewState.Dead || Ship[m] < 0 || Ships[Ship[m]] is not { } s)
             return;
+        Nav.End(Nav.WalkerOf(m));
         Unseat(s, m);
         Health[m] = 0;
         State[m] = CrewState.Dead;
@@ -500,6 +535,12 @@ public sealed class CrewWorld
     {
         if (Player[m] == 0)
             return;
+        if (Nav.WalkerOf(m) is var wk and >= 0)
+        {
+            Nav.End(wk);
+            if (State[m] == CrewState.Walking)
+                Ready[m] = Math.Min(Ready[m], Tick + MinWalkTicks); // (a record again: there by the timer)
+        }
         IsBody[Player[m] - 1] = false;
         if (host != null && State[m] != CrewState.Dead && host.HealthOf((byte)(Player[m] - 1)) is var f and >= 0)
             Health[m] = MathF.Max(1, f * MemberHealth); // (its body's wounds go back to its record)
@@ -525,6 +566,7 @@ public sealed class CrewWorld
             FreeAi(s);
         }
         Events.Add($"construct {s.Body}: its crew {why}");
+        Nav.Drop(s.Body);
         _shipOf.Remove(s.Body);
         Ships[s.Slot] = null;
         ShipCount--;
@@ -583,6 +625,15 @@ public sealed class CrewWorld
             AddStation(c, s, works, CrewStationKind.Works);
         if (s.StCount < MaxCrewPerBody && c.GunCount > 0 && MagazineStation(c) is var mag and >= 0 && IndexOf(s, mag) < 0)
             AddStation(c, s, mag, CrewStationKind.Magazine);
+        // Work crews (phase 7): a spotter beside the capital gun, then each lifter, cargo dock and Building Station (at most WorkStations).
+        if (s.StCount < MaxCrewPerBody && CapitalGun(c) is var cap and >= 0 && IndexOf(s, cap) < 0)
+            AddStation(c, s, cap, CrewStationKind.Spot);
+        for (int i = 0, n = 0; i < c.PartCount && s.StCount < MaxCrewPerBody && n < WorkStations; i++)
+            if (c.Parts[i].Health > 0 && WorkKind(c.Parts[i].D) is var wk and not CrewStationKind.Rest && IndexOf(s, i) < 0)
+            {
+                AddStation(c, s, i, wk);
+                n++;
+            }
         for (var i = 0; i < c.PartCount && s.StCount < MaxCrewPerBody; i++)
             if (i != helm && c.Parts[i].D.Role == PartRole.Seat && Usable(c, i) && IndexOf(s, i) < 0)
                 AddStation(c, s, i, CrewStationKind.Rest);
@@ -677,7 +728,69 @@ public sealed class CrewWorld
         return best;
     }
 
-    private static bool Standing(CrewStationKind k) => k is CrewStationKind.Works or CrewStationKind.Magazine;
+    private static bool Standing(CrewStationKind k) => k is not (CrewStationKind.Helm or CrewStationKind.Gun or CrewStationKind.Rest);
+
+    /// <summary>A gun part this big (m3 of its bounds) or more is a capital gun: the biggest gets a spotter's place.</summary>
+    public const float CapitalSize = 1.5f;
+
+    /// <summary>The station kinds of phase 7 (work crews), their jobs, and a part's: a lifter, a cargo dock, a Building Station.</summary>
+    public static CrewJob JobFor(CrewStationKind k) => k switch
+    {
+        CrewStationKind.Helm => CrewJob.Pilot,
+        CrewStationKind.Gun => CrewJob.Gunner,
+        CrewStationKind.Works => CrewJob.Engineer,
+        CrewStationKind.Magazine => CrewJob.Loader,
+        CrewStationKind.Spot => CrewJob.Spotter,
+        CrewStationKind.Crane => CrewJob.Crane,
+        CrewStationKind.Dock => CrewJob.Hauler,
+        CrewStationKind.Build => CrewJob.Builder,
+        _ => CrewJob.Spare,
+    };
+
+    public static CrewStationKind WorkKind(ConstructPartDef d) =>
+        d.Lifter != null ? CrewStationKind.Crane : d.IsDock ? CrewStationKind.Dock : d.IsBuildStation ? CrewStationKind.Build : CrewStationKind.Rest;
+
+    /// <summary>The part of the body's capital gun, its biggest (-1: none is <see cref="CapitalSize"/> or more).</summary>
+    public static int CapitalGun(Construct c)
+    {
+        var best = -1;
+        var size = CapitalSize;
+        for (var k = 0; k < c.GunCount; k++)
+        {
+            int part = c.Guns[k].Part;
+            if (c.Guns[k].Def == null || part >= c.PartCount)
+                continue;
+            c.PartBounds(part, out var mn, out var mx);
+            var v = (mx.X - mn.X) * (mx.Y - mn.Y) * (mx.Z - mn.Z);
+            if (v >= size)
+                (best, size) = (part, v + 1e-4f);
+        }
+        return best;
+    }
+
+    /// <summary>
+    /// Phase 7's gate (bot-brain.md rule 1 for machines): on a crewed NPC body (a faction kind, not a player's own crew or a prize), a lifter, a
+    /// cargo dock or a Building Station works only while a living member stands at its station. Players' bodies, route ships and uncrewed
+    /// bodies are never held. Set as <see cref="CrewGate.Works"/> by the game's crew.
+    /// </summary>
+    public bool Works(Construct c, int part)
+    {
+        if (!_shipOf.TryGetValue(c.Id, out var slot) || Ships[slot] is not { } s || s.Faction == 0 || s.Own || s.Prize || c.Owner != 255)
+            return true;
+        for (var k = 0; k < s.StCount; k++)
+            if (s.StPart[k] == part && s.StKind[k] is CrewStationKind.Crane or CrewStationKind.Dock or CrewStationKind.Build)
+                return s.StMember[k] is var m and >= 0 && State[m] == CrewState.Station;
+        return true; // (a machine that isn't a station: past the roster's places)
+    }
+
+    /// <summary>Spotters at their places on <paramref name="s"/>: its capital gun's part (-1: none).</summary>
+    public int Spotted(CrewShip s)
+    {
+        for (var k = 0; k < s.StCount; k++)
+            if (s.StKind[k] == CrewStationKind.Spot && s.StMember[k] is var m and >= 0 && State[m] == CrewState.Station)
+                return s.StPart[k];
+        return -1;
+    }
 
     private static bool Usable(Construct c, int part) => !c.Parts[part].Broken && c.Parts[part].D.Role == PartRole.Seat && !c.Parts[part].D.RemoteReceiver && !c.Parts[part].D.LifterCab;
 
@@ -728,6 +841,10 @@ public sealed class CrewWorld
         var t2 = System.Diagnostics.Stopwatch.GetTimestamp();
         BodiedTick(w, host);
         Drive(w, q, host);
+        Nav.Step(w);
+        foreach (var e in Nav.Events)
+            Events.Add(e);
+        Nav.Events.Clear();
         var t3 = System.Diagnostics.Stopwatch.GetTimestamp();
         if (Ticks > 10)
         {
@@ -882,6 +999,7 @@ public sealed class CrewWorld
         }
         if (s.Ai != null)
             s.Ai.Mode = s.Mode;
+        NavLook(c, s, host);
         Fill(c, s, host);
         if (Tick >= s.CaptainAt)
             Captain(c, s, host);
@@ -946,9 +1064,18 @@ public sealed class CrewWorld
                 Station[m] = -1;
                 continue;
             }
+            Nav.End(Nav.WalkerOf(m));
             if (Player[m] != 0 && Standing(s.StKind[st]))
-                DropBody(m, host); // (no body stands at a station yet: a record there until CrewNav, phase 4's next step)
-            if (Player[m] != 0 && host != null && !host.Sit((byte)(Player[m] - 1), c, s.StPart[st]))
+            {
+                if (host != null && s.Nav != null && s.NavBuild == s.Nav.Build && s.StNode[st] >= 0)
+                {
+                    if (!host.Feet((byte)(Player[m] - 1), out var feet) || Vector3.Distance(c.ToLocal(feet), s.Nav.NodePos(s.StNode[st])) > 1.2f)
+                        host.StandAt((byte)(Player[m] - 1), c, s.Nav.NodePos(s.StNode[st])); // (there by the timer: put on its spot)
+                }
+                else
+                    DropBody(m, host); // (nowhere a body stands there: a record at it)
+            }
+            else if (Player[m] != 0 && host != null && !host.Sit((byte)(Player[m] - 1), c, s.StPart[st]))
             {
                 State[m] = CrewState.Free;
                 Station[m] = -1;
@@ -969,9 +1096,13 @@ public sealed class CrewWorld
                 State[m0] = CrewState.Free;
             }
         }
-        for (var pass = 0; pass < 5; pass++)
+        for (var pass = 0; pass < 9; pass++)
         {
-            var kind = pass switch { 0 => CrewStationKind.Helm, 1 => CrewStationKind.Gun, 2 => CrewStationKind.Works, 3 => CrewStationKind.Magazine, _ => CrewStationKind.Rest };
+            var kind = pass switch
+            {
+                0 => CrewStationKind.Helm, 1 => CrewStationKind.Gun, 2 => CrewStationKind.Works, 3 => CrewStationKind.Magazine, 4 => CrewStationKind.Spot,
+                5 => CrewStationKind.Crane, 6 => CrewStationKind.Dock, 7 => CrewStationKind.Build, _ => CrewStationKind.Rest,
+            };
             for (var st = 0; st < s.StCount; st++)
             {
                 if (s.StKind[st] != kind || s.Own && kind == CrewStationKind.Helm || s.StMember[st] >= 0 || Sitter(c, s.StPart[st]) != 0 || (Standing(kind) ? c.Parts[s.StPart[st]].Health <= 0 : c.Parts[s.StPart[st]].Broken) || Coming(s, st))
@@ -988,23 +1119,132 @@ public sealed class CrewWorld
                 }
                 var from = Station[m] >= 0 ? s.StPart[Station[m]] : -1;
                 var dist = from >= 0 ? Vector3.Distance(ConstructRender.PartCentre(c, from), ConstructRender.PartCentre(c, s.StPart[st])) : 6f;
+                var fromNode = Station[m] >= 0 ? NodeOf(s, Station[m]) : -1;
                 if (Station[m] >= 0)
                     Unseat(s, m);
-                if (kind == CrewStationKind.Helm)
-                    Job[m] = CrewJob.Pilot;
-                else if (kind == CrewStationKind.Gun)
-                    Job[m] = CrewJob.Gunner;
-                else if (kind == CrewStationKind.Works)
-                    Job[m] = CrewJob.Engineer;
-                else if (kind == CrewStationKind.Magazine)
-                    Job[m] = CrewJob.Loader;
+                var walked = Player[m] != 0 && host != null && WalkBody(c, s, m, fromNode, st, host);
+                if (kind != CrewStationKind.Rest)
+                    Job[m] = JobFor(kind);
                 State[m] = CrewState.Walking;
                 Station[m] = (short)st;
                 Tag[m] = s.StTag[st];
-                Ready[m] = Tick + Math.Max(MinWalkTicks, (int)(dist / WalkSpeed * World.TickRate));
-                Events.Add($"construct {c.Id}: crew member {Uid[m]} goes for the {StationName(kind)} ({dist:0} m)");
+                Ready[m] = walked ? Tick + WalkTimeout : Tick + Math.Max(MinWalkTicks, (int)(dist * (s.Nav != null ? 1.4f : 1f) / WalkSpeed * World.TickRate));
+                Events.Add($"construct {c.Id}: crew member {Uid[m]} {(walked ? "walks" : "goes")} to the {StationName(kind)} ({dist:0} m)");
             }
         }
+    }
+
+    /// <summary>A body walking CrewNav's path gives up after this long (ticks) and is put at its station.</summary>
+    public const int WalkTimeout = 60 * World.TickRate;
+
+    /// <summary>
+    /// Near a person (bodied), the body's walk graph (CrewNav: built off the tick in slices, again after a rebuild); once built, each station's
+    /// standing spot on it. Seated and asleep crews have none (their walks are timers).
+    /// </summary>
+    private void NavLook(Construct c, CrewShip s, ICrewHost? host)
+    {
+        if (s.Tier != CrewTier.Bodied || host == null) // (no game: no bodies to walk it)
+        {
+            s.Nav = null;
+            return;
+        }
+        var g = Nav.Want(c);
+        s.Nav = g;
+        if (g == null || s.NavBuild == g.Build)
+            return;
+        s.NavBuild = g.Build;
+        for (var st = 0; st < s.StCount; st++)
+        {
+            int part = s.StPart[st];
+            if (part >= c.PartCount)
+            {
+                s.StNode[st] = -1;
+                continue;
+            }
+            Vector3 at;
+            if (Standing(s.StKind[st]))
+                at = PartFoot(c, part);
+            else
+                at = c.ToLocal(ConstructEdits.SeatFeet(c, part));
+            s.StNode[st] = CrewNav.NearestNode(g, at, CrewNav.Reach + (Standing(s.StKind[st]) ? 1f : 0f));
+        }
+        s.SeatsDirty = true;
+    }
+
+    /// <summary>Station <paramref name="st"/>'s spot on the walk graph (-1: none, or no graph built).</summary>
+    private static int NodeOf(CrewShip s, int st) => s.Nav != null && s.NavBuild == s.Nav.Build && st >= 0 && st < s.StCount ? s.StNode[st] : -1;
+
+    /// <summary>Member <paramref name="m"/> can walk to station <paramref name="st"/>: no graph, or a spot unknown, says yes; else the same connected part.</summary>
+    private bool Reaches(CrewShip s, int m, int st)
+    {
+        var to = NodeOf(s, st);
+        var from = Station[m] >= 0 && State[m] == CrewState.Station ? NodeOf(s, Station[m]) : -1;
+        return to < 0 || from < 0 || s.Nav!.Comp[to] == s.Nav.Comp[from];
+    }
+
+    /// <summary>A bodied member walks to station <paramref name="st"/> along CrewNav's path: stood up at its spot, a walker queued. False: no graph or spot (the timer's walk).</summary>
+    private bool WalkBody(Construct c, CrewShip s, int m, int fromNode, int st, ICrewHost host)
+    {
+        var to = NodeOf(s, st);
+        var g = s.Nav;
+        if (g == null || to < 0)
+            return false;
+        if (fromNode < 0 && host.Feet((byte)(Player[m] - 1), out var feet))
+            fromNode = CrewNav.NearestNode(g, c.ToLocal(feet));
+        if (fromNode < 0 || g.Comp[fromNode] != g.Comp[to] || Nav.Walk(g, m, fromNode, to) < 0)
+            return false;
+        host.StandAt((byte)(Player[m] - 1), c, g.NodePos(fromNode));
+        return true;
+    }
+
+    /// <summary>The part with tag <paramref name="tag"/> (-1: none: gone, or split off with another piece).</summary>
+    public static int PartByTag(Construct c, ushort tag)
+    {
+        if (tag == 0)
+            return -1;
+        for (var i = 0; i < c.PartCount; i++)
+            if (c.Parts[i].Tag == tag)
+                return i;
+        return -1;
+    }
+
+    /// <summary>
+    /// A bodied member's errand inside its body (an engineer to a part, a loader between boxes, a repeller to a boarder): walks it along CrewNav's
+    /// path from where it stands to the spot nearest <paramref name="rest"/>, keeping its station. False: no graph, no spot, or no way there.
+    /// </summary>
+    public bool Errand(Construct c, CrewShip s, int m, Vector3 rest, ICrewHost host, float across = CrewNav.Reach + 1)
+    {
+        if (Player[m] == 0 || s.Nav is not { } g || s.NavBuild != g.Build || !host.Feet((byte)(Player[m] - 1), out var feet))
+            return false;
+        var from = CrewNav.NearestNode(g, c.ToLocal(feet), 1.2f);
+        var to = CrewNav.NearestNode(g, rest, across, 2.5f);
+        if (from < 0 || to < 0 || g.Comp[from] != g.Comp[to])
+            return false;
+        var w = Nav.WalkerOf(m);
+        if (w >= 0 && Nav.WGoal[w] == to && Nav.WPhase[w] <= 1)
+            return true; // (on its way there already)
+        return Nav.Walk(g, m, from, to) >= 0;
+    }
+
+    /// <summary>A member's errand has ended (there, or given up): no walker left.</summary>
+    public bool ErrandDone(int m) => Nav.WalkerOf(m) < 0;
+
+    /// <summary>The spot a part is worked from, in the rest frame: its centre at its foot.</summary>
+    public static Vector3 PartFoot(Construct c, int part)
+    {
+        c.PartBounds(part, out var mn, out var mx);
+        c.SegPose(c.Parts[part].Seg, out var sq, out var sp);
+        return sp + Vector3.Transform(new Vector3((mn.X + mx.X) * 0.5f, mn.Y + 0.1f, (mn.Z + mx.Z) * 0.5f), sq);
+    }
+
+    /// <summary>A body walking CrewNav's path got there (or gave up, <paramref name="ok"/> false: it is put there as the timer would): its station is taken at the next look.</summary>
+    public void Arrived(int m, bool ok)
+    {
+        if (m < 0 || m >= High || State[m] != CrewState.Walking)
+            return;
+        Ready[m] = Tick;
+        if (!ok)
+            Events.Add($"construct {Body[m]}: crew member {Uid[m]} couldn't walk the way: put at the station");
     }
 
     public static string StationName(CrewStationKind k) => k switch
@@ -1013,6 +1253,10 @@ public sealed class CrewWorld
         CrewStationKind.Gun => "gun seat",
         CrewStationKind.Works => "engine room",
         CrewStationKind.Magazine => "magazine",
+        CrewStationKind.Spot => "spotter's place",
+        CrewStationKind.Crane => "crane",
+        CrewStationKind.Dock => "cargo dock",
+        CrewStationKind.Build => "building station",
         _ => "couch",
     };
 
@@ -1043,11 +1287,13 @@ public sealed class CrewWorld
             var penalty = curKind switch
             {
                 CrewStationKind.Rest => 0f,
-                CrewStationKind.Gun or CrewStationKind.Works or CrewStationKind.Magazine when kind == CrewStationKind.Helm => 1000f, // (a gunner, an engineer or a loader leaves for the helm only with no spare)
+                not CrewStationKind.Rest when kind == CrewStationKind.Helm => 1000f, // (a gunner, an engineer, a loader or a work hand leaves for the helm only with no spare)
                 _ => -1f,
             };
             if (penalty < 0)
                 continue;
+            if (!Reaches(s, m, st))
+                continue; // (cut off from it: CrewNav's graph has no way)
             var d = cur >= 0 ? Vector3.Distance(ConstructRender.PartCentre(c, s.StPart[cur]), to) : 6f;
             if (d + penalty < bestScore)
             {
@@ -1069,9 +1315,10 @@ public sealed class CrewWorld
             if (Player[m] != 0 || State[m] != CrewState.Station || Station[m] < 0)
                 continue;
             int part = s.StPart[Station[m]];
-            if (Sitter(c, part) != 0 || Standing(s.StKind[Station[m]]))
-                continue;
-            var id = host.Promote(this, m, c, part);
+            var stands = Standing(s.StKind[Station[m]]);
+            if (Sitter(c, part) != 0 || stands && NodeOf(s, Station[m]) < 0)
+                continue; // (a standing station with no spot on the walk graph: a record there)
+            var id = host.Promote(this, m, c, part, stands ? s.Nav!.NodePos(NodeOf(s, Station[m])) : null);
             if (id == 0)
             {
                 if (!s.BodiesShort)

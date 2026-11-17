@@ -348,7 +348,7 @@ public static partial class ConstructRide
                 p.Stood = true;
             if (p.Seg > 0 && p.Seg <= Construct.MaxJoints)
                 c.RiderBits[p.Seg] |= 1UL << (who & 63);
-            if (c.SpringCount > 0 && !c.Anchored && c.CarriedBy == 0 && p.Seg == 0)
+            if (c.SpringCount > 0 && !c.Anchored && c.CarriedBy == 0 && p.Seg == 0 && !w.IsCrewBody(who)) // (a crew body's weight never wakes or moves its ship: bot-brain.md)
             {
                 c.SpringRiders++;
                 c.SpringRiderSum += s.Position;
