@@ -192,7 +192,7 @@ public static class ConstructPower
             c.Rebuild();
         Mains(c);
         var electrical = c.HasBattery || world.PowerRequired;
-        var wants = c.Engine >= 0 && (c.Driven || c.EngineWired || c.SteerRuns || c.RotorRuns) && c.HasFuel; // (an engine with nothing to drive still runs: a power take-off)
+        var wants = c.Engine >= 0 && (c.Driven || c.EngineWired || c.SteerRuns || c.RotorRuns || c.GenRuns) && c.HasFuel; // (an engine with nothing to drive still runs: a power take-off)
         if (electrical != c.Electrical)
         {
             c.Electrical = electrical;
@@ -223,7 +223,7 @@ public static class ConstructPower
             c.EngineRunning = false;
             c.StarterFailed = false;
         }
-        else if (!c.EngineRunning && (c.Driven && (c.Throttle != 0 || c.AeroTrim > 0 || c.RotorGoverned || c.SteerTorque && c.SteerInput != 0) || c.EngineWired && c.EngineSignal != 0 || c.SteerRuns || c.RotorRuns))
+        else if (!c.EngineRunning && (c.Driven && (c.Throttle != 0 || c.AeroTrim > 0 || c.RotorGoverned || c.SteerTorque && c.SteerInput != 0) || c.EngineWired && c.EngineSignal != 0 || c.SteerRuns || c.RotorRuns || c.GenRuns)) // (a generator head asks it: ConstructGenset.cs)
         {
             var starter = engineDef?.StarterKJ ?? StarterKJ;
             if (c.PowerOn && c.Engine >= 0 && c.Parts[c.Engine].Powered && c.Charge >= starter)

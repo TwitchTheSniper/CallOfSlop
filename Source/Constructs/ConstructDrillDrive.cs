@@ -231,7 +231,7 @@ public static class ConstructDrillDrive
     /// <summary>The torque the drills take off the engine this tick at <paramref name="rpm"/> (<see cref="Construct.ShaftShare"/>: how much of it the engine can carry).</summary>
     public static float Carry(Construct c, ConstructPartDef e, float rpm, float amount)
     {
-        var load = c.ShaftLoad + c.RailLoad + c.HydLoad + c.RotorLoad + c.LegLoad; // (walker legs on a shaft: ConstructWalkLegs.cs)
+        var load = c.ShaftLoad + c.RailLoad + c.HydLoad + c.RotorLoad + c.LegLoad + c.GenLoad; // (walker legs on a shaft: ConstructWalkLegs.cs; generator heads: ConstructGenset.cs)
         if (load <= 0)
         {
             c.ShaftShare = 1;
@@ -255,7 +255,7 @@ public static class ConstructDrillDrive
             return;
         }
         var demand = MathF.Abs(throttle);
-        var want = (e.IdleRpm + demand * (e.MaxRpm * 0.95f - e.IdleRpm)) * c.ShaftShare;
+        var want = (ConstructGenset.Governs(c) ? c.GenRpm : e.IdleRpm + demand * (e.MaxRpm * 0.95f - e.IdleRpm)) * c.ShaftShare; // (a generator set governs its speed)
         if (c.RpmGovern > 0)
             want = MathF.Min(want, c.RpmGovern); // (a rotor's hub: ConstructRotor.cs)
         c.Rpm += Math.Clamp(want - c.Rpm, -e.MaxRpm * 2 * dt, e.MaxRpm * 2 * dt);

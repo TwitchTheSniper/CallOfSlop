@@ -938,7 +938,7 @@ public static partial class ConstructPhysics
     private const float HeadingHold = 0.9f;
 
     /// <summary>Is the engine asked to run this tick: a driver in the seat, or a run signal wired into it (board item cs03: no seat needed)?</summary>
-    public static bool DriveOn(Construct c) => (c.Driven || c.EngineWired || c.SteerRuns || c.RotorRuns) && c.EngineRunning && c.StallTicks == 0;
+    public static bool DriveOn(Construct c) => (c.Driven || c.EngineWired || c.SteerRuns || c.RotorRuns || c.GenRuns) && c.EngineRunning && c.StallTicks == 0;
 
     /// <summary>The throttle this tick: a wired engine's signal (its throttle port, or its one input), else the driver's.</summary>
     public static float DriveThrottle(Construct c) => c.EngineWired ? c.EngineSignal : c.Throttle;
@@ -952,7 +952,7 @@ public static partial class ConstructPhysics
     private static void Powertrain(Construct c, bool free, float dt)
     {
         var on = DriveOn(c);
-        var throttle = ConstructRotor.EngineThrottle(c, DriveThrottle(c));
+        var throttle = ConstructGenset.Throttle(c, ConstructRotor.EngineThrottle(c, DriveThrottle(c))); // (a generator set governs an engine nobody drives)
         var steer = ConstructDrive.SteerNow(c);
         if (free)
         {

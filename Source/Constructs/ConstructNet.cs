@@ -1415,7 +1415,7 @@ public static partial class ConstructNet
     /// charging): both ride only the pose, so it sends one, at most every <see cref="StateEvery"/> pose ticks.
     /// </summary>
     private static bool StateDue(Construct c, uint poseTick) =>
-        poseTick - c.StateSentAt >= StateEvery && (MathF.Abs(c.Fuel - c.FuelSent) >= 0.01f || c.Fuel != c.FuelSent && c.Fuel == 0 || ChargeByte(c) != c.ChargeSent || c.CapCapacity > 0 && CapByte(c) != c.CapSent || c.PlantCount > 0 && ShareOut(c.PlantShow) != c.PlantSent);
+        poseTick - c.StateSentAt >= StateEvery && (MathF.Abs(c.Fuel - c.FuelSent) >= 0.01f || c.Fuel != c.FuelSent && c.Fuel == 0 || ChargeByte(c) != c.ChargeSent || c.CapCapacity > 0 && CapByte(c) != c.CapSent || c.PlantCount > 0 && ShareOut(c.PlantShow) != c.PlantSent || c.GenHeads > 0 && GenChanged(c));
 
     private static void StateSent(Construct c, uint poseTick)
     {
@@ -1423,8 +1423,18 @@ public static partial class ConstructNet
         c.ChargeSent = ChargeByte(c);
         c.CapSent = CapByte(c);
         c.PlantSent = ShareOut(c.PlantShow);
+        c.GenSent = (byte)c.Gen;
+        c.GenOutSent = GenOutByte(c);
+        c.GenDemandSent = GenDemandByte(c);
         c.StateSentAt = poseTick;
     }
+
+    private static byte GenOutByte(Construct c) => c.GenMax > 0 ? ShareOut(c.GenOut / c.GenMax) : (byte)0;
+
+    private static byte GenDemandByte(Construct c) => c.GenMax > 0 ? (byte)Math.Clamp(MathF.Round(c.GenDemand / c.GenMax * 127.5f), 0, 255) : (byte)0; // (0 to twice what it gives)
+
+    /// <summary>A still base's generator set moved since its last pose (its state, its output, the draw: the look line on a client).</summary>
+    private static bool GenChanged(Construct c) => (byte)c.Gen != c.GenSent || GenOutByte(c) != c.GenOutSent || GenDemandByte(c) != c.GenDemandSent;
 
     /// <summary>
     /// Server: the poses of the bodies that move, plus a few sleeping ones in turn. Returns false when there is nothing
@@ -1732,7 +1742,12 @@ public static partial class ConstructNet
         if (c.CapCapacity > 0)
             w.U8(CapByte(c)); // (protocol 331: the capacitors' share, ship-works.md 8)
         if (c.PlantCount > 0)
+        {
             w.U8(ShareOut(c.PlantShow)); // (protocol 335: how hard the power plants work, for a reactor's hum)
+            w.U8((byte)c.Gen); // (protocol 339: an engine generator set, ConstructGenset.cs: its state, then what it can give, gives and the draw)
+            if (c.Gen != GenState.None)
+                w.F32(c.GenMax).U8(GenOutByte(c)).U8(GenDemandByte(c));
+        }
         // The signal parts' values, in part order (only with logic: the client knows which parts they are): the first
         // ordinal (u16) and how many (u16): all of them, or a window that turns (protocol 117).
         var at = w.Length;
@@ -1838,6 +1853,21 @@ public static partial class ConstructNet
                 var plantShare = r.U8() / 255f;
                 if (c != null && !stale)
                     c.PlantShow = plantShare;
+                var gen = r.U8();
+                float genMax = 0, genOut = 0, genDraw = 0;
+                if (gen != (byte)GenState.None)
+                {
+                    genMax = r.F32();
+                    genOut = r.U8() / 255f * genMax;
+                    genDraw = r.U8() / 127.5f * genMax;
+                }
+                if (c != null && !stale)
+                {
+                    c.Gen = gen < (byte)GenState.COUNT ? (GenState)gen : GenState.None;
+                    c.GenMax = float.IsFinite(genMax) ? genMax : 0;
+                    c.GenOut = genOut;
+                    c.GenDemand = genDraw;
+                }
             }
             int signalFrom = r.U16();
             int signals = r.U16();

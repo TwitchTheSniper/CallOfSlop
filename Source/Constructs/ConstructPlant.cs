@@ -74,6 +74,7 @@ public sealed partial class Construct
             keepPart[k] = Plants[k];
         }
         PlantCount = 0;
+        GenHeads = 0;
         HasSmoke = false;
         foreach (var i in Specials) // (plants and stacks are special parts)
         {
@@ -83,11 +84,19 @@ public sealed partial class Construct
                 continue;
             var n = PlantCount++;
             Plants[n] = (ushort)i;
+            if (d.PlantShaft > 0)
+                GenHeads++; // (a Generator Head: the engine turns it, ConstructGenset.cs)
             PlantFed[n] = d.PlantFuel != EngineFuel.Fuel || Parts[i].Working && FuelReaches(i);
             PlantLevel[n] = 0;
             for (var k = 0; k < old; k++)
                 if (keepPart[k] == i)
                     PlantLevel[n] = keep[k];
+        }
+        if (GenHeads == 0)
+        {
+            Gen = GenState.None;
+            GenRuns = false;
+            GenLoad = GenOut = 0;
         }
         if (!HasSmoke)
             return;
@@ -151,6 +160,8 @@ public static class ConstructPlant
                 continue;
             ref var p = ref c.Parts[part];
             var d = p.D;
+            if (d.PlantShaft > 0)
+                continue; // (a Generator Head: after the plants, below)
             var fed = p.Working && c.PlantFed[k] && (d.PlantFuel != EngineFuel.Fuel || c.FuelLeft > 0);
             var wired = p.InCount > 0;
             var on = fed && (!wired || p.In >= 0.5f);
@@ -172,8 +183,10 @@ public static class ConstructPlant
                 smoke = MathF.Max(smoke, level);
             }
         }
+        if (c.GenHeads > 0)
+            ConstructGenset.Step(c, drawKw, ref need, ref rated, dt); // (engine generator sets: what is still needed, off the engine's shaft)
         if (c.EngineRunning && c.Engine >= 0 && c.Engine < c.PartCount && c.DefOf(c.Engine) is { FuelKind: EngineFuel.Fuel } e)
-            smoke = MathF.Max(smoke, 0.2f + 0.8f * Math.Clamp(c.DriveTorque / e.EngineTorque, 0, 1));
+            smoke = MathF.Max(smoke, 0.2f + 0.8f * Math.Clamp(MathF.Max(c.DriveTorque, c.GenLoad * c.ShaftShare) / e.EngineTorque, 0, 1)); // (a genset smokes with its load)
         c.SmokeLevel = smoke;
         c.PlantShow = rated > 0 ? Math.Clamp(c.PlantOut / rated, 0, 1) : 0;
     }

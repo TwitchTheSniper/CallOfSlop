@@ -101,6 +101,7 @@ public static class PartKit
         new Generators.LegParts(),
         new Generators.UpgradeParts(),
         new Generators.EngineParts(),
+        new Generators.GeneratorHeadParts(), // (engine generators: heads a modular engine's shaft turns, ConstructGenset.cs)
         new Generators.BuildingParts(),
         new Generators.InteriorParts(),
         new Generators.ShipWorksParts(), // (ship works: the drives' nozzles, mounts, works and pods any ship builds from)
