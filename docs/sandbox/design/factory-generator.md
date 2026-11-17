@@ -330,3 +330,17 @@ TwitchTheSniper first.
    the start.
 7. **Grading load.** Recommend the user grades one sheet of 12 seeds per style and function at phase 2's end, and ships
    the top three. Or: ship whatever passes the checks and the diversity spread (no grading).
+
+## The user's answers (2026-11-17)
+
+All seven take the recommendation:
+
+1. Code lives in a new `Source/FactoryKit/`, with `--gen-factory` commands.
+2. Both: shipped, graded seeds for creative spawns and showcases, and generation in play from a brief.
+3. One body per building plus a site file.
+4. A player-facing Works Planner later, after phase 3.
+5. Militia style first, then the new faction kinds one by one.
+6. A road, a tipping bay and a ground hauler first; a Cargo Dock later.
+7. The user grades one Factory gallery sheet of 12 seeds per style and function; the top three ship (an exception to the no-pictures rule, for grading only).
+
+The production system, Building Stations and logistics are TwitchTheSniper's own (the user's): phases 3 and 5 need no outside agreement.
