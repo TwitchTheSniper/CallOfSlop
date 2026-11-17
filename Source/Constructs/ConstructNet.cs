@@ -94,7 +94,7 @@ public static partial class ConstructNet
         w.Begin(Msg.CBody).U8((byte)CBodyKind.Full).U16(c.Id).U32(tick);
         w.U8((byte)((c.Wreck ? 1 : 0) | (c.Anchored ? 2 : 0) | (c.Asleep ? 4 : 0) | (c.Damaged ? 8 : 0) | (c.Pinned ? 16 : 0) | (c.Frozen ? 32 : 0))).U8(c.Owner).U8(c.FrozenBy); // (protocol 84: pinned; 87: frozen by the physics gun, and by whom)
         w.U16((ushort)Math.Max(0, c.Root)).U8(c.Driver).U16((ushort)(c.DriverSeat < 0 ? ushort.MaxValue : c.DriverSeat));
-        w.F32(c.Fuel).F32(c.Charge).U8(PowerFlags(c)).U8(GearOut(c)).U16(RpmOut(c)).U8((byte)c.Note).U8(ShareOut(c.ThrustShow)).U8(ShareOut(MathF.Max(c.SmokeLevel, c.BurnShow))); // (protocol 83: the charge, power and gear; 86: rpm, drive note; 117: thrust, smoke)
+        w.F32(c.Fuel).F32(c.Charge).F32(c.Cap).U8(PowerFlags(c)).U8(GearOut(c)).U16(RpmOut(c)).U8((byte)c.Note).U8(ShareOut(c.ThrustShow)).U8(ShareOut(MathF.Max(c.SmokeLevel, c.BurnShow))); // (protocol 83: the charge, power and gear; 86: rpm, drive note; 117: thrust, smoke)
         w.Vec(c.Pos).F32(c.Rot.X).F32(c.Rot.Y).F32(c.Rot.Z).F32(c.Rot.W).Vec(c.Vel).Vec(c.AngVel);
         w.U16((ushort)c.PartCount);
         for (var i = 0; i < c.PartCount; i++)
@@ -1054,6 +1054,7 @@ public static partial class ConstructNet
         var seat = r.U16();
         var fuel = r.F32();
         var charge = r.F32();
+        var capKj = r.F32(); // (protocol 329: the capacitors, ship-works.md 8)
         var power = r.U8();
         var gear = r.U8();
         var rpm = r.U16();
@@ -1226,6 +1227,7 @@ public static partial class ConstructNet
         {
             c.Fuel = fuel;
             c.Charge = float.IsFinite(charge) ? charge : 0;
+            c.Cap = float.IsFinite(capKj) ? Math.Clamp(capKj, 0, c.CapCapacity) : 0;
         }
         SetPower(c, power, gear);
         SetDrive(c, rpm, note);
@@ -1406,17 +1408,20 @@ public static partial class ConstructNet
 
     private static byte ChargeByte(Construct c) => (byte)MathF.Round(ConstructPower.Share(c) * 255);
 
+    private static byte CapByte(Construct c) => (byte)MathF.Round(ConstructPower.CapShare(c) * 255);
+
     /// <summary>
     /// A still body's fuel pool or charge moved since its last pose (a station or a pipe draining a parked tank, a battery
     /// charging): both ride only the pose, so it sends one, at most every <see cref="StateEvery"/> pose ticks.
     /// </summary>
     private static bool StateDue(Construct c, uint poseTick) =>
-        poseTick - c.StateSentAt >= StateEvery && (MathF.Abs(c.Fuel - c.FuelSent) >= 0.01f || c.Fuel != c.FuelSent && c.Fuel == 0 || ChargeByte(c) != c.ChargeSent);
+        poseTick - c.StateSentAt >= StateEvery && (MathF.Abs(c.Fuel - c.FuelSent) >= 0.01f || c.Fuel != c.FuelSent && c.Fuel == 0 || ChargeByte(c) != c.ChargeSent || c.CapCapacity > 0 && CapByte(c) != c.CapSent);
 
     private static void StateSent(Construct c, uint poseTick)
     {
         c.FuelSent = c.Fuel;
         c.ChargeSent = ChargeByte(c);
+        c.CapSent = CapByte(c);
         c.StateSentAt = poseTick;
     }
 
@@ -1704,7 +1709,7 @@ public static partial class ConstructNet
             .U16(S16(Mrad(c.AngVel.X))).U16(S16(Mrad(c.AngVel.Y))).U16(S16(Mrad(c.AngVel.Z))) // (protocol 102: riders leave with the deck's turning speed too; ConstructRide.cs)
             .U8(unchecked((byte)(sbyte)Math.Clamp(MathF.Round(c.Steer * 100), -127, 127)))
             .U8(c.Driver)
-            .U8((byte)((c.Asleep ? PoseAsleep : 0) | (c.LegCount > 0 ? PoseWalker : 0))) // (protocol 229: a walk block follows the rotors)
+            .U8((byte)((c.Asleep ? PoseAsleep : 0) | (c.LegCount > 0 ? PoseWalker : 0) | (c.CapCapacity > 0 ? PoseCap : 0))) // (protocol 229: a walk block follows the rotors; 329: the capacitors' share after it)
             .U8((byte)MathF.Round(ConstructPower.Share(c) * 255)).U8(PowerFlags(c)).U8(GearOut(c)).F32(c.Fuel) // (protocol 83; 117: a float, a capital tank holds millions of litres)
             .U16(RpmOut(c)).U8((byte)c.Note) // (protocol 86)
             .U8(ShareOut(c.ThrustShow)).U8(ShareOut(MathF.Max(c.SmokeLevel, c.BurnShow))); // (protocol 117)
@@ -1723,6 +1728,8 @@ public static partial class ConstructNet
         WriteAir(w, c);
         if (c.LegCount > 0)
             WriteWalk(w, c); // (protocol 229: the gait and the feet: ConstructNetWalk.cs)
+        if (c.CapCapacity > 0)
+            w.U8(CapByte(c)); // (protocol 329: the capacitors' share, ship-works.md 8)
         // The signal parts' values, in part order (only with logic: the client knows which parts they are): the first
         // ordinal (u16) and how many (u16): all of them, or a window that turns (protocol 117).
         var at = w.Length;
@@ -1817,6 +1824,12 @@ public static partial class ConstructNet
             ReadAir(ref r, c != null && !stale ? c : null);
             if ((sleepByte & PoseWalker) != 0)
                 ReadWalk(ref r, c != null && !stale ? c : null, pos);
+            if ((sleepByte & PoseCap) != 0)
+            {
+                var capShare = r.U8() / 255f;
+                if (c != null && !stale)
+                    c.Cap = capShare * c.CapCapacity;
+            }
             int signalFrom = r.U16();
             int signals = r.U16();
             var sigs = c != null && !stale ? Signals(c) : default;

@@ -16,6 +16,8 @@ public struct CGun
     public ushort Interval, ReloadTicks, Mag; // ticks between shots, ticks to reload, rounds a load
     public GunEffect Effects;
     public GunFx Fx;
+    public float Energy; // kJ a shot takes from the capacitors (ship-works.md 8; 0: none)
+    public bool NoAmmo; // a gun of energy alone (a laser): no rounds, it fires while the capacitors hold a shot
     public float Blast, BlastDamage, Speed, Kick; // the splash of an explosive round, the tracer's speed, the push back on the body
     public byte BoxCount; // ammo boxes its feed chain reaches (Construct.GunBoxes, BoxesPerGun a gun)
     public short Seat; // the gunner's seat that fires and aims it (when nothing is wired into it), or -1
@@ -651,6 +653,8 @@ public static class ConstructWeapons
         g.MaxRange = d.GunMaxRange;
         g.Kick = d.GunKick;
         g.Fx = d.GunFx;
+        g.Energy = d.GunEnergy;
+        g.NoAmmo = d.GunEnergy > 0 && d.GunMag == 0;
         g.Speed = d.GunSpeed;
         g.Blast = d.GunBlast;
         g.BlastDamage = d.GunBlastDamage;
@@ -937,24 +941,27 @@ public static class ConstructWeapons
                 if (off > SentryHoldFire)
                     trigger = false; // (a sentry turns onto its target first)
             }
-            if (g.Seat >= 0 && g.Seat < c.PartCount && (c.Parts[g.Seat].Keys & ConstructParts.KeyReload) != 0 && p.Reload == 0 && p.Rounds > 0 && ConstructAmmo.TypeOfGun(world, c, k) + 1 != Math.Max((byte)1, p.AmmoType))
+            if (!g.NoAmmo && g.Seat >= 0 && g.Seat < c.PartCount && (c.Parts[g.Seat].Keys & ConstructParts.KeyReload) != 0 && p.Reload == 0 && p.Rounds > 0 && ConstructAmmo.TypeOfGun(world, c, k) + 1 != Math.Max((byte)1, p.AmmoType))
             {
                 p.Rounds = 0; // (the gunner's reload clears what is in it, for the type the switch has chosen: those rounds are lost)
                 world.NoteAmmo(c, g.Part);
             }
             var per = Math.Max((ushort)1, g.PerShot);
-            if (p.Rounds < per && p.Reload == 0 && BoxRounds(c, k, world) > 0)
+            if (!g.NoAmmo && p.Rounds < per && p.Reload == 0 && BoxRounds(c, k, world) > 0)
             {
                 p.Reload = g.ReloadTicks;
                 world.NoteAmmo(c, g.Part);
             }
             if ((g.Effects & GunEffect.Harpoon) != 0 && ConstructHarpoon.LineOut(world, c, ref g, trigger))
                 continue; // (a line is out: the trigger reels, the reload key cuts: ConstructHarpoon.cs)
-            if (!trigger || p.Cool > 0 || p.Rounds < per || p.Reload > 0)
+            if (!trigger || p.Cool > 0 || !g.NoAmmo && (p.Rounds < per || p.Reload > 0))
                 continue;
             if ((g.Effects & GunEffect.Shell) != 0 && !world.ShellRoom)
                 continue; // (as many shells in the air as the world holds: it waits, the round not spent)
-            p.Rounds -= per;
+            if (g.Energy > 0 && (Beam(c, g.Part) <= 0 || !ConstructPower.Draw(world, c, g.Energy)))
+                continue; // (an energy gun fires from the capacitors only, and an emitter with no generator serving it not at all: the round, if any, kept)
+            if (!g.NoAmmo)
+                p.Rounds -= per;
             p.Cool = g.Interval;
             world.NoteAmmo(c, g.Part);
             c.Wake();
@@ -1261,6 +1268,13 @@ public static class ConstructWeapons
         return Vector3.Normalize(fwd + (right * MathF.Cos(a) + up * MathF.Sin(a)) * r);
     }
 
+    /// <summary>The share of its rating an energy gun's works give it (a Laser Emitter's generators; 1 for one that needs none: a railgun, a Laser Pod).</summary>
+    public static float Beam(Construct c, int part)
+    {
+        ConstructWorks.CapOf(c, part, out var cap, out _);
+        return cap;
+    }
+
     /// <summary>Gun <paramref name="k"/> fires one shot (every barrel's pellets): each round resolved at once, a fire event each.</summary>
     internal static void Fire(ConstructWorld world, Construct c, int k, IWorldQuery query)
     {
@@ -1269,6 +1283,8 @@ public static class ConstructWeapons
         if (g.Kick > 0)
             Recoil(c, k); // (before the rounds: what they hit can't have moved the gun yet)
         var damage = (float)g.Def!.Damage;
+        if (g.Energy > 0)
+            damage *= Beam(c, g.Part); // (a laser emitter's beam is what its generators serve: ship-works.md 5.4)
         if ((g.Effects & GunEffect.Shell) != 0)
         {
             MuzzleWorld(c, k, out _, out var along);

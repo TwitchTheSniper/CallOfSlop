@@ -557,7 +557,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   names, status lines as a u8 count then a str each, offers by PartRef, a port's manifest, a Route Computer's docks:
     //   LinkedLogistics.Write); CActKind.Link at the end of CActKind (u16 body, u16 part, u8 LinkOp, u32 a, u32 b, str text); the
     //   Building Station's Sub-jobs setting is a choice (Off, Auto, Linked).
-    public const ushort ProtocolVersion = 328;
+    // 329: ship works phase 5 (docs/sandbox/design/ship-works.md 8): a body's Full gains f32 Cap (its capacitors' kJ) after the charge; a pose's
+    //   asleep byte gains bit 4 (PoseCap), and with it a u8 share of the capacitors after the walk block; GunFx gains Beam at its end.
+    public const ushort ProtocolVersion = 329;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;
