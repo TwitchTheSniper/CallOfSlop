@@ -175,6 +175,7 @@ public sealed class ShipWorksParts : IPartGenerator
         Look(p, -w * 0.32, y0 + 0.083, -d * 0.75, w * 0.32, y0 + h * 0.25, -d * 0.2, Trim, "painted plating"); // (the shell tray)
         Cyl(p, w * 0.3, y0 + h * 0.75, tr * 0.5, -d + 0.12, -d * 0.3, Copper, "copper", segments: 8); // (a hydraulic ram)
         Look(p, -w / 2 + 0.06, y0 + h * 0.6, -d * 0.3, -w / 2 + 0.09, y0 + h * 0.8, -d * 0.1, Gauge, "", glow: true); // (its ready lamp)
+        Look(p, -w * 0.4, y0 + 0.078, -d * 0.18, w * 0.4, y0 + 0.086, -0.03, Hazard, "hazard paint"); // (a hazard band on the frame's front edge: this face feeds the ring)
         Hidden(p, -w / 2, y0 + 0.08, -d, w / 2, h / 2, -0.02);
         Hidden(p, -0.2, -0.2, -0.02, 0.2, 0.2, 0); // (the face that meets the trunk)
         p.Sock("front", P(0, 0, 0), "+z");
