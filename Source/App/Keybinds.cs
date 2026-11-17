@@ -87,6 +87,7 @@ public enum GameAction
     JoinTalk, // binds version 26: Sandbox, join the talk another player is having with one of the story's people, while its notice shows (Program.StoryTalk.cs) on Backspace
     SeatRadar, // binds version 27: in a seat, lock the radar contact nearest the look, the next one, or none (ConstructRadar.cs, Program.SandboxRadar.cs) on the middle mouse button
     CommandView, // binds version 28: Sandbox, the command view (the star system as a hologram, ships and their orders; Source/UI/UiCommand.cs) on Home
+    SeatDampeners, // binds version 29: in a seat, a ship's inertia dampeners off or on (ConstructFlight.ToggleDampeners) on Z, which is Prone outside a seat
     COUNT,
 }
 
@@ -209,7 +210,7 @@ public static class Keybinds
                 or GameAction.ThirdPerson or GameAction.ThirdPersonSide or GameAction.SandboxDrop or GameAction.Noclip or GameAction.BuildMirror or GameAction.BuildLine or GameAction.BuildReplace
                 or GameAction.BuildGantry or GameAction.BuildPlaneUp or GameAction.BuildPlaneDown or GameAction.GantryOrbit or GameAction.SelectMove or GameAction.SelectCopy or GameAction.SelectPaint or GameAction.SelectWeld or GameAction.SelectSave or GameAction.SelectTool or GameAction.StoryWindow or GameAction.FactionWindow or GameAction.Logbook => BindContext.Sandbox,
             // (Sandbox has no scoreboard at all; its inventory is GameAction.SandboxInventory, the Zombies parts inventory stays on its own key)
-            GameAction.SeatRollLeft or GameAction.SeatRollRight or GameAction.SeatHook or GameAction.SeatEject or GameAction.SeatRadar => BindContext.Seat,
+            GameAction.SeatRollLeft or GameAction.SeatRollRight or GameAction.SeatHook or GameAction.SeatEject or GameAction.SeatRadar or GameAction.SeatDampeners => BindContext.Seat,
             GameAction.SpectateNext or GameAction.SpectatePrev or GameAction.Scoreboard or GameAction.Inventory or GameAction.DropItem => BindContext.NotSandbox,
             _ => BindContext.Any,
         };
@@ -452,8 +453,9 @@ public static class Keybinds
     /// 26: Join another player's talk (Sandbox) on Backspace added (same rule).
     /// 27: Radar lock in a seat on the middle mouse button added (same rule; it shares the tool wheel's button, see <see cref="Overlap"/>).
     /// 28: the command view (Sandbox) on Home added (same rule).
+    /// 29: Inertia dampeners in a seat on Z added (same rule; it shares Prone's key, which does nothing in a seat, see <see cref="Overlap"/>).
     /// </summary>
-    public const int DefaultsVersion = 28;
+    public const int DefaultsVersion = 29;
 
     /// <summary>Default keys that changed, per binds version: (version that changed it, action, old default, new default).</summary>
     private static readonly (int Version, int Index, int Old, int New)[] Changes =
@@ -517,6 +519,7 @@ public static class Keybinds
         (26, (int)GameAction.JoinTalk, Unbound, Key(GlfwKey.Backspace)),
         (27, (int)GameAction.SeatRadar, Unbound, Mouse(GlfwMouseButton.Middle)),
         (28, (int)GameAction.CommandView, Unbound, Key(GlfwKey.Home)),
+        (29, (int)GameAction.SeatDampeners, Unbound, Key(GlfwKey.Z)),
     ];
 
     /// <summary>
@@ -688,6 +691,7 @@ public static class Keybinds
             GameAction.JoinTalk => "Join a chat (Sandbox: when another player talks to someone, while the notice shows)",
             GameAction.SeatRadar => "Radar lock (in a seat with a radar: the contact nearest your look, again for the next)",
             GameAction.CommandView => "Command view (Sandbox: the star system, your ships and their orders)",
+            GameAction.SeatDampeners => "Inertia dampeners on or off (in a ship's seat: off, it coasts and the keys only burn)",
             _ => a.ToString(),
         };
 
