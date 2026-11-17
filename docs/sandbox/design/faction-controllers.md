@@ -157,3 +157,220 @@ power holds one (to agree with Karl, section 13):
   enough with more. Each change is a news line and a relation event (section 5.3).
 - **Players hold planets too** (later, with Karl): a player faction's outposts and ships count as its presence, so a
   player can take a planet's resources by force, which is the "combat ship, then take on a faction" step of SURVIVAL.md.
+
+## 5. Relations that change through play
+
+### 5.1 One table for everyone
+
+Relations are numbers from -100 to 100, kept by the host in the factions table beside what is there now:
+
+| Pair | Where | New? |
+| --- | --- | --- |
+| Power x power | `NpcRelation[16 * 16]` (sbyte), not symmetric: how A sees B | New (256 bytes) |
+| Power x player faction | `StoryStanding[32 * 16]` (to be renamed `NpcStanding`) | There |
+| Power x lone player | `PlayerStanding[256 * 16]` | There |
+| Player faction x player faction | `FactionTable.Stance` (war, neutral, wants alliance): the players' own choice, untouched | There |
+
+So today's player standing is merged rather than replaced: a player faction is one more party in a power's row, with
+the same thresholds, events and decay. Nothing about player factions' own stances to each other changes.
+
+### 5.2 Thresholds (with 5 points of hysteresis each way)
+
+| Band | Value | What crews and controllers do |
+| --- | --- | --- |
+| **War** | -100 to -50 | Fight on sight; the controller may Raid and Take against them; no pacts but a ceasefire |
+| **Hostile** | -49 to -1 | Fight on sight (today's "below 0"), no raids on their planets |
+| **Wary** | 0 to 19 | Answer fire only (today's wary); no trade |
+| **Neutral** | 20 to 59 | Leave alone; trade (later); may answer a call for help against a common enemy |
+| **Friendly** | 60 to 100 | Help in a fight they see; share sightings; a pact may be offered |
+
+**Allied** is a pact, not a band: two powers (or a power and a player faction) are allied while an alliance pact holds,
+whatever the numbers, and an ally's crews treat each other's enemies as their own in a fight. The bands keep the present
+rule that a crew fights below 0, so phase 1 changes no existing behaviour for a player.
+
+Starting values come from data: the kind's `stance.factions` words keep working (hostile -50, wary 0, neutral 20, as
+`StartStanding`), and a power may give numbers (`"relations": {"Rime Home Guard": -70, "players": 0}`). Each value also
+has a **rest** value it drifts back to (the starting one, unless the power file says otherwise).
+
+### 5.3 Events that move them
+
+One table in data, `Crew/Relations.json`: each event, its base amount, and which of the power's parameters scales it.
+Proposed starting numbers (to tune):
+
+| Event | To the victim's view of the doer | Scaled by |
+| --- | --- | --- |
+| Hit a body or crew member (once a minute per pair, as now) | -3 to -5 | pride |
+| Kill a crew member | -4 | values.crew |
+| Destroy a ship | -15 | values.ships, pride |
+| Capture a ship (boarded, taken) | -20 (as now) | values.ships, pride |
+| Raid a convoy (cargo lost) | -10 per share of cargo | values.cargo, greed |
+| Take a planet | -40 | values.planets, pride |
+| Release or drop prisoners | +5, +3 (as now) | forgiveness |
+| Help in a fight (damage dealt to the victim's attacker while near it) | +2 a minute, at most +10 a fight | loyalty |
+| Escort its convoy to the end | +5 | values.cargo |
+| Trade (later: a sale or a delivered contract) | +1 to +5 | greed |
+| Break a pact | -40, and -15 to every power that knows | loyalty of the hearer |
+| Keep a pact a whole game day | +1 | - |
+
+**Third parties ("word gets around", from the archived story's patterns, as an idea only).** An event between A and B
+also moves C's view of the doer if C **knows** of it: C has a crew within sight of it, holds the planet it happened on, or
+is A's ally (allies tell each other). C's share: its own relation to the victim, as a sign: C friendly to the victim
+takes `loyalty x amount`; C hostile to the victim takes `+amount / 5` (the present `Deed` rule, kept). This is how a
+player who keeps raiding Traders becomes friends with Raiders without asking, and how killing a Militia escort sours the
+Militia's allies. Knowing is checked once, when the event is posted to the faction ring, not every tick.
+
+### 5.4 Decay
+
+Every controller think, each relation moves towards its rest value by `forgiveness x 1 point a real minute` (a
+grudge of -60 at forgiveness 0.2 takes about four hours of play to fade to its rest). War never decays past Hostile on
+its own: leaving a war needs a ceasefire (5.5), so wars don't end by waiting alone. The clock is real (simulated) time,
+not the space clock: at 100K a week of game time passes in seconds, and a grudge should not (question 3).
+
+### 5.5 Pacts: ceasefires, alliances, breaking them
+
+A pact table (at most 32 pacts a world): kind, the two parties, its start and an end (or none).
+
+| Pact | Forms when | Effect | Breaks when |
+| --- | --- | --- | --- |
+| **Ceasefire** | At war, and the loser's losses this war pass its pride line, or both have been at war a long time with nothing taken | No fighting for 30 real minutes; relation set to -40 (Hostile, no raids) | Either attacks the other (a broken pact) or it expires |
+| **Non-aggression** | Neutral or better, a common enemy, or a Traders power paying | Crews don't start fights; wary of each other | An attack |
+| **Alliance** | Friendly both ways, a common enemy at war with either, and both controllers' loyalty high enough | Fight each other's enemies; answer Call allies; share sightings | An attack; a refused Call allies (relation -10, and an alliance fails after two refusals); the relation falling under Neutral; greed: an ally's weak planet looks better than the alliance (scored, rare) |
+
+A controller proposes a pact at its think when its scoring wants one; the other side's controller answers at its next
+think by its own scoring (no talk, no text). With players, pacts are proposed and answered through the Faction window
+(phase 5; diplomacy is open in SURVIVAL.md, section 13).
+
+## 6. Admirals and groups
+
+### 6.1 A group
+
+A **group** is 1 to 12 ships of one power (or of allies on one Call allies mission) under one admiral, made for one
+mission: a convoy, a patrol, a strike group, a planet defence force. A fixed pool of `MaxGroups` (64) records:
+
+- its power, mission, admiral (a crew member id and its flagship), members (ship records or bodies, at most 12),
+  formation, current order, home, its strength (summed at each think) and its losses this mission;
+- **real or abstract** (section 8): real while any member is a body in an open bubble, abstract otherwise.
+
+Groups **form** when the controller gives a mission: it takes free ships at a home (or orders new ones within budget)
+and names the best of them flagship. They **dissolve** when the mission ends (ships go home and become free), when
+losses pass the doctrine's break line (survivors Retreat as singles), or when the admiral is lost and the doctrine says
+the group breaks (6.5).
+
+### 6.2 What an admiral decides
+
+Each think the admiral reads its mission, its members' reports and its contacts (the union of its captains' contact lists
+and its power's shared sightings), and writes one **order** into each captain's `CrewShip`:
+
+| Order | The captain does |
+| --- | --- |
+| `Form(slot)` | Keeps a slot in the flagship's frame (the convoy's `ConvoyIndex` and `Lane`, generalised to an offset); its own goal stays Hold |
+| `GoTo(place)` / `Route(route)` | Flies or drives there (a `GameNav` order for a ship in a star system, the ground helm's path for a vehicle) |
+| `Engage(target)` | Fights that contact first (its own pick only if it can't reach it) |
+| `Escort(body)` | Keeps station on that body and engages what comes within its band |
+| `Hold` | Holds where it is, fights what comes |
+| `Retreat(place)` | Flees to that place, whatever its own morale (the captain's Flee, given a heading) |
+
+The captain keeps its own judgement inside the order: it still Flees on its own hull and morale lines, unless the
+doctrine's `discipline` holds it (a disciplined Militia line holds until the admiral says go; Raiders run when they like).
+
+Tactics, all small and bounded: **focus fire** (the admiral picks the contact with the best threat-to-strength ratio for
+most of its ships, leaves escorts on their charge), **screen** (escorts between the convoy and the nearest threat),
+**retreat** (when the group's strength falls under the enemy's by its caution, or losses pass its line), **ask for
+reinforcement** (a report to the controller, which may give a Defend or Escort mission to another group).
+
+### 6.3 Reports up
+
+Per group, pushed into its ring by captains and the admiral: contact sighted (who, where, strength guess), ship lost,
+ship badly hit, out of ammunition, boarded (with the boarding acts' outcome), mission done or failed, need help. The
+admiral sums them into its own report to the controller at each think: strength left, losses, sightings (fed into the
+power's shared sightings, which allies also read), progress.
+
+### 6.4 Doctrine (data, per power: `Crew/Doctrines/*.json` or inline)
+
+| Key | What |
+| --- | --- |
+| `caution` | Strength ratio before engaging (from the power) and the retreat line |
+| `discipline` | 0-1: how far captains' own Flee is held off while the admiral holds |
+| `skill` | 0-1: how well it picks focus targets and formations (a low skill picks the nearest, not the best) |
+| `formation` | Its preferred shapes per mission: column, wedge, line, screen; spacing |
+| `breakLine` | Losses (share of the group) at which the group retreats or breaks |
+| `succession` | `captain` (the next senior captain steps up after a delay), `break` (the group scatters), `flagship` (only a named flagship class can carry an admiral; the rest return home) |
+| `delay` | Seconds of disarray while command passes: no new orders, each captain on its own |
+
+### 6.5 Is the admiral a person?
+
+Recommended: **an abstract mind carried by a real crew record.** The admiral's thinking is a group record (cheap, no
+body needed), but it is tied to one crew member aboard the flagship (a record in `CrewWorld` like any other, job
+`Admiral`, at the bridge seat or a Gunnery Console used as a command station, else in a couch). So:
+
+- killing that member or destroying the flagship ends that admiral: **succession** by doctrine (a captain steps up after
+  `delay`, or the group breaks);
+- an admiral who surrenders in a boarding is a **prize**: a prisoner worth a big ransom in credits (later, with trade),
+  and a relation event (-25) for the power; releasing one is +15;
+- the look line names them ("Admiral Vance, Rime Home Guard"), so a player can pick the flagship out.
+
+Nothing in the crew system changes for this but one job name. The alternative, a fully abstract admiral, is cheaper by
+nothing measurable and gives the player no target; a fully bodied admiral walking about is the same as the recommended
+one once bodied by the existing LOD.
+
+### 6.6 Phase 2's convoys become groups
+
+`VehicleSpawner.RequestConvoy` stays as it is. When a crewed convoy is set down, it becomes a group: its leader is the
+flagship, its leader's commander the admiral (the command role's vehicle if the convoy has one: ROLES.md's command role
+is "masts and radio, armour", made for this), each member's `ConvoyIndex` and `Lane` its `Form` slot, its out-and-back
+drive a `Patrol` mission with no controller (a convoy from the Spawn tab has a power but needs no mission). The follower
+code in `CrewGround.cs` is the `Form` order's ground driver; nothing there is thrown away. Today's Call for help becomes a
+report: the group's admiral answers first (its own escorts), then the power's controller (another group), then allies.
+
+## 7. What players see and do
+
+- **Faction window (F2).** "How the world's factions see you" stays and gains: each power's band in words and colour,
+  its pacts with you, its relation to the other powers (a 16 x 16 grid in words, hover for the number), what planets it
+  holds, and a short **news** list (the last 32 events: "Rime Home Guard and the Red Hand are at war", "Slopolis has
+  fallen to the Red Hand", "The Free Traders' convoy reached Shard"). Phase 5 adds proposals (ceasefire, non-aggression,
+  alliance) for a faction leader.
+- **Command view.** A **FACTIONS** layer beside LOGISTICS: each planet ringed in its holder's colour (striped when
+  contested); groups **you know of** as markers in their power's colour with a guess at their mission (PATROL, CONVOY,
+  STRIKE) and a line to where they go; a group heading for one of your linked factories, routes or ships drawn red and
+  flagged (SURVIVAL.md, decided: threats to a supply line are shown). You know of a group if a ship of yours (radar,
+  sight), an allied power or an allied player has seen it in the last few minutes; the rest is fog.
+- **News lines.** Big events (war declared, a pact made or broken, a planet changing hands, a convoy of yours attacked)
+  come as a HUD notice and a radio line (no story writing: one templated line per event kind, ASCII).
+- **How players move relations.** By deeds (section 5.3): fighting, capturing, raiding, helping, escorting, releasing
+  prisoners; later by contracts (escort, deliver, raid for pay: credits) and pacts through the window.
+- **Players as admirals (later, phase 6).** A player's own hired fleet (bot-brain.md's own crews) is a group with the
+  player as its admiral: the command view's orders gain Form on me, Escort, Engage, Hold, Retreat for a group of picked
+  ships, and the same admiral code turns them into captain orders. This is the "fleet room" idea of SURVIVAL.md.
+
+## 8. Scale: few minds, many crew, far-away groups as one
+
+- **Counts.** At most 16 controllers (one tick each in turn: each thinks every 16 ticks at most, every 5 s by rule),
+  `MaxGroups` 64 admirals (two a tick round robin, so every one thinks within half a second when due), thousands of crew
+  unchanged (the crew system's own LOD and budget stand).
+- **Budget.** Controllers plus admirals at most 0.3 ms a tick on the 2-core box, nothing allocated in a steady tick (fixed
+  arrays: groups, missions, pacts, rings, relation table). Measured with 16 powers, 64 groups and the crew budget's
+  thousands, by a new `--faction-check` (a dev tool, not a self-test section).
+- **Abstract groups.** A group with no member in an open bubble near a player is **abstract**: it is one record with a
+  position, a speed, a strength and a cargo, moved along its route by the space clock (between planets as a single nav
+  trip of its slowest ship; on a closed world along a route at its cruise speed). Its ships are records (model key,
+  hull share, crew alive count), as the link ledger keeps a closed world as a report. **Abstract fights** between two
+  abstract groups that meet are settled at the controllers' rate by strength (each side loses a share of ships by the
+  other's strength over its own, bounded, so a battle takes minutes, never one roll), and logged as news.
+- **Materialising.** When an abstract group comes within 5 km of a player (or a bubble a player is in opens where it
+  is), its ships are made as bodies, crewed, out of sight where it can be (behind the horizon, in space at range), a few
+  a second (a generated vehicle is slow to make: `VehicleModel` keys of a power's fleet are made once and cached as
+  blueprints). Their hull share becomes damage spread over parts; the crew alive count becomes the roster. When nobody
+  is within 7 km for a minute, they **collapse** back into a record. At most `MaxFactionBodies` (40) faction bodies a
+  world as bodies at once; groups beyond that stay abstract and keep their distance.
+- **Closed worlds.** Karl's rule (nothing happens while the game isn't running) holds; the faction layer runs while the
+  host does, on closed worlds too, but only as records in the host's main Game: a closed world is never opened for a
+  faction's sake (the link ledger's answer 5, kept).
+- **Network.** All of it is server only. Clients get: the power names, colours and the relation grid and pacts in
+  `Msg.Factions` (the grid is 256 bytes, sent on change; protocol bump), planet holders (a byte per body in the space
+  message or `Msg.Factions`), known groups for the command view per client (at most 32 entries, 1 Hz while the view is
+  open, filtered by what that player's faction knows: a new message at the end of `Msg`), and news lines (a new message).
+  Missions, scores, budgets and unseen groups are never sent.
+- **Saves.** A new `Powers` section in the world save (a tag beside `CrewTag`, versioned, skipped with a log line if it
+  doesn't read): relations, rest values, pacts, holdings, stocks, missions, groups with their abstract ships and
+  positions, rings' unread events, news. Power, mission and group ids saved as names or keys, as crews' factions are.
+  No new save file: nothing for `SavePaths`, the package list or MIGRATING.md. Old saves start every power from its file.
