@@ -54,6 +54,12 @@ body frame as an ordinary part, shut or open, and changes only when a player or 
   1.5 m along its +z off an opening up to 1.3 m across, hung by a shoe on its fore edge (`base`). The Zero Day has one on its
   cradle over the shaft, the Shuttle one in a pocket in its cabin floor (its lid 6 mm under the deck, walked over when shut,
   sliding aft between a plate and a 4 mm skin); both slide aft.
+- **Launch hatches** (Karl, 2026-11-18: "a hatch here instead, which opens before the missiles fire"). A `"door"` block with
+  `"launch": true` is opened by the server when a launch from its own body finds it, shut, on the way out
+  (`ConstructOrdnance.Blocked` names it, `Drop` calls `ConstructDoors.OpenForLaunch`). The rack keeps the launch owed
+  (`HatchWait`, a bit of its `State`) so a tap or a crew's two-tick press still goes once the leaf is clear; the body's
+  launch hatches shut `LaunchHold` (4 s) after its last launch (`Construct.LaunchHatchHold`). A locked or wrecked one blocks
+  as any part does. F works one by hand. The part is the **Zero Day Torpedo Hatch** over each torpedo port.
 - **Settling.** At the end its parts are put at the new pose (whole quarter turns and centimetres, so they stay on the grid),
   and only what the leaf touches changes (`Construct.DoorPartMoved`): its boxes move in the collider (`ConstructCollider.MovePart`)
   and its bounds in the part tree (`Construct.TreeMove`), each found under the part's old bounds, the nodes over them refitted
