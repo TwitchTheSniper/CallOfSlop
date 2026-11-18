@@ -35,6 +35,8 @@ public sealed partial class Construct
 
     public ushort[] PieceRacks = []; // its Piece Racks (made with the caches: ConstructConveyor.BuildRacks), for drawing what they hold
     public int PieceRackCount;
+    public ushort[] ToolRacks = []; // its Tool Racks (ToolRacks.cs), for drawing the tools on their hooks
+    public int ToolRackCount;
 
     public void ReserveConveyed(int n)
     {
@@ -311,8 +313,15 @@ public static class ConstructConveyor
     public static void BuildRacks(Construct c)
     {
         c.PieceRackCount = 0;
+        c.ToolRackCount = 0;
         foreach (var i in c.Specials)
         {
+            if (c.Parts[i].D.IsToolRack)
+            {
+                if (c.ToolRacks.Length == c.ToolRackCount)
+                    Array.Resize(ref c.ToolRacks, Math.Max(4, c.ToolRackCount * 2));
+                c.ToolRacks[c.ToolRackCount++] = (ushort)i;
+            }
             if (!c.Parts[i].D.IsPieceRack)
                 continue;
             if (c.PieceRacks.Length == c.PieceRackCount)

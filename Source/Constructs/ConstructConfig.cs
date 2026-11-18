@@ -220,6 +220,7 @@ public enum CfgKey : byte
     ShellDamage, // Robot Shell: health it has lost (shells don't heal: a repair with the attach tool or a crew engineer puts it back; not on the panel)
     Dampeners, // Flight Stabilizer on Ship keys: its inertia dampeners (off: the keys only burn, and it coasts; the seat's dampener key flips it: ConstructFlight.ToggleDampeners)
     Walls, // Storage Volume: on, its box is a walled open-topped bin (four walls and a floor inside the box, solid; ConstructStoreVolume.Walled)
+    ToolsOut, // Tool Rack: which hooks' tools a crew member has taken, a bit each (not on the panel; ToolRacks.cs)
     COUNT,
 }
 
@@ -552,6 +553,7 @@ public static class ConstructConfig
         if (d.Door != null)
             ConstructDoors.AddSettings(d, list);
         ShellWear.AddSettings(d, list); // (a Robot Shell's wear, hidden)
+        ToolRacks.AddSettings(d, list); // (a Tool Rack's tools out, hidden)
         AddThrowSettings(d, list);
         // Every part that shows text: its size (last, so a part file's own settings keep their slots).
         if (ConstructPanels.HasText(d) && list.Count < MaxSlots && !list.Exists(e => e.Id == CfgKey.TextSize))

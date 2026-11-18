@@ -126,7 +126,7 @@ public sealed partial class Game
     }
 
     /// <summary>Server: the player wakes in the shell. Their body's state is kept, the shell's construct goes, and they stand where it stood.</summary>
-    private void ShellEnter(Player p, ref SandboxHand h, Construct chair, int seat, Construct shell)
+    private void ShellEnter(Player p, ref SandboxHand h, Construct chair, int seat, Construct shell, bool crew = false)
     {
         ref var run = ref _sh[p.Id];
         if (h.RemoteBody != 0)
@@ -163,8 +163,9 @@ public sealed partial class Game
         var feet = shell.ToWorld(sp.Pos) + GravityFrames.UpAt(shell.WorldCom) * 0.03f; // (its part's feet: a shell cut off a dock keeps its place in the ship's frame)
         var fwd = Vector3.Transform(-Vector3.UnitZ, shell.Rot * Rot24.Quat(sp.Rot));
         ShellWoke(p, shell);
-        var firstShell = !HasFirst(p.Id, Milestone.Shell);
-        FirstReached(p, Milestone.Shell); // (GameMilestones.cs)
+        var firstShell = !crew && !HasFirst(p.Id, Milestone.Shell);
+        if (!crew)
+            FirstReached(p, Milestone.Shell); // (GameMilestones.cs; a crew miner's body has none: GameCrewMine.cs)
         var kit = firstShell && ShellSparesKit(p); // (a few spare works for the first shell: GameShellWear.cs)
         Constructs.Remove(shell);
         p.Teleport(feet);
@@ -174,7 +175,8 @@ public sealed partial class Game
         p.InShell = true;
         (p.ShellChair, p.ShellSeat) = (chair.Id, (ushort)seat); // (their body is drawn sitting there: ShellBodyOf)
         ShellBroadcast(p);
-        SandboxHands.Notices.Add((p.Id, kit ? "You wake in the robot shell, a pouch of shell spares in your inventory (fit them with the attach tool). Esc menu > Leave the shell."
+        if (!crew)
+            SandboxHands.Notices.Add((p.Id, kit ? "You wake in the robot shell, a pouch of shell spares in your inventory (fit them with the attach tool). Esc menu > Leave the shell."
             : "You wake in the robot shell. Your body is safe in the chair: Esc menu > Leave the shell."));
         Log($"[shell] {p.Name} wakes in a shell (chair {chair.Id}, channel {run.Channel})");
     }

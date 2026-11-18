@@ -16,6 +16,7 @@ public enum CrewJob : byte
     Builder, // phase 7: works a Building Station's bay (its job steps only while one stands there)
     Admiral, // faction-controllers.md phase 2: leads a group of captains from any seat on the fleet command network (CrewFleet.cs); never a station's worker
     Interrogator, // phase 2: questions prisoners for intelligence (a player's own hand: CrewFleet.Interrogate, Game/GameCrewIntel.cs)
+    Miner, // works the ore near its post with a portable drill off a Tool Rack (or a Mining Shell), and carries it to the post's bin (Game/GameCrewMine.cs)
 }
 
 /// <summary>What a crew member is doing.</summary>
@@ -58,6 +59,7 @@ public enum CrewStationKind : byte
     Crane, // a lifter's base
     Dock, // a cargo dock
     Build, // a Building Station
+    Rack, // a Tool Rack: its miner takes a drill from it to the ore (Game/GameCrewMine.cs)
 }
 
 /// <summary>The game's side of the crew (Game/GameCrew.cs): bot bodies, people's targets. Null in a check with no game: nobody is bodied.</summary>
@@ -786,11 +788,12 @@ public sealed class CrewWorld
         CrewStationKind.Crane => CrewJob.Crane,
         CrewStationKind.Dock => CrewJob.Hauler,
         CrewStationKind.Build => CrewJob.Builder,
+        CrewStationKind.Rack => CrewJob.Miner,
         _ => CrewJob.Spare,
     };
 
     public static CrewStationKind WorkKind(ConstructPartDef d) =>
-        d.Lifter != null ? CrewStationKind.Crane : d.IsDock ? CrewStationKind.Dock : d.IsBuildStation ? CrewStationKind.Build : CrewStationKind.Rest;
+        d.Lifter != null ? CrewStationKind.Crane : d.IsDock ? CrewStationKind.Dock : d.IsBuildStation ? CrewStationKind.Build : d.IsToolRack ? CrewStationKind.Rack : CrewStationKind.Rest;
 
     /// <summary>The part of the body's capital gun, its biggest (-1: none is <see cref="CapitalSize"/> or more).</summary>
     public static int CapitalGun(Construct c)
@@ -834,7 +837,8 @@ public sealed class CrewWorld
         return -1;
     }
 
-    private static bool Usable(Construct c, int part) => !c.Parts[part].Broken && c.Parts[part].D.Role == PartRole.Seat && !c.Parts[part].D.RemoteReceiver && !c.Parts[part].D.LifterCab;
+    private static bool Usable(Construct c, int part) => !c.Parts[part].Broken && c.Parts[part].D.Role == PartRole.Seat && !c.Parts[part].D.RemoteReceiver && !c.Parts[part].D.LifterCab
+        && c.Parts[part].D.ShellRange <= 0; // (a Shell Control Chair isn't a couch: a body sat there would link to a shell; a miner sits in it to wear one, GameCrewMine.cs)
 
     private static int IndexOf(CrewShip s, int part)
     {
@@ -1151,12 +1155,12 @@ public sealed class CrewWorld
                 State[m0] = CrewState.Free;
             }
         }
-        for (var pass = 0; pass < 9; pass++)
+        for (var pass = 0; pass < 10; pass++)
         {
             var kind = pass switch
             {
                 0 => CrewStationKind.Helm, 1 => CrewStationKind.Gun, 2 => CrewStationKind.Works, 3 => CrewStationKind.Magazine, 4 => CrewStationKind.Spot,
-                5 => CrewStationKind.Crane, 6 => CrewStationKind.Dock, 7 => CrewStationKind.Build, _ => CrewStationKind.Rest,
+                5 => CrewStationKind.Crane, 6 => CrewStationKind.Dock, 7 => CrewStationKind.Build, 8 => CrewStationKind.Rack, _ => CrewStationKind.Rest,
             };
             for (var st = 0; st < s.StCount; st++)
             {
@@ -1312,6 +1316,7 @@ public sealed class CrewWorld
         CrewStationKind.Crane => "crane",
         CrewStationKind.Dock => "cargo dock",
         CrewStationKind.Build => "building station",
+        CrewStationKind.Rack => "tool rack",
         _ => "couch",
     };
 
@@ -1560,7 +1565,7 @@ public sealed class CrewWorld
             {
                 var uid = r.U32();
                 var jb = r.U8();
-                var job = (CrewJob)Math.Min(jb & 0x7F, (int)CrewJob.Interrogator); // (was capped at Loader: a saved Spotter, Crane, Hauler or Builder came back a Loader)
+                var job = (CrewJob)Math.Min(jb & 0x7F, (int)CrewJob.Miner); // (was capped at Loader: a saved Spotter, Crane, Hauler or Builder came back a Loader)
                 var health = r.U8() / 255f * MemberHealth;
                 var skill = r.U8();
                 var tag = r.U16();

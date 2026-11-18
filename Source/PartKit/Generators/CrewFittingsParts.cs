@@ -135,10 +135,45 @@ public sealed class CrewFittingsParts : IPartGenerator
         return p.Stats(60, 200, 4, 2.0);
     }
 
+    /// <summary>The Tool Rack's hooks (its frame: a drill's grip, its bit down), shared with ToolRacks' drawing through the part file.</summary>
+    public static readonly double[] RackHookX = [-0.3, 0, 0.3];
+    public const double RackHookY = 1.38, RackHookZ = 0.02;
+
+    /// <summary>
+    /// The Tool Rack (factory-generator-notes.md "Tool racks and crew miners"): a shadow board on two posts and a plinth, three steel hooks,
+    /// each with a dark outline of a drill painted behind it (so an empty hook shows what is missing), a shelf of bit boxes and a hazard cap.
+    /// The drills themselves are drawn by the game on every full hook (RouteRender.DrawToolRacks), never boxes of the part: a crew miner
+    /// takes one and hangs it back. Front is +z; it stands on its plinth or hangs on a wall by its back.
+    /// </summary>
+    private static Part ToolRack()
+    {
+        const string Post = "#3b4a3a", Board = "#9a9a82", Ink = "#26282a", Steel = "#8c9298", Shelf = "#5a5f63", Bits = "#b04a2a";
+        var p = Fitting("Drill Rack", "A rack of three portable drills. A crew miner takes a drill, works the ore near its post and hangs the drill back. Put one on an extraction post and crew it with miners.", color: Board);
+        p.Add(Box([-0.5, 0, -0.16], [0.5, 0.08, 0.16], Ink, shape: Kw(("finish", "dirty steel")))); // the plinth
+        foreach (var s in new[] { -1, 1 })
+            p.Add(Box([s < 0 ? -0.5 : 0.44, 0.08, -0.13], [s < 0 ? -0.44 : 0.5, 1.9, -0.05], Post, shape: Kw(("finish", "painted steel")))); // a post
+        p.Add(Box([-0.44, 0.3, -0.12], [0.44, 1.86, -0.09], Board, shape: Kw(("finish", "painted plating")))); // the shadow board
+        p.Add(Box([-0.52, 1.9, -0.15], [0.52, 1.96, 0.01], Hazard, detail: true, shape: Kw(("finish", "hazard paint")))); // the cap
+        p.Add(Box([-0.437, 0.45, -0.087], [0.437, 0.48, 0.2], Shelf, detail: true, shape: Kw(("finish", "steel")))); // the shelf
+        p.Add(Box([-0.437, 0.483, 0.17], [0.437, 0.52, 0.197], Hazard, detail: true, shape: Kw(("finish", "hazard paint")))); // its lip
+        foreach (var x in new[] { -0.3, -0.12, 0.08, 0.26 })
+            p.Add(Box([x - 0.06, 0.483, -0.06], [x + 0.06, 0.56, 0.12], Bits, detail: true, shape: Kw(("finish", "plastic")))); // a box of bits
+        foreach (var x in RackHookX)
+        {
+            p.Add(Box([x - 0.055, 1.09, -0.087], [x + 0.055, 1.42, -0.083], Ink, detail: true, shape: Kw(("finish", "rubber")))); // the drill's outline
+            p.Add(Box([x - 0.022, 1.425, -0.087], [x + 0.022, 1.455, 0.115], Steel, detail: true, shape: Kw(("finish", "steel")))); // the hook's arm
+            p.Add(Box([x - 0.022, 1.458, 0.085], [x + 0.022, 1.51, 0.115], Steel, detail: true, shape: Kw(("finish", "steel")))); // its tip
+        }
+        p.Add(Box([-0.2, 1.62, -0.087], [0.2, 1.7, -0.083], Hazard, detail: true, shape: Kw(("finish", "hazard paint")))); // the label strip
+        WallSockets(p, 0.16, 1.96);
+        p.Set(("toolRack", Kw(("tool", "drill"), ("hooks", Py.L(RackHookX.Select(x => (object?)Py.L(x, RackHookY, RackHookZ)).ToArray())))));
+        return p.Stats(40, 140, 3, 2.0);
+    }
+
     public void Make(PartOutput o)
     {
         o.Own(Out);
-        foreach (var p in new[] { Cradle(), CrashCouch(), FlightCouch(), Coffee(), GunneryConsole() })
+        foreach (var p in new[] { Cradle(), CrashCouch(), FlightCouch(), Coffee(), GunneryConsole(), ToolRack() })
         {
             var d = p.Json();
             o.File($"{Out}/{FileName((string)d["name"]!)}", PyJson.Dumps(d, 2) + "\n");

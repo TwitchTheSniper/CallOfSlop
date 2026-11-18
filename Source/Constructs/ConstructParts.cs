@@ -834,6 +834,9 @@ public sealed partial class ConstructPartDef
     public float RemoteRange, CameraFov;
     public bool ShellBody; // a Robot Shell: a body a player wakes in from a Shell Control Chair (ConstructShell.cs)
     public float ShellRange; // a Shell Control Chair: how far its shells may be, metres (0: not a chair)
+    public ConstructTool RackTool; // a Tool Rack: the hand tool it holds (ToolRacks.cs; None: not a rack)
+    public Vector3[] RackHooks = []; // ...where each tool hangs (the part's frame: the tool's grip, its bit down)
+    public bool IsToolRack => RackHooks.Length > 0;
     public Vector3 CameraAt;
     public bool IsPress, IsLathe, IsPressDie; // ConstructPress.cs
     public PressBayDef[] PressBays = [];
@@ -1340,7 +1343,7 @@ public static partial class ConstructParts
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "finish", "friction", "collider",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "fluidTank", "seat", "hinge", "joint", "logic",
         "transmission", "battery", "capacitor", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "yield", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "retired", "hydraulics", "toolOnly", "tray", "walk", "boarding", "ladder", "toolDock", "damaged", "stage", "faces", "faceAxis", "router",
-        "sight", "ordnance", "mooring", "wear", "eva", "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "dieExtension", "runOut", "enginePiece", "sizeClass", "generator", "thruster", "burner", "flame", "rotor", "surface", "smoke", "dock", "breach", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "shell", "office", "requisition", "media", "speaker", "leg", "stabiliser", "door", "lifter", "craneRail", "lifterCab", "radar", "works", "worksPiece", "logiLink",
+        "sight", "ordnance", "mooring", "wear", "eva", "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "dieExtension", "runOut", "enginePiece", "sizeClass", "generator", "thruster", "burner", "flame", "rotor", "surface", "smoke", "dock", "breach", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "shell", "office", "requisition", "media", "speaker", "leg", "stabiliser", "door", "lifter", "craneRail", "lifterCab", "radar", "works", "worksPiece", "logiLink", "toolRack",
     ];
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, a contoured shape with its settings (index 8 up to the last), and the glass flag (last).</summary>
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, and a contoured shape with its settings.</summary>
@@ -1944,6 +1947,7 @@ public static partial class ConstructParts
         ParseNamedPorts(d, root, file); // (link ports by function: ConstructPorts.cs)
         ConstructRemote.Parse(d, root, file); // (the wireless seat link and cameras: ConstructRemote.cs)
         ConstructShell.Parse(d, root, file); // (robot shells and their chairs: ConstructShell.cs)
+        ToolRacks.Parse(d, root, file); // (a Tool Rack: hand tools a crew takes and returns, ToolRacks.cs)
         ConstructPanels.Parse(d, root, file); // (display panels: DisplayPanel.cs)
         ConstructMedia.Parse(d, root, file);
         ConstructSpeakers.Parse(d, root, file);
