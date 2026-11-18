@@ -741,6 +741,8 @@ public sealed partial class Game
                     u2 = BoardUpOf(o2);
                     h2 = fp;
                 }
+                if (h2 < 0 || h2 >= t.PartCount || HullHoles.Refusal(HullHoles.BaseOf(t.DefOf(h2))) != null)
+                    continue; // (a hatch, a machine: the cutter can't hole it, only burn it whole)
                 if (i != part || fp >= 0)
                     Console.WriteLine($"[nav] board: the pod cuts in by construct {t.Id}'s {t.DefOf(h2).Name}{(pass == 0 ? ", its floor level with the room's" : ", into a room whose floor isn't level with its own")} (picked: its {t.DefOf(part).Name})");
                 (seg, spot, outward, up, hitPart) = (s2, p2, o2, u2, h2);
