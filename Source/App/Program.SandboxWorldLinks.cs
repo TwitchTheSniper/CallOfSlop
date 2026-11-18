@@ -180,14 +180,20 @@ public static partial class Program
             return WorldLinkRender.AimLink = -1;
         WorldLinkRender.AimLink = link;
         ref var l = ref g.Constructs.WorldLinks[link];
-        var key = HashCode.Combine(link, l.BodyFrom, l.BodyTo, (int)mode);
+        var fb = g.Constructs.Get(l.BodyFrom);
+        var tb = g.Constructs.Get(l.BodyTo);
+        ConstructRender.LinkEndBodyA = fb; // (the two devices it connects, outlined)
+        ConstructRender.LinkEndPartA = l.From;
+        ConstructRender.LinkEndBodyB = tb;
+        ConstructRender.LinkEndPartB = l.To;
+        var key = HashCode.Combine(link, l.BodyFrom, l.BodyTo, (int)mode, l.From, l.To, (fb?.PartCount ?? 0) * 65536 + (tb?.PartCount ?? 0), l.FromPort * 256 + l.ToPort);
         if (key != _lkLookKey)
         {
             _lkLookKey = key;
             var fc = g.Constructs.Get(l.BodyFrom);
             var tc = g.Constructs.Get(l.BodyTo);
             var name = ConstructRoutes.Name(l.Type);
-            _lkLook = $"World {name}: {(fc != null && l.From < fc.PartCount ? fc.DefOf(l.From).Name : "?")} -> {(tc != null && l.To < tc.PartCount ? tc.DefOf(l.To).Name : "?")}{(mode == LinkMode.Delete ? $" - {SandboxKeys.Fire}: delete" : "")}";
+            _lkLook = $"World {name}: {(fc != null ? ConstructRoutes.EndLabel(fc, l.From, l.Type, l.FromPort, input: false) : "?")} -> {(tc != null ? ConstructRoutes.EndLabel(tc, l.To, l.Type, l.ToPort, input: true) : "?")}{(mode == LinkMode.Delete ? $" - {SandboxKeys.Fire}: delete" : "")}";
         }
         g.SandboxLookText = _lkLook;
         if (fire && mode == LinkMode.Delete)
