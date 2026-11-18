@@ -794,6 +794,10 @@ public sealed class PowerControllers
             return;
         }
         var flag = w.Get(g.Flagship);
+        // Its ships that came late (a defence goes with what it has) join the group.
+        foreach (var s in p.Ships)
+            if (s.State == PowerShipState.Out && s.Mission == i && s.Body != 0 && crew.ShipOf(s.Body) is { Group: < 0 } && g.Count < CrewGroup.MaxShips)
+                crew.Fleet.Join(crew, w, m.Group, s.Body);
         // Its group's reports since the last look.
         var contact = g.Enemy > 0;
         for (var k = 0; k < g.RingCount; k++)
