@@ -89,7 +89,7 @@ public static partial class ConstructRide
     public const float VaultReach = 1.4f;
 
     /// <summary>A body coming down lands on a part's top with its centre up to this far (m) past the edge (a capsule stands on an edge like that).</summary>
-    public const float EdgeHold = 0.6f * World.PlayerRadius;
+    public static float EdgeHold => 0.6f * World.BodyRadius; // (a robot shell's frame: its size, World.Body)
 
     /// <summary>Boarding assist 3: Use within this (m) of a construct's part grabs on, and climbs onto a top this high (m) above the feet at most.</summary>
     public const float GrabReach = 1.5f, GrabRise = 2.6f;
@@ -491,7 +491,7 @@ public static partial class ConstructRide
                 {
                     if (a == ax)
                         continue;
-                    var inset = MathF.Min(World.PlayerRadius + 0.05f, half[a]);
+                    var inset = MathF.Min(World.BodyRadius + 0.05f, half[a]);
                     // (inset == half leaves lo and hi equal, and rounding can put lo a hair above hi: Math.Clamp throws
                     // on that, which crashed the game on F at a narrow part; such a face is a line, so take its centre.)
                     float lo = centre[a] - half[a] + inset, hi = centre[a] + half[a] - inset;
@@ -501,7 +501,7 @@ public static partial class ConstructRide
                 var at = t + Vector3.Transform(top, q);
                 var rise = at.Y - feet.Y;
                 var across = new Vector2(at.X - feet.X, at.Z - feet.Z).Length();
-                if (rise < -0.3f || rise > GrabRise || across > GrabReach + World.PlayerRadius + 0.5f + slack)
+                if (rise < -0.3f || rise > GrabRise || across > GrabReach + World.BodyRadius + 0.5f + slack)
                     continue;
                 if (BlockedOn(c, i, at, height))
                     continue;
@@ -596,7 +596,7 @@ public static partial class ConstructRide
                 c.BoxOf(i, b, out var centre, out var half);
                 var rel = Vector3.Abs(lp - centre);
                 // (a body: radius across, half its height up and down; the floor it stands on is just below)
-                if (rel.X < half.X + World.PlayerRadius * 0.7f && rel.Z < half.Z + World.PlayerRadius * 0.7f && rel.Y < half.Y + height * 0.45f
+                if (rel.X < half.X + World.BodyRadius * 0.7f && rel.Z < half.Z + World.BodyRadius * 0.7f && rel.Y < half.Y + height * 0.45f
                     && !(i == onPart && rel.Y >= half.Y + height * 0.45f - 0.1f))
                     return i;
             }

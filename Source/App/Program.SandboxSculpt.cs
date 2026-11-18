@@ -131,7 +131,7 @@ public static partial class Program
             _slopeHave = _flatHave = false; // (a new mode starts clean)
         }
         ConnectorRender.ShapeOn = false;
-        var have = SculptSpot(eye, dir, table.Reach, aimed, in hit, out var at);
+        var have = SculptSpot(eye, dir, table.Reach * ShellFrames.ScaleOf(me), aimed, in hit, out var at); // (a robot shell's frame reaches as far as its size: the server's the same)
         var lmb = Down(GameAction.Fire) && !_swallowClick;
         var creative = g.SandboxInfiniteParts;
         var repeat = g.SculptRepeat(table, me.Id, creative);

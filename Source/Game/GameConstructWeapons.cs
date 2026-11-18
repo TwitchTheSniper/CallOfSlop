@@ -35,6 +35,7 @@ public sealed partial class Game : IConstructTargets
             ref var h = ref SandboxHands.Hand(p.Id);
             if (h.Seated && h.SeatBody == ignoreBody)
                 continue; // (its own riders: the gunner sits behind the gun)
+            using var pb = World.Body(ShellFrames.ScaleOf(p)); // (a robot shell's frame: its size)
             if ((p.Sim.RideUp != Vector3.Zero ? World.RayHitsBody(p.Position, p.Sim.Stance, p.Yaw, o, d, dist, p.Sim.RideUpW) : World.Hitbox(p.Position, p.Sim.Stance, p.Yaw).Raycast(o, d, dist)) is { } td && td < dist)
             {
                 dist = td;

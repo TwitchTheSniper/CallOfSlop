@@ -97,7 +97,7 @@ public static class ConstructLifterPush
                 ref readonly var b = ref Boxes[i];
                 if (b.Lift.WaitFrom != 0)
                     continue; // (a stopped piece pushes nobody: the player it waits for walks out of it; and a pin costs no room checks a tick)
-                if (!Overlap(b, s.Position, height, World.PlayerRadius, out var push))
+                if (!Overlap(b, s.Position, height, World.BodyRadius, out var push))
                     continue;
                 any = true;
                 if (!based)
@@ -168,7 +168,7 @@ public static class ConstructLifterPush
         for (var i = 0; i < n; i++)
         {
             ref readonly var b = ref Boxes[i];
-            if (b.Lift.WaitFrom != 0 || !Overlap(b, feet, height, World.PlayerRadius, out _))
+            if (b.Lift.WaitFrom != 0 || !Overlap(b, feet, height, World.BodyRadius, out _))
                 continue;
             Pins++;
             LastBlock = "a player riding a construct";
@@ -333,7 +333,7 @@ public static class ConstructLifterPush
         Span<Vector3> ways = stackalloc Vector3[6];
         var count = 0;
         for (var s = 0; s < 6; s++)
-            if (Side(b, lpos, World.PlayerRadius, s, out var p) && p.LengthSquared() <= MaxEscape * MaxEscape)
+            if (Side(b, lpos, World.BodyRadius, s, out var p) && p.LengthSquared() <= MaxEscape * MaxEscape)
                 ways[count++] = p;
         for (var k = 0; k < count; k++)
         {
@@ -361,7 +361,7 @@ public static class ConstructLifterPush
         if (!_bodyAlready && world.BodyIn(raised, h - 0.02f))
             return Blocked($"a construct at {raised:0.00}");
         for (var i = 0; i < n; i++)
-            if (i != self && Overlap(Boxes[i], raised, h, World.PlayerRadius, out _))
+            if (i != self && Overlap(Boxes[i], raised, h, World.BodyRadius, out _))
                 return Blocked("another piece");
         return true;
     }
