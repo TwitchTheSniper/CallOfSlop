@@ -134,7 +134,7 @@ captains, combat or civilian.
 - Names: each crewed ship has a captain (the senior member: at the helm first). The look line reads "Admiral Una's flagship, Militia
   group 3, Captain Bea, crew of 5"; news lines name admirals and captains.
 - Prisoners: a ship taken with its admiral or captain aboard makes them officers: -25 with their power (`captureOfficer`), a notice of
-  their ransom (1,500 an admiral, 400 a captain). In the Crew window a prisoner admiral or pilot has Question and Ransom; ransomed or
+  their ransom (1,500 an admiral, 400 a captain). In the Crew window an officer prisoner (the roster's job byte has bit 7) has Question and Ransom; ransomed or
   released, +15 (`releaseOfficer`, in place of a plain release's +5). Questioning takes about 60 s at resistance 0.5 with an
   Interrogator of skill 128 (skill 255: two thirds; alone: three times), resistance by doctrine give or take 0.2 by the person. Broken,
   an admiral gives up its group (each captain, crew and order, positions) and the other admirals of its power (positions); a captain its
@@ -156,12 +156,14 @@ captains, combat or civilian.
 
 ### Saves and network
 
-- Saves: a `FLET` section (`WorldSaveWriter.FleetTag`, version 1): each group's header (power by name, task, doctrine by name, admiral,
-  number, order, route). Each body's crew block (version 3) ends with its group's slot and its captain; ships rejoin their group as their
-  crews load (a loaded group waits 20 s before it thinks). An order's body (Escort, Board) isn't kept. Officer prisoners are plain
-  prisoners after a load (not kept yet). The crew block's load capped jobs at Loader (a Spotter, Crane, Hauler or Builder came back a
+- Saves: a `FLET` section (`WorldSaveWriter.FleetTag`, version 1): the fleet's stamp (random per world), each group's header (power by
+  name, task, doctrine by name, admiral, number, order, route), and the officer prisoners (uid, power, group slot and number, rank,
+  resistance: a saved prisoner admiral can still be questioned or ransomed; a questioning under way starts again). Each body's crew
+  block (version 3) ends with its group's slot, number and the fleet's stamp, and its captain; ships rejoin their group as their crews
+  load only when all three match (a ship from another world's save, as on a landing, never joins an unrelated group in the same slot;
+  a loaded group waits 20 s before it thinks). An order's body (Escort, Board) isn't kept. The crew block's load capped jobs at Loader (a Spotter, Crane, Hauler or Builder came back a
   Loader): fixed.
-- Protocol 345 (main 344 at the merge): `Msg.CrewSeats` ends with u16 captain's name, u16 admiral's name aboard, u16 group
+- Protocol 346 (main 345 at the merge): `Msg.CrewSeats` ends with u16 captain's name, u16 admiral's name aboard, u16 group
   number; `Msg.Intel` at the end of `Msg`; `CrewOrder` gains Interrogate, Ransom, Interrogator.
 
 ### Tried by hand (2026-11-17, the 2-core box shared with two other builders)
@@ -198,5 +200,5 @@ captains, combat or civilian.
   drawing and interest management. Not built: the measurements above say where to start (the world step, then `CrewWorld.MaxDrivers`, 64).
 - The relations scale widened (blood enemies to wants to merge) and the new pacts (trade, tribute, vassalage): not done here (they change
   phase 1's bands and the Faction window; they fit the controller phase better).
-- Officer prisoners kept through a save; an order's body kept through a save; admirals coordinating across groups (only intel names them);
+- An order's body kept through a save; admirals coordinating across groups (only intel names them);
   reports read by a controller (the ring fills and is counted; phase 3 reads it); players as admirals (phase 6).

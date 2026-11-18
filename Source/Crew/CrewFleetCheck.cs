@@ -406,7 +406,7 @@ public static class CrewFleetCheck
         Console.WriteLine($"  Admiral {CrewNames.Of(crew.Name[m])}: resistance {res:0.00}: {crew.Fleet.InterrogationSeconds(res, 200):0} s with a skilled interrogator (200), {crew.Fleet.InterrogationSeconds(res, 60):0} s an unskilled one, {crew.Fleet.InterrogationSeconds(res, -1):0} s alone; ransom {r.RansomAdmiral} credits");
         var lines = new List<string>();
         var marks = new List<(Vector3, string)>();
-        crew.Fleet.Intel(crew, w, null, uid, power, (short)sa, serial, flagShip.Body, true, lines, marks);
+        crew.Fleet.Intel(crew, w, null, uid, power, (short)sa, g.Number, flagShip.Body, true, lines, marks);
         foreach (var l in lines)
             Console.WriteLine($"  admiral says: {l}");
         Console.WriteLine($"  marks: {string.Join("; ", marks.Select(x => $"{x.Item2} at {x.Item1.X:0},{x.Item1.Z:0}"))}");
@@ -415,7 +415,7 @@ public static class CrewFleetCheck
         var cap = CrewFleet.CaptainOf(crew, other);
         lines.Clear();
         marks.Clear();
-        crew.Fleet.Intel(crew, w, null, crew.Uid[cap], power, other.Group, crew.Fleet.Groups[sb].Serial, other.Body, false, lines, marks);
+        crew.Fleet.Intel(crew, w, null, crew.Uid[cap], power, other.Group, crew.Fleet.Groups[sb].Number, other.Body, false, lines, marks);
         foreach (var l in lines)
             Console.WriteLine($"  Captain {CrewNames.Of(crew.Name[cap])} says: {l}");
         var capOk = marks.Count >= 1 && lines.Count >= 2;

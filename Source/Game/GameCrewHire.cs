@@ -420,7 +420,7 @@ public sealed partial class Game
             var uid = r.U32();
             var name = CrewNames.Of(r.U16());
             var jb = r.U8();
-            v.Members.Add((uid, name, (CrewJob)Math.Min(jb & 0x7F, (int)LastJob), (CrewState)Math.Min((int)r.U8(), (int)CrewState.Scuttling), r.U8(), r.U8(), (jb & 0x80) != 0)); // (job byte bit 7: an officer prisoner, protocol 345)
+            v.Members.Add((uid, name, (CrewJob)Math.Min(jb & 0x7F, (int)LastJob), (CrewState)Math.Min((int)r.U8(), (int)CrewState.Scuttling), r.U8(), r.U8(), (jb & 0x80) != 0)); // (job byte bit 7: an officer prisoner, protocol 346)
         }
     }
 

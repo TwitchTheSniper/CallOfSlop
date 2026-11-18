@@ -129,7 +129,7 @@ public enum Msg : byte
     Credits, // server -> one client, Sandbox: their credits (u64 as i64; -1 unlimited) when they change (reliable ordered; GameCrewHire.cs, protocol 332)
     PowerNews, // server -> all and each joiner, Sandbox: the NPC powers' news (u8 n, n x text: wars, pacts, friends) as lines are posted, and the last 32 to a joiner (reliable ordered; GameCrewFactions.cs, protocol 333)
     MachineSound, // server -> all, Sandbox: a machine's one-shot that only the server sees happen, such as a Robot Shell Dock's clamps (u8 Sfx, f32 x 3 where; unreliable; GameMachineSounds.cs, protocol 335)
-    Intel, // server -> one client, Sandbox: what a questioned officer gave up, shown as marks (u16 seconds, u8 n, n x (3 x f32 where, text label)) (reliable ordered; GameCrewFleet.cs, protocol 345)
+    Intel, // server -> one client, Sandbox: what a questioned officer gave up, shown as marks (u16 seconds, u8 n, n x (3 x f32 where, text label)) (reliable ordered; GameCrewFleet.cs, protocol 346)
 }
 
 /// <summary>Tiny little-endian packet writer.</summary>

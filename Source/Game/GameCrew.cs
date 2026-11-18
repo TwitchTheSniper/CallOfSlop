@@ -488,7 +488,7 @@ public sealed partial class Game : ICrewHost
         }
     }
 
-    /// <summary>Client: Msg.CrewSeats (u16 body, u8 n, n x u16 seat part, u8 faction kind, u8 crew alive, u16 scuttle point (0xFFFF: none), u8 its stage: protocol 332; u16 captain's name, u16 admiral's name aboard (0xFFFF: none), u16 group number: 345).</summary>
+    /// <summary>Client: Msg.CrewSeats (u16 body, u8 n, n x u16 seat part, u8 faction kind, u8 crew alive, u16 scuttle point (0xFFFF: none), u8 its stage: protocol 332; u16 captain's name, u16 admiral's name aboard (0xFFFF: none), u16 group number: 346).</summary>
     private void ReadCrewSeats(ref PacketReader r)
     {
         var body = r.U16();
