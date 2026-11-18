@@ -283,6 +283,7 @@ public sealed partial class Ui
                 DrawRankBars(game);
             }
             DrawPowerRelations(game, t);
+            DrawContracts(game, me); // (phase 5: UiFactionsPolitics.cs)
             DrawFactionJobs(game);
             DrawStoryTech(t, 0, me.Id);
             return;
@@ -422,6 +423,8 @@ public sealed partial class Ui
                     int v = t.StoryStanding[mine * FactionTable.MaxStory + f];
                     ImGuiSafe.TextWrapped($"{t.StoryNames[f]}: {StandingWord(v)} ({v:+0;-0;0})");
                 }
+            DrawPartyPacts(game, t, me, mine); // (phase 5: UiFactionsPolitics.cs)
+            DrawContracts(game, me);
             DrawPowerRelations(game, t);
             DrawFactionJobs(game);
             DrawStoryTech(t, mine, me.Id);

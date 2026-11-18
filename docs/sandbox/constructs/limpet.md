@@ -74,7 +74,7 @@ the way from the cutter's face to the room behind with a seal sleeve on the pod 
 rectangular tube lofted from the pod's door (square to the pod, 1.14 by 1.96 m) to the hole's far end (level in the target,
 1.5 cm inside the hole's edge, so it hides the cut faces), four 5 cm walls in the gasket's black rubber that draw and collide as
 hull plates. Nothing outside shows through the gap between a slanted hull and the skirt, or through a hollow (a torpedo bay's
-port) the hole passes. It is a `HullHoles.Sleeve` entry in the part's key (`Holed (Limpet Nose | s...)`, protocol 359). The
+port) the hole passes. It is a `HullHoles.Sleeve` entry in the part's key (`Holed (Limpet Nose | s...)`, protocol 360). The
 look line shows a cut or sealed part by its file part's name ("Zero Day Torpedo Bay L (cut through)"), not its key.
 
 Trying it: the window tool's `boardwalk [BACK] [TICKS]` (host) puts this player in the gripped pod BACK m behind its cutter

@@ -181,6 +181,7 @@ public sealed class CrewShip
 
     public bool Foe(byte player) => (Foes[player >> 6] & (1UL << (player & 63))) != 0;
     public void MarkFoe(byte player) => Foes[player >> 6] |= 1UL << (player & 63);
+    public void UnmarkFoe(byte player) => Foes[player >> 6] &= ~(1UL << (player & 63)); // (phase 5: a pact partner's stray round, forgiven)
 
     public bool HelmOn(CrewWorld w) => Helm >= 0 && StMember[Helm] is var m and >= 0 && w.State[m] == CrewState.Station;
     public bool InGrace(long tick) => tick < GraceUntil;
