@@ -8,6 +8,8 @@ public sealed class StationDef
 {
     public string Name = "", Power = "", Planet = "";
     public StationGood[] Goods = [];
+    public float Orbit; // its height over its planet (m): where a hauler meets it when its world isn't the one being played (0: unknown)
+    public string Blueprint = ""; // built in its planet's world the first time that world is played without it (empty: a ship start builds it)
 }
 
 /// <summary>A good a station trades: what it pays and asks a unit (credits), what it starts with and holds at most.</summary>
@@ -71,7 +73,11 @@ public static class StationMarkets
                     Name = s.GetProperty("name").GetString() ?? "",
                     Power = s.TryGetProperty("power", out var pw) ? pw.GetString() ?? "" : "",
                     Planet = s.TryGetProperty("planet", out var pl) ? pl.GetString() ?? "" : "",
+                    Orbit = Math.Clamp(s.TryGetProperty("orbit", out var ob) ? ob.GetSingle() * 1000f : 0f, 0f, 150_000f),
+                    Blueprint = s.TryGetProperty("blueprint", out var bpn) ? bpn.GetString() ?? "" : "",
                 };
+                if (d.Blueprint.Length > 0 && (d.Orbit < 5000 || d.Planet.Length == 0))
+                    throw new FormatException($"{d.Name}: a station built in its world needs a \"planet\" and an \"orbit\" of at least 5 km");
                 if (d.Name.Length == 0 || d.Name.Any(ch => ch > 127))
                     throw new FormatException("a station needs an ASCII \"name\"");
                 var goods = new List<StationGood>();
@@ -161,7 +167,18 @@ public sealed partial class Game
     private int _stationsSent = -1;
     private long _stationsSentAt;
 
-    /// <summary>Host: the market of station <paramref name="st"/>, made from its def the first time (null: it has none).</summary>
+    /// <summary>Host: every station's market by its def (StationMarkets.All), kept across worlds: a landing keeps them, a new game starts them again.</summary>
+    private StationMarket?[] _marketByDef = [];
+
+    /// <summary>Host: the market of station def <paramref name="def"/>, made from its data the first time (its stock as the data starts it).</summary>
+    private StationMarket MarketOfDef(int def)
+    {
+        if (_marketByDef.Length != StationMarkets.All.Length)
+            Array.Resize(ref _marketByDef, StationMarkets.All.Length);
+        return _marketByDef[def] ??= new StationMarket { Def = def, Stock = [.. StationMarkets.All[def].Goods.Select(g => g.Stock)] };
+    }
+
+    /// <summary>Host: the market of station <paramref name="st"/> (null: it has none, or another station of its name holds it here).</summary>
     public StationMarket? StationMarketOf(Construct st)
     {
         if (StationMarketsHere.TryGetValue(st.Id, out var m))
@@ -171,10 +188,33 @@ public sealed partial class Game
         var def = StationMarkets.Find(StationName(st));
         if (def < 0)
             return null;
-        m = new StationMarket { Body = st.Id, Def = def, Stock = [.. StationMarkets.All[def].Goods.Select(g => g.Stock)] };
+        m = MarketOfDef(def);
+        if (m.Body != 0 && m.Body != st.Id && Constructs.Get(m.Body) is { Wreck: false, IsStation: true })
+            return null; // (two stations of one name: the first keeps the market)
+        m.Body = st.Id;
         StationMarketsHere[st.Id] = m;
         StationsVersion++;
         return m;
+    }
+
+    /// <summary>Both sides, a new world (OpeningReset): the markets leave this world's bodies; a new game (not a landing) starts them and the haulers again.</summary>
+    private void StationsReset()
+    {
+        StationMarketsHere.Clear();
+        var travel = _landing != null; // (a landing keeps the markets: GameSpaceLanding.cs)
+        foreach (var m in _marketByDef)
+            if (m != null)
+            {
+                m.Body = 0;
+                m.Moored.Clear();
+            }
+        if (!travel)
+            _marketByDef = [];
+        _hauls.Clear(); // (the haulers here went with the world left behind: new ones set out, StationHaulTick)
+        _haulNext = [];
+        _stationsBuilt = false;
+        _stationsBuildAt = ServerTick + 5 * World.TickRate;
+        StationsVersion++;
     }
 
     /// <summary>The power holding a station's market (0: none).</summary>

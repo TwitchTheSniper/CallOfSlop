@@ -89,6 +89,9 @@ public interface ICrewHost
     /// <summary>The target crew <paramref name="s"/> on <paramref name="c"/> fights this tick, from the contact its last look picked (<see cref="CrewShip.Contact"/>, <see cref="CrewShip.ContactBody"/>); <paramref name="look"/>: look again.</summary>
     bool Target(Construct c, CrewShip s, bool look, out ShipAiTarget t);
 
+    /// <summary>Does <paramref name="c"/>'s flight computer fly it under an order (the command view's, a station hauler's leg)? Its crew then leaves the helm to it while it has nothing to fight.</summary>
+    bool UnderOrders(Construct c) => false;
+
     /// <summary>Someone did <paramref name="e"/> to crew <paramref name="s"/>: a person (<paramref name="byPlayer"/>; a crew member's body counts as its power) or a crewed body's guns (<paramref name="byBody"/>): relations move (Crew/CrewRelations.cs).</summary>
     void Deed(RelEvent e, CrewShip s, byte byPlayer, ushort byBody);
 
@@ -1485,6 +1488,12 @@ public sealed class CrewWorld
                 has = false; // (its owner's order: Hold fire)
             if (host == null)
                 s.Contact = has ? (byte)0 : (byte)255; // (a check's fixed target is the captain's contact)
+            if (!has && host != null && host.UnderOrders(c))
+            {
+                if (c.CrewAims || c.CrewDrives)
+                    ai.Release(c); // (nothing to fight and an order to fly: the flight computer has the helm, as a hauler's leg needs)
+                continue;
+            }
             if (has)
             {
                 s.TargetAt = t.At;

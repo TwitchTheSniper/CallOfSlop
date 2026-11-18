@@ -58,8 +58,6 @@ public sealed partial class Game
             OpeningCompanion(co, centre, up, fwd, r, speed);
         foreach (var st in script.Stations)
             OpeningStation(st, centre, up, fwd, (float)pl.Radius, e.System.Bodies[body].Mu);
-        if (script.Stations.Length > 0)
-            OpeningHaulers(centre); // (the stations' haulers: GameStationHaulers.cs)
         return true;
     }
 

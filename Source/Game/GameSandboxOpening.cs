@@ -93,9 +93,7 @@ public sealed partial class Game
         _opOn = false;
         _opShip = 0;
         _opHolds.Clear();
-        _hauls.Clear(); // (station haulers: GameStationHaulers.cs)
-        StationMarketsHere.Clear(); // (a new world's stations make theirs again)
-        StationsVersion++;
+        StationsReset(); // (stations' markets and haulers: GameStationMarket.cs)
         BreakdownReset(); // (GameSandboxBreakdowns.cs)
         FragmentsReset(); // (and the data centres: GameStoryFragments.cs)
         LoreReset(); // (and the things to look at: GameStoryLore.cs)

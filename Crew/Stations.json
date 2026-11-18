@@ -10,16 +10,18 @@
   // station"): NPC ships a power runs between two stations, crewed by that power. Each buys "goods" at "from" (what it asks, up to what the
   // ship's bins hold and what the station has), flies there with the Dock order, sells to "to" (what that one pays), loads that station's
   // "back" goods and runs home: the stock moves, and the power's books pay and earn it. "ship" is a blueprint with bins; "count" ships run
-  // the route, "wait" seconds moored at each end. Haulers start with a ship start's stations (Story/Opening).
+  // the route, "wait" seconds moored at each end. A hauler sets out from whichever of its stations is in the world being played
+  // (Game/GameStationHaulers.cs); a station's "orbit" (km) is where it meets one at a station in another world.
   "margin": 0.25,
   "haulers": [
-    { "power": "Traders", "ship": "Magpie Mining Ship", "count": 1, "from": "Caledon Highport", "to": "Loch Watch", "goods": ["iron ore", "copper ore"], "back": ["steel"], "wait": 30 }
+    { "power": "Traders", "ship": "Magpie Mining Ship", "count": 1, "from": "Caledon Highport", "to": "Glacier Watch", "goods": ["iron ore", "copper ore"], "back": ["steel"], "wait": 30 }
   ],
   "stations": [
     {
       "name": "Caledon Highport",
       "power": "Traders",
       "planet": "Caledon",
+      "orbit": 40,
       "goods": [
         { "good": "iron ore", "buy": 0.12, "sell": 0.18, "stock": 20000, "most": 200000 },
         { "good": "copper ore", "buy": 0.2, "sell": 0.3, "stock": 8000, "most": 120000 },
@@ -34,12 +36,15 @@
       ]
     },
     {
-      // The Militia's station over Caledon (Karl, 2026-11-18: a second station "at a fixed place in another neutral faction's turf"; the
-      // Militia hold Heather Mine, Glen Post and Loch Post below, Crew/Territory.json). Built from the Highport's blueprint for now, on a
-      // higher orbit (Story/Opening). They want ore for their refinery and sell its steel: the haulers' run.
-      "name": "Loch Watch",
+      // The Militia's station over Glacier (Karl, 2026-11-18: a second station "at a fixed place in another neutral faction's turf",
+      // over Glacier "to test faction areas", "more complicated pathfinding" and "how fuel scales"; the Militia hold Glacier Spaceport
+      // and Icefall Refinery below, Crew/Territory.json). Built from the Highport's blueprint for now, 40 km up over the map's middle,
+      // the first time Glacier's world is played ("blueprint", "orbit" in km). They want ore for their refinery and sell its steel.
+      "name": "Glacier Watch",
       "power": "Militia",
-      "planet": "Caledon",
+      "planet": "Glacier",
+      "blueprint": "Caledon Highport",
+      "orbit": 40,
       "goods": [
         { "good": "iron ore", "buy": 0.24, "sell": 0.3, "stock": 2000, "most": 150000 },
         { "good": "copper ore", "buy": 0.34, "sell": 0.42, "stock": 1000, "most": 80000 },

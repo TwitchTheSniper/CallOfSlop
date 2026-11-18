@@ -17,6 +17,9 @@ public sealed partial class Game : ICrewHost
     private readonly ushort[] _crewParts = new ushort[CrewWorld.MaxCrewPerBody];
     private int _crewSendAt;
 
+    /// <summary>ICrewHost: a ship under a command-view order (or a station hauler's leg) is flown by its flight computer, not its crew's pilot.</summary>
+    public bool UnderOrders(Construct c) => NavOf(c.Id) != null;
+
     /// <summary>A tick, after the people's seats and before the constructs step: the crews think, man their seats and drive.</summary>
     private void SandboxCrewTick()
     {
