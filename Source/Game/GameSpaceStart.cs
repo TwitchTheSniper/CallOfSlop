@@ -104,13 +104,15 @@ public sealed partial class Game
     {
         if (ConstructBuild.FindBlueprint(co.Ship) is not { } bp)
             return;
-        var a = co.Behind / r; // (the angle back along the orbit)
+        var still = co.Away > 0;
+        var a = still ? 0f : co.Behind / r; // (the angle back along the orbit)
         var cu = up * MathF.Cos(a) - fwd * MathF.Sin(a);
         var cf = fwd * MathF.Cos(a) + up * MathF.Sin(a);
         var z = -cf;
         var x = Vector3.Cross(cu, z);
         var rot = Quaternion.Normalize(Quaternion.CreateFromRotationMatrix(new Matrix4x4(x.X, x.Y, x.Z, 0, cu.X, cu.Y, cu.Z, 0, z.X, z.Y, z.Z, 0, 0, 0, 0, 1)));
-        var c = ConstructBuild.Build(Constructs, bp, centre + cu * r, rot, out var why);
+        var at = centre + cu * (r + co.Away); // (held still: straight out past the player's ship)
+        var c = ConstructBuild.Build(Constructs, bp, at, rot, out var why);
         if (c == null)
         {
             Log($"[opening] the company's {co.Ship} didn't build in orbit: {why}");
@@ -118,7 +120,7 @@ public sealed partial class Game
         }
         c.Rebuild();
         c.Owner = 255; // (nobody's: the faction's)
-        c.Vel = cf * speed;
+        c.Vel = still ? Vector3.Zero : cf * speed;
         c.PrevPos = c.Pos;
         c.Wake();
         var faction = CrewPowers.Find(co.Faction);
@@ -126,7 +128,43 @@ public sealed partial class Game
         if (Crew.Events.Count > 0)
             CrewLog();
         Constructs.Events.Add($"opening: the company's {co.Ship} ({co.Faction}) as construct {c.Id}");
-        Log($"[opening] the company's {co.Ship} is construct {c.Id}, {co.Behind:0} m {(co.Behind >= 0 ? "behind" : "ahead")}, crewed by {CrewPowers.Of(faction)?.Name ?? "nobody"} ({(crew != null ? Crew.Alive(crew) : 0)} aboard)");
+        if (still)
+        {
+            _opHolds.Add(c.Id); // (its flight computer holds it there once space is up: OpeningHoldsTick)
+            Log($"[opening] the company's {co.Ship} is construct {c.Id}, held still {co.Away / 1000:0.0} km out past the ship, crewed by {CrewPowers.Of(faction)?.Name ?? "nobody"} ({(crew != null ? Crew.Alive(crew) : 0)} aboard)");
+        }
+        else
+            Log($"[opening] the company's {co.Ship} is construct {c.Id}, {co.Behind:0} m {(co.Behind >= 0 ? "behind" : "ahead")}, crewed by {CrewPowers.Of(faction)?.Name ?? "nobody"} ({(crew != null ? Crew.Alive(crew) : 0)} aboard)");
+    }
+
+    /// <summary>Host: company held still (the opening's <c>"away"</c>), waiting for its order to hold its point.</summary>
+    private readonly List<ushort> _opHolds = new(4);
+
+    /// <summary>
+    /// Host, each space tick while any wait: a company ship held still gets a Go to order at the point it was built (its own
+    /// flight computer holds it there against the planet's pull: NavPhase.Hold), once space is up. Not saved: a loaded world's
+    /// ship coasts from where it was.
+    /// </summary>
+    private void OpeningHoldsTick(SpaceSession s)
+    {
+        for (var k = _opHolds.Count - 1; k >= 0; k--)
+        {
+            if (Constructs.Get(_opHolds[k]) is not { PartCount: > 0 } c)
+            {
+                _opHolds.RemoveAt(k);
+                continue;
+            }
+            if (c.Dirty)
+                c.Rebuild();
+            var t = s.Flight!.Clock.Now;
+            if (!NavState(c, t, out var pos, out _))
+                continue;
+            var body = s.Bubble.Body;
+            s.System.StateOf(body, t, out var bp, out _);
+            if (NavApply(s, c, NavKind.GoTo, body, pos - bp, 0, 255, "the opening", null, out _) is { } why)
+                Log($"[opening] construct {c.Id} can't hold still: {why}");
+            _opHolds.RemoveAt(k);
+        }
     }
 
     /// <summary>Server: a player into the ship, standing in its frame at their wake spot (lying down, as the opening has them). False: no ship.</summary>
