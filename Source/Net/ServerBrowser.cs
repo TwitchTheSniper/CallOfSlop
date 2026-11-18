@@ -627,7 +627,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 365: a worn MMU taken off anywhere (Karl, 2026-11-18): CActKind.MmuOff (no bytes) at its end.
     // 366: station haulers and buying: FactionOp.StationBuy (u16 ship, u8 good) at its end.
     // 367: landing leg pods (Karl, 2026-11-18): CActKind.LandingGear (u16 body) at its end; doors gain "held" poses and riding links (drawn, not sent).
-    public const ushort ProtocolVersion = 367;
+    // 368: noclip Board inside (creative Sandbox): the input packet ends with a u8 of board bits, one per command, then per set bit a u16 construct and 3 f32 (its rest-frame aim; InputCmd.NoclipBoard).
+    public const ushort ProtocolVersion = 368;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

@@ -29,12 +29,39 @@ public sealed partial class Game
             me.NoclipWanted = !me.NoclipWanted && NoclipAllowed(me);
     }
 
+    // The Board inside key's ask, until the next input takes it (Program.Noclip.cs).
+    private ushort _boardBody;
+    private Vector3 _boardAt;
+
+    /// <summary>
+    /// The local player's Board inside key on construct <paramref name="body"/>, aimed at <paramref name="at"/> (its rest frame):
+    /// noclip ends, and the next input carries the ask, so the server and this client's prediction set them down inside it
+    /// in the same tick of the shared step (ConstructRideInterior.cs).
+    /// </summary>
+    public void NoclipBoardAsk(ushort body, Vector3 at)
+    {
+        if (Local is not { } me || !NoclipAllowed(me))
+            return;
+        me.NoclipWanted = false;
+        (_boardBody, _boardAt) = (body, at);
+    }
+
+    /// <summary>The ask for the input being made, once.</summary>
+    private ushort NoclipBoardTake(out Vector3 at)
+    {
+        at = _boardAt;
+        var body = _boardBody;
+        _boardBody = 0;
+        return body;
+    }
+
     /// <summary>The wish of one input, as the rules have it: the server's word on what a client sent, and the same rule for the client's prediction.</summary>
     private InputCmd NoclipFilter(Player p, InputCmd cmd)
     {
-        if (cmd.Noclip && !NoclipAllowed(p))
+        if ((cmd.Noclip || cmd.NoclipBoard != 0) && !NoclipAllowed(p))
         {
             cmd.Noclip = false;
+            cmd.NoclipBoard = 0; // (Board inside is creative's, as noclip is)
             p.NoclipWanted = false;
         }
         return cmd;
@@ -43,9 +70,6 @@ public sealed partial class Game
     /// <summary>The tick someone left noclip (from <see cref="ZBlockPlayer"/>, the shared step): out of whatever they are in.</summary>
     private void NoclipLeft(ref MoveState s)
     {
-        s.NoclipExit = false;
-        s.Position = NoclipMove.ExitSpot(s.Position, _sepAtTick != 0 ? _sepAtTick : MoverPhysics.Clock, SandboxOn ? Constructs : null);
-        s.RideWorld = s.Position;
-        ConstructRide.NoclipLanded(ref s); // (in a moving construct's frame: they stay in it, on its deck)
+        NoclipMove.Leave(ref s, _sepAtTick != 0 ? _sepAtTick : MoverPhysics.Clock, SandboxOn ? Constructs : null); // (in a construct's frame: on a floor inside it)
     }
 }

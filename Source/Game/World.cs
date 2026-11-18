@@ -75,6 +75,8 @@ public struct InputCmd
     public float RideYaw, RidePitch; // the look in that construct's frame, about the rider's up
     public float Roll; // a worn MMU's roll about the look (PilotGear.MmuAxes), quantised by World.QuantRoll; 0 otherwise
     public bool MmuCoast; // a worn MMU's dampeners off: with no key held it keeps its speed (false, the default: it brakes to the nearest craft's motion; PilotGear.MmuBrake)
+    public ushort NoclipBoard; // creative Sandbox's Board inside key: the construct to be set down inside (0: none; ConstructRideInterior.cs), on the input that leaves noclip
+    public Vector3 NoclipBoardAt; // where the look met it, in its rest frame
 }
 
 /// <summary>Everything movement depends on. Client prediction and the server run the same code on it.</summary>
@@ -359,7 +361,7 @@ public static partial class World
     public static void Simulate(ref MoveState s, in InputCmd cmd)
     {
         using var _ = Body(s); // (a robot shell's frame: its size, for this body's move alone)
-        if (s.Noclip || cmd.Noclip)
+        if (s.Noclip || cmd.Noclip || cmd.NoclipBoard != 0)
             NoclipMove.Step(ref s, cmd); // creative Sandbox's flight (NoclipMove.cs)
         else if (PilotGear.MmuFree(s))
             SimulateMmu(ref s, cmd);
