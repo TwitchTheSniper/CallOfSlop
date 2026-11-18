@@ -599,7 +599,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   Msg.CrewRoster's job byte has bit 7 for an officer prisoner.
     // 347: time speed to 1,000,000x (SpaceClock.MaxSpeed): Msg.Space's clock speed may pass 100,000, which an older client clamped, so its
     //   clock ran ten times slow between the host's clock packets.
-    public const ushort ProtocolVersion = 347;
+    // 348: a breaching cutter cuts a door-sized hole out of a hull piece (HullHoles.cs): a body's part may be a "Holed (...)" run-time
+    //   part, sent as its key after Extrusion.WireMark and HullLoft.WireKind, which an older client refused as a malformed packet.
+    public const ushort ProtocolVersion = 348;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;
