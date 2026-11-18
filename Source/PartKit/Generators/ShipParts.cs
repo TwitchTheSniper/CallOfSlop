@@ -804,6 +804,10 @@ public sealed class ShipParts : IPartGenerator
             Sock(p, $"shelfL{i}", Cx - Lw, F0 + 0.125, z, "+x");
         Sock(p, "rackR", Cx + Lw, F0 + 0.9, 5.0, "-x");
         Sock(p, "lockerR", Cx + Lw, F0 + 0.125, 6.05, "-x");
+        // The spacewalk gear by the ramp, the way out: the MMU Dock and a Space Suit Locker to starboard, a second locker to port.
+        Sock(p, "mmuDock", Cx + Lw, F0 + 0.125, 2.75, "-x");
+        Sock(p, "suitR", Cx + Lw, F0 + 0.125, 3.8, "-x");
+        Sock(p, "suitL", Cx - Lw, F0 + 0.125, 2.8, "+x");
         Sock(p, "shellDock", Cx + Lw, F0 + 0.125, 7.0, "-x"); // (the one Robot Shell Dock, aft of the locker: Karl, 2026-11-17)
         Sock(p, "crate0", 2.4, F0, 10.6, "+y");
         Sock(p, "crate1", 3.2, F0, 10.6, "+y");
@@ -2070,6 +2074,9 @@ public sealed class ShipParts : IPartGenerator
         Hang(bp, "Tool Rack", keel, "rackR", "back");
         Paint(bp, Hang(bp, "Locker", keel, "lockerR", "wall"), "#5d7468", "worn paint");
         Hang(bp, "Robot Shell", Hang(bp, "Robot Shell Dock", keel, "shellDock", "wall"), "dock", "back");
+        Hang(bp, EvaParts.LockerName, keel, "suitR", "wall");
+        Hang(bp, EvaParts.LockerName, keel, "suitL", "wall");
+        EvaParts.FitDock(bp, Holder(bp, keel, "mmuDock"), "mmuDock", saddles[1]); // (its pack fed from the starboard saddle tank, outside the wall)
         Hang(bp, "Requisition Crate", keel, "crate0", "-y");
         Hang(bp, "Requisition Crate", keel, "crate1", "-y");
         // The engine room. (The Engineer's Panel is where the breakdowns are seen to: GameSandboxBreakdowns reads its name.)
