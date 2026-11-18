@@ -56,3 +56,19 @@ second at high speed; on rails above 10K it holds still.
   15K; on rails it stays). That is the patched-conic trade.
 - `--space-ships` on Dev.json at 10,000x for 2400 h logs failed drifts from the moonlet ship's decaying orbit
   (adaptive, unchanged by this branch); not compared with main.
+
+## Review fixes (2026-11-17)
+
+- Protocol 347: a clock speed past 100,000 on the wire (an older client clamped it and its clock ran ten times slow).
+- Rail ships are looked at one by one: each when its own step is up (`_railNext`), so one ship near a sphere's edge cuts
+  the tick into chunks without every ship paying a Kepler solve in each. A hand-over mid-tick cuts what is left again
+  for the new primary's steps, its sky among them (`RailStep` also bounds the time to a sky the orbit dips under).
+- A rail ship that goes under its primary's sky inside a chunk is put back where it crossed (bisected along its rail)
+  and waits there for the rest of the tick (`SkyHolds`); under the sky and falling, time is held so it takes four ticks
+  to reach the ground. The landable worlds' skies sit inside their spheres (Crumb's edge 2 km, sphere about 4 km;
+  Slopolis 6.1 km and about 63 km), so a ship coming in meets the sphere, then the sky.
+- `SpaceShips.WarpRails` comes from the game's own limits (orders, settings), not other systems' ships' step limits,
+  which are what rails lift (`SpaceFlight.Tick(shipLimit, railLimit)`).
+- `--space-ships ... --crowd N [--sky]`: N more ships round the first moon and across its sphere. Frostreach, 200 at
+  1M for 2400 h: 4.2 ms a tick on the loaded 2-core box (load 14), nearly all in the adaptive steps of the ships near
+  Rime's sphere edge, as at 10K; 20 with skies for 24 h: 59 us a tick, 1364 holds at a sky.
