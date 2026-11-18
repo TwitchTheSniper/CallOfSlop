@@ -23,6 +23,8 @@ public sealed partial class Ui
     private string _cmdOrderComeText = "", _cmdOrderTitle = "", _cmdOrderOrbit = "", _cmdOrderGo = "", _cmdOrderNote = "";
     private ushort _cmdOrderDock; // another craft under the click: dock with it (0: none)
     private string _cmdOrderDockText = "", _cmdOrderDockWhy = "";
+    private string _cmdOrderMeetText = "", _cmdOrderMeetWhy = ""; // the same craft: a rendezvous beside it (Game/GameNavMeet.cs)
+    private float _cmdOrderMeetGap = Game.NavMeetGap;
     private double _cmdOrderNoteUntil;
     private bool _cmdOrderBoard, _cmdOrderBoardDoor; // a Board order (Game/GameNavBoard.cs): the ship's pod to a door or the hull of another
     private ushort _cmdOrderBoardShip;
@@ -87,6 +89,11 @@ public sealed partial class Ui
                 : cr.Space && !other.Space ? "IT IS IN SPACE: BRING IT DOWN INTO THE SKY FIRST"
                 : Game.NavDockFor(g.Constructs, t, c) < 0 ? "NO PORT AVAILABLE"
                 : "";
+            _cmdOrderMeetText = "RENDEZVOUS WITH " + CmdName(t);
+            _cmdOrderMeetWhy = c.CarriedBy == t.Id || t.CarriedBy == c.Id ? "" // (docked together: nothing to meet)
+                : !g.NavState(c, s.Now, out _, out _) || !g.NavState(t, s.Now, out _, out _) ? "TOO FAR APART TO MEET"
+                : cr.Space && !other.Space ? "TO MEET IT: BRING IT DOWN INTO THE SKY FIRST"
+                : "OK";
             _cmdOrderTitle = "ORDER FOR " + CmdName(c);
             _cmdOrderAt = m;
             _cmdOrderAsk = true;
@@ -203,6 +210,18 @@ public sealed partial class Ui
                     else if (ImGui.Button(_cmdOrderDockText, new float2(MathF.Max(300 * _scale, ImGui.CalcTextSize(_cmdOrderDockText).X + 20 * _scale), 0)))
                         send = NavKind.Dock;
                 }
+                if (_cmdOrderDock != 0 && _cmdOrderMeetWhy.Length > 0)
+                {
+                    if (_cmdOrderMeetWhy != "OK")
+                        ImGuiSafe.TextColored(new float4(CmdAmber.X, CmdAmber.Y, CmdAmber.Z, 1f), _cmdOrderMeetWhy);
+                    else
+                    {
+                        ImGui.SetNextItemWidth(220 * _scale);
+                        ImGui.SliderFloat("m apart##cmdmeet"u8, ref _cmdOrderMeetGap, Game.NavMeetGapLeast, Game.NavMeetGapMost, "%.0f"u8, ImGuiSliderFlags.Logarithmic);
+                        if (ImGui.Button(_cmdOrderMeetText, new float2(MathF.Max(300 * _scale, ImGui.CalcTextSize(_cmdOrderMeetText).X + 20 * _scale), 0)))
+                            send = NavKind.Meet;
+                    }
+                }
                 if (_cmdOrderBoard)
                 {
                     var bw = MathF.Max(300 * _scale, ImGui.CalcTextSize(_cmdOrderBoardText).X + 20 * _scale);
@@ -246,6 +265,9 @@ public sealed partial class Ui
                         break;
                     case NavKind.Dock:
                         g.NavSend(_cmdOrderShip, NavKind.Dock, s.Bubble.Body, Vec3d.Zero, 0, _cmdOrderDock); // (the host picks the port, and says when there is none)
+                        break;
+                    case NavKind.Meet:
+                        g.NavSend(_cmdOrderShip, NavKind.Meet, s.Bubble.Body, Vec3d.Zero, _cmdOrderMeetGap, _cmdOrderDock); // (the host works out the world and the side)
                         break;
                 }
                 if (board != 0 && g.Constructs.Get(_cmdOrderBoardShip) is { } bt && g.Constructs.Get(_cmdOrderShip) is { } carrier)
@@ -377,6 +399,19 @@ public sealed partial class Ui
         if (Game.NavDockFor(g.Constructs, t, c) < 0)
             return "NO PORT AVAILABLE";
         g.NavSend(c.Id, NavKind.Dock, s.Bubble.Body, Vec3d.Zero, 0, target);
+        return null;
+    }
+
+    /// <summary>The script and the checks: the picked craft is told to meet <paramref name="target"/> and hold <paramref name="gap"/> m clear of it, as the menu's RENDEZVOUS WITH would.</summary>
+    public string? CommandMeet(Game g, ushort target, float gap)
+    {
+        if (g.Space is not { } s)
+            return "no star system here";
+        if (g.Constructs.Get(_cmdSel) is not { } c)
+            return "no ship is picked";
+        if (g.Constructs.Get(target) is not { } t || t == c)
+            return "no such ship to meet";
+        g.NavSend(c.Id, NavKind.Meet, s.Bubble.Body, Vec3d.Zero, gap, target);
         return null;
     }
 

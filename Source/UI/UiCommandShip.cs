@@ -161,9 +161,9 @@ public sealed partial class Ui
             return;
         }
         float2 at;
-        if (o.Kind == NavKind.Board)
+        if (o.Kind is NavKind.Board or NavKind.Meet)
         {
-            var tk = CmdFind((ushort)Math.Clamp(o.Point.X, 0, ushort.MaxValue)); // (a pod boarding: the ship it boards, GameNavBoard.cs)
+            var tk = CmdFind(o.Kind == NavKind.Meet ? o.Target : (ushort)Math.Clamp(o.Point.X, 0, ushort.MaxValue)); // (a pod boarding: the ship it boards, GameNavBoard.cs; a rendezvous: the ship it meets)
             if (tk < 0)
                 return;
             at = _cmdCraft[tk].At;
@@ -637,10 +637,13 @@ public sealed partial class Ui
             var phase = o2.Phase switch
             {
                 NavPhase.Climb => "CLIMBING OUT OF THE SKY",
+                NavPhase.Transfer when o2.Kind == NavKind.Meet => "CLOSING ON IT",
                 NavPhase.Transfer => "ON ITS WAY",
                 NavPhase.Insert => "MATCHING THE ORBIT",
                 NavPhase.Orbiting => "IN ORBIT, DRIVE OFF",
+                NavPhase.Hold when o2.Kind == NavKind.Meet => "ALONGSIDE, MATCHING ITS MOTION",
                 NavPhase.Hold => "HOLDING AT THE POINT",
+                NavPhase.Flying when o2.Kind == NavKind.Meet => "FLYING TO ITS SIDE",
                 NavPhase.Flying when o2.Kind == NavKind.Dock => "LINING UP WITH THE PORT",
                 NavPhase.Flying => "FLYING THERE",
                 NavPhase.Arrived => "OVER THE WAYPOINT",
@@ -658,6 +661,7 @@ public sealed partial class Ui
                 _ => "STARTING",
             };
             k.Order = o2.Kind == NavKind.Dock && g.Constructs.Get(o2.Target) is { } with ? "DOCK WITH " + CmdName(with) + (o2.TargetPart < with.PartCount ? ": " + with.DefOf(o2.TargetPart).Name.ToUpperInvariant() : "")
+                : o2.Kind == NavKind.Meet && g.Constructs.Get(o2.Target) is { } meet ? string.Create(inv, $"RENDEZVOUS WITH {CmdName(meet)}, {o2.Radius:0} M APART")
                 : Game.NavText(sys, o2).ToUpperInvariant();
             if (o2.ArriveNs != 0 && o2.Phase is NavPhase.Depart or NavPhase.Coast or NavPhase.Correct or NavPhase.Wait)
             {
