@@ -186,6 +186,9 @@ public sealed partial class SpaceStationParts : IPartGenerator
         }
         foreach (var s in p.Sockets)
             s["at"] = Shift((List<object?>)s["at"]!);
+        if (p.D.Get("clampArm") is PyDict arm)
+            foreach (var key in new[] { "shoulder", "stow" })
+                arm[key] = Shift((List<object?>)arm[key]!);
         return o;
     }
 
@@ -224,6 +227,12 @@ public sealed partial class SpaceStationParts : IPartGenerator
             var name = (string)d["name"]!;
             defs.Add(name, d);
             o.File($"{Out}/Highport/{FileName(name)}", PyJson.Dumps(d, 2) + "\n");
+        }
+        // the clamp arms' moving pieces, drawn by the game, never placed (SpaceStationClampArm.cs)
+        foreach (var p in ClampArmPieces(new Kit("Station", "Clamp arm")))
+        {
+            var d = p.Json();
+            o.File($"{Out}/ClampArm/{FileName((string)d["name"]!)}", PyJson.Dumps(d, 2) + "\n");
         }
         BuildingParts.AddPartDefs(o, defs, Out);
         o.File($"{BpOut}/CaledonHighport.json", PyJson.Dumps(Blueprint(HighportName,

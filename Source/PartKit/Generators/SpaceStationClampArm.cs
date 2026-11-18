@@ -191,3 +191,108 @@ public sealed partial class SpaceStationParts
     private static IEnumerable<double[]> HexRing(double x, double z, double r, double y) =>
         Enumerable.Range(0, 6).Select(i => new[] { x + r * Math.Cos(i * Math.PI / 3 + Math.PI / 6), y, z + r * Math.Sin(i * Math.PI / 3 + Math.PI / 6) });
 }
+
+// ---- the clamp arms in the game (Karl, 2026-11-18: "It looks so good!")
+
+public sealed partial class SpaceStationParts
+{
+    /// <summary>How far the arm reaches from its shoulder to a hull (m): past the lane's stage point on every Highport berth.</summary>
+    public const double ClampReach = 60;
+
+    /// <summary>
+    /// A berth's clamp arm base on a docking arm's top at along a, a little to the berth's side (side +1 or -1, so each berth's arm is
+    /// nearest its own berth): the drum, a hidden weld block on the top chord, and the saddle its head rests on when stowed, 13 m
+    /// along the arm away from the berth's middle (stowDir). The moving arm (yoke, boom, head) is drawn by the game from the
+    /// "clampArm" block: its shoulder, where its wrist rests stowed, its reach (ClampArmRender.cs, GameStationArms.cs).
+    /// </summary>
+    private static Part ClampArmBase(Kit k, string name, ArmFrame fr, double a, int side, double yb, int stowDir, double stowAlong = ClampStowAlong)
+    {
+        var p = k.Piece(name, "A berth's clamp arm: a turntable on the docking arm's top. Its telescoping boom reaches out to a ship at the end of the berth's approach lane, its magnetic clamp takes the hull and it draws the ship in to the berth.", Frame);
+        var deck = yb + ArmH;
+        var c = side * 0.6;
+        var (x, z) = fr.At(a, c);
+        fr.Hidden(p, a - 1.4, a + 1.4, c - 1.4, c + 1.4, deck, deck + 0.8);
+        Cyl(p, 'y', x, 0, z, 2.15, deck + 0.003, deck + 0.8, Frame, Dirty);
+        Shaped(p, x - 2.17, deck + 0.35, z - 2.17, x + 2.17, deck + 0.5, z + 2.17, Hazard, HazardFin, "cylinder", "+y");
+        // the saddle the parked head rests on
+        var (sx, sz) = fr.At(a + stowDir * stowAlong, c);
+        Detail(p, sx - 2.0, deck + 0.003, sz - 2.0, sx + 2.0, deck + ClampStowPad - 0.03, sz + 2.0, Frame, Dirty);
+        Lamp(p, sx - 2.02, deck + 0.3, sz - 0.3, sx + 2.02, deck + 0.5, sz + 0.3, LampCol);
+        var shoulder = P(x, deck + ShoulderUp, z);
+        var (wx, wz) = fr.At(a + stowDir * stowAlong, c);
+        var stow = P(wx, deck + ClampStowPad + HeadLen, wz);
+        p.Set(("clampArm", Kw(("shoulder", Pt(shoulder)), ("stow", Pt(stow)), ("reach", ClampReach))));
+        return Finish(p);
+    }
+
+    private const double ClampStowAlong = 13.2, ClampStowPad = 1.1;
+
+    private static List<object?> Pt(double[] v) => [.. v.Select(q => (object?)R(q))];
+
+    /// <summary>
+    /// The arm's moving pieces, drawn by the game where the arm is (ClampArmRender.cs), never placed: each in its own frame, the
+    /// shoulder pivot or the wrist at the origin (P adds the half cell; the game takes it back off). The yoke turns about +y, its
+    /// boom swinging in its y-z plane; boom section k runs along +z from 0 to its length; the head hangs from the wrist down -y to its
+    /// pad. Three heads: parked (dark), seeking (talons open, amber) and holding (talons shut, green).
+    /// </summary>
+    private static List<Part> ClampArmPieces(Kit k)
+    {
+        var all = new List<Part>();
+        var y = k.Piece("Clamp Arm Yoke", "A clamp arm's turning housing and shoulder yoke (drawn where the arm points).", Hazard);
+        var dk = -ShoulderUp; // (the drum's top, under the pivot)
+        Hidden(y, -0.2, -0.2, -0.2, 0.2, 0.2, 0.2);
+        Sock(y, "pivot", 0, 0.2, 0, "+y");
+        Hull(y, HexRing(0, 0, 2.0, dk + 0.805).Concat(HexRing(0, 0, 1.7, dk + 2.6)).ToList(), Plate2, Plated);
+        foreach (var s in new[] { -1, 1 })
+            Detail(y, s * 1.75, dk + 2.605, -1.6, s * 2.3, 1.4, 1.6, Hazard, HazardFin);
+        Cyl(y, 'x', 0, 0, 0, 0.95, -2.5, 2.5, Frame, Steel);
+        Lamp(y, -0.3, dk + 2.0, -1.95, 0.3, dk + 2.3, -1.85, LampCol);
+        all.Add(Finish(y, 1));
+        for (var i = 0; i < BoomT.Length; i++)
+        {
+            var b = k.Piece($"Clamp Arm Boom {i + 1}", "A clamp arm's telescoping boom section (drawn where the arm reaches).", Plate);
+            var t = BoomT[i] / 2;
+            Hidden(b, -0.2, -0.2, 1, 0.2, 0.2, 1.4);
+            Sock(b, "root", 0, 0, 0, "-z");
+            Solid(b, -t, -t, 0, t, t, BoomSect, i % 2 == 0 ? Plate : Plate3, Plated);
+            if (i == 0)
+            {
+                Detail(b, -t - 0.35, -t - 0.35, -1.6, t + 0.35, t + 0.35, 0.002, Frame, Dirty); // (the counterweight behind the pivot)
+                Detail(b, -0.15, t + 0.05, 0.5, 0.15, t + 0.35, BoomSect - 0.6, Tank, Rusty); // (the feed hose along its top)
+            }
+            if (i < BoomT.Length - 1)
+            {
+                var c = t + 0.125;
+                Detail(b, -c, -c, BoomSect - 0.5, c, c, BoomSect + 0.04, Hazard, HazardFin);
+                Lamp(b, -c - 0.02, -c - 0.02, BoomSect - 0.32, c + 0.02, c + 0.02, BoomSect - 0.18, "#3fd0ff");
+            }
+            all.Add(Finish(b, 1));
+        }
+        foreach (var (nm, pad, open) in new[] { ("Clamp Arm Head", Off, false), ("Clamp Arm Head Seek", Seek, true), ("Clamp Arm Head Lock", Locked, false) })
+        {
+            var h = k.Piece(nm, "A clamp arm's magnetic clamp head: wrist, neck, housing, pad and talons (drawn where the arm holds).", Hazard);
+            double g = -HeadLen; // (the pad's face)
+            Hidden(h, -0.2, -0.2, -0.2, 0.2, 0.2, 0.2);
+            Sock(h, "wrist", 0, 0.2, 0, "+y");
+            Sphere(h, 0, 0, 0, 1.25, Frame, Steel);
+            Shaped(h, -1.3, -0.12, -1.3, 1.3, 0.12, 1.3, pad, Steel, "cylinder", "+y", ("glow", true), ("paintable", false));
+            Cyl(h, 'y', 0, 0, 0, 0.75, g + 2.0, -0.6, Plate2, Plated);
+            foreach (var s in new[] { -1, 1 })
+                Bar(h, [s * 1.15, -0.2, 0], [s * 1.6, g + 2.02, 0], 0.34, Frame, Steel);
+            Hull(h, HexRing(0, 0, 2.3, g + 0.385).Concat(HexRing(0, 0, 1.85, g + 2.0)).ToList(), Hazard, HazardFin);
+            Cyl(h, 'y', 0, 0, 0, 2.4, g + 0.02, g + 0.38, HazardDark, "rubber");
+            Shaped(h, -2.46, g + 0.13, -2.46, 2.46, g + 0.27, 2.46, pad, Steel, "cylinder", "+y", ("glow", true), ("paintable", false));
+            Lamp(h, -0.3, g + 1.0, -2.07, 0.3, g + 1.4, -1.95, LampCol);
+            var (reach, foot) = open ? (3.9, 0.7) : (2.85, 0.06);
+            for (var t = 0; t < 4; t++)
+            {
+                var ang = Math.PI / 4 + t * Math.PI / 2;
+                double cx = Math.Cos(ang), cz = Math.Sin(ang);
+                Bar(h, [cx * 1.9, g + 1.6, cz * 1.9], [cx * (reach + 0.4), g + 1.15, cz * (reach + 0.4)], 0.4, Frame, Steel);
+                Bar(h, [cx * (reach + 0.4), g + 1.15, cz * (reach + 0.4)], [cx * reach, g + foot, cz * reach], 0.32, Hazard, HazardFin);
+            }
+            all.Add(Finish(h, 1));
+        }
+        return all;
+    }
+}
