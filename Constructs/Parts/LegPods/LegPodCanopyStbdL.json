@@ -16,7 +16,8 @@
     ],
     "angle": 90.0,
     "seconds": 1.5,
-    "hang": "hang"
+    "hang": "hang",
+    "gear": "canopy"
   },
   "mass": 240.0,
   "health": 2400,

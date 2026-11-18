@@ -1056,52 +1056,256 @@
       "by": "top"
     },
     {
-      "part": "Dray Landing Leg",
+      "part": "Leg Pod Housing XL",
       "on": 7,
       "socket": "leg0",
-      "by": "top",
-      "paint": "#264b67",
-      "finish": "worn paint"
+      "by": "top"
     },
     {
-      "part": "Dray Landing Leg",
+      "part": "Leg Pod Canopy Port XL",
+      "on": 160,
+      "socket": "canopyL",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Canopy Stbd XL",
+      "on": 160,
+      "socket": "canopyR",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Strut XL",
+      "on": 160,
+      "socket": "strut",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Carriage XL",
+      "on": 160,
+      "socket": "carriage",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Brace XL",
+      "on": 164,
+      "socket": "brace",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Foot XL",
+      "on": 160,
+      "socket": "foot",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Housing XL",
       "on": 7,
       "socket": "leg1",
-      "by": "top",
-      "paint": "#264b67",
-      "finish": "worn paint"
+      "by": "top"
     },
     {
-      "part": "Dray Landing Leg",
+      "part": "Leg Pod Canopy Port XL",
+      "on": 167,
+      "socket": "canopyL",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Canopy Stbd XL",
+      "on": 167,
+      "socket": "canopyR",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Strut XL",
+      "on": 167,
+      "socket": "strut",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Carriage XL",
+      "on": 167,
+      "socket": "carriage",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Brace XL",
+      "on": 171,
+      "socket": "brace",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Foot XL",
+      "on": 167,
+      "socket": "foot",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Housing XL",
       "on": 20,
       "socket": "leg2",
-      "by": "top",
-      "paint": "#264b67",
-      "finish": "worn paint"
+      "by": "top"
     },
     {
-      "part": "Dray Landing Leg",
+      "part": "Leg Pod Canopy Port XL",
+      "on": 174,
+      "socket": "canopyL",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Canopy Stbd XL",
+      "on": 174,
+      "socket": "canopyR",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Strut XL",
+      "on": 174,
+      "socket": "strut",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Carriage XL",
+      "on": 174,
+      "socket": "carriage",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Brace XL",
+      "on": 178,
+      "socket": "brace",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Foot XL",
+      "on": 174,
+      "socket": "foot",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Housing XL",
       "on": 20,
       "socket": "leg3",
-      "by": "top",
-      "paint": "#264b67",
-      "finish": "worn paint"
+      "by": "top"
     },
     {
-      "part": "Dray Landing Leg",
+      "part": "Leg Pod Canopy Port XL",
+      "on": 181,
+      "socket": "canopyL",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Canopy Stbd XL",
+      "on": 181,
+      "socket": "canopyR",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Strut XL",
+      "on": 181,
+      "socket": "strut",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Carriage XL",
+      "on": 181,
+      "socket": "carriage",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Brace XL",
+      "on": 185,
+      "socket": "brace",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Foot XL",
+      "on": 181,
+      "socket": "foot",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Housing XL",
       "on": 21,
       "socket": "leg4",
-      "by": "top",
-      "paint": "#264b67",
-      "finish": "worn paint"
+      "by": "top"
     },
     {
-      "part": "Dray Landing Leg",
+      "part": "Leg Pod Canopy Port XL",
+      "on": 188,
+      "socket": "canopyL",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Canopy Stbd XL",
+      "on": 188,
+      "socket": "canopyR",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Strut XL",
+      "on": 188,
+      "socket": "strut",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Carriage XL",
+      "on": 188,
+      "socket": "carriage",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Brace XL",
+      "on": 192,
+      "socket": "brace",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Foot XL",
+      "on": 188,
+      "socket": "foot",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Housing XL",
       "on": 21,
       "socket": "leg5",
-      "by": "top",
-      "paint": "#264b67",
-      "finish": "worn paint"
+      "by": "top"
+    },
+    {
+      "part": "Leg Pod Canopy Port XL",
+      "on": 195,
+      "socket": "canopyL",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Canopy Stbd XL",
+      "on": 195,
+      "socket": "canopyR",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Strut XL",
+      "on": 195,
+      "socket": "strut",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Carriage XL",
+      "on": 195,
+      "socket": "carriage",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Brace XL",
+      "on": 199,
+      "socket": "brace",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Foot XL",
+      "on": 195,
+      "socket": "foot",
+      "by": "hang"
     },
     {
       "part": "Dray Boarding Ladder",
@@ -1361,24 +1565,24 @@
   ],
   "wires": [
     [
-      167,
-      169
+      203,
+      205
     ],
     [
-      177,
-      175
+      213,
+      211
     ],
     [
-      177,
-      176
+      213,
+      212
     ],
     [
-      180,
-      178
+      216,
+      214
     ],
     [
-      180,
-      179
+      216,
+      215
     ]
   ],
   "conduit": true,

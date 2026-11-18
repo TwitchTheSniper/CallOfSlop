@@ -12,6 +12,7 @@
     "travel": 0.7787,
     "seconds": 3.5,
     "hang": "hang",
+    "gear": "leg",
     "link": {
       "crank": [
         0.0,

@@ -46,7 +46,32 @@ public sealed class LegPodParts : IPartGenerator
         new("S", 0.5, 220, 140, 40, 1500),
         new("M", 0.75, 700, 420, 110, 3500),
         new("L", 1.0, 1500, 900, 240, 6000),
+        new("XL", 1.25, 2900, 1750, 470, 9000), // (the Zero Day's and the Dray's: their keels stand about 3.2 m up)
     ];
+
+    /// <summary>Where a size's pad stands under the pod's top, its legs down (a ship's ground: its keel's mount less this).</summary>
+    public static double ReachOf(string size) => Sizes.First(s => s.L == size).Reach;
+
+    /// <summary>
+    /// A whole pod of size <paramref name="size"/> hung by its housing's top on socket <paramref name="sock"/> of step <paramref name="on"/>
+    /// (its nose forward, -z). Returns the housing's step.
+    /// </summary>
+    public static int HangPod(BuildingParts.Blueprint bp, string size, int on, string sock)
+    {
+        var h = bp.Hang($"Leg Pod Housing {size}", on, sock, "top"); // (its nose forward, -z: a housing turned half round puts its leaves on the wrong sides)
+        PodOn(bp, size, h);
+        return h;
+    }
+
+    private static void PodOn(BuildingParts.Blueprint bp, string size, int h)
+    {
+        bp.Hang($"Leg Pod Canopy Port {size}", h, "canopyL", "hang");
+        bp.Hang($"Leg Pod Canopy Stbd {size}", h, "canopyR", "hang");
+        bp.Hang($"Leg Pod Strut {size}", h, "strut", "hang");
+        var car = bp.Hang($"Leg Pod Carriage {size}", h, "carriage", "hang");
+        bp.Hang($"Leg Pod Brace {size}", car, "brace", "hang");
+        bp.Hang($"Leg Pod Foot {size}", h, "foot", "hang");
+    }
 
     // The pod in L metres (scaled by K): top half width and half length, the beam's height and half width, the mouth's.
     private const double TopW = 0.72, TopL = 2.05, BeamY = -0.42, BeamW = 0.78, MouthY = -1.0, MouthW = 0.6, MouthL = 1.8; // (Karl, 2026-11-18: as small as the leg allows)
@@ -289,7 +314,7 @@ public sealed class LegPodParts : IPartGenerator
         Hidden(p, k, sx * In, MouthY - 0.06, -Lz, sx * Hinge, MouthY, Lz);
         p.Sock("hang", Pt(k, sx * (Hinge - 0.02), MouthY, 0), "+y");
         // It turns about its bottom outboard corner, the inner edge down (right hand about +z: +90 on starboard, -90 on port).
-        p.Set(("door", Kw(("kind", "swing"), ("axis", "+z"), ("pivot", new List<object?> { Py.Round(sx * Hinge * k, 4), Py.Round((MouthY - 0.06) * k, 4), 0.0 }), ("angle", 90.0 * side), ("seconds", 1.5), ("hang", "hang"))));
+        p.Set(("door", Kw(("kind", "swing"), ("axis", "+z"), ("pivot", new List<object?> { Py.Round(sx * Hinge * k, 4), Py.Round((MouthY - 0.06) * k, 4), 0.0 }), ("angle", 90.0 * side), ("seconds", 1.5), ("hang", "hang"), ("gear", "canopy"))));
         return p.Stats(s.LeafMass, s.Health * 0.4, 30, 4.0);
     }
 
@@ -359,7 +384,7 @@ public sealed class LegPodParts : IPartGenerator
         // Collision: the root eye only (a held door: what is drawn swings, the collider stays at the hinge).
         Hidden(p, k, -StrutW, y - StrutH, z0 - StrutH, StrutW, y + StrutH, z0 + StrutH);
         p.Sock("hang", Pt(k, 0, y + StrutH, z0), "+y");
-        p.Set(("door", Kw(("kind", "swing"), ("axis", "+x"), ("pivot", V3(k, 0, y, z0)), ("angle", Unfurl), ("held", true), ("seconds", 3.5), ("hang", "hang"))));
+        p.Set(("door", Kw(("kind", "swing"), ("axis", "+x"), ("pivot", V3(k, 0, y, z0)), ("angle", Unfurl), ("held", true), ("seconds", 3.5), ("hang", "hang"), ("gear", "leg"))));
         return p.Stats(s.GantryMass * 0.45, s.Health * 0.6, 30, 4.0);
     }
 
@@ -381,7 +406,7 @@ public sealed class LegPodParts : IPartGenerator
         Across(p, k, Pin0.Y, Pin0.Z, 0.03, -InW + 0.02, InW - 0.02, Chrome, "chrome");
         Hidden(p, k, CarMid, Pin0.Y - 0.05, Pin0.Z - 0.05, CarShoe, Pin0.Y + 0.05, Pin0.Z + 0.05);
         p.Sock("hang", Pt(k, CarMid, Pin0.Y, Pin0.Z), "-x");
-        p.Set(("door", Kw(("kind", "swing"), ("axis", "+x"), ("held", true), ("seconds", 3.5), ("hang", "hang"), ("link", LinkBlock(k)))));
+        p.Set(("door", Kw(("kind", "swing"), ("axis", "+x"), ("held", true), ("seconds", 3.5), ("hang", "hang"), ("gear", "leg"), ("link", LinkBlock(k)))));
         return p.Stats(s.GantryMass * 0.12, s.Health * 0.5, 30, 4.0);
     }
 
@@ -409,7 +434,7 @@ public sealed class LegPodParts : IPartGenerator
         Hidden(p, k, CarMid, y - CarH, z - CarHalf, CarShoe, y + CarH, z - 0.06);
         p.Sock("hang", Pt(k, InW, y, z + 0.08), "+x");
         p.Sock("brace", Pt(k, CarMid, y, z), "+x");
-        p.Set(("door", Kw(("kind", "slide"), ("axis", "-z"), ("travel", Py.Round(CarTravel * k, 4)), ("seconds", 3.5), ("hang", "hang"), ("link", LinkBlock(k)))));
+        p.Set(("door", Kw(("kind", "slide"), ("axis", "-z"), ("travel", Py.Round(CarTravel * k, 4)), ("seconds", 3.5), ("hang", "hang"), ("gear", "leg"), ("link", LinkBlock(k)))));
         return p.Stats(s.GantryMass * 0.2, s.Health * 0.5, 30, 4.0);
     }
 
@@ -435,7 +460,7 @@ public sealed class LegPodParts : IPartGenerator
         Hidden(p, k, -PadW, bot, az - PadL, PadW, top, az + PadL);
         Hidden(p, k, -StrutW - 0.07, top, az - 0.18, StrutW + 0.07, top + 0.05, az + 0.18);
         p.Sock("hang", Pt(k, 0, (top + bot) / 2, az + PadL), "+z");
-        p.Set(("door", Kw(("kind", "swing"), ("axis", "+x"), ("held", true), ("seconds", 3.5), ("hang", "hang"),
+        p.Set(("door", Kw(("kind", "swing"), ("axis", "+x"), ("held", true), ("seconds", 3.5), ("hang", "hang"), ("gear", "leg"),
             ("link", Kw(("crank", V3(k, 0, CrankY, CrankZ)), ("crankAxis", "+x"), ("crankAngle", Unfurl), ("knee", V3(k, 0, ay, az)), ("ride", true))))));
         return p.Stats(s.GantryMass * 0.23, s.Health * 0.6, 30, 4.0);
     }
@@ -464,13 +489,7 @@ public sealed class LegPodParts : IPartGenerator
     {
         var bp = new BuildingParts.Blueprint($"Landing Leg Pod {s.L}",
             $"A landing leg pod ({s.L}) assembled: the housing, its two canopy leaves and the gantry with its leg, stowed. Weld the housing's top under a keel; open the canopy, then lower the gantry.", defs);
-        var h = bp.First($"Leg Pod Housing {s.L}");
-        bp.Hang($"Leg Pod Canopy Port {s.L}", h, "canopyL", "hang");
-        bp.Hang($"Leg Pod Canopy Stbd {s.L}", h, "canopyR", "hang");
-        bp.Hang($"Leg Pod Strut {s.L}", h, "strut", "hang");
-        var car = bp.Hang($"Leg Pod Carriage {s.L}", h, "carriage", "hang");
-        bp.Hang($"Leg Pod Brace {s.L}", car, "brace", "hang");
-        bp.Hang($"Leg Pod Foot {s.L}", h, "foot", "hang");
+        PodOn(bp, s.L, bp.First($"Leg Pod Housing {s.L}"));
         return bp.Json();
     }
 

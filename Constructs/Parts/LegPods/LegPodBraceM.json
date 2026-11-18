@@ -12,6 +12,7 @@
     "held": true,
     "seconds": 3.5,
     "hang": "hang",
+    "gear": "leg",
     "link": {
       "crank": [
         0.0,

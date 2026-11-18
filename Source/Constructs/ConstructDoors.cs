@@ -38,6 +38,7 @@ public sealed class CDoorDef
     // the collider, rays and players see the held leaf where it settled, not where it is drawn: keep its solid boxes at its hinge.
     public bool Held;
     public Vector3 Shift; // a held door's settle, the part's frame
+    public byte Gear; // "gear": "canopy" (1) or "leg" (2): a landing leg pod's, worked together by a seat's gear key (ConstructDoors.ToggleGear)
     public int Ticks => Math.Max(1, (int)MathF.Round(Seconds * World.TickRate));
 }
 
@@ -85,7 +86,7 @@ public static class ConstructDoors
         var where = $"{file}, door";
         if (d.Role != PartRole.Door)
             throw new ConstructPartException($"{file}: only a part with \"role\": \"door\" has a \"door\" block");
-        ConstructParts.Known(b, ["kind", "axis", "pivot", "angle", "travel", "seconds", "hang", "dock", "launch", "link", "held"], where);
+        ConstructParts.Known(b, ["kind", "axis", "pivot", "angle", "travel", "seconds", "hang", "dock", "launch", "link", "held", "gear"], where);
         var dd = new CDoorDef();
         var kind = ConstructParts.Str(ConstructParts.Need(b, "kind", where), file, "door.kind");
         dd.Slide = kind switch
@@ -115,6 +116,12 @@ public static class ConstructDoors
                 throw new ConstructPartException($"{file}: \"door.angle\" is 90, 180, -90 or -180 degrees (a part turns in quarter turns; a \"held\" door any angle to 180)");
             dd.Angle = deg * MathF.PI / 180f;
         }
+        dd.Gear = ConstructParts.Opt(b, "gear") is { } gr ? ConstructParts.Str(gr, file, "door.gear") switch
+        {
+            "canopy" => (byte)1,
+            "leg" => (byte)2,
+            _ => throw new ConstructPartException($"{file}: \"door.gear\" is canopy or leg"),
+        } : (byte)0;
         if (dd.Held && (dd.Dock || dd.Launch))
             throw new ConstructPartException($"{file}: a \"held\" door is neither a dock nor a launch hatch");
         dd.Seconds = ConstructParts.Opt(b, "seconds") is { } sec ? ConstructParts.Num(sec, file, "door.seconds") : 0.8f;
@@ -317,10 +324,63 @@ public static class ConstructDoors
                 continue;
             if (c.LaunchHatchHold > 0 && --c.LaunchHatchHold == 0)
                 ShutLaunchHatches(world, c);
+            if (c.GearTicks > 0 && --c.GearTicks == 0)
+                CommandGear(world, c, c.GearOut ? (byte)2 : (byte)1, c.GearOut); // (the second half of a gear key: the legs after the canopy, or the canopy after the legs)
             if ((c.DoorMovingCount | c.DoorWiredCount) == 0)
                 continue;
             StepBody(world, c);
         }
+    }
+
+    // ---- Landing gear: the landing leg pods' canopies and legs, worked as one by a seat's gear key ------------------
+
+    /// <summary>0: no landing leg pod on the body; 1: its legs are up (or going up); 2: down (or going down). Every peer (the seat's HUD line).</summary>
+    public static int GearState(Construct c)
+    {
+        if (c.DoorCount == 0 || !c.EnsureDoors())
+            return 0;
+        var any = false;
+        for (var k = 0; k < c.DoorCount; k++)
+            if (c.Parts[c.Doors[k].Part].D.Door!.Gear == 2)
+            {
+                any = true;
+                if (!TargetOpen(c, c.Doors[k].Part))
+                    return 1;
+            }
+        return any ? 2 : 0;
+    }
+
+    public static bool HasGear(Construct c) => GearState(c) > 0;
+
+    /// <summary>
+    /// Server: the gear key. Lowering, the canopies open at once and the legs follow once they are open; raising, the legs come up
+    /// at once and the canopies shut after them (Karl, 2026-11-18: "the canopy opens, and ... the gantry inside ... move[s] the landing
+    /// feet out"). The second half waits on <see cref="Construct.GearTicks"/> (a key again turns it round). A refusal's reason, or null.
+    /// </summary>
+    public static string? ToggleGear(ConstructWorld world, Construct c)
+    {
+        var state = GearState(c);
+        if (state == 0)
+            return "this craft has no landing leg pods";
+        var lower = state == 1;
+        c.GearOut = lower;
+        var first = lower ? (byte)1 : (byte)2;
+        CommandGear(world, c, first, lower);
+        var ticks = 0;
+        for (var k = 0; k < c.DoorCount; k++)
+            if (c.Parts[c.Doors[k].Part].D.Door is { } dd && dd.Gear == first)
+                ticks = Math.Max(ticks, dd.Ticks);
+        c.GearTicks = ticks + 3; // (a few ticks' gap, so the second half starts from a settled first)
+        return null;
+    }
+
+    private static void CommandGear(ConstructWorld world, Construct c, byte gear, bool open)
+    {
+        if (!c.EnsureDoors())
+            return;
+        for (var k = 0; k < c.DoorCount; k++)
+            if (c.Parts[c.Doors[k].Part].D.Door!.Gear == gear)
+                Command(world, c, k, open);
     }
 
     // ---- Launch hatches -------------------------------------------------------------------------------------------

@@ -40,6 +40,8 @@ public sealed partial class Construct
     public int DoorLeafCount;
     public int DoorDockCount; // docking hatches among them (ConstructDoors.StepDocks)
     public int DoorMovingCount, DoorWiredCount; // (the server's step looks at a body only while one is above 0)
+    public int GearTicks; // server: ticks until a gear key's second half (ConstructDoors.ToggleGear); not saved
+    public bool GearOut; // ...and which way it goes: true lowers the legs (after the canopy), false shuts the canopy (after the legs)
     public int DoorHeldCount; // "held" doors (ConstructDoors.cs: drawn at their open pose while open, so the drawing looks them up)
     public int LaunchHatchHold; // server: ticks until the launch hatches opened for its launches shut (0: none is held open; ConstructDoors.OpenForLaunch)
     public int DoorEpoch; // goes up whenever the door list is built again (the merged meshes plan again, leaving door parts out: ConstructRenderBatch.cs)

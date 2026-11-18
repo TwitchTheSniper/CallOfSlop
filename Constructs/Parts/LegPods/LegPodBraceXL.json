@@ -1,0 +1,391 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Leg Pod Brace XL",
+  "description": "A landing leg pod's brace (XL): two boxed bars from the strut's knee to a pin on the carriage. As the strut swings down the carriage runs forward and the brace turns with them, locking the leg at 45 degrees. A generic ship fitting: it fits any ship.",
+  "group": "Ship",
+  "section": "Ship fittings",
+  "role": "door",
+  "tool": "welder",
+  "door": {
+    "kind": "swing",
+    "axis": "+x",
+    "held": true,
+    "seconds": 3.5,
+    "hang": "hang",
+    "gear": "leg",
+    "link": {
+      "crank": [
+        0.0,
+        -0.625,
+        -1.4375
+      ],
+      "crankAxis": "+x",
+      "crankAngle": 45.0,
+      "knee": [
+        0.0,
+        -0.625,
+        -0.1875
+      ],
+      "pin": [
+        0.0,
+        -0.35,
+        1.1597
+      ],
+      "rail": "-z"
+    }
+  },
+  "mass": 210.0,
+  "health": 4500,
+  "armour": 30,
+  "material": "steel",
+  "color": "#30353b",
+  "attachSeconds": 4.0,
+  "boxes": [
+    {
+      "min": [
+        -0.375,
+        -0.6752,
+        -0.1461
+      ],
+      "max": [
+        -0.25,
+        -0.2998,
+        1.1183
+      ],
+      "color": "#30353b",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          -0.375,
+          -0.6752,
+          -0.1211
+        ],
+        [
+          -0.25,
+          -0.6752,
+          -0.1211
+        ],
+        [
+          -0.25,
+          -0.5528,
+          -0.1461
+        ],
+        [
+          -0.375,
+          -0.5528,
+          -0.1461
+        ],
+        [
+          -0.375,
+          -0.4222,
+          1.1183
+        ],
+        [
+          -0.25,
+          -0.4222,
+          1.1183
+        ],
+        [
+          -0.25,
+          -0.2998,
+          1.0933
+        ],
+        [
+          -0.375,
+          -0.2998,
+          1.0933
+        ]
+      ],
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -0.385,
+        -0.465,
+        0.9297
+      ],
+      "max": [
+        -0.24,
+        -0.2872,
+        1.1338
+      ],
+      "color": "#e0b020",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          -0.385,
+          -0.2872,
+          1.1048
+        ],
+        [
+          -0.24,
+          -0.2872,
+          1.1048
+        ],
+        [
+          -0.24,
+          -0.4293,
+          1.1338
+        ],
+        [
+          -0.385,
+          -0.4293,
+          1.1338
+        ],
+        [
+          -0.385,
+          -0.323,
+          0.9297
+        ],
+        [
+          -0.24,
+          -0.323,
+          0.9297
+        ],
+        [
+          -0.24,
+          -0.465,
+          0.9587
+        ],
+        [
+          -0.385,
+          -0.465,
+          0.9587
+        ]
+      ],
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.375,
+        -0.7125,
+        -0.275
+      ],
+      "max": [
+        -0.25,
+        -0.5375,
+        -0.1
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+x",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.375,
+        -0.425,
+        1.0847
+      ],
+      "max": [
+        -0.25,
+        -0.275,
+        1.2347
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+x",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        0.25,
+        -0.6752,
+        -0.1461
+      ],
+      "max": [
+        0.375,
+        -0.2998,
+        1.1183
+      ],
+      "color": "#30353b",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          0.25,
+          -0.6752,
+          -0.1211
+        ],
+        [
+          0.375,
+          -0.6752,
+          -0.1211
+        ],
+        [
+          0.375,
+          -0.5528,
+          -0.1461
+        ],
+        [
+          0.25,
+          -0.5528,
+          -0.1461
+        ],
+        [
+          0.25,
+          -0.4222,
+          1.1183
+        ],
+        [
+          0.375,
+          -0.4222,
+          1.1183
+        ],
+        [
+          0.375,
+          -0.2998,
+          1.0933
+        ],
+        [
+          0.25,
+          -0.2998,
+          1.0933
+        ]
+      ],
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        0.24,
+        -0.465,
+        0.9297
+      ],
+      "max": [
+        0.385,
+        -0.2872,
+        1.1338
+      ],
+      "color": "#e0b020",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          0.24,
+          -0.2872,
+          1.1048
+        ],
+        [
+          0.385,
+          -0.2872,
+          1.1048
+        ],
+        [
+          0.385,
+          -0.4293,
+          1.1338
+        ],
+        [
+          0.24,
+          -0.4293,
+          1.1338
+        ],
+        [
+          0.24,
+          -0.323,
+          0.9297
+        ],
+        [
+          0.385,
+          -0.323,
+          0.9297
+        ],
+        [
+          0.385,
+          -0.465,
+          0.9587
+        ],
+        [
+          0.24,
+          -0.465,
+          0.9587
+        ]
+      ],
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        0.25,
+        -0.7125,
+        -0.275
+      ],
+      "max": [
+        0.375,
+        -0.5375,
+        -0.1
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+x",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        0.25,
+        -0.425,
+        1.0847
+      ],
+      "max": [
+        0.375,
+        -0.275,
+        1.2347
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+x",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.6625,
+        -0.3875,
+        1.1222
+      ],
+      "max": [
+        0.6625,
+        -0.3125,
+        1.1972
+      ],
+      "color": "#9aa0a4",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+x",
+      "finish": "chrome"
+    },
+    {
+      "min": [
+        0.375,
+        -0.4125,
+        1.0972
+      ],
+      "max": [
+        0.5625,
+        -0.2875,
+        1.2222
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "hang",
+      "at": [
+        0.375,
+        -0.35,
+        1.1597
+      ],
+      "dir": "-x"
+    }
+  ]
+}

@@ -112,6 +112,7 @@ public enum CActKind : byte
     Dampeners, // u16 body (the seat's): the seated player flips that ship's inertia dampeners (protocol 340; ConstructFlight.ToggleDampeners)
     MouseSteer, // u16 body (the seat's): the seated player takes that ship's nose with the mouse, or lets it go (protocol 349; ConstructFlight.ToggleMouseSteer)
     MmuOff, // nothing: a worn MMU comes off the wearer's back where they are, a loose part holding its fuel (protocol 365; GameSandboxEva.cs)
+    LandingGear, // u16 body (the seat's): the seated player lowers or raises that craft's landing leg pods (protocol 367; ConstructDoors.ToggleGear)
 }
 
 /// <summary>
@@ -1429,6 +1430,14 @@ public sealed partial class Game
                     return "not in a seat of that craft";
                 return ConstructFlight.ToggleMouseSteer(Constructs, craft);
             }
+            case CActKind.LandingGear:
+            {
+                var body = r.U16();
+                ref var sh = ref hands.Hand(p.Id);
+                if (!sh.Seated || sh.SeatBody != body || Constructs.Get(body) is not { } craft)
+                    return "not in a seat of that craft";
+                return ConstructDoors.ToggleGear(Constructs, craft);
+            }
             case CActKind.StoreIn:
             case CActKind.TakeStored:
             {
@@ -1601,6 +1610,7 @@ public sealed partial class Game
                 break;
             case CActKind.Dampeners:
             case CActKind.MouseSteer:
+            case CActKind.LandingGear:
                 w.U16(body);
                 break;
             case CActKind.SeatKeys:
@@ -2914,6 +2924,8 @@ public sealed partial class Game
             {
                 lines.Add(new HudLine(jump, jump.StartsWith("Jump drive: ") && !jump.Contains(" ly, ") ? orange : white)); // (GameSpaceJump.cs)
             }
+            if (ConstructDoors.GearState(car) is var gear and > 0)
+                lines.Add(new HudLine(gear == 2 ? SandboxKeys.GearRaise : SandboxKeys.GearLower, dim)); // (the landing leg pods: ConstructDoors.ToggleGear)
             if (car.GunCount > 0)
             {
                 var carGun = Math.Max(0, GunOfSeat(car, h.SeatPart));

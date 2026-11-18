@@ -41,7 +41,11 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
 
     private const double Cx = 6.5; // the centreline
     private const double Ft0 = 0.25, Ceil0 = 3.25, Ft1 = 3.5, Ceil1 = 6.5, Roof = 6.75; // floor tops and ceilings of the two decks
-    private const double Ground = -4.85; // where the legs stand (0.75 m longer for the Limpet docked under the keel: 0.8 m under its belly)
+    // The legs: four XL landing leg pods under the keel (Karl, 2026-11-18: "add and replace legs for the Zero Day"; LegPodParts.cs). Their
+    // pads stand LegPodParts.ReachOf("XL") (3.23 m) under the keel, the docked Limpet's belly 0.76 m off the ground. The front pair
+    // forward of the Limpet, the aft pair aft of it and the belly hatch: a long stance.
+    private const string PodSize = "XL";
+    private static readonly (string Name, double X, double Z)[] LegPods = [("legFL", -1.85, 18.2), ("legFR", 1.85, 18.2), ("legBL", -1.85, 35.4), ("legBR", 1.85, 35.4)];
     private const double ZFront = 8.5, ZStep = 14.75, ZAft = 42.0; // the rooms' front, where they widen, their back
     // A PDC's magazine (ship-works.md 5.2): a bunker in the hull's void behind the room's side wall at its barbette, aft of the
     // feed's line: its size out from the wall, up and along (m), and how far aft of the feed's line it starts. 0.7 m3: 2,800 rounds.
@@ -700,10 +704,23 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         Sock(p, "bow", Cx, 0.0, 8.0, "-z");
                 Sock(p, "lowerFore", Cx - 2.0, 0.0, 12.0, "+y");
         Sock(p, "lowerAft", Cx - 2.0, 0.0, 36.0, "+y");
-                foreach (var (s, z, n) in new[] { (-1, 18.0, "legFL"), (1, 18.0, "legFR"), (-1, 34.0, "legBL"), (1, 34.0, "legBR") })
-            Sock(p, n, Cx + s * 2.2, At(z)[0].Y + 0.02, z, "-y");
-        foreach (var (s, z, n) in new[] { (-1, 14.25, "liftFL"), (1, 14.25, "liftFR"), (-1, 37.75, "liftBL"), (1, 37.75, "liftBR") })
+        foreach (var (n, x, z) in LegPods) // (each on a pad 6 mm proud of the flat, so the housing's top clears the keel's plate)
+        {
+            var y = At(z)[0].Y - 0.006;
+            Solid(p, Cx + x - 0.5, y, z - 0.5, Cx + x + 0.5, At(z)[0].Y + 0.15, z + 0.5, Frame, "dirty steel");
+            Sock(p, n, Cx + x, y, z, "-y");
+        }
+        foreach (var (s, z, n) in new[] { (-1, 14.25, "liftFL"), (1, 14.25, "liftFR") })
             Sock(p, n, Cx + s * 1.4, At(z)[0].Y + 0.02, z, "-y");
+        // The aft pair 1.75 m further aft than before the leg pods (clear of the aft pods), where the keel slopes down to the stern: each
+        // on a flat pad under the slope, inside the jet's top.
+        foreach (var (s, n) in new[] { (-1, "liftBL"), (1, "liftBR") })
+        {
+            const double z = 39.5, half = 0.5;
+            var y = At(z + half)[0].Y - 0.006;
+            Solid(p, Cx + s * 1.4 - half, y, z - half, Cx + s * 1.4 + half, At(z)[0].Y + 0.15, z + half, Frame, "dirty steel");
+            Sock(p, n, Cx + s * 1.4, y, z, "-y");
+        }
         p.Set(("fuelTank", Kw(("capacity", 14000))), ("ports", Py.L(BigDriveParts.PipePort("Fuel out", "out", [.. P(Cx, -1.0, 42.0).Cast<object>()], "+z", "fuel"))));
         return p.Stats(26000, 60000, 45, 30.0);
     }
@@ -1709,21 +1726,6 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         return p.Stats(900 * scale, 3000, 20, 6.0);
     }
 
-    private static Part Leg()
-    {
-        var p = new Part("Zero Day Landing Leg", Small, Section, "A landing leg: a telescopic strut and its ram on a broad pad.", role: "frame", tool: "welder", material: "steel", color: Frame, group: Group);
-        var bottom = Ground - Mid[0].Item2 - 0.02; // (the pad's underside, below the keel)
-        p.Add(Box([-0.24, -0.9, -0.24], [0.24, 0, 0.24], Armour, shape: Kw(("finish", "plated steel"))));
-        p.Add(Box([-0.16, bottom + 0.2, -0.16], [0.16, -0.9, 0.16], "#9aa0a4", shape: Kw(("finish", "chrome"))));
-        p.Add(Box([-0.55, bottom, -0.55], [0.55, bottom + 0.2, 0.55], Frame, shape: Kw(("finish", "rubber"))));
-        p.Add(Box([-0.32, bottom + 0.2, -0.32], [0.32, bottom + 0.3, 0.32], Frame, shape: Kw(("finish", "dirty steel"))));
-        p.Add(Box([0.26, -0.8, -0.06], [0.36, -0.1, 0.06], "#4a4e52", detail: true, shape: Kw(("finish", "steel"))));
-        p.Add(Box([0.28, bottom + 0.35, -0.04], [0.34, -0.8, 0.04], "#9aa0a4", detail: true, shape: Kw(("finish", "chrome"))));
-        p.Add(Box([-0.245, -0.45, -0.245], [0.245, -0.33, 0.245], Hazard, detail: true, shape: Kw(("finish", "hazard paint"))));
-        p.Sock("top", [0, 0, 0], "+y");
-        return p.Stats(1100, 3500, 20, 6.0);
-    }
-
     // ---- ladders
 
     private static Part Ladder(string name, double rise, string desc, string sockName, double[] sockAt, string sockDir)
@@ -2285,8 +2287,8 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         }
         foreach (var n in new[] { "liftFL", "liftFR", "liftBL", "liftBR" })
             Hang(bp, "Zero Day Lift Jet", keel, n, "top");
-        foreach (var n in new[] { "legFL", "legFR", "legBL", "legBR" })
-            Hang(bp, "Zero Day Landing Leg", keel, n, "top");
+        foreach (var (n, _, _) in LegPods)
+            LegPodParts.HangPod(bp, PodSize, Holder(bp, keel, n), n); // (B in a seat lowers and raises them: ConstructDoors.ToggleGear)
         foreach (var n in new[] { "retroL", "retroR" })
             Hang(bp, "Zero Day Retro Jet", bow, n, "top");
         foreach (var piece in new[] { bow, stern })
@@ -2495,7 +2497,6 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
             .. structure, Barbette(), Collar(), Bell(),
             Jet("Zero Day Lift Jet", $"A lift jet under the Zero Day's keel: {LiftForce / 1e6:0.0} MN straight down.", LiftForce, 1.4),
             Jet("Zero Day Retro Jet", $"A retro jet in the Zero Day's cheek: {RetroForce / 1e6:0.0} MN forward, to slow it down.", RetroForce, 1.0),
-            Leg(),
             Ladder("Zero Day Ladder", Ft1 - Ft0, "A ladder between the Zero Day's decks: F climbs it.", "bottom", [0, 0, -0.095], "-y"),
             Railgun(), Pdc(), Countermeasures(), Reactor(), FlightComputer(), Locker(), TorpedoHatch(),
         ];
