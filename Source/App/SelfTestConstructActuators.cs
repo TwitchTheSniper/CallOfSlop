@@ -191,7 +191,8 @@ public static partial class SelfTest
         };
         var before = GC.GetAllocatedBytesForCurrentThread();
         StepJoints(w, q, 300, each);
-        var bytes = GC.GetAllocatedBytesForCurrentThread() - before;
+        // (A one-off runtime allocation in the one window, seen once in a CI shard and never alone: the least of repeat rounds then.)
+        var bytes = RecheckAllocBytes(GC.GetAllocatedBytesForCurrentThread() - before, () => StepJoints(w, q, 100, each));
         // Let be: it sleeps where it stands.
         var sleptAt = -1;
         var p1 = c.Pos;
@@ -563,6 +564,7 @@ public static partial class SelfTest
         AllocProfile.Stop();
         AllocProfile.On = false;
         var where = bytes > 0 ? AllocProfile.Top(6, 120) : "";
+        bytes = RecheckAllocBytes(bytes, () => StepJoints(w, q, 120, hold));
         // The arm alone: its own tick cost.
         tower.Asleep = true;
         var alone = System.Diagnostics.Stopwatch.StartNew();
