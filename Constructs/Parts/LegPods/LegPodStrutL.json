@@ -1,0 +1,272 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Leg Pod Strut L",
+  "description": "A landing leg pod's strut (L): a graphite sleeve and chrome ram on a broad pad, hinged at the pod's bow end. Stowed it lies along the pod; it swings a quarter turn down to stand the pad 3.25 m under the pod's top, its brace and carriage with it. A generic ship fitting: it fits any ship.",
+  "group": "Ship",
+  "section": "Ship fittings",
+  "role": "door",
+  "tool": "welder",
+  "door": {
+    "kind": "swing",
+    "axis": "+x",
+    "pivot": [
+      0.0,
+      -0.65,
+      -1.0
+    ],
+    "angle": 90,
+    "seconds": 3.5,
+    "hang": "hang"
+  },
+  "mass": 540.0,
+  "health": 3600,
+  "armour": 30,
+  "material": "steel",
+  "color": "#3b4148",
+  "attachSeconds": 4.0,
+  "boxes": [
+    {
+      "min": [
+        -0.2,
+        -0.85,
+        -1.2
+      ],
+      "max": [
+        0.2,
+        -0.45,
+        -0.8
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+x",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.17,
+        -0.82,
+        -0.9
+      ],
+      "max": [
+        0.17,
+        -0.48,
+        0.85
+      ],
+      "color": "#3b4148",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -0.185,
+        -0.835,
+        0.85
+      ],
+      "max": [
+        0.185,
+        -0.465,
+        0.93
+      ],
+      "color": "#e0b020",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.11,
+        -0.76,
+        0.93
+      ],
+      "max": [
+        0.11,
+        -0.54,
+        1.28
+      ],
+      "color": "#9aa0a4",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "finish": "chrome"
+    },
+    {
+      "min": [
+        -0.19,
+        -0.75,
+        0.48
+      ],
+      "max": [
+        -0.15,
+        -0.55,
+        0.72
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        0.15,
+        -0.75,
+        0.48
+      ],
+      "max": [
+        0.19,
+        -0.55,
+        0.72
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.2,
+        -0.7,
+        0.55
+      ],
+      "max": [
+        0.2,
+        -0.6,
+        0.65
+      ],
+      "color": "#9aa0a4",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+x",
+      "finish": "chrome"
+    },
+    {
+      "min": [
+        -0.14,
+        -0.79,
+        1.16
+      ],
+      "max": [
+        0.14,
+        -0.51,
+        1.44
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "shape": "sphere",
+      "segments": 12,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.47,
+        -1.12,
+        1.44
+      ],
+      "max": [
+        0.47,
+        -0.18,
+        1.5
+      ],
+      "color": "#3b4148",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "taper": [
+        0.7,
+        0.7
+      ],
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -0.47,
+        -1.12,
+        1.5
+      ],
+      "max": [
+        0.47,
+        -0.18,
+        1.55
+      ],
+      "color": "#30353b",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -0.482,
+        -1.132,
+        1.51
+      ],
+      "max": [
+        0.482,
+        -0.168,
+        1.54
+      ],
+      "color": "#e0b020",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.43,
+        -1.08,
+        1.55
+      ],
+      "max": [
+        0.43,
+        -0.22,
+        1.6
+      ],
+      "color": "#1a1b1d",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "finish": "rubber"
+    },
+    {
+      "min": [
+        -0.17,
+        -0.82,
+        -1.15
+      ],
+      "max": [
+        0.17,
+        -0.48,
+        1.44
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.4324,
+        -1.0824,
+        1.44
+      ],
+      "max": [
+        0.4324,
+        -0.2176,
+        1.6
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "hang",
+      "at": [
+        0.0,
+        -0.48,
+        -1.0
+      ],
+      "dir": "+y"
+    }
+  ]
+}

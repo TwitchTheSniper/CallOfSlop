@@ -19,15 +19,21 @@
       "by": "hang"
     },
     {
-      "part": "Leg Pod Gantry L",
+      "part": "Leg Pod Strut L",
       "on": 0,
-      "socket": "gantry",
+      "socket": "strut",
       "by": "hang"
     },
     {
-      "part": "Leg Pod Foot L",
+      "part": "Leg Pod Carriage L",
       "on": 0,
-      "socket": "foot",
+      "socket": "carriage",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Brace L",
+      "on": 4,
+      "socket": "brace",
       "by": "hang"
     }
   ]
