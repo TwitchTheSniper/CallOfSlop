@@ -37,12 +37,19 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
 #tip { position: fixed; pointer-events: none; padding: 4px 8px; font: 12px var(--body); background: var(--panel); border: 1px solid var(--line); border-radius: 4px; }
 #tip b { font-weight: 600; } #tip small { color: var(--muted); display: block; }
 .hint { color: var(--muted); font-size: 11px; margin: 0; }
+.anim { display: flex; flex-direction: column; gap: 8px; padding: 10px; border: 1px solid var(--accent); border-radius: 6px; }
+.animRow { display: flex; align-items: center; gap: 8px; }
+.animRow output { font: 12px var(--mono); min-width: 74px; text-align: right; font-variant-numeric: tabular-nums; }
+#play { font: 600 12px var(--body); color: #fff; background: var(--accent); border: 0; border-radius: 4px; padding: 5px 10px; cursor: pointer; min-width: 58px; }
+.marks { display: flex; flex-wrap: wrap; gap: 4px; }
+.marks button { font: 11px var(--body); color: var(--muted); background: transparent; border: 1px solid var(--line); border-radius: 10px; padding: 2px 8px; cursor: pointer; }
+.marks button.on { color: var(--accent); border-color: var(--accent); }
 .picked { margin: 0; font: 600 12px var(--body); color: var(--accent); }
 @media (min-width: 641px) { #view { left: calc(332px + env(safe-area-inset-left, 0px)); } }
 @media (max-width: 640px) {
   #view { bottom: 42%; }
   #panel { top: auto; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); left: max(16px, env(safe-area-inset-left, 0px)); right: max(16px, env(safe-area-inset-right, 0px)); width: auto; max-height: 42%; gap: 8px; padding: 10px 12px; }
-  #parts { display: none; } #search { display: none; } h1 { font-size: 17px; } .desc { display: none; }
+  #parts { display: none; } #search { display: none; } h1 { font-size: 17px; } .desc { display: none; } .marks { display: none; }
 }
 </style>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600&family=IBM+Plex+Mono&family=IBM+Plex+Sans:wght@400;600&display=swap">
@@ -53,7 +60,14 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
   <select id="pick2" aria-label="Choose a deck or part" hidden></select>
   <div><h1 id="name">Construct</h1><p class="desc" id="desc"></p></div>
   <div class="stats" id="stats"></div>
+  <div id="animBox" class="anim" hidden>
+    <div class="animRow"><button id="play" aria-label="Play">Play</button><input id="time" type="range" min="0" max="1000" value="0" aria-label="Animation time"><output id="timev">0.0 s</output></div>
+    <div class="toggles"><button id="tBack" aria-pressed="true" title="Play it open, then shut again">Open and shut</button><button id="tSlow" aria-pressed="false" title="Play at a quarter speed">Slow</button></div>
+    <div class="marks" id="marks"></div>
+  </div>
   <label class="row" for="cut"><span>Cut at</span><input id="cut" type="range" min="0" max="1000" value="1000"><output id="cutv" style="font:12px var(--mono);min-width:44px;text-align:right">top</output></label>
+  <label class="row" for="cutX"><span>Cut side</span><input id="cutX" type="range" min="0" max="1000" value="1000"><output id="cutXv" style="font:12px var(--mono);min-width:44px;text-align:right">off</output></label>
+  <label class="row" for="cutZ"><span>Cut length</span><input id="cutZ" type="range" min="0" max="1000" value="1000"><output id="cutZv" style="font:12px var(--mono);min-width:44px;text-align:right">off</output></label>
   <div class="toggles">
     <button id="tGlass" aria-pressed="true">Glass</button>
     <button id="tEdges" aria-pressed="false">Edges</button>
@@ -92,7 +106,8 @@ const camera = new THREE.PerspectiveCamera(40, 1, 0.01, 1000);
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = !matchMedia("(prefers-reduced-motion: reduce)").matches;
 const clip = new THREE.Plane(new THREE.Vector3(0, -1, 0), 1e6), clipLo = new THREE.Plane(new THREE.Vector3(0, 1, 0), 1e6); // (above the cut, below a deck)
-const clips = [clip, clipLo];
+const clipX = new THREE.Plane(new THREE.Vector3(-1, 0, 0), 1e6), clipZ = new THREE.Plane(new THREE.Vector3(0, 0, -1), 1e6); // (the side and length cuts)
+const clips = [clip, clipLo, clipX, clipZ];
 const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 function resize() { const w = view.clientWidth, h = view.clientHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); }
 addEventListener("resize", resize); resize();
@@ -103,11 +118,12 @@ const b64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
 const finishHue = {}; let hueN = 0;
 const finishColour = name => { if (!(name in finishHue)) finishHue[name] = new THREE.Color().setHSL((hueN++ * 0.618) % 1, 0.55, 0.55); return finishHue[name]; };
 const tmp = new THREE.Color();
-let M = null, look16, triPart, solidGeo, glassGeo, solid, glass, grid = null, edges = null, size = [1, 1, 1], centre = new THREE.Vector3(), radius = 1;
+let pieces = []; // (an animation: one group a moving track, holding its solid and glass)
+let M = null, look16, triPart, triTrack = null, solidGeo, glassGeo, solid, glass, grid = null, edges = null, size = [1, 1, 1], centre = new THREE.Vector3(), radius = 1;
 let picked = -1, byFinish = false, edgesOn = false, glassOn = true, linksOn = false, xray = false, links = null;
 
-function build(glassSide, pos16, nrm8) {
-  const idx = []; for (let t = 0; t < look16.length; t++) if ((M.looks[look16[t]][1] > 0) === glassSide) idx.push(t);
+function build(glassSide, pos16, nrm8, track = 0) {
+  const idx = []; for (let t = 0; t < look16.length; t++) if ((M.looks[look16[t]][1] > 0) === glassSide && (!triTrack || triTrack[t] === track)) idx.push(t);
   const p = new Float32Array(idx.length * 9), n = new Float32Array(idx.length * 9), c = new Float32Array(idx.length * 9);
   idx.forEach((t, k) => { for (let j = 0; j < 9; j++) { p[k*9+j] = pos16[t*9+j] / M.scale; n[k*9+j] = nrm8[t*9+j] / 127; } });
   const g = new THREE.BufferGeometry();
@@ -117,7 +133,7 @@ function build(glassSide, pos16, nrm8) {
 function paint() {
   if (!M) return;
   const pick = css("--pick") || "#ffb347";
-  for (const g of [solidGeo, glassGeo]) {
+  for (const g of [solidGeo, glassGeo, ...pieces.flatMap(p => [p.solid.geometry, p.glass.geometry])]) {
     const col = g.attributes.color.array;
     g.userData.tris.forEach((t, k) => {
       const L = M.looks[look16[t]];
@@ -139,7 +155,8 @@ document.querySelectorAll(".views button").forEach(b => b.onclick = () => setVie
 
 function dispose() {
   for (const o of [solid, glass, grid, edges]) if (o) { scene.remove(o); o.geometry.dispose(); o.material.dispose(); }
-  edges = null; dropLinks();
+  for (const p of pieces) { if (p.ghost) { scene.remove(p.ghost); p.ghost.geometry.dispose(); p.ghost.material.dispose(); } scene.remove(p.group); p.group.traverse(o => { if (o.geometry) { o.geometry.dispose(); o.material.dispose(); } }); }
+  pieces = []; edges = null; dropLinks();
 }
 
 // Links: each link of the model ([type, x, y, z, ...] from its output through its nodes to its input) as square tubes, one colour a type.
@@ -169,6 +186,7 @@ function show(model) {
   dispose(); M = model; picked = -1; document.getElementById("picked").hidden = true; tip.hidden = true;
   const pos16 = new Int16Array(b64(M.pos).buffer), nrm8 = new Int8Array(b64(M.nrm).buffer);
   look16 = new Uint16Array(b64(M.look).buffer);
+  triTrack = M.track && M.anim ? b64(M.track) : null;
   triPart = new Int32Array(look16.length);
   M.parts.forEach(([, first, count], i) => triPart.fill(i, first, first + count));
   document.getElementById("name").textContent = M.name;
@@ -181,8 +199,24 @@ function show(model) {
   solid = new THREE.Mesh(solidGeo, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8, metalness: 0.15, side: THREE.DoubleSide, clippingPlanes: clips }));
   glass = new THREE.Mesh(glassGeo, new THREE.MeshStandardMaterial({ vertexColors: true, transparent: true, opacity: 0.35, roughness: 0.1, depthWrite: false, side: THREE.DoubleSide, clippingPlanes: clips }));
   glass.visible = glassOn;
+  if (triTrack) M.anim.tracks.forEach((tr, k) => {
+    const group = new THREE.Group(), sg = build(false, pos16, nrm8, k + 1), gg = build(true, pos16, nrm8, k + 1);
+    const ps = new THREE.Mesh(sg, solid.material.clone()), pg = new THREE.Mesh(gg, glass.material.clone());
+    pg.visible = glassOn; group.add(ps, pg); scene.add(group); pieces.push({ group, solid: ps, glass: pg, frames: tr.frames, name: tr.name });
+  });
   centre = new THREE.Vector3(...[0,1,2].map(a => (M.min[a] + M.max[a]) / 2));
   radius = Math.max(0.5, Math.hypot(...size) / 2);
+  if (pieces.length) {
+    // Frame the whole motion, not only the rest pose: every piece's box at a few of its poses, and a faint outline of where each piece rests.
+    const all = new THREE.Box3(new THREE.Vector3(...M.min), new THREE.Vector3(...M.max)), bb = new THREE.Box3(), m = new THREE.Matrix4(), q = new THREE.Quaternion(), v = new THREE.Vector3(), one = new THREE.Vector3(1, 1, 1);
+    for (const p of pieces) {
+      p.solid.geometry.computeBoundingBox(); const local = p.solid.geometry.boundingBox; if (local.isEmpty()) continue;
+      const n = p.frames.length - 1; for (let k = 0; k <= 8; k++) { const f = p.frames[Math.round(n * k / 8)]; m.compose(v.set(f[0], f[1], f[2]), q.set(f[3], f[4], f[5], f[6]), one); all.union(bb.copy(local).applyMatrix4(m)); }
+      const ghost = new THREE.LineSegments(new THREE.EdgesGeometry(p.solid.geometry, 25), new THREE.LineBasicMaterial({ color: css("--accent") || "#d0742c", transparent: true, opacity: 0.35, clippingPlanes: clips }));
+      p.ghost = ghost; scene.add(ghost);
+    }
+    all.getCenter(centre); radius = Math.max(0.5, all.getSize(v).length() / 2);
+  }
   const cells = Math.max(2, Math.ceil(radius * 3));
   grid = new THREE.GridHelper(cells, cells, 0x888888, 0x888888);
   grid.position.set(centre.x, M.min[1] - 0.002, centre.z); grid.material.transparent = true; grid.material.opacity = 0.25;
@@ -192,8 +226,9 @@ function show(model) {
   controls.target.copy(centre); setView("iso");
   if (edgesOn) makeEdges();
   if (linksOn) makeLinks();
+  setupAnim();
   document.getElementById("tLinks").hidden = document.getElementById("tXray").hidden = !(M.links && M.links.length);
-  deck(-1);
+  deck(-1); resetCuts();
   names = new Map(); M.parts.forEach(([n], i) => { if (!names.has(n)) names.set(n, []); names.get(n).push(i); });
   search.value = ""; paint(); fillList();
 }
@@ -210,10 +245,15 @@ function deck(k) {
   controls.target.set(centre.x, (lo + hi) / 2, centre.z); camera.position.copy(controls.target).add(v); controls.update();
 }
 cut.oninput = () => { if (!M) return; const f = cut.value / 1000; const y = M.min[1] + f * size[1]; clip.constant = f >= 1 ? 1e6 : y; cutv.textContent = f >= 1 ? "top" : (y - M.min[1]).toFixed(2) + " m"; };
-function makeEdges() { edges = new THREE.LineSegments(new THREE.EdgesGeometry(solidGeo, 25), new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.35, clippingPlanes: clips })); scene.add(edges); }
+const edgeLines = g => new THREE.LineSegments(new THREE.EdgesGeometry(g, 25), new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.35, clippingPlanes: clips }));
+const cutX = document.getElementById("cutX"), cutXv = document.getElementById("cutXv"), cutZ = document.getElementById("cutZ"), cutZv = document.getElementById("cutZv");
+const sideCut = (input, out, plane, a) => () => { if (!M) return; const f = input.value / 1000, v = M.min[a] + f * size[a]; plane.constant = f >= 1 ? 1e6 : v; out.textContent = f >= 1 ? "off" : (v - M.min[a]).toFixed(2) + " m"; };
+cutX.oninput = sideCut(cutX, cutXv, clipX, 0); cutZ.oninput = sideCut(cutZ, cutZv, clipZ, 2);
+function resetCuts() { cutX.value = cutZ.value = 1000; cutX.oninput(); cutZ.oninput(); }
+function makeEdges() { edges = edgeLines(solidGeo); scene.add(edges); for (const p of pieces) if (!p.edges) { p.edges = edgeLines(p.solid.geometry); p.group.add(p.edges); } }
 const toggle = (id, fn) => { const b = document.getElementById(id); b.onclick = () => { const on = b.getAttribute("aria-pressed") !== "true"; b.setAttribute("aria-pressed", on); fn(on); }; };
-toggle("tGlass", on => { glassOn = on; if (glass) glass.visible = on; });
-toggle("tEdges", on => { edgesOn = on; if (on && !edges && M) makeEdges(); if (edges) edges.visible = on; });
+toggle("tGlass", on => { glassOn = on; if (glass) glass.visible = on; for (const p of pieces) p.glass.visible = on; });
+toggle("tEdges", on => { edgesOn = on; if (on && !edges && M) makeEdges(); if (edges) edges.visible = on; for (const p of pieces) if (p.edges) p.edges.visible = on; });
 toggle("tFinish", on => { byFinish = on; paint(); });
 toggle("tSpin", on => { controls.autoRotate = on; });
 toggle("tLinks", on => { linksOn = on; if (on) makeLinks(); else dropLinks(); });
@@ -241,7 +281,8 @@ function hit(ev) {
   if (!M) return null;
   const r = renderer.domElement.getBoundingClientRect(); mouse.set((ev.clientX - r.left) / r.width * 2 - 1, -(ev.clientY - r.top) / r.height * 2 + 1);
   ray.setFromCamera(mouse, camera);
-  const h = ray.intersectObjects(glass.visible ? [solid, glass] : [solid], false).find(h => clip.distanceToPoint(h.point) >= 0 && clipLo.distanceToPoint(h.point) >= 0);
+  const objs = [solid, ...pieces.map(p => p.solid)]; if (glass.visible) objs.push(glass, ...pieces.map(p => p.glass));
+  const h = ray.intersectObjects(objs, false).find(h => clips.every(c => c.distanceToPoint(h.point) >= 0));
   if (!h) return null; const t = h.object.geometry.userData.tris[h.faceIndex]; return { part: triPart[t], look: M.looks[look16[t]] };
 }
 let down = null;
@@ -267,7 +308,48 @@ renderer.domElement.addEventListener("pointermove", e => {
   showTip(h, e.clientX, e.clientY);
 });
 renderer.domElement.addEventListener("pointerleave", e => { if (e.pointerType === "mouse") tip.hidden = true; });
-renderer.setAnimationLoop(() => { controls.update(); renderer.render(scene, camera); });
+
+// Animation: each track's pose (position and quaternion in the model frame) sampled evenly over the model's seconds; the slider scrubs,
+// Play runs it (open, a pause, then shut again unless "Open and shut" is off; a loop just goes round), the marks jump to a step.
+const animBox = document.getElementById("animBox"), playB = document.getElementById("play"), timeIn = document.getElementById("time"), timev = document.getElementById("timev"), marksEl = document.getElementById("marks");
+let animT = 0, playing = false, dir = 1, holdUntil = 0, last = performance.now(), slow = false, back = true;
+const qa = new THREE.Quaternion(), qb = new THREE.Quaternion();
+function pose(t) {
+  if (!M || !M.anim) return;
+  const S = M.anim.seconds || 1; animT = Math.max(0, Math.min(S, t));
+  for (const p of pieces) {
+    const n = p.frames.length - 1, x = n * animT / S, i = Math.min(n - 1, Math.floor(x)), u = x - i, a = p.frames[i], b = p.frames[i + 1] || a;
+    p.group.position.set(a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u, a[2] + (b[2] - a[2]) * u);
+    qa.set(a[3], a[4], a[5], a[6]); qb.set(b[3], b[4], b[5], b[6]); p.group.quaternion.slerpQuaternions(qa, qb, u);
+  }
+  timeIn.value = Math.round(animT / S * 1000); timev.textContent = `${animT.toFixed(2)} / ${S.toFixed(1)} s`;
+  marksEl.querySelectorAll("button").forEach(b => b.classList.toggle("on", +b.dataset.t <= animT + 1e-3 && !(+b.dataset.next <= animT + 1e-3)));
+}
+function setPlaying(on) { playing = on; playB.textContent = on ? "Pause" : "Play"; playB.setAttribute("aria-label", on ? "Pause" : "Play"); last = performance.now(); }
+function setupAnim() {
+  const a = M && M.anim; animBox.hidden = !a; setPlaying(false); dir = 1; holdUntil = 0; marksEl.innerHTML = "";
+  if (!a) return;
+  document.getElementById("tBack").hidden = !!a.loop;
+  const ms = a.marks || [];
+  ms.forEach(([t, label], i) => { const b = document.createElement("button"); b.textContent = label; b.dataset.t = t; b.dataset.next = i + 1 < ms.length ? ms[i + 1][0] : 1e9; b.onclick = () => { setPlaying(false); pose(t); }; marksEl.appendChild(b); });
+  pose(0); if (!matchMedia("(prefers-reduced-motion: reduce)").matches) setPlaying(true);
+}
+playB.onclick = () => { if (!playing && !M.anim.loop && dir > 0 && animT >= M.anim.seconds - 1e-3 && !back) pose(0); setPlaying(!playing); };
+timeIn.oninput = () => { setPlaying(false); pose(timeIn.value / 1000 * (M.anim.seconds || 1)); };
+toggle("tBack", on => { back = on; });
+toggle("tSlow", on => { slow = on; });
+function tick(now) {
+  const dt = Math.min(0.1, (now - last) / 1000) * (slow ? 0.25 : 1); last = now;
+  if (!playing || !M || !M.anim) return;
+  const S = M.anim.seconds || 1;
+  if (now < holdUntil) return;
+  let t = animT + dt * dir;
+  if (M.anim.loop) t = t >= S ? t - S : t;
+  else if (t >= S) { t = S; if (back) { dir = -1; holdUntil = now + 900; } else setPlaying(false); }
+  else if (t <= 0) { t = 0; dir = 1; holdUntil = now + 900; }
+  pose(t);
+}
+renderer.setAnimationLoop(now => { tick(now); controls.update(); renderer.render(scene, camera); });
 
 // One model in the page, or a gallery: models/index.json lists the ships, the parts they use and parts in no ship. The first picker
 // takes a ship (or the loose parts), the second the whole ship, one of its decks or one of its parts on its own.
@@ -282,6 +364,8 @@ else {
   const load = async e => { if (!cache.has(e.file)) { say("Loading " + e.name + "..."); cache.set(e.file, await (await fetch(e.file)).json()); } return cache.get(e.file); };
   try {
     const idx = await (await fetch("models/index.json")).json();
+    if (idx.groups) await shelves(idx);
+    else {
     const partById = new Map(idx.parts.map(p => [p.id, p])), noun = idx.noun || "ship";
     sel.setAttribute("aria-label", "Choose a " + noun);
     for (const sh of idx.ships) opt(sel, sh.id, sh.name);
@@ -314,6 +398,25 @@ else {
     sel2.onchange = () => { location.hash = sel2.value; };
     addEventListener("hashchange", () => open(location.hash.slice(1)));
     await open(location.hash.slice(1));
+    }
   } catch (err) { say("Could not load the gallery: " + err.message); }
+
+  // The Animation gallery's index: shelves of items ({groups: [{name, items: [{id, name, file}]}]}); the first picker takes a shelf, the second an item; #id names it.
+  async function shelves(idx) {
+    const byId = new Map(); idx.groups.forEach(g => g.items.forEach(it => byId.set(it.id, [g.name, it])));
+    sel.setAttribute("aria-label", "Choose a kind"); sel2.setAttribute("aria-label", "Choose an animation");
+    idx.groups.forEach(g => opt(sel, g.name, `${g.name} (${g.items.length})`));
+    sel.hidden = sel2.hidden = false;
+    const fillShelf = name => { sel2.innerHTML = ""; for (const it of idx.groups.find(g => g.name === name).items) opt(sel2, it.id, it.name); };
+    const open = async id => {
+      const found = byId.get(id) || [idx.groups[0].name, idx.groups[0].items[0]];
+      if (sel.value !== found[0] || !sel2.options.length) { sel.value = found[0]; fillShelf(found[0]); }
+      sel2.value = found[1].id; const m = await load(found[1]); if (M !== m) show(m);
+    };
+    sel.onchange = () => { location.hash = idx.groups.find(g => g.name === sel.value).items[0].id; };
+    sel2.onchange = () => { location.hash = sel2.value; };
+    addEventListener("hashchange", () => open(location.hash.slice(1)));
+    await open(location.hash.slice(1));
+  }
 }
 </script>

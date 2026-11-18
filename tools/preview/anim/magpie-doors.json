@@ -1,0 +1,10 @@
+{
+  // An Animation gallery timing file (tools/preview/README.md, "The Animation gallery"): the Magpie's doors in turn.
+  "blueprint": "Magpie Mining Ship",
+  "title": "Magpie: doors, hatch and stern ramp",
+  "steps": [
+    { "part": "Slide Door 1.5x2.25 m", "at": 0, "label": "Inner doors slide" },
+    { "part": "Service Hatch 1x0.8 m", "at": 0.8, "label": "Service hatch" },
+    { "part": "Magpie Stern Ramp", "at": 1.6, "label": "Stern ramp lowers" }
+  ]
+}
