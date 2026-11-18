@@ -55,8 +55,12 @@ public sealed partial class Audio
         {
             src.Looping = true;
             Start(MachineSlot(voice), src, set[0], position, gain, pitch, MachineFalloff(scale), mix, MixBus.Tactical);
-            // (start each loop somewhere along it, so two reactors switched on together don't pulse in step)
-            src.SampleOffset = _rng.Next(SampleRate * 19 / 10);
+            // (start each reactor somewhere along its loop, so two switched on together don't sound as one; a reactor's
+            // second voice starts where its first is, so the two hums, both on 55 Hz, add up in phase and never cancel)
+            var partner = voice ^ 1;
+            src.SampleOffset = (voice & 1) == 1 && _machineSfx[partner] >= 0 && _machineSources[partner].State == AlSourceState.Playing
+                ? _machineSources[partner].SampleOffset
+                : _rng.Next(SampleRate * 39 / 10);
             _machineSfx[voice] = (int)sfx;
             _played++;
             return;

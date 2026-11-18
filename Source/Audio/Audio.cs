@@ -105,13 +105,20 @@ public enum Sfx
     ShellBoot, // a robot shell starting up: relays, a capacitor whine, servos testing each joint, a fan spinning up
     ShellPowerDown, // a robot shell left standing: servos relaxing, the whine falling, the fan winding down
     ReactorHumLight, // a reactor at light load (a loop)
-    ReactorHumHeavy, // a reactor working hard: a deeper, pulsing hum (a loop, faded in over the light one by load)
+    ReactorHumHeavy, // a reactor working hard: the same steady hum, fuller, with a sub octave (a loop, faded in over the light one by load)
     DockClamp, // a Robot Shell Dock's clamps closing on a shell: servo, magnetic thunk, locking pins
     DockRelease, // the dock's clamps letting a shell go: a chirp, pins out, a hydraulic hiss
     ShellGlitch, // a worn robot shell's processor glitching: a short digital stutter (SynthShell.cs, played by Game.ShellWearFrame)
     ShellStatic, // its optics: a soft crackle of static
     ShellBrownout, // its power cell browning out: a falling whine and a click
     ShellServoGrind, // a worn leg actuator: a short grinding servo (3D, nearby players hear it)
+    DoorSlide, // event doors (SynthDoors.cs, played by Game.DoorSounds): a sliding door or small hatch on its way, a pneumatic kick and a servo
+    DoorSlideHeavy, // a big sliding door (a hold's well doors, a docking hatch): a geared motor grinding along its rail
+    DoorSwing, // a swing door or service hatch: the latch and the hinge
+    DoorSwingHeavy, // a ramp, a hold door or a launch hatch on hydraulics: a pump's whine and a deep hinge groan
+    DoorShut, // a door coming home shut: a thunk and the seal's short hiss
+    DoorShutHeavy, // a heavy door or hatch coming home shut: a deep clang and the locking bolts
+    DoorOpenStop, // a door reaching its stop, open: a soft clack
     COUNT,
 }
 
@@ -1056,6 +1063,8 @@ public static partial class Synth
             return machine; // SynthMachine.cs
         if (ShellFoley(sfx, variant) is { } shell)
             return shell; // SynthShell.cs
+        if (DoorFoley(sfx) is { } door)
+            return door; // SynthDoors.cs
         var rng = new Random(77 + (int)sfx + variant * 1000);
         Buf b;
         switch (sfx)
