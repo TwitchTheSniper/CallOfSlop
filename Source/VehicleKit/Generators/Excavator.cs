@@ -65,12 +65,12 @@ public sealed class Excavator(FactionStyle style) : VehicleShape(style)
         // at a few degrees' give with a tier-1 drill; a Motor Hinge Medium would take a medium socket the house hasn't got.)
         var boomX = 0.625f + 0.125f * d.Int(0, 1);
         var boomHinge = v.Put("Motor Hinge 3x3 Medium", new Vector3(boomX, deckY + 0.375f, front - Vehicle.Half), new Orient(Vector3.UnitX, Vector3.UnitY, Vector3.UnitY, -Vector3.UnitX), 0.2f, cross, "base"); // (its axis to the left: a positive angle lays the boom forward)
-        var boomLong = d.Pick((float[])[2.5f, 2.75f]);
+        var boomLong = d.Pick((float[])[2.5f, 2.75f]); // (2 + 0.5, 2 + 0.75)
         var boomBase = v.SocketPoint(boomHinge, "leaf");
         var boom = Run(v, boomHinge, "leaf", boomBase, Vector3.UnitY, boomLong);
         // ---- The stick: a Motor Hinge 3x3 on the boom's front near its top, its leaf forward, the stick out forward from it.
         var stickHinge = v.Put("Motor Hinge 3x3 Medium", new Vector3(boomX, boomBase.Y + boomLong - 0.375f, front - Vehicle.Half - 0.125f - 0.375f), new Orient(Vector3.UnitX, -Vector3.UnitZ, Vector3.UnitY, Vector3.UnitX), 0.2f, boom[^1], "base");
-        var stickLong = d.Pick((float[])[2f, 2.25f]);
+        var stickLong = d.Pick((float[])[1.75f, 2f]); // (lengths the beam run makes exactly: 1 + 0.75, 2)
         var stickBase = v.SocketPoint(stickHinge, "leaf");
         var stick = Run(v, stickHinge, "leaf", stickBase, -Vector3.UnitZ, stickLong);
         var stickEnd = stickBase.Z - stickLong;
@@ -142,7 +142,9 @@ public sealed class Excavator(FactionStyle style) : VehicleShape(style)
         var last = on;
         while (left > 0.01f)
         {
-            var m = left >= 2 ? 2f : left >= 1 ? 1f : left >= 0.75f ? 0.75f : 0.5f;
+            var m = left >= 2 ? 2f : left >= 1.75f ? 1f : left >= 1 ? 1f : left >= 0.75f ? 0.75f : 0.5f;
+            if (left < 0.49f)
+                throw new VehicleKitException($"a beam run of {length} m can't be made of 2, 1, 0.75 and 0.5 m beams");
             var name = m switch { 2f => "Square Beam 2 m", 1f => "Square Beam 1 m", 0.75f => "Square Beam 0.75 m", _ => "Square Beam 0.5 m" };
             last = v.Put(name, at + dir * (m * 0.5f), Orient.Along(dir), 0.05f, last);
             list.Add(last);

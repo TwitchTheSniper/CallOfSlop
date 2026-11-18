@@ -287,14 +287,22 @@ public static class ExcavatorCheck
         var rim = Height(ConstructCargo.FromPart(hauler, bed, new Vector3(0, 0.62f, 0)));
         Console.WriteLine($"  hauler's bed rim {rim:0.00} m up; bucket's edge {Height(Edge()):0.00} m; bed {What(hauler, bed)}");
         bodies0 = w.Bodies.Count;
-        Console.WriteLine($"    (aimed {V(mid)}, bed now {V(ConstructCargo.FromPart(hauler, bed, Vector3.Zero))}, pour point local {V(pourAt)})");
         Set(2, pourLever);
-        for (var k = 0; k < 10; k++)
+        for (var k = 0; k < 40 && Amount(c, scoop) > 0; k++)
         {
-            Tick(0.5f);
-            if (k % 2 == 0)
-                Console.WriteLine($"    (pour {k}: lip {V(LowLip())}, bed {V(ConstructCargo.FromPart(hauler, bed, Vector3.Zero))}, bucket {What(c, scoop)})");
+            // A driver backs the bed under the lip as the bucket opens: its middle under the lowest lip, along the ground.
+            var miss = LowLip() - ConstructCargo.FromPart(hauler, bed, Vector3.Zero);
+            miss -= Vector3.Dot(miss, up) * up;
+            if (miss.Length() > 0.4f && k % 3 == 0)
+            {
+                hauler.Pos += miss;
+                hauler.Vel = Vector3.Zero;
+                hauler.AngVel = Vector3.Zero;
+                hauler.Wake();
+            }
+            Tick(0.1f);
         }
+        Tick(2);
         var poured = w.StoreOf(hauler, bed) is { } hs && hs.Material == ore ? hs.Amount : 0;
         Console.WriteLine($"  bucket opened over the bed: {Pose()}; bucket {What(c, scoop)}, bed {What(hauler, bed)}, {w.Bodies.Count - bodies0} new bodies");
         Say(oreIn > 0 && poured > 0 && w.Bodies.Count == bodies0, $"the ore went into the hauler's bed: {What(hauler, bed)}, {w.Bodies.Count - bodies0} bundle(s) spilt");
