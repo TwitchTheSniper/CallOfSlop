@@ -2300,7 +2300,7 @@ public static unsafe partial class Program
 
         // ---- First-person gun -----------------------------------------------
         pass = Perf.Pass(PerfArea.ViewModel, PerfGpuPass.ViewModel);
-        if (local is { Alive: true } && !tp && !talkView && !Ui.CommandOpen && !_game.OpeningActive && !_game.QuarryRiding && !_wsNoHands && !DrawSandboxTool(now, eye, fwd)) // (_wsNoHands: the window tool's --no-hands, for pictures) // (Sandbox: the wrench or welder instead, or nothing in a seat; nothing in hand in the opening or on a ride)
+        if (local is { Alive: true } && !tp && !talkView && !Ui.CommandOpen && !_game.OpeningActive && !_game.QuarryRiding && !_wsNoHands && !DrawLadderHands(now, eye, fwd, camUp) && !DrawSandboxTool(now, eye, fwd)) // (_wsNoHands: the window tool's --no-hands, for pictures) // (Sandbox: the wrench or welder instead, or nothing in a seat; nothing in hand in the opening or on a ride)
         {
             GunModel.AdsCutaway = SightLens.Cutaway(_game.Active.Def, _game.AimT); // reflex dots hand over to the lens pass as you aim
             DrawViewModel(now, proj);

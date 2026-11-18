@@ -124,7 +124,7 @@ public static unsafe partial class Program
         s.Split(',') is [var x, var y, var z] && float.TryParse(x, System.Globalization.CultureInfo.InvariantCulture, out var a)
         && float.TryParse(y, System.Globalization.CultureInfo.InvariantCulture, out var b) && float.TryParse(z, System.Globalization.CultureInfo.InvariantCulture, out var c) ? new Vector3(a, b, c) : null;
 
-    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "design" or "extr" or "plate" or "fitpart" or "inv" or "fuel" or "cutter" or "put" or "side" or "walk" or "ray" or "guns" or "engines" or "bundle" or "drag" or "mousemove" or "station" or "subbp" or "linked" or "bpui" or "lifter" or "aim" or "near" or "from" or "inside" or "me" or "person" or "use" or "waitnear" or "key" or "touch" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "picker" or "bring" or "craft" or "disown" or "saveload" or "stock" or "feed" or "kit" or "poke" or "joints" or "timed" or "saveworld" or "loadworld" or "logi" or "period" or "gang" or "incident" || WsGhostKnown(action) || WsNavKnown(action) || WsTourKnown(action) || WsTalkKnown(action) || WsPlayKnown(action);
+    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "design" or "extr" or "plate" or "fitpart" or "inv" or "fuel" or "cutter" or "put" or "side" or "walk" or "ray" or "guns" or "engines" or "bundle" or "drag" or "mousemove" or "station" or "subbp" or "linked" or "bpui" or "lifter" or "aim" or "near" or "from" or "inside" or "me" or "person" or "use" or "waitnear" or "key" or "touch" or "ladder" or "ladderclimb" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "picker" or "bring" or "craft" or "disown" or "saveload" or "stock" or "feed" or "kit" or "poke" or "joints" or "timed" or "saveworld" or "loadworld" or "logi" or "period" or "gang" or "incident" || WsGhostKnown(action) || WsNavKnown(action) || WsTourKnown(action) || WsTalkKnown(action) || WsPlayKnown(action);
 
     private static void WsSay(string s)
     {
@@ -911,6 +911,34 @@ public static unsafe partial class Program
             case "touch":
                 WsTouch(g, me, arg);
                 return;
+            case "ladder" or "ladderclimb" when g.IsServer: // host: "ladder PART[#n] foot|top": this player out of the flight, standing at that end of a ladder; then F on it (ConstructRide.ClimbLadder)
+            {
+                var cut = arg.LastIndexOf(' ');
+                var end = cut > 0 ? arg[(cut + 1)..].ToLowerInvariant() : "";
+                var (c, part) = WsFind(g, cut > 0 ? arg[..cut] : arg);
+                if (c == null || part < 0 || c.DefOf(part).LadderTop <= 0 || end is not ("foot" or "top"))
+                {
+                    WsFail("ladder PART[#n] foot|top (a ladder)");
+                    return;
+                }
+                if (verb == "ladderclimb")
+                {
+                    var why = g.SandboxGrabOn(me, c, part, ladder: true);
+                    WsSay(why == null ? $"ladder: climbing {(end == "top" ? "down" : "up")} {c.DefOf(part).Name} #{part}" : $"ladder: refused: {why}");
+                    _wsWait = 1;
+                    return;
+                }
+                me.NoclipWanted = false;
+                g.NoclipShot = false;
+                me.Sim.Noclip = false;
+                ConstructRide.LadderEnds(c.DefOf(part), out var lfoot, out var ltop);
+                ref var lp = ref c.Parts[part];
+                c.WorldFrame(lp.Seg, out var lq, out var lt);
+                me.Teleport(lt + Vector3.Transform(lp.Pos + Rot24.Apply(lp.Rot, end == "top" ? ltop : lfoot), lq) + new Vector3(0, 0.05f, 0));
+                _wsQueue.EnqueueFront($"ladderclimb {arg}");
+                WsWaitTicks(30); // (on their feet, in the ship's frame, before F)
+                return;
+            }
             case "person": // "person NAME X,UP,Z": the eye that far from a story person's body along the world's x, up and z, looking at their chest
             {
                 var cut = arg.LastIndexOf(' ');

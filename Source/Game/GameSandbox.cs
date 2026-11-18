@@ -2439,6 +2439,7 @@ public sealed partial class Game
     /// </summary>
     internal void UpdateSandboxSeats(double now, float dt)
     {
+        _ladderDt = dt;
         if (!IsServer && Constructs.Bodies.Count == 0 && ConstructGravity.Wells + ConstructGravity.Generators > 0)
             ConstructGravity.Clear(); // (the last gravity part went)
         if (Constructs.Bodies.Count == 0)
@@ -2470,6 +2471,7 @@ public sealed partial class Game
         {
             p.RenderSeat = SeatKind.None;
             p.RenderRide = false;
+            p.RenderLadder = false;
             if (!p.Alive)
                 continue; // (RenderSeatWas stays: a ragdoll of a seated death starts seated)
             p.RenderSeatWas = SeatKind.None;
@@ -2492,6 +2494,7 @@ public sealed partial class Game
             if (body == 0)
             {
                 SandboxRideRender(p, remote); // standing in or on a construct: drawn in its frame as it is drawn (ConstructRide.cs)
+                SandboxLadderRender(p, remote); // on a ladder: facing it, hands and feet on its rungs (LadderAnim.cs)
                 continue;
             }
             if (Constructs.Get(body) is not { } c || part >= c.PartCount || c.Parts[part].D.Role != PartRole.Seat)
@@ -2622,6 +2625,52 @@ public sealed partial class Game
         _rideView = key;
         _rideViewYaw = yaw;
     }
+
+    /// <summary>
+    /// Every frame, a player climbing a ladder (ConstructRideLadder.cs): the ladder's frame as it is drawn now and the feet
+    /// in it, for the climb's pose (LadderAnim.cs). A remote climber's ladder comes in their snapshots.
+    /// </summary>
+    private void SandboxLadderRender(Player p, bool remote)
+    {
+        var body = remote ? p.SnapRideBody : p.Sim.RideBody;
+        var ladder = remote ? p.SnapRideLadder - 1 : p.Sim.RideLadder != 0 && p.Sim.RideClimb > 0 ? p.Sim.RideLadderPart : -1;
+        if (p.Id == LocalId && ladder < 0)
+            _ladderLook = 0;
+        if (ladder < 0 || body == 0 || Constructs.Get(body) is not { } c || ladder >= c.PartCount || c.Parts[ladder].Broken)
+            return;
+        ref var lp = ref c.Parts[ladder];
+        var d = lp.D;
+        if (d.LadderTop <= 0)
+            return;
+        DrawnFrame(c, lp.Seg, out var q, out var t);
+        var lq = q * Rot24.Quat(lp.Rot);
+        var origin = t + Vector3.Transform(lp.Pos, q);
+        p.RenderLadderFrame = Matrix4x4.CreateFromQuaternion(lq) * Matrix4x4.CreateTranslation(origin);
+        p.RenderLadderFeet = Vector3.Transform(p.RenderPosition - origin, Quaternion.Conjugate(lq));
+        p.RenderLadderGeom = LadderGeom.Of(d);
+        p.RenderLadder = true;
+        if (p.Id != LocalId || GravityFrames.Curved)
+            return;
+        // Your view turns to the ladder as you grab it (a quarter of a second), then it is yours again.
+        var key = ((uint)body << 16) | (uint)(ladder + 1);
+        if (_ladderLook != key)
+        {
+            _ladderLook = key;
+            _ladderLookLeft = 0.3f;
+        }
+        if (_ladderLookLeft <= 0)
+            return;
+        var f = Vector3.Transform(Vector3.UnitZ, lq);
+        if (f.X * f.X + f.Z * f.Z < 0.1f)
+            return;
+        var k = MathF.Min(1f, _ladderDt / _ladderLookLeft);
+        LookYaw = World.WrapAngle(LookYaw + World.WrapAngle(MathF.Atan2(f.X, -f.Z) - LookYaw) * k);
+        p.RenderYaw = p.Yaw = LookYaw;
+        _ladderLookLeft -= _ladderDt;
+    }
+
+    private uint _ladderLook; // the ladder your view last turned to (body << 16 | part + 1; 0: none)
+    private float _ladderLookLeft, _ladderDt;
 
     /// <summary>Client: a ride state from the server starts where the construct as we have it puts its feet (the replay then runs in its frame).</summary>
     private void SandboxRideAdopt(ref MoveState s)

@@ -48,6 +48,7 @@ public sealed partial class Game
         Weapon = p.Weapon, Boost = p.Sim.BoostTicks, MantleTicks = p.Sim.MantleTicks, MantleTo = p.Sim.MantleTo,
         Shield = p.ShieldCharges, Regen = p.Regenerating, Blood = p.Blood,
         RideBody = p.Alive ? p.Sim.RideBody : (ushort)0, RideSeg = p.Sim.RideSeg, RideLocal = p.Sim.RideLocal, RideUp = p.Sim.RideUp,
+        RideLadder = p.Alive && p.Sim.RideBody != 0 && p.Sim.RideLadder != 0 ? (ushort)(p.Sim.RideLadderPart + 1) : (ushort)0,
         Noclip = p.Alive && p.Sim.Noclip,
         Canopy = p.Alive ? p.Sim.Canopy : (byte)0,
     };
@@ -128,6 +129,7 @@ public sealed partial class Game
             Ride = p.Sim.RideBody != 0 || p.Sim.RideFree > 0, RideBody = p.Sim.RideBody, RideSeg = p.Sim.RideSeg, RideAir = p.Sim.RideAir,
             RideClimb = p.Sim.RideClimb, RideFree = p.Sim.RideFree, RideGrip = ConstructRide.GripByte(p.Sim.RideGripUp), RideOn = p.Sim.RideOn,
             RideLocal = p.Sim.RideLocal, RideClimbTo = p.Sim.RideClimbTo, RideUp = p.Sim.RideUp, RideVel = p.Sim.RideVel,
+            RideLadder = p.Sim.RideClimb > 0 ? p.Sim.RideLadder : (byte)0, RideLadderPart = p.Sim.RideLadderPart, RideClimbNext = p.Sim.RideClimbNext, RideClimbLast = p.Sim.RideClimbLast,
             Worn = (p.Sim.Gear | p.Sim.Canopy | p.Sim.GearDelay) != 0, Gear = p.Sim.Gear, Canopy = p.Sim.Canopy, GearDelay = p.Sim.GearDelay, JetFuel = p.Sim.JetFuel, GearJump = p.Sim.GearJump,
         };
         // This recipient's selection: near and alive every time, the rest on alternate snapshots.
@@ -232,6 +234,10 @@ public sealed partial class Game
                     ownMove.RideGripUp = ConstructRide.GripVec(ro.RideGrip);
                     ownMove.RideLocal = ro.RideLocal;
                     ownMove.RideClimbTo = ro.RideClimbTo;
+                    ownMove.RideLadder = ro.RideLadder;
+                    ownMove.RideLadderPart = ro.RideLadderPart;
+                    ownMove.RideClimbNext = ro.RideClimbNext;
+                    ownMove.RideClimbLast = ro.RideClimbLast;
                     ownMove.RideUp = ro.RideUp;
                     ownMove.RideVel = ro.RideVel;
                 }
@@ -281,7 +287,7 @@ public sealed partial class Game
                 p.Snaps.Add(new Snap
                 {
                     Tick = tick, Position = e.Position, Velocity = e.Velocity, Yaw = e.Yaw, Pitch = e.Pitch, Stance = e.Stance, Grounded = e.Grounded, Mantling = e.MantleTicks > 0,
-                    SeatBody = e.SeatBody, SeatPart = e.SeatPart, RideBody = e.RideBody, RideSeg = e.RideSeg, RideLocal = e.RideLocal, RideUp = e.RideUp, Noclip = e.Noclip,
+                    SeatBody = e.SeatBody, SeatPart = e.SeatPart, RideBody = e.RideBody, RideSeg = e.RideSeg, RideLocal = e.RideLocal, RideUp = e.RideUp, RideLadder = e.RideLadder, Noclip = e.Noclip,
                 });
                 if (p.Snaps.Count > Player.MaxSnaps)
                     p.Snaps.RemoveAt(0);
