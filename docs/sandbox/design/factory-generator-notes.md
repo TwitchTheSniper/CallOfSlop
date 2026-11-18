@@ -2,6 +2,42 @@
 
 Notes kept by the builders of `factory-generator.md` (the design and the user's answers of 2026-11-17). Newest state first.
 
+## State (2026-11-17, third builder): the grading's answers (branch claude/cargo-parts-factory)
+
+- **Cargo parts** (storage-and-cargo.md "Cargo parts for works"): Ore Bunkers 4, 5, 6 and 8 m; the Storage Volume's **Walls** setting (on by default:
+  floor and walls inside the box, solid, sealing all but the top); **Tipping Grates** 4 and 6 m; **Unloading Augers** 4 and 6 m on a Turntable 1x1
+  Medium (`ConstructAugers.cs`). Protocol 343 (CfgKey.Walls after Dampeners, new part files). Walls are stored off (old saves and blueprints load open); the inventory's new ones and the kit's stores are walled.
+- **One spacing system** (`FactoryPlan`, "The spacing system"): a 4 m module; across the spine the road (vehicle lane) 4 m, the aisle (walkway) 2 m,
+  the machine band in whole modules, the service strip 2 m; along it every cell is whole modules: footprint plus a clearance by purpose (1 m round a
+  machine, 0.5 m round a store), centred. The style's random margins are gone; zones are runs of cells. Shed frames stand on module lines,
+  centred in their zone; road markings a module apart.
+- **Signs**: the numbered zone boards (Medium Text Signs on two posts) are gone. Three small Text Signs: TIP HERE by the grate (a lamp on its
+  post), LOAD on the loading post, MAIN SWITCH at the plant.
+- **Stock and loading**: raw heaps, refined stock and the ore buffer are walled Storage Volumes (3 m square, 2.5 or 3.5 m high by what they
+  must hold, the hopper just behind the box); the tipping bay is a Tipping Grate 6 m flush with the road's edge (left unpainted: its grid and
+  hazard strips); the loading point (refinery and post alike) is an Unloading Auger 4 m on a turntable on a 4 m post, its spout over the road's
+  middle 4.7 m up, LOAD wired into its Run. The loading skip (Tipper Body on a Motor Hinge) is gone; the site's hauler spot is under the spout.
+- **Extraction follows the ore**: a spot gives 1,200 units then is worked out (`ResourceField` spots, saved); a drill on an unwired Electric rail
+  moves itself on (`ConstructDrillFollow`). Each drill has a run (a 3x3 4 m and a 2 m Linear Actuator on the floor's back row, Rest 0) in an
+  8 m cell, and the style's `Follow` picks per seed: **arm** (a Frame Beam out over the back edge, the drill on its end: 3 spots along) or
+  **gantry** (a 3x3 4 m cross rail on the carriage, stop low 25 %, the drill turned to put its bit beside the cross rail: 2 x 3 spots). No deck
+  (the drill's foot is 1.24 m up on either). The post class is 40 m long now (three drills' runs).
+- Measured: `--gen-factory extraction|refinery --seeds 12` all build, 0 coplanar faces; `--factory-check "Militia extraction 1"` (arm) and `5`
+  (gantry) with a deposit made headless: the drills fill the buffer (4738 each in 150 s, over three spots' worth) and step on; `--haul-check`
+  runs the loop (auger 600 into the bed, TIP onto the grate, the refinery makes 300). A window run on Proving Ground's iron vein (spawn at
+  20,0,-40): the post drills, the drills move on, 4,324 ore in 130 s.
+- **The grading sheet**: `/home/claude/factory-grading2/index.html` (with `models/`): Militia Extraction Posts 1-12, Refineries 1-12 and the
+  new parts. Not opened in a browser here.
+
+### Open (third builder)
+
+1. **Tool racks and NPC crews** (the user's second way to follow the ore): not built. Arms and gantries only.
+2. (Merge review) The flat battery is not the drill rails: the charge is 0 at the first look after the spawn, with no draw and no motor work
+   (the rails never moved). Not traced further. A post spawned in a window at 50,0,-50 on Proving Ground came up with a flat battery at once (charge 0 before the first look; the MAIN
+   SWITCH needs power to put out, so the plant never starts). At 20,0,-40 and on the flat it starts. Not traced: the guess is the rails
+   driving drills buried in sloping ground (motor work). A plant that starts without the switch, or a post that levels its drills, would fix it.
+3. A rail at its ends leaves the drill worked out; nothing moves the post. The whole-site spawn and relocation are still open.
+
 ## State (2026-11-17, second builder): phase 2 begun
 
 - **The shed shell** (part kit `factory_shell`): Portal Column 8 m (an H column), Portal Rafter 5.5/7.5/9.5/11.5/13.5 m (seats under each end, top

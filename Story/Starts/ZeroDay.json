@@ -1,16 +1,16 @@
 {
   // The Zero Day start (Karl, 2026-11-17: "a Day Zero start for both creative and survival ... in the location of the other
   // mining ship start, but add a NPC Zero Day to another faction which is neutral and nearby"): you wake aboard your own Zero
-  // Day Frigate (docs/sandbox/constructs/torpedo-frigate.md) over Crumb, where the Magpie start wakes, with a Traders' Zero Day
+  // Day Frigate (docs/sandbox/constructs/torpedo-frigate.md) over Caledon, where the Magpie start wakes (both moved from Crumb, Karl 2026-11-17), with a Traders' Zero Day
   // going round a few hundred metres behind (Story/Opening/ZeroDay.json "company"). No colony, no warden, no induction.
   "format": "call-of-slop-start/1",
   "name": "Zero Day frigate",
   "order": 6, // after the Magpie
   "character": "Captain",
   "background": "a captain who bought a decommissioned IT Department torpedo frigate at auction, no questions asked",
-  "about": "You wake in your cabin aboard the Zero Day, a torpedo frigate holding station over Crumb, Mille's little moonlet. The racks are loaded and the capacitors are charged. A Traders' frigate of the same class keeps you company a few hundred metres back along the orbit. They mean no harm, unless you give them cause.",
-  "map": "Crumb",
-  "opening": "ZeroDay.json", // a card, then waking aboard over Crumb
+  "about": "You wake in your cabin aboard the Zero Day, a torpedo frigate in orbit over Caledon, the highland world of Frostreach. The racks are loaded and the capacitors are charged. A Traders' frigate of the same class keeps you company a few hundred metres back along the orbit. They mean no harm, unless you give them cause.",
+  "map": "Caledon",
+  "opening": "ZeroDay.json", // a card, then waking aboard over Caledon
   "tutorial": "none",
   "kit": [] // what you have is aboard
 }

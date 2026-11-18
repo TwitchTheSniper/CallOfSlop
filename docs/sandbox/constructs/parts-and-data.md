@@ -55,6 +55,7 @@ still load): `CallOfSlop --check-construct-parts` prints every part and blueprin
 | `hinge` | `axis` (a direction), `pivot`, `min`/`max` (degrees), `leaf` (the leaf socket: what attaches there swings). |
 | `joint` | Milestone 2, a moving joint: `type` (`motor`, `turntable`, `piston`, `steering`), `axis`, `pivot`, `min`/`max` (degrees; a piston's are metres, `min` 0 and `max` its travel up to 4 m; a turntable without them turns forever), `leaf` (a struct socket: anything fitted there moves, a door's `leaf` socket too), `speed` (degrees or metres a second), `strength` (N m, or N for a piston). |
 | `dock`, `launch`, `conveyor` | [Large systems](big-systems.md#large-systems): a docking clamp's or magnetic lock's block on a cargo logic part, a catapult's or arrestor's, a conveyor's. |
+| `breach` | On a lamp logic part only: `kind` (`grapple` or `cutter`), `reach` (m, 0.05 to 8), a cutter's `rate` (damage a second, raw). [The shuttle](shuttle.md#grapples-and-the-cutter-constructbreachcs). |
 | `logic` | Milestone 2, a logic part: `kind` (below), and for the kinds with a setting `settings` (the values it cycles through), `labels` (what the HUD shows; an input reader's are its keys), `setting` (the starting index), `settingName`. |
 | `group`, `section` | Clues for the inventory's rules, `Constructs/Categories.json` ("The inventory"; each up to 32 characters; a section needs a group). A `group` that names a category places the part there. Without them it goes by its role. |
 | `yield` | A material bundle (the Material Bundle a broken bin spills): the units the Recycler gives back (its Setting is the material id). Other parts give back by mass and class ([Salvage haul](gathering-and-salvage.md#salvage-haul-decision-31)). The old `scrap` key is gone (protocol 106). |
@@ -193,7 +194,8 @@ control box's lamp shows the same colour.
 - **Limits**: 4 volumes a construct (a fifth is refused when fitted), 24 carried bodies a construct, 8 m a side.
 - **Blueprints**: a `"cargo"` list of loose parts (`{ "part", "at", "turn" }` in the construct's frame) built inside a
   volume that starts frozen; `ConstructCargo.ToJson` writes a construct's cargo back in that form. The **Cargo Rack**
-  blueprint is the example. World saving isn't built yet: frozen contents round-trip through the construct message and
+  blueprint is the example. A `"carry"` list (`{ "blueprint", "at", "turn" }`, at most 8) builds whole craft held in its
+  docks that start holding ([the shuttle](shuttle.md#on-the-zero-day)). World saving isn't built yet: frozen contents round-trip through the construct message and
   blueprints, relative to the construct.
 - **Network** (protocol 93): server-authoritative. A carried body's `CBody` ends with its carrier and its pose in the
   frame of the volume's segment; every machine moves it with the carrier (a client after blending the poses), so a
@@ -478,8 +480,15 @@ low sandbag wall. A box whose top is below the feet no longer pushes (so walking
 next never snags). Loose and free constructs are unchanged (a parked car still blocks you).
 
 **Fixed ladders.** A part with `"ladder"` (its landing's height in its own frame, m: up +y, climbed from its front, -z) is a
-vertical ladder: F at its foot climbs it to the landing behind its top, F at its top climbs down to its foot, at 2.4 m/s
-(`ConstructRide.ClimbLadder`, a climb in the construct's frame like a grab-on, so no wire change). The Fixed Ladder 3 m
+vertical ladder: F at its foot grabs it and climbs to the landing behind its top, F at its top climbs down to its foot
+(`ConstructRideLadder.cs`). The climb is three legs in the construct's frame, so a moving ship carries the climber: a step
+onto the rungs, the climb facing the ladder at 2 m/s, and a step off onto the floor at the other end (1.6 m/s). That end is
+worked out as the climb starts: the usual spot, or when something stands there the nearest spot within 1.4 m where a body
+fits with a floor under it and nothing solid between it and the rungs, so a fitting on a landing no longer stops a ladder.
+The body faces the ladder with hands and feet on its rungs, posed from where the feet are on it (`LadderAnim.cs`), so
+other players see the same climb; in first person the view turns to the ladder as you grab it and both hands are on the
+rungs. The wire carries the climb's legs and the ladder (protocol 345). `--ladder-check` plays every shipped ladder's
+climb up and down to its end. The Fixed Ladder 3 m
 climbs the watchtowers (and the Orbital Depot's stores tower) from the pad to the platform.
 
 **What bots still need** (the sandbox-spawns work owns bot navigation over constructs): today bots walk up stairs and

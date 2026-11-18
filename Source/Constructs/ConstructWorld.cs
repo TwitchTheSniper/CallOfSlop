@@ -1856,11 +1856,132 @@ public sealed partial class ConstructWorld
                     }
                 }
             }
+            SkinBlock(c, candidates, ref s, height, feetUp, ref standing, ref standSeg);
         }
         // Into (or out of) the ride frame: standing on a part rides its segment; off every surface, a jump stays in the
         // frame inside the construct's bounds, else they leave it with its momentum (ConstructRide.cs).
         ConstructRide.End(ref s, ride, standing, standSeg, gripUp, faceUp, frame);
         return standing;
+    }
+
+    private readonly List<ContactShape> _skinShapes = new(256);
+    private byte[] _skinSegs = new byte[256]; // (each skin triangle's segment: what a player landing on it stands on)
+
+    /// <summary>
+    /// A ship's skin (its parts' "hull" shapes: ConstructHulls) against a player outside its frame: they land on its plates (and
+    /// stand on them: then <see cref="ConstructRide.End"/> takes them into its frame, where ConstructRideMove.Gather meets the
+    /// plates as triangles) and are pushed out of its sides, where the boxes above meet only the rooms metres inside it.
+    /// <paramref name="candidates"/>: the body's parts near the player, in <see cref="_partHits"/>.
+    /// </summary>
+    private void SkinBlock(Construct c, int candidates, ref MoveState s, float height, Vector3 up, ref Construct? standing, ref int standSeg)
+    {
+        var any = false;
+        for (var ci = 0; ci < candidates && !any; ci++)
+            any = c.Parts[_partHits[ci]].D.HasSkin;
+        if (!any)
+            return; // (no skin near: every body but a ship's)
+        var r = World.PlayerRadius;
+        var step = s.Velocity * World.TickDt;
+        var from = s.Position - step; // (where this tick's move started: a fall faster than a plate is thick still meets it)
+        var lo = Vector3.Min(from, s.Position) - new Vector3(r + height + 0.2f);
+        var hi = Vector3.Max(from, s.Position) + new Vector3(r + height + 0.2f);
+        var shapes = _skinShapes;
+        shapes.Clear();
+        for (var ci = 0; ci < candidates; ci++)
+        {
+            var i = _partHits[ci];
+            ref var p = ref c.Parts[i];
+            if (!p.D.HasSkin || p.Broken)
+                continue;
+            c.WorldFrame(p.Seg, out var q, out var t);
+            var first = shapes.Count;
+            ConstructRide.AddSkin(shapes, c, i, q, t, lo, hi, c.Id, p.Seg);
+            if (_skinSegs.Length < shapes.Count)
+                Array.Resize(ref _skinSegs, Math.Max(shapes.Count, _skinSegs.Length * 2));
+            for (var k = first; k < shapes.Count; k++)
+                _skinSegs[k] = p.Seg;
+        }
+        if (shapes.Count == 0)
+            return;
+        var span = System.Runtime.InteropServices.CollectionsMarshal.AsSpan(shapes);
+        var core = up * (height - 2 * r);
+        // Coming down onto it: the move cast along its way, stopped where it first meets a plate it can stand on.
+        if (Vector3.Dot(step, up) < 0 && step.LengthSquared() > 1e-8f)
+        {
+            var len = step.Length();
+            var dir = step / len;
+            var a = from + up * r;
+            if (CapsuleContact.Cast(span, a, a + core, r, dir, len, out var toi, out var n, out _, out var hit) && Vector3.Dot(n, up) >= World.MinWalkNormalY)
+            {
+                s.Position = from + dir * toi;
+                Stand(c, _skinSegs[hit], ref s, up, ref standing, ref standSeg);
+                return;
+            }
+        }
+        var push = CapsuleContact.Depenetrate(span, s.Position + up * r, s.Position + up * r + core, r, 4, out _);
+        if (push == Vector3.Zero)
+        {
+            // Stood on it last tick: still on it if a plate is just under the feet.
+            if (s.Grounded || Vector3.Dot(s.Velocity, up) > 0.5f)
+                return;
+            var a = s.Position + up * r;
+            if (CapsuleContact.Cast(span, a, a + core, r, -up, 0.06f, out var toi, out var n, out _, out var hit) && Vector3.Dot(n, up) >= World.MinWalkNormalY)
+            {
+                s.Position -= up * toi;
+                Stand(c, _skinSegs[hit], ref s, up, ref standing, ref standSeg);
+            }
+            return;
+        }
+        var lift = Vector3.Dot(push, up);
+        if (lift >= World.MinWalkNormalY * push.Length())
+        {
+            s.Position += push; // (on top of a plate)
+            Stand(c, StoodSeg(span, s.Position, up), ref s, up, ref standing, ref standSeg);
+            return;
+        }
+        // Into its side: out sideways (never down through the floor they stand on), the speed into it gone.
+        if (s.Grounded && lift < 0)
+            push -= up * lift;
+        s.Position += push;
+        var pl = push.Length();
+        if (pl > 1e-6f)
+        {
+            var pn = push / pl;
+            var vn = Vector3.Dot(s.Velocity, pn);
+            if (vn < 0)
+                s.Velocity -= pn * vn;
+        }
+    }
+
+    /// <summary>The segment of the skin triangle nearest under the feet (just pushed up onto it).</summary>
+    private int StoodSeg(ReadOnlySpan<ContactShape> span, Vector3 feet, Vector3 up)
+    {
+        var best = 0;
+        var bd = float.MaxValue;
+        var r = World.PlayerRadius;
+        for (var k = 0; k < span.Length; k++)
+        {
+            var d = CapsuleContact.Separation(span[k], feet + up * r, feet + up * r, r, out _, out _);
+            if (d < bd)
+            {
+                bd = d;
+                best = _skinSegs[k];
+            }
+        }
+        return best;
+    }
+
+    private static void Stand(Construct c, int seg, ref MoveState s, Vector3 up, ref Construct? standing, ref int standSeg)
+    {
+        var vu = Vector3.Dot(s.Velocity, up);
+        if (vu < 0)
+            s.Velocity -= up * vu;
+        s.Grounded = true;
+        if (standing == null)
+        {
+            standing = c;
+            standSeg = seg;
+        }
     }
 
     private static Vector3 GripAxis(int ax, int sign)
@@ -2205,6 +2326,7 @@ public sealed partial class ConstructWorld
         AllocProfile.Mark("machines: ConstructLift");
         ConstructLift.Step(this, query, ref _liftTicks); // (the gas in lift cells, burners, what wakes a craft asleep)
         LoadStep(server: true); // (what the bins hold counts in their bodies' mass: before the cargo step, which reads a carried body's)
+        ConstructBreach.Step(this); // (boarding craft's hull grapples take hold or let go, their cutters burn: before the cargo step, which carries what they hold)
         ConstructCargo.Step(this); // (what frozen cargo volumes carry follows them; what entered is caught, what left is let go)
         perf.Dispose();
         ConstructGravity.Refresh(this); // (gravity wells and generators as they are now: ConstructGravity.cs)

@@ -28,6 +28,14 @@ The first Survival ship: a lofted two-deck miner with four drills on rams throug
 
 The IT Department's warship: a faceted lofted hull, two decks the length of the ship, torpedo sponsons, a spinal railgun, PDCs, flares; its AI crew, which flies and fights any stabilised craft by itself (ConstructShipAi.cs).
 
+## [The Shuttle](constructs/shuttle.md), 4 KB
+
+The Zero Day's boarding craft, carried on a cradle on its spine: hull grapples grip an enemy hull, a breaching cutter burns through it (ConstructBreach.cs), and a blueprint's `"carry"` list (craft built held in its docks).
+
+## [The Limpet](constructs/limpet.md), 4 KB
+
+The Zero Day's 8-person boarding pod, docked under its keel: the command view's Board order flies it to another craft's door (it seals on it) or hull (it cuts through), Game/GameNavBoard.cs.
+
 ## [The Dray container hauler](constructs/hauler.md), 3 KB
 
 A cargo ship round a hold of fourteen container slots, an overhead crane on rails and a belly well with sliding doors, two big drives with their engines in a drive room aft, and attitude jets; no legs, lamps or fittings yet.

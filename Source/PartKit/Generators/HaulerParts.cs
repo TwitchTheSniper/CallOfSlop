@@ -59,7 +59,7 @@ public sealed class HaulerParts : IPartGenerator
 
     private static readonly Rect Well = new(Cx - 1.45, 26.8, Cx + 1.45, 33.2); // the belly well under the middle lane of row 3
     private static readonly Rect BellyHatch = new(Cx + 2.4, 11.4, Cx + 3.65, 12.65); // the airlock's boarding shaft
-    private static readonly Rect LadderHatch = new(Cx - 3.4, 12.3, Cx - 2.15, 13.55); // the suit room up to the aft hall
+    private static readonly Rect LadderHatch = new(Cx - 3.4, 11.8, Cx - 2.15, 13.05); // the suit room up to the aft hall (room behind it for the ladder's landing, before the hold's wall)
     private const double TrackY = -1.26; // the well doors' tracks' underside
 
     /// <summary>The side doors beside the well (row 3), one a side: the opening's ends along the ship, its head, and the hinge socket.</summary>

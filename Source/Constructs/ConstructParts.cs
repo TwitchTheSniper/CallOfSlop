@@ -461,6 +461,9 @@ public sealed partial class ConstructPartDef
     public int SolidBoxes; // how many of Boxes are solid
     internal ConvexHull[]? Hulls; // its convex colliders, made on first use (ConstructHulls)
     internal bool[]? HullCovers; // per solid box: a hull stands for it
+    internal bool[]? HullSkin; // per hull: made from a "hull" shape (a plate of skin a player stands on as well: ConstructRideMove.Gather)
+    public bool HasSkin; // a "hull" shaped detail box collides (ConstructHulls): SkinMin..SkinMax reaches past the solid boxes' bounds
+    public Vector3 SkinMin, SkinMax; // the "hull" shapes' bounds in the part's frame (Construct.ReachBounds)
     public bool ColliderBoxes; // "collider": "boxes": its hidden solid boxes collide whatever its shapes (ConstructHulls)
     public bool HasGlass; // a box of it is a see-through glass pane ("glass": true): it shatters into small debris when it breaks
     public CSocket[] Sockets = [];
@@ -546,6 +549,7 @@ public sealed partial class ConstructPartDef
     public float MotorTorque, MotorPower, MotorTop; // suspension: a hub motor in the mount (N m at the wheel, kW, m/s it fades out at): drives its wheel from the circuit, no shaft (ConstructThrust.cs)
     public float PlantRate, PlantBurn, PlantSpool, PlantBuffer; // generator: kW, litres a second at full output, seconds to come up, kJ it holds
     public EngineFuel PlantFuel; // generator: Fuel, or None (a reactor)
+    public float PlantShaft; // generator: a Generator Head's efficiency, shaft to circuit (0: a plant that makes its own power); an engine on its Drive in turns it (ConstructGenset.cs)
     public float ThrustForce, ThrustBurn, ThrustPower, ThrustSpool; // thruster: N, litres a second and kW at full thrust, seconds from nothing to full
     public EngineFuel ThrustFuel; // thruster: Fuel or Electric
     public ThrustKind ThrustKind; // thruster: what makes its push (ConstructBoost.cs)
@@ -754,6 +758,8 @@ public sealed partial class ConstructPartDef
     public float DockSide, DockSettle = ConstructCargo.SettleSpeed, DockMaxMass = float.MaxValue, DockCharge, DockFuel; // a docking clamp or magnetic lock ("dock"): its longest box side, the speed it catches under, the heaviest body, kW and litres a second into what it holds
     public bool DockChute; // ...and its bins unload into the bins of the construct it is docked to
     public bool IsDock => DockSide > 0;
+    public BreachKind Breach; // a boarding craft's hull grapple or breaching cutter ("breach": ConstructBreach.cs): a lamp-kind part worked by its input
+    public float BreachReach, BreachRate; // how far below its face it grips or cuts (m); a cutter's damage a second to what is under it
     public float DockPull, DockEject; // a dock's tractor reach past its box (m), and how fast it throws what it lets go along its front (m/s): ConstructCarrier.cs
     public float MastReach = 12; // a mooring mast: how far from its top it ties (m)
     public byte MastRope = 2; // ...and the rope's size
@@ -811,7 +817,7 @@ public sealed partial class ConstructPartDef
     public RotorDef? Rotor; // a propeller or a rotor (ConstructRotor.cs)
     public LegDef? Leg; // a walker leg (ConstructWalk.cs)
     public float Steady; // kg of walker a stabiliser steadies (ConstructWalkFeel.cs)
-    public bool ShaftIn => GatherRpm > 0 || RailDrive == RailDriveKind.Shaft || Hyd == HydKind.Pump || Rotor is { Shaft: true } || Leg is { Shaft: > 0 }; // a part with a "Drive in" shaft port: ConstructDrillDrive.cs
+    public bool ShaftIn => GatherRpm > 0 || RailDrive == RailDriveKind.Shaft || Hyd == HydKind.Pump || Rotor is { Shaft: true } || Leg is { Shaft: > 0 } || PlantShaft > 0; // a part with a "Drive in" shaft port: ConstructDrillDrive.cs
 
     /// <summary>Has a signal output (wires start here): seats (someone sits there) and every logic part but lamps, horns and brakes.</summary>
     public PanelDef[] Panels = []; // flat display surfaces (DisplayPanel.cs)
@@ -836,7 +842,7 @@ public sealed partial class ConstructPartDef
     public string DieFamily = ""; // a die: its rows in Pressing.json
 
     public MonitorKind Monitor; // a production monitor's source: its "Data out" link makes a display show it (ProductionLines.Monitors.cs)
-    public bool HasOutput => Role == PartRole.Seat || IsExtruder || IsRouter || IsMedia || Monitor != MonitorKind.None || (Role == PartRole.Logic && Logic is not (CLogic.Lamp or CLogic.Horn or CLogic.Brake or CLogic.GravityWell or CLogic.GravityGen or CLogic.Display or CLogic.Instrument or CLogic.RadioTx))
+    public bool HasOutput => Role == PartRole.Seat || IsExtruder || IsRouter || IsMedia || Monitor != MonitorKind.None || PlantShaft > 0 || (Role == PartRole.Logic && Logic is not (CLogic.Lamp or CLogic.Horn or CLogic.Brake or CLogic.GravityWell or CLogic.GravityGen or CLogic.Display or CLogic.Instrument or CLogic.RadioTx))
                              || Role == PartRole.Hose && HoseCarry == HoseCarry.Data && HoseEnd == HoseEnd.Inlet; // (a data lead's inlet puts out what the lead carries)
 
     /// <summary>
@@ -879,7 +885,7 @@ public sealed partial class ConstructPartDef
         PartRole.FluidTank => IsEnvelope ? 1 : 0, // a lift cell's vent
         PartRole.Burner => 2, // throttle, hold height
         PartRole.Hose => HoseCarry == HoseCarry.Data && HoseEnd == HoseEnd.Outlet ? 1 : 0, // a data lead's outlet: the signal it sends down the lead
-        PartRole.Storage => IsExtruder ? DataIn.Length : IsGatherer || IsRecycler || IsRefiner || IsAssembler || IsPress || IsBeacon || IsTerminal || IsCraftTerminal ? 1 : 0, // (an Extruder: Run and Cut, a Wheel Former and Mode) a module's, Recycler's, production machine's or beacon's Run: on/off (ConstructGatherer.HeldOff)
+        PartRole.Storage => IsExtruder ? DataIn.Length : IsGatherer || IsRecycler || IsRefiner || IsAssembler || IsPress || IsBeacon || IsTerminal || IsCraftTerminal || IsAuger ? 1 : 0, // (an Extruder: Run and Cut, a Wheel Former and Mode) a module's, Recycler's, production machine's or beacon's Run: on/off (ConstructGatherer.HeldOff)
         PartRole.Logic => Logic switch
         {
             CLogic.Button or CLogic.Lever or CLogic.AnalogLever or CLogic.Switch or CLogic.Plate or CLogic.Speed or CLogic.Proximity or CLogic.FuelGauge or CLogic.ChargeGauge => 0,
@@ -1332,7 +1338,7 @@ public static partial class ConstructParts
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "finish", "friction", "collider",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "fluidTank", "seat", "hinge", "joint", "logic",
         "transmission", "battery", "capacitor", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "yield", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "retired", "hydraulics", "toolOnly", "tray", "walk", "boarding", "ladder", "toolDock", "damaged", "stage", "faces", "faceAxis", "router",
-        "sight", "ordnance", "mooring", "wear", "eva", "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "dieExtension", "runOut", "enginePiece", "sizeClass", "generator", "thruster", "burner", "flame", "rotor", "surface", "smoke", "dock", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "shell", "office", "requisition", "media", "speaker", "leg", "stabiliser", "door", "lifter", "craneRail", "lifterCab", "radar", "works", "worksPiece", "logiLink",
+        "sight", "ordnance", "mooring", "wear", "eva", "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "dieExtension", "runOut", "enginePiece", "sizeClass", "generator", "thruster", "burner", "flame", "rotor", "surface", "smoke", "dock", "breach", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "shell", "office", "requisition", "media", "speaker", "leg", "stabiliser", "door", "lifter", "craneRail", "lifterCab", "radar", "works", "worksPiece", "logiLink",
     ];
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, a contoured shape with its settings (index 8 up to the last), and the glass flag (last).</summary>
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, and a contoured shape with its settings.</summary>
@@ -1637,6 +1643,17 @@ public static partial class ConstructParts
         d.UseBoxes = Enumerable.Range(0, d.Boxes.Length).Where(k => d.Boxes[k].Use || d.Boxes[k].Rig is BoxRig.Lever or BoxRig.Knob or BoxRig.Slide or BoxRig.Stick).ToArray(); // (an Analog Lever's rig is its handle)
         d.SolidBoxes = list.Count(x => !x.Detail);
         d.HasGlass = list.Any(x => x.IsGlass);
+        // A "hull" shape (a plate of a ship's skin) collides where it is drawn (ConstructHulls), so the part's reach takes it in;
+        // its BoundsMin..BoundsMax stays the solid boxes' (sockets, snaps and the kit measure those).
+        d.SkinMin = new Vector3(float.MaxValue);
+        d.SkinMax = new Vector3(float.MinValue);
+        foreach (var b in list)
+            if (b.Detail && b.Shape != 0 && PartShapes.KindOf(b.Shape) == "hull")
+            {
+                d.HasSkin = true;
+                d.SkinMin = Vector3.Min(d.SkinMin, b.Center - b.Half);
+                d.SkinMax = Vector3.Max(d.SkinMax, b.Center + b.Half);
+            }
         d.BoundsMin = new Vector3(float.MaxValue);
         d.BoundsMax = new Vector3(float.MinValue);
         foreach (var b in d.Boxes.AsSpan(0, d.SolidBoxes))

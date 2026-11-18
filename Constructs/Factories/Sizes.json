@@ -2,7 +2,7 @@
   "format": "call-of-slop-factory-sizes/1",
   "about": "Factory size classes (docs/sandbox/design/factory-generator.md 2.1): the most floor (metres along the spine and across it), parts and machines a generated building of each class may have. Provisional.",
   "sizes": [
-    { "name": "post", "length": 32, "depth": 32, "parts": 1200, "machines": [1, 4] },
+    { "name": "post", "length": 40, "depth": 32, "parts": 1200, "machines": [1, 4] },
     { "name": "works", "length": 64, "depth": 64, "parts": 3500, "machines": [4, 14] },
     { "name": "plant", "length": 128, "depth": 96, "parts": 8000, "machines": [12, 40] }
   ]

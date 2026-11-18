@@ -217,6 +217,9 @@ public enum CfgKey : byte
     AiCrew, // Flight Stabilizer: an AI crew flies and fights the craft from its seats (ShipAiMode; ConstructShipAi.cs)
     SubJobs, // Building Station: Auto, it takes other stations' sub-blueprint uses as sub-jobs; Off, it keeps to its player's builds (ConstructStationTree.cs)
     ShellWear0, ShellWear1, ShellWear2, ShellWear3, // Robot Shell: its works' wear, two bytes a setting (not on the panel; ShellWear.cs)
+    ShellDamage, // Robot Shell: health it has lost (shells don't heal: a repair with the attach tool or a crew engineer puts it back; not on the panel)
+    Dampeners, // Flight Stabilizer on Ship keys: its inertia dampeners (off: the keys only burn, and it coasts; the seat's dampener key flips it: ConstructFlight.ToggleDampeners)
+    Walls, // Storage Volume: on, its box is a walled open-topped bin (four walls and a floor inside the box, solid; ConstructStoreVolume.Walled)
     COUNT,
 }
 
@@ -770,7 +773,7 @@ public static class ConstructConfig
 
     private static string DefaultType(CfgKey k) => k switch
     {
-        CfgKey.StartOn or CfgKey.Latched or CfgKey.Grip or CfgKey.Invert or CfgKey.Wrap or CfgKey.Pushable or CfgKey.Stabilised => "toggle",
+        CfgKey.StartOn or CfgKey.Latched or CfgKey.Grip or CfgKey.Invert or CfgKey.Wrap or CfgKey.Pushable or CfgKey.Stabilised or CfgKey.Walls => "toggle",
         CfgKey.Profile => "choice",
         CfgKey.RunMode or CfgKey.LinePage or CfgKey.OrderKind or CfgKey.OrderMaterial => "choice",
         CfgKey.SteerKind => "choice",
@@ -835,6 +838,7 @@ public static class ConstructConfig
                 CfgKey.StartOn => d.Logic is CLogic.Timer or CLogic.Switch or CLogic.Toggle or CLogic.Cargo || d.IsSpawner,
                 CfgKey.SizeX or CfgKey.SizeY or CfgKey.SizeZ or CfgKey.AtX or CfgKey.AtY or CfgKey.AtZ => ConstructCargo.HasBox(d),
                 CfgKey.Hole => d.IsEnvelope,
+                CfgKey.Walls => d.IsVolumeStore,
                 CfgKey.Reverse => d.Surface is { Control: > 0 } || d.Rotor != null || d.ThrustGimbal > 0,
                 CfgKey.Trim => d.Surface is { Control: > 0 },
                 CfgKey.Hand or CfgKey.Pusher or CfgKey.TorqueMix or CfgKey.BladeLost or (>= CfgKey.Blade0 and <= CfgKey.Blade3) => d.Rotor != null,
@@ -842,7 +846,7 @@ public static class ConstructConfig
                 CfgKey.FanBlades => d.Rotor != null || d.IsFanFormer,
                 CfgKey.FanKind or CfgKey.FanDiameter => d.IsFanFormer,
                 CfgKey.WingKind or CfgKey.WingChord or CfgKey.WingSpan => d.IsAirframeFormer,
-                (>= CfgKey.Keys and <= CfgKey.HomeZ) or CfgKey.InvertPitch or (>= CfgKey.PitchRate and <= CfgKey.ThrustLimit) or CfgKey.HomeY or CfgKey.WaypointY or CfgKey.AiCrew => d.Logic == CLogic.FlightStabilizer,
+                (>= CfgKey.Keys and <= CfgKey.HomeZ) or CfgKey.InvertPitch or (>= CfgKey.PitchRate and <= CfgKey.ThrustLimit) or CfgKey.HomeY or CfgKey.WaypointY or CfgKey.AiCrew or CfgKey.Dampeners => d.Logic == CLogic.FlightStabilizer,
                 CfgKey.Throw or CfgKey.Expo => d.Surface is { Control: > 0 } || d.ThrustGimbal > 0,
                 CfgKey.Grain => d.ThrustKind == ThrustKind.Solid,
                 CfgKey.Stabilised => d.Logic == CLogic.TurretModule,
@@ -852,7 +856,7 @@ public static class ConstructConfig
                 CfgKey.Grip => d.Role == PartRole.Panel || d.Walk != WalkKind.None,
                 CfgKey.Profile or CfgKey.Width or CfgKey.Height or CfgKey.Wall or CfgKey.CutLength => d.IsExtruder && !d.IsPanelFormer || ProductionLines.IsConsole(d), // (a console's: its next bill line)
                 CfgKey.MaskA or CfgKey.MaskB or CfgKey.MaskC or CfgKey.MaskD => d.IsExtruder && !d.IsPanelFormer,
-                >= CfgKey.ShellWear0 and <= CfgKey.ShellWear3 => d.ShellBody,
+                (>= CfgKey.ShellWear0 and <= CfgKey.ShellWear3) or CfgKey.ShellDamage => d.ShellBody,
                 CfgKey.RunMode => d.IsWheelFormer && !d.IsPanelFormer,
                 CfgKey.AmmoType => d.Role is PartRole.AmmoBox or PartRole.Storage,
                 CfgKey.Charge => d.IsReceiverGun,

@@ -217,6 +217,8 @@ public sealed class ConvexHull
 /// over hidden solid boxes that stand for it. A wedge and a cylinder (or tube: its outside) are convex, so they get a real
 /// convex collider made from their mesh, and the hidden boxes under them stop being colliders. The rest keep their solid
 /// boxes: an arc is not convex (its stepped boxes follow the curve), rounded and bevelled pieces are nearly their box.
+/// A "hull" shape (a convex plate or prism from its points: a ship's skin, its armour, its rails) collides as itself too, over
+/// nothing: its solid boxes stay colliders, and a player stands on its plates as on boxes (ConstructRideMove.Gather).
 /// A part file says <c>"collider": "boxes"</c> to keep its hidden boxes whatever its shapes. Ray hits use the same collider
 /// (<see cref="ConstructWorld.Raycast"/>); a player's feet use the hidden boxes, the shape in steps a player walks up.
 /// </summary>
@@ -245,7 +247,7 @@ public static class ConstructHulls
         return ConvexHull.Of(points) ?? throw new InvalidOperationException("the wheel's prism has no hull");
     }
 
-    private static bool HullShape(string shape) => shape is "wedge" or "cylinder" or "tube";
+    private static bool HullShape(string shape) => shape is "wedge" or "cylinder" or "tube" or "hull";
 
     /// <summary><paramref name="d"/>'s convex colliders (in the part's frame) and, per solid box, whether a hull stands for it. Made on first use.</summary>
     public static ConvexHull[] Of(ConstructPartDef d)
@@ -265,12 +267,14 @@ public static class ConstructHulls
     private static void Make(ConstructPartDef d)
     {
         var hulls = new List<ConvexHull>();
+        var skin = new List<bool>();
         var covers = NoCovers;
         for (var b = d.SolidBoxes; b < d.Boxes.Length && !d.ColliderBoxes; b++)
         {
             var box = d.Boxes[b];
             if (box.Shape == 0 || !HullShape(PartShapes.KindOf(box.Shape)))
                 continue;
+            var plate = PartShapes.KindOf(box.Shape) == "hull";
             var mesh = PartShapes.Mesh(box.Shape);
             var points = new Vector3[mesh.Length / 6];
             for (var k = 0; k < points.Length; k++)
@@ -278,6 +282,9 @@ public static class ConstructHulls
             if (ConvexHull.Of(points) is not { } hull)
                 continue;
             hulls.Add(hull);
+            skin.Add(plate);
+            if (plate)
+                continue; // (a plate of skin stands for nothing: a tilted one's box can hold a hidden box of the void behind it, which still collides)
             // The hidden solid boxes inside this shape's box stand for it no more.
             if (covers.Length == 0)
                 covers = new bool[d.SolidBoxes];
@@ -290,6 +297,7 @@ public static class ConstructHulls
             }
         }
         d.HullCovers = covers;
+        d.HullSkin = skin.Contains(true) ? skin.ToArray() : null;
         d.Hulls = hulls.Count > 0 ? hulls.ToArray() : None;
     }
 }

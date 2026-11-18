@@ -270,6 +270,12 @@ public static unsafe partial class Program
             return VehicleKit.VehicleKitCli.CheckVehicle(vehicleFile); // the vehicle check on any blueprint file
         if (args.Any(a => a.Equals("--no-drive-gate", StringComparison.OrdinalIgnoreCase)))
             VehicleKit.VehicleDriveCheck.GateOn = false; // the spawn's drive check off, to measure what it catches and costs (VehicleDriveCheck.cs)
+        if (args.Any(a => a.Equals("--skin-check", StringComparison.OrdinalIgnoreCase)))
+            return SkinCheck.Cli(args); // does each ship's drawn skin collide where it is drawn: rays, a standing player, a dropped plate (Source/DevTools/SkinCheck.cs)
+        if (args.Any(a => a.Equals("--ship-keys-check", StringComparison.OrdinalIgnoreCase)))
+            return ShipKeysCheck.Cli(args); // each ship on Ship keys held still and each key held in turn: which way its thrusters push (Source/DevTools/ShipKeysCheck.cs)
+        if (args.Any(a => a.Equals("--ladder-check", StringComparison.OrdinalIgnoreCase)))
+            return LadderCheck.Cli(args); // every ladder on the shipped blueprints climbed up and down headless (Source/DevTools/LadderCheck.cs)
         if (args.Any(a => a.Equals("--ride-check", StringComparison.OrdinalIgnoreCase)))
             return RideCheck.Cli(args); // a player walked round moving ships headless: every tick their frame changed or lapsed (Source/DevTools/RideCheck.cs)
         if (args.SkipWhile(a => !a.Equals("--flight-check", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } flightFile)
@@ -2296,7 +2302,7 @@ public static unsafe partial class Program
 
         // ---- First-person gun -----------------------------------------------
         pass = Perf.Pass(PerfArea.ViewModel, PerfGpuPass.ViewModel);
-        if (local is { Alive: true } && !tp && !talkView && !Ui.CommandOpen && !_game.OpeningActive && !_game.QuarryRiding && !_wsNoHands && !DrawSandboxTool(now, eye, fwd)) // (_wsNoHands: the window tool's --no-hands, for pictures) // (Sandbox: the wrench or welder instead, or nothing in a seat; nothing in hand in the opening or on a ride)
+        if (local is { Alive: true } && !tp && !talkView && !Ui.CommandOpen && !_game.OpeningActive && !_game.QuarryRiding && !_wsNoHands && !DrawLadderHands(now, eye, fwd, camUp) && !DrawSandboxTool(now, eye, fwd)) // (_wsNoHands: the window tool's --no-hands, for pictures) // (Sandbox: the wrench or welder instead, or nothing in a seat; nothing in hand in the opening or on a ride)
         {
             GunModel.AdsCutaway = SightLens.Cutaway(_game.Active.Def, _game.AimT); // reflex dots hand over to the lens pass as you aim
             DrawViewModel(now, proj);
