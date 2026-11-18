@@ -147,6 +147,16 @@ body's sphere of influence.
 touches the flight keys: hands on the controls always win. An orbit order stays after the ship is in orbit ("IN
 ORBIT, DRIVE OFF") and burns again only if the ship has drifted well off its circle.
 
+### Boarding (`Game/GameNavBoard.cs`)
+
+Board, for a ship with a boarding pod docked on it (a craft with mag locks and a breaching cutter facing its nose: the Zero
+Day's Limpet, [limpet.md](../sandbox/constructs/limpet.md)). Pick the carrier, then right-click another craft: the part
+under the cursor (in its hologram; zoom in until it is large) is the spot, a door if one is under it, and the menu offers
+BOARD: SEAL ON THIS DOOR or BOARD: CUT IN HERE under the Dock line (zoomed out, or off the hull, it says how to pick a spot instead). The order goes on the pod (its card shows it): it flies out from under the
+carrier, across, grips, then opens the door or cuts through and opens its own. On the wire its point is the target's id,
+the part and 1 for a door (protocol 342); the host works the spot and the way out of the skin there. The pod must be within
+3 km of the target. `order board N door|hull` (the window tool) gives it from a script.
+
 ### How a ship flies one (`Game.ServerTickNav`, before the launch step each tick)
 
 - **In a sky** (`NavInSky`): the order works the Flight Stabilizer's autopilot through `ConstructFlight.NavEngage`, as
@@ -233,7 +243,7 @@ docs/sandbox/design/faction-controllers.md section 6.2, so he chose docking alon
   the host docks it (`NavDockCatch`): out of the flight, set upright in the middle of a pull dock's box and caught
   (`ConstructCargo.Catch`), so it rides the other ship as any docked craft does. A ship in a sky climbs out first to dock
   with one in space; one in space is refused a port down in a sky ("bring it down into the sky first").
-- **Wire** (protocol 341): `CActKind.NavOrder` ends with the target construct, `Msg.Nav` with the target and the port.
+- **Wire** (protocol 342): `CActKind.NavOrder` ends with the target construct, `Msg.Nav` with the target and the port.
 - **Trying it:** `order dock N` (dock with the Nth craft, as `cmdpick` counts) and `letgo [ID]` (host: the port holding
   a craft lets it go). A Shuttle onto the Zero Day's clamp, in the sky and in orbit:
 

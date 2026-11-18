@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Storage Volume",
-  "description": "A box you size: one bulk material or parts, inside your walls.",
+  "description": "A box you size: one bulk material or parts, in its own walls or yours.",
   "group": "Storage",
   "section": "Cargo",
   "role": "storage",
@@ -209,6 +209,13 @@
       "step": 0.05,
       "default": 0,
       "tooltip": "Where the box's centre is from the part (z)."
+    },
+    {
+      "key": "walls",
+      "label": "Walls",
+      "group": "Box",
+      "default": false,
+      "tooltip": "On: the box is a walled bin, open at the top (its walls and floor take 0.15 m inside it). Off: you build the walls. A new one from the inventory comes walled."
     },
     {
       "key": "material",

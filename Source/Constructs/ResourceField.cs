@@ -166,6 +166,7 @@ public sealed partial class ResourceField
     private readonly HashSet<uint> _blocked = new(); // lattice cells under the map's solid boxes
     private readonly ConcurrentDictionary<uint, byte> _felled = new(); // (read by collision queries, also a background vantage build)
     private readonly Dictionary<uint, int> _cut = new(); // a tree part cut: the wood taken so far (server)
+    private readonly Dictionary<uint, int> _spots = new(); // a drill spot's units taken so far (server; SpotKey)
     private readonly PriorityQueue<uint, long> _regrow = new(); // felled trees by the tick they grow back (server)
     private long _clock; // ticks gathered so far this match (server)
     private readonly List<FoliageInstance> _drawn = new();
@@ -432,12 +433,38 @@ public sealed partial class ResourceField
         iz = (int)(key & 0xFFFF) - 32768;
     }
 
-    /// <summary>Server: takes up to <paramref name="want"/> units from the underground deposit under a point.</summary>
+    /// <summary>Server: takes up to <paramref name="want"/> units from the underground deposit under a point (and from its spot: <see cref="SpotLeft"/>).</summary>
     public int Tap(float x, float z, int want, out byte material)
     {
         material = 0;
         var i = _planet != null ? -1 : At(x, z, false, true, out _);
-        return TapDeposit(i, want, ref material);
+        var key = SpotKey(new Vector3(x, 0, z));
+        return Spend(key, TapDeposit(i, Math.Min(want, SpotLeft(key)), ref material));
+    }
+
+    // ---- Spots: the ground under a drill works out (the user, 2026-11-17: "extraction must follow the ore") ---------------------
+
+    public const float SpotSize = 3f; // metres: a drill spot (a hole's width, DrillShaft.Radius x 2, and a little)
+    public const int SpotUnits = 1200; // what one spot gives before it is worked out (a minute of a Workshop drill)
+
+    /// <summary>The spot a point lies in: a 3 m cell (3D on a round world, so a key is the same from any face).</summary>
+    public static uint SpotKey(Vector3 p)
+    {
+        int ix = (int)MathF.Floor(p.X / SpotSize), iy = (int)MathF.Floor(p.Y / SpotSize), iz = (int)MathF.Floor(p.Z / SpotSize);
+        return Mix(Mix(Mix(0x5b0711u, (uint)ix), (uint)iy), (uint)iz);
+    }
+
+    /// <summary>What the spot <paramref name="key"/> still gives (a flat world asks with y 0).</summary>
+    public int SpotLeft(uint key) => _spots.TryGetValue(key, out var taken) ? Math.Max(0, SpotUnits - taken) : SpotUnits;
+
+    /// <summary>Is the spot under a point worked out?</summary>
+    public bool WorkedOut(Vector3 p) => SpotLeft(SpotKey(_planet != null ? p : p with { Y = 0 })) <= 0;
+
+    private int Spend(uint key, int took)
+    {
+        if (took > 0)
+            _spots[key] = _spots.GetValueOrDefault(key) + took;
+        return took;
     }
 
     private int TapDeposit(int i, int want, ref byte material)
@@ -493,6 +520,7 @@ public sealed partial class ResourceField
             _deposits[i] = d;
         }
         _cut.Clear();
+        _spots.Clear();
         _regrow.Clear();
         _clock = 0;
         if (!_felled.IsEmpty)
@@ -582,6 +610,7 @@ public sealed class ResourceFieldState
     public uint[] Felled = [];
     public (uint Key, long Due)[] Regrow = [];
     public (uint Key, int Done)[] Cut = [];
+    public (uint Key, int Taken)[] Spots = []; // drill spots worked so far (ResourceField.SpotKey; after Cut in a save: older saves have none)
 }
 
 public sealed partial class ResourceField
@@ -598,6 +627,7 @@ public sealed partial class ResourceField
         s.Felled = _felled.Keys.ToArray();
         s.Regrow = _regrow.UnorderedItems.Select(e => (e.Element, e.Priority)).ToArray();
         s.Cut = _cut.Select(e => (e.Key, e.Value)).ToArray();
+        s.Spots = _spots.Select(e => (e.Key, e.Value)).ToArray();
         return s;
     }
 
@@ -626,6 +656,9 @@ public sealed partial class ResourceField
         _cut.Clear();
         foreach (var (key, done) in s.Cut)
             _cut[key] = done;
+        _spots.Clear();
+        foreach (var (key, taken) in s.Spots)
+            _spots[key] = taken;
         return note;
     }
 }

@@ -1,0 +1,203 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Ore Bunker 5 m",
+  "description": "A large open concrete bin for bulk stock: chute in and out on its rim, or tip a load in from above.",
+  "group": "Production",
+  "section": "Factory",
+  "role": "storage",
+  "tool": "welder",
+  "storage": {
+    "bulk": {
+      "material": "any",
+      "capacity": 18919,
+      "chuteLoad": 160,
+      "min": [
+        -2.295,
+        0.205,
+        -2.295
+      ],
+      "max": [
+        2.295,
+        2.45,
+        2.295
+      ]
+    }
+  },
+  "ports": [
+    {
+      "name": "Chute in",
+      "type": "chute",
+      "dir": "in",
+      "at": [
+        -2.4,
+        2.5,
+        0.0
+      ],
+      "face": "+y"
+    },
+    {
+      "name": "Chute out",
+      "type": "chute",
+      "dir": "out",
+      "at": [
+        2.4,
+        2.5,
+        0.0
+      ],
+      "face": "+y"
+    }
+  ],
+  "mass": 8450.1,
+  "health": 67500,
+  "armour": 20,
+  "material": "concrete",
+  "color": "#8e8a80",
+  "attachSeconds": 2.5,
+  "boxes": [
+    {
+      "min": [
+        -2.5,
+        0.0,
+        -2.5
+      ],
+      "max": [
+        2.5,
+        0.2,
+        2.5
+      ]
+    },
+    {
+      "min": [
+        -2.5,
+        0.2,
+        -2.5
+      ],
+      "max": [
+        -2.3,
+        2.5,
+        2.5
+      ]
+    },
+    {
+      "min": [
+        2.3,
+        0.2,
+        -2.5
+      ],
+      "max": [
+        2.5,
+        2.5,
+        2.5
+      ]
+    },
+    {
+      "min": [
+        -2.3,
+        0.2,
+        -2.5
+      ],
+      "max": [
+        2.3,
+        2.496,
+        -2.3
+      ]
+    },
+    {
+      "min": [
+        -2.3,
+        0.2,
+        2.3
+      ],
+      "max": [
+        2.3,
+        2.496,
+        2.5
+      ]
+    },
+    {
+      "min": [
+        -2.512,
+        2.497,
+        -2.512
+      ],
+      "max": [
+        -2.288,
+        2.53,
+        2.512
+      ],
+      "color": "#5c5a55",
+      "detail": true
+    },
+    {
+      "min": [
+        2.288,
+        2.497,
+        -2.512
+      ],
+      "max": [
+        2.512,
+        2.53,
+        2.512
+      ],
+      "color": "#5c5a55",
+      "detail": true
+    },
+    {
+      "min": [
+        -2.287,
+        2.497,
+        -2.509
+      ],
+      "max": [
+        2.287,
+        2.527,
+        -2.291
+      ],
+      "color": "#5c5a55",
+      "detail": true
+    },
+    {
+      "min": [
+        -2.287,
+        2.497,
+        2.291
+      ],
+      "max": [
+        2.287,
+        2.527,
+        2.509
+      ],
+      "color": "#5c5a55",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+x",
+      "at": [
+        2.5,
+        1.25,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -2.5,
+        1.25,
+        0.0
+      ],
+      "dir": "-x"
+    }
+  ]
+}

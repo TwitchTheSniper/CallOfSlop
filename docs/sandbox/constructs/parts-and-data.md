@@ -487,7 +487,7 @@ worked out as the climb starts: the usual spot, or when something stands there t
 fits with a floor under it and nothing solid between it and the rungs, so a fitting on a landing no longer stops a ladder.
 The body faces the ladder with hands and feet on its rungs, posed from where the feet are on it (`LadderAnim.cs`), so
 other players see the same climb; in first person the view turns to the ladder as you grab it and both hands are on the
-rungs. The wire carries the climb's legs and the ladder (protocol 342). `--ladder-check` plays every shipped ladder's
+rungs. The wire carries the climb's legs and the ladder (protocol 345). `--ladder-check` plays every shipped ladder's
 climb up and down to its end. The Fixed Ladder 3 m
 climbs the watchtowers (and the Orbital Depot's stores tower) from the pad to the platform.
 

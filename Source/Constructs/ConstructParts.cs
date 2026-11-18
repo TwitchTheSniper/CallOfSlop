@@ -885,7 +885,7 @@ public sealed partial class ConstructPartDef
         PartRole.FluidTank => IsEnvelope ? 1 : 0, // a lift cell's vent
         PartRole.Burner => 2, // throttle, hold height
         PartRole.Hose => HoseCarry == HoseCarry.Data && HoseEnd == HoseEnd.Outlet ? 1 : 0, // a data lead's outlet: the signal it sends down the lead
-        PartRole.Storage => IsExtruder ? DataIn.Length : IsGatherer || IsRecycler || IsRefiner || IsAssembler || IsPress || IsBeacon || IsTerminal || IsCraftTerminal ? 1 : 0, // (an Extruder: Run and Cut, a Wheel Former and Mode) a module's, Recycler's, production machine's or beacon's Run: on/off (ConstructGatherer.HeldOff)
+        PartRole.Storage => IsExtruder ? DataIn.Length : IsGatherer || IsRecycler || IsRefiner || IsAssembler || IsPress || IsBeacon || IsTerminal || IsCraftTerminal || IsAuger ? 1 : 0, // (an Extruder: Run and Cut, a Wheel Former and Mode) a module's, Recycler's, production machine's or beacon's Run: on/off (ConstructGatherer.HeldOff)
         PartRole.Logic => Logic switch
         {
             CLogic.Button or CLogic.Lever or CLogic.AnalogLever or CLogic.Switch or CLogic.Plate or CLogic.Speed or CLogic.Proximity or CLogic.FuelGauge or CLogic.ChargeGauge => 0,

@@ -87,8 +87,8 @@ public sealed partial class Game
         {
             if (c.SpaceShip == 0)
             {
-                if (c.Anchored || c.Asleep || c.PartCount == 0 || c.CarriedBy != 0 || c.GrabbedBy != 255 || c.Frozen || c.Pinned)
-                    continue;
+                if (c.Anchored || c.Asleep || c.PartCount == 0 || c.CarriedBy != 0 || c.GrabbedBy != 255 || c.Frozen || c.Pinned || NavBoarding(c))
+                    continue; // (a pod flying to board stays a body of the bubble: GameNavBoard.cs)
                 var com = c.WorldCom;
                 if (Vector3.DistanceSquared(com, centre) <= edge * edge)
                     continue;

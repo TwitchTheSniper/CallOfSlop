@@ -587,9 +587,14 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 340: inertia dampeners (a ship's seat key): CActKind.Dampeners (u16 body) at its end; CfgKey gains Dampeners at its end, a Flight Stabilizer setting.
     // 341: docking from the command view (GameNavDock.cs): NavKind.Dock and NavPhase.Docking/DockWait at their ends; CActKind.NavOrder ends
     //   with a u16 target construct, Msg.Nav with u16 target and u16 port (a part index).
-    // 342: ladders climbed with an animation (ConstructRideLadder.cs): SnapOwn's climb ends with u8 RideLadder, and when it is set u16 the
-    //   ladder and 2 x vec the later legs' ends; a fast entry of kind 248 (RideLadderKind) is a ride entry and then u16 the ladder + 1.
-    public const ushort ProtocolVersion = 342;
+    // 342: the Board order (Game/GameNavBoard.cs): NavKind gains Board (a pod flown to a ship's door or hull; Point: the target id, part, 1 for a door)
+    //   at its end, and the Limpet boarding pod's 11 parts (Constructs/Parts/Limpet) move part ids.
+    // 343: cargo parts (factory-generator-notes.md): CfgKey.Walls after Dampeners, a Storage Volume's walls setting; new part files (bunkers, the Tipping Grate, the Unloading Auger) shift part ids.
+    // 344: noclip in a moving construct's frame (NoclipMove.cs, ConstructRide.NoclipFrame): a snapshot's fast entry gains extension kind 248
+    //   (a ride's bytes, flying), and the PilotGear step stows a canopy in vacuum (Eva.Vacuum).
+    // 345: ladders climbed with an animation (ConstructRideLadder.cs): SnapOwn's climb ends with u8 RideLadder, and when it is set u16 the
+    //   ladder and 2 x vec the later legs' ends; a fast entry of kind 247 (RideLadderKind) is a ride entry and then u16 the ladder + 1.
+    public const ushort ProtocolVersion = 345;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

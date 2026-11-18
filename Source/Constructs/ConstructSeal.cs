@@ -228,7 +228,7 @@ public static class ConstructSeal
                         covered[f] |= Covers(centre, half, sc, sh, axis[f], nu[f], nv[f]);
             }
         }
-        byte mask = 0;
+        byte mask = ConstructStoreVolume.Walled(p, p.D) ? ConstructStoreVolume.WalledFaces : (byte)0; // (its own walls; the top is open unless the construct closes it)
         for (var f = 0; f < 6; f++)
             if (System.Numerics.BitOperations.PopCount(covered[f]) >= table.Cover * nu[f] * nv[f] - 1e-3f)
                 mask |= (byte)(1 << f);

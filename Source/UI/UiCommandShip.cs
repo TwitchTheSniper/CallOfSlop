@@ -160,12 +160,23 @@ public sealed partial class Ui
                 ImDrawListExtensions.AddPolyline(dl, _cmdPts.AsSpan(i, 4), col, ImDrawFlags.None, 1.4f * _scale);
             return;
         }
-        var to = o.Kind == NavKind.Dock
-            ? g.Constructs.Get(o.Target) is { } port && o.TargetPart < port.PartCount ? _cvPose.ToEcliptic(Vec3d.From(Game.NavDockCentre(port, o.TargetPart, out _, out _))) : cr.Pos // (the port on the other ship)
-            : o.Kind == NavKind.Come && g.Players.GetValueOrDefault(o.By) is { Alive: true } who && o.Phase != NavPhase.Landing
-            ? _cvPose.ToEcliptic(Vec3d.From(who.Position)) // (it comes to them where they are now)
-            : o.Kind is NavKind.Ground or NavKind.Land or NavKind.Come ? _cvPose.ToEcliptic(o.Point) : bp + o.Point;
-        var at = CmdP(to);
+        float2 at;
+        if (o.Kind == NavKind.Board)
+        {
+            var tk = CmdFind((ushort)Math.Clamp(o.Point.X, 0, ushort.MaxValue)); // (a pod boarding: the ship it boards, GameNavBoard.cs)
+            if (tk < 0)
+                return;
+            at = _cmdCraft[tk].At;
+        }
+        else
+        {
+            var to = o.Kind == NavKind.Dock
+                ? g.Constructs.Get(o.Target) is { } port && o.TargetPart < port.PartCount ? _cvPose.ToEcliptic(Vec3d.From(Game.NavDockCentre(port, o.TargetPart, out _, out _))) : cr.Pos // (the port on the other ship)
+                : o.Kind == NavKind.Come && g.Players.GetValueOrDefault(o.By) is { Alive: true } who && o.Phase != NavPhase.Landing
+                ? _cvPose.ToEcliptic(Vec3d.From(who.Position)) // (it comes to them where they are now)
+                : o.Kind is NavKind.Ground or NavKind.Land or NavKind.Come ? _cvPose.ToEcliptic(o.Point) : bp + o.Point;
+            at = CmdP(to);
+        }
         var d = 7 * _scale;
         CmdGlow(dl, at + new float2(0, -d), at + new float2(d, 0), CmdAmber, fade);
         CmdGlow(dl, at + new float2(d, 0), at + new float2(0, d), CmdAmber, fade);

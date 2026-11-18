@@ -54,11 +54,12 @@ public static class NoclipMove
     /// <summary>One tick of a noclip player: going in, flying, or coming out (<see cref="MoveState.NoclipExit"/>: the game then finds room).</summary>
     public static void Step(ref MoveState s, in InputCmd cmd)
     {
+        var frame = ConstructRide.NoclipFrame(ref s); // (in a moving construct: flying in its frame, so it doesn't leave them behind)
         if (!cmd.Noclip)
         {
             s.Noclip = false;
             s.NoclipExit = true;
-            s.RideFree = Flung; // (the speed stays: a flick at something, carried until they land)
+            s.RideFree = frame != null ? (byte)0 : Flung; // (the speed stays: a flick at something, carried until they land; in a frame, it carries them on to its deck)
             return;
         }
         if (!s.Noclip)
@@ -70,7 +71,6 @@ public static class NoclipMove
         s.Grounded = false;
         s.Stance = Stance.Stand;
         s.MantleTicks = 0;
-        ConstructRide.Clear(ref s); // (the position is the world's already; a frame can't hold someone flying)
 
         var at = s.Position;
         var b = cmd.Buttons;
@@ -95,7 +95,18 @@ public static class NoclipMove
             speed = MathF.Min(MaxSpeed, MathF.Max(FastSpeed, now + (now - RampFrom) * RampRate * World.TickDt / blend));
         }
         s.Velocity += (wish * speed - s.Velocity) * blend;
-        s.Position = Bounds(at + s.Velocity * World.TickDt);
+        if (frame != null && ConstructRide.NoclipMoved(ref s, frame, s.Velocity * World.TickDt))
+        {
+            var held = Bounds(s.Position);
+            if (held != s.Position)
+            {
+                ConstructRide.Clear(ref s); // (the frame went past the flight's space: the flyer stays at its edge)
+                s.Position = held;
+            }
+            return;
+        }
+        s.Position = Bounds(frame != null ? s.Position : at + s.Velocity * World.TickDt);
+        ConstructRide.NoclipCatch(ref s);
     }
 
     /// <summary>
