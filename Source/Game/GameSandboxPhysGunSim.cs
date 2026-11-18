@@ -46,6 +46,11 @@ public sealed partial class Game
     /// <summary>For the window tool's check: how far the drawn piece leads the server's pose of the drawn tick (m), in the frame.</summary>
     public float SandboxHeldLead { get; private set; }
 
+    /// <summary>For the window tool's check: the eye the simulation aimed from this frame, and the render eye at that moment (the tick's pose on a deck).</summary>
+    public Vector3 SandboxHeldEye { get; private set; }
+
+    public Vector3 SandboxHeldEyeEarly { get; private set; }
+
     /// <summary>
     /// Client, every frame from <see cref="SandboxPredictHeld"/>: the held piece (or the one just let go) drawn from the
     /// client's own simulation. False: not simulated (the old drawing or the let-go fade goes on).
@@ -66,7 +71,7 @@ public sealed partial class Game
                 SimStart(held);
             }
             else if (frameBody != _simFrameBody || frameSeg != _simFrameSeg)
-                SimReframe(held, frameBody, frameSeg); // (stepped onto a deck or off it, or onto a lift on it: the same pose, kept in the new frame)
+                SimReframe(frameBody, frameSeg); // (stepped onto a deck or off it, or onto a lift on it: the same pose, kept in the new frame)
             _simFree = _simStill = false;
             _simGrabLocal = held.GrabLocal;
         }
@@ -97,7 +102,9 @@ public sealed partial class Game
         var due = _moverCmds - _simCmds;
         _simCmds = _moverCmds;
         var steps = 0;
-        var eye = me?.RenderEye ?? Vector3.Zero;
+        var eye = me != null ? RiderDrawnEye(me) : Vector3.Zero; // (pg02: on a deck, the eye as the deck is drawn, not the tick's)
+        SandboxHeldEye = eye;
+        SandboxHeldEyeEarly = me?.RenderEye ?? Vector3.Zero;
         var look = LookDir(LookYaw, LookPitch);
         ref var hand = ref SandboxHands.Hand(LocalId);
         var aim = Vector3.Transform(eye + look * _sbPredDist - _simFt, inv);
@@ -302,13 +309,15 @@ public sealed partial class Game
     }
 
     /// <summary>pg02: the frame the holder stands in (the segment carrying them, as the server keeps a rider's beam in), or 0: the world.</summary>
-    private static void SimRiding(Player me, Construct held, out ushort body, out int seg)
+    private void SimRiding(Player me, Construct held, out ushort body, out int seg)
     {
         body = 0;
         seg = 0;
         var ride = me.Sim.RideBody;
         if (me.Sim.RideUp == Vector3.Zero || ride == 0 || ride == held.Id || held.CarriedBy == ride)
             return;
+        if (Constructs.Get(ride) is null)
+            return; // (the deck is gone, merged or replaced: the world, kept from where it was drawn, not a restart)
         body = ride;
         seg = ConstructRide.Carrier(me.Sim);
     }
@@ -338,6 +347,10 @@ public sealed partial class Game
         return SimFramePose();
     }
 
+    /// <summary>Does the frame move (a deck under way)? A gone deck or the world: no.</summary>
+    private bool SimFrameMoving() =>
+        _simFrameBody != 0 && Constructs.Get(_simFrameBody) is { } deck && !deck.Asleep && !deck.Anchored && (deck.Vel.LengthSquared() > 0.25f || deck.AngVel.LengthSquared() > 1e-3f);
+
     /// <summary>The frame's own velocity at a world point, and its spin (zero for the world).</summary>
     private Vector3 SimFrameVel(Vector3 at) =>
         _simFrameBody != 0 && Constructs.Get(_simFrameBody) is { } deck ? ConstructRide.SurfaceVel(deck, _simFrameSeg <= deck.JointCount ? _simFrameSeg : 0, at) : Vector3.Zero;
@@ -350,14 +363,12 @@ public sealed partial class Game
     /// new frame. The path kept can't be (the old deck's past poses aren't kept), so it starts again: the reconcile waits for it
     /// for the bodies' delay, the lead clamp holds meanwhile.
     /// </summary>
-    private void SimReframe(Construct c, ushort body, int seg)
+    private void SimReframe(ushort body, int seg)
     {
-        if (!SimFramePose())
-        {
-            SimSetFrame(body, seg);
-            SimStart(c);
-            return;
-        }
+        var oldMoving = SimFrameMoving();
+        SimFramePose(); // (the old deck gone: its last drawn pose stays in _simFt/_simFq, so the piece goes on from where it was drawn)
+        var oldFt = _simFt;
+        var oldFq = _simFq;
         var pos = _simFt + Vector3.Transform(_simPos, _simFq);
         var prev = _simFt + Vector3.Transform(_simPrevPos, _simFq);
         var rot = Quaternion.Normalize(_simFq * _simRot);
@@ -378,7 +389,15 @@ public sealed partial class Game
         _simVel = Vector3.Transform(vel - SimFrameVel(pos), inv);
         _simSpin = Vector3.Transform(spin - SimFrameSpin(), inv);
         _simAimWas = Vector3.Transform(aimWas - _simFt, inv);
-        Array.Clear(_simHistTick);
+        if (oldMoving || SimFrameMoving())
+            Array.Clear(_simHistTick); // (a moving deck's past poses aren't kept: the path starts again, the lead clamp holds meanwhile)
+        else
+            for (var i = 0; i < SimHistory; i++) // (two frames at rest, as between parked constructs: the path kept carries across)
+                if (_simHistTick[i] != 0)
+                {
+                    _simHistPos[i] = Vector3.Transform(oldFt + Vector3.Transform(_simHistPos[i], oldFq) - _simFt, inv);
+                    _simHistRot[i] = Quaternion.Normalize(inv * oldFq * _simHistRot[i]);
+                }
         SimRecord();
     }
 }

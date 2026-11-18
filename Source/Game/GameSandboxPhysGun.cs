@@ -210,6 +210,8 @@ public sealed partial class Game
     public void SandboxPredictHeld(float dt)
     {
         SandboxNudgePredict(dt);
+        if (!IsServer && _sbPredOn)
+            RideLookNow(); // (pg02: the look in the deck's frame as drawn this frame, before the simulation aims with it)
         ushort body = 0;
         Construct? c = null;
         Player? me = null;

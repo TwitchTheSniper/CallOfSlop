@@ -66,7 +66,7 @@ public sealed partial class Game
             JointStart(b, _jsSeg);
         var due = _moverCmds - _jsCmds;
         _jsCmds = _moverCmds;
-        var beam = (me?.RenderEye ?? Vector3.Zero) + LookDir(LookYaw, LookPitch) * _sbPredDist;
+        var beam = (me != null ? RiderDrawnEye(me) : Vector3.Zero) + LookDir(LookYaw, LookPitch) * _sbPredDist; // (pg02: on a deck, the eye as drawn)
         var creative = SandboxInfiniteParts;
         var accel = ConstructGrab.AccelFor(b.SegMass[MovedSeg(b, _jsSeg)], creative, SandboxHands.PullOf(LocalId, creative));
         var radius = 1f;
