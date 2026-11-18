@@ -16,6 +16,9 @@ public static partial class ConstructRide
     /// <summary>A floor counts as inside when the construct is over it within this (m): a deck under its own roof.</summary>
     public const float InteriorRoof = 8f;
 
+    /// <summary>The first pass looks for floors this far (m) above and below the start only.</summary>
+    private const float WindowAbove = 2.5f, WindowBelow = 6f;
+
     /// <summary>Seats looked at for a standing spot beside them, when no floor under a roof is found.</summary>
     private const int InteriorSeats = 24;
 
@@ -46,8 +49,12 @@ public static partial class ConstructRide
         return _inFound;
     }
 
+    /// <summary>The last search's rays and columns (for --ride-check's line).</summary>
+    internal static int InteriorLastRays, InteriorLastColumns;
+
     private static bool Search(ConstructWorld w, Construct c, Vector3 from, float height, out Vector3 best)
     {
+        InteriorLastColumns = 0;
         best = from;
         var upL = Vector3.Normalize(UpFor(c, GravityFrames.UpAt(c.ToWorld(from))));
         var upW = Vector3.Normalize(Vector3.Transform(upL, c.Rot));
@@ -70,23 +77,34 @@ public static partial class ConstructRide
         float inside = float.MaxValue, open = float.MaxValue;
         var openSpot = from;
         var rays = 0;
-        // Ring by ring round the start, nearest first: a ring further out than the best spot inside can't beat it.
-        for (var ring = 0; ring <= reach && rays < InteriorRays; ring++)
+        // Ring by ring round the start, nearest first: a ring further out than the best spot inside can't beat it. First only
+        // the decks near the start's height (a ray through a whole capital ship's height meets hundreds of parts), then all.
+        var h0 = Vector3.Dot(from, upL);
+        for (var pass = 0; pass < 2 && inside == float.MaxValue; pass++)
         {
-            if ((ring - 1) * step > MathF.Sqrt(inside))
-                break;
-            for (var i = -ring; i <= ring && rays < InteriorRays; i++)
-                for (var j = -ring; j <= ring && rays < InteriorRays; j++)
-                {
-                    if (Math.Max(Math.Abs(i), Math.Abs(j)) != ring)
-                        continue;
-                    var a = a0 + i * step;
-                    var b = b0 + j * step;
-                    if (a < lo.X - 0.5f || a > hi.X + 0.5f || b < lo.Y - 0.5f || b > hi.Y + 0.5f)
-                        continue;
-                    Column(w, c, e1 * a + e2 * b, upL, upW, lo.Z, hi.Z, from, height, ref rays, ref inside, ref best, ref open, ref openSpot);
-                }
+            var low = pass == 0 ? MathF.Max(lo.Z, h0 - WindowBelow) : lo.Z;
+            var high = pass == 0 ? MathF.Min(hi.Z, h0 + WindowAbove) : hi.Z;
+            if (pass == 1 && low >= h0 - WindowBelow && high <= h0 + WindowAbove)
+                break; // (the first pass saw it all)
+            for (var ring = 0; ring <= reach && rays < InteriorRays; ring++)
+            {
+                if ((ring - 1) * step > MathF.Sqrt(inside))
+                    break;
+                for (var i = -ring; i <= ring && rays < InteriorRays; i++)
+                    for (var j = -ring; j <= ring && rays < InteriorRays; j++)
+                    {
+                        if (Math.Max(Math.Abs(i), Math.Abs(j)) != ring)
+                            continue;
+                        var a = a0 + i * step;
+                        var b = b0 + j * step;
+                        if (a < lo.X - 0.5f || a > hi.X + 0.5f || b < lo.Y - 0.5f || b > hi.Y + 0.5f)
+                            continue;
+                        InteriorLastColumns++;
+                        Column(w, c, e1 * a + e2 * b, upL, upW, low, high, from, height, ref rays, ref inside, ref best, ref open, ref openSpot);
+                    }
+            }
         }
+        InteriorLastRays = rays;
         if (inside < float.MaxValue)
             return true;
         // No floor under a roof: beside the seat nearest the start, standing.
@@ -125,44 +143,37 @@ public static partial class ConstructRide
                 continue;
             var spot = c.ToLocal(hit.Point + upW * 0.02f);
             var d = Vector3.DistanceSquared(spot, from);
-            if (d >= inside && d >= open)
-                continue;
+            if (d >= inside)
+                continue; // (no nearer than the best spot inside: nothing more to learn here)
             var feetW = c.ToWorld(spot);
-            if (!BodyFits(w, c, c, feetW, upW, height) || !Headroom(w, c, feetW, upW, height, ref rays))
-                continue;
             rays++;
             var roofed = w.Raycast(feetW + upW * 0.5f, upW, InteriorRoof, out var roof, only: c) && roof.Body == c;
-            if (roofed && d < inside)
+            if (!roofed && (d >= open || inside < float.MaxValue))
+                continue;
+            if (!FrameRoom(w, c, spot, upL, height) || !BodyFits(w, c, c, feetW, upW, height))
+                continue;
+            if (roofed)
                 (inside, best) = (d, spot);
-            else if (!roofed && d < open)
+            else
                 (open, openSpot) = (d, spot);
         }
     }
 
     /// <summary>
-    /// Room for a standing body by rays, which meet a hull's skin as the frame's mover does (<see cref="BodyFits"/> tests the
-    /// solid boxes only, and a skin stands off its rooms by up to metres: a spot under a bow's skin was popped up through it).
-    /// Up from the feet at the middle and round the body's edge, and out to each side at the waist and the head.
+    /// Room for a standing body as the frame's mover has it: the shapes it would gather there (the construct's boxes and its
+    /// hull's skin, which stands off its rooms by up to metres: <see cref="BodyFits"/> tests the boxes only, and a spot under a
+    /// bow's skin was popped up through it), against the standing capsule at <paramref name="spot"/> (rest frame).
     /// </summary>
-    private static bool Headroom(ConstructWorld w, Construct c, Vector3 feet, Vector3 up, float height, ref int rays)
+    private static bool FrameRoom(ConstructWorld w, Construct c, Vector3 spot, Vector3 upL, float height)
     {
         var r = World.BodyRadius;
-        var side = Vector3.Normalize(Vector3.Cross(up, MathF.Abs(up.X) < 0.9f ? Vector3.UnitX : Vector3.UnitZ));
-        var fore = Vector3.Cross(up, side);
-        Span<Vector3> ways = [Vector3.Zero, side, -side, fore, -fore];
-        for (var k = 0; k < ways.Length; k++)
-        {
-            rays++;
-            if (w.Raycast(feet + up * 0.3f + ways[k] * (r * 0.9f), up, height - 0.3f, out var hit, only: c) && hit.Body == c)
+        Gather(w, c, 0, spot, upL, 0.2f);
+        var shapes = System.Runtime.InteropServices.CollectionsMarshal.AsSpan(SweptMover.Instance.FrameShapes);
+        var p = spot + upL * (r + 0.03f);
+        var e = spot + upL * MathF.Max(r + 0.03f, height - r);
+        for (var i = 0; i < shapes.Length; i++)
+            if (CapsuleContact.Separation(shapes[i], p, e, r, out _, out _) < -0.01f)
                 return false;
-        }
-        for (var k = 1; k < ways.Length; k++)
-            for (var lift = 0.9f; lift < height; lift += 0.7f)
-            {
-                rays++;
-                if (w.Raycast(feet + up * lift, ways[k], r, out var hit, only: c) && hit.Body == c)
-                    return false;
-            }
         return true;
     }
 

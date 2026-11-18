@@ -211,6 +211,9 @@ public static class RideCheck
             if (s.NoclipExit)
                 NoclipMove.Leave(ref s, 0, w);
             var ms = clock.Elapsed.TotalMilliseconds;
+            clock.Restart();
+            ConstructRide.InteriorSpot(w, c, c.ToWorld(mid + new Vector3(0.37f, 0.21f, 1.3f)), World.HeightOf(Stance.Stand), out _); // (once more from a spot beside it: the cost without the first call's JIT)
+            var warm = clock.Elapsed.TotalMilliseconds;
             var at = c.ToLocal(s.Position);
             var roofed = s.RideBody == c.Id && w.Raycast(s.Position + s.RideUpW * 0.5f, s.RideUpW, ConstructRide.InteriorRoof, out _, only: c);
             int grounded = 0, off = 0;
@@ -224,7 +227,7 @@ public static class RideCheck
                 off += s.RideBody != c.Id ? 1 : 0;
             }
             var drift = (c.ToLocal(s.Position) - at).Length();
-            Console.WriteLine($"  board inside key: set down at {at}, {(roofed ? "under its roof" : "NOT under a roof")}, grounded {grounded} of 120 ticks, out of its frame {off}, moved {drift:0.00} m in it, the search {ms:0.0} ms");
+            Console.WriteLine($"  board inside key: set down at {at}, {(roofed ? "under its roof" : "NOT under a roof")}, grounded {grounded} of 120 ticks, out of its frame {off}, moved {drift:0.00} m in it, the search {ms:0.0} ms ({warm:0.0} ms warm, {ConstructRide.InteriorLastRays} rays down {ConstructRide.InteriorLastColumns} columns)");
             return s.RideBody != c.Id || off > 0 || grounded < 100 ? 1 : 0;
         }
         finally
