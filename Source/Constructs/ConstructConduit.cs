@@ -29,6 +29,7 @@ public static class ConstructConduit
     /// </summary>
     private static readonly (float Air, byte Gap, bool Exact)[] ShipTries = [(AirShip, 0, false), (AirShip, 0, true), (6f, 0, false), (3f, 0, false), (6f, 5, false), (1.5f, 8, false)];
     public const float AirShip = 30f;
+    public const float AirWall = 6f; // the linking tool's price of a metre off every surface for a cable or pipe it lays in the walls (Program.SandboxAutoRoute.cs)
     public const float ExactBudgetMs = 1000f; // the true cost's search, for the few routes the plain guess left in the open (its pass over the lattice comes first), as the blueprints load
     public const float BudgetMs = 250f; // one search at most, as the blueprints load: past it the wire stays straight (concealed)
     public const float PlayMs = 20f; // a whole build's searching at most in play (a blueprint the load didn't route: a mod's, one built while it loads); past it the rest stay straight and are tried again next build
@@ -177,7 +178,8 @@ public static class ConstructConduit
         open = 0f;
         var search = _search ??= new RouteSearch();
         search.Clear();
-        var ask = new RouteAsk { World = world, C = c, Type = type, From = from, FromPort = fromPort, Parent = 255, Nodes = [], Count = 0, To = to, ToPort = toPort, Conduit = air, ConduitGap = gap, Exact = exact };
+        var ask = new RouteAsk { World = world, C = c, Type = type, From = from, FromPort = fromPort, Parent = 255, Nodes = [], Count = 0, To = to, ToPort = toPort, Conduit = air, ConduitGap = gap, Exact = exact,
+            Lay = type is RouteType.Data or RouteType.Power ? LinkLay.Wall : LinkLay.Near }; // (a pre-built's cables lie in its walls, only the switches and lamps seen: Karl, 2026-11-18)
         var end = Math.Min(deadline, Stopwatch.GetTimestamp() + (long)((exact ? ExactBudgetMs : BudgetMs) * Stopwatch.Frequency / 1000));
         RouteSearch.Result r;
         do
@@ -196,6 +198,8 @@ public static class ConstructConduit
             return null;
         }
         var nodes = r.Nodes.AsSpan(0, r.Count).ToArray();
+        if (r.Unburied)
+            Console.WriteLine($"[conduit] construct {c.Id}: a {ConstructRoutes.Name(type)} {c.DefOf(from).Name} -> {c.DefOf(to).Name} lies on the walls, not in them: {r.BuryWhy}");
         open = OpenLength(c, type, from, fromPort, to, toPort, nodes);
         why = OnMoving(c, ship, from, to, nodes) ? "it would ride a moving part" : ConstructRoutes.Check(world, c, type, from, fromPort, 255, 0, default, nodes, to, toPort, straight: r.Pierced);
         return why == null ? nodes : null;
@@ -238,7 +242,7 @@ public static class ConstructConduit
     public static string File => Path.Combine(AppFolders.Exe, "Cache", "conduit-routes.txt");
     private static Dictionary<string, string>? _disk;
     /// <summary>Bumped whenever the router lays a blueprint differently (its costs, its tries), so a disk cache from before is laid again.</summary>
-    private const int RouterVersion = 3; // 2: ships price open air dearly (AirShip); 3: a route in the open is searched again by the true cost (RouteAsk.Exact)
+    private const int RouterVersion = 4; // 2: ships price open air dearly (AirShip); 3: a route in the open is searched again by the true cost (RouteAsk.Exact); 4: cables laid in the walls (ConstructRoutesWalls.cs)
     private static string DiskKey(string text) => $"{BlueprintCheckCache.KeyOf(text)}.r{RouterVersion}";
     private const string NotWanted = "none"; // (a blueprint with wires that isn't a pre-built: kept so the next start needn't load the parts to find that out)
     private static bool _diskDirty;
@@ -420,13 +424,15 @@ public static class ConstructConduit
                     continue;
                 var a = ConstructRoutes.PortPoint(c, rt.From, rt.FromPort, rt.Type);
                 var b = ConstructRoutes.PortPoint(c, rt.To, rt.ToPort, rt.Type);
-                float len = 0f, open = 0f;
+                float len = 0f, open = 0f, hidden = 0f;
                 var prev = ConstructRoutes.RestPoint(c, r, -1);
                 for (var i = 0; i <= rt.Count; i++)
                 {
                     var q = ConstructRoutes.RestPoint(c, r, i);
                     var l = System.Numerics.Vector3.Distance(prev, q);
                     len += l;
+                    if (ConstructRoutes.SegmentBuried(c, r, i))
+                        hidden += l;
                     var steps = Math.Max(1, (int)(l / 0.1f));
                     for (var k = 0; k < steps; k++)
                     {
@@ -443,7 +449,7 @@ public static class ConstructConduit
                         var sd = ConstructRoutes.SignedDistance(c, q, -1, -1, out var near);
                         Console.WriteLine($"    {q.X:0.00},{q.Y:0.00},{q.Z:0.00}: {sd:0.000} m off {(near >= 0 ? c.DefOf(near).Name : "-")}");
                     }
-                Console.WriteLine($"  {(rt.Type == RouteType.Data ? "" : ConstructRoutes.Name(rt.Type) + " ")}{c.DefOf(rt.From).Name}#{rt.From} -> {c.DefOf(rt.To).Name}#{rt.To}: {(rt.Count == 0 ? "straight" : $"{rt.Count} nodes")}, {len:0.0} m (straight {System.Numerics.Vector3.Distance(a, b):0.0} m), {open:0.0} m in the open");
+                Console.WriteLine($"  {(rt.Type == RouteType.Data ? "" : ConstructRoutes.Name(rt.Type) + " ")}{c.DefOf(rt.From).Name}#{rt.From} -> {c.DefOf(rt.To).Name}#{rt.To}: {(rt.Count == 0 ? "straight" : $"{rt.Count} nodes")}, {len:0.0} m (straight {System.Numerics.Vector3.Distance(a, b):0.0} m), {open:0.0} m in the open, {hidden:0.0} m in the walls");
             }
         }
         Console.WriteLine($"[conduit] {Routed} links routed, {Failed} left straight, {Ms:0} ms of searching; {Kept} copies from the cache");

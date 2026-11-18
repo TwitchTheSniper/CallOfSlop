@@ -26,7 +26,7 @@ public sealed partial class ConstructEdits
             return why;
         if (parent == 255 && Linking(world, player, eye, body, from, out _, inReach: false) is { } why2)
             return why2;
-        if (ConstructRoutes.Check(world, c!, type, from, fromPort, parent, parentSeg, junction, nodes, to, toPort) is { } bad)
+        if (ConstructRoutes.Check(world, c!, type, from, fromPort, parent, parentSeg, junction, nodes, to, toPort, tidy: true) is { } bad) // (the tool's: nodes fixed to structure only, ConstructRoutesWalls.cs)
             return bad;
         if (ConstructRoutes.Add(world, c!, type, from, fromPort, parent, parentSeg, junction, nodes, to, toPort) < 0)
             return "no room for another link";
