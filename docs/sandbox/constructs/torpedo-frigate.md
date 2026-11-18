@@ -77,7 +77,13 @@ inside the hull, in one room with engineering.
 
 - Two torpedo sponsons (Zero Day Torpedo Bay L/R), each a room off the torpedo room through a bulkhead door, with a
   six-round drum Ordnance Rack loaded with designed torpedoes (radar seeker, HE warhead) that leave through the launch
-  port in the sponson's front face. The fire buttons are on the torpedo room's walls.
+  port in the sponson's front face. The fire buttons are on the torpedo room's walls. Either gunner fires both bays with
+  Space (Karl, 2026-11-17/18): an Input Reader on each station's Turret Module reads the seat's jump key. Ops' is wired to an
+  OR Gate under the torpedo room's ceiling at its fore end on each side; the mess's to one in the passage between the suit bay
+  and the airlock, then one each side at the torpedo room's aft end (a wire reaches 8 m); each side's gates are wired to its
+  bay's magazine. The mouse stays the PDCs'. A launch's way-out ray passes the bay the rack hangs in (its convex collider
+  closes the port: `ConstructOrdnance.Blocked`), so the magazines let go. Launched in space a torpedo coasts 7 minutes after
+  its motor (about 120 km; weapons.md "Flight").
 - The Zero Day Railgun along the spine, fixed forward and aimed by the ship (the pilot fires it). Each slug takes 15 MJ from the Capacitor Bank M in engineering, aft of the reactor (ship-works.md 8; energy guns fire from capacitors only): two full slugs and a bit, one refilled in 10 s.
 - Four Zero Day PDCs on barbettes on the beam, run from the two gun stations (ops and the mess). Each turns on a **Turret
   Ring S** whose trunk goes down the barbette's well, fed from its own **magazine** (ship-works.md 5.2): an Ammo
@@ -93,7 +99,8 @@ inside the hull, in one room with engineering.
 - Radar and lock (Karl, 2026-11-17): a Long Range Sensor on the shuttle's cradle deck aft of the pod, by the mast, wired into a
   Fire Director in the mess's starboard aft corner below it (a wire reaches 8 m, so the director sits under the sensor, not
   in ops). Every seat gets the scope, and the middle mouse locks a contact (`ConstructRadar.CanLock`); a torpedo launched
-  from either bay takes the lock while the contact is within its seeker's 2 km. Shoot either part and it is a scope again.
+  from either bay takes the lock at any range the radar holds it (the sensor reaches 100 km since 2026-11-17), past its
+  seeker's own 2 km. Shoot either part and it is a scope again.
 
 ## Getting aboard
 
@@ -102,6 +109,8 @@ both landings are clear. `--check-building "Zero Day Frigate"` passes (327 m2 a 
 from the ground up the boarding ladder and the two ladders between the decks). The legs leave 2.5 m under the keel so
 people can walk beneath it to the shaft. A ladder in the mess climbs through the spine into the Shuttle on its
 cradle ([shuttle.md](shuttle.md)), through a Docking Hatch on the cradle that opens with the Shuttle's own while the clamp holds it.
+Under the keel aft of the belly shaft, the Limpet boarding pod hangs on a Docking Clamp ([limpet.md](limpet.md)); the legs
+are 0.75 m longer for it, and a second shaft with a Docking Hatch at its foot takes its ladder up into the lower deck.
 
 ## Flames
 

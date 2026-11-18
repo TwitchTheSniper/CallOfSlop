@@ -46,5 +46,6 @@ public sealed partial class Game
         s.NoclipExit = false;
         s.Position = NoclipMove.ExitSpot(s.Position, _sepAtTick != 0 ? _sepAtTick : MoverPhysics.Clock, SandboxOn ? Constructs : null);
         s.RideWorld = s.Position;
+        ConstructRide.NoclipLanded(ref s); // (in a moving construct's frame: they stay in it, on its deck)
     }
 }

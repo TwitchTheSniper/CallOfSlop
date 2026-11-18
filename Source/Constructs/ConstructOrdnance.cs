@@ -38,7 +38,12 @@ public static class ConstructOrdnance
     public const int BombClear = World.TickRate; // ticks a bomb passes its own construct
     public const float LookReach = 1500f; // m a gunner's look locks a missile out to, with no sight
     public const float LookCone = 6f; // degrees a target stays locked off the look
-    public const float MissileCoast = 6f; // seconds a missile flies on after its burn before it goes off
+    public const float MissileCoast = 6f; // seconds a missile flies on after its burn before it goes off (in air)
+    public const float MissileSpaceCoast = 420f; // ...and launched in space, where nothing slows it: a 280 m/s Zero Day torpedo coasts about 120 km (Karl, 2026-11-17: "should reach 100 km easily")
+    public const float SpaceAir = 0.02f; // the air's density (1 at the ground) below which a launch is in space
+
+    /// <summary>Seconds a missile launched at <paramref name="at"/> flies on after its last burn: <see cref="MissileSpaceCoast"/> in space, else <see cref="MissileCoast"/>.</summary>
+    public static float CoastAt(Vector3 at) => ConstructAir.Density(at) < SpaceAir ? MissileSpaceCoast : MissileCoast;
     public const int ProxArm = 6; // ticks before a proximity fuse arms (it never takes the gun's own body)
     public const float FlyingSpeed = 3f; // m/s: a proximity fuse takes what moves at this or faster for something flying
     public const float FlareDrag = 1.5f; // a flare's drag, a second: it hangs and sinks
@@ -299,10 +304,33 @@ public static class ConstructOrdnance
         var half = (mx - mn) * 0.5f;
         var local = Vector3.Abs(Vector3.Transform(down, Quaternion.Conjugate(q)));
         var from = at + down * (Vector3.Dot(local, half) + 0.03f);
-        if (!world.Raycast(from, down, DropClear, out var hit, only: c))
-            return false;
-        by = hit.Body.DefOf(hit.Part);
-        return true;
+        var left = DropClear;
+        for (var tries = 0; tries < 4; tries++)
+        {
+            if (!world.Raycast(from, down, left, out var hit, only: c))
+                return false;
+            if (rack >= 0 && Launches(c.DefOf(rack), c.DefOf(bomb)) && hit.Part != bomb && !c.DefOf(hit.Part).IsOrdnance && Linked(c, rack, hit.Part) && hit.Distance < left)
+            {
+                // A launch passes the part its rack hangs in: a tube or a sponson's port is open in its look, but a shaped part's collider is
+                // its convex hull, which closes the port (the Zero Day's torpedo bays, Karl 2026-11-18: nothing launched). The shell passes
+                // its own construct for its first second anyway.
+                from = hit.Point + down * 0.02f;
+                left -= hit.Distance + 0.02f;
+                continue;
+            }
+            by = hit.Body.DefOf(hit.Part);
+            return true;
+        }
+        return false;
+    }
+
+    /// <summary>Is <paramref name="other"/> joined to <paramref name="rack"/> by a link (the part the rack hangs in)?</summary>
+    private static bool Linked(Construct c, int rack, int other)
+    {
+        for (var e = c.FirstLink(rack); e >= 0; e = c.NextLink(e))
+            if (c.OtherEnd(e) == other)
+                return true;
+        return false;
     }
 
     /// <summary>The look line's trouble with a rack, or null.</summary>

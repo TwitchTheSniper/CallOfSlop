@@ -123,10 +123,13 @@ public sealed partial class Game
     public static float ShellMoveMult(Player? p) => p is { InShell: true } ? ShellWear.Current.MoveShare(p.ShellWear) : 1f;
 
     /// <summary>
-    /// Server, from <see cref="DamagePlayer"/>: a hit on someone in a shell. Worn plating lets it through harder; the hit wears the plating
-    /// and one other work. The damage to take.
+    /// Server, from <see cref="DamagePlayer"/>: a hit on someone in a shell, by the part it landed on (Karl, 2026-11-18). An arm or a leg:
+    /// that actuator takes it (failed: the arm hangs, the leg is lost) and only <see cref="ShellWear.LimbHealth"/> of it reaches the
+    /// shell's health. The body: health (worn plating lets it through harder), and it wears the plating and the power cell. The head:
+    /// health, and by chance (<see cref="ShellWear.HeadChance"/>) the processor or the optics. In Creative as well as Survival (it is
+    /// combat, not wear). The damage to take.
     /// </summary>
-    private int ShellHit(Player victim, int amount)
+    private int ShellHit(Player victim, int amount, BloodPart part)
     {
         ref var run = ref _sh[victim.Id];
         if (!run.On)
@@ -134,13 +137,33 @@ public sealed partial class Game
         var t = ShellWear.Current;
         if (t.Problem.Length > 0)
             return amount;
-        var hurt = Math.Max(1, (int)MathF.Round(amount * t.HitShare(victim.ShellWear)));
-        if (SandboxSurvivalOption)
+        var limb = part switch
         {
-            run.Acc[(int)ShellWork.Plating] += amount * t.HitPlating * 2.55f;
-            run.Acc[_swRng.Next(ShellWear.Works - 1)] += amount * t.HitOther * 2.55f; // (any but the plating)
-            ShellWearApply(victim, ref run, t);
+            BloodPart.LegL => ShellWork.LegL,
+            BloodPart.LegR => ShellWork.LegR,
+            BloodPart.ArmL => ShellWork.ArmL,
+            BloodPart.ArmR => ShellWork.ArmR,
+            _ => (ShellWork?)null,
+        };
+        int hurt;
+        if (limb is { } l)
+        {
+            run.Acc[(int)l] += amount * t.HitLimb * 2.55f;
+            hurt = (int)MathF.Round(amount * t.LimbHealth);
         }
+        else
+        {
+            hurt = Math.Max(1, (int)MathF.Round(amount * t.HitShare(victim.ShellWear)));
+            run.Acc[(int)ShellWork.Plating] += amount * t.HitPlating * 2.55f;
+            if (part == BloodPart.Head)
+            {
+                if (_swRng.NextSingle() < t.HeadChance)
+                    run.Acc[(int)(_swRng.Next(2) == 0 ? ShellWork.Cpu : ShellWork.Optics)] += amount * t.HitHead * 2.55f;
+            }
+            else
+                run.Acc[(int)ShellWork.Power] += amount * t.HitOther * 2.55f;
+        }
+        ShellWearApply(victim, ref run, t);
         return hurt;
     }
 

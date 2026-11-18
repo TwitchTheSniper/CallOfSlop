@@ -183,6 +183,7 @@ public static partial class ConstructRide
         s.RideSeg = (byte)seg;
         s.RideUp = up;
         s.RideClimb = 0;
+        s.RideLadder = 0;
         s.RideAir = 0;
         s.RideFree = 0;
         s.RideGripUp = Vector3.Zero;
@@ -209,7 +210,7 @@ public static partial class ConstructRide
         s.RideUp = Vector3.Normalize(up);
         s.RideLocal = local;
         s.RideVel = Vector3.Zero;
-        s.RideClimb = s.RideAir = s.RideFree = 0;
+        s.RideClimb = s.RideAir = s.RideFree = s.RideLadder = 0;
         s.Grounded = true;
         Place(ref s, c);
     }
@@ -250,9 +251,15 @@ public static partial class ConstructRide
                 var carry = CarrierVel(c, s.RideOn, s.RideClimbTo) * World.TickDt; // (climbing onto a moving lift: its end, and the climber, go with it)
                 s.RideClimbTo += carry;
                 s.RideLocal += carry;
+                if (s.RideLadder != 0)
+                {
+                    s.RideClimbNext += carry;
+                    s.RideClimbLast += carry;
+                }
             }
             s.RideLocal += (s.RideClimbTo - s.RideLocal) / s.RideClimb;
             s.RideClimb--;
+            NextLeg(ref s);
             s.RideVel = Vector3.Zero;
             Place(ref s, c);
             s.Grounded = s.RideClimb == 0;
@@ -491,6 +498,8 @@ public static partial class ConstructRide
                 c.SolidBox(i, b, out var centre, out var half);
                 Add(shapes, last == seg ? centre : rt + Vector3.Transform(centre, rq), half, rq, lo, hi, c.Id, last, i);
             }
+            if (p.D.HasSkin)
+                AddSkin(shapes, c, i, rq, rt, lo, hi, c.Id, last);
         }
         c.WorldFrame(seg, out var qf, out var tf);
         var iqf = Quaternion.Conjugate(qf);
@@ -521,6 +530,60 @@ public static partial class ConstructRide
                     o.SolidBox(i, b, out var centre, out var half);
                     Add(shapes, off + Vector3.Transform(centre, r), half, r, lo, hi, o.Id, p.Seg, i);
                 }
+                if (p.D.HasSkin)
+                    AddSkin(shapes, o, i, r, off, lo, hi, o.Id, p.Seg);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Part <paramref name="i"/>'s skin (its "hull" shapes: ConstructHulls) as triangles in the gather's frame, where a point of
+    /// its segment is <paramref name="t"/> + <paramref name="q"/> * point; only the plates that reach lo..hi. A ship's skin stands
+    /// off its rooms' boxes by up to metres, so without these a rider sank into it or fell through.
+    /// </summary>
+    internal static void AddSkin(List<ContactShape> shapes, Construct c, int i, Quaternion q, Vector3 t, Vector3 lo, Vector3 hi, ushort body, int seg)
+    {
+        ref var p = ref c.Parts[i];
+        var hulls = ConstructHulls.Of(p.D);
+        var skin = p.D.HullSkin;
+        if (skin == null || c.MergeOf[i] != 0)
+            return;
+        var k = c.ScaleOf(i);
+        var rot = q * Rot24.Quat(p.Rot);
+        var at = t + Vector3.Transform(p.Pos, q);
+        Span<Vector3> v = stackalloc Vector3[ConvexHull.MaxCorners];
+        for (var h = 0; h < hulls.Length; h++)
+        {
+            if (!skin[h])
+                continue;
+            var hull = hulls[h];
+            var n = Math.Min(hull.V.Length, v.Length);
+            var mn = new Vector3(float.MaxValue);
+            var mx = new Vector3(float.MinValue);
+            for (var j = 0; j < n; j++)
+            {
+                v[j] = at + Vector3.Transform(hull.V[j] * k, rot);
+                mn = Vector3.Min(mn, v[j]);
+                mx = Vector3.Max(mx, v[j]);
+            }
+            if (mn.X > hi.X || mx.X < lo.X || mn.Y > hi.Y || mx.Y < lo.Y || mn.Z > hi.Z || mx.Z < lo.Z)
+                continue;
+            for (var f = 0; f + 1 < hull.FaceStart.Length; f++)
+            {
+                int first = hull.FaceStart[f], end = hull.FaceStart[f + 1];
+                for (var e = first + 1; e + 1 < end; e++)
+                {
+                    var a = v[hull.FaceIdx[first]];
+                    var b = v[hull.FaceIdx[e]];
+                    var cc = v[hull.FaceIdx[e + 1]];
+                    var tri = ContactShape.FromTriangle(a, b, cc, default);
+                    if (tri.Min.X > hi.X || tri.Max.X < lo.X || tri.Min.Y > hi.Y || tri.Max.Y < lo.Y || tri.Min.Z > hi.Z || tri.Max.Z < lo.Z)
+                        continue;
+                    if (shapes.Count == _tags.Length)
+                        Array.Resize(ref _tags, _tags.Length * 2);
+                    _tags[shapes.Count] = new ShapeTag { Body = body, Seg = (byte)seg, Part = i };
+                    shapes.Add(tri);
+                }
             }
         }
     }
@@ -535,6 +598,81 @@ public static partial class ConstructRide
             Array.Resize(ref _tags, _tags.Length * 2);
         _tags[shapes.Count] = new ShapeTag { Body = body, Seg = (byte)seg, Part = part };
         shapes.Add(shape);
+    }
+
+    /// <summary>
+    /// Noclip in a moving construct (<see cref="NoclipMove"/>): the flyer keeps the frame they are in, so a ship at speed
+    /// doesn't leave them behind, and their flight's velocity is relative to it. The start of their tick: the frame they are in
+    /// (null: none, or it went, or something moved them), with them put where it is now and <see cref="MoveState.Velocity"/>
+    /// their speed through it.
+    /// </summary>
+    public static Construct? NoclipFrame(ref MoveState s)
+    {
+        if (s.RideUp == Vector3.Zero || s.RideBody == 0)
+        {
+            if (s.RideBody != 0)
+                Clear(ref s);
+            return null;
+        }
+        var c = Bodies?.Get(s.RideBody);
+        if (c == null || s.RideSeg > c.JointCount)
+        {
+            Clear(ref s);
+            return null;
+        }
+        c.WorldFrame(s.RideSeg, out var q, out _);
+        if (!Absorb(ref s, q))
+        {
+            Clear(ref s);
+            return null;
+        }
+        s.RideOn = 0;
+        s.RideClimb = 0;
+        Place(ref s, c);
+        return c;
+    }
+
+    /// <summary>
+    /// The end of a noclip flyer's tick in frame <paramref name="c"/>: the move (<see cref="MoveState.Velocity"/>, relative)
+    /// goes into it. False: clear of it (past <see cref="InFrame"/>'s padded box), they are the world's again, with their own speed.
+    /// </summary>
+    public static bool NoclipMoved(ref MoveState s, Construct c, Vector3 move)
+    {
+        c.WorldFrame(s.RideSeg, out var q, out _);
+        var iq = Quaternion.Conjugate(q);
+        s.RideLocal += Vector3.Transform(move, iq);
+        s.RideVel = Vector3.Transform(s.Velocity, iq);
+        s.RideAir = 0;
+        Place(ref s, c);
+        c.SegPose(s.RideSeg, out var qs, out var ts);
+        if (InFrame(c, ts + Vector3.Transform(s.RideLocal, qs), Vector3.Transform(s.RideUp, qs)))
+            return true;
+        var v = s.Velocity + SurfaceVel(c, 0, s.Position); // (their speed in the world: the flight eases it to their keys)
+        Clear(ref s);
+        s.Velocity = v;
+        return false;
+    }
+
+    /// <summary>
+    /// A noclip flyer out of any frame: inside a moving construct's bounds (no padding: flying past a hull doesn't catch) takes
+    /// them into its frame, their speed through it kept (caught, not hit; <see cref="NoclipMoved"/> lets them go again).
+    /// </summary>
+    public static void NoclipCatch(ref MoveState s)
+    {
+        var w = Bodies;
+        if (w == null || FrameAt(w, s.Position + GravityFrames.UpAt(s.Position) * 0.9f, pad: 0f, top: 0f) is not { } f)
+            return;
+        Join(ref s, f, 0, UpFor(f, GravityFrames.UpAt(s.Position)), s.Velocity - SurfaceVel(f, 0, s.Position)); // (their speed through it, which the flight eases away: a ship that overtakes a still flyer carries them a few metres in, no more)
+        s.Grounded = false;
+    }
+
+    /// <summary>Someone left noclip in a frame and the game found them room (<see cref="NoclipMove.ExitSpot"/>): their new spot goes into the frame, so they stand in it, on its deck.</summary>
+    public static void NoclipLanded(ref MoveState s)
+    {
+        if (s.RideUp == Vector3.Zero || Bodies?.Get(s.RideBody) is not { } c || s.RideSeg > c.JointCount)
+            return;
+        s.RideLocal = ToLocal(c, s.RideSeg, s.Position);
+        Place(ref s, c);
     }
 
     /// <summary>

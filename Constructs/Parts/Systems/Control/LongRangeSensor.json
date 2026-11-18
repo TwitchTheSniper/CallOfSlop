@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Long Range Sensor",
-  "description": "On while a player is in range, up to 300 m. Its craft's seats get a radar of ships out to 2.5 km: lock one for the missiles.",
+  "description": "On while a player is in range, up to 300 m. Its craft's seats get a radar of ships out to 100 km: lock one for the missiles.",
   "group": "Ship systems",
   "section": "Bridge",
   "role": "logic",
@@ -35,7 +35,7 @@
     }
   ],
   "radar": {
-    "range": 2500
+    "range": 100000
   },
   "boxes": [
     {

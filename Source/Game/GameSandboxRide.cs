@@ -306,7 +306,7 @@ public sealed partial class Game
         p.Teleport(World.ClampToArena(spot));
         p.Sim.RideBody = 0;
         p.Sim.RideUp = default;
-        p.Sim.RideAir = p.Sim.RideClimb = 0;
+        p.Sim.RideAir = p.Sim.RideClimb = p.Sim.RideLadder = 0;
         p.Sim.Velocity = vel + up * EjectKick;
         p.Sim.Grounded = false;
         p.Sim.RideFree = ConstructRide.FreeTicks; // (the craft's speed carries them until the parachute takes over)

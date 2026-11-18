@@ -1,0 +1,263 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Unloading Auger 6 m",
+  "description": "A hopper and a swinging tube: it pours its load from the spout into a truck bed or bin under it. Fit it on a Turntable 1x1 Medium to swing it.",
+  "group": "Production",
+  "section": "Factory",
+  "role": "storage",
+  "tool": "welder",
+  "power": 1500.0,
+  "storage": {
+    "bulk": {
+      "material": "any",
+      "capacity": 800,
+      "chuteLoad": 320,
+      "min": [
+        -0.275,
+        0.065,
+        -0.275
+      ],
+      "max": [
+        0.275,
+        0.65,
+        0.275
+      ]
+    },
+    "auger": {
+      "tip": [
+        0.0,
+        0.1,
+        5.85
+      ],
+      "rate": 200
+    }
+  },
+  "ports": [
+    {
+      "name": "Chute in",
+      "type": "chute",
+      "dir": "in",
+      "at": [
+        0.0,
+        0.7,
+        -0.3
+      ],
+      "face": "+y"
+    }
+  ],
+  "mass": 390.0,
+  "health": 1800,
+  "armour": 12,
+  "material": "steel",
+  "color": "#c9a227",
+  "attachSeconds": 2.5,
+  "boxes": [
+    {
+      "min": [
+        -0.32,
+        0.0,
+        -0.32
+      ],
+      "max": [
+        0.32,
+        0.06,
+        0.32
+      ],
+      "color": "#3d4247"
+    },
+    {
+      "min": [
+        -0.318,
+        0.056,
+        -0.318
+      ],
+      "max": [
+        -0.28,
+        0.7,
+        0.318
+      ]
+    },
+    {
+      "min": [
+        0.28,
+        0.056,
+        -0.318
+      ],
+      "max": [
+        0.318,
+        0.7,
+        0.318
+      ]
+    },
+    {
+      "min": [
+        -0.276,
+        0.056,
+        -0.318
+      ],
+      "max": [
+        0.276,
+        0.696,
+        -0.28
+      ]
+    },
+    {
+      "min": [
+        -0.276,
+        0.056,
+        0.28
+      ],
+      "max": [
+        0.276,
+        0.696,
+        0.318
+      ]
+    },
+    {
+      "min": [
+        -0.16,
+        0.42,
+        0.324
+      ],
+      "max": [
+        0.16,
+        0.74,
+        5.7
+      ]
+    },
+    {
+      "min": [
+        -0.18,
+        0.32,
+        5.696
+      ],
+      "max": [
+        0.18,
+        0.76,
+        6.0
+      ]
+    },
+    {
+      "min": [
+        -0.12,
+        0.12,
+        5.74
+      ],
+      "max": [
+        0.12,
+        0.324,
+        5.96
+      ],
+      "color": "#3d4247"
+    },
+    {
+      "min": [
+        -0.172,
+        0.408,
+        0.92
+      ],
+      "max": [
+        0.172,
+        0.752,
+        1.0
+      ],
+      "color": "#3d4247",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.172,
+        0.408,
+        1.82
+      ],
+      "max": [
+        0.172,
+        0.752,
+        1.9
+      ],
+      "color": "#3d4247",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.172,
+        0.408,
+        2.72
+      ],
+      "max": [
+        0.172,
+        0.752,
+        2.8
+      ],
+      "color": "#3d4247",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.172,
+        0.408,
+        3.62
+      ],
+      "max": [
+        0.172,
+        0.752,
+        3.7
+      ],
+      "color": "#3d4247",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.172,
+        0.408,
+        4.52
+      ],
+      "max": [
+        0.172,
+        0.752,
+        4.6
+      ],
+      "color": "#3d4247",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.172,
+        0.408,
+        5.42
+      ],
+      "max": [
+        0.172,
+        0.752,
+        5.5
+      ],
+      "color": "#3d4247",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.1,
+        0.12,
+        0.47
+      ],
+      "max": [
+        0.1,
+        0.416,
+        0.67
+      ],
+      "color": "#3d4247",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "mount",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

@@ -1,10 +1,10 @@
 {
   "format": "call-of-slop-factory-site/1",
   "name": "Militia Ore Loop 3",
-  "about": "The ore loop (factory-generator.md phase 1): Militia Extraction Post 3 over a deposit, Militia Refinery 3 downstream on the same road line, an Ore Hauler under the post\u0027s loading skip. Flip LOAD on the skip\u0027s post, drive east along the road to the refinery\u0027s Tipping Bunker (the bunker on your left, your left wheels along its edge) and flip TIP behind the cab.",
+  "about": "The ore loop (factory-generator.md phase 1): Militia Extraction Post 3 over a deposit, Militia Refinery 3 downstream on the same road line, an Ore Hauler under the post\u0027s loading auger. Flip LOAD on the auger\u0027s post, drive east along the road to the refinery\u0027s Tipping Grate (the grate on your left, your left wheels along its edge) and flip TIP behind the cab.",
   "bodies": [
     { "blueprint": "Militia Extraction Post 3", "at": [0, 0], "yaw": 0, "note": "over the deposit, its drills along the back edge" },
-    { "blueprint": "Militia Refinery 3", "at": [40, 0], "yaw": 0, "note": "downstream, the same road line" },
-    { "blueprint": "Militia Ore Hauler 1", "at": [25.25, -3.2], "yaw": 90, "note": "its bed\u0027s middle, facing east, under the loading skip" }
+    { "blueprint": "Militia Refinery 3", "at": [44, 0], "yaw": 0, "note": "downstream, the same road line" },
+    { "blueprint": "Militia Ore Hauler 1", "at": [30.25, -1.9], "yaw": 90, "note": "its bed\u0027s middle, facing east, under the loading auger\u0027s spout" }
   ]
 }
