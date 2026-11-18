@@ -444,6 +444,7 @@ public sealed partial class ConstructPartDef
     public string Folder = ""; // the subfolder of Constructs/Parts it is in ("" for the top; "Structure/Beams"...)
     public string Description = "";
     public string Group = "", Section = ""; // clues for the inventory's rules ("group", "section"; Constructs/Categories.json, PartCategories.cs): its category comes from there
+    public bool IsStationPiece; // its group is "Station": a construct of them is a space station (Construct.IsStation)
     public PartRole Role;
     public ConstructTool Tool;
     public float AttachSeconds;
@@ -1397,6 +1398,7 @@ public static partial class ConstructParts
             throw new ConstructPartException($"{file}: \"name\" must be 1-{most} plain ASCII characters");
         d.Description = Opt(root, "description") is { } desc ? AsciiText(desc, file, "description") : "";
         d.Group = Opt(root, "group") is { } grp ? AsciiText(grp, file, "group") : "";
+        d.IsStationPiece = d.Group == "Station";
         d.Section = Opt(root, "section") is { } sec ? AsciiText(sec, file, "section") : "";
         if (d.Group.Length > 32 || d.Section.Length > 32 || (d.Section.Length > 0 && d.Group.Length == 0))
             throw new ConstructPartException($"{file}: \"group\" and \"section\" are at most 32 characters, and a \"section\" needs a \"group\"");

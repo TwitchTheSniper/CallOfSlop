@@ -137,15 +137,16 @@ public static class ConstructCargo
     public static bool DockTaken(ConstructWorld world, Construct c, int part, Construct? except)
     {
         foreach (var b in world.Bodies)
-            if (b != except && b.CarriedBy == c.Id && (b.CarryTag != 0 ? CarriedIn(c, b) == part : MostlyInside(c, part, b)))
-                return true; // (a client isn't told the carry's tag, nor is a grapple's grip one: the craft in the port's box)
+            if (b != except && (b.CarriedBy == c.Id && (b.CarryTag != 0 ? CarriedIn(c, b) == part : MostlyInside(c, part, b)) || b.MooredTo == c.Id && b.MoorPart == part))
+                return true; // (a client isn't told the carry's tag, nor is a grapple's grip one: the craft in the port's box; a station's berth moors a ship: GameStations.cs)
         return false;
     }
 
     /// <summary>Why <paramref name="b"/> can't be caught by carrier <paramref name="c"/> (null: it can).</summary>
+    /// <remarks>A station's berths never carry: they moor (Game.StationMoor, GameStations.cs).</remarks>
     public static bool Catchable(ConstructWorld world, Construct c, Construct b, ConstructPartDef volume)
     {
-        if (b == c || world.CarrierClock < b.DockAway || b.CarriedBy != 0 || b.CargoCount > 0 || b.PartCount == 0 || b.Anchored || b.Pinned || b.Frozen || b.GrabbedBy != 255)
+        if (b == c || c.IsStation || world.CarrierClock < b.DockAway || b.CarriedBy != 0 || b.CargoCount > 0 || b.PartCount == 0 || b.Anchored || b.Pinned || b.Frozen || b.GrabbedBy != 255)
             return false;
         if (volume.IsDock)
         {

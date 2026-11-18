@@ -816,6 +816,7 @@ public sealed partial class Game
         SendFactions(to); // (before the constructs: who shares what, GameSandboxFactions.cs)
         SendPowerNewsTo(to); // (the NPC powers' news: GameCrewFactions.cs)
         SendContractsTo(to); // (the powers' contracts: GameCrewPolitics.cs)
+        SendStationsTo(to); // (the stations' markets and moorings: GameStationMarket.cs)
         if (Constructs.Designs.Count > 0)
         {
             PanelDesigns.Write(w, Constructs); // (the shared panel designs, before any order that names one)

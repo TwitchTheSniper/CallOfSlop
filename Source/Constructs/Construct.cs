@@ -399,6 +399,13 @@ public sealed partial class Construct
 
     // Logic (milestone 2; ConstructLogic.cs)
     public bool HasLogic; // any logic part or wire: the logic step runs
+    /// <summary>Host: the station whose berth holds this ship in space (0: none), the berth (a dock part), and where it lies in the
+    /// station's frame (its centre of mass, its turn): Game.StationMoor (GameStations.cs). A moored ship isn't carried (it may carry craft of its own).</summary>
+    public ushort MooredTo, MoorPart;
+    public Vector3 MoorAt;
+    public Quaternion MoorRot = Quaternion.Identity;
+    public ushort MoorAway, MoorAwayPart; // host: the station berth it was cast off from, which won't moor it again until it has left that berth's box
+    public bool IsStation; // built of space station pieces (part group "Station": docs/sandbox/constructs/station.md): the command view shows it as a station
     public bool HasVolumeStore; // a Storage Volume: its box is drawn with the cargo volumes' (ConstructRenderCargo.cs)
     public bool HasRecycler; // a Recycler part: the recycler step looks at it (ConstructRecycler.cs)
     public bool HasGatherer; // a gathering module: the gatherer step looks at it (ConstructGatherer.cs)
@@ -1605,6 +1612,9 @@ public sealed partial class Construct
         else
             BuildSegMass();
         HasLogic = WireCount > 0;
+        IsStation = false;
+        for (var i = 0; i < PartCount && !IsStation; i++)
+            IsStation = Parts[i].D.IsStationPiece; // (the same on every peer: from the parts alone)
         HasRecycler = false;
         HasGatherer = false;
         HasRefiner = false;

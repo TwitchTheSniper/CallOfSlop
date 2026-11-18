@@ -82,6 +82,7 @@ public sealed partial class Game
         ServerTickNav(Space); // (ships under orders: where their drives point and how hard they push, GameNav.cs)
         ServerTickLinkRoutes(Space); // (route ships' legs through space: GameSandboxLinked.cs)
         SpaceLaunchBefore(f); // (ships that are constructs: their thrust and turn, GameSpaceLaunch.cs)
+        StationMoorStep(f); // (ships moored at a station's berths go round with it; slow ships in an empty berth are moored: GameStations.cs)
         SpaceAwayBefore(Space); // (and those in other systems: GameSpaceJump.cs)
         foreach (var af in Space.Away)
             if (af != null && af.Ships.AnyThrust())

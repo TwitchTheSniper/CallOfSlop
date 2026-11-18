@@ -588,6 +588,7 @@
       "socket": "p1clamp",
       "by": "-y",
       "config": {
+        "startOn": true,
         "sizeX": 14,
         "sizeY": 8,
         "sizeZ": 14,
@@ -610,6 +611,7 @@
       "socket": "p5clamp",
       "by": "-y",
       "config": {
+        "startOn": true,
         "sizeX": 14,
         "sizeY": 8,
         "sizeZ": 14,
@@ -632,6 +634,7 @@
       "socket": "p9clamp",
       "by": "-y",
       "config": {
+        "startOn": true,
         "sizeX": 14,
         "sizeY": 8,
         "sizeZ": 14,
@@ -654,6 +657,7 @@
       "socket": "p13clamp",
       "by": "-y",
       "config": {
+        "startOn": true,
         "sizeX": 14,
         "sizeY": 8,
         "sizeZ": 14,
@@ -673,7 +677,8 @@
         "sizeX": 21.1,
         "sizeY": 18.7,
         "sizeZ": 59.3,
-        "atY": 9.35
+        "atY": 9.35,
+        "startOn": true
       },
       "paint": "#d9a441",
       "finish": "hazard paint"
@@ -687,7 +692,8 @@
         "sizeX": 21.1,
         "sizeY": 18.7,
         "sizeZ": 59.3,
-        "atY": 9.35
+        "atY": 9.35,
+        "startOn": true
       },
       "paint": "#d9a441",
       "finish": "hazard paint"
@@ -701,7 +707,8 @@
         "sizeX": 21.1,
         "sizeY": 18.7,
         "sizeZ": 59.3,
-        "atY": 9.35
+        "atY": 9.35,
+        "startOn": true
       },
       "paint": "#d9a441",
       "finish": "hazard paint"
@@ -715,7 +722,8 @@
         "sizeX": 21.1,
         "sizeY": 18.7,
         "sizeZ": 59.3,
-        "atY": 9.35
+        "atY": 9.35,
+        "startOn": true
       },
       "paint": "#d9a441",
       "finish": "hazard paint"
@@ -729,7 +737,8 @@
         "sizeX": 40.9,
         "sizeY": 15.1,
         "sizeZ": 22.3,
-        "atY": 7.55
+        "atY": 7.55,
+        "startOn": true
       },
       "paint": "#d9a441",
       "finish": "hazard paint"
@@ -743,7 +752,8 @@
         "sizeX": 40.9,
         "sizeY": 15.1,
         "sizeZ": 22.3,
-        "atY": 7.55
+        "atY": 7.55,
+        "startOn": true
       },
       "paint": "#d9a441",
       "finish": "hazard paint"
@@ -757,7 +767,8 @@
         "sizeX": 40.9,
         "sizeY": 15.1,
         "sizeZ": 22.3,
-        "atY": 7.55
+        "atY": 7.55,
+        "startOn": true
       },
       "paint": "#d9a441",
       "finish": "hazard paint"
@@ -771,7 +782,8 @@
         "sizeX": 40.9,
         "sizeY": 15.1,
         "sizeZ": 22.3,
-        "atY": 7.55
+        "atY": 7.55,
+        "startOn": true
       },
       "paint": "#d9a441",
       "finish": "hazard paint"
@@ -785,7 +797,8 @@
         "sizeX": 67.3,
         "sizeY": 15.7,
         "sizeZ": 18.7,
-        "atY": 7.85
+        "atY": 7.85,
+        "startOn": true
       },
       "paint": "#d9a441",
       "finish": "hazard paint"
@@ -799,7 +812,8 @@
         "sizeX": 67.3,
         "sizeY": 15.7,
         "sizeZ": 18.7,
-        "atY": 7.85
+        "atY": 7.85,
+        "startOn": true
       },
       "paint": "#d9a441",
       "finish": "hazard paint"
@@ -813,7 +827,8 @@
         "sizeX": 67.3,
         "sizeY": 15.7,
         "sizeZ": 18.7,
-        "atY": 7.85
+        "atY": 7.85,
+        "startOn": true
       },
       "paint": "#d9a441",
       "finish": "hazard paint"
@@ -827,7 +842,8 @@
         "sizeX": 67.3,
         "sizeY": 15.7,
         "sizeZ": 18.7,
-        "atY": 7.85
+        "atY": 7.85,
+        "startOn": true
       },
       "paint": "#d9a441",
       "finish": "hazard paint"

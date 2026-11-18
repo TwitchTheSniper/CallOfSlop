@@ -332,7 +332,7 @@ public sealed partial class SpaceStationParts
         Sock(p, tag + "clamp", px + 3.5, y, pz - 3.5, "+y", Medium);
         k.Hangs.Add(new HangSpec((string)p.D["name"]!, tag + "hatch", "Docking Hatch", "base", null, null, null));
         k.Hangs.Add(new HangSpec((string)p.D["name"]!, tag + "clamp", "Docking Clamp Medium", "-y",
-            new PyDict { ["sizeX"] = 14, ["sizeY"] = 8, ["sizeZ"] = 14, ["atY"] = 4.5, ["atX"] = -3.5, ["atZ"] = 3.5 }, Hazard, HazardFin));
+            new PyDict { ["startOn"] = true, ["sizeX"] = 14, ["sizeY"] = 8, ["sizeZ"] = 14, ["atY"] = 4.5, ["atX"] = -3.5, ["atZ"] = 3.5 }, Hazard, HazardFin));
     }
 
     /// <summary>A sky bridge from one hex block's face to another's, at height y: a plated tube with lit strips, drawn only.</summary>
