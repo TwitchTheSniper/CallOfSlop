@@ -229,5 +229,21 @@ public sealed partial class SpaceStationParts : IPartGenerator
         o.File($"{BpOut}/CaledonHighport.json", PyJson.Dumps(Blueprint(HighportName,
             "Caledon Highport, the first space station: a ring of sixteen habitat segments 264 m across round one hexagonal hub under a command dome, joined by three spokes. Landing pads for Shuttles and Limpets on the ring's roof, hangars in its walls; under the hub a docking spindle with the customs drum, a dock collar with Zero Day berths north and south and Magpie berths east and west, a freight collar with Dray berths, and engineering with its radiators, the reactor and the station-keeping drives at its foot.",
             kit, order, origins, defs), 2) + "\n");
+
+        // the clamp arm demo (a design draft: SpaceStationClampArm.cs)
+        var demo = ClampArmDemo();
+        Connect(demo.Pieces);
+        var dOrder = PlaceOrder(demo.Pieces, "Clamp Demo Arm 1");
+        var dOrigins = demo.Pieces.ToDictionary(p => (string)p.D["name"]!, Recentre);
+        foreach (var p in demo.Pieces)
+        {
+            var d = p.Json();
+            var name = (string)d["name"]!;
+            defs.Add(name, d);
+            o.File($"{Out}/ClampArm/{FileName(name)}", PyJson.Dumps(d, 2) + "\n");
+        }
+        o.File($"{BpOut}/ClampArmDemo.json", PyJson.Dumps(Blueprint(ClampDemoName,
+            "Design draft: the berth clamp arm, as a storyboard along one docking arm with four Zero Day berths. 1: a ship on the berth's approach lane, the arm stowed. 2: the ship at the lane's stage point, the arm reaching out to it, its clamp seeking. 3: clamped, the ship's drives off, drawn in. 4: moored, no longer flown. The ships are glass outlines of the Zero Day's size.",
+            demo, dOrder, dOrigins, defs), 2) + "\n");
     }
 }
