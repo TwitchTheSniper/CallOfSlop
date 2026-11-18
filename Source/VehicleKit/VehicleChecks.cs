@@ -32,6 +32,9 @@ public sealed class VehicleCheckOptions
     /// <summary>The most of its bounding box a body may fill, seen from the side and from above (VEHICLEKIT.md, "Silhouette").</summary>
     public float MaxSideFill = 0.62f, MaxTopFill = 0.84f;
 
+    /// <summary>It steers by driving its sides against each other, with no steered wheel (a tracked vehicle: the Excavator).</summary>
+    public bool SkidSteers;
+
     /// <summary>It's towed: nothing drives it, so only its build, its z-fighting and how it stands are checked.</summary>
     public bool Towed;
 
@@ -228,8 +231,8 @@ public static class VehicleChecks
             zF = MathF.Min(zF, wh.Centre.Z);
             zB = MathF.Max(zB, wh.Centre.Z);
         }
-        r.Notes.Add($"wheels: {c.WheelCount}, {driven} driven, {steered} steered; wheelbase {zB - zF:0.00} m");
-        if (driven == 0 || steered == 0)
+        r.Notes.Add($"wheels: {c.WheelCount}, {driven} driven, {steered} steered{(c.SkidSteer ? " (skid steer)" : "")}; wheelbase {zB - zF:0.00} m");
+        if (driven == 0 || steered == 0 && !o.SkidSteers) // (only a shape that says it skid steers may have no steered wheel: the Excavator's tracks; c.SkidSteer is true of any body with no steered wheel)
             r.Failures.Add($"{driven} driven and {steered} steered wheels: it needs both");
         var ground = float.MaxValue;
         for (var k = 0; k < c.WheelCount; k++)
