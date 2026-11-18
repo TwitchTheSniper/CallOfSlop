@@ -110,6 +110,7 @@ public enum CActKind : byte
     Link, // u16 body, u16 part, u8 LinkOp, u32 a, u32 b, str text: a linked logistics part's panel, or a route from the command view (protocol 328; GameSandboxLinked.cs)
     Crew, // u16 body, u32 member uid, u8 CrewOrder: a crew order from the Crew window (protocol 332; GameCrewHire.cs)
     Dampeners, // u16 body (the seat's): the seated player flips that ship's inertia dampeners (protocol 340; ConstructFlight.ToggleDampeners)
+    MouseSteer, // u16 body (the seat's): the seated player takes that ship's nose with the mouse, or lets it go (protocol 349; ConstructFlight.ToggleMouseSteer)
 }
 
 /// <summary>
@@ -1399,6 +1400,14 @@ public sealed partial class Game
                     return "not in a seat of that craft";
                 return ConstructFlight.ToggleDampeners(Constructs, craft);
             }
+            case CActKind.MouseSteer:
+            {
+                var body = r.U16();
+                ref var sh = ref hands.Hand(p.Id);
+                if (!sh.Seated || sh.SeatBody != body || Constructs.Get(body) is not { } craft)
+                    return "not in a seat of that craft";
+                return ConstructFlight.ToggleMouseSteer(Constructs, craft);
+            }
             case CActKind.StoreIn:
             case CActKind.TakeStored:
             {
@@ -1570,6 +1579,7 @@ public sealed partial class Game
                 w.U16(body).U16(part).U8((byte)socket); // (socket: the weld)
                 break;
             case CActKind.Dampeners:
+            case CActKind.MouseSteer:
                 w.U16(body);
                 break;
             case CActKind.SeatKeys:
@@ -2313,6 +2323,7 @@ public sealed partial class Game
     }
 
     private uint _sbViewSeat; // the seat the local view last turned with (body << 16 | part + 1; 0: none)
+    private bool _sbViewSteers; // that seat's look steered its ship's nose last frame (ConstructFlight.MouseSteers)
     private float _sbViewYaw;
 
     /// <summary>
@@ -2473,8 +2484,9 @@ public sealed partial class Game
                 // The view turns with the seat, then stays inside the seat type's limits.
                 localSeat = ((uint)body << 16) | (uint)(part + 1); // (16 bits of part: << 8 mixed seats past part 255)
                 var steers = ConstructFlight.MouseSteers(c, part); // (a ship's nose follows the look: the look stays put and the ship comes round to it)
-                if (_sbViewSeat != localSeat && kind != SeatKind.Gunner)
-                    SeatLookForward(q, feet, seatYaw); // (just sat down: the view faces the way the seat does, not wherever the look was as the player bent to it)
+                if (_sbViewSeat != localSeat && kind != SeatKind.Gunner || steers && !_sbViewSteers && _sbViewSeat == localSeat)
+                    SeatLookForward(q, feet, seatYaw); // (just sat down, or just took the nose with the mouse: the view faces the way the seat does, so the ship doesn't swing round to wherever the look was)
+                _sbViewSteers = steers;
                 if (!steers && (_sbViewSeat == localSeat && lookKind != SeatKind.Gunner || _sbViewSeat == localSeat && !c.SeatAims(part))) // (a gunner who points the turret looks where they look: the turret follows)
                     LookYaw = World.WrapAngle(LookYaw + World.WrapAngle(seatYaw - _sbViewYaw));
                 _sbViewYaw = seatYaw;
@@ -2771,6 +2783,8 @@ public sealed partial class Game
                 lines.Add(new HudLine(SandboxKeys.PilotEject, dim));
             if (ConstructFlight.DampenersOff(car))
                 lines.Add(ConstructFlight.AutopilotOn(car) || car.NavThrottle >= 0 || car.CrewAims ? new HudLine(SandboxKeys.DampenersHeld, dim) : new HudLine(SandboxKeys.DampenersOff, orange)); // (ConstructFlight.Coasts)
+            if (ConstructFlight.MouseSteerOff(car))
+                lines.Add(new HudLine(SandboxKeys.MouseSteerOff, orange)); // (the mouse looks round; the nose holds, A and D turn it)
             if (car.StabCount > 0 && !car.CanDrive)
                 lines.Add(new HudLine(ConstructFlight.KeyHint(car), dim));
             else if (car.CanDrive && car.StarterFailed)

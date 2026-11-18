@@ -174,6 +174,8 @@ public static unsafe partial class Program
             SeatedRadar(g, me); // (the radar key: Program.SandboxRadar.cs)
             if (Pressed(GameAction.SeatDampeners) && g.Constructs.Get(h.SeatBody) is { } ship && ConstructFlight.HasDampeners(ship))
                 g.SandboxSend(CActKind.Dampeners, body: h.SeatBody); // (a ship's inertia dampeners off or on: ConstructFlight.ToggleDampeners)
+            if (Pressed(GameAction.SeatMouseSteer) && g.Constructs.Get(h.SeatBody) is { } steered && ConstructFlight.HasMouseSteer(steered))
+                g.SandboxSend(CActKind.MouseSteer, body: h.SeatBody); // (the mouse takes the nose or lets it go: ConstructFlight.ToggleMouseSteer)
             return true;
         }
         if (_sbSeatKeys > 0)

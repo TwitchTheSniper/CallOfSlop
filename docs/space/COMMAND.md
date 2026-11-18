@@ -279,7 +279,7 @@ default; `NavMeetGap`).
   the other's height, written at most twice a second and only when it has moved 6 m. A ship in a sky climbs out to meet a
   craft in space; one in space is refused a craft down in a sky ("bring it down into the sky first").
 - **It ends** when cancelled, the other craft is gone or wrecked, goes down into a sky from space, or the two dock.
-- **Wire** (protocol 349): `NavKind.Meet` at its end; the target and gap ride the order's existing target and radius.
+- **Wire** (protocol 350): `NavKind.Meet` at its end; the target and gap ride the order's existing target and radius.
 - **Trying it:** `order meet N [GAP]` (the Nth craft, as `cmdpick` counts). The Shuttle from a 9 km orbit to the Zero
   Day's at 5.5 km (about 75 s to alongside):
 
