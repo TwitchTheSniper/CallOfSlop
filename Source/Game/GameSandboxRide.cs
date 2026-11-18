@@ -161,6 +161,7 @@ public sealed partial class Game
             foreach (var b in Constructs.Bodies) // (a list: no allocation)
                 if (b.CarriedBy == root.Id && b != c)
                     RideDrawnAdd(b);
+        Constructs.GridStale(); // (the broadphase sees these bodies where they are drawn until RideTickPose: one built in this window must not serve the next tick)
     }
 
     private void RideDrawnAdd(Construct c)
@@ -190,6 +191,16 @@ public sealed partial class Game
         }
         _rideDrawnCount = 0;
         _rideDrawn = null;
+        Constructs.GridStale(); // (a grid built at the drawn poses goes: the server's next query builds it from the tick's)
+    }
+
+    /// <summary>Is <paramref name="c"/> at its drawn pose now (RideDrawnPose's set)?</summary>
+    private bool RideDrawnHas(Construct c)
+    {
+        for (var k = 0; k < _rideDrawnCount; k++)
+            if (_rideDrawnSet[k] == c)
+                return true;
+        return false;
     }
 
     /// <summary>
@@ -223,8 +234,8 @@ public sealed partial class Game
         var body = h.Seated ? h.SeatBody : me.Sim.RideBody;
         if (body != 0 && Constructs.Get(body) is { } c)
         {
-            if (c == _rideDrawn)
-                return; // (RideDrawnPose has put this body where it is drawn, under the drawn eye already: moving the eye too put it (a - a^2) of a tick's travel off, a metre at orbital speed, so the look flickered on and off seats and ladders as the frame's blend changed)
+            if (RideDrawnHas(c))
+                return; // (RideDrawnPose has posed it with the ridden body, a seat's craft docked in a carrier too: RideDrawnPose has put this body where it is drawn, under the drawn eye already: moving the eye too put it (a - a^2) of a tick's travel off, a metre at orbital speed, so the look flickered on and off seats and ladders as the frame's blend changed)
             var pos = Vector3.Lerp(c.PrevPos, c.Pos, _alpha);
             var rot = Quaternion.Slerp(c.PrevRot, c.Rot, _alpha);
             var turn = Quaternion.Normalize(c.Rot * Quaternion.Conjugate(rot));
