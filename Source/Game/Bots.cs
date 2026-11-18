@@ -384,7 +384,7 @@ public sealed partial class Game
             _w.U8(p.Id).U8(p.Bot != null ? (byte)1 : (byte)0).U8((byte)bytes.Length);
             foreach (var c in bytes)
                 _w.U8(c);
-            WriteRosterCosmetics(_w, p); // prestige, level, hat (GameCosmetics.cs)
+            WriteRosterCosmetics(_w, p); // look, uniform, spacewalk gear (GameCosmetics.cs)
         }
         WriteRosterAway(_w); // free travel: who is on another planetoid (GameTravel.cs, protocol 146)
         Net.Broadcast(_w.Span, PacketReliability.ReliableOrdered);
@@ -405,7 +405,7 @@ public sealed partial class Game
                 chars[k] = (char)r.U8();
             // Bot names carry their personality, e.g. "[BOT] Brick (Rusher)", so they get a little more room.
             var name = isBot ? CleanBotName(new string(chars)) : Settings.Clean(new string(chars));
-            var cosmetics = ReadRosterCosmetics(ref r, isBot); // prestige, level, hat (GameCosmetics.cs)
+            var cosmetics = ReadRosterCosmetics(ref r, isBot); // look, uniform, spacewalk gear (GameCosmetics.cs)
             _names[id] = name;
             _cosmetics[id] = cosmetics;
             if (Players.TryGetValue(id, out var p))

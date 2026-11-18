@@ -594,7 +594,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   (a ride's bytes, flying), and the PilotGear step stows a canopy in vacuum (Eva.Vacuum).
     // 345: removals (docs/removals-notes.md). The penal colony went: Msg.Tutorial, ColonyAlarm,
     //   Depot, Quarry, Labour, LabourHands, Breakout, Errand, LabourDay, LabourIncident and Objective (the "what next" line) keep their slots as Removed*, never sent,
-    //   and the colony's lore and building parts move part ids.
+    //   and the colony's lore and building parts move part ids, as do the old factions' dressing parts (the Pipe Box and the
+    //   rest). Levelling and prestige went: the roster entry loses prestige, level and hat (3 bytes, before the look), the
+    //   Loadout message loses its hat byte and the prestige and level after it, and the Hello keeps two zero bytes where
+    //   prestige and level were, so the protocol version after them stays where every build reads it.
     public const ushort ProtocolVersion = 345;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>

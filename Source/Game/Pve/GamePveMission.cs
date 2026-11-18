@@ -717,7 +717,7 @@ public sealed partial class Game
         SendPveEvent(label == "OBJECTIVE" ? PveEventKind.Objective : PveEventKind.Mission, (ushort)xp, 0, "", toClientsOnly: true);
     }
 
-    /// <summary>Client (or the host): co-op XP into the local progress (Progression.cs).</summary>
+    /// <summary>Client (or the host): once co-op XP into the local progress; nothing since levelling went.</summary>
     private void CoopLocalAward(PveEventKind kind, ushort arg, double now)
     {
         // (account XP for co-op kills, objectives and missions went with levelling, 2026-11-17)

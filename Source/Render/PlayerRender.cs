@@ -36,7 +36,7 @@ public static class PlayerRender
             rot = Matrix4x4.CreateRotationY(-p.RenderRideYaw) * Matrix4x4.CreateFromQuaternion(p.RenderRideRot); // contraption space: standing in the construct
         var at = Matrix4x4.CreateTranslation(p.RenderPosition);
         var color = p.Color;
-        var hat = HatRender.HatFor(p); // prestige hat (HatRender.cs)
+        var hat = HatRender.HatFor(p); // a uniform's cap (HatRender.cs)
 
         if (!p.Alive)
         {

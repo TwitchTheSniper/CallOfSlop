@@ -1,4 +1,4 @@
-## Moving your progression to this build
+## Moving your saves to this build
 
 Older builds of Call of Slop kept your saves **inside the game folder**, next to `CallOfSlop.exe`. From this release on, your saves live in one fixed place that every new build uses:
 
@@ -14,10 +14,11 @@ Once your saves are there, every future update keeps them automatically. You onl
 
 | File | What it holds |
 | --- | --- |
-| `progress.txt` | Your level, XP, prestige and unlocks |
 | `loadout.txt` | Your loadouts |
 | `settings.txt` | Your settings and keybinds |
 | `workbench.txt` | Your workbench weapon builds |
+
+(`progress.txt`, an older build's level, XP and prestige, is no longer read: levelling, prestige and the prestige hats were removed. It can stay or go.)
 | `ordnance.txt` | Your saved bomb and missile designs (the Ordnance Bench) |
 | `blueprints.txt` | Your workbench blueprint library (newer builds; the first time it opens it copies in the builds from `workbench.txt`) |
 | `audio_mix.json` and the `AudioMixes` folder | Your audio mixer levels and presets |
@@ -36,7 +37,7 @@ The `Cache` folder in the save folder is not a save: it holds maps the game buil
    ```
 2. Start the new `CallOfSlop.exe`.
 3. On its first run, the game finds the old build beside it and copies your saves into `%APPDATA%\CallOfSlop`. If you have more than one old build there, it uses the one you played most recently.
-4. Check your level in the main menu. If it's right, you're done.
+4. Check your loadouts in the main menu. If they're right, you're done.
 
 Nothing is moved or deleted. Your old build's files are left exactly as they were.
 
@@ -47,7 +48,6 @@ Use this if the automatic copy didn't find your old build, for example because i
 1. **Close the game** if it's running.
 2. Open your **old** build's folder: the one with the old `CallOfSlop.exe`.
 3. Copy these files and folders, whichever of them you have:
-   - `progress.txt`
    - `loadout.txt`
    - `settings.txt`
    - `workbench.txt`
@@ -58,9 +58,9 @@ Use this if the automatic copy didn't find your old build, for example because i
    - the `Worlds` folder (if you have it)
    - the `ConstructBlueprints` folder (with its subfolders: `.versions` holds older versions your blueprints' uses may name)
 4. Paste them into `%APPDATA%\CallOfSlop`. Create the folder if it isn't there. If Windows asks, replace the files that are already there.
-5. Start the new build and check your level in the main menu.
+5. Start the new build and check your loadouts in the main menu.
 
-> Do this before playing much on the new build. Whatever you copy in replaces the new build's progress.
+> Do this before playing much on the new build. Whatever you copy in replaces the new build's files.
 
 Not save files (you don't need to copy them): `update_check.txt` (when the game last asked GitHub for updates) and `update.log` (what the updater removed). Both live in the save folder and are safe to delete. The `Logs` folder isn't a save either: it holds the stuck-spot reports (`stuck-spots-*.json`, where bots got stuck in your matches). Send it to the developer if bots got stuck a lot; it's safe to delete.
 
@@ -162,6 +162,6 @@ Put an empty file called `portable.txt` next to `CallOfSlop.exe`. The game then 
   1. Close the game.
   2. Do the manual copy above.
   3. Check that you copied from the old build's own folder: the one that has `CallOfSlop.exe` in it.
-- **A save got damaged:** every save keeps its previous version as `NAME.bak`, for example `progress.txt.bak`, in the same folder. Close the game, delete the damaged file, rename the `.bak` file back to the original name, and start the game again.
+- **A save got damaged:** every save keeps its previous version as `NAME.bak`, for example `loadout.txt.bak`, in the same folder. Close the game, delete the damaged file, rename the `.bak` file back to the original name, and start the game again.
 - **Still stuck:** send `callofslop.log` from the game folder. Its `[saves]` lines say which folder the game used and what it copied.
 - **The game crashed:** send `callofslop.log`, `crash.txt`, `breadcrumb.txt` and the newest `crash-NNNN.dmp` from the game folder (on a Mac: `~/Library/Logs/CallOfSlop`). They are logs, not saves: you don't need to copy them to a new build, and they are safe to delete.

@@ -30,10 +30,6 @@ public static class BotGear
     /// <summary>The gear level that opens everything (the max account level).</summary>
     public const int Full = 1;
 
-    /// <summary>The level a person counts as: 0 if unknown, the max level once they have prestiged, otherwise their level.</summary>
-    public static int EffectiveLevel(int prestige, int level) =>
-        prestige > 0 ? Full : level <= 0 ? 0 : Math.Min(level, Full);
-
     /// <summary>The rounded average of <paramref name="count"/> levels adding up to <paramref name="sum"/> (0 for nobody).</summary>
     public static int Average(int sum, int count) =>
         count <= 0 ? 0 : Math.Clamp((int)Math.Round(sum / (double)count, MidpointRounding.AwayFromZero), 1, Full);
@@ -276,8 +272,7 @@ public sealed partial class Game
     public int BotGearAverage { get; private set; }
 
     /// <summary>
-    /// The average account level of the people in the game right now (bots don't count; prestige counts as the max level;
-    /// unknown levels are left out), or 0 if nobody's level is known. The host's own level comes from its progression.
+    /// The average account level of the people in the game: none is known since levelling went, so 0 (bots carry everything).
     /// </summary>
     public int HumanAverageLevel() => 0; // (nobody reports a level since levelling went: 2026-11-17)
 

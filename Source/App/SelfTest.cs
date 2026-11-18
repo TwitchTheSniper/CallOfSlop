@@ -2618,21 +2618,21 @@ public static partial class SelfTest
         // Progression returns to whatever was before it.
         nav.Open(LoadoutPage.Secondary);
         nav.Open(LoadoutPage.Attachments, 2);
-        nav.Open(LoadoutPage.Progression);
-        Expect(LoadoutPage.Progression, 4, "progression over attachments");
+        nav.Open(LoadoutPage.Streaks);
+        Expect(LoadoutPage.Streaks, 4, "streaks over attachments");
         nav.Back();
         Expect(LoadoutPage.Attachments, 3, "Back from progression");
         if (nav.Arg != 2)
             Fail("the attachments page under progression lost its weapon id");
 
         // Re-opening a page already on the stack goes back down to it (no loops, bounded depth).
-        nav.Open(LoadoutPage.Progression);
-        nav.Open(LoadoutPage.Progression);
-        Expect(LoadoutPage.Progression, 4, "progression opened twice");
+        nav.Open(LoadoutPage.Streaks);
+        nav.Open(LoadoutPage.Streaks);
+        Expect(LoadoutPage.Streaks, 4, "streaks opened twice");
         nav.Open(LoadoutPage.Secondary);
         Expect(LoadoutPage.Secondary, 2, "re-opening the weapon select");
         for (var i = 0; i < 50; i++)
-            nav.Open(i % 2 == 0 ? LoadoutPage.Attachments : LoadoutPage.Progression, i);
+            nav.Open(i % 2 == 0 ? LoadoutPage.Attachments : LoadoutPage.Streaks, i);
         if (nav.Depth > 4)
             Fail($"stack grew to {nav.Depth} pages after alternating opens");
 

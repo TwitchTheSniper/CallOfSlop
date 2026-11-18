@@ -1,7 +1,7 @@
 namespace CallOfSlop;
 
 /// <summary>
-/// Gun Game's weapon ladder: the weapons in the order Progression unlocks them (starters first), cut down to
+/// Gun Game's weapon ladder: the weapons in the weapon list's order, cut down to
 /// <see cref="Steps"/> evenly spaced steps so a match doesn't take 50 kills. The first step is the first weapon of the
 /// unlock order and the last step is the last one. Everyone plays the ladder whatever they have unlocked.
 /// </summary>

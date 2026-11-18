@@ -8,7 +8,6 @@ obj/
 *.user
 
 # Personal game files, if the game is ever run from the project folder
-progress*.txt
 settings.txt
 loadout*.txt
 workbench.txt
