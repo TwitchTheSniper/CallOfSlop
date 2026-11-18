@@ -187,21 +187,9 @@
       "by": "j0"
     },
     {
-      "part": "Highport Miner Cradle EL 1",
-      "on": 27,
-      "socket": "j2",
-      "by": "j0"
-    },
-    {
       "part": "Highport Miner Clamp EL",
       "on": 27,
-      "socket": "j3",
-      "by": "j0"
-    },
-    {
-      "part": "Highport Miner Cradle ER 1",
-      "on": 27,
-      "socket": "j4",
+      "socket": "j2",
       "by": "j0"
     },
     {
@@ -211,21 +199,9 @@
       "by": "j0"
     },
     {
-      "part": "Highport Miner Cradle WL 1",
-      "on": 28,
-      "socket": "j2",
-      "by": "j0"
-    },
-    {
       "part": "Highport Miner Clamp WL",
       "on": 28,
-      "socket": "j3",
-      "by": "j0"
-    },
-    {
-      "part": "Highport Miner Cradle WR 1",
-      "on": 28,
-      "socket": "j4",
+      "socket": "j2",
       "by": "j0"
     },
     {
@@ -253,411 +229,291 @@
       "by": "j0"
     },
     {
-      "part": "Highport Miner Cradle EL 3",
-      "on": 30,
-      "socket": "j2",
-      "by": "j0"
-    },
-    {
       "part": "Highport Miner Cradle ER 2",
       "on": 30,
-      "socket": "j3",
-      "by": "j0"
-    },
-    {
-      "part": "Highport Miner Cradle ER 3",
-      "on": 30,
-      "socket": "j4",
+      "socket": "j2",
       "by": "j0"
     },
     {
       "part": "Highport Miner Clamp ER",
       "on": 30,
-      "socket": "j5",
-      "by": "j0"
-    },
-    {
-      "part": "Highport Miner Cradle WL 2",
-      "on": 34,
-      "socket": "j1",
-      "by": "j0"
-    },
-    {
-      "part": "Highport Miner Cradle WL 3",
-      "on": 34,
-      "socket": "j2",
-      "by": "j0"
-    },
-    {
-      "part": "Highport Miner Cradle WR 2",
-      "on": 34,
       "socket": "j3",
       "by": "j0"
     },
     {
-      "part": "Highport Miner Cradle WR 3",
-      "on": 34,
-      "socket": "j4",
+      "part": "Highport Miner Cradle WL 2",
+      "on": 32,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Highport Miner Cradle WR 2",
+      "on": 32,
+      "socket": "j2",
       "by": "j0"
     },
     {
       "part": "Highport Miner Clamp WR",
-      "on": 34,
-      "socket": "j5",
+      "on": 32,
+      "socket": "j3",
       "by": "j0"
     },
     {
       "part": "Highport Frigate Collar",
-      "on": 38,
+      "on": 34,
       "socket": "j1",
       "by": "j0"
     },
     {
       "part": "Highport Freight Arm E 2",
-      "on": 39,
+      "on": 35,
       "socket": "j1",
-      "by": "j0"
-    },
-    {
-      "part": "Highport Freight Cradle EL 1",
-      "on": 39,
-      "socket": "j2",
-      "by": "j0"
-    },
-    {
-      "part": "Highport Freight Cradle ER 1",
-      "on": 39,
-      "socket": "j3",
       "by": "j0"
     },
     {
       "part": "Highport Freight Arm W 2",
-      "on": 40,
+      "on": 36,
       "socket": "j1",
       "by": "j0"
     },
     {
-      "part": "Highport Freight Cradle WL 1",
-      "on": 40,
-      "socket": "j2",
-      "by": "j0"
-    },
-    {
-      "part": "Highport Freight Cradle WR 1",
-      "on": 40,
-      "socket": "j3",
-      "by": "j0"
-    },
-    {
       "part": "Highport Spindle 5",
-      "on": 51,
+      "on": 43,
       "socket": "j1",
       "by": "j0"
     },
     {
       "part": "Highport Frigate Arm N 1",
-      "on": 51,
+      "on": 43,
       "socket": "j2",
       "by": "j0"
     },
     {
       "part": "Highport Frigate Arm S 1",
-      "on": 51,
+      "on": 43,
       "socket": "j3",
       "by": "j0"
     },
     {
       "part": "Highport Freight Arm E 3",
-      "on": 52,
+      "on": 44,
       "socket": "j1",
       "by": "j0"
     },
     {
       "part": "Highport Freight Cradle EL 2",
-      "on": 52,
+      "on": 44,
       "socket": "j2",
       "by": "j0"
     },
     {
       "part": "Highport Freight Clamp EL",
-      "on": 52,
+      "on": 44,
       "socket": "j3",
       "by": "j0"
     },
     {
       "part": "Highport Freight Cradle ER 2",
-      "on": 52,
+      "on": 44,
       "socket": "j4",
       "by": "j0"
     },
     {
       "part": "Highport Freight Arm W 3",
-      "on": 55,
+      "on": 45,
       "socket": "j1",
       "by": "j0"
     },
     {
       "part": "Highport Freight Cradle WL 2",
-      "on": 55,
+      "on": 45,
       "socket": "j2",
       "by": "j0"
     },
     {
       "part": "Highport Freight Clamp WL",
-      "on": 55,
+      "on": 45,
       "socket": "j3",
       "by": "j0"
     },
     {
       "part": "Highport Freight Cradle WR 2",
-      "on": 55,
+      "on": 45,
       "socket": "j4",
       "by": "j0"
     },
     {
       "part": "Highport Engineering",
-      "on": 58,
+      "on": 46,
       "socket": "j1",
       "by": "j0"
     },
     {
       "part": "Highport Frigate Arm N 2",
-      "on": 59,
+      "on": 47,
       "socket": "j1",
       "by": "j0"
     },
     {
       "part": "Highport Frigate Arm S 2",
-      "on": 60,
+      "on": 48,
       "socket": "j1",
       "by": "j0"
     },
     {
       "part": "Highport Freight Arm E 4",
-      "on": 61,
+      "on": 49,
       "socket": "j1",
       "by": "j0"
     },
     {
       "part": "Highport Freight Clamp ER",
-      "on": 61,
+      "on": 49,
       "socket": "j4",
       "by": "j0"
     },
     {
       "part": "Highport Freight Arm W 4",
-      "on": 65,
+      "on": 53,
       "socket": "j1",
       "by": "j0"
     },
     {
       "part": "Highport Freight Clamp WR",
-      "on": 65,
+      "on": 53,
       "socket": "j4",
       "by": "j0"
     },
     {
       "part": "Highport Reactor",
-      "on": 69,
+      "on": 57,
       "socket": "j1",
       "by": "j0"
     },
     {
       "part": "Highport Radiator N 1",
-      "on": 69,
+      "on": 57,
       "socket": "j2",
       "by": "j0"
     },
     {
       "part": "Highport Radiator S 1",
-      "on": 69,
+      "on": 57,
       "socket": "j3",
       "by": "j0"
     },
     {
       "part": "Highport Frigate Arm N 3",
-      "on": 70,
+      "on": 58,
       "socket": "j1",
-      "by": "j0"
-    },
-    {
-      "part": "Highport Frigate Cradle NL 1",
-      "on": 70,
-      "socket": "j2",
       "by": "j0"
     },
     {
       "part": "Highport Frigate Clamp NL",
-      "on": 70,
-      "socket": "j3",
-      "by": "j0"
-    },
-    {
-      "part": "Highport Frigate Cradle NR 1",
-      "on": 70,
-      "socket": "j4",
+      "on": 58,
+      "socket": "j2",
       "by": "j0"
     },
     {
       "part": "Highport Frigate Arm S 3",
-      "on": 71,
+      "on": 59,
       "socket": "j1",
-      "by": "j0"
-    },
-    {
-      "part": "Highport Frigate Cradle SL 1",
-      "on": 71,
-      "socket": "j2",
       "by": "j0"
     },
     {
       "part": "Highport Frigate Clamp SL",
-      "on": 71,
-      "socket": "j3",
-      "by": "j0"
-    },
-    {
-      "part": "Highport Frigate Cradle SR 1",
-      "on": 71,
-      "socket": "j4",
-      "by": "j0"
-    },
-    {
-      "part": "Highport Freight Cradle EL 3",
-      "on": 72,
-      "socket": "j1",
-      "by": "j0"
-    },
-    {
-      "part": "Highport Freight Cradle ER 3",
-      "on": 72,
-      "socket": "j2",
-      "by": "j0"
-    },
-    {
-      "part": "Highport Freight Cradle WL 3",
-      "on": 74,
-      "socket": "j1",
-      "by": "j0"
-    },
-    {
-      "part": "Highport Freight Cradle WR 3",
-      "on": 74,
+      "on": 59,
       "socket": "j2",
       "by": "j0"
     },
     {
       "part": "Highport Thrust Block",
-      "on": 76,
+      "on": 64,
       "socket": "j1",
       "by": "j0"
     },
     {
       "part": "Highport Radiator N 2",
-      "on": 77,
+      "on": 65,
       "socket": "j1",
       "by": "j0"
     },
     {
       "part": "Highport Radiator S 2",
-      "on": 78,
+      "on": 66,
       "socket": "j1",
       "by": "j0"
     },
     {
       "part": "Highport Frigate Arm N 4",
-      "on": 79,
+      "on": 67,
       "socket": "j1",
       "by": "j0"
     },
     {
       "part": "Highport Frigate Cradle NL 2",
-      "on": 79,
+      "on": 67,
       "socket": "j2",
       "by": "j0"
     },
     {
       "part": "Highport Frigate Cradle NR 2",
-      "on": 79,
+      "on": 67,
       "socket": "j3",
       "by": "j0"
     },
     {
       "part": "Highport Frigate Clamp NR",
-      "on": 79,
+      "on": 67,
       "socket": "j4",
       "by": "j0"
     },
     {
       "part": "Highport Frigate Gantry N",
-      "on": 79,
+      "on": 67,
       "socket": "j5",
       "by": "j0"
     },
     {
       "part": "Highport Frigate Arm S 4",
-      "on": 83,
+      "on": 69,
       "socket": "j1",
       "by": "j0"
     },
     {
       "part": "Highport Frigate Cradle SL 2",
-      "on": 83,
+      "on": 69,
       "socket": "j2",
       "by": "j0"
     },
     {
       "part": "Highport Frigate Cradle SR 2",
-      "on": 83,
+      "on": 69,
       "socket": "j3",
       "by": "j0"
     },
     {
       "part": "Highport Frigate Clamp SR",
-      "on": 83,
+      "on": 69,
       "socket": "j4",
       "by": "j0"
     },
     {
       "part": "Highport Frigate Gantry S",
-      "on": 83,
+      "on": 69,
       "socket": "j5",
       "by": "j0"
     },
     {
       "part": "Highport Radiator N 3",
-      "on": 92,
+      "on": 72,
       "socket": "j1",
       "by": "j0"
     },
     {
       "part": "Highport Radiator S 3",
-      "on": 93,
+      "on": 73,
       "socket": "j1",
-      "by": "j0"
-    },
-    {
-      "part": "Highport Frigate Cradle NL 3",
-      "on": 94,
-      "socket": "j1",
-      "by": "j0"
-    },
-    {
-      "part": "Highport Frigate Cradle NR 3",
-      "on": 94,
-      "socket": "j2",
-      "by": "j0"
-    },
-    {
-      "part": "Highport Frigate Cradle SL 3",
-      "on": 99,
-      "socket": "j1",
-      "by": "j0"
-    },
-    {
-      "part": "Highport Frigate Cradle SR 3",
-      "on": 99,
-      "socket": "j2",
       "by": "j0"
     },
     {
@@ -754,14 +610,16 @@
     },
     {
       "part": "Docking Clamp Large",
-      "on": 95,
+      "on": 75,
       "socket": "clamp",
       "by": "-y",
       "config": {
         "sizeX": 21.1,
         "sizeY": 18.7,
         "sizeZ": 59.3,
-        "atY": 9.35,
+        "atX": -9.0,
+        "atY": 11.75,
+        "atZ": 0.0,
         "startOn": true
       },
       "paint": "#d9a441",
@@ -769,14 +627,16 @@
     },
     {
       "part": "Docking Clamp Large",
-      "on": 96,
+      "on": 76,
       "socket": "clamp",
       "by": "-y",
       "config": {
         "sizeX": 21.1,
         "sizeY": 18.7,
         "sizeZ": 59.3,
-        "atY": 9.35,
+        "atX": 9.0,
+        "atY": 11.75,
+        "atZ": 0.0,
         "startOn": true
       },
       "paint": "#d9a441",
@@ -784,14 +644,16 @@
     },
     {
       "part": "Docking Clamp Large",
-      "on": 100,
+      "on": 80,
       "socket": "clamp",
       "by": "-y",
       "config": {
         "sizeX": 21.1,
         "sizeY": 18.7,
         "sizeZ": 59.3,
-        "atY": 9.35,
+        "atX": 9.0,
+        "atY": 11.75,
+        "atZ": 0.0,
         "startOn": true
       },
       "paint": "#d9a441",
@@ -799,14 +661,67 @@
     },
     {
       "part": "Docking Clamp Large",
-      "on": 101,
+      "on": 81,
       "socket": "clamp",
       "by": "-y",
       "config": {
         "sizeX": 21.1,
         "sizeY": 18.7,
         "sizeZ": 59.3,
-        "atY": 9.35,
+        "atX": -9.0,
+        "atY": 11.75,
+        "atZ": 0.0,
+        "startOn": true
+      },
+      "paint": "#d9a441",
+      "finish": "hazard paint"
+    },
+    {
+      "part": "Docking Clamp Large",
+      "on": 37,
+      "socket": "clamp",
+      "by": "-y",
+      "config": {
+        "sizeX": 40.9,
+        "sizeY": 15.1,
+        "sizeZ": 22.3,
+        "atX": 0.0,
+        "atY": 9.95,
+        "atZ": -9.6,
+        "startOn": true
+      },
+      "paint": "#d9a441",
+      "finish": "hazard paint"
+    },
+    {
+      "part": "Docking Clamp Large",
+      "on": 38,
+      "socket": "clamp",
+      "by": "-y",
+      "config": {
+        "sizeX": 40.9,
+        "sizeY": 15.1,
+        "sizeZ": 22.3,
+        "atX": 0.0,
+        "atY": 9.95,
+        "atZ": 9.6,
+        "startOn": true
+      },
+      "paint": "#d9a441",
+      "finish": "hazard paint"
+    },
+    {
+      "part": "Docking Clamp Large",
+      "on": 40,
+      "socket": "clamp",
+      "by": "-y",
+      "config": {
+        "sizeX": 40.9,
+        "sizeY": 15.1,
+        "sizeZ": 22.3,
+        "atX": 0.0,
+        "atY": 9.95,
+        "atZ": 9.6,
         "startOn": true
       },
       "paint": "#d9a441",
@@ -821,7 +736,9 @@
         "sizeX": 40.9,
         "sizeY": 15.1,
         "sizeZ": 22.3,
-        "atY": 7.55,
+        "atX": 0.0,
+        "atY": 9.95,
+        "atZ": -9.6,
         "startOn": true
       },
       "paint": "#d9a441",
@@ -829,59 +746,16 @@
     },
     {
       "part": "Docking Clamp Large",
-      "on": 43,
-      "socket": "clamp",
-      "by": "-y",
-      "config": {
-        "sizeX": 40.9,
-        "sizeY": 15.1,
-        "sizeZ": 22.3,
-        "atY": 7.55,
-        "startOn": true
-      },
-      "paint": "#d9a441",
-      "finish": "hazard paint"
-    },
-    {
-      "part": "Docking Clamp Large",
-      "on": 46,
-      "socket": "clamp",
-      "by": "-y",
-      "config": {
-        "sizeX": 40.9,
-        "sizeY": 15.1,
-        "sizeZ": 22.3,
-        "atY": 7.55,
-        "startOn": true
-      },
-      "paint": "#d9a441",
-      "finish": "hazard paint"
-    },
-    {
-      "part": "Docking Clamp Large",
-      "on": 48,
-      "socket": "clamp",
-      "by": "-y",
-      "config": {
-        "sizeX": 40.9,
-        "sizeY": 15.1,
-        "sizeZ": 22.3,
-        "atY": 7.55,
-        "startOn": true
-      },
-      "paint": "#d9a441",
-      "finish": "hazard paint"
-    },
-    {
-      "part": "Docking Clamp Large",
-      "on": 62,
+      "on": 50,
       "socket": "clamp",
       "by": "-y",
       "config": {
         "sizeX": 67.3,
         "sizeY": 15.7,
         "sizeZ": 18.7,
-        "atY": 7.85,
+        "atX": 0.0,
+        "atY": 10.25,
+        "atZ": -7.8,
         "startOn": true
       },
       "paint": "#d9a441",
@@ -889,14 +763,16 @@
     },
     {
       "part": "Docking Clamp Large",
-      "on": 64,
+      "on": 52,
       "socket": "clamp",
       "by": "-y",
       "config": {
         "sizeX": 67.3,
         "sizeY": 15.7,
         "sizeZ": 18.7,
-        "atY": 7.85,
+        "atX": 0.0,
+        "atY": 10.25,
+        "atZ": 7.8,
         "startOn": true
       },
       "paint": "#d9a441",
@@ -904,14 +780,16 @@
     },
     {
       "part": "Docking Clamp Large",
-      "on": 66,
+      "on": 54,
       "socket": "clamp",
       "by": "-y",
       "config": {
         "sizeX": 67.3,
         "sizeY": 15.7,
         "sizeZ": 18.7,
-        "atY": 7.85,
+        "atX": 0.0,
+        "atY": 10.25,
+        "atZ": 7.8,
         "startOn": true
       },
       "paint": "#d9a441",
@@ -919,14 +797,16 @@
     },
     {
       "part": "Docking Clamp Large",
-      "on": 68,
+      "on": 56,
       "socket": "clamp",
       "by": "-y",
       "config": {
         "sizeX": 67.3,
         "sizeY": 15.7,
         "sizeZ": 18.7,
-        "atY": 7.85,
+        "atX": 0.0,
+        "atY": 10.25,
+        "atZ": -7.8,
         "startOn": true
       },
       "paint": "#d9a441",
