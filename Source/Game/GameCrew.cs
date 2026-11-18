@@ -27,6 +27,7 @@ public sealed partial class Game : ICrewHost
         CrewFactionsTick();
         Crew.Step(Constructs, World.Query, this, _crewPeople.AsSpan(0, n));
         CrewFleetTick(); // (groups' news, questioning: GameCrewFleet.cs)
+        FleetPlayersTick(); // (players' groups: their commanders on the net, what each peer hears: GameCrewFleetPlayers.cs)
         CrewPowersTick(); // (the faction controllers: GameCrewPowers.cs)
         if (Crew.Events.Count > 0)
             CrewLog();

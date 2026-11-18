@@ -2440,6 +2440,9 @@ public sealed partial class Game : IDisposable
             case (byte)Msg.Intel when !IsServer:
                 ReadIntel(ref r); // what a questioned officer gave up (GameCrewFleet.cs)
                 break;
+            case (byte)Msg.FleetGroups when !IsServer:
+                ReadFleetGroups(ref r); // the players' fleet groups this player may command (GameCrewFleetPlayers.cs)
+                break;
             case (byte)Msg.Contracts when !IsServer:
                 ReadContracts(ref r); // the powers' contracts for credits (GameCrewPolitics.cs)
                 break;

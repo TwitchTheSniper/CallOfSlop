@@ -300,7 +300,10 @@ public sealed partial class Game
             return null;
         if (kind == NavKind.Board)
             return NavBoardAct(s, c, point, p);
-        return NavApply(s, c, kind, body, point, radius, p.Id, p.Name, p, out _, target);
+        var why = NavApply(s, c, kind, body, point, radius, p.Id, p.Name, p, out _, target);
+        if (why == null)
+            FleetNavTaken(id); // (it leaves a fleet group of its owner's: GameCrewFleetPlayers.cs)
+        return why;
     }
 
     /// <summary>

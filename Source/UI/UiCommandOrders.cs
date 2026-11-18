@@ -41,7 +41,8 @@ public sealed partial class Ui
             CmdNote("PICK A SHIP FIRST (LEFT CLICK ONE)");
             return;
         }
-        if (Game.NavProblem(c) is { } why)
+        _cmdAdmHasGround = false;
+        if (Game.NavProblem(c) is { } why && g.FleetGroupOf(c.Id) == null) // (a fleet group's ship takes its group's orders: UiCommandAdmiral.cs)
         {
             CmdNote(CmdName(c) + " TAKES NO ORDERS: " + why.ToUpperInvariant());
             return;
@@ -123,6 +124,7 @@ public sealed partial class Ui
                 var centre = s.Bubble.GameCentre;
                 var up = (world - centre).Normalized();
                 _cmdOrderLand = centre + up * b.Radius;
+                (_cmdAdmHasGround, _cmdAdmGround) = (true, _cmdOrderLand.ToVector3()); // (a fleet group's place: on the ground, its ships keep their clearance over it)
                 _cmdOrderHasLand = CmdCanLand(c);
                 // (at the ship's own height over the ground: the autopilot holds that)
                 _cmdOrderGround = centre + up * (Vec3d.From(c.WorldCom) - centre).Length;
@@ -186,8 +188,14 @@ public sealed partial class Ui
             var board = 0; // (1: pick a hull spot to cut into, 2: a door to seal on)
             ImGuiSafe.TextColored(new float4(CmdAmber.X, CmdAmber.Y, CmdAmber.Z, 1f), _cmdOrderTitle);
             ImGui.Separator();
-            if (_cmdOrderShut || g.Constructs.Get(_cmdOrderShip) is not { } c || Game.NavProblem(c) != null)
+            var fleetShip = g.FleetGroupOf(_cmdOrderShip) != null;
+            if (_cmdOrderShut || g.Constructs.Get(_cmdOrderShip) is not { } c || Game.NavProblem(c) != null && !fleetShip)
                 ImGui.CloseCurrentPopup();
+            else if (Game.NavProblem(c) != null)
+            {
+                if (CmdAdmOrders(g)) // (only its fleet group's orders: UiCommandAdmiral.cs)
+                    ImGui.CloseCurrentPopup();
+            }
             else
             {
                 if (_cmdOrderBody > 0)
@@ -272,7 +280,7 @@ public sealed partial class Ui
                 }
                 if (board != 0 && g.Constructs.Get(_cmdOrderBoardShip) is { } bt && g.Constructs.Get(_cmdOrderShip) is { } carrier)
                     CmdBoardStart(carrier, bt, board == 2); // (the view flies to it: UiCommandBoard.cs)
-                if (send != NavKind.None || board != 0)
+                if (send != NavKind.None || board != 0 || fleetShip && CmdAdmOrders(g)) // (its fleet group's orders too: UiCommandAdmiral.cs)
                     ImGui.CloseCurrentPopup();
             }
             ImGui.EndPopup();

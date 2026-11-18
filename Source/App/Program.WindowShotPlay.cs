@@ -10,6 +10,8 @@ namespace CallOfSlop;
 /// </summary>
 public static partial class Program
 {
+    private static ushort _wsAdmiralLead; // (the window tool's crewadmiral: the ship the others escort)
+
     private static int[]? _wsClipParts;
     private static int[]? _wsClipMade;
     private static readonly List<ushort> _wsClipMadeDef = [];
@@ -159,6 +161,83 @@ public static partial class Program
                         Console.WriteLine("[windowshot] crewprisoner: no prisoner in this client's rosters");
                 }
                 return true;
+            case "crewadmiral": // "crewadmiral ships N BLUEPRINT [/ LEAD]" (host, a test state: N ships of yours with hired crews, and a lead before them) | "new [all]" | "add" | "order KIND [ID|lead|npc|ride|X Z]" | "formation NAME" | "spacing M" | "doctrine N" | "admiral hand|me" | "stop WORK X Z [S]" | "task NAME" | "disband" | "show": players as admirals (faction-controllers.md phase 6) through the real fleet act (CActKind.Fleet); X Z are metres right and ahead of this player
+            {
+                var aw = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                var av = aw.Length > 0 ? aw[0].ToLowerInvariant() : "show";
+                var grp = g.FleetGroups.Count > 0 ? g.FleetGroups[0] : null;
+                var fwd = GravityFrames.FlatForward(me.Position, me.Yaw);
+                var right = Vector3.Cross(fwd, GravityFrames.UpAt(me.Position));
+                Vector3 Place(int k) => k + 1 < aw.Length && float.TryParse(aw[k], System.Globalization.CultureInfo.InvariantCulture, out var dx) && float.TryParse(aw[k + 1], System.Globalization.CultureInfo.InvariantCulture, out var dz)
+                    ? g.SandboxGroundAt(me.Position + right * dx + fwd * dz) : default;
+                ushort Free()
+                {
+                    foreach (var v in g.CrewRosters.Values)
+                        if (v.Own && v.Owner == me.Id && g.FleetGroupOf(v.Body) == null && v.Body != _wsAdmiralLead)
+                            return v.Body;
+                    return 0;
+                }
+                ushort Target(string t) => t switch
+                {
+                    "lead" => _wsAdmiralLead,
+                    "ride" => me.Sim.RideBody,
+                    "npc" => g.CrewInfo.Keys.FirstOrDefault(b => !g.CrewRosters.ContainsKey(b)),
+                    _ => ushort.TryParse(t, out var id) ? id : (ushort)0,
+                };
+                switch (av)
+                {
+                    case "ships" when g.IsServer && aw.Length > 2:
+                    {
+                        var rest = string.Join(' ', aw[2..]).Split('/', StringSplitOptions.TrimEntries);
+                        Console.WriteLine($"[windowshot] crewadmiral: {g.FleetTestShips(me, rest[0], int.Parse(aw[1]), rest.Length > 1 ? rest[1] : null) ?? "asked"}");
+                        break;
+                    }
+                    case "lead" when aw.Length > 1: // "lead ID": the ship the others escort (not put in a group by "new all")
+                        _wsAdmiralLead = ushort.Parse(aw[1]);
+                        break;
+                    case "new":
+                        g.SandboxFleet(FleetOp.New, body: Free(), arg: (byte)(aw.Length > 1 && aw[1] == "all" ? 1 : 0));
+                        break;
+                    case "add" when grp != null:
+                        g.SandboxFleet(FleetOp.Add, grp.Slot, aw.Length > 1 ? Target(aw[1]) : Free());
+                        break;
+                    case "order" when grp != null && aw.Length > 1 && Enum.TryParse<OrderKind>(aw[1], true, out var kind):
+                        g.SandboxFleet(FleetOp.Order, grp.Slot, aw.Length == 3 ? Target(aw[2]) : (ushort)0, at: Place(2), arg: (byte)kind);
+                        break;
+                    case "formation" when grp != null && aw.Length > 1 && Enum.TryParse<FleetFormation>(aw[1], true, out var shape):
+                        g.SandboxFleet(FleetOp.Formation, grp.Slot, arg: (byte)shape);
+                        break;
+                    case "spacing" when grp != null && aw.Length > 1:
+                        g.SandboxFleet(FleetOp.Spacing, grp.Slot, value: float.Parse(aw[1], System.Globalization.CultureInfo.InvariantCulture));
+                        break;
+                    case "doctrine" when grp != null && aw.Length > 1:
+                        g.SandboxFleet(FleetOp.Doctrine, grp.Slot, arg: byte.Parse(aw[1]));
+                        break;
+                    case "task" when grp != null && aw.Length > 1 && Enum.TryParse<GroupTask>(aw[1], true, out var task):
+                        g.SandboxFleet(FleetOp.Task, grp.Slot, arg: (byte)task);
+                        break;
+                    case "admiral" when grp != null:
+                    {
+                        uint uid = 0;
+                        if (aw.Length > 1 && aw[1] == "hand")
+                            foreach (var b in grp.Ships.Take(grp.Count))
+                                if (uid == 0 && g.CrewRosters.TryGetValue(b, out var rv))
+                                    uid = rv.Members.FirstOrDefault(mm => mm.Job != CrewJob.Pilot && mm.State != CrewState.Dead).Uid;
+                        g.SandboxFleet(FleetOp.Admiral, grp.Slot, uid: uid);
+                        break;
+                    }
+                    case "stop" when grp != null && aw.Length > 3 && Enum.TryParse<OrderKind>(aw[1], true, out var work):
+                        g.SandboxFleet(FleetOp.Stop, grp.Slot, at: Place(2), arg: (byte)work, value: aw.Length > 4 ? float.Parse(aw[4], System.Globalization.CultureInfo.InvariantCulture) : 20);
+                        break;
+                    case "disband" when grp != null:
+                        g.SandboxFleet(FleetOp.Disband, grp.Slot);
+                        break;
+                }
+                Console.WriteLine($"[windowshot] crewadmiral {av}: {g.FleetGroupsLine()}");
+                if (g.IsServer)
+                    Console.WriteLine($"[windowshot] crewadmiral server: {g.FleetPlayersLine()}");
+                return true;
+            }
             case "crewfleet": // "crewfleet": host: every group, its admiral, ships, orders and strength (faction-controllers.md phase 2)
                 Console.WriteLine($"[windowshot] crewfleet: {(g.IsServer ? g.CrewFleetLines() : $"{g.IntelMarks.Count} intel marks")}");
                 foreach (var body in g.CrewInfo.Keys)

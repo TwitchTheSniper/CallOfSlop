@@ -111,6 +111,7 @@ public enum CActKind : byte
     Crew, // u16 body, u32 member uid, u8 CrewOrder: a crew order from the Crew window (protocol 332; GameCrewHire.cs)
     Dampeners, // u16 body (the seat's): the seated player flips that ship's inertia dampeners (protocol 340; ConstructFlight.ToggleDampeners)
     MouseSteer, // u16 body (the seat's): the seated player takes that ship's nose with the mouse, or lets it go (protocol 349; ConstructFlight.ToggleMouseSteer)
+    Fleet, // u8 FleetOp, u8 group slot, u16 body, u32 uid, vec at, u8 arg, f32 value: a player's fleet group from the command view (protocol 360; GameCrewFleetPlayers.cs)
 }
 
 /// <summary>
@@ -1015,6 +1016,8 @@ public sealed partial class Game
                 return ShellLeaveAct(p); // robot shells (GameRobotShell.cs)
             case CActKind.NavOrder:
                 return NavOrderAct(p, ref r); // an order for a ship from the command view (GameNav.cs)
+            case CActKind.Fleet:
+                return FleetAct(p, ref r); // a player's fleet group (GameCrewFleetPlayers.cs)
             case CActKind.Talk:
             {
                 var person = r.U8();

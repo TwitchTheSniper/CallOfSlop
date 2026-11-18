@@ -619,7 +619,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 359: players in the politics (faction-controllers.md phase 5): Msg.Factions ends with the pacts between powers and player factions, the powers'
     //   offers, the factions' proposals and blood feuds with factions; FactionOp gains Pact, PactAnswer, PactBreak, CallAllies, ContractTake and ContractDrop
     //   at its end; Msg.Contracts takes the slot of RemovedColonyAlarm (Msg is full).
-    public const ushort ProtocolVersion = 359;
+    // 360: players as admirals (faction-controllers.md phase 6): CActKind.Fleet at the end of CActKind (a player's fleet group from the command
+    //   view); Msg.FleetGroups takes the slot of RemovedDepot (Msg is full).
+    public const ushort ProtocolVersion = 360;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;
