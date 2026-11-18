@@ -315,7 +315,7 @@ public static class RouteRender
             var front = MathF.Max(r.At, MathF.Min(r.At + ConstructConveyor.Speed * elapsed, limit));
             prevRoute = k;
             prevBack = front - along;
-            ConstructConveyor.Pose(c, k, front - along * 0.5f, d, out var origin, out var rot, out var seg, r.ViaPlus1 - 1);
+            ConstructConveyor.Pose(c, k, front - along * 0.5f, d, out var origin, out var rot, out var seg, r.ViaPlus1 - 1, drawn: true);
             var m = Matrix4x4.CreateFromQuaternion(rot) * Matrix4x4.CreateTranslation(origin) * SegFrames[seg >= 0 && seg <= c.JointCount && seg <= Construct.MaxJoints ? seg : 0];
             var paint = r.Paint != 0 ? ConstructPaint.ToVector(r.Paint) : Vector3.Zero;
             for (var bx = 0; bx < d.Boxes.Length; bx++)

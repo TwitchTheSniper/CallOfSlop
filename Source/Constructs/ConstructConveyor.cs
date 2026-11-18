@@ -505,7 +505,7 @@ public static class ConstructConveyor
     /// Where a piece whose middle is <paramref name="s"/> metres along the link sits, in the rest frame of the segment
     /// <paramref name="seg"/> its span starts in: its origin and turn (x across, y up, z along the link).
     /// </summary>
-    public static void Pose(Construct c, int route, float s, ConstructPartDef d, out Vector3 origin, out Quaternion rot, out int seg, int via = -1)
+    public static void Pose(Construct c, int route, float s, ConstructPartDef d, out Vector3 origin, out Quaternion rot, out int seg, int via = -1, bool drawn = false)
     {
         var a = ConstructRoutes.Point(c, route, -1, out seg);
         var b = a;
@@ -517,7 +517,7 @@ public static class ConstructConveyor
             if (-s > lead)
             {
                 // Its middle is still on the conveyor it came off: as it was there.
-                Pose(c, via, Length(c, via) + s + lead, d, out origin, out rot, out seg);
+                Pose(c, via, Length(c, via) + s + lead, d, out origin, out rot, out seg, drawn: drawn);
                 return;
             }
             // In the junction: along its lead-in, from the input's end through the junction's middle to here, turning from the
@@ -546,7 +546,7 @@ public static class ConstructConveyor
             }
             z = segLen > 1e-4f ? (b - a) / segLen : Vector3.UnitZ;
             mid = a + z * MathF.Min(s, segLen); // (before its start: on, back along its first segment)
-            if (segLen > 1e-4f && count > 0)
+            if (drawn && segLen > 1e-4f && count > 0) // (drawing only: the server's positions stay on the straight segments)
                 OnCurve(c, route, i, a, b, z, segLen, s, ref mid, ref z);
         }
         var up = Vector3.UnitY - z * z.Y;

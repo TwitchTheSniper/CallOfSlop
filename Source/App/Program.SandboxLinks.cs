@@ -80,6 +80,7 @@ public static partial class Program
     /// <summary>The link being routed is dropped (the tool put away, the construct gone, Esc).</summary>
     private static void LinkReset()
     {
+        ConstructRoutes.Grade = ConstructRoutes.GradeMode.Free; // (each link starts free: the snap never carries over unseen, a world link's included)
         _lkBody = 0;
         _lkFrom = -1;
         _lkParent = 255;

@@ -230,14 +230,14 @@ only). A chute's or a conveyor's change of grade alone (both segments in one upr
 angle) may be any angle (`ConstructRoutes.BendRule(type, from, to)`, `GradeOnly`); plan turns keep their steps. Such a node is drawn
 as a vertical curve (`RouteCurves`: radius the larger of 1.5 m and three bed widths, a chute's 1.2 m, each curve at most 45% of
 either segment; 2 to 80 degrees, so a flat-to-vertical corner keeps its elbow), and a riding piece is drawn following it
-(`ConstructConveyor.Pose`, `OnCurve`). Nothing about what a link carries changes: its length, a piece's distance along it, the
-speed, gaps, junctions and every timing still come from the straight segments between its nodes, and old links keep their nodes.
-While routing a chute or conveyor, Reload cycles the grade the next node is snapped to (free in 5 degree steps, level, 20, 40;
-`ConstructRoutes.Grade`), and the HUD shows the next segment's grade. The auto-router lays a rise between two ports in a row as one
-incline (`RouteSearch.DirectRamp`: out of the start, a jog sideways when off line, at 30, 20, 40 or 45 degrees) and replaces a
-lattice route's flat - vertical - flat runs by inclines where one fits (`Ramps`); each candidate passes the server's own check or
-is dropped. **Trestles**, **Trestle Posts** (1 to 8 m) and **Link Bridges** (4, 6, 8 m) carry links over an aisle (part kit
-`link_supports`); their tops are saddles (a `tray` block), so a node snaps to a lane's centreline 0.12 m over the top.
+(`ConstructConveyor.Pose(..., drawn: true)`, `OnCurve`; the server's positions stay on the straight segments). Nothing about what a
+link carries changes: its length, a piece's distance along it, the speed, gaps, junctions and every timing still come from the
+straight segments between its nodes, and old links keep their nodes. While routing a chute or conveyor, Reload cycles the grade the
+next node is snapped to (free in 5 degree steps, level, 20, 40; `ConstructRoutes.Grade`, back to free when the link ends), and the
+HUD shows the next segment's grade. The auto-router is unchanged: an incline is the player's own geometry, laid by hand (a ramp
+substitution in auto-route was tried and dropped: a shorter route carries differently). **Trestles**, **Trestle Posts** (1 to 8 m)
+and **Link Bridges** (4, 6, 8 m) carry links over an aisle (part kit `link_supports`; their Assembling rows go after every older
+row, `Assembling.LateFolders`); their tops are saddles (a `tray` block), so a node snaps to a lane's centreline 0.12 m over the top.
 `--factory-check` fails a factory whose chute or conveyor is under 2.4 m over its aisle or 4.5 m over its vehicle lane.
 
 **One pipe** (decision 28): there is a single pipe and it carries any fluid (fuel, water, oil, steam...). There are no pipe

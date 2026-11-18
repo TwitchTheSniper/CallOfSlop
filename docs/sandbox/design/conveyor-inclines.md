@@ -211,18 +211,19 @@ its spacing.
 
 - **Grade bends** (`ConstructRoutes.BendRule(type, from, to)`, `GradeOnly`): a chute's or conveyor's change of grade alone, up to a
   right angle, is any angle; plan turns keep their 45 degree steps. No bed kinds, no limits, no new refusals, no `Bed`/`Graded`
-  fields: nothing in a save or on the wire changed, so no protocol bump.
+  fields: nothing in a save or on the wire changed for links.
 - **Vertical curves** (`RouteCurves`): drawn by `RouteRender.Curve` (3 to 8 pieces, a few mm fatter or thinner by turns: no
-  coplanar faces) and ridden by `ConstructConveyor.Pose`/`OnCurve` for 2 to 80 degree grade changes. The link's length and a
-  piece's distance along it are the straight segments' as before; the curve moves only where a piece inside its window is drawn
-  (and where the server drops it if the link goes).
+  coplanar faces) and ridden in the drawing by `ConstructConveyor.Pose(..., drawn: true)`/`OnCurve` for 2 to 80 degree grade
+  changes. The link's length, a piece's distance along it and every server-side position stay the straight segments'.
 - **The tool**: Reload while routing a chute or conveyor cycles the grade snap (free 5 degree steps, level, 20, 40;
-  `ConstructRoutes.Grade`, `GradeTurn`); the HUD shows the next segment's grade. Not the G key: G is the grenade, live in Sandbox.
-- **The router**: `RouteSearch.DirectRamp` (two ports in a row at different heights: one incline, a sideways jog when off line)
-  and `Ramps` (a lattice route's flat - vertical - flat as an incline where it fits), each checked with the server's rule. The
-  `VerticalCost` search weight was not added.
+  `ConstructRoutes.Grade`, `GradeTurn`; back to free when the link ends); the HUD shows the next segment's grade. Not the G key: G
+  is the grenade, live in Sandbox.
+- **The router is unchanged.** A ramp pass (section 4) was built and dropped in review: an incline in place of a vertical leg
+  makes the link shorter, which changes travel time and how many pieces fit, and the user's rule keeps transfer as it is. An incline
+  is laid by hand.
 - **Supports** (part kit `link_supports`, Constructs/Parts/LinkSupports): Trestle and Trestle Post 1 to 8 m, Link Bridge 4/6/8 m,
-  saddles as `tray` lanes. The shell's rafters got no saddles (the pipe rack).
+  saddles as `tray` lanes; their recipes go after every older Assembling row (`Assembling.LateFolders`), so saved Assemblers keep
+  their recipe numbers; protocol 351 (the new files move part ids). The shell's rafters got no saddles (the pipe rack).
 - **Not built**, as the answer rules out: bed kinds and grade limits, Piece Lift, Bucket Elevator, Spiral Chute, power for lifts,
   refusing rising chutes. **The factory kit** already lays its chutes on the service strip behind the machines, never across the
   aisle or the road, so no overhead layer was needed at today's spacing; `--factory-check` now fails a chute or conveyor under the

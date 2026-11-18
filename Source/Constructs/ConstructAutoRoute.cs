@@ -156,7 +156,7 @@ public sealed class RouteSearch
     private string? _lastWhy;
     private float _width; // a conveyor: the bed it opens to (m); else 0
     private float _bed, _minRun, _endStub, _bend; // this stage: the shortest run between bends, the shortest stub out of a port, a bend's cost
-    private Vector3[] _alt = [], _best = [], _fwd = [], _roomPts = [], _ramp = [];
+    private Vector3[] _alt = [], _best = [], _fwd = [], _roomPts = [];
     private int[] _roomHosts = [];
 
     private static readonly int[,] Dir18 = MakeDirs();
@@ -232,7 +232,6 @@ public sealed class RouteSearch
         _alt = new Vector3[MaxPath];
         _best = new Vector3[MaxPath];
         _fwd = new Vector3[MaxPath];
-        _ramp = new Vector3[MaxPath];
         _roomPts = new Vector3[Construct.MaxNodesPerRoute * 2 + 2];
         _roomHosts = new int[Construct.MaxNodesPerRoute * 2 + 2];
     }
@@ -1662,138 +1661,7 @@ public sealed class RouteSearch
             n = TidyEnd(n, false);
         if (_ask.Parent == 255 && (_hasPrev || _sDir != Vector3.Zero) && !_loose && !_pierced)
             n = TidyEnd(n, true);
-        if (_ask.Type is RouteType.Conveyor or RouteType.Chute && _ask.Conduit <= 0f && !_loose && !_pierced)
-        {
-            if (DirectRamp(out var m))
-                return Nodes(m, true);
-            n = Ramps(n);
-        }
         return Nodes(n, true);
-    }
-
-    /// <summary>
-    /// Two ports facing each other along one level way at different heights (machines in a row, one up on a trestle or a deck): the
-    /// route laid by hand as a fitter would, out of the start, a sideways jog at the start's height when they are off line, one
-    /// straight incline and in, kept when it passes the whole server check. It stands in for the lattice's result, whose rise is a
-    /// vertical leg that may wander round the parts beside it. False when the ends don't line up or nothing fits.
-    /// </summary>
-    private bool DirectRamp(out int n)
-    {
-        n = 0;
-        if (!_closed || _sDir == Vector3.Zero || _gDir == Vector3.Zero || MathF.Abs(_sDir.Y) > 0.01f || Vector3.Dot(_sDir, -_gDir) < 0.999f)
-            return false;
-        var d = Vector3.Normalize(new Vector3(_sDir.X, 0, _sDir.Z));
-        var v = _g - _s;
-        var rise = v.Y;
-        var ahead = Vector3.Dot(v, d);
-        var side = new Vector3(v.X, 0, v.Z) - d * ahead;
-        var jog = side.Length() > 0.01f;
-        if (MathF.Abs(rise) < RampMinRise || ahead <= 0f)
-            return false;
-        var stub = MathF.Max(_endStub, _minRun);
-        var used = 2f * stub + (jog ? _minRun : 0f);
-        for (var g = 0; g < RampDeg.Length; g++)
-        {
-            var rad = RampDeg[g] * MathF.PI / 180f;
-            var run = MathF.Abs(rise) / MathF.Tan(rad);
-            var spare = ahead - used - run; // (the curves at its foot and crest are drawn within the level runs either side: RouteCurves keeps each to under half a run)
-            if (spare < 0f)
-                continue;
-            var m = 0;
-            _ramp[m++] = _s;
-            var at = _s + d * stub;
-            if (jog)
-            {
-                _ramp[m++] = at;
-                at += side;
-                _ramp[m++] = at;
-                at += d * _minRun;
-            }
-            at += d * (spare * 0.5f);
-            _ramp[m++] = at;
-            at += d * run + Vector3.UnitY * rise;
-            _ramp[m++] = at;
-            _ramp[m++] = _g;
-            m = Collapse(_ramp, m);
-            if (Build(_ramp, m, out _, out _) != null)
-                continue;
-            Array.Copy(_ramp, _path, m);
-            n = m;
-            return true;
-        }
-        return false;
-    }
-
-    // ---- The ramp pass (docs/sandbox/design/conveyor-inclines.md section 4; the look of the route only) ---------------------------
-
-    /// <summary>The grades a rise is tried at, in order: the first whose incline fits and passes the server's rule replaces the vertical leg.</summary>
-    private static readonly float[] RampDeg = [30f, 20f, 40f, 45f];
-    private const float RampMinRise = 0.3f; // a rise under this keeps its two elbows (a curve would take more room than it saves)
-
-    /// <summary>
-    /// A chute's or a conveyor's flat - vertical - flat runs laid again as one straight incline (its crest and foot drawn as curves,
-    /// RouteCurves): the climb starts back along the run before the rise and may end on along the one after, at the steepest of
-    /// <see cref="RampDeg"/> in order that fits beside the ends' stubs and passes the whole server check. A rise where none fits stays
-    /// vertical. What the link carries and how fast is the same either way (the user, 2026-11-17). Returns the new count; allocates nothing.
-    /// </summary>
-    private int Ramps(int n)
-    {
-        var p = _path;
-        for (var i = 1; i + 2 < n; i++)
-        {
-            var up = p[i + 1] - p[i];
-            var rise = MathF.Abs(up.Y);
-            if (rise < RampMinRise || up.X * up.X + up.Z * up.Z > 1e-4f)
-                continue;
-            var dIn = p[i] - p[i - 1];
-            var dOut = p[i + 2] - p[i + 1];
-            if (MathF.Abs(dIn.Y) > 0.01f || MathF.Abs(dOut.Y) > 0.01f)
-                continue;
-            var lenIn = dIn.Length();
-            var lenOut = dOut.Length();
-            if (lenIn < 1e-3f || lenOut < 1e-3f)
-                continue;
-            var hIn = dIn / lenIn;
-            var hOut = dOut / lenOut;
-            var same = Vector3.Dot(hIn, hOut) > 0.999f;
-            // What each flat run keeps: a port's stub, or the run a corner at its far end needs.
-            var keepIn = i - 1 == 0 && _ask.Parent == 255 && !_hasPrev ? _endStub : _minRun;
-            var keepOut = i + 2 == n - 1 && _closed ? _endStub : _minRun;
-            for (var g = 0; g < RampDeg.Length; g++)
-            {
-                var rad = RampDeg[g] * MathF.PI / 180f;
-                var run = rise / MathF.Tan(rad);
-                var t = RouteCurves.Tangent(_ask.Type, MathF.Max(_bed, 0.3f), hIn, 100f, Vector3.Normalize(hIn * run + Vector3.UnitY * up.Y), 100f); // (the room its foot or crest curve takes)
-                var availIn = MathF.Max(0f, lenIn - keepIn - t);
-                var availOut = MathF.Max(0f, lenOut - keepOut - t);
-                float back, fwd;
-                if (same)
-                {
-                    if (availIn + availOut < run)
-                        continue;
-                    back = MathF.Min(availIn, run * 0.5f + MathF.Max(0f, run * 0.5f - availOut));
-                    fwd = run - back;
-                }
-                else if (availIn >= run)
-                    (back, fwd) = (run, 0f); // (a turn in plan after the rise: the incline runs along the way in, and turns at the top)
-                else if (availOut >= run)
-                    (back, fwd) = (0f, run);
-                else
-                    continue;
-                // The candidate: p[i] back along the way in, p[i + 1] on along the way out.
-                var m = 0;
-                for (var k = 0; k < n; k++)
-                    _ramp[m++] = k == i ? p[i] - hIn * back : k == i + 1 ? p[i + 1] + hOut * fwd : p[k];
-                m = Collapse(_ramp, m);
-                if (Build(_ramp, m, out _, out _) != null)
-                    continue;
-                Array.Copy(_ramp, p, m);
-                i += m - n; // (a run used up collapses a point)
-                n = m;
-                break;
-            }
-        }
-        return n;
     }
 
     /// <summary>The path's corners as nodes, on the parts they run past, checked with the server's rule.</summary>
