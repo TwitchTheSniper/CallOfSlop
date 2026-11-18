@@ -10,6 +10,12 @@ namespace CallOfSlop.Space;
 /// </summary>
 public static class SpaceTimeRule
 {
+    /// <summary>
+    /// Above this speed coasting ships take rails under <see cref="SpaceShips.WarpRailTolerance"/> (2026-11-17): at 10,000x
+    /// and under, ships fly the full model as before; faster, the patched conic, as space games do at high warp.
+    /// </summary>
+    public const int WarpRailsAbove = 10_000;
+
     public static int Effective(int requested, bool anyoneBusy, int shipLimit)
     {
         var w = Math.Clamp(requested, 0, SpaceClock.MaxSpeed);
@@ -63,11 +69,16 @@ public sealed class SpaceFlight
 
     /// <summary>
     /// One game tick: the speed the rule allows, the clock, then every ship. <paramref name="shipLimit"/> is the other
-    /// systems' ships' own limit (phase 6: their flights follow this clock, <see cref="Follow"/>).
+    /// systems' ships' own limit (phase 6: their flights follow this clock, <see cref="Follow"/>) and the game's;
+    /// <paramref name="railLimit"/> the game's alone, for <see cref="SpaceShips.WarpRails"/>.
     /// </summary>
-    public void Tick(int shipLimit = int.MaxValue)
+    public void Tick(int shipLimit = int.MaxValue, int railLimit = int.MaxValue)
     {
-        Clock.Speed = SpaceTimeRule.Effective(RequestedSpeed, AnyoneBusy || Ships.AnyThrust(), Math.Min(Ships.MaxSpeed, shipLimit));
+        var busy = AnyoneBusy || Ships.AnyThrust();
+        // Rails from what the game allows (railLimit: orders, settings), not the ships' own limits here or in other
+        // systems (shipLimit has those too): those are what rails lift.
+        Ships.WarpRails = SpaceTimeRule.Effective(RequestedSpeed, busy, railLimit) > SpaceTimeRule.WarpRailsAbove;
+        Clock.Speed = SpaceTimeRule.Effective(RequestedSpeed, busy, Math.Min(Ships.MaxSpeed, shipLimit));
         Clock.Tick();
         Wells.Refresh(); // (where the wells' ships are as this step starts)
         Ships.Advance(Clock.Now);
@@ -81,6 +92,7 @@ public sealed class SpaceFlight
     {
         Clock.Speed = master.Speed;
         Clock.Set(master.Now);
+        Ships.WarpRails = master.Speed > SpaceTimeRule.WarpRailsAbove;
         Wells.Refresh();
         Ships.Advance(master.Now);
     }
