@@ -286,6 +286,44 @@ its 7 crew bodies, no fall (the earlier fall wasn't seen again). `--crew-walk` a
 Factory Showcase and Linked Yard OK; `--crew-check` OK (39 us a tick); `--linked-check` passed; sections Ride frame, Seated riders,
 Sandbox spawns, Frame allocations, Large systems network, Salvage haul network, Mode switch reset pass.
 
+## Done: boarded crews fight back (Karl, 2026-11-18)
+
+Karl: "when boarded, NPCs should take up arms and try to defend themselves". Built on phase 5's acts, not instead of them
+(`Game/GameCrewDefend.cs`, called from `ICrewHost.Board` each captain's look):
+
+- Crew bodies carry a sidearm at their stations (a launcher or a non-pistol secondary becomes the P9; a sniper or launcher primary the BR-1;
+  no grenades aboard). The long gun is in the lockers: an arms point is a Gun Rack or a part named Locker, not a suit's or a medicine one.
+- Who stands up, under every act but Surrender and Abandon (and with no faction, or while a scuttle runs): the off-duty crew (couches, no
+  station); under Repel also the work hands (loader, spotter, crane, dock, builder), the engineer only if its faction never scuttles, and the
+  gunners once the boarders are half the crew left. The pilot keeps the helm. This replaces Repel's old stand-up and walk-to-the-boarder.
+- Each fighter: walks (CrewNav) to the nearest arms point on its part of the graph, takes its long gun in 1.5 s; then every other one
+  holds the bridge (stops 3 m from the helm), the rest the breach (where the first boarder was seen aboard: stops 7 m short). Holding, it
+  crouches and comes up for a look every 3 s, stands to shoot, ducks to reload or when hit. A breach guard with nobody seen for 12 s hunts
+  (walks to the nearest boarder, through doors) and opens a shut door between it and a boarder from 2.5 m. A walker that sees a boarder
+  within 30 m stops and fights (one on its way to a locker only within 8 m, and goes back for the gun once they are gone, twice at most).
+- Sight and shots: the bots' `BotSees` reads only the world, not constructs, so it saw through every wall aboard (300+ rounds into the
+  hull a run). A fighter sees a boarder only with no ship part on the line to where it aims (`SandboxRay`), and holds fire while one is on
+  its round's line. Its aim (`GuardAim`) is worked along the target's own up: `BotAim` aims along the planet's up, which on a rolled ship
+  (the Raiders' Zero Day lay on its back in the check) or in space put every round into the deck.
+- Twitch's rules stand: morale, the acts, surrender, scuttle (still only the engineer), capture. A hit on the ship's hull by its own crew
+  body is no longer a foe or a deed (`CrewWorld.OwnBody`): their stray rounds had marked their own crewmate a foe.
+- `CrewWorld.Errand` takes how far from the feet a walk may start (`fromAcross`, 1.2 m as before; fighters 2.5 m: a work hand stands
+  beside its machine, off the walked spots).
+- `--crew-check [SHIP] --crew-board [--crew-faction NAME] [--seconds S] [--mortal]` (`Crew/CrewBoardCheck.cs`): a host and a joined
+  client; the ship settles, is crewed, the host stands aboard as a foe; checks crew up, long guns, posts, shots, the client seeing a gun
+  change, then shoots the crew one at a time until it gives up by its rules.
+
+Verified (2026-11-18, the Zero Day): Raiders, Mercenaries, Militia: 3-4 crew up, 1-2 took long guns, posts held, a breach guard opened a
+bulkhead door on the boarder; with `--mortal` each crew killed the boarder (4-6 rounds). Losses: Raiders scuttled, Militia and Mercenaries
+surrendered, nobody fought on after. Traders surrender at once (their rules), so nobody stands up. `--crew-check` fight: 78 us a tick.
+
+Unverified: a boarding in flight or in orbit (the check's ship is landed); the Limpet's cut hole as the breach (the breach is where the
+first boarder stood); two boarders; a client's view of a crew body crouching.
+
+Seen, not fixed: a ship built over the ground drops about 2 m at up to 7 m/s as it settles, and riders on its decks (crew bodies and the
+host's player) sank 0.25 m into the deck or fell off the hull; work hands standing on the docked Shuttle stand off the Zero Day's graph
+and fight with their sidearms where they are.
+
 ## Next (for a successor)
 
 - CrewNav: lifts (ride a lift deck: `ConstructRide` carriers), patching a graph on a part's loss instead of building it again, Lock down

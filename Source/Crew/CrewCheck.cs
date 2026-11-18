@@ -26,6 +26,8 @@ public static class CrewCheck
             return CrewMineCheck.Run(args); // (miners off a Drill Rack, a host and a joined client: CrewMineCheck.cs)
         var at = Array.FindIndex(args, a => a.Equals("--crew-check", StringComparison.OrdinalIgnoreCase));
         var shipName = at >= 0 && at + 1 < args.Length && !args[at + 1].StartsWith("--") ? args[at + 1] : "Zero Day Frigate";
+        if (args.Any(a => a.Equals("--crew-board", StringComparison.OrdinalIgnoreCase)))
+            return CrewBoardCheck.Run(args, shipName); // (a boarded crew arms itself and fights: CrewBoardCheck.cs)
         var targetName = Arg("--target") ?? "Zero Day Frigate";
         var range = float.TryParse(Arg("--range"), System.Globalization.CultureInfo.InvariantCulture, out var r) ? r : 1200;
         var seconds = int.TryParse(Arg("--seconds"), out var s) ? s : 120;

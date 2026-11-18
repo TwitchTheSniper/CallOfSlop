@@ -149,6 +149,8 @@ public sealed class CrewShip
     public BoardAct Act;
     public bool Own, HoldFire; // phase 6: a player's own hired crew (the Player Crew kind: never the helm unless a player orders it, never in the way); told to hold fire
     public bool Boarded, Prize, CalledHelp; // Prize: taken by a player, its crew are prisoners
+    public Vector3 BreachAt; // where the first boarder was seen aboard (the body's frame), while BreachSet: the breach guards' post (GameCrewDefend.cs)
+    public bool BreachSet;
     public short ScPart = -1; // the scuttle point (-1: none); ScStage 1 on the way, 2 arming, 3 counting down; ScAt the stage's end
     public byte ScStage, ScDisarmBy = 255;
     public int ScMember = -1;
@@ -1062,6 +1064,17 @@ public sealed class CrewWorld
             Embody(c, s, host);
     }
 
+    /// <summary>Whether player <paramref name="player"/> is one of <paramref name="s"/>'s own crew bodies.</summary>
+    private bool OwnBody(CrewShip s, byte player)
+    {
+        if (!IsBody[player])
+            return false;
+        for (var i = 0; i < s.MemberCount; i++)
+            if (Player[s.Members[i]] == player + 1)
+                return true;
+        return false;
+    }
+
     /// <summary>
     /// The captain (bot-brain.md section 3, phase 3): once a second near a person, every five seconds further, it reads who has hit the body (a
     /// deed against its faction), its hull and losses into morale, and picks its goal by its faction's rules: with something to fight it engages,
@@ -1077,12 +1090,14 @@ public sealed class CrewWorld
             var byBody = c.LastHitBody;
             c.LastHitBy = 255;
             c.LastHitBody = 0;
+            if (by != 255 && OwnBody(s, by))
+                by = 255; // (its own crew's shots in a fight aboard: GameCrewDefend.cs; no foe, no deed)
             if (by != 255 && !s.Foe(by))
             {
                 s.MarkFoe(by);
                 Events.Add($"construct {c.Id}: player {by} attacked its crew{(def != null ? $" ({CrewPowers.Of(s.Faction)!.Name})" : "")}");
             }
-            if (def != null)
+            if (def != null && (by != 255 || byBody != 0))
                 host?.Deed(RelEvent.HitBody, s, by, byBody);
         }
         var hullWas = s.Hull;
@@ -1274,14 +1289,14 @@ public sealed class CrewWorld
     }
 
     /// <summary>
-    /// A bodied member's errand inside its body (an engineer to a part, a loader between boxes, a repeller to a boarder): walks it along CrewNav's
+    /// A bodied member's errand inside its body (an engineer to a part, a loader between boxes, a fighter to a locker or a post): walks it along CrewNav's
     /// path from where it stands to the spot nearest <paramref name="rest"/>, keeping its station. False: no graph, no spot, or no way there.
     /// </summary>
-    public bool Errand(Construct c, CrewShip s, int m, Vector3 rest, ICrewHost host, float across = CrewNav.Reach + 1)
+    public bool Errand(Construct c, CrewShip s, int m, Vector3 rest, ICrewHost host, float across = CrewNav.Reach + 1, float fromAcross = 1.2f)
     {
         if (Player[m] == 0 || s.Nav is not { } g || s.NavBuild != g.Build || !host.Feet((byte)(Player[m] - 1), out var feet))
             return false;
-        var from = CrewNav.NearestNode(g, c.ToLocal(feet), 1.2f);
+        var from = CrewNav.NearestNode(g, c.ToLocal(feet), fromAcross); // (a fighter just up from a standing place looks further: GameCrewDefend.cs)
         var to = CrewNav.NearestNode(g, rest, across, 2.5f);
         if (from < 0 || to < 0 || g.Comp[from] != g.Comp[to])
             return false;
