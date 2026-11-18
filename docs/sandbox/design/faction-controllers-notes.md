@@ -163,3 +163,40 @@ captains, combat or civilian.
   Loader): fixed.
 - Protocol 345 (main 344 at the merge): `Msg.CrewSeats` ends with u16 captain's name, u16 admiral's name aboard, u16 group
   number; `Msg.Intel` at the end of `Msg`; `CrewOrder` gains Interrogate, Ransom, Interrogator.
+
+### Tried by hand (2026-11-17, the 2-core box shared with two other builders)
+
+- `--crew-fleet strike`: three Militia Zero Days, two frigates (one shot about to 35%): all three on the shot-about one 12 of 12 looks, it
+  fell to 30%. `screen`: a Traders convoy of three Zero Days, a threat to its north: both escorts screening between 8 of 8 looks, the
+  flagship kept on its way. `succession`: Militia, Captain Una in command 9.2 s after the admiral was shot (delay 8 s); Raiders, the
+  group broke 0.7 s after and all three ran. `convoy` (four Bandit ground vehicles as Militia, the leader the flagship): sent 300 m,
+  followers 14 m off their places (as phase 2's check measures it), the leader there; a Zero Day 220 m off, the admiral pulled back.
+  `mining` (three Traders Zero Days): mine, deliver, then back to mine. `interrogate`: the admiral gave up its group's two captains and
+  the other admiral (three positions), a captain its ship and crew; resistance 0.76: 71 s with an interrogator of skill 200, 274 s alone.
+- A window run (host and a joined client under xvfb, `crewconvoy Militia 3`, `crewfleet`): the spawner's convoy became group 1 under
+  Admiral Vera on the leader, the other two joined with Form orders; the client's look lines read "Admiral Vera's flagship, Militia
+  group 1, Captain Zed, crew of 5".
+- Scale (`--crew-fleet scale`): 256 groups of 4 (1,024 bodies, 64 awake): the admirals 2.4 us a tick, worst 35 us, 0 bytes. 1,000
+  Bandit Helicopter 1 (23 parts) all awake and driven in 84 groups (driver cap raised to 1,000): admirals 34 us, crews 0.81 ms, the
+  world's own step 12.6 ms a tick (worst 55 ms): 13.4 ms, over the 8 ms budget. 100 Zero Day Frigates (276 parts) all awake: the world's
+  step 78.5 ms a tick (about 0.8 ms a frigate), so about ten awake frigates fit in 8 ms today. The brain is not the limit; the physics
+  of awake bodies is (and the world step allocated 166 KB in 300 ticks with 1,024 bodies: not the crews' or the admirals').
+
+### Not verified
+
+- Questioning, ransom and intel marks in a running game (no ship taken in a window run: only the core in the check); the Crew window's
+  new buttons and the marks drawn (no picture); the Fleet section through a real save and load; a cut-off net in play (no part shot away);
+  Board, Escort, Load and Unload orders in a run; a group's call for help.
+- Formation flying is loose: followers 20 to 160 m off their slots in the air, and in the mining check two frigates settled onto the ground
+  after 130 to 170 s of flying (cause not found: the height hold under orders, or fuel). Helicopters fly poorly under the crews' flying
+  (Karl's `ShipAi`, also in the plain fight: their noses wander), so the air checks use Zero Days.
+- The admirals' worst tick in the small checks was 2.4 to 5 ms once (taken for JIT or a GC on the shared box; at scale the worst was 35 us).
+
+### Left (later phases, or follow-ups)
+
+- **The 1,000-body target** needs the LOD the design asks for: a coarse physics and think rate for awake bodies far from players, batched
+  drawing and interest management. Not built: the measurements above say where to start (the world step, then `CrewWorld.MaxDrivers`, 64).
+- The relations scale widened (blood enemies to wants to merge) and the new pacts (trade, tribute, vassalage): not done here (they change
+  phase 1's bands and the Faction window; they fit the controller phase better).
+- Officer prisoners kept through a save; an order's body kept through a save; admirals coordinating across groups (only intel names them);
+  reports read by a controller (the ring fills and is counted; phase 3 reads it); players as admirals (phase 6).
