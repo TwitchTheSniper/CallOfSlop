@@ -135,7 +135,7 @@ public sealed partial class Game
             return FleetNew(p, body, arg == 1);
         if (fleet.Of(slot) is not { } g || !FleetMay(p, g))
             return "no fleet group of yours";
-        FleetCommander(g);
+        FleetCommander(g, p); // (the one giving the order must reach the net: the owner, or their faction's leader)
         string? why = null;
         switch (op)
         {
@@ -351,14 +351,14 @@ public sealed partial class Game
     }
 
     /// <summary>Where <paramref name="g"/>'s commander is and how far they reach the net (aboard a body with a radio part, else a hand set).</summary>
-    private void FleetCommander(CrewGroup g)
+    private void FleetCommander(CrewGroup g, Player? giving = null)
     {
         var owner = (Player?)null;
         foreach (var p in Players.Values)
             if (p.Bot == null && p.CrewSlot < 0 && p.Name == g.OwnerName)
                 owner = p;
         g.Owner = owner?.Id ?? 255;
-        var by = owner ?? FleetCommanderOf(g);
+        var by = giving ?? owner ?? FleetCommanderOf(g);
         g.CommanderHere = by is { Alive: true };
         if (by == null)
             return;
@@ -583,6 +583,9 @@ public sealed partial class Game
     /// Host, a test state: <paramref name="n"/> of blueprint <paramref name="name"/> set down round <paramref name="me"/>, each with a full hired crew of
     /// theirs (as hiring a crew would leave it), and (with <paramref name="lead"/>) one <paramref name="lead"/> before them, crewed too. Null: asked.
     /// </summary>
+    /// <summary>The test state's lead ship (the one the others escort), once set down.</summary>
+    public ushort FleetTestLead;
+
     public string? FleetTestShips(Player me, string name, int n, string? lead)
     {
         var f = CrewPowers.ForKindName("Player Crew");
@@ -604,17 +607,19 @@ public sealed partial class Game
                     Crew.Fac[s.Members[k]] = f;
                 s.SeatsDirty = s.RosterDirty = true;
             }
+            if (what == lead)
+                FleetTestLead = c.Id;
             Console.WriteLine($"[fleet] test ship {what}: construct {c.Id}, {me.Name}'s own crew of {Crew.ShipOf(c.Id)?.MemberCount ?? 0}");
         }
         if (lead != null)
         {
             if (ConstructBuild.FindBlueprint(lead) is not { } lb)
                 return $"no blueprint \"{lead}\"";
-            if (VehicleSpawn.RequestBlueprint(lb, SandboxGroundAt(me.Position + fwd * 120), me.Yaw, me.Id, done: Crewed) is { } why)
+            if (VehicleSpawn.RequestBlueprint(lb, SandboxGroundAt(me.Position + fwd * 120), me.Yaw, done: Crewed) is { } why)
                 return why;
         }
         for (var i = 0; i < n; i++)
-            if (VehicleSpawn.RequestBlueprint(bp, SandboxGroundAt(me.Position + fwd * 120 + right * (i - (n - 1) * 0.5f) * 120 - fwd * 150), me.Yaw, me.Id, done: Crewed) is { } why)
+            if (VehicleSpawn.RequestBlueprint(bp, SandboxGroundAt(me.Position + fwd * 120 + right * (i - (n - 1) * 0.5f) * 120 - fwd * 150), me.Yaw, done: Crewed) is { } why)
                 return why;
         return null;
     }

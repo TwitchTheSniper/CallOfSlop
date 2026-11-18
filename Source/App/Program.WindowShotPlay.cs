@@ -10,7 +10,8 @@ namespace CallOfSlop;
 /// </summary>
 public static partial class Program
 {
-    private static ushort _wsAdmiralLead; // (the window tool's crewadmiral: the ship the others escort)
+    private static ushort _wsAdmiralLead;
+    private static int _wsAdmiralGroup; // (the window tool's crewadmiral: the ship the others escort)
 
     private static int[]? _wsClipParts;
     private static int[]? _wsClipMade;
@@ -165,7 +166,7 @@ public static partial class Program
             {
                 var aw = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
                 var av = aw.Length > 0 ? aw[0].ToLowerInvariant() : "show";
-                var grp = g.FleetGroups.Count > 0 ? g.FleetGroups[0] : null;
+                var grp = g.FleetGroups.Count > 0 ? g.FleetGroups[Math.Min(_wsAdmiralGroup, g.FleetGroups.Count - 1)] : null;
                 var fwd = GravityFrames.FlatForward(me.Position, me.Yaw);
                 var right = Vector3.Cross(fwd, GravityFrames.UpAt(me.Position));
                 Vector3 Place(int k) => k + 1 < aw.Length && float.TryParse(aw[k], System.Globalization.CultureInfo.InvariantCulture, out var dx) && float.TryParse(aw[k + 1], System.Globalization.CultureInfo.InvariantCulture, out var dz)
@@ -182,6 +183,7 @@ public static partial class Program
                     "lead" => _wsAdmiralLead,
                     "ride" => me.Sim.RideBody,
                     "npc" => g.CrewInfo.Keys.FirstOrDefault(b => !g.CrewRosters.ContainsKey(b)),
+                    "crewed" => g.CrewRosters.Values.FirstOrDefault(v => v.Own && g.FleetGroupOf(v.Body) == null)?.Body ?? 0, // (a crewed ship of anyone's in none of this peer's groups: a client's way to the host's lead)
                     _ => ushort.TryParse(t, out var id) ? id : (ushort)0,
                 };
                 switch (av)
@@ -192,11 +194,15 @@ public static partial class Program
                         Console.WriteLine($"[windowshot] crewadmiral: {g.FleetTestShips(me, rest[0], int.Parse(aw[1]), rest.Length > 1 ? rest[1] : null) ?? "asked"}");
                         break;
                     }
-                    case "lead" when aw.Length > 1: // "lead ID": the ship the others escort (not put in a group by "new all")
-                        _wsAdmiralLead = ushort.Parse(aw[1]);
+                    case "lead": // "lead [ID]": the ship the others escort (host without an id: the test state's lead); not taken by "new" or "add"
+                        _wsAdmiralLead = aw.Length > 1 ? ushort.Parse(aw[1]) : g.FleetTestLead;
+                        Console.WriteLine($"[windowshot] crewadmiral lead: {_wsAdmiralLead}");
                         break;
                     case "new":
-                        g.SandboxFleet(FleetOp.New, body: Free(), arg: (byte)(aw.Length > 1 && aw[1] == "all" ? 1 : 0));
+                        g.SandboxFleet(FleetOp.New, body: aw.Length > 1 && aw[1] == "lead" ? _wsAdmiralLead : Free(), arg: (byte)(aw.Length > 1 && aw[1] == "all" ? 1 : 0));
+                        break;
+                    case "use" when aw.Length > 1: // "use N": the verbs after this work on this peer's N-th group (from 0)
+                        _wsAdmiralGroup = int.Parse(aw[1]);
                         break;
                     case "add" when grp != null:
                         g.SandboxFleet(FleetOp.Add, grp.Slot, aw.Length > 1 ? Target(aw[1]) : Free());

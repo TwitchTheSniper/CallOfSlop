@@ -41,6 +41,8 @@ public sealed partial class Ui
         var inGroup = g.FleetGroupOf(_cmdSel);
         if (inGroup != null)
             _cmdAdmSlot = inGroup.Slot; // (picking a group's ship picks its group)
+        if (CmdAdmPicked(g) == null && g.FleetGroups.Count > 0)
+            _cmdAdmSlot = g.FleetGroups[0].Slot; // (none picked: the first)
         var picked = CmdAdmPicked(g);
         if (g.FleetGroups.Count == 0 && !mine)
             return;
