@@ -16,7 +16,7 @@ namespace CallOfSlop;
 /// </summary>
 public static unsafe partial class Program
 {
-    private static bool WsNavKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "command" or "cmdpick" or "order" or "nav" or "hoist" or "speed" or "travel" or "cmdview" or "rclick" or "rclickup" or "spacewalk" or "missile" or "missiles" or "letgo" or "orbit" or "boardwalk" or "cmdboard" or "mouse";
+    private static bool WsNavKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "command" or "cmdpick" or "order" or "nav" or "hoist" or "speed" or "travel" or "cmdview" or "rclick" or "rclickup" or "spacewalk" or "missile" or "missiles" or "letgo" or "orbit" or "boardwalk" or "cmdboard" or "mouse" or "ram" or "gapto";
 
     /// <summary>"order dock N": the picked craft docks with the Nth craft on the map (as cmdpick counts them).</summary>
     private static string? WsDockOrder(Game g, int n)
@@ -120,6 +120,59 @@ public static unsafe partial class Program
                 WsSay($"[nav] boardwalk: {back:0.0} m behind the cutter, W for {ticks:0} ticks");
                 WsWaitTicks((int)ticks + 10);
                 _wsQueue.EnqueueFront("me");
+                return true;
+            }
+            case "ram" when g.IsServer: // "ram N [SPEED] [GAP]" (host): the picked ship in space set GAP m (default 5) off the Nth craft's bounds, closing on it at SPEED m/s (default 5): do they meet? (GameSpaceCollide.cs)
+            {
+                var n = words.Length > 0 && int.TryParse(words[0], out var rk) ? rk : 1;
+                var speed = words.Length > 1 && float.TryParse(words[1], inv, out var rs) ? rs : 5f;
+                var gap = words.Length > 2 && float.TryParse(words[2], inv, out var rg) ? rg : 5f;
+                Construct? target = null;
+                var seen = 0;
+                foreach (var c in g.Constructs.Bodies)
+                    if (Ui.CmdIsCraft(c) && ++seen == Math.Max(1, n))
+                        target = c;
+                if (g.Constructs.Get(words.Length > 3 && ushort.TryParse(words[3], out var rid) ? rid : Ui.CommandPicked) is not { CarriedBy: 0 } ship || target == null || target == ship)
+                {
+                    WsFail("ram N [SPEED] [GAP] [ID]: pick a craft first (cmdpick, or its construct ID), loose or a ship in space, and another craft N");
+                    return true;
+                }
+                var from = ship.WorldCom - target.WorldCom;
+                var way = from.LengthSquared() > 1e-6f ? Vector3.Normalize(from) : Vector3.UnitX;
+                var at = target.WorldCom + way * (ship.Radius + target.Radius + gap);
+                var vel = target.Vel - way * speed;
+                if (ship.SpaceShip == 0)
+                {
+                    ship.Pos += at - ship.WorldCom; // (a loose body: past the edge and out of every frame it leaves the bubble as a ship, GameSpaceLaunch.cs)
+                    ship.PrevPos = ship.Pos;
+                    ship.Vel = vel;
+                    ship.AngVel = System.Numerics.Vector3.Zero;
+                    ship.KeepSpeed();
+                    ship.Wake();
+                }
+                WsSay(string.Create(inv, $"[nav] ram: construct {ship.Id} {(ship.SpaceShip == 0 ? "moved" : g.SpaceShove(ship, at - ship.WorldCom, vel - ship.Vel))} at {speed:0.0} m/s into construct {target.Id}, {ship.Radius + target.Radius + gap:0} m between centres"));
+                _wsWait = 3;
+                return true;
+            }
+            case "gapto": // "gapto N": the picked craft's centre against the Nth craft's, and how fast they close (after a "ram")
+            {
+                var n = words.Length > 0 && int.TryParse(words[0], out var gk) ? gk : 1;
+                Construct? target = null;
+                var seen = 0;
+                foreach (var c in g.Constructs.Bodies)
+                    if (Ui.CmdIsCraft(c) && ++seen == Math.Max(1, n))
+                        target = c;
+                if (g.Constructs.Get(words.Length > 1 && ushort.TryParse(words[1], out var gid) ? gid : Ui.CommandPicked) is not { } ship || target == null || target == ship)
+                {
+                    WsFail("gapto N: pick a craft first (cmdpick), and another craft N");
+                    return true;
+                }
+                var d = ship.WorldCom - target.WorldCom;
+                var close = d.LengthSquared() > 1e-6f ? -Vector3.Dot(ship.Vel - target.Vel, Vector3.Normalize(d)) : 0;
+                var touch = ConstructPhysics.ShipContact(g.Constructs, ship, target, World.TickDt, out var tn, out var tgap, out _) > 0
+                    ? string.Create(inv, $"; pieces {tgap:0.000} m apart along ({tn.X:0.00}, {tn.Y:0.00}, {tn.Z:0.00}), closing {-Vector3.Dot(ship.Vel - target.Vel, tn):0.00} m/s there") : "; pieces apart";
+                WsSay(string.Create(inv, $"[nav] gapto: construct {ship.Id} to {target.Id}: {d.Length():0.00} m between centres (radii {ship.Radius:0.0} + {target.Radius:0.0}), closing {close:0.00} m/s, {(ship.SpaceShip != 0 ? "space" : "sky")}/{(target.SpaceShip != 0 ? "space" : "sky")}{touch}"));
+                _wsWait = 1;
                 return true;
             }
             case "cmdview": // "cmdview YAW PITCH" (degrees): the view's turn and tilt
