@@ -2,7 +2,7 @@ namespace CallOfSlop;
 
 /// <summary>
 /// Machine sounds (Game/GameMachineSounds.cs plays them; Karl, 2026-11-17): the Shell Control Chair's helmet and neural
-/// link, a robot shell starting up and powering down, a reactor's hum at light and heavy load (exact loops), and a Robot
+/// link, a robot shell starting up and powering down, a reactor's steady hum at light and heavy load (exact loops), and a Robot
 /// Shell Dock's clamps closing and letting go. All made here from tones and noise, like every other sound in the game:
 /// no samples, no licences. Deterministic for its arguments.
 /// </summary>
@@ -154,12 +154,14 @@ public static partial class Synth
     }
 
     /// <summary>The loops' length (s): every tone in them is a whole number of cycles in it, so the seam can't click.</summary>
-    private const float HumSeconds = 2f;
+    private const float HumSeconds = 4f;
 
     /// <summary>
-    /// A reactor's hum, an exact loop. Light: a smooth 55 Hz hum with its octaves, a faint glassy shimmer of two close high
-    /// tones beating slowly, and a breath of coolant noise. Heavy: an octave of sub under it, the harmonics driven harder,
-    /// a pulse twice a second as the core works, a growl in the mids and more rush in the coolant.
+    /// A reactor's hum, an exact loop and a steady tone (Karl, 2026-11-18: no pulse, no beat, no climb). Both loops sit on
+    /// the same 55 Hz, so fading between them by load changes how full the hum is, never its pitch. Light: the 55 Hz hum
+    /// with its octaves, a faint steady high whine and a breath of coolant. Heavy: the same hum with a sub octave under it,
+    /// its harmonics driven harder and more coolant rush. Nothing in either is modulated, and the coolant's noise runs four
+    /// seconds before it repeats, too long to hear as a pattern.
     /// </summary>
     private static short[] ReactorHum(Random rng, bool heavy)
     {
@@ -168,8 +170,8 @@ public static partial class Synth
         // The coolant: noise through a band, twice round so the filters' state matches at the seam.
         var noise = new float[len];
         float lp = 0, hp = 0;
-        var aLo = heavy ? 0.03f : 0.015f;
-        var aHi = heavy ? 0.18f : 0.09f;
+        var aLo = heavy ? 0.02f : 0.012f;
+        var aHi = heavy ? 0.12f : 0.07f;
         for (var pass = 0; pass < 2; pass++)
             for (var i = 0; i < len; i++)
             {
@@ -178,32 +180,24 @@ public static partial class Synth
                 lp += aHi * (noise[i] - lp);
                 hp += aLo * (lp - hp);
                 if (pass == 1)
-                    b.S[i] = (lp - hp) * (heavy ? 0.5f : 0.22f);
+                    b.S[i] = (lp - hp) * (heavy ? 0.26f : 0.12f);
             }
         for (var i = 0; i < len; i++)
         {
-            var t = i / (float)Sr; // (0 .. 2 s; every frequency below is a multiple of 0.5 Hz)
+            var t = i / (float)Sr; // (0 .. 4 s; every frequency below is a multiple of 0.25 Hz)
+            var core = 0.55f * MathF.Sin(MathF.Tau * 55f * t)
+                + 0.3f * MathF.Sin(MathF.Tau * 110f * t + 0.4f)
+                + 0.12f * MathF.Sin(MathF.Tau * 165f * t + 1.1f)
+                + 0.07f * MathF.Sin(MathF.Tau * 220f * t + 2.0f);
             float s;
             if (!heavy)
-            {
-                s = 0.55f * MathF.Sin(MathF.Tau * 55f * t)
-                    + 0.3f * MathF.Sin(MathF.Tau * 110f * t + 0.4f)
-                    + 0.12f * MathF.Sin(MathF.Tau * 165f * t + 1.1f)
-                    + 0.07f * MathF.Sin(MathF.Tau * 220f * t + 2.0f);
-                var beat = 0.6f + 0.4f * MathF.Sin(MathF.Tau * 0.5f * t); // (two close tones: a slow shimmer)
-                s += 0.035f * beat * (MathF.Sin(MathF.Tau * 1760f * t) + MathF.Sin(MathF.Tau * 1763f * t));
-                s += 0.02f * MathF.Sin(MathF.Tau * 2640f * t) * (0.5f + 0.5f * MathF.Sin(MathF.Tau * 1.5f * t));
-            }
+                s = core + 0.025f * MathF.Sin(MathF.Tau * 1760f * t);
             else
             {
-                var pulse = 0.72f + 0.28f * MathF.Pow(0.5f + 0.5f * MathF.Sin(MathF.Tau * 2f * t), 3f);
-                var core = MathF.Sin(MathF.Tau * 41.5f * t) * 0.6f
-                    + MathF.Sin(MathF.Tau * 83f * t + 0.3f) * 0.5f
-                    + MathF.Sin(MathF.Tau * 124.5f * t + 0.9f) * 0.3f
-                    + MathF.Sin(MathF.Tau * 166f * t + 1.7f) * 0.2f;
-                s = MathF.Tanh(core * 1.6f) * 0.7f * pulse; // (driven: rougher harmonics)
-                s += 0.12f * MathF.Sin(MathF.Tau * 249f * t) * MathF.Sin(MathF.Tau * 3.5f * t); // (a growl)
-                s += 0.05f * (MathF.Sin(MathF.Tau * 1245f * t) + MathF.Sin(MathF.Tau * 1249f * t)) * pulse;
+                s = MathF.Tanh(core * 1.8f) * 0.75f; // (driven: fuller harmonics)
+                s += 0.35f * MathF.Sin(MathF.Tau * 27.5f * t + 0.2f); // (the sub)
+                s += 0.06f * MathF.Sin(MathF.Tau * 275f * t + 0.7f);
+                s += 0.03f * MathF.Sin(MathF.Tau * 1760f * t);
             }
             b.S[i] += s;
         }

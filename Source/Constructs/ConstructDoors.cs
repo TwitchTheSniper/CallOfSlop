@@ -29,6 +29,12 @@ public sealed partial class ConstructWorld
     /// <summary>Server: event doors that started moving (Flags bit 0: towards open) or settled (bit 1), for the clients (CBodyKind.Door).</summary>
     public readonly List<(ushort Body, ushort Part, byte Flags)> DoorEvents = new(64);
 
+    /// <summary>
+    /// Every peer: event doors that started moving or settled here (the same flags as <see cref="DoorEvents"/>), for their
+    /// sounds (Game.DoorSounds empties it each frame; GameDoorSounds.cs).
+    /// </summary>
+    public readonly List<(ushort Body, ushort Part, byte Flags)> DoorHeard = new(4097); // (its cap, so a burst never grows it)
+
     internal int DockDoorTicks; // (ConstructDoors.StepDocks's count to its next look: one a world)
 }
 
@@ -179,6 +185,7 @@ public static class ConstructDoors
         Start(c, k, open, f);
         p.Count = (ushort)Math.Max(1, (int)MathF.Round((open ? 1 - f : f) * p.D.Door!.Ticks));
         world.DoorEvents.Add((c.Id, dr.Part, (byte)(open ? 1 : 0))); // (one turned back is turned back on the clients too)
+        world.DoorHeard.Add((c.Id, dr.Part, (byte)(open ? 1 : 0)));
     }
 
     private static void Start(Construct c, int k, bool open, float from)
@@ -200,6 +207,8 @@ public static class ConstructDoors
     {
         if (world.DoorEvents.Count > 4096)
             world.DoorEvents.Clear(); // (a world nobody flushes: a generator's, a test's)
+        if (world.DoorHeard.Count > 4096)
+            world.DoorHeard.Clear(); // (a world nobody hears)
         if (++world.DockDoorTicks >= DockEvery)
         {
             world.DockDoorTicks = 0;
@@ -401,6 +410,7 @@ public static class ConstructDoors
             }
             Settle(c, k, open);
             world.DoorEvents.Add((c.Id, c.Doors[k].Part, (byte)((open ? 1 : 0) | 2)));
+            world.DoorHeard.Add((c.Id, c.Doors[k].Part, (byte)((open ? 1 : 0) | 2)));
         }
     }
 
@@ -531,6 +541,10 @@ public static class ConstructDoors
                 Settle(c, k, open);
             else if (TargetOpen(c, part) != open)
                 Start(c, k, open, OpenFraction(c, k, byTicks: false));
+            else
+                continue;
+            if (world.DoorHeard.Count < 4096)
+                world.DoorHeard.Add((id, part, flags));
         }
     }
 }
