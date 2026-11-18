@@ -315,6 +315,8 @@ The drop aid: a pilot or a gunner with a rack in reach gets the orange cross (`G
 
 **A heavy gun's shell.** In a heavy gun's `gun` block `"shell"` (flak, rocket, missile, flare, or an artillery kind) makes its rounds shells, with `speed`, `blast`, `blastDamage` and `crater`; `thrust` (m/s2) and `burn` (s) push it along its flight, `turn` (degrees a second) turns a missile, `prox` (m) is a proximity fuse. Triggers, feeds, reels, ammo and recoil are a gun's as ever.
 
+**Flak fuse and own hull** (Karl, 2026-11-18). A heavy gun's `"flak"` (m, up to 10) is how close its rounds pass a missile or bomb in the air to burst on it (`ConstructWorld.RayShell`'s capsule widened by it): the Zero Day PDC's is 3 m, so its 14-damage rounds can bring down a 366-health torpedo in the second it is in reach (a direct hit alone landed one round in thirty). A gun on a joint (a turret) holds fire while the first thing along its bore within 150 m is its own construct or a craft it carries (`ConstructWeapons.OwnHullInWay`, one ray on a shot that would go), so a gun station inside the hull can't shoot through it; the round is kept.
+
 | Part | Shell | What it does |
 | --- | --- | --- |
 | AA Gun | flak, 340 m/s, 12 m blast | Bursts within 4 m of a flying body, or on its sight's time. An air burst digs nothing. |

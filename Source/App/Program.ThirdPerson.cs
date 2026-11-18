@@ -103,12 +103,40 @@ public static unsafe partial class Program
         if (!g.ThirdPersonSeatPoint(out var point, out _, out _, out _, out _, out _))
             return;
         var camPos = point - f * (ThirdPerson.SeatDist * ThirdPerson.PullRatio); // (the camera as the orbit has moved it since the last frame)
-        var target = ThirdPerson.AimTarget(World.Query, camPos, f, eye, World.Range);
+        var target = GunnerAimTarget(g, me, c, h.SeatPart, camPos, f, eye);
         if (DeathCam.LookAt(eye, target) is { } look)
         {
             g.LookYaw = look.Yaw;
             g.LookPitch = Math.Clamp(look.Pitch, -1.5f, 1.5f);
         }
+    }
+
+    /// <summary>
+    /// What a gunner seat's third-person crosshair is on: the first thing the camera's ray meets (the map, another construct, a missile in the
+    /// air), never the gunner's own ship or what it carries, out to the reach of the seat's guns. The seat's look is then the way from the eye
+    /// to that point, so the server's look from the eye (ConstructWeapons.GunnerPoint) meets the same thing and the guns converge where the
+    /// crosshair is. Only the map was cast before, out to 200 m: in space a ship under the crosshair wasn't seen, and the guns converged on a
+    /// point off it by the camera's offset from the eye (tens of metres on a frigate).
+    /// </summary>
+    private static Vector3 GunnerAimTarget(Game g, Player me, Construct c, int seat, Vector3 camPos, Vector3 f, Vector3 eye)
+    {
+        var reach = 0f;
+        for (var k = 0; k < c.GunCount; k++)
+            if (c.Guns[k].Seat == seat && c.Guns[k].Def != null)
+                reach = MathF.Max(reach, c.Guns[k].MaxRange);
+        if (reach <= 0)
+            reach = World.Range;
+        var o = ThirdPerson.AimOrigin(camPos, f, eye);
+        // Cast where the bodies are at the tick (the host draws between ticks: at orbital speed a tick is metres), placed back on the drawn ray.
+        var to = o;
+        var tf = f;
+        g.AimToTick(me, ref to, ref tf);
+        var dist = World.Query.Raycast(to, tf, reach, QueryFilter.Shots);
+        if (g.Constructs.Raycast(to, tf, dist, out var hit, c, ignoreCargo: true) && hit.Distance < dist)
+            dist = hit.Distance;
+        if (g.Constructs.ShellCount > 0 && g.Constructs.RayShell(to, tf, dist, out var sd, out _) && sd < dist)
+            dist = sd;
+        return o + f * dist;
     }
 
     /// <summary>

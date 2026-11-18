@@ -98,6 +98,7 @@ inside the hull, in one room with engineering.
   whose blueprint fills it with ammo comes full whenever the game builds it, in Survival too (Karl, 2026-11-17: an
   enemy frigate must be able to fire); one a player's Building Station fits comes empty and is filled by hand
   (`ConstructBuild.SetConfig`, `ConstructWorld.PlayerBuild`).
+- Point defence (Karl, 2026-11-18): the PDCs' rounds have a 3 m flak fuse (weapons.md "Flak fuse and own hull"), and no turret fires through the Zero Day's own hull or its docked craft. The crew's gunners turn on any missile or torpedo steering for the ship inside their guns' reach before anything else (`ShipAi.PointDefence`); `--crew-check --crew-defence` puts two crewed frigates against each other (about half the torpedoes were shot down, 2026-11-18). A player gunner's third-person crosshair now finds ships and missiles, not only the ground, so the guns converge where it is (`Program.GunnerAimTarget`), and the look is carried from the gunner's place to the ship's centre on a planet's curved frames (`GameSandbox`, the seat's `AimYaw`).
 - Four Zero Day Countermeasure Launchers (flare guns) on the spine, all fired by the flares button in ops.
 - Radar and lock (Karl, 2026-11-17): a Long Range Sensor on the shuttle's cradle deck aft of the pod, by the mast, wired into a
   Fire Director in the mess's starboard aft corner below it (a wire reaches 8 m, so the director sits under the sensor, not

@@ -41,6 +41,8 @@ public static class CrewCheck
             return Work(shipBp, _faction != 0 ? _faction : CrewPowers.Find("Traders")) ? 0 : 1;
         if (args.Any(a => a.Equals("--crew-walk", StringComparison.OrdinalIgnoreCase)))
             return Walks(shipBp, float.TryParse(Arg("--speed"), System.Globalization.CultureInfo.InvariantCulture, out var sp) ? sp : 0, float.TryParse(Arg("--turn"), System.Globalization.CultureInfo.InvariantCulture, out var tn) ? tn * MathF.PI / 180f : 0) ? 0 : 1;
+        if (args.Any(a => a.Equals("--crew-defence", StringComparison.OrdinalIgnoreCase)))
+            return Defence(shipBp, targetBp, shipName, targetName, range, Arg("--seconds") != null ? seconds : 60) ? 0 : 1;
         if (Arg("--crew-convoy") is { } convoy)
             return Convoy(convoy.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries), seconds > 0 && Arg("--seconds") != null ? seconds : 60) ? 0 : 1;
         _faction = Arg("--crew-faction") is { } fn ? CrewPowers.Find(fn) : (byte)0;
@@ -56,6 +58,53 @@ public static class CrewCheck
     }
 
     private static byte _faction;
+
+    /// <summary>
+    /// <c>--crew-check [SHIP] --crew-defence [--target NAME] [--range M] [--seconds S]</c>: two crewed ships after each other, each launching its torpedoes
+    /// and its point defence shooting at what comes for it (ShipAi.PointDefence). Prints each one's launches, rounds fired at missiles and the
+    /// shells shot down; passes when some point defence fired and something was shot down.
+    /// </summary>
+    private static bool Defence(ConstructBuild.Blueprint shipBp, ConstructBuild.Blueprint targetBp, string shipName, string targetName, float range, int seconds)
+    {
+        var place = VehicleDriveCheck.Place(1);
+        var w = new ConstructWorld();
+        var q = new SelfTest.DriveWorld();
+        var a = Build(w, shipBp, Vector3.Zero, 0, place);
+        var b = Build(w, targetBp, new Vector3(0, 0, -range), MathF.PI, place);
+        var crew = new CrewWorld();
+        var ca = crew.Crew(a, ShipAiMode.Everyone, faction: _faction)!;
+        var cb = crew.Crew(b, ShipAiMode.Everyone, faction: _faction)!;
+        crew.FixedFor = (Construct c, CrewShip s, out ShipAiTarget t) =>
+        {
+            var o = c == a ? b : a;
+            t = new ShipAiTarget { At = o.WorldCom, Vel = o.Vel, Body = o.Id, Player = 255 };
+            return o.PartCount > 0;
+        };
+        Console.WriteLine($"crew defence: {shipName} against {targetName} at {range:0} m, {seconds} s");
+        Flush(crew);
+        var people = new Vector3[2];
+        var hpA = Health(a);
+        var hpB = Health(b);
+        for (var t = 0; t < seconds * World.TickRate; t++)
+        {
+            using (place.In())
+            {
+                people[0] = a.WorldCom;
+                people[1] = b.WorldCom;
+                crew.Step(w, q, null, people, crewOn: false);
+                w.Step(q, World.TickDt);
+            }
+            Flush(crew, quiet: true);
+            if (t % (5 * World.TickRate) == 5 * World.TickRate - 1)
+                Console.WriteLine($"  {(t + 1) / World.TickRate,3} s: range {Vector3.Distance(a.WorldCom, b.WorldCom),5:0} m; launches {ca.Ai?.Launches ?? 0}/{cb.Ai?.Launches ?? 0}, " +
+                                  $"point defence firing ticks {ca.Ai?.PointDefenceShots ?? 0}/{cb.Ai?.PointDefenceShots ?? 0}, shells in the air {w.ShellCount}, shot down {w.ShellsShotDown}, " +
+                                  $"health {Health(a) / hpA * 100:0}%/{Health(b) / hpB * 100:0}%");
+        }
+        var pd = (ca.Ai?.PointDefenceShots ?? 0) + (cb.Ai?.PointDefenceShots ?? 0);
+        var ok = pd > 0 && w.ShellsShotDown > 0;
+        Console.WriteLine($"crew defence: {pd} point defence firing ticks, {w.ShellsShotDown} shells shot down: {(ok ? "ok" : "NO DEFENCE")}");
+        return ok;
+    }
 
     internal static Construct Build(ConstructWorld w, ConstructBuild.Blueprint bp, Vector3 ground, float yaw, VehicleDriveCheck.CheckPlace place)
     {

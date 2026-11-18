@@ -1747,7 +1747,7 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         p.Sock("bottom", [0, -0.15, 0], "-y");
         p.Sock("top", [0, 0.15, 0], "+y");
         p.Sock("back", [0, 0, 0.3], "+z");
-        p.Set(("gun", Kw(("damage", 14), ("rpm", 1800), ("spread", 1.4), ("range", 240), ("mag", 400), ("reload", 2.5), ("kick", 6), ("fx", "bullet"), ("soundOf", "Bastille"), ("muzzle", Py.L(0, 0, -1.38)))), ("centreSockets", false));
+        p.Set(("gun", Kw(("damage", 14), ("rpm", 1800), ("spread", 1.4), ("range", 240), ("mag", 400), ("reload", 2.5), ("kick", 6), ("flak", 3.0), ("fx", "bullet"), ("soundOf", "Bastille"), ("muzzle", Py.L(0, 0, -1.38)))), ("centreSockets", false));
         return p.Stats(200, 520, 14, 3.0);
     }
 
