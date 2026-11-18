@@ -2,6 +2,7 @@
   // Landing leg pod M deploying (LegPodParts.cs): the canopy swings open, then the strut swings 45 degrees down on its hinge while the brace's carriage runs forward and the foot rides the ankle, kept level.
   "blueprint": "Landing Leg Pod M",
   "title": "Landing leg pod M: deploy",
+  "shelf": "Landing legs",
   "steps": [
     { "part": "Leg Pod Canopy Port M", "at": 0, "label": "Canopy opens" },
     { "part": "Leg Pod Canopy Stbd M", "at": 0 },
