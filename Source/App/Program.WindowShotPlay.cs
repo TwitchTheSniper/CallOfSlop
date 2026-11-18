@@ -157,6 +157,9 @@ public static partial class Program
             case "crewpowers": // "crewpowers [near]": host: each power's stock, ships and missions (near: its places laid again 300-450 m round this player); a client: the news and powers gone (faction-controllers.md phase 3)
                 Console.WriteLine($"[windowshot] crewpowers: {(g.IsServer ? g.CrewPowersLine(arg) : $"{g.PowerNews.Count} news lines, last \"{g.PowerNews.LastOrDefault()}\"; powers gone {g.FactionTable.PowerGone:X4}; grid {g.FactionTable.PowerCount} powers, {g.FactionTable.PactCount} pacts")}");
                 return true;
+            case "crewterritory": // "crewterritory [near|leave]": host: planets, sites and far groups (near: a far Take group put 3.5 km from this player; leave: the far ranges shrunk so nobody counts as near: its bodies collapse); a client: its map (faction-controllers.md phase 4)
+                Console.WriteLine($"[windowshot] crewterritory: {(g.IsServer ? g.CrewTerritoryLine(me, arg) : g.FactionMapLine())}");
+                return true;
             case "crewofficer": // "crewofficer question|ransom": host: this player questions or ransoms the first officer prisoner
                 if (g.IsServer)
                     Console.WriteLine($"[windowshot] crewofficer: {g.CrewOfficerFirst(me, arg)}");

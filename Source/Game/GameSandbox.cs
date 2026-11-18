@@ -437,6 +437,7 @@ public sealed partial class Game
             SandboxHarpoonTick(); // (lines on players: their ends and who still holds them, GameSandboxHarpoon.cs)
         SandboxCrewTick(); // (crews man and work their ships' seats: GameCrew.cs, Source/Crew/CrewWorld.cs)
         AllocProfile.Mark("sandbox: constructs");
+        Constructs.PeopleCount = InterestPoints(Constructs.People); // (far NPC bodies step on a coarser rate: ConstructFar.cs)
         using (Perf.Measure(PerfArea.Constructs))
             Constructs.Step(World.Query, World.TickDt);
         AllocProfile.Mark("sandbox: after constructs");
