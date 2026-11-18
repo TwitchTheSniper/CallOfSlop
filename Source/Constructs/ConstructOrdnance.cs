@@ -40,7 +40,7 @@ public static class ConstructOrdnance
     public const float LookCone = 6f; // degrees a target stays locked off the look
     public const float MissileCoast = 6f; // seconds a missile flies on after its burn before it goes off (in air)
     public const float MissileSpaceCoast = 420f; // ...and launched in space, where nothing slows it: a 280 m/s Zero Day torpedo coasts about 120 km (Karl, 2026-11-17: "should reach 100 km easily")
-    public const float SpaceAir = 0.02f; // the air's density (1 at the ground) below which a launch is in space
+    public const float SpaceAir = 0.1f; // the air's density (1 at the ground) below which a launch is in space: about 2.8 km up (air thins by e every 1.2 km), under the ship starts' 3 km orbits (2026-11-18: at 0.02 a torpedo fired from the Zero Day start's orbit, 7% air, coasted 6 s)
 
     /// <summary>Seconds a missile launched at <paramref name="at"/> flies on after its last burn: <see cref="MissileSpaceCoast"/> in space, else <see cref="MissileCoast"/>.</summary>
     public static float CoastAt(Vector3 at) => ConstructAir.Density(at) < SpaceAir ? MissileSpaceCoast : MissileCoast;
