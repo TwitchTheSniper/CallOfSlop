@@ -74,6 +74,45 @@ public static class FactoryCheck
         foreach (var o in script.Programme.Objects)
             if (PartOf(o) is var i && i >= 0 && c.DefOf(i).Name != o.Part)
                 Say(false, $"object {o.Id} ({o.Part}) is a {c.DefOf(i).Name} in the built body");
+        // Floor for people, overhead for flow (conveyor-inclines.md section 10): no chute or conveyor under the clear height over the aisle
+        // or the vehicle lane, its ends' first and last half metre aside (a machine's port may stand at the aisle's edge).
+        var low = 0;
+        string? lowAt = null;
+        for (var k = 0; k < c.RouteCount; k++)
+        {
+            ref var r = ref c.Routes[k];
+            if (r.Type is not (RouteType.Chute or RouteType.Conveyor))
+                continue;
+            var len = ConstructConveyor.Length(c, k);
+            var under = ConstructRoutes.Radius(r.Type) + (r.Type == RouteType.Conveyor ? 0.09f : 0f); // (a bed's under-plate hangs under its line)
+            var a = ConstructRoutes.Point(c, k, -1, out _);
+            var along = 0f;
+            for (var i = 0; i <= r.Count && low < 64; i++)
+            {
+                var b = ConstructRoutes.Point(c, k, i, out _);
+                var seg = Vector3.Distance(a, b);
+                for (var t = 0f; t < seg; t += 0.25f)
+                {
+                    var at = along + t;
+                    if (at < 0.5f || at > len - 0.5f)
+                        continue;
+                    var p = Vector3.Lerp(a, b, t / seg);
+                    foreach (var (tile, clear) in script.Walkways)
+                    {
+                        var tp = c.Parts[tile.Index].Pos;
+                        if (MathF.Abs(p.X - tp.X) <= 1f && MathF.Abs(p.Z - tp.Z) <= 1f && p.Y - under < tp.Y + c.DefOf(tile.Index).BoundsMax.Y + clear)
+                        {
+                            low++;
+                            lowAt ??= $"a {ConstructRoutes.Name(r.Type)} at {p.X:0.0}, {p.Y:0.0}, {p.Z:0.0} ({clear:0.0} m clear wanted)";
+                            break;
+                        }
+                    }
+                }
+                along += seg;
+                a = b;
+            }
+        }
+        Say(low == 0, low == 0 ? $"no chute or conveyor lies low over the aisle or the vehicle lane ({script.Walkways.Count} walkway tiles)" : $"{low} spot(s) of link low over a walkway: first {lowAt}");
         // Feed: the heaps and the tipping bay from creative stock (the hauler's load), and an extraction's buffer (no deposit headless).
         var table = RecyclingTable.Current;
         foreach (var o in script.Programme.Objects.Where(o => o.Role is "heap" or "tipping" || o.Role == "buffer"))
