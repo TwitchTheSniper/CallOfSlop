@@ -16,7 +16,7 @@ public static partial class Program
     private static float _wsSwingRate, _wsSwingSecs, _wsSwingMax, _wsSwingSum, _wsSwingRest;
     private static int _wsSwingFrames, _wsSwingN, _wsWaitPeerFrames;
 
-    private static bool WsHeldKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "swing" or "waitpeer";
+    private static bool WsHeldKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "swing" or "waitpeer" or "beside" or "pitch" or "aimat";
 
     private static bool WsHeldVerb(Game g, string verb, string arg)
     {
@@ -30,6 +30,61 @@ public static partial class Program
             }
             else
                 _wsWaitPeerFrames = 0;
+            return true;
+        }
+        if (verb == "aimat" && g.Local is { } eyeOf)
+        {
+            // "aimat N": the look turned to construct N's centre of mass
+            if (!ushort.TryParse(arg, out var id) || g.Constructs.Get(id) is not { } body)
+            {
+                WsFail($"aimat: no construct {arg}");
+                return true;
+            }
+            WsLook(g, eyeOf.Eye, body.WorldCom);
+            WsSay(FormattableString.Invariant($"aimat: construct {id} at {body.WorldCom:0.0}, {Vector3.Distance(eyeOf.Eye, body.WorldCom):0.0} m"));
+            _wsWait = 3;
+            return true;
+        }
+        if (verb == "pitch")
+        {
+            // "pitch DEG": the look's pitch alone (the yaw stays where it is)
+            g.LookPitch = float.Parse(arg, System.Globalization.CultureInfo.InvariantCulture) * MathF.PI / 180f;
+            _wsWait = 3;
+            return true;
+        }
+        if (verb == "beside" && g.Local is { } self)
+        {
+            // "beside M": host, every other player set down M m to the host's right, facing as the host faces; a client
+            // waits (up to 60 s) until it stands there, then takes the host's look
+            var right = Vector3.Normalize(Vector3.Cross(g.LookDir(self.Yaw, 0), GravityFrames.UpAt(self.Position)));
+            var m = float.TryParse(arg, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var bm) ? bm : 3f;
+            if (g.IsServer)
+            {
+                foreach (var other in g.Players.Values)
+                    if (other != self)
+                    {
+                        other.Teleport(self.Position + right * m);
+                        WsSay(FormattableString.Invariant($"beside: player {other.Id} to {self.Position + right * m:0.0}, yaw {self.Yaw * 180 / MathF.PI:0.0}"));
+                    }
+                _wsWait = 30;
+                return true;
+            }
+            var host = g.Players.Values.FirstOrDefault(q => q != self && q.Alive);
+            if (host == null || MathF.Abs(Vector2.Distance(new Vector2(host.Position.X, host.Position.Z), new Vector2(self.Position.X, self.Position.Z)) - m) > 1f)
+            {
+                if (_wsWaitPeerFrames++ < 60 * 2)
+                {
+                    _wsQueue.EnqueueFront($"beside {arg}");
+                    _wsWait = 30;
+                    return true;
+                }
+                WsFail("beside: the host never set this player beside it");
+                return true;
+            }
+            _wsWaitPeerFrames = 0;
+            g.LookYaw = host.Yaw;
+            WsSay(FormattableString.Invariant($"beside: {Vector3.Distance(host.Position, self.Position):0.0} m from the host, yaw {host.Yaw * 180 / MathF.PI:0.0}"));
+            _wsWait = 3;
             return true;
         }
         if (verb != "swing")
