@@ -18,6 +18,16 @@ Write a new plan method beside `RingStation()` with the kit's calls, call it fro
 
 `--preview-gallery DIR --group Station` exports every station and station part; it is published as the Station gallery Artifact, https://claude.ai/artifact/WbNLguag82bvYRDQK2mHgm (separate from the Ship gallery; republish it with the changed `models/*.json`). The layout sheets from the first design, the findings from the second and Karl's reference picture are in the project files under `station/highport/`.
 
-Nothing spawns a station in a world yet.
+The Magpie and Zero Day starts build Caledon Highport 40 km over Caledon (the opening's `"stations"`, `GameSpaceStart.OpeningStation`).
 
-The chutes, conveyors, pipes, sky bridges and boarding tubes are looks only: nothing runs through them yet (no links). The clamps and hatches are the real parts, not yet wired.
+The chutes, conveyors, pipes, sky bridges and boarding tubes are looks only: nothing runs through them yet (no links). The clamps and hatches are the real parts: the clamps say `"startOn": true`, so every berth is armed from the start.
+
+## In the game (`Game/GameStations.cs`)
+
+- **A station** is any construct with a piece of the `Station` group (`Construct.IsStation`, from `ConstructPartDef.IsStationPiece`); its name is its pieces' section ("Caledon Highport").
+- **The command view** lists it as a craft and draws it as a station: a ring round a hexagonal hub on three spokes with the spindle's arms past it, in lilac, with its name and "STATION  N OF M BERTHS FREE" (berths: its working docking ports). Its card says how to dock there. It takes no orders.
+- **Berths moor a ship, they don't carry it** (Karl 2026-11-18: dock at its berths by hand and with the Dock order). A ship carried by a port can't carry craft itself, and the Zero Day carries its Shuttle and Limpet, so a station's berth holds a ship by mooring it: `Construct.MooredTo`, `MoorPart`, `MoorAt`, `MoorRot` (host only). Moored, it is set in the middle of the berth's box, upright with the clamp and its length along the box's, and each tick before the flight steps (`StationMoorStep`) its flight state is the station's plus the berth's offset, and its turn the station's, so the two go round together; its own thrust is ignored.
+- **Docking:** the command view's Dock order on a station (it may carry craft; `NavDockCheck`) flies in as for any port and is moored where a ship would be caught (`NavDockInSpace`). **By hand:** six times a second the host looks for a ship in space that is mostly inside an armed, empty berth's box and slower than 3 m/s against it (`StationMoorScan`), and moors it.
+- **Casting off:** the pilot's key (as a clamp lets go), or any new order from the command view. A ship cast off isn't moored again by that berth until it has left its box (`MoorAway`).
+- **Not yet:** clients aren't told who is moored (a joined player's card says "IN SPACE" and counts the berth free); a save doesn't keep a mooring (the ship drifts off on load); in a world where power is required the clamps need power the station doesn't have.
+- **Trying it:** `--window-shot X.png --map Caledon --start ZeroDay --survival --do "skip; wait 120; command 90000; cmdpick 1; order dock 3; wait 19000; nav"` (the Zero Day climbs 37 km and moors in about five minutes); `moorclear` (host) lets a ship cast off be moored again by the berth it lies in.
