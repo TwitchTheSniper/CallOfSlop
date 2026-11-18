@@ -1161,6 +1161,15 @@ public sealed class CrewWorld
                 State[m0] = CrewState.Free;
             }
         }
+        // A player's own hands take the helm only while their ship is in one of the player's fleet groups (phase 6: its admiral flies it); out of
+        // one, whoever is at the helm stands down and the ship is its owner's to fly again.
+        if (s.Own && s.Group < 0 && s.Helm >= 0 && s.Helm < s.StCount && s.StMember[s.Helm] is var hm and >= 0)
+        {
+            Unseat(s, hm);
+            State[hm] = CrewState.Free;
+            s.Ai?.Release(c);
+            Events.Add($"construct {c.Id}: crew member {Uid[hm]} stands down from the helm (no fleet group)");
+        }
         for (var pass = 0; pass < 10; pass++)
         {
             var kind = pass switch
@@ -1170,7 +1179,7 @@ public sealed class CrewWorld
             };
             for (var st = 0; st < s.StCount; st++)
             {
-                if (s.StKind[st] != kind || s.Own && kind == CrewStationKind.Helm || s.StMember[st] >= 0 || Sitter(c, s.StPart[st]) != 0 || (Standing(kind) ? c.Parts[s.StPart[st]].Health <= 0 : c.Parts[s.StPart[st]].Broken) || Coming(s, st))
+                if (s.StKind[st] != kind || s.Own && kind == CrewStationKind.Helm && s.Group < 0 || s.StMember[st] >= 0 || Sitter(c, s.StPart[st]) != 0 || (Standing(kind) ? c.Parts[s.StPart[st]].Health <= 0 : c.Parts[s.StPart[st]].Broken) || Coming(s, st))
                     continue;
                 var m = Nearest(c, s, st, kind);
                 if (m < 0)
@@ -1483,6 +1492,8 @@ public sealed class CrewWorld
                 has = true;
             }
             ai.Step(w, c, q, has, t);
+            if (s.Own && c.CrewAims && ai.Boarded(c, this))
+                c.CrewAims = false; // (a player's own ship in a group: its owner at the helm flies it, the hands keep the guns)
         }
     }
 

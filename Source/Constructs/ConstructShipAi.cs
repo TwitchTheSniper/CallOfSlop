@@ -172,7 +172,7 @@ public sealed partial class ShipAi
                 _rackButton[_rackCount++] = (short)b;
             }
         }
-        c.CrewAims = _stab >= 0 && Ship is not { Own: true }; // (its stabilizer turns to where the crew's pilot looks, whatever its Mouse aim setting; never saved. A player's own crew never flies it)
+        c.CrewAims = _stab >= 0 && Ship is not { Own: true, Group: < 0 }; // (its stabilizer turns to where the crew's pilot looks, whatever its Mouse aim setting; never saved. A player's own crew flies it only in one of the player's fleet groups: phase 6)
     }
 
     /// <summary>A Button wired into part <paramref name="part"/>, or -1.</summary>
