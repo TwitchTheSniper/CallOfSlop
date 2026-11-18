@@ -49,13 +49,13 @@ public sealed class LegPodParts : IPartGenerator
     ];
 
     // The pod in L metres (scaled by K): top half width and half length, the beam's height and half width, the mouth's.
-    private const double TopW = 0.85, TopL = 2.05, BeamY = -0.45, BeamW = 0.95, MouthY = -1.35, MouthW = 0.68, MouthL = 1.8;
+    private const double TopW = 0.72, TopL = 2.05, BeamY = -0.42, BeamW = 0.78, MouthY = -1.0, MouthW = 0.6, MouthL = 1.8; // (Karl, 2026-11-18: as small as the leg allows)
 
     /// <summary>The top's and the beam's half length towards end e (-1 the bow, raked out further: a chisel nose; +1 the stern).</summary>
     private static double TopAt(double e) => e < 0 ? 2.45 : TopL;
     private static double BeamAt(double e) => e < 0 ? 2.35 : 2.1;
-    private const double InW = 0.6, InL = 1.75, Ceil = -0.12; // the hollow inside: half width, half length (the rails' face), the ceiling
-    private const double Hinge = 0.64; // a canopy leaf's outboard edge (its hinge runs along the bottom corner there)
+    private const double InW = 0.55, InL = 1.75, Ceil = -0.12; // the hollow inside: half width, half length (the rails' face), the ceiling
+    private const double Hinge = 0.575; // a canopy leaf's outboard edge (its hinge runs along the bottom corner there)
     private const double PlateT = 0.04;
 
     private static double[] Pt(double k, double x, double y, double z) => [Py.Round(x * k, 4), Py.Round(y * k, 4), Py.Round(z * k, 4)];
@@ -139,7 +139,7 @@ public sealed class LegPodParts : IPartGenerator
         return [.. f];
     }
 
-    private static readonly double[] Centre = [0, -0.9, 0];
+    private static readonly double[] Centre = [0, -0.6, 0];
 
     // ---- the housing
 
@@ -152,7 +152,7 @@ public sealed class LegPodParts : IPartGenerator
         // Collision: the top plate, the two side walls and the two end walls round the hollow.
         Hidden(p, k, -TopW, Ceil, -TopAt(-1), TopW, 0, TopAt(1));
         foreach (var sx in new[] { -1.0, 1.0 })
-            Hidden(p, k, sx * InW, MouthY, -InL, sx * 0.9, Ceil, InL);
+            Hidden(p, k, sx * InW, MouthY, -InL, sx * MouthW, Ceil, InL);
         foreach (var e in new[] { -1.0, 1.0 })
             Hidden(p, k, -InW, MouthY, e * InL, InW, Ceil, e * BayEnd);
         // The skin: eight facets, plated, pale; the top plate's underside dark (the bay's ceiling).
@@ -214,7 +214,7 @@ public sealed class LegPodParts : IPartGenerator
         {
             D(p, k, sx * (InW + 0.004), MouthY + 0.02, -InL + 0.02, sx * (InW + 0.044), Ceil - 0.02, InL - 0.02, Lining, "dirty steel");
             for (var z = -1.5; z <= 1.51; z += 0.5) // (ribs, under the carriage's rail)
-                D(p, k, sx * (InW - 0.04), MouthY + 0.06, z - 0.04, sx * (InW + 0.004), Pin0.Y - 0.14, z + 0.04, Frame, "dirty steel");
+                D(p, k, sx * (InW - 0.03), MouthY + 0.06, z - 0.04, sx * (InW + 0.004), Pin0.Y - 0.14, z + 0.04, Frame, "dirty steel");
             // The carriage's rail along the wall: a chrome flat on a dark web, hazard stops at each end of its run.
             D(p, k, sx * (InW - 0.012), Pin0.Y - 0.1, -InL + 0.03, sx * (InW + 0.004), Pin0.Y + 0.1, InL - 0.03, Frame, "dirty steel");
             D(p, k, sx * (InW - 0.022), Pin0.Y + CarH + 0.068, Pin1.Z - CarHalf - 0.1, sx * (InW - 0.008), Pin0.Y + CarH + 0.088, Pin0.Z + CarHalf + 0.1, Chrome, "chrome");
@@ -247,8 +247,8 @@ public sealed class LegPodParts : IPartGenerator
             }
             Along(p, k, sx * Hinge, hy, 0.018, -MouthL + 0.03, MouthL - 0.03, Chrome, "chrome");
         }
-        p.Sock("canopyL", Pt(k, -0.62, MouthY, 0), "-y");
-        p.Sock("canopyR", Pt(k, 0.62, MouthY, 0), "-y");
+        p.Sock("canopyL", Pt(k, -(Hinge - 0.02), MouthY, 0), "-y");
+        p.Sock("canopyR", Pt(k, Hinge - 0.02, MouthY, 0), "-y");
         return p.Stats(s.HousingMass, s.Health, 30, k >= 1 ? 6.0 : 4.0);
     }
 
@@ -287,7 +287,7 @@ public sealed class LegPodParts : IPartGenerator
         foreach (var z in new[] { -0.75, 0.0, 0.75 })
             D(p, k, sx * 0.08, MouthY + 0.004, z - 0.03, sx * (Hinge - 0.08), MouthY + 0.03, z + 0.03, Frame, "dirty steel");
         Hidden(p, k, sx * In, MouthY - 0.06, -Lz, sx * Hinge, MouthY, Lz);
-        p.Sock("hang", Pt(k, sx * 0.62, MouthY, 0), "+y");
+        p.Sock("hang", Pt(k, sx * (Hinge - 0.02), MouthY, 0), "+y");
         // It turns about its bottom outboard corner, the inner edge down (right hand about +z: +90 on starboard, -90 on port).
         p.Set(("door", Kw(("kind", "swing"), ("axis", "+z"), ("pivot", new List<object?> { Py.Round(sx * Hinge * k, 4), Py.Round((MouthY - 0.06) * k, 4), 0.0 }), ("angle", 90.0 * side), ("seconds", 1.5), ("hang", "hang"))));
         return p.Stats(s.LeafMass, s.Health * 0.4, 30, 4.0);

@@ -76,7 +76,9 @@ public static partial class ConstructPreview
                 failed++;
         }
 
-        string[] order = ["Ships", "Stations", "Assemblies", "Doors and hatches", "Hinges and joints", "Switches and levers", "Machines"];
+        string[] known = ["Ships", "Stations", "Assemblies", "Doors and hatches", "Hinges and joints", "Switches and levers", "Machines"];
+        // (a timing file's own "shelf" goes after Ships and Stations, never dropped)
+        string[] order = [.. known.Take(2), .. groups.Keys.Except(known).OrderBy(g => g, StringComparer.Ordinal), .. known.Skip(2)];
         var list = JsonSerializer.Serialize(new { groups = order.Where(groups.ContainsKey).Select(g => new { name = g, items = groups[g] }), noun = "animation" });
         var listPath = Path.Combine(models, "index.json");
         if (!File.Exists(listPath) || File.ReadAllText(listPath) != list)
