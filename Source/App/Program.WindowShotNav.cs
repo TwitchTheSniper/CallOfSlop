@@ -15,7 +15,7 @@ namespace CallOfSlop;
 /// </summary>
 public static unsafe partial class Program
 {
-    private static bool WsNavKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "command" or "cmdpick" or "order" or "nav" or "hoist" or "speed" or "travel" or "cmdview" or "rclick" or "rclickup" or "spacewalk" or "missile" or "missiles" or "letgo";
+    private static bool WsNavKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "command" or "cmdpick" or "order" or "nav" or "hoist" or "speed" or "travel" or "cmdview" or "rclick" or "rclickup" or "spacewalk" or "missile" or "missiles" or "letgo" or "orbit";
 
     /// <summary>"order dock N": the picked craft docks with the Nth craft on the map (as cmdpick counts them).</summary>
     private static string? WsDockOrder(Game g, int n)
@@ -264,6 +264,32 @@ public static unsafe partial class Program
                 else
                     WsFail("travel FUEL SHARE (percents)");
                 return true;
+            case "orbit": // "orbit": the picked craft's drawn conic this frame, to the metre (a frame between ticks: steady while it coasts)
+            {
+                if (g.Space is not { } s || g.Constructs.Get(Ui.CommandPicked) is not { } c)
+                {
+                    WsFail("orbit: pick a craft first (command, cmdpick)");
+                    return true;
+                }
+                var t = g.SpaceRenderTime;
+                if (!g.NavState(c, t, out var pos, out var vel))
+                {
+                    WsSay("[nav] orbit: no state");
+                    return true;
+                }
+                var prim = NavGuidance.PrimaryAt(s.System, pos, t);
+                s.System.StateOf(prim, t, out var bp, out var bv);
+                var rr = pos - bp;
+                var vv = vel - bv;
+                if (vv.LengthSquared / 2 - s.System.Bodies[prim].Mu / rr.Length >= 0 || Vec3d.Cross(rr, vv).Length <= 1)
+                {
+                    WsSay(string.Create(inv, $"[nav] orbit round {s.System.Bodies[prim].Name} at day {t.Seconds / 86400:0.0000} ({s.Speed}x): open, {rr.Length:0} m out at {vv.Length:0.0} m/s"));
+                    return true;
+                }
+                var ko = KeplerOrbit.FromState(s.System.Bodies[prim].Mu, pos - bp, vel - bv, t);
+                WsSay(string.Create(inv, $"[nav] orbit round {s.System.Bodies[prim].Name} at day {t.Seconds / 86400:0.0000} ({s.Speed}x): low {ko.Periapsis:0} m, high {ko.Apoapsis:0} m, tilt {Math.Acos(Math.Clamp(Vec3d.Cross(ko.P, ko.Q).Z, -1, 1)) * 180 / Math.PI:0.000} deg, periapsis towards {ko.P.X:0.0000},{ko.P.Y:0.0000},{ko.P.Z:0.0000}"));
+                return true;
+            }
             case "speed" when g.IsServer:
                 WsSay($"[nav] speed {arg}: {(int.TryParse(arg, out var w) && g.RequestTimeSpeed(w) ? "asked" : "refused")}");
                 return true;

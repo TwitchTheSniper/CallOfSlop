@@ -826,8 +826,8 @@ public sealed partial class Ui
     }
     private float _pendingUiScale = -1;
 
-    private static readonly int[] TimeSpeedChoices = [10, 100, 1000, 10_000, 100_000];
-    private static readonly string[] TimeSpeedLabels = ["10x", "100x", "1000x", "10000x", "100000x"];
+    private static readonly int[] TimeSpeedChoices = [10, 100, 1000, 10_000, 100_000, 1_000_000];
+    private static readonly string[] TimeSpeedLabels = ["10x", "100x", "1000x", "10000x", "100000x", "1000000x"];
 
     /// <summary>Settings > Gameplay: how ships travel between planets (Karl, 2026-11-16). Host settings: in a joined game the host's count.</summary>
     private void GameplaySettings(Settings s, float w)

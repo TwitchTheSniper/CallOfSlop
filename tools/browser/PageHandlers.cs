@@ -5,9 +5,12 @@ using CefSharp.Structs;
 
 namespace SlopBrowser;
 
-/// <summary>Frames from the offscreen browser.</summary>
-internal sealed class Painter(SharedBlock block) : IRenderHandler
+/// <summary>Frames from the offscreen browser. The first one, and a size the game's block can't take, say so in the game's log.</summary>
+internal sealed class Painter(SharedBlock block, int slot) : IRenderHandler
 {
+    private bool _painted;
+    private int _wrongSize;
+
     public ScreenInfo? GetScreenInfo() => new ScreenInfo { DeviceScaleFactor = 1 };
     public Rect GetViewRect() => new(0, 0, block.Width, block.Height);
     public bool GetScreenPoint(int viewX, int viewY, out int screenX, out int screenY)
@@ -19,8 +22,23 @@ internal sealed class Painter(SharedBlock block) : IRenderHandler
     public void OnAcceleratedPaint(PaintElementType type, Rect dirtyRect, AcceleratedPaintInfo acceleratedPaintInfo) { }
     public void OnPaint(PaintElementType type, Rect dirtyRect, IntPtr buffer, int width, int height)
     {
-        if (type == PaintElementType.View)
-            block.WriteFrame(buffer, width, height);
+        if (type != PaintElementType.View)
+            return;
+        if (width != block.Width || height != block.Height)
+        {
+            // (a display scale that isn't 1, say; a paint or two while a size settles is no fault, so the panel hears of it only if it goes on)
+            if (++_wrongSize == 1)
+                Program.Log($"page {slot}: the browser paints {width} x {height}, not the screen's {block.Width} x {block.Height}");
+            else if (_wrongSize == 10 && !_painted)
+                Program.Say($"pfail {slot} the browser paints {width} x {height}, not the screen's {block.Width} x {block.Height}");
+            return;
+        }
+        block.WriteFrame(buffer, width, height);
+        if (!_painted)
+        {
+            _painted = true;
+            Program.Log($"page {slot}: first picture, {width} x {height}");
+        }
     }
     public void OnCursorChange(IntPtr cursor, CursorType type, CursorInfo customCursorInfo) { }
     public bool StartDragging(IDragData dragData, DragOperationsMask mask, int x, int y) => false;
