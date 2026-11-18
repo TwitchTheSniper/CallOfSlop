@@ -154,6 +154,9 @@ public static partial class Program
                 foreach (var body in g.CrewInfo.Keys)
                     Console.WriteLine($"[windowshot] crewfleet: look line of {body}: {g.CrewLook(body)}"); // (as this peer has it: Msg.CrewSeats)
                 return true;
+            case "crewpowers": // "crewpowers [near]": host: each power's stock, ships and missions (near: its places laid again 300-450 m round this player); a client: the news and powers gone (faction-controllers.md phase 3)
+                Console.WriteLine($"[windowshot] crewpowers: {(g.IsServer ? g.CrewPowersLine(arg) : $"{g.PowerNews.Count} news lines, last \"{g.PowerNews.LastOrDefault()}\"; powers gone {g.FactionTable.PowerGone:X4}; grid {g.FactionTable.PowerCount} powers, {g.FactionTable.PactCount} pacts")}");
+                return true;
             case "crewofficer": // "crewofficer question|ransom": host: this player questions or ransoms the first officer prisoner
                 if (g.IsServer)
                     Console.WriteLine($"[windowshot] crewofficer: {g.CrewOfficerFirst(me, arg)}");

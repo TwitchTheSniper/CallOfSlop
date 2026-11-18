@@ -368,10 +368,15 @@ public sealed class CrewWorld
     // ---- Making and losing crews ---------------------------------------------------------------------------------------------------
 
     /// <summary>A roster for <paramref name="c"/> (none yet): one member per station it can work now, and spares (<paramref name="spares"/>; -1: by its couches).</summary>
+    /// <summary>The power a new crew serves for the one asked (the game's: a gone power's heir; null: as asked).</summary>
+    public Func<byte, byte>? LivePower;
+
     public CrewShip? Crew(Construct c, ShipAiMode mode, bool air = false, int spares = -1, byte faction = 0, bool empty = false)
     {
         if (_shipOf.ContainsKey(c.Id))
             return ShipOf(c.Id);
+        if (faction != 0 && LivePower != null)
+            faction = LivePower(faction); // (a power gone for good crews nothing: its heir, else nobody's: faction-controllers.md phase 3)
         var s = NewShip(c.Id, mode, air);
         SetFaction(c, s, faction);
         Scan(c, s);

@@ -260,6 +260,32 @@ public sealed partial class Game
     }
 
     /// <summary>
+    /// pg02: the local rider's eye as <see cref="SandboxFrameRender"/> will draw it this frame (the feet in the construct's drawn
+    /// frame), for what runs before it: the physics gun's client simulation. <see cref="Player.RenderEye"/> is still at the
+    /// tick's pose then, metres from the drawn deck at a ship's speed. Not riding: the render eye.
+    /// </summary>
+    internal Vector3 RiderDrawnEye(Player me)
+    {
+        var body = me.Sim.RideBody;
+        var seg = me.Sim.RideSeg;
+        if (me.Sim.RideUp == Vector3.Zero || body == 0 || Constructs.Get(body) is not { } c || seg > c.JointCount)
+            return me.RenderEye;
+        var local = me.Sim.RideLocal;
+        if (me.PrevRideBody == body && me.PrevRideSeg == seg)
+            local = Vector3.Lerp(me.PrevRideLocal, local, _alpha);
+        DrawnFrame(c, seg, out var q, out var t);
+        var feet = t + Vector3.Transform(local, q) + (IsServer ? Vector3.Zero : _correction);
+        return feet + Vector3.Transform(new Vector3(0, me.RenderEyeHeight, 0), ConstructRide.RiderRot(q, Vector3.Normalize(me.Sim.RideUp)));
+    }
+
+    /// <summary>pg02: the local rider's look taken into the construct's drawn frame now (as the ride render does after), so the physics gun's simulation aims as drawn.</summary>
+    internal void RideLookNow()
+    {
+        if (Local is { } me && me.Sim.RideUp != Vector3.Zero)
+            RideLookSync();
+    }
+
+    /// <summary>
     /// Every frame, a rider in contraption space: the body stands in the construct as it is drawn this frame, the feet from
     /// the frame (between ticks for this machine's own simulation, from the snapshots for a remote rider). The camera follows.
     /// </summary>
