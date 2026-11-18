@@ -126,7 +126,8 @@ public static partial class ConstructLifters
                 flat = Vector3.Normalize(flat) * new Vector2(move.X, move.Z).Length();
             next = Clamp(ld, l, was + flat + Vector3.UnitY * move.Y);
             var wn = lp + Vector3.Transform(next, lr); // (never under the ground: the hook stops on it)
-            var clear = l.Def != 0 && ConstructParts.Get(l.Def) is { } hd ? MathF.Max(0, -hd.BoundsMin.Y) : 0.1f; // (the piece's bottom under its origin)
+            var clear = l.Def != 0 && ConstructParts.Get(l.Def) is { } hd ? MathF.Max(0, -hd.BoundsMin.Y)
+                : l.CarryBody != 0 && world.Get(l.CarryBody) is { } cb ? MathF.Max(0.1f, -cb.LocalMin.Y) : 0.1f; // (the piece's bottom under its origin, or a carried container's)
             var alt = Altitude(wn, out var up);
             if (alt < clear) // (any move: across over a rising floor too, run 7: a cave's bowl took the hook 0.38 m into the ground, then Ctrl popped it out)
                 next = Clamp(ld, l, Vector3.Transform(wn + up * (clear - alt) - lp, Quaternion.Conjugate(lr)));
@@ -186,7 +187,12 @@ public static partial class ConstructLifters
         var hand = l.To;
         (l.From, l.FromRot) = (hand, l.ToRot);
         Console.WriteLine($"[lifter] body {c.Id} part {l.Part}: its cab was left{(l.Def != 0 ? " with a piece in the hand" : "")}");
-        if (l.Def != 0 && ConstructParts.Get(l.Def) is { } d)
+        if (l.CarryBody != 0)
+        {
+            CabLetGo(world, c, l, "the cab was left, so it let go"); // (a container on the hook: set down where it hangs)
+            (l.State, l.Why, l.Age, l.Dur) = (LiftState.Idle, LiftWhy.None, Every, Every);
+        }
+        else if (l.Def != 0 && ConstructParts.Get(l.Def) is { } d)
         {
             (l.State, l.Age, l.Dur) = (LiftState.Stuck, Every, Every);
             if (!Redirect(world, c, l, ld, d))
@@ -203,17 +209,24 @@ public static partial class ConstructLifters
         Frame(c, l.Part, ld, out var lp, out var lr, out var shoulder);
         var inv = Quaternion.Conjugate(lr);
         var hook = lp + Vector3.Transform(l.To, lr); // (where the hand goes this step: the piece's origin)
+        if (l.CarryBody != 0)
+        {
+            CabLetGo(world, c, l, "set it down");
+            return;
+        }
         if (l.Points == null || world.LiftTick - l.PointsAt >= PointEvery)
             FindPoints(world, c, l, ld);
         if (l.Def == 0)
         {
-            // A loose one-part body under the hook, nearest first.
+            // A loose one-part body under the hook, nearest first (a container in this construct's own frozen hold too: the Dray's).
             Construct? best = null;
             var bestD = CabGrabReach * CabGrabReach;
             var many = false;
             foreach (var lo in world.Bodies)
             {
-                if (lo == c || lo.Anchored || lo.HeldBy != 0 || lo.GrabbedBy != 255 || lo.CarriedBy != 0 || lo.Driver != 255)
+                if (lo == c || lo.Anchored || lo.HeldBy != 0 || lo.GrabbedBy != 255 || lo.Driver != 255)
+                    continue;
+                if (lo.CarriedBy != 0 && !(lo.CarriedBy == c.Id && lo.PartCount == 1 && lo.DefOf(0).IsContainer))
                     continue;
                 var off = lo.WorldCom - hook;
                 if (MathF.Abs(off.Y) > CabGrabReach + 1f + lo.Radius)
@@ -233,6 +246,11 @@ public static partial class ConstructLifters
             if (best != null)
             {
                 var d = best.DefOf(0);
+                if (d.IsContainer)
+                {
+                    CabTakeBody(world, c, l, ld, best, lp, inv);
+                    return;
+                }
                 if (PickWhy(world, best) is { } pw)
                 {
                     CabSay(l, LiftWhy.CabNotNew, pw); // (the one pick rule: what it holds would be lost)
@@ -348,6 +366,67 @@ public static partial class ConstructLifters
         (l.From, l.To) = (origin, origin);
         (l.Start, l.Dur) = (Now, Every);
         LifterProbe.CarriesHeard++;
+    }
+
+    /// <summary>
+    /// Server: F on a cargo container under the hook. The crane carries the body itself, frozen on the hook (as a submodule carry:
+    /// PoseBodies poses it each tick, clients see its poses), so what it holds, its paint and its damage go with it; F again lets go.
+    /// A container in this construct's frozen hold is let out of it first (it is caught again once it settles).
+    /// </summary>
+    private static void CabTakeBody(ConstructWorld world, Construct c, CLift l, LifterDef ld, Construct body, Vector3 lp, Quaternion inv)
+    {
+        var d = body.DefOf(0);
+        if (body.Dirty)
+            body.Rebuild();
+        if (body.Mass > ld.Payload)
+        {
+            CabSay(l, LiftWhy.CabTooBig, $"too heavy: the {d.Name} weighs {body.Mass / 1000f:0.#} t with what it holds, it carries {ld.Payload / 1000f:0.#} t");
+            return;
+        }
+        if (!Carries(ld, d))
+        {
+            CabSay(l, LiftWhy.CabTooBig, CarryRefusal(ld, d));
+            return;
+        }
+        if (body.CarriedBy != 0)
+            ConstructCargo.Release(world, body);
+        var at = Vector3.Transform(body.Pos - lp, inv);
+        (l.From, l.To, l.FromRot, l.ToRot) = (at, at, Quaternion.Normalize(inv * body.Rot), Quaternion.Normalize(inv * body.Rot));
+        (l.Start, l.Dur, l.Age, l.State, l.Def) = (Now, Every, Every, LiftState.Carry, (ushort)0);
+        l.CarryBody = body.Id;
+        body.Frozen = true;
+        body.HeldBy = c.Id;
+        body.Vel = body.AngVel = Vector3.Zero;
+        if (!world.BodyCarries.Contains(l))
+            world.BodyCarries.Add(l);
+        CabSay(l, LiftWhy.CabGrabbed, $"took the {d.Name} ({body.Mass / 1000f:0.#} t)");
+    }
+
+    /// <summary>Server: the hook lets go of the body it carries (F in the cab, the cab left): it falls free at the carrier's speed.</summary>
+    private static void CabLetGo(ConstructWorld world, Construct c, CLift l, string what)
+    {
+        if (world.Get(l.CarryBody) is { } body && body.HeldBy == c.Id)
+        {
+            body.HeldBy = 0;
+            ConstructEdits.Unfreeze(world, body); // (anchored as Pinned, rebuilt, and its structure goes out: a joined client sees it loose)
+            body.Vel = c.Vel;
+            body.AngVel = Vector3.Zero;
+            body.Wake();
+            CabSay(l, LiftWhy.CabDropped, $"{what}: the {body.DefOf(0).Name}");
+            l.Moves++;
+        }
+        l.CarryBody = 0;
+        world.BodyCarries.Remove(l);
+        CabEmpty(l);
+    }
+
+    /// <summary>Is this body on a Lifter Cab's hook? (A save writes it loose where it hangs: the cab's carry isn't saved.)</summary>
+    public static bool OnCabHook(ConstructWorld world, Construct body)
+    {
+        foreach (var l in world.BodyCarries)
+            if (l.CarryBody == body.Id && l.Steered)
+                return true;
+        return false;
     }
 
     private static void CabEmpty(CLift l)

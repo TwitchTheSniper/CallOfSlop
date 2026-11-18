@@ -36,6 +36,7 @@ public sealed partial class Game : ICrewHost
         CrewWorkTick();
         CrewMineTick(); // (miners off their posts: GameCrewMine.cs)
         CrewSendSeats();
+        HandsUpTick(); // (surrendered crew, hands up: GameCrewHandsUp.cs)
         CrewHireTick();
         CrewRosterSend();
     }

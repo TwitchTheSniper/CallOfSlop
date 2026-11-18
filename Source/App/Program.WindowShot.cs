@@ -123,7 +123,7 @@ public static unsafe partial class Program
         s.Split(',') is [var x, var y, var z] && float.TryParse(x, System.Globalization.CultureInfo.InvariantCulture, out var a)
         && float.TryParse(y, System.Globalization.CultureInfo.InvariantCulture, out var b) && float.TryParse(z, System.Globalization.CultureInfo.InvariantCulture, out var c) ? new Vector3(a, b, c) : null;
 
-    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "design" or "extr" or "plate" or "fitpart" or "inv" or "fuel" or "cutter" or "put" or "side" or "walk" or "ray" or "guns" or "engines" or "bundle" or "drag" or "mousemove" or "station" or "subbp" or "linked" or "bpui" or "lifter" or "aimlink" or "aim" or "near" or "from" or "inside" or "me" or "person" or "use" or "waitnear" or "key" or "touch" or "ladder" or "ladderclimb" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "picker" or "bring" or "craft" or "disown" or "saveload" or "stock" or "feed" or "kit" or "poke" or "joints" or "timed" or "saveworld" or "loadworld" or "logi" or "period" or "gang" or "incident" || WsGhostKnown(action) || WsNavKnown(action) || WsTourKnown(action) || WsTalkKnown(action) || WsPlayKnown(action) || WsHeldKnown(action);
+    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "design" or "extr" or "plate" or "fitpart" or "inv" or "fuel" or "cutter" or "put" or "side" or "walk" or "ray" or "guns" or "engines" or "bundle" or "drag" or "mousemove" or "station" or "subbp" or "linked" or "bpui" or "lifter" or "aimlink" or "aim" or "near" or "from" or "inside" or "me" or "mmu" or "coast" or "person" or "use" or "waitnear" or "key" or "touch" or "ladder" or "ladderclimb" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "picker" or "bring" or "craft" or "disown" or "saveload" or "stock" or "feed" or "kit" or "poke" or "joints" or "timed" or "saveworld" or "loadworld" or "logi" or "period" or "gang" or "incident" || WsGhostKnown(action) || WsNavKnown(action) || WsTourKnown(action) || WsTalkKnown(action) || WsPlayKnown(action) || WsHeldKnown(action);
 
     private static void WsSay(string s)
     {
@@ -1834,6 +1834,14 @@ public static unsafe partial class Program
                     WsSay($"ui: eye {me.Eye:0.0}, aim {(hitOn && uh.Part >= 0 && uh.Part < uh.Body.PartCount ? $"{uh.Body.DefOf(uh.Part).Name} part {uh.Part} of {uh.Body.Id} at {uh.Distance:0.00} m" : "nothing")}; look line \"{g.SandboxLookText}\"; seated {g.SandboxHands.Hand(me.Id).Seated}");
                 }
                 return;
+            case "mmu" when g.IsServer: // a suit and a full MMU on the host's player
+                g.WsGiveMmu(me);
+                WsSay($"mmu: worn, {me.Sim.JetFuel} fuel, free {PilotGear.MmuFree(me.Sim)}");
+                return;
+            case "coast": // the MMU's dampeners off or on (the Z key's toggle)
+                g.MmuToggleDampers();
+                WsSay($"coast: {(g.MmuCoasting ? "dampeners off" : "dampeners on")}");
+                return;
             case "me": // where this player is: feet, height over the ground, the frame they stand in and whether it is a ship in space
             {
                 if (g.SandboxHands.Hand(me.Id) is { Seated: true } sh && g.Constructs.Get(sh.SeatBody) is { StabCount: > 0 } sc && sc.Stabs[0].Part < sc.PartCount)
@@ -1845,7 +1853,7 @@ public static unsafe partial class Program
                 }
                 var ride = g.Constructs.Get(me.Sim.RideBody);
                 var height = World.Map.Planetoid is { } mpl ? (float)mpl.Altitude(me.Position) : me.Position.Y;
-                WsSay($"me: feet {me.Position:0.0}, {height:0} m up, alive {me.Alive}, grounded {me.Sim.Grounded}, stance {me.Sim.Stance}; velocity {me.Sim.Velocity.Length():0.0} m/s own (+{(ride == null ? 0 : ConstructRide.RiderSurfaceVel(ride, me.Sim, me.Position).Length()):0.0} the frame's), on segment {ConstructRide.Carrier(me.Sim)}; frame {(ride == null ? "none" : $"construct {ride.Id} at {ride.Vel.Length():0} m/s{(ride.SpaceShip != 0 ? $", in space (ship {ride.SpaceShip})" : "")}, local {me.Sim.RideLocal:0.00}")}; seated {g.SandboxHands.Hand(me.Id).Seated}; opening {g.OpeningLocal}");
+                WsSay($"me: feet {me.Position:0.0}, {height:0} m up, alive {me.Alive}, grounded {me.Sim.Grounded}, stance {me.Sim.Stance}; velocity {me.Sim.Velocity.Length():0.0} m/s own (+{(ride == null ? 0 : ConstructRide.RiderSurfaceVel(ride, me.Sim, me.Position).Length()):0.0} the frame's), on segment {ConstructRide.Carrier(me.Sim)}; frame {(ride == null ? "none" : $"construct {ride.Id} at {ride.Vel.Length():0} m/s{(ride.SpaceShip != 0 ? $", in space (ship {ride.SpaceShip})" : "")}, local {me.Sim.RideLocal:0.00}")}; seated {g.SandboxHands.Hand(me.Id).Seated}; opening {g.OpeningLocal}; eva {me.Eva}, pack fuel {me.Sim.JetFuel} of {Eva.MmuFull}");
                 return;
             }
             case "shot":

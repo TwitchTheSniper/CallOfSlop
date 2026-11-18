@@ -93,13 +93,19 @@ public static unsafe partial class Program
         if (ConstructFlight.MouseSteers(c, h.SeatPart))
         {
             // A ship that steers by the look: the camera is the look, so the nose comes round to where the camera points (its first tilt counts as level).
-            g.LookYaw = ThirdPerson.OrbitYaw;
-            g.LookPitch = Math.Clamp(ThirdPerson.OrbitPitch - ThirdPerson.SteerTilt * MathF.Max(0, 1 - MathF.Abs(ThirdPerson.OrbitPitch) / 1.5f), -1.5f, 1.5f); // (the camera straight up or down is the nose straight up or down)
+            var pitch = Math.Clamp(ThirdPerson.OrbitPitch - ThirdPerson.SteerTilt * MathF.Max(0, 1 - MathF.Abs(ThirdPerson.OrbitPitch) / 1.5f), -1.5f, 1.5f); // (the camera straight up or down is the nose straight up or down)
+            if (g.SeatOrbitRot(out var sr))
+                g.SetLookDir(Vector3.Transform(World.Forward(ThirdPerson.OrbitYaw, pitch), sr)); // (in the ship's frame: GameSandbox.cs, SeatOrbitRot)
+            else
+            {
+                g.LookYaw = ThirdPerson.OrbitYaw;
+                g.LookPitch = pitch;
+            }
             return;
         }
         if (c.SeatKindOf(h.SeatPart) != SeatKind.Gunner)
             return;
-        var f = g.LookDir(ThirdPerson.OrbitYaw, ThirdPerson.OrbitPitch);
+        var f = SeatOrbitDir(g);
         if (!g.ThirdPersonSeatPoint(out var point, out _, out _, out _, out _, out _))
             return;
         var camPos = point - f * (ThirdPerson.SeatDist * ThirdPerson.PullRatio); // (the camera as the orbit has moved it since the last frame)
@@ -173,6 +179,10 @@ public static unsafe partial class Program
         g.LookPitch = Math.Clamp(MathF.Asin(Math.Clamp(look.Y, -1f, 1f)), -1.5f, 1.5f);
     }
 
+    /// <summary>The seat orbit camera's way: in a ship's frame (<see cref="Game.SeatOrbitRot"/>), else measured against the planet's up.</summary>
+    private static Vector3 SeatOrbitDir(Game g) =>
+        g.SeatOrbitRot(out var r) ? Vector3.Transform(World.Forward(ThirdPerson.OrbitYaw, ThirdPerson.OrbitPitch), r) : g.LookDir(ThirdPerson.OrbitYaw, ThirdPerson.OrbitPitch);
+
     /// <summary>The on-foot camera for this frame's look without a cast: last frame's pull applied to the wanted spot.</summary>
     private static Vector3 FootCameraNow(Vector3 eye, Vector3 fwd)
     {
@@ -222,19 +232,23 @@ public static unsafe partial class Program
             ref var h = ref _game.SandboxHands.Hand(local.Id);
             var drone = _game.LocalDrone();
             var key = drone != null ? 1UL << 40 | drone.Id : (ulong)h.SeatBody << 16 | (uint)(h.SeatPart + 1); // (a part index is up to 16 bits: the old body << 8 mixed seats past part 255)
+            var shipFrame = _game.SeatOrbitRot(out var sr); // (in a ship the orbit turns with it: its yaw and pitch are in the ship's frame, GameSandbox.cs)
             if (key != _tpSeatKey)
             {
                 _tpSeatKey = key;
                 ThirdPerson.SeatDist = dist;
-                ThirdPerson.OrbitYaw = drone != null ? heading : _game.LookYaw; // (a drone's starts from behind it)
+                if (shipFrame)
+                    ConstructRide.LookIn(sr, _game.LookDir(_game.LookYaw, _game.LookPitch), out ThirdPerson.OrbitYaw, out _);
+                else
+                    ThirdPerson.OrbitYaw = drone != null ? heading : _game.LookYaw; // (a drone's starts from behind it)
                 ThirdPerson.OrbitPitch = ThirdPerson.SteerTilt;
                 _tpHeading = heading;
             }
-            if (follow)
+            if (follow && !shipFrame)
                 ThirdPerson.OrbitYaw = World.WrapAngle(ThirdPerson.OrbitYaw + World.WrapAngle(heading - _tpHeading));
             _tpHeading = heading;
             ThirdPerson.SeatDist = ThirdPerson.Clamp(ThirdPerson.SeatDist, zoomMin, zoomMax);
-            f = _game.LookDir(ThirdPerson.OrbitYaw, ThirdPerson.OrbitPitch);
+            f = SeatOrbitDir(_game);
             ideal = from - f * ThirdPerson.SeatDist;
         }
         cam = ThirdPerson.Pull(q, from, ideal);

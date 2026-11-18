@@ -694,6 +694,7 @@ public sealed partial class ConstructPartDef
     public Vector3 ExtDieAt; // ...the die's centre on its output face (part frame; the piece grows along +z from here)
     public float ExtMaxLength, ExtPush; // ...the longest piece (m), and how hard it pushes what is in the way (N)
     public int ExtDieSocket = -1; // ...its socket of kind "die"
+    public bool IsContainer; // a cargo container ("container": true): a Lifter Cab's crane carries it whole, contents and all (ConstructLifterCab.cs)
     public bool IsRequisition; // a Requisition Crate ("requisition": true): a story faction's courier collects a Supply job from its box (Game/GameStoryJobs.cs)
     public bool IsDieFrame; // a Die Frame ("dieFrame": true): the die of an Extruder it is joined to reaches across it
     public float ExtGrowStep; // a Die Extension ("dieExtension": metres): flush with the die face of an Extruder of its size class, it adds a row or column of that much die (ExtruderGrowth.cs)
@@ -872,6 +873,8 @@ public sealed partial class ConstructPartDef
     public bool HasReading => Logic is >= CLogic.Xor and <= CLogic.BusOut and not (CLogic.KeySwitch or CLogic.Instrument or CLogic.RadioTx or CLogic.BusIn) || Logic == CLogic.Cipher; // (a terminal's: its key and locks, GameStoryFragments.cs) // its number reaches clients exactly (CPart.Reading; LogicDisplays.cs)
     public bool WidePorts => Logic is CLogic.Mux or CLogic.BusIn or CLogic.BusOut or CLogic.FlightStabilizer || Logic == CLogic.Display && DataIn.Length > 1; // more data ports than the logic step's sums (Construct.PortIn)
     public int TextSlots; // messages it holds ("logic.text": CPart.Text and Text2; LogicText.cs)
+    public bool Labelled; // a logic part with no messages of its own: its one text slot is a player's label for it, set with the configure tool (LogicText.Name)
+    public bool Settable => Configurable || TextSlots > 0; // the configure tool opens a panel on it (settings, or only its text)
 
     /// <summary>How many wires may come into it (0: it takes no input).</summary>
     public int MaxInputs => IsSpeaker || Surface is { Control: > 0 } ? 1 : Role switch // (a speaker's one cable comes from what it repeats; a control surface's angle)
@@ -1348,7 +1351,7 @@ public static partial class ConstructParts
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "finish", "friction", "collider",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "fluidTank", "seat", "hinge", "joint", "logic",
         "transmission", "battery", "capacitor", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "yield", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "retired", "hydraulics", "toolOnly", "tray", "walk", "boarding", "ladder", "toolDock", "damaged", "stage", "faces", "faceAxis", "router",
-        "sight", "ordnance", "mooring", "wear", "eva", "air", "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "dieExtension", "runOut", "enginePiece", "sizeClass", "generator", "thruster", "burner", "flame", "rotor", "surface", "smoke", "dock", "breach", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "shell", "office", "requisition", "media", "speaker", "leg", "stabiliser", "door", "lifter", "craneRail", "lifterCab", "radar", "works", "worksPiece", "logiLink", "toolRack",
+        "sight", "ordnance", "mooring", "wear", "eva", "air", "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "dieExtension", "runOut", "enginePiece", "sizeClass", "generator", "thruster", "burner", "flame", "rotor", "surface", "smoke", "dock", "breach", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "shell", "office", "requisition", "container", "media", "speaker", "leg", "stabiliser", "door", "lifter", "craneRail", "lifterCab", "radar", "works", "worksPiece", "logiLink", "toolRack",
     ];
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, a contoured shape with its settings (index 8 up to the last), and the glass flag (last).</summary>
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, and a contoured shape with its settings.</summary>
@@ -1716,6 +1719,9 @@ public static partial class ConstructParts
             Range(d.ExtRunOut, 1, 64, file, "runOut");
         }
         d.IsRequisition = Opt(root, "requisition") is { ValueKind: JsonValueKind.True };
+        d.IsContainer = Opt(root, "container") is { ValueKind: JsonValueKind.True };
+        if (d.IsContainer && d.Role != PartRole.Storage)
+            throw new ConstructPartException($"{file}: a \"container\" is a storage part");
 
         // Role data
         string[] roleKeys = ["engine", "wheel", "suspension", "fuelTank", "seat", "hinge", "joint", "logic", "transmission", "battery", "alternator", "hitch", "gun", "gunPart", "ammoBox", "storage", "differential", "drive", "hose", "enginePiece", "generator", "thruster", "burner", "fluidTank", "rotor", "leg"];
@@ -1959,6 +1965,11 @@ public static partial class ConstructParts
         ToolRacks.Parse(d, root, file); // (a Tool Rack: hand tools a crew takes and returns, ToolRacks.cs)
         ConstructPanels.Parse(d, root, file); // (display panels: DisplayPanel.cs)
         ConstructMedia.Parse(d, root, file);
+        if (d.Role == PartRole.Logic && d.TextSlots == 0 && !d.IsMedia && !d.IsRouter)
+        {
+            d.TextSlots = 1; // (a switch's, button's, lever's, timer's... label: "Hangar lights" in its look line and wiring rows; the configure tool's Label box)
+            d.Labelled = true;
+        }
         ConstructSpeakers.Parse(d, root, file);
         ConstructPhysics.ParseStabiliser(d, root, file); // (a walker stabiliser: ConstructWalkFeel.cs)
         LinkedLogistics.Parse(d, root, file); // (linked logistics: link ends, the Cargo Dock and Port, the Route Computer, the Dispatcher)

@@ -12,7 +12,7 @@ namespace CallOfSlop;
 /// </summary>
 public sealed partial class Ui
 {
-    private readonly CmdHolo _cmdFine = new() { Fine = true };
+    private readonly CmdHolo[] _cmdFines = [new() { Fine = true }, new() { Fine = true }]; // (the carrier and the craft it boards can both be close)
     private const int CmdFineCells = 200, CmdFineLevels = 28, CmdFineLines = 12000;
     private const float CmdFineLevelLeast = 0.9f; // m between levels at the finest (a deck and its rooms read apart)
     private const float CmdFineFrom = 220; // px across the screen (at scale 1) from which the picked craft is shown fine
@@ -41,14 +41,22 @@ public sealed partial class Ui
 
     private CmdHolo CmdHoloFineOf(Construct c, double now)
     {
-        var h = _cmdFine;
-        if (h.Id != c.Id || h.Parts != c.PartCount || !CmdHoloSame(h, c, now))
+        CmdHolo? h = null;
+        foreach (var f in _cmdFines)
+            if (f.Id == c.Id && f.Parts == c.PartCount)
+                h = f;
+        if (h == null || !CmdHoloSame(h, c, now))
         {
+            h ??= _cmdFines[0].Used <= _cmdFines[1].Used ? _cmdFines[0] : _cmdFines[1];
             var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
             CmdHoloBuild(h, c, CmdFineCells, CmdFineLevelLeast, CmdFineLevels, CmdFineLines, true);
             Console.WriteLine(FormattableString.Invariant($"[command] close hologram of construct {c.Id}: {h.Count} lines, {h.Nx - 2} x {h.Nz - 2} cells of {h.Cell:0.00} m, {h.Ny} levels, {System.Diagnostics.Stopwatch.GetElapsedTime(t0).TotalMilliseconds:0.0} ms"));
             h.Checked = now;
-            _cmdRoomFor = -1; // (the room outline was cut from the old grid)
+            if (c.Id == _cmdBoardShip)
+            {
+                _cmdRoomFor = -1; // (the room outline was cut from the old grid, and the spots from the old parts)
+                CmdCutForget();
+            }
         }
         h.Used = now;
         return h;
@@ -182,9 +190,12 @@ public sealed partial class Ui
     private Vector3[] _cmdRoomA = new Vector3[CmdRoomLines], _cmdRoomB = new Vector3[CmdRoomLines];
     private byte[] _cmdRoomMark = [];
     private const int CmdRoomLines = 2400, CmdRoomCells = 6000;
-    private const double CmdCutWait = 0.12; // s the cursor rests on a part before the spot is worked out (it casts many rays)
+    private const double CmdCutWait = 0.06; // s the cursor rests on a part before the spot is worked out (it casts many rays)
 
-    /// <summary>Each frame while picking where to cut in: works the spot out again once the cursor has rested on another part.</summary>
+    /// <summary>
+    /// Each frame while picking where to cut in: once the cursor rests on another part, the spot is worked out (Game.BoardPreview) a few
+    /// milliseconds a frame until it is found, then kept for that part while the pick lasts, so going back over a part costs nothing.
+    /// </summary>
     private void CmdCutUpdate(Game g, Construct t, int part, double now)
     {
         if (part != _cmdCutWant)
@@ -200,13 +211,53 @@ public sealed partial class Ui
         }
         if (part == _cmdCutPart || now - _cmdCutSince < CmdCutWait || g.Constructs.Get(_cmdBoardCarrier) is not { } carrier)
             return;
+        if (_cmdCutKnownFor != t.Id)
+        {
+            _cmdCutKnown.Clear();
+            _cmdCutKnownFor = t.Id;
+        }
+        CmdCut r;
+        if (!_cmdCutKnown.TryGetValue(part, out r))
+        {
+            r.On = g.BoardPreview(carrier, t, part, CmdCutBudgetMs, out var done, out r.At, out r.Out, out r.Up, out r.Room, out r.Feet, out r.Deep, out r.Hit);
+            if (!done)
+            {
+                _cmdCutOn = false; // (still working: next frame goes on)
+                _cmdBoardHoverText = "FINDING WHERE THE POD CUTS IN...";
+                return;
+            }
+            if (_cmdCutKnown.Count >= 256)
+                _cmdCutKnown.Clear();
+            _cmdCutKnown[part] = r;
+        }
         _cmdCutPart = part;
-        _cmdCutOn = g.BoardPreview(carrier, t, part, out _cmdCutAt, out _cmdCutOut, out _cmdCutUp, out _cmdCutRoom, out _cmdCutFeet, out _cmdCutDeep, out _cmdCutHit);
+        (_cmdCutOn, _cmdCutAt, _cmdCutOut, _cmdCutUp, _cmdCutRoom, _cmdCutFeet, _cmdCutDeep, _cmdCutHit) = (r.On, r.At, r.Out, r.Up, r.Room, r.Feet, r.Deep, r.Hit);
         _cmdRoomFor = -1;
         _cmdBoardHoverText = !_cmdCutOn ? "NO HULL TO CUT HERE"
             : _cmdCutRoom == 1 ? "CUT IN HERE: A ROOM BEHIND, FLOOR LEVEL"
             : _cmdCutRoom == 2 ? "CUT IN HERE: A ROOM BEHIND, A STEP UP OR DOWN"
             : "CUT IN HERE: NO ROOM FOUND BEHIND";
+    }
+
+    private struct CmdCut
+    {
+        public bool On;
+        public Vector3 At, Out, Up, Feet;
+        public int Room, Hit;
+        public float Deep;
+    }
+
+    private readonly Dictionary<int, CmdCut> _cmdCutKnown = new(256); // part -> its worked-out spot, for the craft being boarded
+    private ushort _cmdCutKnownFor;
+    private const double CmdCutBudgetMs = 2.5; // ms a frame the preview's search may take
+
+    /// <summary>Forget the worked-out spots (a new pick, or the target's parts changed).</summary>
+    private void CmdCutForget()
+    {
+        _cmdCutKnown.Clear();
+        _cmdCutKnownFor = 0;
+        _cmdCutOn = false;
+        _cmdCutPart = _cmdCutWant = -2;
     }
 
     /// <summary>The pod's skirt on the hull, the hole it cuts (a door's size, from the room's floor up), the tunnel in and the room behind.</summary>

@@ -75,8 +75,9 @@ public static class ConstructRemote
         var near = float.MaxValue;
         foreach (var d in world.Bodies)
         {
-            if (d.Receiver < 0 || d == c || d.Dirty || d.Receiver >= d.PartCount || d.Driver != 255 && d.Driver != player || !Factions.Shares(d.Owner, owner) && d.Owner != 255)
-                continue;
+            if (d.Receiver < 0 || d == c || d.Dirty || d.Receiver >= d.PartCount || d.Driver != 255 && d.Driver != player || !Factions.Shares(d.Owner, owner) && d.Owner != 255
+                || d.Owner == 255 && d.NpcFaction != 0)
+                continue; // (an NPC power's crewed drone is theirs, not nobody's: it is flown by its crew)
             var f = Hears(d, d.Receiver, channel, range, at);
             if (f >= 0 && f < near)
             {

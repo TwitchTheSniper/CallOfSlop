@@ -706,82 +706,161 @@ public sealed partial class Game
     /// <returns>1: a room level with the pod's floor; 2: a room, not level; 0: none found.</returns>
     private int BoardNearRoom(Construct t, Construct pod, int part, ref byte seg, ref Vector3 spot, ref Vector3 outward, ref Vector3 up, ref int hitPart)
     {
+        var search = new BoardSearch();
+        BoardSearchStart(search, t, pod, part, seg, spot, outward, up, hitPart);
+        BoardSearchStep(search, t, 0);
+        (seg, spot, outward, up, hitPart) = (search.Seg, search.Spot, search.Out, search.Up, search.Hit);
+        return search.Found;
+    }
+
+    private const int BoardSearchMost = 60; // parts round the picked one it tries, nearest first
+
+    /// <summary><see cref="BoardNearRoom"/>'s search, kept between steps so the command view's preview can spread it over frames.</summary>
+    internal sealed class BoardSearch
+    {
+        public ushort Target;
+        public int Part, Next, Found;
+        public bool Done;
+        public float Lift;
+        public byte Seg;
+        public Vector3 Spot, Out, Up;
+        public int Hit;
+        public readonly List<(float D, int I)> Order = new(BoardSearchMost);
+        public readonly List<(float D, int I)> All = new(64);
+        // Each candidate's BoardSpot, worked out once for both passes.
+        public readonly byte[] Tried = new byte[BoardSearchMost]; // 0 not yet, 1 a spot, 2 none
+        public readonly (byte S, Vector3 P, Vector3 O, Vector3 U, int H)[] Spots = new (byte, Vector3, Vector3, Vector3, int)[BoardSearchMost];
+    }
+
+    private void BoardSearchStart(BoardSearch q, Construct t, Construct pod, int part, byte seg, Vector3 spot, Vector3 outward, Vector3 up, int hitPart)
+    {
         if (t.Dirty)
             t.Rebuild();
-        var lift = BoardCutterLift(pod);
-        var order = new List<(float D, int I)>(t.PartCount) { (0, part) };
+        (q.Target, q.Part, q.Next, q.Found, q.Done) = (t.Id, part, 0, 0, false);
+        (q.Seg, q.Spot, q.Out, q.Up, q.Hit) = (seg, spot, outward, up, hitPart);
+        q.Lift = BoardCutterLift(pod);
+        q.All.Clear();
         t.PartBounds(part, out var mn, out var mx);
         var from = (mn + mx) * 0.5f;
         for (var i = 0; i < t.PartCount; i++)
             if (i != part && !t.Parts[i].Broken && t.SolidCount(i) > 0 && !BoardIsDoor(t, i))
             {
                 t.PartBounds(i, out var a, out var b);
-                order.Add((Vector3.DistanceSquared((a + b) * 0.5f, from), i));
+                q.All.Add((Vector3.DistanceSquared((a + b) * 0.5f, from), i));
             }
-        order.Sort((x, y) => x.D.CompareTo(y.D));
-        for (var pass = 0; pass < 2; pass++)
-            for (var k = 0; k < order.Count && k < 60; k++)
+        q.All.Sort((x, y) => x.D.CompareTo(y.D));
+        q.Order.Clear();
+        q.Order.Add((0, part));
+        for (var k = 0; k < q.All.Count && q.Order.Count < BoardSearchMost; k++)
+            q.Order.Add(q.All[k]);
+        Array.Clear(q.Tried);
+        q.Tried[0] = 1;
+        q.Spots[0] = (seg, spot, outward, up, hitPart);
+    }
+
+    /// <summary>
+    /// Goes on with <paramref name="q"/>: the picked spot first, moved up or down its face if need be, then the nearest parts' flat patches,
+    /// each pass a room level with the pod's floor, then any room. Past <paramref name="until"/> (a Stopwatch stamp; 0: no limit) it stops
+    /// between candidates and returns false, to go on later. True: done, the result in q (Found 1 level, 2 not level, 0 none: the spot as picked).
+    /// </summary>
+    private bool BoardSearchStep(BoardSearch q, Construct t, long until)
+    {
+        if (q.Done)
+            return true;
+        var part = q.Part;
+        while (q.Next < 2 * q.Order.Count)
+        {
+            if (until != 0 && q.Next > 0 && System.Diagnostics.Stopwatch.GetTimestamp() > until)
+                return false;
+            var pass = q.Next / q.Order.Count;
+            var k = q.Next % q.Order.Count;
+            q.Next++;
+            var i = q.Order[k].I;
+            if (q.Tried[k] == 0)
             {
-                var i = order[k].I;
-                byte s2;
-                Vector3 p2, o2, u2;
-                int h2;
-                if (i == part)
-                    (s2, p2, o2, u2, h2) = (seg, spot, outward, up, hitPart);
-                else if (!BoardSpot(t, i, true, out s2, out p2, out o2, out u2, out h2))
-                    continue;
-                t.WorldFrame(s2, out var q2, out var t2);
-                var nw = Vector3.Transform(o2, q2);
-                if (!BoardLevelSpot(t, t2 + Vector3.Transform(p2, q2), nw, Vector3.Transform(u2, q2), pass == 0 ? lift : -1, out var at, out var n, out var fp))
-                    continue;
-                var inv = Quaternion.Conjugate(q2);
-                if (fp >= 0)
-                {
-                    p2 = Vector3.Transform(at - t2, inv);
-                    o2 = Vector3.Normalize(Vector3.Transform(n, inv));
-                    u2 = BoardUpOf(o2);
-                    h2 = fp;
-                }
-                if (h2 < 0 || h2 >= t.PartCount || HullHoles.Refusal(HullHoles.BaseOf(t.DefOf(h2))) != null)
-                    continue; // (a hatch, a machine: the cutter can't hole it, only burn it whole)
-                if ((i != part || fp >= 0) && !_boardQuiet)
-                    Console.WriteLine($"[nav] board: the pod cuts in by construct {t.Id}'s {t.DefOf(h2).Name}{(pass == 0 ? ", its floor level with the room's" : ", into a room whose floor isn't level with its own")} (picked: its {t.DefOf(part).Name})");
-                (seg, spot, outward, up, hitPart) = (s2, p2, o2, u2, h2);
-                return pass == 0 ? 1 : 2;
+                q.Tried[k] = BoardSpot(t, i, true, out var s0, out var p0, out var o0, out var u0, out var h0) ? (byte)1 : (byte)2;
+                q.Spots[k] = (s0, p0, o0, u0, h0);
             }
+            if (q.Tried[k] != 1)
+                continue;
+            var (s2, p2, o2, u2, h2) = q.Spots[k];
+            t.WorldFrame(s2, out var q2, out var t2);
+            var nw = Vector3.Transform(o2, q2);
+            if (!BoardLevelSpot(t, t2 + Vector3.Transform(p2, q2), nw, Vector3.Transform(u2, q2), pass == 0 ? q.Lift : -1, out var at, out var n, out var fp))
+                continue;
+            var inv = Quaternion.Conjugate(q2);
+            if (fp >= 0)
+            {
+                p2 = Vector3.Transform(at - t2, inv);
+                o2 = Vector3.Normalize(Vector3.Transform(n, inv));
+                u2 = BoardUpOf(o2);
+                h2 = fp;
+            }
+            if (h2 < 0 || h2 >= t.PartCount || HullHoles.Refusal(HullHoles.BaseOf(t.DefOf(h2))) != null)
+                continue; // (a hatch, a machine: the cutter can't hole it, only burn it whole)
+            if ((i != part || fp >= 0) && !_boardQuiet)
+                Console.WriteLine($"[nav] board: the pod cuts in by construct {t.Id}'s {t.DefOf(h2).Name}{(pass == 0 ? ", its floor level with the room's" : ", into a room whose floor isn't level with its own")} (picked: its {t.DefOf(part).Name})");
+            (q.Seg, q.Spot, q.Out, q.Up, q.Hit) = (s2, p2, o2, u2, h2);
+            (q.Found, q.Done) = (pass == 0 ? 1 : 2, true);
+            return true;
+        }
         if (!_boardQuiet)
             Console.WriteLine($"[nav] board: no room behind any hull near construct {t.Id}'s {t.DefOf(part).Name}: the pod cuts in where it was told");
-        return 0;
+        (q.Found, q.Done) = (0, true);
+        return true;
     }
 
     private bool _boardQuiet; // (the command view's preview runs the same picks: no log lines)
 
+    private readonly BoardSearch _boardPreview = new();
+
     /// <summary>
     /// The command view's preview of a Board order on the hull by <paramref name="part"/> (UiCommandBoard.cs), on host or client: where
-    /// the pod would cut in as <see cref="NavBoardAct"/> picks it (<see cref="BoardSpot"/>, then <see cref="BoardNearRoom"/>) and the hole's
-    /// frame as <see cref="ConstructBreach.OpenHole"/> takes it, all in <paramref name="t"/>'s rest frame: <paramref name="at"/> on the skin,
-    /// <paramref name="outward"/> out of it, <paramref name="up"/> the hole's up. <paramref name="room"/>: 1 a room behind level with the pod's
-    /// floor, 2 a room not level, 0 none (<paramref name="feet"/> on that room's floor, <paramref name="deep"/> how far in it begins).
-    /// <paramref name="cut"/>: the hull piece it cuts. False: no pod, or no hull there.
+    /// the pod would cut in as <see cref="NavBoardAct"/> picks it (<see cref="BoardSpot"/>, then <see cref="BoardNearRoom"/>'s search) and
+    /// the hole's frame as <see cref="ConstructBreach.OpenHole"/> takes it, all in <paramref name="t"/>'s rest frame: <paramref name="at"/> on
+    /// the skin, <paramref name="outward"/> out of it, <paramref name="up"/> the hole's up. <paramref name="room"/>: 1 a room behind level with
+    /// the pod's floor, 2 a room not level, 0 none (<paramref name="feet"/> on that room's floor, <paramref name="deep"/> how far in it
+    /// begins). <paramref name="cut"/>: the hull piece it cuts. The search casts many rays (up to a few hundred ms on a Zero Day), so it
+    /// goes on across calls for the same part, <paramref name="budgetMs"/> at a time: <paramref name="done"/> false means call again next
+    /// frame. False (and done): no pod, or no hull there.
     /// </summary>
-    public bool BoardPreview(Construct carrier, Construct t, int part, out Vector3 at, out Vector3 outward, out Vector3 up, out int room, out Vector3 feet, out float deep, out int cut)
+    public bool BoardPreview(Construct carrier, Construct t, int part, double budgetMs, out bool done, out Vector3 at, out Vector3 outward, out Vector3 up, out int room, out Vector3 feet, out float deep, out int cut)
     {
-        (at, outward, up, feet, room, deep, cut) = (default, default, default, default, 0, 0, -1);
+        (at, outward, up, feet, room, deep, cut, done) = (default, default, default, default, 0, 0, -1, true);
         if (t.Dirty || part < 0 || part >= t.PartCount || BoardPodOf(Constructs, carrier) is not { } pod)
             return false;
+        var q = _boardPreview;
         _boardQuiet = true;
         try
         {
-            if (!BoardSpot(t, part, true, out var seg, out var spot, out var o, out var u, out var hit))
+            var until = System.Diagnostics.Stopwatch.GetTimestamp() + (long)(budgetMs * System.Diagnostics.Stopwatch.Frequency / 1000);
+            if (q.Target != t.Id || q.Part != part || q.Order.Count == 0 || q.Order[0].I != part)
+            {
+                if (!BoardSpot(t, part, true, out var seg0, out var spot0, out var o0, out var u0, out var hit0))
+                {
+                    q.Target = 0;
+                    return false;
+                }
+                BoardSearchStart(q, t, pod, part, seg0, spot0, o0, u0, hit0);
+                if (System.Diagnostics.Stopwatch.GetTimestamp() > until)
+                {
+                    done = false; // (the picked spot took this frame: the search goes on next frame)
+                    return false;
+                }
+            }
+            if (!BoardSearchStep(q, t, until))
+            {
+                done = false;
                 return false;
-            room = BoardNearRoom(t, pod, part, ref seg, ref spot, ref o, ref u, ref hit);
-            cut = hit;
-            t.WorldFrame(seg, out var q, out var tt);
-            var w = tt + Vector3.Transform(spot, q);
-            var down = ConstructBreach.Level(t, -Vector3.Transform(o, q));
+            }
+            room = q.Found;
+            cut = q.Hit;
+            t.WorldFrame(q.Seg, out var qq, out var tt);
+            var w = tt + Vector3.Transform(q.Spot, qq);
+            var down = ConstructBreach.Level(t, -Vector3.Transform(q.Out, qq));
             var upw = Vector3.Transform(Vector3.UnitY, t.Rot);
             upw -= down * Vector3.Dot(upw, down);
-            upw = upw.LengthSquared() > 0.05f ? Vector3.Normalize(upw) : Vector3.Transform(u, q);
+            upw = upw.LengthSquared() > 0.05f ? Vector3.Normalize(upw) : Vector3.Transform(q.Up, qq);
             var inv = Quaternion.Conjugate(t.Rot);
             at = t.ToLocal(w);
             outward = -Vector3.Normalize(Vector3.Transform(down, inv));
@@ -790,6 +869,7 @@ public sealed partial class Game
                 feet = t.ToLocal(f);
             else
                 room = 0;
+            q.Target = 0; // (done: the next call starts afresh)
             return true;
         }
         finally

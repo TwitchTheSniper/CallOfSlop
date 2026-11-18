@@ -528,11 +528,10 @@
       "by": "back"
     },
     {
-      "part": "Battery",
+      "part": "Ship Battery S",
       "on": 11,
       "socket": "battery",
-      "by": "-z",
-      "paint": "#3a3d3f"
+      "by": "wall"
     },
     {
       "part": "Bulkhead Light",
@@ -636,12 +635,6 @@
         "keys": "Ship",
         "mouseAim": true
       }
-    },
-    {
-      "part": "Chart Table",
-      "on": 20,
-      "socket": "chart",
-      "by": "back"
     },
     {
       "part": "Shell Control Chair",
@@ -898,36 +891,36 @@
       98
     ],
     [
-      124,
+      123,
+      119
+    ],
+    [
+      123,
       120
     ],
     [
-      124,
+      123,
       121
     ],
     [
-      124,
+      123,
       122
     ],
     [
-      124,
-      123
+      128,
+      124
     ],
     [
-      129,
+      128,
       125
     ],
     [
-      129,
+      128,
       126
     ],
     [
-      129,
+      128,
       127
-    ],
-    [
-      129,
-      128
     ]
   ],
   "links": [

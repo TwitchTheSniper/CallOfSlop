@@ -487,22 +487,11 @@
       "by": "bottom"
     },
     {
-      "part": "Battery",
+      "part": "Ship Battery M",
       "on": 3,
-      "socket": "battery0",
-      "by": "-y"
-    },
-    {
-      "part": "Battery",
-      "on": 3,
-      "socket": "battery1",
-      "by": "-y"
-    },
-    {
-      "part": "Battery",
-      "on": 3,
-      "socket": "battery2",
-      "by": "-y"
+      "socket": "battery",
+      "by": "bottom",
+      "spin": 2
     },
     {
       "part": "Power Board",
@@ -542,7 +531,7 @@
     },
     {
       "part": "Manned Manoeuvring Unit",
-      "on": 79,
+      "on": 77,
       "socket": "mmu",
       "by": "mount"
     },
@@ -572,7 +561,7 @@
     },
     {
       "part": "Robot Shell",
-      "on": 84,
+      "on": 82,
       "socket": "dock",
       "by": "back"
     },
@@ -584,7 +573,7 @@
     },
     {
       "part": "Robot Shell",
-      "on": 86,
+      "on": 84,
       "socket": "dock",
       "by": "back"
     },
@@ -596,7 +585,7 @@
     },
     {
       "part": "Robot Shell",
-      "on": 88,
+      "on": 86,
       "socket": "dock",
       "by": "back"
     },
@@ -693,12 +682,6 @@
         "keys": "Ship",
         "mouseAim": true
       }
-    },
-    {
-      "part": "Chart Table",
-      "on": 5,
-      "socket": "chart",
-      "by": "back"
     },
     {
       "part": "Magpie Locker",
@@ -1044,28 +1027,36 @@
       66
     ],
     [
-      91,
+      89,
+      88
+    ],
+    [
+      92,
       90
     ],
     [
-      94,
-      92
+      92,
+      91
     ],
     [
-      94,
+      95,
       93
     ],
     [
-      97,
-      95
+      95,
+      94
     ],
     [
-      97,
-      96
+      96,
+      98
     ],
     [
-      98,
-      100
+      110,
+      108
+    ],
+    [
+      110,
+      109
     ],
     [
       113,
@@ -1076,39 +1067,31 @@
       112
     ],
     [
-      116,
+      115,
       114
     ],
     [
-      116,
-      115
+      134,
+      133
     ],
     [
-      118,
-      117
+      136,
+      135
     ],
     [
-      137,
-      136
+      139,
+      137
     ],
     [
       139,
       138
-    ],
-    [
-      142,
-      140
-    ],
-    [
-      142,
-      141
     ]
   ],
   "links": [
     {
       "type": "pipe",
       "from": 0,
-      "to": 79,
+      "to": 77,
       "fromPort": "Fuel out",
       "toPort": "Fuel in"
     }
