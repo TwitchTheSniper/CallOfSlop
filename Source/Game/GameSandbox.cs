@@ -389,8 +389,16 @@ public sealed partial class Game
                 SandboxEject(p, c, seat);
                 continue;
             }
-            c.Parts[seat].AimYaw = p.Yaw; // (a gunner points the guns with their look; ConstructWeapons.cs)
-            c.Parts[seat].AimPitch = p.Pitch;
+            // A gunner points the guns with their look (ConstructWeapons.cs). The look is the player's, at their own place; the seat's is read at
+            // the construct's centre (GunnerPoint, the modules, mouse aim), so on a planet's curved frames it is carried there: at a frigate's
+            // gun station 30 m off its centre the frames differ enough to put rounds metres off at 200 m.
+            if (GravityFrames.Curved)
+                (c.Parts[seat].AimYaw, c.Parts[seat].AimPitch) = GravityFrames.Angles(c.WorldCom, GravityFrames.Forward(p.Position, p.Yaw, p.Pitch));
+            else
+            {
+                c.Parts[seat].AimYaw = p.Yaw;
+                c.Parts[seat].AimPitch = p.Pitch;
+            }
             if (c.Parts[seat].D.LifterCab)
                 ConstructLifters.CabInput(Constructs, c, seat, b, p.Yaw); // (a Lifter Cab's keys for its lifter's step, before the logic tick clears them: ConstructLifterCab.cs)
             if (seat == c.DriveSeat && !c.Parts[seat].D.LifterCab) // (a Lifter Cab never drives: its keys move the hook, even linked to a Driving Module)

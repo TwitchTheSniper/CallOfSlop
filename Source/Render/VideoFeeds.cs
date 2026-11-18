@@ -33,6 +33,9 @@ public static unsafe class VideoFeeds
         return Shown[page] ? page + 1 : 0;
     }
 
+    /// <summary>A frame of page <paramref name="page"/>'s current track has gone up.</summary>
+    public static bool HasPicture(int page) => Shown[page];
+
     /// <summary>The page has a new track: its old picture isn't shown.</summary>
     public static void Forget(int page) => Shown[page] = false;
 
@@ -78,9 +81,12 @@ public static unsafe class VideoFeeds
     private static bool Init()
     {
         // (an error left by some other draw would be blamed on this texture, and every screen would stay on "Loading": clear the flag first)
-        for (var k = 0; k < 16 && Native.glGetError() != GL_NO_ERROR; k++)
-        {
-        }
+        var stale = 0;
+        var codes = "";
+        for (uint e; stale < 16 && (e = (uint)Native.glGetError()) != (uint)GL_NO_ERROR; stale++)
+            codes += $" 0x{e:x}";
+        if (stale > 0)
+            Console.WriteLine($"[media] {stale} GL error(s) left by earlier drawing, cleared before the pictures' texture:{codes}"); // (once: Init runs once)
         GlTexture t = default;
         Native.glGenTextures(1, &t);
         _tex = t;

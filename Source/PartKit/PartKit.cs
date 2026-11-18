@@ -50,6 +50,7 @@ public static class PartKit
     [
         new Generators.FreeParts(),
         new Generators.FactoryShellParts(), // (the factory kit's parts: ore bunkers, later the shell)
+        new Generators.LinkSupportParts(), // (trestles and link bridges: links up and over an aisle, conveyor-inclines.md)
         new Generators.BanditParts(),
         new Generators.MediaParts(),
         new Generators.AmmoParts(),

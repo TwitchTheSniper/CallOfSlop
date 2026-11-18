@@ -5,7 +5,8 @@ namespace CallOfSlop;
 /// <summary>
 /// Which reactors are heard (Karl, 2026-11-17): the <see cref="Reactors"/> nearest the listener, each on two looping voices,
 /// a light hum and a heavy one faded across by how hard the body's power plants work (<see cref="Construct.PlantShow"/>,
-/// in every peer's pose), a little higher in pitch as it climbs. A reactor is a power plant that burns nothing, of at
+/// in every peer's pose). A steady tone (Karl, 2026-11-18): the pitch never moves and the loudness hardly does; load only
+/// makes the hum fuller, eased over several seconds so a change in power use is never heard as a ramp. A reactor is a power plant that burns nothing, of at
 /// least <see cref="MinKw"/> (a hamster wheel isn't one). A reactor whose ship has its mains off is quiet. Nothing allocates.
 /// </summary>
 public static class MachineSounds
@@ -23,7 +24,7 @@ public static class MachineSounds
     private const float PickRange = 140f;
 
     /// <summary>The hum's gain before the bus at idle and at full load.</summary>
-    public const float IdleGain = 0.16f, FullGain = 0.34f;
+    public const float IdleGain = 0.22f, FullGain = 0.27f;
 
     private static readonly Construct?[] Body = new Construct?[Reactors];
     private static readonly int[] Part = new int[Reactors];
@@ -43,7 +44,7 @@ public static class MachineSounds
             if (c.PlantCount == 0 || c.SpaceAway != 0)
                 continue;
             // (eased here, so a pose's byte steps don't step the hum)
-            c.HumShow += (c.PlantShow - c.HumShow) * Math.Clamp(dt * 1.5f, 0f, 1f);
+            c.HumShow += (c.PlantShow - c.HumShow) * Math.Clamp(dt * 0.3f, 0f, 1f);
             if (c.MainsOff)
                 continue;
             if (Vector3.DistanceSquared(c.Pos, listener) > (PickRange + 40f) * (PickRange + 40f))
@@ -80,10 +81,11 @@ public static class MachineSounds
             var load = Math.Clamp(c.HumShow, 0f, 1f);
             var scale = Math.Clamp(MathF.Sqrt(d.PlantRate / 10000f), 0.6f, 3f);
             var gain = IdleGain + (FullGain - IdleGain) * load;
-            var heavy = MathF.Pow(Math.Clamp((load - 0.2f) / 0.6f, 0f, 1f), 1.3f); // (the heavy hum comes in past a fifth, all of it by four fifths)
-            var pitch = (1f + 0.07f * load) * (scale > 1.5f ? 0.9f : 1f); // (a big core sits a little lower)
-            audio.MachineLoopAt(s * 2, Sfx.ReactorHumLight, at, gain * (1f - 0.75f * heavy), pitch, scale);
-            audio.MachineLoopAt(s * 2 + 1, Sfx.ReactorHumHeavy, at, gain * heavy, pitch, scale);
+            var heavy = Math.Clamp((load - 0.2f) / 0.6f, 0f, 1f); // (the fuller hum comes in past a fifth, all of it by four fifths)
+            var pitch = scale > 1.5f ? 0.9f : 1f; // (a big core sits a little lower; load never moves it)
+            // (equal power across the two, and the heavy voice always running a little, so neither starts or stops as load moves)
+            audio.MachineLoopAt(s * 2, Sfx.ReactorHumLight, at, gain * MathF.Cos(heavy * MathF.PI / 2), pitch, scale);
+            audio.MachineLoopAt(s * 2 + 1, Sfx.ReactorHumHeavy, at, gain * MathF.Max(0.02f, MathF.Sin(heavy * MathF.PI / 2)), pitch, scale);
         }
         for (var s = count; s < Reactors; s++)
         {

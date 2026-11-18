@@ -606,8 +606,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   Loadout message loses its hat byte and the prestige and level after it, and the Hello keeps two zero bytes where
     //   prestige and level were, so the protocol version after them stays where every build reads it.
     // 349: mouse steering key in a ship's seat: CActKind.MouseSteer (u16 body) at its end (flips the Flight Stabilizer's Mouse aim setting).
-    // 350: the Mining Shell (docs/sandbox/design/mining-shell.md): Msg.Shell ends with u8 frame (Constructs/Shells.json), u8 hopper material, u16 hopper units.
-    public const ushort ProtocolVersion = 350;
+    // 350: the rendezvous order (Game/GameNavMeet.cs): NavKind gains Meet at its end (Target: the craft met, Radius: the gap kept, m).
+    // 351: conveyor inclines: the 27 link support parts (Constructs/Parts/LinkSupports) move the part ids after them.
+    // 352: the Mining Shell (docs/sandbox/design/mining-shell.md): Msg.Shell ends with u8 frame (Constructs/Shells.json), u8 hopper material, u16 hopper units.
+    public const ushort ProtocolVersion = 352;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;
