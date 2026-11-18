@@ -14,7 +14,10 @@
   "wake": [[4.175, 3.385, 21.875], [8.375, 3.385, 22.175], [4.175, 3.385, 27.875], [6.375, 3.385, 24.375], [6.375, 3.385, 37.875], [6.375, 0.135, 27.875]],
   // A crewed ship of another faction on the same orbit (GameSpaceStart.OpeningCompanion): the Traders are neutral to players
   // (Crew/Factions/Traders.json) and fly the IT style, so a Zero Day suits them. "behind": m back along the orbit (- ahead).
-  "company": [{ "ship": "Zero Day Frigate", "faction": "Traders", "behind": 400 }],
+  // "away": held still that far out (m, straight out from Caledon past the player's ship, not orbiting) by its own flight
+  // computer: the Mercenaries' Zero Day (Karl, 2026-11-18, to test against), hostile to players, neutral to the Traders,
+  // 80 km out, so 81 to 99 km from the ship as it goes round: always inside the 100 km radar and the torpedoes' reach.
+  "company": [{ "ship": "Zero Day Frigate", "faction": "Traders", "behind": 400 }, { "ship": "Zero Day Frigate", "faction": "Mercenaries", "away": 80000 }],
   "beats": {
     "placeholder": { "time": 4.0, "caption": "The torpedo racks click over on their safeties. Below, Caledon turns, green glens under snow-capped bens." },
     "wake": { "time": 3.5, "lines": [] }

@@ -100,6 +100,7 @@ public sealed partial class Game
         _opOn = false;
         _opColony = 0;
         _opShip = 0;
+        _opHolds.Clear();
         BreakdownReset(); // (GameSandboxBreakdowns.cs)
         LockdownReset(); // (and its barracks: GameColonyLockdown.cs)
         ColonyBuildingsReset(); // (and the Ministry's buildings round the colony: GameColonyBuildings.cs)
@@ -538,7 +539,7 @@ public sealed class OpeningScript
     public float Orbit = 3000; // its height over the ground (m; at least past the sky's edge)
     public Vector3[] Wake = []; // where people wake in it, in the ship's own metres (from its first part's middle), one each in turn
     /// <summary>A crewed ship of an NPC faction kind going round with the start's ship, <c>Behind</c> m back along its orbit (GameSpaceStart.cs).</summary>
-    public readonly record struct Companion(string Ship, string Faction, float Behind);
+    public readonly record struct Companion(string Ship, string Faction, float Behind, float Away = 0);
     public Companion[] Company = [];
     public readonly BeatDef[] Beats = new BeatDef[(int)OpeningStage.Wake + 1];
     public string Problem = "";
@@ -622,7 +623,12 @@ public sealed class OpeningScript
         var behind = Math.Clamp(e.TryGetProperty("behind", out var b) ? b.GetSingle() : 400f, -5000f, 5000f);
         if (MathF.Abs(behind) < 150f)
             behind = behind < 0 ? -150f : 150f;
-        return new Companion(ship, faction, behind);
+        // "away": held still that far out instead (m straight out from the planet past the player's ship, not on the orbit:
+        // Karl, 2026-11-18, a rival to find on the radar), under the far distance where a ship is parked (GameSpaceJump.cs)
+        var away = Math.Clamp(e.TryGetProperty("away", out var w) ? w.GetSingle() : 0f, 0f, 150_000f);
+        if (away > 0 && away < 1000f)
+            away = 1000f;
+        return new Companion(ship, faction, behind, away);
     }
 
     private static string Text(JsonElement e, string key, string fallback) =>
