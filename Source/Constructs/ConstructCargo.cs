@@ -126,6 +126,22 @@ public static class ConstructCargo
         return all > 0 && inside >= all * InsideShare;
     }
 
+    /// <summary>Does a clamp or a magnetic lock take one craft at a time (a hangar bay, which throws what it lets go out of its mouth, holds as many as fit)?</summary>
+    public static bool OneCraft(ConstructPartDef d) => d.IsDock && d.DockEject <= 0;
+
+    /// <summary>
+    /// Does dock <paramref name="part"/> of <paramref name="c"/> already hold a craft other than <paramref name="except"/>: one
+    /// caught in it, or gripped (by its own grapples) in its box? Walks the bodies, so callers ask only when <paramref name="c"/>
+    /// carries something or a catch is near.
+    /// </summary>
+    public static bool DockTaken(ConstructWorld world, Construct c, int part, Construct? except)
+    {
+        foreach (var b in world.Bodies)
+            if (b != except && (b.CarriedBy == c.Id && (b.CarryTag != 0 ? CarriedIn(c, b) == part : MostlyInside(c, part, b)) || b.MooredTo == c.Id && b.MoorPart == part))
+                return true; // (a client isn't told the carry's tag, nor is a grapple's grip one: the craft in the port's box; a station's berth moors a ship: GameStations.cs)
+        return false;
+    }
+
     /// <summary>Why <paramref name="b"/> can't be caught by carrier <paramref name="c"/> (null: it can).</summary>
     public static bool Catchable(ConstructWorld world, Construct c, Construct b, ConstructPartDef volume)
     {
@@ -358,6 +374,9 @@ public static class ConstructCargo
                 c.WorldFrame(p.Seg, out var q, out var t);
                 var world0 = t + Vector3.Transform(centre, q);
                 var reach0 = half.Length();
+                var one = OneCraft(p.D);
+                if (one && carried > 0 && DockTaken(world, c, part, null))
+                    continue; // (a clamp or a lock that holds a craft takes no second one: two docked ships stood in each other)
                 var near = world.Near(world0, reach0, _near); // (the broadphase: what may be inside)
                 for (var bi = 0; bi < near.Count; bi++)
                 {
@@ -375,6 +394,8 @@ public static class ConstructCargo
                     {
                         Catch(world, c, part, b);
                         carried = CarriedCount(world, c);
+                        if (one)
+                            break;
                     }
                 }
             }

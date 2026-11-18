@@ -34,13 +34,7 @@ public sealed partial class Game
             if (p.Broken || !c.DefOf(i).IsDock)
                 continue;
             all++;
-            var held = false;
-            foreach (var b in world.Bodies)
-                if (b.CarriedBy == c.Id && (b.CarryTag != 0 ? ConstructCargo.CarriedIn(c, b) == i : ConstructCargo.MostlyInside(c, i, b)) || b.MooredTo == c.Id && b.MoorPart == i)
-                {
-                    held = true;
-                    break;
-                }
+            var held = ConstructCargo.DockTaken(world, c, i, null);
             if (!held)
                 free++;
         }

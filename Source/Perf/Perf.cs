@@ -22,6 +22,12 @@ public enum PerfArea : byte
     Sandbox, //       the Sandbox's tick (GameSandbox.cs ServerTickSandbox): hands, seats and everything below
     Constructs, //         ConstructWorld.Step: every construct
     ConstructLogic, //           links, hoses, power, routes, guns, the logic blocks, doors, launchers
+    CLinks, //             couplings, wires between bodies, hydraulics, no-collide pairs, ropes, world links and hoses, far marking
+    CPower, //             ConstructPower.Step per body (and the per-body housekeeping beside it)
+    CRoutes, //             ConstructRoutes.Step per body: routed links' leaks, sparks, chutes
+    CWeapons, //             ConstructWeapons.Step: guns, turrets, ordnance aim
+    CLogicBlocks, //             radio, then ConstructLogic.Step per body: the logic blocks
+    CDoors, //             decouplers, racks' release, hoists, launchers, doors, riding before physics
     ConstructPhysics, //           ConstructPhysics.Step: bodies, contacts, joints, wheels
     Production, //           machines: recyclers, gatherers, scoops, smelters, assemblers, extruders, conveyors, beacons, cargo
     SandboxWorld, //         the world's own: spawns, vehicles made at spawn, AI pilots, shots, debris, the flush
@@ -102,7 +108,7 @@ public static class Perf
     public static readonly string[] Names =
     [
         "Events", "Input", "Game update", "Net receive", "Server ticks", "Match and mode", "Zombies", "Horde", "Co-op",
-        "Sandbox tick", "Constructs", "Links, power, logic", "Construct physics", "Machines, production", "Spawns, pilots, debris", "Colony, duties", "Story",
+        "Sandbox tick", "Constructs", "Links, power, logic", "Links, ropes, hoses", "Power", "Routed links", "Weapons", "Logic blocks", "Doors, launchers, release", "Construct physics", "Machines, production", "Spawns, pilots, debris", "Colony, duties", "Story",
         "Projectiles", "Props, logic, destruction", "Space, travel", "Terrain streaming", "Player moves", "Bots + nav", "Net send (snapshots)", "Client prediction",
         "Frame state, sounds", "Audio, voice, frenzy", "Render (CPU)", "Buildings", "City", "Terrain", "Props", "Meshes", "Foliage",
         "Decals", "Sky", "Players", "Entities, zombies", "Constructs (draw)", "Effects", "Particles", "Post effects", "View model", "HUD (2D)", "Ragdolls", "UI (ImGui)",
@@ -127,6 +133,7 @@ public static class Perf
         Under(PerfArea.Modes, PerfArea.Zombies, PerfArea.Coop, PerfArea.Sandbox);
         Under(PerfArea.Sandbox, PerfArea.Constructs, PerfArea.SandboxWorld, PerfArea.Colony, PerfArea.Story);
         Under(PerfArea.Constructs, PerfArea.ConstructLogic, PerfArea.ConstructPhysics, PerfArea.Production);
+        Under(PerfArea.ConstructLogic, PerfArea.CLinks, PerfArea.CPower, PerfArea.CRoutes, PerfArea.CWeapons, PerfArea.CLogicBlocks, PerfArea.CDoors);
         Under(PerfArea.Zombies, PerfArea.Horde);
         Under(PerfArea.Render, PerfArea.Buildings, PerfArea.City, PerfArea.Terrain, PerfArea.Props, PerfArea.Meshes, PerfArea.Foliage, PerfArea.Decals, PerfArea.Sky,
             PerfArea.Bodies, PerfArea.Entities, PerfArea.ConstructDraw, PerfArea.Effects, PerfArea.Particles, PerfArea.PostFx, PerfArea.ViewModel, PerfArea.Hud, PerfArea.Ragdolls);
