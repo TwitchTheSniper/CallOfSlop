@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Highland Plane 8",
-  "group": "Clan MacSlop",
+  "group": "Highland",
   "description": "A pusher mid-wing plane on tricycle gear. Shift and Ctrl set the throttle, S lifts the nose, A and D bank and turn.",
   "steps": [
     {"part": "Frame Block", "paint": "#0b4f9c"},

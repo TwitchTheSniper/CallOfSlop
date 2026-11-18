@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "British Plane 8",
-  "group": "Ministry of Slop",
+  "group": "British",
   "description": "A pusher mid-wing plane on tricycle gear. Shift and Ctrl set the throttle, S lifts the nose, A and D bank and turn.",
   "steps": [
     {"part": "Frame Block", "paint": "#e8dfc8"},

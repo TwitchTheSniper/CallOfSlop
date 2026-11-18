@@ -599,9 +599,17 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   Msg.CrewRoster's job byte has bit 7 for an officer prisoner.
     // 347: time speed to 1,000,000x (SpaceClock.MaxSpeed): Msg.Space's clock speed may pass 100,000, which an older client clamped, so its
     //   clock ran ten times slow between the host's clock packets.
-    // 348: a breaching cutter cuts a door-sized hole out of a hull piece (HullHoles.cs): a body's part may be a "Holed (...)" run-time
+    // 348: removals (docs/removals-notes.md). The penal colony went: Msg.Tutorial, ColonyAlarm,
+    //   Depot, Quarry, Labour, LabourHands, Breakout, Errand, LabourDay, LabourIncident and Objective (the "what next" line) keep their slots as Removed*, never sent,
+    //   and the colony's lore and building parts move part ids, as do the old factions' dressing parts (the Pipe Box and the
+    //   rest). Levelling and prestige went: the roster entry loses prestige, level and hat (3 bytes, before the look), the
+    //   Loadout message loses its hat byte and the prestige and level after it, and the Hello keeps two zero bytes where
+    //   prestige and level were, so the protocol version after them stays where every build reads it.
+    // 349: mouse steering key in a ship's seat: CActKind.MouseSteer (u16 body) at its end (flips the Flight Stabilizer's Mouse aim setting).
+    // 350: the rendezvous order (Game/GameNavMeet.cs): NavKind gains Meet at its end (Target: the craft met, Radius: the gap kept, m).
+    // 351: a breaching cutter cuts a door-sized hole out of a hull piece (HullHoles.cs): a body's part may be a "Holed (...)" run-time
     //   part, sent as its key after Extrusion.WireMark and HullLoft.WireKind, which an older client refused as a malformed packet.
-    public const ushort ProtocolVersion = 348;
+    public const ushort ProtocolVersion = 351;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

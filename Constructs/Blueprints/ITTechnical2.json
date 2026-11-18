@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 2 body 2 kit 2 wear 2, chassis 2 axles, front under the hood, inset 1.25 m, coil/leaf, wing 0.5, cab style glasshouse, language van standard 2.61 m, flare 0.00, crowned 0.8, brow 0.64 1.25 m, tail 0.80 1.25 m, door right, 12 facets, cab pod cab, 8 facets, nose wedge, wear age 0.59 (0 rusty, 0 dirty, 0 sooty, 0 patched, 0 rusted out), body gun bay, cab enclosed, nose short hood, rear porch, under tub, layout gun bay 2 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "IT Technical 2",
-  "group": "IT Department",
+  "group": "IT",
   "description": "A technical: a short hood, an enclosed cab, a gun behind the cab, a drum on the rear porch. 1 gun.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#3b3f44"},
@@ -76,9 +76,9 @@
     {"part": "Arch Fender", "on": 66, "socket": "-x0", "by": "mount", "paint": "#c0392b"},
     {"part": "Plate Steel 0.5 m", "weld": {"on": 67, "pos": [1.321, 0.597, -0.375], "rot": [0.0004, -0.0061, -0.7058, 0.7084]}, "paint": "#d8d0b8"},
     {"part": "Plate Steel 0.5 m", "weld": {"on": 68, "pos": [-0.82, 0.216, -0.373], "rot": [0.0059, 0.0055, 0.7125, 0.7016]}, "paint": "#d8d0b8"},
-    {"part": "Office Plant", "on": 66, "socket": "top", "by": "base"},
-    {"part": "Network Switch", "on": 62, "socket": "front", "by": "base"},
-    {"part": "Wi-Fi Mast", "on": 58, "socket": "front02", "by": "base"}
+    {"part": "Desk Fan", "on": 66, "socket": "top", "by": "base"},
+    {"part": "Office Plant", "on": 35, "socket": "top", "by": "base"},
+    {"part": "Satellite Dish", "on": 62, "socket": "front", "by": "base"}
   ],
   "wires": [[32, 33], [33, 27], [47, 54], [54, 49]],
   "links": [

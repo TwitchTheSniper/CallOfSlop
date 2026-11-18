@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 6 body 6 kit 6 wear 6, chassis 2 axles, front under the hood, inset 1 m, hydraulic/swing arm, wing 0.5, archetype gun buggy, language tub standard 2.20 m, flare 0.14, tapered 0.6, brow 0.60 1.5 m, tail 0.65 1.25 m, door right, 11 facets, cab tub caged cab, 8 facets, nose wedge, wear age 0.63 (0 rusty, 0 dirty, 0 sooty, 0 patched, 0 rusted out), body gun bay, cab caged, nose long hood, rear porch, under stilts, layout gun bay 2 m, plan 2
   "format": "call-of-slop-construct-blueprint/1",
   "name": "IT Buggy 6",
-  "group": "IT Department",
+  "group": "IT",
   "description": "A gun buggy: a long hood, a caged cab, a gun behind the cab, a drum on the rear porch. 1 gun.",
   "steps": [
     {"part": "Square Beam 1 m", "paint": "#3b3f44"},
@@ -69,8 +69,9 @@
     {"part": "Hull Loft (hoodw UhV2WyWjXSWtVd ~80080A80N7eX78g60q4e_2f3013)", "on": 24, "socket": "+y", "by": "engine", "paint": "#0f7bd8"},
     {"part": "Bar Grille", "on": 61, "socket": "front", "by": "back", "paint": "#0f7bd8"},
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 62, "pos": [0.123, 0.515, -1.085], "rot": [-0.7035, 0.007, 0.0019, 0.7107]}, "paint": "#d8d0b8"},
-    {"part": "CRT Monitor", "on": 61, "socket": "top", "by": "base"},
-    {"part": "Satellite Dish", "on": 57, "socket": "front", "by": "base"}
+    {"part": "Network Switch", "on": 61, "socket": "top", "by": "base"},
+    {"part": "Network Switch", "on": 57, "socket": "front", "by": "base"},
+    {"part": "Satellite Dish", "on": 58, "socket": "front", "by": "base"}
   ],
   "wires": [[29, 30], [30, 24], [42, 52], [52, 44]],
   "links": [

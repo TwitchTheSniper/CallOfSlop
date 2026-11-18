@@ -1,0 +1,185 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Zero Day Torpedo Hatch",
+  "description": "The armoured hatch over one of the Zero Day's torpedo ports, hinged on its outboard edge. It swings open by itself just before a torpedo launches and shuts a few seconds after the last one. F opens or shuts it by hand.",
+  "group": "Ship",
+  "section": "Zero Day frigate",
+  "role": "door",
+  "tool": "welder",
+  "door": {
+    "kind": "swing",
+    "axis": "+y",
+    "angle": -90,
+    "seconds": 1.0,
+    "hang": "hang",
+    "launch": true
+  },
+  "mass": 600.0,
+  "health": 8000,
+  "armour": 45,
+  "material": "steel",
+  "color": "#30353b",
+  "attachSeconds": 6.0,
+  "boxes": [
+    {
+      "min": [
+        -2.55,
+        -1.25,
+        -0.08
+      ],
+      "max": [
+        0.0,
+        1.25,
+        0.0
+      ],
+      "color": "#30353b",
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -2.3,
+        -0.85,
+        -0.115
+      ],
+      "max": [
+        -0.2,
+        -0.75,
+        -0.074
+      ],
+      "color": "#3b4148",
+      "detail": true,
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -2.3,
+        -0.05,
+        -0.115
+      ],
+      "max": [
+        -0.2,
+        0.05,
+        -0.074
+      ],
+      "color": "#3b4148",
+      "detail": true,
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -2.3,
+        0.75,
+        -0.115
+      ],
+      "max": [
+        -0.2,
+        0.85,
+        -0.074
+      ],
+      "color": "#3b4148",
+      "detail": true,
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -2.52,
+        -1.22,
+        -0.092
+      ],
+      "max": [
+        -2.38,
+        1.22,
+        -0.074
+      ],
+      "color": "#e0b020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -2.25,
+        -0.62,
+        -0.096
+      ],
+      "max": [
+        -0.25,
+        -0.38,
+        -0.076
+      ],
+      "color": "#2c5aa0",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -2.25,
+        0.38,
+        -0.096
+      ],
+      "max": [
+        -0.25,
+        0.62,
+        -0.076
+      ],
+      "color": "#2c5aa0",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -0.12,
+        -1.1,
+        -0.13
+      ],
+      "max": [
+        -0.002,
+        -0.8,
+        -0.073
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.12,
+        0.8,
+        -0.13
+      ],
+      "max": [
+        -0.002,
+        1.1,
+        -0.073
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -2.31,
+        -0.06,
+        -0.102
+      ],
+      "max": [
+        -2.23,
+        0.06,
+        -0.075
+      ],
+      "color": "#f0a830",
+      "detail": true,
+      "glow": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "hang",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+z"
+    }
+  ]
+}

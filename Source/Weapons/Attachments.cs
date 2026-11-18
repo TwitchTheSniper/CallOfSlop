@@ -98,7 +98,8 @@ public sealed class AttachmentDef
 /// <summary>
 /// Call of Duty style gunsmith. Every weapon has 6 slots; each slot holds one attachment or nothing.
 /// A weapon's attachments are a "kit": 5 bits per slot packed into a uint (sent as 4 bytes; protocol 46, 4 bits and 3 bytes before).
-/// Attachments unlock per weapon with weapon XP (kills with that gun, plus a match bonus; see <see cref="UnlockXp"/>).
+/// Every attachment that fits is open (weapon XP and its unlocks went with levelling, 2026-11-17; <see cref="UnlockXp"/>
+/// stays only as the order the lists show them in).
 /// The server applies the same kit to the same base stats, so attachments are fully authoritative.
 /// </summary>
 public static class Attachments
@@ -365,10 +366,9 @@ public static class Attachments
     }
 
     /// <summary>
-    /// Drops anything that doesn't fit the weapon (and, if progress is given, anything still locked: on a gun that starts
-    /// scoped, an empty optic slot is its iron sights, so while those are locked the default scope goes back on).
+    /// Drops anything that doesn't fit the weapon. (Weapon XP no longer locks anything: levelling went, 2026-11-17.)
     /// </summary>
-    public static uint Sanitize(WeaponDef w, uint kit, Progress? progress = null)
+    public static uint Sanitize(WeaponDef w, uint kit)
     {
         var baseDef = Weapons.Get(w.Id);
         var fit = WeaponTweaks.FileDef(baseDef); // fits and unlocks go by the file, never a live tweak
@@ -378,12 +378,8 @@ public static class Attachments
             var a = Get((AttachSlot)s, Slot(kit, (AttachSlot)s));
             if (a == null || !a.Fits(fit))
                 continue;
-            if (progress != null && progress.WeaponXp(w.Id) < UnlockXp(baseDef, a))
-                continue;
             clean = With(clean, (AttachSlot)s, a.Index);
         }
-        if (progress != null && Slot(clean, AttachSlot.Optic) == 0 && DefaultOptic(baseDef) is { } scope && !IronSightsUnlocked(baseDef, progress.WeaponXp(w.Id)))
-            clean = With(clean, AttachSlot.Optic, scope.Index);
         return clean;
     }
 

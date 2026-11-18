@@ -30,13 +30,13 @@ public sealed partial class Game
         _loreAt = 0;
     }
 
-    /// <summary>The construct of one of the colony's buildings, by its blueprint's name (0: none here).</summary>
-    private ushort LoreBuilding(string name) => ColonyBuilding(name)?.Id ?? (name.Equals("Remote Works", StringComparison.OrdinalIgnoreCase) ? _dpWorks : (ushort)0); // (the Ministry's buildings too: GameColonyBuildings.cs)
+    /// <summary>The construct of a building an item stands in, by its blueprint's name (0: none here; the penal colony's buildings were the only ones, removed 2026-11-17).</summary>
+    private static ushort LoreBuilding(string name) => 0;
 
     /// <summary>Server, from <see cref="StoryTick"/>: every few seconds, each item with a place stands there once (and is found again after a load).</summary>
     private void LoreTick(StoryEngine s, double now)
     {
-        if (now < _loreAt || !_opOn || _opColony == 0)
+        if (now < _loreAt || !_opOn)
             return;
         _loreAt = now + 3;
         var items = s.Rules.Lore.Items;

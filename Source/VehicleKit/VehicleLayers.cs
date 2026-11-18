@@ -102,7 +102,7 @@ public readonly record struct VehicleLayers(int? Chassis = null, int? Body = nul
             return VehicleLayer.Chassis;
         if (Is(topic, "wear") || Is(topic, "crooked"))
             return VehicleLayer.Wear;
-        if (Is(topic, "grammar kit") || Is(topic, "weapon") || Is(topic, "rounds") || Is(topic, "ram") || Is(topic, "show") || Is(topic, "kit") || Is(topic, "piper")
+        if (Is(topic, "grammar kit") || Is(topic, "weapon") || Is(topic, "rounds") || Is(topic, "ram") || Is(topic, "show") || Is(topic, "kit")
             || Is(topic, "mark") || Is(topic, "furnish") || Is(topic, "end chest") || Is(topic, "cargo") || Is(topic, "crew") || Is(topic, "panniers"))
             return VehicleLayer.Kit;
         return VehicleLayer.Body;

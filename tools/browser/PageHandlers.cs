@@ -10,6 +10,7 @@ internal sealed class Painter(SharedBlock block, int slot) : IRenderHandler
 {
     private bool _painted;
     private int _wrongSize;
+    private bool _failed; // this painter said pfail: its first right-size frame takes it back
 
     public ScreenInfo? GetScreenInfo() => new ScreenInfo { DeviceScaleFactor = 1 };
     public Rect GetViewRect() => new(0, 0, block.Width, block.Height);
@@ -30,10 +31,18 @@ internal sealed class Painter(SharedBlock block, int slot) : IRenderHandler
             if (++_wrongSize == 1)
                 Program.Log($"page {slot}: the browser paints {width} x {height}, not the screen's {block.Width} x {block.Height}");
             else if (_wrongSize == 10 && !_painted)
+            {
+                _failed = true;
                 Program.Say($"pfail {slot} the browser paints {width} x {height}, not the screen's {block.Width} x {block.Height}");
+            }
             return;
         }
         block.WriteFrame(buffer, width, height);
+        if (_failed)
+        {
+            _failed = false;
+            Program.Say($"pok {slot}");
+        }
         if (!_painted)
         {
             _painted = true;

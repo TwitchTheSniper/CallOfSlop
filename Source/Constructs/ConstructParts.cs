@@ -628,6 +628,7 @@ public sealed partial class ConstructPartDef
     /// <summary>Uses power on an electrical construct (logic parts, moving joints, anything with a draw; the engine's starter separately).</summary>
     public bool Electric => Role == PartRole.Logic && Logic != CLogic.Cargo && Logic != CLogic.FlightStabilizer && Logic != CLogic.Decoupler && Logic != CLogic.BombRack && !IsSeatModule || Role == PartRole.Joint && JointType is not (JointType.Steering or JointType.Flex or JointType.Slider or JointType.Swivel) && RailDrive != RailDriveKind.Shaft || PowerDraw > 0 || FuelKind == EngineFuel.Electric && Role == PartRole.Engine || MotorTorque > 0 || Role == PartRole.Thruster && ThrustFuel == EngineFuel.Electric || Rotor is { MotorKw: > 0 }; // (steering is mechanical)
     // Weapons (milestone 3; ConstructWeapons.cs)
+    public float GunFlak; // a heavy gun's flak fuse (m): its rounds burst passing this close to a missile or bomb in the air (a point-defence gun's)
     public float GunThrust, GunBurn, GunTurn, GunProx, GunCrater; // a heavy gun's shell (ConstructOrdnance.cs): its push (m/s2), seconds it burns, turn (degrees a second), proximity fuse (m), crater (m)
     public int GunShell = -1; // a heavy gun's ShellKind ("shell"); -1: its rounds are rounds
     public SightKind Sight; // "sight": bolted to a gun, what it adds (ConstructOrdnance.cs)
@@ -823,7 +824,6 @@ public sealed partial class ConstructPartDef
     public PanelDef[] Panels = []; // flat display surfaces (DisplayPanel.cs)
     public bool RemoteReceiver, IsCamera; // ConstructRemote.cs
     public bool IsMedia; // a Video Screen or Music Player (ConstructMedia.cs)
-    public bool MediaPipes; // a Pipe Box: it plays its list while its construct is driven (ConstructPipes.cs)
     public bool IsWeb; // a Browser Screen: IsMedia, and its one line is a web address (ConstructMedia.cs)
     public bool IsSpeaker; // a speaker (ConstructSpeakers.cs)
     public float SpeakerNear; // metres it holds full level
@@ -2190,7 +2190,7 @@ public static partial class ConstructParts
     /// </summary>
     private static void ParseGun(ConstructPartDef d, JsonElement b, string file, string bw)
     {
-        Known(b, ["shell", "thrust", "burn", "turn", "prox", "crater", "receiver", "action", "damage", "rpm", "spread", "range", "maxRange", "mag", "reload", "pellets", "speed", "flags", "blast", "blastDamage", "muzzle", "fx", "kick", "soundOf", "energy"], bw);
+        Known(b, ["shell", "thrust", "burn", "turn", "prox", "crater", "receiver", "action", "damage", "rpm", "spread", "range", "maxRange", "mag", "reload", "pellets", "speed", "flags", "blast", "blastDamage", "muzzle", "fx", "kick", "soundOf", "energy", "flak"], bw);
         d.GunMaxRange = Opt(b, "maxRange") is { } mr ? Num(mr, file, "gun.maxRange") : 300f;
         Range(d.GunMaxRange, 1, 1000, file, "gun.maxRange");
         d.GunKick = Opt(b, "kick") is { } kick ? Num(kick, file, "gun.kick") : 0f;
@@ -2269,6 +2269,8 @@ public static partial class ConstructParts
         foreach (var f in d.GunFlags)
             if (f is not ("penetrating" or "explosive" or "incendiary"))
                 throw new ConstructPartException($"{file}: \"gun.flags\": \"{f}\" (a heavy gun's flags are penetrating, explosive, incendiary)");
+        d.GunFlak = Opt(b, "flak") is { } fk ? Num(fk, file, "gun.flak") : 0f;
+        Range(d.GunFlak, 0, 10, file, "gun.flak");
         d.GunBlast = Opt(b, "blast") is { } bl ? Num(bl, file, "gun.blast") : 0f;
         Range(d.GunBlast, 0, 60, file, "gun.blast");
         d.GunBlastDamage = Opt(b, "blastDamage") is { } bd ? Num(bd, file, "gun.blastDamage") : d.GunDamage;

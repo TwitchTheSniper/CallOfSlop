@@ -81,6 +81,7 @@ public sealed partial class Audio
         Sfx.HullCreak or Sfx.PartFail => MixBus.PropBreak,
         >= Sfx.ShellHelmetDown and <= Sfx.DockRelease => MixBus.Tactical, // (machines, at your ear too: SynthMachine.cs)
         Sfx.ShellServoGrind => MixBus.PropBreak,
+        >= Sfx.DoorSlide and <= Sfx.DoorOpenStop => MixBus.Tactical, // (doors and hatches: SynthDoors.cs)
         _ => world ? MixBus.Tactical : MixBus.Ui,
     };
 

@@ -859,6 +859,32 @@ public static partial class ConstructRoutes
     }
 
     /// <summary>
+    /// One end of a link on its look line (user, 2026-11-17: aiming at a cable shows what it connects): the device and the port,
+    /// "Battery #2: Power out". The device is numbered among the parts of its kind on the construct, in part order, only when
+    /// there are two or more; a port with no name (the part itself) gives the device alone. Allocates: call it when the look changes.
+    /// </summary>
+    public static string EndLabel(Construct c, int part, RouteType t, byte port, bool input)
+    {
+        if (part < 0 || part >= c.PartCount)
+            return "?";
+        var d = c.DefOf(part);
+        int number = 0, same = 0;
+        for (var i = 0; i < c.PartCount; i++)
+        {
+            var di = c.DefOf(i);
+            if (ReferenceEquals(di, d) || string.Equals(di.Name, d.Name, StringComparison.Ordinal))
+            {
+                same++;
+                if (i <= part)
+                    number++;
+            }
+        }
+        var device = same >= 2 ? $"{d.Name} #{number}" : d.Name;
+        var pn = PortName(d, t, port, input);
+        return pn.Length > 0 ? $"{device}: {pn}" : device;
+    }
+
+    /// <summary>
     /// A pipe carries what its output port produces: when the input port it ends at wants another fluid ("exhaust into a
     /// fuel inlet") this says so, else null. A warning on the link, not a refusal.
     /// </summary>

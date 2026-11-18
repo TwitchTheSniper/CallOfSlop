@@ -104,17 +104,17 @@ public static class Styles
     };
 
     /// <summary>
-    /// The IT Department: a parody of modern office work, and the first faction everything is tried with. Beige cases, carpet
-    /// grey and corporate blue, a hazard stripe of lanyard yellow; monitors, dishes, switches, cable reels, plants and plaques where
-    /// bandits hang skulls, router antennas and dishes down the flanks, server racks, computers and fax machines in the rooms (the
-    /// Computer and the Fax Machine are the only line to the IT Department: docs/archive/story/STORY.md), neat plates (it passed an audit).
-    /// Guns are named for the job. It is the tech faction: what it carries and drops is electronics (Constructs/Loot.json "it").
+    /// IT: office kit on wheels, and the first style everything is tried with (the Traders fly it: Crew/Factions/Traders.json). Beige
+    /// cases, carpet grey and corporate blue, a hazard stripe of lanyard yellow; dishes, switches, plants and fans where bandits hang
+    /// skulls, router antennas and dishes down the flanks, server racks, computers and fax machines in the rooms, neat plates. It is
+    /// the tech style: what it carries and drops is electronics (Constructs/Loot.json "it"). (The IT Department's joke pieces, the
+    /// CRT monitor, the cable reel and the plaque, went with the old factions, 2026-11-17.)
     /// </summary>
     public static readonly FactionStyle It = new()
     {
         Name = "IT",
         Extra = ["Car", "Buggy", "Concept", "Giant Truck", "Drone", "Plane", "Helicopter"], // (phase 8a: its archetypes' cars; 8b: buggies, monster trucks, wagons, concepts, giants)
-        Group = "IT Department",
+        Group = "IT",
         Palette = new()
         {
             ["rust"] = ["#d8d0b8", "#cfc6aa", "#d8d0b8", "#8e9296", "#a7abae"], // (the panels: old beige cases, carpet tile grey)
@@ -136,14 +136,14 @@ public static class Styles
             ["cab"] = ["Windscreen Frame", "Chop Top Cab", "Roll Cage", "Roll Bar"],
             ["heavyCab"] = ["Cab Over Shell", "Tin Roof Cab", "Chop Top Cab"],
             ["spike"] = ["Router Antenna", "Router Antenna", "Wi-Fi Mast", "Satellite Dish"],                 // (Constructs/Parts/Office, Source/PartKit/Generators/OfficeParts.cs)
-            ["trophy"] = ["CRT Monitor", "Satellite Dish", "Network Switch", "Cable Reel", "CRT Monitor", "Office Plant", "Desk Fan", "Employee of the Month"],
+            ["trophy"] = ["Network Switch", "Satellite Dish", "Network Switch", "Office Plant", "Desk Fan", "Office Plant"],
             ["bunk"] = ["Crew Bench"],                                                   // (nobody sleeps here, officially)
             ["workbench"] = ["Scrap Workbench"],                                         // (the hot desk)
             ["mast"] = ["Satellite Dish", "Wi-Fi Mast", "Satellite Dish", "Router Antenna"],          // (on the roofs: Vehicle.Kit)
-            ["gear"] = ["Cable Reel", "Network Switch", "CRT Monitor", "Satellite Dish", "Cable Reel"], // (on open beds and porches)
+            ["gear"] = ["Network Switch", "Satellite Dish", "Office Plant", "Network Switch"], // (on open beds and porches)
             ["rack"] = ["Server Rack"],                                                  // (loot on its shelves)
             ["computer"] = ["Computer"],                                                 // (emails IT: GameSandboxOffice.cs)
-            ["fax"] = ["Fax Machine"],                                                   // (IT answers on it)
+            ["fax"] = ["Fax Machine"],                                                   // (the office desk answers on it: GameSandboxOffice.cs)
             ["layout"] = ["open plan", "server room", "stationery cupboard", "break room"],
             ["layout open plan"] = ["computer", "computer", "fax", "rack"],
             ["layout server room"] = ["rack", "rack", "computer", "fax"],
@@ -152,13 +152,13 @@ public static class Styles
         },
         LightGear = Bandit.LightGear,
         HeavyGear = Bandit.HeavyGear,
-        // The weapon slot: named for the job.
+        // The weapon slot: named for the trade.
         Weapons =
         [
-            new("Ticket Closer", "Courier Carbine Receiver{barrel:Standard Barrel,feed:Box Mag}"),
-            new("Ticket Closer", "Courier Carbine Receiver{barrel:Stub Barrel{muzzle:Flash Hider},feed:Box Mag}"),
-            new("Reply All", "Workhorse Receiver{barrel:Standard Barrel,feed:Extended Mag,action:Full-Auto Sear}"),
-            new("Hard Reset", "Farmhand Pump Receiver{barrel:Scattermouth Barrel,feed:Shell Box,action:Pump Slide}"),
+            new("Bill of Sale", "Courier Carbine Receiver{barrel:Standard Barrel,feed:Box Mag}"),
+            new("Bill of Sale", "Courier Carbine Receiver{barrel:Stub Barrel{muzzle:Flash Hider},feed:Box Mag}"),
+            new("Bulk Order", "Workhorse Receiver{barrel:Standard Barrel,feed:Extended Mag,action:Full-Auto Sear}"),
+            new("Final Offer", "Farmhand Pump Receiver{barrel:Scattermouth Barrel,feed:Shell Box,action:Pump Slide}"),
         ],
         // (the shapes' own seeds fail in this style's dice; these are --sweep-vehicle's most different passing seeds)
         Seeds = new()
@@ -172,17 +172,17 @@ public static class Styles
     };
 
     /// <summary>
-    /// The Call Centre: the Scammers (docs/archive/story/STORY.md, "The Scammers") on wheels. A parody of the scam call centre: cubicle grey and
-    /// corporate teal, with WINNER yellow, hot pink and dollar green where bandits use war paint; desk phones, headsets on stands, GIFT CARDS
-    /// signs and a prize wheel where bandits hang skulls, loudhailers down the flanks, phone masts on the roofs, and rooms of cubicles
-    /// (a drawer of loot in each) round the water cooler (Constructs/Parts/CallCentre, Source/PartKit/Generators/CallCentreParts.cs). They run on
-    /// other people's batteries, so that is what they carry (Constructs/Loot.json "scam"). Guns are named for the job.
+    /// Scam: grey and teal haulers dressed in loudhailers and phone masts (the Salvagers fly it: Crew/Factions/Salvagers.json). Cubicle grey
+    /// and corporate teal, with yellow, hot pink and green where bandits use war paint; hubcaps, cones and loudhailers where bandits hang
+    /// skulls, loudhailers down the flanks, phone masts on the roofs, and rooms of crates and shelves round the water cooler. They run on
+    /// other people's batteries, so that is what they carry (Constructs/Loot.json "scam"). Guns are named for the salvage trade. (The
+    /// scam call centre's pieces, the phones, headsets, signs, prize wheel and cubicles, went with the old factions, 2026-11-17.)
     /// </summary>
     public static readonly FactionStyle Scam = new()
     {
         Name = "Scam",
         Extra = ["Car", "Buggy", "Concept", "Drone", "Plane", "Helicopter"], // (phase 8a: its archetypes' cars; 8b: buggies, monster trucks, wagons, concepts, giants)
-        Group = "The Call Centre",
+        Group = "Scam",
         Palette = new()
         {
             ["rust"] = ["#9aa0a6", "#8a9096", "#b0b4b8", "#7d8a92"],            // (the panels: cubicle fabric greys)
@@ -196,24 +196,23 @@ public static class Styles
             ["hood"] = ["Snub Hood", "Long Hood", "Slab Nose"],
             ["fender"] = ["Arch Fender", "Wide Arch Fender"], // (phase 9a: as before: slim arches alone made two committed Technicals read as a box from above)
             ["spike"] = ["Loudhailer", "Loudhailer", "Phone Mast"],                                       // (Constructs/Parts/CallCentre)
-            ["trophy"] = ["Office Phone", "Call Headset", "Gift Card Sign", "Prize Wheel", "Office Phone", "Gift Card Sign", "Call Headset", "Loudhailer"],
-            ["mast"] = ["Phone Mast", "Phone Mast", "Loudhailer", "Gift Card Sign"],                     // (on the roofs: Vehicle.Kit)
-            ["gear"] = ["Prize Wheel", "Gift Card Sign", "Office Phone", "Loudhailer"],                  // (on open beds and porches)
-            ["cubicle"] = ["Cubicle Desk"],                                                              // (loot in its drawer)
+            ["trophy"] = ["Hubcap Plate", "Loudhailer", "Traffic Cone", "Hubcap Plate", "Loudhailer"],
+            ["mast"] = ["Phone Mast", "Phone Mast", "Loudhailer"],                                       // (on the roofs: Vehicle.Kit)
+            ["gear"] = ["Traffic Cone", "Loudhailer", "Hubcap Plate"],                                   // (on open beds and porches)
             ["cooler"] = ["Water Cooler"],
-            ["layout"] = ["call floor", "call floor", "managers office", "break room"],
-            ["layout call floor"] = ["cubicle", "cubicle", "cubicle", "cooler"],
-            ["layout managers office"] = ["computer", "cubicle", "rack", "crates"],                     // (the computer: someone has to click the adverts)
-            ["layout break room"] = ["cooler", "bench", "cubicle", "crates"],
+            ["layout"] = ["scrap store", "scrap store", "office", "break room"],
+            ["layout scrap store"] = ["crates", "crates", "shelf", "cooler"],
+            ["layout office"] = ["computer", "crates", "rack", "shelf"],
+            ["layout break room"] = ["cooler", "bench", "crates", "shelf"],
         },
         LightGear = Bandit.LightGear,
         HeavyGear = Bandit.HeavyGear,
         Weapons =
         [
-            new("Cold Caller", "Courier Carbine Receiver{barrel:Standard Barrel,feed:Box Mag}"),
-            new("Robocall", "Workhorse Receiver{barrel:Standard Barrel,feed:Extended Mag,action:Full-Auto Sear}"),
-            new("Final Notice", "Farmhand Pump Receiver{barrel:Scattermouth Barrel,feed:Shell Box,action:Pump Slide}"),
-            new("Cold Caller", "Courier Carbine Receiver{barrel:Stub Barrel{muzzle:Flash Hider},feed:Box Mag}"),
+            new("Scrapper", "Courier Carbine Receiver{barrel:Standard Barrel,feed:Box Mag}"),
+            new("Strip Down", "Workhorse Receiver{barrel:Standard Barrel,feed:Extended Mag,action:Full-Auto Sear}"),
+            new("Write-Off", "Farmhand Pump Receiver{barrel:Scattermouth Barrel,feed:Shell Box,action:Pump Slide}"),
+            new("Scrapper", "Courier Carbine Receiver{barrel:Stub Barrel{muzzle:Flash Hider},feed:Box Mag}"),
         ],
         // (--sweep-vehicle's most different passing seeds)
         Seeds = new()
@@ -227,24 +226,22 @@ public static class Styles
     };
 
     /// <summary>
-    /// The Clan MacSlop: a Highland clan on wheels, and the loudest faction on the map. Tartan reds and hunting greens on the panels, Saltire
-    /// blue and white on the hoods, war paint in pillar-box red and lion-rampant yellow; Saltires on the roofs, thistles, haggis and a Highland
-    /// coo's head where bandits hang skulls, wee cabers down the flanks, kegs on the beds and whisky casks in the rooms (loot inside). Every
-    /// vehicle carries a Pipe Box (the "piper" slot: Vehicle.Kit), which strikes up the pipes while someone drives it, so you hear them
-    /// coming from 150 m (docs/sandbox/MEDIA.md, "Pipe Boxes"; the tunes are PipeTunes). Plates a little crooked (well loved, not neglected).
-    /// Guns are named for the glen: the Claymore, the Sgian Dubh, the Highland Charge and the Caber Toss.
+    /// Highland: long-bonneted haulers in tartan reds and hunting greens (the Traders fly it beside IT: Crew/Factions/Traders.json). Blue and
+    /// white on the hoods, war paint in red and yellow; dishes and phone masts on the roofs, cones and gnomes where bandits hang skulls,
+    /// iron spikes down the flanks, and rooms of bunks, crates and shelves. Plates a little crooked (well loved, not neglected). Guns are
+    /// named for the haul. (The Clan MacSlop's dressing, its Pipe Box and pipe tunes, went with the old factions, 2026-11-17.)
     /// </summary>
     public static readonly FactionStyle Highland = new()
     {
         Name = "Highland",
         Extra = ["Car", "Monster Truck", "Wagon", "Concept", "Giant Truck", "Drone", "Plane", "Helicopter"], // (phase 8a: its archetypes' cars; 8b: buggies, monster trucks, wagons, concepts, giants)
-        Group = "Clan MacSlop",
+        Group = "Highland",
         Palette = new()
         {
             ["rust"] = ["#7b1e22", "#1f4a2e", "#23395d", "#5b4a2f", "#8c2a2a", "#2b5a3a"], // (the panels: clan tartan reds, hunting green, navy, tweed)
-            ["body"] = ["#005eb8", "#0b4f9c", "#e8e4d8", "#005eb8"],                     // (Saltire blue and white)
+            ["body"] = ["#005eb8", "#0b4f9c", "#e8e4d8", "#005eb8"],                     // (blue and white)
             ["frame"] = ["#2a2622", "#33302b"],
-            ["war"] = ["#c8102e", "#f2c400", "#e8e4d8", "#1b1714"],                      // (pillar-box red, lion-rampant yellow, white, black)
+            ["war"] = ["#c8102e", "#f2c400", "#e8e4d8", "#1b1714"],                      // (red, yellow, white, black)
         },
         Parts = new(Bandit.Parts)
         {
@@ -256,28 +253,26 @@ public static class Styles
             ["nose"] = ["Bull Bar", "Bar Grille", "Ram Plow", "none"],
             ["fender"] = ["Wide Arch Fender"], // (phase 9a: a long bonnet's broad flowing wings)
             ["cab"] = ["Roll Cage", "Tin Roof Cab", "Chop Top Cab", "Windscreen Frame", "Roll Bar"],
-            ["spike"] = ["Wee Caber", "Wee Caber", "Iron Spike"],                                        // (Constructs/Parts/Highland, --gen-parts highland_parts)
-            ["trophy"] = ["Thistle", "Coo Heid", "Haggis on a Post", "Thistle", "Wee Keg", "Coo Heid"],
-            ["mast"] = ["Saltire Flag", "Saltire Flag", "Thistle"],                                      // (on the roofs: Vehicle.Kit)
-            ["gear"] = ["Wee Keg", "Wee Keg", "Coo Heid", "Saltire Flag"],                               // (on open beds and porches)
-            ["piper"] = ["Pipe Box"],                                                                    // (one on every vehicle: Vehicle.Kit)
-            ["cask"] = ["Whisky Cask"],                                                                  // (loot inside)
-            ["layout"] = ["bothy", "distillery", "ceilidh hall", "kit room"],
-            ["layout bothy"] = ["bunk", "bunk", "shelf", "cask"],
-            ["layout distillery"] = ["cask", "cask", "cask", "crates"],
-            ["layout ceilidh hall"] = ["bench", "bench", "cask", "crates"],
-            ["layout kit room"] = ["workbench", "shelf", "cask", "crates"],
+            ["spike"] = ["Iron Spike", "Iron Spike", "Long Iron Spike"],
+            ["trophy"] = ["Traffic Cone", "Garden Gnome", "Satellite Dish", "Traffic Cone"],
+            ["mast"] = ["Satellite Dish", "Phone Mast", "Satellite Dish"],                               // (on the roofs: Vehicle.Kit)
+            ["gear"] = ["Traffic Cone", "Garden Gnome", "Network Switch"],                               // (on open beds and porches)
+            ["layout"] = ["bunkhouse", "store", "mess hall", "kit room"],
+            ["layout bunkhouse"] = ["bunk", "bunk", "shelf", "crates"],
+            ["layout store"] = ["crates", "crates", "shelf", "bench"],
+            ["layout mess hall"] = ["bench", "bench", "crates", "shelf"],
+            ["layout kit room"] = ["workbench", "shelf", "crates", "crates"],
         },
         LightGear = Bandit.LightGear,
         HeavyGear = Bandit.HeavyGear,
-        // The weapon slot: named for the glen.
+        // The weapon slot: named for the haul.
         Weapons =
         [
-            new("Claymore", "Farmhand Pump Receiver{barrel:Scattermouth Barrel,feed:Shell Box,action:Pump Slide}"),
-            new("Sgian Dubh", "Courier Carbine Receiver{barrel:Stub Barrel{muzzle:Flash Hider},feed:Box Mag}"),
-            new("Highland Charge", "Workhorse Receiver{barrel:Standard Barrel,feed:Extended Mag,action:Full-Auto Sear}"),
-            new("Highland Charge", "Workhorse Receiver{barrel:Standard Barrel,feed:Extended Mag,action:Full-Auto Sear}"),
-            new("Caber Toss", "Whaler Receiver{barrel:Harpoon Tube,feed:Harpoon Breech,action:Harpoon Trigger}"),
+            new("Long Haul", "Farmhand Pump Receiver{barrel:Scattermouth Barrel,feed:Shell Box,action:Pump Slide}"),
+            new("Small Print", "Courier Carbine Receiver{barrel:Stub Barrel{muzzle:Flash Hider},feed:Box Mag}"),
+            new("Express Delivery", "Workhorse Receiver{barrel:Standard Barrel,feed:Extended Mag,action:Full-Auto Sear}"),
+            new("Express Delivery", "Workhorse Receiver{barrel:Standard Barrel,feed:Extended Mag,action:Full-Auto Sear}"),
+            new("Hook and Line", "Whaler Receiver{barrel:Harpoon Tube,feed:Harpoon Breech,action:Harpoon Trigger}"),
         ],
         // (--sweep-vehicle's most different passing seeds in this style's dice)
         Seeds = new()
@@ -291,24 +286,23 @@ public static class Styles
     };
 
     /// <summary>
-    /// The Ministry of Slop: a very British faction on wheels, affectionate and mostly understated. Bus red on the panels with the odd
-    /// racing green, cream or rain-washed grey; racing green, cream and navy on the hoods; war paint in the flag's blue, red and white and
-    /// double-yellow-line yellow. Union Flags, Belisha beacons and rain gauges on the roofs, teapots in cosies, traffic cones nobody will
-    /// move and garden gnomes where bandits hang skulls, furled brollies down the flanks (it's that sort of day), queue posts on the beds,
-    /// and rooms of pillar boxes and red telephone boxes (loot in each) round a tea urn (Constructs/Parts/British,
-    /// Source/PartKit/Generators/BritishParts.cs). Plates neat but not new. Only this style builds the Double Decker (<see cref="FactionStyle.Extra"/>).
-    /// Guns are named the way the British complain: Terribly Sorry, Bit of Bother, a Strongly Worded Letter and Builder's Tea.
+    /// British: bus red and racing green, mostly understated (the Mercenaries fly it: Crew/Factions/Mercenaries.json). Bus red on the
+    /// panels with the odd racing green, cream or rain-washed grey; racing green, cream and navy on the hoods; war paint in blue, red,
+    /// white and yellow. Loudhailers and dishes on the roofs, jerry cans, traffic cones and garden gnomes where bandits hang skulls, iron
+    /// spikes down the flanks, and rooms of benches, shelves and crates. Plates neat but not new. Only this style builds the Double Decker
+    /// (<see cref="FactionStyle.Extra"/>). Guns are named for the contract. (The Ministry of Slop's dressing, the flags, beacons, brollies,
+    /// teapots, queue posts, pillar boxes, phone boxes and the tea urn, went with the old factions, 2026-11-17.)
     /// </summary>
     public static readonly FactionStyle British = new()
     {
         Name = "British",
-        Group = "Ministry of Slop",
+        Group = "British",
         Palette = new()
         {
             ["rust"] = ["#c8102e", "#b5121b", "#c8102e", "#be0f2a", "#c8102e", "#b5121b", "#1f4a32", "#e8dfc8", "#7d8186"], // (the panels: bus red, mostly; a racing green, cream, the grey of a wet Tuesday)
             ["body"] = ["#004225", "#e8dfc8", "#1d2b4f", "#004225"],                                // (racing green, cream, navy)
             ["frame"] = ["#1b1c1e", "#2b2a28"],
-            ["war"] = ["#012169", "#c8102e", "#f2f0e8", "#f2c400"],                                // (the flag's blue, red and white; double-yellow-line yellow)
+            ["war"] = ["#012169", "#c8102e", "#f2f0e8", "#f2c400"],                                // (blue, red, white, yellow)
         },
         Parts = new(Bandit.Parts)
         {
@@ -323,29 +317,26 @@ public static class Styles
             ["fender"] = ["Arch Fender"], // (phase 9a: a bus's slim wheel arches)
             ["cab"] = ["Windscreen Frame", "Tin Roof Cab", "Chop Top Cab", "Roll Bar"],
             ["heavyCab"] = ["Tin Roof Cab", "Cab Over Shell", "Chop Top Cab"],
-            ["spike"] = ["Furled Brolly", "Furled Brolly", "Belisha Beacon"],                                  // (Constructs/Parts/British, Source/PartKit/Generators/BritishParts.cs)
-            ["trophy"] = ["Teapot", "Traffic Cone", "Garden Gnome", "Teapot", "Rain Gauge", "Traffic Cone"],
-            ["mast"] = ["Union Flag", "Belisha Beacon", "Rain Gauge", "Union Flag"],                           // (on the roofs: Vehicle.Kit)
-            ["gear"] = ["Queue Post", "Queue Post", "Traffic Cone", "Garden Gnome"],                           // (on open beds and porches: a queue forms)
-            ["pillar"] = ["Pillar Box"],                                                                       // (loot inside)
-            ["phonebox"] = ["Phone Box"],                                                                      // (loot under the shelf)
-            ["urn"] = ["Tea Urn"],
-            ["layout"] = ["tea room", "post office", "lost property", "snug"],
-            ["layout tea room"] = ["urn", "bench", "bench", "pillar"],
-            ["layout post office"] = ["pillar", "pillar", "phonebox", "shelf"],
-            ["layout lost property"] = ["phonebox", "shelf", "crates", "pillar"],
-            ["layout snug"] = ["bench", "urn", "phonebox", "crates"],
+            ["spike"] = ["Long Iron Spike", "Iron Spike", "Long Iron Spike"],
+            ["trophy"] = [HullLoft.JerryCan, "Traffic Cone", "Garden Gnome", HullLoft.JerryCan, "Traffic Cone"],
+            ["mast"] = ["Loudhailer", "Satellite Dish", "Loudhailer"],                                         // (on the roofs: Vehicle.Kit)
+            ["gear"] = [HullLoft.JerryCan, "Traffic Cone", HullLoft.JerryCan, "Garden Gnome"],                 // (on open beds and porches)
+            ["layout"] = ["mess", "armoury", "store", "bunkroom"],
+            ["layout mess"] = ["bench", "bench", "crates", "shelf"],
+            ["layout armoury"] = ["shelf", "shelf", "crates", "crates"],
+            ["layout store"] = ["crates", "shelf", "crates", "bench"],
+            ["layout bunkroom"] = ["bunk", "bunk", "shelf", "crates"],
         },
         LightGear = Bandit.LightGear,
         HeavyGear = Bandit.HeavyGear,
-        // The weapon slot: named the way they complain.
+        // The weapon slot: named for the contract.
         Weapons =
         [
-            new("Terribly Sorry", "Workhorse Receiver{barrel:Standard Barrel,feed:Extended Mag,action:Full-Auto Sear}"),
-            new("Terribly Sorry", "Workhorse Receiver{barrel:Stub Barrel{muzzle:Flash Hider},feed:Box Mag,action:Full-Auto Sear}"),
-            new("Bit of Bother", "Courier Carbine Receiver{barrel:Standard Barrel,feed:Box Mag}"),
-            new("Strongly Worded Letter", "Farmhand Pump Receiver{barrel:Scattermouth Barrel,feed:Shell Box,action:Pump Slide}"),
-            new("Builder's Tea", "Firebreather Receiver{barrel:Flame Nozzle,feed:Fuel Canister,action:Flame Valve}", Box: null),
+            new("Hazard Pay", "Workhorse Receiver{barrel:Standard Barrel,feed:Extended Mag,action:Full-Auto Sear}"),
+            new("Hazard Pay", "Workhorse Receiver{barrel:Stub Barrel{muzzle:Flash Hider},feed:Box Mag,action:Full-Auto Sear}"),
+            new("Retainer", "Courier Carbine Receiver{barrel:Standard Barrel,feed:Box Mag}"),
+            new("Severance", "Farmhand Pump Receiver{barrel:Scattermouth Barrel,feed:Shell Box,action:Pump Slide}"),
+            new("Scorched Earth", "Firebreather Receiver{barrel:Flame Nozzle,feed:Fuel Canister,action:Flame Valve}", Box: null),
         ],
         Extra = ["Double Decker", "Car", "Wagon", "Concept", "Drone", "Plane", "Helicopter"],
         // (--sweep-vehicle's most different passing seeds in this style's dice)
@@ -388,5 +379,7 @@ public static class Styles
         Weapons = [new("Service MG", "Reaper Battle Rifle Receiver{barrel:Standard Barrel,feed:Box Mag}")],
         LootTable = "bandit",
         Limits = new() { ["crookedPlates"] = 2, ["tiltDegrees"] = 1, ["thirdSeat"] = 1, ["slits"] = 0 },
+        Seeds = new() { ["Ore Hauler"] = [1] }, // (the factory kit's ore loop spawns seed 1; the shape's other seeds were never committed)
+        Committed = ["Ore Hauler", "Excavator"], // (it ships no vehicles, but the factory kit's ore loop spawns these by name: --gen-vehicles compares them)
     };
 }

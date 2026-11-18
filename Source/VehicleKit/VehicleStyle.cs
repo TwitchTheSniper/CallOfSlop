@@ -176,6 +176,12 @@ public sealed class FactionStyle
     public string[] Extra { get; init; } = [];
 
     /// <summary>
+    /// A style that doesn't ship (<see cref="Styles.Shipped"/>) can still have some shapes' seeds committed, because something spawns them by name (the factory kit's
+    /// Militia Ore Hauler, the Militia Excavator): those shapes, so --gen-vehicles compares them and --check-vehicle checks them with their generator.
+    /// </summary>
+    public string[] Committed { get; init; } = [];
+
+    /// <summary>
     /// Shape grammar weights (kit 2: <see cref="ShapeGrammar"/>, docs/vehiclekit/VEHICLEKIT.md "Shape grammar"), by family ("nose", "cab", "body", "rear", "under", "flank", "sides")
     /// and module name ("long hood", "caged", "room", "porch"...): how much likelier this faction makes a module than the default. A family or a module not named
     /// keeps its default, which comes from the style's own slots (a nose from its "hood" list, a cab from its "heavyCab" list), so a style that names none works unchanged.

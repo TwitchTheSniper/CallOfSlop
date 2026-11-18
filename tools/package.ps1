@@ -4,7 +4,7 @@
 
 .DESCRIPTION
   Self-contained (testers don't need .NET installed), Windows x64, and with NO personal files: it is published into a
-  fresh folder, so settings.txt, progress.txt, loadout*.txt, workbench.txt, blueprints.txt, audio mixes, saved worlds, save backups, portable.txt,
+  fresh folder, so settings.txt, loadout*.txt, workbench.txt, blueprints.txt, audio mixes, saved worlds, save backups, portable.txt,
   logs and smoke screenshots never get in (and any that somehow do are deleted before zipping). Players' saves live in
   %APPDATA%\CallOfSlop anyway (SavePaths.cs).
 
@@ -95,7 +95,7 @@ if ($Step -ne "zip") {
     }
 
     # Belt and braces: no personal or debug files in the shared copy.
-    $personal = @("settings.txt", "progress*.txt", "loadout*.txt", "workbench.txt", "blueprints.txt", "ordnance.txt", "audio_mix.json", "appearance.txt", "portable.txt", "update_check.txt", "update.log", ".callofslop-build",
+    $personal = @("settings.txt", "loadout*.txt", "workbench.txt", "blueprints.txt", "ordnance.txt", "audio_mix.json", "appearance.txt", "portable.txt", "update_check.txt", "update.log", ".callofslop-build",
                   "*.bak", "*.tmp", "*.corrupt", "*.log", "smoke_*.bmp", "selftest.log", "stuck-spots*.json",
                   "crash.txt", "breadcrumb*", "crash-*.dmp", "crash-*.json", # crash logs and dumps (CrashLog.cs, CrashDumps.cs)
                   "steam_appid.txt") # a developer's Steam file (Source/Platform/Steam): never shipped
@@ -107,7 +107,7 @@ if ($Step -ne "zip") {
     if (Test-Path (Join-Path $folder "DevEdits")) { Remove-Item -Recurse -Force (Join-Path $folder "DevEdits") } # prop editor change packages (portable mode)
     if (Test-Path (Join-Path $folder "Logs")) { Remove-Item -Recurse -Force (Join-Path $folder "Logs") } # the game's own reports (portable mode: stuck-spot reports)
     Copy-Item -Force "tools/TESTERS.txt" (Join-Path $folder "READ ME FIRST.txt")
-    Copy-Item -Force "tools/MIGRATING.md" (Join-Path $folder "MOVING YOUR SAVES.txt") # how to bring progression over from an older build
+    Copy-Item -Force "tools/MIGRATING.md" (Join-Path $folder "MOVING YOUR SAVES.txt") # how to bring the saves over from an older build
     if ($Runtime -like "win-*") { Copy-Item -Force "tools/RunServerList.bat" (Join-Path $folder "RunServerList.bat") } # a server list for friends (README, Playing with friends)
     Copy-Item -Force "tools/masters.txt" (Join-Path $folder "masters.txt") # server lists shipped with the zip (Settings.ShippedMasters)
     # The browser for Video Screens and Music Players (docs/sandbox/MEDIA.md): Windows only, in a folder of its own; the game only starts it when a link plays.

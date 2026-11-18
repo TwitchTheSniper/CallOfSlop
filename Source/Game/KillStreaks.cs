@@ -307,13 +307,8 @@ public static partial class KillStreaks
         StreakId.NapalmStrike, StreakId.AttackDrone, StreakId.EmpBlast, StreakId.Gunship, StreakId.StrafeRun, StreakId.Juggernaut,
     ];
 
-    public static int UnlockLevel(StreakId id)
-    {
-        if (id == StreakId.None || Starters.Contains(id))
-            return 1;
-        var i = Array.IndexOf(UnlockOrder, id);
-        return i < 0 ? Progress.MaxLevel : 5 + (int)MathF.Round(i * (Progress.MaxLevel - 7) / (float)(UnlockOrder.Length - 1));
-    }
+    /// <summary>Every streak is open (levelling went, 2026-11-17); <see cref="UnlockOrder"/> stays as the lists' order.</summary>
+    public static int UnlockLevel(StreakId id) => 1;
 
     public static byte KillId(StreakId id) => (byte)id <= 8 ? (byte)(KillIdBase + (byte)id) : (byte)(ExtraKillIdBase + (byte)id - 9);
 

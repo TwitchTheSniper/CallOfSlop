@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Zero Day Frigate (crewed)",
-  "description": "The Zero Day with an IT Department crew aboard: it lifts off, closes on the nearest player, you included, and fights with its railgun, turrets and torpedoes. Sit at its helm to take it.",
+  "description": "The Zero Day with a crew aboard: it lifts off, closes on the nearest player, you included, and fights with its railgun, turrets and torpedoes. Sit at its helm to take it.",
   "steps": [
     {
       "part": "Zero Day Keel"
@@ -1890,6 +1890,19 @@
       "by": "base"
     },
     {
+      "part": "Zero Day Torpedo Hatch",
+      "on": 17,
+      "socket": "hatch",
+      "by": "hang"
+    },
+    {
+      "part": "Zero Day Torpedo Hatch",
+      "on": 16,
+      "socket": "hatch",
+      "by": "hang",
+      "spin": 3
+    },
+    {
       "part": "Zero Day Railgun",
       "on": 64,
       "socket": "railgun",
@@ -1897,7 +1910,7 @@
     },
     {
       "part": "Ammo Box",
-      "on": 272,
+      "on": 274,
       "socket": "ammo",
       "by": "bottom"
     },
@@ -1945,37 +1958,37 @@
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 280,
+      "on": 282,
       "socket": "lug0",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 280,
+      "on": 282,
       "socket": "lug1",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 280,
+      "on": 282,
       "socket": "lug2",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 280,
+      "on": 282,
       "socket": "lug3",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 280,
+      "on": 282,
       "socket": "lug4",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 280,
+      "on": 282,
       "socket": "lug5",
       "by": "lug"
     },
@@ -1987,37 +2000,37 @@
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 287,
+      "on": 289,
       "socket": "lug0",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 287,
+      "on": 289,
       "socket": "lug1",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 287,
+      "on": 289,
       "socket": "lug2",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 287,
+      "on": 289,
       "socket": "lug3",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 287,
+      "on": 289,
       "socket": "lug4",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 287,
+      "on": 289,
       "socket": "lug5",
       "by": "lug"
     }
@@ -2181,15 +2194,7 @@
     ],
     [
       181,
-      272
-    ],
-    [
-      198,
       274
-    ],
-    [
-      198,
-      275
     ],
     [
       198,
@@ -2200,32 +2205,40 @@
       277
     ],
     [
-      278,
+      198,
+      278
+    ],
+    [
+      198,
       279
     ],
     [
+      280,
+      281
+    ],
+    [
       127,
-      280
+      282
     ],
     [
       262,
-      280
+      282
     ],
     [
       265,
-      280
+      282
     ],
     [
       128,
-      287
+      289
     ],
     [
       263,
-      287
+      289
     ],
     [
       266,
-      287
+      289
     ]
   ],
   "links": [

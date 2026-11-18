@@ -56,7 +56,7 @@ public sealed partial class Ui
     public LobbyRoomAction DrawLobbyRoom(Game game, Settings s, string address, double now)
     {
         var action = LobbyRoomAction.None;
-        _room.Refresh(game, game.Progress);
+        _room.Refresh(game);
         var vp = ImGui.GetMainViewport();
         var size = new float2(MathF.Min(1260 * _scale, vp.WorkSize.X - 24), MathF.Min(800 * _scale, vp.WorkSize.Y - 24));
         ImGui.SetNextWindowPos(new float2(vp.WorkPos.X + vp.WorkSize.X / 2, vp.WorkPos.Y + vp.WorkSize.Y / 2), ImGuiCond.Always, new float2(0.5f, 0.5f));
@@ -158,8 +158,6 @@ public sealed partial class Ui
             var p0 = ImGui.GetCursorScreenPos();
             if (r.Host)
                 DrawCrown(dl, p0, icon);
-            if (r.Hat != HatId.None)
-                DrawHatIcon(dl, r.Hat, p0 + new float2(icon + 2 * _scale, 0), icon);
             var avatar = SteamAvatars.Texture(r.SteamId); // 0 without Steam on both sides, or while it loads
             var avatarW = avatar != 0 ? icon + 2 * _scale : 0;
             if (avatar != 0)
@@ -910,14 +908,6 @@ public sealed partial class Ui
         if (ImGui.IsItemHovered())
             ImGui.SetItemTooltip("Edit your loadouts. You spawn with the selected one; you can still change it in the countdown."u8);
         ImGui.SameLine();
-        // Your hat, as the others see it in the list.
-        if (me != null && me.Hat != HatId.None)
-        {
-            var p0 = ImGui.GetCursorScreenPos();
-            DrawHatIcon(ImGui.GetWindowDrawList(), me.Hat, p0 + new float2(0, 4 * _scale), btn.Y - 8 * _scale);
-            ImGui.Dummy(new float2(btn.Y, btn.Y));
-            ImGui.SameLine();
-        }
         var atOnce = game.Module.StartsAtOnce; // (no ready-up and no countdown: the host starts it)
         if (!atOnce)
         {
@@ -976,28 +966,4 @@ public sealed partial class Ui
         ImDrawListExtensions.AddTriangleFilled(dl, new float2(p0.X + s * 0.62f, b - s * 0.2f), new float2(p0.X + s * 0.8f, p0.Y + s * 0.15f), new float2(p0.X + s * 0.9f, b - s * 0.2f), col);
     }
 
-    /// <summary>A hat seen from the front: each box of its model as a coloured rectangle, fitted into a <paramref name="s"/> square.</summary>
-    private static void DrawHatIcon(ImDrawListPtr dl, HatId id, float2 p0, float s)
-    {
-        if (Cosmetics.Get(id) is not { } hat || hat.Boxes.Count == 0)
-            return;
-        var w = MathF.Max(hat.Max.X - hat.Min.X, 0.01f);
-        var h = MathF.Max(hat.Max.Y - hat.Min.Y, 0.01f);
-        var k = s / MathF.Max(w, h);
-        var ox = p0.X + (s - w * k) / 2 - hat.Min.X * k;
-        var oy = p0.Y + s - (s - h * k) / 2 + hat.Min.Y * k; // y up in the model, down on screen
-        var boxes = hat.Boxes;
-        for (var i = 0; i < boxes.Count; i++) // (an index loop: no enumerator to allocate every frame)
-        {
-            var box = boxes[i];
-            var m = box.Local;
-            var cx = m.M41;
-            var cy = m.M42;
-            var hx = 0.5f * MathF.Sqrt(m.M11 * m.M11 + m.M12 * m.M12 + m.M13 * m.M13);
-            var hy = 0.5f * MathF.Sqrt(m.M21 * m.M21 + m.M22 * m.M22 + m.M23 * m.M23);
-            var c = box.Color;
-            dl.AddRectFilled(new float2(ox + (cx - hx) * k, oy - (cy + hy) * k), new float2(ox + (cx + hx) * k, oy - (cy - hy) * k),
-                new ImColor8((byte)Math.Clamp(c.X * 255, 0, 255), (byte)Math.Clamp(c.Y * 255, 0, 255), (byte)Math.Clamp(c.Z * 255, 0, 255), 255));
-        }
-    }
 }

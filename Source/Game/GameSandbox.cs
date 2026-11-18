@@ -110,6 +110,7 @@ public enum CActKind : byte
     Link, // u16 body, u16 part, u8 LinkOp, u32 a, u32 b, str text: a linked logistics part's panel, or a route from the command view (protocol 328; GameSandboxLinked.cs)
     Crew, // u16 body, u32 member uid, u8 CrewOrder: a crew order from the Crew window (protocol 332; GameCrewHire.cs)
     Dampeners, // u16 body (the seat's): the seated player flips that ship's inertia dampeners (protocol 340; ConstructFlight.ToggleDampeners)
+    MouseSteer, // u16 body (the seat's): the seated player takes that ship's nose with the mouse, or lets it go (protocol 349; ConstructFlight.ToggleMouseSteer)
 }
 
 /// <summary>
@@ -328,7 +329,6 @@ public sealed partial class Game
         if (ServerTick % World.TickRate == 0)
         {
             ConstructMedia.Tick(Constructs, ServerTick); // (the game's own tracks end by the clock)
-            ConstructPipes.Tick(Constructs, ServerTick); // (Pipe Boxes strike up when someone drives)
         }
         SandboxNow = now;
         if (!SandboxOn)
@@ -374,11 +374,7 @@ public sealed partial class Game
             if (Crew.IsBody[p.Id])
                 continue; // (a crew body: its crew works the seat, GameCrew.cs)
             if (c.Parts[seat].D.Bunk)
-            {
                 SandboxBunkSeen(p, c, seat); // (their checkpoint: GameSandboxDeath.cs)
-                TutorialSee(p.Id, TutorialCue.Bunk); // (the induction's bunk step: GameTutorial.cs)
-                QuarrySee(p.Id, QuarryCue.Bunk); // (the duty's last step: GameQuarry.cs)
-            }
             if (c.Parts[seat].D.SeatHeal > 0)
                 SandboxSeatHeal(p, c.Parts[seat].D.SeatHeal); // (a medical station: GameSandboxDeath.cs)
             var b = p.Id == LocalId ? HeldButtons : p.LastInput.Buttons;
@@ -393,8 +389,16 @@ public sealed partial class Game
                 SandboxEject(p, c, seat);
                 continue;
             }
-            c.Parts[seat].AimYaw = p.Yaw; // (a gunner points the guns with their look; ConstructWeapons.cs)
-            c.Parts[seat].AimPitch = p.Pitch;
+            // A gunner points the guns with their look (ConstructWeapons.cs). The look is the player's, at their own place; the seat's is read at
+            // the construct's centre (GunnerPoint, the modules, mouse aim), so on a planet's curved frames it is carried there: at a frigate's
+            // gun station 30 m off its centre the frames differ enough to put rounds metres off at 200 m.
+            if (GravityFrames.Curved)
+                (c.Parts[seat].AimYaw, c.Parts[seat].AimPitch) = GravityFrames.Angles(c.WorldCom, GravityFrames.Forward(p.Position, p.Yaw, p.Pitch));
+            else
+            {
+                c.Parts[seat].AimYaw = p.Yaw;
+                c.Parts[seat].AimPitch = p.Pitch;
+            }
             if (c.Parts[seat].D.LifterCab)
                 ConstructLifters.CabInput(Constructs, c, seat, b, p.Yaw); // (a Lifter Cab's keys for its lifter's step, before the logic tick clears them: ConstructLifterCab.cs)
             if (seat == c.DriveSeat && !c.Parts[seat].D.LifterCab) // (a Lifter Cab never drives: its keys move the hook, even linked to a Driving Module)
@@ -460,17 +464,7 @@ public sealed partial class Game
         ShellTick(); // (worn robot shells keep their link: GameRobotShell.cs)
         ShellWearTick(); // (...and wear a little: GameShellWear.cs)
         FirstsTick(); // (a first flight in a craft of your own: GameMilestones.cs)
-        PlayAreaTick(now); // (the tutorial's play areas: out of one, the step waits; GameTutorialBounds.cs)
-        QuarryTick(now); // (the first Ministry duty, the quarry: GameQuarry.cs)
-        BreakoutTick(now); // (the convicts' break-out: GameBreakout.cs)
-        ErrandTick(now); // (errands on the works yard's machines: GameErrands.cs)
-        LabourTick(now); // (the colony's convict labourers: GameLabour.cs)
-        NavSitesTick(now); // (the bots' paths round the colony and the quarry: GameNavSites.cs)
-        DepotTick(now); // (the Orbital Depot's steps: GameDepot.cs)
-        ObjectivesTick(now); // (the "what next" goal line: GameObjectives.cs)
-        LockdownTick(now); // (the penal colony's lockdown: GameColonyLockdown.cs)
         StoryArmsTick(); // (no stock gun in a story world: GameStoryArms.cs)
-        TutorialTick(now); // (the warden's induction: who starts, which steps are done; GameTutorial.cs)
         perf.Dispose();
         perf = Perf.Measure(PerfArea.Story);
         AllocProfile.Mark("sandbox: story");
@@ -955,15 +949,7 @@ public sealed partial class Game
     /// <summary>Server: one action from a player (the local host's own go straight here). Returns why it was refused, or null.</summary>
     private string? SandboxAct(Player p, ref PacketReader r, double now)
     {
-        var asked = r; // (a copy from the kind: the induction reads what was done once it worked, GameTutorial.cs)
-        var why = SandboxActDo(p, ref r, now);
-        if (why == null && SandboxOn)
-        {
-            var again = asked;
-            TutorialSawAct(p, ref asked);
-            QuarrySawAct(p, ref again); // (the quarry duty's steps: GameQuarry.cs)
-        }
-        return why;
+        return SandboxActDo(p, ref r, now);
     }
 
     private string? SandboxActDo(Player p, ref PacketReader r, double now)
@@ -1005,8 +991,8 @@ public sealed partial class Game
             case CActKind.OpeningSkip:
                 return OpeningSkipAct(p); // the survival opening (GameSandboxOpening.cs)
             case CActKind.QuarrySkip:
-                QuarrySkip(p); // the first Ministry duty (GameQuarry.cs)
-                return null;
+            case CActKind.ErrandDrop:
+                return null; // (the penal colony's duty and errands, removed 2026-11-17: their kinds keep their bytes)
             case CActKind.Crew:
             {
                 var body = r.U16();
@@ -1020,9 +1006,6 @@ public sealed partial class Game
                 var part = r.U16();
                 return BreakdownMendAct(p, body, part); // (the rust bucket's breakdowns: GameSandboxBreakdowns.cs)
             }
-            case CActKind.ErrandDrop:
-                ErrandDrop(p); // an errand on a works yard machine (GameErrands.cs)
-                return null;
             case CActKind.ShellLeave:
                 return ShellLeaveAct(p); // robot shells (GameRobotShell.cs)
             case CActKind.NavOrder:
@@ -1056,9 +1039,7 @@ public sealed partial class Game
             case CActKind.Tool:
             {
                 var asked = ConstructToolWire.From(r.U8());
-                return TutorialToolFor(p.Id, asked) is { } tool // (the warden's induction holds tools until their step: GameTutorial.cs)
-                    ? hands.SetTool(p.Id, StoryArmsTool(p, tool), Constructs, eye, p.Yaw) // (no gun in a story world: GameStoryArms.cs)
-                    : Tutorial.NotIssued(asked);
+                return hands.SetTool(p.Id, StoryArmsTool(p, asked), Constructs, eye, p.Yaw); // (no gun in a story world: GameStoryArms.cs)
             }
             case CActKind.NudgeBegin:
             case CActKind.NudgeSteer:
@@ -1427,6 +1408,14 @@ public sealed partial class Game
                     return "not in a seat of that craft";
                 return ConstructFlight.ToggleDampeners(Constructs, craft);
             }
+            case CActKind.MouseSteer:
+            {
+                var body = r.U16();
+                ref var sh = ref hands.Hand(p.Id);
+                if (!sh.Seated || sh.SeatBody != body || Constructs.Get(body) is not { } craft)
+                    return "not in a seat of that craft";
+                return ConstructFlight.ToggleMouseSteer(Constructs, craft);
+            }
             case CActKind.StoreIn:
             case CActKind.TakeStored:
             {
@@ -1598,6 +1587,7 @@ public sealed partial class Game
                 w.U16(body).U16(part).U8((byte)socket); // (socket: the weld)
                 break;
             case CActKind.Dampeners:
+            case CActKind.MouseSteer:
                 w.U16(body);
                 break;
             case CActKind.SeatKeys:
@@ -1645,29 +1635,13 @@ public sealed partial class Game
     }
 
     /// <summary>
-    /// This PC's tool request through the induction's gate (GameTutorial.cs): a tool not issued yet, or the gun, is refused
-    /// with a line; putting a tool away takes out bare hands. True when nothing is to be sent.
+    /// This PC's tool request: in a story world putting a tool away takes out bare hands (GameStoryArms.cs). True when
+    /// nothing is to be sent (never, since the warden's induction that held tools back went, 2026-11-17).
     /// </summary>
     private bool SandboxToolGated(ref ushort part)
     {
         if (part == (ushort)ConstructTool.None && Local is { } me && StoryUnarmed(me))
             part = (ushort)ConstructTool.Hands; // (no gun in a story world: bare hands, shown at once as the server will; GameStoryArms.cs)
-        var asked = (ConstructTool)part;
-        if (TutorialToolLocal(asked) is not { } tool)
-        {
-            SandboxSay(Tutorial.NotIssued(asked));
-            return true;
-        }
-        if (tool == asked)
-            return false;
-        ref var h = ref SandboxHands.Hand(LocalId);
-        if (h.Tool == tool)
-        {
-            if (h.Held == ConstructParts.None)
-                SandboxSay($"{(Tutorial.Speaker.Length > 0 ? Tutorial.Speaker : "The warden")} holds your gun until the induction is over");
-            return true;
-        }
-        part = (ushort)tool;
         return false;
     }
 
@@ -2357,6 +2331,7 @@ public sealed partial class Game
     }
 
     private uint _sbViewSeat; // the seat the local view last turned with (body << 16 | part + 1; 0: none)
+    private bool _sbViewSteers; // that seat's look steered its ship's nose last frame (ConstructFlight.MouseSteers)
     private float _sbViewYaw;
 
     /// <summary>
@@ -2517,8 +2492,9 @@ public sealed partial class Game
                 // The view turns with the seat, then stays inside the seat type's limits.
                 localSeat = ((uint)body << 16) | (uint)(part + 1); // (16 bits of part: << 8 mixed seats past part 255)
                 var steers = ConstructFlight.MouseSteers(c, part); // (a ship's nose follows the look: the look stays put and the ship comes round to it)
-                if (_sbViewSeat != localSeat && kind != SeatKind.Gunner)
-                    SeatLookForward(q, feet, seatYaw); // (just sat down: the view faces the way the seat does, not wherever the look was as the player bent to it)
+                if (_sbViewSeat != localSeat && kind != SeatKind.Gunner || steers && !_sbViewSteers && _sbViewSeat == localSeat)
+                    SeatLookForward(q, feet, seatYaw); // (just sat down, or just took the nose with the mouse: the view faces the way the seat does, so the ship doesn't swing round to wherever the look was)
+                _sbViewSteers = steers;
                 if (!steers && (_sbViewSeat == localSeat && lookKind != SeatKind.Gunner || _sbViewSeat == localSeat && !c.SeatAims(part))) // (a gunner who points the turret looks where they look: the turret follows)
                     LookYaw = World.WrapAngle(LookYaw + World.WrapAngle(seatYaw - _sbViewYaw));
                 _sbViewYaw = seatYaw;
@@ -2815,6 +2791,8 @@ public sealed partial class Game
                 lines.Add(new HudLine(SandboxKeys.PilotEject, dim));
             if (ConstructFlight.DampenersOff(car))
                 lines.Add(ConstructFlight.AutopilotOn(car) || car.NavThrottle >= 0 || car.CrewAims ? new HudLine(SandboxKeys.DampenersHeld, dim) : new HudLine(SandboxKeys.DampenersOff, orange)); // (ConstructFlight.Coasts)
+            if (ConstructFlight.MouseSteerOff(car))
+                lines.Add(new HudLine(SandboxKeys.MouseSteerOff, orange)); // (the mouse looks round; the nose holds, A and D turn it)
             if (car.StabCount > 0 && !car.CanDrive)
                 lines.Add(new HudLine(ConstructFlight.KeyHint(car), dim));
             else if (car.CanDrive && car.StarterFailed)

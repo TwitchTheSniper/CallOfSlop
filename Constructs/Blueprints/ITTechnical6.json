@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 6 body 6 kit 6 wear 6, chassis 2 axles, front forward, inset 1.75 m, hydraulic/hydraulic, wing 0.5, cab style glasshouse, language van standard 2.32 m, flare 0.12, plain 0.8, brow 0.66 1.5 m, tail 0.82 1 m, door right, 12 facets, cab pod cab, 8 facets, nose rounded, fitting radome, wear age 0.26 (0 rusty, 0 dirty, 0 sooty, 0 patched, 0 rusted out), body gun bay+bed, cab enclosed, nose short hood, rear bare, under tub, sides walls, layout gun bay 2 m+bed 2 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "IT Technical 6",
-  "group": "IT Department",
+  "group": "IT",
   "description": "A technical: a short hood, an enclosed cab, a gun behind the cab, an open bed. 1 gun.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#3b3f44"},
@@ -89,10 +89,10 @@
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 78, "pos": [-1.076, 0.63, 4.251], "rot": [-0.0077, 0.0029, 0.7028, 0.7113]}, "paint": "#cfc6aa"},
     {"part": "Hull Loft (decoR WRWQ)", "on": 34, "socket": "top", "by": "base"},
     {"part": "Router Antenna", "on": 78, "socket": "front03", "by": "base"},
-    {"part": "Employee of the Month", "on": 80, "socket": "top", "by": "base"},
-    {"part": "Cable Reel", "on": 48, "socket": "front", "by": "base"},
-    {"part": "CRT Monitor", "on": 54, "socket": "front", "by": "base"},
-    {"part": "Satellite Dish", "on": 52, "socket": "front", "by": "base"}
+    {"part": "Office Plant", "on": 80, "socket": "top", "by": "base"},
+    {"part": "Network Switch", "on": 48, "socket": "front", "by": "base"},
+    {"part": "Satellite Dish", "on": 54, "socket": "front", "by": "base"},
+    {"part": "Office Plant", "on": 52, "socket": "front", "by": "base"}
   ],
   "wires": [[31, 32], [32, 26], [66, 77], [77, 68]],
   "links": [

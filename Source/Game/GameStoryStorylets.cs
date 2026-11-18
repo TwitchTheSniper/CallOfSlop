@@ -20,7 +20,6 @@ public sealed partial class Game
     private Action<int, string, Ints8>? _storyletHook;
     private Action<int, string>? _storyletNotice;
     private StoryEngine? _storyletWired;
-    private int _vInduct = -2;
     private double _spotAt, _choicesAt;
     private readonly HashSet<long> _spotNear = new(); // (player entity, spot index): within reach now (a visit counts on coming in)
     private readonly int[] _choiceKey = new int[256]; // per player: what their talk panel's choices were last sent as
@@ -54,32 +53,18 @@ public sealed partial class Game
             _storyletWired = s;
             s.Storylets.Hook = _storyletHook ??= StoryletHook;
             s.Storylets.Notice = _storyletNotice ??= StoryletNotice;
-            _vInduct = s.Rules.VerbId("Induct");
             StoryletsForget();
         }
         if (now >= _spotAt)
         {
             _spotAt = now + StoryletSpotEvery;
             StoryletSpots(s, sr);
-            foreach (var p in Players.Values)
-                if (p.Bot == null && p.Id < MaxPlayers && _tutState[p.Id] is TutorialState.Finished or TutorialState.Skipped)
-                    StoryletInducted(p); // (once each: also a world saved before storylets, or a skip)
         }
         if (now >= _choicesAt)
         {
             _choicesAt = now + 0.5;
             StoryletChoicesSend(s);
         }
-    }
-
-    /// <summary>Server, from the induction (GameTutorial.cs): it finished or was skipped: an Induct, once per player.</summary>
-    private void StoryletInducted(Player p)
-    {
-        if (Story is not { } s || _vInduct < 0 && (_vInduct = s.Rules.VerbId("Induct")) < 0 || StoryWho(p) is not (var who and >= 0))
-            return;
-        if (s.Rules.Quality("Inducted") is { } q && s.World.Quality(who, q.Id) > 0)
-            return;
-        s.Record(_vInduct, who, place: StoryPlace());
     }
 
     /// <summary>A player coming within a spot's reach of its person's body is a visit (Visited +1); they must walk out of twice the reach for the next.</summary>
@@ -119,26 +104,8 @@ public sealed partial class Game
         var p = StoryPlayerOf(player) is { Bot: null } pp ? pp : null;
         if (p == null)
             return;
-        var now = SandboxNow;
-        switch (hook)
-        {
-            case "lockdown":
-                LockdownStart(p, $"[MINISTRY MEMO] LOCKDOWN at the Penal Colony: contraband found on {p.Name}. The barracks is turning out.", now);
-                break;
-            case "depot":
-                DepotOffer(p, now);
-                break;
-            case "breakout":
-                BreakoutStart(p); // (the convicts' night: GameBreakout.cs)
-                break;
-            case "pcvirus":
-                ColonyPcInfect(p); // (the duty desk's computer: GameColonyPc.cs)
-                break;
-            default:
-                if (hook.StartsWith(StoryletRules.ErrandHook, StringComparison.Ordinal))
-                    ErrandOffer(p, hook[StoryletRules.ErrandHook.Length..], now); // (a works yard machine: GameErrands.cs)
-                break;
-        }
+        // (The hooks the game acted on, "lockdown", "depot", "breakout", "pcvirus" and "errand:ID", were the penal colony's,
+        // removed 2026-11-17: the archived story's storylets still name them, and they only log.)
         Log($"[storylet] hook {hook} for {p.Name}");
     }
 

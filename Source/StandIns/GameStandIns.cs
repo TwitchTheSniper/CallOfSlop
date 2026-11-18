@@ -22,7 +22,7 @@ namespace CallOfSlop;
 /// </summary>
 public sealed partial class Game
 {
-    public const int StandInMax = 48; // (the people's craft, and the traffic's with its stations: GameTraffic.cs)
+    public const int StandInMax = 48; // (the people's craft)
     public const double StandInShuttleRoad = 5; // story minutes: a road this long or longer is flown
     public const float StandInSide = 7f; // m: a craft stands this far to the side of the road's end
     public const double StandInStand = 8; // s an arrival stands before going
@@ -58,7 +58,6 @@ public sealed partial class Game
         StandInCount = 0;
         _standInMap = World.Map;
         StandInPath.ForgetRoutes();
-        TrafficForget(); // (the ambient traffic: GameTraffic.cs)
     }
 
     private uint StandInTicks(double seconds) => (uint)Math.Max(1, Math.Round(seconds * World.TickRate));
@@ -174,7 +173,6 @@ public sealed partial class Game
             return;
         _standInAt = now + StoryBodiesEvery;
         StandInCouriersLook();
-        TrafficTick(now); // (the ambient traffic: GameTraffic.cs)
         if (!StandInsOn || !StoryBodiesOn || Phase != MatchPhase.Playing || !StoryMiddle())
             return;
         var ag = s.Agents;

@@ -9,13 +9,13 @@ only: a uniform changes how a body is drawn, never its hit boxes.
   so a greatcoat reads as one down to the thigh), boots, gloves and cuffs; up to 30 torso boxes laid where the plate
   carrier was (coat body, belt, buckle, lapels, buttons, epaulettes, pips, chevrons, badges, ribbons, collars; the shirt's
   abdomen, chest, shoulders, collar and neck stay, in the coat colours); and a hat (hat parts as in `hats.json`, drawn
-  and knocked off like a prestige hat, `HatRender.HatFor`). `"detail": true` boxes are dropped beyond 30 m.
+  and knocked off like any hat, `HatRender.HatFor`). `"detail": true` boxes are dropped beyond 30 m.
 - **Frames:** torso boxes are in the standing torso's frame (centre 0, x +-0.4 at the shoulders, y +-0.25, -z the front:
   the chest's face at z -0.21, the coat body's at -0.215, the back at +0.21; the shoulder box's top at y 0.275). Crouch
   and prone scale them with the torso. The no-coplanar-faces rule applies: 2 to 5 mm between faces that touch.
 - **Who wears what** (`Source/Game/GameUniforms.cs`, host, once a second in the story's tick): a story person (a bot)
-  wears the first uniform whose `wornBy` starts their name ("Warden ", "Officer ", "Riot Officer "). A player in a world
-  with the story's opening (the penal colony) is issued the uniform whose `tiers` holds their standing tier with its
+  wears the first uniform whose `wornBy` starts their name ("Warden ", "Officer ", "Riot Officer "). A player in a story world
+  (`--story`; the penal colony start that made one was removed 2026-11-17) is issued the uniform whose `tiers` holds their standing tier with its
   `faction`, unless they picked **Own Clothes** (`LookAxis.Uniform` on the APPEARANCE screen). A memo goes out under the
   faction's voice when one is issued or withdrawn. Plain Sandbox worlds have a story too (everyone an Inmate there), so
   players get nothing outside the opening's worlds.

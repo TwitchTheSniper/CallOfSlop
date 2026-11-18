@@ -22,8 +22,8 @@ public sealed class Loadout
 }
 
 /// <summary>
-/// Your loadout slots, saved to loadout.txt next to the game. Slots unlock with level (see
-/// <see cref="Progress.LoadoutSlotLevel"/>); locked slots keep their contents for later.
+/// Your loadout slots, saved to loadout.txt next to the game. Every slot is open (the level gates went with levelling,
+/// 2026-11-17).
 /// Each slot has its own attachments; the last build used on each gun is remembered too, so
 /// putting a gun into another slot starts with the attachments you like on it.
 /// </summary>
@@ -34,7 +34,7 @@ public static class LoadoutStore
     /// <summary>The <c>version=</c> line written to loadout.txt (files without one load the same).</summary>
     public const int SaveVersion = 1;
 
-    public static readonly Loadout[] Slots = Enumerable.Range(0, Progress.MaxLoadoutSlots).Select(DefaultLoadout).ToArray();
+    public static readonly Loadout[] Slots = Enumerable.Range(0, MaxSlots).Select(DefaultLoadout).ToArray();
 
     /// <summary>The slot you spawn with.</summary>
     public static int Selected;
@@ -53,66 +53,40 @@ public static class LoadoutStore
         Perks = new PerkSet(Perks.Starters[0], Perks.Starters[1], Perks.Starters[2]),
     };
 
-    /// <summary>How many slots you can see and use at your level (always at least 1). Slots unlock in order, so these are slots 0..n-1.</summary>
-    public static int UnlockedSlots(Progress progress) => Math.Clamp(progress.LoadoutSlots, 1, Slots.Length);
+    /// <summary>How many slots there are to use (every one, since levelling went: 2026-11-17).</summary>
+    public const int MaxSlots = 10;
 
-    /// <summary>
-    /// <paramref name="slot"/> if it's unlocked, otherwise the highest unlocked slot (a locked pick after a
-    /// prestige or level reset, or an edited file). Only the choice moves: a locked slot's contents stay saved.
-    /// </summary>
-    public static int UnlockedSlot(int slot, Progress progress) => Math.Clamp(slot, 0, UnlockedSlots(progress) - 1);
+    /// <summary><paramref name="slot"/> clamped to the slots there are (an edited file).</summary>
+    public static int ValidSlot(int slot) => Math.Clamp(slot, 0, Slots.Length - 1);
 
-    /// <summary>The level the next loadout slot unlocks at, or null once every slot is unlocked.</summary>
-    public static int? NextSlotLevel(Progress progress) =>
-        UnlockedSlots(progress) < Slots.Length ? Progress.LoadoutSlotLevel(UnlockedSlots(progress)) : null;
-
-    /// <summary>The selected slot as you'd actually spawn with it (locked items swapped for defaults).</summary>
-    public static Loadout Active(Progress progress)
+    /// <summary>The selected slot as you'd actually spawn with it (anything not valid swapped for defaults).</summary>
+    public static Loadout Active()
     {
-        Selected = UnlockedSlot(Selected, progress);
-        return Effective(Slots[Selected], progress);
+        Selected = ValidSlot(Selected);
+        return Effective(Slots[Selected]);
     }
 
-    /// <summary>A copy of <paramref name="l"/> with anything still locked replaced (after a level reset, say).</summary>
-    public static Loadout Effective(Loadout l, Progress progress)
+    /// <summary>A copy of <paramref name="l"/> with anything not valid replaced (a gun in the wrong slot, a grenade in the equipment slot).</summary>
+    public static Loadout Effective(Loadout l)
     {
         var e = l.Clone();
         var p = Weapons.Get(l.Primary);
         var s = Weapons.Get(l.Secondary);
-        if (p.Slot != Slot.Primary || !progress.IsUnlocked(p))
+        if (p.Slot != Slot.Primary)
             p = Weapons.DefaultPrimary;
-        if (s.Slot != Slot.Secondary || !progress.IsUnlocked(s))
+        if (s.Slot != Slot.Secondary)
             s = Weapons.DefaultSecondary;
         e.Primary = p.Id;
         e.Secondary = s.Id;
-        e.PrimaryKit = Attachments.Sanitize(p, p.Id == l.Primary ? l.PrimaryKit : KitMemory(p.Id), progress);
-        e.SecondaryKit = Attachments.Sanitize(s, s.Id == l.Secondary ? l.SecondaryKit : KitMemory(s.Id), progress);
-        if (!progress.IsUnlocked(e.Grenade) || Throwables.Get(e.Grenade).IsEquipment)
+        e.PrimaryKit = Attachments.Sanitize(p, p.Id == l.Primary ? l.PrimaryKit : KitMemory(p.Id));
+        e.SecondaryKit = Attachments.Sanitize(s, s.Id == l.Secondary ? l.SecondaryKit : KitMemory(s.Id));
+        if (Throwables.Get(e.Grenade).IsEquipment)
             e.Grenade = ThrowableKind.None;
-        if (!progress.IsUnlocked(e.Equipment) || (e.Equipment != ThrowableKind.None && !Throwables.Get(e.Equipment).IsEquipment))
+        if (e.Equipment != ThrowableKind.None && !Throwables.Get(e.Equipment).IsEquipment)
             e.Equipment = ThrowableKind.None;
-        var perks = l.Perks.Sanitized();
-        foreach (var c in new[] { PerkCategory.Movement, PerkCategory.Survival, PerkCategory.Damage })
-            if (!progress.IsUnlocked(perks[c]))
-                perks = perks.With(c, PerkId.None);
-        e.Perks = perks;
-        e.Streaks = EffectiveStreaks(l.Streaks, progress);
+        e.Perks = l.Perks.Sanitized();
+        e.Streaks = l.Streaks.Sanitized();
         return e;
-    }
-
-    /// <summary>Locked streaks swapped for a starter that isn't in the set yet (or left empty).</summary>
-    public static StreakSet EffectiveStreaks(StreakSet set, Progress progress)
-    {
-        var s = set.Sanitized();
-        foreach (var id in s.Ids.ToArray())
-        {
-            if (progress.IsUnlocked(id))
-                continue;
-            s = s.Without(id);
-            if (KillStreaks.Starters.FirstOrDefault(x => !s.Has(x)) is var starter and not StreakId.None)
-                s = s.With(starter);
-        }
-        return s;
     }
 
     /// <summary>The attachments last used on a weapon (a gun never used yet: its default kit, a sniper's scope).</summary>
@@ -120,9 +94,9 @@ public static class LoadoutStore
         LastKit.TryGetValue(weaponId, out var kit) ? kit : weaponId < Weapons.All.Length ? Attachments.DefaultKit(Weapons.Get(weaponId)) : 0;
 
     /// <summary>Puts a gun into a slot of a loadout, with the attachments last used on it.</summary>
-    public static void SetWeapon(Loadout l, int slot, byte weaponId, Progress progress)
+    public static void SetWeapon(Loadout l, int slot, byte weaponId)
     {
-        var kit = Attachments.Sanitize(Weapons.Get(weaponId), KitMemory(weaponId), progress);
+        var kit = Attachments.Sanitize(Weapons.Get(weaponId), KitMemory(weaponId));
         if (slot == 0)
         {
             l.Primary = weaponId;

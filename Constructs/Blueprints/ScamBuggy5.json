@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 5 body 5 kit 5 wear 5, chassis 2 axles, front under the hood, inset 1 m, wishbone/swing arm, wing 0.5, archetype gun buggy, language tub standard 2.15 m, flare 0.07, wedge 0.7, brow 0.65 1.25 m, tail 0.62 1 m, door left, cab tub caged cab, nose wedge, lopsided right, wear age 0.96 (0 rusty, 2 dirty, 1 sooty, 0 patched, 0 rusted out), body gun bay, cab caged, nose long hood, rear porch, under stilts, layout gun bay 2 m, plan 2
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Scam Buggy 5",
-  "group": "The Call Centre",
+  "group": "Scam",
   "description": "A gun buggy: a long hood, a caged cab, a gun behind the cab, a drum on the rear porch. 1 gun.",
   "steps": [
     {"part": "Square Beam 1 m", "paint": "#2a2c30"},
@@ -70,10 +70,9 @@
     {"part": "Hull Loft (hoodw UZV2WyWjXSWtVd ~80080E7Oc5uw3f2013)", "on": 24, "socket": "+y", "by": "engine", "paint": "#2a2c30"},
     {"part": "Bar Grille", "on": 62, "socket": "front", "by": "back", "paint": "#ffd400"},
     {"part": "Plate Steel 0.5 m", "weld": {"on": 63, "pos": [0.124, 0.467, -1.145], "rot": [-0.71, 0.0054, 0.0147, 0.7041]}, "paint": "#b0b4b8"},
-    {"part": "Prize Wheel", "on": 62, "socket": "top", "by": "base"},
-    {"part": "Gift Card Sign", "on": 59, "socket": "front", "by": "base"},
-    {"part": "Prize Wheel", "on": 56, "socket": "front02", "by": "base"},
-    {"part": "Phone Mast", "on": 54, "socket": "front30", "by": "base"}
+    {"part": "Loudhailer", "on": 62, "socket": "top", "by": "base"},
+    {"part": "Traffic Cone", "on": 59, "socket": "front", "by": "base"},
+    {"part": "Traffic Cone", "on": 56, "socket": "front02", "by": "base"}
   ],
   "wires": [[29, 30], [30, 24], [42, 52], [52, 44]],
   "links": [

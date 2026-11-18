@@ -19,7 +19,6 @@ public sealed class LobbyRoomView
         public string Ping = "";
         public byte Team = Game.NoTeam;
         public bool Picked, Ready, Bot, Host, You;
-        public HatId Hat;
         public ulong SteamId; // the Steam avatar before the name, when both sides are on Steam (SteamAvatars.cs)
         public Vector3 Color;
         public int PingMs;
@@ -57,13 +56,13 @@ public sealed class LobbyRoomView
     public int MapListPack => _mapListPack;
 
     /// <summary>Brings the text up to date with <paramref name="game"/>. Cheap and allocation-free when nothing changed.</summary>
-    public void Refresh(Game game, Progress? localProgress)
+    public void Refresh(Game game)
     {
-        var sig = Signature(game, localProgress);
+        var sig = Signature(game);
         if (sig != _signature)
         {
             _signature = sig;
-            Rebuild(game, localProgress);
+            Rebuild(game);
         }
         if (game.ChatVersion != _chatVersion)
         {
@@ -85,7 +84,7 @@ public sealed class LobbyRoomView
 
     private static long Mix(long h, long v) => unchecked((h ^ v) * 0x100000001B3L + (long)0x9E3779B97F4A7C15UL);
 
-    private static long Signature(Game game, Progress? prog)
+    private static long Signature(Game game)
     {
         long h = 1469598103934665603L;
         h = Mix(h, game.LobbyVersion);
@@ -106,16 +105,13 @@ public sealed class LobbyRoomView
         {
             h = Mix(h, p.Id | (p.Team << 8) | (p.TeamChoice << 16) | ((p.Ready ? 1 : 0) << 24) | ((p.Bot != null ? 1 : 0) << 25));
             h = Mix(h, p.Name.GetHashCode());
-            h = Mix(h, p.Prestige | (p.Level << 8) | ((int)p.Hat << 16));
             h = Mix(h, p.SteamId.GetHashCode());
             h = Mix(h, p.Id < game.PingMs.Length ? game.PingMs[p.Id] / 5 : 0); // 5 ms steps: no rebuild for 1 ms jitter
         }
-        if (prog != null)
-            h = Mix(h, prog.Prestige | (prog.Level << 8));
         return h;
     }
 
-    private void Rebuild(Game game, Progress? prog)
+    private void Rebuild(Game game)
     {
         Rebuilds++;
         foreach (var r in Rows)
@@ -133,9 +129,7 @@ public sealed class LobbyRoomView
             r.Bot = p.Bot != null;
             r.Host = p.Id == Game.HostId && !r.Bot;
             r.Name = r.You ? $"{game.NameOf(p.Id)} (you)" : game.NameOf(p.Id);
-            var (prestige, level) = r.You && prog != null ? ((int)prog.Prestige, (int)prog.Level) : ((int)p.Prestige, (int)p.Level);
-            r.Rank = r.Bot ? "BOT" : level > 0 ? Progress.RankLabel(prestige, level) : "";
-            r.Hat = p.Hat;
+            r.Rank = r.Bot ? "BOT" : "";
             r.SteamId = r.Bot ? 0 : p.SteamId;
             r.Team = game.IsTeamMode ? p.Team : Game.NoTeam;
             r.Picked = !r.Bot && p.TeamChoice < 2;

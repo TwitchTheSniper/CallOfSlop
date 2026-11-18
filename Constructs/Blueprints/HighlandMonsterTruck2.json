@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 2 body 2 kit 2 wear 2, chassis 2 axles, front under the hood, inset 1.25 m, strut/strut, wing 0.5, archetype monster truck, cab style coachbuilt, language pickup heavy 2.31 m, flare 0.23, level 0.7, brow 0.74 1 m, tail 0.89 1 m, door right, cab pickup caged cab, nose grille, fitting chrome grille, fitting mascot, wear age 0.92 (1 rusty, 6 dirty, 0 sooty, 0 patched, 0 rusted out), body gun bay, cab caged, nose long hood, rear porch, under tub, layout gun bay 2 m, plan 2
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Highland Monster Truck 2",
-  "group": "Clan MacSlop",
+  "group": "Highland",
   "description": "A monster truck: a long hood, a caged cab, a gun behind the cab, a drum on the rear porch. 1 gun.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#2a2622"},
@@ -83,10 +83,9 @@
     {"part": "Plate Steel 0.5 m", "weld": {"on": 73, "pos": [1.376, 0.56, -0.373], "rot": [0.002, 0.0232, -0.7053, 0.7086]}, "paint": "#8c2a2a"},
     {"part": "Plate Steel 0.5 m", "weld": {"on": 74, "pos": [-0.873, 0.207, -0.377], "rot": [-0.013, -0.0074, 0.7156, 0.6983]}, "paint": "#7b1e22"},
     {"part": "Hull Loft (decoO UaV-)", "on": 71, "socket": "top", "by": "base"},
-    {"part": "Pipe Box", "on": 66, "socket": "front01", "by": "base"},
-    {"part": "Thistle", "on": 35, "socket": "top", "by": "base"},
-    {"part": "Saltire Flag", "on": 69, "socket": "front", "by": "base"},
-    {"part": "Coo Heid", "on": 66, "socket": "front11", "by": "base"}
+    {"part": "Network Switch", "on": 69, "socket": "front", "by": "base"},
+    {"part": "Garden Gnome", "on": 66, "socket": "front11", "by": "base"},
+    {"part": "Phone Mast", "on": 66, "socket": "front00", "by": "base"}
   ],
   "wires": [[32, 33], [33, 27], [46, 60], [60, 48], [60, 49]],
   "links": [

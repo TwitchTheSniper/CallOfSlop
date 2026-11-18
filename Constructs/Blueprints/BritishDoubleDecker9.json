@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 9 body 9 kit 9 wear 9, chassis 2 axles, front set back, inset 2.5 m, leaf/leaf, wing 0.5, cab style town cab, language bus heavy 2.66 m, flare 0.25, plain 0.9, brow 0.82 1.25 m, tail 0.84 1 m, door right, 11 facets, upper deck over bays 1 to 3, cut 2.31 m, bulwark 1.14 m, stair left at 2.25 m back, cab coach cab, 8 facets, nose grille, space upper deck, trim livery on 7 bay sides, wear age 0.65 (10 rusty, 4 dirty, 0 sooty, 1 patched, 0 rusted out), body room, cab enclosed, nose short hood, rear gun deck, under tub, flank loaded, roof none, layout room(Brow T,Door,Bay T-L,Bay L-T,Bay T,Tail T), plan 2
   "format": "call-of-slop-construct-blueprint/1",
   "name": "British Double Decker 9",
-  "group": "Ministry of Slop",
+  "group": "British",
   "description": "A double-decker bus: a short hood, an enclosed cab, a walk-in hull with loot, a stern gun deck. 2 guns.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#1b1c1e"},
@@ -158,17 +158,16 @@
     {"part": "Ammo Socket", "on": 129, "socket": "left", "by": "right"},
     {"part": "Lever", "on": 87, "socket": "lever", "by": "-y"},
     {"part": "Crate Stack", "on": 57, "socket": "centre +y", "by": "foot10", "spin": 1},
-    {"part": "Tea Urn", "on": 56, "socket": "front13", "by": "foot10", "spin": 1},
-    {"part": "Tea Urn", "on": 56, "socket": "front10", "by": "foot10", "spin": 1},
-    {"part": "Tea Urn", "on": 51, "socket": "front33", "by": "foot00", "spin": 2},
-    {"part": "Ammo Container", "on": 51, "socket": "front30", "by": "-y", "spin": 2},
+    {"part": "Shelf Bay 1", "on": 51, "socket": "front21", "by": "-y.0.1", "spin": 2},
+    {"part": "Ammo Container", "on": 56, "socket": "front10", "by": "-y", "spin": 1},
+    {"part": "Loudhailer", "on": 153, "socket": "+y.1.0", "by": "base"},
     {"part": "Hull Pannier 1 m", "on": 96, "socket": "-x0", "by": "back", "paint": "#b5121b"},
     {"part": "Hull Loft (hoodg UtV2WyWjXYXYVd ~6W06mB6uN6uY6ej68u4f02P4014)", "on": 29, "socket": "+y", "by": "engine", "paint": "#c8102e"},
-    {"part": "Slat Grille", "on": 158, "socket": "front", "by": "back", "paint": "#c8102e"},
-    {"part": "Sheet Steel 0.5 m", "weld": {"on": 159, "pos": [0.128, 0.478, -1.725], "rot": [-0.7111, -0.0082, 0, 0.7031]}, "paint": "#1f4a32"},
-    {"part": "Traffic Cone", "on": 158, "socket": "top", "by": "base"},
-    {"part": "Rain Gauge", "on": 37, "socket": "top", "by": "base"},
-    {"part": "Queue Post", "on": 109, "socket": "front00", "by": "base"},
+    {"part": "Slat Grille", "on": 157, "socket": "front", "by": "back", "paint": "#c8102e"},
+    {"part": "Sheet Steel 0.5 m", "weld": {"on": 158, "pos": [0.128, 0.478, -1.725], "rot": [-0.7111, -0.0082, 0, 0.7031]}, "paint": "#1f4a32"},
+    {"part": "Traffic Cone", "on": 157, "socket": "top", "by": "base"},
+    {"part": "Hull Loft (decoJ W0)", "on": 37, "socket": "top", "by": "base"},
+    {"part": "Hull Loft (decoJ W0)", "on": 109, "socket": "front00", "by": "base"},
     {"part": "Garden Gnome", "on": 123, "socket": "front", "by": "base"},
     {"part": "Garden Gnome", "on": 115, "socket": "front", "by": "base"},
     {"part": "Hull Loft (triml9 XzW5 ~CG0COQCWrCWyD9FEPfEXkEY4EQUDouBpD8hM5JR03R ~D80D8GDGWDOyDP0EfGFvWGXkGY0GYWGR0FxVFJd03d)", "on": 87, "socket": "+x0", "by": "base", "paint": "#c8102e"},
@@ -178,7 +177,7 @@
     {"part": "Hull Loft (triml6 XBW5 ~D80DGTDOvDOyF1MGXkGXpGYGGQiFx9DpVBZd03d ~D80DGWDOyDP0EfGFvWGXkGY0GYWGR0FxVFJd03d)", "on": 92, "socket": "-x0", "by": "base", "paint": "#e8dfc8"},
     {"part": "Hull Loft (triml5 XaW5 ~D80DGTDOvDOyF1MGXkGXpGYGGQiFx9DpVBZd03d ~D80DGWDOyDP0EfGFvWGXkGY0GYWGR0FxVFJd03d)", "on": 93, "socket": "+x0", "by": "base", "paint": "#e8dfc8"},
     {"part": "Hull Loft (triml6 XaW5 ~D80DGWDOyDP0EfGFvWGXkGY0GYWGR0FxVFJd03d ~D80DGTDOvDOyF1MGXkGXpGYGGQiFx9DpVBZd03d)", "on": 93, "socket": "-x0", "by": "base", "paint": "#e8dfc8"},
-    {"part": "Plate Steel 0.5 m", "weld": {"on": 157, "pos": [-1.346, 1.605, 5.752], "rot": [0.0023, -0.008, 0.7148, 0.6993]}, "paint": "#c8102e"}
+    {"part": "Plate Steel 0.5 m", "weld": {"on": 156, "pos": [-1.346, 1.605, 5.752], "rot": [0.0023, -0.008, 0.7148, 0.6993]}, "paint": "#c8102e"}
   ],
   "wires": [[34, 35], [35, 29], [101, 135], [135, 129], [138, 145], [145, 140], [151, 148]],
   "hoses": [[149, 150]],
@@ -189,5 +188,5 @@
     {"type": "feed", "from": 147, "to": 148, "fromPort": "Ammo out", "toPort": "Ammo in 2", "laid": true},
     {"type": "feed", "from": 148, "to": 149, "fromPort": "Ammo out", "toPort": "Ammo in", "laid": true}
   ],
-  "loot": [{"step": 152, "table": "british"}]
+  "loot": [{"step": 152, "table": "british"}, {"step": 153, "table": "british"}]
 }

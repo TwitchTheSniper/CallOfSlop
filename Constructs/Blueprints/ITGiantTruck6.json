@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 6 body 6 kit 6 wear 6, chassis 3 axles, tag 1.25 m, front set back, inset 2.25 m, leaf/leaf/leaf, wing 0.5, archetype giant hauler, cab style pod, language van giant 2.40 m, flare 0.27, raked 0.8, brow 0.63 1.5 m, tail 0.86 1.25 m, door right, 12 facets, cab van cab, 8 facets, nose rounded, fitting radome, pods podb on 2 bay sides, trim fairing on 6 bay sides, wear age 0.78 (2 rusty, 6 dirty, 0 sooty, 0 patched, 0 rusted out), body room, cab enclosed, nose long hood, rear porch, under stilts, flank bare, roof none, layout room(Brow T,Door,Bay T,Bay T-L,Tail L)
   "format": "call-of-slop-construct-blueprint/1",
   "name": "IT Giant Truck 6",
-  "group": "IT Department",
+  "group": "IT",
   "description": "A giant truck: a long hood, an enclosed cab, a walk-in hull with loot, a drum on the rear porch. 1 gun.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#3b3f44"},
@@ -142,9 +142,9 @@
     {"part": "Bar Grille", "on": 133, "socket": "front", "by": "back", "paint": "#f2c400"},
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 134, "pos": [0.122, 0.444, -1.943], "rot": [-0.7064, 0.01, 0.0015, 0.7078]}, "paint": "#a7abae"},
     {"part": "Hull Loft (decoR WWWQ)", "on": 38, "socket": "top", "by": "base"},
-    {"part": "CRT Monitor", "on": 133, "socket": "top", "by": "base"},
-    {"part": "Cable Reel", "on": 129, "socket": "front", "by": "base"},
-    {"part": "Network Switch", "on": 127, "socket": "front30", "by": "base"},
+    {"part": "Network Switch", "on": 133, "socket": "top", "by": "base"},
+    {"part": "Network Switch", "on": 129, "socket": "front", "by": "base"},
+    {"part": "Satellite Dish", "on": 127, "socket": "front30", "by": "base"},
     {"part": "Hull Loft (podb XaWCY6WY ~Cm0D8RDOrDOyFHGGvaGvhGw5GoWGYxFRJCxZ9pf6hk03k ~Cm0D8RDOtDOyFfJGvaGvkGwAGobGZ1FRQCxg9pn6hs03s)", "on": 103, "socket": "+x0", "by": "base", "paint": "#cfc6aa"},
     {"part": "Hull Loft (podb XaWCY9Wc ~Cm0D8RDOtDOyFfJGvaGvkGwAGobGZ1FRQCxg9pn6hs03s ~Cm0D8RDOrDOyFHGGvaGvhGw5GoWGYxFRJCxZ9pf6hk03k)", "on": 103, "socket": "-x0", "by": "base", "paint": "#cfc6aa"},
     {"part": "Hull Loft (trimf1 XaW5 ~C00CGFCWVCekCe-DPDEPTEPaEHiDHwAw38276Y852A02A ~Cm0D8RDOrDOyFHGGvaGvhGw5GoWGYxFRJCxZ9pf6hk03k)", "on": 97, "socket": "+x0", "by": "base", "paint": "#e6e2d6"},
@@ -152,8 +152,7 @@
     {"part": "Hull Loft (trimf6 YMW5 ~Cm0D8RDOrDOyFHGGvaGvhGw5GoWGYxFRJCxZ9pf6hk03k =)", "on": 98, "socket": "-x0", "by": "base", "paint": "#e6e2d6"},
     {"part": "Hull Loft (trimf0 XaW5 ~Cm0D8QDOqDOyF1FGvaGvfGw3GoTGYtFRGCxV9pc6hg03g ~Cm0D8RDOtDOyFfJGvaGvkGwAGobGZ1FRQCxg9pn6hs03s)", "on": 104, "socket": "-x0", "by": "base", "paint": "#e6e2d6"},
     {"part": "Hull Loft (trimf1 XaW5 ~Cm0D8QDOqDOyF1FGvaGvfGw3GoTGYtFRGCxV9pc6hg03g ~C00CONCWkCeyD16EfTEnaEnqEgCEQZDQuAx683C53G03G)", "on": 105, "socket": "+x0", "by": "base", "paint": "#e6e2d6"},
-    {"part": "Hull Loft (trimf8 XaW5 ~C00CONCWkCeyD16EfTEnaEnqEgCEQZDQuAx683C53G03G ~Cm0D8QDOqDOyF1FGvaGvfGw3GoTGYtFRGCxV9pc6hg03g)", "on": 105, "socket": "-x0", "by": "base", "paint": "#e6e2d6"},
-    {"part": "Router Antenna", "on": 128, "socket": "front33", "by": "base"}
+    {"part": "Hull Loft (trimf8 XaW5 ~C00CONCWkCeyD16EfTEnaEnqEgCEQZDQuAx683C53G03G ~Cm0D8QDOqDOyF1FGvaGvfGw3GoTGYtFRGCxV9pc6hg03g)", "on": 105, "socket": "-x0", "by": "base", "paint": "#e6e2d6"}
   ],
   "wires": [[35, 36], [36, 30], [106, 114], [114, 111], [120, 117]],
   "hoses": [[118, 119]],

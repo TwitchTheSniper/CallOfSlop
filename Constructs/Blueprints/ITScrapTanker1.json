@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front under the hood, inset 2 m, leaf/leaf, wing 0.5, cab style glasshouse, language pod heavy 2.62 m, flare 0.16, sloped 0.6, brow 0.65 1.25 m, tail 0.69 1.25 m, door right, 9 facets, cab pod cab, 6 facets, nose wedge, fitting radome, trim fairing on 5 bay sides, wear age 0.21 (0 rusty, 0 dirty, 0 sooty, 0 patched, 0 rusted out), body room+tank, cab enclosed, nose long hood, rear bare, under stilts, flank panniers, roof none, layout room(Brow T,Door,Tail T)+tank 2 m, plan 2
   "format": "call-of-slop-construct-blueprint/1",
   "name": "IT Scrap Tanker 1",
-  "group": "IT Department",
+  "group": "IT",
   "description": "A scrap tanker: a long hood, an enclosed cab, a walk-in hull with loot, a big round tank of fuel. 1 gun.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#3b3f44"},
@@ -109,7 +109,7 @@
     {"part": "Plate Steel 0.5 m", "weld": {"on": 99, "pos": [1.239, 0.478, -0.377], "rot": [-0.0053, -0.0069, -0.7029, 0.7113]}, "paint": "#a7abae"},
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 98, "pos": [0.124, 0.512, -1.184], "rot": [-0.7101, 0.0038, -0.006, 0.7041]}, "paint": "#a7abae"},
     {"part": "Hull Loft (decoR WUWM)", "on": 35, "socket": "top", "by": "base"},
-    {"part": "Employee of the Month", "on": 97, "socket": "top", "by": "base"},
+    {"part": "Office Plant", "on": 97, "socket": "top", "by": "base"},
     {"part": "Hull Loft (trimf8 XaW5 ~BG0C0QCGqCGyCXED9eCvuCg1B2P8Qh52t02t ~Cm0DecDuyEPCG1oG1uFoPEw_DBXABy6KE04E)", "on": 71, "socket": "+x0", "by": "base", "paint": "#1f4e8c"},
     {"part": "Hull Loft (trimf7 XaW5 ~Cm0DecDuyEPCG1oG1uFoPEw_DBXABy6KE04E ~BG0C0QCGqCGyCXED9eCvuCg1B2P8Qh52t02t)", "on": 71, "socket": "-x0", "by": "base", "paint": "#1f4e8c"},
     {"part": "Hull Loft (trimf8 YMW5 ~Cm0DecDuyEPCG1oG1uFoPEw_DBXABy6KE04E =)", "on": 72, "socket": "-x0", "by": "base", "paint": "#1f4e8c"},

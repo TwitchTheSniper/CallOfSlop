@@ -108,11 +108,10 @@ public static unsafe partial class Program
         if (args.SkipWhile(a => !a.Equals("--size", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault()?.Split('x') is [var w, var h] && int.TryParse(w, out var wi) && int.TryParse(h, out var hi))
             (_settings.Width, _settings.Height) = (Math.Clamp(wi, 320, 3840), Math.Clamp(hi, 240, 2160));
         _settings.Mode = GameMode.Sandbox;
-        _settings.SandboxSurvival = args.Any(a => a.Equals("--survival", StringComparison.OrdinalIgnoreCase)); // (creative by default; --survival: a survival world, the penal colony's on Glacier unless --start names another)
+        _settings.SandboxSurvival = args.Any(a => a.Equals("--survival", StringComparison.OrdinalIgnoreCase)); // (creative by default; --survival: a survival world on the map as it is, unless --start names a start)
         _settings.MapRandom = false;
         var start = args.SkipWhile(a => !a.Equals("--start", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() ?? ""; // (a start by id, on its own planetoid: GameStoryStart.cs)
-        // No --start: as the tools always had it, Survival plays the penal colony (the tutorial's start) and Creative the map as it is.
-        _settings.SurvivalTutorial = _settings.SandboxSurvival && (start.Length == 0 || StoryStarts.Tutorial is { } tut && start.Equals(tut.Id, StringComparison.OrdinalIgnoreCase));
+        // No --start: the any-map start, so the map is the one asked for (Survival played the penal colony until 2026-11-17).
         _settings.StoryStart = start.Length > 0 ? start : Array.Find(StoryStarts.All, a => a.AnyMap)?.Id ?? "";
         _settings.Bots = 0;
         _settings.ShowFps = false;
@@ -124,7 +123,7 @@ public static unsafe partial class Program
         s.Split(',') is [var x, var y, var z] && float.TryParse(x, System.Globalization.CultureInfo.InvariantCulture, out var a)
         && float.TryParse(y, System.Globalization.CultureInfo.InvariantCulture, out var b) && float.TryParse(z, System.Globalization.CultureInfo.InvariantCulture, out var c) ? new Vector3(a, b, c) : null;
 
-    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "design" or "extr" or "plate" or "fitpart" or "inv" or "fuel" or "cutter" or "put" or "side" or "walk" or "ray" or "guns" or "engines" or "bundle" or "drag" or "mousemove" or "station" or "subbp" or "linked" or "bpui" or "lifter" or "aim" or "near" or "from" or "inside" or "me" or "person" or "use" or "waitnear" or "key" or "touch" or "ladder" or "ladderclimb" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "picker" or "bring" or "craft" or "disown" or "saveload" or "stock" or "feed" or "kit" or "poke" or "joints" or "timed" or "saveworld" or "loadworld" or "logi" or "period" or "gang" or "incident" || WsGhostKnown(action) || WsNavKnown(action) || WsTourKnown(action) || WsTalkKnown(action) || WsPlayKnown(action) || WsHeldKnown(action);
+    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "design" or "extr" or "plate" or "fitpart" or "inv" or "fuel" or "cutter" or "put" or "side" or "walk" or "ray" or "guns" or "engines" or "bundle" or "drag" or "mousemove" or "station" or "subbp" or "linked" or "bpui" or "lifter" or "aimlink" or "aim" or "near" or "from" or "inside" or "me" or "person" or "use" or "waitnear" or "key" or "touch" or "ladder" or "ladderclimb" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "picker" or "bring" or "craft" or "disown" or "saveload" or "stock" or "feed" or "kit" or "poke" or "joints" or "timed" or "saveworld" or "loadworld" or "logi" or "period" or "gang" or "incident" || WsGhostKnown(action) || WsNavKnown(action) || WsTourKnown(action) || WsTalkKnown(action) || WsPlayKnown(action) || WsHeldKnown(action);
 
     private static void WsSay(string s)
     {
@@ -566,40 +565,58 @@ public static unsafe partial class Program
             case "wait":
                 WsWaitTicks(int.TryParse(arg, out var w) ? Math.Max(0, w) : 30);
                 return;
-            case "gang": // "gang NAME SIDE,UP,OUT": the eye that far to the right of, above and in front of a labour gang's spot, looking at it
+            case "aimlink":
             {
-                var cut = arg.LastIndexOf(' ');
-                var off = cut > 0 ? arg[(cut + 1)..].Split(',') : [];
-                if (cut <= 0 || off.Length != 3 || !off.All(o => float.TryParse(o, System.Globalization.CultureInfo.InvariantCulture, out _)) || !g.LabourGangAt(arg[..cut], out var gp, out var gf))
+                // "aimlink PART[#n] [K]": the eye beside the middle of link K (default 0) of PART's body, looking at it, as the player
+                // aims at a laid cable; `ui` then prints the look line (the linking tool's names of both ends).
+                var sp2 = arg.LastIndexOf(' ');
+                var numbered = sp2 > 0 && int.TryParse(arg[(sp2 + 1)..], out _);
+                var kk = numbered ? int.Parse(arg[(sp2 + 1)..]) : 0;
+                var (lc, _) = WsFind(g, numbered ? arg[..sp2] : arg);
+                if (lc == null && !g.IsServer && WsLiftWait(30))
                 {
-                    WsFail("gang NAME SIDE,UP,OUT (a gang of Story/Labour/PenalColony.json that stands now)");
+                    _wsQueue.EnqueueFront(action);
+                    _wsWait = 30;
                     return;
                 }
-                var v = off.Select(o => float.Parse(o, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
-                var up = StandInPath.Up(gp);
-                var right = Vector3.Normalize(Vector3.Cross(gf, up));
-                var at = gp + up * 1f;
-                WsEyeTo(g, me, at + right * v[0] + up * v[1] + gf * v[2]);
-                WsLook(g, me.Eye, at);
+                _wsLiftSince = 0;
+                if (lc == null || kk < 0 || kk >= lc.RouteCount)
+                {
+                    WsFail($"aimlink: no link {kk} on \"{arg}\"'s body ({lc?.RouteCount ?? 0} links)");
+                    return;
+                }
+                var cnt = lc.Routes[kk].Count;
+                var (pa, pb) = (ConstructRoutes.WorldPoint(lc, kk, -1), ConstructRoutes.WorldPoint(lc, kk, 0));
+                for (var i = 0; i <= cnt; i++)
+                {
+                    var (qa, qb) = (ConstructRoutes.WorldPoint(lc, kk, i - 1), ConstructRoutes.WorldPoint(lc, kk, i));
+                    if (Vector3.DistanceSquared(qa, qb) > Vector3.DistanceSquared(pa, pb))
+                        (pa, pb) = (qa, qb);
+                }
+                var mid = (pa + pb) * 0.5f;
+                var along = Vector3.Normalize(pb - pa + new Vector3(1e-4f, 0, 0));
+                var side = Vector3.Cross(along, Vector3.UnitY);
+                side = side.LengthSquared() < 1e-4f ? Vector3.UnitX : Vector3.Normalize(side);
+                Vector3[] tries = [Vector3.Normalize(side + Vector3.UnitY), Vector3.Normalize(-side + Vector3.UnitY), Vector3.UnitY, side, -side];
+                var eye = mid + tries[0] * 1.2f;
+                foreach (var t in tries)
+                {
+                    var e = mid + t * 1.2f;
+                    if (g.Constructs.Raycast(e, -t, 1.3f, out var lh) && lh.Body == lc && lh.RoutePlus1 == kk + 1)
+                    {
+                        eye = e;
+                        break;
+                    }
+                }
+                if (g.IsServer)
+                    WsEyeTo(g, me, eye);
+                else
+                    eye = me.Eye; // (a joined client's player is the host's to place: `bring PART` on the host, then this only turns the look)
+                WsLook(g, eye, mid);
+                WsSay($"aimlink: link {kk} ({ConstructRoutes.Name(lc.Routes[kk].Type)}) of body {lc.Id}, eye {eye:0.00} looking at {mid:0.00}");
                 _wsWait = 3;
                 return;
             }
-            case "incident": // "incident GANG KIND": that incident begins now in that gang (GameLabourIncidents.cs)
-            {
-                var cut = arg.LastIndexOf(' ');
-                if ((cut > 0 ? g.IncidentStartNamed(arg[..cut], arg[(cut + 1)..]) : "incident GANG KIND") is { } why)
-                    WsFail(why);
-                return;
-            }
-            case "period": // "period NAME": the colony's day jumps to that period (GameLabourDay.cs)
-                if (!g.LabourJumpTo(arg))
-                    WsFail($"period NAME: no period \"{arg}\" in the colony's day ({string.Join(", ", LabourScript.Current.Day.Select(d => d.Name))})");
-                else
-                {
-                    LabourRender.SnapShifts(5); // (the gangs change even in view, for the picture)
-                    WsWaitTicks(240); // (the next look, and the gangs' coming and going)
-                }
-                return;
             case "aim" or "near" or "panel":
             {
                 var spec = verb == "near" && arg.LastIndexOf(' ') is var sp and > 0 && float.TryParse(arg[(sp + 1)..], System.Globalization.CultureInfo.InvariantCulture, out _) ? arg[..sp] : arg;

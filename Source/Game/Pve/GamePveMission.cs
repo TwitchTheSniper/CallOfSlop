@@ -717,20 +717,10 @@ public sealed partial class Game
         SendPveEvent(label == "OBJECTIVE" ? PveEventKind.Objective : PveEventKind.Mission, (ushort)xp, 0, "", toClientsOnly: true);
     }
 
-    /// <summary>Client (or the host): co-op XP into the local progress (Progression.cs).</summary>
+    /// <summary>Client (or the host): once co-op XP into the local progress; nothing since levelling went.</summary>
     private void CoopLocalAward(PveEventKind kind, ushort arg, double now)
     {
-        if (Progress == null)
-            return;
-        int? levelUp = kind switch
-        {
-            PveEventKind.Kill => Progress.AwardCoop(CoopKillXp + ((arg & 1) != 0 ? CoopHeadshotXp : 0), (arg & 1) != 0 ? "HEADSHOT KILL" : "KILL", now, (byte)(arg >> 1)),
-            PveEventKind.Objective => Progress.AwardCoop(arg, "OBJECTIVE", now),
-            PveEventKind.Mission => Progress.AwardCoop(arg, "MISSION COMPLETE", now),
-            _ => null,
-        };
-        if (levelUp != null)
-            Audio.Effect(Sfx.LevelUp, 0.8f);
+        // (account XP for co-op kills, objectives and missions went with levelling, 2026-11-17)
     }
 
     /// <summary>The big centre line (OBJECTIVE 2/4...) and when it went up (local clock).</summary>

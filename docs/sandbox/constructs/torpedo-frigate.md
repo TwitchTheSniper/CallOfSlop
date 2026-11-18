@@ -82,7 +82,10 @@ inside the hull, in one room with engineering.
   OR Gate under the torpedo room's ceiling at its fore end on each side; the mess's to one in the passage between the suit bay
   and the airlock, then one each side at the torpedo room's aft end (a wire reaches 8 m); each side's gates are wired to its
   bay's magazine. The mouse stays the PDCs'. A launch's way-out ray passes the bay the rack hangs in (its convex collider
-  closes the port: `ConstructOrdnance.Blocked`), so the magazines let go. Launched in space a torpedo coasts 7 minutes after
+  closes the port: `ConstructOrdnance.Blocked`), so the magazines let go. The sponson's nose is flat between two lips that
+  fair into the hull (Karl, 2026-11-18: the full cowl closed the port), and an armoured **Zero Day Torpedo Hatch** hinged
+  on its outboard edge covers the port: a launch that finds it shut swings it a quarter turn forward along the flank (1 s),
+  the torpedo goes once it is clear, and it shuts 4 s after the last (big-systems.md "Launch hatches"). Launched in space a torpedo coasts 7 minutes after
   its motor (about 120 km; weapons.md "Flight").
 - The Zero Day Railgun along the spine, fixed forward and aimed by the ship (the pilot fires it). Each slug takes 15 MJ from the Capacitor Bank M in engineering, aft of the reactor (ship-works.md 8; energy guns fire from capacitors only): two full slugs and a bit, one refilled in 10 s.
 - Four Zero Day PDCs on barbettes on the beam, run from the two gun stations (ops and the mess). Each turns on a **Turret
@@ -95,6 +98,7 @@ inside the hull, in one room with engineering.
   whose blueprint fills it with ammo comes full whenever the game builds it, in Survival too (Karl, 2026-11-17: an
   enemy frigate must be able to fire); one a player's Building Station fits comes empty and is filled by hand
   (`ConstructBuild.SetConfig`, `ConstructWorld.PlayerBuild`).
+- Point defence (Karl, 2026-11-18): the PDCs' rounds have a 3 m flak fuse (weapons.md "Flak fuse and own hull"), and no turret fires through the Zero Day's own hull or its docked craft. The crew's gunners turn on any missile or torpedo steering for the ship inside their guns' reach before anything else (`ShipAi.PointDefence`); `--crew-check --crew-defence` puts two crewed frigates against each other (about half the torpedoes were shot down, 2026-11-18). A player gunner's third-person crosshair now finds ships and missiles, not only the ground, so the guns converge where it is (`Program.GunnerAimTarget`), and the look is carried from the gunner's place to the ship's centre on a planet's curved frames (`GameSandbox`, the seat's `AimYaw`).
 - Four Zero Day Countermeasure Launchers (flare guns) on the spine, all fired by the flares button in ops.
 - Radar and lock (Karl, 2026-11-17): a Long Range Sensor on the shuttle's cradle deck aft of the pod, by the mast, wired into a
   Fire Director in the mess's starboard aft corner below it (a wire reaches 8 m, so the director sits under the sensor, not

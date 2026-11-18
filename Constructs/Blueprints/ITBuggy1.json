@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front under the hood, inset 1 m, wishbone/swing arm, wing 0.5, archetype gun buggy, language tub heavy 2.20 m, flare 0.29, tapered 0.9, brow 0.68 1.5 m, tail 0.62 1 m, door right, 10 facets, cab tub caged cab, 7 facets, nose wedge, wear age 0.23 (1 rusty, 0 dirty, 0 sooty, 0 patched, 0 rusted out), body gun bay, cab caged, nose long hood, rear porch, under stilts, layout gun bay 2 m, plan 3
   "format": "call-of-slop-construct-blueprint/1",
   "name": "IT Buggy 1",
-  "group": "IT Department",
+  "group": "IT",
   "description": "A gun buggy: a long hood, a caged cab, a gun behind the cab, a drum on the rear porch. 1 gun.",
   "steps": [
     {"part": "Square Beam 1 m", "paint": "#3b3f44"},
@@ -70,9 +70,10 @@
     {"part": "Hull Loft (hoodw UhV2WyWjXSWtVd ~80080B7uQ7Ob6Wl58z2v4014)", "on": 24, "socket": "+y", "by": "engine", "paint": "#f2c400"},
     {"part": "Slat Grille", "on": 62, "socket": "front", "by": "back", "paint": "#f2c400"},
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 63, "pos": [0.124, 0.498, -1.083], "rot": [-0.7086, 0.0039, 0.0038, 0.7056]}, "paint": "#d8d0b8"},
-    {"part": "Cable Reel", "on": 62, "socket": "top", "by": "base"},
-    {"part": "Satellite Dish", "on": 59, "socket": "front", "by": "base"},
-    {"part": "Cable Reel", "on": 60, "socket": "front", "by": "base"}
+    {"part": "Network Switch", "on": 62, "socket": "top", "by": "base"},
+    {"part": "Network Switch", "on": 59, "socket": "front", "by": "base"},
+    {"part": "Office Plant", "on": 57, "socket": "front", "by": "base"},
+    {"part": "Router Antenna", "on": 60, "socket": "front", "by": "base"}
   ],
   "wires": [[29, 30], [30, 24], [42, 53], [53, 44]],
   "links": [

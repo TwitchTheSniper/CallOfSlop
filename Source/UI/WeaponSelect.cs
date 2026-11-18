@@ -45,7 +45,7 @@ public static class WeaponSelect
         var upper = new string[all.Length];
         foreach (var w in all)
         {
-            levels[w.Id] = Progress.UnlockLevel(w);
+            levels[w.Id] = 1; // (nothing is locked since levelling went: the list goes by the file's order)
             upper[w.Id] = w.Name.ToUpperInvariant();
         }
         foreach (var c in TabOrder)
@@ -81,7 +81,7 @@ public static class WeaponSelect
     public static int UnlockLevel(WeaponDef w)
     {
         Build();
-        return w.Id < _unlockLevel.Length ? _unlockLevel[w.Id] : Progress.UnlockLevel(w);
+        return w.Id < _unlockLevel.Length ? _unlockLevel[w.Id] : 1;
     }
 
     /// <summary>The weapon's name in capitals (cached, for the big hero title).</summary>

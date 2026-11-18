@@ -67,7 +67,7 @@
     <None Update="Models\**\*" CopyToOutputDirectory="PreserveNewest" />
     <!-- Recorded gunshot layers (Audio\Samples\Guns: manifest.json + WAVs, made by tools\audio\make_gun_samples.py); optional, the synth covers anything missing. -->
     <None Update="Audio\**\*" CopyToOutputDirectory="PreserveNewest" />
-    <!-- Cosmetics catalog (prestige hats): Cosmetics\hats.json (see README, Prestige). -->
+    <!-- Cosmetics: Cosmetics\uniforms.json (the uniforms and their caps, Source/Cosmetics/Uniforms.cs). -->
     <None Update="Cosmetics\**\*" CopyToOutputDirectory="PreserveNewest" />
     <!-- Decals for the Decal / DecalScatter map ops and bullet impacts: one JSON file each, in category folders (see Decals\README.md). -->
     <None Update="Decals\**\*" CopyToOutputDirectory="PreserveNewest" />

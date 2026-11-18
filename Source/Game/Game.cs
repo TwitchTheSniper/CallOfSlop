@@ -187,9 +187,6 @@ public sealed partial class Game : IDisposable
 
     public readonly string LocalName;
 
-    /// <summary>The local player's progression (XP is awarded for the local player's kills).</summary>
-    public Progress? Progress;
-
     public Game(NetPeer net, Audio audio, string playerName, byte primary, byte secondary, int bots = 0,
         BotDifficulty botSkill = BotDifficulty.Normal, byte mapId = 0,
         ThrowableKind grenade = ThrowableKind.None, ThrowableKind equipment = ThrowableKind.None, uint primaryKit = 0, uint secondaryKit = 0,
@@ -792,9 +789,7 @@ public sealed partial class Game : IDisposable
         _w.Begin(Msg.Loadout).U8(ChosenPrimary).U8(ChosenSecondary).U8((byte)ChosenGrenade).U8((byte)ChosenEquipment)
             .U32(ChosenPrimaryKit).U32(ChosenSecondaryKit)
             .U8((byte)ChosenPerks.Movement).U8((byte)ChosenPerks.Survival).U8((byte)ChosenPerks.Damage)
-            .U8((byte)ChosenStreaks.A).U8((byte)ChosenStreaks.B).U8((byte)ChosenStreaks.C)
-            .U8((byte)ChosenHat); // protocol 25: the hat (GameCosmeticLoadout.cs)
-        WriteHelloProfile(_w); // then prestige and level now: the scoreboard's Level column (GameCosmetics.cs; older servers ignore it)
+            .U8((byte)ChosenStreaks.A).U8((byte)ChosenStreaks.B).U8((byte)ChosenStreaks.C);
         ChosenLook.Pack(_w); // protocol 45: the APPEARANCE screen's look (Appearance.cs)
         Net.SendToServer(_w.Span, PacketReliability.ReliableOrdered);
     }
@@ -1440,6 +1435,8 @@ public sealed partial class Game : IDisposable
         p.LastCombatTime = -100;
         if (p.Bot != null)
             PickBotLoadout(p);
+        else if (SandboxOn && !SandboxInfiniteParts)
+            SurvivalStockLoadout(p); // (a person's first spawn too, before any loadout packet: the host's comes from the menu's loadout)
         p.Primary = p.WantPrimary;
         p.Secondary = p.WantSecondary;
         p.PrimaryKit = p.WantPrimaryKit;
@@ -1472,11 +1469,25 @@ public sealed partial class Game : IDisposable
     }
 
     /// <summary>A player asked for a new loadout: apply now if out of combat, otherwise on next spawn.</summary>
+    /// <summary>
+    /// Server, Survival: a person's stock loadout is the default guns, plain, with no grenade or gear (what a fresh player had
+    /// while levels gated the loadout, until 2026-11-17), whatever their loadout.txt holds: what else they carry comes from
+    /// the world (the start kit, a gun built at a Gun Workbench).
+    /// </summary>
+    private static void SurvivalStockLoadout(Player p)
+    {
+        p.WantPrimary = Weapons.DefaultPrimary.Id;
+        p.WantSecondary = Weapons.DefaultSecondary.Id;
+        p.WantPrimaryKit = Attachments.DefaultKit(Weapons.DefaultPrimary);
+        p.WantSecondaryKit = Attachments.DefaultKit(Weapons.DefaultSecondary);
+        p.WantGrenade = p.WantEquipment = ThrowableKind.None;
+    }
+
     private void ServerRequestLoadout(Player p, byte primary, byte secondary, ThrowableKind grenade, ThrowableKind equipment, uint primaryKit, uint secondaryKit,
         PerkSet perks, double now)
     {
         p.WantPerks = perks.Sanitized();
-        // Unlocks are tracked on each player's own PC, so the server just checks the slots make sense.
+        // The server checks the slots make sense (and Survival keeps the stock guns, below).
         p.WantGrenade = Throwables.Get(grenade) is { IsEquipment: false } g ? g.Kind : ThrowableKind.None;
         p.WantEquipment = Throwables.Get(equipment) is { IsEquipment: true } e ? e.Kind : ThrowableKind.None;
         var pw = Weapons.Get(primary);
@@ -1485,10 +1496,14 @@ public sealed partial class Game : IDisposable
             pw = Weapons.DefaultPrimary;
         if (sw.Slot != Slot.Secondary)
             sw = Weapons.DefaultSecondary;
+        if (SandboxOn && !SandboxInfiniteParts && p.Bot == null)
+            (pw, sw, primaryKit, secondaryKit) = (Weapons.DefaultPrimary, Weapons.DefaultSecondary, Attachments.DefaultKit(Weapons.DefaultPrimary), Attachments.DefaultKit(Weapons.DefaultSecondary)); // (Survival: SurvivalStockLoadout)
         p.WantPrimary = pw.Id;
         p.WantSecondary = sw.Id;
         p.WantPrimaryKit = Attachments.Sanitize(pw, primaryKit);
         p.WantSecondaryKit = Attachments.Sanitize(sw, secondaryKit);
+        if (SandboxOn && !SandboxInfiniteParts && p.Bot == null)
+            p.WantGrenade = p.WantEquipment = ThrowableKind.None;
         (p.MpPrimary, p.MpSecondary, p.MpPrimaryKit, p.MpSecondaryKit) = (p.WantPrimary, p.WantSecondary, p.WantPrimaryKit, p.WantSecondaryKit); // kept through a Zombies run
 
         // Loadouts change on (re)spawn. The only exception is the pre-match countdown, where you're
@@ -1600,14 +1615,11 @@ public sealed partial class Game : IDisposable
         var healthBefore = victim.Health;
         victim.Health -= amount;
         var hitPart = victim.InShell ? shellPart : BloodOnHit(victim, attacker, kind, from); // the blood marks: body part and direction (BodyBlood.cs)
-        if (victim.Team == SbPeopleTeam)
-            LockdownAssault(attacker, victim, now); // (the penal colony's staff: the lockdown, GameColonyLockdown.cs)
         if (victim.Health > 0)
         {
             if (victim.Team == SbPeopleTeam)
             {
                 StoryBodyHurt(victim, attacker); // (a story person says so: GameStoryTalk.cs)
-                OutpostHurt(victim, attacker, now); // (an outpost's person, and their mates: GameOutposts.cs)
             }
             return false;
         }
@@ -2058,7 +2070,6 @@ public sealed partial class Game : IDisposable
                 SendCrewRosters(sender); // own crews and prizes (GameCrewHire.cs)
                 SendLogicState(sender); // map logic: doors, lamps, levers, controlled movers (GameLogic.cs)
                 SendCorpseState(sender); // the bodies lying about (GameCorpses.cs)
-                SendLabourState(sender); // the penal colony's convict labourers (GameLabour.cs)
                 Module.OnClientJoined(this, sender); // the active mode's own state (Sandbox: every construct)
                 if (VoteOpen)
                 {
@@ -2192,7 +2203,7 @@ public sealed partial class Game : IDisposable
                     var perks = r.Has(3) ? new PerkSet((PerkId)r.U8(), (PerkId)r.U8(), (PerkId)r.U8()) : PerkSet.Empty;
                     ServerRequestLoadout(p, lp, ls, lg, le, lpk, lsk, perks, now);
                     ReadLoadoutStreaks(p, ref r);
-                    ReadLoadoutHat(p, ref r); // GameCosmeticLoadout.cs
+                    ReadLoadoutLook(p, ref r); // GameCosmeticLoadout.cs
                 }
                 break;
             }
@@ -2288,7 +2299,7 @@ public sealed partial class Game : IDisposable
                 _w.Begin(Msg.Hello).U8((byte)nameBytes.Length);
                 foreach (var c in nameBytes)
                     _w.U8(c);
-                WriteHelloProfile(_w); // prestige + level (cosmetic, GameCosmetics.cs)
+                _w.U8(0).U8(0); // (two bytes that held prestige and level until protocol 348: kept, so the version below stays where every build reads it)
                 _w.U16(ServerInfo.ProtocolVersion); // protocol 74: the host refuses a different build (GameHostBye.cs)
                 _w.U64(LocalWorldKey); // protocol 128: who this PC is to a saved world (GameWorldSave.cs)
                 Net.SendToServer(_w.Span, PacketReliability.ReliableOrdered);
@@ -2310,7 +2321,8 @@ public sealed partial class Game : IDisposable
                 if (Players.Values.Any(o => o != p && o.Name == name))
                     name = Settings.Clean($"{name[..Math.Min(name.Length, 13)]} {p.Id}");
                 p.Name = name;
-                ReadHelloProfile(p, ref r); // prestige + level (cosmetic, GameCosmetics.cs)
+                if (r.Has(2))
+                    r.U16(); // (prestige and level until protocol 348: kept as padding, so an older build's version is read where it sends it)
                 if (r.Has(2) && VersionProblem(r.U16(), "player") is { } helloProblem) // (builds before protocol 74 don't send it: let them in)
                 {
                     RefuseVersion(sender, p, helloProblem); // GameHostBye.cs
@@ -2359,32 +2371,11 @@ public sealed partial class Game : IDisposable
             case (byte)Msg.Relay when r.Has(2):
                 OnRelayPacket(sender, ref r); // free travel: a traveller's packets for a planetoid the host runs (GameTravelVisit.cs)
                 break;
-            case (byte)Msg.Tutorial:
-                OnTutorialPacket(sender, ref r); // the warden's induction (GameTutorial.cs)
-                break;
             case (byte)Msg.Shell when !IsServer && r.Has(2):
                 ReadShell(ref r); // who wears a robot shell (GameRobotShell.cs)
                 break;
             case (byte)Msg.StandIn when !IsServer:
                 ReadStandIn(ref r); // STAND-IN: the story's placeholder craft (Source/StandIns/GameStandIns.cs)
-                break;
-            case (byte)Msg.Labour when !IsServer:
-                ReadLabour(ref r); // the penal colony's convict labourers (GameLabour.cs)
-                break;
-            case (byte)Msg.LabourHands when !IsServer:
-                ReadLabourHands(ref r); // the story people working among them (GameLabourHands.cs)
-                break;
-            case (byte)Msg.LabourDay when !IsServer:
-                ReadLabourDay(ref r); // the colony's day: the period and the gangs on shift (GameLabourDay.cs)
-                break;
-            case (byte)Msg.LabourIncident when !IsServer:
-                ReadLabourIncident(ref r); // an incident in a gang (GameLabourIncidents.cs)
-                break;
-            case (byte)Msg.Breakout when !IsServer:
-                ReadBreakout(ref r); // the convicts' break-out (GameBreakout.cs)
-                break;
-            case (byte)Msg.Errand when !IsServer:
-                ReadErrand(ref r); // an errand on a works yard machine (GameErrands.cs)
                 break;
             case (byte)Msg.Fragments when !IsServer:
                 ReadFragments(ref r); // the old records' fragments and the leads (GameStoryFragments.cs)
@@ -2394,18 +2385,6 @@ public sealed partial class Game : IDisposable
                 break;
             case (byte)Msg.StoryPaths when !IsServer:
                 ReadStoryPaths(ref r); // the Logbook's Paths (GameStoryPaths.cs)
-                break;
-            case (byte)Msg.Quarry when !IsServer && r.Has(22):
-                ReadQuarry(ref r); // the first Ministry duty (GameQuarry.cs)
-                break;
-            case (byte)Msg.Depot when !IsServer && r.Has(14):
-                ReadDepot(ref r); // the Orbital Depot's steps (GameDepot.cs)
-                break;
-            case (byte)Msg.Objective when !IsServer && r.Has(5):
-                ReadObjective(ref r); // the "what next" goal (GameObjectives.cs)
-                break;
-            case (byte)Msg.ColonyAlarm when !IsServer:
-                ReadColonyAlarm(ref r); // the penal colony's alarm (GameColonyLockdown.cs)
                 break;
             case (byte)Msg.Jobs:
                 OnJobsPacket(sender, ref r); // faction jobs (GameStoryJobs.cs)
@@ -2575,13 +2554,6 @@ public sealed partial class Game : IDisposable
         }
         Log($"{Name(killer)}  [{Throwables.KillName(killId)}{(headshot ? " - HEADSHOT" : "")}]  {Name(victim)}", killer == LocalId || victim == LocalId);
 
-        // Progression: the local player earns XP for every kill, in single player and multiplayer.
-        if (killer == LocalId && victim != LocalId && Progress != null)
-        {
-            var now = Brutal.GlfwApi.Glfw.Time;
-            if (Progress.AwardKill(headshot, killId >= Throwables.KillIdBase, now, killId) != null && Module.ArenaExtras) // (Sandbox: earned quietly, levels still unlock its grenades and guns)
-                Audio.Effect(Sfx.LevelUp, 0.8f);
-        }
     }
 
     public void Dispose()

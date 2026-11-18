@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 5 body 5 kit 5 wear 5, chassis 2 axles, front under the hood, inset 1 m, leaf/leaf, wing 0.5, archetype early fastback, cab style coachbuilt, language fastback standard 2.23 m, flare 0.09, fastback 0.9, brow 0.74 1.5 m, tail 0.61 1.25 m, door right, cab fastback cab, nose grille, wear age 1.07 (1 rusty, 2 dirty, 0 sooty, 0 patched, 0 rusted out), body boot, cab enclosed, nose ram, rear bare, under stilts, layout boot 2.5 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Highland Car 5",
-  "group": "Clan MacSlop",
+  "group": "Highland",
   "description": "A car: a ram on the hood, an enclosed cab, a boot behind the cabin, the gun on a pedestal ahead of it. 1 gun.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#2a2622"},
@@ -65,9 +65,9 @@
     {"part": "Hull Loft (hoodg UfV2WyWjXYXYVd ~7e080G80U7Wm5G-011)", "on": 23, "socket": "+y", "by": "engine", "paint": "#5b4a2f"},
     {"part": "Ram Plow", "on": 57, "socket": "front", "by": "back", "paint": "#e8e4d8"},
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 58, "pos": [0.121, 0.349, -1.221], "rot": [-0.7085, 0.0118, 0.0081, 0.7056]}, "paint": "#2b5a3a"},
-    {"part": "Pipe Box", "on": 57, "socket": "top", "by": "base"},
+    {"part": "Garden Gnome", "on": 57, "socket": "top", "by": "base"},
     {"part": "Square Beam 0.5 m", "on": 41, "socket": "top", "by": "-z", "paint": "#2a2622"},
-    {"part": "Coo Heid", "on": 61, "socket": "+z", "by": "base"}
+    {"part": "Phone Mast", "on": 61, "socket": "+z", "by": "base"}
   ],
   "wires": [[28, 29], [29, 23], [45, 56], [56, 47]],
   "links": [

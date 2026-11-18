@@ -132,7 +132,6 @@ public sealed partial class Game
         UniformsTick(now); // (who wears what: GameUniforms.cs)
         StoryJobsTick(s, now); // (faction jobs: crates, builds, couriers, the window: GameStoryJobs.cs)
         StoryBodiesTick(now); // (the people's bodies: GameStoryBodies.cs)
-        OutpostsTick(s, now); // (the factions' outposts beyond the colony, and their people: GameOutposts.cs)
         StandInsTick(s, now); // STAND-IN: craft for the people's trips (Source/StandIns)
         StoryletsTick(s, now); // (the storylets' hooks, spots and talk-panel answers: GameStoryStorylets.cs)
         StoryTopicsTick(s, now); // (what each person will talk about in an open talk panel: GameStoryTopics.cs)
@@ -284,8 +283,6 @@ public sealed partial class Game
         else
             s.Record(_vKill, a, v, place: StoryPlace());
         StoryMoodsOnKill(s, attacker, victim, a, v, now); // (rage, panic, grief: GameStoryMoods.cs)
-        if (victim.Team == SbPeopleTeam)
-            OutpostHurt(victim, attacker, now, killed: true); // (an outpost's mates go for whoever did it: GameOutposts.cs)
     }
 
     /// <summary>A player left (from <see cref="SandboxModule.OnPlayerLeave"/>): their Leave, and the slot forgotten.</summary>
@@ -312,8 +309,6 @@ public sealed partial class Game
     {
         if (Story is not { } s || Constructs.Get(body) is not { } c || StoryWho(p) is not (var who and >= 0))
             return;
-        if (SpaceportBoard(p, body))
-            return; // (the Ministry's courier, taken: its own story, GameSpaceport.cs)
         var t = StoryConstruct(body);
         if (t < 0 || c.Owner == p.Id && _rRode >= 0 && s.World.Get(who, _rRode, t) > 0 || StoryRepeat(_vBoard, who, t))
             return;

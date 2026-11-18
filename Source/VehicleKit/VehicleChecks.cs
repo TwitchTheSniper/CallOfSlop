@@ -32,6 +32,9 @@ public sealed class VehicleCheckOptions
     /// <summary>The most of its bounding box a body may fill, seen from the side and from above (VEHICLEKIT.md, "Silhouette").</summary>
     public float MaxSideFill = 0.62f, MaxTopFill = 0.84f;
 
+    /// <summary>It steers by driving its sides against each other, with no steered wheel (a tracked vehicle: the Excavator).</summary>
+    public bool SkidSteers;
+
     /// <summary>It's towed: nothing drives it, so only its build, its z-fighting and how it stands are checked.</summary>
     public bool Towed;
 
@@ -228,8 +231,8 @@ public static class VehicleChecks
             zF = MathF.Min(zF, wh.Centre.Z);
             zB = MathF.Max(zB, wh.Centre.Z);
         }
-        r.Notes.Add($"wheels: {c.WheelCount}, {driven} driven, {steered} steered; wheelbase {zB - zF:0.00} m");
-        if (driven == 0 || steered == 0)
+        r.Notes.Add($"wheels: {c.WheelCount}, {driven} driven, {steered} steered{(c.SkidSteer ? " (skid steer)" : "")}; wheelbase {zB - zF:0.00} m");
+        if (driven == 0 || steered == 0 && !o.SkidSteers) // (only a shape that says it skid steers may have no steered wheel: the Excavator's tracks; c.SkidSteer is true of any body with no steered wheel)
             r.Failures.Add($"{driven} driven and {steered} steered wheels: it needs both");
         var ground = float.MaxValue;
         for (var k = 0; k < c.WheelCount; k++)
@@ -352,10 +355,7 @@ public static class VehicleChecks
             w.Step(q, World.TickDt);
             r.WorstTilt = MathF.Max(r.WorstTilt, Tilt(c));
             r.TopSpeed = MathF.Max(r.TopSpeed, c.Vel.Length());
-            if (t % World.TickRate == World.TickRate - 1)
-                ConstructPipes.Tick(w, (uint)t); // (as the server does, once a second)
         }
-        Pipes(c, r);
         var moved = c.WorldCom - p0;
         r.Distance = new Vector2(moved.X, moved.Z).Length();
         r.Yaw = World.WrapAngle(Heading(c) - h0) * 180 / MathF.PI;
@@ -374,21 +374,6 @@ public static class VehicleChecks
         var left = w.Bodies.Count(b => b != c && b.WheelCount == 0 && Vector3.Distance(b.WorldCom, c.WorldCom) < 8);
         if (left < bp.Cargo.Count)
             r.Failures.Add($"{bp.Cargo.Count - left} of {bp.Cargo.Count} cargo fell off on the drive run");
-    }
-
-    /// <summary>A Pipe Box (docs/sandbox/MEDIA.md, "Pipe Boxes") must have struck up a pipe tune by the end of the drive.</summary>
-    private static void Pipes(Construct c, VehicleReport r)
-    {
-        for (var i = 0; i < c.PartCount; i++)
-        {
-            ref var p = ref c.Parts[i];
-            if (!p.D.MediaPipes)
-                continue;
-            if (p.Media is { State: MediaState.Playing, Entry: { } line } && MediaEntry.Track(line) is { Pipes: not null } tune)
-                r.Notes.Add($"pipes: the {p.D.Name} struck up \"{tune.Name}\" while it drove");
-            else
-                r.Failures.Add($"the {p.D.Name} didn't strike up while it drove (engine {(c.EngineRunning ? "running" : "off")})");
-        }
     }
 
     private static void Turn(ConstructBuild.Blueprint bp, VehicleCheckOptions o, VehicleReport r)
