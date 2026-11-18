@@ -89,7 +89,7 @@ public interface ICrewHost
     /// <summary>The target crew <paramref name="s"/> on <paramref name="c"/> fights this tick, from the contact its last look picked (<see cref="CrewShip.Contact"/>, <see cref="CrewShip.ContactBody"/>); <paramref name="look"/>: look again.</summary>
     bool Target(Construct c, CrewShip s, bool look, out ShipAiTarget t);
 
-    /// <summary>Does <paramref name="c"/>'s flight computer fly it under an order (the command view's, a station hauler's leg)? Its crew then leaves the helm to it while it has nothing to fight.</summary>
+    /// <summary>Does <paramref name="c"/>'s flight computer fly it under an order (the command view's, a station hauler's leg), or is it moored at a station? Its crew then leaves the helm alone while it has nothing to fight.</summary>
     bool UnderOrders(Construct c) => false;
 
     /// <summary>Someone did <paramref name="e"/> to crew <paramref name="s"/>: a person (<paramref name="byPlayer"/>; a crew member's body counts as its power) or a crewed body's guns (<paramref name="byBody"/>): relations move (Crew/CrewRelations.cs).</summary>
