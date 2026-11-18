@@ -104,7 +104,13 @@ public static unsafe partial class Program
             return;
         var camPos = point - f * (ThirdPerson.SeatDist * ThirdPerson.PullRatio); // (the camera as the orbit has moved it since the last frame)
         var target = GunnerAimTarget(g, me, c, h.SeatPart, camPos, f, eye);
-        if (DeathCam.LookAt(eye, target) is { } look)
+        if (GravityFrames.Curved && (target - eye).LengthSquared() > 1e-6f)
+        {
+            var (yaw, pitch) = GravityFrames.Angles(g.LookFrame, target - eye); // (the look's own frame: flat angles on a planet put the guns off the crosshair)
+            g.LookYaw = yaw;
+            g.LookPitch = Math.Clamp(pitch, -1.5f, 1.5f);
+        }
+        else if (DeathCam.LookAt(eye, target) is { } look)
         {
             g.LookYaw = look.Yaw;
             g.LookPitch = Math.Clamp(look.Pitch, -1.5f, 1.5f);

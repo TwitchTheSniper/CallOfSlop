@@ -988,8 +988,8 @@ public static class ConstructWeapons
         ref var g = ref c.Guns[k];
         MuzzleWorld(c, k, out var muzzle, out var fwd);
         var reach = MathF.Min(g.MaxRange, HullCheckReach);
-        if (!world.Raycast(muzzle + fwd * 0.3f, fwd, reach, out var hit))
-            return false;
+        if (!world.Raycast(muzzle + fwd * 0.3f, fwd, reach, out var hit) || hit.Glass || hit.Distance < 0.05f)
+            return false; // (glass it shoots out through; a part round the muzzle itself, a shield or a mount it fires from, is its own)
         return hit.Body == c || hit.Body.CarriedBy == c.Id || c.CarriedBy != 0 && (hit.Body.Id == c.CarriedBy || hit.Body.CarriedBy == c.CarriedBy);
     }
 
