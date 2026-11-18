@@ -737,6 +737,13 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         DoorSock(p, "doorBayR", false, 21.6, Cx + Lw + 0.125, Ft0);
         Sock(p, "fireL", Cx - Lw, Ft0 + 1.35, 23.6, "+x");
         Sock(p, "fireR", Cx + Lw, Ft0 + 1.35, 23.6, "-x");
+        // Under the torpedo room's ceiling, the OR Gates that carry the forward gunner's torpedo key to each bay's magazine (a wire reaches 8 m;
+        // each on a small plate 5 mm under the deck above, off its plane).
+        foreach (var (n, x) in new[] { ("relayL", Cx - 3.0), ("relayR", Cx + 3.0) })
+        {
+            Solid(p, x - 0.15, Ceil0 - 0.03, 21.85, x + 0.15, Ceil0 - 0.005, 22.15, Ceil, "painted plating");
+            Sock(p, n, x, Ceil0 - 0.03, 22.0, "-y");
+        }
         Sock(p, "warheads0", Cx - 3.6, Ft0, 24.6, "+y");
         Sock(p, "warheads1", Cx + 3.6, Ft0, 24.6, "+y");
         // Lamps and their switches.
@@ -2277,6 +2284,7 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
             bp.Steps[mag]["config"] = MagazineConfig(side);
             bp.Feeds.Add((mag, rings[k], "Ammo out", "Ammo in", MagazineFeed(bp, mag, rings[k])));
         }
+        var torpedoKey = -1;
         foreach (var (deck, pair) in new[] { (uf, new[] { guns[0], guns[1] }), (ua, new[] { guns[2], guns[3] }) })
         {
             var console = Hang(bp, "Gunnery Console", deck, "gun", "bottom");
@@ -2285,7 +2293,18 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
             bp.Wires.Add((seat, module));
             foreach (var g in pair)
                 bp.Wires.Add((module, g));
+            // Ops' gunner's torpedo key: an Input Reader on the module reading Space, wired through an OR Gate under the torpedo room's ceiling
+            // to each bay's magazine (Karl, 2026-11-17: "connect the torpedo launch to the gunnery chair"). The mouse stays the PDCs'; the
+            // torpedo room's buttons still fire a bay each. The mess's station is too far aft for the wires.
+            if (deck != uf)
+                continue;
+            torpedoKey = Hang(bp, "Input Reader", module, "+x", "-x");
+            bp.Steps[torpedoKey]["config"] = new PyDict { ["setting"] = "jump" };
+            bp.Wires.Add((seat, torpedoKey));
         }
+        var relays = new[] { Hang(bp, "OR Gate", lf, "relayL", "+y"), Hang(bp, "OR Gate", lf, "relayR", "+y") };
+        foreach (var r in relays)
+            bp.Wires.Add((torpedoKey, r));
         // The shuttle's Docking Clamp on the cradle (holding from the start, its box round the pod) and the ladder up into it from the mess.
         var clamp = Hang(bp, "Docking Clamp Medium", spine, "shuttleClamp", "-y");
         bp.Steps[clamp]["config"] = ShuttleClampConfig();
@@ -2313,13 +2332,14 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         // bay's fire button lets one go.
         var steps = (List<object?>)json["steps"]!;
         var wires = (List<object?>)json["wires"]!;
-        foreach (var (bay, fire) in new[] { (bayL, fireL), (bayR, fireR) })
+        foreach (var (bay, fire, relay) in new[] { (bayL, fireL, relays[0]), (bayR, fireR, relays[1]) })
         {
             steps.Add(Kw(("part", Magazine), ("on", bay), ("socket", "magazine"), ("by", "top")));
             var mag = steps.Count - 1;
             for (var i = 0; i < 6; i++)
                 steps.Add(Kw(("part", Torpedo), ("on", mag), ("socket", $"lug{i}"), ("by", "lug")));
             wires.Add(new List<object?> { fire, mag });
+            wires.Add(new List<object?> { relay, mag });
         }
         return json;
     }

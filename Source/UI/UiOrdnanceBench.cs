@@ -28,7 +28,7 @@ public sealed partial class Ui
         (172, 104, 176), (86, 182, 170), (214, 108, 108), (150, 152, 172),
     ];
     private static readonly string[] OrdStageNames = ["S1", "S2", "S3", "S4", "S5", "S6", "S7", "S8", "S9", "S+"];
-    private static readonly string OrdMissileWhy = $"A motor lights as it leaves: it flies as a missile, and goes off {ConstructOrdnance.MissileCoast:0} s after its last burn if it meets nothing.";
+    private static readonly string OrdMissileWhy = $"A motor lights as it leaves: it flies as a missile, and goes off {ConstructOrdnance.MissileCoast:0} s after its last burn if it meets nothing ({ConstructOrdnance.MissileSpaceCoast / 60f:0} minutes when launched in space).";
 
     public void OpenOrdnanceBench(Game game)
     {

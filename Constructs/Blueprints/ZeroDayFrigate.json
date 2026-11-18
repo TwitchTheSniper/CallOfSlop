@@ -1746,6 +1746,15 @@
       "by": "-x"
     },
     {
+      "part": "Input Reader",
+      "on": 252,
+      "socket": "+x",
+      "by": "-x",
+      "config": {
+        "setting": "jump"
+      }
+    },
+    {
       "part": "Gunnery Console",
       "on": 31,
       "socket": "gun",
@@ -1759,9 +1768,21 @@
     },
     {
       "part": "Turret Module",
-      "on": 253,
+      "on": 254,
       "socket": "module",
       "by": "-x"
+    },
+    {
+      "part": "OR Gate",
+      "on": 4,
+      "socket": "relayL",
+      "by": "+y"
+    },
+    {
+      "part": "OR Gate",
+      "on": 4,
+      "socket": "relayR",
+      "by": "+y"
     },
     {
       "part": "Docking Clamp Medium",
@@ -1820,7 +1841,7 @@
     },
     {
       "part": "Ammo Box",
-      "on": 261,
+      "on": 264,
       "socket": "ammo",
       "by": "bottom"
     },
@@ -1868,37 +1889,37 @@
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 269,
+      "on": 272,
       "socket": "lug0",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 269,
+      "on": 272,
       "socket": "lug1",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 269,
+      "on": 272,
       "socket": "lug2",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 269,
+      "on": 272,
       "socket": "lug3",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 269,
+      "on": 272,
       "socket": "lug4",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 269,
+      "on": 272,
       "socket": "lug5",
       "by": "lug"
     },
@@ -1910,37 +1931,37 @@
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 276,
+      "on": 279,
       "socket": "lug0",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 276,
+      "on": 279,
       "socket": "lug1",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 276,
+      "on": 279,
       "socket": "lug2",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 276,
+      "on": 279,
       "socket": "lug3",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 276,
+      "on": 279,
       "socket": "lug4",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 276,
+      "on": 279,
       "socket": "lug5",
       "by": "lug"
     }
@@ -2059,16 +2080,28 @@
       239
     ],
     [
-      254,
-      255
+      251,
+      253
     ],
     [
       255,
+      256
+    ],
+    [
+      256,
       242
     ],
     [
-      255,
+      256,
       245
+    ],
+    [
+      253,
+      257
+    ],
+    [
+      253,
+      258
     ],
     [
       174,
@@ -2076,35 +2109,43 @@
     ],
     [
       177,
-      261
-    ],
-    [
-      194,
-      263
-    ],
-    [
-      194,
       264
-    ],
-    [
-      194,
-      265
     ],
     [
       194,
       266
     ],
     [
-      267,
+      194,
+      267
+    ],
+    [
+      194,
       268
     ],
     [
-      123,
+      194,
       269
     ],
     [
+      270,
+      271
+    ],
+    [
+      123,
+      272
+    ],
+    [
+      257,
+      272
+    ],
+    [
       124,
-      276
+      279
+    ],
+    [
+      258,
+      279
     ]
   ],
   "links": [

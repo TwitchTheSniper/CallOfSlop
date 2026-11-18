@@ -170,7 +170,9 @@ public sealed partial class Ui
         }
         else
         {
-            var to = o.Kind == NavKind.Come && g.Players.GetValueOrDefault(o.By) is { Alive: true } who && o.Phase != NavPhase.Landing
+            var to = o.Kind == NavKind.Dock
+                ? g.Constructs.Get(o.Target) is { } port && o.TargetPart < port.PartCount ? _cvPose.ToEcliptic(Vec3d.From(Game.NavDockCentre(port, o.TargetPart, out _, out _))) : cr.Pos // (the port on the other ship)
+                : o.Kind == NavKind.Come && g.Players.GetValueOrDefault(o.By) is { Alive: true } who && o.Phase != NavPhase.Landing
                 ? _cvPose.ToEcliptic(Vec3d.From(who.Position)) // (it comes to them where they are now)
                 : o.Kind is NavKind.Ground or NavKind.Land or NavKind.Come ? _cvPose.ToEcliptic(o.Point) : bp + o.Point;
             at = CmdP(to);
@@ -639,6 +641,7 @@ public sealed partial class Ui
                 NavPhase.Insert => "MATCHING THE ORBIT",
                 NavPhase.Orbiting => "IN ORBIT, DRIVE OFF",
                 NavPhase.Hold => "HOLDING AT THE POINT",
+                NavPhase.Flying when o2.Kind == NavKind.Dock => "LINING UP WITH THE PORT",
                 NavPhase.Flying => "FLYING THERE",
                 NavPhase.Arrived => "OVER THE WAYPOINT",
                 NavPhase.NoDrive => "NO DRIVE: IT CAN'T FLY THIS",
@@ -650,9 +653,12 @@ public sealed partial class Ui
                 NavPhase.Wait => "IN ORBIT, WAITING FOR ITS WINDOW",
                 NavPhase.Descend => "COMING DOWN INTO THE SKY",
                 NavPhase.Landing => "SETTING DOWN",
+                NavPhase.Docking => "CLOSING ON THE PORT",
+                NavPhase.DockWait => "WAITING: THE PORT ISN'T ARMED OR HAS NO POWER",
                 _ => "STARTING",
             };
-            k.Order = Game.NavText(sys, o2).ToUpperInvariant();
+            k.Order = o2.Kind == NavKind.Dock && g.Constructs.Get(o2.Target) is { } with ? "DOCK WITH " + CmdName(with) + (o2.TargetPart < with.PartCount ? ": " + with.DefOf(o2.TargetPart).Name.ToUpperInvariant() : "")
+                : Game.NavText(sys, o2).ToUpperInvariant();
             if (o2.ArriveNs != 0 && o2.Phase is NavPhase.Depart or NavPhase.Coast or NavPhase.Correct or NavPhase.Wait)
             {
                 var left = (o2.ArriveNs - s.Now.Ns) / (double)SpaceTime.NsPerSecond;
@@ -767,7 +773,7 @@ public sealed partial class Ui
         }
         else
         {
-            Row(dl, "ORDER", "NONE. RIGHT CLICK A WORLD OR A PLACE", CmdDim, ref y);
+            Row(dl, "ORDER", "NONE. RIGHT CLICK A WORLD, A PLACE OR A SHIP", CmdDim, ref y);
             y += 4 * _scale;
             // The quick ones: a low orbit round the world it is at.
             if (cr.Primary > 0)
