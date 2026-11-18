@@ -128,12 +128,14 @@ public static partial class ConstructPhysics
     }
 
     /// <summary>How a group moves this tick: the velocity at <paramref name="at"/> and the spin (the speed its motors may reach counts, so a stalled arm still looks ahead).</summary>
-    private static void GroupMotion(Construct c, int index, int seg, Vector3 at, out Vector3 v, out Vector3 w)
+    private static void GroupMotion(Construct c, int index, int seg, Vector3 at, out Vector3 v, out Vector3 w, bool posedMoves = false)
     {
         v = Vector3.Zero;
         w = Vector3.Zero;
-        if (_dyn[index])
+        if (_dyn[index] || posedMoves && c.SpaceShip != 0)
         {
+            // (between bodies, a ship out of the bubble is posed by its flight, not stepped, but it moves: as the solver's VelSide, so a loose
+            // piece aboard it at orbital speed is still beside it, not 3 m a tick away; the ground pass keeps a posed ship still)
             v = c.Vel + Vector3.Cross(c.AngVel, at - c.WorldCom);
             w = c.AngVel;
         }
@@ -725,8 +727,8 @@ public static partial class ConstructPhysics
             a.WorldFrame(sa, out var qa, out var ta);
             var fa = CFrame.Of(qa, ta);
             var midA = fa.Point(ca.Nodes[ca.Groups[ga].Root].Centre);
-            GroupMotion(a, ia, sa, midA, out var va, out var wa);
-            var speedA = va.Length() + wa.Length() * ca.Nodes[ca.Groups[ga].Root].Half.Length();
+            GroupMotion(a, ia, sa, midA, out var va, out var wa, posedMoves: true);
+            var spinA = wa.Length() * ca.Nodes[ca.Groups[ga].Root].Half.Length();
             for (var gb = 0; gb < cb.GroupCount; gb++)
             {
                 int sb = cb.Groups[gb].Seg;
@@ -737,9 +739,12 @@ public static partial class ConstructPhysics
                     continue;
                 ref readonly var fgb = ref fb[gb];
                 var midB = fgb.Point(cb.Nodes[cb.Groups[gb].Root].Centre);
-                GroupMotion(b, ib, sb, midB, out var vb, out var wb);
-                var speedB = vb.Length() + wb.Length() * cb.Nodes[cb.Groups[gb].Root].Half.Length();
-                var margin = Skin + (speedA + speedB) * dt;
+                GroupMotion(b, ib, sb, midB, out var vb, out var wb, posedMoves: true);
+                // How near pieces must be to meet this tick: by how fast the two groups close on each other, not by how fast each moves
+                // (two bodies coasting side by side in orbit at 200 m/s are still: summed speeds made a 7 m margin, every piece of a torpedo
+                // rack a candidate of the one taken off it, 2-3 frames a second; 2026-11-18).
+                var spinB = wb.Length() * cb.Nodes[cb.Groups[gb].Root].Half.Length();
+                var margin = Skin + ((va - vb).Length() + spinA + spinB) * dt;
                 var ba = new CFrame { X = fa.LocalDir(fgb.X), Y = fa.LocalDir(fgb.Y), Z = fa.LocalDir(fgb.Z), T = fa.Local(fgb.T) };
                 var count = ca.Pairs(ga, cb, gb, ba, margin, pairs);
                 var start = n;
