@@ -123,7 +123,7 @@ public static unsafe partial class Program
         s.Split(',') is [var x, var y, var z] && float.TryParse(x, System.Globalization.CultureInfo.InvariantCulture, out var a)
         && float.TryParse(y, System.Globalization.CultureInfo.InvariantCulture, out var b) && float.TryParse(z, System.Globalization.CultureInfo.InvariantCulture, out var c) ? new Vector3(a, b, c) : null;
 
-    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "design" or "extr" or "plate" or "fitpart" or "inv" or "fuel" or "cutter" or "put" or "side" or "walk" or "ray" or "guns" or "engines" or "bundle" or "drag" or "mousemove" or "station" or "subbp" or "linked" or "bpui" or "lifter" or "aim" or "near" or "from" or "inside" or "me" or "person" or "use" or "waitnear" or "key" or "touch" or "ladder" or "ladderclimb" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "picker" or "bring" or "craft" or "disown" or "saveload" or "stock" or "feed" or "kit" or "poke" or "joints" or "timed" or "saveworld" or "loadworld" or "logi" or "period" or "gang" or "incident" || WsGhostKnown(action) || WsNavKnown(action) || WsTourKnown(action) || WsTalkKnown(action) || WsPlayKnown(action) || WsHeldKnown(action);
+    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "design" or "extr" or "plate" or "fitpart" or "inv" or "fuel" or "cutter" or "put" or "side" or "walk" or "ray" or "guns" or "engines" or "bundle" or "drag" or "mousemove" or "station" or "subbp" or "linked" or "bpui" or "lifter" or "aimlink" or "aim" or "near" or "from" or "inside" or "me" or "person" or "use" or "waitnear" or "key" or "touch" or "ladder" or "ladderclimb" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "picker" or "bring" or "craft" or "disown" or "saveload" or "stock" or "feed" or "kit" or "poke" or "joints" or "timed" or "saveworld" or "loadworld" or "logi" or "period" or "gang" or "incident" || WsGhostKnown(action) || WsNavKnown(action) || WsTourKnown(action) || WsTalkKnown(action) || WsPlayKnown(action) || WsHeldKnown(action);
 
     private static void WsSay(string s)
     {
@@ -565,6 +565,55 @@ public static unsafe partial class Program
             case "wait":
                 WsWaitTicks(int.TryParse(arg, out var w) ? Math.Max(0, w) : 30);
                 return;
+            case "aimlink":
+            {
+                // "aimlink PART[#n] [K]": the eye beside the middle of link K (default 0) of PART's body, looking at it, as the player
+                // aims at a laid cable; `ui` then prints the look line (the linking tool's names of both ends).
+                var sp2 = arg.LastIndexOf(' ');
+                var numbered = sp2 > 0 && int.TryParse(arg[(sp2 + 1)..], out _);
+                var kk = numbered ? int.Parse(arg[(sp2 + 1)..]) : 0;
+                var (lc, _) = WsFind(g, numbered ? arg[..sp2] : arg);
+                if (lc == null && !g.IsServer && WsLiftWait(30))
+                {
+                    _wsQueue.EnqueueFront(action);
+                    _wsWait = 30;
+                    return;
+                }
+                _wsLiftSince = 0;
+                if (lc == null || kk < 0 || kk >= lc.RouteCount)
+                {
+                    WsFail($"aimlink: no link {kk} on \"{arg}\"'s body ({lc?.RouteCount ?? 0} links)");
+                    return;
+                }
+                var cnt = lc.Routes[kk].Count;
+                var (pa, pb) = (ConstructRoutes.WorldPoint(lc, kk, -1), ConstructRoutes.WorldPoint(lc, kk, 0));
+                for (var i = 0; i <= cnt; i++)
+                {
+                    var (qa, qb) = (ConstructRoutes.WorldPoint(lc, kk, i - 1), ConstructRoutes.WorldPoint(lc, kk, i));
+                    if (Vector3.DistanceSquared(qa, qb) > Vector3.DistanceSquared(pa, pb))
+                        (pa, pb) = (qa, qb);
+                }
+                var mid = (pa + pb) * 0.5f;
+                var along = Vector3.Normalize(pb - pa + new Vector3(1e-4f, 0, 0));
+                var side = Vector3.Cross(along, Vector3.UnitY);
+                side = side.LengthSquared() < 1e-4f ? Vector3.UnitX : Vector3.Normalize(side);
+                Vector3[] tries = [Vector3.Normalize(side + Vector3.UnitY), Vector3.Normalize(-side + Vector3.UnitY), Vector3.UnitY, side, -side];
+                var eye = mid + tries[0] * 1.2f;
+                foreach (var t in tries)
+                {
+                    var e = mid + t * 1.2f;
+                    if (g.Constructs.Raycast(e, -t, 1.3f, out var lh) && lh.Body == lc && lh.RoutePlus1 == kk + 1)
+                    {
+                        eye = e;
+                        break;
+                    }
+                }
+                WsEyeTo(g, me, eye);
+                WsLook(g, eye, mid);
+                WsSay($"aimlink: link {kk} ({ConstructRoutes.Name(lc.Routes[kk].Type)}) of body {lc.Id}, eye {eye:0.00} looking at {mid:0.00}");
+                _wsWait = 3;
+                return;
+            }
             case "aim" or "near" or "panel":
             {
                 var spec = verb == "near" && arg.LastIndexOf(' ') is var sp and > 0 && float.TryParse(arg[(sp + 1)..], System.Globalization.CultureInfo.InvariantCulture, out _) ? arg[..sp] : arg;
