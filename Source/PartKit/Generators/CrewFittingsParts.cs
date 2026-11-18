@@ -153,7 +153,7 @@ public sealed class CrewFittingsParts : IPartGenerator
         foreach (var s in new[] { -1, 1 })
             p.Add(Box([s < 0 ? -0.5 : 0.44, 0.08, -0.13], [s < 0 ? -0.44 : 0.5, 1.9, -0.05], Post, shape: Kw(("finish", "painted steel")))); // a post
         p.Add(Box([-0.44, 0.3, -0.12], [0.44, 1.86, -0.09], Board, shape: Kw(("finish", "painted plating")))); // the shadow board
-        p.Add(Box([-0.52, 1.9, -0.15], [0.52, 1.96, 0.01], Hazard, detail: true, shape: Kw(("finish", "hazard paint")))); // the cap
+        p.Add(Box([-0.52, 1.9, -0.15], [0.52, 1.96, 0.01], Hazard, shape: Kw(("finish", "hazard paint")))); // the cap
         p.Add(Box([-0.437, 0.45, -0.087], [0.437, 0.48, 0.2], Shelf, detail: true, shape: Kw(("finish", "steel")))); // the shelf
         p.Add(Box([-0.437, 0.483, 0.17], [0.437, 0.52, 0.197], Hazard, detail: true, shape: Kw(("finish", "hazard paint")))); // its lip
         foreach (var x in new[] { -0.3, -0.12, 0.08, 0.26 })

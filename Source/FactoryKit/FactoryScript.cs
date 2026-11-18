@@ -24,6 +24,7 @@ public sealed class FactoryScript : BlueprintScript
     private readonly Dictionary<int, VPart> _of = new();
     private readonly List<(VPart Lamp, float X)> _lamps = new();
     private VPart? _switch;
+    private bool _shellChair; // (--crew-check --crew-mine --crew-shell: a Shell Control Chair beside the Drill Rack, so a miner may wear a Mining Shell)
     private int _cable; // (cables side by side, never on one line)
 
     private static readonly Orient Front = new(Vector3.UnitY, Vector3.UnitY, Vector3.UnitZ, Vector3.UnitZ); // own +z to the road
@@ -73,10 +74,10 @@ public sealed class FactoryScript : BlueprintScript
         return (p, plan, f, style);
     }
 
-    public static FactoryScript Build(FactoryBrief brief)
+    public static FactoryScript Build(FactoryBrief brief, bool shellChair = false)
     {
         var (p, plan, f, style) = Planned(brief);
-        var s = new FactoryScript(brief, f, style, p, plan);
+        var s = new FactoryScript(brief, f, style, p, plan) { _shellChair = shellChair };
         s.Lay();
         return s;
     }
@@ -357,8 +358,11 @@ public sealed class FactoryScript : BlueprintScript
     {
         if (Function.Name != "extraction" || Plan.Cells.FirstOrDefault(c => c.Obj.Role == "drill") is not { } first)
             return;
-        var rack = On("Drill Rack", FactoryPlan.Snap(first.Rect.X0 + 1.0f), -(FactoryPlan.RoadDepth + FactoryPlan.AisleDepth) - 0.5f, Front);
+        var x = FactoryPlan.Snap(first.Rect.X0 + 1.0f);
+        var rack = On("Drill Rack", x, -(FactoryPlan.RoadDepth + FactoryPlan.AisleDepth) - 0.75f, Front);
         Paint(rack, Style.Colour(_paint.Fork("rack"), "frame"));
+        if (_shellChair)
+            On("Shell Control Chair", x + 1.5f, -(FactoryPlan.RoadDepth + FactoryPlan.AisleDepth) - 0.75f, Back);
     }
 
     /// <summary>A 3x3 rail's base to its carriage's top socket (metres).</summary>

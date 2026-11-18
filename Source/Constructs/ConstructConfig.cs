@@ -859,6 +859,7 @@ public static class ConstructConfig
                 CfgKey.Profile or CfgKey.Width or CfgKey.Height or CfgKey.Wall or CfgKey.CutLength => d.IsExtruder && !d.IsPanelFormer || ProductionLines.IsConsole(d), // (a console's: its next bill line)
                 CfgKey.MaskA or CfgKey.MaskB or CfgKey.MaskC or CfgKey.MaskD => d.IsExtruder && !d.IsPanelFormer,
                 (>= CfgKey.ShellWear0 and <= CfgKey.ShellWear3) or CfgKey.ShellDamage => d.ShellBody,
+                CfgKey.ToolsOut => d.IsToolRack, // (ToolRacks.cs)
                 CfgKey.RunMode => d.IsWheelFormer && !d.IsPanelFormer,
                 CfgKey.AmmoType => d.Role is PartRole.AmmoBox or PartRole.Storage,
                 CfgKey.Charge => d.IsReceiverGun,

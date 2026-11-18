@@ -23,6 +23,9 @@ public sealed partial class Game
 
     public const int DrillLoad = 600, DrillTier = 2;
 
+    /// <summary>A crew miner in a Mining Shell goes back to tip when its hopper holds this much (two spots' worth, 80 s of its arm), not only when full: the post's buffer is fed steadily.</summary>
+    public const int ShellLoad = 2400;
+
     /// <summary>How far from its rack a miner looks for ore (m), how far it keeps off the post's own bounds (its drills' arms and gantries reach out 3 m).</summary>
     public const float MineReach = 40, MineClear = 4;
 
@@ -396,7 +399,7 @@ public sealed partial class Game
             ShellDrillTap(p, j.Spot, SandboxNow); // (its rate by time between looks: MineEvery ticks is well inside its gap)
             j.Mined = j.Carry = hp.Amount;
             j.Mat = hp.Material;
-            return hp.Capacity <= 0 || hp.Amount >= hp.Capacity;
+            return hp.Capacity <= 0 || hp.Amount >= Math.Min(hp.Capacity, ShellLoad);
         }
         if (p != null)
             p.Pitch = -1.0f;
@@ -484,6 +487,7 @@ public sealed partial class Game
         if (j.Shell && p.InShell)
         {
             ShellReturn(p, lost: false, "");
+            j.Shell = false; // (out of it: the shell stands by the bin for the next trip)
             CrewStandAt(p, c, CrewWorld.PartFoot(c, CrewWorld.PartByTag(c, j.ChairTag) is var ch and >= 0 ? ch : (rack >= 0 ? rack : 0)));
         }
         if (rack < 0 || !Crew.Errand(c, s, m, CrewWorld.PartFoot(c, rack), this))
