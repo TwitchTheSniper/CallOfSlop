@@ -220,6 +220,7 @@ public enum CfgKey : byte
     ShellDamage, // Robot Shell: health it has lost (shells don't heal: a repair with the attach tool or a crew engineer puts it back; not on the panel)
     Dampeners, // Flight Stabilizer on Ship keys: its inertia dampeners (off: the keys only burn, and it coasts; the seat's dampener key flips it: ConstructFlight.ToggleDampeners)
     Walls, // Storage Volume: on, its box is a walled open-topped bin (four walls and a floor inside the box, solid; ConstructStoreVolume.Walled)
+    ToolsOut, // Tool Rack: which hooks' tools a crew member has taken, a bit each (not on the panel; ToolRacks.cs)
     COUNT,
 }
 
@@ -552,6 +553,7 @@ public static class ConstructConfig
         if (d.Door != null)
             ConstructDoors.AddSettings(d, list);
         ShellWear.AddSettings(d, list); // (a Robot Shell's wear, hidden)
+        ToolRacks.AddSettings(d, list); // (a Tool Rack's tools out, hidden)
         AddThrowSettings(d, list);
         // Every part that shows text: its size (last, so a part file's own settings keep their slots).
         if (ConstructPanels.HasText(d) && list.Count < MaxSlots && !list.Exists(e => e.Id == CfgKey.TextSize))
@@ -857,6 +859,7 @@ public static class ConstructConfig
                 CfgKey.Profile or CfgKey.Width or CfgKey.Height or CfgKey.Wall or CfgKey.CutLength => d.IsExtruder && !d.IsPanelFormer || ProductionLines.IsConsole(d), // (a console's: its next bill line)
                 CfgKey.MaskA or CfgKey.MaskB or CfgKey.MaskC or CfgKey.MaskD => d.IsExtruder && !d.IsPanelFormer,
                 (>= CfgKey.ShellWear0 and <= CfgKey.ShellWear3) or CfgKey.ShellDamage => d.ShellBody,
+                CfgKey.ToolsOut => d.IsToolRack, // (ToolRacks.cs)
                 CfgKey.RunMode => d.IsWheelFormer && !d.IsPanelFormer,
                 CfgKey.AmmoType => d.Role is PartRole.AmmoBox or PartRole.Storage,
                 CfgKey.Charge => d.IsReceiverGun,
@@ -976,8 +979,8 @@ public static class ConstructConfig
         {
             var e = d.Config[s];
             var v = At(p, d, s);
-            if (v == (e.Bound ? d.DefaultSetting : e.Default))
-                continue;
+            if (v == (e.Bound ? d.DefaultSetting : e.Default) || e.Id == CfgKey.ToolsOut)
+                continue; // (a Tool Rack's empty hooks are its crew's trips, never a blueprint's: ToolRacks.cs)
             parts.Add($"\"{e.Key}\": " + e.Type switch
             {
                 CfgType.Toggle => v >= 0.5f ? "true" : "false",

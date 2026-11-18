@@ -2,6 +2,49 @@
 
 Notes kept by the builders of `factory-generator.md` (the design and the user's answers of 2026-11-17). Newest state first.
 
+## State (2026-11-18, fourth builder): tool racks and crew miners (branch claude/tool-racks)
+
+The user's second way to follow the ore ("tool racks for NPCs"): crew carry portable drills to where the ore is.
+
+- **Drill Rack** (part kit `crew_fittings`, `Constructs/Parts/CrewFittings/DrillRack.json`): a shadow board on posts with three hooks, a painted
+  outline behind each. Its `"toolRack": {"tool": "drill", "hooks": [...]}` key (`Source/Constructs/ToolRacks.cs`); which hooks are empty is a hidden
+  setting (`CfgKey.ToolsOut`, a bit a hook), so it rides saves, blueprints and the body's structure to every peer. The drills are drawn by
+  `RouteRender.DrawToolRacks` (the ground drill's held model, bit down) on full hooks within 40 m. Named Drill Rack because Interior/Furniture has a
+  decorative "Tool Rack". Recipe at the end of the Assembling table (`LateHand`): 24 steel, 4 copper, 2 rubber, 30 s; its drills come with it.
+- **Crew Miner** (`Game/GameCrewMine.cs`): a rack is a work station (`CrewStationKind.Rack`, job `CrewJob.Miner`, both appended; filled after the
+  Building Station's). Every trip (5 s rest between): the nearest 3 m spot within 40 m of the rack over ore a tier 2 drill works (not deep, not
+  worked out, not another miner's, 4 m clear of the post's bounds); a drill off the rack (or, if the body has a free Shell Control Chair and a
+  Mining Shell with a drill is in its reach, the miner sits there and wears it); CrewNav to the floor's edge nearest the spot, straight steering
+  over the ground, 10 units a second into its arms up to 600 (a shell: its arm's 30 a second through `ShellDrillTap` into the hopper, back at
+  2,400); a worked-out spot with room left moves it to the next; back to the edge, CrewNav to the post's bin (a Storage Volume first), tip
+  (`Deposit`; what doesn't fit spills as a Material Bundle), drill back on its hook (a shell left standing by the bin, the body back in the
+  chair, then walked home). No headway for 4 s: put there, logged. A record (no person within 300 m) does the same on timers. A miner who
+  dies or leaves: the drill goes back on the rack (it never runs dry), a carried load spills. No terrain is dug (no dig log used).
+- **Extraction posts** (`FactoryScript.DrillRack`): a Drill Rack in the first drill zone's band at the aisle's edge (z -6.75), facing the
+  aisle. Militia Extraction Posts 1-3 regenerated (one step more). Seeds 1-12 build, 0 coplanar faces; `--factory-check "Militia extraction 1"` works.
+- Shell Control Chairs are no longer couches for crew (`CrewWorld.Usable`): a body sat there would link to a shell.
+- **The check**: `--crew-check --crew-mine [--seconds S] [--crew-shell] [--crew-far] [--post N]`: a host and a joined client on the Proving Ground,
+  the post set down by ore and crewed (Raiders: no brief), stepped in game time. Measured (2-core box): rack drill, bodied: 2 trips, 1,200 iron
+  ore tipped in 150 s, the client saw the hook empty and the body with the drill out; shell: 2,400 tipped in one trip, the shell woken again for
+  the next; far (records): 600 in 150 s. Protocol 355 (the new part file moves ids; CfgKey.ToolsOut; the job byte).
+
+- **Review fixes**: a shell trip cut short no longer spills its load twice (the hopper's load is ShellReturn's alone); a rack's empty hooks
+  follow the trips under way (`GameCrewMine.MineRacks`, each work look: a world saved with miners out, or a crew gone, gets its drills back,
+  logged), blueprints never keep empty hooks (`ConstructConfig.ToJson` skips ToolsOut), a miner sent back to the Shell Control Chair stands up
+  at its rack, a miner never sets off from a seat, and one waiting on an empty rack says so once. `--crew-shell-kill`: the shell shot out
+  mid-trip (630 spilt once), the miner up and on with a drill. "Sandbox tool models" fails on main as on this branch (bot scene allocations).
+
+### Open (fourth builder)
+
+0. Posts placed from site files are never crewed: sites are only written by `--gen-factory site`, nothing in the game places them yet, and a
+   site has no power to own it. Crew them when site placement and site ownership come.
+
+1. One miner per rack (a station per part): a rack's three drills serve one miner. More would take a station per hook.
+2. Round worlds: miners look for spots on flat maps only (`ResourceField.Ground`); none on a planetoid yet.
+3. A straight walk off the post sometimes finds no headway (seen once in three runs: put there). A ground path round the post's own parts would fix it.
+4. No look line on the rack (it has no store); the player can't take a drill from it (players' tools are always to hand).
+5. Not tried in a window: how the drills hang on the hooks, the crew body's drill in hand, the shell walking.
+
 ## State (2026-11-17, third builder): the grading's answers (branch claude/cargo-parts-factory)
 
 - **Cargo parts** (storage-and-cargo.md "Cargo parts for works"): Ore Bunkers 4, 5, 6 and 8 m; the Storage Volume's **Walls** setting (on by default:

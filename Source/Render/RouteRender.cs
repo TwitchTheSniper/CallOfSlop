@@ -61,9 +61,11 @@ public static class RouteRender
         gfx.BeginBatch();
         foreach (var c in world.Bodies)
         {
-            if (c.RouteCount == 0 && c.PieceRackCount == 0)
+            if (c.RouteCount == 0 && c.PieceRackCount == 0 && c.ToolRackCount == 0)
                 continue;
             Frames(c, alpha, blendTicks);
+            if (c.ToolRackCount > 0)
+                DrawToolRacks(gfx, c);
             if (c.PieceRackCount > 0)
                 DrawRacks(gfx, world, c);
             if (c.PieceRackCount > 0 && world.Designs.Count > 0)
@@ -442,6 +444,43 @@ public static class RouteRender
             }
         }
     }
+
+    /// <summary>
+    /// Tool Racks (ToolRacks.cs): the tool's held model on every full hook, its bit down, within <see cref="ToolRackDrawNear"/>. A hook whose
+    /// tool a crew member took shows the board's painted outline. Allocates nothing.
+    /// </summary>
+    private static void DrawToolRacks(Renderer gfx, Construct c)
+    {
+        var eye = gfx.CameraPosition;
+        for (var k = 0; k < c.ToolRackCount; k++)
+        {
+            int part = c.ToolRacks[k];
+            if (part >= c.PartCount || !c.DefOf(part).IsToolRack || c.Parts[part].Broken || ToolRender.ModelFor(c.DefOf(part).RackTool) is not { } model)
+                continue;
+            ref var p = ref c.Parts[part];
+            var frame = Matrix4x4.CreateFromQuaternion(Rot24.Quat(p.Rot)) * Matrix4x4.CreateTranslation(p.Pos) * SegFrames[p.Seg <= c.JointCount && p.Seg <= Construct.MaxJoints ? p.Seg : 0];
+            if (Vector3.DistanceSquared(eye, Vector3.Transform(Vector3.Zero, frame)) > ToolRackDrawNear * ToolRackDrawNear)
+                continue;
+            var o = ToolRacks.Out(p);
+            var hooks = p.D.RackHooks;
+            for (var h = 0; h < hooks.Length; h++)
+            {
+                if ((o & 1 << h) != 0)
+                    continue;
+                var m = HangDown * Matrix4x4.CreateTranslation(hooks[h]) * frame;
+                for (var b = 0; b < model.Boxes.Length; b++)
+                {
+                    ref readonly var box = ref model.Boxes[b];
+                    gfx.Draw(Matrix4x4.CreateScale(box.Size) * Matrix4x4.CreateTranslation(box.Center) * m, box.Color);
+                }
+            }
+        }
+    }
+
+    /// <summary>A tool hung on a rack: its forward (-z, the bit) turned straight down.</summary>
+    private static readonly Matrix4x4 HangDown = Matrix4x4.CreateRotationX(-MathF.PI / 2);
+
+    public const float ToolRackDrawNear = 40f;
 
     private static void DrawRacks(Renderer gfx, ConstructWorld world, Construct c)
     {

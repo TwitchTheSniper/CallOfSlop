@@ -40,6 +40,7 @@ public sealed partial class Game
             }
             CrewEngineer(c, s);
             CrewLoader(c, s);
+            CrewMiner(c, s); // (a Tool Rack's miner: GameCrewMine.cs)
         }
     }
 

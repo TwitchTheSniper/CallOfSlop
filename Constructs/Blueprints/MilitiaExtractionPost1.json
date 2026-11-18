@@ -128,10 +128,11 @@
     {"part": "Switch", "on": 117, "socket": "x+1", "by": "+x", "paint": "#d8a020"},
     {"part": "Text Sign", "on": 117, "socket": "y+2", "by": "back", "paint": "#23272b", "text": ["LOAD"]},
     {"part": "Line Console", "on": 1, "socket": "top20", "by": "bottom", "config": {"startOn": true}, "paint": "#e0b020"},
+    {"part": "Drill Rack", "on": 78, "socket": "top22", "by": "bottom", "paint": "#2f3236"},
     {"part": "Flagpole Base", "on": 88, "socket": "top11", "by": "b00", "paint": "#2f3236"},
-    {"part": "Flagpole Mast 3.75 m", "on": 124, "socket": "mast", "by": "b", "paint": "#26282a"},
-    {"part": "Flagpole Mast 3.75 m", "on": 125, "socket": "t", "by": "b", "paint": "#c8c4b0"},
-    {"part": "Lamp", "on": 126, "socket": "t", "by": "-y", "config": {"colour": "#ff4030", "brightness": 200}},
+    {"part": "Flagpole Mast 3.75 m", "on": 125, "socket": "mast", "by": "b", "paint": "#26282a"},
+    {"part": "Flagpole Mast 3.75 m", "on": 126, "socket": "t", "by": "b", "paint": "#c8c4b0"},
+    {"part": "Lamp", "on": 127, "socket": "t", "by": "-y", "config": {"colour": "#ff4030", "brightness": 200}},
     {"part": "Lane Marking", "on": 95, "socket": "top30", "by": "bottom", "finish": "hazard paint"},
     {"part": "Floor Arrow", "on": 83, "socket": "top30", "by": "bottom", "paint": "#d8a020", "finish": "hazard paint"},
     {"part": "Lane Marking", "on": 60, "socket": "top30", "by": "bottom", "finish": "hazard paint"},
@@ -148,6 +149,6 @@
     {"type": "chute", "from": 116, "to": 120, "fromPort": "Chute out", "toPort": "Chute in", "nodes": [[1.37, 0.5, -3.7], [5.25, 0.5, -3.7]], "laid": true, "paint": "#555b62"},
     {"type": "data", "from": 123, "to": 111, "toPort": "Run", "nodes": [[0.25, 0.33, 1.05], [-7.25, 0.33, 1.05], [-14.75, 0.33, 1.05], [-14.78, 0.33, 1.05], [-14.78, 0.33, -6.25]], "laid": true, "paint": "#34383d"},
     {"type": "data", "from": 123, "to": 115, "toPort": "Run", "nodes": [[0.25, 0.33, 1.01], [-6.78, 0.33, 1.01], [-6.78, 0.33, -6.25]], "laid": true, "paint": "#34383d"},
-    {"type": "data", "from": 101, "to": 127, "nodes": [[8.05, 0.33, -0.2], [8.05, 0.33, -4.77], [0.55, 0.33, -4.77], [-6.95, 0.33, -4.77], [-14.45, 0.33, -4.77], [-15.7, 0.33, -4.77], [-15.7, 0.33, -2.3], [-15.7, 7.3, -2.3], [-15.7, 8.4, -2.3]], "laid": true, "paint": "#34383d"}
+    {"type": "data", "from": 101, "to": 128, "nodes": [[8.05, 0.33, -0.2], [8.05, 0.33, -4.77], [0.55, 0.33, -4.77], [-6.95, 0.33, -4.77], [-14.45, 0.33, -4.77], [-15.7, 0.33, -4.77], [-15.7, 0.33, -2.3], [-15.7, 7.3, -2.3], [-15.7, 8.4, -2.3]], "laid": true, "paint": "#34383d"}
   ]
 }
