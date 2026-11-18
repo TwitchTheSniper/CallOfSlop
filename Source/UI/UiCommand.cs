@@ -99,6 +99,7 @@ public sealed partial class Ui
         _cmdFocusAuto = true;
         _cmdFocusBody = -1;
         _cmdFocusShip = 0;
+        _cmdBoardShip = 0; // (a Board pick left open when the view shut is dropped)
         _cmdFocusKey = int.MinValue;
         _cmdPan = _cmdGlide = Vec3d.Zero;
         _cmdSpanWant = session.Constructs.Get(_cmdSel) is { } c ? Math.Max(40, c.Radius * 5.5) : 4000;
@@ -174,6 +175,7 @@ public sealed partial class Ui
             CmdChrome(dl, session, s, fade, now, keyName);
             CmdRoster(dl, session, s, fade);
             CmdShipCard(dl, session, s, fade, now);
+            CmdBoardDraw(dl, session, fade); // (picking where to board: UiCommandBoard.cs)
             CmdInput(session, s);
             CmdOrderPopup(session, s);
         }
@@ -881,11 +883,13 @@ public sealed partial class Ui
             if (!ImGui.IsMouseDown(ImGuiMouseButton.Left))
             {
                 _cmdHeldL = false;
-                if (!_cmdDragL)
+                if (!_cmdDragL && _cmdBoardShip != 0)
+                    CmdBoardClick(g, m); // (picking where to board: UiCommandBoard.cs)
+                else if (!_cmdDragL)
                     CmdPick(g, s, m, ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left));
             }
         }
-        if (free && ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
+        if (free && _cmdBoardShip == 0 && ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
             CmdPick(g, s, m, true);
 
         // Right: a click orders, a drag turns the view.
@@ -907,7 +911,12 @@ public sealed partial class Ui
             if (!ImGui.IsMouseDown(ImGuiMouseButton.Right))
             {
                 _cmdHeldR = false;
-                if (!_cmdDragR)
+                if (!_cmdDragR && _cmdBoardShip != 0)
+                {
+                    CmdNote("BOARDING CANCELLED");
+                    CmdBoardEnd();
+                }
+                else if (!_cmdDragR)
                     CmdOrderAt(g, s, m);
             }
         }
