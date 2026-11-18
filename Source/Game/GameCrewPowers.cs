@@ -102,6 +102,7 @@ public sealed partial class Game : IPowerHost
         rel.Might ??= Controllers.Might;
         rel.Merge ??= (a, b) => Controllers.MergeInto(Crew, Constructs, Relations, a, b);
         Controllers.Step(Crew, Constructs, rel, this);
+        CrewTerritoryTick(); // (each player's view of the map, once a second: GameCrewTerritory.cs)
         if (Controllers.Log.Count > 0)
         {
             foreach (var line in Controllers.Log)

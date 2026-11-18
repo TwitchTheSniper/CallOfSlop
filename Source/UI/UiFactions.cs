@@ -158,6 +158,18 @@ public sealed partial class Ui
                 _ => $"{PactWord(t.PactKindOf[k])}: {pa} and {pb} ({t.PactHeld[k]} min{left})",
             });
         }
+        var map = game.FactionMap;
+        if (map.PlanetCount > 0)
+        {
+            ImGuiSafe.TextColored(Dim, "Planets (who holds the majority of each one's key sites)");
+            for (var i = 0; i < map.PlanetCount; i++)
+            {
+                var h = map.Holder[i];
+                var lead = map.Leader[i];
+                ImGuiSafe.TextWrapped(h != 0 ? $"{map.Planet[i]}: {CrewPowers.Of(h)?.Name} ({map.Share[i] * 100 / 255}%)"
+                    : $"{map.Planet[i]}: contested{(lead != 0 ? $" ({CrewPowers.Of(lead)?.Name} leads, {map.Share[i] * 100 / 255}%)" : "")}");
+            }
+        }
         if (game.PowerNews.Count > 0)
         {
             ImGuiSafe.TextColored(Dim, "News");
