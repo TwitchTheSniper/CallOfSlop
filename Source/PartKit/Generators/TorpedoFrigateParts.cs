@@ -2359,11 +2359,9 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         bp.Steps[fc]["config"] = flight;
         bp.Wires.Add((pilot, fc));
         var railModule = Hang(bp, "Turret Module", uf, "gunModule", "-y");
-        Hang(bp, "Chart Table", uf, "chart", "back");
         foreach (var (i, x, _) in LinkChairs)
             bp.HangTurned("Shell Control Chair", Holder(bp, uf, $"linkChair{i}"), $"linkChair{i}", "bottom", i == 0 ? BuildingParts.RY270 : BuildingParts.RY90);
         Paint(bp, Hang(bp, "Zero Day Locker", uf, "bridgeLocker", "wall"), Armour, "worn paint");
-        Hang(bp, "Chart Table", uf, "plot", "bottom");
         Paint(bp, Hang(bp, "Crash Couch", uf, "couchA", "wall"), "#2c3e58", "fabric");
         Paint(bp, Hang(bp, "Zero Day Locker", uf, "lockerA", "wall"), Blue, "worn paint");
         Paint(bp, Hang(bp, "Crash Couch", uf, "couchCaptain", "wall"), "#2c3e58", "fabric");

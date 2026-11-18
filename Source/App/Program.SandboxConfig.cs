@@ -32,12 +32,13 @@ public static partial class Program
         var c = hit.Body;
         var d = c.DefOf(hit.Part);
         var why = g.SandboxConfigRefusal(c, me.Id);
-        var key = ((long)c.Id << 40) | ((long)hit.Part << 16) | (long)Ui.SandboxConfigSelection.Length << 8 | (why != null ? 1L : 0) | (d.Configurable ? 2L : 0);
+        var key = ((long)c.Id << 40) | ((long)hit.Part << 16) | (long)Ui.SandboxConfigSelection.Length << 8 | (why != null ? 1L : 0) | (d.Settable ? 2L : 0) ^ (d.Labelled && c.Parts[hit.Part].Text != null ? (long)c.Parts[hit.Part].Text!.GetHashCode() << 20 : 0);
         if (key != _sbCfgLookKey)
         {
             _sbCfgLookKey = key;
-            _sbCfgLookText = why ?? (d.Configurable
-                ? SandboxKeys.Line(d.Name, Ui.SandboxConfigSelection.Length > 0 ? $"{Ui.SandboxConfigSelection.Length} selected" : null, null, SandboxKeys.Do(SandboxKeys.Fire, "settings"))
+            var label = d.Labelled ? c.Parts[hit.Part].Text : null;
+            _sbCfgLookText = why ?? (d.Settable
+                ? SandboxKeys.Line(label != null ? $"{label} ({d.Name})" : d.Name, Ui.SandboxConfigSelection.Length > 0 ? $"{Ui.SandboxConfigSelection.Length} selected" : null, null, SandboxKeys.Do(SandboxKeys.Fire, "settings"))
                 : $"{d.Name}: no settings");
         }
         g.SandboxLookText = _sbCfgLookText;
@@ -52,7 +53,7 @@ public static partial class Program
             SetMouseCaptured(false);
             return;
         }
-        if (!d.Configurable)
+        if (!d.Settable)
         {
             g.SandboxSay($"a {d.Name} has no settings");
             return;
