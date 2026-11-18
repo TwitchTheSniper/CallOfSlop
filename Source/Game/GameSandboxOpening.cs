@@ -538,8 +538,9 @@ public sealed class OpeningScript
         var bp = Text(e, "blueprint", "");
         if (ConstructBuild.FindBlueprint(bp) == null)
             throw new FormatException($"stations: no blueprint named \"{bp}\"");
-        // (high enough to clear the start's ship and its company by kilometres; at most 200 km, inside any body's reach here)
-        var orbit = Math.Clamp(e.TryGetProperty("orbit", out var o) ? o.GetSingle() : 40000f, 5000f, 200000f);
+        // (high enough to clear the start's ship and its company by kilometres; at most 150 km, inside the bubble's 200 km reach from
+        // the origin on the ground (GameSpaceJump.SpaceFarDistance), past which a ship is parked away)
+        var orbit = Math.Clamp(e.TryGetProperty("orbit", out var o) ? o.GetSingle() : 40000f, 5000f, 150000f);
         var ahead = Math.Clamp(e.TryGetProperty("ahead", out var a) ? a.GetSingle() : 0f, -50000f, 50000f);
         return new Station(bp, orbit, ahead);
     }
