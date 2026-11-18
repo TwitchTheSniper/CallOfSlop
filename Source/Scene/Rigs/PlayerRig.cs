@@ -16,7 +16,8 @@ public sealed class PlayerRig
     public readonly ArmNodes Right, Left;
     public readonly SceneNode Pelvis;
     public readonly SceneNode[] Thighs = new SceneNode[2], Shins = new SceneNode[2], Feet = new SceneNode[2];
-    private readonly SceneNode _upper, _gear, _pelvisBox, _tool;
+    private readonly SceneNode _frame, _upper, _gear, _pelvisBox, _tool;
+    private readonly ShellKitNodes _kit; // a robot shell frame's modules: the ore hopper, the drill arm (ShellKitNodes.cs)
     private readonly ToolNode _toolDraw = new();
     private readonly PackNode _packDraw = new(); // (the gear node's own draw: the backpack, before the gun and arms)
     private readonly SceneNode[] _stances = new SceneNode[3]; // Stand, Crouch, Prone
@@ -42,13 +43,14 @@ public sealed class PlayerRig
 
     public PlayerRig(byte id)
     {
-        Root = new SceneNode("player_" + id);
-        _upper = Root.Add("upper_body");
+        Root = new SceneNode("player_" + id); // (its own matrix: a robot shell's frame's size about the feet; the body below is a person's)
+        _frame = Root.Add("frame");
+        _upper = _frame.Add("upper_body");
         for (var i = 0; i < 3; i++)
             _stances[i] = MakeStance(i);
 
         // Legs: pelvis -> thigh -> shin -> foot, boxes in LegAnimator's draw order.
-        Pelvis = Root.Add("pelvis");
+        Pelvis = _frame.Add("pelvis");
         var pp = LegAnimator.PelvisPart;
         _pelvisBox = Pelvis.Add("pelvis_box", Matrix4x4.CreateScale(pp.Size) * Matrix4x4.CreateTranslation(pp.Center), Renderable.Box(Vector3.One));
         var parts = LegAnimator.LegParts;
@@ -68,7 +70,7 @@ public sealed class PlayerRig
             }
         }
 
-        _gear = Root.Add("upper_gear");
+        _gear = _frame.Add("upper_gear");
         _gear.Custom = _packDraw; // Sandbox: the backpack and what it holds (Source/Render/BackpackRender.cs); nothing outside Sandbox
         Gun = new GunRig();
         _gear.Add(Gun.Root);
@@ -79,11 +81,12 @@ public sealed class PlayerRig
         Left = new ArmNodes("l", -1, carry: false);
         _gear.Add(Right.Root);
         _gear.Add(Left.Root);
-        _health = Root.Add("health_bar");
+        _health = _frame.Add("health_bar");
         _health.Renderable = Renderable.Box(Vector3.One, 1f, 2);
-        _corpse = Root.Add("corpse", Matrix4x4.CreateScale(0.8f, 0.25f, 1.8f) * Matrix4x4.CreateTranslation(0, 0.125f, 0), Renderable.Box(Vector3.One));
-        _corpseHat = Root.Add("corpse_hat");
+        _corpse = _frame.Add("corpse", Matrix4x4.CreateScale(0.8f, 0.25f, 1.8f) * Matrix4x4.CreateTranslation(0, 0.125f, 0), Renderable.Box(Vector3.One));
+        _corpseHat = _frame.Add("corpse_hat");
         _corpseHat.Visible = false;
+        _kit = new ShellKitNodes(_gear);
     }
 
     private SceneNode MakeStance(int stance)
@@ -149,7 +152,9 @@ public sealed class PlayerRig
     {
         BodyBloodRender.Reset(); // marks are placed below for a living body (Source/Render/BodyBloodRender.cs)
         var body = PlayerRender.BodyFrame(p); // (a planet: standing on its curve; Sandbox: seated in the seat's frame)
-        Root.SetLocalMatrix(legsOnly ? Matrix4x4.CreateTranslation(0, 0, FirstPersonBack) * body : body);
+        _frame.SetLocalMatrix(legsOnly ? Matrix4x4.CreateTranslation(0, 0, FirstPersonBack) * body : body);
+        var size = p.Alive ? ShellFrames.ScaleOf(p) : 1f; // (a robot shell's frame: the Mining Shell is drawn 1.5x about its feet)
+        Root.SetLocalMatrix(size == 1f ? Matrix4x4.Identity : Matrix4x4.CreateTranslation(-body.Translation) * Matrix4x4.CreateScale(size) * Matrix4x4.CreateTranslation(body.Translation));
         var color = p.Color;
         var legUniform = BodyModel.UniformOf(p);
         if (color != _color || legUniform != _legUniform)
@@ -238,6 +243,11 @@ public sealed class PlayerRig
             PoseGun(p, def, gunPose, upper, time);
         }
 
+        _kit.Pose(p, seated); // (after the arms: a drill arm hides the right one)
+        if (_kit.DrillShown)
+            Right.Root.Visible = false;
+        else if (!Right.Root.Visible)
+            Right.Root.Visible = true;
         var frac = Math.Clamp(p.Health / (float)World.MaxHealth, 0f, 1f);
         _health.SetLocalMatrix(Matrix4x4.CreateScale(0.8f * frac, 0.06f, 0.06f) * Matrix4x4.CreateTranslation(0, barY, 0));
         _health.Renderable.Color = Vector3.Lerp(new Vector3(1, 0.1f, 0.1f), new Vector3(0.2f, 1, 0.2f), frac);

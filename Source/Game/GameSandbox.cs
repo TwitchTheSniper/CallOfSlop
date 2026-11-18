@@ -287,13 +287,15 @@ public sealed partial class Game
         var c = Constructs.Get(h.SeatBody);
         if (SandboxHands.Stand(Constructs, p.Id) is not { } feet || !teleport)
             return;
+        p.Sim.Frame = p.ShellFrame;
+        using var body = World.Body(p.Sim); // (a robot shell's frame: the deck it stands on and the spot beside the seat fit its size)
         int seat = h.SeatPart; // (Stand brought it up to date)
         var vel = Vector3.Zero;
         if (c != null && seat < c.PartCount)
         {
             vel = ConstructRide.SurfaceVel(c, c.Parts[seat].Seg, ConstructEdits.SeatFeet(c, seat));
             if ((vel.LengthSquared() > 1f || !ConstructRide.GroundUnder(feet))
-                && ConstructRide.ExitDeck(Constructs, c, seat, World.PlayerHeight, vel, out var deck, out var seg, out var spot))
+                && ConstructRide.ExitDeck(Constructs, c, seat, World.BodyHeight, vel, out var deck, out var seg, out var spot))
             {
                 p.Teleport(spot);
                 p.Sim.Velocity = vel;
@@ -308,7 +310,7 @@ public sealed partial class Game
         foreach (var t in tries)
         {
             var at = World.ClampToArena(t);
-            if (World.Blocked(at) && t != tries[^1])
+            if (World.Blocked(at, World.BodyHeight) && t != tries[^1])
                 continue;
             p.Teleport(at);
             if (vel.LengthSquared() > 1f)
@@ -1039,6 +1041,8 @@ public sealed partial class Game
             case CActKind.Tool:
             {
                 var asked = ConstructToolWire.From(r.U8());
+                if (ShellToolRefusal(p, asked) is { } only)
+                    return only; // (a shell frame whose module is its only tool: the Mining Shell's drill arm, GameShellHopper.cs)
                 return hands.SetTool(p.Id, StoryArmsTool(p, asked), Constructs, eye, p.Yaw); // (no gun in a story world: GameStoryArms.cs)
             }
             case CActKind.NudgeBegin:
@@ -1640,6 +1644,11 @@ public sealed partial class Game
     /// </summary>
     private bool SandboxToolGated(ref ushort part)
     {
+        if (Local is { } wearer && ShellToolRefusal(wearer, (ConstructTool)part) is { } only)
+        {
+            SandboxSay(only); // (the server refuses it the same way: GameShellHopper.cs)
+            return true;
+        }
         if (part == (ushort)ConstructTool.None && Local is { } me && StoryUnarmed(me))
             part = (ushort)ConstructTool.Hands; // (no gun in a story world: bare hands, shown at once as the server will; GameStoryArms.cs)
         return false;
@@ -2082,6 +2091,7 @@ public sealed partial class Game
             ConstructRide.Clear(ref s); // (a seat is its own frame)
             return;
         }
+        using var body = World.Body(s); // (a robot shell's frame: its size against the constructs too)
         Constructs.BlockPlayer(ref s, World.HeightOf(s.Stance), IsServer, p.Id, frame: p.FramedRider, doors: p.Bot == null || NavGraph.Current.SiteOf(s.Position, 2f) < 0);
         if (Constructs.LiftBodies.Count > 0 && p.Bot == null)
             ConstructLifterPush.Block(Constructs, ref s, World.HeightOf(s.Stance), _sepAtTick != 0 ? _sepAtTick : MoverPhysics.Clock, IsServer); // (a Loader Arm's piece in the air pushes them aside, or waits for them: ConstructLifterPush.cs)
@@ -2116,6 +2126,7 @@ public sealed partial class Game
             return "not while noclipping";
         // (it moved on since the player aimed: a little more reach the faster it goes)
         var slack = c.Anchored || c.Asleep ? 0 : MathF.Min((c.Vel - p.Sim.Velocity).Length(), 12f) * 0.15f;
+        using var body = World.Body(p.Sim); // (a robot shell's size on the rungs)
         var why = ladder ? ConstructRide.ClimbLadder(ref p.Sim, c, part, World.HeightOf(Stance.Stand), frame: p.FramedRider)
             : ConstructRide.GrabOn(ref p.Sim, c, part, World.HeightOf(p.Sim.Stance), slack, frame: p.FramedRider);
         if (why == null)

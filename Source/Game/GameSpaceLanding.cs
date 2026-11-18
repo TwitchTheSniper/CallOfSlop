@@ -257,7 +257,7 @@ public sealed partial class Game
         FirstForRiders(ship, Milestone.Landing, to.Name); // (before the save: the records carry it to the new world; GameMilestones.cs)
         WorldSaveNow(wait: true); // (the whole world, the ship and everyone's things with it, in the world's own file)
         var from = World.Map.Name;
-        var why = WorldCopy(ws, StashFolder(ws, from), c => !Aboard(ship, c)); // (the planetoid left behind, without the ship)
+        var why = WorldCopy(ws, StashFolder(ws, from), c => !Aboard(ship, c) && !ShellSaveStandIn(c)); // (the planetoid left behind, without the ship; a worn shell goes with its wearer, GameRobotShell.cs)
         if (why != null)
         {
             foreach (var p in Players.Values)

@@ -610,7 +610,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 351: conveyor inclines: the 27 link support parts (Constructs/Parts/LinkSupports) move the part ids after them.
     // 352: a breaching cutter cuts a door-sized hole out of a hull piece (HullHoles.cs): a body's part may be a "Holed (...)" run-time
     //   part, sent as its key after Extrusion.WireMark and HullLoft.WireKind, which an older client refused as a malformed packet.
-    public const ushort ProtocolVersion = 352;
+    // 353: the Mining Shell (docs/sandbox/design/mining-shell.md): Msg.Shell ends with u8 frame (Constructs/Shells.json), u8 hopper material, u16 hopper units.
+    public const ushort ProtocolVersion = 353;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;
