@@ -10,16 +10,17 @@ namespace CallOfSlop;
 public sealed partial class CrewFleet
 {
     /// <summary>What players' groups have to tell their owners (by name: an admiral lost, command passed), drained by the game.</summary>
-    public readonly List<(string Owner, string Text)> Notices = new(16);
+    public readonly List<(ulong Owner, string Text)> Notices = new(16);
 
-    /// <summary>An escort engages a threat only this close to what it guards (m); further off it keeps its station and its gunners fire from there.</summary>
-    public const float EscortBand = 1000;
+    /// <summary>A player's escort engages a threat this close to what it guards (m: past the guns that hit a ward, a Zero Day's from 760 m); further off
+    /// it keeps its station and its gunners fire from there. A power's escort fights whatever it sees, as in phase 2.</summary>
+    public const float EscortBand = 1800;
 
     /// <summary>A group's news: a power's to everyone, a player's to its owner.</summary>
     private void Say(CrewGroup g, string text)
     {
         if (g.Players)
-            Notices.Add((g.OwnerName, text));
+            Notices.Add((g.OwnerKey, text));
         else
             News.Add(text);
     }
@@ -28,7 +29,7 @@ public sealed partial class CrewFleet
     /// A group of <paramref name="owner"/>'s crewed bodies (their own hired crews; the game has checked they are theirs), the player its admiral. -1
     /// (with why): no slot, or no own crew among them.
     /// </summary>
-    public int FormPlayer(CrewWorld crew, ConstructWorld w, string ownerName, byte owner, ReadOnlySpan<ushort> bodies, out string? why)
+    public int FormPlayer(CrewWorld crew, ConstructWorld w, string ownerName, ulong ownerKey, byte owner, ReadOnlySpan<ushort> bodies, out string? why)
     {
         why = null;
         var slot = -1;
@@ -67,6 +68,7 @@ public sealed partial class CrewFleet
         g.Live = true;
         g.Serial++;
         g.OwnerName = ownerName;
+        g.OwnerKey = ownerKey;
         g.Owner = owner;
         g.PlayerAdmiral = true;
         g.Task = GroupTask.Patrol;

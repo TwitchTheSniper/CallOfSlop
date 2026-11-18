@@ -54,6 +54,19 @@ public sealed partial class ShipAi
     public CrewWorld? Crew;
     public CrewShip? Ship;
     /// <summary>What it is doing, for the check's lines and a log (made when read: nothing on the tick).</summary>
+    /// <summary>Its formation's own: the ward it keeps station on (or what that carries), or a ship of its group.</summary>
+    private static bool Mate(Construct b, ushort ward, CrewGroup? mates)
+    {
+        if (ward != 0 && (b.Id == ward || b.CarriedBy == ward))
+            return true;
+        if (mates == null)
+            return false;
+        for (var k = 0; k < mates.Count; k++)
+            if (mates.Ships[k] == b.Id || mates.Ships[k] == b.CarriedBy)
+                return true;
+        return false;
+    }
+
     /// <summary>The keys that slide it sideways (by its flight pattern: Scan).</summary>
     private ushort SlideLeft = ConstructParts.KeyRollLeft, SlideRight = ConstructParts.KeyRollRight;
 
@@ -253,9 +266,9 @@ public sealed partial class ShipAi
             _ground = Clearance(world, c, query, com, -up, 400);
             var way = c.Vel - up * Vector3.Dot(c.Vel, up);
             var far = way.Length() * LookAhead;
-            _ahead = far > 10 ? Clearance(world, c, query, com, way / way.Length(), far, terrainOnly: Ordered(out var lo) && lo.Kind is OrderKind.Form or OrderKind.Escort or OrderKind.Screen) : float.MaxValue;
-            // (in a formation the ship ahead is its anchor or a group mate, kept clear by the slots' spacing: only the ground ahead makes it climb,
-            // or a formation behind a ship climbs for ever: faction-controllers-notes.md phase 6)
+            _ahead = far > 10 ? Clearance(world, c, query, com, way / way.Length(), far, ward: Ordered(out var lo) && lo.Kind is OrderKind.Form or OrderKind.Escort or OrderKind.Screen ? lo.Body : (ushort)0, mates: Ship != null && Crew != null ? Crew.Fleet.Of(Ship.Group) : null) : float.MaxValue;
+            // (in a formation the ship ahead may be its ward or a group mate, kept clear by the slots' spacing: those don't make it climb, or a
+            // formation behind a ship climbs for ever; the ground, a base, a station or anyone else's ship ahead still does: phase 6)
         }
         var pilotOn = Manned(_pilot);
         if (pilotOn)
@@ -545,10 +558,10 @@ public sealed partial class ShipAi
     }
 
     /// <summary>How far the ground or another body is from the ship's centre along a way, out to <paramref name="reach"/> (m), less the ship's own extent that way.</summary>
-    private static float Clearance(ConstructWorld world, Construct c, IWorldQuery query, Vector3 from, Vector3 way, float reach, bool terrainOnly = false)
+    private static float Clearance(ConstructWorld world, Construct c, IWorldQuery query, Vector3 from, Vector3 way, float reach, ushort ward = 0, CrewGroup? mates = null)
     {
         var d = query.Raycast(from, way, reach + c.Radius, QueryFilter.All);
-        if (!terrainOnly && world.Raycast(from, way, d, out var hit, c, ignoreCargo: true) && hit.Distance < d) // (not what it carries: a Zero Day's docked Limpet under it read as the ground 4 m down, and it climbed for ever)
+        if (world.Raycast(from, way, d, out var hit, c, ignoreCargo: true) && hit.Distance < d && !Mate(hit.Body, ward, mates)) // (not what it carries: a Zero Day's docked Limpet under it read as the ground 4 m down, and it climbed for ever)
             d = hit.Distance;
         var local = Vector3.Transform(way, Quaternion.Conjugate(c.Rot));
         var own = MathF.Abs(local.X) * MathF.Max(-c.LocalMin.X, c.LocalMax.X) + MathF.Abs(local.Y) * MathF.Max(c.Com.Y - c.LocalMin.Y, c.LocalMax.Y - c.Com.Y) + MathF.Abs(local.Z) * MathF.Max(-c.LocalMin.Z, c.LocalMax.Z);

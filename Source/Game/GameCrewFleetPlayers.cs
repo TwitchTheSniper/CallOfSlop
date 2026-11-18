@@ -103,12 +103,33 @@ public sealed partial class Game
 
     // ---- Server: the acts --------------------------------------------------------------------------------------------------------------
 
+    /// <summary>Who a person is to the world, for their fleet groups: their world key, else their verified Steam id (0: not known yet). Names are
+    /// unique only among those online, so a group is never keyed on one.</summary>
+    private ulong FleetKeyOf(Player p) => p.Bot != null ? 0 : WorldKeyOf(p) is var k and not 0 ? k : TrustedSteamId(p);
+
+    /// <summary>Is <paramref name="p"/> the owner of <paramref name="g"/> (by their saved identity; a group from a save made before the key was kept is
+    /// claimed by its owner's name once, and keyed from then on)?</summary>
+    private bool FleetOwner(Player p, CrewGroup g)
+    {
+        if (p.Bot != null || p.CrewSlot >= 0)
+            return false;
+        var key = FleetKeyOf(p);
+        if (key == 0)
+            return false;
+        if (g.OwnerKey == 0 && g.OwnerName == p.Name)
+            g.OwnerKey = key;
+        if (g.OwnerKey != key)
+            return false;
+        g.OwnerName = p.Name; // (a rename keeps the group)
+        return true;
+    }
+
     /// <summary>Server: may <paramref name="p"/> command <paramref name="g"/>? Its owner, or the leader of the owner's faction.</summary>
     private bool FleetMay(Player p, CrewGroup g)
     {
         if (!g.Players || p.Bot != null)
             return false;
-        if (g.OwnerName == p.Name)
+        if (FleetOwner(p, g))
             return true;
         var f = g.Owner != 255 ? FactionTable.Of[g.Owner] : (byte)0;
         return f != 0 && FactionTable.Leader[f] == p.Id && FactionTable.Of[p.Id] == f;
@@ -217,7 +238,7 @@ public sealed partial class Game
             return null;
         var mine = 0;
         foreach (var g in Crew.Fleet.Groups)
-            if (g.Live && g.OwnerName == p.Name)
+            if (g.Live && g.Players && FleetOwner(p, g))
                 mine++;
         if (mine >= FleetGroupsEach)
             return $"you lead {FleetGroupsEach} groups already";
@@ -238,7 +259,9 @@ public sealed partial class Game
                 return "that isn't a ship of yours with a hired crew (hire hands for it in the Crew window)";
             ids[n++] = body;
         }
-        var slot = Crew.Fleet.FormPlayer(Crew, Constructs, p.Name, p.Id, ids[..n], out var why);
+        if (FleetKeyOf(p) == 0)
+            return "the host doesn't know who you are yet: try again in a moment";
+        var slot = Crew.Fleet.FormPlayer(Crew, Constructs, p.Name, FleetKeyOf(p), p.Id, ids[..n], out var why);
         if (slot < 0)
             return why;
         var ng = Crew.Fleet.Groups[slot];
@@ -342,7 +365,7 @@ public sealed partial class Game
         {
             if (p.Bot != null || p.CrewSlot >= 0)
                 continue;
-            if (p.Name == g.OwnerName)
+            if (FleetOwner(p, g))
                 return p;
             if (g.Owner != 255 && FleetMay(p, g))
                 leader = p;
@@ -355,7 +378,7 @@ public sealed partial class Game
     {
         var owner = (Player?)null;
         foreach (var p in Players.Values)
-            if (p.Bot == null && p.CrewSlot < 0 && p.Name == g.OwnerName)
+            if (FleetOwner(p, g))
                 owner = p;
         g.Owner = owner?.Id ?? 255;
         var by = giving ?? owner ?? FleetCommanderOf(g);
@@ -406,7 +429,7 @@ public sealed partial class Game
             if (g.Owner == 255)
                 continue;
             for (var k = g.Count - 1; k >= 0; k--)
-                if (Constructs.Get(g.Ships[k]) is { } c && c.Owner != g.Owner && !Factions.Shares(g.Owner, c.Owner))
+                if (Constructs.Get(g.Ships[k]) is { } c && c.Owner != g.Owner && Players.ContainsKey(c.Owner) && !Factions.Shares(g.Owner, c.Owner))
                 {
                     fleet.LeavePlayer(Crew, g, c.Id); // (given away, or taken: not theirs to command)
                     if (!g.Live)
@@ -415,7 +438,7 @@ public sealed partial class Game
         }
         foreach (var (owner, text) in fleet.Notices)
             foreach (var p in Players.Values)
-                if (p.Bot == null && p.Name == owner)
+                if (owner != 0 && FleetKeyOf(p) == owner)
                     SandboxHands.Notices.Add((p.Id, text));
         fleet.Notices.Clear();
         foreach (var p in Players.Values)

@@ -50,7 +50,7 @@ public sealed partial class ShipAi
     private float StandOffNow => Ordered(out var o) && o.Kind == OrderKind.Board ? BoardRange : StandOff;
 
     /// <summary>A body's way ahead, level: a ship's nose, a vehicle's drive forward.</summary>
-    private static Vector3 Heading(Construct f, Vector3 up) => Level(Vector3.Transform(f.StabCount > 0 ? -Vector3.UnitZ : f.DriveFwd, f.Rot), up);
+    internal static Vector3 Heading(Construct f, Vector3 up) => Level(Vector3.Transform(f.StabCount > 0 ? -Vector3.UnitZ : f.DriveFwd, f.Rot), up);
 
     /// <summary>Where its order puts it (world), the way to face there, and the velocity to keep with; false: no place (fight or hold as ever).</summary>
     private static bool OrderPoint(ConstructWorld world, Construct c, in ShipOrder o, Vector3 up, out Vector3 to, out Vector3 face, out Vector3 keep)
@@ -133,7 +133,7 @@ public sealed partial class ShipAi
         var nose = Level(Vector3.Transform(-Vector3.UnitZ, c.Rot), up);
         var top = o.Speed > 0 ? o.Speed : o.Kind == OrderKind.Retreat ? OrderRun : OrderCruise;
         if (Ship!.SpeedCap > 0 && Crew!.Tick < Ship.SpeedCapUntil && o.Kind != OrderKind.Retreat)
-            top = MathF.Min(top, Ship.SpeedCap); // (its escort can't fly faster: phase 6)
+            top = MathF.Min(top, Ship.SpeedCap); // (its escort is falling behind: phase 6; the ask lapses a few seconds after they catch up)
         var keepFwd = Vector3.Dot(keep, nose);
         var wantFwd = Math.Clamp(keepFwd + Vector3.Dot(flat, nose) * 0.12f, -15, top);
         var fwdNow = Vector3.Dot(c.Vel, nose);
@@ -142,8 +142,8 @@ public sealed partial class ShipAi
         if (wantFwd - fwdNow > 2)
         {
             pilot |= (ushort)Buttons.Forward;
-            if (wantFwd - fwdNow > 8 && Vector3.Dot(nose, dir) > 0.9f && fwdNow > Ship!.TopSpeed)
-                Ship.TopSpeed = fwdNow; // (full ahead and still short: about as fast as it goes)
+            if (wantFwd - fwdNow > 8 && Vector3.Dot(nose, dir) > 0.9f && fwdNow > 1)
+                Ship!.TopSpeed = Ship.TopSpeed <= 0 ? fwdNow : Ship.TopSpeed + (fwdNow - Ship.TopSpeed) * 0.02f; // (full ahead and still short: about as fast as it goes now, a running mean that rises and falls with its load and damage)
         }
         else if (wantFwd - fwdNow < -2)
             pilot |= (ushort)Buttons.Back;

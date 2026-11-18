@@ -66,9 +66,9 @@ public static class CrewAdmiralsCheck
             return true;
         };
         Span<ushort> one = [miner.Id];
-        var gm = crew.Fleet.FormPlayer(crew, w, "Tester", me, one, out var why1);
+        var gm = crew.Fleet.FormPlayer(crew, w, "Tester", 1, me, one, out var why1);
         Span<ushort> three = [escorts[0].Id, escorts[1].Id, escorts[2].Id];
-        var ge = crew.Fleet.FormPlayer(crew, w, "Tester", me, three, out var why2);
+        var ge = crew.Fleet.FormPlayer(crew, w, "Tester", 1, me, three, out var why2);
         if (gm < 0 || ge < 0)
         {
             Console.WriteLine($"fleet escort: no group formed ({why1 ?? why2}): FAILED");

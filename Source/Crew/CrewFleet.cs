@@ -122,7 +122,8 @@ public sealed class CrewGroup
     // save: a player's id changes between sessions); Owner their id while they are here (255: away). The admiral is the player
     // (PlayerAdmiral) or one of their hands aboard a member, job Admiral. The game writes where the player is and how far they reach the fleet
     // net (Commander*) once a second; the player commands from the command view, through the server, while the net carries it.
-    public string OwnerName = "";
+    public string OwnerName = ""; // (shown; who they are is OwnerKey)
+    public ulong OwnerKey; // the owner's saved identity (their world key, or Steam id): names are unique only among those online
     public byte Owner = 255;
     public bool PlayerAdmiral;
     public bool CommanderHere;
@@ -157,6 +158,7 @@ public sealed class CrewGroup
         RevealedUntil = 0;
         Array.Clear(RevealedTo);
         OwnerName = "";
+        OwnerKey = 0;
         Owner = 255;
         PlayerAdmiral = CommanderHere = CommanderHeard = false;
         CommanderBody = 0;
@@ -649,7 +651,7 @@ public sealed partial class CrewFleet
             var best = float.MinValue;
             for (var f = 0; f < foes; f++)
             {
-                if (_foes[f] == 0 || guard != null && g.Order == OrderKind.Escort && Vector3.DistanceSquared(_foeAt[f], guard.WorldCom) > EscortBand * EscortBand)
+                if (_foes[f] == 0 || g.Players && guard != null && g.Order == OrderKind.Escort && Vector3.DistanceSquared(_foeAt[f], guard.WorldCom) > EscortBand * EscortBand)
                     continue; // (an escort keeps station against what is still far from its charge: its gunners fire from there)
                 var d = Vector3.Distance(_foeAt[f], centre);
                 var hp = w.Get(_foes[f]) is { } fc ? CrewWorld.HullOf(fc) * 0.01f + 1 : 1;
@@ -673,17 +675,26 @@ public sealed partial class CrewFleet
         for (var k = 0; k < g.Count; k++)
             big = MathF.Max(big, w.Get(g.Ships[k])!.Radius);
         var span = big * 2 + 25;
-        // An escort that can't keep up asks what it guards to fly no faster than its slowest ship can, with a margin to catch up on a turn.
+        // An escort falling behind its slot (behind it along what it guards' way, and as fast as it goes) asks what it guards to fly a little under
+        // that escort's speed until it is back; the ask lapses a few seconds after the last think that saw one behind.
         if (guard != null && crew.ShipOf(guard.Id) is { } gs)
         {
+            var up = GravityFrames.UpAt(guard.WorldCom);
+            var fwd = ShipAi.Heading(guard, up);
+            var right = Vector3.Cross(fwd, up);
             var slowest = float.MaxValue;
             for (var k = 0; k < g.Count; k++)
-                if (_heard[k] && crew.ShipOf(g.Ships[k]) is { TopSpeed: > 0 } es)
+            {
+                if (!_heard[k] || crew.ShipOf(g.Ships[k]) is not { TopSpeed: > 0 } es || es.Order.Kind is not (OrderKind.Escort or OrderKind.Form) || es.Order.Body != guard.Id)
+                    continue;
+                var slot = guard.WorldCom + right * es.Order.At.X + fwd * es.Order.At.Z;
+                if (Vector3.Dot(slot - _pos[k], fwd) > FallBehind)
                     slowest = MathF.Min(slowest, es.TopSpeed);
+            }
             if (slowest < float.MaxValue)
             {
-                gs.SpeedCap = slowest * 0.7f;
-                gs.SpeedCapUntil = until;
+                gs.SpeedCap = MathF.Max(5, slowest * 0.85f);
+                gs.SpeedCapUntil = crew.Tick + (long)(Rules.ThinkNear * 3 * World.TickRate);
             }
         }
         var running = g.Order == OrderKind.Retreat;
@@ -721,7 +732,7 @@ public sealed partial class CrewFleet
                 o = g.Order switch
                 {
                     OrderKind.Screen => new ShipOrder { Kind = OrderKind.Screen, Body = guard.Id, At = new Vector3(0, 0, g.Doctrine.Spacing * (1 + (slotN - 1) % 3)), Fight = false },
-                    OrderKind.Escort => new ShipOrder { Kind = OrderKind.Escort, Body = guard.Id, At = Slot(g.Doctrine, slotN, span) + Step(slotN, big, sc), Fight = false },
+                    OrderKind.Escort => new ShipOrder { Kind = OrderKind.Escort, Body = guard.Id, At = Slot(g.Doctrine, slotN, span) + Step(slotN, big, sc), Fight = !g.Players }, // (a power's escort fights what it sees, as before; a player's keeps its slot until the admiral's band sends it in)
                     _ => new ShipOrder { Kind = OrderKind.Form, Body = guard.Id, At = Slot(g.Doctrine, slotN, span) + Step(slotN, big, sc), Fight = false },
                 };
             }
@@ -770,6 +781,9 @@ public sealed partial class CrewFleet
     }
 
     private static Vector3 Flat(Vector3 v) => v with { Y = 0 };
+
+    /// <summary>An escort this far (m) behind its slot along its ward's way is falling behind: the ward slows for it.</summary>
+    public const float FallBehind = 60;
 
     /// <summary>A flagship this close to a route's point (m, plus half its size) is there.</summary>
     public const float ArriveBand = 50;
@@ -962,7 +976,7 @@ public sealed partial class CrewFleet
 
     // ---- Saves (the world's Fleet section: WorldSaveWriter.FleetTag; each ship's group in its crew block) -------------------------------
 
-    public const byte SaveVersion = 2; // (2: phase 6, each group ends with its owner's name, the player-admiral flag, its shape and spacing; 1 still reads)
+    public const byte SaveVersion = 3; // (2: phase 6, each group ends with its owner's name, the player-admiral flag, its shape and spacing; 3: and the owner's key; 1 and 2 still read)
 
     /// <summary>Every live group's header (its ships rejoin from their crew blocks); null: none.</summary>
     public byte[]? SaveBytes()
@@ -980,7 +994,7 @@ public sealed partial class CrewFleet
             for (var i = 0; i < g.RouteCount; i++)
                 wr.Vec(g.Route[i]).U8((byte)g.RouteWork[i]);
             wr.U8((byte)g.RouteAt).F32(g.Dwell).U8((byte)((g.Loop ? 1 : 0) | (g.Retreating ? 2 : 0))).F32(g.Strength0).I32(g.Losses);
-            wr.Str(g.OwnerName).U8((byte)(g.PlayerAdmiral ? 1 : 0)).U8((byte)g.Doctrine.Formation).F32(g.Doctrine.Spacing).U16(g.Flagship); // (2; the flagship by id only as a hint: body ids change, so a player-led group's anchor is found again among its ships)
+            wr.Str(g.OwnerName).U8((byte)(g.PlayerAdmiral ? 1 : 0)).U8((byte)g.Doctrine.Formation).F32(g.Doctrine.Spacing).U16(g.Flagship).U64(g.OwnerKey); // (2; the flagship by id only as a hint: body ids change, so a player-led group's anchor is found again among its ships)
         }
         wr.U16((ushort)Math.Min(Officers.Count, 65535));
         foreach (var (uid, o) in Officers)
@@ -1039,6 +1053,8 @@ public sealed partial class CrewFleet
                     var shape = (FleetFormation)Math.Min((int)r.U8(), (int)FleetFormation.Screen);
                     var spacing = Math.Clamp(r.F32(), MinSpacing, MaxSpacing);
                     r.U16();
+                    if (v >= 3)
+                        g.OwnerKey = r.U64();
                     if (g.Players)
                     {
                         g.Doctrine = g.Doctrine.Copy();
