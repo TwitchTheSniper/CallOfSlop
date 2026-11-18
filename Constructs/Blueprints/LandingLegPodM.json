@@ -1,0 +1,34 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Landing Leg Pod M",
+  "description": "A landing leg pod (M) assembled: the housing, its two canopy leaves and the gantry with its leg, stowed. Weld the housing's top under a keel; open the canopy, then lower the gantry.",
+  "steps": [
+    {
+      "part": "Leg Pod Housing M"
+    },
+    {
+      "part": "Leg Pod Canopy Port M",
+      "on": 0,
+      "socket": "canopyL",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Canopy Stbd M",
+      "on": 0,
+      "socket": "canopyR",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Gantry M",
+      "on": 0,
+      "socket": "gantry",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Foot M",
+      "on": 0,
+      "socket": "foot",
+      "by": "hang"
+    }
+  ]
+}

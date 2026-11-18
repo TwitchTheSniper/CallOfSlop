@@ -1,0 +1,250 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Leg Pod Foot L",
+  "description": "A landing leg pod's foot (L): the chrome ram that runs out of the gantry's sleeve, a torque link, the ankle and a broad pad. It slides down 1.95 m with the gantry to stand the pad 3.26 m under the pod's top. A generic ship fitting: it fits any ship.",
+  "group": "Ship",
+  "section": "Ship fittings",
+  "role": "door",
+  "tool": "welder",
+  "door": {
+    "kind": "slide",
+    "axis": "-y",
+    "travel": 1.95,
+    "seconds": 3.5,
+    "hang": "hang"
+  },
+  "mass": 360.0,
+  "health": 3600,
+  "armour": 30,
+  "material": "steel",
+  "color": "#3b4148",
+  "attachSeconds": 4.0,
+  "boxes": [
+    {
+      "min": [
+        -0.11,
+        -1.02,
+        -0.66
+      ],
+      "max": [
+        0.11,
+        -0.13,
+        -0.44
+      ],
+      "color": "#9aa0a4",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+y",
+      "finish": "chrome"
+    },
+    {
+      "min": [
+        -0.125,
+        -1.02,
+        -0.675
+      ],
+      "max": [
+        0.125,
+        -0.94,
+        -0.425
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+y",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.03,
+        -0.94,
+        -0.85
+      ],
+      "max": [
+        0.03,
+        -0.75,
+        -0.79
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.03,
+        -1.03,
+        -0.85
+      ],
+      "max": [
+        0.03,
+        -0.94,
+        -0.66
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.14,
+        -1.19,
+        -0.69
+      ],
+      "max": [
+        0.14,
+        -0.95,
+        -0.41
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "shape": "sphere",
+      "segments": 12,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.08,
+        -1.13,
+        -0.79
+      ],
+      "max": [
+        0.08,
+        -1.09,
+        -0.31
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.52,
+        -1.15,
+        -1.07
+      ],
+      "max": [
+        0.52,
+        -1.09,
+        -0.03
+      ],
+      "color": "#3b4148",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+y",
+      "taper": [
+        0.7,
+        0.7
+      ],
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -0.52,
+        -1.26,
+        -1.07
+      ],
+      "max": [
+        0.52,
+        -1.15,
+        -0.03
+      ],
+      "color": "#30353b",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+y",
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -0.532,
+        -1.24,
+        -1.082
+      ],
+      "max": [
+        0.532,
+        -1.19,
+        -0.018
+      ],
+      "color": "#e0b020",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+y",
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.48,
+        -1.31,
+        -1.03
+      ],
+      "max": [
+        0.48,
+        -1.26,
+        -0.07
+      ],
+      "color": "#1a1b1d",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+y",
+      "finish": "rubber"
+    },
+    {
+      "min": [
+        -0.4784,
+        -1.31,
+        -1.0284
+      ],
+      "max": [
+        0.4784,
+        -1.09,
+        -0.0716
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.468,
+        -1.25,
+        -0.61
+      ],
+      "max": [
+        0.596,
+        -1.15,
+        -0.49
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        0.4784,
+        -1.25,
+        -0.61
+      ],
+      "max": [
+        0.6,
+        -1.15,
+        -0.49
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "hang",
+      "at": [
+        0.6,
+        -1.2,
+        -0.55
+      ],
+      "dir": "+x"
+    }
+  ]
+}
