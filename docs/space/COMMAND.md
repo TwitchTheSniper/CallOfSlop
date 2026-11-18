@@ -205,8 +205,10 @@ cells of 0.25 m or more (200 across at most), a level every 0.9 m or more, at mo
 once and again only when its parts change (about 5 ms and 2,900 lines for a Zero Day). Both holograms are cut from the parts'
 own boxes and hull skin shapes, not their bounds, so a welded hull piece no longer fills the rooms it walls. On the fine one
 the outer skin (lines beside cells open to the outside on that level) is bright, inner walls dim, outlines every other level;
-doors and hatches are green boxes. While picking a hull spot, once the cursor rests on a part for 0.12 s the view works the
-spot out as the host will (`Game.BoardPreview`: `BoardSpot`, then `BoardNearRoom`, with no log lines) and draws the hull piece
+doors and hatches are green boxes. While picking a hull spot, once the cursor rests on a part for 0.06 s the view works the
+spot out as the host will (`Game.BoardPreview`: `BoardSpot`, then `BoardNearRoom`'s search, with no log lines; the search
+costs up to a few hundred ms on a Zero Day, so it runs 2.5 ms a frame, one candidate at most past that, and each part's result
+is kept while the pick lasts; there are two close-hologram slots, so the carrier and its target don't take turns rebuilding) and draws the hull piece
 it cuts (amber box), the pod's skirt, the hole as `ConstructBreach.OpenHole` cuts it (1.1 by 2.1 m from the room's floor up,
 red when no room is found), the tunnel in to the room's wall, and the room behind as an outline on its floor (the fine grid's
 inside cells joined to where a person lands). The label says whether the room's floor is level with the pod's. Close up, a
