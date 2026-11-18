@@ -445,7 +445,7 @@ A ship crewed by an NPC power (the Traders' Zero Day in the Zero Day start, any 
 or carried by one (its Shuttle), is that power's: it can be picked, read on its card (OWNER TRADERS), tracked, locked onto and
 fought, but the order menu and the card's buttons say "IT IS THE TRADERS' SHIP", and the host refuses its orders, a cancel
 included (`Game.CommandRefusal` in `NavOrderAct`). Another player's ship outside your faction is refused the same way. Its helm and
-the seats its crew fly and fight from can't be sat in, its settings are locked, and its drones and robot shells can't be linked to.
+the seats its crew fly and fight from can't be sat in, and its drones and robot shells can't be linked to.
 Boarded and taken (its crew surrendered: the Traders give up the moment anyone comes aboard), it is the captor's, with every
 nobody's craft it carries (`GameCrewBoard.CrewCaptureCraft`).
 

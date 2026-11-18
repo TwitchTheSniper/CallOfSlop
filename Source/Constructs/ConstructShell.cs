@@ -54,7 +54,7 @@ public static class ConstructShell
         var fitted = false;
         foreach (var d in world.Bodies)
         {
-            if (d.PartCount == 0 || d.Owner != 255 && d.Owner != player && !Factions.Shares(d.Owner, player) || d.Owner == 255 && d.NpcFaction != 0) // (an NPC power's crewed ship and its shells are theirs)
+            if (d.PartCount == 0 || d.Owner != 255 && d.Owner != player && !Factions.Shares(d.Owner, player))
                 continue;
             if (d.PartCount > 1)
             {

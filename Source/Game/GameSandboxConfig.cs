@@ -25,8 +25,6 @@ public sealed partial class Game
     /// </summary>
     public string? SandboxConfigRefusal(Construct c, byte player)
     {
-        if (!c.Wreck && PowerHolding(c) is var f and not 0)
-            return $"locked: it is the {PowerPossessive(f)} ship, run by its crew"; // (GameShipControl.cs)
         if (Factions.Shares(c.Owner, player) || c.Owner == 255 || c.Wreck || c.Loose)
             return null;
         var owner = Players.GetValueOrDefault(c.Owner);

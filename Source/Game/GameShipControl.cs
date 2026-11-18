@@ -4,7 +4,7 @@ namespace CallOfSlop;
 /// Who may command or fly a ship (Karl, 2026-11-18; faction-controllers.md section 7: a player commands their own ships, and
 /// later their hired groups as admiral). A player gives command view orders only to a ship that is theirs, a faction mate's, or
 /// nobody's; a ship crewed by an NPC power (the Traders' Zero Day of the Zero Day start, any power's crewed ship) is that power's:
-/// it is seen, picked, locked and fought, never ordered, and its helm and gun seats are its crew's. Boarded and taken (its crew
+/// it is seen, picked, locked and fought, never ordered, and its helm and gun seats, drones and robot shells are its crew's. Boarded and taken (its crew
 /// surrendered: GameCrewBoard.cs), it is a prize and the captor's.
 /// </summary>
 public sealed partial class Game
@@ -20,8 +20,17 @@ public sealed partial class Game
         if (c.CarriedBy != 0 && c.CarriedBy != c.Id && Constructs.Get(c.CarriedBy) is { Owner: 255, CarriedBy: 0 } carrier && PowerHolding(carrier) is var held and not 0)
             return held; // (its own craft, docked or carried: a Shuttle on the Traders' clamp is the Traders')
         if (IsServer)
-            return c.NpcFaction != 0 && Crew.ShipOf(c.Id) is { Own: false, Prize: false } s && s.Faction != 0 && Crew.Alive(s) > 0 ? s.Faction : (byte)0;
+            return c.NpcFaction != 0 && Crew.ShipOf(c.Id) is { Own: false, Prize: false } s && s.Faction != 0 && Standing(s) ? s.Faction : (byte)0;
         return CrewInfo.TryGetValue(c.Id, out var i) && i.Alive > 0 ? i.Faction : (byte)0;
+    }
+
+    /// <summary>Server: any member of the crew neither dead nor surrendered (a crew that put its hands up holds nothing).</summary>
+    private bool Standing(CrewShip s)
+    {
+        for (var i = 0; i < s.MemberCount; i++)
+            if (Crew.State[s.Members[i]] is not (CrewState.Dead or CrewState.Surrendered))
+                return true;
+        return false;
     }
 
     /// <summary>Why <paramref name="player"/> may not command <paramref name="c"/> (command view orders), or null: theirs, a faction mate's, or nobody's.</summary>
