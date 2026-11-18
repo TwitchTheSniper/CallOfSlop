@@ -239,8 +239,19 @@ public static class ExcavatorCheck
         var pourLever = holdLever < 0.5f ? 1f : 0f;
         var bodies0 = w.Bodies.Count;
         var fillOps0 = server.DigOps;
+        Vector3 LowLip()
+        {
+            var lips = new[] { new Vector3(-0.625f, -0.115f, 1.125f), new Vector3(0.625f, -0.115f, 1.125f), new Vector3(-0.625f, 0.875f, -0.125f), new Vector3(0.625f, 0.875f, -0.125f) }.Select(o => ConstructCargo.FromPart(c, scoop, o)).OrderBy(Height).ToArray();
+            return (lips[0] + lips[1]) * 0.5f;
+        }
         Set(2, pourLever);
-        Tick(5);
+        var pourAt = Vector3.Zero; // (where the lip was when the load began to leave, in the excavator's frame: the hauler goes under it)
+        for (var k = 0; k < 50; k++)
+        {
+            Tick(0.1f);
+            if (pourAt == Vector3.Zero && Amount(c, scoop) < dug)
+                pourAt = Local(LowLip());
+        }
         Console.WriteLine($"  bucket opened over open ground: {Pose()}; bucket {What(c, scoop)}, {server.DigOps - fillOps0} fill ops, {w.Bodies.Count - bodies0} new bodies");
         Say(Amount(c, scoop) < dug && server.DigOps > fillOps0, $"the spoil went onto the ground as a heap: {server.DigOps - fillOps0} fill ops, {Amount(c, scoop)} left in the bucket, {w.Bodies.Count - bodies0} bundle(s)");
 
@@ -265,7 +276,7 @@ public static class ExcavatorCheck
         var bed = Enumerable.Range(0, hauler.PartCount).First(i => hauler.DefOf(i).Name == "Tipper Body");
         Tick(2);
         // Under the bucket's mouth: the hauler moved so its bed's middle is under the bucket's middle, and settled (a driver would back it in).
-        var mid = ConstructCargo.FromPart(c, bucketHinge, Vector3.Zero); // (the bucket's pivot: where it pours from moves as it opens, the pivot doesn't)
+        var mid = c.Pos + Vector3.Transform(pourAt, c.Rot); // (where the lip poured the spoil: the arm is in the same pose)
         var shift = mid - ConstructCargo.FromPart(hauler, bed, Vector3.Zero);
         shift -= Vector3.Dot(shift, up) * up;
         hauler.Pos += shift;
@@ -276,14 +287,13 @@ public static class ExcavatorCheck
         var rim = Height(ConstructCargo.FromPart(hauler, bed, new Vector3(0, 0.62f, 0)));
         Console.WriteLine($"  hauler's bed rim {rim:0.00} m up; bucket's edge {Height(Edge()):0.00} m; bed {What(hauler, bed)}");
         bodies0 = w.Bodies.Count;
+        Console.WriteLine($"    (aimed {V(mid)}, bed now {V(ConstructCargo.FromPart(hauler, bed, Vector3.Zero))}, pour point local {V(pourAt)})");
         Set(2, pourLever);
         for (var k = 0; k < 10; k++)
         {
             Tick(0.5f);
-            var lips = new[] { new Vector3(-0.625f, -0.115f, 1.125f), new Vector3(0.625f, -0.115f, 1.125f), new Vector3(-0.625f, 0.875f, -0.125f), new Vector3(0.625f, 0.875f, -0.125f) }.Select(o => ConstructCargo.FromPart(c, scoop, o)).OrderBy(Height).ToArray();
-            var lip = (lips[0] + lips[1]) * 0.5f;
-            var inBed = Vector3.Transform(lip - ConstructCargo.FromPart(hauler, bed, Vector3.Zero), Quaternion.Conjugate(hauler.Rot));
-            Console.WriteLine($"    (pour {k}: lowest lip at {V(inBed)} in the bed's frame (it is 2.1 x 2.5 m), {Height(lip):0.00} m up; bucket {What(c, scoop)}, scoop blocked {w.StoreOf(c, scoop)?.Blocked}, bed {What(hauler, bed)})");
+            if (k % 2 == 0)
+                Console.WriteLine($"    (pour {k}: lip {V(LowLip())}, bed {V(ConstructCargo.FromPart(hauler, bed, Vector3.Zero))}, bucket {What(c, scoop)})");
         }
         var poured = w.StoreOf(hauler, bed) is { } hs && hs.Material == ore ? hs.Amount : 0;
         Console.WriteLine($"  bucket opened over the bed: {Pose()}; bucket {What(c, scoop)}, bed {What(hauler, bed)}, {w.Bodies.Count - bodies0} new bodies");
