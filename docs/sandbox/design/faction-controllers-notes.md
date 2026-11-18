@@ -202,3 +202,109 @@ captains, combat or civilian.
   phase 1's bands and the Faction window; they fit the controller phase better).
 - An order's body kept through a save; admirals coordinating across groups (only intel names them);
   reports read by a controller (the ring fills and is counted; phase 3 reads it); players as admirals (phase 6).
+
+## Phase 3: the controller in open worlds (built 2026-11-18, branch `claude/faction-controller`)
+
+Built to section 3, phase 3's row, the user's answers (5: powers can be wiped out; 6: real production; 7: fog; 8: 1,000 bodies; 9: allies help)
+and Karl's (2: the wider scale and more pacts; 4: existing ships as placeholders). Phase 2's leftovers folded in: the wider relations scale and the
+new pacts (they need a power's stock, which this phase brings), and the controllers read the groups' report rings.
+
+### What a player sees
+
+- In a survival world, the powers act round the players. Each power with a plan lays its places on the open world (Traders a home and a second
+  place facing it across the player, so their road passes by; Raiders a camp; the Militia a post: 1.2 to 2.2 km out, on ground, another bearing
+  and nearer when a map's edge is in the way), and fields ships there, out of everyone's sight (600 m), bought at their real bill.
+- **Convoys.** Every few minutes the Traders send a box truck with two technicals as escorts, under an admiral, from home to their other place
+  (load, deliver: their stock earns the cargo), and back; at home each ship docks out of sight (600 m: 400 m) into the hangar, its hull kept, and
+  is fielded again (its repair paid) next time.
+- **Raids.** A power at war with the convoy's (Raiders with Traders) that knows of it (near one of its places, or seen by one of its crews: fog)
+  sends raiders to catch it; its captains fight on sight and the admiral focuses them. A cargo ship lost to the raid is loot (half its value) and a
+  `raidConvoy` event; then they go home with it, or when their admiral pulls back for long, or after 12 minutes.
+- **Calls for help.** A convoy in a fight calls: its allies (alliance, vassalage) must answer or be thought less of (`refuseCall`), and a power
+  neutral or better to the caller that fights its enemy answers when loyal enough (0.4): the Militia sends warships to escort the convoy (or hold where
+  it called from), comes home when 40 s pass with no enemy, and gains `answerCall` and `escortConvoy` with the caller.
+- **Places lost.** An enemy group sitting 300 m from a place with none of the power's ships near for 3 minutes takes it (news); its income goes.
+  Its ships standing there with no enemy for as long take it back.
+- **Gone for good** (answer 5): a power with no ship (out, building or docked), no place it holds and less stock than its cheapest ship is gone
+  (news; the Faction window greys it "(gone)"; it thinks and signs nothing more).
+- **The wider scale** (Karl's 2): a relation at -100 is a **blood feud** ("blood enemies", "BLOOD" in the grid): a ship destroyed, a capture or a
+  raid against a power already at the floor (-99) whose pride is 0.4 or more; it never moves again (no decay, no release, no ceasefire, no tribute).
+  At 90 and over, **kindred** ("wants to merge", "kin"); kindred both ways for 30 minutes, the weaker power joins the stronger: its ships change
+  sides, its stock goes over, it is gone ("X joins Y").
+- **New pacts:** trade agreement (both neutral or better, one greedy enough (0.5), both with an economy; each side earns 20 a minute; grows from
+  non-aggression, and into an alliance), tribute (a much weaker power (under 0.6 of the other's might) at war, beaten past its pride line and not
+  proud (under 0.6), pays a quarter of its income for peace, no end while paid; five minutes unpaid and it lapses, -20), vassalage (a tribute held an
+  hour with the payer neutral or better: it pays, and fights its lord's enemies as an ally). The window names who pays whom.
+
+### Where
+
+| What | Where |
+| --- | --- |
+| The controllers: books, places, ships (hangar, building, out), missions (Convoy, Raid, Defend, Patrol, strays home), calls, merging, the section's bytes | `Source/Crew/CrewControllers.cs` (`PowerControllers`, `IPowerHost`) |
+| Numbers and per-kind plans; a ship's bill from its blueprint's parts' Assembling recipes | `Crew/Controllers.json` (`call-of-slop-npc-controllers/1`), `Source/Crew/CrewControllerRules.cs`; a power file's `"plan"` overrides its kind's key by key |
+| Bands (Kindred), blood feuds, the new events and pacts, `Gone`, `Might`, `Merge`, `Tell` | `Source/Crew/CrewRelations.cs`, `Crew/Relations.json` |
+| The game's side: ships set down by the spawner (`RequestBlueprint(..., power)`, crewed by that power), docking, news, saves, on/off | `Source/Game/GameCrewPowers.cs`; `--powers on|off` (`Game.PowersForce`; default: survival worlds only) |
+| Window | `UI/UiFactions.cs`: BLOOD/kin words, trade, tribute and vassalage lines, gone powers greyed |
+| Tools | `--crew-check --crew-fleet powers [--seconds S]`, `--crew-fleet politics` (`Source/Crew/CrewPowersCheck.cs`); window verb `crewpowers [near]` |
+
+A plan (in `Crew/Controllers.json` "kinds", or a power file's "plan"):
+
+```json
+"Traders": { "start": 4000, "income": 30, "ships": 8, "groups": 3, "places": 2,
+             "fleet": { "cargo": ["IT Box Truck 1"], "escort": ["IT Technical 2"] },
+             "missions": { "convoy": { "cargo": 1, "escorts": 2 } },
+             "placeList": [ { "name": "Rime depot", "world": "Glacier", "at": [100, 0, -400] } ] }
+```
+
+Roles are cargo, escort, raider and warship; missions convoy, raid, defend and patrol. A kind with no plan has no economy (fields and trades
+nothing). Bills today: IT Box Truck 1 516 units (109 parts), IT Technical 2 403, Bandit Buggy 1 373, Bandit Technical 1 371, British
+Technical 2 393, British Gun Wagon 1 479.
+
+### Saves and network
+
+- Saves: a `CTRL` section (`WorldSaveWriter.ControllersTag`, version 1, after POWR): per power by name, its books, places, ships (by blueprint
+  name; a ship out is a record that takes up the first crewed body of its power again, since body ids change), missions (group by slot and
+  number) and the next convoy. A world from before has none: every power starts from its plan. No new save file. Fallen powers are re-marked in
+  the relations on load.
+- Protocol 352: `Msg.Factions` ends with u16 powers gone; pact kinds 4 to 6; -100 means a blood feud. Stocks, missions and ships are never sent.
+
+### Tried by hand (2026-11-18, the 2-core box shared with other builders)
+
+- `--crew-fleet powers --seconds 300` (a person at the middle, the file's numbers with waits and distances shortened): convoy formed with two
+  escorts and delivered; raid sent, engaged the convoy (looted in two runs of four: the convoy outruns it as often as not); call for help, the Militia
+  answered and went; books equal stock at every tick, never below 0; 7 to 14 bodies set down, 3 to 7 docked; the section read back byte for byte.
+  Thinks past the first minute: median 4 to 8 us, 99th 38 to 47 us, worst 0.5 ms (once 5 ms: a group formed); 23 us a tick on average with
+  seven powers thinking each second in the tool (3.9 to 14 us a tick in the game, at its five seconds); 88 bytes in all in thinks that said nothing.
+- `--crew-fleet politics`: trade from non-aggression, a blood feud that nothing moves, tribute then vassalage, a merge, a save round trip: all OK.
+- Window runs (Glacier, survival, host and a joined client under xvfb, `crewpowers near`): WINDOW_RESULT
+- Proving Ground is 384 m square: places shrink to its middle and nothing can be set down out of sight, so the controllers are for big worlds.
+
+### Not verified
+
+- A cargo ship's loot through a real raid in a running game (the tool's crews target by a stand-in for the game's fight rule); docking and the
+  hangar in a game with a person near home; merging, tribute and vassalage between powers' ships in play (the engine only); a place lost and taken
+  back in a game; a CTRL section through the real save file and a load (the bytes round trip in the tool and in `crewpowers`); a fallen power's
+  greyed row (no picture).
+
+### Questions (defaults taken; the user's or Karl's)
+
+1. **Real production (answer 6).** Ships are bought from a stock at their blueprint's real bill (every part's recipe) and take its build time, at a
+   power's home; no factory builds them yet. The factory generator (its prerequisite) is still being built and has no shipyard function. Default:
+   keep the bill-from-stock until the generator can make a yard, then a power's homes become generated factory sites whose output feeds the hangar
+   (what nobody sees estimated on the ledger, as linked logistics' closed worlds). Agree?
+2. **On by default in survival.** Default: yes, survival worlds only (creative never; `--powers` overrides). A host setting in the lobby? Default: later.
+3. **Places.** With no data and no outposts (phase 4), a power lays its places round the first person on each open world (1.2-2.2 km). Default:
+   keep until phase 4's key sites; Karl's world sites replace them.
+4. **Who may answer a call.** Default: allies always; neutral-or-better powers fighting the same enemy at loyalty 0.4 and up.
+5. **Blood feuds with players.** Not built (only between powers); default: the same rule when phase 5 brings pacts with players.
+6. **A fallen power's row** is kept, greyed, and never refilled; who takes a free row (an independent captain "making a name") is open.
+
+### Left (later phases, or follow-ups)
+
+- **The 1,000-body target** is phase 4's LOD (phase 2's measures stand: the world step of awake bodies is the limit). Today the world caps the
+  controllers' bodies at 24 (`world.maxBodies`), spawning out of sight only.
+- Space ships: the plans name ground vehicles; a power's space fleet waits for Karl's ship roles (the plans take any blueprint by role).
+- Allies helping players (answer 9) is phase 1's crew rule (a power friendly to a person joins their fights it sees); powers answering a
+  player's call and pacts with players are phase 5.
+- Fog for players (answer 7) is the command view's FACTIONS layer (phase 4); the controllers' own knowledge is fogged already.
+- Missions don't yet weigh their risk by the enemy's known strength beyond a raid's size check; abstract groups, presence and Take are phase 4.
