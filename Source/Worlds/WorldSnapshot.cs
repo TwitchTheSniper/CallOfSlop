@@ -93,6 +93,7 @@ public sealed class WorldSnapshot
     public string SpaceSystem = "";
     public OpeningSave? Opening; // the survival opening's colony and crash site (GameSandboxOpening.cs), or null
     public byte[]? CrewFactions; // how each NPC faction kind sees each player faction (Game/GameCrewFactions.cs; in the Crew section), null: none met
+    public byte[]? Fleet; // the NPC powers' groups and admirals (CrewFleet.SaveBytes; the FLET section)
     public byte[]? Powers; // the NPC powers' relations, pacts and news (PowerRelations.SaveBytes; the POWR section)
     public byte[]? LinkLedger; // the host's link ledger (LinkLedger.SaveBytes; the LINK section), the main world's only
     public string Start = ""; // the story start the world was made with (GameStoryStart.cs; "": the default)

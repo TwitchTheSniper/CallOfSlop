@@ -8,10 +8,11 @@ namespace CallOfSlop;
 public sealed partial class Game
 {
     private string _startAsked = ""; // the host's choice (Settings.StoryStart), or a save's
+    private bool _startLegacy; // a loaded world saved without a start (one from before starts): StoryStarts.Legacy
     private StoryStart? _start; // resolved on this map once asked
 
-    /// <summary>The start this world plays: the one asked for on its own planetoid, else the any-map one or the default.</summary>
-    public StoryStart PlayedStart => _start ??= StoryStarts.For(_startAsked, World.Map.Name);
+    /// <summary>The start this world plays: the one asked for on its own planetoid, else the any-map one or the default; a loaded world saved without one, Legacy.</summary>
+    public StoryStart PlayedStart => _start ??= _startLegacy ? StoryStarts.Legacy : StoryStarts.For(_startAsked, World.Map.Name);
 
     /// <summary>The start's opening (server). Clients keep the default's, which only gives the skip hint.</summary>
     private OpeningScript OpScript => PlayedStart.Script;
@@ -20,6 +21,7 @@ public sealed partial class Game
     public void SetStoryStart(string id)
     {
         _startAsked = id ?? "";
+        _startLegacy = false;
         _start = null;
     }
 
@@ -27,6 +29,7 @@ public sealed partial class Game
     private void StartLoad(string id)
     {
         SetStoryStart(id);
+        _startLegacy = id.Length == 0; // (the save's Start section, read after, sets it back with the id)
         if (id.Length > 0)
             Log($"[start] the world was made with the {id} start");
     }

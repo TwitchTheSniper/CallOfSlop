@@ -210,6 +210,7 @@ public sealed partial class Game
         s.Opening = OpeningCapture(); // (GameSandboxOpening.cs)
         s.Start = StartCapture(); // (GameStoryStart.cs)
         s.CrewFactions = CrewFactionBytes(); // (the NPC powers' standings with player factions: GameCrewFactions.cs)
+        s.Fleet = IsServer ? Crew.Fleet.SaveBytes() : null; // (groups and admirals: Crew/CrewFleet.cs)
         s.Powers = PowersBytes(); // (the powers' relations among themselves, pacts and news: GameCrewFactions.cs)
         s.LinkLedger = Keep == null && stashFolder == null && (LinkLedger.Ends.Count > 0 || LinkLedger.Lines.Count > 0) ? LinkLedger.SaveBytes() : null; // (the host's main world keeps the ledger: linked-logistics.md section 8)
         s.OpCount = 0;
@@ -465,7 +466,7 @@ public sealed partial class Game
         Constructs.Resources = World.Map.Resources;
         var r = new SaveReader(body) { Shift = WorldShift(body) };
         ushort nextTag = 1;
-        StartLoad(""); // (a world from before starts plays the default; its Start section says otherwise: GameStoryStart.cs)
+        StartLoad(""); // (a world from before starts plays StoryStarts.Legacy, no opening; its Start section says otherwise: GameStoryStart.cs)
         while (r.Has(8))
         {
             var tag = r.U32();
@@ -601,6 +602,9 @@ public sealed partial class Game
                 break;
             case WorldSaveWriter.CrewTag:
                 WorldReadCrew(r, ws); // (credits and NPC standings: GameCrewFactions.cs)
+                break;
+            case WorldSaveWriter.FleetTag:
+                Crew.Fleet.Load(Crew, r.Bytes(r.I32())); // (groups and admirals: their ships rejoin from their crew blocks)
                 break;
             case WorldSaveWriter.PowersTag:
                 WorldReadPowers(r); // (the NPC powers' relations, pacts and news: GameCrewFactions.cs)

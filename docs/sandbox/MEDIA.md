@@ -39,7 +39,7 @@ no text from another player can point anyone's browser anywhere. A playlist link
 
 ## The browser
 
-`tools/browser` is an exe of its own, CefSharp's offscreen build of stock CEF, published to `Browser/` next to the game by `tools/package.ps1` and, once, by `Start.bat`. CI's build and self-test jobs never touch it. The game's process never loads
+`tools/browser` is an exe of its own, CefSharp's offscreen build of stock CEF, published to `Browser/` next to the game by `tools/package.ps1` and by `tools/BuildBrowser.bat` (which `Start.bat` calls; `dotnet build` never builds it, so after a change under `tools/browser`, or in a new worktree, run it). CI's build and self-test jobs never touch it. The game's process never loads
 CEF: `MediaBrowser` starts it for the first page and quits it 20 s after the last. Before that the game has paid one file check. If it fails or crashes, `MediaBrowser.Problem` says why on the panel and the look
 line, it gets three goes a session, and game tracks don't notice. Self-tests and the window tools leave `MediaBrowser.Allowed` off and never start one. CefSharp needs the Visual C++ 2022 runtime; a PC without one gets "the browser closed" on the panel, and only links are affected.
 
@@ -49,6 +49,16 @@ line, it gets three goes a session, and game tracks don't notice. Self-tests and
   game allocates nothing. `VideoFeeds` copies at most one frame a render, and only for a page a panel asked for, so a screen behind you or out of sight costs no picture.
 - **The page.** YouTube's official iframe player, from `youtube-nocookie.com`, in a small page the browser serves itself at `https://callofslop.invalid/player.html`. It needs a real https page: since 2025 the player refuses to run without a Referer
   (error 153), which rules out `file:` and `data:` URLs. Top-level navigation away is refused, popups are closed, no input reaches the page. Nothing is kept on disk. Its picture is shown as it comes, with nothing drawn over it, adverts included, unless this viewer turned on ad blocking.
+
+### When a screen shows no picture
+
+Nothing stays on "Loading" for ever (2026-11-17: every screen did, with nothing in the log). The panel and the look line say why, and `callofslop.log` has a `[media]` line:
+
+- **The helper's version.** It says `ready N` and the game refuses any `N` but `MediaBrowser.HelperVersion` (`tools/browser/Program.cs` `Version`: raise both together whenever a command line changes): "the Browser folder is out of date: run tools\BuildBrowser.bat". An older helper skipped commands whose field count it didn't know, so a Browser folder published before the ad-blocking change took no page at all. It now answers a command it can't take with a `pfail` or a `log` line.
+- **No answer.** A helper that hasn't said `ready` in 30 s is killed: "the browser didn't start in 30 s".
+- **A page's own failure** (`pfail SLOT REASON`, shown under "Can't play this"): the page or YouTube's frame didn't load (CEF's error code), YouTube's player script didn't load, a page couldn't be made, or paints come at a size the block can't take. A Browser Screen's `pok` clears it when a later page loads.
+- **No picture after 20 s** (`MediaDirector.LoadTimeout`): "No picture" and the hop that is missing (browser not ready, the player never loaded, frames drawn but none shown), with one log line a page giving player state, error, frames from the browser and uploads.
+- **The picture texture** (`VideoFeeds.Problem`): its GL error, if the 1280 x 720 x 4 array can't be made. An error left by another draw is cleared first, so it isn't blamed on this one.
 
 ## Hands on a screen
 

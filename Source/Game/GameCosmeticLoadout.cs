@@ -3,7 +3,7 @@ namespace CallOfSlop;
 /// <summary>
 /// The look from the APPEARANCE screen on its way to the server: after the kill streaks in <see cref="Msg.Loadout"/>, sent
 /// on joining and with every Deploy / Respawn; the roster tells everyone (GameCosmetics.cs). (The hat byte and the prestige
-/// and level after it were removed with levelling, protocol 346.)
+/// and level after it were removed with levelling, protocol 348.)
 /// </summary>
 public sealed partial class Game
 {

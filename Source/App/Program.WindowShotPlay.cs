@@ -114,6 +114,15 @@ public static partial class Program
                         Console.WriteLine("[windowshot] crewprisoner: no prisoner in this client's rosters");
                 }
                 return true;
+            case "crewfleet": // "crewfleet": host: every group, its admiral, ships, orders and strength (faction-controllers.md phase 2)
+                Console.WriteLine($"[windowshot] crewfleet: {(g.IsServer ? g.CrewFleetLines() : $"{g.IntelMarks.Count} intel marks")}");
+                foreach (var body in g.CrewInfo.Keys)
+                    Console.WriteLine($"[windowshot] crewfleet: look line of {body}: {g.CrewLook(body)}"); // (as this peer has it: Msg.CrewSeats)
+                return true;
+            case "crewofficer": // "crewofficer question|ransom": host: this player questions or ransoms the first officer prisoner
+                if (g.IsServer)
+                    Console.WriteLine($"[windowshot] crewofficer: {g.CrewOfficerFirst(me, arg)}");
+                return true;
             case "npcstanding": // "npcstanding": how each NPC faction kind sees this player, as this peer's factions table has it
                 Console.WriteLine($"[windowshot] npcstanding: {g.CrewStandingLine(me)}");
                 return true;

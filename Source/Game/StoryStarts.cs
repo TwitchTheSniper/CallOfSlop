@@ -160,14 +160,14 @@ public static class StoryStarts
     public static readonly StoryStart Legacy = new() { Id = "", Name = "Old world", Map = "any" };
 
     /// <summary>
-    /// The start a world on <paramref name="map"/> plays when <paramref name="id"/> was asked for: that one on its own
+    /// The start a fresh world on <paramref name="map"/> plays when <paramref name="id"/> was asked for: that one on its own
     /// planetoid (or any map's), else the any-map start (a new world taken to another map, or a world saved with a start
-    /// that is gone: the archived Castaway and the penal colony), else the default. Nothing asked (a world saved before
-    /// starts) plays <see cref="Legacy"/>.
+    /// that is gone: the archived Castaway and the penal colony), else the default. Nothing asked (a tool's or a test's
+    /// world) is the default on its planetoid, else the any-map start. A loaded world saved without a start plays
+    /// <see cref="Legacy"/> instead (Game.StartLoad).
     /// </summary>
     public static StoryStart For(string id, string map) =>
-        id.Length == 0 ? Legacy
-        : Find(id) is not { } s ? Array.Find(All, a => a.AnyMap) ?? Default
+        Find(id.Length == 0 ? Default.Id : id) is not { } s ? Array.Find(All, a => a.AnyMap) ?? Default
         : s.AnyMap || s.Map.Equals(map, StringComparison.OrdinalIgnoreCase) ? s
         : Array.Find(All, a => a.AnyMap) ?? Default;
 

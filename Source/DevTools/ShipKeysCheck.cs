@@ -4,7 +4,7 @@ using CallOfSlop.VehicleKit;
 namespace CallOfSlop;
 
 /// <summary>
-/// <c>--ship-keys-check [BLUEPRINT,...] [--gravity G]</c>: each shipped ship flown on Ship keys (or the named blueprints) is held
+/// <c>--ship-keys-check [BLUEPRINT,...] [--gravity G] [--coast [--trace]]</c>: each shipped ship flown on Ship keys (or the named blueprints) is held
 /// still in a flat world (zero gravity by default), and each key is held in turn: W, S, A, D, Shift, Ctrl, Q, E. For each it
 /// prints where the ship went and how it turned (against holding no key), the thrusters' mean push and which fired, and FAIL when
 /// it didn't go the way the key asks (Karl, 2026-11-18: the Zero Day's W lit the wrong jets). <c>--jets</c> lists every thruster.
@@ -125,6 +125,8 @@ public static class ShipKeysCheck
                         bad++;
                     Console.WriteLine($"  {(ok ? "ok  " : "FAIL")} {name,-10} nose up {turned.X,5:0.0} right side down {turned.Y,5:0.0} nose right {turned.Z,5:0.0} deg   {firing}");
                 }
+            if (args.Any(a => a.Equals("--coast", StringComparison.OrdinalIgnoreCase)))
+                Coast(w, place, c, sp, seat, home, rot);
         }
         Console.WriteLine(bad == 0 ? "every key pushes its way" : $"{bad} key(s) push the wrong way");
         return bad;
@@ -155,6 +157,63 @@ public static class ShipKeysCheck
         return (new Vector3(-moved.Z, moved.Y, moved.X), new Vector3(Deg(nose.Y), Deg(-right.Y), Deg(nose.X)), f, t, firing);
     }
 
+    /// <summary><c>--coast</c>: dampeners off, let go level, nose 60 degrees up, then W: each thruster group's mean level, the push and how fast it climbs (Karl, 2026-11-18: flames with dampeners off).</summary>
+    private static bool Trace => Environment.GetCommandLineArgs().Any(a => a == "--trace");
+
+    private static void Coast(ConstructWorld w, VehicleDriveCheck.CheckPlace place, Construct c, CPart sp, int seat, Vector3 home, Quaternion rot)
+    {
+        var err = ConstructFlight.ToggleDampeners(w, c);
+        Console.WriteLine($"  dampeners off: {(err ?? (ConstructFlight.DampenersOff(c) ? "yes" : "NO"))}");
+        foreach (var (name, pitch, keys) in new[] { ("level, let go", 0f, (ushort)0), ("nose 60 up, let go", 60f, (ushort)0), ("level, W", 0f, (ushort)Buttons.Forward), ("level, Ctrl", 0f, (ushort)Buttons.Crouch) })
+        {
+            var turn = Quaternion.Normalize(rot * Quaternion.CreateFromAxisAngle(Vector3.UnitX, pitch * MathF.PI / 180));
+            c.Pos = c.PrevPos = home;
+            c.Rot = c.PrevRot = turn;
+            c.Vel = c.AngVel = Vector3.Zero;
+            c.Parts[c.Stabs[0].Part].State |= 1;
+            var nose = Vector3.Transform(Vector3.Transform(-Vector3.UnitZ, Rot24.Quat(sp.Rot)), c.Rot);
+            c.Parts[seat].AimYaw = MathF.Atan2(nose.X, -nose.Z);
+            c.Parts[seat].AimPitch = MathF.Asin(Math.Clamp(nose.Y, -1, 1));
+            var levels = new SortedDictionary<string, float>();
+            var show = 0f;
+            const int ticks = 120;
+            var q = new SelfTest.DriveWorld();
+            for (var t = 0; t < ticks; t++)
+            {
+                using (place.In())
+                {
+                    c.Parts[c.DriverSeat].Keys = (ushort)(keys | CPart.Occupied);
+                    ConstructEdits.DriveInput(c, (Buttons)(keys & 0xff), World.TickDt);
+                    w.Step(q, World.TickDt);
+                }
+                show += c.ThrustShow / ticks;
+                if (Trace && t % 15 == 14)
+                {
+                    var inv = Quaternion.Conjugate(c.Rot);
+                    var bv = Vector3.Transform(c.Vel, inv);
+                    var bn = Vector3.Transform(-Vector3.UnitZ, c.Rot);
+                    var lv = new SortedDictionary<string, float>();
+                    for (var k = 0; k < c.ThrusterCount; k++)
+                    {
+                        ref var th = ref c.Thrusters[k];
+                        var dir = MathF.Abs(th.Dir.Y) > 0.7f ? th.Dir.Y > 0 ? "up" : "down" : MathF.Abs(th.Dir.X) > 0.7f ? th.Dir.X > 0 ? "right" : "left" : th.Dir.Z < 0 ? "fwd" : "back";
+                        lv[dir] = MathF.Max(lv.GetValueOrDefault(dir), th.Level);
+                    }
+                    Console.WriteLine($"    t {(t + 1) / 60f:0.00}: body vel fwd {-bv.Z:0.0} up {bv.Y:0.0} right {bv.X:0.0}, nose {MathF.Asin(Math.Clamp(bn.Y, -1, 1)) * 180 / MathF.PI:0.0} deg; {string.Join(" ", lv.Select(kv => $"{kv.Key} {kv.Value * 100:0}"))}");
+                }
+                for (var k = 0; k < c.ThrusterCount; k++)
+                {
+                    ref var th = ref c.Thrusters[k];
+                    var dir = MathF.Abs(th.Dir.Y) > 0.7f ? th.Dir.Y > 0 ? "up" : "down" : MathF.Abs(th.Dir.X) > 0.7f ? th.Dir.X > 0 ? "right" : "left" : th.Dir.Z < 0 ? "fwd" : "back";
+                    var key = $"{c.Parts[th.Part].D.Name} pushing {dir}";
+                    levels[key] = MathF.Max(levels.GetValueOrDefault(key), th.Level);
+                }
+            }
+            Console.WriteLine($"  coast {name}: speed {c.Vel.Length():0.0} m/s, climb {c.Vel.Y:0.0} m/s, thrust shown {show * 100:0}%; most each group: {string.Join(", ", levels.Select(kv => $"{kv.Key} {kv.Value * 100:0}%"))}");
+        }
+        ConstructFlight.ToggleDampeners(w, c);
+    }
+
     private static string Show(Vector3 v) => $"({v.X:0.##}, {v.Y:0.##}, {v.Z:0.##})";
 
     /// <summary>Holds the keys for some ticks; the thrusters' push and twist at the end, in the body's frame, and which fire.</summary>
@@ -162,7 +221,8 @@ public static class ShipKeysCheck
     {
         var q = new SelfTest.DriveWorld();
         Vector3 f = Vector3.Zero, tq = Vector3.Zero;
-        var firing = new Dictionary<string, int>();
+        var firing = new Dictionary<string, float>();
+        var count = new Dictionary<string, int>();
         for (var t = 0; t < ticks; t++)
         {
             using (place.In())
@@ -175,18 +235,20 @@ public static class ShipKeysCheck
             for (var k = 0; k < c.ThrusterCount; k++)
             {
                 ref var th = ref c.Thrusters[k];
+                ref var p = ref c.Parts[th.Part];
+                var dir0 = MathF.Abs(th.Dir.Y) > 0.7f ? th.Dir.Y > 0 ? "up" : "down" : MathF.Abs(th.Dir.X) > 0.7f ? th.Dir.X > 0 ? "right" : "left" : th.Dir.Z < 0 ? "fwd" : "back";
+                var key0 = $"{p.D.Name} {dir0}";
+                firing[key0] = firing.GetValueOrDefault(key0) + th.Level / ticks; // (the mean over the hold, of each jet of the group)
+                if (t == 0)
+                    count[key0] = count.GetValueOrDefault(key0) + 1;
                 if (th.Level < 0.05f)
                     continue;
-                ref var p = ref c.Parts[th.Part];
                 var push = th.Dir * (p.D.ThrustForce * th.Level / ticks); // (the segment's frame: these ships' thrusters hang on the body)
                 f += push;
                 tq += Vector3.Cross(th.At - c.Com, push);
-                var dir = MathF.Abs(th.Dir.Y) > 0.7f ? th.Dir.Y > 0 ? "up" : "down" : MathF.Abs(th.Dir.X) > 0.7f ? th.Dir.X > 0 ? "right" : "left" : th.Dir.Z < 0 ? "fwd" : "back";
-                var key = $"{p.D.Name} {dir}";
-                firing[key] = Math.Max(firing.GetValueOrDefault(key), 1);
             }
         }
         // Body axes: forward -z, up +y, right +x; pitch about +x (nose up), roll about -z (right side down), yaw about -y (nose right).
-        return (new Vector3(-f.Z, f.Y, f.X), new Vector3(tq.X, -tq.Z, -tq.Y), string.Join(", ", firing.Keys));
+        return (new Vector3(-f.Z, f.Y, f.X), new Vector3(tq.X, -tq.Z, -tq.Y), string.Join(", ", firing.Where(kv => kv.Value / count[kv.Key] >= 0.02f).OrderByDescending(kv => kv.Value / count[kv.Key]).Select(kv => $"{kv.Key} {kv.Value / count[kv.Key] * 100:0}%")));
     }
 }

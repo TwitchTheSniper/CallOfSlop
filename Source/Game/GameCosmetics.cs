@@ -7,7 +7,7 @@ public readonly record struct PlayerCosmetics(PlayerLook Look = default, byte Un
 /// Looks on the network. Cosmetic only: nothing here touches gameplay. The roster carries each player's look, uniform and
 /// spacewalk gear (<see cref="PlayerLook.WireBytes"/> + 2 bytes a player), so a joiner sees everyone's APPEARANCE picks from
 /// the roster it gets on joining. (Prestige, the account level and the prestige hats that went before them were removed
-/// with levelling, protocol 346.)
+/// with levelling, protocol 348.)
 /// </summary>
 public sealed partial class Game
 {

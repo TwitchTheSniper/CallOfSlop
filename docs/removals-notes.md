@@ -14,7 +14,7 @@ every path is the coordinator's; this file is what was done and what changed for
   keeps only the map, the start's ship, the crash site and who has been through it; an older world's tail (barracks,
   depot, data centres, quarry, buildings) is left unread. The `TUTR`, `DEPO` and `QUAR` sections are no longer written
   and are skipped like any unknown section (their tag constants stay so nobody reuses them).
-- **Wire (protocol 346).** `Msg.Tutorial`, `ColonyAlarm`, `Depot`, `Quarry`, `Objective`, `Labour`, `LabourHands`,
+- **Wire (protocol 348).** `Msg.Tutorial`, `ColonyAlarm`, `Depot`, `Quarry`, `Objective`, `Labour`, `LabourHands`,
   `Breakout`, `Errand`, `LabourDay` and `LabourIncident` keep their slots as `Removed*`, never sent. `CActKind.QuarrySkip`
   and `ErrandDrop` keep their bytes and do nothing. `RespawnSpot.Colony`, `Sfx.ColonyAlarm` and the unused
   `OpeningStage` beats keep their bytes. The colony's lore and building parts went, so part ids move.
@@ -76,7 +76,7 @@ every path is the coordinator's; this file is what was done and what changed for
   order; perks list starters first.
 - **Hats deleted** (the user's decision): Cosmetics/hats.json, `HatId`, the catalogue, `Player.Hat`/`Prestige`/`Level`,
   the APPEARANCE screen's hat row, the hat icons. HatDef/HatRender stay for the uniforms' caps.
-- **Wire (protocol 346, one history line with the colony's).** The roster entry loses prestige, level and hat (3 bytes);
+- **Wire (protocol 348, one history line with the colony's).** The roster entry loses prestige, level and hat (3 bytes);
   the Loadout message loses its hat byte and the prestige and level after it; the Hello keeps two zero bytes where
   prestige and level were, so an older build's version is still read where it sends it and it gets a clean refusal.
 - **Saves.** progress.txt left `SavePaths.SaveFiles`, tools/package.ps1, tools/MIGRATING.md and .gitignore; an old one stays

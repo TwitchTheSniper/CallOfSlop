@@ -1435,6 +1435,8 @@ public sealed partial class Game : IDisposable
         p.LastCombatTime = -100;
         if (p.Bot != null)
             PickBotLoadout(p);
+        else if (SandboxOn && !SandboxInfiniteParts)
+            SurvivalStockLoadout(p); // (a person's first spawn too, before any loadout packet: the host's comes from the menu's loadout)
         p.Primary = p.WantPrimary;
         p.Secondary = p.WantSecondary;
         p.PrimaryKit = p.WantPrimaryKit;
@@ -1467,11 +1469,25 @@ public sealed partial class Game : IDisposable
     }
 
     /// <summary>A player asked for a new loadout: apply now if out of combat, otherwise on next spawn.</summary>
+    /// <summary>
+    /// Server, Survival: a person's stock loadout is the default guns, plain, with no grenade or gear (what a fresh player had
+    /// while levels gated the loadout, until 2026-11-17), whatever their loadout.txt holds: what else they carry comes from
+    /// the world (the start kit, a gun built at a Gun Workbench).
+    /// </summary>
+    private static void SurvivalStockLoadout(Player p)
+    {
+        p.WantPrimary = Weapons.DefaultPrimary.Id;
+        p.WantSecondary = Weapons.DefaultSecondary.Id;
+        p.WantPrimaryKit = Attachments.DefaultKit(Weapons.DefaultPrimary);
+        p.WantSecondaryKit = Attachments.DefaultKit(Weapons.DefaultSecondary);
+        p.WantGrenade = p.WantEquipment = ThrowableKind.None;
+    }
+
     private void ServerRequestLoadout(Player p, byte primary, byte secondary, ThrowableKind grenade, ThrowableKind equipment, uint primaryKit, uint secondaryKit,
         PerkSet perks, double now)
     {
         p.WantPerks = perks.Sanitized();
-        // Unlocks are tracked on each player's own PC, so the server just checks the slots make sense.
+        // The server checks the slots make sense (and Survival keeps the stock guns, below).
         p.WantGrenade = Throwables.Get(grenade) is { IsEquipment: false } g ? g.Kind : ThrowableKind.None;
         p.WantEquipment = Throwables.Get(equipment) is { IsEquipment: true } e ? e.Kind : ThrowableKind.None;
         var pw = Weapons.Get(primary);
@@ -1480,10 +1496,14 @@ public sealed partial class Game : IDisposable
             pw = Weapons.DefaultPrimary;
         if (sw.Slot != Slot.Secondary)
             sw = Weapons.DefaultSecondary;
+        if (SandboxOn && !SandboxInfiniteParts && p.Bot == null)
+            (pw, sw, primaryKit, secondaryKit) = (Weapons.DefaultPrimary, Weapons.DefaultSecondary, Attachments.DefaultKit(Weapons.DefaultPrimary), Attachments.DefaultKit(Weapons.DefaultSecondary)); // (Survival: SurvivalStockLoadout)
         p.WantPrimary = pw.Id;
         p.WantSecondary = sw.Id;
         p.WantPrimaryKit = Attachments.Sanitize(pw, primaryKit);
         p.WantSecondaryKit = Attachments.Sanitize(sw, secondaryKit);
+        if (SandboxOn && !SandboxInfiniteParts && p.Bot == null)
+            p.WantGrenade = p.WantEquipment = ThrowableKind.None;
         (p.MpPrimary, p.MpSecondary, p.MpPrimaryKit, p.MpSecondaryKit) = (p.WantPrimary, p.WantSecondary, p.WantPrimaryKit, p.WantSecondaryKit); // kept through a Zombies run
 
         // Loadouts change on (re)spawn. The only exception is the pre-match countdown, where you're
@@ -2279,7 +2299,7 @@ public sealed partial class Game : IDisposable
                 _w.Begin(Msg.Hello).U8((byte)nameBytes.Length);
                 foreach (var c in nameBytes)
                     _w.U8(c);
-                _w.U8(0).U8(0); // (two bytes that held prestige and level until protocol 346: kept, so the version below stays where every build reads it)
+                _w.U8(0).U8(0); // (two bytes that held prestige and level until protocol 348: kept, so the version below stays where every build reads it)
                 _w.U16(ServerInfo.ProtocolVersion); // protocol 74: the host refuses a different build (GameHostBye.cs)
                 _w.U64(LocalWorldKey); // protocol 128: who this PC is to a saved world (GameWorldSave.cs)
                 Net.SendToServer(_w.Span, PacketReliability.ReliableOrdered);
@@ -2302,7 +2322,7 @@ public sealed partial class Game : IDisposable
                     name = Settings.Clean($"{name[..Math.Min(name.Length, 13)]} {p.Id}");
                 p.Name = name;
                 if (r.Has(2))
-                    r.U16(); // (prestige and level until protocol 346: kept as padding, so an older build's version is read where it sends it)
+                    r.U16(); // (prestige and level until protocol 348: kept as padding, so an older build's version is read where it sends it)
                 if (r.Has(2) && VersionProblem(r.U16(), "player") is { } helloProblem) // (builds before protocol 74 don't send it: let them in)
                 {
                     RefuseVersion(sender, p, helloProblem); // GameHostBye.cs
@@ -2401,6 +2421,9 @@ public sealed partial class Game : IDisposable
                 break;
             case (byte)Msg.Credits when !IsServer:
                 ReadCredits(ref r); // this player's credits (GameCrewHire.cs)
+                break;
+            case (byte)Msg.Intel when !IsServer:
+                ReadIntel(ref r); // what a questioned officer gave up (GameCrewFleet.cs)
                 break;
             case (byte)Msg.PowerNews when !IsServer:
                 ReadPowerNews(ref r); // the NPC powers' news lines (GameCrewFactions.cs)

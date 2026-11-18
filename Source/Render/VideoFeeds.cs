@@ -23,6 +23,9 @@ public static unsafe class VideoFeeds
     public static long Uploads; // frames copied since the start
     public static double LastMs; // the last copy's CPU time
 
+    /// <summary>Why no page's picture can be shown on this PC, or null: the panels say it instead of "Loading".</summary>
+    public static string? Problem { get; private set; }
+
     /// <summary>A panel wants page <paramref name="page"/>'s picture. Its layer plus one, or 0: nothing to show yet.</summary>
     public static int Request(int page)
     {
@@ -74,6 +77,10 @@ public static unsafe class VideoFeeds
 
     private static bool Init()
     {
+        // (an error left by some other draw would be blamed on this texture, and every screen would stay on "Loading": clear the flag first)
+        for (var k = 0; k < 16 && Native.glGetError() != GL_NO_ERROR; k++)
+        {
+        }
         GlTexture t = default;
         Native.glGenTextures(1, &t);
         _tex = t;
@@ -85,10 +92,11 @@ public static unsafe class VideoFeeds
         Native.glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, (int)GL_CLAMP_TO_EDGE);
         Native.glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, (int)GL_CLAMP_TO_EDGE);
         Native.glActiveTexture(GL_TEXTURE0);
-        if (Native.glGetError() != GL_NO_ERROR)
+        if (Native.glGetError() is var error && error != GL_NO_ERROR)
         {
             _broken = true;
-            Console.WriteLine("[media] pictures off: no room for the texture");
+            Problem = $"no room for the pictures (GL error 0x{(uint)error:x})";
+            Console.WriteLine($"[media] pictures off: the {MediaBlock.MaxWidth} x {MediaBlock.MaxHeight} x {MediaDirector.MaxPages} texture failed, GL error 0x{(uint)error:x}");
             return false;
         }
         _ready = true;

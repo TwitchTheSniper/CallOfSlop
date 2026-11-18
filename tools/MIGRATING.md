@@ -17,14 +17,14 @@ Once your saves are there, every future update keeps them automatically. You onl
 | `loadout.txt` | Your loadouts |
 | `settings.txt` | Your settings and keybinds |
 | `workbench.txt` | Your workbench weapon builds |
-
-(`progress.txt`, an older build's level, XP and prestige, is no longer read: levelling, prestige and the prestige hats were removed. It can stay or go.)
 | `ordnance.txt` | Your saved bomb and missile designs (the Ordnance Bench) |
 | `blueprints.txt` | Your workbench blueprint library (newer builds; the first time it opens it copies in the builds from `workbench.txt`) |
 | `audio_mix.json` and the `AudioMixes` folder | Your audio mixer levels and presets |
 | The `ConstructBlueprints` folder | Blueprints you saved at a Blueprint Desk in Sandbox |
-| `appearance.txt` | Your soldier's look and hat (newer builds; older ones kept the hat in `loadout.txt`) |
+| `appearance.txt` | Your soldier's look (newer builds) |
 | The `Worlds` folder | Your saved Sandbox worlds, one folder a world (newer builds) |
+
+(`progress.txt`, an older build's level, XP and prestige, is no longer read: levelling, prestige and the prestige hats were removed. It can stay or go.)
 
 The `Cache` folder in the save folder is not a save: it holds maps the game built itself (`Cache/Maps`, so the next start is quick) and bot route maps it worked out (`Cache/Nav`), for maps it had no ready-made ones for. Don't copy it; it's safe to delete, and the game rebuilds what it needs. The `DevEdits` folder (change packages from the dev prop editor) isn't a save either: attach the packages to reports, and copy them over only if you want to keep them.
 
