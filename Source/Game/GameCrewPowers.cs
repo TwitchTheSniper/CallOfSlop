@@ -22,6 +22,7 @@ public sealed partial class Game : IPowerHost
     private void CrewPowersClear()
     {
         Controllers.Rules = ControllerRules.Current; // (Crew/Controllers.json and every plan's bills read here, at a world's start, never in a tick)
+        Controllers.Territory = TerritoryRules.Current; // (phase 4: Crew/Territory.json, the planets' key sites)
         Controllers.Reset();
         var rel = Relations;
         (rel.Might, rel.Merge) = (null, null); // (trade, tribute, blood feuds and merging only where the controllers run: CrewPowersTick)
@@ -158,6 +159,37 @@ public sealed partial class Game : IPowerHost
     }
 
     bool IPowerHost.Sees(byte power, Vector3 at) => ((IPowerSight)this).Sees(power, at);
+
+    double IPowerHost.SpaceSeconds => Space is { } s ? s.Now.Seconds : -1;
+
+    double IPowerHost.PlanetGap(string a, string b)
+    {
+        if (Space is not { } s)
+            return -1;
+        var sys = s.System;
+        int i = sys.IndexOf(a), j = sys.IndexOf(b);
+        if (i < 0 || j < 0)
+            return -1;
+        var now = s.Now;
+        return (sys.PositionOf(i, now) - sys.PositionOf(j, now)).Length;
+    }
+
+    bool IPowerHost.SiteAt(string planet, Vector2 at, out Vector3 world)
+    {
+        world = default;
+        if (!planet.Equals(World.Map.Name, StringComparison.OrdinalIgnoreCase))
+            return false;
+        if (World.Map.Planetoid is { } pl)
+        {
+            var (lat, lon) = (at.X * MathF.PI / 180, at.Y * MathF.PI / 180);
+            var dir = new Vector3(MathF.Cos(lat) * MathF.Cos(lon), MathF.Sin(lat), MathF.Cos(lat) * MathF.Sin(lon));
+            world = pl.Center + dir * pl.SurfaceRadius(dir, out _);
+            if (((IPowerHost)this).Ground(world + dir * 2, out var ground))
+                world = ground;
+            return true;
+        }
+        return ((IPowerHost)this).Ground(new Vector3(at.X, 0, at.Y), out world);
+    }
 
     /// <summary>A window run's look (<c>crewpowers [near]</c>): near lays every power's places again close round the first person and sends its convoy now; then the books,
     /// ships and missions, and whether the section's bytes read back the same.</summary>

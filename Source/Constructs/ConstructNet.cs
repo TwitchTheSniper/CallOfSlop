@@ -1523,11 +1523,13 @@ public static partial class ConstructNet
     /// <summary>Joiner streaming: bytes of structure a joiner gets a tick at most (about 1 MB/s at 60 Hz).</summary>
     public const int StreamBytesPerTick = 16 * 1024;
 
-    // Distance bands: a body this far from a client (or further) is sent every 1, 2, 4 or 8 pose packets.
-    public const float NearBand = 80f, MidBand = 200f, FarBand = 400f;
+    // Distance bands: a body this far from a client (or further) is sent every 1, 2, 4, 8, 32 or 128 pose packets (the last two for the
+    // thousand faction ships of faction-controllers.md answer 8: past 1.5 km a body is a few pixels and steps on a coarser rate, ConstructFar.cs;
+    // a body that went still there is told by the sleeping bodies' refresh).
+    public const float NearBand = 80f, MidBand = 200f, FarBand = 400f, DistantBand = 1500f, HorizonBand = 4000f;
 
     /// <summary>How many pose ticks apart a body <paramref name="dist"/> metres from a client is sent.</summary>
-    public static int PosePeriod(float dist) => dist < NearBand ? 1 : dist < MidBand ? 2 : dist < FarBand ? 4 : 8;
+    public static int PosePeriod(float dist) => dist < NearBand ? 1 : dist < MidBand ? 2 : dist < FarBand ? 4 : dist < DistantBand ? 8 : dist < HorizonBand ? 32 : 128;
 
     private static readonly List<Construct> _moving = new(256), _due = new(256);
 

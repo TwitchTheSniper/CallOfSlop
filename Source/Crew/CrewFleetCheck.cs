@@ -526,6 +526,17 @@ public static class CrewFleetCheck
         }
         Console.WriteLine($"fleet scale: {asleep} asleep at the end; {idle} undriven, the most moving of them at {idleFast:0.00} (speed + spin)");
         Console.WriteLine($"fleet scale: physics {w.PhysicsMs / ticks:0.00} ms a tick of the world's step; far bodies {farSum / (double)ticks:0} on average, stepped {ConstructFar.SimNear / (double)ticks:0} near and {ConstructFar.SimFar / (double)ticks:0} far a tick (every {ConstructFar.Every} ticks past {ConstructFar.Range:0} m); fastest body {maxSpeed:0.0} m/s, lowest {lowest:0.0} m; the step's parts (links, power, weapons, logic, doors, physics, machines, rest) {string.Join(" ", w.StepMs.Select(x => (x / ticks).ToString("0.00")))} ms; physics' parts (list, bodies, contacts, solver, rest) {string.Join(" ", ConstructPhysics.PartMs.Select(x => (x / ticks).ToString("0.00")))} ms");
+        // The network: one client standing with the person, a big world's poses for 60 pose ticks (the movers near it every time, far ones less often).
+        var pw = new PacketWriter();
+        long poseBytes = 0, poses = 0;
+        var packets = 0;
+        for (uint pt = 1; pt <= 60; pt++)
+        {
+            ConstructNet.PoseMovers(w, pt);
+            poses += ConstructNet.WritePosesFor(pw, w, pt, pt, Vector3.Zero, (int)pt * 4, x => { poseBytes += x.Length; packets++; });
+            ConstructNet.PoseSent();
+        }
+        Console.WriteLine($"fleet scale: the network: {ConstructNet.MoverCount} movers; one client by the person gets {poses / 60.0:0} poses, {poseBytes / 60.0 / 1024:0.0} KB in {packets / 60.0:0.0} packets a pose tick");
         ConstructFar.Every = every0;
         Console.WriteLine($"fleet scale: admirals {fleetUs:0.0} us a tick (worst {crew.Fleet.WorstMs * 1000:0} us, {crew.Fleet.Thinks} thinks in {ticks} ticks, {crew.Fleet.Bytes} bytes); crews {crewMs:0.00} ms a tick (worst {crew.WorstMs:0.00} ms, {crew.Bytes} bytes); " +
                           $"the world's step {worldAvg:0.00} ms a tick (worst {worstWorld:0.0} ms); {driven} driven, {moving} moving; all of it {crewMs + worldAvg:0.00} ms a tick against the 8 ms budget; {bytes} bytes allocated in all");

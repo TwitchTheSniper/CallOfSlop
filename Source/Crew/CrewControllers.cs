@@ -27,6 +27,7 @@ public enum PowerShipState : byte
     Spawning,
     Hangar,
     Out,
+    Far, // phase 4: a record in a far group (Crew/CrewTerritory.cs), no body
 }
 
 public struct PowerShip
@@ -39,6 +40,7 @@ public struct PowerShip
     public uint Uid; // out: its captain's (else a member's) crew uid, kept fresh: after a load it takes up the body whose crew holds that uid
     public long ReadyAt; // building: the tick it is done
     public sbyte Mission; // -1: free
+    public short Far; // phase 4: its far group + 1 (0: none; CrewTerritory.cs)
 }
 
 public struct PowerMission
@@ -91,6 +93,19 @@ public interface IPowerHost
 
     /// <summary>A crew of <paramref name="power"/> sees <paramref name="at"/> (its controller's fog of war: answer 7).</summary>
     bool Sees(byte power, Vector3 at);
+
+    /// <summary>Phase 4: the space clock's seconds (far groups move between planets by it); -1: none (the controllers' own ticks).</summary>
+    double SpaceSeconds => -1;
+
+    /// <summary>Phase 4: metres between two planets now; -1: not known (the territory's transit time).</summary>
+    double PlanetGap(string a, string b) => -1;
+
+    /// <summary>Phase 4: a key site's place on the open world (<paramref name="at"/>: latitude and longitude on a planetoid, else x and z); false: that planet isn't open here.</summary>
+    bool SiteAt(string planet, Vector2 at, out Vector3 world)
+    {
+        world = default;
+        return false;
+    }
 }
 
 /// <summary>
@@ -102,9 +117,9 @@ public interface IPowerHost
 /// (Crew/CrewFleet.cs); it reads their reports. A power left with no ship, no place and no stock for a ship is gone for good (answer 5). Server only;
 /// fixed arrays: nothing allocated in a tick but a news line or a log line.
 /// </summary>
-public sealed class PowerControllers
+public sealed partial class PowerControllers
 {
-    public const int MaxShips = 32, MaxMissions = 8, MaxPlaces = 8, MaxCalls = 16, N = FactionTable.MaxStory;
+    public const int MaxShips = 64, MaxMissions = 8, MaxPlaces = 8, MaxCalls = 16, N = FactionTable.MaxStory;
     private static int T => World.TickRate;
 
     public ControllerRules Rules = ControllerRules.Current;
@@ -129,6 +144,8 @@ public sealed class PowerControllers
         public int PlaceK = -1; // the generated place it lays next (-1: not laying)
         public bool Relink; // after a load: its missions' groups are looked up again once the Fleet section is read
         public byte Heir; // merged into (saved)
+        public bool HadSites; // phase 4: it held a key site once (a power that never had a place or a site can't fall)
+        public long NextTake; // phase 4: when it next weighs a Take
 
         public int Held()
         {
@@ -235,6 +252,7 @@ public sealed class PowerControllers
         Array.Clear(Calls);
         CallTotal = 0;
         News.Clear();
+        TerritoryReset(); // (phase 4: sites to their holders in the data, no far group: CrewTerritory.cs)
     }
 
     public float Cheapest(byte a)
@@ -267,7 +285,10 @@ public sealed class PowerControllers
     {
         Tick++;
         Ticks++;
-        if (!On || Count == 0 || Tick < _thinkAt)
+        if (!On || Count == 0)
+            return;
+        FarStep(crew, w, rel, host); // (a slice of the far groups each tick: CrewTerritory.cs)
+        if (Tick < _thinkAt)
             return;
         var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
         var b0 = GC.GetAllocatedBytesForCurrentThread();
@@ -307,6 +328,7 @@ public sealed class PowerControllers
             Relink(crew, p, a);
         Books(rel, p, a, minutes);
         Part(0);
+        FarThink(crew, w, rel, host, p, a, def, minutes); // (territory: its sites' garrisons and income, Take and Defend groups nobody sees: CrewTerritory.cs)
         if (_peopleN == 0)
             return; // (nobody on this world: phase 4's far layer moves what nobody sees)
         if (p.Started && !string.Equals(p.World, host.WorldKey, StringComparison.Ordinal))
@@ -332,7 +354,7 @@ public sealed class PowerControllers
         Part(6);
         Strays(crew, w, p, a);
         Part(7);
-        if (p.Plan.CanFall && p.ShipCount() == 0 && p.PlaceCount > 0 && p.Held() == 0 && p.Stock < Cheapest(a))
+        if (p.Plan.CanFall && p.ShipCount() == 0 && (p.PlaceCount > 0 || p.HadSites) && p.Held() == 0 && SitesOf(a) == 0 && p.Stock < Cheapest(a))
         {
             p.Fallen = true;
             rel.Fall(a, $"{def.Name} is no more: no ship, no place and nothing left to build with");
@@ -532,7 +554,7 @@ public sealed class PowerControllers
             ref var s = ref p.Ships[i];
             switch (s.State)
             {
-                case PowerShipState.Building when Tick >= s.ReadyAt && home >= 0 && !p.Razed[home]:
+                case PowerShipState.Building when s.Far == 0 && Tick >= s.ReadyAt && home >= 0 && !p.Razed[home]:
                     if (Bodies() >= Rules.MaxBodies || NearestPerson(p.Place[home]) < SpawnFrom)
                         break; // (out of sight only, and within the world's cap)
                     if (!host.Ground(p.Place[home] + new Vector3((i % 4 - 1.5f) * 14, 0, (i / 4 % 4 - 1.5f) * 18), out var at))
@@ -543,7 +565,7 @@ public sealed class PowerControllers
                         s.State = PowerShipState.Building;
                     break;
                 case PowerShipState.Out:
-                    if (s.Body == 0 && _adopts < 2)
+                    if (s.Body == 0 && s.Far == 0 && _adopts < 2)
                     {
                         _adopts++; // (after a load: two a think, each a scan of the crews)
                         Adopt(crew, w, p, a, ref s);
@@ -559,7 +581,7 @@ public sealed class PowerControllers
                         break;
                     }
                     s.Uid = UidOf(crew, cs);
-                    if (_dockedAt != Tick && s.Mission < 0 && cs.Group < 0 && home >= 0 && !p.Razed[home] && Vector3.Distance(c.WorldCom, p.Place[home]) < Rules.DockRange + c.Radius
+                    if (_dockedAt != Tick && s.Mission < 0 && s.Far == 0 && cs.Group < 0 && home >= 0 && !p.Razed[home] && Vector3.Distance(c.WorldCom, p.Place[home]) < Rules.DockRange + c.Radius
                         && NearestPerson(c.WorldCom) > DockFrom)
                         Dock(crew, host, p, ref s, c, cs);
                     break;
@@ -596,7 +618,7 @@ public sealed class PowerControllers
             return;
         var n = 0;
         foreach (var s in p.Ships)
-            if (s.State == PowerShipState.Out && s.Mission < 0 && s.Body != 0 && crew.ShipOf(s.Body) is { Group: < 0 } && w.Get(s.Body) is { } c
+            if (s.State == PowerShipState.Out && s.Mission < 0 && s.Far == 0 && s.Body != 0 && crew.ShipOf(s.Body) is { Group: < 0 } && w.Get(s.Body) is { } c
                 && Vector3.Distance(c.WorldCom, p.Place[home]) > Rules.DockRange * 2 && n < _ids.Length)
                 _ids[n++] = s.Body;
         if (n == 0)
@@ -608,7 +630,7 @@ public sealed class PowerControllers
         if (slot < 0)
             return;
         for (var k = 0; k < MaxShips; k++)
-            if (p.Ships[k].State == PowerShipState.Out && p.Ships[k].Mission < 0 && Array.IndexOf(_ids, p.Ships[k].Body, 0, n) >= 0)
+            if (p.Ships[k].State == PowerShipState.Out && p.Ships[k].Mission < 0 && p.Ships[k].Far == 0 && Array.IndexOf(_ids, p.Ships[k].Body, 0, n) >= 0)
                 p.Ships[k].Mission = (sbyte)i;
         p.Missions[i] = new PowerMission { Kind = MissionKind.Patrol, Stage = PowerMissionStage.Return, Group = (short)slot, GroupNumber = crew.Fleet.Groups[slot].Number, OtherGroup = -1, Started = Tick, StageAt = Tick, ReadTick = Tick };
         crew.Fleet.Command(slot, OrderKind.GoTo, p.Place[home]);
@@ -663,6 +685,11 @@ public sealed class PowerControllers
         if (c == null || crew.ShipOf(c.Id) is not { } cs || cs.Faction != a)
         {
             Log.Add($"{Name(a)}'s {Blueprints[s.Bp].Name} wasn't set down{(c != null ? " crewed" : "")}: {why}");
+            if (s.Far != 0)
+            {
+                s.State = PowerShipState.Far; // (a far group's: it stays a record and is tried again: CrewTerritory.cs)
+                return;
+            }
             s.State = PowerShipState.Building;
             s.ReadyAt = Tick + 30L * T;
             return;
@@ -678,7 +705,7 @@ public sealed class PowerControllers
     private bool Field(Power p, byte a, ShipRole role, int m)
     {
         for (var i = 0; i < MaxShips; i++)
-            if (p.Ships[i].State == PowerShipState.Out && p.Ships[i].Role == role && p.Ships[i].Mission < 0 && p.Ships[i].Body != 0)
+            if (p.Ships[i].State == PowerShipState.Out && p.Ships[i].Role == role && p.Ships[i].Mission < 0 && p.Ships[i].Far == 0 && p.Ships[i].Body != 0)
             {
                 p.Ships[i].Mission = (sbyte)m;
                 return true;
@@ -1131,8 +1158,10 @@ public sealed class PowerControllers
                     crew.Fac[cs.Members[j]] = b;
                 cs.SeatsDirty = true;
             }
+            if (s.State == PowerShipState.Far)
+                s = s with { State = PowerShipState.Hangar, Far = 0 };
             if (s.State is PowerShipState.Out or PowerShipState.Hangar && Array.FindIndex(pb.Ships, x => x.State == PowerShipState.None) is var free and >= 0)
-                pb.Ships[free] = s with { Mission = -1 }; // (a merge: rare; its blueprint index is shared)
+                pb.Ships[free] = s with { Mission = -1, Far = 0 }; // (a merge: rare; its blueprint index is shared)
         }
         pb.Stock += pa.Stock;
         pb.Received += pa.Stock;
@@ -1143,6 +1172,7 @@ public sealed class PowerControllers
         Array.Clear(pa.Ships);
         for (var i = 0; i < MaxMissions; i++)
             End(pa, i);
+        FarMerged(a, b); // (its far groups end, its sites go to b: CrewTerritory.cs)
         rel.Fall(a, $"{Name(a)} joins {Name(b)}: they are one power now", into: b); // (its other crews follow: the host re-tags them, Game.CrewPowersGone)
     }
 
