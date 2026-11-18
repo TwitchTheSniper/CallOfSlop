@@ -1181,6 +1181,7 @@ public sealed partial class Game : IDisposable
             p.SnapRideSeg = s.RideSeg;
             p.SnapRideLocal = s.RideLocal;
             p.SnapRideUp = s.RideUp;
+            p.SnapRideLadder = s.RideLadder;
         }
 
         static void SetMotion(Player p, Vector3 vel, bool grounded, bool mantling)

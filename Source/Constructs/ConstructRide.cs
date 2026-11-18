@@ -164,6 +164,7 @@ public static partial class ConstructRide
         s.RideOn = 0;
         s.RideAir = 0;
         s.RideClimb = 0;
+        s.RideLadder = 0;
         s.RideGripUp = Vector3.Zero;
         s.RideUp = Vector3.Zero;
         s.RideVel = Vector3.Zero;
@@ -204,6 +205,7 @@ public static partial class ConstructRide
             // A climb (a vault, a grab-on): glide to its end in the frame; nothing else moves them.
             s.RideLocal += (s.RideClimbTo - s.RideLocal) / s.RideClimb;
             s.RideClimb--;
+            NextLeg(ref s);
             s.Position = t + Vector3.Transform(s.RideLocal, q);
             s.Velocity = Vector3.Zero;
             s.Grounded = s.RideClimb == 0;
@@ -314,6 +316,7 @@ public static partial class ConstructRide
                 s.RideBody = standing.Id;
                 s.RideSeg = (byte)standSeg;
                 s.RideClimb = 0;
+                s.RideLadder = 0;
             }
             s.RideAir = 0;
             s.RideFree = 0;
@@ -422,7 +425,8 @@ public static partial class ConstructRide
         s.RideSeg = (byte)seg;
         s.RideLocal = ToLocal(c, seg, s.Position);
         s.RideClimbTo = ToLocal(c, seg, to);
-        s.RideClimb = (byte)Math.Clamp(ticks, 1, 120); // (a vault or a grab-on takes half a second at most, a ladder up to two)
+        s.RideClimb = (byte)Math.Clamp(ticks, 1, 120); // (a vault or a grab-on takes half a second at most)
+        s.RideLadder = 0; // (a ladder's climb sets its legs after this: ClimbLadder)
         s.RideAir = 0;
         s.RideFree = 0;
         s.RideGripUp = Vector3.Zero;
@@ -516,52 +520,8 @@ public static partial class ConstructRide
         return null;
     }
 
-    /// <summary>A vertical ladder's climb: metres a second up or down it.</summary>
-    public const float LadderSpeed = 2.4f;
-
-    /// <summary>
-    /// A vertical ladder (a part with "ladder": its landing's height, in its own frame: up +y, climbed from its front, -z):
-    /// Use at its foot climbs it to the landing behind its top; Use from up there climbs down to its foot. The climb runs in
-    /// the construct's frame like a grab-on (<see cref="StartClimb"/>), at <see cref="LadderSpeed"/>. Returns null when it
-    /// started, else why not.
-    /// </summary>
-    public static string? ClimbLadder(ref MoveState s, Construct c, int part, float height, bool frame = false)
-    {
-        if (s.RideClimb > 0)
-            return "already climbing";
-        if (part < 0 || part >= c.PartCount)
-            return "nothing to climb there";
-        if (c.Dirty)
-            c.Rebuild();
-        ref var p = ref c.Parts[part];
-        var d = p.D;
-        if (d.LadderTop <= 0 || p.Broken)
-            return "nothing to climb there";
-        if (StowedFoot(c, part))
-            return "the ladder is stowed: F on its foot rolls it down";
-        c.WorldFrame(p.Seg, out var q, out var t);
-        var pos = p.Pos;
-        var rot = p.Rot;
-        Vector3 ToWorld(Vector3 local) => t + Vector3.Transform(pos + Rot24.Apply(rot, local), q);
-        var feetLocal = Vector3.Transform(Vector3.Transform(s.Position - t, Quaternion.Conjugate(q)) - pos, Quaternion.Conjugate(Rot24.Quat(rot))); // (the feet in the ladder's own frame)
-        var cx = (d.BoundsMin.X + d.BoundsMax.X) * 0.5f;
-        var stand = World.PlayerRadius + 0.12f;
-        var foot = new Vector3(cx, d.BoundsMin.Y + 0.02f, d.BoundsMin.Z - stand);
-        var top = new Vector3(cx, d.LadderTop + 0.02f, d.BoundsMax.Z + stand);
-        var atTop = feetLocal.Y > (foot.Y + top.Y) * 0.5f;
-        var from = atTop ? top : foot;
-        var across = new Vector2(feetLocal.X - from.X, feetLocal.Z - from.Z).Length();
-        if (across > GrabReach + World.PlayerRadius || MathF.Abs(feetLocal.Y - from.Y) > 1.2f)
-            return "get to the ladder's foot or its top first";
-        var to = ToWorld(atTop ? foot : top);
-        if (!atTop && BlockedOn(c, part, to, height))
-            return "no room at the top";
-        StartClimb(ref s, c, p.Seg, to, (int)MathF.Ceiling((top.Y - foot.Y) / LadderSpeed * World.TickRate) + 6, frame);
-        return null;
-    }
-
     /// <summary>A ladder with an event door hung on it (a boarding ladder's foot, MinerParts) is climbed only with that door open.</summary>
-    private static bool StowedFoot(Construct c, int ladder)
+    internal static bool StowedFoot(Construct c, int ladder)
     {
         for (var l = 0; l < c.LinkCount; l++)
         {

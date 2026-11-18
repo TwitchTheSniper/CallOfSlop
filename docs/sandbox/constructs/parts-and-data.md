@@ -480,8 +480,15 @@ low sandbag wall. A box whose top is below the feet no longer pushes (so walking
 next never snags). Loose and free constructs are unchanged (a parked car still blocks you).
 
 **Fixed ladders.** A part with `"ladder"` (its landing's height in its own frame, m: up +y, climbed from its front, -z) is a
-vertical ladder: F at its foot climbs it to the landing behind its top, F at its top climbs down to its foot, at 2.4 m/s
-(`ConstructRide.ClimbLadder`, a climb in the construct's frame like a grab-on, so no wire change). The Fixed Ladder 3 m
+vertical ladder: F at its foot grabs it and climbs to the landing behind its top, F at its top climbs down to its foot
+(`ConstructRideLadder.cs`). The climb is three legs in the construct's frame, so a moving ship carries the climber: a step
+onto the rungs, the climb facing the ladder at 2 m/s, and a step off onto the floor at the other end (1.6 m/s). That end is
+worked out as the climb starts: the usual spot, or when something stands there the nearest spot within 1.4 m where a body
+fits with a floor under it and nothing solid between it and the rungs, so a fitting on a landing no longer stops a ladder.
+The body faces the ladder with hands and feet on its rungs, posed from where the feet are on it (`LadderAnim.cs`), so
+other players see the same climb; in first person the view turns to the ladder as you grab it and both hands are on the
+rungs. The wire carries the climb's legs and the ladder (protocol 342). `--ladder-check` plays every shipped ladder's
+climb up and down to its end. The Fixed Ladder 3 m
 climbs the watchtowers (and the Orbital Depot's stores tower) from the pad to the platform.
 
 **What bots still need** (the sandbox-spawns work owns bot navigation over constructs): today bots walk up stairs and
