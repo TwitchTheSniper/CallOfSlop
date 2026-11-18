@@ -43,6 +43,9 @@ public sealed partial class Game
     /// <summary>For the window tool's check: is the holder's piece drawn from the client's simulation now?</summary>
     public bool SandboxHeldSimulated => _simOn;
 
+    /// <summary>For the window tool's check: how far the drawn piece leads the server's pose of the drawn tick (m), in the frame.</summary>
+    public float SandboxHeldLead { get; private set; }
+
     /// <summary>
     /// Client, every frame from <see cref="SandboxPredictHeld"/>: the held piece (or the one just let go) drawn from the
     /// client's own simulation. False: not simulated (the old drawing or the let-go fade goes on).
@@ -172,6 +175,7 @@ public sealed partial class Game
                 }
             }
         }
+        SandboxHeldLead = Vector3.Distance(pos, serverPos);
         c.Pos = _simFt + Vector3.Transform(pos, _simFq); // (the drawn deck carries it)
         c.Rot = Quaternion.Normalize(_simFq * rot);
         _simDrawnPos = c.Pos;

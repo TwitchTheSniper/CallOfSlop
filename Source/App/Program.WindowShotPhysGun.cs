@@ -144,7 +144,7 @@ public static partial class Program
             else
                 _wsSwingRest = lag;
             if (_wsSwingFrames++ % 6 == 0)
-                WsSay(FormattableString.Invariant($"swing: t {t:0.00} s, lag {lag:0.000} m, {deg:0.0} deg off the look, sim {g.SandboxHeldSimulated || g.SandboxJointSimulated}, seg {h.GrabSeg}, dist {_pgDist:0.0}, mass {c.Mass:0} kg"));
+                WsSay(FormattableString.Invariant($"swing: t {t:0.00} s, lag {lag:0.000} m, {deg:0.0} deg off the look, sim {g.SandboxHeldSimulated || g.SandboxJointSimulated}, seg {h.GrabSeg}, lead {g.SandboxHeldLead:0.000} m, dist {_pgDist:0.0}, mass {c.Mass:0} kg"));
         }
         if (t >= _wsSwingSecs + 1.5f)
         {
