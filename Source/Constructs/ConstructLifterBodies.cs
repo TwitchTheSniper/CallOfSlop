@@ -164,8 +164,8 @@ public static partial class ConstructLifters
             body.Rot = body.PrevRot = body.NetRot = body.NetFromRot = Quaternion.Normalize(lr * rot);
             body.Vel = body.AngVel = Vector3.Zero;
             body.Wake(); // (an awake body's pose goes to clients every pose packet)
-            if (age < l.Dur || l.WaitFrom != 0)
-                continue;
+            if (age < l.Dur || l.WaitFrom != 0 || l.Steered)
+                continue; // (a cab's container stays on the hook until F lets it go: ConstructLifterCab.cs)
             // At its spot: the main station's next look takes it (ConstructStationTree.Watch: a body in its bay).
             l.CarryBody = 0;
             world.BodyCarries.RemoveAt(k);

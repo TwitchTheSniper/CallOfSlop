@@ -4,7 +4,7 @@
   "description": "A length of the Dray's keel, between two of the hull's stations: plating, armour and the void inside.",
   "group": "Ship",
   "section": "Dray hauler",
-  "role": "frame",
+  "role": "fueltank",
   "tool": "welder",
   "mass": 3750.0,
   "health": 31500,
@@ -12,6 +12,23 @@
   "material": "steel",
   "color": "#264b67",
   "attachSeconds": 10.0,
+  "fuelTank": {
+    "capacity": 3000
+  },
+  "ports": [
+    {
+      "name": "Fuel out",
+      "type": "pipe",
+      "dir": "out",
+      "fluid": "fuel",
+      "at": [
+        6.875,
+        -0.725,
+        13.863
+      ],
+      "face": "+z"
+    }
+  ],
   "boxes": [
     {
       "min": [
