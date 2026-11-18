@@ -70,7 +70,7 @@ public sealed class ShellParts : IPartGenerator
     /// <summary>The hopper's bulk box (the part's storage): inside its walls, open at the top. Also where the game draws the ore.</summary>
     public static readonly double[] HopperMin = [-0.31, 1.395, 0.245], HopperMax = [0.31, 2.18, 0.755];
 
-    public const int HopperUnits = 900; // the Ore Hopper's load (a Materials Bin holds 600)
+    public const int HopperUnits = 5400; // the Ore Hopper's load: three minutes of its drill arm at 30 a second (the user, 2026-11-17; a Materials Bin holds 600)
 
     /// <summary>
     /// The Mining Shell (the user, 2026-11-17; docs/sandbox/design/mining-shell.md): the robot at 1.5x, an open ore hopper on its back

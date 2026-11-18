@@ -20,6 +20,8 @@ public sealed class ShellModule
     public float Rate; // a drill: ore tapped a second while it is drilling a deposit
     public int Tier = 1; // a drill: the Drill Module tier it works as (a deposit's minTier)
     public string[] Takes = []; // a hopper: the materials it holds (Recycling.json names)
+    public string Part = ""; // "part": the construct part this module is off the shell (the Shell Gantry's table, mining-shell.md; none yet)
+    public ConstructTool? Tool; // "tool": while the shell is worn this is its only tool (the Drill Arm's ground drill; the user, 2026-11-17)
 }
 
 /// <summary>One shell frame: a body (its part), its size and pace, and the module in each slot (<see cref="ShellFrames.Slots"/> order).</summary>
@@ -30,6 +32,30 @@ public sealed class ShellFrame
     public string[] Jobs = [];
     public ShellModule?[] Modules = new ShellModule?[ShellFrames.SlotCount];
     public bool[] Fixed = new bool[ShellFrames.SlotCount]; // a slot customisation may not change (none can be changed yet)
+
+    /// <summary>The tool a module forces while the shell is worn (the first slot's that names one), or null: any tool.</summary>
+    public ConstructTool? ForcedTool
+    {
+        get
+        {
+            foreach (var m in Modules)
+                if (m?.Tool is { } t)
+                    return t;
+            return null;
+        }
+    }
+
+    /// <summary>The module that forces <see cref="ForcedTool"/> (for its name in a refusal), or null.</summary>
+    public ShellModule? ToolModule
+    {
+        get
+        {
+            foreach (var m in Modules)
+                if (m?.Tool != null)
+                    return m;
+            return null;
+        }
+    }
 
     /// <summary>The first module of a kind in its slots, or null.</summary>
     public ShellModule? Find(ShellModuleKind kind)
@@ -167,6 +193,11 @@ public static class ShellFrames
                     if (RecyclingTable.Current.IdOf(t) == 0)
                         throw new FormatException($"module \"{mod.Name}\": \"takes\": no material named \"{t}\" in Recycling.json");
             }
+            if (m.TryGetProperty("part", out var mp))
+                mod.Part = mp.GetString() ?? "";
+            if (m.TryGetProperty("tool", out var tl))
+                mod.Tool = Enum.TryParse<ConstructTool>(tl.GetString(), true, out var tool) && ConstructToolWire.From((byte)tool) == tool && tool != ConstructTool.None
+                    ? tool : throw new FormatException($"module \"{mod.Name}\": no tool \"{tl.GetString()}\"");
             if (!modules.TryAdd(mod.Name, mod))
                 throw new FormatException($"module \"{mod.Name}\" twice");
         }

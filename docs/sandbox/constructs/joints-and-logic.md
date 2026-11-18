@@ -86,7 +86,7 @@ is the Robot Shell, with the numbers every shell had. A shell part stands as the
 - **Mining Shell** (`shell_parts`, `MiningShell.json`; Assembler recipe at tier 2): frame "Mining", 1.5x a person in every
   direction (the mover's capsule through `World.BodyScale`, set from `MoveState.Frame` in `World.Simulate` and in a `World.Body`
   scope round construct blocking, ladders and hit boxes), x0.85 pace, x0.7 the hits it takes. It crouches through doors.
-- **Ore hopper** (`GameShellHopper.cs`): the part is a bin (900 units of any one material); worn, its load is the player's
+- **Ore hopper** (`GameShellHopper.cs`): the part is a bin (5,400 units of any one material); worn, its load is the player's
   hopper (`ConstructEdits.Hoppers`), back in the part when it stands, spilt as a Material Bundle when destroyed. F at a bin, a
   Storage Volume or a refinery tips the hopper first (`ConstructEdits.TipHopper`).
 - **Drill arm**: with the ground drill out, a scoop over an underground deposit the arm's tier works taps it into the hopper at

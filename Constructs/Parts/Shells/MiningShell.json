@@ -31,7 +31,7 @@
   "storage": {
     "bulk": {
       "material": "any",
-      "capacity": 900,
+      "capacity": 5400,
       "min": [
         -0.31,
         1.395,

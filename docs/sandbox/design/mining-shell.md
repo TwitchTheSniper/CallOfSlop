@@ -39,18 +39,21 @@ on the same channels. Decided (defaults; the user may change them):
   ground and hold machine, not a crew body.
 - **Speed, mass, health.** Speed x0.85 of a person's (`speed`), hits taken x0.7 (`damage`: thicker plating); health is a
   shell's (`World.MaxHealth`), wear as any shell. The part is 140 kg (the Robot Shell 38).
-- **The ore hopper** (back slot). The Mining Shell's part is a bin: `storage.bulk` with 900 units of one material at a time,
+- **The ore hopper** (back slot). The Mining Shell's part is a bin: `storage.bulk` with 5,400 units (three minutes of drilling) of one material at a time,
   ores, stone and sand only (`takes`). Standing, it is a bin like any other: F takes a load out, its look line shows the fill,
   and its load adds mass. Worn, the hopper's contents go with the player (`ShellRun`, `SandboxHands.Hoppers`) and come back
   into the part when it stands again, so nothing is lost by leaving.
-- **The fixed drill arm** (right-arm slot). The right arm is a drill, always: it can't be put away or swapped. With the ground
-  drill out (the tool wheel, as ever; the robot has it whatever the player owns), a scoop does what the ground drill does
+- **The fixed drill arm** (right-arm slot). The right arm is a drill, always, and the shell's only tool (the user, 2026-11-17):
+  the module's `"tool": "GroundDrill"` forces it. While the shell is worn the tool wheel, the number keys and the gun are
+  refused on both sides (`ShellToolRefusal`: the client says why and sends nothing, the server refuses the act and puts the
+  drill back out every few ticks, `ShellForceTool`); leaving the shell gives the body's own tools back. A scoop does what the ground drill does
   (dirt, stone and sand into the inventory, the hole in the ground) and, over an underground deposit the drill arm's tier
-  works, also taps the deposit through `ResourceField.Tap` into the hopper at the module's `rate` (20 units a second, a
-  Workshop Drill Module's), counted by the time between scoops (a first scoop after a pause counts at most 0.5 s), so a slower
+  works, also taps the deposit through `ResourceField.Tap` into the hopper at the module's `rate` (30 units a second), counted by the time between scoops (a first scoop after a pause counts at most 0.5 s), so a slower
   or faster drill motor doesn't change it. The spot rules are the Drill Module's: a 3 m spot gives 1,200 then says "this spot
   is worked out". Tier 2: iron and copper, not gold (tier 3) or levite (tier 4, deep). A full hopper or another material says
-  so and the scoop still digs. The left arm holds every other tool as a person's hands do.
+  so and the scoop still digs. The arm's hole ends `DrillShaft.Depth` (1.5 m) under the surface as built, as a Drill Module's
+  does: a scoop on a floor deeper than that only taps (`ShellDrillBored`), so the crosshair stays on the floor within reach and
+  a held button keeps the whole rate; a player in the hole can still mantle out.
 - **Unloading.** F at a Materials Bin, a Storage Volume, a Tipping Bunker, an Ore Hauler's bed or a refinery's input tips the
   hopper first (as much as fits, the same `Deposit` and `Feed` a carried load uses); with an empty hopper F does what it did.
 - **Getting one.** Survival: an Assembler recipe (tier 2: 70 steel, 14 copper, 8 rubber, 3 Circuit Boards, 60 s), then wake it
@@ -66,7 +69,8 @@ on the same channels. Decided (defaults; the user may change them):
 
 - **slots**: the slot names in a fixed order: `head`, `back`, `leftArm`, `rightArm`. The order is a wire and save order; a new
   slot goes at the end.
-- **modules**: what can go in a slot. Each has a `name`, the `slot` kind it fits (`head`, `back`, `arm`) and a `kind` the code
+- **modules**: what can go in a slot. A module is meant to be a whole functional part (the Shell Gantry, below, sets them on a
+  parts table); a module may name that part with `"part"` once it exists (none does yet). Each has a `name`, the `slot` kind it fits (`head`, `back`, `arm`) and a `kind` the code
   knows (`head`, `pack`, `hopper`, `hand`, `drill`), plus that kind's numbers (a drill's `rate` and `tier`, a hopper's
   `takes`). Today's modules: Optics Head, Power Pack, Ore Hopper, Hand, Drill Arm.
 - **frames**: a shell body. Its `name`, the `part` that stands as it, `scale`, `speed`, `damage`, `jobs`, the module in each
@@ -77,15 +81,20 @@ on the same channels. Decided (defaults; the user may change them):
   in the back slot", the renderer draws each slot's module. So customisation only adds modules (data, a look and, for a new
   kind, its rule) and a way to choose them (UI, and a per-shell record of the choice in the part's config).
 
-## Questions for the user
+## The user's answers (2026-11-17)
 
-1. **Size 1.5x everywhere, including the collision?** Default: yes, so it doesn't fit through doors standing and ship decks are
-   crouch-only. The other choice is drawn 1.5x but a person's collision, which goes everywhere a person goes.
-2. **Drill arm controls.** Default: the ground drill tool's controls (LMB scoops), with ore going to the hopper. The other choice
-   is a key of its own so the drill works whatever tool the left arm holds.
-3. **Numbers**: 900 units hopper, 20 a second at tier 2, x0.85 speed, x0.7 damage, the recipe. Placeholders until played.
-4. **Customisation's rule**: may a slot's module be swapped anywhere (the attach tool at a standing shell, like the spares) or
-   only at a station? Not built; the data's `fixed` list is ready for either.
+1. **Collision**: 1.5x, as built (it crouches through doors; ship decks are crouch-only).
+2. **Controls**: "Drill is the shell's only tool." Primary fire drills with the arm; no other tool or the gun while worn
+   (data: the right-arm module's `"tool"`, so a future module can force its own).
+3. **Numbers**: 30 units a second, really sustained (the hole stops at 1.5 m so the scoops keep landing), and a hopper of
+   three minutes of mining, 5,400 units. Speed x0.85, hits x0.7 and the tier 2 recipe stay.
+4. **Where modules swap** (future, not built): a **Shell Gantry** station. "I would like a new station to be constructed, a
+   vertical gantry system that the suit will be held in. From there, arms on the gantry will pick up and place pieces in the
+   station storage hopper. When I say hopper, I mean something similar to the blueprint construction station, where it has a
+   table that can hold whole functional parts." So the shell stands in a vertical gantry, the gantry's arms take modules off
+   and fit them, moving them to and from a parts table like the Building Station's hold. The layout above fits it: a module
+   is a whole part (`"part"`), a frame's `fixed` slots are the ones the gantry may not change. Before building the station,
+   show the user a layout image and get approval (user, 2026-11-17).
 
 ## Not yet
 

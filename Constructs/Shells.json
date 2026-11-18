@@ -8,13 +8,14 @@
   "slots": ["head", "back", "leftArm", "rightArm"], // the order is the wire's: a new slot goes at the end
   // A module's "kind" is what the code knows: head, pack, hopper (the shell part's own bin is the hopper; "takes" what it
   // holds), hand (holds the tools), drill (always out: while ground drill scoops land on a deposit a Drill Module of "tier"
-  // works, it taps "rate" units a second of its ore into the hopper).
+  // works, it taps "rate" units a second of its ore into the hopper). A module's "tool" is the shell's only tool while it is
+  // worn (the tool wheel, the number keys and the gun are refused; leaving the shell gives the body's tools back).
   "modules": [
     { "name": "Optics Head", "slot": "head", "kind": "head" },
     { "name": "Power Pack", "slot": "back", "kind": "pack" },
     { "name": "Ore Hopper", "slot": "back", "kind": "hopper", "takes": ["iron ore", "copper ore", "gold ore", "levite ore", "stone", "sand"] },
     { "name": "Hand", "slot": "arm", "kind": "hand" },
-    { "name": "Drill Arm", "slot": "arm", "kind": "drill", "rate": 20, "tier": 2 }
+    { "name": "Drill Arm", "slot": "arm", "kind": "drill", "rate": 30, "tier": 2, "tool": "GroundDrill" }
   ],
   "frames": [
     { "name": "Standard", "part": "Robot Shell", "scale": 1, "speed": 1, "damage": 1,

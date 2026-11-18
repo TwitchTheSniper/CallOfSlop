@@ -83,16 +83,15 @@ public sealed partial class Game
         var round = field.Planet != null;
         if ((round ? field.TappableAt(at) : field.TappableAt(at.X, at.Z)) is not { } kind)
             return;
-        var names = RecyclingTable.Current;
-        var mat = names.IdOf(kind.Material);
-        var why = field.WorkedOut(at) ? "this spot is worked out: drill a few metres on"
-            : drill.Tier < kind.MinTier ? $"the drill arm can't work {kind.Name} (that takes a tier {kind.MinTier} drill)"
-            : kind.Deep ? $"the {kind.Name} lies under the rock: a Drill Module bores down to it"
-            : !HopperTakes(hp.Module, mat) ? $"the hopper doesn't hold {kind.Material}"
-            : hp.Amount > 0 && hp.Material != mat ? $"the hopper holds {names.NameOf(hp.Material)}: tip it out first (F at a bin or a refinery)"
-            : hp.Amount >= hp.Capacity ? $"the hopper is full ({hp.Capacity}): F at a bin, a Storage Volume or a refinery tips it"
-            : null;
-        if (why == null)
+        var mat = RecyclingTable.Current.IdOf(kind.Material);
+        var why = field.WorkedOut(at) ? DrillWhy.WorkedOut
+            : drill.Tier < kind.MinTier ? DrillWhy.Tier
+            : kind.Deep ? DrillWhy.Deep
+            : !HopperTakes(hp.Module, mat) ? DrillWhy.Takes
+            : hp.Amount > 0 && hp.Material != mat ? DrillWhy.Other
+            : hp.Amount >= hp.Capacity ? DrillWhy.Full
+            : DrillWhy.None;
+        if (why == DrillWhy.None)
         {
             // By time, not by scoop: the arm taps its rate a second while it is held on the ore, however fast the drill motor scoops.
             var dt = Math.Clamp(now - _drillAt[p.Id], 0, DrillGap);
@@ -110,13 +109,55 @@ public sealed partial class Game
                 hp.Amount += got;
                 return;
             }
-            why = "this spot is worked out: drill a few metres on";
+            why = DrillWhy.WorkedOut;
         }
-        if (now - _drillSaid[p.Id] > 3)
+        if (now - _drillSaid[p.Id] <= 3)
+            return; // (the line is made only when it is said: nothing allocates while a full hopper keeps scooping)
+        _drillSaid[p.Id] = now;
+        var names = RecyclingTable.Current;
+        SandboxHands.Notices.Add((p.Id, why switch
         {
-            _drillSaid[p.Id] = now;
-            SandboxHands.Notices.Add((p.Id, why));
-        }
+            DrillWhy.WorkedOut => "this spot is worked out: drill a few metres on",
+            DrillWhy.Tier => $"the drill arm can't work {kind.Name} (that takes a tier {kind.MinTier} drill)",
+            DrillWhy.Deep => $"the {kind.Name} lies under the rock: a Drill Module bores down to it",
+            DrillWhy.Takes => $"the hopper doesn't hold {kind.Material}",
+            DrillWhy.Other => $"the hopper holds {names.NameOf(hp.Material)}: tip it out first (F at a bin or a refinery)",
+            _ => $"the hopper is full ({hp.Capacity}): F at a bin, a Storage Volume or a refinery tips it",
+        }));
+    }
+
+    private enum DrillWhy : byte { None, WorkedOut, Tier, Deep, Takes, Other, Full }
+
+    /// <summary>
+    /// Server: a scoop by a drill arm at a point already <see cref="DrillShaft.Depth"/> under the surface as built (the user, 2026-11-17:
+    /// a sustained dig taps the arm's whole rate). The hole ends there, as a Drill Module's does, so the crosshair stays on its floor
+    /// within reach and the arm taps on; a player in it can still mantle out.
+    /// </summary>
+    private static bool ShellDrillBored(Player p, IDigGround ground, Vector3 at) =>
+        p.InShell && p.ShellFrame != 0 && ShellFrames.Of(p.ShellFrame).Find(ShellModuleKind.Drill) != null && ground.AboveBuilt(at) < -DrillShaft.Depth;
+
+    /// <summary>
+    /// Both sides: a tool asked for by someone in a shell whose frame forces one (a module's "tool", Constructs/Shells.json: the Mining
+    /// Shell's drill arm is its only tool; the user, 2026-11-17). Null: allowed (no forced tool, or the forced one).
+    /// </summary>
+    internal static string? ShellToolRefusal(Player p, ConstructTool asked)
+    {
+        if (!p.InShell || p.ShellFrame == 0)
+            return null;
+        var f = ShellFrames.Of(p.ShellFrame);
+        if (f.ForcedTool is not { } only || asked == only)
+            return null;
+        return $"the {f.Part}'s only tool is its {f.ToolModule!.Name}: leave the shell for your own tools";
+    }
+
+    /// <summary>Server, from <see cref="ShellTick"/>: a worn shell with a forced tool has it out (after a seat, a part picked up, a wake).</summary>
+    private void ShellForceTool(Player p)
+    {
+        if (p.ShellFrame == 0 || ShellFrames.Of(p.ShellFrame).ForcedTool is not { } only)
+            return;
+        ref var h = ref SandboxHands.Hand(p.Id);
+        if (h.Tool != only && !h.Seated)
+            SandboxHands.SetTool(p.Id, only, Constructs, p.Eye, p.Yaw);
     }
 
     private static bool HopperTakes(ShellModule mod, byte material)

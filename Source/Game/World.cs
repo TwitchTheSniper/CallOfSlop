@@ -247,7 +247,10 @@ public static partial class World
     public const float HeadStart = 1.4f; // standing: hits above this are headshots
 
     // ---- Stances -------------------------------------------------------------
-    public static float HeightOf(Stance s) => BodyScale * (s switch { Stance.Crouch => 1.2f, Stance.Prone => 0.6f, _ => PlayerHeight });
+    public static float HeightOf(Stance s) => HeightOf(s, BodyScale);
+
+    /// <summary>The height of a stance for a body of <paramref name="scale"/> times a person's size (whatever <see cref="BodyScale"/> is now).</summary>
+    public static float HeightOf(Stance s, float scale) => scale * (s switch { Stance.Crouch => 1.2f, Stance.Prone => 0.6f, _ => PlayerHeight });
     public static float EyeOf(Stance s) => EyeOf(s, BodyScale);
 
     /// <summary>The eye height of a stance for a body of <paramref name="scale"/> times a person's size (whatever <see cref="BodyScale"/> is now).</summary>

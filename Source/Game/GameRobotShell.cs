@@ -159,7 +159,7 @@ public sealed partial class Game
         SandboxHands.PackDirty.Add(p.Id);
         var tool = h.Tool;
         h = SandboxHand.Empty;
-        h.Tool = tool == ConstructTool.None ? ConstructTool.Hands : tool;
+        h.Tool = ShellFrames.Of(ShellFrames.FrameOf(sp.D)).ForcedTool ?? (tool == ConstructTool.None ? ConstructTool.Hands : tool); // (a frame's only tool: the Mining Shell's drill arm)
         var feet = shell.ToWorld(sp.Pos) + GravityFrames.UpAt(shell.WorldCom) * 0.03f; // (its part's feet: a shell cut off a dock keeps its place in the ship's frame)
         var fwd = Vector3.Transform(-Vector3.UnitZ, shell.Rot * Rot24.Quat(sp.Rot));
         ShellWoke(p, shell);
@@ -273,6 +273,7 @@ public sealed partial class Game
             if (!run.On)
                 continue;
             HopperSync(p); // (its ore hopper's load to every peer: GameShellHopper.cs)
+            ShellForceTool(p); // (a frame's only tool stays out)
             var chair = Constructs.Get(run.Chair);
             var seat = chair?.SeatOf(p.Id) ?? -1;
             if (chair == null || seat < 0 || chair.Parts[seat].Broken)
@@ -361,6 +362,48 @@ public sealed partial class Game
 
     /// <summary>Server: a player leaves the game: back in their body first, so their record is the body's and the shell stands.</summary>
     internal void ShellLeaveGame(Player p) => ShellReturn(p, lost: false, "");
+
+    private readonly List<Construct> _shSaved = [];
+
+    /// <summary>
+    /// Server, before a world save's capture: each worn shell stands for a moment where its wearer is, as worn and as damaged, with
+    /// its ore hopper's load in its bin, so the save holds it (the record holds their body in the chair: <see cref="ShellCatch"/>).
+    /// The capture is the same tick, and <see cref="ShellUnstandAfterSave"/> takes them away again: no peer hears of them. A save is
+    /// rare, so the list may allocate.
+    /// </summary>
+    private void ShellStandForSave()
+    {
+        _shSaved.Clear();
+        foreach (var p in Players.Values)
+        {
+            ref var run = ref _sh[p.Id];
+            if (!run.On || run.ShellDef == null)
+                continue;
+            if (ConstructBuild.PlaceNew(Constructs, run.ShellDef, p.Position, p.Yaw) is not { } c)
+            {
+                Log($"[shell] {p.Name}'s worn {run.ShellDef.Name} isn't in this save: the world is full");
+                continue;
+            }
+            ConstructConfig.Put(ref c.Parts[0], run.ShellDef, CfgKey.Channel, run.Channel);
+            ShellWear.Write(ref c.Parts[0], run.ShellDef, p.ShellWear);
+            ShellWear.PutHealth(ref c.Parts[0], run.ShellDef, p.Health);
+            c.Owner = run.Owner;
+            c.Frozen = true;
+            c.Rebuild();
+            ref var hp = ref SandboxHands.Hoppers[p.Id];
+            if (hp.Amount > 0 && Constructs.Deposit(c, 0, hp.Amount, hp.Material) < hp.Amount)
+                Log($"[shell] {p.Name}'s hopper didn't all fit the saved {run.ShellDef.Name}'s bin");
+            _shSaved.Add(c);
+        }
+    }
+
+    /// <summary>Server, after the capture: the stand-ins go (the wearers still wear their shells).</summary>
+    private void ShellUnstandAfterSave()
+    {
+        foreach (var c in _shSaved)
+            Constructs.Remove(c);
+        _shSaved.Clear();
+    }
 
     /// <summary>Server, a world save's record of someone in a shell: their body's place, health, hands and backpack.</summary>
     private void ShellCatch(Player p, WorldPlayer rec)
