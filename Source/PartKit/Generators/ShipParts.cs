@@ -2098,7 +2098,6 @@ public sealed class ShipParts : IPartGenerator
         var stab = Hang(bp, "Flight Stabilizer", deck, "module", "-y"); // (a small gyro: the attitude jets turn it)
         bp.Steps[stab]["config"] = ShipFlight();
         bp.Wires.Add((pilot, stab));
-        Hang(bp, "Chart Table", deck, "chart", "back");
         bp.HangTurned("Shell Control Chair", Holder(bp, deck, "linkChair"), "linkChair", "bottom", BuildingParts.R0);
         // The bedroom, the bathroom.
         Paint(bp, Hang(bp, "Iron Bed", deck, "bed", "wall"), "#6b4a2e", "worn paint");

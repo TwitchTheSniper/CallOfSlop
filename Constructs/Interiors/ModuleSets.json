@@ -111,7 +111,6 @@
         {"part": "Fire Director", "count": 1, "role": "gunner"},
         {"part": "Crew Station", "count": 1, "role": "engineer"},
         {"part": "Engineer's Panel", "count": 1, "role": "engineer"},
-        {"part": "Chart Table", "count": 1, "loot": true},
         {"part": "Lamp", "count": 1},
         {"part": "Chest", "count": 1, "loot": true} ],
       "dress": "crew",

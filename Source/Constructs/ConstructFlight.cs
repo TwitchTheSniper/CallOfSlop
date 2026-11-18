@@ -652,6 +652,15 @@ public static partial class ConstructFlight
         return KeysOf(c, p, p.D) == FlightPattern.Ship && ConstructConfig.Get(p, p.D, CfgKey.MouseAim, 0) >= 0.5f && SeatFor(c, c.Stabs[0].Part) == seat;
     }
 
+    /// <summary>Is it a ship (its first stabilizer on Ship keys)? Its pilot flies by the mouse and the couch's side sticks, so no steering wheel is drawn (Karl, 2026-11-18). On every peer, from the structure alone.</summary>
+    public static bool ShipKeyed(Construct c)
+    {
+        if (c.StabCount == 0 || c.Stabs[0].Part >= c.PartCount)
+            return false;
+        ref var p = ref c.Parts[c.Stabs[0].Part];
+        return KeysOf(c, p, p.D) == FlightPattern.Ship;
+    }
+
     /// <summary>Is a stabilizer on Ship keys flying this craft this tick (in space it then turns by its jets, not held level: GameSpaceLaunch.cs)?</summary>
     public static bool FliesShip(Construct c)
     {

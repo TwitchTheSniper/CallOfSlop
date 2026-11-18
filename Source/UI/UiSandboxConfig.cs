@@ -488,7 +488,7 @@ public sealed partial class Ui
         {
             var other = _cfOpenRequest;
             _cfOpenRequest = -1;
-            if (other < c.PartCount && c.DefOf(other).Configurable)
+            if (other < c.PartCount && c.DefOf(other).Settable)
                 OpenSandboxConfig(c, other);
         }
         if (!open)
@@ -510,7 +510,7 @@ public sealed partial class Ui
         if (d.TextSlots == 0 || part < 0 || part >= c.PartCount)
             return;
         var key = (long)c.Id << 20 | (uint)part;
-        ImGui.SeparatorText(d.IsRouter ? "Name"u8 : "Text"u8);
+        ImGui.SeparatorText(d.IsRouter ? "Name"u8 : d.Labelled ? "Label"u8 : "Text"u8);
         for (var slot = 0; slot < d.TextSlots; slot++)
         {
             _cfText[slot] ??= new ImInputString(LogicText.MaxChars + 1);
@@ -521,7 +521,7 @@ public sealed partial class Ui
             if (ImGui.IsItemDeactivatedAfterEdit())
                 game.SandboxPartText(c.Id, part, slot, ImGuiSafe.Text(_cfText[slot]!));
             if (ImGui.IsItemHovered())
-                ImGuiSafe.SetTooltip(d.IsRouter ? "Its name on the network board and in order notes (empty: its number)." : d.TextSlots == 2 ? slot == 0 ? "Shown with its wire off." : "Shown with its wire on." : "Labels, comma-separated.");
+                ImGuiSafe.SetTooltip(d.Labelled ? "What it is called in its look line and the wiring lists, e.g. Hangar lights (empty: its part name)." : d.IsRouter ? "Its name on the network board and in order notes (empty: its number)." : d.TextSlots == 2 ? slot == 0 ? "Shown with its wire off." : "Shown with its wire on." : "Labels, comma-separated.");
         }
         _cfTextKey = key;
     }
@@ -831,7 +831,7 @@ public sealed partial class Ui
                 continue;
             var into = w.To == _cfPart;
             var o = into ? w.From : w.To;
-            rows.Add(o == _cfPart ? "Loop: into itself" : $"{(into ? "In from" : "Out to")}: {c.DefOf(o).Name} {(c.DefOf(o).Configurable ? "" : " - no settings")}");
+            rows.Add(o == _cfPart ? "Loop: into itself" : $"{(into ? "In from" : "Out to")}: {LogicText.Name(c, o)} {(c.DefOf(o).Settable ? "" : " - no settings")}");
             idx.Add(k);
             other.Add(o);
         }

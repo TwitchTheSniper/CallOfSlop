@@ -872,6 +872,8 @@ public sealed partial class ConstructPartDef
     public bool HasReading => Logic is >= CLogic.Xor and <= CLogic.BusOut and not (CLogic.KeySwitch or CLogic.Instrument or CLogic.RadioTx or CLogic.BusIn) || Logic == CLogic.Cipher; // (a terminal's: its key and locks, GameStoryFragments.cs) // its number reaches clients exactly (CPart.Reading; LogicDisplays.cs)
     public bool WidePorts => Logic is CLogic.Mux or CLogic.BusIn or CLogic.BusOut or CLogic.FlightStabilizer || Logic == CLogic.Display && DataIn.Length > 1; // more data ports than the logic step's sums (Construct.PortIn)
     public int TextSlots; // messages it holds ("logic.text": CPart.Text and Text2; LogicText.cs)
+    public bool Labelled; // a logic part with no messages of its own: its one text slot is a player's label for it, set with the configure tool (LogicText.Name)
+    public bool Settable => Configurable || TextSlots > 0; // the configure tool opens a panel on it (settings, or only its text)
 
     /// <summary>How many wires may come into it (0: it takes no input).</summary>
     public int MaxInputs => IsSpeaker || Surface is { Control: > 0 } ? 1 : Role switch // (a speaker's one cable comes from what it repeats; a control surface's angle)
@@ -1959,6 +1961,11 @@ public static partial class ConstructParts
         ToolRacks.Parse(d, root, file); // (a Tool Rack: hand tools a crew takes and returns, ToolRacks.cs)
         ConstructPanels.Parse(d, root, file); // (display panels: DisplayPanel.cs)
         ConstructMedia.Parse(d, root, file);
+        if (d.Role == PartRole.Logic && d.TextSlots == 0 && !d.IsMedia && !d.IsRouter)
+        {
+            d.TextSlots = 1; // (a switch's, button's, lever's, timer's... label: "Hangar lights" in its look line and wiring rows; the configure tool's Label box)
+            d.Labelled = true;
+        }
         ConstructSpeakers.Parse(d, root, file);
         ConstructPhysics.ParseStabiliser(d, root, file); // (a walker stabiliser: ConstructWalkFeel.cs)
         LinkedLogistics.Parse(d, root, file); // (linked logistics: link ends, the Cargo Dock and Port, the Route Computer, the Dispatcher)
