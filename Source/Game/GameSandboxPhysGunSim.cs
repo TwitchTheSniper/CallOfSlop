@@ -6,8 +6,8 @@ namespace CallOfSlop;
 /// pg01 (user, 2026-11-17): a joined holder's own held piece is simulated on the client by the server's own spring
 /// (<see cref="ConstructGrab.Follow"/>: the same settle time, top pull, the beam's acceleration for the piece's mass and the
 /// holder's pull, gravity, and the physics step's damping and speed limits), so it swings and trails behind the crosshair
-/// as it does on the host, instead of being drawn on the crosshair. The client steps it on the stamped mover clock
-/// (GameMovers.cs: the server runs our look of mover tick T at its own tick T), keeps the poses it predicted by tick, and
+/// as it does on the host, instead of being drawn on the crosshair. The client steps it once a local tick, labelled on
+/// the stamped mover clock (GameMovers.cs: the server runs our look of mover tick T at its own tick T), keeps the poses it predicted by tick, and
 /// eases the whole predicted path towards the server's pose of the same tick (the bodies' drawn tick,
 /// <see cref="ConstructWorld.NetRenderTick"/>), so a disagreement closes without a snap and without the delay feeding back.
 /// A wall or a floor the server stopped it at still shows: the drawn piece leads the server's by at most what the old
@@ -25,7 +25,7 @@ public sealed partial class Game
     private bool _simOn, _simFree, _simStill;
     private float _simThrowSpeed;
     private ushort _simBody;
-    private uint _simTick, _simFreeTick;
+    private uint _simTick, _simFreeTick, _simCmds;
     private Vector3 _simPos, _simVel, _simSpin, _simPrevPos, _simGrabLocal, _simAimWas, _simDrawnPos;
     private Quaternion _simRot = Quaternion.Identity, _simPrevRot = Quaternion.Identity, _simDrawnRot = Quaternion.Identity;
     private float _simAimSpeed, _simBodySpeed;
@@ -70,10 +70,15 @@ public sealed partial class Game
         var c = Constructs.Get(_simBody);
         if (c == null || c.CarriedBy != 0)
             return SimStop();
-        // Step on the mover clock, as the server runs this look (a jump of the clock starts the path again).
+        // One step a local tick (a predicted command made), labelled by the mover clock, as the server runs this look. Not
+        // by the clock's own count: its steering (GameMovers.SteerMoverClock) moves it a tick without a local tick, and a
+        // step more or less in one frame drew the piece a tick's travel on or back (845 m/s2 on Windows CI; a jump of the
+        // clock past the history starts the path again).
         var target = _moverTick;
         if (target > _simTick + 30 || target + 30 < _simTick)
             SimStart(c);
+        var due = _moverCmds - _simCmds;
+        _simCmds = _moverCmds;
         var steps = 0;
         var eye = me?.RenderEye ?? Vector3.Zero;
         var look = LookDir(LookYaw, LookPitch);
@@ -82,9 +87,16 @@ public sealed partial class Game
         var creative = SandboxInfiniteParts;
         var accel = ConstructGrab.AccelFor(c.Mass, creative, SandboxHands.PullOf(LocalId, creative));
         var wantRot = Quaternion.Normalize(ConstructGrab.LookQ(hand, LookYaw) * _sbPredRel);
-        while (_simTick < target && steps++ < 8)
+        while (due > 0 && steps++ < 8)
+        {
+            due--;
             SimStep(c, aim, wantRot, accel, !_simFree && me != null);
-        _simTick = Math.Max(_simTick, target);
+        }
+        if (_simTick != target)
+        {
+            _simTick = target; // (the steering's tick: the path carries on, labelled on the clock again)
+            SimRecord();
+        }
         // The aim's speed and the server's, held up for a moment when they drop (as the old prediction's lead).
         var keep = MathF.Exp(-dt / 0.3f);
         var aimSpeed = dt > 1e-4f ? MathF.Min(Vector3.Distance(aim, _simAimWas) / dt, 60f) : 0f;
@@ -118,7 +130,7 @@ public sealed partial class Game
             }
         }
         // The drawn piece between the last two predicted ticks, as the local player is drawn.
-        var alpha = (float)Math.Clamp(MoverRenderTick - (_simTick - 1.0), 0, 1);
+        var alpha = Math.Clamp(_alpha, 0f, 1f);
         var pos = Vector3.Lerp(_simPrevPos, _simPos, alpha);
         var rot = Quaternion.Normalize(Quaternion.Slerp(_simPrevRot, _simRot, alpha));
         {
@@ -187,6 +199,7 @@ public sealed partial class Game
         _simVel = c.Asleep ? Vector3.Zero : c.Vel;
         _simSpin = c.Asleep ? Vector3.Zero : c.AngVel;
         _simTick = _moverTick;
+        _simCmds = _moverCmds;
         _simAimSpeed = _simBodySpeed = 0;
         _simThrowSpeed = 0;
         _simAimWas = c.ToWorld(c.GrabLocal);
