@@ -27,8 +27,8 @@ input[type=range] { flex: 1; min-width: 0; accent-color: var(--accent); }
 .toggles button, .views button { font: 12px var(--body); color: var(--fg); background: transparent; border: 1px solid var(--line); border-radius: 4px; padding: 4px 8px; cursor: pointer; }
 .toggles button[aria-pressed=true] { border-color: var(--accent); color: var(--accent); }
 button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-#pick, #pick2 { width: 100%; font: 600 12px var(--body); padding: 5px 6px; border: 1px solid var(--line); border-radius: 4px; background: transparent; color: var(--fg); }
-#pick option, #pick optgroup, #pick2 option, #pick2 optgroup { background: var(--bg); color: var(--fg); }
+#pick, #pick2, #pick3 { width: 100%; font: 600 12px var(--body); padding: 5px 6px; border: 1px solid var(--line); border-radius: 4px; background: transparent; color: var(--fg); }
+#pick option, #pick optgroup, #pick2 option, #pick2 optgroup, #pick3 option, #pick3 optgroup { background: var(--bg); color: var(--fg); }
 #search { width: 100%; box-sizing: border-box; font: 12px var(--body); padding: 5px 8px; border: 1px solid var(--line); border-radius: 4px; background: transparent; color: var(--fg); }
 #parts { margin: 0; padding: 0; list-style: none; overflow: auto; min-height: 60px; flex: 1; border-top: 1px solid var(--line); }
 #parts li { display: flex; justify-content: space-between; gap: 8px; padding: 3px 2px; cursor: pointer; border-bottom: 1px solid color-mix(in srgb, var(--line) 50%, transparent); }
@@ -57,7 +57,8 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
 <div id="view"></div>
 <aside id="panel">
   <select id="pick" aria-label="Choose a ship" hidden></select>
-  <select id="pick2" aria-label="Choose a deck or part" hidden></select>
+  <select id="pick2" aria-label="Choose one" hidden></select>
+  <select id="pick3" aria-label="Choose the whole of it, a deck or one of its parts" hidden></select>
   <div><h1 id="name">Construct</h1><p class="desc" id="desc"></p></div>
   <div class="stats" id="stats"></div>
   <div id="animBox" class="anim" hidden>
@@ -373,7 +374,7 @@ renderer.setAnimationLoop(now => { tick(now); controls.update(); renderer.render
 const inline = JSON.parse(document.getElementById("model").textContent);
 if (inline) show(inline);
 else {
-  const sel = document.getElementById("pick"), sel2 = document.getElementById("pick2"), cache = new Map();
+  const sel = document.getElementById("pick"), sel2 = document.getElementById("pick2"), sel3 = document.getElementById("pick3"), cache = new Map();
   const say = text => { document.getElementById("name").textContent = text; };
   const opt = (parent, value, text) => { const o = document.createElement("option"); o.value = value; o.textContent = text; parent.appendChild(o); return o; };
   const group = (parent, label) => { const g = document.createElement("optgroup"); g.label = label; parent.appendChild(g); return g; };
@@ -382,36 +383,51 @@ else {
     const idx = await (await fetch("models/index.json")).json();
     if (idx.groups) await shelves(idx);
     else {
-    const partById = new Map(idx.parts.map(p => [p.id, p])), noun = idx.noun || "ship";
-    sel.setAttribute("aria-label", "Choose a " + noun);
-    for (const sh of idx.ships) opt(sel, sh.id, sh.name);
-    if (idx.loose.length) opt(sel, "loose", "Parts in no " + noun);
+    // Three pickers: what kind (Ships or Parts), which one, and for a ship the whole of it, a deck or one of its parts.
+    const partById = new Map(idx.parts.map(p => [p.id, p])), noun = idx.noun || "ship", nouns = noun[0].toUpperCase() + noun.slice(1) + "s";
+    sel.setAttribute("aria-label", "Choose " + nouns.toLowerCase() + " or parts");
+    if (idx.ships.length) opt(sel, "ships", `${nouns} (${idx.ships.length})`);
+    if (idx.parts.length) opt(sel, "parts", `Parts (${idx.parts.length})`);
     sel.hidden = sel2.hidden = false;
-    let current = null; // (the first picker's value whose second list is filled)
-    const fill = async top => {
-      if (current === top) return; current = top; sel2.innerHTML = "";
+    let kind = null, current = null; // (whose lists the second and third pickers hold)
+    const fillKind = k => {
+      if (kind === k) return; kind = k; sel2.innerHTML = "";
+      if (k === "ships") { sel2.setAttribute("aria-label", "Choose a " + noun); for (const sh of idx.ships) opt(sel2, sh.id, sh.name); return; }
+      sel2.setAttribute("aria-label", "Choose a part");
+      const bySection = new Map(); for (const p of [...idx.parts].sort((a, b) => a.name.localeCompare(b.name))) { const k2 = p.section || "Other"; if (!bySection.has(k2)) bySection.set(k2, []); bySection.get(k2).push(p); }
+      for (const [section, ps] of [...bySection].sort((a, b) => a[0].localeCompare(b[0]))) { const g = group(sel2, section); for (const p of ps) opt(g, "loose--part-" + p.id, p.name); }
+    };
+    const fillShip = async top => {
+      if (current === top) return; current = top; sel3.innerHTML = "";
       const ship = idx.ships.find(s => s.id === top);
-      if (ship) {
-        opt(sel2, top, "Whole " + noun);
-        const m = await load(ship);
-        if (m.decks && m.decks.length) { const g = group(sel2, "Decks"); m.decks.forEach((d, i) => opt(g, top + "--deck-" + (i + 1), "Deck " + d[0])); }
-        const g = group(sel2, "Parts");
-        for (const [id, n] of [...ship.uses].sort((a, b) => (partById.get(a[0])?.name || "").localeCompare(partById.get(b[0])?.name || "")))
-          if (partById.has(id)) opt(g, top + "--part-" + id, partById.get(id).name + (n > 1 ? "  x" + n : ""));
-      } else for (const id of idx.loose) if (partById.has(id)) opt(sel2, "loose--part-" + id, partById.get(id).name);
+      opt(sel3, top, "Whole " + noun);
+      const m = await load(ship);
+      if (m.decks && m.decks.length) { const g = group(sel3, "Decks"); m.decks.forEach((d, i) => opt(g, top + "--deck-" + (i + 1), "Deck " + d[0])); }
+      const g = group(sel3, "Its parts");
+      for (const [id, n] of [...ship.uses].sort((a, b) => (partById.get(a[0])?.name || "").localeCompare(partById.get(b[0])?.name || "")))
+        if (partById.has(id)) opt(g, top + "--part-" + id, partById.get(id).name + (n > 1 ? "  x" + n : ""));
     };
     const open = async view => {
-      let [top, rest] = view.split(/--(.*)/s); if (!idx.ships.some(s => s.id === top) && top !== "loose") { top = idx.ships[0] ? idx.ships[0].id : "loose"; rest = undefined; }
-      sel.value = top; await fill(top);
-      const want = rest ? top + "--" + rest : (top === "loose" ? sel2.options[0]?.value : top);
-      if ([...sel2.options].some(o => o.value === want)) sel2.value = want;
-      const v = sel2.value || want || "";
-      const part = /--part-(.+)$/.exec(v), dk = /--deck-(\d+)$/.exec(v);
+      let [top, rest] = view.split(/--(.*)/s);
+      if (top === "parts" || top === "loose" && !/^part-/.test(rest || "")) { top = "loose"; rest = idx.parts[0] ? "part-" + [...idx.parts].sort((a, b) => a.name.localeCompare(b.name))[0].id : undefined; }
+      if (top !== "loose" && !idx.ships.some(s => s.id === top)) { top = idx.ships[0] ? idx.ships[0].id : "loose"; rest = undefined; if (top === "loose" && idx.parts[0]) rest = "part-" + idx.parts[0].id; }
+      if (top === "loose") {
+        fillKind("parts"); sel.value = "parts"; sel3.hidden = true; current = null;
+        const id = /^part-(.+)$/.exec(rest || "")?.[1];
+        if (id && partById.has(id)) { sel2.value = "loose--part-" + id; show(await load(partById.get(id))); } else say("No parts yet");
+        return;
+      }
+      fillKind("ships"); sel.value = "ships"; sel2.value = top; sel3.hidden = false; await fillShip(top);
+      const want = rest ? top + "--" + rest : top;
+      sel3.value = [...sel3.options].some(o => o.value === want) ? want : top;
+      const part = /--part-(.+)$/.exec(sel3.value), dk = /--deck-(\d+)$/.exec(sel3.value);
       if (part && partById.has(part[1])) show(await load(partById.get(part[1])));
-      else { const ship = idx.ships.find(s => s.id === top); if (!ship) { say("No models yet"); return; } const m = await load(ship); if (M !== m) show(m); deck(dk ? +dk[1] - 1 : -1); }
+      else { const m = await load(idx.ships.find(s => s.id === top)); if (M !== m) show(m); deck(dk ? +dk[1] - 1 : -1); }
     };
-    sel.onchange = () => { location.hash = sel.value; };
-    sel2.onchange = () => { location.hash = sel2.value; };
+    const go = v => { if (location.hash.slice(1) === v) open(v); else location.hash = v; }; // (the same address again: no hashchange)
+    sel.onchange = () => go(sel.value === "ships" ? (idx.ships[0]?.id || "") : "parts");
+    sel2.onchange = () => go(sel2.value);
+    sel3.onchange = () => go(sel3.value);
     addEventListener("hashchange", () => open(location.hash.slice(1)));
     await open(location.hash.slice(1));
     }
@@ -423,14 +439,17 @@ else {
     sel.setAttribute("aria-label", "Choose a kind"); sel2.setAttribute("aria-label", "Choose an animation");
     idx.groups.forEach(g => opt(sel, g.name, `${g.name} (${g.items.length})`));
     sel.hidden = sel2.hidden = false;
-    const fillShelf = name => { sel2.innerHTML = ""; for (const it of idx.groups.find(g => g.name === name).items) opt(sel2, it.id, it.name); };
+    let filled = null; // (the shelf whose items the second picker holds)
+    const fillShelf = name => { filled = name; sel2.innerHTML = ""; for (const it of idx.groups.find(g => g.name === name).items) opt(sel2, it.id, it.name); };
     const open = async id => {
       const found = byId.get(id) || [idx.groups[0].name, idx.groups[0].items[0]];
-      if (sel.value !== found[0] || !sel2.options.length) { sel.value = found[0]; fillShelf(found[0]); }
+      if (filled !== found[0]) fillShelf(found[0]);
+      sel.value = found[0];
       sel2.value = found[1].id; const m = await load(found[1]); if (M !== m) show(m);
     };
-    sel.onchange = () => { location.hash = idx.groups.find(g => g.name === sel.value).items[0].id; };
-    sel2.onchange = () => { location.hash = sel2.value; };
+    const go = v => { if (location.hash.slice(1) === v) open(v); else location.hash = v; }; // (the same address again: no hashchange)
+    sel.onchange = () => go(idx.groups.find(g => g.name === sel.value).items[0].id);
+    sel2.onchange = () => go(sel2.value);
     addEventListener("hashchange", () => open(location.hash.slice(1)));
     await open(location.hash.slice(1));
   }

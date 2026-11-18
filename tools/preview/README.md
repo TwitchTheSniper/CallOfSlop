@@ -25,7 +25,8 @@ fetches its models, so to look at it there serve DIR over http on localhost and 
 `--anim-gallery DIR` writes the same kind of gallery for things that move, with a timeline: a Play button, a time slider to
 scrub through the motion, marks that jump to each step, "Open and shut" (plays it open, pauses, plays it shut) and "Slow"
 (a quarter speed). Three cuts work on it and on the Ship and Station galleries too: **Cut at** (height), **Cut side** (across
-x) and **Cut length** (along z). A moving piece shows a faint orange outline of where it rests. The Artifact is
+x) and **Cut length** (along z). The top picker is the kind (Ships, Stations, Doors and hatches, Machines...), the second
+the one to show; the Ship and Station galleries also have a third for a ship's decks and its own parts. A moving piece shows a faint orange outline of where it rests. The Artifact is
 https://claude.ai/artifact/K33B3W7yHsqTQApajCijUD: republish it from a new run with only the changed files (the run prints
 them, like the Ship gallery), after reading or listing it once from a new session.
 
@@ -46,6 +47,7 @@ Not shown: suspension travel, walking legs, a control surface's flap, lamps and 
 {
   "blueprint": "Landing Leg Pod M",
   "title": "Landing leg pod: deploy",
+  "shelf": "Landing legs",
   "description": "Optional; the blueprint's own otherwise.",
   "seconds": 6,
   "steps": [
@@ -56,6 +58,8 @@ Not shown: suspension travel, walking legs, a control surface's flap, lamps and 
 }
 ```
 
+`"shelf"` (optional) names the top picker's group it goes under; without it a whole ship or station (a blueprint of 30 parts
+or more whose first part is in the Ship or Station group) goes under Ships or Stations, anything else under Assemblies.
 `"blueprint"` is a shipped blueprint's name or a draft blueprint file (a path, or a file name beside the timing file).
 Every event door in it opens, with the parts riding its leaf; a step's doors (every door part of that name) start at
 `"at"` seconds and take the step's `"seconds"` or their own; doors no step names start at 0. `"seconds"` at the top is the

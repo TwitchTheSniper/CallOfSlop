@@ -58,8 +58,8 @@ public static partial class ConstructPreview
         // Assemblies: one timing file each (tools/preview/anim/*.json).
         foreach (var timing in AnimFiles())
         {
-            if (AssemblyModel(timing, picked, out var name) is { } json)
-                Add("Assemblies", name, json);
+            if (AssemblyModel(timing, picked, out var name, out var shelf) is { } json)
+                Add(shelf, name, json);
             else if (name != "")
                 failed++;
         }
@@ -76,7 +76,7 @@ public static partial class ConstructPreview
                 failed++;
         }
 
-        string[] order = ["Assemblies", "Doors and hatches", "Hinges and joints", "Switches and levers", "Machines"];
+        string[] order = ["Ships", "Stations", "Assemblies", "Doors and hatches", "Hinges and joints", "Switches and levers", "Machines"];
         var list = JsonSerializer.Serialize(new { groups = order.Where(groups.ContainsKey).Select(g => new { name = g, items = groups[g] }), noun = "animation" });
         var listPath = Path.Combine(models, "index.json");
         if (!File.Exists(listPath) || File.ReadAllText(listPath) != list)
@@ -260,9 +260,10 @@ public static partial class ConstructPreview
     /// and take its "seconds" (or their own); unlisted doors start at 0. Null (and the reason printed, <paramref name="name"/> set) when it can't be made;
     /// null with an empty name when <paramref name="picked"/> leaves it out.
     /// </summary>
-    private static string? AssemblyModel(string file, HashSet<string>? picked, out string name)
+    private static string? AssemblyModel(string file, HashSet<string>? picked, out string name, out string shelf)
     {
         name = "";
+        shelf = "Assemblies";
         JsonElement root;
         try
         {
@@ -287,6 +288,11 @@ public static partial class ConstructPreview
                 steps.Add((s.GetProperty("part").GetString() ?? "", s.TryGetProperty("at", out var a) ? a.GetSingle() : 0, s.TryGetProperty("seconds", out var sec) ? sec.GetSingle() : 0, s.TryGetProperty("label", out var l) ? l.GetString() ?? "" : ""));
         var length = root.TryGetProperty("seconds", out var le) ? le.GetSingle() : 0;
         var description = root.TryGetProperty("description", out var de) ? de.GetString() : null;
+        // Its shelf: "shelf" in the file, else by what the blueprint is (a whole ship or station: its first part's group and at least 30 parts), else Assemblies.
+        if (root.TryGetProperty("shelf", out var sh) && sh.GetString() is { Length: > 0 } named)
+            shelf = named;
+        else if (ConstructBuild.FindBlueprint(what) is { Steps.Count: >= 30 } known && ConstructParts.Find(known.Steps[0].Part)?.Group is { } g && g is "Ship" or "Station")
+            shelf = g + "s";
         return Export(what, out _, out _, out _, null, null, length, false, null, steps, title, description, Path.GetFileName(file));
     }
 
