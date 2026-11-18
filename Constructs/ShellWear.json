@@ -16,5 +16,12 @@
   "serviceMaterial": "metal", // what a service costs (Recycling.json's materials)
   "serviceCost": 1,
   "hitPlating": 0.25, // % of the plating's condition a point of damage takes
-  "hitOther": 0.12 // % of one other part's (picked at random) a point of damage takes
+  "hitOther": 0.12, // % of the power cell's a point of damage to the body takes
+  // Where a hit lands (Karl, 2026-11-18): a hit on an arm or a leg goes into that actuator, and only a share of it into the shell's
+  // health, so shooting a leg off doesn't destroy the shell; a hit on the body is health (destroyed at 0) and plating; a hit on the
+  // head is health and, by chance, the processor or the optics.
+  "hitLimb": 1.2, // % of the actuator's condition a point of damage on its arm or leg takes (a failed one is lost: the shell hops)
+  "limbHealth": 0.25, // share of a limb hit's damage that reaches the shell's health
+  "headChance": 0.5, // chance a head hit damages the processor or the optics (one of the two, at random)
+  "hitHead": 1.5 // % of that work's condition a point of damage takes
 }
