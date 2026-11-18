@@ -53,6 +53,14 @@ public sealed class FactoryScript : BlueprintScript
     /// <summary>The built part of a programme object (its index in the body as the blueprint builds it), or -1.</summary>
     public int IndexOf(FactoryObject o) => _of.TryGetValue(o.Id, out var v) ? v.Index : -1;
 
+    /// <summary>
+    /// The floor tiles people and vehicles cross, each with the clear height a link over it keeps (conveyor-inclines.md section 6: 2.4 m
+    /// over the aisle, 4.5 m over the vehicle lane): --factory-check finds any chute or conveyor lower than that over one.
+    /// </summary>
+    public readonly List<(VPart Tile, float Clear)> Walkways = new();
+
+    public const float AisleClear = 2.4f, LaneClear = 4.5f;
+
     /// <summary>Stages 1 to 4 (the programme and the plan), no parts: what <c>--gen-factory --plan</c> prints, under a second.</summary>
     public static (FactoryProgramme P, FactoryPlan Plan, FactoryFunction F, FactoryStyle S) Planned(FactoryBrief brief)
     {
@@ -220,11 +228,13 @@ public sealed class FactoryScript : BlueprintScript
         {
             Paint(t, Style.Colour(_paint.Fork("lane"), "lane"));
             Finish(t, "concrete");
+            Walkways.Add((t, LaneClear));
         }
         else if (z > -(FactoryPlan.RoadDepth + FactoryPlan.AisleDepth) && zone is 'P' or 'S')
         {
             Paint(t, Style.Colour(_paint.Fork("aisle"), "aisle"));
             Finish(t, "painted deck plate");
+            Walkways.Add((t, AisleClear));
         }
         else
         {

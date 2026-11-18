@@ -141,8 +141,7 @@ public static partial class ConstructRoutes
             var d = Vector3.Normalize(pts[i] - pts[i - 1]);
             if (prev != Vector3.Zero)
             {
-                var bend = MathF.Acos(Math.Clamp(Vector3.Dot(prev, d), -1f, 1f)) * 180f / MathF.PI;
-                if (BendRule(type, bend) is { } why)
+                if (BendRule(type, prev, d) is { } why)
                     return why;
             }
             prev = d;

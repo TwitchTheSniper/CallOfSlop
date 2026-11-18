@@ -751,8 +751,9 @@ public sealed class MinerParts : IPartGenerator
         Sock(p, "pipes", Cx - Lw, Ft0 + 2.75, 20.6, "+x");
         Sock(p, "panel", Cx + Lw, Ft0 + 0.6, 19.2, "-x");
         Sock(p, "ladder", AftHatch.X0 + 0.625, Ft0, AftHatch.Z1 - 0.095, "+y");
-        for (var i = 0; i < 3; i++)
-            Sock(p, $"suit{i}", Cx - Lw, Ft0 + 0.125, 23.4 + i * 0.7, "+x");
+        for (var i = 0; i < 2; i++) // (Space Suit Lockers, then the MMU Dock by the ramp: out of it, the nacelles are a few metres aft)
+            Sock(p, $"suit{i}", Cx - Lw, Ft0 + 0.125, 23.45 + i * 0.85, "+x");
+        Sock(p, "mmuDock", Cx - Lw, Ft0 + 0.125, 25.35, "+x");
         Sock(p, "toolRack", Cx + Lw, Ft0 + 0.9, 24.0, "-x");
         for (var i = 0; i < 3; i++) // (the Robot Shell Docks down the starboard wall, by the ramp: Karl, 2026-11-17)
             Sock(p, $"shellDock{i}", Cx + Lw, Ft0 + 0.125, 20.3 + i * (2 * CrewFittingsParts.DockHalf + 0.02), "-x");
@@ -762,7 +763,7 @@ public sealed class MinerParts : IPartGenerator
         Sock(p, "lampBayB", Cx - Lw, Ft0 + 2.45, 25.4, "+x");
         Sock(p, "switchEng", Cx + Lw, Ft0 + 1.3, 18.7, "-x");
         Sock(p, "switchBayR", Cx + Lw, Ft0 + 1.3, 25.0, "-x");
-        Sock(p, "switchBayL", Cx - Lw, Ft0 + 1.3, 25.7, "+x");
+        Sock(p, "switchBayL", Cx - Lw, Ft0 + 1.3, 26.05, "+x"); // (aft of the MMU Dock's upright)
         foreach (var z in new[] { ZDrill, ZT })
             foreach (var y in new[] { 0.0, Ceil0 + 0.25 })
                 MustFit("engine deck", z, Lw + 0.25, y);
@@ -2005,8 +2006,9 @@ public sealed class MinerParts : IPartGenerator
         bp.Hang("Power Board", eng, "board", "back");
         bp.Hang("Pipe Bank", eng, "pipes", "back");
         bp.Hang("Engineer's Panel", eng, "panel", "back");
-        for (var i = 0; i < 3; i++)
-            Paint(bp, bp.Hang("Magpie Locker", eng, $"suit{i}", "wall"), Hazard, "worn paint");
+        for (var i = 0; i < 2; i++)
+            bp.Hang(EvaParts.LockerName, eng, $"suit{i}", "wall");
+        EvaParts.FitDock(bp, eng, "mmuDock", keel); // (its pack fed from the keel's tank)
         bp.Hang("Tool Rack", eng, "toolRack", "back");
         for (var i = 0; i < 3; i++)
             bp.Hang("Robot Shell", bp.Hang("Robot Shell Dock", eng, $"shellDock{i}", "wall"), "dock", "back");

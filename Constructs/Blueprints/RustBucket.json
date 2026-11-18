@@ -456,6 +456,30 @@
       "by": "back"
     },
     {
+      "part": "Space Suit Locker",
+      "on": 4,
+      "socket": "suitR",
+      "by": "wall"
+    },
+    {
+      "part": "Space Suit Locker",
+      "on": 2,
+      "socket": "suitL",
+      "by": "wall"
+    },
+    {
+      "part": "MMU Dock",
+      "on": 2,
+      "socket": "mmuDock",
+      "by": "wall"
+    },
+    {
+      "part": "Manned Manoeuvring Unit",
+      "on": 76,
+      "socket": "mmu",
+      "by": "mount"
+    },
+    {
       "part": "Requisition Crate",
       "on": 0,
       "socket": "crate0",
@@ -834,65 +858,74 @@
   ],
   "wires": [
     [
-      83,
-      81
-    ],
-    [
-      83,
-      82
-    ],
-    [
-      86,
-      84
-    ],
-    [
-      86,
+      87,
       85
     ],
     [
-      89,
-      87
+      87,
+      86
     ],
     [
-      89,
+      90,
       88
     ],
     [
       90,
+      89
+    ],
+    [
+      93,
+      91
+    ],
+    [
+      93,
       92
     ],
     [
-      118,
-      114
+      94,
+      96
     ],
     [
-      118,
-      115
+      122,
+      118
     ],
     [
-      118,
-      116
-    ],
-    [
-      118,
-      117
-    ],
-    [
-      123,
+      122,
       119
     ],
     [
-      123,
+      122,
       120
     ],
     [
-      123,
+      122,
       121
     ],
     [
-      123,
-      122
+      127,
+      123
+    ],
+    [
+      127,
+      124
+    ],
+    [
+      127,
+      125
+    ],
+    [
+      127,
+      126
     ]
+  ],
+  "links": [
+    {
+      "type": "pipe",
+      "from": 30,
+      "to": 76,
+      "fromPort": "Fuel out",
+      "toPort": "Fuel in"
+    }
   ],
   "conduit": true
 }

@@ -65,7 +65,7 @@ was found), level in the target's frame. Every part it crosses that can take a h
 (`Source/Constructs/HullHoles.cs`): a named run-time part, `Holed (BASE | x,y,z,dx,dy,dz,ux,uy,uz,w,h,l)`, its boxes cut round
 the tunnel and its thin hull facets (the skin, which collides) cut in their own plane, so the hole is gone from the drawing,
 the collider and a player's moves alike: you see space through it and walk through the gap. It travels as its key (saves,
-blueprints and the wire: protocol 351), so a joined client builds the same part. A part that can't take a hole (a machine)
+blueprints and the wire: protocol 352), so a joined client builds the same part. A part that can't take a hole (a machine)
 but is at most 2.5 m each way is burned away; bigger ones are left and logged (`[breach]` in callofslop.log). The body is
 rebuilt once, as any edit's.
 

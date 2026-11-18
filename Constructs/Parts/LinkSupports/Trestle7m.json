@@ -1,0 +1,221 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Trestle 7 m",
+  "description": "Two legs and a beam 7 m up: lay a chute or conveyor over its saddle (two lanes) to carry it over an aisle.",
+  "group": "Storage and Logistics",
+  "section": "Link supports",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 579.3,
+  "health": 1900,
+  "armour": 10,
+  "material": "steel",
+  "color": "#3e5a70",
+  "attachSeconds": 2.5,
+  "collider": "boxes",
+  "tray": {
+    "at": [
+      0,
+      7.12,
+      0
+    ],
+    "axis": [
+      0,
+      0,
+      1
+    ],
+    "across": [
+      1,
+      0,
+      0
+    ],
+    "lanes": 2,
+    "pitch": 0.8,
+    "length": 0.3,
+    "guard": 0.3
+  },
+  "boxes": [
+    {
+      "min": [
+        -0.88,
+        0.0,
+        -0.06
+      ],
+      "max": [
+        -0.76,
+        6.796,
+        0.06
+      ]
+    },
+    {
+      "min": [
+        -0.96,
+        0.003,
+        -0.14
+      ],
+      "max": [
+        -0.68,
+        0.025,
+        0.14
+      ],
+      "color": "#24282c",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.884,
+        1.7,
+        -0.064
+      ],
+      "max": [
+        -0.756,
+        1.9,
+        0.064
+      ],
+      "color": "#f2b01e",
+      "detail": true
+    },
+    {
+      "min": [
+        0.76,
+        0.0,
+        -0.06
+      ],
+      "max": [
+        0.88,
+        6.796,
+        0.06
+      ]
+    },
+    {
+      "min": [
+        0.68,
+        0.003,
+        -0.14
+      ],
+      "max": [
+        0.96,
+        0.025,
+        0.14
+      ],
+      "color": "#24282c",
+      "detail": true
+    },
+    {
+      "min": [
+        0.756,
+        1.7,
+        -0.064
+      ],
+      "max": [
+        0.884,
+        1.9,
+        0.064
+      ],
+      "color": "#f2b01e",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.76,
+        3.11,
+        -0.04
+      ],
+      "max": [
+        0.76,
+        3.19,
+        0.04
+      ],
+      "color": "#3e5a70"
+    },
+    {
+      "min": [
+        -0.9,
+        6.8,
+        -0.15
+      ],
+      "max": [
+        0.9,
+        7.0,
+        0.15
+      ],
+      "color": "#2f3a44"
+    },
+    {
+      "min": [
+        -0.775,
+        6.998,
+        -0.144
+      ],
+      "max": [
+        -0.745,
+        7.035,
+        0.144
+      ],
+      "color": "#8d969e",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.055,
+        6.998,
+        -0.144
+      ],
+      "max": [
+        -0.025,
+        7.035,
+        0.144
+      ],
+      "color": "#8d969e",
+      "detail": true
+    },
+    {
+      "min": [
+        0.025,
+        6.998,
+        -0.144
+      ],
+      "max": [
+        0.055,
+        7.035,
+        0.144
+      ],
+      "color": "#8d969e",
+      "detail": true
+    },
+    {
+      "min": [
+        0.745,
+        6.998,
+        -0.144
+      ],
+      "max": [
+        0.775,
+        7.035,
+        0.144
+      ],
+      "color": "#8d969e",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "foot",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        7.0,
+        0.0
+      ],
+      "dir": "+y"
+    }
+  ]
+}
