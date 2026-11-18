@@ -118,7 +118,7 @@ const b64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
 const finishHue = {}; let hueN = 0;
 const finishColour = name => { if (!(name in finishHue)) finishHue[name] = new THREE.Color().setHSL((hueN++ * 0.618) % 1, 0.55, 0.55); return finishHue[name]; };
 const tmp = new THREE.Color();
-let pieces = []; // (an animation: one group a moving track, holding its solid and glass)
+let pieces = [], partBox = [], partMove = new Uint8Array(0); // (an animation: one group a moving track, holding its solid and glass)
 let M = null, look16, triPart, triTrack = null, solidGeo, glassGeo, solid, glass, grid = null, edges = null, size = [1, 1, 1], centre = new THREE.Vector3(), radius = 1;
 let picked = -1, byFinish = false, edgesOn = false, glassOn = true, linksOn = false, xray = false, links = null;
 
@@ -229,7 +229,14 @@ function show(model) {
   setupAnim();
   document.getElementById("tLinks").hidden = document.getElementById("tXray").hidden = !(M.links && M.links.length);
   deck(-1); resetCuts();
-  names = new Map(); M.parts.forEach(([n], i) => { if (!names.has(n)) names.set(n, []); names.get(n).push(i); });
+  // Each part's box at rest and the track it moves on (0: still), for the list's "centre on it" and the Animation gallery's list of moving parts only.
+  partBox = M.parts.map(() => new THREE.Box3()); partMove = new Uint8Array(M.parts.length);
+  const pv = new THREE.Vector3();
+  for (let t = 0; t < look16.length; t++) {
+    const pi = triPart[t]; if (triTrack && triTrack[t]) partMove[pi] = triTrack[t];
+    for (let v = 0; v < 3; v++) partBox[pi].expandByPoint(pv.set(pos16[t*9+v*3] / M.scale, pos16[t*9+v*3+1] / M.scale, pos16[t*9+v*3+2] / M.scale));
+  }
+  names = new Map(); M.parts.forEach(([n], i) => { if (triTrack && !partMove[i]) return; if (!names.has(n)) names.set(n, []); names.get(n).push(i); });
   search.value = ""; paint(); fillList();
 }
 
@@ -266,10 +273,19 @@ function fillList() {
   const q = search.value.trim().toLowerCase(); list.innerHTML = "";
   for (const [n, ids] of names) if (!q || n.toLowerCase().includes(q)) {
     const li = document.createElement("li"); li.innerHTML = `<span></span><em>${ids.length > 1 ? "x" + ids.length : "#" + ids[0]}</em>`; li.firstChild.textContent = n;
-    li.classList.toggle("on", ids.includes(picked)); li.onclick = () => pick(ids.includes(picked) ? ids[(ids.indexOf(picked) + 1) % ids.length] : ids[0]); list.appendChild(li);
+    li.classList.toggle("on", ids.includes(picked)); li.onclick = () => { const i = ids.includes(picked) ? ids[(ids.indexOf(picked) + 1) % ids.length] : ids[0]; pick(i); focus(i); }; list.appendChild(li);
   }
 }
 search.oninput = fillList;
+// Centre the view on part i where it is now (a moving part at its current pose), keeping the way the camera looks.
+function focus(i) {
+  if (!M || !partBox[i] || partBox[i].isEmpty()) return;
+  const b = partBox[i].clone(), k = partMove[i];
+  if (k && pieces[k - 1]) { pieces[k - 1].group.updateMatrixWorld(); b.applyMatrix4(pieces[k - 1].group.matrixWorld); }
+  const c = b.getCenter(new THREE.Vector3()), r = Math.max(0.3, b.getSize(new THREE.Vector3()).length() / 2);
+  const d = camera.position.clone().sub(controls.target); if (d.lengthSq() < 1e-9) d.set(-1, 0.7, -1.1);
+  controls.target.copy(c); camera.position.copy(c).add(d.normalize().multiplyScalar(r * 3.2)); controls.update();
+}
 function pick(i) {
   picked = i; paint(); fillList();
   const el = document.getElementById("picked"); el.hidden = !(M && i >= 0); if (!el.hidden) el.textContent = `Picked: ${M.parts[i][0]}  #${i}`;
