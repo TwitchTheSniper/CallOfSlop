@@ -338,12 +338,16 @@ public sealed class Assembling : IPartGenerator
     private static bool IsItem(PyDict p) => (p.Get("tool") as string ?? "wrench") != "welder" && Py.D(p.Get("mass") ?? 0) <= 40 && !Py.Truthy(p.Get("physicsOnly"));
 
     /// <summary>A part's recipe by rule.</summary>
+    private static readonly List<string> _capped = [];
+
     private static PyDict LongTail(PyDict p)
     {
         var mass = Py.D(p["mass"]);
         var role = p.Get("role") as string ?? "frame";
         var (material, share, second) = Class.TryGetValue(p.Get("material") as string ?? "steel", out var cl) ? cl : Class["steel"];
         var units = Math.Min(MaxUnits, Math.Max(1, RInt(mass * share)));
+        if (RInt(mass * share) > MaxUnits)
+            _capped.Add($"{p.Get("name")} ({RInt(mass * share)})"); // (never silent: a family that caps all its sizes costs the same at every size; Make logs them)
         var m = new PyDict { [material] = units };
         if (second is not null)
             m[second] = Math.Min(MaxUnits, Math.Max(1, units / 4));
@@ -552,6 +556,9 @@ public sealed class Assembling : IPartGenerator
         }
         if (recipes.Count > AssemblingTable.MaxRecipes) // (past it the game refuses the whole table, and every Assembler has no recipes)
             throw new InvalidOperationException($"assembling: {recipes.Count} recipes, past AssemblingTable.MaxRecipes ({AssemblingTable.MaxRecipes})");
+        if (_capped.Count > 0)
+            Console.WriteLine($"[assembling] {_capped.Count} recipes capped at {MaxUnits} units of their main material (their mass asks more): {string.Join(", ", _capped.Take(12))}{(_capped.Count > 12 ? ", ..." : "")}");
+        _capped.Clear();
         o.File("Constructs/Assembling.json", Layout(recipes));
     }
 

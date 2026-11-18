@@ -100,11 +100,14 @@ public static unsafe class BloodOverlayRenderer
         ? (new Vector3(0.24f, 0.035f, 0.045f), new Vector3(0.08f, 0.01f, 0.015f))
         : (new Vector3(0.62f, 0.03f, 0.03f), new Vector3(0.2f, 0.0f, 0.01f));
 
+    /// <summary>A robot shell's overlay: oil on the visor (dark brown to black), in place of blood.</summary>
+    public static (Vector3 Red, Vector3 Dark) OilColors => (new Vector3(0.11f, 0.09f, 0.05f), new Vector3(0.02f, 0.018f, 0.012f));
+
     /// <summary>
     /// Builds and draws the overlay for this frame (call in the HUD pass: ortho camera, blending on, depth test off).
     /// Restores <paramref name="g"/>'s program and texture afterwards.
     /// </summary>
-    public static void Draw(Renderer g, BloodOverlay overlay, float screenW, float screenH, float spanLeft, float spanW, BloodMode mode, BloodColour colour)
+    public static void Draw(Renderer g, BloodOverlay overlay, float screenW, float screenH, float spanLeft, float spanW, BloodMode mode, BloodColour colour, bool oil = false)
     {
         var n = overlay.Build(A, B, screenW, screenH, spanLeft, spanW, mode);
         LastInstances = n;
@@ -122,7 +125,7 @@ public static unsafe class BloodOverlayRenderer
         fixed (Vector4* pb = B)
             Native.glUniform4fv(_locB, n, (float*)pb);
         Native.glUniform2f(_locScreen, screenW, screenH);
-        var (red, dark) = Colors(colour);
+        var (red, dark) = oil ? OilColors : Colors(colour);
         Native.glUniform3f(_locRed, red.X, red.Y, red.Z);
         Native.glUniform3f(_locDark, dark.X, dark.Y, dark.Z);
         Native.glUniform1i(_locMask, 2);

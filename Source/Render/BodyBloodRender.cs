@@ -38,6 +38,9 @@ public static class BodyBloodRender
     /// <summary>Player blood: bright red or the dark option.</summary>
     public static Vector3 PlayerColor => Colour == BloodColour.Dark ? new Vector3(0.2f, 0.03f, 0.035f) : new Vector3(0.5f, 0.02f, 0.02f);
 
+    /// <summary>A robot shell's marks: dark oil and lubricant, not blood (Karl, 2026-11-17), whatever the blood colour setting.</summary>
+    public static readonly Vector3 OilColor = new(0.045f, 0.038f, 0.026f);
+
     /// <summary>Zombie blood: a dark, brownish ichor.</summary>
     public static readonly Vector3 ZombieColor = new(0.2f, 0.11f, 0.035f);
 
@@ -190,7 +193,7 @@ public static class BodyBloodRender
         var t0 = Stopwatch.GetTimestamp();
         SoldierFrames(body, legs, stance, p.RenderYaw, out var f);
         _count = Place(p.Id, p.Blood, frac, f, Mode, Data);
-        _color = PlayerColor;
+        _color = p.InShell ? OilColor : PlayerColor;
         _yaw = p.RenderYaw;
         Note(t0);
     }

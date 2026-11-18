@@ -197,7 +197,7 @@ public static class ConstructRotor
         var density = ConstructAir.Density(com);
         var wind = ConstructAir.Wind(com);
         var t = AirTable.Current;
-        var engineOn = ConstructPhysics.DriveOn(c);
+        var engineOn = ConstructPhysics.DriveAsked(c); // (an engine a generator set runs turns no propeller)
         var load = 0f;
         var thrust = 0f;
         var live = false;

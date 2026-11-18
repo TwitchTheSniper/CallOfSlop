@@ -79,6 +79,7 @@ public static partial class ConstructRide
         c.Vel = SurfaceVel(frame, seg, c.WorldCom);
         c.AngVel = SurfaceSpin(frame, seg);
         c.VelBefore = c.VelThen = c.Vel; // (no jolt on its first step: it was always moving so)
+        c.SpeedKept = c.Vel.Length(); // (and the frame's speed even past the physics' limit: ConstructPhysics.Integrate)
         c.Asleep = false;
         c.SleepTicks = 0;
         return true;
@@ -118,6 +119,7 @@ public static partial class ConstructRide
     private static void SpawnOne(ConstructWorld w, Construct c)
     {
         c.Fresh = false;
+        c.SpeedKept = c.Vel.Length(); // (a path that gave it its frame's motion, a split or a cut: past the speed limit too, ConstructPhysics.Integrate)
         if (c.Anchored || c.Pinned || c.Frozen || c.Asleep || c.CarriedBy != 0 || c.SpaceShip != 0 || c.HeldBy != 0 || c.PartCount == 0
             || c.Vel != Vector3.Zero || c.AngVel != Vector3.Zero)
             return; // (held, asleep, or given a motion by the path that made it)

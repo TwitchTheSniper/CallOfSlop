@@ -279,6 +279,16 @@
   ],
   "sockets": [
     {
+      "name": "limpetClamp",
+      "at": [
+        4.275,
+        -1.705,
+        29.175
+      ],
+      "dir": "-y",
+      "class": "medium"
+    },
+    {
       "name": "j0",
       "at": [
         6.375,

@@ -1,0 +1,382 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Small Generator Head",
+  "description": "Turned by an engine: bolt a flywheel's output to it, or run a drive shaft to it. Up to 150 kW into the circuit, 90% of the shaft's power. The engine runs as the circuit asks.",
+  "group": "Drivetrain",
+  "section": "Power plants",
+  "role": "generator",
+  "tool": "wrench",
+  "mass": 240.0,
+  "health": 500,
+  "armour": 8,
+  "material": "steel",
+  "color": "#4f6a52",
+  "attachSeconds": 2.5,
+  "collider": "boxes",
+  "generator": {
+    "rate": 150,
+    "fuel": "none",
+    "spool": 2.0,
+    "shaft": 0.9
+  },
+  "ports": [
+    {
+      "name": "Power out",
+      "type": "power",
+      "dir": "out",
+      "at": [
+        0,
+        0.263,
+        0
+      ],
+      "face": "+y"
+    },
+    {
+      "name": "Drive in",
+      "type": "shaft",
+      "dir": "in",
+      "socket": "drive",
+      "at": [
+        0,
+        0,
+        -0.3
+      ],
+      "face": "-z"
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -0.2,
+        -0.2,
+        -0.252
+      ],
+      "max": [
+        0.2,
+        0.2,
+        0.264
+      ]
+    },
+    {
+      "min": [
+        -0.164,
+        -0.164,
+        -0.288
+      ],
+      "max": [
+        0.164,
+        0.164,
+        -0.255
+      ],
+      "color": "#2b2e2c"
+    },
+    {
+      "min": [
+        -0.14,
+        -0.14,
+        0.267
+      ],
+      "max": [
+        0.14,
+        0.14,
+        0.3
+      ],
+      "color": "#2b2e2c"
+    },
+    {
+      "min": [
+        -0.036,
+        -0.036,
+        -0.3
+      ],
+      "max": [
+        0.036,
+        0.036,
+        -0.285
+      ],
+      "color": "#9aa0a6"
+    },
+    {
+      "min": [
+        -0.19,
+        -0.5,
+        -0.24
+      ],
+      "max": [
+        -0.1,
+        -0.203,
+        0.252
+      ],
+      "color": "#2b2e2c"
+    },
+    {
+      "min": [
+        0.1,
+        -0.5,
+        -0.24
+      ],
+      "max": [
+        0.19,
+        -0.203,
+        0.252
+      ],
+      "color": "#2b2e2c"
+    },
+    {
+      "min": [
+        -0.23,
+        -0.14,
+        -0.192
+      ],
+      "max": [
+        -0.196,
+        0.15,
+        -0.168
+      ],
+      "color": "#2b2e2c",
+      "detail": true
+    },
+    {
+      "min": [
+        0.196,
+        -0.14,
+        -0.192
+      ],
+      "max": [
+        0.23,
+        0.15,
+        -0.168
+      ],
+      "color": "#2b2e2c",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.23,
+        -0.14,
+        -0.096
+      ],
+      "max": [
+        -0.196,
+        0.15,
+        -0.072
+      ],
+      "color": "#2b2e2c",
+      "detail": true
+    },
+    {
+      "min": [
+        0.196,
+        -0.14,
+        -0.096
+      ],
+      "max": [
+        0.23,
+        0.15,
+        -0.072
+      ],
+      "color": "#2b2e2c",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.23,
+        -0.14,
+        0.0
+      ],
+      "max": [
+        -0.196,
+        0.15,
+        0.024
+      ],
+      "color": "#2b2e2c",
+      "detail": true
+    },
+    {
+      "min": [
+        0.196,
+        -0.14,
+        0.0
+      ],
+      "max": [
+        0.23,
+        0.15,
+        0.024
+      ],
+      "color": "#2b2e2c",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.23,
+        -0.14,
+        0.096
+      ],
+      "max": [
+        -0.196,
+        0.15,
+        0.12
+      ],
+      "color": "#2b2e2c",
+      "detail": true
+    },
+    {
+      "min": [
+        0.196,
+        -0.14,
+        0.096
+      ],
+      "max": [
+        0.23,
+        0.15,
+        0.12
+      ],
+      "color": "#2b2e2c",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.23,
+        -0.14,
+        0.192
+      ],
+      "max": [
+        -0.196,
+        0.15,
+        0.216
+      ],
+      "color": "#2b2e2c",
+      "detail": true
+    },
+    {
+      "min": [
+        0.196,
+        -0.14,
+        0.192
+      ],
+      "max": [
+        0.23,
+        0.15,
+        0.216
+      ],
+      "color": "#2b2e2c",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.07,
+        0.196,
+        -0.07
+      ],
+      "max": [
+        0.07,
+        0.263,
+        0.07
+      ],
+      "color": "#2b2e2c"
+    },
+    {
+      "min": [
+        -0.055,
+        0.259,
+        -0.018
+      ],
+      "max": [
+        -0.015,
+        0.296,
+        0.018
+      ],
+      "color": "#b8733e",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.02,
+        0.259,
+        -0.02
+      ],
+      "max": [
+        0.02,
+        0.298,
+        0.02
+      ],
+      "color": "#b8733e",
+      "detail": true
+    },
+    {
+      "min": [
+        0.015,
+        0.259,
+        -0.018
+      ],
+      "max": [
+        0.055,
+        0.296,
+        0.018
+      ],
+      "color": "#b8733e",
+      "detail": true
+    },
+    {
+      "min": [
+        0.202,
+        0.02,
+        -0.072
+      ],
+      "max": [
+        0.218,
+        0.1,
+        0.072
+      ],
+      "color": "#d9c27a",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "drive",
+      "at": [
+        0.0,
+        0.0,
+        -0.3
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        -0.5,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+x",
+      "at": [
+        0.2,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.2,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        0.3
+      ],
+      "dir": "+z"
+    }
+  ]
+}

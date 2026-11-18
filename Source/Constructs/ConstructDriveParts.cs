@@ -426,7 +426,7 @@ public static partial class ConstructParts
     /// <summary>A power plant's block (role <c>generator</c>; ConstructPlant.cs).</summary>
     private static void ParseGenerator(ConstructPartDef d, JsonElement b, string file, string bw)
     {
-        Known(b, ["rate", "fuel", "burnRate", "spool", "buffer"], bw);
+        Known(b, ["rate", "fuel", "burnRate", "spool", "buffer", "shaft"], bw);
         d.PlantRate = Num(Need(b, "rate", bw), file, "generator.rate");
         Range(d.PlantRate, 0.1f, 100_000_000, file, "generator.rate");
         d.PlantFuel = Opt(b, "fuel") is { } fu ? EnumOf<EngineFuel>(Str(fu, file, "generator.fuel"), file, "generator.fuel") : EngineFuel.Fuel;
@@ -440,6 +440,10 @@ public static partial class ConstructParts
         Range(d.PlantSpool, 0, 120, file, "generator.spool");
         d.PlantBuffer = Opt(b, "buffer") is { } bf ? Num(bf, file, "generator.buffer") : d.PlantRate * 2;
         Range(d.PlantBuffer, 1, 100_000_000_000f, file, "generator.buffer");
+        d.PlantShaft = Opt(b, "shaft") is { } sh ? Num(sh, file, "generator.shaft") : 0f; // (a Generator Head: an engine's shaft turns it, ConstructGenset.cs)
+        Range(d.PlantShaft, 0, 1, file, "generator.shaft");
+        if (d.PlantShaft > 0 && d.PlantFuel != EngineFuel.None)
+            throw new ConstructPartException($"{file}: a generator head (\"shaft\") burns nothing itself: \"fuel\": \"none\"");
         d.DataIn = ["run"];
     }
 

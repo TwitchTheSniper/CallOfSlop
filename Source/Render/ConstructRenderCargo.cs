@@ -16,6 +16,7 @@ public static partial class ConstructRender
     public static Vector3 VolumeDragSize, VolumeDragAt;
 
     private static readonly Vector3 VolFrozen = new(0.45f, 0.85f, 1f), VolFree = new(1f, 0.72f, 0.25f), VolHot = new(1f, 1f, 1f), VolStore = new(0.5f, 0.9f, 0.55f), VolTank = new(0.4f, 0.65f, 1f), VolOpen = new(1f, 0.25f, 0.2f);
+    private static readonly Vector3 WallSide = new(0.55f, 0.54f, 0.5f), WallFloor = new(0.47f, 0.46f, 0.43f);
 
     /// <summary>Every cargo volume of construct <paramref name="c"/> (its body matrix <paramref name="body"/>).</summary>
     private static int DrawVolumes(Renderer gfx, Construct c, in Matrix4x4 body, float alpha)
@@ -50,6 +51,14 @@ public static partial class ConstructRender
                 gfx.Draw(Matrix4x4.CreateScale(half * 2 * slack) * Matrix4x4.CreateTranslation(centre) * m, skin, 1f);
                 n++;
             }
+            if (store && !dragged && ConstructStoreVolume.Walled(p, p.D))
+                for (var k = 0; k < ConstructStoreVolume.WallBoxes; k++)
+                {
+                    // A walled Storage Volume's floor and walls, solid concrete (a box being dragged is only outlined until it is let go).
+                    ConstructStoreVolume.WallBox(c, i, k, out var wc, out var wh);
+                    gfx.Draw(Matrix4x4.CreateScale(wh * 2) * Matrix4x4.CreateTranslation(wc) * m, k == 0 ? WallFloor : WallSide, 1f);
+                    n++;
+                }
             if (tank && !p.D.IsEnvelope && !dragged && ConstructFluid.Fill(c, i, out var tc, out var th) && ConstructFluid.Held(p, p.D) is { } fluid)
             {
                 // The fluid: see-through, clear of the player's walls, with a brighter surface so the level reads.

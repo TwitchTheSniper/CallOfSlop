@@ -252,7 +252,7 @@ public sealed partial class Game
         }
     }
 
-    /// <summary>Client: Msg.Intel (u16 seconds, u8 n, n x (3 x f32 where, text label): protocol 340).</summary>
+    /// <summary>Client: Msg.Intel (u16 seconds, u8 n, n x (3 x f32 where, text label): protocol 345).</summary>
     private void ReadIntel(ref PacketReader r)
     {
         if (!r.Has(3))

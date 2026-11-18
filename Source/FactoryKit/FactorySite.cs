@@ -33,15 +33,15 @@ public sealed class FactorySite
     public static FactorySite OreLoop(string style, int seed)
     {
         var post = FactoryScript.Planned(new FactoryBrief { Function = "extraction", Style = style, Seed = seed });
-        var skip = post.Plan.CellOf(post.P.Of("loading").First()) ?? throw new FactoryKitException("the post has no loading skip");
+        var skip = post.Plan.CellOf(post.P.Of("loading").First()) ?? throw new FactoryKitException("the post has no loading auger");
         var s = new FactorySite { Name = $"{style} Ore Loop {seed}" };
-        s.About = $"The ore loop (factory-generator.md phase 1): {style} Extraction Post {seed} over a deposit, {style} Refinery {seed} downstream on the same road line, an Ore Hauler under the post's loading skip. Flip LOAD on the skip's post, drive east along the road to the refinery's Tipping Bunker (the bunker on your left, your left wheels along its edge) and flip TIP behind the cab.";
+        s.About = $"The ore loop (factory-generator.md phase 1): {style} Extraction Post {seed} over a deposit, {style} Refinery {seed} downstream on the same road line, an Ore Hauler under the post's loading auger. Flip LOAD on the auger's post, drive east along the road to the refinery's Tipping Grate (the grate on your left, your left wheels along its edge) and flip TIP behind the cab.";
         var postName = FactoryScript.BlueprintName(new FactoryBrief { Function = "extraction", Style = style, Seed = seed });
         var refName = FactoryScript.BlueprintName(new FactoryBrief { Function = "refinery", Style = style, Seed = seed });
         s.Bodies.Add(new SiteBody(postName, 0, 0, 0, "over the deposit, its drills along the back edge"));
         s.Bodies.Add(new SiteBody(refName, post.Plan.Length + Gap, 0, 0, "downstream, the same road line"));
-        // The hauler's bed middle under the skip's lip (FactoryHaul.Park: about 1.9 m out from the skip's middle towards the road), facing east.
-        s.Bodies.Add(new SiteBody($"{style} Ore Hauler 1", skip.X, -(FactoryPlan.RoadDepth + 0.25f) + 1.05f, 90, "its bed's middle, facing east, under the loading skip"));
+        // The hauler's bed middle under the auger's spout (FactoryScript.Loading: over the road's middle), facing east.
+        s.Bodies.Add(new SiteBody($"{style} Ore Hauler 1", skip.X, FactoryPlan.SpoutZ, 90, "its bed's middle, facing east, under the loading auger's spout"));
         return s;
     }
 

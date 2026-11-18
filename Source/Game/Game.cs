@@ -881,6 +881,7 @@ public sealed partial class Game : IDisposable
         if (size < 0)
             size = def.BulletSize; // other players' shots: the weapon's (mean) round size
         TracerSounds(from, to, def, hitFlags); // impacts, whizzes, hits heard in the world (GameSounds.cs)
+        ShellOilFx(from, to, hitFlags); // a hit on a robot shell sprays oil, not blood (GameRobotShell.cs)
         ImpactDecals.OnTracer(World.Map, from, to, shooter?.Id ?? (byte)255, now, def.Pellets > 1, ImpactDecals.CalibreScale(def) * SizeLook(size)); // a bullet-impact decal where it ends on a surface (Source/Decals); bigger rounds leave bigger marks
         PenetrationMarks(through, to, def, shooter?.Id ?? (byte)255, now); // went through walls on the way: marks on both sides (GamePenetration.cs)
         var color = def.Sound switch
@@ -1036,7 +1037,7 @@ public sealed partial class Game : IDisposable
         LastCorrection = error.Length();
         me.Sim = state;
 
-        if (respawned || LastCorrection > (state.Noclip ? MathF.Max(2f, state.Velocity.Length() * 0.2f) : state.RideBody != 0 ? RideEaseMax : 2f)) // (flying fast, one tick's turn is metres: eased like any other, not a jump; landing on a moving deck, this client's copy is a round trip behind: eased too)
+        if (respawned || LastCorrection > (state.RideBody != 0 ? RideEaseMax : state.Noclip ? MathF.Max(2f, state.Velocity.Length() * 0.2f) : 2f)) // (flying fast, one tick's turn is metres: eased like any other, not a jump; landing on a moving deck or caught into its frame in noclip, this client's copy is a round trip behind: eased too)
         {
             me.PrevPosition = state.Position;
             _correction = Vector3.Zero;
@@ -1591,10 +1592,13 @@ public sealed partial class Game : IDisposable
         amount = StreakArmorAbsorb(victim, amount, head, kind, now); // Ballistic Vests and the Juggernaut suit (KillStreaksMore.cs)
         if (amount <= 0)
             return false;
-        amount = ShellHit(victim, amount); // (a robot shell's plating, and the hit's wear: GameShellWear.cs)
+        var shellPart = victim.InShell ? (head ? BloodPart.Head : BloodOnHit(victim, attacker, kind, from)) : BloodPart.None; // (a shell's hit goes by where it lands)
+        if (victim.InShell && head)
+            victim.Blood = BloodMarks.AddHit(victim.Blood, BloodPart.Head, BloodMarks.SectorOfPart(BloodPart.Head));
+        amount = ShellHit(victim, amount, shellPart); // (a robot shell: the part hit, its plating and the hit's wear: GameShellWear.cs)
         var healthBefore = victim.Health;
         victim.Health -= amount;
-        var hitPart = BloodOnHit(victim, attacker, kind, from); // the blood marks: body part and direction (BodyBlood.cs)
+        var hitPart = victim.InShell ? shellPart : BloodOnHit(victim, attacker, kind, from); // the blood marks: body part and direction (BodyBlood.cs)
         if (victim.Team == SbPeopleTeam)
             LockdownAssault(attacker, victim, now); // (the penal colony's staff: the lockdown, GameColonyLockdown.cs)
         if (victim.Health > 0)

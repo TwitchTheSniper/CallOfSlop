@@ -168,8 +168,94 @@ public static class RideCheck
                     lapses++;
                 w.Remove(beside);
             }
+            // ...and one cut free there that the physics then steps: it keeps the ship's speed past the physics' limit (a part
+            // detached from a fast ship flew off behind it: Construct.SpeedKept). Made well over the ship, so the step meets
+            // nothing, and the ship is held where it is for that step.
+            if (ConstructBuild.PlaceNew(w, ConstructParts.Need("Deck Plate"), at + GravityFrames.UpAt(at) * (c.Radius * 2 + 20f), 0) is { } cut)
+            {
+                cut.Rebuild();
+                cut.Vel = c.PointVel(cut.WorldCom);
+                cut.AngVel = c.AngVel;
+                var want = cut.Vel;
+                ConstructRide.SpawnIntoMotion(w);
+                c.Anchored = true;
+                ConstructPhysics.Step(w, World.Query, World.TickDt);
+                c.Anchored = false;
+                var off = Vector3.Dot(want - cut.Vel, want.LengthSquared() > 1e-4f ? Vector3.Normalize(want) : Vector3.Zero);
+                Console.WriteLine($"  plate cut free, a physics step on: {cut.Vel.Length():0.00} m/s, the ship there {want.Length():0.00} m/s (fell behind by {off:0.00} m/s)");
+                if (off > 0.5f)
+                    lapses++;
+                w.Remove(cut);
+            }
         }
+        c.Pos = c.PrevPos = home - Vector3.Transform(-Vector3.UnitZ, c.Rot) * MathF.Min(speed * 2.5f, 120f); // (back over the yard, and short of it by half the flight: the map's edge clamps a flyer too; past 50 m/s the yard is too small, try it in space)
+        lapses += NoclipBoard(w, c, speed);
         return lapses;
+    }
+
+    /// <summary>
+    /// Creative noclip into the moving ship (NoclipMove.cs, ConstructRide.NoclipFrame): a flyer hovers still in its path, the
+    /// ship overtakes them and they are caught into its frame; they hover on while it flies on and turns (they must stay in);
+    /// then they leave noclip and must stand in the ship, on a deck.
+    /// </summary>
+    private static int NoclipBoard(ConstructWorld w, Construct c, float speed)
+    {
+        var was = ConstructRide.Bodies;
+        ConstructRide.Bodies = w;
+        try
+        {
+            var mid = (c.LocalMin + c.LocalMax) * 0.5f;
+            var start = c.ToWorld(new Vector3(mid.X, mid.Y, c.LocalMin.Z - 6f)); // (still, in its path ahead of the bow: it overtakes them)
+            var s = new MoveState { Position = start };
+            var yaw = 0f;
+            int caught = -1, lost = 0, t = 0;
+            var vel = Vector3.Transform(-Vector3.UnitZ, c.Rot) * speed;
+            for (; t < 60 * 2; t++)
+            {
+                var fwd = Vector3.Transform(-Vector3.UnitZ, c.Rot);
+                vel = fwd * speed;
+                var q = Quaternion.CreateFromAxisAngle(Vector3.UnitY, 0.05f * World.TickDt) * c.Rot;
+                Pose(w, c, c.Pos + vel * World.TickDt, q, vel, new Vector3(0, 0.05f, 0));
+                var b = Buttons.None;
+                var cmd = new InputCmd { Buttons = b, Yaw = yaw, SpeedPct = 100, Noclip = true, RideBody = s.RideBody, RideYaw = 0 };
+                World.Simulate(ref s, cmd);
+                if (s.RideBody == c.Id && caught < 0)
+                    caught = t;
+                else if (caught >= 0 && s.RideBody != c.Id)
+                    lost++;
+            }
+            var inside = c.ToLocal(s.Position);
+            Console.WriteLine($"  noclip in: {(caught < 0 ? "NEVER caught" : $"caught at t{caught}")}, out of its frame {lost} ticks after, at {inside} (bounds {c.LocalMin} .. {c.LocalMax})");
+            // Leaving noclip there: the game finds room (Game.NoclipLeft), then they ride its frame.
+            World.Simulate(ref s, new InputCmd { Yaw = yaw, SpeedPct = 100, RideBody = s.RideBody });
+            if (s.NoclipExit)
+            {
+                s.NoclipExit = false;
+                s.Position = NoclipMove.ExitSpot(s.Position, 0, w);
+                s.RideWorld = s.Position;
+                ConstructRide.NoclipLanded(ref s);
+            }
+            var grounded = 0;
+            var off = 0;
+            for (var k = 0; k < 60 * 3; k++, t++)
+            {
+                var fwd = Vector3.Transform(-Vector3.UnitZ, c.Rot);
+                vel = fwd * speed;
+                Pose(w, c, c.Pos + vel * World.TickDt, c.Rot, vel, Vector3.Zero);
+                World.Simulate(ref s, new InputCmd { Yaw = yaw, SpeedPct = 100, RideBody = s.RideBody });
+                w.BlockPlayer(ref s, World.HeightOf(s.Stance), server: true, who: 1);
+                grounded += s.Grounded && s.RideBody == c.Id ? 1 : 0;
+                off += s.RideBody != c.Id ? 1 : 0;
+            }
+            var end = c.ToLocal(s.Position);
+            var on = s.RideBody == c.Id && s.Grounded && ConstructRide.InFrame(c, end, Vector3.UnitY, 0f, 0f);
+            Console.WriteLine($"  noclip off: {(on ? "on a deck" : "NOT on a deck")} at {end}, grounded in its frame {grounded} of 180 ticks, out of it {off}, speed off the ship's {(s.Velocity).Length():0.00} m/s (relative)");
+            return caught < 0 || lost > 0 || !on ? 1 : 0;
+        }
+        finally
+        {
+            ConstructRide.Bodies = was;
+        }
     }
 
     /// <summary>

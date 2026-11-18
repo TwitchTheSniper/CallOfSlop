@@ -1,0 +1,168 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Docking Hatch",
+  "description": "A docking hatch (any ship can carry one): an armoured lid that slides 1.5 m off an opening up to 1.3 m across. While a dock holds the craft over another docking hatch, both slide open by themselves, and shut when the dock lets go. F opens or shuts it by hand. Fit it flat over the opening, with 1.5 m clear on its sliding side.",
+  "group": "Ship",
+  "section": "Ship fittings",
+  "role": "door",
+  "tool": "wrench",
+  "door": {
+    "kind": "slide",
+    "axis": "+z",
+    "travel": 1.5,
+    "seconds": 2.0,
+    "hang": "base",
+    "dock": true
+  },
+  "mass": 250.0,
+  "health": 3000,
+  "armour": 30,
+  "material": "steel",
+  "color": "#30353b",
+  "attachSeconds": 4.0,
+  "boxes": [
+    {
+      "min": [
+        -0.72,
+        0.014,
+        -0.72
+      ],
+      "max": [
+        0.72,
+        0.06,
+        0.72
+      ],
+      "color": "#30353b",
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -0.3,
+        0.0,
+        -0.72
+      ],
+      "max": [
+        0.3,
+        0.014,
+        -0.66
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.68,
+        0.054,
+        -0.68
+      ],
+      "max": [
+        0.68,
+        0.068,
+        -0.56
+      ],
+      "color": "#e0b020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.68,
+        0.054,
+        0.56
+      ],
+      "max": [
+        0.68,
+        0.068,
+        0.68
+      ],
+      "color": "#e0b020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.44,
+        0.054,
+        -0.52
+      ],
+      "max": [
+        -0.36,
+        0.09,
+        0.52
+      ],
+      "color": "#3b4148",
+      "detail": true,
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -0.04,
+        0.054,
+        -0.52
+      ],
+      "max": [
+        0.04,
+        0.09,
+        0.52
+      ],
+      "color": "#3b4148",
+      "detail": true,
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        0.36,
+        0.054,
+        -0.52
+      ],
+      "max": [
+        0.44,
+        0.09,
+        0.52
+      ],
+      "color": "#3b4148",
+      "detail": true,
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -0.2,
+        0.054,
+        -0.54
+      ],
+      "max": [
+        0.2,
+        0.12,
+        -0.5
+      ],
+      "color": "#9aa0a4",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.58,
+        0.054,
+        -0.05
+      ],
+      "max": [
+        0.66,
+        0.085,
+        0.05
+      ],
+      "color": "#40e070",
+      "detail": true,
+      "glow": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base",
+      "at": [
+        0.0,
+        0.0,
+        -0.69
+      ],
+      "dir": "-y"
+    }
+  ]
+}

@@ -1,0 +1,105 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Limpet Mag Lock",
+  "description": "A mag lock on the Limpet's nose: a magnetic pad on a short ram. Wired to the lock switch: while it is on and a hull is within half a metre of its pad, the pod grips that hull and rides on it.",
+  "group": "Ship",
+  "section": "Limpet",
+  "role": "logic",
+  "tool": "wrench",
+  "logic": {
+    "kind": "lamp"
+  },
+  "breach": {
+    "kind": "grapple",
+    "reach": 0.6
+  },
+  "power": 300,
+  "config": [
+    {
+      "key": "colour",
+      "type": "colour",
+      "label": "Colour",
+      "group": "Light",
+      "default": "#ff9040",
+      "tooltip": "The colour its lamp glows while it grips."
+    }
+  ],
+  "mass": 90.0,
+  "health": 1500,
+  "armour": 25,
+  "material": "steel",
+  "color": "#1f2226",
+  "attachSeconds": 3.0,
+  "boxes": [
+    {
+      "min": [
+        -0.16,
+        -0.13,
+        -0.16
+      ],
+      "max": [
+        0.16,
+        0.0,
+        0.16
+      ],
+      "color": "#1f2226",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.18,
+        -0.155,
+        -0.18
+      ],
+      "max": [
+        0.18,
+        -0.13,
+        0.18
+      ],
+      "color": "#202326",
+      "detail": true,
+      "finish": "rubber"
+    },
+    {
+      "min": [
+        -0.165,
+        -0.1,
+        -0.165
+      ],
+      "max": [
+        0.165,
+        -0.06,
+        0.165
+      ],
+      "color": "#e0b020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.05,
+        -0.05,
+        0.16
+      ],
+      "max": [
+        0.05,
+        -0.02,
+        0.176
+      ],
+      "color": "#ff8030",
+      "detail": true,
+      "glow": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+y"
+    }
+  ]
+}

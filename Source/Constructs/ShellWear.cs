@@ -39,6 +39,7 @@ public sealed class ShellWear
 
     public float LegHours = 5, ArmHours = 7, PowerHours = 6, ProcessorHours = 9, OpticsHours = 8, PlatingHours = 12;
     public float WornPct = 40, ServiceToPct = 70, HitPlating = 0.25f, HitOther = 0.12f;
+    public float HitLimb = 1.2f, LimbHealth = 0.25f, HeadChance = 0.5f, HitHead = 1.5f; // where a hit lands (Karl, 2026-11-18: GameShellWear.ShellHit)
     public string ServiceMaterial = "metal";
     public int ServiceCost = 1;
     public string Problem = "";
@@ -73,6 +74,10 @@ public sealed class ShellWear
             t.ServiceCost = (int)Num(root, "serviceCost", 0, 1000);
             t.HitPlating = Num(root, "hitPlating", 0, 100);
             t.HitOther = Num(root, "hitOther", 0, 100);
+            t.HitLimb = Num(root, "hitLimb", 0, 100);
+            t.LimbHealth = Num(root, "limbHealth", 0, 1);
+            t.HeadChance = Num(root, "headChance", 0, 1);
+            t.HitHead = Num(root, "hitHead", 0, 100);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException or FormatException or KeyNotFoundException or InvalidOperationException)
         {
@@ -181,7 +186,21 @@ public sealed class ShellWear
         foreach (var k in Keys)
             if (!list.Exists(e => e.Id == k))
                 list.Add(new CConfigDef { Key = ConstructConfig.KeyName(k), Id = k, Type = CfgType.Mask, Hidden = true, Label = "Shell wear", Group = "Shell", Tooltip = "Not on the panel." });
+        if (!list.Exists(e => e.Id == CfgKey.ShellDamage))
+            list.Add(new CConfigDef { Key = ConstructConfig.KeyName(CfgKey.ShellDamage), Id = CfgKey.ShellDamage, Type = CfgType.Number, Min = 0, Max = World.MaxHealth, Step = 1,
+                Hidden = true, Label = "Shell damage", Group = "Shell", Tooltip = "Not on the panel." });
     }
+
+    /// <summary>
+    /// A standing shell's health (Karl, 2026-11-17: shells don't heal by themselves): what it had when it was last stood down,
+    /// kept in a hidden setting as the health it has lost, so it rides saves, blueprints and CBody. A repair puts it back.
+    /// </summary>
+    public static int HealthOf(in CPart p, ConstructPartDef d) =>
+        Math.Clamp(World.MaxHealth - (int)MathF.Round(ConstructConfig.Get(p, d, CfgKey.ShellDamage, 0)), 1, World.MaxHealth);
+
+    /// <summary>...and written back.</summary>
+    public static void PutHealth(ref CPart p, ConstructPartDef d, int health) =>
+        ConstructConfig.Put(ref p, d, CfgKey.ShellDamage, World.MaxHealth - Math.Clamp(health, 0, World.MaxHealth));
 
     /// <summary>A standing shell's wear, read from its part's settings.</summary>
     public static void Read(in CPart p, ConstructPartDef d, ref ShellCond c)

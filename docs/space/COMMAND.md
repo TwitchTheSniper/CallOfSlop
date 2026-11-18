@@ -30,7 +30,7 @@ the cursor is free and the game takes no input.
 | Right drag | Turn and tilt (the tilt stops at straight down) |
 | Click | Pick a craft or a body (its card opens on the right) |
 | Double click | Centre on it |
-| Right click | An order for the picked ship: on a world, an orbit; on a place in space, go there |
+| Right click | An order for the picked ship: on a world, an orbit; on a place in space, go there; on another craft, dock with it |
 | SHIP / WORLD / MOONS / SYSTEM | Jump to that zoom, focus back to automatic |
 
 **The focus follows the zoom** while it is automatic: close in it is the picked ship (the player's own position with none
@@ -102,9 +102,31 @@ when the view is closed and opened again. Code: `Source/UI/UiCommandLinks.cs`.
   factories, 128 links, 32 legs; `LinkedLogistics.PartCount` is kept per rebuild); a label string is made only when its
   key changes. A frame projects the nodes and draws lines.
 
+## The missiles layer
+
+Karl, 2026-11-17: "Missiles show up on command view. Add a tickbox to show missiles, their target and their projected
+trajectory/flight path". The **MISSILES** tickbox (top middle, left of the zoom presets) turns it on and off; like the
+logistics layer it stays as it was when the view is closed and opened again. Code: `Source/UI/UiCommandMissiles.cs`.
+
+- **What is drawn:** every missile in flight (`ShellKind.Missile`: a Missile Rail's, and any designed missile or torpedo
+  off an Ordnance Bench, MIRV warheads too) as a dart along its way; a fine dotted line to what it steers for, with a
+  turning ring on a body (a small ring on a flare that drew it or on a point); and its path ahead as a solid line fading
+  with distance, with a cross where it meets its target. Red when the target is yours or your faction's ("INCOMING"),
+  orange otherwise. The label: what it goes for (the craft's call sign, FLARE, POINT or NO LOCK), how far, and how soon at
+  its closing speed. Under the tickbox: how many are in flight.
+- **The path** (`CmdMissilePath`) is the missile's own flight stepped forward in 40 steps of whole ticks: gravity, its push
+  while burn is left (after its wait), a designed weapon's drag and its turn rate (fins by the air, gimbal while burning),
+  turning towards its target where that will be, the target moving on at its velocity now, with the same 3 s lead the
+  flight uses. It looks 1.3 times its time to target ahead (3 to 90 s, never past its life). Stages still to come and wings
+  aren't stepped: it is what the missile would do as it is now, so a target that turns makes it bend.
+- **Multiplayer:** nothing new on the wire. Every PC already flies every shell from the launch event and ShellSteer (push,
+  turn, burn, target, aim, a flare drawing it), so a joined client draws the same missiles from its own copy.
+- **Cost:** off, one bool check a frame. On, at most 96 missiles a frame, each 40 steps (a gravity and an air read a
+  step); a label's text is made at most four times a second.
+
 ## Orders
 
-Five kinds (`NavKind`), each for one ship, given by any player to any ship that takes orders. **A ship takes orders
+Six kinds (`NavKind`), each for one ship, given by any player to any ship that takes orders. **A ship takes orders
 when it has a working Flight Stabilizer** (the "flight computer"; `Game.NavProblem` says why not: a wreck, none fitted,
 wrecked, or held down). Orders are the host's (`Game.NavOrders`); they are not saved and end when the map changes.
 
@@ -114,6 +136,7 @@ wrecked, or held down). Orders are the host's (`Game.NavOrders`); they are not s
 | Go to a place | Right click empty space | Flies to that point (fixed against the body that rules there), stops and holds it |
 | Fly to a spot over the ground | Right click the ground of the world it is flying over | The Flight Stabilizer's own waypoint autopilot, at the ship's present height |
 | Land on a spot | Right click the ground of the world you are on, LAND HERE (from its sky or from space) | Comes down into the sky over the spot if it is in space, flies over it and sets down on it ("Landing", below) |
+| Dock with another craft | Right click another craft, DOCK WITH <NAME> ("NO PORT AVAILABLE" when it has none free) | Flies to the point in front of a free docking port on it and in, until the port holds it ("Docking", below) |
 | Come to me | Right click your own marker (YOU), COME TO ME, or COME TO ME on the card | You on the ground or in the sky: as a landing, on a spot beside you on the side it comes from, which follows you until it starts down. You out in space (over the sky's edge, on a spacewalk or another ship): it flies to you and holds beside you, matching your motion, until cancelled |
 
 The lowest orbit (`Game.NavMinOrbit`) is `NavEdgeMargin` (400 m) over a mapped world's sky edge, since inside the sky a
@@ -123,6 +146,16 @@ body's sphere of influence.
 **An order ends** when it is cancelled, when its ship is gone or stops taking orders, or when a pilot at its helm
 touches the flight keys: hands on the controls always win. An orbit order stays after the ship is in orbit ("IN
 ORBIT, DRIVE OFF") and burns again only if the ship has drifted well off its circle.
+
+### Boarding (`Game/GameNavBoard.cs`)
+
+Board, for a ship with a boarding pod docked on it (a craft with mag locks and a breaching cutter facing its nose: the Zero
+Day's Limpet, [limpet.md](../sandbox/constructs/limpet.md)). Pick the carrier, then right-click another craft: the part
+under the cursor (in its hologram; zoom in until it is large) is the spot, a door if one is under it, and the menu offers
+BOARD: SEAL ON THIS DOOR or BOARD: CUT IN HERE under the Dock line (zoomed out, or off the hull, it says how to pick a spot instead). The order goes on the pod (its card shows it): it flies out from under the
+carrier, across, grips, then opens the door or cuts through and opens its own. On the wire its point is the target's id,
+the part and 1 for a door (protocol 342); the host works the spot and the way out of the skin there. The pod must be within
+3 km of the target. `order board N door|hull` (the window tool) gives it from a script.
 
 ### How a ship flies one (`Game.ServerTickNav`, before the launch step each tick)
 
@@ -180,6 +213,44 @@ landing limit.
   a ship that landed. Still for ten seconds higher up (a repulsor field or its gas holding it, or something the ray
   doesn't see) the order gives up and leaves it hovering, since let go in the air it would fall. Cancelling a landing
   leaves it hovering too, as any order in a sky does.
+
+### Docking (`Game/GameNavDock.cs`)
+
+Karl, 2026-11-17: "select a ship, right click on another with the option to dock. If there is no docking port available,
+it will show 'no port available'". (He asked for the admiral's orders too: the admirals are only designed so far,
+docs/sandbox/design/faction-controllers.md section 6.2, so he chose docking alone for now.)
+
+- **A docking port** is any part with a `"dock"` (Docking Clamp, Medium, Large and Capital, Magnetic Lock and Medium,
+  Hangar Bay, Medium and Large) that is working, holds no other craft and takes the ship's mass (`DockMaxMass`):
+  `Game.NavDockFor`, the same on both peers, so the menu says "NO PORT AVAILABLE" when the host would refuse. Armed
+  ports come first, then the nearest. The host checks the port again once a second and moves to another free one if
+  it was taken; none left ends the order.
+- **The way in** (`NavDockCentre`): a clamp or a lock is come at from over it (its up), a hangar bay through its mouth
+  (where it ejects). The ship lines up `NavDockOver` (30 m) off the port's box (phase Flying, "LINING UP WITH THE PORT"),
+  then closes on the box's middle at `NavDockSink` (2 m/s, Docking). An unarmed or unpowered port has it wait there
+  (DockWait, "WAITING: THE PORT ISN'T ARMED OR HAS NO POWER"); after a minute at the port without being taken the order
+  gives up and says why.
+- **In a sky** the stabilizer's autopilot flies it (Waypoint mode, written only when the point has moved a metre), and
+  the port takes it as it takes any craft: a clamp's tractor from its pull's reach, a bay or a lock once it is in the box
+  and slow. While it lines up no tractor takes it (`Construct.DockAway` held a tick ahead): a Shuttle drawn in by the
+  Zero Day's clamp from beside and below was dragged up the frigate's side and turned over. Once the tractor has it
+  the autopilot only holds it level and on its heading (Heading mode), since a position hold keeps it 2 m off the middle
+  the clamp snaps to, and let go altogether a craft stops levelling and can tip onto its back. A craft on repulsors holds
+  its own height whatever the autopilot asks, so it lines up over the ground only and the clamp's pull does the rest.
+- **In space** both ships are particles and their physics sleeps, so no tractor works: the nav computer flies the
+  `GoTo` law in the other ship's moving frame (at no more than `NavComeAccel`), and once the ship is in the port's
+  reach (a pull dock's: half the stand-off; a bay's or lock's: in its box) and under `NavDockSlow` (3 m/s) against it,
+  the host docks it (`NavDockCatch`): out of the flight, set upright in the middle of a pull dock's box and caught
+  (`ConstructCargo.Catch`), so it rides the other ship as any docked craft does. A ship in a sky climbs out first to dock
+  with one in space; one in space is refused a port down in a sky ("bring it down into the sky first").
+- **Wire** (protocol 342): `CActKind.NavOrder` ends with the target construct, `Msg.Nav` with the target and the port.
+- **Trying it:** `order dock N` (dock with the Nth craft, as `cmdpick` counts) and `letgo [ID]` (host: the port holding
+  a craft lets it go). A Shuttle onto the Zero Day's clamp, in the sky and in orbit:
+
+```
+--window-shot out.png --map Glacier --blueprint "Zero Day Frigate" --calm --do "command 3000; spawnbp Shuttle; wait 120; letgo 2; cmdpick 2; hoist 1; wait 30; cmdpick 3; order dock 1; wait 2400; nav"
+--window-shot out.png --map Glacier --blueprint "Zero Day Frigate" --calm --do "command 60000; cmdpick 1; order orbit Glacier 5.5; wait 8000; letgo 2; wait 400; cmdpick 2; order dock 1; wait 3600; nav"
+```
 
 ## Time speed
 
@@ -282,7 +353,7 @@ The window tool (README.md "Testing without playing") has verbs for it (`Source/
 the Nth craft, `order orbit BODY KM`, `order goto BODY KM`, `order ground M` (a spot M metres along the ground),
 `order land M` (a spot M metres along the ground to set down on; from space, along from under the ship), `order come`,
 `spacewalk KM [SIDE]` (host: you out KM km over the ground under the picked craft, SIDE m beside it, at rest) and
-`order cancel` give the picked craft an order as the menu would; `linked layer [on|off]` (Program.WindowShotLinked.cs) turns the logistics layer on or off and prints its factories, links and legs, (an orbit of another planet is a trip), `rclick X,Y` is a right click (the menu itself), `nav` prints every craft and its order, `hoist KM` (host) puts
+`order cancel` give the picked craft an order as the menu would; `linked layer [on|off]` (Program.WindowShotLinked.cs) turns the logistics layer on or off and prints its factories, links and legs, `missiles [on|off]` the missiles layer (and how many it drew), `missile M [SPEED]` (host) a test missile M metres off the picked craft, locked on it, (an orbit of another planet is a trip), `rclick X,Y` is a right click (the menu itself), `nav` prints every craft and its order, `hoist KM` (host) puts
 the picked craft that high, at rest, `speed N` asks for a time speed (host), and `travel FUEL SHARE` sets Settings >
 Gameplay's Fuel use in space and Trip fuel for the run (percents). The `nav` line has each craft's acceleration and dV. For example, a Magpie into orbit and on to the
 moon:

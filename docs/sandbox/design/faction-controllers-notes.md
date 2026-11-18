@@ -161,5 +161,5 @@ captains, combat or civilian.
   crews load (a loaded group waits 20 s before it thinks). An order's body (Escort, Board) isn't kept. Officer prisoners are plain
   prisoners after a load (not kept yet). The crew block's load capped jobs at Loader (a Spotter, Crane, Hauler or Builder came back a
   Loader): fixed.
-- Protocol 340 (main 337, another branch 339): `Msg.CrewSeats` ends with u16 captain's name, u16 admiral's name aboard, u16 group
+- Protocol 345 (main 344 at the merge): `Msg.CrewSeats` ends with u16 captain's name, u16 admiral's name aboard, u16 group
   number; `Msg.Intel` at the end of `Msg`; `CrewOrder` gains Interrogate, Ransom, Interrogator.

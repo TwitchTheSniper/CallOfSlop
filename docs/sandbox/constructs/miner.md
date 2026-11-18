@@ -120,7 +120,8 @@ so a part that touches nothing throws. The blueprint places each part with `Put`
 ## The Magpie start
 
 The Magpie has a start of its own (`Story/Starts/Magpie.json`, docs/story/STARTS.md), in Survival and Creative: the crew
-wake aboard 1.8 km over Crumb, Mille's 600 m moonlet, whose ground is iron, stone and sand, the ores the tier 1 drills work
+wake aboard 3.2 km over Caledon, Frostreach's 6 km highland world (Crumb until Karl moved it, 2026-11-17), whose ground is
+stone, iron and sand, the ores the tier 1 drills work
 (docs/planets/WORLDS.md). The wake spots are the two cabins, the hall, the mess corridor, the workshop and engineering
-(`Story/Opening/Magpie.json`); a change to the decks' rooms checks them (`--window-shot X.png --map Crumb --start Magpie
+(`Story/Opening/Magpie.json`); a change to the decks' rooms checks them (`--window-shot X.png --map Caledon --start Magpie
 --survival --do "skip; wait 240; me"` prints where the player stands).

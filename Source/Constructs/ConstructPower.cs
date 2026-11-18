@@ -17,7 +17,7 @@ public static class ConstructPower
 
     /// <summary>Does part <paramref name="i"/> work as far as power goes (always, on a construct that isn't electrical, or for a part that needs none)?</summary>
     public static bool On(Construct c, int i) =>
-        i >= 0 && i < c.PartCount && c.PtoDriven[i] ? c.EngineRunning // (a joint on a power take-off runs from the engine)
+        i >= 0 && i < c.PartCount && c.PtoDriven[i] ? ConstructPhysics.PtoLive(c) // (a joint on a power take-off runs from the engine; not one a generator set alone runs)
         : !c.Electrical || i < 0 || i >= c.PartCount || !c.Parts[i].D.Electric || c.PowerOn && c.Parts[i].Powered;
 
     /// <summary>With the caches: which parts a working battery's links reach, what the batteries hold, the alternators on the engine.</summary>
@@ -192,7 +192,7 @@ public static class ConstructPower
             c.Rebuild();
         Mains(c);
         var electrical = c.HasBattery || world.PowerRequired;
-        var wants = c.Engine >= 0 && (c.Driven || c.EngineWired || c.SteerRuns || c.RotorRuns) && c.HasFuel; // (an engine with nothing to drive still runs: a power take-off)
+        var wants = c.Engine >= 0 && (c.Driven || c.EngineWired || c.SteerRuns || c.RotorRuns || c.GenRuns) && c.HasFuel; // (an engine with nothing to drive still runs: a power take-off)
         if (electrical != c.Electrical)
         {
             c.Electrical = electrical;
@@ -223,7 +223,7 @@ public static class ConstructPower
             c.EngineRunning = false;
             c.StarterFailed = false;
         }
-        else if (!c.EngineRunning && (c.Driven && (c.Throttle != 0 || c.AeroTrim > 0 || c.RotorGoverned || c.SteerTorque && c.SteerInput != 0) || c.EngineWired && c.EngineSignal != 0 || c.SteerRuns || c.RotorRuns))
+        else if (!c.EngineRunning && (c.Driven && (c.Throttle != 0 || c.AeroTrim > 0 || c.RotorGoverned || c.SteerTorque && c.SteerInput != 0) || c.EngineWired && c.EngineSignal != 0 || c.SteerRuns || c.RotorRuns || c.GenRuns)) // (a generator head asks it: ConstructGenset.cs)
         {
             var starter = engineDef?.StarterKJ ?? StarterKJ;
             if (c.PowerOn && c.Engine >= 0 && c.Parts[c.Engine].Powered && c.Charge >= starter)
@@ -262,6 +262,12 @@ public static class ConstructPower
                 {
                     if (p.Cool > 0)
                         watts += d.PowerDraw; // (a reload hoist draws its wattage while it moves a weapon, nothing idle: ConstructHoists.cs)
+                    continue;
+                }
+                if (d.IsAuger)
+                {
+                    if (world.StoreOf(c, i) is { Blocked: ConstructScoops.PourInto })
+                        watts += d.PowerDraw; // (an Unloading Auger draws while it pours, nothing idle: ConstructAugers.cs)
                     continue;
                 }
                 var machine = d.IsRecycler || d.IsGatherer || d.IsRefiner || d.IsAssembler || d.IsPress || d.IsBeacon || d.IsTerminal || d.IsExtruder;

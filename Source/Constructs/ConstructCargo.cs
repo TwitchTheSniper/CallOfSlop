@@ -188,10 +188,12 @@ public static class ConstructCargo
             var at = b.WorldCom;
             b.Vel = c.PointVel(at) + c.SegPointVel(b.CarrySeg, at);
             b.AngVel = c.AngVel;
+            b.KeepSpeed(); // (a ship's speed in orbit is far past the physics' limit for a free body: it keeps it, Construct.SpeedKept)
             world.Events.Add($"construct {c.Id}: let construct {b.Id} go");
         }
         b.CarriedBy = 0;
         b.CarryTag = 0;
+        b.BreachSealed = false;
         b.Wake();
         world.StructureDirty.Add(b.Id);
         world.CargoChanged = true;
@@ -207,6 +209,12 @@ public static class ConstructCargo
         var at = b.WorldCom;
         b.Vel = carrier.PointVel(at) + carrier.SegPointVel(seg, at);
         b.AngVel = carrier.AngVel;
+        // (the host draws a body between its last two poses: the carried one's last pose is where the carrier's last pose
+        // held it, so it is drawn on its cradle however fast the carrier went; a ship posed out of the bubble has the same
+        // two poses, and its cargo then has too)
+        var back = carrier.PrevRot * Quaternion.Conjugate(carrier.Rot);
+        b.PrevPos = carrier.PrevPos + Vector3.Transform(b.Pos - carrier.Pos, back);
+        b.PrevRot = Quaternion.Normalize(back * b.Rot);
     }
 
     /// <summary>Client, every frame after the poses are blended: every carried body drawn where its carrier holds it.</summary>
@@ -214,6 +222,17 @@ public static class ConstructCargo
     {
         foreach (var b in world.Bodies)
             if (b.CarriedBy != 0 && world.Get(b.CarriedBy) is { } c && c.CarriedBy == 0)
+                Follow(c, b);
+    }
+
+    /// <summary>
+    /// Host, after the space step has posed the ships out of the bubble (GameSpaceLaunch.cs, which runs after the constructs'
+    /// step): what they carry follows them again, or it would be drawn a tick behind and shake against its cradle. Allocates nothing.
+    /// </summary>
+    public static void FollowPosed(ConstructWorld world)
+    {
+        foreach (var b in world.Bodies)
+            if (b.CarriedBy != 0 && world.Get(b.CarriedBy) is { SpaceShip: not 0, CarriedBy: 0 } c)
                 Follow(c, b);
     }
 
