@@ -427,6 +427,7 @@ public sealed partial class Construct
     public int JumpCount; // jump drives (Game/GameSpaceJump.cs): counted with the part caches
     public int LaunchCount; // catapults, arrestor gear, pull docks and mooring masts (ConstructLauncher.cs, ConstructCarrier.cs): counted with the part caches
     public uint ArrestFree, DockAway; // server, ConstructWorld.CarrierClock: arrestor gear and docks leave it alone until then
+    public bool BreachSealed; // server: gripped by a Board order (Game/GameNavBoard.cs): it holds while its grapples are on, hull under them or not (ConstructBreach)
 
     public const float RiderMass = 85f; // a player standing on a joint's segment, for its load
     // Riders on a body on spring feet (board item cs03; server): this tick's count, their feet added up, and the landings' impulse (N s, down).

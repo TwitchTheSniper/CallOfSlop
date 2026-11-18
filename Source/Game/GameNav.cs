@@ -14,6 +14,7 @@ public enum NavKind : byte
     Land, // fly to a spot on the ground of the bubble's world (World coordinates), from its sky or from space, and set down on it
     Come, // fly to the player who gave it (Point: the spot beside them, World coordinates, as last worked out): set down there, or in space hold beside them
     Dock, // dock with another craft (Target) at one of its docking ports (TargetPart): GameNavDock.cs
+    Board, // a carrier's docked boarding pod flies to another ship's door (seals on it) or hull (cuts in): Point (target id, part, 1 for a door), the order on the pod (GameNavBoard.cs)
 }
 
 /// <summary>How far an order has got (a wire byte: add at the end).</summary>
@@ -99,6 +100,14 @@ public sealed class NavOrder
 
     /// <summary>Host: a Come order's player was out in space when last seen (it holds beside them there, not lands).</summary>
     internal bool ComeSpace;
+
+    /// <summary>Host, a Board order (GameNavBoard.cs): the ship boarded, the frame its spot is kept in (that part's segment), the
+    /// spot on its skin and the way out of it there (that frame), the door to open (-1: cut in), and ticks in the order's stage.</summary>
+    internal ushort BoardTarget, BoardFrom;
+    internal byte BoardSeg;
+    internal System.Numerics.Vector3 BoardSpot, BoardOut, BoardUp, BoardDrop;
+    internal System.Numerics.Quaternion BoardRot;
+    internal int BoardDoor = -1, BoardTicks, BoardAll;
 }
 
 /// <summary>
@@ -268,8 +277,10 @@ public sealed partial class Game
                 NavEnd(had, c, "cancelled");
             return null;
         }
-        if (kind > NavKind.Dock || !double.IsFinite(point.X + point.Y + point.Z + radius))
+        if (kind > NavKind.Board || !double.IsFinite(point.X + point.Y + point.Z + radius))
             return null;
+        if (kind == NavKind.Board)
+            return NavBoardAct(s, c, point, p);
         return NavApply(s, c, kind, body, point, radius, p.Id, p.Name, p, out _, target);
     }
 
@@ -376,6 +387,7 @@ public sealed partial class Game
             NavKind.Land => "land on a spot on " + name,
             NavKind.Come => "come to its player",
             NavKind.Dock => "dock with construct " + o.Target,
+            NavKind.Board => o.Point.Z >= 0.5 ? "board a ship by its door" : "board a ship through its hull",
             _ => "none",
         };
     }
@@ -424,6 +436,13 @@ public sealed partial class Game
         {
             var o = NavOrders[k];
             var c = Constructs.Get(o.Construct);
+            if (o.Kind == NavKind.Board)
+            {
+                NavBoardTick(o, c); // (a pod: no flight computer of its own needed, and nobody at its controls: GameNavBoard.cs)
+                if (o.Kind != NavKind.None)
+                    NavPhaseOut(o);
+                continue;
+            }
             if (o.Kind == NavKind.Dock && c != null && c.CarriedBy != 0 && c.CarriedBy == o.Target)
             {
                 NavEnd(o, c, "it has docked", docked: true); // (in a sky the port took it: a clamp's tractor or a bay's box)
@@ -457,15 +476,21 @@ public sealed partial class Game
                 NavInSpace(s, o, c);
             if (o.Kind == NavKind.None)
                 continue; // (it ended there: a landing is down)
-            if (o.Phase != o.PhaseSent || o.ArriveNs != o.ArriveSent || o.DvNeed != o.DvSent || o.TargetPart != o.TargetPartSent)
-            {
-                o.PhaseSent = o.Phase;
-                o.TargetPartSent = o.TargetPart;
-                o.ArriveSent = o.ArriveNs;
-                o.DvSent = o.DvNeed; // (a Short order's least dV changes as the planets move)
-                WriteNav(_w, o);
-                Net.Broadcast(_w.Span, PacketReliability.ReliableOrdered);
-            }
+            NavPhaseOut(o);
+        }
+    }
+
+    /// <summary>Host: a change of an order's phase (or a Dock order's port) goes out to everyone.</summary>
+    private void NavPhaseOut(NavOrder o)
+    {
+        if (o.Phase != o.PhaseSent || o.ArriveNs != o.ArriveSent || o.DvNeed != o.DvSent || o.TargetPart != o.TargetPartSent)
+        {
+            o.PhaseSent = o.Phase;
+            o.TargetPartSent = o.TargetPart;
+            o.ArriveSent = o.ArriveNs;
+            o.DvSent = o.DvNeed; // (a Short order's least dV changes as the planets move)
+            WriteNav(_w, o);
+            Net.Broadcast(_w.Span, PacketReliability.ReliableOrdered);
         }
     }
 
@@ -669,7 +694,7 @@ public sealed partial class Game
         var target = r.U16();
         var targetPart = r.U16();
         var o = NavOf(id);
-        if (kind == NavKind.None || kind > NavKind.Dock)
+        if (kind == NavKind.None || kind > NavKind.Board)
         {
             if (o != null)
                 NavOrders.Remove(o);

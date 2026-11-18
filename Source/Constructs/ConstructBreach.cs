@@ -42,6 +42,29 @@ public static class ConstructBreach
         return b.BreachParts > 0;
     }
 
+    /// <summary>Is <paramref name="b"/> a boarding pod (a grapple and a cutter both: the Limpet), which a Board order can fly (Game/GameNavBoard.cs)?
+    /// Walks the parts: for an order and the order menu, not a tick.</summary>
+    public static bool IsPod(Construct b)
+    {
+        bool grip = false, cut = false;
+        for (var i = 0; i < b.PartCount; i++)
+        {
+            var k = b.DefOf(i).Breach;
+            grip |= k == BreachKind.Grapple;
+            cut |= k == BreachKind.Cutter;
+        }
+        return grip && cut;
+    }
+
+    /// <summary>Is a cutter of <paramref name="b"/> through (on, and nothing left under its ring)?</summary>
+    public static bool CutThrough(Construct b)
+    {
+        for (var i = 0; i < b.PartCount; i++)
+            if (b.DefOf(i).Breach == BreachKind.Cutter && On(b, i) && (b.Parts[i].State & 8) != 0)
+                return true;
+        return false;
+    }
+
     private static bool On(Construct b, int i) => !b.Parts[i].Broken && b.Parts[i].Out >= 0.5f;
 
     /// <summary>Does a grapple of <paramref name="b"/> hold on now (one of them unbroken and on)? A carried body with no volume of
@@ -61,7 +84,7 @@ public static class ConstructBreach
         b.CarriedBy != 0 && world.Get(b.CarriedBy) is { } c && ConstructCargo.CarriedIn(c, b) < 0;
 
     /// <summary>A breach part's face: its middle (world) and the way out of its face (its -y, world).</summary>
-    private static void Face(Construct b, int i, out Vector3 at, out Vector3 down)
+    internal static void Face(Construct b, int i, out Vector3 at, out Vector3 down)
     {
         ref var p = ref b.Parts[i];
         b.PartBounds(i, out var mn, out var mx);
@@ -99,12 +122,16 @@ public static class ConstructBreach
         }
     }
 
-    /// <summary>Is the gripped body's hull still under a grapple that is on (its reach and a little more: the grip holds it there)?</summary>
+    /// <summary>Is the gripped body's hull still under a grapple that is on (its reach and a little more: the grip holds it there), or
+    /// was it sealed on by a Board order?</summary>
     private static bool OnHull(ConstructWorld world, Construct b, Construct c)
     {
+        if (b.BreachSealed)
+            return true; // (sealed on by a Board order, its nose round a door or wedged in its cut: Holds alone lets it go)
         for (var i = 0; i < b.PartCount; i++)
         {
-            if (b.DefOf(i).Breach != BreachKind.Grapple || !On(b, i))
+            var kind = b.DefOf(i).Breach;
+            if (kind != BreachKind.Grapple || !On(b, i))
                 continue;
             Face(b, i, out var at, out var down);
             if (world.Raycast(at, down, b.DefOf(i).BreachReach + 0.3f, out _, b, only: c))
@@ -149,6 +176,9 @@ public static class ConstructBreach
         b.CarryPos = Vector3.Transform(b.Pos - tt, inv);
         b.CarryRot = Quaternion.Normalize(inv * b.Rot);
         b.Asleep = true;
+        for (var i = 0; i < b.PartCount; i++)
+            if (b.DefOf(i).Breach == BreachKind.Cutter)
+                b.Parts[i].State = (byte)(b.Parts[i].State & ~8); // (a new grip is a new cut: a cutter left on through the last hull isn't through this one)
         world.StructureDirty.Add(b.Id);
         world.CargoChanged = true;
         world.Events.Add($"construct {b.Id}: its grapples took hold of construct {t.Id}");
@@ -169,6 +199,8 @@ public static class ConstructBreach
                 p.State = (byte)(p.State & ~8);
                 continue;
             }
+            if ((p.State & 8) != 0)
+                continue; // (through: it cuts no deeper, into the floor beyond, until it is turned off and on again)
             Face(b, i, out var at, out var down);
             b.PartBounds(i, out var mn, out var mx);
             var r = MathF.Min(mx.X - mn.X, mx.Z - mn.Z) * 0.3f;

@@ -587,7 +587,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 340: inertia dampeners (a ship's seat key): CActKind.Dampeners (u16 body) at its end; CfgKey gains Dampeners at its end, a Flight Stabilizer setting.
     // 341: docking from the command view (GameNavDock.cs): NavKind.Dock and NavPhase.Docking/DockWait at their ends; CActKind.NavOrder ends
     //   with a u16 target construct, Msg.Nav with u16 target and u16 port (a part index).
-    public const ushort ProtocolVersion = 341;
+    // 342: the Board order (Game/GameNavBoard.cs): NavKind gains Board (a pod flown to a ship's door or hull; Point: the target id, part, 1 for a door)
+    //   at its end, and the Limpet boarding pod's 11 parts (Constructs/Parts/Limpet) move part ids.
+    public const ushort ProtocolVersion = 342;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

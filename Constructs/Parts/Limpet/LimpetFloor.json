@@ -1,0 +1,376 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Limpet Floor",
+  "description": "The Limpet's floor: the belly plate, the deck the boarders' seats stand on, the flight computer's console and the batteries' footing.",
+  "group": "Ship",
+  "section": "Limpet",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 900.0,
+  "health": 6000,
+  "armour": 40,
+  "material": "steel",
+  "color": "#3b4148",
+  "attachSeconds": 12.0,
+  "boxes": [
+    {
+      "min": [
+        -1.495,
+        -0.125,
+        -2.802
+      ],
+      "max": [
+        1.245,
+        0.125,
+        2.552
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -1.328,
+        -0.122,
+        -2.799
+      ],
+      "max": [
+        1.078,
+        0.122,
+        2.549
+      ],
+      "color": "#3b4148",
+      "detail": true,
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -1.492,
+        0.122,
+        -2.799
+      ],
+      "max": [
+        1.242,
+        0.138,
+        2.549
+      ],
+      "color": "#4a4f55",
+      "detail": true,
+      "finish": "painted deck plate"
+    },
+    {
+      "min": [
+        -0.675,
+        0.138,
+        -2.605
+      ],
+      "max": [
+        0.425,
+        0.154,
+        1.295
+      ],
+      "color": "#3a3e43",
+      "detail": true,
+      "finish": "painted grating"
+    },
+    {
+      "min": [
+        -0.675,
+        0.138,
+        -2.795
+      ],
+      "max": [
+        0.425,
+        0.154,
+        -2.625
+      ],
+      "color": "#e0b020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.725,
+        0.138,
+        1.225
+      ],
+      "max": [
+        0.475,
+        0.152,
+        1.335
+      ],
+      "color": "#e0b020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -1.175,
+        -0.16,
+        -2.725
+      ],
+      "max": [
+        0.925,
+        -0.128,
+        -1.475
+      ],
+      "color": "#30353b",
+      "detail": true,
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -1.175,
+        -0.16,
+        -1.425
+      ],
+      "max": [
+        0.925,
+        -0.128,
+        -0.175
+      ],
+      "color": "#30353b",
+      "detail": true,
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -1.175,
+        -0.16,
+        -0.075
+      ],
+      "max": [
+        0.925,
+        -0.128,
+        1.175
+      ],
+      "color": "#30353b",
+      "detail": true,
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -1.175,
+        -0.16,
+        1.225
+      ],
+      "max": [
+        0.925,
+        -0.128,
+        2.475
+      ],
+      "color": "#30353b",
+      "detail": true,
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        0.695,
+        0.138,
+        1.855
+      ],
+      "max": [
+        1.175,
+        0.855,
+        2.495
+      ],
+      "color": "#22262b",
+      "finish": "plastic"
+    },
+    {
+      "min": [
+        0.665,
+        0.495,
+        1.925
+      ],
+      "max": [
+        0.693,
+        0.775,
+        2.425
+      ],
+      "color": "#58c8e8",
+      "detail": true,
+      "glow": true
+    },
+    {
+      "min": [
+        0.665,
+        0.375,
+        1.975
+      ],
+      "max": [
+        0.693,
+        0.425,
+        2.075
+      ],
+      "color": "#40e070",
+      "detail": true,
+      "glow": true
+    },
+    {
+      "min": [
+        0.665,
+        0.375,
+        2.125
+      ],
+      "max": [
+        0.693,
+        0.425,
+        2.225
+      ],
+      "color": "#f0a830",
+      "detail": true,
+      "glow": true
+    },
+    {
+      "min": [
+        0.705,
+        0.855,
+        1.865
+      ],
+      "max": [
+        1.165,
+        0.871,
+        2.485
+      ],
+      "color": "#e0b020",
+      "detail": true,
+      "finish": "hazard paint"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "seatL0",
+      "at": [
+        -1.065,
+        0.125,
+        -1.675
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "seatR0",
+      "at": [
+        0.815,
+        0.125,
+        -1.675
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "seatL1",
+      "at": [
+        -1.065,
+        0.125,
+        -0.815
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "seatR1",
+      "at": [
+        0.815,
+        0.125,
+        -0.815
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "seatL2",
+      "at": [
+        -1.065,
+        0.125,
+        0.045
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "seatR2",
+      "at": [
+        0.815,
+        0.125,
+        0.045
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "seatL3",
+      "at": [
+        -1.065,
+        0.125,
+        0.905
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "seatR3",
+      "at": [
+        0.815,
+        0.125,
+        0.905
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "computer",
+      "at": [
+        0.935,
+        0.855,
+        2.175
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "battery0",
+      "at": [
+        -1.175,
+        0.125,
+        1.975
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "battery1",
+      "at": [
+        -1.175,
+        0.125,
+        2.275
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "ladder",
+      "at": [
+        -0.125,
+        0.125,
+        2.455
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j0",
+      "at": [
+        -1.495,
+        -0.005,
+        -0.125
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j1",
+      "at": [
+        1.245,
+        -0.005,
+        -0.125
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "j2",
+      "at": [
+        -0.125,
+        -0.005,
+        -2.802
+      ],
+      "dir": "-z"
+    }
+  ]
+}

@@ -193,6 +193,7 @@ public static class ConstructCargo
         }
         b.CarriedBy = 0;
         b.CarryTag = 0;
+        b.BreachSealed = false;
         b.Wake();
         world.StructureDirty.Add(b.Id);
         world.CargoChanged = true;
