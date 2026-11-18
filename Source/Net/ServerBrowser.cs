@@ -585,7 +585,7 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 339: engine generators (ConstructGenset.cs): a pose's plant block gains u8 GenState, and with a set f32 kW it can give, u8 its output's
     //   share and u8 the draw (0 to twice that); the four Generator Heads move part ids.
     // 344 (after 340-343 on other branches): removals (docs/removals-notes.md). The penal colony went: Msg.Tutorial, ColonyAlarm,
-    //   Depot, Quarry, Labour, LabourHands, Breakout, Errand, LabourDay and LabourIncident keep their slots as Removed*, never sent,
+    //   Depot, Quarry, Labour, LabourHands, Breakout, Errand, LabourDay, LabourIncident and Objective (the "what next" line) keep their slots as Removed*, never sent,
     //   and the colony's lore and building parts move part ids.
     public const ushort ProtocolVersion = 344;
 

@@ -1282,7 +1282,6 @@ public static unsafe partial class Program
         AllocProfile.Mark("sb: beams, sounds, ambience");
         DrawPhysGunBeams(g, now); // the physics guns' beams (Program.PhysicsGun.cs)
         g.SandboxSounds(now); // horns (GameSandbox.cs)
-        g.ColonyAlarmSounds(now); // the penal colony's lockdown siren (GameColonyLockdown.cs)
         g.StoryBabbleSounds(now); // the story people murmur their lines (GameStoryBabble.cs)
         PartAmbience.Frame(g.Constructs, Gfx.CameraPosition, now, g.TickAlpha, g.IsServer, g.Audio); // smoke, steam, a tannoy, snow along the ground (PartAmbience.cs)
         g.EngineAudio.Pick(g.Constructs, Gfx.CameraPosition);

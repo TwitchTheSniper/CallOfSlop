@@ -311,11 +311,8 @@ public sealed partial class Game
                 mats.Add(((byte)i, inv.Materials[i]));
         rec.Materials = mats.ToArray();
         WorldStores.Copy(SandboxHands.Pack(p.Id), rec.Pack);
-        TutorialCatch(p, rec); // (the induction: GameTutorial.cs)
         DeathCatch(p, rec); // (checkpoint and fate: GameSandboxDeath.cs)
         ShellCatch(p, rec); // (in a robot shell: the body's place and things, GameRobotShell.cs)
-        DepotCatch(p, rec); // (the Orbital Depot's run: GameDepot.cs)
-        QuarryCatch(p, rec); // (the first Ministry duty: GameQuarry.cs)
         UpgradesCatch(p, rec); // (tool upgrades: GameSandboxUpgrades.cs)
         FirstsCatch(p, rec); // (milestones for firsts: GameMilestones.cs)
         CrewCatch(p, rec); // (credits and NPC standings: GameCrewFactions.cs)
@@ -880,10 +877,7 @@ public sealed partial class Game
                 c.FrozenBy = p.Id;
         }
         FactionPlayerBack(p, rec.Offline); // (their faction again: GameSandboxFactions.cs)
-        TutorialArrive(p, rec); // (where they were in the induction: GameTutorial.cs)
         DeathArrive(p, rec); // (their checkpoint, and whether they are dead for good: GameSandboxDeath.cs)
-        DepotArrive(p, rec); // (where they were on the Orbital Depot's run: GameDepot.cs)
-        QuarryArrive(p, rec); // (where they were on the first Ministry duty: GameQuarry.cs)
         UpgradesArrive(p, rec); // (their tool upgrades: GameSandboxUpgrades.cs)
         FirstsArrive(p, rec); // (their firsts: GameMilestones.cs)
         CrewArrive(p, rec); // (their credits and NPC standings: GameCrewFactions.cs)

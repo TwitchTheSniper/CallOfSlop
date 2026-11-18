@@ -93,7 +93,6 @@ public sealed partial class Game
         _opOn = false;
         _opShip = 0;
         BreakdownReset(); // (GameSandboxBreakdowns.cs)
-        ObjectivesReset(); // (and the "what next" goals: GameObjectives.cs)
         FragmentsReset(); // (and the data centres: GameStoryFragments.cs)
         LoreReset(); // (and the things to look at: GameStoryLore.cs)
         OpeningLocal = OpeningStage.None;

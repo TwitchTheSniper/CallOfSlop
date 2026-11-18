@@ -1596,14 +1596,11 @@ public sealed partial class Game : IDisposable
         var healthBefore = victim.Health;
         victim.Health -= amount;
         var hitPart = BloodOnHit(victim, attacker, kind, from); // the blood marks: body part and direction (BodyBlood.cs)
-        if (victim.Team == SbPeopleTeam)
-            LockdownAssault(attacker, victim, now); // (the penal colony's staff: the lockdown, GameColonyLockdown.cs)
         if (victim.Health > 0)
         {
             if (victim.Team == SbPeopleTeam)
             {
                 StoryBodyHurt(victim, attacker); // (a story person says so: GameStoryTalk.cs)
-                OutpostHurt(victim, attacker, now); // (an outpost's person, and their mates: GameOutposts.cs)
             }
             return false;
         }
@@ -2054,7 +2051,6 @@ public sealed partial class Game : IDisposable
                 SendCrewRosters(sender); // own crews and prizes (GameCrewHire.cs)
                 SendLogicState(sender); // map logic: doors, lamps, levers, controlled movers (GameLogic.cs)
                 SendCorpseState(sender); // the bodies lying about (GameCorpses.cs)
-                SendLabourState(sender); // the penal colony's convict labourers (GameLabour.cs)
                 Module.OnClientJoined(this, sender); // the active mode's own state (Sandbox: every construct)
                 if (VoteOpen)
                 {
@@ -2355,32 +2351,11 @@ public sealed partial class Game : IDisposable
             case (byte)Msg.Relay when r.Has(2):
                 OnRelayPacket(sender, ref r); // free travel: a traveller's packets for a planetoid the host runs (GameTravelVisit.cs)
                 break;
-            case (byte)Msg.Tutorial:
-                OnTutorialPacket(sender, ref r); // the warden's induction (GameTutorial.cs)
-                break;
             case (byte)Msg.Shell when !IsServer && r.Has(2):
                 ReadShell(ref r); // who wears a robot shell (GameRobotShell.cs)
                 break;
             case (byte)Msg.StandIn when !IsServer:
                 ReadStandIn(ref r); // STAND-IN: the story's placeholder craft (Source/StandIns/GameStandIns.cs)
-                break;
-            case (byte)Msg.Labour when !IsServer:
-                ReadLabour(ref r); // the penal colony's convict labourers (GameLabour.cs)
-                break;
-            case (byte)Msg.LabourHands when !IsServer:
-                ReadLabourHands(ref r); // the story people working among them (GameLabourHands.cs)
-                break;
-            case (byte)Msg.LabourDay when !IsServer:
-                ReadLabourDay(ref r); // the colony's day: the period and the gangs on shift (GameLabourDay.cs)
-                break;
-            case (byte)Msg.LabourIncident when !IsServer:
-                ReadLabourIncident(ref r); // an incident in a gang (GameLabourIncidents.cs)
-                break;
-            case (byte)Msg.Breakout when !IsServer:
-                ReadBreakout(ref r); // the convicts' break-out (GameBreakout.cs)
-                break;
-            case (byte)Msg.Errand when !IsServer:
-                ReadErrand(ref r); // an errand on a works yard machine (GameErrands.cs)
                 break;
             case (byte)Msg.Fragments when !IsServer:
                 ReadFragments(ref r); // the old records' fragments and the leads (GameStoryFragments.cs)
@@ -2390,18 +2365,6 @@ public sealed partial class Game : IDisposable
                 break;
             case (byte)Msg.StoryPaths when !IsServer:
                 ReadStoryPaths(ref r); // the Logbook's Paths (GameStoryPaths.cs)
-                break;
-            case (byte)Msg.Quarry when !IsServer && r.Has(22):
-                ReadQuarry(ref r); // the first Ministry duty (GameQuarry.cs)
-                break;
-            case (byte)Msg.Depot when !IsServer && r.Has(14):
-                ReadDepot(ref r); // the Orbital Depot's steps (GameDepot.cs)
-                break;
-            case (byte)Msg.Objective when !IsServer && r.Has(5):
-                ReadObjective(ref r); // the "what next" goal (GameObjectives.cs)
-                break;
-            case (byte)Msg.ColonyAlarm when !IsServer:
-                ReadColonyAlarm(ref r); // the penal colony's alarm (GameColonyLockdown.cs)
                 break;
             case (byte)Msg.Jobs:
                 OnJobsPacket(sender, ref r); // faction jobs (GameStoryJobs.cs)

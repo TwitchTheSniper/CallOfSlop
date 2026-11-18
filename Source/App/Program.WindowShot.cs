@@ -563,40 +563,6 @@ public static unsafe partial class Program
             case "wait":
                 WsWaitTicks(int.TryParse(arg, out var w) ? Math.Max(0, w) : 30);
                 return;
-            case "gang": // "gang NAME SIDE,UP,OUT": the eye that far to the right of, above and in front of a labour gang's spot, looking at it
-            {
-                var cut = arg.LastIndexOf(' ');
-                var off = cut > 0 ? arg[(cut + 1)..].Split(',') : [];
-                if (cut <= 0 || off.Length != 3 || !off.All(o => float.TryParse(o, System.Globalization.CultureInfo.InvariantCulture, out _)) || !g.LabourGangAt(arg[..cut], out var gp, out var gf))
-                {
-                    WsFail("gang NAME SIDE,UP,OUT (a gang of Story/Labour/PenalColony.json that stands now)");
-                    return;
-                }
-                var v = off.Select(o => float.Parse(o, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
-                var up = StandInPath.Up(gp);
-                var right = Vector3.Normalize(Vector3.Cross(gf, up));
-                var at = gp + up * 1f;
-                WsEyeTo(g, me, at + right * v[0] + up * v[1] + gf * v[2]);
-                WsLook(g, me.Eye, at);
-                _wsWait = 3;
-                return;
-            }
-            case "incident": // "incident GANG KIND": that incident begins now in that gang (GameLabourIncidents.cs)
-            {
-                var cut = arg.LastIndexOf(' ');
-                if ((cut > 0 ? g.IncidentStartNamed(arg[..cut], arg[(cut + 1)..]) : "incident GANG KIND") is { } why)
-                    WsFail(why);
-                return;
-            }
-            case "period": // "period NAME": the colony's day jumps to that period (GameLabourDay.cs)
-                if (!g.LabourJumpTo(arg))
-                    WsFail($"period NAME: no period \"{arg}\" in the colony's day ({string.Join(", ", LabourScript.Current.Day.Select(d => d.Name))})");
-                else
-                {
-                    LabourRender.SnapShifts(5); // (the gangs change even in view, for the picture)
-                    WsWaitTicks(240); // (the next look, and the gangs' coming and going)
-                }
-                return;
             case "aim" or "near" or "panel":
             {
                 var spec = verb == "near" && arg.LastIndexOf(' ') is var sp and > 0 && float.TryParse(arg[(sp + 1)..], System.Globalization.CultureInfo.InvariantCulture, out _) ? arg[..sp] : arg;

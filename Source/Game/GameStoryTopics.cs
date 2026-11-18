@@ -105,7 +105,6 @@ public sealed partial class Game
             StoryAnswer(s, a, who, answer.Line);
         else if (line != null)
             s.Talk.SayFor(a.Entity, who, line, s.Time, -1, -1);
-        SpaceportTopic(s, p, who, a.Entity, topic, answer); // (the courier's handover: GameSpaceport.cs)
         StoryTopicsSend(s, p); // (what is on offer now: a follow-up, or the topic gone)
         return null;
     }

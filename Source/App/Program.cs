@@ -137,10 +137,6 @@ public static unsafe partial class Program
             return Space.SpaceCli.Trips(args); // headless: the trips an order would plan between a system's planets (Source/Space/NavTrip.cs)
         if (args.Any(a => a.Equals("--space-ships", StringComparison.OrdinalIgnoreCase)))
             return Space.SpaceCli.Ships(args); // headless: demo ships flying in a star system's gravity (Source/Space/SpaceShips.cs)
-        if (args.Any(a => a.Equals("--traffic-check", StringComparison.OrdinalIgnoreCase)))
-            return TrafficCheck.Run(args); // headless: STAND-IN: the story world's ambient traffic, a host and a client (Source/StandIns/GameTraffic.cs)
-        if (args.Any(a => a.Equals("--outpost-check", StringComparison.OrdinalIgnoreCase)))
-            return OutpostCheck.Run(args); // headless: the factions' outposts on the story's world, visited one by one, and what they cost (GameOutposts.cs)
         if (args.Any(a => a.Equals("--travel-check", StringComparison.OrdinalIgnoreCase)))
             return GameTravelCheck.Run(args); // headless: free travel step 2, a ship handed to a client's own game and back (GameTravel.cs)
         if (args.Any(a => a.Equals("--two-planetoids", StringComparison.OrdinalIgnoreCase)))
@@ -936,8 +932,6 @@ public static unsafe partial class Program
                     DrawStormFrost(); // frost at the edges while you are out in a cold storm (Program.Storm.cs)
                 if (!benchCovers && g.OpeningActive)
                     DrawOpeningUi(g, now); // the survival opening has the screen: no HUD (Program.Opening.cs)
-                else if (!benchCovers && g.QuarryRiding)
-                    Ui.DrawRideUi(g); // a story ride (the crew bus) is a cinematic: only its words, no HUD (UiQuarry.cs, Program.Quarry.cs)
                 else if (!benchCovers)
                 {
                     DrawNameTags(g); // under the HUD windows (Program.NameTags.cs)
@@ -948,7 +942,7 @@ public static unsafe partial class Program
                     Ui.DrawHud(g, now, _joinAddress, _settings);
                 }
                 // What the player has just learnt, in the middle of the screen; it waits out the opening, a ride and the bench (UiTechnologies.cs).
-                if (Ui.DrawCelebration(g, now, benchCovers || g.OpeningActive || g.QuarryRiding, _settings.Bind(GameAction.Logbook)))
+                if (Ui.DrawCelebration(g, now, benchCovers || g.OpeningActive, _settings.Bind(GameAction.Logbook)))
                     AudioSystem.Effect(Sfx.LevelUp, 0.6f);
                 uiPart.Dispose();
                 uiPart = Perf.Measure(PerfArea.UiMenus);
@@ -1769,15 +1763,11 @@ public static unsafe partial class Program
 
         if (OpeningInput(now))
             return; // the survival opening: lying there, only the skip key (Program.Opening.cs)
-        if (QuarryRideInput(now))
-            return; // the quarry duty's crew bus: a passenger (Program.Quarry.cs)
         ThirdPersonAim(); // Sandbox third person: shots and tools aim from the crosshair (Program.ThirdPerson.cs)
         ZombiesInput(now, _mouseCaptured && Pressed(GameAction.Interact)); // Zombies: the interact key's hold, workbenches (Program.Zombies.cs)
         SandboxMenuInput(); // Sandbox: the inventory key opens and closes the debug parts menu (Program.Sandbox.cs)
         _game.RideDrawnPose(); // (the host's aim meets the construct it rides as it is drawn: GameSandboxRide.cs)
         var sandbox = SandboxInputGuarded(now); // Sandbox: tools, parts, seats and doors take these keys (Program.Sandbox.cs)
-        if (_game.SandboxOn)
-            _game.TutorialClientFrame(Ui.SandboxPartsOpen, ToolWheelOpen); // (the induction's two cues only this PC sees: GameTutorial.cs)
         _game.RideTickPose();
         var buttons = Buttons.None;
         if (_mouseCaptured)
@@ -2101,8 +2091,7 @@ public static unsafe partial class Program
         var talkView = TalkCamera(local, ref eye, ref fwd, ref fov); // (talking to someone: eases to a shot over your shoulder at them, Program.TalkCamera.cs)
         if (_talkCamT > 0)
             _game.Audio.SetListener(eye, fwd);
-        var openingView = local != null && OpeningCamera(local, now, ref eye, ref fwd, ref camUp); // (the survival opening: lying at the crash site, waking in the colony; Program.Opening.cs)
-        openingView |= local != null && QuarryRideCamera(ref eye, ref fwd, ref camUp); // (the quarry duty's crew bus: Program.Quarry.cs)
+        var openingView = local != null && OpeningCamera(local, now, ref eye, ref fwd, ref camUp); // (the survival opening: waking aboard or at the start; Program.Opening.cs)
         if (openingView)
             _game.Audio.SetListener(eye, fwd);
         // Third person: nothing comes nearer the camera than its sphere (ThirdPerson.CameraRadius), so the near plane can stand
@@ -2139,8 +2128,6 @@ public static unsafe partial class Program
         ToolRender.Hands = _game.SandboxOn ? _game.SandboxHands : null; // Sandbox: tools in everyone's hands instead of guns (Source/Render/ToolRender.cs)
         foreach (var p in _game.Players.Values)
         {
-            if (p.Id == _game.LocalId && _game.QuarryRiding)
-                continue; // (on a ride you are on the bus, not standing at the stop the camera may be watching)
             if (p.Id == _game.LocalId && p.Alive && !tp && !pilotView && !talkView) // (third person, the talk camera, or looking through a drone: your whole body is drawn like anyone's)
             {
                 if (ScenePresentation.Enabled && ScenePresentation.FirstPersonLegs && !_wsNoHands) // (--no-hands: a picture from the flying camera shows the scene, not your legs)
@@ -2151,8 +2138,6 @@ public static unsafe partial class Program
             DrawPlayer(p);
         }
         DrawShellBodies();
-        AllocProfile.Mark("people: labourers");
-        LabourRender.Draw(Gfx, _game); // the penal colony's convict labourers (Source/Render/LabourRender.cs)
         AllocProfile.Stop();
         Gfx.EndBatch();
 
@@ -2296,7 +2281,7 @@ public static unsafe partial class Program
 
         // ---- First-person gun -----------------------------------------------
         pass = Perf.Pass(PerfArea.ViewModel, PerfGpuPass.ViewModel);
-        if (local is { Alive: true } && !tp && !talkView && !Ui.CommandOpen && !_game.OpeningActive && !_game.QuarryRiding && !_wsNoHands && !DrawSandboxTool(now, eye, fwd)) // (_wsNoHands: the window tool's --no-hands, for pictures) // (Sandbox: the wrench or welder instead, or nothing in a seat; nothing in hand in the opening or on a ride)
+        if (local is { Alive: true } && !tp && !talkView && !Ui.CommandOpen && !_game.OpeningActive && !_wsNoHands && !DrawSandboxTool(now, eye, fwd)) // (_wsNoHands: the window tool's --no-hands, for pictures) // (Sandbox: the wrench or welder instead, or nothing in a seat; nothing in hand in the opening or on a ride)
         {
             GunModel.AdsCutaway = SightLens.Cutaway(_game.Active.Def, _game.AimT); // reflex dots hand over to the lens pass as you aim
             DrawViewModel(now, proj);
@@ -2449,8 +2434,6 @@ public static unsafe partial class Program
     /// <summary>Another player's box body with its gun and arms: through the scene graph (Source/Scene/Rigs/PlayerRig.cs), or the old immediate path.</summary>
     private static void DrawPlayer(Player p)
     {
-        if (_game != null && _game.LabourHandOf(p.Id) >= 0)
-            return; // (working in a gang of convicts: drawn as one of them, Render/LabourRender.cs)
         ThirdPersonArms.ShotFlash = _game?.FlashBarrels(p.Id, Glfw.Time) ?? 0; // their gun flashes at the barrels that just fired (Program.Muzzle.cs); no game in the legs smoke
         if (ScenePresentation.Enabled)
             ScenePresentation.DrawPlayer(Gfx, p, Glfw.Time);
@@ -2560,7 +2543,7 @@ public static unsafe partial class Program
         float cx = w / 2, cy = h / 2;
         var k = Ui.Scale / 1.2f; // HUD drawn here follows the UI scale setting (1.0 at 1080p)
         DrawBloodOverlay(now, w, h, local); // blood splatters by your health, under the HUD (Program.Blood.cs)
-        if (_game.OpeningActive || _game.QuarryRiding)
+        if (_game.OpeningActive)
         {
             Gfx.SetBlend(false);
             Gfx.SetDepthTest(true);

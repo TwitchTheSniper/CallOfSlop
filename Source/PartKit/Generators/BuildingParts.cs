@@ -1951,7 +1951,6 @@ public sealed partial class BuildingParts : IPartGenerator
         bp.Put("Data Centre Terminal", [2.0, 0.375, 6.0], RY180);
         o.Add(bp);
 
-        o.AddRange(OutpostBlueprints(defs)); // (the factions' outposts beyond the colony: BuildingParts.Outposts.cs)
         return o;
     }
 
