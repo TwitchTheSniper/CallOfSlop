@@ -2,7 +2,7 @@
 
 The user's note (factory-generator-notes.md, "Extraction must follow the ore"): drills deplete the ground under them, so extraction has to move its drills over
 the deposit; a mining vehicle shaped like an excavator helps. This is that vehicle: a vehicle-kit generator, `Source/VehicleKit/Generators/Excavator.cs`,
-Militia style (`Militia Excavator`, seeds 1, 2 and 3 committed).
+Militia style (`Militia Excavator`, seeds 1, 14 and 24 committed: `--sweep-vehicle --seeds 30` passes 30 of 30, the shipped three 0.28 apart).
 
 ## What it is
 
@@ -14,8 +14,9 @@ Militia style (`Militia Excavator`, seeds 1, 2 and 3 committed).
   drill needs one in survival (`ConstructRecycler.Powered`).
 - **Arm.** Built in its travelling pose: the boom upright on a Motor Hinge 3x3 Medium at the cross beam's right, the stick out forward on another 3x3, the
   Digging Bucket hanging from a Motor Hinge 2x2 Medium under the stick's end, mouth to the cab. A tier-1 Drill Module on the stick's top at its end, its
-  bit forward past the end, its Chute out linked into the bucket (a chute flexes across a joint). Lengths by seed: rails 3.25 to 3.75 m, boom 2.5 or
-  2.75 m, stick 2 or 2.25 m; the boom 0.625 or 0.75 m right of the middle; the cab shell (Roll Cage, Tin Roof or Chop Top).
+  bit forward past the end, its Chute out linked into the bucket (a chute flexes across a joint). By seed: rails 3.25 to 4 m, boom 2.5, 2.75 or 3 m, stick 1.75 or
+  2 m (lengths a beam run makes exactly); the bucket (Digging twice as likely as Rock or Trenching); the cab shell (Roll Cage, Tin Roof, Chop Top, Mesh
+  Guard); a work lamp on the cab, a spare tank, a push bar on the nose and armour plates on the power pack.
 - **Controls.** The seat (left, behind the boom's foot) links to a Driving Module: W/S/A/D drive the tracks, and the module's `roll` output (Q and E)
   goes into the turntable, which turns while it is off zero and holds where it stops. Three Analog Levers on the seat's sill (left to right: boom, stick,
   bucket) are wired to the hinges, and the Switch beside them to the drill's Run. Each lever starts where the arm was built: the boom's at 0 (upright;
@@ -44,8 +45,17 @@ Militia style (`Militia Excavator`, seeds 1, 2 and 3 committed).
 - `--gen-vehicles` compares Militia's committed files too: a style that doesn't ship names the shapes it commits (`FactionStyle.Committed`: the Ore
   Hauler and the Excavator), and `VehicleRegistry.All` adds them.
 
+## Measured (2026-11-17)
+
+`--excavator-check` passes every step on the Construct Yard with a joined client (the client's boom and slew within 3 degrees of the host's) and on the
+Dev Planetoid, where it stands over an iron vein and the lowered drill fills its buffer (20 iron ore in 10 s). Named sections: No z-fighting, Construct
+actuators, Construct drivetrain, Terrain digging and Constructs pass; Gathering failed only its ray timing (457 ms against 200) at a load average of 26 on
+the shared 2-core box: this branch changes no ray or gathering code. `--gen-vehicles`: 242 identical.
+
 ## Found on the way
 
+- A stick of 2.25 m was laid as 2 + 0.5 m (the beam run overshot), so the bucket's hinge missed the stick's sockets; the run now refuses a length it can't make.
+- The lip a bucket pours from swings out as it opens: the check backs the hauler's bed under the lowest lip while it pours, as a driver would.
 - A yard sentry shot the seated host player and its rounds broke the arm off: the check stands the excavator 40 m or more from any armed body.
 - The boom's 3x3 hinge reads 85 to 110% of its rating with the arm laid out (a few degrees of give). A Motor Hinge Medium (500 kN m) needs a medium
   socket, and no adapter takes a medium part onto a small socket. Hydraulic cylinders would be the real answer (a ram with leverage), but the vehicle kit's
