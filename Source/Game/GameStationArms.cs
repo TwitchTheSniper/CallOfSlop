@@ -50,11 +50,30 @@ public sealed partial class Game
             return;
         var d = st.DefOf(a.Berth);
         if (!d.IsDock || !StationMoorable(st, ship, d) || !NavDockFree(Constructs, st, a.Berth, ship) || f.Ships.IndexOfId(ship.SpaceShip) is not (var i and >= 0))
+        {
+            StationArmRefused(st, a.Berth, ship, d);
             return;
+        }
         Log($"[station] the clamp arm of berth {a.Berth} of {StationName(st)} took construct {ship.Id}, {Vector3.Distance(ship.WorldCom, st.WorldCom):0} m from its middle");
         if (NavOf(ship.Id) is { } o)
             NavEnd(o, ship, $"it has docked with {StationName(st)}", docked: o.Kind == NavKind.Dock);
         StationMoor(f, i, ship, st, a.Berth);
+    }
+
+    /// <summary>Host: the head touched a ship its berth won't take: logged once, and the arm lets go of it until it leaves reach.</summary>
+    private void StationArmRefused(Construct st, int berth, Construct ship, ConstructPartDef d)
+    {
+        var set = st.ClampArms!;
+        for (var k = 0; k < set.N; k++)
+        {
+            ref var arm = ref set.Arms[k];
+            if (arm.Berth != berth || arm.Ship != ship.Id)
+                continue;
+            arm.Refused = ship.Id;
+            arm.Ship = 0;
+        }
+        var why = !d.IsDock ? "not a berth" : ship.Mass > d.DockMaxMass ? $"{ship.Mass:0} kg, over the berth's {d.DockMaxMass:0} kg" : !StationMoorable(st, ship, d) ? "not moorable now (anchored, held, frozen or just cast off)" : !NavDockFree(Constructs, st, berth, ship) ? "the berth is taken" : "not in the flight";
+        Log($"[station] the clamp arm of berth {berth} of {StationName(st)} let go of construct {ship.Id}: {why}");
     }
 
     /// <summary>Host: a ship just moored at a berth with an arm starts where it is and is drawn in (StationMoor sets where it ends).</summary>

@@ -11,6 +11,7 @@ public struct ClampArm
     public Vector3 GripS, OutS; // where on that ship its pad goes, and the hull's outward normal there: the ship's rest frame
     public bool Holds; // the ship is moored at its berth: the head stays on the hull
     public bool OnHull; // the head has reached the hull it holds, and moves with it from then on
+    public ushort Refused; // host: a ship the berth wouldn't take when the head touched it (logged once); not reached for again while it stays in reach
 }
 
 public sealed class ClampArmSet
@@ -145,15 +146,17 @@ public static class ConstructClampArms
             return;
         }
         a.Holds = false;
-        if (a.Ship != 0 && (world.Get(a.Ship) is not { } cur || !Reachable(st, cur, shoulder, reach, host) || NearestBerth(st, cur.WorldCom) != a.Berth))
+        if (a.Ship != 0 && (world.Get(a.Ship) is not { } cur || !Reachable(world, st, a.Berth, cur, shoulder, reach, host) || NearestBerth(st, cur.WorldCom) != a.Berth))
             a.Ship = 0;
         if (a.Ship != 0)
             return;
+        if (a.Refused != 0 && (world.Get(a.Refused) is not { } rf || !Reachable(world, st, a.Berth, rf, shoulder, reach, host)))
+            a.Refused = 0; // (it has gone out of reach, or flown off: it may be reached for again when it comes back)
         Construct? best = null;
         var bestD = float.MaxValue;
         foreach (var b in world.Bodies)
         {
-            if (!Reachable(st, b, shoulder, reach, host))
+            if (b.Id == a.Refused || !Reachable(world, st, a.Berth, b, shoulder, reach, host))
                 continue;
             var dd = Vector3.DistanceSquared(b.WorldCom, shoulder);
             if (dd < bestD)
@@ -186,9 +189,16 @@ public static class ConstructClampArms
         return berth;
     }
 
-    /// <summary>A ship the arm may reach for: in space, free, slow against the station, its hull within reach of the shoulder.</summary>
-    private static bool Reachable(Construct st, Construct b, Vector3 shoulder, float reach, bool host) =>
-        b != st && !b.IsStation && !b.Wreck && (!host || b.SpaceShip != 0 && b.SpaceAway == 0) && b.CarriedBy == 0 && b.PartCount > 0
+    /// <summary>
+    /// A ship the arm may reach for: in space, free, slow against the station, its hull within reach of the shoulder, and one its berth
+    /// would take (GameStations.StationMoorable). The host alone knows a ship's flight and when it was cast off: a ship just cast off from
+    /// this station isn't reached for until it has left the berth it lay in (MoorAway, cleared by StationMoorScan) and the docks' wait is over.
+    /// </summary>
+    private static bool Reachable(ConstructWorld world, Construct st, int berth, Construct b, Vector3 shoulder, float reach, bool host) =>
+        b != st && !b.IsStation && !b.Wreck && b.CarriedBy == 0 && b.PartCount > 0
+        && (!host || b.SpaceShip != 0 && b.SpaceAway == 0 && b.MoorAway != st.Id && world.CarrierClock >= b.DockAway)
+        && !b.Anchored && !b.Pinned && !b.Frozen && b.GrabbedBy == 255
+        && (b.MooredTo == st.Id || b.Mass <= st.DefOf(berth).DockMaxMass)
         && (b.ThrusterCount > 0 || b.StabCount > 0) // (a ship, not a loose piece: GameStations.StationMoorable)
         && (b.MooredTo == 0 || b.MooredTo == st.Id)
         && Vector3.Distance(b.WorldCom, shoulder) - b.Radius * 0.5f < reach

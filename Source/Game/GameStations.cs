@@ -102,7 +102,10 @@ public sealed partial class Game
         ship.AngVel = station.AngVel;
         StationMoorFlight(f, i, ship, station);
         if (ship.MoorDraw < 1)
+        {
             ship.Pos = comNow - Vector3.Transform(ship.Com, ship.Rot); // (it stays where the clamp took it, not in the berth, this tick)
+            (ship.PrevPos, ship.PrevRot) = (ship.Pos, ship.Rot); // (nor drawn part way to the berth by the frame's blend)
+        }
         Constructs.Events.Add($"construct {station.Id}: the {station.DefOf(part).Name} moored construct {ship.Id}");
         Log($"[station] construct {ship.Id} moored at {StationName(station)} (construct {station.Id}), berth {part} ({station.DefOf(part).Name})");
     }
