@@ -458,6 +458,9 @@ public sealed partial class ConstructEdits
                 var i = ConstructBuild.Attach(world, c, def, g);
                 if (i < 0)
                     return "failed: too many parts";
+                ConstructStoreVolume.NewPlacement(ref c.Parts[i], def); // (a new Storage Volume from the inventory comes walled)
+                if (def.IsVolumeStore)
+                    c.Dirty = true; // (its walls are solid boxes: the rebuild takes them)
                 ConstructAmmo.Fitted(world, c, i, def, ref h, InfiniteParts); // (a magazine goes on with what is in it)
                 if (claim)
                 {
@@ -484,6 +487,9 @@ public sealed partial class ConstructEdits
                 if (ConstructBuild.PlaceNew(world, def, fp) is not { } c)
                     return "failed: the world is full";
                 c.Owner = player; // (what a player sets down is theirs, and everything built onto it)
+                ConstructStoreVolume.NewPlacement(ref c.Parts[0], def); // (a new Storage Volume from the inventory comes walled)
+                if (def.IsVolumeStore)
+                    c.Dirty = true; // (its walls are solid boxes: the rebuild takes them)
                 ConstructAmmo.Fitted(world, c, 0, def, ref h, InfiniteParts); // (a magazine set down keeps what is in it)
                 h.Held = ConstructParts.None;
                 Refill(world, player, ref h, def, eye);

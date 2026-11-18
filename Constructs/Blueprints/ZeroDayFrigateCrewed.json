@@ -1749,6 +1749,15 @@
       "by": "-x"
     },
     {
+      "part": "Input Reader",
+      "on": 252,
+      "socket": "+x",
+      "by": "-x",
+      "config": {
+        "setting": "jump"
+      }
+    },
+    {
       "part": "Gunnery Console",
       "on": 31,
       "socket": "gun",
@@ -1762,9 +1771,21 @@
     },
     {
       "part": "Turret Module",
-      "on": 253,
+      "on": 254,
       "socket": "module",
       "by": "-x"
+    },
+    {
+      "part": "OR Gate",
+      "on": 4,
+      "socket": "relayL",
+      "by": "+y"
+    },
+    {
+      "part": "OR Gate",
+      "on": 4,
+      "socket": "relayR",
+      "by": "+y"
     },
     {
       "part": "Docking Clamp Medium",
@@ -1788,6 +1809,28 @@
       "by": "bottom"
     },
     {
+      "part": "Docking Clamp Medium",
+      "on": 2,
+      "socket": "limpetClamp",
+      "by": "-y",
+      "spin": 3,
+      "config": {
+        "startOn": true,
+        "sizeX": 4.4,
+        "sizeY": 2.8,
+        "sizeZ": 6.8,
+        "atX": 2.1,
+        "atY": 0.79,
+        "atZ": -0.05
+      }
+    },
+    {
+      "part": "Docking Hatch",
+      "on": 3,
+      "socket": "limpetHatch",
+      "by": "base"
+    },
+    {
       "part": "Docking Hatch",
       "on": 66,
       "socket": "dockHatch",
@@ -1801,7 +1844,7 @@
     },
     {
       "part": "Ammo Box",
-      "on": 259,
+      "on": 264,
       "socket": "ammo",
       "by": "bottom"
     },
@@ -1849,37 +1892,37 @@
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 267,
+      "on": 272,
       "socket": "lug0",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 267,
+      "on": 272,
       "socket": "lug1",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 267,
+      "on": 272,
       "socket": "lug2",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 267,
+      "on": 272,
       "socket": "lug3",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 267,
+      "on": 272,
       "socket": "lug4",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 267,
+      "on": 272,
       "socket": "lug5",
       "by": "lug"
     },
@@ -1891,37 +1934,37 @@
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 274,
+      "on": 279,
       "socket": "lug0",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 274,
+      "on": 279,
       "socket": "lug1",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 274,
+      "on": 279,
       "socket": "lug2",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 274,
+      "on": 279,
       "socket": "lug3",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 274,
+      "on": 279,
       "socket": "lug4",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 274,
+      "on": 279,
       "socket": "lug5",
       "by": "lug"
     }
@@ -2040,16 +2083,28 @@
       239
     ],
     [
-      254,
-      255
+      251,
+      253
     ],
     [
       255,
+      256
+    ],
+    [
+      256,
       242
     ],
     [
-      255,
+      256,
       245
+    ],
+    [
+      253,
+      257
+    ],
+    [
+      253,
+      258
     ],
     [
       174,
@@ -2057,35 +2112,43 @@
     ],
     [
       177,
-      259
-    ],
-    [
-      194,
-      261
-    ],
-    [
-      194,
-      262
-    ],
-    [
-      194,
-      263
-    ],
-    [
-      194,
       264
     ],
     [
-      265,
+      194,
       266
     ],
     [
-      123,
+      194,
       267
     ],
     [
+      194,
+      268
+    ],
+    [
+      194,
+      269
+    ],
+    [
+      270,
+      271
+    ],
+    [
+      123,
+      272
+    ],
+    [
+      257,
+      272
+    ],
+    [
       124,
-      274
+      279
+    ],
+    [
+      258,
+      279
     ]
   ],
   "links": [
@@ -2198,6 +2261,15 @@
         6.5,
         7.755,
         39.0
+      ],
+      "turn": 0
+    },
+    {
+      "blueprint": "Limpet",
+      "at": [
+        6.5,
+        -4.05,
+        29.349999999999998
       ],
       "turn": 0
     }

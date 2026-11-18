@@ -38,7 +38,12 @@ public static class ConstructOrdnance
     public const int BombClear = World.TickRate; // ticks a bomb passes its own construct
     public const float LookReach = 1500f; // m a gunner's look locks a missile out to, with no sight
     public const float LookCone = 6f; // degrees a target stays locked off the look
-    public const float MissileCoast = 6f; // seconds a missile flies on after its burn before it goes off
+    public const float MissileCoast = 6f; // seconds a missile flies on after its burn before it goes off (in air)
+    public const float MissileSpaceCoast = 420f; // ...and launched in space, where nothing slows it: a 280 m/s Zero Day torpedo coasts about 120 km (Karl, 2026-11-17: "should reach 100 km easily")
+    public const float SpaceAir = 0.02f; // the air's density (1 at the ground) below which a launch is in space
+
+    /// <summary>Seconds a missile launched at <paramref name="at"/> flies on after its last burn: <see cref="MissileSpaceCoast"/> in space, else <see cref="MissileCoast"/>.</summary>
+    public static float CoastAt(Vector3 at) => ConstructAir.Density(at) < SpaceAir ? MissileSpaceCoast : MissileCoast;
     public const int ProxArm = 6; // ticks before a proximity fuse arms (it never takes the gun's own body)
     public const float FlyingSpeed = 3f; // m/s: a proximity fuse takes what moves at this or faster for something flying
     public const float FlareDrag = 1.5f; // a flare's drag, a second: it hangs and sinks

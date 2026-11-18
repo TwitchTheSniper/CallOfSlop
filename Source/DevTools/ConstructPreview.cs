@@ -327,6 +327,40 @@ public static partial class ConstructPreview
                     triLook.Add(look);
                 }
             }
+            if (ConstructStoreVolume.Walled(p, d))
+            {
+                // A walled Storage Volume's floor and walls (made from its box, not its file: the game draws them in ConstructRenderCargo).
+                const string wallHex = "#8c8a80";
+                var wkey = (wallHex, 0f, false, "");
+                if (!lookIndex.TryGetValue(wkey, out var wlook))
+                {
+                    wlook = (ushort)looks.Count;
+                    lookIndex[wkey] = wlook;
+                    looks.Add((wallHex, 0f, false, "", 0f, 0.9f));
+                }
+                for (var k = 0; k < ConstructStoreVolume.WallBoxes; k++)
+                {
+                    ConstructStoreVolume.WallBox(c, i, k, out var wc, out var wh);
+                    var wm = Matrix4x4.CreateScale(wh * 2) * Matrix4x4.CreateTranslation(wc) * Matrix4x4.CreateFromQuaternion(q) * Matrix4x4.CreateTranslation(t);
+                    foreach (var (n, a, bb) in CubeFaces)
+                    {
+                        var wn = Vector3.Normalize(Vector3.Transform(n, q));
+                        Vector3 Corner(float u, float v) => Vector3.Transform(n * 0.5f + a * u + bb * v, wm);
+                        foreach (var (v0, v1, v2) in new[] { (Corner(-0.5f, -0.5f), Corner(0.5f, -0.5f), Corner(0.5f, 0.5f)), (Corner(-0.5f, -0.5f), Corner(0.5f, 0.5f), Corner(-0.5f, 0.5f)) })
+                        {
+                            pos.Add(v0);
+                            pos.Add(v1);
+                            pos.Add(v2);
+                            nrm.Add(wn);
+                            nrm.Add(wn);
+                            nrm.Add(wn);
+                            triLook.Add(wlook);
+                        }
+                    }
+                    if (k == 0)
+                        floors.Add((Vector3.Transform(wc + new Vector3(0, wh.Y, 0), q).Y + t.Y, wh.X * wh.Z * 4, i));
+                }
+            }
             if (parts.Length > 0)
                 parts.Append(',');
             parts.Append(JsonSerializer.Serialize(new object[] { d.Name, first, triLook.Count - first }));

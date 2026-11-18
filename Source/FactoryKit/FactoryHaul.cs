@@ -5,8 +5,8 @@ namespace CallOfSlop.FactoryKit;
 
 /// <summary>
 /// <c>--haul-check [--post N] [--refinery N] [--hauler N]</c> (factory-generator.md phase 1, the ore loop): a Militia extraction post, a refinery and an Ore
-/// Hauler spawned headless on one creative world. The post's buffer is fed (no deposit headless) and fills the loading skip by chute; the hauler is set
-/// down under the skip and LOAD is switched on; the hauler is moved to the refinery's tipping bay (the drive itself is a player's: not simulated) and TIP is
+/// Hauler spawned headless on one creative world. The post's buffer is fed (no deposit headless) and fills the loading auger by chute; the hauler is set
+/// down under the auger's spout and LOAD is switched on; the hauler is moved to the refinery's tipping bay (the drive itself is a player's: not simulated) and TIP is
 /// switched on; then the refinery runs. Each step names what it moved. Exit code: failures. Bounded game time (about 2 minutes), not a long simulation.
 /// </summary>
 public static class FactoryHaul
@@ -51,7 +51,7 @@ public static class FactoryHaul
         var table = RecyclingTable.Current;
         var ore = table.IdOf("iron ore");
         var skip = post.IndexOf(post.Programme.Of("loading").First());
-        var loadSwitch = skip + 1; // (FactoryScript.Skip: post, hinge, skip, switch)
+        var loadSwitch = skip + 1; // (FactoryScript.Loading: post, post, turntable, auger, switch)
         var buffer = post.IndexOf(post.Programme.Of("buffer").First());
         var bay = refinery.IndexOf(refinery.Programme.Of("tipping").First());
         int Find(Construct c, string part) => Enumerable.Range(0, c.PartCount).First(i => c.DefOf(i).Name == part);
@@ -87,19 +87,18 @@ public static class FactoryHaul
         w.Deposit(pc, buffer, 2000, ore);
         Run(20);
         var inSkip = Amount(pc, skip);
-        Say(inSkip > 0, $"the buffer's chute filled the loading skip: {inSkip} iron ore");
-        // 2. The hauler under the skip, LOAD on: the skip tips over the road into its bed.
-        var s0 = At(pc, skip);
+        Say(inSkip > 0, $"the buffer's chute filled the loading auger: {inSkip} iron ore");
+        // 2. The hauler under the spout, LOAD on: the auger pours over the road into its bed.
         var truckY = tc.Pos.Y + FactoryScript.FloorY + 0.05f;
-        var spot = origin + new Vector3(site.Bodies[2].X, 0, site.Bodies[2].Z); // (the site's hauler spot: its bed's middle under the skip's lip)
+        var spot = origin + new Vector3(site.Bodies[2].X, 0, site.Bodies[2].Z); // (the site's hauler spot: its bed's middle under the spout)
         Park(spot.X, spot.Z, truckY);
         var before = Amount(tc, bed);
         Flip(pc, loadSwitch);
         Run(15);
-        var s1 = At(pc, skip);
-        Console.WriteLine($"  skip moved from {s0.Y:0.00} m to {s1.Y:0.00} m up, {s0.Z:0.00} to {s1.Z:0.00} across ({(s1.Z > s0.Z ? "towards" : "away from")} the road)");
+        var tipAt = ConstructAugers.Tip(pc, skip);
+        Console.WriteLine($"  spout at {tipAt.X:0.00} {tipAt.Y:0.00} {tipAt.Z:0.00}, the bed's middle at {At(tc, bed).X:0.00} {At(tc, bed).Y:0.00} {At(tc, bed).Z:0.00}; auger {(w.StoreOf(pc, skip) is { } ast ? ast.Blocked : 0)}");
         var loaded = Amount(tc, bed) - before;
-        Say(loaded > 0, $"LOAD tipped the skip into the hauler's bed: {loaded} iron ore (skip left {Amount(pc, skip)})");
+        Say(loaded > 0, $"LOAD ran the auger into the hauler's bed: {loaded} iron ore (auger left {Amount(pc, skip)})");
         Flip(pc, loadSwitch);
         Run(5);
         // 3. At the refinery's tipping bay, the bay on its left: TIP on.
@@ -127,7 +126,7 @@ public static class FactoryHaul
         Console.WriteLine($"  bed moved from {b0.Y:0.00} m to {b1.Y:0.00} m up, {b0.Z:0.00} to {b1.Z:0.00} across; its up now {up.X:0.00} {up.Y:0.00} {up.Z:0.00}; truck at {tc.Pos.X:0.0} {tc.Pos.Y:0.0} {tc.Pos.Z:0.0}, switch {tc.Parts[tip].State}");
         var tipped = bed0 - Amount(tc, bed);
         var spilt = w.Bodies.Count - bodies0;
-        Say(tipped > 0 && sawInto && spilt == 0, $"TIP poured the bed into the Tipping Bunker: {tipped} iron ore out of the bed, the bunker's most at once {bayMax}, {spilt} bundle(s) spilt");
+        Say(tipped > 0 && sawInto && spilt == 0, $"TIP poured the bed onto the Tipping Grate: {tipped} iron ore out of the bed, the bunker's most at once {bayMax}, {spilt} bundle(s) spilt");
         Flip(tc, tip);
         // 4. The refinery takes it from there (the stone a Foundry wants comes as creative stock: the loop carries ore).
         foreach (var o in refinery.Programme.Of("heap").Where(o => o.Material != "iron ore"))

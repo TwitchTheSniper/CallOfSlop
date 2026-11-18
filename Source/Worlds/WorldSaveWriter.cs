@@ -252,6 +252,9 @@ public static class WorldSaveWriter
                 w.I32(field.Cut.Length);
                 foreach (var (key, done) in field.Cut)
                     w.U32(key).I32(done);
+                w.I32(field.Spots.Length);
+                foreach (var (key, taken) in field.Spots)
+                    w.U32(key).I32(taken);
             });
         if (s.SpaceSystem.Length > 0)
             w.Section(Space, () =>

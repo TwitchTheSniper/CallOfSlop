@@ -54,6 +54,21 @@ public static class FactoryCheck
         using (place.In())
             c = job.Join(Vector3.Zero, 0, out var why) ?? throw new FactoryKitException($"{bp.Name} doesn't build: {why}");
         Console.WriteLine($"{bp.Name}: {c.PartCount} parts, spawned in {slices} slices of 2 ms (worst {worstSlice:0.0} ms), joined to the world in {clock.Elapsed.TotalMilliseconds:0.0} ms");
+        // An extraction post gets a deposit behind its back edge (none headless otherwise), its floor set so its drills' bits are just over the
+        // field's ground (a post is anchored: it stays where it is put), and the drills follow the ore over it (ConstructDrillFollow).
+        var drills = script.Programme.Of("drill").Select(o => script.IndexOf(o)).Where(i => i >= 0).ToArray();
+        if (drills.Length > 0)
+            using (place.In())
+            {
+                ConstructGatherer.WorkBox(c, drills[0], out var at0, out _, out _);
+                var field = new ResourceField(World.Map, ResourceTable.Current, new SandboxResources { Generate = false, Deposits = [new SandboxDeposit("iron vein", at0.X + 8, at0.Z - 4, 60, 1, 0)] });
+                ConstructGatherer.WorkBox(c, drills[0], out var at1, out var bottom, out _);
+                c.Pos.Y += field.Ground(at1.X, at1.Z) + 0.05f - bottom;
+                c.Anchored = true;
+                c.Wake();
+                w.Resources = field;
+                Console.WriteLine($"  a deposit under the drills: {field.KindAt(at1.X, at1.Z, false)?.Name ?? "none"} at {at1.X:0.0}, {at1.Z:0.0}; the post set {field.Ground(at1.X, at1.Z) + 0.05f - bottom:0.00} m up or down to it");
+            }
         // The objects' parts: the script's own indexes (a blueprint builds its steps in order, one part each).
         int PartOf(FactoryObject o) => script.IndexOf(o);
         foreach (var o in script.Programme.Objects)
@@ -100,22 +115,26 @@ public static class FactoryCheck
                         worked[o.Id] |= Working(w, c, PartOf(o));
                     }
             }
+        Console.WriteLine($"  power: on {c.PowerOn}, mains off {c.MainsOff}, charge {c.Charge:0} kJ, draw {c.PowerUse:0} W, plant {c.PlantOut:0.0} kW");
         Console.WriteLine($"  ran {seconds} s of game time: tick CPU less first-call compiling ({SelfTest.ThreadCpu.Kind}) {total / Math.Max(1, ticks):0.00} ms mean, {worst:0.00} ms worst (tick {worstAt}), {over} tick(s) over 8 ms");
         Say(over <= 1, $"the tick stays under 8 ms (one-off JIT aside: {over} over)");
         foreach (var e in script.Programme.Edges.Where(e => e.Main))
         {
             var to = script.Programme.Objects[e.To];
             var from = script.Programme.Objects[e.From];
-            if (from.Role == "drill")
-            {
-                Console.WriteLine($"  --   {from.Part} {from.Id} -> {to.Part} {to.Id}: drills need a deposit, none headless (not run)");
-                continue;
-            }
             var passed = to.Role == "bin" && script.Programme.Edges.Any(x => x.From == to.Id && got[x.To] > 0); // (a bin passes it straight on)
             Say(got[to.Id] > 0 || worked[to.Id] || passed, $"{from.Part} {from.Id} -> {to.Part} {to.Id} ({e.Material}) carried {got[to.Id]}");
         }
         foreach (var o in script.Programme.Objects.Where(o => o.Role == "process"))
             Say(worked[o.Id], $"{o.Part} {o.Id} ({o.Material}) worked");
+        if (w.Resources is { } f2)
+            foreach (var i in drills)
+            {
+                ConstructGatherer.WorkBox(c, i, out var at, out _, out _);
+                var left = f2.SpotLeft(ResourceField.SpotKey(new Vector3(at.X, 0, at.Z)));
+                var why = w.StoreOf(c, i) is { } dst ? (GatherStall)dst.Blocked : GatherStall.None;
+                Console.WriteLine($"  drill {i} ends at {at.X:0.0}, {at.Z:0.0} ({left} left on that spot), {why}");
+            }
         var product = script.Programme.Objects.Where(o => o.Role is "bin" or "loading").Sum(o => Amount(w, c, PartOf(o)));
         foreach (var o in script.Programme.Objects.Where(o => o.Role is "bin" or "loading"))
             Console.WriteLine($"  {o.Role} {o.Id} holds {Amount(w, c, PartOf(o))} {(w.StoreOf(c, PartOf(o)) is { Material: > 0 } st ? table.NameOf(st.Material) : "nothing")}");

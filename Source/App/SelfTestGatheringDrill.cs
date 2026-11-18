@@ -139,8 +139,9 @@ public static partial class SelfTest
         Line($"gathering: drilled {long_ / 60:0} min: {ops} ops, floor {surface - floor:0.00} m down, {taken} units, bit {bottom - floor:0.00} m over the floor");
         want(ops >= 4 && ops <= DrillShaft.Scoops, $"a hole took {ops} ops");
         want(surface - floor >= DrillShaft.Depth && surface - floor < DrillShaft.Depth + 0.5f, $"the hole is {surface - floor:0.00} m deep");
-        want(st.Busy, "the drill stopped once the hole was deeper than its bit");
-        want(taken >= ConstructParts.Need("Drill Module").GatherRate * long_ * 0.95f, $"only {taken} units in {long_} s");
+        // (the user, 2026-11-17: a spot gives ResourceField.SpotUnits and is worked out; the drill stops there and says so)
+        want(!st.Busy && (GatherStall)st.Blocked == GatherStall.WorkedOut, $"a drill on a worked-out spot: busy {st.Busy}, stall {(GatherStall)st.Blocked}");
+        want(taken >= ResourceField.SpotUnits * 0.95f && taken <= ResourceField.SpotUnits, $"{taken} units from one spot in {long_} s (a spot gives {ResourceField.SpotUnits})");
         want(c.Pos == pos, "the anchored drill moved");
         // Moved away, it stops; brought back, it resumes, and a hole already dug takes no more ops.
         var done = ops;
@@ -151,14 +152,14 @@ public static partial class SelfTest
         want(!st.Busy && st.Amount == kept, "a drill lifted out of its hole kept working");
         c.Pos = pos;
         Gather(1, st);
-        want(st.Busy, "a drill brought back to its hole didn't resume");
+        want(!st.Busy, "a drill brought back to its worked-out spot started again");
         w.Remove(c);
         c = DrillAt(w, f, vein.X, vein.Y);
         c.Pos = pos;
         st = w.StoreOf(c, 0)!;
         var before = taken;
         Gather(scoop + 1, st);
-        want(st.Busy && taken > before && ops == done, $"a second drill at the hole: busy {st.Busy}, {taken - before} units, {ops - done} more ops");
+        want(!st.Busy && taken == before && ops == done, $"a second drill at the worked-out hole: busy {st.Busy}, {taken - before} units, {ops - done} more ops");
         w.Remove(c);
         // Fresh spots along the deposit.
         var spots = new List<Vector2>();

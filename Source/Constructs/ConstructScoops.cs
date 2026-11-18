@@ -67,11 +67,17 @@ public sealed partial class Construct
     private void RebuildScoops()
     {
         ScoopCount = 0;
+        AugerCount = 0;
         foreach (var i in Specials) // (scoops are special parts)
             if (ScoopCount < MaxScoops && Parts[i].D.IsScoop)
             {
                 Scoops ??= new CScoop[MaxScoops];
                 Scoops[ScoopCount++] = new CScoop { Part = (ushort)i };
+            }
+            else if (AugerCount < MaxScoops && Parts[i].D.IsAuger)
+            {
+                Augers ??= new CAuger[MaxScoops];
+                Augers[AugerCount++] = new CAuger { Part = (ushort)i };
             }
     }
 
@@ -228,13 +234,30 @@ public static class ConstructScoops
         for (var i = 0; i < bodies.Count; i++)
         {
             var c = bodies[i];
-            if (c.ScoopCount == 0 && !c.Dirty)
+            if (c.ScoopCount == 0 && c.AugerCount == 0 && !c.Dirty)
                 continue;
             if (c.Dirty)
                 c.Rebuild();
             for (var k = 0; k < c.ScoopCount; k++)
                 One(world, query, c, k, slow, dt);
+            if (slow)
+                for (var k = 0; k < c.AugerCount; k++)
+                    ConstructAugers.One(world, c, k);
         }
+    }
+
+    /// <summary>
+    /// An Unloading Auger's pour (ConstructAugers.cs): what is in <paramref name="pour"/> goes into a store under its spout, never onto the
+    /// ground (an auger with nothing under it holds its load). Returns the units that went in, or -1 with no store under it.
+    /// </summary>
+    internal static int PourAuger(ConstructWorld world, Construct c, int part, CStore st, Vector3 from, Vector3 down, int units)
+    {
+        if (!FindBelow(world, c, part, from, down, false, out var body, out var to, out _) || to < 0)
+            return -1;
+        var put = Give(world, body!, to, units, st.Material);
+        if (put > 0)
+            world.Withdraw(c, part, put);
+        return put;
     }
 
     /// <summary>A point of the part in the world.</summary>
@@ -470,6 +493,9 @@ public static class ConstructScoops
                 return k;
         return -1;
     }
+
+    /// <summary>A store's pour state for its look line (an auger's too).</summary>
+    internal static void Mark(ConstructWorld world, CStore st, byte why) => SetBlocked(world, st, why);
 
     private static void SetBlocked(ConstructWorld world, CStore st, byte why)
     {

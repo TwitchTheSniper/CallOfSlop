@@ -373,6 +373,12 @@ Creative worlds only (the map's `infiniteParts`; the same test as the physics gu
   very input the server does. `Game.NoclipFilter` checks the wish wherever an input is simulated, so a hand-made packet
   flies nobody outside creative Sandbox. `MoveState.Noclip` is what is actually happening; a snapshot's fast entry says so
   (extension kind 253), which is how a client's replay and a third peer know.
+- **In a moving construct (2026-11-17).** Flying into a moving construct's bounds (`ConstructRide.NoclipCatch`, the frames
+  `FrameAt` finds: not anchored, asleep or still) takes the flyer into its frame, their speed through it kept and then eased
+  away, so a ship that overtakes them carries them a few metres in; in it they fly relative to it (`NoclipFrame`,
+  `NoclipMoved`) until clear of the padded frame (`InFrame`). Leaving noclip there finds room as anywhere, then the spot goes
+  into the frame (`NoclipLanded`) and they fall onto its deck, not left behind. A snapshot sends such a flyer as a ride with
+  extension kind 248 (protocol 341). `--ride-check` ends each ship with this (a still flyer in its path).
 - **Speeds.** 10 m/s, Sprint 40 m/s. Sprint held on keeps building to 240 m/s in about 5 s, worked out from the velocity alone,
   so it needs no state or wheel and a snapshot carries it.
 - **Bounds.** The map's rectangle, 200 m under the lowest ground to 2 km over the highest; a shaped map's outline isn't

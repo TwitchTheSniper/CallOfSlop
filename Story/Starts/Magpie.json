@@ -1,16 +1,16 @@
 {
   // The Magpie start (Karl, 2026-11-15: "a start for the mining ship ... near an asteroid or something with low gravity to mine
   // basic materials. Both for creative and survival"): you wake aboard the Magpie Mining Ship (docs/sandbox/constructs/miner.md)
-  // a short way over Crumb, Mille's moonlet, a 600 m rock with iron, stone and sand in it (docs/planets/WORLDS.md). No colony, no
-  // warden, no induction (docs/story/STARTS.md "A ship start").
+  // a short way over Crumb, Mille's moonlet; Karl, 2026-11-17: moved to Caledon, the 6 km highland world, a bigger planet with
+  // more gravity, whose ground holds stone, iron and sand (docs/planets/WORLDS.md). No colony, no warden, no induction (docs/story/STARTS.md "A ship start").
   "format": "call-of-slop-start/1",
   "name": "Magpie mining ship",
   "order": 5, // after the rust bucket, which stays the first start
   "character": "Prospector",
   "background": "a rock miner who sank everything into a second-hand mining ship and still owes on the drills",
-  "about": "You wake in your cabin aboard the Magpie, a mining ship holding station over Crumb, Mille's little moonlet. Four drills hang ready in the well, the ore hoppers are empty, and the rock below is streaked with iron, stone and sand. Set her down and start cutting.",
-  "map": "Crumb",
-  "opening": "Magpie.json", // a card, then waking aboard over Crumb
+  "about": "You wake in your cabin aboard the Magpie, a mining ship in orbit over Caledon, the highland world of Frostreach. Four drills hang ready in the well, the ore hoppers are empty, and the bens below are streaked with iron, stone and sand. Set her down and start cutting.",
+  "map": "Caledon",
+  "opening": "Magpie.json", // a card, then waking aboard over Caledon
   "tutorial": "none",
   "kit": [] // what you have is aboard
 }

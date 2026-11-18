@@ -52,6 +52,8 @@ public static partial class SelfTest
         ConstructConfig.Set(ref p, d, slots[3], at.X);
         ConstructConfig.Set(ref p, d, slots[4], at.Y);
         ConstructConfig.Set(ref p, d, slots[5], at.Z);
+        if (d.CfgSlot[(int)CfgKey.Walls] is var ws and >= 0)
+            ConstructConfig.Set(ref p, d, (byte)ws, 0); // (these rigs are the open box with the player's own walls: a walled box is the Walls setting's, ConstructStoreVolume.Walled)
         c.Dirty = true;
         c.Rebuild();
     }

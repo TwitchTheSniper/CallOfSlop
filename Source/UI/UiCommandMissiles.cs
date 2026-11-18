@@ -21,7 +21,7 @@ public sealed partial class Ui
     public bool CommandMissilesOn;
 
     public const int CmdMaxMissiles = 96, CmdMissileSteps = 40;
-    public const float CmdMissileMinAhead = 3f, CmdMissileMaxAhead = 90f; // s: how far ahead a path looks
+    public const float CmdMissileMinAhead = 3f, CmdMissileMaxAhead = 600f; // s: how far ahead a path looks
 
     private static readonly Vector3 CmdOrange = new(1f, 0.55f, 0.18f);
 

@@ -33,8 +33,8 @@ public sealed class FactoryStyle
     /// <summary>The signature seen at 50 m (buildings.md rule 3): "mast", "stack" or "roof".</summary>
     public string Signature = "mast";
 
-    /// <summary>Cell margin round a machine (metres), the seed picks within: a tidy style keeps it even, a sprawling one loose.</summary>
-    public float MarginMin = 0.75f, MarginMax = 1.5f;
+    /// <summary>How an extraction post moves its drills over the ground (FactoryPlan.Follow): "arm" (an arm on a rail) or "gantry" (a cross rail on a rail), by weight.</summary>
+    public Dictionary<string, double> Follow = new() { ["arm"] = 1 };
 
     /// <summary>The perimeter piece for a fenced zone (power), standing on its <c>b0_0</c> socket.</summary>
     public string Fence = "Sandbag Wall 2 m";
@@ -106,8 +106,7 @@ public static class FactoryStyles
         },
         LampColour = "#ffcf7a",
         Signature = "mast",
-        MarginMin = 0.75f,
-        MarginMax = 1.75f,
+        Follow = new() { ["arm"] = 0.5, ["gantry"] = 0.5 },
         Fence = "Sandbag Wall 2 m",
         Seeds = new() { ["extraction"] = [1, 2, 3], ["refinery"] = [1, 2, 3] },
     };
