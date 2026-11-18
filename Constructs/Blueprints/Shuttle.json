@@ -253,22 +253,18 @@
       "finish": "fabric"
     },
     {
-      "part": "Zero Day Locker",
+      "part": "Space Suit Locker",
       "on": 0,
       "socket": "lockerL",
       "by": "bottom",
-      "spin": 1,
-      "paint": "#e0b020",
-      "finish": "worn paint"
+      "spin": 2
     },
     {
-      "part": "Zero Day Locker",
+      "part": "Space Suit Locker",
       "on": 0,
       "socket": "lockerR",
       "by": "bottom",
-      "spin": 2,
-      "paint": "#e0b020",
-      "finish": "worn paint"
+      "spin": 1
     },
     {
       "part": "Battery",

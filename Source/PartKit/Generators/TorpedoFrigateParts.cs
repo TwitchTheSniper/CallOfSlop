@@ -834,10 +834,13 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         DoorSock(p, "doorAirlock", false, 32.25, Cx + 1.875, Ft0);
         DoorSock(p, "doorEngine", true, Cx - 0.75, 34.125, Ft0);
         Sock(p, "boarding", BellyHatch.X0 + 0.625, Ft0 - 0.125, BellyHatch.Z1, "-z");
-        // Fittings: suit lockers in the bay, more torpedo crates, engineering's reactor, boards, batteries, pipes and the ladder up.
-        for (var i = 0; i < 4; i++)
-            Sock(p, $"suit{i}", Cx - Lw, Ft0 + 0.125, 30.6 + i * 0.7, "+x");
+        // Fittings: Space Suit Lockers in the bay (0.8 m wide), one more and the MMU Dock in the airlock by the boarding shaft (its upright
+        // on the bulkhead, clear of the locker and the hatch's rail), more torpedo crates, engineering's reactor, boards, batteries, pipes
+        // and the ladder up.
+        for (var i = 0; i < 3; i++)
+            Sock(p, $"suit{i}", Cx - Lw, Ft0 + 0.125, 30.75 + i * 0.85, "+x");
         Sock(p, "airlockLocker", Cx + Lw, Ft0 + 0.125, 33.3, "-x");
+        Sock(p, "mmuDock", Cx + 3.3, Ft0 + 0.125, 34.0, "-z");
         for (var i = 0; i < 4; i++) // (the Robot Shell Docks along the engineering bulkhead's forward face, port of its door: Karl, 2026-11-17)
             Sock(p, $"shellDock{i}", Cx - Lw + 0.2 + CrewFittingsParts.DockHalf + i * (2 * CrewFittingsParts.DockHalf + 0.01), Ft0 + 0.125, 34.0, "-z");
         Sock(p, "reactor", Cx + 3.1, Ft0, 35.5, "+y");
@@ -2275,10 +2278,11 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         Switch(bp, lf, "switchTorp", LampAt(bp, lf, "lampTorpL", "#ffd8a0"), LampAt(bp, lf, "lampTorpR", "#ffd8a0"));
         foreach (var bay in new[] { bayL, bayR })
             Switch(bp, bay, "switch", LampAt(bp, bay, "lamp", "#ff7050"));
-        // Lower deck aft: suits, the airlock, engineering.
-        for (var i = 0; i < 4; i++)
-            Paint(bp, Hang(bp, "Zero Day Locker", la, $"suit{i}", "wall"), Hazard, "worn paint");
-        Paint(bp, Hang(bp, "Zero Day Locker", la, "airlockLocker", "wall"), Hazard, "worn paint");
+        // Lower deck aft: suits, the airlock (a suit and the MMU, its pack fed from the keel's tank under it), engineering.
+        for (var i = 0; i < 3; i++)
+            Hang(bp, EvaParts.LockerName, la, $"suit{i}", "wall");
+        Hang(bp, EvaParts.LockerName, la, "airlockLocker", "wall");
+        EvaParts.FitDock(bp, Holder(bp, la, "mmuDock"), "mmuDock", placed["Zero Day Keel 4"]);
         for (var i = 0; i < 4; i++)
             Hang(bp, "Robot Shell", Hang(bp, "Robot Shell Dock", la, $"shellDock{i}", "wall"), "dock", "back");
         foreach (var d in new[] { "doorBayL", "doorBayR", "doorAirlock", "doorEngine" })

@@ -288,8 +288,8 @@ public sealed partial class TorpedoFrigateParts
         foreach (var (s, z, n) in new[] { (-1, 1.5, "seatL0"), (-1, 2.5, "seatL1"), (1, 1.5, "seatR0"), (1, 2.5, "seatR1") })
             Sock(p, n, s * 0.74, LFt, z, "+y");
         // (the lockers stand against the side walls ahead of the seats, facing in, Karl's ask; the batteries between the seats and the engines)
-        Sock(p, "lockerL", -(LCabW - 0.255), LFt, 0.45, "+y");
-        Sock(p, "lockerR", LCabW - 0.255, LFt, 0.45, "+y");
+        Sock(p, "lockerL", -(LCabW - 0.3), LFt, 0.45, "+y"); // (Space Suit Lockers, 0.6 m deep: backs to the walls)
+        Sock(p, "lockerR", LCabW - 0.3, LFt, 0.45, "+y");
         foreach (var (s, n) in new[] { (-1, "batteryL0"), (1, "batteryR0") })
             Sock(p, n, s * 1.05, LFt, 3.15, "+y");
         foreach (var (s, n) in new[] { (-1, "batteryL1"), (1, "batteryR1") })
@@ -732,9 +732,9 @@ public sealed partial class TorpedoFrigateParts
             Paint(bp, bp.HangTurned("Flight Couch", belly, n, "bottom", BuildingParts.RY270), "#2c3e58", "fabric");
         foreach (var n in new[] { "seatR0", "seatR1" })
             Paint(bp, bp.HangTurned("Flight Couch", belly, n, "bottom", BuildingParts.RY90), "#2c3e58", "fabric");
-        // (a locker's back is its -z: RY90 puts it to -x, against the port wall, and RY270 to +x)
-        Paint(bp, bp.HangTurned("Zero Day Locker", belly, "lockerL", "bottom", BuildingParts.RY90), Hazard, "worn paint");
-        Paint(bp, bp.HangTurned("Zero Day Locker", belly, "lockerR", "bottom", BuildingParts.RY270), Hazard, "worn paint");
+        // (a Space Suit Locker's back is its +z: RY270 puts it to -x, against the port wall, and RY90 to +x)
+        bp.HangTurned(EvaParts.LockerName, belly, "lockerL", "bottom", BuildingParts.RY270);
+        bp.HangTurned(EvaParts.LockerName, belly, "lockerR", "bottom", BuildingParts.RY90);
         foreach (var n in new[] { "batteryL0", "batteryR0", "batteryL1", "batteryR1" })
             bp.Hang("Battery", belly, n, "-y");
         // Lights: the cockpit's and the cabin's, on the starboard cockpit switch; the cabin's switch by the hatch.

@@ -754,6 +754,11 @@ public sealed class HaulerParts : IPartGenerator
             Sock(p, $"shellDock{i}", Cx - Lw + 0.17 + CrewFittingsParts.DockHalf + i * (2 * CrewFittingsParts.DockHalf + 0.01), Ft0 + 0.125, 10.625, "+z");
         for (var i = 0; i < 3; i++)
             Sock(p, $"linkChair{i}", Cx + Lw - 0.5, Ft0, 6.4 + i * 1.0, "+y");
+        // The spacewalk gear: a Space Suit Locker in the suit room, port of the ladder; in the airlock the MMU Dock forward of the
+        // boarding shaft and a second locker aft of it.
+        Sock(p, "suit0", Cx - Lw, Ft0 + 0.125, 13.3, "+x");
+        Sock(p, "suit1", Cx + Lw, Ft0 + 0.125, 13.3, "-x");
+        Sock(p, "mmuDock", Cx + Lw, Ft0 + 0.125, 10.6, "-x");
         Sock(p, "boarding", BellyHatch.X0 + 0.625, Ft0 - 0.125, BellyHatch.Z1, "-z");
         foreach (var (what, z) in new[] { ("lower deck front", ZFront - 0.25), ("lower deck back", ZHold) })
             foreach (var y in new[] { 0.0, Ft1 })
@@ -1595,6 +1600,9 @@ public sealed class HaulerParts : IPartGenerator
         Door(bp, fore, "doorHold");
         Door(bp, aft, "doorDrive");
         Hang(bp, "Dray Ladder", lower, "ladder", "bottom");
+        foreach (var n in new[] { "suit0", "suit1" })
+            Hang(bp, EvaParts.LockerName, lower, n, "wall");
+        EvaParts.FitDock(bp, Holder(bp, lower, "mmuDock"), "mmuDock"); // (no fuel line: the Dray has no tankage yet)
         for (var i = 0; i < 3; i++)
         {
             Hang(bp, "Robot Shell", Hang(bp, "Robot Shell Dock", lower, $"shellDock{i}", "wall"), "dock", "back");
