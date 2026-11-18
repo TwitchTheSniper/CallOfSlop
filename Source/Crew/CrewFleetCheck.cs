@@ -4,7 +4,7 @@ using CallOfSlop.VehicleKit;
 namespace CallOfSlop;
 
 /// <summary>
-/// <c>--crew-check --crew-fleet strike|screen|succession|convoy|mining|interrogate|scale|powers|politics|all [--seconds S] [--fleet-scale N] [--fleet-awake K]
+/// <c>--crew-check --crew-fleet strike|screen|succession|convoy|mining|interrogate|escort|scale|powers|politics|all [--seconds S] [--fleet-scale N] [--fleet-awake K]
 /// [--group-size G] [--crew-scale-ship NAME]</c> (docs/sandbox/design/faction-controllers.md phase 2): groups led by admirals, driven by their
 /// seated crews with no game (a tool's world: no bodies). Each prints what happened and a verdict; exit 0 when every part asked passed.
 /// </summary>
@@ -35,6 +35,8 @@ public static class CrewFleetCheck
             ok &= CrewPlayersCheck.Run(); // (phase 5: players in the politics, CrewPlayersCheck.cs)
         if (which.Equals("territory", StringComparison.OrdinalIgnoreCase) || which.Equals("far", StringComparison.OrdinalIgnoreCase))
             ok &= CrewTerritoryCheck.Run(which, seconds); // (phase 4: territory and the far layer, CrewTerritoryCheck.cs)
+        if (which.Equals("escort", StringComparison.OrdinalIgnoreCase))
+            ok &= CrewAdmiralsCheck.Run(args); // (phase 6: a player's hired ships escort their mining ship, CrewAdmiralsCheck.cs)
         if (which.Equals("scale", StringComparison.OrdinalIgnoreCase))
             ok &= Scale(int.TryParse(Arg("--fleet-scale"), out var n) ? n : 1000, int.TryParse(Arg("--fleet-awake"), out var k) ? k : 64,
                 int.TryParse(Arg("--group-size"), out var gs) ? Math.Clamp(gs, 1, CrewGroup.MaxShips) : CrewGroup.MaxShips, Arg("--crew-scale-ship") ?? "Bandit Helicopter 1",
@@ -363,7 +365,7 @@ public static class CrewFleetCheck
             if (t % (10 * World.TickRate) == 10 * World.TickRate - 1)
                 Console.WriteLine($"  {(t + 1) / World.TickRate,3} s: {string.Join("; ", ships.Select(b => $"{b.Id}: {crew.ShipOf(b.Id)?.Ai?.State ?? "no driver"} at {b.Vel.Length():0} m/s, {b.WorldCom.Y:0} m up, helm {(crew.ShipOf(b.Id) is { } hs && hs.HelmOn(crew) ? "manned" : "EMPTY")}, keys {(crew.ShipOf(b.Id) is { Helm: >= 0 } ks ? b.Parts[ks.StPart[ks.Helm]].Keys : 0):X}, nose to its way {Vector3.Dot(Vector3.Normalize(Vector3.Transform(-Vector3.UnitZ, b.Rot) with { Y = 0 }), b.Vel.LengthSquared() > 1 ? Vector3.Normalize(b.Vel with { Y = 0 }) : Vector3.Zero):0.0}"))}");
         }
-        var looped = crew.ShipOf(g.Flagship) is { Order.Kind: OrderKind.Mine } && arrivals.Count >= 2;
+        var looped = arrivals.Count >= 3 && arrivals[2] == 0 || crew.ShipOf(g.Flagship) is { Order.Kind: OrderKind.Mine } && arrivals.Count >= 2; // (a third arrival at the mine, or on its way back to it)
         var ok = arrivals.Count >= 2 && arrivals[0] == 0 && arrivals[1] == 1 && looped;
         Console.WriteLine($"fleet mining: route points reached in order: {string.Join(", ", arrivals.Select(a => a == 0 ? "mine" : "deliver"))}{(looped ? ", then back to mine" : "")}: {(ok ? "OK" : "FAILED")}");
         return ok;

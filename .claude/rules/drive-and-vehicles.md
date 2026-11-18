@@ -2,6 +2,9 @@
 paths:
   - "Source/Constructs/ConstructDrive*.cs"
   - "Source/Constructs/ConstructEngine.cs"
+  - "Source/Constructs/ConstructShipAi*.cs"
+  - "Source/Crew/CrewOrders.cs"
+  - "Source/Crew/CrewGround.cs"
   - "Source/Constructs/ConstructSuspension.cs"
   - "Source/Constructs/ConstructTracks.cs"
   - "Source/Constructs/ConstructWheelShape.cs"
@@ -34,3 +37,4 @@ Each line is a past failure's rule. Add a new one at the end: date, what went wr
 - 2026-11-10: fix/turret-seat ran the rotary joints' speed from stopped (min 0) and Construct actuators still wanted a minimum above zero; a range change in a part generator is followed by the checks that read that range.
 - 2026-11-11: all-wheel drive moved `FrontAxleZ` an eighth ahead of the rails, and `Vehicle.RailZ` still counted socket rows from it, so every Gun Wagon bed sill was asked for between two sockets (the T Gearbox got the blame). Work out a socket grid from the part that holds the sockets (`RailGrid`), never from an axle line, and read the refusal's "m from where it was asked" before blaming a placement.
 - 2026-11-16: vehicles crawled on low-g planetoids: every tyre's friction budget was its real load, so drive, brakes and top speed all fell with gravity. Drive grip (along the ground, rolling drag, `LastGrip`) is from 1 g (`ConstructPhysics.Wheels`); side grip stays real. A change to tyre forces is tried with `--speed-test --gravity` at 0.16, 1 and 2. The top-up is each tyre's own resting share (`CWheel.RestShare`) times the world's missing pull only: an even share let a light driven axle out-accelerate 1 g, and Anti-Grav's or zero g's missing weight must not be made up.
+- 2026-11-18: the crews' flying under an admiral misread the ground and fought its own: a Zero Day's docked Limpet (a body it carries) read as the ground 4 m down, so formations climbed for ever (phase 2's "followers 20-160 m off"); a ship-pattern craft slid on Q and E, which roll it, until it lay on its side and settled for good (phase 2's frigates "settling mid-route"); escorts fired through what they guarded. A clearance ray skips what the body carries (`ignoreCargo`), a craft's slide keys come from its flight pattern and a ship-pattern pilot keeps it level (`ShipAi.Level`), and a ship under Form, Escort or Screen holds fire with its ward in the line (`WardInLine`).

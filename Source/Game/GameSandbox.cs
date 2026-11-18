@@ -113,6 +113,7 @@ public enum CActKind : byte
     MouseSteer, // u16 body (the seat's): the seated player takes that ship's nose with the mouse, or lets it go (protocol 349; ConstructFlight.ToggleMouseSteer)
     MmuOff, // nothing: a worn MMU comes off the wearer's back where they are, a loose part holding its fuel (protocol 365; GameSandboxEva.cs)
     LandingGear, // u16 body (the seat's): the seated player lowers or raises that craft's landing leg pods (protocol 367; ConstructDoors.ToggleGear)
+    Fleet, // u8 FleetOp, u8 group slot, u16 body, u32 uid, vec at, u8 arg, f32 value: a player's fleet group from the command view (protocol 368; GameCrewFleetPlayers.cs)
 }
 
 /// <summary>
@@ -1020,6 +1021,8 @@ public sealed partial class Game
                 return ShellLeaveAct(p); // robot shells (GameRobotShell.cs)
             case CActKind.NavOrder:
                 return NavOrderAct(p, ref r); // an order for a ship from the command view (GameNav.cs)
+            case CActKind.Fleet:
+                return FleetAct(p, ref r); // a player's fleet group (GameCrewFleetPlayers.cs)
             case CActKind.Talk:
             {
                 var person = r.U8();
