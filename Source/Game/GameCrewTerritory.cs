@@ -114,6 +114,40 @@ public sealed partial class Game
         return party != 0 ? t.StoryStanding[party * FactionTable.MaxStory + power - 1] : t.PlayerStanding[p.Id * FactionTable.MaxStory + power - 1];
     }
 
+    /// <summary>The window tool's <c>crewterritory</c> on the host.</summary>
+    public string CrewTerritoryLine(Player me, string arg)
+    {
+        var c = Controllers;
+        var w = arg.Trim().ToLowerInvariant();
+        if (w == "near")
+        {
+            var gi = c.FarNear(Relations, this, me.Position, 3500);
+            if (gi < 0)
+                return $"no far group could be put on {World.Map.Name} (its planet in Crew/Territory.json: {c.Territory.PlanetOf(World.Map.Name) >= 0})";
+            return $"far group {c.Far[gi].Number} of {CrewPowers.Of(c.Far[gi].Power)?.Name} put 3.5 km off, {c.Far[gi].Ships} ships being fielded";
+        }
+        if (w == "leave")
+        {
+            var t = c.Territory.Copy();
+            (t.MaterialiseRange, t.CollapseRange, t.CollapseSeconds) = (1, 2, 5); // (a test's: as if this player had gone far off)
+            c.Territory = t;
+        }
+        return $"active {PowersActive}; far groups {c.FarLive}, materialised {c.Materialised}, collapsed {c.Collapsed}, sites taken {c.SitesTaken}, planet changes {c.PlanetChanges}; far layer {c.FarMs / Math.Max(1, c.Ticks) * 1000:0.0} us a tick (worst {c.FarWorstMs:0.00} ms); bodies {c.Bodies()}; host's map: {FactionMapLine()}\n{c.TerritoryText()}";
+    }
+
+    /// <summary>This peer's map in a line (the window tool's).</summary>
+    public string FactionMapLine()
+    {
+        var v = FactionMap;
+        var sb = new System.Text.StringBuilder($"{v.PlanetCount} planets ");
+        for (var i = 0; i < v.PlanetCount; i++)
+            sb.Append($"{v.Planet[i]}={(v.Holder[i] != 0 ? CrewPowers.Of(v.Holder[i])?.Tag ?? "?" : "contested")} ");
+        sb.Append($"; {v.GroupCount} groups known:");
+        for (var i = 0; i < v.GroupCount; i++)
+            sb.Append($" [{CrewPowers.Of(v.Groups[i].Power)?.Name} {v.Groups[i].Task} x{v.Groups[i].Ships}{(v.Groups[i].Here ? " here" : "")}{(v.Groups[i].Stale ? " stale" : "")}{(v.Groups[i].Threat ? " THREAT" : "")}{(v.Groups[i].Real ? " real" : "")}]");
+        return sb.ToString();
+    }
+
     /// <summary><see cref="Msg.FactionMap"/>: u8 planets (text name, u8 holder, u8 leader, u8 share 0-255), u8 groups (u8 power, u8 task, u8 flags (1 here, 2 stale,
     /// 4 threat, 8 real), u8 planet, u8 to-planet, u8 progress, u8 ships, 3 x f32 place, u16 age s).</summary>
     private static void WriteFactionMap(PacketWriter w, FactionMapView v)

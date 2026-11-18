@@ -718,8 +718,12 @@ public sealed partial class PowerControllers
         if (_peopleN == 0 || !g.PosKnown || !OpenWorld(host, g.Planet) || NearestPersonTo(g.Pos) > Territory.MaterialiseRange)
             return;
         var p = Powers[g.Power];
-        if (Bodies() + g.Ships > Rules.MaxBodies)
-            return;
+        var records = 0;
+        for (var i = 0; i < MaxShips; i++)
+            if (p.Ships[i].Far == gi + 1 && p.Ships[i].State == PowerShipState.Far)
+                records++;
+        if (records == 0 || Bodies() + records > Rules.MaxBodies)
+            return; // (nothing built yet, or over the world's cap: it stays a record, unseen)
         g.Body = 1;
         g.SpawnAt = Tick;
         g.FarSince = 0;
@@ -918,6 +922,37 @@ public sealed partial class PowerControllers
         s = default;
         s.Mission = -1;
         return true;
+    }
+
+    /// <summary>A test's (the window tool's <c>crewterritory near</c>): a Take group of the first power that fields armed ships, set on the open world
+    /// <paramref name="from"/> m from <paramref name="at"/>, for a site on that world (any, else none). -1: none could be made.</summary>
+    public int FarNear(PowerRelations rel, IPowerHost host, Vector3 at, float from)
+    {
+        var planet = Territory.PlanetOf(host.WorldKey);
+        if (planet < 0)
+            return -1;
+        for (var a = (byte)1; a <= Count; a++)
+        {
+            if (FarArmed(a) is not { } role || !Powers[a].Plan.Fields || rel.Gone[a])
+                continue;
+            var site = -1;
+            for (var k = 0; k < SiteCount && site < 0; k++)
+                if (_sitePlanet[k] == planet && SiteHolder[k] != a)
+                    site = k;
+            if (site < 0)
+                continue;
+            Powers[a].Stock = Math.Max(Powers[a].Stock, 3000); // (a test's: it can field them)
+            var gi = FarForm(rel, Powers[a], a, FarTask.Take, site, 2, role);
+            if (gi < 0)
+                continue;
+            ref var g = ref Far[gi];
+            var p = at + new Vector3(from, 0, 0);
+            if (host.Ground(p, out var ground))
+                p = ground;
+            (g.Planet, g.ToPlanet, g.State, g.StateAt, g.Pos, g.PosKnown, g.Arrive) = ((short)planet, (short)planet, FarState.Land, Tick, p, true, double.MaxValue);
+            return gi;
+        }
+        return -1;
     }
 
     // ---- Saves (in the controllers' section, version 2) -----------------------------------------------------------------------------

@@ -52,6 +52,9 @@ public sealed class TerritoryRules
     /// <summary>A tool: rules of its own, from now on in this run.</summary>
     public static void Use(TerritoryRules r) => _current = r;
 
+    /// <summary>A copy whose numbers a test may change (the lists are shared).</summary>
+    public TerritoryRules Copy() => (TerritoryRules)MemberwiseClone();
+
     public int KindOf(string name) => Kinds.FindIndex(k => k.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
 
     public int PlanetOf(string name) => Planets.FindIndex(p => p.Equals(name, StringComparison.OrdinalIgnoreCase));
