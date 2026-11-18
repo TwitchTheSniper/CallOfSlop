@@ -5,7 +5,7 @@ namespace CallOfSlop.VehicleKit.Generators;
 /// <summary>
 /// The excavator, a mining vehicle (docs/vehiclekit/EXCAVATOR-notes.md; factory-generator-notes.md "Extraction must follow the ore"): a tracked undercarriage carrying
 /// the engine, a house on a slewing turntable with the cab, and a boom, a stick and a Digging Bucket on motor hinges. A Drill Module on the stick's end chutes what it
-/// drills into the bucket, so the arm carries the drill over fresh ore and swings the load round to a hauler's open bed or a bin.
+/// drills into the bucket, a Small Genset at the house's back powers the motors, so the arm carries the drill over fresh ore and swings the load round to a hauler's open bed or a bin.
 /// Built in its travelling pose: the boom upright, the stick out forward, the bucket hanging under it. The driver's seat drives the tracks (its Driving Module),
 /// Q and E slew the house (the module's roll output into the turntable), three Analog Levers beside the seat set the boom, the stick and the bucket (a lever where
 /// it starts is the pose it was built in), and a switch runs the drill. Any crew driver can take the seat.
@@ -61,15 +61,16 @@ public sealed class Excavator(FactionStyle style) : VehicleShape(style)
         var cross = v.Put("Square Beam 2 m", new Vector3(0, top + Vehicle.Half, front - Vehicle.Half), Orient.Along(Vector3.UnitX), 0.2f, spine);
         var deckY = top + 2 * Vehicle.Half;
 
-        // ---- The boom: a Motor Hinge 3x3 on the cross beam's right, its axis across, the boom standing up on its leaf.
+        // ---- The boom: a Motor Hinge 3x3 on the cross beam's right, its axis across, the boom standing up on its leaf. (Its 30 kN m holds the arm laid out
+        // at a few degrees' give with a tier-1 drill; a Motor Hinge Medium would take a medium socket the house hasn't got.)
         var boomX = 0.625f + 0.125f * d.Int(0, 1);
-        var boomHinge = v.Put("Motor Hinge 3x3 Medium", new Vector3(boomX, deckY + 0.375f, front - Vehicle.Half), new Orient(Vector3.UnitX, Vector3.UnitY, Vector3.UnitY, Vector3.UnitX), 0.2f, cross, "base");
-        var boomLong = d.Pick((float[])[2.5f, 2.75f, 3f]);
+        var boomHinge = v.Put("Motor Hinge 3x3 Medium", new Vector3(boomX, deckY + 0.375f, front - Vehicle.Half), new Orient(Vector3.UnitX, Vector3.UnitY, Vector3.UnitY, -Vector3.UnitX), 0.2f, cross, "base"); // (its axis to the left: a positive angle lays the boom forward)
+        var boomLong = d.Pick((float[])[2.5f, 2.75f]);
         var boomBase = v.SocketPoint(boomHinge, "leaf");
         var boom = Run(v, boomHinge, "leaf", boomBase, Vector3.UnitY, boomLong);
         // ---- The stick: a Motor Hinge 3x3 on the boom's front near its top, its leaf forward, the stick out forward from it.
         var stickHinge = v.Put("Motor Hinge 3x3 Medium", new Vector3(boomX, boomBase.Y + boomLong - 0.375f, front - Vehicle.Half - 0.125f - 0.375f), new Orient(Vector3.UnitX, -Vector3.UnitZ, Vector3.UnitY, Vector3.UnitX), 0.2f, boom[^1], "base");
-        var stickLong = d.Pick((float[])[2f, 2.25f, 2.5f]);
+        var stickLong = d.Pick((float[])[2f, 2.25f]);
         var stickBase = v.SocketPoint(stickHinge, "leaf");
         var stick = Run(v, stickHinge, "leaf", stickBase, -Vector3.UnitZ, stickLong);
         var stickEnd = stickBase.Z - stickLong;
@@ -77,7 +78,7 @@ public sealed class Excavator(FactionStyle style) : VehicleShape(style)
         var bucketHinge = v.Stand("Motor Hinge 2x2 Medium", new Vector3(boomX, stickBase.Y - Vehicle.Half, stickEnd + Vehicle.Half), new Orient(Vector3.UnitX, -Vector3.UnitY, Vector3.UnitY, Vector3.UnitX), stick[^1], "base");
         var scoop = v.Onto(bucketHinge, "leaf", "Digging Bucket", "back", SpinFor(v, bucketHinge, "leaf", "Digging Bucket", "back", Vector3.UnitY, Vector3.UnitZ));
         // ---- The drill on the stick's top at its end, its bit forward past the end: with the boom down it stands upright over the ground ahead of the bucket.
-        var drillName = d.Fork("drill").Chance(0.5) ? "Drill Module" : "Workshop Drill Module";
+        const string drillName = "Drill Module"; // (tier 1, 200 kg: the Workshop's 300 kg at the arm's end put the boom past its rating; swap it for copper)
         var drill = v.Stand(drillName, new Vector3(boomX, stickBase.Y + Vehicle.Half, stickEnd + 0.375f), new Orient(-Vector3.UnitY, -Vector3.UnitZ, Vector3.UnitZ, Vector3.UnitY), stick[^1], "back", 0.3f);
         v.Link("chute", drill, scoop, "Chute out", null);
 
@@ -112,7 +113,12 @@ public sealed class Excavator(FactionStyle style) : VehicleShape(style)
         v.Wire(bucketLever, bucketHinge);
         var drillSwitch = v.Put("Switch", new Vector3(0.5f, deckY + 2 * Vehicle.Half + 0.1f, seatZ), Orient.Any, 0.2f, seatSill);
         v.Wire(drillSwitch, drill);
-        var battery = v.Onto(spine, "+z", "Battery", "-z", 0);
+        // ---- The power pack at the house's back, its counterweight: the arm's motors draw tens of kilowatts while they move, far past an alternator's 1.5 kW,
+        // so a Small Genset (100 kW) on its own fuel tank feeds the circuit, and the battery (which a drill needs in survival) rides on it.
+        var genset = v.Onto(spine, "+z", "Small Genset", "-z", 0);
+        var houseTank = v.Onto(genset, "+y", "Fuel Tank", "-y", 0);
+        v.Link("pipe", houseTank, genset, null, "Fuel in", laid: true);
+        var battery = v.Onto(genset, "-x", "Battery", "+x", 0);
 
         v.Deck("house", deckY, new Vehicle.Rect(-1.125f, 1.125f, front - Vehicle.Half, rear - 0.25f), "deck", [footHole, sillHole]);
         var shell = d.Fork("cab").Pick((string[])["Roll Cage", "Tin Roof Cab", "Chop Top Cab"]);
@@ -123,7 +129,8 @@ public sealed class Excavator(FactionStyle style) : VehicleShape(style)
         v.PaintAll([.. boom, .. stick, .. v.Panels["house"]], "body", paint);
         v.PaintAll([boomHinge, stickHinge, bucketHinge, scoop, table, spine, cross, seatSill, shellSill], "frame", paint);
         v.PaintAll(v.Panels["cabshell"], "body", paint);
-        v.PaintAll([battery, drillSwitch], "frame", paint);
+        v.PaintAll([battery, drillSwitch, genset], "frame", paint);
+        v.PaintAll([houseTank], "body", paint);
     }
 
     /// <summary>Square beams end to end from <paramref name="on"/>'s <paramref name="socket"/> at <paramref name="from"/> along <paramref name="dir"/>, <paramref name="length"/> metres (2 m, then 1, 0.75, 0.5 m).</summary>
