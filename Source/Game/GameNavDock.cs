@@ -56,8 +56,9 @@ public sealed partial class Game
         if (!d.IsDock || ship.Mass > d.DockMaxMass)
             return false;
         foreach (var b in world.Bodies)
-            if (b != ship && b.CarriedBy == target.Id && (b.CarryTag != 0 ? ConstructCargo.CarriedIn(target, b) == part : ConstructCargo.MostlyInside(target, part, b)))
-                return false; // (a client isn't told the carry's tag, nor is a grapple's grip one: the craft in the port's box)
+            if (b != ship && (b.CarriedBy == target.Id && (b.CarryTag != 0 ? ConstructCargo.CarriedIn(target, b) == part : ConstructCargo.MostlyInside(target, part, b))
+                || b.MooredTo == target.Id && b.MoorPart == part))
+                return false; // (a client isn't told the carry's tag, nor is a grapple's grip one: the craft in the port's box; a station's berth moors: GameStations.cs)
         return true;
     }
 
@@ -86,8 +87,10 @@ public sealed partial class Game
             return "They are too far apart: bring them to the same world first";
         if (c.SpaceShip != 0 && t.SpaceShip == 0)
             return "It is out in space and the other is in the sky: bring it down into the sky first";
-        if (c.CargoCount > 0)
-            return "It carries a craft or cargo of its own: no port takes it so"; // (ConstructCargo.Catchable: no cargo in cargo)
+        if (c.CargoCount > 0 && !t.IsStation)
+            return "It carries a craft or cargo of its own: no port takes it so"; // (ConstructCargo.Catchable: no cargo in cargo; a station's berth moors it instead: GameStations.cs)
+        if (c.MooredTo != 0)
+            return "It is moored at a station: give it another order to cast off";
         port = NavDockFor(Constructs, t, c);
         return port < 0 ? "No port available on " + t.DisplayName() : null;
     }
@@ -233,10 +236,16 @@ public sealed partial class Game
         var d = t.DefOf(part);
         var com = c.WorldCom;
         var slip = (c.Vel - t.PointVel(com)).Length();
-        if (armed && slip < MathF.Max(NavDockSlow, d.DockSettle) && ConstructCargo.Catchable(Constructs, t, c, d)
+        if (armed && slip < MathF.Max(NavDockSlow, d.DockSettle) && (t.IsStation ? StationMoorable(t, c, d) : ConstructCargo.Catchable(Constructs, t, c, d))
             && (d.DockPull > 0 ? Vector3.Distance(com, centre) < MathF.Min(along + NavDockOver * 0.5f, along + d.DockPull) : ConstructCargo.MostlyInside(t, part, c)))
         {
-            NavDockCatch(f, i, o, c, t, part, centre);
+            if (t.IsStation)
+            {
+                StationMoor(f, i, c, t, part); // (a station's berth moors it, its own craft aboard: GameStations.cs)
+                NavEnd(o, c, $"it has docked with {StationName(t)}", docked: true);
+            }
+            else
+                NavDockCatch(f, i, o, c, t, part, centre);
             return Vec3d.Zero;
         }
         var pose = s.Bubble.PoseAt(time);

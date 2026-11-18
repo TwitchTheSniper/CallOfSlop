@@ -16,7 +16,7 @@ namespace CallOfSlop;
 /// </summary>
 public static unsafe partial class Program
 {
-    private static bool WsNavKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "command" or "cmdpick" or "order" or "nav" or "hoist" or "speed" or "travel" or "cmdview" or "rclick" or "rclickup" or "spacewalk" or "missile" or "missiles" or "letgo" or "orbit" or "boardwalk" or "cmdboard" or "mouse";
+    private static bool WsNavKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "command" or "cmdpick" or "order" or "nav" or "hoist" or "speed" or "travel" or "cmdview" or "rclick" or "rclickup" or "spacewalk" or "missile" or "missiles" or "letgo" or "orbit" or "boardwalk" or "cmdboard" or "mouse" or "moorclear";
 
     /// <summary>"order dock N": the picked craft docks with the Nth craft on the map (as cmdpick counts them).</summary>
     private static string? WsDockOrder(Game g, int n)
@@ -208,6 +208,12 @@ public static unsafe partial class Program
                 _wsWait = 10;
                 return true;
             }
+            case "moorclear" when g.IsServer:
+                // (a test state: the picked craft may be moored again at once by the berth it was cast off from, as if it had flown out and back)
+                if (g.Constructs.Get(Ui.CommandPicked) is { } mc)
+                    mc.MoorAway = 0;
+                WsSay($"[nav] moorclear: construct {Ui.CommandPicked}, moored to {g.Constructs.Get(Ui.CommandPicked)?.MooredTo ?? 0}");
+                return true;
             case "nav":
             {
                 if (g.Space is not { } s)
@@ -226,7 +232,7 @@ public static unsafe partial class Program
                     c.WorldFrame(0, out var cq, out _);
                     var tilt = MathF.Acos(Math.Clamp(Vector3.Dot(Vector3.Transform(Vector3.UnitY, cq), ConstructPhysics.HoldUp(c.WorldCom)), -1, 1)) * 180 / MathF.PI; // (its deck against the ground's up)
                     WsSay(string.Create(inv, $"[nav] construct {c.Id} drive: {accel:0.00} m/s2, {(burn > 0 ? $"{c.FuelLeft / burn:0} s at full, dV {accel * c.FuelLeft / burn:0} m/s" : "no fuel burnt")}"));
-                    WsSay(string.Create(inv, $"[nav] construct {c.Id}: {(c.SpaceAway != 0 ? "parked" : c.SpaceShip != 0 ? "space" : "sky")}, {height:0} m up, tilt {tilt:0} deg, {c.Vel.Length():0.0} m/s, spin {c.AngVel.Length():0.00} rad/s{(c.CarriedBy != 0 ? $", held by {c.CarriedBy}" : "")}, mass {c.Mass / 1000:0.0} t, fuel {c.FuelLeft:0} L, thrust {c.ThrustShow:0.00}, nav throttle {c.NavThrottle:0.00}, takes orders: {Game.NavProblem(c) ?? "yes"}; order: {(o == null ? "none" : $"{Game.NavText(s.System, o)}, {o.Phase}, {o.Distance:0} m to go, {o.SpeedError:0.0} m/s off{(o.ArriveNs != 0 ? $", trip leaves day {o.DepartNs / 864e11:0.0}, arrives day {o.ArriveNs / 864e11:0.0}, {o.DvNeed / 1000:0.00} km/s" : "")}")}; space day {s.Now.Seconds / 86400:0.00} at {s.Speed}x{((c.SpaceAway != 0 ? g.SpaceAwayLine(c) : g.SpaceOrbitLine(c)) is { } line ? "; " + line : "")}{(g.Local is { Alive: true } you && c.SpaceShip == 0 ? $"; {Vector3.Distance(you.Position, c.WorldCom):0} m from you" : "")}"));
+                    WsSay(string.Create(inv, $"[nav] construct {c.Id}: {(c.SpaceAway != 0 ? "parked" : c.SpaceShip != 0 ? "space" : "sky")}, {height:0} m up, tilt {tilt:0} deg, {c.Vel.Length():0.0} m/s, spin {c.AngVel.Length():0.00} rad/s{(c.CarriedBy != 0 ? $", held by {c.CarriedBy}" : "")}{(c.MooredTo != 0 ? $", moored at {c.MooredTo}" : "")}, mass {c.Mass / 1000:0.0} t, fuel {c.FuelLeft:0} L, thrust {c.ThrustShow:0.00}, nav throttle {c.NavThrottle:0.00}, takes orders: {Game.NavProblem(c) ?? "yes"}; order: {(o == null ? "none" : $"{Game.NavText(s.System, o)}, {o.Phase}, {o.Distance:0} m to go, {o.SpeedError:0.0} m/s off{(o.ArriveNs != 0 ? $", trip leaves day {o.DepartNs / 864e11:0.0}, arrives day {o.ArriveNs / 864e11:0.0}, {o.DvNeed / 1000:0.00} km/s" : "")}")}; space day {s.Now.Seconds / 86400:0.00} at {s.Speed}x{((c.SpaceAway != 0 ? g.SpaceAwayLine(c) : g.SpaceOrbitLine(c)) is { } line ? "; " + line : "")}{(g.Local is { Alive: true } you && c.SpaceShip == 0 ? $"; {Vector3.Distance(you.Position, c.WorldCom):0} m from you" : "")}"));
                 }
                 return true;
             }
