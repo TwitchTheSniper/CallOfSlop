@@ -102,6 +102,21 @@ public static partial class ConstructParts
             if (d.Eva == EvaPart.Dock && (d.Role != PartRole.Seat || !d.Sockets.Any(s => s.Name == "mmu")))
                 throw new ConstructPartException($"{file}: an MMU dock is a seat with an \"mmu\" socket");
         }
+        if (Opt(root, "air") is { } ab)
+        {
+            Known(ab, ["kind", "holds"], $"{file}, air");
+            d.Air = Str(Need(ab, "kind", $"{file}, air"), file, "air.kind") switch
+            {
+                "unit" => AirPart.Unit,
+                "tank" => AirPart.Tank,
+                var k => throw new ConstructPartException($"{file}: \"air\".\"kind\" is unit or tank, not \"{k}\""),
+            };
+            var holds = Num(Need(ab, "holds", $"{file}, air"), file, "air.holds");
+            Range(holds, 0, ushort.MaxValue, file, "air.holds");
+            d.AirHolds = (ushort)holds;
+            if (d.Eva != EvaPart.None)
+                throw new ConstructPartException($"{file}: an \"air\" part keeps its oxygen in the part's rounds: it can't be spacewalk gear too");
+        }
         if (Opt(root, "jump") is { } jb)
         {
             if (d.Logic != CLogic.JumpDrive)

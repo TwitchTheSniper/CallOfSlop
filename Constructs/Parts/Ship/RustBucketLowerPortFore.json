@@ -1491,6 +1491,15 @@
       "dir": "+x"
     },
     {
+      "name": "lifeSupport",
+      "at": [
+        1.125,
+        0.25,
+        5.845
+      ],
+      "dir": "+x"
+    },
+    {
       "name": "switchHoldL",
       "at": [
         1.125,

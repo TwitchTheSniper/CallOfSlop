@@ -754,6 +754,8 @@ public sealed class MinerParts : IPartGenerator
         for (var i = 0; i < 2; i++) // (Space Suit Lockers, then the MMU Dock by the ramp: out of it, the nacelles are a few metres aft)
             Sock(p, $"suit{i}", Cx - Lw, Ft0 + 0.125, 23.45 + i * 0.85, "+x");
         Sock(p, "mmuDock", Cx - Lw, Ft0 + 0.125, 25.35, "+x");
+        Sock(p, "lifeSupport", Cx - Lw, Ft0 + 0.125, 20.0, "+x"); // (the ship's air: the unit and a tank on the port wall, between the batteries and the Power Board)
+        Sock(p, "o2Tank0", Cx - Lw, Ft0 + 0.125, 20.85, "+x");
         Sock(p, "toolRack", Cx + Lw, Ft0 + 0.9, 24.0, "-x");
         for (var i = 0; i < 3; i++) // (the Robot Shell Docks down the starboard wall, by the ramp: Karl, 2026-11-17)
             Sock(p, $"shellDock{i}", Cx + Lw, Ft0 + 0.125, 20.3 + i * (2 * CrewFittingsParts.DockHalf + 0.02), "-x");
@@ -2009,6 +2011,8 @@ public sealed class MinerParts : IPartGenerator
         for (var i = 0; i < 2; i++)
             bp.Hang(EvaParts.LockerName, eng, $"suit{i}", "wall");
         EvaParts.FitDock(bp, eng, "mmuDock", keel); // (its pack fed from the keel's tank)
+        bp.Hang(EvaParts.LifeSupportName, eng, "lifeSupport", "wall"); // (the ship's air: 16 person-hours with its tank)
+        bp.Hang(EvaParts.OxygenTankName, eng, "o2Tank0", "wall");
         bp.Hang("Tool Rack", eng, "toolRack", "back");
         for (var i = 0; i < 3; i++)
             bp.Hang("Robot Shell", bp.Hang("Robot Shell Dock", eng, $"shellDock{i}", "wall"), "dock", "back");

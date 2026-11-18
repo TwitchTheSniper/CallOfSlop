@@ -609,6 +609,18 @@
       "by": "mount"
     },
     {
+      "part": "Life Support Unit",
+      "on": 31,
+      "socket": "lifeSupport",
+      "by": "wall"
+    },
+    {
+      "part": "Oxygen Tank",
+      "on": 31,
+      "socket": "o2Tank0",
+      "by": "wall"
+    },
+    {
       "part": "Robot Shell Dock",
       "on": 35,
       "socket": "shellDock0",
@@ -616,7 +628,7 @@
     },
     {
       "part": "Robot Shell",
-      "on": 98,
+      "on": 100,
       "socket": "dock",
       "by": "back"
     },
@@ -635,7 +647,7 @@
     },
     {
       "part": "Robot Shell",
-      "on": 101,
+      "on": 103,
       "socket": "dock",
       "by": "back"
     },
@@ -654,7 +666,7 @@
     },
     {
       "part": "Robot Shell",
-      "on": 104,
+      "on": 106,
       "socket": "dock",
       "by": "back"
     },
@@ -679,13 +691,13 @@
     },
     {
       "part": "Fuel Pump L",
-      "on": 108,
+      "on": 110,
       "socket": "back",
       "by": "front"
     },
     {
       "part": "Coolant Exchanger L",
-      "on": 109,
+      "on": 111,
       "socket": "back",
       "by": "front"
     },
@@ -703,13 +715,13 @@
     },
     {
       "part": "Fuel Pump L",
-      "on": 112,
+      "on": 114,
       "socket": "back",
       "by": "front"
     },
     {
       "part": "Coolant Exchanger L",
-      "on": 113,
+      "on": 115,
       "socket": "back",
       "by": "front"
     },
@@ -1001,7 +1013,7 @@
     },
     {
       "part": "Medium Crane Bridge",
-      "on": 138,
+      "on": 140,
       "socket": "-x.0.0",
       "by": "+x",
       "paint": "#e0a020",

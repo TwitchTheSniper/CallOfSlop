@@ -882,6 +882,11 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
             Sock(p, $"suit{i}", Cx - Lw, Ft0 + 0.125, 30.75 + i * 0.85, "+x");
         Sock(p, "airlockLocker", Cx + Lw, Ft0 + 0.125, 33.3, "-x");
         Sock(p, "mmuDock", Cx + 3.3, Ft0 + 0.125, 34.0, "-z");
+        // The ship's air (docs/sandbox/EVA.md "Ship air"): the Life Support Unit and two Oxygen Tanks on engineering's port wall, aft of
+        // the bulkhead and forward of the Engineer's Panel.
+        Sock(p, "lifeSupport", Cx - Lw, Ft0 + 0.125, 34.8, "+x");
+        for (var i = 0; i < 2; i++)
+            Sock(p, $"o2Tank{i}", Cx - Lw, Ft0 + 0.125, 35.65 + i * 0.85, "+x");
         for (var i = 0; i < 4; i++) // (the Robot Shell Docks along the engineering bulkhead's forward face, port of its door: Karl, 2026-11-17)
             Sock(p, $"shellDock{i}", Cx - Lw + 0.2 + CrewFittingsParts.DockHalf + i * (2 * CrewFittingsParts.DockHalf + 0.01), Ft0 + 0.125, 34.0, "-z");
         Sock(p, "reactor", Cx + 3.1, Ft0, 35.5, "+y");
@@ -2323,6 +2328,9 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
             Hang(bp, EvaParts.LockerName, la, $"suit{i}", "wall");
         Hang(bp, EvaParts.LockerName, la, "airlockLocker", "wall");
         EvaParts.FitDock(bp, Holder(bp, la, "mmuDock"), "mmuDock", placed["Zero Day Keel 4"]);
+        Hang(bp, EvaParts.LifeSupportName, la, "lifeSupport", "wall"); // (the ship's air: 28 person-hours with its two tanks)
+        for (var i = 0; i < 2; i++)
+            Hang(bp, EvaParts.OxygenTankName, la, $"o2Tank{i}", "wall");
         for (var i = 0; i < 4; i++)
             Hang(bp, "Robot Shell", Hang(bp, "Robot Shell Dock", la, $"shellDock{i}", "wall"), "dock", "back");
         foreach (var d in new[] { "doorBayL", "doorBayR", "doorAirlock", "doorEngine" })

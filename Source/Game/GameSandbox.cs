@@ -337,6 +337,7 @@ public sealed partial class Game
         if (!SandboxOn)
             return;
         SandboxRules();
+        ShipAirTick(); // (once a second: who breathes each ship's air, and what it costs: GameShipAir.cs)
         Constructs.PlayerSpotCount = 0;
         foreach (var p in Players.Values)
         {

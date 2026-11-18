@@ -22,6 +22,7 @@ public sealed class EvaParts : IPartGenerator
     public const double DockY = 0.93, DockZ = 0.47, MountZ = 0.39;
 
     public const string LockerName = "Space Suit Locker", DockName = "MMU Dock", MmuName = "Manned Manoeuvring Unit";
+    public const string LifeSupportName = "Life Support Unit", OxygenTankName = "Oxygen Tank";
 
     /// <summary>
     /// A ship's spacewalk station (docs/sandbox/EVA.md "On the ships"): an MMU Dock hung by its "wall" socket on the ship's socket, a pack
@@ -148,10 +149,71 @@ public sealed class EvaParts : IPartGenerator
         return p.Stats(70, 250, 4, 2.0);
     }
 
+    /// <summary>
+    /// The Life Support Unit (Karl, 2026-11-18; docs/sandbox/EVA.md "Ship air"): a wall cabinet that scrubs and circulates a ship's
+    /// air, with a small oxygen reserve of its own. Without one working the ship is vacuum. The locker's footprint and wall socket,
+    /// shallower (0.45 m), so it goes wherever a locker does.
+    /// </summary>
+    private static Part LifeSupport()
+    {
+        var p = new Part(LifeSupportName, Small, Section,
+            "Keeps a ship's air: aboard while it works and oxygen is left, anyone breathes without a suit, and suits refill. Everyone aboard uses it up, crew and prisoners too. Holds 4 person-hours; Oxygen Tanks add more. Refills its tanks in a planet's air. F reads it.",
+            role: "frame", tool: "wrench", material: "steel", color: Grey, group: Group);
+        p.Add(Box([-0.4, 0, 0.12], [0.4, 1.8, 0.3], Steel, shape: F("painted steel"))); // (the cabinet's back)
+        p.Add(Box([-0.4, 0, -0.15], [0.4, 0.25, 0.12], Frame, shape: F("dirty steel"))); // (the plinth)
+        p.Add(Box([-0.4, 0.25, -0.12], [0.4, 1.8, 0.12], Grey, shape: F("painted steel"))); // (the body)
+        p.Add(Look([-0.4, 0.25, -0.15], [0.4, 0.29, -0.12], Frame, "dirty steel"));
+        // The intake grille low down: dark slats in a frame.
+        p.Add(Look([-0.32, 0.36, -0.132], [0.32, 0.86, -0.12], Dark, "steel"));
+        for (var i = 0; i < 6; i++)
+            p.Add(Look([-0.3, 0.39 + i * 0.08, -0.145], [0.3, 0.42 + i * 0.08, -0.132], Steel, "steel"));
+        // The panel: a white face with two gauges, the status lamp and a blue band.
+        p.Add(Look([-0.3, 1.05, -0.135], [0.3, 1.5, -0.12], "#d8dcd4", "plastic"));
+        foreach (var x in new[] { -0.15, 0.13 })
+        {
+            p.Add(Look([x - 0.08, 1.24, -0.15], [x + 0.08, 1.4, -0.135], White, "gloss paint"));
+            p.Add(Look([x - 0.006, 1.29, -0.162], [x + 0.006, 1.37, -0.15], Dark, "plastic")); // (its needle)
+        }
+        p.Add(Box([-0.22, 1.1, -0.15], [-0.14, 1.16, -0.135], "#40e070", detail: true, shape: Kw(("glow", true), ("paintable", false))));
+        p.Add(Look([0.08, 1.1, -0.15], [0.24, 1.16, -0.135], Dark, "plastic")); // (the read-out)
+        p.Add(Look([-0.4, 1.6, -0.132], [0.4, 1.66, -0.12], "#3a7fc0", "worn paint"));
+        // The ducts out of its top into the wall.
+        foreach (var x in new[] { -0.2, 0.2 })
+            p.Add(Look([x - 0.07, 1.8, -0.05], [x + 0.07, 1.9, 0.29], Steel, "dirty steel"));
+        p.Sock("bottom", [0, 0, 0], "-y");
+        p.Sock("wall", [0, 0.125, 0.3], "+z");
+        p.Set(("air", Kw(("kind", "unit"), ("holds", (int)ShipAir.UnitHolds))));
+        return p.Stats(90, 300, 4, 3.0);
+    }
+
+    /// <summary>The Oxygen Tank: two tall bottles strapped to a wall frame, a manifold over them. 12 person-hours of oxygen for the ship's Life Support Unit.</summary>
+    private static Part OxygenTank()
+    {
+        var p = new Part(OxygenTankName, Small, Section,
+            "Two oxygen bottles on a wall frame: 12 person-hours more air for the ship's Life Support Unit. Its unit refills it in a planet's air. F reads it.",
+            role: "frame", tool: "wrench", material: "steel", color: "#5f8f5a", group: Group);
+        p.Add(Box([-0.4, 0, 0.24], [0.4, 1.8, 0.3], Steel, shape: F("painted steel"))); // (the frame's back plate)
+        p.Add(Box([-0.4, 0, -0.15], [0.4, 0.08, 0.24], Frame, shape: F("dirty steel"))); // (the foot)
+        foreach (var x in new[] { -0.19, 0.19 })
+        {
+            p.Add(Box([x - 0.16, 0.08, -0.12], [x + 0.16, 1.45, 0.2], "#5f8f5a", shape: F("gloss paint"))); // (a bottle)
+            p.Add(Look([x - 0.13, 1.45, -0.09], [x + 0.13, 1.55, 0.17], White, "gloss paint")); // (its white shoulder)
+            p.Add(Look([x - 0.04, 1.55, -0.0], [x + 0.04, 1.63, 0.08], Gold, "brass")); // (its valve)
+            foreach (var y in new[] { 0.4, 1.1 })
+                p.Add(Look([x - 0.165, y, -0.125], [x + 0.165, y + 0.05, 0.205], Hazard, "hazard paint")); // (a strap)
+        }
+        p.Add(Look([-0.3, 1.63, 0.0], [0.3, 1.69, 0.08], Gold, "brass")); // (the manifold)
+        p.Add(Look([-0.04, 1.69, 0.0], [0.04, 1.8, 0.24], Gold, "brass")); // (its line into the wall)
+        p.Sock("bottom", [0, 0, 0], "-y");
+        p.Sock("wall", [0, 0.125, 0.3], "+z");
+        p.Set(("air", Kw(("kind", "tank"), ("holds", (int)ShipAir.TankHolds))));
+        return p.Stats(110, 250, 3, 2.0);
+    }
+
     public void Make(PartOutput o)
     {
         o.Own(Out);
-        foreach (var p in new[] { Locker(), Dock(), Mmu() })
+        foreach (var p in new[] { Locker(), Dock(), Mmu(), LifeSupport(), OxygenTank() })
         {
             var d = p.Json();
             o.File($"{Out}/{FileName((string)d["name"]!)}", PyJson.Dumps(d, 2) + "\n");

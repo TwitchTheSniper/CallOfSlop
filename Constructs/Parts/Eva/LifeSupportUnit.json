@@ -1,0 +1,354 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Life Support Unit",
+  "description": "Keeps a ship's air: aboard while it works and oxygen is left, anyone breathes without a suit, and suits refill. Everyone aboard uses it up, crew and prisoners too. Holds 4 person-hours; Oxygen Tanks add more. Refills its tanks in a planet's air. F reads it.",
+  "group": "Flight",
+  "section": "Pilot gear",
+  "role": "frame",
+  "tool": "wrench",
+  "air": {
+    "kind": "unit",
+    "holds": 240
+  },
+  "mass": 90.0,
+  "health": 300,
+  "armour": 4,
+  "material": "steel",
+  "color": "#a7abab",
+  "attachSeconds": 3.0,
+  "boxes": [
+    {
+      "min": [
+        -0.4,
+        0.0,
+        0.12
+      ],
+      "max": [
+        0.4,
+        1.8,
+        0.3
+      ],
+      "color": "#5c6166",
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -0.4,
+        0.0,
+        -0.15
+      ],
+      "max": [
+        0.4,
+        0.25,
+        0.12
+      ],
+      "color": "#2c3034",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.4,
+        0.25,
+        -0.12
+      ],
+      "max": [
+        0.4,
+        1.8,
+        0.12
+      ],
+      "color": "#a7abab",
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -0.4,
+        0.25,
+        -0.15
+      ],
+      "max": [
+        0.4,
+        0.29,
+        -0.12
+      ],
+      "color": "#2c3034",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.32,
+        0.36,
+        -0.132
+      ],
+      "max": [
+        0.32,
+        0.86,
+        -0.12
+      ],
+      "color": "#2a2c2f",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.3,
+        0.39,
+        -0.145
+      ],
+      "max": [
+        0.3,
+        0.42,
+        -0.132
+      ],
+      "color": "#5c6166",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.3,
+        0.47,
+        -0.145
+      ],
+      "max": [
+        0.3,
+        0.5,
+        -0.132
+      ],
+      "color": "#5c6166",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.3,
+        0.55,
+        -0.145
+      ],
+      "max": [
+        0.3,
+        0.58,
+        -0.132
+      ],
+      "color": "#5c6166",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.3,
+        0.63,
+        -0.145
+      ],
+      "max": [
+        0.3,
+        0.66,
+        -0.132
+      ],
+      "color": "#5c6166",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.3,
+        0.71,
+        -0.145
+      ],
+      "max": [
+        0.3,
+        0.74,
+        -0.132
+      ],
+      "color": "#5c6166",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.3,
+        0.79,
+        -0.145
+      ],
+      "max": [
+        0.3,
+        0.82,
+        -0.132
+      ],
+      "color": "#5c6166",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.3,
+        1.05,
+        -0.135
+      ],
+      "max": [
+        0.3,
+        1.5,
+        -0.12
+      ],
+      "color": "#d8dcd4",
+      "detail": true,
+      "finish": "plastic"
+    },
+    {
+      "min": [
+        -0.23,
+        1.24,
+        -0.15
+      ],
+      "max": [
+        -0.07,
+        1.4,
+        -0.135
+      ],
+      "color": "#e4e4dc",
+      "detail": true,
+      "finish": "gloss paint"
+    },
+    {
+      "min": [
+        -0.156,
+        1.29,
+        -0.162
+      ],
+      "max": [
+        -0.144,
+        1.37,
+        -0.15
+      ],
+      "color": "#2a2c2f",
+      "detail": true,
+      "finish": "plastic"
+    },
+    {
+      "min": [
+        0.05,
+        1.24,
+        -0.15
+      ],
+      "max": [
+        0.21,
+        1.4,
+        -0.135
+      ],
+      "color": "#e4e4dc",
+      "detail": true,
+      "finish": "gloss paint"
+    },
+    {
+      "min": [
+        0.124,
+        1.29,
+        -0.162
+      ],
+      "max": [
+        0.136,
+        1.37,
+        -0.15
+      ],
+      "color": "#2a2c2f",
+      "detail": true,
+      "finish": "plastic"
+    },
+    {
+      "min": [
+        -0.22,
+        1.1,
+        -0.15
+      ],
+      "max": [
+        -0.14,
+        1.16,
+        -0.135
+      ],
+      "color": "#40e070",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.08,
+        1.1,
+        -0.15
+      ],
+      "max": [
+        0.24,
+        1.16,
+        -0.135
+      ],
+      "color": "#2a2c2f",
+      "detail": true,
+      "finish": "plastic"
+    },
+    {
+      "min": [
+        -0.4,
+        1.6,
+        -0.132
+      ],
+      "max": [
+        0.4,
+        1.66,
+        -0.12
+      ],
+      "color": "#3a7fc0",
+      "detail": true,
+      "finish": "worn paint"
+    },
+    {
+      "min": [
+        -0.27,
+        1.8,
+        -0.05
+      ],
+      "max": [
+        -0.13,
+        1.9,
+        0.29
+      ],
+      "color": "#5c6166",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        0.13,
+        1.8,
+        -0.05
+      ],
+      "max": [
+        0.27,
+        1.9,
+        0.29
+      ],
+      "color": "#5c6166",
+      "detail": true,
+      "finish": "dirty steel"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "wall",
+      "at": [
+        0.0,
+        0.125,
+        0.3
+      ],
+      "dir": "+z"
+    }
+  ]
+}
