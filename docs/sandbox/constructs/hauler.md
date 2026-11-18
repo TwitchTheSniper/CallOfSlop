@@ -34,8 +34,9 @@ girders) along the hold's roof, a sensor mast, radiators over the drive room.
   In a window run the bridge sits on its rails and reports Idle (nothing to pick); it needs power to move.
 - **The well** is the middle lane of row 3 (6.4 by 2.9 m), through the floor and the keel. Two belly door leaves
   (Dray Well Door L/R, slide doors) hang from tracks across the well's ends and slide outboard 1.5 m to open it.
-- **Side doors** (Karl, 2026-11-16): one each side beside the well, in the lower side panel of row 3 (5.2 m long, floor to
-  3.05 m), through the hull piece and the hold wall. Dray Side Door L/R are ribbed swing doors hinged along their head at
+- **Side doors** (Karl, 2026-11-16): one each side beside the well, in the lower side panel of row 3 (6.24 m long, floor to
+  3.05 m: Karl, 2026-11-18, a 6.06 by 2.59 m container carried along the ship goes out of either, as it does down the 6.4 by
+  2.9 m well), through the hull piece and the hold wall. The second Cargo Volume's box stands aft of the port door (z 34). Dray Side Door L/R are ribbed swing doors hinged along their head at
   the beam: they swing up and out 90 degrees to an awning over the doorway. Each hangs by `sideDoorL`/`sideDoorR` under a
   hinge beam in the well band's hull piece; the brackets of the crane's girder stand at the doorway's jambs.
 - **Doors** are Bulkhead Doors 1.5x2.25 m in hazard orange.
@@ -58,8 +59,10 @@ girders) along the hold's roof, a sensor mast, radiators over the drive room.
 
 ## Flying, power and the containers (2026-11-18)
 
-- **Fuel.** The keel is the tank (24,000 l, shared over its bands, each with a Fuel out), the bow 2,000 l and the stern 6,000 l, so
-  every jet and drive takes fuel from the piece it hangs on. A pipe isn't needed.
+- **Fuel.** The keel is the tank (24,000 l, shared over its bands, each with a Fuel out), the bow 8,000 l (a drum drawn across the
+  nose's void, Karl 2026-11-18) and the stern 6,000 l, so every jet and drive takes fuel from the piece it hangs on. A pipe isn't
+  needed. Four **Dray Saddle Tanks** (15.2 m drums, 16,000 l each; Karl, 2026-11-18: long tanks down the sides) lie on the roof's
+  outer slopes beside the upper chines, two a side the hold's length, each on two pads on the spine (`saddleL0`..`saddleR1`).
 - **The bridge.** Two Flight Couches face the view screen; the Dray Flight Computer (40 MN m gyro, Ship keys, the mouse aims the
   nose) stands between them and the screen, wired to the pilot's couch. `--flight-check` climbs 7 m in 2 s, hovers level at 3.15
   times its weight empty. Its pitch is slow (43 degrees in 6 s against the check's 55), as the Zero Day's is (33); a stiffer gyro

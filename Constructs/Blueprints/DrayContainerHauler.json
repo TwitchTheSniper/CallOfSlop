@@ -1132,6 +1132,30 @@
       }
     },
     {
+      "part": "Dray Saddle Tank",
+      "on": 78,
+      "socket": "saddleL0",
+      "by": "pad"
+    },
+    {
+      "part": "Dray Saddle Tank",
+      "on": 51,
+      "socket": "saddleL1",
+      "by": "pad"
+    },
+    {
+      "part": "Dray Saddle Tank",
+      "on": 78,
+      "socket": "saddleR0",
+      "by": "pad"
+    },
+    {
+      "part": "Dray Saddle Tank",
+      "on": 51,
+      "socket": "saddleR1",
+      "by": "pad"
+    },
+    {
       "part": "Dray Power Plant",
       "on": 26,
       "socket": "plant",
@@ -1322,7 +1346,7 @@
     },
     {
       "part": "Cargo Volume",
-      "on": 1,
+      "on": 5,
       "socket": "volume1",
       "by": "-y",
       "config": {
@@ -1332,7 +1356,7 @@
         "sizeZ": 8.0,
         "atX": 5.4,
         "atY": 1.7,
-        "atZ": 0.2
+        "atZ": -0.8
       }
     },
     {
@@ -1365,20 +1389,20 @@
       169
     ],
     [
-      177,
-      175
-    ],
-    [
-      177,
-      176
-    ],
-    [
-      180,
-      178
-    ],
-    [
-      180,
+      181,
       179
+    ],
+    [
+      181,
+      180
+    ],
+    [
+      184,
+      182
+    ],
+    [
+      184,
+      183
     ]
   ],
   "conduit": true,

@@ -95,10 +95,14 @@ public sealed class HaulerParts : IPartGenerator
     /// <summary>The legs: three pairs outboard of the skids.</summary>
     private static readonly (double X, double Z)[] LegAt = [(-3.35, 19.0), (3.35, 19.0), (-3.35, 36.0), (3.35, 36.0), (-3.35, 44.5), (3.35, 44.5)];
     private const double PadProud = 0.1; // a jet's or leg's mount under the flat
-    private const int KeelFuel = 24000, BowFuel = 2000, SternFuel = 6000; // litres
+    private const int KeelFuel = 24000, BowFuel = 8000, SternFuel = 6000, SaddleFuel = 16000; // litres (the bow's tank, the four saddle tanks each: Karl, 2026-11-18)
+    /// <summary>The saddle tanks (Karl, 2026-11-18: long fuel tanks down the sides): two a side, lying on the roof's outer slope (facet 4) beside
+    /// the upper chine, the hold's length; each on two pads on the spine. The tank's axis, its radius, its ends, its pads' z from its front.</summary>
+    private const double SaddleR = 0.6, SaddleX = 6.15, SaddleY = 8.49, SaddleLen = 15.2, PadTop = 7.8, PadBot = 7.505, PadHalf = 0.25;
+    private static readonly double[] SaddleZ = [14.6, 30.2], SaddlePads = [2.4, 13.4];
     /// <summary>The Cargo Volumes over the slots (at most 8 m a side): rows 1-2, rows 3-4 (the side slots of row 3), row 5. Each control box
     /// on the port walkway's floor; the box's middle z (each holds its rows' containers' middles), its length.</summary>
-    private static readonly (double Box, double Mid, double Len)[] Volumes = [(20.4, 20.4, 8.0), (33.0, 33.2, 8.0), (42.8, 42.8, 6.4)];
+    private static readonly (double Box, double Mid, double Len)[] Volumes = [(20.4, 20.4, 8.0), (34.0, 33.2, 8.0), (42.8, 42.8, 6.4)]; // (the second box aft of the port side door, so a container goes out past it)
     private const double VolX = -(Hw - 0.35);
     /// <summary>The containers it starts with (empty): lane, row (from 0). A blueprint's cargo stands within 30 m of its origin (the
     /// keel's), so the first two rows.</summary>
@@ -136,7 +140,9 @@ public sealed class HaulerParts : IPartGenerator
         return Cx + s * (a.H + (b.H - a.H) * (y - a.Y) / (b.Y - a.Y));
     }
 
-    private const double SideZ0 = 27.4, SideZ1 = 32.6, SideTop = 3.05, SideSockX = 6.875, SideSockY = 3.075, SideSockZ = 30.125;
+    // (Karl, 2026-11-18: a container goes out of a side door as well as the well: the doorway 6.24 m long, for a 6.06 m box carried along the
+    // ship, and 2.8 m high, for its 2.59 m; the jambs stay inside the row's band)
+    private const double SideZ0 = 26.88, SideZ1 = 33.12, SideTop = 3.05, SideSockX = 6.875, SideSockY = 3.075, SideSockZ = 30.125, JambW = 0.07;
 
     private static double[] P(double x, double y, double z) => [x - H, y - H, z - H];
 
@@ -435,6 +441,33 @@ public sealed class HaulerParts : IPartGenerator
         var a = phase + Math.PI / n + i * 2 * Math.PI / n;
         return P(cx + r * Math.Cos(a), y, cz + r * Math.Sin(a));
     })];
+
+    /// <summary>A ring of n points round axis (0 x, 1 y, 2 z) through c, radius r, at a along the axis; map turns each point into the part's frame.</summary>
+    private static double[][] RingAx(double[] c, int axis, double r, double a, int n, Func<double[], double[]> map) => [.. Enumerable.Range(0, n).Select(i =>
+    {
+        var an = Math.PI / n + i * 2 * Math.PI / n;
+        int u = (axis + 1) % 3, v = (axis + 2) % 3;
+        var q = (double[])c.Clone();
+        q[axis] = a;
+        q[u] += r * Math.Cos(an);
+        q[v] += r * Math.Sin(an);
+        return map(q);
+    })];
+
+    /// <summary>A drawn tank: a cylinder of radius r along axis from a0 to a1, its ends domed over dome metres, hoop bands round it.</summary>
+    private static void DrawTank(Part p, double[] c, int axis, double r, double a0, double a1, double dome, int hoops, string col, string band, Func<double[], double[]> map)
+    {
+        const int n = 16;
+        double[][] R(double rr, double a) => RingAx(c, axis, rr, a, n, map);
+        Prism(p, R(r * 0.55, a0), R(r, a0 + dome), col, "worn paint");
+        Prism(p, R(r, a0 + dome + 0.003), R(r, a1 - dome - 0.003), col, "worn paint");
+        Prism(p, R(r, a1 - dome), R(r * 0.55, a1), col, "worn paint");
+        for (var i = 0; i < hoops; i++)
+        {
+            var a = a0 + dome + 0.4 + i * (a1 - a0 - 2 * dome - 0.8) / Math.Max(1, hoops - 1);
+            Prism(p, R(r + 0.025, a - 0.06), R(r + 0.025, a + 0.06), band, "dirty steel");
+        }
+    }
 
     /// <summary>A ring of n points round an axis along z at (cx, cy), radius rx by ry, at z (unshifted part-local metres).</summary>
     private static double[][] RingZ(double cx, double cy, double rx, double ry, double z, int n) => [.. Enumerable.Range(0, n).Select(i =>
@@ -910,7 +943,7 @@ public sealed class HaulerParts : IPartGenerator
                         Detail(p, Cx + s * (RailX - 0.5) - s * 0.004, RailY - 0.95, ga + 0.004, Cx + s * (RailX - 0.5) + s * 0.012, RailY - 0.55, gb - 0.004, Hazard, "hazard paint");
                     }
                     // (beside the side door the brackets stand at its jambs)
-                    var bzs = sideDoor ? [SideZ0 - 0.2, SideZ1 + 0.2] : Enumerable.Range(0, 12).Select(i => RailZ0 + 0.3 + 3.9 * i).Where(z => z < railZ1).ToArray();
+                    var bzs = sideDoor ? [za + 0.2, zb - 0.2] : Enumerable.Range(0, 12).Select(i => RailZ0 + 0.3 + 3.9 * i).Where(z => z < railZ1).ToArray();
                     foreach (var bz in bzs)
                         if (bz >= za && bz < zb)
                         {
@@ -1102,6 +1135,11 @@ public sealed class HaulerParts : IPartGenerator
         foreach (var (za, zb) in new[] { (Zt + 2.0, Zc), (Zc, ZFront - 0.25) })
             foreach (var (ya, yb) in new[] { (At(za)[0].Y + 0.05, 1.5), (1.5, 3.2), (3.2, 5.0), (5.0, 6.4) })
                 VoidT(p, za, zb, ya, yb, 0, 0.004, zb == ZFront - 0.25 ? 0.0 : 0.004);
+        // The bow's tank (Karl, 2026-11-18): a big drum across the nose behind the brow, on two cradles, inside the sealed void.
+        double[] bt = [Cx, 2.6, 2.7];
+        DrawTank(p, bt, 0, 1.3, Cx - 2.6, Cx + 2.6, 0.45, 4, Hazard, Frame, q => P(q[0], q[1], q[2]));
+        foreach (var x in new[] { Cx - 1.5, Cx + 1.5 })
+            Detail(p, x - 0.15, 1.0, 1.9, x + 0.15, 1.45, 3.5, Frame, "dirty steel");
         FuelPort(p, 2.0);
         return p.Stats(9000, 24000, 40, 15.0);
     }
@@ -1154,6 +1192,16 @@ public sealed class HaulerParts : IPartGenerator
             Prism(p, [P(x - 0.04, y, 46.5), P(x + 0.04, y, 46.5), P(x + 0.04, y, 49.0), P(x - 0.04, y, 49.0)],
                 [P(x - 0.03, y + 0.9, 47.2), P(x + 0.03, y + 0.9, 47.2), P(x + 0.03, y + 0.9, 49.2), P(x - 0.03, y + 0.9, 49.2)], i % 2 == 0 ? Frame : Bare, "soot");
         }
+        // The saddle tanks' pads on the roof's outer slope: a block sunk into the slope, its flat top taking the tank's cradle.
+        foreach (var s in new[] { -1, 1 })
+            for (var t = 0; t < SaddleZ.Length; t++)
+                foreach (var (dz, k) in SaddlePads.Select((d, k) => (d, k)))
+                {
+                    var z = SaddleZ[t] + dz;
+                    Solid(p, Cx + s * (SaddleX - PadHalf), PadBot, z - 0.3, Cx + s * (SaddleX + PadHalf), PadTop, z + 0.3, Frame, "dirty steel");
+                    if (k == 0)
+                        Sock(p, $"saddle{(s < 0 ? "L" : "R")}{t}", Cx + s * SaddleX, PadTop, z, "+y");
+                }
         // The roof's void.
         foreach (var (za, zb, ya) in new[] { (ZFront, 11.25, Roof), (11.25, 13.75, Roof), (13.75, ZHold - 0.125, Roof) })
             VoidT(p, za, zb, ya, Math.Min(Top(za), Top(zb)) - 0.02, 0, 0.004, 0.004);
@@ -1247,14 +1295,12 @@ public sealed class HaulerParts : IPartGenerator
         var len = zb - za;
         Facet(p, 2, s, za, SideZ0, Skin2, "painted plating");
         Facet(p, 2, s, SideZ1, zb, Skin2, "painted plating");
-        Chine(p, 2, s, za, SideZ0 - 0.06, 0.3, 0.14, Armour2);
-        Chine(p, 2, s, SideZ1 + 0.06, zb, 0.3, 0.14, Armour2);
-        // The jambs: a dark frame each side, a hazard stripe on its face.
-        foreach (var (u0, u1) in new[] { ((SideZ0 - 0.26 - za) / len, (SideZ0 - za) / len), ((SideZ1 - za) / len, (SideZ1 + 0.26 - za) / len) })
+                // The jambs: a dark frame each side, a hazard stripe on its face.
+        foreach (var (u0, u1) in new[] { ((SideZ0 - JambW - za) / len, (SideZ0 - za) / len), ((SideZ1 - za) / len, (SideZ1 + JambW - za) / len) })
         {
             Slab(p, 2, s, za, zb, u0, u1, 0.01, 0.99, 0.02, 0.11, 0.03, Frame, "dirty steel");
             var um = (u0 + u1) / 2;
-            FStrip(p, 2, s, za, zb, um - 0.06 / len, um + 0.06 / len, 0.06, 0.94, 0.116, Hazard, "hazard paint");
+            FStrip(p, 2, s, za, zb, um - 0.02 / len, um + 0.02 / len, 0.06, 0.94, 0.116, Hazard, "hazard paint");
         }
         // Inside: the sill over the void, its hazard edge, the ends' linings and the hinge beam.
         double SkinX(double y) => SkinHalf(SideZ0, y);
@@ -1343,6 +1389,31 @@ public sealed class HaulerParts : IPartGenerator
         p.Sock(sockName, sockAt, sockDir);
         p.Set(("ladder", rise));
         return p.Stats(60 + rise * 12, 400, 6, 3.0);
+    }
+
+    /// <summary>A saddle tank: a long drum on two cradles. Origin at the front cradle's foot, where it sits on its pad (+y up the tank).</summary>
+    private static Part SaddleTank()
+    {
+        var p = new Part("Dray Saddle Tank", Small, Section, $"A saddle tank: a {SaddleLen:0.#} m drum of fuel on two cradles. Four lie along the Dray's roof beside its upper chines, {SaddleFuel} litres each.", role: "fueltank", tool: "welder", material: "steel", color: Armour2, group: Group);
+        double[] S = [SaddleX, PadTop, SaddlePads[0]]; // (the ship's starboard tank in front-relative metres: z from the tank's front)
+        double[] L(double[] q) => [Py.Round(q[0] - S[0], 4), Py.Round(q[1] - S[1], 4), Py.Round(q[2] - S[2], 4)];
+        double[] c = [SaddleX, SaddleY, 0];
+        DrawTank(p, c, 2, SaddleR, 0, SaddleLen, 0.4, 6, Armour2, Frame, L);
+        // A hazard band and a fill cap at the front, the feed down to the spine at the back.
+        var mapR = (Func<double[], double[]>)L;
+        Prism(p, RingAx(c, 2, SaddleR + 0.02, 0.85, 16, mapR), RingAx(c, 2, SaddleR + 0.02, 1.05, 16, mapR), Hazard, "hazard paint");
+        p.Add(Box(L([SaddleX - 0.1, SaddleY + SaddleR - 0.05, 1.4]), L([SaddleX + 0.1, SaddleY + SaddleR + 0.1, 1.6]), Red, detail: true, shape: Kw(("finish", "worn paint"))));
+        foreach (var dz in SaddlePads)
+        {
+            // The cradle: a saddle block on the pad and a strap over the drum.
+            p.Add(Box(L([SaddleX - 0.22, PadTop, dz - 0.25]), L([SaddleX + 0.22, SaddleY - SaddleR + 0.12, dz + 0.25]), Frame, shape: Kw(("finish", "dirty steel"))));
+            Prism(p, RingAx(c, 2, SaddleR + 0.045, dz - 0.05, 16, mapR), RingAx(c, 2, SaddleR + 0.045, dz + 0.05, 16, mapR), Frame, "dirty steel");
+        }
+        p.Add(Box(L([SaddleX - 0.42, SaddleY - 0.42, 0.2]), L([SaddleX + 0.42, SaddleY + 0.42, SaddleLen - 0.2]), hidden: true));
+        p.Sock("pad", [0, 0, 0], "-y");
+        p.Set(("fuelTank", Kw(("capacity", SaddleFuel))));
+        p.Set(("ports", Py.L(BigDriveParts.PipePort("Fuel out", "out", [.. L([SaddleX, SaddleY, SaddleLen - 0.2]).Cast<object>()], "+z", "fuel"))));
+        return p.Stats(2200, 9000, 20, 10.0);
     }
 
     // ---- the flying parts: lift jets, legs, the power plant, the flight computer (the Magpie's kind, in the Dray's colours and size)
@@ -1907,6 +1978,11 @@ public sealed class HaulerParts : IPartGenerator
         var fc = Hang(bp, "Dray Flight Computer", upper, "computer", "bottom");
         bp.Steps[fc]["config"] = ShipParts.ShipFlight();
         bp.Wires.Add((pilot, fc));
+        // The saddle tanks on the roof's slopes, two a side.
+        var spine = placed["Dray Spine"];
+        foreach (var n in new[] { "L", "R" })
+            for (var t = 0; t < SaddleZ.Length; t++)
+                Hang(bp, "Dray Saddle Tank", spine, $"saddle{n}{t}", "pad");
         // The power, in the drive room.
         Hang(bp, "Dray Power Plant", drive, "plant", "bottom");
         Hang(bp, "Power Board", drive, "board", "bottom");
@@ -1967,7 +2043,7 @@ public sealed class HaulerParts : IPartGenerator
             .. structure, WellDoor(-1), WellDoor(1), SideDoor(-1), SideDoor(1),
             Ladder("Dray Ladder", Ft1 - Ft0, "A ladder between the Dray's crew decks: F climbs it.", "bottom", [0, 0, -0.095], "-y"),
             Ladder("Dray Boarding Ladder", Ft0 - Ground, "The Dray's boarding ladder, from the ground up its belly shaft into the airlock: F climbs it.", "hull", [0, Py.Round(Ft0 - 0.125 - Ground, 3), -0.005], "+z"),
-            LiftJet(), Leg(), PowerPlant(), FlightComputer(),
+            LiftJet(), Leg(), PowerPlant(), FlightComputer(), SaddleTank(),
         ];
         var defs = new Dictionary<string, PyDict>();
         o.Own(Out);
