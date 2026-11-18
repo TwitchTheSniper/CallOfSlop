@@ -31,4 +31,13 @@ public static unsafe partial class Program
         var scoped = g.Local is { Alive: true } && g.AimT > 0.5f && Sights.Magnified(g.Active.Def);
         Ui.DrawNameTags(g, _nameTags, _settings.NameTagHealth, scoped);
     }
+
+    /// <summary>What a questioned officer gave up (Game.IntelMarks, GameCrewFleet.cs): a label over each position until its time is up.</summary>
+    private static void DrawIntelMarks(Game g)
+    {
+        if (Ui.MenuOpen || g.IntelLive() == 0)
+            return;
+        foreach (var (at, label, _) in g.IntelMarks)
+            Hud.WorldLabel(at + new System.Numerics.Vector3(0, 12, 0), label, new System.Numerics.Vector3(1f, 0.75f, 0.3f), 0.9f, 15f);
+    }
 }
