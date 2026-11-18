@@ -25,10 +25,11 @@ public static partial class Program
 
     private static string Fore(float metres) => MathF.Abs(metres) < 0.05f ? "over the centre of mass" : $"{MathF.Abs(metres):0.0} m {(metres > 0 ? "ahead of" : "behind")} it";
 
-    /// <summary>With a build tool out: the centre of mass, lift and thrust of the flyer under the crosshair, and a moment after.</summary>
+    /// <summary>With the attach tool out or a part in hand: the centre of mass, lift and thrust of the flyer under the crosshair, and a moment after.
+    /// Not with the linking, configure or selector tool: on a big ship the bars cross the whole view while wiring (Karl, 2026-11-18).</summary>
     private static void BalanceFrame(Game g, in SandboxHand h, bool aimed, in ConstructHit hit, double now)
     {
-        var building = h.Tool is ConstructTool.Welder or ConstructTool.Linker or ConstructTool.Configure or ConstructTool.Selector || h.Held != ConstructParts.None;
+        var building = h.Tool is ConstructTool.Welder || h.Held != ConstructParts.None;
         if (!building)
             return;
         if (aimed && ConstructFlight.Flies(hit.Body))
