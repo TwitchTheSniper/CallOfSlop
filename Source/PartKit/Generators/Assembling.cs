@@ -202,6 +202,7 @@ public sealed class Assembling : IPartGenerator
         Rec("Airburst Fuse", 6, 3, m: [("steel", 2), ("copper", 1)], p: [("Circuit Board", 1)]),
         Rec("Remote Fuse", 6, 3, m: [("steel", 2), ("copper", 2)], p: [("Circuit Board", 1)]),
         Rec("Robot Shell", 30, 2, m: [("steel", 30), ("copper", 8), ("rubber", 4)], p: [("Circuit Board", 2)]),
+        Rec("Mining Shell", 60, 2, m: [("steel", 70), ("copper", 14), ("rubber", 8)], p: [("Circuit Board", 3)]), // (docs/sandbox/design/mining-shell.md)
         Rec("Shell Control Chair", 12, 2, m: [("steel", 14), ("copper", 6), ("rubber", 3)], p: [("Circuit Board", 1)]),
         Rec("Cluster Dispenser", 10, 3, m: [("steel", 10), ("concrete", 3)]),
         Rec("Fire Bomblets", 10, 3, m: [("steel", 8), ("concrete", 2), ("rubber", 2)]),

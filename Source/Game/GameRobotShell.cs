@@ -58,6 +58,7 @@ public sealed partial class Game
     private void ShellResetAll()
     {
         Array.Clear(_sh);
+        Array.Clear(SandboxHands.Hoppers);
         foreach (var p in Players.Values)
         {
             p.InShell = false;
@@ -144,6 +145,9 @@ public sealed partial class Game
         run.Channel = ConstructShell.ChannelOf(sp);
         run.Owner = shell.Owner;
         ShellWear.Read(sp, sp.D, ref p.ShellWear); // (its works' wear goes with them: GameShellWear.cs)
+        p.ShellFrame = ShellFrames.FrameOf(sp.D); // (its frame: size, pace, modules; Constructs/Shells.json)
+        p.Sim.Frame = p.ShellFrame;
+        HopperOn(p, shell); // (an ore hopper's load goes with them: GameShellHopper.cs)
         var shellHp = ShellWear.HealthOf(sp, sp.D); // (as damaged as it was left: shells don't heal, Health.cs)
         run.Acc = default;
         run.Sent = p.ShellWear;
@@ -196,14 +200,17 @@ public sealed partial class Game
             SandboxHands.Drop(Constructs, p.Id, feet, yaw);
         if (SandboxHands.Packs[p.Id].Items > 0)
             SandboxHands.DropPack(Constructs, p.Id, feet, yaw);
+        var standing = false;
         if (!lost && run.ShellDef != null && ConstructBuild.PlaceNew(Constructs, run.ShellDef, feet, yaw) is { } stood)
         {
+            standing = true;
             ConstructConfig.Put(ref stood.Parts[0], run.ShellDef, CfgKey.Channel, run.Channel);
             ShellWear.Write(ref stood.Parts[0], run.ShellDef, p.ShellWear); // (it stands as worn as they left it)
             ShellWear.PutHealth(ref stood.Parts[0], run.ShellDef, p.Health); // (and as damaged)
             stood.Owner = run.Owner;
             stood.Frozen = dock == null; // (it stands as it was left until someone moves it; one for a dock is clamped on first)
             stood.Rebuild();
+            HopperOff(p, stood, feet); // (the hopper's load back into the part's bin: GameShellHopper.cs)
             Constructs.StructureDirty.Add(stood.Id);
             if (dock != null && SandboxHands.ClipOnDock(Constructs, p.Id, dock, dockPart, stood) is { } stuck)
             {
@@ -212,6 +219,8 @@ public sealed partial class Game
                 stood.Rebuild();
             }
         }
+        if (!standing)
+            HopperOff(p, null, feet); // (destroyed, or no room to stand it: the load spills where it fell)
         if (run.Pack != null)
         {
             SandboxHands.Packs[p.Id] = run.Pack;
@@ -242,6 +251,8 @@ public sealed partial class Game
         p.InShell = false;
         p.ShellChair = p.ShellSeat = 0;
         p.ShellWear = default;
+        p.ShellFrame = 0;
+        p.Sim.Frame = 0;
         run.On = false;
         run.Spent = true; // (still in the chair: they stand up before it links again)
         run.Pack = null;
@@ -261,6 +272,7 @@ public sealed partial class Game
             ref var run = ref _sh[p.Id];
             if (!run.On)
                 continue;
+            HopperSync(p); // (its ore hopper's load to every peer: GameShellHopper.cs)
             var chair = Constructs.Get(run.Chair);
             var seat = chair?.SeatOf(p.Id) ?? -1;
             if (chair == null || seat < 0 || chair.Parts[seat].Broken)
@@ -370,7 +382,8 @@ public sealed partial class Game
 
     // ---- The wire ---------------------------------------------------------------------------------------------------
 
-    /// <summary>Server: who wears a shell, to everyone (<see cref="Msg.Shell"/>: u8 player, u8 on, u16 chair, u16 seat, 8 x u8 the works' wear).</summary>
+    /// <summary>Server: who wears a shell, to everyone (<see cref="Msg.Shell"/>: u8 player, u8 on, u16 chair, u16 seat, 8 x u8 the works' wear,
+    /// u8 frame, u8 hopper material, u16 hopper units; protocol 350).</summary>
     private void ShellBroadcast(Player p)
     {
         if (Net.IsOffline)
@@ -379,6 +392,7 @@ public sealed partial class Game
         w.Begin(Msg.Shell).U8(p.Id).U8(p.InShell ? (byte)1 : (byte)0).U16(p.ShellChair).U16(p.ShellSeat);
         for (var k = 0; k < ShellWear.Works; k++)
             w.U8(p.ShellWear[k]);
+        ShellWriteFrame(w, p);
         Net.Broadcast(w.Span, PacketReliability.ReliableOrdered);
     }
 
@@ -392,6 +406,7 @@ public sealed partial class Game
                 w.Begin(Msg.Shell).U8(p.Id).U8(1).U16(p.ShellChair).U16(p.ShellSeat);
                 for (var k = 0; k < ShellWear.Works; k++)
                     w.U8(p.ShellWear[k]);
+                ShellWriteFrame(w, p);
                 Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
             }
     }
@@ -406,11 +421,19 @@ public sealed partial class Game
         ShellCond wear = default;
         for (var k = 0; k < ShellWear.Works; k++)
             wear[k] = r.U8();
+        if (!r.Has(4))
+            return;
+        var frame = r.U8();
+        var hopMat = r.U8();
+        var hopAmt = r.U16();
         if (Players.TryGetValue(id, out var p))
         {
             p.InShell = on;
             (p.ShellChair, p.ShellSeat) = on ? (chair, seat) : ((ushort)0, (ushort)0);
             p.ShellWear = on ? wear : default;
+            p.ShellFrame = on ? frame : (byte)0;
+            p.Sim.Frame = p.ShellFrame; // (its size: the mover reads it, World.Body)
+            (p.HopperMaterial, p.HopperAmount) = on ? (hopMat, hopAmt) : ((byte)0, (ushort)0);
         }
     }
 
@@ -559,5 +582,6 @@ public sealed partial class Game
             _sbShell.Text = $"ROBOT SHELL  {me.Health * 100 / World.MaxHealth}%  -  no self-repair, your body waits in the chair (Esc menu: leave the shell)";
         lines.Add(new HudLine(_sbShell.Text, orange));
         ShellWearHud(me, lines, orange, dim); // (its worn works: GameShellWear.cs)
+        HopperHud(me, lines, dim); // (an ore hopper's load: GameShellHopper.cs)
     }
 }

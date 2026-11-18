@@ -425,7 +425,7 @@ public sealed partial class Game : IDisposable
                 p.RenderMantling = p.Sim.MantleTicks > 0;
             }
             // Ease the eye height so stance changes glide instead of snapping the camera.
-            p.RenderEyeHeight += (World.EyeOf(p.RenderStance) - p.RenderEyeHeight) * (1f - MathF.Exp(-14f * dt));
+            p.RenderEyeHeight += (World.EyeOf(p.RenderStance) * ShellFrames.ScaleOf(p) - p.RenderEyeHeight) * (1f - MathF.Exp(-14f * dt)); // (a robot shell's frame: a Mining Shell's eye is higher)
         }
     }
 
@@ -659,6 +659,7 @@ public sealed partial class Game : IDisposable
             {
                 if (other.Id == LocalId || !other.Alive)
                     continue;
+                using var ob = World.Body(ShellFrames.ScaleOf(other));
                 if (World.RayHitsBody(other.RenderPosition, other.RenderStance, other.RenderYaw, o, d, dist) is { } t)
                 {
                     dist = t;
@@ -953,6 +954,7 @@ public sealed partial class Game : IDisposable
             Eva.Step(me, Eva.Fed(me, SandboxHands.Hand(me.Id).Seated)); // (the HUD's air on a joined client; the host hurts: GameSandboxEva.cs)
         if (me.Alive)
         {
+            me.Sim.Frame = me.ShellFrame; // (a robot shell's size: Msg.Shell, never a snapshot)
             World.Simulate(ref me.Sim, cmd);
             ZBlockPlayer(me, ref me.Sim); // predicted like the server
             if (Constructs.PlayerEndCount > 0)
@@ -1002,6 +1004,7 @@ public sealed partial class Game : IDisposable
 
         var predicted = me.Position;
         var state = server;
+        state.Frame = me.ShellFrame; // (snapshots don't carry a shell's frame: Msg.Shell does)
         ConstructRide.Bodies = Constructs;
         World.OpenSky = SandboxOn;
         SandboxRideAdopt(ref state); // a rider's replay starts where the construct as we have it puts them (GameSandbox.cs)
@@ -1268,6 +1271,7 @@ public sealed partial class Game : IDisposable
                 if (p.Alive)
                 {
                     using var _ = Perf.Measure(PerfArea.Players);
+                    p.Sim.Frame = p.ShellFrame;
                     World.Simulate(ref p.Sim, cmd);
                     ZBlockPlayer(p, ref p.Sim); // out of zombie bodies (ZombieBlock.cs)
                     if (Constructs.PlayerEndCount > 0)
@@ -1341,6 +1345,7 @@ public sealed partial class Game : IDisposable
             p.Weapon = cmd.Weapon;
         if (p.Alive)
         {
+            p.Sim.Frame = p.ShellFrame; // (a robot shell's size, GameRobotShell.cs)
             World.Simulate(ref p.Sim, cmd);
             _sepAtTick = p.Bot == null ? cmd.Tick : 0; // a client's input meets the bodies at its stamped tick (PlayerSeparation.cs)
             ZBlockPlayer(p, ref p.Sim); // out of zombie bodies (ZombieBlock.cs)
@@ -1756,7 +1761,8 @@ public sealed partial class Game : IDisposable
             var at = HistoricState(p, rewindTo);
             RideTarget(shooter, ref at); // (on the shooter's own deck: in its frame, GameSandboxRide.cs)
             at.Position = CarryRewound(at.Position, rewindTo, ref at.Yaw); // on a moving platform: where the shooter saw it
-            targets.Add((p, World.Hitbox(at.Position, at.Stance, at.Yaw), at));
+            using (World.Body(ShellFrames.ScaleOf(p))) // (a robot shell's frame: its size)
+                targets.Add((p, World.Hitbox(at.Position, at.Stance, at.Yaw), at));
         }
 
         var damage = nested ? new List<(Player Victim, float Damage)>() : _resolveDamage;
@@ -1796,6 +1802,7 @@ public sealed partial class Game : IDisposable
             (Player P, Box Hitbox, HistoryEntry At)? hit = null;
             foreach (var t in targets)
             {
+                using var tb = World.Body(ShellFrames.ScaleOf(t.P));
                 if ((GravityFrames.Curved || t.At.Up != Vector3.Zero ? World.RayHitsBody(t.At.Position, t.At.Stance, t.At.Yaw, o, d, dist, t.At.Up) : t.Hitbox.Grown(grow).Raycast(o, d, dist)) is { } td && td < dist)
                 {
                     dist = td;

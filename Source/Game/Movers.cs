@@ -192,7 +192,7 @@ public static class MoverPhysics
     public static bool Overlaps(Vector3 feet, float height, double tick)
     {
         foreach (ref readonly var b in At(tick))
-            if (feet.Y < b.Top - 0.001f && feet.Y + height > b.Bottom + 0.001f && CircleOverlap(b, feet.X, feet.Z, World.PlayerRadius, out _))
+            if (feet.Y < b.Top - 0.001f && feet.Y + height > b.Bottom + 0.001f && CircleOverlap(b, feet.X, feet.Z, World.BodyRadius, out _))
                 return true;
         return false;
     }
@@ -210,7 +210,7 @@ public static class MoverPhysics
             ref readonly var b = ref boxes[i];
             if (MathF.Abs(feet.Y - b.Top) > tolerance || (best >= 0 && b.Top <= boxes[best].Top))
                 continue;
-            if (CircleOverlap(b, feet.X, feet.Z, World.PlayerRadius, out _))
+            if (CircleOverlap(b, feet.X, feet.Z, World.BodyRadius, out _))
                 best = i;
         }
         return best;
@@ -319,7 +319,7 @@ public static class MoverPhysics
     {
         foreach (ref readonly var b in At(tick))
         {
-            if (!CircleOverlap(b, feet.X, feet.Z, World.PlayerRadius, out _))
+            if (!CircleOverlap(b, feet.X, feet.Z, World.BodyRadius, out _))
                 continue;
             if (velocity.Y <= 0 && prevY >= b.Top - 0.02f && newY < b.Top)
             {
@@ -349,7 +349,7 @@ public static class MoverPhysics
             {
                 if (feet.Y >= b.Top - 0.001f || feet.Y + height <= b.Bottom + 0.001f)
                     continue;
-                if (!CircleOverlap(b, feet.X, feet.Z, World.PlayerRadius, out var push))
+                if (!CircleOverlap(b, feet.X, feet.Z, World.BodyRadius, out var push))
                     continue;
                 any = true;
                 var rise = b.Top - feet.Y;
@@ -392,7 +392,7 @@ public static class MoverPhysics
             return shortest;
         float dx = feet.X - b.Center.X, dz = feet.Z - b.Center.Z;
         float lx = dx * b.Cos + dz * b.Sin, lz = -dx * b.Sin + dz * b.Cos;
-        var r = World.PlayerRadius;
+        var r = World.BodyRadius;
         Span<Vector2> local = [new(b.Half.X + r - lx, 0), new(-b.Half.X - r - lx, 0), new(0, b.Half.Z + r - lz), new(0, -b.Half.Z - r - lz)];
         local.Sort((p, q) => p.LengthSquared().CompareTo(q.LengthSquared()));
         foreach (var l in local)
@@ -414,7 +414,7 @@ public static class MoverPhysics
             return feet;
         foreach (ref readonly var b in At(tick))
         {
-            if (feet.Y >= b.Top || feet.Y + height <= b.Bottom || !CircleOverlap(b, feet.X, feet.Z, World.PlayerRadius, out _))
+            if (feet.Y >= b.Top || feet.Y + height <= b.Bottom || !CircleOverlap(b, feet.X, feet.Z, World.BodyRadius, out _))
                 continue;
             var top = feet with { Y = b.Top + 0.001f };
             if (!BlockedAll(top, height, tick))
@@ -487,7 +487,7 @@ public static class MoverPhysics
         map.Movers.Select(m =>
         {
             var s = m.Sweep;
-            var margin = World.PlayerRadius + 0.2f;
+            var margin = World.BodyRadius + 0.2f;
             var lo = new Vector3(s.Min.X - margin, s.Min.Y, s.Min.Z - margin);
             var hi = new Vector3(s.Max.X + margin, 200f, s.Max.Z + margin);
             return new Box((lo + hi) / 2, (hi - lo) / 2);

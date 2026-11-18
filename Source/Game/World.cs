@@ -118,6 +118,7 @@ public struct MoveState
     public ushort JetFuel;
     public bool GearJump; // the jump key last tick
 
+    public byte Frame; // a robot shell's frame (Constructs/Shells.json, ShellFrames.cs; 0: a person's size): the server's, from Msg.Shell on a client; never in a snapshot
     public bool Noclip; // flying with no collision (NoclipMove.cs; creative Sandbox)
     public bool NoclipExit; // just left it: the shared step after the move finds room (Game.NoclipLeft; never sent)
 }
@@ -246,8 +247,41 @@ public static partial class World
     public const float HeadStart = 1.4f; // standing: hits above this are headshots
 
     // ---- Stances -------------------------------------------------------------
-    public static float HeightOf(Stance s) => s switch { Stance.Crouch => 1.2f, Stance.Prone => 0.6f, _ => PlayerHeight };
-    public static float EyeOf(Stance s) => s switch { Stance.Crouch => 1.05f, Stance.Prone => 0.45f, _ => EyeHeight };
+    public static float HeightOf(Stance s) => BodyScale * (s switch { Stance.Crouch => 1.2f, Stance.Prone => 0.6f, _ => PlayerHeight });
+    public static float EyeOf(Stance s) => BodyScale * (s switch { Stance.Crouch => 1.05f, Stance.Prone => 0.45f, _ => EyeHeight });
+
+    /// <summary>
+    /// The size of the body being moved, hit or blocked now, as a share of a person's (a robot shell's frame: the Mining Shell is
+    /// 1.5, docs/sandbox/design/mining-shell.md). 1 except inside <see cref="Simulate"/> for a body with a <see cref="MoveState.Frame"/>
+    /// and inside a <see cref="Body"/> scope, so every check that doesn't ask is a person's, as it always was. The step height and
+    /// the mantle reach stay a person's. Read by <see cref="HeightOf"/>, <see cref="EyeOf"/>, <see cref="BodyRadius"/>.
+    /// </summary>
+    public static float BodyScale = 1f;
+
+    /// <summary>The capsule radius of the body being moved now (<see cref="PlayerRadius"/> times <see cref="BodyScale"/>).</summary>
+    public static float BodyRadius => PlayerRadius * BodyScale;
+
+    /// <summary>The standing height of the body being moved now (<see cref="PlayerHeight"/> times <see cref="BodyScale"/>).</summary>
+    public static float BodyHeight => PlayerHeight * BodyScale;
+
+    /// <summary>A scope with <see cref="BodyScale"/> set to a shell frame's size; disposing puts the old one back. Nothing allocates.</summary>
+    public static BodyScope Body(float scale) => new(scale);
+
+    /// <summary>The same for a move state's frame (0: a person).</summary>
+    public static BodyScope Body(in MoveState s) => new(s.Frame == 0 ? 1f : ShellFrames.ScaleOf(s.Frame));
+
+    public readonly struct BodyScope : IDisposable
+    {
+        private readonly float _was;
+
+        public BodyScope(float scale)
+        {
+            _was = BodyScale;
+            BodyScale = scale;
+        }
+
+        public void Dispose() => BodyScale = _was;
+    }
     public static float SpeedOf(Stance s) => s switch { Stance.Crouch => 0.5f, Stance.Prone => 0.22f, _ => 1f };
     public static float SpreadOf(Stance s) => s switch { Stance.Crouch => 0.75f, Stance.Prone => 0.5f, _ => 1f };
     public static float RecoilOf(Stance s) => s switch { Stance.Crouch => 0.85f, Stance.Prone => 0.6f, _ => 1f };
@@ -316,6 +350,7 @@ public static partial class World
     /// </summary>
     public static void Simulate(ref MoveState s, in InputCmd cmd)
     {
+        using var _ = Body(s); // (a robot shell's frame: its size, for this body's move alone)
         if (s.Noclip || cmd.Noclip)
             NoclipMove.Step(ref s, cmd); // creative Sandbox's flight (NoclipMove.cs)
         else if (s.RideUp != Vector3.Zero && ConstructRide.Step(ref s, cmd))
@@ -338,12 +373,12 @@ public static partial class World
         if (stance != Stance.Prone)
         {
             var h = HeightOf(stance);
-            return new(feet + new Vector3(0, h / 2, 0), new Vector3(PlayerRadius, h / 2, PlayerRadius));
+            return new(feet + new Vector3(0, h / 2, 0), new Vector3(BodyRadius, h / 2, BodyRadius));
         }
         var f = FlatForward(yaw);
         // Matches the drawn body: from 0.8 m behind the feet to 1.0 m in front (head and gun).
-        var half = new Vector3(MathF.Abs(f.X) * 0.9f + MathF.Abs(f.Z) * 0.3f, 0.3f, MathF.Abs(f.Z) * 0.9f + MathF.Abs(f.X) * 0.3f);
-        return new(feet + f * 0.1f + new Vector3(0, 0.3f, 0), half);
+        var half = new Vector3(MathF.Abs(f.X) * 0.9f + MathF.Abs(f.Z) * 0.3f, 0.3f, MathF.Abs(f.Z) * 0.9f + MathF.Abs(f.X) * 0.3f) * BodyScale;
+        return new(feet + f * (0.1f * BodyScale) + new Vector3(0, 0.3f * BodyScale, 0), half);
     }
 
     /// <summary>
@@ -663,6 +698,12 @@ public sealed class Player
     public ushort ShellChair, ShellSeat; // in a shell: the chair's construct and seat part, where their own body is drawn sitting (0: none)
     [MatchState]
     public ShellCond ShellWear; // in a shell: its works' wear (ShellWear.cs; the server's, every peer hears it with Msg.Shell)
+    [MatchState]
+    public byte ShellFrame; // in a shell: its frame (Constructs/Shells.json, ShellFrames.cs; 0 the Robot Shell); every peer hears it with Msg.Shell
+    [MatchState]
+    public byte HopperMaterial; // in a shell with an ore hopper: what it holds (a material id, 0 empty), as every peer last heard it
+    [MatchState]
+    public ushort HopperAmount; // ...and how much (units)
     public ushort Kills;
     public ushort Deaths;
     public byte Team = Game.NoTeam; // team modes: 0 (Blue) or 1 (Red); replicated in the mode state
@@ -769,7 +810,7 @@ public sealed class Player
     {
         NoclipWanted = false;
         Sim.Noclip = Sim.NoclipExit = false;
-        Sim.Gear = Sim.Canopy = Sim.GearDelay = 0;
+        Sim.Gear = Sim.Canopy = Sim.GearDelay = Sim.Frame = 0;
         SbSpawned = false;
         InShell = false; // (the server ends any shell run at a new match: ShellResetAll)
         Eva = 0;
@@ -778,6 +819,8 @@ public sealed class Player
         SuitAir = CallOfSlop.Eva.SuitSeconds;
         ShellChair = ShellSeat = 0;
         ShellWear = default;
+        ShellFrame = HopperMaterial = 0;
+        HopperAmount = 0;
         SbOwner = 255;
         SbBody = SbTag = SbBoarding = 0;
         SbPart = 0;
@@ -917,7 +960,7 @@ public sealed class Player
     public Stance RenderStance; // stance being drawn (interpolated for remote players)
     public float RenderEyeHeight = World.EyeHeight; // smoothed so crouching doesn't snap the camera
 
-    public Vector3 Eye => Sim.RideUp != Vector3.Zero ? Position + Sim.RideUpW * World.EyeOf(Sim.Stance) : GravityFrames.Above(Position, World.EyeOf(Sim.Stance)); // (along "up": straight up except on a planet)
+    public Vector3 Eye => Sim.RideUp != Vector3.Zero ? Position + Sim.RideUpW * (World.EyeOf(Sim.Stance) * ShellFrames.ScaleOf(this)) : GravityFrames.Above(Position, World.EyeOf(Sim.Stance) * ShellFrames.ScaleOf(this)); // (along "up": straight up except on a planet; a robot shell's frame: its size)
     public Vector3 RenderEye => RenderSeat != SeatKind.None ? RenderPosition + Vector3.Transform(new Vector3(0, RenderEyeHeight, 0), RenderSeatRot)
         : RenderRide ? RenderPosition + Vector3.Transform(new Vector3(0, RenderEyeHeight, 0), RenderRideRot) : GravityFrames.Above(RenderPosition, RenderEyeHeight);
     public Vector3 Chest => Sim.RideUp != Vector3.Zero ? Position + Sim.RideUpW * (World.HeightOf(Sim.Stance) * 0.65f) : GravityFrames.Above(Position, World.HeightOf(Sim.Stance) * 0.65f);

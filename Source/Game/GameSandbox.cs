@@ -2074,6 +2074,7 @@ public sealed partial class Game
             ConstructRide.Clear(ref s); // (a seat is its own frame)
             return;
         }
+        using var body = World.Body(s); // (a robot shell's frame: its size against the constructs too)
         Constructs.BlockPlayer(ref s, World.HeightOf(s.Stance), IsServer, p.Id, frame: p.FramedRider, doors: p.Bot == null || NavGraph.Current.SiteOf(s.Position, 2f) < 0);
         if (Constructs.LiftBodies.Count > 0 && p.Bot == null)
             ConstructLifterPush.Block(Constructs, ref s, World.HeightOf(s.Stance), _sepAtTick != 0 ? _sepAtTick : MoverPhysics.Clock, IsServer); // (a Loader Arm's piece in the air pushes them aside, or waits for them: ConstructLifterPush.cs)
@@ -2108,6 +2109,7 @@ public sealed partial class Game
             return "not while noclipping";
         // (it moved on since the player aimed: a little more reach the faster it goes)
         var slack = c.Anchored || c.Asleep ? 0 : MathF.Min((c.Vel - p.Sim.Velocity).Length(), 12f) * 0.15f;
+        using var body = World.Body(p.Sim); // (a robot shell's size on the rungs)
         var why = ladder ? ConstructRide.ClimbLadder(ref p.Sim, c, part, World.HeightOf(Stance.Stand), frame: p.FramedRider)
             : ConstructRide.GrabOn(ref p.Sim, c, part, World.HeightOf(p.Sim.Stance), slack, frame: p.FramedRider);
         if (why == null)

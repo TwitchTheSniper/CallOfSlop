@@ -81,6 +81,8 @@ public sealed partial class Game
             return null;
         }
         _sculptTokens[p.Id] = tokens - 1;
+        if (kind == DigKind.Scoop && p.InShell)
+            ShellDrillTap(p, at, now); // (a shell's drill arm: the deposit under the scoop into its ore hopper, GameShellHopper.cs)
         var e = DigGround!;
         if (e.Ops.Count >= table.LogCap)
             return $"the ground has taken all the changes it can this match ({e.Ops.Count:N0}): nothing more can be dug or filled";
