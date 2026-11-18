@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Leg Pod Strut L",
-  "description": "A landing leg pod's strut (L): a graphite sleeve and chrome ram on a broad pad, hinged at the pod's bow end. Stowed it lies along the pod; it swings a quarter turn down to stand the pad 3.25 m under the pod's top, its brace and carriage with it. A generic ship fitting: it fits any ship.",
+  "description": "A landing leg pod's strut (L): a boxed graphite beam hinged at the pod's bow end. Stowed it lies along the pod; it swings 45 degrees down with its brace and carriage, the foot at its ankle kept level. A generic ship fitting: it fits any ship.",
   "group": "Ship",
   "section": "Ship fittings",
   "role": "door",
@@ -11,14 +11,15 @@
     "axis": "+x",
     "pivot": [
       0.0,
-      -0.65,
-      -1.0
+      -0.5,
+      -1.15
     ],
-    "angle": 90,
+    "angle": 45.0,
+    "held": true,
     "seconds": 3.5,
     "hang": "hang"
   },
-  "mass": 540.0,
+  "mass": 405.0,
   "health": 3600,
   "armour": 30,
   "material": "steel",
@@ -27,14 +28,14 @@
   "boxes": [
     {
       "min": [
-        -0.2,
-        -0.85,
-        -1.2
+        -0.15,
+        -0.64,
+        -1.29
       ],
       "max": [
-        0.2,
-        -0.45,
-        -0.8
+        0.15,
+        -0.36,
+        -1.01
       ],
       "color": "#1f2226",
       "detail": true,
@@ -45,65 +46,59 @@
     },
     {
       "min": [
-        -0.17,
-        -0.82,
-        -0.9
+        -0.16,
+        -0.62,
+        -1.05
       ],
       "max": [
-        0.17,
-        -0.48,
-        0.85
+        0.16,
+        -0.38,
+        1.13
       ],
       "color": "#3b4148",
       "detail": true,
-      "shape": "cylinder",
-      "segments": 16,
       "finish": "plated steel"
     },
     {
       "min": [
-        -0.185,
-        -0.835,
-        0.85
+        -0.172,
+        -0.585,
+        -0.85
       ],
       "max": [
-        0.185,
-        -0.465,
-        0.93
+        -0.16,
+        -0.415,
+        -0.35
       ],
-      "color": "#e0b020",
+      "color": "#30353b",
       "detail": true,
-      "shape": "cylinder",
-      "segments": 16,
-      "finish": "hazard paint"
+      "finish": "plated steel"
     },
     {
       "min": [
-        -0.11,
-        -0.76,
-        0.93
+        -0.172,
+        -0.585,
+        0.05
       ],
       "max": [
-        0.11,
-        -0.54,
-        1.28
+        -0.16,
+        -0.415,
+        0.93
       ],
-      "color": "#9aa0a4",
+      "color": "#30353b",
       "detail": true,
-      "shape": "cylinder",
-      "segments": 16,
-      "finish": "chrome"
+      "finish": "plated steel"
     },
     {
       "min": [
         -0.19,
-        -0.75,
-        0.48
+        -0.54,
+        -0.25
       ],
       "max": [
-        -0.15,
-        -0.55,
-        0.72
+        -0.16,
+        -0.46,
+        -0.05
       ],
       "color": "#1f2226",
       "detail": true,
@@ -111,29 +106,120 @@
     },
     {
       "min": [
-        0.15,
-        -0.75,
-        0.48
+        0.16,
+        -0.585,
+        -0.85
+      ],
+      "max": [
+        0.172,
+        -0.415,
+        -0.35
+      ],
+      "color": "#30353b",
+      "detail": true,
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        0.16,
+        -0.585,
+        0.05
+      ],
+      "max": [
+        0.172,
+        -0.415,
+        0.93
+      ],
+      "color": "#30353b",
+      "detail": true,
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        0.16,
+        -0.54,
+        -0.25
       ],
       "max": [
         0.19,
-        -0.55,
-        0.72
+        -0.46,
+        -0.05
       ],
       "color": "#1f2226",
       "detail": true,
       "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.13,
+        -0.38,
+        -0.9
+      ],
+      "max": [
+        0.13,
+        -0.35,
+        0.98
+      ],
+      "color": "#a9a59a",
+      "detail": true,
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -0.166,
+        -0.626,
+        0.11
+      ],
+      "max": [
+        0.166,
+        -0.374,
+        0.19
+      ],
+      "color": "#e0b020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.166,
+        -0.626,
+        0.93
+      ],
+      "max": [
+        0.166,
+        -0.374,
+        1.01
+      ],
+      "color": "#e0b020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.035,
+        -0.632,
+        -0.75
+      ],
+      "max": [
+        0.035,
+        -0.62,
+        0.83
+      ],
+      "color": "#5ac8ff",
+      "detail": true,
+      "glow": true,
+      "paintable": false
     },
     {
       "min": [
         -0.2,
-        -0.7,
-        0.55
+        -0.55,
+        -0.2
       ],
       "max": [
         0.2,
-        -0.6,
-        0.65
+        -0.45,
+        -0.1
       ],
       "color": "#9aa0a4",
       "detail": true,
@@ -144,116 +230,32 @@
     },
     {
       "min": [
-        -0.14,
-        -0.79,
-        1.16
+        -0.15,
+        -0.62,
+        1.11
       ],
       "max": [
-        0.14,
-        -0.51,
-        1.44
+        0.15,
+        -0.38,
+        1.35
       ],
       "color": "#1f2226",
       "detail": true,
-      "shape": "sphere",
+      "shape": "cylinder",
       "segments": 12,
+      "front": "+x",
       "finish": "dirty steel"
     },
     {
       "min": [
-        -0.47,
-        -1.12,
-        1.44
+        -0.16,
+        -0.62,
+        -1.27
       ],
       "max": [
-        0.47,
-        -0.18,
-        1.5
-      ],
-      "color": "#3b4148",
-      "detail": true,
-      "shape": "cylinder",
-      "segments": 8,
-      "taper": [
-        0.7,
-        0.7
-      ],
-      "finish": "plated steel"
-    },
-    {
-      "min": [
-        -0.47,
-        -1.12,
-        1.5
-      ],
-      "max": [
-        0.47,
-        -0.18,
-        1.55
-      ],
-      "color": "#30353b",
-      "detail": true,
-      "shape": "cylinder",
-      "segments": 8,
-      "finish": "plated steel"
-    },
-    {
-      "min": [
-        -0.482,
-        -1.132,
-        1.51
-      ],
-      "max": [
-        0.482,
-        -0.168,
-        1.54
-      ],
-      "color": "#e0b020",
-      "detail": true,
-      "shape": "cylinder",
-      "segments": 8,
-      "finish": "hazard paint"
-    },
-    {
-      "min": [
-        -0.43,
-        -1.08,
-        1.55
-      ],
-      "max": [
-        0.43,
-        -0.22,
-        1.6
-      ],
-      "color": "#1a1b1d",
-      "detail": true,
-      "shape": "cylinder",
-      "segments": 8,
-      "finish": "rubber"
-    },
-    {
-      "min": [
-        -0.17,
-        -0.82,
-        -1.15
-      ],
-      "max": [
-        0.17,
-        -0.48,
-        1.44
-      ],
-      "hidden": true
-    },
-    {
-      "min": [
-        -0.4324,
-        -1.0824,
-        1.44
-      ],
-      "max": [
-        0.4324,
-        -0.2176,
-        1.6
+        0.16,
+        -0.38,
+        -1.03
       ],
       "hidden": true
     }
@@ -263,8 +265,8 @@
       "name": "hang",
       "at": [
         0.0,
-        -0.48,
-        -1.0
+        -0.38,
+        -1.15
       ],
       "dir": "+y"
     }

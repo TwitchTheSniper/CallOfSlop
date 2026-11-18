@@ -6,9 +6,10 @@ namespace CallOfSlop;
 /// <summary>
 /// A door's <c>"link"</c> block (a landing leg pod's brace and carriage, LegPodParts.cs): a crank turns <see cref="CrankAngle"/> about
 /// <see cref="CrankAxis"/> through <see cref="Crank"/>; a rod pinned to it at <see cref="Knee"/> has its other end, <see cref="Pin"/>,
-/// running along <see cref="Rail"/>. A swing door with one is the rod; a slide door is what carries the pin. Only the drawing on the way
-/// follows it (<see cref="ConstructDoors.LinkMove"/>): the door still settles by its own quarter turn or slide, and the part file is
-/// refused unless the link's end pose is that one. Points in the part's frame as built (shut).
+/// running along <see cref="Rail"/>. A swing door with one is the rod; a slide door is what carries the pin; with <see cref="Ride"/> the
+/// leaf rides the knee without turning (a leg's foot, kept level). The drawing follows it (<see cref="ConstructDoors.LinkMove"/>): a door
+/// that settles by its own quarter turn or slide is refused unless the link's end pose is that one; a held door's drawing keeps it.
+/// Points in the part's frame as built (shut).
 /// </summary>
 public sealed class CDoorLink
 {
@@ -16,6 +17,7 @@ public sealed class CDoorLink
     public byte CrankAxis, Rail;
     public float CrankAngle; // radians
     public float Branch; // which of the two places the pin may be (the one it is at as built)
+    public bool Ride; // "ride": true: the leaf moves with the knee and never turns (no pin, no rail)
 }
 
 /// <summary>A part file's <c>"door"</c> block: the part is an event door's leaf (ConstructDoors.cs).</summary>
@@ -31,6 +33,11 @@ public sealed class CDoorDef
     public bool Dock; // "dock": true: a docking hatch, opened and shut by the server as its body docks (ConstructDoors.StepDocks)
     public bool Launch; // "launch": true: a launch hatch, opened by the server when a launch from its own body finds it in the way, shut a while after (ConstructDoors.OpenForLaunch)
     public CDoorLink? Link; // "link": the leaf is one bar of a crank and slider (a landing leg's brace or its carriage), drawn on the way by it
+    // "held": true: the open pose needn't be a quarter turn (a landing leg's strut at 45 degrees). Its parts settle by Shift alone (none,
+    // or a riding link's knee move: a foot kept level), and while it is open it is drawn at its open pose (Construct.DrawnDoorOf), so
+    // the collider, rays and players see the held leaf where it settled, not where it is drawn: keep its solid boxes at its hinge.
+    public bool Held;
+    public Vector3 Shift; // a held door's settle, the part's frame
     public int Ticks => Math.Max(1, (int)MathF.Round(Seconds * World.TickRate));
 }
 
@@ -78,7 +85,7 @@ public static class ConstructDoors
         var where = $"{file}, door";
         if (d.Role != PartRole.Door)
             throw new ConstructPartException($"{file}: only a part with \"role\": \"door\" has a \"door\" block");
-        ConstructParts.Known(b, ["kind", "axis", "pivot", "angle", "travel", "seconds", "hang", "dock", "launch", "link"], where);
+        ConstructParts.Known(b, ["kind", "axis", "pivot", "angle", "travel", "seconds", "hang", "dock", "launch", "link", "held"], where);
         var dd = new CDoorDef();
         var kind = ConstructParts.Str(ConstructParts.Need(b, "kind", where), file, "door.kind");
         dd.Slide = kind switch
@@ -89,7 +96,13 @@ public static class ConstructDoors
         };
         dd.Axis = ConstructParts.DirOf(ConstructParts.Str(ConstructParts.Need(b, "axis", where), file, "door.axis"), file, "door.axis");
         dd.Pivot = ConstructParts.Opt(b, "pivot") is { } pv ? ConstructParts.Vec(pv, file, "door.pivot") : Vector3.Zero;
-        if (dd.Slide)
+        dd.Held = ConstructParts.Opt(b, "held") is { } hd && hd.ValueKind == JsonValueKind.True;
+        var linked = ConstructParts.Opt(b, "link") != null;
+        if (dd.Held && linked)
+        {
+            // (a held linked leaf goes by its link alone: no travel or angle of its own)
+        }
+        else if (dd.Slide)
         {
             dd.Travel = ConstructParts.Num(ConstructParts.Need(b, "travel", where), file, "door.travel");
             if (dd.Travel is < 0.05f or > 20f)
@@ -98,10 +111,12 @@ public static class ConstructDoors
         else
         {
             var deg = ConstructParts.Num(ConstructParts.Need(b, "angle", where), file, "door.angle");
-            if (deg == 0 || MathF.Abs(deg) > 180 || deg % 90 != 0)
-                throw new ConstructPartException($"{file}: \"door.angle\" is 90, 180, -90 or -180 degrees (a part turns in quarter turns)");
+            if (deg == 0 || MathF.Abs(deg) > 180 || (!dd.Held && deg % 90 != 0))
+                throw new ConstructPartException($"{file}: \"door.angle\" is 90, 180, -90 or -180 degrees (a part turns in quarter turns; a \"held\" door any angle to 180)");
             dd.Angle = deg * MathF.PI / 180f;
         }
+        if (dd.Held && (dd.Dock || dd.Launch))
+            throw new ConstructPartException($"{file}: a \"held\" door is neither a dock nor a launch hatch");
         dd.Seconds = ConstructParts.Opt(b, "seconds") is { } sec ? ConstructParts.Num(sec, file, "door.seconds") : 0.8f;
         if (dd.Seconds is < 0.1f or > 10f)
             throw new ConstructPartException($"{file}: \"door.seconds\" is 0.1 to 10");
@@ -120,20 +135,31 @@ public static class ConstructDoors
     private static CDoorLink ParseLink(CDoorDef dd, JsonElement b, string file)
     {
         var where = $"{file}, door.link";
-        ConstructParts.Known(b, ["crank", "crankAxis", "crankAngle", "knee", "pin", "rail"], where);
+        ConstructParts.Known(b, ["crank", "crankAxis", "crankAngle", "knee", "pin", "rail", "ride"], where);
         var l = new CDoorLink
         {
             Crank = ConstructParts.Vec(ConstructParts.Need(b, "crank", where), file, "door.link.crank"),
             Knee = ConstructParts.Vec(ConstructParts.Need(b, "knee", where), file, "door.link.knee"),
-            Pin = ConstructParts.Vec(ConstructParts.Need(b, "pin", where), file, "door.link.pin"),
             CrankAxis = ConstructParts.DirOf(ConstructParts.Str(ConstructParts.Need(b, "crankAxis", where), file, "door.link.crankAxis"), file, "door.link.crankAxis"),
             CrankAngle = ConstructParts.Num(ConstructParts.Need(b, "crankAngle", where), file, "door.link.crankAngle") * MathF.PI / 180f,
+            Ride = ConstructParts.Opt(b, "ride") is { } rd && rd.ValueKind == JsonValueKind.True,
         };
+        if (l.CrankAngle == 0 || MathF.Abs(l.CrankAngle) > MathF.PI + 1e-4f)
+            throw new ConstructPartException($"{file}: \"door.link.crankAngle\" is -180 to 180 degrees, not 0");
+        if (l.Ride)
+        {
+            if (!dd.Held)
+                throw new ConstructPartException($"{file}: a door.link that rides its knee is on a \"held\" door");
+            l.Pin = l.Knee;
+            dd.Shift = Vector3.Transform(Vector3.Zero, LinkMove(dd, l, 1f)); // (it settles where its knee went)
+            return l;
+        }
+        l.Pin = ConstructParts.Vec(ConstructParts.Need(b, "pin", where), file, "door.link.pin");
         l.Rail = dd.Slide && ConstructParts.Opt(b, "rail") == null ? dd.Axis : ConstructParts.DirOf(ConstructParts.Str(ConstructParts.Need(b, "rail", where), file, "door.link.rail"), file, "door.link.rail");
         var r = ConstructParts.DirVector(l.Rail);
         l.Branch = Vector3.Dot(l.Pin - l.Knee, r) >= 0 ? 1 : -1;
-        if (MathF.Abs(MathF.Abs(l.CrankAngle) - MathF.PI / 2) > 1e-4f && MathF.Abs(MathF.Abs(l.CrankAngle) - MathF.PI) > 1e-4f)
-            throw new ConstructPartException($"{file}: \"door.link.crankAngle\" is 90, 180, -90 or -180 degrees");
+        if (dd.Held)
+            return l; // (it stays where it was built: only its drawing moves)
         // The link has to end where the door settles, or what is drawn jumps at the settle.
         var end = LinkMove(dd, l, 1f);
         var settle = dd.Slide
@@ -155,6 +181,8 @@ public static class ConstructDoors
         var ax = ConstructParts.DirVector(l.CrankAxis);
         var r = ConstructParts.DirVector(l.Rail);
         var knee = l.Crank + Vector3.Transform(l.Knee - l.Crank, Quaternion.CreateFromAxisAngle(ax, l.CrankAngle * o));
+        if (l.Ride)
+            return Matrix4x4.CreateTranslation(knee - l.Knee);
         var rod = Vector3.Distance(l.Pin, l.Knee);
         var d = l.Pin - knee;
         var dr = Vector3.Dot(d, r);
@@ -429,7 +457,9 @@ public static class ConstructDoors
     {
         ref var p = ref c.Parts[part];
         var dd = p.D.Door!;
-        return dd.Slide && SettledOpen(c, part) ? p.Pos - Rot24.Apply(p.Rot, ConstructParts.DirVector(dd.Axis)) * dd.Travel : p.Pos;
+        if (!SettledOpen(c, part))
+            return p.Pos;
+        return dd.Held ? p.Pos - Rot24.Apply(p.Rot, dd.Shift) : dd.Slide ? p.Pos - Rot24.Apply(p.Rot, ConstructParts.DirVector(dd.Axis)) * dd.Travel : p.Pos;
     }
 
     private static void StepBody(ConstructWorld world, Construct c)
@@ -522,7 +552,9 @@ public static class ConstructDoors
         pivot = p.Pos + Rot24.Apply(p.Rot, dd.Pivot); // (on the axis: the same from either pose)
         r = 0;
         shift = Vector3.Zero;
-        if (dd.Slide)
+        if (dd.Held)
+            shift = Rot24.Apply(p.Rot, dd.Shift) * (open ? 1 : -1);
+        else if (dd.Slide)
             shift = axis * (open ? dd.Travel : -dd.Travel);
         else
             r = Rot24.Nearest(Quaternion.CreateFromAxisAngle(axis, open ? dd.Angle : -dd.Angle), out _);
@@ -564,15 +596,16 @@ public static class ConstructDoors
 
     // ---- Drawing --------------------------------------------------------------------------------------------------
 
-    /// <summary>A moving door's leaf, drawn: the turn (or slide) from its settled pose to where it is now, in the body frame.</summary>
+    /// <summary>A moving door's leaf (or a held one's, open), drawn: the turn (or slide) from its settled pose to where it is now, in the body frame.</summary>
     public static Matrix4x4 DrawPose(Construct c, int k)
     {
         var part = c.Doors[k].Part;
         ref var p = ref c.Parts[part];
         var dd = p.D.Door!;
-        var f = OpenFraction(c, k, byTicks: false) - (SettledOpen(c, part) ? 1 : 0); // (-1..1: from the settled pose)
-        if (dd.Link != null)
-            return LinkPose(dd, p.Rot, p.Pos, f);
+        var open = SettledOpen(c, part);
+        if (dd.Link != null || dd.Held)
+            return LinkPose(dd, p.Rot, p.Pos, OpenFraction(c, k, byTicks: false), open);
+        var f = OpenFraction(c, k, byTicks: false) - (open ? 1 : 0); // (-1..1: from the settled pose)
         var axis = Rot24.Apply(p.Rot, ConstructParts.DirVector(dd.Axis));
         if (dd.Slide)
             return Matrix4x4.CreateTranslation(axis * (dd.Travel * f));
@@ -581,22 +614,31 @@ public static class ConstructDoors
     }
 
     /// <summary>
-    /// A linked door <paramref name="f"/> of the way from its settled pose (-1..1: below 0 it settled open), in the frame its part sits in
-    /// (at <paramref name="at"/>, turned <paramref name="rot"/>, as it is now): from the settled pose back to as built, then on by the link.
+    /// A linked or held door <paramref name="o"/> of the way open (0 shut, 1 open), in the frame its part sits in (at <paramref name="at"/>,
+    /// turned <paramref name="rot"/>, as it is now, settled open or not): its open move from as built, then back from the settle it is at
+    /// (a held door's: <see cref="CDoorDef.Shift"/>).
     /// </summary>
-    public static Matrix4x4 LinkPose(CDoorDef dd, byte rot, Vector3 at, float f)
+    public static Matrix4x4 LinkPose(CDoorDef dd, byte rot, Vector3 at, float o, bool settledOpen)
     {
-        var l = dd.Link!;
-        float s = f < 0 ? 1 : 0, o = f + s;
         var place = Matrix4x4.CreateFromQuaternion(Rot24.Quat(rot)) * Matrix4x4.CreateTranslation(at);
         Matrix4x4.Invert(place, out var back);
-        var m = LinkMove(dd, l, o);
-        if (s > 0)
+        var m = OpenMove(dd, o);
+        if (settledOpen)
         {
-            Matrix4x4.Invert(LinkMove(dd, l, 1), out var shut);
-            m = shut * m;
+            Matrix4x4.Invert(dd.Held ? Matrix4x4.CreateTranslation(dd.Shift) : OpenMove(dd, 1), out var shut);
+            m *= shut; // (a part point to where it is o open, then from the settled frame: v * move * settle^-1 * place)
         }
         return back * m * place;
+    }
+
+    /// <summary>A door <paramref name="o"/> of the way open from as built (0 shut, 1 open), in its part's frame: its link, its slide or its turn.</summary>
+    public static Matrix4x4 OpenMove(CDoorDef dd, float o)
+    {
+        if (dd.Link != null)
+            return LinkMove(dd, dd.Link, o);
+        if (dd.Slide)
+            return Matrix4x4.CreateTranslation(ConstructParts.DirVector(dd.Axis) * (dd.Travel * o));
+        return Matrix4x4.CreateTranslation(-dd.Pivot) * Matrix4x4.CreateFromAxisAngle(ConstructParts.DirVector(dd.Axis), dd.Angle * o) * Matrix4x4.CreateTranslation(dd.Pivot);
     }
 
     // ---- The wire --------------------------------------------------------------------------------------------------

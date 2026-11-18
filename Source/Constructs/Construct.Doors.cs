@@ -40,6 +40,7 @@ public sealed partial class Construct
     public int DoorLeafCount;
     public int DoorDockCount; // docking hatches among them (ConstructDoors.StepDocks)
     public int DoorMovingCount, DoorWiredCount; // (the server's step looks at a body only while one is above 0)
+    public int DoorHeldCount; // "held" doors (ConstructDoors.cs: drawn at their open pose while open, so the drawing looks them up)
     public int LaunchHatchHold; // server: ticks until the launch hatches opened for its launches shut (0: none is held open; ConstructDoors.OpenForLaunch)
     public int DoorEpoch; // goes up whenever the door list is built again (the merged meshes plan again, leaving door parts out: ConstructRenderBatch.cs)
     private int _doorStamp = -1;
@@ -68,7 +69,7 @@ public sealed partial class Construct
                 _doorOld = new CDoor[Doors.Length];
             Array.Copy(Doors, _doorOld, oldCount);
         }
-        DoorCount = DoorLeafCount = DoorMovingCount = DoorWiredCount = DoorDockCount = 0;
+        DoorCount = DoorLeafCount = DoorMovingCount = DoorWiredCount = DoorDockCount = DoorHeldCount = 0;
         foreach (var i in Specials)
         {
             ref var p = ref Parts[i];
@@ -175,6 +176,8 @@ public sealed partial class Construct
                 DoorDockCount++;
             if ((Parts[Doors[k].Part].State & ConstructDoors.Moving) != 0)
                 DoorMovingCount++;
+            if (Parts[Doors[k].Part].D.Door!.Held)
+                DoorHeldCount++;
         }
         DoorEpoch++;
     }
@@ -196,9 +199,12 @@ public sealed partial class Construct
     /// </summary>
     public int MovingDoorOf(int part)
     {
-        if (DoorMovingCount == 0 || DoorOfListed(part) is not (var k and >= 0))
+        if ((DoorMovingCount | DoorHeldCount) == 0 || DoorOfListed(part) is not (var k and >= 0))
             return -1;
-        return (Parts[Doors[k].Part].State & ConstructDoors.Moving) != 0 ? k : -1;
+        ref var dp = ref Parts[Doors[k].Part];
+        if ((dp.State & ConstructDoors.Moving) != 0)
+            return k;
+        return dp.D.Door!.Held && ConstructDoors.SettledOpen(this, Doors[k].Part) ? k : -1; // (a held door, open: drawn at its open pose)
     }
 
     // ---- Settling: only what the leaf touches (ConstructDoors.Settle) --------------------------------------------

@@ -35,6 +35,12 @@
       "on": 4,
       "socket": "brace",
       "by": "hang"
+    },
+    {
+      "part": "Leg Pod Foot L",
+      "on": 0,
+      "socket": "foot",
+      "by": "hang"
     }
   ]
 }

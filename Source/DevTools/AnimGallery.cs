@@ -245,8 +245,8 @@ public static partial class ConstructPreview
     /// <summary>An event door <paramref name="f"/> of the way from its settled pose (-1..1), in the frame its part sits in: <see cref="ConstructDoors.DrawPose"/>.</summary>
     private static Matrix4x4 DoorMove(CDoorDef dd, byte rot, Vector3 at, float f)
     {
-        if (dd.Link != null)
-            return ConstructDoors.LinkPose(dd, rot, at, f);
+        if (dd.Link != null || dd.Held)
+            return ConstructDoors.LinkPose(dd, rot, at, f < 0 ? f + 1 : f, f < 0);
         var axis = Rot24.Apply(rot, ConstructParts.DirVector(dd.Axis));
         if (dd.Slide)
             return Matrix4x4.CreateTranslation(axis * (dd.Travel * f));

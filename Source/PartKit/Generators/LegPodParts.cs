@@ -38,7 +38,7 @@ public sealed class LegPodParts : IPartGenerator
     /// <summary>A size: its letter, its scale on the L (the Zero Day's), and the masses. Reach: the pad's sole under the pod's top, deployed.</summary>
     private sealed record Size(string L, double K, double HousingMass, double GantryMass, double LeafMass, double Health)
     {
-        public double Reach => Py.Round((-CrankY + StrutLen) * K, 2);
+        public double Reach => Py.Round((-CrankY + StrutLen * Sn + PadTop + PadT) * K, 2);
     }
 
     private static readonly Size[] Sizes =
@@ -154,7 +154,7 @@ public sealed class LegPodParts : IPartGenerator
         foreach (var sx in new[] { -1.0, 1.0 })
             Hidden(p, k, sx * InW, MouthY, -InL, sx * 0.9, Ceil, InL);
         foreach (var e in new[] { -1.0, 1.0 })
-            Hidden(p, k, -InW, MouthY, e * InL, InW, Ceil, e * 1.65);
+            Hidden(p, k, -InW, MouthY, e * InL, InW, Ceil, e * BayEnd);
         // The skin: eight facets, plated, pale; the top plate's underside dark (the bay's ceiling).
         var faces = Faces();
         foreach (var q in faces)
@@ -207,14 +207,14 @@ public sealed class LegPodParts : IPartGenerator
             Hull(p, k, [[-BeamW, BeamY + 0.05, e * (BeamAt(e) - 0.04)], [BeamW, BeamY + 0.05, e * (BeamAt(e) - 0.04)], [-BeamW, BeamY - 0.06, e * (BeamAt(e) - 0.04)], [BeamW, BeamY - 0.06, e * (BeamAt(e) - 0.04)],
                 [-BeamW + 0.01, BeamY + 0.03, e * (BeamAt(e) + 0.05)], [BeamW - 0.01, BeamY + 0.03, e * (BeamAt(e) + 0.05)], [-BeamW + 0.01, BeamY - 0.04, e * (BeamAt(e) + 0.05)], [BeamW - 0.01, BeamY - 0.04, e * (BeamAt(e) + 0.05)]], Frame, "dirty steel");
         // The amber lamp on the bow end, under the rail, and a stencil plate beside it.
-        Slab(p, k, faces[5], Centre, 0.44, 0.56, 0.06, 0.16, 0.004, 0.05, 0.01, Amber, "", glow: true);
-        Slab(p, k, faces[5], Centre, 0.6, 0.82, 0.06, 0.14, 0.004, 0.015, 0, Frame, "painted plating");
+        Slab(p, k, faces[5], Centre, 0.44, 0.56, 0.06, 0.16, 0.009, 0.05, 0.01, Amber, "", glow: true);
+        Slab(p, k, faces[5], Centre, 0.6, 0.82, 0.06, 0.14, 0.009, 0.02, 0, Frame, "painted plating");
         // Inside: the bay's lining (dark, on the walls' inner faces), the ceiling with its light strip, the rails on the end walls.
         foreach (var sx in new[] { -1.0, 1.0 })
         {
             D(p, k, sx * (InW + 0.004), MouthY + 0.02, -InL + 0.02, sx * (InW + 0.044), Ceil - 0.02, InL - 0.02, Lining, "dirty steel");
-            for (var z = -1.5; z <= 1.51; z += 0.5) // (ribs, above the carriage's rail)
-                D(p, k, sx * (InW - 0.04), Pin0.Y + 0.14, z - 0.04, sx * (InW + 0.004), Ceil - 0.04, z + 0.04, Frame, "dirty steel");
+            for (var z = -1.5; z <= 1.51; z += 0.5) // (ribs, under the carriage's rail)
+                D(p, k, sx * (InW - 0.04), MouthY + 0.06, z - 0.04, sx * (InW + 0.004), Pin0.Y - 0.14, z + 0.04, Frame, "dirty steel");
             // The carriage's rail along the wall: a chrome flat on a dark web, hazard stops at each end of its run.
             D(p, k, sx * (InW - 0.012), Pin0.Y - 0.1, -InL + 0.03, sx * (InW + 0.004), Pin0.Y + 0.1, InL - 0.03, Frame, "dirty steel");
             D(p, k, sx * (InW - 0.022), Pin0.Y + CarH + 0.068, Pin1.Z - CarHalf - 0.1, sx * (InW - 0.008), Pin0.Y + CarH + 0.088, Pin0.Z + CarHalf + 0.1, Chrome, "chrome");
@@ -225,14 +225,28 @@ public sealed class LegPodParts : IPartGenerator
             D(p, k, -InW + 0.03, MouthY + 0.02, e * (InL + 0.004), InW - 0.03, Ceil - 0.02, e * (InL + 0.044), Lining, "dirty steel");
         D(p, k, -0.05, -0.09, -1.4, 0.05, -0.064, 1.4, Glow, "", glow: true);
         // The strut's hinge bracket under the ceiling at the bow end: two cheeks and a block between them, a hazard band.
-        Hidden(p, k, -0.3, CrankY + StrutR, CrankZ - 0.2, 0.3, Ceil, CrankZ + 0.2);
-        D(p, k, -0.3, CrankY + StrutR + 0.004, CrankZ - 0.2, 0.3, Ceil - 0.004, CrankZ + 0.2, Armour, "plated steel");
+        Hidden(p, k, -0.3, CrankY + StrutH, CrankZ - 0.2, 0.3, Ceil, CrankZ + 0.2);
+        D(p, k, -0.3, CrankY + StrutH + 0.004, CrankZ - 0.2, 0.3, Ceil - 0.004, CrankZ + 0.2, Armour, "plated steel");
         foreach (var sx in new[] { -1.0, 1.0 })
-            D(p, k, sx * 0.21, CrankY - 0.12, CrankZ - 0.16, sx * 0.3, CrankY + StrutR + 0.004, CrankZ + 0.16, Frame, "dirty steel");
-        D(p, k, -0.305, CrankY + StrutR + 0.05, CrankZ - 0.205, 0.305, CrankY + StrutR + 0.11, CrankZ + 0.205, Hazard, "hazard paint");
+            D(p, k, sx * 0.21, CrankY - 0.12, CrankZ - 0.16, sx * 0.3, CrankY + StrutH + 0.004, CrankZ + 0.16, Frame, "dirty steel");
+        D(p, k, -0.305, CrankY + StrutH + 0.05, CrankZ - 0.205, 0.305, CrankY + StrutH + 0.11, CrankZ + 0.205, Hazard, "hazard paint");
         p.Sock("top", [0, 0, 0], "+y");
-        p.Sock("strut", Pt(k, 0, CrankY + StrutR, CrankZ), "-y");
+        p.Sock("strut", Pt(k, 0, CrankY + StrutH, CrankZ), "-y");
         p.Sock("carriage", Pt(k, InW, Pin0.Y, Pin0.Z + 0.08), "-x");
+        p.Sock("foot", Pt(k, 0, CrankY - PadTop - PadT / 2, BayEnd), "-z");
+        // The canopy's hinges: a bracket down from the mouth's edge each side to the leaves' hinge line, a knuckle on it between each
+        // pair of the leaf's, and the pin through them all, so an open leaf hangs on the pod.
+        foreach (var sx in new[] { -1.0, 1.0 })
+        {
+            double hy = MouthY - 0.06;
+            foreach (var z in new[] { -1.62, -0.55, 0.55, 1.62 })
+            {
+                var h = Math.Abs(z) > 1 ? 0.1 : 0.22;
+                D(p, k, sx * (Hinge - 0.035), hy + 0.012, z - h, sx * (MouthW - 0.006), MouthY - 0.004, z + h, Frame, "dirty steel");
+                Along(p, k, sx * Hinge, hy, 0.04, z - h, z + h, Frame, "dirty steel");
+            }
+            Along(p, k, sx * Hinge, hy, 0.018, -MouthL + 0.03, MouthL - 0.03, Chrome, "chrome");
+        }
         p.Sock("canopyL", Pt(k, -0.62, MouthY, 0), "-y");
         p.Sock("canopyR", Pt(k, 0.62, MouthY, 0), "-y");
         return p.Stats(s.HousingMass, s.Health, 30, k >= 1 ? 6.0 : 4.0);
@@ -264,8 +278,11 @@ public sealed class LegPodParts : IPartGenerator
             var v = 0.04 + c * 0.135;
             Slab(p, k, under, above, 0.88, 0.99, v, v + 0.07, 0.004, 0.025, 0, c % 2 == 0 ? Hazard : Frame, c % 2 == 0 ? "hazard paint" : "dirty steel");
         }
-        foreach (var z in new[] { -1.1, 0.0, 1.1 })
-            D(p, k, sx * (Hinge - 0.07), MouthY - 0.075, z - 0.14, sx * (Hinge + 0.004), MouthY - 0.005, z + 0.14, Frame, "dirty steel");
+        foreach (var z in new[] { -1.1, 0.0, 1.1 }) // (knuckles round the hinge pin, between the pod's: they stay on it as the leaf turns)
+        {
+            Along(p, k, sx * Hinge, MouthY - 0.06, 0.045, z - 0.3, z + 0.3, Frame, "dirty steel");
+            D(p, k, sx * (Hinge - 0.12), MouthY - 0.085, z - 0.26, sx * (Hinge - 0.02), MouthY - 0.035, z + 0.26, Frame, "dirty steel");
+        }
         // The inside face: a dark stiffener grid.
         foreach (var z in new[] { -0.75, 0.0, 0.75 })
             D(p, k, sx * 0.08, MouthY + 0.004, z - 0.03, sx * (Hinge - 0.08), MouthY + 0.03, z + 0.03, Frame, "dirty steel");
@@ -276,103 +293,96 @@ public sealed class LegPodParts : IPartGenerator
         return p.Stats(s.LeafMass, s.Health * 0.4, 30, 4.0);
     }
 
-    // ---- the leg: a strut on a hinge, a brace and the carriage its top rides (Karl, 2026-11-18: "with the two hinges, lengthways. As it
-    // opens up, the gantry it's on goes to the other side")
+    // ---- the leg: a strut on a hinge, a brace and the carriage its top rides, a foot kept level (Karl, 2026-11-18: "with the two hinges,
+    // lengthways. As it opens up, the gantry it's on goes to the other side"; then "it unfurls at 45 degrees, with a more rectangular
+    // shape and the hinge of the foot moving so it fits back in and always stays horizontal whilst deploying and going back in")
     //
-    // Stowed, the strut lies along the pod, hinged at its bow end (Crank), its pad standing on edge at the stern end; the two braces
-    // run from its knee forward and down to a pin on the carriage, which sits on rails along the bay's walls aft of the hinge. Deploying,
-    // the strut swings a quarter turn down about its hinge while the carriage runs forward past the hinge (a crank and slider: the brace's
-    // length sets where the carriage is), and the brace turns a quarter turn too, so every piece settles square. The geometry is solved
-    // so the brace's quarter turn joins the knee and the pin at both ends (Alpha: the brace's lean below the strut, stowed).
+    // Stowed, the strut lies flat along the pod, hinged at its bow end (Crank), the foot level under its stern end; the two braces run
+    // from its knee aft and up to a pin on the carriage, which sits on rails along the bay's walls. Deploying, the strut swings 45 degrees
+    // down about its hinge while the carriage runs forward towards the hinge (a crank and slider: the brace's length sets where the
+    // carriage is) and the foot rides the ankle without turning, so its pad stays level all the way. 45 degrees isn't a quarter turn, so
+    // the strut and the brace are "held" doors (ConstructDoors.cs): their solid boxes stay at the hinge and the carriage, only their
+    // drawing swings; the carriage settles by its slide and the foot by the ankle's move, so the pad's collider is where it stands.
 
-    private const double CrankY = -0.65, CrankZ = -1.0, KneeAt = 1.6, StrutLen = 2.6, StrutR = 0.17, PadR = 0.47, PadT = 0.16, BraceX = 0.25;
-    private const double Alpha = -30 * Math.PI / 180;
-    private static double Rod => KneeAt / (Math.Cos(Alpha) - Math.Sin(Alpha)); // the brace's length, pin to pin
+    private const double CrankY = -0.5, CrankZ = -1.15, Unfurl = 45, StrutW = 0.16, StrutH = 0.12, KneeAt = 1.0, Rod = 1.1, RailY = -0.28, BraceX = 0.25;
+    private const double PadW = 0.5, PadL = 0.42, PadTop = 0.22, PadT = 0.18; // the foot: half width, half length, its top under the ankle, its thickness
+    private const double BayEnd = 1.65; // the stern end wall's inner face (the foot's pad stows against it)
+    private static double AnkleZ0 => BayEnd - PadL; // the ankle stowed (the foot's pad reaches the end wall)
+    private static double StrutLen => AnkleZ0 - CrankZ;
+    private static readonly double Sn = Math.Sin(Unfurl * Math.PI / 180), Cs = Math.Cos(Unfurl * Math.PI / 180);
     private static (double Y, double Z) Knee0 => (CrankY, CrankZ + KneeAt);
-    private static (double Y, double Z) Knee1 => (CrankY - KneeAt, CrankZ);
-    private static (double Y, double Z) Pin0 => (Knee0.Y + Rod * Math.Sin(Alpha), Knee0.Z - Rod * Math.Cos(Alpha));
-    private static (double Y, double Z) Pin1 => (Knee1.Y + Rod * Math.Cos(Alpha), Knee1.Z + Rod * Math.Sin(Alpha));
+    private static (double Y, double Z) Knee1 => (CrankY - KneeAt * Sn, CrankZ + KneeAt * Cs);
+    private static double PinZ((double Y, double Z) knee) => knee.Z + Math.Sqrt(Rod * Rod - Sq1(RailY - knee.Y)); // (aft of the knee)
+    private static (double Y, double Z) Pin0 => (RailY, PinZ(Knee0));
+    private static (double Y, double Z) Pin1 => (RailY, PinZ(Knee1));
+    private static double Sq1(double a) => a * a;
     private static double CarTravel => Pin0.Z - Pin1.Z; // (forward, along -z)
     private const double CarHalf = 0.12, CarH = 0.065, CarMid = 0.3, CarShoe = 0.45; // the carriage: half length along the rail, half height round the pin, where its beam ends and its shoes start
 
-    /// <summary>The fixed point of the brace's quarter turn about +x (stowed to deployed): where its settle turns it.</summary>
-    private static (double Y, double Z) BracePivot()
-    {
-        // A quarter turn about +x: y' = Py - (z - Pz), z' = Pz + (y - Py); solved for Knee0 -> Knee1.
-        var (y0, z0) = Knee0; var (y1, z1) = Knee1;
-        var pz = (y1 + z0 + z1 - y0) / 2;
-        var py = (y1 + z0 - z1 + y0) / 2;
-        return (py, pz);
-    }
-
     private static List<object?> V3(double k, double x, double y, double z) => [Py.Round(x * k, 4), Py.Round(y * k, 4), Py.Round(z * k, 4)];
 
-    private static PyDict LinkBlock(double k) => Kw(("crank", V3(k, 0, CrankY, CrankZ)), ("crankAxis", "+x"), ("crankAngle", 90),
+    private static PyDict LinkBlock(double k) => Kw(("crank", V3(k, 0, CrankY, CrankZ)), ("crankAxis", "+x"), ("crankAngle", Unfurl),
         ("knee", V3(k, 0, Knee0.Y, Knee0.Z)), ("pin", V3(k, 0, Pin0.Y, Pin0.Z)), ("rail", "-z"));
-
-    /// <summary>A cylinder along z at (x, y), L metres (a stowed strut's).</summary>
-    private static void Along(Part p, double k, double x, double y, double r, double z0, double z1, string col, string finish, int segments = 16) =>
-        p.Add(Box(Pt(k, x - r, y - r, Math.Min(z0, z1)), Pt(k, x + r, y + r, Math.Max(z0, z1)), col, detail: true,
-            shape: Kw(("shape", "cylinder"), ("segments", segments), ("finish", finish))));
 
     /// <summary>A cylinder along x at (y, z), L metres (a hinge pin's).</summary>
     private static void Across(Part p, double k, double y, double z, double r, double x0, double x1, string col, string finish) =>
         p.Add(Box(Pt(k, Math.Min(x0, x1), y - r, z - r), Pt(k, Math.Max(x0, x1), y + r, z + r), col, detail: true,
             shape: Kw(("shape", "cylinder"), ("segments", 12), ("front", "+x"), ("finish", finish))));
 
+    /// <summary>A cylinder along z at (x, y), L metres (a canopy hinge's).</summary>
+    private static void Along(Part p, double k, double x, double y, double r, double z0, double z1, string col, string finish) =>
+        p.Add(Box(Pt(k, x - r, y - r, Math.Min(z0, z1)), Pt(k, x + r, y + r, Math.Max(z0, z1)), col, detail: true,
+            shape: Kw(("shape", "cylinder"), ("segments", 12), ("finish", finish))));
+
     private static Part Strut(Size s)
     {
         var k = s.K;
         var p = new Part($"Leg Pod Strut {s.L}", Small, Section,
-            $"A landing leg pod's strut ({s.L}): a graphite sleeve and chrome ram on a broad pad, hinged at the pod's bow end. Stowed it lies along the pod; it swings a quarter turn down to stand the pad {Py.G(s.Reach)} m under the pod's top, its brace and carriage with it. A generic ship fitting: it fits any ship.",
+            $"A landing leg pod's strut ({s.L}): a boxed graphite beam hinged at the pod's bow end. Stowed it lies along the pod; it swings 45 degrees down with its brace and carriage, the foot at its ankle kept level. A generic ship fitting: it fits any ship.",
             role: "door", tool: "welder", material: "steel", color: Armour, group: Group);
-        double y = CrankY, z0 = CrankZ, tip = CrankZ + StrutLen;
-        // The knuckle on its hinge pin, the sleeve to past the knee, a hazard collar, the chrome ram out to the ankle.
-        Across(p, k, y, z0, 0.2, -0.2, 0.2, Frame, "dirty steel");
-        Along(p, k, 0, y, StrutR, z0 + 0.1, Knee0.Z + 0.25, Armour, "plated steel");
-        Along(p, k, 0, y, StrutR + 0.015, Knee0.Z + 0.25, Knee0.Z + 0.33, Hazard, "hazard paint");
-        Along(p, k, 0, y, 0.11, Knee0.Z + 0.33, tip - PadT - 0.16, Chrome, "chrome");
-        // The knee: a lug either side for the braces' pins.
+        double y = CrankY, z0 = CrankZ, tip = AnkleZ0;
+        // The root eye on its hinge pin, the boxed beam (a darker web inset each side, a top cap), hazard bands, the ankle eye.
+        Across(p, k, y, z0, StrutH + 0.02, -StrutW + 0.01, StrutW - 0.01, Frame, "dirty steel");
+        D(p, k, -StrutW, y - StrutH, z0 + 0.1, StrutW, y + StrutH, tip - 0.1, Armour, "plated steel");
         foreach (var sx in new[] { -1.0, 1.0 })
-            D(p, k, sx * (StrutR - 0.02), y - 0.1, Knee0.Z - 0.12, sx * (BraceX - 0.06), y + 0.1, Knee0.Z + 0.12, Frame, "dirty steel");
-        Across(p, k, y, Knee0.Z, 0.05, -BraceX + 0.05, BraceX - 0.05, Chrome, "chrome");
-        // The ankle and the pad, the pad's sole facing aft while stowed (down when deployed).
-        p.Add(Box(Pt(k, -0.14, y - 0.14, tip - PadT - 0.28), Pt(k, 0.14, y + 0.14, tip - PadT), Frame, detail: true, shape: Kw(("shape", "sphere"), ("segments", 12), ("finish", "dirty steel"))));
-        p.Add(Box(Pt(k, -PadR, y - PadR, tip - PadT), Pt(k, PadR, y + PadR, tip - PadT + 0.06), Armour, detail: true, shape: Kw(("shape", "cylinder"), ("segments", 8), ("taper", Py.L(0.7, 0.7)), ("finish", "plated steel"))));
-        Along(p, k, 0, y, PadR, tip - PadT + 0.06, tip - 0.05, Armour2, "plated steel", 8);
-        Along(p, k, 0, y, PadR + 0.012, tip - 0.09, tip - 0.06, Hazard, "hazard paint", 8);
-        Along(p, k, 0, y, PadR - 0.04, tip - 0.05, tip, Rubber, "rubber", 8);
-        // Collision: the strut and the pad (a hinge leaf turns about its pin; the box behind the pin turns up into the bay).
-        Hidden(p, k, -StrutR, y - StrutR, z0 - 0.15, StrutR, y + StrutR, tip - PadT);
-        Hidden(p, k, -PadR * 0.92, y - PadR * 0.92, tip - PadT, PadR * 0.92, y + PadR * 0.92, tip);
-        p.Sock("hang", Pt(k, 0, y + StrutR, z0), "+y");
-        p.Set(("door", Kw(("kind", "swing"), ("axis", "+x"), ("pivot", V3(k, 0, y, z0)), ("angle", 90), ("seconds", 3.5), ("hang", "hang"))));
-        return p.Stats(s.GantryMass * 0.6, s.Health * 0.6, 30, 4.0);
+        {
+            D(p, k, sx * StrutW, y - StrutH + 0.035, z0 + 0.3, sx * (StrutW + 0.012), y + StrutH - 0.035, Knee0.Z - 0.2, Armour2, "plated steel");
+            D(p, k, sx * StrutW, y - StrutH + 0.035, Knee0.Z + 0.2, sx * (StrutW + 0.012), y + StrutH - 0.035, tip - 0.3, Armour2, "plated steel");
+            D(p, k, sx * StrutW, y - 0.04, Knee0.Z - 0.1, sx * (BraceX - 0.06), y + 0.04, Knee0.Z + 0.1, Frame, "dirty steel"); // (the knee lug)
+        }
+        D(p, k, -StrutW + 0.03, y + StrutH, z0 + 0.25, StrutW - 0.03, y + StrutH + 0.03, tip - 0.25, Skin2, "plated steel");
+        D(p, k, -StrutW - 0.006, y - StrutH - 0.006, Knee0.Z + 0.26, StrutW + 0.006, y + StrutH + 0.006, Knee0.Z + 0.34, Hazard, "hazard paint");
+        D(p, k, -StrutW - 0.006, y - StrutH - 0.006, tip - 0.3, StrutW + 0.006, y + StrutH + 0.006, tip - 0.22, Hazard, "hazard paint");
+        D(p, k, -0.035, y - StrutH - 0.012, z0 + 0.4, 0.035, y - StrutH, tip - 0.4, Glow, "", glow: true);
+        Across(p, k, Knee0.Y, Knee0.Z, 0.05, -BraceX + 0.05, BraceX - 0.05, Chrome, "chrome");
+        Across(p, k, y, tip, StrutH, -StrutW + 0.01, StrutW - 0.01, Frame, "dirty steel");
+        // Collision: the root eye only (a held door: what is drawn swings, the collider stays at the hinge).
+        Hidden(p, k, -StrutW, y - StrutH, z0 - StrutH, StrutW, y + StrutH, z0 + StrutH);
+        p.Sock("hang", Pt(k, 0, y + StrutH, z0), "+y");
+        p.Set(("door", Kw(("kind", "swing"), ("axis", "+x"), ("pivot", V3(k, 0, y, z0)), ("angle", Unfurl), ("held", true), ("seconds", 3.5), ("hang", "hang"))));
+        return p.Stats(s.GantryMass * 0.45, s.Health * 0.6, 30, 4.0);
     }
 
     private static Part Brace(Size s)
     {
         var k = s.K;
         var p = new Part($"Leg Pod Brace {s.L}", Small, Section,
-            $"A landing leg pod's brace ({s.L}): two raked bars from the strut's knee to a pin on the carriage. As the strut swings down the carriage runs forward and the brace turns with them, locking the leg upright. A generic ship fitting: it fits any ship.",
+            $"A landing leg pod's brace ({s.L}): two boxed bars from the strut's knee to a pin on the carriage. As the strut swings down the carriage runs forward and the brace turns with them, locking the leg at 45 degrees. A generic ship fitting: it fits any ship.",
             role: "door", tool: "welder", material: "steel", color: Armour2, group: Group);
         foreach (var sx in new[] { -1.0, 1.0 })
         {
             double[] knee = [sx * BraceX, Knee0.Y, Knee0.Z], pin = [sx * BraceX, Pin0.Y, Pin0.Z];
             Beam(p, k, Lerp(knee, pin, 0.04), Lerp(pin, knee, 0.04), 0.05, Armour2, "plated steel");
-            Beam(p, k, Lerp(pin, knee, 0.03), Lerp(pin, knee, 0.16), 0.064, Hazard, "hazard paint");
-            Across(p, k, Knee0.Y, Knee0.Z, 0.075, sx * (BraceX - 0.05), sx * (BraceX + 0.05), Frame, "dirty steel");
-            Across(p, k, Pin0.Y, Pin0.Z, 0.075, sx * (BraceX - 0.05), sx * (BraceX + 0.05), Frame, "dirty steel");
+            Beam(p, k, Lerp(pin, knee, 0.03), Lerp(pin, knee, 0.16), 0.058, Hazard, "hazard paint");
+            Across(p, k, Knee0.Y, Knee0.Z, 0.07, sx * (BraceX - 0.05), sx * (BraceX + 0.05), Frame, "dirty steel");
+            Across(p, k, Pin0.Y, Pin0.Z, 0.06, sx * (BraceX - 0.05), sx * (BraceX + 0.05), Frame, "dirty steel");
         }
         // The pin through the carriage, out to its shoes, and the pin's boss on the carriage that the brace hangs by.
-        Across(p, k, Pin0.Y, Pin0.Z, 0.035, -InW + 0.02, InW - 0.02, Chrome, "chrome");
+        Across(p, k, Pin0.Y, Pin0.Z, 0.03, -InW + 0.02, InW - 0.02, Chrome, "chrome");
         Hidden(p, k, CarMid, Pin0.Y - 0.05, Pin0.Z - 0.05, CarShoe, Pin0.Y + 0.05, Pin0.Z + 0.05);
-        var mid = Lerp([0, Knee0.Y, Knee0.Z], [0, Pin0.Y, Pin0.Z], 0.5);
-        Hidden(p, k, -0.05, mid[1] - 0.05, mid[2] - 0.05, 0.05, mid[1] + 0.05, mid[2] + 0.05);
         p.Sock("hang", Pt(k, CarMid, Pin0.Y, Pin0.Z), "-x");
-        var (py, pz) = BracePivot();
-        p.Set(("door", Kw(("kind", "swing"), ("axis", "+x"), ("pivot", V3(k, 0, py, pz)), ("angle", 90), ("seconds", 3.5), ("hang", "hang"), ("link", LinkBlock(k)))));
-        return p.Stats(s.GantryMass * 0.15, s.Health * 0.5, 30, 4.0);
+        p.Set(("door", Kw(("kind", "swing"), ("axis", "+x"), ("held", true), ("seconds", 3.5), ("hang", "hang"), ("link", LinkBlock(k)))));
+        return p.Stats(s.GantryMass * 0.12, s.Health * 0.5, 30, 4.0);
     }
 
     private static Part Carriage(Size s)
@@ -387,7 +397,7 @@ public sealed class LegPodParts : IPartGenerator
         {
             D(p, k, sx * (InW - 0.07), y - CarH - 0.02, z - CarHalf, sx * (InW - 0.018), y + CarH + 0.02, z + CarHalf, Frame, "dirty steel"); // (the shoe on the rail)
             Across(p, k, y + CarH + 0.035, z, 0.03, sx * (InW - 0.06), sx * (InW - 0.02), Chrome, "chrome"); // (its roller)
-            D(p, k, sx * 0.3, y + CarH, z - 0.05, sx * 0.38, y + CarH + 0.06, z + 0.05, Glow, "", glow: true);
+            D(p, k, sx * 0.3, y + CarH, z - 0.05, sx * 0.38, y + CarH + 0.04, z + 0.05, Glow, "", glow: true);
             for (var c = 0; c < 3; c++)
                 D(p, k, sx * (0.1 + c * 0.14), y - CarH - 0.012, z - CarHalf + 0.03, sx * (0.16 + c * 0.14), y - CarH + 0.004, z + CarHalf - 0.03, Frame, "dirty steel");
         }
@@ -400,7 +410,34 @@ public sealed class LegPodParts : IPartGenerator
         p.Sock("hang", Pt(k, InW, y, z + 0.08), "+x");
         p.Sock("brace", Pt(k, CarMid, y, z), "+x");
         p.Set(("door", Kw(("kind", "slide"), ("axis", "-z"), ("travel", Py.Round(CarTravel * k, 4)), ("seconds", 3.5), ("hang", "hang"), ("link", LinkBlock(k)))));
-        return p.Stats(s.GantryMass * 0.25, s.Health * 0.5, 30, 4.0);
+        return p.Stats(s.GantryMass * 0.2, s.Health * 0.5, 30, 4.0);
+    }
+
+    private static Part Foot(Size s)
+    {
+        var k = s.K;
+        var p = new Part($"Leg Pod Foot {s.L}", Small, Section,
+            $"A landing leg pod's foot ({s.L}): a broad rectangular pad on a clevis round the strut's ankle. It rides the ankle down and back without turning, so the pad stays level, and stands {Py.G(s.Reach)} m under the pod's top. A generic ship fitting: it fits any ship.",
+            role: "door", tool: "welder", material: "steel", color: Armour, group: Group);
+        double ay = CrankY, az = AnkleZ0, top = ay - PadTop, bot = top - PadT;
+        // The clevis: two cheeks either side of the ankle eye, the ankle pin through them, a block down to the pad.
+        foreach (var sx in new[] { -1.0, 1.0 })
+            D(p, k, sx * (StrutW + 0.012), ay - 0.08, az - 0.14, sx * (StrutW + 0.07), top + 0.004, az + 0.14, Frame, "dirty steel");
+        Across(p, k, ay, az, 0.05, -StrutW - 0.08, StrutW + 0.08, Chrome, "chrome");
+        D(p, k, -StrutW - 0.07, top + 0.004, az - 0.18, StrutW + 0.07, top + 0.05, az + 0.18, Armour2, "plated steel");
+        // The pad: a stepped armoured plate, a hazard band round its rim, a rubber sole.
+        D(p, k, -PadW, bot + 0.04, az - PadL, PadW, top, az + PadL, Armour, "plated steel");
+        D(p, k, -PadW + 0.06, top, az - PadL + 0.06, PadW - 0.06, top + 0.004 + 0.03, az + PadL - 0.06, Armour2, "plated steel");
+        D(p, k, -PadW - 0.006, bot + 0.04, az - PadL - 0.006, PadW + 0.006, bot + 0.075, az + PadL + 0.006, Hazard, "hazard paint");
+        D(p, k, -PadW + 0.03, bot, az - PadL + 0.03, PadW - 0.03, bot + 0.04, az + PadL - 0.03, Rubber, "rubber");
+        D(p, k, -0.2, top + 0.034, az + PadL - 0.05, 0.2, top + 0.05, az + PadL - 0.02, Glow, "", glow: true);
+        // Collision: the pad, and the clevis block (it settles where it is drawn: it rides the ankle without turning).
+        Hidden(p, k, -PadW, bot, az - PadL, PadW, top, az + PadL);
+        Hidden(p, k, -StrutW - 0.07, top, az - 0.18, StrutW + 0.07, top + 0.05, az + 0.18);
+        p.Sock("hang", Pt(k, 0, (top + bot) / 2, az + PadL), "+z");
+        p.Set(("door", Kw(("kind", "swing"), ("axis", "+x"), ("held", true), ("seconds", 3.5), ("hang", "hang"),
+            ("link", Kw(("crank", V3(k, 0, CrankY, CrankZ)), ("crankAxis", "+x"), ("crankAngle", Unfurl), ("knee", V3(k, 0, ay, az)), ("ride", true))))));
+        return p.Stats(s.GantryMass * 0.23, s.Health * 0.6, 30, 4.0);
     }
 
     /// <summary>A square beam of half side <paramref name="r"/> from a to b (L metres).</summary>
@@ -433,6 +470,7 @@ public sealed class LegPodParts : IPartGenerator
         bp.Hang($"Leg Pod Strut {s.L}", h, "strut", "hang");
         var car = bp.Hang($"Leg Pod Carriage {s.L}", h, "carriage", "hang");
         bp.Hang($"Leg Pod Brace {s.L}", car, "brace", "hang");
+        bp.Hang($"Leg Pod Foot {s.L}", h, "foot", "hang");
         return bp.Json();
     }
 
@@ -442,7 +480,7 @@ public sealed class LegPodParts : IPartGenerator
         foreach (var s in Sizes)
         {
             var defs = new Dictionary<string, PyDict>();
-            foreach (var part in new[] { Housing(s), Canopy(s, -1), Canopy(s, 1), Strut(s), Brace(s), Carriage(s) })
+            foreach (var part in new[] { Housing(s), Canopy(s, -1), Canopy(s, 1), Strut(s), Brace(s), Carriage(s), Foot(s) })
             {
                 var d = part.Json();
                 var name = (string)d["name"]!;

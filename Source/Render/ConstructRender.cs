@@ -485,8 +485,8 @@ public static partial class ConstructRender
         {
             seg = SegMatrix(c, p.Seg, alpha);
         }
-        else if (c.DoorMovingCount > 0 && c.MovingDoorOf(i) is var door and >= 0)
-            seg = ConstructDoors.DrawPose(c, door); // (an event door on its way: ConstructDoors.cs)
+        else if ((c.DoorMovingCount | c.DoorHeldCount) > 0 && c.MovingDoorOf(i) is var door and >= 0)
+            seg = ConstructDoors.DrawPose(c, door); // (an event door on its way, or a held one open: ConstructDoors.cs)
         // A raycast wheel: down its suspension, turning, steering.
         var wheel = Matrix4x4.Identity;
         var spinAxis = Vector3.UnitX;
