@@ -5,9 +5,9 @@ namespace CallOfSlop;
 /// <summary>
 /// Boarding (docs/sandbox/design/bot-brain.md section 8, phase 5), server only: what a crew does when hostile players come aboard. The captain's
 /// look (once a second while bodied) counts the boarders (a player riding the body or sitting in it), makes each one a foe (a deed), and weighs
-/// the faction's boarding acts against its state: boarders against defenders, morale, hull, whether the helm is manned. Hold keeps the stations
-/// (the pilot flies, the gunners fire outside); every act but Surrender and Abandon arms the off-duty crew from the lockers to hold the bridge and
-/// the breach, and Repel sends the work hands and, outnumbered, the gunners too (GameCrewDefend.cs); Flee runs
+/// the faction's boarding acts against its state: boarders against defenders, morale, hull, whether the helm is manned. every act but Surrender and
+/// Abandon stands the crew up and arms them from the lockers to hold the bridge and the breach (GameCrewDefend.cs `CrewDefends`: all but the pilot,
+/// a miner, an engineer kept for a scuttle, and the gunners while their ship fights another craft); Hold flies on as it was; Flee runs
 /// at full ahead; Call for help sends the same faction's crews within 3 km at the boarder; Abandon leaves the ship a derelict; Surrender leaves
 /// every station, hands up (the ship stops: rule 1); Scuttle sends the nearest engineer (only an engineer: kill them first and it can't be done) to a magazine or fuel tank to arm a charge
 /// (15 s), then counts down (90 s) and the point goes up as it would shot through. A player disarms it at the point with the attach tool's Fire
