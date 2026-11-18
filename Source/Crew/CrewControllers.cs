@@ -1200,7 +1200,7 @@ public sealed partial class PowerControllers
 
     // ---- Saves (the world's Controllers section) --------------------------------------------------------------------------------
 
-    public const byte SaveVersion = 1;
+    public const byte SaveVersion = 2; // 2: phase 4's sites, far groups, a ship's far group (version 1 still reads: its territory starts from the data)
 
     /// <summary>
     /// u8 version; u8 n; per power: text name, u8 flags (1 fallen, 2 started), 7 x f64 (stock, start, earned, spent, looted, paid, received), text world,
@@ -1216,7 +1216,7 @@ public sealed partial class PowerControllers
         for (var a = 1; a <= Count; a++)
         {
             var p = Powers[a];
-            w.Str(Name((byte)a)).U8((byte)((p.Fallen ? 1 : 0) | (p.Started ? 2 : 0))).Str(p.Heir != 0 ? Name(p.Heir) : "");
+            w.Str(Name((byte)a)).U8((byte)((p.Fallen ? 1 : 0) | (p.Started ? 2 : 0) | (p.HadSites ? 4 : 0))).Str(p.Heir != 0 ? Name(p.Heir) : "");
             w.F64(p.Stock).F64(p.StartStock).F64(p.Earned).F64(p.Spent).F64(p.Looted).F64(p.Paid).F64(p.Received);
             w.Str(p.World).U8((byte)p.PlaceCount);
             for (var i = 0; i < p.PlaceCount; i++)
@@ -1224,8 +1224,8 @@ public sealed partial class PowerControllers
             w.U8((byte)p.ShipCount());
             foreach (var s in p.Ships)
                 if (s.State != PowerShipState.None)
-                    w.U8((byte)(s.State == PowerShipState.Spawning ? PowerShipState.Building : s.State)).U8((byte)s.Role).Str(Blueprints[s.Bp].Name).F32(s.Hull)
-                        .I32((int)Math.Max(0, (s.ReadyAt - Tick) / T)).U8((byte)s.Mission).U32(s.State == PowerShipState.Out ? s.Uid : 0);
+                    w.U8((byte)(s.State == PowerShipState.Spawning ? s.Far != 0 ? PowerShipState.Far : PowerShipState.Building : s.State)).U8((byte)s.Role).Str(Blueprints[s.Bp].Name).F32(s.Hull)
+                        .I32((int)Math.Max(0, (s.ReadyAt - Tick) / T)).U8((byte)s.Mission).U32(s.State == PowerShipState.Out ? s.Uid : 0).U16((ushort)s.Far);
             var mn = 0;
             foreach (var m in p.Missions)
                 if (m.Kind != MissionKind.None)
@@ -1240,8 +1240,9 @@ public sealed partial class PowerControllers
                     .U16((ushort)m.OtherGroup).U16(m.OtherNumber).F32(m.At.X).F32(m.At.Y).F32(m.At.Z).U8(m.From).U8(m.To).U8(m.NeedCargo).U8(m.NeedArmed).U8((byte)m.Armed)
                     .U8((byte)((m.Paid ? 1 : 0) | (m.Called ? 2 : 0) | (m.Looted ? 4 : 0))).I32((int)((Tick - m.Started) / T)).I32((int)((Tick - m.StageAt) / T)).U8((byte)i);
             }
-            w.I32((int)Math.Max(0, (p.NextConvoy - Tick) / T));
+            w.I32((int)Math.Max(0, (p.NextConvoy - Tick) / T)).I32((int)Math.Max(0, (p.NextTake - Tick) / T));
         }
+        TerritorySave(w); // (phase 4: CrewTerritory.cs)
         return w.Span.ToArray();
     }
 
@@ -1253,7 +1254,7 @@ public sealed partial class PowerControllers
         {
             var r = new SaveReader(bytes);
             var v = r.U8();
-            if (v != SaveVersion)
+            if (v is not (1 or SaveVersion))
             {
                 Log.Add($"the world's controllers section is of version {v} (this build reads {SaveVersion}): every power starts from its plan");
                 return;
@@ -1269,6 +1270,7 @@ public sealed partial class PowerControllers
                 var flags = r.U8();
                 p.Fallen = (flags & 1) != 0;
                 p.Started = (flags & 2) != 0;
+                p.HadSites |= (flags & 4) != 0;
                 p.Heir = CrewPowers.Find(r.Str());
                 p.Relink = true;
                 (p.Stock, p.StartStock, p.Earned, p.Spent, p.Looted, p.Paid, p.Received) = (r.F64(), r.F64(), r.F64(), r.F64(), r.F64(), r.F64(), r.F64());
@@ -1296,6 +1298,7 @@ public sealed partial class PowerControllers
                     var ready = r.I32();
                     var mission = (sbyte)r.U8();
                     var uid = r.U32();
+                    var far = v >= 2 ? (short)r.U16() : (short)0;
                     var bp = Blueprints.FindIndex(b => b.Name.Equals(bpName, StringComparison.OrdinalIgnoreCase));
                     if (bp < 0 && ConstructBuild.FindBlueprint(bpName) is { } found)
                     {
@@ -1303,12 +1306,12 @@ public sealed partial class PowerControllers
                         Blueprints.Add(found);
                         Bills.Add(Rules.BillOf(found));
                     }
-                    if (bp < 0 || p.Id == 0 || i >= MaxShips || st is not (PowerShipState.Building or PowerShipState.Hangar or PowerShipState.Out) || role >= ShipRole.Count)
+                    if (bp < 0 || p.Id == 0 || i >= MaxShips || st is not (PowerShipState.Building or PowerShipState.Hangar or PowerShipState.Out or PowerShipState.Far) || role >= ShipRole.Count)
                     {
                         Log.Add($"{name}'s saved ship \"{bpName}\" can't be kept (no such blueprint now): left out");
                         continue;
                     }
-                    p.Ships[i] = new PowerShip { State = st, Role = role, Bp = (short)bp, Hull = hull, ReadyAt = Tick + (long)ready * T, Mission = mission, Uid = uid };
+                    p.Ships[i] = new PowerShip { State = st, Role = role, Bp = (short)bp, Hull = hull, ReadyAt = Tick + (long)ready * T, Mission = mission, Uid = uid, Far = (short)Math.Clamp((int)far, 0, MaxFar) };
                 }
                 int mc = r.U8();
                 for (var i = 0; i < mc; i++)
@@ -1331,9 +1334,14 @@ public sealed partial class PowerControllers
                         p.Missions[slot] = m;
                 }
                 p.NextConvoy = Tick + (long)r.I32() * T;
+                if (v >= 2)
+                    p.NextTake = Tick + (long)r.I32() * T;
                 if (p.Fallen && p.Id != 0)
                     rel.Fall(p.Id, "", quiet: true, into: p.Heir);
             }
+            if (v >= 2)
+                TerritoryLoad(r);
+            FarTidy(); // (a ship whose far group didn't read goes into its hangar)
         }
         catch (Exception ex) when (ex is WorldFileException or ArgumentException or IndexOutOfRangeException or InvalidDataException)
         {

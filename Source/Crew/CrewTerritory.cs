@@ -95,6 +95,7 @@ public sealed partial class PowerControllers
             SiteHolder[k] = s.Holder.Length > 0 ? CrewPowers.Find(s.Holder) : (byte)0;
             SiteGarrison[k] = SiteHolder[k] != 0 ? Territory.Kinds[s.Kind].Garrison : 0;
             SiteEmptySince[k] = SiteNewsAt[k] = 0;
+            _sitePlanet[k] = (short)Territory.PlanetOf(s.Planet);
             var same = 0;
             foreach (var o in Territory.Sites)
                 if (o.Kind == s.Kind && o.Planet.Equals(s.Planet, StringComparison.OrdinalIgnoreCase))
@@ -115,7 +116,9 @@ public sealed partial class PowerControllers
         return n;
     }
 
-    private int PlanetIndex(int site) => Territory.PlanetOf(Territory.Sites[site].Planet);
+    private readonly short[] _sitePlanet = new short[MaxSites];
+
+    private int PlanetIndex(int site) => _sitePlanet[site]; // (made at TerritoryReset: a lookup by name allocates its lambda)
 
     private string PlanetName(int planet) => planet >= 0 && planet < PlanetCount ? Territory.Planets[planet] : "space";
 
@@ -364,9 +367,9 @@ public sealed partial class PowerControllers
             return;
         var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
         var b0 = GC.GetAllocatedBytesForCurrentThread();
-        var e0 = News.Count + crew.Events.Count + Log.Count;
+        var e0 = News.Count + crew.Events.Count + Log.Count + rel.NewsTotal;
         _peopleN = host.People(_people);
-        var now = Now(host);
+        var now = _lastNow = Now(host);
         for (var n = 0; n < Territory.GroupsPerTick; n++)
         {
             // (the next live group; at most one pass round the pool a tick)
@@ -380,6 +383,8 @@ public sealed partial class PowerControllers
             ref var g = ref Far[gi];
             var dt = (Tick - g.LastStep) / (float)T;
             g.LastStep = Tick;
+            if (g.Arrive < 0)
+                g.Arrive = now + (-1 - g.Arrive); // (loaded: its seconds left, on this clock)
             StepFar(crew, w, rel, host, gi, ref g, dt, now);
             FarSteps++;
             if (n + 1 >= FarLive)
@@ -389,7 +394,7 @@ public sealed partial class PowerControllers
         FarMs += ms;
         if (Ticks > 600)
             FarWorstMs = Math.Max(FarWorstMs, ms);
-        if (News.Count + crew.Events.Count + Log.Count == e0)
+        if (News.Count + crew.Events.Count + Log.Count + rel.NewsTotal == e0)
             FarBytes += GC.GetAllocatedBytesForCurrentThread() - b0;
     }
 
@@ -913,6 +918,96 @@ public sealed partial class PowerControllers
         s = default;
         s.Mission = -1;
         return true;
+    }
+
+    // ---- Saves (in the controllers' section, version 2) -----------------------------------------------------------------------------
+
+    /// <summary>u8 sites (text planet, text name, text holder, f32 garrison); u16 far groups (u16 slot, text power, u8 task, u8 state, u8 body, text planet,
+    /// text to-planet, text site, f64 seconds to its arrival, 3 x f32 place, u8 place known, u16 number, f32 strength). Names, so the data may change under it.</summary>
+    private void TerritorySave(SaveWriter w)
+    {
+        w.U8((byte)SiteCount);
+        for (var k = 0; k < SiteCount; k++)
+            w.Str(Territory.Sites[k].Planet).Str(Territory.Sites[k].Name).Str(SiteHolder[k] != 0 ? Name(SiteHolder[k]) : "").F32(SiteGarrison[k]);
+        var n = 0;
+        for (var i = 0; i < MaxFar; i++)
+            if (Far[i].Task != FarTask.None)
+                n++;
+        w.U16((ushort)n);
+        var now = _lastNow;
+        for (var i = 0; i < MaxFar; i++)
+        {
+            ref var g = ref Far[i];
+            if (g.Task == FarTask.None)
+                continue;
+            w.U16((ushort)i).Str(Name(g.Power)).U8((byte)g.Task).U8((byte)g.State).U8((byte)(g.Body == 2 ? 2 : 0)).Str(g.Planet >= 0 ? PlanetName(g.Planet) : "")
+                .Str(g.ToPlanet >= 0 ? PlanetName(g.ToPlanet) : "").Str(g.Site >= 0 && g.Site < SiteCount ? Territory.Sites[g.Site].Name : "").F64(g.Arrive < 0 ? -1 - g.Arrive : Math.Max(0, g.Arrive - now))
+                .F32(g.Pos.X).F32(g.Pos.Y).F32(g.Pos.Z).U8((byte)(g.PosKnown ? 1 : 0)).U16(g.Number).F32(g.Strength);
+        }
+    }
+
+    private double _lastNow;
+
+    private void TerritoryLoad(SaveReader r)
+    {
+        int sites = r.U8();
+        for (var i = 0; i < sites; i++)
+        {
+            var planet = r.Str();
+            var name = r.Str();
+            var holder = r.Str();
+            var garrison = r.F32();
+            var k = Territory.Sites.FindIndex(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase) && x.Planet.Equals(planet, StringComparison.OrdinalIgnoreCase));
+            if (k < 0 || k >= SiteCount)
+            {
+                Log.Add($"the world's territory names the site {name} on {planet}, which isn't in the data now: left out");
+                continue;
+            }
+            SiteHolder[k] = holder.Length > 0 ? CrewPowers.Find(holder) : (byte)0;
+            SiteGarrison[k] = garrison;
+        }
+        int n = r.U16();
+        for (var i = 0; i < n; i++)
+        {
+            int slot = r.U16();
+            var power = CrewPowers.Find(r.Str());
+            var g = new FarGroup { Task = (FarTask)r.U8(), State = (FarState)r.U8(), Body = r.U8(), RealSlot = -1, LastStep = Tick, StateAt = Tick, QuietSince = Tick };
+            g.Planet = (short)Territory.PlanetOf(r.Str());
+            g.ToPlanet = (short)Territory.PlanetOf(r.Str());
+            var site = r.Str();
+            g.Site = (short)Territory.Sites.FindIndex(x => x.Name.Equals(site, StringComparison.OrdinalIgnoreCase));
+            g.Arrive = r.F64(); // (seconds left: made a time on the clock at its first step: FarTidy keeps it relative)
+            g.Pos = new Vector3(r.F32(), r.F32(), r.F32());
+            g.PosKnown = r.U8() != 0;
+            g.Number = r.U16();
+            g.Strength = r.F32();
+            g.Power = power;
+            _farNumber = Math.Max(_farNumber, g.Number);
+            if (slot >= MaxFar || power == 0 || g.Task is FarTask.None or > FarTask.Home || g.State > FarState.AtSite || g.Site >= SiteCount)
+            {
+                Log.Add($"a saved far group can't be kept (its power, task or site isn't read now): left out");
+                continue;
+            }
+            g.Arrive = -1 - g.Arrive; // (negative: seconds left, to be put on the clock at its first step)
+            Far[slot] = g;
+            FarLive++;
+        }
+        Holders(null, quiet: true);
+    }
+
+    /// <summary>After a load: a ship of a far group that wasn't read goes into its hangar.</summary>
+    private void FarTidy()
+    {
+        for (var a = 1; a <= N; a++)
+            for (var i = 0; i < MaxShips; i++)
+            {
+                ref var s = ref Powers[a].Ships[i];
+                if (s.Far == 0 || s.Far - 1 < MaxFar && Far[s.Far - 1].Task != FarTask.None && Far[s.Far - 1].Power == a)
+                    continue;
+                if (s.State is PowerShipState.Far)
+                    s.State = PowerShipState.Hangar;
+                s.Far = 0;
+            }
     }
 
     // ---- What the window, the news and the command view read ---------------------------------------------------------------------

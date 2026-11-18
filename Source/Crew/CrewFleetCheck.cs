@@ -31,6 +31,8 @@ public static class CrewFleetCheck
             ok &= Interrogate();
         if (which.Equals("powers", StringComparison.OrdinalIgnoreCase) || which.Equals("politics", StringComparison.OrdinalIgnoreCase))
             ok &= CrewPowersCheck.Run(which, seconds); // (phase 3: the controllers, CrewPowersCheck.cs)
+        if (which.Equals("territory", StringComparison.OrdinalIgnoreCase) || which.Equals("far", StringComparison.OrdinalIgnoreCase))
+            ok &= CrewTerritoryCheck.Run(which, seconds); // (phase 4: territory and the far layer, CrewTerritoryCheck.cs)
         if (which.Equals("scale", StringComparison.OrdinalIgnoreCase))
             ok &= Scale(int.TryParse(Arg("--fleet-scale"), out var n) ? n : 1000, int.TryParse(Arg("--fleet-awake"), out var k) ? k : 64,
                 int.TryParse(Arg("--group-size"), out var gs) ? Math.Clamp(gs, 1, CrewGroup.MaxShips) : CrewGroup.MaxShips, Arg("--crew-scale-ship") ?? "Bandit Helicopter 1",
