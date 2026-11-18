@@ -78,7 +78,8 @@ public sealed partial class ResourceField
     {
         material = 0;
         Locate(p, out var f, out var x, out var z);
-        return TapDeposit(At(x, z, false, true, out _, f), want, ref material);
+        var key = SpotKey(p);
+        return Spend(key, TapDeposit(At(x, z, false, true, out _, f), Math.Min(want, SpotLeft(key)), ref material));
     }
 
     /// <summary>Server: how much the underground deposit a drill at a world point would tap holds.</summary>

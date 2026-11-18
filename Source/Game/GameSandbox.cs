@@ -109,6 +109,7 @@ public enum CActKind : byte
     NavOrder, // u16 body, u8 NavKind (0 cancels), u8 the star system's body, 3 x f64 point, f64 radius: an order for a ship from the command view (protocol 323; GameNav.cs)
     Link, // u16 body, u16 part, u8 LinkOp, u32 a, u32 b, str text: a linked logistics part's panel, or a route from the command view (protocol 328; GameSandboxLinked.cs)
     Crew, // u16 body, u32 member uid, u8 CrewOrder: a crew order from the Crew window (protocol 332; GameCrewHire.cs)
+    Dampeners, // u16 body (the seat's): the seated player flips that ship's inertia dampeners (protocol 340; ConstructFlight.ToggleDampeners)
 }
 
 /// <summary>
@@ -1390,6 +1391,14 @@ public sealed partial class Game
                     return "not in a seat of that craft";
                 return ConstructRadar.SetLock(Constructs, craft, target);
             }
+            case CActKind.Dampeners:
+            {
+                var body = r.U16();
+                ref var sh = ref hands.Hand(p.Id);
+                if (!sh.Seated || sh.SeatBody != body || Constructs.Get(body) is not { } craft)
+                    return "not in a seat of that craft";
+                return ConstructFlight.ToggleDampeners(Constructs, craft);
+            }
             case CActKind.StoreIn:
             case CActKind.TakeStored:
             {
@@ -1559,6 +1568,9 @@ public sealed partial class Game
                 break;
             case CActKind.FreeformCut:
                 w.U16(body).U16(part).U8((byte)socket); // (socket: the weld)
+                break;
+            case CActKind.Dampeners:
+                w.U16(body);
                 break;
             case CActKind.SeatKeys:
             case CActKind.BeaconMaterial:
@@ -2663,7 +2675,7 @@ public sealed partial class Game
         }
         if (me.Sim.Canopy == PilotGear.OpenChute || me.Sim.Canopy == PilotGear.OpenGlider)
             lines.Add(new HudLine(me.Sim.Canopy == PilotGear.OpenGlider ? SandboxKeys.PilotGlide : SandboxKeys.PilotCut, dim));
-        else if (me.Sim.Canopy == 0 && me.Sim.Gear != 0 && !me.Sim.Grounded && me.Sim.RideBody == 0 && me.Sim.Velocity.Y < -PilotGear.OpenFall && (me.Sim.Gear & 3) != 0)
+        else if (me.Sim.Canopy == 0 && me.Sim.Gear != 0 && !me.Sim.Grounded && me.Sim.RideBody == 0 && me.Sim.Velocity.Y < -PilotGear.OpenFall && (me.Sim.Gear & 3) != 0 && !Eva.Vacuum(me.Position))
             lines.Add(new HudLine((me.Sim.Gear & PilotGear.Glider) != 0 ? SandboxKeys.PilotOpenGlider : SandboxKeys.PilotOpenChute, white));
         if (h.Seated && Constructs.Get(h.SeatBody) is { } car)
         {
@@ -2708,6 +2720,8 @@ public sealed partial class Game
                 lines.Add(new HudLine(pilotKey, white));
             if (h.SeatPart < car.PartCount && car.Parts[h.SeatPart].D.SeatEject)
                 lines.Add(new HudLine(SandboxKeys.PilotEject, dim));
+            if (ConstructFlight.DampenersOff(car))
+                lines.Add(ConstructFlight.AutopilotOn(car) || car.NavThrottle >= 0 || car.CrewAims ? new HudLine(SandboxKeys.DampenersHeld, dim) : new HudLine(SandboxKeys.DampenersOff, orange)); // (ConstructFlight.Coasts)
             if (car.StabCount > 0 && !car.CanDrive)
                 lines.Add(new HudLine(ConstructFlight.KeyHint(car), dim));
             else if (car.CanDrive && car.StarterFailed)

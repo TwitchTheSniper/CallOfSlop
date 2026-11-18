@@ -1,0 +1,245 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Limpet Stern",
+  "description": "The Limpet's stern: a plain armoured bulkhead, the aft wall the ladder stands against. There is no drive: the pod flies on its RCS alone, one way.",
+  "group": "Ship",
+  "section": "Limpet",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 500.0,
+  "health": 5000,
+  "armour": 40,
+  "material": "steel",
+  "color": "#3b4148",
+  "attachSeconds": 8.0,
+  "boxes": [
+    {
+      "min": [
+        -1.625,
+        -0.125,
+        2.558
+      ],
+      "max": [
+        1.375,
+        2.225,
+        2.672
+      ],
+      "color": "#3b4148",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          -1.325,
+          -0.125,
+          2.558
+        ],
+        [
+          1.075,
+          -0.125,
+          2.558
+        ],
+        [
+          1.375,
+          0.175,
+          2.558
+        ],
+        [
+          1.375,
+          1.925,
+          2.558
+        ],
+        [
+          1.075,
+          2.225,
+          2.558
+        ],
+        [
+          -1.325,
+          2.225,
+          2.558
+        ],
+        [
+          -1.625,
+          1.925,
+          2.558
+        ],
+        [
+          -1.625,
+          0.175,
+          2.558
+        ],
+        [
+          -1.325,
+          -0.125,
+          2.672
+        ],
+        [
+          1.075,
+          -0.125,
+          2.672
+        ],
+        [
+          1.375,
+          0.175,
+          2.672
+        ],
+        [
+          1.375,
+          1.925,
+          2.672
+        ],
+        [
+          1.075,
+          2.225,
+          2.672
+        ],
+        [
+          -1.325,
+          2.225,
+          2.672
+        ],
+        [
+          -1.625,
+          1.925,
+          2.672
+        ],
+        [
+          -1.625,
+          0.175,
+          2.672
+        ]
+      ],
+      "paintable": false,
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -1.625,
+        -0.125,
+        2.558
+      ],
+      "max": [
+        1.375,
+        2.225,
+        2.675
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -1.475,
+        0.175,
+        2.542
+      ],
+      "max": [
+        1.225,
+        0.875,
+        2.558
+      ],
+      "color": "#2c5aa0",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -1.475,
+        0.915,
+        2.542
+      ],
+      "max": [
+        1.225,
+        2.045,
+        2.558
+      ],
+      "color": "#c4c8ca",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -1.325,
+        0.275,
+        2.672
+      ],
+      "max": [
+        -0.245,
+        1.875,
+        2.694
+      ],
+      "color": "#30353b",
+      "detail": true,
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -0.005,
+        0.275,
+        2.672
+      ],
+      "max": [
+        1.075,
+        1.875,
+        2.694
+      ],
+      "color": "#30353b",
+      "detail": true,
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -1.325,
+        1.935,
+        2.672
+      ],
+      "max": [
+        1.075,
+        1.995,
+        2.688
+      ],
+      "color": "#e0b020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -1.505,
+        1.575,
+        2.672
+      ],
+      "max": [
+        -1.375,
+        1.775,
+        2.692
+      ],
+      "color": "#e0402c",
+      "detail": true,
+      "glow": true
+    },
+    {
+      "min": [
+        1.125,
+        1.575,
+        2.672
+      ],
+      "max": [
+        1.255,
+        1.775,
+        2.692
+      ],
+      "color": "#e0402c",
+      "detail": true,
+      "glow": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "j0",
+      "at": [
+        -0.125,
+        2.225,
+        2.585
+      ],
+      "dir": "+y"
+    }
+  ]
+}

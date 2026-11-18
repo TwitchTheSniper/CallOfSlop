@@ -264,6 +264,8 @@ public static unsafe partial class Program
             return VehicleKit.VehicleKitCli.CheckVehicle(vehicleFile); // the vehicle check on any blueprint file
         if (args.Any(a => a.Equals("--no-drive-gate", StringComparison.OrdinalIgnoreCase)))
             VehicleKit.VehicleDriveCheck.GateOn = false; // the spawn's drive check off, to measure what it catches and costs (VehicleDriveCheck.cs)
+        if (args.Any(a => a.Equals("--skin-check", StringComparison.OrdinalIgnoreCase)))
+            return SkinCheck.Cli(args); // does each ship's drawn skin collide where it is drawn: rays, a standing player, a dropped plate (Source/DevTools/SkinCheck.cs)
         if (args.Any(a => a.Equals("--ladder-check", StringComparison.OrdinalIgnoreCase)))
             return LadderCheck.Cli(args); // every ladder on the shipped blueprints climbed up and down headless (Source/DevTools/LadderCheck.cs)
         if (args.Any(a => a.Equals("--ride-check", StringComparison.OrdinalIgnoreCase)))

@@ -41,7 +41,7 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
 
     private const double Cx = 6.5; // the centreline
     private const double Ft0 = 0.25, Ceil0 = 3.25, Ft1 = 3.5, Ceil1 = 6.5, Roof = 6.75; // floor tops and ceilings of the two decks
-    private const double Ground = -4.1; // where the legs stand
+    private const double Ground = -4.85; // where the legs stand (0.75 m longer for the Limpet docked under the keel: 0.8 m under its belly)
     private const double ZFront = 8.5, ZStep = 14.75, ZAft = 42.0; // the rooms' front, where they widen, their back
     // A PDC's magazine (ship-works.md 5.2): a bunker in the hull's void behind the room's side wall at its barbette, aft of the
     // feed's line: its size out from the wall, up and along (m), and how far aft of the feed's line it starts. 0.7 m3: 2,800 rounds.
@@ -343,6 +343,20 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
 
     private static void Sock(Part p, string name, double x, double y, double z, string dir) => p.Sock(name, P(x, y, z), dir);
 
+    // The downward attitude jets (Karl, 2026-11-17: the lift jets push up and nothing pushed down, so the ship couldn't descend under
+    // thrust or pitch and roll like the shuttle): a Heavy RCS Thruster on a pad either side of the roof at the bow and at the stern, each
+    // on a tank part so its fuel reaches it, clear of the railgun's barrel, the flare launchers, the cradle, the sensor and the fins.
+    private const double TopRcsBowX = 1.4, TopRcsBowZ = 5.2, TopRcsSternX = 2.0, TopRcsSternZ = 45.9, TopRcsPad = 0.54;
+
+    /// <summary>A square pad standing out of the spine's plate (which may slope along z) at x, z, its top a whole centimetre and the socket on it, facing up.</summary>
+    private static void TopJetPad(Part p, string name, double x, double z)
+    {
+        double h = TopRcsPad / 2, ya = At(z - h)[4].Y, yb = At(z + h)[4].Y;
+        double top = Math.Ceiling((Math.Max(ya, yb) + 0.05) * 100) / 100, bottom = Math.Min(ya, yb) - 0.12;
+        Solid(p, x - h, bottom, z - h, x + h, top, z + h, Frame, "dirty steel");
+        Sock(p, name, x, top, z, "+y");
+    }
+
     private static double[][] Ngon(double cx, double y, double cz, double r, int n, double phase = 0) => [.. Enumerable.Range(0, n).Select(i =>
     {
         var a = phase + Math.PI / n + i * 2 * Math.PI / n;
@@ -546,6 +560,9 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
     // ---- the keel: the hull's underside, the fuel under the lower deck, the legs, the lift jets and the boarding shaft
 
     private static readonly Rect BellyHatch = new(Cx + 2.6, 30.6, Cx + 3.85, 31.85);
+    /// <summary>The Limpet's shaft (TorpedoFrigateLimpet.cs): from the passage by the airlock down through the keel into the pod's receiver, on the centreline.</summary>
+    private const double LimpetLiningFoot = 0.18; // the Limpet shaft's lining stops this far over the keel: under it the docking hatch slides aft
+    private static readonly Rect LimpetShaft = new(Cx - 0.55, LimpetRecvZ - 0.55, Cx + 0.55, LimpetRecvZ + 0.55);
 
     private static Part Keel()
     {
@@ -554,16 +571,13 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         for (var i = 0; i < zs.Length - 1; i++)
         {
             double za = zs[i], zb = zs[i + 1];
-            // The keel's flat: plated, with the boarding shaft's hole cut where it passes.
+            // The keel's flat: plated, with the boarding shaft's and the Limpet's holes cut where they pass.
             if (za <= BellyHatch.Z0 && zb >= BellyHatch.Z1)
             {
                 var y = At(za)[0].Y;
                 var hb = At(za)[0].H;
-                var a = BellyHatch;
-                Plate(p, [P(Cx - hb, y, za), P(Cx + hb, y, za), P(Cx + hb, y, a.Z0), P(Cx - hb, y, a.Z0)], Armour, "plated steel");
-                Plate(p, [P(Cx - hb, y, a.Z1), P(Cx + hb, y, a.Z1), P(Cx + hb, y, zb), P(Cx - hb, y, zb)], Armour, "plated steel");
-                Plate(p, [P(Cx - hb, y, a.Z0), P(a.X0, y, a.Z0), P(a.X0, y, a.Z1), P(Cx - hb, y, a.Z1)], Armour, "plated steel");
-                Plate(p, [P(a.X1, y, a.Z0), P(Cx + hb, y, a.Z0), P(Cx + hb, y, a.Z1), P(a.X1, y, a.Z1)], Armour, "plated steel");
+                foreach (var r in Minus(Minus([new Rect(Cx - hb, za, Cx + hb, zb)], BellyHatch), LimpetShaft))
+                    Plate(p, [P(r.X0, y, r.Z0), P(r.X1, y, r.Z0), P(r.X1, y, r.Z1), P(r.X0, y, r.Z1)], Armour, "plated steel");
             }
             else
                 Facet(p, 0, 1, za, zb, Armour, "plated steel");
@@ -581,6 +595,8 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         }
         // The fuel void: hidden boxes under the floor, round the shaft.
         var shaft = new Rect(BellyHatch.X0 - 0.05, BellyHatch.Z0 - 0.05, BellyHatch.X1 + 0.05, BellyHatch.Z1 + 0.05);
+        var limpetShaft = new Rect(LimpetShaft.X0 - 0.05, LimpetShaft.Z0 - 0.05, LimpetShaft.X1 + 0.05, LimpetShaft.Z1 + 0.05);
+        var limpetPocket = new Rect(Cx - DockHatchHalf - 0.06, LimpetShaft.Z0 - 0.25, Cx + DockHatchHalf + 0.06, LimpetRecvZ + DockHatchHalf + DockHatchTravel + 0.06); // (the docking hatch's, shut and slid open)
         for (var i = 0; i < zs.Length - 1; i++)
         {
             double za = zs[i], zb = zs[i + 1];
@@ -590,7 +606,7 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
                 var xo = new[] { SkinHalf(za, ya), SkinHalf(za, yt), SkinHalf(zb, ya), SkinHalf(zb, yt) }.Min() - 0.06;
                 if (xo < 0.3 || yt <= ya)
                     continue;
-                foreach (var r in Minus([new Rect(Cx - xo, i == 0 ? za : za + 0.012, Cx + xo, i == zs.Length - 2 ? zb : zb - 0.012)], shaft)) // (inner ends kept off the decks' voids)
+                foreach (var r in Minus(Minus(Minus([new Rect(Cx - xo, i == 0 ? za : za + 0.012, Cx + xo, i == zs.Length - 2 ? zb : zb - 0.012)], shaft), limpetShaft), ya < -0.9 ? limpetPocket : limpetShaft)) // (inner ends kept off the decks' voids; the Limpet's hatch slides in a pocket at the bottom)
                     Hidden(p, r.X0, ya, r.Z0, r.X1, yt, r.Z1);
             }
         }
@@ -602,6 +618,22 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         Detail(p, shaft.X0 - 0.12, hy - 0.03, shaft.Z0 - 0.12, shaft.X1 + 0.12, hy - 0.004, shaft.Z0, Hazard, "hazard paint");
         Detail(p, shaft.X0 - 0.12, hy - 0.03, shaft.Z1, shaft.X1 + 0.12, hy - 0.004, shaft.Z1 + 0.12, Hazard, "hazard paint");
         Detail(p, shaft.X0 + 0.1, hy - 0.03, shaft.Z0 - 0.4, shaft.X1 - 0.1, hy - 0.004, shaft.Z0 - 0.25, Red, glow: true);
+        // The Limpet's shaft: lined the same way, rungs up its aft side (the pod's ladder climbs on through it), a hazard frame round
+        // its mouth under the keel; the pod's Docking Clamp hangs beside it, to port.
+        var ls = limpetShaft;
+        foreach (var (x0, z0, x1, z1, e) in new[] { (ls.X0, ls.Z0, ls.X1, ls.Z0, 0.0), (ls.X0, ls.Z1, ls.X1, ls.Z1, 0.0),
+            (ls.X0, ls.Z0 + 0.025, ls.X0, ls.Z1 - 0.025, 0.005), (ls.X1, ls.Z0 + 0.025, ls.X1, ls.Z1 - 0.025, 0.005) })
+            Plate(p, [P(x0, hy + LimpetLiningFoot + e, z0), P(x1, hy + LimpetLiningFoot + e, z1), P(x1, -0.01 - e, z1), P(x0, -0.01 - e, z0)], Grate, "dirty steel");
+        for (var y = hy + 0.25; y < -0.1; y += 0.3)
+            Detail(p, Cx - 0.22, y - 0.02, ls.Z1 - 0.08, Cx + 0.22, y + 0.02, ls.Z1 - 0.012, Hazard, "hazard paint");
+        foreach (var (x0, z0, x1, z1) in new[] { (ls.X0 - 0.12, ls.Z0 - 0.12, ls.X1 + 0.12, ls.Z0), (ls.X0 - 0.12, ls.Z1, ls.X1 + 0.12, ls.Z1 + 0.12),
+            (ls.X0 - 0.12, ls.Z0 + 0.003, ls.X0, ls.Z1 - 0.003), (ls.X1, ls.Z0 + 0.003, ls.X1 + 0.12, ls.Z1 - 0.003) })
+            Detail(p, x0, hy - 0.03, z0, x1, hy - 0.004, z1, Hazard, "hazard paint");
+        p.Sock("limpetClamp", P(LimpetClampX, hy + 0.02, LimpetClampZ), "-y", Medium); // (a medium socket: the Docking Clamp Medium)
+        // The Docking Hatch inside the keel over the shaft's mouth, its shoe on a sill fore of it: it slides aft into the keel, and opens
+        // with the Limpet's own while the clamp holds the pod.
+        Hidden(p, Cx - 0.35, hy + 0.02, LimpetShaft.Z0 - 0.2, Cx + 0.35, hy + 0.07, LimpetShaft.Z0 - 0.06); // (5 cm at least, or Hidden drops it)
+        Sock(p, "limpetHatch", Cx, hy + 0.07, LimpetRecvZ - DockHatchHang, "+y");
         // Mounts for the parts that go on the keel.
         Sock(p, "bow", Cx, 0.0, 8.0, "-z");
                 Sock(p, "lowerFore", Cx - 2.0, 0.0, 12.0, "+y");
@@ -705,6 +737,13 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         DoorSock(p, "doorBayR", false, 21.6, Cx + Lw + 0.125, Ft0);
         Sock(p, "fireL", Cx - Lw, Ft0 + 1.35, 23.6, "+x");
         Sock(p, "fireR", Cx + Lw, Ft0 + 1.35, 23.6, "-x");
+        // Under the torpedo room's ceiling, the OR Gates that carry the forward gunner's torpedo key to each bay's magazine (a wire reaches 8 m;
+        // each on a small plate 5 mm under the deck above, off its plane).
+        foreach (var (n, x) in new[] { ("relayL", Cx - 3.0), ("relayR", Cx + 3.0) })
+        {
+            Solid(p, x - 0.15, Ceil0 - 0.03, 21.85, x + 0.15, Ceil0 - 0.005, 22.15, Ceil, "painted plating");
+            Sock(p, n, x, Ceil0 - 0.03, 22.0, "-y");
+        }
         Sock(p, "warheads0", Cx - 3.6, Ft0, 24.6, "+y");
         Sock(p, "warheads1", Cx + 3.6, Ft0, 24.6, "+y");
         // Lamps and their switches.
@@ -726,7 +765,7 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
     {
         var p = Big("Zero Day Lower Deck Aft", "The Zero Day's lower deck, aft: the rest of the torpedo room, the airlock over the boarding shaft, the suit bay and engineering.");
         double y0 = Ft0, y1 = Ceil0;
-        Floor(p, [new Rect(Cx - Lw - 0.25, 25.0, Cx + Lw + 0.25, ZAft + 0.25)], 0, Ft0, Deck, "painted deck plate", BellyHatch);
+        Floor(p, [new Rect(Cx - Lw - 0.25, 25.0, Cx + Lw + 0.25, ZAft + 0.25)], 0, Ft0, Deck, "painted deck plate", BellyHatch, LimpetShaft);
         Detail(p, Cx - 3.0, Ft0, 25.1, Cx + 3.0, Ft0 + 0.012, 29.9, Grate, "painted grating");
         Detail(p, Cx - Lw + 0.1, Ft0, 34.4, Cx + Lw - 0.1, Ft0 + 0.012, ZAft - 0.1, Grate, "painted grating"); // (engineering's grating)
         foreach (var s in new[] { -1, 1 })
@@ -738,6 +777,7 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         WallRun(p, true, Cx + 1.75, Cx + Lw, 30.25, y0, y1);
         WallRun(p, false, 30.375, 34.0, Cx + 1.875, y0, y1, Door(32.25));
         HatchRail(p, BellyHatch, Ft0);
+        HatchRail(p, LimpetShaft, Ft0); // (the way down into the Limpet, open at its aft edge where its ladder lands)
         // The bulkhead into engineering.
         WallRun(p, true, Cx - Lw, Cx + Lw, 34.125, y0, y1, Door(Cx - 0.75));
         // Engineering: pipes along the ceiling's corners, a catwalk-grey ceiling of frames, the reactor forward to starboard. Aft,
@@ -1075,6 +1115,9 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
             Solid(p, rx - 0.4, ry - 0.4, rz, rx + 0.4, ry + 0.4, rz + 0.9, Armour2, "plated steel"); // (the retro jet's housing)
             Detail(p, rx - 0.41, ry + 0.1, rz + 0.2, rx + 0.41, ry + 0.18, rz + 0.7, Hazard, "hazard paint");
         }
+        // Two attitude jets on the canopy's roof, either side of the railgun's barrel, firing up: they push the nose down (and roll the ship).
+        foreach (var s in new[] { -1, 1 })
+            TopJetPad(p, s < 0 ? "rcsTopL" : "rcsTopR", Cx + s * TopRcsBowX, TopRcsBowZ);
         p.Set(("fuelTank", Kw(("capacity", 1500))), ("ports", Py.L(BigDriveParts.PipePort("Fuel out", "out", [.. P(Cx, 1.0, 8.0).Cast<object>()], "+z", "fuel"))));
         return p.Stats(9000, 24000, 40, 15.0);
     }
@@ -1254,6 +1297,9 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
             Shoulder(p, 3, s, 42.3, 46.3, 0.8, 0.45, 1.2, Armour);
             Shoulder(p, 1, s, 42.6, 46.0, 0.6, 0.3, 1.0, Armour);
         }
+        // Two attitude jets on the roof aft of the shuttle, between the heat-sink fins, firing up: they push the tail down (and roll the ship).
+        foreach (var s in new[] { -1, 1 })
+            TopJetPad(p, s < 0 ? "rcsTopL" : "rcsTopR", Cx + s * TopRcsSternX, TopRcsSternZ);
         // (no stern face: the drive collar closes it, its plate the engines' mount)
         // Heat-sink fins above the drive, angled out.
         foreach (var s in new[] { -1, 1 })
@@ -2125,6 +2171,9 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
             Hang(bp, "Zero Day Landing Leg", keel, n, "top");
         foreach (var n in new[] { "retroL", "retroR" })
             Hang(bp, "Zero Day Retro Jet", bow, n, "top");
+        foreach (var piece in new[] { bow, stern })
+            foreach (var n in new[] { "rcsTopL", "rcsTopR" })
+                Hang(bp, "Heavy RCS Thruster", piece, n, "base");
         // Ladders: the boarding ladder up the shaft, two between the decks.
         Hang(bp, "Zero Day Boarding Ladder", la, "boarding", "hull");
         Hang(bp, "Zero Day Ladder", lf, "ladder", "bottom");
@@ -2235,6 +2284,7 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
             bp.Steps[mag]["config"] = MagazineConfig(side);
             bp.Feeds.Add((mag, rings[k], "Ammo out", "Ammo in", MagazineFeed(bp, mag, rings[k])));
         }
+        var torpedoKey = -1;
         foreach (var (deck, pair) in new[] { (uf, new[] { guns[0], guns[1] }), (ua, new[] { guns[2], guns[3] }) })
         {
             var console = Hang(bp, "Gunnery Console", deck, "gun", "bottom");
@@ -2243,11 +2293,26 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
             bp.Wires.Add((seat, module));
             foreach (var g in pair)
                 bp.Wires.Add((module, g));
+            // Ops' gunner's torpedo key: an Input Reader on the module reading Space, wired through an OR Gate under the torpedo room's ceiling
+            // to each bay's magazine (Karl, 2026-11-17: "connect the torpedo launch to the gunnery chair"). The mouse stays the PDCs'; the
+            // torpedo room's buttons still fire a bay each. The mess's station is too far aft for the wires.
+            if (deck != uf)
+                continue;
+            torpedoKey = Hang(bp, "Input Reader", module, "+x", "-x");
+            bp.Steps[torpedoKey]["config"] = new PyDict { ["setting"] = "jump" };
+            bp.Wires.Add((seat, torpedoKey));
         }
+        var relays = new[] { Hang(bp, "OR Gate", lf, "relayL", "+y"), Hang(bp, "OR Gate", lf, "relayR", "+y") };
+        foreach (var r in relays)
+            bp.Wires.Add((torpedoKey, r));
         // The shuttle's Docking Clamp on the cradle (holding from the start, its box round the pod) and the ladder up into it from the mess.
         var clamp = Hang(bp, "Docking Clamp Medium", spine, "shuttleClamp", "-y");
         bp.Steps[clamp]["config"] = ShuttleClampConfig();
         Hang(bp, "Zero Day Shuttle Ladder", ua, "shuttleLadder", "bottom");
+        // The Limpet's Docking Clamp, upside down under the keel to port of the pod it holds there.
+        var limpetClamp = bp.HangTurned("Docking Clamp Medium", Holder(bp, keel, "limpetClamp"), "limpetClamp", "-y", BuildingParts.Turn("+x", "-y"));
+        bp.Steps[limpetClamp]["config"] = LimpetClampConfig();
+        bp.HangTurned("Docking Hatch", Holder(bp, keel, "limpetHatch"), "limpetHatch", "base", BuildingParts.R0); // (opens with the Limpet's own while its clamp holds it)
         bp.HangTurned("Docking Hatch", Holder(bp, spine, "dockHatch"), "dockHatch", "base", BuildingParts.R0); // (opens with the shuttle's own while the clamp holds it)
         // The railgun along the spine, fired by the pilot; its slug box on the breech.
         var rail = Hang(bp, "Zero Day Railgun", spine, "railgun", "back");
@@ -2261,18 +2326,20 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         // seat and the torpedoes take that lock at launch (ConstructRadar.CanLock; Karl, 2026-11-17). No guns are wired out of it.
         bp.Wires.Add((Hang(bp, "Long Range Sensor", spine, "sensor", "-y"), Hang(bp, "Fire Director", ua, "director", "-y")));
         var json = bp.Json();
-        json["carry"] = Py.L(Kw(("blueprint", ShuttleName), ("at", Py.L(Cx, CradleY + ShuttleLift, ShuttleZ)), ("turn", 0))); // (built on its cradle, held by the clamp: ConstructCargo.BuildCarry)
+        json["carry"] = Py.L(Kw(("blueprint", ShuttleName), ("at", Py.L(Cx, CradleY + ShuttleLift, ShuttleZ)), ("turn", 0)), // (built on its cradle, held by the clamp: ConstructCargo.BuildCarry)
+            Kw(("blueprint", LimpetName), ("at", Py.L(Cx, LimpetBaseY, LimpetOriginZ)), ("turn", 0))); // (under the keel, its receiver on the Limpet shaft)
         // The torpedo magazines (a rack's shape is made by the game, so its steps go last, by socket name) and their torpedoes; each
         // bay's fire button lets one go.
         var steps = (List<object?>)json["steps"]!;
         var wires = (List<object?>)json["wires"]!;
-        foreach (var (bay, fire) in new[] { (bayL, fireL), (bayR, fireR) })
+        foreach (var (bay, fire, relay) in new[] { (bayL, fireL, relays[0]), (bayR, fireR, relays[1]) })
         {
             steps.Add(Kw(("part", Magazine), ("on", bay), ("socket", "magazine"), ("by", "top")));
             var mag = steps.Count - 1;
             for (var i = 0; i < 6; i++)
                 steps.Add(Kw(("part", Torpedo), ("on", mag), ("socket", $"lug{i}"), ("by", "lug")));
             wires.Add(new List<object?> { fire, mag });
+            wires.Add(new List<object?> { relay, mag });
         }
         return json;
     }
@@ -2306,8 +2373,10 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         o.Own(Out);
         o.Own(LOut);
         o.Own(BoardingOut);
+        o.Own(POut);
         var (shuttle, shuttleOrder) = ShuttleStructure();
-        foreach (var (p, folder) in parts.Select(x => (x, Out)).Append((ShuttleLadder(), Out)).Concat(ShuttleParts(shuttle)))
+        var (limpet, limpetOrder) = LimpetStructure();
+        foreach (var (p, folder) in parts.Select(x => (x, Out)).Append((ShuttleLadder(), Out)).Concat(ShuttleParts(shuttle)).Concat(LimpetParts(limpet)))
         {
             var d = p.Json();
             var name = (string)d["name"]!;
@@ -2316,6 +2385,7 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         }
         BuildingParts.AddPartDefs(o, defs, Out);
         o.File($"{BpOut}/Shuttle.json", PyJson.Dumps(ShuttleBlueprint(defs, shuttleOrder), 2) + "\n");
+        o.File($"{BpOut}/Limpet.json", PyJson.Dumps(LimpetBlueprint(defs, limpetOrder), 2) + "\n");
         o.File($"{BpOut}/ZeroDayFrigate.json", PyJson.Dumps(Blueprint(defs), 2) + "\n");
         o.File($"{BpOut}/ZeroDayFrigateCrewed.json", PyJson.Dumps(Blueprint(defs, crewed: true), 2) + "\n");
     }

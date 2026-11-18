@@ -122,7 +122,7 @@ public struct PlayerMask : IEquatable<PlayerMask>
 ///   the mantling flag says an extension follows: mantle ticks, then the mantle target (9 bytes), or ticks 0 and a seat
 ///   (+4 bytes: construct id, seat part; protocol 80: a seated player, whose yaw is then relative to the seat's facing), or
 ///   254 and a ride (+16 bytes: construct id, segment, the feet in its frame at 1/256 m; protocol 102, ConstructRide.cs; the rider's up, 3 x i8, protocol 130),
-///   or 253 alone (+1 byte: noclip, protocol 126; NoclipMove.cs);
+///   or 253 alone (+1 byte: noclip, protocol 126; NoclipMove.cs), or 248 and a ride's bytes (noclip in a moving construct's frame, protocol 341);
 ///   slow entries (20 bytes): id, kills, deaths, primary, secondary, kits, perks, frenzy level, frenzy class (+ buffs bit; protocol 26).
 /// Slow entries go out for a player while their slow fields changed in the last half second (so a lost packet is
 /// covered), and every 8th snapshot for everyone (late joiners catch up in ~0.25 s). If a snapshot still doesn't fit
@@ -139,6 +139,7 @@ public static class Snapshot
     public const byte RideKind = 254;
     public const int NoclipBytes = 1; // (protocol 126: kind 253 alone: flying)
     public const byte NoclipKind = 253;
+    public const byte RideNoclipKind = 248; // (protocol 341: a ride's bytes, flying in noclip in a moving construct's frame; NoclipMove.cs)
     public const byte CanopyKind = 249; // (protocol 176: + the Canopy, 250..252, alone: PilotGear.cs)
     public const int SlowBytes = 20; // 16 + frenzy level and class (protocol 26) + 2 (kits are 4 bytes each since protocol 46)
     public const int OwnBytes = 1 + 24 + SlowBytes; // +12 while mantling
@@ -195,7 +196,7 @@ public static class Snapshot
         if (seated)
             w.U8(0).U16(p.SeatBody).U16(p.SeatPart);
         else if (riding)
-            w.U8(RideKind).U16(p.RideBody).U8(p.RideSeg).U24(Q24(p.RideLocal.X)).U24(Q24(p.RideLocal.Y)).U24(Q24(p.RideLocal.Z))
+            w.U8(p.Noclip ? RideNoclipKind : RideKind).U16(p.RideBody).U8(p.RideSeg).U24(Q24(p.RideLocal.X)).U24(Q24(p.RideLocal.Y)).U24(Q24(p.RideLocal.Z))
                 .U8(UpByte(p.RideUp.X)).U8(UpByte(p.RideUp.Y)).U8(UpByte(p.RideUp.Z));
         else if (flying)
             w.U8(NoclipKind);
@@ -243,8 +244,9 @@ public static class Snapshot
                     p.SeatPart = r.U16();
                 }
             }
-            else if (p.MantleTicks == RideKind && r.Has(RideBytes - 1))
+            else if (p.MantleTicks is RideKind or RideNoclipKind && r.Has(RideBytes - 1))
             {
+                p.Noclip = p.MantleTicks == RideNoclipKind;
                 p.MantleTicks = 0;
                 p.RideBody = r.U16();
                 p.RideSeg = r.U8();

@@ -39,6 +39,7 @@ public sealed class ShellWear
 
     public float LegHours = 5, ArmHours = 7, PowerHours = 6, ProcessorHours = 9, OpticsHours = 8, PlatingHours = 12;
     public float WornPct = 40, ServiceToPct = 70, HitPlating = 0.25f, HitOther = 0.12f;
+    public float HitLimb = 1.2f, LimbHealth = 0.25f, HeadChance = 0.5f, HitHead = 1.5f; // where a hit lands (Karl, 2026-11-18: GameShellWear.ShellHit)
     public string ServiceMaterial = "metal";
     public int ServiceCost = 1;
     public string Problem = "";
@@ -73,6 +74,10 @@ public sealed class ShellWear
             t.ServiceCost = (int)Num(root, "serviceCost", 0, 1000);
             t.HitPlating = Num(root, "hitPlating", 0, 100);
             t.HitOther = Num(root, "hitOther", 0, 100);
+            t.HitLimb = Num(root, "hitLimb", 0, 100);
+            t.LimbHealth = Num(root, "limbHealth", 0, 1);
+            t.HeadChance = Num(root, "headChance", 0, 1);
+            t.HitHead = Num(root, "hitHead", 0, 100);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException or FormatException or KeyNotFoundException or InvalidOperationException)
         {

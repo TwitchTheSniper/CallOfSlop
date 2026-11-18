@@ -659,14 +659,14 @@ public sealed class LargeSystems : IPartGenerator
 
     private static Part Sensor()
     {
-        var p = new Part("Long Range Sensor", Small, "Bridge", "On while a player is in range, up to 300 m. Its craft's seats get a radar of ships out to 2.5 km: lock one for the missiles.", role: "logic", color: "#4f6a7a", group: GroupSmall, tool: "wrench");
+        var p = new Part("Long Range Sensor", Small, "Bridge", "On while a player is in range, up to 300 m. Its craft's seats get a radar of ships out to 100 km: lock one for the missiles.", role: "logic", color: "#4f6a7a", group: GroupSmall, tool: "wrench");
         p.Add(Box([-0.125, -0.125, -0.125], [0.125, 0.5, 0.125]));
         p.Add(Box([-0.3, 0.5, -0.05], [0.3, 0.6, 0.05], "#d0d0d0", detail: true));
         p.Sock("-y", [0, -0.125, 0], "-y");
         p.Stats(20, 80, 2, 2);
         p.Set(("logic", S(("kind", "proximity"), ("settings", Py.L(60)), ("labels", Py.L("60 m")))),
             ("config", Py.L(Num("radius", "Range", "Sensor", "m", 5, 300, 5, "How far it reaches.", 120))),
-            ("radar", S(("range", 2500))));
+            ("radar", S(("range", 100000)))); // (100 km: a Zero Day torpedo coasts that far in space, and a lock guides it all the way: Karl, 2026-11-17)
         return p;
     }
 

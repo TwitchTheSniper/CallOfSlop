@@ -26,7 +26,7 @@ public sealed class AmmoParts : IPartGenerator
     private static List<object?> BoxConfig(PartOutput o)
     {
         var volume = (PyDict)o.ReadJson("Constructs/Parts/Storage/StorageVolume.json")!;
-        return [.. (List<object?>)volume["config"]!, AmmoType()];
+        return [.. ((List<object?>)volume["config"]!).Where(e => e is not PyDict k || k["key"] as string != "walls"), AmmoType()]; // (no Walls: a magazine's walls are the hull's)
     }
 
     private static (string, Part) Container(PartOutput o)

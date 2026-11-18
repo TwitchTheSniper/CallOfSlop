@@ -12,6 +12,7 @@ public sealed class FactoryObject
     public double Rate; // units a second through it
     public int Bank = -1; // (machines of one recipe stand together facing one feed)
     public float Size; // (a store's footprint: metres square)
+    public float Height = 2.5f; // (a walled store's height)
     public override string ToString() => $"{Id,2} {Zone,-8} {Role,-8} {Part}{(Material.Length > 0 ? $" ({Material})" : "")} {FactoryData.N(Rate * 3600)}/h";
 }
 
@@ -34,6 +35,15 @@ public sealed class FactoryProgramme
     public int Tier;
 
     public IEnumerable<FactoryObject> Of(string role) => Objects.Where(o => o.Role == role);
+
+    /// <summary>A walled store's side (metres): a 4 m module less the store's clearance each side (FactoryPlan.StoreClear).</summary>
+    public const float StoreSide = 3f;
+
+    public const string LoadingAuger = "Unloading Auger 4 m";
+
+    /// <summary>What a walled Storage Volume of this side and height holds (its walls and floor out of the box: ConstructStoreVolume.WallT).</summary>
+    public static double StoreUnits(float side, float height) =>
+        (side - 2 * ConstructStoreVolume.WallT) * (side - 2 * ConstructStoreVolume.WallT) * (height - ConstructStoreVolume.WallT) * RecyclingTable.Current.UnitsPerCubicMetre;
 
     private FactoryObject Add(string role, string part, string zone, string material = "", double rate = 0, int bank = -1)
     {
@@ -61,10 +71,22 @@ public sealed class FactoryProgramme
             default:
                 throw new FactoryKitException($"function {f.Name}: phase 1 solves extraction and refinery only");
         }
-        // Stock goes in bunkers (factory_shell parts: open concrete bins that hold what they are rated, where a Storage Volume in the open spilt past a
-        // quarter full), the size the store asked for rounded to a bunker's; the tipping bay's is the low one a hauler pours over.
+        // Stock goes in walled Storage Volumes (the user, 2026-11-17: the volume's own walls, so no hand-built enclosure and no spill), a module's
+        // cell each (FactoryPlan.Module less the store's clearance: 3 m square), 2.5 or 3.5 m high by what it must hold; the tipping bay is a Tipping
+        // Grate a hauler pours onto from the road; the loading point an Unloading Auger on a post over the road (FactoryScript.Loading).
         foreach (var o in p.Objects.Where(o => o.Part == "Storage Volume"))
-            (o.Part, o.Size) = o.Role == "tipping" ? ("Tipping Bunker 3 m", 3f) : o.Size <= 2.25f ? ("Ore Bunker 2 m", 2f) : ("Ore Bunker 3 m", 3f);
+        {
+            if (o.Role == "tipping")
+            {
+                (o.Part, o.Size) = ("Tipping Grate 6 m", 6f);
+                continue;
+            }
+            var need = o.Rate * f.IntakeMinutes * 60;
+            o.Size = StoreSide;
+            o.Height = need > StoreUnits(StoreSide, 2.5f) ? 3.5f : 2.5f;
+        }
+        foreach (var o in p.Objects.Where(o => o.Role == "loading"))
+            (o.Part, o.Size) = (LoadingAuger, 1f);
         // Power: every machine's draw plus the margin, in gensets of the style's plant.
         var draw = p.Objects.Sum(o => (ConstructParts.Find(o.Part)?.PowerDraw ?? 0)) / 1000.0;
         p.PowerKw = draw * (1 + f.PowerMargin);
@@ -85,9 +107,7 @@ public sealed class FactoryProgramme
         var n = Math.Max(1, (int)Math.Ceiling(rate / drill.GatherRate * (1 + 2 * Spare) - 1e-6));
         var drills = Enumerable.Range(0, n).Select(_ => Add("drill", drill.Name, "intake", ore, rate / n, 0)).ToList();
         var buffer = Add("buffer", "Storage Volume", "storage", ore, rate);
-        buffer.Size = 2.5f;
-        var load = Add("loading", "Tipper Body", "output", ore, rate); // (the loading skip over the road: FactoryScript.Skip)
-        load.Size = 2.5f;
+        var load = Add("loading", "Storage Volume", "output", ore, rate); // (the loading auger over the road: FactoryScript.Loading)
         foreach (var dr in drills)
             Edges.Add(new FactoryEdge(dr.Id, buffer.Id, ore, "chute", dr.Rate, true));
         Edges.Add(new FactoryEdge(buffer.Id, load.Id, ore, "chute", rate, true));
@@ -130,12 +150,10 @@ public sealed class FactoryProgramme
         // Raw heaps (the tipping bay's ore first), then each bank's machines, then a bin per output and the loading bin.
         var tipping = raw.Keys.FirstOrDefault(m => m.EndsWith(" ore", StringComparison.Ordinal)) ?? raw.Keys.First();
         var bay = Add("tipping", "Storage Volume", "intake", tipping, raw[tipping]);
-        bay.Size = 3.0f;
         var heaps = new Dictionary<string, FactoryObject>();
         foreach (var (m, rate) in raw.OrderBy(r => r.Key == tipping ? 0 : 1).ThenBy(r => r.Key, StringComparer.Ordinal))
         {
-            var h = heaps[m] = Add("heap", "Storage Volume", "intake", m, rate);
-            h.Size = Math.Clamp((float)Math.Ceiling(Math.Sqrt(rate * f.IntakeMinutes * 60 / 400.0 / 2.0) * 2) / 2, 2.0f, 3.5f); // (400 units a cubic metre, 2 m high)
+            heaps[m] = Add("heap", "Storage Volume", "intake", m, rate);
         }
         Edges.Add(new FactoryEdge(bay.Id, heaps[tipping].Id, tipping, "chute", raw[tipping], true));
         var made = new Dictionary<string, List<FactoryObject>>();
@@ -169,11 +187,9 @@ public sealed class FactoryProgramme
         foreach (var (m, perHour) in target)
         {
             var bin = Add("bin", "Storage Volume", "storage", m, perHour / 3600.0);
-            bin.Size = 2.0f;
             foreach (var o in made[m])
                 Edges.Add(new FactoryEdge(o.Id, bin.Id, m, "chute", o.Rate, true));
             var load = Add("loading", "Storage Volume", "output", m, perHour / 3600.0);
-            load.Size = 2.0f;
             Edges.Add(new FactoryEdge(bin.Id, load.Id, m, "chute", bin.Rate, true));
         }
     }

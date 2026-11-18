@@ -1,12 +1,13 @@
 {
   // The Zero Day start's opening (Story/Starts/ZeroDay.json, docs/story/STARTS.md "A ship start"): no colony, no cast, no wreck;
-  // the Zero Day Frigate is built over Crumb and everyone wakes aboard, standing in its frame (GameSpaceStart.cs).
+  // the Zero Day Frigate is built over Caledon and everyone wakes aboard, standing in its frame (GameSpaceStart.cs).
   "format": "call-of-slop-opening/1",
   "cast": "",
   "warden": "",
   "wreck": "",
   "ship": "Zero Day Frigate", // the blueprint everyone wakes aboard (Source/PartKit/Generators/TorpedoFrigateParts.cs)
-  "orbit": 1200, // m over the ground; GameSpaceStart lifts it past Crumb's sky edge (1.4 km up) and its margin
+  "orbit": 3200, // m over the ground (Karl, 2026-11-17: over Caledon, a bigger world with more pull, not Crumb): past
+  // Caledon's sky edge (the map's 8.6 km half width, 2.6 km up) and GameSpaceStart's margin, clear of Ben Slop; about 207 m/s round
   // Where people wake, one each in turn, in the ship's own metres from its first part's middle (TorpedoFrigateParts' metres
   // less 0.125): cabin A, the captain's cabin, cabin B, the upper corridor, the mess, and the lower deck's torpedo room.
   "wake": [[4.175, 3.385, 21.875], [8.375, 3.385, 22.175], [4.175, 3.385, 27.875], [6.375, 3.385, 24.375], [6.375, 3.385, 37.875], [6.375, 0.135, 27.875]],
@@ -14,7 +15,7 @@
   // (Crew/Factions/Traders.json) and fly the IT style, so a Zero Day suits them. "behind": m back along the orbit (- ahead).
   "company": [{ "ship": "Zero Day Frigate", "faction": "Traders", "behind": 400 }],
   "beats": {
-    "placeholder": { "time": 4.0, "caption": "The torpedo racks click over on their safeties. Below, Crumb turns, grey and pitted." },
+    "placeholder": { "time": 4.0, "caption": "The torpedo racks click over on their safeties. Below, Caledon turns, green glens under snow-capped bens." },
     "wake": { "time": 3.5, "lines": [] }
   },
   "skip": "skip the opening"
