@@ -84,7 +84,6 @@ public static class VehicleDriveCheck
             return Done(start, kept with { Tilt = tilt, Why = $"it can't drive: {c.DriveProblem}" }, gate);
         c.Driver = 1;
         c.DriverSeat = c.DriveSeat;
-        using (place.In())
         var p0 = c.WorldCom;
         var f0 = Vector3.Transform(c.SeatForward(), c.Rot);
         var fwd = Vector3.Normalize(new Vector3(f0.X, 0, f0.Z));

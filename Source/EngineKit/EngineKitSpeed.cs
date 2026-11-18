@@ -81,7 +81,6 @@ public static class EngineKitSpeed
             w.Step(q, World.TickDt);
             speeds[t] = new Vector2(c.Vel.X, c.Vel.Z).Length();
             top = MathF.Max(top, speeds[t]);
-            if (t % World.TickRate == World.TickRate - 1)
         }
         float At(float v)
         {
