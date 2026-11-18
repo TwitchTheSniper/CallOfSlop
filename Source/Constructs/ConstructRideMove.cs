@@ -319,7 +319,7 @@ public static partial class ConstructRide
         return c;
     }
 
-    private static Quaternion QuatOf(Construct c, int seg)
+    internal static Quaternion QuatOf(Construct c, int seg)
     {
         c.WorldFrame(seg, out var q, out _);
         return q;

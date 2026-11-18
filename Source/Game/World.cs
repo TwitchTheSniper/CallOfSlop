@@ -115,7 +115,7 @@ public struct MoveState
     // What they wear (PilotGear.cs): only ever set in Sandbox, so everything else pays one test.
     public byte Gear; // the backpack's parachute, glider and jetpack (bits; the server's)
     public byte Canopy; // open now, or burning
-    public byte GearDelay; // ticks until an ejection seat's parachute opens
+    public byte GearDelay; // ticks until an ejection seat's parachute opens; with a worn MMU (Gear's Mmu bit), the thrusting ticks into its tank's next unit (PilotGear.MmuPush)
     public ushort JetFuel;
     public bool GearJump; // the jump key last tick
 

@@ -156,6 +156,7 @@ public sealed partial class Game
             if (!DockMmu(c, part, p.MmuFuel))
                 return "the MMU won't go on the dock";
             p.Eva &= unchecked((byte)~Eva.Mmu);
+            p.Sim.GearDelay = 0;
             p.Sim.JetFuel = p.MmuFuel = 0;
             BroadcastRoster();
             Constructs.Events.Add($"construct {c.Id}: {p.Name} docked an MMU");
@@ -233,6 +234,7 @@ public sealed partial class Game
         Constructs.RemovePart(c, mmu); // (the pack comes off the dock with them)
         p.Eva |= Eva.Mmu;
         SandboxStand(p, teleport: true);
+        p.Sim.GearDelay = 0;
         p.Sim.JetFuel = p.MmuFuel = fuel;
         p.Sim.Gear = SandboxWorn(p);
         // A gentle push off the dock, forward out of it, with whatever the ship was doing: in its frame when they stand in it
@@ -284,19 +286,63 @@ public sealed partial class Game
         BroadcastRoster();
     }
 
+    /// <summary>
+    /// Server, <see cref="CActKind.MmuOff"/> (Karl, 2026-11-18: get out of it without docking): the worn pack comes off the
+    /// wearer's back where they are, a loose part behind them holding its fuel and moving as they were (a ship's frame and
+    /// all), and they are a plain spacewalker again: walking on a deck, or drifting out in space.
+    /// </summary>
+    private string? SandboxMmuOff(Player p)
+    {
+        if ((p.Eva & Eva.Mmu) == 0 || !p.Alive)
+            return "no MMU on your back";
+        if (SandboxHands.Hand(p.Id).Seated)
+            return "get out of the seat first";
+        var vel = p.Sim.Velocity;
+        var up = GravityFrames.UpAt(p.Position);
+        var turn = Quaternion.Identity;
+        if (p.Sim.RideUp != Vector3.Zero && Constructs.Get(p.Sim.RideBody) is { } ride && p.Sim.RideSeg <= ride.JointCount)
+        {
+            turn = ConstructRide.QuatOf(ride, p.Sim.RideSeg);
+            vel = Vector3.Transform(p.Sim.RideVel, turn) + ConstructRide.RiderSurfaceVel(ride, p.Sim, p.Position);
+            up = Vector3.Transform(p.Sim.RideUp, turn);
+        }
+        var behind = -GravityFrames.Forward(p.Position, p.Yaw, 0);
+        behind -= up * Vector3.Dot(behind, up);
+        behind = behind.LengthSquared() > 1e-6f ? Vector3.Normalize(behind) : Vector3.Zero;
+        if (!LooseMmu(p, p.Position + up * 1.15f + behind * 0.75f, vel))
+            return "the MMU won't come off here";
+        p.Eva &= unchecked((byte)~Eva.Mmu);
+        p.Sim.GearDelay = 0;
+        p.Sim.JetFuel = p.MmuFuel = 0;
+        p.Sim.Gear = SandboxWorn(p);
+        p.Sim.Canopy = 0;
+        BroadcastRoster();
+        SandboxHands.Notices.Add((p.Id, "MMU off: it floats beside you (pick it up and fit it on an MMU Dock to fly it again)"));
+        Constructs.Events.Add($"player {p.Name} took off an MMU");
+        return null;
+    }
+
+    /// <summary>Server: a loose MMU at <paramref name="at"/> moving at <paramref name="vel"/> (world), holding the wearer's fuel. False when none could be made.</summary>
+    private bool LooseMmu(Player p, Vector3 at, Vector3 vel)
+    {
+        if (ConstructParts.Find("Manned Manoeuvring Unit") is not { } def
+            || Constructs.Create(at, Quaternion.CreateFromAxisAngle(Vector3.UnitY, -p.Yaw)) is not { } loose)
+            return false;
+        Constructs.AddPart(loose, def, Vector3.Zero, 0);
+        loose.Parts[0].Rounds = p.MmuFuel;
+        loose.Vel = vel;
+        return true;
+    }
+
     /// <summary>Server, a death: the suit comes off, and a worn MMU floats where they died as a loose part.</summary>
     private void SandboxEvaDied(Player p)
     {
         if (p.Eva == 0)
             return;
-        if ((p.Eva & Eva.Mmu) != 0 && ConstructParts.Find("Manned Manoeuvring Unit") is { } def
-            && Constructs.Create(p.Position + new Vector3(0, 1f, 0), Quaternion.CreateFromAxisAngle(Vector3.UnitY, -p.Yaw)) is { } loose)
-        {
-            Constructs.AddPart(loose, def, Vector3.Zero, 0);
-            loose.Parts[0].Rounds = p.MmuFuel;
-            loose.Vel = p.Sim.Velocity;
-        }
+        if ((p.Eva & Eva.Mmu) != 0)
+            LooseMmu(p, p.Position + new Vector3(0, 1f, 0), p.Sim.Velocity);
         p.Eva = 0;
+        p.Sim.GearDelay = 0;
         p.Sim.JetFuel = p.MmuFuel = 0;
         BroadcastRoster();
     }

@@ -179,8 +179,14 @@ public static class PilotGear
             return Vector3.Zero;
         MmuAxes(s.Position, cmd.Yaw, cmd.Pitch, cmd.Roll, out var fwd, out var right, out var upLook); // (the look in the gravity frame there: a planet's or an orbit's)
         var wish = fwd * f + right * r + upLook * u;
-        if (cmd.Seq % MmuBurnEvery == 0)
+        // A unit of the tank every MmuBurnEvery thrusting ticks, counted in GearDelay (an ejection chute's, which a worn pack
+        // never opens, and sent with the move, so a client predicts the same). Not by cmd.Seq: the host's own player's commands
+        // carry Seq 0, so its pack burned a unit every tick, twenty times too fast (Karl, 2026-11-18: "incredibly inefficient").
+        if (++s.GearDelay >= MmuBurnEvery)
+        {
+            s.GearDelay = 0;
             s.JetFuel--;
+        }
         s.Canopy = Burning; // (others see its puffs)
         return Vector3.Normalize(wish) * (MmuAccel * World.TickDt);
     }

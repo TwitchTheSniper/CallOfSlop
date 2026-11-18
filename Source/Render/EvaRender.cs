@@ -67,8 +67,12 @@ public static class EvaRender
 
     private static readonly Vector3 Puff = new(0.86f, 0.88f, 0.9f);
 
-    /// <summary>Where the wearer's soles are in the pack frame, standing (the torso's middle 1.15 m over the feet, the latch 2 cm under it and 0.455 m behind).</summary>
-    private const float SoleY = -1.13f, FeetZ = -0.455f;
+    /// <summary>
+    /// Where the wearer's soles are in the pack frame: the torso's middle stands 1.15 m over the feet (the latch 2 cm under
+    /// it, 0.455 m behind the ankles), and strapped in the knees bend, the ankles at <see cref="LegAnimator.PackAnkle"/>
+    /// (Karl, 2026-11-18: a barber's chair, more upright), so the soles sit that much higher and further forward.
+    /// </summary>
+    private static readonly float SoleY = -1.13f + LegAnimator.PackAnkle.Y - LegAnimator.AnkleHeight, FeetZ = -0.455f + LegAnimator.PackAnkle.Z; // (before Pedestals: initialised in order)
 
     /// <summary>
     /// The foot pedestals (Karl, 2026-11-18: a worn MMU is a vehicle, the feet rest on it, no walking): from the frame's foot

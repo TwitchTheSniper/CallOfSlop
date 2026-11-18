@@ -183,6 +183,8 @@ public static unsafe partial class Program
             _sbSeatKeys = 0;
             g.SandboxSend(CActKind.SeatKeys, part: 0);
         }
+        if ((me.Eva & Eva.Mmu) != 0 && Pressed(GameAction.SeatEject))
+            g.SandboxSend(CActKind.MmuOff); // (the worn MMU comes off where they are, no dock needed: GameSandboxEva.cs)
         if (SandboxSpawnInput(g, me))
             return true; // placing a spawn: Fire spawns, Aim stops (Program.SandboxSpawn.cs)
         if (SandboxBlueprintGhostInput(g, me))

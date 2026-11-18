@@ -221,6 +221,7 @@ public static unsafe partial class Program
                 _snapWheel.Menu.Close();
             return false;
         }
-        return _snapWheel.Step(g, Down(GameAction.RecentParts), new Vector2((float)delta.X, (float)delta.Y), blocked, dt);
+        var mmu = g.Local is { } me && (me.Eva & Eva.Mmu) != 0; // (wearing an MMU the key takes it off: Program.Sandbox.cs)
+        return _snapWheel.Step(g, Down(GameAction.RecentParts) && !(mmu && _settings.Bind(GameAction.RecentParts) == _settings.Bind(GameAction.SeatEject)), new Vector2((float)delta.X, (float)delta.Y), blocked, dt);
     }
 }
