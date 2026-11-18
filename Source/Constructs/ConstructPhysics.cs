@@ -1306,8 +1306,8 @@ public static partial class ConstructPhysics
                 if (i == j || j < i && (_dyn[j] || _jact[j]))
                     continue; // (a pair of moving bodies is taken from the lower index)
                 var b = bodies[j];
-                if (a.CarriedBy == b.Id || b.CarriedBy == a.Id || a.CarriedBy != 0 && a.CarriedBy == b.CarriedBy)
-                    continue; // (a carrier and what its frozen cargo volumes carry don't collide)
+                if (a.CarriedBy == b.Id || b.CarriedBy == a.Id || a.CarriedBy != 0 && a.CarriedBy == b.CarriedBy || a.HeldBy == b.Id || b.HeldBy == a.Id)
+                    continue; // (a carrier and what its frozen cargo volumes carry don't collide, nor a lifter's body and what its hook holds)
                 var reach = a.Radius + b.Radius + (a.Vel - b.Vel).Length() * dt;
                 if (Vector3.DistanceSquared(a.WorldCom, b.WorldCom) > reach * reach)
                     continue;

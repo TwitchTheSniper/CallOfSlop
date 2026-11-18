@@ -148,6 +148,11 @@ public static partial class ConstructLifters
                 // (the body went, or its station let go of it, or the lifter did: the carry ends where it is)
                 if (body != null && c != null && body.HeldBy == c.Id)
                     body.HeldBy = 0;
+                else if (body != null && c == null && body.HeldBy == l.Body)
+                {
+                    body.HeldBy = 0; // (the carrier is gone, a Dray shot down: what it held falls free)
+                    ConstructEdits.Unfreeze(world, body);
+                }
                 l.CarryBody = 0;
                 world.BodyCarries.RemoveAt(k);
                 if (c != null && ld != null && l.State == LiftState.Carry)

@@ -408,7 +408,7 @@ public static partial class ConstructLifters
         if (world.Get(l.CarryBody) is { } body && body.HeldBy == c.Id)
         {
             body.HeldBy = 0;
-            body.Frozen = false;
+            ConstructEdits.Unfreeze(world, body); // (anchored as Pinned, rebuilt, and its structure goes out: a joined client sees it loose)
             body.Vel = c.Vel;
             body.AngVel = Vector3.Zero;
             body.Wake();
@@ -418,6 +418,15 @@ public static partial class ConstructLifters
         l.CarryBody = 0;
         world.BodyCarries.Remove(l);
         CabEmpty(l);
+    }
+
+    /// <summary>Is this body on a Lifter Cab's hook? (A save writes it loose where it hangs: the cab's carry isn't saved.)</summary>
+    public static bool OnCabHook(ConstructWorld world, Construct body)
+    {
+        foreach (var l in world.BodyCarries)
+            if (l.CarryBody == body.Id && l.Steered)
+                return true;
+        return false;
     }
 
     private static void CabEmpty(CLift l)
