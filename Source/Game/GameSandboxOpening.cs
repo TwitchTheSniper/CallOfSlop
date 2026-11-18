@@ -446,6 +446,9 @@ public sealed class OpeningScript
     /// <summary>A crewed ship of an NPC faction kind going round with the start's ship, <c>Behind</c> m back along its orbit (GameSpaceStart.cs).</summary>
     public readonly record struct Companion(string Ship, string Faction, float Behind);
     public Companion[] Company = [];
+    /// <summary>A station built on its own circular orbit, <c>Orbit</c> m over the ground above the start, <c>Ahead</c> m on along it (GameSpaceStart.cs).</summary>
+    public readonly record struct Station(string Blueprint, float Orbit, float Ahead);
+    public Station[] Stations = [];
     public readonly BeatDef[] Beats = new BeatDef[(int)OpeningStage.Wake + 1];
     public string Problem = "";
 
@@ -488,6 +491,10 @@ public sealed class OpeningScript
                 t.Company = [.. co.EnumerateArray().Select(ReadCompanion)];
             if (t.Company.Length > 0 && t.Ship.Length == 0)
                 throw new FormatException("\"company\" goes with a ship start (\"ship\")");
+            if (root.TryGetProperty("stations", out var st))
+                t.Stations = [.. st.EnumerateArray().Select(ReadStation)];
+            if (t.Stations.Length > 0 && t.Ship.Length == 0)
+                throw new FormatException("\"stations\" go with a ship start (\"ship\")");
             var beats = root.GetProperty("beats");
             foreach (var (key, stage) in new[] { ("placeholder", OpeningStage.Out), ("wake", OpeningStage.Wake) })
             {
@@ -524,6 +531,18 @@ public sealed class OpeningScript
         if (MathF.Abs(behind) < 150f)
             behind = behind < 0 ? -150f : 150f;
         return new Companion(ship, faction, behind);
+    }
+
+    private static Station ReadStation(JsonElement e)
+    {
+        var bp = Text(e, "blueprint", "");
+        if (ConstructBuild.FindBlueprint(bp) == null)
+            throw new FormatException($"stations: no blueprint named \"{bp}\"");
+        // (high enough to clear the start's ship and its company by kilometres; at most 150 km, inside the bubble's 200 km reach from
+        // the origin on the ground (GameSpaceJump.SpaceFarDistance), past which a ship is parked away)
+        var orbit = Math.Clamp(e.TryGetProperty("orbit", out var o) ? o.GetSingle() : 40000f, 5000f, 150000f);
+        var ahead = Math.Clamp(e.TryGetProperty("ahead", out var a) ? a.GetSingle() : 0f, -50000f, 50000f);
+        return new Station(bp, orbit, ahead);
     }
 
     private static string Text(JsonElement e, string key, string fallback) =>
