@@ -816,7 +816,7 @@ public sealed class ShipParts : IPartGenerator
         Sock(p, "panelEng", 1.9, F0 + 0.6, 12.125, "+z");
         Sock(p, "boardEng", 8.0, F0 + 0.9, 12.125, "+z");
         Sock(p, "pipesEngL", 3.1, F0 + 2.6, 12.125, "+z");
-        Sock(p, "battery", 7.3, F0 + 2.2, 12.125, "+z");
+        Sock(p, "battery", 6.85, F0 + 0.125, 12.125, "+z"); // (its Ship Battery S stands on the floor against this wall: Karl, 2026-11-18)
         Sock(p, "switchHoldL", Cx - Lw, F0 + 1.3, 7.2, "+x");
         Sock(p, "switchHoldR", Cx + Lw, F0 + 1.3, 7.55, "-x"); // (aft of the Robot Shell Dock)
         Sock(p, "switchEng", 6.3, F0 + 1.3, 12.125, "+z");
@@ -2088,7 +2088,7 @@ public sealed class ShipParts : IPartGenerator
         Hang(bp, "Engineer's Panel", keel, "panelEng", "back");
         Hang(bp, "Power Board", keel, "boardEng", "back");
         Hang(bp, "Pipe Bank", keel, "pipesEngL", "back");
-        Paint(bp, Hang(bp, "Battery", keel, "battery", "-z"), "#3a3d3f");
+        Hang(bp, "Ship Battery S", keel, "battery", "wall");
         Switch(bp, keel, "switchHoldL", Lamp(bp, keel, "lampHoldL0"), Lamp(bp, keel, "lampHoldL1"));
         Switch(bp, keel, "switchHoldR", Lamp(bp, keel, "lampHoldR0"), Lamp(bp, keel, "lampHoldR1"));
         Switch(bp, keel, "switchEng", Lamp(bp, keel, "lampEngL"), Lamp(bp, keel, "lampEngR"));

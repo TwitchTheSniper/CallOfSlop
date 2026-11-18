@@ -46,8 +46,7 @@ public sealed partial class Ui
         _cmdSpanWant = Math.Max(CommandMinSpan, t.Radius * 2.2); // (it fills most of the height: the cut-in spot reads)
         _cmdBoardBanner = (seal ? "BOARDING: LEFT CLICK A DOOR OF " : "BOARDING: LEFT CLICK WHERE TO CUT INTO ") + CmdName(t) + "     RIGHT CLICK OR ESC: CANCEL";
         _cmdBoardHoverPart = -2;
-        _cmdCutOn = false;
-        _cmdCutPart = _cmdCutWant = -2;
+        CmdCutForget();
     }
 
     /// <summary>For the window tool's <c>cmdboard</c>: the Board pick on <paramref name="t"/> for the picked craft's pod. Null, or why not.</summary>

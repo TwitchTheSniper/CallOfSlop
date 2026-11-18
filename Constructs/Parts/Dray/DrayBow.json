@@ -1,11 +1,28 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Dray Bow",
-  "description": "The Dray's bow: a blunt, faceted cab nose, armoured over the sealed bridge, with a ground scanner under its chin.",
+  "description": "The Dray's bow: a blunt, faceted cab nose, armoured over the sealed bridge, with a ground scanner under its chin and the bow jets' tank behind it.",
   "group": "Ship",
   "section": "Dray hauler",
-  "role": "frame",
+  "role": "fueltank",
   "tool": "welder",
+  "fuelTank": {
+    "capacity": 2000
+  },
+  "ports": [
+    {
+      "name": "Fuel out",
+      "type": "pipe",
+      "dir": "out",
+      "fluid": "fuel",
+      "at": [
+        6.875,
+        1.875,
+        4.625
+      ],
+      "face": "+z"
+    }
+  ],
   "mass": 9000.0,
   "health": 24000,
   "armour": 40,

@@ -49,10 +49,10 @@ public sealed partial class Ui
         foreach (var v in pct)
             worst = Math.Min(worst, v);
 
-        // The plate: above the health bar, under the chat.
+        // The plate: bottom left, where the health bar was (Sandbox draws none: UiVitalsPanel.cs), under the chat.
         var w = 292 * s;
         var h = 196 * s;
-        var p0 = new float2(pos.X + 20 * s, pos.Y + size.Y - 48 * s - h);
+        var p0 = new float2(pos.X + 20 * s, pos.Y + size.Y - 30 * s - h);
         var p1 = p0 + new float2(w, h);
         var edge = SpColour(worst, worn);
         CmdPlate(dl, p0, p1, 1f, edge == CmdCyan ? CmdCyan : edge);

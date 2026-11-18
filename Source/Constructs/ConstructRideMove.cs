@@ -735,6 +735,8 @@ public static partial class ConstructRide
         if (MmuFloat)
         {
             s.RideVel += Vector3.Transform(MmuPush, Quaternion.Conjugate(q)); // (the pack's push, into the segment's frame)
+            if (MmuPush == Vector3.Zero && !cmd.MmuCoast)
+                s.RideVel -= PilotGear.MmuBrake(ref s, cmd, s.RideVel); // (its dampeners: held still in the ship, no key held)
             s.Grounded = false; // (never footing: it floats, and a floor stops it)
             control = 0;
             gravity = 0;

@@ -623,8 +623,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 361: stations (docs/sandbox/constructs/station.md): Msg.Stations takes the slot of RemovedDepot (Msg is full); FactionOp.StationSell (u16 ship) at its end.
     // 362: surrendered crew show their hands up (Karl, 2026-11-18): Msg.HandsUp in the slot of the removed RemovedQuarry (Msg is full).
     // 363: labelled switches (Karl, 2026-11-18): every logic part without messages takes one text slot, its label (ConstructPartDef.Labelled), so CBody's text tail may carry one on a switch; an older peer refuses it as malformed. No new bytes.
-    // 364: a worn MMU taken off anywhere (Karl, 2026-11-18): CActKind.MmuOff (no bytes) at its end.
-    public const ushort ProtocolVersion = 364;
+    // 364: a worn MMU's inertia dampeners (Karl, 2026-11-18): the input packet ends with a u8 of dampeners-off bits, one per command (InputCmd.MmuCoast).
+    // 365: a worn MMU taken off anywhere (Karl, 2026-11-18): CActKind.MmuOff (no bytes) at its end.
+    public const ushort ProtocolVersion = 365;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

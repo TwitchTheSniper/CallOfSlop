@@ -1650,6 +1650,8 @@ what is under the hook (within 1.5 m across): a loose single part within its pay
 sets it down loose where it hangs. **E** gets out; a piece left in the hand goes on by the lifter's own rule. While seated the look
 line says what it did, its reach is drawn and the hook's shadow falls on what is under it. The hand's moves are lift words at 10 Hz
 while it moves; a client eases between them. Window tool: `lifter cab [arm|crane]`, `lifter sit`, `lifter cabstate [bait NAME]`.
+A **cargo container** (a part with `"container": true`, the Cargo Container 20 ft) is carried whole: F takes the body itself onto the
+hook, frozen, with what it holds, and F lets it fall free (`CabTakeBody`, `CabLetGo`; the Dray's hold, hauler.md).
 
 **Players in the way**: a piece pushes a player aside by at most 0.75 m; a bigger one waits for them (Alarm after 10 s), and so does
 any piece that reaches a player standing on a construct (a floor slab, a pad, a deck: they ride its frame, so nothing moves them).

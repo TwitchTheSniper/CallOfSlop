@@ -4,7 +4,7 @@
   "description": "A length of the Dray's keel, between two of the hull's stations: plating, armour and the void inside.",
   "group": "Ship",
   "section": "Dray hauler",
-  "role": "frame",
+  "role": "fueltank",
   "tool": "welder",
   "mass": 3750.0,
   "health": 31500,
@@ -12,6 +12,23 @@
   "material": "steel",
   "color": "#264b67",
   "attachSeconds": 10.0,
+  "fuelTank": {
+    "capacity": 3000
+  },
+  "ports": [
+    {
+      "name": "Fuel out",
+      "type": "pipe",
+      "dir": "out",
+      "fluid": "fuel",
+      "at": [
+        6.875,
+        -0.725,
+        20.263
+      ],
+      "face": "+z"
+    }
+  ],
   "boxes": [
     {
       "min": [
@@ -789,9 +806,101 @@
         20.263
       ],
       "hidden": true
+    },
+    {
+      "min": [
+        4.625,
+        -1.425,
+        15.375
+      ],
+      "max": [
+        5.625,
+        -1.215,
+        16.375
+      ],
+      "color": "#202326",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        8.125,
+        -1.425,
+        15.375
+      ],
+      "max": [
+        9.125,
+        -1.215,
+        16.375
+      ],
+      "color": "#202326",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        3.125,
+        -1.425,
+        18.475
+      ],
+      "max": [
+        3.925,
+        -1.215,
+        19.275
+      ],
+      "color": "#202326",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        9.825,
+        -1.425,
+        18.475
+      ],
+      "max": [
+        10.625,
+        -1.215,
+        19.275
+      ],
+      "color": "#202326",
+      "finish": "dirty steel"
     }
   ],
   "sockets": [
+    {
+      "name": "lift0",
+      "at": [
+        5.125,
+        -1.425,
+        15.875
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "lift1",
+      "at": [
+        8.625,
+        -1.425,
+        15.875
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "leg0",
+      "at": [
+        3.525,
+        -1.425,
+        18.875
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "leg1",
+      "at": [
+        10.225,
+        -1.425,
+        18.875
+      ],
+      "dir": "-y"
+    },
     {
       "name": "j0",
       "at": [

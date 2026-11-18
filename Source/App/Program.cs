@@ -1747,6 +1747,8 @@ public static unsafe partial class Program
         wheelOpen |= GantryMouse(delta); // Sandbox: the Build Gantry's camera has the mouse (Program.SandboxGantry.cs)
         wheelOpen |= LeverMouse(delta); // Sandbox: a hand on an Analog Lever: the mouse moves it (Program.SandboxLever.cs)
 
+        if (_game.MmuSteering && Pressed(GameAction.SeatDampeners))
+            _game.MmuToggleDampers(); // (a worn MMU's inertia dampeners, on the seat's key: GameSandboxMmu.cs)
         var tpOrbit = ThirdPersonInput(); // Sandbox third person: the toggle, and whether the mouse orbits the seat camera (Program.ThirdPerson.cs)
 
         // Mouse look is applied every frame (never waits for a tick or the network). Not while typing in the chat (or with the tool wheel open).
@@ -2611,9 +2613,12 @@ public static unsafe partial class Program
             var hp = Math.Clamp(local.Health / (float)World.MaxHealth, 0f, 1f);
             float m = 30 * k, bw = 300 * k, bh = 18 * k, inset = 3 * k;
             var left = safeLeft + m;
-            Gfx.Rect(left, m, bw, bh, black, 0.5f);
-            Gfx.Rect(left + inset, m + inset, (bw - 2 * inset) * hp, bh - 2 * inset, HealthBarColor(local, hp, now), 0.95f);
-            DrawHealthExtras(local, left, m, bw, bh, k, now); // regen glow and Last Stand shield pips (Program.Health.cs)
+            if (!_game.SandboxOn) // (Sandbox: the vitals panel or the shell's says it, Ui/UiVitalsPanel.cs)
+            {
+                Gfx.Rect(left, m, bw, bh, black, 0.5f);
+                Gfx.Rect(left + inset, m + inset, (bw - 2 * inset) * hp, bh - 2 * inset, HealthBarColor(local, hp, now), 0.95f);
+                DrawHealthExtras(local, left, m, bw, bh, k, now); // regen glow and Last Stand shield pips (Program.Health.cs)
+            }
 
             // Ammo bar (bottom-right) or reload progress; none seated in a Sandbox seat, where no hand gun fires (Game.ServerShot)
             if (!_game.SandboxSeatedHere)

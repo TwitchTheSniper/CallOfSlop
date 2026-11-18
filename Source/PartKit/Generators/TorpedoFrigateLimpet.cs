@@ -90,8 +90,7 @@ public sealed partial class TorpedoFrigateParts
             Sock(p, $"seatR{i}", 0.94, PFt, PSeatZ[i], "+y");
         }
         Sock(p, "computer", 1.06, 0.98, 2.3, "+y");
-        Sock(p, "battery0", -1.05, PFt, 2.1, "+y");
-        Sock(p, "battery1", -1.05, PFt, 2.4, "+y");
+        Sock(p, "battery", -(PWallIn - 0.175), PFt, 2.25, "+y"); // (its Ship Battery XS, back to the port wall: Karl, 2026-11-18)
         Sock(p, "ladder", 0, PFt, PIn - 0.1, "+y");
         return p.Stats(900, 6000, 40, 12.0);
     }
@@ -366,8 +365,7 @@ public sealed partial class TorpedoFrigateParts
         // The flight computer (no pilot: the ship that carries it flies it), the batteries, the ladder up to the receiver.
         var fc = bp.Hang("Flight Stabilizer", floor, "computer", "-y");
         bp.Steps[fc]["config"] = ShipParts.ShipFlight();
-        foreach (var n in new[] { "battery0", "battery1" })
-            bp.Hang("Battery", floor, n, "-y");
+        bp.HangTurned("Ship Battery XS", floor, "battery", "bottom", BuildingParts.RY270);
         bp.Hang("Limpet Ladder", floor, "ladder", "bottom");
         // The Docking Hatch under the receiver, upside down (it slides forward, its shoe aft): it opens with the keel's while the clamp holds the pod.
         bp.HangTurned("Docking Hatch", st["Limpet Roof"], "hatch", "base", BuildingParts.Turn("+x", "-y"));
