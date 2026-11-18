@@ -608,7 +608,10 @@ public static unsafe partial class Program
                         break;
                     }
                 }
-                WsEyeTo(g, me, eye);
+                if (g.IsServer)
+                    WsEyeTo(g, me, eye);
+                else
+                    eye = me.Eye; // (a joined client's player is the host's to place: `bring PART` on the host, then this only turns the look)
                 WsLook(g, eye, mid);
                 WsSay($"aimlink: link {kk} ({ConstructRoutes.Name(lc.Routes[kk].Type)}) of body {lc.Id}, eye {eye:0.00} looking at {mid:0.00}");
                 _wsWait = 3;
