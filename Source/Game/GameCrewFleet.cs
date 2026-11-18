@@ -11,18 +11,21 @@ namespace CallOfSlop;
 /// </summary>
 public sealed partial class Game
 {
-    /// <summary>An officer taken prisoner: what it can give up, and from where (its group's slot and serial: a group reused is another group).</summary>
-    private sealed class Officer
+    /// <summary>Officers taken prisoner (kept in the world's Fleet section with the groups: CrewFleet.Officers).</summary>
+    private Dictionary<uint, FleetOfficer> _officers => Crew.Fleet.Officers;
+
+    /// <summary>A captain's own ship (the prize that holds it now), for its intel.</summary>
+    private ushort CrewOfficerShip(uint uid, FleetOfficer o) => CrewShipHolding(uid)?.Body ?? 0;
+
+    /// <summary>The crewed body holding member <paramref name="uid"/> (an officer prisoner's ship after a save and load: body ids change), or null.</summary>
+    private CrewShip? CrewShipHolding(uint uid)
     {
-        public byte Power;
-        public short Group;
-        public int Serial;
-        public ushort Ship;
-        public bool Admiral;
-        public float Resistance;
+        for (var i = 0; i < Crew.ShipHigh; i++)
+            if (Crew.Ships[i] is { } s && CrewByUid(s, uid) >= 0)
+                return s;
+        return null;
     }
 
-    private readonly Dictionary<uint, Officer> _officers = new();
     private readonly Dictionary<uint, (byte Player, ushort Body, long Done)> _questioning = new();
     private readonly List<string> _intelLines = new(32);
     private readonly List<(Vector3 At, string Label)> _intelMarks = new(32);
@@ -65,20 +68,21 @@ public sealed partial class Game
             if (!admiral && Crew.Uid[m] != cap)
                 continue;
             short group = -1;
-            var serial = 0;
+            ushort number = 0;
             if (admiral)
                 foreach (var g in Crew.Fleet.Groups)
                     if (g.Live && g.AdmiralUid == Crew.Uid[m])
-                        (group, serial) = ((short)g.Slot, g.Serial);
+                        (group, number) = ((short)g.Slot, g.Number);
             if (!admiral && Crew.Fleet.Of(s.Group) is { } sg)
-                (group, serial) = (s.Group, sg.Serial);
+                (group, number) = (s.Group, sg.Number);
             var power = Crew.Fac[m];
-            var o = new Officer { Power = power, Group = group, Serial = serial, Ship = c.Id, Admiral = admiral, Resistance = CrewFleet.ResistanceOf(Crew.Uid[m], Crew.Fleet.Rules.DoctrineOf(power)) };
+            var o = new FleetOfficer { Power = power, Group = group, Number = number, Admiral = admiral, Resistance = CrewFleet.ResistanceOf(Crew.Uid[m], Crew.Fleet.Rules.DoctrineOf(power)) };
             _officers[Crew.Uid[m]] = o;
             if (by != 255)
                 PowerDeed(RelEvent.CaptureOfficer, power, by, c.WorldCom);
             var rank = admiral ? "Admiral" : "Captain";
             Console.WriteLine($"[fleet] construct {c.Id}: {rank} {CrewNames.Of(Crew.Name[m])} ({CrewPowers.Of(power)?.Name}) taken prisoner by player {by}");
+            s.RosterDirty = true; // (the Crew window marks the officer)
             CrewNotice(c, $"Among them {rank} {CrewNames.Of(Crew.Name[m])} of {CrewPowers.Of(power)?.Name}: worth a ransom of {(admiral ? Crew.Fleet.Rules.RansomAdmiral : Crew.Fleet.Rules.RansomCaptain)} credits, or questioning (Crew window).");
         }
     }
@@ -154,17 +158,20 @@ public sealed partial class Game
     {
         var o = _officers[uid];
         _officers.Remove(uid); // (questioned once: what they knew is told)
-        var m = Crew.ShipOf(body) is { } s ? CrewByUid(s, uid) : -1;
+        if (CrewShipHolding(uid) is { } rs)
+            rs.RosterDirty = true; // (no longer an officer in the Crew window)
+        var held = Crew.ShipOf(body) is { } hs && CrewByUid(hs, uid) >= 0 ? hs : CrewShipHolding(uid);
+        var m = held != null ? CrewByUid(held, uid) : -1;
         var name = m >= 0 ? CrewNames.Of(Crew.Name[m]) : "the prisoner";
         _intelLines.Clear();
         _intelMarks.Clear();
-        Crew.Fleet.Intel(Crew, Constructs, this, uid, o.Power, o.Group, o.Serial, o.Ship, o.Admiral, _intelLines, _intelMarks);
+        Crew.Fleet.Intel(Crew, Constructs, this, uid, o.Power, o.Group, o.Number, CrewOfficerShip(uid, o), o.Admiral, _intelLines, _intelMarks);
         if (o.Resistance > 0.8f && _intelMarks.Count > 2)
             _intelMarks.RemoveRange(2, _intelMarks.Count - 2); // (a hard one gives up only part)
         SandboxHands.Notices.Add((p.Id, $"{(o.Admiral ? "Admiral" : "Captain")} {name} talks:"));
         foreach (var l in _intelLines)
             SandboxHands.Notices.Add((p.Id, l));
-        if (o.Admiral && Crew.Fleet.Of(o.Group) is { } g && g.Serial == o.Serial)
+        if (o.Admiral && Crew.Fleet.Of(o.Group) is { } g && g.Number == o.Number)
         {
             g.RevealedUntil = Crew.Tick + (long)(Crew.Fleet.Rules.IntelSeconds * World.TickRate);
             g.RevealedTo[p.Id >> 6] |= 1UL << (p.Id & 63);
@@ -303,7 +310,7 @@ public sealed partial class Game
     public string CrewOfficerFirst(Player me, string op)
     {
         foreach (var (uid, o) in _officers)
-            if (Crew.ShipOf(o.Ship) is { } s)
+            if (CrewShipHolding(uid) is { } s)
                 return (op == "ransom" ? CrewRansom(me, s.Body, uid) : CrewInterrogate(me, s.Body, uid)) ?? $"{op}: under way for {(o.Admiral ? "an admiral" : "a captain")} ({uid})";
         return "no officer prisoner";
     }

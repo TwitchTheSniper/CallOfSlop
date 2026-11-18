@@ -68,6 +68,17 @@ public struct FleetReportEntry
     public long Tick;
 }
 
+/// <summary>An officer taken prisoner (faction-controllers.md, the user's answers on admirals 7): its power, the group it led or served in (slot and
+/// number: a slot used again is another group), its rank and how hard it is to question.</summary>
+public sealed class FleetOfficer
+{
+    public byte Power;
+    public short Group = -1;
+    public ushort Number;
+    public bool Admiral;
+    public float Resistance;
+}
+
 /// <summary>One group: 1 to 12 ships of one power under one admiral (faction-controllers.md 6.1). Fixed arrays: made once, pooled.</summary>
 public sealed class CrewGroup
 {
@@ -157,6 +168,15 @@ public sealed class CrewFleet
 
     public readonly CrewGroup[] Groups = new CrewGroup[MaxGroups];
     public int Live;
+
+    /// <summary>This world's fleet (random at a world's start, kept in its save): a ship's crew block names its group by slot, number and this, so a
+    /// ship from another world's save (a landing) never joins an unrelated group that happens to sit in the same slot.</summary>
+    public uint Stamp = NewStamp();
+
+    private static uint NewStamp() => (uint)Random.Shared.Next(1, int.MaxValue);
+
+    /// <summary>Officers taken prisoner (an admiral or a captain): what each can give up when questioned. Kept in the Fleet section.</summary>
+    public readonly Dictionary<uint, FleetOfficer> Officers = new();
     private int _at, _number;
     private long _droppedSaidAt;
     public FleetRules Rules = FleetRules.Current;
@@ -184,6 +204,8 @@ public sealed class CrewFleet
         Live = 0;
         _number = 0;
         News.Clear();
+        Officers.Clear();
+        Stamp = NewStamp();
     }
 
     // ---- Forming and leaving -----------------------------------------------------------------------------------------------------
@@ -272,6 +294,7 @@ public sealed class CrewFleet
             g.AdmiralUid = crew.Uid[m];
             g.AdmiralName = crew.Name[m];
             g.Flagship = flag.Body;
+            flag.SeatsDirty = true;
         }
         foreach (var b in g.Ships.AsSpan(0, g.Count))
             g.Strength0 += crew.ShipOf(b)!.Strength;
@@ -766,6 +789,7 @@ public sealed class CrewFleet
         g.Flagship = best.Body;
         best.CaptainUid = 0; // (its ship needs another captain)
         CaptainOf(crew, best);
+        best.SeatsDirty = true; // (clients' look line: the admiral's flagship, its new captain)
         g.Post(FleetReport.Command, best.Body, 0, crew.Tick);
         var secs = (crew.Tick - g.LeaderlessSince) / (float)World.TickRate;
         crew.Events.Add($"fleet: group {g.Number}: Captain {CrewNames.Of(g.AdmiralName)} (construct {best.Body}) takes command, {secs:0.0} s after the admiral was lost");
@@ -807,8 +831,11 @@ public sealed class CrewFleet
                 best = m;
             }
         }
-        if (best >= 0)
+        if (best >= 0 && s.CaptainUid != crew.Uid[best])
+        {
             s.CaptainUid = crew.Uid[best];
+            s.SeatsDirty = true; // (clients' look line names the captain)
+        }
         return best;
     }
 
@@ -847,10 +874,10 @@ public sealed class CrewFleet
     /// <summary>Every live group's header (its ships rejoin from their crew blocks); null: none.</summary>
     public byte[]? SaveBytes()
     {
-        if (Live == 0)
+        if (Live == 0 && Officers.Count == 0)
             return null;
-        var wr = new SaveWriter(256 + Live * 160);
-        wr.U8(SaveVersion).U16((ushort)_number).U16((ushort)Live);
+        var wr = new SaveWriter(256 + Live * 160 + Officers.Count * 48);
+        wr.U8(SaveVersion).U32(Stamp).U16((ushort)_number).U16((ushort)Live);
         foreach (var g in Groups)
         {
             if (!g.Live)
@@ -861,6 +888,9 @@ public sealed class CrewFleet
                 wr.Vec(g.Route[i]).U8((byte)g.RouteWork[i]);
             wr.U8((byte)g.RouteAt).F32(g.Dwell).U8((byte)((g.Loop ? 1 : 0) | (g.Retreating ? 2 : 0))).F32(g.Strength0).I32(g.Losses);
         }
+        wr.U16((ushort)Math.Min(Officers.Count, 65535));
+        foreach (var (uid, o) in Officers)
+            wr.U32(uid).Str(CrewPowers.Of(o.Power)?.Name ?? "").U16((ushort)(o.Group + 1)).U16(o.Number).U8((byte)(o.Admiral ? 1 : 0)).F32(o.Resistance);
         return wr.Span.ToArray();
     }
 
@@ -877,6 +907,7 @@ public sealed class CrewFleet
                 Console.WriteLine($"[fleet] the Fleet section is of version {v} (this build reads {SaveVersion}): no groups");
                 return;
             }
+            Stamp = r.U32();
             _number = r.U16();
             int n = r.U16();
             for (var k = 0; k < n; k++)
@@ -918,7 +949,18 @@ public sealed class CrewFleet
                 g.ThinkAt = crew.Tick + (long)(LoadGraceSeconds * World.TickRate); // (its ships rejoin from their crew blocks first)
                 Live++;
             }
-            Console.WriteLine($"[fleet] {Live} groups came back from the save");
+            int on = r.U16();
+            for (var k = 0; k < on; k++)
+            {
+                var uid = r.U32();
+                var pname = r.Str();
+                var o = new FleetOfficer { Power = CrewPowers.Find(pname), Group = (short)(r.U16() - 1), Number = r.U16(), Admiral = r.U8() != 0, Resistance = Math.Clamp(r.F32(), 0.05f, 0.95f) };
+                if (o.Power != 0)
+                    Officers[uid] = o;
+                else
+                    Console.WriteLine($"[fleet] a saved officer prisoner of power \"{pname}\", which isn't read now: a plain prisoner");
+            }
+            Console.WriteLine($"[fleet] {Live} groups and {Officers.Count} officer prisoners came back from the save");
         }
         catch (WorldFileException ex)
         {
@@ -931,11 +973,11 @@ public sealed class CrewFleet
     public const float LoadGraceSeconds = 20;
 
     /// <summary>A ship from a save rejoins its group's slot (the Fleet section is read before bodies' crews).</summary>
-    public void Rejoin(CrewWorld crew, Construct c, CrewShip s, int slot)
+    public void Rejoin(CrewWorld crew, Construct c, CrewShip s, int slot, ushort number, uint stamp)
     {
-        if (Of(slot) is not { } g || g.Power != s.Faction || g.Count >= CrewGroup.MaxShips)
+        if (stamp != Stamp || Of(slot) is not { } g || g.Number != number || g.Power != s.Faction || g.Count >= CrewGroup.MaxShips)
         {
-            Console.WriteLine($"[fleet] construct {c.Id}'s saved group (slot {slot}) isn't there or isn't its power's: its captain is on its own");
+            Console.WriteLine($"[fleet] construct {c.Id}'s saved group (slot {slot}) isn't this world's, isn't there or isn't its power's: its captain is on its own");
             return;
         }
         for (var k = 0; k < g.Count; k++)
@@ -953,12 +995,12 @@ public sealed class CrewFleet
     /// coordinates with; a captain its ship, its crew and where any of them are off it and what they do. Lines and marks (world points with a label)
     /// for the asker. Allocates (a rare event, not a tick).
     /// </summary>
-    public void Intel(CrewWorld crew, ConstructWorld w, ICrewHost? host, uint uid, byte power, short groupSlot, int groupSerial, ushort shipBody, bool admiral,
+    public void Intel(CrewWorld crew, ConstructWorld w, ICrewHost? host, uint uid, byte power, short groupSlot, ushort groupNumber, ushort shipBody, bool admiral,
         List<string> lines, List<(Vector3 At, string Label)> marks)
     {
         if (admiral)
         {
-            if (Of(groupSlot) is { } g && g.Serial == groupSerial)
+            if (Of(groupSlot) is { } g && g.Number == groupNumber)
             {
                 lines.Add($"Group {g.Number} ({g.Task}, {PowerName(g.Power)}): {g.Count} ships, {(g.AdmiralUid != 0 ? $"now under Admiral {CrewNames.Of(g.AdmiralName)}" : "leaderless")}, order {g.Order}.");
                 for (var k = 0; k < g.Count; k++)

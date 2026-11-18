@@ -1516,7 +1516,8 @@ public sealed class CrewWorld
             var tag = State[m] == CrewState.Station ? Tag[m] : (ushort)0;
             wr.U32(Uid[m]).U8((byte)((byte)Job[m] | (State[m] == CrewState.Surrendered ? 0x80 : 0))).U8((byte)Math.Clamp(Health[m] / MemberHealth * 255, 1, 255)).U8(Skill[m]).U16(tag).U16(Name[m]);
         }
-        wr.U16((ushort)(s.Group + 1)).U32(s.CaptainUid); // (3: its group, whose header is the world's Fleet section: CrewFleet.SaveBytes)
+        var grp = Fleet.Of(s.Group);
+        wr.U16((ushort)(grp != null ? s.Group + 1 : 0)).U16(grp?.Number ?? 0).U32(Fleet.Stamp).U32(s.CaptainUid); // (3: its group by slot, number and this world's fleet stamp; its header is the Fleet section: CrewFleet.SaveBytes)
         return wr.Span.ToArray();
     }
 
@@ -1571,9 +1572,11 @@ public sealed class CrewWorld
             if (v >= 3)
             {
                 var slot = r.U16() - 1;
+                var number = r.U16();
+                var stamp = r.U32();
                 s.CaptainUid = r.U32();
                 if (slot >= 0)
-                    Fleet.Rejoin(this, c, s, slot);
+                    Fleet.Rejoin(this, c, s, slot, number, stamp);
             }
             Events.Add($"construct {c.Id}: its crew of {s.MemberCount} came back from the save");
         }
