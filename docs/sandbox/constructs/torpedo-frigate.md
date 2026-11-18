@@ -77,7 +77,11 @@ inside the hull, in one room with engineering.
 
 - Two torpedo sponsons (Zero Day Torpedo Bay L/R), each a room off the torpedo room through a bulkhead door, with a
   six-round drum Ordnance Rack loaded with designed torpedoes (radar seeker, HE warhead) that leave through the launch
-  port in the sponson's front face. The fire buttons are on the torpedo room's walls.
+  port in the sponson's front face. The fire buttons are on the torpedo room's walls. The ops gunner fires both bays with
+  Space (Karl, 2026-11-17): an Input Reader on ops' Turret Module reads the seat's jump key and is wired to an OR Gate under
+  the torpedo room's ceiling on each side (a wire reaches 8 m), each wired to its bay's magazine; the mouse stays the PDCs'.
+  The mess's station is too far aft for the wires and has no torpedo key. Launched in space a torpedo coasts 7 minutes after
+  its motor (about 120 km; weapons.md "Flight").
 - The Zero Day Railgun along the spine, fixed forward and aimed by the ship (the pilot fires it). Each slug takes 15 MJ from the Capacitor Bank M in engineering, aft of the reactor (ship-works.md 8; energy guns fire from capacitors only): two full slugs and a bit, one refilled in 10 s.
 - Four Zero Day PDCs on barbettes on the beam, run from the two gun stations (ops and the mess). Each turns on a **Turret
   Ring S** whose trunk goes down the barbette's well, fed from its own **magazine** (ship-works.md 5.2): an Ammo
@@ -93,7 +97,8 @@ inside the hull, in one room with engineering.
 - Radar and lock (Karl, 2026-11-17): a Long Range Sensor on the shuttle's cradle deck aft of the pod, by the mast, wired into a
   Fire Director in the mess's starboard aft corner below it (a wire reaches 8 m, so the director sits under the sensor, not
   in ops). Every seat gets the scope, and the middle mouse locks a contact (`ConstructRadar.CanLock`); a torpedo launched
-  from either bay takes the lock while the contact is within its seeker's 2 km. Shoot either part and it is a scope again.
+  from either bay takes the lock at any range the radar holds it (the sensor reaches 100 km since 2026-11-17), past its
+  seeker's own 2 km. Shoot either part and it is a scope again.
 
 ## Getting aboard
 

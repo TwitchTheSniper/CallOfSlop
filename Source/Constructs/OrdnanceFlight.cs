@@ -402,10 +402,10 @@ public static class OrdnanceFlight
         public byte By;
     }
 
-    /// <summary>Seconds a design may fly before it is given up on: its burns and waits, a missile's coast, and half a minute.</summary>
-    public static float LifeSeconds(OrdFlightStats f)
+    /// <summary>Seconds a design may fly before it is given up on: its burns and waits, a missile's coast (<paramref name="coast"/>; in air when not given), and half a minute.</summary>
+    public static float LifeSeconds(OrdFlightStats f, float coast = ConstructOrdnance.MissileCoast)
     {
-        var t = 30f + ConstructOrdnance.MissileCoast;
+        var t = 30f + coast;
         foreach (var g in f.Stages)
             t += g.Burn + g.Wait;
         return MathF.Max(t, f.Timer);
@@ -437,6 +437,7 @@ public static class OrdnanceFlight
         var fwd = ConstructOrdnance.LaunchDir(c, rack, part);
         var vel = c.PointVel(at) + c.SegPointVel(c.Parts[part].Seg, at) + (rail ? fwd * RailKick : Vector3.Zero);
         var first = f.Charges.Count > 0 ? f.Charges[0] : null;
+        var coast = design.Kind == OrdKind.Missile ? ConstructOrdnance.CoastAt(at) : ConstructOrdnance.MissileCoast; // (in space a missile coasts for minutes: nothing slows it)
         var s = new CShell
         {
             Kind = design.Kind == OrdKind.Missile ? ShellKind.Missile : ShellKind.Bomb,
@@ -447,7 +448,7 @@ public static class OrdnanceFlight
             Flags = ShellFlags.Designed, Design = def, Mass = st.Mass,
             Turn = f.TurnAny * MathF.PI / 180f, TurnAir = f.TurnAir * MathF.PI / 180f,
             Drag = f.Drag, Lift = f.Lift, Deploy = (int)(f.Deploy * World.TickRate),
-            Life = (int)(LifeSeconds(f) * World.TickRate),
+            Life = (int)(LifeSeconds(f, coast) * World.TickRate),
             Seek = (byte)f.Seek, Channel = (int)f.Channel,
             Fuses = f.Fuses, Prox = (f.Fuses & OrdFuse.Prox) != 0 ? f.Prox : 0, FuseHeight = f.FuseHeight, FuseDistance = f.FuseDistance,
         };
@@ -464,7 +465,7 @@ public static class OrdnanceFlight
             var burns = s.Wait;
             foreach (var g in f.Stages)
                 burns += (int)((g.Burn + g.Wait) * World.TickRate);
-            s.Fuse = burns + (int)(ConstructOrdnance.MissileCoast * World.TickRate);
+            s.Fuse = burns + (int)(coast * World.TickRate);
         }
         if ((f.Fuses & OrdFuse.Timer) != 0)
             s.Fuse = s.Fuse > 0 ? Math.Min(s.Fuse, (int)(f.Timer * World.TickRate)) : (int)(f.Timer * World.TickRate);
@@ -512,9 +513,9 @@ public static class OrdnanceFlight
     private static void Lock(ConstructWorld world, Construct c, int rack, ref CShell s, OrdFlightStats f, Vector3 at, Vector3 fwd, IWorldQuery query)
     {
         var cos = MathF.Cos(f.SeekCone * MathF.PI / 180f);
-        if (f.Seek is OrdSeek.Heat or OrdSeek.Radar or OrdSeek.Command && ConstructRadar.Target(world, c, at, f.SeekReach) is var radar and > 0)
+        if (f.Seek is OrdSeek.Heat or OrdSeek.Radar or OrdSeek.Command && ConstructRadar.Target(world, c, at, float.MaxValue) is var radar and > 0)
         {
-            s.Target = radar; // (the craft's radar lock wins over what the seeker would find: ConstructRadar.cs)
+            s.Target = radar; // (the craft's radar lock wins over what the seeker would find, at any range the radar holds it: ConstructRadar.cs)
             if (f.Seek == OrdSeek.Heat)
                 s.Flags |= ShellFlags.FlareProne;
             return;
