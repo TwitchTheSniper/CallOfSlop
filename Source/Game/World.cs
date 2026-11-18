@@ -97,6 +97,11 @@ public struct MoveState
     public byte RideFree; // > 0: ticks of weak air steering after leaving a moving construct (its momentum carries you)
     public Vector3 RideLocal; // feet in the segment's frame
     public Vector3 RideClimbTo; // a climb's end (the segment's frame)
+    // A ladder climb (ConstructRide.ClimbLadder): three legs, on (to the rungs), the climb, off (to the floor at the other end),
+    // glided one after another; RideClimbTo is the current leg's end, RideClimbNext and RideClimbLast the later ones'.
+    public byte RideLadder; // 0: not on a ladder; else LadderOn, LadderDown when going down, and the low 2 bits the legs still to come
+    public ushort RideLadderPart; // the ladder climbed (a part of RideBody)
+    public Vector3 RideClimbNext, RideClimbLast;
     public Vector3 RideGripUp; // standing on a grip face: its up in the segment's frame (zero: an ordinary surface)
     public Vector3 RideWorld; // where the frame last put the feet (world; not sent: the start of the next tick's own move)
     // Contraption space (ConstructRideMove.cs): a rider with RideUp set lives in the construct: RideLocal and RideVel are their
@@ -599,6 +604,7 @@ public struct Snap
     public byte RideSeg;
     public Vector3 RideLocal;
     public Vector3 RideUp; // contraption space: their up in its rest frame (ConstructRideMove.cs)
+    public ushort RideLadder; // on this ladder of RideBody + 1 (0: not on one; ConstructRideLadder.cs)
     public bool Noclip; // Sandbox: flying (NoclipMove.cs): no ground under them, no arena to hold them to
 }
 
@@ -833,6 +839,12 @@ public sealed class Player
     public Vector3 RenderRideBody; // the construct's drawn position (its body frame's origin) this frame: with RenderRideRel, the render origin for a rider's camera (Program.RenderOrigin)
     public Vector3 RenderRideRel; // the feet from RenderRideBody, worked out in small numbers (never as a difference of two world points, which jitters by float rounding)
     public Vector3 RenderRideFeet; // the feet in the rider's own axes, from the frame's origin: the legs' gait works here, still however fast the construct goes (a ship in orbit: 300 m/s)
+    // On a ladder (ConstructRideLadder.cs; set each frame by GameSandbox, drawn by LadderAnim.cs): the ladder's frame as it is
+    // drawn (its own frame to the world), its feet line (LadderGeom), and the feet in its frame. The body faces the ladder.
+    public bool RenderLadder;
+    public Matrix4x4 RenderLadderFrame = Matrix4x4.Identity;
+    public Vector3 RenderLadderFeet;
+    public LadderGeom RenderLadderGeom;
     public Vector3 RenderWheelR, RenderWheelL; // a driver's hands on the steering wheel (world), and the rim's turn
     public Quaternion RenderWheelRot = Quaternion.Identity;
 
@@ -844,6 +856,7 @@ public sealed class Player
     /// <summary>Client, a remote player: the construct the interpolated snapshots have them riding (0: none), and their feet in its frame (ConstructRide.cs).</summary>
     public ushort SnapRideBody;
     public Vector3 SnapRideUp;
+    public ushort SnapRideLadder; // on this ladder + 1 (0: not on one)
 
     public byte SnapRideSeg;
     public Vector3 SnapRideLocal;

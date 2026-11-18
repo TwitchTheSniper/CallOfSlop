@@ -1176,6 +1176,7 @@ public sealed partial class Game : IDisposable
             p.SnapRideSeg = s.RideSeg;
             p.SnapRideLocal = s.RideLocal;
             p.SnapRideUp = s.RideUp;
+            p.SnapRideLadder = s.RideLadder;
         }
 
         static void SetMotion(Player p, Vector3 vel, bool grounded, bool mantling)
@@ -2278,7 +2279,7 @@ public sealed partial class Game : IDisposable
                 _w.Begin(Msg.Hello).U8((byte)nameBytes.Length);
                 foreach (var c in nameBytes)
                     _w.U8(c);
-                _w.U8(0).U8(0); // (two bytes that held prestige and level until protocol 345: kept, so the version below stays where every build reads it)
+                _w.U8(0).U8(0); // (two bytes that held prestige and level until protocol 346: kept, so the version below stays where every build reads it)
                 _w.U16(ServerInfo.ProtocolVersion); // protocol 74: the host refuses a different build (GameHostBye.cs)
                 _w.U64(LocalWorldKey); // protocol 128: who this PC is to a saved world (GameWorldSave.cs)
                 Net.SendToServer(_w.Span, PacketReliability.ReliableOrdered);
@@ -2301,7 +2302,7 @@ public sealed partial class Game : IDisposable
                     name = Settings.Clean($"{name[..Math.Min(name.Length, 13)]} {p.Id}");
                 p.Name = name;
                 if (r.Has(2))
-                    r.U16(); // (prestige and level until protocol 345: kept as padding, so an older build's version is read where it sends it)
+                    r.U16(); // (prestige and level until protocol 346: kept as padding, so an older build's version is read where it sends it)
                 if (r.Has(2) && VersionProblem(r.U16(), "player") is { } helloProblem) // (builds before protocol 74 don't send it: let them in)
                 {
                     RefuseVersion(sender, p, helloProblem); // GameHostBye.cs

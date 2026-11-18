@@ -216,13 +216,27 @@ public sealed class PlayerRig
         if (_packDraw.Mmu)
             _packDraw.MmuFrame = EvaRender.OnBack(p) * upper;
         _packDraw.Time = time;
-        var tool = ToolRender.ThirdPerson(p, gunPose, upper, time, ref _toolDraw.Frame);
-        _tool.Visible = tool;
-        Gun.Root.Visible = !tool;
-        if (tool)
+        if (p.RenderLadder && !seated)
+        {
+            // On a ladder: both hands on its rungs, nothing in them (LadderAnim.cs).
+            _tool.Visible = false;
+            Gun.Root.Visible = false;
+            LadderAnim.Hands(p, LadderAnim.Weight(p), body, out var rh, out var lh);
+            ThirdPersonArms.PoseHands(p, rh, lh, upper);
             PoseArms(upper);
+        }
+        else if (ToolRender.ThirdPerson(p, gunPose, upper, time, ref _toolDraw.Frame))
+        {
+            _tool.Visible = true;
+            Gun.Root.Visible = false;
+            PoseArms(upper);
+        }
         else
+        {
+            _tool.Visible = false;
+            Gun.Root.Visible = true;
             PoseGun(p, def, gunPose, upper, time);
+        }
 
         var frac = Math.Clamp(p.Health / (float)World.MaxHealth, 0f, 1f);
         _health.SetLocalMatrix(Matrix4x4.CreateScale(0.8f * frac, 0.06f, 0.06f) * Matrix4x4.CreateTranslation(0, barY, 0));

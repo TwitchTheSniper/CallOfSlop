@@ -221,7 +221,8 @@ public static class LegAnimator
         var yaw = p.RenderYaw;
         var stance = p.RenderStance;
         var seated = p.RenderSeat != SeatKind.None; // (carried by a construct: no gait, whatever the speed)
-        var vel = seated ? Vector3.Zero : GravityFrames.ToLocal(pos, p.RenderVelocity); // (a planet: in the body's own frame)
+        var ladder = p.RenderLadder && !seated; // (climbing: hands and feet on the rungs, LadderAnim.cs)
+        var vel = seated || ladder ? Vector3.Zero : GravityFrames.ToLocal(pos, p.RenderVelocity); // (a planet: in the body's own frame)
         if (p.RenderRide)
         {
             // Contraption space: the gait in the rider's own frame, as they are drawn (PlayerRender). In the world's the planted
@@ -318,6 +319,10 @@ public static class LegAnimator
         if (seated)
         {
             SeatedLegs(ref st, pose, p.RenderSeat, p.RenderLookYaw);
+        }
+        else if (ladder)
+        {
+            LadderLegs(ref st, pose, p);
         }
         else if (prone)
         {
@@ -561,7 +566,7 @@ public static class LegAnimator
         // ---- Locals for the scene graph / immediate path ----
         pose.PelvisLocal = pose.Pelvis;
         var invPelvis = ArmNodes.RigidInverse(pose.Pelvis);
-        var body = p.RenderRide ? bodyRot * Matrix4x4.CreateFromQuaternion(p.RenderRideRot) * Matrix4x4.CreateTranslation(p.RenderPosition) : bodyRot * Matrix4x4.CreateTranslation(pos); // (as PlayerRender draws a rider)
+        var body = ladder ? LadderAnim.BodyFrame(p) : p.RenderRide ? bodyRot * Matrix4x4.CreateFromQuaternion(p.RenderRideRot) * Matrix4x4.CreateTranslation(p.RenderPosition) : bodyRot * Matrix4x4.CreateTranslation(pos); // (as PlayerRender draws a rider)
         for (var i = 0; i < 2; i++)
         {
             pose.ThighLocal[i] = pose.Thigh[i] * invPelvis;
@@ -744,6 +749,41 @@ public static class LegAnimator
             var pole = Vector3.Normalize(new Vector3(side * 0.1f, 0.8f, -1f));
             pose.Planted[i] = true;
             pose.Lifted[i] = false;
+            Solve(pose, i, hip, target, pole, foot);
+        }
+    }
+
+    /// <summary>
+    /// On a ladder (LadderAnim.cs): facing it, the hips a little back from the rungs, each foot on a rung or stepping up to
+    /// the next, knees out in front; the upper body leans in. Eased to standing as they step on or off. No foot rays.
+    /// </summary>
+    private static void LadderLegs(ref State st, LegPose pose, Player p)
+    {
+        st.Phase = 0;
+        st.Cadence = 0;
+        st.Drop = 0;
+        st.PelvisH = StandPelvis;
+        st.Air = st.Fall = st.Mantle = 0;
+        var w = LadderAnim.Weight(p);
+        Span<Vector3> feet = stackalloc Vector3[2];
+        LadderAnim.Feet(p, w, feet);
+        var hips = new Vector3(0, StandPelvis - 0.06f * w, 0.06f * w);
+        pose.Pelvis = Matrix4x4.CreateTranslation(hips);
+        pose.Drop = 0;
+        pose.Upper = Matrix4x4.CreateTranslation(0, -StandPelvis, 0) * Matrix4x4.CreateRotationX(-0.1f * w) * Matrix4x4.CreateTranslation(hips);
+        var foot = FootFrame(0, 0, Vector3.UnitY);
+        for (var i = 0; i < 2; i++)
+        {
+            var side = i == 0 ? 1f : -1f;
+            var hip = Vector3.Transform(new Vector3(side * 0.19f, -HipDrop, 0), pose.Pelvis);
+            var target = feet[i];
+            var d = target - hip;
+            const float reach = MaxReach * 1.01f;
+            pose.Lifted[i] = d.LengthSquared() > reach * reach;
+            if (pose.Lifted[i])
+                target = hip + d * (reach / d.Length());
+            var pole = Vector3.Normalize(new Vector3(side * 0.2f, 0.2f, -1f));
+            pose.Planted[i] = false;
             Solve(pose, i, hip, target, pole, foot);
         }
     }

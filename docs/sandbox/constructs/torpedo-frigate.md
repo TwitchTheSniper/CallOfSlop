@@ -77,10 +77,12 @@ inside the hull, in one room with engineering.
 
 - Two torpedo sponsons (Zero Day Torpedo Bay L/R), each a room off the torpedo room through a bulkhead door, with a
   six-round drum Ordnance Rack loaded with designed torpedoes (radar seeker, HE warhead) that leave through the launch
-  port in the sponson's front face. The fire buttons are on the torpedo room's walls. The ops gunner fires both bays with
-  Space (Karl, 2026-11-17): an Input Reader on ops' Turret Module reads the seat's jump key and is wired to an OR Gate under
-  the torpedo room's ceiling on each side (a wire reaches 8 m), each wired to its bay's magazine; the mouse stays the PDCs'.
-  The mess's station is too far aft for the wires and has no torpedo key. Launched in space a torpedo coasts 7 minutes after
+  port in the sponson's front face. The fire buttons are on the torpedo room's walls. Either gunner fires both bays with
+  Space (Karl, 2026-11-17/18): an Input Reader on each station's Turret Module reads the seat's jump key. Ops' is wired to an
+  OR Gate under the torpedo room's ceiling at its fore end on each side; the mess's to one in the passage between the suit bay
+  and the airlock, then one each side at the torpedo room's aft end (a wire reaches 8 m); each side's gates are wired to its
+  bay's magazine. The mouse stays the PDCs'. A launch's way-out ray passes the bay the rack hangs in (its convex collider
+  closes the port: `ConstructOrdnance.Blocked`), so the magazines let go. Launched in space a torpedo coasts 7 minutes after
   its motor (about 120 km; weapons.md "Flight").
 - The Zero Day Railgun along the spine, fixed forward and aimed by the ship (the pilot fires it). Each slug takes 15 MJ from the Capacitor Bank M in engineering, aft of the reactor (ship-works.md 8; energy guns fire from capacitors only): two full slugs and a bit, one refilled in 10 s.
 - Four Zero Day PDCs on barbettes on the beam, run from the two gun stations (ops and the mess). Each turns on a **Turret

@@ -84,10 +84,24 @@ public static class ConstructGrab
     /// </summary>
     public static void Drive(Construct c, float dt, bool nearOther = false)
     {
+        var vel = c.Vel;
+        var spin = c.AngVel;
+        Follow(c.Pos, c.Rot, c.Com, c.GrabLocal, ref vel, ref spin, c.GrabTarget, c.GrabRot, c.GrabAccel, c.GrabFrameVel, c.GrabFrameSpin, dt, nearOther);
+        c.Vel = vel;
+        c.AngVel = spin;
+    }
+
+    /// <summary>
+    /// <see cref="Drive"/>'s spring on a pose and velocities held apart from a construct: the server's held body, and a
+    /// joined holder's own prediction of it (GameSandboxPhysGun.cs: the same swing and lag as the host's).
+    /// </summary>
+    public static void Follow(Vector3 pos, Quaternion rot, Vector3 com, Vector3 grabLocal, ref Vector3 vel, ref Vector3 angVel, Vector3 target, Quaternion wantRot,
+        float accel, Vector3 frameVel, Vector3 frameSpin, float dt, bool nearOther = false)
+    {
         var maxPull = nearOther ? MathF.Min(MaxPull, NearStep / dt) : MaxPull; // (another construct close by: a step short enough that the overlap tests can't be jumped)
         var maxTurn = nearOther ? MathF.Min(MaxTurn, NearTurn) : MaxTurn;
         // The turn first: the rotation still to go, as an axis and angle, closed over TurnTime.
-        var q = c.GrabRot * Quaternion.Conjugate(c.Rot);
+        var q = wantRot * Quaternion.Conjugate(rot);
         if (q.W < 0)
             q = new Quaternion(-q.X, -q.Y, -q.Z, -q.W);
         var s = MathF.Sqrt(q.X * q.X + q.Y * q.Y + q.Z * q.Z);
@@ -97,31 +111,32 @@ public static class ConstructGrab
             var angle = 2f * MathF.Atan2(s, q.W);
             w = new Vector3(q.X, q.Y, q.Z) / s * MathF.Min(angle / TurnTime, maxTurn);
         }
-        var dw = w + c.GrabFrameSpin - c.AngVel; // (in a rider's hands, on top of their deck's turn)
-        var spin = SpinFor(c.GrabAccel) * dt;
+        var dw = w + frameSpin - angVel; // (in a rider's hands, on top of their deck's turn)
+        var spin = SpinFor(accel) * dt;
         if (dw.LengthSquared() > spin * spin)
             dw *= spin / dw.Length();
         if (float.IsFinite(dw.X + dw.Y + dw.Z))
-            c.AngVel += dw;
+            angVel += dw;
         // The move: the grab point's wanted velocity closes the gap over SettleTime; the centre takes it, less what the
         // spin already gives the grab point (pr02: a point off the centre is carried, not swung round the centre).
-        var at = c.ToWorld(c.GrabLocal);
-        var gap = c.GrabTarget - at;
+        var at = pos + Vector3.Transform(grabLocal, rot);
+        var gap = target - at;
         var want = gap / SettleTime;
         // At most the top speed, and no faster than the beam can brake from within the gap (a stronger beam overshot otherwise).
-        var cap = MathF.Min(maxPull, MathF.Sqrt(2f * BrakeShare * c.GrabAccel * gap.Length()));
+        var cap = MathF.Min(maxPull, MathF.Sqrt(2f * BrakeShare * accel * gap.Length()));
         if (want.LengthSquared() > cap * cap)
             want *= cap / want.Length();
         if (!float.IsFinite(want.X + want.Y + want.Z))
             return;
-        var dv = want + c.GrabFrameVel - Vector3.Cross(c.AngVel, at - c.WorldCom) - c.Vel; // (the same: on top of their deck's speed)
-        var lim = (c.GrabAccel + ConstructPhysics.GravityAccel) * dt;
+        var worldCom = pos + Vector3.Transform(com, rot);
+        var dv = want + frameVel - Vector3.Cross(angVel, at - worldCom) - vel; // (the same: on top of their deck's speed)
+        var lim = (accel + ConstructPhysics.GravityAccel) * dt;
         if (dv.LengthSquared() > lim * lim)
             dv *= lim / dv.Length();
-        c.Vel += dv;
-        var own = c.Vel - c.GrabFrameVel;
+        vel += dv;
+        var own = vel - frameVel;
         if (nearOther && own.LengthSquared() > maxPull * maxPull)
-            c.Vel = c.GrabFrameVel + own * (maxPull / own.Length());
+            vel = frameVel + own * (maxPull / own.Length());
     }
 
     // ---- A free joint in the beam: a slider's carriage, a free rotation part's leaf, and what they carry --------------------

@@ -348,6 +348,26 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
     // on a tank part so its fuel reaches it, clear of the railgun's barrel, the flare launchers, the cradle, the sensor and the fins.
     private const double TopRcsBowX = 1.4, TopRcsBowZ = 5.2, TopRcsSternX = 2.0, TopRcsSternZ = 45.9, TopRcsPad = 0.54;
 
+    // The side jets (Karl, 2026-11-18: A and D slid nothing, it had no jet pushing sideways): a Heavy RCS Thruster out of each flank low
+    // on the beam (below it the hull's void boxes reach out under the flare), at the bow behind the retro jets and at the stern, each pushing the ship away from its side.
+    private const double SideRcsBowZ = 5.5, SideRcsBowY = 3.0, SideRcsSternZ = 45.0, SideRcsSternY = 3.3;
+
+    /// <summary>A block out of the hull's side (on the beam line, its widest) on side s at y, z, its outer face standing clear of the skin and its armour, the socket on it facing out.</summary>
+    private static void SideJetPad(Part p, string name, int s, double y, double z)
+    {
+        var h = TopRcsPad / 2;
+        double most = 0, least = double.MaxValue;
+        foreach (var zz in new[] { z - h, z + h })
+            foreach (var yy in new[] { y - h, y + h })
+            {
+                most = Math.Max(most, SkinHalf(zz, yy));
+                least = Math.Min(least, SkinHalf(zz, yy));
+            }
+        double outer = Math.Ceiling((most + 0.3) * 100) / 100, inner = least - 0.12; // (clear of the beam's chine and the armour on the side)
+        Solid(p, Cx + Math.Min(s * inner, s * outer), y - h, z - h, Cx + Math.Max(s * inner, s * outer), y + h, z + h, Frame, "dirty steel");
+        Sock(p, name, Cx + s * outer, y, z, s < 0 ? "-x" : "+x");
+    }
+
     /// <summary>A square pad standing out of the spine's plate (which may slope along z) at x, z, its top a whole centimetre and the socket on it, facing up.</summary>
     private static void TopJetPad(Part p, string name, double x, double z)
     {
@@ -841,6 +861,14 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         Sock(p, "switchAirlock", Cx + 1.75, Ft0 + 1.3, 31.6, "-x");
         Sock(p, "switchEng", Cx + 1.0, Ft0 + 1.3, 34.25, "+z");
         Sock(p, "switchTorp", Cx + 2.5, Ft0 + 1.3, 30.125, "-z");
+        // Under the ceiling, the OR Gates that carry the mess gunner's torpedo key forward (a wire reaches 8 m): one in the passage
+        // between the suit bay and the airlock, then one each side at the torpedo room's aft end, each on a small plate 5 mm under
+        // the deck above.
+        foreach (var (n, x, z) in new[] { ("relayAft", Cx + 0.8, 33.2), ("relayAftL", Cx - 3.0, 28.0), ("relayAftR", Cx + 3.0, 28.0) })
+        {
+            Solid(p, x - 0.15, Ceil0 - 0.03, z - 0.15, x + 0.15, Ceil0 - 0.005, z + 0.15, Ceil, "painted plating");
+            Sock(p, n, x, Ceil0 - 0.03, z, "-y");
+        }
         foreach (var (what, z) in new[] { ("torpedo room", 25.0), ("engineering", ZAft + 0.25) })
             foreach (var y in new[] { 0.0, Ceil0 + 0.25 })
                 MustFit(what, z, Lw + 0.25, y);
@@ -1118,6 +1146,8 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         // Two attitude jets on the canopy's roof, either side of the railgun's barrel, firing up: they push the nose down (and roll the ship).
         foreach (var s in new[] { -1, 1 })
             TopJetPad(p, s < 0 ? "rcsTopL" : "rcsTopR", Cx + s * TopRcsBowX, TopRcsBowZ);
+        foreach (var s in new[] { -1, 1 })
+            SideJetPad(p, s < 0 ? "rcsSideL" : "rcsSideR", s, SideRcsBowY, SideRcsBowZ);
         p.Set(("fuelTank", Kw(("capacity", 1500))), ("ports", Py.L(BigDriveParts.PipePort("Fuel out", "out", [.. P(Cx, 1.0, 8.0).Cast<object>()], "+z", "fuel"))));
         return p.Stats(9000, 24000, 40, 15.0);
     }
@@ -1300,6 +1330,8 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         // Two attitude jets on the roof aft of the shuttle, between the heat-sink fins, firing up: they push the tail down (and roll the ship).
         foreach (var s in new[] { -1, 1 })
             TopJetPad(p, s < 0 ? "rcsTopL" : "rcsTopR", Cx + s * TopRcsSternX, TopRcsSternZ);
+        foreach (var s in new[] { -1, 1 })
+            SideJetPad(p, s < 0 ? "rcsSideL" : "rcsSideR", s, SideRcsSternY, SideRcsSternZ);
         // (no stern face: the drive collar closes it, its plate the engines' mount)
         // Heat-sink fins above the drive, angled out.
         foreach (var s in new[] { -1, 1 })
@@ -2172,7 +2204,7 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         foreach (var n in new[] { "retroL", "retroR" })
             Hang(bp, "Zero Day Retro Jet", bow, n, "top");
         foreach (var piece in new[] { bow, stern })
-            foreach (var n in new[] { "rcsTopL", "rcsTopR" })
+            foreach (var n in new[] { "rcsTopL", "rcsTopR", "rcsSideL", "rcsSideR" })
                 Hang(bp, "Heavy RCS Thruster", piece, n, "base");
         // Ladders: the boarding ladder up the shaft, two between the decks.
         Hang(bp, "Zero Day Boarding Ladder", la, "boarding", "hull");
@@ -2229,8 +2261,11 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         var pilot = Hang(bp, "Flight Couch", uf, "pilot", "bottom");
         Hang(bp, "Flight Couch", uf, "copilot", "bottom");
         var fc = Hang(bp, "Zero Day Flight Computer", uf, "computer", "bottom");
+        // Ship keys with mouse aim, as the other ships fly (Karl, 2026-11-18: on Auto it flew as a rotorcraft, so W tipped it on its lift jets and Ctrl never lit the roof's jets).
+        var flight = ShipParts.ShipFlight();
         if (crewed)
-            bp.Steps[fc]["config"] = new PyDict { ["aiCrew"] = (int)ShipAiMode.Everyone };
+            flight["aiCrew"] = (int)ShipAiMode.Everyone;
+        bp.Steps[fc]["config"] = flight;
         bp.Wires.Add((pilot, fc));
         var railModule = Hang(bp, "Turret Module", uf, "gunModule", "-y");
         Hang(bp, "Chart Table", uf, "chart", "back");
@@ -2284,7 +2319,7 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
             bp.Steps[mag]["config"] = MagazineConfig(side);
             bp.Feeds.Add((mag, rings[k], "Ammo out", "Ammo in", MagazineFeed(bp, mag, rings[k])));
         }
-        var torpedoKey = -1;
+        var torpedoKeys = new int[2];
         foreach (var (deck, pair) in new[] { (uf, new[] { guns[0], guns[1] }), (ua, new[] { guns[2], guns[3] }) })
         {
             var console = Hang(bp, "Gunnery Console", deck, "gun", "bottom");
@@ -2293,18 +2328,24 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
             bp.Wires.Add((seat, module));
             foreach (var g in pair)
                 bp.Wires.Add((module, g));
-            // Ops' gunner's torpedo key: an Input Reader on the module reading Space, wired through an OR Gate under the torpedo room's ceiling
-            // to each bay's magazine (Karl, 2026-11-17: "connect the torpedo launch to the gunnery chair"). The mouse stays the PDCs'; the
-            // torpedo room's buttons still fire a bay each. The mess's station is too far aft for the wires.
-            if (deck != uf)
-                continue;
-            torpedoKey = Hang(bp, "Input Reader", module, "+x", "-x");
-            bp.Steps[torpedoKey]["config"] = new PyDict { ["setting"] = "jump" };
-            bp.Wires.Add((seat, torpedoKey));
+            // Each gunner's torpedo key: an Input Reader on the module reading Space, wired through OR Gates under the lower deck's ceiling
+            // to each bay's magazine (Karl, 2026-11-17/18: "connect the torpedo launch to the gunnery chair", both chairs). The mouse stays
+            // the PDCs'; the torpedo room's buttons still fire a bay each.
+            var key = Hang(bp, "Input Reader", module, "+x", "-x");
+            bp.Steps[key]["config"] = new PyDict { ["setting"] = "jump" };
+            bp.Wires.Add((seat, key));
+            torpedoKeys[deck == uf ? 0 : 1] = key;
         }
+        // Ops' key goes to a gate each side at the torpedo room's fore end; the mess's to one in the passage aft, then a gate each side at
+        // the torpedo room's aft end. Each side's gates are wired to its magazine below.
         var relays = new[] { Hang(bp, "OR Gate", lf, "relayL", "+y"), Hang(bp, "OR Gate", lf, "relayR", "+y") };
         foreach (var r in relays)
-            bp.Wires.Add((torpedoKey, r));
+            bp.Wires.Add((torpedoKeys[0], r));
+        var aftRelay = Hang(bp, "OR Gate", la, "relayAft", "+y");
+        bp.Wires.Add((torpedoKeys[1], aftRelay));
+        var aftRelays = new[] { Hang(bp, "OR Gate", la, "relayAftL", "+y"), Hang(bp, "OR Gate", la, "relayAftR", "+y") };
+        foreach (var r in aftRelays)
+            bp.Wires.Add((aftRelay, r));
         // The shuttle's Docking Clamp on the cradle (holding from the start, its box round the pod) and the ladder up into it from the mess.
         var clamp = Hang(bp, "Docking Clamp Medium", spine, "shuttleClamp", "-y");
         bp.Steps[clamp]["config"] = ShuttleClampConfig();
@@ -2332,7 +2373,7 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         // bay's fire button lets one go.
         var steps = (List<object?>)json["steps"]!;
         var wires = (List<object?>)json["wires"]!;
-        foreach (var (bay, fire, relay) in new[] { (bayL, fireL, relays[0]), (bayR, fireR, relays[1]) })
+        foreach (var (bay, fire, relay, aft) in new[] { (bayL, fireL, relays[0], aftRelays[0]), (bayR, fireR, relays[1], aftRelays[1]) })
         {
             steps.Add(Kw(("part", Magazine), ("on", bay), ("socket", "magazine"), ("by", "top")));
             var mag = steps.Count - 1;
@@ -2340,6 +2381,7 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
                 steps.Add(Kw(("part", Torpedo), ("on", mag), ("socket", $"lug{i}"), ("by", "lug")));
             wires.Add(new List<object?> { fire, mag });
             wires.Add(new List<object?> { relay, mag });
+            wires.Add(new List<object?> { aft, mag });
         }
         return json;
     }

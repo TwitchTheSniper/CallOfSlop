@@ -139,6 +139,8 @@ public sealed partial class Game
             h.GrabSeg = 0;
         }
         _sbPredOn = false;
+        _simThrowSpeed = 0;
+        _simStill = freeze; // (pg01: frozen where it is: the client's copy doesn't fly on)
         h.GrabAskedAt = SandboxNow;
         PhysGunSend(freeze ? CActKind.GrabFreeze : CActKind.GrabRelease, 0, default, 0);
     }
@@ -154,6 +156,10 @@ public sealed partial class Game
         }
         _sbPredOn = false;
         h.GrabAskedAt = SandboxNow;
+        _simStill = false;
+        var creative = SandboxInfiniteParts; // (pg01: the client's flight of it takes the server's throw: ConstructEditsUpgrades.Throw)
+        _simThrowSpeed = !IsServer && _simOn && !_simFree && Constructs.Get(_simBody) is { } thrown && SandboxHands.Has(LocalId, ToolStat.Throw, creative)
+            ? MathF.Min(ConstructEdits.ThrowSpeed, SandboxHands.PullOf(LocalId, creative) / MathF.Max(thrown.Mass, 1f) * ConstructEdits.ThrowPullSeconds) : 0;
         PhysGunSend(CActKind.GrabThrow, 0, default, 0);
     }
 
@@ -212,6 +218,7 @@ public sealed partial class Game
             ref var h = ref SandboxHands.Hand(LocalId);
             if (h is { Tool: ConstructTool.PhysicsGun, GrabSeg: not 0 } && Constructs.Get(h.GrabBody) is { } carried && h.GrabSeg <= carried.JointCount)
             {
+                SimStop();
                 if (!ConstructGrab.InChain(carried, h.GrabSeg))
                     PredictJoint(carried, h.GrabSeg, h.GrabLocal, lp, dt); // (in a chain only the server knows how the pull shares out: it draws the server's, smoothly)
                 _sbPredHave = false;
@@ -226,6 +233,14 @@ public sealed partial class Game
                 me = lp;
             }
         }
+        // pg01: the holder's piece simulated by the server's own spring (GameSandboxPhysGunSim.cs), and flown on once let go.
+        if (SandboxSimHeld(c, me, dt))
+        {
+            _sbPredHave = false;
+            if (_sbFadeBody == _simBody)
+                _sbFadeBody = 0;
+            return;
+        }
         // cj01: let go (or the hold ended): the piece doesn't jump back to the server's pose, a round trip and the bodies'
         // delay behind; the gap closes over a fraction of a second.
         if (_sbPredHave && _sbPredBody != body)
@@ -235,6 +250,7 @@ public sealed partial class Game
                 _sbFadeBody = _sbPredBody;
                 _sbFadePos = _sbPredDrawnPos - was.Pos;
                 _sbFadeRot = Quaternion.Normalize(_sbPredDrawnRot * Quaternion.Conjugate(was.Rot));
+                _sbFadeSlow = false;
             }
             _sbPredHave = false;
         }
@@ -242,14 +258,17 @@ public sealed partial class Game
         {
             if (Constructs.Get(_sbFadeBody) is { } f && _sbFadePos.LengthSquared() + (1 - MathF.Abs(_sbFadeRot.W)) > 1e-6f)
             {
-                var k = MathF.Exp(-dt / FadeSeconds);
+                var k = MathF.Exp(-dt / (_sbFadeSlow ? SimReleaseFade : FadeSeconds));
                 _sbFadePos *= k;
                 _sbFadeRot = Quaternion.Normalize(Quaternion.Slerp(Quaternion.Identity, _sbFadeRot, k));
                 f.Pos += _sbFadePos;
                 f.Rot = Quaternion.Normalize(_sbFadeRot * f.Rot);
             }
             else
+            {
                 _sbFadeBody = 0;
+                _sbFadeSlow = false;
+            }
         }
         if (c == null || me == null)
         {
@@ -347,6 +366,7 @@ public sealed partial class Game
     private Vector3 _sbPredErrPos, _sbPredDrawnPos, _sbFadePos;
     private Quaternion _sbPredErrRot = Quaternion.Identity, _sbPredDrawnRot = Quaternion.Identity, _sbFadeRot = Quaternion.Identity;
     private ushort _sbPredBody, _sbFadeBody;
+    private bool _sbFadeSlow;
 
     private float _sbSteerSent = float.NaN;
     private Quaternion _sbSteerRelSent;

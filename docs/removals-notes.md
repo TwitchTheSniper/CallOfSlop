@@ -14,7 +14,7 @@ every path is the coordinator's; this file is what was done and what changed for
   keeps only the map, the start's ship, the crash site and who has been through it; an older world's tail (barracks,
   depot, data centres, quarry, buildings) is left unread. The `TUTR`, `DEPO` and `QUAR` sections are no longer written
   and are skipped like any unknown section (their tag constants stay so nobody reuses them).
-- **Wire (protocol 344).** `Msg.Tutorial`, `ColonyAlarm`, `Depot`, `Quarry`, `Objective`, `Labour`, `LabourHands`,
+- **Wire (protocol 346).** `Msg.Tutorial`, `ColonyAlarm`, `Depot`, `Quarry`, `Objective`, `Labour`, `LabourHands`,
   `Breakout`, `Errand`, `LabourDay` and `LabourIncident` keep their slots as `Removed*`, never sent. `CActKind.QuarrySkip`
   and `ErrandDrop` keep their bytes and do nothing. `RespawnSpot.Colony`, `Sfx.ColonyAlarm` and the unused
   `OpeningStage` beats keep their bytes. The colony's lore and building parts went, so part ids move.

@@ -32,6 +32,7 @@ public static partial class Program
     private static void WsTourFrame()
     {
         WsTalkFrame();
+        WsHeldFrame();
         var t = Stopwatch.GetTimestamp();
         if (_wsPerfLeft > 0 && _wsPerfLast != 0)
         {

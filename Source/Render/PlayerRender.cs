@@ -17,6 +17,8 @@ public static class PlayerRender
     {
         if (p.RenderSeat != SeatKind.None)
             return Matrix4x4.CreateFromQuaternion(p.RenderSeatRot) * Matrix4x4.CreateTranslation(p.RenderPosition);
+        if (p.RenderLadder && p.Alive)
+            return LadderAnim.BodyFrame(p); // (on a ladder: facing it)
         if (p.RenderRide)
             return Matrix4x4.CreateRotationY(-p.RenderRideYaw) * Matrix4x4.CreateFromQuaternion(p.RenderRideRot) * Matrix4x4.CreateTranslation(p.RenderPosition); // (contraption space: standing in the construct)
         var rot = Matrix4x4.CreateRotationY(-p.RenderYaw);
@@ -34,6 +36,8 @@ public static class PlayerRender
             rot = Matrix4x4.CreateFromQuaternion(p.RenderSeatRot); // seated: in the seat's frame
         else if (p.RenderRide && p.Alive)
             rot = Matrix4x4.CreateRotationY(-p.RenderRideYaw) * Matrix4x4.CreateFromQuaternion(p.RenderRideRot); // contraption space: standing in the construct
+        if (p.RenderLadder && p.Alive && p.RenderSeat == SeatKind.None)
+            rot = LadderAnim.BodyRot(p); // on a ladder: facing it (LadderAnim.cs)
         var at = Matrix4x4.CreateTranslation(p.RenderPosition);
         var color = p.Color;
         var hat = HatRender.HatFor(p); // a uniform's cap (HatRender.cs)
@@ -83,7 +87,14 @@ public static class PlayerRender
             var co = new ToolGfxOut(g);
             CanopyRender.Emit(ref co, p.Sim.Canopy, up); // Sandbox: a pilot's gear in the air
         }
-        if (p.RenderSeat == SeatKind.Driver)
+        if (p.RenderLadder && p.RenderSeat == SeatKind.None)
+        {
+            // On a ladder: both hands on its rungs, nothing in them (LadderAnim.cs).
+            LadderAnim.Hands(p, LadderAnim.Weight(p), body, out var rh, out var lh);
+            ThirdPersonArms.PoseHands(p, rh, lh, up);
+            ThirdPersonArms.Draw(g);
+        }
+        else if (p.RenderSeat == SeatKind.Driver)
         {
             // Both hands on the steering wheel, no gun (Sandbox).
             ThirdPersonArms.Animate(p, p.WeaponDef, gunPose, up, time);
