@@ -51,8 +51,10 @@ on the same channels. Decided (defaults; the user may change them):
   works, also taps the deposit through `ResourceField.Tap` into the hopper at the module's `rate` (30 units a second), counted by the time between scoops (a first scoop after a pause counts at most 0.5 s), so a slower
   or faster drill motor doesn't change it. The spot rules are the Drill Module's: a 3 m spot gives 1,200 then says "this spot
   is worked out". Tier 2: iron and copper, not gold (tier 3) or levite (tier 4, deep). A full hopper or another material says
-  so and the scoop still digs. The arm's hole ends `DrillShaft.Depth` (1.5 m) under the surface as built, as a Drill Module's
-  does: a scoop on a floor deeper than that only taps (`ShellDrillBored`), so the crosshair stays on the floor within reach and
+  so and the scoop still digs. Boring into ore, the arm's hole ends `DrillShaft.Depth` (1.5 m) under where that bore first
+  struck the ground, as a Drill Module's does: over a deposit the arm can work, a scoop on a floor deeper than that within a
+  spot's width only taps (`ShellDrillBored`); anywhere else (hillsides, cliffs, caves, ground with no ore) it digs as the ground
+  drill does, so the crosshair stays on the floor within reach and
   a held button keeps the whole rate; a player in the hole can still mantle out.
 - **Unloading.** F at a Materials Bin, a Storage Volume, a Tipping Bunker, an Ore Hauler's bed or a refinery's input tips the
   hopper first (as much as fits, the same `Deposit` and `Feed` a carried load uses); with an empty hopper F does what it did.

@@ -365,6 +365,9 @@ public sealed partial class Game
 
     private readonly List<Construct> _shSaved = [];
 
+    /// <summary>Is this body a world save's stand-in for a worn shell (only while a save captures)?</summary>
+    private bool ShellSaveStandIn(Construct c) => _shSaved.Count > 0 && _shSaved.Contains(c);
+
     /// <summary>
     /// Server, before a world save's capture: each worn shell stands for a moment where its wearer is, as worn and as damaged, with
     /// its ore hopper's load in its bin, so the save holds it (the record holds their body in the chair: <see cref="ShellCatch"/>).
@@ -401,7 +404,7 @@ public sealed partial class Game
     private void ShellUnstandAfterSave()
     {
         foreach (var c in _shSaved)
-            Constructs.Remove(c);
+            Constructs.Remove(c, quiet: true); // (no peer heard of it: no gone message, no unbolt clunk at the wearer)
         _shSaved.Clear();
     }
 

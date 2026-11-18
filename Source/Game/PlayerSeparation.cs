@@ -122,7 +122,8 @@ public sealed partial class Game
                     {
                         var lp = SandboxRiderAt(p.Sim); // (a rider: in the construct as we have it, as we are: ConstructRide.cs)
                         var d = new Vector3(lp.X - me.Sim.Position.X, 0, lp.Z - me.Sim.Position.Z);
-                        _sepMirror[n] = d.LengthSquared() < (World.PlayerRadius * 2 + 0.3f) * (World.PlayerRadius * 2 + 0.3f);
+                        var reach = World.PlayerRadius * (ShellFrames.ScaleOf(p) + ShellFrames.ScaleOf(me)) + 0.3f; // (each body's own radius, as the contact: a robot shell's frame)
+                        _sepMirror[n] = d.LengthSquared() < reach * reach;
                     }
                 }
                 _sepPos[n] = IsServer ? p.Sim.Position : SepCarried(n, p);

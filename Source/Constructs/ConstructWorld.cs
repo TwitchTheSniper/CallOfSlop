@@ -519,7 +519,9 @@ public sealed partial class ConstructWorld
     /// (ConstructConveyor.cs), unless <paramref name="keepRiders"/> (it goes elsewhere whole: travel, where they went with its
     /// copy). A client's removals are the server's word and clear its riders first (ConstructNet.cs).
     /// </summary>
-    public void Remove(Construct c, bool keepRiders = false)
+    /// <param name="quiet">a body no peer ever heard of, gone in the tick it came (a world save's stand-in for a worn shell): no
+    /// gone message, no building sound, no story note.</param>
+    public void Remove(Construct c, bool keepRiders = false, bool quiet = false)
     {
         if (c.ConveyedCount > 0)
         {
@@ -532,12 +534,15 @@ public sealed partial class ConstructWorld
                 FreeStore(ref c.Parts[i]); // (what a construct that goes holds goes with it; one being taken apart spills first)
         if (_byId.TryGetValue(c.Id, out var had) && ReferenceEquals(had, c) && _partTally >= 0)
             _partTally = Math.Max(0, _partTally - c.PartCount);
-        GoneRing[GoneTotal++ % GoneRing.Length] = new GoneBody(c.ToWorld(c.Com), c.Radius, c.PartCount);
+        if (!quiet)
+            GoneRing[GoneTotal++ % GoneRing.Length] = new GoneBody(c.ToWorld(c.Com), c.Radius, c.PartCount);
         Bodies.Remove(c);
         GridStale();
         _byId.Remove(c.Id);
         PatchBase.Remove(c.Id);
         StructureDirty.Remove(c.Id);
+        if (quiet)
+            return;
         Removed.Add(c.Id);
         Note(CNoteKind.Gone, c.Id); // (the story: ConstructWorldNotes.cs)
     }

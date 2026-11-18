@@ -85,7 +85,7 @@ public sealed partial class Game
         if (e.Ops.Count >= table.LogCap)
             return $"the ground has taken all the changes it can this match ({e.Ops.Count:N0}): nothing more can be dug or filled";
         var inv = SandboxInv.Of(p.Id);
-        if (kind == DigKind.Scoop && ShellDrillBored(p, e, at))
+        if (kind == DigKind.Scoop && ShellDrillBored(p, at))
         {
             ShellDrillTap(p, at, now); // (a drill arm's hole is as deep as a Drill Module's: below it, the arm only taps the ore, GameShellHopper.cs)
             return null;

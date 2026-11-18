@@ -50,6 +50,7 @@ public sealed partial class Game
         }
         hp = default;
         (p.HopperMaterial, p.HopperAmount) = (0, 0);
+        _boring[p.Id] = false;
     }
 
     /// <summary>Server, from <see cref="ShellTick"/>: peers hear a hopper's load again when it moved by 2 % of its room, or emptied or changed material.</summary>
@@ -128,13 +129,36 @@ public sealed partial class Game
 
     private enum DrillWhy : byte { None, WorkedOut, Tier, Deep, Takes, Other, Full }
 
+    private readonly Vector3[] _boreFrom = new Vector3[256]; // where a drill arm's bore into an ore spot began (the ground it first struck there)
+    private readonly bool[] _boring = new bool[256];
+
     /// <summary>
-    /// Server: a scoop by a drill arm at a point already <see cref="DrillShaft.Depth"/> under the surface as built (the user, 2026-11-17:
-    /// a sustained dig taps the arm's whole rate). The hole ends there, as a Drill Module's does, so the crosshair stays on its floor
-    /// within reach and the arm taps on; a player in it can still mantle out.
+    /// Server: a scoop by a drill arm boring into ore (the user, 2026-11-17: a sustained dig taps the arm's whole rate). Only where the
+    /// point is over a deposit the arm can tap, and only once the bore is <see cref="DrillShaft.Depth"/> deep, measured from where this
+    /// bore first struck the ground (a scoop more than a spot's width across starts a new bore): then the hole ends there, as a Drill
+    /// Module's does, so the crosshair stays on its floor within reach and the arm taps on, and a player in it can still mantle out.
+    /// Anywhere else (a hillside, a cliff, a cave, ground with no ore) the scoop digs as the ground drill's does.
     /// </summary>
-    private static bool ShellDrillBored(Player p, IDigGround ground, Vector3 at) =>
-        p.InShell && p.ShellFrame != 0 && ShellFrames.Of(p.ShellFrame).Find(ShellModuleKind.Drill) != null && ground.AboveBuilt(at) < -DrillShaft.Depth;
+    private bool ShellDrillBored(Player p, Vector3 at)
+    {
+        if (!p.InShell || p.ShellFrame == 0 || ShellFrames.Of(p.ShellFrame).Find(ShellModuleKind.Drill) is not { } drill || Constructs.Resources is not { } field)
+            return false;
+        var kind = field.Planet != null ? field.TappableAt(at) : field.TappableAt(at.X, at.Z);
+        if (kind == null || kind.MinTier > drill.Tier || kind.Deep)
+        {
+            _boring[p.Id] = false;
+            return false;
+        }
+        var up = GravityFrames.UpAt(at);
+        var d = at - _boreFrom[p.Id];
+        var across = d - up * Vector3.Dot(d, up);
+        if (!_boring[p.Id] || across.LengthSquared() > ResourceField.SpotSize * ResourceField.SpotSize)
+        {
+            (_boreFrom[p.Id], _boring[p.Id]) = (at, true);
+            return false;
+        }
+        return Vector3.Dot(_boreFrom[p.Id] - at, up) > DrillShaft.Depth;
+    }
 
     /// <summary>
     /// Both sides: a tool asked for by someone in a shell whose frame forces one (a module's "tool", Constructs/Shells.json: the Mining
