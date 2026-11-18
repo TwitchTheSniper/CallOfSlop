@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 5 body 5 kit 5 wear 5, chassis 2 axles, front under the hood, inset 2.5 m, leaf/leaf, wing 0.5, cab style bus front, language bus heavy 2.56 m, flare 0.09, crowned 0.6, brow 0.73 1 m, tail 0.86 1 m, door right, 10 facets, cab bus capsule, 7 facets, nose rounded, fitting destination board, wear age 0.76 (0 rusty, 6 dirty, 0 sooty, 0 patched, 0 rusted out), body gun bay+bed, cab cab-over, nose flat, rear hitch, under tub, sides walls, layout gun bay 2 m+bed 2 m, plan 2
   "format": "call-of-slop-construct-blueprint/1",
   "name": "British Technical 5",
-  "group": "Ministry of Slop",
+  "group": "British",
   "description": "A technical: a flat nose, a cab-over, a gun behind the cab, an open bed, a tow hitch. 1 gun.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#2b2a28"},
@@ -82,9 +82,9 @@
     {"part": "Scrap Ladder", "on": 72, "socket": "front01", "by": "back", "paint": "#1b1c1e"},
     {"part": "Plate Steel 0.5 m", "weld": {"on": 72, "pos": [-1.058, 0.581, 4.254], "rot": [-0.0118, 0.0107, 0.7112, 0.7028]}, "paint": "#b5121b"},
     {"part": "Hull Loft (decoD WoWMUSVy)", "on": 32, "socket": "top", "by": "base"},
-    {"part": "Furled Brolly", "on": 72, "socket": "front10", "by": "base"},
+    {"part": "Long Iron Spike", "on": 72, "socket": "front10", "by": "base"},
     {"part": "Garden Gnome", "on": 54, "socket": "front33", "by": "base"},
-    {"part": "Queue Post", "on": 55, "socket": "front", "by": "base"}
+    {"part": "Traffic Cone", "on": 55, "socket": "front", "by": "base"}
   ],
   "wires": [[30, 31], [31, 25], [63, 70], [70, 65]],
   "links": [

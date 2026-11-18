@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Scam Plane 12",
-  "group": "The Call Centre",
+  "group": "Scam",
   "description": "A single-engined high-wing plane on a tail wheel. Shift and Ctrl set the throttle, S lifts the nose, A and D bank and turn.",
   "steps": [
     {"part": "Frame Block", "paint": "#1a8c8c"},

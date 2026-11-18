@@ -4,7 +4,7 @@ using System.Text;
 namespace CallOfSlop;
 
 /// <summary>
-/// Where the player's own files live (progress, loadouts, settings, workbench builds, audio mixes), so they carry over
+/// Where the player's own files live (loadouts, settings, workbench builds, audio mixes), so they carry over
 /// from one build to the next. Game data (Maps, Weapons, Props, classes.json, hats.json...) stays next to the game.
 /// <list type="bullet">
 /// <item>Normally: <c>%APPDATA%\CallOfSlop\</c> on Windows, <c>~/Library/Application Support/CallOfSlop/</c> on macOS,
@@ -28,11 +28,18 @@ public static class SavePaths
     public const string SaveDirFlag = "--save-dir";
 
     /// <summary>The player's own files (copied over by the migration). Everything else next to the game is game data.</summary>
-    public static readonly string[] SaveFiles = ["progress.txt", "loadout.txt", "settings.txt", "workbench.txt", BlueprintStore.FileName, "audio_mix.json", AppearanceStore.FileName, OrdnanceStore.FileName];
+    public static readonly string[] SaveFiles = ["loadout.txt", "settings.txt", "workbench.txt", BlueprintStore.FileName, "audio_mix.json", AppearanceStore.FileName, OrdnanceStore.FileName];
 
     // Also in the save folder but not save files (never migrated; safe to delete): update_check.txt (UpdateCache.cs) and
     // update.log (what the updater's cleanup removed, UpdateCleanup.cs), the Cache folder (cached nav graphs, BotNavBake.cs) and the Logs folder (stuck-spot reports, StuckSpots.cs), and the DevEdits folder (prop editor change packages, DevEditPackage.cs).
     // The package script still strips them.
+
+    /// <summary>
+    /// The file that marks a folder as holding a build's saves (<see cref="FindPreviousBuild"/>, and a save folder's first
+    /// run). Every build writes settings.txt; it was progress.txt until levelling went (2026-11-17), and builds before that
+    /// have both, so an older build beside this one is still found.
+    /// </summary>
+    public const string MarkerFile = "settings.txt";
 
     /// <summary>The player's own folders (copied over file by file).</summary>
     public static readonly string[] SaveFolders = ["AudioMixes", WorldStore.RootName, PlayerBlueprints.FolderName];
@@ -156,7 +163,7 @@ public static class SavePaths
         if (SameFolder(folder, ExeFolder))
             return;
         Migrate(ExeFolder, folder, Console.WriteLine);
-        if (!File.Exists(Path.Combine(folder, "progress.txt")) && FindPreviousBuild(ExeFolder) is { } previous)
+        if (!File.Exists(Path.Combine(folder, MarkerFile)) && FindPreviousBuild(ExeFolder) is { } previous)
         {
             Console.WriteLine($"[saves] first run: importing saves from the previous build in {previous}");
             Migrate(previous, folder, Console.WriteLine);
@@ -274,7 +281,7 @@ public static class SavePaths
 
     /// <summary>
     /// Another Call of Slop build next to this one (a sibling folder, or a sibling of the parent: tester zips unzip to
-    /// CallOfSlop-date-hash\CallOfSlop\) that has a progress.txt; the one saved most recently. Null if none.
+    /// CallOfSlop-date-hash\CallOfSlop\) that has a <see cref="MarkerFile"/>; the one saved most recently. Null if none.
     /// </summary>
     public static string? FindPreviousBuild(string exeFolder)
     {
@@ -293,10 +300,10 @@ public static class SavePaths
             looked++;
             if (SameFolder(dir, self))
                 return;
-            var progress = Path.Combine(dir, "progress.txt");
-            if (!File.Exists(progress) || !(File.Exists(Path.Combine(dir, "CallOfSlop.dll")) || File.Exists(Path.Combine(dir, "CallOfSlop.exe"))))
+            var marker = Path.Combine(dir, MarkerFile);
+            if (!File.Exists(marker) || !(File.Exists(Path.Combine(dir, "CallOfSlop.dll")) || File.Exists(Path.Combine(dir, "CallOfSlop.exe"))))
                 return;
-            var t = File.GetLastWriteTimeUtc(progress);
+            var t = File.GetLastWriteTimeUtc(marker);
             if (t > bestTime)
                 (best, bestTime) = (dir, t);
         }

@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 3 body 3 kit 3 wear 3, chassis 2 axles, front under the hood, inset 1 m, hydraulic/hydraulic, wing 0.5, archetype estate, cab style box, language estate standard 2.40 m, flare 0.05, level 1.0, brow 0.74 1 m, tail 0.92 0.75 m, door right, cab estate crew cab, nose flat, fitting roof sign, lopsided right, wear age 0.58 (3 rusty, 1 dirty, 0 sooty, 1 patched, 0 rusted out), body gap+boot, cab crew, nose long hood, rear bare, under stilts, layout gap 1 m+boot 2.8 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Scam Car 3",
-  "group": "The Call Centre",
+  "group": "Scam",
   "description": "A car: a long hood, a crew cab, bare rails behind the cab, a boot behind the cabin, the gun on a pedestal ahead of it. 1 gun.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#2a2c30"},
@@ -87,7 +87,7 @@
     {"part": "Hull Loft (decoS XFWAWdW0)", "on": 38, "socket": "top", "by": "base", "paint": "#ff3d8b"},
     {"part": "Loudhailer", "on": 73, "socket": "top", "by": "base"},
     {"part": "Square Beam 0.5 m", "on": 57, "socket": "top", "by": "-z", "paint": "#2a2c30"},
-    {"part": "Office Phone", "on": 81, "socket": "+z", "by": "base"},
+    {"part": "Hubcap Plate", "on": 81, "socket": "+z", "by": "base"},
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 76, "pos": [-0.753, 0.332, -0.375], "rot": [-0.0116, -0.0006, 0.7077, 0.7064]}, "paint": "#9aa0a6"}
   ],
   "wires": [[30, 31], [31, 25], [61, 71], [71, 63]],

@@ -63,39 +63,6 @@ public sealed partial class Game
 
     // ---- The sites ----------------------------------------------------------------------------------------------------
 
-    /// <summary>Server, with the colony (a fresh story world, or a world from before the sites): every site not standing yet.</summary>
-    private void FragmentSitesBuild()
-    {
-        if (!StoryOn)
-        {
-            Log("[fragments] the story is archived (Game.StoryOn): no data centres");
-            return;
-        }
-        var script = FragmentScript.Current;
-        if (script.Problem.Length > 0)
-        {
-            Log($"[fragments] {script.Problem}: no data centres");
-            return;
-        }
-        if (_opColony == 0)
-            return;
-        for (var k = 0; k < script.Sites.Length; k++)
-        {
-            var site = script.Sites[k];
-            if (site.Map.Length > 0 || Constructs.Get(FragmentScript.SiteBodies[k]) != null)
-                continue; // (a site on another world stands when the group first comes there: FragmentSitesHere)
-            if (SandboxKitPiece(site.Blueprint, _opMiddle, site.From, site.To, level: 1.2f) is not { } c)
-            {
-                Log($"[fragments] no level ground for the {site.Name} ({site.Blueprint}) {site.From:0} to {site.To:0} m from the colony");
-                continue;
-            }
-            FragmentScript.SiteBodies[k] = c.Id;
-            _fgTerm[k] = -1;
-            Constructs.Events.Add($"fragments: the {site.Name} as construct {c.Id}");
-            Log($"[fragments] the {site.Name} is construct {c.Id} at {c.WorldCom.X:0},{c.WorldCom.Z:0}, {Vector3.Distance(c.WorldCom, _opMiddle):0} m from the colony");
-        }
-    }
-
     private bool _fgHere;
 
     /// <summary>How near a world's site a building with a terminal counts as that site's (m).</summary>
@@ -184,34 +151,6 @@ public sealed partial class Game
             if (FragmentScript.SiteBodies[j] == id)
                 return true;
         return false;
-    }
-
-    /// <summary>Server, a save: each site's id and construct.</summary>
-    private (string Site, ushort Body)[] FragmentSitesCapture()
-    {
-        var sites = FragmentScript.Current.Sites;
-        var n = 0;
-        for (var k = 0; k < sites.Length; k++)
-            if (FragmentScript.SiteBodies[k] != 0 && sites[k].Map.Length == 0)
-                n++;
-        var o = new (string, ushort)[n];
-        n = 0;
-        for (var k = 0; k < sites.Length; k++)
-            if (FragmentScript.SiteBodies[k] != 0 && sites[k].Map.Length == 0)
-                o[n++] = (sites[k].Id, FragmentScript.SiteBodies[k]);
-        return o;
-    }
-
-    /// <summary>Server, a world loading (its constructs in): the sites it had, by id; any it lacks are built.</summary>
-    private void FragmentSitesLoad((string Site, ushort Body)[] saved)
-    {
-        var sites = FragmentScript.Current.Sites;
-        foreach (var (id, body) in saved)
-            for (var k = 0; k < sites.Length; k++)
-                if (sites[k].Id == id && sites[k].Map.Length == 0 && Constructs.Get(body) != null)
-                    FragmentScript.SiteBodies[k] = body;
-        if (_opColony != 0)
-            FragmentSitesBuild();
     }
 
     /// <summary>A site's terminal (the first cipher part on its construct), or -1.</summary>

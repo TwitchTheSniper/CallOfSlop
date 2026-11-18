@@ -88,7 +88,7 @@ public struct BriefGun
 public struct BriefWeak
 {
     public BriefRef Part; // At: its middle
-    public string Kind; // the style's rule label ("fuel", "tyres", "antenna", "Pipe Box"...), or "fuel", "tyres", "ammo", "engine" for anything
+    public string Kind; // the style's rule label ("fuel", "tyres", "antenna", "mast"...), or "fuel", "tyres", "ammo", "engine" for anything
     public ushort Bearings; // bits of VehicleBrief.WeakBins (22.5 degrees, 0 dead ahead, clockwise): a standing player 20 m off there hits it first
     public bool Top; // seen from straight above
 }

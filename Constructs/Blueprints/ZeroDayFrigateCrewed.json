@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Zero Day Frigate (crewed)",
-  "description": "The Zero Day with an IT Department crew aboard: it lifts off, closes on the nearest player, you included, and fights with its railgun, turrets and torpedoes. Sit at its helm to take it.",
+  "description": "The Zero Day with a crew aboard: it lifts off, closes on the nearest player, you included, and fights with its railgun, turrets and torpedoes. Sit at its helm to take it.",
   "steps": [
     {
       "part": "Zero Day Keel"

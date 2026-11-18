@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 7 body 7 kit 7 wear 7, chassis 2 axles, front under the hood, inset 1.75 m, coil/leaf, wing 0.75, archetype curtain-sider, cab style coachbuilt, language curtain heavy 2.49 m, flare 0.05, level 0.9, brow 0.94 1 m, tail 0.93 0.75 m, door right, cab cab-over capsule, nose grille, balcony t, lopsided right, trim clinker on 3 bay sides, wear age 0.88 (5 rusty, 15 dirty, 0 sooty, 3 patched, 1 rusted out), body room+bed, cab cab-over, nose flat, rear porch hitch, under tub, flank loaded, sides rails, roof none, layout room(Brow T,Door,Bay T,Tail T)+bed 2 m, plan 2
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Highland Box Truck 7",
-  "group": "Clan MacSlop",
+  "group": "Highland",
   "description": "A box truck: a flat nose, a cab-over, a walk-in hull with loot, an open bed, a drum on the rear porch over a tow hitch. 2 guns.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#2a2622"},
@@ -133,27 +133,27 @@
     {"part": "Ammo Socket", "on": 113, "socket": "left", "by": "right"},
     {"part": "Crew Bench", "on": 49, "socket": "front01", "by": "foot02", "spin": 3},
     {"part": "Crate Stack", "on": 54, "socket": "front23", "by": "foot00", "spin": 1},
-    {"part": "Thistle", "on": 57, "socket": "front00", "by": "base", "spin": 1},
     {"part": "Hull Pannier 1 m", "on": 81, "socket": "-x0", "by": "back", "paint": "#7b1e22"},
     {"part": "Hull Pannier 1 m", "on": 85, "socket": "+x0", "by": "back", "paint": "#8c2a2a"},
     {"part": "Square Beam 0.75 m", "on": 11, "socket": "+y0", "by": "-x0", "spin": 1, "paint": "#2a2622"},
-    {"part": "Square Beam 0.75 m", "on": 131, "socket": "+x0", "by": "-x0", "spin": 1, "paint": "#2a2622"},
-    {"part": "Plate Steel 1 m", "on": 132, "socket": "+x2", "by": "back01", "paint": "#33302b"},
+    {"part": "Square Beam 0.75 m", "on": 130, "socket": "+x0", "by": "-x0", "spin": 1, "paint": "#2a2622"},
+    {"part": "Plate Steel 1 m", "on": 131, "socket": "+x2", "by": "back01", "paint": "#33302b"},
     {"part": "Tread Plate 1 m", "on": 96, "socket": "+z0", "by": "-x0", "paint": "#2b5a3a"},
-    {"part": "Plate Steel 0.25 m", "on": 134, "socket": "+z1", "by": "-x", "paint": "#2a2622"},
-    {"part": "Plate Steel 0.25 m", "on": 134, "socket": "+z2", "by": "-x", "paint": "#2b5a3a"},
-    {"part": "Fuel Drum", "on": 133, "socket": "front30", "by": "-y"},
+    {"part": "Plate Steel 0.25 m", "on": 133, "socket": "+z1", "by": "-x", "paint": "#2a2622"},
+    {"part": "Plate Steel 0.25 m", "on": 133, "socket": "+z2", "by": "-x", "paint": "#2b5a3a"},
+    {"part": "Fuel Drum", "on": 132, "socket": "front30", "by": "-y"},
     {"part": "Tow Hitch", "on": 11, "socket": "+z", "by": "-z0"},
     {"part": "Bed Rail 1 m", "on": 97, "socket": "-x0", "by": "edge1", "paint": "#1f4a2e"},
-    {"part": "Pipe Box", "on": 37, "socket": "top", "by": "base"},
-    {"part": "Wee Keg", "on": 135, "socket": "front", "by": "base"},
-    {"part": "Coo Heid", "on": 136, "socket": "front", "by": "base"},
+    {"part": "Traffic Cone", "on": 37, "socket": "top", "by": "base"},
+    {"part": "Garden Gnome", "on": 134, "socket": "front", "by": "base"},
+    {"part": "Network Switch", "on": 135, "socket": "front", "by": "base"},
     {"part": "Hull Loft (trimr4 XaW5 ~DG0DmeDmyE9GEAzDpXCxf03h ~DW0E0gE0yEfGEh8EJkDRt03v)", "on": 78, "socket": "+x0", "by": "base", "paint": "#8c2a2a"},
     {"part": "Hull Loft (trimr1 XaW5 ~DW0E0gE0yEfGEh8EJkDRt03v ~DG0DmeDmyE9GEAzDpXCxf03h)", "on": 78, "socket": "-x0", "by": "base", "paint": "#8c2a2a"},
     {"part": "Hull Loft (trimr9 XBW5 ~DW0E0gE0yEfGEh8EJkDRt03v ~D00DWdDWyDvGDwwDZTChb03c)", "on": 88, "socket": "+x0", "by": "base", "paint": "#23395d"},
-    {"part": "Sheet Steel 0.5 m", "weld": {"on": 129, "pos": [-1.212, 1.36, 3.253], "rot": [0.0117, -0.0062, 0.7185, 0.6954]}, "paint": "#1f4a2e"},
-    {"part": "Sheet Steel 0.5 m", "weld": {"on": 139, "pos": [-1.078, 0.655, 6.37], "rot": [-0.001, -0.0135, 0.692, 0.7218]}, "paint": "#8c2a2a"},
-    {"part": "Tread Plate 0.5 m", "weld": {"on": 130, "pos": [1.706, 1.603, 4.638], "rot": [0.0082, 0.0225, -0.7027, 0.7111]}, "paint": "#1f4a2e"}
+    {"part": "Phone Mast", "on": 100, "socket": "front", "by": "base"},
+    {"part": "Sheet Steel 0.5 m", "weld": {"on": 128, "pos": [-1.212, 1.36, 3.253], "rot": [0.0117, -0.0062, 0.7185, 0.6954]}, "paint": "#1f4a2e"},
+    {"part": "Sheet Steel 0.5 m", "weld": {"on": 138, "pos": [-1.078, 0.655, 6.37], "rot": [-0.001, -0.0135, 0.692, 0.7218]}, "paint": "#8c2a2a"},
+    {"part": "Tread Plate 0.5 m", "weld": {"on": 129, "pos": [1.706, 1.603, 4.638], "rot": [0.0082, 0.0225, -0.7027, 0.7111]}, "paint": "#1f4a2e"}
   ],
   "wires": [[34, 35], [35, 29], [93, 107], [107, 104], [94, 116], [116, 113], [116, 117], [123, 120]],
   "hoses": [[121, 122], [124, 125]],
@@ -163,7 +163,7 @@
     {"type": "feed", "from": 119, "to": 120, "fromPort": "Ammo out", "toPort": "Ammo in 2", "laid": true},
     {"type": "feed", "from": 120, "to": 121, "fromPort": "Ammo out", "toPort": "Ammo in", "laid": true},
     {"type": "feed", "from": 119, "to": 124, "fromPort": "Ammo out", "toPort": "Ammo in", "laid": true},
-    {"type": "pipe", "from": 137, "to": 29, "nodes": [[1.25, 0.82, 8.06], [1.25, 0.55, 8.06], [0.67, 0.55, 8.06], [0.67, 0.55, 2.125], [0.67, 0.05, 2.125], [0.67, 0.05, 0.505], [0.67, 0.25, 0.505], [-0.17, 0.25, 0.505], [-0.17, 0.62, 0.505], [-0.17, 0.62, 0]], "laid": true}
+    {"type": "pipe", "from": 136, "to": 29, "nodes": [[1.25, 0.82, 8.06], [1.25, 0.55, 8.06], [0.67, 0.55, 8.06], [0.67, 0.55, 2.125], [0.67, 0.05, 2.125], [0.67, 0.05, 0.505], [0.67, 0.25, 0.505], [-0.17, 0.25, 0.505], [-0.17, 0.62, 0.505], [-0.17, 0.62, 0]], "laid": true}
   ],
   "loot": [{"step": 126, "table": "highland"}, {"step": 127, "table": "highland"}]
 }

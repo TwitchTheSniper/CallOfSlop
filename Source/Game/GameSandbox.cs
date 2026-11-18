@@ -328,7 +328,6 @@ public sealed partial class Game
         if (ServerTick % World.TickRate == 0)
         {
             ConstructMedia.Tick(Constructs, ServerTick); // (the game's own tracks end by the clock)
-            ConstructPipes.Tick(Constructs, ServerTick); // (Pipe Boxes strike up when someone drives)
         }
         SandboxNow = now;
         if (!SandboxOn)
@@ -374,11 +373,7 @@ public sealed partial class Game
             if (Crew.IsBody[p.Id])
                 continue; // (a crew body: its crew works the seat, GameCrew.cs)
             if (c.Parts[seat].D.Bunk)
-            {
                 SandboxBunkSeen(p, c, seat); // (their checkpoint: GameSandboxDeath.cs)
-                TutorialSee(p.Id, TutorialCue.Bunk); // (the induction's bunk step: GameTutorial.cs)
-                QuarrySee(p.Id, QuarryCue.Bunk); // (the duty's last step: GameQuarry.cs)
-            }
             if (c.Parts[seat].D.SeatHeal > 0)
                 SandboxSeatHeal(p, c.Parts[seat].D.SeatHeal); // (a medical station: GameSandboxDeath.cs)
             var b = p.Id == LocalId ? HeldButtons : p.LastInput.Buttons;
@@ -460,17 +455,7 @@ public sealed partial class Game
         ShellTick(); // (worn robot shells keep their link: GameRobotShell.cs)
         ShellWearTick(); // (...and wear a little: GameShellWear.cs)
         FirstsTick(); // (a first flight in a craft of your own: GameMilestones.cs)
-        PlayAreaTick(now); // (the tutorial's play areas: out of one, the step waits; GameTutorialBounds.cs)
-        QuarryTick(now); // (the first Ministry duty, the quarry: GameQuarry.cs)
-        BreakoutTick(now); // (the convicts' break-out: GameBreakout.cs)
-        ErrandTick(now); // (errands on the works yard's machines: GameErrands.cs)
-        LabourTick(now); // (the colony's convict labourers: GameLabour.cs)
-        NavSitesTick(now); // (the bots' paths round the colony and the quarry: GameNavSites.cs)
-        DepotTick(now); // (the Orbital Depot's steps: GameDepot.cs)
-        ObjectivesTick(now); // (the "what next" goal line: GameObjectives.cs)
-        LockdownTick(now); // (the penal colony's lockdown: GameColonyLockdown.cs)
         StoryArmsTick(); // (no stock gun in a story world: GameStoryArms.cs)
-        TutorialTick(now); // (the warden's induction: who starts, which steps are done; GameTutorial.cs)
         perf.Dispose();
         perf = Perf.Measure(PerfArea.Story);
         AllocProfile.Mark("sandbox: story");
@@ -955,15 +940,7 @@ public sealed partial class Game
     /// <summary>Server: one action from a player (the local host's own go straight here). Returns why it was refused, or null.</summary>
     private string? SandboxAct(Player p, ref PacketReader r, double now)
     {
-        var asked = r; // (a copy from the kind: the induction reads what was done once it worked, GameTutorial.cs)
-        var why = SandboxActDo(p, ref r, now);
-        if (why == null && SandboxOn)
-        {
-            var again = asked;
-            TutorialSawAct(p, ref asked);
-            QuarrySawAct(p, ref again); // (the quarry duty's steps: GameQuarry.cs)
-        }
-        return why;
+        return SandboxActDo(p, ref r, now);
     }
 
     private string? SandboxActDo(Player p, ref PacketReader r, double now)
@@ -1005,8 +982,8 @@ public sealed partial class Game
             case CActKind.OpeningSkip:
                 return OpeningSkipAct(p); // the survival opening (GameSandboxOpening.cs)
             case CActKind.QuarrySkip:
-                QuarrySkip(p); // the first Ministry duty (GameQuarry.cs)
-                return null;
+            case CActKind.ErrandDrop:
+                return null; // (the penal colony's duty and errands, removed 2026-11-17: their kinds keep their bytes)
             case CActKind.Crew:
             {
                 var body = r.U16();
@@ -1020,9 +997,6 @@ public sealed partial class Game
                 var part = r.U16();
                 return BreakdownMendAct(p, body, part); // (the rust bucket's breakdowns: GameSandboxBreakdowns.cs)
             }
-            case CActKind.ErrandDrop:
-                ErrandDrop(p); // an errand on a works yard machine (GameErrands.cs)
-                return null;
             case CActKind.ShellLeave:
                 return ShellLeaveAct(p); // robot shells (GameRobotShell.cs)
             case CActKind.NavOrder:
@@ -1056,9 +1030,7 @@ public sealed partial class Game
             case CActKind.Tool:
             {
                 var asked = ConstructToolWire.From(r.U8());
-                return TutorialToolFor(p.Id, asked) is { } tool // (the warden's induction holds tools until their step: GameTutorial.cs)
-                    ? hands.SetTool(p.Id, StoryArmsTool(p, tool), Constructs, eye, p.Yaw) // (no gun in a story world: GameStoryArms.cs)
-                    : Tutorial.NotIssued(asked);
+                return hands.SetTool(p.Id, StoryArmsTool(p, asked), Constructs, eye, p.Yaw); // (no gun in a story world: GameStoryArms.cs)
             }
             case CActKind.NudgeBegin:
             case CActKind.NudgeSteer:
@@ -1645,29 +1617,13 @@ public sealed partial class Game
     }
 
     /// <summary>
-    /// This PC's tool request through the induction's gate (GameTutorial.cs): a tool not issued yet, or the gun, is refused
-    /// with a line; putting a tool away takes out bare hands. True when nothing is to be sent.
+    /// This PC's tool request: in a story world putting a tool away takes out bare hands (GameStoryArms.cs). True when
+    /// nothing is to be sent (never, since the warden's induction that held tools back went, 2026-11-17).
     /// </summary>
     private bool SandboxToolGated(ref ushort part)
     {
         if (part == (ushort)ConstructTool.None && Local is { } me && StoryUnarmed(me))
             part = (ushort)ConstructTool.Hands; // (no gun in a story world: bare hands, shown at once as the server will; GameStoryArms.cs)
-        var asked = (ConstructTool)part;
-        if (TutorialToolLocal(asked) is not { } tool)
-        {
-            SandboxSay(Tutorial.NotIssued(asked));
-            return true;
-        }
-        if (tool == asked)
-            return false;
-        ref var h = ref SandboxHands.Hand(LocalId);
-        if (h.Tool == tool)
-        {
-            if (h.Held == ConstructParts.None)
-                SandboxSay($"{(Tutorial.Speaker.Length > 0 ? Tutorial.Speaker : "The warden")} holds your gun until the induction is over");
-            return true;
-        }
-        part = (ushort)tool;
         return false;
     }
 

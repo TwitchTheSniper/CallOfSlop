@@ -1570,7 +1570,7 @@ public sealed partial class BuildingParts : IPartGenerator
         }
         o.AddRange(BrutalistParts()); // (fins, buttresses, canopies, fascias, slot and ribbon walls: BuildingParts.Brutalist.cs)
         o.AddRange(SiteParts()); // (road slabs, heating mains, the stack, gate piers, the flag, notice boards: BuildingParts.Site.cs)
-        o.AddRange(StreetParts()); // (what the Ministry puts on its roofs: the tannoy, slogan frames, a water tank, a hoist, the siren: BuildingParts.Street.cs)
+        o.AddRange(StreetParts()); // (what goes on a concrete roof: the tannoy, slogan frames, a water tank, a hoist, the siren: BuildingParts.Street.cs)
         return o;
     }
 
@@ -1934,32 +1934,8 @@ public sealed partial class BuildingParts : IPartGenerator
         bp.Hang("Fence Gate", hg, "leaf", "hang");
         o.Add(bp);
 
-        // (The Penal Colony and the Colony Barracks are the Ministry's: BuildingParts.Ministry.cs.)
-
-        // Remote Works: the Ministry's remote labour hall beside the penal colony (docs/story/DEPOT.md, Game/GameDepot.cs). A 4 by
-        // 12 m concrete hall with windows down both long sides, an open doorway at the front (z 0, the door corner's side), four
-        // Shell Control Chairs in a row down the middle facing the door, and a 12 by 8 m apron in front where the depot's landers
-        // come down. The chairs and the apron are found by their places (DepotSpots in GameDepot.cs).
-        bp = new Blueprint("Remote Works", "The Ministry of Slop's remote labour hall: four shell control chairs and a landing apron.", defs);
-        bp.First(Pad);
-        bp.Put(Pad, Cell(0, 0, 16), R0);
-        bp.Put(Pad, Cell(0, 0, 32), R0);
-        foreach (var j in new[] { 1, 2 })
-            foreach (var i in new[] { 0, -1, 1 }) // (the apron, x -4 to 8 by z -8 to 0: each pad next to one already down)
-                bp.Put(Pad, Cell(16 * i, 0, -16 * j), R0);
-        RoomCorners(bp, "Concrete", 0, 2, 0, 16, 48, door: 1);
-        foreach (var z in new[] { 23, 39 })
-            bp.Put("Concrete Window Wall 4 m", Cell(0, 2, z), RY90);
-        foreach (var z in new[] { 8, 24 })
-            bp.Put("Concrete Window Wall 4 m", Cell(15, 2, z), RY270);
-        foreach (var z in new[] { 0, 16, 32 })
-            bp.Put("Concrete Floor 4x4 m", Cell(0, 2 + WallH, z), R0);
-        foreach (var z in new[] { 2.0, 4.0, 6.0, 8.0 })
-            bp.Put("Shell Control Chair", [1.75, 0.375, z], R0);
-        o.Add(bp);
-
         // Sealed Data Centre: the first of the five data centres (docs/archive/story/FRAGMENTS.md, Game/GameStoryFragments.cs), past the old
-        // mine near the penal colony. A 4 by 8 m concrete block with blank walls and a flat roof, its doorway at the front (z 0), two
+        // mine (built only by the archived story). A 4 by 8 m concrete block with blank walls and a flat roof, its doorway at the front (z 0), two
         // server racks down the middle and the Data Centre Terminal at the back facing the door. It has no battery: the player
         // brings power. The game finds the terminal by its part, not by its place.
         bp = new Blueprint("Sealed Data Centre", "A sealed data centre from before the records: server racks and a dead terminal.", defs);
@@ -1975,31 +1951,6 @@ public sealed partial class BuildingParts : IPartGenerator
         bp.Put("Data Centre Terminal", [2.0, 0.375, 6.0], RY180);
         o.Add(bp);
 
-        // Orbital Depot: the Ministry's station high over the Remote Works, where a new inmate first wakes in a robot shell. A 16 by
-        // 12 m deck: the shell bay (a corrugated hut, its door to the deck) at the back left, the stores tower at the back right (a
-        // watchtower's frame and platform, climbed by a fixed ladder: the Driving Module waits on top) and the open hangar deck in
-        // front, with no rail at its edge. The game hangs it in the sky and puts the shells, the module and the landers on it.
-        bp = new Blueprint("Orbital Depot", "The Ministry of Slop's orbital depot: a shell bay, a stores tower and a hangar deck.", defs);
-        bp.First(Pad);
-        for (var i = 0; i < 4; i++)
-            for (var j = 0; j < 3; j++)
-                if (i != 0 || j != 0)
-                    bp.Put(Pad, Cell(16 * i, 0, 16 * j), R0);
-        RoomCorners(bp, "Corrugated", 0, 2, 32, 16, 16, door: 1);
-        bp.Put("Corrugated Roof Slope 4x4 m", Cell(0, 2 + WallH, 32), R0);
-        int ox = 48, oz = 32;
-        foreach (var (x, z) in new[] { (8, 8), (15, 8), (8, 15), (15, 15) })
-            bp.Put("Wood Post 2.75 m", Cell(ox + x, 2, oz + z), R0);
-        bp.Put("Tower Brace", Cell(ox + 9, 2, oz + 15), R0);
-        bp.Put("Tower Brace", Cell(ox + 8, 2, oz + 14), RY90);
-        bp.Put("Tower Brace", Cell(ox + 15, 2, oz + 9), RY270);
-        bp.Put("Tower Platform 2x2 m", Cell(ox + 8, 2 + WallH, oz + 8), R0);
-        bp.Put("Fixed Ladder 3 m", Cell(ox + 11, 2, oz + 7), R0); // (straight up the platform's open front)
-        o.Add(bp);
-        o.AddRange(MinistryBlueprints(defs)); // (the Ministry's buildings round the penal colony: BuildingParts.Ministry.cs)
-        o.AddRange(SpaceportBlueprints(defs)); // (the Ministry's spaceport on Glacier, 2 km from the colony: BuildingParts.Spaceport.cs)
-        o.AddRange(SiteBlueprints(defs)); // (the penal colony's site: its street, square, covered way and heating mains: BuildingParts.Site.cs)
-        o.AddRange(OutpostBlueprints(defs)); // (the factions' outposts beyond the colony: BuildingParts.Outposts.cs)
         return o;
     }
 

@@ -56,7 +56,7 @@ A number outside the allowed range is rejected. The "usual" column is what the s
 | `name` | Shown everywhere and used in save files. Must be unique. | required | 1-40 characters, no `=` |
 | `author` | Your name. Optional. | `""` | |
 | `order` | Position in the weapon list. Lower comes first, ties sort by name. See "Ids and order" below. | `1000` | any whole number |
-| `unlockLevel` | Account level that unlocks it. See "Unlocking" below. | max level | 1 or more |
+| `unlockLevel` | Read and ignored: levelling went (2026-11-17), every weapon is open. | - | 1 or more |
 | `class` | `Pistol`, `SMG`, `AssaultRifle`, `DMR`, `Sniper`, `Shotgun`, `LMG`, `Special` or `Launcher`. Pistols and launchers go in the **secondary** slot, everything else in the **primary** (a launcher fires projectiles: see [Launchers](#launchers)). The class also picks the gun's model shape, the reload sound and which attachments fit. | required | |
 | `defaultOptic` | The optic attachment (by name) the weapon starts with: it's in the default kit, needs no weapon XP and bots always run it, and the gun's iron sights (no optic) become an unlock half-way through its attachment XP. Leave it out: a `Sniper` starts with its first full scope (4x or more) in unlock order, every other class with iron sights. The shipped snipers name the 8x Sniper Scope (Needle, Leviathan, Railspike) or the 4x Scope (Kite, Ghost SD). | none | an optic that fits it |
 | `blurb` | One line shown in the loadout menu. Plain ASCII only: the game's font has no curly quotes, long dashes, accented letters or symbols like × and °, which show up as `?`. Write `'`, `-`, `x` and `deg` instead. `%` is fine. | `""` | |
@@ -323,11 +323,11 @@ Attachments change these by their field names with a `launcher` prefix, e.g. `{ 
 
 Weapons are sorted by `order`, then by name. A weapon's position in that list is its id, which the network uses. The shipped weapons use `order` 1-50 (pistols 1-9, SMGs 10-16, rifles 17-24, marksman 25-30, snipers 31-35, shotguns 36-41, LMGs 42-46, special 47-50) and the launchers 101-108. Give new weapons 110 or more, or leave `order` out (it defaults to 1000), so they're listed after the shipped ones.
 
-Your progress doesn't depend on ids: weapon XP in `progress.txt` (`wx.<weapon name>=...`) and loadouts in `loadout.txt` are stored by **name**. Renaming a weapon starts its weapon XP from zero, and removing a weapon file keeps its XP in the save in case it comes back.
+Your loadouts don't depend on ids: `loadout.txt` stores weapons by **name**.
 
 ## Unlocking
 
-Each account level unlocks one item. The shipped weapons unlock in a hand-tuned order, built into the game and matched by name. Any other weapon unlocks at its `unlockLevel` (1 = available from the start), or at the max level if it has none. Levels above the max count as the max. Setting `unlockLevel` on a shipped weapon overrides its built-in level.
+Nothing unlocks any more: account levels, weapon XP and prestige were removed (2026-11-17, docs/removals-notes.md). Every weapon and attachment that fits is open. A file's `unlockLevel` is still read (old files and mods) and ignored.
 
 ## Attachments
 

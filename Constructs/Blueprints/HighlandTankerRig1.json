@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front forward, inset 1 m, coil/swing arm, wing 0.5, cab style coachbuilt, language boat standard 2.11 m, flare 0.03, plain 0.9, brow 0.66 1 m, tail 0.75 1.25 m, door right, cab boat cab, nose grille, fitting chrome grille, fitting mascot, wear age 0.98 (3 rusty, 9 dirty, 1 sooty, 0 patched, 1 rusted out), body gun bay+bed, cab enclosed, nose short hood, rear porch hitch, under stilts, sides open, layout gun bay 2 m+bed 2 m, plan 2
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Highland Tanker Rig 1",
-  "group": "Clan MacSlop",
+  "group": "Highland",
   "description": "A tanker rig: a short hood, an enclosed cab, a gun behind the cab, an open bed, a drum on the rear porch over a tow hitch. 1 gun.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#2a2622"},
@@ -88,8 +88,9 @@
     {"part": "Hull Loft (hoodg UfV2WyWjXYXYVd ~6W07GL70i5ux3X3014)", "on": 25, "socket": "+y", "by": "engine", "paint": "#1b1714"},
     {"part": "Hull Loft (decoG WeVvWg)", "on": 80, "socket": "front", "by": "base"},
     {"part": "Hull Loft (decoO UuV_)", "on": 80, "socket": "top", "by": "base"},
-    {"part": "Pipe Box", "on": 33, "socket": "top", "by": "base"},
-    {"part": "Wee Keg", "on": 48, "socket": "front00", "by": "base"}
+    {"part": "Traffic Cone", "on": 33, "socket": "top", "by": "base"},
+    {"part": "Garden Gnome", "on": 48, "socket": "front00", "by": "base"},
+    {"part": "Satellite Dish", "on": 49, "socket": "front10", "by": "base"}
   ],
   "wires": [[30, 31], [31, 25], [61, 71], [71, 63]],
   "links": [

@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front set back, inset 1.25 m, wishbone/leaf, wing 0.5, archetype supercar, cab style glasshouse, language superwedge standard 2.34 m, flare 0.11, fastback 0.9, brow 0.59 1.25 m, tail 0.63 1.25 m, door right, 8 facets, cab superwedge cab, 6 facets, nose rounded, wear age 0.77 (0 rusty, 0 dirty, 0 sooty, 0 patched, 0 rusted out), body boot, cab enclosed, nose short hood, rear bare, under tub, layout boot 3 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "IT Car 1",
-  "group": "IT Department",
+  "group": "IT",
   "description": "A car: a short hood, an enclosed cab, a boot behind the cabin, the gun on a pedestal ahead of it. 1 gun.",
   "steps": [
     {"part": "Square Beam 1 m", "paint": "#3b3f44"},
@@ -68,7 +68,9 @@
     {"part": "Slat Grille", "on": 59, "socket": "front", "by": "back", "paint": "#c0392b"},
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 60, "pos": [0.123, 0.461, -1.782], "rot": [-0.7092, 0.0075, 0.0045, 0.705]}, "paint": "#8e9296"},
     {"part": "Network Switch", "on": 59, "socket": "top", "by": "base"},
-    {"part": "Router Antenna", "on": 34, "socket": "top", "by": "base"}
+    {"part": "Office Plant", "on": 34, "socket": "top", "by": "base"},
+    {"part": "Square Beam 0.5 m", "on": 37, "socket": "front00", "by": "-z", "paint": "#3b3f44"},
+    {"part": "Wi-Fi Mast", "on": 64, "socket": "+z", "by": "base"}
   ],
   "wires": [[31, 32], [32, 26], [48, 58], [58, 50]],
   "links": [

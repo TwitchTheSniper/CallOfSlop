@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 4 body 4 kit 4 wear 4, chassis 2 axles, front under the hood, inset 2 m, hydraulic/leaf, wing 0.5, cab style bus front, language coach heavy 2.73 m, flare 0.11, crowned 1.0, brow 0.63 1.25 m, tail 0.82 0.75 m, door right, 9 facets, cab coach capsule, 6 facets, nose rounded, fitting destination board, wear age 0.96 (3 rusty, 2 dirty, 0 sooty, 1 patched, 1 rusted out), body gun bay+bed, cab cab-over, nose flat, rear bare, under tub, sides rails, layout gun bay 2 m+bed 2 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "British Technical 4",
-  "group": "Ministry of Slop",
+  "group": "British",
   "description": "A technical: a flat nose, a cab-over, a gun behind the cab, an open bed. 1 gun.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#2b2a28"},
@@ -84,9 +84,9 @@
     {"part": "Ordnance:M25:Radar Seeker+Impact Fuse+Warhead HE+Tail Fins+Solid Motor", "on": 75, "socket": "lug0", "by": "lug"},
     {"part": "Bed Rail 1 m", "on": 55, "socket": "+x0", "by": "edge1", "paint": "#be0f2a"},
     {"part": "Hull Loft (decoD WoWMURVy)", "on": 35, "socket": "top", "by": "base"},
-    {"part": "Queue Post", "on": 56, "socket": "front", "by": "base"},
-    {"part": "Queue Post", "on": 51, "socket": "front", "by": "base"},
-    {"part": "Union Flag", "on": 50, "socket": "front01", "by": "base"},
+    {"part": "Traffic Cone", "on": 51, "socket": "front", "by": "base"},
+    {"part": "Traffic Cone", "on": 52, "socket": "front", "by": "base"},
+    {"part": "Satellite Dish", "on": 58, "socket": "front", "by": "base"},
     {"part": "Plate Steel 0.5 m", "weld": {"on": 77, "pos": [-1.059, 0.711, 4.127], "rot": [-0.0141, 0.004, 0.7035, 0.7106]}, "paint": "#1f4a32"}
   ],
   "wires": [[32, 33], [33, 27], [67, 74], [74, 69], [74, 75]],

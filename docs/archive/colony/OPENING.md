@@ -1,0 +1,136 @@
+# The survival opening
+
+A new survival world starts with a story: your ship crash-lands and you wake in the Ministry of Slop's penal colony. The
+warden's induction (the keybind tutorial, `Source/Game/GameTutorial.cs`) takes over from there. Karl's idea (2026-11-07);
+it leans towards premise E (Convicts) in the project doc `planets/PREMISES.md`.
+
+**The crash is a placeholder (Karl, 2026-11-12).** The falling-down-in-your-ship scene (a tumbling view, the impact, coming
+to with a recovery team over you) was taken out, to be made again later: for now a black card says what happened, with a
+small "placeholder: crash landing" tag over it, while the player already lies in the cell block. The wreck is still placed
+out past the colony. The old scene is in git history (PR #64) for whoever rebuilds it; the unused beats keep their bytes in
+`OpeningStage` (wire values).
+
+Code: `Source/Game/GameSandboxOpening.cs` (the server's beats, the colony, the wire, the save), `Source/App/Program.Opening.cs`
+(the camera, the screen and the skip key). Data: `Story/Opening/Opening.json` (names, times, lines), `Story/Casts/PenalColony.json`
+(the staff), the `Penal Colony` blueprint (made by the part kit's `BuildingParts.Blueprints`).
+
+## When it runs
+
+- **A new survival world**: Survival chosen in the lobby (the same switch as the start kit), on a fresh world or an unsaved match.
+  At the match start the server places the **Penal Colony** blueprint on the nearest clear ground round the parts rack (or the
+  first spawn) whose ground varies by under 1.2 m, then the start kit round the colony (it is the colony's work yard), the
+  **wreck** (`"wreck"`, the Crashed Plane: a hand-made blueprint, never a vehicle-kit vehicle) 70 to 140 m out as dressing, and adds the
+  **Penal Colony cast** to the story, so the warden and three guards have bodies about the colony (their middle is just outside
+  its gate). No room for the colony: the opening still runs, and everyone wakes near the start.
+- **Every player, once per world**: the host, each friend and every late joiner, on first arriving alive. In a saved world
+  "once" is the person's record (`WorldPlayer.Opened`); in an unsaved match, once per player id. Worlds from before this have
+  no colony and no opening.
+- **Together (co-op, 2026-11-08)**: friends who arrive while someone is still on the placeholder card join their group:
+  they go through the beats on that clock and everyone wakes in the cell block together, each to their own side, and starts
+  the induction as a group (docs/sandbox/TUTORIAL.md, "Together"). Anyone arriving later has a card of their own, then joins
+  whoever is on their step.
+  Since 2026-11-14 (docs/sandbox/SURVIVAL.md) the penal colony is Survival's tutorial: the Tutorial tickbox on the Single
+  player or Multiplayer page plays it on Glacier in a world of its own that isn't saved. The rust bucket start's opening is
+  this one's card and wake, aboard (docs/story/STARTS.md "A ship start").
+- **Skip**: the jump key, at any beat (for that person only; the rest of the group carries on). Skipping puts them in the cell block at once and starts the induction.
+
+## The beats
+
+Times are in `Opening.json`. Each group (one player, or friends who arrived together) has its own clock, and only the group hears its lines.
+
+| Beat | What happens |
+| --- | --- |
+| Placeholder (4 s, `OpeningStage.Out`, `"placeholder"` in the file) | Black, lying in the cell block. The caption ("Your ship comes down hard. The Ministry of Slop finds you.") under a small "[ placeholder: crash landing ]" tag. |
+| Wake (4.5 s) | The black lifts on the cell block's ceiling, looking towards the warden; his line; they get up over the last second. Then the induction (`TutorialBegin`). |
+
+While it runs the player lies prone and nothing they press acts (`OpeningFilter` on both sides, `OpeningInput` on the client),
+apart from the skip key; the hands draw nothing and the start kit's notice waits until they wake. Killed during it, the opening
+ends and the respawn is the start. Leaving during it, they are put in the cell block first, so they come back there.
+
+## The seam with the tutorial
+
+Two server calls on Game, both taking the player id: `TutorialDefer(id)` as the opening claims a player (on the tick they
+arrive), and `TutorialBegin(id)` when they wake or skip. This file declares them as `partial void`; the tutorial implements
+them. `Game.OpeningActive` (the local player is in it), `Game.OpeningWarden()` (his body, or null) and `Game.OpeningHas(id)`
+(server) are there for the tutorial to read.
+
+After the tutorial the Ministry sends a player to remote labour: the Orbital Depot (docs/story/DEPOT.md).
+
+## Lockdown
+
+Hurt the warden or a guard (anyone in the Penal Colony cast) and the colony goes into lockdown (Karl, 2026-11-08;
+`Source/Game/GameColonyLockdown.cs`):
+
+- The attacker's induction ends (a skip, so the tutorial gives back what it held), the warden shouts at them, and a
+  `[MINISTRY MEMO]` line tells everyone.
+- The siren (`Sfx.ColonyAlarm`, `Source/Audio/SynthAlarm.cs`) wails over the colony on every peer until it stands down.
+- The **Colony Barracks** (a blueprint from the part kit's `BuildingParts`, placed 16 to 60 m from the colony when
+  the colony is built, or when a world from before it is loaded) turns out six riot officers, one every half second,
+  just outside it on the colony's side. They are hostile bots (Hard, SMGs and rifles) that fight only the wanted and walk
+  to the nearest one until they see them.
+- Everyone who hurts the staff while it runs is wanted. Wanted ends at death or leaving; the world's death rules decide
+  what follows.
+- It stands down when nobody is wanted, the squad is all dead, or after 10 minutes: the siren stops and the officers walk
+  back to the barracks and are gone (after a minute at most). Hurting the staff again starts it over and makes up the squad.
+- Standing: the Ministry's deed "Assaulted our staff" (-15, at most once a minute) on the story's Attack, and "Killed our
+  staff" (-40) as before (`Story/Factions/Ministry.json`).
+
+## The Ministry's buildings
+
+The colony doesn't stand alone: the Ministry of Slop's street is built with it on a fresh story world
+(`Game/GameColonyBuildings.cs`), before the barracks, the Remote Works and the quarry, so those find room round it.
+
+- **The style** is the Ministry's Brutalism (docs/sandbox/constructs/buildings.md): bare concrete, a heavy lid round
+  every flat roof, slots and high ribbons for windows, buttresses and fins, a canopy and steps at each door, amber
+  bulkhead lamps outside; inside, strip lights on round brown switches a player can work, radiators, filing cabinets,
+  a teleprinter, tape reels. Each building's shape comes from its job, and no two have the same outline.
+- **Across the street**, facing the gate: the **Colony Infirmary** (long, low and white: a blank buttressed wall to the
+  weather, a medical station at the door, two bunks, the medicine cabinet and the files at the far end), the **Ministry
+  Records Office** (the tallest: the archive is a slotted box over the hall, oversailing the forecourt on three columns
+  so the queue stands under it; a counter, the filing and a stair behind it; tape cabinets upstairs; the Union Flag on
+  the roof), the **Colony Canteen** (a hall two storeys high with a clerestory, a servery through to a low kitchen
+  behind, its back door and its stack) and the **Requisitions Store** (the roof out over a loading dock on two columns,
+  a counter in the opening, shelves behind, crates on the dock).
+- **By the gate**: the **Colony Gatehouse** (the gate clerk's post, its roof thrown 4 m towards the gate; a Belisha beacon
+  and the phone box); **lamp posts** down the street and the stock **Watchtowers** off the yard's back corners.
+- Every building has a battery (a fuse box high on a wall) so its mains lamps are lit, and signs in the Ministry's
+  voice ("FLED? REPORT HERE", "BE ILL ON FORM 27B"; a notice board holds three lines of seven letters).
+- **Where**: `Story/Opening/ColonyBuildings.json`: each building's blueprint, where its middle stands in the colony's
+  own frame (x along the front, the gate at x 6; negative z out in front of the gate), its turn and how level its ground
+  must be. A spot that is taken or too steep moves the building to the nearest clear, level spot within `"slack"` metres
+  (logged as `[colony] ... m off its spot`), or it isn't built.
+- **The blueprints** are the part kit's (`Source/PartKit/Generators/BuildingParts.Ministry.cs`, `--gen-parts
+  building_parts`), in the Ministry's palette (concrete `#a29e94` and `#858179`, Ministry green `#2f5a3c` doors, navy signs).
+- **For other code** (the lore's items, the staff's posts): `Game.ColonyBuilding("Ministry Records Office")` is the
+  server's construct of a building by its blueprint's name, or null (taken down, or none); "Penal Colony" and "Colony
+  Barracks" answer too. A spot in it is its blueprint's metres through `ToWorld`.
+- **The save**: the Opening section lists the buildings (name and construct id) after the quarry. One someone takes
+  down stays down; a world saved before the list gets the buildings the next time it loads.
+
+## Network and save
+
+- **`Msg.ColonyAlarm`** (protocol 208), server to all: u8 on, vec where it sounds; reliable when it changes, and again every
+  3 s while on (unreliable) for anyone who joins.
+- **`Msg.Opening`** (protocol 199), server to one client, reliable: the beat (`OpeningStage`), the time into it, its length,
+  the camera's focus, the caption and the line just said. Lines also go as ordinary chat lines from the speaker (over their head),
+  to that player only. **`CActKind.OpeningSkip`** asks to skip.
+- **The world save** has an `Opening` section (tag `OPEN`, its own section, so an older reader skips it): the map, the colony's
+  construct id, the crash site, the key and Steam id of everyone who has been through it, and last the barracks' construct
+  id (an older reader stops before it; a world without it gets a barracks when it loads), then the depot's, the data
+  centres', the quarry's and the Ministry's buildings (likewise). The colony itself is an ordinary
+  anchored construct, saved with the rest. On another planetoid (free travel) the section's map doesn't match, so there is no
+  colony there and no opening for someone joining there.
+
+## Changing it
+
+- Words and times: `Story/Opening/Opening.json` (ASCII, refused with a reason otherwise: then there is no opening).
+- The colony: the `Penal Colony` blueprint in `Source/PartKit/Generators/BuildingParts.cs` (`--gen-parts building_parts` rewrites the file). The cell
+  block and the gate are found by their cells (`OpeningSpots`): moving them in the blueprint means moving them there too.
+- The staff: `Story/Casts/PenalColony.json` (the warden's name is also `"warden"` in Opening.json).
+
+## Later
+
+- **Ranks** (Karl, 2026-11-07): a player can work their way up in the colony (inmate, then trusty, and on up) instead of only
+  breaking out, as a standing ladder with the Ministry (faction standing, `Story/Factions`). A breakout stays possible: the
+  colony is an ordinary construct with a gate, and the start kit stands outside its fence.
+- Later in the Ministry's line, dropping an antimatter bomb on a town or colony makes a faction universally hunted.

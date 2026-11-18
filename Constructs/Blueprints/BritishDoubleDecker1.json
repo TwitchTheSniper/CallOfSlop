@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front under the hood, inset 2 m, leaf/leaf, wing 0.75, cab style town cab, language bus heavy 2.61 m, flare 0.14, tapered 0.6, brow 0.77 1.5 m, tail 0.84 1 m, door right, 9 facets, upper deck over bays 2 to 5, cut 2.33 m, bulwark 1.08 m, stair left at 3.00 m back, cab coach cab, 6 facets, nose rounded, balcony r, space upper deck, trim livery on 11 bay sides, wear age 0.6 (6 rusty, 6 dirty, 0 sooty, 1 patched, 0 rusted out), body room, cab enclosed, nose long hood, rear gun deck, under stilts, flank panniers, roof none, layout room(Brow L,Bay L-T,Bay T,Door,Bay T,Bay T-N,Tail N)
   "format": "call-of-slop-construct-blueprint/1",
   "name": "British Double Decker 1",
-  "group": "Ministry of Slop",
+  "group": "British",
   "description": "A double-decker bus: a long hood, an enclosed cab, a walk-in hull with loot, a stern gun deck. 1 gun.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#2b2a28"},
@@ -164,12 +164,12 @@
     {"part": "Ammo Box", "on": 154, "socket": "left", "by": "right"},
     {"part": "Turret Module", "on": 142, "socket": "+x", "by": "-x"},
     {"part": "Scrap Bunk", "on": 69, "socket": "front36", "by": "foot10"},
-    {"part": "Pillar Box", "on": 62, "socket": "front33", "by": "foot10", "spin": 2},
-    {"part": "Tea Urn", "on": 67, "socket": "front11", "by": "foot10", "spin": 1},
-    {"part": "Tea Urn", "on": 72, "socket": "front11", "by": "foot00", "spin": 2},
-    {"part": "Pillar Box", "on": 62, "socket": "front34", "by": "foot00", "spin": 2},
-    {"part": "Tea Urn", "on": 67, "socket": "front13", "by": "foot10", "spin": 1},
-    {"part": "Union Flag", "on": 101, "socket": "front00", "by": "base", "spin": 2},
+    {"part": "Shelf Bay 1", "on": 62, "socket": "front20", "by": "-y.3.1", "spin": 2},
+    {"part": "Shelf Bay 1", "on": 62, "socket": "front21", "by": "-y.0.1", "spin": 2},
+    {"part": "Loudhailer", "on": 67, "socket": "front11", "by": "base"},
+    {"part": "Traffic Cone", "on": 160, "socket": "+y.1.0", "by": "base"},
+    {"part": "Garden Gnome", "on": 160, "socket": "+y.1.1", "by": "base"},
+    {"part": "Traffic Cone", "on": 111, "socket": "up53", "by": "base", "spin": 2},
     {"part": "Hull Pannier 1 m", "on": 106, "socket": "-x0", "by": "back", "paint": "#c8102e"},
     {"part": "Hull Pannier 1 m", "on": 106, "socket": "+x0", "by": "back", "paint": "#b5121b"},
     {"part": "Hull Loft (hoodr USV2WyWjXIXEVd ~6u078E7GT70g68v3H1011)", "on": 31, "socket": "+y", "by": "engine", "paint": "#f2c400"},
@@ -178,10 +178,10 @@
     {"part": "Arch Fender", "on": 167, "socket": "-x0", "by": "mount", "paint": "#f2c400"},
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 168, "pos": [0.128, 0.421, -1.243], "rot": [-0.7162, -0.0095, 0.0005, 0.6979]}, "paint": "#b5121b"},
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 169, "pos": [1.266, 0.528, -0.378], "rot": [-0.0103, 0.0097, -0.719, 0.6948]}, "paint": "#c8102e"},
-    {"part": "Teapot", "on": 167, "socket": "top", "by": "base"},
+    {"part": "Hull Loft (decoJ W0)", "on": 167, "socket": "top", "by": "base"},
     {"part": "Garden Gnome", "on": 39, "socket": "top", "by": "base"},
+    {"part": "Hull Loft (decoJ W0)", "on": 132, "socket": "front", "by": "base"},
     {"part": "Garden Gnome", "on": 129, "socket": "front", "by": "base"},
-    {"part": "Traffic Cone", "on": 127, "socket": "front", "by": "base"},
     {"part": "Hull Loft (triml1 YMW5 ~CG0COSCWtCWyD1JDXlDQAC2OAob82r4Qy02y ~Cu0D0YD8yDH4EndEvkEw9E2hD3C9pW5pf03f)", "on": 105, "socket": "+x0", "by": "base", "paint": "#004225"},
     {"part": "Hull Loft (triml2 YMW5 ~Cu0D0YD8yDH4EndEvkEw9E2hD3C9pW5pf03f ~CG0COSCWtCWyD1JDXlDQAC2OAob82r4Qy02y)", "on": 105, "socket": "-x0", "by": "base", "paint": "#004225"},
     {"part": "Hull Loft (triml1 XBW5 ~Cu0D0eD8yDfFEvkEvtEwVEZ6Dhf03f ~Cu0D0eD0yDnGF1kF1tF2VEh7Dpf03f)", "on": 107, "socket": "+x0", "by": "base", "paint": "#004225"},
@@ -200,5 +200,5 @@
     {"type": "shaft", "from": 32, "to": 9, "fromPort": "Output shaft", "toPort": "Input shaft"},
     {"type": "pipe", "from": 139, "to": 31, "nodes": [[1.5, 0.82, 9.05], [1.5, 0.55, 9.05], [0.67, 0.55, 9.05], [0.67, 0.55, 2.125], [0.67, 0.05, 2.125], [0.67, 0.05, 0.505], [0.67, 0.25, 0.505], [-0.17, 0.25, 0.505], [-0.17, 0.62, 0.505], [-0.17, 0.62, 0]], "laid": true}
   ],
-  "loot": [{"step": 158, "table": "british"}, {"step": 159, "table": "british"}, {"step": 162, "table": "british"}]
+  "loot": [{"step": 158, "table": "british"}, {"step": 159, "table": "british"}, {"step": 160, "table": "british"}]
 }

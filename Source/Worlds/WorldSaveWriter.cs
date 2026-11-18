@@ -119,44 +119,13 @@ public static class WorldSaveWriter
                 foreach (var p in s.Players)
                     if (p.Opened)
                         w.U64(p.Key).U64(p.SteamId);
-                w.U16(op.Barracks); // (the lockdown's barracks, GameColonyLockdown.cs: last, so an older reader stops before it)
-                w.U16(op.Works).U16(op.Depot); // (the Orbital Depot's, GameDepot.cs: after it, likewise)
-                w.U8((byte)Math.Min(op.Sites.Length, 255)); // (the data centres, GameStoryFragments.cs: after those, likewise)
-                for (var k = 0; k < op.Sites.Length && k < 255; k++)
-                    w.Str(op.Sites[k].Site).U16(op.Sites[k].Body);
-                w.U16(op.Quarry); // (the Ministry Quarry, GameQuarry.cs: after those, likewise)
-                w.U8((byte)Math.Min(op.Buildings.Length, 255)); // (the Ministry's buildings, GameColonyBuildings.cs: after it, likewise)
-                for (var k = 0; k < op.Buildings.Length && k < 255; k++)
-                    w.Str(op.Buildings[k].Name).U16(op.Buildings[k].Body);
+                // (worlds from before 2026-11-17 have the penal colony's barracks, depot, data centres, quarry and buildings
+                // after this; the colony is gone, so nothing more is written and a reader stops here)
             });
         if (s.Start.Length > 0)
-            w.Section(StartTag, () => w.Str(s.Start)); // (the story start, GameStoryStart.cs: a section of its own, only for a start that isn't the default, so an older reader skips it)
-        if (Array.Exists(s.Players, p => p.TutorialState != TutorialState.None))
-            w.Section(TutorialTag, () =>
-            {
-                // (the warden's induction, GameTutorial.cs: a section of its own, so an older reader skips it)
-                w.I32(s.Players.Length);
-                foreach (var p in s.Players)
-                    w.U64(p.Key).U64(p.SteamId).U8(p.TutorialStep).U8((byte)p.TutorialState);
-            });
-        if (Array.Exists(s.Players, p => p.DepotState != 0))
-            w.Section(DepotTag, () =>
-            {
-                // (the Orbital Depot's runs, GameDepot.cs: a section of its own, so an older reader skips it)
-                var those = Array.FindAll(s.Players, p => p.DepotState != 0);
-                w.I32(those.Length);
-                foreach (var p in those)
-                    w.U64(p.Key).U64(p.SteamId).U8(p.DepotState).U16(p.DepotLander);
-            });
-        if (Array.Exists(s.Players, p => p.QuarryState != 0))
-            w.Section(QuarryTag, () =>
-            {
-                // (the first Ministry duty's runs, GameQuarry.cs: a section of its own, so an older reader skips it)
-                var those = Array.FindAll(s.Players, p => p.QuarryState != 0);
-                w.I32(those.Length);
-                foreach (var p in those)
-                    w.U64(p.Key).U64(p.SteamId).U8(p.QuarryState);
-            });
+            w.Section(StartTag, () => w.Str(s.Start)); // (the story start, GameStoryStart.cs: a section of its own, so an older reader skips it; none for a world from before starts)
+        // (TutorialTag, DepotTag and QuarryTag were the penal colony's induction, Orbital Depot and first duty: no longer
+        // written since 2026-11-17, and skipped like any unknown section in an older world)
         if (Array.Exists(s.Players, p => p.Fallen || p.Died || p.BunkBody != 0))
             w.Section(Fate, () =>
             {

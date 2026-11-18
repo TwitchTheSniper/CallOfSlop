@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "IT Drone 3",
-  "group": "IT Department",
+  "group": "IT",
   "description": "A home-made drone: eight small rotors on four tube arms round a battery. Fly it from a Remote Console on its channel: Shift climbs, Ctrl sinks, W A S D move and turn it.",
   "steps": [
     {"part": "Battery", "paint": "#1f4e8c"},

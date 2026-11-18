@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Zero Day Frigate",
-  "description": "The IT Department's torpedo frigate: two decks the length of a sleek armoured hull, a rotary torpedo bay in each flank, a spinal railgun, four point-defence turrets, flare launchers and four drive bells across the stern, each with its own engine.",
+  "description": "A torpedo frigate: two decks the length of a sleek armoured hull, a rotary torpedo bay in each flank, a spinal railgun, four point-defence turrets, flare launchers and four drive bells across the stern, each with its own engine.",
   "steps": [
     {
       "part": "Zero Day Keel"

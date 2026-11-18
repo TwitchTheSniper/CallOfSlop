@@ -3,12 +3,12 @@ using static CallOfSlop.PartKit.PartKitMath;
 namespace CallOfSlop.PartKit.Generators;
 
 /// <summary>
-/// The IT Department's parts: Constructs/Parts/Office (docs/vehiclekit/VEHICLEKIT.md, "The IT style"). Was tools/constructs/office_parts.py.
+/// Office equipment: Constructs/Parts/Office (docs/vehiclekit/VEHICLEKIT.md, "The IT style"). Was tools/constructs/office_parts.py.
 ///
-/// What the IT Department bolts on where bandits hang skulls and spikes: a beige monitor on a stalk, a potted plant, a desk fan, an
-/// Employee of the Month plaque, a satellite dish, a network switch and a cable reel as trophies, and router antennas down the flanks as
-/// spikes. In its rooms: server racks (loot on their shelves), and the Computer and the Fax Machine, the only line to the IT Department
-/// (docs/archive/story/STORY.md, "The IT Department's fax"). Furniture stands on feet on the floor's quarter grid and faces its own +z, into
+/// What the IT style bolts on where bandits hang skulls and spikes: a potted plant, a desk fan, a satellite dish and a network switch as
+/// trophies, and router antennas down the flanks as spikes. In its rooms: server racks (loot on their shelves), and the Computer and the
+/// Fax Machine, the office desk's line in and out (GameSandboxOffice.cs). (The joke pieces, the CRT monitor, the Employee of the Month
+/// plaque and the cable reel, went with the old factions, 2026-11-17.) Furniture stands on feet on the floor's quarter grid and faces its own +z, into
 /// the room, as BodyParts' does. Each trophy stands on one "base" socket and points up its own +y, so the kit turns
 /// it outward, as the bandit parts do (BanditParts.cs). Leaves and soil aren't paintable; the rest takes the style's paint. Faces that
 /// meet are kept a few millimetres apart (CLAUDE.md, "No coplanar faces"). Recipes come from the part kit's assembling (--gen-parts assembling); run it after this one.
@@ -45,20 +45,6 @@ public sealed class OfficeParts : IPartGenerator
         return d;
     }
 
-    private static Part Monitor()
-    {
-        var p = new Part("CRT Monitor", Small, Section, "A beige monitor on a pole. Still logged in to something important.", color: Beige, group: Group);
-        var top = 0.18;
-        Stalk(p, top);
-        p.Add(Box([-0.07, top, -0.06], [0.07, top + 0.02, 0.06], BeigeDark)); // (the foot)
-        p.Add(Box([-0.17, top + 0.02, -0.12], [0.17, top + 0.3, 0.14], Beige)); // (the case: deep, as they were)
-        p.Add(Box([-0.14, top + 0.05, -0.124], [0.14, top + 0.27, -0.1], Screen, detail: true, shape: NoPaint)); // (the glass, 4 mm proud of the case's face)
-        p.Add(Box([0.1, top + 0.03, -0.126], [0.13, top + 0.045, -0.11], "#3fd04a", detail: true, shape: NoPaint)); // (the power light)
-        BaseSocket(p);
-        p.Stats(9, 30, 1, 0.5);
-        return p;
-    }
-
     private static Part Plant()
     {
         var p = new Part("Office Plant", Small, Section, "A potted plant nobody waters. It has outlived three reorganisations.", color: Pot, group: Group);
@@ -82,19 +68,6 @@ public sealed class OfficeParts : IPartGenerator
         p.Add(Box([-0.03, top + 0.03, -0.085], [0.03, top + 0.09, -0.078], Dark, detail: true, shape: Round("cylinder", 8, "-z"))); // (the hub, in front of the guard)
         BaseSocket(p);
         p.Stats(3, 20, 0, 0.5);
-        return p;
-    }
-
-    private static Part Plaque()
-    {
-        var p = new Part("Employee of the Month", Small, Section, "A gold plaque on a post. Everyone has had it twice.", color: Gold, group: Group);
-        var top = 0.25;
-        Stalk(p, top, Dark);
-        p.Add(Box([-0.16, top, -0.03], [0.16, top + 0.22, 0.0], "#5a3a22")); // (the board)
-        p.Add(Box([-0.12, top + 0.03, -0.034], [0.12, top + 0.19, -0.03], Gold, detail: true)); // (the plate, 4 mm proud)
-        p.Add(Box([-0.08, top + 0.13, -0.038], [0.08, top + 0.16, -0.034], Blue, detail: true, shape: NoPaint)); // (the name, in the house blue)
-        BaseSocket(p);
-        p.Stats(3, 25, 1, 0.5);
         return p;
     }
 
@@ -258,7 +231,7 @@ public sealed class OfficeParts : IPartGenerator
 
     private static Part Dish()
     {
-        var p = new Part("Satellite Dish", Small, Section, "A satellite dish on a post. It picks up the IT Department's hold music.", color: "#c9cbc8", group: Group);
+        var p = new Part("Satellite Dish", Small, Section, "A satellite dish on a post. It picks up somebody's hold music.", color: "#c9cbc8", group: Group);
         var top = 0.22;
         Stalk(p, top, Dark);
         p.Add(Box([-0.06, top, -0.06], [0.06, top + 0.04, 0.06], Dark)); // (its mount)
@@ -271,26 +244,11 @@ public sealed class OfficeParts : IPartGenerator
         return p;
     }
 
-    private static Part Reel()
-    {
-        var p = new Part("Cable Reel", Small, Section, "A drum of network cable, about a kilometre of it. All of it tangled.", color: Cable, group: Group);
-        var top = 0.06;
-        p.Add(Box([-0.08, 0, -0.06], [0.08, top, 0.06], Dark)); // (its stand)
-        var r = 0.17;
-        foreach (var x in new[] { -0.14, 0.11 })
-            p.Add(Box([x, top, -r], [x + 0.03, top + 2 * r, r], "#7a5e40", detail: true, shape: Round("cylinder", 12, "+x"))); // (the flanges)
-        p.Add(Box([-0.11, top + 0.04, -r + 0.04], [0.11, top + 2 * r - 0.04, r - 0.04], hidden: true));
-        p.Add(Box([-0.11, top + 0.04, -r + 0.04], [0.11, top + 2 * r - 0.04, r - 0.04], Cable, detail: true, shape: Round("cylinder", 12, "+x", paintable: false))); // (the cable)
-        BaseSocket(p);
-        p.Stats(6, 30, 0, 0.5);
-        return p;
-    }
-
     public void Make(PartOutput o) => WriteParts(o, Out,
     [
-        ("", Monitor()), ("", Plant()), ("", Fan()), ("", Plaque()),
+        ("", Plant()), ("", Fan()),
         ("", Antenna("Router Antenna", 0.3, "A router's antenna, bolted on. Full bars, no internet.", 0.5)),
         ("", Antenna("Wi-Fi Mast", 0.55, "A tall Wi-Fi antenna. The password is on a sticky note somewhere.", 1)),
-        ("", Switch()), ("", Dish()), ("", Reel()), ("", ServerRack()), ("", Computer()), ("", Fax()), ("", Terminal()),
+        ("", Switch()), ("", Dish()), ("", ServerRack()), ("", Computer()), ("", Fax()), ("", Terminal()),
     ]);
 }

@@ -36,7 +36,7 @@ Playing together
 - Single player against bots works offline.
 
 Your saves (see also MOVING YOUR SAVES.txt, which describes the Windows folders)
-- Settings, progression, loadouts and workbench builds are saved in
+- Settings, loadouts and workbench builds are saved in
   ~/Library/Application Support/CallOfSlop  (Finder: Go > Go to Folder..., or Settings > Player > Open save folder)
   so every new build sees them.
 

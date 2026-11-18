@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 2 body 2 kit 2 wear 2, chassis 2 axles, front forward, inset 2 m, hydraulic/leaf, wing 0.5, cab style box, language van standard 2.56 m, flare 0.04, raked 0.9, brow 0.63 1 m, tail 0.82 1 m, door right, cab cabin cab, nose flat, lopsided left, wear age 0.74 (3 rusty, 4 dirty, 0 sooty, 0 patched, 0 rusted out), body gun bay+bed, cab enclosed, nose long hood, rear hitch, under stilts, sides walls, layout gun bay 2 m+bed 1.5 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Scam Tanker Rig 2",
-  "group": "The Call Centre",
+  "group": "Scam",
   "description": "A tanker rig: a long hood, an enclosed cab, a gun behind the cab, an open bed, a tow hitch. 1 gun.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#2a2c30"},
@@ -81,11 +81,11 @@
     {"part": "Hull Loft (hoodf UcV2WyWjXWXWVd ~7807Gu015)", "on": 24, "socket": "+y", "by": "engine", "paint": "#2a2c30"},
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 71, "pos": [-1.077, 0.59, 4.01], "rot": [0.0184, 0.0011, 0.7098, 0.7042]}, "paint": "#9aa0a6"},
     {"part": "Loudhailer", "on": 71, "socket": "front10", "by": "base"},
-    {"part": "Prize Wheel", "on": 73, "socket": "top", "by": "base"},
-    {"part": "Loudhailer", "on": 57, "socket": "front", "by": "base"},
-    {"part": "Gift Card Sign", "on": 51, "socket": "front00", "by": "base"},
-    {"part": "Prize Wheel", "on": 55, "socket": "front", "by": "base"},
-    {"part": "Loudhailer", "on": 32, "socket": "top", "by": "base"}
+    {"part": "Traffic Cone", "on": 73, "socket": "top", "by": "base"},
+    {"part": "Loudhailer", "on": 32, "socket": "top", "by": "base"},
+    {"part": "Traffic Cone", "on": 51, "socket": "front00", "by": "base"},
+    {"part": "Traffic Cone", "on": 55, "socket": "front", "by": "base"},
+    {"part": "Hubcap Plate", "on": 45, "socket": "front00", "by": "base"}
   ],
   "wires": [[29, 30], [30, 24], [62, 69], [69, 64]],
   "links": [

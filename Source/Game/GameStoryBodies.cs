@@ -50,13 +50,7 @@ public sealed partial class Game
         public double MoodUntil; // game time
         public byte MoodCause; // whoever caused it: their player id (MoodCauseEntity -1: nobody)
         public int MoodCauseEntity, MoodAbout; // story entities: whoever caused it, whom it is about (-1: none)
-        public short Post; // their post for this shift (GameStoryPosts.cs): its index + 1 (0: none, the work spot)
-        public double PostFor = -1; // the Work step (its start on the story clock) the post is for
-        public Vector3 PostGoal; // where the post has them stand
-        public double PostStuck; // game time: since when they have been near the post's seat without sitting (-1: not)
-        public bool PostSat; // sat in the post's seat
-        public double DoorSince = -1; // game time: since when they have stood at the barracks' doorway step on the way in (-1: not)
-        public bool Station; // keeps to Home (the spaceport's pilot, 2 km from the colony: GameSpaceport.cs), never walks off to anyone far
+        public bool Station; // keeps to Home, never walks off to anyone far (the spaceport's pilot was one, until 2026-11-17)
 
         public StoryBody() { }
     }
@@ -132,12 +126,12 @@ public sealed partial class Game
                 continue; // (lying there: the spawns tick takes it away, GameSandboxSpawns.cs)
             // Empty hands (the sidearm stays away) until they fight: Karl's convicts were walking round the colony pistol in hand.
             ref var hand = ref SandboxHands.Hand(p.Id);
-            var tool = b.Fight == StoryFighting || BreakoutCrewArmed(b.Entity) ? ConstructTool.None : ConstructTool.Hands;
+            var tool = b.Fight == StoryFighting ? ConstructTool.None : ConstructTool.Hands;
             if (hand.Tool != tool && !hand.Seated)
                 hand.Tool = tool;
             var leaving = StoryLeaving(s, a, place);
             b.Leaving = leaving;
-            var gone = !on || a.Dead || !(ag.Where(a.Entity) == place || StoryArriving(s, a, place, clock) || leaving) || BreakoutAboard(a.Entity);
+            var gone = !on || a.Dead || !(ag.Where(a.Entity) == place || StoryArriving(s, a, place, clock) || leaving);
             if (!gone && leaving && Flat2(p.Position - StoryRoadEnd(s, ref b, a.Doing.Place)) < 3f * 3f)
                 gone = StandInMayBoard(a.Entity); // (at the road's end: off they go; STAND-IN: once their craft has landed, Source/StandIns)
             if (gone)
@@ -151,7 +145,7 @@ public sealed partial class Game
 
         // Players of the people's side that no body names (a load, a reset): put away.
         foreach (var p in Players.Values)
-            if (p.Team == SbPeopleTeam && p.SbSpawned && StoryBodyIndex(p.Id) < 0 && OutpostGuardIndex(p.Id) < 0) // (an outpost's people are GameOutposts.cs's)
+            if (p.Team == SbPeopleTeam && p.SbSpawned && StoryBodyIndex(p.Id) < 0)
             {
                 StoryBodyRemove(p);
                 removed = true;
@@ -162,8 +156,8 @@ public sealed partial class Game
         if (on && _bodyCount < StoryBodiesMax && place >= 0)
             foreach (var a in ag.All)
             {
-                if (a.Dead || StoryBodyIndexOf(a.Entity) >= 0 || BreakoutAboard(a.Entity))
-                    continue; // (riding in the courier: GameBreakoutShip.cs)
+                if (a.Dead || StoryBodyIndexOf(a.Entity) >= 0)
+                    continue;
                 var here = ag.Where(a.Entity) == place;
                 var arriving = !here && StoryArriving(s, a, place, clock);
                 if (!here && !arriving)
@@ -188,7 +182,6 @@ public sealed partial class Game
             }
         }
         StoryTalkTick(s, now); // (what they say, and who hears it: GameStoryTalk.cs)
-        LabourHandsTick(now); // (who of them stands working in a gang of convicts: GameLabourHands.cs)
     }
 
     private static float Flat2(Vector3 v) => v.X * v.X + v.Z * v.Z;
@@ -353,8 +346,6 @@ public sealed partial class Game
         }
         else
             b.Work = b.Home;
-        if (SpaceportKeeper(name) && SpaceportKeeperSpot() is { } station)
-            (b.Home, b.Work, b.Station) = (station, station, true); // (the courier's pilot keeps to his apron: GameSpaceport.cs)
         var at = arriving ? StoryRoadEnd(s, ref b, a.DoingFromPlace) : StoryStepSpot(s, a, ref b);
         var bot = new Player
         {
@@ -389,7 +380,7 @@ public sealed partial class Game
             return b.LivesHere ? b.Home : b.Work; // (idle: at home, or about their work when they live elsewhere)
         var verb = s.Rules.People.Actions[a.Doing.Action].Verb;
         if (verb == _vWork)
-            return StoryPostGoal(s, a, ref b) ?? b.Work; // (at their post for the shift: GameStoryPosts.cs)
+            return b.Work;
         return verb == _vRest ? b.Home : b.Goal == default ? b.Home : b.Goal;
     }
 
@@ -398,8 +389,6 @@ public sealed partial class Game
     {
         if (b.Leaving)
             return StoryRoadEnd(s, ref b, a.Doing.Place);
-        if (BreakoutGoalOf(a.Entity) is { } breakout)
-            return breakout; // (the convicts' break-out: to the hauler, or at the spaceport: GameBreakout.cs)
         var with = s.Plays.PartnerOf(a.Entity); // (in a play: beside whoever they are with in it)
         if (with < 0 && a.Busy && a.Doing.Target >= 0 && !s.Rules.People.Actions[a.Doing.Action].Road)
             with = a.Doing.Target;
@@ -463,19 +452,12 @@ public sealed partial class Game
             return; // (in a fight: GameStoryFights.cs)
         var goal = i >= 0 ? _bodies[i].Goal : p.SbHome;
         if (i >= 0 && SandboxHands.Hand(p.Id).Seated)
-            goal = p.Position; // (sat at their post: GameStoryPosts.cs)
-        else if (i >= 0)
-        {
-            StoryDoorStep(p, ref _bodies[i], goal, now);
-            goal = StoryDoorRoute(p.Position, goal); // (in and out of the barracks by its doorway: GameStoryPosts.cs)
-        }
+            goal = p.Position;
         b.HeardTime = b.LastSeenTime = -100;
         b.Target = byte.MaxValue;
         b.ForcedGoal = Flat2(goal - p.Position) < 1.2f * 1.2f ? p.Position : goal;
         b.HoldUntil = now + 1; // (a hold walks, and the stuck watch leaves a body standing at its spot alone)
         b.HoldAnchor = goal;
-        if (i >= 0)
-            StoryPostBot(p, b, ref _bodies[i], now); // (at their post: sat down, turned to the work, or up again: GameStoryPosts.cs)
         StorySightFace(p, b, now); // (turned to whoever they react to: GameStorySight.cs)
         StoryBodyFace(p, b, now); // (turned to whoever they talk to, and stopped for a player: GameStoryChat.cs)
     }

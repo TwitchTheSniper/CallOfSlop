@@ -94,7 +94,7 @@ public sealed class RagdollBody
     public readonly float[] Blood = new float[8];
     public float BloodSeed;
 
-    // The prestige hat: on the head, or knocked off (flying, then lying on its side).
+    // The hat (a uniform's cap): on the head, or knocked off (flying, then lying on its side).
     public HatDef? Hat;
     public bool HatOff, HatResting;
     public Vector3 HatPos, HatVel, HatAxis, HatRestPos;
@@ -751,7 +751,7 @@ public static class Ragdolls
 
     /// <summary>
     /// A player's body blown apart (the kill's "gibbed" flag): gibs in their colours, flung from the blast, and their
-    /// prestige hat flying off on its own. False on Off gore (the caller makes a normal ragdoll).
+    /// hat flying off on its own. False on Off gore (the caller makes a normal ragdoll).
     /// </summary>
     private static bool TryGibPlayer(Player p, in RagdollDeath d, in KillPacket kill, double now)
     {

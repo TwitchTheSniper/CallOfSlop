@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 2 body 2 kit 2 wear 2, chassis 2 axles, front set back, inset 1.25 m, coil/hydraulic, wing 0.5, cab style town cab, language coach standard 2.75 m, flare 0.07, crowned 1.0, brow 0.69 1 m, tail 0.83 0.75 m, door left, 10 facets, cab coach cab, 7 facets, nose grille, wear age 0.4 (1 rusty, 2 dirty, 0 sooty, 0 patched, 0 rusted out), body gun bay, cab enclosed, nose long hood, rear porch, under tub, layout gun bay 2 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "British Technical 2",
-  "group": "Ministry of Slop",
+  "group": "British",
   "description": "A technical: a long hood, an enclosed cab, a gun behind the cab, a drum on the rear porch. 1 gun.",
   "steps": [
     {"part": "Square Beam 0.75 m", "paint": "#1b1c1e"},
@@ -75,9 +75,9 @@
     {"part": "Hull Loft (hoodg UbV2WyWjXYXYVd ~6O06WC6eP6eb6Gn50z2f2012)", "on": 29, "socket": "+y", "by": "engine", "paint": "#f2c400"},
     {"part": "Slat Grille", "on": 67, "socket": "front", "by": "back", "paint": "#1b1c1e"},
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 68, "pos": [0.126, 0.499, -1.908], "rot": [-0.7055, -0.0018, -0.0102, 0.7086]}, "paint": "#c8102e"},
-    {"part": "Teapot", "on": 67, "socket": "top", "by": "base"},
-    {"part": "Traffic Cone", "on": 63, "socket": "front", "by": "base"},
-    {"part": "Union Flag", "on": 60, "socket": "front03", "by": "base"}
+    {"part": "Hull Loft (decoJ W0)", "on": 67, "socket": "top", "by": "base"},
+    {"part": "Hull Loft (decoJ W0)", "on": 63, "socket": "front", "by": "base"},
+    {"part": "Satellite Dish", "on": 37, "socket": "top", "by": "base"}
   ],
   "wires": [[34, 35], [35, 29], [50, 57], [57, 52]],
   "links": [

@@ -118,7 +118,6 @@
       "rolls": [1, 3],
       "empty": 0.15,
       "items": [
-        {"part": "Pipe Box", "weight": 2, "count": [1, 1]},
         {"part": "Gear Set", "weight": 8, "count": [1, 3]},
         {"part": "Bearing", "weight": 6, "count": [1, 3]},
         {"part": "Tyre Carcass", "weight": 6, "count": [1, 2]},
@@ -344,7 +343,6 @@
       "rolls": [2, 4],
       "empty": 0.05,
       "items": [
-        {"part": "Pipe Box", "weight": 2, "count": [1, 1]},
         {"part": "Gear Set", "weight": 8, "count": [1, 3]},
         {"part": "Bearing", "weight": 6, "count": [1, 3]},
         {"part": "Tyre Carcass", "weight": 6, "count": [1, 2]},
@@ -374,7 +372,6 @@
       "rolls": [3, 5],
       "empty": 0,
       "items": [
-        {"part": "Pipe Box", "weight": 2, "count": [1, 1]},
         {"part": "Gear Set", "weight": 8, "count": [1, 3]},
         {"part": "Bearing", "weight": 6, "count": [1, 3]},
         {"part": "Tyre Carcass", "weight": 6, "count": [1, 2]},
@@ -550,7 +547,6 @@
         {"part": "Filter", "weight": 4, "count": [1, 2]},
         {"part": "Lamp", "weight": 3, "count": [1, 2]},
         {"part": "Small Fuel Tank", "weight": 3, "count": [1, 1]},
-        {"part": "Pipe Box", "weight": 2, "count": [1, 1]},
         {"part": "Battery", "weight": 1, "count": [1, 1]}
       ]
     },

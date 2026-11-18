@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 4 body 4 kit 4 wear 4, chassis 2 axles, front under the hood, inset 1.75 m, leaf/leaf, wing 0.5, archetype estate, cab style bus front, language estate standard 2.48 m, flare 0.03, level 0.9, brow 0.69 1.5 m, tail 0.86 0.75 m, door left, 8 facets, cab estate crew cab, 6 facets, nose rounded, wear age 0.72 (0 rusty, 4 dirty, 0 sooty, 1 patched, 0 rusted out), body gap+boot, cab crew, nose long hood, rear hitch, under tub, layout gap 1 m+boot 2.8 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "British Car 4",
-  "group": "Ministry of Slop",
+  "group": "British",
   "description": "A car: a long hood, a crew cab, bare rails behind the cab, a boot behind the cabin, the gun on a pedestal ahead of it, a tow hitch. 1 gun.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#2b2a28"},
@@ -88,8 +88,7 @@
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 78, "pos": [1.284, 0.553, -0.379], "rot": [-0.0126, 0.0112, -0.7168, 0.6971]}, "paint": "#b5121b"},
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 79, "pos": [-0.782, 0.279, -0.375], "rot": [-0.0053, -0.0002, 0.7132, 0.701]}, "paint": "#c8102e"},
     {"part": "Garden Gnome", "on": 76, "socket": "top", "by": "base"},
-    {"part": "Square Beam 0.5 m", "on": 62, "socket": "top", "by": "-z", "paint": "#2b2a28"},
-    {"part": "Union Flag", "on": 83, "socket": "+z", "by": "base"},
+    {"part": "Loudhailer", "on": 40, "socket": "top", "by": "base"},
     {"part": "Plate Steel 0.5 m", "weld": {"on": 77, "pos": [0.129, 0.389, -1.213], "rot": [-0.701, -0.0118, 0.007, 0.713]}, "paint": "#b5121b"}
   ],
   "wires": [[32, 33], [33, 27], [66, 73], [73, 68], [73, 74]],

@@ -192,7 +192,7 @@ public static class VehicleContext
         ["Bandit"] = new() { Strength = 1.2 }, // (scavengers: they build from whatever is lying about)
         ["IT"] = new() { Strength = 0.7, Near = 100 }, // (procurement buys what the catalogue has)
         ["Scam"] = new() { Strength = 0.7, Near = 100 },
-        ["Highland"] = new() { Strength = 1.0, GroundRoles = ["rust"] }, // (the tartan may go to the hills' colours; the Saltire stays)
+        ["Highland"] = new() { Strength = 1.0, GroundRoles = ["rust"] }, // (the tartan may go to the hills' colours; the hood's blue stays)
         ["British"] = new() { Strength = 0.6, GroundRoles = ["rust"], Near = 90 }, // (the bus stays red unless something near the ground is listed)
     };
 

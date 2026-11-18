@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 16 body 16 kit 16 wear 16, chassis 2 axles, front forward, inset 2 m, leaf/leaf, wing 0.5, cab style box, language cabin heavy 2.48 m, flare 0.12, plain 0.9, brow 0.77 1 m, tail 0.77 1 m, door left, cab cabin cab, nose flat, fitting roof sign, wear age 0.79 (1 rusty, 4 dirty, 0 sooty, 0 patched, 0 rusted out), body gun bay+bed, cab enclosed, nose long hood, rear porch, under tub, sides open, layout gun bay 2 m+bed 1.5 m, plan 4
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Scam Technical 16",
-  "group": "The Call Centre",
+  "group": "Scam",
   "description": "A technical: a long hood, an enclosed cab, a gun behind the cab, an open bed, a drum on the rear porch. 1 gun.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#2a2c30"},
@@ -84,9 +84,9 @@
     {"part": "Fuel Drum", "on": 70, "socket": "front33", "by": "-y"},
     {"part": "Hull Loft (hoodf UTV2WyWjXWXWVd ~6e06mu016)", "on": 26, "socket": "+y", "by": "engine", "paint": "#21c45a"},
     {"part": "Hull Loft (decoS XJWAWgW0)", "on": 34, "socket": "top", "by": "base", "paint": "#ff3d8b"},
-    {"part": "Office Phone", "on": 77, "socket": "top", "by": "base"},
-    {"part": "Prize Wheel", "on": 71, "socket": "front03", "by": "base"},
-    {"part": "Loudhailer", "on": 53, "socket": "front", "by": "base"}
+    {"part": "Traffic Cone", "on": 77, "socket": "top", "by": "base"},
+    {"part": "Traffic Cone", "on": 71, "socket": "front03", "by": "base"},
+    {"part": "Loudhailer", "on": 52, "socket": "front", "by": "base"}
   ],
   "wires": [[31, 32], [32, 26], [57, 67], [67, 59]],
   "links": [

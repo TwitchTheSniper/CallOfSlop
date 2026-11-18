@@ -61,7 +61,6 @@ public sealed partial class Ui
     /// </summary>
     private void DrawStreakPicker(Audio audio, float2 area)
     {
-        var prog = Progress;
         var l = Edit;
         var set = l.Streaks.Sanitized();
         var gap = ImGui.GetStyle().ItemSpacing.X;
@@ -123,32 +122,31 @@ public sealed partial class Ui
             {
                 if (n++ % cols != 0)
                     ImGui.SameLine();
-                var unlocked = prog.IsUnlocked(def.Id);
                 var selected = set.Has(def.Id);
                 var pos = ImGui.GetCursorScreenPos();
-                ImGui.PushStyleColor(ImGuiCol.ChildBg, selected ? SelectedBg : !unlocked ? LockedBg : _hoverStreak == def ? CardHover : CardBg);
+                ImGui.PushStyleColor(ImGuiCol.ChildBg, selected ? SelectedBg : _hoverStreak == def ? CardHover : CardBg);
                 if (ImGui.BeginChild($"##streak{(int)def.Id}", new float2(cw, ch), ImGuiChildFlags.Borders, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
                 {
                     var dl = ImGui.GetWindowDrawList();
-                    DrawStreakIcon(dl, def.Id, pos + new float2(30 * _scale, 32 * _scale), 21 * _scale, !unlocked);
+                    DrawStreakIcon(dl, def.Id, pos + new float2(30 * _scale, 32 * _scale), 21 * _scale);
                     ImGui.SetCursorScreenPos(pos + new float2(60 * _scale, 8 * _scale));
                     ImGui.PushFont(default, 19);
-                    ImGuiSafe.TextColored(unlocked ? new float4(1, 1, 1, 1) : Dim, def.Name);
+                    ImGuiSafe.TextColored(new float4(1, 1, 1, 1), def.Name);
                     ImGui.PopFont();
                     ImGui.SetCursorScreenPos(pos + new float2(60 * _scale, 32 * _scale));
-                    ImGuiSafe.TextColored(unlocked ? Rgba(def.Color) : Dim, unlocked ? def.Short : $"LOCKED  -  unlocks at level {KillStreaks.UnlockLevel(def.Id)}");
+                    ImGuiSafe.TextColored(Rgba(def.Color), def.Short);
                     // Cost badge, top right
                     var badge = $"{def.Kills} KILLS";
                     var bw = ImGui.CalcTextSize(badge).X + 14 * _scale;
                     var b0 = pos + new float2(cw - bw - (selected ? 30 : 10) * _scale, 8 * _scale);
                     var b1 = b0 + new float2(bw, 20 * _scale);
-                    dl.AddRectFilled(b0, b1, unlocked ? Col(def.Color, 60) : new ImColor8(60, 60, 64, 120), 4 * _scale);
-                    SizedText(dl, new float2((b0.X + b1.X) / 2, b0.Y + 2 * _scale), ImGui.GetFontSize(), unlocked ? Col(def.Color) : Dim8, badge, 0.5f);
+                    dl.AddRectFilled(b0, b1, Col(def.Color, 60), 4 * _scale);
+                    SizedText(dl, new float2((b0.X + b1.X) / 2, b0.Y + 2 * _scale), ImGui.GetFontSize(), Col(def.Color), badge, 0.5f);
                     if (selected)
                         DrawStar(dl, pos + new float2(cw - 16 * _scale, 18 * _scale), 7 * _scale, new ImColor8(240, 150, 40, 255));
                     ImGui.SetCursorScreenPos(pos + new float2(10 * _scale, 58 * _scale));
                     ImGui.PushTextWrapPos(ImGui.GetCursorPos().X + cw - 20 * _scale);
-                    ImGui.PushStyleColor(ImGuiCol.Text, unlocked ? new float4(0.8f, 0.8f, 0.84f, 1f) : Dim);
+                    ImGui.PushStyleColor(ImGuiCol.Text, new float4(0.8f, 0.8f, 0.84f, 1f));
                     ImGuiSafe.TextWrapped(def.Effect);
                     ImGui.PopStyleColor();
                     ImGui.PopTextWrapPos();
@@ -160,11 +158,6 @@ public sealed partial class Ui
                 // A click picks (a double-click's second click is swallowed, so it never undoes the pick).
                 if (ImGui.IsItemClicked(ImGuiMouseButton.Left) && !SecondClick)
                 {
-                    if (!unlocked)
-                    {
-                        LockedFeedback(audio);
-                    }
-                    else
                     {
                         l.Streaks = selected ? set.Without(def.Id) : set.With(def.Id, set[_streakFocus]);
                         if (!selected)

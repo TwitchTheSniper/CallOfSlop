@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 6 body 6 kit 6 wear 6, chassis 3 axles, tandem 1.5 m, front under the hood, inset 1 m, swing arm/trailing arm, wing 0.5, cab style box, language van standard 2.54 m, flare 0.08, tapered 0.6, brow 0.62 1 m, tail 0.82 1 m, door right, cab cabin cab, nose flat, balcony g, fitting roof sign, trim signboards on 4 bay sides, wear age 0.67 (5 rusty, 3 dirty, 0 sooty, 0 patched, 0 rusted out), body room+gun bed, cab enclosed, nose short hood, rear porch hitch, under stilts, flank panniers, sides open, roof none, layout room(Brow T,Door,Tail T)+gun bed 2.5 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Scam Gun Wagon 6",
-  "group": "The Call Centre",
+  "group": "Scam",
   "description": "A gun wagon: a short hood, an enclosed cab, a walk-in hull with loot, a gun bed, a drum on the rear porch over a tow hitch. 1 gun.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#2a2c30"},
@@ -136,7 +136,7 @@
     {"part": "Chest", "on": 65, "socket": "front00", "by": "bottom", "spin": 3},
     {"part": "Tall Shelf Bay 1", "on": 62, "socket": "front11", "by": "-y.3.1", "spin": 1},
     {"part": "Water Cooler", "on": 63, "socket": "front16", "by": "foot00", "spin": 1},
-    {"part": "Office Phone", "on": 129, "socket": "+y.1.0", "by": "base"},
+    {"part": "Hubcap Plate", "on": 129, "socket": "+y.1.0", "by": "base"},
     {"part": "Square Beam 0.75 m", "on": 14, "socket": "+y0", "by": "-x0", "spin": 1, "paint": "#2a2c30"},
     {"part": "Square Beam 0.75 m", "on": 132, "socket": "+x0", "by": "-x0", "spin": 1, "paint": "#2a2c30"},
     {"part": "Plate Steel 1 m", "on": 133, "socket": "+x2", "by": "back02", "paint": "#9aa0a6"},
@@ -153,15 +153,14 @@
     {"part": "Plate Steel 0.5 m", "weld": {"on": 144, "pos": [-0.898, 0.326, -0.377], "rot": [0.0125, -0.0036, 0.7158, 0.6982]}, "paint": "#7d8a92"},
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 143, "pos": [1.412, 0.581, -0.378], "rot": [-0.0091, -0.0115, -0.6969, 0.717]}, "paint": "#9aa0a6"},
     {"part": "Hull Loft (decoS XHWAWfW0)", "on": 44, "socket": "top", "by": "base", "paint": "#f2f2ee"},
-    {"part": "Office Phone", "on": 142, "socket": "top", "by": "base"},
-    {"part": "Prize Wheel", "on": 105, "socket": "front", "by": "base"},
-    {"part": "Office Phone", "on": 95, "socket": "front13", "by": "base"},
-    {"part": "Gift Card Sign", "on": 112, "socket": "front", "by": "base"},
+    {"part": "Hubcap Plate", "on": 142, "socket": "top", "by": "base"},
+    {"part": "Traffic Cone", "on": 105, "socket": "front", "by": "base"},
+    {"part": "Hubcap Plate", "on": 95, "socket": "front13", "by": "base"},
+    {"part": "Loudhailer", "on": 112, "socket": "front", "by": "base"},
     {"part": "Hull Loft (trimg7 XaW5 ~Be0CGfCGyCnaCnuBQF7QQ02T ~Cm0DOyDf5EXaEJ9Cpl8S1046)", "on": 81, "socket": "+x0", "by": "base", "paint": "#ffd400"},
     {"part": "Hull Loft (trimg6 XaW5 ~Cm0DOyDf5EXaEJ9Cpl8S1046 ~Be0CGfCGyCnaCnuBQF7QQ02T)", "on": 81, "socket": "-x0", "by": "base", "paint": "#ffd400"},
     {"part": "Hull Loft (trimg6 YMW5 ~Cm0DOyDf5EXaEJ9Cpl8S1046 =)", "on": 82, "socket": "-x0", "by": "base", "paint": "#ffd400"},
-    {"part": "Hull Loft (trimg8 XaW5 ~Cm0DOyDf5EXaEJ9Cpl8S1046 ~Bm0CWtCWyD1aD2WAA_6ZD03H)", "on": 85, "socket": "+x0", "by": "base", "paint": "#ffd400"},
-    {"part": "Phone Mast", "on": 92, "socket": "front00", "by": "base"}
+    {"part": "Hull Loft (trimg8 XaW5 ~Cm0DOyDf5EXaEJ9Cpl8S1046 ~Bm0CWtCWyD1aD2WAA_6ZD03H)", "on": 85, "socket": "+x0", "by": "base", "paint": "#ffd400"}
   ],
   "wires": [[41, 42], [42, 35], [119, 126], [126, 121]],
   "links": [

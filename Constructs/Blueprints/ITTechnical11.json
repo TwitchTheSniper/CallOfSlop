@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 11 body 11 kit 11 wear 11, chassis 2 axles, front under the hood, inset 1.25 m, hydraulic/leaf, wing 0.5, cab style glasshouse, language van heavy 2.33 m, flare 0.17, plain 0.6, brow 0.77 1.5 m, tail 0.88 1 m, door right, 8 facets, cab pod cab, 6 facets, nose wedge, fitting radome, wear age 0.25 (0 rusty, 2 dirty, 0 sooty, 0 patched, 0 rusted out), body gun bay+bed, cab enclosed, nose short hood, rear porch, under stilts, sides rails, layout gun bay 2 m+bed 1.5 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "IT Technical 11",
-  "group": "IT Department",
+  "group": "IT",
   "description": "A technical: a short hood, an enclosed cab, a gun behind the cab, an open bed, a drum on the rear porch. 1 gun.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#3b3f44"},
@@ -95,11 +95,10 @@
     {"part": "Slat Grille", "on": 86, "socket": "front", "by": "back", "paint": "#c0392b"},
     {"part": "Plate Steel 0.5 m", "weld": {"on": 87, "pos": [0.123, 0.501, -1.008], "rot": [-0.7075, 0.0072, 0.0044, 0.7066]}, "paint": "#d8d0b8"},
     {"part": "Hull Loft (decoR WSWN)", "on": 37, "socket": "top", "by": "base"},
-    {"part": "CRT Monitor", "on": 86, "socket": "top", "by": "base"},
-    {"part": "Network Switch", "on": 53, "socket": "front", "by": "base"},
-    {"part": "CRT Monitor", "on": 52, "socket": "front", "by": "base"},
-    {"part": "Network Switch", "on": 81, "socket": "front", "by": "base"},
-    {"part": "Router Antenna", "on": 60, "socket": "front", "by": "base"}
+    {"part": "Office Plant", "on": 86, "socket": "top", "by": "base"},
+    {"part": "Satellite Dish", "on": 53, "socket": "front", "by": "base"},
+    {"part": "Office Plant", "on": 52, "socket": "front", "by": "base"},
+    {"part": "Network Switch", "on": 55, "socket": "front", "by": "base"}
   ],
   "wires": [[34, 35], [35, 29], [69, 75], [75, 71]],
   "links": [

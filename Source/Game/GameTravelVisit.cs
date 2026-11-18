@@ -157,8 +157,6 @@ public sealed partial class Game
         var g = new Game(new NetPeer(RelayTransport.Joining(link, visit.Place)), link.Audio, link.LocalName, link.ChosenPrimary, link.ChosenSecondary)
         {
             LocalWorldKey = link.LocalWorldKey,
-            Progress = link.Progress,
-            ChosenHat = link.ChosenHat,
             ChosenLook = link.ChosenLook,
         };
         g.Link = link;

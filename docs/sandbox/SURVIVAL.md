@@ -15,8 +15,10 @@ docs/story/STARTS.md):
 
 - **Rust bucket** (first, both modes): wake aboard your own patched freighter in orbit over Glacier.
 - **On the ground** (both modes): the map you pick, with the start kit by its parts rack in Survival.
-- **Tutorial** (Survival only, a tickbox): the Ministry's penal colony on Glacier and the warden's induction, in a world
-  of its own that is never saved. Untick it to play your own world.
+- **Magpie** and **Zero Day**: a mining ship or a frigate over Crumb.
+
+The penal colony tutorial (the Ministry's colony on Glacier and the warden's induction) was removed (2026-11-17,
+docs/removals-notes.md): Survival has no tutorial now.
 
 Multiplayer's HOST A GAME opens the lobby with the same choices; the lobby keeps Creative or Survival, the saved world and
 the limits, and no longer offers the archived arena modes for a Sandbox game.
@@ -100,13 +102,12 @@ Recoverable, not deleted:
   workbench preview and the arena level bar on the main menu (the code behind them stays). The placeholder Castaway start
   is in `docs/archive/story/starts`.
 
-What stays live: the penal colony (its buildings, quarry, depot, spaceport and labour gangs) as the tutorial's world, the
-opening's card and wake, and the warden's induction. Its staff are story people, so the colony has nobody walking it while
-the story is archived; the induction's lines still come, signed by the warden.
+What stays live: the opening's card and wake (docs/story/OPENING.md). The penal colony, its buildings, quarry, depot,
+spaceport, labour gangs and the warden's induction were removed (2026-11-17); a world from before starts loads with its
+colony as plain constructs and plays no opening.
 
 A world saved while the story was on keeps loading, and its story is kept: the Story section is read as bytes and written
-back unread on every save (`GameStory.StoryRead`), so `--story` later finds it whole. The tutorial's crew bus is a
-stand-in craft and is still kept up and sent to friends who join without the story (`StandInsKeep`). A world saved with
-a start that is gone (the archived Castaway) plays the On the ground start.
+back unread on every save (`GameStory.StoryRead`), so `--story` later finds it whole. A world saved with a start that is gone (the archived Castaway, the
+penal colony) plays the On the ground start.
 
 **Faction politics (decided, agreed by Karl 2026-11-17).** NPC factions are kinds; powers (the factions that act) are made from kinds, up to 16. Relations between powers and with players run from blood enemies who never make peace to wanting to merge, moved by events and fading over time, with pacts (ceasefire, non-aggression, alliance, trade, tribute, vassalage). A planet belongs to the power with majority control, key sites weighted by how rare they are there. Admirals coordinate groups of captains, combat or civilian. Design: `docs/sandbox/design/faction-controllers.md`.

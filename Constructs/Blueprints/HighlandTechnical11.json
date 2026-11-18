@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 11 body 11 kit 11 wear 11, chassis 2 axles, front under the hood, inset 1.75 m, hydraulic/hydraulic, wing 0.5, cab style tourer, language boat standard 2.48 m, flare 0.15, plain 0.9, brow 0.72 1.5 m, tail 0.68 1.25 m, door left, cab boat caged cab, nose grille, fitting mascot, wear age 1.04 (4 rusty, 4 dirty, 0 sooty, 0 patched, 1 rusted out), body gun bay+bed, cab caged, nose long hood, rear hitch, under tub, sides walls, layout gun bay 2 m+bed 2 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Highland Technical 11",
-  "group": "Clan MacSlop",
+  "group": "Highland",
   "description": "A technical: a long hood, a caged cab, a gun behind the cab, an open bed, a tow hitch. 1 gun.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#33302b"},
@@ -82,11 +82,10 @@
     {"part": "Plate Steel 0.5 m", "weld": {"on": 70, "pos": [-1.057, 0.667, 4.013], "rot": [0.0084, 0.0104, 0.7236, 0.6901]}, "paint": "#23395d"},
     {"part": "Tread Plate 0.5 m", "weld": {"on": 71, "pos": [-1.055, 0.57, 4.758], "rot": [0.0257, -0.0056, 0.716, 0.6976]}, "paint": "#23395d"},
     {"part": "Hull Loft (decoO UaV-)", "on": 73, "socket": "top", "by": "base"},
-    {"part": "Pipe Box", "on": 44, "socket": "front00", "by": "base"},
-    {"part": "Wee Caber", "on": 70, "socket": "front02", "by": "base"},
-    {"part": "Wee Keg", "on": 50, "socket": "front33", "by": "base"},
-    {"part": "Saltire Flag", "on": 52, "socket": "front", "by": "base"},
-    {"part": "Thistle", "on": 35, "socket": "top", "by": "base"}
+    {"part": "Iron Spike", "on": 70, "socket": "front02", "by": "base"},
+    {"part": "Garden Gnome", "on": 50, "socket": "front33", "by": "base"},
+    {"part": "Network Switch", "on": 52, "socket": "front", "by": "base"},
+    {"part": "Phone Mast", "on": 51, "socket": "front", "by": "base"}
   ],
   "wires": [[32, 33], [33, 27], [57, 67], [67, 59]],
   "links": [

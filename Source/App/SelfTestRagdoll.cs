@@ -270,8 +270,8 @@ public static partial class SelfTest
         if (!(headMove > chestMove + 0.02f) || !(chestMove > 0))
             Fail("ragdolls: a headshot doesn't snap the head back");
 
-        // Hats: a headshot knocks it off; it lands on its side on the floor.
-        if (Cosmetics.Get(HatId.TallTopHat) is { } hat)
+        // Hats (a uniform's cap): a headshot knocks it off; it lands on its side on the floor.
+        if (Uniforms.All.FirstOrDefault(u => u.Hat != null)?.Hat is { } hat)
         {
             Ragdolls.Clear();
             var tb = Ragdolls.SpawnForTest(Death(new Vector3(1, 0, 3), 0, new Vector3(1, 1.6f, -5), 4f, head: true), RagdollLook.Soldier, 0, color, hat);

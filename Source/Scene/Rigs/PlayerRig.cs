@@ -7,7 +7,7 @@ namespace CallOfSlop;
 /// hip bob, lean) -> one body group per stance (torso -> <see cref="BodyModel"/> torso parts, head -> head parts and the hat), the legs (pelvis -> thigh -> shin
 /// -> foot per side, posed by <see cref="LegAnimator"/>), "upper_gear" (same pose as upper_body) -> the gun in hand
 /// (<see cref="GunRig"/>, posed by <see cref="ThirdPersonArms"/>) with both arms holding it, the health bar, and the corpse
-/// box, plus the prestige hat (<see cref="HatRender"/>) on each stance's head and on the ground by the corpse. Draws exactly what <see cref="PlayerRender.DrawImmediate"/> draws, in the same order.
+/// box, plus the hat (a uniform's cap, <see cref="HatRender"/>) on each stance's head and on the ground by the corpse. Draws exactly what <see cref="PlayerRender.DrawImmediate"/> draws, in the same order.
 /// </summary>
 public sealed class PlayerRig
 {
@@ -116,7 +116,7 @@ public sealed class PlayerRig
             BodyModel.Build(_torsoParts[i], _headParts[i], i, v, c, hat, uniform);
     }
 
-    /// <summary>The prestige hat: rebuilt only when it changes, posed on the visible stance's head (or by the corpse).</summary>
+    /// <summary>The hat: rebuilt only when it changes, posed on the visible stance's head (or by the corpse).</summary>
     private void PoseHat(Player p, double time, bool legsOnly)
     {
         var hat = legsOnly ? null : HatRender.HatFor(p);

@@ -1,7 +1,7 @@
 namespace CallOfSlop.PartKit.Generators;
 
 /// <summary>
-/// The Brutalist pieces (docs/sandbox/constructs/buildings.md, "The Ministry of Slop: Brutalism"): what turns a concrete room
+/// The Brutalist pieces (docs/sandbox/constructs/buildings.md, "Brutalism"): what turns a concrete room
 /// into a building that reads at 50 m. Fins and stepped buttresses give a front its rhythm and its weight, a fascia round the
 /// roof slab gives it a heavy lid, a canopy marks the way in, and slot and ribbon walls keep the windows small, deep and
 /// high, as a cold place wants them. All plain concrete on the building module, so they go on the walls' and slabs' own
