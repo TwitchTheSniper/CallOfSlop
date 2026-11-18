@@ -66,6 +66,8 @@ public static partial class ConstructRide
             return "nothing to climb there";
         if (StowedFoot(c, part))
             return "the ladder is stowed: F on its foot rolls it down";
+        if (ConstructDoor.EventDoor(c, part) is var hatch and >= 0 && hatch != part && (ConstructDoors.IsMoving(c, hatch) || !ConstructDoors.SettledOpen(c, hatch)))
+            return ConstructDoors.IsMoving(c, hatch) ? "the hatch is still moving" : "the ladder is stowed: F opens the hatch"; // (a ladder on a door's leaf, the Dray's belly hatch: its pose is the leaf's only once the door rests open; crews too)
         c.WorldFrame(p.Seg, out var q, out var t);
         var pos = p.Pos;
         var rot = p.Rot;

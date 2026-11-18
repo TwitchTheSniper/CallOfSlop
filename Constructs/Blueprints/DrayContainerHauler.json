@@ -1308,10 +1308,27 @@
       "by": "hang"
     },
     {
-      "part": "Dray Boarding Ladder",
+      "part": "Dray Belly Hatch",
       "on": 9,
       "socket": "boarding",
-      "by": "hull"
+      "by": "hang"
+    },
+    {
+      "part": "Dray Boarding Ladder",
+      "on": 202,
+      "socket": "ladder",
+      "by": "foot",
+      "paint": "#202326",
+      "finish": "painted steel"
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 34,
+      "socket": "switchHatch",
+      "by": "back",
+      "config": {
+        "startOn": false
+      }
     },
     {
       "part": "Flight Couch",
@@ -1334,6 +1351,30 @@
         "keys": "Ship",
         "mouseAim": true
       }
+    },
+    {
+      "part": "Dray Saddle Tank",
+      "on": 78,
+      "socket": "saddleL0",
+      "by": "pad"
+    },
+    {
+      "part": "Dray Saddle Tank",
+      "on": 51,
+      "socket": "saddleL1",
+      "by": "pad"
+    },
+    {
+      "part": "Dray Saddle Tank",
+      "on": 78,
+      "socket": "saddleR0",
+      "by": "pad"
+    },
+    {
+      "part": "Dray Saddle Tank",
+      "on": 51,
+      "socket": "saddleR1",
+      "by": "pad"
     },
     {
       "part": "Dray Power Plant",
@@ -1526,7 +1567,7 @@
     },
     {
       "part": "Cargo Volume",
-      "on": 1,
+      "on": 5,
       "socket": "volume1",
       "by": "-y",
       "config": {
@@ -1536,7 +1577,7 @@
         "sizeZ": 8.0,
         "atX": 5.4,
         "atY": 1.7,
-        "atZ": 0.2
+        "atZ": -0.8
       }
     },
     {
@@ -1565,24 +1606,28 @@
   ],
   "wires": [
     [
-      203,
-      205
+      204,
+      202
     ],
     [
-      213,
-      211
+      205,
+      207
     ],
     [
-      213,
-      212
+      219,
+      217
     ],
     [
-      216,
-      214
+      219,
+      218
     ],
     [
-      216,
-      215
+      222,
+      220
+    ],
+    [
+      222,
+      221
     ]
   ],
   "conduit": true,

@@ -328,6 +328,8 @@ public static class ConstructDoors
                 CommandGear(world, c, c.GearOut ? (byte)2 : (byte)1, c.GearOut); // (the second half of a gear key: the legs after the canopy, or the canopy after the legs)
             if ((c.DoorMovingCount | c.DoorWiredCount) == 0)
                 continue;
+            if (c.GearOut && c.DoorMovingCount > 0)
+                GearLift(c);
             StepBody(world, c);
         }
     }
@@ -363,6 +365,8 @@ public static class ConstructDoors
         if (state == 0)
             return "this craft has no landing leg pods";
         var lower = state == 1;
+        if (!lower && FeetClear(c, 0f) < GearStandClear)
+            return "the craft stands on its legs: lift off first";
         c.GearOut = lower;
         var first = lower ? (byte)1 : (byte)2;
         CommandGear(world, c, first, lower);
@@ -372,6 +376,57 @@ public static class ConstructDoors
                 ticks = Math.Max(ticks, dd.Ticks);
         c.GearTicks = ticks + 3; // (a few ticks' gap, so the second half starts from a settled first)
         return null;
+    }
+
+    /// <summary>Feet this close over the ground (m) are stood on: the gear key won't raise them.</summary>
+    private const float GearStandClear = 0.3f;
+
+    /// <summary>
+    /// The lowest point of a pod's feet (the riding links that slide down: <see cref="CDoorDef.Shift"/>) over the ground under it,
+    /// with each foot still settled shut drawn <paramref name="f"/> of its way out (as the drawing moves it). A great height when nothing is under them.
+    /// </summary>
+    private static float FeetClear(Construct c, float f)
+    {
+        var clear = float.MaxValue;
+        for (var k = 0; k < c.DoorCount; k++)
+        {
+            var part = c.Doors[k].Part;
+            ref var p = ref c.Parts[part];
+            if (p.D.Door is not { Gear: 2, Held: true } dd || dd.Shift == Vector3.Zero)
+                continue;
+            var move = SettledOpen(c, part) || f <= 0 ? Vector3.Zero : Rot24.Apply(p.Rot, Vector3.Transform(Vector3.Zero, OpenMove(dd, f))); // (a ride link turns nothing: its move is the knee's)
+            c.PartBounds(part, out var mn, out var mx);
+            for (var i = 0; i < 8; i++)
+            {
+                var corner = new Vector3((i & 1) != 0 ? mx.X : mn.X, (i & 2) != 0 ? mx.Y : mn.Y, (i & 4) != 0 ? mx.Z : mn.Z) + move;
+                clear = MathF.Min(clear, ConstructLifters.Altitude(c.SegToWorld(p.Seg, corner), out _));
+            }
+        }
+        return clear;
+    }
+
+    /// <summary>
+    /// Server, each tick the legs come down: a craft on the ground is lifted as far as its feet, drawn on their way out, would be
+    /// under it. A held door's collider only moves when it settles, and a foot that appeared metres under the ground there was past
+    /// what the ground's contacts hold (<c>MaxGroundDepth</c>): the craft stayed down with its feet buried (2026-11-18, the Dray).
+    /// </summary>
+    private static void GearLift(Construct c)
+    {
+        var f = 0f;
+        for (var k = 0; k < c.DoorCount; k++)
+            if (c.Parts[c.Doors[k].Part].D.Door is { Gear: 2, Held: true } dd && dd.Shift != Vector3.Zero && (c.Parts[c.Doors[k].Part].State & Moving) != 0)
+                f = MathF.Max(f, OpenFraction(c, k, byTicks: true));
+        if (f <= 0)
+            return;
+        var under = -FeetClear(c, f);
+        if (under <= 0.001f || under > 2f)
+            return; // (clear of the ground; or far under it, which isn't a pod's feet on the ground)
+        ConstructLifters.Altitude(c.Pos, out var up);
+        c.Pos += up * under;
+        var vu = Vector3.Dot(c.Vel, up);
+        if (vu < 0)
+            c.Vel -= up * vu; // (the feet hold it: it doesn't fall back between ticks)
+        c.Wake();
     }
 
     private static void CommandGear(ConstructWorld world, Construct c, byte gear, bool open)
@@ -513,7 +568,7 @@ public static class ConstructDoors
     }
 
     /// <summary>Where door part <paramref name="part"/> is when shut, in the body frame (a slid-open hatch's place less its travel).</summary>
-    private static Vector3 ShutPos(Construct c, int part)
+    internal static Vector3 ShutPos(Construct c, int part)
     {
         ref var p = ref c.Parts[part];
         var dd = p.D.Door!;
@@ -593,6 +648,7 @@ public static class ConstructDoors
             for (var m = 0; m < dr.LeafCount; m++)
                 Place(c, c.DoorLeaves[dr.LeafFirst + m], r, pivot, shift);
             SetSettled(c, part, open);
+            c.Wake(); // (its collider moved: a parked body standing on a leg pod's foot, or a hatch shut on something, settles again)
         }
         if ((p.State & Moving) != 0)
             c.DoorMovingCount--;

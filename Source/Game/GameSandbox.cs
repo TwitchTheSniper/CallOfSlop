@@ -1197,7 +1197,7 @@ public sealed partial class Game
                     return hoseWhy; // (a hose part: take, plug, unplug or hang back its hose; GameSandboxWorldLinks.cs)
                 if (Constructs.Get(body) is { Loose: true, PartCount: 1 } module && ToolUpgrades.Current.ModuleOf(module.Parts[0].Def) != null)
                     return hands.FitUpgrade(Constructs, p.Id, eye, module); // (a tool upgrade: fitted, ConstructEditsUpgrades.cs)
-                if (Constructs.Get(body) is { } lc && part < lc.PartCount && lc.DefOf(part).LadderTop > 0)
+                if (Constructs.Get(body) is { } lc && part < lc.PartCount && lc.DefOf(part).LadderTop > 0 && !LadderOnShutDoor(lc, part))
                     return SandboxGrabOn(p, lc, part, ladder: true); // (a vertical ladder: climbed up or down, ConstructRide.ClimbLadder)
                 if (Constructs.Get(body) is { } bc && part < bc.PartCount && bc.DefOf(part).Boarding)
                     return SandboxGrabOn(p, bc, part); // (a grab handle, a boarding ladder, a step plate: ba01)
@@ -2134,6 +2134,9 @@ public sealed partial class Game
         var at = c.ToLocal(p.Sim.Position + new Vector3(0, 0.9f, 0)); // (the body's middle, not the feet: standing on a deck plate puts the feet at its top)
         return at.X < c.LocalMin.X || at.Y < c.LocalMin.Y || at.Z < c.LocalMin.Z || at.X > c.LocalMax.X || at.Y > c.LocalMax.Y || at.Z > c.LocalMax.Z;
     }
+
+    /// <summary>A ladder riding a shut event door's leaf (the Dray's belly hatch): F on it works the door (hands.Use) instead of a climb.</summary>
+    internal static bool LadderOnShutDoor(Construct c, int part) => ConstructDoor.EventDoor(c, part) is var d and >= 0 && d != part && !ConstructDoors.TargetOpen(c, d);
 
     internal string? SandboxGrabOn(Player p, Construct c, int part, bool ladder = false)
     {
