@@ -1377,7 +1377,8 @@ public static class Ragdolls
                 var gf = Matrix4x4.CreateFromQuaternion(Quaternion.Slerp(b.HatRot, b.HatRestRot, land));
                 gf.Translation = b.HatResting ? Vector3.Lerp(b.HatPos, b.HatRestPos, land) : b.HatPos;
                 foreach (var box in gibHat.Boxes)
-                    sink.Box(box.Local, gf, box.Color);
+                    if (!box.Glass) // (the sink draws solid boxes only: a visor is left out)
+                        sink.Box(box.Local, gf, box.Color);
             }
             return;
         }
@@ -1494,7 +1495,8 @@ public static class Ragdolls
             hf.Translation = b.HatResting ? Vector3.Lerp(b.HatPos, b.HatRestPos, land) : b.HatPos;
         }
         foreach (var box in hat.Boxes)
-            sink.Box(box.Local, hf, box.Color);
+            if (!box.Glass) // (the sink draws solid boxes only: a visor is left out)
+                sink.Box(box.Local, hf, box.Color);
     }
 
     private static void EmitParts(BodyParts parts, in Matrix4x4 frame, ref Sink sink, float[] blood, bool torsoParts)
