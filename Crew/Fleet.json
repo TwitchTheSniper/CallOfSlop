@@ -1,0 +1,21 @@
+{
+  // Groups, admirals and the fleet command network: docs/sandbox/design/faction-controllers.md section 6 and the user's answers on admirals.
+  // A doctrine is picked by a power's or kind's "doctrine" key, else by the kind's name, else "Standard".
+  "format": "call-of-slop-fleet/1",
+  "net": {
+    "parts": ["Wireless Sender", "Wireless Receiver", "Long Range Sensor", "Wi-Fi Mast", "Router Antenna"],
+    "radioRange": 25000,
+    "voiceRange": 1500,
+    "cutGraceSeconds": 30
+  },
+  "think": { "nearSeconds": 1, "farSeconds": 5, "groupsPerTick": 8 },
+  "prisoners": { "ransomAdmiral": 1500, "ransomCaptain": 400, "interrogateSeconds": 60, "aloneTimes": 3, "intelSeconds": 300 },
+  "doctrines": {
+    "Standard": { "caution": 1.0, "discipline": 0.5, "skill": 0.5, "formation": "wedge", "spacing": 60, "succession": "captain", "delaySeconds": 10, "resistance": 0.5 },
+    "Militia": { "caution": 1.3, "discipline": 0.8, "skill": 0.6, "formation": "line", "spacing": 50, "succession": "captain", "delaySeconds": 8, "resistance": 0.7 },
+    "Raiders": { "caution": 0.8, "discipline": 0.2, "skill": 0.4, "formation": "wedge", "spacing": 40, "succession": "break", "delaySeconds": 0, "resistance": 0.3 },
+    "Traders": { "caution": 1.6, "discipline": 0.4, "skill": 0.3, "formation": "column", "spacing": 45, "succession": "captain", "delaySeconds": 15, "resistance": 0.4 },
+    "Mercenaries": { "caution": 1.0, "discipline": 0.7, "skill": 0.8, "formation": "wedge", "spacing": 60, "succession": "captain", "delaySeconds": 5, "resistance": 0.6 },
+    "Salvagers": { "caution": 1.4, "discipline": 0.3, "skill": 0.3, "formation": "column", "spacing": 50, "succession": "flagship", "delaySeconds": 12, "resistance": 0.4 }
+  }
+}

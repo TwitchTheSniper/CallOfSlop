@@ -65,6 +65,7 @@ public sealed partial class ShipAi
         7 => $"following, {_stateDist:0} m behind its place",
         8 => $"patrolling, {_stateDist:0} m to go",
         9 => $"fleeing, {_stateDist:0} m",
+        10 => $"ordered: {_orderKind.ToString().ToLowerInvariant()}, {_stateDist:0} m",
         _ => "standing by",
     };
     private int _state;
@@ -226,6 +227,8 @@ public sealed partial class ShipAi
         if (pilotOn)
             _pilotWas = true;
         var grace = !pilotOn && Grace;
+        if (OrderFly(world, c, has, t, com, up, pilotOn, grace))
+            return; // (its admiral's order: a slot, a place, a screen or a retreat: Source/Crew/CrewOrders.cs)
         ushort pilot = CPart.Occupied;
         if (!has)
         {
@@ -261,7 +264,7 @@ public sealed partial class ShipAi
 
         // Range: a closing speed that falls to nothing at the stand-off, held with W and S (it faces its target, so forward is towards it).
         var close = Vector3.Dot(c.Vel - t.Vel, dir);
-        var gap = dist - StandOff;
+        var gap = dist - StandOffNow; // (a Board order closes to boarding range)
         var wantClose = Math.Clamp(gap * 0.12f, -25, 60);
         if (wantClose - close > 2)
             pilot |= (ushort)Buttons.Forward;
