@@ -34,7 +34,7 @@
       "face": "-x"
     }
   ],
-  "mass": 1500.0,
+  "mass": 600.0,
   "health": 2000,
   "armour": 4,
   "material": "steel",

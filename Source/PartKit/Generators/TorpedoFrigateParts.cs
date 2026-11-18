@@ -892,9 +892,7 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         Sock(p, "reactor", Cx + 3.1, Ft0, 35.5, "+y");
         Sock(p, "board", Cx + Lw, Ft0 + 0.9, 40.6, "-x");
         Sock(p, "panel", Cx - Lw, Ft0 + 0.6, 38.0, "+x");
-        Sock(p, "battery0", Cx - 3.9, Ft0, 39.0, "+y");
-        Sock(p, "battery1", Cx - 3.9, Ft0, 39.5, "+y");
-        Sock(p, "battery2", Cx - 3.9, Ft0, 40.0, "+y");
+        Sock(p, "battery", Cx - Lw + 0.41, Ft0, 39.9, "+y"); // (its Ship Battery Bank, back to the port wall: Karl, 2026-11-18)
         Sock(p, "capacitor", Cx + 2.4, Ft0, 37.0, "+y"); // (the railgun's Capacitor Bank, aft of the reactor: ship-works.md 8)
         Sock(p, "pipes", Cx - 2.7, Ft0 + 2.75, 34.25, "+z"); // (on the bulkhead's aft face)
         Sock(p, "toolRack", Cx + Lw, Ft0 + 0.9, 38.2, "-x");
@@ -2338,8 +2336,7 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         Hang(bp, "Zero Day Reactor", la, "reactor", "bottom");
         Hang(bp, "Power Board", la, "board", "back");
         Hang(bp, "Engineer's Panel", la, "panel", "back");
-        for (var i = 0; i < 3; i++)
-            Hang(bp, "Battery", la, $"battery{i}", "-y");
+        bp.HangTurned("Ship Battery Bank", Holder(bp, la, "battery"), "battery", "bottom", BuildingParts.RY270);
         Hang(bp, "Capacitor Bank M", la, "capacitor", "deck"); // (the railgun fires from it: Karl, 2026-11-17, energy guns fire from capacitors only)
         Hang(bp, "Pipe Bank", la, "pipes", "back");
         Hang(bp, "Tool Rack", la, "toolRack", "back");

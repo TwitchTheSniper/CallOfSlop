@@ -27,7 +27,7 @@ public sealed class ShipBatteryParts : IPartGenerator
         new("Ship Battery XS", 0.5, 0.6, 0.32, 600, 45, 150, 2, 2),
         new("Ship Battery S", 0.8, 1.2, 0.36, 2000, 130, 300, 3, 3),
         new("Ship Battery M", 0.8, 2.0, 0.5, 6000, 320, 600, 3, 5),
-        new("Ship Battery Bank", 2.4, 2.0, 0.8, 24000, 1500, 2000, 3, 5, Modules: 3),
+        new("Ship Battery Bank", 2.4, 2.0, 0.8, 24000, 600, 2000, 3, 5, Modules: 3),
     ];
 
     private static PyDict F(string finish) => Kw(("finish", finish));
