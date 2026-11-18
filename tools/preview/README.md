@@ -19,3 +19,50 @@ light, legs and tracks left out, joints at rest, hidden collision boxes skipped.
 The page loads three.js 0.160.0 from cdn.jsdelivr.net. A cloud container's browser can't reach that CDN, and the gallery
 fetches its models, so to look at it there serve DIR over http on localhost and route the CDN to the npm package's files
 (Playwright `page.route`; launch with the proxy's `bypass: "localhost"`), as the ship-design skill describes.
+
+## The Animation gallery
+
+`--anim-gallery DIR` writes the same kind of gallery for things that move, with a timeline: a Play button, a time slider to
+scrub through the motion, marks that jump to each step, "Open and shut" (plays it open, pauses, plays it shut) and "Slow"
+(a quarter speed). Three cuts work on it and on the Ship and Station galleries too: **Cut at** (height), **Cut side** (across
+x) and **Cut length** (along z). A moving piece shows a faint orange outline of where it rests. The Artifact is
+https://claude.ai/artifact/K33B3W7yHsqTQApajCijUD: republish it from a new run with only the changed files (the run prints
+them, like the Ship gallery), after reading or listing it once from a new session.
+
+What it picks up by itself, from the part data the game draws by (code: `Source/DevTools/AnimGallery.cs`):
+
+- **Doors and hatches**: every part with a `"door"` block (event doors, docking and launch hatches), over its `"seconds"`.
+- **Hinges and joints**: a hinge's or joint's leaf boxes, from its "min" to its "max" at its motor speed (a turntable
+  with no limits goes round).
+- **Switches and levers**: boxes with a `"rig"` of lever, knob, slide, flip, press or stick, from low or off to high or on.
+- **Machines**: `"work"` boxes that spin or stroke, looped.
+
+Not shown: suspension travel, walking legs, a control surface's flap, lamps and screens.
+
+**Assemblies** (several parts moving in order: a pod's canopy, then its gantry) come from a timing file in
+`tools/preview/anim/NAME.json` (comments allowed):
+
+```json
+{
+  "blueprint": "Landing Leg Pod M",
+  "title": "Landing leg pod: deploy",
+  "description": "Optional; the blueprint's own otherwise.",
+  "seconds": 6,
+  "steps": [
+    { "part": "Landing Leg Pod M Canopy L", "at": 0, "label": "Canopy opens" },
+    { "part": "Landing Leg Pod M Canopy R", "at": 0 },
+    { "part": "Landing Leg Pod M Gantry", "at": 1.2, "seconds": 2.5, "label": "Gantry lowers the leg" }
+  ]
+}
+```
+
+`"blueprint"` is a shipped blueprint's name or a draft blueprint file (a path, or a file name beside the timing file).
+Every event door in it opens, with the parts riding its leaf; a step's doors (every door part of that name) start at
+`"at"` seconds and take the step's `"seconds"` or their own; doors no step names start at 0. `"seconds"` at the top is the
+timeline's length (default: when the last door is open). A step naming no door of the blueprint is listed in
+`callofslop.log` with the doors it has. Nothing new goes in the part files: a part animates in the gallery the way it does
+in the game, so a motion the game can't do yet can't be shown here yet either.
+
+The model JSON is the preview's with two more keys: `"track"` (base64, one byte a triangle: 0 still, k the k-th track) and
+`"anim"`: `{"seconds", "loop", "marks": [[t, label]...], "tracks": [{"name", "frames": [[x, y, z, qx, qy, qz, qw]...]}]}`,
+each track's pose in the model frame sampled evenly over the seconds (15 a second, at most 121); the page interpolates.
