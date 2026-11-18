@@ -270,13 +270,20 @@ Technical 2 393, British Gun Wagon 1 479.
 
 ### Tried by hand (2026-11-18, the 2-core box shared with other builders)
 
-- `--crew-fleet powers --seconds 300` (a person at the middle, the file's numbers with waits and distances shortened): convoy formed with two
-  escorts and delivered; raid sent, engaged the convoy (looted in two runs of four: the convoy outruns it as often as not); call for help, the Militia
+- `--crew-fleet powers --seconds 300` (about 70 s of wall time; a person at the middle, the file's numbers with waits and distances shortened): convoy formed with two
+  escorts and delivered (three runs of five: in the others the raid pinned it); raid sent, engaged the convoy (looted in two runs of four: the convoy outruns it as often as not); call for help, the Militia
   answered and went; books equal stock at every tick, never below 0; 7 to 14 bodies set down, 3 to 7 docked; the section read back byte for byte.
-  Thinks past the first minute: median 4 to 8 us, 99th 38 to 47 us, worst 0.5 ms (once 5 ms: a group formed); 23 us a tick on average with
-  seven powers thinking each second in the tool (3.9 to 14 us a tick in the game, at its five seconds); 88 bytes in all in thinks that said nothing.
+  Thinks past the first minute: median 4 to 8 us, 99th 25 to 47 us; 4 us a tick on average in the tool (seven powers, each every second);
+  88 bytes in all in thinks that said nothing (a ship set down or a buy logs, and allocates: a request).
 - `--crew-fleet politics`: trade from non-aggression, a blood feud that nothing moves, tribute then vassalage, a merge, a save round trip: all OK.
-- Window runs (Glacier, survival, host and a joined client under xvfb, `crewpowers near`): WINDOW_RESULT
+- Window run (Glacier, survival, host and a joined client under xvfb, `crewpowers near`): the Traders bought a box truck and two technicals
+  (1,322 of 4,000) and sent them under Admiral Rhea (the truck on Deliver, both escorts screening); the Raiders bought two raiders (744) and sent
+  them (both on Engage, order Hold beside the convoy); the convoy called for help, the Militia answered, bought two warships (872), went with the
+  first ready and escorted the convoy (Engage). The joined client's look lines named every group, admiral and captain; its news, grid and pacts
+  matched the host's. Controllers 14 us a tick (the host at about a third of real speed on the loaded box); the section read back the same.
+- Merged build (main 353): `powers` and `politics` OK again; thinks median 5 us, 99th 25 to 33 us. The worst single thinks (5 to 9 ms) came with
+  the box's load at 15 to 20 (other builders' builds) and no log line in them; one, before the fix, was three ships docking in one think (a removal
+  each): now one ship docks a think.
 - Proving Ground is 384 m square: places shrink to its middle and nothing can be set down out of sight, so the controllers are for big worlds.
 
 ### Not verified

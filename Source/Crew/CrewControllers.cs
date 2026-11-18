@@ -174,7 +174,7 @@ public sealed class PowerControllers
     public int Ticks, Thinks;
     public long Bytes;
     private int _next;
-    private long _thinkAt;
+    private long _thinkAt, _dockedAt;
     private readonly Vector3[] _people = new Vector3[64];
     private int _peopleN;
     private readonly ushort[] _ids = new ushort[CrewGroup.MaxShips];
@@ -524,7 +524,7 @@ public sealed class PowerControllers
                         s.Mission = -1;
                         break;
                     }
-                    if (s.Mission < 0 && cs.Group < 0 && home >= 0 && !p.Razed[home] && Vector3.Distance(c.WorldCom, p.Place[home]) < Rules.DockRange + c.Radius
+                    if (_dockedAt != Tick && s.Mission < 0 && cs.Group < 0 && home >= 0 && !p.Razed[home] && Vector3.Distance(c.WorldCom, p.Place[home]) < Rules.DockRange + c.Radius
                         && NearestPerson(c.WorldCom) > DockFrom)
                         Dock(crew, host, p, ref s, c, cs);
                     break;
@@ -579,6 +579,7 @@ public sealed class PowerControllers
 
     private void Dock(CrewWorld crew, IPowerHost host, Power p, ref PowerShip s, Construct c, CrewShip cs)
     {
+        _dockedAt = Tick; // (one body taken out of the world a think: a removal costs a few ms)
         if (cs.Group >= 0)
             crew.Fleet.Leave(crew, cs);
         s.Hull = Math.Clamp(cs.Hull, 0.05f, 1);
@@ -970,7 +971,7 @@ public sealed class PowerControllers
                     s.Mission = -1;
                 continue;
             }
-            if (!p.Razed[home] && Vector3.Distance(c.WorldCom, p.Place[home]) < Rules.DockRange + c.Radius && NearestPerson(c.WorldCom) > DockFrom)
+            if (_dockedAt != Tick && !p.Razed[home] && Vector3.Distance(c.WorldCom, p.Place[home]) < Rules.DockRange + c.Radius && NearestPerson(c.WorldCom) > DockFrom)
                 Dock(crew, host, p, ref s, c, cs);
             else
                 left++;
