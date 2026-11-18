@@ -51,7 +51,8 @@ public sealed class FlightEffectors
     public const int Forward = 0, Up = 1, Right = 2, Pitch = 3, Roll = 4, Yaw = 5; // the rows of a demand: N along its axes, N m about them
     public readonly CEffector[] Items = new CEffector[Max];
     public int Count;
-    public readonly float[] A = new float[Max * Rows], P = new float[Max * Rows]; // what a unit does to each row (scaled), and the share of each row each takes
+    public bool Leans; // Lean holds a first share, P what makes up the rest
+    public readonly float[] A = new float[Max * Rows], P = new float[Max * Rows], Lean = new float[Max * Rows]; // what a unit does to each row (scaled), and the share of each row each takes; on Ship keys, the share leaning on the jets with the longest levers (ConstructFlight.Solve)
     public readonly float[] Scale = new float[Rows]; // what a whole row is, N or N m (0: nothing answers it)
     public readonly float[] Low = new float[Max], High = new float[Max], U = new float[Max];
     public int Thrusters, Gimbals, Cyclics, Repulsors, Rotors, Surfaces, Burners, Vents;
