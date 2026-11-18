@@ -30,7 +30,7 @@ the cursor is free and the game takes no input.
 | Right drag | Turn and tilt (the tilt stops at straight down) |
 | Click | Pick a craft or a body (its card opens on the right) |
 | Double click | Centre on it |
-| Right click | An order for the picked ship: on a world, an orbit; on a place in space, go there |
+| Right click | An order for the picked ship: on a world, an orbit; on a place in space, go there; on another craft, dock with it |
 | SHIP / WORLD / MOONS / SYSTEM | Jump to that zoom, focus back to automatic |
 
 **The focus follows the zoom** while it is automatic: close in it is the picked ship (the player's own position with none
@@ -126,7 +126,7 @@ logistics layer it stays as it was when the view is closed and opened again. Cod
 
 ## Orders
 
-Five kinds (`NavKind`), each for one ship, given by any player to any ship that takes orders. **A ship takes orders
+Six kinds (`NavKind`), each for one ship, given by any player to any ship that takes orders. **A ship takes orders
 when it has a working Flight Stabilizer** (the "flight computer"; `Game.NavProblem` says why not: a wreck, none fitted,
 wrecked, or held down). Orders are the host's (`Game.NavOrders`); they are not saved and end when the map changes.
 
@@ -136,6 +136,7 @@ wrecked, or held down). Orders are the host's (`Game.NavOrders`); they are not s
 | Go to a place | Right click empty space | Flies to that point (fixed against the body that rules there), stops and holds it |
 | Fly to a spot over the ground | Right click the ground of the world it is flying over | The Flight Stabilizer's own waypoint autopilot, at the ship's present height |
 | Land on a spot | Right click the ground of the world you are on, LAND HERE (from its sky or from space) | Comes down into the sky over the spot if it is in space, flies over it and sets down on it ("Landing", below) |
+| Dock with another craft | Right click another craft, DOCK WITH <NAME> ("NO PORT AVAILABLE" when it has none free) | Flies to the point in front of a free docking port on it and in, until the port holds it ("Docking", below) |
 | Come to me | Right click your own marker (YOU), COME TO ME, or COME TO ME on the card | You on the ground or in the sky: as a landing, on a spot beside you on the side it comes from, which follows you until it starts down. You out in space (over the sky's edge, on a spacewalk or another ship): it flies to you and holds beside you, matching your motion, until cancelled |
 
 The lowest orbit (`Game.NavMinOrbit`) is `NavEdgeMargin` (400 m) over a mapped world's sky edge, since inside the sky a
@@ -202,6 +203,44 @@ landing limit.
   a ship that landed. Still for ten seconds higher up (a repulsor field or its gas holding it, or something the ray
   doesn't see) the order gives up and leaves it hovering, since let go in the air it would fall. Cancelling a landing
   leaves it hovering too, as any order in a sky does.
+
+### Docking (`Game/GameNavDock.cs`)
+
+Karl, 2026-11-17: "select a ship, right click on another with the option to dock. If there is no docking port available,
+it will show 'no port available'". (He asked for the admiral's orders too: the admirals are only designed so far,
+docs/sandbox/design/faction-controllers.md section 6.2, so he chose docking alone for now.)
+
+- **A docking port** is any part with a `"dock"` (Docking Clamp, Medium, Large and Capital, Magnetic Lock and Medium,
+  Hangar Bay, Medium and Large) that is working, holds no other craft and takes the ship's mass (`DockMaxMass`):
+  `Game.NavDockFor`, the same on both peers, so the menu says "NO PORT AVAILABLE" when the host would refuse. Armed
+  ports come first, then the nearest. The host checks the port again once a second and moves to another free one if
+  it was taken; none left ends the order.
+- **The way in** (`NavDockCentre`): a clamp or a lock is come at from over it (its up), a hangar bay through its mouth
+  (where it ejects). The ship lines up `NavDockOver` (30 m) off the port's box (phase Flying, "LINING UP WITH THE PORT"),
+  then closes on the box's middle at `NavDockSink` (2 m/s, Docking). An unarmed or unpowered port has it wait there
+  (DockWait, "WAITING: THE PORT ISN'T ARMED OR HAS NO POWER"); after a minute at the port without being taken the order
+  gives up and says why.
+- **In a sky** the stabilizer's autopilot flies it (Waypoint mode, written only when the point has moved a metre), and
+  the port takes it as it takes any craft: a clamp's tractor from its pull's reach, a bay or a lock once it is in the box
+  and slow. While it lines up no tractor takes it (`Construct.DockAway` held a tick ahead): a Shuttle drawn in by the
+  Zero Day's clamp from beside and below was dragged up the frigate's side and turned over. Once the tractor has it
+  the autopilot only holds it level and on its heading (Heading mode), since a position hold keeps it 2 m off the middle
+  the clamp snaps to, and let go altogether a craft stops levelling and can tip onto its back. A craft on repulsors holds
+  its own height whatever the autopilot asks, so it lines up over the ground only and the clamp's pull does the rest.
+- **In space** both ships are particles and their physics sleeps, so no tractor works: the nav computer flies the
+  `GoTo` law in the other ship's moving frame (at no more than `NavComeAccel`), and once the ship is in the port's
+  reach (a pull dock's: half the stand-off; a bay's or lock's: in its box) and under `NavDockSlow` (3 m/s) against it,
+  the host docks it (`NavDockCatch`): out of the flight, set upright in the middle of a pull dock's box and caught
+  (`ConstructCargo.Catch`), so it rides the other ship as any docked craft does. A ship in a sky climbs out first to dock
+  with one in space; one in space is refused a port down in a sky ("bring it down into the sky first").
+- **Wire** (protocol 341): `CActKind.NavOrder` ends with the target construct, `Msg.Nav` with the target and the port.
+- **Trying it:** `order dock N` (dock with the Nth craft, as `cmdpick` counts) and `letgo [ID]` (host: the port holding
+  a craft lets it go). A Shuttle onto the Zero Day's clamp, in the sky and in orbit:
+
+```
+--window-shot out.png --map Glacier --blueprint "Zero Day Frigate" --calm --do "command 3000; spawnbp Shuttle; wait 120; letgo 2; cmdpick 2; hoist 1; wait 30; cmdpick 3; order dock 1; wait 2400; nav"
+--window-shot out.png --map Glacier --blueprint "Zero Day Frigate" --calm --do "command 60000; cmdpick 1; order orbit Glacier 5.5; wait 8000; letgo 2; wait 400; cmdpick 2; order dock 1; wait 3600; nav"
+```
 
 ## Time speed
 

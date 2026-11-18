@@ -6,7 +6,7 @@ Notes kept by the builders of `factory-generator.md` (the design and the user's 
 
 - **Cargo parts** (storage-and-cargo.md "Cargo parts for works"): Ore Bunkers 4, 5, 6 and 8 m; the Storage Volume's **Walls** setting (on by default:
   floor and walls inside the box, solid, sealing all but the top); **Tipping Grates** 4 and 6 m; **Unloading Augers** 4 and 6 m on a Turntable 1x1
-  Medium (`ConstructAugers.cs`). Protocol 341 (CfgKey.Walls after Dampeners, new part files). Walls are stored off (old saves and blueprints load open); the inventory's new ones and the kit's stores are walled.
+  Medium (`ConstructAugers.cs`). Protocol 342 (CfgKey.Walls after Dampeners, new part files). Walls are stored off (old saves and blueprints load open); the inventory's new ones and the kit's stores are walled.
 - **One spacing system** (`FactoryPlan`, "The spacing system"): a 4 m module; across the spine the road (vehicle lane) 4 m, the aisle (walkway) 2 m,
   the machine band in whole modules, the service strip 2 m; along it every cell is whole modules: footprint plus a clearance by purpose (1 m round a
   machine, 0.5 m round a store), centred. The style's random margins are gone; zones are runs of cells. Shed frames stand on module lines,

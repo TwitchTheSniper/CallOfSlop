@@ -403,7 +403,7 @@ public static class ConstructDoors
 
     private static void Place(Construct c, int part, byte r, Vector3 pivot, Vector3 shift)
     {
-        c.RestBounds(part, out var oldMin, out var oldMax);
+        c.ReachBounds(part, out var oldMin, out var oldMax); // (as the part tree holds it)
         c.DoorPartMoving(part);
         ref var q = ref c.Parts[part];
         var oldPos = q.Pos;

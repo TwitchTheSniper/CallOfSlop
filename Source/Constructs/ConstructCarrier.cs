@@ -58,6 +58,7 @@ public static class ConstructCarrier
         ConstructCargo.Release(world, b);
         b.DockAway = world.CarrierClock + AwayTicks;
         b.Vel += dir * eject;
+        b.KeepSpeed(); // (with its push out of the bay)
     }
 
     private static Vector3 Front(Construct c, int part)

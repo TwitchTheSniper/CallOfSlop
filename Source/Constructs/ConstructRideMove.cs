@@ -491,6 +491,8 @@ public static partial class ConstructRide
                 c.SolidBox(i, b, out var centre, out var half);
                 Add(shapes, last == seg ? centre : rt + Vector3.Transform(centre, rq), half, rq, lo, hi, c.Id, last, i);
             }
+            if (p.D.HasSkin)
+                AddSkin(shapes, c, i, rq, rt, lo, hi, c.Id, last);
         }
         c.WorldFrame(seg, out var qf, out var tf);
         var iqf = Quaternion.Conjugate(qf);
@@ -520,6 +522,60 @@ public static partial class ConstructRide
                 {
                     o.SolidBox(i, b, out var centre, out var half);
                     Add(shapes, off + Vector3.Transform(centre, r), half, r, lo, hi, o.Id, p.Seg, i);
+                }
+                if (p.D.HasSkin)
+                    AddSkin(shapes, o, i, r, off, lo, hi, o.Id, p.Seg);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Part <paramref name="i"/>'s skin (its "hull" shapes: ConstructHulls) as triangles in the gather's frame, where a point of
+    /// its segment is <paramref name="t"/> + <paramref name="q"/> * point; only the plates that reach lo..hi. A ship's skin stands
+    /// off its rooms' boxes by up to metres, so without these a rider sank into it or fell through.
+    /// </summary>
+    internal static void AddSkin(List<ContactShape> shapes, Construct c, int i, Quaternion q, Vector3 t, Vector3 lo, Vector3 hi, ushort body, int seg)
+    {
+        ref var p = ref c.Parts[i];
+        var hulls = ConstructHulls.Of(p.D);
+        var skin = p.D.HullSkin;
+        if (skin == null || c.MergeOf[i] != 0)
+            return;
+        var k = c.ScaleOf(i);
+        var rot = q * Rot24.Quat(p.Rot);
+        var at = t + Vector3.Transform(p.Pos, q);
+        Span<Vector3> v = stackalloc Vector3[ConvexHull.MaxCorners];
+        for (var h = 0; h < hulls.Length; h++)
+        {
+            if (!skin[h])
+                continue;
+            var hull = hulls[h];
+            var n = Math.Min(hull.V.Length, v.Length);
+            var mn = new Vector3(float.MaxValue);
+            var mx = new Vector3(float.MinValue);
+            for (var j = 0; j < n; j++)
+            {
+                v[j] = at + Vector3.Transform(hull.V[j] * k, rot);
+                mn = Vector3.Min(mn, v[j]);
+                mx = Vector3.Max(mx, v[j]);
+            }
+            if (mn.X > hi.X || mx.X < lo.X || mn.Y > hi.Y || mx.Y < lo.Y || mn.Z > hi.Z || mx.Z < lo.Z)
+                continue;
+            for (var f = 0; f + 1 < hull.FaceStart.Length; f++)
+            {
+                int first = hull.FaceStart[f], end = hull.FaceStart[f + 1];
+                for (var e = first + 1; e + 1 < end; e++)
+                {
+                    var a = v[hull.FaceIdx[first]];
+                    var b = v[hull.FaceIdx[e]];
+                    var cc = v[hull.FaceIdx[e + 1]];
+                    var tri = ContactShape.FromTriangle(a, b, cc, default);
+                    if (tri.Min.X > hi.X || tri.Max.X < lo.X || tri.Min.Y > hi.Y || tri.Max.Y < lo.Y || tri.Min.Z > hi.Z || tri.Max.Z < lo.Z)
+                        continue;
+                    if (shapes.Count == _tags.Length)
+                        Array.Resize(ref _tags, _tags.Length * 2);
+                    _tags[shapes.Count] = new ShapeTag { Body = body, Seg = (byte)seg, Part = i };
+                    shapes.Add(tri);
                 }
             }
         }

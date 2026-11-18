@@ -341,6 +341,9 @@ public sealed partial class Construct
     // speed; ConstructRide.SpawnIntoMotion sets it, ConstructPhysics.Integrate lets it slow and never speed up past it). 0: none.
     internal float SpeedKept;
 
+    /// <summary>Server: its velocity was just set from a moving frame (let go, cut free): it keeps that speed past the physics' limit.</summary>
+    internal void KeepSpeed() => SpeedKept = Vel.Length();
+
     // Mass properties (rebuilt with the caches)
     public float Mass, InvMass;
     public Vector3 Com; // body frame
@@ -1290,15 +1293,9 @@ public sealed partial class Construct
         // (the bounds first: a Storage Volume's load sits inside them, ConstructStoreVolume.Usable)
         for (var i = 0; i < PartCount; i++)
         {
-            RestBounds(i, out var mn, out var mx);
+            ReachBounds(i, out var mn, out var mx); // (a merged receiver's drawn box reaches further than its members, a lift cell's envelope than its block, a ship's skin than its rooms)
             LocalMin = Vector3.Min(LocalMin, mn);
             LocalMax = Vector3.Max(LocalMax, mx);
-            if (MergeOf[i] != 0 || Parts[i].D.IsEnvelope || ConstructStoreVolume.Walled(Parts[i], Parts[i].D)) // (and a walled Storage Volume's walls: its box)
-            {
-                ShapeBounds(i, out var smn, out var smx); // (a merged receiver's drawn box reaches further than its members, and a lift cell's envelope than its block)
-                LocalMin = Vector3.Min(LocalMin, smn);
-                LocalMax = Vector3.Max(LocalMax, smx);
-            }
         }
         for (var i = 0; i < PartCount; i++)
         {
@@ -1503,6 +1500,54 @@ public sealed partial class Construct
         Fuel = 0;
         Charge = 0;
         _fuelSet = _chargeSet = true;
+    }
+
+    /// <summary>
+    /// Everything of part <paramref name="i"/> that collides, in the body frame at rest: <see cref="RestBounds"/>, a merged
+    /// receiver's or a lift cell's drawn box (<see cref="ShapeBounds"/>) and its skin's "hull" shapes. The part tree, the body's
+    /// bounds and the broadphase's radius take this, so a ship whose skin stands metres off its solid boxes is found by a player,
+    /// a ray or another body that reaches only the skin.
+    /// </summary>
+    public void ReachBounds(int i, out Vector3 min, out Vector3 max)
+    {
+        RestBounds(i, out min, out max);
+        var d = Parts[i].D;
+        if (MergeOf[i] != 0 || d.IsEnvelope || ConstructStoreVolume.Walled(Parts[i], d)) // (and a walled Storage Volume's walls: its box)
+        {
+            ShapeBounds(i, out var smn, out var smx);
+            min = Vector3.Min(min, smn);
+            max = Vector3.Max(max, smx);
+        }
+        if (d.HasSkin && MergeOf[i] == 0)
+        {
+            ToRest(i, d.SkinMin, d.SkinMax, out var kmn, out var kmx);
+            min = Vector3.Min(min, kmn);
+            max = Vector3.Max(max, kmx);
+        }
+    }
+
+    /// <summary>A box in part <paramref name="i"/>'s own frame (unscaled) as a box in the body frame at rest.</summary>
+    private void ToRest(int i, Vector3 lo, Vector3 hi, out Vector3 min, out Vector3 max)
+    {
+        ref var p = ref Parts[i];
+        var k = ScaleOf(i);
+        var wc = p.Pos + Rot24.Apply(p.Rot, (lo + hi) * 0.5f * k);
+        var wh = Rot24.ApplyHalf(p.Rot, (hi - lo) * 0.5f * k);
+        min = wc - wh;
+        max = wc + wh;
+        var seg = p.Seg;
+        if (FreeformCount == 0 || seg == 0 || FrameOf(seg) == 0)
+            return;
+        RestPose(seg, out var q, out var t);
+        var c = t + Vector3.Transform((min + max) * 0.5f, q);
+        var h = (max - min) * 0.5f;
+        var m = Matrix4x4.CreateFromQuaternion(q);
+        var e = new Vector3(
+            MathF.Abs(m.M11) * h.X + MathF.Abs(m.M21) * h.Y + MathF.Abs(m.M31) * h.Z,
+            MathF.Abs(m.M12) * h.X + MathF.Abs(m.M22) * h.Y + MathF.Abs(m.M32) * h.Z,
+            MathF.Abs(m.M13) * h.X + MathF.Abs(m.M23) * h.Y + MathF.Abs(m.M33) * h.Z);
+        min = c - e;
+        max = c + e;
     }
 
     /// <summary>Part <paramref name="i"/>'s bounds in the body frame at rest (a freeform segment's part turned into it: the box round it).</summary>

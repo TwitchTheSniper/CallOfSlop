@@ -13,6 +13,7 @@ public enum NavKind : byte
     Ground, // fly to a point over the ground of the world it is on (World coordinates), on its autopilot
     Land, // fly to a spot on the ground of the bubble's world (World coordinates), from its sky or from space, and set down on it
     Come, // fly to the player who gave it (Point: the spot beside them, World coordinates, as last worked out): set down there, or in space hold beside them
+    Dock, // dock with another craft (Target) at one of its docking ports (TargetPart): GameNavDock.cs
 }
 
 /// <summary>How far an order has got (a wire byte: add at the end).</summary>
@@ -35,6 +36,8 @@ public enum NavPhase : byte
     Wait, // between planets: in orbit, drive off, until its launch window (NavOrder.DepartNs)
     Descend, // in space, coming down into the sky over its spot (a Land or Come order)
     Landing, // over its spot, coming down onto it on its autopilot (the order ends when it is down)
+    Docking, // a Dock order: lined up with the port, closing on it (the order ends when the port holds it)
+    DockWait, // a Dock order: lined up with the port, waiting for it to be armed (or powered)
 }
 
 /// <summary>One ship's order (the host's; clients hear a copy for the command view).</summary>
@@ -49,6 +52,15 @@ public sealed class NavOrder
 
     /// <summary>The player who gave it.</summary>
     public byte By;
+
+    /// <summary>A Dock order: the craft it docks with and the port on it (a part index; the host may move it to another free one).</summary>
+    public ushort Target, TargetPart;
+
+    /// <summary>Host: a Dock order's way in (m out from the port's box), its look at the port (ticks) and the port clients were last told.</summary>
+    internal float DockAlt;
+    internal int DockLook;
+    internal ushort TargetPartSent;
+    internal bool DockTractor; // (a Dock order in a sky: the clamp's tractor has it, the autopilot only levels it)
 
     /// <summary>Host: what clients were last told, and whether the autopilot was set for the phase it is in.</summary>
     internal NavPhase PhaseSent;
@@ -99,7 +111,7 @@ public sealed class NavOrder
 /// A Land or Come order sets the ship down: from space it comes down into the sky over its spot, flies there on its
 /// autopilot and comes down on it (<see cref="Construct.NavLand"/>), and the order ends once it is down, its stabilizer at rest.
 /// <para>
-/// The wire (protocol 327): <c>CActKind.NavOrder</c> from a client, and <see cref="Msg.Nav"/> from the host to everyone
+/// The wire (protocol 341): <c>CActKind.NavOrder</c> from a client, and <see cref="Msg.Nav"/> from the host to everyone
 /// when an order starts, changes phase or ends, and to each joiner.
 /// </para>
 /// </summary>
@@ -220,10 +232,10 @@ public sealed partial class Game
     // ---------------------------------------------------------------------------------------------------------------
 
     /// <summary>Client (or the host itself): an order for a ship, or <see cref="NavKind.None"/> to cancel its order.</summary>
-    public void NavSend(ushort construct, NavKind kind, int body, Vec3d point, double radius)
+    public void NavSend(ushort construct, NavKind kind, int body, Vec3d point, double radius, ushort target = 0)
     {
         var w = SbW;
-        w.Begin(Msg.CAct).U8((byte)CActKind.NavOrder).U16(construct).U8((byte)kind).U8((byte)body).F64(point.X).F64(point.Y).F64(point.Z).F64(radius);
+        w.Begin(Msg.CAct).U8((byte)CActKind.NavOrder).U16(construct).U8((byte)kind).U8((byte)body).F64(point.X).F64(point.Y).F64(point.Z).F64(radius).U16(target);
         if (IsServer)
         {
             if (Local is { } me)
@@ -240,13 +252,14 @@ public sealed partial class Game
     /// <summary>Host: a player's order (after the act's kind byte). Returns what to tell them, or null.</summary>
     private string? NavOrderAct(Player p, ref PacketReader r)
     {
-        if (!r.Has(2 + 1 + 1 + 8 * 4))
+        if (!r.Has(2 + 1 + 1 + 8 * 4 + 2))
             return null;
         var id = r.U16();
         var kind = (NavKind)r.U8();
         int body = r.U8();
         var point = new Vec3d(r.F64(), r.F64(), r.F64());
         var radius = r.F64();
+        var target = r.U16();
         if (Space is not { } s || Constructs.Get(id) is not { } c)
             return "That ship is gone";
         if (kind == NavKind.None)
@@ -255,25 +268,39 @@ public sealed partial class Game
                 NavEnd(had, c, "cancelled");
             return null;
         }
-        if (kind > NavKind.Come || !double.IsFinite(point.X + point.Y + point.Z + radius))
+        if (kind > NavKind.Dock || !double.IsFinite(point.X + point.Y + point.Z + radius))
             return null;
-        return NavApply(s, c, kind, body, point, radius, p.Id, p.Name, p, out _);
+        return NavApply(s, c, kind, body, point, radius, p.Id, p.Name, p, out _, target);
     }
 
     /// <summary>
     /// Host: an order set on a ship (a player's from the command view, or a Route Computer's leg: GameSandboxLinked.cs), checked as a
     /// player's is, with everything a new order starts from reset (a cruise, a hand-over, a trip's plan). Null, or why it takes none.
     /// </summary>
-    internal string? NavApply(SpaceSession s, Construct c, NavKind kind, int body, Vec3d point, double radius, byte by, string who, Player? p, out NavOrder? order)
+    internal string? NavApply(SpaceSession s, Construct c, NavKind kind, int body, Vec3d point, double radius, byte by, string who, Player? p, out NavOrder? order, ushort target = 0)
     {
         order = null;
         var id = c.Id;
         if (NavProblem(c) is { } why)
             return "It takes no orders: " + why;
+        var port = -1;
+        if (kind == NavKind.Dock)
+        {
+            if (NavDockCheck(c, target, out port) is { } cant)
+                return cant;
+            body = s.Bubble.Body;
+            point = Vec3d.Zero;
+        }
+        else
+            target = 0;
         var sys = c.SpaceAway != 0 ? Galaxy.System(c.SpaceAway - 1) : s.System;
         if (body >= sys.Count)
             return null;
-        if (kind == NavKind.Ground)
+        if (kind == NavKind.Dock)
+        {
+            // (checked above: the other ship and its port)
+        }
+        else if (kind == NavKind.Ground)
         {
             if (c.SpaceShip != 0 || body != s.Bubble.Body)
                 return "It is in space: fly it down into the sky first, or give it an orbit";
@@ -326,6 +353,11 @@ public sealed partial class Game
         o.DvNeed = 0;
         o.Still = 0;
         o.ComeSpace = kind == NavKind.Come && p != null && NavPlayerInSpace(p);
+        o.Target = target;
+        o.TargetPart = o.TargetPartSent = (ushort)Math.Max(0, port);
+        o.DockAlt = 0;
+        o.DockLook = 0;
+        o.DockTractor = false;
         c.NavLand = 0; // (any new order, a player's or a route leg's, ends a landing's hold)
         order = o;
         Console.WriteLine($"[nav] {who} ordered construct {id}: {NavText(sys, o)}");
@@ -343,6 +375,7 @@ public sealed partial class Game
             NavKind.Ground => "go to a waypoint on " + name,
             NavKind.Land => "land on a spot on " + name,
             NavKind.Come => "come to its player",
+            NavKind.Dock => "dock with construct " + o.Target,
             _ => "none",
         };
     }
@@ -352,7 +385,7 @@ public sealed partial class Game
         : m >= 1e7 ? FormattableString.Invariant($"{m / 1e6:0.0} thousand km") : FormattableString.Invariant($"{m / 1000:0.0} km");
 
     /// <summary>Host: an order is over (done with, cancelled, or its ship is gone): the drive is let go and everyone hears.</summary>
-    private void NavEnd(NavOrder o, Construct? c, string why, bool down = false)
+    private void NavEnd(NavOrder o, Construct? c, string why, bool down = false, bool docked = false)
     {
         if (c != null)
         {
@@ -364,6 +397,8 @@ public sealed partial class Game
                 c.AngVel = Vector3.Zero; // (the order's turn isn't a spin to hand to a ship that turns by its jets)
             if (down)
                 ConstructFlight.NavSetDown(Constructs, c); // (down: its autopilot off and its stabilizer at rest, as a pilot leaves it)
+            else if (docked)
+                ConstructFlight.NavRelease(Constructs, c); // (held by the port now: its autopilot let go, as a route's ship leaves it docked)
             else if (c.SpaceShip == 0 && o.Engaged)
                 ConstructFlight.NavEngage(Constructs, c, FlightMode.Hover, default, 0); // (it stays where it is, hovering, until someone takes it)
             Console.WriteLine($"[nav] construct {c.Id}'s order ended: {why}");
@@ -389,6 +424,11 @@ public sealed partial class Game
         {
             var o = NavOrders[k];
             var c = Constructs.Get(o.Construct);
+            if (o.Kind == NavKind.Dock && c != null && c.CarriedBy != 0 && c.CarriedBy == o.Target)
+            {
+                NavEnd(o, c, "it has docked", docked: true); // (in a sky the port took it: a clamp's tractor or a bay's box)
+                continue;
+            }
             if (c == null || NavProblem(c) != null || !SandboxOn)
             {
                 NavEnd(o, c, "the ship can't fly it any more");
@@ -406,15 +446,21 @@ public sealed partial class Game
                 NavEnd(o, c, comeEnds);
                 continue;
             }
-            if (c.SpaceShip == 0)
+            if (o.Kind == NavKind.Dock)
+            {
+                if (!NavDockTick(s, o, c))
+                    continue;
+            }
+            else if (c.SpaceShip == 0)
                 NavInSky(s, o, c);
             else
                 NavInSpace(s, o, c);
             if (o.Kind == NavKind.None)
                 continue; // (it ended there: a landing is down)
-            if (o.Phase != o.PhaseSent || o.ArriveNs != o.ArriveSent || o.DvNeed != o.DvSent)
+            if (o.Phase != o.PhaseSent || o.ArriveNs != o.ArriveSent || o.DvNeed != o.DvSent || o.TargetPart != o.TargetPartSent)
             {
                 o.PhaseSent = o.Phase;
+                o.TargetPartSent = o.TargetPart;
                 o.ArriveSent = o.ArriveNs;
                 o.DvSent = o.DvNeed; // (a Short order's least dV changes as the planets move)
                 WriteNav(_w, o);
@@ -427,7 +473,7 @@ public sealed partial class Game
     private void NavInSky(SpaceSession s, NavOrder o, Construct c)
     {
         c.NavThrottle = -1;
-        var climbs = o.Kind is NavKind.GoTo or NavKind.Orbit || o.Kind == NavKind.Come && o.ComeSpace;
+        var climbs = o.Kind is NavKind.GoTo or NavKind.Orbit or NavKind.Dock || o.Kind == NavKind.Come && o.ComeSpace; // (a Dock order comes here only to climb out to a ship in space)
         c.NavClimb = climbs ? NavClimbSpeed : 0; // (only a climb out to space hurries)
         var here = c.WorldCom;
         if (!climbs && o.Kind is NavKind.Land or NavKind.Come)
@@ -497,7 +543,18 @@ public sealed partial class Game
         c.NavLift = lift;
         Vec3d a;
         var mu = sys.Bodies[o.Body].Mu;
-        if (!o.Handed && (o.Cruise || NavTrip.Crosses(sys, pos, t, o.Body)) && NavCruise(s, f, o, c, pos, t, aMax, out a))
+        if (o.Kind == NavKind.Dock)
+        {
+            if (Constructs.Get(o.Target) is not { } dockAt)
+            {
+                c.NavThrottle = 0;
+                return;
+            }
+            a = NavDockInSpace(s, f, i, sys, o, c, dockAt, pos, f.Ships.VelocityOf(i), t, aMax);
+            if (o.Kind == NavKind.None)
+                return; // (docked, or given up: NavEnd let its drive go)
+        }
+        else if (!o.Handed && (o.Cruise || NavTrip.Crosses(sys, pos, t, o.Body)) && NavCruise(s, f, o, c, pos, t, aMax, out a))
         {
             // Between planets: the trip's own burns (GameNavTrip.cs).
         }
@@ -582,7 +639,7 @@ public sealed partial class Game
 
     private static void WriteNav(PacketWriter w, NavOrder o) =>
         w.Begin(Msg.Nav).U16(o.Construct).U8((byte)o.Kind).U8(o.Body).U8((byte)o.Phase).U8(o.By).F64(o.Point.X).F64(o.Point.Y).F64(o.Point.Z).F64(o.Radius)
-            .U64((ulong)o.ArriveNs).U64((ulong)o.DepartNs).F32(o.DvNeed);
+            .U64((ulong)o.ArriveNs).U64((ulong)o.DepartNs).F32(o.DvNeed).U16(o.Target).U16(o.TargetPart);
 
     /// <summary>Host: a joiner hears every order.</summary>
     private void SendNavState(RakNetGUID to)
@@ -597,7 +654,7 @@ public sealed partial class Game
     /// <summary>Client: an order began, changed or (kind None) ended.</summary>
     private void ReadNav(ref PacketReader r)
     {
-        if (IsServer || !r.Has(2 + 4 + 8 * 4 + 8 + 8 + 4))
+        if (IsServer || !r.Has(2 + 4 + 8 * 4 + 8 + 8 + 4 + 4))
             return;
         var id = r.U16();
         var kind = (NavKind)r.U8();
@@ -609,8 +666,10 @@ public sealed partial class Game
         var arriveNs = (long)r.U64();
         var departNs = (long)r.U64();
         var dvNeed = r.F32();
+        var target = r.U16();
+        var targetPart = r.U16();
         var o = NavOf(id);
-        if (kind == NavKind.None || kind > NavKind.Come)
+        if (kind == NavKind.None || kind > NavKind.Dock)
         {
             if (o != null)
                 NavOrders.Remove(o);
@@ -631,6 +690,8 @@ public sealed partial class Game
         o.ArriveNs = arriveNs;
         o.DepartNs = departNs;
         o.DvNeed = dvNeed;
+        o.Target = target;
+        o.TargetPart = targetPart;
     }
 
     /// <summary>The bubble changed (another map): construct ids start again, so no order outlives it.</summary>

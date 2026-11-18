@@ -57,13 +57,7 @@ public sealed partial class Construct
                 _treeLoose[_treeLooseCount++] = i;
                 continue;
             }
-            RestBounds(i, out var mn, out var mx);
-            if (MergeOf[i] != 0 || Parts[i].D.IsEnvelope || ConstructStoreVolume.Walled(Parts[i], Parts[i].D)) // (and a walled Storage Volume's walls: its box)
-            {
-                ShapeBounds(i, out var smn, out var smx); // (a merged receiver's one box reaches past its members, a lift cell's envelope past its block)
-                mn = Vector3.Min(mn, smn);
-                mx = Vector3.Max(mx, smx);
-            }
+            ReachBounds(i, out var mn, out var mx); // (a merged receiver's one box reaches past its members, a lift cell's envelope past its block, a ship's skin past its rooms)
             _partMin[i] = mn;
             _partMax[i] = mx;
             _treeOrder[rigid++] = i;

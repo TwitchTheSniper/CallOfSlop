@@ -426,16 +426,7 @@ public sealed partial class Construct
         }
     }
 
-    private void StructBounds(int i, out Vector3 mn, out Vector3 mx)
-    {
-        RestBounds(i, out mn, out mx);
-        if (MergeOf[i] != 0 || Parts[i].D.IsEnvelope || ConstructStoreVolume.Walled(Parts[i], Parts[i].D)) // (and a walled Storage Volume's walls: its box)
-        {
-            ShapeBounds(i, out var smn, out var smx); // (a merged receiver's drawn box reaches further than its members, and a lift cell's envelope than its block)
-            mn = Vector3.Min(mn, smn);
-            mx = Vector3.Max(mx, smx);
-        }
-    }
+    private void StructBounds(int i, out Vector3 mn, out Vector3 mx) => ReachBounds(i, out mn, out mx);
 
     /// <summary>Part <paramref name="i"/> goes: true when it was the last part on a face of the bounds (they are summed again then).</summary>
     private bool OnBounds(int i)

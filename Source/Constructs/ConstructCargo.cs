@@ -188,6 +188,7 @@ public static class ConstructCargo
             var at = b.WorldCom;
             b.Vel = c.PointVel(at) + c.SegPointVel(b.CarrySeg, at);
             b.AngVel = c.AngVel;
+            b.KeepSpeed(); // (a ship's speed in orbit is far past the physics' limit for a free body: it keeps it, Construct.SpeedKept)
             world.Events.Add($"construct {c.Id}: let construct {b.Id} go");
         }
         b.CarriedBy = 0;
@@ -220,6 +221,17 @@ public static class ConstructCargo
     {
         foreach (var b in world.Bodies)
             if (b.CarriedBy != 0 && world.Get(b.CarriedBy) is { } c && c.CarriedBy == 0)
+                Follow(c, b);
+    }
+
+    /// <summary>
+    /// Host, after the space step has posed the ships out of the bubble (GameSpaceLaunch.cs, which runs after the constructs'
+    /// step): what they carry follows them again, or it would be drawn a tick behind and shake against its cradle. Allocates nothing.
+    /// </summary>
+    public static void FollowPosed(ConstructWorld world)
+    {
+        foreach (var b in world.Bodies)
+            if (b.CarriedBy != 0 && world.Get(b.CarriedBy) is { SpaceShip: not 0, CarriedBy: 0 } c)
                 Follow(c, b);
     }
 
