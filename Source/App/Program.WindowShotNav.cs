@@ -279,6 +279,13 @@ public static unsafe partial class Program
                 }
                 var prim = NavGuidance.PrimaryAt(s.System, pos, t);
                 s.System.StateOf(prim, t, out var bp, out var bv);
+                var rr = pos - bp;
+                var vv = vel - bv;
+                if (vv.LengthSquared / 2 - s.System.Bodies[prim].Mu / rr.Length >= 0 || Vec3d.Cross(rr, vv).Length <= 1)
+                {
+                    WsSay(string.Create(inv, $"[nav] orbit round {s.System.Bodies[prim].Name} at day {t.Seconds / 86400:0.0000} ({s.Speed}x): open, {rr.Length:0} m out at {vv.Length:0.0} m/s"));
+                    return true;
+                }
                 var ko = KeplerOrbit.FromState(s.System.Bodies[prim].Mu, pos - bp, vel - bv, t);
                 WsSay(string.Create(inv, $"[nav] orbit round {s.System.Bodies[prim].Name} at day {t.Seconds / 86400:0.0000} ({s.Speed}x): low {ko.Periapsis:0} m, high {ko.Apoapsis:0} m, tilt {Math.Acos(Math.Clamp(Vec3d.Cross(ko.P, ko.Q).Z, -1, 1)) * 180 / Math.PI:0.000} deg, periapsis towards {ko.P.X:0.0000},{ko.P.Y:0.0000},{ko.P.Z:0.0000}"));
                 return true;

@@ -40,9 +40,17 @@ second at high speed; on rails above 10K it holds still.
 - `--space-ships Systems/Frostreach.json --hours 2400 --speed 1000000`: 1,000,000x from the second tick on, every
   orbit on rails, energy round each primary constant to the digit from then on; 20 years (`--hours 175000`) the same,
   42 us a tick. At 100K and earlier code: 15,360x.
-- `--window-shot ... orbit` (the picked craft's drawn conic to the metre, per frame): see the branch report.
+- `--window-shot --map Glacier --blueprint "Magpie Mining Ship" --calm --do "command 60000; cmdpick 1; hoist 15;
+  travel 25 12; order orbit Mille 5; speed 1000000; ..."` with the new `orbit` verb (the picked craft's drawn conic this
+  frame, to the metre): parked round Glacier waiting for its window, time ran at 1,000,000x and the drawn conic was the
+  same to the metre in frames days apart (low 12,683 m, high 23,003 m); slowing for the departure (1,500x down to 1x,
+  coasting) it moved by tens of metres, the moon's real tide; the departure burn held 1x.
 
 ## Left
+
+- Not tried: the coast between planets and the arrival at 1M in a window run (the departure burn is real time and the
+  runs kept being cut short), and a joined client's view at 1M (it samples the host's ship states along their two-body
+  orbits, `ShipTrack`, unchanged).
 
 - A ship on rails ignores a moon's tide that would, over months, change its orbit (Rime's at 1.5 radii escaped at
   15K; on rails it stays). That is the patched-conic trade.
