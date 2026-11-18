@@ -94,6 +94,13 @@ public static class PlayerRender
             ThirdPersonArms.PoseHands(p, rh, lh, up);
             ThirdPersonArms.Draw(g);
         }
+        else if (p.RenderHandsUp && p.RenderSeat == SeatKind.None)
+        {
+            // Surrendered (Sandbox crew, GameCrewHandsUp.cs): no gun, both hands up over the head, shaking.
+            HandsUp(p, up, time, out var rh, out var lh);
+            ThirdPersonArms.PoseHands(p, rh, lh, up);
+            ThirdPersonArms.Draw(g);
+        }
         else if (p.RenderSeat == SeatKind.Driver)
         {
             // Both hands on the steering wheel, no gun (Sandbox).
@@ -161,6 +168,30 @@ public static class PlayerRender
                 var bone = part.Bone switch { 1 => thigh, 2 => shin, _ => foot };
                 g.Draw(Matrix4x4.CreateScale(part.Size) * Matrix4x4.CreateTranslation(part.Center) * bone, c.Of(part.Paint));
             }
+        }
+    }
+
+    /// <summary>
+    /// A surrendered body's hands (<see cref="Player.RenderHandsUp"/>): palms out, a little over and either side of the head, each
+    /// trembling on its own (a fast shake, out of step between the hands and between people).
+    /// </summary>
+    public static void HandsUp(Player p, in Matrix4x4 up, double time, out HandTarget right, out HandTarget left)
+    {
+        var rot = ThirdPersonArms.RotationOf(up);
+        var t = (float)(time % 1000.0) * 23f + p.Id * 1.7f;
+        right = left = default;
+        for (var i = 0; i < 2; i++)
+        {
+            var side = i == 0 ? 1f : -1f;
+            var k = t + i * 2.3f;
+            var shake = new Vector3(0.022f * MathF.Sin(k), 0.018f * MathF.Sin(k * 1.37f + 0.9f), 0.012f * MathF.Sin(k * 0.71f + 2f));
+            var at = Vector3.Transform(new Vector3(side * 0.3f, 1.98f, -0.06f) + shake, up);
+            var palm = Quaternion.Concatenate(Quaternion.CreateFromAxisAngle(Vector3.UnitX, -MathF.PI / 2 + 0.25f * MathF.Sin(k * 0.5f)), rot); // (fingers up, palm out)
+            var h = new HandTarget(at, palm, HandShape.Flat);
+            if (i == 0)
+                right = h;
+            else
+                left = h;
         }
     }
 

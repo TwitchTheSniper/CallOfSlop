@@ -41,7 +41,7 @@ public sealed partial class Ui
             CmdNote("PICK A SHIP FIRST (LEFT CLICK ONE)");
             return;
         }
-        if (Game.NavProblem(c) is { } why)
+        if (g.NavNoOrders(c) is { } why)
         {
             CmdNote(CmdName(c) + " TAKES NO ORDERS: " + why.ToUpperInvariant());
             return;
@@ -186,7 +186,7 @@ public sealed partial class Ui
             var board = 0; // (1: pick a hull spot to cut into, 2: a door to seal on)
             ImGuiSafe.TextColored(new float4(CmdAmber.X, CmdAmber.Y, CmdAmber.Z, 1f), _cmdOrderTitle);
             ImGui.Separator();
-            if (_cmdOrderShut || g.Constructs.Get(_cmdOrderShip) is not { } c || Game.NavProblem(c) != null)
+            if (_cmdOrderShut || g.Constructs.Get(_cmdOrderShip) is not { } c || g.NavNoOrders(c) != null)
                 ImGui.CloseCurrentPopup();
             else
             {

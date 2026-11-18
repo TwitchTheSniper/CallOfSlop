@@ -48,6 +48,7 @@ public sealed class NpcFactionDef
     public float FleeHull, FleeMorale; // the captain's Flee wins below these (hull share, morale)
     public readonly float[] Board = new float[9]; // weights by BoardAct
     public float SurrenderMorale, ScuttleDesperation;
+    public bool SurrenderAtOnce; // boarding.atOnce (Karl, 2026-11-18: the Traders): anyone who comes aboard uninvited is a boarder, and the crew puts its hands up at once
     public ScuttleWhen Scuttle;
     public float ScuttleArm = 15, ScuttleCountdown = 90, ScuttleDisarm = 5; // s
     public string[] ScuttlePoints = [];
@@ -208,6 +209,7 @@ public static class CrewFactions
                     d.Board[(int)Enum.Parse<BoardAct>(kv.Name, ignoreCase: true)] = Math.Clamp(kv.Value.GetSingle(), 0, 10);
             d.SurrenderMorale = Num(bo, "surrenderMorale", 0, 0, 1);
             d.ScuttleDesperation = Num(bo, "scuttleDesperation", 1, 0, 2);
+            d.SurrenderAtOnce = bo.TryGetProperty("atOnce", out var ao) && ao.GetBoolean();
         }
         if (root.TryGetProperty("scuttle", out var sc))
         {

@@ -230,6 +230,15 @@ public sealed class PlayerRig
             ThirdPersonArms.PoseHands(p, rh, lh, upper);
             PoseArms(upper);
         }
+        else if (p.RenderHandsUp && !seated)
+        {
+            // Surrendered (Sandbox crew, GameCrewHandsUp.cs): nothing in their hands, both up over the head, shaking.
+            _tool.Visible = false;
+            Gun.Root.Visible = false;
+            PlayerRender.HandsUp(p, upper, time, out var rh, out var lh);
+            ThirdPersonArms.PoseHands(p, rh, lh, upper);
+            PoseArms(upper);
+        }
         else if (ToolRender.ThirdPerson(p, gunPose, upper, time, ref _toolDraw.Frame))
         {
             _tool.Visible = true;

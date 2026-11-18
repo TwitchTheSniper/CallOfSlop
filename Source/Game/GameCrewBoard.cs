@@ -36,7 +36,7 @@ public sealed partial class Game
         {
             if (!p.Alive || p.CrewSlot >= 0 || !Aboard(p, c.Id))
                 continue;
-            if (!BoardFoe(c, s, p))
+            if (!BoardFoe(c, s, p) && !(def is { SurrenderAtOnce: true } && BoardGuest(c, p)))
                 continue; // (only those the crew's rules call hostile: never the owner, the owner's faction or a hired crew's employer)
             boarders++;
             if (first == 255)
@@ -108,7 +108,9 @@ public sealed partial class Game
         for (var k = 0; k < score.Length; k++)
             if (score[k] > score[(int)best])
                 best = (BoardAct)k;
-        if (!s.CalledHelp && def.Board[(int)BoardAct.CallForHelp] > 0)
+        if (def.SurrenderAtOnce)
+            best = BoardAct.Surrender; // (Karl, 2026-11-18: the Traders put their hands up as soon as anyone boards; no fight, no call for help)
+        else if (!s.CalledHelp && def.Board[(int)BoardAct.CallForHelp] > 0)
             CrewCallHelp(c, s, first);
         if (best != s.Act)
             Console.WriteLine($"[crew] construct {c.Id}: boarded by {boarders} ({defenders} crew left, morale {s.Morale * 100:0}%, desperation {desperation:0.00}): {best}");
@@ -191,6 +193,9 @@ public sealed partial class Game
     /// Whether <paramref name="p"/> aboard counts as a boarder: someone the crew's faction rules call hostile (<see cref="Fights"/>: a foe or
     /// standing below 0, or the stabilizer's setting with no faction), and never the ship's owner or anyone in the owner's faction.
     /// </summary>
+    /// <summary>Anyone aboard but the ship's owner and the owner's faction: an uninvited guest, a boarder to a crew that surrenders at once (<see cref="NpcFactionDef.SurrenderAtOnce"/>).</summary>
+    private bool BoardGuest(Construct c, Player p) => p.Alive && p.CrewSlot < 0 && (c.Owner == 255 || p.Id != c.Owner && !Factions.Shares(c.Owner, p.Id));
+
     private bool BoardFoe(Construct c, CrewShip s, Player p)
     {
         if (c.Owner != 255 && (p.Id == c.Owner || Factions.Shares(c.Owner, p.Id)))
@@ -211,6 +216,7 @@ public sealed partial class Game
         {
             c.Owner = by;
             Constructs.StructureDirty.Add(c.Id);
+            CrewCaptureCraft(c, by, 0);
         }
         var prisoners = 0;
         for (var i = 0; i < s.MemberCount; i++)
@@ -225,6 +231,41 @@ public sealed partial class Game
         CrewNotice(c, prisoners > 0
             ? $"You took the ship. Its {prisoners} crew are your prisoners: release them, put them off once landed, hire them or hold them (Crew window)."
             : "You took the ship.");
+    }
+
+    /// <summary>
+    /// A taken ship's own craft go with it (Karl, 2026-11-18): every body it carries or holds docked (a Shuttle on its clamp, a Limpet
+    /// in its bay, cargo), and theirs in turn, that is nobody's or its power's becomes the captor's, and any crew of the power aboard
+    /// one gives up with the ship. Another party's craft held on it (a boarder's pod gripping the hull) is left as it is.
+    /// </summary>
+    private void CrewCaptureCraft(Construct c, byte by, int depth)
+    {
+        if (depth > 4)
+            return;
+        foreach (var d in Constructs.Bodies)
+        {
+            if (d.CarriedBy != c.Id || d == c || d.Owner != 255 || d.Wreck || d.PartCount == 0)
+                continue;
+            if (ConstructPlace.LimitRefusal(Constructs, by) is { } full)
+            {
+                Console.WriteLine($"[crew] construct {d.Id}, carried by the taken {c.Id}, stays nobody's: {full}");
+                continue;
+            }
+            d.Owner = by;
+            d.NpcFaction = 0;
+            Constructs.StructureDirty.Add(d.Id);
+            if (Crew.ShipOf(d.Id) is { Own: false, Prize: false } ds && ds.Faction != 0)
+            {
+                for (var i = 0; i < ds.MemberCount; i++)
+                    if (Crew.State[ds.Members[i]] is not (CrewState.Dead or CrewState.Surrendered))
+                        CrewSurrender(ds.Members[i]);
+                ds.Prize = true;
+                ds.Act = BoardAct.Surrender;
+                ds.SeatsDirty = ds.RosterDirty = true;
+            }
+            Console.WriteLine($"[crew] construct {d.Id}, carried by the taken {c.Id}, is player {by}'s too");
+            CrewCaptureCraft(d, by, depth + 1);
+        }
     }
 
     /// <summary>A line to everyone aboard or within <see cref="ScuttleHeard"/> m.</summary>

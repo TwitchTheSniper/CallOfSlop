@@ -290,6 +290,8 @@ public sealed partial class Game
         var target = r.U16();
         if (Space is not { } s || Constructs.Get(id) is not { } c)
             return "That ship is gone";
+        if (CommandRefusal(c, p.Id) is { } theirs)
+            return "You can't give it orders: " + theirs; // (only your own, your faction's or nobody's: GameShipControl.cs)
         if (kind == NavKind.None)
         {
             if (NavOf(id) is { } had)

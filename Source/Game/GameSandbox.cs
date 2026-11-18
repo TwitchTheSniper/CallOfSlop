@@ -432,6 +432,7 @@ public sealed partial class Game
         Constructs.CrewBodies = Crew.IsBody; // (crew at the controls aren't a person taking over)
         Constructs.CrewWorks ??= Crew.Works; // (an NPC crew's machines work only manned: CrewGate)
         SandboxHands.CrewYield ??= CrewYield; // (a crew body stands up for a player who sits)
+        SandboxHands.SeatRefusal ??= ShipSeatRefusal; // (an NPC power's helm and gun seats are its crew's: GameShipControl.cs)
         Constructs.Hands ??= SandboxHandOf; // (a held hose follows its holder's hands)
         Constructs.Taught ??= AssemblerTaught; // (parts a story faction must teach first: GameStoryTech.cs)
         if (Constructs.PlayerEndCount > 0)
@@ -2464,6 +2465,7 @@ public sealed partial class Game
             p.RenderSeat = SeatKind.None;
             p.RenderRide = false;
             p.RenderLadder = false;
+            p.RenderHandsUp = HandsUp[p.Id] && p.Alive; // (surrendered crew: GameCrewHandsUp.cs)
             if (!p.Alive)
                 continue; // (RenderSeatWas stays: a ragdoll of a seated death starts seated)
             p.RenderSeatWas = SeatKind.None;

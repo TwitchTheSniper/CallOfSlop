@@ -936,6 +936,7 @@ public sealed class Player
     // On a ladder (ConstructRideLadder.cs; set each frame by GameSandbox, drawn by LadderAnim.cs): the ladder's frame as it is
     // drawn (its own frame to the world), its feet line (LadderGeom), and the feet in its frame. The body faces the ladder.
     public bool RenderLadder;
+    public bool RenderHandsUp; // a surrendered crew body (set each frame by GameSandbox from Game.HandsUp, drawn by PlayerRender): hands up, shaking
     public Matrix4x4 RenderLadderFrame = Matrix4x4.Identity;
     public Vector3 RenderLadderFeet;
     public LadderGeom RenderLadderGeom;
