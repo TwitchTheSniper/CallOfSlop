@@ -686,6 +686,36 @@ public static partial class ConstructFlight
         return ConstructConfig.Get(p, p.D, CfgKey.Dampeners, 1) < 0.5f;
     }
 
+    /// <summary>Does this craft fly on Ship keys with a Mouse aim setting, so its seat's mouse steering key means something (on every peer, from the structure alone)?</summary>
+    public static bool HasMouseSteer(Construct c)
+    {
+        if (c.StabCount == 0 || c.Stabs[0].Part >= c.PartCount)
+            return false;
+        ref var p = ref c.Parts[c.Stabs[0].Part];
+        return KeysOf(c, p, p.D) == FlightPattern.Ship && p.D.CfgSlot[(int)CfgKey.MouseAim] >= 0;
+    }
+
+    /// <summary>Its Mouse aim setting is off: the mouse looks round, the nose holds and A and D turn it.</summary>
+    public static bool MouseSteerOff(Construct c)
+    {
+        if (!HasMouseSteer(c))
+            return false;
+        ref var p = ref c.Parts[c.Stabs[0].Part];
+        return ConstructConfig.Get(p, p.D, CfgKey.MouseAim, 0) < 0.5f;
+    }
+
+    /// <summary>Server: the seat's mouse steering key flips its stabilizer's Mouse aim setting (Karl, 2026-11-18: take control of the ship, or let the mouse look round). A refusal's reason, or null.</summary>
+    public static string? ToggleMouseSteer(ConstructWorld world, Construct c)
+    {
+        if (!HasMouseSteer(c))
+            return "this craft has no mouse steering (a Flight Stabilizer on Ship keys)";
+        ref var p = ref c.Parts[c.Stabs[0].Part];
+        Put(ref p, p.D, CfgKey.MouseAim, MouseSteerOff(c) ? 1 : 0);
+        world.StructureDirty.Add(c.Id);
+        c.Wake();
+        return null;
+    }
+
     /// <summary>Server: the seat's dampener key flips its stabilizer's Inertia dampeners setting. A refusal's reason, or null.</summary>
     public static string? ToggleDampeners(ConstructWorld world, Construct c)
     {
