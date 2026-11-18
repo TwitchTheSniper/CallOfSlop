@@ -210,7 +210,7 @@ public static class ConstructClampArms
     /// </summary>
     private static void Grip(ConstructWorld world, Construct ship, Vector3 shoulder, ref ClampArm a)
     {
-        if (HatchGrip(ship, shoulder, ref a))
+        if (HatchGrip(world, ship, shoulder, ref a))
             return;
         var toArm = Vector3.Transform(shoulder - ship.WorldCom, Quaternion.Conjugate(ship.Rot));
         var ax = MathF.Abs(toArm.X) >= MathF.Abs(toArm.Y) && MathF.Abs(toArm.X) >= MathF.Abs(toArm.Z) ? 0 : MathF.Abs(toArm.Y) >= MathF.Abs(toArm.Z) ? 1 : 2;
@@ -235,31 +235,39 @@ public static class ConstructClampArms
             a.GripS = Vector3.Transform(hit.Point - ship.Pos, Quaternion.Conjugate(ship.Rot));
     }
 
-    /// <summary>The pad on the ship's docking hatch (a door part with <c>"dock": true</c>) nearest the shoulder of those facing it, its outward face the hatch's up. False: it has none facing the arm.</summary>
-    private static bool HatchGrip(Construct ship, Vector3 shoulder, ref ClampArm a)
+    /// <summary>
+    /// The pad on the ship's docking hatch (a door part with <c>"dock": true</c>) nearest the shoulder of those on its outside facing it:
+    /// its lid looks at the arm and a ray from out past the ship down onto the lid meets it first (a hatch in a floor inside the hull,
+    /// under a carried craft or on the belly is passed over). Its place is where it sits shut (ConstructDoors.ShutPos), so every peer picks
+    /// the same one whether it is open or not. False: none such, the hull instead.
+    /// </summary>
+    private static bool HatchGrip(ConstructWorld world, Construct ship, Vector3 shoulder, ref ClampArm a)
     {
         var best = -1;
         var bestD = float.MaxValue;
-        var inv = Quaternion.Conjugate(ship.Rot);
+        var bestAt = Vector3.Zero;
+        var bestUp = Vector3.Zero;
         for (var i = 0; i < ship.PartCount; i++)
         {
             ref var p = ref ship.Parts[i];
             if (p.Broken || p.D.Door is not { Dock: true })
                 continue;
-            var pw = ship.SegToWorld(p.Seg, p.Pos);
-            if (Vector3.Dot(ship.SegToWorld(p.Seg, p.Pos + Rot24.Apply(p.Rot, Vector3.UnitY)) - pw, shoulder - pw) <= 0)
-                continue; // (a hatch facing away from the arm, a belly hatch under an arm overhead: the hull instead)
+            var shut = ConstructDoors.ShutPos(ship, i);
+            var pw = ship.SegToWorld(p.Seg, shut);
+            var up = Vector3.Normalize(ship.SegToWorld(p.Seg, shut + Rot24.Apply(p.Rot, Vector3.UnitY)) - pw);
             var d = Vector3.DistanceSquared(pw, shoulder);
-            if (d < bestD)
-                (best, bestD) = (i, d);
+            if (Vector3.Dot(up, shoulder - pw) <= 0 || d >= bestD)
+                continue; // (a hatch facing away from the arm, or farther than one found)
+            var far = ship.Radius * 2 + 4;
+            if (!world.Raycast(pw + up * far, -up, far + 1, out var hit, only: ship) || hit.Part != i)
+                continue; // (not on the outside: something of the ship lies over it)
+            (best, bestD, bestAt, bestUp) = (i, d, pw, up);
         }
         if (best < 0)
             return false;
-        ref var h = ref ship.Parts[best];
-        var at = ship.SegToWorld(h.Seg, h.Pos);
-        var upW = Vector3.Normalize(ship.SegToWorld(h.Seg, h.Pos + Rot24.Apply(h.Rot, Vector3.UnitY)) - at);
-        a.OutS = Vector3.Normalize(Vector3.Transform(upW, inv));
-        a.GripS = Vector3.Transform(at - ship.Pos, inv) + a.OutS * 0.1f; // (on the lid)
+        var inv = Quaternion.Conjugate(ship.Rot);
+        a.OutS = Vector3.Normalize(Vector3.Transform(bestUp, inv));
+        a.GripS = Vector3.Transform(bestAt - ship.Pos, inv) + a.OutS * 0.1f; // (on the lid)
         return true;
     }
 }
