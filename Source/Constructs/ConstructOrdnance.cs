@@ -871,7 +871,10 @@ public sealed partial class ConstructWorld
             ref var s = ref Shells[k];
             (s.Thrust, s.Turn, s.Burn, s.Target, s.Size) = (e.Thrust, e.Turn, e.Burn, e.Target, e.Half);
             if ((e.Ext & 1) != 0)
+            {
                 (s.AirPush, s.TurnAir, s.TurnBurn, s.Drag, s.Lift, s.MinSpeed, s.Wait, s.Deploy, s.Flags, s.Aim, s.Life) = (e.AirPush, e.TurnAir, e.TurnBurn, e.Drag, e.Lift, e.MinSpeed, e.Wait, e.Deploy, e.Flags, e.Aim, e.Life);
+                (s.Bore, s.Boost) = (e.Bore, e.Boost);
+            }
         }
     }
 
