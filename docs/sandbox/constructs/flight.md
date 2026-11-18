@@ -92,7 +92,7 @@ Invert pitch swaps W and S (not on Ship keys). **Settings:** keys, strength, sta
 
 **To add a family of effectors:** a class with `IEffectorSource` (`List`, `Authority`, `Command`) and a line in `ConstructEffectors.Sources`.
 
-**Balance markers.** With the attach, linking, configure or selector tool out, or a part in hand, the crosshair on a flyer shows the centre of mass (yellow), lift (blue) and thrust (orange), labelled with how far ahead of the centre of mass each is. `Construct.LiftCentre` is the one sum: a new lifting thing adds itself with `ConstructFlight.AddLift`.
+**Balance markers.** With the attach tool out or a part in hand (not the linking, configure or selector tool, whose work the bars hid on a big ship), the crosshair on a flyer shows the centre of mass (yellow), lift (blue) and thrust (orange), labelled with how far ahead of the centre of mass each is. `Construct.LiftCentre` is the one sum: a new lifting thing adds itself with `ConstructFlight.AddLift`.
 
 ## Jets, rockets and repulsors
 
