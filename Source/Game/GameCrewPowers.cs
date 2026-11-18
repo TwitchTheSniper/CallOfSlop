@@ -71,7 +71,19 @@ public sealed partial class Game : IPowerHost
 
     string IPowerHost.WorldKey => World.Map.Name;
 
-    Vector3 IPowerHost.Ground(Vector3 at) => ConstructWorld.Ground(World.Query, at);
+    bool IPowerHost.Ground(Vector3 at, out Vector3 ground)
+    {
+        if (World.Map.Planetoid != null)
+        {
+            ground = ConstructWorld.Ground(World.Query, at);
+            return !ConstructWorld.FellOut(ground, World.Query);
+        }
+        ground = at with { Y = 0 };
+        if (!World.Query.Raycast(new Vector3(at.X, 200, at.Z), -Vector3.UnitY, 400, new QueryFilter(QueryLayers.Static), out var hit))
+            return false; // (off the map)
+        ground = hit.Point;
+        return !ConstructWorld.FellOut(ground, World.Query);
+    }
 
     bool IPowerHost.Spawn(byte power, int ship, ConstructBuild.Blueprint bp, Vector3 at, float yaw)
     {
@@ -91,6 +103,23 @@ public sealed partial class Game : IPowerHost
     }
 
     bool IPowerHost.Sees(byte power, Vector3 at) => ((IPowerSight)this).Sees(power, at);
+
+    /// <summary>A window run's look (<c>crewpowers [near]</c>): near lays every power's places again close round the first person and sends its convoy now; then the books,
+    /// ships and missions, and whether the section's bytes read back the same.</summary>
+    public string CrewPowersLine(string arg)
+    {
+        if (arg.Trim().Equals("near", StringComparison.OrdinalIgnoreCase))
+        {
+            Controllers.PlacesNear = 300; // (ships set down and docked 180 m from people then) // (a test's: places laid again at each one's next think, 300-450 m out)
+            foreach (var p in Controllers.Powers)
+                (p.Started, p.NextConvoy) = (false, 0);
+        }
+        var back = new PowerControllers { Rules = Controllers.Rules };
+        var bytes = Controllers.SaveBytes();
+        back.Load(new PowerRelations(), bytes);
+        var same = back.SaveBytes().AsSpan().SequenceEqual(bytes);
+        return $"active {PowersActive}, bodies {Controllers.Bodies()}, {Controllers.Thinks} thinks, {Controllers.CpuMs / Math.Max(1, Controllers.Ticks) * 1000:0.0} us a tick, {Controllers.Bytes} bytes (parts in ms: {string.Join(" ", Controllers.PartMs.Select(x => x.ToString("0.0")))}; worst {Controllers.WorstMs:0.00} ms); save {bytes.Length} bytes, reads back {(same ? "the same" : "DIFFERENT")}\n{Controllers.Text(Crew)}";
+    }
 
     /// <summary>The controllers for a save (null: none run here).</summary>
     private byte[]? ControllersBytes() => CrewStandingOn && IsServer ? Controllers.SaveBytes() : null;

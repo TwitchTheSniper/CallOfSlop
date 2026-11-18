@@ -27,7 +27,11 @@ public static class CrewPowersCheck
 
         public string WorldKey => "check";
 
-        public Vector3 Ground(Vector3 at) => at with { Y = 0 };
+        public bool Ground(Vector3 at, out Vector3 ground)
+        {
+            ground = at with { Y = 0 };
+            return true;
+        }
 
         public bool Spawn(byte power, int ship, ConstructBuild.Blueprint bp, Vector3 at, float yaw)
         {
@@ -113,6 +117,7 @@ public static class CrewPowersCheck
         var news = new List<string>();
         double worstCtl = 0;
         var thinkMs = new List<double>(4096);
+        var worstAt = 0;
         for (var t = 0; t < seconds * World.TickRate; t++)
         {
             using (place.In())
@@ -124,7 +129,8 @@ public static class CrewPowersCheck
                 var ms = (System.Diagnostics.Stopwatch.GetTimestamp() - s0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency - (host.BuildMs - b0);
                 if (t > 60 * World.TickRate) // (past the first minute: its JIT)
                 {
-                    worstCtl = Math.Max(worstCtl, ms);
+                    if (ms > worstCtl)
+                        (worstCtl, worstAt) = (ms, t / World.TickRate);
                     if (ms > 0.002)
                         thinkMs.Add(ms);
                 }
@@ -190,9 +196,14 @@ public static class CrewPowersCheck
         Console.Write(ctl.Text(crew));
         thinkMs.Sort();
         if (thinkMs.Count > 0)
-            Console.WriteLine($"  thinks past the first minute: {thinkMs.Count}, median {thinkMs[thinkMs.Count / 2] * 1000:0} us, 99th {thinkMs[thinkMs.Count * 99 / 100] * 1000:0} us, worst {thinkMs[^1] * 1000:0} us");
+            Console.WriteLine($"  thinks past the first minute: {thinkMs.Count}, median {thinkMs[thinkMs.Count / 2] * 1000:0} us, 99th {thinkMs[thinkMs.Count * 99 / 100] * 1000:0} us, worst {thinkMs[^1] * 1000:0} us at {worstAt} s; {thinkMs.Count(x => x > 0.5)} over 0.5 ms");
         Console.WriteLine($"  relations: Raiders see Traders {rel.Get(raiders, traders)}, Traders see Raiders {rel.Get(traders, raiders)}, Traders see Militia {rel.Get(traders, militia)}, Militia see Traders {rel.Get(militia, traders)}");
-        var ok = convoyFormed && escorted && raidFormed && raidEngaged && called && answered && defendRan && booksOk && neverNegative;
+        var saved = ctl.SaveBytes();
+        var back = new PowerControllers { Rules = rules };
+        back.Load(new PowerRelations(), saved);
+        var roundTrip = back.SaveBytes().AsSpan().SequenceEqual(saved) && back.Powers[traders].Stock == ctl.Powers[traders].Stock && back.Powers[raiders].ShipCount() == ctl.Powers[raiders].ShipCount();
+        Console.WriteLine($"  the controllers section: {saved.Length} bytes, reads back {(roundTrip ? "the same" : "DIFFERENT")}");
+        var ok = convoyFormed && escorted && raidFormed && raidEngaged && called && answered && defendRan && booksOk && neverNegative && roundTrip;
         Console.WriteLine($"fleet powers: convoy formed {Yes(convoyFormed)}, escorted {Yes(escorted)}, delivered {Yes(delivered)}; raid sent {Yes(raidFormed)}, engaged the convoy {Yes(raidEngaged)}, looted {Yes(looted)}; " +
                           $"call for help {Yes(called)}, the Militia answered {Yes(answered)} and went {Yes(defendRan)}; books match stock {Yes(booksOk)}, never below 0 {Yes(neverNegative)}; " +
                           $"bodies set down {host.Spawns}, docked {host.Docks}; controllers {(ctl.CpuMs - host.BuildMs) / Math.Max(1, ctl.Ticks) * 1000:0.0} us a tick without the tool's builds (worst {worstCtl * 1000:0} us, {ctl.Thinks} thinks; builds {host.BuildMs:0} ms in all), {ctl.Bytes} bytes; " +

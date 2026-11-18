@@ -78,8 +78,8 @@ public interface IPowerHost
     /// <summary>The open world's key (a map or planet's name): places picked on one world are not used on another.</summary>
     string WorldKey { get; }
 
-    /// <summary>The ground under or near <paramref name="at"/>.</summary>
-    Vector3 Ground(Vector3 at);
+    /// <summary>The ground under or near <paramref name="at"/>; false: none there (off the map's edge).</summary>
+    bool Ground(Vector3 at, out Vector3 ground);
 
     /// <summary>Set down blueprint <paramref name="bp"/> at <paramref name="at"/>, crewed by <paramref name="power"/>; the host calls <see cref="PowerControllers.Spawned"/>
     /// with <paramref name="ship"/> when it is down (or failed). False: not now (try again later).</summary>
@@ -161,6 +161,16 @@ public sealed class PowerControllers
     /// <summary>Log lines (the host prints them): kept apart so a think that logs is not counted as allocating in a steady tick.</summary>
     public readonly List<string> Log = new(16);
     public double CpuMs, WorstMs;
+    /// <summary>Where a think's time goes (ms in all): books, places, ships, places lost, missions, calls, new missions, strays.</summary>
+    public readonly double[] PartMs = new double[8];
+    private long _partAt;
+
+    private void Part(int k)
+    {
+        var now = System.Diagnostics.Stopwatch.GetTimestamp();
+        PartMs[k] += (now - _partAt) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+        _partAt = now;
+    }
     public int Ticks, Thinks;
     public long Bytes;
     private int _next;
@@ -169,6 +179,10 @@ public sealed class PowerControllers
     private int _peopleN;
     private readonly ushort[] _ids = new ushort[CrewGroup.MaxShips];
     public bool On = true;
+    /// <summary>A test's: places laid this far out (and half again), not the rules' (0: the rules').</summary>
+    public float PlacesNear;
+    private float SpawnFrom => PlacesNear > 0 ? MathF.Min(Rules.SpawnFromPeople, PlacesNear * 0.6f) : Rules.SpawnFromPeople;
+    private float DockFrom => PlacesNear > 0 ? MathF.Min(Rules.DockFromPeople, PlacesNear * 0.6f) : Rules.DockFromPeople;
 
     public PowerControllers()
     {
@@ -247,6 +261,7 @@ public sealed class PowerControllers
     public void Step(CrewWorld crew, ConstructWorld w, PowerRelations rel, IPowerHost host)
     {
         Tick++;
+        Ticks++;
         if (!On || Count == 0 || Tick < _thinkAt)
             return;
         var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
@@ -263,8 +278,8 @@ public sealed class PowerControllers
         if (News.Count + crew.Events.Count + Log.Count == e0)
             Bytes += GC.GetAllocatedBytesForCurrentThread() - b0; // (a think that said nothing allocates nothing)
         CpuMs += ms;
-        if (Ticks++ > 10)
-            WorstMs = Math.Max(WorstMs, ms);
+        if (Thinks > 3 * Count)
+            WorstMs = Math.Max(WorstMs, ms); // (past each power's first thinks: their JIT)
     }
 
     private void Say(string line) => News.Add(line);
@@ -281,19 +296,28 @@ public sealed class PowerControllers
         var dt = p.Thought == 0 ? 0 : Tick - p.Thought;
         p.Thought = Tick;
         var minutes = dt / (60.0 * T);
+        _partAt = System.Diagnostics.Stopwatch.GetTimestamp();
         Books(rel, p, a, minutes);
+        Part(0);
         if (_peopleN == 0)
             return; // (nobody on this world: phase 4's far layer moves what nobody sees)
-        if (!p.Started || p.World != host.WorldKey)
+        if (!p.Started || !string.Equals(p.World, host.WorldKey, StringComparison.Ordinal))
             Places(host, p, a);
+        Part(1);
         Upkeep(crew, w, host, p, a);
+        Part(2);
         Raze(crew, w, rel, p, a);
+        Part(3);
         for (var i = 0; i < MaxMissions; i++)
             if (p.Missions[i].Kind != MissionKind.None)
                 StepMission(crew, w, rel, host, p, a, i, def);
+        Part(4);
         Hear(crew, w, rel, p, a, def);
-        Strays(crew, w, p, a);
+        Part(5);
         Plan(crew, w, rel, host, p, a, def);
+        Part(6);
+        Strays(crew, w, p, a);
+        Part(7);
         if (p.Plan.CanFall && p.ShipCount() == 0 && p.PlaceCount > 0 && p.Held() == 0 && p.Stock < Cheapest(a))
         {
             p.Fallen = true;
@@ -362,7 +386,10 @@ public sealed class PowerControllers
         p.PlaceCount = 0;
         foreach (var spec in p.Plan.PlaceList)
             if ((spec.World.Length == 0 || spec.World == "*" || spec.World.Equals(p.World, StringComparison.OrdinalIgnoreCase)) && p.PlaceCount < MaxPlaces)
-                AddPlace(p, spec.Name, host.Ground(spec.At));
+                if (host.Ground(spec.At, out var g))
+                    AddPlace(p, spec.Name, g);
+                else
+                    Log.Add($"{Name(a)}: its place {spec.Name} at {spec.At} has no ground under it: left out");
         if (p.PlaceCount == 0 && p.Plan.Places > 0)
         {
             var me = _people[0];
@@ -371,11 +398,22 @@ public sealed class PowerControllers
             for (var k = 0; k < p.Plan.Places && k < MaxPlaces; k++)
             {
                 var b = bearing + (k == 1 ? MathF.PI * 0.85f : k * 2.1f);
-                var r = Rules.PlaceNear + (Rules.PlaceFar - Rules.PlaceNear) * ((seed >> (8 + k * 4)) % 16) / 15f;
+                var (lo, hi) = PlacesNear > 0 ? (PlacesNear, PlacesNear * 1.5f) : (Rules.PlaceNear, Rules.PlaceFar);
+                var r = lo + (hi - lo) * ((seed >> (8 + k * 4)) % 16) / 15f;
                 var up = GravityFrames.Curved ? GravityFrames.UpAt(me) : Vector3.UnitY;
                 var east = Vector3.Normalize(Vector3.Cross(up, MathF.Abs(up.Z) < 0.9f ? Vector3.UnitZ : Vector3.UnitX));
                 var north = Vector3.Cross(east, up);
-                AddPlace(p, k == 0 ? "home" : $"place {k + 1}", host.Ground(me + (east * MathF.Cos(b) + north * MathF.Sin(b)) * r));
+                // Ground under it, else another bearing (and nearer, each four tries): a small map's edge.
+                for (var tries = 0; tries < 16; tries++)
+                {
+                    var bb = b + tries * 0.52f;
+                    var rr = r * MathF.Pow(0.8f, tries / 4);
+                    if (host.Ground(me + (east * MathF.Cos(bb) + north * MathF.Sin(bb)) * rr, out var g))
+                    {
+                        AddPlace(p, k == 0 ? "home" : $"place {k + 1}", g);
+                        break;
+                    }
+                }
             }
         }
         if (p.PlaceCount > 0)
@@ -464,10 +502,12 @@ public sealed class PowerControllers
             switch (s.State)
             {
                 case PowerShipState.Building when Tick >= s.ReadyAt && home >= 0 && !p.Razed[home]:
-                    if (Bodies() >= Rules.MaxBodies || NearestPerson(p.Place[home]) < Rules.SpawnFromPeople)
+                    if (Bodies() >= Rules.MaxBodies || NearestPerson(p.Place[home]) < SpawnFrom)
                         break; // (out of sight only, and within the world's cap)
-                    var at = host.Ground(p.Place[home] + new Vector3((i % 4 - 1.5f) * 14, 0, (i / 4 % 4 - 1.5f) * 18));
+                    if (!host.Ground(p.Place[home] + new Vector3((i % 4 - 1.5f) * 14, 0, (i / 4 % 4 - 1.5f) * 18), out var at))
+                        at = p.Place[home];
                     s.State = PowerShipState.Spawning;
+                    Log.Add($"{Name(a)} sets down its {Blueprints[s.Bp].Name} at its {p.PlaceName[home]}"); // (a request: rare, and it allocates)
                     if (!host.Spawn(a, i, Blueprints[s.Bp], at, (i * 0.7f) % MathF.Tau))
                         s.State = PowerShipState.Building;
                     break;
@@ -485,7 +525,7 @@ public sealed class PowerControllers
                         break;
                     }
                     if (s.Mission < 0 && cs.Group < 0 && home >= 0 && !p.Razed[home] && Vector3.Distance(c.WorldCom, p.Place[home]) < Rules.DockRange + c.Radius
-                        && NearestPerson(c.WorldCom) > Rules.DockFromPeople)
+                        && NearestPerson(c.WorldCom) > DockFrom)
                         Dock(crew, host, p, ref s, c, cs);
                     break;
             }
@@ -926,7 +966,7 @@ public sealed class PowerControllers
                     s.Mission = -1;
                 continue;
             }
-            if (!p.Razed[home] && Vector3.Distance(c.WorldCom, p.Place[home]) < Rules.DockRange + c.Radius && NearestPerson(c.WorldCom) > Rules.DockFromPeople)
+            if (!p.Razed[home] && Vector3.Distance(c.WorldCom, p.Place[home]) < Rules.DockRange + c.Radius && NearestPerson(c.WorldCom) > DockFrom)
                 Dock(crew, host, p, ref s, c, cs);
             else
                 left++;
