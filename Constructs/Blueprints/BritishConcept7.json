@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 7 body 7 kit 7 wear 7, chassis 2 axles, front under the hood, inset 1.25 m, wishbone/swing arm, wing 0.5, archetype streamliner, cab style bus front, language streamliner heavy 2.50 m, flare 0.14, fastback 0.7, brow 0.52 1 m, tail 0.52 1 m, door right, 10 facets, cab streamliner cab, 7 facets, nose rounded, wear age 0.77 (0 rusty, 0 dirty, 0 sooty, 0 patched, 0 rusted out), body boot, cab enclosed, nose long hood, rear bare, under stilts, layout boot 2.8 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "British Concept 7",
-  "group": "Ministry of Slop",
+  "group": "British",
   "description": "A concept car: a long hood, an enclosed cab, a boot behind the cabin, the gun on a pedestal ahead of it. 1 gun.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#1b1c1e"},
@@ -59,8 +59,7 @@
     {"part": "Launch Rack", "on": 42, "socket": "+x2", "by": "top"},
     {"part": "Hull Loft (hoodr UNV2WyWjXIXEVd ~80080A80P80a70k58x396016)", "on": 23, "socket": "+y", "by": "engine", "paint": "#c8102e"},
     {"part": "Traffic Cone", "on": 52, "socket": "top", "by": "base"},
-    {"part": "Square Beam 0.5 m", "on": 39, "socket": "top", "by": "-z", "paint": "#1b1c1e"},
-    {"part": "Rain Gauge", "on": 54, "socket": "+z", "by": "base"}
+    {"part": "Loudhailer", "on": 30, "socket": "top", "by": "base"}
   ],
   "wires": [[28, 29], [29, 23], [43, 50], [50, 45], [50, 51]],
   "links": [

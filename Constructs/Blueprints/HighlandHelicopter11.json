@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Highland Helicopter 11",
-  "group": "Clan MacSlop",
+  "group": "Highland",
   "description": "A light helicopter on skids, a cab round its seat, two tanks. Shift climbs, Ctrl sinks, W and S lean it on, Q and E sideways, A and D turn.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#2a2622"},

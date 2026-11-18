@@ -545,7 +545,7 @@ where it has one. Line numbers are those of this audit.
 | Data sanity | `MaxChars` | `Constructs/LogicText.cs:14` | `60` | - | Kept |
 | Data sanity | `MaxSide` | `Constructs/ModularRack.cs:54` | `16` | rows, columns, layers or segments | Kept: 16 x 16 is 256 > 247, so the station cap decides |
 | Data sanity | `MaxName` | `Constructs/PlayerBlueprints.cs:14` | `32` | - | Kept |
-| Data sanity | `MaxPrestige` | `Cosmetics/Cosmetics.cs:45` | `5` | - | Kept |
+| Data sanity | `MaxPrestige` | (removed 2026-11-17 with prestige) | - | - | Removed |
 | Data sanity | `MaxVertices` | `Decals/DecalBaker.cs:61` | `400_000` | - | Kept |
 | Data sanity | `MaxSize` | `Decals/DecalFile.cs:21` | `16f` | - | Kept |
 | Data sanity | `MaxImageSize` | `Decals/DecalFile.cs:24` | `512` | - | Kept |

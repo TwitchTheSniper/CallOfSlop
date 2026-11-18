@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "British Drone 2",
-  "group": "Ministry of Slop",
+  "group": "British",
   "description": "A remote multirotor, 4 ducted fans on a hub. Fly it from a Remote Console on its channel: Shift climbs, Ctrl sinks, W A S D move and turn it.",
   "steps": [
     {"part": "6-Way Hub", "paint": "#2b2a28"},

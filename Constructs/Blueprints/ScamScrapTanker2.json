@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 2 body 2 kit 2 wear 2, chassis 2 axles, front under the hood, inset 1.5 m, leaf/leaf, wing 0.75, cab style kiosk, language van standard 2.36 m, flare 0.00, plain 1.0, brow 0.62 1 m, tail 0.81 1 m, door left, cab cabin capsule, nose grille, fitting roof sign, wear age 0.53 (0 rusty, 0 dirty, 1 sooty, 0 patched, 0 rusted out), body gun bay+tank, cab cab-over, nose flat, rear bare, under stilts, layout gun bay 2 m+tank 2 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Scam Scrap Tanker 2",
-  "group": "The Call Centre",
+  "group": "Scam",
   "description": "A scrap tanker: a flat nose, a cab-over, a gun behind the cab, a big round tank of fuel. 1 gun.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#2a2c30"},
@@ -71,9 +71,9 @@
     {"part": "Turret Module", "on": 50, "socket": "+x", "by": "-x"},
     {"part": "Hull Loft (decoS XIWAWaW0)", "on": 34, "socket": "top", "by": "base", "paint": "#ffd400"},
     {"part": "Square Beam 0.5 m", "on": 2, "socket": "+y1", "by": "-z", "paint": "#2a2c30"},
-    {"part": "Phone Mast", "on": 65, "socket": "+z", "by": "base"},
+    {"part": "Loudhailer", "on": 65, "socket": "+z", "by": "base"},
     {"part": "Square Beam 0.5 m", "on": 5, "socket": "+y5", "by": "-z", "paint": "#2a2c30"},
-    {"part": "Office Phone", "on": 67, "socket": "+z", "by": "base"}
+    {"part": "Traffic Cone", "on": 67, "socket": "+z", "by": "base"}
   ],
   "wires": [[31, 32], [32, 26], [50, 63], [63, 52]],
   "links": [

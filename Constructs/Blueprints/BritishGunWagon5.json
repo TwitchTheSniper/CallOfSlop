@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 5 body 5 kit 5 wear 5, chassis 3 axles, pusher 1.25 m, front under the hood, inset 1.75 m, hydraulic/hydraulic/hydraulic, wing 0.5, cab style bus front, language bus heavy 2.95 m, flare 0.26, crowned 0.8, brow 0.72 1.5 m, tail 0.76 0.75 m, door right, 10 facets, cab bus capsule, 7 facets, nose rounded, fitting destination board, wear age 0.53 (2 rusty, 2 dirty, 1 sooty, 0 patched, 0 rusted out), body hutch, cab cab-over, nose flat, rear hitch, under stilts, layout hutch 4 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "British Gun Wagon 5",
-  "group": "Ministry of Slop",
+  "group": "British",
   "description": "A gun wagon: a flat nose, a cab-over, an ammo hutch and a stern gun on a flat deck, a tow hitch. 1 gun.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#1b1c1e"},
@@ -110,8 +110,8 @@
     {"part": "Lever", "on": 96, "socket": "top", "by": "-y"},
     {"part": "Tow Hitch", "on": 9, "socket": "+z", "by": "-z0"},
     {"part": "Hull Loft (decoD WoWMUTVy)", "on": 35, "socket": "top", "by": "base"},
-    {"part": "Queue Post", "on": 70, "socket": "front00", "by": "base"},
-    {"part": "Furled Brolly", "on": 79, "socket": "front00", "by": "base"}
+    {"part": "Traffic Cone", "on": 70, "socket": "front00", "by": "base"},
+    {"part": "Long Iron Spike", "on": 65, "socket": "front00", "by": "base"}
   ],
   "wires": [[32, 33], [33, 27], [89, 95], [95, 91], [102, 99]],
   "hoses": [[100, 101]],

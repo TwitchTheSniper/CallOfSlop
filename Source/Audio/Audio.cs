@@ -93,7 +93,7 @@ public enum Sfx
     BuildLinkPipe, // a pipe, shaft or chute finished
     BuildGrab, // the physics gun takes hold
     BuildDrop, // the physics gun lets go
-    ColonyAlarm, // the penal colony's lockdown siren (SynthAlarm.cs, played by Game.ColonyAlarmSounds): one wail, up and down
+    ColonyAlarm, // a siren's wail, up and down (SynthAlarm.cs; the penal colony's lockdown played it until 2026-11-17: the slot stays, Sfx is on the wire)
     Babble, // one murmured syllable of a story person's talk (SynthBabble.cs, played by Game.StoryBabbleSounds): "ma", "ga", "na"...
     Tannoy, // a loudspeaker on a pole: two chimes and a garbled announcement (SynthAlarm.cs, played by PartAmbience)
     HullCreak, // a ship's part about to go: a long metal groan and a few ticks (SynthBreakdown.cs, played by Game.BreakdownHeard)

@@ -94,8 +94,17 @@ public readonly record struct SpaceTime(long Ns) : IComparable<SpaceTime>
 /// </summary>
 public sealed class SpaceClock
 {
-    /// <summary>The fastest speed allowed (the doc's 100,000x).</summary>
-    public const int MaxSpeed = 100_000;
+    /// <summary>
+    /// The fastest speed allowed: 1,000,000x (2026-11-17; it was 100,000x), a tick 4.6 hours of space, a trip between
+    /// planets of a year or so under a minute. Fast ships are on rails then (<see cref="SpaceShips.WarpRails"/>).
+    /// </summary>
+    public const int MaxSpeed = 1_000_000;
+
+    /// <summary>
+    /// The space time past which the clock no longer speeds up (250 years: <see cref="SpaceTime"/> ends at about 292,
+    /// which 1,000,000x would reach in under three hours of play).
+    /// </summary>
+    public const long LatestNs = 250L * 365 * 86400 * SpaceTime.NsPerSecond;
 
     private long _baseNs;
     private long _ticks;
@@ -111,7 +120,7 @@ public sealed class SpaceClock
         get => _speed;
         set
         {
-            var w = Math.Clamp(value, 0, MaxSpeed);
+            var w = Math.Clamp(value, 0, Fastest);
             if (w == _speed)
                 return;
             _baseNs = Now.Ns;
@@ -121,7 +130,15 @@ public sealed class SpaceClock
     }
 
     /// <summary>One game tick (1/60 s of real time).</summary>
-    public void Tick() => _ticks++;
+    public void Tick()
+    {
+        _ticks++;
+        if (_speed > 1 && Now.Ns > LatestNs)
+            Speed = 1;
+    }
+
+    /// <summary>The fastest the clock may run from here (<see cref="MaxSpeed"/>, or 1x past <see cref="LatestNs"/>).</summary>
+    public int Fastest => Now.Ns > LatestNs ? 1 : MaxSpeed;
 
     /// <summary>Jumps to a time (a loaded save, a host's clock).</summary>
     public void Set(SpaceTime t)

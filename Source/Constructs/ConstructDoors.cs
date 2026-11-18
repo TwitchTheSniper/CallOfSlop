@@ -14,6 +14,7 @@ public sealed class CDoorDef
     public float Seconds; // how long it takes to open or shut
     public int Hang = -1; // the socket it hangs by (its other sockets take what rides on the leaf)
     public bool Dock; // "dock": true: a docking hatch, opened and shut by the server as its body docks (ConstructDoors.StepDocks)
+    public bool Launch; // "launch": true: a launch hatch, opened by the server when a launch from its own body finds it in the way, shut a while after (ConstructDoors.OpenForLaunch)
     public int Ticks => Math.Max(1, (int)MathF.Round(Seconds * World.TickRate));
 }
 
@@ -55,7 +56,7 @@ public static class ConstructDoors
         var where = $"{file}, door";
         if (d.Role != PartRole.Door)
             throw new ConstructPartException($"{file}: only a part with \"role\": \"door\" has a \"door\" block");
-        ConstructParts.Known(b, ["kind", "axis", "pivot", "angle", "travel", "seconds", "hang", "dock"], where);
+        ConstructParts.Known(b, ["kind", "axis", "pivot", "angle", "travel", "seconds", "hang", "dock", "launch"], where);
         var dd = new CDoorDef();
         var kind = ConstructParts.Str(ConstructParts.Need(b, "kind", where), file, "door.kind");
         dd.Slide = kind switch
@@ -87,6 +88,7 @@ public static class ConstructDoors
         if (dd.Hang < 0)
             throw new ConstructPartException($"{file}: \"door.hang\" names one of its sockets");
         dd.Dock = ConstructParts.Opt(b, "dock") is { } dk && dk.ValueKind == JsonValueKind.True;
+        dd.Launch = ConstructParts.Opt(b, "launch") is { } ln && ln.ValueKind == JsonValueKind.True;
         d.Door = dd;
         d.DataIn = ["Open", "Toggle", "Lock"]; // (In, In1, In2: high opens and low shuts; a rise toggles; high locks F out)
     }
@@ -205,9 +207,55 @@ public static class ConstructDoors
         }
         foreach (var c in world.Bodies)
         {
-            if (!c.EnsureDoors() || (c.DoorMovingCount | c.DoorWiredCount) == 0)
+            if (!c.EnsureDoors())
+                continue;
+            if (c.LaunchHatchHold > 0 && --c.LaunchHatchHold == 0)
+                ShutLaunchHatches(world, c);
+            if ((c.DoorMovingCount | c.DoorWiredCount) == 0)
                 continue;
             StepBody(world, c);
+        }
+    }
+
+    // ---- Launch hatches -------------------------------------------------------------------------------------------
+
+    /// <summary>Ticks a launch hatch the server opened stays open after its body's last launch (then it shuts).</summary>
+    public const int LaunchHold = World.TickRate * 4;
+
+    /// <summary>Is part <paramref name="part"/> on a launch hatch (a <c>"door"</c> block with <c>"launch": true</c>) that may be opened: door index, else -1.</summary>
+    public static int LaunchHatchOf(Construct c, int part)
+    {
+        if (c.DoorOf(part) is not (var k and >= 0))
+            return -1;
+        var door = c.Doors[k].Part;
+        return c.Parts[door].D.Door!.Launch && !c.Parts[door].Broken && !Locked(c, door) ? k : -1;
+    }
+
+    /// <summary>
+    /// Server: a launch from body <paramref name="c"/> found its launch hatch <paramref name="k"/> in the way (the Zero Day's torpedo
+    /// ports, Karl 2026-11-18: "a hatch here instead, which opens before the missiles fire"). It opens; the rack looks again soon and
+    /// launches once the leaf has swung out of the way. The body's hatches shut <see cref="LaunchHold"/> after its last launch.
+    /// </summary>
+    public static void OpenForLaunch(ConstructWorld world, Construct c, int k)
+    {
+        Command(world, c, k, true);
+        c.LaunchHatchHold = LaunchHold;
+    }
+
+    /// <summary>Server: a launch left body <paramref name="c"/>; hatches it opened for launches stay open a while longer.</summary>
+    public static void Launched(Construct c)
+    {
+        if (c.LaunchHatchHold > 0)
+            c.LaunchHatchHold = LaunchHold;
+    }
+
+    private static void ShutLaunchHatches(ConstructWorld world, Construct c)
+    {
+        for (var k = 0; k < c.DoorCount; k++)
+        {
+            var door = c.Doors[k].Part;
+            if (c.Parts[door].D.Door!.Launch && !c.Parts[door].Broken && !Locked(c, door) && TargetOpen(c, door))
+                Command(world, c, k, false);
         }
     }
 

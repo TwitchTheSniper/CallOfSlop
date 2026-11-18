@@ -245,57 +245,43 @@ public static class AppearanceStore
 
     private static string PathName => SavePaths.PathOf(FileName);
 
-    /// <summary>The hat you wear (kept while it's locked at your prestige, but worn as None until it unlocks).</summary>
-    public static HatId Hat;
-
     /// <summary>Your look (Auto on every axis for a new player).</summary>
     public static PlayerLook Look;
 
     /// <summary>The smoke test sets this so it never writes your appearance.txt.</summary>
     public static bool ReadOnly;
 
-    /// <summary>The hat you'd actually wear: <see cref="Hat"/> if your prestige unlocks it, otherwise None.</summary>
-    public static HatId EffectiveHat(Progress? progress) =>
-        Cosmetics.IsUnlocked(Hat, CosmeticPrestige.Of(progress)) ? Hat : HatId.None;
-
-    /// <summary>Reads appearance.txt (or migrates the hat from loadout.txt when there's none yet) and writes it back.</summary>
+    /// <summary>Reads appearance.txt and writes it back when there was none.</summary>
     public static void Load()
     {
         string[]? lines = null;
-        string[]? legacy = null;
         try
         {
             lines = SavePaths.ReadLines(PathName, SaveVersion);
             if (lines == null && File.Exists(PathName))
                 lines = []; // damaged and no backup: defaults
-            if (lines == null)
-                legacy = SavePaths.ReadLines(SavePaths.PathOf("loadout.txt"), LoadoutStore.SaveVersion);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             lines = [];
         }
-        LoadLines(lines, legacy);
+        LoadLines(lines);
         if (lines == null)
         {
-            Console.WriteLine($"[appearance] no {FileName} yet: hat {Cosmetics.KeyOf(Hat)} {(legacy != null ? "taken from loadout.txt" : "(new player)")}, look auto");
+            Console.WriteLine($"[appearance] no {FileName} yet: look auto");
             Save();
         }
     }
 
     /// <summary>
-    /// Reads appearance.txt lines (null: no file yet). With no file, <paramref name="legacyLoadout"/> (loadout.txt's lines,
-    /// or null) supplies the hat from its old <c>hat=</c> line. The self-test calls this directly.
+    /// Reads appearance.txt lines (null: no file yet). An old file's <c>hat=</c> line (the prestige hats, removed
+    /// 2026-11-17) is skipped. The self-test calls this directly.
     /// </summary>
-    public static void LoadLines(string[]? fileLines, string[]? legacyLoadout = null)
+    public static void LoadLines(string[]? fileLines)
     {
-        Hat = HatId.None;
         Look = default;
         if (fileLines == null)
-        {
-            Hat = LegacyHat(legacyLoadout);
             return;
-        }
         foreach (var line in fileLines)
         {
             var parts = line.Split('=', 2);
@@ -303,11 +289,6 @@ public static class AppearanceStore
                 continue;
             var key = parts[0].Trim().ToLowerInvariant();
             var value = parts[1].Trim();
-            if (key == "hat")
-            {
-                Hat = Cosmetics.FromKey(value); // unknown or "none": no hat
-                continue;
-            }
             foreach (var axis in Enum.GetValues<LookAxis>())
                 if (key == PlayerLook.AxisKey(axis))
                     Look = Look.With(axis, PlayerLook.ParseOption(axis, value));
@@ -315,25 +296,10 @@ public static class AppearanceStore
         Look = Look.Sanitized();
     }
 
-    /// <summary>The hat in an old loadout.txt (its <c>hat=</c> line; None if there's no file or no line).</summary>
-    public static HatId LegacyHat(string[]? loadoutLines)
-    {
-        if (loadoutLines == null)
-            return HatId.None;
-        var hat = HatId.None;
-        foreach (var line in loadoutLines)
-        {
-            var parts = line.Split('=', 2);
-            if (parts.Length == 2 && parts[0].Trim() == "hat")
-                hat = Cosmetics.FromKey(parts[1]);
-        }
-        return hat;
-    }
-
     /// <summary>The lines appearance.txt is saved as (without the version line).</summary>
     public static List<string> SaveLines()
     {
-        var lines = new List<string> { $"hat={Cosmetics.KeyOf(Hat)}" };
+        var lines = new List<string>();
         foreach (var axis in Enum.GetValues<LookAxis>())
             lines.Add($"{PlayerLook.AxisKey(axis)}={PlayerLook.OptionKey(axis, Look.Get(axis))}");
         return lines;

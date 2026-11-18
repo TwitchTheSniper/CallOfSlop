@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front under the hood, inset 1.5 m, strut/strut, wing 0.75, archetype monster truck, cab style coachbuilt, language pickup standard 2.43 m, flare 0.00, level 1.0, brow 0.75 1 m, tail 0.84 1 m, door left, cab pickup cab, nose grille, fitting chrome grille, fitting mascot, lopsided right, wear age 0.86 (3 rusty, 17 dirty, 0 sooty, 0 patched, 1 rusted out), body gun bay+bed, cab enclosed, nose long hood, rear bare, under tub, sides open, layout gun bay 2 m+bed 2 m, plan 3
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Highland Monster Truck 1",
-  "group": "Clan MacSlop",
+  "group": "Highland",
   "description": "A monster truck: a long hood, an enclosed cab, a gun behind the cab, an open bed. 1 gun.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#2a2622"},
@@ -103,10 +103,11 @@
     {"part": "Plate Steel 0.5 m", "weld": {"on": 94, "pos": [-0.892, 0.327, -0.376], "rot": [-0.0187, -0.006, 0.6895, 0.724]}, "paint": "#1f4a2e"},
     {"part": "Plate Steel 0.5 m", "weld": {"on": 93, "pos": [1.395, 0.547, -0.378], "rot": [-0.01, -0.0046, -0.723, 0.6907]}, "paint": "#1f4a2e"},
     {"part": "Hull Loft (decoO UaV-)", "on": 91, "socket": "top", "by": "base"},
-    {"part": "Pipe Box", "on": 34, "socket": "top", "by": "base"},
-    {"part": "Coo Heid", "on": 60, "socket": "front", "by": "base"},
-    {"part": "Coo Heid", "on": 56, "socket": "front00", "by": "base"},
-    {"part": "Wee Keg", "on": 46, "socket": "front03", "by": "base"}
+    {"part": "Garden Gnome", "on": 34, "socket": "top", "by": "base"},
+    {"part": "Garden Gnome", "on": 60, "socket": "front", "by": "base"},
+    {"part": "Network Switch", "on": 56, "socket": "front00", "by": "base"},
+    {"part": "Garden Gnome", "on": 46, "socket": "front03", "by": "base"},
+    {"part": "Satellite Dish", "on": 59, "socket": "front", "by": "base"}
   ],
   "wires": [[31, 32], [32, 26], [74, 90], [90, 76]],
   "links": [

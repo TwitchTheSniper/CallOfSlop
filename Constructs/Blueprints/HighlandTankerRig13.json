@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 13 body 13 kit 13 wear 13, chassis 2 axles, front under the hood, inset 1 m, leaf/leaf, wing 0.5, cab style coachbuilt, language slab standard 2.41 m, flare 0.09, kick-up 0.6, brow 0.69 1.25 m, tail 0.86 0.75 m, door right, cab boat cab, nose grille, lopsided right, wear age 0.62 (1 rusty, 4 dirty, 0 sooty, 0 patched, 1 rusted out), body gun bay+bed, cab enclosed, nose short hood, rear hitch, under stilts, sides walls, layout gun bay 2 m+bed 2 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Highland Tanker Rig 13",
-  "group": "Clan MacSlop",
+  "group": "Highland",
   "description": "A tanker rig: a short hood, an enclosed cab, a gun behind the cab, an open bed, a tow hitch. 1 gun.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#33302b"},
@@ -94,11 +94,11 @@
     {"part": "Ram Plow", "on": 85, "socket": "front", "by": "back", "paint": "#1b1714"},
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 86, "pos": [0.115, 0.389, -1.224], "rot": [-0.6963, 0.0293, -0.0033, 0.7172]}, "paint": "#23395d"},
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 84, "pos": [-1.071, 0.62, 4.758], "rot": [-0.0002, 0.0235, 0.7003, 0.7135]}, "paint": "#1f4a2e"},
-    {"part": "Pipe Box", "on": 85, "socket": "top", "by": "base"},
-    {"part": "Wee Keg", "on": 48, "socket": "front11", "by": "base"},
-    {"part": "Coo Heid", "on": 60, "socket": "front", "by": "base"},
-    {"part": "Coo Heid", "on": 56, "socket": "front", "by": "base"},
-    {"part": "Thistle", "on": 34, "socket": "top", "by": "base"}
+    {"part": "Garden Gnome", "on": 85, "socket": "top", "by": "base"},
+    {"part": "Garden Gnome", "on": 48, "socket": "front11", "by": "base"},
+    {"part": "Garden Gnome", "on": 60, "socket": "front", "by": "base"},
+    {"part": "Garden Gnome", "on": 56, "socket": "front", "by": "base"},
+    {"part": "Satellite Dish", "on": 51, "socket": "front10", "by": "base"}
   ],
   "wires": [[31, 32], [32, 26], [66, 82], [82, 68]],
   "links": [

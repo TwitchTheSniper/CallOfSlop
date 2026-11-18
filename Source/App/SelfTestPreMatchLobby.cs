@@ -276,7 +276,7 @@ public static partial class SelfTest
         Run(game, ref now, 0.2);
         game.SelfTestChatFrom(game.Players[0], "hello", 1);
         var view = new LobbyRoomView();
-        view.Refresh(game, null);
+        view.Refresh(game);
         view.RefreshMapList(game, 0);
         var rebuilds = view.Rebuilds;
         // The least of a few identical rounds (SelfTestCpuRatio.cs): a real per-call allocation shows in every round, a one-off runtime allocation in one at most.
@@ -284,13 +284,13 @@ public static partial class SelfTest
         {
             for (var i = 0; i < 2000; i++)
             {
-                view.Refresh(game, null);
+                view.Refresh(game);
                 view.RefreshMapList(game, 0);
             }
         }, warmups: 0);
         var rows = view.Rows.Count;
         game.SetReady(true); // a change: one rebuild
-        view.Refresh(game, null);
+        view.Refresh(game);
         Line($"lobby screen text: {rows} rows, {view.MapList.Count} maps listed; 2000 quiet frames allocated {bytes} bytes and rebuilt {view.Rebuilds - rebuilds - 1} times; a ready tick rebuilt it");
         if (bytes > 1024) // (a little slack for the runtime itself; one string a frame would be 50+ KB)
             Fail($"the lobby screen's text allocated {bytes} bytes over 2000 frames with nothing changing");

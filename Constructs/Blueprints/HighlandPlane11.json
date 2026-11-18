@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Highland Plane 11",
-  "group": "Clan MacSlop",
+  "group": "Highland",
   "description": "A twin-jet high-wing plane on tricycle gear. Shift and Ctrl set the throttle, S lifts the nose, A and D bank and turn.",
   "steps": [
     {"part": "Frame Block", "paint": "#005eb8"},

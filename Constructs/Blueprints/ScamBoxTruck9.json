@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 9 body 9 kit 9 wear 9, chassis 2 axles, front under the hood, inset 1.5 m, leaf/leaf, wing 0.5, cab style kiosk, language cabin standard 2.38 m, flare 0.02, plain 0.7, brow 0.89 1 m, tail 0.84 1 m, door right, cab cabin capsule, nose grille, balcony g, lopsided right, trim signboards on 5 bay sides, wear age 0.61 (2 rusty, 8 dirty, 0 sooty, 1 patched, 0 rusted out), body room+bed, cab cab-over, nose flat, rear hitch, under stilts, flank loaded, sides walls, roof none, layout room(Brow T,Door,Tail T)+bed 2 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Scam Box Truck 9",
-  "group": "The Call Centre",
+  "group": "Scam",
   "description": "A box truck: a flat nose, a cab-over, a walk-in hull with loot, an open bed, a tow hitch. 1 gun.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#2a2c30"},
@@ -135,9 +135,9 @@
     {"part": "Scrap Ladder", "on": 124, "socket": "front02", "by": "back", "paint": "#8a9096"},
     {"part": "Plate Steel 0.5 m", "weld": {"on": 125, "pos": [-1.056, 0.679, 6.753], "rot": [-0.0145, 0.0073, 0.7137, 0.7002]}, "paint": "#9aa0a6"},
     {"part": "Loudhailer", "on": 126, "socket": "front11", "by": "base"},
-    {"part": "Call Headset", "on": 37, "socket": "top", "by": "base"},
-    {"part": "Prize Wheel", "on": 85, "socket": "front33", "by": "base"},
-    {"part": "Office Phone", "on": 97, "socket": "front", "by": "base"},
+    {"part": "Loudhailer", "on": 37, "socket": "top", "by": "base"},
+    {"part": "Traffic Cone", "on": 99, "socket": "front", "by": "base"},
+    {"part": "Traffic Cone", "on": 85, "socket": "front33", "by": "base"},
     {"part": "Hull Loft (trimg3 XaW5 ~CO0CWyCodDYj03J ~Cm0CuyDIzE3203k)", "on": 74, "socket": "+x0", "by": "base", "paint": "#21c45a"},
     {"part": "Hull Loft (trimg3 XaW5 ~Cm0CuyDIzE3203k ~CO0CWyCodDYj03J)", "on": 74, "socket": "-x0", "by": "base", "paint": "#21c45a"},
     {"part": "Hull Loft (trimg3 YMW5 ~Cm0CuyDIzE3203k =)", "on": 75, "socket": "-x0", "by": "base", "paint": "#9aa0a6"},

@@ -693,8 +693,8 @@ public sealed partial class Ui
     // ---------------------------------------------------------------------------------------------------------------
 
     private CmdLabel _cmdClock, _cmdScale;
-    private static readonly int[] CmdSpeeds = [0, 1, 10, 100, 1000, 10_000, 100_000];
-    private static readonly string[] CmdSpeedLabels = ["II", "1x", "10x", "100x", "1K", "10K", "100K"];
+    private static readonly int[] CmdSpeeds = [0, 1, 10, 100, 1000, 10_000, 100_000, 1_000_000];
+    private static readonly string[] CmdSpeedLabels = ["II", "1x", "10x", "100x", "1K", "10K", "100K", "1M"];
     private static readonly string[] CmdHeldText = ["", "   (A SHIP IS BURNING)", "   (SLOWED FOR A BURN)", "   (SHIPS' LIMIT)", "   (SETTINGS' LIMIT)"];
 
     /// <summary>Why the time runs slower than the host asked (an index into <see cref="CmdHeldText"/>; 0: it doesn't, or this is a client).</summary>
@@ -743,7 +743,7 @@ public sealed partial class Ui
             {
                 var q0 = p0 + new float2(k * (tw + 3 * _scale), 76 * _scale);
                 if (CmdButton(dl, q0, q0 + new float2(tw, 19 * _scale), CmdSpeedLabels[k], k == 0 ? CmdAmber : CmdCyan, fade, hf.RequestedSpeed == CmdSpeeds[k], 11))
-                    g.RequestTimeSpeed(Math.Min(CmdSpeeds[k], Math.Max(1, g.TimeSpeedMost)));
+                    g.RequestTimeSpeed(CmdSpeeds[k]); // (the settings' limit holds it, and the clock line says so)
             }
         }
 

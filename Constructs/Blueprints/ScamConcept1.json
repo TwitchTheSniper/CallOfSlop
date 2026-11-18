@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front under the hood, inset 1 m, leaf/swing arm, wing 0.5, archetype bubble car, cab style kiosk, language bubble standard 2.07 m, flare 0.10, crowned 0.8, brow 0.60 1.25 m, tail 0.55 1 m, door left, cab bubble capsule, nose grille, fitting roof sign, wear age 0.75 (0 rusty, 2 dirty, 0 sooty, 0 patched, 0 rusted out), body boot, cab cab-over, nose flat, rear bare, under stilts, layout boot 2.8 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Scam Concept 1",
-  "group": "The Call Centre",
+  "group": "Scam",
   "description": "A concept car: a flat nose, a cab-over, a boot behind the cabin, the gun on a pedestal ahead of it. 1 gun.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#2a2c30"},
@@ -64,7 +64,7 @@
     {"part": "Square Beam 0.5 m", "on": 11, "socket": "+y0", "by": "-z", "paint": "#2a2c30"},
     {"part": "Loudhailer", "on": 56, "socket": "+z", "by": "base"},
     {"part": "Square Beam 0.5 m", "on": 11, "socket": "+y1", "by": "-z", "paint": "#2a2c30"},
-    {"part": "Office Phone", "on": 58, "socket": "+z", "by": "base"}
+    {"part": "Traffic Cone", "on": 58, "socket": "+z", "by": "base"}
   ],
   "wires": [[29, 30], [30, 24], [46, 53], [53, 48]],
   "links": [

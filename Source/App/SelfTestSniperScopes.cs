@@ -23,7 +23,6 @@ public static partial class SelfTest
             Fail("no sniper rifles loaded");
             return;
         }
-        var fresh = new Progress { ReadOnly = true };
         foreach (var (gun, scope) in ShippedSniperScopes)
             if (Weapons.Find(gun) is { } w && Attachments.DefaultOptic(w)?.Name != scope)
                 Fail($"{gun}: starts with {Attachments.DefaultOptic(w)?.Name ?? "iron sights"} (its file names the {scope})");
@@ -39,33 +38,14 @@ public static partial class SelfTest
             }
             var kit = Attachments.DefaultKit(w);
             var d = Attachments.Apply(w, kit);
-            var ironsXp = Attachments.IronSightsXp(w);
-            var max = Attachments.MaxXp(w);
             Line($"  {w.Name}: starts with the {scope.Name} ({d.AdsZoom:0.#}x, {d.AdsTime:0.00} s to aim, mobility {d.Mobility:0.00}); "
-                 + $"{Attachments.NoOpticName(w).ToLowerInvariant()} {w.AdsZoom:0.#}x ({w.AdsTime:0.00} s, mobility {w.Mobility:0.00}) unlock at {ironsXp:N0} of {max:N0} weapon XP");
+                 + $"{Attachments.NoOpticName(w).ToLowerInvariant()} {w.AdsZoom:0.#}x ({w.AdsTime:0.00} s, mobility {w.Mobility:0.00})");
             if (scope.Slot != AttachSlot.Optic || !scope.Fits(w) || !Sights.Magnified(d) || !GunModel.FullScope(d) || d.AdsZoom <= w.AdsZoom)
                 Fail($"{w.Name}: the {scope.Name} isn't a magnified full scope ({d.Optic}, {d.AdsZoom}x)");
-            if (Attachments.UnlockXp(w, scope) != 0)
-                Fail($"{w.Name}: its starting {scope.Name} needs {Attachments.UnlockXp(w, scope)} weapon XP");
-            if (Attachments.Sanitize(w, 0, fresh) != kit || Attachments.Sanitize(w, kit, fresh) != kit)
-                Fail($"{w.Name}: a fresh profile gets [{Attachments.Describe(Attachments.Sanitize(w, 0, fresh))}], not the default scope");
+            if (Attachments.Sanitize(w, kit) != kit)
+                Fail($"{w.Name}: its default scope didn't survive Sanitize");
             if (Attachments.Sanitize(w, 0) != 0)
-                Fail($"{w.Name}: Sanitize without progress (the server) changed an empty optic slot");
-            if (ironsXp < max * 0.3f || ironsXp > max * 0.7f || ironsXp % 50 != 0)
-                Fail($"{w.Name}: iron sights unlock at {ironsXp} of {max} weapon XP (expected about half, a multiple of 50)");
-
-            // Locked until the unlock XP, then selectable; other attachments still need their own XP.
-            var before = Progress.Parse([$"wx.{w.Name}={ironsXp - 50}"]);
-            var after = Progress.Parse([$"wx.{w.Name}={ironsXp}"]);
-            if (Attachments.IronSightsUnlocked(w, ironsXp - 50) || !Attachments.IronSightsUnlocked(w, ironsXp))
-                Fail($"{w.Name}: IronSightsUnlocked is wrong around {ironsXp} weapon XP");
-            if (Attachments.Sanitize(w, 0, before) != kit)
-                Fail($"{w.Name}: iron sights usable at {ironsXp - 50} weapon XP");
-            if (Attachments.Sanitize(w, 0, after) != 0)
-                Fail($"{w.Name}: iron sights not selectable at {ironsXp} weapon XP (got [{Attachments.Describe(Attachments.Sanitize(w, 0, after))}])");
-            var other = Attachments.For(w).FirstOrDefault(a => a.Slot == AttachSlot.Optic && a != scope && Attachments.UnlockXp(w, a) <= ironsXp - 50);
-            if (other != null && Attachments.Slot(Attachments.Sanitize(w, Attachments.With(0, AttachSlot.Optic, other.Index), before), AttachSlot.Optic) != other.Index)
-                Fail($"{w.Name}: an unlocked {other.Name} was swapped for the default scope");
+                Fail($"{w.Name}: Sanitize changed an empty optic slot (iron sights are open since levelling went)");
 
             // Bots always aim through the scope (and their random rolls are the same as before: it takes none).
             var rng = new Random(77);
@@ -80,8 +60,8 @@ public static partial class SelfTest
         {
             if (Attachments.StartsScoped(w) || Attachments.DefaultKit(w) != 0 || Attachments.IronSightsXp(w) != 0)
                 Fail($"{w.Name} ({w.ClassName}): starts with an optic, but only snipers should");
-            if (Attachments.Sanitize(w, 0, fresh) != 0)
-                Fail($"{w.Name}: a fresh profile's empty kit changed");
+            if (Attachments.Sanitize(w, 0) != 0)
+                Fail($"{w.Name}: an empty kit changed");
             if (Attachments.Slot(Game.BotKit(w, new Random(5)), AttachSlot.Optic) != 0)
                 Fail($"{w.Name}: a bot fitted an optic");
         }
@@ -181,19 +161,15 @@ public static partial class SelfTest
             if (!LoadoutStore.SaveLines().SequenceEqual(lines))
                 Fail("loadout.txt changed on a second save");
 
-            // Spawning: locked iron sights put the scope back; unlocked ones stay.
-            var max = Progress.TotalFor(Progress.MaxLevel);
-            var low = Progress.Parse([$"xp={max}", $"wx.{b.Name}={Attachments.IronSightsXp(b) - 50}"]);
-            var high = Progress.Parse([$"xp={max}", $"wx.{b.Name}={Attachments.IronSightsXp(b)}"]);
-            var effLow = LoadoutStore.Effective(s[1], low).PrimaryKit;
-            var effHigh = LoadoutStore.Effective(s[1], high).PrimaryKit;
-            Line($"  iron sights on the {b.Name}: saved as \"{Attachments.IronSightsName}\"; spawn with [{Attachments.Describe(effLow)}] below {Attachments.IronSightsXp(b):N0} weapon XP, [{Attachments.Describe(effHigh)}] from it");
-            if (effLow != Attachments.DefaultKit(b) || effHigh != 0)
-                Fail($"spawning with locked / unlocked iron sights gave [{Attachments.Describe(effLow)}] / [{Attachments.Describe(effHigh)}]");
+            // Spawning: iron sights stay (nothing is locked since levelling went, 2026-11-17).
+            var eff = LoadoutStore.Effective(s[1]).PrimaryKit;
+            Line($"  iron sights on the {b.Name}: saved as \"{Attachments.IronSightsName}\"; spawn with [{Attachments.Describe(eff)}]");
+            if (eff != 0)
+                Fail($"spawning with iron sights gave [{Attachments.Describe(eff)}]");
             // A gun put into a slot for the first time comes with its scope.
             LoadoutStore.LoadLines(null);
             var l = LoadoutStore.Slots[0];
-            LoadoutStore.SetWeapon(l, 0, a.Id, high);
+            LoadoutStore.SetWeapon(l, 0, a.Id);
             if (l.PrimaryKit != Attachments.DefaultKit(a))
                 Fail($"a brand-new {a.Name} came with [{Attachments.Describe(l.PrimaryKit)}]");
         }

@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front set back, inset 1.5 m, hydraulic/leaf, wing 0.5, cab style box, language cabin standard 2.75 m, flare 0.02, plain 1.0, brow 0.85 1 m, tail 0.86 0.75 m, door left, cab cabin cab, nose flat, fitting roof sign, lopsided right, wear age 0.4 (0 rusty, 1 dirty, 0 sooty, 0 patched, 0 rusted out), body gun bay+bed, cab enclosed, nose short hood, rear hitch, under tub, sides open, layout gun bay 2 m+bed 1.5 m, plan 2
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Scam Technical 1",
-  "group": "The Call Centre",
+  "group": "Scam",
   "description": "A technical: a short hood, an enclosed cab, a gun behind the cab, an open bed, a tow hitch. 1 gun.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#2a2c30"},
@@ -80,11 +80,10 @@
     {"part": "Slat Grille", "on": 71, "socket": "front", "by": "back", "paint": "#f2f2ee"},
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 72, "pos": [0.129, 0.485, -1.749], "rot": [-0.6981, -0.0119, 0.0087, 0.7159]}, "paint": "#9aa0a6"},
     {"part": "Hull Loft (decoS XIWAWaW0)", "on": 35, "socket": "top", "by": "base", "paint": "#ffd400"},
-    {"part": "Call Headset", "on": 71, "socket": "top", "by": "base"},
-    {"part": "Prize Wheel", "on": 47, "socket": "front10", "by": "base"},
-    {"part": "Office Phone", "on": 51, "socket": "front", "by": "base"},
-    {"part": "Prize Wheel", "on": 53, "socket": "front", "by": "base"},
-    {"part": "Phone Mast", "on": 44, "socket": "front10", "by": "base"}
+    {"part": "Loudhailer", "on": 71, "socket": "top", "by": "base"},
+    {"part": "Traffic Cone", "on": 47, "socket": "front10", "by": "base"},
+    {"part": "Loudhailer", "on": 51, "socket": "front", "by": "base"},
+    {"part": "Traffic Cone", "on": 53, "socket": "front", "by": "base"}
   ],
   "wires": [[32, 33], [33, 27], [58, 69], [69, 60]],
   "links": [

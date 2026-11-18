@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "IT Fuel Trailer 2",
-  "group": "IT Department",
+  "group": "IT",
   "description": "A fuel trailer: a round tank on a sprung frame, with a drawbar's eye for a Tow Hitch.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#3b3f44"},

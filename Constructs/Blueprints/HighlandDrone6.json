@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Highland Drone 6",
-  "group": "Clan MacSlop",
+  "group": "Highland",
   "description": "A remote multirotor, 6 ducted fans on a hub, two battery packs. Fly it from a Remote Console on its channel: Shift climbs, Ctrl sinks, W A S D move and turn it.",
   "steps": [
     {"part": "6-Way Hub", "paint": "#33302b"},

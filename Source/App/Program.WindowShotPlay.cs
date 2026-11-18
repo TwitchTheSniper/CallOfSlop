@@ -16,13 +16,36 @@ public static partial class Program
     private static int _wsClipBodies, _wsClipLoose;
     private static bool _wsClipToolAsked;
 
-    private static bool WsPlayKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "sit" or "seated" or "getout" or "recycle" or "clip" or "partinfo" or "partlook" or "hands" or "cabto" or "damage" or "makeengine" or "standon" or "aimintake" or "feetup" or "cave" or "spawnbp" or "bringon" or "dropmotion" or "shellwear" or "shellleave" or "shellfix";
+    private static bool WsPlayKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "sit" or "seated" or "getout" or "recycle" or "clip" or "partinfo" or "partlook" or "hands" or "cabto" or "damage" or "makeengine" or "standon" or "aimintake" or "feetup" or "cave" or "spawnbp" or "bringon" or "dropmotion" or "shellwear" or "shellleave" or "shellfix" or "shells";
 
     private static bool WsPlayVerb(Game g, Player me, string verb, string arg)
     {
         var ci = System.Globalization.CultureInfo.InvariantCulture;
         switch (verb)
         {
+            case "shells" when g.IsServer: // host: every shell in flight: kind, age, where it is from the body that fired it, its speed against it, its target; and each body's radar lock
+            {
+                var w = g.Constructs;
+                foreach (var b in w.Bodies)
+                    if (b.RadarLock != 0)
+                        WsSay($"shells: body {b.Id} has radar lock on body {b.RadarLock}");
+                WsSay($"shells: radar craft {g.RadarCraft?.Id ?? 0}, range {g.RadarRange:0} m, can lock {g.RadarCanLock}, local lock {g.RadarLock}, {g.RadarContactCount} contacts");
+                for (var i = 0; i < g.RadarContactCount; i++)
+                    if (w.Get(g.RadarContacts[i]) is { } ct && g.RadarCraft is { } rc)
+                        WsSay(string.Create(ci, $"shells: contact body {ct.Id}, {Vector3.Distance(ct.WorldCom, rc.WorldCom):0} m"));
+                if (arg == "look" && g.RadarContactCount > 0 && w.Get(g.RadarContacts[0]) is { } first)
+                    WsLook(g, me.Eye, first.WorldCom); // ("shells look": the look turned onto the nearest contact, as the mouse would turn it)
+                WsSay($"shells: {w.ShellCount} in flight");
+                for (var k = 0; k < w.ShellCount; k++)
+                {
+                    ref var sh = ref w.Shells[k];
+                    var from = w.Get(sh.Gun);
+                    var rel = from != null ? sh.Pos - from.WorldCom : sh.Pos;
+                    var rv = from != null ? sh.Vel - from.Vel : sh.Vel;
+                    WsSay(string.Create(ci, $"shells: #{sh.Id} {sh.Kind} age {sh.Age} landed {sh.Landed} from body {sh.Gun}: {rel.Length():0.0} m off ({rel:0.0}), {rv.Length():0.0} m/s against it, target {sh.Target}{(w.Get(sh.Target) is { } tg ? string.Create(ci, $" {Vector3.Distance(tg.WorldCom, sh.Pos):0} m off it, closing {Vector3.Dot(sh.Vel - tg.Vel, Vector3.Normalize(tg.WorldCom - sh.Pos)):0} m/s") : "")}"));
+                }
+                return true;
+            }
             case "crew": // "crew": every crew's roster and its driver's shots, the body's height and speed (the host's: GameCrew.cs)
                 foreach (var line in g.CrewLines())
                     Console.WriteLine($"[windowshot] crew: {line}");
@@ -113,6 +136,15 @@ public static partial class Program
                     if (!sent)
                         Console.WriteLine("[windowshot] crewprisoner: no prisoner in this client's rosters");
                 }
+                return true;
+            case "crewfleet": // "crewfleet": host: every group, its admiral, ships, orders and strength (faction-controllers.md phase 2)
+                Console.WriteLine($"[windowshot] crewfleet: {(g.IsServer ? g.CrewFleetLines() : $"{g.IntelMarks.Count} intel marks")}");
+                foreach (var body in g.CrewInfo.Keys)
+                    Console.WriteLine($"[windowshot] crewfleet: look line of {body}: {g.CrewLook(body)}"); // (as this peer has it: Msg.CrewSeats)
+                return true;
+            case "crewofficer": // "crewofficer question|ransom": host: this player questions or ransoms the first officer prisoner
+                if (g.IsServer)
+                    Console.WriteLine($"[windowshot] crewofficer: {g.CrewOfficerFirst(me, arg)}");
                 return true;
             case "npcstanding": // "npcstanding": how each NPC faction kind sees this player, as this peer's factions table has it
                 Console.WriteLine($"[windowshot] npcstanding: {g.CrewStandingLine(me)}");

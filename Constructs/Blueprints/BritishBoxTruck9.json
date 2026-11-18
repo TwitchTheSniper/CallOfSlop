@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 9 body 9 kit 9 wear 9, chassis 2 axles, front under the hood, inset 2 m, swing arm/trailing arm, wing 0.5, cab style bus front, language coach heavy 2.32 m, flare 0.13, raked 0.6, brow 0.66 1.25 m, tail 0.85 1 m, door right, 12 facets, cab coach capsule, 8 facets, nose rounded, fitting destination board, trim livery on 5 bay sides, wear age 0.54 (2 rusty, 3 dirty, 0 sooty, 0 patched, 0 rusted out), body gap+room, cab cab-over, nose flat, rear porch, under tub, flank panniers, roof none, layout gap 0.5 m+room(Brow T,Door,Tail T)
   "format": "call-of-slop-construct-blueprint/1",
   "name": "British Box Truck 9",
-  "group": "Ministry of Slop",
+  "group": "British",
   "description": "A box truck: a flat nose, a cab-over, bare rails behind the cab, a walk-in hull with loot, a drum on the rear porch. 1 gun.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#2b2a28"},
@@ -96,23 +96,23 @@
     {"part": "Ammo Reel", "on": 85, "socket": "top", "by": "-y"},
     {"part": "Ammo Socket", "on": 80, "socket": "top", "by": "bottom"},
     {"part": "Lever", "on": 71, "socket": "lever", "by": "-y"},
-    {"part": "Chest", "on": 52, "socket": "front10", "by": "bottom", "spin": 1},
-    {"part": "Union Flag", "on": 91, "socket": "lid", "by": "base"},
+    {"part": "Shelf Bay 1", "on": 52, "socket": "front10", "by": "-y.1.1", "spin": 1},
     {"part": "Square Beam 0.75 m", "on": 9, "socket": "+y2", "by": "-x0", "spin": 1, "paint": "#2b2a28"},
-    {"part": "Square Beam 0.75 m", "on": 93, "socket": "+x0", "by": "-x0", "spin": 1, "paint": "#2b2a28"},
-    {"part": "Plate Steel 1 m", "on": 94, "socket": "+x2", "by": "back02", "paint": "#be0f2a"},
+    {"part": "Square Beam 0.75 m", "on": 92, "socket": "+x0", "by": "-x0", "spin": 1, "paint": "#2b2a28"},
+    {"part": "Plate Steel 1 m", "on": 93, "socket": "+x2", "by": "back02", "paint": "#be0f2a"},
     {"part": "Plate Steel 0.5x1 m", "on": 47, "socket": "+x3", "by": "-x0", "paint": "#c8102e"},
-    {"part": "Plate Steel 0.5x1 m", "on": 94, "socket": "+x0", "by": "back02", "spin": 1, "paint": "#1f4a32"},
+    {"part": "Plate Steel 0.5x1 m", "on": 93, "socket": "+x0", "by": "back02", "spin": 1, "paint": "#1f4a32"},
     {"part": "Plate Steel 0.25 m", "on": 53, "socket": "+x3", "by": "-x", "paint": "#c8102e"},
-    {"part": "Plate Steel 0.25 m", "on": 97, "socket": "-z1", "by": "-x", "paint": "#7d8186"},
-    {"part": "Fuel Drum", "on": 95, "socket": "front30", "by": "-y"},
+    {"part": "Plate Steel 0.25 m", "on": 96, "socket": "-z1", "by": "-x", "paint": "#7d8186"},
+    {"part": "Fuel Drum", "on": 94, "socket": "front30", "by": "-y"},
     {"part": "Hull Loft (decoD WoWMUSVy)", "on": 35, "socket": "top", "by": "base"},
-    {"part": "Queue Post", "on": 96, "socket": "front03", "by": "base"},
+    {"part": "Traffic Cone", "on": 94, "socket": "front00", "by": "base"},
     {"part": "Hull Loft (triml9 XaW5 ~BG0BWGBeVBmlBm-C1ECHUC1jAvx9267o86QB52C3oE02E ~Ce0CuQD8qD8yDnFEnfEvkEo3EYTDwtCpFAZX7hf4hl03l)", "on": 71, "socket": "+x0", "by": "base", "paint": "#004225"},
     {"part": "Hull Loft (triml0 XaW5 ~Ce0CuQD8qD8yDnFEnfEvkEo3EYTDwtCpFAZX7hf4hl03l ~BG0BWGBeVBmlBm-C1ECHUC1jAvx9267o86QB52C3oE02E)", "on": 71, "socket": "-x0", "by": "base", "paint": "#004225"},
     {"part": "Hull Loft (triml5 YMW5 ~Ce0CuQD8qD8yDnFEnfEvkEo3EYTDwtCpFAZX7hf4hl03l =)", "on": 72, "socket": "-x0", "by": "base", "paint": "#004225"},
     {"part": "Hull Loft (triml9 XaW5 ~Ce0CuQD8qD8yDnFEnfEvkEo3EYTDwtCpFAZX7hf4hl03l ~BO0BeNBukC0yC95CfSCvkCvqCoBCAXBAt9B66ZD3pJ03J)", "on": 75, "socket": "+x0", "by": "base", "paint": "#004225"},
-    {"part": "Hull Loft (triml2 XaW5 ~BO0BeNBukC0yC95CfSCvkCvqCoBCAXBAt9B66ZD3pJ03J ~Ce0CuQD8qD8yDnFEnfEvkEo3EYTDwtCpFAZX7hf4hl03l)", "on": 75, "socket": "-x0", "by": "base", "paint": "#004225"}
+    {"part": "Hull Loft (triml2 XaW5 ~BO0BeNBukC0yC95CfSCvkCvqCoBCAXBAt9B66ZD3pJ03J ~Ce0CuQD8qD8yDnFEnfEvkEo3EYTDwtCpFAZX7hf4hl03l)", "on": 75, "socket": "-x0", "by": "base", "paint": "#004225"},
+    {"part": "Long Iron Spike", "on": 95, "socket": "front00", "by": "base"}
   ],
   "wires": [[32, 33], [33, 27], [76, 84], [84, 80], [90, 87]],
   "hoses": [[88, 89]],
@@ -121,7 +121,7 @@
     {"type": "feed", "from": 85, "to": 87, "fromPort": "Ammo out", "toPort": "Ammo in 1", "laid": true},
     {"type": "feed", "from": 86, "to": 87, "fromPort": "Ammo out", "toPort": "Ammo in 2", "laid": true},
     {"type": "feed", "from": 87, "to": 88, "fromPort": "Ammo out", "toPort": "Ammo in", "laid": true},
-    {"type": "pipe", "from": 100, "to": 27, "nodes": [[1.25, 0.82, 5.55], [1.25, 0.55, 5.55], [0.67, 0.55, 5.55], [0.67, 0.55, 2.125], [0.67, 0.05, 2.125], [0.67, 0.05, 0.505], [0.67, 0.25, 0.505], [-0.17, 0.25, 0.505], [-0.17, 0.62, 0.505], [-0.17, 0.62, 0]], "laid": true}
+    {"type": "pipe", "from": 99, "to": 27, "nodes": [[1.25, 0.82, 5.55], [1.25, 0.55, 5.55], [0.67, 0.55, 5.55], [0.67, 0.55, 2.125], [0.67, 0.05, 2.125], [0.67, 0.05, 0.505], [0.67, 0.25, 0.505], [-0.17, 0.25, 0.505], [-0.17, 0.62, 0.505], [-0.17, 0.62, 0]], "laid": true}
   ],
   "loot": [{"step": 91, "table": "british"}]
 }

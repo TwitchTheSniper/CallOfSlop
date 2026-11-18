@@ -40,8 +40,6 @@ public static unsafe partial class Program
         var p = _lookPlayer;
         p.Name = pv.Name;
         p.Look = pv.Look;
-        p.Hat = pv.Hat;
-        p.Prestige = (byte)Math.Clamp(pv.Prestige, 0, Cosmetics.MaxPrestige);
         p.Alive = true;
         p.Health = World.MaxHealth;
         p.RenderPosition = Vector3.Zero;
@@ -52,7 +50,7 @@ public static unsafe partial class Program
         p.RenderGrounded = true;
         p.RenderMantling = false;
 
-        // Frame the body plus the hat (the Ridiculous Top Hat is tall), feet to crown, a little from above.
+        // Frame the body plus its headwear, feet to crown, a little from above.
         var hatH = HatRender.HatFor(p) is { } hat ? hat.Height * (BodyModel.Stances[0].HeadSize.X / HatRender.ModelHeadWidth) : 0f;
         var top = World.PlayerHeight + hatH + 0.1f;
         var cy = top / 2;

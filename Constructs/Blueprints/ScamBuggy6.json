@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 6 body 6 kit 6 wear 6, chassis 2 axles, front set back, inset 1 m, leaf/swing arm, wing 0.5, archetype gun buggy, language tub standard 2.31 m, flare 0.07, tapered 0.8, brow 0.59 1 m, tail 0.64 0.75 m, door left, cab tub caged cab, nose wedge, lopsided right, wear age 0.34 (0 rusty, 0 dirty, 0 sooty, 0 patched, 0 rusted out), body gun bay, cab caged, nose long hood, rear porch hitch, under stilts, layout gun bay 2 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Scam Buggy 6",
-  "group": "The Call Centre",
+  "group": "Scam",
   "description": "A gun buggy: a long hood, a caged cab, a gun behind the cab, a drum on the rear porch over a tow hitch. 1 gun.",
   "steps": [
     {"part": "Square Beam 1 m", "paint": "#2a2c30"},
@@ -68,10 +68,11 @@
     {"part": "Fuel Drum", "on": 54, "socket": "front30", "by": "-y"},
     {"part": "Tow Hitch", "on": 6, "socket": "+z", "by": "-z0"},
     {"part": "Hull Loft (hoodw UZV2WyWjXSWtVd ~80080E7Wb5uv3f0011)", "on": 25, "socket": "+y", "by": "engine", "paint": "#f2f2ee"},
-    {"part": "Gift Card Sign", "on": 62, "socket": "top", "by": "base"},
-    {"part": "Gift Card Sign", "on": 58, "socket": "front", "by": "base"},
-    {"part": "Office Phone", "on": 59, "socket": "front", "by": "base"},
-    {"part": "Phone Mast", "on": 56, "socket": "front", "by": "base"}
+    {"part": "Loudhailer", "on": 62, "socket": "top", "by": "base"},
+    {"part": "Loudhailer", "on": 33, "socket": "top", "by": "base"},
+    {"part": "Loudhailer", "on": 58, "socket": "front", "by": "base"},
+    {"part": "Loudhailer", "on": 59, "socket": "front", "by": "base"},
+    {"part": "Traffic Cone", "on": 55, "socket": "front30", "by": "base"}
   ],
   "wires": [[30, 31], [31, 25], [43, 50], [50, 45], [50, 51]],
   "links": [

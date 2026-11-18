@@ -476,9 +476,7 @@ public sealed partial class Vehicle
             var face = MathF.Abs(c.X) > 0.6f ? new Vector3(MathF.Sign(c.X), 0, 0) : c.Z > 0 ? Vector3.UnitZ : -Vector3.UnitZ;
             Crooked("patches", Style.Part(d, "patch"), w, c + face * 0.06f + new Vector3(0, (float)d.Between(-0.08, 0.08), 0), face, d);
         }
-        FactionDecos(); // (phase 4: the faction's fittings on the cab and the hood, before the piper and the trophies take their sockets: Vehicle.Trim.cs)
-        if (Style.Parts.ContainsKey("piper"))
-            Piper(); // (before the trophies take the hood's sockets)
+        FactionDecos(); // (phase 4: the faction's fittings on the cab and the hood, before the trophies take their sockets: Vehicle.Trim.cs)
         d = Dice.Fork("show");
         var sides = Panels.GetValueOrDefault("sides") ?? [];
         var lean = Rule.AsymAmount >= 0.5f ? Lean : 0; // (phase 6: a lopsided vehicle's spikes on its one side)
@@ -510,7 +508,7 @@ public sealed partial class Vehicle
     private static int Spikes(int n, int side, int lean) => lean == 0 ? n : lean == side ? n + 1 : 0;
 
     /// <summary>
-    /// A style that has "mast" and "gear" slots dresses more than the flanks and the hood (the IT Department's dishes and masts): masts on
+    /// A style that has "mast" and "gear" slots dresses more than the flanks and the hood (the Traders' dishes and masts): masts on
     /// the rooms' roofs, spikes down the rooms' outer walls, and gear standing on open beds and porches. Its own fork, so the rest of a
     /// seed's vehicle is as it was, and a style without the slots (bandits) never rolls it.
     /// </summary>
@@ -523,38 +521,6 @@ public sealed partial class Vehicle
         Dress("spike", walls.Where(p => CentreOf(p).X > 0.6f), Vector3.UnitX, d.Int(1, 2), d);
         Dress("gear", (Panels.GetValueOrDefault("bed") ?? []).Concat(Panels.GetValueOrDefault("porch") ?? []), Vector3.UnitY, d.Int(1, 3), d);
         Dress("mast", Panels.GetValueOrDefault("cabshell") ?? [], Vector3.UnitY, 1, d);
-    }
-
-    /// <summary>
-    /// A style with a "piper" slot (the Clan MacSlop's Pipe Box: docs/sandbox/MEDIA.md, "Pipe Boxes") stands exactly one on every vehicle, up
-    /// front where it can: the hood, then the cab, a room's roof, the bed, a porch, the headboard. Its own fork, so nothing else of a seed moves.
-    /// A shape with nowhere to stand one throws, so a sweep skips that seed.
-    /// </summary>
-    private void Piper()
-    {
-        if (!Parts.Any(p => p.Def.Role == PartRole.Seat))
-            return; // (a trailer: nobody drives it, so its pipes would never play)
-        var d = Dice.Fork("piper");
-        var before = Parts.Count;
-        var sides = Panels.GetValueOrDefault("sides") ?? [];
-        var places = new (IEnumerable<VPart> On, Vector3 Dir)[]
-        {
-            (Panels.GetValueOrDefault("hood") ?? [], Vector3.UnitY),
-            (Panels.GetValueOrDefault("cabshell") ?? [], Vector3.UnitY),
-            (Rooms.SelectMany(r => r.Roof), Vector3.UnitY),
-            (Panels.GetValueOrDefault("bed") ?? [], Vector3.UnitY),
-            (Panels.GetValueOrDefault("porch") ?? [], Vector3.UnitY),
-            (Panels.GetValueOrDefault("headboard") ?? [], -Vector3.UnitZ),
-            (sides.Where(p => CentreOf(p).X < 0), -Vector3.UnitX),
-            (sides.Where(p => CentreOf(p).X > 0), Vector3.UnitX),
-        };
-        foreach (var (on, dir) in places)
-        {
-            Dress("piper", on, dir, 1, d);
-            if (Parts.Count > before)
-                return;
-        }
-        throw new VehicleKitException("nowhere to stand the Pipe Box (the \"piper\" slot)");
     }
 
     /// <summary>Paints every part of a list from a palette role.</summary>

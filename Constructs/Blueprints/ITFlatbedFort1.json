@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front under the hood, inset 2.25 m, coil/leaf, wing 0.5, cab style pod, language van standard 2.51 m, flare 0.04, raked 0.8, brow 0.75 1.5 m, tail 0.80 1 m, door right, 8 facets, cab van merged cab, 6 facets, nose rounded, trim fairing on 5 bay sides, wear age 0.7 (4 rusty, 4 dirty, 0 sooty, 0 patched, 0 rusted out), body room+gun bed, cab merged, nose flat, rear bare, under stilts, flank bare, sides rails, roof none, layout room(Brow T,Door,Tail T)+gun bed 2 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "IT Flatbed Fort 1",
-  "group": "IT Department",
+  "group": "IT",
   "description": "A flatbed fort: a flat nose, a cab merged into the room, a walk-in hull with loot, a gun bed. 2 guns.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#3b3f44"},
@@ -131,10 +131,10 @@
     {"part": "Chest", "on": 49, "socket": "front00", "by": "bottom", "spin": 3},
     {"part": "Server Rack", "on": 48, "socket": "front11", "by": "foot01", "spin": 1},
     {"part": "Bed Rail 1 m", "on": 81, "socket": "+z1", "by": "edge1", "paint": "#d8d0b8"},
-    {"part": "Employee of the Month", "on": 72, "socket": "top", "by": "base"},
-    {"part": "Cable Reel", "on": 82, "socket": "front03", "by": "base"},
-    {"part": "Network Switch", "on": 84, "socket": "front01", "by": "base"},
-    {"part": "Cable Reel", "on": 86, "socket": "front", "by": "base"},
+    {"part": "Office Plant", "on": 72, "socket": "top", "by": "base"},
+    {"part": "Network Switch", "on": 82, "socket": "front03", "by": "base"},
+    {"part": "Network Switch", "on": 86, "socket": "front", "by": "base"},
+    {"part": "Office Plant", "on": 96, "socket": "front", "by": "base"},
     {"part": "Hull Loft (trimf5 XaW5 ~BW0C0XC8yC92CfZCY4Bwa8wx6p04p4034 ~CW0D0iD0yDXODfaDo3DglD3R9pu5K5045)", "on": 65, "socket": "+x0", "by": "base", "paint": "#1f4e8c"},
     {"part": "Hull Loft (trimf2 XaW5 ~CW0D0iD0yDXODfaDo3DglD3R9pu5K5045 ~BW0C0XC8yC92CfZCY4Bwa8wx6p04p4034)", "on": 65, "socket": "-x0", "by": "base", "paint": "#1f4e8c"},
     {"part": "Hull Loft (trimf4 YMW5 ~CW0D0iD0yDXODfaDo3DglD3R9pu5K5045 =)", "on": 66, "socket": "-x0", "by": "base", "paint": "#1f4e8c"},

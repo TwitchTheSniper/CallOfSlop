@@ -108,11 +108,10 @@ public static unsafe partial class Program
         if (args.SkipWhile(a => !a.Equals("--size", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault()?.Split('x') is [var w, var h] && int.TryParse(w, out var wi) && int.TryParse(h, out var hi))
             (_settings.Width, _settings.Height) = (Math.Clamp(wi, 320, 3840), Math.Clamp(hi, 240, 2160));
         _settings.Mode = GameMode.Sandbox;
-        _settings.SandboxSurvival = args.Any(a => a.Equals("--survival", StringComparison.OrdinalIgnoreCase)); // (creative by default; --survival: a survival world, the penal colony's on Glacier unless --start names another)
+        _settings.SandboxSurvival = args.Any(a => a.Equals("--survival", StringComparison.OrdinalIgnoreCase)); // (creative by default; --survival: a survival world on the map as it is, unless --start names a start)
         _settings.MapRandom = false;
         var start = args.SkipWhile(a => !a.Equals("--start", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() ?? ""; // (a start by id, on its own planetoid: GameStoryStart.cs)
-        // No --start: as the tools always had it, Survival plays the penal colony (the tutorial's start) and Creative the map as it is.
-        _settings.SurvivalTutorial = _settings.SandboxSurvival && (start.Length == 0 || StoryStarts.Tutorial is { } tut && start.Equals(tut.Id, StringComparison.OrdinalIgnoreCase));
+        // No --start: the any-map start, so the map is the one asked for (Survival played the penal colony until 2026-11-17).
         _settings.StoryStart = start.Length > 0 ? start : Array.Find(StoryStarts.All, a => a.AnyMap)?.Id ?? "";
         _settings.Bots = 0;
         _settings.ShowFps = false;
@@ -565,40 +564,6 @@ public static unsafe partial class Program
         {
             case "wait":
                 WsWaitTicks(int.TryParse(arg, out var w) ? Math.Max(0, w) : 30);
-                return;
-            case "gang": // "gang NAME SIDE,UP,OUT": the eye that far to the right of, above and in front of a labour gang's spot, looking at it
-            {
-                var cut = arg.LastIndexOf(' ');
-                var off = cut > 0 ? arg[(cut + 1)..].Split(',') : [];
-                if (cut <= 0 || off.Length != 3 || !off.All(o => float.TryParse(o, System.Globalization.CultureInfo.InvariantCulture, out _)) || !g.LabourGangAt(arg[..cut], out var gp, out var gf))
-                {
-                    WsFail("gang NAME SIDE,UP,OUT (a gang of Story/Labour/PenalColony.json that stands now)");
-                    return;
-                }
-                var v = off.Select(o => float.Parse(o, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
-                var up = StandInPath.Up(gp);
-                var right = Vector3.Normalize(Vector3.Cross(gf, up));
-                var at = gp + up * 1f;
-                WsEyeTo(g, me, at + right * v[0] + up * v[1] + gf * v[2]);
-                WsLook(g, me.Eye, at);
-                _wsWait = 3;
-                return;
-            }
-            case "incident": // "incident GANG KIND": that incident begins now in that gang (GameLabourIncidents.cs)
-            {
-                var cut = arg.LastIndexOf(' ');
-                if ((cut > 0 ? g.IncidentStartNamed(arg[..cut], arg[(cut + 1)..]) : "incident GANG KIND") is { } why)
-                    WsFail(why);
-                return;
-            }
-            case "period": // "period NAME": the colony's day jumps to that period (GameLabourDay.cs)
-                if (!g.LabourJumpTo(arg))
-                    WsFail($"period NAME: no period \"{arg}\" in the colony's day ({string.Join(", ", LabourScript.Current.Day.Select(d => d.Name))})");
-                else
-                {
-                    LabourRender.SnapShifts(5); // (the gangs change even in view, for the picture)
-                    WsWaitTicks(240); // (the next look, and the gangs' coming and going)
-                }
                 return;
             case "aim" or "near" or "panel":
             {

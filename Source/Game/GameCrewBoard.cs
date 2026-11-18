@@ -164,6 +164,17 @@ public sealed partial class Game
     {
         s.CalledHelp = true;
         var n = 0;
+        // Its admiral answers first: every ship of its group, wherever it is on the net (faction-controllers.md 6.6), then the crews near.
+        if (Crew.Fleet.Of(s.Group) is { } g)
+        {
+            g.Post(FleetReport.Boarded, s.Body, boarder, Crew.Tick);
+            for (var k = 0; k < g.Count; k++)
+                if (Crew.ShipOf(g.Ships[k]) is { OnNet: true } gs && gs != s)
+                {
+                    gs.MarkFoe(boarder);
+                    n++;
+                }
+        }
         for (var i = 0; i < Crew.ShipHigh; i++)
             if (Crew.Ships[i] is { Tier: not CrewTier.Asleep } o && o != s && (o.Faction == s.Faction || CrewStandingOn && Relations.Helps(o.Faction, s.Faction)) && !o.Prize && Constructs.Get(o.Body) is { } oc
                 && Vector3.DistanceSquared(oc.WorldCom, c.WorldCom) < HelpRange * HelpRange)
@@ -208,6 +219,7 @@ public sealed partial class Game
         if (def != null && by != 255)
             ((ICrewHost)this).Deed(RelEvent.Capture, s, by, 0);
         CrewBounty(by, prisoners); // (credits: GameCrewHire.cs)
+        CrewOfficersTaken(c, s, by); // (an admiral or a captain among them: GameCrewFleet.cs)
         s.RosterDirty = true;
         Console.WriteLine($"[crew] construct {c.Id}: taken by player {by}{(c.Owner == by ? "" : " (who can't own another: it stays nobody's)")}, {prisoners} prisoners");
         CrewNotice(c, prisoners > 0
@@ -449,7 +461,8 @@ public sealed partial class Game
         {
             case "release":
                 Crew.Release(m, this);
-                PowerDeed(RelEvent.Release, faction, p.Id, c.WorldCom);
+                if (!CrewOfficerFreed(uid, p.Id, c.WorldCom)) // (an officer: the bigger event, GameCrewFleet.cs)
+                    PowerDeed(RelEvent.Release, faction, p.Id, c.WorldCom);
                 Console.WriteLine($"[crew] construct {body}: player {p.Id} released prisoner {uid}");
                 return null;
             case "drop":

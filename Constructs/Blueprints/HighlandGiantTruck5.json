@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 5 body 5 kit 5 wear 5, chassis 3 axles, tag 1.25 m, front under the hood, inset 2 m, leaf/leaf/leaf, wing 0.5, archetype giant hauler, cab style coachbuilt, language slab giant 2.40 m, flare 0.55, kick-up 0.8, brow 0.79 1 m, tail 0.78 1.25 m, door right, cab slab caged cab, nose grille, fitting mascot, lopsided right, trim clinker on 7 bay sides, wear age 0.93 (14 rusty, 33 dirty, 0 sooty, 0 patched, 0 rusted out), body room, cab caged, nose short hood, rear gun deck, under skirted, flank panniers, roof none, layout room(Brow L,Bay L-T,Door,Bay T-N,Bay N,Bay N-L,Tail L)
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Highland Giant Truck 5",
-  "group": "Clan MacSlop",
+  "group": "Highland",
   "description": "A giant truck: a short hood, a caged cab, a walk-in hull with loot, a stern gun deck. 3 guns.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#33302b"},
@@ -216,16 +216,15 @@
     {"part": "Lever", "on": 111, "socket": "lever", "by": "-y"},
     {"part": "Tall Shelf Bay 1", "on": 71, "socket": "front20", "by": "-y.1.1", "spin": 2},
     {"part": "Scrap Bunk", "on": 73, "socket": "front11", "by": "foot00"},
-    {"part": "Whisky Cask", "on": 75, "socket": "centre +y", "by": "foot10", "spin": 1},
     {"part": "Ammo Container", "on": 77, "socket": "front02", "by": "-y", "spin": 1},
-    {"part": "Wee Keg", "on": 209, "socket": "+y.1.0", "by": "base"},
-    {"part": "Thistle", "on": 75, "socket": "front07", "by": "base", "spin": 1},
+    {"part": "Traffic Cone", "on": 209, "socket": "+y.1.0", "by": "base"},
+    {"part": "Garden Gnome", "on": 209, "socket": "+y.1.1", "by": "base"},
     {"part": "Hull Loft (hoodg UgV2WyWjXYXYVd ~6e06uu593013)", "on": 31, "socket": "+y", "by": "engine", "paint": "#33302b"},
-    {"part": "Bull Bar", "on": 215, "socket": "front", "by": "back", "paint": "#f2c400"},
-    {"part": "Tread Plate 0.5 m", "weld": {"on": 216, "pos": [0.129, 0.505, -1.175], "rot": [-0.7186, -0.0098, 0.0258, 0.6948]}, "paint": "#7b1e22"},
-    {"part": "Hull Loft (decoO UwV_)", "on": 215, "socket": "top", "by": "base"},
-    {"part": "Pipe Box", "on": 39, "socket": "top", "by": "base"},
-    {"part": "Wee Keg", "on": 155, "socket": "front", "by": "base"},
+    {"part": "Bull Bar", "on": 214, "socket": "front", "by": "back", "paint": "#f2c400"},
+    {"part": "Tread Plate 0.5 m", "weld": {"on": 215, "pos": [0.129, 0.505, -1.175], "rot": [-0.7186, -0.0098, 0.0258, 0.6948]}, "paint": "#7b1e22"},
+    {"part": "Hull Loft (decoO UwV_)", "on": 214, "socket": "top", "by": "base"},
+    {"part": "Garden Gnome", "on": 156, "socket": "front", "by": "base"},
+    {"part": "Phone Mast", "on": 39, "socket": "top", "by": "base"},
     {"part": "Hull Loft (trimr1 XaW5 ~CO0CWyGwHDgj02j ~D80DGyKQtH3Q03Q)", "on": 111, "socket": "+x0", "by": "base", "paint": "#2b5a3a"},
     {"part": "Hull Loft (trimr8 XaW5 ~D80DGyKQtH3Q03Q ~CO0CWyGwHDgj02j)", "on": 111, "socket": "-x0", "by": "base", "paint": "#2b5a3a"},
     {"part": "Hull Loft (trimr4 YMW5 ~D80DGyKR9H3m03m =)", "on": 115, "socket": "-x0", "by": "base", "paint": "#2b5a3a"},
@@ -243,5 +242,5 @@
     {"type": "feed", "from": 204, "to": 205, "fromPort": "Ammo out", "toPort": "Ammo in 2", "laid": true},
     {"type": "feed", "from": 205, "to": 206, "fromPort": "Ammo out", "toPort": "Ammo in", "laid": true}
   ],
-  "loot": [{"step": 209, "table": "highland"}, {"step": 210, "table": "highland"}, {"step": 211, "table": "highland"}]
+  "loot": [{"step": 209, "table": "highland"}, {"step": 210, "table": "highland"}]
 }

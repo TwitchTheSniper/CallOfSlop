@@ -26,10 +26,9 @@ public static partial class Program
     public static float TalkCamWeight => DeathCam.EaseInOut(_talkCamT);
 
     /// <summary>
-    /// While the talk camera shows: the local player's own health bar is left off their head (PlayerRig.cs). On a story ride
-    /// (a cinematic, Program.Quarry.cs) nobody's is drawn.
+    /// While the talk camera shows: the local player's own health bar is left off their head (PlayerRig.cs).
     /// </summary>
-    public static bool TalkHidesBar(byte id) => _talkCamT > 0f && id == _game.LocalId || _session is { QuarryRiding: true };
+    public static bool TalkHidesBar(byte id) => _talkCamT > 0f && id == _game.LocalId;
 
     /// <summary>
     /// The shots tried in turn, as (metres back, metres to the side: negative left): over the left shoulder, the right,
@@ -125,7 +124,7 @@ public static partial class Program
     {
         var dt = (float)FrameDt;
         Player? them = null;
-        var want = _talkTo != 255 && !_talkRemote && local is { Alive: true, RenderSeat: SeatKind.None } && _game.SandboxOn && !_game.OpeningActive && !_game.QuarryRiding
+        var want = _talkTo != 255 && !_talkRemote && local is { Alive: true, RenderSeat: SeatKind.None } && _game.SandboxOn && !_game.OpeningActive
                    && _game.Players.TryGetValue(_talkTo, out them) && them.Alive;
         if (!want && local is not { Alive: true })
             _talkCamT = 0; // (a death cuts it: the death camera takes over)

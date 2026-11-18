@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front under the hood, inset 1.25 m, coil/swing arm, wing 0.75, archetype carriage, cab style town cab, language carriage standard 2.34 m, flare 0.03, sheer 0.7, brow 0.68 1.5 m, tail 0.79 1.5 m, door right, 9 facets, cab carriage cab, 6 facets, nose grille, balcony r, trim livery on 5 bay sides, wear age 0.97 (3 rusty, 13 dirty, 0 sooty, 0 patched, 0 rusted out), body room+bed, cab enclosed, nose long hood, rear porch, under stilts, flank panniers, sides rails, roof none, layout room(Brow T,Door,Tail T)+bed 1.5 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "British Wagon 1",
-  "group": "Ministry of Slop",
+  "group": "British",
   "description": "A wagon: a long hood, an enclosed cab, a walk-in hull with loot, an open bed, a drum on the rear porch. 1 gun.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#2b2a28"},
@@ -129,16 +129,17 @@
     {"part": "Arch Fender", "on": 118, "socket": "-x0", "by": "mount", "paint": "#c8102e"},
     {"part": "Plate Steel 0.5 m", "weld": {"on": 119, "pos": [0.126, 0.46, -1.105], "rot": [-0.714, -0.0008, 0.0164, 0.6999]}, "paint": "#be0f2a"},
     {"part": "Plate Steel 0.5 m", "weld": {"on": 121, "pos": [-0.826, 0.263, -0.372], "rot": [0.0053, 0.0089, 0.6977, 0.7163]}, "paint": "#c8102e"},
-    {"part": "Teapot", "on": 118, "socket": "top", "by": "base"},
-    {"part": "Queue Post", "on": 89, "socket": "front", "by": "base"},
-    {"part": "Queue Post", "on": 114, "socket": "front", "by": "base"},
-    {"part": "Garden Gnome", "on": 86, "socket": "front13", "by": "base"},
+    {"part": "Hull Loft (decoJ W0)", "on": 118, "socket": "top", "by": "base"},
+    {"part": "Hull Loft (decoJ W0)", "on": 37, "socket": "top", "by": "base"},
+    {"part": "Hull Loft (decoJ W0)", "on": 92, "socket": "front", "by": "base"},
+    {"part": "Traffic Cone", "on": 89, "socket": "front", "by": "base"},
+    {"part": "Hull Loft (decoJ W0)", "on": 114, "socket": "front", "by": "base"},
     {"part": "Hull Loft (triml3 XaW5 ~B80BuOCWmCeyCn9CfXC9wAoH7oW5oZ3oc02c ~CW0DGXDuyE13EXbEPuEI7DQeBx88hS4hc03c)", "on": 73, "socket": "+x0", "by": "base", "paint": "#004225"},
     {"part": "Hull Loft (triml4 XaW5 ~CW0DGXDuyE13EXbEPuEI7DQeBx88hS4hc03c ~B80BuOCWmCeyCn9CfXC9wAoH7oW5oZ3oc02c)", "on": 73, "socket": "-x0", "by": "base", "paint": "#004225"},
     {"part": "Hull Loft (triml8 YMW5 ~CW0DGXDuyE13EXbEPuEI7DQeBx88hS4hc03c =)", "on": 74, "socket": "-x0", "by": "base", "paint": "#c8102e"},
     {"part": "Hull Loft (triml5 XaWO ~CW0DGXDuyE13EXbEPuEI7DQeBx88hS4hc03c ~B80BuPCWpCeyCnDCfdCHuC21AgP7If3om02m)", "on": 77, "socket": "+x0", "by": "base", "paint": "#004225"},
     {"part": "Hull Loft (triml7 XaWO ~B80BuPCWpCeyCnDCfdCHuC21AgP7If3om02m ~CW0DGXDuyE13EXbEPuEI7DQeBx88hS4hc03c)", "on": 77, "socket": "-x0", "by": "base", "paint": "#004225"},
-    {"part": "Furled Brolly", "on": 37, "socket": "top", "by": "base"}
+    {"part": "Long Iron Spike", "on": 91, "socket": "front", "by": "base"}
   ],
   "wires": [[35, 36], [36, 30], [80, 100], [100, 96], [106, 103]],
   "hoses": [[104, 105]],

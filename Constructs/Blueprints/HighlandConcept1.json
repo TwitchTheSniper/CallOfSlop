@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front under the hood, inset 1 m, hydraulic/hydraulic, wing 0.5, archetype streamliner, cab style coachbuilt, language streamliner standard 2.02 m, flare 0.02, fastback 0.7, brow 0.60 1 m, tail 0.57 1 m, door right, cab streamliner cab, nose grille, fitting mascot, wear age 1.07 (0 rusty, 3 dirty, 0 sooty, 0 patched, 0 rusted out), body boot, cab enclosed, nose short hood, rear bare, under tub, layout boot 3.3 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Highland Concept 1",
-  "group": "Clan MacSlop",
+  "group": "Highland",
   "description": "A concept car: a short hood, an enclosed cab, a boot behind the cabin, the gun on a pedestal ahead of it. 1 gun.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#33302b"},
@@ -66,9 +66,8 @@
     {"part": "Bar Grille", "on": 57, "socket": "front", "by": "back", "paint": "#1b1714"},
     {"part": "Plate Steel 0.5 m", "weld": {"on": 58, "pos": [0.127, 0.438, -1.103], "rot": [-0.7162, -0.0022, 0.0223, 0.6975]}, "paint": "#2b5a3a"},
     {"part": "Hull Loft (decoO UsV_)", "on": 57, "socket": "top", "by": "base"},
-    {"part": "Pipe Box", "on": 32, "socket": "top", "by": "base"},
-    {"part": "Square Beam 0.5 m", "on": 29, "socket": "+y1", "by": "-z", "paint": "#33302b"},
-    {"part": "Wee Keg", "on": 62, "socket": "+z", "by": "base"}
+    {"part": "Traffic Cone", "on": 32, "socket": "top", "by": "base"},
+    {"part": "Satellite Dish", "on": 37, "socket": "+x", "by": "base"}
   ],
   "wires": [[30, 31], [31, 25], [46, 56], [56, 48]],
   "links": [

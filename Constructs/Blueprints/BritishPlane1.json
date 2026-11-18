@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "British Plane 1",
-  "group": "Ministry of Slop",
+  "group": "British",
   "description": "A single-engined low-wing plane on tricycle gear, T-tail. Shift and Ctrl set the throttle, S lifts the nose, A and D bank and turn.",
   "steps": [
     {"part": "Frame Block", "paint": "#004225"},

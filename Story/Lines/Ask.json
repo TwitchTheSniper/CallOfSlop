@@ -1,0 +1,11 @@
+{
+  // The stock asks anyone can be asked (Topics/General.json: "What's this place?", "What do you do here?" and "Any
+  // advice?" answer through AskPlace, AskSelf and AskAdvice), for whoever has no rule of their own. They were in
+  // Colony.json, which went with the penal colony (2026-11-17, docs/removals-notes.md). Words change nothing.
+  "about": "anyone answering the stock asks",
+  "rules": [
+    { "on": "AskPlace", "say": [ "Don't think about it too hard.", "A place. That's about the size of it." ] },
+    { "on": "AskSelf", "say": [ "I get by.", "Same as everyone. Work, soup, sleep." ] },
+    { "on": "AskAdvice", "say": [ "Keep your head down.", "Work hard, say little.", "Don't believe everything you hear on the radio." ] }
+  ]
+}

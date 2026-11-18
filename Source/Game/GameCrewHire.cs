@@ -12,6 +12,9 @@ public enum CrewOrder : byte
     Dismiss, // one of your crew leaves
     HoldFire, // the whole crew of that body: hold fire
     FireAtWill, // ... fire at will
+    Interrogate, // faction-controllers.md phase 2: question a prisoner officer (an admiral or a captain) for intelligence (GameCrewFleet.cs)
+    Ransom, // ... send a prisoner officer back to its power for credits
+    Interrogator, // ... one of your hands becomes your Interrogator (or back to a spare)
 }
 
 /// <summary>
@@ -295,6 +298,10 @@ public sealed partial class Game
                 return CrewPrisoner(p, body, uid, "drop");
             case CrewOrder.Hire:
                 return CrewHire(p, body, uid);
+            case CrewOrder.Interrogate:
+                return CrewInterrogate(p, body, uid);
+            case CrewOrder.Ransom:
+                return CrewRansom(p, body, uid);
         }
         if (Constructs.Get(body) is not { } c || Crew.ShipOf(body) is not { Own: true } s)
             return "no crew of yours aboard that";
@@ -309,6 +316,8 @@ public sealed partial class Game
                 Crew.Release(m, this);
                 s.SeatsDirty = true;
                 return null;
+            case CrewOrder.Interrogator:
+                return CrewMakeInterrogator(s, uid);
             case CrewOrder.HoldFire:
             case CrewOrder.FireAtWill:
                 s.HoldFire = op == CrewOrder.HoldFire;
@@ -326,7 +335,7 @@ public sealed partial class Game
         public ushort Body;
         public byte Owner;
         public bool Own, Prize, HoldFire;
-        public readonly List<(uint Uid, string Name, CrewJob Job, CrewState State, byte Hp, byte Fac)> Members = new(CrewWorld.MaxCrewPerBody);
+        public readonly List<(uint Uid, string Name, CrewJob Job, CrewState State, byte Hp, byte Fac, bool Officer)> Members = new(CrewWorld.MaxCrewPerBody);
     }
 
     /// <summary>Client (and the host): the rosters of own crews and prizes (<see cref="Msg.CrewRoster"/>).</summary>
@@ -355,6 +364,9 @@ public sealed partial class Game
         }
     }
 
+    /// <summary>The last crew job (a roster's job byte is capped by it, so a new job is never read as another).</summary>
+    private static readonly CrewJob LastJob = Enum.GetValues<CrewJob>().Max();
+
     private void WriteRoster(CrewShip s, Construct c)
     {
         var n = 0;
@@ -367,7 +379,7 @@ public sealed partial class Game
             var m = s.Members[k];
             if (Crew.State[m] == CrewState.Dead)
                 continue;
-            _w.U32(Crew.Uid[m]).U16(Crew.Name[m]).U8((byte)Crew.Job[m]).U8((byte)Crew.State[m]).U8((byte)Math.Clamp(Crew.Health[m] / CrewWorld.MemberHealth * 255, 0, 255)).U8(Crew.Fac[m]);
+            _w.U32(Crew.Uid[m]).U16(Crew.Name[m]).U8((byte)((byte)Crew.Job[m] | (_officers.ContainsKey(Crew.Uid[m]) ? 0x80 : 0))).U8((byte)Crew.State[m]).U8((byte)Math.Clamp(Crew.Health[m] / CrewWorld.MemberHealth * 255, 0, 255)).U8(Crew.Fac[m]);
         }
     }
 
@@ -404,7 +416,12 @@ public sealed partial class Game
         (v.Owner, v.Own, v.Prize, v.HoldFire) = (owner, (flags & 1) != 0, (flags & 2) != 0, (flags & 4) != 0);
         v.Members.Clear();
         for (var k = 0; k < n; k++)
-            v.Members.Add((r.U32(), CrewNames.Of(r.U16()), (CrewJob)Math.Min((int)r.U8(), (int)CrewJob.Builder), (CrewState)Math.Min((int)r.U8(), (int)CrewState.Scuttling), r.U8(), r.U8()));
+        {
+            var uid = r.U32();
+            var name = CrewNames.Of(r.U16());
+            var jb = r.U8();
+            v.Members.Add((uid, name, (CrewJob)Math.Min(jb & 0x7F, (int)LastJob), (CrewState)Math.Min((int)r.U8(), (int)CrewState.Scuttling), r.U8(), r.U8(), (jb & 0x80) != 0)); // (job byte bit 7: an officer prisoner, protocol 346)
+        }
     }
 
     /// <summary>Host: a roster that went (the crew disbanded): clients drop it.</summary>

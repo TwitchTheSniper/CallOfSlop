@@ -5,13 +5,11 @@ namespace CallOfSlop;
 
 /// <summary>
 /// The window tool's tour actions (a play-test pass: tools/playtest/tour.ps1): the camera to named places in one run, each
-/// pictured and its frame rate read. <c>places</c> prints where the colony's buildings and the outposts are;
+/// pictured and its frame rate read. <c>places</c> prints where the player is;
 /// <c>view TARGET | DIST,UP,BEARING</c> puts the eye DIST m out from TARGET on a compass bearing (degrees from north) and UP m
-/// above it, looking at it, where TARGET is a colony building's blueprint name ("Watchtower"), <c>outpost N</c> (from 1),
-/// <c>geo LAT,LON</c> (the ground there, on a planetoid) or <c>X,Y,Z</c>; <c>perf N [LABEL]</c> times the next N frames
-/// (mean, frames a second, the 99th percentile and the worst); <c>pace</c> prints how long the induction and the first duty
-/// take at the least, step by step (GamePace.cs). <c>--uncapped</c> turns VSync and every frame cap off so the
-/// numbers are the game's own.
+/// above it, looking at it, where TARGET is <c>body N</c>, <c>geo LAT,LON</c> (the ground there,
+/// on a planetoid) or <c>X,Y,Z</c>; <c>perf N [LABEL]</c> times the next N frames (mean, frames a second, the 99th percentile
+/// and the worst). <c>--uncapped</c> turns VSync and every frame cap off so the numbers are the game's own.
 /// </summary>
 public static partial class Program
 {
@@ -20,7 +18,7 @@ public static partial class Program
     private static long _wsPerfLast;
     private static readonly List<double> _wsPerfMs = [];
 
-    private static bool WsTourKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "places" or "view" or "perf" or "skip" or "open" or "what" or "pace" or "errand";
+    private static bool WsTourKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "places" or "view" or "perf" or "skip" or "open" or "what";
 
     private static void WsTourSettings(string[] args)
     {
@@ -69,38 +67,8 @@ public static partial class Program
                 PerfBench.Begin(_wsPerfLabel); // (the profiler on over the same frames: PerfBench.cs)
                 return true;
             }
-            case "pace": // the induction's and the first duty's floor, step by step, with no player (GamePace.cs)
-                g.PaceEstimate(WsSay);
-                return true;
-            case "errand": // "errand ID": host, an errand started as its storylet's hook starts it (GameErrands.cs); "errand": where it stands; "errand at": the eye 2.5 m from its marker
-                if (arg.Equals("at", StringComparison.OrdinalIgnoreCase))
-                {
-                    if (!g.ErrandHasTarget || g.Local is not { } em)
-                    {
-                        WsFail("errand at: no marker");
-                        return true;
-                    }
-                    var t = g.ErrandTarget;
-                    var from = t + Vector3.Normalize(new Vector3(em.Eye.X - t.X, 0, em.Eye.Z - t.Z) + new Vector3(1e-4f, 0, 0)) * 2.5f + new Vector3(0, 1.2f, 0);
-                    WsEyeTo(g, em, from);
-                    WsLook(g, from, t);
-                    _wsWait = 3;
-                    return true;
-                }
-                if (arg.Length > 0 && !g.ErrandDevStart(arg))
-                {
-                    WsFail($"errand: no errand \"{arg}\", or not the host");
-                    return true;
-                }
-                WsSay($"[ws] errand: {g.ErrandDevState()}");
-                _wsWait = 30;
-                return true;
-            case "skip": // the survival opening skipped, as its key does; "skip induction": the induction too, as its button does
+            case "skip": // the survival opening skipped, as its key does
                 g.OpeningSkip();
-                if (arg.Equals("induction", StringComparison.OrdinalIgnoreCase))
-                    g.TutorialAsk(TutorialOp.Skip);
-                if (arg.Equals("duty", StringComparison.OrdinalIgnoreCase))
-                    g.QuarryAskSkip(); // (the first Ministry duty, as the Esc menu's button: it holds the player's storylets till it ends)
                 _wsWait = 90;
                 return true;
             case "open": // a window as its key opens it: "open logbook [Records|Paths|Technologies]", "open parts", "open factions"
@@ -139,7 +107,7 @@ public static partial class Program
                 }
                 var dir = g.LookDir(g.LookYaw + dr * MathF.PI / 180, g.LookPitch + du * MathF.PI / 180);
                 WsSay(g.Constructs.Raycast(me.Eye, dir, 200f, out var hit, look: true)
-                    ? $"[what] {arg}: {g.ColonyBuildingsList().FirstOrDefault(b => b.Body == hit.Body.Id).Name ?? $"construct {hit.Body.Id}"}, part {hit.Part} {hit.Body.DefOf(hit.Part).Name}, {hit.Distance:0.0} m"
+                    ? $"[what] {arg}: construct {hit.Body.Id}, part {hit.Part} {hit.Body.DefOf(hit.Part).Name}, {hit.Distance:0.0} m"
                     : $"[what] {arg}: no construct within 200 m");
                 return true;
             }
@@ -154,11 +122,6 @@ public static partial class Program
                     return $"{p.X:0},{p.Y:0},{p.Z:0} (lat {MathF.Asin(d.Y) * 180 / MathF.PI:0.000}, lon {(MathF.Atan2(d.X, d.Z) * 180 / MathF.PI + 360) % 360:0.000})";
                 }
                 WsSay($"[place] player at {Where(me.Position)}");
-                foreach (var (name, body) in g.ColonyBuildingsList())
-                    if (g.Constructs.Get(body) is { } c)
-                        WsSay($"[place] {name}: {Where(c.WorldCom)}, radius {c.Radius:0} m, {c.PartCount} parts");
-                for (var i = 0; i < g.OutpostCount; i++)
-                    WsSay($"[place] outpost {i + 1}: {Where(g.OutpostMiddle(i))}");
                 WsSay($"[place] bodies {g.Constructs.Bodies.Count}, players {g.Players.Count}");
                 return true;
             }
@@ -171,7 +134,7 @@ public static partial class Program
                 if (nums.Length != 3 || !nums.Select((s, i) => float.TryParse(s, System.Globalization.CultureInfo.InvariantCulture, out v[i])).All(b => b)
                     || WsTourTarget(g, what) is not { } target)
                 {
-                    WsFail($"view TARGET | DIST,UP,BEARING (TARGET: a colony building, outpost N, geo LAT,LON or X,Y,Z): \"{arg}\"");
+                    WsFail($"view TARGET | DIST,UP,BEARING (TARGET: body N, geo LAT,LON or X,Y,Z): \"{arg}\"");
                     return true;
                 }
                 GravityFrames.Frame(target, out var right, out var up, out var north);
@@ -191,8 +154,6 @@ public static partial class Program
 
     private static Vector3? WsTourTarget(Game g, string what)
     {
-        if (what.StartsWith("outpost ", StringComparison.OrdinalIgnoreCase))
-            return int.TryParse(what[8..], out var i) && i >= 1 && i <= g.OutpostCount ? g.OutpostMiddle(i - 1) : null;
         if (what.StartsWith("geo ", StringComparison.OrdinalIgnoreCase))
         {
             if (World.Map.Planetoid is not { } pl || what[4..].Split(',') is not [var la, var lo]
@@ -204,22 +165,6 @@ public static partial class Program
         }
         if (what.StartsWith("body ", StringComparison.OrdinalIgnoreCase))
             return ushort.TryParse(what[5..], out var id) && g.Constructs.Get(id) is { } bc ? bc.WorldCom : null;
-        if (WsVec(what) is { } p)
-            return p;
-        return g.ColonyBuilding(what) is { } c ? c.WorldCom : null;
-    }
-}
-
-public sealed partial class Game
-{
-    /// <summary>The colony's buildings by blueprint name (the window tool's <c>places</c>), the colony and barracks first.</summary>
-    internal IEnumerable<(string Name, ushort Body)> ColonyBuildingsList()
-    {
-        if (_opColony != 0)
-            yield return ("Penal Colony", _opColony);
-        if (_opBarracks != 0)
-            yield return ("Colony Barracks", _opBarracks);
-        foreach (var b in _cbBuilt)
-            yield return b;
+        return WsVec(what);
     }
 }
