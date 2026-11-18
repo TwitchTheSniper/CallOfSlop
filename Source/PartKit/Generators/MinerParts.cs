@@ -744,9 +744,7 @@ public sealed class MinerParts : IPartGenerator
         Hidden(p, Cx - 0.1, 0.0, ZT - 0.1, Cx + 0.1, 0.2, ZT);
         Sock(p, "ramp", Cx, 0.1, ZT, "+z");
         Sock(p, "reactor", Cx - 2.5, Ft0, 20.0, "+y");
-        Sock(p, "battery0", Cx - 3.85, Ft0, 18.6, "+y");
-        Sock(p, "battery1", Cx - 3.85, Ft0, 18.95, "+y");
-        Sock(p, "battery2", Cx - 3.85, Ft0, 19.3, "+y");
+        Sock(p, "battery", Cx - Lw + 0.26, Ft0, 18.95, "+y"); // (its Ship Battery M, back to the port wall: Karl, 2026-11-18)
         Sock(p, "board", Cx - Lw, Ft0 + 0.9, 21.9, "+x");
         Sock(p, "pipes", Cx - Lw, Ft0 + 2.75, 20.6, "+x");
         Sock(p, "panel", Cx + Lw, Ft0 + 0.6, 19.2, "-x");
@@ -2003,8 +2001,7 @@ public sealed class MinerParts : IPartGenerator
         Door(bp, bay, "doorAft");
         // The cargo bay aft: engineering along its port side, the suit lockers, the ramp.
         bp.Hang("Magpie Power Plant", eng, "reactor", "bottom");
-        for (var i = 0; i < 3; i++)
-            bp.Hang("Battery", eng, $"battery{i}", "-y");
+        bp.HangTurned("Ship Battery M", eng, "battery", "bottom", BuildingParts.RY270);
         bp.Hang("Power Board", eng, "board", "back");
         bp.Hang("Pipe Bank", eng, "pipes", "back");
         bp.Hang("Engineer's Panel", eng, "panel", "back");

@@ -1,17 +1,34 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Dray Keel",
-  "description": "The Dray's keel: the flat underside under the crew section, the hold and the drive room, with the boarding shaft, the cargo well and the tracks its belly doors slide on.",
+  "description": "The Dray's keel: the flat underside under the crew section, the hold and the drive room, with the fuel tankage in the void under the floors, the boarding shaft, the cargo well and the tracks its belly doors slide on, and the lift jets' and legs' mounts.",
   "group": "Ship",
   "section": "Dray hauler",
-  "role": "frame",
+  "role": "fueltank",
   "tool": "welder",
+  "fuelTank": {
+    "capacity": 3000
+  },
   "mass": 3750.0,
   "health": 31500,
   "armour": 45,
   "material": "steel",
   "color": "#264b67",
   "attachSeconds": 10.0,
+  "ports": [
+    {
+      "name": "Fuel out",
+      "type": "pipe",
+      "dir": "out",
+      "fluid": "fuel",
+      "at": [
+        6.875,
+        -0.725,
+        33.063
+      ],
+      "face": "+z"
+    }
+  ],
   "boxes": [
     {
       "min": [

@@ -528,11 +528,10 @@
       "by": "back"
     },
     {
-      "part": "Battery",
+      "part": "Ship Battery S",
       "on": 11,
       "socket": "battery",
-      "by": "-z",
-      "paint": "#3a3d3f"
+      "by": "wall"
     },
     {
       "part": "Bulkhead Light",

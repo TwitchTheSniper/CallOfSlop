@@ -69,13 +69,14 @@ public static class ThirdPerson
 
     /// <summary>
     /// A seat's orbit point in the world, for the construct at <paramref name="pos"/> and <paramref name="rot"/>: the
-    /// centre of mass raised by half the construct's height, moved by the seat's settings (in the construct's frame, z forward).
+    /// centre of mass raised by half the construct's height (a ship's flight seat: not raised), moved by the seat's settings (in the construct's frame, z forward).
     /// </summary>
     public static Vector3 SeatPoint(Construct c, int part, Vector3 pos, Quaternion rot, out float dist, out float zoomMin, out float zoomMax, out bool follow)
     {
         ref var sp = ref c.Parts[part];
         var d = sp.D;
-        var local = c.Com + new Vector3(0, (c.LocalMax.Y - c.LocalMin.Y) * 0.5f, 0)
+        var flight = ConstructFlight.ShipKeyed(c) && (part == c.DriveSeat || ConstructFlight.MouseSteers(c, part)); // (a ship's flight seat: round its centre of mass itself, Karl 2026-11-18)
+        var local = c.Com + new Vector3(0, flight ? 0f : (c.LocalMax.Y - c.LocalMin.Y) * 0.5f, 0)
                     + new Vector3(ConstructConfig.Get(sp, d, CfgKey.OrbitX, 0), ConstructConfig.Get(sp, d, CfgKey.OrbitY, 0), -ConstructConfig.Get(sp, d, CfgKey.OrbitZ, 0));
         dist = ConstructConfig.Get(sp, d, CfgKey.OrbitDist, 10);
         zoomMin = ConstructConfig.Get(sp, d, CfgKey.ZoomMin, 3);

@@ -56,8 +56,33 @@ girders) along the hold's roof, a sensor mast, radiators over the drive room.
   nose tip) and one at the stern (z 52, and two on the transom): up, down, out to each side and along the ship, two of
   each, so it can slide any way and turn on any axis.
 
+## Flying, power and the containers (2026-11-18)
+
+- **Fuel.** The keel is the tank (24,000 l, shared over its bands, each with a Fuel out), the bow 2,000 l and the stern 6,000 l, so
+  every jet and drive takes fuel from the piece it hangs on. A pipe isn't needed.
+- **The bridge.** Two Flight Couches face the view screen; the Dray Flight Computer (40 MN m gyro, Ship keys, the mouse aims the
+  nose) stands between them and the screen, wired to the pilot's couch. `--flight-check` climbs 7 m in 2 s, hovers level at 3.15
+  times its weight empty. Its pitch is slow (43 degrees in 6 s against the check's 55), as the Zero Day's is (33); a stiffer gyro
+  made it roll over.
+- **Lift and legs.** Six Dray Lift Jets (2 MN each, whole parts with nothing inside) on pads under the keel's flat, inside the
+  skids, clear of the well (z 16, 24, 42); six Dray Landing Legs outboard of the skids stand the keel 2.9 m off the ground (`Ground`),
+  room for a container under the well. Loaded with 14 containers of 30 t it still lifts about twice its weight.
+- **Getting in.** The Dray Boarding Ladder runs from the ground up the belly shaft into the airlock (`--ladder-check`: up and down).
+  `--check-building` doesn't follow ladders, so it still marks the decks cut off.
+- **Power.** The Dray Power Plant (600 kW, no fuel) on the drive room's deck starboard of the door, the Power Board beside it, three
+  Batteries on the engine floor's starboard walkway. Lamps: two on the bridge and two in the mess and passage, each pair on a
+  Bakelite Switch; eight down the hold's walls and two in the drive room with no switch (a wire reaches 8 m; unwired lamps light).
+- **Containers.** A **Cargo Container 20 ft** (`Constructs/Parts/Cargo`, generic, in the Storage tab; 2.3 t, origin at its roof's
+  middle) holds parts and bulk in its inside, by hand or by chute through the ports on its doors; `"container": true`. Three frozen
+  Cargo Volumes (8 m across, 3.4 m high; rows 1-2, rows 3-4, row 5) hold whatever settles in them, so containers ride with the ship.
+  It starts with four empty ones in rows 1 and 2 (a blueprint's cargo stands within 30 m of its origin).
+- **The crane** has a **Lifter Cab** at the hold's forward end, starboard. From the cab, F on a container under the hook takes the
+  **body itself**: it hangs frozen on the hook (`ConstructLifters.CabTakeBody`, posed by `PoseBodies` as a submodule carry), so what
+  it holds goes with it; F again lets it fall free at the ship's speed, and the cargo volume catches it once it settles. A container
+  in the Dray's own frozen hold is let out of it first. Over the crane's 30 t (the body's mass with its load) it says "too heavy".
+  Leaving the cab lets it go where it hangs. A save mid-carry keeps it at the hook's place (`CarryEnd`).
+
 ## Not yet
 
-Legs, the boarding ladder, a seat and flight stabiliser, lamps, wiring and fittings (Karl's scope for the first cut). Without legs and a
-boarding ladder `--check-building` can't reach the decks from the ground; its map shows every room joined through its doors.
-No container part, no power for the crane, no cargo storage volumes.
+A Survival recipe path other than the Assembler for the new parts, ship-to-ship transfer, and NPC haulers using it. `--check-building`
+can't follow the boarding ladder.

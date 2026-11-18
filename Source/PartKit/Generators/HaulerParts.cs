@@ -82,6 +82,27 @@ public sealed class HaulerParts : IPartGenerator
     /// <summary>Attitude jets (Karl, 2026-11-16: it flips and burns on its drives, with small jets every way for small moves): a
     /// cluster at the bow and one at the stern, each up, down, out to both sides and along the ship, Heavy RCS Thrusters on pads.</summary>
     private const string Rcs = "Heavy RCS Thruster";
+
+    // ---- flying it (2026-11-18: the gaps after the first cut): fuel in the keel, bow and stern, a pilot's couch and the flight
+    // computer on the bridge, a power plant and batteries in the drive room, lift jets and long legs under the keel, a ladder up
+    // the boarding shaft, lamps, and three frozen Cargo Volumes over the slots so the containers ride with it.
+
+    /// <summary>Where the legs stand: 2.9 m under the keel's flat, room for a container (2.59 m tall) under it to go up the well.</summary>
+    private static double Ground => Mid[0].Item2 - 2.9;
+    private const double LiftForce = 2000000, JetScale = 1.3, Burn = 2.5;
+    /// <summary>The lift jets under the keel's flat: three pairs inside the skids, clear of the well and its tracks.</summary>
+    private static readonly (double X, double Z)[] LiftAt = [(-1.75, 16.0), (1.75, 16.0), (-1.75, 24.0), (1.75, 24.0), (-1.75, 42.0), (1.75, 42.0)];
+    /// <summary>The legs: three pairs outboard of the skids.</summary>
+    private static readonly (double X, double Z)[] LegAt = [(-3.35, 19.0), (3.35, 19.0), (-3.35, 36.0), (3.35, 36.0), (-3.35, 44.5), (3.35, 44.5)];
+    private const double PadProud = 0.1; // a jet's or leg's mount under the flat
+    private const int KeelFuel = 24000, BowFuel = 2000, SternFuel = 6000; // litres
+    /// <summary>The Cargo Volumes over the slots (at most 8 m a side): rows 1-2, rows 3-4 (the side slots of row 3), row 5. Each control box
+    /// on the port walkway's floor; the box's middle z (each holds its rows' containers' middles), its length.</summary>
+    private static readonly (double Box, double Mid, double Len)[] Volumes = [(20.4, 20.4, 8.0), (33.0, 33.2, 8.0), (42.8, 42.8, 6.4)];
+    private const double VolX = -(Hw - 0.35);
+    /// <summary>The containers it starts with (empty): lane, row (from 0). A blueprint's cargo stands within 30 m of its origin (the
+    /// keel's), so the first two rows.</summary>
+    private static readonly (int Lane, int Row)[] StartBoxes = [(0, 0), (2, 0), (0, 1), (2, 1)];
     private const double BowRcsZ = 3.0, SternRcsZ = 52.0, RcsPadW = 0.6;
 
     /// <summary>A pad for an attitude jet: a square solid standing proud metres off the surface point (clear of the armour on it), sunk
@@ -97,6 +118,14 @@ public sealed class HaulerParts : IPartGenerator
         at[axis] += s * proud;
         Solid(p, lo[0], lo[1], lo[2], hi[0], hi[1], hi[2], Frame, "dirty steel");
         Sock(p, name, at[0], at[1], at[2], dir);
+    }
+
+    /// <summary>A mount under the keel's flat (bottom y): a square solid half wide, sunk 11 cm into the hull and standing PadProud
+    /// proud; its underside takes the socket.</summary>
+    private static void MountPad(Part p, string name, double x, double y, double z, double half)
+    {
+        Solid(p, x - half, y - PadProud, z - half, x + half, y + 0.11, z + half, Frame, "dirty steel");
+        Sock(p, name, x, y - PadProud, z, "-y");
     }
 
     /// <summary>The x of facet k's surface (side s) at height y and station z (between its two profile points).</summary>
@@ -627,7 +656,7 @@ public sealed class HaulerParts : IPartGenerator
 
     private static Part Keel()
     {
-        var p = Big("Dray Keel", "The Dray's keel: the flat underside under the crew section, the hold and the drive room, with the boarding shaft, the cargo well and the tracks its belly doors slide on.", color: Armour2);
+        var p = Big("Dray Keel", "The Dray's keel: the flat underside under the crew section, the hold and the drive room, with the fuel tankage in the void under the floors, the boarding shaft, the cargo well and the tracks its belly doors slide on, and the lift jets' and legs' mounts.", "fueltank", Armour2);
         double[] zs = [ZFront, 11.25, 13.75, ZHold, .. Rows[1..], ZEngEnd];
         for (var i = 0; i < zs.Length - 1; i++)
         {
@@ -705,6 +734,12 @@ public sealed class HaulerParts : IPartGenerator
             var zi = z0 < Well.Z0 ? z1 : z0;
             Detail(p, Cx - 3.1, TrackY + 0.012, zi - 0.004, Cx + 3.1, wy - 0.002, zi + 0.004, Hazard, "hazard paint");
         }
+        // The lift jets' and the legs' mounts: square pads under the flat.
+        for (var i = 0; i < LiftAt.Length; i++)
+            MountPad(p, $"lift{i}", Cx + LiftAt[i].X, Mid[0].Item2, LiftAt[i].Z, 0.5);
+        for (var i = 0; i < LegAt.Length; i++)
+            MountPad(p, $"leg{i}", Cx + LegAt[i].X, Mid[0].Item2, LegAt[i].Z, 0.4);
+        p.Set(("fuelTank", Kw(("capacity", KeelFuel)))); // (shared out over its bands, each with its Fuel out: SplitBands)
         Sock(p, "wellDoorL", Cx - 0.73, TrackY, Well.Z0 - 0.15, "-y");
         Sock(p, "wellDoorR", Cx + 0.73, TrackY, Well.Z0 - 0.15, "-y");
         return p.Stats(30000, 70000, 45, 30.0);
@@ -761,6 +796,9 @@ public sealed class HaulerParts : IPartGenerator
         Sock(p, "mmuDock", Cx + Lw, Ft0 + 0.125, 10.6, "-x");
         Sock(p, "lifeSupport", Cx - Lw, Ft0 + 0.125, 5.7, "+x"); // (the ship's air: the unit and a tank on the mess's port wall, forward)
         Sock(p, "o2Tank0", Cx - Lw, Ft0 + 0.125, 6.55, "+x");
+        Sock(p, "lampMess", Cx - Lw, Ft0 + 2.3, 8.6, "+x");
+        Sock(p, "lampPassage", Cx + 1.125, Ft0 + 2.3, 8.6, "-x"); // (the passage's starboard wall, between the store's door and the airlock's)
+        Sock(p, "switchMess", Cx - 1.125, Ft0 + 1.3, 7.6, "-x");
         Sock(p, "boarding", BellyHatch.X0 + 0.625, Ft0 - 0.125, BellyHatch.Z1, "-z");
         foreach (var (what, z) in new[] { ("lower deck front", ZFront - 0.25), ("lower deck back", ZHold) })
             foreach (var y in new[] { 0.0, Ft1 })
@@ -815,6 +853,13 @@ public sealed class HaulerParts : IPartGenerator
             foreach (var (ya, yb) in new[] { (Ceil0, 5.0), (5.0, Roof) })
                 VoidT(p, za, zb, ya, yb, xin, za == ZFront ? 0.0 : 0.004, 0.004);
         DoorSock(p, "doorBridge", true, Cx - 0.75, ZCab, Ft1);
+        // The bridge's couches facing the view screen, the flight computer between them and the screen; its lamps and their switch.
+        Sock(p, "pilot", Cx - 0.8, Ft1, 6.95, "+y");
+        Sock(p, "copilot", Cx + 0.8, Ft1, 6.95, "+y");
+        Sock(p, "computer", Cx, Ft1, 5.9, "+y");
+        Sock(p, "lampBridgeL", Cx - UwF, Ft1 + 2.3, 7.4, "+x");
+        Sock(p, "lampBridgeR", Cx + UwF, Ft1 + 2.3, 7.4, "-x");
+        Sock(p, "switchBridge", Cx + 1.3, Ft1 + 1.3, ZCab - 0.125, "-z");
         DoorSock(p, "doorCabinA", false, 9.6, Cx - 0.875, Ft1);
         DoorSock(p, "doorCabinB", false, 9.6, Cx + 0.875, Ft1);
         DoorSock(p, "doorHead", false, 12.0, Cx + 1.125, Ft1);
@@ -932,7 +977,17 @@ public sealed class HaulerParts : IPartGenerator
         if (i0 == 0)
         {
             DoorSock(p, "doorHold", true, Cx - 0.625, ZHold, Ft0);
+            Sock(p, "cab", Cx + 4.75, Ft0, 14.5, "+y"); // (the Lifter Cab at the hold's forward end, starboard: the crane's driver)
         }
+        // Lamps on both walls, forward of each row's frame (not in row 3: the side doors).
+        for (var r = i0; r < i1; r++)
+            if (Rows[r] != Well.Z0)
+                foreach (var sd in new[] { -1, 1 })
+                    Sock(p, $"lamp{(sd < 0 ? "L" : "R")}{r}", Cx + sd * Hw, 3.6, (Rows[r] + Rows[r + 1]) / 2 + 1.6, sd < 0 ? "+x" : "-x");
+        // The Cargo Volumes' control boxes, on the port walkway's floor.
+        for (var v = 0; v < Volumes.Length; v++)
+            if (Volumes[v].Box >= z0 && Volumes[v].Box < z1)
+                Sock(p, $"volume{v}", Cx + VolX, Ft0, Volumes[v].Box, "+y");
         if (i1 == Rows.Length - 1)
             DoorSock(p, "doorDrive", true, Cx - 0.75, ZHoldEnd, Ft0);
         foreach (var z in new[] { plan.Z0, plan.Z1 })
@@ -981,6 +1036,15 @@ public sealed class HaulerParts : IPartGenerator
         }
         Sock(p, "stair", Cx - 0.375, Ft0, ZPlat - 1.375, "+y"); // (a 1.5 m flight's foot: it rises aft to the engine floor's edge)
         Sock(p, "panel", Cx - Ew, Ft0 + 0.6, PanelZ, "+x");
+        // The power: the plant on the deck starboard of the door, the Power Board on the forward wall between them, three batteries on
+        // the engine floor's starboard walkway against the wall; lamps on both walls over the engine floor.
+        Sock(p, "plant", Cx + 3.25, Ft0, 46.95, "+y");
+        Sock(p, "board", Cx + 1.6, Ft0, ZHoldEnd + 0.3, "+y");
+        for (var i = 0; i < 3; i++)
+            Sock(p, $"battery{i}", Cx + Ew - 0.2, Fe, 49.0 + i * 0.8, "+y");
+        Sock(p, "lampDriveL", Cx - Ew, Fe + 2.1, 50.6, "+x");
+        Sock(p, "lampDriveR", Cx + Ew, Fe + 2.1, 50.6, "-x");
+
         foreach (var y in new[] { 0.0, Ft1, CeilE + 0.25 })
             MustFit("drive room", plan.Z1, Ew + 0.25, y);
         return p.Stats(11000, 24000, 30, 15.0);
@@ -990,7 +1054,8 @@ public sealed class HaulerParts : IPartGenerator
 
     private static Part Bow()
     {
-        var p = Big("Dray Bow", "The Dray's bow: a blunt, faceted cab nose, armoured over the sealed bridge, with a ground scanner under its chin.", color: Armour);
+        var p = Big("Dray Bow", "The Dray's bow: a blunt, faceted cab nose, armoured over the sealed bridge, with a ground scanner under its chin and the bow jets' tank behind it.", "fueltank", Armour);
+        p.Set(("fuelTank", Kw(("capacity", BowFuel))));
         foreach (var (za, zb) in new[] { (Zt, Zc), (Zc, ZFront) })
         {
             Facet(p, 0, 1, za, zb, Armour2, "plated steel");
@@ -1037,6 +1102,7 @@ public sealed class HaulerParts : IPartGenerator
         foreach (var (za, zb) in new[] { (Zt + 2.0, Zc), (Zc, ZFront - 0.25) })
             foreach (var (ya, yb) in new[] { (At(za)[0].Y + 0.05, 1.5), (1.5, 3.2), (3.2, 5.0), (5.0, 6.4) })
                 VoidT(p, za, zb, ya, yb, 0, 0.004, zb == ZFront - 0.25 ? 0.0 : 0.004);
+        FuelPort(p, 2.0);
         return p.Stats(9000, 24000, 40, 15.0);
     }
 
@@ -1101,7 +1167,8 @@ public sealed class HaulerParts : IPartGenerator
 
     private static Part SternPart()
     {
-        var p = Big("Dray Stern", "The Dray's stern: the hull closing over the drive room, and the transom its two big nozzles bolt to, on shrouds. Behind each, on the transom bulkhead's inner face, its engine runs forward into the drive room.", color: Armour);
+        var p = Big("Dray Stern", "The Dray's stern: the hull closing over the drive room, and the transom its two big nozzles bolt to, on shrouds, with the drives' day tank in its void. Behind each, on the transom bulkhead's inner face, its engine runs forward into the drive room.", "fueltank", Armour);
+        p.Set(("fuelTank", Kw(("capacity", SternFuel))));
         Works.Mount(p); // (the nozzles' mount: each one's engine bolts to the bulkhead's inner face on its axis)
         foreach (var s in new[] { -1, 1 })
         {
@@ -1164,6 +1231,7 @@ public sealed class HaulerParts : IPartGenerator
             Sock(p, $"drive{i}", x, DriveY, Stern + 0.43, "+z");
             Sock(p, $"engine{i}", x, DriveY, StIn, "-z");
         }
+        FuelPort(p, DriveY);
         return p.Stats(12000, 32000, 45, 20.0);
     }
 
@@ -1275,6 +1343,174 @@ public sealed class HaulerParts : IPartGenerator
         p.Sock(sockName, sockAt, sockDir);
         p.Set(("ladder", rise));
         return p.Stats(60 + rise * 12, 400, 6, 3.0);
+    }
+
+    // ---- the flying parts: lift jets, legs, the power plant, the flight computer (the Magpie's kind, in the Dray's colours and size)
+
+    /// <summary>A lift jet under the keel: a squat housing on the mount, the bell down. Whole, with nothing inside (only main drives
+    /// have engines, Karl 2026-11-16). Origin at its root; the bell along -y.</summary>
+    private static Part LiftJet()
+    {
+        const double k = JetScale;
+        var p = new Part("Dray Lift Jet", Small, Section, $"A lift jet: {LiftForce / 1e6:0.0} MN straight down. Six of them under the Dray's keel hold it up loaded, from the keel's tanks.", role: "thruster", tool: "wrench", material: "steel", color: Frame, group: Group);
+        double[] R(double r, double y, int i, int n = 8)
+        {
+            var an = Math.PI / n + i * 2 * Math.PI / n;
+            return [Py.Round(r * k * Math.Cos(an), 4), Py.Round(y * k, 4), Py.Round(r * k * Math.Sin(an), 4)];
+        }
+        Prism(p, [.. Enumerable.Range(0, 8).Select(i => R(0.55, -0.003, i))], [.. Enumerable.Range(0, 8).Select(i => R(0.48, -0.45, i))], Armour2, "worn paint");
+        Prism(p, [.. Enumerable.Range(0, 8).Select(i => R(0.56, -0.32, i))], [.. Enumerable.Range(0, 8).Select(i => R(0.56, -0.24, i))], Hazard, "hazard paint");
+        (double Y, double R)[] st = [(-0.45, 0.32), (-0.6, 0.27), (-0.9, 0.38), (-1.05, 0.44)];
+        for (var s = 0; s < st.Length - 1; s++)
+            for (var i = 0; i < 8; i++)
+                Quad(p, R(st[s].R, st[s].Y, i), R(st[s].R, st[s].Y, i + 1), R(st[s + 1].R, st[s + 1].Y, i + 1), R(st[s + 1].R, st[s + 1].Y, i), s == 0 ? "#3a3d40" : "#2a2c2e", s == 0 ? "dirty steel" : "soot");
+        Plate(p, [.. Enumerable.Range(0, 8).Select(i => R(0.24, -0.61, i))], "#ffb060", glow: true);
+        p.Add(Box([-0.45 * k, -0.45 * k, -0.45 * k], [0.45 * k, 0, 0.45 * k], hidden: true));
+        p.Add(Box([-0.4 * k, -1.05 * k, -0.4 * k], [0.4 * k, -0.45 * k, 0.4 * k], hidden: true));
+        p.Sock("top", [0, 0, 0], "+y");
+        p.Set(("thruster", Kw(("force", LiftForce), ("spool", 0.6), ("exhaust", "-y"), ("at", Py.L(0, Py.Round(-1.05 * k, 4), 0)), ("burnRate", Py.Round(LiftForce / 1e6 * Burn, 4)))),
+            ("ports", Py.L(BigDriveParts.PipePort("Fuel in", "in", [Py.Round(0.45 * k, 4), Py.Round(-0.2 * k, 4), 0], "+x", "fuel"))));
+        p.Set(("flame", Py.L(Kw(("at", Py.L(0, Py.Round(-1.05 * k, 4), 0)), ("dir", "-y"), ("radius", Py.Round(0.4 * k, 4)), ("length", Py.Round(2.8 * k, 4)), ("kind", "Rocket")))));
+        return p.Stats(1100, 4000, 25, 6.0);
+    }
+
+    /// <summary>A landing leg: a heavy strut and its ram on a broad pad, long enough to stand the keel 2.9 m off the ground.</summary>
+    private static Part Leg()
+    {
+        var p = new Part("Dray Landing Leg", Small, Section, "A landing leg: a heavy strut and its ram on a broad pad. Six stand the Dray 2.9 m off the ground, room for a container under the well.", role: "frame", tool: "welder", material: "steel", color: Frame, group: Group);
+        var bottom = Ground - (Mid[0].Item2 - PadProud); // (the pad's underside, from the mount's)
+        void B(double x0, double y0, double z0, double x1, double y1, double z1, string col, string fin, bool detail = false) =>
+            p.Add(Box([x0, y0, z0], [x1, y1, z1], col, detail: detail, shape: Kw(("finish", fin))));
+        B(-0.36, -0.7, -0.36, 0.36, 0, 0.36, Armour2, "worn paint"); // (the strut's housing)
+        B(-0.365, -0.62, -0.365, 0.365, -0.52, 0.365, Hazard, "hazard paint", true);
+        B(-0.23, bottom + 0.3, -0.23, 0.23, -0.7, 0.23, "#9aa0a4", "chrome"); // (the ram)
+        B(-0.44, bottom + 0.25, -0.44, 0.44, bottom + 0.4, 0.44, Frame, "dirty steel"); // (the ram's foot on its ball)
+        B(-0.75, bottom, -0.75, 0.75, bottom + 0.25, 0.75, Frame, "rubber"); // (the pad)
+        foreach (var x in new[] { -1, 1 })
+            B(x * 0.37, bottom + 0.42, -0.07, x * 0.47, -0.08, 0.07, "#4a4e52", "steel", true); // (the hydraulic lines down each side)
+        p.Sock("top", [0, 0, 0], "+y");
+        return p.Stats(1600, 6000, 30, 8.0);
+    }
+
+    /// <summary>The power plant: a stack of cells in a cage on the drive room's deck, its coolant risers to the ceiling. No fuel.</summary>
+    private static Part PowerPlant()
+    {
+        var p = new Part("Dray Power Plant", Small, Section, "The Dray's power plant: a stack of cells in a cage, 600 kW for the crane, the docks, the lights and the flight computer. No fuel.", role: "generator", tool: "welder", material: "steel", color: Armour, group: Group);
+        double[] O(double x, double y, double z, double r, int i, int n = 8)
+        {
+            var a = Math.PI / n + i * 2 * Math.PI / n;
+            return [Py.Round(x + r * Math.Cos(a), 4), y, Py.Round(z + r * Math.Sin(a), 4)];
+        }
+        void B(double x0, double y0, double z0, double x1, double y1, double z1, string col, string fin, bool detail = false) =>
+            p.Add(Box([x0, y0, z0], [x1, y1, z1], col, detail: detail, shape: Kw(("finish", fin))));
+        B(-0.8, 0, -0.8, 0.8, 0.2, 0.8, Frame, "dirty steel");
+        foreach (var (x, z) in new[] { (-0.38, -0.38), (0.38, -0.38), (-0.38, 0.38), (0.38, 0.38) })
+        {
+            Prism(p, [.. Enumerable.Range(0, 8).Select(i => O(x, 0.2, z, 0.32, i))], [.. Enumerable.Range(0, 8).Select(i => O(x, 1.7, z, 0.32, i))], Armour, "worn paint");
+            Prism(p, [.. Enumerable.Range(0, 8).Select(i => O(x, 1.0, z, 0.34, i))], [.. Enumerable.Range(0, 8).Select(i => O(x, 1.08, z, 0.34, i))], "#80d0ff", "glass", glow: true);
+        }
+        foreach (var (x, z) in new[] { (-0.77, -0.77), (0.77, -0.77), (-0.77, 0.77), (0.77, 0.77) })
+            B(x - 0.04, 0.2, z - 0.04, x + 0.04, 1.9, z + 0.04, Frame, "dirty steel", true);
+        B(-0.81, 1.86, -0.81, 0.81, 1.94, 0.81, Frame, "dirty steel", true);
+        foreach (var (x, col) in new[] { (-0.1, "#a8402c"), (0.1, "#2f6a9a") })
+            B(x - 0.05, 1.94, -0.05, x + 0.05, 2.45, 0.05, col, "painted steel", true);
+        p.Add(Box([-0.74, 0.2, -0.74], [0.74, 1.7, 0.74], hidden: true));
+        B(-0.79, 0.2, -0.812, -0.45, 0.45, -0.79, Hazard, "hazard paint", true);
+        p.Sock("bottom", [0, 0, 0], "-y");
+        p.Set(("generator", Kw(("rate", 600), ("spool", 6), ("fuel", "none"))), ("ports", Py.L(Kw(("name", "Power out"), ("type", "power"), ("dir", "out"), ("at", Py.L(0, 0.1, 0.8)), ("face", "+z")))));
+        return p.Stats(2800, 3500, 25, 10.0);
+    }
+
+    /// <summary>The flight computer: a flight stabilizer with a heavy ship's gyro in a console between the couches and the screen.</summary>
+    private static Part FlightComputer()
+    {
+        const string console = "#22262b";
+        var p = new Part("Dray Flight Computer", Small, Section, "The Dray's flight computer: a flight stabilizer with a heavy hauler's gyro in a console between the couches. Fit it level, its arrow forward.", role: "logic", tool: "wrench", material: "steel", color: console, group: Group);
+        void B(double x0, double y0, double z0, double x1, double y1, double z1, string col, PyDict shape, bool detail = false) =>
+            p.Add(Box([x0, y0, z0], [x1, y1, z1], col, detail: detail, shape: shape));
+        B(-0.45, 0, -0.3, 0.45, 0.85, 0.3, console, Kw(("finish", "plastic")));
+        B(-0.38, 0.42, 0.3, 0.38, 0.76, 0.318, "#78c8e8", Kw(("glow", true)), true); // (its screen faces the couches)
+        for (var i = 0; i < 5; i++)
+            B(-0.3 + i * 0.13, 0.28, 0.3, -0.24 + i * 0.13, 0.34, 0.318, i % 2 == 0 ? "#60e090" : "#f0a830", Kw(("glow", true)), true);
+        B(-0.05, 0.851, -0.22, 0.05, 0.867, 0.1, Hazard, Kw(("finish", "hazard paint")), true); // (the arrow, forward)
+        B(-0.12, 0.851, -0.22, 0.12, 0.867, -0.14, Hazard, Kw(("finish", "hazard paint")), true);
+        p.Sock("bottom", [0, 0, 0], "-y");
+        p.Set(("logic", Kw(("kind", "flightstabilizer"), ("gyro", 40000000))), ("config", FlightParts.Config), ("faces", "forward"), ("faceAxis", "-z"));
+        return p.Stats(300, 600, 8, 3.0);
+    }
+
+    // ---- the container (a generic part, not the Dray's: any crane or player may use one)
+
+    public const string ContainerName = "Cargo Container 20 ft";
+    private const string ContainerOut = "Constructs/Parts/Cargo";
+    private const double CtH = 2.59, CtHalfW = BoxW / 2, CtHalfL = BoxL / 2; // a container's height, half its width and length
+
+    /// <summary>
+    /// A 20-foot cargo container: ribbed steel sides, corner posts and castings, two doors with lock bars at one end. A storage part
+    /// whose box is its inside (parts and bulk, by hand or chute through its doors' ports), marked a container, so a Lifter Cab's crane
+    /// carries it whole, what it holds and all. Its origin is its roof's middle, where a crane's hook takes it; its feet's socket under it.
+    /// </summary>
+    private static Part Container()
+    {
+        const string col = "#a84a2e", rib = "#963f26";
+        var p = new Part(ContainerName, Small, "Cargo", "A 20-foot cargo container: fill it by hand or by chute through its doors' ports, and a crane carries it whole, with what it holds (a Dray's crane from its Lifter Cab). It holds parts and bulk.", role: "storage", tool: "welder", material: "steel", color: col, group: "Storage");
+        void B(double x0, double y0, double z0, double x1, double y1, double z1, string c, string fin, bool detail = false) =>
+            p.Add(Box([x0, y0, z0], [x1, y1, z1], c, detail: detail, shape: Kw(("finish", fin))));
+        double w = CtHalfW - 0.02, l = CtHalfL - 0.02;
+        B(-w, -CtH + 0.02, -l, w, -0.02, l, col, "painted plating"); // (the shell)
+        // Ribs down the long sides and across the front end, standing 25 mm proud.
+        for (var z = -l + 0.25; z < l - 0.2; z += 0.28)
+            foreach (var sx in new[] { -1, 1 })
+                B(sx * (w - 0.01), -CtH + 0.17, z - 0.06, sx * (w + 0.025), -0.17, z + 0.06, rib, "painted plating", true);
+        for (var x = -w + 0.25; x < w - 0.2; x += 0.28)
+            B(x - 0.06, -CtH + 0.17, -l - 0.025, x + 0.06, -0.17, -l + 0.01, rib, "painted plating", true);
+        // The roof's ribs, low.
+        for (var z = -l + 0.4; z < l - 0.3; z += 0.6)
+            B(-w + 0.12, -0.03, z - 0.04, w - 0.12, -0.008, z + 0.04, rib, "painted plating", true);
+        // Rails along the top and bottom of each side and across each end.
+        foreach (var sx in new[] { -1, 1 })
+        {
+            B(sx * (w - 0.03), -CtH + 0.004, -l + 0.1, sx * (w + 0.015), -CtH + 0.16, l - 0.1, "#3b2a22", "dirty steel", true);
+            B(sx * (w - 0.03), -0.16, -l + 0.1, sx * (w + 0.015), -0.004, l - 0.1, rib, "painted plating", true);
+        }
+        // Corner posts and castings (the twistlocks' holes), dark steel.
+        foreach (var sx in new[] { -1, 1 })
+            foreach (var sz in new[] { -1, 1 })
+            {
+                B(sx * (CtHalfW - 0.2), -CtH + 0.18, sz * (CtHalfL - 0.2), sx * (CtHalfW - 0.002), -0.18, sz * (CtHalfL - 0.002), "#2e2622", "dirty steel", true);
+                foreach (var (ya, yb) in new[] { (-CtH, -CtH + 0.18), (-0.18, 0.0) }) // (solid: its feet and its top are the part's faces)
+                    B(sx * (CtHalfW - 0.2), ya, sz * (CtHalfL - 0.2), sx * (CtHalfW + 0.003), yb, sz * (CtHalfL + 0.003), "#22201e", "steel");
+            }
+        // The doors at the +z end: two leaves, four lock bars with their handles, hinges, a placard.
+        foreach (var sx in new[] { -1, 1 })
+        {
+            B(sx * 0.008, -CtH + 0.17, l - 0.01, sx * (w - 0.18), -0.17, l + 0.016, col, "worn paint", true);
+            foreach (var bx in new[] { 0.3, 0.8 })
+            {
+                B(sx * bx - 0.025, -CtH + 0.2, l + 0.016, sx * bx + 0.025, -0.2, l + 0.05, "#5c5f60", "steel", true);
+                B(sx * bx - 0.02, -1.45, l + 0.05, sx * bx + 0.14 * sx, -1.38, l + 0.075, "#5c5f60", "steel", true);
+            }
+            foreach (var hy in new[] { -0.5, -1.3, -2.1 })
+                B(sx * (w - 0.17), hy - 0.06, l + 0.016, sx * (w - 0.1), hy + 0.06, l + 0.045, "#3b2a22", "dirty steel", true);
+        }
+        B(-0.55, -0.7, l + 0.016, -0.35, -0.55, l + 0.03, "#e6e2d4", "painted plating", true); // (the placard)
+        // Its hold: the inside, a bit less than the shell. Fixed: the box settings only shrink it.
+        double ix = 2 * w - 0.1, iy = CtH - 0.2, iz = 2 * l - 0.12;
+        p.Sock("-y", [0, -CtH, 0], "-y");
+        p.Sock("top", [0, 0, 0], "+y");
+        p.Set(("storage", Kw(("bulk", Kw(("material", "any"), ("volume", true), ("chuteLoad", 160))))), ("container", true),
+            ("ports", Py.L(Kw(("name", "Chute in"), ("type", "chute"), ("dir", "in"), ("at", Py.L(-0.55, -0.4, Py.Round(CtHalfL + 0.003, 3))), ("face", "+z")),
+                Kw(("name", "Chute out"), ("type", "chute"), ("dir", "out"), ("at", Py.L(0.55, -CtH + 0.4, Py.Round(CtHalfL + 0.003, 3))), ("face", "+z")))),
+            ("config", Py.L(
+                Kw(("key", "sizeX"), ("label", "Width"), ("group", "Box"), ("unit", "m"), ("min", 0.2), ("max", Py.Round(ix, 2)), ("step", 0.1), ("default", Py.Round(ix, 2)), ("tooltip", "The hold's size across the container.")),
+                Kw(("key", "sizeY"), ("label", "Height"), ("group", "Box"), ("unit", "m"), ("min", 0.2), ("max", Py.Round(iy, 2)), ("step", 0.1), ("default", Py.Round(iy, 2)), ("tooltip", "The hold's height.")),
+                Kw(("key", "sizeZ"), ("label", "Length"), ("group", "Box"), ("unit", "m"), ("min", 0.2), ("max", Py.Round(iz, 2)), ("step", 0.1), ("default", Py.Round(iz, 2)), ("tooltip", "The hold's length.")),
+                Kw(("key", "atX"), ("label", "Centre x"), ("group", "Box"), ("unit", "m"), ("min", -1.0), ("max", 1.0), ("step", 0.05), ("default", 0.0), ("tooltip", "Where the hold's middle is (x).")),
+                Kw(("key", "atY"), ("label", "Centre y"), ("group", "Box"), ("unit", "m"), ("min", -2.5), ("max", 0.0), ("step", 0.05), ("default", Py.Round(-CtH / 2, 2)), ("tooltip", "Where the hold's middle is (y: under the roof).")),
+                Kw(("key", "atZ"), ("label", "Centre z"), ("group", "Box"), ("unit", "m"), ("min", -2.9), ("max", 2.9), ("step", 0.05), ("default", 0.0), ("tooltip", "Where the hold's middle is (z).")),
+                Kw(("key", "material"), ("label", "Material"), ("group", "Contents"), ("creative", true), ("tooltip", "The bulk it holds. Creative worlds only.")),
+                Kw(("key", "fill"), ("label", "Fill"), ("group", "Contents"), ("unit", "%"), ("min", 0), ("max", 100), ("default", 0), ("creative", true), ("tooltip", "How full the hold is.")))));
+        return p.Stats(2300, 6000, 12, 10.0);
     }
 
     private static Part Big(string name, string desc, string role = "frame", string color = Skin) =>
@@ -1424,14 +1660,17 @@ public sealed class HaulerParts : IPartGenerator
             {
                 q.D["role"] = core.D["role"];
                 q.Set(("fuelTank", Kw(("capacity", each))));
-                if (q != core) // (a tank has a fuel-out port: on its aft face, under the floor, for a pipe a player lays)
-                {
-                    var zmax = q.Boxes.Where(bx => !Drawn(bx)).Max(bx => Convert.ToDouble(((List<object?>)bx["max"]!)[2]));
-                    q.Set(("ports", Py.L(BigDriveParts.PipePort("Fuel out", "out", [.. new[] { Cx - H, -1.0 - H, zmax }.Cast<object>()], "+z", "fuel"))));
-                }
+                FuelPort(q, -0.6); // (a tank has a fuel-out port: on its aft face, under the floor, for a pipe a player lays)
             }
         }
         return all;
+    }
+
+    /// <summary>A fuel tank's Fuel out on its aft (+z) face, on the centreline at height y (ship metres).</summary>
+    private static void FuelPort(Part q, double y)
+    {
+        var zmax = q.Boxes.Where(bx => !Drawn(bx)).Max(bx => Convert.ToDouble(((List<object?>)bx["max"]!)[2]));
+        q.Set(("ports", Py.L(BigDriveParts.PipePort("Fuel out", "out", [.. new[] { Cx - H, y - H, zmax }.Cast<object>()], "+z", "fuel"))));
     }
 
     /// <summary>A split part's sockets: each to the piece whose box face it is on (a solid box first), else to fallback's, else the core.</summary>
@@ -1584,9 +1823,24 @@ public sealed class HaulerParts : IPartGenerator
 
     private const string Rail = "Crane Rail Medium 4 m", CraneBridge = "Medium Crane Bridge";
 
+    private static int Lamp(BuildingParts.Blueprint bp, int on, string sock, string colour = "#fff0d0")
+    {
+        var s = Hang(bp, "Bulkhead Light", on, sock, "back");
+        bp.Steps[s]["config"] = new PyDict { ["colour"] = colour };
+        return s;
+    }
+
+    private static void Switch(BuildingParts.Blueprint bp, int on, string sock, params int[] lamps)
+    {
+        var s = Hang(bp, "Bakelite Switch", on, sock, "back");
+        bp.Steps[s]["config"] = new PyDict { ["startOn"] = true };
+        foreach (var l in lamps)
+            bp.Wires.Add((s, l));
+    }
+
     private static PyDict Blueprint(Dictionary<string, PyDict> defs)
     {
-        var bp = new BuildingParts.Blueprint(ShipName, "A container hauler: a long hold for fourteen 20-foot containers with an overhead crane down its length and a well in its belly to lift them through, a small crew section forward and a drive room aft. Two big torch drives push it, each with its own engine in the drive room behind it, and attitude jets at the bow and stern move it about. (No legs, lamps or fittings yet.)", defs, maxSteps: 400);
+        var bp = new BuildingParts.Blueprint(ShipName, "A container hauler: a long hold for fourteen 20-foot containers with an overhead crane down its length and a well in its belly to lift them through, a small crew section forward and a drive room aft. Two big torch drives push it, each with its own engine in the drive room behind it, and attitude jets at the bow and stern move it about. It stands on six long legs over a container, opens its well and lifts the box up into its hold; lift jets hold it up, loaded, and its containers ride in three frozen cargo volumes.", defs, maxSteps: 400);
         bp.Conduit = true;
         double[] zero = [0, 0, 0];
         var placed = new Dictionary<string, int>();
@@ -1641,7 +1895,51 @@ public sealed class HaulerParts : IPartGenerator
                     port[k] = r;
             }
         Paint(bp, bp.Hang(CraneBridge, port[1], "-x.0.0", "+x"), Hazard, "hazard paint");
-        return bp.Json();
+        // Flying it: the lift jets and the legs under the keel, the boarding ladder up its shaft.
+        for (var i = 0; i < LiftAt.Length; i++)
+            Hang(bp, "Dray Lift Jet", keel, $"lift{i}", "top");
+        for (var i = 0; i < LegAt.Length; i++)
+            Paint(bp, Hang(bp, "Dray Landing Leg", keel, $"leg{i}", "top"), Armour2, "worn paint");
+        Hang(bp, "Dray Boarding Ladder", lower, "boarding", "hull");
+        // The bridge: the pilot flies through the flight computer between the couches and the screen (Ship keys, the mouse aims the nose).
+        var pilot = Hang(bp, "Flight Couch", upper, "pilot", "bottom");
+        Hang(bp, "Flight Couch", upper, "copilot", "bottom");
+        var fc = Hang(bp, "Dray Flight Computer", upper, "computer", "bottom");
+        bp.Steps[fc]["config"] = ShipParts.ShipFlight();
+        bp.Wires.Add((pilot, fc));
+        // The power, in the drive room.
+        Hang(bp, "Dray Power Plant", drive, "plant", "bottom");
+        Hang(bp, "Power Board", drive, "board", "bottom");
+        for (var i = 0; i < 3; i++)
+            Hang(bp, "Battery", drive, $"battery{i}", "-y");
+        // Lamps and their switches.
+        Switch(bp, upper, "switchBridge", Lamp(bp, upper, "lampBridgeL", "#ff6050"), Lamp(bp, upper, "lampBridgeR", "#ff6050"));
+        Switch(bp, lower, "switchMess", Lamp(bp, lower, "lampMess", "#ffe0b0"), Lamp(bp, lower, "lampPassage"));
+        // (the hold's and the drive room's lamps have no switch: a wire reaches 8 m, and unwired they light while the power reaches them)
+        for (var r = 0; r < Rows.Length - 1; r++)
+            if (Rows[r] != Well.Z0)
+                foreach (var sd in new[] { "L", "R" })
+                    Lamp(bp, r < 2 ? fore : aft, $"lamp{sd}{r}", "#ffe8b0");
+        Lamp(bp, drive, "lampDriveL", "#a0d0ff");
+        Lamp(bp, drive, "lampDriveR", "#a0d0ff");
+        // The containers: three Cargo Volumes over the slots, frozen from the start, the crane's cab, and the empty boxes it starts with.
+        var holds = new[] { fore, well, aft };
+        for (var v = 0; v < Volumes.Length; v++)
+        {
+            var (bz, mz, len) = Volumes[v];
+            var piece = holds[Array.FindIndex(Rows, z => z > bz) - 1 < 2 ? 0 : bz < Rows[3] ? 1 : 2];
+            var vol = Hang(bp, "Cargo Volume", piece, $"volume{v}", "-y");
+            bp.Steps[vol]["config"] = new PyDict
+            {
+                ["startOn"] = true, ["sizeX"] = 8.0, ["sizeY"] = 3.4, ["sizeZ"] = len,
+                ["atX"] = Py.Round(-VolX, 2), ["atY"] = 1.7, ["atZ"] = Py.Round(mz - bz, 2),
+            };
+        }
+        Paint(bp, Hang(bp, "Lifter Cab", fore, "cab", "-y.0.0"), Hazard, "hazard paint");
+        var json = bp.Json();
+        json["cargo"] = StartBoxes.Select(b => (object?)Kw(("part", ContainerName),
+            ("at", Py.L(Py.Round(Cx + Lanes[b.Lane] - H, 3), Py.Round(Ft0 + 0.03 + CtH - H, 3), Py.Round((Rows[b.Row] + Rows[b.Row + 1]) / 2 - H, 3))), ("turn", 0))).ToList();
+        return json;
     }
 
     public void Make(PartOutput o)
@@ -1668,6 +1966,8 @@ public sealed class HaulerParts : IPartGenerator
         [
             .. structure, WellDoor(-1), WellDoor(1), SideDoor(-1), SideDoor(1),
             Ladder("Dray Ladder", Ft1 - Ft0, "A ladder between the Dray's crew decks: F climbs it.", "bottom", [0, 0, -0.095], "-y"),
+            Ladder("Dray Boarding Ladder", Ft0 - Ground, "The Dray's boarding ladder, from the ground up its belly shaft into the airlock: F climbs it.", "hull", [0, Py.Round(Ft0 - 0.125 - Ground, 3), -0.005], "+z"),
+            LiftJet(), Leg(), PowerPlant(), FlightComputer(),
         ];
         var defs = new Dictionary<string, PyDict>();
         o.Own(Out);
@@ -1680,6 +1980,10 @@ public sealed class HaulerParts : IPartGenerator
             defs.Add(name, d);
             o.File($"{Out}/{FileName(name)}", PyJson.Dumps(d, 2) + "\n");
         }
+        o.Own(ContainerOut);
+        var box = Container().Json();
+        defs.Add(ContainerName, box);
+        o.File($"{ContainerOut}/{FileName(ContainerName)}", PyJson.Dumps(box, 2) + "\n");
         BuildingParts.AddPartDefs(o, defs, Out);
         o.File($"{BpOut}/DrayContainerHauler.json", PyJson.Dumps(Blueprint(defs), 2) + "\n");
     }
