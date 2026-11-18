@@ -190,7 +190,7 @@ public sealed partial class PowerRelations
         var k = PK(party, victim);
         if (Attack(e) && PartyIndex(victim, party) is var i and >= 0)
         {
-            if (e <= RelEvent.Capture)
+            if (e is RelEvent.HitBody or RelEvent.HitCrew) // (only a hit may be stray: a kill, a ship sunk, a boarding or a capture is never forgiven)
             {
                 if (Tick - _partyStrayAt[k] > 60L * T)
                     _partyStrayHits[k] = 0;

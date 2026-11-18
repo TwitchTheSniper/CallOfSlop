@@ -160,19 +160,30 @@ public sealed class PowerContracts
         }
     }
 
+    /// <summary>The taker is here as the one who took it (a player id is reused by the next joiner once they leave): else it is held for them by name, its clock
+    /// stopped, until they come back. True: here.</summary>
+    private bool Present(IContractHost host, ref Contract c)
+    {
+        if (c.Taker != 255 && host.PlayerNamed(c.TakerName) == c.Taker)
+            return true;
+        var back = host.PlayerNamed(c.TakerName);
+        if (back != c.Taker)
+        {
+            if (c.Taker != 255)
+                Console.WriteLine($"[crew] contract {c.Serial}: its taker {c.TakerName} is away: held for them");
+            c.Taker = back; // (255: away; else they are back, perhaps under another id)
+            Version++;
+        }
+        return c.Taker != 255;
+    }
+
     private void Work(PowerRelations rel, IContractHost host, int i, ref Contract c)
     {
         var tick = rel.Tick;
-        if (c.Taker == 255)
+        if (!Present(host, ref c))
         {
-            c.Taker = host.PlayerNamed(c.TakerName); // (a loaded world: its taker when they come back)
-            if (c.Taker == 255)
-            {
-                if (tick >= c.Until)
-                    End(rel, host, ref c, false, "out of time");
-                return;
-            }
-            Version++;
+            c.Until += T; // (held for the taker while they are away: its clock stops)
+            return;
         }
         if (rel.Gone[c.Power])
         {
@@ -375,8 +386,8 @@ public sealed class PowerContracts
         for (var i = 0; i < Max; i++)
         {
             ref var c = ref All[i];
-            if (c.State == ContractState.Taken && c.Kind == ContractKind.Raid && c.Need == 1 && c.Progress == 1 && c.Taker != 255)
-                End(rel, host, ref c, true, "");
+            if (c.State == ContractState.Taken && c.Kind == ContractKind.Raid && c.Need == 1 && c.Progress == 1 && Present(host, ref c))
+                End(rel, host, ref c, true, ""); // (paid only to its taker, here: else when they come back)
         }
     }
 

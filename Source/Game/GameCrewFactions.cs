@@ -188,7 +188,12 @@ public sealed partial class Game : IPowerSight
             if (ship != null)
                 (s.FoeBody, s.FoeBodyAt) = (ship.Body, Crew.Tick); // (it answers fire, whatever its view: GameCrew.cs)
         }
-        rel.Post(e, s.Faction, power, player, at);
+        if (rel.Post(e, s.Faction, power, player, at))
+        {
+            if (player != 255)
+                s.UnmarkFoe(player); // (phase 5: a pact partner's stray hit, forgiven: the crew doesn't turn on them)
+            return;
+        }
         if (e is RelEvent.HitBody or RelEvent.HitCrew or RelEvent.KillCrew or RelEvent.DestroyShip && s.ContactBody != 0
             && Crew.ShipOf(s.ContactBody) is { Faction: not 0, Own: false } friend && friend.Faction != s.Faction)
             rel.Help(friend.Faction, power, player, at); // (s was fighting friend: whoever hurt s helped them)

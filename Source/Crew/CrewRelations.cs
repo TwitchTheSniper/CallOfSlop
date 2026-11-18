@@ -508,14 +508,14 @@ public sealed partial class PowerRelations
 
     /// <summary>
     /// <paramref name="doerPower"/> (a power; 0: none) or <paramref name="doerPlayer"/> (a person; 255: none) did <paramref name="e"/> to power
-    /// <paramref name="victim"/> at <paramref name="at"/>: the victim's view of the doer moves, a pact between them breaks on an attack, and powers
+    /// <paramref name="victim"/> at <paramref name="at"/> (true: a faction member's stray hit on a pact partner, forgiven: no deed): the victim's view of the doer moves, a pact between them breaks on an attack, and powers
     /// that know of it (a crew of theirs sees the place, or they are the victim's allies) take a part: a friend of the victim's its loyalty's share,
     /// an enemy of the victim's the opposite fifth.
     /// </summary>
-    public void Post(RelEvent e, byte victim, byte doerPower, byte doerPlayer, Vector3 at)
+    public bool Post(RelEvent e, byte victim, byte doerPower, byte doerPlayer, Vector3 at)
     {
         if (Def(victim) is not { } v || doerPower == victim || doerPower == 0 && doerPlayer == 255 || doerPower > Count || Gone[victim])
-            return;
+            return false;
         var amount = Amount(e, v);
         if (doerPower != 0 && e is RelEvent.DestroyShip or RelEvent.Capture or RelEvent.CaptureOfficer or RelEvent.RaidConvoy or RelEvent.TakePlanet && Rel[(victim - 1) * N + doerPower - 1] <= BloodValue + 1 && v.Pride >= Rules.BloodPride && !Blood(victim, doerPower) && Might != null)
         {
@@ -542,12 +542,12 @@ public sealed partial class PowerRelations
         else
         {
             if (PlayerDeed(e, v, victim, doerPlayer, at))
-                return; // (a pact partner's stray fire: forgiven, phase 5)
+                return true; // (a pact partner's stray fire: forgiven, phase 5; the game clears the foe mark the hit made)
             MovePlayer(victim, doerPlayer, amount);
             Contracts.Deed(e, victim, doerPlayer, Table.Of[doerPlayer]); // (a raid contract done by it: Crew/CrewContracts.cs)
         }
         if (e is RelEvent.BreakPact or RelEvent.BreakPactHeard or RelEvent.KeepPact or RelEvent.PayTribute or RelEvent.AnswerCall or RelEvent.RefuseCall or RelEvent.ContractDone or RelEvent.ContractFailed)
-            return;
+            return false;
         // Word gets around.
         for (var c = 1; c <= Count; c++)
         {
@@ -567,12 +567,9 @@ public sealed partial class PowerRelations
             else
                 MovePlayer((byte)c, doerPlayer, share);
         }
+        return false;
     }
 
-    /// <summary>
-    /// <paramref name="doerPower"/> or <paramref name="doerPlayer"/> hurt someone fighting power <paramref name="friend"/>'s crew near it: the
-    /// friend thinks better of them, at most once each <see cref="RelationRules.HelpEverySeconds"/> and <see cref="RelationRules.HelpMax"/> a fight.
-    /// </summary>
     public void Help(byte friend, byte doerPower, byte doerPlayer, Vector3 at)
     {
         if (Def(friend) is not { } f || doerPower == friend || doerPower == 0 && doerPlayer == 255 || doerPower > Count)

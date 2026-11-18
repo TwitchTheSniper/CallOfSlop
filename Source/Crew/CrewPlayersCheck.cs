@@ -14,7 +14,7 @@ public static class CrewPlayersCheck
 {
     private sealed class Host : IContractHost
     {
-        public bool ShipAlive = true;
+        public bool ShipAlive = true, AdaHere = true;
         public int Paid;
         public readonly List<string> Told = [];
 
@@ -42,7 +42,7 @@ public static class CrewPlayersCheck
 
         public void Pay(byte player, int credits) => Paid += credits;
         public void Tell(byte player, string line) => Told.Add(line);
-        public byte PlayerNamed(string name) => name == "Ada" ? (byte)0 : (byte)255;
+        public byte PlayerNamed(string name) => name == "Ada" && AdaHere ? (byte)0 : (byte)255;
         public bool AnyoneFor(byte power) => true;
     }
 
@@ -114,6 +114,17 @@ public static class CrewPlayersCheck
         var held = rel.PartyPact(militia, party) == PactKind.Ceasefire;
         rel.Post(RelEvent.HitBody, militia, 0, ada, default);
         Check(signed && held && rel.PartyPact(militia, party) == PactKind.None, $"a second ceasefire: {rel.Rules.FriendlyFireHits} stray hits forgiven, the next breaks it ({LastNews()})");
+        // A member's splash on an allied ship (two hits) is forgiven: no deed (the game clears the foe mark the hit made), the pact holds; a kill under a ceasefire breaks it at once.
+        rel.Propose(party, militia, PactKind.Ceasefire);
+        Minutes(0.2);
+        Minutes(1.1); // (a fresh minute of stray hits)
+        var before = rel.PartyGet(militia, party);
+        var forgiven = rel.Post(RelEvent.HitBody, militia, 0, ada, default) & rel.Post(RelEvent.HitCrew, militia, 0, ada, default);
+        Check(rel.PartyPact(militia, party) == PactKind.Ceasefire && forgiven && rel.PartyGet(militia, party) == before,
+            $"splash on a partner's ship: forgiven, no deed, the ceasefire holds ({rel.PartyPact(militia, party)}, standing {before} -> {rel.PartyGet(militia, party)})");
+        var killForgiven = rel.Post(RelEvent.KillCrew, militia, 0, ada, default);
+        Check(!killForgiven && rel.PartyPact(militia, party) == PactKind.None && rel.PartyGet(militia, party) < before,
+            $"a kill under a ceasefire is never stray: it breaks the pact at once ({before} -> {rel.PartyGet(militia, party)})");
         // The Militia beaten by the faction offers a ceasefire itself.
         for (var k = 0; k < 4; k++)
             rel.Post(RelEvent.DestroyShip, militia, 0, ada, default);
@@ -190,6 +201,18 @@ public static class CrewPlayersCheck
         var takes = (Take(esc), Take(del));
         Check(takes is (null, null), $"the escort and the delivery taken ({takes.Item1 ?? "ok"}, {takes.Item2 ?? "ok"})");
         Check(Take(raid) is { } third && third.Contains("already"), "a third contract at once is refused");
+        // The taker leaves (their id may go to the next joiner): the contracts are held for them by name, nothing worked or paid, their clocks stopped.
+        host.AdaHere = false;
+        var heldPaid = host.Paid;
+        var until = cs.All[esc].Until;
+        for (var k = 0; k < 10 * World.TickRate; k++)
+        {
+            rel.Step();
+            cs.Step(rel, host);
+        }
+        Check(cs.All[esc].State == ContractState.Taken && cs.All[esc].Taker == 255 && cs.All[esc].Progress == 0 && host.Paid == heldPaid && cs.All[esc].Until > until,
+            $"the taker away: held for them (taker {cs.All[esc].Taker}, progress {cs.All[esc].Progress}, clock stopped {cs.All[esc].Until > until})");
+        host.AdaHere = true;
         var paid0 = host.Paid;
         var done0 = cs.Done;
         var tradersStand = rel.PartyGet(cs.All[del].Power, party);

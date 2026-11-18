@@ -364,7 +364,7 @@ public sealed partial class Game : IContractHost
             return;
         int n = r.U8();
         var k = 0;
-        for (var i = 0; i < n && r.Has(32); i++)
+        for (var i = 0; i < n && r.Has(33); i++)
         {
             var c = new Contract
             {
