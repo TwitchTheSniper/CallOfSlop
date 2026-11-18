@@ -29,6 +29,8 @@ public enum RelEvent : byte
     BreakPact,
     BreakPactHeard,
     KeepPact,
+    CaptureOfficer, // phase 2: an admiral or a captain taken prisoner (faction-controllers.md, the user's answers on admirals 7)
+    ReleaseOfficer, // ... released or ransomed back
     Count,
 }
 
@@ -50,10 +52,10 @@ public interface IPowerSight
 public sealed class RelationRules
 {
     public const string Format = "call-of-slop-npc-relations/1";
-    public static readonly string[] Keys = ["hitBody", "hitCrew", "killCrew", "destroyShip", "board", "capture", "release", "drop", "hire", "help", "breakPact", "breakPactHeard", "keepPact"];
+    public static readonly string[] Keys = ["hitBody", "hitCrew", "killCrew", "destroyShip", "board", "capture", "release", "drop", "hire", "help", "breakPact", "breakPactHeard", "keepPact", "captureOfficer", "releaseOfficer"];
 
-    public readonly int[] Amount = [-5, -3, -4, -15, -10, -20, 5, 3, 2, 2, -40, -15, 1];
-    public readonly string[][] Scale = [["pride"], ["pride"], ["values.crew"], ["values.ships", "pride"], ["pride"], ["values.ships", "pride"], ["forgiveness"], ["forgiveness"], [], ["loyalty"], [], ["loyalty"], []];
+    public readonly int[] Amount = [-5, -3, -4, -15, -10, -20, 5, 3, 2, 2, -40, -15, 1, -25, 15];
+    public readonly string[][] Scale = [["pride"], ["pride"], ["values.crew"], ["values.ships", "pride"], ["pride"], ["values.ships", "pride"], ["forgiveness"], ["forgiveness"], [], ["loyalty"], [], ["loyalty"], [], ["pride"], ["forgiveness"]];
     public int WarLine = -50, WaryLine = 0, NeutralLine = 20, FriendlyLine = 60, Hysteresis = 5;
     public float DecayPerMinute = 1f, EnemyShare = 0.2f;
     public int HelpMax = 10, HelpEverySeconds = 60, FightGapSeconds = 300;
@@ -387,7 +389,7 @@ public sealed class PowerRelations
         return v != 0 ? v : Math.Sign(a);
     }
 
-    private static bool Attack(RelEvent e) => e <= RelEvent.Capture;
+    private static bool Attack(RelEvent e) => e <= RelEvent.Capture || e == RelEvent.CaptureOfficer;
 
     /// <summary>
     /// <paramref name="doerPower"/> (a power; 0: none) or <paramref name="doerPlayer"/> (a person; 255: none) did <paramref name="e"/> to power
