@@ -242,7 +242,8 @@ public sealed partial class Game
     {
         if (_jfBody == 0)
             return;
-        if (Constructs.Get(_jfBody) is not { } b || _jfSeg > b.JointCount || MathF.Abs(_jfOff) < 1e-4f)
+        var b = Constructs.Get(_jfBody);
+        if (b == null || _jfSeg > b.JointCount || MathF.Abs(_jfOff) < 1e-4f)
         {
             if (b != null && _jfSeg <= b.JointCount)
                 b.Joints[_jfSeg - 1].Angle = Put(ref b.Joints[_jfSeg - 1], b.Joints[_jfSeg - 1].NetDrawn);
