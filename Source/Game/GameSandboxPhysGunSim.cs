@@ -13,7 +13,10 @@ namespace CallOfSlop;
 /// A wall or a floor the server stopped it at still shows: the drawn piece leads the server's by at most what the old
 /// prediction allowed (<see cref="ConstructGrab.Predict"/>'s lead). Let go or thrown, it flies on ballistically (a throw
 /// adds the server's throw speed) until the server's drawn pose has passed the let-go, then the gap fades as before.
-/// Not for a holder riding a moving frame (the old aim-and-correction drawing stays there) nor for a held joint.
+/// pg02: a holder standing on a deck simulates it in the deck's frame (the segment carrying them, as the server's beam is
+/// on top of their deck's motion: GameSandboxRide.SandboxRiderGrab): the pose, the velocities, the path kept and the lead
+/// are the deck's, and the drawn deck carries it, so a ship under way doesn't leave it behind or glue it to the crosshair.
+/// A held joint has its own prediction beside this one (GameSandboxPhysGunSimJoint.cs).
 /// </summary>
 public sealed partial class Game
 {
@@ -32,6 +35,10 @@ public sealed partial class Game
     private bool _simServerHave;
     private Vector3 _simServerPos;
     private Quaternion _simServerRot = Quaternion.Identity;
+    private ushort _simFrameBody; // pg02: the deck the simulation is kept in (0: the world), and its segment
+    private int _simFrameSeg;
+    private Vector3 _simFt; // the frame's drawn pose this frame
+    private Quaternion _simFq = Quaternion.Identity;
 
     /// <summary>For the window tool's check: is the holder's piece drawn from the client's simulation now?</summary>
     public bool SandboxHeldSimulated => _simOn;
@@ -46,12 +53,17 @@ public sealed partial class Game
             return SimStop();
         if (held != null && me != null)
         {
-            if (SimRiding(me))
-                return SimStop();
+            SimRiding(me, held, out var frameBody, out var frameSeg);
             if (_simOn && _simBody != held.Id)
                 SimStop(); // (another piece taken while the last one flies on: that one fades from where it was drawn, no snap)
             if (!_simOn || _simBody != held.Id)
+            {
+                if (!SimSetFrame(frameBody, frameSeg))
+                    return SimStop();
                 SimStart(held);
+            }
+            else if (frameBody != _simFrameBody || frameSeg != _simFrameSeg)
+                SimReframe(held, frameBody, frameSeg); // (stepped onto a deck or off it, or onto a lift on it: the same pose, kept in the new frame)
             _simFree = _simStill = false;
             _simGrabLocal = held.GrabLocal;
         }
@@ -60,7 +72,7 @@ public sealed partial class Game
             _simFree = true; // (let go: it flies on from the predicted motion; a throw adds what the server adds)
             _simFreeTick = _simTick;
             if (_simThrowSpeed > 0)
-                _simVel += Vector3.Normalize(LookDir(LookYaw, LookPitch)) * _simThrowSpeed;
+                _simVel += Vector3.Transform(Vector3.Normalize(LookDir(LookYaw, LookPitch)), Quaternion.Conjugate(_simFq)) * _simThrowSpeed;
             _simThrowSpeed = 0;
             if (_simStill)
                 _simVel = _simSpin = Vector3.Zero;
@@ -68,7 +80,7 @@ public sealed partial class Game
         if (!_simOn)
             return false;
         var c = Constructs.Get(_simBody);
-        if (c == null || c.CarriedBy != 0)
+        if (c == null || c.CarriedBy != 0 || !SimFramePose())
             return SimStop();
         // One step a local tick (a predicted command made), labelled by the mover clock, as the server runs this look. Not
         // by the clock's own count: its steering (GameMovers.SteerMoverClock) moves it a tick without a local tick, and a
@@ -77,20 +89,22 @@ public sealed partial class Game
         var target = _moverTick;
         if (target > _simTick + 30 || target + 30 < _simTick)
             SimStart(c);
+        // pg02: everything below is in the frame: the aim and the turn the look asks for, the server's pose, the path kept.
+        var inv = Quaternion.Conjugate(_simFq);
         var due = _moverCmds - _simCmds;
         _simCmds = _moverCmds;
         var steps = 0;
         var eye = me?.RenderEye ?? Vector3.Zero;
         var look = LookDir(LookYaw, LookPitch);
         ref var hand = ref SandboxHands.Hand(LocalId);
-        var aim = eye + look * _sbPredDist;
+        var aim = Vector3.Transform(eye + look * _sbPredDist - _simFt, inv);
         var creative = SandboxInfiniteParts;
         var accel = ConstructGrab.AccelFor(c.Mass, creative, SandboxHands.PullOf(LocalId, creative));
-        var wantRot = Quaternion.Normalize(ConstructGrab.LookQ(hand, LookYaw) * _sbPredRel);
+        var wantRot = Quaternion.Normalize(inv * ConstructGrab.LookQ(hand, LookYaw) * _sbPredRel);
         while (due > 0 && steps++ < 8)
         {
             due--;
-            SimStep(c, aim, wantRot, accel, !_simFree && me != null);
+            SimStep(c, aim, wantRot, accel, !_simFree && me != null, inv);
         }
         if (_simTick != target)
         {
@@ -102,16 +116,18 @@ public sealed partial class Game
         var aimSpeed = dt > 1e-4f ? MathF.Min(Vector3.Distance(aim, _simAimWas) / dt, 60f) : 0f;
         _simAimWas = aim;
         _simAimSpeed = MathF.Max(aimSpeed, _simAimSpeed * keep);
-        _simBodySpeed = MathF.Max(c.Vel.Length(), _simBodySpeed * keep);
+        _simBodySpeed = MathF.Max((c.Vel - SimFrameVel(c.Pos)).Length(), _simBodySpeed * keep);
         _simServerPos = c.Pos;
         _simServerRot = c.Rot;
+        var serverPos = Vector3.Transform(c.Pos - _simFt, inv);
+        var serverRot = Quaternion.Normalize(inv * c.Rot);
         // Ease the predicted path towards the server's pose of the same tick (c.Pos/Rot: the blended pose of the drawn tick).
         var rt = Constructs.NetRenderTick;
         if (SimHistoryAt(rt, out var hp, out var hr))
         {
             var a = 1f - MathF.Exp(-dt / SimReconcileSeconds);
-            var dp = (c.Pos - hp) * a;
-            var er = Quaternion.Normalize(c.Rot * Quaternion.Conjugate(hr));
+            var dp = (serverPos - hp) * a;
+            var er = Quaternion.Normalize(serverRot * Quaternion.Conjugate(hr));
             if (er.W < 0)
                 er = -er;
             var dq = Quaternion.Normalize(Quaternion.Slerp(Quaternion.Identity, er, a));
@@ -140,7 +156,7 @@ public sealed partial class Game
             var lead = (float)Math.Max(0, (_simTick - rt) * World.TickDt) + ConstructGrab.LeadSeconds;
             var moving = _simFree ? 1f : Math.Clamp(_simAimSpeed / ConstructGrab.RestSpeed, 0f, 1f);
             var allowed = MathF.Max(ConstructGrab.LeadMin * moving, ConstructGrab.RestLead) + (_simFree ? _simBodySpeed : MathF.Max(_simBodySpeed, _simAimSpeed)) * lead;
-            var off = pos - _simServerPos;
+            var off = pos - serverPos;
             if (off.LengthSquared() > allowed * allowed)
             {
                 var len = off.Length();
@@ -156,10 +172,10 @@ public sealed partial class Game
                 }
             }
         }
-        c.Pos = pos;
-        c.Rot = rot;
-        _simDrawnPos = pos;
-        _simDrawnRot = rot;
+        c.Pos = _simFt + Vector3.Transform(pos, _simFq); // (the drawn deck carries it)
+        c.Rot = Quaternion.Normalize(_simFq * rot);
+        _simDrawnPos = c.Pos;
+        _simDrawnRot = c.Rot;
         if (_simFree && rt >= _simFreeTick + 2)
         {
             // The server's drawn pose is past the let-go: the gap to it fades, as a let-go of the old drawing did.
@@ -194,29 +210,30 @@ public sealed partial class Game
         _simOn = true;
         _simFree = false;
         _simBody = c.Id;
-        _simPos = _simPrevPos = c.Pos;
-        _simRot = _simPrevRot = c.Rot;
-        _simVel = c.Asleep ? Vector3.Zero : c.Vel;
-        _simSpin = c.Asleep ? Vector3.Zero : c.AngVel;
+        var inv = Quaternion.Conjugate(_simFq);
+        _simPos = _simPrevPos = Vector3.Transform(c.Pos - _simFt, inv);
+        _simRot = _simPrevRot = Quaternion.Normalize(inv * c.Rot);
+        _simVel = Vector3.Transform((c.Asleep ? Vector3.Zero : c.Vel) - SimFrameVel(c.Pos), inv);
+        _simSpin = Vector3.Transform((c.Asleep ? Vector3.Zero : c.AngVel) - SimFrameSpin(), inv);
         _simTick = _moverTick;
         _simCmds = _moverCmds;
         _simAimSpeed = _simBodySpeed = 0;
         _simThrowSpeed = 0;
-        _simAimWas = c.ToWorld(c.GrabLocal);
+        _simAimWas = _simPos + Vector3.Transform(c.GrabLocal, _simRot);
         Array.Clear(_simHistTick);
         SimRecord();
     }
 
     /// <summary>One server tick of the held piece, by the physics step's rules for a body in the beam (no contacts: the server's pose brings those).</summary>
-    private void SimStep(Construct c, Vector3 aim, Quaternion wantRot, float accel, bool beam)
+    private void SimStep(Construct c, Vector3 aim, Quaternion wantRot, float accel, bool beam, Quaternion inv)
     {
         var dt = (float)World.TickDt;
         _simPrevPos = _simPos;
         _simPrevRot = _simRot;
         var com = c.Com;
-        var worldCom = _simPos + Vector3.Transform(com, _simRot);
-        var weight = GravityFrames.Curved || GravityFrames.HookCount > 0 ? ConstructGravity.GravityFor(c, worldCom) : new Vector3(0, -ConstructPhysics.GravityAccel, 0);
-        _simVel += weight * ((1 - c.AntiShare) * dt);
+        var worldCom = _simPos + Vector3.Transform(com, _simRot); // (in the frame)
+        var weight = GravityFrames.Curved || GravityFrames.HookCount > 0 ? ConstructGravity.GravityFor(c, _simFt + Vector3.Transform(worldCom, _simFq)) : new Vector3(0, -ConstructPhysics.GravityAccel, 0);
+        _simVel += Vector3.Transform(weight, inv) * ((1 - c.AntiShare) * dt); // (the world's gravity, turned into the deck's frame)
         if (_simFree && _simStill)
         {
             _simTick++;
@@ -238,8 +255,8 @@ public sealed partial class Game
         _simPos = next - Vector3.Transform(com, _simRot);
         if (!float.IsFinite(_simPos.X + _simPos.Y + _simPos.Z + _simRot.W))
         {
-            _simPos = c.Pos;
-            _simRot = c.Rot;
+            _simPos = Vector3.Transform(c.Pos - _simFt, inv);
+            _simRot = Quaternion.Normalize(inv * c.Rot);
             _simVel = _simSpin = Vector3.Zero;
         }
         _simTick++;
@@ -280,12 +297,84 @@ public sealed partial class Game
         return true;
     }
 
-    /// <summary>Does the holder stand in a frame that moves (a deck under way)? The old drawing keeps that case.</summary>
-    private bool SimRiding(Player me)
+    /// <summary>pg02: the frame the holder stands in (the segment carrying them, as the server keeps a rider's beam in), or 0: the world.</summary>
+    private static void SimRiding(Player me, Construct held, out ushort body, out int seg)
     {
+        body = 0;
+        seg = 0;
         var ride = me.Sim.RideBody;
-        if (ride == 0 || Constructs.Get(ride) is not { } deck)
+        if (me.Sim.RideUp == Vector3.Zero || ride == 0 || ride == held.Id || held.CarriedBy == ride)
+            return;
+        body = ride;
+        seg = ConstructRide.Carrier(me.Sim);
+    }
+
+    /// <summary>The frame's drawn pose this frame (a client draws its bodies at their drawn pose already). False: its deck is gone.</summary>
+    private bool SimFramePose()
+    {
+        if (_simFrameBody == 0)
+        {
+            _simFt = Vector3.Zero;
+            _simFq = Quaternion.Identity;
+            return true;
+        }
+        if (Constructs.Get(_simFrameBody) is not { } deck)
             return false;
-        return deck.Vel.LengthSquared() > 0.01f || deck.AngVel.LengthSquared() > 1e-4f;
+        deck.WorldFrame(_simFrameSeg <= deck.JointCount ? _simFrameSeg : 0, out _simFq, out _simFt);
+        _simFq = Quaternion.Normalize(_simFq);
+        return float.IsFinite(_simFt.X + _simFt.Y + _simFt.Z + _simFq.W);
+    }
+
+    private bool SimSetFrame(ushort body, int seg)
+    {
+        (_simFrameBody, _simFrameSeg) = (body, seg);
+        if (SimFramePose())
+            return true;
+        (_simFrameBody, _simFrameSeg) = (0, 0);
+        return SimFramePose();
+    }
+
+    /// <summary>The frame's own velocity at a world point, and its spin (zero for the world).</summary>
+    private Vector3 SimFrameVel(Vector3 at) =>
+        _simFrameBody != 0 && Constructs.Get(_simFrameBody) is { } deck ? ConstructRide.SurfaceVel(deck, _simFrameSeg <= deck.JointCount ? _simFrameSeg : 0, at) : Vector3.Zero;
+
+    private Vector3 SimFrameSpin() =>
+        _simFrameBody != 0 && Constructs.Get(_simFrameBody) is { } deck ? ConstructRide.SurfaceSpin(deck, _simFrameSeg <= deck.JointCount ? _simFrameSeg : 0) : Vector3.Zero;
+
+    /// <summary>
+    /// pg02: the holder moved into another frame mid-hold: the predicted pose and motion are the same in the world, written in the
+    /// new frame. The path kept can't be (the old deck's past poses aren't kept), so it starts again: the reconcile waits for it
+    /// for the bodies' delay, the lead clamp holds meanwhile.
+    /// </summary>
+    private void SimReframe(Construct c, ushort body, int seg)
+    {
+        if (!SimFramePose())
+        {
+            SimSetFrame(body, seg);
+            SimStart(c);
+            return;
+        }
+        var pos = _simFt + Vector3.Transform(_simPos, _simFq);
+        var prev = _simFt + Vector3.Transform(_simPrevPos, _simFq);
+        var rot = Quaternion.Normalize(_simFq * _simRot);
+        var prevRot = Quaternion.Normalize(_simFq * _simPrevRot);
+        var vel = Vector3.Transform(_simVel, _simFq) + SimFrameVel(pos);
+        var spin = Vector3.Transform(_simSpin, _simFq) + SimFrameSpin();
+        var aimWas = _simFt + Vector3.Transform(_simAimWas, _simFq);
+        if (!SimSetFrame(body, seg))
+        {
+            SimStop();
+            return;
+        }
+        var inv = Quaternion.Conjugate(_simFq);
+        _simPos = Vector3.Transform(pos - _simFt, inv);
+        _simPrevPos = Vector3.Transform(prev - _simFt, inv);
+        _simRot = Quaternion.Normalize(inv * rot);
+        _simPrevRot = Quaternion.Normalize(inv * prevRot);
+        _simVel = Vector3.Transform(vel - SimFrameVel(pos), inv);
+        _simSpin = Vector3.Transform(spin - SimFrameSpin(), inv);
+        _simAimWas = Vector3.Transform(aimWas - _simFt, inv);
+        Array.Clear(_simHistTick);
+        SimRecord();
     }
 }

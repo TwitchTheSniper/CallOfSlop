@@ -219,8 +219,10 @@ public sealed partial class Game
             if (h is { Tool: ConstructTool.PhysicsGun, GrabSeg: not 0 } && Constructs.Get(h.GrabBody) is { } carried && h.GrabSeg <= carried.JointCount)
             {
                 SimStop();
-                if (!ConstructGrab.InChain(carried, h.GrabSeg))
-                    PredictJoint(carried, h.GrabSeg, h.GrabLocal, lp, dt); // (in a chain only the server knows how the pull shares out: it draws the server's, smoothly)
+                if (ConstructGrab.InChain(carried, h.GrabSeg))
+                    SandboxSimJoint(null, 0, default, null, dt); // (in a chain only the server knows how the pull shares out: it draws the server's, smoothly)
+                else if (!SandboxSimJoint(carried, h.GrabSeg, h.GrabLocal, lp, dt)) // (pg02: the server's beam on a joint, stepped here)
+                    PredictJoint(carried, h.GrabSeg, h.GrabLocal, lp, dt);
                 _sbPredHave = false;
                 return;
             }
@@ -233,6 +235,7 @@ public sealed partial class Game
                 me = lp;
             }
         }
+        SandboxSimJoint(null, 0, default, null, dt); // (pg02: a joint let go swings on, then fades to the server's angle)
         // pg01: the holder's piece simulated by the server's own spring (GameSandboxPhysGunSim.cs), and flown on once let go.
         if (SandboxSimHeld(c, me, dt))
         {

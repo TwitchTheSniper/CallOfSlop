@@ -123,6 +123,11 @@ public static partial class Program
             var look = g.LookDir(g.LookYaw, g.LookPitch);
             var eye = me.RenderEye;
             var at = c.ToWorld(h.GrabLocal);
+            if (h.GrabSeg != 0 && h.GrabSeg <= c.JointCount)
+            {
+                c.WorldFrame(h.GrabSeg, out var sq, out var st); // (a held joint: the point is in its segment's frame)
+                at = st + Vector3.Transform(h.GrabLocal, sq);
+            }
             var lag = Vector3.Distance(at, eye + look * _pgDist);
             var off = at - eye;
             var deg = MathF.Acos(Math.Clamp(Vector3.Dot(Vector3.Normalize(off), look), -1f, 1f)) * 180f / MathF.PI;
@@ -135,7 +140,7 @@ public static partial class Program
             else
                 _wsSwingRest = lag;
             if (_wsSwingFrames++ % 6 == 0)
-                WsSay(FormattableString.Invariant($"swing: t {t:0.00} s, lag {lag:0.000} m, {deg:0.0} deg off the look, sim {g.SandboxHeldSimulated}, dist {_pgDist:0.0}, mass {c.Mass:0} kg"));
+                WsSay(FormattableString.Invariant($"swing: t {t:0.00} s, lag {lag:0.000} m, {deg:0.0} deg off the look, sim {g.SandboxHeldSimulated || g.SandboxJointSimulated}, dist {_pgDist:0.0}, mass {c.Mass:0} kg"));
         }
         if (t >= _wsSwingSecs + 1.5f)
         {
