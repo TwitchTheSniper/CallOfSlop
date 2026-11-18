@@ -222,7 +222,7 @@ public static class LegAnimator
         var stance = p.RenderStance;
         var seated = p.RenderSeat != SeatKind.None; // (carried by a construct: no gait, whatever the speed)
         var ladder = p.RenderLadder && !seated; // (climbing: hands and feet on the rungs, LadderAnim.cs)
-        var pack = !seated && !ladder && EvaRender.Wears(p) && Eva.Vacuum(p.RenderPosition); // (a worn MMU: feet on its pedestals, no gait or air pose: Karl, 2026-11-18)
+        var pack = !seated && EvaRender.Strapped(p); // (a worn MMU: feet on its pedestals, no gait or air pose: Karl, 2026-11-18)
         var vel = seated || ladder || pack ? Vector3.Zero : GravityFrames.ToLocal(pos, p.RenderVelocity); // (a planet: in the body's own frame)
         if (p.RenderRide)
         {

@@ -67,6 +67,7 @@ public sealed class PackNode : IRenderable
     public byte Canopy; // a pilot's gear in the air (CanopyRender.cs)
     public Matrix4x4 BodyFrame;
     public bool Mmu; // a Manned Manoeuvring Unit on their suit's back (EvaRender.cs)
+    public bool Strapped; // ...flown in vacuum, the feet on its pedestals (EvaRender.Strapped)
     public Matrix4x4 MmuFrame;
     public double Time;
 
@@ -74,7 +75,7 @@ public sealed class PackNode : IRenderable
     {
         var o = new ToolListOut(list);
         if (Mmu)
-            EvaRender.Emit(ref o, MmuFrame, Canopy == PilotGear.Burning, Time);
+            EvaRender.Emit(ref o, MmuFrame, Canopy == PilotGear.Burning, Time, Strapped);
         else if (Canopy != 0)
             CanopyRender.Emit(ref o, Canopy, BodyFrame);
         if (Pack == null)

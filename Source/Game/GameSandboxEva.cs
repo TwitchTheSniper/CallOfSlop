@@ -289,7 +289,8 @@ public sealed partial class Game
     /// <summary>
     /// Server, <see cref="CActKind.MmuOff"/> (Karl, 2026-11-18: get out of it without docking): the worn pack comes off the
     /// wearer's back where they are, a loose part behind them holding its fuel and moving as they were (a ship's frame and
-    /// all), and they are a plain spacewalker again: walking on a deck, or drifting out in space.
+    /// all), and they are a plain spacewalker again, walking on the deck. Not out in open space, out of every ship's frame:
+    /// with no thrust they would drift off for good.
     /// </summary>
     private string? SandboxMmuOff(Player p)
     {
@@ -297,6 +298,8 @@ public sealed partial class Game
             return "no MMU on your back";
         if (SandboxHands.Hand(p.Id).Seated)
             return "get out of the seat first";
+        if (p.Sim.RideBody == 0 && Eva.Vacuum(p.Position))
+            return "not out here: with no pack you'd drift off for good (take it off aboard a ship)"; // (L is also the dock's detach key: a second press would strand them)
         var vel = p.Sim.Velocity;
         var up = GravityFrames.UpAt(p.Position);
         var turn = Quaternion.Identity;
@@ -309,7 +312,7 @@ public sealed partial class Game
         var behind = -GravityFrames.Forward(p.Position, p.Yaw, 0);
         behind -= up * Vector3.Dot(behind, up);
         behind = behind.LengthSquared() > 1e-6f ? Vector3.Normalize(behind) : Vector3.Zero;
-        if (!LooseMmu(p, p.Position + up * 1.15f + behind * 0.75f, vel))
+        if (!LooseMmu(p, p.Position + up * 1.15f + behind * 0.65f, vel))
             return "the MMU won't come off here";
         p.Eva &= unchecked((byte)~Eva.Mmu);
         p.Sim.GearDelay = 0;
