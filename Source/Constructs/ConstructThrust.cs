@@ -225,6 +225,8 @@ public static partial class ConstructPhysics
     /// <summary>One tick of a construct's thrusters (free and awake): the hover hold, what each is asked, its spool, its push and what it burns.</summary>
     private static void Thrusters(Construct c, IWorldQuery query, in Matrix4x4 invI, float dt)
     {
+        if (c.ThrustPuppet)
+            return; // (a Board order flies it and lights its jets itself: GameNavBoard.cs)
         var com = c.WorldCom;
         var g = GravityAccel;
         var planet = GravityFrames.Curved; // (the hold measures its height along its gravity: HoldHeight)
@@ -475,6 +477,11 @@ public static partial class ConstructPhysics
     /// </summary>
     public static Vector3 SpaceThrust(Construct c, float dt, out Vector3 torque)
     {
+        if (c.ThrustPuppet)
+        {
+            torque = Vector3.Zero;
+            return Vector3.Zero; // (as Thrusters: its jets are lit for show while a Board order flies it)
+        }
         torque = Vector3.Zero;
         var owned = ConstructFlight.FliesShip(c);
         var com = c.WorldCom;
