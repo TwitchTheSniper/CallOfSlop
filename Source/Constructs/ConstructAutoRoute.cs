@@ -21,6 +21,8 @@ public struct RouteAsk
     public ushort OpenHost;
     public byte ConduitGap; // ... and the closest its lattice keeps planes, cm (0: RouteSearch.ConduitGap)
     public bool Exact; // a conduit's: guess by the true cost to the goal (a pass over the lattice first), for a search the plain guess loses its way in
+    public LinkLay Lay; // a cable's or pipe's: laid in the walls it runs along, or on their far side (ConstructRoutesWalls.cs; Near: as found)
+    public bool Tidy; // the tool's: nodes on structure only, and no run along a fitting (ConstructRoutes.IsFixing)
     public float Conduit; // a pre-built's wiring (ConstructConduit.cs), above 1: the cost a metre off every surface, so it runs along walls, floors and ceilings like conduit (0: the tool's own route)
 }
 
@@ -74,6 +76,8 @@ public sealed class RouteSearch
         public int Count;
         public float Length; // the whole link's length
         public ushort Width; // a conveyor: the bed it will open to (cm), what its ends take and its turns leave room for
+        public string? BuryWhy; // ... and why not
+        public bool Unburied; // a lay in the walls was asked, and the route couldn't keep to them: it is the one found, on the surface
         public bool Pierced; // a conduit that passes through a wall, a deck or a hull plate (RouteSearch.PierceMax): checked by its ends and spans only
         internal long Age;
     }
@@ -95,6 +99,8 @@ public sealed class RouteSearch
     private byte[][] _marks = [];
     private float[][] _lat = [];
     private Vector3[] _path = [];
+    private Vector3[] _unburied = []; // (the path as found, while a lay in the walls is tried)
+    private byte[] _buryAxes = []; // (per corner: the axes Bury moved it along)
     private CRouteNode[] _chk = [];
     private readonly int[] _tgtPoint = new int[256];
     private readonly byte[] _tgtDir = new byte[256];
@@ -143,6 +149,9 @@ public sealed class RouteSearch
     private float _hFactor = 0.92f; // the search's guess of the cost a metre: lower with runs to lie beside, or it would never look at the way round to them
     private Vector3 _s, _g, _sDir, _gDir, _min, _max;
     private bool _closed, _flat, _hasPrev, _longWay, _gaveUp;
+    private LinkLay _lay; // the lay asked for (Near for anything that can't lie in a wall)
+    private bool _tidy, _buriedNow;
+    private string? _buryWhy; // the tool's rule (RouteAsk.Tidy); the result was laid in the walls
     private bool _pierce, _pierced, _loose; // a conduit: may pass through walls; the path found does; a cable's (data, power), which leaves and meets a part any way and lies flat on the wall
     private int _frame, _startHost, _goalHost, _msS, _msG;
     private bool _half; // the goal is a suspension's Drive in
@@ -232,6 +241,8 @@ public sealed class RouteSearch
         _alt = new Vector3[MaxPath];
         _best = new Vector3[MaxPath];
         _fwd = new Vector3[MaxPath];
+        _unburied = new Vector3[MaxPath];
+        _buryAxes = new byte[MaxPath];
         _roomPts = new Vector3[Construct.MaxNodesPerRoute * 2 + 2];
         _roomHosts = new int[Construct.MaxNodesPerRoute * 2 + 2];
     }
@@ -256,7 +267,7 @@ public sealed class RouteSearch
         var h = Mix(Mix(Mix(1234567L, a.C.Id), a.C.RebuildStamp), (long)a.Type);
         h = Mix(Mix(Mix(Mix(h, a.From), a.FromPort), a.Parent), a.ParentSeg);
         h = Mix(Mix(Mix(Mix(h, a.Junction), a.Count), a.To), a.ToPort);
-        h = Mix(Mix(Mix(Mix(h, a.OpenAt), a.OpenHost), a.C.RouteCount), BitConverter.SingleToInt32Bits(a.Conduit) + a.ConduitGap * 7919L + (a.Exact ? 104729L : 0L));
+        h = Mix(Mix(Mix(Mix(h, a.OpenAt), a.OpenHost), a.C.RouteCount), BitConverter.SingleToInt32Bits(a.Conduit) + a.ConduitGap * 7919L + (a.Exact ? 104729L : 0L) + (long)a.Lay * 15485863L + (a.Tidy ? 32452843L : 0L));
         for (var i = 0; i < a.Count; i++)
             h = Mix(Mix(h, a.Nodes[i].Pos), a.Nodes[i].Host);
         return h == 0 ? 1 : h;
@@ -304,7 +315,9 @@ public sealed class RouteSearch
         slot.Count = count;
         slot.Length = length;
         slot.Width = width;
-        slot.Pierced = state == RouteSearchState.Found && _pierced;
+        slot.Pierced = state == RouteSearchState.Found && _pierced && !_buriedNow;
+        slot.Unburied = state == RouteSearchState.Found && _lay != LinkLay.Near && !_buriedNow;
+        slot.BuryWhy = slot.Unburied ? _buryWhy : null;
         slot.Age = ++_age;
         for (var i = 0; i < count; i++)
             slot.Nodes[i] = _chk[_ask.Count + i];
@@ -331,6 +344,9 @@ public sealed class RouteSearch
         _loose = a.Conduit > 0f && _flat && a.Type is RouteType.Data or RouteType.Power;
         _hWeight = _loose ? ConduitWeight : 1f; // (a chute or pipe is big and seen: its search keeps to the best route, not one 1.5 times as dear)
         _pierced = false;
+        _lay = _flat && ConstructRoutes.Buryable(a.Type) ? a.Lay : LinkLay.Near;
+        _tidy = a.Tidy && ConstructRoutes.Tidies(a.Type);
+        _buriedNow = false;
         if (_pierce && _hard.Length == 0)
             _hard = new byte[MaxPoints];
         _lastWhy = null;
@@ -776,11 +792,12 @@ public sealed class RouteSearch
             if (i >= c.PartCount)
                 continue;
             var d = c.DefOf(i);
+            var ring = _tidy && !ConstructRoutes.IsFixing(d) ? 0 : HugBit; // (the tool's: no run along a seat, a crate or a lamp for its discount)
             for (var b = 0; b < d.SolidBoxes; b++)
                 if (BoxInWork(c, i, b, out var lo, out var hi) && Overlaps(lo - clear, hi + clear))
                 {
                     if (_flat)
-                        RasterBox(lo - clear + inset, hi + clear - inset, BlockBit, HugBit, _pierce ? HardAxes(d, lo, hi) : 0);
+                        RasterBox(lo - clear + inset, hi + clear - inset, BlockBit, ring, _pierce ? HardAxes(d, lo, hi) : 0);
                     else
                         RasterPoints(lo - clear, hi + clear);
                 }
@@ -1668,11 +1685,206 @@ public sealed class RouteSearch
     private bool Nodes(int n, bool final)
     {
         n = Collapse(_path, n);
-        var why = Build(_path, n, out var total, out var length);
+        string? why;
+        int total;
+        float length;
+        _buriedNow = false;
+        if (_lay != LinkLay.Near && n >= 2 && n < MaxPath - 4)
+        {
+            // In the walls (ConstructRoutesWalls.cs): the route found along them, each corner moved into the walls it runs on, and a
+            // dip into the wall behind each device. If that doesn't pass the rule, the route as found goes on the surface (and says so).
+            Array.Copy(_path, _unburied, n);
+            var m = Bury(n);
+            why = Build(_path, m, out total, out length);
+            if (why == null)
+            {
+                _buriedNow = true;
+                Done(RouteSearchState.Found, null, total - _ask.Count, length, BedWidth(total));
+                return true;
+            }
+            _buryWhy = why;
+            Array.Copy(_unburied, _path, n);
+        }
+        why = Build(_path, n, out total, out length);
         if (why != null)
             return final && Refuse(why);
         Done(RouteSearchState.Found, null, total - _ask.Count, length, BedWidth(total));
         return true;
+    }
+
+    // ---- In the walls (Karl, 2026-11-18; ConstructRoutesWalls.cs) -------------------------------------------------------
+
+    /// <summary>
+    /// The route found (corners <c>_path[0..n)</c>, run along the walls' faces) moved into them: each corner that lies against the
+    /// face of a wall box (a frame's or panel's, no thicker than <see cref="ConstructRoutes.FarMax"/> across) goes to that box's
+    /// middle along the face's normal, or (<see cref="LinkLay.Far"/>) one link radius past its far face; a corner against two walls
+    /// (a corner of the room) goes into both. Both ends of a run along one face move alike, so the run stays square. Then a dip
+    /// from each device into the wall behind it. Returns the new count (corners on top of each other or in line merged).
+    /// </summary>
+    private int Bury(int n)
+    {
+        var c = _ask.C;
+        var far = _lay == LinkLay.Far;
+        var reach = _radius * 1.5f + 0.03f; // (a corner this far off a face lies against it: the tool's routes keep a radius off, a conduit's a quarter)
+        var lastNode = n - 1; // (a closed path's last point is the port; an open one's is the spot clicked, laid as the player asked)
+        var fromPort = _ask.Parent == 255 && _ask.Count == 0;
+        // (the devices at the ends are corners too, for the walls they are mounted on, further off: a lamp's middle is a few cm out from
+        // its wall; they stay where they are, and the dips below join them to the walls their runs were moved into)
+        var first = fromPort ? 0 : 1;
+        var last = _closed ? n - 1 : n - 2;
+        for (var i = first; i <= last; i++)
+        {
+            var end = i == 0 || i == n - 1;
+            var p = _path[i];
+            var q = p;
+            byte axes = 0;
+            var endRun = end ? RunAxis(p, _path[i == 0 ? 1 : n - 2]) : -1;
+            for (var axis = 0; axis < 3; axis++)
+            {
+                if (axis == endRun)
+                    continue;
+                var reachHere = end ? EndReach : reach;
+                var best = float.MaxValue;
+                var target = 0f;
+                for (var at = 0; at < _partN; at++)
+                {
+                    var part = _parts[at];
+                    if (part >= c.PartCount)
+                        continue;
+                    var d = c.DefOf(part);
+                    if (d.Role is not (PartRole.Frame or PartRole.Panel))
+                        continue;
+                    for (var b = 0; b < d.SolidBoxes; b++)
+                    {
+                        if (!ConstructRoutes.WallBox(d, b) || !BoxInWork(c, part, b, out var lo, out var hi))
+                            continue;
+                        var thick = hi[axis] - lo[axis];
+                        if (far && thick > ConstructRoutes.FarMax)
+                            continue;
+                        var sink = MathF.Min(thick * 0.5f, ConstructRoutes.WallSink(_radius)); // (a thick wall: just under its face)
+                        var u = (axis + 1) % 3;
+                        var v = (axis + 2) % 3;
+                        var slack = _radius + 0.01f;
+                        if (p[u] < lo[u] - slack || p[u] > hi[u] + slack || p[v] < lo[v] - slack || p[v] > hi[v] + slack)
+                            continue;
+                        var above = p[axis] - hi[axis]; // (against its high face)
+                        var below = lo[axis] - p[axis]; // (against its low face)
+                        if (above >= -0.005f && above <= reachHere && above < best)
+                        {
+                            best = above;
+                            target = far ? lo[axis] - _radius : hi[axis] - sink;
+                        }
+                        if (below >= -0.005f && below <= reachHere && below < best)
+                        {
+                            best = below;
+                            target = far ? hi[axis] + _radius : lo[axis] + sink;
+                        }
+                    }
+                }
+                if (best < float.MaxValue)
+                {
+                    q[axis] = target;
+                    axes |= (byte)(1 << axis);
+                }
+            }
+            _path[i] = q;
+            _buryAxes[i] = axes;
+        }
+        if (!fromPort)
+            _buryAxes[0] = 0;
+        if (!_closed)
+            _buryAxes[n - 1] = 0;
+        // Keep it square: corners joined by runs not along an axis shared their place on it as found, so they share it still. Each such
+        // chain takes the place of its first corner that moved on that axis (a run along a frame's end, or past a wall it hugs only at
+        // one corner, would otherwise slope across the room), and a chain where none moved stays where it was.
+        for (var axis = 0; axis < 3; axis++)
+        {
+            var start = first;
+            while (start <= last)
+            {
+                var end = start;
+                while (end + 1 <= last && RunAxis(_unburied[end], _unburied[end + 1]) != axis)
+                    end++;
+                var value = _unburied[start][axis];
+                var moved = false;
+                for (var i = start; i <= end && !moved; i++)
+                    if ((_buryAxes[i] & (1 << axis)) != 0)
+                    {
+                        value = _path[i][axis];
+                        moved = true;
+                    }
+                for (var i = start; i <= end; i++)
+                {
+                    _path[i][axis] = value;
+                    _buryAxes[i] = (byte)(moved ? _buryAxes[i] | (1 << axis) : _buryAxes[i] & ~(1 << axis));
+                }
+                start = end + 1;
+            }
+        }
+        _path[0] = _unburied[0]; // (the ends stay at their devices)
+        _path[n - 1] = _unburied[n - 1];
+        _buryAxes[0] = _buryAxes[n - 1] = 0;
+        // The dips: from a device's port into the wall behind it, square to the run that leaves it (the planes of the corner next to it).
+        var m = n;
+        if (_closed && n >= 3 && _buryAxes[n - 2] != 0)
+        {
+            var dip = Dip(_path[n - 1], _unburied[n - 2], _path[n - 2], _buryAxes[n - 2]);
+            if (Vector3.DistanceSquared(dip, _path[n - 1]) > 1e-4f && Vector3.DistanceSquared(dip, _path[n - 2]) > 1e-4f)
+            {
+                _path[m] = _path[m - 1];
+                _path[m - 1] = dip;
+                m++;
+            }
+        }
+        if (_ask.Parent == 255 && _ask.Count == 0 && m >= 3 && _buryAxes[1] != 0)
+        {
+            var dip = Dip(_s, _unburied[1], _path[1], _buryAxes[1]);
+            if (Vector3.DistanceSquared(dip, _s) > 1e-4f && Vector3.DistanceSquared(dip, _path[1]) > 1e-4f)
+            {
+                for (var i = m; i > 1; i--)
+                    _path[i] = _path[i - 1];
+                _path[1] = dip;
+                m++;
+            }
+        }
+        m = Collapse(_path, m);
+        // (corners moved into one wall from either side of a thin thing can land a few cm apart: the later one goes, and the run between
+        // its neighbours may slope a little inside the wall. Not the segments into the devices, which may be short.)
+        for (var i = 2; i <= m - 2;)
+        {
+            if (Vector3.Distance(_path[i - 1], _path[i]) >= ConstructRoutes.MinSegment)
+            {
+                i++;
+                continue;
+            }
+            var drop = i == m - 2 && i - 1 >= 2 ? i - 1 : i; // (keep the dip into the device at the far end)
+            for (var k = drop; k < m - 1; k++)
+                _path[k] = _path[k + 1];
+            m--;
+            i = Math.Max(2, i - 1);
+        }
+        return m;
+    }
+
+    private const float EndReach = 0.15f; // a device's middle this far off a wall is mounted on it (for Bury)
+
+    /// <summary>The axis a run from <paramref name="a"/> to <paramref name="b"/> goes along (its longest).</summary>
+    private static int RunAxis(Vector3 a, Vector3 b)
+    {
+        var d = Vector3.Abs(b - a);
+        return d.X >= d.Y ? d.X >= d.Z ? 0 : 2 : d.Y >= d.Z ? 1 : 2;
+    }
+
+    /// <summary>The point behind a device's port <paramref name="port"/> in the planes the next corner was moved to, along the axes it moved square to the run between them.</summary>
+    private static Vector3 Dip(Vector3 port, Vector3 cornerWas, Vector3 corner, byte axes)
+    {
+        var run = cornerWas - port;
+        var along = MathF.Abs(run.X) >= MathF.Abs(run.Y) ? MathF.Abs(run.X) >= MathF.Abs(run.Z) ? 0 : 2 : MathF.Abs(run.Y) >= MathF.Abs(run.Z) ? 1 : 2;
+        var dip = port;
+        for (var a = 0; a < 3; a++)
+            if ((axes & (1 << a)) != 0 && a != along)
+                dip[a] = corner[a];
+        return dip;
     }
 
     /// <summary>A closed conveyor's bed as it will be laid (cm): what its ends take, no wider than its turns leave room for.</summary>
@@ -1754,7 +1966,7 @@ public sealed class RouteSearch
         Hosts(have, total);
         var c = _ask.C;
         if (_closed)
-            return ConstructRoutes.Check(_ask.World, c, _ask.Type, _ask.From, _ask.FromPort, _ask.Parent, _ask.ParentSeg, _ask.Junction, _chk.AsSpan(0, total), _ask.To, _ask.ToPort, straight: _pierced, checkFrom: have); // (what the search added: the rest was checked as it was laid; a conduit through a wall only its ends and spans, since the lattice kept it clear of all but the plates it passes)
+            return ConstructRoutes.Check(_ask.World, c, _ask.Type, _ask.From, _ask.FromPort, _ask.Parent, _ask.ParentSeg, _ask.Junction, _chk.AsSpan(0, total), _ask.To, _ask.ToPort, straight: _pierced && !_buriedNow, checkFrom: have, tidy: _tidy); // (what the search added: the rest was checked as it was laid; a conduit through a wall only its ends and spans, since the lattice kept it clear of all but the plates it passes)
         var tail = _chk[total - 1];
         return ConstructRoutes.OpenPath(c, _ask.Type, _ask.From, _ask.FromPort, _ask.Parent, _ask.ParentSeg, _ask.Junction, _chk.AsSpan(0, total - 1), tail.Pos, tail.Host);
     }
@@ -2032,6 +2244,8 @@ public sealed class RouteSearch
                 continue;
             c.RestBounds(i, out var lo, out var hi);
             var d = Vector3.DistanceSquared(rest, Vector3.Clamp(rest, lo, hi));
+            if (_tidy && i != _startHost && i != _goalHost && !ConstructRoutes.IsFixing(c.DefOf(i)))
+                d += 1f; // (the tool's: a node goes on the wall behind a fitting, not on the fitting)
             if (d < dist)
             {
                 dist = d;

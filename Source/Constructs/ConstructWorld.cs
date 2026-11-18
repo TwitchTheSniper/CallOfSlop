@@ -1477,7 +1477,7 @@ public sealed partial class ConstructWorld
                 }
             }
             // Routed links (cables, pipes, shafts, chutes on the outside): hit like parts, each segment on its own.
-            if (c.RouteCount > 0 && ConstructRoutes.Ray(c, origin, dir, ref best, out var route, out var rseg, out var rp))
+            if (c.RouteCount > 0 && ConstructRoutes.Ray(c, origin, dir, ref best, out var route, out var rseg, out var rp, look))
             {
                 found = true;
                 hit.Body = c;

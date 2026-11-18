@@ -141,6 +141,7 @@ public static unsafe partial class Program
         LinkToolOut(g, h.Tool == ConstructTool.Linker);
         ConnectorToolOut(in h);
         ConstructRender.ShowWires = h.Tool == ConstructTool.Linker;
+        ConstructRoutes.LookBuried = ConstructRender.ShowWires; // (the tool's look ray reaches a link in a wall)
         ConstructRender.AimMotion = h.Tool == ConstructTool.Configure; // (a joint under the crosshair swings through its range as a ghost: JointSides, board item js01)
         ConstructRender.VolumesShown = h.Tool is not (ConstructTool.None or ConstructTool.Hands); // (cargo volumes: outlined in build mode)
         if (h.Tool != ConstructTool.Configure && (_cvBody != 0 || _cvArmed))

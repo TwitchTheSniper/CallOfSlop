@@ -204,6 +204,7 @@ public static partial class ConstructRender
         ConnectorRender.NoCollideShow = false;
         SocketWeldRender.Clear();
         ShowWires = false;
+        ConstructRoutes.LookBuried = false;
         RouteRender.ClearPreview();
         WireFromBody = 0;
         WireFromPart = -1;

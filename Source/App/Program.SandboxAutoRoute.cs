@@ -27,6 +27,8 @@ public static partial class Program
     {
         if (_lkType == RouteType.Shaft)
             return true;
+        if (LinkLayNow != LinkLay.Near)
+            return false; // (in the walls: the straight line across the room isn't, so it is searched for along them)
         var d = Vector3.Abs(to - from);
         return d.X + d.Y + d.Z < 0.75f || (d.X > 0.02f ? 1 : 0) + (d.Y > 0.02f ? 1 : 0) + (d.Z > 0.02f ? 1 : 0) <= 1;
     }
@@ -35,7 +37,11 @@ public static partial class Program
     {
         World = g.Constructs, C = c, Type = _lkType, From = _lkFrom, FromPort = _lkFromPort, Parent = _lkParent, ParentSeg = _lkParentSeg, Junction = _lkJunction,
         Nodes = _lkNodes, Count = _lkCount, To = to, ToPort = port, OpenAt = openAt, OpenHost = openHost,
+        Lay = LinkLayNow, Tidy = true, Conduit = LinkLayNow != LinkLay.Near ? ConstructConduit.AirWall : 0f, // (in the walls: it runs along them, as a pre-built's wiring does)
     };
+
+    /// <summary>The lay of the link being routed: the tool's setting for a cable or pipe (<see cref="ConstructRoutes.Lay"/>), else on the surface.</summary>
+    private static LinkLay LinkLayNow => ConstructRoutes.Buryable(_lkType) ? ConstructRoutes.Lay : LinkLay.Near;
 
     /// <summary>
     /// The ghost to an input: the straight line while that is tidy and fits, else the search's route. Sets the preview past the
@@ -145,7 +151,7 @@ public static partial class Program
         if (ck != _lkCheckKey)
         {
             _lkCheckKey = ck;
-            _lkCheckWhy = ConstructRoutes.Check(g.Constructs, c, _lkType, _lkFrom, _lkFromPort, _lkParent, _lkParentSeg, _lkJunction, _lkNodes.AsSpan(0, _lkCount), _lkPickPart, port);
+            _lkCheckWhy = ConstructRoutes.Check(g.Constructs, c, _lkType, _lkFrom, _lkFromPort, _lkParent, _lkParentSeg, _lkJunction, _lkNodes.AsSpan(0, _lkCount), _lkPickPart, port, tidy: true);
         }
         LinkAutoInput(g, c, eye, tail, _lkPickPart, port, _lkCheckWhy, n0);
     }
@@ -172,7 +178,7 @@ public static partial class Program
             g.SandboxSay($"a link has at most {Construct.MaxNodesPerRoute} nodes");
             return;
         }
-        if (ConstructRoutes.Check(g.Constructs, c, _lkType, _lkFrom, _lkFromPort, _lkParent, _lkParentSeg, _lkJunction, _lkNodes.AsSpan(0, _lkCount), to, port) is { } why)
+        if (ConstructRoutes.Check(g.Constructs, c, _lkType, _lkFrom, _lkFromPort, _lkParent, _lkParentSeg, _lkJunction, _lkNodes.AsSpan(0, _lkCount), to, port, tidy: true) is { } why)
         {
             _lkCount = keep;
             g.SandboxSay(why);
@@ -187,14 +193,14 @@ public static partial class Program
         var res = _lkAutoRes;
         if (res == null)
             return;
-        var key = ((long)res.Key << 3) ^ (long)res.State ^ ((long)to << 44) ^ ((long)SandboxKeys.Stamp << 56);
+        var key = ((long)res.Key << 3) ^ (long)res.State ^ (res.Unburied ? 1L << 40 : 0) ^ ((long)to << 44) ^ ((long)SandboxKeys.Stamp << 56);
         if (key != _lkAutoLookKey)
         {
             _lkAutoLookKey = key;
             var name = $"{Cap(ConstructRoutes.Name(_lkType))} to {c.DefOf(to).Name}";
             _lkAutoLook = res.State switch
             {
-                RouteSearchState.Found => $"{name}: route found, {res.Count} node{(res.Count == 1 ? "" : "s")}, {res.Length:0.0} m{(res.Width > 0 ? $", {res.Width / 100f:0.00} m wide" : "")} - {SandboxKeys.Fire}: confirm",
+                RouteSearchState.Found => $"{name}: route found{(res.Unburied ? " (on the surface: no way through the walls here)" : LinkLayNow != LinkLay.Near ? $" {ConstructRoutes.LayName(LinkLayNow)}" : "")}, {res.Count} node{(res.Count == 1 ? "" : "s")}, {res.Length:0.0} m{(res.Width > 0 ? $", {res.Width / 100f:0.00} m wide" : "")} - {SandboxKeys.Fire}: confirm",
                 RouteSearchState.Failed => $"{name}: no route - {res.Why} - {SandboxKeys.Fire} a surface: place a node",
                 _ => $"{name}: routing",
             };

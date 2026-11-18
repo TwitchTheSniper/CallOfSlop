@@ -142,6 +142,13 @@ public static class RouteRender
                             continue;
                         }
                         tStart = 0f;
+                        if (ConstructRoutes.SegmentBuried(c, k, i))
+                        {
+                            // (in a wall: hidden; the linking tool shows it through the wall, DrawOverlay)
+                            dirPrev = Vector3.Zero;
+                            a = b;
+                            continue;
+                        }
                         if (cut)
                         {
                             // Two stubs with a gap between them.
@@ -588,11 +595,44 @@ public static class RouteRender
     }
 
     /// <summary>The preview of the link being routed, highlight-all and the aimed link: unlit, through the parts (only with the linking tool).</summary>
+    private const float BuriedShow = 6f; // the linking tool shows links in the walls this near the eye (highlight all shows them all)
+
     public static void DrawOverlay(Renderer gfx, ConstructWorld world, float alpha, bool blendTicks)
     {
         if (!ConstructRender.ShowWires)
             return;
         gfx.SetDepthTest(false);
+        // Links in the walls (ConstructRoutesWalls.cs): with the tool out, a thin line through the wall where each runs.
+        var eye = gfx.CameraPosition;
+        if (!Highlight)
+            foreach (var c in world.Bodies)
+            {
+                if (c.RouteCount == 0)
+                    continue;
+                var framed = false;
+                for (var k = 0; k < c.RouteCount; k++)
+                {
+                    ref var r = ref c.Routes[k];
+                    if (!ConstructRoutes.Buryable(r.Type) || AimBody == c && k == AimRoute)
+                        continue;
+                    for (var i = 0; i <= r.Count; i++)
+                    {
+                        if (!ConstructRoutes.SegmentBuried(c, k, i))
+                            continue;
+                        if (!framed)
+                        {
+                            Frames(c, alpha, blendTicks);
+                            framed = true;
+                        }
+                        var a = At(c, k, i - 1);
+                        var b = At(c, k, i);
+                        Geometry.ClosestSegmentSegment(a, b, eye, eye, out var near, out _);
+                        if (Vector3.DistanceSquared(near, eye) > BuriedShow * BuriedShow)
+                            continue; // (only the walls round the player: a whole ship's wiring at once is a tangle)
+                        Line(gfx, a, b, ConstructRoutes.SegmentHealth(c, k, i) <= 0 ? new Vector3(1f, 0.25f, 0.2f) : Colour(r.Type) * 1.6f + new Vector3(0.08f), 0.45f, ConstructRoutes.Radius(r.Type) * 0.6f);
+                    }
+                }
+            }
         foreach (var c in world.Bodies)
         {
             if (c.RouteCount == 0 || !Highlight && AimBody != c)
