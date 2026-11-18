@@ -98,8 +98,15 @@ public static class HullHoles
 
     private sealed record Made(ConstructPartDef Base, Hole[] Holes);
 
-    private static readonly Dictionary<string, ConstructPartDef?> Interned = new(StringComparer.Ordinal);
-    private static readonly Dictionary<ConstructPartDef, Made> Info = new();
+    /// <summary>The tables, made on the first hole (a nested class, so a sweep or a look before any hole allocates nothing).</summary>
+    private static class Store
+    {
+        internal static readonly Dictionary<string, ConstructPartDef?> Interned = new(StringComparer.Ordinal);
+        internal static readonly Dictionary<ConstructPartDef, Made> Info = new();
+    }
+
+    /// <summary>Set by the first <see cref="Parse"/>: until then there is nothing to look up or forget.</summary>
+    private static volatile bool _used;
 
     /// <summary>Counts for a check: parts made, the time it took, pieces left out, refusals.</summary>
     public static int DefsMade, Refused, PiecesDropped, FacetsCut, BoxesCut;
@@ -114,15 +121,19 @@ public static class HullHoles
     /// <summary>The file part a part was holed from (itself when it has no holes).</summary>
     public static ConstructPartDef BaseOf(ConstructPartDef d)
     {
-        lock (Interned)
-            return Info.TryGetValue(d, out var m) ? m.Base : d;
+        if (!_used)
+            return d;
+        lock (Store.Interned)
+            return Store.Info.TryGetValue(d, out var m) ? m.Base : d;
     }
 
     /// <summary>The holes a part has (none for a whole part).</summary>
     public static Hole[] HolesOf(ConstructPartDef d)
     {
-        lock (Interned)
-            return Info.TryGetValue(d, out var m) ? m.Holes : [];
+        if (!_used)
+            return [];
+        lock (Store.Interned)
+            return Store.Info.TryGetValue(d, out var m) ? m.Holes : [];
     }
 
     public static bool IsHoled(ConstructPartDef d) => d.IsNamedRuntime && d.Name.StartsWith(Prefix, StringComparison.Ordinal);
@@ -194,6 +205,9 @@ public static class HullHoles
                 return null;
         if (ConstructParts.Find(baseName) is not { } b || Refusal(b) != null) // (before the lock: the first ask loads the parts)
             return null;
+        _used = true;
+        var Interned = Store.Interned;
+        var Info = Store.Info;
         lock (Interned)
         {
             if (Interned.TryGetValue(name, out var have))
@@ -235,6 +249,14 @@ public static class HullHoles
     /// <summary>(RuntimeParts) Drops the doomed parts from the key table.</summary>
     internal static void Forget(Func<ConstructPartDef, bool> doomed)
     {
+        if (_used)
+            ForgetUsed(doomed); // (the lambda in a method of its own: its closure is made when the scope opens)
+    }
+
+    private static void ForgetUsed(Func<ConstructPartDef, bool> doomed)
+    {
+        var Interned = Store.Interned;
+        var Info = Store.Info;
         lock (Interned)
         {
             RuntimeParts.DropOrNull(Interned, d => d == null || doomed(d));
