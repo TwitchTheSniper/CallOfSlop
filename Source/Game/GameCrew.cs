@@ -91,6 +91,7 @@ public sealed partial class Game : ICrewHost
         };
         Players[id] = bot;
         Spawn(bot, ServerTick, SandboxNow);
+        CrewArmsOnSpawn(bot); // (a sidearm at the station; the long gun is in the lockers: GameCrewDefend.cs)
         if (stand is { } at)
             CrewStandAt(bot, c, at); // (an engineer or a loader stands at its place)
         else if (!CrewSit(bot, c, part))
