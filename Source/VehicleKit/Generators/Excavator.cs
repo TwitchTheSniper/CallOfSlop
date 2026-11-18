@@ -15,7 +15,7 @@ public sealed class Excavator(FactionStyle style) : VehicleShape(style)
     public override string Shape => "Excavator";
     public override IReadOnlyList<int> Seeds => [1, 14, 24]; // (--sweep-vehicle --seeds 30: the most different, 0.28 apart)
 
-    public override VehicleCheckOptions? Checks => new() { MaxParts = 300, MaxMass = 16000, MinDistance = 8, MinTurn = 30, MinStability = 0.5f, MaxYawDrift = 20 }; // (stability: built with its boom upright, as excavators travel, on tracks 2.1 m apart)
+    public override VehicleCheckOptions? Checks => new() { SkidSteers = true, MaxParts = 300, MaxMass = 16000, MinDistance = 8, MinTurn = 30, MinStability = 0.5f, MaxYawDrift = 20 }; // (stability: built with its boom upright, as excavators travel, on tracks 2.1 m apart)
 
     /// <summary>
     /// The joints' ranges, degrees from the pose it was built in. The boom's lever runs it from upright (0) forward and down to <see cref="BoomDown"/>: the stick then

@@ -34,7 +34,7 @@ public static class ExcavatorCheck
         var haulerText = VehicleRegistry.Make(VehicleRegistry.Find("Militia Ore Hauler")!, 1).Text();
         map.RestoreProps();
         World.SetMap(map);
-        const ushort port = 26311;
+        const ushort port = 26411; // (outside the self-tests' 26123-26311: SelfTest.cs)
         using var server = new Game(NetPeer.Host(port, 4), new Audio(), "Host", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id, bots: 0, mapId: map.Id) { MapVoteEnabled = false };
         server.Mode = GameMode.Sandbox;
         using var client = withClient ? new Game(NetPeer.Join("127.0.0.1", port), new Audio(), "Watcher", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id) : null;
