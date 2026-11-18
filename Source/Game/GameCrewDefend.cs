@@ -133,32 +133,38 @@ public sealed partial class Game
         return best >= 0 ? best : NearestArms(c, feet);
     }
 
-    /// <summary>Whether the member should be up defending under act <paramref name="act"/> (see the class summary).</summary>
+    /// <summary>A gunner keeps its gun while its ship fought another craft this recently (ticks): the guns can't reach a boarder inside.</summary>
+    private const long GunsBusy = 10 * World.TickRate;
+
+    /// <summary>Its guns fought another craft lately (a person on foot, the boarder before he came aboard, isn't one).</summary>
+    private bool GunsFightCraft(CrewShip s) => Crew.Tick - s.TargetTick <= GunsBusy && s.TargetBody != 0 && s.TargetBody != s.Body;
+
+    /// <summary>
+    /// Whether the member should be up defending under act <paramref name="act"/>: everyone aboard but the pilot at the helm, a miner out on the
+    /// ground, the engineers of a faction that may scuttle (they are kept for it), and the gunners while their ship is fighting another craft
+    /// (unless the boarders outnumber half the crew). Karl, 2026-11-18: seated gunners stayed put while he walked past them.
+    /// </summary>
     private bool CrewDefends(CrewShip s, NpcFactionDef? def, int m, BoardAct act, float ratio)
     {
         if (Crew.Player[m] == 0)
             return false;
+        var mayScuttle = act == BoardAct.Scuttle || def is not { Scuttle: ScuttleWhen.Never };
         var st = Crew.State[m];
-        if (st == CrewState.Free)
+        if (st is CrewState.Free or CrewState.Walking)
             return Crew.Job[m] switch
             {
-                CrewJob.Pilot => false, // (turned out of the helm: the fill puts it back once the seat is free)
-                CrewJob.Engineer => act != BoardAct.Scuttle, // (the scuttle takes an engineer)
+                CrewJob.Pilot => false, // (on its way to the helm, or turned out of it: the fill puts it back once the seat is free)
+                CrewJob.Engineer => !mayScuttle, // (the scuttle takes an engineer)
                 _ => true,
             };
         if (st != CrewState.Station || Crew.Station[m] < 0 || Crew.Station[m] >= s.StCount)
             return false;
-        var kind = s.StKind[Crew.Station[m]];
-        if (kind == CrewStationKind.Rest)
-            return true;
-        if (act != BoardAct.Repel)
-            return false;
-        return kind switch
+        return s.StKind[Crew.Station[m]] switch
         {
-            CrewStationKind.Magazine or CrewStationKind.Spot or CrewStationKind.Crane or CrewStationKind.Dock or CrewStationKind.Build => true,
-            CrewStationKind.Works => def is { Scuttle: ScuttleWhen.Never },
-            CrewStationKind.Gun => ratio >= 0.5f,
-            _ => false, // (the helm is kept; a miner is out on the ground)
+            CrewStationKind.Helm or CrewStationKind.Rack => false, // (the helm is kept; a miner is out on the ground)
+            CrewStationKind.Works => !mayScuttle,
+            CrewStationKind.Gun => !GunsFightCraft(s) || ratio >= 0.5f,
+            _ => true, // (a couch, a magazine, a spotter's post, a crane, a dock, a Building Station)
         };
     }
 
@@ -179,6 +185,7 @@ public sealed partial class Game
             var m = s.Members[i];
             if (!CrewDefends(s, def, m, s.Act, ratio) || !Players.TryGetValue((byte)(Crew.Player[m] - 1), out var bp) || !bp.Alive)
                 continue;
+            Crew.Nav.End(Crew.Nav.WalkerOf(m)); // (a walk to its station ends)
             Crew.Leave(m, CrewState.Fighting);
             _guards[bp.Id].Uid = 0; // (a new boarding starts its stages afresh)
             if (SandboxHands.Hand(bp.Id).Seated)

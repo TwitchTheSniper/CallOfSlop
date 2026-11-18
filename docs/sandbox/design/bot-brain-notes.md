@@ -324,6 +324,8 @@ Seen, not fixed: a ship built over the ground drops about 2 m at up to 7 m/s as 
 host's player) sank 0.25 m into the deck or fell off the hull; work hands standing on the docked Shuttle stand off the Zero Day's graph
 and fight with their sidearms where they are.
 
+**Follow-up (Karl, 2026-11-18, in-game):** seated gunners stayed in their couches while he walked past them. `CrewDefends` kept a station's crew seated under every act but Repel, and kept the gunners while the ship had a target lately, which included the boarder himself on his way in. Now every act but Surrender and Abandon stands up everyone but the pilot at the helm, a miner on the ground and the engineers of a faction that may scuttle; gunners stay only while their guns fought another craft in the last 10 s (`GunsFightCraft`) and the boarders don't outnumber half the crew.
+
 ## Next (for a successor)
 
 - CrewNav: lifts (ride a lift deck: `ConstructRide` carriers), patching a graph on a part's loss instead of building it again, Lock down
