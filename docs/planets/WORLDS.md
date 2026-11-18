@@ -80,8 +80,8 @@ the survey post stands.
 | The IT Department | The Server Farm | Glacier | the office, a smart depot and a beacon depot, a hut, a lookout |
 | Clan MacSlop | The Glen | Caledon | the chief's hall and two houses, the smithy (a foundry), a lookout, the gate |
 
-The Ministry's home is the penal colony on Glacier, near the pole where a story game starts (the opening builds it; it
-was on the Planetoid until 2026-11-12). Nobody lives in the settlements yet:
+The Ministry's home was the penal colony on Glacier, near the pole (removed 2026-11-17 with its tutorial: the ground kept
+for it stays as it is). Nobody lives in the settlements yet:
 the factions' people are still met by radio and in their vehicles.
 
 Cinder turns once an orbit, so its sun stays over latitude 0, longitude 220 (`--check-planetoid` prints it): the day

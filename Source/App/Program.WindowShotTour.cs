@@ -5,9 +5,9 @@ namespace CallOfSlop;
 
 /// <summary>
 /// The window tool's tour actions (a play-test pass: tools/playtest/tour.ps1): the camera to named places in one run, each
-/// pictured and its frame rate read. <c>places</c> prints where the player and the outposts are;
+/// pictured and its frame rate read. <c>places</c> prints where the player is;
 /// <c>view TARGET | DIST,UP,BEARING</c> puts the eye DIST m out from TARGET on a compass bearing (degrees from north) and UP m
-/// above it, looking at it, where TARGET is <c>outpost N</c> (from 1), <c>body N</c>, <c>geo LAT,LON</c> (the ground there,
+/// above it, looking at it, where TARGET is <c>body N</c>, <c>geo LAT,LON</c> (the ground there,
 /// on a planetoid) or <c>X,Y,Z</c>; <c>perf N [LABEL]</c> times the next N frames (mean, frames a second, the 99th percentile
 /// and the worst). <c>--uncapped</c> turns VSync and every frame cap off so the numbers are the game's own.
 /// </summary>
@@ -121,8 +121,6 @@ public static partial class Program
                     return $"{p.X:0},{p.Y:0},{p.Z:0} (lat {MathF.Asin(d.Y) * 180 / MathF.PI:0.000}, lon {(MathF.Atan2(d.X, d.Z) * 180 / MathF.PI + 360) % 360:0.000})";
                 }
                 WsSay($"[place] player at {Where(me.Position)}");
-                for (var i = 0; i < g.OutpostCount; i++)
-                    WsSay($"[place] outpost {i + 1}: {Where(g.OutpostMiddle(i))}");
                 WsSay($"[place] bodies {g.Constructs.Bodies.Count}, players {g.Players.Count}");
                 return true;
             }
@@ -135,7 +133,7 @@ public static partial class Program
                 if (nums.Length != 3 || !nums.Select((s, i) => float.TryParse(s, System.Globalization.CultureInfo.InvariantCulture, out v[i])).All(b => b)
                     || WsTourTarget(g, what) is not { } target)
                 {
-                    WsFail($"view TARGET | DIST,UP,BEARING (TARGET: outpost N, body N, geo LAT,LON or X,Y,Z): \"{arg}\"");
+                    WsFail($"view TARGET | DIST,UP,BEARING (TARGET: body N, geo LAT,LON or X,Y,Z): \"{arg}\"");
                     return true;
                 }
                 GravityFrames.Frame(target, out var right, out var up, out var north);
@@ -155,8 +153,6 @@ public static partial class Program
 
     private static Vector3? WsTourTarget(Game g, string what)
     {
-        if (what.StartsWith("outpost ", StringComparison.OrdinalIgnoreCase))
-            return int.TryParse(what[8..], out var i) && i >= 1 && i <= g.OutpostCount ? g.OutpostMiddle(i - 1) : null;
         if (what.StartsWith("geo ", StringComparison.OrdinalIgnoreCase))
         {
             if (World.Map.Planetoid is not { } pl || what[4..].Split(',') is not [var la, var lo]

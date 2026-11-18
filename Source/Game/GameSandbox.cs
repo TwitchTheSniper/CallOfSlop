@@ -373,7 +373,6 @@ public sealed partial class Game
             if (Crew.IsBody[p.Id])
                 continue; // (a crew body: its crew works the seat, GameCrew.cs)
             if (c.Parts[seat].D.Bunk)
-            {
                 SandboxBunkSeen(p, c, seat); // (their checkpoint: GameSandboxDeath.cs)
             if (c.Parts[seat].D.SeatHeal > 0)
                 SandboxSeatHeal(p, c.Parts[seat].D.SeatHeal); // (a medical station: GameSandboxDeath.cs)
