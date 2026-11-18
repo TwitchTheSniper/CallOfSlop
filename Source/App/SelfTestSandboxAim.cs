@@ -222,24 +222,22 @@ public static partial class SelfTest
         }
         Line($"aim highlight: {checks} predicate/action comparisons, {bad} disagree");
 
-        // The predicate allocates nothing (the reasons are the strings it is given).
+        // The predicate allocates nothing (the reasons are the strings it is given). The warm-up runs the measured loop's own
+        // body (it used to skip the welder, hands and paint calls), and the least of identical rounds counts: a real per-call
+        // allocation shows in every round, a one-off runtime one (2536 B once on Linux CI, never here) in one at most.
         var t1 = AimT(s, s.A, s.Lamp);
         var t2 = AimT(s, s.E, 0);
-        for (var i = 0; i < 20; i++)
+        var alloc = SteadyAllocBytes(() =>
         {
-            SandboxAim.CanAct(R, t1);
-            SandboxAim.CanAct(ConstructTool.PhysicsGun, t2);
-        }
-        var before = GC.GetAllocatedBytesForCurrentThread();
-        for (var i = 0; i < 2000; i++)
-        {
-            SandboxAim.CanAct(R, t1);
-            SandboxAim.CanAct(Wd, t1);
-            SandboxAim.CanAct(ConstructTool.PhysicsGun, t2);
-            SandboxAim.CanAct(ConstructTool.None, t1);
-            SandboxAim.CanAct(ConstructTool.Paint, t1);
-        }
-        var alloc = GC.GetAllocatedBytesForCurrentThread() - before;
+            for (var i = 0; i < 2000; i++)
+            {
+                SandboxAim.CanAct(R, t1);
+                SandboxAim.CanAct(Wd, t1);
+                SandboxAim.CanAct(ConstructTool.PhysicsGun, t2);
+                SandboxAim.CanAct(ConstructTool.None, t1);
+                SandboxAim.CanAct(ConstructTool.Paint, t1);
+            }
+        }, warmups: 1, rounds: 3);
         Line($"aim highlight: 10000 predicate calls allocated {alloc} B");
         if (alloc > 0)
             Fail($"aim highlight: the predicate allocated {alloc} B");
