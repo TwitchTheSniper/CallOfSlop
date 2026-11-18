@@ -825,6 +825,69 @@ public static partial class ConstructPhysics
         }
     }
 
+    /// <summary>
+    /// Two ships out of the bubble: each is posed by its flight, not stepped, so the step never pairs them (GameSpaceCollide.cs
+    /// asks here instead). Their pieces' contact points this tick, as the step finds them (speculative by their closing speed,
+    /// swept when thin): the deepest gap and its normal (from <paramref name="b"/> into <paramref name="a"/>, the mean of the
+    /// points near that deepest) and where it is. Returns how many points; 0: apart.
+    /// </summary>
+    internal static int ShipContact(ConstructWorld world, Construct a, Construct b, float dt, out Vector3 normal, out float gap, out Vector3 at)
+    {
+        normal = at = Vector3.Zero;
+        gap = float.MaxValue;
+        var ca = a.Collider;
+        var cb = b.Collider;
+        var nc = world.FirstNoCollide(a, b);
+        var rel = a.Vel - b.Vel;
+        var spin = a.AngVel - b.AngVel;
+        var margin = Skin + rel.Length() * dt + spin.Length() * dt * MathF.Min(a.Radius, b.Radius);
+        var pairs = _pairBuf.AsSpan();
+        var n = 0;
+        for (var ga = 0; ga < ca.GroupCount; ga++)
+        {
+            int sa = ca.Groups[ga].Seg;
+            a.WorldFrame(sa, out var qa, out var ta);
+            var fa = CFrame.Of(qa, ta);
+            for (var gb = 0; gb < cb.GroupCount; gb++)
+            {
+                int sb = cb.Groups[gb].Seg;
+                if (nc >= 0 && world.NoCollideGroups(nc, a, sa, b, sb))
+                    continue;
+                b.WorldFrame(sb, out var qb, out var tb);
+                var fb = CFrame.Of(qb, tb);
+                var ba = new CFrame { X = fa.LocalDir(fb.X), Y = fa.LocalDir(fb.Y), Z = fa.LocalDir(fb.Z), T = fa.Local(fb.T) };
+                var count = ca.Pairs(ga, cb, gb, ba, margin, pairs);
+                var start = n;
+                var every = Spread(count, n);
+                for (var i = 0; i < count && n < MaxCand - 16; i += every)
+                {
+                    int la = pairs[i * 2], lb = pairs[i * 2 + 1];
+                    ref var pa = ref ca.Leaves[la];
+                    ref var pb = ref cb.Leaves[lb];
+                    if (pa.WheelIx >= 0 || pb.WheelIx >= 0)
+                        continue; // (a cylinder's leaf is the bounds of its travel; the wheel's boxes stand for it here)
+                    if (nc >= 0 && world.NoCollideParts(nc, a, sa, pa.Part, b, sb, pb.Part))
+                        continue;
+                    ca.World(la, fa, out var wa);
+                    cb.World(lb, fb, out var wb);
+                    n = Swept(wa, ca, fa, wb, cb, fb, rel, spin, margin, dt, n);
+                }
+                n = start + ReducePoints(_cand.AsSpan(start, n - start));
+            }
+        }
+        for (var k = 0; k < n; k++)
+            if (_cand[k].Gap < gap)
+            {
+                gap = _cand[k].Gap;
+                at = _cand[k].P;
+            }
+        for (var k = 0; k < n; k++)
+            if (_cand[k].Gap < gap + 0.05f)
+                normal += _cand[k].N;
+        normal = normal.LengthSquared() > 1e-12f ? Vector3.Normalize(normal) : Vector3.Zero;
+        return normal == Vector3.Zero ? 0 : n;
+    }
+
     /// <summary>Would the held body's piece, moved, overlap a piece of <paramref name="b"/> it doesn't overlap now? (Only a new overlap refuses a step: pr02.)</summary>
     private static bool NewOverlap(Construct c, Construct b, Vector3 move)
     {

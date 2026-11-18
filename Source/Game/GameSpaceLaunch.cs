@@ -140,9 +140,12 @@ public sealed partial class Game
                 continue;
             }
             SpacePose(c, p, vel.ToVector3(), centre, dt);
+            if (_spacePosed.Count < _spacePosed.Capacity)
+                _spacePosed.Add(c);
             launched++;
         }
         SpaceLaunched = launched;
+        SpaceCollide(f, pose, dt); // (posed ships never meet in the step: they are kept apart here, GameSpaceCollide.cs)
         for (var k = 0; k < _spaceRiders.Count; k++)
             SpaceCarry(_spaceRiders[k]);
         _spaceRiders.Clear();
