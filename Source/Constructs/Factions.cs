@@ -105,7 +105,7 @@ public sealed class FactionTable
     public ushort PowerGone;
 
     /// <summary>
-    /// Phase 5 (faction-controllers.md, players in the politics; protocol 358): pacts between powers (NPC rows) and player factions (kind, the power's row,
+    /// Phase 5 (faction-controllers.md, players in the politics; protocol 359): pacts between powers (NPC rows) and player factions (kind, the power's row,
     /// the faction's id, minutes held and left, 0xFFFF: no end), the powers' standing offers to factions and the factions' proposals waiting for an answer
     /// (the power's row, the faction, the kind), and blood feuds (how power f sees faction id, a bit at [id * MaxStory + f]).
     /// </summary>

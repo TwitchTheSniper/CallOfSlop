@@ -1572,7 +1572,7 @@ public static unsafe partial class Program
         var binds = _settings.Binds;
         for (var i = 0; i < _slotDown.Length; i++)
             _slotDown[i] = !blocked && binds[i] != Keybinds.Unbound && Keybinds.IsDown(_window, binds[i]);
-        Keybinds.Resolve(binds, _session != null && _game is { SandboxOn: true }, _slotDown, _game is { SandboxSeatedHere: true }); // (per-mode keys; a Shift chord hides its plain key; in a seat the roll keys hide theirs)
+        Keybinds.Resolve(binds, _session != null && _game is { SandboxOn: true }, _slotDown, _game is { SandboxSeatedHere: true } or { MmuSteering: true }); // (a worn MMU flies like a seat: Q and E roll; per-mode keys; a Shift chord hides its plain key; in a seat the roll keys hide theirs)
         Keybinds.Collapse(_slotDown, _down); // (an action is down while any of its bindings is: pressed with the first, released with the last)
         if (_windowShot)
             WindowShotKeys(_down); // (--window-shot's script: Program.WindowShot.cs)
@@ -1758,8 +1758,17 @@ public static unsafe partial class Program
             var zoom = float.Lerp(1f, _game.Active.Def.AdsZoom, _game.AimT);
             var sens = BaseSensitivity * _settings.Sensitivity / zoom * _game.TacticalLookMult; // a stun slows turning (GameTactical.cs)
             var dy = (float)delta.Y * (_settings.InvertY ? -1 : 1);
-            _game.LookYaw = World.WrapAngle(_game.LookYaw + (float)delta.X * sens);
-            _game.LookPitch = Math.Clamp(_game.LookPitch - dy * sens, -1.55f, 1.55f);
+            if (_game.MmuLookSync())
+            {
+                // A worn MMU: the mouse turns and pitches the spacewalker about their own axes, the roll keys roll them (GameSandboxMmu.cs).
+                var roll = (Down(GameAction.SeatRollRight) ? 1f : 0f) - (Down(GameAction.SeatRollLeft) ? 1f : 0f);
+                _game.MmuTurn((float)delta.X * sens, -dy * sens, roll * Game.MmuRollRate * (float)FrameDt);
+            }
+            else
+            {
+                _game.LookYaw = World.WrapAngle(_game.LookYaw + (float)delta.X * sens);
+                _game.LookPitch = Math.Clamp(_game.LookPitch - dy * sens, -1.55f, 1.55f);
+            }
         }
 
         if (_game.Local is { Alive: false })
@@ -2085,6 +2094,11 @@ public static unsafe partial class Program
             fwd = _game.LookDir(_game.LookYaw + rk.Yaw + kk.Yaw, Math.Clamp(_game.LookPitch + rk.Pitch + kk.Pitch, -1.56f, 1.56f));
             camUp = Vector3.Transform(camUp, Quaternion.CreateFromAxisAngle(fwd, -(rk.Roll + kk.Roll + _headBob.Roll)));
             fov *= 1f + rk.Fov;
+            if (_game.MmuCamera(out var mmuFwd, out var mmuUp))
+            {
+                fwd = mmuFwd; // (a worn MMU: the camera is the spacewalker's attitude, rolled and all: GameSandboxMmu.cs)
+                camUp = mmuUp;
+            }
         }
         var pilotView = false;
         if (!tp)

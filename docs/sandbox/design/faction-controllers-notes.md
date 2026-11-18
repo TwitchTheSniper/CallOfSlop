@@ -487,7 +487,7 @@ with players) and phase 4's question 5 (an ally's groups known) taken up.
   by its captain's uid). Versions 1 and 2 read (no pacts with factions, no contracts). Faction ids are the world's own; a faction that ends loses its pacts,
   feuds and standing at the powers' next thinks, so a new one in its id starts clean. No new save file. A Defend for a faction's call isn't kept as one: after
   a load it holds where it was called.
-- Protocol 358 (main 357 at the merge): `Msg.Factions` ends with the pacts with factions, the powers' offers, the factions' proposals and the feuds with
+- Protocol 359 (main 358 at the merge): `Msg.Factions` ends with the pacts with factions, the powers' offers, the factions' proposals and the feuds with
   factions; `FactionOp` gains Pact, PactAnswer, PactBreak, CallAllies, ContractTake and ContractDrop at its end; `Msg.Contracts` (all contracts, on change,
   at most once a second, and to each joiner) in the slot of `RemovedColonyAlarm`.
 
@@ -534,3 +534,14 @@ with players) and phase 4's question 5 (an ally's groups known) taken up.
 
 - Player factions holding planets (phase 4's question 1) and players as admirals (phase 6).
 - A power's view of a faction's allies (a faction allied with a power's enemy is not yet thought less of).
+
+### Review fixes (2026-11-18)
+
+- Only a hit (`hitBody`, `hitCrew`) by a member on a pact partner may be stray (8 a minute); a kill, a ship sunk, a boarding or a capture breaks the pact at
+  once and counts in full. A forgiven hit is no deed (`PowerRelations.Post` returns true) and the game clears the foe mark the hit made
+  (`CrewShip.UnmarkFoe`), so an allied crew clipped by splash doesn't turn on the member.
+- A taken contract follows its taker by name: when they leave (their id goes to the next joiner) it is held for them, unworked and unpaid, its clock
+  stopped, and taken up again when someone of that name comes back; pay goes only to the taker present (`PowerContracts.Present`).
+- `Msg.Contracts`' read guard is 33 bytes an entry. Checks: `players` adds splash on a partner (forgiven, the ceasefire holds), a kill under a ceasefire
+  (breaks it) and the taker away (held); `--selftest-only "Packets, Save folder, Frame allocations, Interaction sweep"`, `--crew-relations`, `politics`
+  and `players`: all passed after merging main (protocol 359).

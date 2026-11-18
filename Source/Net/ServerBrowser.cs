@@ -615,10 +615,11 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 355: the Drill Rack (a new part file moves part ids; CfgKey.ToolsOut after Walls) and the crew's Miner job and Rack station (the roster's job byte).
     // 356: territory and the far layer (faction-controllers.md phase 4): Msg.FactionMap (planets' holders, the groups a player knows of), in the slot of the removed RemovedTutorial (Msg is full).
     // 357: a rack launch's straight run: ShellFlags.Boost, and a designed ShellOut with it carries its way off the rack (vec) and the age guidance takes over (u16).
-    // 358: players in the politics (faction-controllers.md phase 5): Msg.Factions ends with the pacts between powers and player factions, the powers'
+    // 358: a worn MMU's roll (Karl, 2026-11-18: it rolls and pitches with the mouse): the input packet ends with an i16 roll per command (PilotGear.MmuAxes).
+    // 359: players in the politics (faction-controllers.md phase 5): Msg.Factions ends with the pacts between powers and player factions, the powers'
     //   offers, the factions' proposals and blood feuds with factions; FactionOp gains Pact, PactAnswer, PactBreak, CallAllies, ContractTake and ContractDrop
     //   at its end; Msg.Contracts takes the slot of RemovedColonyAlarm (Msg is full).
-    public const ushort ProtocolVersion = 358;
+    public const ushort ProtocolVersion = 359;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

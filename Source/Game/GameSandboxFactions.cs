@@ -20,7 +20,7 @@ public enum FactionOp : byte
     SetRank, // u8 owner byte, u8 rank: move a member of a lower rank to another below one's own (FactionMay.Promote)
     MakeLeader, // u8 owner byte: the leader hands the faction to another member (and becomes the rank below)
     Stance, // u8 faction, i8 stance (-1 war, 0 neutral, 1 alliance): toward another faction (FactionMay.Relations)
-    // Protocol 358 (faction-controllers.md phase 5: GameCrewPolitics.cs).
+    // Protocol 359 (faction-controllers.md phase 5: GameCrewPolitics.cs).
     Pact, // u8 power, u8 pact kind: the leader proposes a pact to an NPC power (or takes its offer of that pact)
     PactAnswer, // u8 power, u8 yes: the leader takes or turns down a power's offer
     PactBreak, // u8 power: the leader breaks the faction's pact with a power
@@ -512,7 +512,7 @@ public sealed partial class Game
         for (var k = 0; k < t.PactCount; k++)
             w.U8(t.PactKindOf[k]).U8(t.PactA[k]).U8(t.PactB[k]).U16(t.PactHeld[k]).U16(t.PactLeft[k]);
         w.U16(t.PowerGone); // (protocol 354: powers gone for good, faction-controllers.md phase 3)
-        // Protocol 358 (phase 5): pacts with player factions, offers, proposals and blood feuds.
+        // Protocol 359 (phase 5): pacts with player factions, offers, proposals and blood feuds.
         w.U8((byte)t.PartyPactCount);
         for (var k = 0; k < t.PartyPactCount; k++)
             w.U8(t.PartyPactKind[k]).U8(t.PartyPactPower[k]).U8(t.PartyPactParty[k]).U16(t.PartyPactHeld[k]).U16(t.PartyPactLeft[k]);
@@ -664,7 +664,7 @@ public sealed partial class Game
             }
         }
         t.PowerGone = r.Has(2) ? r.U16() : (ushort)0;
-        int ppn = r.Has(1) ? r.U8() : 0; // (protocol 358: phase 5)
+        int ppn = r.Has(1) ? r.U8() : 0; // (protocol 359: phase 5)
         t.PartyPactCount = 0;
         for (var k = 0; k < ppn && r.Has(7); k++)
         {

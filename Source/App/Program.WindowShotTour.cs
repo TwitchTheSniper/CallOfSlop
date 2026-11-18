@@ -132,9 +132,9 @@ public static partial class Program
                 var what = bar > 0 ? arg[..bar].Trim() : arg.Trim();
                 var v = new float[3];
                 if (nums.Length != 3 || !nums.Select((s, i) => float.TryParse(s, System.Globalization.CultureInfo.InvariantCulture, out v[i])).All(b => b)
-                    || WsTourTarget(g, what) is not { } target)
+                    || WsTourTarget(g, what, me) is not { } target)
                 {
-                    WsFail($"view TARGET | DIST,UP,BEARING (TARGET: body N, geo LAT,LON or X,Y,Z): \"{arg}\"");
+                    WsFail($"view TARGET | DIST,UP,BEARING (TARGET: body N, geo LAT,LON, other or X,Y,Z): \"{arg}\"");
                     return true;
                 }
                 GravityFrames.Frame(target, out var right, out var up, out var north);
@@ -152,8 +152,15 @@ public static partial class Program
         return false;
     }
 
-    private static Vector3? WsTourTarget(Game g, string what)
+    private static Vector3? WsTourTarget(Game g, string what, Player? me = null)
     {
+        if (what.Equals("other", StringComparison.OrdinalIgnoreCase)) // (another player's eye: the host looking at a joined client's face, a suit's helmet)
+        {
+            foreach (var other in g.Players.Values)
+                if (other != me && other.Alive)
+                    return other.Eye;
+            return null;
+        }
         if (what.StartsWith("geo ", StringComparison.OrdinalIgnoreCase))
         {
             if (World.Map.Planetoid is not { } pl || what[4..].Split(',') is not [var la, var lo]
