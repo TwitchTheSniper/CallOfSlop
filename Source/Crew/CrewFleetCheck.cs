@@ -471,6 +471,7 @@ public static class CrewFleetCheck
         crew.Ticks = 0;
         crew.Fleet.CpuMs = crew.Fleet.WorstMs = 0;
         crew.Fleet.Ticks = crew.Fleet.Thinks = 0;
+        crew.Fleet.Bytes = 0;
         double worldMs = 0, worstWorld = 0;
         var ticks = seconds * World.TickRate;
         var b0 = GC.GetAllocatedBytesForCurrentThread();
@@ -501,10 +502,10 @@ public static class CrewFleetCheck
         var fleetUs = crew.Fleet.CpuMs / Math.Max(1, crew.Fleet.Ticks) * 1000;
         var crewMs = crew.CpuMs / Math.Max(1, crew.Ticks);
         var worldAvg = worldMs / ticks;
-        Console.WriteLine($"fleet scale: admirals {fleetUs:0.0} us a tick (worst {crew.Fleet.WorstMs * 1000:0} us, {crew.Fleet.Thinks} thinks in {ticks} ticks); crews {crewMs:0.00} ms a tick (worst {crew.WorstMs:0.00} ms, {crew.Bytes} bytes); " +
+        Console.WriteLine($"fleet scale: admirals {fleetUs:0.0} us a tick (worst {crew.Fleet.WorstMs * 1000:0} us, {crew.Fleet.Thinks} thinks in {ticks} ticks, {crew.Fleet.Bytes} bytes); crews {crewMs:0.00} ms a tick (worst {crew.WorstMs:0.00} ms, {crew.Bytes} bytes); " +
                           $"the world's step {worldAvg:0.00} ms a tick (worst {worstWorld:0.0} ms); {driven} driven, {moving} moving; all of it {crewMs + worldAvg:0.00} ms a tick against the 8 ms budget; {bytes} bytes allocated in all");
         CrewWorld.DriverCap = CrewWorld.MaxDrivers;
-        var ok = fleetUs < 300 && crew.Bytes == 0;
+        var ok = fleetUs < 300 && crew.Bytes == 0 && crew.Fleet.Bytes == 0;
         Console.WriteLine($"fleet scale: the admirals within 0.3 ms and allocating nothing: {(ok ? "OK" : "OVER")}; the whole tick {(crewMs + worldAvg < 8 ? "within" : "OVER")} 8 ms");
         return ok;
     }

@@ -116,6 +116,8 @@ public static partial class Program
                 return true;
             case "crewfleet": // "crewfleet": host: every group, its admiral, ships, orders and strength (faction-controllers.md phase 2)
                 Console.WriteLine($"[windowshot] crewfleet: {(g.IsServer ? g.CrewFleetLines() : $"{g.IntelMarks.Count} intel marks")}");
+                foreach (var body in g.CrewInfo.Keys)
+                    Console.WriteLine($"[windowshot] crewfleet: look line of {body}: {g.CrewLook(body)}"); // (as this peer has it: Msg.CrewSeats)
                 return true;
             case "crewofficer": // "crewofficer question|ransom": host: this player questions or ransoms the first officer prisoner
                 if (g.IsServer)

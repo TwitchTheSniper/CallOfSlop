@@ -167,6 +167,7 @@ public sealed class CrewFleet
     // Its cost (the far layer must stay fixed per tick at 256 groups).
     public double CpuMs, WorstMs;
     public int Ticks, Thinks;
+    public long Bytes;
 
     public CrewFleet()
     {
@@ -426,6 +427,8 @@ public sealed class CrewFleet
     public void Step(CrewWorld crew, ConstructWorld w, ICrewHost? host)
     {
         var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+        var b0 = GC.GetAllocatedBytesForCurrentThread();
+        var e0 = crew.Events.Count + News.Count;
         if (Live > 0)
             for (var k = 0; k < Rules.GroupsPerTick; k++)
             {
@@ -439,6 +442,8 @@ public sealed class CrewFleet
                 }
             }
         var ms = (System.Diagnostics.Stopwatch.GetTimestamp() - t0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+        if (crew.Events.Count + News.Count == e0)
+            Bytes += GC.GetAllocatedBytesForCurrentThread() - b0; // (a think that said nothing allocates nothing)
         CpuMs += ms;
         if (Ticks++ > 10)
             WorstMs = Math.Max(WorstMs, ms);
