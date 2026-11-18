@@ -407,6 +407,7 @@ public sealed partial class Game
             var name = isBot ? CleanBotName(new string(chars)) : Settings.Clean(new string(chars));
             var cosmetics = ReadRosterCosmetics(ref r, isBot); // look, uniform, spacewalk gear (GameCosmetics.cs)
             _names[id] = name;
+            _rosterBot[id] = isBot;
             _cosmetics[id] = cosmetics;
             if (Players.TryGetValue(id, out var p))
             {
@@ -424,6 +425,12 @@ public sealed partial class Game
     }
 
     private readonly Dictionary<byte, string> _names = new();
+
+    /// <summary>Client: which player ids the host's roster calls bots (crew bodies among them).</summary>
+    private readonly bool[] _rosterBot = new bool[256];
+
+    /// <summary>Is player <paramref name="id"/> a bot (a crew body, a spawned bot) rather than a person? On any peer (the command view's crew dots).</summary>
+    public bool PlayerIsBot(byte id) => IsServer ? Players.TryGetValue(id, out var p) && p.Bot != null : _rosterBot[id];
 
     public string NameOf(byte id) =>
         Players.TryGetValue(id, out var p) && p.Name.Length > 0 ? p.Name : _names.GetValueOrDefault(id) ?? $"Player {id}";

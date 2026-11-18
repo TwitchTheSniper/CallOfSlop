@@ -7,7 +7,7 @@ ship with a working flight computer then flies there by itself. It is the first 
 
 - **Key:** Home (`GameAction.CommandView`, rebindable; M is the Mirror Table's). Esc closes the order menu, then the view.
   Sandbox only, on a map that is in a star system (`Game.Space`); elsewhere the key says why not.
-- **Code:** the picture `Source/UI/UiCommand.cs`, the ships in it and the ship card `UiCommandShip.cs`, the order menu
+- **Code:** the picture `Source/UI/UiCommand.cs`, the ships in it and the ship card `UiCommandShip.cs`, the crews on it `UiCommandCrew.cs`, the order menu
   `UiCommandOrders.cs`, the key `Source/App/Program.Command.cs`; the orders `Source/Game/GameNav.cs`, trips between
   planets `Source/Game/GameNavTrip.cs`; the steering maths `Source/Space/NavGuidance.cs`, the transfer planner
   `Source/Space/NavTrip.cs`.
@@ -67,9 +67,10 @@ What a commander wants to know about a ship without boarding it (`CmdCardRead`, 
 | HULL, FUEL, POWER | Bars: parts still working, litres of fuel of its tanks' room, stored energy |
 | DRIVE | Acceleration at full thrust (and in g) and the thrust itself |
 | BURN | Time at full thrust on the fuel aboard, and the change of speed that buys (dV) |
-| CARGO, CREW | What its holds carry, who is aboard |
+| CARGO | What its holds carry |
 | SYSTEMS | Flight computer (and whether its autopilot is on), jump drive, guns and thrusters, counted |
 | ORDER, NOW | Its order and what it is doing about it; why it takes none ("NO FLIGHT COMPUTER") |
+| FACTION, COMMAND, PEOPLE, CREW | Who holds it and how they stand with you, its group and admiral, the people aboard, its crew ("The crews layer", below) |
 
 Buttons: CANCEL ORDER, a one-click "ORBIT <BODY> LOW", CENTRE. A picked body has a small card of its own (what it is a
 planet or moon of, radius, gravity at the ground, how far out it is and its time round, whether it can be landed on).
@@ -101,6 +102,33 @@ when the view is closed and opened again. Code: `Source/UI/UiCommandLinks.cs`.
 - **Cost:** off, one bool check. On, the bodies with link parts are gathered four times a second into fixed arrays (64
   factories, 128 links, 32 legs; `LinkedLogistics.PartCount` is kept per rebuild); a label string is made only when its
   key changes. A frame projects the nodes and draws lines.
+
+## The crews layer
+
+Karl, 2026-11-18: "visualising crews etc for the ships on the RTS view", in the view's own style. The **CREWS** tickbox (top
+middle, left of MISSILES; on by default) turns the map's part of it on and off; the card's rows are always there. Code:
+`Source/UI/UiCommandCrew.cs`.
+
+- **Under a craft's name:** who holds it and its crew in one line: "FLAGSHIP  MILITIA G1  CAPT ZED  CREW 10", "YOUR CREW  8 ABOARD"
+  or "PRIZE  3 PRISONERS". Its colour is how that power stands with you, as the faction window reads it: red below 0 (its crews
+  fight you), amber wary (under 20), cyan neutral (under 60), green friendly, yours or a prize.
+- **Groups:** a chevron over each flagship, and a dashed line running from every other ship of its group to it.
+- **On a hologram:** a dot at each seat a crew member works with no body (the stand-ins), and one at each body aboard: a person
+  green with a ring, a crew body in its power's colour, a ring turning on whoever has the helm.
+- **On the card:** FACTION (the power and its standing in words and number, YOUR CREW, PRIZE, PLAYER BUILT or NOBODY), COMMAND
+  (its group and its admiral: "ADMIRAL IKE'S FLAGSHIP", or "UNDER ADMIRAL IKE" for the others), PEOPLE (players in its seats,
+  PILOT and SHELL marked, and how many stand on its decks), CREW. A crew of yours or a prize is listed member by member (up to
+  eight, then "AND N MORE"): job, name, a ten-cell health bar and what they are doing (AT THE HELM, ON A GUN, MOVING, FIGHTING,
+  PRISONER, OFFICER ...). Anyone else's crew is only its captain and how many are alive, and how many sit at stations as
+  stand-ins: what a peer can see from outside.
+- **Multiplayer:** nothing new on the wire. It reads what every peer already has: `Game.CrewInfo` and `CrewStandIns`
+  (Msg.CrewSeats), `Game.CrewRosters` (Msg.CrewRoster: own crews and prizes only), the factions table's standings, and the players.
+  `Game.PlayerIsBot` tells a crew body from a person on a client from the host's roster byte.
+- **Cost:** off, one bool check. On, the map line is made only when its crew, standing or command changes (a key per craft);
+  the group lines are a pass over the flagships on the map; the card's rows are made with the rest of the card, four times a second.
+- **Window tool:** `crewgroup POWER` (every crewed body of that power, in one patrol group) and `crewown` (the last crewed body
+  becomes yours) are test states for it, for example:
+  `--map Glacier --calm --blueprint "Zero Day Frigate (crewed)" --do "look 90 0; spawnbp Zero Day Frigate (crewed); look 180 0; spawnbp Zero Day Frigate (crewed); wait 120; crewown; crewgroup Militia; wait 300; command 500; cmdpick 3"`.
 
 ## The missiles layer
 
