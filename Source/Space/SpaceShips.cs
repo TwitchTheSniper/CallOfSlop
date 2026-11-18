@@ -184,6 +184,13 @@ public sealed class SpaceShips
     private readonly long[] _aNs;
     private readonly int[] _sub;
 
+    // Rail ships within one Advance: when each is next looked at (ns; between looks its state is left alone, exactly,
+    // since a rail is a function of time), the step it was given at its last look (s), and whether it reached its
+    // primary's sky in this tick and waits there for the rest of it.
+    private readonly long[] _railNext;
+    private readonly double[] _railStep;
+    private readonly bool[] _skyHeld;
+
     // Bodies: GM, sphere of influence, children (flattened).
     private readonly int _nb;
     private readonly double[] _mu, _soi;
@@ -210,7 +217,9 @@ public sealed class SpaceShips
     public int MaxSpeed { get; private set; } = SpaceClock.MaxSpeed;
 
     /// <summary>Counters for tests and the log: hand-overs, rail entries, Kepler solves that failed (should stay 0).</summary>
-    public long Handovers, RailEntries, DriftFailures, AdaptiveSteps, CoastSteps;
+    public long Handovers, RailEntries, DriftFailures, AdaptiveSteps, CoastSteps, SkyHolds;
+
+    private long _advanceTo;
 
     public SpaceShips(StarSystem system, int capacity, SpaceTime start = default, List<ISpaceForce>? forces = null)
     {
@@ -233,6 +242,9 @@ public sealed class SpaceShips
         _aEnd = new Vec3d[capacity];
         _aNs = new long[capacity];
         _sub = new int[capacity];
+        _railNext = new long[capacity];
+        _railStep = new double[capacity];
+        _skyHeld = new bool[capacity];
 
         var bodies = system.Bodies;
         _nb = bodies.Length;
@@ -465,17 +477,47 @@ public sealed class SpaceShips
         var chunks = (long)Math.Ceiling(need / Math.Clamp(Math.Min(ChunkSubsteps, MaxSubsteps), 1, MaxGrid));
         if (chunks < 1 || double.IsNaN(need))
             chunks = 1;
-        // Ships on rails are looked at often enough not to pass through a sphere of influence between two looks (one
-        // tick at 1,000,000x is 4.6 hours: a ship would fly through a moon's sphere unseen).
+        // Ships on rails are looked at often enough not to pass through a sphere of influence (or under a sky) between
+        // two looks: one tick at 1,000,000x is 4.6 hours, and a ship would fly through a moon's sphere unseen. Each is
+        // looked at only when its own step is up (a look is a Kepler solve and the mode's check), so a ship near an
+        // edge cuts the tick into many chunks without the others paying for them.
         var railNeed = 1.0;
         for (var i = 0; i < Count; i++)
-            if (_mode[i] == ShipMode.Rail)
-                railNeed = Math.Max(railNeed, dt / RailStep(i));
+        {
+            _skyHeld[i] = false;
+            if (_mode[i] != ShipMode.Rail)
+                continue;
+            _railStep[i] = RailStep(i);
+            _railNext[i] = Time.Ns + (long)Math.Min(total, _railStep[i] * SpaceTime.NsPerSecond);
+            railNeed = Math.Max(railNeed, dt / _railStep[i]);
+        }
         if (railNeed > chunks)
             chunks = (long)Math.Min(Math.Ceiling(railNeed), Math.Max(chunks, MaxRailChunks));
+        _advanceTo = to.Ns;
         var start = Time.Ns;
+        var span = total;
+        var recut = false;
         for (long c = 1; c <= chunks; c++)
-            StepChunk(c == chunks ? to.Ns : start + (long)((Int128)total * c / chunks), c == 1);
+        {
+            var hv = Handovers;
+            StepChunk(c == chunks ? to.Ns : start + (long)((Int128)span * c / chunks), c == 1);
+            if (Handovers == hv || c == chunks || recut)
+                continue;
+            // A ship changed primary mid-tick (into a moon's sphere, say): what is left of the tick is cut again for
+            // its new steps (its sky among them), once a tick.
+            var rest = (to.Ns - Time.Ns) / (double)SpaceTime.NsPerSecond;
+            var need2 = 1.0;
+            for (var i = 0; i < Count; i++)
+                if (_mode[i] == ShipMode.Rail)
+                    need2 = Math.Max(need2, rest / _railStep[i]);
+            if (need2 <= chunks - c)
+                continue;
+            recut = true;
+            start = Time.Ns;
+            span = to.Ns - Time.Ns;
+            chunks = (long)Math.Min(Math.Ceiling(need2), Math.Max(chunks - c, MaxRailChunks));
+            c = 0;
+        }
         UpdateSpeedLimit();
     }
 
@@ -529,8 +571,11 @@ public sealed class SpaceShips
         var dt2 = dt * dt;
         _interp = worst * dt2 * dt2 / 384 < 1e-6 && worst * dt2 / 8 < 1e-9;
 
+        var final = endNs >= _advanceTo;
         for (var i = 0; i < Count; i++)
         {
+            if (_skyHeld[i] || _mode[i] == ShipMode.Rail && Thrust[i] == Vec3d.Zero && !final && endNs < _railNext[i])
+                continue; // (held at its sky for the rest of the tick, or a rail ship whose next look isn't due)
             if (_mode[i] != ShipMode.Adaptive && Thrust[i] != Vec3d.Zero)
             {
                 _mode[i] = ShipMode.Adaptive; // thrust set since the last step (a rail ship's state is current)
@@ -539,8 +584,7 @@ public sealed class SpaceShips
             switch (_mode[i])
             {
                 case ShipMode.Rail:
-                    if (!UniversalKepler.PropagateNs(_mu[_primary[i]], _railR[i], _railV[i], endNs - _railEpoch[i].Ns, out _r[i], out _v[i]))
-                        DriftFailures++;
+                    RailLook(i, t0, endNs);
                     break;
                 case ShipMode.Coast:
                     StepCoast(i, nMax);
@@ -558,10 +602,51 @@ public sealed class SpaceShips
         Array.Copy(_gAcc, last, _cAcc, 0, _nb);
         for (var i = 0; i < Count; i++)
         {
+            if (_skyHeld[i])
+            {
+                if (_mode[i] == ShipMode.Rail)
+                    EnterRails(i); // (it waits where it reached the sky: its rail starts again from there)
+                continue;
+            }
+            if (_mode[i] == ShipMode.Rail && !final && endNs < _railNext[i])
+                continue;
             if (_mode[i] == ShipMode.Rail && Handover(i, _cPos, _cVel, 0))
                 _mode[i] = ShipMode.Coast; // its rail was round the old primary
             SelectMode(i);
+            if (_mode[i] == ShipMode.Rail)
+            {
+                _railStep[i] = RailStep(i);
+                _railNext[i] = endNs + (long)Math.Min(long.MaxValue / 4, _railStep[i] * SpaceTime.NsPerSecond);
+            }
         }
+    }
+
+    /// <summary>
+    /// A rail ship's look at the end of a chunk: its rail carried there. A ship that went under its primary's sky in the
+    /// chunk is put back where it crossed (found along its rail) and waits there for the rest of the tick, so the game
+    /// sees it at the sky's edge (to land, or to come back into the bubble) instead of past it or under the ground.
+    /// </summary>
+    private void RailLook(int i, long t0, long endNs)
+    {
+        var mu = _mu[_primary[i]];
+        var sky = Sky[_primary[i]];
+        var wasOut = sky > 0 && _r[i].LengthSquared >= sky * sky;
+        if (!UniversalKepler.PropagateNs(mu, _railR[i], _railV[i], endNs - _railEpoch[i].Ns, out _r[i], out _v[i]))
+            DriftFailures++;
+        if (!wasOut || _r[i].LengthSquared >= sky * sky)
+            return;
+        long lo = Math.Max(t0, _railEpoch[i].Ns), hi = endNs;
+        for (var k = 0; k < 40 && hi - lo > 1000; k++)
+        {
+            var mid = lo + (hi - lo) / 2;
+            if (UniversalKepler.PropagateNs(mu, _railR[i], _railV[i], mid - _railEpoch[i].Ns, out var rm, out _) && rm.LengthSquared < sky * sky)
+                hi = mid;
+            else
+                lo = mid;
+        }
+        UniversalKepler.PropagateNs(mu, _railR[i], _railV[i], hi - _railEpoch[i].Ns, out _r[i], out _v[i]);
+        _skyHeld[i] = true;
+        SkyHolds++;
     }
 
     /// <summary>Wisdom-Holman kick-drift-kick on the grid.</summary>
@@ -864,6 +949,12 @@ public sealed class SpaceShips
                 var r = _r[i].Length;
                 if (r > sky && Periapsis(_mu[p], _r[i], _v[i]) < sky)
                     speed = Math.Min(speed, (r - sky) / Math.Max(1, _v[i].Length) / (4 * tick));
+                else if (r <= sky && Vec3d.Dot(_r[i], _v[i]) < 0)
+                {
+                    // Under the sky (held at its edge, or waiting to come back into the bubble), falling: four ticks to the ground.
+                    var down = -Vec3d.Dot(_r[i], _v[i]) / r;
+                    speed = Math.Min(speed, Math.Max(0, r - System.Bodies[p].Radius) / Math.Max(1, down) / (4 * tick));
+                }
             }
         }
         MaxSpeed = (int)Math.Clamp(Math.Floor(speed), 1, SpaceClock.MaxSpeed);
@@ -907,6 +998,9 @@ public sealed class SpaceShips
             var vr = (v - (_cVel[c] - _cVel[p])).Length;
             step = Math.Min(step, Math.Max(0, gap) / Math.Max(1e-3, vr));
         }
+        var sky = Sky[p];
+        if (sky > 0 && rl > sky && peri < sky)
+            step = Math.Min(step, (rl - sky) / Math.Max(1e-3, v.Length)); // (and its sky's edge, when it dips under it)
         return Math.Max(RailStepLeast, step * 0.5);
     }
 

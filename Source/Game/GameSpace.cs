@@ -85,7 +85,8 @@ public sealed partial class Game
             if (af != null && af.Ships.AnyThrust())
                 f.AnyoneBusy = true; // (a burn this tick is real time wherever it is: its own flight's test only sees its own)
         SpaceSkies(Space, f); // (where ships stop being ships, so time slows before one gets there: GameSpaceLanding.cs)
-        f.Tick(Math.Min(Space.AwaySpeedLimit, Math.Min(NavSpeedCap, Math.Max(1, TimeSpeedMost)))); // (ships under orders slow it before a burn: GameNavTrip.cs)
+        var allowed = Math.Min(NavSpeedCap, Math.Max(1, TimeSpeedMost));
+        f.Tick(Math.Min(Space.AwaySpeedLimit, allowed), allowed); // (ships under orders slow it before a burn: GameNavTrip.cs)
         foreach (var af in Space.Away)
             af?.Follow(f.Clock); // (the other systems' ships, on the same galaxy time)
         SpaceLaunchAfter(f); // (constructs past the sky's edge become ships; ships pose their constructs or come back in)

@@ -69,12 +69,15 @@ public sealed class SpaceFlight
 
     /// <summary>
     /// One game tick: the speed the rule allows, the clock, then every ship. <paramref name="shipLimit"/> is the other
-    /// systems' ships' own limit (phase 6: their flights follow this clock, <see cref="Follow"/>).
+    /// systems' ships' own limit (phase 6: their flights follow this clock, <see cref="Follow"/>) and the game's;
+    /// <paramref name="railLimit"/> the game's alone, for <see cref="SpaceShips.WarpRails"/>.
     /// </summary>
-    public void Tick(int shipLimit = int.MaxValue)
+    public void Tick(int shipLimit = int.MaxValue, int railLimit = int.MaxValue)
     {
         var busy = AnyoneBusy || Ships.AnyThrust();
-        Ships.WarpRails = SpaceTimeRule.Effective(RequestedSpeed, busy, shipLimit) > SpaceTimeRule.WarpRailsAbove;
+        // Rails from what the game allows (railLimit: orders, settings), not the ships' own limits here or in other
+        // systems (shipLimit has those too): those are what rails lift.
+        Ships.WarpRails = SpaceTimeRule.Effective(RequestedSpeed, busy, railLimit) > SpaceTimeRule.WarpRailsAbove;
         Clock.Speed = SpaceTimeRule.Effective(RequestedSpeed, busy, Math.Min(Ships.MaxSpeed, shipLimit));
         Clock.Tick();
         Wells.Refresh(); // (where the wells' ships are as this step starts)

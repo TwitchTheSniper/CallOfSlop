@@ -67,6 +67,8 @@ public static class SpaceCli
         string? file = null;
         double hours = 6;
         var speed = 100;
+        var crowd = 0; // --crowd N: N more ships round the first moon and across its sphere (the rails' cost near an edge)
+        var sky = false; // --sky: every body has a sky 1.3 radii out (SpaceShips.Sky), as the game sets its worlds' edges
         for (var i = 0; i < args.Length; i++)
         {
             var a = args[i].ToLowerInvariant();
@@ -77,13 +79,17 @@ public static class SpaceCli
                 hours = double.Parse(v, CultureInfo.InvariantCulture);
             else if (a == "--speed" && v != null)
                 speed = int.Parse(v, CultureInfo.InvariantCulture);
+            else if (a == "--crowd" && v != null)
+                crowd = int.Parse(v, CultureInfo.InvariantCulture);
+            else if (a == "--sky")
+                sky = true;
         }
         var sys = LoadOrPrint(file ?? Path.Combine(AppContext.BaseDirectory, StarSystemFile.FolderName, "Dev.json"));
         if (sys == null)
             return 1;
-        var flight = new SpaceFlight(sys, sys.Count + 1);
+        var flight = new SpaceFlight(sys, sys.Count + 1 + crowd);
         var ships = flight.Ships;
-        var names = new string[sys.Count + 1];
+        var names = new string[sys.Count + 1 + crowd];
         for (var b = 1; b < sys.Count; b++)
         {
             var body = sys.Bodies[b];
@@ -95,6 +101,37 @@ public static class SpaceCli
             var body = sys.Bodies[1];
             var r = 1.5 * body.Radius;
             names[ships.AddRelative(1, new Vec3d(0, r, 0), new Vec3d(-1.5 * Math.Sqrt(2 * body.Mu / r), 0, 0))] = $"leaving {body.Name}";
+        }
+        if (sky)
+            for (var b = 1; b < sys.Count; b++)
+                ships.Sky[b] = 1.3 * sys.Bodies[b].Radius;
+        var moon = Array.FindIndex(sys.Bodies, b => b.Parent > 0);
+        if (crowd > 0 && moon > 0)
+        {
+            var rng = new Random(1);
+            var mb = sys.Bodies[moon];
+            var soi = SpaceShips.SphereOfInfluence(sys, moon);
+            sys.StateOf(moon, default, out var mp, out _);
+            sys.StateOf(mb.Parent, default, out var pp, out _);
+            var mu = sys.Bodies[mb.Parent].Mu;
+            for (var k = 0; k < crowd; k++)
+            {
+                var ang = rng.NextDouble() * Math.Tau;
+                if (k % 2 == 0)
+                {
+                    // Round the moon, from low to near its sphere's edge, some dipping under its sky.
+                    var r = 1.4 * mb.Radius + rng.NextDouble() * (0.95 * soi - 1.4 * mb.Radius);
+                    var vc = Math.Sqrt(mb.Mu / r) * (0.7 + 0.3 * rng.NextDouble());
+                    names[ships.AddRelative(moon, new Vec3d(r * Math.Cos(ang), r * Math.Sin(ang), 0), new Vec3d(-vc * Math.Sin(ang), vc * Math.Cos(ang), 0))] = $"crowd {k} {mb.Name}";
+                }
+                else
+                {
+                    // Round the moon's parent near the moon's own path, so they cross its sphere.
+                    var d = (mp - pp).Length + (rng.NextDouble() * 4 - 2) * soi;
+                    var vc = Math.Sqrt(mu / d);
+                    names[ships.AddRelative(mb.Parent, new Vec3d(d * Math.Cos(ang), d * Math.Sin(ang), 0), new Vec3d(-vc * Math.Sin(ang), vc * Math.Cos(ang), 0))] = $"crowd {k} across";
+                }
+            }
         }
         flight.RequestSpeed(speed, fromHost: true);
         // Each ship's orbital energy round its primary at the start, to show drift (a closed orbit keeps it; rails exactly).
@@ -113,7 +150,7 @@ public static class SpaceCli
             if (flight.Clock.Now.Seconds >= nextHour * 3600)
             {
                 Console.WriteLine($"[space] {flight.Clock.Now} at {flight.Clock.Speed}x (ships allow {ships.MaxSpeed}x)");
-                for (var i = 0; i < ships.Count; i++)
+                for (var i = 0; i < Math.Min(ships.Count, sys.Count + 1); i++) // (not the crowd)
                 {
                     var p = ships.PrimaryOf(i);
                     var d = (ships.PositionOf(i) - ships.BodyPosition(p)).Length;
@@ -133,7 +170,7 @@ public static class SpaceCli
         Console.WriteLine(FormattableString.Invariant($"[space] time speed {slowest}x to {fastest}x after the first tick; the slowest tick {worstMs:0.00} ms"));
         Console.WriteLine(FormattableString.Invariant(
             $"[space] {ticks} ticks in {sw.Elapsed.TotalMilliseconds:0.0} ms ({sw.Elapsed.TotalMilliseconds * 1000 / Math.Max(1, ticks):0.0} us a tick); ")
-            + FormattableString.Invariant($"{ships.Handovers} hand-overs, {ships.RailEntries} rail entries, {ships.CoastSteps} coasting and {ships.AdaptiveSteps} adaptive steps, {ships.DriftFailures} failed drifts"));
+            + FormattableString.Invariant($"{ships.Handovers} hand-overs, {ships.RailEntries} rail entries, {ships.CoastSteps} coasting and {ships.AdaptiveSteps} adaptive steps, {ships.DriftFailures} failed drifts, {ships.SkyHolds} held at a sky"));
         return 0;
     }
 
