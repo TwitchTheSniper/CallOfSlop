@@ -124,6 +124,16 @@ logistics layer it stays as it was when the view is closed and opened again. Cod
 - **Cost:** off, one bool check a frame. On, at most 96 missiles a frame, each 40 steps (a gravity and an air read a
   step); a label's text is made at most four times a second.
 
+## The factions layer
+
+The FACTIONS button (right of LOGISTICS) turns on the NPC powers' map (docs/sandbox/design/faction-controllers.md phase 4; Karl's answer 3): each
+planet ringed in its holder's colour with its tag and share of control (a dashed ring in the leader's colour and white when contested), and the faction
+groups this player knows of as triangles in their power's colour, labelled with a guess at what they do (STRIKE, DEFENCE, GARRISON, RETURNING) and
+their ships. Fog of war (the user's answer 7): a group shows only while it is on this player's world within 8 km of them, or for five minutes after the
+news named it (dim, with how many minutes ago, where it was then). A group of a power hostile to the player out to take a site, or within 3 km, is red
+with brackets and THREAT. It all comes from `Msg.FactionMap`, once a second per player (`Game/GameCrewTerritory.cs`); labels are made only when it
+changes. Code: `Source/UI/UiCommandFactions.cs`. Window tool: `crewterritory [near|leave]` (`Program.WindowShotPlay.cs`).
+
 ## Orders
 
 Eight kinds (`NavKind`), each for one ship, given by any player to any ship that takes orders. **A ship takes orders
