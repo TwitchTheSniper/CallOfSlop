@@ -110,7 +110,7 @@ public sealed partial class Game
         var aim = Vector3.Transform(eye + look * _sbPredDist - _simFt, inv);
         var creative = SandboxInfiniteParts;
         var accel = ConstructGrab.AccelFor(c.Mass, creative, SandboxHands.PullOf(LocalId, creative));
-        var wantRot = Quaternion.Normalize(inv * ConstructGrab.LookQ(hand, LookYaw) * _sbPredRel);
+        var wantRot = Quaternion.Normalize(inv * ConstructGrab.LookQ(hand, eye, LookYaw) * _sbPredRel);
         while (due > 0 && steps++ < 8)
         {
             due--;

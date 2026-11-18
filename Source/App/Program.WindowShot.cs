@@ -396,6 +396,8 @@ public static unsafe partial class Program
         if (d.LengthSquared() < 1e-6f)
             return;
         d = Vector3.Normalize(d);
+        if (g.Local is { } me && me.Sim.RideUp == Vector3.Zero)
+            d = GravityFrames.ToLocal(eye, d); // (the look's angles are in the gravity frame there: a round world's side)
         g.LookYaw = MathF.Atan2(d.X, -d.Z);
         g.LookPitch = Math.Clamp(MathF.Asin(Math.Clamp(d.Y, -1f, 1f)), -1.5f, 1.5f);
     }

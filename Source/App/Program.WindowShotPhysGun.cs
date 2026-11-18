@@ -16,6 +16,9 @@ public static partial class Program
     private static bool _wsSwingPitch;
     private static float _wsSwingRate, _wsSwingSecs, _wsSwingMax, _wsSwingSum, _wsSwingRest;
     private static int _wsSwingFrames, _wsSwingN, _wsWaitPeerFrames;
+    private static bool _wsSwingRelHave; // (the piece's turn against the view, taken at the script's first swing: start with a still one, "swing 0 1")
+    private static Quaternion _wsSwingRel0;
+    private static float _wsSwingDrift, _wsSwingDriftRest;
 
     private static bool WsHeldKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "swing" or "waitpeer" or "beside" or "pitch" or "aimat";
 
@@ -103,6 +106,7 @@ public static partial class Program
         _wsSwingStart = _wsSwingLast = Stopwatch.GetTimestamp();
         _wsSwingMax = _wsSwingSum = _wsSwingRest = 0;
         _wsSwingFrames = _wsSwingN = 0;
+        _wsSwingDrift = _wsSwingDriftRest = 0;
         _wsWait = Math.Max(_wsWait, 2);
         return true;
     }
@@ -133,6 +137,25 @@ public static partial class Program
                 at = st + Vector3.Transform(h.GrabLocal, sq);
             }
             var lag = Vector3.Distance(at, eye + look * _pgDist);
+            // The piece's turn against the view's own yaw frame (built from the look and the up the player stands to, not
+            // from the code's frame): with no turn key it should stay put as the look sweeps, in any gravity frame.
+            var up = h.RideBody != 0 ? Vector3.Transform(Vector3.UnitY, h.RideTurn) : GravityFrames.UpAt(eye);
+            var flat = look - up * Vector3.Dot(look, up);
+            var drift = 0f;
+            if (flat.LengthSquared() > 1e-6f && h.GrabSeg == 0)
+            {
+                flat = Vector3.Normalize(flat);
+                var rx = Vector3.Cross(flat, up);
+                var viewQ = Quaternion.Normalize(Quaternion.CreateFromRotationMatrix(new Matrix4x4(rx.X, rx.Y, rx.Z, 0, up.X, up.Y, up.Z, 0, -flat.X, -flat.Y, -flat.Z, 0, 0, 0, 0, 1)));
+                var rel = Quaternion.Normalize(Quaternion.Conjugate(viewQ) * c.Rot);
+                if (!_wsSwingRelHave)
+                    (_wsSwingRel0, _wsSwingRelHave) = (rel, true);
+                drift = 2f * MathF.Acos(Math.Clamp(MathF.Abs(Quaternion.Dot(rel, _wsSwingRel0)), 0f, 1f)) * 180f / MathF.PI;
+                if (t < _wsSwingSecs)
+                    _wsSwingDrift = MathF.Max(_wsSwingDrift, drift);
+                else
+                    _wsSwingDriftRest = drift;
+            }
             var off = at - eye;
             var deg = MathF.Acos(Math.Clamp(Vector3.Dot(Vector3.Normalize(off), look), -1f, 1f)) * 180f / MathF.PI;
             if (t < _wsSwingSecs)
@@ -144,11 +167,11 @@ public static partial class Program
             else
                 _wsSwingRest = lag;
             if (_wsSwingFrames++ % 6 == 0)
-                WsSay(FormattableString.Invariant($"swing: t {t:0.00} s, lag {lag:0.000} m, {deg:0.0} deg off the look, sim {g.SandboxHeldSimulated || g.SandboxJointSimulated}, seg {h.GrabSeg}, lead {g.SandboxHeldLead:0.000} m, eye off {Vector3.Distance(g.SandboxHeldEye, eye):0.000} (tick eye {Vector3.Distance(g.SandboxHeldEyeEarly, eye):0.000}) m, dist {_pgDist:0.0}, mass {c.Mass:0} kg"));
+                WsSay(FormattableString.Invariant($"swing: t {t:0.00} s, lag {lag:0.000} m, {deg:0.0} deg off the look, sim {g.SandboxHeldSimulated || g.SandboxJointSimulated}, seg {h.GrabSeg}, lead {g.SandboxHeldLead:0.000} m, turn off the view {drift:0.0} deg, spin {c.AngVel.Length() * 180f / MathF.PI:0} deg/s, eye off {Vector3.Distance(g.SandboxHeldEye, eye):0.000} (tick eye {Vector3.Distance(g.SandboxHeldEyeEarly, eye):0.000}) m, dist {_pgDist:0.0}, mass {c.Mass:0} kg"));
         }
         if (t >= _wsSwingSecs + 1.5f)
         {
-            WsSay(FormattableString.Invariant($"swing done: {(g.IsServer ? "host" : "client")}, swinging max {_wsSwingMax:0.000} m, mean {(_wsSwingN > 0 ? _wsSwingSum / _wsSwingN : 0):0.000} m over {_wsSwingN} frames; at rest {_wsSwingRest:0.000} m"));
+            WsSay(FormattableString.Invariant($"swing done: {(g.IsServer ? "host" : "client")}, swinging max {_wsSwingMax:0.000} m, mean {(_wsSwingN > 0 ? _wsSwingSum / _wsSwingN : 0):0.000} m over {_wsSwingN} frames; at rest {_wsSwingRest:0.000} m; turn off the view at most {_wsSwingDrift:0.0} deg swinging, {_wsSwingDriftRest:0.0} deg at rest"));
             _wsSwingStart = 0;
             _wsWait = 0;
         }

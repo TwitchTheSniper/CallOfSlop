@@ -286,7 +286,7 @@ public sealed partial class Game
         var eye = me.RenderEye;
         var target = eye + look * _sbPredDist;
         ref var hand = ref SandboxHands.Hand(LocalId);
-        var lookQ = ConstructGrab.LookQ(hand, LookYaw);
+        var lookQ = ConstructGrab.LookQ(hand, eye, LookYaw);
         var turn = Quaternion.Normalize(lookQ * _sbPredRel);
         float speed = 0, spin = 0;
         if (_sbPredHave && dt > 1e-4f)

@@ -29,6 +29,9 @@ public static partial class Program
     private static string _pgLookText = "";
     private static readonly List<Construct> _pgNear = new(32);
 
+    /// <summary>The turn the held piece's relative turn is kept in (ConstructGrab.LookQ): the look's yaw in the gravity frame at this player's eye, or a rider's in their deck's frame.</summary>
+    private static Quaternion PhysGunLookQ(Game g, float yaw) => ConstructGrab.LookQ(g.SandboxHands.Hand(g.LocalId), g.Local?.Eye ?? Vector3.Zero, yaw);
+
     /// <summary>Radians the held thing turns per pixel of mouse movement.</summary>
     private const float PhysGunTurnPerPixel = 0.006f;
 
@@ -65,13 +68,13 @@ public static partial class Program
         if (!_pgSnapLock)
         {
             _pgSnapLock = true;
-            _pgSnapWorld = ConstructGrab.SnapIn(_pgSnapFrame, ConstructGrab.LookQ(g.SandboxHands.Hand(g.LocalId), yaw) * _pgRel);
+            _pgSnapWorld = ConstructGrab.SnapIn(_pgSnapFrame, PhysGunLookQ(g, yaw) * _pgRel);
             _pgAccYaw = _pgAccPitch = 0;
         }
         _pgAccYaw += dyaw;
         _pgAccPitch += dpitch;
         const float step = ConstructGrab.SnapStep;
-        var right = ConstructGrab.RightOf(yaw);
+        var right = ConstructGrab.RightOf(PhysGunLookQ(g, yaw));
         for (var k = 0; k < 8 && MathF.Abs(_pgAccYaw) >= step; k++)
         {
             var s = MathF.Sign(_pgAccYaw) * step;
@@ -84,7 +87,7 @@ public static partial class Program
             _pgSnapWorld = ConstructGrab.TurnSnapped(_pgSnapWorld, _pgSnapFrame, 0, s, right);
             _pgAccPitch -= s;
         }
-        _pgRel = ConstructGrab.RelOf(yaw, _pgSnapWorld);
+        _pgRel = ConstructGrab.RelOf(PhysGunLookQ(g, yaw), _pgSnapWorld);
     }
 
     /// <summary>
@@ -119,7 +122,7 @@ public static partial class Program
     {
         if (_pgSnapLock && Down(GameAction.Sprint))
         {
-            _pgRel = ConstructGrab.RelOf(g.LookYaw, _pgSnapWorld);
+            _pgRel = ConstructGrab.RelOf(PhysGunLookQ(g, g.LookYaw), _pgSnapWorld);
             return;
         }
         PhysGunSnapEnd(g);
@@ -294,7 +297,7 @@ public static partial class Program
                 {
                     var c = hit.Body;
                     _pgDist = Math.Clamp(hit.Distance, ConstructGrab.MinDist, range);
-                    _pgRel = Quaternion.Normalize(Quaternion.Conjugate(ConstructGrab.LookQ(h, g.LookYaw)) * c.Rot);
+                    _pgRel = Quaternion.Normalize(Quaternion.Conjugate(PhysGunLookQ(g, g.LookYaw)) * c.Rot);
                     _pgAccYaw = _pgAccPitch = 0;
                     PhysGunSnapEnd(g);
                     if (ConstructPress.MachineOf(c, hit.Part) >= 0 || ConstructOrdnance.RackOf(c, hit.Part) >= 0)

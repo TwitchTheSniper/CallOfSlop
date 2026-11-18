@@ -73,8 +73,28 @@ public static class ConstructGrab
     /// <summary>The look's yaw as a turn about up (World.FlatForward(yaw) is this turn of -Z).</summary>
     public static Quaternion YawQ(float yaw) => Quaternion.CreateFromAxisAngle(Vector3.UnitY, -yaw);
 
-    /// <summary>The turn a held thing's <see cref="SandboxHand.GrabRel"/> is relative to: the look's yaw, or for a rider their look's yaw in the construct's frame.</summary>
-    public static Quaternion LookQ(in SandboxHand h, float yaw) => h.RideBody != 0 ? h.RideTurn : YawQ(yaw);
+    /// <summary>
+    /// The look's yaw as a turn in the gravity frame at <paramref name="at"/> (the holder's eye): a player's yaw is measured
+    /// about the local up there (<see cref="GravityFrames.Forward"/>), so on a round world away from the map's +Y the turn
+    /// about the world's Y (<see cref="YawQ(float)"/>) turned a held piece about the wrong axis as the look swept, and
+    /// the mouse turned it the wrong way (user, 2026-11-18).
+    /// </summary>
+    public static Quaternion YawQ(Vector3 at, float yaw) => PgOld ? YawQ(yaw) : Quaternion.Normalize(TangentQ(at) * YawQ(yaw));
+    public static readonly bool PgOld = Environment.GetEnvironmentVariable("PG_OLD") != null; // TEMP
+
+    /// <summary>The gravity frame a player's look is measured in at <paramref name="at"/> (x right, y up, -z north), as a turn; identity on a plain map.</summary>
+    public static Quaternion TangentQ(Vector3 at)
+    {
+        var x = GravityFrames.ToWorld(at, Vector3.UnitX); // (the axes Forward turns a look into: the map's own on a plain map)
+        var y = GravityFrames.ToWorld(at, Vector3.UnitY);
+        if (x == Vector3.UnitX && y == Vector3.UnitY)
+            return Quaternion.Identity;
+        var z = GravityFrames.ToWorld(at, Vector3.UnitZ);
+        return Quaternion.Normalize(Quaternion.CreateFromRotationMatrix(new Matrix4x4(x.X, x.Y, x.Z, 0, y.X, y.Y, y.Z, 0, z.X, z.Y, z.Z, 0, 0, 0, 0, 1)));
+    }
+
+    /// <summary>The turn a held thing's <see cref="SandboxHand.GrabRel"/> is relative to: the look's yaw in the gravity frame at the holder's eye <paramref name="at"/>, or for a rider their look's yaw in the construct's frame.</summary>
+    public static Quaternion LookQ(in SandboxHand h, Vector3 at, float yaw) => h.RideBody != 0 ? h.RideTurn : YawQ(at, yaw);
 
     /// <summary>
     /// Inside the physics step, after gravity (the spring of before pr01, stronger: pr02): the held construct's velocity is
@@ -359,8 +379,14 @@ public static class ConstructGrab
     /// <summary>The look's right as a direction in the world (the held thing's turn up and down is about the axis nearest it).</summary>
     public static Vector3 RightOf(float yaw) => Vector3.Transform(Vector3.UnitX, YawQ(yaw));
 
+    /// <summary>The look's right, from the turn the held thing is relative to (<see cref="LookQ"/>).</summary>
+    public static Vector3 RightOf(Quaternion lookTurn) => Vector3.Transform(Vector3.UnitX, lookTurn);
+
     /// <summary>A world turn as the turn relative to the look's yaw (what the hands hold and the server applies).</summary>
     public static Quaternion RelOf(float yaw, Quaternion world) => Quaternion.Normalize(Quaternion.Conjugate(YawQ(yaw)) * world);
+
+    /// <summary>A world turn as the turn relative to <paramref name="lookTurn"/> (<see cref="LookQ"/>).</summary>
+    public static Quaternion RelOf(Quaternion lookTurn, Quaternion world) => Quaternion.Normalize(Quaternion.Conjugate(lookTurn) * world);
 
     /// <summary>
     /// pw01: the turn snapped to whole 45 degree steps about the axes of <paramref name="frame"/> (identity: the world's
@@ -641,7 +667,7 @@ public sealed partial class ConstructEdits
         h.GrabSeg = 0;
         h.GrabLocal = local;
         h.GrabDist = Math.Clamp(dist, ConstructGrab.MinDist, GrabRange(player));
-        h.GrabRel = Quaternion.Normalize(Quaternion.Conjugate(ConstructGrab.LookQ(h, yaw)) * c.Rot);
+        h.GrabRel = Quaternion.Normalize(Quaternion.Conjugate(ConstructGrab.LookQ(h, eye, yaw)) * c.Rot);
         h.Edit = EditKind.None;
         Done.Add($"player {player}: grabbed construct {body} with the physics gun");
         return null;
@@ -800,7 +826,7 @@ public sealed partial class ConstructEdits
         }
         // (a rider's look moves with their deck: the step below moves both on by the deck's speed, so the piece keeps its place in the frame)
         c.GrabTarget = eye + look * h.GrabDist + frameVel * World.TickDt;
-        c.GrabRot = ConstructGrab.LookQ(h, yaw) * h.GrabRel;
+        c.GrabRot = ConstructGrab.LookQ(h, eye, yaw) * h.GrabRel;
         c.GrabFrameVel = frameVel;
         c.GrabFrameSpin = frameSpin;
         if (frameVel != Vector3.Zero)
