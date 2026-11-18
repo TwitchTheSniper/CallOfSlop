@@ -24,6 +24,13 @@ public static class LogicText
 
     public static string Get(in CPart p, int slot) => (slot == 0 ? p.Text : p.Text2) ?? "";
 
+    /// <summary>What a player calls part <paramref name="part"/>: its label when it is a labelled part with one set (a switch named "Hangar lights"), else its part name.</summary>
+    public static string Name(Construct c, int part)
+    {
+        var d = c.DefOf(part);
+        return d.Labelled && c.Parts[part].Text is { } label ? label : d.Name;
+    }
+
     public static void Set(ref CPart p, int slot, string text)
     {
         var clean = Clean(text);
