@@ -139,7 +139,13 @@ public static class ConstructCarrier
         c.WorldFrame(p.Seg, out var q, out var t);
         var target = t + Vector3.Transform(centre, q);
         var reach = half.Length() + d.DockPull;
-        if ((world.CarrierClock + (uint)k) % ConstructCargo.ScanEvery == 0 && p.Mem == 0)
+        var look = (world.CarrierClock + (uint)k) % ConstructCargo.ScanEvery == 0;
+        if (look && c.CargoCount > 0 && ConstructCargo.OneCraft(d) && ConstructCargo.DockTaken(world, c, k, null))
+        {
+            p.Mem = 0; // (it holds a craft already: it pulls no second one onto it)
+            return;
+        }
+        if (look && p.Mem == 0)
         {
             var near = world.Near(target, reach, _near);
             var best = float.MaxValue;
