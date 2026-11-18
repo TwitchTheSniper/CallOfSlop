@@ -622,7 +622,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 360: the Limpet's seal sleeve: a "Holed (...)" key may hold "s..." sleeve entries (HullHoles.Sleeve), which an older client can't make.
     // 361: stations (docs/sandbox/constructs/station.md): Msg.Stations takes the slot of RemovedDepot (Msg is full); FactionOp.StationSell (u16 ship) at its end.
     // 362: surrendered crew show their hands up (Karl, 2026-11-18): Msg.HandsUp in the slot of the removed RemovedQuarry (Msg is full).
-    public const ushort ProtocolVersion = 362;
+    // 363: labelled switches (Karl, 2026-11-18): every logic part without messages takes one text slot, its label (ConstructPartDef.Labelled), so CBody's text tail may carry one on a switch; an older peer refuses it as malformed. No new bytes.
+    public const ushort ProtocolVersion = 363;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;
