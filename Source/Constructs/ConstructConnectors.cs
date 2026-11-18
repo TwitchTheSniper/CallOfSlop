@@ -559,7 +559,7 @@ public static partial class ConstructPhysics
         for (var k = 0; k < world.ConnectorCount; k++)
         {
             ref var cn = ref world.Connectors[k];
-            if (cn.A.Body != cn.B.Body && world.Get(cn.A.Body) is { } a && world.Get(cn.B.Body) is { } b && (a.SimMark == stamp) != (b.SimMark == stamp))
+            if (cn.A.Body != cn.B.Body && world.Get(cn.A.Body) is { } a && world.Get(cn.B.Body) is { } b && (a.SimMark == stamp) != (b.SimMark == stamp) && (Pass == 0 || InPass(a) && InPass(b)))
                 a.SimMark = b.SimMark = stamp;
         }
     }

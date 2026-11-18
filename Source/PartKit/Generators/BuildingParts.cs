@@ -1670,6 +1670,9 @@ public sealed partial class BuildingParts : IPartGenerator
         /// </summary>
         public readonly List<(int From, int To, string FromPort, string ToPort, double[][]? Nodes)> Feeds = [];
 
+        /// <summary>Pipes by step, from and to, with their ports (a fuel tank's Fuel out into an MMU Dock's Fuel in): routed, after the feeds.</summary>
+        public readonly List<(int From, int To, string FromPort, string ToPort)> Pipes = [];
+
         /// <summary>Lay the wires as conduit along the walls though the build isn't anchored (a ship's lamps: ConstructConduit.cs).</summary>
         public bool Conduit;
 
@@ -1820,9 +1823,10 @@ public sealed partial class BuildingParts : IPartGenerator
             var d = new PyDict { ["format"] = "call-of-slop-construct-blueprint/1", ["name"] = Name, ["description"] = Desc, ["steps"] = Steps.Cast<object?>().ToList() };
             if (Wires.Count > 0)
                 d["wires"] = Wires.Select(w => (object?)new List<object?> { w.From, w.To }).ToList();
-            if (DataLinks.Count > 0 || Feeds.Count > 0)
+            if (DataLinks.Count > 0 || Feeds.Count > 0 || Pipes.Count > 0)
                 d["links"] = DataLinks.Select(l => (object?)new PyDict { ["type"] = "data", ["from"] = l.From, ["to"] = l.To, ["fromPort"] = l.FromPort })
-                    .Concat(Feeds.Select(l => (object?)FeedJson(l))).ToList();
+                    .Concat(Feeds.Select(l => (object?)FeedJson(l)))
+                    .Concat(Pipes.Select(l => (object?)new PyDict { ["type"] = "pipe", ["from"] = l.From, ["to"] = l.To, ["fromPort"] = l.FromPort, ["toPort"] = l.ToPort })).ToList();
             if (Conduit)
                 d["conduit"] = true;
             return d;

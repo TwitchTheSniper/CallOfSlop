@@ -476,6 +476,22 @@ public sealed class Assembling : IPartGenerator
         };
     }
 
+    /// <summary>
+    /// Folders added after saves held Assembler recipes by number (an Assembler's recipe setting is 1 + its place in its family's list): their
+    /// rows go at the end of the file, in this order, so no older row moves. A new folder of parts goes at the end of this list.
+    /// </summary>
+    private static readonly string[] LateFolders = ["LinkSupports"];
+
+    /// <summary>
+    /// Hand-written recipes added after the table's rows were saved in worlds: they go after every older row, in the order
+    /// added, since an Assembler's recipe choice is saved by its index in its machine's family (WorldSaveBodies.cs).
+    /// </summary>
+    private static List<PyDict> LateHand() =>
+    [
+        Rec("Mining Shell", 60, 2, m: [("steel", 70), ("copper", 14), ("rubber", 8)], p: [("Circuit Board", 3)]), // (docs/sandbox/design/mining-shell.md)
+        Rec("Drill Rack", 30, 1, m: [("steel", 24), ("copper", 4), ("rubber", 2)]), // (its three portable drills come with it: factory-generator-notes.md "Tool racks and crew miners")
+    ];
+
     /// <summary>The recipes file: the header, then one recipe a line (json.dumps with its default separators).</summary>
     public static string Layout(IEnumerable<PyDict> recipes) =>
         "{\n  \"format\": \"" + Format + "\",\n  \"about\": " + PyJson.Dumps(About) + ",\n  \"recipes\": [\n"
@@ -498,8 +514,10 @@ public sealed class Assembling : IPartGenerator
         var recipes = Hand();
         recipes.AddRange(UpgradeParts.Recipes.Select(r => Rec(r.Output, r.Seconds, r.Tier, m: r.Materials, p: r.Parts)));
         recipes.AddRange(AirWeaponsParts.OrdnanceRacks.Select(r => RackRecipe(r.Name, r.Layout, r.A, r.B, r.Length, r.Diameter)));
-        var hand = recipes.Select(r => (string)r["output"]!).ToHashSet();
+        var lateHand = LateHand();
+        var hand = recipes.Concat(lateHand).Select(r => (string)r["output"]!).ToHashSet();
         var tail = new List<PyDict>();
+        var late = new List<PyDict>();
         foreach (var (p, folder) in known)
         {
             var name = (string)p["name"]!;
@@ -508,10 +526,12 @@ public sealed class Assembling : IPartGenerator
                 continue;
             if (Py.Truthy(p.Get("retired"))) // (a retired part loads and runs but has no recipe: the tier cylinders, sized-parts answer 8)
                 continue;
-            tail.Add(MachineOf(p, folder) != "" ? FlightRecipe(p, folder) : LongTail(p));
+            (LateFolders.Contains(folder) ? late : tail).Add(MachineOf(p, folder) != "" ? FlightRecipe(p, folder) : LongTail(p));
         }
         // (stable: a family's recipes are in file order, and the plain Assembler's keep their places)
         recipes.AddRange(tail.OrderBy(r => r.Get("machine") as string ?? "", StringComparer.Ordinal));
+        recipes.AddRange(late); // (after every older row: a saved Assembler keeps the number of its recipe)
+        recipes.AddRange(lateHand); // (and the hand-written rows added since, last)
         var byName = new Dictionary<string, PyDict>();
         foreach (var (p, _) in known)
             byName[(string)p["name"]!] = p;

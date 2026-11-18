@@ -139,11 +139,25 @@ public static partial class ConstructPhysics
 
     public static float GravityAccel => World.Gravity * World.GravityScale;
 
+    /// <summary>The far bodies' LOD (ConstructFar.cs): 0 every body (as always); 1 the near pass (every body but the far ones); 2 the far pass (the far
+    /// bodies whose turn it is this tick, stepped by their rate's time, and what sleeps against them).</summary>
+    public static int Pass;
+    public static uint PassTick;
+
+    private static bool InPass(Construct c) => Pass switch
+    {
+        1 => c.FarRate <= 1,
+        2 => c.FarRate > 1 && PassTick % c.FarRate == 0, // (one phase for every far body: they meet each other, ropes and all, in the same step)
+        _ => true,
+    };
+
     /// <summary>One tick for every awake free body of <paramref name="world"/>, and the joints of every awake body.</summary>
     public static void Step(ConstructWorld world, IWorldQuery query, float dt)
     {
+        var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
         var bodies = SimList(world);
         _bodies = bodies;
+        Lap(0, ref t0);
         var n = bodies.Count;
         for (var i = 0; i < n; i++)
             if (bodies[i].Dirty)
@@ -158,7 +172,7 @@ public static partial class ConstructPhysics
         var g = new Vector3(0, -GravityAccel, 0);
         _world = world; // (the held body's sweep skips what it is coupled to)
         _warm = WarmOf(world);
-        _warmTick = ++world.WarmTick;
+        _warmTick = Pass == 2 ? world.WarmTick : ++world.WarmTick; // (one advance a real tick: the far pass steps in the near pass's tick, ConstructFar.cs)
         for (var i = 0; i < n; i++)
         {
             var c = bodies[i];
@@ -166,6 +180,12 @@ public static partial class ConstructPhysics
                 c.Rebuild();
             _ = c.Collider; // (made here, not when something first touches it mid-step)
             c.SimIndex = i;
+            if (Pass != 0 && !InPass(c))
+            {
+                // (another pass's body that one of this pass's touches: met as a fixed obstacle where it is, never moved, timed or posed here: ConstructFar.cs)
+                (_dyn[i], _jact[i], _invI[i]) = (false, false, default);
+                continue;
+            }
             if (c.NudgeBy == 255) // (a nudged body's are set with its pose: ConstructNudge.cs)
             {
                 c.PrevPos = c.Pos;
@@ -244,6 +264,7 @@ public static partial class ConstructPhysics
             if (c.RecoilCount > 0)
                 ApplyRecoils(c, i);
         }
+        Lap(1, ref t0);
         _world = world;
         ApplyDeckPushes(n, dt);
         CouplingExclusions(world, n);
@@ -253,7 +274,9 @@ public static partial class ConstructPhysics
         if (world.BeamCount > 0)
             BeamRows(world, n, dt); // (a physics gun on a piece of a mechanism: ConstructFreeChain.cs)
         PinRows(n);
+        Lap(2, ref t0);
         Solve(dt);
+        Lap(3, ref t0);
         ConnectorLoads(world, dt);
         WarmStore();
         SleepTogether();
@@ -267,6 +290,17 @@ public static partial class ConstructPhysics
             if (_dyn[i] || _jact[i])
                 Sleep(c);
         }
+        Lap(4, ref t0);
+    }
+
+    /// <summary>Where the physics' time goes (ms in all; a tool reads and clears it): the list, each body's forces and ground, the contacts between bodies, the solver, the rest.</summary>
+    public static readonly double[] PartMs = new double[5];
+
+    private static void Lap(int k, ref long t0)
+    {
+        var now = System.Diagnostics.Stopwatch.GetTimestamp();
+        PartMs[k] += (now - t0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+        t0 = now;
     }
 
     /// <summary>
@@ -281,7 +315,7 @@ public static partial class ConstructPhysics
         LastWorldBodies = bodies.Count;
         if (!world.UseGrid)
         {
-            _sim.AddRange(bodies);
+            _sim.AddRange(bodies); // (a far pass too: the other pass's bodies are fixed obstacles in it)
             LastSimulated = _sim.Count;
             return _sim;
         }
@@ -290,6 +324,8 @@ public static partial class ConstructPhysics
         for (var i = 0; i < bodies.Count; i++)
         {
             var c = bodies[i];
+            if (Pass != 0 && !InPass(c))
+                continue; // (the far bodies' LOD: ConstructFar.cs)
             if (c.Asleep && c.MovingJoints > 0)
                 WakeCheck(c); // (asks a motor to move? then it wakes and steps; else it costs this test alone)
             var moving = !c.Asleep && c.CarriedBy == 0 && (!c.Anchored || c.MovingJoints > 0 || c.RotorLive) || EngineLive(c) || BeltMoving(c); // (cs03: an anchored base with its engine running stays in the list, and so does what sits on its wheels)
@@ -310,7 +346,7 @@ public static partial class ConstructPhysics
             {
                 var b = near[j];
                 if (b.SimMark == stamp)
-                    continue;
+                    continue; // (another pass's body joins as a fixed obstacle: a far ship still lands on an anchored pad and meets a near one)
                 var reach = a.Radius + b.Radius + ConstructWorld.GridMargin;
                 if (Vector3.DistanceSquared(a.WorldCom, b.WorldCom) > reach * reach)
                     continue;
@@ -320,7 +356,7 @@ public static partial class ConstructPhysics
         for (var k = 0; k < world.CouplingCount; k++)
         {
             ref var cp = ref world.Couplings[k];
-            if (world.Get(cp.BodyA) is { } a && world.Get(cp.BodyB) is { } b && (a.SimMark == stamp) != (b.SimMark == stamp))
+            if (world.Get(cp.BodyA) is { } a && world.Get(cp.BodyB) is { } b && (a.SimMark == stamp) != (b.SimMark == stamp) && (Pass == 0 || InPass(a) && InPass(b)))
                 a.SimMark = b.SimMark = stamp;
         }
         MarkConnectors(world, stamp);
@@ -638,7 +674,7 @@ public static partial class ConstructPhysics
         var rot = Matrix4x4.CreateFromQuaternion(c.Rot);
         var lockedTouch = 0;
         var rimTurn = c.WheelCount <= RimEvery ? 1 : (c.WheelCount + RimEvery - 1) / RimEvery;
-        var rimAt = (int)(_warmTick % (uint)rimTurn);
+        var rimAt = (int)((Pass == 2 && c.FarRate > 1 ? PassTick / c.FarRate + c.Id : _warmTick) % (uint)rimTurn); // (a far body: its own steps count, so every rim takes its turn)
         // The body as this tick began: every tyre answers the same motion, so the order the wheels come in steers nothing.
         var vel0 = c.Vel;
         var spin0 = c.AngVel;
@@ -2119,7 +2155,8 @@ public static partial class ConstructPhysics
     private static void Sleep(Construct c)
     {
         // (a long body's far end moves at its spin times its length: a 300 m hull is not still at what a buggy is)
-        var still = c.Anchored || c.Vel.LengthSquared() < StillSpeed2 && c.AngVel.LengthSquared() * MathF.Max(1, c.Radius * c.Radius / 64f) < StillSpeed2;
+        var still2 = Pass == 2 && c.FarRate > 1 ? StillSpeed2 * c.FarRate * c.FarRate : StillSpeed2; // (a far body's coarse step jitters more: nobody is near to see it creep: ConstructFar.cs)
+        var still = c.Anchored || c.Vel.LengthSquared() < still2 && c.AngVel.LengthSquared() * MathF.Max(1, c.Radius * c.Radius / 64f) < still2;
         still &= (!c.Driven || (c.Throttle == 0 && c.SteerInput == 0 && c.LiftInput == 0 && c.RollInput == 0)) && !(c.EngineWired && c.EngineSignal != 0) && c.SteerSignal == 0 && !c.HoverOn && !c.ActiveSignal && !c.StabLive && c.ThrustShow <= 0 && !c.RotorLive;
         for (var j = 0; j < c.JointCount && still; j++)
         {
@@ -2131,7 +2168,8 @@ public static partial class ConstructPhysics
             c.SleepTicks = 0;
             return;
         }
-        if (++c.SleepTicks >= SleepAfterTicks)
+        c.SleepTicks += Pass == 2 && c.FarRate > 1 ? c.FarRate : 1; // (a far body's step is that many ticks: ConstructFar.cs)
+        if (c.SleepTicks >= SleepAfterTicks)
         {
             c.Asleep = true;
             c.Vel = c.AngVel = Vector3.Zero;

@@ -89,7 +89,7 @@ public static partial class ConstructPhysics
                 ref readonly var e = ref _warm[(int)(ct.Key + (ulong)probe) & mask];
                 if (e.Key != ct.Key)
                     continue;
-                if (e.Tick == _warmTick - 1)
+                if (e.Tick == _warmTick - (Pass == 2 ? ConstructFar.Every : 1u)) // (a far body's last step was its rate's ticks ago: ConstructFar.cs)
                 {
                     ct.Jn = e.Jn;
                     Push2(ct, ct.Normal * ct.Jn);

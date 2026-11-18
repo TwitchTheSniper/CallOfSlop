@@ -170,13 +170,14 @@ public sealed partial class Ui
             CmdGrid(dl, s, fade);
             CmdBodies(dl, session, s, fade, now);
             CmdLinks(dl, session, s, fade, now); // (the logistics layer, when on: UiCommandLinks.cs)
+            CmdFactions(dl, session, s, fade, now); // (the factions layer, when on: UiCommandFactions.cs)
             CmdFleet(dl, session, fade, now); // (groups to their flagships, when CREWS is on: UiCommandCrew.cs)
             CmdCrafts(dl, session, s, fade, now);
             CmdMissiles(dl, session, fade, now); // (the missiles layer, when on: UiCommandMissiles.cs)
             CmdChrome(dl, session, s, fade, now, keyName);
             CmdRoster(dl, session, s, fade);
             CmdShipCard(dl, session, s, fade, now);
-            CmdBoardDraw(dl, session, fade); // (picking where to board: UiCommandBoard.cs)
+            CmdBoardDraw(dl, session, fade, now); // (picking where to board: UiCommandBoard.cs)
             CmdInput(session, s);
             CmdOrderPopup(session, s);
         }
@@ -763,8 +764,9 @@ public sealed partial class Ui
                 CmdPreset(g, sys, k);
         }
         CmdLinksButton(dl, new float2(bx + 4 * (bw + 6 * _scale) + 18 * _scale, by), new float2(bw * 1.1f, bh), fade); // (the logistics layer)
-        CmdMissilesButton(dl, new float2(bx - 18 * _scale - bw * 1.15f, by), new float2(bw * 1.15f, bh), fade);
-        CmdCrewsButton(dl, new float2(bx - 24 * _scale - bw * 2.15f, by), new float2(bw, bh), fade); // (the crews layer, left of MISSILES: UiCommandCrew.cs) // (the missiles layer, left of the presets: the ship card is on the right)
+        CmdFactionsButton(dl, g, new float2(bx + 4 * (bw + 6 * _scale) + 24 * _scale + bw * 1.1f, by), new float2(bw * 1.05f, bh), fade); // (the factions layer: planets held, groups known)
+        CmdMissilesButton(dl, new float2(bx - 18 * _scale - bw * 1.15f, by), new float2(bw * 1.15f, bh), fade); // (the missiles layer, left of the presets: the ship card is on the right)
+        CmdCrewsButton(dl, new float2(bx - 24 * _scale - bw * 2.15f, by), new float2(bw, bh), fade); // (the crews layer, left of MISSILES: UiCommandCrew.cs)
         if (_cmdScale.Stale((long)(_cmdSpan * 100)))
             _cmdScale.Text = "VIEW  " + CmdDistance(_cmdSpan) + "  ACROSS" + (_cmdFocusAuto ? "" : "   //   FOCUS PINNED");
         CmdText(dl, new float2(_cvCentre.X, by + bh + 7 * _scale), 11, CmdDim, fade, _cmdScale.Text!, 1);

@@ -32,7 +32,7 @@ public sealed partial class Game
     public const float SepMaxPush = World.PlayerRadius * 2 / (0.25f * World.TickRate) / 2;
 
     /// <summary>How far round a body the grid is asked (m): contact plus a tick's movement of either body, with slack.</summary>
-    private const float SepQueryRadius = World.PlayerRadius * 2 + 0.8f;
+    private const float SepQueryRadius = World.PlayerRadius * 3 + 0.8f; // (two Mining Shells, 1.5x each, touch at 1.2 m: docs/sandbox/design/mining-shell.md)
 
     private const int SepQueryMax = 32;
 
@@ -122,7 +122,8 @@ public sealed partial class Game
                     {
                         var lp = SandboxRiderAt(p.Sim); // (a rider: in the construct as we have it, as we are: ConstructRide.cs)
                         var d = new Vector3(lp.X - me.Sim.Position.X, 0, lp.Z - me.Sim.Position.Z);
-                        _sepMirror[n] = d.LengthSquared() < (World.PlayerRadius * 2 + 0.3f) * (World.PlayerRadius * 2 + 0.3f);
+                        var reach = World.PlayerRadius * (ShellFrames.ScaleOf(p) + ShellFrames.ScaleOf(me)) + 0.3f; // (each body's own radius, as the contact: a robot shell's frame)
+                        _sepMirror[n] = d.LengthSquared() < reach * reach;
                     }
                 }
                 _sepPos[n] = IsServer ? p.Sim.Position : SepCarried(n, p);
@@ -178,11 +179,11 @@ public sealed partial class Game
         // Touching us: its own pushes off us, as the server works them out: off where we were at the start of each tick as
         // the server had us then (our input from _sepLag ticks earlier), under its own rules (less against its own
         // motion, never into a wall or off an edge).
-        var h = World.HeightOf(o.Sim.Stance);
+        var h = World.HeightOf(o.Sim.Stance, ShellFrames.ScaleOf(o));
         var r = _sepRate[i];
         var v = MathF.Sqrt(r.X * r.X + r.Z * r.Z);
         var most = -MathF.Max(0, SepMaxPush - v);
-        const float contact = World.PlayerRadius * 2;
+        var contact = World.PlayerRadius * (ShellFrames.ScaleOf(o) + ShellFrames.ScaleOf(me)); // (each body's own radius: a robot shell's frame)
         at = SandboxRiderAt(o.Sim);
         for (var t = from + 1; t != from + 1 + (uint)ticks; t++)
         {
@@ -263,12 +264,12 @@ public sealed partial class Game
         if (!SepEligible(p))
             return;
         var feet = s.Position;
-        var h = World.HeightOf(s.Stance);
+        var size = ShellFrames.ScaleOf(p);
+        var h = World.HeightOf(s.Stance, size);
         Span<int> near = stackalloc int[SepQueryMax];
         var n = _sepGrid.Query(feet, _sepAtTick == 0 ? SepQueryRadius : SepQueryRadius + 0.6f, near); // (bodies carried on or looked back)
         if (n < 2)
             return;
-        const float contact = World.PlayerRadius * 2;
         float px = 0, pz = 0;
         var touching = false;
         for (var k = 0; k < n; k++)
@@ -280,8 +281,10 @@ public sealed partial class Game
             if (!Players.TryGetValue(o.Id, out var live) || live != o)
                 continue; // (left since the grid was built)
             var op = SepOther(i, o);
-            if (feet.Y >= op.Y + World.HeightOf(o.Sim.Stance) - 0.05f || feet.Y + h <= op.Y + 0.05f)
+            var osize = ShellFrames.ScaleOf(o);
+            if (feet.Y >= op.Y + World.HeightOf(o.Sim.Stance, osize) - 0.05f || feet.Y + h <= op.Y + 0.05f)
                 continue; // one is over the other's head
+            var contact = World.PlayerRadius * (size + osize); // (each body's own radius: a robot shell's frame)
             var dx = feet.X - op.X;
             var dz = feet.Z - op.Z;
             var d2 = dx * dx + dz * dz;

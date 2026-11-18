@@ -76,6 +76,24 @@ reaches), `Source/Game/GameRobotShell.cs` (the swap, the link, the wire, the sav
 
 Not yet: a body drawn in the chair while you are away; a shell's damage kept between visits (its wear is: below).
 
+### Frames, modules and the Mining Shell
+
+The user (2026-11-17); the design and its questions: [design/mining-shell.md](../design/mining-shell.md). Data
+`Constructs/Shells.json` (format `call-of-slop-shells/1`, `Source/Constructs/ShellFrames.cs`): slots (head, back, left arm, right
+arm), modules (Optics Head, Power Pack, Ore Hopper, Hand, Drill Arm) and frames. A frame's index is its byte on the wire; frame 0
+is the Robot Shell, with the numbers every shell had. A shell part stands as the frame that names it (`ShellFrames.FrameOf`).
+
+- **Mining Shell** (`shell_parts`, `MiningShell.json`; Assembler recipe at tier 2): frame "Mining", 1.5x a person in every
+  direction (the mover's capsule through `World.BodyScale`, set from `MoveState.Frame` in `World.Simulate` and in a `World.Body`
+  scope round construct blocking, ladders and hit boxes), x0.85 pace, x0.7 the hits it takes. It crouches through doors.
+- **Ore hopper** (`GameShellHopper.cs`): the part is a bin (5,400 units of any one material); worn, its load is the player's
+  hopper (`ConstructEdits.Hoppers`), back in the part when it stands, spilt as a Material Bundle when destroyed. F at a bin, a
+  Storage Volume or a refinery tips the hopper first (`ConstructEdits.TipHopper`).
+- **Drill arm**: with the ground drill out, a scoop over an underground deposit the arm's tier works taps it into the hopper at
+  the module's rate (`ShellDrillTap`, by a Drill Module's spot and tier rules); the scoop digs as ever.
+- **Seen**: `Msg.Shell` ends with the frame, the hopper's material and load (protocol 353); the rig draws the frame's size about
+  the feet and its modules (`Scene/Rigs/ShellKitNodes.cs`). The window tool's `hopper` verb prints a peer's view.
+
 ## Robot shell wear
 
 Karl (2026-11-17): "mild, but over time they wear down and need maintenance". Data `Constructs/ShellWear.json` (refused with a

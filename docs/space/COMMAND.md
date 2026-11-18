@@ -152,6 +152,16 @@ logistics layer it stays as it was when the view is closed and opened again. Cod
 - **Cost:** off, one bool check a frame. On, at most 96 missiles a frame, each 40 steps (a gravity and an air read a
   step); a label's text is made at most four times a second.
 
+## The factions layer
+
+The FACTIONS button (right of LOGISTICS) turns on the NPC powers' map (docs/sandbox/design/faction-controllers.md phase 4; Karl's answer 3): each
+planet ringed in its holder's colour with its tag and share of control (a dashed ring in the leader's colour and white when contested), and the faction
+groups this player knows of as triangles in their power's colour, labelled with a guess at what they do (STRIKE, DEFENCE, GARRISON, RETURNING) and
+their ships. Fog of war (the user's answer 7): a group shows only while it is on this player's world within 8 km of them, or for five minutes after the
+news named it (dim, with how many minutes ago, where it was then). A group of a power hostile to the player out to take a site, or within 3 km, is red
+with brackets and THREAT. It all comes from `Msg.FactionMap`, once a second per player (`Game/GameCrewTerritory.cs`); labels are made only when it
+changes. Code: `Source/UI/UiCommandFactions.cs`. Window tool: `crewterritory [near|leave]` (`Program.WindowShotPlay.cs`).
+
 ## Orders
 
 Eight kinds (`NavKind`), each for one ship, given by any player to any ship that takes orders. **A ship takes orders
@@ -188,6 +198,20 @@ view back as it was; a right click or Esc puts it back with no order (UI/UiComma
 carrier, across, grips, then opens the door or cuts through and opens its own. On the wire its point is the target's id,
 the part and 1 for a door (protocol 342); the host works the spot and the way out of the skin there. The pod must be within
 3 km of the target. `order board N door|hull` (the window tool) gives it from a script.
+
+**The close hologram and the cut-in preview** (UI/UiCommandHolo.cs, Karl 2026-11-18: "you cannot see where you're cutting").
+The picked craft, or the craft being boarded, once it is over about 220 px across is cut again finer: one craft at a time,
+cells of 0.25 m or more (200 across at most), a level every 0.9 m or more, at most 12,000 lines (bigger cells past that), built
+once and again only when its parts change (about 5 ms and 2,900 lines for a Zero Day). Both holograms are cut from the parts'
+own boxes and hull skin shapes, not their bounds, so a welded hull piece no longer fills the rooms it walls. On the fine one
+the outer skin (lines beside cells open to the outside on that level) is bright, inner walls dim, outlines every other level;
+doors and hatches are green boxes. While picking a hull spot, once the cursor rests on a part for 0.12 s the view works the
+spot out as the host will (`Game.BoardPreview`: `BoardSpot`, then `BoardNearRoom`, with no log lines) and draws the hull piece
+it cuts (amber box), the pod's skirt, the hole as `ConstructBreach.OpenHole` cuts it (1.1 by 2.1 m from the room's floor up,
+red when no room is found), the tunnel in to the room's wall, and the room behind as an outline on its floor (the fine grid's
+inside cells joined to where a person lands). The label says whether the room's floor is level with the pod's. Close up, a
+part's middle within 2 m of the cursor counts as under it (12 to 48 px). Window tool: `cmdboard N door|hull` starts the
+pick, `mouse X,Y` rests the cursor.
 
 ### How a ship flies one (`Game.ServerTickNav`, before the launch step each tick)
 

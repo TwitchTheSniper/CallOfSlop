@@ -585,6 +585,30 @@
       "by": "bottom"
     },
     {
+      "part": "Space Suit Locker",
+      "on": 31,
+      "socket": "suit0",
+      "by": "wall"
+    },
+    {
+      "part": "Space Suit Locker",
+      "on": 32,
+      "socket": "suit1",
+      "by": "wall"
+    },
+    {
+      "part": "MMU Dock",
+      "on": 32,
+      "socket": "mmuDock",
+      "by": "wall"
+    },
+    {
+      "part": "Manned Manoeuvring Unit",
+      "on": 96,
+      "socket": "mmu",
+      "by": "mount"
+    },
+    {
       "part": "Robot Shell Dock",
       "on": 35,
       "socket": "shellDock0",
@@ -592,7 +616,7 @@
     },
     {
       "part": "Robot Shell",
-      "on": 94,
+      "on": 98,
       "socket": "dock",
       "by": "back"
     },
@@ -611,7 +635,7 @@
     },
     {
       "part": "Robot Shell",
-      "on": 97,
+      "on": 101,
       "socket": "dock",
       "by": "back"
     },
@@ -630,7 +654,7 @@
     },
     {
       "part": "Robot Shell",
-      "on": 100,
+      "on": 104,
       "socket": "dock",
       "by": "back"
     },
@@ -655,13 +679,13 @@
     },
     {
       "part": "Fuel Pump L",
-      "on": 104,
+      "on": 108,
       "socket": "back",
       "by": "front"
     },
     {
       "part": "Coolant Exchanger L",
-      "on": 105,
+      "on": 109,
       "socket": "back",
       "by": "front"
     },
@@ -679,13 +703,13 @@
     },
     {
       "part": "Fuel Pump L",
-      "on": 108,
+      "on": 112,
       "socket": "back",
       "by": "front"
     },
     {
       "part": "Coolant Exchanger L",
-      "on": 109,
+      "on": 113,
       "socket": "back",
       "by": "front"
     },
@@ -977,7 +1001,7 @@
     },
     {
       "part": "Medium Crane Bridge",
-      "on": 134,
+      "on": 138,
       "socket": "-x.0.0",
       "by": "+x",
       "paint": "#e0a020",

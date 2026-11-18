@@ -82,6 +82,7 @@ public sealed class VehicleSpawner(Game game)
         public int Lane, Index; // its lane (0 the middle) and place in the convoy (0 the leader)
         public SpawnContext? Context; // where it is made for (phase 7: VehicleContext.cs; null or neutral: as before); kept through rerolls
         public EngineKit.EngineRequest? Engine; // an engine on its own (GameSandboxEngines.cs): made by the Engine Kit, never rerolled or stood in for
+        public byte Power; // a power's ship (faction-controllers.md phase 3: GameCrewPowers.cs): crewed by that power (0: by its style's kind)
         public bool Hold; // made ready and held for its owner to place with a ghost (GameSandboxBlueprintGhost.cs), not set down
         public ushort Token; // ...the owner's prepare it answers
     }
@@ -332,11 +333,11 @@ public sealed class VehicleSpawner(Game game)
     /// Asks for a blueprint to be set down as it is (the parts menu's, too big for one tick: <see cref="AtOnce"/>), in the same
     /// queue and the same way as a made vehicle, where <see cref="Request"/> says. Returns why it was refused, or null: queued.
     /// </summary>
-    public string? RequestBlueprint(ConstructBuild.Blueprint bp, Vector3 ground, float yaw, byte owner = 255, byte frontOf = 255, Finished? done = null)
+    public string? RequestBlueprint(ConstructBuild.Blueprint bp, Vector3 ground, float yaw, byte owner = 255, byte frontOf = 255, Finished? done = null, byte power = 0)
     {
         if (Full(owner) is { } full)
             return full;
-        Enqueue(new Ask { Bp = bp, Ground = ground, Yaw = yaw, Owner = owner, Front = frontOf, Done = done });
+        Enqueue(new Ask { Bp = bp, Ground = ground, Yaw = yaw, Owner = owner, Front = frontOf, Done = done, Power = power });
         return null;
     }
 
@@ -616,7 +617,7 @@ public sealed class VehicleSpawner(Game game)
             run.LeaderId = c.Id;
         if (brief == null)
         {
-            game.CrewFactionVehicle(c); // (a nobody's vehicle drives only with a crew: GameCrew.cs)
+            game.CrewFactionVehicle(c, a.Power); // (a nobody's vehicle drives only with a crew: GameCrew.cs)
             return;
         }
         if (a.Convoy is { } r)
@@ -626,7 +627,7 @@ public sealed class VehicleSpawner(Game game)
             brief.Model = m.Key;
         if (brief.Attach(c) is { } why)
             Console.WriteLine($"[vehicles] {name}: its behaviour brief doesn't fit the body that was built ({why}): left off");
-        game.CrewFactionVehicle(c);
+        game.CrewFactionVehicle(c, a.Power);
     }
 
     private void Finish(in Ask a, Construct? c, string name, string why)

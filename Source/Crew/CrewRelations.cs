@@ -3,7 +3,11 @@ using System.Text.Json;
 
 namespace CallOfSlop;
 
-/// <summary>Bands a relation falls in (faction-controllers.md section 5.2). Crews fight below 0 whatever the band.</summary>
+/// <summary>
+/// Bands a relation falls in (faction-controllers.md section 5.2, widened by Karl's answer 2 in phase 3). Crews fight below 0 whatever the band.
+/// Below War, a relation at -100 is a <b>blood feud</b> (<see cref="PowerRelations.Blood"/>): it never moves again, so no peace is ever made;
+/// above Friendly, <see cref="Kindred"/> powers want to join each other, and the weaker merges into the stronger when both stay there.
+/// </summary>
 public enum RelBand : byte
 {
     War,
@@ -11,6 +15,7 @@ public enum RelBand : byte
     Wary,
     Neutral,
     Friendly,
+    Kindred, // phase 3: wants to join and merge with them
 }
 
 /// <summary>What moves a relation (Crew/Relations.json, section 5.3), in that file's key order.</summary>
@@ -31,6 +36,13 @@ public enum RelEvent : byte
     KeepPact,
     CaptureOfficer, // phase 2: an admiral or a captain taken prisoner (faction-controllers.md, the user's answers on admirals 7)
     ReleaseOfficer, // ... released or ransomed back
+    RaidConvoy, // phase 3: a convoy's cargo ship lost to a raid (the controllers: Crew/CrewControllers.cs)
+    EscortConvoy, // ... a convoy brought home with the doer's help (an answered call)
+    AnswerCall, // ... a call for help answered
+    RefuseCall, // ... an ally's call for help turned down
+    PayTribute, // ... a tribute paid on time, each real hour
+    TakeSite, // phase 4: a key site taken from its holder (Crew/CrewTerritory.cs); a whole planet lost adds TakePlanet
+    TakePlanet,
     Count,
 }
 
@@ -40,6 +52,9 @@ public enum PactKind : byte
     Ceasefire,
     NonAggression,
     Alliance,
+    Trade, // phase 3 (Karl's answer 2): both earn by it; no fights
+    Tribute, // the payer (PactA) pays a share of its income to the other (PactB) for peace; no end while paid
+    Vassalage, // a tribute grown old and friendly: the vassal (PactA) pays and fights its lord's (PactB) enemies, as an ally
 }
 
 /// <summary>Who sees what happens at a place: a crew of a power's awake within its sight (the server's crews; a tool's stand-in).</summary>
@@ -52,11 +67,18 @@ public interface IPowerSight
 public sealed class RelationRules
 {
     public const string Format = "call-of-slop-npc-relations/1";
-    public static readonly string[] Keys = ["hitBody", "hitCrew", "killCrew", "destroyShip", "board", "capture", "release", "drop", "hire", "help", "breakPact", "breakPactHeard", "keepPact", "captureOfficer", "releaseOfficer"];
+    public static readonly string[] Keys = ["hitBody", "hitCrew", "killCrew", "destroyShip", "board", "capture", "release", "drop", "hire", "help", "breakPact", "breakPactHeard", "keepPact", "captureOfficer", "releaseOfficer",
+        "raidConvoy", "escortConvoy", "answerCall", "refuseCall", "payTribute", "takeSite", "takePlanet"];
 
-    public readonly int[] Amount = [-5, -3, -4, -15, -10, -20, 5, 3, 2, 2, -40, -15, 1, -25, 15];
-    public readonly string[][] Scale = [["pride"], ["pride"], ["values.crew"], ["values.ships", "pride"], ["pride"], ["values.ships", "pride"], ["forgiveness"], ["forgiveness"], [], ["loyalty"], [], ["loyalty"], [], ["pride"], ["forgiveness"]];
-    public int WarLine = -50, WaryLine = 0, NeutralLine = 20, FriendlyLine = 60, Hysteresis = 5;
+    public readonly int[] Amount = [-5, -3, -4, -15, -10, -20, 5, 3, 2, 2, -40, -15, 1, -25, 15, -10, 5, 3, -10, 1, -10, -40];
+    public readonly string[][] Scale = [["pride"], ["pride"], ["values.crew"], ["values.ships", "pride"], ["pride"], ["values.ships", "pride"], ["forgiveness"], ["forgiveness"], [], ["loyalty"], [], ["loyalty"], [], ["pride"], ["forgiveness"],
+        ["values.cargo", "greed"], ["values.cargo"], ["loyalty"], ["loyalty"], ["greed"], ["values.planets"], ["values.planets", "pride"]];
+    public int WarLine = -50, WaryLine = 0, NeutralLine = 20, FriendlyLine = 60, KindredLine = 90, Hysteresis = 5;
+    public float BloodPride = 0.4f; // a relation at the floor hit again turns to a blood feud when the victim's pride is at least this
+    public int MergeMinutes = 30; // both kindred this long: the weaker joins the stronger
+    public float TradeGreed = 0.5f, TributeWeaker = 0.6f, TributePride = 0.6f, TributeGreed = 0.4f, VassalLoyalty = 0.3f;
+    public int VassalMinutes = 60; // a tribute held this long with the payer at least neutral to the receiver: vassalage
+    public float TributeShare = 0.25f, TradePerMinute = 20; // the tribute's share of the payer's income; what a trade pact earns each side a minute (units)
     public float DecayPerMinute = 1f, EnemyShare = 0.2f;
     public int HelpMax = 10, HelpEverySeconds = 60, FightGapSeconds = 300;
     public int CeasefireMinutes = 30, CeasefireRelation = -40, CeasefireLosses = 10, StaleWarMinutes = 30, AnswerCooldownMinutes = 5;
@@ -105,7 +127,10 @@ public sealed class RelationRules
                 r.WaryLine = 0; // (crews fight below 0: the line between Hostile and Wary stays there)
                 r.NeutralLine = Int(b, "neutral", r.NeutralLine, 1, 99);
                 r.FriendlyLine = Int(b, "friendly", r.FriendlyLine, r.NeutralLine + 1, 100);
+                r.KindredLine = Int(b, "kindred", r.KindredLine, r.FriendlyLine + 1, 100);
                 r.Hysteresis = Int(b, "hysteresis", r.Hysteresis, 0, 20);
+                r.BloodPride = Num(b, "bloodPride", r.BloodPride, 0, 1.01f);
+                r.MergeMinutes = Int(b, "mergeMinutes", r.MergeMinutes, 1, 100000);
             }
             if (root.TryGetProperty("decay", out var d))
                 r.DecayPerMinute = Num(d, "perMinute", r.DecayPerMinute, 0, 20);
@@ -127,6 +152,14 @@ public sealed class RelationRules
                 r.AllianceLoyalty = Num(p, "allianceLoyalty", r.AllianceLoyalty, 0, 1);
                 r.CeasefireRefuseAggression = Num(p, "ceasefireRefuseAggression", r.CeasefireRefuseAggression, 0, 1.01f);
                 r.FriendlyFireHits = Int(p, "friendlyFireHits", r.FriendlyFireHits, 0, 255);
+                r.TradeGreed = Num(p, "tradeGreed", r.TradeGreed, 0, 1.01f);
+                r.TradePerMinute = Num(p, "tradePerMinute", r.TradePerMinute, 0, 1e6f);
+                r.TributeWeaker = Num(p, "tributeWeaker", r.TributeWeaker, 0, 1);
+                r.TributePride = Num(p, "tributePride", r.TributePride, 0, 1.01f);
+                r.TributeGreed = Num(p, "tributeGreed", r.TributeGreed, 0, 1.01f);
+                r.TributeShare = Num(p, "tributeShare", r.TributeShare, 0, 1);
+                r.VassalMinutes = Int(p, "vassalMinutes", r.VassalMinutes, 1, 100000);
+                r.VassalLoyalty = Num(p, "vassalLoyalty", r.VassalLoyalty, 0, 1.01f);
             }
         }
         catch (Exception ex) when (ex is IOException or JsonException or InvalidDataException or UnauthorizedAccessException or InvalidOperationException or FormatException or KeyNotFoundException)
@@ -154,9 +187,20 @@ public sealed class RelationRules
     }
 
     /// <summary>The raw band of value <paramref name="v"/>.</summary>
-    public RelBand Raw(int v) => v <= WarLine ? RelBand.War : v < WaryLine ? RelBand.Hostile : v < NeutralLine ? RelBand.Wary : v < FriendlyLine ? RelBand.Neutral : RelBand.Friendly;
+    public RelBand Raw(int v) => v <= WarLine ? RelBand.War : v < WaryLine ? RelBand.Hostile : v < NeutralLine ? RelBand.Wary : v < FriendlyLine ? RelBand.Neutral : v < KindredLine ? RelBand.Friendly : RelBand.Kindred;
 
-    private int Lower(RelBand b) => b switch { RelBand.War => -100, RelBand.Hostile => WarLine + 1, RelBand.Wary => WaryLine, RelBand.Neutral => NeutralLine, _ => FriendlyLine };
+    private int Lower(RelBand b) => b switch { RelBand.War => -100, RelBand.Hostile => WarLine + 1, RelBand.Wary => WaryLine, RelBand.Neutral => NeutralLine, RelBand.Friendly => FriendlyLine, _ => KindredLine };
+
+    /// <summary>The band in words (the Faction window, news); -100 is a blood feud.</summary>
+    public string Words(int v) => v <= PowerRelations.BloodValue ? "blood enemies" : Raw(v) switch
+    {
+        RelBand.War => "at war",
+        RelBand.Hostile => "hostile",
+        RelBand.Wary => "wary",
+        RelBand.Neutral => "neutral",
+        RelBand.Friendly => "friendly",
+        _ => "wants to merge",
+    };
 
     /// <summary>The band after <paramref name="prev"/> for value <paramref name="v"/>, with <see cref="Hysteresis"/> points each way.</summary>
     public RelBand Next(RelBand prev, int v)
@@ -164,7 +208,7 @@ public sealed class RelationRules
         var raw = Raw(v);
         if (raw < prev && v > Lower(prev) - Hysteresis)
             return prev;
-        if (raw > prev && v < Lower(prev + 1) + Hysteresis)
+        if (raw > prev && prev < RelBand.Kindred && v < Lower(prev + 1) + Hysteresis)
             return prev;
         return raw;
     }
@@ -181,7 +225,30 @@ public sealed class PowerRelations
 {
     public const int N = FactionTable.MaxStory, MaxPacts = 32, MaxNews = 32;
     public const int ThinkSeconds = 5;
+    /// <summary>A blood feud shows as this value (the grid sent to clients; the engine keeps the feud as a flag, <see cref="Feud"/>).</summary>
+    public const int BloodValue = -100;
     private static int T => World.TickRate;
+
+    /// <summary>Phase 3: a power gone for good (wiped out, or merged into another): it thinks no more, signs nothing, and nothing is posted to it.</summary>
+    public readonly bool[] Gone = new bool[N + 1];
+    /// <summary>Phase 3: a power's might (the controllers': ships and stock), for tribute and merging (null: all equal).</summary>
+    public Func<byte, float>? Might;
+    /// <summary>Phase 3: power a joins power b (both kindred long enough; a is the weaker): the controllers move its ships, then <see cref="Fall"/>.</summary>
+    public Action<byte, byte>? Merge;
+    private readonly long[] _kinSince = new long[N * N];
+
+    /// <summary>How <paramref name="a"/> sees <paramref name="b"/> is a blood feud: no peace, ever.</summary>
+    public bool Blood(byte a, byte b) => a != b && a > 0 && b > 0 && a <= N && b <= N && Feud[(a - 1) * N + b - 1];
+
+    /// <summary>How a sees b is a blood feud (Karl's answer 2): set by a grave deed at the floor, saved (POWR version 2), never cleared but by a new world.
+    /// A relation at -100 alone is no feud (worlds from before phase 3 clamped there).</summary>
+    public readonly bool[] Feud = new bool[N * N];
+
+    /// <summary>The value clients are shown: -100 only for a feud (others at -99 at worst), so the window's words need no flag on the wire.</summary>
+    public sbyte Shown(int k) => Feud[k] ? (sbyte)BloodValue : (sbyte)Math.Max((int)Rel[k], BloodValue + 1);
+
+    /// <summary>A gone power's heir: the power it merged into (0: wiped out, none).</summary>
+    public readonly byte[] MergedInto = new byte[N + 1];
 
     public RelationRules Rules = RelationRules.Current;
     public FactionTable Table = new(); // the factions table whose NPC rows hold the standings with players (the Game sets its own)
@@ -252,6 +319,10 @@ public sealed class PowerRelations
         Array.Clear(_helpSum);
         Array.Clear(_decay);
         Array.Clear(_thought);
+        Array.Clear(_kinSince);
+        Array.Clear(Gone);
+        Array.Clear(MergedInto);
+        Array.Clear(Feud);
         Array.Clear(News);
         NewsTotal = 0;
         for (var a = 1; a <= Count; a++)
@@ -314,7 +385,7 @@ public sealed class PowerRelations
     public bool StrayFire(byte victim, byte doer, out bool first)
     {
         first = false;
-        if (victim == doer || !HoldsFire(victim, doer) && BandOf(victim, doer) != RelBand.Friendly)
+        if (victim == doer || !HoldsFire(victim, doer) && BandOf(victim, doer) < RelBand.Friendly)
             return false;
         var k = (victim - 1) * N + doer - 1;
         if (Tick - _strayAt[k] > 60L * T)
@@ -329,7 +400,7 @@ public sealed class PowerRelations
     }
 
     /// <summary><paramref name="a"/> helps <paramref name="f"/> in a fight it sees: allied, or friendly.</summary>
-    public bool Helps(byte a, byte f) => a != 0 && f != 0 && a != f && (PactOf(a, f) == PactKind.Alliance || BandOf(a, f) == RelBand.Friendly);
+    public bool Helps(byte a, byte f) => a != 0 && f != 0 && a != f && (PactOf(a, f) is PactKind.Alliance or PactKind.Vassalage || BandOf(a, f) >= RelBand.Friendly);
 
     // ---- Standing with players (the factions table's NPC rows) -----------------------------------------------------------------------
 
@@ -389,7 +460,7 @@ public sealed class PowerRelations
         return v != 0 ? v : Math.Sign(a);
     }
 
-    private static bool Attack(RelEvent e) => e <= RelEvent.Capture || e == RelEvent.CaptureOfficer;
+    private static bool Attack(RelEvent e) => e <= RelEvent.Capture || e is RelEvent.CaptureOfficer or RelEvent.RaidConvoy or RelEvent.TakeSite or RelEvent.TakePlanet;
 
     /// <summary>
     /// <paramref name="doerPower"/> (a power; 0: none) or <paramref name="doerPlayer"/> (a person; 255: none) did <paramref name="e"/> to power
@@ -399,9 +470,16 @@ public sealed class PowerRelations
     /// </summary>
     public void Post(RelEvent e, byte victim, byte doerPower, byte doerPlayer, Vector3 at)
     {
-        if (Def(victim) is not { } v || doerPower == victim || doerPower == 0 && doerPlayer == 255 || doerPower > Count)
+        if (Def(victim) is not { } v || doerPower == victim || doerPower == 0 && doerPlayer == 255 || doerPower > Count || Gone[victim])
             return;
         var amount = Amount(e, v);
+        if (doerPower != 0 && e is RelEvent.DestroyShip or RelEvent.Capture or RelEvent.CaptureOfficer or RelEvent.RaidConvoy or RelEvent.TakePlanet && Rel[(victim - 1) * N + doerPower - 1] <= BloodValue + 1 && v.Pride >= Rules.BloodPride && !Blood(victim, doerPower) && Might != null)
+        {
+            // A grave deed against a power already at the floor: a blood feud, for good (Karl's answer 2; only where the controllers run: Might set).
+            Set(victim, doerPower, BloodValue);
+            Feud[(victim - 1) * N + doerPower - 1] = true;
+            Say($"{Name(victim)} swears a blood feud against {Name(doerPower)}");
+        }
         if (doerPower != 0)
         {
             Move(victim, doerPower, amount);
@@ -419,14 +497,14 @@ public sealed class PowerRelations
         }
         else
             MovePlayer(victim, doerPlayer, amount);
-        if (e is RelEvent.BreakPact or RelEvent.BreakPactHeard or RelEvent.KeepPact)
+        if (e is RelEvent.BreakPact or RelEvent.BreakPactHeard or RelEvent.KeepPact or RelEvent.PayTribute or RelEvent.AnswerCall or RelEvent.RefuseCall)
             return;
         // Word gets around.
         for (var c = 1; c <= Count; c++)
         {
-            if (c == victim || c == doerPower || Def(c) is not { Controller: true } cd)
+            if (c == victim || c == doerPower || Def(c) is not { Controller: true } cd || Gone[c])
                 continue;
-            var allied = PactOf((byte)c, victim) == PactKind.Alliance;
+            var allied = PactOf((byte)c, victim) is PactKind.Alliance or PactKind.Vassalage;
             if (!allied && Sight?.Sees((byte)c, at) != true)
                 continue;
             var view = Get((byte)c, victim);
@@ -473,6 +551,8 @@ public sealed class PowerRelations
             return;
         var k = (a - 1) * N + b - 1;
         var was = Rel[k];
+        if (Feud[k])
+            return; // (a blood feud never moves)
         Rel[k] = (sbyte)Math.Clamp(was + delta, -100, 100);
         if (Rel[k] == was)
             return;
@@ -507,9 +587,11 @@ public sealed class PowerRelations
             _warSince[k] = 0;
             Say($"{Name(a)} is no longer at war with {Name(b)}");
         }
-        else if (band == RelBand.Friendly)
+        else if (band == RelBand.Kindred)
+            Say($"{Name(a)} would join {Name(b)} if they asked");
+        else if (band == RelBand.Friendly && was < band)
             Say($"{Name(a)} now counts {Name(b)} as friends");
-        else if (was == RelBand.Friendly)
+        else if (was >= RelBand.Friendly && band < RelBand.Friendly)
             Say($"{Name(a)} no longer counts {Name(b)} as friends");
         else if (band == RelBand.Hostile && was > band)
             Say($"{Name(a)} turns hostile to {Name(b)}");
@@ -536,7 +618,45 @@ public sealed class PowerRelations
 
     // ---- Pacts -------------------------------------------------------------------------------------------------------------------------
 
-    public static string PactName(PactKind k) => k switch { PactKind.Ceasefire => "ceasefire", PactKind.NonAggression => "non-aggression pact", PactKind.Alliance => "alliance", _ => "pact" };
+    public static string PactName(PactKind k) => k switch
+    {
+        PactKind.Ceasefire => "ceasefire",
+        PactKind.NonAggression => "non-aggression pact",
+        PactKind.Alliance => "alliance",
+        PactKind.Trade => "trade agreement",
+        PactKind.Tribute => "tribute",
+        PactKind.Vassalage => "vassalage",
+        _ => "pact",
+    };
+
+    /// <summary>The pact between <paramref name="a"/> and <paramref name="b"/> (and its index), for the controllers' payments.</summary>
+    public int PactAt(byte a, byte b) => PactIndex(a, b);
+
+    /// <summary>A controller ends pact <paramref name="i"/> (a tribute unpaid): news, no relation event but <paramref name="hurt"/> to the receiver's view of the payer.</summary>
+    public void EndPact(int i, string why, int hurt = 0)
+    {
+        if (i < 0 || i >= MaxPacts || PactK[i] == PactKind.None)
+            return;
+        var (a, b) = (PactA[i], PactB[i]);
+        End(i, why);
+        if (hurt != 0)
+            Move(b, a, hurt);
+    }
+
+    /// <summary>Power <paramref name="p"/> is gone for good (answer 5: wiped out; or merged): its pacts end, it thinks no more; news.</summary>
+    public void Fall(byte p, string line, bool quiet = false, byte into = 0)
+    {
+        if (p == 0 || p > Count || Gone[p])
+            return;
+        Gone[p] = true;
+        MergedInto[p] = into;
+        for (var i = 0; i < MaxPacts; i++)
+            if (PactK[i] != PactKind.None && (PactA[i] == p || PactB[i] == p))
+                PactK[i] = PactKind.None;
+        Version++;
+        if (!quiet)
+            Say(line);
+    }
 
     private void Form(PactKind kind, byte a, byte b)
     {
@@ -550,14 +670,20 @@ public sealed class PowerRelations
         }
         (PactK[i], PactA[i], PactB[i], PactStart[i], PactKept[i]) = (kind, a, b, Tick, 0);
         PactEnd[i] = kind == PactKind.Ceasefire ? Tick + (long)Rules.CeasefireMinutes * 60 * T : 0;
-        if (kind == PactKind.Ceasefire)
+        if (kind is PactKind.Ceasefire or PactKind.Tribute)
         {
             foreach (var (x, y) in new[] { (a, b), (b, a) }) // (rare: a pact signed)
                 if (Get(x, y) < Rules.CeasefireRelation)
                     Set(x, y, Rules.CeasefireRelation);
         }
         Version++;
-        Say(kind == PactKind.Alliance ? $"{Name(a)} and {Name(b)} are now allies" : $"{Name(a)} and {Name(b)} sign a {PactName(kind)}");
+        Say(kind switch
+        {
+            PactKind.Alliance => $"{Name(a)} and {Name(b)} are now allies",
+            PactKind.Tribute => $"{Name(a)} pays tribute to {Name(b)} for peace",
+            PactKind.Vassalage => $"{Name(a)} becomes a vassal of {Name(b)}",
+            _ => $"{Name(a)} and {Name(b)} sign a {PactName(kind)}",
+        });
     }
 
     private void End(int i, string why)
@@ -585,20 +711,35 @@ public sealed class PowerRelations
     private bool CommonEnemy(byte a, byte b, bool war)
     {
         for (var c = 1; c <= Count; c++)
-            if (c != a && c != b && Get(a, (byte)c) < 0 && Get(b, (byte)c) < 0 && (!war || BandOf(a, (byte)c) == RelBand.War || BandOf(b, (byte)c) == RelBand.War))
+            if (c != a && c != b && !Gone[c] && Get(a, (byte)c) < 0 && Get(b, (byte)c) < 0 && (!war || BandOf(a, (byte)c) == RelBand.War || BandOf(b, (byte)c) == RelBand.War))
                 return true;
         return false;
     }
 
-    private bool AllianceWanted(byte a, byte b) => BandOf(a, b) == RelBand.Friendly && BandOf(b, a) == RelBand.Friendly
+    /// <summary>Some power both <paramref name="a"/> and <paramref name="b"/> see below 0.</summary>
+    public bool CommonEnemyOf(byte a, byte b) => CommonEnemy(a, b, war: false);
+
+    private bool AllianceWanted(byte a, byte b) => BandOf(a, b) >= RelBand.Friendly && BandOf(b, a) >= RelBand.Friendly
         && Def(a)!.Loyalty >= Rules.AllianceLoyalty && Def(b)!.Loyalty >= Rules.AllianceLoyalty && CommonEnemy(a, b, war: true);
 
     private bool NonAggressionWanted(byte a, byte b) => BandOf(a, b) >= RelBand.Neutral && BandOf(b, a) >= RelBand.Neutral && CommonEnemy(a, b, war: false);
 
+    private float MightOf(byte p) => Might?.Invoke(p) ?? 1;
+
+    /// <summary>Trade (Karl's answer 2): both neutral or better, no war, and one of them greedy enough to want the business.</summary>
+    private bool TradeWanted(byte a, byte b) => BandOf(a, b) >= RelBand.Neutral && BandOf(b, a) >= RelBand.Neutral
+        && MathF.Max(Def(a)!.Greed, Def(b)!.Greed) >= Rules.TradeGreed && Might != null && MightOf(a) > 0 && MightOf(b) > 0; // (both with an economy)
+
+    /// <summary>Tribute: <paramref name="a"/> would pay <paramref name="b"/> for peace: a ceasefire it wants, much the weaker, and not too proud.</summary>
+    private bool TributeWanted(byte a, byte b) => Might != null && CeasefireWanted(a, b) && MightOf(a) < MightOf(b) * Rules.TributeWeaker && Def(a)!.Pride < Rules.TributePride;
+
+    /// <summary>Vassalage: a tribute held long, the payer at least neutral to the receiver.</summary>
+    private bool VassalWanted(byte a, byte b, int i) => PactK[i] == PactKind.Tribute && PactA[i] == a && Tick - PactStart[i] >= (long)Rules.VassalMinutes * 60 * T && BandOf(a, b) >= RelBand.Neutral;
+
     private bool CeasefireWanted(byte a, byte b)
     {
         var k = (a - 1) * N + b - 1;
-        if (BandOf(a, b) != RelBand.War && BandOf(b, a) != RelBand.War)
+        if (BandOf(a, b) != RelBand.War && BandOf(b, a) != RelBand.War || Blood(a, b) || Blood(b, a))
             return false;
         var line = Rules.CeasefireLosses * (0.5f + Def(a)!.Pride);
         var since = Math.Max(_warSince[k], _warSince[(b - 1) * N + a - 1]);
@@ -628,7 +769,7 @@ public sealed class PowerRelations
         var def = Def(a)!;
         var dt = _thought[a - 1] == 0 ? 0 : Tick - _thought[a - 1];
         _thought[a - 1] = Tick;
-        if (!def.Controller)
+        if (!def.Controller || Gone[a])
             return;
         Decay(a, def, dt);
         for (var i = 0; i < MaxPacts; i++)
@@ -641,10 +782,15 @@ public sealed class PowerRelations
                 End(i, "runs out");
                 continue;
             }
-            if (PactK[i] == PactKind.Alliance && (BandOf(a, o) < RelBand.Neutral || BandOf(o, a) < RelBand.Neutral)
+            if (PactK[i] is PactKind.Alliance or PactKind.Vassalage or PactKind.Trade && (BandOf(a, o) < RelBand.Neutral || BandOf(o, a) < RelBand.Neutral)
                 || PactK[i] == PactKind.NonAggression && (BandOf(a, o) == RelBand.War || BandOf(o, a) == RelBand.War))
             {
                 End(i, "falls apart");
+                continue;
+            }
+            if (PactK[i] == PactKind.Tribute && PactA[i] == a && BandOf(a, o) >= RelBand.Neutral && !VassalWanted(a, o, i) && BandOf(o, a) >= RelBand.Friendly)
+            {
+                End(i, "ends: the payer is free of it"); // (friends both ways: tribute is no longer asked)
                 continue;
             }
             if (PactA[i] == a && (Tick - PactStart[i]) / (3600L * T) > PactKept[i])
@@ -653,15 +799,38 @@ public sealed class PowerRelations
                 Move(a, o, Amount(RelEvent.KeepPact, def));
                 Move(o, a, Amount(RelEvent.KeepPact, Def(o)!));
             }
-            if (PactK[i] == PactKind.NonAggression && AllianceWanted(a, o) && _proposed[(a - 1) * N + o - 1] == PactKind.None && Tick >= _answerAfter[(a - 1) * N + o - 1])
-                _proposed[(a - 1) * N + o - 1] = PactKind.Alliance;
+            var ao = (a - 1) * N + o - 1;
+            if (_proposed[ao] == PactKind.None && Tick >= _answerAfter[ao])
+            {
+                if (PactK[i] is PactKind.NonAggression or PactKind.Trade && AllianceWanted(a, o))
+                    _proposed[ao] = PactKind.Alliance;
+                else if (PactK[i] == PactKind.NonAggression && TradeWanted(a, o))
+                    _proposed[ao] = PactKind.Trade;
+                else if (VassalWanted(a, o, i))
+                    _proposed[ao] = PactKind.Vassalage;
+            }
         }
         for (var b = (byte)1; b <= Count; b++)
         {
-            if (b == a || Def(b) is not { Controller: true } bd)
+            if (b == a || Def(b) is not { Controller: true } bd || Gone[b])
                 continue;
             var ab = (a - 1) * N + b - 1;
             var ba = (b - 1) * N + a - 1;
+            // Kindred both ways a long while: the weaker joins the stronger (Karl's answer 2: merging powers is a real outcome).
+            if (BandOf(a, b) == RelBand.Kindred && BandOf(b, a) == RelBand.Kindred && Merge != null)
+            {
+                if (_kinSince[ab] == 0)
+                    _kinSince[ab] = Tick;
+                else if (Tick - _kinSince[ab] >= (long)Rules.MergeMinutes * 60 * T && MightOf(a) <= MightOf(b))
+                {
+                    _kinSince[ab] = 0;
+                    Merge(a, b);
+                    if (Gone[a])
+                        return;
+                }
+            }
+            else
+                _kinSince[ab] = 0;
             // Answer b's proposal to a.
             if (_proposed[ba] is var kind and not PactKind.None)
             {
@@ -673,7 +842,10 @@ public sealed class PowerRelations
                 {
                     PactKind.Ceasefire => cur == PactKind.None && CeasefireWanted(b, a) && (def.Aggression < Rules.CeasefireRefuseAggression || _loss[ab] > 0),
                     PactKind.NonAggression => cur == PactKind.None && NonAggressionWanted(a, b),
-                    PactKind.Alliance => cur is PactKind.None or PactKind.NonAggression && AllianceWanted(a, b),
+                    PactKind.Alliance => cur is PactKind.None or PactKind.NonAggression or PactKind.Trade && AllianceWanted(a, b),
+                    PactKind.Trade => cur is PactKind.None or PactKind.NonAggression && TradeWanted(a, b),
+                    PactKind.Tribute => cur == PactKind.None && CeasefireWanted(b, a) && def.Greed >= Rules.TributeGreed,
+                    PactKind.Vassalage => cur == PactKind.Tribute && def.Loyalty >= Rules.VassalLoyalty,
                     _ => false,
                 };
                 if (yes)
@@ -688,8 +860,10 @@ public sealed class PowerRelations
             // Propose.
             if (PactOf(a, b) != PactKind.None || _proposed[ab] != PactKind.None || Tick < _answerAfter[ab])
                 continue;
-            var want = CeasefireWanted(a, b) ? PactKind.Ceasefire
+            var want = TributeWanted(a, b) ? PactKind.Tribute
+                : CeasefireWanted(a, b) ? PactKind.Ceasefire
                 : AllianceWanted(a, b) ? PactKind.Alliance
+                : TradeWanted(a, b) ? PactKind.Trade
                 : NonAggressionWanted(a, b) ? PactKind.NonAggression
                 : PactKind.None;
             if (want != PactKind.None)
@@ -709,8 +883,8 @@ public sealed class PowerRelations
             if (b == a)
                 continue;
             var k = (a - 1) * N + b - 1;
-            if (PactOf(a, (byte)b) == PactKind.Ceasefire)
-                continue; // (a ceasefire holds the grudge where it was set)
+            if (PactOf(a, (byte)b) == PactKind.Ceasefire || Feud[k])
+                continue; // (a ceasefire holds the grudge where it was set; a blood feud never fades)
             var to = Toward(Rel[k], def.RestTo[b], steps, Band[k] == RelBand.War);
             if (to != Rel[k])
                 Move(a, (byte)b, to - Rel[k]);
@@ -745,6 +919,9 @@ public sealed class PowerRelations
     }
 
     // ---- News ------------------------------------------------------------------------------------------------------------------------
+
+    /// <summary>A line of news from outside the engine (the controllers: a convoy sent, a raid, a call answered).</summary>
+    public void Tell(string line) => Say(line);
 
     private void Say(string line)
     {
@@ -784,7 +961,7 @@ public sealed class PowerRelations
 
     // ---- Saves (the world's Powers section) ------------------------------------------------------------------------------------------
 
-    public const byte SaveVersion = 1;
+    public const byte SaveVersion = 2; // (2: blood feuds, a bit a pair, after the news)
 
     /// <summary>
     /// u8 version; u8 n, n x text power name; n x n x i8 (row a: how a sees each); u8 pacts, each (u8 kind, u8 a, u8 b, i32 seconds held,
@@ -816,6 +993,15 @@ public sealed class PowerRelations
         w.U8((byte)news);
         for (var k = NewsTotal - news; k < NewsTotal; k++)
             w.Str(News[k % MaxNews]);
+        for (var a = 0; a < n; a++)
+            for (var b = 0; b < n; b += 8)
+            {
+                var bits = 0;
+                for (var j = 0; j < 8 && b + j < n; j++)
+                    if (Feud[a * N + b + j])
+                        bits |= 1 << j;
+                w.U8((byte)bits);
+            }
         return w.Span.ToArray();
     }
 
@@ -826,9 +1012,9 @@ public sealed class PowerRelations
         {
             var r = new SaveReader(bytes);
             var v = r.U8();
-            if (v != SaveVersion)
+            if (v is not (1 or SaveVersion))
             {
-                Console.WriteLine($"[crew] the world's powers section is of version {v} (this build reads {SaveVersion}): relations start from the power files");
+                Console.WriteLine($"[crew] the world's powers section is of version {v} (this build reads 1 and {SaveVersion}): relations start from the power files");
                 return;
             }
             int n = r.U8();
@@ -860,7 +1046,7 @@ public sealed class PowerRelations
                 var held = r.I32();
                 var left = r.I32();
                 var kept = r.U8();
-                if (a >= n || b >= n || map[a] == 0 || map[b] == 0 || kind is not (PactKind.Ceasefire or PactKind.NonAggression or PactKind.Alliance) || i >= MaxPacts)
+                if (a >= n || b >= n || map[a] == 0 || map[b] == 0 || kind is not (PactKind.Ceasefire or PactKind.NonAggression or PactKind.Alliance or PactKind.Trade or PactKind.Tribute or PactKind.Vassalage) || i >= MaxPacts)
                     continue;
                 (PactK[i], PactA[i], PactB[i], PactStart[i], PactEnd[i], PactKept[i]) = (kind, map[a], map[b], Tick - (long)held * T, left < 0 ? 0 : Tick + (long)left * T, kept);
             }
@@ -884,6 +1070,16 @@ public sealed class PowerRelations
                 News[NewsTotal % MaxNews] = r.Str();
                 NewsTotal++;
             }
+            Array.Clear(Feud); // (version 1, from before blood feuds: none, whatever its values)
+            if (v >= 2)
+                for (var a = 0; a < n; a++)
+                    for (var b = 0; b < n; b += 8)
+                    {
+                        var bits = r.U8();
+                        for (var j = 0; j < 8 && b + j < n; j++)
+                            if ((bits >> j & 1) != 0 && map[a] != 0 && map[b + j] != 0 && map[a] != map[b + j])
+                                Feud[(map[a] - 1) * N + map[b + j] - 1] = true;
+                    }
             Version++;
         }
         catch (Exception ex) when (ex is WorldFileException or ArgumentException or IndexOutOfRangeException or InvalidDataException)

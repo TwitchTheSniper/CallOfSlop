@@ -22,6 +22,8 @@ public static class CrewCheck
             return CrewFleetCheck.Run(fleet, args); // (groups and admirals: CrewFleetCheck.cs)
         if (args.Any(a => a.Equals("--crew-relations", StringComparison.OrdinalIgnoreCase)))
             return CrewRelationsCheck.Run(args); // (relations that change through play: CrewRelationsCheck.cs)
+        if (args.Any(a => a.Equals("--crew-mine", StringComparison.OrdinalIgnoreCase)))
+            return CrewMineCheck.Run(args); // (miners off a Drill Rack, a host and a joined client: CrewMineCheck.cs)
         var at = Array.FindIndex(args, a => a.Equals("--crew-check", StringComparison.OrdinalIgnoreCase));
         var shipName = at >= 0 && at + 1 < args.Length && !args[at + 1].StartsWith("--") ? args[at + 1] : "Zero Day Frigate";
         var targetName = Arg("--target") ?? "Zero Day Frigate";

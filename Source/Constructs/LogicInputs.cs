@@ -46,7 +46,7 @@ public static class LogicInputs
         Factions.Shares(c.Owner, player) || c.Owner == 255 || c.Wreck || ConstructParts.Get(held)?.Name == KeyItem ? null : "locked: it turns for its owner, or with a Key in your hands";
 
     /// <summary>The logic step's part: what it puts out.</summary>
-    public static float Step(ref CPart p, ConstructPartDef d)
+    public static float Step(ref CPart p, ConstructPartDef d, int ticks = 1)
     {
         if (d.Logic == CLogic.Numpad)
         {
@@ -54,7 +54,7 @@ public static class LogicInputs
             p.State = (byte)(p.State & ~AcceptedBit);
             return ConstructConfig.Get(p, d, CfgKey.Value, 0);
         }
-        if (p.Count > 0 && --p.Count == 0)
+        if (p.Count > 0 && (p.Count = (ushort)Math.Max(0, p.Count - ticks)) == 0)
             p.State = (byte)(p.State & ~1);
         var open = (p.State & 1) != 0;
         return open != ConstructConfig.Get(p, d, CfgKey.Invert, 0) >= 0.5f ? 1 : 0;
