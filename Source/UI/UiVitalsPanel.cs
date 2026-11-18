@@ -8,7 +8,8 @@ namespace CallOfSlop;
 /// A person's panel, bottom left in Sandbox (Karl, 2026-11-18: "replacing the HP bar with percent, oxygen in suit, etc. similar to
 /// the robot shell"): the robot shell panel's glass plate and hologram (UiShellPanel.cs), here a person's figure lit by their health,
 /// with a helmet drawn round the head while suited. Rows, each a label, a bar and a value: health; the suit's air (or NO SUIT); breath
-/// held, while it runs down; the ship's air aboard a ship with life support (ShipAir.cs); the MMU's fuel while worn. It replaces the
+/// held, while it runs down; the ship's air aboard a ship with life support (ShipAir.cs); the MMU's fuel and its inertia dampeners
+/// while worn, with the pack's icon in the heading (its jets lit while it burns). It replaces the
 /// green health bar and the HUD's air lines. Strings are made once, or once when their value changes: nothing allocates a frame.
 /// </summary>
 public sealed partial class Ui
@@ -54,7 +55,7 @@ public sealed partial class Ui
 
         var hp = Math.Clamp(me.Health * 100 / World.MaxHealth, 0, 100);
         var suitPct = Math.Clamp((int)(me.SuitAir * 100 / Eva.SuitSeconds), 0, 100);
-        var rows = 2 + (holding ? 1 : 0) + (ship != null ? 1 : 0) + (mmu ? 1 : 0);
+        var rows = 2 + (holding ? 1 : 0) + (ship != null ? 1 : 0) + (mmu ? 2 : 0);
 
         // The plate, bottom left where the health bar was.
         var w = 292 * s;
@@ -74,6 +75,8 @@ public sealed partial class Ui
         CmdText(dl, p0 + new float2(12 * s, 23 * s), 10.5f, stateCol, stateCol == CmdRed ? 0.9f * blink : 0.9f, state);
         CmdText(dl, new float2(p1.X - 12 * s, p0.Y + 6 * s), 19f, hpCol, hp <= 15 ? blink : 1f, SpPct[hp], 2);
         CmdLine(dl, p0 + new float2(10 * s, 40 * s), new float2(p1.X - 10 * s, p0.Y + 40 * s), CmdDim, 0.5f);
+        if (mmu)
+            VpMmuIcon(dl, p0 + new float2(176 * s, 20 * s), me, blink);
 
         // The hologram: a person seen from behind, lit by their health; a helmet round the head while suited, the pack on the back.
         var cx = p0.X + 54 * s;
@@ -128,9 +131,43 @@ public sealed partial class Ui
         {
             var fp = Math.Clamp(me.Sim.JetFuel * 100 / Eva.MmuFull, 0, 100);
             VpRow(dl, p0, p1, ref y, "MMU FUEL", fp, SpColour(fp, 25), fp <= 15 ? blink : 1f, SpPct[fp]);
+            var coast = game.MmuCoasting;
+            VpRow(dl, p0, p1, ref y, "INERTIA", -1, coast ? CmdAmber : CmdCyan, 1f, coast ? "COASTING" : "DAMPED");
         }
         if (ship != null && ship.AirWorks && ship.AirUnits > 0)
             CmdText(dl, new float2(p0.X + 108 * s, p1.Y - 16 * s), 10f, CmdDim, 0.8f, VpAboard((int)ship.AirAboard), 0, false);
+    }
+
+    /// <summary>
+    /// The pack's icon in the heading while an MMU is worn: its box seen from behind, the two arms forward to their hand
+    /// controllers, and a jet at each corner, lit while it burns (thrust or the dampeners' brake). Its colour is its fuel's.
+    /// </summary>
+    private void VpMmuIcon(ImDrawListPtr dl, float2 c, Player me, float blink)
+    {
+        var s = _scale;
+        var fp = Math.Clamp(me.Sim.JetFuel * 100 / Eva.MmuFull, 0, 100);
+        var col = SpColour(fp, 25);
+        var a = fp <= 15 ? blink : 1f;
+        var burning = me.Sim.Canopy == PilotGear.Burning;
+        float2 P(float x, float y) => new(c.X + x * s, c.Y + y * s);
+        CmdGlow(dl, P(-7, -10), P(7, -10), col, a); // (the box)
+        CmdGlow(dl, P(7, -10), P(7, 10), col, a);
+        CmdGlow(dl, P(7, 10), P(-7, 10), col, a);
+        CmdGlow(dl, P(-7, 10), P(-7, -10), col, a);
+        dl.AddRectFilled(P(-5, -8), P(5, 8), Hud.Colour(col, 0.16f * a));
+        CmdLine(dl, P(-7, 2), P(-13, 2), col, 0.8f * a, 1.4f); // (its arms and their hand controllers)
+        CmdLine(dl, P(-13, 2), P(-13, -4), col, 0.8f * a, 1.4f);
+        CmdLine(dl, P(7, 2), P(13, 2), col, 0.8f * a, 1.4f);
+        CmdLine(dl, P(13, 2), P(13, -4), col, 0.8f * a, 1.4f);
+        for (var k = 0; k < 4; k++)
+        {
+            var sx = (k & 1) == 0 ? -1f : 1f;
+            var sy = k < 2 ? -1f : 1f;
+            CmdLine(dl, P(7 * sx, 10 * sy), P(10 * sx, 13 * sy), col, 0.7f * a, 1.2f); // (a corner jet)
+            if (burning)
+                CmdGlow(dl, P(10 * sx, 13 * sy), P(13 * sx, 16 * sy), CmdWhite, 0.55f + 0.35f * blink, 1.6f);
+        }
+        CmdText(dl, P(18, -6), 10f, col, 0.9f * a, "MMU", 0, false);
     }
 
     private int _vpAboardN = -1;
@@ -155,7 +192,17 @@ public sealed partial class Ui
         var bx1 = p1.X - 62 * s;
         CmdText(dl, new float2(lx, y), 11f, col == CmdCyan ? CmdWhite : col, 0.9f * a, label, 0, false);
         var by = y + 7 * s;
-        dl.AddRectFilled(new float2(bx0, by - 1.5f * s), new float2(bx1, by + 1.5f * s), Hud.Colour(CmdDim, 0.25f));
+        if (pct < 0)
+        {
+            // No bar: a switch's two marks, the lit one its state (the inertia dampeners: on at the right, off at the left).
+            var on = col == CmdCyan;
+            bx1 -= 12 * s; // (room for its longer word)
+            var mid = (bx0 + bx1) * 0.5f;
+            dl.AddRectFilled(new float2(bx0, by - 2.5f * s), new float2(mid - 2 * s, by + 2.5f * s), Hud.Colour(on ? CmdDim : col, on ? 0.25f : 0.9f * a));
+            dl.AddRectFilled(new float2(mid + 2 * s, by - 2.5f * s), new float2(bx1, by + 2.5f * s), Hud.Colour(on ? col : CmdDim, on ? 0.9f * a : 0.25f));
+        }
+        else
+            dl.AddRectFilled(new float2(bx0, by - 1.5f * s), new float2(bx1, by + 1.5f * s), Hud.Colour(CmdDim, 0.25f));
         if (pct > 0)
             dl.AddRectFilled(new float2(bx0, by - 1.5f * s), new float2(bx0 + (bx1 - bx0) * pct / 100f, by + 1.5f * s), Hud.Colour(col, 0.9f * a));
         CmdText(dl, new float2(p1.X - 10 * s, y), 11f, col, a, value, 2, false);

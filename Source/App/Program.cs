@@ -1747,6 +1747,8 @@ public static unsafe partial class Program
         wheelOpen |= GantryMouse(delta); // Sandbox: the Build Gantry's camera has the mouse (Program.SandboxGantry.cs)
         wheelOpen |= LeverMouse(delta); // Sandbox: a hand on an Analog Lever: the mouse moves it (Program.SandboxLever.cs)
 
+        if (_game.MmuSteering && Pressed(GameAction.SeatDampeners))
+            _game.MmuToggleDampers(); // (a worn MMU's inertia dampeners, on the seat's key: GameSandboxMmu.cs)
         var tpOrbit = ThirdPersonInput(); // Sandbox third person: the toggle, and whether the mouse orbits the seat camera (Program.ThirdPerson.cs)
 
         // Mouse look is applied every frame (never waits for a tick or the network). Not while typing in the chat (or with the tool wheel open).

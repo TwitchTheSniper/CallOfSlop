@@ -148,8 +148,10 @@ public static class PilotGear
     /// A Manned Manoeuvring Unit (docs/sandbox/EVA.md): out of any ride frame (World.Simulate takes them out of one when they
     /// fire), the move keys push along the look (W and S along it, pitch and all; A and D across), jump up and crouch down
     /// along the look's own up, rolled by <see cref="InputCmd.Roll"/>, at <see cref="MmuAccel"/> while its tank lasts; a push
-    /// lifts them off what they stand on. Nothing slows them: what they have, they keep. Its fuel is its own (the dock fills
-    /// it), so the ground doesn't refill it; a unit lasts <see cref="MmuBurnEvery"/> thrusting ticks.
+    /// lifts them off what they stand on. With its dampeners on (<see cref="InputCmd.MmuCoast"/> false, the default) and no key
+    /// held, it brakes them to the nearest craft's motion (<see cref="MmuHoldBody"/>) at the same push; off, what they have they
+    /// keep. Its fuel is its own (the dock fills it), so the ground doesn't refill it; a unit lasts <see cref="MmuBurnEvery"/>
+    /// thrusting (or braking) ticks.
     /// </summary>
     private static void MmuStep(ref MoveState s, in InputCmd cmd)
     {
@@ -160,9 +162,53 @@ public static class PilotGear
         }
         var push = MmuPush(ref s, cmd);
         if (push == Vector3.Zero)
+        {
+            if (!cmd.MmuCoast && ConstructRide.Bodies is { } w && MmuHoldBody(w, s.Position) is { } c)
+            {
+                var rel = s.Velocity - ConstructRide.SurfaceVel(c, 0, s.Position);
+                s.Velocity -= MmuBrake(ref s, cmd, rel);
+            }
             return;
+        }
         s.Velocity += push;
         s.Grounded = false; // (a push off the floor: the pack flies, it doesn't walk)
+    }
+
+    public const float MmuHoldReach = 200f; // m from a craft's hull within which the dampeners hold a spacewalker to its motion
+    public const float MmuHoldSize = 3f; // m: the least a body's radius may be to be held to (a craft, not a loose bolt)
+    public const float MmuStill = 0.03f; // m/s: slower than this against what they're held to, the dampeners rest (no fuel)
+
+    /// <summary>The craft a spacewalker out of any frame is held to by the dampeners: the nearest hull within <see cref="MmuHoldReach"/>, or null.</summary>
+    public static Construct? MmuHoldBody(ConstructWorld w, Vector3 at)
+    {
+        Construct? best = null;
+        var bestGap = MmuHoldReach;
+        var bodies = w.Bodies;
+        for (var k = 0; k < bodies.Count; k++)
+        {
+            var c = bodies[k];
+            if (c.Radius < MmuHoldSize || c.PartCount == 0)
+                continue;
+            var gap = Vector3.Distance(at, c.WorldCom) - c.Radius;
+            if (gap < bestGap)
+                (best, bestGap) = (c, gap);
+        }
+        return best;
+    }
+
+    /// <summary>
+    /// The dampeners' brake this tick against <paramref name="rel"/> (the velocity to take away, in the caller's frame), at most
+    /// the pack's push; fuel burned and puffs shown while it brakes, nothing below <see cref="MmuStill"/> or with the tank dry.
+    /// </summary>
+    public static Vector3 MmuBrake(ref MoveState s, in InputCmd cmd, Vector3 rel)
+    {
+        var speed = rel.Length();
+        if (speed < MmuStill || s.JetFuel == 0 || s.MantleTicks > 0 || !float.IsFinite(speed))
+            return Vector3.Zero;
+        if (cmd.Seq % MmuBurnEvery == 0)
+            s.JetFuel--;
+        s.Canopy = Burning;
+        return rel * (MathF.Min(speed, MmuAccel * World.TickDt) / speed);
     }
 
     /// <summary>This tick's push from the pack (a world velocity change; zero when no key is held or the tank is dry), its fuel burned and its puffs shown.</summary>

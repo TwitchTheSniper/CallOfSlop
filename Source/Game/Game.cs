@@ -392,6 +392,7 @@ public sealed partial class Game : IDisposable
             SpeedPct = (byte)Math.Clamp((int)MathF.Round(speed * 100), 1, 200),
             Noclip = Local is { NoclipWanted: true },
             Roll = MmuCmdRoll(), // a worn MMU's roll about the look (GameSandboxMmu.cs)
+            MmuCoast = MmuCoasting, // a worn MMU's dampeners off (GameSandboxMmu.cs)
         });
     }
 
@@ -993,6 +994,11 @@ public sealed partial class Game : IDisposable
             }
         for (var i = _pendingInputs.Count - count; i < _pendingInputs.Count; i++)
             _w.U16(unchecked((ushort)(short)MathF.Round(_pendingInputs[i].Roll / MathF.PI * 32767f))); // trailer: a worn MMU's roll (PilotGear.MmuAxes; protocol 358)
+        var coast = 0;
+        for (var i = 0; i < count; i++)
+            if (_pendingInputs[_pendingInputs.Count - count + i].MmuCoast)
+                coast |= 1 << i;
+        _w.U8((byte)coast); // trailer: a worn MMU's dampeners off, a bit per command (PilotGear.MmuBrake; protocol 364)
         Net.SendToServer(_w.Span, PacketReliability.UnreliableSequenced);
     }
 
@@ -2182,6 +2188,12 @@ public sealed partial class Game : IDisposable
                 if (r.Has(2 * read)) // a worn MMU's roll, a turn's half in an i16 per command (PilotGear.MmuAxes)
                     for (var i = 0; i < read; i++)
                         cmds[i].Roll = Math.Max((short)-32767, unchecked((short)r.U16())) * (MathF.PI / 32767f);
+                if (r.Has(1)) // a worn MMU's dampeners off, a bit per command (PilotGear.MmuBrake)
+                {
+                    var coast = r.U8();
+                    for (var i = 0; i < Math.Min(read, 8); i++)
+                        cmds[i].MmuCoast = (coast & (1 << i)) != 0;
+                }
                 for (var i = 0; i < read; i++)
                 {
                     var cmd = cmds[i];
