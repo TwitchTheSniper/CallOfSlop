@@ -21,6 +21,7 @@ public sealed partial class Game
     public const int MaxMoverTickSkew = 30;
 
     private uint _moverTick; // client: stamp of the latest predicted command
+    private uint _moverCmds; // client: predicted commands made (local ticks run), whatever the steering did to the stamps
     private bool _moverClockSet;
     private double _moverTickError;
     private readonly uint[] _moverStampBySeq = new uint[256];
@@ -37,6 +38,7 @@ public sealed partial class Game
         if (!_moverClockSet)
             return 0; // no snapshot yet: let the server use its own clock
         _moverTick++;
+        _moverCmds++; // (one a local tick: the stamps' steering below moves _moverTick without one)
         _moverStampBySeq[seq & 255] = _moverTick;
         MoverPhysics.Clock = _moverTick;
         return _moverTick;
