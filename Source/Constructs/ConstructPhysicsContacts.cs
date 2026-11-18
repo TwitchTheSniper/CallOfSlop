@@ -706,17 +706,29 @@ public static partial class ConstructPhysics
         return m;
     }
 
+    /// <summary>
+    /// How far back <paramref name="posed"/>'s pieces are met by <paramref name="other"/> this step: a ship out of the bubble is
+    /// posed by its flight after the step (GameSpaceLaunch.cs), where it will be at the step's end, so a loose body beside it,
+    /// still where it was at the step's start, met it a tick's travel on (3.5 m at 208 m/s in orbit): a Board order's pod let go
+    /// under the Zero Day's keel was met jammed in it, and the friction held it there (Karl, 2026-11-18). Its velocity times the
+    /// step, so the two meet as they are; nothing for a body carried in its frame (SpaceCarry puts it at the ship's new pose too).
+    /// </summary>
+    internal static Vector3 PosedBack(Construct posed, Construct other, float dt) =>
+        posed.SpaceShip != 0 && other.SpaceShip == 0 && other.SpaceRide != posed.Id ? posed.Vel * dt : Vector3.Zero;
+
     /// <summary>Every piece of the pair against every piece near it, through the trees of each rigid group of each.</summary>
     private static void PairContacts(Construct a, short ia, Construct b, short ib, float dt)
     {
         var ca = a.Collider;
         var cb = b.Collider;
         var nc = _world?.FirstNoCollide(a, b) ?? -1; // (a pair the no-collide tool set: ConstructNoCollide.cs)
+        var backA = PosedBack(a, b, dt);
+        var backB = PosedBack(b, a, dt);
         Span<CFrame> fb = stackalloc CFrame[ca.GroupCount == 1 && cb.GroupCount == 1 ? 1 : Construct.MaxJoints + 1];
         for (var g = 0; g < cb.GroupCount; g++)
         {
             b.WorldFrame(cb.Groups[g].Seg, out var q, out var t);
-            fb[g] = CFrame.Of(q, t);
+            fb[g] = CFrame.Of(q, t - backB);
         }
         var n = 0;
         var pairs = _pairBuf.AsSpan();
@@ -725,7 +737,7 @@ public static partial class ConstructPhysics
             int sa = ca.Groups[ga].Seg;
             var movesA = _dyn[ia] || _jact[ia] && sa != 0;
             a.WorldFrame(sa, out var qa, out var ta);
-            var fa = CFrame.Of(qa, ta);
+            var fa = CFrame.Of(qa, ta - backA);
             var midA = fa.Point(ca.Nodes[ca.Groups[ga].Root].Centre);
             GroupMotion(a, ia, sa, midA, out var va, out var wa, posedMoves: true);
             var spinA = wa.Length() * ca.Nodes[ca.Groups[ga].Root].Half.Length();

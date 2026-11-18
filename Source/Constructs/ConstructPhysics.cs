@@ -1309,7 +1309,7 @@ public static partial class ConstructPhysics
                 if (a.CarriedBy == b.Id || b.CarriedBy == a.Id || a.CarriedBy != 0 && a.CarriedBy == b.CarriedBy || a.HeldBy == b.Id || b.HeldBy == a.Id)
                     continue; // (a carrier and what its frozen cargo volumes carry don't collide, nor a lifter's body and what its hook holds)
                 var reach = a.Radius + b.Radius + (a.Vel - b.Vel).Length() * dt;
-                if (Vector3.DistanceSquared(a.WorldCom, b.WorldCom) > reach * reach)
+                if (Vector3.DistanceSquared(a.WorldCom - PosedBack(a, b, dt), b.WorldCom - PosedBack(b, a, dt)) > reach * reach) // (a ship out of the bubble met where it was at the step's start: PosedBack)
                     continue;
                 if (_dyn[i] && b.Asleep && !b.Anchored && b.WheelCount + b.SpringCount > 0 && (a.Vel.LengthSquared() >= StillSpeed2 || a.AngVel.LengthSquared() >= StillSpeed2))
                     b.Wake(); // (a deck under way: wheels hold a body clear of the parts, so no contact would wake it; others wake when they touch)
