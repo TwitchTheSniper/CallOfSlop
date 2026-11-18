@@ -23,8 +23,19 @@ Three parts (part kit generator `Source/PartKit/Generators/EvaParts.cs`, files i
 
 No canopy in vacuum (2026-11-17): where `Eva.Vacuum` holds, `PilotGear.Step` never opens the parachute or the glider (the jump key; an ejection seat's delayed chute waits, held, and opens once they fall into air), and one already open stows; the jetpack still burns. The HUD's open hint is hidden there too.
 
+## On the ships (2026-11-18)
+
+Each ship's generator places the gear by its way out; `EvaParts.FitDock` hangs an MMU Dock with a pack on it and, given a tank, a pipe from the tank's Fuel out into the dock's Fuel in (`Blueprint.Pipes`, routed along the walls as conduit).
+
+- **Zero Day** (`TorpedoFrigateParts.cs`): three Space Suit Lockers in the suit bay, one in the airlock, and the MMU Dock on the airlock's aft bulkhead by the boarding shaft, fed from Zero Day Keel 4.
+- **Magpie** (`MinerParts.cs`): two lockers and the dock on the cargo bay's port wall by the stern ramp, a few metres from the nacelles' service hatches; fed from the keel.
+- **Rust Bucket** (`ShipParts.cs`): the dock and a locker on the hold's starboard wall by the bow ramp, a second locker to port; fed from the starboard saddle tank.
+- **Dray** (`HaulerParts.cs`): a locker in the suit room, the dock and a locker in the airlock either side of the boarding shaft; no fuel line, as the Dray has no tankage yet.
+- **Shuttle** (`TorpedoFrigateShuttle.cs`): its two cabin lockers are Space Suit Lockers; no room for a dock. The **Limpet** has none: its cabin is 1.98 m tall, under the locker.
+
+A docked pack starts empty and fills in 15 s from the ship's fuel (at once in Creative).
+
 ## Not yet
 
-- No ship blueprint carries a dock or locker yet.
 - No brake or attitude hold; the seated pose in the dock is the plain sitting pose.
 - The suit isn't kept in a world save (a player rejoining in vacuum is given a fresh one).

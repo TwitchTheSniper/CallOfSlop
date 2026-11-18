@@ -21,6 +21,22 @@ public sealed class EvaParts : IPartGenerator
     /// <summary>Where a docked pack sits in the dock's frame: its latch faces the rider's back (MMU Dock's seat).</summary>
     public const double DockY = 0.93, DockZ = 0.47, MountZ = 0.39;
 
+    public const string LockerName = "Space Suit Locker", DockName = "MMU Dock", MmuName = "Manned Manoeuvring Unit";
+
+    /// <summary>
+    /// A ship's spacewalk station (docs/sandbox/EVA.md "On the ships"): an MMU Dock hung by its "wall" socket on the ship's socket, a pack
+    /// docked on it, and, when a tank is given, a pipe from the tank's Fuel out into the dock's Fuel in (routed as conduit by the build).
+    /// Returns the dock's step.
+    /// </summary>
+    public static int FitDock(BuildingParts.Blueprint bp, int on, string sock, int tank = -1, string tankPort = "Fuel out")
+    {
+        var dock = bp.Hang(DockName, on, sock, "wall");
+        bp.Hang(MmuName, dock, "mmu", "mount");
+        if (tank >= 0)
+            bp.Pipes.Add((tank, dock, tankPort, "Fuel in"));
+        return dock;
+    }
+
     private static PyDict F(string finish) => Kw(("finish", finish));
 
     private static PyDict? Look(double[] a, double[] b, string color, string finish, bool detail = true) => Box(a, b, color, detail: detail, shape: F(finish));
