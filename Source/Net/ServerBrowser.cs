@@ -607,7 +607,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   prestige and level were, so the protocol version after them stays where every build reads it.
     // 349: mouse steering key in a ship's seat: CActKind.MouseSteer (u16 body) at its end (flips the Flight Stabilizer's Mouse aim setting).
     // 350: the rendezvous order (Game/GameNavMeet.cs): NavKind gains Meet at its end (Target: the craft met, Radius: the gap kept, m).
-    public const ushort ProtocolVersion = 350;
+    // 351: conveyor inclines: the 27 link support parts (Constructs/Parts/LinkSupports) move the part ids after them.
+    public const ushort ProtocolVersion = 351;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

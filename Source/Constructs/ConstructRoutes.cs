@@ -1184,7 +1184,7 @@ public static partial class ConstructRoutes
             if (prev != Vector3.Zero && !(Flexes(c, type, c.Parts[hosts[i - 1]].Seg, c.Parts[hosts[i]].Seg) || i >= 2 && Flexes(c, type, c.Parts[hosts[i - 2]].Seg, c.Parts[hosts[i - 1]].Seg)))
             {
                 var bend = MathF.Acos(Math.Clamp(Vector3.Dot(prev, d), -1f, 1f)) * 180f / MathF.PI;
-                if (BendRule(type, bend) is { } why)
+                if (BendRule(type, prev, d) is { } why)
                     return i == 1 && prev == PortDirIn(c, hosts[0], fromPort, inRest) && type == RouteType.Shaft && c.FrameOf(c.Parts[hosts[0]].Seg) != 0 && bend <= 80f
                         ? $"the {c.DefOf(hosts[0]).Name}'s output is {bend:0} degrees off the shaft (at most {ShaftMaxBendDeg:0}): add a U joint" : why;
             }
@@ -1237,6 +1237,34 @@ public static partial class ConstructRoutes
                 return null;
         }
     }
+
+    /// <summary>
+    /// Why a bend from way <paramref name="from"/> to way <paramref name="to"/> (unit vectors) breaks a type's rule, or null. A chute's or a
+    /// conveyor's change of grade alone (both ways in one upright plane, the same way along it, up to a right angle) may be any angle: an
+    /// incline climbs straight and its crest and foot are drawn as curves (docs/sandbox/design/conveyor-inclines.md, the user's answer: the
+    /// look and the laying only, nothing about what the link carries). Plan turns keep their steps.
+    /// </summary>
+    public static string? BendRule(RouteType type, Vector3 from, Vector3 to)
+    {
+        var deg = MathF.Acos(Math.Clamp(Vector3.Dot(from, to), -1f, 1f)) * 180f / MathF.PI;
+        if (type is RouteType.Chute or RouteType.Conveyor && deg <= 90f + AngleSlackDeg && GradeOnly(from, to))
+            return null;
+        return BendRule(type, deg);
+    }
+
+    /// <summary>True when two ways differ only in grade: in one upright plane, the same way along it (or one of them straight up or down).</summary>
+    public static bool GradeOnly(Vector3 from, Vector3 to)
+    {
+        var a = new Vector2(from.X, from.Z);
+        var b = new Vector2(to.X, to.Z);
+        var la = a.Length();
+        var lb = b.Length();
+        if (la < 0.03f || lb < 0.03f)
+            return true;
+        return Vector2.Dot(a, b) / (la * lb) > GradePlaneCos;
+    }
+
+    private static readonly float GradePlaneCos = MathF.Cos(4f * MathF.PI / 180f); // (a node on the 1 cm grid turns a 0.25 m segment's plan up to about 2.3 degrees)
 
     /// <summary>The part a segment of a link is fixed to at its far end (a junction on it sits there).</summary>
     public static int HostOf(Construct c, int route, int seg)
@@ -1645,6 +1673,12 @@ public static partial class ConstructRoutes
         if (prevDir == Vector3.Zero || type is RouteType.Data or RouteType.Power)
             return ConstructWorld.Quantise(p);
         var bend = MathF.Acos(Math.Clamp(Vector3.Dot(prevDir, dir), -1f, 1f));
+        if (type is RouteType.Chute or RouteType.Conveyor && bend <= MathF.PI * 0.5f && GradeOnly(prevDir, dir) && GradeTurn(prevDir, dir) is { } graded)
+        {
+            // A change of grade alone (conveyor-inclines.md section 7): onto the grade the tool's mode asks for, in the way's own upright plane.
+            var on = MathF.Max(MathF.Max(MinSegment + 0.02f, Vector3.Dot(d, graded)), 0.25f);
+            return ConstructWorld.Quantise(prev + graded * on);
+        }
         float want;
         if (type == RouteType.Shaft)
             want = MathF.Min(bend, ShaftMaxBendDeg * MathF.PI / 180f);
@@ -1664,6 +1698,51 @@ public static partial class ConstructRoutes
         // Long enough that the 1 cm grid keeps the bend within its slack.
         along = MathF.Max(along, 0.25f);
         return ConstructWorld.Quantise(prev + turned * along);
+    }
+
+    /// <summary>How the linking tool lays a chute's or conveyor's next segment up or down (conveyor-inclines.md section 7; cycled with Reload while routing).</summary>
+    public enum GradeMode : byte
+    {
+        Free, // the grade aimed at, in 5 degree steps
+        Level, // at the last node's height
+        Gentle, // 20 degrees up or down, the way aimed
+        Steep, // 40 degrees up or down
+    }
+
+    /// <summary>The linking tool's grade mode (the client's; a snap the server never makes).</summary>
+    public static GradeMode Grade;
+
+    public const float GradeStepDeg = 5f, GentleDeg = 20f, SteepDeg = 40f;
+
+    public static string GradeName(GradeMode m) => m switch
+    {
+        GradeMode.Level => "level",
+        GradeMode.Gentle => $"{GentleDeg:0} deg",
+        GradeMode.Steep => $"{SteepDeg:0} deg",
+        _ => "free",
+    };
+
+    /// <summary>The way on from <paramref name="prevDir"/> towards <paramref name="dir"/> at the grade <see cref="Grade"/> gives, or null when neither has a way in plan.</summary>
+    private static Vector3? GradeTurn(Vector3 prevDir, Vector3 dir)
+    {
+        var h = new Vector3(prevDir.X, 0, prevDir.Z);
+        if (h.LengthSquared() < 1e-3f)
+            h = new Vector3(dir.X, 0, dir.Z);
+        if (h.LengthSquared() < 1e-3f)
+            return null; // (straight up into straight up: nothing to grade)
+        h = Vector3.Normalize(h);
+        var aimed = MathF.Atan2(dir.Y, MathF.Sqrt(dir.X * dir.X + dir.Z * dir.Z)) * 180f / MathF.PI;
+        var deg = Grade switch
+        {
+            GradeMode.Level => 0f,
+            GradeMode.Gentle => MathF.Abs(aimed) < GradeStepDeg * 0.5f ? 0f : MathF.CopySign(GentleDeg, aimed),
+            GradeMode.Steep => MathF.Abs(aimed) < GradeStepDeg * 0.5f ? 0f : MathF.CopySign(SteepDeg, aimed),
+            _ => MathF.Round(aimed / GradeStepDeg) * GradeStepDeg,
+        };
+        if (MathF.Abs(deg) >= 89.5f)
+            return null; // (straight up or down: the plain steps make that corner)
+        var r = deg * MathF.PI / 180f;
+        return h * MathF.Cos(r) + Vector3.UnitY * MathF.Sin(r);
     }
 
     // ---- Edits (server) ------------------------------------------------------------------------------------------
