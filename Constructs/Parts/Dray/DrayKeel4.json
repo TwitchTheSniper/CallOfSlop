@@ -4,7 +4,7 @@
   "description": "A length of the Dray's keel, between two of the hull's stations: plating, armour and the void inside.",
   "group": "Ship",
   "section": "Dray hauler",
-  "role": "frame",
+  "role": "fueltank",
   "tool": "welder",
   "mass": 3750.0,
   "health": 31500,
@@ -12,6 +12,23 @@
   "material": "steel",
   "color": "#264b67",
   "attachSeconds": 10.0,
+  "fuelTank": {
+    "capacity": 3000
+  },
+  "ports": [
+    {
+      "name": "Fuel out",
+      "type": "pipe",
+      "dir": "out",
+      "fluid": "fuel",
+      "at": [
+        6.875,
+        -0.725,
+        26.675
+      ],
+      "face": "+z"
+    }
+  ],
   "boxes": [
     {
       "min": [
@@ -1039,9 +1056,55 @@
       ],
       "color": "#202326",
       "finish": "dirty steel"
+    },
+    {
+      "min": [
+        4.625,
+        -1.425,
+        23.375
+      ],
+      "max": [
+        5.625,
+        -1.215,
+        24.375
+      ],
+      "color": "#202326",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        8.125,
+        -1.425,
+        23.375
+      ],
+      "max": [
+        9.125,
+        -1.215,
+        24.375
+      ],
+      "color": "#202326",
+      "finish": "dirty steel"
     }
   ],
   "sockets": [
+    {
+      "name": "lift2",
+      "at": [
+        5.125,
+        -1.425,
+        23.875
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "lift3",
+      "at": [
+        8.625,
+        -1.425,
+        23.875
+      ],
+      "dir": "-y"
+    },
     {
       "name": "wellDoorL",
       "at": [

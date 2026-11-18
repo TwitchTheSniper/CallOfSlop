@@ -4,7 +4,7 @@
   "description": "A length of the Dray's keel, between two of the hull's stations: plating, armour and the void inside.",
   "group": "Ship",
   "section": "Dray hauler",
-  "role": "frame",
+  "role": "fueltank",
   "tool": "welder",
   "mass": 3750.0,
   "health": 31500,
@@ -12,6 +12,23 @@
   "material": "steel",
   "color": "#264b67",
   "attachSeconds": 10.0,
+  "fuelTank": {
+    "capacity": 3000
+  },
+  "ports": [
+    {
+      "name": "Fuel out",
+      "type": "pipe",
+      "dir": "out",
+      "fluid": "fuel",
+      "at": [
+        6.875,
+        -0.725,
+        39.463
+      ],
+      "face": "+z"
+    }
+  ],
   "boxes": [
     {
       "min": [
@@ -759,9 +776,55 @@
       "color": "#e0a020",
       "detail": true,
       "finish": "hazard paint"
+    },
+    {
+      "min": [
+        3.125,
+        -1.425,
+        35.475
+      ],
+      "max": [
+        3.925,
+        -1.215,
+        36.275
+      ],
+      "color": "#202326",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        9.825,
+        -1.425,
+        35.475
+      ],
+      "max": [
+        10.625,
+        -1.215,
+        36.275
+      ],
+      "color": "#202326",
+      "finish": "dirty steel"
     }
   ],
   "sockets": [
+    {
+      "name": "leg2",
+      "at": [
+        3.525,
+        -1.425,
+        35.875
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "leg3",
+      "at": [
+        10.225,
+        -1.425,
+        35.875
+      ],
+      "dir": "-y"
+    },
     {
       "name": "j0",
       "at": [
