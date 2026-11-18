@@ -203,10 +203,13 @@ public static class CrewBoardCheck
         var shots = server.BotStats.Shots.Sum() - shots0;
         Say($"after {now - start:0} s ({clock.Elapsed.TotalSeconds:0} s real): {server.Crew.Describe(crew)}");
         Check(maxFighting > 0, $"crew took up arms: {maxFighting} fighting at once");
-        Check(maxArmed > 0 || lockers == 0, $"crew took long guns from the lockers: {maxArmed} armed at once ({lockers} lockers aboard)");
-        Check(maxHeld > 0, $"crew held posts: {maxHeld} at once");
+        var early = mortal && !host.Alive && now - start < 15; // (killed by sidearms before anyone reached a locker: the later stages can't be judged)
+        if (early)
+            Say($"the host was killed after {now - start:0} s, before the lockers and posts: those checks are skipped");
+        Check(early || maxArmed > 0 || lockers == 0, $"crew took long guns from the lockers: {maxArmed} armed at once ({lockers} lockers aboard)");
+        Check(early || maxHeld > 0, $"crew held posts: {maxHeld} at once");
         Check(shots > 0, $"crew fired at the boarder: {shots} shots{(mortal ? $", the host {(host.Alive ? $"at {host.Health} of {hostHealth} hp (lowest {minHealth})" : "killed")}" : "")}");
-        Check(clientChanged, $"the client saw a crew body's gun change ({clientWeapons.Count} crew bodies seen)");
+        Check(early || clientChanged, $"the client saw a crew body's gun change ({clientWeapons.Count} crew bodies seen)");
         // Beaten: morale under its line; the next looks surrender, and nobody fights on.
         if (host.Alive && crew.Act is not (BoardAct.Surrender or BoardAct.Abandon))
         {

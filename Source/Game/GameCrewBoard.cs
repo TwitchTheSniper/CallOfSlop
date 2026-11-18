@@ -59,7 +59,10 @@ public sealed partial class Game
                 s.BreachSet = false;
                 for (var i = 0; i < s.MemberCount; i++)
                     if (Crew.State[s.Members[i]] == CrewState.Fighting)
-                        Crew.State[s.Members[i]] = CrewState.Free; // (back to their stations: the next look's fill)
+                    {
+                        Crew.Nav.End(Crew.Nav.WalkerOf(s.Members[i])); // (a fighter's walk to a locker, a post or the boarder ends)
+                        Crew.State[s.Members[i]] = CrewState.Free;
+                    } // (back to their stations: the next look's fill)
                 Console.WriteLine($"[crew] construct {c.Id}: no boarders left aboard");
             }
             return s.ScStage > 0;
@@ -152,6 +155,7 @@ public sealed partial class Game
     {
         if (Crew.Player[m] != 0 && Players.TryGetValue((byte)(Crew.Player[m] - 1), out var bp))
             SandboxStand(bp, teleport: true);
+        Crew.Nav.End(Crew.Nav.WalkerOf(m)); // (a fighter stops where it is)
         Crew.Leave(m, CrewState.Surrendered);
     }
 

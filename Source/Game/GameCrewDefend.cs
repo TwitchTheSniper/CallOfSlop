@@ -140,7 +140,12 @@ public sealed partial class Game
             return false;
         var st = Crew.State[m];
         if (st == CrewState.Free)
-            return true;
+            return Crew.Job[m] switch
+            {
+                CrewJob.Pilot => false, // (turned out of the helm: the fill puts it back once the seat is free)
+                CrewJob.Engineer => act != BoardAct.Scuttle, // (the scuttle takes an engineer)
+                _ => true,
+            };
         if (st != CrewState.Station || Crew.Station[m] < 0 || Crew.Station[m] >= s.StCount)
             return false;
         var kind = s.StKind[Crew.Station[m]];
@@ -175,6 +180,7 @@ public sealed partial class Game
             if (!CrewDefends(s, def, m, s.Act, ratio) || !Players.TryGetValue((byte)(Crew.Player[m] - 1), out var bp) || !bp.Alive)
                 continue;
             Crew.Leave(m, CrewState.Fighting);
+            _guards[bp.Id].Uid = 0; // (a new boarding starts its stages afresh)
             if (SandboxHands.Hand(bp.Id).Seated)
                 SandboxStand(bp, teleport: true); // (up from the couch or the gun)
             stood++;
