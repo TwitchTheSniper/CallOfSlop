@@ -599,7 +599,7 @@ fleet command network; doctrine; 256 groups) and Karl's answer 3 (fleet orders i
 - Saves: the `FLET` section's version 2 ends each group with its owner's name, the player-admiral flag, its shape and spacing (and the flagship's id as
   a hint). Version 1 reads. A player's group with an Escort, Form, Screen, Engage or Board order comes back holding (bodies' ids change). The owner is
   found again by name when they come back. No new save file.
-- Protocol 367 (main 366 at the merge): `CActKind.Fleet` at the end of CActKind (u8 FleetOp, u8 slot, u16 body, u32 uid, vec, u8 arg, f32 value);
+- Protocol 368 (main 367 at the merge): `CActKind.Fleet` at the end of CActKind (u8 FleetOp, u8 slot, u16 body, u32 uid, vec, u8 arg, f32 value);
   `Msg.FleetGroups` (once a second, only when it changed, to each player for the groups they may command; no strings) in RemovedObjective's slot.
 
 ### Tried by hand (2026-11-18, the 2-core box shared, load 7 to 10)

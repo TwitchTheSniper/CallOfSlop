@@ -65,7 +65,9 @@ public sealed class HaulerParts : IPartGenerator
     private static double HatchX => BellyHatch.X0 + 0.625;
     private static double HatchBottom => At(BellyHatch.Z1)[0].Y - 0.012;
     private static double HatchTop => HatchBottom + 0.08;
-    private static double HatchTravel => HatchBottom - Ground - 0.005;
+    // (2026-11-18, the leg pods: the keel stands higher than the stowed ladder is long, so the hatch stops short of the ground, its plate
+    // a step up, and the stowed ladder's top stays under the airlock's ceiling)
+    private static double HatchTravel => Math.Min(HatchBottom - Ground - 0.005, Ceil0 - 0.03 - Ft0);
     private static double LadderZ => BellyHatch.Z1 - 0.03;
     private static double BoardRise => Ft0 - (HatchTop - HatchTravel);
     private static readonly Rect LadderHatch = new(Cx - 3.4, 11.8, Cx - 2.15, 13.05); // the suit room up to the aft hall (room behind it for the ladder's landing, before the hold's wall)
@@ -96,14 +98,18 @@ public sealed class HaulerParts : IPartGenerator
     // computer on the bridge, a power plant and batteries in the drive room, lift jets and long legs under the keel, a ladder up
     // the boarding shaft, lamps, and three frozen Cargo Volumes over the slots so the containers ride with it.
 
-    /// <summary>Where the legs stand: 2.9 m under the keel's flat, room for a container (2.59 m tall) under it to go up the well.</summary>
-    private static double Ground => Mid[0].Item2 - 2.9;
+    /// <summary>Where the legs stand: the landing leg pods' reach under their mounts (about 3.4 m under the keel's flat), room for a
+    /// container (2.59 m tall) under it to go up the well.</summary>
+    private static double Ground => Mid[0].Item2 - LegProud - LegPodParts.ReachOf(LegPod);
     private const double LiftForce = 2000000, JetScale = 1.3, Burn = 2.5;
     /// <summary>The lift jets under the keel's flat: three pairs inside the skids, clear of the well and its tracks.</summary>
     private static readonly (double X, double Z)[] LiftAt = [(-1.75, 16.0), (1.75, 16.0), (-1.75, 24.0), (1.75, 24.0), (-1.75, 42.0), (1.75, 42.0)];
-    /// <summary>The legs: three pairs outboard of the skids.</summary>
-    private static readonly (double X, double Z)[] LegAt = [(-3.35, 19.0), (3.35, 19.0), (-3.35, 36.0), (3.35, 36.0), (-3.35, 44.5), (3.35, 44.5)];
-    private const double PadProud = 0.1; // a jet's or leg's mount under the flat
+    /// <summary>The legs: three pairs of Landing Leg Pods (XL) under the flat's outer edges, between the lift jets and clear of the well
+    /// doors' tracks (Karl, 2026-11-18: the pods replace the old struts; B in a seat lowers and raises them).</summary>
+    private static readonly (double X, double Z)[] LegAt = [(-2.95, 20.0), (2.95, 20.0), (-2.95, 37.0), (2.95, 37.0), (-2.95, 45.8), (2.95, 45.8)];
+    private const string LegPod = "XL";
+    private const double PadProud = 0.1; // a jet's mount under the flat
+    private const double LegProud = 0.16; // a leg pod's mount: its top clears the keel strakes (14 cm under the flat)
     private const int KeelFuel = 24000, BowFuel = 8000, SternFuel = 6000, SaddleFuel = 16000; // litres (the bow's tank, the four saddle tanks each: Karl, 2026-11-18)
     /// <summary>The saddle tanks (Karl, 2026-11-18: long fuel tanks down the sides): two a side, lying on the roof's outer slope (facet 4) beside
     /// the upper chine, the hold's length; each on two pads on the spine. The tank's axis, its radius, its ends, its pads' z from its front.</summary>
@@ -135,10 +141,10 @@ public sealed class HaulerParts : IPartGenerator
 
     /// <summary>A mount under the keel's flat (bottom y): a square solid half wide, sunk 11 cm into the hull and standing PadProud
     /// proud; its underside takes the socket.</summary>
-    private static void MountPad(Part p, string name, double x, double y, double z, double half)
+    private static void MountPad(Part p, string name, double x, double y, double z, double half, double proud = PadProud)
     {
-        Solid(p, x - half, y - PadProud, z - half, x + half, y + 0.11, z + half, Frame, "dirty steel");
-        Sock(p, name, x, y - PadProud, z, "-y");
+        Solid(p, x - half, y - proud, z - half, x + half, y + 0.11, z + half, Frame, "dirty steel");
+        Sock(p, name, x, y - proud, z, "-y");
     }
 
     /// <summary>The x of facet k's surface (side s) at height y and station z (between its two profile points).</summary>
@@ -780,7 +786,7 @@ public sealed class HaulerParts : IPartGenerator
         for (var i = 0; i < LiftAt.Length; i++)
             MountPad(p, $"lift{i}", Cx + LiftAt[i].X, Mid[0].Item2, LiftAt[i].Z, 0.5);
         for (var i = 0; i < LegAt.Length; i++)
-            MountPad(p, $"leg{i}", Cx + LegAt[i].X, Mid[0].Item2, LegAt[i].Z, 0.4);
+            MountPad(p, $"leg{i}", Cx + LegAt[i].X, Mid[0].Item2, LegAt[i].Z, 0.4, LegProud);
         p.Set(("fuelTank", Kw(("capacity", KeelFuel)))); // (shared out over its bands, each with its Fuel out: SplitBands)
         Sock(p, "wellDoorL", Cx - 0.73, TrackY, Well.Z0 - 0.15, "-y");
         Sock(p, "wellDoorR", Cx + 0.73, TrackY, Well.Z0 - 0.15, "-y");
@@ -1484,24 +1490,6 @@ public sealed class HaulerParts : IPartGenerator
         return p.Stats(1100, 4000, 25, 6.0);
     }
 
-    /// <summary>A landing leg: a heavy strut and its ram on a broad pad, long enough to stand the keel 2.9 m off the ground.</summary>
-    private static Part Leg()
-    {
-        var p = new Part("Dray Landing Leg", Small, Section, "A landing leg: a heavy strut and its ram on a broad pad. Six stand the Dray 2.9 m off the ground, room for a container under the well.", role: "frame", tool: "welder", material: "steel", color: Frame, group: Group);
-        var bottom = Ground - (Mid[0].Item2 - PadProud); // (the pad's underside, from the mount's)
-        void B(double x0, double y0, double z0, double x1, double y1, double z1, string col, string fin, bool detail = false) =>
-            p.Add(Box([x0, y0, z0], [x1, y1, z1], col, detail: detail, shape: Kw(("finish", fin))));
-        B(-0.36, -0.7, -0.36, 0.36, 0, 0.36, Armour2, "worn paint"); // (the strut's housing)
-        B(-0.365, -0.62, -0.365, 0.365, -0.52, 0.365, Hazard, "hazard paint", true);
-        B(-0.23, bottom + 0.3, -0.23, 0.23, -0.7, 0.23, "#9aa0a4", "chrome"); // (the ram)
-        B(-0.44, bottom + 0.25, -0.44, 0.44, bottom + 0.4, 0.44, Frame, "dirty steel"); // (the ram's foot on its ball)
-        B(-0.75, bottom, -0.75, 0.75, bottom + 0.25, 0.75, Frame, "rubber"); // (the pad)
-        foreach (var x in new[] { -1, 1 })
-            B(x * 0.37, bottom + 0.42, -0.07, x * 0.47, -0.08, 0.07, "#4a4e52", "steel", true); // (the hydraulic lines down each side)
-        p.Sock("top", [0, 0, 0], "+y");
-        return p.Stats(1600, 6000, 30, 8.0);
-    }
-
     /// <summary>The power plant: a stack of cells in a cage on the drive room's deck, its coolant risers to the ceiling. No fuel.</summary>
     private static Part PowerPlant()
     {
@@ -2011,7 +1999,7 @@ public sealed class HaulerParts : IPartGenerator
         for (var i = 0; i < LiftAt.Length; i++)
             Hang(bp, "Dray Lift Jet", keel, $"lift{i}", "top");
         for (var i = 0; i < LegAt.Length; i++)
-            Paint(bp, Hang(bp, "Dray Landing Leg", keel, $"leg{i}", "top"), Armour2, "worn paint");
+            LegPodParts.HangPod(bp, LegPod, Holder(bp, keel, $"leg{i}"), $"leg{i}");
         var hatch = Hang(bp, BellyHatchName, lower, "boarding", "hang"); // (the belly hatch, shut; the ladder stowed on it)
         Paint(bp, bp.Hang("Dray Boarding Ladder", hatch, "ladder", "foot"), Frame, "painted steel");
         Switch(bp, lower, "switchHatch", false, hatch); // (off: the hatch shut)
@@ -2087,7 +2075,7 @@ public sealed class HaulerParts : IPartGenerator
             Ladder("Dray Ladder", Ft1 - Ft0, "A ladder between the Dray's crew decks: F climbs it.", "bottom", [0, 0, -0.095], "-y"),
             Ladder("Dray Boarding Ladder", Py.Round(BoardRise, 3), "The Dray's boarding ladder: it stands on the belly hatch, stowed up through the airlock's floor while the hatch is shut, and runs from the ground up the shaft when it is open. F climbs it.", "foot", [0, 0, -0.1], "-y", over: -0.03),
             BellyHatchPart(),
-            LiftJet(), Leg(), PowerPlant(), FlightComputer(), SaddleTank(),
+            LiftJet(), PowerPlant(), FlightComputer(), SaddleTank(),
         ];
         var defs = new Dictionary<string, PyDict>();
         o.Own(Out);

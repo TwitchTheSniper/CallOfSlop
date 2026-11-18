@@ -1,0 +1,6 @@
+{
+  // An Animation gallery timing file: every event door of the Zero Day at once (its own "seconds" each), torpedo hatches too.
+  "blueprint": "Zero Day Frigate",
+  "title": "Zero Day: every door and hatch",
+  "steps": []
+}
