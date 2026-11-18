@@ -54,11 +54,24 @@ public static class HatRender
         return Matrix4x4.CreateRotationZ(-MathF.PI / 2) * Matrix4x4.CreateRotationY(0.5f) * Matrix4x4.CreateTranslation(0.35f, rest, -1.15f);
     }
 
-    /// <summary>Immediate mode: draws the hat's boxes under <paramref name="frame"/> (hat space to world).</summary>
+    /// <summary>Immediate mode: draws the hat's boxes under <paramref name="frame"/> (hat space to world), its glass last, blended.</summary>
     public static void Draw(Renderer g, HatDef def, in Matrix4x4 frame)
     {
+        var glass = false;
         foreach (var b in def.Boxes)
-            g.Draw(b.Local * frame, b.Color);
+            if (b.Glass)
+                glass = true;
+            else
+                g.Draw(b.Local * frame, b.Color);
+        if (!glass)
+            return;
+        g.SetBlend(true);
+        g.SetDepthWrite(false);
+        foreach (var b in def.Boxes)
+            if (b.Glass)
+                g.Draw(b.Local * frame, b.Color, b.Alpha);
+        g.SetDepthWrite(true);
+        g.SetBlend(false);
     }
 
     /// <summary>Scene graph: replaces <paramref name="node"/>'s children with the hat's boxes (allocates; call when the hat changes).</summary>
@@ -68,6 +81,10 @@ public static class HatRender
         if (def == null)
             return;
         foreach (var b in def.Boxes)
-            node.Add("hat_box", b.Local, Renderable.Box(b.Color));
+            if (!b.Glass)
+                node.Add("hat_box", b.Local, Renderable.Box(b.Color));
+        foreach (var b in def.Boxes) // (glass after the solid boxes and the face behind it: blended, no depth write)
+            if (b.Glass)
+                node.Add("hat_glass", b.Local, Renderable.Box(b.Color, b.Alpha, flags: RenderFlags.Blend | RenderFlags.NoDepthWrite));
     }
 }

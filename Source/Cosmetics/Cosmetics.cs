@@ -4,8 +4,14 @@ using System.Text.Json;
 
 namespace CallOfSlop;
 
-/// <summary>One box of a hat model: a unit cube transformed into head space (y = 0 the top of the head, -Z the face).</summary>
-public readonly record struct HatBox(Matrix4x4 Local, Vector3 Color);
+/// <summary>
+/// One box of a hat model: a unit cube transformed into head space (y = 0 the top of the head, -Z the face). Alpha under 1 is
+/// glass (a part's "glass": its opacity, as the space suit helmet's visor): drawn blended after the hat's solid boxes.
+/// </summary>
+public readonly record struct HatBox(Matrix4x4 Local, Vector3 Color, float Alpha = 1f)
+{
+    public bool Glass => Alpha < 1f;
+}
 
 /// <summary>A hat model: a uniform's cap (Cosmetics/uniforms.json, Uniforms.cs), drawn by HatRender.</summary>
 public sealed class HatDef
@@ -40,13 +46,20 @@ public static class Cosmetics
         if (size.X <= 0 || size.Y <= 0 || size.Z <= 0)
             throw new FormatException($"{where}: \"size\" must be positive");
         var color = Color(p, where);
+        var alpha = 1f;
+        if (p.TryGetProperty("glass"u8, out var gl))
+        {
+            alpha = gl.GetSingle();
+            if (alpha is < 0.05f or >= 1f)
+                throw new FormatException($"{where}: \"glass\" is its opacity, 0.05 to under 1");
+        }
         float Deg(string name) => p.TryGetProperty(name, out var v) ? v.GetSingle() * MathF.PI / 180f : 0f;
         var tilt = Matrix4x4.CreateRotationY(Deg("tiltY")) * Matrix4x4.CreateRotationX(Deg("tiltX")) * Matrix4x4.CreateRotationZ(Deg("tiltZ"));
         var place = tilt * Matrix4x4.CreateTranslation(at);
         switch (shape)
         {
             case "box":
-                boxes.Add(new HatBox(Matrix4x4.CreateScale(size) * place, color));
+                boxes.Add(new HatBox(Matrix4x4.CreateScale(size) * place, color, alpha));
                 break;
             case "round":
                 // A union of squares turned around Y: always covers the head's own square, reads as round from any side.
@@ -54,7 +67,7 @@ public static class Cosmetics
                 if (sides < 1 || sides > 8)
                     throw new FormatException($"{where}: \"sides\" is 1..8");
                 for (var i = 0; i < sides; i++)
-                    boxes.Add(new HatBox(Matrix4x4.CreateScale(size) * Matrix4x4.CreateRotationY(i * MathF.PI / 2 / sides) * place, color));
+                    boxes.Add(new HatBox(Matrix4x4.CreateScale(size) * Matrix4x4.CreateRotationY(i * MathF.PI / 2 / sides) * place, color, alpha));
                 break;
             default:
                 throw new FormatException($"{where}: \"shape\" is \"box\" or \"round\"");
