@@ -954,7 +954,7 @@ public sealed partial class Game : IDisposable
         SepBuild(); // the other players' and bots' bodies as last heard (PlayerSeparation.cs)
         ClientTickTerrainStream(); // streamed ground made ready round the local player (GameTerrainStream.cs)
         if (SandboxOn && !IsServer)
-            Eva.Step(me, Eva.Fed(me, SandboxHands.Hand(me.Id).Seated)); // (the HUD's air on a joined client; the host hurts: GameSandboxEva.cs)
+            Eva.Step(me, OnShipAir(me), out _); // (the HUD's air on a joined client; the host hurts and bills the ship: GameSandboxEva.cs)
         if (me.Alive)
         {
             me.Sim.Frame = me.ShellFrame; // (a robot shell's size: Msg.Shell, never a snapshot)
@@ -2446,6 +2446,9 @@ public sealed partial class Game : IDisposable
                 break;
             case (byte)Msg.Intel when !IsServer:
                 ReadIntel(ref r); // what a questioned officer gave up (GameCrewFleet.cs)
+                break;
+            case (byte)Msg.Stations when !IsServer:
+                ReadStations(ref r); // the stations' markets and moorings (GameStationMarket.cs)
                 break;
             case (byte)Msg.Contracts when !IsServer:
                 ReadContracts(ref r); // the powers' contracts for credits (GameCrewPolitics.cs)

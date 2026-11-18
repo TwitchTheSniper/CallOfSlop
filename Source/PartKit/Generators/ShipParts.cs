@@ -808,6 +808,8 @@ public sealed class ShipParts : IPartGenerator
         Sock(p, "mmuDock", Cx + Lw, F0 + 0.125, 2.75, "-x");
         Sock(p, "suitR", Cx + Lw, F0 + 0.125, 3.8, "-x");
         Sock(p, "suitL", Cx - Lw, F0 + 0.125, 2.8, "+x");
+        Sock(p, "lifeSupport", Cx - Lw, F0 + 0.125, 5.97, "+x"); // (the ship's air: the unit and a tank on the port wall, in the gaps between the shelves)
+        Sock(p, "o2Tank0", Cx - Lw, F0 + 0.125, 8.93, "+x");
         Sock(p, "shellDock", Cx + Lw, F0 + 0.125, 7.0, "-x"); // (the one Robot Shell Dock, aft of the locker: Karl, 2026-11-17)
         Sock(p, "crate0", 2.4, F0, 10.6, "+y");
         Sock(p, "crate1", 3.2, F0, 10.6, "+y");
@@ -2076,6 +2078,8 @@ public sealed class ShipParts : IPartGenerator
         Hang(bp, "Robot Shell", Hang(bp, "Robot Shell Dock", keel, "shellDock", "wall"), "dock", "back");
         Hang(bp, EvaParts.LockerName, keel, "suitR", "wall");
         Hang(bp, EvaParts.LockerName, keel, "suitL", "wall");
+        Hang(bp, EvaParts.LifeSupportName, keel, "lifeSupport", "wall"); // (the ship's air: 16 person-hours with its tank)
+        Hang(bp, EvaParts.OxygenTankName, keel, "o2Tank0", "wall");
         EvaParts.FitDock(bp, Holder(bp, keel, "mmuDock"), "mmuDock", saddles[1]); // (its pack fed from the starboard saddle tank, outside the wall)
         Hang(bp, "Requisition Crate", keel, "crate0", "-y");
         Hang(bp, "Requisition Crate", keel, "crate1", "-y");

@@ -759,6 +759,8 @@ public sealed class HaulerParts : IPartGenerator
         Sock(p, "suit0", Cx - Lw, Ft0 + 0.125, 13.3, "+x");
         Sock(p, "suit1", Cx + Lw, Ft0 + 0.125, 13.3, "-x");
         Sock(p, "mmuDock", Cx + Lw, Ft0 + 0.125, 10.6, "-x");
+        Sock(p, "lifeSupport", Cx - Lw, Ft0 + 0.125, 5.7, "+x"); // (the ship's air: the unit and a tank on the mess's port wall, forward)
+        Sock(p, "o2Tank0", Cx - Lw, Ft0 + 0.125, 6.55, "+x");
         Sock(p, "boarding", BellyHatch.X0 + 0.625, Ft0 - 0.125, BellyHatch.Z1, "-z");
         foreach (var (what, z) in new[] { ("lower deck front", ZFront - 0.25), ("lower deck back", ZHold) })
             foreach (var y in new[] { 0.0, Ft1 })
@@ -1603,6 +1605,8 @@ public sealed class HaulerParts : IPartGenerator
         foreach (var n in new[] { "suit0", "suit1" })
             Hang(bp, EvaParts.LockerName, lower, n, "wall");
         EvaParts.FitDock(bp, Holder(bp, lower, "mmuDock"), "mmuDock"); // (no fuel line: the Dray has no tankage yet)
+        Hang(bp, EvaParts.LifeSupportName, lower, "lifeSupport", "wall"); // (the ship's air: 16 person-hours with its tank)
+        Hang(bp, EvaParts.OxygenTankName, lower, "o2Tank0", "wall");
         for (var i = 0; i < 3; i++)
         {
             Hang(bp, "Robot Shell", Hang(bp, "Robot Shell Dock", lower, $"shellDock{i}", "wall"), "dock", "back");

@@ -362,7 +362,7 @@ prisoners (simplest, no data), or a flat materials fee anywhere.
   surrender at once).
 - Surrendered crew bodies (and prisoners) are drawn with nothing in their hands, both up over the head and trembling
   (`PlayerRender.HandsUp`, in `PlayerRender` and `PlayerRig`): the host finds them a few times a second and sends the changes
-  (`Msg.HandsUp`, protocol 361, in the slot of RemovedDepot; all of them to a joiner: `GameCrewHandsUp.cs`).
+  (`Msg.HandsUp`, protocol 362, in the slot of RemovedQuarry; all of them to a joiner: `GameCrewHandsUp.cs`).
 - A taken ship's own craft go with it (`GameCrewBoard.CrewCaptureCraft`): every nobody's body it carries (`CarriedBy`: a Shuttle
   on its clamp, a Limpet in its bay, cargo), and theirs, becomes the captor's, and any power's crew aboard one gives up too; another
   party's craft held on it (a boarder's pod) is left alone.

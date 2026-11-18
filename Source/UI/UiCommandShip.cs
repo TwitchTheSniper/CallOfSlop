@@ -67,11 +67,13 @@ public sealed partial class Ui
 
             if (!CmdOn(cr.At, cr.Px + 40))
                 continue;
-            var colour = picked ? CmdWhite : order != null ? CmdAmber : CmdCyan;
+            var colour = picked ? CmdWhite : order != null ? CmdAmber : c.IsStation ? CmdStation : CmdCyan;
             var hover = !_cmdOverPanel && (m - cr.At).Length() < MathF.Max(14 * _scale, MathF.Min(cr.Px, 90 * _scale));
             var half = MathF.Max(13 * _scale, cr.Px * 1.08f);
             if (cr.Px > 20 * _scale)
                 CmdHoloDraw(dl, g, c, cr, picked ? CmdCyan : CmdDim, fade * (picked ? 1f : 0.8f), now);
+            else if (c.IsStation)
+                CmdStationGlyph(dl, cr.At, 9 * _scale, colour, fade, now);
             else
             {
                 // A dart along the way it goes (seen from its world); a diamond when it sits still.
@@ -112,7 +114,9 @@ public sealed partial class Ui
             CmdLine(dl, cr.At + new float2(off * 0.7f, off * 0.7f), cr.At + new float2(off + 14 * _scale, off + 10 * _scale), colour, 0.6f * fade);
             CmdLine(dl, cr.At + new float2(off + 14 * _scale, off + 10 * _scale), cr.At + new float2(off + 30 * _scale, off + 10 * _scale), colour, 0.6f * fade);
             CmdText(dl, cr.At + new float2(off + 34 * _scale, off + 3 * _scale), picked ? 13.5f : 12, colour, fade, CmdName(c));
-            if (CommandCrewsOn && CmdCrewTag(g, c.Id, out var crewColour) is { } crewTag)
+            if (c.IsStation)
+                CmdText(dl, cr.At + new float2(off + 34 * _scale, off + (picked ? 20 : 18) * _scale), 10, CmdStation, 0.85f * fade, CmdBerthLine(g, c, now));
+            else if (CommandCrewsOn && CmdCrewTag(g, c.Id, out var crewColour) is { } crewTag)
                 CmdText(dl, cr.At + new float2(off + 34 * _scale, off + (picked ? 20 : 18) * _scale), 10, crewColour, 0.85f * fade, crewTag); // (UiCommandCrew.cs)
         }
 
@@ -134,6 +138,55 @@ public sealed partial class Ui
     }
 
     private readonly CmdLabel[] _cmdApsis = new CmdLabel[2];
+
+    /// <summary>
+    /// A station as a glyph (Karl, 2026-11-18: "visible on the RTS view as a station"): a ring round a hexagonal hub on three
+    /// spokes, turning slowly, with a tick for each docking arm under it, so it never reads as a ship's dart or diamond.
+    /// </summary>
+    private void CmdStationGlyph(ImDrawListPtr dl, float2 at, float r, Vector3 colour, float fade, double now)
+    {
+        ImDrawListExtensions.AddCircleFilled(dl, in at, r, Hud.Colour(colour, 0.14f * fade), 24);
+        CmdRing(dl, at, r, colour, fade, 1.6f);
+        CmdRing(dl, at, r * 0.72f, colour, 0.45f * fade, 1f);
+        var spin = (float)(now * 0.15 % (Math.PI * 2));
+        var hub = r * 0.3f;
+        for (var k = 0; k < 6; k++)
+        {
+            var a0 = spin + k * MathF.PI / 3;
+            var a1 = a0 + MathF.PI / 3;
+            CmdLine(dl, at + new float2(MathF.Cos(a0), MathF.Sin(a0)) * hub, at + new float2(MathF.Cos(a1), MathF.Sin(a1)) * hub, colour, fade, 1.3f);
+        }
+        for (var k = 0; k < 3; k++)
+        {
+            var a = spin + MathF.PI / 6 + k * MathF.PI * 2 / 3;
+            var dir = new float2(MathF.Cos(a), MathF.Sin(a));
+            CmdLine(dl, at + dir * hub, at + dir * (r * 0.72f), colour, 0.8f * fade);
+        }
+        // the docking spindle's arms, out past the ring
+        for (var k = 0; k < 4; k++)
+        {
+            var a = -spin * 0.5f + k * MathF.PI / 2;
+            var dir = new float2(MathF.Cos(a), MathF.Sin(a));
+            CmdLine(dl, at + dir * (r + 2 * _scale), at + dir * (r + 5 * _scale), colour, 0.7f * fade, 1.4f);
+        }
+    }
+
+    /// <summary>A station's second line on the map: "STATION", its berths free, at most every half second (no text made per frame).</summary>
+    private string CmdBerthLine(Game g, Construct c, double now)
+    {
+        if (!_cmdBerths.TryGetValue(c.Id, out var b) || now - b.At > 0.5)
+        {
+            var all = Game.StationBerths(g.Constructs, c, out var free);
+            var key = all | (long)free << 16;
+            var text = b.Text != null && b.Key == key ? b.Text
+                : all == 0 ? "STATION    NO BERTHS"
+                : string.Create(System.Globalization.CultureInfo.InvariantCulture, $"STATION    {free} OF {all} BERTHS FREE");
+            _cmdBerths[c.Id] = b = (key, now, text);
+        }
+        return b.Text!;
+    }
+
+    private readonly Dictionary<ushort, (long Key, double At, string? Text)> _cmdBerths = new(8);
 
     /// <summary>Where an order sends its ship: the circle it is to fly, or the point, and a line there.</summary>
     private void CmdOrderMark(ImDrawListPtr dl, Game g, SpaceSession s, Construct c, NavOrder o, in CmdCraft cr, Vec3d r, Vec3d v, float fade, double now)
@@ -200,7 +253,7 @@ public sealed partial class Ui
     /// <summary>A craft's call sign: what its flight computer is called, and its number.</summary>
     private string CmdName(Construct c)
     {
-        var key = c.Id | (long)(c.StabCount > 0 && c.Stabs[0].Part < c.PartCount ? c.Parts[c.Stabs[0].Part].Def : 0) << 16;
+        var key = c.Id | (long)(c.StabCount > 0 && c.Stabs[0].Part < c.PartCount ? c.Parts[c.Stabs[0].Part].Def : 0) << 16 | (c.IsStation ? 1L << 40 : 0);
         if (!_cmdNames.TryGetValue(c.Id, out var name) || name.Key != key)
         {
             var kind = "CRAFT";
@@ -213,7 +266,10 @@ public sealed partial class Ui
             }
             else if (c.SpaceShip != 0)
                 kind = "HULL";
-            _cmdNames[c.Id] = name = (key, kind + " " + c.Id);
+            var text = kind + " " + c.Id;
+            if (c.IsStation)
+                text = Game.StationName(c).ToUpperInvariant(); // (a station goes by its own name: Caledon Highport)
+            _cmdNames[c.Id] = name = (key, text);
         }
         return name.Text;
     }
@@ -616,7 +672,8 @@ public sealed partial class Ui
         var name = _cmdBodyNames.Length > cr.Primary ? _cmdBodyNames[cr.Primary] : body.Name.ToUpperInvariant();
         var height = !cr.Space && World.Map.Planetoid is { } pl ? pl.Altitude(c.WorldCom) : r.Length - body.Radius; // (in the sky: over the ground under it)
         var ground = !cr.Space ? c.Vel.Length() : v.Length;
-        k.Status = c.SpaceAway != 0 ? "DEEP SPACE, ROUND " + name
+        k.Status = c.MooredTo != 0 && g.Constructs.Get(c.MooredTo) is { } moor ? "DOCKED AT " + CmdName(moor) // (the host's word: GameStations.cs)
+            : c.SpaceAway != 0 ? "DEEP SPACE, ROUND " + name
             : cr.Space ? "IN SPACE, ROUND " + name
             : !c.HoverOn && ground < 1 ? "DOWN ON " + name
             : ground < 2 ? "HOVERING OVER " + name
@@ -691,8 +748,14 @@ public sealed partial class Ui
         if (c.ThrusterCount > 0)
             _cmdCrew.Append(inv, $"    {c.ThrusterCount} THRUSTER{(c.ThrusterCount == 1 ? "" : "S")}");
         k.Systems = _cmdCrew.ToString();
+        if (c.IsStation)
+        {
+            var all = Game.StationBerths(g.Constructs, c, out var free);
+            k.Systems = string.Create(inv, $"{free} OF {all} FREE{(c.GunCount > 0 ? $"    {c.GunCount} GUN{(c.GunCount == 1 ? "" : "S")}" : "")}");
+        }
 
-        k.Problem = g.NavNoOrders(c) is { } why ? "TAKES NO ORDERS: " + why.ToUpperInvariant() : "";
+        k.Problem = c.IsStation ? "A STATION: PICK A SHIP, THEN RIGHT CLICK HERE TO DOCK"
+            : g.NavNoOrders(c) is { } why ? "TAKES NO ORDERS: " + why.ToUpperInvariant() : "";
         k.Orders = k.Problem.Length == 0;
         var o2 = g.NavOf(c.Id);
         k.HasOrder = o2 != null;
@@ -753,6 +816,11 @@ public sealed partial class Ui
             return;
         }
         ref var cr = ref _cmdCraft[at];
+        if (c.IsStation)
+        {
+            CmdStationCard(dl, g, s, c, cr, fade, now); // (its market and berths: UiCommandStation.cs)
+            return;
+        }
         if (_cmdCard.Id != c.Id || now - _cmdCard.Read > 0.25 || _cmdCard.Name == null)
             CmdCardRead(g, s, c, cr, now);
         ref var k = ref _cmdCard;

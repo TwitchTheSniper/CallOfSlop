@@ -370,6 +370,8 @@ public sealed partial class Game
             if (c.SpaceShip == 0 && SpaceEdge <= 0)
                 return "There is no way to space from here";
         }
+        if (c.MooredTo != 0)
+            StationCastOff(c); // (moored at a station: a new order casts it off, GameStations.cs)
         var o = NavOf(id);
         if (o == null)
         {

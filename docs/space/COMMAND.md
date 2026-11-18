@@ -316,6 +316,9 @@ docs/sandbox/design/faction-controllers.md section 6.2, so he chose docking alon
 --window-shot out.png --map Glacier --blueprint "Zero Day Frigate" --calm --do "command 60000; cmdpick 1; order orbit Glacier 5.5; wait 8000; letgo 2; wait 400; cmdpick 2; order dock 1; wait 3600; nav"
 ```
 
+- **A station** (Caledon Highport) is drawn as a station, not a ship, and its berths moor a ship rather than carry it, so a
+  ship carrying craft (the Zero Day) docks there too: docs/sandbox/constructs/station.md "In the game".
+
 ### Rendezvous (`Game/GameNavMeet.cs`)
 
 Karl, 2026-11-18: "one ship to match another ship's velocity or orbit and meet up alongside". `NavKind.Meet`: the order's

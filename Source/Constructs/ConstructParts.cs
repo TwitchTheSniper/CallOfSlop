@@ -444,6 +444,7 @@ public sealed partial class ConstructPartDef
     public string Folder = ""; // the subfolder of Constructs/Parts it is in ("" for the top; "Structure/Beams"...)
     public string Description = "";
     public string Group = "", Section = ""; // clues for the inventory's rules ("group", "section"; Constructs/Categories.json, PartCategories.cs): its category comes from there
+    public bool IsStationPiece; // its group is "Station": a construct of them is a space station (Construct.IsStation)
     public PartRole Role;
     public ConstructTool Tool;
     public float AttachSeconds;
@@ -769,6 +770,8 @@ public sealed partial class ConstructPartDef
     public bool SeatEject; // an ejection seat ("seat"."eject"): a key or signal throws its rider clear on a parachute (PilotGear.cs)
     public byte Wear; // worn from the backpack ("wear"): PilotGear's bit
     public EvaPart Eva; // spacewalk gear ("eva"): a suit locker, an MMU dock or the MMU itself (GameSandboxEva.cs)
+    public AirPart Air; // ship air ("air"): a Life Support Unit or an Oxygen Tank (ShipAir.cs)
+    public ushort AirHolds; // ...the oxygen it holds full, in person-minutes (kept in CPart.Rounds)
     public float LaunchSpeed, LaunchReach; // a launch rail's speed off it over the deck (0: its accel runs to the end of the rail), and how far past its ends an arrestor catches
     public float LaunchWidth, LaunchHeight, LaunchAccel, LaunchMaxMass = float.MaxValue; // a catapult or arrestor ("launch"): its zone over its top, m/s2, the heaviest body it takes
     public float JumpRange, JumpCharge, JumpEnergy; // a jump drive ("jump"): its reach (light-years), seconds to charge, kJ a tonne of ship a light-year
@@ -1345,7 +1348,7 @@ public static partial class ConstructParts
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "finish", "friction", "collider",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "fluidTank", "seat", "hinge", "joint", "logic",
         "transmission", "battery", "capacitor", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "yield", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "retired", "hydraulics", "toolOnly", "tray", "walk", "boarding", "ladder", "toolDock", "damaged", "stage", "faces", "faceAxis", "router",
-        "sight", "ordnance", "mooring", "wear", "eva", "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "dieExtension", "runOut", "enginePiece", "sizeClass", "generator", "thruster", "burner", "flame", "rotor", "surface", "smoke", "dock", "breach", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "shell", "office", "requisition", "media", "speaker", "leg", "stabiliser", "door", "lifter", "craneRail", "lifterCab", "radar", "works", "worksPiece", "logiLink", "toolRack",
+        "sight", "ordnance", "mooring", "wear", "eva", "air", "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "dieExtension", "runOut", "enginePiece", "sizeClass", "generator", "thruster", "burner", "flame", "rotor", "surface", "smoke", "dock", "breach", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "shell", "office", "requisition", "media", "speaker", "leg", "stabiliser", "door", "lifter", "craneRail", "lifterCab", "radar", "works", "worksPiece", "logiLink", "toolRack",
     ];
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, a contoured shape with its settings (index 8 up to the last), and the glass flag (last).</summary>
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, and a contoured shape with its settings.</summary>
@@ -1397,6 +1400,7 @@ public static partial class ConstructParts
             throw new ConstructPartException($"{file}: \"name\" must be 1-{most} plain ASCII characters");
         d.Description = Opt(root, "description") is { } desc ? AsciiText(desc, file, "description") : "";
         d.Group = Opt(root, "group") is { } grp ? AsciiText(grp, file, "group") : "";
+        d.IsStationPiece = d.Group == "Station";
         d.Section = Opt(root, "section") is { } sec ? AsciiText(sec, file, "section") : "";
         if (d.Group.Length > 32 || d.Section.Length > 32 || (d.Section.Length > 0 && d.Group.Length == 0))
             throw new ConstructPartException($"{file}: \"group\" and \"section\" are at most 32 characters, and a \"section\" needs a \"group\"");

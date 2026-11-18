@@ -23,6 +23,14 @@ public static class ConstructCarrier
     /// <summary>The pilot's key, pressed in <paramref name="c"/>.</summary>
     public static void PilotKey(ConstructWorld world, Construct c)
     {
+        if (c.MooredTo != 0)
+        {
+            world.Events.Add($"construct {c.MooredTo}: berth let go of construct {c.Id}");
+            (c.MoorAway, c.MoorAwayPart) = (c.MooredTo, c.MoorPart); // (not moored again until it has left the berth's box: GameStations.cs)
+            c.MooredTo = 0; // (a station's berth: GameStations.cs)
+            c.DockAway = world.CarrierClock + AwayTicks;
+            return;
+        }
         if (c.CarriedBy != 0)
         {
             LetGo(world, c);

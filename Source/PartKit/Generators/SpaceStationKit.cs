@@ -429,6 +429,7 @@ public sealed partial class SpaceStationParts
                 ["sizeY"] = Math.Min(96, shipH + 4),
                 ["sizeZ"] = Math.Min(96, fr.Dx != 0 ? shipW + 4 : shipL + 6),
                 ["atY"] = R(2 + shipH / 2),
+                ["startOn"] = true, // (armed from the start: a station's berths hold what docks: the command view's Dock order and by hand)
             };
             k.Hangs.Add(new HangSpec((string)p.D["name"]!, "clamp", "Docking Clamp Large", "-y", cfg, Hazard, HazardFin));
         }
@@ -506,6 +507,7 @@ public sealed partial class SpaceStationParts
                     ["sizeY"] = Math.Min(96, shipH + 4),
                     ["sizeZ"] = Math.Min(96, fr.Dx != 0 ? shipW + 4 : shipL + 6),
                     ["atY"] = R(2 + shipH / 2),
+                    ["startOn"] = true, // (armed from the start: a station's berths hold what docks: the command view's Dock order and by hand)
                 };
                 var (cx2, cz2) = fr.At(centreA, 0);
                 cfg["atX"] = R(cx2 - x);
