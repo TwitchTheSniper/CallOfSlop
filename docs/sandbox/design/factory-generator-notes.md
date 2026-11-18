@@ -28,7 +28,16 @@ The user's second way to follow the ore ("tool racks for NPCs"): crew carry port
   ore tipped in 150 s, the client saw the hook empty and the body with the drill out; shell: 2,400 tipped in one trip, the shell woken again for
   the next; far (records): 600 in 150 s. Protocol 355 (the new part file moves ids; CfgKey.ToolsOut; the job byte).
 
+- **Review fixes**: a shell trip cut short no longer spills its load twice (the hopper's load is ShellReturn's alone); a rack's empty hooks
+  follow the trips under way (`GameCrewMine.MineRacks`, each work look: a world saved with miners out, or a crew gone, gets its drills back,
+  logged), blueprints never keep empty hooks (`ConstructConfig.ToJson` skips ToolsOut), a miner sent back to the Shell Control Chair stands up
+  at its rack, a miner never sets off from a seat, and one waiting on an empty rack says so once. `--crew-shell-kill`: the shell shot out
+  mid-trip (630 spilt once), the miner up and on with a drill. "Sandbox tool models" fails on main as on this branch (bot scene allocations).
+
 ### Open (fourth builder)
+
+0. Posts placed from site files are never crewed: sites are only written by `--gen-factory site`, nothing in the game places them yet, and a
+   site has no power to own it. Crew them when site placement and site ownership come.
 
 1. One miner per rack (a station per part): a rack's three drills serve one miner. More would take a station per hook.
 2. Round worlds: miners look for spots on flat maps only (`ResourceField.Ground`); none on a planetoid yet.
