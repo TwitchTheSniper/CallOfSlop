@@ -122,7 +122,8 @@ public sealed partial class Game
     /// Host: each berth's lane on a station, worked out once for its build (Karl, 2026-11-18: "a landing path for each station, such that
     /// the way to get into each dock is as you'd expect"): of the six ways out of the berth's box, the first a ship the box's size can
     /// leave by without touching the station, out past its edge (five rays: the middle and near each corner of the box's face that way),
-    /// trying up out of the clamp first, then the sides, then down, then the ends; if none is clear, the one that goes farthest.
+    /// trying its outer end first (away from the station's middle), then up out of the clamp, the sides, down, and the inner end; if
+    /// none is clear, the one that goes farthest.
     /// </summary>
     public void StationLanes(Construct t)
     {
@@ -150,16 +151,22 @@ public sealed partial class Game
                     other[n++] = a;
             var side = h[other[0]] <= h[other[1]] ? other[0] : other[1]; // (the box's short way across: its sides)
             var end = side == other[0] ? other[1] : other[0];
-            order[0] = upK;
-            order[1] = side * 2;
-            order[2] = side * 2 + 1;
-            order[3] = upK ^ 1;
-            order[4] = end * 2;
-            order[5] = end * 2 + 1;
             var centreW = tr + Vector3.Transform(mid, q);
+            // The berth's outer end first (Karl 2026-11-18: one line of berths to a level, ships coming in along it from the arm's
+            // end like traffic), then up out of the clamp, the sides, down, and the end towards the station's middle.
+            var outEnd = Vector3.Dot(Vector3.Transform(LaneAxis(end * 2), q), centreW - t.WorldCom) >= 0 ? end * 2 : end * 2 + 1;
+            // (a square pad's berth is come down onto from over it: a long berth beside an arm is the one with ends)
+            var longBerth = h[end] > 1.5f * h[side];
+            order[0] = longBerth ? outEnd : upK;
+            order[1] = longBerth ? upK : outEnd;
+            order[2] = side * 2;
+            order[3] = side * 2 + 1;
+            order[4] = upK ^ 1;
+            order[5] = outEnd ^ 1;
             var reach = t.Radius * 2 + LaneClear;
             var best = -1;
             var bestFar = -1f;
+            var bestBy = -1;
             foreach (var k in order)
             {
                 var axis = LaneAxis(k);
@@ -172,22 +179,24 @@ public sealed partial class Game
                 var vW = Vector3.Transform(LaneAxis(v * 2), q) * h[v] * 0.7f;
                 var face = h[ax] + 0.5f; // (rays start on the box's face that way: the cradles and pads inside the berth are where the ship lies anyway)
                 var near = float.MaxValue;
+                var nearPart = -1;
                 for (var r = 0; r < 5; r++)
                 {
                     var o = centreW + dir * face + (r switch { 1 => uW + vW, 2 => uW - vW, 3 => -uW + vW, 4 => -uW - vW, _ => Vector3.Zero });
                     if (Constructs.Raycast(o, dir, reach, out var hit, only: t))
-                        near = MathF.Min(near, hit.Distance + face);
+                        if (hit.Distance + face < near)
+                            (near, nearPart) = (hit.Distance + face, hit.Part);
                 }
                 if (near == float.MaxValue)
                 {
-                    best = k;
+                    (best, bestFar) = (k, -1f);
                     break;
                 }
                 if (near > bestFar)
-                    (best, bestFar) = (k, near);
+                    (best, bestFar, bestBy) = (k, near, nearPart);
             }
             lanes[i] = (sbyte)best;
-            Log($"[station] {StationName(t)}: berth {i} ({t.DefOf(i).Name}) is flown into {(bestFar < 0 ? "along a clear lane" : $"along its best lane (blocked {bestFar:0} m out)")}, {"+x -x +y -y +z -z".Split(' ')[best]} of its box{(best == upK ? " (up out of the clamp)" : "")}");
+            Log($"[station] {StationName(t)}: berth {i} ({t.DefOf(i).Name}) is flown into {(bestFar < 0 ? "along a clear lane" : $"along its best lane (blocked {bestFar:0} m out by {(bestBy >= 0 ? t.DefOf(bestBy).Name : "?")} {bestBy})")}, {"+x -x +y -y +z -z".Split(' ')[best]} of its box{(best == upK ? " (up out of the clamp)" : best == outEnd ? " (its outer end)" : "")}");
         }
         t.DockLanes = lanes;
         t.DockLanesFor = t.PartCount;

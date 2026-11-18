@@ -29,7 +29,7 @@ public enum FactionOp : byte
     ContractDrop, // u8 slot, u16 serial: give a contract you hold up (it fails)
     // Protocol 361 (stations: GameStationMarket.cs).
     StationSell, // u16 ship: sell the ore and goods in the bins of the moored ship you are aboard to its station
-    // Protocol 362.
+    // Protocol 366.
     StationBuy, // u16 ship, u8 good: buy as much of one of its station's goods as the moored ship's bins and your credits take
 }
 
