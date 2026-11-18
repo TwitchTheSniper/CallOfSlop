@@ -464,6 +464,50 @@ public sealed partial class Game
 
     // ---- Tools (allocate) -------------------------------------------------------------------------------------------------------------
 
+    /// <summary>Window tool, a test state: every crewed body's crew is of power <paramref name="name"/>, and they form one patrol group (the command view's crews layer).</summary>
+    public string CrewGroupAll(string name)
+    {
+        var f = CrewPowers.Find(name);
+        if (f == 0)
+            return $"no power {name}";
+        Span<ushort> ids = stackalloc ushort[CrewGroup.MaxShips];
+        var n = 0;
+        for (var i = 0; i < Crew.ShipHigh && n < ids.Length; i++)
+            if (Crew.Ships[i] is { Own: false } s && Constructs.Get(s.Body) is { } c)
+            {
+                CrewWorld.SetFaction(c, s, f);
+                for (var k = 0; k < s.MemberCount; k++)
+                    Crew.Fac[s.Members[k]] = f;
+                s.SeatsDirty = true;
+                ids[n++] = c.Id;
+            }
+        if (n == 0)
+            return "no crewed body";
+        var g = Crew.Fleet.Form(Crew, Constructs, GroupTask.Patrol, ids[..n], "the window tool's crewgroup");
+        return $"{n} bodies of {name}, group slot {g}";
+    }
+
+    /// <summary>Window tool, a test state: the last crewed body becomes <paramref name="me"/>'s own crew (the Player Crew power, theirs), so its roster is sent.</summary>
+    public string CrewMakeOwn(Player me)
+    {
+        var f = CrewPowers.ForKindName("Player Crew");
+        if (f == 0)
+            return "no Player Crew power";
+        for (var i = Crew.ShipHigh - 1; i >= 0; i--)
+            if (Crew.Ships[i] is { } s && Constructs.Get(s.Body) is { } c)
+            {
+                if (s.Group >= 0)
+                    return $"construct {c.Id} is in a group: crewown before crewgroup";
+                c.Owner = me.Id;
+                CrewWorld.SetFaction(c, s, f);
+                for (var k = 0; k < s.MemberCount; k++)
+                    Crew.Fac[s.Members[k]] = f;
+                s.SeatsDirty = s.RosterDirty = true;
+                return $"construct {c.Id}: {me.Name}'s own crew";
+            }
+        return "no crewed body";
+    }
+
     public string CrewSetFaction(string name)
     {
         var f = CrewPowers.Find(name);

@@ -25,8 +25,8 @@ public static class Eva
     public const float BreathSeconds = 20f, SuitSeconds = 30 * 60f; // breath held, a full suit's air
     public const float BreathBack = 5f, SuitRefill = 90f; // seconds of each back a second in air (a suit fills from the air or its dock)
     public const int ChokeDamage = 10; // a second, out of breath
-    public const ushort MmuFull = 3600; // the pack's tank: a minute of thrust (ticks; MoveState.JetFuel while worn)
-    public const float MmuLitres = 6f; // fuel a full tank takes from the ship
+    public const ushort MmuFull = 3600; // the pack's tank: twenty minutes of thrust (Karl, 2026-11-18: x20), in units of PilotGear.MmuBurnEvery ticks (MoveState.JetFuel while worn)
+    public const float MmuLitres = 120f; // fuel a full tank takes from the ship (twenty times the old minute's 6 L)
     public const int MmuFillTicks = 4; // tank a tick on a fed dock: full in 15 s
     public const uint IssueTicks = 10 * World.TickRate; // a spawn this recent out in vacuum is given a suit (the ship starts, a world rejoined in orbit)
 
@@ -217,13 +217,18 @@ public sealed partial class Game
         Constructs.RemovePart(c, mmu); // (the pack comes off the dock with them)
         p.Eva |= Eva.Mmu;
         SandboxStand(p, teleport: true);
-        if (p.Sim.RideBody != 0)
-            ConstructRide.Leave(ref p.Sim, Constructs.Get(p.Sim.RideBody), momentum: true); // (stood on a deck out in space: off it, or the pack can't fire)
         p.Sim.JetFuel = p.MmuFuel = fuel;
         p.Sim.Gear = SandboxWorn(p);
-        // A gentle push off the dock, forward out of it, with whatever the ship was doing.
-        c.WorldFrame(dock.Seg, out var q, out _);
-        p.Sim.Velocity += Vector3.Transform(Rot24.Apply(dock.Rot, -Vector3.UnitZ), q) * 0.6f;
+        // A gentle push off the dock, forward out of it, with whatever the ship was doing: in its frame when they stand in it
+        // (out in space the pack floats in the ship's frame: World.SimulateMmu), else in the world.
+        var outOf = Rot24.Apply(dock.Rot, -Vector3.UnitZ);
+        if (p.Sim.RideBody == c.Id && p.Sim.RideUp != Vector3.Zero && c.FrameOf(p.Sim.RideSeg) == c.FrameOf(dock.Seg))
+            p.Sim.RideVel += outOf * 0.6f;
+        else
+        {
+            c.WorldFrame(dock.Seg, out var q, out _);
+            p.Sim.Velocity += Vector3.Transform(outOf, q) * 0.6f;
+        }
         p.Sim.Grounded = false;
         BroadcastRoster();
         Constructs.Events.Add($"construct {c.Id}: {p.Name} flew off on an MMU ({fuel * 100 / Eva.MmuFull}% fuel)");
@@ -310,7 +315,7 @@ public sealed partial class Game
         }
         if (_sbEva.Text.Length > 0)
             lines.Add(new HudLine(_sbEva.Text, me.Breath < Eva.BreathSeconds || me.SuitAir <= 0 && Eva.Vacuum(me.Position) ? red : (me.Eva & Eva.Suit) != 0 && me.SuitAir < 300 ? orange : white));
-        if (mmuOn && !me.Sim.Grounded && me.Sim.RideBody == 0 && !h.Seated)
+        if (mmuOn && !h.Seated)
             lines.Add(new HudLine(SandboxKeys.EvaFly, dim));
         return false;
     }

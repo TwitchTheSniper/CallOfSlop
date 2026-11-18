@@ -621,17 +621,14 @@ public sealed partial class Game
     /// <summary>The Esc menu's button: leave the shell and wake in the chair.</summary>
     public void ShellAskLeave() => SandboxSend(CActKind.ShellLeave);
 
-    private SbText _sbShell;
-
-    /// <summary>The HUD's line while this PC's player wears a shell.</summary>
+    /// <summary>
+    /// The HUD's lines while this PC's player wears a shell. The shell's health and its works' are not lines: the bottom-left panel
+    /// shows them (UI/UiShellPanel.cs; Karl, 2026-11-18).
+    /// </summary>
     private void ShellHud(Player me, List<HudLine> lines, Vector4 orange, Vector4 dim)
     {
         if (!me.InShell)
             return;
-        if (_sbShell.Stale(me.Health))
-            _sbShell.Text = $"ROBOT SHELL  {me.Health * 100 / World.MaxHealth}%  -  no self-repair, your body waits in the chair (Esc menu: leave the shell)";
-        lines.Add(new HudLine(_sbShell.Text, orange));
-        ShellWearHud(me, lines, orange, dim); // (its worn works: GameShellWear.cs)
         HopperHud(me, lines, dim); // (an ore hopper's load: GameShellHopper.cs)
     }
 }

@@ -222,14 +222,15 @@ public static class LegAnimator
         var stance = p.RenderStance;
         var seated = p.RenderSeat != SeatKind.None; // (carried by a construct: no gait, whatever the speed)
         var ladder = p.RenderLadder && !seated; // (climbing: hands and feet on the rungs, LadderAnim.cs)
-        var vel = seated || ladder ? Vector3.Zero : GravityFrames.ToLocal(pos, p.RenderVelocity); // (a planet: in the body's own frame)
+        var pack = !seated && !ladder && EvaRender.Wears(p) && Eva.Vacuum(p.RenderPosition); // (a worn MMU: feet on its pedestals, no gait or air pose: Karl, 2026-11-18)
+        var vel = seated || ladder || pack ? Vector3.Zero : GravityFrames.ToLocal(pos, p.RenderVelocity); // (a planet: in the body's own frame)
         if (p.RenderRide)
         {
             // Contraption space: the gait in the rider's own frame, as they are drawn (PlayerRender). In the world's the planted
             // feet and the ground's height were left behind by the construct's own motion: a ship in orbit tore the legs away.
             pos = p.RenderRideFeet;
             yaw = p.RenderRideYaw;
-            vel = Vector3.Transform(p.RenderVelocity, Quaternion.Conjugate(p.RenderRideRot)); // (a rider's velocity is relative to the construct)
+            vel = pack ? Vector3.Zero : Vector3.Transform(p.RenderVelocity, Quaternion.Conjugate(p.RenderRideRot)); // (a rider's velocity is relative to the construct)
         }
 
         var dt = (float)(now - st.Last);
@@ -263,7 +264,7 @@ public static class LegAnimator
 
         // ---- Air, falling, landing, mantling ----
         var mantling = p.RenderMantling;
-        var grounded = p.RenderGrounded || mantling;
+        var grounded = p.RenderGrounded || mantling || pack;
         if (!grounded)
         {
             st.AirTime += dt;
@@ -461,7 +462,7 @@ public static class LegAnimator
             Span<float> groundOff = stackalloc float[2];
             Span<Vector3> normal = stackalloc Vector3[2];
             var filter = QueryFilter.All.AtTick(MoverTick);
-            var useRays = near && groundW > 0.001f && !p.RenderRide; // (standing in a construct's frame the ground isn't down: the flat gait)
+            var useRays = near && groundW > 0.001f && !p.RenderRide && !pack; // (standing in a construct's frame the ground isn't down: the flat gait; on an MMU's pedestals, the pedestals)
             for (var i = 0; i < 2; i++)
             {
                 var h = pos.Y;

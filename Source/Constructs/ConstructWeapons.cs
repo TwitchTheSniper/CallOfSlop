@@ -94,6 +94,8 @@ public struct CFireEvent
     public ushort Wait, Deploy;
     public int Life;
     public Vector3 Aim;
+    public Vector3 Bore; // ShellOut with ShellFlags.Boost (protocol 357): the way off its rack, and the age guidance takes over
+    public ushort Boost;
     public ShellLookKind LookKind; // ShellOut (protocol 184): the model it is drawn with in the air (ShellLooks.cs)
     public uint Look; // ...a part file's id, or a designed weapon's key hashed
     public Quaternion Rot; // ...how it hung on its rack (its part's world turn)

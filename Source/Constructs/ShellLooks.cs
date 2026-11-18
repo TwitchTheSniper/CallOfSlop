@@ -114,7 +114,7 @@ public static class ShellLooks
         var speed = s.Vel.Length();
         if (speed < AlignSpeed)
             return;
-        var way = s.Vel / speed;
+        var way = (s.Flags & ShellFlags.Boost) != 0 && s.Age < s.Boost ? s.Bore : s.Vel / speed; // (off a rack, it points along it: in orbit its speed is mostly the ship's)
         var nose = Vector3.Transform(-Vector3.UnitZ, s.Rot);
         var onto = Quaternion.Normalize(Quaternion.Concatenate(s.Rot, FromTo(nose, way)));
         var k = MathF.Min(1f, (s.Age + 1) / (float)AlignTicks);

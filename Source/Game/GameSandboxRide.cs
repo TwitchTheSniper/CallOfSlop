@@ -334,7 +334,10 @@ public sealed partial class Game
             return up;
         if (Local is { RenderRide: true, Alive: true } me)
             up = Vector3.Normalize(Vector3.Transform(Vector3.UnitY, me.RenderRideRot));
-        var body = Local is { RenderRide: true } ? Local.Sim.RideBody : (ushort)0;
+        var seatUp = SeatFrameUp; // (seated where the look is kept in the seat's frame: its up, GameSandbox.cs)
+        if (seatUp != Vector3.Zero)
+            up = Vector3.Normalize(seatUp);
+        var body = Local is { RenderRide: true } ? Local.Sim.RideBody : seatUp != Vector3.Zero ? (ushort)(_seatFrameKey >> 16) : (ushort)0;
         var key = _rideLookUp;
         if ((body != _rideCamBody || key != _rideCamUp) && _rideCamWas != Vector3.Zero)
             _rideCamTurn = ConstructRide.TurnBetween(up, _rideCamWas);

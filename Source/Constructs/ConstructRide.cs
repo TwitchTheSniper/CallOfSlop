@@ -112,7 +112,9 @@ public static partial class ConstructRide
         for (var i = 0; i < bodies.Count; i++)
         {
             var c = bodies[i];
-            var a = c.Anchored || c.Asleep ? Vector3.Zero : (c.Vel - c.VelBefore) / World.TickDt;
+            if (c.FarRate > 1 && c.Vel == c.VelBefore && !c.Asleep)
+                continue; // (a far body between its steps: its last step's acceleration stands: ConstructFar.cs)
+            var a = c.Anchored || c.Asleep ? Vector3.Zero : (c.Vel - c.VelBefore) / (World.TickDt * (c.FarRate > 1 ? c.FarRate : 1)); // (a far step is that many ticks' change)
             c.Accel = Vector3.Lerp(c.Accel, a, 0.5f);
             c.VelThen = c.VelBefore;
             c.VelBefore = c.Vel;

@@ -490,36 +490,6 @@ public sealed partial class Game
 
     // ---- Both sides: the HUD and what it looks and sounds like ----------------------------------------------------------
 
-    private SbText _sbShellWear;
-
-    /// <summary>The HUD's line of worn works while this PC's player wears a shell (nothing when all is well).</summary>
-    private void ShellWearHud(Player me, List<HudLine> lines, Vector4 orange, Vector4 dim)
-    {
-        var t = ShellWear.Current;
-        long key = 1;
-        var any = false;
-        for (var k = 0; k < ShellWear.Works; k++)
-        {
-            var w = me.ShellWear[k];
-            key = key * 131 + (t.Worn(w) || w >= ShellWear.Failed ? ShellWear.Pct(w) + 1 : 0);
-            any |= t.Worn(w) || w >= ShellWear.Failed;
-        }
-        if (!any)
-            return;
-        if (_sbShellWear.Stale(key))
-        {
-            var sb = new System.Text.StringBuilder("SHELL WEAR:");
-            for (var k = 0; k < ShellWear.Works; k++)
-            {
-                var w = me.ShellWear[k];
-                if (t.Worn(w) || w >= ShellWear.Failed)
-                    sb.Append(sb.Length > 11 ? ", " : " ").Append(ShellWear.ShortOf((ShellWork)k)).Append(w >= ShellWear.Failed ? " FAILED" : $" {ShellWear.Pct(w)}%");
-            }
-            _sbShellWear.Text = sb.ToString();
-        }
-        lines.Add(new HudLine(_sbShellWear.Text, dim));
-    }
-
     /// <summary>What this PC's player's shell does to the view this frame (Ui/UiShellWear.cs draws it).</summary>
     public struct ShellView
     {

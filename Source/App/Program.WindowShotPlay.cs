@@ -23,7 +23,7 @@ public static partial class Program
         var ci = System.Globalization.CultureInfo.InvariantCulture;
         switch (verb)
         {
-            case "shells" when g.IsServer: // host: every shell in flight: kind, age, where it is from the body that fired it, its speed against it, its target; and each body's radar lock
+            case "shells" when g.IsServer: // host: "shells [look|lock]": every shell in flight: kind, age, where it is from the body that fired it, its speed against it, its target; and each body's radar lock
             {
                 var w = g.Constructs;
                 foreach (var b in w.Bodies)
@@ -35,6 +35,8 @@ public static partial class Program
                         WsSay(string.Create(ci, $"shells: contact body {ct.Id}, {Vector3.Distance(ct.WorldCom, rc.WorldCom):0} m"));
                 if (arg == "look" && g.RadarContactCount > 0 && w.Get(g.RadarContacts[0]) is { } first)
                     WsLook(g, me.Eye, first.WorldCom); // ("shells look": the look turned onto the nearest contact, as the mouse would turn it)
+                if (arg == "lock" && g.RadarContactCount > 0 && w.Get(g.RadarContacts[0]) is { } locked)
+                    WsSay($"shells: lock {(g.RadarPick(me.Eye, Vector3.Normalize(locked.WorldCom - me.Eye)) ? "taken" : "refused")}"); // ("shells lock": the radar key's lock on the nearest contact, wherever a seat lets the look turn)
                 WsSay($"shells: {w.ShellCount} in flight");
                 for (var k = 0; k < w.ShellCount; k++)
                 {
@@ -126,6 +128,14 @@ public static partial class Program
                 if (g.IsServer)
                     Console.WriteLine($"[windowshot] crewfaction: {g.CrewSetFaction(arg)}");
                 return true;
+            case "crewgroup": // "crewgroup NAME": host, a test state: every crewed body's crew is of that power, formed into one patrol group
+                if (g.IsServer)
+                    Console.WriteLine($"[windowshot] crewgroup: {g.CrewGroupAll(arg)}");
+                return true;
+            case "crewown": // "crewown": host, a test state: the last crewed body becomes this player's own crew
+                if (g.IsServer)
+                    Console.WriteLine($"[windowshot] crewown: {g.CrewMakeOwn(me)}");
+                return true;
             case "crewdisarm": // "crewdisarm": host, a server shortcut: this player is put by the first crewed body's scuttle charge and starts its disarm (the Mend act's server path)
                 if (g.IsServer)
                     Console.WriteLine($"[windowshot] crewdisarm: {g.CrewDisarmFirst(me)}");
@@ -156,6 +166,9 @@ public static partial class Program
                 return true;
             case "crewpowers": // "crewpowers [near]": host: each power's stock, ships and missions (near: its places laid again 300-450 m round this player); a client: the news and powers gone (faction-controllers.md phase 3)
                 Console.WriteLine($"[windowshot] crewpowers: {(g.IsServer ? g.CrewPowersLine(arg) : $"{g.PowerNews.Count} news lines, last \"{g.PowerNews.LastOrDefault()}\"; powers gone {g.FactionTable.PowerGone:X4}; grid {g.FactionTable.PowerCount} powers, {g.FactionTable.PactCount} pacts")}");
+                return true;
+            case "crewterritory": // "crewterritory [near|leave]": host: planets, sites and far groups (near: a far Take group put 3.5 km from this player; leave: the far ranges shrunk so nobody counts as near: its bodies collapse); a client: its map (faction-controllers.md phase 4)
+                Console.WriteLine($"[windowshot] crewterritory: {(g.IsServer ? g.CrewTerritoryLine(me, arg) : g.FactionMapLine())}");
                 return true;
             case "crewofficer": // "crewofficer question|ransom": host: this player questions or ransoms the first officer prisoner
                 if (g.IsServer)

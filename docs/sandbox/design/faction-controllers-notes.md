@@ -333,3 +333,98 @@ Technical 2 393, British Gun Wagon 1 479.
   its own body, or docked since). `--crew-relations` passed; `--selftest-only "Sandbox spawns, Save folder"` passed. Thinks past the first minute:
   median 5 us, 99th 137 us; the worst (4 ms) with the box at load 13 and nothing logged in that second (taken for preemption; not measured quiet:
   the box was never quiet).
+
+## Phase 4: territory and the far layer (built 2026-11-18, branch `claude/faction-territory`)
+
+Built to section 4 as Karl's answer 1 reworks it (majority control weighted by key sites' rarity), section 8, the user's answers 3 (space clock for
+groups between planets), 4 (far fights by strength, a closed world never opened), 7 (fog) and 8 (1,000 bodies: real progress and a measure), Karl's 3
+(the FACTIONS layer) and 4 (existing ships as placeholders).
+
+### What a player sees
+
+- **Planets held.** Frostreach's planets and moons have key sites (`Crew/Territory.json`: 31 spaceports, refineries, mines and outposts, each with a
+  start holder). A site's control is its kind's weight shared among the sites of that kind on its planet (one spaceport there is worth a spaceport's
+  whole weight; one of four mines a quarter of a mine's); a power with more than half a planet's control holds it, else it is contested. Held sites earn
+  their power income a minute and keep a garrison (abstract: outposts as buildings with gun crews are later) that grows back while nobody attacks.
+- **Wars over sites, seen or not.** Every few minutes a power at war with a site's holder sends a far Take group (its armed ships from the hangar, or
+  bought at their bill) when it is strong enough by its caution; a power whose site is attacked sends a Defend group. Far groups move between planets
+  on the space clock (distance at 3,000 m/s; 10 minutes when unknown), land and go to the site; there they fight by strength (1% of the enemy's strength
+  a second, at most 2% of their own: minutes, never one roll), a ship whose hull runs out is lost (`destroyShip`); a group past its caution's line pulls
+  back home. A site with no garrison and no defender left is taken after 2 minutes (`takeSite`), and a planet that changes holder is news ("Shard falls
+  to the Raiders: the Traders have lost it", "X is contested") and a `takePlanet` event (-40). The attackers stay as its garrison for a while, then go
+  home, where their ships go into the hangar. None of it opens a closed world.
+- **Groups near a person.** A far group on the open world within 5 km of a person is set down as crewed bodies, at least 600 m from everyone, two a
+  step, within the controllers' body cap (over it: it stays a record), then formed into a crew group under an admiral (phase 2) and sent to its site;
+  with nobody within 7 km for a minute its ships go back to records one a step, hulls kept, and it goes on as a record.
+- **Command view FACTIONS layer** (`docs/space/COMMAND.md` "The factions layer"): planets ringed by holder (dashed when contested) with tag and share;
+  groups known (on this world within 8 km, or named by news in the last 5 minutes: dim, "N MIN AGO"), a guess at their task and ships, THREAT in red
+  for a hostile power's strike or one within 3 km. The Faction window (F2) lists each planet's holder and share.
+
+### Where
+
+| What | Where |
+| --- | --- |
+| Sites, holders, garrisons, income, Take and Defend, far groups (move, fight, take, home), materialise and collapse, save bytes | `Source/Crew/CrewTerritory.cs` (`PowerControllers` partial, `FarGroup`) |
+| Numbers and the planets' sites | `Crew/Territory.json` (`call-of-slop-npc-territory/1`; missing: no territory), `Source/Crew/CrewTerritoryRules.cs` |
+| A ship's strength in a far fight | `ControllerRules.Bill.Strength` (1 + 2 a gun + parts / 60) |
+| The host's side: the space clock, planets' distances, a site's place on the open world | `Source/Game/GameCrewPowers.cs` (`IPowerHost.SpaceSeconds/PlanetGap/SiteAt`) |
+| Each player's map, fog, threats, `Msg.FactionMap` | `Source/Game/GameCrewTerritory.cs` |
+| Command view layer, F2 planets | `Source/UI/UiCommandFactions.cs`, `UiFactions.DrawPowerRelations` |
+| Far bodies' coarse rate | `Source/Constructs/ConstructFar.cs`, `ConstructPhysics.Pass`, `ConstructWorld.Step` (logic and power), `ConstructNet.PosePeriod` |
+| Tools | `--crew-fleet territory`, `--crew-fleet far`, `--crew-fleet scale --fleet-spread M --far-every K` (`Source/Crew/CrewTerritoryCheck.cs`, `CrewFleetCheck.cs`); window verb `crewterritory [near|leave]` |
+
+### The 1,000-body work (answer 8)
+
+- **Far bodies' physics, logic and power** step once every 4 ticks by 4 ticks' time when an NPC body (not owned, held, carried, coupled or in space) is
+  1.5 km or more from every person (`ConstructFar`): physics in a second pass over just those due this tick (a far body never meets a near one in the
+  same pass); asleep far bodies' logic and power too. Sleep counts a far step as 4 ticks and lets a far body sleep at 4 times the still speed (at a
+  coarse step a body at rest jitters at 0.2 m/s and never slept).
+- **Network:** two more pose bands: past 1.5 km a body is sent every 32 pose ticks, past 4 km every 128 (the sleeping refresh tells a far body's last pose).
+- **Measured** (`--crew-fleet scale --fleet-scale 1000 --fleet-awake 1000 --fleet-spread 8000`, Bandit Helicopter 1, 23 parts, the 2-core box shared):
+  the world's step 4.26 ms a tick before, 2.49 to 2.94 ms after (physics 1.71 to 0.75-0.82 ms, logic 1.75 to 0.79 ms); crews 0.20-0.27 ms; one client
+  by the person gets 32 poses, 1.9 KB in 2.1 packets a pose tick with 427 movers. With all 1,000 within 1.1 km (phase 2's case) nothing changes: 8.6
+  ms a tick, the near bodies' own cost.
+- **What remains for 1,000:** near bodies (within 1.5 km) still cost full rate; machines' scans (0.55 ms for 1,000 bodies), the crews' 168 KB
+  allocated in 240 ticks with bodies spread over 8 km (found before this branch: the crews' LOD moving; not looked into), batched drawing (not touched),
+  and the controllers' body cap (`world.maxBodies` 24, spawning is slow: a vehicle a few hundred ms on this box). Big blueprints (Zero Day, 276 parts) were
+  not measured again.
+
+### Saves and network
+
+- CTRL version 2: each power's flag for having held a site and its next Take; each ship's far group; then the sites (planet, name, holder by name,
+  garrison) and the far groups (slot, power, task, state, real or not, planets and site by name, seconds to arrival, place, number, strength). A real
+  group's ships are saved out with their crew's uid and taken up again by it after a load; a ship whose far group doesn't read goes into the hangar.
+  Version 1 still reads (the territory starts from the data). No new save file.
+- Protocol 356 (main 355 at the merge): `Msg.FactionMap`, once a second to each player. `enum Msg` is full: it takes `RemovedTutorial`'s slot.
+
+### Tried by hand (2026-11-18, the box shared with other builders)
+
+- `--crew-fleet territory --seconds 400` (16 power files written for the run, 5 planets of 8 sites, nobody anywhere, times shortened): 22 to 32 sites
+  taken, 6 to 16 planet changes, each in the news; far groups topped up to 64-73 after two minutes: controllers and far layer 12 to 18 us a tick
+  (99th 44-51 us, worst 0.1-1.2 ms), 0 bytes in steps that said nothing; the section read back the same.
+- `--crew-fleet far`: nothing set down while the person was 9 km off; within 3 km both the Raiders' Take group and the Militia's Defend group
+  materialised (the nearest body 3 km from the person), collapsed 10 s (the tool's time) after the person went 10 km off, hulls kept.
+- Phase 3's `powers`, `politics` and `--crew-relations`: OK (looted no in that run: the convoy outran the raid, as noted before).
+- Window run (Glacier, survival, host and a joined client under xvfb): nine planets with holders on host and client; `crewterritory near` put a
+  Militia Take group 3.5 km off, it materialised as a crew group (the client's look lines named its admiral and captains), the client's map knew it
+  ("here, real"); `crewterritory leave` (ranges shrunk) collapsed it, the client then knew it unreal. Far layer 11 us a tick.
+
+### Not verified
+
+- The FACTIONS layer as drawn (no picture taken); the F2 planets list as drawn.
+- A real save and load with a far group real (the uid adoption) or in transit; a save from before (version 1) read through the game.
+- A real Take by bodies (garrison worn down by a real group, site taken) in a running game; a group set down on a planetoid at a site given by
+  latitude and longitude (the window run put it by the player); groups in transit between planets on a real space clock.
+- Far bodies' coarse rate with wheeled vehicles on slopes and with big ships (only helicopters at rest and flying were measured).
+- The 7 ms worst far-layer tick seen once in the window run (before any group was near; taken for the loaded box, not traced).
+
+### Questions (defaults taken)
+
+1. **Players holding planets** (Karl's 1 says player factions hold them the same way): no player site exists yet. Default: later, with player-built
+   outposts counted as sites by kind.
+2. **Outposts as buildings.** Garrisons are numbers. Default: the factory and base generators' sites become the key sites' buildings, their gun crews
+   the garrison, in a later phase.
+3. **Far groups on other open places** (planetoids run as a place on the host): the far layer sets bodies down only on the host's main world. Default:
+   a place's Game asks the main Game's controllers (one layer), later.
+4. **Body cap.** Kept at 24 (`world.maxBodies`). Default: raise it once spawning is cheaper; the LOD above is what lets it go up.
+5. **Allies' sightings for fog.** Not shared yet (no pacts with players until phase 5). Default: an ally's groups and what its crews see, then.
