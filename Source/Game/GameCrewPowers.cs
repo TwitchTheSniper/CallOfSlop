@@ -117,12 +117,22 @@ public sealed partial class Game : IPowerHost
         }
     }
 
-    int IPowerHost.People(Span<Vector3> into)
+    int IPowerHost.People(Span<Vector3> into) => InterestPoints(into);
+
+    /// <summary>Where people see from: each living player, and the drone a player flies from their seat (the same point their poses centre on,
+    /// <see cref="SandboxInterestAt"/>). The far bodies' rate, the controllers' sight and the far layer's materialising and collapsing all use these.</summary>
+    public int InterestPoints(Span<Vector3> into)
     {
         var n = 0;
         foreach (var p in Players.Values)
-            if (p.Alive && p.Bot == null && n < into.Length)
-                into[n++] = p.Position;
+        {
+            if (!p.Alive || p.Bot != null || n >= into.Length)
+                continue;
+            into[n++] = p.Position;
+            var at = SandboxInterestAt(p);
+            if (n < into.Length && Vector3.DistanceSquared(at, p.Position) > 1)
+                into[n++] = at;
+        }
         return n;
     }
 

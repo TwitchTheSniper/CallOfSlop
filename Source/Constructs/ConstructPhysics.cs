@@ -172,7 +172,7 @@ public static partial class ConstructPhysics
         var g = new Vector3(0, -GravityAccel, 0);
         _world = world; // (the held body's sweep skips what it is coupled to)
         _warm = WarmOf(world);
-        _warmTick = ++world.WarmTick;
+        _warmTick = Pass == 2 ? world.WarmTick : ++world.WarmTick; // (one advance a real tick: the far pass steps in the near pass's tick, ConstructFar.cs)
         for (var i = 0; i < n; i++)
         {
             var c = bodies[i];
@@ -676,7 +676,7 @@ public static partial class ConstructPhysics
         var rot = Matrix4x4.CreateFromQuaternion(c.Rot);
         var lockedTouch = 0;
         var rimTurn = c.WheelCount <= RimEvery ? 1 : (c.WheelCount + RimEvery - 1) / RimEvery;
-        var rimAt = (int)(_warmTick % (uint)rimTurn);
+        var rimAt = (int)((Pass == 2 && c.FarRate > 1 ? (PassTick + c.Id) / c.FarRate : _warmTick) % (uint)rimTurn); // (a far body: its own steps count, so every rim takes its turn)
         // The body as this tick began: every tyre answers the same motion, so the order the wheels come in steers nothing.
         var vel0 = c.Vel;
         var spin0 = c.AngVel;

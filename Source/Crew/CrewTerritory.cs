@@ -839,7 +839,9 @@ public sealed partial class PowerControllers
                 g.Body = 0;
                 return;
             }
-            grp = null;
+            // (bodies out and no crew group: saved while it was being set down, or its group ended under it: formed again at its next step)
+            (g.Body, g.SpawnAt) = (1, Tick - 121L * T);
+            return;
         }
         if (grp != null && w.Get(grp.Flagship) is { } flag)
             g.Pos = flag.WorldCom;
@@ -975,13 +977,23 @@ public sealed partial class PowerControllers
             ref var g = ref Far[i];
             if (g.Task == FarTask.None)
                 continue;
-            w.U16((ushort)i).Str(Name(g.Power)).U8((byte)g.Task).U8((byte)g.State).U8((byte)(g.Body == 2 ? 2 : 0)).Str(g.Planet >= 0 ? PlanetName(g.Planet) : "")
+            w.U16((ushort)i).Str(Name(g.Power)).U8((byte)g.Task).U8((byte)g.State).U8((byte)(g.Body != 0 && AnyOut(i) ? 2 : 0)).Str(g.Planet >= 0 ? PlanetName(g.Planet) : "")
                 .Str(g.ToPlanet >= 0 ? PlanetName(g.ToPlanet) : "").Str(g.Site >= 0 && g.Site < SiteCount ? Territory.Sites[g.Site].Name : "").F64(g.Arrive < 0 ? -1 - g.Arrive : Math.Max(0, g.Arrive - now))
                 .F32(g.Pos.X).F32(g.Pos.Y).F32(g.Pos.Z).U8((byte)(g.PosKnown ? 1 : 0)).U16(g.Number).F32(g.Strength);
         }
     }
 
     private double _lastNow;
+
+    /// <summary>Has far group <paramref name="gi"/> a ship out as a body (saved real, so its bodies are taken up again after a load).</summary>
+    private bool AnyOut(int gi)
+    {
+        var p = Powers[Far[gi].Power];
+        for (var i = 0; i < MaxShips; i++)
+            if (p.Ships[i].Far == gi + 1 && p.Ships[i].State == PowerShipState.Out)
+                return true;
+        return false;
+    }
 
     private void TerritoryLoad(SaveReader r)
     {

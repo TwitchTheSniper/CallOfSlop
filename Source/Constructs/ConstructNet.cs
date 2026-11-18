@@ -1576,8 +1576,8 @@ public static partial class ConstructNet
             if (Priority(c))
                 continue;
             var period = PosePeriod(Vector3.Distance(c.WorldCom, at) - c.Radius);
-            if (period == 1 || (poseTick + c.Id) % (uint)period == 0)
-                _due.Add(c);
+            if (period == 1 || (poseTick + c.Id) % (uint)period == 0 || period > HotPoseTicks && poseTick + 1 == c.PoseHot)
+                _due.Add(c); // (past the hot window's length: its last change goes out as the window closes, whatever its band)
         }
         var bodies = world.Bodies;
         for (var k = 0; k < SleepingPerPacket && bodies.Count > 0; k++)

@@ -54,6 +54,9 @@ public static class ConstructFar
     /// <summary>Is a far body's logic and power due this tick (and so stepped by <see cref="Construct.FarLogic"/> ticks' time)?</summary>
     public static bool LogicDue(Construct c) => c.FarLogic <= 1 || (_tick + c.Id) % c.FarLogic == 0;
 
+    /// <summary>Ticks one logic step of <paramref name="c"/> stands for (a hold counted in ticks counts down by this).</summary>
+    public static int StepTicks(Construct c) => c.FarLogic > 1 ? c.FarLogic : 1;
+
     /// <summary>At the start of a world's step: which NPC bodies are far (their logic and power on the coarse rate; the awake ones' physics too).</summary>
     public static void Mark(ConstructWorld world)
     {
@@ -85,6 +88,31 @@ public static class ConstructFar
                 (a.FarRate, a.FarLogic, n) = (0, 0, n - 1); // (coupled: stepped with its partner, every tick)
             if (world.Get(cp.BodyB) is { FarRate: > 1 } b)
                 (b.FarRate, b.FarLogic, n) = (0, 0, n - 1);
+        }
+        // A rope or spring to a near body (or to the world) makes it near: the whole connected set steps at one rate (a few rounds for chains).
+        for (var round = 0; round < 4 && n > 0; round++)
+        {
+            var changed = false;
+            for (var k = 0; k < world.ConnectorCount; k++)
+            {
+                ref var cn = ref world.Connectors[k];
+                var a = cn.A.Body != 0 ? world.Get(cn.A.Body) : null;
+                var b = cn.B.Body != 0 ? world.Get(cn.B.Body) : null;
+                var aFar = a is { FarLogic: > 1 };
+                var bFar = b is { FarLogic: > 1 };
+                if (aFar == bFar && (a != null && b != null))
+                    continue;
+                if (aFar)
+                    (n, changed) = (n - (a!.FarRate > 1 ? 1 : 0), true);
+                if (aFar)
+                    (a!.FarRate, a.FarLogic) = (0, 0);
+                if (bFar)
+                    (n, changed) = (n - (b!.FarRate > 1 ? 1 : 0), true);
+                if (bFar)
+                    (b!.FarRate, b.FarLogic) = (0, 0);
+            }
+            if (!changed)
+                break;
         }
         LastFar = n;
     }
