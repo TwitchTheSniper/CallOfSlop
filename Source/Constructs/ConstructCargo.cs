@@ -226,6 +226,17 @@ public static class ConstructCargo
     }
 
     /// <summary>
+    /// Host, after the space step has posed the ships out of the bubble (GameSpaceLaunch.cs, which runs after the constructs'
+    /// step): what they carry follows them again, or it would be drawn a tick behind and shake against its cradle. Allocates nothing.
+    /// </summary>
+    public static void FollowPosed(ConstructWorld world)
+    {
+        foreach (var b in world.Bodies)
+            if (b.CarriedBy != 0 && world.Get(b.CarriedBy) is { SpaceShip: not 0, CarriedBy: 0 } c)
+                Follow(c, b);
+    }
+
+    /// <summary>
     /// Server, every tick after the physics: carried bodies follow (or are let go when their volume unfroze, broke or
     /// went); ten times a second (and at once after a volume changes state) what has entered a frozen volume is caught and
     /// what has left one is let go; the carriers' masses follow. Allocates nothing.

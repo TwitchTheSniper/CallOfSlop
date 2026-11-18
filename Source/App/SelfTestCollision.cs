@@ -71,7 +71,7 @@ public static partial class SelfTest
                 var kind = PartShapes.KindOf(d.Boxes[b].Shape);
                 if (kind is not ("wedge" or "cylinder" or "tube"))
                     continue;
-                if (ConstructHulls.Of(d).Length == 0)
+                if (ConstructHulls.Of(d).Length == (d.HullSkin?.Count(x => x) ?? 0)) // (a ship's skin plates are hulls of their own: not this shape's)
                 {
                     // (a wheel's drawn cylinder, 24 sides since 703bc1e8, has no hull: the collider gives every wheel its own
                     // cylinder leaf, ConstructCollider.AddCylinder against ConstructHulls.WheelPrism, so it isn't on boxes)
