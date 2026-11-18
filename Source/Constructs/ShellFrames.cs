@@ -17,7 +17,7 @@ public sealed class ShellModule
 {
     public string Name = "", Slot = "";
     public ShellModuleKind Kind;
-    public int Units; // a drill: ore tapped a scoop
+    public float Rate; // a drill: ore tapped a second while it is drilling a deposit
     public int Tier = 1; // a drill: the Drill Module tier it works as (a deposit's minTier)
     public string[] Takes = []; // a hopper: the materials it holds (Recycling.json names)
 }
@@ -155,10 +155,10 @@ public static class ShellFrames
                 throw new FormatException($"module \"{mod.Name}\": \"slot\" is \"head\", \"back\" or \"arm\"");
             if (mod.Kind == ShellModuleKind.Drill)
             {
-                mod.Units = m.GetProperty("units").GetInt32();
+                mod.Rate = Num(m, "rate", 0.1f, 1000);
                 mod.Tier = m.GetProperty("tier").GetInt32();
-                if (mod.Units is < 1 or > 1000 || mod.Tier is < 1 or > ConstructParts.MaxTier)
-                    throw new FormatException($"module \"{mod.Name}\": \"units\" 1 to 1000, \"tier\" 1 to {ConstructParts.MaxTier}");
+                if (mod.Tier is < 1 or > ConstructParts.MaxTier)
+                    throw new FormatException($"module \"{mod.Name}\": \"tier\" 1 to {ConstructParts.MaxTier}");
             }
             if (mod.Kind == ShellModuleKind.Hopper)
             {

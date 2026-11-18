@@ -248,7 +248,10 @@ public static partial class World
 
     // ---- Stances -------------------------------------------------------------
     public static float HeightOf(Stance s) => BodyScale * (s switch { Stance.Crouch => 1.2f, Stance.Prone => 0.6f, _ => PlayerHeight });
-    public static float EyeOf(Stance s) => BodyScale * (s switch { Stance.Crouch => 1.05f, Stance.Prone => 0.45f, _ => EyeHeight });
+    public static float EyeOf(Stance s) => EyeOf(s, BodyScale);
+
+    /// <summary>The eye height of a stance for a body of <paramref name="scale"/> times a person's size (whatever <see cref="BodyScale"/> is now).</summary>
+    public static float EyeOf(Stance s, float scale) => scale * (s switch { Stance.Crouch => 1.05f, Stance.Prone => 0.45f, _ => EyeHeight });
 
     /// <summary>
     /// The size of the body being moved, hit or blocked now, as a share of a person's (a robot shell's frame: the Mining Shell is
@@ -960,7 +963,7 @@ public sealed class Player
     public Stance RenderStance; // stance being drawn (interpolated for remote players)
     public float RenderEyeHeight = World.EyeHeight; // smoothed so crouching doesn't snap the camera
 
-    public Vector3 Eye => Sim.RideUp != Vector3.Zero ? Position + Sim.RideUpW * (World.EyeOf(Sim.Stance) * ShellFrames.ScaleOf(this)) : GravityFrames.Above(Position, World.EyeOf(Sim.Stance) * ShellFrames.ScaleOf(this)); // (along "up": straight up except on a planet; a robot shell's frame: its size)
+    public Vector3 Eye => Sim.RideUp != Vector3.Zero ? Position + Sim.RideUpW * World.EyeOf(Sim.Stance, ShellFrames.ScaleOf(this)) : GravityFrames.Above(Position, World.EyeOf(Sim.Stance, ShellFrames.ScaleOf(this))); // (along "up": straight up except on a planet; a robot shell's frame: its size)
     public Vector3 RenderEye => RenderSeat != SeatKind.None ? RenderPosition + Vector3.Transform(new Vector3(0, RenderEyeHeight, 0), RenderSeatRot)
         : RenderRide ? RenderPosition + Vector3.Transform(new Vector3(0, RenderEyeHeight, 0), RenderRideRot) : GravityFrames.Above(RenderPosition, RenderEyeHeight);
     public Vector3 Chest => Sim.RideUp != Vector3.Zero ? Position + Sim.RideUpW * (World.HeightOf(Sim.Stance) * 0.65f) : GravityFrames.Above(Position, World.HeightOf(Sim.Stance) * 0.65f);

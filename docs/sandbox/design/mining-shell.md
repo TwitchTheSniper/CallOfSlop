@@ -46,8 +46,9 @@ on the same channels. Decided (defaults; the user may change them):
 - **The fixed drill arm** (right-arm slot). The right arm is a drill, always: it can't be put away or swapped. With the ground
   drill out (the tool wheel, as ever; the robot has it whatever the player owns), a scoop does what the ground drill does
   (dirt, stone and sand into the inventory, the hole in the ground) and, over an underground deposit the drill arm's tier
-  works, also taps the deposit through `ResourceField.Tap` into the hopper: `units` a scoop (6, one scoop every 0.3 s: 20 a
-  second, a Workshop Drill Module's rate). The spot rules are the Drill Module's: a 3 m spot gives 1,200 then says "this spot
+  works, also taps the deposit through `ResourceField.Tap` into the hopper at the module's `rate` (20 units a second, a
+  Workshop Drill Module's), counted by the time between scoops (a first scoop after a pause counts at most 0.5 s), so a slower
+  or faster drill motor doesn't change it. The spot rules are the Drill Module's: a 3 m spot gives 1,200 then says "this spot
   is worked out". Tier 2: iron and copper, not gold (tier 3) or levite (tier 4, deep). A full hopper or another material says
   so and the scoop still digs. The left arm holds every other tool as a person's hands do.
 - **Unloading.** F at a Materials Bin, a Storage Volume, a Tipping Bunker, an Ore Hauler's bed or a refinery's input tips the
@@ -66,7 +67,7 @@ on the same channels. Decided (defaults; the user may change them):
 - **slots**: the slot names in a fixed order: `head`, `back`, `leftArm`, `rightArm`. The order is a wire and save order; a new
   slot goes at the end.
 - **modules**: what can go in a slot. Each has a `name`, the `slot` kind it fits (`head`, `back`, `arm`) and a `kind` the code
-  knows (`head`, `pack`, `hopper`, `hand`, `drill`), plus that kind's numbers (a drill's `units` and `tier`, a hopper's
+  knows (`head`, `pack`, `hopper`, `hand`, `drill`), plus that kind's numbers (a drill's `rate` and `tier`, a hopper's
   `takes`). Today's modules: Optics Head, Power Pack, Ore Hopper, Hand, Drill Arm.
 - **frames**: a shell body. Its `name`, the `part` that stands as it, `scale`, `speed`, `damage`, `jobs`, the module in each
   slot (`slots`) and which slots are `fixed` (can't be swapped by customisation: the Mining Shell's drill arm and hopper).

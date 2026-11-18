@@ -324,6 +324,8 @@ public sealed partial class Game
             why = "too far from the dock";
         else if (dp.Broken)
             why = $"the {dp.D.Name} is wrecked";
+        else if (_sh[p.Id].ShellDef is { } worn && worn.Name != dp.D.ToolDockFits)
+            why = $"a {worn.Name} doesn't fit a {dp.D.Name}"; // (the Mining Shell is too big for one: docs/sandbox/design/mining-shell.md)
         else if (SandboxHands.DockRefusal(c, p.Id) is { } no)
             why = no;
         else

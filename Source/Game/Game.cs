@@ -425,7 +425,7 @@ public sealed partial class Game : IDisposable
                 p.RenderMantling = p.Sim.MantleTicks > 0;
             }
             // Ease the eye height so stance changes glide instead of snapping the camera.
-            p.RenderEyeHeight += (World.EyeOf(p.RenderStance) * ShellFrames.ScaleOf(p) - p.RenderEyeHeight) * (1f - MathF.Exp(-14f * dt)); // (a robot shell's frame: a Mining Shell's eye is higher)
+            p.RenderEyeHeight += (World.EyeOf(p.RenderStance, ShellFrames.ScaleOf(p)) - p.RenderEyeHeight) * (1f - MathF.Exp(-14f * dt)); // (a robot shell's frame: a Mining Shell's eye is higher)
         }
     }
 
