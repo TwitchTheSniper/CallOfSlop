@@ -49,6 +49,8 @@ public sealed class Excavator(FactionStyle style) : VehicleShape(style)
         var tailSill = v.Sill(v.RailZ(v.RearAxleZ + 0.5f));
         var tank = v.Put("Fuel Tank", v.SocketPoint(tailSill, "+y2") + new Vector3(0, 0.25f, 0), Orient.Forward, 0.3f, tailSill, "-y");
         v.FuelFrom(tank);
+        if (d.Fork("spare").Chance(0.5))
+            v.PaintAll([v.Put("Fuel Tank", v.SocketPoint(tailSill, "+y0") + new Vector3(0, 0.25f, 0), Orient.Forward, 0.3f, tailSill, "-y")], "body", d.Fork("paint spare")); // (a spare: a jerry for the long dig)
 
         // ---- The house: a turntable on a three-layer sill ahead of the engine, a spine along it, a cross beam at its front, a deck.
         var houseZ = v.RailZ(trackMid - 0.5f + 0.25f * d.Int(0, 1));
@@ -63,7 +65,7 @@ public sealed class Excavator(FactionStyle style) : VehicleShape(style)
 
         // ---- The boom: a Motor Hinge 3x3 on the cross beam's right, its axis across, the boom standing up on its leaf. (Its 30 kN m holds the arm laid out
         // at a few degrees' give with a tier-1 drill; a Motor Hinge Medium would take a medium socket the house hasn't got.)
-        var boomX = 0.625f + 0.125f * d.Int(0, 1);
+        const float boomX = 0.75f; // (at 0.625 the bucket hinge fell between the stick's sockets)
         var boomHinge = v.Put("Motor Hinge 3x3 Medium", new Vector3(boomX, deckY + 0.375f, front - Vehicle.Half), new Orient(Vector3.UnitX, Vector3.UnitY, Vector3.UnitY, -Vector3.UnitX), 0.2f, cross, "base"); // (its axis to the left: a positive angle lays the boom forward)
         var boomLong = d.Pick((float[])[2.5f, 2.75f]); // (2 + 0.5, 2 + 0.75)
         var boomBase = v.SocketPoint(boomHinge, "leaf");
@@ -76,7 +78,8 @@ public sealed class Excavator(FactionStyle style) : VehicleShape(style)
         var stickEnd = stickBase.Z - stickLong;
         // ---- The bucket: a Motor Hinge 2x2 under the stick's last cell, its leaf down, the Digging Bucket hanging from it by its back, mouth to the cab.
         var bucketHinge = v.Stand("Motor Hinge 2x2 Medium", new Vector3(boomX, stickBase.Y - Vehicle.Half, stickEnd + Vehicle.Half), new Orient(Vector3.UnitX, -Vector3.UnitY, Vector3.UnitY, Vector3.UnitX), stick[^1], "base");
-        var scoop = v.Onto(bucketHinge, "leaf", "Digging Bucket", "back", SpinFor(v, bucketHinge, "leaf", "Digging Bucket", "back", Vector3.UnitY, Vector3.UnitZ));
+        var bucketName = d.Fork("bucket").Pick((string[])["Digging Bucket", "Digging Bucket", "Rock Bucket", "Trenching Bucket"]); // (the all-rounder; bars for stone; narrow and deep)
+        var scoop = v.Onto(bucketHinge, "leaf", bucketName, "back", SpinFor(v, bucketHinge, "leaf", bucketName, "back", Vector3.UnitY, Vector3.UnitZ));
         // ---- The drill on the stick's top at its end, its bit forward past the end: with the boom down it stands upright over the ground ahead of the bucket.
         const string drillName = "Drill Module"; // (tier 1, 200 kg: the Workshop's 300 kg at the arm's end put the boom past its rating; swap it for copper)
         var drill = v.Stand(drillName, new Vector3(boomX, stickBase.Y + Vehicle.Half, stickEnd + 0.375f), new Orient(-Vector3.UnitY, -Vector3.UnitZ, Vector3.UnitZ, Vector3.UnitY), stick[^1], "back", 0.3f);
@@ -123,6 +126,15 @@ public sealed class Excavator(FactionStyle style) : VehicleShape(style)
         v.Deck("house", deckY, new Vehicle.Rect(-1.125f, 1.125f, front - Vehicle.Half, rear - 0.25f), "deck", [footHole, sillHole]);
         var shell = d.Fork("cab").Pick((string[])["Roll Cage", "Tin Roof Cab", "Chop Top Cab"]);
         v.Panels["cabshell"] = [v.Stand(shell, new Vector3(-0.5f, deckY + 2 * Vehicle.Half, seatZ + 0.5f), Orient.Forward, shellSill, "footL", 0.2f)];
+        if (d.Fork("lamp").Chance(0.6))
+            try
+            {
+                v.Paint(v.Onto(v.Panels["cabshell"][0], "top", "Lamp", "-y", 0, clear: true), "#e8d890"); // (a work lamp on the cab's roof)
+            }
+            catch (VehicleKitException)
+            {
+                // (no room on this shell's top: none)
+            }
 
         // ---- Paint.
         var paint = d.Fork("paint");

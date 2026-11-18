@@ -122,7 +122,7 @@ public static class ExcavatorCheck
         var stick = Part("Motor Hinge 3x3 Medium", 1);
         var bucketHinge = Part("Motor Hinge 2x2 Medium");
         var table = Part("Turntable 3x3 Medium");
-        var scoop = Part("Digging Bucket");
+        var scoop = Enumerable.Range(0, c.PartCount).First(i => c.DefOf(i).IsScoop);
         var drill = Enumerable.Range(0, c.PartCount).First(i => c.DefOf(i).Name.EndsWith("Drill Module", StringComparison.Ordinal));
         var levers = Enumerable.Range(0, c.PartCount).Where(i => c.DefOf(i).Name == "Analog Lever").ToArray();
         var w = server.Constructs;
