@@ -42,14 +42,15 @@ public sealed partial class Game
                 continue;
             var armed = ConstructCargo.IsFrozen(target.Parts[i]);
             var d = Vector3.DistanceSquared(NavDockCentre(target, i, out _, out _), from);
-            // A station's berths are each made for a ship's size: one the ship fits takes it first, the snuggest of those (a Magpie
-            // goes to a Magpie's berth, not a frigate's), then any.
+            // A station's berths are each made for a ship's size (Karl 2026-11-18: berth classes by ship size, not by ship): only one
+            // the ship fits takes it, the snuggest of those (a Magpie goes to a Magpie's berth, not a frigate's); none fits: no berth.
             var fit = false;
             if (target.IsStation)
             {
-                fit = BerthFits(target, i, ship, out var room);
-                if (fit)
-                    d = room;
+                if (!BerthFits(target, i, ship, out var room))
+                    continue;
+                fit = true;
+                d = room;
             }
             if (fit && !bestFit || fit == bestFit && (armed && !bestArmed || armed == bestArmed && d < bestD))
                 (best, bestD, bestArmed, bestFit) = (i, d, armed, fit);
@@ -57,8 +58,17 @@ public sealed partial class Game
         return best;
     }
 
+    /// <summary>Any peer: is a station's lack of a berth for <paramref name="ship"/> only that it fits none of the free ones (it is too big for them)?</summary>
+    public static bool NavDockNoFit(ConstructWorld world, Construct station, Construct ship)
+    {
+        for (var i = 0; i < station.PartCount; i++)
+            if (NavDockFree(world, station, i, ship))
+                return true;
+        return false;
+    }
+
     /// <summary>Does <paramref name="ship"/> fit berth <paramref name="part"/>'s box (its sizes, longest to shortest, each within the box's), and the box's room to spare (m³)?</summary>
-    private static bool BerthFits(Construct station, int part, Construct ship, out float room)
+    public static bool BerthFits(Construct station, int part, Construct ship, out float room)
     {
         ConstructCargo.Box(station, part, out _, out var half);
         var s = ship.LocalMax - ship.LocalMin;
@@ -114,7 +124,7 @@ public sealed partial class Game
             return "It is moored at a station: give it another order to cast off";
         StationLanes(t); // (a station's berths' ways in, once: GameStations.cs)
         port = NavDockFor(Constructs, t, c);
-        return port < 0 ? "No port available on " + t.DisplayName() : null;
+        return port >= 0 ? null : t.IsStation && NavDockNoFit(Constructs, t, c) ? $"No berth on {t.DisplayName()} fits it" : "No port available on " + t.DisplayName();
     }
 
     /// <summary>

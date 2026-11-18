@@ -373,7 +373,7 @@ public sealed partial class Game
                             b.MoorAway = 0; // (it has left the berth it was cast off from)
                         continue;
                     }
-                    if (away || !StationMoorable(st, b, d) || NavOf(b.Id) is { Kind: NavKind.Dock })
+                    if (away || !StationMoorable(st, b, d) || !BerthFits(st, part, b, out _) || NavOf(b.Id) is { Kind: NavKind.Dock })
                         continue; // (one under a Dock order is moored by its order: GameNavDock.cs)
                     if ((b.Vel - st.PointVel(b.WorldCom)).Length() > MathF.Max(NavDockSlow, d.DockSettle) || !ConstructCargo.MostlyInside(st, part, b) || !NavDockFree(Constructs, st, part, b))
                         continue;
