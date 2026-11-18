@@ -59,6 +59,15 @@ public sealed class HaulerParts : IPartGenerator
 
     private static readonly Rect Well = new(Cx - 1.45, 26.8, Cx + 1.45, 33.2); // the belly well under the middle lane of row 3
     private static readonly Rect BellyHatch = new(Cx + 1.8, 11.4, Cx + 3.05, 12.65); // the airlock's boarding shaft (2026-11-18: in from 2.4 m, so it stays inside the keel's flat, which is 3.15 m wide at its front: the sloped plate beside the flat sealed its outboard edge)
+    // The belly hatch and the boarding ladder on it (BellyHatchPart): the plate's faces, how far it slides down (its underside to the
+    // ground), the ladder's back (2 cm in front of the strut) and its rise from the plate to the deck.
+    private const string BellyHatchName = "Dray Belly Hatch";
+    private static double HatchX => BellyHatch.X0 + 0.625;
+    private static double HatchBottom => At(BellyHatch.Z1)[0].Y - 0.012;
+    private static double HatchTop => HatchBottom + 0.08;
+    private static double HatchTravel => HatchBottom - Ground - 0.005;
+    private static double LadderZ => BellyHatch.Z1 - 0.03;
+    private static double BoardRise => Ft0 - (HatchTop - HatchTravel);
     private static readonly Rect LadderHatch = new(Cx - 3.4, 11.8, Cx - 2.15, 13.05); // the suit room up to the aft hall (room behind it for the ladder's landing, before the hold's wall)
     private const double TrackY = -1.26; // the well doors' tracks' underside
 
@@ -95,10 +104,14 @@ public sealed class HaulerParts : IPartGenerator
     /// <summary>The legs: three pairs outboard of the skids.</summary>
     private static readonly (double X, double Z)[] LegAt = [(-3.35, 19.0), (3.35, 19.0), (-3.35, 36.0), (3.35, 36.0), (-3.35, 44.5), (3.35, 44.5)];
     private const double PadProud = 0.1; // a jet's or leg's mount under the flat
-    private const int KeelFuel = 24000, BowFuel = 2000, SternFuel = 6000; // litres
+    private const int KeelFuel = 24000, BowFuel = 8000, SternFuel = 6000, SaddleFuel = 16000; // litres (the bow's tank, the four saddle tanks each: Karl, 2026-11-18)
+    /// <summary>The saddle tanks (Karl, 2026-11-18: long fuel tanks down the sides): two a side, lying on the roof's outer slope (facet 4) beside
+    /// the upper chine, the hold's length; each on two pads on the spine. The tank's axis, its radius, its ends, its pads' z from its front.</summary>
+    private const double SaddleR = 0.6, SaddleX = 6.15, SaddleY = 8.49, SaddleLen = 15.2, PadTop = 7.8, PadBot = 7.505, PadHalf = 0.25;
+    private static readonly double[] SaddleZ = [14.6, 30.2], SaddlePads = [2.4, 13.4];
     /// <summary>The Cargo Volumes over the slots (at most 8 m a side): rows 1-2, rows 3-4 (the side slots of row 3), row 5. Each control box
     /// on the port walkway's floor; the box's middle z (each holds its rows' containers' middles), its length.</summary>
-    private static readonly (double Box, double Mid, double Len)[] Volumes = [(20.4, 20.4, 8.0), (33.0, 33.2, 8.0), (42.8, 42.8, 6.4)];
+    private static readonly (double Box, double Mid, double Len)[] Volumes = [(20.4, 20.4, 8.0), (34.0, 33.2, 8.0), (42.8, 42.8, 6.4)]; // (the second box aft of the port side door, so a container goes out past it)
     private const double VolX = -(Hw - 0.35);
     /// <summary>The containers it starts with (empty): lane, row (from 0). A blueprint's cargo stands within 30 m of its origin (the
     /// keel's), so the first two rows.</summary>
@@ -136,7 +149,9 @@ public sealed class HaulerParts : IPartGenerator
         return Cx + s * (a.H + (b.H - a.H) * (y - a.Y) / (b.Y - a.Y));
     }
 
-    private const double SideZ0 = 27.4, SideZ1 = 32.6, SideTop = 3.05, SideSockX = 6.875, SideSockY = 3.075, SideSockZ = 30.125;
+    // (Karl, 2026-11-18: a container goes out of a side door as well as the well: the doorway 6.24 m long, for a 6.06 m box carried along the
+    // ship, and 2.8 m high, for its 2.59 m; the jambs stay inside the row's band)
+    private const double SideZ0 = 26.88, SideZ1 = 33.12, SideTop = 3.05, SideSockX = 6.875, SideSockY = 3.075, SideSockZ = 30.125, JambW = 0.07;
 
     private static double[] P(double x, double y, double z) => [x - H, y - H, z - H];
 
@@ -435,6 +450,33 @@ public sealed class HaulerParts : IPartGenerator
         var a = phase + Math.PI / n + i * 2 * Math.PI / n;
         return P(cx + r * Math.Cos(a), y, cz + r * Math.Sin(a));
     })];
+
+    /// <summary>A ring of n points round axis (0 x, 1 y, 2 z) through c, radius r, at a along the axis; map turns each point into the part's frame.</summary>
+    private static double[][] RingAx(double[] c, int axis, double r, double a, int n, Func<double[], double[]> map) => [.. Enumerable.Range(0, n).Select(i =>
+    {
+        var an = Math.PI / n + i * 2 * Math.PI / n;
+        int u = (axis + 1) % 3, v = (axis + 2) % 3;
+        var q = (double[])c.Clone();
+        q[axis] = a;
+        q[u] += r * Math.Cos(an);
+        q[v] += r * Math.Sin(an);
+        return map(q);
+    })];
+
+    /// <summary>A drawn tank: a cylinder of radius r along axis from a0 to a1, its ends domed over dome metres, hoop bands round it.</summary>
+    private static void DrawTank(Part p, double[] c, int axis, double r, double a0, double a1, double dome, int hoops, string col, string band, Func<double[], double[]> map)
+    {
+        const int n = 16;
+        double[][] R(double rr, double a) => RingAx(c, axis, rr, a, n, map);
+        Prism(p, R(r * 0.55, a0), R(r, a0 + dome), col, "worn paint");
+        Prism(p, R(r, a0 + dome + 0.003), R(r, a1 - dome - 0.003), col, "worn paint");
+        Prism(p, R(r, a1 - dome), R(r * 0.55, a1), col, "worn paint");
+        for (var i = 0; i < hoops; i++)
+        {
+            var a = a0 + dome + 0.4 + i * (a1 - a0 - 2 * dome - 0.8) / Math.Max(1, hoops - 1);
+            Prism(p, R(r + 0.025, a - 0.06), R(r + 0.025, a + 0.06), band, "dirty steel");
+        }
+    }
 
     /// <summary>A ring of n points round an axis along z at (cx, cy), radius rx by ry, at z (unshifted part-local metres).</summary>
     private static double[][] RingZ(double cx, double cy, double rx, double ry, double z, int n) => [.. Enumerable.Range(0, n).Select(i =>
@@ -799,7 +841,8 @@ public sealed class HaulerParts : IPartGenerator
         Sock(p, "lampMess", Cx - Lw, Ft0 + 2.3, 8.6, "+x");
         Sock(p, "lampPassage", Cx + 1.125, Ft0 + 2.3, 8.6, "-x"); // (the passage's starboard wall, between the store's door and the airlock's)
         Sock(p, "switchMess", Cx - 1.125, Ft0 + 1.3, 7.6, "-x");
-        Sock(p, "boarding", BellyHatch.X0 + 0.625, Ft0 - 0.125, BellyHatch.Z1, "-z");
+        Sock(p, "boarding", HatchX, Ft0 - 0.125, BellyHatch.Z1, "-z"); // (the belly hatch hangs here, at the deck's edge over the shaft's aft wall)
+        Sock(p, "switchHatch", Cx + 1.375, Ft0 + 1.3, 12.9, "+x"); // (the airlock's inboard wall: its switch opens and shuts the belly hatch)
         foreach (var (what, z) in new[] { ("lower deck front", ZFront - 0.25), ("lower deck back", ZHold) })
             foreach (var y in new[] { 0.0, Ft1 })
                 MustFit(what, z, Lw + 0.25, y);
@@ -910,7 +953,7 @@ public sealed class HaulerParts : IPartGenerator
                         Detail(p, Cx + s * (RailX - 0.5) - s * 0.004, RailY - 0.95, ga + 0.004, Cx + s * (RailX - 0.5) + s * 0.012, RailY - 0.55, gb - 0.004, Hazard, "hazard paint");
                     }
                     // (beside the side door the brackets stand at its jambs)
-                    var bzs = sideDoor ? [SideZ0 - 0.2, SideZ1 + 0.2] : Enumerable.Range(0, 12).Select(i => RailZ0 + 0.3 + 3.9 * i).Where(z => z < railZ1).ToArray();
+                    var bzs = sideDoor ? [za + 0.2, zb - 0.2] : Enumerable.Range(0, 12).Select(i => RailZ0 + 0.3 + 3.9 * i).Where(z => z < railZ1).ToArray();
                     foreach (var bz in bzs)
                         if (bz >= za && bz < zb)
                         {
@@ -1102,6 +1145,11 @@ public sealed class HaulerParts : IPartGenerator
         foreach (var (za, zb) in new[] { (Zt + 2.0, Zc), (Zc, ZFront - 0.25) })
             foreach (var (ya, yb) in new[] { (At(za)[0].Y + 0.05, 1.5), (1.5, 3.2), (3.2, 5.0), (5.0, 6.4) })
                 VoidT(p, za, zb, ya, yb, 0, 0.004, zb == ZFront - 0.25 ? 0.0 : 0.004);
+        // The bow's tank (Karl, 2026-11-18): a big drum across the nose behind the brow, on two cradles, inside the sealed void.
+        double[] bt = [Cx, 2.6, 2.7];
+        DrawTank(p, bt, 0, 1.3, Cx - 2.6, Cx + 2.6, 0.45, 4, Hazard, Frame, q => P(q[0], q[1], q[2]));
+        foreach (var x in new[] { Cx - 1.5, Cx + 1.5 })
+            Detail(p, x - 0.15, 1.0, 1.9, x + 0.15, 1.45, 3.5, Frame, "dirty steel");
         FuelPort(p, 2.0);
         return p.Stats(9000, 24000, 40, 15.0);
     }
@@ -1154,6 +1202,16 @@ public sealed class HaulerParts : IPartGenerator
             Prism(p, [P(x - 0.04, y, 46.5), P(x + 0.04, y, 46.5), P(x + 0.04, y, 49.0), P(x - 0.04, y, 49.0)],
                 [P(x - 0.03, y + 0.9, 47.2), P(x + 0.03, y + 0.9, 47.2), P(x + 0.03, y + 0.9, 49.2), P(x - 0.03, y + 0.9, 49.2)], i % 2 == 0 ? Frame : Bare, "soot");
         }
+        // The saddle tanks' pads on the roof's outer slope: a block sunk into the slope, its flat top taking the tank's cradle.
+        foreach (var s in new[] { -1, 1 })
+            for (var t = 0; t < SaddleZ.Length; t++)
+                foreach (var (dz, k) in SaddlePads.Select((d, k) => (d, k)))
+                {
+                    var z = SaddleZ[t] + dz;
+                    Solid(p, Cx + s * (SaddleX - PadHalf), PadBot, z - 0.3, Cx + s * (SaddleX + PadHalf), PadTop, z + 0.3, Frame, "dirty steel");
+                    if (k == 0)
+                        Sock(p, $"saddle{(s < 0 ? "L" : "R")}{t}", Cx + s * SaddleX, PadTop, z, "+y");
+                }
         // The roof's void.
         foreach (var (za, zb, ya) in new[] { (ZFront, 11.25, Roof), (11.25, 13.75, Roof), (13.75, ZHold - 0.125, Roof) })
             VoidT(p, za, zb, ya, Math.Min(Top(za), Top(zb)) - 0.02, 0, 0.004, 0.004);
@@ -1247,14 +1305,12 @@ public sealed class HaulerParts : IPartGenerator
         var len = zb - za;
         Facet(p, 2, s, za, SideZ0, Skin2, "painted plating");
         Facet(p, 2, s, SideZ1, zb, Skin2, "painted plating");
-        Chine(p, 2, s, za, SideZ0 - 0.06, 0.3, 0.14, Armour2);
-        Chine(p, 2, s, SideZ1 + 0.06, zb, 0.3, 0.14, Armour2);
-        // The jambs: a dark frame each side, a hazard stripe on its face.
-        foreach (var (u0, u1) in new[] { ((SideZ0 - 0.26 - za) / len, (SideZ0 - za) / len), ((SideZ1 - za) / len, (SideZ1 + 0.26 - za) / len) })
+                // The jambs: a dark frame each side, a hazard stripe on its face.
+        foreach (var (u0, u1) in new[] { ((SideZ0 - JambW - za) / len, (SideZ0 - za) / len), ((SideZ1 - za) / len, (SideZ1 + JambW - za) / len) })
         {
             Slab(p, 2, s, za, zb, u0, u1, 0.01, 0.99, 0.02, 0.11, 0.03, Frame, "dirty steel");
             var um = (u0 + u1) / 2;
-            FStrip(p, 2, s, za, zb, um - 0.06 / len, um + 0.06 / len, 0.06, 0.94, 0.116, Hazard, "hazard paint");
+            FStrip(p, 2, s, za, zb, um - 0.02 / len, um + 0.02 / len, 0.06, 0.94, 0.116, Hazard, "hazard paint");
         }
         // Inside: the sill over the void, its hazard edge, the ends' linings and the hinge beam.
         double SkinX(double y) => SkinHalf(SideZ0, y);
@@ -1326,10 +1382,10 @@ public sealed class HaulerParts : IPartGenerator
         return p.Stats(1600, 8000, 35, 8.0);
     }
 
-    private static Part Ladder(string name, double rise, string desc, string sockName, double[] sockAt, string sockDir)
+    private static Part Ladder(string name, double rise, string desc, string sockName, double[] sockAt, string sockDir, double over = 1.0)
     {
         var p = new Part(name, Small, Section, desc, role: "frame", tool: "welder", material: "steel", color: Frame, group: Group);
-        var top = rise + 1.0;
+        var top = rise + over; // (its rails' top over the landing)
         p.Add(Box([-0.3, 0, -0.19], [0.3, top, -0.005], hidden: true));
         foreach (var x in new[] { -0.25, 0.25 })
         {
@@ -1343,6 +1399,60 @@ public sealed class HaulerParts : IPartGenerator
         p.Sock(sockName, sockAt, sockDir);
         p.Set(("ladder", rise));
         return p.Stats(60 + rise * 12, 400, 6, 3.0);
+    }
+
+    /// <summary>The belly hatch (Karl, 2026-11-18: the boarding ladder becomes a hatch, the ladder folding out of it): a plate that shuts the
+    /// boarding shaft flush under the keel, on a strut up the shaft's aft wall to the deck's edge, where it hangs. It slides down to the
+    /// ground (an event door, slide -y) and the Dray Boarding Ladder stands on it, riding it: shut, the ladder stands stowed up through
+    /// the airlock's floor; open, it runs from the ground up the shaft. Origin at its hanging socket on the deck's edge.</summary>
+    private static Part BellyHatchPart()
+    {
+        var p = new Part(BellyHatchName, Small, Section, "The Dray's belly hatch: a plate that shuts the boarding shaft under the keel. F (or the airlock's switch) slides it down to the ground, and the boarding ladder standing on it comes down with it.", role: "door", tool: "welder", material: "steel", color: Armour2, group: Group);
+        double[] S = [HatchX, Ft0 - 0.125, BellyHatch.Z1];
+        double[] L(double x, double y, double z) => [Py.Round(x - S[0], 4), Py.Round(y - S[1], 4), Py.Round(z - S[2], 4)];
+        void B(double x0, double y0, double z0, double x1, double y1, double z1, string? col, string? fin, bool detail = false, bool hidden = false) =>
+            p.Add(hidden ? Box(L(x0, y0, z0), L(x1, y1, z1), hidden: true) : Box(L(x0, y0, z0), L(x1, y1, z1), col!, detail: detail, shape: Kw(("finish", fin!))));
+        double x0 = BellyHatch.X0 - 0.02, x1 = BellyHatch.X1 + 0.02, z0 = BellyHatch.Z0 - 0.02, z1 = BellyHatch.Z1 - 0.035;
+        B(x0, HatchBottom, z0, x1, HatchTop, z1, Armour2, "plated steel"); // (the plate, its underside 1 cm under the keel's flat)
+        foreach (var i in Enumerable.Range(0, 4)) // (hazard chevrons on its underside)
+        {
+            var z = z0 + 0.15 + i * 0.3;
+            B(x0 + 0.1, HatchBottom - 0.008, z, x1 - 0.1, HatchBottom - 0.002, z + 0.12, Hazard, "hazard paint", detail: true);
+        }
+        B(x0 + 0.03, HatchTop + 0.002, z0 + 0.03, x0 + 0.13, HatchTop + 0.06, z1 - 0.03, Frame, "dirty steel", detail: true); // (stiffeners on its top)
+        B(x1 - 0.13, HatchTop + 0.002, z0 + 0.03, x1 - 0.03, HatchTop + 0.06, z1 - 0.03, Frame, "dirty steel", detail: true);
+        // The strut up the shaft's aft wall to the deck's edge: hidden where it meets the deck, a drawn post just in front of that.
+        B(HatchX - 0.3, HatchTop, BellyHatch.Z1 - 0.03, HatchX + 0.3, Ft0 - 0.01, BellyHatch.Z1, null, null, hidden: true);
+        B(HatchX - 0.28, HatchTop + 0.004, BellyHatch.Z1 - 0.028, HatchX + 0.28, Ft0 - 0.02, BellyHatch.Z1 - 0.004, Frame, "painted steel");
+        p.Sock("hang", [0, 0, 0], "+z");
+        p.Sock("ladder", L(HatchX, HatchTop, LadderZ - 0.1), "+y");
+        p.Set(("door", Kw(("kind", "slide"), ("axis", "-y"), ("travel", Py.Round(HatchTravel, 3)), ("seconds", 4.0), ("hang", "hang"))));
+        return p.Stats(500, 4000, 30, 6.0);
+    }
+
+    /// <summary>A saddle tank: a long drum on two cradles. Origin at the front cradle's foot, where it sits on its pad (+y up the tank).</summary>
+    private static Part SaddleTank()
+    {
+        var p = new Part("Dray Saddle Tank", Small, Section, $"A saddle tank: a {SaddleLen:0.#} m drum of fuel on two cradles. Four lie along the Dray's roof beside its upper chines, {SaddleFuel} litres each.", role: "fueltank", tool: "welder", material: "steel", color: Armour2, group: Group);
+        double[] S = [SaddleX, PadTop, SaddlePads[0]]; // (the ship's starboard tank in front-relative metres: z from the tank's front)
+        double[] L(double[] q) => [Py.Round(q[0] - S[0], 4), Py.Round(q[1] - S[1], 4), Py.Round(q[2] - S[2], 4)];
+        double[] c = [SaddleX, SaddleY, 0];
+        DrawTank(p, c, 2, SaddleR, 0, SaddleLen, 0.4, 6, Armour2, Frame, L);
+        // A hazard band and a fill cap at the front, the feed down to the spine at the back.
+        var mapR = (Func<double[], double[]>)L;
+        Prism(p, RingAx(c, 2, SaddleR + 0.02, 0.85, 16, mapR), RingAx(c, 2, SaddleR + 0.02, 1.05, 16, mapR), Hazard, "hazard paint");
+        p.Add(Box(L([SaddleX - 0.1, SaddleY + SaddleR - 0.05, 1.4]), L([SaddleX + 0.1, SaddleY + SaddleR + 0.1, 1.6]), Red, detail: true, shape: Kw(("finish", "worn paint"))));
+        foreach (var dz in SaddlePads)
+        {
+            // The cradle: a saddle block on the pad and a strap over the drum.
+            p.Add(Box(L([SaddleX - 0.22, PadTop, dz - 0.25]), L([SaddleX + 0.22, SaddleY - SaddleR + 0.12, dz + 0.25]), Frame, shape: Kw(("finish", "dirty steel"))));
+            Prism(p, RingAx(c, 2, SaddleR + 0.045, dz - 0.05, 16, mapR), RingAx(c, 2, SaddleR + 0.045, dz + 0.05, 16, mapR), Frame, "dirty steel");
+        }
+        p.Add(Box(L([SaddleX - 0.42, SaddleY - 0.42, 0.2]), L([SaddleX + 0.42, SaddleY + 0.42, SaddleLen - 0.2]), hidden: true));
+        p.Sock("pad", [0, 0, 0], "-y");
+        p.Set(("fuelTank", Kw(("capacity", SaddleFuel))));
+        p.Set(("ports", Py.L(BigDriveParts.PipePort("Fuel out", "out", [.. L([SaddleX, SaddleY, SaddleLen - 0.2]).Cast<object>()], "+z", "fuel"))));
+        return p.Stats(2200, 9000, 20, 10.0);
     }
 
     // ---- the flying parts: lift jets, legs, the power plant, the flight computer (the Magpie's kind, in the Dray's colours and size)
@@ -1830,10 +1940,12 @@ public sealed class HaulerParts : IPartGenerator
         return s;
     }
 
-    private static void Switch(BuildingParts.Blueprint bp, int on, string sock, params int[] lamps)
+    private static void Switch(BuildingParts.Blueprint bp, int on, string sock, params int[] lamps) => Switch(bp, on, sock, true, lamps);
+
+    private static void Switch(BuildingParts.Blueprint bp, int on, string sock, bool startOn, params int[] lamps)
     {
         var s = Hang(bp, "Bakelite Switch", on, sock, "back");
-        bp.Steps[s]["config"] = new PyDict { ["startOn"] = true };
+        bp.Steps[s]["config"] = new PyDict { ["startOn"] = startOn };
         foreach (var l in lamps)
             bp.Wires.Add((s, l));
     }
@@ -1900,13 +2012,20 @@ public sealed class HaulerParts : IPartGenerator
             Hang(bp, "Dray Lift Jet", keel, $"lift{i}", "top");
         for (var i = 0; i < LegAt.Length; i++)
             Paint(bp, Hang(bp, "Dray Landing Leg", keel, $"leg{i}", "top"), Armour2, "worn paint");
-        Hang(bp, "Dray Boarding Ladder", lower, "boarding", "hull");
+        var hatch = Hang(bp, BellyHatchName, lower, "boarding", "hang"); // (the belly hatch, shut; the ladder stowed on it)
+        Paint(bp, bp.Hang("Dray Boarding Ladder", hatch, "ladder", "foot"), Frame, "painted steel");
+        Switch(bp, lower, "switchHatch", false, hatch); // (off: the hatch shut)
         // The bridge: the pilot flies through the flight computer between the couches and the screen (Ship keys, the mouse aims the nose).
         var pilot = Hang(bp, "Flight Couch", upper, "pilot", "bottom");
         Hang(bp, "Flight Couch", upper, "copilot", "bottom");
         var fc = Hang(bp, "Dray Flight Computer", upper, "computer", "bottom");
         bp.Steps[fc]["config"] = ShipParts.ShipFlight();
         bp.Wires.Add((pilot, fc));
+        // The saddle tanks on the roof's slopes, two a side.
+        var spine = placed["Dray Spine"];
+        foreach (var n in new[] { "L", "R" })
+            for (var t = 0; t < SaddleZ.Length; t++)
+                Hang(bp, "Dray Saddle Tank", spine, $"saddle{n}{t}", "pad");
         // The power, in the drive room.
         Hang(bp, "Dray Power Plant", drive, "plant", "bottom");
         Hang(bp, "Power Board", drive, "board", "bottom");
@@ -1966,8 +2085,9 @@ public sealed class HaulerParts : IPartGenerator
         [
             .. structure, WellDoor(-1), WellDoor(1), SideDoor(-1), SideDoor(1),
             Ladder("Dray Ladder", Ft1 - Ft0, "A ladder between the Dray's crew decks: F climbs it.", "bottom", [0, 0, -0.095], "-y"),
-            Ladder("Dray Boarding Ladder", Ft0 - Ground, "The Dray's boarding ladder, from the ground up its belly shaft into the airlock: F climbs it.", "hull", [0, Py.Round(Ft0 - 0.125 - Ground, 3), -0.005], "+z"),
-            LiftJet(), Leg(), PowerPlant(), FlightComputer(),
+            Ladder("Dray Boarding Ladder", Py.Round(BoardRise, 3), "The Dray's boarding ladder: it stands on the belly hatch, stowed up through the airlock's floor while the hatch is shut, and runs from the ground up the shaft when it is open. F climbs it.", "foot", [0, 0, -0.1], "-y", over: -0.03),
+            BellyHatchPart(),
+            LiftJet(), Leg(), PowerPlant(), FlightComputer(), SaddleTank(),
         ];
         var defs = new Dictionary<string, PyDict>();
         o.Own(Out);

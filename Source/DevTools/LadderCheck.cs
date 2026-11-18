@@ -44,6 +44,8 @@ public static class LadderCheck
                 if (d.LadderTop <= 0)
                     continue;
                 ladders++;
+                if (Game.LadderOnShutDoor(c, i)) // (one stowed on a shut door's leaf, the Dray's belly hatch: climbed with that door open, as F leaves it)
+                    ConstructDoors.Settle(c, c.DoorOf(i), true);
                 var (up, down) = (Try(w, c, i, false), Try(w, c, i, true));
                 var ok = up == null && down == null;
                 bad += ok ? 0 : 1;

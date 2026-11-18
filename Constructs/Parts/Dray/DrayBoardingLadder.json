@@ -1,13 +1,13 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Dray Boarding Ladder",
-  "description": "The Dray's boarding ladder, from the ground up its belly shaft into the airlock: F climbs it.",
+  "description": "The Dray's boarding ladder: it stands on the belly hatch, stowed up through the airlock's floor while the hatch is shut, and runs from the ground up the shaft when it is open. F climbs it.",
   "group": "Ship",
   "section": "Dray hauler",
   "role": "frame",
   "tool": "welder",
-  "ladder": 4.35,
-  "mass": 112.2,
+  "ladder": 4.265,
+  "mass": 111.2,
   "health": 400,
   "armour": 6,
   "material": "steel",
@@ -22,7 +22,7 @@
       ],
       "max": [
         0.3,
-        5.35,
+        4.235,
         -0.005
       ],
       "hidden": true
@@ -35,7 +35,7 @@
       ],
       "max": [
         -0.22,
-        5.352,
+        4.237,
         -0.12
       ],
       "color": "#9aa0a4",
@@ -81,21 +81,6 @@
       "max": [
         -0.23,
         3.06,
-        -0.01
-      ],
-      "color": "#202326",
-      "detail": true,
-      "finish": "dirty steel"
-    },
-    {
-      "min": [
-        -0.27,
-        4.2,
-        -0.12
-      ],
-      "max": [
-        -0.23,
-        4.26,
         -0.01
       ],
       "color": "#202326",
@@ -110,7 +95,7 @@
       ],
       "max": [
         0.28,
-        5.352,
+        4.237,
         -0.12
       ],
       "color": "#9aa0a4",
@@ -156,21 +141,6 @@
       "max": [
         0.27,
         3.06,
-        -0.01
-      ],
-      "color": "#202326",
-      "detail": true,
-      "finish": "dirty steel"
-    },
-    {
-      "min": [
-        0.23,
-        4.2,
-        -0.12
-      ],
-      "max": [
-        0.27,
-        4.26,
         -0.01
       ],
       "color": "#202326",
@@ -390,12 +360,12 @@
     {
       "min": [
         -0.29,
-        5.29,
+        4.175,
         -0.19
       ],
       "max": [
         0.29,
-        5.35,
+        4.235,
         -0.11
       ],
       "color": "#e0a020",
@@ -405,13 +375,13 @@
   ],
   "sockets": [
     {
-      "name": "hull",
+      "name": "foot",
       "at": [
         0.0,
-        4.225,
-        -0.005
+        0.0,
+        -0.1
       ],
-      "dir": "+z"
+      "dir": "-y"
     }
   ]
 }
