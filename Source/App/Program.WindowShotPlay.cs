@@ -23,7 +23,7 @@ public static partial class Program
         var ci = System.Globalization.CultureInfo.InvariantCulture;
         switch (verb)
         {
-            case "shells" when g.IsServer: // host: every shell in flight: kind, age, where it is from the body that fired it, its speed against it, its target; and each body's radar lock
+            case "shells" when g.IsServer: // host: "shells [look|lock]": every shell in flight: kind, age, where it is from the body that fired it, its speed against it, its target; and each body's radar lock
             {
                 var w = g.Constructs;
                 foreach (var b in w.Bodies)
@@ -35,6 +35,8 @@ public static partial class Program
                         WsSay(string.Create(ci, $"shells: contact body {ct.Id}, {Vector3.Distance(ct.WorldCom, rc.WorldCom):0} m"));
                 if (arg == "look" && g.RadarContactCount > 0 && w.Get(g.RadarContacts[0]) is { } first)
                     WsLook(g, me.Eye, first.WorldCom); // ("shells look": the look turned onto the nearest contact, as the mouse would turn it)
+                if (arg == "lock" && g.RadarContactCount > 0 && w.Get(g.RadarContacts[0]) is { } locked)
+                    WsSay($"shells: lock {(g.RadarPick(me.Eye, Vector3.Normalize(locked.WorldCom - me.Eye)) ? "taken" : "refused")}"); // ("shells lock": the radar key's lock on the nearest contact, wherever a seat lets the look turn)
                 WsSay($"shells: {w.ShellCount} in flight");
                 for (var k = 0; k < w.ShellCount; k++)
                 {
