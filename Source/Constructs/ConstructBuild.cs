@@ -1173,6 +1173,8 @@ public static class ConstructBuild
     /// <summary>A step's "config" (the part's settings), after its "setting"; and its "text".</summary>
     private static void SetConfig(ConstructWorld world, Construct c, int part, ConstructPartDef def, Blueprint bp, int step)
     {
+        if (part >= 0 && def.Air != AirPart.None && (world.Creative || !world.PlayerBuild))
+            c.Parts[part].Rounds = def.AirHolds; // (a ship the game spawns comes with its air, as with its magazines; a Building Station's build comes empty: ShipAir.cs)
         if (part >= 0 && step < bp.StepText.Count && bp.StepText[step] is { } texts)
             for (var k = 0; k < texts.Length && k < def.TextSlots; k++)
                 LogicText.Set(ref c.Parts[part], k, texts[k]);

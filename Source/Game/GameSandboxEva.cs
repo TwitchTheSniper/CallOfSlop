@@ -34,31 +34,32 @@ public static class Eva
     public static bool Vacuum(Vector3 at) =>
         GravityFrames.Point is { OrbitFrom: > 0 } pg && Vector3.DistanceSquared(at, pg.Center) > pg.OrbitFrom * pg.OrbitFrom || ConstructAir.Density(at) < VacuumBelow;
 
-    /// <summary>
-    /// Is the suit fed this tick: seated in any seat, or standing aboard a construct (the ship's air line, until pressurised
-    /// rooms exist). The server and a joined client judge it by the same rule, so the HUD keeps with the host.
-    /// </summary>
-    public static bool Fed(Player p, bool seated) => seated || p.Sim.RideBody != 0;
-
     /// <summary>Does this player breathe: a person, not a robot shell, not an NPC, alive, not flying in creative's noclip.</summary>
     public static bool Breathes(Player p) => p.Bot == null && !p.InShell && p.Alive && !p.Sim.Noclip;
 
     /// <summary>
-    /// One tick of air for <paramref name="p"/>; <paramref name="topUp"/>: strapped into a dock, whose line fills the suit.
-    /// True when they are out of breath this tick (the server hurts them once a second).
+    /// One tick of air for <paramref name="p"/>; <paramref name="shipAir"/>: aboard a pressurised ship (ShipAir.cs), whose air they
+    /// breathe and whose oxygen fills their suit. True when they are out of breath this tick (the server hurts them once a second).
+    /// <paramref name="suitFilled"/>: the seconds of suit air taken this tick (the server bills the ship for them).
     /// </summary>
-    public static bool Step(Player p, bool topUp)
+    public static bool Step(Player p, bool shipAir, out float suitFilled)
     {
         var dt = World.TickDt;
+        suitFilled = 0;
         if (!Breathes(p))
         {
             p.Breath = BreathSeconds;
             return false;
         }
         var suited = (p.Eva & Suit) != 0;
-        var vacuum = Vacuum(p.Position);
-        if (suited && (topUp || !vacuum))
+        var vacuum = !shipAir && Vacuum(p.Position);
+        if (suited && !vacuum && p.SuitAir < SuitSeconds)
+        {
+            var was = p.SuitAir;
             p.SuitAir = MathF.Min(SuitSeconds, p.SuitAir + SuitRefill * dt);
+            if (shipAir && Vacuum(p.Position))
+                suitFilled = p.SuitAir - was; // (from the ship's oxygen; a planet's air is free)
+        }
         if (!vacuum)
         {
             p.Breath = MathF.Min(BreathSeconds, p.Breath + BreathBack * dt);
@@ -75,17 +76,17 @@ public static class Eva
     }
 
     /// <summary>The HUD's air line for the local player, or null when there is nothing to say.</summary>
-    public static string? AirLine(Player p)
+    public static string? AirLine(Player p, bool shipAir)
     {
         if (!Breathes(p))
             return null;
-        var vacuum = Vacuum(p.Position);
+        var vacuum = !shipAir && Vacuum(p.Position);
         if ((p.Eva & Suit) != 0)
         {
             var share = p.SuitAir / SuitSeconds;
             if (p.SuitAir <= 0 && vacuum)
-                return p.Breath > 0 ? $"SUIT AIR GONE: {p.Breath:0} s of breath (get to air or a suit locker)" : "SUFFOCATING: get to air or a suit locker";
-            return vacuum || share < 0.999f ? $"Suit air {share * 100:0}% ({p.SuitAir / 60:0} min)" : null;
+                return p.Breath > 0 ? $"SUIT AIR GONE: {p.Breath:0} s of breath (get to air)" : "SUFFOCATING: get to air";
+            return vacuum || share < 0.999f ? $"Suit air {share * 100:0}% ({p.SuitAir / 60:0} min)" + (shipAir && share < 0.999f ? ", filling from the ship" : "") : null;
         }
         if (!vacuum)
             return null;
@@ -106,6 +107,11 @@ public sealed partial class Game
     private string? SandboxEvaUse(Player p, ushort body, ushort part, out bool handled)
     {
         handled = false;
+        if (Constructs.Get(body) is { } ac && part < ac.PartCount && ac.DefOf(part).Air != AirPart.None && p.Alive)
+        {
+            handled = true; // (a Life Support Unit or an Oxygen Tank: its reading, GameShipAir.cs)
+            return Vector3.Distance(p.Eye, ConstructEdits.ReachPoint(ac, part, p.Eye)) > ConstructBuild.UseReach + 0.75f ? "too far away" : ShipAirUse(p, ac, part);
+        }
         if (Constructs.Get(body) is not { } c || part >= c.PartCount || c.DefOf(part).Eva is not (EvaPart.Locker or EvaPart.Dock) || !p.Alive)
             return null;
         var d = c.DefOf(part);
@@ -121,9 +127,19 @@ public sealed partial class Game
             if ((p.Eva & Eva.Mmu) != 0)
                 return "dock the MMU first: back into an empty MMU Dock";
             p.Eva ^= Eva.Suit;
-            p.SuitAir = Eva.SuitSeconds;
+            if ((p.Eva & Eva.Suit) != 0)
+            {
+                // The locker fills the suit from the ship's air, or from a planet's; with neither it comes as it was hung up (Karl, 2026-11-18).
+                var air = ShipAir.AirBody(Constructs, c);
+                if (ShipAir.Pressurised(air) || !Eva.Vacuum(p.Position))
+                {
+                    if (air != null && Eva.Vacuum(p.Position) && !SandboxInfiniteParts)
+                        ShipAir.Take(Constructs, air, (int)MathF.Ceiling((Eva.SuitSeconds - p.SuitAir) * ShipAir.SuitFillCost));
+                    p.SuitAir = Eva.SuitSeconds;
+                }
+            }
             BroadcastRoster();
-            SandboxHands.Notices.Add((p.Id, (p.Eva & Eva.Suit) != 0 ? "Space suit on: its air lasts 30 minutes in vacuum" : "Space suit hung back up"));
+            SandboxHands.Notices.Add((p.Id, (p.Eva & Eva.Suit) != 0 ? $"Space suit on: its air lasts {p.SuitAir / 60:0} minutes in vacuum" : "Space suit hung back up"));
             Constructs.Events.Add($"construct {c.Id}: {p.Name} {((p.Eva & Eva.Suit) != 0 ? "put on" : "took off")} a space suit");
             return null;
         }
@@ -238,11 +254,13 @@ public sealed partial class Game
     /// <summary>Server, each tick for every player: breath, and the worn MMU's gear bit.</summary>
     private void SandboxEvaTick(Player p, double now)
     {
-        var topUp = Eva.Fed(p, SandboxHands.Hand(p.Id).Seated);
+        var shipAir = OnShipAir(p); // (aboard a pressurised ship: GameShipAir.cs)
         if ((p.Eva & Eva.Suit) == 0 && p.Bot == null && !p.InShell && p.Alive && ServerTick - p.SpawnTick < Eva.IssueTicks && Eva.Vacuum(p.Position))
             SandboxEvaIssue(p); // (woken or respawned out in vacuum, as the ship starts do: in a suit, not choking)
         ref var choke = ref _evaChoke[p.Id];
-        if (!Eva.Step(p, topUp))
+        var choking = Eva.Step(p, shipAir, out var suitFilled);
+        ShipAirBillSuit(p, suitFilled);
+        if (!choking)
         {
             choke = 0;
             return;
@@ -286,7 +304,7 @@ public sealed partial class Game
 
 public sealed partial class Game
 {
-    private SbText _sbEva, _sbEvaDock;
+    private SbText _sbEva, _sbEvaDock, _sbShipAir;
 
     /// <summary>The HUD's spacewalk lines: the air, the MMU's fuel and keys; strapped into a dock, its lines alone (true).</summary>
     private bool SandboxEvaHud(Player me, in SandboxHand h, List<HudLine> lines, Vector4 white, Vector4 dim, Vector4 orange, Vector4 red)
@@ -302,19 +320,37 @@ public sealed partial class Game
             lines.Add(new HudLine(mmu >= 0 ? SandboxKeys.EvaDock : SandboxKeys.GetOut, dim));
             return true;
         }
-        var air = Eva.Breathes(me) && (me.Eva & Eva.Suit) != 0 | Eva.Vacuum(me.Position);
+        var ship = Eva.Breathes(me) ? ShipAirOf(me) : null;
+        if (ship != null)
+        {
+            // The ship's air (GameShipAir.cs): how long it lasts for everyone aboard. A joined client counts the people it sees aboard.
+            ShipAir.Survey(ship);
+            if (!IsServer)
+            {
+                var n = 0;
+                foreach (var o in Players.Values)
+                    if (o.Alive && !o.InShell && ShipAirOf(o) == ship)
+                        n++;
+                ship.AirAboard = (byte)Math.Min(255, n);
+            }
+            if (_sbShipAir.Stale(ship.AirUnits * 1024L + ship.AirAboard * 2 + (ship.AirWorks ? 1 : 0) + ((long)ship.AirMax << 32)))
+                _sbShipAir.Text = ShipAir.Line(ship);
+            lines.Add(new HudLine(_sbShipAir.Text, ship.AirUnits <= 0 ? red : ship.AirUnits * 4 <= ship.AirMax ? orange : white));
+        }
+        var shipAir = ShipAir.Pressurised(ship);
+        var air = Eva.Breathes(me) && (me.Eva & Eva.Suit) != 0 | (!shipAir && Eva.Vacuum(me.Position));
         var mmuOn = (me.Eva & Eva.Mmu) != 0;
         if (!air && !mmuOn)
             return false;
-        var key = (long)me.Eva + ((long)MathF.Ceiling(me.Breath) << 2) + ((long)MathF.Ceiling(me.SuitAir / 60) << 8) + ((long)(me.Sim.JetFuel * 100 / Eva.MmuFull) << 20) + (Eva.Vacuum(me.Position) ? 1L << 30 : 0);
+        var key = (long)me.Eva + ((long)MathF.Ceiling(me.Breath) << 2) + ((long)MathF.Ceiling(me.SuitAir / 60) << 8) + ((long)(me.Sim.JetFuel * 100 / Eva.MmuFull) << 20) + (Eva.Vacuum(me.Position) ? 1L << 30 : 0) + (shipAir ? 1L << 31 : 0);
         if (_sbEva.Stale(key))
         {
-            var line = Eva.AirLine(me);
+            var line = Eva.AirLine(me, shipAir);
             var pack = mmuOn ? $"MMU fuel {me.Sim.JetFuel * 100 / Eva.MmuFull}%" : null;
             _sbEva.Text = line != null && pack != null ? $"{line}, {pack}" : line ?? pack ?? "";
         }
         if (_sbEva.Text.Length > 0)
-            lines.Add(new HudLine(_sbEva.Text, me.Breath < Eva.BreathSeconds || me.SuitAir <= 0 && Eva.Vacuum(me.Position) ? red : (me.Eva & Eva.Suit) != 0 && me.SuitAir < 300 ? orange : white));
+            lines.Add(new HudLine(_sbEva.Text, me.Breath < Eva.BreathSeconds || me.SuitAir <= 0 && !shipAir && Eva.Vacuum(me.Position) ? red : (me.Eva & Eva.Suit) != 0 && me.SuitAir < 300 ? orange : white));
         if (mmuOn && !h.Seated)
             lines.Add(new HudLine(SandboxKeys.EvaFly, dim));
         return false;

@@ -1218,6 +1218,7 @@ public sealed partial class Construct
         StoreNetKey = ConstructBeacons.KeyOf(this);
         ConstructWeapons.BuildGuns(this);
         CountSpecials();
+        ShipAir.Build(this); // (the parts that hold its air: ShipAir.cs)
         BuildFreeChain(); // (frozen pieces and chains: after what anchors it)
         Root = PickRoot();
         FinishRebuild();
