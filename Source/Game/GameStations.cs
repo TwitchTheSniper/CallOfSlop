@@ -60,6 +60,7 @@ public sealed partial class Game
     /// </summary>
     public void StationMoor(SpaceFlight f, int i, Construct ship, Construct station, int part)
     {
+        var (comNow, rotNow) = (ship.WorldCom, ship.Rot); // (a berth with a clamp arm draws it in from here: GameStationArms.cs)
         var centre = NavDockCentre(station, part, out _, out _);
         ship.Rot = StationMoorRot(station, part, ship);
         ship.Pos = centre - Vector3.Transform(ship.Com, ship.Rot);
@@ -73,7 +74,16 @@ public sealed partial class Game
         ship.MoorPart = (ushort)part;
         ship.MoorAt = Vector3.Transform(centre - station.Pos, inv);
         ship.MoorRot = Quaternion.Normalize(inv * ship.Rot);
+        ship.MoorDraw = 1;
+        if (StationBerthArm(station, part))
+            StationDrawFrom(ship, station, comNow, rotNow);
+        ship.AngVel = station.AngVel;
         StationMoorFlight(f, i, ship, station);
+        if (ship.MoorDraw < 1)
+        {
+            ship.Pos = comNow - Vector3.Transform(ship.Com, ship.Rot); // (it stays where the clamp took it, not in the berth, this tick)
+            (ship.PrevPos, ship.PrevRot) = (ship.Pos, ship.Rot); // (nor drawn part way to the berth by the frame's blend)
+        }
         Constructs.Events.Add($"construct {station.Id}: the {station.DefOf(part).Name} moored construct {ship.Id}");
         Log($"[station] construct {ship.Id} moored at {StationName(station)} (construct {station.Id}), berth {part} ({station.DefOf(part).Name})");
     }
@@ -262,6 +272,7 @@ public sealed partial class Game
             StationMoorScan(f);
             StationMoorRecheck();
         }
+        StationArmsStep(f); // (GameStationArms.cs)
         if (ServerTick % World.TickRate == 7)
             StationMarketTick(); // (GameStationMarket.cs)
         foreach (var c in Constructs.Bodies)
@@ -285,9 +296,12 @@ public sealed partial class Game
         if (j < 0)
             return;
         var pose = Space!.Bubble.PoseAt(f.Ships.Time);
-        c.Rot = Quaternion.Normalize(st.Rot * c.MoorRot);
+        if (c.MoorDraw < 1)
+            c.MoorDraw = MathF.Min(1, c.MoorDraw + c.MoorDrawRate * World.TickDt); // (the clamp arm drawing it in: GameStationArms.cs)
+        StationMoorPose(c, out var moorAt, out var moorRot);
+        c.Rot = Quaternion.Normalize(st.Rot * moorRot);
         c.AngVel = st.AngVel;
-        var off = Vector3.Transform(c.MoorAt, st.Rot) - Vector3.Transform(st.Com, st.Rot); // (from the station's centre of mass, as its flight goes)
+        var off = Vector3.Transform(moorAt, st.Rot) - Vector3.Transform(st.Com, st.Rot); // (from the station's centre of mass, as its flight goes)
         f.Ships.RelativeOf(j, out var primary, out var r, out var v);
         f.Ships.SetState(i, primary, r + pose.Rot.Rotate(Vec3d.From(off)), v + pose.Rot.Rotate(Vec3d.From(Vector3.Cross(st.AngVel, off))));
         f.Ships.Thrust[i] = f.Ships.Thrust[j];
@@ -304,6 +318,8 @@ public sealed partial class Game
         {
             if (c.MooredTo == 0 || Constructs.Get(c.MooredTo) is not { } st)
                 continue;
+            if (c.MoorDraw < 1 && c.MoorPart < st.PartCount && st.DefOf(c.MoorPart).IsDock)
+                continue; // (still on its way in on the clamp arm: GameStationArms.cs)
             if (c.MoorPart < st.PartCount && st.DefOf(c.MoorPart).IsDock && ConstructCargo.MostlyInside(st, c.MoorPart, c))
                 continue;
             var found = -1;

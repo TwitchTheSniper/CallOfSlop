@@ -648,6 +648,7 @@ public sealed partial class SpaceStationParts
                 Cradle(k, $"{who} Cradle {nm}{sn} 1", fr, side, mid - s, ybA, bottom, ship.W, ship.L, ship.H, false);
                 Cradle(k, $"{who} Cradle {nm}{sn} 2", fr, side, mid, ybA, bottom - 4, ship.W, ship.L, ship.H, true);
                 Cradle(k, $"{who} Cradle {nm}{sn} 3", fr, side, mid + s, ybA, bottom, ship.W, ship.L, ship.H, false);
+                ClampArmBase(k, $"{who} Clamp {nm}{sn}", fr, mid + side * (ship == ZeroDay ? 6 : 4), side, ybA, side, ship == ZeroDay ? ClampStowAlong : 11); // (SpaceStationClampArm.cs)
             }
             if (gantry)
                 Gantry(k, $"{who} Gantry {nm}", fr, mid - 1, ybA, ArmHalf + 3.5 + ship.W + 3, bottom + ship.H + 3);
@@ -668,6 +669,7 @@ public sealed partial class SpaceStationParts
                 Cradle(k, $"Freight Cradle {nm}{sn} 1", fr, side, mid - 22, ybB, bottom, Dray.W, Dray.L, Dray.H, false);
                 Cradle(k, $"Freight Cradle {nm}{sn} 2", fr, side, mid, ybB, bottom - 4, Dray.W, Dray.L, Dray.H, true);
                 Cradle(k, $"Freight Cradle {nm}{sn} 3", fr, side, mid + 22, ybB, bottom, Dray.W, Dray.L, Dray.H, false);
+                ClampArmBase(k, $"Freight Clamp {nm}{sn}", fr, mid + side * 6, side, ybB, side);
             }
         }
 

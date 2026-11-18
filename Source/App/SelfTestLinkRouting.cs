@@ -98,7 +98,7 @@ public static partial class SelfTest
 
         // 4) Hold to adjust: a node clicked into the frame block's side (sunk 70%) from a node beside it: the search finds
         // the nearest valid offset out along the normal; the wheel's steps move it 1 cm (Ctrl 5 cm); the server agrees.
-        var power = RouteType.Power;
+        var power = RouteType.Feed; // (an ammo feed: a cable or pipe may lie in the block now, ConstructRoutesWalls.cs)
         var rp = ConstructRoutes.Radius(power);
         Span<Vector3> open = stackalloc Vector3[3];
         Span<int> oh = stackalloc int[3];

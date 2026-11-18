@@ -253,6 +253,7 @@ public static unsafe partial class Program
                     "come" => Ui.CommandOrder(g, NavKind.Come, "", 0),
                     "dock" when words.Length == 2 && int.TryParse(words[1], out var nth) => WsDockOrder(g, nth),
                     "dockat" when words.Length == 2 && ushort.TryParse(words[1], out var dockId) => Ui.CommandDock(g, dockId), // (by construct id)
+                    "dock" when words is [_, "station"] => g.Constructs.Bodies.FirstOrDefault(b => b.IsStation) is { } st ? Ui.CommandDock(g, st.Id) : "no station on the map", // ("order dock station": the first station)
                     "meet" when words.Length is 2 or 3 && int.TryParse(words[1], out var mnth) => WsMeetOrder(g, mnth, words.Length == 3 && float.TryParse(words[2], inv, out var mgap) ? mgap : Game.NavMeetGap),
                     "orbit" or "goto" when words.Length == 3 && double.TryParse(words[2], inv, out var km) => Ui.CommandOrder(g, kind == "orbit" ? NavKind.Orbit : NavKind.GoTo, words[1], km),
                     _ => "order orbit BODY KM | order goto BODY KM | order ground M | order land M | order come | order dock N | order meet N [GAP] | order board N door|hull | order cancel",
