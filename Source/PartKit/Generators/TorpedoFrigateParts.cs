@@ -348,6 +348,26 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
     // on a tank part so its fuel reaches it, clear of the railgun's barrel, the flare launchers, the cradle, the sensor and the fins.
     private const double TopRcsBowX = 1.4, TopRcsBowZ = 5.2, TopRcsSternX = 2.0, TopRcsSternZ = 45.9, TopRcsPad = 0.54;
 
+    // The side jets (Karl, 2026-11-18: A and D slid nothing, it had no jet pushing sideways): a Heavy RCS Thruster out of each flank low
+    // on the beam (below it the hull's void boxes reach out under the flare), at the bow behind the retro jets and at the stern, each pushing the ship away from its side.
+    private const double SideRcsBowZ = 5.5, SideRcsBowY = 3.0, SideRcsSternZ = 45.0, SideRcsSternY = 3.3;
+
+    /// <summary>A block out of the hull's side (on the beam line, its widest) on side s at y, z, its outer face standing clear of the skin and its armour, the socket on it facing out.</summary>
+    private static void SideJetPad(Part p, string name, int s, double y, double z)
+    {
+        var h = TopRcsPad / 2;
+        double most = 0, least = double.MaxValue;
+        foreach (var zz in new[] { z - h, z + h })
+            foreach (var yy in new[] { y - h, y + h })
+            {
+                most = Math.Max(most, SkinHalf(zz, yy));
+                least = Math.Min(least, SkinHalf(zz, yy));
+            }
+        double outer = Math.Ceiling((most + 0.3) * 100) / 100, inner = least - 0.12; // (clear of the beam's chine and the armour on the side)
+        Solid(p, Cx + Math.Min(s * inner, s * outer), y - h, z - h, Cx + Math.Max(s * inner, s * outer), y + h, z + h, Frame, "dirty steel");
+        Sock(p, name, Cx + s * outer, y, z, s < 0 ? "-x" : "+x");
+    }
+
     /// <summary>A square pad standing out of the spine's plate (which may slope along z) at x, z, its top a whole centimetre and the socket on it, facing up.</summary>
     private static void TopJetPad(Part p, string name, double x, double z)
     {
@@ -1118,6 +1138,8 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         // Two attitude jets on the canopy's roof, either side of the railgun's barrel, firing up: they push the nose down (and roll the ship).
         foreach (var s in new[] { -1, 1 })
             TopJetPad(p, s < 0 ? "rcsTopL" : "rcsTopR", Cx + s * TopRcsBowX, TopRcsBowZ);
+        foreach (var s in new[] { -1, 1 })
+            SideJetPad(p, s < 0 ? "rcsSideL" : "rcsSideR", s, SideRcsBowY, SideRcsBowZ);
         p.Set(("fuelTank", Kw(("capacity", 1500))), ("ports", Py.L(BigDriveParts.PipePort("Fuel out", "out", [.. P(Cx, 1.0, 8.0).Cast<object>()], "+z", "fuel"))));
         return p.Stats(9000, 24000, 40, 15.0);
     }
@@ -1300,6 +1322,8 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         // Two attitude jets on the roof aft of the shuttle, between the heat-sink fins, firing up: they push the tail down (and roll the ship).
         foreach (var s in new[] { -1, 1 })
             TopJetPad(p, s < 0 ? "rcsTopL" : "rcsTopR", Cx + s * TopRcsSternX, TopRcsSternZ);
+        foreach (var s in new[] { -1, 1 })
+            SideJetPad(p, s < 0 ? "rcsSideL" : "rcsSideR", s, SideRcsSternY, SideRcsSternZ);
         // (no stern face: the drive collar closes it, its plate the engines' mount)
         // Heat-sink fins above the drive, angled out.
         foreach (var s in new[] { -1, 1 })
@@ -2172,7 +2196,7 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         foreach (var n in new[] { "retroL", "retroR" })
             Hang(bp, "Zero Day Retro Jet", bow, n, "top");
         foreach (var piece in new[] { bow, stern })
-            foreach (var n in new[] { "rcsTopL", "rcsTopR" })
+            foreach (var n in new[] { "rcsTopL", "rcsTopR", "rcsSideL", "rcsSideR" })
                 Hang(bp, "Heavy RCS Thruster", piece, n, "base");
         // Ladders: the boarding ladder up the shaft, two between the decks.
         Hang(bp, "Zero Day Boarding Ladder", la, "boarding", "hull");
@@ -2229,8 +2253,11 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         var pilot = Hang(bp, "Flight Couch", uf, "pilot", "bottom");
         Hang(bp, "Flight Couch", uf, "copilot", "bottom");
         var fc = Hang(bp, "Zero Day Flight Computer", uf, "computer", "bottom");
+        // Ship keys with mouse aim, as the other ships fly (Karl, 2026-11-18: on Auto it flew as a rotorcraft, so W tipped it on its lift jets and Ctrl never lit the roof's jets).
+        var flight = ShipParts.ShipFlight();
         if (crewed)
-            bp.Steps[fc]["config"] = new PyDict { ["aiCrew"] = (int)ShipAiMode.Everyone };
+            flight["aiCrew"] = (int)ShipAiMode.Everyone;
+        bp.Steps[fc]["config"] = flight;
         bp.Wires.Add((pilot, fc));
         var railModule = Hang(bp, "Turret Module", uf, "gunModule", "-y");
         Hang(bp, "Chart Table", uf, "chart", "back");
