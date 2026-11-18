@@ -1423,7 +1423,10 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
             var col = i == 3 ? Skin : i == 4 ? Skin2 : Armour;
             var fin = i == 3 ? "painted plating" : "plated steel";
             var dz = i % 2 == 1 ? FacetStagger : 0; // (odd panels' corners a little aft, so neighbours' ends never share a plane)
-            Quad(p, V(flat[i], zf + dz), V(flat[i + 1], zf + dz), V(full[i + 1], SpZ0 + dz), V(full[i], SpZ0 + dz), col, fin);
+            // The nose: only the lips under and over the launch port fair into the hull; between them the front is flat, the port
+            // in it behind its hatch (Karl, 2026-11-18: the cowl closed the port, "a hatch here instead, which opens before the missiles fire").
+            if (i == 0 || i == full.Length - 2)
+                Quad(p, V(flat[i], zf + dz), V(flat[i + 1], zf + dz), V(full[i + 1], SpZ0 + dz), V(full[i], SpZ0 + dz), col, fin);
             Quad(p, V(full[i], SpZ0 + dz), V(full[i + 1], SpZ0 + dz), V(full[i + 1], SpZ1 + dz), V(full[i], SpZ1 + dz), col, fin);
             Quad(p, V(full[i], SpZ1 + dz), V(full[i + 1], SpZ1 + dz), V(flat[i + 1], za), V(flat[i], za), col, fin);
         }
@@ -1446,7 +1449,12 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         // (the cap as plates round the port: below, above, inboard and outboard of it, each a few mm off the next so none share a face)
         double zB = SpZ0, zA = SpZ0 - 0.005, zO = SpZ0 + 0.005, zI = SpZ0 + 0.0025;
         Plate(p, [V(capOut[0], zB), V(capOut[1], zB), V(capOut[2], zB), P(s < 0 ? xa : xb, py0, zB), P(s < 0 ? xb : xa, py0, zB)], Armour, "plated steel");
-        Plate(p, [P(xa, py1, zA), P(xb, py1, zA), P(xb, SpTop - 0.1, zA), P(xa, SpTop - 0.1, zA)], Armour, "plated steel");
+        // (over the port to the top of the outline, the lip's edge: two convex plates)
+        Plate(p, [P((s < 0 ? xb : xa) + s * 0.004, py1, zA), P(s < 0 ? xa : xb, py1, zA), V(capOut[4], zA), P(capOut[5].X + s * 0.004, capOut[5].Y, zA)], Armour, "plated steel"); // (its inboard edge 4 mm off the inboard plate's)
+        Plate(p, [P(s < 0 ? xa : xb, py1, zA - 0.0025), V(capOut[3], zA - 0.0025), V(capOut[4], zA - 0.0025)], Armour, "plated steel");
+        // The lips' open ends, closed back to the front: under the port the lower lip's outboard end, over it the upper lip's.
+        Plate(p, [V(full[1], SpZ0), V(flat[1], zf), V(flat[1], SpZ0 - 0.0075)], Armour, "plated steel");
+        Plate(p, [V(full[4], SpZ0), V(flat[4], zf), V(flat[4], SpZ0 - 0.0075)], Armour, "plated steel");
         Plate(p, [P(Cx + s * (SpOut), SpBot + 0.6, zO), P(Cx + s * SpOut, 2.6, zO), P(s < 0 ? xa : xb, py1, zO), P(s < 0 ? xa : xb, py0, zO)], Armour, "plated steel");
         Plate(p, [V(full[0], zI), P(s < 0 ? xb : xa, py0, zI), P(s < 0 ? xb : xa, py1, zI), V(full[5], zI)], Armour, "plated steel");
         foreach (var (x0, y0, x1, y1) in new[] { (xa - 0.08, py0 - 0.08, xb + 0.08, py0), (xa - 0.08, py1, xb + 0.08, py1 + 0.08), (xa - 0.08, py0, xa, py1), (xb, py0, xb + 0.08, py1) })
@@ -1472,7 +1480,38 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         Sock(p, "magazine", Cx + s * 6.9, 2.85, 25.4, "-y");
         Sock(p, "lamp", Cx + s * SpRoom, Ft0 + 2.2, 23.0, s < 0 ? "+x" : "-x");
         Sock(p, "switch", Cx + s * SpRoom, Ft0 + 1.3, 21.4, s < 0 ? "+x" : "-x");
+        Hidden(p, Cx + s * (HatchHinge - 0.07), HatchY - 1.2, HatchZ, Cx + s * (HatchHinge + 0.07), HatchY + 1.2, SpZ0 + 0.3); // (the hatch's hinge post, behind the frame outboard of the port)
+        Sock(p, "hatch", Cx + s * HatchHinge, HatchY, HatchZ, "-z"); // (the launch hatch's hinge, at the port's outboard edge on the front)
         return p.Stats(9000, 30000, 45, 15.0);
+    }
+
+    // The launch hatch over each torpedo port (Karl, 2026-11-18): a plate hinged on its outboard edge, clear of the port's hazard frame
+    // in front of the flat nose, swinging forward a quarter turn to lie along the hull's flank while a torpedo goes (ConstructDoors.OpenForLaunch).
+    private const double HatchHinge = SpOut - 0.25, HatchW = 2.55, HatchH = 2.5, HatchT = 0.08, HatchY = 1.55, HatchZ = SpZ0 - 0.055;
+
+    /// <summary>
+    /// The torpedo port's launch hatch: an armoured plate in its own frame from the hinge (its "hang" socket, facing +z into the
+    /// sponson's front) inboard along -x and forward along -z. A launch hatch (<c>"launch": true</c>): when a magazine fires and finds
+    /// it shut in the way, the server swings it open, the torpedo goes once it is clear, and it shuts four seconds after the last one.
+    /// F opens and shuts it by hand too. Symmetric top to bottom, so the port side's is the same part turned half round its z.
+    /// </summary>
+    private static Part TorpedoHatch()
+    {
+        var p = new Part("Zero Day Torpedo Hatch", Small, Section, "The armoured hatch over one of the Zero Day's torpedo ports, hinged on its outboard edge. It swings open by itself just before a torpedo launches and shuts a few seconds after the last one. F opens or shuts it by hand.", role: "door", tool: "welder", material: "steel", color: Armour2, group: Group);
+        double w = HatchW, h = HatchH / 2, t = HatchT;
+        p.Add(Box([-w, -h, -t], [0, h, 0], Armour2, shape: Kw(("finish", "plated steel"))));
+        // On its face: ribs across, hazard chevrons down its leading (inboard) edge, the IT blue band, hinge knuckles and a lamp.
+        foreach (var y in new[] { -0.8, 0.0, 0.8 })
+            p.Add(Box([-w + 0.25, y - 0.05, -t - 0.035], [-0.2, y + 0.05, -t + 0.006], Armour, detail: true, shape: Kw(("finish", "plated steel"))));
+        p.Add(Box([-w + 0.03, -h + 0.03, -t - 0.012], [-w + 0.17, h - 0.03, -t + 0.006], Hazard, detail: true, shape: Kw(("finish", "hazard paint"))));
+        foreach (var y in new[] { -0.5, 0.5 })
+            p.Add(Box([-w + 0.3, y - 0.12, -t - 0.016], [-0.25, y + 0.12, -t + 0.004], Blue, detail: true, shape: Kw(("finish", "painted plating"))));
+        foreach (var y in new[] { -0.95, 0.95 })
+            p.Add(Box([-0.12, y - 0.15, -t - 0.05], [0.0, y + 0.15, -t + 0.007], Frame, detail: true, shape: Kw(("finish", "dirty steel"))));
+        p.Add(Box([-w + 0.24, -0.06, -t - 0.022], [-w + 0.32, 0.06, -t + 0.005], Amber, detail: true, shape: Kw(("glow", true))));
+        p.Sock("hang", [0, 0, 0], "+z");
+        p.Set(("door", Kw(("kind", "swing"), ("axis", "+y"), ("angle", -90), ("seconds", 1.0), ("hang", "hang"), ("launch", true))));
+        return p.Stats(600, 8000, 45, 6.0);
     }
 
     /// <summary>Where a barbette meets the hull: the outer face of the void box beside the upper floor (Void's rounding).</summary>
@@ -2355,6 +2394,9 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         bp.Steps[limpetClamp]["config"] = LimpetClampConfig();
         bp.HangTurned("Docking Hatch", Holder(bp, keel, "limpetHatch"), "limpetHatch", "base", BuildingParts.R0); // (opens with the Limpet's own while its clamp holds it)
         bp.HangTurned("Docking Hatch", Holder(bp, spine, "dockHatch"), "dockHatch", "base", BuildingParts.R0); // (opens with the shuttle's own while the clamp holds it)
+        // The launch hatches over the torpedo ports: they swing open as a magazine fires (the port side's turned half round, its hinge outboard).
+        bp.HangTurned("Zero Day Torpedo Hatch", bayR, "hatch", "hang", BuildingParts.R0);
+        bp.HangTurned("Zero Day Torpedo Hatch", bayL, "hatch", "hang", BuildingParts.Turn("-x", "-y"));
         // The railgun along the spine, fired by the pilot; its slug box on the breech.
         var rail = Hang(bp, "Zero Day Railgun", spine, "railgun", "back");
         Hang(bp, "Ammo Box", rail, "ammo", "bottom");
@@ -2409,7 +2451,7 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
             Leg(),
             Ladder("Zero Day Ladder", Ft1 - Ft0, "A ladder between the Zero Day's decks: F climbs it.", "bottom", [0, 0, -0.095], "-y"),
             Ladder("Zero Day Boarding Ladder", Ft0 - Ground, "The Zero Day's boarding ladder, from the ground up the shaft into the airlock: F climbs it.", "hull", [0, Ft0 - Ground - 0.125, -0.005], "+z"),
-            Railgun(), Pdc(), Countermeasures(), Reactor(), FlightComputer(), Locker(),
+            Railgun(), Pdc(), Countermeasures(), Reactor(), FlightComputer(), Locker(), TorpedoHatch(),
         ];
         var defs = new Dictionary<string, PyDict>();
         o.Own(Out);

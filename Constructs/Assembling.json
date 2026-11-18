@@ -2088,6 +2088,7 @@
     {"output": "Zero Day Stern", "materials": {"steel": 2000, "rubber": 500}, "seconds": 180.0},
     {"output": "Zero Day Torpedo Bay L", "materials": {"steel": 1800, "concrete": 360}, "seconds": 180.0},
     {"output": "Zero Day Torpedo Bay R", "materials": {"steel": 1800, "concrete": 360}, "seconds": 180.0},
+    {"output": "Zero Day Torpedo Hatch", "materials": {"steel": 120}, "parts": {"Bearing": 12}, "seconds": 20.0, "minTier": 2},
     {"output": "Zero Day Turret Barbette", "materials": {"steel": 360, "concrete": 72}, "seconds": 56.0},
     {"output": "Zero Day Upper Aft Ceiling", "materials": {"steel": 173, "concrete": 35}, "seconds": 28.0},
     {"output": "Zero Day Upper Aft Hull Port 4", "materials": {"steel": 260, "concrete": 52}, "seconds": 41.0},
