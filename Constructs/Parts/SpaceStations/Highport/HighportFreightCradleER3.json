@@ -1,0 +1,265 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Highport Freight Cradle ER 3",
+  "description": "A berth cradle: a post down the arm's side and a beam under the ship, padded where the hull rests on it.",
+  "group": "Station",
+  "section": "Caledon Highport",
+  "role": "frame",
+  "tool": "welder",
+  "collider": "boxes",
+  "mass": 13473.6,
+  "health": 20168,
+  "armour": 40,
+  "material": "steel",
+  "color": "#4c5359",
+  "attachSeconds": 20.0,
+  "boxes": [
+    {
+      "min": [
+        -1.275,
+        -6.925,
+        -10.125
+      ],
+      "max": [
+        0.325,
+        5.875,
+        -9.125
+      ],
+      "color": "#4c5359",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -1.275,
+        -6.925,
+        -9.125
+      ],
+      "max": [
+        0.325,
+        -4.725,
+        10.575
+      ],
+      "color": "#4c5359",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -1.295,
+        -4.745,
+        -8.125
+      ],
+      "max": [
+        0.345,
+        -4.713,
+        -6.925
+      ],
+      "color": "#d9a441",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -1.295,
+        -4.745,
+        -5.725
+      ],
+      "max": [
+        0.345,
+        -4.713,
+        -4.525
+      ],
+      "color": "#d9a441",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -1.295,
+        -4.745,
+        -3.325
+      ],
+      "max": [
+        0.345,
+        -4.713,
+        -2.125
+      ],
+      "color": "#d9a441",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -1.295,
+        -4.745,
+        -0.925
+      ],
+      "max": [
+        0.345,
+        -4.713,
+        0.275
+      ],
+      "color": "#d9a441",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -1.295,
+        -4.745,
+        1.475
+      ],
+      "max": [
+        0.345,
+        -4.713,
+        2.675
+      ],
+      "color": "#d9a441",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -1.295,
+        -4.745,
+        3.875
+      ],
+      "max": [
+        0.345,
+        -4.713,
+        5.075
+      ],
+      "color": "#d9a441",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -1.295,
+        -4.745,
+        6.275
+      ],
+      "max": [
+        0.345,
+        -4.713,
+        7.475
+      ],
+      "color": "#d9a441",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -1.295,
+        -4.745,
+        8.675
+      ],
+      "max": [
+        0.345,
+        -4.713,
+        9.875
+      ],
+      "color": "#d9a441",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.65,
+        -5.9765,
+        -9.7126
+      ],
+      "max": [
+        -0.3,
+        5.4265,
+        9.6626
+      ],
+      "color": "#4c5359",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          -0.3,
+          5.4265,
+          -9.5374
+        ],
+        [
+          -0.3,
+          5.1235,
+          -9.7126
+        ],
+        [
+          -0.65,
+          5.4265,
+          -9.5374
+        ],
+        [
+          -0.65,
+          5.1235,
+          -9.7126
+        ],
+        [
+          -0.3,
+          -5.6735,
+          9.6626
+        ],
+        [
+          -0.3,
+          -5.9765,
+          9.4874
+        ],
+        [
+          -0.65,
+          -5.6735,
+          9.6626
+        ],
+        [
+          -0.65,
+          -5.9765,
+          9.4874
+        ]
+      ],
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -1.075,
+        -4.725,
+        -4.485
+      ],
+      "max": [
+        0.125,
+        -4.425,
+        -2.885
+      ],
+      "color": "#25272a",
+      "detail": true,
+      "finish": "rubber"
+    },
+    {
+      "min": [
+        -1.075,
+        -4.725,
+        4.335
+      ],
+      "max": [
+        0.125,
+        -4.425,
+        5.935
+      ],
+      "color": "#25272a",
+      "detail": true,
+      "finish": "rubber"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "j0",
+      "at": [
+        -0.475,
+        -0.625,
+        -10.125
+      ],
+      "dir": "-z"
+    }
+  ]
+}
