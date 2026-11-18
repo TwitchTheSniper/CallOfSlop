@@ -187,9 +187,6 @@ public sealed partial class Game : IDisposable
 
     public readonly string LocalName;
 
-    /// <summary>The local player's progression (XP is awarded for the local player's kills).</summary>
-    public Progress? Progress;
-
     public Game(NetPeer net, Audio audio, string playerName, byte primary, byte secondary, int bots = 0,
         BotDifficulty botSkill = BotDifficulty.Normal, byte mapId = 0,
         ThrowableKind grenade = ThrowableKind.None, ThrowableKind equipment = ThrowableKind.None, uint primaryKit = 0, uint secondaryKit = 0,
@@ -2533,13 +2530,6 @@ public sealed partial class Game : IDisposable
         }
         Log($"{Name(killer)}  [{Throwables.KillName(killId)}{(headshot ? " - HEADSHOT" : "")}]  {Name(victim)}", killer == LocalId || victim == LocalId);
 
-        // Progression: the local player earns XP for every kill, in single player and multiplayer.
-        if (killer == LocalId && victim != LocalId && Progress != null)
-        {
-            var now = Brutal.GlfwApi.Glfw.Time;
-            if (Progress.AwardKill(headshot, killId >= Throwables.KillIdBase, now, killId) != null && Module.ArenaExtras) // (Sandbox: earned quietly, levels still unlock its grenades and guns)
-                Audio.Effect(Sfx.LevelUp, 0.8f);
-        }
     }
 
     public void Dispose()

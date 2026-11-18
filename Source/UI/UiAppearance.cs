@@ -8,14 +8,13 @@ namespace CallOfSlop;
 /// it behind the UI (Program.Appearance.cs), like the gunsmith's gun.
 /// </summary>
 public readonly record struct AppearancePreview(float2 WinMin, float2 WinMax, float2 ViewMin, float2 ViewMax, float Yaw, string Name,
-    PlayerLook Look, HatId Hat, int Prestige);
+    PlayerLook Look);
 
 /// <summary>
-/// Main menu > APPEARANCE: who you are in a match. Left: your soldier, turning slowly (drag to turn it), wearing the hat
-/// and the look picked here. Right: the HAT (moved here from the loadout screen; prestige hats, locked ones greyed) and one
-/// picker per axis bots vary on (<see cref="LookAxis"/>: skin tone, hair colour, headwear, beard, helmet / cap colour) plus
+/// Main menu > APPEARANCE: who you are in a match. Left: your soldier, turning slowly (drag to turn it), wearing the look
+/// picked here. Right: one picker per axis bots vary on (<see cref="LookAxis"/>: skin tone, hair colour, headwear, beard, helmet / cap colour) plus
 /// the free-for-all outfit colour. Every axis has <b>Auto</b> (the look the game picks from your name, as before), and the
-/// screen has RANDOM and RESET (everything back to Auto; the hat stays). Saved at once to appearance.txt
+/// screen has RANDOM and RESET (everything back to Auto). (The prestige hats went with levelling, 2026-11-17.) Saved at once to appearance.txt
 /// (<see cref="AppearanceStore"/>), used in every mode (team modes keep the team colour on the outfit), and sent to everyone
 /// in the match (GameCosmetics.cs).
 /// </summary>
@@ -48,7 +47,6 @@ public sealed partial class Ui
     }
 
     /// <summary>Height of a hat card on this screen (unscaled px).</summary>
-    internal const float LookHatCardH = 112;
 
     /// <summary>Height of one axis row (heading + swatches, unscaled px).</summary>
     internal const float LookAxisRowH = 62;
@@ -72,7 +70,7 @@ public sealed partial class Ui
     }
 
     /// <summary>The height the picker panel's content needs (unscaled px): heading, the hat row, the axis rows, the team note.</summary>
-    internal static float AppearancePanelContentH() => 34 + 26 + LookHatCardH + 14 + LookAxes.Length * LookAxisRowH + 100;
+    internal static float AppearancePanelContentH() => 34 + 14 + LookAxes.Length * LookAxisRowH + 100;
 
     /// <summary>The axes in screen order.</summary>
     internal static readonly LookAxis[] LookAxes = Enum.GetValues<LookAxis>();
@@ -100,7 +98,6 @@ public sealed partial class Ui
             var contentMin = ImGui.GetCursorScreenPos();
             var contentMax = winPos + winSize - style.WindowPadding;
             var (viewMin, viewMax, panelMin, panelMax) = AppearanceRects(contentMin, contentMax, _scale);
-            var prestige = CosmeticPrestige.Of(Progress);
             var autoLook = BodyModel.VariantFor(name, 0);
 
             // ---- The model: drag to turn it; it turns slowly by itself when left alone ----
@@ -116,8 +113,7 @@ public sealed partial class Ui
             _lookYaw %= MathF.Tau;
             var dl = ImGui.GetWindowDrawList();
             DlText(dl, viewMin + new float2(10 * _scale, 8 * _scale), Dim8, "drag to turn"u8);
-            var worn = AppearanceStore.EffectiveHat(Progress);
-            LookPreview = new AppearancePreview(winPos, winPos + winSize, viewMin, viewMax, _lookYaw, name, AppearanceStore.Look, worn, prestige);
+            LookPreview = new AppearancePreview(winPos, winPos + winSize, viewMin, viewMax, _lookYaw, name, AppearanceStore.Look);
 
             // ---- The pickers ----
             ImGui.SetCursorScreenPos(panelMin);
@@ -125,13 +121,12 @@ public sealed partial class Ui
             if (ImGui.BeginChild("##lookpanel"u8, new float2(panelMax.X - panelMin.X, panelMax.Y - panelMin.Y), ImGuiChildFlags.Borders))
             {
                 DrawLookButtons(audio);
-                DrawLookHats(audio, prestige);
                 foreach (var axis in LookAxes)
                     DrawLookAxis(audio, axis, autoLook);
                 ImGui.Spacing();
                 ImGui.PushStyleColor(ImGuiCol.Text, Dim);
-                ImGui.TextWrapped("Team modes: your shirt, sleeves, trousers and a bandana wear the team colour so sides stay readable. Without teams (free-for-all, co-op, Zombies) they wear your outfit colour. Everything else (skin, hair, headwear, beard, helmet colour, hat) shows in every mode."u8);
-                ImGui.TextWrapped("Faction uniform: in the story, the Ministry of Slop issues a uniform for your standing (a boiler suit for inmates, a donkey jacket for contractors, a bowler for Crown Servants). It replaces your outfit and hat while worn. Own Clothes keeps your own look."u8);
+                ImGui.TextWrapped("Team modes: your shirt, sleeves, trousers and a bandana wear the team colour so sides stay readable. Without teams (free-for-all, co-op, Zombies) they wear your outfit colour. Everything else (skin, hair, headwear, beard, helmet colour) shows in every mode."u8);
+                ImGui.TextWrapped("Faction uniform: in the story, the Ministry of Slop issues a uniform for your standing (a boiler suit for inmates, a donkey jacket for contractors, a bowler for Crown Servants). It replaces your outfit and headwear while worn. Own Clothes keeps your own look."u8);
                 ImGui.PopStyleColor();
             }
             ImGui.EndChild();
@@ -177,61 +172,6 @@ public sealed partial class Ui
     {
         AppearanceStore.Look = look.Sanitized();
         AppearanceStore.Save();
-    }
-
-    /// <summary>The hat row: No hat and each prestige hat, a small drawing each; locked ones greyed with their prestige.</summary>
-    private void DrawLookHats(Audio audio, int prestige)
-    {
-        ImGui.TextColored(Orange, "Hat"u8);
-        ImGui.SameLine();
-        ImGuiSafe.TextColored(Dim, $"- unlocks with prestige (yours: {prestige}). Cosmetic only.");
-        var choices = HatChoices();
-        var gap = ImGui.GetStyle().ItemSpacing.X;
-        var origin = ImGui.GetCursorScreenPos();
-        var w = MathF.Max(40 * _scale, (ImGui.GetContentRegionAvail().X - gap * (choices.Length - 1)) / choices.Length);
-        var h = LookHatCardH * _scale;
-        var dl = ImGui.GetWindowDrawList();
-        var worn = AppearanceStore.EffectiveHat(Progress);
-        for (var i = 0; i < choices.Length; i++)
-        {
-            var id = choices[i];
-            var min = origin + new float2(i * (w + gap), 0);
-            var max = min + new float2(w, h);
-            var unlocked = Cosmetics.IsUnlocked(id, prestige);
-            ImGui.SetCursorScreenPos(min);
-            ImGui.InvisibleButton($"##lookhat{i}", new float2(w, h));
-            var hot = ImGui.IsItemHovered();
-            if (ImGui.IsItemClicked(ImGuiMouseButton.Left) && !SecondClick)
-            {
-                if (!unlocked)
-                    LockedFeedback(audio);
-                else if (AppearanceStore.Hat != id)
-                {
-                    AppearanceStore.Hat = id;
-                    AppearanceStore.Save();
-                    Acted();
-                    audio.Effect(Sfx.HitTick, 0.4f);
-                }
-            }
-            var on = worn == id;
-            var rr = 4 * _scale;
-            dl.AddRectFilled(min, max, on ? new ImColor8(41, 51, 66, 248) : !unlocked ? new ImColor8(18, 18, 20, 220) : hot ? Hover8 : Card8, rr);
-            dl.AddRect(min, max, on ? Orange8 : hot && unlocked ? new ImColor8(115, 190, 242, 255) : new ImColor8(60, 64, 74, 255), rr, ImDrawFlags.None, (on ? 2f : 1f) * _scale);
-            var textH = 38 * _scale;
-            var r = MathF.Max(4, MathF.Min(w, h - textH) * 0.36f);
-            DrawHatPreview(dl, id, new float2((min.X + max.X) / 2, min.Y + (h - textH) / 2 + 2 * _scale), r, !unlocked);
-            if (!unlocked)
-                DrawPadlock(dl, new float2(max.X - 12 * _scale, min.Y + 14 * _scale), 14 * _scale, new ImColor8(150, 150, 158, 255));
-            var clip = new float4(min.X, min.Y, max.X, max.Y);
-            var def = Cosmetics.Get(id);
-            ImGui.PushFont(default, 14);
-            DlText(dl, new float2(min.X + 5 * _scale, max.Y - textH), unlocked ? White8 : Dim8, def?.Name ?? "No hat", clip);
-            DlText(dl, new float2(min.X + 5 * _scale, max.Y - textH + 17 * _scale), on ? Orange8 : unlocked ? new ImColor8(115, 190, 242, 255) : new ImColor8(220, 120, 90, 255),
-                on ? "Wearing" : unlocked ? "Unlocked" : $"LOCKED - {HatRequirement(id)}", clip);
-            ImGui.PopFont();
-        }
-        ImGui.SetCursorScreenPos(origin + new float2(0, h + 8 * _scale));
-        ImGui.Dummy(new float2(1, 1));
     }
 
     /// <summary>One axis: its heading (what it is now), then Auto and a swatch or a named button per option bots use.</summary>

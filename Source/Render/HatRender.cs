@@ -3,11 +3,12 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// Prestige hats on players' heads (models from Cosmetics/hats.json, Source/Cosmetics/Cosmetics.cs). A hat is a few
+/// Uniform caps on players' heads (models from Cosmetics/uniforms.json, Source/Cosmetics/Uniforms.cs; the prestige hats went
+/// with levelling, 2026-11-17). A hat is a few
 /// boxes parented to the head, so it follows the body lean, the stance and the legs' hip bob like the head does, and is
 /// never drawn in your own first-person view (only your legs are). Cosmetic only: no collision, hitboxes come from
 /// <see cref="World"/> and never look at hats. A dead player's hat lies on the ground by the corpse.
-/// The ridiculous top hat sways with movement: a pure function of the drawn velocity and the clock (no per-player state),
+/// A hat with wobble sways with movement: a pure function of the drawn velocity and the clock (no per-player state),
 /// so the scene graph and the immediate fallback draw the same thing.
 /// </summary>
 public static class HatRender
@@ -15,15 +16,8 @@ public static class HatRender
     /// <summary>The head width the hat models are made for (the standing head box).</summary>
     public const float ModelHeadWidth = 0.45f;
 
-    /// <summary>The hat to draw on <paramref name="p"/>: their uniform's (staff and bots too: Source/Cosmetics/Uniforms.cs), else bots never wear one; people only a hat their prestige allows.</summary>
-    public static HatDef? HatFor(Player p)
-    {
-        if (BodyModel.UniformOf(p)?.Hat is { } cap)
-            return cap;
-        if (p.Bot != null || p.Hat == HatId.None || !Cosmetics.IsUnlocked(p.Hat, p.Prestige))
-            return null;
-        return Cosmetics.Get(p.Hat);
-    }
+    /// <summary>The hat to draw on <paramref name="p"/>: their uniform's (staff and bots too: Source/Cosmetics/Uniforms.cs), else none.</summary>
+    public static HatDef? HatFor(Player p) => BodyModel.UniformOf(p)?.Hat;
 
     /// <summary>
     /// The hat's local matrix in the head node's space (origin at the head box's centre): scaled to the head, sitting on

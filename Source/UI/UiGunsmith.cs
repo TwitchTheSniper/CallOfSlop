@@ -41,11 +41,10 @@ public sealed partial class Ui
 
     private void DrawShowcase(Audio audio, WeaponDef w, float2 area, float2 winPos, float2 winSize)
     {
-        var prog = Progress;
         var origin = ImGui.GetCursorScreenPos();
         var kit = KitOf(w);
         var options = Attachments.For(w);
-        var wxp = prog.WeaponXp(w.Id);
+        const int wxp = int.MaxValue; // (every attachment is open since levelling went, 2026-11-17)
 
         // What the gun looks like right now (with the hovered attachment previewed on it).
         var previewKit = kit;
@@ -66,16 +65,6 @@ public sealed partial class Ui
         ImGui.PopFont();
         ImGui.SetCursorScreenPos(titlePos + new float2(0, 36 * _scale));
         ImGuiSafe.TextColored(Dim, $"{w.ClassName}  -  {w.ModeName}");
-        if (options.Count > 0)
-        {
-            var maxXp = Attachments.MaxXp(w);
-            ImGui.SetCursorScreenPos(titlePos + new float2(0, 58 * _scale));
-            ImGuiSafe.TextColored(Dim, $"Weapon XP {Math.Min(wxp, maxXp):N0} / {maxXp:N0}");
-            ImGui.SetCursorScreenPos(titlePos + new float2(0, 78 * _scale));
-            ImGui.PushStyleColor(ImGuiCol.PlotHistogram, new float4(0.4f, 0.95f, 1f, 1f));
-            ImGui.ProgressBar(Math.Clamp(wxp / (float)maxXp, 0f, 1f), new float2(area.X * 0.17f, 6 * _scale), ""u8);
-            ImGui.PopStyleColor();
-        }
         if (!InEdit(w))
         {
             // Opened from the weapon select on a gun that isn't equipped: a preview until you change something.

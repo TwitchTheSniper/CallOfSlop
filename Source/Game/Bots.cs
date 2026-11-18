@@ -377,7 +377,6 @@ public sealed partial class Game
     {
         if (!IsServer)
             return;
-        RefreshHostProfile(); // the host's own prestige / level (GameCosmetics.cs)
         _w.Begin(Msg.Roster).U8((byte)Players.Count);
         foreach (var p in Players.Values)
         {

@@ -84,7 +84,7 @@ public static unsafe partial class Program
     private static void SendRoomLoadout(double now)
     {
         if (_session is { } g)
-            g.ChooseLoadout(LoadoutStore.Active(g.Progress ?? _progress), now);
+            g.ChooseLoadout(LoadoutStore.Active(), now);
     }
 
     /// <summary>The lobby room's input: the Ready key, and the loadout screen closing (the server gets the new loadout).</summary>

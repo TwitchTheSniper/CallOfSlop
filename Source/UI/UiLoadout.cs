@@ -48,7 +48,7 @@ public sealed partial class Ui
     private uint KitOf(WeaponDef w)
     {
         var kit = w.Id == Edit.Primary ? Edit.PrimaryKit : w.Id == Edit.Secondary ? Edit.SecondaryKit : LoadoutStore.KitMemory(w.Id);
-        return Attachments.Sanitize(w, kit, Progress);
+        return Attachments.Sanitize(w, kit);
     }
 
     /// <summary>Is the gun in the loadout being edited?</summary>
@@ -60,9 +60,9 @@ public sealed partial class Ui
     /// </summary>
     private void SetKitOf(Audio audio, WeaponDef w, uint kit)
     {
-        if (!InEdit(w) && WeaponSelect.UnlockLevel(w) <= Progress.Level)
+        if (!InEdit(w))
         {
-            LoadoutStore.SetWeapon(Edit, (int)w.Slot, w.Id, Progress);
+            LoadoutStore.SetWeapon(Edit, (int)w.Slot, w.Id);
             audio.Equip(w);
         }
         if (w.Id == Edit.Primary)
@@ -125,7 +125,7 @@ public sealed partial class Ui
     {
         _nav.Reset();
         _renaming = false;
-        _editSlot = LoadoutStore.UnlockedSlot(LoadoutStore.Selected, Progress);
+        _editSlot = LoadoutStore.ValidSlot(LoadoutStore.Selected);
         _hoverThrowable = null;
         _hoverAttachment = null;
         _hoverPerk = null;
@@ -153,14 +153,14 @@ public sealed partial class Ui
     public void DeploySaved(Game game, double now)
     {
         MenuOpen = false;
-        game.ChooseLoadout(LoadoutStore.Active(Progress), now);
+        game.ChooseLoadout(LoadoutStore.Active(), now);
         game.RequestRespawn();
     }
 
     private void ApplySelection(Game game, double now)
     {
         LoadoutStore.Selected = _editSlot;
-        game.ChooseLoadout(LoadoutStore.Active(Progress), now);
+        game.ChooseLoadout(LoadoutStore.Active(), now);
         LoadoutStore.Save();
     }
 
@@ -193,8 +193,7 @@ public sealed partial class Ui
         TrackSecondClick();
 
         var deployed = false;
-        var prog = Progress;
-        _editSlot = LoadoutStore.UnlockedSlot(_editSlot, prog); // a locked slot (level reset, edited file) falls back to an unlocked one
+        _editSlot = LoadoutStore.ValidSlot(_editSlot); // (an edited file's slot past the end falls back to the last)
         var vp = ImGui.GetMainViewport();
         var center = new float2(vp.WorkPos.X + vp.WorkSize.X / 2, vp.WorkPos.Y + vp.WorkSize.Y / 2);
         ImGui.SetNextWindowPos(center, ImGuiCond.Always, new float2(0.5f, 0.5f));
@@ -229,9 +228,6 @@ public sealed partial class Ui
             {
                 case LoadoutPage.Overview:
                     DrawOverview(game, body);
-                    break;
-                case LoadoutPage.Progression:
-                    DrawProgressionPage(body);
                     break;
                 default:
                     DrawEditView(audio, body, winPos, winSize);
@@ -314,8 +310,6 @@ public sealed partial class Ui
                 }
                 ImGui.EndChild();
             }
-            if (game?.Module.ArenaExtras ?? true) // (Sandbox: no levels)
-                LevelBar(barMin, new float2(barW, footerH));
         }
         ImGui.End();
         return deployed;
@@ -372,7 +366,7 @@ public sealed partial class Ui
                 LoadoutPage.Perks => "Perks",
                 LoadoutPage.Attachments => $"{Weapons.Get((byte)Math.Clamp(e.Arg, 0, 255)).Name} attachments",
                 LoadoutPage.Streaks => "Kill streaks",
-                _ => "Progression",
+                _ => "",
             };
             if (i == _nav.Depth - 1)
                 ImGui.Text(label);
@@ -382,90 +376,16 @@ public sealed partial class Ui
         ImGui.Spacing();
     }
 
-    /// <summary>The progression page: level, XP, stats and every unlock by level.</summary>
-    private void DrawProgressionPage(float2 size)
-    {
-        var prog = Progress;
-        if (ImGui.BeginChild("##progression"u8, size, ImGuiChildFlags.None))
-        {
-            LevelSummary();
-            ImGuiSafe.TextColored(Dim, $"Kills {prog.Kills}   Headshots {prog.Headshots}   Matches {prog.Matches}   Wins {prog.Wins}   Loadout slots {prog.LoadoutSlots}/{CallOfSlop.Progress.MaxLoadoutSlots}");
-            ImGui.Spacing();
-            ProgressionTable();
-        }
-        ImGui.EndChild();
-    }
-
-    /// <summary>
-    /// The level bar in the footer: LEVEL N, XP into the level, the next unlock. Clicking it opens the
-    /// progression page (or goes back from it).
-    /// </summary>
-    private void LevelBar(float2 min, float2 size)
-    {
-        var p = Progress;
-        var open = _nav.Current == LoadoutPage.Progression;
-        ImGui.SetCursorScreenPos(min);
-        if (ImGui.InvisibleButton("##levelbar"u8, size))
-        {
-            if (open)
-                GoBack();
-            else
-                OpenPage(LoadoutPage.Progression);
-        }
-        var hot = ImGui.IsItemHovered();
-        if (hot)
-            ImGui.SetItemTooltip(open ? "Back"u8 : "Show every unlock by level"u8);
-        var dl = ImGui.GetWindowDrawList();
-        var max = min + size;
-        var r = 4 * _scale;
-        dl.AddRectFilled(min, max, open ? new ImColor8(44, 38, 32, 245) : hot ? Hover8 : Card8, r);
-        if (open || hot)
-            dl.AddRect(min, max, Orange8, r, ImDrawFlags.None, 1.5f * _scale);
-        var pad = 10 * _scale;
-        var clip = new float4(min.X, min.Y, max.X, max.Y);
-        var maxed = p.Level >= CallOfSlop.Progress.MaxLevel;
-
-        ImGui.PushFont(default, 18);
-        DlText(dl, new float2(min.X + pad, min.Y + 3 * _scale), Orange8, $"LEVEL {p.Level}", clip);
-        ImGui.PopFont();
-        ImGui.PushFont(default, 14);
-        var link = open ? "< BACK"u8 : "ALL UNLOCKS >"u8;
-        var lw = ImGui.CalcTextSize(link).X;
-        DlText(dl, new float2(max.X - pad - lw, min.Y + 6 * _scale), hot || open ? White8 : new ImColor8(115, 190, 242, 255), link, clip);
-
-        var b0 = new float2(min.X + pad, min.Y + 24 * _scale);
-        var bw = size.X - 2 * pad;
-        dl.AddRectFilled(b0, b0 + new float2(bw, 4 * _scale), new ImColor8(48, 52, 60, 255));
-        var f = maxed ? 1f : Math.Clamp(p.LevelFraction, 0f, 1f);
-        if (f > 0)
-            dl.AddRectFilled(b0, b0 + new float2(bw * f, 4 * _scale), Orange8);
-
-        var cy = min.Y + 30 * _scale;
-        var xp = maxed ? $"MAX LEVEL  -  {p.Xp:N0} XP" : $"{p.XpIntoLevel:N0} / {CallOfSlop.Progress.XpForNext(p.Level):N0} XP";
-        DlText(dl, new float2(min.X + pad, cy), Dim8, xp, clip);
-        if (p.NextUnlock is { } next)
-        {
-            var xw = ImGui.CalcTextSize(xp).X;
-            var text = $"Next: {next.Name} at {next.Level}";
-            var tw = ImGui.CalcTextSize(text).X;
-            var tx = MathF.Max(min.X + pad + xw + 14 * _scale, max.X - pad - tw);
-            DlText(dl, new float2(tx, cy), Dim8, text, new float4(min.X, min.Y, max.X - pad, max.Y));
-        }
-        ImGui.PopFont();
-    }
-
     // ---- Overview: slot list + cards ----------------------------------------------------------
 
     private void DrawOverview(Game? game, float2 size)
     {
-        var prog = Progress;
         var hot = -1;
         var leftW = size.X * 0.3f;
         if (ImGui.BeginChild("##slots"u8, new float2(leftW, size.Y), ImGuiChildFlags.None))
         {
             var rowH = 50 * _scale;
-            // Only unlocked slots are listed; locked ones keep their saved contents and show up again once unlocked.
-            for (var i = 0; i < LoadoutStore.UnlockedSlots(prog); i++)
+            for (var i = 0; i < LoadoutStore.Slots.Length; i++)
             {
                 var l = LoadoutStore.Slots[i];
                 var selected = i == _editSlot;
@@ -476,7 +396,7 @@ public sealed partial class Ui
                     ImGui.PushFont(default, 18);
                     ImGuiSafe.TextColored(selected ? new float4(0.55f, 0.85f, 1f, 1f) : new float4(1, 1, 1, 1), l.Name);
                     ImGui.PopFont();
-                    var eff = LoadoutStore.Effective(l, prog);
+                    var eff = LoadoutStore.Effective(l);
                     ImGuiSafe.TextColored(Dim, $"{Weapons.Get(eff.Primary).Name} + {Weapons.Get(eff.Secondary).Name}");
                     if (selected)
                     {
@@ -502,8 +422,6 @@ public sealed partial class Ui
                     _renaming = false;
                 }
             }
-            if (LoadoutStore.NextSlotLevel(prog) is { } next)
-                ImGuiSafe.TextColored(Dim, $"Next slot at level {next}");
         }
         ImGui.EndChild();
 
@@ -511,7 +429,7 @@ public sealed partial class Ui
         if (ImGui.BeginChild("##cards"u8, new float2(0, size.Y), ImGuiChildFlags.None, ImGuiWindowFlags.NoScrollbar))
         {
             var l = Edit;
-            var eff = LoadoutStore.Effective(l, prog);
+            var eff = LoadoutStore.Effective(l);
 
             // Name + rename
             ImGui.PushFont(default, 26);
@@ -590,7 +508,7 @@ public sealed partial class Ui
                 OpenPage(LoadoutPage.Streaks);
 
             if (!SameAsStored(l, eff))
-                ImGui.TextColored(Orange, "Some items in this loadout are locked at your level, so defaults stand in for them."u8);
+                ImGui.TextColored(Orange, "Some items in this loadout don't fit their slot, so defaults stand in for them."u8);
         }
         ImGui.EndChild();
         _hotCard = hot;
@@ -649,16 +567,8 @@ public sealed partial class Ui
             ImGui.PopTextWrapPos();
 
             var options = Attachments.For(def);
-            var wxp = Progress.WeaponXp(def.Id);
-            var max = Attachments.MaxXp(def);
             ImGui.SetCursorScreenPos(pos + new float2(10 * _scale, height - 30 * _scale));
-            ImGuiSafe.TextColored(Dim, options.Count == 0
-                ? "Takes no attachments"
-                : $"Weapon XP {Math.Min(wxp, max):N0} / {max:N0}  -  {options.Count(a => wxp >= Attachments.UnlockXp(def, a))}/{options.Count} unlocked");
-            ImGui.SetCursorScreenPos(pos + new float2(10 * _scale, height - 10 * _scale));
-            ImGui.PushStyleColor(ImGuiCol.PlotHistogram, new float4(0.4f, 0.95f, 1f, 1f));
-            ImGui.ProgressBar(options.Count == 0 ? 0 : Math.Clamp(wxp / (float)max, 0f, 1f), new float2(width * 0.42f, 4 * _scale), ""u8);
-            ImGui.PopStyleColor();
+            ImGuiSafe.TextColored(Dim, options.Count == 0 ? "Takes no attachments" : $"{options.Count} attachments");
 
             // Attachment dots, top right (like the slot cards in the gunsmith)
             var slots = Enumerable.Range(0, Attachments.SlotCount).Count(sl => options.Any(a => (int)a.Slot == sl));
@@ -760,7 +670,6 @@ public sealed partial class Ui
 
     private void DrawEditView(Audio audio, float2 size, float2 winPos, float2 winSize)
     {
-        var prog = Progress;
         var l = Edit;
         var page = _nav.Current;
         var area = new float2(ImGui.GetContentRegionAvail().X, size.Y);
@@ -784,7 +693,7 @@ public sealed partial class Ui
         if (page is LoadoutPage.Primary or LoadoutPage.Secondary)
         {
             var gunSlot = page == LoadoutPage.Secondary ? 1 : 0;
-            var gun = Weapons.Get(LoadoutStore.Effective(l, prog).WeaponIn(gunSlot));
+            var gun = Weapons.Get(LoadoutStore.Effective(l).WeaponIn(gunSlot));
             _showcaseLastFrame = true; // the hero gun is drawn behind the UI, like the showcase
             DrawWeaponSelect(audio, gunSlot, gun, area, winPos, winSize);
             return;
@@ -797,17 +706,12 @@ public sealed partial class Ui
         {
             foreach (var t in Throwables.All.Where(t => t.InLoadouts && (t.Kind == ThrowableKind.None || t.IsEquipment == equipmentTab)))
             {
-                var unlocked = prog.IsUnlocked(t.Kind);
                 var selected = equipmentTab ? l.Equipment == t.Kind : l.Grenade == t.Kind;
-                var label = unlocked ? $"{t.Name}##t{(int)t.Kind}" : $"[LOCKED] {t.Name}  -  level {CallOfSlop.Progress.UnlockLevel(t.Kind)}##t{(int)t.Kind}";
-                if (!unlocked)
-                    ImGui.PushStyleColor(ImGuiCol.Text, Dim);
+                var label = $"{t.Name}##t{(int)t.Kind}";
                 // A click (or a double-click: its second click lands on the same, now picked, item) picks it.
                 if (ImGui.Selectable(label, selected) && !SecondClick)
                 {
-                    if (!unlocked)
-                        LockedFeedback(audio);
-                    else if (!selected)
+                    if (!selected)
                     {
                         if (equipmentTab)
                             l.Equipment = t.Kind;
@@ -817,8 +721,6 @@ public sealed partial class Ui
                         audio.Effect(Sfx.HitTick, 0.4f);
                     }
                 }
-                if (!unlocked)
-                    ImGui.PopStyleColor();
                 if (ImGui.IsItemHovered())
                     hoveredThrowable = t;
             }
@@ -866,7 +768,6 @@ public sealed partial class Ui
     /// <summary>Three columns, one per category: click a perk to carry it in this loadout.</summary>
     private void DrawPerkPicker(Audio audio, float2 area)
     {
-        var prog = Progress;
         var l = Edit;
         var gap = ImGui.GetStyle().ItemSpacing.X;
         var colW = (area.X - gap * 2) / 3;
@@ -893,12 +794,11 @@ public sealed partial class Ui
                 ImGui.Spacing();
                 foreach (var def in Perks.In(cat).Prepend(Perks.Get(PerkId.None)))
                 {
-                    var unlocked = prog.IsUnlocked(def.Id);
                     var selected = l.Perks[cat] == def.Id;
                     var cardH = def.Id == PerkId.None ? 36 * _scale : 112 * _scale;
                     var pos = ImGui.GetCursorScreenPos();
                     var cw = ImGui.GetContentRegionAvail().X;
-                    ImGui.PushStyleColor(ImGuiCol.ChildBg, selected ? SelectedBg : !unlocked ? LockedBg : _hoverPerk == def && _perkFocus == cat ? CardHover : CardBg);
+                    ImGui.PushStyleColor(ImGuiCol.ChildBg, selected ? SelectedBg : _hoverPerk == def && _perkFocus == cat ? CardHover : CardBg);
                     if (ImGui.BeginChild($"##perk{c}_{(int)def.Id}", new float2(cw, cardH), ImGuiChildFlags.Borders, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
                     {
                         if (def.Id == PerkId.None)
@@ -908,16 +808,16 @@ public sealed partial class Ui
                         else
                         {
                             var dl = ImGui.GetWindowDrawList();
-                            DrawPerkIcon(dl, def.Id, cat, pos + new float2(26 * _scale, 30 * _scale), 18 * _scale, !unlocked);
+                            DrawPerkIcon(dl, def.Id, cat, pos + new float2(26 * _scale, 30 * _scale), 18 * _scale);
                             ImGui.SetCursorScreenPos(pos + new float2(52 * _scale, 8 * _scale));
                             ImGui.PushFont(default, 18);
-                            ImGuiSafe.TextColored(unlocked ? new float4(1, 1, 1, 1) : Dim, def.Name);
+                            ImGuiSafe.TextColored(new float4(1, 1, 1, 1), def.Name);
                             ImGui.PopFont();
                             ImGui.SetCursorScreenPos(pos + new float2(52 * _scale, 30 * _scale));
-                            ImGuiSafe.TextColored(unlocked ? col4 : Dim, def.When);
+                            ImGuiSafe.TextColored(col4, def.When);
                             ImGui.SetCursorScreenPos(pos + new float2(8 * _scale, 54 * _scale));
-                            ImGui.PushStyleColor(ImGuiCol.Text, unlocked ? new float4(0.8f, 0.8f, 0.84f, 1f) : Dim);
-                            ImGuiSafe.TextWrapped(unlocked ? def.Effect : $"Unlocks at level {CallOfSlop.Progress.PerkLevel(def.Id)}. {def.Effect}");
+                            ImGui.PushStyleColor(ImGuiCol.Text, new float4(0.8f, 0.8f, 0.84f, 1f));
+                            ImGuiSafe.TextWrapped(def.Effect);
                             ImGui.PopStyleColor();
                             if (selected)
                             {
@@ -936,9 +836,7 @@ public sealed partial class Ui
                     // A click picks it (a double-click's second click lands on the picked card and does nothing more).
                     if (ImGui.IsItemClicked(ImGuiMouseButton.Left) && !SecondClick)
                     {
-                        if (!unlocked)
-                            LockedFeedback(audio);
-                        else if (!selected)
+                        if (!selected)
                         {
                             l.Perks = l.Perks.With(cat, def.Id);
                             LoadoutStore.Save();

@@ -237,9 +237,6 @@ public sealed partial class Game
     {
         var won = LocalWon;
         Log(MatchResult, true);
-        // Match XP for whoever finished the match in it (account XP + a weapon XP bonus for the loadout carried).
-        if (Progress != null && Local is { } me && Progress.AwardMatch(won, me.Primary, me.Secondary, Brutal.GlfwApi.Glfw.Time) != null)
-            Audio.Effect(Sfx.LevelUp, 0.8f);
         if (Local != null)
             Audio.Effect(won ? Sfx.LevelUp : Winner == NoWinner ? Sfx.Respawn : Sfx.Death, 0.8f);
     }

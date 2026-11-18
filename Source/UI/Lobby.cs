@@ -55,7 +55,6 @@ public sealed partial class Ui
     public bool PauseOpen;
     private bool _pauseSettings;
     private ImInputString? _nameInput;
-    private bool _confirmReset;
     private ImInputString? _addressInput;
     private int _portInput;
 
@@ -600,68 +599,6 @@ public sealed partial class Ui
         ImGui.Spacing();
     }
 
-    /// <summary>
-    /// The level heading, XP bar, prestige button and next unlock. The main menu passes <paramref name="compact"/>: every
-    /// line wraps at the button width (so a long unlock name can't stretch the panel) and the XP values and the
-    /// "every level unlocks" blurb are left to the Loadouts > Progression page, which draws the full version.
-    /// </summary>
-    private void LevelSummary(bool compact = false)
-    {
-        var p = Progress;
-        var wrapFrom = ImGui.GetCursorPosX();
-        if (compact)
-            ImGui.PushTextWrapPos(wrapFrom + MenuButtonWidth * _scale);
-        ImGui.PushFont(default, 22);
-        ImGuiSafe.TextColored(Orange, $"{PrestigePrefix(p)}LEVEL {p.Level}");
-        ImGui.PopFont();
-        ImGui.SameLine();
-        ImGuiSafe.TextColored(Dim, p.Level >= CallOfSlop.Progress.MaxLevel
-            ? (compact ? $"  max level - {p.Xp} XP" : $"  max level - {p.Xp} XP, {p.Kills} kills, {p.Headshots} headshots")
-            : $"  {p.XpIntoLevel} / {CallOfSlop.Progress.XpForNext(p.Level)} XP to level {p.Level + 1}");
-        ImGui.PushStyleColor(ImGuiCol.PlotHistogram, Orange);
-        ImGui.ProgressBar(p.LevelFraction, new float2(MenuButtonWidth * _scale, 10 * _scale), ""u8);
-        ImGui.PopStyleColor();
-        PrestigeButton(compact); // UiPrestige.cs
-        if (p.NextUnlock is { } next)
-            ImGuiSafe.TextColored(Dim, $"Next unlock: {next.Name} ({next.Kind.ToLowerInvariant()}) at level {next.Level}");
-        if (compact)
-        {
-            ImGui.PopTextWrapPos();
-            ImGui.Spacing();
-            return;
-        }
-        ImGuiSafe.TextColored(Dim, $"Kill +{CallOfSlop.Progress.KillXp} XP   Headshot kill +{CallOfSlop.Progress.HeadshotBonus}   Grenade kill +{CallOfSlop.Progress.GrenadeBonus}   Match +{CallOfSlop.Progress.MatchXp}   Win +{CallOfSlop.Progress.WinXp}");
-        ImGuiSafe.TextColored(Dim, $"Every level unlocks something: weapons, grenades, perks and up to {CallOfSlop.Progress.MaxLoadoutSlots} loadout slots. Each gun also earns its own weapon XP for attachments (3-7 matches to max one out).");
-        ImGui.Spacing();
-    }
-
-    private void ProgressionTable()
-    {
-        var p = Progress;
-        var height = MathF.Min(460 * _scale, ImGui.GetMainViewport().WorkSize.Y * 0.5f);
-        if (!ImGui.BeginTable("##prog"u8, 3, ImGuiTableFlags.RowBg | ImGuiTableFlags.BordersInnerV | ImGuiTableFlags.ScrollY, new float2(720 * _scale, height)))
-            return;
-        ImGui.TableSetupColumn("Level"u8, ImGuiTableColumnFlags.WidthFixed, 70 * _scale);
-        ImGui.TableSetupColumn("XP"u8, ImGuiTableColumnFlags.WidthFixed, 90 * _scale);
-        ImGui.TableSetupColumn("Unlocks"u8, ImGuiTableColumnFlags.WidthStretch);
-        ImGui.TableHeadersRow();
-        for (var level = 1; level <= CallOfSlop.Progress.MaxLevel; level++)
-        {
-            var reached = p.Level >= level;
-            var unlocks = string.Join(", ", p.UnlocksAt(level).Select(CallOfSlop.Progress.Describe));
-            ImGui.TableNextRow();
-            ImGui.TableNextColumn();
-            ImGuiSafe.TextColored(reached ? Green : Dim, $"{level}");
-            ImGui.TableNextColumn();
-            ImGuiSafe.TextColored(Dim, $"{CallOfSlop.Progress.TotalFor(level)}");
-            ImGui.TableNextColumn();
-            ImGui.PushStyleColor(ImGuiCol.Text, reached ? new float4(1, 1, 1, 1) : Dim);
-            ImGuiSafe.TextWrapped(unlocks.Length > 0 ? unlocks : "-");
-            ImGui.PopStyleColor();
-        }
-        ImGui.EndTable();
-    }
-
     /// <summary>Shown under a bot slider at 0: what a match with nobody else in it does.</summary>
     private void TestModeHint()
     {
@@ -880,30 +817,6 @@ public sealed partial class Ui
             ImGui.SliderFloat("Field of view"u8, ref s.Fov, 60f, 110f, "%.0f deg"u8);
             ImGui.Checkbox("Show network stats"u8, ref s.ShowNetStats);
 
-            ImGui.Spacing();
-            ImGui.SeparatorText("Progression"u8);
-            ImGui.Text($"Level {Progress.Level}  ({Progress.Xp} XP, {Progress.Kills} kills)");
-            if (!_confirmReset)
-            {
-                if (ImGui.Button("Reset level"u8))
-                    _confirmReset = true;
-                ImGui.SameLine();
-                ImGui.TextColored(Dim, "Back to level 1 - all unlocks lock again."u8);
-            }
-            else
-            {
-                ImGui.TextColored(Red, "Reset to level 1 and lose all XP and unlocks? This can't be undone."u8);
-                if (ImGui.Button("Yes, reset"u8))
-                {
-                    Progress.Reset();
-                    LoadoutStore.Selected = 0; // only one loadout slot at level 1 (locked picks fall back to defaults when used)
-                    LoadoutStore.Save();
-                    _confirmReset = false;
-                }
-                ImGui.SameLine();
-                if (ImGui.Button("Cancel"u8))
-                    _confirmReset = false;
-            }
             // Where the saves live (SavePaths.cs): they carry over to new builds automatically.
             ImGui.Spacing();
             ImGui.SeparatorText("Saves"u8);
@@ -911,7 +824,7 @@ public sealed partial class Ui
             if (ImGui.Button("Open save folder"u8))
                 SavePaths.OpenFolder();
             ImGui.SameLine();
-            ImGui.TextColored(Dim, "Progress, loadouts and settings carry over to new builds."u8);
+            ImGui.TextColored(Dim, "Loadouts and settings carry over to new builds."u8);
             if (SavePaths.Warning is { } saveWarning)
                 ImGuiSafe.TextColored(Red, saveWarning);
             UpdateSettings(s); // Updates: check at startup, Check for updates (UiUpdates.cs)

@@ -1432,40 +1432,22 @@ public static partial class SelfTest
 
     private static void CheckLoadoutsAndPerks()
     {
-        // Loadout slots: 1 at level 1, the last at max level, evenly spread, always increasing.
-        var levels = Enumerable.Range(0, Progress.MaxLoadoutSlots).Select(Progress.LoadoutSlotLevel).ToArray();
-        Line($"loadout slots unlock at levels {string.Join(", ", levels)} (max level {Progress.MaxLevel})");
-        if (levels[0] != 1 || levels[^1] != Progress.MaxLevel || levels.Zip(levels.Skip(1)).Any(p => p.Second <= p.First))
-            Fail("loadout slot levels must go 1 ... max level, strictly increasing");
-        var gaps = levels.Zip(levels.Skip(1)).Select(p => p.Second - p.First).ToArray();
-        if (gaps.Max() - gaps.Min() > 1)
-            Fail($"loadout slots aren't evenly spaced: gaps {string.Join(",", gaps)}");
-        var fresh = new Progress { ReadOnly = true };
-        if (fresh.LoadoutSlots != 1)
-            Fail($"a level-1 player has {fresh.LoadoutSlots} loadout slots (should be 1)");
-        var maxed = new Progress { ReadOnly = true, Xp = Progress.TotalFor(Progress.MaxLevel) };
-        if (maxed.LoadoutSlots != Progress.MaxLoadoutSlots)
-            Fail($"a max-level player has {maxed.LoadoutSlots} loadout slots");
-
-        // Perks: four per category, the starters at level 1, everything unlocks by max level.
+        // Perks: three or more per category, a starter in each. (Unlock levels went with levelling, 2026-11-17.)
         foreach (var c in new[] { PerkCategory.Movement, PerkCategory.Survival, PerkCategory.Damage })
         {
             var inCat = Perks.In(c).ToArray();
-            Line($"{Perks.CategoryName(c)}: {string.Join(", ", inCat.Select(p => $"{p.Name} (lvl {Progress.PerkLevel(p.Id)})"))}");
+            Line($"{Perks.CategoryName(c)}: {string.Join(", ", inCat.Select(p => p.Name))}");
             if (inCat.Length < 3)
                 Fail($"{c} has only {inCat.Length} perks");
-            if (!inCat.Any(p => Progress.PerkLevel(p.Id) == 1))
+            if (!inCat.Any(p => Perks.Starters.Contains(p.Id)))
                 Fail($"{c} has no starter perk");
         }
-        if (Perks.All.Any(p => Progress.PerkLevel(p.Id) > Progress.MaxLevel))
-            Fail("a perk unlocks past max level");
 
-        // A level-1 player's loadout with locked things in it falls back to defaults.
+        // A loadout keeps what fits: nothing is locked any more.
         var l = new Loadout { Primary = Weapons.Find("Railspike")!.Id, Grenade = ThrowableKind.Smoke, Perks = new PerkSet(PerkId.Parkour, PerkId.LastStand, PerkId.PointBlank) };
-        var eff = LoadoutStore.Effective(l, fresh);
-        if (eff.Primary != Weapons.DefaultPrimary.Id || eff.Grenade != ThrowableKind.None || eff.Perks.Movement != PerkId.None
-            || eff.Perks.Survival != PerkId.None || eff.Perks.Damage != PerkId.PointBlank)
-            Fail($"locked items weren't swapped out: {Weapons.Get(eff.Primary).Name}, {eff.Grenade}, {eff.Perks}");
+        var eff = LoadoutStore.Effective(l);
+        if (eff.Primary != l.Primary || eff.Grenade != ThrowableKind.Smoke || eff.Perks.Movement != PerkId.Parkour)
+            Fail($"a loadout lost an item that fits: {Weapons.Get(eff.Primary).Name}, {eff.Grenade}, {eff.Perks}");
 
         // ---- Movement perks in the shared physics ----
         World.SetMap(Maps.All[0]);
@@ -1704,12 +1686,7 @@ public static partial class SelfTest
             var k = Math.Max(0, (int)MathF.Ceiling(list.Count * 0.6f) - 1);
             return Attachments.UnlockXp(w, list[k]);
         }).ToArray();
-        var levelCosts = Enumerable.Range(1, Progress.MaxLevel - 1).Select(Progress.XpForNext).ToArray();
-        Line($"XP for 60% of a gun's attachments: {sixty.Min():N0}-{sixty.Max():N0}, avg {sixty.Average():N0};  XP per level (= per new unlock): {levelCosts.Min():N0}-{levelCosts.Max():N0}, avg {levelCosts.Average():N0}");
-        Line($"levels {Progress.MaxLevel}, total XP to unlock everything {Progress.TotalFor(Progress.MaxLevel):N0} (~{Progress.TotalFor(Progress.MaxLevel) / perMatch:0} matches)");
-        var ratio = levelCosts.Average() / sixty.Average();
-        if (ratio < 0.7 || ratio > 1.4)
-            Fail($"level cost vs 60%-of-a-gun ratio {ratio:0.00} is off target");
+        Line($"XP for 60% of a gun's attachments (their list order): {sixty.Min():N0}-{sixty.Max():N0}, avg {sixty.Average():N0}");
     }
 
     // ---- 4b. Optics ------------------------------------------------------------------------
@@ -1995,35 +1972,6 @@ public static partial class SelfTest
             if (Weapons.Find(fb.Name) is { } file && WeaponDiffs(fb, file, includeId: false) is { Count: > 0 } d)
                 Line($"note: the built-in fallback {fb.Name} differs from its file ({string.Join("; ", d)})");
         }
-
-        // ---- Unlocks: the hand-tuned table still applies by name ----
-        if (Weapons.Find("Courier") is { } courier && Progress.UnlockLevel(courier) != 2)
-            Fail($"Courier unlocks at level {Progress.UnlockLevel(courier)} (should be 2)");
-        if (Progress.UnlockLevel(Weapons.DefaultPrimary) != 1 || Progress.UnlockLevel(Weapons.DefaultSecondary) != 1)
-            Fail("the default weapons aren't unlocked at level 1");
-        if (Weapons.Find("Toy Blaster") is { } toy && Progress.UnlockLevel(toy) != Progress.MaxLevel)
-            Fail($"Toy Blaster unlocks at level {Progress.UnlockLevel(toy)} (should be the max, {Progress.MaxLevel})");
-        foreach (var w in Weapons.All)
-            if (Progress.All.Count(u => u.Weapon == w) != 1)
-                Fail($"{w.Name} appears {Progress.All.Count(u => u.Weapon == w)} times in the unlock table");
-
-        // ---- progress.txt: old id-based weapon XP becomes name-based ----
-        var old = Progress.Parse(["xp=5000", "wx16=1234", "wk9=3", "wx9=50", "wk17=2", "wx99=7", "wx.Courier=10", "wx11=999"]);
-        var expect = new (string Name, int Xp)[] { ("BR-1 Prototype", 1234), ("Hornet SMG", 50), ("Vanguard AR", 200), ("Courier", 10) };
-        foreach (var (name, xp) in expect)
-            if (old.WeaponXp(name) != xp)
-                Fail($"old save: {name} has {old.WeaponXp(name)} weapon XP (expected {xp})");
-        if (Weapons.Find("BR-1 Prototype") is { } br && old.WeaponXp(br.Id) != 1234)
-            Fail("weapon XP by id doesn't find the name-based entry");
-        var saved = old.ToLines().ToArray();
-        if (!saved.Contains("wx.BR-1 Prototype=1234") || saved.Any(l => l.Length > 2 && (l.StartsWith("wx", StringComparison.Ordinal) || l.StartsWith("wk", StringComparison.Ordinal)) && char.IsDigit(l[2])))
-            Fail($"progress isn't saved with name keys: {string.Join(" | ", saved)}");
-        var reread = Progress.Parse(saved);
-        if (expect.Any(e => reread.WeaponXp(e.Name) != e.Xp) || reread.Xp != 5000)
-            Fail("progress didn't survive a save and reload");
-        if (!Progress.Parse(["wx.Some Modded Gun=77"]).ToLines().Contains("wx.Some Modded Gun=77"))
-            Fail("weapon XP for a weapon that isn't loaded was dropped");
-        Line($"old save migrated: {string.Join(", ", expect.Select(e => $"{e.Name} {old.WeaponXp(e.Name)}"))}");
 
         // ---- Multiplayer fingerprint ----
         if (WeaponSet.Mismatch(WeaponSet.WeaponsHash, (byte)Weapons.All.Length, WeaponSet.AttachmentsHash, (byte)attachments.Length) != null)
@@ -2721,8 +2669,6 @@ public static partial class SelfTest
                         Fail($"{w.Name} ({w.ClassName}, {w.Slot}) is in the {slot} tab {WeaponSelect.TabName(c)}");
                     if (i > 0 && WeaponSelect.UnlockLevel(guns[i - 1]) > WeaponSelect.UnlockLevel(w))
                         Fail($"tab {WeaponSelect.TabName(c)} isn't sorted by unlock level ({guns[i - 1].Name} before {w.Name})");
-                    if (WeaponSelect.UnlockLevel(w) != Progress.UnlockLevel(w))
-                        Fail($"{w.Name}: cached unlock level {WeaponSelect.UnlockLevel(w)} != {Progress.UnlockLevel(w)}");
                 }
             }
         }

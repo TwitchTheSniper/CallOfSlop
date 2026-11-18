@@ -45,13 +45,6 @@ public sealed partial class Ui
     private void DrawLevelCell(Game game, Player p)
     {
         var cell = ScoreboardModel.Level(game, p);
-        var icon = ImGui.GetTextLineHeight();
-        if (cell.Hat != HatId.None)
-        {
-            DrawHatIcon(ImGui.GetWindowDrawList(), cell.Hat, ImGui.GetCursorScreenPos(), icon);
-            ImGui.Dummy(new float2(icon, icon));
-            ImGui.SameLine(0, 3 * _scale);
-        }
         ImGuiSafe.TextColored(cell.Bot ? Dim : Gold, cell.Label);
     }
 
