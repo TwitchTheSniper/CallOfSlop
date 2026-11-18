@@ -27,6 +27,15 @@ public static unsafe partial class Program
         return $"no craft {n} ({seen} on the map)";
     }
 
+    private static string? WsMeetOrder(Game g, int n, float gap)
+    {
+        var seen = 0;
+        foreach (var c in g.Constructs.Bodies)
+            if (Ui.CmdIsCraft(c) && ++seen == Math.Max(1, n))
+                return Ui.CommandMeet(g, c.Id, gap);
+        return $"no craft {n} ({seen} on the map)";
+    }
+
     private static float Bulk(Construct c, int i)
     {
         c.PartBounds(i, out var mn, out var mx);
@@ -169,8 +178,9 @@ public static unsafe partial class Program
                     "cancel" => Ui.CommandOrder(g, NavKind.None, "", 0),
                     "come" => Ui.CommandOrder(g, NavKind.Come, "", 0),
                     "dock" when words.Length == 2 && int.TryParse(words[1], out var nth) => WsDockOrder(g, nth),
+                    "meet" when words.Length is 2 or 3 && int.TryParse(words[1], out var mnth) => WsMeetOrder(g, mnth, words.Length == 3 && float.TryParse(words[2], inv, out var mgap) ? mgap : Game.NavMeetGap),
                     "orbit" or "goto" when words.Length == 3 && double.TryParse(words[2], inv, out var km) => Ui.CommandOrder(g, kind == "orbit" ? NavKind.Orbit : NavKind.GoTo, words[1], km),
-                    _ => "order orbit BODY KM | order goto BODY KM | order ground M | order land M | order come | order dock N | order board N door|hull | order cancel",
+                    _ => "order orbit BODY KM | order goto BODY KM | order ground M | order land M | order come | order dock N | order meet N [GAP] | order board N door|hull | order cancel",
                 };
                 if (why != null)
                     WsFail("order: " + why);
@@ -186,14 +196,16 @@ public static unsafe partial class Program
                 }
                 foreach (var c in g.Constructs.Bodies)
                 {
-                    if (!Ui.CmdIsCraft(c))
+                    if (!Ui.CmdIsCraft(c) && !(c.CarriedBy != 0 && c.StabCount > 0)) // (a docked craft too, to see it ride)
                         continue;
                     var o = g.NavOf(c.Id);
                     var height = World.Map.Planetoid is { } pl ? (float)pl.Altitude(c.WorldCom) : c.WorldCom.Y;
                     var push = ConstructPhysics.NavDrive(c, out _, out _, out var burn);
                     var accel = c.Mass > 0 ? push / c.Mass : 0;
+                    c.WorldFrame(0, out var cq, out _);
+                    var tilt = MathF.Acos(Math.Clamp(Vector3.Dot(Vector3.Transform(Vector3.UnitY, cq), ConstructPhysics.HoldUp(c.WorldCom)), -1, 1)) * 180 / MathF.PI; // (its deck against the ground's up)
                     WsSay(string.Create(inv, $"[nav] construct {c.Id} drive: {accel:0.00} m/s2, {(burn > 0 ? $"{c.FuelLeft / burn:0} s at full, dV {accel * c.FuelLeft / burn:0} m/s" : "no fuel burnt")}"));
-                    WsSay(string.Create(inv, $"[nav] construct {c.Id}: {(c.SpaceAway != 0 ? "parked" : c.SpaceShip != 0 ? "space" : "sky")}, {height:0} m up, {c.Vel.Length():0.0} m/s, mass {c.Mass / 1000:0.0} t, fuel {c.FuelLeft:0} L, thrust {c.ThrustShow:0.00}, nav throttle {c.NavThrottle:0.00}, takes orders: {Game.NavProblem(c) ?? "yes"}; order: {(o == null ? "none" : $"{Game.NavText(s.System, o)}, {o.Phase}, {o.Distance:0} m to go, {o.SpeedError:0.0} m/s off{(o.ArriveNs != 0 ? $", trip leaves day {o.DepartNs / 864e11:0.0}, arrives day {o.ArriveNs / 864e11:0.0}, {o.DvNeed / 1000:0.00} km/s" : "")}")}; space day {s.Now.Seconds / 86400:0.00} at {s.Speed}x{((c.SpaceAway != 0 ? g.SpaceAwayLine(c) : g.SpaceOrbitLine(c)) is { } line ? "; " + line : "")}{(g.Local is { Alive: true } you && c.SpaceShip == 0 ? $"; {Vector3.Distance(you.Position, c.WorldCom):0} m from you" : "")}"));
+                    WsSay(string.Create(inv, $"[nav] construct {c.Id}: {(c.SpaceAway != 0 ? "parked" : c.SpaceShip != 0 ? "space" : "sky")}, {height:0} m up, tilt {tilt:0} deg, {c.Vel.Length():0.0} m/s, spin {c.AngVel.Length():0.00} rad/s{(c.CarriedBy != 0 ? $", held by {c.CarriedBy}" : "")}, mass {c.Mass / 1000:0.0} t, fuel {c.FuelLeft:0} L, thrust {c.ThrustShow:0.00}, nav throttle {c.NavThrottle:0.00}, takes orders: {Game.NavProblem(c) ?? "yes"}; order: {(o == null ? "none" : $"{Game.NavText(s.System, o)}, {o.Phase}, {o.Distance:0} m to go, {o.SpeedError:0.0} m/s off{(o.ArriveNs != 0 ? $", trip leaves day {o.DepartNs / 864e11:0.0}, arrives day {o.ArriveNs / 864e11:0.0}, {o.DvNeed / 1000:0.00} km/s" : "")}")}; space day {s.Now.Seconds / 86400:0.00} at {s.Speed}x{((c.SpaceAway != 0 ? g.SpaceAwayLine(c) : g.SpaceOrbitLine(c)) is { } line ? "; " + line : "")}{(g.Local is { Alive: true } you && c.SpaceShip == 0 ? $"; {Vector3.Distance(you.Position, c.WorldCom):0} m from you" : "")}"));
                 }
                 return true;
             }

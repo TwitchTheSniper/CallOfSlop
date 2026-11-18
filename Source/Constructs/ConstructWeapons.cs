@@ -35,6 +35,7 @@ public struct CGun
     public bool RingFed; // its feed is its ring's: an ammo feed into the ring's Ammo in (ship-works.md 5.2)
     public float Loaded; // 0..1: the share of it its ring's autoloaders serve (ConstructWorks.LoadersAt; 0 when its ring isn't fed)
     public short MagPart; // the magazine on its receiver (-1: none): rounds a player brought (ConstructAmmo.cs)
+    public float Flak; // its rounds' flak fuse against missiles and bombs in the air (m; 0: only a direct hit; ConstructPartDef.GunFlak)
     public float RoundV; // what its rounds leave at (m/s; 0: they fly straight: flames, rockets)
     public short Director; // the fire director wired into it (-1: none): it aims where the director's gunner looks
     public short Turret; // the Turret Module wired into it (-1: none): its seat (Seat) aims and fires it (ConstructModules.cs)
@@ -658,6 +659,7 @@ public static class ConstructWeapons
         g.Speed = d.GunSpeed;
         g.Blast = d.GunBlast;
         g.BlastDamage = d.GunBlastDamage;
+        g.Flak = d.GunFlak;
         g.Def = w;
     }
 
@@ -958,6 +960,8 @@ public static class ConstructWeapons
                 continue;
             if ((g.Effects & GunEffect.Shell) != 0 && !world.ShellRoom)
                 continue; // (as many shells in the air as the world holds: it waits, the round not spent)
+            if (g.AimJoints > 0 && OwnHullInWay(world, c, k))
+                continue; // (a turret laid across its own ship holds fire: rounds never pass its own hull, or a craft it carries; the round kept)
             if (g.Energy > 0 && (Beam(c, g.Part) <= 0 || !ConstructPower.Draw(c, g.Energy)))
                 continue; // (an energy gun fires from the capacitors only, and an emitter with no generator serving it not at all: the round, if any, kept)
             if (!g.NoAmmo)
@@ -969,6 +973,24 @@ public static class ConstructWeapons
             if (c.Dirty || !world.Bodies.Contains(c))
                 return; // (its own parts were hit: the rest fire next tick)
         }
+    }
+
+    /// <summary>How far past a turret's muzzle its line of fire is looked along for its own hull (m; a frigate's length, and never past the gun's reach).</summary>
+    public const float HullCheckReach = 150f;
+
+    /// <summary>
+    /// Is the first thing along turret gun <paramref name="k"/>'s bore its own construct, or a craft that construct carries (a docked shuttle)?
+    /// A turret turns where its gunner looks, and a gun station inside the hull looks through the hull: without this its rounds went through
+    /// its own ship (Round passes its own body). Server, only on a shot that would go (one ray).
+    /// </summary>
+    public static bool OwnHullInWay(ConstructWorld world, Construct c, int k)
+    {
+        ref var g = ref c.Guns[k];
+        MuzzleWorld(c, k, out var muzzle, out var fwd);
+        var reach = MathF.Min(g.MaxRange, HullCheckReach);
+        if (!world.Raycast(muzzle + fwd * 0.3f, fwd, reach, out var hit) || hit.Glass || hit.Distance < 0.05f)
+            return false; // (glass it shoots out through; a part round the muzzle itself, a shield or a mount it fires from, is its own)
+        return hit.Body == c || hit.Body.CarriedBy == c.Id || c.CarriedBy != 0 && (hit.Body.Id == c.CarriedBy || hit.Body.CarriedBy == c.CarriedBy);
     }
 
     /// <summary>Fills gun <paramref name="k"/> from its boxes, nearest first, up to a load.</summary>
@@ -1403,7 +1425,7 @@ public static class ConstructWeapons
                     tid = id;
                     what = 3;
                 }
-                if (world.ShellCount > 0 && world.RayShell(pos, dir, best, out var sd, out var sk) && sd < best)
+                if (world.ShellCount > 0 && world.RayShell(pos, dir, best, out var sd, out var sk, g.Flak) && sd < best)
                 {
                     best = sd;
                     tid = sk;

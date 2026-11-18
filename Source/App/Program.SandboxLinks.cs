@@ -633,15 +633,26 @@ public static partial class Program
         {
             RouteRender.AimBody = c;
             RouteRender.AimRoute = k;
+            if (h.Tool == ConstructTool.Linker)
+            {
+                // (the two devices it connects, outlined)
+                ConstructRender.LinkEndBodyA = ConstructRender.LinkEndBodyB = c;
+                ConstructRender.LinkEndPartA = r.Source;
+                ConstructRender.LinkEndPartB = r.To;
+            }
         }
         var hp = ConstructRoutes.SegmentHealth(c, k, hit.RouteSeg);
         var key = ((long)c.Id << 40) ^ ((long)k << 32) ^ ((long)hit.RouteSeg << 24) ^ (long)(hp * 10) ^ (repair ? 1L << 62 : 0) ^ ((long)h.Tool << 56)
-                  ^ (r.FedEnd ? 1L << 61 : 0) ^ ((long)(r.Share * 100) << 12) ^ (c.FlexSectionCount > 0 ? ConstructRoutes.FlexKey(c, k) : 0) ^ ((long)jam << 4) ^ ((long)r.ConvW << 44);
+                  ^ (r.FedEnd ? 1L << 61 : 0) ^ ((long)(r.Share * 100) << 12) ^ (c.FlexSectionCount > 0 ? ConstructRoutes.FlexKey(c, k) : 0) ^ ((long)jam << 4) ^ ((long)r.ConvW << 44)
+                  ^ ((long)c.PartCount << 20) ^ ((long)r.Source * 40503L) ^ ((long)r.To * 2654435761L) ^ ((long)r.ToPort << 50) ^ ((long)r.SourcePort * 0x1E3779B97F4A7C15L) ^ ((long)r.Parent * 0x632BE59BD9B4E019L); // (the ends' labels: devices are numbered among the body's parts)
         if (key != _lkLookKey)
         {
             _lkLookKey = key;
             var full = ConstructRoutes.Health(r.Type);
-            var what = r.Source < c.PartCount && r.To < c.PartCount ? $"{c.DefOf(r.Source).Name} -> {c.DefOf(r.To).Name}" : "";
+            // (both ends: device and port, "Battery #2: Power out -> Extruder: Power in"; a branch starts at a junction on its tree's source)
+            var what = r.Source < c.PartCount && r.To < c.PartCount
+                ? $"{ConstructRoutes.EndLabel(c, r.Source, r.Type, r.SourcePort, input: false)}{(r.Parent != 255 ? ", via a junction" : "")} -> {ConstructRoutes.EndLabel(c, r.To, r.Type, r.ToPort, input: true)}"
+                : "";
             var share0 = r.Type != RouteType.Data && r.Share < 0.999f ? $", {r.Share * 100:0}% of flow" : "";
             var share = r.Type == RouteType.Conveyor ? $", {r.ConvW / 100f:0.00} m wide" : share0;
             var state = hp <= 0 ? " - cut" : !r.FedEnd ? " - cut further back" : "";

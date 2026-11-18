@@ -724,7 +724,7 @@ public static class MediaDirector
         if (PageOf(c.Id, part) is var page and >= 0)
         {
             var r = MediaBrowser.Report(page);
-            return r.Error != 0 ? ErrorText(r.Error) : r.Failure.Length > 0 ? r.Failure : r.Title.Length > 0 ? r.Title : Stuck(page) ?? "loading";
+            return r.Error != 0 ? ErrorText(r.Error) : r.Failure.Length > 0 ? r.Failure : r.Title.Length > 0 ? r.Title : VideoFeeds.HasPicture(page) ? "playing" : Stuck(page) ?? "loading"; // (a picture with no title yet is no stall)
         }
         return Why(m);
     }

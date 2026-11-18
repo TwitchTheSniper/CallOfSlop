@@ -41,6 +41,9 @@ public static partial class ConstructRender
     public static Construct? WeldBodyA, WeldBodyB;
     public static int WeldPartA = -1, WeldPartB = -1;
     public static Vector3 WeldOnA, WeldOnB;
+    // The linking tool aimed at a link (user, 2026-11-17): the two devices it connects, outlined (Program.SandboxLinks.cs; a world link's ends may lie on two bodies).
+    public static Construct? LinkEndBodyA, LinkEndBodyB;
+    public static int LinkEndPartA = -1, LinkEndPartB = -1;
     public static bool WeldValid;
     public static bool ShowWires; // the linking tool is out: the wires are drawn (only then)
     public static ushort WireFromBody; // a wire in progress starts at this part
@@ -196,6 +199,8 @@ public static partial class ConstructRender
         SideOutlines = MotionBoxes = 0;
         WeldBodyA = WeldBodyB = null;
         WeldPartA = WeldPartB = -1;
+        LinkEndBodyA = LinkEndBodyB = null;
+        LinkEndPartA = LinkEndPartB = -1;
         ConnectorRender.NoCollideShow = false;
         SocketWeldRender.Clear();
         ShowWires = false;
@@ -1328,6 +1333,10 @@ public static partial class ConstructRender
                 gfx.Draw(Matrix4x4.CreateScale(0.07f) * Matrix4x4.CreateTranslation((WeldOnA + WeldOnB) * 0.5f), WeldValid ? new Vector3(1f, 0.7f, 0.25f) : colour, 0.9f * pulse, mode: 2);
             }
         }
+        if (LinkEndBodyA is { } la && LinkEndPartA >= 0 && LinkEndPartA < la.PartCount)
+            Outline(gfx, la, LinkEndPartA, new Vector3(0.4f, 0.85f, 1f), 0.25f + 0.1f * pulse);
+        if (LinkEndBodyB is { } lb && LinkEndPartB >= 0 && LinkEndPartB < lb.PartCount)
+            Outline(gfx, lb, LinkEndPartB, new Vector3(0.4f, 0.85f, 1f), 0.25f + 0.1f * pulse);
         if (RemoverSel is { Count: > 0 } sel)
         {
             // The remover's marks: every selected part outlined red (its links are drawn by RouteRender.DrawSelected).

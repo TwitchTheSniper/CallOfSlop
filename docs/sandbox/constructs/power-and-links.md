@@ -404,6 +404,11 @@ tank's pipe into an engine's Coolant in does not feed it). A fuel tank's Fill ta
   fluid, "(no effect yet)". A pipe carries what its output port produces, so ending one on an engine lists just the inlets
   that want that fluid ("Fuel in"); with a single candidate it connects with no picker. While aiming at a part, its matching
   ports show as small labelled markers where they sit.
+- **What a link connects (user, 2026-11-17).** With the linking tool (or the paint, remover or repair welder) aimed at a laid link, the look
+  line names both ends, device and port: "Power cable: Battery #2: Power out -> Extruder: Power in" (`ConstructRoutes.EndLabel`; a device is
+  numbered among the parts of its kind on its body, in part order, only when there are two or more; a branch adds ", via a junction"). A world
+  link's line does the same for its two bodies. With the linking tool the two devices are outlined in light blue (`ConstructRender.LinkEnd*`).
+  Everything comes from the client's own copy (links, ports and defs), so a joined client shows the same; the string is made only when the look's key changes.
 - **Fluid warning.** An input port that wants another fluid than the pipe carries (exhaust into a fuel inlet) is allowed but
   the link's look line says "WARNING: exhaust into a fuel inlet" (`ConstructRoutes.FluidWarning`, `EndNote`).
 - **Old saves.** A blueprint link whose `fromPort` / `toPort` is a socket's name (the old directional ports: "+z", "-z0")
