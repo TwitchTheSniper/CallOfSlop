@@ -546,6 +546,8 @@ public static class ConstructConveyor
             }
             z = segLen > 1e-4f ? (b - a) / segLen : Vector3.UnitZ;
             mid = a + z * MathF.Min(s, segLen); // (before its start: on, back along its first segment)
+            if (segLen > 1e-4f && count > 0)
+                OnCurve(c, route, i, a, b, z, segLen, s, ref mid, ref z);
         }
         var up = Vector3.UnitY - z * z.Y;
         up = up.LengthSquared() > 1e-4f ? Vector3.Normalize(up) : Vector3.UnitX;
@@ -555,6 +557,52 @@ public static class ConstructConveyor
         var middle = (d.BoundsMin + d.BoundsMax) * 0.5f;
         var local = new Vector3(middle.X, d.BoundsMin.Y - BedTop, middle.Z);
         origin = mid - Vector3.Transform(local, rot);
+    }
+
+    /// <summary>
+    /// A piece inside a vertical curve's window (<see cref="RouteCurves"/>, drawn by RouteRender the same way): its middle and way follow the
+    /// curve. Only where it is drawn changes: <paramref name="s"/>, its distance along segment <paramref name="i"/>, and so its timing and
+    /// the link's length stay those of the straight segments (the user, 2026-11-17: the look only).
+    /// </summary>
+    private static void OnCurve(Construct c, int route, int i, Vector3 a, Vector3 b, Vector3 z, float segLen, float s, ref Vector3 mid, ref Vector3 way)
+    {
+        ref var r = ref c.Routes[route];
+        if (s < 0 || s > segLen || ConstructRoutes.SegmentHealth(c, route, i) <= 0 || c.FlexSectionCount > 0 && ConstructRoutes.FlexSectionAt(c, route, i) >= 0)
+            return;
+        var w = r.ConvW / 100f;
+        if (i < r.Count && s > segLen * (1f - RouteCurves.RoomShare) && ConstructRoutes.SegmentHealth(c, route, i + 1) > 0
+            && !(c.FlexSectionCount > 0 && ConstructRoutes.FlexSectionAt(c, route, i + 1) >= 0))
+        {
+            var n = ConstructRoutes.Point(c, route, i + 1, out var sn);
+            ConstructRoutes.Point(c, route, i, out var sb);
+            var dn = n - b;
+            var ln = dn.Length();
+            if (sn == sb && ln > 1e-4f)
+            {
+                var zn = dn / ln;
+                var t = RouteCurves.Tangent(RouteType.Conveyor, w, z, segLen, zn, ln);
+                if (t > 0f && s > segLen - t)
+                {
+                    RouteCurves.At(b, z, zn, t, (s - (segLen - t)) / (2f * t), out mid, out way);
+                    return;
+                }
+            }
+        }
+        if (i >= 1 && s < segLen * RouteCurves.RoomShare && ConstructRoutes.SegmentHealth(c, route, i - 1) > 0
+            && !(c.FlexSectionCount > 0 && ConstructRoutes.FlexSectionAt(c, route, i - 1) >= 0))
+        {
+            var p = ConstructRoutes.Point(c, route, i - 2, out var sp);
+            ConstructRoutes.Point(c, route, i - 1, out var sa);
+            var dp = a - p;
+            var lp = dp.Length();
+            if (sp == sa && lp > 1e-4f)
+            {
+                var zp = dp / lp;
+                var t = RouteCurves.Tangent(RouteType.Conveyor, w, zp, lp, z, segLen);
+                if (t > 0f && s < t)
+                    RouteCurves.At(a, zp, z, t, 0.5f + s / (2f * t), out mid, out way);
+            }
+        }
     }
 
     /// <summary>A rider's centre and turn in the world now (server: where it drops).</summary>

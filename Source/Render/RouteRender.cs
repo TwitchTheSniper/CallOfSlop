@@ -78,26 +78,68 @@ public static class RouteRender
                 var radius = ConstructRoutes.Radius(r.Type);
                 var a = At(c, k, -1);
                 var dirPrev = Vector3.Zero;
+                var curves = r.Type is RouteType.Conveyor or RouteType.Chute; // (vertical curves: RouteCurves, the look only)
+                var curveW = r.ConvW / 100f; // (the curve's radius from the link's own width, as the riders' pose takes it)
+                var tStart = 0f; // the curve at this segment's start (set by the one before)
+                var b = curves ? At(c, k, 0) : default;
                 for (var i = 0; i <= r.Count; i++)
                 {
-                    var b = At(c, k, i);
+                    if (!curves)
+                        b = At(c, k, i);
                     var d = b - a;
                     var len = d.Length();
+                    var next = curves && i < r.Count ? At(c, k, i + 1) : b;
                     if (len > 1e-4f)
                     {
                         var z = d / len;
                         var cut = ConstructRoutes.SegmentHealth(c, k, i) <= 0;
+                        // The curve at this segment's end, when the grade alone changes there (and neither end is cut).
+                        var tEnd = 0f;
+                        var zNext = Vector3.Zero;
+                        if (curves && i < r.Count && !cut && !(c.FlexSectionCount > 0 && (ConstructRoutes.FlexSectionAt(c, k, i) >= 0 || ConstructRoutes.FlexSectionAt(c, k, i + 1) >= 0)))
+                        {
+                            var dn = next - b;
+                            var ln = dn.Length();
+                            if (ln > 1e-4f && ConstructRoutes.SegmentHealth(c, k, i + 1) > 0)
+                            {
+                                zNext = dn / ln;
+                                tEnd = RouteCurves.Tangent(r.Type, curveW, z, len, zNext, ln);
+                            }
+                        }
+                        var sa = a + z * tStart;
+                        var sb = b - z * tEnd;
+                        var slen = MathF.Max(1e-4f, len - tStart - tEnd);
                         if (r.Type == RouteType.Conveyor)
                         {
                             var bed = c == SizeBody && k == SizeRoute ? SizeW : r.ConvW / 100f;
-                            Conveyor(gfx, a, b, z, len, bed, cut, r.Paint);
+                            Conveyor(gfx, sa, sb, z, slen, bed, cut, r.Paint);
                             n++;
-                            if (dirPrev != Vector3.Zero && Vector3.Dot(dirPrev, z) < 0.9998f)
+                            if (dirPrev != Vector3.Zero && Vector3.Dot(dirPrev, z) < 0.9998f && tStart <= 0f)
                                 ConveyorElbow(gfx, a, dirPrev, z, bed, r.Paint);
+                            if (tEnd > 0f)
+                                Curve(gfx, r.Type, b, z, zNext, tEnd, bed, radius, r.Paint);
                             dirPrev = z;
+                            tStart = tEnd;
                             a = b;
+                            b = next;
                             continue;
                         }
+                        if (curves && !cut && !(c.FlexSectionCount > 0 && ConstructRoutes.FlexSectionAt(c, k, i) >= 0))
+                        {
+                            // A chute: the duct straight between its curves, the curves drawn round.
+                            Piece(gfx, r.Type, sa, sb, z, radius, dim: false, paint: r.Paint);
+                            n++;
+                            if (dirPrev != Vector3.Zero && Vector3.Dot(dirPrev, z) < 0.9998f && tStart <= 0f)
+                                Elbow(gfx, r.Type, a, dirPrev, z, radius, r.Paint);
+                            if (tEnd > 0f)
+                                Curve(gfx, r.Type, b, z, zNext, tEnd, 0f, radius, r.Paint);
+                            dirPrev = z;
+                            tStart = tEnd;
+                            a = b;
+                            b = next;
+                            continue;
+                        }
+                        tStart = 0f;
                         if (cut)
                         {
                             // Two stubs with a gap between them.
@@ -119,7 +161,11 @@ public static class RouteRender
                             Elbow(gfx, r.Type, a, dirPrev, z, radius, r.Paint);
                         dirPrev = z;
                     }
+                    else
+                        tStart = 0f;
                     a = b;
+                    if (curves)
+                        b = next;
                 }
             }
             if (c.ConveyedCount > 0)
@@ -202,6 +248,46 @@ public static class RouteRender
         var outer = Matrix4x4.CreateScale(0.06f, 0.14f, width + 0.12f);
         gfx.Draw(outer * Basis(across) * Matrix4x4.CreateTranslation(at + from * side - y * 0.02f), rail); // (ahead of the way in)
         gfx.Draw(outer * basis * Matrix4x4.CreateTranslation(at - across * side - y * 0.02f), rail); // (behind the way out)
+    }
+
+    /// <summary>
+    /// A vertical curve (<see cref="RouteCurves"/>) at <paramref name="node"/>: a few short straight pieces along it, a conveyor's bed with a
+    /// roller each, a chute's duct. The pieces overlap a centimetre at their joints so the crest shows no gap; each is a few mm fatter or
+    /// thinner than its neighbours (and than the straight beds either side) so no two faces share a plane (z-fighting rule).
+    /// </summary>
+    private static void Curve(Renderer gfx, RouteType type, Vector3 node, Vector3 dIn, Vector3 dOut, float t, float width, float radius, uint paint)
+    {
+        var pieces = RouteCurves.Pieces(dIn, dOut);
+        RouteCurves.At(node, dIn, dOut, t, 0f, out var p0, out _);
+        var rail = paint != 0 ? ConstructPaint.ToVector(paint) : ConvRail;
+        var chute = paint != 0 ? ConstructPaint.ToVector(paint) : Colour(type);
+        for (var j = 0; j < pieces; j++)
+        {
+            RouteCurves.At(node, dIn, dOut, t, (j + 1f) / pieces, out var p1, out _);
+            var d = p1 - p0;
+            var len = d.Length();
+            if (len > 1e-4f)
+            {
+                var z = d / len;
+                var fat = (j & 1) == 0 ? 0.004f : 0.008f;
+                var mid = (p0 + p1) * 0.5f;
+                var basis = Basis(z);
+                if (type == RouteType.Conveyor)
+                {
+                    var x = new Vector3(basis.M11, basis.M12, basis.M13);
+                    var y = new Vector3(basis.M21, basis.M22, basis.M23);
+                    var side = width * 0.5f + 0.03f;
+                    var l = len + 0.02f;
+                    gfx.Draw(Matrix4x4.CreateScale(width + 0.06f + fat, 0.03f + fat, l) * basis * Matrix4x4.CreateTranslation(mid - y * 0.075f), ConvPlate);
+                    gfx.Draw(Matrix4x4.CreateScale(0.06f + fat, 0.14f + fat, l) * basis * Matrix4x4.CreateTranslation(mid + x * side - y * 0.02f), rail);
+                    gfx.Draw(Matrix4x4.CreateScale(0.06f + fat, 0.14f + fat, l) * basis * Matrix4x4.CreateTranslation(mid - x * side - y * 0.02f), rail);
+                    gfx.Draw(Matrix4x4.CreateScale(width - 0.01f, 0.05f, 0.05f) * basis * Matrix4x4.CreateTranslation(mid + y * 0.03f), ConvRoller);
+                }
+                else
+                    gfx.Draw(Matrix4x4.CreateScale(radius * 2f + fat, radius * 2f + fat, len + 0.02f) * basis * Matrix4x4.CreateTranslation(mid), chute);
+            }
+            p0 = p1;
+        }
     }
 
     /// <summary>

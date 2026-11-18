@@ -1,0 +1,140 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Trestle Post 4 m",
+  "description": "One post and a short beam 4 m up: lay a chute or conveyor over its saddle (one lane).",
+  "group": "Storage and Logistics",
+  "section": "Link supports",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 215.1,
+  "health": 1220,
+  "armour": 8,
+  "material": "steel",
+  "color": "#3e5a70",
+  "attachSeconds": 2.5,
+  "collider": "boxes",
+  "tray": {
+    "at": [
+      0,
+      4.12,
+      0
+    ],
+    "axis": [
+      0,
+      0,
+      1
+    ],
+    "across": [
+      1,
+      0,
+      0
+    ],
+    "lanes": 1,
+    "pitch": 0.8,
+    "length": 0.3,
+    "guard": 0.3
+  },
+  "boxes": [
+    {
+      "min": [
+        -0.07,
+        0.0,
+        -0.07
+      ],
+      "max": [
+        0.07,
+        3.796,
+        0.07
+      ]
+    },
+    {
+      "min": [
+        -0.16,
+        0.003,
+        -0.16
+      ],
+      "max": [
+        0.16,
+        0.025,
+        0.16
+      ],
+      "color": "#24282c",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.074,
+        1.7,
+        -0.074
+      ],
+      "max": [
+        0.074,
+        1.9,
+        0.074
+      ],
+      "color": "#f2b01e",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.45,
+        3.8,
+        -0.15
+      ],
+      "max": [
+        0.45,
+        4.0,
+        0.15
+      ],
+      "color": "#2f3a44"
+    },
+    {
+      "min": [
+        -0.375,
+        3.998,
+        -0.144
+      ],
+      "max": [
+        -0.345,
+        4.035,
+        0.144
+      ],
+      "color": "#8d969e",
+      "detail": true
+    },
+    {
+      "min": [
+        0.345,
+        3.998,
+        -0.144
+      ],
+      "max": [
+        0.375,
+        4.035,
+        0.144
+      ],
+      "color": "#8d969e",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "foot",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        4.0,
+        0.0
+      ],
+      "dir": "+y"
+    }
+  ]
+}
