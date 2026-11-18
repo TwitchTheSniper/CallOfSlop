@@ -10,6 +10,7 @@ public struct ClampArm
     public ushort Ship; // the ship it reaches for or holds (0: none, it goes back to its saddle)
     public Vector3 GripS, OutS; // where on that ship its pad goes, and the hull's outward normal there: the ship's rest frame
     public bool Holds; // the ship is moored at its berth: the head stays on the hull
+    public bool OnHull; // the head has reached the hull it holds, and moves with it from then on
 }
 
 public sealed class ClampArmSet
@@ -106,9 +107,14 @@ public static class ConstructClampArms
                 (want, wantOut) = (d.ClampStow, Vector3.UnitY);
             var gap = want - a.Wrist;
             var len = gap.Length();
-            var step = HeadSpeed * dt;
-            if (a.Holds || len <= step)
-                a.Wrist = want; // (holding, the head moves with the hull)
+            var step = HeadSpeed * (a.Holds ? 2 : 1) * dt; // (a ship moored before the head reached it: the head catches up)
+            if (!a.Holds)
+                a.OnHull = false;
+            if (a.OnHull || len <= step)
+            {
+                a.Wrist = want; // (on the hull, the head moves with it)
+                a.OnHull = a.Holds;
+            }
             else
                 a.Wrist += gap * (step / len);
             a.Out = Vector3.Normalize(Vector3.Lerp(a.Out, wantOut, MathF.Min(1, dt * 3)) + wantOut * 1e-3f);
@@ -130,7 +136,10 @@ public static class ConstructClampArms
         if (moored != 0)
         {
             if (a.Ship != moored && world.Get(moored) is { } m)
+            {
                 Grip(world, m, shoulder, ref a);
+                a.OnHull = false;
+            }
             a.Ship = moored;
             a.Holds = true;
             return;
