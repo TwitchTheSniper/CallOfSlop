@@ -55,10 +55,7 @@ public sealed partial class Game
         var d = target.DefOf(part);
         if (!d.IsDock || ship.Mass > d.DockMaxMass)
             return false;
-        foreach (var b in world.Bodies)
-            if (b != ship && b.CarriedBy == target.Id && (b.CarryTag != 0 ? ConstructCargo.CarriedIn(target, b) == part : ConstructCargo.MostlyInside(target, part, b)))
-                return false; // (a client isn't told the carry's tag, nor is a grapple's grip one: the craft in the port's box)
-        return true;
+        return !ConstructCargo.DockTaken(world, target, part, ship);
     }
 
     /// <summary>
@@ -233,7 +230,7 @@ public sealed partial class Game
         var d = t.DefOf(part);
         var com = c.WorldCom;
         var slip = (c.Vel - t.PointVel(com)).Length();
-        if (armed && slip < MathF.Max(NavDockSlow, d.DockSettle) && ConstructCargo.Catchable(Constructs, t, c, d)
+        if (armed && slip < MathF.Max(NavDockSlow, d.DockSettle) && ConstructCargo.Catchable(Constructs, t, c, d) && NavDockFree(Constructs, t, part, c)
             && (d.DockPull > 0 ? Vector3.Distance(com, centre) < MathF.Min(along + NavDockOver * 0.5f, along + d.DockPull) : ConstructCargo.MostlyInside(t, part, c)))
         {
             NavDockCatch(f, i, o, c, t, part, centre);
