@@ -610,7 +610,7 @@ public sealed partial class Ui
         var inv = System.Globalization.CultureInfo.InvariantCulture;
         k.Name = CmdName(c);
         var size = c.LocalMax - c.LocalMin;
-        var owner = c.Owner != 255 && g.Players.TryGetValue(c.Owner, out var op) ? op.Name.ToUpperInvariant() : "NOBODY";
+        var owner = c.Owner != 255 && g.Players.TryGetValue(c.Owner, out var op) ? op.Name.ToUpperInvariant() : g.PowerHolding(c) is var pw and not 0 && CrewPowers.Of(pw) is { } power ? power.Name.ToUpperInvariant() : "NOBODY"; // (an NPC power's crewed ship is theirs: GameShipControl.cs)
         k.Class = string.Create(inv, $"{c.Mass / 1000:0.0} T    {MathF.Max(size.X, MathF.Max(size.Y, size.Z)):0} M LONG    {c.PartCount} PARTS    OWNER {owner}");
 
         var name = _cmdBodyNames.Length > cr.Primary ? _cmdBodyNames[cr.Primary] : body.Name.ToUpperInvariant();
@@ -692,7 +692,7 @@ public sealed partial class Ui
             _cmdCrew.Append(inv, $"    {c.ThrusterCount} THRUSTER{(c.ThrusterCount == 1 ? "" : "S")}");
         k.Systems = _cmdCrew.ToString();
 
-        k.Problem = Game.NavProblem(c) is { } why ? "TAKES NO ORDERS: " + why.ToUpperInvariant() : "";
+        k.Problem = g.NavNoOrders(c) is { } why ? "TAKES NO ORDERS: " + why.ToUpperInvariant() : "";
         k.Orders = k.Problem.Length == 0;
         var o2 = g.NavOf(c.Id);
         k.HasOrder = o2 != null;

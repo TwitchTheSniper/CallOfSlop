@@ -72,6 +72,9 @@ public sealed partial class ConstructEdits
     /// <summary>Server: a crew body in seat (construct, part) stands up for a player who uses it (Game/GameCrew.cs). True: the seat is free now.</summary>
     public Func<Construct, int, bool>? CrewYield;
 
+    /// <summary>Server: why player (byte) may not sit in seat (construct, part), or null: an NPC power's helm and gun seats are its crew's (Game/GameShipControl.cs).</summary>
+    public Func<Construct, int, byte, string?>? SeatRefusal;
+
     public readonly SandboxHand[] Hands = new SandboxHand[256];
 
     /// <summary>A line per completed edit (the self-test reads them; the game logs them).</summary>
@@ -1168,6 +1171,8 @@ public sealed partial class ConstructEdits
                 return "the seat is wrecked";
             if (h.Seated)
                 return "you are already sitting";
+            if (SeatRefusal?.Invoke(c, part, player) is { } theirs)
+                return theirs;
             if ((seat.SitterPlus1 != 0 || part == c.DriveSeat && c.Driver != 255) && !(CrewYield?.Invoke(c, part) ?? false))
                 return "someone is already in it"; // (a crew member stands up for a player: Game/GameCrew.cs)
             h.Edit = EditKind.None;

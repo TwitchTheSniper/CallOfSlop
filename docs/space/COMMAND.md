@@ -438,6 +438,17 @@ the target.
 - The space clock (`SpaceMsg.Clock`) carries the host's Fuel use in space (a u8 percent, 326), so a client's card works
   out the same dV.
 
+## Whose ships you may order
+
+(Karl, 2026-11-18; `Game/GameShipControl.cs`.) A player gives orders only to a ship that is theirs, a faction mate's, or nobody's.
+A ship crewed by an NPC power (the Traders' Zero Day in the Zero Day start, any power's crewed ship), and a nobody's craft docked in
+or carried by one (its Shuttle), is that power's: it can be picked, read on its card (OWNER TRADERS), tracked, locked onto and
+fought, but the order menu and the card's buttons say "IT IS THE TRADERS' SHIP", and the host refuses its orders, a cancel
+included (`Game.CommandRefusal` in `NavOrderAct`). Another player's ship outside your faction is refused the same way. Its helm and
+the seats its crew fly and fight from can't be sat in, its settings are locked, and its drones and robot shells can't be linked to.
+Boarded and taken (its crew surrendered: the Traders give up the moment anyone comes aboard), it is the captor's, with every
+nobody's craft it carries (`GameCrewBoard.CrewCaptureCraft`).
+
 ## What it doesn't do yet
 
 - **A jump within a system** (above, "Jump drives"): its cost is Karl's to decide.
@@ -446,7 +457,6 @@ the target.
 - Holding a place near a body burns fuel all the while (the ship hovers on its drive). A ship with no pilot and an
   empty tank falls.
 - Orders aren't saved, there are no queues or patrols, and one ship is ordered at a time (no box select).
-- Anyone may order any ship that takes orders: there is no ownership check yet.
 
 ## Trying it
 

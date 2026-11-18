@@ -352,3 +352,18 @@ prisoners (simplest, no data), or a flat materials fee anywhere.
 - Aircraft pilots as crew (`PilotHeld`): built, never flown with a pilot killed.
 - Stand-ins' look (no picture taken); whether clients' part indices always match the host's after a rebuild (the host
   re-sends on its rebuild; a client's own rebuild order is assumed the same).
+
+## Done: the Traders give up at once, hands up (Karl, 2026-11-18)
+
+- A kind's `"boarding": { "atOnce": true }` (`NpcFactionDef.SurrenderAtOnce`; the Traders have it): anyone aboard who isn't the
+  owner or the owner's faction counts as a boarder (`Game.BoardGuest`), and the crew's first look after it surrenders, with no
+  weighing and no call for help. The next look takes the ship as before (a prize, the crew prisoners). Other kinds are unchanged
+  (`--crew-check --crew-board` still passes with Raiders; with `--crew-faction Traders` its fight checks fail by design: 8 of 8
+  surrender at once).
+- Surrendered crew bodies (and prisoners) are drawn with nothing in their hands, both up over the head and trembling
+  (`PlayerRender.HandsUp`, in `PlayerRender` and `PlayerRig`): the host finds them a few times a second and sends the changes
+  (`Msg.HandsUp`, protocol 361, in the slot of RemovedDepot; all of them to a joiner: `GameCrewHandsUp.cs`).
+- A taken ship's own craft go with it (`GameCrewBoard.CrewCaptureCraft`): every nobody's body it carries (`CarriedBy`: a Shuttle
+  on its clamp, a Limpet in its bay, cargo), and theirs, becomes the captor's, and any power's crew aboard one gives up too; another
+  party's craft held on it (a boarder's pod) is left alone.
+- Who may command a power's ship: docs/space/COMMAND.md "Whose ships you may order".

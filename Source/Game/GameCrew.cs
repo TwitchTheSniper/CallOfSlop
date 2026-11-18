@@ -33,6 +33,7 @@ public sealed partial class Game : ICrewHost
         CrewWorkTick();
         CrewMineTick(); // (miners off their posts: GameCrewMine.cs)
         CrewSendSeats();
+        HandsUpTick(); // (surrendered crew, hands up: GameCrewHandsUp.cs)
         CrewHireTick();
         CrewRosterSend();
     }
@@ -464,7 +465,7 @@ public sealed partial class Game : ICrewHost
             var cap = s.Faction != 0 && !s.Own ? CrewFleet.CaptainOf(Crew, s) : -1;
             var grp = Crew.Fleet.Of(s.Group);
             var adm = grp != null && grp.Flagship == s.Body && grp.AdmiralUid != 0 ? grp.AdmiralName : (ushort)0xFFFF;
-            CrewSeatsOut(s.Body, s.Tier == CrewTier.Asleep && s.Near > CrewStandInFar ? 0 : Crew.StandIns(s, _crewParts), s.Faction, Crew.Alive(s), s.ScPart, s.ScStage,
+            CrewSeatsOut(s.Body, s.Tier == CrewTier.Asleep && s.Near > CrewStandInFar ? 0 : Crew.StandIns(s, _crewParts), s.Prize ? (byte)0 : s.Faction, /* (a prize's crew are prisoners, no power's: GameShipControl.cs) */ Crew.Alive(s), s.ScPart, s.ScStage,
                 cap >= 0 ? Crew.Name[cap] : (ushort)0xFFFF, adm, grp?.Number ?? 0);
             sent++;
         }

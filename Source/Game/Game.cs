@@ -2082,6 +2082,7 @@ public sealed partial class Game : IDisposable
                 SendSpaceState(sender); // the space bubble and its clock (GameSpace.cs)
                 SendNavState(sender); // the ships under orders (GameNav.cs)
                 SendCrewSeats(sender); // the crews' stand-ins (GameCrew.cs)
+                SendHandsUp(sender); // surrendered crew, hands up (GameCrewHandsUp.cs)
                 SendCrewRosters(sender); // own crews and prizes (GameCrewHire.cs)
                 SendLogicState(sender); // map logic: doors, lamps, levers, controlled movers (GameLogic.cs)
                 SendCorpseState(sender); // the bodies lying about (GameCorpses.cs)
@@ -2433,6 +2434,9 @@ public sealed partial class Game : IDisposable
                 break;
             case (byte)Msg.CrewSeats when !IsServer:
                 ReadCrewSeats(ref r); // the crews' stand-ins (GameCrew.cs)
+                break;
+            case (byte)Msg.HandsUp when !IsServer:
+                ReadHandsUp(ref r); // surrendered crew, hands up (GameCrewHandsUp.cs)
                 break;
             case (byte)Msg.CrewRoster when !IsServer:
                 ReadCrewRoster(ref r); // own crews and prizes (GameCrewHire.cs)
