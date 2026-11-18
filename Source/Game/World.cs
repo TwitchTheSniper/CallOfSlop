@@ -683,9 +683,7 @@ public sealed class Player
     public uint PrimaryKit, SecondaryKit; // attachments on each gun (replicated)
     public PerkSet Perks = PerkSet.Empty; // replicated
 
-    // Cosmetics (prestige + hats, Source/Cosmetics/Cosmetics.cs): never used for gameplay. Bots: always 0 / None.
-    public byte Prestige, Level; // as the player reported them in their Hello (untrusted, only shown and used to validate the hat); in the roster
-    public HatId Hat; // the hat they wear (set from the loadout once Cosmetics.IsUnlocked(hat, Prestige) and human); in the roster
+    // Cosmetics: never used for gameplay. (Prestige, the account level and the prestige hats went with levelling, 2026-11-17.)
     public PlayerLook Look; // the look picked on the APPEARANCE screen (Source/Cosmetics/Appearance.cs; bots: Auto); in the roster
     [MatchState]
     public byte Eva; // spacewalk gear (Eva's bits: a space suit, an MMU on it; GameSandboxEva.cs); the server's, in the roster

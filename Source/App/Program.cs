@@ -48,7 +48,6 @@ public static unsafe partial class Program
     private static readonly Ui Ui = new();
     private static readonly Audio AudioSystem = new();
     private static Settings _settings = new();
-    private static Progress _progress = new();
 
     // ---- The current match (null while in the lobby) ----------------------------
     private static Game? _session;
@@ -415,8 +414,7 @@ public static unsafe partial class Program
             return 0;
         InitSteamNet(args); // lobbies, invites, +connect_lobby, Rich Presence (Program.SteamNet.cs)
         Ui.BenchSettings = _settings; // the workbench's "Show incompatible parts" checkbox
-        _progress = Progress.Load();
-        AppearanceStore.Load(); // before the loadouts: a first run takes the hat from loadout.txt's old hat= line (Appearance.cs)
+        AppearanceStore.Load(); // (Appearance.cs)
         LoadoutStore.Load();
         Console.WriteLine($"[update] this build: {BuildInfo.Label} (protocol {ServerInfo.ProtocolVersion})");
         {
@@ -531,7 +529,6 @@ public static unsafe partial class Program
             if (!_windowShot && !_shotTool && !_perfShot && !_allocFrames && !_glBench) // the tool runs borrow settings temporarily; never save them
             {
                 _settings.Save();
-                _progress.Save();
             }
         }
         return _wsExit;
@@ -642,7 +639,6 @@ public static unsafe partial class Program
         InitPerf(); // the perf window's GPU timer and music counter (Program.Perf.cs)
         Ui.Init(_window);
         Ui.TextSize = _settings.TextSize;
-        Ui.Progress = _progress;
         ApplyDisplay(); // windowed / borderless / fullscreen from settings.txt
 
         // Remember the windowed size and position the player drags to.
@@ -685,7 +681,7 @@ public static unsafe partial class Program
         EndSession("");
         _lobbyMessage = "";
         _joinInvite = invite;
-        var loadout = LoadoutStore.Active(_progress);
+        var loadout = LoadoutStore.Active();
         try
         {
             NetPeer net;
@@ -723,8 +719,7 @@ public static unsafe partial class Program
             _session = new Game(net, AudioSystem, DisplayName(), loadout.Primary, loadout.Secondary, bots, _settings.Difficulty, map.Id,
                 loadout.Grenade, loadout.Equipment, loadout.PrimaryKit, loadout.SecondaryKit, loadout.Perks)
                 {
-                    Progress = _progress,
-                    ChosenHat = AppearanceStore.EffectiveHat(_progress), // hat and look: the APPEARANCE screen (GameCosmeticLoadout.cs)
+                    // (the look: the APPEARANCE screen, GameCosmeticLoadout.cs)
                     ChosenLook = AppearanceStore.Look,
                     LocalWorldKey = _settings.WorldKey,
                     WorldAutosaveMinutes = _settings.WorldAutosaveMinutes,

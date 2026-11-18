@@ -792,9 +792,7 @@ public sealed partial class Game : IDisposable
         _w.Begin(Msg.Loadout).U8(ChosenPrimary).U8(ChosenSecondary).U8((byte)ChosenGrenade).U8((byte)ChosenEquipment)
             .U32(ChosenPrimaryKit).U32(ChosenSecondaryKit)
             .U8((byte)ChosenPerks.Movement).U8((byte)ChosenPerks.Survival).U8((byte)ChosenPerks.Damage)
-            .U8((byte)ChosenStreaks.A).U8((byte)ChosenStreaks.B).U8((byte)ChosenStreaks.C)
-            .U8((byte)ChosenHat); // protocol 25: the hat (GameCosmeticLoadout.cs)
-        WriteHelloProfile(_w); // then prestige and level now: the scoreboard's Level column (GameCosmetics.cs; older servers ignore it)
+            .U8((byte)ChosenStreaks.A).U8((byte)ChosenStreaks.B).U8((byte)ChosenStreaks.C);
         ChosenLook.Pack(_w); // protocol 45: the APPEARANCE screen's look (Appearance.cs)
         Net.SendToServer(_w.Span, PacketReliability.ReliableOrdered);
     }
@@ -2187,7 +2185,7 @@ public sealed partial class Game : IDisposable
                     var perks = r.Has(3) ? new PerkSet((PerkId)r.U8(), (PerkId)r.U8(), (PerkId)r.U8()) : PerkSet.Empty;
                     ServerRequestLoadout(p, lp, ls, lg, le, lpk, lsk, perks, now);
                     ReadLoadoutStreaks(p, ref r);
-                    ReadLoadoutHat(p, ref r); // GameCosmeticLoadout.cs
+                    ReadLoadoutLook(p, ref r); // GameCosmeticLoadout.cs
                 }
                 break;
             }
@@ -2283,7 +2281,7 @@ public sealed partial class Game : IDisposable
                 _w.Begin(Msg.Hello).U8((byte)nameBytes.Length);
                 foreach (var c in nameBytes)
                     _w.U8(c);
-                WriteHelloProfile(_w); // prestige + level (cosmetic, GameCosmetics.cs)
+                _w.U8(0).U8(0); // (two bytes that held prestige and level until protocol 345: kept, so the version below stays where every build reads it)
                 _w.U16(ServerInfo.ProtocolVersion); // protocol 74: the host refuses a different build (GameHostBye.cs)
                 _w.U64(LocalWorldKey); // protocol 128: who this PC is to a saved world (GameWorldSave.cs)
                 Net.SendToServer(_w.Span, PacketReliability.ReliableOrdered);
@@ -2305,7 +2303,8 @@ public sealed partial class Game : IDisposable
                 if (Players.Values.Any(o => o != p && o.Name == name))
                     name = Settings.Clean($"{name[..Math.Min(name.Length, 13)]} {p.Id}");
                 p.Name = name;
-                ReadHelloProfile(p, ref r); // prestige + level (cosmetic, GameCosmetics.cs)
+                if (r.Has(2))
+                    r.U16(); // (prestige and level until protocol 345: kept as padding, so an older build's version is read where it sends it)
                 if (r.Has(2) && VersionProblem(r.U16(), "player") is { } helloProblem) // (builds before protocol 74 don't send it: let them in)
                 {
                     RefuseVersion(sender, p, helloProblem); // GameHostBye.cs
