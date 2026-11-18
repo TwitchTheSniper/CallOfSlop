@@ -164,6 +164,17 @@ public sealed partial class Game
     {
         s.CalledHelp = true;
         var n = 0;
+        // Its admiral answers first: every ship of its group, wherever it is on the net (faction-controllers.md 6.6), then the crews near.
+        if (Crew.Fleet.Of(s.Group) is { } g)
+        {
+            g.Post(FleetReport.Boarded, s.Body, boarder, Crew.Tick);
+            for (var k = 0; k < g.Count; k++)
+                if (Crew.ShipOf(g.Ships[k]) is { OnNet: true } gs && gs != s)
+                {
+                    gs.MarkFoe(boarder);
+                    n++;
+                }
+        }
         for (var i = 0; i < Crew.ShipHigh; i++)
             if (Crew.Ships[i] is { Tier: not CrewTier.Asleep } o && o != s && (o.Faction == s.Faction || CrewStandingOn && Relations.Helps(o.Faction, s.Faction)) && !o.Prize && Constructs.Get(o.Body) is { } oc
                 && Vector3.DistanceSquared(oc.WorldCom, c.WorldCom) < HelpRange * HelpRange)

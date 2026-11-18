@@ -106,3 +106,60 @@ picks the first until phase 3 gives powers their own ships).
 - Pacts with players (phase 5), Call allies, raids, trade, escort and planet events (phases 2-4: the event keys are not
   in `Relations.json` until something posts them).
 - Aggression, greed and caution are read but used only by the ceasefire's answer (aggression); the rest wait for missions.
+
+## Phase 2: groups and admirals (built 2026-11-17, branch `claude/faction-admirals`)
+
+Built to the user's answers on admirals (with Karl): an admiral is a role in the hierarchy, not a combat post; it leads any group of
+captains, combat or civilian.
+
+### What a player gets
+
+- NPC ships work together. A group is 1 to 12 ships of one power under an admiral (256 groups at most); a spawner's crewed convoy is one
+  (its leader carries the admiral). The admiral weighs the strength it has left against the enemy's every think (no fixed break line:
+  it pulls back under half the ratio its doctrine wants and comes in again past it), focuses its warships' fire on one target (a skilled
+  admiral picks the one worth most for what it takes to kill, a poor one the nearest), and with civilians to keep it screens them: armed
+  ships between the flagship and the threat while the flagship keeps going.
+- Orders a captain obeys (`OrderKind`): Form (a slot in the flagship's frame), GoTo, Engage (focus fire), Escort, Hold, Retreat, Board
+  (closes to 40 m and holds alongside), Screen, and the civilian Load, Unload, Mine, Deliver and Route (a route of up to 8 points, each
+  with its work and a dwell, looped). Captains keep their own judgement inside an order: their Flee lines are held off by the doctrine's
+  discipline (a Militia line holds; Raiders run when they like).
+- The fleet command network: the admiral commands from whatever seat it has on any ship of its group that is on the net. A ship reaches
+  the net by radio (25 km) while a part that gives access is whole: Wireless Sender or Receiver, Long Range Sensor, Wi-Fi Mast, Router
+  Antenna or any radar (`Crew/Fleet.json` "net.parts"); with none, its crew's hand sets reach 1.5 km. Ships hear the admiral through
+  each other (a chain). Cut off (net parts shot away, out of reach), a ship keeps its last order 30 s, then its captain is on its own; an
+  admiral whose own ship is cut off reaches only those within its own reach.
+- Losing the admiral (killed, taken with its ship) runs the doctrine's succession: `captain` (after the delay the senior captain on the
+  strongest ship steps up: news), `break` (every ship runs from what it fought for a minute, the group is gone), `flagship` (only a ship
+  with a radio fit can carry an admiral; none: home).
+- Names: each crewed ship has a captain (the senior member: at the helm first). The look line reads "Admiral Una's flagship, Militia
+  group 3, Captain Bea, crew of 5"; news lines name admirals and captains.
+- Prisoners: a ship taken with its admiral or captain aboard makes them officers: -25 with their power (`captureOfficer`), a notice of
+  their ransom (1,500 an admiral, 400 a captain). In the Crew window a prisoner admiral or pilot has Question and Ransom; ransomed or
+  released, +15 (`releaseOfficer`, in place of a plain release's +5). Questioning takes about 60 s at resistance 0.5 with an
+  Interrogator of skill 128 (skill 255: two thirds; alone: three times), resistance by doctrine give or take 0.2 by the person. Broken,
+  an admiral gives up its group (each captain, crew and order, positions) and the other admirals of its power (positions); a captain its
+  ship, its crew and where any of them are off it and what they do. Positions show as labels over the world for 5 minutes, to the asker
+  and their faction; a hard one (over 0.8) gives up only two. An own hand becomes your Interrogator from the Crew window (job
+  `Interrogator`).
+- A boarded group ship's call for help goes to its admiral first: every ship of its group on the net marks the boarder a foe.
+
+### Where
+
+| What | Where |
+| --- | --- |
+| Groups, admirals, net, orders' choice, succession, reports ring (64, drops counted and logged), intel, Fleet section | `Source/Crew/CrewFleet.cs` |
+| Doctrines and the net's numbers (`call-of-slop-fleet/1`; missing: built-in) | `Crew/Fleet.json`, `Source/Crew/CrewFleetRules.cs` (a kind or power may name one with `"doctrine"`) |
+| Orders at the helm (fly to a slot or place, drive one, screen, retreat) | `Source/Crew/CrewOrders.cs` (ShipAi partial), hooks in `ConstructShipAi.Step` and `CrewGround.GroundHelm` |
+| Engage and Board targets, discipline, reports from captains | `CrewWorld.Drive`, `CrewWorld.Captain` |
+| Convoys as groups, officers, questioning, ransom, intel marks | `Source/Game/GameCrewFleet.cs`; buttons `UI/UiCrew.cs`; labels `Program.NameTags.cs` |
+| Tool | `--crew-check --crew-fleet strike|screen|succession|convoy|mining|interrogate|all`, `--crew-fleet scale --fleet-scale N --fleet-awake K [--group-size G] [--crew-scale-ship NAME]` (`Source/Crew/CrewFleetCheck.cs`); window verbs `crewfleet`, `crewofficer question|ransom` |
+
+### Saves and network
+
+- Saves: a `FLET` section (`WorldSaveWriter.FleetTag`, version 1): each group's header (power by name, task, doctrine by name, admiral,
+  number, order, route). Each body's crew block (version 3) ends with its group's slot and its captain; ships rejoin their group as their
+  crews load (a loaded group waits 20 s before it thinks). An order's body (Escort, Board) isn't kept. Officer prisoners are plain
+  prisoners after a load (not kept yet). The crew block's load capped jobs at Loader (a Spotter, Crane, Hauler or Builder came back a
+  Loader): fixed.
+- Protocol 340 (main 337, another branch 339): `Msg.CrewSeats` ends with u16 captain's name, u16 admiral's name aboard, u16 group
+  number; `Msg.Intel` at the end of `Msg`; `CrewOrder` gains Interrogate, Ransom, Interrogator.

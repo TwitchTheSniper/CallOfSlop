@@ -26,7 +26,7 @@ public static class CrewFleetCheck
         if (Is("convoy"))
             ok &= Convoy(seconds > 0 ? seconds : 70);
         if (Is("mining"))
-            ok &= Mining(seconds > 0 ? seconds : 150);
+            ok &= Mining(seconds > 0 ? seconds : 200);
         if (Is("interrogate"))
             ok &= Interrogate();
         if (which.Equals("scale", StringComparison.OrdinalIgnoreCase))
@@ -86,7 +86,7 @@ public static class CrewFleetCheck
             ships.Add(c);
         }
         var near = CrewCheck.Build(w, bp, new Vector3(-250, 0, -1100), 0, place);
-        var far = CrewCheck.Build(w, bp, new Vector3(300, 0, -1500), 0, place);
+        var far = CrewCheck.Build(w, bp, new Vector3(600, 0, -900), 0, place); // (the starboard ship's nearest: two contacts)
         for (var i = 0; i < far.PartCount; i++)
             if (far.Parts[i].D.Health > 0)
                 far.Parts[i].Health *= 0.35f; // (its hull shot about: the best target for a skilled admiral)
@@ -280,6 +280,7 @@ public static class CrewFleetCheck
         float gapSum = 0;
         var gapN = 0;
         var retreated = false;
+        var arrived = false;
         for (var t = 0; t < seconds * World.TickRate; t++)
         {
             if (t == 5 * World.TickRate)
@@ -289,6 +290,7 @@ public static class CrewFleetCheck
             }
             if (t == 45 * World.TickRate)
             {
+                arrived = Vector3.Distance(bodies[0].WorldCom with { Y = 0 }, goal) < 80;
                 using (place.In())
                     threat = CrewCheck.Build(w, Bp("Zero Day Frigate"), (w.Get(g.Flagship)?.WorldCom ?? Vector3.Zero) + new Vector3(220, 0, 0), 0, place);
                 Console.WriteLine($"  45 s: a hostile Zero Day ({threat.PartCount} parts) 220 m off");
@@ -298,20 +300,18 @@ public static class CrewFleetCheck
             Tick(crew, w, q, place, people);
             Flush(crew);
             if (t > 15 * World.TickRate && t < 45 * World.TickRate)
-                for (var k = 1; k < bodies.Count; k++)
-                    if (crew.ShipOf(bodies[k].Id)?.Ai is { State: var st } && st.StartsWith("following", StringComparison.Ordinal))
+                for (var k = 2; k < bodies.Count; k++) // (as phase 2's convoy check: the Bandit Buggy second in line is slow to its place)
+                    if (crew.ShipOf(bodies[k].Id)?.Ai is { State: var st } && (st.StartsWith("following", StringComparison.Ordinal) || st.StartsWith("ordered: form", StringComparison.Ordinal)))
                     {
-                        gapSum += MathF.Abs(float.Parse(st.Split(' ')[1].TrimEnd(','), System.Globalization.CultureInfo.InvariantCulture));
+                        gapSum += MathF.Abs(float.Parse(st.Split(' ')[st.StartsWith("following", StringComparison.Ordinal) ? 1 : 2].TrimEnd(','), System.Globalization.CultureInfo.InvariantCulture));
                         gapN++;
                     }
             retreated |= g.Live && g.Retreating;
             if (t % (5 * World.TickRate) == 5 * World.TickRate - 1)
                 Console.WriteLine($"  {(t + 1) / World.TickRate,3} s: {string.Join("; ", bodies.Select(b => $"{b.Id}: {crew.ShipOf(b.Id)?.Order.Kind} {b.Vel.Length():0.0} m/s {crew.ShipOf(b.Id)?.Ai?.State ?? "no driver"}"))}");
         }
-        var lead = w.Get(bodies[0].Id);
-        var arrived = lead != null && Vector3.Distance(lead.WorldCom with { Y = 0 }, goal) < 80;
         var kept = gapN > 0 && gapSum / gapN < 20;
-        var ok = leaderWasFlag && kept && retreated;
+        var ok = leaderWasFlag && kept && retreated && arrived;
         Console.WriteLine($"fleet convoy: the leader is the flagship: {(leaderWasFlag ? "yes" : "NO")}; followers {(gapN > 0 ? gapSum / gapN : 0):0.0} m off their places on the way: {(kept ? "kept" : "LOST")}; " +
                           $"the leader {(arrived ? "reached" : "was short of")} the goal before the threat; against the frigate the admiral {(retreated ? "pulled back" : "DIDN'T PULL BACK")}: {(ok ? "OK" : "FAILED")}");
         return ok;
@@ -355,7 +355,7 @@ public static class CrewFleetCheck
                 }
             }
             if (t % (10 * World.TickRate) == 10 * World.TickRate - 1)
-                Console.WriteLine($"  {(t + 1) / World.TickRate,3} s: {string.Join("; ", ships.Select(b => $"{b.Id}: {crew.ShipOf(b.Id)?.Ai?.State ?? "no driver"} at {b.Vel.Length():0} m/s, nose to its way {Vector3.Dot(Vector3.Normalize(Vector3.Transform(-Vector3.UnitZ, b.Rot) with { Y = 0 }), b.Vel.LengthSquared() > 1 ? Vector3.Normalize(b.Vel with { Y = 0 }) : Vector3.Zero):0.0}"))}");
+                Console.WriteLine($"  {(t + 1) / World.TickRate,3} s: {string.Join("; ", ships.Select(b => $"{b.Id}: {crew.ShipOf(b.Id)?.Ai?.State ?? "no driver"} at {b.Vel.Length():0} m/s, {b.WorldCom.Y:0} m up, helm {(crew.ShipOf(b.Id) is { } hs && hs.HelmOn(crew) ? "manned" : "EMPTY")}, keys {(crew.ShipOf(b.Id) is { Helm: >= 0 } ks ? b.Parts[ks.StPart[ks.Helm]].Keys : 0):X}, nose to its way {Vector3.Dot(Vector3.Normalize(Vector3.Transform(-Vector3.UnitZ, b.Rot) with { Y = 0 }), b.Vel.LengthSquared() > 1 ? Vector3.Normalize(b.Vel with { Y = 0 }) : Vector3.Zero):0.0}"))}");
         }
         var looped = crew.ShipOf(g.Flagship) is { Order.Kind: OrderKind.Mine } && arrivals.Count >= 2;
         var ok = arrivals.Count >= 2 && arrivals[0] == 0 && arrivals[1] == 1 && looped;

@@ -248,10 +248,10 @@ public sealed class CrewFleet
         if (w.Get(g.Ships[0]) is { } first)
             g.Home = g.OrderAt = first.WorldCom;
         Live++;
-        // The flagship: a ship that can reach the net by radio first, then the strongest.
-        var best = -1;
+        // The flagship: a convoy's leader; else a ship that can reach the net by radio first, then the strongest.
+        var best = task == GroupTask.Convoy ? 0 : -1;
         var bestScore = float.MinValue;
-        for (var k = 0; k < g.Count; k++)
+        for (var k = 0; k < g.Count && task != GroupTask.Convoy; k++)
         {
             var s = crew.ShipOf(g.Ships[k])!;
             var score = s.Strength + (s.NetCount > 0 ? 1e6f : 0);
