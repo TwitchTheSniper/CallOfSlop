@@ -259,6 +259,7 @@ public static unsafe partial class Program
                       ^ (aim.Verdict == AimVerdict.Refused ? (long)(aim.Why?.GetHashCode() ?? 1) << 3 : 0)
                       ^ (hit.Body.Loose && ToolUpgrades.Current.ModuleOf(d.Id) is { } module ? (g.SandboxHands.Level(me.Id, module.Stat) + 1L) * 7919L << 24 : 0) // (a tool upgrade: what you have of it)
                       ^ (h.Tool == ConstructTool.Hands ? h.Held == ConstructParts.None ? 1L << 59 : 1L << 58 : 0) // (hands out: what the click does, and whether they are full)
+                      ^ (d.Labelled && part.Text != null ? (long)part.Text.GetHashCode() * 6151L : 0) // (a switch's label)
                       ^ (g.CrewInfo.TryGetValue(hit.Body.Id, out var crewKey) ? (long)(crewKey.Faction * 256 + crewKey.Alive) * 104729L : 0); // (a crewed body's faction and crew)
             if (key != _sbLookKey)
             {
@@ -323,6 +324,8 @@ public static unsafe partial class Program
                     _ when ConstructEdits.WreckedAlone(hit.Body) => SandboxKeys.Line(d.Name, SandboxKeys.Join($"wrecked, {d.Mass:0} kg", carriedIn), "haul it to a Recycler"),
                     _ => SandboxKeys.Line(d.Name, hp, null, !fits || aim.Verdict != AimVerdict.Can ? null : $"hold {SandboxKeys.Aim}: {(salvage ? "salvage" : "take off")}"),
                 };
+                if (d.Labelled && part.Text is { } label && _sbLookText != null)
+                    _sbLookText = _sbLookText.Replace(d.Name, label); // (a labelled switch, button, lever...: "Hangar lights: off"; LogicText.Name)
                 if (HullHoles.IsHoled(d) && _sbLookText != null)
                     _sbLookText = _sbLookText.Replace(d.Name, HullHoles.Shown(d)); // (a cut or sealed part: its file part's name, not its key)
                 if (g.CrewLook(hit.Body.Id) is { } crewNote)

@@ -30,6 +30,12 @@ the part going, or walking more than 10 m from it.
   (Enter sets it), held inside its range and on its step; **choice**: a dropdown; **toggle**: a check box; **colour**: a
   colour picker and eight swatches; **key** (an input reader's key): "Press to bind" then the key itself (only keys a
   seat passes on: fire, aim, reload, jump, sprint, forward, back, left, right; Esc cancels), or the dropdown.
+- **Label** (switches, buttons, levers, timers, lamps, sensors: every logic part with no messages of its own,
+  `ConstructPartDef.Labelled`): a name for that one part, up to 60 ASCII characters, kept in its text slot
+  (`CPart.Text`), so it saves, copies into blueprints and reaches every client in CBody like a sign's message. The
+  look line shows it instead of the part name ("Hangar lights: off"; with the configure tool out, "Hangar lights
+  (Bakelite Switch)"), and so do the wiring rows ("In from: Hangar lights"). Empty: the part name. The Use key still
+  flips the switch (only signs open a typing box).
 - **Wiring**: every wire into and out of the part ("In from: Switch (part 3)"); hovering a row highlights the part at
   the other end in the world, clicking it opens that part's settings.
 - **Reset** (every setting to its default), **Copy** and **Paste** (only onto a part of the same kind; the button names

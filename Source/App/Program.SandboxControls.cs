@@ -112,7 +112,7 @@ public static partial class Program
             MediaLook(g, c, hit.Part, d, h.Tool);
             return false;
         }
-        if (p.Broken || !keyed && (d.TextSlots == 0 || d.IsRouter) || h.Tool == ConstructTool.PhysicsGun && h.GrabBody != 0)
+        if (p.Broken || !keyed && (d.TextSlots == 0 || d.IsRouter || d.Labelled) || h.Tool == ConstructTool.PhysicsGun && h.GrabBody != 0)
             return false;
         var box = keyed ? LogicInputs.KeyAt(c, hit.Part, hit.Point) : -1;
         var key = box >= 0 ? d.Boxes[box].Key : '\0';
@@ -134,7 +134,7 @@ public static partial class Program
                 '\0' => "type",
                 _ => $"press {key}",
             };
-            _ctText = SandboxKeys.Line(d.Name, keyed ? LogicDisplays.Look(p, d) : LogicText.Get(p, slot), why, SandboxKeys.Do(SandboxKeys.Use, action));
+            _ctText = SandboxKeys.Line(LogicText.Name(c, hit.Part), keyed ? LogicDisplays.Look(p, d) : LogicText.Get(p, slot), why, SandboxKeys.Do(SandboxKeys.Use, action));
         }
         g.SandboxLookText = _ctText;
         if (!Pressed(GameAction.Interact))
