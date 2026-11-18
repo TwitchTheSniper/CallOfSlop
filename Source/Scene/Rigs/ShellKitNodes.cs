@@ -62,6 +62,12 @@ public sealed class ShellKitNodes
         if (frame != _frame)
         {
             _frame = frame;
+            if (frame == 0)
+            {
+                // A person or a Robot Shell: nothing to draw, and nothing looked up (the shells file is read on first use: never in a frame of someone who isn't in one).
+                DrillShown = _hopper.Visible = _arm.Visible = _root.Visible = false;
+                return;
+            }
             var f = ShellFrames.Of(frame);
             var hop = frame != 0 && f.Modules[1]?.Kind == ShellModuleKind.Hopper;
             DrillShown = frame != 0 && f.Modules[3]?.Kind == ShellModuleKind.Drill;
