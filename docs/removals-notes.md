@@ -63,6 +63,27 @@ every path is the coordinator's; this file is what was done and what changed for
   "Twa Dugs"); the planetoid and system descriptions (the map owner's, made by tools/planets/make_worlds.py); the office
   desk's "IT Department" voice (Story/Office); the vehicle kit's history docs.
 
-## 1. Levelling and prestige
+## 1. Levelling, prestige and the prestige hats
 
-(to do)
+- **Gates first.** `LoadoutStore.Active()`/`Effective(l)` swap only what doesn't fit a slot; every loadout slot is open
+  (`LoadoutStore.MaxSlots`); `Attachments.Sanitize(w, kit)` drops only what doesn't fit; `BotGear.Full` is 1, so every
+  bot gear check passes and bots draw loadouts as they did at the old max level (Sandbox spawn guns come from
+  `LoadoutStore.Active()` as before). `Attachments.UnlockXp`/`MaxXp`/`IronSightsXp` stay only as list order (archived
+  gunsmith screens).
+- **Gone.** Progression.cs (account XP, levels, the unlock table, weapon XP, prestige), UiPrestige, the HUD's XP bar,
+  popups and level-up banners, the loadout screen's Progression page and level bar, the Settings page's Reset level,
+  the scoreboard's and lobby room's rank tags, kill/match/co-op XP awards. The Gun Game ladder goes by the weapon list's
+  order; perks list starters first.
+- **Hats deleted** (the user's decision): Cosmetics/hats.json, `HatId`, the catalogue, `Player.Hat`/`Prestige`/`Level`,
+  the APPEARANCE screen's hat row, the hat icons. HatDef/HatRender stay for the uniforms' caps.
+- **Wire (protocol 346, one history line with the colony's).** The roster entry loses prestige, level and hat (3 bytes);
+  the Loadout message loses its hat byte and the prestige and level after it; the Hello keeps two zero bytes where
+  prestige and level were, so an older build's version is still read where it sends it and it gets a clean refusal.
+- **Saves.** progress.txt left `SavePaths.SaveFiles`, tools/package.ps1, tools/MIGRATING.md and .gitignore; an old one stays
+  on disk unread (still on the update checker's never-ship list). `SavePaths.MarkerFile` (settings.txt) is the new mark of
+  a build's saves for `FindPreviousBuild` and a save folder's first run (builds before this have it too). appearance.txt's
+  old `hat=` line is skipped and not written again; loadout.txt loads as it was, with nothing locked.
+- **Self-test.** "Save folder" now uses loadout.txt and plain `SavePaths` lines for its migration, atomic-write and
+  newer-format checks; the archived "Loadouts and perks", "Attachments", "Weapon files", "Weapon select", "Loadout
+  navigation", "Launchers", "Sniper scopes", "Gun Game", "Ragdolls" (a uniform's cap) and "Mode switch reset" were edited
+  to build. No section added; MaxSections unchanged.
