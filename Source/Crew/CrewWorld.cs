@@ -16,6 +16,7 @@ public enum CrewJob : byte
     Builder, // phase 7: works a Building Station's bay (its job steps only while one stands there)
     Admiral, // faction-controllers.md phase 2: leads a group of captains from any seat on the fleet command network (CrewFleet.cs); never a station's worker
     Interrogator, // phase 2: questions prisoners for intelligence (a player's own hand: CrewFleet.Interrogate, Game/GameCrewIntel.cs)
+    Miner, // works the ore near its post with a portable drill off a Tool Rack (or a Mining Shell), and carries it to the post's bin (Game/GameCrewMine.cs)
 }
 
 /// <summary>What a crew member is doing.</summary>
@@ -58,6 +59,7 @@ public enum CrewStationKind : byte
     Crane, // a lifter's base
     Dock, // a cargo dock
     Build, // a Building Station
+    Rack, // a Tool Rack: its miner takes a drill from it to the ore (Game/GameCrewMine.cs)
 }
 
 /// <summary>The game's side of the crew (Game/GameCrew.cs): bot bodies, people's targets. Null in a check with no game: nobody is bodied.</summary>
@@ -147,6 +149,8 @@ public sealed class CrewShip
     public BoardAct Act;
     public bool Own, HoldFire; // phase 6: a player's own hired crew (the Player Crew kind: never the helm unless a player orders it, never in the way); told to hold fire
     public bool Boarded, Prize, CalledHelp; // Prize: taken by a player, its crew are prisoners
+    public Vector3 BreachAt; // where the first boarder was seen aboard (the body's frame), while BreachSet: the breach guards' post (GameCrewDefend.cs)
+    public bool BreachSet;
     public short ScPart = -1; // the scuttle point (-1: none); ScStage 1 on the way, 2 arming, 3 counting down; ScAt the stage's end
     public byte ScStage, ScDisarmBy = 255;
     public int ScMember = -1;
@@ -179,6 +183,7 @@ public sealed class CrewShip
 
     public bool Foe(byte player) => (Foes[player >> 6] & (1UL << (player & 63))) != 0;
     public void MarkFoe(byte player) => Foes[player >> 6] |= 1UL << (player & 63);
+    public void UnmarkFoe(byte player) => Foes[player >> 6] &= ~(1UL << (player & 63)); // (phase 5: a pact partner's stray round, forgiven)
 
     public bool HelmOn(CrewWorld w) => Helm >= 0 && StMember[Helm] is var m and >= 0 && w.State[m] == CrewState.Station;
     public bool InGrace(long tick) => tick < GraceUntil;
@@ -366,10 +371,15 @@ public sealed class CrewWorld
     // ---- Making and losing crews ---------------------------------------------------------------------------------------------------
 
     /// <summary>A roster for <paramref name="c"/> (none yet): one member per station it can work now, and spares (<paramref name="spares"/>; -1: by its couches).</summary>
+    /// <summary>The power a new crew serves for the one asked (the game's: a gone power's heir; null: as asked).</summary>
+    public Func<byte, byte>? LivePower;
+
     public CrewShip? Crew(Construct c, ShipAiMode mode, bool air = false, int spares = -1, byte faction = 0, bool empty = false)
     {
         if (_shipOf.ContainsKey(c.Id))
             return ShipOf(c.Id);
+        if (faction != 0 && LivePower != null)
+            faction = LivePower(faction); // (a power gone for good crews nothing: its heir, else nobody's: faction-controllers.md phase 3)
         var s = NewShip(c.Id, mode, air);
         SetFaction(c, s, faction);
         Scan(c, s);
@@ -786,11 +796,12 @@ public sealed class CrewWorld
         CrewStationKind.Crane => CrewJob.Crane,
         CrewStationKind.Dock => CrewJob.Hauler,
         CrewStationKind.Build => CrewJob.Builder,
+        CrewStationKind.Rack => CrewJob.Miner,
         _ => CrewJob.Spare,
     };
 
     public static CrewStationKind WorkKind(ConstructPartDef d) =>
-        d.Lifter != null ? CrewStationKind.Crane : d.IsDock ? CrewStationKind.Dock : d.IsBuildStation ? CrewStationKind.Build : CrewStationKind.Rest;
+        d.Lifter != null ? CrewStationKind.Crane : d.IsDock ? CrewStationKind.Dock : d.IsBuildStation ? CrewStationKind.Build : d.IsToolRack ? CrewStationKind.Rack : CrewStationKind.Rest;
 
     /// <summary>The part of the body's capital gun, its biggest (-1: none is <see cref="CapitalSize"/> or more).</summary>
     public static int CapitalGun(Construct c)
@@ -834,7 +845,8 @@ public sealed class CrewWorld
         return -1;
     }
 
-    private static bool Usable(Construct c, int part) => !c.Parts[part].Broken && c.Parts[part].D.Role == PartRole.Seat && !c.Parts[part].D.RemoteReceiver && !c.Parts[part].D.LifterCab;
+    private static bool Usable(Construct c, int part) => !c.Parts[part].Broken && c.Parts[part].D.Role == PartRole.Seat && !c.Parts[part].D.RemoteReceiver && !c.Parts[part].D.LifterCab
+        && c.Parts[part].D.ShellRange <= 0; // (a Shell Control Chair isn't a couch: a body sat there would link to a shell; a miner sits in it to wear one, GameCrewMine.cs)
 
     private static int IndexOf(CrewShip s, int part)
     {
@@ -1052,6 +1064,17 @@ public sealed class CrewWorld
             Embody(c, s, host);
     }
 
+    /// <summary>Whether player <paramref name="player"/> is one of <paramref name="s"/>'s own crew bodies.</summary>
+    private bool OwnBody(CrewShip s, byte player)
+    {
+        if (!IsBody[player])
+            return false;
+        for (var i = 0; i < s.MemberCount; i++)
+            if (Player[s.Members[i]] == player + 1)
+                return true;
+        return false;
+    }
+
     /// <summary>
     /// The captain (bot-brain.md section 3, phase 3): once a second near a person, every five seconds further, it reads who has hit the body (a
     /// deed against its faction), its hull and losses into morale, and picks its goal by its faction's rules: with something to fight it engages,
@@ -1067,12 +1090,14 @@ public sealed class CrewWorld
             var byBody = c.LastHitBody;
             c.LastHitBy = 255;
             c.LastHitBody = 0;
+            if (by != 255 && OwnBody(s, by))
+                by = 255; // (its own crew's shots in a fight aboard: GameCrewDefend.cs; no foe, no deed)
             if (by != 255 && !s.Foe(by))
             {
                 s.MarkFoe(by);
                 Events.Add($"construct {c.Id}: player {by} attacked its crew{(def != null ? $" ({CrewPowers.Of(s.Faction)!.Name})" : "")}");
             }
-            if (def != null)
+            if (def != null && (by != 255 || byBody != 0))
                 host?.Deed(RelEvent.HitBody, s, by, byBody);
         }
         var hullWas = s.Hull;
@@ -1151,12 +1176,12 @@ public sealed class CrewWorld
                 State[m0] = CrewState.Free;
             }
         }
-        for (var pass = 0; pass < 9; pass++)
+        for (var pass = 0; pass < 10; pass++)
         {
             var kind = pass switch
             {
                 0 => CrewStationKind.Helm, 1 => CrewStationKind.Gun, 2 => CrewStationKind.Works, 3 => CrewStationKind.Magazine, 4 => CrewStationKind.Spot,
-                5 => CrewStationKind.Crane, 6 => CrewStationKind.Dock, 7 => CrewStationKind.Build, _ => CrewStationKind.Rest,
+                5 => CrewStationKind.Crane, 6 => CrewStationKind.Dock, 7 => CrewStationKind.Build, 8 => CrewStationKind.Rack, _ => CrewStationKind.Rest,
             };
             for (var st = 0; st < s.StCount; st++)
             {
@@ -1264,14 +1289,14 @@ public sealed class CrewWorld
     }
 
     /// <summary>
-    /// A bodied member's errand inside its body (an engineer to a part, a loader between boxes, a repeller to a boarder): walks it along CrewNav's
+    /// A bodied member's errand inside its body (an engineer to a part, a loader between boxes, a fighter to a locker or a post): walks it along CrewNav's
     /// path from where it stands to the spot nearest <paramref name="rest"/>, keeping its station. False: no graph, no spot, or no way there.
     /// </summary>
-    public bool Errand(Construct c, CrewShip s, int m, Vector3 rest, ICrewHost host, float across = CrewNav.Reach + 1)
+    public bool Errand(Construct c, CrewShip s, int m, Vector3 rest, ICrewHost host, float across = CrewNav.Reach + 1, float fromAcross = 1.2f)
     {
         if (Player[m] == 0 || s.Nav is not { } g || s.NavBuild != g.Build || !host.Feet((byte)(Player[m] - 1), out var feet))
             return false;
-        var from = CrewNav.NearestNode(g, c.ToLocal(feet), 1.2f);
+        var from = CrewNav.NearestNode(g, c.ToLocal(feet), fromAcross); // (a fighter just up from a standing place looks further: GameCrewDefend.cs)
         var to = CrewNav.NearestNode(g, rest, across, 2.5f);
         if (from < 0 || to < 0 || g.Comp[from] != g.Comp[to])
             return false;
@@ -1312,6 +1337,7 @@ public sealed class CrewWorld
         CrewStationKind.Crane => "crane",
         CrewStationKind.Dock => "cargo dock",
         CrewStationKind.Build => "building station",
+        CrewStationKind.Rack => "tool rack",
         _ => "couch",
     };
 
@@ -1560,7 +1586,7 @@ public sealed class CrewWorld
             {
                 var uid = r.U32();
                 var jb = r.U8();
-                var job = (CrewJob)Math.Min(jb & 0x7F, (int)CrewJob.Interrogator); // (was capped at Loader: a saved Spotter, Crane, Hauler or Builder came back a Loader)
+                var job = (CrewJob)Math.Min(jb & 0x7F, (int)CrewJob.Miner); // (was capped at Loader: a saved Spotter, Crane, Hauler or Builder came back a Loader)
                 var health = r.U8() / 255f * MemberHealth;
                 var skill = r.U8();
                 var tag = r.U16();

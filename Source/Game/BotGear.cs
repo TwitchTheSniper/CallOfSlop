@@ -14,24 +14,10 @@ public enum BotGearMode : byte
 }
 
 /// <summary>
-/// The rules for bot loadouts that match the lobby's level (pure functions; the game side is in <see cref="Game"/>,
-/// below). A bot's "gear level" is an account level; its loadout only holds items a player of that level could have:
-///
-///   - Lobby level: the average account level of the people in the game (bots don't count), rounded. A player who has
-///     prestiged counts as the max level (they have earned everything at least once). A player whose level is unknown
-///     (0: an old client) doesn't count. Offline single player: your own level. Nobody with a known level (a bot-only
-///     game, the self-test's seeded matches): everything, exactly as before.
-///   - Per-bot jitter: each bot sits up to <see cref="JitterRange"/> levels either side of the lobby level, fixed by its
-///     seed, so not every bot is the same. The upward side is capped at (lobby level - 1): a brand-new lobby's bots never
-///     out-gear it. Clamped to 1..max.
-///   - Weapons, grenades, equipment, perks and kill streaks: unlocked at or below the gear level (the same table as
-///     players, <see cref="Progress"/>).
-///   - Attachments (weapon XP): a bot's weapon XP on a gun is taken as (gear level - the gun's unlock level) /
-///     <see cref="AttachmentLevels"/> of the gun's max XP, so a gun gains attachments over the six levels after it
-///     unlocks (a level is 2-3 matches, a gun maxes out in 3-7), and a just-unlocked or starter gun at level 1 has only
-///     what needs no XP.
-///   - At the max level (or <see cref="BotGearMode.Everything"/>) everything is open with full kits, and the loadout
-///     is drawn exactly as before (same random draws), so seeded matches play as they always did.
+/// Bot loadouts (pure functions; the game side is in <see cref="Game"/>, below). Until 2026-11-17 a bot's "gear level" matched
+/// the players' average account level; levelling went, so every gear level opens everything (<see cref="Full"/> is 1): the
+/// gates below always pass and a loadout is drawn exactly as it was at the old max level. The caches (attachment lists,
+/// default kits) stay: lives must not allocate.
 /// </summary>
 public static class BotGear
 {
@@ -42,11 +28,7 @@ public static class BotGear
     public const int AttachmentLevels = 6;
 
     /// <summary>The gear level that opens everything (the max account level).</summary>
-    public static int Full => Progress.MaxLevel;
-
-    /// <summary>The level a person counts as: 0 if unknown, the max level once they have prestiged, otherwise their level.</summary>
-    public static int EffectiveLevel(int prestige, int level) =>
-        prestige > 0 ? Full : level <= 0 ? 0 : Math.Min(level, Full);
+    public const int Full = 1;
 
     /// <summary>The rounded average of <paramref name="count"/> levels adding up to <paramref name="sum"/> (0 for nobody).</summary>
     public static int Average(int sum, int count) =>
@@ -84,7 +66,7 @@ public static class BotGear
     /// <summary>May a bot of this gear level carry the weapon?</summary>
     public static bool Weapon(WeaponDef w, int level) => level >= Full || UnlockLevel(w) <= level;
 
-    /// <summary>The account level that unlocks the weapon (<see cref="Progress.UnlockLevel(WeaponDef)"/>, cached per weapon list).</summary>
+    /// <summary>The level that unlocks the weapon: 1, every one (it builds the per-weapon caches for this weapon list).</summary>
     public static int UnlockLevel(WeaponDef w)
     {
         var all = Weapons.All;
@@ -94,7 +76,7 @@ public static class BotGear
             levels = new int[all.Length];
             foreach (var x in all)
                 if (x.Id < levels.Length)
-                    levels[x.Id] = Progress.UnlockLevel(x);
+                    levels[x.Id] = 1; // (nothing is locked since levelling went)
             _weaponLevels = levels;
             _weaponSource = all;
             // Every weapon's attachment list and unlock XP now, not on the life that first draws the gun: filling
@@ -119,7 +101,7 @@ public static class BotGear
                     kits[x.Id] = Attachments.DefaultKit(x);
             _defaultKits = kits;
         }
-        return w.Id < levels.Length && ReferenceEquals(all[w.Id], w) ? levels[w.Id] : Progress.UnlockLevel(w);
+        return w.Id < levels.Length && ReferenceEquals(all[w.Id], w) ? levels[w.Id] : 1;
     }
 
     private static WeaponDef[]? _weaponSource;
@@ -203,7 +185,7 @@ public static class BotGear
         if (k == ThrowableKind.None || level >= Full)
             return true;
         var levels = _throwableLevels ??= BuildThrowableLevels();
-        return (int)k < levels.Length ? levels[(int)k] <= level : Progress.UnlockLevel(k) <= level;
+        return (int)k < levels.Length ? levels[(int)k] <= level : level >= 1;
     }
 
     private static int[]? _throwableLevels;
@@ -214,7 +196,7 @@ public static class BotGear
         var levels = new int[kinds.Length];
         foreach (var k in kinds)
             if ((int)k < levels.Length)
-                levels[(int)k] = k == ThrowableKind.None ? 1 : Progress.UnlockLevel(k);
+                levels[(int)k] = 1;
         return levels;
     }
 
@@ -224,7 +206,7 @@ public static class BotGear
         if (level >= Full)
             return true;
         var levels = _perkLevels ??= BuildPerkLevels();
-        return (int)id < levels.Length ? levels[(int)id] <= level : Progress.PerkLevel(id) <= level;
+        return (int)id < levels.Length ? levels[(int)id] <= level : level >= 1;
     }
 
     private static int[]? _perkLevels;
@@ -234,7 +216,7 @@ public static class BotGear
         var levels = new int[Perks.All.Length];
         foreach (var p in Perks.All)
             if ((int)p.Id < levels.Length)
-                levels[(int)p.Id] = Progress.PerkLevel(p.Id);
+                levels[(int)p.Id] = 1;
         return levels;
     }
 
@@ -290,26 +272,9 @@ public sealed partial class Game
     public int BotGearAverage { get; private set; }
 
     /// <summary>
-    /// The average account level of the people in the game right now (bots don't count; prestige counts as the max level;
-    /// unknown levels are left out), or 0 if nobody's level is known. The host's own level comes from its progression.
+    /// The average account level of the people in the game: none is known since levelling went, so 0 (bots carry everything).
     /// </summary>
-    public int HumanAverageLevel()
-    {
-        int sum = 0, count = 0;
-        foreach (var p in Players.Values)
-        {
-            if (p.Bot != null)
-                continue;
-            var level = IsServer && p.Id == LocalId && Progress is { } prog
-                ? BotGear.EffectiveLevel(prog.Prestige, prog.Level)
-                : BotGear.EffectiveLevel(p.Prestige, p.Level);
-            if (level <= 0)
-                continue;
-            sum += level;
-            count++;
-        }
-        return BotGear.Average(sum, count);
-    }
+    public int HumanAverageLevel() => 0; // (nobody reports a level since levelling went: 2026-11-17)
 
     /// <summary>Works the lobby's level out again (people join and leave, levels go up): on every roster change and every bot life.</summary>
     private void RefreshBotGear()

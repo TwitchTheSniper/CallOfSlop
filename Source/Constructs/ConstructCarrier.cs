@@ -130,23 +130,29 @@ public static class ConstructCarrier
     {
         ref var p = ref c.Parts[k];
         var d = p.D;
-        if (!ConstructCargo.IsFrozen(p) || !ConstructPower.On(c, k))
+        if (!ConstructCargo.IsFrozen(p) || !ConstructPower.On(c, k) || c.SpaceShip != 0)
         {
-            p.Mem = 0;
+            p.Mem = 0; // (out of the bubble both ships are posed by their flight: a pull would be undone every tick while its spin and its push back on the carrier stayed, and both tumbled; the host docks a ship there itself, GameNavDock.cs)
             return;
         }
         ConstructCargo.Box(c, k, out var centre, out var half);
         c.WorldFrame(p.Seg, out var q, out var t);
         var target = t + Vector3.Transform(centre, q);
         var reach = half.Length() + d.DockPull;
-        if ((world.CarrierClock + (uint)k) % ConstructCargo.ScanEvery == 0 && p.Mem == 0)
+        var look = (world.CarrierClock + (uint)k) % ConstructCargo.ScanEvery == 0;
+        if (look && c.CargoCount > 0 && ConstructCargo.OneCraft(d) && ConstructCargo.DockTaken(world, c, k, null))
+        {
+            p.Mem = 0; // (it holds a craft already: it pulls no second one onto it)
+            return;
+        }
+        if (look && p.Mem == 0)
         {
             var near = world.Near(target, reach, _near);
             var best = float.MaxValue;
             for (var n = 0; n < near.Count; n++)
             {
                 var b = near[n];
-                if (b.CarriedBy != 0 || b.DriveSeat < 0 && b.ThrusterCount == 0 || world.CarrierClock < b.DockAway || !ConstructCargo.Catchable(world, c, b, d))
+                if (b.CarriedBy != 0 || b.SpaceShip != 0 || b.DriveSeat < 0 && b.ThrusterCount == 0 || world.CarrierClock < b.DockAway || !ConstructCargo.Catchable(world, c, b, d))
                     continue;
                 var gap = Vector3.DistanceSquared(b.WorldCom, target);
                 if (gap < best && gap < reach * reach && (b.Vel - c.PointVel(b.WorldCom)).LengthSquared() < PullStart * PullStart)
@@ -158,7 +164,7 @@ public static class ConstructCarrier
         }
         if (p.Mem == 0)
             return;
-        if (world.Get((ushort)p.Mem) is not { } body || body.CarriedBy != 0 || world.CarrierClock < body.DockAway || !ConstructCargo.Catchable(world, c, body, d)
+        if (world.Get((ushort)p.Mem) is not { } body || body.CarriedBy != 0 || body.SpaceShip != 0 || world.CarrierClock < body.DockAway || !ConstructCargo.Catchable(world, c, body, d)
             || Vector3.DistanceSquared(body.WorldCom, target) > reach * reach * 1.7f)
         {
             p.Mem = 0;

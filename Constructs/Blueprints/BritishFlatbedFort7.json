@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 7 body 7 kit 7 wear 7, chassis 2 axles, front under the hood, inset 2.25 m, hydraulic/leaf, wing 0.5, cab style town cab, language bus standard 2.44 m, flare 0.02, plain 0.9, brow 0.90 1.25 m, tail 0.79 1 m, door right, 11 facets, cab coach cab, 8 facets, nose rounded, trim livery on 5 bay sides, wear age 0.63 (3 rusty, 12 dirty, 0 sooty, 1 patched, 0 rusted out), body gun bed+room, cab enclosed, nose long hood, rear porch hitch, under tub, flank panniers, sides walls, roof none, layout gun bed 3 m+room(Brow T,Door,Tail T)
   "format": "call-of-slop-construct-blueprint/1",
   "name": "British Flatbed Fort 7",
-  "group": "Ministry of Slop",
+  "group": "British",
   "description": "A flatbed fort: a long hood, an enclosed cab, a gun bed, a walk-in hull with loot, a drum on the rear porch over a tow hitch. 2 guns.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#2b2a28"},
@@ -134,7 +134,7 @@
     {"part": "Ammo Socket", "on": 107, "socket": "left", "by": "right"},
     {"part": "Lever", "on": 97, "socket": "lever", "by": "-y"},
     {"part": "Chest", "on": 79, "socket": "front12", "by": "bottom", "spin": 3},
-    {"part": "Pillar Box", "on": 75, "socket": "front03", "by": "foot00", "spin": 2},
+    {"part": "Ammo Container", "on": 76, "socket": "front13", "by": "-y", "spin": 2},
     {"part": "Square Beam 0.75 m", "on": 11, "socket": "+y2", "by": "-x0", "spin": 1, "paint": "#2b2a28"},
     {"part": "Square Beam 0.75 m", "on": 130, "socket": "+x0", "by": "-x0", "spin": 1, "paint": "#2b2a28"},
     {"part": "Plate Steel 1 m", "on": 131, "socket": "+x2", "by": "back01", "paint": "#e8dfc8"},
@@ -155,14 +155,14 @@
     {"part": "Hull Loft (hoodr UXV2WyWjXIXEVd ~7O07eA7mM7mW7Wg70r5Gz2f1011)", "on": 31, "socket": "+y", "by": "engine", "paint": "#c8102e"},
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 142, "pos": [-1.059, 0.622, 3.997], "rot": [-0.0137, -0.0095, 0.6994, 0.7146]}, "paint": "#c8102e"},
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 143, "pos": [1.562, 0.929, 2.001], "rot": [0.0045, -0.0105, -0.706, 0.7081]}, "paint": "#c8102e"},
-    {"part": "Furled Brolly", "on": 141, "socket": "front10", "by": "base"},
-    {"part": "Furled Brolly", "on": 140, "socket": "front00", "by": "base"},
-    {"part": "Furled Brolly", "on": 142, "socket": "front03", "by": "base"},
-    {"part": "Belisha Beacon", "on": 144, "socket": "front12", "by": "base"},
-    {"part": "Furled Brolly", "on": 145, "socket": "front03", "by": "base"},
+    {"part": "Long Iron Spike", "on": 141, "socket": "front10", "by": "base"},
+    {"part": "Long Iron Spike", "on": 140, "socket": "front00", "by": "base"},
+    {"part": "Long Iron Spike", "on": 142, "socket": "front03", "by": "base"},
+    {"part": "Long Iron Spike", "on": 144, "socket": "front12", "by": "base"},
+    {"part": "Long Iron Spike", "on": 145, "socket": "front03", "by": "base"},
     {"part": "Traffic Cone", "on": 147, "socket": "top", "by": "base"},
-    {"part": "Teapot", "on": 39, "socket": "top", "by": "base"},
-    {"part": "Traffic Cone", "on": 70, "socket": "front", "by": "base"},
+    {"part": "Hull Loft (decoJ W0)", "on": 39, "socket": "top", "by": "base"},
+    {"part": "Hull Loft (decoJ W0)", "on": 70, "socket": "front", "by": "base"},
     {"part": "Hull Loft (triml3 XaW5 ~CO0CWQCeqCeyCfFCnfCnkCo3CgTCAtABC6xL3ZQ03Q ~DG0DOTDWiDWxDfODvkDvrDoIDgmDBDB3a7Zk3xq03q)", "on": 97, "socket": "+x0", "by": "base", "paint": "#004225"},
     {"part": "Hull Loft (triml0 XaW5 ~DG0DOTDWiDWxDfODvkDvrDoIDgmDBDB3a7Zk3xq03q ~CO0CWQCeqCeyCfFCnfCnkCo3CgTCAtABC6xL3ZQ03Q)", "on": 97, "socket": "-x0", "by": "base", "paint": "#004225"},
     {"part": "Hull Loft (triml8 YMW5 ~DG0DOTDWxDfODvkDvrDoIDgmDBDB3a7Zk3xq03q =)", "on": 98, "socket": "-x0", "by": "base", "paint": "#004225"},
@@ -179,5 +179,5 @@
     {"type": "feed", "from": 124, "to": 125, "fromPort": "Ammo out", "toPort": "Ammo in", "laid": true},
     {"type": "pipe", "from": 138, "to": 31, "nodes": [[1.25, 0.82, 8.06], [1.25, 0.55, 8.06], [0.67, 0.55, 8.06], [0.67, 0.55, 2.125], [0.67, 0.05, 2.125], [0.67, 0.05, 0.505], [0.67, 0.25, 0.505], [-0.17, 0.25, 0.505], [-0.17, 0.62, 0.505], [-0.17, 0.62, 0]], "laid": true}
   ],
-  "loot": [{"step": 128, "table": "british"}, {"step": 129, "table": "british"}]
+  "loot": [{"step": 128, "table": "british"}]
 }

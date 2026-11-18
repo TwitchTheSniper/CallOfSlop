@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front set back, inset 2.25 m, hydraulic/leaf, wing 0.5, cab style town cab, language bus heavy 2.89 m, flare 0.08, plain 0.8, brow 0.86 1 m, tail 0.73 1.25 m, door right, 12 facets, cab coach cab, 8 facets, nose rounded, trim livery on 7 bay sides, wear age 0.74 (11 rusty, 8 dirty, 0 sooty, 0 patched, 0 rusted out), body gun bed+room, cab enclosed, nose long hood, rear bare, under tub, flank panniers, sides walls, roof none, layout gun bed 2.5 m+room(Brow L,Bay L-T,Door,Tail T)
   "format": "call-of-slop-construct-blueprint/1",
   "name": "British Flatbed Fort 1",
-  "group": "Ministry of Slop",
+  "group": "British",
   "description": "A flatbed fort: a long hood, an enclosed cab, a gun bed, a walk-in hull with loot. 2 guns.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#2b2a28"},
@@ -164,9 +164,9 @@
     {"part": "Ammo Reel", "on": 153, "socket": "top", "by": "-y"},
     {"part": "Ammo Socket", "on": 128, "socket": "top", "by": "bottom"},
     {"part": "Lever", "on": 116, "socket": "lever", "by": "-y"},
-    {"part": "Phone Box", "on": 85, "socket": "front22", "by": "foot10", "spin": 2},
-    {"part": "Pillar Box", "on": 91, "socket": "front20", "by": "foot10", "spin": 1},
-    {"part": "Phone Box", "on": 87, "socket": "front23", "by": "foot00", "spin": 2},
+    {"part": "Shelf Bay 1", "on": 91, "socket": "front10", "by": "-y.3.1", "spin": 1},
+    {"part": "Ammo Container", "on": 90, "socket": "front22", "by": "-y", "spin": 1},
+    {"part": "Garden Gnome", "on": 159, "socket": "+y.1.0", "by": "base"},
     {"part": "Plate Steel 0.5x1 m", "on": 54, "socket": "+x", "by": "back02", "paint": "#b5121b"},
     {"part": "Plate Steel 0.5 m", "on": 66, "socket": "+x", "by": "back00", "paint": "#c8102e"},
     {"part": "Plate Steel 0.5x1 m", "on": 53, "socket": "+x", "by": "back02", "spin": 3, "paint": "#1b1c1e"},
@@ -174,12 +174,12 @@
     {"part": "Hull Loft (hoodr UXV2WyWjXIXEVd ~7G07WB7eM7eY7Oj6mu5902f4014)", "on": 29, "socket": "+y", "by": "engine", "paint": "#be0f2a"},
     {"part": "Plate Steel 0.5 m", "weld": {"on": 162, "pos": [-1.055, 0.653, 1.253], "rot": [-0.0142, 0.007, 0.7185, 0.6954]}, "paint": "#c8102e"},
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 164, "pos": [1.575, 0.936, 1.249], "rot": [-0.0029, -0.0213, -0.698, 0.7158]}, "paint": "#7d8186"},
-    {"part": "Belisha Beacon", "on": 162, "socket": "front02", "by": "base"},
-    {"part": "Belisha Beacon", "on": 164, "socket": "front02", "by": "base"},
-    {"part": "Teapot", "on": 166, "socket": "top", "by": "base"},
+    {"part": "Long Iron Spike", "on": 162, "socket": "front02", "by": "base"},
+    {"part": "Long Iron Spike", "on": 164, "socket": "front02", "by": "base"},
+    {"part": "Hull Loft (decoJ W0)", "on": 166, "socket": "top", "by": "base"},
     {"part": "Garden Gnome", "on": 37, "socket": "top", "by": "base"},
-    {"part": "Traffic Cone", "on": 71, "socket": "front", "by": "base"},
-    {"part": "Queue Post", "on": 79, "socket": "front", "by": "base"},
+    {"part": "Hull Loft (decoJ W0)", "on": 71, "socket": "front", "by": "base"},
+    {"part": "Hull Loft (decoJ W0)", "on": 50, "socket": "front", "by": "base"},
     {"part": "Hull Loft (triml3 XaW5 ~CW0CeOCelCmyCv7DHVDPkDPsDQEDAcCIyA3C6xJ3pN03N ~D80DGSDOtDOyDvJEHXEXlEYAEQcEJ2DJSAxl7hs4Rx03x)", "on": 116, "socket": "+x0", "by": "base", "paint": "#e8dfc8"},
     {"part": "Hull Loft (triml2 XaW5 ~D80DGSDOtDOyDvJEHXEXlEYAEQcEJ2DJSAxl7hs4Rx03x ~CW0CeOCelCmyCv7DHVDPkDPsDQEDAcCIyA3C6xJ3pN03N)", "on": 116, "socket": "-x0", "by": "base", "paint": "#e8dfc8"},
     {"part": "Hull Loft (triml9 XBW5 ~D80DGSDOtDOyDvJEHXEXlEYAEQcEJ2DJSAxl7hs4Rx03x ~D80DGWDOyDP0EHVEXkEX_EYVEQ_EJVDJzAyI7iR4SX04X)", "on": 117, "socket": "+x0", "by": "base", "paint": "#e8dfc8"},
@@ -197,5 +197,5 @@
     {"type": "feed", "from": 154, "to": 155, "fromPort": "Ammo out", "toPort": "Ammo in 2", "laid": true},
     {"type": "feed", "from": 155, "to": 156, "fromPort": "Ammo out", "toPort": "Ammo in", "laid": true}
   ],
-  "loot": [{"step": 159, "table": "british"}, {"step": 160, "table": "british"}, {"step": 161, "table": "british"}]
+  "loot": [{"step": 159, "table": "british"}]
 }

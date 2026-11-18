@@ -17,7 +17,7 @@ public static class SandboxKeys
     public static string BuildMirror = "M", BuildLine = "O", BuildReplace = "P", BuildGantry = "U", GantryKeys = "";
 
     /// <summary>The key lines a seat shows.</summary>
-    public static string Drive = "", DriveStart = "", DriveShift = "", Fly = "", FlyPlane = "", FlyRotor = "", FlyRocket = "", FlyShip = "", FlyShipKeys = "", DampenersOff = "", DampenersHeld = "", Gunner = "", GunnerTurrets = "", GetOut = "";
+    public static string Drive = "", DriveStart = "", DriveShift = "", Fly = "", FlyPlane = "", FlyRotor = "", FlyRocket = "", FlyShip = "", FlyShipKeys = "", DampenersOff = "", DampenersHeld = "", MouseSteerOff = "", Gunner = "", GunnerTurrets = "", GetOut = "";
 
     /// <summary>The pilot's key lines on a rail or in a dock, and an ejection seat's (ConstructCarrier.Hint).</summary>
     public static string EvaDock = "", EvaFly = "", PilotHook = "", PilotLaunch = "", PilotUndock = "", PilotEject = "", PilotOpenChute = "", PilotOpenGlider = "", PilotCut = "", PilotGlide = "";
@@ -116,7 +116,7 @@ public static class SandboxKeys
         PilotUndock = $"{K(GameAction.SeatHook)}: undock";
         PilotEject = $"{K(GameAction.SeatEject)}: eject";
         EvaDock = $"{K(GameAction.SeatEject)}: detach and fly the MMU, {Use}: get out (it stays docked)";
-        EvaFly = $"MMU: {K(GameAction.MoveForward)}/{K(GameAction.MoveBack)}: along the look, {K(GameAction.MoveLeft)}/{K(GameAction.MoveRight)}: across, {K(GameAction.Jump)}/{K(GameAction.CrouchHold)}: up/down";
+        EvaFly = $"MMU: mouse turns and pitches, {K(GameAction.SeatRollLeft)}/{K(GameAction.SeatRollRight)}: roll, {K(GameAction.MoveForward)}/{K(GameAction.MoveBack)}: along the look, {K(GameAction.MoveLeft)}/{K(GameAction.MoveRight)}: across, {K(GameAction.Jump)}/{K(GameAction.CrouchHold)}: up/down";
         PilotOpenChute = $"{K(GameAction.Jump)}: parachute";
         PilotOpenGlider = $"{K(GameAction.Jump)}: glider";
         PilotCut = $"{K(GameAction.Jump)}: cut away";
@@ -126,8 +126,10 @@ public static class SandboxKeys
         FlyRotor = $"{pitch}: forward, back, {sides}: yaw, {seatRoll}: roll, {lift}: climb, descend, {GetOut}";
         FlyRocket = $"{pitch}: lean on, back, {sides}: lean left, right, {seatRoll}: spin, {lift}: throttle, {GetOut}";
         var damp = K(GameAction.SeatDampeners);
-        FlyShip = $"mouse: steer the nose, {pitch}: forward, back, {sides}: slide, {seatRoll}: roll, {lift}: up, down, {damp}: dampeners, {GetOut}";
-        FlyShipKeys = $"{pitch}: forward, back, {sides}: yaw, {seatRoll}: roll, {lift}: up, down, {damp}: dampeners, {GetOut}";
+        var mouseKey = K(GameAction.SeatMouseSteer);
+        FlyShip = $"mouse: steer the nose, {pitch}: forward, back, {sides}: slide, {seatRoll}: roll, {lift}: up, down, {damp}: dampeners, {mouseKey}: let go of the mouse, {GetOut}";
+        FlyShipKeys = $"{pitch}: forward, back, {sides}: yaw, {seatRoll}: roll, {lift}: up, down, {damp}: dampeners, {mouseKey}: mouse steering, {GetOut}";
+        MouseSteerOff = $"MOUSE STEERING OFF: the mouse looks round, the nose holds - {mouseKey}: take control";
         DampenersOff = $"DAMPENERS OFF: it coasts, the keys only burn - {damp}: on";
         DampenersHeld = $"DAMPENERS OFF, held on while the autopilot or an order flies it - {damp}: on";
         Gunner = $"{Fire}: shoot, {GetOut}";

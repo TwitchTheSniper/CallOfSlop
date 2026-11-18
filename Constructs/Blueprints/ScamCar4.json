@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 4 body 4 kit 4 wear 4, chassis 2 axles, front under the hood, inset 1.25 m, coil/hydraulic, wing 0.5, archetype compact hatch, cab style box, language hatch standard 2.34 m, flare 0.05, crowned 1.0, brow 0.65 1.25 m, tail 0.90 1 m, door right, cab hatch cab, nose flat, wear age 0.93 (1 rusty, 3 dirty, 0 sooty, 0 patched, 0 rusted out), body boot, cab enclosed, nose short hood, rear bare, under stilts, layout boot 2.8 m, plan 4
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Scam Car 4",
-  "group": "The Call Centre",
+  "group": "Scam",
   "description": "A car: a short hood, an enclosed cab, a boot behind the cabin, the gun on a pedestal ahead of it. 1 gun.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#2a2c30"},
@@ -61,9 +61,10 @@
     {"part": "Turret Module", "on": 46, "socket": "+x", "by": "-x"},
     {"part": "Launch Rack", "on": 45, "socket": "+x2", "by": "top"},
     {"part": "Hull Loft (hoodf UwV2WyWjXWXWVd ~7m080L80k6uy3n0011)", "on": 23, "socket": "+y", "by": "engine", "paint": "#2a2c30"},
-    {"part": "Office Phone", "on": 55, "socket": "top", "by": "base"},
+    {"part": "Hubcap Plate", "on": 55, "socket": "top", "by": "base"},
+    {"part": "Hubcap Plate", "on": 31, "socket": "top", "by": "base"},
     {"part": "Square Beam 0.5 m", "on": 42, "socket": "top", "by": "-z", "paint": "#2a2c30"},
-    {"part": "Phone Mast", "on": 57, "socket": "+z", "by": "base"}
+    {"part": "Loudhailer", "on": 58, "socket": "+z", "by": "base"}
   ],
   "wires": [[28, 29], [29, 23], [46, 53], [53, 48], [53, 54]],
   "links": [

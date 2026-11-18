@@ -16,6 +16,7 @@ public sealed class MediaReport
     public volatile string Address = ""; // a web page's, secrets out
     public volatile bool HasMedia, InnerPaused; // its main video or audio
     public volatile float Scroll, InnerTime;
+    public volatile string Failure = ""; // the browser's own word on why this page can't show anything ("pfail"), or ""
 }
 
 /// <summary>
@@ -27,15 +28,28 @@ public sealed class MediaReport
 public static class MediaBrowser
 {
     private const int MaxRestarts = 2;
-    private const double RestartAfter = 10;
+    private const double RestartAfter = 10, ReadyWithin = 30, FirstReadyWithin = 90; // (a first start on a PC may wait on a virus scan of CEF's files)
+
+    /// <summary>
+    /// The command lines' version, which the helper says with "ready" (tools/browser/Program.cs <c>Version</c>: raise both together whenever a line changes). A helper built
+    /// from older source used to skip the commands it didn't know, and every screen said "Loading" for ever; now it is refused and the panels say how to rebuild it.
+    /// </summary>
+    public const int HelperVersion = 2;
+
+    /// <summary>What a player is told to do about a missing or old helper.</summary>
+    public const string Rebuild = "run tools\\BuildBrowser.bat (or Start.bat) to build it";
 
     private static readonly MediaReport[] Reports = NewReports();
     private static readonly MediaBlock?[] Blocks = new MediaBlock?[MediaDirector.MaxPages];
     private static BlockingCollection<string>? _lines; // (one per process: a new one never hears what was said to the last)
     private static Process? _process;
     private static int _restarts;
+    private static bool _everStarted; // a helper said ready once this session: later starts get ReadyWithin, the first FirstReadyWithin
     private static double _failedAt = double.NegativeInfinity;
-    private static string? _problem;
+    private static volatile string? _problem;
+    private static volatile string? _stale; // the helper is from other source: no restart helps, so it stays all session
+    private static volatile bool _ready;
+    private static double _startedAt;
     private static int _blockNumber;
 
     /// <summary>Set by the windowed game; the self-tests and any tool leave it off.</summary>
@@ -53,6 +67,9 @@ public static class MediaBrowser
 
     public static bool Running => _process != null;
 
+    /// <summary>The helper said "ready" with this game's version.</summary>
+    public static bool Ready => _ready;
+
     public static MediaReport Report(int page) => Reports[page];
 
     public static MediaBlock? Block(int page) => Blocks[page];
@@ -64,9 +81,11 @@ public static class MediaBrowser
         {
             if (!Allowed)
                 return "links are off here";
+            if (_stale != null)
+                return _stale;
             if (_problem != null)
                 return _problem;
-            return File.Exists(ExePath) ? null : OperatingSystem.IsWindows() ? "this build has no browser files (Browser folder)" : "links need the Windows game for now";
+            return File.Exists(ExePath) ? null : OperatingSystem.IsWindows() ? "this build has no Browser folder: " + Rebuild : "links need the Windows game for now";
         }
     }
 
@@ -103,6 +122,7 @@ public static class MediaBrowser
         r.Address = "";
         r.HasMedia = r.InnerPaused = false;
         r.Scroll = r.InnerTime = 0;
+        r.Failure = "";
         return true;
     }
 
@@ -146,6 +166,22 @@ public static class MediaBrowser
         _lines?.CompleteAdding();
         _process = null;
         _lines = null;
+        _ready = false;
+    }
+
+    /// <summary>A helper that went quiet or is from other source: it goes now, not when it next reads.</summary>
+    private static void Kill()
+    {
+        var process = _process;
+        Quit();
+        try
+        {
+            process?.Kill(entireProcessTree: true);
+        }
+        catch (Exception e) when (e is InvalidOperationException or System.ComponentModel.Win32Exception or NotSupportedException)
+        {
+            Console.WriteLine($"[media] the browser didn't stop: {e.Message}");
+        }
     }
 
     /// <summary>The game is closing. Its end of stdin closing would do it too.</summary>
@@ -176,6 +212,8 @@ public static class MediaBrowser
             _process = process;
             _lines = lines;
             _problem = null;
+            _ready = false;
+            _startedAt = Stopwatch.GetTimestamp() / (double)Stopwatch.Frequency;
             new Thread(() => Writer(process, lines)) { IsBackground = true, Name = "Browser in" }.Start();
             new Thread(() => Reader(process)) { IsBackground = true, Name = "Browser out" }.Start();
             Console.WriteLine("[media] browser started");
@@ -199,7 +237,15 @@ public static class MediaBrowser
     /// <summary>Each scan: after a pause a failed browser gets another go, a few times a session.</summary>
     public static void Tick()
     {
-        if (_problem != null && _restarts <= MaxRestarts && Stopwatch.GetTimestamp() / (double)Stopwatch.Frequency - _failedAt > RestartAfter)
+        var now = Stopwatch.GetTimestamp() / (double)Stopwatch.Frequency;
+        if (_process != null && _stale != null)
+            Kill(); // (said by the reader's thread: this is the main one)
+        else if (_process != null && !_ready && now - _startedAt > (_everStarted ? ReadyWithin : FirstReadyWithin))
+        {
+            Kill();
+            Fail($"the browser didn't start in {(_everStarted ? ReadyWithin : FirstReadyWithin):0} s (see slopbrowser.log beside callofslop.log)");
+        }
+        if (_problem != null && _restarts <= MaxRestarts && now - _failedAt > RestartAfter)
             _problem = null;
     }
 
@@ -252,7 +298,25 @@ public static class MediaBrowser
         switch (a[0])
         {
             case "ready":
-                Console.WriteLine("[media] browser ready");
+                if (a.Length >= 2 && int.TryParse(a[1], NumberStyles.None, CultureInfo.InvariantCulture, out var version) && version == HelperVersion)
+                {
+                    _ready = true;
+                    _everStarted = true;
+                    Console.WriteLine($"[media] browser ready (version {version})");
+                }
+                else
+                {
+                    _stale = "the Browser folder is out of date: " + Rebuild;
+                    Console.WriteLine($"[media] browser refused: it says version {(a.Length >= 2 ? MediaEntry.Printable(a[1]) : "none")}, this game needs {HelperVersion} ({ExePath} is from older source: {Rebuild})");
+                }
+                break;
+            case "pfail" when a.Length >= 3 && int.TryParse(a[1], out var page5) && (uint)page5 < Reports.Length:
+                var why = MediaEntry.Printable(line[(line.IndexOf(' ', 6) + 1)..], 120);
+                Reports[page5].Failure = why;
+                Console.WriteLine($"[media] page {page5}: {why}");
+                break;
+            case "pok" when a.Length >= 2 && int.TryParse(a[1], out var page6) && (uint)page6 < Reports.Length:
+                Reports[page6].Failure = "";
                 break;
             case "log":
                 Console.WriteLine($"[media] browser: {line[Math.Min(4, line.Length)..]}");

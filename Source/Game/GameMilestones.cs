@@ -70,8 +70,7 @@ public sealed partial class Game
             if (p.Bot != null || HasFirst(p.Id, Milestone.Ship))
                 continue;
             ref var h = ref SandboxHands.Hand(p.Id);
-            if (!p.Alive || !h.Seated || Constructs.Get(h.SeatBody) is not { } c || c.ThrusterCount == 0 || !OwnsCraft(p, c)
-                || _dpWho[p.Id] != null && _dp[p.Id].Lander == c.Id) // (not the lander the depot lent them: GameDepot.cs)
+            if (!p.Alive || !h.Seated || Constructs.Get(h.SeatBody) is not { } c || c.ThrusterCount == 0 || !OwnsCraft(p, c))
             {
                 fl = default;
                 continue;

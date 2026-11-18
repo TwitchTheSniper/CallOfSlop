@@ -43,7 +43,7 @@ public static partial class Program
             _wsWait = Math.Max(_wsWait, 2);
     }
 
-    private static bool WsTalkKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "talk" or "say" or "heard" or "standing" or "secs" or "hold" or "where" or "seat" or "crew" or "crewshoot" or "crewbodies" or "crewconvoy" or "crewfleet" or "crewofficer" or "crewhit" or "npcstanding" or "crewbreak" or "crewkill" or "crewfaction" or "crewdisarm" or "crewprisoner";
+    private static bool WsTalkKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "talk" or "say" or "heard" or "standing" or "secs" or "hold" or "where" or "seat" or "crew" or "crewshoot" or "crewbodies" or "crewconvoy" or "crewfleet" or "crewpowers" or "crewterritory" or "crewpolitics" or "crewofficer" or "crewhit" or "npcstanding" or "crewbreak" or "crewkill" or "crewfaction" or "crewgroup" or "crewown" or "crewdisarm" or "crewprisoner";
 
     private static bool WsTalkVerb(Game g, Player me, string verb, string arg)
     {
@@ -142,11 +142,11 @@ public static partial class Program
                 _wsKeysUntil = System.Diagnostics.Stopwatch.GetTimestamp() + (long)(double.Parse(sp.Length > 1 ? sp[1] : "1", System.Globalization.CultureInfo.InvariantCulture) * System.Diagnostics.Stopwatch.Frequency);
                 return true;
             }
-            case "seat": // "seat NAME": stand by the first Seat of that building or vehicle (by its blueprint's name) and press the use key on it
+            case "seat": // "seat BODY": stand by the first Seat of that construct (by its id) and press the use key on it
             {
-                if (g.ColonyBuilding(arg) is not { } c)
+                if (!ushort.TryParse(arg, out var seatBody) || g.Constructs.Get(seatBody) is not { } c)
                 {
-                    WsFail($"seat: no body called \"{arg}\"");
+                    WsFail($"seat: no construct {arg}");
                     return true;
                 }
                 var part = -1;
@@ -170,8 +170,8 @@ public static partial class Program
                 WsSay($"[seat] {arg} part {part}, {Vector3.Distance(me.Eye, spot):0.0} m");
                 return true;
             }
-            case "where": // where this player is: from the colony's middle and from the spaceport (m), and what they sit in
-                WsSay($"[where] at {me.Position:0}, {Vector3.Distance(me.Position, g.ColonyBuilding("Penal Colony")?.WorldCom ?? me.Position):0} m from the colony, {Vector3.Distance(me.Position, g.ColonyBuilding("Spaceport Terminal")?.WorldCom ?? me.Position):0} m from the spaceport terminal, seated {g.SandboxHands.Hand(me.Id).Seated}");
+            case "where": // where this player is, and what they sit in
+                WsSay($"[where] at {me.Position:0}, seated {g.SandboxHands.Hand(me.Id).Seated}");
                 return true;
             case "standing": // host: the four convicts' feelings for this player and the break-out's qualities
                 WsSay("[standing] " + g.StoryStanding(me, ["Dot Pruett", "Wren Haskett", "Ambrose Thale", "Hester Mossop", "Sergeant Bellweather"], ["Crew", "Suspicion", "Grassed", "Inducted", "Parcel", "Contraband", "Escaped"]));

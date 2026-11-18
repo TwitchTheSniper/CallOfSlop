@@ -111,7 +111,7 @@ public sealed partial class ShipAi
         _launchAt = _strafeUntil = _idle = _flaresAt = 0;
         _pilotKeys = 0;
         _pilotWas = false;
-        Shots = GunnerShots = Launches = Flares = 0;
+        Shots = GunnerShots = Launches = Flares = PointDefenceShots = 0;
         Crew = null;
         Ship = null;
         GroundReset();
@@ -242,7 +242,7 @@ public sealed partial class ShipAi
             else if (grace)
                 Seat(c, _pilot, _pilotKeys, _pilotYaw, _pilotPitch);
             for (var s = 0; s < _seatCount; s++)
-                if (Manned(_seats[s]))
+                if (Manned(_seats[s]) && !(_seats[s] < c.PartCount && SeatFree(c, _seats[s]) && !c.Parts[_seats[s]].Broken && PointDefence(world, c, s)))
                     GunSeat(c, s, CPart.Occupied, c.Parts[_seats[s]].AimYaw, c.Parts[_seats[s]].AimPitch);
             return;
         }
@@ -299,6 +299,8 @@ public sealed partial class ShipAi
             int seat = _seats[s];
             if (seat >= c.PartCount || !SeatFree(c, seat) || c.Parts[seat].Broken || !Manned(seat))
                 continue; // (a player's seat is theirs; an empty gunner's seat fires nothing)
+            if (PointDefence(world, c, s))
+                continue; // (a missile coming for it first)
             var (look, fire) = Gunnery(world, c, seat, t, dist, fixedGuns: false);
             GunSeat(c, s, (ushort)(CPart.Occupied | (fire ? ConstructParts.KeyFire : 0)), look.Yaw, look.Pitch);
         }
@@ -353,6 +355,57 @@ public sealed partial class ShipAi
                 return true;
         }
         return false;
+    }
+
+    /// <summary>Point defence: a missile this many ticks ahead is aimed at (what it closes in the tick the turret takes to fire).</summary>
+    public const int PointDefenceLeadTicks = 2;
+
+    public int PointDefenceShots; // (rounds fired at missiles, for the check)
+
+    /// <summary>
+    /// Point defence: gunner's seat <paramref name="s"/> turns its turrets on the nearest missile or torpedo steering for this ship (not one a flare has
+    /// drawn off) inside its guns' reach, and fires when a gun bears, before anything else it would shoot at. False when there is none (the seat
+    /// is left to the caller). The rounds meet it in the air (ConstructWeapons.Round: RayShell). Allocates nothing.
+    /// </summary>
+    private bool PointDefence(ConstructWorld world, Construct c, int s)
+    {
+        if (world.ShellCount == 0)
+            return false;
+        int seat = _seats[s];
+        var reach = 0f;
+        for (var k = 0; k < c.GunCount; k++)
+        {
+            ref var g = ref c.Guns[k];
+            if (g.Seat == seat && g.Def != null && g.AimJoints > 0 && g.Part < c.PartCount && !c.Parts[g.Part].Broken && (g.Effects & GunEffect.Shell) == 0)
+                reach = MathF.Max(reach, g.MaxRange);
+        }
+        if (reach <= 0)
+            return false;
+        var eye = ConstructWeapons.SeatEye(c, seat);
+        var best = -1;
+        var bestD = reach * reach;
+        for (var k = 0; k < world.ShellCount; k++)
+        {
+            ref var sh = ref world.Shells[k];
+            if (sh.Landed || sh.Target != c.Id || sh.Gun == c.Id || sh.Decoy != 0 || sh.Design == null && sh.Look == null)
+                continue; // (only what steers for it and a round can meet: RayShell's rule)
+            var d = Vector3.DistanceSquared(sh.Pos, eye);
+            if (d < bestD)
+            {
+                bestD = d;
+                best = k;
+            }
+        }
+        if (best < 0)
+            return false;
+        ref var m = ref world.Shells[best];
+        var t = new ShipAiTarget { At = m.Pos + (m.Vel - c.Vel) * (PointDefenceLeadTicks * World.TickDt), Vel = c.Vel, Player = 255 }; // (the rounds are there at once inside the guns' reach: no lead for their flight)
+        var shots = Shots;
+        var (look, fire) = Gunnery(world, c, seat, t, MathF.Sqrt(bestD), fixedGuns: false);
+        if (fire)
+            PointDefenceShots += Shots - shots;
+        GunSeat(c, s, (ushort)(CPart.Occupied | (fire ? ConstructParts.KeyFire : 0)), look.Yaw, look.Pitch);
+        return true;
     }
 
     /// <summary>Where seat <paramref name="seat"/> looks this tick (at the target, led for its guns' rounds) and whether it fires.</summary>

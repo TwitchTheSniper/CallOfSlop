@@ -101,6 +101,31 @@ public sealed class FactionTable
     public int PactCount;
     public readonly byte[] PactKindOf = new byte[MaxPacts], PactA = new byte[MaxPacts], PactB = new byte[MaxPacts];
     public readonly ushort[] PactHeld = new ushort[MaxPacts], PactLeft = new ushort[MaxPacts];
+    /// <summary>Powers gone for good (phase 3: wiped out or merged), a bit per NPC row (protocol 354).</summary>
+    public ushort PowerGone;
+
+    /// <summary>
+    /// Phase 5 (faction-controllers.md, players in the politics; protocol 359): pacts between powers (NPC rows) and player factions (kind, the power's row,
+    /// the faction's id, minutes held and left, 0xFFFF: no end), the powers' standing offers to factions and the factions' proposals waiting for an answer
+    /// (the power's row, the faction, the kind), and blood feuds (how power f sees faction id, a bit at [id * MaxStory + f]).
+    /// </summary>
+    public int PartyPactCount;
+    public readonly byte[] PartyPactKind = new byte[MaxPacts], PartyPactPower = new byte[MaxPacts], PartyPactParty = new byte[MaxPacts];
+    public readonly ushort[] PartyPactHeld = new ushort[MaxPacts], PartyPactLeft = new ushort[MaxPacts];
+    public const int MaxPartyAsks = 32;
+    public int OfferCount, AskCount;
+    public readonly byte[] OfferPower = new byte[MaxPartyAsks], OfferParty = new byte[MaxPartyAsks], OfferKind = new byte[MaxPartyAsks];
+    public readonly byte[] AskPower = new byte[MaxPartyAsks], AskParty = new byte[MaxPartyAsks], AskKind = new byte[MaxPartyAsks];
+    public readonly bool[] PartyFeud = new bool[Max * MaxStory];
+
+    /// <summary>The pact (kind byte) between power row <paramref name="f"/> and faction <paramref name="id"/> (0: none).</summary>
+    public byte PartyPactOf(int f, byte id)
+    {
+        for (var k = 0; k < PartyPactCount; k++)
+            if (PartyPactPower[k] == f && PartyPactParty[k] == id)
+                return PartyPactKind[k];
+        return 0;
+    }
 
     /// <summary>The standing each technology is taught at, per story faction in the order of <see cref="StoryTech"/> (its tier's lowest standing).</summary>
     public sbyte[][] StoryTechNeed = [];
@@ -209,6 +234,9 @@ public sealed class FactionTable
         PowerCount = 0;
         PactCount = 0;
         Array.Clear(PowerRel);
+        PowerGone = 0;
+        PartyPactCount = OfferCount = AskCount = 0;
+        Array.Clear(PartyFeud);
         Version++;
     }
 

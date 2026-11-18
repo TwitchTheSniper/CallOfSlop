@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "IT Turret 2",
-  "group": "IT Department",
+  "group": "IT",
   "description": "A IT turret: a Siege Bunker Buster on a turntable, its gunner's seat on the arm. Sit in it to aim and fire; weld or bolt its base to anything.",
   "steps": [
     {"part": "Plate Steel 1 m", "paint": "#1f4e8c"},

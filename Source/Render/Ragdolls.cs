@@ -94,7 +94,7 @@ public sealed class RagdollBody
     public readonly float[] Blood = new float[8];
     public float BloodSeed;
 
-    // The prestige hat: on the head, or knocked off (flying, then lying on its side).
+    // The hat (a uniform's cap): on the head, or knocked off (flying, then lying on its side).
     public HatDef? Hat;
     public bool HatOff, HatResting;
     public Vector3 HatPos, HatVel, HatAxis, HatRestPos;
@@ -751,7 +751,7 @@ public static class Ragdolls
 
     /// <summary>
     /// A player's body blown apart (the kill's "gibbed" flag): gibs in their colours, flung from the blast, and their
-    /// prestige hat flying off on its own. False on Off gore (the caller makes a normal ragdoll).
+    /// hat flying off on its own. False on Off gore (the caller makes a normal ragdoll).
     /// </summary>
     private static bool TryGibPlayer(Player p, in RagdollDeath d, in KillPacket kill, double now)
     {
@@ -1377,7 +1377,8 @@ public static class Ragdolls
                 var gf = Matrix4x4.CreateFromQuaternion(Quaternion.Slerp(b.HatRot, b.HatRestRot, land));
                 gf.Translation = b.HatResting ? Vector3.Lerp(b.HatPos, b.HatRestPos, land) : b.HatPos;
                 foreach (var box in gibHat.Boxes)
-                    sink.Box(box.Local, gf, box.Color);
+                    if (!box.Glass) // (the sink draws solid boxes only: a visor is left out)
+                        sink.Box(box.Local, gf, box.Color);
             }
             return;
         }
@@ -1494,7 +1495,8 @@ public static class Ragdolls
             hf.Translation = b.HatResting ? Vector3.Lerp(b.HatPos, b.HatRestPos, land) : b.HatPos;
         }
         foreach (var box in hat.Boxes)
-            sink.Box(box.Local, hf, box.Color);
+            if (!box.Glass) // (the sink draws solid boxes only: a visor is left out)
+                sink.Box(box.Local, hf, box.Color);
     }
 
     private static void EmitParts(BodyParts parts, in Matrix4x4 frame, ref Sink sink, float[] blood, bool torsoParts)

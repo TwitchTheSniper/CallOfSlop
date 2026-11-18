@@ -14,8 +14,6 @@ public enum LoadoutPage : byte
     Perks,
     /// <summary>The attachment showcase for one gun (the entry's argument is the weapon id).</summary>
     Attachments,
-    /// <summary>Level, XP and every unlock by level.</summary>
-    Progression,
     /// <summary>The kill streak picker.</summary>
     Streaks,
     // (The hat page moved to the main menu's APPEARANCE screen, UiAppearance.cs.)

@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Highland Turret 1",
-  "group": "Clan MacSlop",
+  "group": "Highland",
   "description": "A Highland turret: a Flak Block on a turntable, its gunner's seat on the arm. Sit in it to aim and fire; weld or bolt its base to anything.",
   "steps": [
     {"part": "Plate Steel 1 m", "paint": "#0b4f9c"},

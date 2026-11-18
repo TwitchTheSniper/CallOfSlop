@@ -78,7 +78,7 @@ public sealed partial class Game
         if (!_sbKitBuilt || p.Bot != null || _sbKitTold[p.Id] || OpeningHas(p.Id))
             return; // (in the opening: told when they wake, GameSandboxOpening.cs)
         _sbKitTold[p.Id] = true;
-        SandboxHands.Notices.Add((p.Id, _opColony != 0 ? "Survival: the colony's tools stand round its fence" : "Survival: your start kit stands near the parts rack"));
+        SandboxHands.Notices.Add((p.Id, "Survival: your start kit stands near the parts rack"));
     }
 
     /// <summary>
@@ -99,10 +99,10 @@ public sealed partial class Game
             return;
         }
         if (SandboxSurvivalOption)
-            from = OpeningBuild(from); // (the penal colony first, the kit round it: GameSandboxOpening.cs)
+            from = OpeningBuild(from); // (the start's opening first, the kit round it: GameSandboxOpening.cs)
         foreach (var name in kit)
         {
-            var c = ColonySiteKit(name) ?? SandboxKitPiece(name, from); // (the colony's works yard, inside its fence, when it has one: GameColonySite.cs)
+            var c = SandboxKitPiece(name, from);
             if (c == null)
             {
                 Log($"[sandbox] survival start: {name} could not be placed");

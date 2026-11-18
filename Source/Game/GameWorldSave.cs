@@ -182,7 +182,15 @@ public sealed partial class Game
     {
         var clock = Stopwatch.StartNew();
         var s = stashFolder != null ? new WorldSnapshot() : ws.Snapshot;
-        Constructs.CaptureInto(s, keep);
+        ShellStandForSave(); // (a worn shell is no construct: one stands where its wearer is for the capture, GameRobotShell.cs)
+        try
+        {
+            Constructs.CaptureInto(s, keep);
+        }
+        finally
+        {
+            ShellUnstandAfterSave();
+        }
         foreach (var p in Players.Values)
             if (WorldKnown(p))
                 WorldCatch(p, WorldRecordOf(ws, p));
@@ -211,6 +219,7 @@ public sealed partial class Game
         s.Start = StartCapture(); // (GameStoryStart.cs)
         s.CrewFactions = CrewFactionBytes(); // (the NPC powers' standings with player factions: GameCrewFactions.cs)
         s.Fleet = IsServer ? Crew.Fleet.SaveBytes() : null; // (groups and admirals: Crew/CrewFleet.cs)
+        s.Controllers = ControllersBytes(); // (the powers' controllers: GameCrewPowers.cs)
         s.Powers = PowersBytes(); // (the powers' relations among themselves, pacts and news: GameCrewFactions.cs)
         s.LinkLedger = Keep == null && stashFolder == null && (LinkLedger.Ends.Count > 0 || LinkLedger.Lines.Count > 0) ? LinkLedger.SaveBytes() : null; // (the host's main world keeps the ledger: linked-logistics.md section 8)
         s.OpCount = 0;
@@ -312,11 +321,8 @@ public sealed partial class Game
                 mats.Add(((byte)i, inv.Materials[i]));
         rec.Materials = mats.ToArray();
         WorldStores.Copy(SandboxHands.Pack(p.Id), rec.Pack);
-        TutorialCatch(p, rec); // (the induction: GameTutorial.cs)
         DeathCatch(p, rec); // (checkpoint and fate: GameSandboxDeath.cs)
         ShellCatch(p, rec); // (in a robot shell: the body's place and things, GameRobotShell.cs)
-        DepotCatch(p, rec); // (the Orbital Depot's run: GameDepot.cs)
-        QuarryCatch(p, rec); // (the first Ministry duty: GameQuarry.cs)
         UpgradesCatch(p, rec); // (tool upgrades: GameSandboxUpgrades.cs)
         FirstsCatch(p, rec); // (milestones for firsts: GameMilestones.cs)
         CrewCatch(p, rec); // (credits and NPC standings: GameCrewFactions.cs)
@@ -469,7 +475,7 @@ public sealed partial class Game
         Constructs.Resources = World.Map.Resources;
         var r = new SaveReader(body) { Shift = WorldShift(body) };
         ushort nextTag = 1;
-        StartLoad(""); // (a world from before starts plays the default; its Start section says otherwise: GameStoryStart.cs)
+        StartLoad(""); // (a world from before starts plays StoryStarts.Legacy, no opening; its Start section says otherwise: GameStoryStart.cs)
         while (r.Has(8))
         {
             var tag = r.U32();
@@ -589,15 +595,7 @@ public sealed partial class Game
                 }
                 break;
             }
-            case WorldSaveWriter.TutorialTag:
-                WorldReadTutorial(r, ws); // (GameTutorial.cs)
-                break;
-            case WorldSaveWriter.DepotTag:
-                WorldReadDepot(r, ws); // (the Orbital Depot: GameDepot.cs)
-                break;
-            case WorldSaveWriter.QuarryTag:
-                WorldReadQuarry(r, ws); // (the first Ministry duty: GameQuarry.cs)
-                break;
+            // (TutorialTag, DepotTag and QuarryTag, the penal colony's, are skipped like any unknown section since 2026-11-17)
             case WorldSaveWriter.StartTag:
                 StartLoad(r.Str()); // (the story start it was made with: GameStoryStart.cs)
                 break;
@@ -620,6 +618,9 @@ public sealed partial class Game
             case WorldSaveWriter.PowersTag:
                 WorldReadPowers(r); // (the NPC powers' relations, pacts and news: GameCrewFactions.cs)
                 break;
+            case WorldSaveWriter.ControllersTag:
+                WorldReadControllers(r); // (the powers' stocks, places, ships and missions: GameCrewPowers.cs)
+                break;
             case WorldSaveWriter.FirstsTag:
                 WorldReadFirsts(r, ws); // (milestones for firsts: GameMilestones.cs)
                 break;
@@ -641,26 +642,8 @@ public sealed partial class Game
                         if (key != 0 && rec.Key == key || steam != 0 && rec.SteamId == steam)
                             rec.Opened = true;
                 }
-                if (r.Has(2))
-                    op.Barracks = r.U16(); // (a world from before the barracks has none: GameColonyLockdown.cs builds one)
-                if (r.Has(4))
-                    (op.Works, op.Depot) = (r.U16(), r.U16()); // (a world from before the depot has none: GameDepot.cs builds one)
-                if (r.Has(1))
-                {
-                    var sites = new List<(string, ushort)>();
-                    for (int k = 0, sn = r.U8(); k < sn; k++)
-                        sites.Add((r.Str(), r.U16()));
-                    op.Sites = [.. sites]; // (a world from before the data centres has none: GameStoryFragments.cs builds them)
-                }
-                if (r.Has(2))
-                    op.Quarry = r.U16(); // (a world from before the quarry has none: GameQuarry.cs builds one)
-                if (r.Has(1))
-                {
-                    var built = new List<(string, ushort)>();
-                    for (int k = 0, bn = r.U8(); k < bn; k++)
-                        built.Add((r.Str(), r.U16()));
-                    (op.Buildings, op.BuildingsListed) = ([.. built], true); // (a world from before the buildings: GameColonyBuildings.cs builds them)
-                }
+                // (a world from before 2026-11-17 has the penal colony's barracks, depot, data centres, quarry and buildings
+                // after this: the colony is gone, so the rest is left unread and those bodies stay as plain constructs)
                 if (float.IsFinite(op.Crash.X + op.Crash.Y + op.Crash.Z))
                     _opLoaded = op; // (applied once the constructs are in: GameSandboxOpening.cs)
                 break;
@@ -916,10 +899,7 @@ public sealed partial class Game
                 c.FrozenBy = p.Id;
         }
         FactionPlayerBack(p, rec.Offline); // (their faction again: GameSandboxFactions.cs)
-        TutorialArrive(p, rec); // (where they were in the induction: GameTutorial.cs)
         DeathArrive(p, rec); // (their checkpoint, and whether they are dead for good: GameSandboxDeath.cs)
-        DepotArrive(p, rec); // (where they were on the Orbital Depot's run: GameDepot.cs)
-        QuarryArrive(p, rec); // (where they were on the first Ministry duty: GameQuarry.cs)
         UpgradesArrive(p, rec); // (their tool upgrades: GameSandboxUpgrades.cs)
         FirstsArrive(p, rec); // (their firsts: GameMilestones.cs)
         CrewArrive(p, rec); // (their credits and NPC standings: GameCrewFactions.cs)

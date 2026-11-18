@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "IT Drone 8",
-  "group": "IT Department",
+  "group": "IT",
   "description": "A remote multirotor, 8 ducted fans on a hub, two battery packs. Fly it from a Remote Console on its channel: Shift climbs, Ctrl sinks, W A S D move and turn it.",
   "steps": [
     {"part": "6-Way Hub", "paint": "#3b3f44"},

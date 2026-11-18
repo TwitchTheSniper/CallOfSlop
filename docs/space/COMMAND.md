@@ -7,7 +7,7 @@ ship with a working flight computer then flies there by itself. It is the first 
 
 - **Key:** Home (`GameAction.CommandView`, rebindable; M is the Mirror Table's). Esc closes the order menu, then the view.
   Sandbox only, on a map that is in a star system (`Game.Space`); elsewhere the key says why not.
-- **Code:** the picture `Source/UI/UiCommand.cs`, the ships in it and the ship card `UiCommandShip.cs`, the order menu
+- **Code:** the picture `Source/UI/UiCommand.cs`, the ships in it and the ship card `UiCommandShip.cs`, the crews on it `UiCommandCrew.cs`, the order menu
   `UiCommandOrders.cs`, the key `Source/App/Program.Command.cs`; the orders `Source/Game/GameNav.cs`, trips between
   planets `Source/Game/GameNavTrip.cs`; the steering maths `Source/Space/NavGuidance.cs`, the transfer planner
   `Source/Space/NavTrip.cs`.
@@ -30,7 +30,7 @@ the cursor is free and the game takes no input.
 | Right drag | Turn and tilt (the tilt stops at straight down) |
 | Click | Pick a craft or a body (its card opens on the right) |
 | Double click | Centre on it |
-| Right click | An order for the picked ship: on a world, an orbit; on a place in space, go there; on another craft, dock with it |
+| Right click | An order for the picked ship: on a world, an orbit; on a place in space, go there; on another craft, dock with it or meet it alongside |
 | SHIP / WORLD / MOONS / SYSTEM | Jump to that zoom, focus back to automatic |
 
 **The focus follows the zoom** while it is automatic: close in it is the picked ship (the player's own position with none
@@ -67,9 +67,10 @@ What a commander wants to know about a ship without boarding it (`CmdCardRead`, 
 | HULL, FUEL, POWER | Bars: parts still working, litres of fuel of its tanks' room, stored energy |
 | DRIVE | Acceleration at full thrust (and in g) and the thrust itself |
 | BURN | Time at full thrust on the fuel aboard, and the change of speed that buys (dV) |
-| CARGO, CREW | What its holds carry, who is aboard |
+| CARGO | What its holds carry |
 | SYSTEMS | Flight computer (and whether its autopilot is on), jump drive, guns and thrusters, counted |
 | ORDER, NOW | Its order and what it is doing about it; why it takes none ("NO FLIGHT COMPUTER") |
+| FACTION, COMMAND, PEOPLE, CREW | Who holds it and how they stand with you, its group and admiral, the people aboard, its crew ("The crews layer", below) |
 
 Buttons: CANCEL ORDER, a one-click "ORBIT <BODY> LOW", CENTRE. A picked body has a small card of its own (what it is a
 planet or moon of, radius, gravity at the ground, how far out it is and its time round, whether it can be landed on).
@@ -102,6 +103,33 @@ when the view is closed and opened again. Code: `Source/UI/UiCommandLinks.cs`.
   factories, 128 links, 32 legs; `LinkedLogistics.PartCount` is kept per rebuild); a label string is made only when its
   key changes. A frame projects the nodes and draws lines.
 
+## The crews layer
+
+Karl, 2026-11-18: "visualising crews etc for the ships on the RTS view", in the view's own style. The **CREWS** tickbox (top
+middle, left of MISSILES; on by default) turns the map's part of it on and off; the card's rows are always there. Code:
+`Source/UI/UiCommandCrew.cs`.
+
+- **Under a craft's name:** who holds it and its crew in one line: "FLAGSHIP  MILITIA G1  CAPT ZED  CREW 10", "YOUR CREW  8 ABOARD"
+  or "PRIZE  3 PRISONERS". Its colour is how that power stands with you, as the faction window reads it: red below 0 (its crews
+  fight you), amber wary (under 20), cyan neutral (under 60), green friendly, yours or a prize.
+- **Groups:** a chevron over each flagship, and a dashed line running from every other ship of its group to it.
+- **On a hologram:** a dot at each seat a crew member works with no body (the stand-ins), and one at each body aboard: a person
+  green with a ring, a crew body in its power's colour, a ring turning on whoever has the helm.
+- **On the card:** FACTION (the power and its standing in words and number, YOUR CREW, PRIZE, PLAYER BUILT or NOBODY), COMMAND
+  (its group and its admiral: "ADMIRAL IKE'S FLAGSHIP", or "UNDER ADMIRAL IKE" for the others), PEOPLE (players in its seats,
+  PILOT and SHELL marked, and how many stand on its decks), CREW. A crew of yours or a prize is listed member by member (up to
+  eight, then "AND N MORE"): job, name, a ten-cell health bar and what they are doing (AT THE HELM, ON A GUN, MOVING, FIGHTING,
+  PRISONER, OFFICER ...). Anyone else's crew is only its captain and how many are alive, and how many sit at stations as
+  stand-ins: what a peer can see from outside.
+- **Multiplayer:** nothing new on the wire. It reads what every peer already has: `Game.CrewInfo` and `CrewStandIns`
+  (Msg.CrewSeats), `Game.CrewRosters` (Msg.CrewRoster: own crews and prizes only), the factions table's standings, and the players.
+  `Game.PlayerIsBot` tells a crew body from a person on a client from the host's roster byte.
+- **Cost:** off, one bool check. On, the map line is made only when its crew, standing or command changes (a key per craft);
+  the group lines are a pass over the flagships on the map; the card's rows are made with the rest of the card, four times a second.
+- **Window tool:** `crewgroup POWER` (every crewed body of that power, in one patrol group) and `crewown` (the last crewed body
+  becomes yours) are test states for it, for example:
+  `--map Glacier --calm --blueprint "Zero Day Frigate (crewed)" --do "look 90 0; spawnbp Zero Day Frigate (crewed); look 180 0; spawnbp Zero Day Frigate (crewed); wait 120; crewown; crewgroup Militia; wait 300; command 500; cmdpick 3"`.
+
 ## The missiles layer
 
 Karl, 2026-11-17: "Missiles show up on command view. Add a tickbox to show missiles, their target and their projected
@@ -124,9 +152,19 @@ logistics layer it stays as it was when the view is closed and opened again. Cod
 - **Cost:** off, one bool check a frame. On, at most 96 missiles a frame, each 40 steps (a gravity and an air read a
   step); a label's text is made at most four times a second.
 
+## The factions layer
+
+The FACTIONS button (right of LOGISTICS) turns on the NPC powers' map (docs/sandbox/design/faction-controllers.md phase 4; Karl's answer 3): each
+planet ringed in its holder's colour with its tag and share of control (a dashed ring in the leader's colour and white when contested), and the faction
+groups this player knows of as triangles in their power's colour, labelled with a guess at what they do (STRIKE, DEFENCE, GARRISON, RETURNING) and
+their ships. Fog of war (the user's answer 7): a group shows only while it is on this player's world within 8 km of them, or for five minutes after the
+news named it (dim, with how many minutes ago, where it was then). A group of a power hostile to the player out to take a site, or within 3 km, is red
+with brackets and THREAT. It all comes from `Msg.FactionMap`, once a second per player (`Game/GameCrewTerritory.cs`); labels are made only when it
+changes. Code: `Source/UI/UiCommandFactions.cs`. Window tool: `crewterritory [near|leave]` (`Program.WindowShotPlay.cs`).
+
 ## Orders
 
-Six kinds (`NavKind`), each for one ship, given by any player to any ship that takes orders. **A ship takes orders
+Eight kinds (`NavKind`), each for one ship, given by any player to any ship that takes orders. **A ship takes orders
 when it has a working Flight Stabilizer** (the "flight computer"; `Game.NavProblem` says why not: a wreck, none fitted,
 wrecked, or held down). Orders are the host's (`Game.NavOrders`); they are not saved and end when the map changes.
 
@@ -137,6 +175,7 @@ wrecked, or held down). Orders are the host's (`Game.NavOrders`); they are not s
 | Fly to a spot over the ground | Right click the ground of the world it is flying over | The Flight Stabilizer's own waypoint autopilot, at the ship's present height |
 | Land on a spot | Right click the ground of the world you are on, LAND HERE (from its sky or from space) | Comes down into the sky over the spot if it is in space, flies over it and sets down on it ("Landing", below) |
 | Dock with another craft | Right click another craft, DOCK WITH <NAME> ("NO PORT AVAILABLE" when it has none free) | Flies to the point in front of a free docking port on it and in, until the port holds it ("Docking", below) |
+| Rendezvous with another craft | Right click another craft, set "m apart", RENDEZVOUS WITH <NAME> | Flies to its side, matches its motion (its orbit, or its burn) and holds there alongside, drive parallel to it, until cancelled ("Rendezvous", below) |
 | Come to me | Right click your own marker (YOU), COME TO ME, or COME TO ME on the card | You on the ground or in the sky: as a landing, on a spot beside you on the side it comes from, which follows you until it starts down. You out in space (over the sky's edge, on a spacewalk or another ship): it flies to you and holds beside you, matching your motion, until cancelled |
 
 The lowest orbit (`Game.NavMinOrbit`) is `NavEdgeMargin` (400 m) over a mapped world's sky edge, since inside the sky a
@@ -152,10 +191,27 @@ ORBIT, DRIVE OFF") and burns again only if the ship has drifted well off its cir
 Board, for a ship with a boarding pod docked on it (a craft with mag locks and a breaching cutter facing its nose: the Zero
 Day's Limpet, [limpet.md](../sandbox/constructs/limpet.md)). Pick the carrier, then right-click another craft: the part
 under the cursor (in its hologram; zoom in until it is large) is the spot, a door if one is under it, and the menu offers
-BOARD: SEAL ON THIS DOOR or BOARD: CUT IN HERE under the Dock line (zoomed out, or off the hull, it says how to pick a spot instead). The order goes on the pod (its card shows it): it flies out from under the
+BOARD: SEAL ON THIS DOOR or BOARD: CUT IN HERE under the Dock line. Zoomed out (or off its hull) it offers BOARD: CUT INTO
+ITS HULL... and BOARD: SEAL ON A DOOR... instead (Karl, 2026-11-18): the view flies to that craft and pins on it, a banner
+says what to click, the cursor's label names the door (or says CUT IN HERE), and a left click sends the order and puts the
+view back as it was; a right click or Esc puts it back with no order (UI/UiCommandBoard.cs). The order goes on the pod (its card shows it): it flies out from under the
 carrier, across, grips, then opens the door or cuts through and opens its own. On the wire its point is the target's id,
 the part and 1 for a door (protocol 342); the host works the spot and the way out of the skin there. The pod must be within
 3 km of the target. `order board N door|hull` (the window tool) gives it from a script.
+
+**The close hologram and the cut-in preview** (UI/UiCommandHolo.cs, Karl 2026-11-18: "you cannot see where you're cutting").
+The picked craft, or the craft being boarded, once it is over about 220 px across is cut again finer: one craft at a time,
+cells of 0.25 m or more (200 across at most), a level every 0.9 m or more, at most 12,000 lines (bigger cells past that), built
+once and again only when its parts change (about 5 ms and 2,900 lines for a Zero Day). Both holograms are cut from the parts'
+own boxes and hull skin shapes, not their bounds, so a welded hull piece no longer fills the rooms it walls. On the fine one
+the outer skin (lines beside cells open to the outside on that level) is bright, inner walls dim, outlines every other level;
+doors and hatches are green boxes. While picking a hull spot, once the cursor rests on a part for 0.12 s the view works the
+spot out as the host will (`Game.BoardPreview`: `BoardSpot`, then `BoardNearRoom`, with no log lines) and draws the hull piece
+it cuts (amber box), the pod's skirt, the hole as `ConstructBreach.OpenHole` cuts it (1.1 by 2.1 m from the room's floor up,
+red when no room is found), the tunnel in to the room's wall, and the room behind as an outline on its floor (the fine grid's
+inside cells joined to where a person lands). The label says whether the room's floor is level with the pod's. Close up, a
+part's middle within 2 m of the cursor counts as under it (12 to 48 px). Window tool: `cmdboard N door|hull` starts the
+pick, `mouse X,Y` rests the cursor.
 
 ### How a ship flies one (`Game.ServerTickNav`, before the launch step each tick)
 
@@ -243,6 +299,14 @@ docs/sandbox/design/faction-controllers.md section 6.2, so he chose docking alon
   the host docks it (`NavDockCatch`): out of the flight, set upright in the middle of a pull dock's box and caught
   (`ConstructCargo.Catch`), so it rides the other ship as any docked craft does. A ship in a sky climbs out first to dock
   with one in space; one in space is refused a port down in a sky ("bring it down into the sky first").
+- **Close work in space** (`NavDockRcs`, 2026-11-18): within `NavDockRcsNear` (20 m) of the point it aims at and under
+  `NavDockRcsSlip` (4 m/s) against it, and all the way in once lined up, the ship no longer turns its main drive to each
+  correction (it twirled at its full turn rate over the port and swept its hull through the other ship): its speed against
+  the port is steered straight (its flight's velocity changed, at most `NavDockRcsAccel`, 1.5 m/s², as its small jets would,
+  lit for show by `ThrustPuppet`), and it turns upright with the port. No port's tractor works out of the bubble
+  (`ConstructCarrier.Tractor`: both ships are posed by their flights, so its pull was undone every tick while its spin and its
+  push back on the carrier stayed, and both ships tumbled), and a ship a port catches there by its box (`ConstructCargo.Scan`)
+  leaves the flight and rides the carrier (`SpaceLaunchAfter`); let go, it leaves the bubble again as a ship.
 - **Wire** (protocol 342): `CActKind.NavOrder` ends with the target construct, `Msg.Nav` with the target and the port.
 - **Trying it:** `order dock N` (dock with the Nth craft, as `cmdpick` counts) and `letgo [ID]` (host: the port holding
   a craft lets it go). A Shuttle onto the Zero Day's clamp, in the sky and in orbit:
@@ -252,16 +316,53 @@ docs/sandbox/design/faction-controllers.md section 6.2, so he chose docking alon
 --window-shot out.png --map Glacier --blueprint "Zero Day Frigate" --calm --do "command 60000; cmdpick 1; order orbit Glacier 5.5; wait 8000; letgo 2; wait 400; cmdpick 2; order dock 1; wait 3600; nav"
 ```
 
+### Rendezvous (`Game/GameNavMeet.cs`)
+
+Karl, 2026-11-18: "one ship to match another ship's velocity or orbit and meet up alongside". `NavKind.Meet`: the order's
+`Target` is the other craft and its `Radius` the gap kept between the hulls (the menu's "m apart", 10 to 2000 m, 40 by
+default; `NavMeetGap`).
+
+- **Where it holds:** on the other craft's side (its own X axis, on the side the ship comes from, chosen once), both
+  their radii plus the gap from its middle. It follows that side as the other turns.
+- **In space** it flies the `GoTo` law in the other craft's moving frame: offset and velocity from it, `Avoid` round it
+  (coming from its far side the straight line runs through it) and round the world it is near, and the other's own
+  acceleration fed forward (measured from its velocity tick to tick: its gravity, and a burn of its own), so a ship in orbit
+  is matched without the drive fighting gravity. Far off the approach is planned on the whole drive, closer in it falls
+  towards `NavComeAccel` (5 m/s2) with distance (`NavMeetFar`, 20 km), since it turns to brake and an overshoot would hit
+  it. Within 30 m (or a quarter of the gap) and 1.5 m/s it is Hold ("ALONGSIDE, MATCHING ITS MOTION"): the drive rests
+  and the hull turns its drive parallel to the other's (that craft's strongest drive axis, looked for once a second).
+  Time is held at 1x while it holds, as any Hold is.
+- **Round another planet:** the order's world is the one the other craft is round now (`NavMeetBody`); a ship outside
+  that planet's reach flies the trip there first (planned, waited for, coasted, as an orbit's), and its own law takes over
+  when the trip hands it on.
+- **In a sky** (both bodies there) the stabilizer's autopilot flies it (Waypoint mode) to the point beside the other at
+  the other's height, written at most twice a second and only when it has moved 6 m. A ship in a sky climbs out to meet a
+  craft in space; one in space is refused a craft down in a sky ("bring it down into the sky first").
+- **It ends** when cancelled, the other craft is gone or wrecked, goes down into a sky from space, or the two dock.
+- **Wire** (protocol 350): `NavKind.Meet` at its end; the target and gap ride the order's existing target and radius.
+- **Trying it:** `order meet N [GAP]` (the Nth craft, as `cmdpick` counts). The Shuttle from a 9 km orbit to the Zero
+  Day's at 5.5 km (about 75 s to alongside):
+
+```
+--window-shot out.png --map Glacier --blueprint "Zero Day Frigate" --calm --do "command 60000; cmdpick 1; order orbit Glacier 5.5; wait 8000; letgo 2; wait 200; cmdpick 2; order orbit Glacier 9; wait 6000; order meet 1 60; wait 6000; nav"
+```
+
 ## Time speed
 
 Karl, 2026-11-16: ships coast between planets in real time, and the player speeds time up from the command view. (It
 was the "time warp" of the F7 Space window until then; warp no longer means changing time: docs/archive/space/TIME-WARP.md.)
 
-- **The buttons** (host only) sit under the clock, top left: II (pause), 1x, 10x, 100x, 1K, 10K, 100K
-  (`Game.RequestTimeSpeed`). A joined player sees the clock and its speed, not the buttons.
+- **The buttons** (host only) sit under the clock, top left: II (pause), 1x, 10x, 100x, 1K, 10K, 100K, 1M
+  (`Game.RequestTimeSpeed`). A joined player sees the clock and its speed, not the buttons. A button asks for its speed
+  whatever the settings say; the settings' limit holds the clock and the clock line says so.
 - **What holds it lower** (the clock line says which): any ship in space burning (`SpaceTimeRule`: "A SHIP IS
   BURNING"); a ship under orders about to burn ("SLOWED FOR A BURN": `Game.NavSpeedCap`, see below); the ships' own
-  step budget (`SpaceShips.MaxSpeed`); the host's Settings > Gameplay "Fastest time speed".
+  step budget (`SpaceShips.MaxSpeed`: also a ship on rails nearing a sphere of influence, or a coasting ship whose orbit
+  dips under a world's sky, `SpaceShips.Sky`); the host's Settings > Gameplay "Fastest time speed".
+- **Over 10K ships go on rails** (2026-11-17, `SpaceTimeRule.WarpRailsAbove`): a coasting ship whose other bodies' pull
+  is under 2% of its primary's flies its own two-body orbit (the patched conic, as space games do at high warp), exact
+  and as cheap at 1M as at 1x, so a moon's tide no longer holds time near 15,000x and the drawn orbit stands still. At
+  10K and under they fly the full model as before. Notes: docs/space/warp-notes.md.
 - Life in a bubble (walking, building, a ship in a sky) runs at 60 Hz whatever the clock does; only the sky, the
   orbits and ships in space go faster.
 
@@ -272,7 +373,7 @@ target's planet: `NavTrip.Crosses`) is a **trip**: the transfer conics Hohmann f
 2026-11-16: "flip and burn level of realism", "faster than Hohmann but has the same traits"). Frostreach is real-sized:
 its planets are 0.35 to 4 AU from a star of 1.8 suns, and they go round at 20 to 67 km/s. A Magpie (4.3 g, 26 km/s of dV
 at full fuel use) reaches Mille from Glacier in about 400 days of game time on half its tank; at 100K that is about six
-minutes. Cinder, deep in the star's well, is out of its reach (36 km/s at the least): a ship with more dV, or the "Fuel
+minutes, at 1M about 35 seconds. Cinder, deep in the star's well, is out of its reach (36 km/s at the least): a ship with more dV, or the "Fuel
 use in space" setting, gets there.
 
 1. **Plan** (`NavTrip.Search`, a few departures a tick: `Game.NavPlanPerTick`, time held at 1x for the second it
@@ -288,7 +389,8 @@ use in space" setting, gets there.
    its full pull wobbles a low orbit's shape by kilometres over the days (Slopolis round Glacier): the orbit may
    wander, and is trimmed towards a circle (at 1x, seconds) only when its low point nears the sky's edge (under which
    the ship would be a physics body in the bubble again) or its high point nears the edge of the world's reach.
-   Round a small world time runs at what the ship's steps allow (about 15,000x round Glacier), not the full 100K.
+   Round a small world time ran at what the ship's steps allowed (about 15,000x round Glacier) until ships went on rails
+   above 10K (2026-11-17): a parked orbit now runs at the full 1M, and on rails it doesn't wander.
 3. **Depart**: the burn out, closed-loop, re-solved every tick for the planned arrival from where the ship really is
    (minutes at 4 g), bent round any body in the way (`NavGuidance.Avoid`).
 4. **Coast** round the star with the drive off; every half second (`NavCoastCheck`) it solves again and burns back onto
@@ -312,7 +414,7 @@ than the plan said.
 | --- | --- | --- |
 | Trip fuel | 50% | The share of a ship's dV one trip may spend (10 to 95%; `Game.TripShare`). More is quicker; less leaves fuel for the way home |
 | Fuel use in space | 100% | The share of their fuel thrusters burn in space (10 to 100%; `ConstructPhysics.SpaceFuelScale`, sent to clients with the space clock). At 25% a Magpie carries about 100 km/s and reaches any planet in 120 to 170 days |
-| Fastest time speed | 100000x | The fastest the command view's time speed runs (`Game.TimeSpeedMost`) |
+| Fastest time speed | 1000000x | The fastest the command view's time speed runs (`Game.TimeSpeedMost`) |
 
 `--trip-check [FILE] [--accel A] [--dv DV] [--share S] [--day D]` prints the trip an order would plan between every pair
 of planets (default Frostreach, a Magpie leaving on day 0): when it leaves, how long it takes and its dV.

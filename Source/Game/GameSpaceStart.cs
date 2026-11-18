@@ -56,7 +56,42 @@ public sealed partial class Game
         Log($"[opening] the {script.Ship} is construct {ship.Id}, {(r - pl.Radius) / 1000:0.0} km up over {from.X:0},{from.Z:0}, going round at {speed:0} m/s");
         foreach (var co in script.Company)
             OpeningCompanion(co, centre, up, fwd, r, speed);
+        foreach (var st in script.Stations)
+            OpeningStation(st, centre, up, fwd, (float)pl.Radius, e.System.Bodies[body].Mu);
         return true;
+    }
+
+    /// <summary>
+    /// Server, a ship start's station (the opening's <c>"stations"</c>; Karl, 2026-11-18: Caledon Highport about 40 km out over the
+    /// world the start ship goes round): nobody's, uncrewed, on its own circular orbit <see cref="OpeningScript.Station.Orbit"/> m up,
+    /// its ring level with the ground below and its docking spindle pointing down at the world. It drifts against the start's lower,
+    /// faster orbit. A miss is logged, and the start goes on without it.
+    /// </summary>
+    private void OpeningStation(in OpeningScript.Station st, Vector3 centre, Vector3 up, Vector3 fwd, float radius, double mu)
+    {
+        if (ConstructBuild.FindBlueprint(st.Blueprint) is not { } bp)
+            return;
+        var r = radius + st.Orbit;
+        var a = st.Ahead / r;
+        var su = up * MathF.Cos(a) + fwd * MathF.Sin(a);
+        var sf = fwd * MathF.Cos(a) - up * MathF.Sin(a);
+        var z = -sf;
+        var x = Vector3.Cross(su, z);
+        var rot = Quaternion.Normalize(Quaternion.CreateFromRotationMatrix(new Matrix4x4(x.X, x.Y, x.Z, 0, su.X, su.Y, su.Z, 0, z.X, z.Y, z.Z, 0, 0, 0, 0, 1)));
+        var c = ConstructBuild.Build(Constructs, bp, centre + su * r, rot, out var why);
+        if (c == null)
+        {
+            Log($"[opening] the station {st.Blueprint} didn't build in orbit: {why}");
+            return;
+        }
+        c.Rebuild();
+        c.Owner = 255; // (nobody's)
+        var speed = (float)Math.Sqrt(mu / r);
+        c.Vel = sf * speed;
+        c.PrevPos = c.Pos;
+        c.Wake();
+        Constructs.Events.Add($"opening: the station {st.Blueprint} as construct {c.Id}");
+        Log($"[opening] the station {st.Blueprint} is construct {c.Id}, {st.Orbit / 1000:0.0} km up, going round at {speed:0} m/s");
     }
 
     /// <summary>

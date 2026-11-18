@@ -23,12 +23,14 @@ public sealed partial class Ui
     private string _cmdOrderComeText = "", _cmdOrderTitle = "", _cmdOrderOrbit = "", _cmdOrderGo = "", _cmdOrderNote = "";
     private ushort _cmdOrderDock; // another craft under the click: dock with it (0: none)
     private string _cmdOrderDockText = "", _cmdOrderDockWhy = "";
+    private string _cmdOrderMeetText = "", _cmdOrderMeetWhy = ""; // the same craft: a rendezvous beside it (Game/GameNavMeet.cs)
+    private float _cmdOrderMeetGap = Game.NavMeetGap;
     private double _cmdOrderNoteUntil;
     private bool _cmdOrderBoard, _cmdOrderBoardDoor; // a Board order (Game/GameNavBoard.cs): the ship's pod to a door or the hull of another
     private ushort _cmdOrderBoardShip;
     private int _cmdOrderBoardPart;
     private string _cmdOrderBoardText = "";
-    private string _cmdOrderBoardWhy = ""; // (a pod docked, but no door or panel under the click: what to do instead)
+    private bool _cmdOrderBoardAny, _cmdOrderBoardDoors; // a pod docked but no spot under the click: Board buttons that pick one after (and does it have doors)
 
     /// <summary>A right click on the map: what could the picked ship do there?</summary>
     private void CmdOrderAt(Game g, SpaceSession s, float2 m)
@@ -58,13 +60,16 @@ public sealed partial class Ui
             ref var other = ref _cmdCraft[hit];
             if (other.Id == c.Id || g.Constructs.Get(other.Id) is not { } t)
                 return; // (itself: nothing to tell it)
-            _cmdOrderBoardWhy = "";
+            _cmdOrderBoardAny = _cmdOrderBoardDoors = false;
             if (Game.BoardPodOf(g.Constructs, c) != null)
             {
-                if (other.Px < 40 * _scale)
-                    _cmdOrderBoardWhy = "TO BOARD IT: ZOOM IN AND RIGHT CLICK A DOOR OR A HULL PANEL";
-                else if (!CmdBoardPick(t, other, m, out var part, out var door))
-                    _cmdOrderBoardWhy = "TO BOARD IT: RIGHT CLICK ON A DOOR OR A HULL PANEL";
+                if (other.Px < 40 * _scale || !CmdBoardPick(t, other, m, out var part, out var door))
+                {
+                    _cmdOrderBoardAny = true; // (zoomed out, or off its hull: pick the spot after, the view flies to it: UiCommandBoard.cs)
+                    _cmdOrderBoardShip = t.Id;
+                    for (var i = 0; i < t.PartCount && !_cmdOrderBoardDoors; i++)
+                        _cmdOrderBoardDoors = Game.BoardIsDoor(t, i);
+                }
                 else
                 {
                     _cmdOrderBoard = true;
@@ -84,6 +89,11 @@ public sealed partial class Ui
                 : cr.Space && !other.Space ? "IT IS IN SPACE: BRING IT DOWN INTO THE SKY FIRST"
                 : Game.NavDockFor(g.Constructs, t, c) < 0 ? "NO PORT AVAILABLE"
                 : "";
+            _cmdOrderMeetText = "RENDEZVOUS WITH " + CmdName(t);
+            _cmdOrderMeetWhy = c.CarriedBy == t.Id || t.CarriedBy == c.Id ? "" // (docked together: nothing to meet)
+                : !g.NavState(c, s.Now, out _, out _) || !g.NavState(t, s.Now, out _, out _) ? "TOO FAR APART TO MEET"
+                : cr.Space && !other.Space ? "TO MEET IT: BRING IT DOWN INTO THE SKY FIRST"
+                : "OK";
             _cmdOrderTitle = "ORDER FOR " + CmdName(c);
             _cmdOrderAt = m;
             _cmdOrderAsk = true;
@@ -173,6 +183,7 @@ public sealed partial class Ui
         {
             var sys = s.System;
             var send = NavKind.None;
+            var board = 0; // (1: pick a hull spot to cut into, 2: a door to seal on)
             ImGuiSafe.TextColored(new float4(CmdAmber.X, CmdAmber.Y, CmdAmber.Z, 1f), _cmdOrderTitle);
             ImGui.Separator();
             if (_cmdOrderShut || g.Constructs.Get(_cmdOrderShip) is not { } c || Game.NavProblem(c) != null)
@@ -199,6 +210,18 @@ public sealed partial class Ui
                     else if (ImGui.Button(_cmdOrderDockText, new float2(MathF.Max(300 * _scale, ImGui.CalcTextSize(_cmdOrderDockText).X + 20 * _scale), 0)))
                         send = NavKind.Dock;
                 }
+                if (_cmdOrderDock != 0 && _cmdOrderMeetWhy.Length > 0)
+                {
+                    if (_cmdOrderMeetWhy != "OK")
+                        ImGuiSafe.TextColored(new float4(CmdAmber.X, CmdAmber.Y, CmdAmber.Z, 1f), _cmdOrderMeetWhy);
+                    else
+                    {
+                        ImGui.SetNextItemWidth(220 * _scale);
+                        ImGui.SliderFloat("m apart##cmdmeet"u8, ref _cmdOrderMeetGap, Game.NavMeetGapLeast, Game.NavMeetGapMost, "%.0f"u8, ImGuiSliderFlags.Logarithmic);
+                        if (ImGui.Button(_cmdOrderMeetText, new float2(MathF.Max(300 * _scale, ImGui.CalcTextSize(_cmdOrderMeetText).X + 20 * _scale), 0)))
+                            send = NavKind.Meet;
+                    }
+                }
                 if (_cmdOrderBoard)
                 {
                     var bw = MathF.Max(300 * _scale, ImGui.CalcTextSize(_cmdOrderBoardText).X + 20 * _scale);
@@ -208,9 +231,12 @@ public sealed partial class Ui
                         ImGui.CloseCurrentPopup();
                     }
                 }
-                else if (_cmdOrderDock != 0 && _cmdOrderBoardWhy.Length > 0)
+                else if (_cmdOrderBoardAny)
                 {
-                    ImGuiSafe.TextColored(new float4(CmdAmber.X, CmdAmber.Y, CmdAmber.Z, 1f), _cmdOrderBoardWhy);
+                    if (ImGui.Button("BOARD: CUT INTO ITS HULL..."u8, new float2(300 * _scale, 0)))
+                        board = 1;
+                    if (_cmdOrderBoardDoors && ImGui.Button("BOARD: SEAL ON A DOOR..."u8, new float2(300 * _scale, 0)))
+                        board = 2;
                 }
                 var wide = _cmdOrderPointBody >= 0 ? MathF.Max(300 * _scale, ImGui.CalcTextSize(_cmdOrderGo).X + 20 * _scale) : 300 * _scale;
                 if (_cmdOrderPointBody >= 0 && ImGui.Button(_cmdOrderGo, new float2(wide, 0)))
@@ -240,8 +266,13 @@ public sealed partial class Ui
                     case NavKind.Dock:
                         g.NavSend(_cmdOrderShip, NavKind.Dock, s.Bubble.Body, Vec3d.Zero, 0, _cmdOrderDock); // (the host picks the port, and says when there is none)
                         break;
+                    case NavKind.Meet:
+                        g.NavSend(_cmdOrderShip, NavKind.Meet, s.Bubble.Body, Vec3d.Zero, _cmdOrderMeetGap, _cmdOrderDock); // (the host works out the world and the side)
+                        break;
                 }
-                if (send != NavKind.None)
+                if (board != 0 && g.Constructs.Get(_cmdOrderBoardShip) is { } bt && g.Constructs.Get(_cmdOrderShip) is { } carrier)
+                    CmdBoardStart(carrier, bt, board == 2); // (the view flies to it: UiCommandBoard.cs)
+                if (send != NavKind.None || board != 0)
                     ImGui.CloseCurrentPopup();
             }
             ImGui.EndPopup();
@@ -252,9 +283,10 @@ public sealed partial class Ui
 
     /// <summary>
     /// The part of craft <paramref name="t"/> under the cursor, as its hologram is drawn (UiCommandShip.cs): of the parts whose
-    /// middles lie within a few pixels, the one nearest the eye, or a door among them not far behind it. False: none there.
+    /// middles lie within a few pixels, the one nearest the eye, or a door among them not far behind it (with <paramref name="doors"/>).
+    /// False: none there.
     /// </summary>
-    private bool CmdBoardPick(Construct t, in CmdCraft cr, float2 m, out int part, out bool door)
+    private bool CmdBoardPick(Construct t, in CmdCraft cr, float2 m, out int part, out bool door, bool doors = true)
     {
         part = -1;
         door = false;
@@ -268,14 +300,14 @@ public sealed partial class Ui
             deep[k] = (float)Vec3d.Dot(e, _cvDir);
         }
         var com = t.Com;
-        var reach = 12 * _scale;
+        var reach = Math.Clamp(2f * (float)_cvScale, 12 * _scale, 48 * _scale); // (close up, the part nearest the eye within 2 m of the cursor: a big hull piece's middle is far from its edge)
         float bestDeep = float.MaxValue, doorDeep = float.MaxValue;
         var doorPart = -1;
         for (var i = 0; i < t.PartCount; i++)
         {
             var p = t.Parts[i].Pos - com;
             var at = cr.At + ax[0] * p.X + ax[1] * p.Y + ax[2] * p.Z;
-            var isDoor = Game.BoardIsDoor(t, i);
+            var isDoor = doors && Game.BoardIsDoor(t, i);
             if ((at - m).Length() > (isDoor ? reach * 1.5f : reach))
                 continue;
             var d = deep[0] * p.X + deep[1] * p.Y + deep[2] * p.Z;
@@ -317,6 +349,11 @@ public sealed partial class Ui
     /// <summary>Esc in the view: an open order menu closes first. False: nothing was open, the view itself may close.</summary>
     public bool CommandEsc()
     {
+        if (!_cmdOrderOpen && _cmdBoardShip != 0)
+        {
+            CmdBoardEnd(); // (a Board pick: the view goes back, no order)
+            return true;
+        }
         if (!_cmdOrderOpen)
             return false;
         _cmdOrderShut = true;
@@ -362,6 +399,19 @@ public sealed partial class Ui
         if (Game.NavDockFor(g.Constructs, t, c) < 0)
             return "NO PORT AVAILABLE";
         g.NavSend(c.Id, NavKind.Dock, s.Bubble.Body, Vec3d.Zero, 0, target);
+        return null;
+    }
+
+    /// <summary>The script and the checks: the picked craft is told to meet <paramref name="target"/> and hold <paramref name="gap"/> m clear of it, as the menu's RENDEZVOUS WITH would.</summary>
+    public string? CommandMeet(Game g, ushort target, float gap)
+    {
+        if (g.Space is not { } s)
+            return "no star system here";
+        if (g.Constructs.Get(_cmdSel) is not { } c)
+            return "no ship is picked";
+        if (g.Constructs.Get(target) is not { } t || t == c)
+            return "no such ship to meet";
+        g.NavSend(c.Id, NavKind.Meet, s.Bubble.Body, Vec3d.Zero, gap, target);
         return null;
     }
 

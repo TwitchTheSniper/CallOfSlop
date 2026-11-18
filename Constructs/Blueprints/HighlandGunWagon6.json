@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 6 body 6 kit 6 wear 6, chassis 2 axles, front under the hood, inset 1.75 m, swing arm/trailing arm, wing 0.5, cab style tourer, language boat standard 2.66 m, flare 0.07, tapered 0.6, brow 0.78 1 m, tail 0.67 1 m, door left, cab boat caged cab, nose grille, fitting chrome grille, fitting mascot, lopsided right, wear age 0.69 (4 rusty, 11 dirty, 0 sooty, 0 patched, 1 rusted out), body hutch, cab caged, nose long hood, rear bare, under stilts, layout hutch 4 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Highland Gun Wagon 6",
-  "group": "Clan MacSlop",
+  "group": "Highland",
   "description": "A gun wagon: a long hood, a caged cab, an ammo hutch and a stern gun on a flat deck. 1 gun.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#33302b"},
@@ -113,8 +113,8 @@
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 104, "pos": [-0.825, 0.254, -0.378], "rot": [-0.0227, -0.009, 0.6895, 0.7239]}, "paint": "#23395d"},
     {"part": "Plate Steel 0.5 m", "weld": {"on": 103, "pos": [1.309, 0.575, -0.376], "rot": [-0.0033, -0.0117, -0.7012, 0.7128]}, "paint": "#23395d"},
     {"part": "Hull Loft (decoO UeV-)", "on": 101, "socket": "top", "by": "base"},
-    {"part": "Pipe Box", "on": 35, "socket": "top", "by": "base"},
-    {"part": "Coo Heid", "on": 56, "socket": "front10", "by": "base"}
+    {"part": "Satellite Dish", "on": 35, "socket": "top", "by": "base"},
+    {"part": "Network Switch", "on": 56, "socket": "front10", "by": "base"}
   ],
   "wires": [[32, 33], [33, 27], [87, 93], [93, 89], [100, 97]],
   "hoses": [[98, 99]],

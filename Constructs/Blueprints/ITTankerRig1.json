@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front under the hood, inset 2.25 m, wishbone/leaf, wing 0.75, cab style pod, language pod standard 2.31 m, flare 0.04, tapered 0.8, brow 0.74 1.25 m, tail 0.65 1.25 m, door left, 12 facets, cab pod capsule, 8 facets, nose rounded, fitting radome, wear age 0.44 (0 rusty, 2 dirty, 0 sooty, 0 patched, 0 rusted out), body gun bay+bed, cab cab-over, nose flat, rear porch hitch, under stilts, sides rails, layout gun bay 2 m+bed 2 m, plan 2
   "format": "call-of-slop-construct-blueprint/1",
   "name": "IT Tanker Rig 1",
-  "group": "IT Department",
+  "group": "IT",
   "description": "A tanker rig: a flat nose, a cab-over, a gun behind the cab, an open bed, a drum on the rear porch over a tow hitch. 1 gun.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#3b3f44"},
@@ -102,8 +102,9 @@
     {"part": "Bed Rail 1 m", "on": 51, "socket": "+z1", "by": "edge1", "paint": "#a7abae"},
     {"part": "Bed Rail 1 m", "on": 59, "socket": "+x", "by": "edge0", "paint": "#d8d0b8"},
     {"part": "Hull Loft (decoR WUWI)", "on": 36, "socket": "top", "by": "base"},
-    {"part": "Satellite Dish", "on": 49, "socket": "front30", "by": "base"},
-    {"part": "Cable Reel", "on": 51, "socket": "front02", "by": "base"}
+    {"part": "Network Switch", "on": 49, "socket": "front30", "by": "base"},
+    {"part": "Network Switch", "on": 51, "socket": "front02", "by": "base"},
+    {"part": "Satellite Dish", "on": 50, "socket": "front11", "by": "base"}
   ],
   "wires": [[33, 34], [34, 28], [75, 82], [82, 77], [82, 83]],
   "links": [

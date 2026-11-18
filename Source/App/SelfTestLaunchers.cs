@@ -41,7 +41,7 @@ public static partial class SelfTest
         // ---- Every launcher loads, secondary only ----------------------------------------------------
         var launchers = Weapons.All.Where(w => w.IsLauncher).ToArray();
         LLine($"launchers ({launchers.Length}): " + string.Join("; ", launchers.Select(w =>
-            $"{w.Name} {w.LauncherProjectile}/{w.LauncherGuidance} {w.Damage} dmg r{w.LauncherRadius} (players x{w.LauncherPlayerMult} r{w.PlayerBlastRadius}) +{w.LauncherDirect} direct, {w.Mag}+{w.LauncherReserve} rounds, lvl {Progress.UnlockLevel(w)}")));
+            $"{w.Name} {w.LauncherProjectile}/{w.LauncherGuidance} {w.Damage} dmg r{w.LauncherRadius} (players x{w.LauncherPlayerMult} r{w.PlayerBlastRadius}) +{w.LauncherDirect} direct, {w.Mag}+{w.LauncherReserve} rounds")));
         if (launchers.Length is < 6 or > 8)
             Fail($"{launchers.Length} launchers (want 6-8)");
         foreach (var w in launchers)
@@ -146,10 +146,8 @@ public static partial class SelfTest
             LoadoutStore.LoadLines(lines);
             if (LoadoutStore.Slots[0].Secondary != sky.Id || !lines.Contains("loadout1.secondary=Skylance AA"))
                 Fail("a launcher secondary didn't survive a loadout save and load");
-            var maxed = new Progress { ReadOnly = true, Xp = Progress.TotalFor(Progress.MaxLevel) };
-            var fresh = new Progress { ReadOnly = true };
-            if (LoadoutStore.Effective(LoadoutStore.Slots[0], maxed).Secondary != sky.Id || LoadoutStore.Effective(LoadoutStore.Slots[0], fresh).Secondary == sky.Id)
-                Fail("a locked launcher should fall back to an unlocked secondary (and an unlocked one stay)");
+            if (LoadoutStore.Effective(LoadoutStore.Slots[0]).Secondary != sky.Id)
+                Fail("a launcher secondary should stay in its slot (nothing is locked since levelling went)");
         }
         finally
         {

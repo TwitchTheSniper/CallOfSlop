@@ -23,12 +23,18 @@ public static unsafe class VideoFeeds
     public static long Uploads; // frames copied since the start
     public static double LastMs; // the last copy's CPU time
 
+    /// <summary>Why no page's picture can be shown on this PC, or null: the panels say it instead of "Loading".</summary>
+    public static string? Problem { get; private set; }
+
     /// <summary>A panel wants page <paramref name="page"/>'s picture. Its layer plus one, or 0: nothing to show yet.</summary>
     public static int Request(int page)
     {
         Wanted[page] = _now;
         return Shown[page] ? page + 1 : 0;
     }
+
+    /// <summary>A frame of page <paramref name="page"/>'s current track has gone up.</summary>
+    public static bool HasPicture(int page) => Shown[page];
 
     /// <summary>The page has a new track: its old picture isn't shown.</summary>
     public static void Forget(int page) => Shown[page] = false;
@@ -74,6 +80,13 @@ public static unsafe class VideoFeeds
 
     private static bool Init()
     {
+        // (an error left by some other draw would be blamed on this texture, and every screen would stay on "Loading": clear the flag first)
+        var stale = 0;
+        var codes = "";
+        for (uint e; stale < 16 && (e = (uint)Native.glGetError()) != (uint)GL_NO_ERROR; stale++)
+            codes += $" 0x{e:x}";
+        if (stale > 0)
+            Console.WriteLine($"[media] {stale} GL error(s) left by earlier drawing, cleared before the pictures' texture:{codes}"); // (once: Init runs once)
         GlTexture t = default;
         Native.glGenTextures(1, &t);
         _tex = t;
@@ -85,10 +98,11 @@ public static unsafe class VideoFeeds
         Native.glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, (int)GL_CLAMP_TO_EDGE);
         Native.glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, (int)GL_CLAMP_TO_EDGE);
         Native.glActiveTexture(GL_TEXTURE0);
-        if (Native.glGetError() != GL_NO_ERROR)
+        if (Native.glGetError() is var error && error != GL_NO_ERROR)
         {
             _broken = true;
-            Console.WriteLine("[media] pictures off: no room for the texture");
+            Problem = $"no room for the pictures (GL error 0x{(uint)error:x})";
+            Console.WriteLine($"[media] pictures off: the {MediaBlock.MaxWidth} x {MediaBlock.MaxHeight} x {MediaDirector.MaxPages} texture failed, GL error 0x{(uint)error:x}");
             return false;
         }
         _ready = true;

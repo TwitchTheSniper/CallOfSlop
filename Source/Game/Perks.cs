@@ -189,8 +189,8 @@ public static class Perks
     public static PerkDef? Find(string name) =>
         All.FirstOrDefault(p => p.Id != PerkId.None && p.Name.Equals(name.Trim(), StringComparison.OrdinalIgnoreCase));
 
-    /// <summary>The perks of one category, starters first, then in unlock order.</summary>
-    public static IEnumerable<PerkDef> In(PerkCategory c) => All.Where(p => p.Category == c).OrderBy(p => Progress.PerkLevel(p.Id));
+    /// <summary>The perks of one category, starters first, then in the list's order.</summary>
+    public static IEnumerable<PerkDef> In(PerkCategory c) => All.Where(p => p.Category == c).OrderBy(p => Starters.Contains(p.Id) ? 0 : 1);
 
     public static string CategoryName(PerkCategory c) => c switch
     {

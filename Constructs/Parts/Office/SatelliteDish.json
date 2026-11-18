@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Satellite Dish",
-  "description": "A satellite dish on a post. It picks up the IT Department's hold music.",
+  "description": "A satellite dish on a post. It picks up somebody's hold music.",
   "group": "Lights and Details",
   "section": "Body panels",
   "role": "frame",

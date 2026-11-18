@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front set back, inset 1.75 m, coil/trailing arm, wing 0.5, cab style pod, language pod standard 2.36 m, flare 0.06, tapered 0.9, brow 0.73 1 m, tail 0.75 1 m, door left, 10 facets, cab pod cab, 7 facets, nose rounded, wear age 0.65 (0 rusty, 4 dirty, 1 sooty, 0 patched, 0 rusted out), body hutch, cab enclosed, nose long hood, rear bare, under tub, layout hutch 4 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "IT Gun Wagon 1",
-  "group": "IT Department",
+  "group": "IT",
   "description": "A gun wagon: a long hood, an enclosed cab, an ammo hutch and a stern gun on a flat deck. 1 gun.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#3b3f44"},
@@ -104,9 +104,9 @@
     {"part": "Hull Loft (hoodr UXV2WyWjXIXEVd ~6e078C7GO78a6em5Gx2n3013)", "on": 27, "socket": "+y", "by": "engine", "paint": "#e6e2d6"},
     {"part": "Bar Grille", "on": 96, "socket": "front", "by": "back", "paint": "#e6e2d6"},
     {"part": "Plate Steel 0.5 m", "weld": {"on": 97, "pos": [0.126, 0.479, -1.929], "rot": [-0.7067, -0.0011, 0.0091, 0.7074]}, "paint": "#a7abae"},
-    {"part": "CRT Monitor", "on": 96, "socket": "top", "by": "base"},
-    {"part": "CRT Monitor", "on": 35, "socket": "top", "by": "base"},
-    {"part": "CRT Monitor", "on": 57, "socket": "front02", "by": "base"},
+    {"part": "Office Plant", "on": 96, "socket": "top", "by": "base"},
+    {"part": "Office Plant", "on": 35, "socket": "top", "by": "base"},
+    {"part": "Network Switch", "on": 47, "socket": "front11", "by": "base"},
     {"part": "Router Antenna", "on": 56, "socket": "front00", "by": "base"}
   ],
   "wires": [[32, 33], [33, 27], [83, 88], [88, 85], [95, 92]],

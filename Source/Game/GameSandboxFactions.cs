@@ -20,6 +20,13 @@ public enum FactionOp : byte
     SetRank, // u8 owner byte, u8 rank: move a member of a lower rank to another below one's own (FactionMay.Promote)
     MakeLeader, // u8 owner byte: the leader hands the faction to another member (and becomes the rank below)
     Stance, // u8 faction, i8 stance (-1 war, 0 neutral, 1 alliance): toward another faction (FactionMay.Relations)
+    // Protocol 359 (faction-controllers.md phase 5: GameCrewPolitics.cs).
+    Pact, // u8 power, u8 pact kind: the leader proposes a pact to an NPC power (or takes its offer of that pact)
+    PactAnswer, // u8 power, u8 yes: the leader takes or turns down a power's offer
+    PactBreak, // u8 power: the leader breaks the faction's pact with a power
+    CallAllies, // a member calls the faction's allied powers (and friendly ones fighting the same foe) for help where they are
+    ContractTake, // u8 slot, u16 serial: take a power's contract
+    ContractDrop, // u8 slot, u16 serial: give a contract you hold up (it fails)
 }
 
 /// <summary>
@@ -55,7 +62,8 @@ public sealed partial class Game
         var mine = t.Of[me];
         if (!FactionPerson(p))
             return "only players can be in a faction";
-        switch ((FactionOp)r.U8())
+        var op = (FactionOp)r.U8();
+        switch (op)
         {
             case FactionOp.Found:
             {
@@ -312,6 +320,13 @@ public sealed partial class Game
                     StoryFactionRelation(t.Names[mine], t.Names[other], now, p); // (GameStoryFactions.cs)
                 return null;
             }
+            case FactionOp.Pact:
+            case FactionOp.PactAnswer:
+            case FactionOp.PactBreak:
+            case FactionOp.CallAllies:
+            case FactionOp.ContractTake:
+            case FactionOp.ContractDrop:
+                return PoliticsAct(p, op, ref r); // (GameCrewPolitics.cs)
         }
         return "unknown faction action";
     }
@@ -496,6 +511,24 @@ public sealed partial class Game
         w.U8((byte)t.PactCount);
         for (var k = 0; k < t.PactCount; k++)
             w.U8(t.PactKindOf[k]).U8(t.PactA[k]).U8(t.PactB[k]).U16(t.PactHeld[k]).U16(t.PactLeft[k]);
+        w.U16(t.PowerGone); // (protocol 354: powers gone for good, faction-controllers.md phase 3)
+        // Protocol 359 (phase 5): pacts with player factions, offers, proposals and blood feuds.
+        w.U8((byte)t.PartyPactCount);
+        for (var k = 0; k < t.PartyPactCount; k++)
+            w.U8(t.PartyPactKind[k]).U8(t.PartyPactPower[k]).U8(t.PartyPactParty[k]).U16(t.PartyPactHeld[k]).U16(t.PartyPactLeft[k]);
+        w.U8((byte)t.OfferCount);
+        for (var k = 0; k < t.OfferCount; k++)
+            w.U8(t.OfferPower[k]).U8(t.OfferParty[k]).U8(t.OfferKind[k]);
+        w.U8((byte)t.AskCount);
+        for (var k = 0; k < t.AskCount; k++)
+            w.U8(t.AskPower[k]).U8(t.AskParty[k]).U8(t.AskKind[k]);
+        byte fn = 0;
+        foreach (var f in t.PartyFeud)
+            fn += f ? (byte)1 : (byte)0;
+        w.U8(fn);
+        for (var k = 0; k < t.PartyFeud.Length; k++)
+            if (t.PartyFeud[k])
+                w.U8((byte)(k / FactionTable.MaxStory)).U8((byte)(k % FactionTable.MaxStory));
     }
 
     private static void WriteFactionPairs(PacketWriter w, byte[] of)
@@ -630,9 +663,43 @@ public sealed partial class Game
                 (t.PactKindOf[i], t.PactA[i], t.PactB[i], t.PactHeld[i], t.PactLeft[i]) = (kind, a, b, held, left);
             }
         }
+        t.PowerGone = r.Has(2) ? r.U16() : (ushort)0;
+        int ppn = r.Has(1) ? r.U8() : 0; // (protocol 359: phase 5)
+        t.PartyPactCount = 0;
+        for (var k = 0; k < ppn && r.Has(7); k++)
+        {
+            var (kind, f, id, held, left) = (r.U8(), r.U8(), r.U8(), r.U16(), r.U16());
+            if (t.PartyPactCount < FactionTable.MaxPacts && f < FactionTable.MaxStory && id < FactionTable.Max)
+            {
+                var i = t.PartyPactCount++;
+                (t.PartyPactKind[i], t.PartyPactPower[i], t.PartyPactParty[i], t.PartyPactHeld[i], t.PartyPactLeft[i]) = (kind, f, id, held, left);
+            }
+        }
+        t.OfferCount = ReadPartyAsks(ref r, t.OfferPower, t.OfferParty, t.OfferKind);
+        t.AskCount = ReadPartyAsks(ref r, t.AskPower, t.AskParty, t.AskKind);
+        int ffn = r.Has(1) ? r.U8() : 0;
+        for (var k = 0; k < ffn && r.Has(2); k++)
+        {
+            var (id, f) = (r.U8(), r.U8());
+            if (id < FactionTable.Max && f < FactionTable.MaxStory)
+                t.PartyFeud[id * FactionTable.MaxStory + f] = true;
+        }
         t.StoryTech = techs;
         ConstructAssembling.TaughtBy = t.TeacherOf;
         t.Version++;
+    }
+
+    private static int ReadPartyAsks(ref PacketReader r, byte[] power, byte[] party, byte[] kind)
+    {
+        int n = r.Has(1) ? r.U8() : 0;
+        var c = 0;
+        for (var k = 0; k < n && r.Has(3); k++)
+        {
+            var (f, id, kd) = (r.U8(), r.U8(), r.U8());
+            if (c < power.Length && f < FactionTable.MaxStory && id < FactionTable.Max)
+                (power[c], party[c], kind[c++]) = (f, id, kd);
+        }
+        return c;
     }
 
     private static void ReadFactionPairs(ref PacketReader r, byte[] of)
@@ -777,7 +844,16 @@ public sealed partial class Game
             case FactionOp.Answer:
             case FactionOp.SetRank:
             case FactionOp.Stance:
+            case FactionOp.Pact:
+            case FactionOp.PactAnswer:
                 w.U8((byte)a).U8((byte)b);
+                break;
+            case FactionOp.PactBreak:
+                w.U8((byte)a);
+                break;
+            case FactionOp.ContractTake:
+            case FactionOp.ContractDrop:
+                w.U8((byte)a).U16((ushort)b);
                 break;
         }
         if (IsServer)

@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front under the hood, inset 1.75 m, coil/hydraulic, wing 0.5, cab style kiosk, language cabin standard 2.37 m, flare 0.07, plain 0.9, brow 0.77 1 m, tail 0.84 1 m, door left, cab cabin capsule, nose flat, fitting roof sign, wear age 0.85 (5 rusty, 3 dirty, 0 sooty, 0 patched, 0 rusted out), body hutch, cab cab-over, nose flat, rear bare, under stilts, layout hutch 4 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Scam Gun Wagon 1",
-  "group": "The Call Centre",
+  "group": "Scam",
   "description": "A gun wagon: a flat nose, a cab-over, an ammo hutch and a stern gun on a flat deck. 1 gun.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#2a2c30"},
@@ -105,9 +105,9 @@
     {"part": "Ammo Socket", "on": 84, "socket": "top", "by": "bottom"},
     {"part": "Lever", "on": 92, "socket": "top", "by": "-y"},
     {"part": "Hull Loft (decoS XHWAWbW0)", "on": 35, "socket": "top", "by": "base", "paint": "#9aa0a6"},
-    {"part": "Prize Wheel", "on": 63, "socket": "front00", "by": "base"},
-    {"part": "Office Phone", "on": 76, "socket": "front00", "by": "base"},
-    {"part": "Phone Mast", "on": 51, "socket": "front33", "by": "base"}
+    {"part": "Traffic Cone", "on": 56, "socket": "front03", "by": "base"},
+    {"part": "Traffic Cone", "on": 60, "socket": "front00", "by": "base"},
+    {"part": "Loudhailer", "on": 56, "socket": "front00", "by": "base"}
   ],
   "wires": [[32, 33], [33, 27], [82, 91], [91, 84], [98, 95]],
   "hoses": [[96, 97]],

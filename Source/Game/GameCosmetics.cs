@@ -1,81 +1,20 @@
 namespace CallOfSlop;
 
-/// <summary>A player's cosmetic profile as it travels in the roster: prestige, account level, hat and look (Appearance.cs).</summary>
-public readonly record struct PlayerCosmetics(byte Prestige, byte Level, HatId Hat, PlayerLook Look = default, byte Uniform = 0, byte Eva = 0);
+/// <summary>A player's cosmetic profile as it travels in the roster: look (Appearance.cs), uniform and spacewalk gear.</summary>
+public readonly record struct PlayerCosmetics(PlayerLook Look = default, byte Uniform = 0, byte Eva = 0);
 
 /// <summary>
-/// Prestige and hats on the network (Source/Cosmetics/Cosmetics.cs). Cosmetic only: nothing here touches gameplay.
-/// A client reports its prestige and level after its name in <see cref="Msg.Hello"/>; the server believes it only for
-/// what it shows (the scoreboard's "P2 L13") and to check which hats that player may wear. The roster carries
-/// prestige, level, hat and look for everyone (3 + <see cref="PlayerLook.WireBytes"/> bytes a player, protocol 45), so a
-/// joiner sees everyone's APPEARANCE picks from the roster it gets on joining. Bots never have a prestige, a level tag or a hat.
-/// Clients also append their prestige and level now to <see cref="Msg.Loadout"/> (sent on joining and every respawn);
-/// the server rebroadcasts the roster only when they changed (<see cref="ServerUpdateProfile"/>), never per snapshot.
+/// Looks on the network. Cosmetic only: nothing here touches gameplay. The roster carries each player's look, uniform and
+/// spacewalk gear (<see cref="PlayerLook.WireBytes"/> + 2 bytes a player), so a joiner sees everyone's APPEARANCE picks from
+/// the roster it gets on joining. (Prestige, the account level and the prestige hats that went before them were removed
+/// with levelling, protocol 348.)
 /// </summary>
 public sealed partial class Game
 {
     private readonly Dictionary<byte, PlayerCosmetics> _cosmetics = new();
 
-    /// <summary>The local profile appended to the Hello: prestige, then level.</summary>
-    private void WriteHelloProfile(PacketWriter w)
-    {
-        var prog = Progress;
-        w.U8((byte)Math.Clamp(prog?.Prestige ?? 0, 0, Cosmetics.MaxPrestige)).U8((byte)Math.Clamp(prog?.Level ?? 1, 1, 255));
-    }
-
-    /// <summary>Server: reads the Hello's profile (absent from a bare Hello: 0 / unknown).</summary>
-    private void ReadHelloProfile(Player p, ref PacketReader r)
-    {
-        var prestige = r.Has(1) ? r.U8() : (byte)0;
-        var level = r.Has(1) ? r.U8() : (byte)0;
-        SetProfile(p, prestige, level);
-    }
-
-    private static void SetProfile(Player p, int prestige, int level)
-    {
-        if (p.Bot != null)
-        {
-            p.Prestige = p.Level = 0;
-            p.Hat = HatId.None;
-            p.Look = default;
-            return;
-        }
-        p.Prestige = (byte)Math.Clamp(prestige, 0, Cosmetics.MaxPrestige);
-        p.Level = (byte)Math.Clamp(level, 0, CallOfSlop.Progress.MaxLevel);
-        if (!Cosmetics.IsUnlocked(p.Hat, p.Prestige))
-            p.Hat = HatId.None;
-    }
-
-    /// <summary>Server: the host's own player takes its prestige and level from the local progression. True if they changed.</summary>
-    private bool RefreshHostProfile()
-    {
-        if (!IsServer || !Players.TryGetValue(LocalId, out var me) || me.Bot != null || Progress is not { } prog)
-            return false;
-        var (prestige, level) = (me.Prestige, me.Level);
-        SetProfile(me, prog.Prestige, prog.Level);
-        return me.Prestige != prestige || me.Level != level;
-    }
-
-    /// <summary>
-    /// Server: a client's prestige and level now (from its loadout packet). Tells everyone (the roster) only when they
-    /// changed, so a level-up shows on every scoreboard; nothing is sent per snapshot. Bots are ignored.
-    /// </summary>
-    public void ServerUpdateProfile(Player p, int prestige, int level)
-    {
-        if (!IsServer || p.Bot != null)
-            return;
-        var (oldPrestige, oldLevel) = (p.Prestige, p.Level);
-        SetProfile(p, prestige, level);
-        if (p.Prestige != oldPrestige || p.Level != oldLevel)
-            BroadcastRoster();
-    }
-
     private static void WriteRosterCosmetics(PacketWriter w, Player p)
     {
-        if (p.Bot != null)
-            w.U8(0).U8(0).U8(0);
-        else
-            w.U8(p.Prestige).U8(p.Level).U8((byte)p.Hat);
         (p.Bot != null ? default : p.Look).Pack(w); // protocol 45: the look (Appearance.cs; bots: Auto)
         w.U8(p.Uniform); // protocol 257: the uniform the server dresses them in (GameUniforms.cs; bots too: the colony's staff)
         w.U8(p.Eva); // protocol 336: their spacewalk gear (a space suit, an MMU on it: GameSandboxEva.cs)
@@ -83,20 +22,12 @@ public sealed partial class Game
 
     private static PlayerCosmetics ReadRosterCosmetics(ref PacketReader r, bool isBot)
     {
-        var prestige = r.Has(1) ? r.U8() : (byte)0;
-        var level = r.Has(1) ? r.U8() : (byte)0;
-        var hat = r.Has(1) ? (HatId)r.U8() : HatId.None;
         var look = PlayerLook.Unpack(ref r); // sanitised: an unknown variant draws as Auto
         var uniform = r.Has(1) ? r.U8() : (byte)0;
         if (Uniforms.Get(uniform) == null)
             uniform = 0; // (a uniform this build doesn't have: plain clothes)
         var eva = r.Has(1) ? (byte)(r.U8() & (Eva.Suit | Eva.Mmu)) : (byte)0;
-        if (isBot)
-            return new PlayerCosmetics(0, 0, HatId.None, default, uniform, eva);
-        prestige = (byte)Math.Min((int)prestige, Cosmetics.MaxPrestige);
-        if (!Cosmetics.IsUnlocked(hat, prestige))
-            hat = HatId.None; // unknown id or not earned: draw nothing
-        return new PlayerCosmetics(prestige, level, hat, look, uniform, eva);
+        return isBot ? new PlayerCosmetics(default, uniform, eva) : new PlayerCosmetics(look, uniform, eva);
     }
 
     private static void ApplyCosmetics(Player p, in PlayerCosmetics c)
@@ -107,29 +38,7 @@ public sealed partial class Game
         p.Eva = c.Eva;
         if (p.Bot != null)
             return;
-        p.Prestige = c.Prestige;
-        p.Level = c.Level;
-        p.Hat = c.Hat;
         p.Look = c.Look;
-    }
-
-    /// <summary>
-    /// Server: puts a hat on a player if they may wear it (a person, and <see cref="Cosmetics.IsUnlocked"/> for the prestige
-    /// they reported); anything else becomes <see cref="HatId.None"/>. Tells everyone (the roster) when it changes.
-    /// Returns the hat actually worn. For the loadout code (the hat sent with the loadout).
-    /// </summary>
-    public HatId ServerSetHat(Player p, HatId hat)
-    {
-        if (!IsServer)
-            return p.Hat;
-        var levelChanged = p.Id == LocalId && RefreshHostProfile(); // the host's level-up shows on everyone's scoreboard
-        var worn = p.Bot == null && Cosmetics.IsUnlocked(hat, p.Prestige) ? hat : HatId.None;
-        if (worn != p.Hat || levelChanged)
-        {
-            p.Hat = worn;
-            BroadcastRoster();
-        }
-        return worn;
     }
 
     /// <summary>
@@ -147,15 +56,5 @@ public sealed partial class Game
             BroadcastRoster();
         }
         return worn;
-    }
-
-    /// <summary>Scoreboard tag after a person's name: "  [P2 L13]", or "" for bots and players who didn't report a level.</summary>
-    public string RankTag(Player p)
-    {
-        if (p.Bot != null)
-            return "";
-        if (p.Id == LocalId && Progress is { } prog)
-            return $"  [{CallOfSlop.Progress.RankLabel(prog.Prestige, prog.Level)}]";
-        return p.Level > 0 ? $"  [{CallOfSlop.Progress.RankLabel(p.Prestige, p.Level)}]" : "";
     }
 }

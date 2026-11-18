@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 5 body 5 kit 5 wear 5, chassis 3 axles, pusher 1.5 m, front under the hood, inset 1.25 m, leaf/leaf/leaf, wing 0.75, cab style box, language van heavy 2.48 m, flare 0.19, plain 0.6, brow 0.75 1.25 m, tail 0.79 1 m, door left, cab cabin cab, nose flat, lopsided right, wear age 0.49 (2 rusty, 4 dirty, 0 sooty, 0 patched, 0 rusted out), body gun bay+gun bed, cab enclosed, nose long hood, rear hitch, under stilts, sides walls, layout gun bay 2 m+gun bed 3 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Scam Gun Wagon 5",
-  "group": "The Call Centre",
+  "group": "Scam",
   "description": "A gun wagon: a long hood, an enclosed cab, a gun behind the cab, a gun bed, a tow hitch. 2 guns.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#2a2c30"},
@@ -137,9 +137,10 @@
     {"part": "Plate Steel 0.5 m", "weld": {"on": 119, "pos": [-1.057, 0.638, 4.252], "rot": [-0.0215, 0.0022, 0.7056, 0.7082]}, "paint": "#b0b4b8"},
     {"part": "Phone Mast", "on": 124, "socket": "front00", "by": "base"},
     {"part": "Loudhailer", "on": 123, "socket": "front01", "by": "base"},
-    {"part": "Call Headset", "on": 125, "socket": "top", "by": "base"},
-    {"part": "Office Phone", "on": 86, "socket": "front", "by": "base"},
-    {"part": "Office Phone", "on": 68, "socket": "front", "by": "base"}
+    {"part": "Loudhailer", "on": 125, "socket": "top", "by": "base"},
+    {"part": "Hubcap Plate", "on": 36, "socket": "top", "by": "base"},
+    {"part": "Loudhailer", "on": 86, "socket": "front", "by": "base"},
+    {"part": "Loudhailer", "on": 58, "socket": "front13", "by": "base"}
   ],
   "wires": [[33, 34], [34, 28], [95, 102], [102, 97], [105, 116], [116, 107]],
   "links": [

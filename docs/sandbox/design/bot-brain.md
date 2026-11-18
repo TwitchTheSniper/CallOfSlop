@@ -215,6 +215,8 @@ run at once (one per group of crew); the set changes as the fight goes.
 | --- | --- | --- |
 | **Hold stations** | Pilot keeps flying, evades and tries to throw boarders off (rolls, burns); gunners keep firing at what is outside | Kill the pilot first: the ship stops |
 | **Repel** | Guards and spare crew take their guns, hold choke points between the breach and the bridge, engine room and magazine (interior rooms, CrewNav's narrowest edges) | Fight; grenades; come in by another way |
+
+Built 2026-11-18 (`Game/GameCrewDefend.cs`, notes "Boarded crews fight back"): under every act but Surrender and Abandon the off-duty crew take long guns from the lockers and hold the bridge and the breach; Repel adds the work hands and, outnumbered, the gunners.
 | **Lock down** | Close and lock doors on the way to vital rooms, stop lifts | Cut through, blow the door |
 | **Call for help** | Radio: the same faction's crewed bodies within 3 km turn to come (their captain's Follow) | Kill the radio part or jam it (if jamming exists), or be quick |
 | **Dump** | Eject cargo (open the hold, push crates out), wipe a route computer: denies the prize | Reach the hold first |

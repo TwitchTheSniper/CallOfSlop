@@ -95,6 +95,7 @@ public sealed class WorldSnapshot
     public byte[]? CrewFactions; // how each NPC faction kind sees each player faction (Game/GameCrewFactions.cs; in the Crew section), null: none met
     public byte[]? Fleet; // the NPC powers' groups and admirals (CrewFleet.SaveBytes; the FLET section)
     public byte[]? Powers; // the NPC powers' relations, pacts and news (PowerRelations.SaveBytes; the POWR section)
+    public byte[]? Controllers; // the powers' controllers: stocks, places, ships, missions (PowerControllers.SaveBytes; the CTRL section, after POWR)
     public byte[]? LinkLedger; // the host's link ledger (LinkLedger.SaveBytes; the LINK section), the main world's only
     public string Start = ""; // the story start the world was made with (GameStoryStart.cs; "": the default)
     public string[] FactionNames = []; // player factions by id ("": free; the players' records say who is in which)
@@ -148,11 +149,6 @@ public sealed class WorldPlayer
     public bool FactionLeader;
     public byte FactionRank; // their rank in it (FactionRanks.Player; saved in the FCT2 section)
     public bool Opened; // has been through the survival opening here (GameSandboxOpening.cs; saved in the Opening section)
-    public TutorialState TutorialState; // the warden's induction (GameTutorial.cs): not started, running, finished or skipped, and at which step
-    public byte TutorialStep;
-    public byte DepotState; // the Orbital Depot's run (GameDepot.cs; saved in the Depot section): none, reported, a step, done
-    public byte QuarryState; // the first Ministry duty's run (GameQuarry.cs; saved in the Quarry section): none, reported, a step, done
-    public ushort DepotLander; // ...and their lander's construct (stable in a save; 0: none)
     public bool Fallen; // dead for good in a permadeath world (GameSandboxDeath.cs; saved in the Fate section)
     public bool Died; // dead when last seen: their next spawn is a respawn, at their checkpoint
     public ushort BunkBody; // their checkpoint: the bunk they last lay in (its construct, stable in a save; 0: none), segment and place in its rest frame

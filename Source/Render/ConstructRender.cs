@@ -41,6 +41,9 @@ public static partial class ConstructRender
     public static Construct? WeldBodyA, WeldBodyB;
     public static int WeldPartA = -1, WeldPartB = -1;
     public static Vector3 WeldOnA, WeldOnB;
+    // The linking tool aimed at a link (user, 2026-11-17): the two devices it connects, outlined (Program.SandboxLinks.cs; a world link's ends may lie on two bodies).
+    public static Construct? LinkEndBodyA, LinkEndBodyB;
+    public static int LinkEndPartA = -1, LinkEndPartB = -1;
     public static bool WeldValid;
     public static bool ShowWires; // the linking tool is out: the wires are drawn (only then)
     public static ushort WireFromBody; // a wire in progress starts at this part
@@ -196,6 +199,8 @@ public static partial class ConstructRender
         SideOutlines = MotionBoxes = 0;
         WeldBodyA = WeldBodyB = null;
         WeldPartA = WeldPartB = -1;
+        LinkEndBodyA = LinkEndBodyB = null;
+        LinkEndPartA = LinkEndPartB = -1;
         ConnectorRender.NoCollideShow = false;
         SocketWeldRender.Clear();
         ShowWires = false;
@@ -211,6 +216,7 @@ public static partial class ConstructRender
     public static void Draw(Renderer gfx, ConstructWorld world, float alpha, bool blendTicks)
     {
         var n = 0;
+        _fxHost = blendTicks; // (blendTicks is IsServer: the host's flames burn by each jet's own level; unset, every flame on the host burned by ThrustShow, so a turn lit every jet)
         if (!CameraFeeds.InPass) // (the seconds this frame's particles emit for: a burning part's flames, a working stack's smoke; nothing set it, so neither showed)
         {
             _fxDt = (float)Math.Clamp(Now - _fxLast, 0, 0.1);
@@ -684,6 +690,8 @@ public static partial class ConstructRender
             var tint = ConstructPaint.BoxColour(p.Paint, in box) * shade; // (the paint tool: a painted part's paintable boxes, ConstructPaint.cs)
             if (lit)
                 gfx.Draw(model, glow, opacity, mode: 2, shape: box.Shape);
+            else if (box.Shows != 0)
+                gfx.Draw(model, !p.Broken && (p.Out >= 0.5f) == (box.Shows == 1) ? box.Color : box.Color * (0.18f * shade), opacity, mode: 2, shape: box.Shape); // (a switch's state lamp: lit in its colour while on, or while off, dark otherwise)
             else if (box.Way != 0 && routerOn && (routerStuck ? MathF.Sin((float)Now * MathF.Tau * 3f) > 0 : routerWay == box.Way))
                 gfx.Draw(model, routerStuck ? RouterStuck : routerState == 2 ? RouterStore : RouterOrder, opacity, mode: 2, shape: box.Shape); // (its way lit: orange to an order, white to storage; every way blinking red while a piece is stuck)
             else if (box.Work == BoxWork.Glow && working)
@@ -1327,6 +1335,10 @@ public static partial class ConstructRender
                 gfx.Draw(Matrix4x4.CreateScale(0.07f) * Matrix4x4.CreateTranslation((WeldOnA + WeldOnB) * 0.5f), WeldValid ? new Vector3(1f, 0.7f, 0.25f) : colour, 0.9f * pulse, mode: 2);
             }
         }
+        if (LinkEndBodyA is { } la && LinkEndPartA >= 0 && LinkEndPartA < la.PartCount)
+            Outline(gfx, la, LinkEndPartA, new Vector3(0.4f, 0.85f, 1f), 0.25f + 0.1f * pulse);
+        if (LinkEndBodyB is { } lb && LinkEndPartB >= 0 && LinkEndPartB < lb.PartCount)
+            Outline(gfx, lb, LinkEndPartB, new Vector3(0.4f, 0.85f, 1f), 0.25f + 0.1f * pulse);
         if (RemoverSel is { Count: > 0 } sel)
         {
             // The remover's marks: every selected part outlined red (its links are drawn by RouteRender.DrawSelected).

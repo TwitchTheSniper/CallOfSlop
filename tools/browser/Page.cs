@@ -30,6 +30,7 @@ internal sealed class Page : IDisposable
     private bool _awake;
     private volatile bool _closing;
     private bool _handsOn;
+    private volatile bool _failed; // a pfail was said: the player playing takes it back (a frame that failed once and loaded on a retry)
 
     public Page(int slot, string id, double seconds, int width, int height, string block, bool ads)
     {
@@ -39,13 +40,21 @@ internal sealed class Page : IDisposable
         var html = Html(id, seconds, width, height);
         _web = new ChromiumWebBrowser(Address, automaticallyCreateBrowser: false)
         {
-            RenderHandler = new Painter(_block),
+            RenderHandler = new Painter(_block, slot),
             AudioHandler = _audioHandler = new PageSound(_block, slot),
             RequestHandler = new Requests(html, new AdResources(_ads)),
             LifeSpanHandler = new NoPopups(),
             DisplayHandler = new Console_(this),
             DialogHandler = null,
             MenuHandler = null,
+        };
+        _web.LoadError += (_, e) =>
+        {
+            // (the page's own document, or the player's frame; an advert's frame failing, or a request the ad list refused, is no fault)
+            if (e.ErrorCode is CefErrorCode.Aborted or CefErrorCode.BlockedByClient || !(e.Frame.IsMain || e.FailedUrl.Contains("/embed/", StringComparison.Ordinal)))
+                return;
+            _failed = true;
+            Program.Say($"pfail {_slot} {(e.Frame.IsMain ? "the page" : "YouTube's player")} didn't load ({e.ErrorCode})");
         };
         _web.Size = new System.Drawing.Size(width, height);
         new Thread(() => PageInput.Run(_block, _web, keys: false, () => _closing, Hands)) { IsBackground = true, Name = "Mouse " + slot }.Start();
@@ -63,6 +72,11 @@ internal sealed class Page : IDisposable
         if (!message.StartsWith(Report, StringComparison.Ordinal))
             return;
         var body = message[Report.Length..];
+        if (body == "noapi")
+        {
+            Program.Say($"pfail {_slot} YouTube's player script didn't load (no network, or youtube.com is blocked)");
+            return;
+        }
         Wake();
         if (body.StartsWith("audio ", StringComparison.Ordinal))
         {
@@ -84,6 +98,11 @@ internal sealed class Page : IDisposable
             return;
         }
         Program.Say($"s {_slot} {body}");
+        if (_failed && body.StartsWith("1 ", StringComparison.Ordinal))
+        {
+            _failed = false;
+            Program.Say($"pok {_slot}");
+        }
         Probe(body);
         AdStep();
     }
@@ -261,7 +280,7 @@ internal sealed class Page : IDisposable
         }
         setInterval(report, 500);
         </script>
-        <script src="https://www.youtube.com/iframe_api"></script>
+        <script src="https://www.youtube.com/iframe_api" onerror="say('noapi')"></script>
         </body></html>
         """);
 

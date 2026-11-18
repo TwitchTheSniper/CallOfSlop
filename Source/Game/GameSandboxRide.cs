@@ -131,13 +131,18 @@ public sealed partial class Game
     }
 
     private Construct? _rideDrawn;
-    private Vector3 _rideTickPos;
-    private Quaternion _rideTickRot;
+    private Construct[] _rideDrawnSet = new Construct[8]; // (the ridden body and the bodies that move with it: its carrier and what that carries)
+    private Vector3[] _rideTickPosSet = new Vector3[8];
+    private Quaternion[] _rideTickRotSet = new Quaternion[8];
+    private int _rideDrawnCount;
 
     /// <summary>
     /// The host's input and overlays see the construct it rides as it is drawn this frame: a host draws between ticks, and at
     /// 200 m/s the tick's pose is up to 3 m from the drawn one, so an aim ray from the drawn eye would miss the parts it is on.
-    /// (A client's bodies are at their drawn pose already.) <see cref="RideTickPose"/> puts the tick's pose back.
+    /// The bodies that move with it go to their drawn pose too: the carrier it is docked in and everything that carrier
+    /// carries (a Limpet in the Zero Day's bay). Left at the tick's pose, the carrier's keel stood up to a tick's travel
+    /// through the docked craft's floor and the look jumped between the couch, the floor and the keel under them.
+    /// (A client's bodies are at their drawn pose already.) <see cref="RideTickPose"/> puts the tick's poses back.
     /// </summary>
     internal void RideDrawnPose()
     {
@@ -147,17 +152,55 @@ public sealed partial class Game
         if (Constructs.Get(body) is not { } c)
             return;
         _rideDrawn = c;
-        (_rideTickPos, _rideTickRot) = (c.Pos, c.Rot);
+        _rideDrawnCount = 0;
+        RideDrawnAdd(c);
+        var root = c.CarriedBy != 0 && Constructs.Get(c.CarriedBy) is { } carrier ? carrier : c; // (a carrier carries only while it isn't carried itself: ConstructCargo)
+        if (root != c)
+            RideDrawnAdd(root);
+        if (root.CargoCount > 0 || root != c) // (the carrier's cargo list counts what it carries: most bodies carry nothing)
+            foreach (var b in Constructs.Bodies) // (a list: no allocation)
+                if (b.CarriedBy == root.Id && b != c)
+                    RideDrawnAdd(b);
+        Constructs.GridStale(); // (the broadphase sees these bodies where they are drawn until RideTickPose: one built in this window must not serve the next tick)
+    }
+
+    private void RideDrawnAdd(Construct c)
+    {
+        if (_rideDrawnCount == _rideDrawnSet.Length)
+        {
+            Array.Resize(ref _rideDrawnSet, _rideDrawnCount * 2); // (rare: a carrier with more craft aboard than any before; kept from then on)
+            Array.Resize(ref _rideTickPosSet, _rideDrawnCount * 2);
+            Array.Resize(ref _rideTickRotSet, _rideDrawnCount * 2);
+        }
+        _rideDrawnSet[_rideDrawnCount] = c;
+        _rideTickPosSet[_rideDrawnCount] = c.Pos;
+        _rideTickRotSet[_rideDrawnCount] = c.Rot;
+        _rideDrawnCount++;
         c.Pos = Vector3.Lerp(c.PrevPos, c.Pos, _alpha);
         c.Rot = Quaternion.Normalize(Quaternion.Slerp(c.PrevRot, c.Rot, _alpha));
     }
 
     internal void RideTickPose()
     {
-        if (_rideDrawn is not { } c)
+        if (_rideDrawn == null)
             return;
-        (c.Pos, c.Rot) = (_rideTickPos, _rideTickRot);
+        for (var k = 0; k < _rideDrawnCount; k++)
+        {
+            (_rideDrawnSet[k].Pos, _rideDrawnSet[k].Rot) = (_rideTickPosSet[k], _rideTickRotSet[k]);
+            _rideDrawnSet[k] = null!;
+        }
+        _rideDrawnCount = 0;
         _rideDrawn = null;
+        Constructs.GridStale(); // (a grid built at the drawn poses goes: the server's next query builds it from the tick's)
+    }
+
+    /// <summary>Is <paramref name="c"/> at its drawn pose now (RideDrawnPose's set)?</summary>
+    private bool RideDrawnHas(Construct c)
+    {
+        for (var k = 0; k < _rideDrawnCount; k++)
+            if (_rideDrawnSet[k] == c)
+                return true;
+        return false;
     }
 
     /// <summary>
@@ -180,7 +223,8 @@ public sealed partial class Game
     /// constructs are hit, and reach measured, where the last tick put them: on a ship at orbital speed that is metres apart,
     /// so a part beside a seated or standing rider read as too far away, or the ray missed it. A rider's eye moves with the
     /// construct it is in (in the construct's frame, so the ship's speed drops out); anyone else's to their own tick position.
-    /// A client draws its constructs where it hits them already, so nothing changes there.
+    /// A client draws its constructs where it hits them already, so nothing changes there. Inside <see cref="RideDrawnPose"/>
+    /// the ridden body stands at its drawn pose, so the eye stays where it is drawn.
     /// </summary>
     internal void AimToTick(Player me, ref Vector3 eye, ref Vector3 dir)
     {
@@ -190,6 +234,8 @@ public sealed partial class Game
         var body = h.Seated ? h.SeatBody : me.Sim.RideBody;
         if (body != 0 && Constructs.Get(body) is { } c)
         {
+            if (RideDrawnHas(c))
+                return; // (RideDrawnPose has posed it with the ridden body, a seat's craft docked in a carrier too: RideDrawnPose has put this body where it is drawn, under the drawn eye already: moving the eye too put it (a - a^2) of a tick's travel off, a metre at orbital speed, so the look flickered on and off seats and ladders as the frame's blend changed)
             var pos = Vector3.Lerp(c.PrevPos, c.Pos, _alpha);
             var rot = Quaternion.Slerp(c.PrevRot, c.Rot, _alpha);
             var turn = Quaternion.Normalize(c.Rot * Quaternion.Conjugate(rot));
@@ -211,6 +257,32 @@ public sealed partial class Game
             ConstructRide.Place(ref p.Sim, c);
             p.Sim.Position += d;
         }
+    }
+
+    /// <summary>
+    /// pg02: the local rider's eye as <see cref="SandboxFrameRender"/> will draw it this frame (the feet in the construct's drawn
+    /// frame), for what runs before it: the physics gun's client simulation. <see cref="Player.RenderEye"/> is still at the
+    /// tick's pose then, metres from the drawn deck at a ship's speed. Not riding: the render eye.
+    /// </summary>
+    internal Vector3 RiderDrawnEye(Player me)
+    {
+        var body = me.Sim.RideBody;
+        var seg = me.Sim.RideSeg;
+        if (me.Sim.RideUp == Vector3.Zero || body == 0 || Constructs.Get(body) is not { } c || seg > c.JointCount)
+            return me.RenderEye;
+        var local = me.Sim.RideLocal;
+        if (me.PrevRideBody == body && me.PrevRideSeg == seg)
+            local = Vector3.Lerp(me.PrevRideLocal, local, _alpha);
+        DrawnFrame(c, seg, out var q, out var t);
+        var feet = t + Vector3.Transform(local, q) + (IsServer ? Vector3.Zero : _correction);
+        return feet + Vector3.Transform(new Vector3(0, me.RenderEyeHeight, 0), ConstructRide.RiderRot(q, Vector3.Normalize(me.Sim.RideUp)));
+    }
+
+    /// <summary>pg02: the local rider's look taken into the construct's drawn frame now (as the ride render does after), so the physics gun's simulation aims as drawn.</summary>
+    internal void RideLookNow()
+    {
+        if (Local is { } me && me.Sim.RideUp != Vector3.Zero)
+            RideLookSync();
     }
 
     /// <summary>
@@ -262,7 +334,10 @@ public sealed partial class Game
             return up;
         if (Local is { RenderRide: true, Alive: true } me)
             up = Vector3.Normalize(Vector3.Transform(Vector3.UnitY, me.RenderRideRot));
-        var body = Local is { RenderRide: true } ? Local.Sim.RideBody : (ushort)0;
+        var seatUp = SeatFrameUp; // (seated where the look is kept in the seat's frame: its up, GameSandbox.cs)
+        if (seatUp != Vector3.Zero)
+            up = Vector3.Normalize(seatUp);
+        var body = Local is { RenderRide: true } ? Local.Sim.RideBody : seatUp != Vector3.Zero ? (ushort)(_seatFrameKey >> 16) : (ushort)0;
         var key = _rideLookUp;
         if ((body != _rideCamBody || key != _rideCamUp) && _rideCamWas != Vector3.Zero)
             _rideCamTurn = ConstructRide.TurnBetween(up, _rideCamWas);

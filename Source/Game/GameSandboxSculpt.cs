@@ -68,7 +68,7 @@ public sealed partial class Game
         if (SculptRefusal() is { } off)
             return off;
         var table = DiggingTable.Current;
-        if (SegmentDistance(at, to, eye) > table.Reach + 0.75f)
+        if (SegmentDistance(at, to, eye) > table.Reach * ShellFrames.ScaleOf(p) + 0.75f) // (a robot shell's frame reaches as far as its size)
             return "too far away";
         if (Vector3.Distance(at, to) > GroundShape.MaxLength)
             return $"too long: a slope is at most {GroundShape.MaxLength:0} m";
@@ -85,6 +85,11 @@ public sealed partial class Game
         if (e.Ops.Count >= table.LogCap)
             return $"the ground has taken all the changes it can this match ({e.Ops.Count:N0}): nothing more can be dug or filled";
         var inv = SandboxInv.Of(p.Id);
+        if (kind == DigKind.Scoop && ShellDrillBored(p, at))
+        {
+            ShellDrillTap(p, at, now); // (a drill arm's hole is as deep as a Drill Module's: below it, the arm only taps the ore, GameShellHopper.cs)
+            return null;
+        }
         if (GroundShape.IsShape(kind))
             return SculptShape(table, e, inv, new DigOp(kind, at, GroundShape.IsGrade(kind) ? table.ShapeRadius : table.CleanRadius, To: to).Quantised);
         var op = new DigOp(kind, at, SculptRadius(table, p.Id, SandboxHands.InfiniteParts)).Quantised;
@@ -103,6 +108,8 @@ public sealed partial class Game
                     return $"you can't carry any more {DiggingTable.KindNames[k]} ({CallOfSlop.SandboxInventory.MaxCount})";
         if (Dig(op) == 0)
             return "the ground there can't be cut any finer";
+        if (p.InShell)
+            ShellDrillTap(p, op.At, SandboxNow); // (a shell's drill arm: the deposit under the accepted scoop into its ore hopper, GameShellHopper.cs)
         for (var k = 0; k < volume.Length; k++)
         {
             var whole = inv.AddBulk(MaterialOf((GroundKind)k), volume[k] * table.Units[k]);

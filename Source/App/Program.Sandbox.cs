@@ -174,6 +174,8 @@ public static unsafe partial class Program
             SeatedRadar(g, me); // (the radar key: Program.SandboxRadar.cs)
             if (Pressed(GameAction.SeatDampeners) && g.Constructs.Get(h.SeatBody) is { } ship && ConstructFlight.HasDampeners(ship))
                 g.SandboxSend(CActKind.Dampeners, body: h.SeatBody); // (a ship's inertia dampeners off or on: ConstructFlight.ToggleDampeners)
+            if (Pressed(GameAction.SeatMouseSteer) && g.Constructs.Get(h.SeatBody) is { } steered && ConstructFlight.HasMouseSteer(steered))
+                g.SandboxSend(CActKind.MouseSteer, body: h.SeatBody); // (the mouse takes the nose or lets it go: ConstructFlight.ToggleMouseSteer)
             return true;
         }
         if (_sbSeatKeys > 0)
@@ -321,6 +323,8 @@ public static unsafe partial class Program
                     _ when ConstructEdits.WreckedAlone(hit.Body) => SandboxKeys.Line(d.Name, SandboxKeys.Join($"wrecked, {d.Mass:0} kg", carriedIn), "haul it to a Recycler"),
                     _ => SandboxKeys.Line(d.Name, hp, null, !fits || aim.Verdict != AimVerdict.Can ? null : $"hold {SandboxKeys.Aim}: {(salvage ? "salvage" : "take off")}"),
                 };
+                if (HullHoles.IsHoled(d) && _sbLookText != null)
+                    _sbLookText = _sbLookText.Replace(d.Name, HullHoles.Shown(d)); // (a cut or sealed part: its file part's name, not its key)
                 if (g.CrewLook(hit.Body.Id) is { } crewNote)
                     _sbLookText = $"{_sbLookText}  ({crewNote})"; // (a crewed body: its faction kind and crew, GameCrew.cs)
                 if (aim.Verdict == AimVerdict.Refused)
@@ -1292,7 +1296,6 @@ public static unsafe partial class Program
         AllocProfile.Mark("sb: beams, sounds, ambience");
         DrawPhysGunBeams(g, now); // the physics guns' beams (Program.PhysicsGun.cs)
         g.SandboxSounds(now); // horns (GameSandbox.cs)
-        g.ColonyAlarmSounds(now); // the penal colony's lockdown siren (GameColonyLockdown.cs)
         g.StoryBabbleSounds(now); // the story people murmur their lines (GameStoryBabble.cs)
         PartAmbience.Frame(g.Constructs, Gfx.CameraPosition, now, g.TickAlpha, g.IsServer, g.Audio); // smoke, steam, a tannoy, snow along the ground (PartAmbience.cs)
         g.EngineAudio.Pick(g.Constructs, Gfx.CameraPosition);

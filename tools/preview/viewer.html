@@ -282,16 +282,17 @@ else {
   const load = async e => { if (!cache.has(e.file)) { say("Loading " + e.name + "..."); cache.set(e.file, await (await fetch(e.file)).json()); } return cache.get(e.file); };
   try {
     const idx = await (await fetch("models/index.json")).json();
-    const partById = new Map(idx.parts.map(p => [p.id, p]));
+    const partById = new Map(idx.parts.map(p => [p.id, p])), noun = idx.noun || "ship";
+    sel.setAttribute("aria-label", "Choose a " + noun);
     for (const sh of idx.ships) opt(sel, sh.id, sh.name);
-    if (idx.loose.length) opt(sel, "loose", "Parts in no ship");
+    if (idx.loose.length) opt(sel, "loose", "Parts in no " + noun);
     sel.hidden = sel2.hidden = false;
     let current = null; // (the first picker's value whose second list is filled)
     const fill = async top => {
       if (current === top) return; current = top; sel2.innerHTML = "";
       const ship = idx.ships.find(s => s.id === top);
       if (ship) {
-        opt(sel2, top, "Whole ship");
+        opt(sel2, top, "Whole " + noun);
         const m = await load(ship);
         if (m.decks && m.decks.length) { const g = group(sel2, "Decks"); m.decks.forEach((d, i) => opt(g, top + "--deck-" + (i + 1), "Deck " + d[0])); }
         const g = group(sel2, "Parts");

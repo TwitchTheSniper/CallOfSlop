@@ -19,6 +19,14 @@ public static partial class ConstructRide
     /// <summary>The world a frame step finds its construct in (the game sets it before a player's step).</summary>
     public static ConstructWorld? Bodies;
 
+    /// <summary>
+    /// Set for one <see cref="Step"/> by World.SimulateMmu (docs/sandbox/EVA.md "Flying"): a worn MMU in vacuum floats in the
+    /// frame (no deck gravity, no footing's friction) and <see cref="MmuPush"/> (a world velocity change, the pack's this tick)
+    /// is added in it. Inside a moving ship the pack flies in the ship's own frame, so nothing about the ship's speed reaches it.
+    /// </summary>
+    internal static bool MmuFloat;
+    internal static Vector3 MmuPush;
+
     /// <summary>A frozen build's own floor is only ridden when its up leans further than this from the world's (cos 15 degrees): a level base needs no frame.</summary>
     public const float AnchoredLevel = 0.966f;
 
@@ -297,7 +305,7 @@ public static partial class ConstructRide
         }
         // The world still counts: carried into the map's geometry (a low bridge, a wall it scrapes past, the ground when they drop off a side) they come off at the deck's speed.
         var u = s.RideUpW;
-        var r = World.PlayerRadius;
+        var r = World.BodyRadius;
         var foot = s.Grounded ? WorldFootSlack : 0f;
         // (standing, the body's thin core only at a walk: stepping onto a steep panel's foot, the body leans out over the ground it left)
         var core = s.Grounded && surfaceVel.LengthSquared() < 4f ? 0.15f : r;
@@ -391,7 +399,7 @@ public static partial class ConstructRide
         var wn = Vector3.Transform(n, q);
         if (Vector3.Dot(wn, worldUp) < GripUp || Vector3.Dot(s.Velocity, wn) > 0.5f)
             return false;
-        var r = World.PlayerRadius;
+        var r = World.BodyRadius;
         var face = centre[ax] + sign * half[ax];
         var dist = (lf[ax] - face) * sign;
         // (the feet at this face, not inside a thick bar: a tall thing's long side is its up, and a body coming down on its end isn't boarding that)
@@ -423,12 +431,12 @@ public static partial class ConstructRide
         // Another construct that runs into them: a hit by its speed relative to their deck, as for anyone (GameSandbox.cs), and a hard one scrapes them off.
         var up = s.RideUp;
         var span = System.Runtime.InteropServices.CollectionsMarshal.AsSpan(shapes);
-        var p = s.RideLocal + up * World.PlayerRadius;
-        var e = s.RideLocal + up * MathF.Max(World.PlayerRadius, height - World.PlayerRadius);
+        var p = s.RideLocal + up * World.BodyRadius;
+        var e = s.RideLocal + up * MathF.Max(World.BodyRadius, height - World.BodyRadius);
         for (var i = 0; i < span.Length && i < _tags.Length; i++) // (the map's shapes in the list have no tag, and there can be more of them than tags)
         {
             var tag = _tags[i];
-            if (tag.Body == ride.Id || CapsuleContact.Separation(span[i], p, e, World.PlayerRadius, out var n, out var pt) > -0.01f)
+            if (tag.Body == ride.Id || CapsuleContact.Separation(span[i], p, e, World.BodyRadius, out var n, out var pt) > -0.01f)
                 continue;
             if (w.Get(tag.Body) is not { } o)
                 continue;
@@ -459,8 +467,8 @@ public static partial class ConstructRide
     {
         var shapes = SweptMover.Instance.FrameShapes;
         shapes.Clear();
-        var lo = Vector3.Min(feet, feet + up * World.PlayerHeight) - new Vector3(reach);
-        var hi = Vector3.Max(feet, feet + up * World.PlayerHeight) + new Vector3(reach);
+        var lo = Vector3.Min(feet, feet + up * World.BodyHeight) - new Vector3(reach);
+        var hi = Vector3.Max(feet, feet + up * World.BodyHeight) + new Vector3(reach);
         var mid = (lo + hi) * 0.5f;
         var radius = (hi - lo).Length() * 0.5f;
         c.SegPose(seg, out var qs, out var ts);
@@ -723,6 +731,14 @@ public static partial class ConstructRide
         var control = s.KnockTicks > 0
             ? (s.Grounded ? Knockback.StaggerGroundControl : Knockback.StaggerAirControl)
             : s.Grounded ? 14f : 3f;
+        var gravity = World.Gravity * World.GravityScale;
+        if (MmuFloat)
+        {
+            s.RideVel += Vector3.Transform(MmuPush, Quaternion.Conjugate(q)); // (the pack's push, into the segment's frame)
+            s.Grounded = false; // (never footing: it floats, and a floor stops it)
+            control = 0;
+            gravity = 0;
+        }
         // Carried by a moving segment under the feet (a lift deck, a turntable): moved with it in the body's frame, its
         // motion this tick at the feet (the velocity half a step on: a turn carries them round it, not out of it).
         var onVel = Vector3.Zero;
@@ -739,7 +755,7 @@ public static partial class ConstructRide
         var m = SweptMover.Instance;
         var reach = s.RideVel.Length() * World.TickDt + World.StepHeight + SweptMover.SnapDown + SweptMover.MinStepForward + 0.5f;
         Gather(w, c, s.RideSeg, s.RideLocal, up, reach);
-        m.FrameStep(ref s.RideLocal, ref s.RideVel, ref s.Grounded, ref s.Stance, up, wish * speed, control, World.Gravity * World.GravityScale,
+        m.FrameStep(ref s.RideLocal, ref s.RideVel, ref s.Grounded, ref s.Stance, up, wish * speed, control, gravity,
             cmd.Buttons, World.JumpSpeed * (s.MovePerk == PerkId.Parkour ? Perks.ParkourJump : 1f));
         _groundBody = null;
         _groundPart = -1;

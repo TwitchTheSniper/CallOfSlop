@@ -523,28 +523,28 @@
       "by": "back"
     },
     {
-      "part": "Magpie Locker",
+      "part": "Space Suit Locker",
       "on": 3,
       "socket": "suit0",
-      "by": "wall",
-      "paint": "#e0a020",
-      "finish": "worn paint"
+      "by": "wall"
     },
     {
-      "part": "Magpie Locker",
+      "part": "Space Suit Locker",
       "on": 3,
       "socket": "suit1",
-      "by": "wall",
-      "paint": "#e0a020",
-      "finish": "worn paint"
+      "by": "wall"
     },
     {
-      "part": "Magpie Locker",
+      "part": "MMU Dock",
       "on": 3,
-      "socket": "suit2",
-      "by": "wall",
-      "paint": "#e0a020",
-      "finish": "worn paint"
+      "socket": "mmuDock",
+      "by": "wall"
+    },
+    {
+      "part": "Manned Manoeuvring Unit",
+      "on": 79,
+      "socket": "mmu",
+      "by": "mount"
     },
     {
       "part": "Tool Rack",
@@ -560,7 +560,7 @@
     },
     {
       "part": "Robot Shell",
-      "on": 81,
+      "on": 82,
       "socket": "dock",
       "by": "back"
     },
@@ -572,7 +572,7 @@
     },
     {
       "part": "Robot Shell",
-      "on": 83,
+      "on": 84,
       "socket": "dock",
       "by": "back"
     },
@@ -584,7 +584,7 @@
     },
     {
       "part": "Robot Shell",
-      "on": 85,
+      "on": 86,
       "socket": "dock",
       "by": "back"
     },
@@ -1032,65 +1032,74 @@
       66
     ],
     [
-      88,
-      87
+      89,
+      88
     ],
     [
-      91,
-      89
-    ],
-    [
-      91,
+      92,
       90
     ],
     [
-      94,
-      92
+      92,
+      91
     ],
     [
-      94,
+      95,
       93
     ],
     [
       95,
-      97
+      94
     ],
     [
-      110,
-      108
+      96,
+      98
     ],
     [
-      110,
+      111,
       109
     ],
     [
-      113,
-      111
+      111,
+      110
     ],
     [
-      113,
+      114,
       112
     ],
     [
-      115,
-      114
+      114,
+      113
     ],
     [
-      134,
-      133
+      116,
+      115
     ],
     [
-      136,
-      135
+      135,
+      134
     ],
     [
-      139,
-      137
+      137,
+      136
     ],
     [
-      139,
+      140,
       138
+    ],
+    [
+      140,
+      139
     ]
+  ],
+  "links": [
+    {
+      "type": "pipe",
+      "from": 0,
+      "to": 79,
+      "fromPort": "Fuel out",
+      "toPort": "Fuel in"
+    }
   ],
   "conduit": true
 }

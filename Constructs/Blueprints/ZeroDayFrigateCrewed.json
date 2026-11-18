@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Zero Day Frigate (crewed)",
-  "description": "The Zero Day with an IT Department crew aboard: it lifts off, closes on the nearest player, you included, and fights with its railgun, turrets and torpedoes. Sit at its helm to take it.",
+  "description": "The Zero Day with a crew aboard: it lifts off, closes on the nearest player, you included, and fights with its railgun, turrets and torpedoes. Sit at its helm to take it.",
   "steps": [
     {
       "part": "Zero Day Keel"
@@ -601,12 +601,6 @@
       "by": "base"
     },
     {
-      "part": "Zero Day Boarding Ladder",
-      "on": 1,
-      "socket": "boarding",
-      "by": "hull"
-    },
-    {
       "part": "Zero Day Ladder",
       "on": 4,
       "socket": "ladder",
@@ -897,44 +891,40 @@
       }
     },
     {
-      "part": "Zero Day Locker",
+      "part": "Space Suit Locker",
       "on": 5,
       "socket": "suit0",
-      "by": "wall",
-      "paint": "#e0b020",
-      "finish": "worn paint"
+      "by": "wall"
     },
     {
-      "part": "Zero Day Locker",
+      "part": "Space Suit Locker",
       "on": 5,
       "socket": "suit1",
-      "by": "wall",
-      "paint": "#e0b020",
-      "finish": "worn paint"
+      "by": "wall"
     },
     {
-      "part": "Zero Day Locker",
+      "part": "Space Suit Locker",
       "on": 5,
       "socket": "suit2",
-      "by": "wall",
-      "paint": "#e0b020",
-      "finish": "worn paint"
+      "by": "wall"
     },
     {
-      "part": "Zero Day Locker",
-      "on": 5,
-      "socket": "suit3",
-      "by": "wall",
-      "paint": "#e0b020",
-      "finish": "worn paint"
-    },
-    {
-      "part": "Zero Day Locker",
+      "part": "Space Suit Locker",
       "on": 6,
       "socket": "airlockLocker",
-      "by": "wall",
-      "paint": "#e0b020",
-      "finish": "worn paint"
+      "by": "wall"
+    },
+    {
+      "part": "MMU Dock",
+      "on": 10,
+      "socket": "mmuDock",
+      "by": "wall"
+    },
+    {
+      "part": "Manned Manoeuvring Unit",
+      "on": 144,
+      "socket": "mmu",
+      "by": "mount"
     },
     {
       "part": "Robot Shell Dock",
@@ -1890,6 +1880,19 @@
       "by": "base"
     },
     {
+      "part": "Zero Day Torpedo Hatch",
+      "on": 17,
+      "socket": "hatch",
+      "by": "hang"
+    },
+    {
+      "part": "Zero Day Torpedo Hatch",
+      "on": 16,
+      "socket": "hatch",
+      "by": "hang",
+      "spin": 3
+    },
+    {
       "part": "Zero Day Railgun",
       "on": 64,
       "socket": "railgun",
@@ -1897,7 +1900,7 @@
     },
     {
       "part": "Ammo Box",
-      "on": 272,
+      "on": 274,
       "socket": "ammo",
       "by": "bottom"
     },
@@ -1945,37 +1948,37 @@
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 280,
+      "on": 282,
       "socket": "lug0",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 280,
+      "on": 282,
       "socket": "lug1",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 280,
+      "on": 282,
       "socket": "lug2",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 280,
+      "on": 282,
       "socket": "lug3",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 280,
+      "on": 282,
       "socket": "lug4",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 280,
+      "on": 282,
       "socket": "lug5",
       "by": "lug"
     },
@@ -1987,69 +1990,69 @@
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 287,
+      "on": 289,
       "socket": "lug0",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 287,
+      "on": 289,
       "socket": "lug1",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 287,
+      "on": 289,
       "socket": "lug2",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 287,
+      "on": 289,
       "socket": "lug3",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 287,
+      "on": 289,
       "socket": "lug4",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 287,
+      "on": 289,
       "socket": "lug5",
       "by": "lug"
     }
   ],
   "wires": [
     [
-      130,
-      129
+      129,
+      128
     ],
     [
-      133,
+      132,
+      130
+    ],
+    [
+      132,
       131
     ],
     [
-      133,
-      132
+      135,
+      133
     ],
     [
-      136,
+      135,
       134
     ],
     [
-      136,
-      135
+      137,
+      136
     ],
     [
-      138,
-      137
-    ],
-    [
-      140,
-      139
+      139,
+      138
     ],
     [
       171,
@@ -2181,15 +2184,7 @@
     ],
     [
       181,
-      272
-    ],
-    [
-      198,
       274
-    ],
-    [
-      198,
-      275
     ],
     [
       198,
@@ -2200,32 +2195,40 @@
       277
     ],
     [
-      278,
+      198,
+      278
+    ],
+    [
+      198,
       279
     ],
     [
-      127,
-      280
+      280,
+      281
+    ],
+    [
+      126,
+      282
     ],
     [
       262,
-      280
+      282
     ],
     [
       265,
-      280
+      282
     ],
     [
-      128,
-      287
+      127,
+      289
     ],
     [
       263,
-      287
+      289
     ],
     [
       266,
-      287
+      289
     ]
   ],
   "links": [
@@ -2328,6 +2331,13 @@
         ]
       ],
       "laid": true
+    },
+    {
+      "type": "pipe",
+      "from": 3,
+      "to": 144,
+      "fromPort": "Fuel out",
+      "toPort": "Fuel in"
     }
   ],
   "conduit": true,

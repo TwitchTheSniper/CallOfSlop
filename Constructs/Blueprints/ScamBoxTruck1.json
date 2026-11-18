@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front under the hood, inset 1 m, leaf/leaf, wing 0.5, archetype rigid box, cab style box, language box body standard 2.61 m, flare 0.01, level 0.6, brow 0.85 1 m, tail 0.91 1 m, door left, cab cab-over capsule, nose flat, fitting roof sign, trim signboards on 3 bay sides, wear age 0.96 (5 rusty, 12 dirty, 0 sooty, 0 patched, 0 rusted out), body room, cab cab-over, nose flat, rear gun deck, under skirted, flank panniers, roof none, layout room(Brow T,Door,Tail T)
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Scam Box Truck 1",
-  "group": "The Call Centre",
+  "group": "Scam",
   "description": "A box truck: a flat nose, a cab-over, a walk-in hull with loot, a stern gun deck. 2 guns.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#2a2c30"},
@@ -127,12 +127,11 @@
     {"part": "Ammo Socket", "on": 103, "socket": "top", "by": "bottom"},
     {"part": "Lever", "on": 70, "socket": "lever", "by": "-y"},
     {"part": "Chest", "on": 55, "socket": "front00", "by": "bottom", "spin": 3},
-    {"part": "Cubicle Desk", "on": 49, "socket": "front03", "by": "foot00", "spin": 2},
+    {"part": "Crate Stack", "on": 50, "socket": "front00", "by": "foot10", "spin": 2},
     {"part": "Water Cooler", "on": 49, "socket": "front33", "by": "foot00", "spin": 2},
-    {"part": "Gift Card Sign", "on": 62, "socket": "front00", "by": "base", "spin": 2},
     {"part": "Hull Loft (decoS XIWAWcW0)", "on": 34, "socket": "top", "by": "base", "paint": "#ffd400"},
-    {"part": "Office Phone", "on": 94, "socket": "front", "by": "base"},
-    {"part": "Loudhailer", "on": 87, "socket": "front01", "by": "base"},
+    {"part": "Loudhailer", "on": 86, "socket": "front00", "by": "base"},
+    {"part": "Loudhailer", "on": 94, "socket": "front", "by": "base"},
     {"part": "Hull Loft (trimg7 XaW5 ~DW0DWyDpwD43045 ~D80D9hDJLCZT03V)", "on": 70, "socket": "-x0", "by": "base", "paint": "#ff3d8b"},
     {"part": "Hull Loft (trimg1 YMW5 ~DW0DWyDpwD43045 =)", "on": 71, "socket": "-x0", "by": "base", "paint": "#ff3d8b"},
     {"part": "Hull Loft (trimg9 XaW5 ~DG0DPoDRZChh03j ~DW0DWyDpwD43045)", "on": 75, "socket": "-x0", "by": "base", "paint": "#ff3d8b"}

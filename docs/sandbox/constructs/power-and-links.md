@@ -225,6 +225,21 @@ segment piece and one elbow piece per type (instanced), and simulated as a graph
 | Drive shaft | round steel, a U joint at each bend | straight, at most 45 degrees a bend (and into a port), no corners (a gearbox does that), no bare junctions (a T gearbox does that), never across a joint (a U or CV joint device does that), except its end into a suspension's Drive in ([half shafts](drivetrain-and-engines.md#half-shafts)) | torque from engines, gearboxes, transfer parts and differentials, port to port, and into a Drill Module's Drive in | 250 |
 | Chute | square duct with rims, a bellows across a moving joint ([Flexible chutes](joints-and-logic.md#flexible-chutes)) | bends in 45 degree steps | items between storage parts (a load of bulk or one stored part a second); a part may name its own chute ports (a Storage Volume's Chute in and Chute out, a Drill Module's Chute out, which takes nothing in) | 80 |
 
+**Inclines and overpasses** (docs/sandbox/design/conveyor-inclines.md, the user's answer of 2026-11-17: the look and the laying
+only). A chute's or a conveyor's change of grade alone (both segments in one upright plane, the same way along it, up to a right
+angle) may be any angle (`ConstructRoutes.BendRule(type, from, to)`, `GradeOnly`); plan turns keep their steps. Such a node is drawn
+as a vertical curve (`RouteCurves`: radius the larger of 1.5 m and three bed widths, a chute's 1.2 m, each curve at most 45% of
+either segment; 2 to 80 degrees, so a flat-to-vertical corner keeps its elbow), and a riding piece is drawn following it
+(`ConstructConveyor.Pose(..., drawn: true)`, `OnCurve`; the server's positions stay on the straight segments). Nothing about what a
+link carries changes: its length, a piece's distance along it, the speed, gaps, junctions and every timing still come from the
+straight segments between its nodes, and old links keep their nodes. While routing a chute or conveyor, Reload cycles the grade the
+next node is snapped to (free in 5 degree steps, level, 20, 40; `ConstructRoutes.Grade`, back to free when the link ends), and the
+HUD shows the next segment's grade. The auto-router is unchanged: an incline is the player's own geometry, laid by hand (a ramp
+substitution in auto-route was tried and dropped: a shorter route carries differently). **Trestles**, **Trestle Posts** (1 to 8 m)
+and **Link Bridges** (4, 6, 8 m) carry links over an aisle (part kit `link_supports`; their Assembling rows go after every older
+row, `Assembling.LateFolders`); their tops are saddles (a `tray` block), so a node snaps to a lane's centreline 0.12 m over the top.
+`--factory-check` fails a factory whose chute or conveyor is under 2.4 m over its aisle or 4.5 m over its vehicle lane.
+
 **One pipe** (decision 28): there is a single pipe and it carries any fluid (fuel, water, oil, steam...). There are no pipe
 styles, no per-style radius or ratings (every pipe is 5 cm in radius) and no wrong-pipe failures: nothing weeps, burns,
 bursts or makes an engine sputter because of what runs through it. It is drawn one neutral way, round with a flange ring
@@ -389,6 +404,11 @@ tank's pipe into an engine's Coolant in does not feed it). A fuel tank's Fill ta
   fluid, "(no effect yet)". A pipe carries what its output port produces, so ending one on an engine lists just the inlets
   that want that fluid ("Fuel in"); with a single candidate it connects with no picker. While aiming at a part, its matching
   ports show as small labelled markers where they sit.
+- **What a link connects (user, 2026-11-17).** With the linking tool (or the paint, remover or repair welder) aimed at a laid link, the look
+  line names both ends, device and port: "Power cable: Battery #2: Power out -> Extruder: Power in" (`ConstructRoutes.EndLabel`; a device is
+  numbered among the parts of its kind on its body, in part order, only when there are two or more; a branch adds ", via a junction"). A world
+  link's line does the same for its two bodies. With the linking tool the two devices are outlined in light blue (`ConstructRender.LinkEnd*`).
+  Everything comes from the client's own copy (links, ports and defs), so a joined client shows the same; the string is made only when the look's key changes.
 - **Fluid warning.** An input port that wants another fluid than the pipe carries (exhaust into a fuel inlet) is allowed but
   the link's look line says "WARNING: exhaust into a fuel inlet" (`ConstructRoutes.FluidWarning`, `EndNote`).
 - **Old saves.** A blueprint link whose `fromPort` / `toPort` is a socket's name (the old directional ports: "+z", "-z0")

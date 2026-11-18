@@ -202,3 +202,346 @@ captains, combat or civilian.
   phase 1's bands and the Faction window; they fit the controller phase better).
 - An order's body kept through a save; admirals coordinating across groups (only intel names them);
   reports read by a controller (the ring fills and is counted; phase 3 reads it); players as admirals (phase 6).
+
+## Phase 3: the controller in open worlds (built 2026-11-18, branch `claude/faction-controller`)
+
+Built to section 3, phase 3's row, the user's answers (5: powers can be wiped out; 6: real production; 7: fog; 8: 1,000 bodies; 9: allies help)
+and Karl's (2: the wider scale and more pacts; 4: existing ships as placeholders). Phase 2's leftovers folded in: the wider relations scale and the
+new pacts (they need a power's stock, which this phase brings), and the controllers read the groups' report rings.
+
+### What a player sees
+
+- In a survival world, the powers act round the players. Each power with a plan lays its places on the open world (Traders a home and a second
+  place facing it across the player, so their road passes by; Raiders a camp; the Militia a post: 1.2 to 2.2 km out, on ground, another bearing
+  and nearer when a map's edge is in the way), and fields ships there, out of everyone's sight (600 m), bought at their real bill.
+- **Convoys.** Every few minutes the Traders send a box truck with two technicals as escorts, under an admiral, from home to their other place
+  (load, deliver: their stock earns the cargo), and back; at home each ship docks out of sight (600 m: 400 m) into the hangar, its hull kept, and
+  is fielded again (its repair paid) next time.
+- **Raids.** A power at war with the convoy's (Raiders with Traders) that knows of it (near one of its places, or seen by one of its crews: fog)
+  sends raiders to catch it; its captains fight on sight and the admiral focuses them. A cargo ship lost to the raid is loot (half its value) and a
+  `raidConvoy` event; then they go home with it, or when their admiral pulls back for long, or after 12 minutes.
+- **Calls for help.** A convoy in a fight calls: its allies (alliance, vassalage) must answer or be thought less of (`refuseCall`), and a power
+  neutral or better to the caller that fights its enemy answers when loyal enough (0.4): the Militia sends warships to escort the convoy (or hold where
+  it called from), comes home when 40 s pass with no enemy, and gains `answerCall` and `escortConvoy` with the caller.
+- **Places lost.** An enemy group sitting 300 m from a place with none of the power's ships near for 3 minutes takes it (news); its income goes.
+  Its ships standing there with no enemy for as long take it back.
+- **Gone for good** (answer 5): a power with no ship (out, building or docked), no place it holds and less stock than its cheapest ship is gone
+  (news; the Faction window greys it "(gone)"; it thinks and signs nothing more).
+- **The wider scale** (Karl's 2): a relation at -100 is a **blood feud** ("blood enemies", "BLOOD" in the grid): a ship destroyed, a capture or a
+  raid against a power already at the floor (-99) whose pride is 0.4 or more; it never moves again (no decay, no release, no ceasefire, no tribute).
+  At 90 and over, **kindred** ("wants to merge", "kin"); kindred both ways for 30 minutes, the weaker power joins the stronger: its ships change
+  sides, its stock goes over, it is gone ("X joins Y").
+- **New pacts:** trade agreement (both neutral or better, one greedy enough (0.5), both with an economy; each side earns 20 a minute; grows from
+  non-aggression, and into an alliance), tribute (a much weaker power (under 0.6 of the other's might) at war, beaten past its pride line and not
+  proud (under 0.6), pays a quarter of its income for peace, no end while paid; five minutes unpaid and it lapses, -20), vassalage (a tribute held an
+  hour with the payer neutral or better: it pays, and fights its lord's enemies as an ally). The window names who pays whom.
+
+### Where
+
+| What | Where |
+| --- | --- |
+| The controllers: books, places, ships (hangar, building, out), missions (Convoy, Raid, Defend, Patrol, strays home), calls, merging, the section's bytes | `Source/Crew/CrewControllers.cs` (`PowerControllers`, `IPowerHost`) |
+| Numbers and per-kind plans; a ship's bill from its blueprint's parts' Assembling recipes | `Crew/Controllers.json` (`call-of-slop-npc-controllers/1`), `Source/Crew/CrewControllerRules.cs`; a power file's `"plan"` overrides its kind's key by key |
+| Bands (Kindred), blood feuds, the new events and pacts, `Gone`, `Might`, `Merge`, `Tell` | `Source/Crew/CrewRelations.cs`, `Crew/Relations.json` |
+| The game's side: ships set down by the spawner (`RequestBlueprint(..., power)`, crewed by that power), docking, news, saves, on/off | `Source/Game/GameCrewPowers.cs`; `--powers on|off` (`Game.PowersForce`; default: survival worlds only) |
+| Window | `UI/UiFactions.cs`: BLOOD/kin words, trade, tribute and vassalage lines, gone powers greyed |
+| Tools | `--crew-check --crew-fleet powers [--seconds S]`, `--crew-fleet politics` (`Source/Crew/CrewPowersCheck.cs`); window verb `crewpowers [near]` |
+
+A plan (in `Crew/Controllers.json` "kinds", or a power file's "plan"):
+
+```json
+"Traders": { "start": 4000, "income": 30, "ships": 8, "groups": 3, "places": 2,
+             "fleet": { "cargo": ["IT Box Truck 1"], "escort": ["IT Technical 2"] },
+             "missions": { "convoy": { "cargo": 1, "escorts": 2 } },
+             "placeList": [ { "name": "Rime depot", "world": "Glacier", "at": [100, 0, -400] } ] }
+```
+
+Roles are cargo, escort, raider and warship; missions convoy, raid, defend and patrol. A kind with no plan has no economy (fields and trades
+nothing). Bills today: IT Box Truck 1 516 units (109 parts), IT Technical 2 403, Bandit Buggy 1 373, Bandit Technical 1 371, British
+Technical 2 393, British Gun Wagon 1 479.
+
+### Saves and network
+
+- Saves: a `CTRL` section (`WorldSaveWriter.ControllersTag`, version 1, after POWR): per power by name, its books, places, ships (by blueprint
+  name; a ship out is a record that takes up the first crewed body of its power again, since body ids change), missions (group by slot and
+  number) and the next convoy. A world from before has none: every power starts from its plan. No new save file. Fallen powers are re-marked in
+  the relations on load.
+- Protocol 354 (main 353 at the merge): `Msg.Factions` ends with u16 powers gone; pact kinds 4 to 6; -100 means a blood feud. Stocks, missions and ships are never sent.
+
+### Tried by hand (2026-11-18, the 2-core box shared with other builders)
+
+- `--crew-fleet powers --seconds 300` (about 70 s of wall time; a person at the middle, the file's numbers with waits and distances shortened): convoy formed with two
+  escorts and delivered (three runs of five: in the others the raid pinned it); raid sent, engaged the convoy (looted in two runs of four: the convoy outruns it as often as not); call for help, the Militia
+  answered and went; books equal stock at every tick, never below 0; 7 to 14 bodies set down, 3 to 7 docked; the section read back byte for byte.
+  Thinks past the first minute: median 4 to 8 us, 99th 25 to 47 us; 4 us a tick on average in the tool (seven powers, each every second);
+  88 bytes in all in thinks that said nothing (a ship set down or a buy logs, and allocates: a request).
+- `--crew-fleet politics`: trade from non-aggression, a blood feud that nothing moves, tribute then vassalage, a merge, a save round trip: all OK.
+- Window run (Glacier, survival, host and a joined client under xvfb, `crewpowers near`): the Traders bought a box truck and two technicals
+  (1,322 of 4,000) and sent them under Admiral Rhea (the truck on Deliver, both escorts screening); the Raiders bought two raiders (744) and sent
+  them (both on Engage, order Hold beside the convoy); the convoy called for help, the Militia answered, bought two warships (872), went with the
+  first ready and escorted the convoy (Engage). The joined client's look lines named every group, admiral and captain; its news, grid and pacts
+  matched the host's. Controllers 14 us a tick (the host at about a third of real speed on the loaded box); the section read back the same.
+- Merged build (main 353): `powers` and `politics` OK again; thinks median 5 us, 99th 25 to 33 us. The worst single thinks (5 to 9 ms) came with
+  the box's load at 15 to 20 (other builders' builds) and no log line in them; one, before the fix, was three ships docking in one think (a removal
+  each): now one ship docks a think.
+- Proving Ground is 384 m square: places shrink to its middle and nothing can be set down out of sight, so the controllers are for big worlds.
+
+### Not verified
+
+- A cargo ship's loot through a real raid in a running game (the tool's crews target by a stand-in for the game's fight rule); docking and the
+  hangar in a game with a person near home; merging, tribute and vassalage between powers' ships in play (the engine only); a place lost and taken
+  back in a game; a CTRL section through the real save file and a load (the bytes round trip in the tool and in `crewpowers`); a fallen power's
+  greyed row (no picture).
+
+### Questions (defaults taken; the user's or Karl's)
+
+1. **Real production (answer 6).** Ships are bought from a stock at their blueprint's real bill (every part's recipe) and take its build time, at a
+   power's home; no factory builds them yet. The factory generator (its prerequisite) is still being built and has no shipyard function. Default:
+   keep the bill-from-stock until the generator can make a yard, then a power's homes become generated factory sites whose output feeds the hangar
+   (what nobody sees estimated on the ledger, as linked logistics' closed worlds). Agree?
+2. **On by default in survival.** Default: yes, survival worlds only (creative never; `--powers` overrides). A host setting in the lobby? Default: later.
+3. **Places.** With no data and no outposts (phase 4), a power lays its places round the first person on each open world (1.2-2.2 km). Default:
+   keep until phase 4's key sites; Karl's world sites replace them.
+4. **Who may answer a call.** Default: allies always; neutral-or-better powers fighting the same enemy at loyalty 0.4 and up.
+5. **Blood feuds with players.** Not built (only between powers); default: the same rule when phase 5 brings pacts with players.
+6. **A fallen power's row** is kept, greyed, and never refilled; who takes a free row (an independent captain "making a name") is open.
+
+### Left (later phases, or follow-ups)
+
+- **The 1,000-body target** is phase 4's LOD (phase 2's measures stand: the world step of awake bodies is the limit). Today the world caps the
+  controllers' bodies at 24 (`world.maxBodies`), spawning out of sight only.
+- Space ships: the plans name ground vehicles; a power's space fleet waits for Karl's ship roles (the plans take any blueprint by role).
+- Allies helping players (answer 9) is phase 1's crew rule (a power friendly to a person joins their fights it sees); powers answering a
+  player's call and pacts with players are phase 5.
+- Fog for players (answer 7) is the command view's FACTIONS layer (phase 4); the controllers' own knowledge is fogged already.
+- Missions don't yet weigh their risk by the enemy's known strength beyond a raid's size check; abstract groups, presence and Take are phase 4.
+
+### Review fixes (2026-11-18)
+
+- A blood feud is a flag per pair (`PowerRelations.Feud`, POWR version 2 adds the bits), not the value -100: worlds from before (which clamped at
+  -100) load with no feuds. Clients are shown -100 only for a feud (`Shown`: others at -99 at worst), so no wire change was needed for it.
+- Trade, tribute, blood feuds and merging run only where the controllers do (`Might`/`Merge` set by `CrewPowersTick` while `PowersActive`): never in
+  creative.
+- A gone power (fallen or merged) crews nothing: `CrewWorld.LivePower` gives every new crew its heir (merged into), else another standing power of its
+  kind, else none; at the tick a power goes (or is read gone from a save) every crew and group still of it is re-tagged (`Game.CrewPowersGone`).
+  The heir is saved in CTRL.
+- After a load, a ship out takes up only the body whose crew holds its saved uid (the captain's, else a member's), and that is in no group but its
+  mission's; none: the record is dropped (logged). Two a think. Places are laid one a think; one ship docks a think.
+- CTRL is written after FLET, and each power's missions find their groups again (slot and number, else the number) at its first think after a load;
+  a mission whose group is gone sends its ships home quietly.
+- Checks: `politics` adds -100 without a feud moving, and no trade or feud with the controllers off; `powers` adds a load (each ship out takes up
+  its own body, or docked since). `--crew-relations` passed; `--selftest-only "Sandbox spawns, Save folder"` passed. Thinks past the first minute:
+  median 5 us, 99th 137 us; the worst (4 ms) with the box at load 13 and nothing logged in that second (taken for preemption; not measured quiet:
+  the box was never quiet).
+
+## Phase 4: territory and the far layer (built 2026-11-18, branch `claude/faction-territory`)
+
+Built to section 4 as Karl's answer 1 reworks it (majority control weighted by key sites' rarity), section 8, the user's answers 3 (space clock for
+groups between planets), 4 (far fights by strength, a closed world never opened), 7 (fog) and 8 (1,000 bodies: real progress and a measure), Karl's 3
+(the FACTIONS layer) and 4 (existing ships as placeholders).
+
+### What a player sees
+
+- **Planets held.** Frostreach's planets and moons have key sites (`Crew/Territory.json`: 31 spaceports, refineries, mines and outposts, each with a
+  start holder). A site's control is its kind's weight shared among the sites of that kind on its planet (one spaceport there is worth a spaceport's
+  whole weight; one of four mines a quarter of a mine's); a power with more than half a planet's control holds it, else it is contested. Held sites earn
+  their power income a minute and keep a garrison (abstract: outposts as buildings with gun crews are later) that grows back while nobody attacks.
+- **Wars over sites, seen or not.** Every few minutes a power at war with a site's holder sends a far Take group (its armed ships from the hangar, or
+  bought at their bill) when it is strong enough by its caution; a power whose site is attacked sends a Defend group. Far groups move between planets
+  on the space clock (distance at 3,000 m/s; 10 minutes when unknown), land and go to the site; there they fight by strength (1% of the enemy's strength
+  a second, at most 2% of their own: minutes, never one roll), a ship whose hull runs out is lost (`destroyShip`); a group past its caution's line pulls
+  back home. A site with no garrison and no defender left is taken after 2 minutes (`takeSite`), and a planet that changes holder is news ("Shard falls
+  to the Raiders: the Traders have lost it", "X is contested") and a `takePlanet` event (-40). The attackers stay as its garrison for a while, then go
+  home, where their ships go into the hangar. None of it opens a closed world.
+- **Groups near a person.** A far group on the open world within 5 km of a person is set down as crewed bodies, at least 600 m from everyone, two a
+  step, within the controllers' body cap (over it: it stays a record), then formed into a crew group under an admiral (phase 2) and sent to its site;
+  with nobody within 7 km for a minute its ships go back to records one a step, hulls kept, and it goes on as a record.
+- **Command view FACTIONS layer** (`docs/space/COMMAND.md` "The factions layer"): planets ringed by holder (dashed when contested) with tag and share;
+  groups known (on this world within 8 km, or named by news in the last 5 minutes: dim, "N MIN AGO"), a guess at their task and ships, THREAT in red
+  for a hostile power's strike or one within 3 km. The Faction window (F2) lists each planet's holder and share.
+
+### Where
+
+| What | Where |
+| --- | --- |
+| Sites, holders, garrisons, income, Take and Defend, far groups (move, fight, take, home), materialise and collapse, save bytes | `Source/Crew/CrewTerritory.cs` (`PowerControllers` partial, `FarGroup`) |
+| Numbers and the planets' sites | `Crew/Territory.json` (`call-of-slop-npc-territory/1`; missing: no territory), `Source/Crew/CrewTerritoryRules.cs` |
+| A ship's strength in a far fight | `ControllerRules.Bill.Strength` (1 + 2 a gun + parts / 60) |
+| The host's side: the space clock, planets' distances, a site's place on the open world | `Source/Game/GameCrewPowers.cs` (`IPowerHost.SpaceSeconds/PlanetGap/SiteAt`) |
+| Each player's map, fog, threats, `Msg.FactionMap` | `Source/Game/GameCrewTerritory.cs` |
+| Command view layer, F2 planets | `Source/UI/UiCommandFactions.cs`, `UiFactions.DrawPowerRelations` |
+| Far bodies' coarse rate | `Source/Constructs/ConstructFar.cs`, `ConstructPhysics.Pass`, `ConstructWorld.Step` (logic and power), `ConstructNet.PosePeriod` |
+| Tools | `--crew-fleet territory`, `--crew-fleet far`, `--crew-fleet scale --fleet-spread M --far-every K` (`Source/Crew/CrewTerritoryCheck.cs`, `CrewFleetCheck.cs`); window verb `crewterritory [near|leave]` |
+
+### The 1,000-body work (answer 8)
+
+- **Far bodies' physics, logic and power** step once every 4 ticks by 4 ticks' time when an NPC body (not owned, held, carried, coupled or in space) is
+  1.5 km or more from every person (`ConstructFar`): physics in a second pass over just those due this tick (a far body never meets a near one in the
+  same pass); asleep far bodies' logic and power too. Sleep counts a far step as 4 ticks and lets a far body sleep at 4 times the still speed (at a
+  coarse step a body at rest jitters at 0.2 m/s and never slept).
+- **Network:** two more pose bands: past 1.5 km a body is sent every 32 pose ticks, past 4 km every 128 (the sleeping refresh tells a far body's last pose).
+- **Measured** (`--crew-fleet scale --fleet-scale 1000 --fleet-awake 1000 --fleet-spread 8000`, Bandit Helicopter 1, 23 parts, the 2-core box shared):
+  the world's step 4.26 ms a tick before, 2.49 to 2.94 ms after (physics 1.71 to 0.75-0.82 ms, logic 1.75 to 0.79 ms); crews 0.20-0.27 ms; one client
+  by the person gets 32 poses, 1.9 KB in 2.1 packets a pose tick with 427 movers. With all 1,000 within 1.1 km (phase 2's case) nothing changes: 8.6
+  ms a tick, the near bodies' own cost.
+- **What remains for 1,000:** near bodies (within 1.5 km) still cost full rate; machines' scans (0.55 ms for 1,000 bodies), the crews' 168 KB
+  allocated in 240 ticks with bodies spread over 8 km (found before this branch: the crews' LOD moving; not looked into), batched drawing (not touched),
+  and the controllers' body cap (`world.maxBodies` 24, spawning is slow: a vehicle a few hundred ms on this box). Big blueprints (Zero Day, 276 parts) were
+  not measured again.
+
+### Saves and network
+
+- CTRL version 2: each power's flag for having held a site and its next Take; each ship's far group; then the sites (planet, name, holder by name,
+  garrison) and the far groups (slot, power, task, state, real or not, planets and site by name, seconds to arrival, place, number, strength). A real
+  group's ships are saved out with their crew's uid and taken up again by it after a load; a ship whose far group doesn't read goes into the hangar.
+  Version 1 still reads (the territory starts from the data). No new save file.
+- Protocol 356 (main 355 at the merge): `Msg.FactionMap`, once a second to each player. `enum Msg` is full: it takes `RemovedTutorial`'s slot.
+
+### Tried by hand (2026-11-18, the box shared with other builders)
+
+- `--crew-fleet territory --seconds 400` (16 power files written for the run, 5 planets of 8 sites, nobody anywhere, times shortened): 22 to 32 sites
+  taken, 6 to 16 planet changes, each in the news; far groups topped up to 64-73 after two minutes: controllers and far layer 12 to 18 us a tick
+  (99th 44-51 us, worst 0.1-1.2 ms), 0 bytes in steps that said nothing; the section read back the same.
+- `--crew-fleet far`: nothing set down while the person was 9 km off; within 3 km both the Raiders' Take group and the Militia's Defend group
+  materialised (the nearest body 3 km from the person), collapsed 10 s (the tool's time) after the person went 10 km off, hulls kept.
+- Phase 3's `powers`, `politics` and `--crew-relations`: OK (looted no in that run: the convoy outran the raid, as noted before).
+- Window run (Glacier, survival, host and a joined client under xvfb): nine planets with holders on host and client; `crewterritory near` put a
+  Militia Take group 3.5 km off, it materialised as a crew group (the client's look lines named its admiral and captains), the client's map knew it
+  ("here, real"); `crewterritory leave` (ranges shrunk) collapsed it, the client then knew it unreal. Far layer 11 us a tick.
+
+### Not verified
+
+- The FACTIONS layer as drawn (no picture taken); the F2 planets list as drawn.
+- A real save and load with a far group real (the uid adoption) or in transit; a save from before (version 1) read through the game.
+- A real Take by bodies (garrison worn down by a real group, site taken) in a running game; a group set down on a planetoid at a site given by
+  latitude and longitude (the window run put it by the player); groups in transit between planets on a real space clock.
+- Far bodies' coarse rate with wheeled vehicles on slopes and with big ships (only helicopters at rest and flying were measured).
+- The 7 ms worst far-layer tick seen once in the window run (before any group was near; taken for the loaded box, not traced).
+
+### Questions (defaults taken)
+
+1. **Players holding planets** (Karl's 1 says player factions hold them the same way): no player site exists yet. Default: later, with player-built
+   outposts counted as sites by kind.
+2. **Outposts as buildings.** Garrisons are numbers. Default: the factory and base generators' sites become the key sites' buildings, their gun crews
+   the garrison, in a later phase.
+3. **Far groups on other open places** (planetoids run as a place on the host): the far layer sets bodies down only on the host's main world. Default:
+   a place's Game asks the main Game's controllers (one layer), later.
+4. **Body cap.** Kept at 24 (`world.maxBodies`). Default: raise it once spawning is cheaper; the LOD above is what lets it go up.
+5. **Allies' sightings for fog.** Not shared yet (no pacts with players until phase 5). Default: an ally's groups and what its crews see, then.
+
+## Phase 5: players in the politics (built 2026-11-18, branch `claude/faction-players`)
+
+Built to section 10's phase 5 row, section 5.5 ("with players, pacts are proposed and answered through the Faction window"), section 7, the user's answer 9
+(allies help players: join fights near them, answer their calls) and Karl's answer 2 (phase 1's model and more pacts), with phase 3's question 5 (blood feuds
+with players) and phase 4's question 5 (an ally's groups known) taken up.
+
+### What a player sees
+
+- **Pacts (Faction window, F2, "Pacts with the world's powers").** Each power's row says the pact with your faction (minutes held or left) or none, its
+  standing, a proposal waiting, or BLOOD FEUD. The **leader** gets buttons for the pacts its standing allows: Ceasefire and Pay tribute below 0, Non-aggression
+  and Trade from neutral (20), Alliance from friendly (60); and Break pact. The power answers at its next think (a few seconds) by its own scoring, as it
+  answers another power: a ceasefire from anyone it fights unless it is aggressive (0.8) and hasn't lost enough to the faction (its pride line, phase 1's);
+  tribute when greedy enough; non-aggression and trade from neutral (trade only for a greedy power); an alliance when friendly, loyal and with an enemy in
+  common. Turned down, the notice says why, and the leader asks again after 5 minutes. A power offers a pact by itself when it wants one (a ceasefire when
+  it is losing, an alliance, trade or non-aggression as between powers): "Militia offers you a ceasefire", Accept or Decline, for 10 minutes. Members who
+  aren't leaders see the pacts and are told only the leader can act.
+- **What a pact does.** Its crews hold fire on the faction's people and their crewed ships, and the faction's hired crews on theirs, whatever the standing
+  (one who shoots is a foe again). A ceasefire lasts 30 minutes and lifts the standing to -40; a tribute costs the leader 150 credits every 10 minutes
+  (unpaid: it lapses, -20); a trade pact pays the leader 10 credits a minute (and the power's stock 20). Alliances and trade fall apart below 15,
+  non-aggression at war. An alliance: the power's crews fight anyone they see fighting the faction's people (phase 1's help rule), its groups are known to
+  the faction on the command view's FACTIONS layer (fog, phase 4), and it answers the faction's call.
+- **Breaking.** The leader's button, or a member's attack (8 stray hits a minute forgiven, as between powers; past that, deliberate). News for everyone
+  ("Client Co breaks its ceasefire with Militia"); the power takes `breakPact` (-40); every power that knows (in a pact with the victim or friendly to it, in
+  a pact with the faction, or with a crew that sees the leader) takes `breakPactHeard` (-15 by loyalty); the faction is told who heard, and the player
+  factions allied with it are told too.
+- **Call allies** (any member, once every 3 minutes a faction): the allied powers answer (Defend: warships go to the caller and follow them while the danger
+  lasts); a power neutral or better that fights the caller's foe answers at loyalty 0.4, as a power's call. Only where the controllers run (survival); in
+  creative the button says so (allies' crews nearby still fight).
+- **Blood feuds with factions:** a grave deed (a ship destroyed or taken, an officer captured, a convoy raided, a planet taken) against a power already at -99
+  by a faction's member, its pride 0.4 or more, where the controllers run: -100 for good, no pact, no contract, no decay. A person in no faction swears none
+  (their standing stops at -99).
+- **Contracts for credits ("Contracts for credits", seen by everyone, a lone player too).** Each power with a mind offers one in turn every 45 s (two open
+  at most each, 24 in the world, 15 minutes to take): escort one of its crewed ships (a convoy's flagship first) for 3 minutes within 400 m (300 credits, 20
+  minutes), deliver 40-160 units of a material (Relations.json's list) to its place in a ship within 60 m (100 + 2 a unit, 30 minutes), raid a power it
+  fights by destroying or taking one of its ships (400, 30 minutes). Taken by one whose standing with it is 0 or more, or whose faction holds a pact with it;
+  two at once; a raid on a power the faction holds a pact with is refused ("break it first"). Tracked once a second; done: paid and `contractDone` (+5);
+  failed (out of time, the ship lost, given up): `contractFailed` (-5). The taker's line shows how far along and how far away. Creative pays as survival does
+  (unlimited credits shown).
+
+### Where
+
+| What | Where |
+| --- | --- |
+| Pacts with factions, proposals, offers, breaking and who hears, feuds, wars' losses, notes for members, save bytes | `Source/Crew/CrewPartyPacts.cs` (`PowerRelations` partial); hooks in `CrewRelations.cs` (`Post`'s player path, `MovePlayer`, `Think`, `Decay`, `Fall`, save version 3) |
+| Contracts: offers, take, drop, work, raid deeds, save bytes | `Source/Crew/CrewContracts.cs` (`PowerContracts`, `IContractHost`), held by the relations (`PowerRelations.Contracts`) |
+| Numbers | `Crew/Relations.json`: events `contractDone`, `contractFailed`; blocks `players` and `contracts` |
+| The game's side: the window's acts, notices, tribute and trade credits, the contracts' host, `Msg.Contracts` | `Source/Game/GameCrewPolitics.cs`; fight rule in `GameCrew.cs` (`Fights`, own crews, `CrewHelpsAgainst`), `PowerRelations.ShipFights` |
+| A faction's call | `PowerControllers.CallForParty` / `HearParty` (`CrewControllers.cs`); `IPowerHost.PersonAt` (a Defend follows the caller) |
+| Window | `UI/UiFactionsPolitics.cs` (`DrawPartyPacts`, `DrawContracts`), from `UiFactions.cs` |
+| Tools | `--crew-check --crew-fleet players` (`Source/Crew/CrewPlayersCheck.cs`); window verb `crewpolitics [found NAME|invite|acceptinvite|standing POWER V|pact POWER KIND|accept POWER|break POWER|call|take N|drop N]` |
+
+### Saves and network
+
+- Saves: the `POWR` section's version 3 adds, after the feud bits, the pacts with factions (kind, power by index, faction id, seconds held and left,
+  hours kept, the next tribute), the factions' feuds, and the open and taken contracts (taker by name: taken up again when they come back; an escort's ship
+  by its captain's uid). Versions 1 and 2 read (no pacts with factions, no contracts). Faction ids are the world's own; a faction that ends loses its pacts,
+  feuds and standing at the powers' next thinks, so a new one in its id starts clean. No new save file. A Defend for a faction's call isn't kept as one: after
+  a load it holds where it was called.
+- Protocol 359 (main 358 at the merge): `Msg.Factions` ends with the pacts with factions, the powers' offers, the factions' proposals and the feuds with
+  factions; `FactionOp` gains Pact, PactAnswer, PactBreak, CallAllies, ContractTake and ContractDrop at its end; `Msg.Contracts` (all contracts, on change,
+  at most once a second, and to each joiner) in the slot of `RemovedColonyAlarm`.
+
+### Tried by hand (2026-11-18, the 2-core box shared)
+
+- `--crew-fleet players`: all OK: Traders and Militia allied; a faction at war with the Militia (-70) proposes a ceasefire, signed (-40, fire held); the
+  leader breaks it: news, the Militia -40 -> -80, its ally the Traders hear (30 -> 15; Salvagers too, friendly to the Militia); 8 stray hits forgiven, the
+  ninth breaks a second ceasefire; the Militia, beaten, offers a ceasefire and it is taken; an alliance with the Traders makes their crews fight the
+  Mercenaries fighting the faction's person, not otherwise; a tribute unpaid lapses; an unwanted alliance turned down and the ask held off; a blood feud
+  (Might set) refuses a ceasefire; contracts: escort, delivery and raid offered, a raid on a pact partner refused, a third refused, escort and delivery done
+  and paid (640), a raid done by a destroyed ship, an escort failed when its ship was lost; a save round trip keeps the pacts and a taken contract, the
+  feud too; a version 2 section reads. Relations 0.05 us a tick with 0 bytes allocated in 3,600 ticks; contracts 0.56 us a tick, nothing allocated
+  but an offer's or an end's line.
+- `--crew-fleet politics` and `--crew-relations` (with its host and joined client): OK, as before.
+- Window run (Glacier, survival, host and a joined client under xvfb, `crewpolitics`): the client founded Client Co and invited the host, who joined; the
+  host (a member, not the leader) asking for a pact was told "only your faction's leader can make or break pacts"; with the Militia at -70 the client leader
+  proposed a ceasefire and the Militia signed ("Client Co and Militia sign a ceasefire"), both peers' tables showing it; the client broke it: news, Militia
+  -40 -> -80, "Word gets around: Raiders, Salvagers, Traders think less of you", the Traders 70 -> 55 on both peers; the call went out (nobody answered: no
+  ally, the Militia now at war, the Traders no Defend plan); a contract from the Militia refused at -80. A second host run took a delivery contract, saved
+  the world through the real save (`saveworld`) and a third loaded it (`loadworld`): the non-aggression pact and the taken contract (its taker found again
+  by name) came back.
+
+### Not verified
+
+- A contract done in a running game (an escort by a real convoy, a delivery out of a real ship's bins, a raid by a real kill), the escort's 400 m measured
+  against a moving ship; a tribute or trade paid in credits in a game; an allied power's Defend group reaching and following a player; allied crews fighting
+  a faction's foes in a real fight (the engine's rule is checked, not bodies shooting); the window's buttons as drawn (no picture: driven by the verb);
+  the FACTIONS layer showing an ally's groups.
+
+### Questions (defaults taken)
+
+1. **Who may act.** Pacts: the leader only (the task's rule; the rank permission `FactionMay.Relations` is not used for them). Call allies: any member.
+   Contracts: anyone, a lone player too; pay to the taker. Agree?
+2. **Pacts open to factions:** ceasefire, non-aggression, trade, alliance and a tribute the faction pays. Vassalage (a faction serving a power, or a power
+   a faction) and a power paying a faction tribute are not offered. Default: later, if wanted.
+3. **Credits and units** are one for one where they meet (a faction's tribute and a trade pact into a power's stock).
+4. **A lone player** (no faction) makes no pacts and swears no feuds; their standing stops at -99.
+5. **Hearers of a broken pact** include powers in a pact with the breaker (they learn its word is worth little) and any that see it, even the victim's
+   enemies. Default kept; say if enemies of the victim should cheer instead (phase 1's +1/5 rule for deeds).
+6. **Contract kinds:** escort a crewed ship (no convoy needed, so creative has them), deliver to the power's place (in creative, or a power with no place
+   here: a meeting point 800 m from the taker), raid. Default: more kinds (salvage, bounty on a named captain) later.
+
+### Left
+
+- Player factions holding planets (phase 4's question 1) and players as admirals (phase 6).
+- A power's view of a faction's allies (a faction allied with a power's enemy is not yet thought less of).
+
+### Review fixes (2026-11-18)
+
+- Only a hit (`hitBody`, `hitCrew`) by a member on a pact partner may be stray (8 a minute); a kill, a ship sunk, a boarding or a capture breaks the pact at
+  once and counts in full. A forgiven hit is no deed (`PowerRelations.Post` returns true) and the game clears the foe mark the hit made
+  (`CrewShip.UnmarkFoe`), so an allied crew clipped by splash doesn't turn on the member.
+- A taken contract follows its taker by name: when they leave (their id goes to the next joiner) it is held for them, unworked and unpaid, its clock
+  stopped, and taken up again when someone of that name comes back; pay goes only to the taker present (`PowerContracts.Present`).
+- `Msg.Contracts`' read guard is 33 bytes an entry. Checks: `players` adds splash on a partner (forgiven, the ceasefire holds), a kill under a ceasefire
+  (breaks it) and the taker away (held); `--selftest-only "Packets, Save folder, Frame allocations, Interaction sweep"`, `--crew-relations`, `politics`
+  and `players`: all passed after merging main (protocol 359).

@@ -17,9 +17,21 @@
     "breakPactHeard": { "amount": -15, "scale": ["loyalty"] },
     "keepPact": { "amount": 1 },
     "captureOfficer": { "amount": -25, "scale": ["pride"] },
-    "releaseOfficer": { "amount": 15, "scale": ["forgiveness"] }
+    "releaseOfficer": { "amount": 15, "scale": ["forgiveness"] },
+    "raidConvoy": { "amount": -10, "scale": ["values.cargo", "greed"] },
+    "escortConvoy": { "amount": 5, "scale": ["values.cargo"] },
+    "answerCall": { "amount": 3, "scale": ["loyalty"] },
+    "refuseCall": { "amount": -10, "scale": ["loyalty"] },
+    "payTribute": { "amount": 1, "scale": ["greed"] },
+    "takeSite": { "amount": -10, "scale": ["values.planets"] },
+    "takePlanet": { "amount": -40, "scale": ["values.planets", "pride"] },
+    // Phase 5: a contract for credits done for the power, or failed (out of time, the ship lost, given up).
+    "contractDone": { "amount": 5, "scale": ["greed"] },
+    "contractFailed": { "amount": -5, "scale": ["pride"] }
   },
-  "bands": { "war": -50, "neutral": 20, "friendly": 60, "hysteresis": 5 },
+  // Phase 3 (Karl's answer 2): a relation at -100 is a blood feud (it never moves: no peace is ever made), reached by a grave deed against a power
+  // already at the floor whose pride is at least bloodPride; at "kindred" or above both ways for mergeMinutes, the weaker power joins the stronger.
+  "bands": { "war": -50, "neutral": 20, "friendly": 60, "kindred": 90, "hysteresis": 5, "bloodPride": 0.4, "mergeMinutes": 30 },
   "decay": { "perMinute": 1 },
   "witness": { "enemyShare": 0.2 },
   "help": { "most": 10, "everySeconds": 60, "fightGapSeconds": 300 },
@@ -31,6 +43,30 @@
     "answerCooldownMinutes": 5,
     "allianceLoyalty": 0.5,
     "ceasefireRefuseAggression": 0.8,
-    "friendlyFireHits": 8
+    "friendlyFireHits": 8,
+    // Phase 3's pacts: trade (both neutral or better, one greedy enough; each side earns tradePerMinute), tribute (a much weaker power at war,
+    // not too proud, pays tributeShare of its income for peace), vassalage (a tribute held vassalMinutes with the payer at least neutral).
+    "tradeGreed": 0.5,
+    "tradePerMinute": 20,
+    "tributeWeaker": 0.6,
+    "tributePride": 0.6,
+    "tributeGreed": 0.4,
+    "tributeShare": 0.25,
+    "vassalMinutes": 60,
+    "vassalLoyalty": 0.3
+  },
+  // Phase 5: pacts with player factions (the Faction window, a leader's). A power's own offer stands offerMinutes, then it waits offerCooldownMinutes;
+  // a faction calls its allies at most every callCooldownMinutes; a trade pact pays the leader tradeCredits a minute; a tribute costs the leader
+  // tributeCredits every tributeEveryMinutes (unpaid: it lapses).
+  "players": { "offerMinutes": 10, "offerCooldownMinutes": 15, "callCooldownMinutes": 3, "tributeEveryMinutes": 10, "tradeCredits": 10, "tributeCredits": 150 },
+  // Phase 5: contracts for credits. A power makes an offer every offerSeconds in turn (two open at most each), standing offerMinutes; an escort is
+  // escortSeconds within escortRange m of the ship in escortMinutes; a delivery deliverMin to deliverMax units (tens) of one of the materials to the
+  // power's place, in a ship within deliverRange m, paid deliverBase + deliverPerUnit a unit; a raid destroys or takes a ship of a power it fights.
+  "contracts": {
+    "offerSeconds": 45, "offerMinutes": 15,
+    "escortSeconds": 180, "escortMinutes": 20, "escortRange": 400, "escortPay": 300,
+    "deliverMinutes": 30, "deliverRange": 60, "deliverBase": 100, "deliverPerUnit": 2, "deliverMin": 40, "deliverMax": 160,
+    "materials": ["iron ore", "copper ore", "stone", "planks", "metal"],
+    "raidMinutes": 30, "raidPay": 400
   }
 }

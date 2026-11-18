@@ -112,6 +112,8 @@ public sealed partial class Ui
             CmdLine(dl, cr.At + new float2(off * 0.7f, off * 0.7f), cr.At + new float2(off + 14 * _scale, off + 10 * _scale), colour, 0.6f * fade);
             CmdLine(dl, cr.At + new float2(off + 14 * _scale, off + 10 * _scale), cr.At + new float2(off + 30 * _scale, off + 10 * _scale), colour, 0.6f * fade);
             CmdText(dl, cr.At + new float2(off + 34 * _scale, off + 3 * _scale), picked ? 13.5f : 12, colour, fade, CmdName(c));
+            if (CommandCrewsOn && CmdCrewTag(g, c.Id, out var crewColour) is { } crewTag)
+                CmdText(dl, cr.At + new float2(off + 34 * _scale, off + (picked ? 20 : 18) * _scale), 10, crewColour, 0.85f * fade, crewTag); // (UiCommandCrew.cs)
         }
 
         // The player, when they aren't aboard something on the map.
@@ -161,9 +163,9 @@ public sealed partial class Ui
             return;
         }
         float2 at;
-        if (o.Kind == NavKind.Board)
+        if (o.Kind is NavKind.Board or NavKind.Meet)
         {
-            var tk = CmdFind((ushort)Math.Clamp(o.Point.X, 0, ushort.MaxValue)); // (a pod boarding: the ship it boards, GameNavBoard.cs)
+            var tk = CmdFind(o.Kind == NavKind.Meet ? o.Target : (ushort)Math.Clamp(o.Point.X, 0, ushort.MaxValue)); // (a pod boarding: the ship it boards, GameNavBoard.cs; a rendezvous: the ship it meets)
             if (tk < 0)
                 return;
             at = _cmdCraft[tk].At;
@@ -222,19 +224,26 @@ public sealed partial class Ui
     // The hologram
     // ---------------------------------------------------------------------------------------------------------------
 
-    /// <summary>A hull as lines: each level's outline, in the construct's rest frame.</summary>
+    /// <summary>A hull as lines: each level's outline, in the construct's rest frame. The fine one (UiCommandHolo.cs) keeps its grid.</summary>
     private sealed class CmdHolo
     {
         public ushort Id;
         public int Parts;
+        public long Shape; // (Construct.ShapeStamp: a hole cut or a part swapped builds it again)
         public Vector3[] A = [], B = [];
         public float[] Level = []; // 0 at the keel .. 1 at the top
+        public bool[] Hull = []; // the line is on the outer skin (the fine one; the coarse one marks every line)
         public int Count;
-        public double Used;
+        public double Used, Checked;
+        public bool Fine;
+        // The grid it was cut from: 1 solid, 0 empty inside, 2 empty outside (open to the edge on its level).
+        public byte[] Grid = [];
+        public int Nx, Ny, Nz;
+        public float Cell, High;
+        public Vector3 Min;
     }
 
     private readonly CmdHolo[] _cmdHolos = [new(), new(), new(), new()];
-    private byte[] _cmdGrid = [];
     private const int CmdHoloCells = 72, CmdHoloLevels = 12, CmdHoloLines = 6000;
 
     private CmdHolo CmdHoloOf(Construct c, double now)
@@ -242,7 +251,7 @@ public sealed partial class Ui
         CmdHolo? free = null;
         foreach (var h in _cmdHolos)
         {
-            if (h.Id == c.Id && h.Parts == c.PartCount)
+            if (h.Id == c.Id && h.Parts == c.PartCount && CmdHoloSame(h, c, now))
             {
                 h.Used = now;
                 return h;
@@ -250,144 +259,229 @@ public sealed partial class Ui
             if (free == null || h.Used < free.Used)
                 free = h;
         }
-        CmdHoloBuild(free!, c);
+        CmdHoloBuild(free!, c, CmdHoloCells, 1.25f, CmdHoloLevels, CmdHoloLines, false);
         free!.Used = now;
         return free;
     }
 
     /// <summary>
     /// Cuts the hull into levels up its own height and keeps each level's outline: the parts' boxes fill a grid a level,
-    /// and every edge between a filled cell and an empty one is a line (runs joined). Once a hull, when first shown.
+    /// and every edge between a filled cell and an empty one is a line (runs joined). Once a hull, when first shown. Past
+    /// <paramref name="most"/> lines it cuts again with bigger cells (rather than drop the top levels).
     /// </summary>
-    private void CmdHoloBuild(CmdHolo h, Construct c)
+    private void CmdHoloBuild(CmdHolo h, Construct c, int cells, float levelLeast, int levels, int most, bool fine)
     {
         h.Id = c.Id;
         h.Parts = c.PartCount;
+        h.Shape = CmdShapeOf(c);
+        h.Fine = fine;
         h.Count = 0;
         var min = c.LocalMin;
         var size = Vector3.Max(c.LocalMax - min, new Vector3(0.1f));
-        var cell = MathF.Max(0.2f, MathF.Max(size.X, size.Z) / CmdHoloCells);
-        var nx = Math.Clamp((int)MathF.Ceiling(size.X / cell) + 2, 3, CmdHoloCells + 2);
-        var nz = Math.Clamp((int)MathF.Ceiling(size.Z / cell) + 2, 3, CmdHoloCells + 2);
-        var ny = Math.Clamp((int)MathF.Ceiling(size.Y / MathF.Max(1.25f, size.Y / CmdHoloLevels)), 1, CmdHoloLevels);
-        var high = size.Y / ny;
-        if (_cmdGrid.Length < nx * nz * ny)
-            _cmdGrid = new byte[nx * nz * ny];
-        Array.Clear(_cmdGrid, 0, nx * nz * ny);
-        for (var i = 0; i < c.PartCount; i++)
+        var cell = MathF.Max(fine ? 0.25f : 0.2f, MathF.Max(size.X, size.Z) / cells);
+        for (var tries = 0; ; tries++)
         {
-            c.PartBounds(i, out var lo, out var hi);
-            var x0 = Math.Clamp((int)MathF.Floor((lo.X - min.X) / cell + 0.25f) + 1, 1, nx - 2);
-            var x1 = Math.Clamp((int)MathF.Ceiling((hi.X - min.X) / cell - 0.25f), x0, nx - 2);
-            var z0 = Math.Clamp((int)MathF.Floor((lo.Z - min.Z) / cell + 0.25f) + 1, 1, nz - 2);
-            var z1 = Math.Clamp((int)MathF.Ceiling((hi.Z - min.Z) / cell - 0.25f), z0, nz - 2);
-            var y0 = Math.Clamp((int)MathF.Floor((lo.Y - min.Y) / high + 0.2f), 0, ny - 1);
-            var y1 = Math.Clamp((int)MathF.Ceiling((hi.Y - min.Y) / high - 0.2f) - 1, y0, ny - 1);
-            for (var y = y0; y <= y1; y++)
-                for (var z = z0; z <= z1; z++)
-                    Array.Fill(_cmdGrid, (byte)1, (y * nz + z) * nx + x0, x1 - x0 + 1);
-        }
-        var want = 0;
-        for (var pass = 0; pass < 2; pass++)
-        {
-            if (pass == 1)
+            CmdHoloCut(h, c, min, size, cell, cells, levelLeast, levels, fine);
+            var n = CmdHoloLinesOf(h, pass: 0);
+            if (n <= most || tries >= 5)
             {
-                want = Math.Min(want, CmdHoloLines);
+                var want = Math.Min(n, most);
                 if (h.A.Length < want)
                 {
                     h.A = new Vector3[want];
                     h.B = new Vector3[want];
                     h.Level = new float[want];
+                    h.Hull = new bool[want];
                 }
+                h.Count = Math.Min(CmdHoloLinesOf(h, pass: 1, want), want);
+                return;
             }
-            var n = 0;
-            for (var y = 0; y < ny; y++)
-            {
-                var wy = min.Y + (y + 0.5f) * high;
-                var level = ny > 1 ? y / (float)(ny - 1) : 1f;
-                // Edges along x: between row z - 1 and row z.
-                for (var z = 1; z < nz; z++)
-                {
-                    var start = -1;
-                    for (var x = 0; x <= nx; x++)
-                    {
-                        var edge = x < nx && _cmdGrid[(y * nz + z) * nx + x] != _cmdGrid[(y * nz + z - 1) * nx + x];
-                        if (edge && start < 0)
-                            start = x;
-                        else if (!edge && start >= 0)
-                        {
-                            if (pass == 1 && n < want)
-                            {
-                                h.A[n] = new Vector3(min.X + (start - 1) * cell, wy, min.Z + (z - 1) * cell);
-                                h.B[n] = new Vector3(min.X + (x - 1) * cell, wy, min.Z + (z - 1) * cell);
-                                h.Level[n] = level;
-                            }
-                            n++;
-                            start = -1;
-                        }
-                    }
-                }
-                // Edges along z: between column x - 1 and column x.
-                for (var x = 1; x < nx; x++)
-                {
-                    var start = -1;
-                    for (var z = 0; z <= nz; z++)
-                    {
-                        var edge = z < nz && _cmdGrid[(y * nz + z) * nx + x] != _cmdGrid[(y * nz + z) * nx + x - 1];
-                        if (edge && start < 0)
-                            start = z;
-                        else if (!edge && start >= 0)
-                        {
-                            if (pass == 1 && n < want)
-                            {
-                                h.A[n] = new Vector3(min.X + (x - 1) * cell, wy, min.Z + (start - 1) * cell);
-                                h.B[n] = new Vector3(min.X + (x - 1) * cell, wy, min.Z + (z - 1) * cell);
-                                h.Level[n] = level;
-                            }
-                            n++;
-                            start = -1;
-                        }
-                    }
-                }
-            }
-            // Ribs: where a corner of the outline is the same corner on the level above, a line up between them.
-            for (var y = 0; y + 1 < ny; y++)
-            {
-                var wy = min.Y + (y + 0.5f) * high;
-                var level = (y + 0.5f) / (ny - 1);
-                for (var z = 1; z < nz; z++)
-                    for (var x = 1; x < nx; x++)
-                    {
-                        var here = CmdCorner(y, x, z, nx, nz);
-                        if (here == 0 || here != CmdCorner(y + 1, x, z, nx, nz))
-                            continue;
-                        if (pass == 1 && n < want)
-                        {
-                            h.A[n] = new Vector3(min.X + (x - 1) * cell, wy, min.Z + (z - 1) * cell);
-                            h.B[n] = new Vector3(min.X + (x - 1) * cell, wy + high, min.Z + (z - 1) * cell);
-                            h.Level[n] = level;
-                        }
-                        n++;
-                    }
-            }
-            if (pass == 0)
-                want = n;
-            else
-                h.Count = Math.Min(n, want);
+            cell *= 1.3f;
         }
     }
 
-    /// <summary>The four cells round a grid corner on a level, as bits, when they make a corner of the outline (one or three filled); else 0.</summary>
-    private int CmdCorner(int y, int x, int z, int nx, int nz)
+    /// <summary>Fills <paramref name="h"/>'s grid from the parts' boxes; on the fine one, marks the empty cells open to the edge on each level.</summary>
+    private void CmdHoloCut(CmdHolo h, Construct c, Vector3 min, Vector3 size, float cell, int cells, float levelLeast, int levels, bool fine)
     {
-        var bits = _cmdGrid[(y * nz + z - 1) * nx + x - 1] | _cmdGrid[(y * nz + z - 1) * nx + x] << 1 | _cmdGrid[(y * nz + z) * nx + x - 1] << 2 | _cmdGrid[(y * nz + z) * nx + x] << 3;
-        return bits is 1 or 2 or 4 or 8 or 7 or 11 or 13 or 14 ? bits : 0;
+        var top = cells + 2;
+        var nx = Math.Clamp((int)MathF.Ceiling(size.X / cell) + 2, 3, top);
+        var nz = Math.Clamp((int)MathF.Ceiling(size.Z / cell) + 2, 3, top);
+        var ny = Math.Clamp((int)MathF.Ceiling(size.Y / MathF.Max(levelLeast, size.Y / levels)), 1, levels);
+        var high = size.Y / ny;
+        (h.Nx, h.Ny, h.Nz, h.Cell, h.High, h.Min) = (nx, ny, nz, cell, high, min);
+        var all = nx * nz * ny;
+        if (h.Grid.Length < all)
+            h.Grid = new byte[all];
+        var grid = h.Grid;
+        Array.Clear(grid, 0, all);
+        for (var i = 0; i < c.PartCount; i++)
+        {
+            // Each of the part's own boxes and skin shapes (a welded hull piece's bounds would fill the rooms it walls), else its bounds.
+            var boxes = c.Parts[i].D.Boxes;
+            var many = boxes.Length;
+            for (var b = 0; b < Math.Max(1, many); b++)
+            {
+                Vector3 lo, hi;
+                if (many == 0)
+                    c.PartBounds(i, out lo, out hi);
+                else
+                {
+                    if (boxes[b].Hidden || boxes[b].Detail && (boxes[b].Shape == 0 || PartShapes.KindOf(boxes[b].Shape) != "hull"))
+                        continue; // (the solid boxes and the hull skin's shapes: not trim)
+                    c.BoxOf(i, b, out var centre, out var half);
+                    (lo, hi) = (centre - half, centre + half);
+                }
+                CmdHoloFill(grid, lo, hi, min, cell, high, nx, ny, nz, fine);
+            }
+        }
+        if (fine)
+            CmdHoloOutside(h);
     }
+
+    /// <summary>
+    /// A box into the grid: at least a cell across, so a thin wall shows. Up its height the coarse grid fills at least one level; the
+    /// fine one only the levels whose middles it spans, so a deck plate doesn't fill a level and hide the rooms on it.
+    /// </summary>
+    private static void CmdHoloFill(byte[] grid, Vector3 lo, Vector3 hi, Vector3 min, float cell, float high, int nx, int ny, int nz, bool fine)
+    {
+        var x0 = Math.Clamp((int)MathF.Floor((lo.X - min.X) / cell + 0.25f) + 1, 1, nx - 2);
+        var x1 = Math.Clamp((int)MathF.Ceiling((hi.X - min.X) / cell - 0.25f), x0, nx - 2);
+        var z0 = Math.Clamp((int)MathF.Floor((lo.Z - min.Z) / cell + 0.25f) + 1, 1, nz - 2);
+        var z1 = Math.Clamp((int)MathF.Ceiling((hi.Z - min.Z) / cell - 0.25f), z0, nz - 2);
+        int y0, y1;
+        if (fine)
+        {
+            y0 = Math.Max(0, (int)MathF.Ceiling((lo.Y - min.Y) / high - 0.5f));
+            y1 = Math.Min(ny - 1, (int)MathF.Floor((hi.Y - min.Y) / high - 0.5f));
+        }
+        else
+        {
+            y0 = Math.Clamp((int)MathF.Floor((lo.Y - min.Y) / high + 0.2f), 0, ny - 1);
+            y1 = Math.Clamp((int)MathF.Ceiling((hi.Y - min.Y) / high - 0.2f) - 1, y0, ny - 1);
+        }
+        for (var y = y0; y <= y1; y++)
+            for (var z = z0; z <= z1; z++)
+                Array.Fill(grid, (byte)1, (y * nz + z) * nx + x0, x1 - x0 + 1);
+    }
+
+    /// <summary>The lines of <paramref name="h"/>'s grid: pass 0 counts them, pass 1 writes the first <paramref name="want"/>.</summary>
+    private static int CmdHoloLinesOf(CmdHolo h, int pass, int want = 0)
+    {
+        var (nx, ny, nz, cell, high, min, grid) = (h.Nx, h.Ny, h.Nz, h.Cell, h.High, h.Min, h.Grid);
+        var n = 0;
+        for (var y = 0; y < ny; y++)
+        {
+            var wy = min.Y + (y + 0.5f) * high;
+            var level = ny > 1 ? y / (float)(ny - 1) : 1f;
+            // Edges along x: between row z - 1 and row z.
+            for (var z = 1; z < nz; z++)
+            {
+                var start = -1;
+                var hull = false;
+                for (var x = 0; x <= nx; x++)
+                {
+                    var i0 = (y * nz + z - 1) * nx + x;
+                    var i1 = (y * nz + z) * nx + x;
+                    var edge = x < nx && (grid[i1] == 1) != (grid[i0] == 1);
+                    var skin = edge && (grid[i0] | grid[i1]) == 3; // (solid beside outside)
+                    if (edge && start >= 0 && skin != hull)
+                    {
+                        // (the run changes from skin to inner wall: two lines)
+                        if (pass == 1 && n < want)
+                            CmdHoloLine(h, n, new Vector3(min.X + (start - 1) * cell, wy, min.Z + (z - 1) * cell), new Vector3(min.X + (x - 1) * cell, wy, min.Z + (z - 1) * cell), level, hull);
+                        n++;
+                        start = -1;
+                    }
+                    if (edge && start < 0)
+                    {
+                        start = x;
+                        hull = skin;
+                    }
+                    else if (!edge && start >= 0)
+                    {
+                        if (pass == 1 && n < want)
+                            CmdHoloLine(h, n, new Vector3(min.X + (start - 1) * cell, wy, min.Z + (z - 1) * cell), new Vector3(min.X + (x - 1) * cell, wy, min.Z + (z - 1) * cell), level, hull);
+                        n++;
+                        start = -1;
+                    }
+                }
+            }
+            // Edges along z: between column x - 1 and column x.
+            for (var x = 1; x < nx; x++)
+            {
+                var start = -1;
+                var hull = false;
+                for (var z = 0; z <= nz; z++)
+                {
+                    var i0 = (y * nz + z) * nx + x - 1;
+                    var i1 = (y * nz + z) * nx + x;
+                    var edge = z < nz && (grid[i1] == 1) != (grid[i0] == 1);
+                    var skin = edge && (grid[i0] | grid[i1]) == 3;
+                    if (edge && start >= 0 && skin != hull)
+                    {
+                        if (pass == 1 && n < want)
+                            CmdHoloLine(h, n, new Vector3(min.X + (x - 1) * cell, wy, min.Z + (start - 1) * cell), new Vector3(min.X + (x - 1) * cell, wy, min.Z + (z - 1) * cell), level, hull);
+                        n++;
+                        start = -1;
+                    }
+                    if (edge && start < 0)
+                    {
+                        start = z;
+                        hull = skin;
+                    }
+                    else if (!edge && start >= 0)
+                    {
+                        if (pass == 1 && n < want)
+                            CmdHoloLine(h, n, new Vector3(min.X + (x - 1) * cell, wy, min.Z + (start - 1) * cell), new Vector3(min.X + (x - 1) * cell, wy, min.Z + (z - 1) * cell), level, hull);
+                        n++;
+                        start = -1;
+                    }
+                }
+            }
+        }
+        // Ribs: where a corner of the outline is the same corner on the level above, a line up between them.
+        for (var y = 0; y + 1 < ny; y++)
+        {
+            var wy = min.Y + (y + 0.5f) * high;
+            var level = (y + 0.5f) / (ny - 1);
+            for (var z = 1; z < nz; z++)
+                for (var x = 1; x < nx; x++)
+                {
+                    var here = CmdCorner(grid, y, x, z, nx, nz);
+                    if (here == 0 || here != CmdCorner(grid, y + 1, x, z, nx, nz))
+                        continue;
+                    if (pass == 1 && n < want)
+                        CmdHoloLine(h, n, new Vector3(min.X + (x - 1) * cell, wy, min.Z + (z - 1) * cell), new Vector3(min.X + (x - 1) * cell, wy + high, min.Z + (z - 1) * cell), level, !h.Fine || CmdCornerSkin(grid, y, x, z, nx, nz));
+                    n++;
+                }
+        }
+        return n;
+    }
+
+    private static void CmdHoloLine(CmdHolo h, int n, Vector3 a, Vector3 b, float level, bool hull)
+    {
+        h.A[n] = a;
+        h.B[n] = b;
+        h.Level[n] = level;
+        h.Hull[n] = hull || !h.Fine;
+    }
+
+    /// <summary>The four cells round a grid corner on a level, as bits, when they make a corner of the outline (one or three filled); else 0.</summary>
+    private static int CmdCorner(byte[] grid, int y, int x, int z, int nx, int nz)
+    {
+        var bits = S(grid[(y * nz + z - 1) * nx + x - 1]) | S(grid[(y * nz + z - 1) * nx + x]) << 1 | S(grid[(y * nz + z) * nx + x - 1]) << 2 | S(grid[(y * nz + z) * nx + x]) << 3;
+        return bits is 1 or 2 or 4 or 8 or 7 or 11 or 13 or 14 ? bits : 0;
+        static int S(byte v) => v == 1 ? 1 : 0;
+    }
+
+    /// <summary>Does an empty cell open to the outside touch this corner (it is a corner of the skin)?</summary>
+    private static bool CmdCornerSkin(byte[] grid, int y, int x, int z, int nx, int nz) =>
+        grid[(y * nz + z - 1) * nx + x - 1] == 2 || grid[(y * nz + z - 1) * nx + x] == 2 || grid[(y * nz + z) * nx + x - 1] == 2 || grid[(y * nz + z) * nx + x] == 2;
 
     /// <summary>The picked craft as a hologram where it is, turned as it is, its thrusters lit when they push.</summary>
     private void CmdHoloDraw(ImDrawListPtr dl, Game g, Construct c, in CmdCraft cr, Vector3 colour, float fade, double now)
     {
-        var h = CmdHoloOf(c, now);
+        var h = CmdHoloFineWanted(c, cr) ? CmdHoloFineOf(c, now) : CmdHoloOf(c, now); // (close up, the picked one cut finer: UiCommandHolo.cs)
         // The body's axes on the screen (pixels a metre): through the World's turn into the ecliptic, then the view's.
         var turn = c.SpaceAway != 0 ? Game.AwayRot : _cvPose.Rot;
         Span<float2> ax = stackalloc float2[3];
@@ -399,16 +493,8 @@ public sealed partial class Ui
         var com = c.Com;
         var at = cr.At;
         var flicker = 0.93f + 0.07f * MathF.Sin((float)now * 31f);
-        // Fewer lines when it is small on the screen.
-        var skip = cr.Px < 60 * _scale ? 3 : cr.Px < 140 * _scale ? 2 : 1;
-        for (var i = 0; i < h.Count; i += skip)
-        {
-            var a = h.A[i] - com;
-            var b = h.B[i] - com;
-            var pa = at + ax[0] * a.X + ax[1] * a.Y + ax[2] * a.Z;
-            var pb = at + ax[0] * b.X + ax[1] * b.Y + ax[2] * b.Z;
-            dl.AddLine(pa, pb, Hud.Colour(colour, (0.28f + 0.6f * h.Level[i]) * fade * flicker), _scale);
-        }
+        CmdHoloDrawLines(dl, h, cr, ax, com, colour, fade, flicker); // (fewer lines when it is small on the screen)
+        CmdHoloExtras(dl, g, c, h, cr, ax, com, fade, now); // (doors and hatches, and where a pod would cut in)
         // Its drive: a flare behind each thruster that pushes.
         var push = c.ThrustShow;
         for (var k = 0; k < c.ThrusterCount; k++)
@@ -424,6 +510,7 @@ public sealed partial class Ui
                 CmdGlow(dl, pa, pb, CmdAmber, fade * (0.5f + 0.5f * push), 2f);
             ImDrawListExtensions.AddCircleFilled(dl, in pa, 2.2f * _scale, Hud.Colour(push > 0.02f ? CmdAmber : colour, fade), 6);
         }
+        CmdHoloCrew(dl, g, c, at, ax, com, fade, now); // (where its crew are: UiCommandCrew.cs)
         // Where the flight computer sits.
         if (c.StabCount > 0 && c.Stabs[0].Part < c.PartCount)
         {
@@ -503,7 +590,7 @@ public sealed partial class Ui
     {
         public ushort Id;
         public double Read;
-        public string Name, Class, Status, Flight, Orbit, Hull, Fuel, Power, Drive, Burn, Cargo, Crew, Systems, Order, Phase, Trip, Problem;
+        public string Name, Class, Status, Flight, Orbit, Hull, Fuel, Power, Drive, Burn, Cargo, Systems, Order, Phase, Trip, Problem;
         public float HullShare, FuelShare, PowerShare, OrderDone;
         public bool HasFuel, HasPower, HasOrder, Orders, Thrusting;
     }
@@ -591,28 +678,7 @@ public sealed partial class Ui
         var cargo = c.LoadMass + c.CargoMass;
         k.Cargo = cargo > 0.5f ? string.Create(inv, $"{cargo / 1000:0.00} T ABOARD") : "EMPTY";
 
-        // Who is aboard: in its seats, and standing within its hull.
-        _cmdCrew.Clear();
-        var standing = 0;
-        foreach (var (id, p) in g.Players)
-        {
-            if (!p.Alive)
-                continue;
-            ref var hand = ref g.SandboxHands.Hand(id);
-            if (hand.Seated && hand.SeatBody == c.Id)
-            {
-                if (_cmdCrew.Length > 0)
-                    _cmdCrew.Append(", ");
-                _cmdCrew.Append(p.Name.ToUpperInvariant());
-                if (c.Driver == id)
-                    _cmdCrew.Append(" (PILOT)");
-            }
-            else if (c.SpaceAway == 0 && Vector3.DistanceSquared(p.Position, c.WorldCom) < c.Radius * c.Radius * 0.6f)
-                standing++;
-        }
-        if (standing > 0)
-            _cmdCrew.Append(_cmdCrew.Length > 0 ? ", " : "").Append(inv, $"{standing} ON DECK");
-        k.Crew = _cmdCrew.Length > 0 ? _cmdCrew.ToString() : "NOBODY ABOARD";
+        CmdCardCrew(g, c); // (who holds it, its command and its crew: UiCommandCrew.cs)
 
         _cmdCrew.Clear();
         _cmdCrew.Append(c.StabCount == 0 ? "NO FLIGHT COMPUTER" : Game.NavProblem(c) == null ? "FLIGHT COMPUTER" : "FLIGHT COMPUTER DOWN");
@@ -637,10 +703,13 @@ public sealed partial class Ui
             var phase = o2.Phase switch
             {
                 NavPhase.Climb => "CLIMBING OUT OF THE SKY",
+                NavPhase.Transfer when o2.Kind == NavKind.Meet => "CLOSING ON IT",
                 NavPhase.Transfer => "ON ITS WAY",
                 NavPhase.Insert => "MATCHING THE ORBIT",
                 NavPhase.Orbiting => "IN ORBIT, DRIVE OFF",
+                NavPhase.Hold when o2.Kind == NavKind.Meet => "ALONGSIDE, MATCHING ITS MOTION",
                 NavPhase.Hold => "HOLDING AT THE POINT",
+                NavPhase.Flying when o2.Kind == NavKind.Meet => "FLYING TO ITS SIDE",
                 NavPhase.Flying when o2.Kind == NavKind.Dock => "LINING UP WITH THE PORT",
                 NavPhase.Flying => "FLYING THERE",
                 NavPhase.Arrived => "OVER THE WAYPOINT",
@@ -658,6 +727,7 @@ public sealed partial class Ui
                 _ => "STARTING",
             };
             k.Order = o2.Kind == NavKind.Dock && g.Constructs.Get(o2.Target) is { } with ? "DOCK WITH " + CmdName(with) + (o2.TargetPart < with.PartCount ? ": " + with.DefOf(o2.TargetPart).Name.ToUpperInvariant() : "")
+                : o2.Kind == NavKind.Meet && g.Constructs.Get(o2.Target) is { } meet ? string.Create(inv, $"RENDEZVOUS WITH {CmdName(meet)}, {o2.Radius:0} M APART")
                 : Game.NavText(sys, o2).ToUpperInvariant();
             if (o2.ArriveNs != 0 && o2.Phase is NavPhase.Depart or NavPhase.Coast or NavPhase.Correct or NavPhase.Wait)
             {
@@ -689,7 +759,7 @@ public sealed partial class Ui
         var pad = 22 * _scale;
         var w = 400 * _scale;
         var line = 19 * _scale;
-        var lines = 14 + (k.Orbit.Length > 0 ? 1 : 0) + (k.HasOrder ? 3 : 0) + (k.Trip.Length > 0 ? 1 : 0) + (k.Problem.Length > 0 ? 1 : 0);
+        var lines = 13 + CmdCrewLines() + (k.Orbit.Length > 0 ? 1 : 0) + (k.HasOrder ? 3 : 0) + (k.Trip.Length > 0 ? 1 : 0) + (k.Problem.Length > 0 ? 1 : 0);
         var p0 = new float2(_cvOrg.X + _cvSize.X - pad - w, _cvOrg.Y + pad);
         var p1 = p0 + new float2(w, 64 * _scale + lines * line + 50 * _scale);
         var edge = k.HasOrder ? CmdAmber : CmdCyan;
@@ -743,8 +813,9 @@ public sealed partial class Ui
         Row(dl, "DRIVE", k.Drive, k.Drive.StartsWith('N') ? CmdAmber : CmdCyan, ref y);
         Row(dl, "BURN", k.Burn, k.Drive.StartsWith('N') ? CmdAmber : CmdCyan, ref y);
         Row(dl, "CARGO", k.Cargo, CmdCyan, ref y);
-        Row(dl, "CREW", k.Crew, CmdCyan, ref y);
         Row(dl, "SYSTEMS", k.Systems, CmdCyan, ref y);
+        y += 6 * _scale;
+        CmdCardCrewDraw(dl, x, col, ref y, line, fade); // (UiCommandCrew.cs)
         if (CmdLinked(c, out var routePart, out var manifest) is { } routeText)
         {
             // Linked logistics (LinkedLogisticsRoutes.cs): its route's state and its manifest, and ROUTE opens its Route Computer's panel.

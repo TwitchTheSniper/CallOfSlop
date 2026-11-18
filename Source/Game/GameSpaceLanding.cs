@@ -52,6 +52,25 @@ public sealed partial class Game
     private static double LandEdge(Map m) => Math.Max(Math.Max(m.HalfX, m.HalfZ), m.Planetoid!.Radius + 500);
 
     /// <summary>
+    /// Host, before the ships step: each world's sky's edge for <see cref="SpaceShips.Sky"/> (the bubble's own, and those
+    /// a ship could land on), so a coasting ship whose orbit dips under one holds the time speed down as it nears it
+    /// instead of passing the edge, or the ground, in one sped-up tick (2026-11-17: 1,000,000x is 4.6 hours a tick).
+    /// </summary>
+    internal void SpaceSkies(SpaceSession s, SpaceFlight f)
+    {
+        var edge = SpaceEdge;
+        if (edge > 0)
+            f.Ships.Sky[s.Bubble.Body] = edge;
+        if (!SandboxOn)
+            return;
+        if (!ReferenceEquals(_landableFor, s))
+            LandableFor(s);
+        foreach (var (lg, b, _, e) in _landable)
+            if (s.FlightOf(lg) is { } lf && b < lf.Ships.Sky.Length)
+                lf.Ships.Sky[b] = e;
+    }
+
+    /// <summary>
     /// Host, after the ships step: a ship in space within another planetoid's sky lands, or is held at its edge. A ship
     /// that has jumped to another star system lands on that system's worlds the same way (the whole group: free travel
     /// stays inside the bubble's own system).
@@ -238,7 +257,7 @@ public sealed partial class Game
         FirstForRiders(ship, Milestone.Landing, to.Name); // (before the save: the records carry it to the new world; GameMilestones.cs)
         WorldSaveNow(wait: true); // (the whole world, the ship and everyone's things with it, in the world's own file)
         var from = World.Map.Name;
-        var why = WorldCopy(ws, StashFolder(ws, from), c => !Aboard(ship, c)); // (the planetoid left behind, without the ship)
+        var why = WorldCopy(ws, StashFolder(ws, from), c => !Aboard(ship, c) && !ShellSaveStandIn(c)); // (the planetoid left behind, without the ship; a worn shell goes with its wearer, GameRobotShell.cs)
         if (why != null)
         {
             foreach (var p in Players.Values)

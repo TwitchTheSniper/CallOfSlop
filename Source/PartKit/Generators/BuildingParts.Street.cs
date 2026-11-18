@@ -1,10 +1,10 @@
 namespace CallOfSlop.PartKit.Generators;
 
 /// <summary>
-/// What the Ministry puts on its roofs (docs/sandbox/constructs/buildings.md, "The street"): the things that give each block
-/// of the penal colony its own outline against the sky, one bold piece a building. The Tannoy Mast is the voice the inmates
-/// hear all day; the Roof Sign Frame holds a slogan board where the whole street reads it; the Roof Water Tank stands on legs
-/// over a roof; the Loading Hoist reaches out over a dock from the lid; the Air Raid Siren calls the guards out. Steel, on a
+/// What goes on a concrete roof (docs/sandbox/constructs/buildings.md, "The street"): the things that give a block its own
+/// outline against the sky, one bold piece a building. The Tannoy Mast; the Roof Sign Frame holds a board where the whole street
+/// reads it; the Roof Water Tank stands on legs over a roof; the Loading Hoist reaches out over a dock from the lid; the Air Raid
+/// Siren. Steel, on a
 /// roof slab's top sockets or the lid's front, a handful of boxes each.
 /// </summary>
 public sealed partial class BuildingParts
@@ -14,8 +14,8 @@ public sealed partial class BuildingParts
     /// <summary>A pole on a concrete foot with four horn loudspeakers at its head, one each way.</summary>
     private static BPart TannoyMast()
     {
-        var p = new BPart("Tannoy Mast", SectionSite, "A pole of horn loudspeakers: the Ministry's voice, at all hours.", tool: "wrench", color: StreetSteel);
-        p.CBox(0, 0, 0, 2, 1, 2, MinWeathered); // the foot
+        var p = new BPart("Tannoy Mast", SectionSite, "A pole of horn loudspeakers: somebody's voice, at all hours.", tool: "wrench", color: StreetSteel);
+        p.CBox(0, 0, 0, 2, 1, 2, ConcreteWeathered); // the foot
         p.FBox(0.19, 0.25, 0.19, 0.31, 3.9, 0.31); // the pole (tall: from the street it is the tallest thing on the Records Office)
         p.FBox(0.16, 3.9, 0.16, 0.34, 3.96, 0.34, detail: true); // (its cap)
         p.FBox(-0.1, 3.3, 0.2, 0.6, 3.36, 0.3, detail: true); // (the cross-arm the cables run along)
@@ -41,7 +41,7 @@ public sealed partial class BuildingParts
         p.FBox(0.0, 0.0, 0.1, 0.12, 1.72, 0.25); // the posts
         p.FBox(2.88, 0.0, 0.1, 3.0, 1.72, 0.25);
         p.FBox(1.44, 0.0, 0.1, 1.56, 0.7, 0.25); // the middle foot
-        p.FBox(-0.05, 0.7, 0.05, 3.05, 1.6, 0.1, MinSlate); // the backing
+        p.FBox(-0.05, 0.7, 0.05, 3.05, 1.6, 0.1, ConcreteSlate); // the backing
         p.FBox(-0.06, 1.72, -0.25, 3.06, 1.78, 0.27); // the hood
         p.Sock("b", [1.5 - H, 0 - H, 0.175 - H], "-y");
         p.Sock("sign", [1.5 - H, 1.15 - H, 0.05 - H], "-z");
@@ -92,7 +92,7 @@ public sealed partial class BuildingParts
     private static BPart AirRaidSiren()
     {
         var p = new BPart("Air Raid Siren", SectionSite, "A louvred drum on a mast: when it winds up, the guards turn out.", tool: "wrench", color: "#8a9196");
-        p.CBox(0, 0, 0, 2, 1, 2, MinWeathered); // the foot
+        p.CBox(0, 0, 0, 2, 1, 2, ConcreteWeathered); // the foot
         p.FBox(0.19, 0.25, 0.19, 0.31, 3.0, 0.31, StreetSteel); // the mast, clear of the lid in profile
         p.FBox(-0.05, 3.0, -0.05, 0.55, 3.5, 0.55); // the drum
         p.FBox(-0.065, 3.1, -0.065, 0.565, 3.4, 0.565, "#5d6366", detail: true); // (its louvres)
@@ -109,7 +109,7 @@ public sealed partial class BuildingParts
     private static BPart RoofSearchlight()
     {
         var p = new BPart("Roof Searchlight", SectionSite, "A searchlight on a pedestal: in a storm its beam sweeps the ground.", tool: "wrench", color: StreetSteel);
-        p.CBox(0, 0, 0, 2, 1, 2, MinWeathered); // the foot
+        p.CBox(0, 0, 0, 2, 1, 2, ConcreteWeathered); // the foot
         p.FBox(0.2, 0.25, 0.2, 0.3, 0.82, 0.3); // the pedestal
         p.FBox(0.02, 0.8, 0.2, 0.48, 0.86, 0.3, detail: true); // the yoke's cross-bar and arms
         p.FBox(0.02, 0.86, 0.2, 0.07, 1.16, 0.3, detail: true);

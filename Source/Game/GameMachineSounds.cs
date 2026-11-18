@@ -23,7 +23,7 @@ public sealed partial class Game
     /// <summary>The link's sounds at the chair, as heard by others, are this much of the wearer's own.</summary>
     private const float ChairHeardGain = 0.55f;
 
-    /// <summary>Every Sandbox frame, host and clients (Program.Sandbox.cs): the hums and the shells' start-ups.</summary>
+    /// <summary>Every Sandbox frame, host and clients (Program.Sandbox.cs): the hums, the shells' start-ups and the doors.</summary>
     public void MachineFrameSounds(double now)
     {
         var dt = (float)Math.Clamp(now - _mcLast, 0, 0.25);
@@ -31,9 +31,11 @@ public sealed partial class Game
         if (!Audio.Enabled)
         {
             _mcFrame++; // (nothing heard: everyone starts unseen when sound comes back)
+            Constructs.DoorHeard.Clear();
             return;
         }
         CallOfSlop.MachineSounds.Frame(Constructs, Audio, Audio.ListenerPosition, dt);
+        DoorSounds(); // (doors and hatches moving: GameDoorSounds.cs)
         _mcFrame++;
         foreach (var p in Players.Values)
         {

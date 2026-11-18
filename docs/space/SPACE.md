@@ -30,7 +30,7 @@ metres). `QuatD` is a double quaternion; `Rotate` turns a frame's own axes into 
 `SpaceTime` is a `long` count of nanoseconds since the system's epoch (the doc's BubbleTime), good for 292 years. A 60 Hz
 tick isn't a whole number of nanoseconds, so `SpaceTime.TickNs(n)` is the exact floor of n / 60 s: 60 ticks are one
 second exactly, and a century of ticks has no remainder. `SpaceClock` is stepped once a tick with a whole-number time speed
-(`Speed`: 0 pauses, up to 100,000x); its time is always "time at the last speed change + `TickNs(ticks x speed)`", so it
+(`Speed`: 0 pauses, up to 1,000,000x; past 250 years of space time it runs no faster than 1x, since `SpaceTime` ends at 292); its time is always "time at the last speed change + `TickNs(ticks x speed)`", so it
 never drifts. (This was the "time warp" until Karl's 2026-11-16 ruling that warp no longer changes time: the old text is
 in docs/archive/space/TIME-WARP.md.)
 
@@ -134,7 +134,13 @@ pure function of position, velocity and time (the predictor calls it at future t
 when it matters.
 
 **Time speed.** `SpaceShips.MaxSpeed` is the fastest time speed at which every ship still takes its full steps within a
-per-tick budget (64 coasting substeps or 16 adaptive steps a tick); ships on rails don't limit it. The rule
+per-tick budget (64 coasting substeps or 16 adaptive steps a tick). A ship on rails is looked at again before it could
+reach a sphere of influence's edge (half the time to it at its speed relative to the body, at least 4 s, at most
+`MaxRailChunks` looks a tick), so time slows as it nears one; a coasting ship whose orbit dips under its primary's sky
+(`SpaceShips.Sky`, set by the game) takes at least four ticks to reach it. Faster than 10,000x
+(`SpaceTimeRule.WarpRailsAbove`, `SpaceShips.WarpRails`) a ship goes on rails while the others' pull is under 2% of its
+primary's (`WarpRailTolerance`; off again over 8%), not 10^-6: the patched conic of space games' high warp. A moon's tide
+on a low orbit (Slopolis on Glacier's, a few 10^-6) is then left out, so the orbit stays as it was instead of wandering. The rule
 (`SpaceTimeRule.Effective`): only the host sets it; above 1x only while nobody is busy (`SpaceFlight.AnyoneBusy`, set by
 the game from phase 3); never past `MaxSpeed` or the limit the game passes in (ships under orders slowing it before a
 burn, and the host's "Fastest time speed": docs/space/COMMAND.md); the host may always pause (0).

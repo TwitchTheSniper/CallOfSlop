@@ -731,9 +731,8 @@ public static class WeaponSet
             Console.WriteLine($"attachments that fit ({fits.Length}): {(fits.Length == 0 ? "none" : string.Join(", ", fits))}");
             if (w.Order == 1000)
                 Console.WriteLine("note: no \"order\", so it's listed after the shipped weapons (they use 1-50)");
-            Console.WriteLine(w.UnlockLevel is { } ul
-                ? $"note: unlocks at level {Math.Clamp(ul, 1, Progress.MaxLevel)}{(ul > Progress.MaxLevel ? $" (max level is {Progress.MaxLevel})" : "")}"
-                : Progress.HasBuiltInUnlock(w.Name) ? "note: unlocks at its built-in level" : $"note: no \"unlockLevel\", so it unlocks at the max level ({Progress.MaxLevel})");
+            if (w.UnlockLevel != null)
+                Console.WriteLine("note: \"unlockLevel\" is read and ignored (levelling went, 2026-11-17)");
             var startOptic = Attachments.ResolveDefaultOptic(w);
             if (w.DefaultOptic != null && !string.Equals(startOptic?.Name, w.DefaultOptic, StringComparison.OrdinalIgnoreCase))
                 Console.WriteLine($"note: \"defaultOptic\" names '{w.DefaultOptic}', which isn't an optic that fits it");

@@ -28,6 +28,8 @@ public sealed partial class Game
     public const int BoardDropTicks = 90; // ticks it drops clear of its dock first, at most
     public const float BoardDropDown = 0.3f; // m it drops out of its dock (the Zero Day's Limpet has 0.8 m under it on the ground)
     public const float BoardClimb = 12; // m at most it climbs over the straight way, so it doesn't drag along the ground
+    public const float BoardTouch = 0.15f; // m: a mag lock this near the hull is on it (the skirt's gasket stands a little proud of the locks)
+    public const float BoardDropSpeed = 2.5f; // m/s at most out of its dock
     public const int BoardFlyTicks = 120 * World.TickRate; // it gives up past this on its way
     public const int BoardCutTicks = 180 * World.TickRate; // and past this cutting
 
@@ -73,9 +75,11 @@ public sealed partial class Game
             return FormattableString.Invariant($"That ship is over {BoardRange / 1000:0} km off: the pod can't reach it");
         if (part < 0 || part >= t.PartCount)
             part = 0;
-        if (!BoardSpot(t, part, out var seg, out var spot, out var outward, out var up, out var hitPart))
+        if (!BoardSpot(t, part, !(point.Z >= 0.5 && BoardIsDoor(t, part)), out var seg, out var spot, out var outward, out var up, out var hitPart))
             return "There is no hull there to board by";
         var door = point.Z >= 0.5 && BoardIsDoor(t, part) ? part : BoardIsDoor(t, hitPart) && point.Z >= 0.5 ? hitPart : -1;
+        if (door < 0)
+            BoardNearRoom(t, pod, part, ref seg, ref spot, ref outward, ref up, ref hitPart); // (a hole into solid hull leads nowhere: the nearest patch with a room behind, its floor level with the pod's)
         var o = NavOf(pod.Id);
         if (o == null)
         {
@@ -98,6 +102,8 @@ public sealed partial class Game
         o.BoardUp = up;
         o.BoardDoor = door;
         o.BoardTicks = o.BoardAll = 0;
+        o.BoardSide = 0;
+        o.BoardDropFor = BoardDropTicks;
         // Where it drops to first (half a metre down out of its dock, in the carrier's frame), and its turn in that frame,
         // held until it is out from under the carrier.
         if (BoardPart(pod, BreachKind.Cutter) is var cut and >= 0)
@@ -105,7 +111,17 @@ public sealed partial class Game
             ConstructBreach.Face(pod, cut, out var nose0, out _);
             var cinv = Quaternion.Conjugate(carrier.Rot);
             o.BoardFrom = carrier.Id;
-            o.BoardDrop = Vector3.Transform(nose0 - carrier.Pos, cinv) - Vector3.UnitY * BoardDropDown;
+            var noseIn = Vector3.Transform(nose0 - carrier.Pos, cinv);
+            var drop = BoardDropDown;
+            if (carrier.SpaceShip != 0)
+            {
+                // In space there is no ground under it: it drops clear of the carrier's lowest point (its legs' feet) first, its roof
+                // a metre under them, and goes straight from there (Karl, 2026-11-18: it fires away and clears the ship first).
+                var roof = Vector3.Transform(pod.WorldCom - nose0, cinv).Y + (pod.LocalMax.Y - pod.Com.Y);
+                drop = MathF.Max(drop, noseIn.Y + roof - carrier.LocalMin.Y + 1f);
+            }
+            o.BoardDrop = noseIn - Vector3.UnitY * drop;
+            o.BoardDropFor = BoardDropTicks + (int)(drop / BoardDropSpeed * World.TickRate);
             o.BoardRot = Quaternion.Normalize(cinv * pod.Rot);
         }
         ConstructCarrier.LetGo(Constructs, pod);
@@ -119,7 +135,7 @@ public sealed partial class Game
     /// or a door's thin side, else the side of the body it lies furthest towards), then a ray in from outside along it through the
     /// part's middle finds the skin. In the frame of the part's segment, so the spot moves with that segment.
     /// </summary>
-    private bool BoardSpot(Construct t, int part, out byte seg, out Vector3 spot, out Vector3 outward, out Vector3 up, out int hitPart)
+    private bool BoardSpot(Construct t, int part, bool flat, out byte seg, out Vector3 spot, out Vector3 outward, out Vector3 up, out int hitPart)
     {
         if (t.Dirty)
             t.Rebuild();
@@ -158,14 +174,112 @@ public sealed partial class Game
         }
         else
             at = tt + Vector3.Transform(mid + n * Vector3.Dot(size, Vector3.Abs(n)) * 0.5f, q);
-        spot = Vector3.Transform(at - tt, inv);
         outward = Vector3.Normalize(Vector3.Transform(nw, inv));
-        // The pod's up: the target's own up, square to the way out (on its top or belly, the target's forward).
+        up = BoardUpOf(outward);
+        if (flat)
+        {
+            // The hull: a patch the whole nose sits flat on, near the spot asked (Karl, 2026-11-18: it met the hull at an angle by
+            // its edge, its skirt over the side). The way out first, then the part's other sides, nearest the body's skin first
+            // (a pointed bow has no flat tip, but its flanks are).
+            Span<Vector3> ways = stackalloc Vector3[5];
+            var count = 0;
+            ways[count++] = n;
+            for (var a = 0; a < 3; a++)
+            {
+                if (a == axis)
+                    continue;
+                var e = a == 0 ? Vector3.UnitX : a == 1 ? Vector3.UnitY : Vector3.UnitZ;
+                var o = a == 0 ? off.X : a == 1 ? off.Y : off.Z;
+                ways[count++] = o >= 0 ? e : -e;
+                ways[count++] = o >= 0 ? -e : e;
+            }
+            var found = false;
+            for (var w = 0; w < count && !found; w++)
+            {
+                var dw = Vector3.Transform(ways[w], q);
+                var start = at;
+                if (w > 0)
+                {
+                    if (!Constructs.Raycast(tt + Vector3.Transform(mid, q) + dw * (t.Radius * 2 + 5), -dw, t.Radius * 4 + 10, out var side, only: t))
+                        continue;
+                    start = side.Point;
+                }
+                var upw = Vector3.Transform(BoardUpOf(ways[w]), q);
+                if (!BoardFlat(t, start, w == 0 ? nw : dw, upw, out var flatAt, out var flatN, out var flatPart))
+                    continue;
+                at = flatAt;
+                hitPart = flatPart;
+                outward = Vector3.Normalize(Vector3.Transform(flatN, inv));
+                up = BoardUpOf(outward);
+                found = true;
+            }
+            if (!found && !_boardQuiet)
+                Console.WriteLine($"[nav] board: no flat patch of construct {t.Id}'s hull within {BoardFlatReach:0} m of its {t.DefOf(part).Name} on any side: the pod goes for the spot itself");
+        }
+        spot = Vector3.Transform(at - tt, inv);
+        return true;
+    }
+
+    /// <summary>The pod's up on a face whose way out is <paramref name="outward"/>: the target's own up, square to it (on its top or belly, the target's forward).</summary>
+    private static Vector3 BoardUpOf(Vector3 outward)
+    {
         var u = Vector3.UnitY - outward * outward.Y;
         if (u.LengthSquared() < 0.04f)
             u = -Vector3.UnitZ - outward * -outward.Z;
-        up = Vector3.Normalize(u);
-        return true;
+        return Vector3.Normalize(u);
+    }
+
+    private const float BoardNoseHalfW = 1.35f, BoardNoseHalfH = 1.05f; // m: the Limpet's skirt, half its width and height
+    private const float BoardFlatStep = 0.5f, BoardFlatReach = 6f; // m: how far round the spot asked it looks, and how finely
+    private const float BoardFlatDepth = 0.3f; // m: how far the skin may stand off flat under the skirt's corners
+
+    /// <summary>
+    /// Host, once per Board order: the nearest spot to <paramref name="at"/> (in rings out to <see cref="BoardFlatReach"/>, along the
+    /// face) where rays in along <paramref name="nw"/> at the skirt's middle and four corners all strike <paramref name="t"/> within
+    /// <see cref="BoardFlatDepth"/> of one another, on faces that look out much the same way. False: nowhere near is flat enough.
+    /// </summary>
+    private bool BoardFlat(Construct t, Vector3 at, Vector3 nw, Vector3 uw, out Vector3 flatAt, out Vector3 flatN, out int flatPart)
+    {
+        flatAt = at;
+        flatN = nw;
+        flatPart = -1;
+        var rw = Vector3.Normalize(Vector3.Cross(uw, nw));
+        var back = t.Radius * 2 + 5;
+        var reach = t.Radius * 4 + 10;
+        var rings = (int)(BoardFlatReach / BoardFlatStep);
+        for (var ring = 0; ring <= rings; ring++)
+            for (var i = -ring; i <= ring; i++)
+                for (var j = -ring; j <= ring; j++)
+                {
+                    if (Math.Max(Math.Abs(i), Math.Abs(j)) != ring)
+                        continue; // (the ring's edge only: nearer ones were tried)
+                    var c = at + rw * (i * BoardFlatStep) + uw * (j * BoardFlatStep);
+                    if (!Constructs.Raycast(c + nw * back, -nw, reach, out var mid, only: t) || Vector3.Dot(mid.Normal, nw) < 0.5f)
+                        continue;
+                    // The skirt square to the face struck (a sloped bow's face too), its corners cast in along that face's normal.
+                    var n0 = Vector3.Normalize(mid.Normal);
+                    var u0 = uw - n0 * Vector3.Dot(uw, n0);
+                    if (u0.LengthSquared() < 0.01f)
+                        continue;
+                    u0 = Vector3.Normalize(u0);
+                    var r0 = Vector3.Cross(u0, n0);
+                    var ok = true;
+                    for (var k = 0; k < 4 && ok; k++)
+                    {
+                        var corner = mid.Point + r0 * ((k & 1) == 0 ? BoardNoseHalfW : -BoardNoseHalfW) + u0 * ((k & 2) == 0 ? BoardNoseHalfH : -BoardNoseHalfH);
+                        var hitc = Constructs.Raycast(corner + n0 * 3, -n0, 6, out var h, only: t);
+                        ok = hitc && MathF.Abs(h.Distance - 3) < BoardFlatDepth && Vector3.Dot(h.Normal, n0) > 0.9f;
+                    }
+                    if (!ok)
+                        continue;
+                    flatAt = mid.Point;
+                    flatN = Vector3.Normalize(mid.Normal);
+                    flatPart = mid.Part >= 0 && mid.Part < t.PartCount ? mid.Part : -1;
+                    if (flatPart < 0)
+                        continue;
+                    return true;
+                }
+        return false;
     }
 
     /// <summary>Host, every tick: a Board order flies its pod, grips, opens or cuts. Allocation-free.</summary>
@@ -186,6 +300,15 @@ public sealed partial class Game
             pod.Rebuild();
         o.BoardTicks++;
         o.BoardAll++;
+        var lit = pod.ThrustPuppet;
+        pod.ThrustPuppet = false; // (NavBoardSteer lights them again while it flies)
+        NavBoardFly(o, pod, t);
+        if (lit && !pod.ThrustPuppet)
+            NavBoardJetsOut(pod);
+    }
+
+    private void NavBoardFly(NavOrder o, Construct pod, Construct t)
+    {
         if (pod.CarriedBy != 0)
         {
             if (pod.CarriedBy != t.Id || o.Phase is not (NavPhase.Arrived or NavPhase.Hold))
@@ -233,10 +356,10 @@ public sealed partial class Game
         {
             // First it drops out of its dock, as it hung there.
             aim = from.Pos + Vector3.Transform(o.BoardDrop, from.Rot);
-            most = 1.5f;
+            most = BoardDropSpeed;
             frame = from;
             goal = Quaternion.Normalize(from.Rot * o.BoardRot);
-            if (o.BoardTicks >= BoardDropTicks || Vector3.Distance(nose, aim) < 0.12f)
+            if (o.BoardTicks >= o.BoardDropFor || Vector3.Distance(nose, aim) < 0.12f)
                 NavBoardStage(o, NavPhase.Transfer);
         }
         else if (o.Phase is NavPhase.None or NavPhase.Transfer)
@@ -249,8 +372,29 @@ public sealed partial class Game
                 // Out from under its carrier first, level and sideways (between its legs, fore and aft of the pod), to the target's
                 // side, still turned as it hung.
                 var side = Vector3.Transform(Vector3.UnitX, from.Rot);
-                aim = nose + (Vector3.Dot(standoff - nose, side) >= 0 ? side : -side) * 4;
+                if (o.BoardSide == 0)
+                {
+                    // Chosen once: the target's side, or (a target fore or aft, along the carrier) the side the pod is already on.
+                    // Picked each tick, a target dead astern flipped it from side to side and it never left.
+                    var way = Vector3.Dot(standoff - from.WorldCom, side);
+                    if (MathF.Abs(way) < 2)
+                        way = Vector3.Dot(pod.WorldCom - from.WorldCom, side) + 1e-3f;
+                    o.BoardSide = (sbyte)(way >= 0 ? 1 : -1);
+                }
+                aim = nose + side * (o.BoardSide * 4);
                 most = 4;
+                frame = from;
+                goal = Quaternion.Normalize(from.Rot * o.BoardRot);
+            }
+            else if (from != null && from.SpaceShip != 0 && InPlan(from, pod.WorldCom))
+            {
+                // Dropped clear under its carrier in space: out from under it at that depth, level in the carrier's frame (a straight
+                // way to a target astern rose into its aft legs), still turned as it hung.
+                var cup = Vector3.Transform(Vector3.UnitY, from.Rot);
+                var way = standoff - nose;
+                way -= cup * Vector3.Dot(way, cup);
+                aim = nose + (way.LengthSquared() > 1e-4f ? Vector3.Normalize(way) : Vector3.Transform(Vector3.UnitX, from.Rot)) * 4;
+                most = 6;
                 frame = from;
                 goal = Quaternion.Normalize(from.Rot * o.BoardRot);
             }
@@ -259,7 +403,7 @@ public sealed partial class Game
                 // Then over to the spot off the skin (climbing a little over the straight way while far), turning nose-in.
                 var gap = standoff - nose;
                 var level = (gap - up * Vector3.Dot(gap, up)).Length();
-                aim = standoff + up * MathF.Min(BoardClimb, 0.3f * MathF.Max(0, level - 6));
+                aim = t.SpaceShip != 0 ? standoff : standoff + up * MathF.Min(BoardClimb, 0.3f * MathF.Max(0, level - 6)); // (in space nothing to drag on)
                 most = BoardSpeed;
             }
             if (Vector3.Distance(nose, standoff) < 0.6f && NavBoardTurnLeft(pod, goal) < 0.1f && (pod.Vel - t.PointVel(pod.WorldCom)).Length() < 1f)
@@ -269,9 +413,11 @@ public sealed partial class Game
         {
             aim = spot - nw * 0.4f; // (in past the skin: it presses on until the locks take hold, or the hull stops it)
             most = BoardInSpeed;
-            var locks = NavBoardLocksReach(pod, t, out var gripPart);
-            if (locks < 2 && o.BoardTicks > 4 * World.TickRate && (locks == 1 || NavBoardNoseOn(pod, cutter, t, out gripPart)))
-                locks = 2; // (pressed on a while: one lock, or the nose itself, on the hull is enough)
+            var locks = NavBoardLocksReach(pod, t, out var gripPart, out var gap);
+            if (gap > BoardTouch)
+                locks = 0; // (in reach, but not yet on it: it closes until its skirt is on the hull, so the seal is whole, Karl 2026-11-18)
+            if (locks < 2 && o.BoardTicks > (int)((BoardStandoff / BoardInSpeed + 3) * World.TickRate) && (NavBoardLocksReach(pod, t, out gripPart, out _) >= 1 || NavBoardNoseOn(pod, cutter, t, out gripPart)))
+                locks = 2; // (pressed on a while past its time to close in: one lock, or the nose itself, on the hull is enough)
             if (locks >= 2 || o.BoardTicks > 20 * World.TickRate)
             {
                 if (gripPart < 0)
@@ -294,13 +440,23 @@ public sealed partial class Game
         NavBoardSteer(pod, frame, nose, aim, most, goal);
     }
 
+    /// <summary>Is <paramref name="at"/> within the carrier's plan (its outline seen from above, in its own frame, and a margin)?</summary>
+    private static bool InPlan(Construct carrier, Vector3 at)
+    {
+        var local = Vector3.Transform(at - carrier.WorldCom, Quaternion.Conjugate(carrier.Rot));
+        var half = (carrier.LocalMax - carrier.LocalMin) * 0.5f + new Vector3(1.5f);
+        var mid = (carrier.LocalMax + carrier.LocalMin) * 0.5f - carrier.Com;
+        return MathF.Abs(local.X - mid.X) < half.X && MathF.Abs(local.Z - mid.Z) < half.Z;
+    }
+
     /// <summary>Is <paramref name="at"/> still under (or over, or in) the carrier, its way out not yet clear: within its plan, short of the target?</summary>
     private static bool Under(Construct carrier, Vector3 at, Vector3 target)
     {
         var local = Vector3.Transform(at - carrier.WorldCom, Quaternion.Conjugate(carrier.Rot));
         var half = (carrier.LocalMax - carrier.LocalMin) * 0.5f + new Vector3(1.5f);
         var mid = (carrier.LocalMax + carrier.LocalMin) * 0.5f - carrier.Com;
-        var inPlan = MathF.Abs(local.X - mid.X) < half.X && MathF.Abs(local.Z - mid.Z) < half.Z;
+        var inPlan = MathF.Abs(local.X - mid.X) < half.X && MathF.Abs(local.Z - mid.Z) < half.Z
+                     && local.Y > carrier.LocalMin.Y - carrier.Com.Y - 1.5f; // (dropped clear under its lowest point: out from under it)
         var targetLocal = Vector3.Transform(target - carrier.WorldCom, Quaternion.Conjugate(carrier.Rot));
         var targetInPlan = MathF.Abs(targetLocal.X - mid.X) < half.X && MathF.Abs(targetLocal.Z - mid.Z) < half.Z;
         return inPlan && !targetInPlan;
@@ -325,6 +481,7 @@ public sealed partial class Game
         if (dv.LengthSquared() > step * step)
             dv = Vector3.Normalize(dv) * step;
         pod.Vel += dv - ConstructGravity.GravityFor(pod, pod.WorldCom) * dt; // (its jets hold it up: the step's gravity taken back before it is added)
+        pod.SpeedKept = MathF.Max(pod.SpeedKept, MathF.Max(want.Length(), pod.Vel.Length()) + 2 * BoardAccel * dt); // (in orbit its frame's 200 m/s and more is past the physics' limit for a free body: it keeps what it is steered to, Construct.SpeedKept)
         var e = Quaternion.Normalize(goal * Quaternion.Conjugate(pod.Rot));
         if (e.W < 0)
             e = -e;
@@ -338,6 +495,39 @@ public sealed partial class Game
         pod.AngVel += dw;
         pod.Asleep = false;
         pod.SleepTicks = 0;
+        NavBoardJets(pod, dv / dt - ConstructGravity.GravityFor(pod, pod.WorldCom), dw / dt); // (what its jets give it: the change asked, and holding it up)
+    }
+
+    /// <summary>
+    /// Its RCS jets lit as it is steered (Karl, 2026-11-18: it fires away from the carrier to clear it): each thruster burns by how
+    /// much its push lies along the acceleration it is given (and the turn), for its flame and the clients' (the thrust step
+    /// pushes nothing while <see cref="Construct.ThrustPuppet"/> is set: the steering moves it).
+    /// </summary>
+    private static void NavBoardJets(Construct pod, Vector3 accel, Vector3 turn)
+    {
+        pod.ThrustPuppet = true;
+        var com = pod.WorldCom;
+        var rate = World.TickDt / 0.12f; // (a quick spool, as an RCS jet's)
+        for (var k = 0; k < pod.ThrusterCount; k++)
+        {
+            ref var t = ref pod.Thrusters[k];
+            pod.WorldFrame(t.Seg, out var q, out var o);
+            var dir = Vector3.Transform(t.Dir, q);
+            var arm = o + Vector3.Transform(t.At, q) - com;
+            var want = Vector3.Dot(dir, accel) / (BoardAccel * 0.35f) + Vector3.Dot(Vector3.Cross(arm, dir), turn) / 1.5f;
+            want = Math.Clamp(want, 0, 1);
+            if (want < 0.08f)
+                want = 0; // (no flicker of jets with almost nothing to do)
+            t.Level = Math.Clamp(t.Level + Math.Clamp(want - t.Level, -2 * rate, rate), 0, 1);
+        }
+    }
+
+    /// <summary>Its jets out when the order stops flying it (it gripped, or the order ended).</summary>
+    private static void NavBoardJetsOut(Construct pod)
+    {
+        pod.ThrustPuppet = false;
+        for (var k = 0; k < pod.ThrusterCount; k++)
+            pod.Thrusters[k].Level = 0;
     }
 
     /// <summary>How far (radians) the pod has still to turn to face in.</summary>
@@ -348,10 +538,10 @@ public sealed partial class Game
     }
 
     /// <summary>Does a mag lock of the pod reach the target's hull (the part it would hold by, or -1)? The nearest lock's hit.</summary>
-    private int NavBoardLocksReach(Construct pod, Construct t, out int part)
+    private int NavBoardLocksReach(Construct pod, Construct t, out int part, out float best)
     {
         part = -1;
-        var best = float.MaxValue;
+        best = float.MaxValue;
         var n = 0;
         for (var i = 0; i < pod.PartCount; i++)
         {
@@ -368,7 +558,7 @@ public sealed partial class Game
                 }
             }
         }
-        return n; // (two locks on the hull: it sits square enough to seal)
+        return n; // (two locks on the hull: it sits square enough to seal; best: how far the nearest is off it)
     }
 
     /// <summary>Is the cutter's face on the target's hull (within half a metre), and on which part?</summary>
@@ -468,5 +658,143 @@ public sealed partial class Game
             if (o.Construct == c.Id && o.Kind == NavKind.Board)
                 return true;
         return false;
+    }
+
+    private const float BoardStepMost = 0.35f; // m: the pod's floor this near the room's: people walk straight through the hole
+    private const float BoardShiftMost = 2.5f; // m: how far up or down the face it moves the spot to bring the floors level
+
+    /// <summary>The cutter's middle over the pod's floor (m), or -1.</summary>
+    private float BoardCutterLift(Construct pod)
+    {
+        if (BoardPart(pod, BreachKind.Cutter) is var cutter && cutter < 0)
+            return -1;
+        ConstructBreach.Face(pod, cutter, out var face, out var down);
+        var podUp = Vector3.Normalize(Vector3.Transform(Vector3.UnitY, pod.Rot));
+        return Constructs.Raycast(face - down * 0.6f, -podUp, 2.5f, out var floor, only: pod) ? Vector3.Dot(face - floor.Point, podUp) : -1;
+    }
+
+    /// <summary>A spot on <paramref name="t"/>'s skin at or near <paramref name="at"/> (world; way out <paramref name="nw"/>, up
+    /// <paramref name="uw"/>) with a room behind it whose floor is level with the pod's (<paramref name="lift"/>: the cutter's middle over
+    /// the pod's floor; below 0, any floor), moved up or down the face as far as <see cref="BoardShiftMost"/> where the nose still sits
+    /// flat. <paramref name="part"/>: -1 when it stayed put.</summary>
+    private bool BoardLevelSpot(Construct t, Vector3 at, Vector3 nw, Vector3 uw, float lift, out Vector3 spotAt, out Vector3 spotN, out int part)
+    {
+        (spotAt, spotN, part) = (at, nw, -1);
+        if (!ConstructBreach.RoomBehind(Constructs, t, at, -nw, out var feet, out _))
+            return false;
+        if (lift < 0)
+            return true;
+        var shift = Vector3.Dot(feet - at, uw) + lift;
+        if (MathF.Abs(shift) <= BoardStepMost)
+            return true;
+        if (MathF.Abs(shift) > BoardShiftMost
+            || !Constructs.Raycast(at + uw * shift + nw * 2f, -nw, 4f, out var skin, only: t)
+            || !BoardFlat(t, skin.Point, nw, uw, out var flatAt, out var flatN, out var flatPart)
+            || !ConstructBreach.RoomBehind(Constructs, t, flatAt, -flatN, out var feet2, out _)
+            || MathF.Abs(Vector3.Dot(feet2 - flatAt, uw) + lift) > BoardStepMost)
+            return false;
+        (spotAt, spotN, part) = (flatAt, flatN, flatPart);
+        return true;
+    }
+
+    /// <summary>
+    /// Order time, the hull: a spot with a room behind it (ConstructBreach.RoomBehind) whose floor is level with the pod's, so the hole
+    /// (cut from that floor up: ConstructBreach.OpenHole) is a doorway: the picked spot, moved up or down its face if need be, else the
+    /// nearest part's flat patch that has one (the parts round the picked one, nearest first); failing a level one, the nearest with any
+    /// room behind it. Nothing found: the spot stays as picked.
+    /// </summary>
+    /// <returns>1: a room level with the pod's floor; 2: a room, not level; 0: none found.</returns>
+    private int BoardNearRoom(Construct t, Construct pod, int part, ref byte seg, ref Vector3 spot, ref Vector3 outward, ref Vector3 up, ref int hitPart)
+    {
+        if (t.Dirty)
+            t.Rebuild();
+        var lift = BoardCutterLift(pod);
+        var order = new List<(float D, int I)>(t.PartCount) { (0, part) };
+        t.PartBounds(part, out var mn, out var mx);
+        var from = (mn + mx) * 0.5f;
+        for (var i = 0; i < t.PartCount; i++)
+            if (i != part && !t.Parts[i].Broken && t.SolidCount(i) > 0 && !BoardIsDoor(t, i))
+            {
+                t.PartBounds(i, out var a, out var b);
+                order.Add((Vector3.DistanceSquared((a + b) * 0.5f, from), i));
+            }
+        order.Sort((x, y) => x.D.CompareTo(y.D));
+        for (var pass = 0; pass < 2; pass++)
+            for (var k = 0; k < order.Count && k < 60; k++)
+            {
+                var i = order[k].I;
+                byte s2;
+                Vector3 p2, o2, u2;
+                int h2;
+                if (i == part)
+                    (s2, p2, o2, u2, h2) = (seg, spot, outward, up, hitPart);
+                else if (!BoardSpot(t, i, true, out s2, out p2, out o2, out u2, out h2))
+                    continue;
+                t.WorldFrame(s2, out var q2, out var t2);
+                var nw = Vector3.Transform(o2, q2);
+                if (!BoardLevelSpot(t, t2 + Vector3.Transform(p2, q2), nw, Vector3.Transform(u2, q2), pass == 0 ? lift : -1, out var at, out var n, out var fp))
+                    continue;
+                var inv = Quaternion.Conjugate(q2);
+                if (fp >= 0)
+                {
+                    p2 = Vector3.Transform(at - t2, inv);
+                    o2 = Vector3.Normalize(Vector3.Transform(n, inv));
+                    u2 = BoardUpOf(o2);
+                    h2 = fp;
+                }
+                if (h2 < 0 || h2 >= t.PartCount || HullHoles.Refusal(HullHoles.BaseOf(t.DefOf(h2))) != null)
+                    continue; // (a hatch, a machine: the cutter can't hole it, only burn it whole)
+                if ((i != part || fp >= 0) && !_boardQuiet)
+                    Console.WriteLine($"[nav] board: the pod cuts in by construct {t.Id}'s {t.DefOf(h2).Name}{(pass == 0 ? ", its floor level with the room's" : ", into a room whose floor isn't level with its own")} (picked: its {t.DefOf(part).Name})");
+                (seg, spot, outward, up, hitPart) = (s2, p2, o2, u2, h2);
+                return pass == 0 ? 1 : 2;
+            }
+        if (!_boardQuiet)
+            Console.WriteLine($"[nav] board: no room behind any hull near construct {t.Id}'s {t.DefOf(part).Name}: the pod cuts in where it was told");
+        return 0;
+    }
+
+    private bool _boardQuiet; // (the command view's preview runs the same picks: no log lines)
+
+    /// <summary>
+    /// The command view's preview of a Board order on the hull by <paramref name="part"/> (UiCommandBoard.cs), on host or client: where
+    /// the pod would cut in as <see cref="NavBoardAct"/> picks it (<see cref="BoardSpot"/>, then <see cref="BoardNearRoom"/>) and the hole's
+    /// frame as <see cref="ConstructBreach.OpenHole"/> takes it, all in <paramref name="t"/>'s rest frame: <paramref name="at"/> on the skin,
+    /// <paramref name="outward"/> out of it, <paramref name="up"/> the hole's up. <paramref name="room"/>: 1 a room behind level with the pod's
+    /// floor, 2 a room not level, 0 none (<paramref name="feet"/> on that room's floor, <paramref name="deep"/> how far in it begins).
+    /// <paramref name="cut"/>: the hull piece it cuts. False: no pod, or no hull there.
+    /// </summary>
+    public bool BoardPreview(Construct carrier, Construct t, int part, out Vector3 at, out Vector3 outward, out Vector3 up, out int room, out Vector3 feet, out float deep, out int cut)
+    {
+        (at, outward, up, feet, room, deep, cut) = (default, default, default, default, 0, 0, -1);
+        if (t.Dirty || part < 0 || part >= t.PartCount || BoardPodOf(Constructs, carrier) is not { } pod)
+            return false;
+        _boardQuiet = true;
+        try
+        {
+            if (!BoardSpot(t, part, true, out var seg, out var spot, out var o, out var u, out var hit))
+                return false;
+            room = BoardNearRoom(t, pod, part, ref seg, ref spot, ref o, ref u, ref hit);
+            cut = hit;
+            t.WorldFrame(seg, out var q, out var tt);
+            var w = tt + Vector3.Transform(spot, q);
+            var down = ConstructBreach.Level(t, -Vector3.Transform(o, q));
+            var upw = Vector3.Transform(Vector3.UnitY, t.Rot);
+            upw -= down * Vector3.Dot(upw, down);
+            upw = upw.LengthSquared() > 0.05f ? Vector3.Normalize(upw) : Vector3.Transform(u, q);
+            var inv = Quaternion.Conjugate(t.Rot);
+            at = t.ToLocal(w);
+            outward = -Vector3.Normalize(Vector3.Transform(down, inv));
+            up = Vector3.Normalize(Vector3.Transform(upw, inv));
+            if (ConstructBreach.RoomBehind(Constructs, t, w, down, out var f, out deep))
+                feet = t.ToLocal(f);
+            else
+                room = 0;
+            return true;
+        }
+        finally
+        {
+            _boardQuiet = false;
+        }
     }
 }

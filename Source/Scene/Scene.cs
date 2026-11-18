@@ -50,14 +50,23 @@ public sealed class Scene
 
     internal void Enqueue(SceneNode n)
     {
+        if (ReferenceEquals(n._queuedIn, this))
+            return; // (in the queue already: a node cleaned by a draw and dirtied again each frame is queued once, not once a frame)
+        n._queuedIn = this;
         if (_dirtyCount == _dirty.Length)
         {
             // Drop entries already cleaned by DrawList.UpdateAndFlatten before growing, so the queue stays as small as
-            // the number of dirty nodes even if UpdateTransforms is called rarely.
+            // the number of dirty nodes even if UpdateTransforms is called rarely. (2026-11-18: before each node was queued
+            // once, a node a draw cleans and a pose dirties again every frame piled up here, and the queue grew without end.)
             var k = 0;
             for (var i = 0; i < _dirtyCount; i++)
-                if (_dirty[i]._dirty && ReferenceEquals(_dirty[i]._scene, this))
-                    _dirty[k++] = _dirty[i];
+            {
+                var e = _dirty[i];
+                if (e._dirty && ReferenceEquals(e._scene, this))
+                    _dirty[k++] = e;
+                else if (ReferenceEquals(e._queuedIn, this))
+                    e._queuedIn = null;
+            }
             Array.Clear(_dirty, k, _dirtyCount - k);
             _dirtyCount = k;
             if (_dirtyCount > _dirty.Length / 2)
@@ -75,6 +84,8 @@ public sealed class Scene
         {
             var n = _dirty[i];
             _dirty[i] = null!;
+            if (ReferenceEquals(n._queuedIn, this))
+                n._queuedIn = null;
             if (!n._dirty || !ReferenceEquals(n._scene, this))
                 continue; // already done as part of an ancestor's subtree, or moved to another scene
             var top = n;

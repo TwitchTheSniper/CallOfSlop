@@ -15,6 +15,7 @@ public enum NavKind : byte
     Come, // fly to the player who gave it (Point: the spot beside them, World coordinates, as last worked out): set down there, or in space hold beside them
     Dock, // dock with another craft (Target) at one of its docking ports (TargetPart): GameNavDock.cs
     Board, // a carrier's docked boarding pod flies to another ship's door (seals on it) or hull (cuts in): Point (target id, part, 1 for a door), the order on the pod (GameNavBoard.cs)
+    Meet, // a rendezvous: fly to another craft (Target), match its motion and hold alongside it, Radius metres clear of it (GameNavMeet.cs)
 }
 
 /// <summary>How far an order has got (a wire byte: add at the end).</summary>
@@ -107,7 +108,18 @@ public sealed class NavOrder
     internal byte BoardSeg;
     internal System.Numerics.Vector3 BoardSpot, BoardOut, BoardUp, BoardDrop;
     internal System.Numerics.Quaternion BoardRot;
+    internal sbyte BoardSide; // host: which way (+1/-1 along the carrier's X) the pod leaves from under it, chosen once (0: not yet)
+    internal int BoardDropFor; // host: the ticks its drop out of the dock may take
     internal int BoardDoor = -1, BoardTicks, BoardAll;
+
+    /// <summary>Host, a Meet order (GameNavMeet.cs): which side of the other craft it holds on (+1/-1 along its X; 0: not chosen yet), a
+    /// tick count for its looks, the other craft's drive axis (its own frame) to hold parallel to, and its acceleration as last measured.</summary>
+    internal sbyte MeetSide;
+    internal int MeetLook;
+    internal System.Numerics.Vector3 MeetAxis;
+    internal Vec3d MeetVel, MeetAccel;
+    internal long MeetNs;
+    internal bool MeetAccelOk;
 }
 
 /// <summary>
@@ -216,6 +228,14 @@ public sealed partial class Game
             // (2026-11-16: at 100,000x the card said "falls back" for a ship the host had 2 km over Glacier).
             if (!IsServer && SpaceShipIdOf(c) is var ship and not 0 && s.SampleShip(ship, t, out pos, out vel))
                 return true;
+            // The host's likewise: its construct is posed at the last tick, and a frame drawn between ticks at
+            // 100,000x is up to half an hour later, so the path drawn from the pose against bodies at the frame's time
+            // jumped about every frame (2026-11-17). The ship's own orbit carried to the time moves with them.
+            if (IsServer && c.SpaceShip != 0 && s.Flight is { } hf && hf.Ships.IndexOfId(c.SpaceShip) is var hi and >= 0)
+            {
+                hf.Ships.StateAt(hi, t, out pos, out vel);
+                return true;
+            }
             var pose = s.Bubble.PoseAt(t);
             var com = Vec3d.From(c.WorldCom);
             pos = pose.ToEcliptic(com);
@@ -229,8 +249,7 @@ public sealed partial class Game
             var i = f.Ships.IndexOfId(c.SpaceShip);
             if (i < 0)
                 return false;
-            pos = f.Ships.PositionOf(i);
-            vel = f.Ships.VelocityOf(i);
+            f.Ships.StateAt(i, t, out pos, out vel); // (carried to the time asked: a frame between ticks)
             return true;
         }
         return s.SampleShip(c.SpaceShip, t, out pos, out vel);
@@ -277,7 +296,7 @@ public sealed partial class Game
                 NavEnd(had, c, "cancelled");
             return null;
         }
-        if (kind > NavKind.Board || !double.IsFinite(point.X + point.Y + point.Z + radius))
+        if (kind > NavKind.Meet || !double.IsFinite(point.X + point.Y + point.Z + radius))
             return null;
         if (kind == NavKind.Board)
             return NavBoardAct(s, c, point, p);
@@ -302,14 +321,20 @@ public sealed partial class Game
             body = s.Bubble.Body;
             point = Vec3d.Zero;
         }
+        else if (kind == NavKind.Meet)
+        {
+            if (NavMeetCheck(s, c, target, ref body, ref radius) is { } cant)
+                return cant;
+            point = Vec3d.Zero;
+        }
         else
             target = 0;
         var sys = c.SpaceAway != 0 ? Galaxy.System(c.SpaceAway - 1) : s.System;
         if (body >= sys.Count)
             return null;
-        if (kind == NavKind.Dock)
+        if (kind is NavKind.Dock or NavKind.Meet)
         {
-            // (checked above: the other ship and its port)
+            // (checked above: the other ship, and a Dock order's port)
         }
         else if (kind == NavKind.Ground)
         {
@@ -369,6 +394,9 @@ public sealed partial class Game
         o.DockAlt = 0;
         o.DockLook = 0;
         o.DockTractor = false;
+        o.MeetSide = 0;
+        o.MeetLook = 0;
+        o.MeetAccelOk = false;
         c.NavLand = 0; // (any new order, a player's or a route leg's, ends a landing's hold)
         order = o;
         Console.WriteLine($"[nav] {who} ordered construct {id}: {NavText(sys, o)}");
@@ -388,6 +416,7 @@ public sealed partial class Game
             NavKind.Come => "come to its player",
             NavKind.Dock => "dock with construct " + o.Target,
             NavKind.Board => o.Point.Z >= 0.5 ? "board a ship by its door" : "board a ship through its hull",
+            NavKind.Meet => "rendezvous with construct " + o.Target,
             _ => "none",
         };
     }
@@ -401,6 +430,8 @@ public sealed partial class Game
     {
         if (c != null)
         {
+            if (c.ThrustPuppet)
+                NavBoardJetsOut(c); // (a pod's jets lit by its Board order: GameNavBoard.cs)
             c.NavThrottle = -1;
             c.NavClimb = 0;
             c.NavLand = 0;
@@ -465,6 +496,11 @@ public sealed partial class Game
                 NavEnd(o, c, comeEnds);
                 continue;
             }
+            if (o.Kind == NavKind.Meet && NavMeetEnds(o, c) is { } meetEnds)
+            {
+                NavEnd(o, c, meetEnds);
+                continue;
+            }
             if (o.Kind == NavKind.Dock)
             {
                 if (!NavDockTick(s, o, c))
@@ -498,7 +534,12 @@ public sealed partial class Game
     private void NavInSky(SpaceSession s, NavOrder o, Construct c)
     {
         c.NavThrottle = -1;
-        var climbs = o.Kind is NavKind.GoTo or NavKind.Orbit or NavKind.Dock || o.Kind == NavKind.Come && o.ComeSpace; // (a Dock order comes here only to climb out to a ship in space)
+        if (o.Kind == NavKind.Meet && Constructs.Get(o.Target) is { SpaceShip: 0 } meet)
+        {
+            NavMeetSky(o, c, meet); // (both in the sky: its autopilot flies it beside the other, GameNavMeet.cs)
+            return;
+        }
+        var climbs = o.Kind is NavKind.GoTo or NavKind.Orbit or NavKind.Dock or NavKind.Meet || o.Kind == NavKind.Come && o.ComeSpace; // (a Dock or Meet order comes here only to climb out to a ship in space)
         c.NavClimb = climbs ? NavClimbSpeed : 0; // (only a climb out to space hurries)
         var here = c.WorldCom;
         if (!climbs && o.Kind is NavKind.Land or NavKind.Come)
@@ -553,6 +594,8 @@ public sealed partial class Game
         var sys = f.System;
         var t = f.Ships.Time;
         var pos = f.Ships.PositionOf(i);
+        if (o.Kind == NavKind.Meet)
+            NavMeetBody(o, sys, pos, t); // (the world the other craft is round now: a trip there if it is round another planet)
         sys.StateOf(o.Body, t, out var bp, out var bv);
         var r = pos - bp;
         var v = f.Ships.VelocityOf(i) - bv;
@@ -582,6 +625,15 @@ public sealed partial class Game
         else if (!o.Handed && (o.Cruise || NavTrip.Crosses(sys, pos, t, o.Body)) && NavCruise(s, f, o, c, pos, t, aMax, out a))
         {
             // Between planets: the trip's own burns (GameNavTrip.cs).
+        }
+        else if (o.Kind == NavKind.Meet)
+        {
+            if (Constructs.Get(o.Target) is not { } meet || !NavState(meet, t, out var mp, out var mv))
+            {
+                c.NavThrottle = 0;
+                return;
+            }
+            a = NavMeetInSpace(s, sys, o, c, meet, pos, f.Ships.VelocityOf(i), mp, mv, t, aMax);
         }
         else if (o.Kind == NavKind.Come && o.ComeSpace && Players.GetValueOrDefault(o.By) is { Alive: true } who)
             a = NavBesideInSpace(s, sys, o, c, who, pos, f.Ships.VelocityOf(i), t, aMax); // (its player is out in space: it comes and holds beside them)
@@ -694,7 +746,7 @@ public sealed partial class Game
         var target = r.U16();
         var targetPart = r.U16();
         var o = NavOf(id);
-        if (kind == NavKind.None || kind > NavKind.Board)
+        if (kind == NavKind.None || kind > NavKind.Meet)
         {
             if (o != null)
                 NavOrders.Remove(o);

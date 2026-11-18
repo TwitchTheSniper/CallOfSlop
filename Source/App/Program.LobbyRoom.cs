@@ -29,7 +29,7 @@ public static unsafe partial class Program
             game.SetSandboxLimits(_settings.SandboxMaxBodies, _settings.SandboxMaxPerPlayer); // (the host's Sandbox safety caps: board item cl01)
             game.SetBlastCap(_settings.SandboxMaxBlast); // (the biggest blast: ConstructMegaBlast.cs)
             game.SetSandboxSurvival(_settings.SandboxSurvival); // (Creative or Survival: GameSandboxSurvival.cs)
-            game.SetStoryStart(_settings.PlayedStartId); // (which start a fresh world plays, the tutorial's with its tickbox: GameStoryStart.cs)
+            game.SetStoryStart(_settings.PlayedStartId); // (which start a fresh world plays: GameStoryStart.cs)
             game.SetSandboxDeath(_settings.SandboxDeath, _settings.SandboxKeepPack); // (survival's death rules: GameSandboxDeath.cs)
         }
         _wasLobbyRoom = false;
@@ -84,7 +84,7 @@ public static unsafe partial class Program
     private static void SendRoomLoadout(double now)
     {
         if (_session is { } g)
-            g.ChooseLoadout(LoadoutStore.Active(g.Progress ?? _progress), now);
+            g.ChooseLoadout(LoadoutStore.Active(), now);
     }
 
     /// <summary>The lobby room's input: the Ready key, and the loadout screen closing (the server gets the new loadout).</summary>

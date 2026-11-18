@@ -1,5 +1,10 @@
 # How a building should look
 
+**2026-11-17: the penal colony, the Ministry of Slop's street, its spaceport and the factions' outposts were removed with the
+old factions** (docs/removals-notes.md). Their blueprints and the code that placed them are gone; the sections below that
+name them ("The site", "The street", the outposts) are history, kept for their reasoning. What stays live is the
+Brutalist style (concrete, the lid, fins and buttresses), the site, street and Brutalist parts, and the rules for every building.
+
 Read [look.md](look.md) first: paint, finishes, lamps and the detail parts are there. This file is the style guide for
 **buildings**: what every building in the story's worlds needs, then each faction's style. A faction's buildings are
 construct blueprints from the part kit (`Source/PartKit/Generators/BuildingParts*.cs`, `--gen-parts building_parts`); the
@@ -108,7 +113,7 @@ Not done: a searchlight has no beam and no lit lamp head (only its pool on the g
 (the particle pool's gravity), right at a pole and wrong far from it; no steam on the mains' pipes themselves; the
 tannoy is one recording.
 
-## The Ministry of Slop: Brutalism
+## Brutalism (once the Ministry of Slop's)
 
 The Ministry builds as a government that expects to be there for ever and has stopped spending: heavy raw concrete,
 honest about its weight, a little too big for what goes on inside, and unchanged since it was poured. Against Glacier's

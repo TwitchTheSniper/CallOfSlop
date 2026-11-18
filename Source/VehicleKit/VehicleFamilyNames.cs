@@ -35,25 +35,25 @@ public static class VehicleFamilyNames
             ["Mk1", "Mk2", "Mk3"],
             ["Old Mother Rust", "The Iron Widow", "King of the Scrapheap", "The Doom Wagon", "The Last Ride", "Big Mutha's Revenge"],
             new() { [VehicleFamilies.UpArmoured] = "Plated", [VehicleFamilies.GunTruck] = "Gunrig", [VehicleFamilies.TankerConversion] = "Guzzler" }),
-        ["IT"] = new(
-            ["Model T-1000 Helpdesk", "Ticket Queue", "Patch Tuesday", "Hotdesk", "Uptime", "Firewall", "Escalation", "Change Request", "Legacy System", "Service Desk", "Blue Screen", "Reboot", "Cloud Migration"],
-            ["", "SP2", "Enterprise"],
-            ["The Mainframe", "Production", "Root Access", "The CTO's Pet Project", "Single Point of Failure"],
-            new() { [VehicleFamilies.UpArmoured] = "Hardened", [VehicleFamilies.GunTruck] = "Pen Test", [VehicleFamilies.TankerConversion] = "Data Lake" }),
-        ["Scam"] = new(
-            ["Cold Call", "Hot Lead", "Prize Winner", "Refund Desk", "Tech Support", "Account Verifier", "Extended Warranty", "Gift Card", "Lucky Draw", "Upsell", "Free Cruise"],
+        ["IT"] = new( // (the Traders: Crew/Factions/Traders.json)
+            ["Ledger", "Manifest", "Consignment", "Waybill", "Freightliner", "Packet", "Courier", "Bulk Carrier", "Clearance", "Invoice", "Tally", "Dispatch", "Tradewind"],
+            ["", "Plus", "Pro"],
+            ["The Counting House", "Cash on Delivery", "The Long Haul", "Net Thirty", "The Bottom Line"],
+            new() { [VehicleFamilies.UpArmoured] = "Hardened", [VehicleFamilies.GunTruck] = "Escort", [VehicleFamilies.TankerConversion] = "Bulk Tanker" }),
+        ["Scam"] = new( // (the Salvagers: Crew/Factions/Salvagers.json)
+            ["Scrapper", "Picker", "Breaker", "Stripper", "Magpie", "Tinker", "Rag and Bone", "Wrecker", "Chopper", "Gleaner", "Totter"],
             ["", "Gold", "Platinum"],
-            ["The Boiler Room", "Grand Prize", "Your Account Is Suspended", "The Big Payout", "Final Final Notice"],
-            new() { [VehicleFamilies.UpArmoured] = "Premium", [VehicleFamilies.GunTruck] = "Hard Sell", [VehicleFamilies.TankerConversion] = "Bulk Deal" }),
-        ["Highland"] = new(
-            ["Glen Rover", "Ben Crawler", "Loch Runner", "Heather Hopper", "Bothy Bus", "Strath Hauler", "Corrie Climber", "Firth Flyer", "Moor Raider", "Croft Wagon", "Munro Bagger", "Kilt Lifter"],
+            ["The Boneyard", "Finders Keepers", "Salvage Rights", "The Last Wreck", "Spare Parts"],
+            new() { [VehicleFamilies.UpArmoured] = "Plated", [VehicleFamilies.GunTruck] = "Claim Jumper", [VehicleFamilies.TankerConversion] = "Sump" }),
+        ["Highland"] = new( // (the Traders' second style)
+            ["Glen Rover", "Ben Crawler", "Loch Runner", "Heather Hopper", "Bothy Bus", "Strath Hauler", "Corrie Climber", "Firth Flyer", "Moor Raider", "Croft Wagon", "Munro Bagger", "Drover"],
             ["", "II", "Mor"],
-            ["The Laird's Pride", "Auld Reekie", "The Big Yin", "The Bonnie Prince", "Wee Beastie"],
-            new() { [VehicleFamilies.UpArmoured] = "Targe", [VehicleFamilies.GunTruck] = "Claymore", [VehicleFamilies.TankerConversion] = "Distillery" }),
-        ["British"] = new(
-            ["Wellington", "Marlborough", "Brigadier", "Bulldog", "Drizzle", "Teatime", "Pennyworth", "Sovereign", "Windsor", "Rainmaker", "Queue Jumper", "Stiff Upper", "Bowler"],
+            ["The Pack Train", "Auld Reekie", "The Big Yin", "Last Orders", "Wee Beastie"],
+            new() { [VehicleFamilies.UpArmoured] = "Targe", [VehicleFamilies.GunTruck] = "Outrider", [VehicleFamilies.TankerConversion] = "Bowser" }),
+        ["British"] = new( // (the Mercenaries: Crew/Factions/Mercenaries.json)
+            ["Wellington", "Marlborough", "Brigadier", "Bulldog", "Drizzle", "Pennyworth", "Sovereign", "Windsor", "Rainmaker", "Contractor", "Stiff Upper", "Freelancer", "Hireling"],
             ["Mk I", "Mk II", "Mk III"],
-            ["Her Majesty's Displeasure", "The Last Bus Home", "Strongly Worded", "Jolly Good Show", "Mind the Gap"],
+            ["The Paymaster", "The Last Bus Home", "No Questions Asked", "Danger Money", "Mind the Gap"],
             new() { [VehicleFamilies.UpArmoured] = "Ironclad", [VehicleFamilies.GunTruck] = "Gunboat", [VehicleFamilies.TankerConversion] = "Bowser" }),
     };
 

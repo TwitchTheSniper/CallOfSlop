@@ -21,7 +21,7 @@ public static partial class ConstructPreview
         if (Flag(args, "--preview-shot") is { } shotOf)
             return Shot(shotOf, args);
         if (Flag(args, "--preview-gallery") is { } galleryDir)
-            return Gallery(galleryDir, Flag(args, "--only"));
+            return Gallery(galleryDir, Flag(args, "--only"), Flag(args, "--group") ?? "Ship");
         var what = Flag(args, "--preview-construct") ?? "";
         var outFile = Flag(args, "--out") ?? Path.Combine(AppContext.BaseDirectory, "preview", Safe(Path.GetFileNameWithoutExtension(what)) + ".html");
         if (Export(what, out var bp, out var parts, out _) is not { } json)
@@ -96,8 +96,9 @@ public static partial class ConstructPreview
     /// ships use and every other "Ship" part, or only the names given, as one gallery: DIR/index.html (the viewer with a ship picker
     /// and a deck-or-part picker), DIR/models/index.json and one DIR/models/NAME.json each. Models whose JSON didn't change are left
     /// untouched and the changed ones are printed, so an agent republishes the gallery Artifact with only those (files it leaves out are kept).
+    /// <c>--group Station</c> makes the Station gallery the same way: every blueprint whose first part is in that group, and its parts.
     /// </summary>
-    private static int Gallery(string dir, string? only)
+    private static int Gallery(string dir, string? only, string group = "Ship")
     {
         var template = Template();
         if (template == null)
@@ -110,10 +111,10 @@ public static partial class ConstructPreview
         var picked = only?.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries) ?? [];
         var shipNames = only != null
             ? picked.Where(n => ConstructBuild.FindBlueprint(n) != null || File.Exists(n)).ToList()
-            : ConstructBuild.Blueprints.Where(b => b.Steps.Count > 0 && ConstructParts.Find(b.Steps[0].Part)?.Group == "Ship").OrderBy(b => b.Name, StringComparer.Ordinal).Select(b => b.Name).ToList();
+            : ConstructBuild.Blueprints.Where(b => b.Steps.Count > 0 && ConstructParts.Find(b.Steps[0].Part)?.Group == group).OrderBy(b => b.Name, StringComparer.Ordinal).Select(b => b.Name).ToList();
         var looseNames = only != null
             ? picked.Where(n => !shipNames.Contains(n)).ToList()
-            : ConstructParts.All.Where(d => d != null && d.Group == "Ship").OrderBy(d => d.Section, StringComparer.Ordinal).ThenBy(d => d.Name, StringComparer.Ordinal).Select(d => d.Name).ToList();
+            : ConstructParts.All.Where(d => d != null && d.Group == group).OrderBy(d => d.Section, StringComparer.Ordinal).ThenBy(d => d.Name, StringComparer.Ordinal).Select(d => d.Name).ToList();
         var changed = new List<string>();
         var failed = 0;
         var ships = new List<object>();
@@ -158,14 +159,16 @@ public static partial class ConstructPreview
             Part(name);
         var loose = parts.Keys.Where(k => !usedByShips.Contains(k)).Select(Slug).ToArray();
 
-        var list = JsonSerializer.Serialize(new { ships, parts = parts.Values, loose });
+        // (a gallery other than the ships names its kind, which the page uses for "Whole station" and the like)
+        var list = group == "Ship" ? JsonSerializer.Serialize(new { ships, parts = parts.Values, loose })
+            : JsonSerializer.Serialize(new { ships, parts = parts.Values, loose, noun = group.ToLowerInvariant() });
         var listPath = Path.Combine(models, "index.json");
         if (!File.Exists(listPath) || File.ReadAllText(listPath) != list)
         {
             File.WriteAllText(listPath, list);
             changed.Add("models/index.json");
         }
-        var page = Page(template, "null", "Ship Gallery");
+        var page = Page(template, "null", group + " Gallery");
         var pagePath = Path.Combine(dir, "index.html");
         if (!File.Exists(pagePath) || File.ReadAllText(pagePath) != page)
         {

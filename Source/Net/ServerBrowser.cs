@@ -597,7 +597,30 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 346: groups and admirals (docs/sandbox/design/faction-controllers.md phase 2; GameCrewFleet.cs): Msg.CrewSeats ends with u16 captain's name, u16
     //   admiral's name aboard (0xFFFF: none), u16 group number (0: none); Msg.Intel at the end of Msg; CrewOrder gains Interrogate, Ransom, Interrogator;
     //   Msg.CrewRoster's job byte has bit 7 for an officer prisoner.
-    public const ushort ProtocolVersion = 346;
+    // 347: time speed to 1,000,000x (SpaceClock.MaxSpeed): Msg.Space's clock speed may pass 100,000, which an older client clamped, so its
+    //   clock ran ten times slow between the host's clock packets.
+    // 348: removals (docs/removals-notes.md). The penal colony went: Msg.Tutorial, ColonyAlarm,
+    //   Depot, Quarry, Labour, LabourHands, Breakout, Errand, LabourDay, LabourIncident and Objective (the "what next" line) keep their slots as Removed*, never sent,
+    //   and the colony's lore and building parts move part ids, as do the old factions' dressing parts (the Pipe Box and the
+    //   rest). Levelling and prestige went: the roster entry loses prestige, level and hat (3 bytes, before the look), the
+    //   Loadout message loses its hat byte and the prestige and level after it, and the Hello keeps two zero bytes where
+    //   prestige and level were, so the protocol version after them stays where every build reads it.
+    // 349: mouse steering key in a ship's seat: CActKind.MouseSteer (u16 body) at its end (flips the Flight Stabilizer's Mouse aim setting).
+    // 350: the rendezvous order (Game/GameNavMeet.cs): NavKind gains Meet at its end (Target: the craft met, Radius: the gap kept, m).
+    // 351: conveyor inclines: the 27 link support parts (Constructs/Parts/LinkSupports) move the part ids after them.
+    // 352: a breaching cutter cuts a door-sized hole out of a hull piece (HullHoles.cs): a body's part may be a "Holed (...)" run-time
+    //   part, sent as its key after Extrusion.WireMark and HullLoft.WireKind, which an older client refused as a malformed packet.
+    // 353: the Mining Shell (docs/sandbox/design/mining-shell.md): Msg.Shell ends with u8 frame (Constructs/Shells.json), u8 hopper material, u16 hopper units.
+    // 354: faction controllers (faction-controllers.md phase 3): Msg.Factions ends with u16 powers gone for good; pact kinds 4-6 (trade, tribute, vassalage); a relation of -100 is a blood feud.
+    // 355: the Drill Rack (a new part file moves part ids; CfgKey.ToolsOut after Walls) and the crew's Miner job and Rack station (the roster's job byte).
+    // 356: territory and the far layer (faction-controllers.md phase 4): Msg.FactionMap (planets' holders, the groups a player knows of), in the slot of the removed RemovedTutorial (Msg is full).
+    // 357: a rack launch's straight run: ShellFlags.Boost, and a designed ShellOut with it carries its way off the rack (vec) and the age guidance takes over (u16).
+    // 358: a worn MMU's roll (Karl, 2026-11-18: it rolls and pitches with the mouse): the input packet ends with an i16 roll per command (PilotGear.MmuAxes).
+    // 359: players in the politics (faction-controllers.md phase 5): Msg.Factions ends with the pacts between powers and player factions, the powers'
+    //   offers, the factions' proposals and blood feuds with factions; FactionOp gains Pact, PactAnswer, PactBreak, CallAllies, ContractTake and ContractDrop
+    //   at its end; Msg.Contracts takes the slot of RemovedColonyAlarm (Msg is full).
+    // 360: the Limpet's seal sleeve: a "Holed (...)" key may hold "s..." sleeve entries (HullHoles.Sleeve), which an older client can't make.
+    public const ushort ProtocolVersion = 360;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 21 body 21 kit 21 wear 21, chassis 2 axles, front under the hood, inset 1.5 m, coil/leaf, wing 0.75, cab style box, language cabin standard 2.48 m, flare 0.01, plain 0.9, brow 0.77 1.25 m, tail 0.78 0.75 m, door right, cab cabin cab, nose flat, fitting roof sign, wear age 0.32 (2 rusty, 2 dirty, 0 sooty, 0 patched, 0 rusted out), body gun bay+bed, cab enclosed, nose short hood, rear bare, under tub, sides rails, layout gun bay 2 m+bed 2 m, plan 2
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Scam Technical 21",
-  "group": "The Call Centre",
+  "group": "Scam",
   "description": "A technical: a short hood, an enclosed cab, a gun behind the cab, an open bed. 1 gun.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#2a2c30"},
@@ -97,10 +97,10 @@
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 87, "pos": [1.417, 0.446, -0.368], "rot": [0.0192, -0.0054, -0.7007, 0.7132]}, "paint": "#b0b4b8"},
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 88, "pos": [-0.914, 0.228, -0.373], "rot": [0.0017, 0.0074, 0.7137, 0.7004]}, "paint": "#9aa0a6"},
     {"part": "Hull Loft (decoS XJWAWdW0)", "on": 34, "socket": "top", "by": "base", "paint": "#ffd400"},
-    {"part": "Gift Card Sign", "on": 85, "socket": "top", "by": "base"},
-    {"part": "Loudhailer", "on": 65, "socket": "front", "by": "base"},
-    {"part": "Office Phone", "on": 59, "socket": "front", "by": "base"},
-    {"part": "Loudhailer", "on": 52, "socket": "front", "by": "base"}
+    {"part": "Loudhailer", "on": 85, "socket": "top", "by": "base"},
+    {"part": "Hubcap Plate", "on": 65, "socket": "front", "by": "base"},
+    {"part": "Hubcap Plate", "on": 52, "socket": "front", "by": "base"},
+    {"part": "Traffic Cone", "on": 56, "socket": "front", "by": "base"}
   ],
   "wires": [[31, 32], [32, 26], [73, 83], [83, 75]],
   "links": [

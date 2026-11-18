@@ -27,9 +27,11 @@ public sealed partial class Game : ICrewHost
         CrewFactionsTick();
         Crew.Step(Constructs, World.Query, this, _crewPeople.AsSpan(0, n));
         CrewFleetTick(); // (groups' news, questioning: GameCrewFleet.cs)
+        CrewPowersTick(); // (the faction controllers: GameCrewPowers.cs)
         if (Crew.Events.Count > 0)
             CrewLog();
         CrewWorkTick();
+        CrewMineTick(); // (miners off their posts: GameCrewMine.cs)
         CrewSendSeats();
         CrewHireTick();
         CrewRosterSend();
@@ -39,11 +41,11 @@ public sealed partial class Game : ICrewHost
     /// A nobody's ground vehicle or walker just set down (a faction vehicle, a convoy's member) gets a crew in its seats (bot-brain.md phase 2:
     /// it moves only with a driver aboard). Aircraft and ships are crewed by their pilots and stabilizers; a player's vehicle never is.
     /// </summary>
-    public void CrewFactionVehicle(Construct c)
+    public void CrewFactionVehicle(Construct c, byte power = 0)
     {
         if (!IsServer || c.Owner != 255 || c.Wreck || c.StabCount > 0 || c.DriveSeat < 0 && !CrewWorks(c) || Crew.Has(c.Id))
             return;
-        Crew.Crew(c, ShipAiMode.Strangers, faction: CrewFactionFor(c));
+        Crew.Crew(c, ShipAiMode.Strangers, faction: power != 0 ? power : CrewFactionFor(c)); // (a power's own ship: its power, GameCrewPowers.cs)
         CrewFleetVehicle(c); // (a convoy's member: its group under an admiral, GameCrewFleet.cs)
         CrewLog();
     }
@@ -89,6 +91,7 @@ public sealed partial class Game : ICrewHost
         };
         Players[id] = bot;
         Spawn(bot, ServerTick, SandboxNow);
+        CrewArmsOnSpawn(bot); // (a sidearm at the station; the long gun is in the lockers: GameCrewDefend.cs)
         if (stand is { } at)
             CrewStandAt(bot, c, at); // (an engineer or a loader stands at its place)
         else if (!CrewSit(bot, c, part))
@@ -136,6 +139,8 @@ public sealed partial class Game : ICrewHost
     {
         if (!Players.TryGetValue(player, out var p) || p.CrewSlot < 0)
             return;
+        if (p.InShell)
+            ShellReturn(p, lost: false, ""); // (a miner in a Mining Shell: back to the chair first, the shell left standing: GameCrewMine.cs)
         if (SandboxHands.Hand(p.Id).Seated)
             SandboxHands.Stand(Constructs, p.Id);
         SandboxHands.Hand(p.Id).Edit = EditKind.None;
@@ -231,6 +236,8 @@ public sealed partial class Game : ICrewHost
             return;
         if (CrewWalkTick(p))
             return;
+        if (CrewMineBody(p))
+            return; // (a miner on the ground: GameCrewMine.cs)
         ref var h = ref SandboxHands.Hand(p.Id);
         var yaw = p.Yaw;
         var pitch = p.Pitch;
@@ -327,7 +334,7 @@ public sealed partial class Game : ICrewHost
                 for (var i = 0; i < Crew.ShipHigh; i++)
                 {
                     if (Crew.Ships[i] is not { Tier: not CrewTier.Asleep, Faction: not 0, Own: false, Prize: false } o || o == s || o.MemberCount == 0
-                        || (s.Own ? c.Owner == 255 || CrewStanding(o.Faction, c.Owner) >= 0 && !o.Foe(c.Owner) : !CrewShipFights(s, o))
+                        || (s.Own ? c.Owner == 255 || (CrewStanding(o.Faction, c.Owner) >= 0 || CrewStandingOn && Relations.PartyHoldsFire(o.Faction, c.Owner)) && !o.Foe(c.Owner) : !CrewShipFights(s, o))
                         || Constructs.Get(o.Body) is not { Wreck: false } oc)
                         continue;
                     var d2 = Vector3.DistanceSquared(oc.WorldCom, com);
@@ -371,7 +378,11 @@ public sealed partial class Game : ICrewHost
             return !(s.Mode == ShipAiMode.Strangers && c.Owner != 255 && Factions.Shares(c.Owner, p.Id));
         if (s.Own)
             return p.Id != c.Owner && !Factions.Shares(c.Owner, p.Id) && (s.Foe(p.Id) || FactionTable.RelationOf(c.Owner, p.Id) == FactionTable.Relations.War); // (a player's own crew: who hit it, or a faction at war with its owner's)
-        return s.Foe(p.Id) || CrewStanding(s.Faction, p.Id) < 0 || CrewStandingOn && CrewHelpsAgainst(c, s, p);
+        if (s.Foe(p.Id))
+            return true;
+        if (CrewStandingOn && Relations.PartyHoldsFire(s.Faction, p.Id))
+            return false; // (phase 5: a pact with their faction holds fire; one who shoots is a foe, and breaks it)
+        return CrewStanding(s.Faction, p.Id) < 0 || CrewStandingOn && CrewHelpsAgainst(c, s, p);
     }
 
     /// <summary>
@@ -398,7 +409,7 @@ public sealed partial class Game : ICrewHost
     private bool CrewHelpsAgainst(Construct c, CrewShip s, Player p)
     {
         var rel = Relations;
-        if (rel.Peek(s.Faction, p.Id) >= rel.Rules.FriendlyLine)
+        if (rel.Peek(s.Faction, p.Id) >= rel.Rules.FriendlyLine || rel.PartyHoldsFire(s.Faction, p.Id))
             return false;
         var sight = CrewPowers.KindOf(s.Faction)?.Sight ?? ShipAi.EngageRange;
         for (var i = 0; i < Crew.ShipHigh; i++)

@@ -17,6 +17,11 @@ public static class MediaDirector
     public const int MaxSpeakers = 8;
 
     private const double ScanEvery = 0.25, SyncEvery = 1, SeekEvery = 10, QuitAfter = 20;
+
+    /// <summary>Seconds a page may show nothing before its panel says why rather than "Loading". A page on a slow line paints its first frame in a few seconds.</summary>
+    public const double LoadTimeout = 20;
+
+    private static double _now;
     private const float SeekDrift = 2.5f, FadeShare = 0.2f; // seconds off the clock before a page seeks; the last share of a part's range fades to nothing
 
     private struct Page
@@ -35,6 +40,8 @@ public static class MediaDirector
         public string Seen; // a web page: the last address looked at
         public double NextSend, NextScroll;
         public ushort Scrolled; // the last scroll this page was told to follow
+        public double Opened; // when this peer asked for it
+        public bool Stuck; // no picture after LoadTimeout: said once in the log
     }
 
     private struct Near
@@ -93,6 +100,7 @@ public static class MediaDirector
     /// <summary>Each frame of the windowed game, Sandbox or not (<paramref name="g"/> null: nothing's world).</summary>
     public static void Frame(Game? g, Audio audio, double now)
     {
+        _now = now;
         VideoFeeds.Upload(now);
         NameOf ??= by => g?.Players.TryGetValue(by, out var who) == true ? who.Name : "A player";
         var world = g is { SandboxOn: true } ? g.Constructs : null;
@@ -358,7 +366,7 @@ public static class MediaDirector
         Pages[free] = new Page
         {
             Open = true, Body = body, Part = part, Seq = m.Seq, Entry = m.Entry!, State = MediaState.Playing, NextSync = now + 3, NextSeek = now + 3, // (a joiner whose tick hadn't come in yet opened at 0)
-            Near = d.MediaNear, Hear = d.MediaHear, Ads = ads,
+            Near = d.MediaNear, Hear = d.MediaHear, Ads = ads, Opened = now,
         };
         audio.MediaPage(free, MediaBrowser.Block(free));
     }
@@ -605,12 +613,18 @@ public static class MediaDirector
         card.VideoHeight = d.MediaHeight;
         card.VideoRect = panel.Picture;
         card.State = PanelState.Ok;
-        if (r.Error != 0)
+        if (r.Error != 0 || r.Failure.Length > 0)
         {
             card.Video = 0;
             card.State = PanelState.Fault;
             card.Add(0, "Can't play this");
-            Words(card, panel, ErrorText(r.Error), 1);
+            Words(card, panel, r.Error != 0 ? ErrorText(r.Error) : r.Failure, 1);
+        }
+        else if (card.Video == 0 && Stuck(page) is { } stuck)
+        {
+            card.State = PanelState.Fault;
+            card.Add(0, "No picture");
+            Words(card, panel, stuck, 1);
         }
         else if (card.Video == 0)
             card.Add(0, "Loading");
@@ -648,6 +662,44 @@ public static class MediaDirector
         return !Others ? "Other players' videos are off" : _closest >= MaxPages ? $"{MaxPages} screens already playing" : "Waiting";
     }
 
+    /// <summary>
+    /// Why page <paramref name="page"/> shows nothing yet, once it has had <see cref="LoadTimeout"/> to, or null while it may still be loading. Said in the log once a page,
+    /// with what each hop knows, so "Loading" never stays for ever without a word (docs/sandbox/MEDIA.md, "When a screen shows no picture").
+    /// </summary>
+    private static string? Stuck(int page)
+    {
+        ref var p = ref Pages[page];
+        if (VideoFeeds.Problem is { } gl)
+            return gl;
+        if (_now - p.Opened < LoadTimeout)
+            return null;
+        var r = MediaBrowser.Report(page);
+        var frames = MediaBrowser.Block(page)?.FrameSeq ?? 0;
+        var web = MediaEntry.IsWeb(p.Entry);
+        var why = !MediaBrowser.Ready ? "the browser never said it was ready"
+            : frames > 0 ? "the browser drew frames but none reached the screen"
+            : web ? "the page drew nothing (no network, or the site didn't answer)"
+            : r.State == MediaReport.NotLoaded ? "YouTube's player didn't load (no network, or youtube.com is blocked)"
+            : $"the player is {StateName(r.State)} but drew nothing";
+        if (!p.Stuck)
+        {
+            p.Stuck = true;
+            Console.WriteLine($"[media] page {page}: no picture after {LoadTimeout:0} s: {why} (browser ready {MediaBrowser.Ready}, player state {r.State}, error {r.Error}, frames from the browser {frames}, uploads {VideoFeeds.Uploads}, {(web ? "web page" : "YouTube")})");
+        }
+        return why;
+    }
+
+    private static string StateName(int state) => state switch
+    {
+        MediaReport.Ended => "ended",
+        MediaReport.Playing => "playing",
+        MediaReport.Paused => "paused",
+        MediaReport.Buffering => "buffering",
+        MediaReport.Cued => "cued",
+        -1 => "unstarted",
+        _ => "state " + state,
+    };
+
     private static string ErrorText(int code) => code switch
     {
         2 => "bad video id",
@@ -672,7 +724,7 @@ public static class MediaDirector
         if (PageOf(c.Id, part) is var page and >= 0)
         {
             var r = MediaBrowser.Report(page);
-            return r.Error != 0 ? ErrorText(r.Error) : r.Title.Length > 0 ? r.Title : "loading";
+            return r.Error != 0 ? ErrorText(r.Error) : r.Failure.Length > 0 ? r.Failure : r.Title.Length > 0 ? r.Title : VideoFeeds.HasPicture(page) ? "playing" : Stuck(page) ?? "loading"; // (a picture with no title yet is no stall)
         }
         return Why(m);
     }

@@ -519,7 +519,9 @@ public sealed partial class ConstructWorld
     /// (ConstructConveyor.cs), unless <paramref name="keepRiders"/> (it goes elsewhere whole: travel, where they went with its
     /// copy). A client's removals are the server's word and clear its riders first (ConstructNet.cs).
     /// </summary>
-    public void Remove(Construct c, bool keepRiders = false)
+    /// <param name="quiet">a body no peer ever heard of, gone in the tick it came (a world save's stand-in for a worn shell): no
+    /// gone message, no building sound, no story note.</param>
+    public void Remove(Construct c, bool keepRiders = false, bool quiet = false)
     {
         if (c.ConveyedCount > 0)
         {
@@ -532,12 +534,15 @@ public sealed partial class ConstructWorld
                 FreeStore(ref c.Parts[i]); // (what a construct that goes holds goes with it; one being taken apart spills first)
         if (_byId.TryGetValue(c.Id, out var had) && ReferenceEquals(had, c) && _partTally >= 0)
             _partTally = Math.Max(0, _partTally - c.PartCount);
-        GoneRing[GoneTotal++ % GoneRing.Length] = new GoneBody(c.ToWorld(c.Com), c.Radius, c.PartCount);
+        if (!quiet)
+            GoneRing[GoneTotal++ % GoneRing.Length] = new GoneBody(c.ToWorld(c.Com), c.Radius, c.PartCount);
         Bodies.Remove(c);
         GridStale();
         _byId.Remove(c.Id);
         PatchBase.Remove(c.Id);
         StructureDirty.Remove(c.Id);
+        if (quiet)
+            return;
         Removed.Add(c.Id);
         Note(CNoteKind.Gone, c.Id); // (the story: ConstructWorldNotes.cs)
     }
@@ -1578,7 +1583,7 @@ public sealed partial class ConstructWorld
     /// <summary>Would a player's body with its feet here overlap a construct's solid part? (Leaving noclip: <see cref="NoclipMove.ExitSpot"/>.)</summary>
     public bool BodyIn(Vector3 feet, float height)
     {
-        var r = World.PlayerRadius;
+        var r = World.BodyRadius;
         var lo = feet - new Vector3(r, 0, r);
         var hi = feet + new Vector3(r, height, r);
         var near = Near(lo, hi, _blockNear);
@@ -1644,18 +1649,18 @@ public sealed partial class ConstructWorld
         }
         var feetUp = GravityFrames.UpAt(s.Position); // (a planet's up: tilted a little from +Y away from the pole)
         var feet0 = s.Position.Y; // (a step up is measured from where the feet were: one step's rise a tick at most)
-        var near = Near(s.Position, World.PlayerRadius + height + 1f, _blockNear); // (the broadphase: the bodies round the player)
+        var near = Near(s.Position, World.BodyRadius + height + 1f, _blockNear); // (the broadphase: the bodies round the player)
         for (var bi = 0; bi < near.Count; bi++)
         {
             var c = near[bi];
-            var reach = c.Radius + World.PlayerRadius + height;
+            var reach = c.Radius + World.BodyRadius + height;
             if (Vector3.DistanceSquared(s.Position, c.WorldCom) > reach * reach)
                 continue;
             if (c.LegCount > 0)
                 ConstructPhysics.FeetBlockPlayer(c, ref s, height); // (a walker's foot pads, stood on as ground, not ridden: a planted foot stays put; ConstructWalkLegs.cs)
             var boardable = !c.Anchored && c != ride; // (boarding assists: a construct that isn't already carrying them)
             var lookedAt = c.ToLocal(s.Position);
-            var pad = new Vector3(World.PlayerRadius + height + 3f); // (the tree is in the rest frame; a turned body's up may not be the world's: a generous box round the player)
+            var pad = new Vector3(World.BodyRadius + height + 3f); // (the tree is in the rest frame; a turned body's up may not be the world's: a generous box round the player)
             var candidates = c.PartsInBox(lookedAt - pad, lookedAt + pad, _partHits);
             for (var ci = 0; ci < candidates; ci++)
             {
@@ -1683,13 +1688,13 @@ public sealed partial class ConstructWorld
                     var above = boardable && !s.Grounded ? ConstructRide.MatchAbove : 0.06f; // (assist 1: a deck met from above matches at once)
                     if (feet.Y > wc.Y + wh.Y + above || feet.Y + height < wc.Y - wh.Y)
                         continue;
-                    if (MathF.Abs(feet.X - wc.X) > wh.X + World.PlayerRadius || MathF.Abs(feet.Z - wc.Z) > wh.Z + World.PlayerRadius)
+                    if (MathF.Abs(feet.X - wc.X) > wh.X + World.BodyRadius || MathF.Abs(feet.Z - wc.Z) > wh.Z + World.BodyRadius)
                         continue;
                     // Assist 2: walking into a construct's part steps up onto it from the disc's edge, up to a deck's height.
                     var toX = wc.X - feet.X;
                     var toZ = wc.Z - feet.Z;
                     var into = boardable && s.Velocity.X * toX + s.Velocity.Z * toZ > 0.5f * MathF.Sqrt(toX * toX + toZ * toZ);
-                    var margin = stepper || into ? World.PlayerRadius + 0.02f : 0.05f; // (just past where the disc is pushed off: it steps up first)
+                    var margin = stepper || into ? World.BodyRadius + 0.02f : 0.05f; // (just past where the disc is pushed off: it steps up first)
                     var rise = into ? ConstructRide.DeckStep : World.StepHeight;
                     // In the box's frame: the closest point of the box to the player's axis, at feet and at a few heights.
                     var lf = Vector3.Transform(feet - t, iq);
@@ -1776,7 +1781,7 @@ public sealed partial class ConstructWorld
                         var dx = probe.X - wclosest.X;
                         var dz = probe.Z - wclosest.Z;
                         var d2 = dx * dx + dz * dz;
-                        if (d2 >= World.PlayerRadius * World.PlayerRadius)
+                        if (d2 >= World.BodyRadius * World.BodyRadius)
                             continue;
                         // A tilted top still under the feet where the disc meets it (it comes up out of the ground further on) doesn't push.
                         if (upLocal.Y < 0.9995f && TopAt(Vector3.Transform(wclosest - t, iq), centre, half, upLocal, t, q, feet) is { } under && under <= feet.Y + 0.06f)
@@ -1805,14 +1810,14 @@ public sealed partial class ConstructWorld
                                 continue;
                             nx = wn.X / len;
                             nz = wn.Z / len;
-                            depth = MathF.Min(o.X < o.Z ? o.X : o.Z, 0.5f) + World.PlayerRadius;
+                            depth = MathF.Min(o.X < o.Z ? o.X : o.Z, 0.5f) + World.BodyRadius;
                         }
                         else
                         {
                             var d = MathF.Sqrt(d2);
                             nx = dx / d;
                             nz = dz / d;
-                            depth = World.PlayerRadius - d;
+                            depth = World.BodyRadius - d;
                         }
                         var vn = s.Velocity.X * nx + s.Velocity.Z * nz;
                         // A moving part (a car, a swinging arm) shoves the player along with it, and hits them as hard as it
@@ -1880,7 +1885,7 @@ public sealed partial class ConstructWorld
             any = c.Parts[_partHits[ci]].D.HasSkin;
         if (!any)
             return; // (no skin near: every body but a ship's)
-        var r = World.PlayerRadius;
+        var r = World.BodyRadius;
         var step = s.Velocity * World.TickDt;
         var from = s.Position - step; // (where this tick's move started: a fall faster than a plate is thick still meets it)
         var lo = Vector3.Min(from, s.Position) - new Vector3(r + height + 0.2f);
@@ -1958,7 +1963,7 @@ public sealed partial class ConstructWorld
     {
         var best = 0;
         var bd = float.MaxValue;
-        var r = World.PlayerRadius;
+        var r = World.BodyRadius;
         for (var k = 0; k < span.Length; k++)
         {
             var d = CapsuleContact.Separation(span[k], feet + up * r, feet + up * r, r, out _, out _);
@@ -2000,7 +2005,7 @@ public sealed partial class ConstructWorld
         if (s.RideClimb > 0 || !ConstructRide.TopFace(upLocal, out var ax, out var sign))
             return false;
         // A body's radius in from the edge it was pushed off, on the top face.
-        var target = wclosest - new Vector3(nx, 0, nz) * (World.PlayerRadius + 0.1f);
+        var target = wclosest - new Vector3(nx, 0, nz) * (World.BodyRadius + 0.1f);
         var iq = Quaternion.Conjugate(q);
         var lt = Vector3.Transform(target - t, iq);
         for (var a = 0; a < 3; a++)
@@ -2250,19 +2255,37 @@ public sealed partial class ConstructWorld
     /// <summary>Server: trees grown back since the clients were last told (GameResources.cs).</summary>
     public readonly List<uint> GrownTrees = new(16);
 
+    /// <summary>The physics' time in all (ms; a tool reads and clears it).</summary>
+    public double PhysicsMs;
+
+    /// <summary>Server: where the people are this tick (the game sets them; a tool too): far NPC bodies step on a coarser rate (ConstructFar.cs). 0: off.</summary>
+    public readonly Vector3[] People = new Vector3[64];
+    public int PeopleCount;
+
     public void Step(IWorldQuery query, float dt)
     {
+        _stepAt = System.Diagnostics.Stopwatch.GetTimestamp();
         _partTally = -1; // (counted again when next asked)
         var perf = Perf.Measure(PerfArea.ConstructLogic); // the perf window's areas (Source/Perf): off, a bool test each
+        var part = Perf.Measure(PerfArea.CLinks);
         StepLinks(); // couplings and wires between constructs (ConstructLinks.cs): resolved, broken when apart, their values
         StepHydraulics(); // (the circuits, a few times a second: ConstructHydraulics.cs)
         StepNoCollide(); // no-collide pairs (ConstructNoCollide.cs): each finds its parts, or goes
         StepConnectors(query); // ropes and springs (ConstructConnectors.cs): resolved, snapped when overloaded, what they hold woken
         StepWorldLinks(query, dt, Hands); // world links and hoses (WorldLinks.cs, ConstructHoses.cs): resolved, snapped when a free construct moves, their flow
+        StepPart(0);
+        ConstructFar.Mark(this); // (far NPC bodies: their logic, power and physics on a coarser rate)
+        part.Dispose();
         foreach (var c in Bodies)
         {
-            ConstructPower.Step(this, c, dt);
+            part = Perf.Measure(PerfArea.CPower);
+            if (ConstructFar.LogicDue(c))
+                ConstructPower.Step(this, c, c.FarLogic > 1 ? dt * c.FarLogic : dt);
+            part.Dispose();
+            part = Perf.Measure(PerfArea.CRoutes);
             ConstructRoutes.Step(this, c, dt); // (routed links: leaks, sparks, chutes)
+            part.Dispose();
+            part = Perf.Measure(PerfArea.CPower);
             if (c.FluidLoadChanged)
             {
                 c.FluidLoadChanged = false;
@@ -2274,12 +2297,24 @@ public sealed partial class ConstructWorld
                 Beacons.Dirty = true;
             }
             ConstructDrive.ShiftKeys(c); // (the driver's R and sprint, before the logic step clears the seats' keys)
+            part.Dispose();
         }
+        StepPart(1);
+        part = Perf.Measure(PerfArea.CWeapons);
         ConstructWeapons.Step(this, query, dt); // (before the logic: a gun's wires carry last tick's values, its gunner's keys this tick's)
+        part.Dispose();
+        StepPart(2);
+        part = Perf.Measure(PerfArea.CLinks);
         FlushSnaps(); // (world links that tore off this tick: WorldLinks.cs)
+        part.Dispose();
+        part = Perf.Measure(PerfArea.CLogicBlocks);
         RadioGather(); // (the wireless senders this tick: ConstructRadio.cs)
         foreach (var c in Bodies)
-            ConstructLogic.Step(this, c, dt);
+            if (ConstructFar.LogicDue(c))
+                ConstructLogic.Step(this, c, c.FarLogic > 1 ? dt * c.FarLogic : dt);
+        part.Dispose();
+        StepPart(3);
+        part = Perf.Measure(PerfArea.CDoors);
         ConstructBoost.Separate(this); // (decouplers that fired: bodies change only out here)
         ConstructOrdnance.Release(this, query); // (bomb racks that let go: the same)
         ConstructHoists.Step(this); // (reload hoists move a weapon from their magazines onto their launchers, a few times a second)
@@ -2287,10 +2322,15 @@ public sealed partial class ConstructWorld
         ConstructDoors.Step(this); // (event doors: the wired ones' edges and the moving ones, nothing for an idle door)
         ConstructRide.SpawnIntoMotion(this); // (bodies made since the last step: into the motion of the frame they were made in)
         ConstructRide.BeforePhysics(this); // (each body's acceleration: riders thrown off by a crash)
+        part.Dispose();
         perf.Dispose();
+        StepPart(4);
         perf = Perf.Measure(PerfArea.ConstructPhysics);
-        ConstructPhysics.Step(this, query, dt);
+        var p0 = System.Diagnostics.Stopwatch.GetTimestamp();
+        ConstructFar.Physics(this, query, dt); // (every body, or the near ones then the far ones whose turn it is: ConstructFar.cs)
+        PhysicsMs += (System.Diagnostics.Stopwatch.GetTimestamp() - p0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
         OverloadDamage();
+        StepPart(5);
         perf.Dispose();
         perf = Perf.Measure(PerfArea.Production);
         AllocProfile.Mark("machines: ConstructRecycler");
@@ -2328,6 +2368,7 @@ public sealed partial class ConstructWorld
         LoadStep(server: true); // (what the bins hold counts in their bodies' mass: before the cargo step, which reads a carried body's)
         ConstructBreach.Step(this); // (boarding craft's hull grapples take hold or let go, their cutters burn: before the cargo step, which carries what they hold)
         ConstructCargo.Step(this); // (what frozen cargo volumes carry follows them; what entered is caught, what left is let go)
+        StepPart(6);
         perf.Dispose();
         ConstructGravity.Refresh(this); // (gravity wells and generators as they are now: ConstructGravity.cs)
         for (var i = Bodies.Count - 1; i >= 0; i--)
@@ -2340,5 +2381,19 @@ public sealed partial class ConstructWorld
             }
         }
         GridMoved(); // (the awake bodies moved: the broadphase is rebuilt at its next query)
+        StepPart(7);
+    }
+
+    /// <summary>Where the step's time goes (ms in all; a tool reads and clears it): links, power and routes, weapons, logic, doors and launchers,
+    /// physics, machines, the rest.</summary>
+    public readonly double[] StepMs = new double[8];
+    private long _stepAt;
+
+    private void StepPart(int k)
+    {
+        var now = System.Diagnostics.Stopwatch.GetTimestamp();
+        if (k > 0)
+            StepMs[k] += (now - _stepAt) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+        _stepAt = now;
     }
 }

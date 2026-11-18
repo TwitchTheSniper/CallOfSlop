@@ -3,9 +3,8 @@ using static CallOfSlop.PartKit.PartKitMath;
 namespace CallOfSlop.PartKit.Generators;
 
 /// <summary>
-/// The robot shells: Constructs/Parts/Shells (the Robot Shell and the Shell Control Chair that wakes you in one), and the Depot Lander
-/// blueprint, the Orbiter without its Driving Module (the Orbital Depot's challenge is to fit and link one). Was
-/// tools/constructs/shell_parts.py. The lander follows Constructs/Blueprints/Orbiter.json: run this after changing it.
+/// The robot shells: Constructs/Parts/Shells (the Robot Shell and the Shell Control Chair that wakes you in one). Was
+/// tools/constructs/shell_parts.py. (The Depot Lander and Ministry Courier blueprints went with the penal colony, 2026-11-17.)
 /// </summary>
 public sealed class ShellParts : IPartGenerator
 {
@@ -14,7 +13,7 @@ public sealed class ShellParts : IPartGenerator
     private const string Out = "Constructs/Parts/Shells";
     private const string Section = "Shells";
     private const string Steel = "#8b949c", Dark = "#30363d", Joint = "#56606a", Visor = "#38d0e8", Lamp = "#f2a93b", Seat = "#3b4652";
-    private const int Range = 3000; // m: the chair's reach (the story's depot hangs 1.5 km over its chairs)
+    private const int Range = 3000; // m: the chair's reach 
 
     private static PyDict Channel() => new()
     {
@@ -26,32 +25,85 @@ public sealed class ShellParts : IPartGenerator
     private static Part Shell()
     {
         var p = new Part("Robot Shell", Small, Section, $"A robot body. Sit in a Shell Control Chair on its channel, within {Py.G(Range / 1000.0)} km, to wake in it: if it is destroyed you only wake in the chair again.", tool: "wrench", group: "Logic", color: Steel);
-        foreach (var s in new[] { -1, 1 })
-        {
-            double x0 = Math.Min(s * 0.045, s * 0.175), x1 = Math.Max(s * 0.045, s * 0.175);
-            p.Add(Box([x0 - 0.01, 0.0, -0.15], [x1 + 0.01, 0.07, 0.09], Dark)); // feet
-            p.Add(Box([x0, 0.06, -0.07], [x1, 0.47, 0.07], Joint)); // shins
-            p.Add(Box([x0 - 0.005, 0.45, -0.085], [x1 + 0.005, 0.53, 0.085], Dark, detail: true)); // knees
-            p.Add(Box([x0 + 0.005, 0.52, -0.075], [x1 - 0.005, 0.88, 0.075])); // thighs
-            double a0 = Math.Min(s * 0.26, s * 0.37), a1 = Math.Max(s * 0.26, s * 0.37);
-            p.Add(Box([a0 - 0.02, 1.36, -0.1], [a1 + 0.02, 1.53, 0.1], Joint)); // shoulders
-            p.Add(Box([a0, 1.0, -0.06], [a1, 1.37, 0.06])); // upper arms
-            p.Add(Box([a0 + 0.005, 0.74, -0.055], [a1 - 0.005, 1.01, 0.055], Joint)); // forearms
-            p.Add(Box([a0 + 0.01, 0.64, -0.05], [a1 - 0.01, 0.75, 0.05], Dark, detail: true)); // hands
-        }
-        p.Add(Box([-0.2, 0.86, -0.11], [0.2, 1.02, 0.1], Dark)); // pelvis
-        p.Add(Box([-0.245, 1.0, -0.135], [0.245, 1.5, 0.125])); // torso
-        p.Add(Box([-0.17, 1.13, -0.16], [0.17, 1.42, -0.12], Joint, detail: true)); // chest plate
-        p.Add(Box([-0.05, 1.22, -0.172], [0.05, 1.27, -0.15], Lamp, detail: true)); // status lamp
-        p.Add(Box([-0.16, 1.07, 0.11], [0.16, 1.44, 0.2], Dark)); // power pack on the back
-        p.Add(Box([-0.06, 1.48, -0.06], [0.06, 1.58, 0.06], Dark)); // neck
-        p.Add(Box([-0.135, 1.56, -0.14], [0.135, 1.83, 0.125])); // head
-        p.Add(Box([-0.11, 1.65, -0.158], [0.11, 1.73, -0.12], Visor)); // visor
-        p.Add(Box([0.07, 1.82, -0.015], [0.09, 1.96, 0.015], Dark, detail: true)); // aerial
+        Robot(p, 1, drill: false);
         p.Sock("bottom", [0, 0, 0], "-y");
         p.Sock("back", [0, 1.25, 0.2], "+z");
         p.Stats(38, 160, 3, 3);
         p.Set(("shell", new PyDict { ["body"] = true }), ("config", Py.L(Channel())), ("centreSockets", false));
+        return p;
+    }
+
+    /// <summary>
+    /// The robot's body at <paramref name="k"/> times a person's size (the Robot Shell is 1; the Mining Shell, Constructs/Shells.json's
+    /// "scale", 1.5). <paramref name="drill"/>: the right arm's forearm and hand are left off for the drill arm.
+    /// </summary>
+    private static void Robot(Part p, double k, bool drill)
+    {
+        PyDict? B(double[] lo, double[] hi, string? c = null, bool detail = false) => Box([lo[0] * k, lo[1] * k, lo[2] * k], [hi[0] * k, hi[1] * k, hi[2] * k], c, detail: detail);
+        foreach (var s in new[] { -1, 1 })
+        {
+            double x0 = Math.Min(s * 0.045, s * 0.175), x1 = Math.Max(s * 0.045, s * 0.175);
+            p.Add(B([x0 - 0.01, 0.0, -0.15], [x1 + 0.01, 0.07, 0.09], Dark)); // feet
+            p.Add(B([x0, 0.06, -0.07], [x1, 0.47, 0.07], Joint)); // shins
+            p.Add(B([x0 - 0.005, 0.45, -0.085], [x1 + 0.005, 0.53, 0.085], Dark, detail: true)); // knees
+            p.Add(B([x0 + 0.005, 0.52, -0.075], [x1 - 0.005, 0.88, 0.075])); // thighs
+            double a0 = Math.Min(s * 0.26, s * 0.37), a1 = Math.Max(s * 0.26, s * 0.37);
+            p.Add(B([a0 - 0.02, 1.36, -0.1], [a1 + 0.02, 1.53, 0.1], Joint)); // shoulders
+            p.Add(B([a0, 1.0, -0.06], [a1, 1.37, 0.06])); // upper arms
+            if (drill && s > 0)
+                continue; // (the right forearm is the drill: MiningShell)
+            p.Add(B([a0 + 0.005, 0.74, -0.055], [a1 - 0.005, 1.01, 0.055], Joint)); // forearms
+            p.Add(B([a0 + 0.01, 0.64, -0.05], [a1 - 0.01, 0.75, 0.05], Dark, detail: true)); // hands
+        }
+        p.Add(B([-0.2, 0.86, -0.11], [0.2, 1.02, 0.1], Dark)); // pelvis
+        p.Add(B([-0.245, 1.0, -0.135], [0.245, 1.5, 0.125])); // torso
+        p.Add(B([-0.17, 1.13, -0.16], [0.17, 1.42, -0.12], Joint, detail: true)); // chest plate
+        p.Add(B([-0.05, 1.22, -0.172], [0.05, 1.27, -0.15], Lamp, detail: true)); // status lamp
+        if (!drill)
+            p.Add(B([-0.16, 1.07, 0.11], [0.16, 1.44, 0.2], Dark)); // power pack on the back (the Mining Shell's hopper is its own)
+        p.Add(B([-0.06, 1.48, -0.06], [0.06, 1.58, 0.06], Dark)); // neck
+        p.Add(B([-0.135, 1.56, -0.14], [0.135, 1.83, 0.125])); // head
+        p.Add(B([-0.11, 1.65, -0.158], [0.11, 1.73, -0.12], Visor)); // visor
+        p.Add(B([0.07, 1.82, -0.015], [0.09, 1.96, 0.015], Dark, detail: true)); // aerial
+    }
+
+    /// <summary>The hopper's bulk box (the part's storage): inside its walls, open at the top. Also where the game draws the ore.</summary>
+    public static readonly double[] HopperMin = [-0.31, 1.395, 0.245], HopperMax = [0.31, 2.18, 0.755];
+
+    public const int HopperUnits = 5400; // the Ore Hopper's load: three minutes of its drill arm at 30 a second (the user, 2026-11-17; a Materials Bin holds 600)
+
+    /// <summary>
+    /// The Mining Shell (the user, 2026-11-17; docs/sandbox/design/mining-shell.md): the robot at 1.5x, an open ore hopper on its back
+    /// (the part's own bin: worn, it is the hopper) and a drill for a right forearm. Frame "Mining" in Constructs/Shells.json.
+    /// </summary>
+    private static Part MiningShell()
+    {
+        const string Ore = "#5a4a3c", Bit = "#c9ced4", Hazard = "#e0a020";
+        var p = new Part("Mining Shell", Small, Section, $"A heavy robot body half again a person's size, an ore hopper on its back and a drill for a right arm: the ground drill's scoops tap ore deposits into the hopper. Wake in it from a Shell Control Chair on its channel. Crouch to pass doors.", role: "storage", tool: "wrench", group: "Logic", color: Steel);
+        Robot(p, 1.5, drill: true);
+        // The hopper: a floor, four walls (the sides lower than the ends), a lip, and two straps over the shoulders.
+        p.Add(Box([-0.36, 1.35, 0.2], [0.36, 1.39, 0.8], Dark)); // floor
+        p.Add(Box([-0.36, 1.393, 0.2], [0.36, 2.25, 0.24], Ore)); // front wall, against the back
+        p.Add(Box([-0.36, 1.393, 0.76], [0.36, 2.25, 0.8], Ore)); // back wall
+        p.Add(Box([-0.358, 1.393, 0.243], [-0.322, 2.2, 0.757], Ore)); // side walls
+        p.Add(Box([0.322, 1.393, 0.243], [0.358, 2.2, 0.757], Ore));
+        p.Add(Box([-0.364, 2.253, 0.196], [0.364, 2.28, 0.245], Hazard, detail: true)); // the front wall's lip
+        p.Add(Box([-0.364, 2.253, 0.755], [0.364, 2.28, 0.804], Hazard, detail: true)); // the back wall's lip
+        foreach (var x in new[] { -0.25, 0.17 })
+            p.Add(Box([x, 2.0, -0.02], [x + 0.08, 2.32, 0.197], Joint, detail: true)); // straps over the shoulders
+        p.Add(Box([-0.2, 1.55, 0.805], [0.2, 1.64, 0.83], Lamp, detail: true)); // a load band on its back
+        // The drill arm, out of the right shoulder: a housing down the forearm, a motor collar, a stepped bit forward.
+        p.Add(Box([0.4, 1.26, -0.42], [0.545, 1.497, 0.08], Joint)); // the housing
+        p.Add(Box([0.385, 1.24, -0.12], [0.56, 1.52, 0.03], Dark)); // the motor collar
+        p.Add(Box([0.425, 1.3, -0.62], [0.52, 1.46, -0.41], Bit)); // the bit's root
+        p.Add(Box([0.445, 1.33, -0.8], [0.5, 1.43, -0.61], Bit)); // its middle
+        p.Add(Box([0.46, 1.355, -0.9], [0.485, 1.405, -0.79], Bit, detail: true)); // its point
+        p.Add(Box([0.39, 1.505, -0.41], [0.555, 1.53, -0.2], Hazard, detail: true)); // a hazard band on the housing
+        p.Sock("bottom", [0, 0, 0], "-y");
+        p.Sock("back", [0, 1.9, 0.8], "+z");
+        p.Stats(140, 260, 6, 5);
+        p.Set(("shell", new PyDict { ["body"] = true }), ("config", Py.L(Channel())), ("centreSockets", false),
+            ("storage", new PyDict { ["bulk"] = new PyDict { ["material"] = "any", ["capacity"] = HopperUnits, ["min"] = Py.L(HopperMin.Cast<object?>().ToArray()), ["max"] = Py.L(HopperMax.Cast<object?>().ToArray()) } }));
         return p;
     }
 
@@ -173,52 +225,8 @@ public sealed class ShellParts : IPartGenerator
         }));
     }
 
-    /// <summary>The Orbiter without its Driving Module or wires: the depot's challenge is to fit and link one.</summary>
-    private static PyDict Lander(PartOutput o)
-    {
-        var orbiter = (PyDict)o.ReadJson("Constructs/Blueprints/Orbiter.json")!;
-        var all = (List<object?>)orbiter["steps"]!;
-        var steps = all.Cast<PyDict>().Where(s => (string?)s["part"] != "Driving Module").Cast<object?>().ToList();
-        if (steps.Count != all.Count - 1 || !steps.Cast<PyDict>().All(s => Py.D(s.Get("on") ?? 0) < steps.Count))
-            throw new InvalidOperationException("Orbiter.json: expected one Driving Module that nothing else stands on");
-        return new PyDict
-        {
-            ["format"] = "call-of-slop-construct-blueprint/1",
-            ["name"] = "Depot Lander",
-            ["description"] = "An Orbiter from the Ministry's Orbital Depot with no Driving Module: fit one on the pilot's seat and link seat, module and jets to fly it.",
-            ["steps"] = steps,
-        };
-    }
-
-    /// <summary>The Orbiter in the Ministry's colours (navy tanks, a green band, slate jets): the Ministry Courier parked on the
-    /// spaceport's first pad (docs/story/SPACEPORT.md), the same ship to fly, its seats and wires as they are.</summary>
-    private static PyDict Courier(PartOutput o)
-    {
-        var orbiter = (PyDict)o.ReadJson("Constructs/Blueprints/Orbiter.json")!;
-        var steps = ((List<object?>)orbiter["steps"]!).Cast<PyDict>().ToList();
-        for (var k = 0; k < steps.Count; k++)
-        {
-            var part = (string?)steps[k]["part"];
-            var paint = part switch { "Fuel Tank" => k is 0 or 1 or 2 ? "#2f5a3c" : "#1f2b45", "Small Jet" => "#4b5157", _ => null };
-            if (paint == null)
-                continue;
-            steps[k]["paint"] = paint;
-            steps[k]["finish"] = "worn paint";
-        }
-        return new PyDict
-        {
-            ["format"] = "call-of-slop-construct-blueprint/1",
-            ["name"] = "Ministry Courier",
-            ["description"] = "The Ministry of Slop's courier ship from the Frostreach spaceport: an Orbiter for two in navy and green, that climbs out of the sky into orbit.",
-            ["steps"] = steps.Cast<object?>().ToList(),
-            ["wires"] = orbiter["wires"],
-        };
-    }
-
     public void Make(PartOutput o)
     {
-        WriteParts(o, Out, [("", Shell()), ("", Chair()), .. Spares()]);
-        o.File("Constructs/Blueprints/DepotLander.json", PyJson.Dumps(Lander(o), 2) + "\n");
-        o.File("Constructs/Blueprints/MinistryCourier.json", PyJson.Dumps(Courier(o), 2) + "\n");
+        WriteParts(o, Out, [("", Shell()), ("", MiningShell()), ("", Chair()), .. Spares()]);
     }
 }

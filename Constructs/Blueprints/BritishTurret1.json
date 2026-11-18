@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "British Turret 1",
-  "group": "Ministry of Slop",
+  "group": "British",
   "description": "A British turret: a Elephant Gun on a turntable, its gunner's seat on the arm. Sit in it to aim and fire; weld or bolt its base to anything.",
   "steps": [
     {"part": "Plate Steel 1 m", "paint": "#004225"},

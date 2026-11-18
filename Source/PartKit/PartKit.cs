@@ -50,15 +50,14 @@ public static class PartKit
     [
         new Generators.FreeParts(),
         new Generators.FactoryShellParts(), // (the factory kit's parts: ore bunkers, later the shell)
+        new Generators.LinkSupportParts(), // (trestles and link bridges: links up and over an aisle, conveyor-inclines.md)
         new Generators.BanditParts(),
         new Generators.MediaParts(),
         new Generators.AmmoParts(),
-        new Generators.HighlandParts(),
         new Generators.ShellParts(),
         new Generators.PilotParts(),
         new Generators.CallCentreParts(),
         new Generators.OfficeParts(),
-        new Generators.LoreParts(),
         new Generators.BritishParts(),
         new Generators.DoorParts(),
         new Generators.StationParts(),
@@ -111,6 +110,7 @@ public static class PartKit
         new Generators.MinerParts(), // (the Magpie mining ship)
         new Generators.TorpedoFrigateParts(), // (the Zero Day torpedo frigate: likewise)
         new Generators.HaulerParts(), // (the Dray container hauler: likewise)
+        new Generators.SpaceStationParts(), // (space stations from the station kit: Caledon Highport; its blueprint hangs docking clamps and hatches)
         new Generators.MakeRv(),
         new Generators.MachineTiers(),
         new Generators.Assembling(),

@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 3 body 3 kit 3 wear 3, chassis 3 axles, tag 1.5 m, front under the hood, inset 2 m, hydraulic/coil/coil, wing 0.5, archetype giant hauler, cab style glasshouse, language pod giant 2.40 m, flare 0.26, sloped 0.6, brow 0.68 1.5 m, tail 0.75 0.75 m, door right, 12 facets, cab pod capsule, 8 facets, nose rounded, trim fairing on 9 bay sides, wear age 0.79 (1 rusty, 3 dirty, 0 sooty, 0 patched, 0 rusted out), body gap+room, cab cab-over, nose flat, rear gun deck, under skirted, flank loaded, roof none, layout gap 1 m+room(Brow T,Bay T,Door,Bay T-L,Tail L), plan 2
   "format": "call-of-slop-construct-blueprint/1",
   "name": "IT Giant Truck 3",
-  "group": "IT Department",
+  "group": "IT",
   "description": "A giant truck: a flat nose, a cab-over, bare rails behind the cab, a walk-in hull with loot, a stern gun deck. 1 gun.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#3b3f44"},
@@ -154,7 +154,7 @@
     {"part": "Crew Bench", "on": 68, "socket": "centre +y", "by": "foot01"},
     {"part": "Fax Machine", "on": 72, "socket": "front13", "by": "foot00", "spin": 2},
     {"part": "Desk Fan", "on": 38, "socket": "top", "by": "base"},
-    {"part": "CRT Monitor", "on": 121, "socket": "front", "by": "base"},
+    {"part": "Office Plant", "on": 121, "socket": "front", "by": "base"},
     {"part": "Hull Loft (trimf1 XaW5 ~B00BWIBubC0tC0yCHAD1TDXlDHuCw1BgI9oW7Qf4ol02l ~CW0DGQDerDeyEXFGXgGvuGw5GYVFgvEJHCBb9Rn6Rw03w)", "on": 97, "socket": "+x0", "by": "base", "paint": "#e6e2d6"},
     {"part": "Hull Loft (trimf2 XaW5 ~CW0DGQDerDeyEXFGXgGvuGw5GYVFgvEJHCBb9Rn6Rw03w ~B00BWIBubC0tC0yCHAD1TDXlDHuCw1BgI9oW7Qf4ol02l)", "on": 97, "socket": "-x0", "by": "base", "paint": "#e6e2d6"},
     {"part": "Hull Loft (trimf8 XaW5 ~CW0DGQDerDeyEXFGXgGvuGw5GYVFgvEJHCBb9Rn6Rw03w ~CW0DGQDepDeyEPDGXeGvuGw2GYSFgrEJCCBV9Ri6Rq03q)", "on": 98, "socket": "+x0", "by": "base", "paint": "#e6e2d6"},

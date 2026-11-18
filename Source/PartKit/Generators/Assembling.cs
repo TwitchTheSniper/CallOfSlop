@@ -157,21 +157,10 @@ public sealed class Assembling : IPartGenerator
         Rec("Fax Machine", 10, 3, m: [("steel", 3), ("laminate", 1)], p: [("Circuit Board", 1), ("Copper Coil", 1)]),
         Rec("Server Rack", 15, 3, m: [("steel", 8)], p: [("Circuit Board", 3), ("Wiring Loom", 2)]),
         Rec("Network Switch", 4, 3, m: [("steel", 1), ("copper", 1)], p: [("Circuit Board", 1)]),
-        Rec("Cable Reel", 3, 2, m: [("copper", 3), ("planks", 1)]),
         Rec("Satellite Dish", 4, 2, m: [("steel", 2), ("copper", 1)]),
-        Rec("Cubicle Desk", 6, 1, m: [("planks", 4), ("steel", 2), ("laminate", 1)]),
         Rec("Water Cooler", 4, 1, m: [("laminate", 2), ("glass", 1)]),
-        Rec("Office Phone", 3, 2, m: [("laminate", 1), ("copper", 1)]),
-        Rec("Call Headset", 2, 2, m: [("laminate", 1), ("copper", 1)]),
-        Rec("Gift Card Sign", 2, 1, m: [("planks", 1), ("laminate", 1)]),
-        Rec("Prize Wheel", 3, 1, m: [("planks", 2), ("laminate", 1)]),
         Rec("Loudhailer", 3, 2, m: [("steel", 1), ("copper", 1)]),
         Rec("Phone Mast", 4, 2, m: [("steel", 2), ("copper", 1)]),
-        Rec("Pipe Box", 8, 2, m: [("planks", 4), ("rubber", 2)], p: [("Bearing", 1)]),
-        Rec("Whisky Cask", 5, 1, m: [("planks", 10), ("steel", 2)]),
-        Rec("Pillar Box", 6, 1, m: [("steel", 12)]),
-        Rec("Phone Box", 8, 1, m: [("steel", 14), ("glass", 3)], p: [("Circuit Board", 1)]),
-        Rec("Tea Urn", 4, 1, m: [("steel", 3), ("planks", 1)]),
         Rec("Light Bomb", 3, 2, m: [("steel", 6), ("concrete", 2)]),
         Rec("AA Gun", 20, 3, m: [("steel", 40)], p: [("Gear Set", 1)]),
         Rec("Rocket Pod Mk2", 12, 3, m: [("steel", 18), ("copper", 3)]),
@@ -324,7 +313,7 @@ public sealed class Assembling : IPartGenerator
         ["Copper Coil"] = 2, ["Wiring Loom"] = 2, ["Servo Motor"] = 2, ["Circuit Board"] = 3, ["Control Unit"] = 3,
     };
 
-    private static readonly string[] SkipFolders = ["Spawn", "Components", "Press/Dies", "Wings", "Lore", "ShipWorks", "Shells/Spares"]; // (dies come from a Die Lathe, or the start kit; the colony's lore items are its own)
+    private static readonly string[] SkipFolders = ["Spawn", "Components", "Press/Dies", "Wings", "Lore", "ShipWorks", "Shells/Spares", "SpaceStations"]; // (dies come from a Die Lathe, or the start kit; the colony's lore items are its own)
     // (the old ammo modules: a box's setting does it now) (a data centre's terminal is found, never made: docs/archive/story/FRAGMENTS.md)
     private static readonly string[] SkipNames = ["Material Bundle", "Construct Core", "Data Centre Terminal", "Chest Lid", "Lid Hinge", "FMJ Rounds", "AP Rounds", "HE Rounds", "Incendiary Rounds"];
     private const int MaxUnits = 2000;
@@ -487,6 +476,22 @@ public sealed class Assembling : IPartGenerator
         };
     }
 
+    /// <summary>
+    /// Folders added after saves held Assembler recipes by number (an Assembler's recipe setting is 1 + its place in its family's list): their
+    /// rows go at the end of the file, in this order, so no older row moves. A new folder of parts goes at the end of this list.
+    /// </summary>
+    private static readonly string[] LateFolders = ["LinkSupports"];
+
+    /// <summary>
+    /// Hand-written recipes added after the table's rows were saved in worlds: they go after every older row, in the order
+    /// added, since an Assembler's recipe choice is saved by its index in its machine's family (WorldSaveBodies.cs).
+    /// </summary>
+    private static List<PyDict> LateHand() =>
+    [
+        Rec("Mining Shell", 60, 2, m: [("steel", 70), ("copper", 14), ("rubber", 8)], p: [("Circuit Board", 3)]), // (docs/sandbox/design/mining-shell.md)
+        Rec("Drill Rack", 30, 1, m: [("steel", 24), ("copper", 4), ("rubber", 2)]), // (its three portable drills come with it: factory-generator-notes.md "Tool racks and crew miners")
+    ];
+
     /// <summary>The recipes file: the header, then one recipe a line (json.dumps with its default separators).</summary>
     public static string Layout(IEnumerable<PyDict> recipes) =>
         "{\n  \"format\": \"" + Format + "\",\n  \"about\": " + PyJson.Dumps(About) + ",\n  \"recipes\": [\n"
@@ -509,8 +514,10 @@ public sealed class Assembling : IPartGenerator
         var recipes = Hand();
         recipes.AddRange(UpgradeParts.Recipes.Select(r => Rec(r.Output, r.Seconds, r.Tier, m: r.Materials, p: r.Parts)));
         recipes.AddRange(AirWeaponsParts.OrdnanceRacks.Select(r => RackRecipe(r.Name, r.Layout, r.A, r.B, r.Length, r.Diameter)));
-        var hand = recipes.Select(r => (string)r["output"]!).ToHashSet();
+        var lateHand = LateHand();
+        var hand = recipes.Concat(lateHand).Select(r => (string)r["output"]!).ToHashSet();
         var tail = new List<PyDict>();
+        var late = new List<PyDict>();
         foreach (var (p, folder) in known)
         {
             var name = (string)p["name"]!;
@@ -519,10 +526,12 @@ public sealed class Assembling : IPartGenerator
                 continue;
             if (Py.Truthy(p.Get("retired"))) // (a retired part loads and runs but has no recipe: the tier cylinders, sized-parts answer 8)
                 continue;
-            tail.Add(MachineOf(p, folder) != "" ? FlightRecipe(p, folder) : LongTail(p));
+            (LateFolders.Contains(folder) ? late : tail).Add(MachineOf(p, folder) != "" ? FlightRecipe(p, folder) : LongTail(p));
         }
         // (stable: a family's recipes are in file order, and the plain Assembler's keep their places)
         recipes.AddRange(tail.OrderBy(r => r.Get("machine") as string ?? "", StringComparer.Ordinal));
+        recipes.AddRange(late); // (after every older row: a saved Assembler keeps the number of its recipe)
+        recipes.AddRange(lateHand); // (and the hand-written rows added since, last)
         var byName = new Dictionary<string, PyDict>();
         foreach (var (p, _) in known)
             byName[(string)p["name"]!] = p;

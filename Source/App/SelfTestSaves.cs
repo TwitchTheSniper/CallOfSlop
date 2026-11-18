@@ -3,7 +3,7 @@ namespace CallOfSlop;
 /// <summary>
 /// Self-test for the save folder (SavePaths.cs): the folder per platform, portable.txt and --save-dir, the copy-only
 /// migration from next to the game (and from a previous build beside it), the both-exist rule, atomic writes with a
-/// .bak and recovery from a damaged file, the newer-format guard, read-only progress, and every save type
+/// .bak and recovery from a damaged file, the newer-format guard, and every save type
 /// round-tripping through the save folder. Everything happens in temp folders: the whole self-test saves into
 /// <see cref="SelfTestSaveFolder"/>, never %APPDATA% or the game folder.
 /// </summary>
@@ -20,7 +20,7 @@ public static partial class SelfTest
         Line($"self-test save folder: {SavePaths.Folder} ({SavePaths.Mode}); a player's would be {real.Folder} ({real.Mode})");
         if (!SavePaths.SameFolder(SavePaths.Folder, SelfTestSaveFolder) || SavePaths.SameFolder(SavePaths.Folder, real.Folder))
             Fail("the self-test isn't saving into its own temp folder");
-        foreach (var name in new[] { "progress.txt", "loadout.txt", "settings.txt", "workbench.txt" })
+        foreach (var name in new[] { "loadout.txt", "settings.txt", "workbench.txt" })
             if (!SavePaths.PathOf(name).StartsWith(SelfTestSaveFolder, StringComparison.Ordinal))
                 Fail($"{name} resolves to {SavePaths.PathOf(name)}, outside the self-test folder");
 
@@ -79,8 +79,8 @@ public static partial class SelfTest
         var exe = Path.Combine(root, "builds", "new", "CallOfSlop");
         var save = Path.Combine(root, "AppData", "CallOfSlop");
         Directory.CreateDirectory(exe);
-        File.WriteAllLines(Path.Combine(exe, "progress.txt"), ["xp=1234", "prestige=1"]);
-        File.WriteAllLines(Path.Combine(exe, "loadout.txt"), ["selected=0", "hat=fedora"]);
+        File.WriteAllLines(Path.Combine(exe, "loadout.txt"), ["selected=0", "slot0=Courier"]);
+        File.WriteAllLines(Path.Combine(exe, "workbench.txt"), ["build=1"]);
         Directory.CreateDirectory(Path.Combine(exe, "AudioMixes"));
         File.WriteAllText(Path.Combine(exe, "AudioMixes", "Loud.json"), "{}");
         File.WriteAllText(Path.Combine(exe, "classes.json"), "{}"); // game data: never copied
@@ -90,29 +90,29 @@ public static partial class SelfTest
         Line($"migration copied: {string.Join(", ", copied)}");
         foreach (var l in log)
             Line("  " + l);
-        if (!copied.Contains("progress.txt") || !copied.Contains("loadout.txt") || !copied.Contains("AudioMixes/Loud.json"))
-            Fail("migration didn't copy progress.txt, loadout.txt and AudioMixes/");
+        if (!copied.Contains("workbench.txt") || !copied.Contains("loadout.txt") || !copied.Contains("AudioMixes/Loud.json"))
+            Fail("migration didn't copy workbench.txt, loadout.txt and AudioMixes/");
         if (File.Exists(Path.Combine(save, "classes.json")) || copied.Contains("settings.txt"))
             Fail("migration copied something that isn't a save");
-        if (!File.Exists(Path.Combine(exe, "progress.txt")) || !File.Exists(Path.Combine(exe, "AudioMixes", "Loud.json")))
+        if (!File.Exists(Path.Combine(exe, "loadout.txt")) || !File.Exists(Path.Combine(exe, "AudioMixes", "Loud.json")))
             Fail("migration moved or deleted an original (it must only copy)");
-        if (!log.Any(l => l.StartsWith("[saves] migrated progress.txt from ")))
-            Fail("no '[saves] migrated progress.txt from <folder>' log line");
-        if (Progress.Load(Path.Combine(save, "progress.txt")) is not { Xp: 1234, Prestige: 1 })
-            Fail("migrated progress.txt doesn't load the same");
+        if (!log.Any(l => l.StartsWith("[saves] migrated loadout.txt from ")))
+            Fail("no '[saves] migrated loadout.txt from <folder>' log line");
+        if (!File.ReadAllLines(Path.Combine(save, "loadout.txt")).SequenceEqual(new[] { "selected=0", "slot0=Courier" }))
+            Fail("migrated loadout.txt isn't the same");
 
         // Both exist: the save folder's copy wins; the one next to the game is left alone.
-        File.WriteAllLines(Path.Combine(exe, "progress.txt"), ["xp=99999"]);
+        File.WriteAllLines(Path.Combine(exe, "loadout.txt"), ["selected=9"]);
         log.Clear();
         var again = SavePaths.Migrate(exe, save, log.Add);
-        if (again.Count != 0 || Progress.Load(Path.Combine(save, "progress.txt")).Xp != 1234)
-            Fail("a second migration replaced the save folder's progress");
-        if (File.ReadAllLines(Path.Combine(exe, "progress.txt")) is not ["xp=99999"])
+        if (again.Count != 0 || File.ReadAllLines(Path.Combine(save, "loadout.txt")) is not ["selected=0", "slot0=Courier"])
+            Fail("a second migration replaced the save folder's loadout");
+        if (File.ReadAllLines(Path.Combine(exe, "loadout.txt")) is not ["selected=9"])
             Fail("the ignored copy next to the game was changed");
-        if (!log.Any(l => l.Contains("kept progress.txt") && l.Contains("ignored")))
+        if (!log.Any(l => l.Contains("kept loadout.txt") && l.Contains("ignored")))
             Fail("no log line about the ignored copy next to the game");
         else
-            Line("both exist: " + log.First(l => l.Contains("kept progress.txt")));
+            Line("both exist: " + log.First(l => l.Contains("kept loadout.txt")));
 
         // First run of a fresh unzip: the newest previous build beside this one is found (one without a game in it isn't).
         var old = Path.Combine(root, "builds", "old", "CallOfSlop");
@@ -121,8 +121,8 @@ public static partial class SelfTest
         foreach (var (dir, days, game) in new[] { (old, -1, true), (older, -5, true), (junk, 0, false) })
         {
             Directory.CreateDirectory(dir);
-            var p = Path.Combine(dir, "progress.txt");
-            File.WriteAllLines(p, ["xp=7"]);
+            var p = Path.Combine(dir, SavePaths.MarkerFile);
+            File.WriteAllLines(p, ["name=old"]);
             File.SetLastWriteTimeUtc(p, DateTime.UtcNow.AddDays(days));
             if (game)
                 File.WriteAllText(Path.Combine(dir, "CallOfSlop.dll"), "");
@@ -133,19 +133,27 @@ public static partial class SelfTest
             Fail($"the previous build wasn't found (got {found ?? "none"}, should be {old})");
     }
 
+    // A save file through SavePaths alone (loadout.txt's name; the lines stand for any save file's: progress.txt was the
+    // example until levelling went, 2026-11-17).
+    private const int TestSaveVersion = 1;
+
+    private static int? TestXp(string path) =>
+        SavePaths.ReadLines(path, TestSaveVersion) is { } lines && lines.FirstOrDefault(l => l.StartsWith("xp=", StringComparison.Ordinal)) is { } l && int.TryParse(l[3..], out var v) ? v : null;
+
     private static void CheckSaveAtomic(string root)
     {
         var dir = Path.Combine(root, "atomic");
-        var path = Path.Combine(dir, "progress.txt");
-        new Progress { Xp = 100 }.Save(path);
-        new Progress { Xp = 200 }.Save(path);
+        Directory.CreateDirectory(dir);
+        var path = Path.Combine(dir, "loadout.txt");
+        SavePaths.WriteLines(path, ["xp=100"], TestSaveVersion);
+        SavePaths.WriteLines(path, ["xp=200"], TestSaveVersion);
         var lines = File.ReadAllLines(path);
         var bak = File.ReadAllLines(SavePaths.BackupOf(path));
         Line($"after two saves: {lines[0]}, {lines[1]}; backup {bak[1]}; temp left: {File.Exists(path + ".tmp")}");
-        if (lines[0] != $"version={Progress.SaveVersion}" || !lines.Contains("xp=200"))
-            Fail("progress.txt doesn't start with its version line / lost the new XP");
+        if (lines[0] != $"version={TestSaveVersion}" || !lines.Contains("xp=200"))
+            Fail("the save doesn't start with its version line / lost the new value");
         if (!bak.Contains("xp=100"))
-            Fail("progress.txt.bak doesn't hold the previous save");
+            Fail("the .bak doesn't hold the previous save");
         if (File.Exists(path + ".tmp"))
             Fail("a .tmp file was left behind");
 
@@ -153,40 +161,33 @@ public static partial class SelfTest
         foreach (var (what, bytes) in new[] { ("zero-filled", new byte[64]), ("empty", Array.Empty<byte>()) })
         {
             File.WriteAllBytes(path, bytes);
-            var p = Progress.Load(path);
-            Line($"{what} progress.txt: loaded XP {p.Xp} from the backup, damaged copy kept: {File.Exists(path + ".corrupt")}");
-            if (p.Xp != 100)
-                Fail($"a {what} progress.txt didn't load its backup (XP {p.Xp}, should be 100)");
+            var xp = TestXp(path);
+            Line($"{what} save: loaded {xp} from the backup, damaged copy kept: {File.Exists(path + ".corrupt")}");
+            if (xp != 100)
+                Fail($"a {what} save didn't load its backup ({xp}, should be 100)");
         }
         // Saving again replaces the damaged file but keeps the good backup.
-        new Progress { Xp = 300 }.Save(path);
-        if (Progress.Load(path).Xp != 300 || !File.ReadAllLines(SavePaths.BackupOf(path)).Contains("xp=100"))
+        SavePaths.WriteLines(path, ["xp=300"], TestSaveVersion);
+        if (TestXp(path) != 300 || !File.ReadAllLines(SavePaths.BackupOf(path)).Contains("xp=100"))
             Fail("saving over a damaged file lost the good backup");
 
         // Old saves (no version line) load exactly as before.
-        File.WriteAllLines(path, ["xp=4321", "prestige=2", "kills=9"]);
-        if (Progress.Load(path) is not { Xp: 4321, Prestige: 2, Kills: 9 })
+        File.WriteAllLines(path, ["xp=4321"]);
+        if (TestXp(path) != 4321)
             Fail("a save without a version line didn't load");
-
-        // Read-only progress (the smoke test's copy, the self-test's) never writes.
-        var ro = Path.Combine(dir, "readonly.txt");
-        new Progress { ReadOnly = true, Xp = 5 }.Save(ro);
-        if (File.Exists(ro))
-            Fail("a ReadOnly progress wrote a file");
     }
 
     private static void CheckSaveNewerFormat(string root)
     {
         SavePaths.ClearWarnings();
-        var path = Path.Combine(root, "newer", "progress.txt");
+        var path = Path.Combine(root, "newer", "loadout.txt");
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         string[] future = ["version=99", "xp=777", "future_thing=1"];
         File.WriteAllLines(path, future);
-        var p = Progress.Load(path);
-        p.Xp += 10;
-        p.Save(path);
-        Line($"newer-format save: loaded XP {p.Xp - 10}, file unchanged: {File.ReadAllLines(path).SequenceEqual(future)}, warning: {SavePaths.Warning != null}");
-        if (p.Xp != 787)
+        var xp = TestXp(path) ?? -1;
+        SavePaths.WriteLines(path, [$"xp={xp + 10}"], TestSaveVersion);
+        Line($"newer-format save: loaded {xp}, file unchanged: {File.ReadAllLines(path).SequenceEqual(future)}, warning: {SavePaths.Warning != null}");
+        if (xp != 777)
             Fail("a newer-format save didn't load what this build understands");
         if (!File.ReadAllLines(path).SequenceEqual(future) || File.Exists(SavePaths.BackupOf(path)))
             Fail("an older build saved over a newer-format save");
@@ -198,12 +199,6 @@ public static partial class SelfTest
     private static void CheckSaveRoundTrips()
     {
         // Every save type through the (self-test's temp) save folder.
-        var progressPath = SavePaths.PathOf("progress.txt");
-        new Progress { Xp = 4242, Prestige = 3, Kills = 17 }.Save();
-        var p = Progress.Load();
-        if (p is not { Xp: 4242, Prestige: 3, Kills: 17 } || !File.Exists(progressPath))
-            Fail("progress didn't round-trip through the save folder");
-
         var settings = new Settings { Name = "SaveTest", Fov = 97 };
         settings.Save();
         var s = Settings.Load();

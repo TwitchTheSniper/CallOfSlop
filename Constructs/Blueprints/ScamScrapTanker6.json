@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 6 body 6 kit 6 wear 6, chassis 2 axles, front under the hood, inset 1.5 m, strut/strut, wing 0.75, cab style box, language cabin standard 2.36 m, flare 0.07, stepped 0.7, brow 0.85 1 m, tail 0.88 1 m, door left, cab cabin cab, nose flat, fitting roof sign, wear age 0.78 (1 rusty, 3 dirty, 0 sooty, 0 patched, 0 rusted out), body gun bay+tank+bed, cab enclosed, nose short hood, rear bare, under tub, sides walls, layout gun bay 2 m+tank 2 m+bed 1.5 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Scam Scrap Tanker 6",
-  "group": "The Call Centre",
+  "group": "Scam",
   "description": "A scrap tanker: a short hood, an enclosed cab, a gun behind the cab, a big round tank of fuel, an open bed. 1 gun.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#2a2c30"},
@@ -94,9 +94,9 @@
     {"part": "Hull Loft (decoS XJWAWjW0)", "on": 37, "socket": "top", "by": "base", "paint": "#9aa0a6"},
     {"part": "Loudhailer", "on": 75, "socket": "front11", "by": "base"},
     {"part": "Phone Mast", "on": 77, "socket": "front00", "by": "base"},
-    {"part": "Gift Card Sign", "on": 80, "socket": "top", "by": "base"},
-    {"part": "Loudhailer", "on": 55, "socket": "front10", "by": "base"},
-    {"part": "Office Phone", "on": 53, "socket": "front12", "by": "base"}
+    {"part": "Hubcap Plate", "on": 80, "socket": "top", "by": "base"},
+    {"part": "Loudhailer", "on": 53, "socket": "front12", "by": "base"},
+    {"part": "Loudhailer", "on": 56, "socket": "front11", "by": "base"}
   ],
   "wires": [[34, 35], [35, 29], [64, 74], [74, 66]],
   "links": [

@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 8 body 8 kit 8 wear 8, chassis 3 axles, tag 1.25 m, front under the hood, inset 1.5 m, leaf/leaf/leaf, wing 0.75, cab style bus front, language coach heavy 2.80 m, flare 0.26, tapered 1.0, brow 0.62 1.25 m, tail 0.75 1 m, door right, 8 facets, cab coach capsule, 6 facets, nose rounded, fitting destination board, wear age 0.81 (2 rusty, 3 dirty, 0 sooty, 1 patched, 0 rusted out), body gun bay+tank+bed, cab cab-over, nose flat, rear hitch, under stilts, sides rails, layout gun bay 2 m+tank 2 m+bed 1.5 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "British Scrap Tanker 8",
-  "group": "Ministry of Slop",
+  "group": "British",
   "description": "A scrap tanker: a flat nose, a cab-over, a gun behind the cab, a big round tank of fuel, an open bed, a tow hitch. 1 gun.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#1b1c1e"},
@@ -102,9 +102,9 @@
     {"part": "Bed Rail 1 m", "on": 66, "socket": "+x", "by": "edge1", "paint": "#be0f2a"},
     {"part": "Hull Loft (decoD WoWMUTVy)", "on": 36, "socket": "top", "by": "base"},
     {"part": "Garden Gnome", "on": 69, "socket": "front", "by": "base"},
-    {"part": "Queue Post", "on": 62, "socket": "front", "by": "base"},
-    {"part": "Traffic Cone", "on": 64, "socket": "front", "by": "base"},
-    {"part": "Furled Brolly", "on": 75, "socket": "front", "by": "base"},
+    {"part": "Traffic Cone", "on": 62, "socket": "front", "by": "base"},
+    {"part": "Hull Loft (decoJ W0)", "on": 64, "socket": "front", "by": "base"},
+    {"part": "Long Iron Spike", "on": 71, "socket": "front", "by": "base"},
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 94, "pos": [1.575, 0.933, 6.121], "rot": [-0.013, 0.0022, -0.7136, 0.7005]}, "paint": "#c8102e"}
   ],
   "wires": [[34, 35], [35, 29], [79, 91], [91, 81], [91, 82]],

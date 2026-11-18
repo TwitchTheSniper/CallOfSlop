@@ -1,0 +1,319 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Highport Frigate Cradle SR 2",
+  "description": "A berth's middle cradle: a post down the arm's side, a beam under the ship with a docking clamp on it, and the boarding tube to the ship's side.",
+  "group": "Station",
+  "section": "Caledon Highport",
+  "role": "frame",
+  "tool": "welder",
+  "collider": "boxes",
+  "mass": 21820.8,
+  "health": 30185,
+  "armour": 40,
+  "material": "steel",
+  "color": "#4c5359",
+  "attachSeconds": 20.0,
+  "boxes": [
+    {
+      "min": [
+        10.875,
+        -8.925,
+        -1.275
+      ],
+      "max": [
+        11.875,
+        7.875,
+        0.325
+      ],
+      "color": "#4c5359",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -11.225,
+        -8.925,
+        -1.275
+      ],
+      "max": [
+        10.875,
+        -6.725,
+        0.325
+      ],
+      "color": "#4c5359",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        8.675,
+        -6.745,
+        -1.295
+      ],
+      "max": [
+        9.875,
+        -6.713,
+        0.345
+      ],
+      "color": "#d9a441",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        6.275,
+        -6.745,
+        -1.295
+      ],
+      "max": [
+        7.475,
+        -6.713,
+        0.345
+      ],
+      "color": "#d9a441",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        3.875,
+        -6.745,
+        -1.295
+      ],
+      "max": [
+        5.075,
+        -6.713,
+        0.345
+      ],
+      "color": "#d9a441",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        1.475,
+        -6.745,
+        -1.295
+      ],
+      "max": [
+        2.675,
+        -6.713,
+        0.345
+      ],
+      "color": "#d9a441",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.925,
+        -6.745,
+        -1.295
+      ],
+      "max": [
+        0.275,
+        -6.713,
+        0.345
+      ],
+      "color": "#d9a441",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -3.325,
+        -6.745,
+        -1.295
+      ],
+      "max": [
+        -2.125,
+        -6.713,
+        0.345
+      ],
+      "color": "#d9a441",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -5.725,
+        -6.745,
+        -1.295
+      ],
+      "max": [
+        -4.525,
+        -6.713,
+        0.345
+      ],
+      "color": "#d9a441",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -8.125,
+        -6.745,
+        -1.295
+      ],
+      "max": [
+        -6.925,
+        -6.713,
+        0.345
+      ],
+      "color": "#d9a441",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -10.525,
+        -6.745,
+        -1.295
+      ],
+      "max": [
+        -9.325,
+        -6.713,
+        0.345
+      ],
+      "color": "#d9a441",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -10.3253,
+        -7.9684,
+        -0.65
+      ],
+      "max": [
+        11.4753,
+        7.4184,
+        -0.3
+      ],
+      "color": "#4c5359",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          11.2747,
+          7.4184,
+          -0.3
+        ],
+        [
+          11.4753,
+          7.1316,
+          -0.3
+        ],
+        [
+          11.2747,
+          7.4184,
+          -0.65
+        ],
+        [
+          11.4753,
+          7.1316,
+          -0.65
+        ],
+        [
+          -10.3253,
+          -7.6816,
+          -0.3
+        ],
+        [
+          -10.1247,
+          -7.9684,
+          -0.3
+        ],
+        [
+          -10.3253,
+          -7.6816,
+          -0.65
+        ],
+        [
+          -10.1247,
+          -7.9684,
+          -0.65
+        ]
+      ],
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        8.475,
+        1.875,
+        -1.875
+      ],
+      "max": [
+        10.875,
+        4.875,
+        0.925
+      ],
+      "color": "#9ba0a3",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        8.475,
+        -6.725,
+        -0.975
+      ],
+      "max": [
+        10.875,
+        1.875,
+        0.025
+      ],
+      "color": "#4c5359",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        8.325,
+        1.775,
+        -1.975
+      ],
+      "max": [
+        8.475,
+        4.975,
+        1.025
+      ],
+      "color": "#d9a441",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        8.255,
+        2.075,
+        -1.575
+      ],
+      "max": [
+        8.325,
+        4.675,
+        0.625
+      ],
+      "color": "#ffd8a0",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "clamp",
+      "at": [
+        -0.175,
+        -6.725,
+        -0.475
+      ],
+      "dir": "+y",
+      "class": "large"
+    },
+    {
+      "name": "j0",
+      "at": [
+        11.875,
+        1.375,
+        -0.475
+      ],
+      "dir": "+x"
+    }
+  ]
+}

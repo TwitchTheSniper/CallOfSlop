@@ -2,7 +2,6 @@
   // The Zero Day start's opening (Story/Starts/ZeroDay.json, docs/story/STARTS.md "A ship start"): no colony, no cast, no wreck;
   // the Zero Day Frigate is built over Caledon and everyone wakes aboard, standing in its frame (GameSpaceStart.cs).
   "format": "call-of-slop-opening/1",
-  "colony": "",
   "cast": "",
   "warden": "",
   "wreck": "",
@@ -18,6 +17,10 @@
   // computer: the Mercenaries' Zero Day (Karl, 2026-11-18, to test against), hostile to players, neutral to the Traders,
   // 80 km out, so 81 to 99 km from the ship as it goes round: always inside the 100 km radar and the torpedoes' reach.
   "company": [{ "ship": "Zero Day Frigate", "faction": "Traders", "behind": 400 }, { "ship": "Zero Day Frigate", "faction": "Mercenaries", "away": 80000 }],
+  // Caledon Highport, the station (Karl, 2026-11-18: "around 40km"): on its own circular orbit 40 km up over the start, about
+  // 93 m/s, so it drifts against the ship's lower, faster orbit (GameSpaceStart.OpeningStation). Caledon's pull there is under 2% of
+  // the ground's; its reach (Hill sphere) runs out near 16,000 km, so no height near the world is wholly out of its gravity.
+  "stations": [{ "blueprint": "Caledon Highport", "orbit": 40000 }],
   "beats": {
     "placeholder": { "time": 4.0, "caption": "The torpedo racks click over on their safeties. Below, Caledon turns, green glens under snow-capped bens." },
     "wake": { "time": 3.5, "lines": [] }

@@ -9,7 +9,7 @@ namespace CallOfSlop;
 /// </summary>
 public static class WorldSaveWriter
 {
-    public const uint Names = 0x53454D41, Players = 0x53594C50, Stores = 0x53524F54, Bodies = 0x53594442, Links = 0x534B4E4C, Ground = 0x53444E47, Resources = 0x53435352, Space = 0x53435053, Misc = 0x4353494D, Riders = 0x53524452, Connectors = 0x534E4E43, NoCollide = 0x4C4F434E, Story = 0x59525453, SpaceAway = 0x59415753, SpaceSeats = 0x54455353, Origin = 0x4E494752, FactionsTag = 0x4E544346, FactionLooks = 0x32544346, Opening = 0x4E45504F, TutorialTag = 0x52545554, Fate = 0x45544146, DepotTag = 0x4F504544, ToolsTag = 0x4C4F4F54, FirstsTag = 0x54535246, QuarryTag = 0x52415551, DesignsTag = 0x4E475344, StartTag = 0x54525453, LinkTag = 0x4B4E494C, CrewTag = 0x57455243, PowersTag = 0x52574F50, FleetTag = 0x54454C46;
+    public const uint Names = 0x53454D41, Players = 0x53594C50, Stores = 0x53524F54, Bodies = 0x53594442, Links = 0x534B4E4C, Ground = 0x53444E47, Resources = 0x53435352, Space = 0x53435053, Misc = 0x4353494D, Riders = 0x53524452, Connectors = 0x534E4E43, NoCollide = 0x4C4F434E, Story = 0x59525453, SpaceAway = 0x59415753, SpaceSeats = 0x54455353, Origin = 0x4E494752, FactionsTag = 0x4E544346, FactionLooks = 0x32544346, Opening = 0x4E45504F, TutorialTag = 0x52545554, Fate = 0x45544146, DepotTag = 0x4F504544, ToolsTag = 0x4C4F4F54, FirstsTag = 0x54535246, QuarryTag = 0x52415551, DesignsTag = 0x4E475344, StartTag = 0x54525453, LinkTag = 0x4B4E494C, CrewTag = 0x57455243, PowersTag = 0x52574F50, FleetTag = 0x54454C46, ControllersTag = 0x4C525443;
 
     /// <summary>Makes and writes the file. Null when it's on disk, else why not.</summary>
     public static string? Run(string folder, WorldSnapshot s)
@@ -119,44 +119,13 @@ public static class WorldSaveWriter
                 foreach (var p in s.Players)
                     if (p.Opened)
                         w.U64(p.Key).U64(p.SteamId);
-                w.U16(op.Barracks); // (the lockdown's barracks, GameColonyLockdown.cs: last, so an older reader stops before it)
-                w.U16(op.Works).U16(op.Depot); // (the Orbital Depot's, GameDepot.cs: after it, likewise)
-                w.U8((byte)Math.Min(op.Sites.Length, 255)); // (the data centres, GameStoryFragments.cs: after those, likewise)
-                for (var k = 0; k < op.Sites.Length && k < 255; k++)
-                    w.Str(op.Sites[k].Site).U16(op.Sites[k].Body);
-                w.U16(op.Quarry); // (the Ministry Quarry, GameQuarry.cs: after those, likewise)
-                w.U8((byte)Math.Min(op.Buildings.Length, 255)); // (the Ministry's buildings, GameColonyBuildings.cs: after it, likewise)
-                for (var k = 0; k < op.Buildings.Length && k < 255; k++)
-                    w.Str(op.Buildings[k].Name).U16(op.Buildings[k].Body);
+                // (worlds from before 2026-11-17 have the penal colony's barracks, depot, data centres, quarry and buildings
+                // after this; the colony is gone, so nothing more is written and a reader stops here)
             });
         if (s.Start.Length > 0)
-            w.Section(StartTag, () => w.Str(s.Start)); // (the story start, GameStoryStart.cs: a section of its own, only for a start that isn't the default, so an older reader skips it)
-        if (Array.Exists(s.Players, p => p.TutorialState != TutorialState.None))
-            w.Section(TutorialTag, () =>
-            {
-                // (the warden's induction, GameTutorial.cs: a section of its own, so an older reader skips it)
-                w.I32(s.Players.Length);
-                foreach (var p in s.Players)
-                    w.U64(p.Key).U64(p.SteamId).U8(p.TutorialStep).U8((byte)p.TutorialState);
-            });
-        if (Array.Exists(s.Players, p => p.DepotState != 0))
-            w.Section(DepotTag, () =>
-            {
-                // (the Orbital Depot's runs, GameDepot.cs: a section of its own, so an older reader skips it)
-                var those = Array.FindAll(s.Players, p => p.DepotState != 0);
-                w.I32(those.Length);
-                foreach (var p in those)
-                    w.U64(p.Key).U64(p.SteamId).U8(p.DepotState).U16(p.DepotLander);
-            });
-        if (Array.Exists(s.Players, p => p.QuarryState != 0))
-            w.Section(QuarryTag, () =>
-            {
-                // (the first Ministry duty's runs, GameQuarry.cs: a section of its own, so an older reader skips it)
-                var those = Array.FindAll(s.Players, p => p.QuarryState != 0);
-                w.I32(those.Length);
-                foreach (var p in those)
-                    w.U64(p.Key).U64(p.SteamId).U8(p.QuarryState);
-            });
+            w.Section(StartTag, () => w.Str(s.Start)); // (the story start, GameStoryStart.cs: a section of its own, so an older reader skips it; none for a world from before starts)
+        // (TutorialTag, DepotTag and QuarryTag were the penal colony's induction, Orbital Depot and first duty: no longer
+        // written since 2026-11-17, and skipped like any unknown section in an older world)
         if (Array.Exists(s.Players, p => p.Fallen || p.Died || p.BunkBody != 0))
             w.Section(Fate, () =>
             {
@@ -206,6 +175,8 @@ public static class WorldSaveWriter
             w.Section(PowersTag, () => w.I32(powers.Length).Bytes(powers)); // (the NPC powers' relations, Crew/CrewRelations.cs: a section of its own, so an older reader skips it)
         if (s.Fleet is { } fleet)
             w.Section(FleetTag, () => w.I32(fleet.Length).Bytes(fleet)); // (groups and admirals, Crew/CrewFleet.cs: a section of its own, so an older reader skips it)
+        if (s.Controllers is { } ctl)
+            w.Section(ControllersTag, () => w.I32(ctl.Length).Bytes(ctl)); // (the powers' controllers, Crew/CrewControllers.cs: after POWR and FLET; its missions find their groups again at each power's next think; an older reader skips it)
         if (s.LinkLedger is { } ledger)
             w.Section(LinkTag, () => w.Bytes(ledger)); // (the link ledger, LinkedLogisticsLedger.cs: a section of its own, so an older reader skips it)
         w.Section(Stores, () =>

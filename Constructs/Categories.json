@@ -21,6 +21,7 @@
   ],
   "rules": [
     { "group": "Ship", "notSection": "Ship fittings", "unlisted": true },
+    { "group": "Station", "unlisted": true },
     { "group": "Ship", "name": ["Magpie", "Zero Day", "Rust Bucket", "Dray", "Shuttle", "Limpet"], "unlisted": true },
     { "group": "Ship", "section": "Ship fittings", "name": ["Hull Mount", "Drive Core", "Fuel Pump", "Coolant Exchanger", "Turbopump", "Mixing Manifold", "Power Conditioner"], "to": ["Drivetrain and Engines", "Drive works"] },
     { "group": "Ship", "section": "Ship fittings", "name": ["Turret Ring", "Autoloader", "Reload Hoist", "Laser Generator"], "to": ["Weapons", "Turret works"] },
@@ -100,6 +101,7 @@
     { "section": "Scoops", "to": ["Production", "Scoops"] },
     { "section": "Factory", "to": ["Production", "Bunkers"] },
     { "section": "Factory shell", "to": ["Buildings", "Roofs"] },
+    { "section": "Link supports", "to": ["Storage and Logistics", "Conveyors"] },
     { "section": "Presses", "to": ["Production", "Presses"] },
     { "section": "Remote", "to": ["Seats and Logic", "Remote and cameras"] },
     { "section": "Shells", "to": ["Seats and Logic", "Remote and cameras"] },

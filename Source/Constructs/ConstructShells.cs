@@ -44,6 +44,8 @@ public struct CShell
     public float Drag, Lift, MinSpeed; // a share of its speed a second in thick air; the share of gravity its wings hold up at speed; an air motor's lowest speed
     public int Wait, Deploy, Life; // ticks before it lights; its age when chutes and wings open; ticks before it is given up on (0: ShellMaxAge)
     public Vector3 Aim; // the point it steers for (HasAim)
+    public Vector3 Bore; // the way its rack sent it (ShellFlags.Boost): its motor pushes along this, and it doesn't turn, until it is clear
+    public int Boost; // its age when guidance takes over (ShellFlags.Boost)
     // ...and only the server's:
     public ConstructPartDef? Design;
     public byte Stage, Charge, Seek; // the stage burning, the charge in a series that goes off next, how it finds its target (OrdSeek)
@@ -70,6 +72,7 @@ public enum ShellFlags : byte
     Mine = 8, // landed, it waits for something to move near it
     Kinetic = 16, // its damage is its speed's when it hits
     FlareProne = 32, // a heat seeker: flares draw it
+    Boost = 64, // launched off a rack or rail: its motor drives it straight along Bore, unguided, until Age reaches Boost (protocol 357)
 }
 
 /// <summary>A landed shell's blast, walked a few parts a tick so that a big one on a big ship costs no one tick much.</summary>

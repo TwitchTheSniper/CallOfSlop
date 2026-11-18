@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 6 body 6 kit 6 wear 6, chassis 2 axles, front under the hood, inset 1.5 m, leaf/leaf, wing 0.75, cab style kiosk, language van standard 2.75 m, flare 0.01, plain 0.8, brow 0.63 1 m, tail 0.82 0.75 m, door left, upper saloon over bays 1 to 3, cut 2.36 m, storey 2.13 m, stair right at 2.00 m back, cab cabin capsule, nose flat, balcony g, space upper saloon, fitting roof sign, lopsided left, trim signboards on 7 bay sides, wear age 0.76 (6 rusty, 17 dirty, 0 sooty, 0 patched, 0 rusted out), body room, cab cab-over, nose flat, rear gun deck, under skirted, flank bare, roof none, layout room(Brow T,Door,Bay T-L,Bay L-N,Tail N)
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Scam War Bus 6",
-  "group": "The Call Centre",
+  "group": "Scam",
   "description": "A war bus: a flat nose, a cab-over, a walk-in hull with loot, a stern gun deck. 2 guns.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#2a2c30"},
@@ -177,11 +177,10 @@
     {"part": "Loudhailer", "on": 168, "socket": "lid", "by": "base"},
     {"part": "Water Cooler", "on": 91, "socket": "up41", "by": "foot00", "spin": 1},
     {"part": "Loudhailer", "on": 91, "socket": "up34", "by": "base"},
-    {"part": "Office Phone", "on": 95, "socket": "up2", "by": "base", "spin": 1},
     {"part": "Hull Loft (decoS XIWAWkW0)", "on": 37, "socket": "top", "by": "base", "paint": "#f2f2ee"},
-    {"part": "Office Phone", "on": 125, "socket": "front", "by": "base"},
-    {"part": "Gift Card Sign", "on": 130, "socket": "front", "by": "base"},
-    {"part": "Prize Wheel", "on": 127, "socket": "front", "by": "base"},
+    {"part": "Hubcap Plate", "on": 125, "socket": "front", "by": "base"},
+    {"part": "Loudhailer", "on": 130, "socket": "front", "by": "base"},
+    {"part": "Traffic Cone", "on": 120, "socket": "front", "by": "base"},
     {"part": "Hull Loft (trimg9 XaW5 ~Bm0COjCOyCXaCY4BAT72f02i ~CW0D8yDH8DPaDQSDRJCZi03i)", "on": 90, "socket": "+x0", "by": "base", "paint": "#f2f2ee"},
     {"part": "Hull Loft (trimg5 XaW5 ~CW0D8yDH8DPaDQSDRJCZi03i ~Bm0COjCOyCXaCY4BAT72f02i)", "on": 90, "socket": "-x0", "by": "base", "paint": "#f2f2ee"},
     {"part": "Hull Loft (trimg8 YMW5 ~CW0D8yDH8DPaDRJCZi03i =)", "on": 91, "socket": "-x0", "by": "base", "paint": "#f2f2ee"},

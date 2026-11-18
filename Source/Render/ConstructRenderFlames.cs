@@ -38,15 +38,7 @@ public static partial class ConstructRender
 {
     private static double _fxLast;
     private static float _fxDt;
-    private static bool _fxHost; // this peer runs the simulation (a client's constructs come in poses)
-
-    /// <summary>Called before the frame's constructs: the seconds their flames emit for.</summary>
-    private static void FlamesBegin(bool host)
-    {
-        _fxHost = host;
-        _fxDt = (float)Math.Clamp(Now - _fxLast, 0, 0.1);
-        _fxLast = Now;
-    }
+    private static bool _fxHost; // this peer runs the simulation (a client's constructs come in poses); set by Draw
 
     private static void FindFlames(Construct c)
     {

@@ -223,7 +223,6 @@ public sealed partial class Game
         {
             LocalWorldKey = 0, // (the host's own player there is never in play: it has no record)
             MapVoteEnabled = false,
-            Progress = Progress,
         };
         g.Mode = GameMode.Sandbox;
         g.Host = this;

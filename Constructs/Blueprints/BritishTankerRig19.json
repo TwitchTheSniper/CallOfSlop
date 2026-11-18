@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 19 body 19 kit 19 wear 19, chassis 2 axles, front under the hood, inset 2.5 m, hydraulic/hydraulic, wing 0.5, cab style bus front, language bus standard 2.55 m, flare 0.00, plain 0.9, brow 0.73 1 m, tail 0.78 1 m, door right, 10 facets, cab bus capsule, 7 facets, nose rounded, fitting destination board, wear age 0.64 (1 rusty, 4 dirty, 0 sooty, 1 patched, 1 rusted out), body gun bay+bed, cab cab-over, nose flat, rear porch hitch, under tub, sides walls, layout gun bay 2 m+bed 2 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "British Tanker Rig 19",
-  "group": "Ministry of Slop",
+  "group": "British",
   "description": "A tanker rig: a flat nose, a cab-over, a gun behind the cab, an open bed, a drum on the rear porch over a tow hitch. 1 gun.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#2b2a28"},
@@ -97,9 +97,9 @@
     {"part": "Plate Steel 0.5 m", "weld": {"on": 87, "pos": [1.566, 0.911, 4.748], "rot": [-0.0042, -0.0144, -0.7188, 0.6951]}, "paint": "#e8dfc8"},
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 84, "pos": [-1.07, 0.674, 4], "rot": [-0.0104, 0.0007, 0.7174, 0.6966]}, "paint": "#b5121b"},
     {"part": "Hull Loft (decoD WoWMUSVy)", "on": 35, "socket": "top", "by": "base"},
-    {"part": "Furled Brolly", "on": 85, "socket": "front11", "by": "base"},
-    {"part": "Belisha Beacon", "on": 86, "socket": "front13", "by": "base"},
-    {"part": "Queue Post", "on": 60, "socket": "front", "by": "base"},
+    {"part": "Iron Spike", "on": 85, "socket": "front11", "by": "base"},
+    {"part": "Long Iron Spike", "on": 86, "socket": "front13", "by": "base"},
+    {"part": "Hull Loft (decoJ W0)", "on": 60, "socket": "front", "by": "base"},
     {"part": "Garden Gnome", "on": 51, "socket": "front00", "by": "base"},
     {"part": "Garden Gnome", "on": 81, "socket": "front", "by": "base"},
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 86, "pos": [1.573, 0.924, 4.002], "rot": [0.0063, 0.018, -0.7077, 0.7063]}, "paint": "#c8102e"}

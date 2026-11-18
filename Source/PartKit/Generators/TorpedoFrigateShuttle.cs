@@ -5,7 +5,7 @@ namespace CallOfSlop.PartKit.Generators;
 /// <summary>
 /// The shuttle, the Zero Day's boarding pod (Karl, 2026-11-17: "Add a boarding shuttle to the Day Zero", his pick of four: a
 /// reusable hull-cutting pod on the spine, first called the Limpet and renamed the Shuttle when he saw it; docs/sandbox/constructs/shuttle.md). About 10 m long and 4 m across: a faceted wedge in
-/// the IT Department's paint, a cockpit for its pilot and a cabin for four boarders that runs to the stern, where its two drives'
+/// the IT style's paint, a cockpit for its pilot and a cabin for four boarders that runs to the stern, where its two drives'
 /// engines (a Drive Core XS each) stand on the floor. It rides a Docking Clamp in a cradle on the Zero Day's roof, its docking
 /// hatch in the cabin floor over the Zero Day's own on the cradle: both open while the clamp holds it (ConstructDoors.StepDocks).
 /// It can also set its four hull grapples down on a ship's hull and grip it (ConstructBreach.cs: it rides on that body from then
@@ -288,8 +288,8 @@ public sealed partial class TorpedoFrigateParts
         foreach (var (s, z, n) in new[] { (-1, 1.5, "seatL0"), (-1, 2.5, "seatL1"), (1, 1.5, "seatR0"), (1, 2.5, "seatR1") })
             Sock(p, n, s * 0.74, LFt, z, "+y");
         // (the lockers stand against the side walls ahead of the seats, facing in, Karl's ask; the batteries between the seats and the engines)
-        Sock(p, "lockerL", -(LCabW - 0.255), LFt, 0.45, "+y");
-        Sock(p, "lockerR", LCabW - 0.255, LFt, 0.45, "+y");
+        Sock(p, "lockerL", -(LCabW - 0.3), LFt, 0.45, "+y"); // (Space Suit Lockers, 0.6 m deep: backs to the walls)
+        Sock(p, "lockerR", LCabW - 0.3, LFt, 0.45, "+y");
         foreach (var (s, n) in new[] { (-1, "batteryL0"), (1, "batteryR0") })
             Sock(p, n, s * 1.05, LFt, 3.15, "+y");
         foreach (var (s, n) in new[] { (-1, "batteryL1"), (1, "batteryR1") })
@@ -359,9 +359,9 @@ public sealed partial class TorpedoFrigateParts
         Sock(p, "lampCockpit", xc, LCeil - 0.4, -1.9, s < 0 ? "+x" : "-x");
         Sock(p, "lampCabinF", xb, LCeil - 0.4, -0.35, s < 0 ? "+x" : "-x"); // (ahead of the locker on this wall)
         Sock(p, "lampCabinB", xb, LCeil - 0.4, 3.4, s < 0 ? "+x" : "-x");
-        Sock(p, "switchA", xc, LFt + 1.25, -1.15, s < 0 ? "+x" : "-x");
-        Sock(p, "switchB", xc, LFt + 1.0, -1.15, s < 0 ? "+x" : "-x");
-        Sock(p, "switchCabin", xb, LFt + 1.3, 0.9, s < 0 ? "+x" : "-x");
+        Sock(p, "switchA", xc, LFt + 1.25, -1.25, s < 0 ? "+x" : "-x");
+        Sock(p, "switchB", xc, LFt + 1.0, -1.25, s < 0 ? "+x" : "-x");
+        Sock(p, "switchCabin", xb, LFt + 1.3, 0.95, s < 0 ? "+x" : "-x");
         foreach (var (z, xh) in new[] { (LNoseZ, LCockW + LWallT), (LBulkZ, LCockW + LWallT), (LBulkZ, LCabW + LWallT), (LAftZ, LCabW + LWallT) })
         {
             LMustFit("side wall", z, xh, LFt);
@@ -732,9 +732,9 @@ public sealed partial class TorpedoFrigateParts
             Paint(bp, bp.HangTurned("Flight Couch", belly, n, "bottom", BuildingParts.RY270), "#2c3e58", "fabric");
         foreach (var n in new[] { "seatR0", "seatR1" })
             Paint(bp, bp.HangTurned("Flight Couch", belly, n, "bottom", BuildingParts.RY90), "#2c3e58", "fabric");
-        // (a locker's back is its -z: RY90 puts it to -x, against the port wall, and RY270 to +x)
-        Paint(bp, bp.HangTurned("Zero Day Locker", belly, "lockerL", "bottom", BuildingParts.RY90), Hazard, "worn paint");
-        Paint(bp, bp.HangTurned("Zero Day Locker", belly, "lockerR", "bottom", BuildingParts.RY270), Hazard, "worn paint");
+        // (a Space Suit Locker's back is its +z: RY270 puts it to -x, against the port wall, and RY90 to +x)
+        bp.HangTurned(EvaParts.LockerName, belly, "lockerL", "bottom", BuildingParts.RY270);
+        bp.HangTurned(EvaParts.LockerName, belly, "lockerR", "bottom", BuildingParts.RY90);
         foreach (var n in new[] { "batteryL0", "batteryR0", "batteryL1", "batteryR1" })
             bp.Hang("Battery", belly, n, "-y");
         // Lights: the cockpit's and the cabin's, on the starboard cockpit switch; the cabin's switch by the hatch.

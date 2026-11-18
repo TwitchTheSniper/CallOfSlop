@@ -1,0 +1,60 @@
+{
+  // Territory (docs/sandbox/design/faction-controllers.md phase 4; Karl's answer 1, 2026-11-17): the key sites of Frostreach's planets and moons, and
+  // who holds each at the start. A planet belongs to the power with more than "majority" of its control; a site gives control by its kind's weight,
+  // shared among the sites of that kind on that planet (one spaceport there counts for all of a spaceport's weight). Garrisons are abstract until
+  // outposts are built as buildings. "at" is latitude and longitude in degrees on a planetoid (x and z on a flat map). Holders name a power, or a kind
+  // (its first power). The "far" numbers move, fight and set down the groups nobody sees (section 8).
+  "format": "call-of-slop-npc-territory/1",
+  "majority": 0.5,
+  "kinds": {
+    "spaceport": { "weight": 10, "garrison": 8, "income": 20 },
+    "refinery": { "weight": 6, "garrison": 5, "income": 12 },
+    "mine": { "weight": 4, "garrison": 3, "income": 8 },
+    "outpost": { "weight": 3, "garrison": 4, "income": 3 }
+  },
+  "far": {
+    "groupsPerTick": 8, "materialise": 5000, "collapse": 7000, "collapseSeconds": 60, "spawnFromPeople": 600,
+    "groundSpeed": 12, "spaceSpeed": 3000, "transitSeconds": 600, "landSeconds": 90, "siteReach": 800,
+    "fightRate": 0.01, "fightCap": 0.02, "takeSeconds": 120, "regenPerMinute": 0.1,
+    "takeEveryMinutes": 3, "holdMinutes": 10, "gatherMinutes": 3, "takeShips": 3, "farGroups": 3
+  },
+  "planets": {
+    "Glacier": [
+      { "name": "Glacier Spaceport", "kind": "spaceport", "at": [20, 30], "holder": "Militia" },
+      { "name": "Icefall Refinery", "kind": "refinery", "at": [-10, 80], "holder": "Militia" },
+      { "name": "North Rime Mine", "kind": "mine", "at": [35, -40], "holder": "Traders" },
+      { "name": "Crevasse Mine", "kind": "mine", "at": [5, 140], "holder": "Traders" },
+      { "name": "Drift Camp", "kind": "outpost", "at": [-40, -100], "holder": "Raiders" }
+    ],
+    "Rime": [ { "name": "Rime Mine", "kind": "mine", "at": [0, 0], "holder": "Militia" } ],
+    "Shard": [
+      { "name": "Shard Mine 1", "kind": "mine", "at": [10, 10], "holder": "Raiders" },
+      { "name": "Shard Mine 2", "kind": "mine", "at": [-20, 60], "holder": "Raiders" },
+      { "name": "Shard Mine 3", "kind": "mine", "at": [40, -90], "holder": "Traders" },
+      { "name": "Splinter Post", "kind": "outpost", "at": [0, 170], "holder": "Raiders" }
+    ],
+    "Slopolis": [
+      { "name": "Slopolis Port", "kind": "spaceport", "at": [0, 0], "holder": "Traders" },
+      { "name": "Slopolis Watch", "kind": "outpost", "at": [30, 90], "holder": "Traders" }
+    ],
+    "Cinder": [
+      { "name": "Ash Refinery", "kind": "refinery", "at": [15, 20], "holder": "Traders" },
+      { "name": "Ember Mine", "kind": "mine", "at": [-25, -60], "holder": "Traders" },
+      { "name": "Slag Mine", "kind": "mine", "at": [45, 120], "holder": "Traders" },
+      { "name": "Cinder Watch", "kind": "outpost", "at": [-5, 170], "holder": "Militia" }
+    ],
+    "Caledon": [
+      { "name": "Caledon Port", "kind": "spaceport", "at": [25, 0], "holder": "Traders" },
+      { "name": "Heather Mine", "kind": "mine", "at": [-15, 70], "holder": "Militia" },
+      { "name": "Glen Post", "kind": "outpost", "at": [50, -80], "holder": "Militia" },
+      { "name": "Loch Post", "kind": "outpost", "at": [-40, 140], "holder": "Militia" }
+    ],
+    "Cairn": [ { "name": "Cairn Mine", "kind": "mine", "at": [0, 0], "holder": "Traders" } ],
+    "Mille": [
+      { "name": "Mille Port", "kind": "spaceport", "at": [10, 45], "holder": "Raiders" },
+      { "name": "Crust Mine", "kind": "mine", "at": [-30, -30], "holder": "Raiders" },
+      { "name": "Mille Refinery", "kind": "refinery", "at": [35, 150], "holder": "Militia" }
+    ],
+    "Crumb": [ { "name": "Crumb Den", "kind": "outpost", "at": [0, 0], "holder": "Raiders" } ]
+  }
+}
