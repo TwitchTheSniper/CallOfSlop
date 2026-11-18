@@ -979,8 +979,8 @@ public static class ConstructConfig
         {
             var e = d.Config[s];
             var v = At(p, d, s);
-            if (v == (e.Bound ? d.DefaultSetting : e.Default))
-                continue;
+            if (v == (e.Bound ? d.DefaultSetting : e.Default) || e.Id == CfgKey.ToolsOut)
+                continue; // (a Tool Rack's empty hooks are its crew's trips, never a blueprint's: ToolRacks.cs)
             parts.Add($"\"{e.Key}\": " + e.Type switch
             {
                 CfgType.Toggle => v >= 0.5f ? "true" : "false",

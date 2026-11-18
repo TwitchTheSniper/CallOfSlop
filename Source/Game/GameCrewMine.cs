@@ -49,7 +49,7 @@ public sealed partial class Game
         public ushort Body, RackTag, BinTag, ChairTag;
         public sbyte Hook; // the rack's hook the drill came off (-1: none, a shell)
         public MineStage Stage;
-        public bool Bodied, Shell;
+        public bool Bodied, Shell, Waited;
         public Vector3 Spot; // the spot's ground point (world)
         public uint SpotKey;
         public Vector3 Edge; // where it steps off and back on (the post's rest frame)
@@ -76,6 +76,7 @@ public sealed partial class Game
     /// <summary>Server, from the crew's work slice (GameCrewWork.cs): each rack's miner on this body starts a trip when it is due.</summary>
     private void CrewMiner(Construct c, CrewShip s)
     {
+        MineRacks(c);
         for (var st = 0; st < s.StCount; st++)
         {
             if (s.StKind[st] != CrewStationKind.Rack || s.StMember[st] is not (var m and >= 0) || Crew.State[m] != CrewState.Station)
@@ -95,6 +96,27 @@ public sealed partial class Game
                 continue;
             _mine[k].Next = Crew.Tick + (long)(MineRest * World.TickRate);
             MineStart(c, s, st, m, k);
+        }
+    }
+
+    /// <summary>
+    /// The body's racks' empty hooks follow the trips under way: a hook marked out with no trip that took it (a world saved with miners out:
+    /// trips aren't saved; a crew that went) has its drill back. Each look of the work slice; a few racks a body.
+    /// </summary>
+    private void MineRacks(Construct c)
+    {
+        for (var k = 0; k < c.ToolRackCount; k++)
+        {
+            int part = c.ToolRacks[k];
+            if (part >= c.PartCount || !c.DefOf(part).IsToolRack || ToolRacks.Out(c.Parts[part]) is var o && o == 0)
+                continue;
+            var live = 0;
+            for (var i = 0; i < _mineHigh; i++)
+                if (_mine[i].Body == c.Id && _mine[i].Hook >= 0 && _mine[i].Stage != MineStage.None && _mine[i].RackTag == c.Parts[part].Tag)
+                    live |= 1 << _mine[i].Hook;
+            for (var h = 0; h < c.DefOf(part).RackHooks.Length; h++)
+                if ((o & ~live & 1 << h) != 0 && ToolRacks.Give(Constructs, c, part, h))
+                    Console.WriteLine($"[crew] construct {c.Id}: the {c.DefOf(part).Name}'s hook {h + 1} had no miner out: its drill is back");
         }
     }
 
@@ -119,7 +141,10 @@ public sealed partial class Game
         var from = ConstructRender.PartCentre(c, rack);
         if (!MineSpot(c, field, from, DrillTier, 0, out var spot, out var key))
             return;
-        j.Bodied = Crew.Player[m] != 0 && Players.TryGetValue((byte)(Crew.Player[m] - 1), out var body) && body.Alive;
+        Player? body = null;
+        j.Bodied = Crew.Player[m] != 0 && Players.TryGetValue((byte)(Crew.Player[m] - 1), out body) && body.Alive;
+        if (j.Bodied && body != null && SandboxHands.Hand(body.Id).Seated)
+            CrewStandAt(body, c, CrewWorld.PartFoot(c, rack)); // (never sets off from a seat: up at its rack first)
         j.Shell = false;
         j.Hook = -1;
         j.ChairTag = 0;
@@ -132,7 +157,13 @@ public sealed partial class Game
         {
             var hook = ToolRacks.Take(Constructs, c, rack);
             if (hook < 0)
+            {
+                if (!j.Waited)
+                    Console.WriteLine($"[crew] construct {c.Id}: its miner {Crew.Uid[m]} waits for a drill: the {c.DefOf(rack).Name} is empty");
+                j.Waited = true;
                 return; // (no drill on the rack: it waits)
+            }
+            j.Waited = false;
             j.Hook = (sbyte)hook;
         }
         j.RackTag = c.Parts[rack].Tag;
@@ -506,7 +537,16 @@ public sealed partial class Game
         if (j.Member >= 0 && j.Member < Crew.High && Crew.Player[j.Member] != 0)
             Players.TryGetValue((byte)(Crew.Player[j.Member] - 1), out p);
         if (p != null && j.Shell && p.InShell)
-            ShellReturn(p, lost: false, "");
+            ShellReturn(p, lost: false, ""); // (the hopper's load goes back into the standing shell, or spills: HopperOff)
+        if (j.Shell)
+            j.Carry = 0; // (a shell's load was its hopper's: ShellReturn put it in the shell or spilt it, never again here)
+        if (p != null && c != null && SandboxHands.Hand(p.Id).Seated && c.Parts.Length > 0 && SandboxHands.Hand(p.Id).SeatBody == c.Id
+            && SandboxHands.Hand(p.Id).SeatPart < c.PartCount && c.DefOf(SandboxHands.Hand(p.Id).SeatPart).ShellRange > 0)
+        {
+            // Back in the Shell Control Chair (a trip cut short, a shell destroyed): up again, at its rack if it still works it, else by the chair.
+            var home = Crew.State[j.Member] == CrewState.Station && CrewWorld.PartByTag(c, j.RackTag) is var rk and >= 0 ? rk : SandboxHands.Hand(p.Id).SeatPart;
+            CrewStandAt(p, c, CrewWorld.PartFoot(c, home));
+        }
         if (p != null && SandboxHands.Hand(p.Id).Tool == ConstructTool.GroundDrill)
             SandboxHands.Hand(p.Id).Tool = ConstructTool.Hands;
         if (c != null && j.Hook >= 0 && CrewWorld.PartByTag(c, j.RackTag) is var rack and >= 0)

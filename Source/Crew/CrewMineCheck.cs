@@ -6,7 +6,7 @@ using CallOfSlop.Space;
 namespace CallOfSlop;
 
 /// <summary>
-/// <c>--crew-check --crew-mine [--seconds S] [--crew-shell] [--crew-far] [--post N]</c> (factory-generator-notes.md "Tool racks and crew miners"): a host and a joined
+/// <c>--crew-check --crew-mine [--seconds S] [--crew-shell] [--crew-shell-kill] [--crew-far] [--post N]</c> (factory-generator-notes.md "Tool racks and crew miners"): a host and a joined
 /// client on localhost on the Proving Ground (creative). A Militia Extraction Post (seed N, with a Shell Control Chair and a Mining Shell standing on its
 /// road when <c>--crew-shell</c>) is set down near the map's first ore a tier 2 drill works, as a nobody's, and crewed; the host stands by it, so its
 /// crew have bodies. For S seconds (90) the miners' trips are run: each line says what they did. Then: ore tipped into the post's bin, the rack's
@@ -21,6 +21,8 @@ public static class CrewMineCheck
         var seconds = int.TryParse(Arg("--seconds"), out var s) ? s : 90;
         var shell = args.Any(a => a.Equals("--crew-shell", StringComparison.OrdinalIgnoreCase));
         var seed = int.TryParse(Arg("--post"), out var ps) ? ps : 1;
+        var kill = args.Any(a => a.Equals("--crew-shell-kill", StringComparison.OrdinalIgnoreCase)); // (the shell shot out mid-trip: the miner stands up and goes on with a drill)
+        shell |= kill;
         var far = args.Any(a => a.Equals("--crew-far", StringComparison.OrdinalIgnoreCase)); // (the host 600 m off: the crew are records, the trips timers)
         var fails = new List<string>();
         void Say(string line) => Console.WriteLine($"[crew-mine] {line}");
@@ -145,6 +147,8 @@ public static class CrewMineCheck
             ann.Teleport(annHost.Position); // (the client moves its own player: the host's word alone is undone by its next input)
         World.Enter(server.Place);
         Say($"people: {string.Join(", ", server.Players.Values.Where(p => p.Bot == null).Select(p => $"{p.Name} {(p.Alive ? "alive" : "dead")} {Vector3.Distance(p.Position, post.WorldCom):0} m off"))}");
+        if (rack >= 0)
+            ConstructConfig.Put(ref post.Parts[rack], post.DefOf(rack), CfgKey.ToolsOut, 4); // (hook 3 marked out with no trip, as a world saved with a miner out loads: it must come back)
         server.CrewFactionVehicle(post);
         var crew = server.Crew.ShipOf(post.Id);
         Check(crew != null, $"the post is crewed: {(crew != null ? server.Crew.Describe(crew) : "no crew")}");
@@ -160,19 +164,46 @@ public static class CrewMineCheck
         var outSeen = false;
         var clientOutSeen = false;
         var clientTool = false;
+        var staleBack = false;
+        var killed = false;
+        double killedAt = 0;
+        var afterKill = false; // (a drill trip after the shell was lost, the miner on its feet)
+        var hopperAtKill = 0;
         while (now < until)
         {
             Frame();
             var t = now;
             World.Enter(server.Place);
-            if (rack >= 0 && ToolRacks.Out(post.Parts[rack]) != 0)
+            if (rack >= 0 && ToolRacks.Out(post.Parts[rack]) is var o && (o & ~4) != 0)
                 outSeen = true;
+            if (rack >= 0 && (ToolRacks.Out(post.Parts[rack]) & 4) == 0)
+                staleBack = true;
             World.Enter(client.Place);
             if (client.Constructs.Get(post.Id) is { } cp && rack < cp.PartCount && cp.DefOf(rack).IsToolRack && ToolRacks.Out(cp.Parts[rack]) != 0)
                 clientOutSeen = true;
             foreach (var p in client.Players.Values)
                 if (p.Id != client.LocalId && client.SandboxHands.Hand(p.Id).Tool == ConstructTool.GroundDrill)
                     clientTool = true;
+            if (kill && !killed && t - (until - seconds) > 30)
+            {
+                World.Enter(server.Place);
+                foreach (var p in server.Players.Values)
+                    if (p.CrewSlot >= 0 && p.InShell)
+                    {
+                        hopperAtKill = server.SandboxHands.Hoppers[p.Id].Amount;
+                        Say($"the miner's shell shot out with {hopperAtKill} in its hopper: {server.CrewShoot(server.Local!, "Miner")}");
+                        killed = true;
+                        killedAt = t;
+                        break;
+                    }
+            }
+            if (killed && !afterKill && t > killedAt + 1)
+            {
+                World.Enter(server.Place);
+                foreach (var p in server.Players.Values)
+                    if (p.CrewSlot >= 0 && !p.InShell && !server.SandboxHands.Hand(p.Id).Seated && rack >= 0 && ToolRacks.Out(post.Parts[rack]) != 0)
+                        afterKill = true;
+            }
             if (t >= nextSay)
             {
                 nextSay = t + 10;
@@ -184,6 +215,9 @@ public static class CrewMineCheck
         var tipped = (bin >= 0 && server.Constructs.StoreOf(post, bin) is { } b1 ? b1.Amount : 0) - binStart;
         Say($"end ({seconds} s of game time in {clock.Elapsed.TotalSeconds:0} s): {server.MineLine()}");
         Check(server.MineTrips > 0 && server.MineTipped > 0, $"miners made {server.MineTrips} trip(s), tipping {server.MineTipped} ore ({tipped} more in the {(bin >= 0 ? post.DefOf(bin).Name : "bin")}, the drills' own besides); {server.MinePutThere} put there for want of headway");
+        Check(staleBack, $"a hook marked out with no miner's trip (a saved world's) got its drill back ({staleBack})");
+        if (kill)
+            Check(killed && afterKill, $"the shell shot out mid-trip ({killed}, {hopperAtKill} in its hopper spilt once): the miner stood up and went on with a drill ({afterKill})");
         if (!shell && !far)
             Check(outSeen && clientOutSeen, $"a drill came off the rack on the host ({outSeen}) and the client saw its hook empty ({clientOutSeen})");
         Check(shell || far || clientTool, $"the client saw a crew body with the drill out ({clientTool})");
