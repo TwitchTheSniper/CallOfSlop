@@ -388,6 +388,20 @@ public sealed partial class Game : IContractHost
         _notesRead = _rel.NoteTotal;
     }
 
+    /// <summary>The window verb <c>crewpolitics standing</c> (host, a test state): how power <paramref name="power"/> sees <paramref name="me"/>'s faction (else them) set.</summary>
+    public string PoliticsStanding(Player me, byte power, int v)
+    {
+        if (!CrewStandingOn || CrewPowers.Of(power) is null)
+            return "no such power";
+        var rel = Relations;
+        var party = FactionTable.Of[me.Id];
+        if (party != 0)
+            rel.MoveParty(power, party, v - rel.PartyGet(power, party));
+        else
+            rel.MovePlayer(power, me.Id, v - rel.Peek(power, me.Id));
+        return $"{CrewPowers.Of(power)!.Name} now at {CrewStanding(power, me.Id)}";
+    }
+
     /// <summary>A tool's line (the window verb <c>crewpolitics</c>; allocates): this peer's pacts with factions and contracts.</summary>
     public string PoliticsLine()
     {

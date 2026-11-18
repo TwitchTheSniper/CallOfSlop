@@ -157,6 +157,49 @@ public static partial class Program
             case "crewpowers": // "crewpowers [near]": host: each power's stock, ships and missions (near: its places laid again 300-450 m round this player); a client: the news and powers gone (faction-controllers.md phase 3)
                 Console.WriteLine($"[windowshot] crewpowers: {(g.IsServer ? g.CrewPowersLine(arg) : $"{g.PowerNews.Count} news lines, last \"{g.PowerNews.LastOrDefault()}\"; powers gone {g.FactionTable.PowerGone:X4}; grid {g.FactionTable.PowerCount} powers, {g.FactionTable.PactCount} pacts")}");
                 return true;
+            case "crewpolitics": // "crewpolitics [found NAME|standing POWER V|pact POWER KIND|accept POWER|break POWER|call|take N|drop N]": phase 5's acts through the real faction messages (standing: host, a test state); then this peer's pacts with factions and contracts
+            {
+                var w = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                var pv = w.Length > 0 ? w[0].ToLowerInvariant() : "";
+                byte Pw(int k) => k < w.Length ? CrewPowers.Find(w[k]) : (byte)0;
+                switch (pv)
+                {
+                    case "found" when w.Length > 1:
+                        g.SandboxFaction(FactionOp.Found, text: string.Join(' ', w[1..]));
+                        break;
+                    case "standing" when w.Length > 2 && g.IsServer:
+                        Console.WriteLine($"[windowshot] crewpolitics: {g.PoliticsStanding(me, Pw(1), int.Parse(w[2]))}");
+                        break;
+                    case "pact" when w.Length > 2:
+                        g.SandboxFaction(FactionOp.Pact, Pw(1), (int)(w[2].ToLowerInvariant() switch { "ceasefire" => PactKind.Ceasefire, "nonaggression" => PactKind.NonAggression, "trade" => PactKind.Trade, "alliance" => PactKind.Alliance, "tribute" => PactKind.Tribute, _ => PactKind.None }));
+                        break;
+                    case "accept":
+                        g.SandboxFaction(FactionOp.PactAnswer, Pw(1), 1);
+                        break;
+                    case "break":
+                        g.SandboxFaction(FactionOp.PactBreak, Pw(1));
+                        break;
+                    case "call":
+                        g.SandboxFaction(FactionOp.CallAllies);
+                        break;
+                    case "invite": // (the first other person here)
+                        foreach (var o in g.Players.Values)
+                            if (o.Id != me.Id && Game.FactionPerson(o))
+                            {
+                                g.SandboxFaction(FactionOp.Invite, o.Id);
+                                break;
+                            }
+                        break;
+                    case "acceptinvite":
+                        g.SandboxFaction(FactionOp.Accept, g.FactionTable.Invited[me.Id]);
+                        break;
+                    case "take" or "drop" when w.Length > 1 && int.TryParse(w[1], out var n) && n >= 0 && n < g.ContractsCount:
+                        g.SandboxFaction(pv == "take" ? FactionOp.ContractTake : FactionOp.ContractDrop, g.ContractsView[n].Body, g.ContractsView[n].Serial);
+                        break;
+                }
+                Console.WriteLine($"[windowshot] crewpolitics: {g.PoliticsLine()}; standing: {g.CrewStandingLine(me)}; {g.CreditsLine}");
+                return true;
+            }
             case "crewterritory": // "crewterritory [near|leave]": host: planets, sites and far groups (near: a far Take group put 3.5 km from this player; leave: the far ranges shrunk so nobody counts as near: its bodies collapse); a client: its map (faction-controllers.md phase 4)
                 Console.WriteLine($"[windowshot] crewterritory: {(g.IsServer ? g.CrewTerritoryLine(me, arg) : g.FactionMapLine())}");
                 return true;
