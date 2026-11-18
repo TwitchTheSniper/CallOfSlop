@@ -87,7 +87,7 @@ public sealed partial class Ui
             _cmdOrderDockText = "DOCK WITH " + CmdName(t);
             _cmdOrderDockWhy = c.SpaceAway != 0 || t.SpaceAway != 0 ? "TOO FAR APART TO DOCK"
                 : cr.Space && !other.Space ? "IT IS IN SPACE: BRING IT DOWN INTO THE SKY FIRST"
-                : Game.NavDockFor(g.Constructs, t, c) < 0 ? "NO PORT AVAILABLE"
+                : Game.NavDockFor(g.Constructs, t, c) < 0 ? (t.IsStation && Game.NavDockNoFit(g.Constructs, t, c) ? "NO BERTH FITS" : "NO PORT AVAILABLE")
                 : "";
             _cmdOrderMeetText = "RENDEZVOUS WITH " + CmdName(t);
             _cmdOrderMeetWhy = c.CarriedBy == t.Id || t.CarriedBy == c.Id ? "" // (docked together: nothing to meet)
@@ -397,7 +397,7 @@ public sealed partial class Ui
         if (g.Constructs.Get(target) is not { } t || t == c)
             return "no such ship to dock with";
         if (Game.NavDockFor(g.Constructs, t, c) < 0)
-            return "NO PORT AVAILABLE";
+            return t.IsStation && Game.NavDockNoFit(g.Constructs, t, c) ? "NO BERTH FITS" : "NO PORT AVAILABLE";
         g.NavSend(c.Id, NavKind.Dock, s.Bubble.Body, Vec3d.Zero, 0, target);
         return null;
     }

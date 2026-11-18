@@ -198,15 +198,20 @@ public static class ConstructClampArms
         b != st && !b.IsStation && !b.Wreck && b.CarriedBy == 0 && b.PartCount > 0
         && (!host || b.SpaceShip != 0 && b.SpaceAway == 0 && b.MoorAway != st.Id && world.CarrierClock >= b.DockAway)
         && !b.Anchored && !b.Pinned && !b.Frozen && b.GrabbedBy == 255
-        && (b.MooredTo == st.Id || b.Mass <= st.DefOf(berth).DockMaxMass)
+        && (b.MooredTo == st.Id || b.Mass <= st.DefOf(berth).DockMaxMass && Game.BerthFits(st, berth, b, out _)) // (a berth takes the ships its size fits: berth classes by size)
         && (b.ThrusterCount > 0 || b.StabCount > 0) // (a ship, not a loose piece: GameStations.StationMoorable)
         && (b.MooredTo == 0 || b.MooredTo == st.Id)
         && Vector3.Distance(b.WorldCom, shoulder) - b.Radius * 0.5f < reach
         && (b.Vel - st.PointVel(b.WorldCom)).Length() < SeekSpeed;
 
-    /// <summary>Where on a ship the pad goes: the middle of the face of its bounds that looks most at the arm, brought onto its hull by one ray.</summary>
+    /// <summary>
+    /// Where on a ship the pad goes: on its Docking Hatch nearest the arm, if it has one (Karl 2026-11-18: a ship's own docking connector
+    /// for the arm, whatever the ship), else the middle of the face of its bounds that looks most at the arm, brought onto its hull by one ray.
+    /// </summary>
     private static void Grip(ConstructWorld world, Construct ship, Vector3 shoulder, ref ClampArm a)
     {
+        if (HatchGrip(world, ship, shoulder, ref a))
+            return;
         var toArm = Vector3.Transform(shoulder - ship.WorldCom, Quaternion.Conjugate(ship.Rot));
         var ax = MathF.Abs(toArm.X) >= MathF.Abs(toArm.Y) && MathF.Abs(toArm.X) >= MathF.Abs(toArm.Z) ? 0 : MathF.Abs(toArm.Y) >= MathF.Abs(toArm.Z) ? 1 : 2;
         // (a ship mostly takes the clamp on its top or its side: the long axis' ends are its bow and stern)
@@ -228,5 +233,41 @@ public static class ConstructClampArms
         var depth = (ax == 0 ? size.X : ax == 1 ? size.Y : size.Z) + 2f;
         if (world.Raycast(from, -nW, depth, out var hit, only: ship))
             a.GripS = Vector3.Transform(hit.Point - ship.Pos, Quaternion.Conjugate(ship.Rot));
+    }
+
+    /// <summary>
+    /// The pad on the ship's docking hatch (a door part with <c>"dock": true</c>) nearest the shoulder of those on its outside facing it:
+    /// its lid looks at the arm and a ray from out past the ship down onto the lid meets it first (a hatch in a floor inside the hull,
+    /// under a carried craft or on the belly is passed over). Its place is where it sits shut (ConstructDoors.ShutPos), so every peer picks
+    /// the same one whether it is open or not. False: none such, the hull instead.
+    /// </summary>
+    private static bool HatchGrip(ConstructWorld world, Construct ship, Vector3 shoulder, ref ClampArm a)
+    {
+        var best = -1;
+        var bestD = float.MaxValue;
+        var bestAt = Vector3.Zero;
+        var bestUp = Vector3.Zero;
+        for (var i = 0; i < ship.PartCount; i++)
+        {
+            ref var p = ref ship.Parts[i];
+            if (p.Broken || p.D.Door is not { Dock: true })
+                continue;
+            var shut = ConstructDoors.ShutPos(ship, i);
+            var pw = ship.SegToWorld(p.Seg, shut);
+            var up = Vector3.Normalize(ship.SegToWorld(p.Seg, shut + Rot24.Apply(p.Rot, Vector3.UnitY)) - pw);
+            var d = Vector3.DistanceSquared(pw, shoulder);
+            if (Vector3.Dot(up, shoulder - pw) <= 0 || d >= bestD)
+                continue; // (a hatch facing away from the arm, or farther than one found)
+            var far = ship.Radius * 2 + 4;
+            if (!world.Raycast(pw + up * far, -up, far + 1, out var hit, only: ship) || hit.Part != i)
+                continue; // (not on the outside: something of the ship lies over it)
+            (best, bestD, bestAt, bestUp) = (i, d, pw, up);
+        }
+        if (best < 0)
+            return false;
+        var inv = Quaternion.Conjugate(ship.Rot);
+        a.OutS = Vector3.Normalize(Vector3.Transform(bestUp, inv));
+        a.GripS = Vector3.Transform(bestAt - ship.Pos, inv) + a.OutS * 0.1f; // (on the lid)
+        return true;
     }
 }
