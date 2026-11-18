@@ -179,6 +179,7 @@ public static class ConstructBreach
         for (var i = 0; i < b.PartCount; i++)
             if (b.DefOf(i).Breach == BreachKind.Cutter)
                 b.Parts[i].State = (byte)(b.Parts[i].State & ~8); // (a new grip is a new cut: a cutter left on through the last hull isn't through this one)
+        b.BreachCut = 0;
         world.StructureDirty.Add(b.Id);
         world.CargoChanged = true;
         world.Events.Add($"construct {b.Id}: its grapples took hold of construct {t.Id}");
@@ -197,6 +198,7 @@ public static class ConstructBreach
             if (!On(b, i))
             {
                 p.State = (byte)(p.State & ~8);
+                b.BreachCut = 0; // (turned off: a new burn starts over)
                 continue;
             }
             if ((p.State & 8) != 0)
@@ -226,6 +228,20 @@ public static class ConstructBreach
                 continue;
             }
             p.State = (byte)(p.State & ~8);
+            // Burned long enough on one spot: the door-sized hole comes out of the hull (HullHoles.cs), into the room behind it.
+            // Anything it can't hole (a machine in the way, a piece too small to hole) is burned away as before.
+            if (b.BreachCut < HoleTicks)
+            {
+                b.BreachCut += StepEvery;
+                if (b.BreachCut >= HoleTicks && OpenHole(world, b, i, c))
+                {
+                    p.State = (byte)(p.State | 8);
+                    world.Events.Add($"construct {b.Id}: the {d.Name} is through construct {c.Id}'s hull");
+                    return; // (the body rebuilds before the next look)
+                }
+                if (b.BreachCut < HoleTicks)
+                    continue; // (still burning: the hull holds until the hole comes out)
+            }
             var by = world.DamageBy;
             var body = world.DamageBody;
             world.DamageBy = b.Driver != 255 ? b.Driver : b.Owner;
@@ -238,5 +254,145 @@ public static class ConstructBreach
             if (c.Dirty)
                 return; // (a part broke off: the body rebuilds before the next look)
         }
+    }
+    // ---- The hole (Karl, 2026-11-18: option C, a real hole you see space through and walk through) ------------------------
+
+    public const int HoleTicks = 10 * World.TickRate; // a cutter burns this long on one spot, then the hole comes out
+    public const float HoleHalfW = 0.55f; // m: half the hole's width (the Limpet's ring opens 1.2 m)
+    public const float HoleTall = 2.1f; // m: from just over the room's floor up
+    public const float HoleRoomMost = 6f; // m at most from the hull's face to the room behind it
+    public const float HoleBlind = 1.2f; // m deep with no room found: a pocket in the hull, not a way in
+    private const float HoleBreakMost = 2.5f; // m: a part the hole can't take but no bigger than this each way is burned away
+
+    /// <summary>The way in, level in <paramref name="t"/>'s frame when it goes in through a side (a slanted flank's face points down
+    /// or up a little: a hole along it would run down through the deck): people walk in on the level.</summary>
+    public static Vector3 Level(Construct t, Vector3 down)
+    {
+        var up = Vector3.Transform(Vector3.UnitY, t.Rot);
+        var k = Vector3.Dot(down, up);
+        if (MathF.Abs(k) > 0.7f)
+            return down; // (in through a roof or a floor: straight on)
+        var flat = down - up * k;
+        return flat.LengthSquared() > 1e-6f ? Vector3.Normalize(flat) : down;
+    }
+
+    /// <summary>
+    /// The first spot a person can stand in <paramref name="t"/> straight on from <paramref name="face"/> along <paramref name="down"/>
+    /// (world), within <see cref="HoleRoomMost"/>: on a floor, clear to head height, under a roof of its own, a step past the room's
+    /// wall. <paramref name="room"/>: how far in that room begins. False: solid all the way, or open sky.
+    /// </summary>
+    public static bool RoomBehind(ConstructWorld world, Construct t, Vector3 face, Vector3 down, out Vector3 feet, out float room)
+    {
+        down = Level(t, down);
+        var up = Vector3.Transform(Vector3.UnitY, t.Rot);
+        up -= down * Vector3.Dot(up, down);
+        up = up.LengthSquared() > 1e-4f ? Vector3.Normalize(up) : Vector3.Transform(Vector3.UnitY, t.Rot);
+        const float r = World.PlayerRadius;
+        var found = -1f;
+        feet = default;
+        room = 0;
+        for (var d = 0.3f; d <= HoleRoomMost; d += 0.25f)
+        {
+            var q = face + down * d;
+            if (!world.Raycast(q + up * 0.6f, -up, 2.6f, out var floor, only: t))
+            {
+                found = -1;
+                continue;
+            }
+            var f = floor.Point + up * 0.03f;
+            if (floor.Distance < 0.05f || !world.CapsuleClear(t, f + up * (r + 0.05f), f + up * (World.PlayerHeight - r), r)
+                || !world.Raycast(f + up * 0.5f, up, 6f, out _, only: t))
+            {
+                found = -1; // (in a wall or a solid piece, or out under the sky: not in a room)
+                continue;
+            }
+            if (found < 0)
+                found = d;
+            if (d < found + 0.45f)
+                continue; // (a step on, so it is plainly in the room and not on its wall's face)
+            feet = f;
+            room = found;
+            return true;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// Server: cutter <paramref name="cutter"/> of <paramref name="b"/> takes its hole out of <paramref name="c"/>: a tunnel its ring's
+    /// width, from just over the floor of the room behind up to head height, as deep as that room's wall; every part it crosses that
+    /// can be holed is swapped for its holed part (HullHoles.cs), a small one that can't is burned away. The body rebuilds and its
+    /// structure goes out to every client, as any edit's does. False: nothing in the way could be holed or burned.
+    /// </summary>
+    public static bool OpenHole(ConstructWorld world, Construct b, int cutter, Construct c)
+    {
+        if (c.Dirty)
+            c.Rebuild();
+        Face(b, cutter, out var at, out var down);
+        down = Level(c, down);
+        var podUp = Vector3.Normalize(Vector3.Transform(Rot24.Apply(b.Parts[cutter].Rot, Vector3.UnitZ), b.Rot));
+        var up = Vector3.Transform(Vector3.UnitY, c.Rot);
+        up -= down * Vector3.Dot(up, down);
+        up = up.LengthSquared() > 0.05f ? Vector3.Normalize(up) : Vector3.Normalize(podUp - down * Vector3.Dot(podUp, down));
+        float depth, bottom;
+        var inRoom = RoomBehind(world, c, at, down, out var feet, out var room);
+        if (inRoom)
+        {
+            depth = room + 0.15f;
+            bottom = Math.Clamp(Vector3.Dot(feet - at, up) + 0.02f, -1.4f, -0.4f); // (the room's floor, as the ring's opening allows)
+        }
+        else
+        {
+            depth = HoleBlind;
+            bottom = -1f;
+        }
+        var top = bottom + HoleTall;
+        var mouth = at - down * 0.15f + up * ((bottom + top) * 0.5f);
+        var halfH = (top - bottom) * 0.5f;
+        var len = depth + 0.15f;
+        var holed = 0;
+        var burned = 0;
+        var changed = false;
+        for (var j = 0; j < c.PartCount; j++)
+        {
+            ref var p = ref c.Parts[j];
+            if (p.Broken || c.Rides(j))
+                continue;
+            var d = c.DefOf(j);
+            Freeform.PartWorld(c, j, out var pos, out var rot);
+            var iq = Quaternion.Conjugate(rot);
+            var local = HullHoles.Hole.Of(Vector3.Transform(mouth - pos, iq), Vector3.Transform(down, iq), Vector3.Transform(up, iq), HoleHalfW, halfH, len);
+            var mn = d.HasSkin ? Vector3.Min(d.BoundsMin, d.SkinMin) : d.BoundsMin;
+            var mx = d.HasSkin ? Vector3.Max(d.BoundsMax, d.SkinMax) : d.BoundsMax;
+            if (!HullHoles.ReachesBounds(mn, mx, local))
+                continue;
+            if (HullHoles.WithHole(d, local) is { } h)
+            {
+                p.Def = h.Id;
+                changed = true;
+                holed++;
+                world.Events.Add($"construct {b.Id}: its cutter holed construct {c.Id}'s {HullHoles.BaseOf(d).Name}");
+                continue;
+            }
+            var why = HullHoles.LastRefusal ?? "";
+            if (why == HullHoles.Misses)
+                continue;
+            var size = mx - mn;
+            if (d.Explosive == null && !d.Core && size.X <= HoleBreakMost && size.Y <= HoleBreakMost && size.Z <= HoleBreakMost)
+            {
+                world.DamagePart(c, j, p.Health + 1f, out _, raw: true); // (a fitting in the way: burned away)
+                burned++;
+                world.Events.Add($"construct {b.Id}: its cutter burned away construct {c.Id}'s {d.Name} ({why})");
+                continue;
+            }
+            Console.WriteLine($"[breach] construct {b.Id}: the hole can't take construct {c.Id}'s {d.Name} ({why}): left as it is");
+        }
+        if (changed)
+        {
+            c.Dirty = true;
+            world.StructureDirty.Add(c.Id);
+            c.Wake();
+        }
+        Console.WriteLine(FormattableString.Invariant($"[breach] construct {b.Id} cut a hole {HoleHalfW * 2:0.0} by {halfH * 2:0.0} m, {len:0.0} m deep, into construct {c.Id}: {holed} parts holed, {burned} burned{(inRoom ? "" : ", no room behind it")}"));
+        return holed + burned > 0;
     }
 }

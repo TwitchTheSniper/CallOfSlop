@@ -428,7 +428,7 @@ public sealed partial class Game
     // ---- The wire ---------------------------------------------------------------------------------------------------
 
     /// <summary>Server: who wears a shell, to everyone (<see cref="Msg.Shell"/>: u8 player, u8 on, u16 chair, u16 seat, 8 x u8 the works' wear,
-    /// u8 frame, u8 hopper material, u16 hopper units; protocol 352).</summary>
+    /// u8 frame, u8 hopper material, u16 hopper units; protocol 353).</summary>
     private void ShellBroadcast(Player p)
     {
         if (Net.IsOffline)

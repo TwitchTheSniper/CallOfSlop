@@ -91,7 +91,7 @@ is the Robot Shell, with the numbers every shell had. A shell part stands as the
   Storage Volume or a refinery tips the hopper first (`ConstructEdits.TipHopper`).
 - **Drill arm**: with the ground drill out, a scoop over an underground deposit the arm's tier works taps it into the hopper at
   the module's rate (`ShellDrillTap`, by a Drill Module's spot and tier rules); the scoop digs as ever.
-- **Seen**: `Msg.Shell` ends with the frame, the hopper's material and load (protocol 352); the rig draws the frame's size about
+- **Seen**: `Msg.Shell` ends with the frame, the hopper's material and load (protocol 353); the rig draws the frame's size about
   the feet and its modules (`Scene/Rigs/ShellKitNodes.cs`). The window tool's `hopper` verb prints a peer's view.
 
 ## Robot shell wear

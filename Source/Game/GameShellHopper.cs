@@ -65,7 +65,7 @@ public sealed partial class Game
         ShellBroadcast(p);
     }
 
-    /// <summary>The frame, hopper material and load at the end of <see cref="Msg.Shell"/> (protocol 352).</summary>
+    /// <summary>The frame, hopper material and load at the end of <see cref="Msg.Shell"/> (protocol 353).</summary>
     private static void ShellWriteFrame(PacketWriter w, Player p) => w.U8(p.InShell ? p.ShellFrame : (byte)0).U8(p.InShell ? p.HopperMaterial : (byte)0).U16(p.InShell ? p.HopperAmount : (ushort)0);
 
     /// <summary>
