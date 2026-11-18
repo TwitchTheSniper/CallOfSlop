@@ -131,13 +131,18 @@ public sealed partial class Game
     }
 
     private Construct? _rideDrawn;
-    private Vector3 _rideTickPos;
-    private Quaternion _rideTickRot;
+    private Construct[] _rideDrawnSet = new Construct[8]; // (the ridden body and the bodies that move with it: its carrier and what that carries)
+    private Vector3[] _rideTickPosSet = new Vector3[8];
+    private Quaternion[] _rideTickRotSet = new Quaternion[8];
+    private int _rideDrawnCount;
 
     /// <summary>
     /// The host's input and overlays see the construct it rides as it is drawn this frame: a host draws between ticks, and at
     /// 200 m/s the tick's pose is up to 3 m from the drawn one, so an aim ray from the drawn eye would miss the parts it is on.
-    /// (A client's bodies are at their drawn pose already.) <see cref="RideTickPose"/> puts the tick's pose back.
+    /// The bodies that move with it go to their drawn pose too: the carrier it is docked in and everything that carrier
+    /// carries (a Limpet in the Zero Day's bay). Left at the tick's pose, the carrier's keel stood up to a tick's travel
+    /// through the docked craft's floor and the look jumped between the couch, the floor and the keel under them.
+    /// (A client's bodies are at their drawn pose already.) <see cref="RideTickPose"/> puts the tick's poses back.
     /// </summary>
     internal void RideDrawnPose()
     {
@@ -147,16 +152,43 @@ public sealed partial class Game
         if (Constructs.Get(body) is not { } c)
             return;
         _rideDrawn = c;
-        (_rideTickPos, _rideTickRot) = (c.Pos, c.Rot);
+        _rideDrawnCount = 0;
+        RideDrawnAdd(c);
+        var root = c.CarriedBy != 0 && Constructs.Get(c.CarriedBy) is { } carrier ? carrier : c; // (a carrier carries only while it isn't carried itself: ConstructCargo)
+        if (root != c)
+            RideDrawnAdd(root);
+        if (root.CargoCount > 0 || root != c) // (the carrier's cargo list counts what it carries: most bodies carry nothing)
+            foreach (var b in Constructs.Bodies) // (a list: no allocation)
+                if (b.CarriedBy == root.Id && b != c)
+                    RideDrawnAdd(b);
+    }
+
+    private void RideDrawnAdd(Construct c)
+    {
+        if (_rideDrawnCount == _rideDrawnSet.Length)
+        {
+            Array.Resize(ref _rideDrawnSet, _rideDrawnCount * 2); // (rare: a carrier with more craft aboard than any before; kept from then on)
+            Array.Resize(ref _rideTickPosSet, _rideDrawnCount * 2);
+            Array.Resize(ref _rideTickRotSet, _rideDrawnCount * 2);
+        }
+        _rideDrawnSet[_rideDrawnCount] = c;
+        _rideTickPosSet[_rideDrawnCount] = c.Pos;
+        _rideTickRotSet[_rideDrawnCount] = c.Rot;
+        _rideDrawnCount++;
         c.Pos = Vector3.Lerp(c.PrevPos, c.Pos, _alpha);
         c.Rot = Quaternion.Normalize(Quaternion.Slerp(c.PrevRot, c.Rot, _alpha));
     }
 
     internal void RideTickPose()
     {
-        if (_rideDrawn is not { } c)
+        if (_rideDrawn == null)
             return;
-        (c.Pos, c.Rot) = (_rideTickPos, _rideTickRot);
+        for (var k = 0; k < _rideDrawnCount; k++)
+        {
+            (_rideDrawnSet[k].Pos, _rideDrawnSet[k].Rot) = (_rideTickPosSet[k], _rideTickRotSet[k]);
+            _rideDrawnSet[k] = null!;
+        }
+        _rideDrawnCount = 0;
         _rideDrawn = null;
     }
 
