@@ -27,7 +27,7 @@ internal sealed class WebPage : IDisposable
         _context = new RequestContext(new RequestContextSettings { CachePath = "", PersistSessionCookies = false });
         _web = new ChromiumWebBrowser(WebPolicy.Allowed(url) ? url : "about:blank", requestContext: _context, automaticallyCreateBrowser: false)
         {
-            RenderHandler = new Painter(_block),
+            RenderHandler = new Painter(_block, slot),
             AudioHandler = new PageSound(_block, slot),
             RequestHandler = new Requests(new Resources(_ads)),
             LifeSpanHandler = new InPlace(),
@@ -39,6 +39,16 @@ internal sealed class WebPage : IDisposable
         };
         _web.AddressChanged += (_, e) => Program.Say($"u {_slot} {WebPolicy.Shareable(e.Address)}");
         _web.TitleChanged += (_, e) => Program.Say($"t {_slot} {Program.OneLine(e.Title)}");
+        _web.LoadError += (_, e) =>
+        {
+            if (e.Frame.IsMain && e.ErrorCode is not (CefErrorCode.Aborted or CefErrorCode.BlockedByClient))
+                Program.Say($"pfail {_slot} the page didn't load ({e.ErrorCode})"); // (never the address)
+        };
+        _web.FrameLoadEnd += (_, e) =>
+        {
+            if (e.Frame.IsMain && e.HttpStatusCode > 0)
+                Program.Say($"pok {_slot}"); // (a page that loaded after one that didn't: its panel's fault goes)
+        };
         _web.Size = new System.Drawing.Size(width, height);
         new Thread(() => PageInput.Run(_block, _web, keys: true, () => _closing, () => { })) { IsBackground = true, Name = "Input " + slot }.Start();
         _ = Watch();

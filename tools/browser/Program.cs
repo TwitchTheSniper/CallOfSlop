@@ -12,12 +12,18 @@ namespace SlopBrowser;
 /// Stdin closing, which is also what the game crashing looks like, ends the process.
 /// <code>
 /// in:  open SLOT ID SECONDS WIDTH HEIGHT MAP ADS | web SLOT URL WIDTH HEIGHT MAP ADS | ads SLOT ON | go SLOT URL | wscroll SLOT SHARE | wplay SLOT | wpause SLOT | wseek SLOT SECONDS | back SLOT | forward SLOT | reload SLOT | play SLOT | pause SLOT | seek SLOT SECONDS | close SLOT | quit
-/// out: ready | fail REASON | log TEXT | s SLOT STATE TIME DURATION ERROR | t SLOT TITLE | u SLOT ADDRESS (secrets out) | w SLOT SCROLL HASMEDIA PAUSED TIME
+/// out: ready VERSION | fail REASON | pfail SLOT REASON | pok SLOT | log TEXT | s SLOT STATE TIME DURATION ERROR | t SLOT TITLE | u SLOT ADDRESS (secrets out) | w SLOT SCROLL HASMEDIA PAUSED TIME
 /// </code>
 /// </summary>
 internal static class Program
 {
     private const int MaxSlots = 4; // (the game's MediaDirector.MaxPages)
+
+    /// <summary>
+    /// The command lines' version, said with "ready". The game refuses a helper whose number isn't its own <c>MediaBrowser.HelperVersion</c> and says on the panels
+    /// that the Browser folder is out of date: an old helper used to skip a command it didn't know, and every screen said "Loading" for ever. Raise both together whenever a line changes.
+    /// </summary>
+    public const int Version = 2;
     private static readonly Regex VideoId = new("^[A-Za-z0-9_-]{11}$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
     private static readonly IDisposable?[] Pages = new IDisposable?[MaxSlots]; // (a Page, YouTube's locked player; or a WebPage, a Browser Screen's own rules)
     private static readonly object Out = new();
@@ -67,11 +73,11 @@ internal static class Program
         }
 
         Log("ad list: " + AdFilter.Load(Path.Combine(AppContext.BaseDirectory, "adhosts.txt")));
-        Say("ready");
+        Say("ready " + Version.ToString(CultureInfo.InvariantCulture));
         try
         {
             while (Console.In.ReadLine() is { } line)
-                if (!Command(line))
+                if (!Safe(line))
                     break;
         }
         catch (Exception e)
@@ -98,6 +104,27 @@ internal static class Program
         return 0;
     }
 
+    /// <summary>One command. A page that can't be made fails on its own panel (<c>pfail</c>), and the others go on.</summary>
+    private static bool Safe(string line)
+    {
+        try
+        {
+            return Command(line);
+        }
+        catch (Exception e) when (e is not OutOfMemoryException)
+        {
+            var a = line.Split(' ', 3);
+            if (a.Length >= 2 && int.TryParse(a[1], NumberStyles.None, CultureInfo.InvariantCulture, out var slot) && slot < MaxSlots)
+            {
+                CloseQuietly(slot);
+                Say($"pfail {slot} {a[0]} failed: {OneLine(e.Message)}");
+            }
+            else
+                Log($"{a[0]} failed: {OneLine(e.Message)}");
+            return true;
+        }
+    }
+
     private static bool Command(string line)
     {
         var a = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
@@ -106,7 +133,10 @@ internal static class Program
         if (a[0] == "quit")
             return false;
         if (a.Length < 2 || !int.TryParse(a[1], NumberStyles.None, CultureInfo.InvariantCulture, out var slot) || slot >= MaxSlots)
+        {
+            Log($"unknown command: {a[0]} ({a.Length} fields)"); // (never the line: a web one holds an address)
             return true;
+        }
         switch (a[0])
         {
             case "ads" when a.Length == 3:
@@ -157,8 +187,27 @@ internal static class Program
             case "close":
                 CloseSlot(slot);
                 break;
+            case "open" or "web":
+                Say($"pfail {slot} the game's {a[0]} command has {a.Length} fields, not the browser's: rebuild the Browser folder"); // (never silent: a mismatch once left every screen on "Loading")
+                break;
+            default:
+                Log($"unknown command: {a[0]} ({a.Length} fields)");
+                break;
         }
         return true;
+    }
+
+    private static void CloseQuietly(int slot)
+    {
+        try
+        {
+            CloseSlot(slot);
+        }
+        catch (Exception e) when (e is not OutOfMemoryException)
+        {
+            Pages[slot] = null;
+            Log($"page {slot}: close failed: {OneLine(e.Message)}");
+        }
     }
 
     private static void CloseSlot(int slot)
