@@ -114,6 +114,14 @@ public static partial class Program
                 if (g.IsServer)
                     Console.WriteLine($"[windowshot] crewfaction: {g.CrewSetFaction(arg)}");
                 return true;
+            case "crewgroup": // "crewgroup NAME": host, a test state: every crewed body's crew is of that power, formed into one patrol group
+                if (g.IsServer)
+                    Console.WriteLine($"[windowshot] crewgroup: {g.CrewGroupAll(arg)}");
+                return true;
+            case "crewown": // "crewown": host, a test state: the last crewed body becomes this player's own crew
+                if (g.IsServer)
+                    Console.WriteLine($"[windowshot] crewown: {g.CrewMakeOwn(me)}");
+                return true;
             case "crewdisarm": // "crewdisarm": host, a server shortcut: this player is put by the first crewed body's scuttle charge and starts its disarm (the Mend act's server path)
                 if (g.IsServer)
                     Console.WriteLine($"[windowshot] crewdisarm: {g.CrewDisarmFirst(me)}");

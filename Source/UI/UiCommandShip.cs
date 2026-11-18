@@ -112,6 +112,8 @@ public sealed partial class Ui
             CmdLine(dl, cr.At + new float2(off * 0.7f, off * 0.7f), cr.At + new float2(off + 14 * _scale, off + 10 * _scale), colour, 0.6f * fade);
             CmdLine(dl, cr.At + new float2(off + 14 * _scale, off + 10 * _scale), cr.At + new float2(off + 30 * _scale, off + 10 * _scale), colour, 0.6f * fade);
             CmdText(dl, cr.At + new float2(off + 34 * _scale, off + 3 * _scale), picked ? 13.5f : 12, colour, fade, CmdName(c));
+            if (CommandCrewsOn && CmdCrewTag(g, c.Id, out var crewColour) is { } crewTag)
+                CmdText(dl, cr.At + new float2(off + 34 * _scale, off + (picked ? 20 : 18) * _scale), 10, crewColour, 0.85f * fade, crewTag); // (UiCommandCrew.cs)
         }
 
         // The player, when they aren't aboard something on the map.
@@ -424,6 +426,7 @@ public sealed partial class Ui
                 CmdGlow(dl, pa, pb, CmdAmber, fade * (0.5f + 0.5f * push), 2f);
             ImDrawListExtensions.AddCircleFilled(dl, in pa, 2.2f * _scale, Hud.Colour(push > 0.02f ? CmdAmber : colour, fade), 6);
         }
+        CmdHoloCrew(dl, g, c, at, ax, com, fade, now); // (where its crew are: UiCommandCrew.cs)
         // Where the flight computer sits.
         if (c.StabCount > 0 && c.Stabs[0].Part < c.PartCount)
         {
@@ -503,7 +506,7 @@ public sealed partial class Ui
     {
         public ushort Id;
         public double Read;
-        public string Name, Class, Status, Flight, Orbit, Hull, Fuel, Power, Drive, Burn, Cargo, Crew, Systems, Order, Phase, Trip, Problem;
+        public string Name, Class, Status, Flight, Orbit, Hull, Fuel, Power, Drive, Burn, Cargo, Systems, Order, Phase, Trip, Problem;
         public float HullShare, FuelShare, PowerShare, OrderDone;
         public bool HasFuel, HasPower, HasOrder, Orders, Thrusting;
     }
@@ -591,28 +594,7 @@ public sealed partial class Ui
         var cargo = c.LoadMass + c.CargoMass;
         k.Cargo = cargo > 0.5f ? string.Create(inv, $"{cargo / 1000:0.00} T ABOARD") : "EMPTY";
 
-        // Who is aboard: in its seats, and standing within its hull.
-        _cmdCrew.Clear();
-        var standing = 0;
-        foreach (var (id, p) in g.Players)
-        {
-            if (!p.Alive)
-                continue;
-            ref var hand = ref g.SandboxHands.Hand(id);
-            if (hand.Seated && hand.SeatBody == c.Id)
-            {
-                if (_cmdCrew.Length > 0)
-                    _cmdCrew.Append(", ");
-                _cmdCrew.Append(p.Name.ToUpperInvariant());
-                if (c.Driver == id)
-                    _cmdCrew.Append(" (PILOT)");
-            }
-            else if (c.SpaceAway == 0 && Vector3.DistanceSquared(p.Position, c.WorldCom) < c.Radius * c.Radius * 0.6f)
-                standing++;
-        }
-        if (standing > 0)
-            _cmdCrew.Append(_cmdCrew.Length > 0 ? ", " : "").Append(inv, $"{standing} ON DECK");
-        k.Crew = _cmdCrew.Length > 0 ? _cmdCrew.ToString() : "NOBODY ABOARD";
+        CmdCardCrew(g, c); // (who holds it, its command and its crew: UiCommandCrew.cs)
 
         _cmdCrew.Clear();
         _cmdCrew.Append(c.StabCount == 0 ? "NO FLIGHT COMPUTER" : Game.NavProblem(c) == null ? "FLIGHT COMPUTER" : "FLIGHT COMPUTER DOWN");
@@ -693,7 +675,7 @@ public sealed partial class Ui
         var pad = 22 * _scale;
         var w = 400 * _scale;
         var line = 19 * _scale;
-        var lines = 14 + (k.Orbit.Length > 0 ? 1 : 0) + (k.HasOrder ? 3 : 0) + (k.Trip.Length > 0 ? 1 : 0) + (k.Problem.Length > 0 ? 1 : 0);
+        var lines = 13 + CmdCrewLines() + (k.Orbit.Length > 0 ? 1 : 0) + (k.HasOrder ? 3 : 0) + (k.Trip.Length > 0 ? 1 : 0) + (k.Problem.Length > 0 ? 1 : 0);
         var p0 = new float2(_cvOrg.X + _cvSize.X - pad - w, _cvOrg.Y + pad);
         var p1 = p0 + new float2(w, 64 * _scale + lines * line + 50 * _scale);
         var edge = k.HasOrder ? CmdAmber : CmdCyan;
@@ -747,8 +729,9 @@ public sealed partial class Ui
         Row(dl, "DRIVE", k.Drive, k.Drive.StartsWith('N') ? CmdAmber : CmdCyan, ref y);
         Row(dl, "BURN", k.Burn, k.Drive.StartsWith('N') ? CmdAmber : CmdCyan, ref y);
         Row(dl, "CARGO", k.Cargo, CmdCyan, ref y);
-        Row(dl, "CREW", k.Crew, CmdCyan, ref y);
         Row(dl, "SYSTEMS", k.Systems, CmdCyan, ref y);
+        y += 6 * _scale;
+        CmdCardCrewDraw(dl, x, col, ref y, line, fade); // (UiCommandCrew.cs)
         if (CmdLinked(c, out var routePart, out var manifest) is { } routeText)
         {
             // Linked logistics (LinkedLogisticsRoutes.cs): its route's state and its manifest, and ROUTE opens its Route Computer's panel.
