@@ -43,6 +43,8 @@ public enum RelEvent : byte
     PayTribute, // ... a tribute paid on time, each real hour
     TakeSite, // phase 4: a key site taken from its holder (Crew/CrewTerritory.cs); a whole planet lost adds TakePlanet
     TakePlanet,
+    ContractDone, // phase 5: a contract for credits done for the power (Crew/CrewContracts.cs)
+    ContractFailed, // ... failed or given up
     Count,
 }
 
@@ -68,11 +70,11 @@ public sealed class RelationRules
 {
     public const string Format = "call-of-slop-npc-relations/1";
     public static readonly string[] Keys = ["hitBody", "hitCrew", "killCrew", "destroyShip", "board", "capture", "release", "drop", "hire", "help", "breakPact", "breakPactHeard", "keepPact", "captureOfficer", "releaseOfficer",
-        "raidConvoy", "escortConvoy", "answerCall", "refuseCall", "payTribute", "takeSite", "takePlanet"];
+        "raidConvoy", "escortConvoy", "answerCall", "refuseCall", "payTribute", "takeSite", "takePlanet", "contractDone", "contractFailed"];
 
-    public readonly int[] Amount = [-5, -3, -4, -15, -10, -20, 5, 3, 2, 2, -40, -15, 1, -25, 15, -10, 5, 3, -10, 1, -10, -40];
+    public readonly int[] Amount = [-5, -3, -4, -15, -10, -20, 5, 3, 2, 2, -40, -15, 1, -25, 15, -10, 5, 3, -10, 1, -10, -40, 5, -5];
     public readonly string[][] Scale = [["pride"], ["pride"], ["values.crew"], ["values.ships", "pride"], ["pride"], ["values.ships", "pride"], ["forgiveness"], ["forgiveness"], [], ["loyalty"], [], ["loyalty"], [], ["pride"], ["forgiveness"],
-        ["values.cargo", "greed"], ["values.cargo"], ["loyalty"], ["loyalty"], ["greed"], ["values.planets"], ["values.planets", "pride"]];
+        ["values.cargo", "greed"], ["values.cargo"], ["loyalty"], ["loyalty"], ["greed"], ["values.planets"], ["values.planets", "pride"], ["greed"], ["pride"]];
     public int WarLine = -50, WaryLine = 0, NeutralLine = 20, FriendlyLine = 60, KindredLine = 90, Hysteresis = 5;
     public float BloodPride = 0.4f; // a relation at the floor hit again turns to a blood feud when the victim's pride is at least this
     public int MergeMinutes = 30; // both kindred this long: the weaker joins the stronger
@@ -84,6 +86,14 @@ public sealed class RelationRules
     public int CeasefireMinutes = 30, CeasefireRelation = -40, CeasefireLosses = 10, StaleWarMinutes = 30, AnswerCooldownMinutes = 5;
     public float AllianceLoyalty = 0.5f, CeasefireRefuseAggression = 0.8f;
     public int FriendlyFireHits = 8; // a friend's or a pact partner's hits forgiven in a minute (stray rounds, splash); past it, deliberate
+    // Phase 5 ("players"): pacts with player factions. A power's own offer stands OfferMinutes, then it waits OfferCooldownMinutes; a faction calls its allies at
+    // most every CallCooldownMinutes; a trade pact pays the leader TradeCredits a minute; a tribute costs the leader TributeCredits every TributeEveryMinutes.
+    public int PartyOfferMinutes = 10, PartyOfferCooldownMinutes = 15, CallCooldownMinutes = 3, TributeEveryMinutes = 10, TradeCredits = 10, TributeCredits = 150;
+    // Phase 5 ("contracts"): jobs for credits a power offers (Crew/CrewContracts.cs).
+    public int ContractOfferSeconds = 45, ContractOfferMinutes = 15, EscortSeconds = 180, EscortMinutes = 20, DeliverMinutes = 30, RaidMinutes = 30;
+    public float EscortRange = 400, DeliverRange = 60;
+    public int EscortPay = 300, RaidPay = 400, DeliverBase = 100, DeliverPerUnit = 2, DeliverMin = 40, DeliverMax = 160;
+    public string[] DeliverMaterials = ["iron ore", "copper ore", "stone", "planks", "metal"];
 
     private static RelationRules? _current;
     public static RelationRules Current => _current ??= Load(Path.Combine(AppFolders.Data, "Crew", "Relations.json"));
@@ -161,6 +171,39 @@ public sealed class RelationRules
                 r.VassalMinutes = Int(p, "vassalMinutes", r.VassalMinutes, 1, 100000);
                 r.VassalLoyalty = Num(p, "vassalLoyalty", r.VassalLoyalty, 0, 1.01f);
             }
+            if (root.TryGetProperty("players", out var pl))
+            {
+                r.PartyOfferMinutes = Int(pl, "offerMinutes", r.PartyOfferMinutes, 1, 1440);
+                r.PartyOfferCooldownMinutes = Int(pl, "offerCooldownMinutes", r.PartyOfferCooldownMinutes, 0, 1440);
+                r.CallCooldownMinutes = Int(pl, "callCooldownMinutes", r.CallCooldownMinutes, 0, 1440);
+                r.TributeEveryMinutes = Int(pl, "tributeEveryMinutes", r.TributeEveryMinutes, 1, 1440);
+                r.TradeCredits = Int(pl, "tradeCredits", r.TradeCredits, 0, 100000);
+                r.TributeCredits = Int(pl, "tributeCredits", r.TributeCredits, 0, 1000000);
+            }
+            if (root.TryGetProperty("contracts", out var ct))
+            {
+                r.ContractOfferSeconds = Int(ct, "offerSeconds", r.ContractOfferSeconds, 5, 86400);
+                r.ContractOfferMinutes = Int(ct, "offerMinutes", r.ContractOfferMinutes, 1, 1440);
+                r.EscortSeconds = Int(ct, "escortSeconds", r.EscortSeconds, 10, 86400);
+                r.EscortMinutes = Int(ct, "escortMinutes", r.EscortMinutes, 1, 1440);
+                r.DeliverMinutes = Int(ct, "deliverMinutes", r.DeliverMinutes, 1, 1440);
+                r.RaidMinutes = Int(ct, "raidMinutes", r.RaidMinutes, 1, 1440);
+                r.EscortRange = Num(ct, "escortRange", r.EscortRange, 10, 10000);
+                r.DeliverRange = Num(ct, "deliverRange", r.DeliverRange, 5, 1000);
+                r.EscortPay = Int(ct, "escortPay", r.EscortPay, 0, 1000000);
+                r.RaidPay = Int(ct, "raidPay", r.RaidPay, 0, 1000000);
+                r.DeliverBase = Int(ct, "deliverBase", r.DeliverBase, 0, 1000000);
+                r.DeliverPerUnit = Int(ct, "deliverPerUnit", r.DeliverPerUnit, 0, 10000);
+                r.DeliverMin = Int(ct, "deliverMin", r.DeliverMin, 1, 60000);
+                r.DeliverMax = Int(ct, "deliverMax", r.DeliverMax, r.DeliverMin, 60000);
+                if (ct.TryGetProperty("materials", out var mats))
+                {
+                    var names = mats.EnumerateArray().Select(e => e.GetString() ?? "").Where(n => n.Length > 0).ToArray();
+                    if (names.Length == 0)
+                        throw new InvalidDataException("\"contracts.materials\" names no material");
+                    r.DeliverMaterials = names;
+                }
+            }
         }
         catch (Exception ex) when (ex is IOException or JsonException or InvalidDataException or UnauthorizedAccessException or InvalidOperationException or FormatException or KeyNotFoundException)
         {
@@ -221,7 +264,7 @@ public sealed class RelationRules
 /// (ceasefire, non-aggression, alliance) that form and break by simple rules at each power's think (one power at a time, each every 5 s).
 /// Fixed arrays: nothing allocated in a tick but a news line (an event, rare).
 /// </summary>
-public sealed class PowerRelations
+public sealed partial class PowerRelations
 {
     public const int N = FactionTable.MaxStory, MaxPacts = 32, MaxNews = 32;
     public const int ThinkSeconds = 5;
@@ -325,6 +368,7 @@ public sealed class PowerRelations
         Array.Clear(Feud);
         Array.Clear(News);
         NewsTotal = 0;
+        ResetParties(); // (phase 5: pacts with player factions, their feuds and contracts: CrewPartyPacts.cs)
         for (var a = 1; a <= Count; a++)
             for (var b = 1; b <= Count; b++)
                 if (Band[(a - 1) * N + b - 1] == RelBand.War)
@@ -496,8 +540,13 @@ public sealed class PowerRelations
             }
         }
         else
+        {
+            if (PlayerDeed(e, v, victim, doerPlayer, at))
+                return; // (a pact partner's stray fire: forgiven, phase 5)
             MovePlayer(victim, doerPlayer, amount);
-        if (e is RelEvent.BreakPact or RelEvent.BreakPactHeard or RelEvent.KeepPact or RelEvent.PayTribute or RelEvent.AnswerCall or RelEvent.RefuseCall)
+            Contracts.Deed(e, victim, doerPlayer, Table.Of[doerPlayer]); // (a raid contract done by it: Crew/CrewContracts.cs)
+        }
+        if (e is RelEvent.BreakPact or RelEvent.BreakPactHeard or RelEvent.KeepPact or RelEvent.PayTribute or RelEvent.AnswerCall or RelEvent.RefuseCall or RelEvent.ContractDone or RelEvent.ContractFailed)
             return;
         // Word gets around.
         for (var c = 1; c <= Count; c++)
@@ -602,9 +651,14 @@ public sealed class PowerRelations
     {
         if (player == 255 || Def(power) is null || delta == 0)
             return;
+        if (Table.Of[player] is var party and not 0)
+        {
+            MoveParty(power, party, delta); // (their faction's standing: phase 5's pacts and feuds are a faction's: CrewPartyPacts.cs)
+            return;
+        }
         ref var v = ref Standing(power, player);
         var was = v;
-        v = (sbyte)Math.Clamp(v + delta, -100, 100);
+        v = (sbyte)Math.Clamp(v + delta, BloodValue + 1, 100); // (-100 is a blood feud's alone, and a person in no faction swears none)
         if (v == was)
             return;
         Table.Version++;
@@ -653,6 +707,9 @@ public sealed class PowerRelations
         for (var i = 0; i < MaxPacts; i++)
             if (PactK[i] != PactKind.None && (PactA[i] == p || PactB[i] == p))
                 PactK[i] = PactKind.None;
+        for (var i = 0; i < MaxPartyPacts; i++)
+            if (PartyK[i] != PactKind.None && PartyPower[i] == p)
+                PartyK[i] = PactKind.None;
         Version++;
         if (!quiet)
             Say(line);
@@ -810,6 +867,7 @@ public sealed class PowerRelations
                     _proposed[ao] = PactKind.Vassalage;
             }
         }
+        PartyThink(a, def); // (phase 5: its pacts with player factions, their proposals and its offers: CrewPartyPacts.cs)
         for (var b = (byte)1; b <= Count; b++)
         {
             if (b == a || Def(b) is not { Controller: true } bd || Gone[b])
@@ -892,7 +950,7 @@ public sealed class PowerRelations
         var t = Table;
         var changed = false;
         for (var party = 1; party < FactionTable.Max; party++)
-            if (MetFaction[party * N + a - 1])
+            if (MetFaction[party * N + a - 1] && !PartyFeud[party * N + a - 1]) // (a blood feud never fades)
             {
                 ref var v = ref t.StoryStanding[party * N + a - 1];
                 var to = Toward(v, def.RestPlayers, steps, v <= Rules.WarLine);
@@ -961,7 +1019,7 @@ public sealed class PowerRelations
 
     // ---- Saves (the world's Powers section) ------------------------------------------------------------------------------------------
 
-    public const byte SaveVersion = 2; // (2: blood feuds, a bit a pair, after the news)
+    public const byte SaveVersion = 3; // (2: blood feuds, a bit a pair, after the news; 3: phase 5's pacts with player factions, their feuds and the contracts)
 
     /// <summary>
     /// u8 version; u8 n, n x text power name; n x n x i8 (row a: how a sees each); u8 pacts, each (u8 kind, u8 a, u8 b, i32 seconds held,
@@ -1002,6 +1060,9 @@ public sealed class PowerRelations
                         bits |= 1 << j;
                 w.U8((byte)bits);
             }
+        WriteParties(w); // (version 3: CrewPartyPacts.cs)
+        Contracts.TickNow = Tick;
+        Contracts.Write(w);
         return w.Span.ToArray();
     }
 
@@ -1012,9 +1073,9 @@ public sealed class PowerRelations
         {
             var r = new SaveReader(bytes);
             var v = r.U8();
-            if (v is not (1 or SaveVersion))
+            if (v is not (1 or 2 or SaveVersion))
             {
-                Console.WriteLine($"[crew] the world's powers section is of version {v} (this build reads 1 and {SaveVersion}): relations start from the power files");
+                Console.WriteLine($"[crew] the world's powers section is of version {v} (this build reads 1 to {SaveVersion}): relations start from the power files");
                 return;
             }
             int n = r.U8();
@@ -1080,6 +1141,13 @@ public sealed class PowerRelations
                             if ((bits >> j & 1) != 0 && map[a] != 0 && map[b + j] != 0 && map[a] != map[b + j])
                                 Feud[(map[a] - 1) * N + map[b + j] - 1] = true;
                     }
+            ResetParties(); // (version 2 and before: no pacts with player factions, no contracts)
+            if (v >= 3)
+            {
+                ReadParties(r, map);
+                Contracts.TickNow = Tick;
+                Contracts.Read(r, map);
+            }
             Version++;
         }
         catch (Exception ex) when (ex is WorldFileException or ArgumentException or IndexOutOfRangeException or InvalidDataException)
