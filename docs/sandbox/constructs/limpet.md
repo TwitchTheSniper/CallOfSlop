@@ -48,8 +48,31 @@ panel of another craft and picks BOARD. The dock lets the pod go and the host fl
 4. **In**: at 0.8 m/s until two mag locks reach the hull (or, after 4 s pressing, one lock or the nose itself), then the
    locks go on and it grips (`ConstructBreach.Grip`); a pod gripped by the order holds while its locks are on
    (`Construct.BreachSealed`), hull under them or not.
-5. **On a door**: the target's door opens, then the pod's own. **On the hull**: the cutter burns through, and once it is
-   through (it then cuts no deeper, wedged in its hole) the pod's door opens.
+5. **On a door**: the target's door opens, then the pod's own. **On the hull**: the cutter burns for 10 s, then takes a
+   real hole out of the hull (below), and the pod's door opens.
+
+### The hole (Karl, 2026-11-18: "option C")
+
+On the hull the order first picks where to cut (`BoardNearRoom`): a spot with a room behind it (`ConstructBreach.RoomBehind`:
+a floor, head room and a roof of its own within 6 m), its floor level with the pod's (within 0.35 m, the spot moved up to
+2.5 m up or down its face where the nose still sits flat). The picked spot first, then the parts round it, nearest first;
+failing a level floor, any room; failing that, the spot as picked. The Zero Day's bow tip is solid, so a Board order on it
+lands on a flank.
+
+Any gripped cutter (the Shuttle's too) burns `ConstructBreach.HoleTicks` (10 s) on one spot, then `OpenHole` cuts a tunnel
+1.1 m wide (the ring's opening) and 2.1 m tall from just over the room's floor, as deep as that room's wall (1.2 m when no room
+was found), level in the target's frame. Every part it crosses that can take a hole is swapped for a holed part
+(`Source/Constructs/HullHoles.cs`): a named run-time part, `Holed (BASE | x,y,z,dx,dy,dz,ux,uy,uz,w,h,l)`, its boxes cut round
+the tunnel and its thin hull facets (the skin, which collides) cut in their own plane, so the hole is gone from the drawing,
+the collider and a player's moves alike: you see space through it and walk through the gap. It travels as its key (saves,
+blueprints and the wire: protocol 352), so a joined client builds the same part. A part that can't take a hole (a machine)
+but is at most 2.5 m each way is burned away; bigger ones are left and logged (`[breach]` in callofslop.log). The body is
+rebuilt once, as any edit's.
+
+Trying it: the window tool's `boardwalk [BACK] [TICKS]` (host) puts this player in the gripped pod BACK m behind its cutter
+facing the hole, prints the doors and what lies ahead, and holds W. On the Zero Day start (`--survival --start ZeroDay
+--map Caledon --do "wait 60; skip; wait 200; command 600; cmdpick 1; order board 2 hull; esc; wait 5500; boardwalk 1.6 400"`)
+the pod cuts in by the Traders' Upper Fore Hull Port 2 and the player ends in their ship.
 
 The pod is steered as a physics body (its speed and turn set straight, within 12 m/s² and 1.2 rad/s), not as a space ship:
 it stays a body of the bubble while it boards (GameSpaceLaunch.cs leaves it be), so it boards in space as in a sky. The order
@@ -61,5 +84,7 @@ is the pod's, so its card shows it; the target is the order's point on the wire 
 - No path finding: it flies straight once clear of its carrier, so a target behind a mountain or another ship is hit.
 - A pod that has boarded stays on the target: there is no way back to the carrier (one way, as designed).
 - The grip isn't kept through a save and load (as the Shuttle's).
+- A hole stays a hole: nothing repairs it, and there is no air to vent (no compartments yet).
+- A holed part keeps its whole health; its ceiling or spine edge may be cut too where the room is lower than 2.1 m.
 - Tried on the host only (a Glacier test world, the Zero Day boarding a Magpie by its hull and by a door); a joined
   client's view of the order wasn't tried.

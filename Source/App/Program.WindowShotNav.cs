@@ -15,7 +15,7 @@ namespace CallOfSlop;
 /// </summary>
 public static unsafe partial class Program
 {
-    private static bool WsNavKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "command" or "cmdpick" or "order" or "nav" or "hoist" or "speed" or "travel" or "cmdview" or "rclick" or "rclickup" or "spacewalk" or "missile" or "missiles" or "letgo" or "orbit";
+    private static bool WsNavKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "command" or "cmdpick" or "order" or "nav" or "hoist" or "speed" or "travel" or "cmdview" or "rclick" or "rclickup" or "spacewalk" or "missile" or "missiles" or "letgo" or "orbit" or "boardwalk";
 
     /// <summary>"order dock N": the picked craft docks with the Nth craft on the map (as cmdpick counts them).</summary>
     private static string? WsDockOrder(Game g, int n)
@@ -99,6 +99,26 @@ public static unsafe partial class Program
                 ConstructCarrier.LetGo(g.Constructs, held);
                 WsSay($"[nav] construct {held.Id} let go");
                 _wsWait = 3;
+                return true;
+            }
+            case "boardwalk" when g.IsServer: // "boardwalk [BACK] [TICKS]" (host): into a gripped pod BACK m behind its cutter, then W held towards its hole (ConstructBreach.OpenHole)
+            {
+                var back = words.Length > 0 && float.TryParse(words[0], inv, out var bk) ? bk : 1.2f;
+                var ticks = words.Length > 1 && float.TryParse(words[1], inv, out var tk) ? tk : 240f;
+                if (g.BoardWalkStart(me, back, out var face) is { } no)
+                {
+                    WsFail("boardwalk: " + no);
+                    return true;
+                }
+                me.NoclipWanted = false;
+                g.NoclipShot = false;
+                g.LookYaw = face;
+                g.LookPitch = 0;
+                _wsHold = GameAction.MoveForward;
+                _wsHoldUntil = System.Diagnostics.Stopwatch.GetTimestamp() + (long)(ticks / World.TickRate * System.Diagnostics.Stopwatch.Frequency);
+                WsSay($"[nav] boardwalk: {back:0.0} m behind the cutter, W for {ticks:0} ticks");
+                WsWaitTicks((int)ticks + 10);
+                _wsQueue.EnqueueFront("me");
                 return true;
             }
             case "cmdview": // "cmdview YAW PITCH" (degrees): the view's turn and tilt
