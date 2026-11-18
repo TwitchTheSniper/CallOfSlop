@@ -202,7 +202,20 @@ public static class ConstructClampArms
         && (b.ThrusterCount > 0 || b.StabCount > 0) // (a ship, not a loose piece: GameStations.StationMoorable)
         && (b.MooredTo == 0 || b.MooredTo == st.Id)
         && Vector3.Distance(b.WorldCom, shoulder) - b.Radius * 0.5f < reach
-        && (b.Vel - st.PointVel(b.WorldCom)).Length() < SeekSpeed;
+        && (b.Vel - st.PointVel(b.WorldCom)).Length() < SeekSpeed
+        && (b.MooredTo == st.Id || LinedUp(st, berth, b));
+
+    /// <summary>How far a ship may be turned from the way it will lie in its berth and still be reached for (radians): the arm draws a
+    /// ship in alongside, it doesn't turn it round (Karl, 2026-11-18: "the ship should pass to the side"; a ship come in at its side
+    /// was turned by the clamp).</summary>
+    public const float LineUpMost = 0.35f;
+
+    /// <summary>Is the ship turned within <see cref="LineUpMost"/> of its mooring pose at this berth (Game.StationMoorRot)?</summary>
+    public static bool LinedUp(Construct st, int berth, Construct b)
+    {
+        var d = MathF.Abs(Quaternion.Dot(Game.StationMoorRot(st, berth, b), b.Rot));
+        return d >= MathF.Cos(LineUpMost * 0.5f);
+    }
 
     /// <summary>Where on a ship the pad goes: the middle of the face of its bounds that looks most at the arm, brought onto its hull by one ray.</summary>
     private static void Grip(ConstructWorld world, Construct ship, Vector3 shoulder, ref ClampArm a)
