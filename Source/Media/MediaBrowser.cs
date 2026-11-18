@@ -28,7 +28,7 @@ public sealed class MediaReport
 public static class MediaBrowser
 {
     private const int MaxRestarts = 2;
-    private const double RestartAfter = 10, ReadyWithin = 30;
+    private const double RestartAfter = 10, ReadyWithin = 30, FirstReadyWithin = 90; // (a first start on a PC may wait on a virus scan of CEF's files)
 
     /// <summary>
     /// The command lines' version, which the helper says with "ready" (tools/browser/Program.cs <c>Version</c>: raise both together whenever a line changes). A helper built
@@ -44,6 +44,7 @@ public static class MediaBrowser
     private static BlockingCollection<string>? _lines; // (one per process: a new one never hears what was said to the last)
     private static Process? _process;
     private static int _restarts;
+    private static bool _everStarted; // a helper said ready once this session: later starts get ReadyWithin, the first FirstReadyWithin
     private static double _failedAt = double.NegativeInfinity;
     private static volatile string? _problem;
     private static volatile string? _stale; // the helper is from other source: no restart helps, so it stays all session
@@ -239,10 +240,10 @@ public static class MediaBrowser
         var now = Stopwatch.GetTimestamp() / (double)Stopwatch.Frequency;
         if (_process != null && _stale != null)
             Kill(); // (said by the reader's thread: this is the main one)
-        else if (_process != null && !_ready && now - _startedAt > ReadyWithin)
+        else if (_process != null && !_ready && now - _startedAt > (_everStarted ? ReadyWithin : FirstReadyWithin))
         {
             Kill();
-            Fail($"the browser didn't start in {ReadyWithin:0} s (see slopbrowser.log beside callofslop.log)");
+            Fail($"the browser didn't start in {(_everStarted ? ReadyWithin : FirstReadyWithin):0} s (see slopbrowser.log beside callofslop.log)");
         }
         if (_problem != null && _restarts <= MaxRestarts && now - _failedAt > RestartAfter)
             _problem = null;
@@ -300,6 +301,7 @@ public static class MediaBrowser
                 if (a.Length >= 2 && int.TryParse(a[1], NumberStyles.None, CultureInfo.InvariantCulture, out var version) && version == HelperVersion)
                 {
                     _ready = true;
+                    _everStarted = true;
                     Console.WriteLine($"[media] browser ready (version {version})");
                 }
                 else
