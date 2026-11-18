@@ -211,6 +211,7 @@ public static partial class ConstructRender
     public static void Draw(Renderer gfx, ConstructWorld world, float alpha, bool blendTicks)
     {
         var n = 0;
+        _fxHost = blendTicks; // (blendTicks is IsServer: the host's flames burn by each jet's own level; unset, every flame on the host burned by ThrustShow, so a turn lit every jet)
         if (!CameraFeeds.InPass) // (the seconds this frame's particles emit for: a burning part's flames, a working stack's smoke; nothing set it, so neither showed)
         {
             _fxDt = (float)Math.Clamp(Now - _fxLast, 0, 0.1);

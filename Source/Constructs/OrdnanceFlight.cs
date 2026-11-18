@@ -725,7 +725,12 @@ public static class OrdnanceFlight
             s.Burn--;
             burning = true;
             var push = s.Thrust + (speed >= s.MinSpeed ? s.AirPush * air : 0);
-            var along = speed > 0.5f ? s.Vel / speed : Vector3.Normalize(-ConstructShells.GravityAt(s.Pos) + new Vector3(0, 1e-3f, 0));
+            var chase = s.Decoy == 0 && s.Target != 0 ? world.Get(s.Target) : null;
+            var rel = chase != null ? s.Vel - chase.Vel : s.Vel; // (chasing a body it pushes along its speed against it: ChaseTurn)
+            var relSpeed = rel.Length();
+            var along = relSpeed > 0.5f ? rel / relSpeed : speed > 0.5f ? s.Vel / speed : Vector3.Normalize(-ConstructShells.GravityAt(s.Pos) + new Vector3(0, 1e-3f, 0));
+            if (chase != null && air < ConstructOrdnance.SpaceAir && SpaceBurn(s.Pos, rel, relSpeed, chase) is { } aimed)
+                along = aimed;
             s.Vel += along * (push * dt);
             speed = s.Vel.Length();
         }
@@ -760,6 +765,11 @@ public static class OrdnanceFlight
         if (rate <= 0 || speed < 1f)
             return;
         Vector3 aim;
+        if (s.Decoy == 0 && s.Target != 0 && world.Get(s.Target) is { } chased)
+        {
+            ChaseTurn(ref s, chased, rate * dt);
+            return;
+        }
         if (s.Decoy != 0 && world.ShellAt(s.Decoy) is var fl and >= 0)
             aim = world.Shells[fl].Pos;
         else if (s.Decoy != 0)
@@ -768,11 +778,6 @@ public static class OrdnanceFlight
             s.Flags &= ~ShellFlags.HasAim;
             return;
         }
-        else if (s.Target != 0 && world.Get(s.Target) is { } t)
-        {
-            var dist = Vector3.Distance(s.Pos, t.WorldCom);
-            aim = t.WorldCom + t.Vel * MathF.Min(dist / speed, 3f);
-        }
         else if ((s.Flags & ShellFlags.HasAim) != 0)
             aim = s.Aim;
         else
@@ -780,6 +785,47 @@ public static class OrdnanceFlight
         var want = aim - s.Pos;
         if (want.LengthSquared() > 1e-2f)
             s.Vel = RocketFlight.Turn(s.Vel / speed, Vector3.Normalize(want), rate * dt) * speed;
+    }
+
+    /// <summary>
+    /// In space a weapon chasing a body points its motor where it has to go, not along the way it moves: nothing holds its
+    /// nose to its flight, and a torpedo dropped from a ship's belly towards a planet 3 km below would reach the ground before
+    /// its jets turned it round (2026-11-18). The push goes towards the target and against the drift across that line, so its
+    /// speed against the target comes to point at it. Null when the target is on top of it.
+    /// </summary>
+    private static Vector3? SpaceBurn(Vector3 at, Vector3 rel, float relSpeed, Construct t)
+    {
+        var to = t.WorldCom - at;
+        var dist = to.Length();
+        if (dist < 1f)
+            return null;
+        var want = to / dist * (relSpeed + SpaceBurnLead) - rel; // (the speed it wants against the target, less the one it has)
+        return want.LengthSquared() > 1e-4f ? Vector3.Normalize(want) : to / dist;
+    }
+
+    /// <summary>m/s a space burn asks for over the speed against the target it has: it keeps closing faster while it burns.</summary>
+    public const float SpaceBurnLead = 50f;
+
+    /// <summary>
+    /// A weapon chasing a body turns its speed against that body, not its speed over the ground: two ships in one orbit both
+    /// move at hundreds of m/s, and turning the whole of that towards the target only circled it (2026-11-18: the Zero Day's
+    /// torpedoes, locked on a ship 400 m off in orbit, flew wide circles kilometres across). Seen from the target, a
+    /// straight line at it is a hit; in still air with a still target it is the same turn as before.
+    /// </summary>
+    private static void ChaseTurn(ref CShell s, Construct t, float turn)
+    {
+        var rel = s.Vel - t.Vel;
+        var closing = rel.Length();
+        var want = t.WorldCom - s.Pos;
+        if (want.LengthSquared() <= 1e-2f)
+            return;
+        want = Vector3.Normalize(want);
+        if (closing < 1f)
+        {
+            s.Vel = t.Vel + want * MathF.Min(1f, turn) * 2f; // (still against it: it starts its way over)
+            return;
+        }
+        s.Vel = t.Vel + RocketFlight.Turn(rel / closing, want, turn) * closing;
     }
 
     /// <summary>Server, each tick for a designed weapon in the air: a burnt-out stage drops and the next lights; now and then a guided one's point moves.</summary>

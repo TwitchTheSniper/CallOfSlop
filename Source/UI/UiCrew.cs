@@ -27,7 +27,7 @@ public sealed partial class Ui
                 if (ImGui.SmallButton(v.HoldFire ? "Fire at will"u8 : "Hold fire"u8))
                     game.SandboxSendCrewOrder(body, 0, v.HoldFire ? CrewOrder.FireAtWill : CrewOrder.HoldFire);
             }
-            foreach (var (uid, name, job, state, hp, fac) in v.Members)
+            foreach (var (uid, name, job, state, hp, fac, officer) in v.Members)
             {
                 ImGui.PushID((int)uid);
                 var kind = CrewPowers.Of(fac)?.Name ?? "";
@@ -51,12 +51,25 @@ public sealed partial class Ui
                     ImGui.SameLine();
                     if (ImGui.SmallButton("Hire"u8))
                         game.SandboxSendCrewOrder(body, uid, CrewOrder.Hire);
+                    if (officer)
+                    {
+                        // (an admiral or a captain taken prisoner: the host marks them, GameCrewFleet.cs)
+                        ImGui.SameLine();
+                        if (ImGui.SmallButton("Question"u8))
+                            game.SandboxSendCrewOrder(body, uid, CrewOrder.Interrogate);
+                        ImGui.SameLine();
+                        if (ImGui.SmallButton("Ransom"u8))
+                            game.SandboxSendCrewOrder(body, uid, CrewOrder.Ransom);
+                    }
                 }
                 else if (v.Own)
                 {
                     ImGui.SameLine();
                     if (ImGui.SmallButton("Dismiss"u8))
                         game.SandboxSendCrewOrder(body, uid, CrewOrder.Dismiss);
+                    ImGui.SameLine();
+                    if (ImGui.SmallButton(job == CrewJob.Interrogator ? "Off questioning"u8 : "Interrogator"u8))
+                        game.SandboxSendCrewOrder(body, uid, CrewOrder.Interrogator);
                 }
                 ImGui.PopID();
             }

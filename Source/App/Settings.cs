@@ -48,7 +48,7 @@ public sealed class Settings
     public int SandboxMaxPerPlayer = ConstructPlace.MaxPerPlayer; // ...and how many constructs each player may own (0: no limit)
     public int TripFuelPercent = 50; // host setting, Settings > Gameplay "Trip fuel": the share of a ship's dV an order to another planet may spend (more is a quicker trip: GameNavTrip.cs)
     public int SpaceFuelPercent = 100; // host setting, Settings > Gameplay "Fuel use in space": the share of their fuel thrusters burn in space (ConstructPhysics.SpaceFuelScale)
-    public int TimeSpeedMost = 100_000; // host setting, Settings > Gameplay "Fastest time speed": the command view's time speed goes no faster (docs/space/COMMAND.md)
+    public int TimeSpeedMost = 1_000_000; // host setting, Settings > Gameplay "Fastest time speed": the command view's time speed goes no faster (docs/space/COMMAND.md)
     public bool TravelTogether; // host setting: a ship lands on another planetoid only with everyone aboard (off: free travel, each lands alone; docs/space/FREE-TRAVEL.md)
     public readonly List<string> SandboxFavorites = new(); // Sandbox: the parts favorited in the Tab inventory, by name (UiSandboxParts.cs)
     public bool SmartRotation = true; // Sandbox: the ghost's first turn is smart rotation's guess (Constructs/SmartRotation.cs); off: the fixed order

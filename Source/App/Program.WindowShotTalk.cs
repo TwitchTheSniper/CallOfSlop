@@ -43,7 +43,7 @@ public static partial class Program
             _wsWait = Math.Max(_wsWait, 2);
     }
 
-    private static bool WsTalkKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "talk" or "say" or "heard" or "standing" or "secs" or "hold" or "where" or "seat" or "crew" or "crewshoot" or "crewbodies" or "crewconvoy" or "crewhit" or "npcstanding" or "crewbreak" or "crewkill" or "crewfaction" or "crewdisarm" or "crewprisoner";
+    private static bool WsTalkKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "talk" or "say" or "heard" or "standing" or "secs" or "hold" or "where" or "seat" or "crew" or "crewshoot" or "crewbodies" or "crewconvoy" or "crewfleet" or "crewofficer" or "crewhit" or "npcstanding" or "crewbreak" or "crewkill" or "crewfaction" or "crewdisarm" or "crewprisoner";
 
     private static bool WsTalkVerb(Game g, Player me, string verb, string arg)
     {

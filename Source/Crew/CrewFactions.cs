@@ -55,6 +55,8 @@ public sealed class NpcFactionDef
     public int HireCost, Wage; // credits
     /// <summary>False ("controller": false): a power made from it keeps its relations as they start (Player Crew, Test Hostile: faction-controllers.md section 2).</summary>
     public bool Controller = true;
+    /// <summary>Its admirals' doctrine in Crew/Fleet.json (empty: the one named as the kind, else Standard: CrewFleetRules.cs).</summary>
+    public string Doctrine = "";
     /// <summary>Its standing to start from with a player who hasn't met it (-100 to 100).</summary>
     public int StartStanding => ToPlayers switch { CrewStance.Hostile => -50, CrewStance.Wary => 0, _ => 20 };
 }
@@ -154,6 +156,7 @@ public static class CrewFactions
             Name = Text(root, "name", 32) is { Length: > 0 } n ? n : throw new InvalidDataException("it has no name"),
             About = Text(root, "about", 200),
             Controller = !root.TryGetProperty("controller", out var ctl) || ctl.GetBoolean(),
+            Doctrine = Text(root, "doctrine", 32),
         };
         if (root.TryGetProperty("styles", out var st))
             d.Styles = st.EnumerateArray().Select(e => e.GetString() ?? "").Where(s => s.Length > 0).ToArray();

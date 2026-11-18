@@ -1012,7 +1012,7 @@ public sealed partial class Game
                 var body = r.U16();
                 var uid = r.U32();
                 var op = r.U8();
-                return op <= (byte)CrewOrder.FireAtWill ? CrewOrderAct(p, body, uid, (CrewOrder)op) : $"no crew order {op}"; // (GameCrewHire.cs)
+                return op <= (byte)CrewOrder.Interrogator ? CrewOrderAct(p, body, uid, (CrewOrder)op) : $"no crew order {op}"; // (GameCrewHire.cs)
             }
             case CActKind.Mend:
             {

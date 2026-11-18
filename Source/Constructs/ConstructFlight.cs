@@ -350,6 +350,33 @@ public static partial class ConstructFlight
         for (var k = 0; k < n; k++)
             for (var r = 0; r < R; r++)
                 a[k * R + r] = scale[r] > 0 ? a[k * R + r] / scale[r] : 0;
+        // Each effector's share of the least that does what is asked: the least sum of squared throttles, which leans on the strongest
+        // jets for everything. On Ship keys the first share is the least sum of squared forces instead, so a turn goes to the jets with
+        // the longest levers (the RCS) and a main drive fires to go its way, not to turn; what they can't do (out of reach, limits) is
+        // made up as before (Karl, 2026-11-18: the Zero Day turned on its drive bells and retros, so they flamed with its dampeners off).
+        Span<float> lean = stackalloc float[n];
+        lean.Fill(1);
+        Shares(f, a, scale, lean, f.P);
+        f.Leans = false;
+        if (pattern == FlightPattern.Ship)
+        {
+            var most = 0f;
+            for (var k = 0; k < n; k++)
+                if (f.Items[k].Kind == EffectorKind.Thruster)
+                    most = MathF.Max(most, f.Items[k].Force.Length());
+            for (var k = 0; k < n; k++)
+                if (f.Items[k].Kind == EffectorKind.Thruster && most > 0)
+                    lean[k] = most / MathF.Max(f.Items[k].Force.Length(), most / 30);
+            Shares(f, a, scale, lean, f.Lean);
+            f.Leans = true;
+        }
+    }
+
+    /// <summary>P = W A^T (A W A^T + a little)^-1, W the squared leans: each effector's share of each row.</summary>
+    private static void Shares(FlightEffectors f, float[] a, ReadOnlySpan<float> scale, ReadOnlySpan<float> lean, float[] into)
+    {
+        const int R = FlightEffectors.Rows;
+        var n = f.Count;
         Span<float> m = stackalloc float[R * R * 2];
         for (var r = 0; r < R; r++)
         {
@@ -357,7 +384,7 @@ public static partial class ConstructFlight
             {
                 var dot = 0f;
                 for (var k = 0; k < n; k++)
-                    dot += a[k * R + r] * a[k * R + q];
+                    dot += a[k * R + r] * a[k * R + q] * lean[k] * lean[k];
                 m[r * 2 * R + q] = dot;
                 m[r * 2 * R + R + q] = r == q ? 1 : 0;
             }
@@ -392,7 +419,7 @@ public static partial class ConstructFlight
                 var share = 0f;
                 for (var q = 0; q < R; q++)
                     share += a[k * R + q] * m[q * 2 * R + R + r];
-                f.P[k * R + r] = scale[r] > 0 ? share : 0;
+                into[k * R + r] = scale[r] > 0 ? share * lean[k] * lean[k] : 0;
             }
     }
 
@@ -426,11 +453,12 @@ public static partial class ConstructFlight
                         left[r] -= f.A[k * R + r] * u[k];
             for (var r = 0; r < R; r++)
                 left[r] *= step == 0 ? 1 : weights[r];
+            var p = step == 0 && f.Leans ? f.Lean : f.P; // (on Ship keys the first share leans on the RCS; the rounds after make up what they couldn't)
             for (var k = 0; k < n; k++)
             {
                 var add = 0f;
                 for (var r = 0; r < R; r++)
-                    add += f.P[k * R + r] * left[r];
+                    add += p[k * R + r] * left[r];
                 u[k] = Math.Clamp(u[k] + add, f.Low[k], f.High[k]);
             }
         }

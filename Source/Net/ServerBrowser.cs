@@ -594,7 +594,12 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   (a ride's bytes, flying), and the PilotGear step stows a canopy in vacuum (Eva.Vacuum).
     // 345: ladders climbed with an animation (ConstructRideLadder.cs): SnapOwn's climb ends with u8 RideLadder, and when it is set u16 the
     //   ladder and 2 x vec the later legs' ends; a fast entry of kind 247 (RideLadderKind) is a ride entry and then u16 the ladder + 1.
-    public const ushort ProtocolVersion = 345;
+    // 346: groups and admirals (docs/sandbox/design/faction-controllers.md phase 2; GameCrewFleet.cs): Msg.CrewSeats ends with u16 captain's name, u16
+    //   admiral's name aboard (0xFFFF: none), u16 group number (0: none); Msg.Intel at the end of Msg; CrewOrder gains Interrogate, Ransom, Interrogator;
+    //   Msg.CrewRoster's job byte has bit 7 for an officer prisoner.
+    // 347: time speed to 1,000,000x (SpaceClock.MaxSpeed): Msg.Space's clock speed may pass 100,000, which an older client clamped, so its
+    //   clock ran ten times slow between the host's clock packets.
+    public const ushort ProtocolVersion = 347;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;
