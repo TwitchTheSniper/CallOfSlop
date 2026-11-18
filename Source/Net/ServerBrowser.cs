@@ -613,8 +613,11 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 353: the Mining Shell (docs/sandbox/design/mining-shell.md): Msg.Shell ends with u8 frame (Constructs/Shells.json), u8 hopper material, u16 hopper units.
     // 354: faction controllers (faction-controllers.md phase 3): Msg.Factions ends with u16 powers gone for good; pact kinds 4-6 (trade, tribute, vassalage); a relation of -100 is a blood feud.
     // 355: the Drill Rack (a new part file moves part ids; CfgKey.ToolsOut after Walls) and the crew's Miner job and Rack station (the roster's job byte).
-    // 356: the Limpet's seal sleeve: a "Holed (...)" key may hold "s..." sleeve entries (HullHoles.Sleeve), which an older client can't make.
-    public const ushort ProtocolVersion = 356;
+    // 356: territory and the far layer (faction-controllers.md phase 4): Msg.FactionMap (planets' holders, the groups a player knows of), in the slot of the removed RemovedTutorial (Msg is full).
+    // 357: a rack launch's straight run: ShellFlags.Boost, and a designed ShellOut with it carries its way off the rack (vec) and the age guidance takes over (u16).
+    // 358: a worn MMU's roll (Karl, 2026-11-18: it rolls and pitches with the mouse): the input packet ends with an i16 roll per command (PilotGear.MmuAxes).
+    // 359: the Limpet's seal sleeve: a "Holed (...)" key may hold "s..." sleeve entries (HullHoles.Sleeve), which an older client can't make.
+    public const ushort ProtocolVersion = 359;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

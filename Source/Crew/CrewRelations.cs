@@ -41,6 +41,8 @@ public enum RelEvent : byte
     AnswerCall, // ... a call for help answered
     RefuseCall, // ... an ally's call for help turned down
     PayTribute, // ... a tribute paid on time, each real hour
+    TakeSite, // phase 4: a key site taken from its holder (Crew/CrewTerritory.cs); a whole planet lost adds TakePlanet
+    TakePlanet,
     Count,
 }
 
@@ -66,11 +68,11 @@ public sealed class RelationRules
 {
     public const string Format = "call-of-slop-npc-relations/1";
     public static readonly string[] Keys = ["hitBody", "hitCrew", "killCrew", "destroyShip", "board", "capture", "release", "drop", "hire", "help", "breakPact", "breakPactHeard", "keepPact", "captureOfficer", "releaseOfficer",
-        "raidConvoy", "escortConvoy", "answerCall", "refuseCall", "payTribute"];
+        "raidConvoy", "escortConvoy", "answerCall", "refuseCall", "payTribute", "takeSite", "takePlanet"];
 
-    public readonly int[] Amount = [-5, -3, -4, -15, -10, -20, 5, 3, 2, 2, -40, -15, 1, -25, 15, -10, 5, 3, -10, 1];
+    public readonly int[] Amount = [-5, -3, -4, -15, -10, -20, 5, 3, 2, 2, -40, -15, 1, -25, 15, -10, 5, 3, -10, 1, -10, -40];
     public readonly string[][] Scale = [["pride"], ["pride"], ["values.crew"], ["values.ships", "pride"], ["pride"], ["values.ships", "pride"], ["forgiveness"], ["forgiveness"], [], ["loyalty"], [], ["loyalty"], [], ["pride"], ["forgiveness"],
-        ["values.cargo", "greed"], ["values.cargo"], ["loyalty"], ["loyalty"], ["greed"]];
+        ["values.cargo", "greed"], ["values.cargo"], ["loyalty"], ["loyalty"], ["greed"], ["values.planets"], ["values.planets", "pride"]];
     public int WarLine = -50, WaryLine = 0, NeutralLine = 20, FriendlyLine = 60, KindredLine = 90, Hysteresis = 5;
     public float BloodPride = 0.4f; // a relation at the floor hit again turns to a blood feud when the victim's pride is at least this
     public int MergeMinutes = 30; // both kindred this long: the weaker joins the stronger
@@ -458,7 +460,7 @@ public sealed class PowerRelations
         return v != 0 ? v : Math.Sign(a);
     }
 
-    private static bool Attack(RelEvent e) => e <= RelEvent.Capture || e is RelEvent.CaptureOfficer or RelEvent.RaidConvoy;
+    private static bool Attack(RelEvent e) => e <= RelEvent.Capture || e is RelEvent.CaptureOfficer or RelEvent.RaidConvoy or RelEvent.TakeSite or RelEvent.TakePlanet;
 
     /// <summary>
     /// <paramref name="doerPower"/> (a power; 0: none) or <paramref name="doerPlayer"/> (a person; 255: none) did <paramref name="e"/> to power
@@ -471,7 +473,7 @@ public sealed class PowerRelations
         if (Def(victim) is not { } v || doerPower == victim || doerPower == 0 && doerPlayer == 255 || doerPower > Count || Gone[victim])
             return;
         var amount = Amount(e, v);
-        if (doerPower != 0 && e is RelEvent.DestroyShip or RelEvent.Capture or RelEvent.CaptureOfficer or RelEvent.RaidConvoy && Rel[(victim - 1) * N + doerPower - 1] <= BloodValue + 1 && v.Pride >= Rules.BloodPride && !Blood(victim, doerPower) && Might != null)
+        if (doerPower != 0 && e is RelEvent.DestroyShip or RelEvent.Capture or RelEvent.CaptureOfficer or RelEvent.RaidConvoy or RelEvent.TakePlanet && Rel[(victim - 1) * N + doerPower - 1] <= BloodValue + 1 && v.Pride >= Rules.BloodPride && !Blood(victim, doerPower) && Might != null)
         {
             // A grave deed against a power already at the floor: a blood feud, for good (Karl's answer 2; only where the controllers run: Might set).
             Set(victim, doerPower, BloodValue);

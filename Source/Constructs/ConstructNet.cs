@@ -276,6 +276,8 @@ public static partial class ConstructNet
                         if ((ShellKind)e.Muzzle != ShellKind.Bomb)
                             w.Vec(e.Half);
                         w.F32(e.AirPush).F32(e.TurnAir).F32(e.TurnBurn).F32(e.Drag).F32(e.Lift).F32(e.MinSpeed).U16(e.Wait).U16(e.Deploy).U8((byte)e.Flags).Vec(e.Aim).U32((uint)Math.Max(0, e.Life));
+                        if ((e.Flags & ShellFlags.Boost) != 0)
+                            w.Vec(e.Bore).U16(e.Boost); // (protocol 357: a rack launch's straight run)
                     }
                 }
                 if (ShellLooks.Carries((ShellKind)e.Muzzle))
@@ -359,7 +361,12 @@ public static partial class ConstructNet
                         e.Flags = (ShellFlags)r.U8();
                         e.Aim = r.Vec();
                         e.Life = (int)Math.Min(r.U32(), int.MaxValue);
-                        if (!float.IsFinite(e.AirPush + e.TurnAir + e.TurnBurn + e.Drag + e.Lift + e.MinSpeed + e.Aim.X + e.Aim.Y + e.Aim.Z))
+                        if ((e.Flags & ShellFlags.Boost) != 0)
+                        {
+                            e.Bore = r.Vec();
+                            e.Boost = r.U16();
+                        }
+                        if (!float.IsFinite(e.AirPush + e.TurnAir + e.TurnBurn + e.Drag + e.Lift + e.MinSpeed + e.Aim.X + e.Aim.Y + e.Aim.Z + e.Bore.X + e.Bore.Y + e.Bore.Z))
                             throw new MalformedPacketException("a designed shell's flight that isn't a number");
                     }
                 }
@@ -1523,11 +1530,13 @@ public static partial class ConstructNet
     /// <summary>Joiner streaming: bytes of structure a joiner gets a tick at most (about 1 MB/s at 60 Hz).</summary>
     public const int StreamBytesPerTick = 16 * 1024;
 
-    // Distance bands: a body this far from a client (or further) is sent every 1, 2, 4 or 8 pose packets.
-    public const float NearBand = 80f, MidBand = 200f, FarBand = 400f;
+    // Distance bands: a body this far from a client (or further) is sent every 1, 2, 4, 8, 32 or 128 pose packets (the last two for the
+    // thousand faction ships of faction-controllers.md answer 8: past 1.5 km a body is a few pixels and steps on a coarser rate, ConstructFar.cs;
+    // a body that went still there is told by the sleeping bodies' refresh).
+    public const float NearBand = 80f, MidBand = 200f, FarBand = 400f, DistantBand = 1500f, HorizonBand = 4000f;
 
     /// <summary>How many pose ticks apart a body <paramref name="dist"/> metres from a client is sent.</summary>
-    public static int PosePeriod(float dist) => dist < NearBand ? 1 : dist < MidBand ? 2 : dist < FarBand ? 4 : 8;
+    public static int PosePeriod(float dist) => dist < NearBand ? 1 : dist < MidBand ? 2 : dist < FarBand ? 4 : dist < DistantBand ? 8 : dist < HorizonBand ? 32 : 128;
 
     private static readonly List<Construct> _moving = new(256), _due = new(256);
 
@@ -1574,8 +1583,10 @@ public static partial class ConstructNet
             if (Priority(c))
                 continue;
             var period = PosePeriod(Vector3.Distance(c.WorldCom, at) - c.Radius);
-            if (period == 1 || (poseTick + c.Id) % (uint)period == 0)
-                _due.Add(c);
+            if (period > 8 && c.FarRate <= 1 && c.FarLogic <= 1 && !Still(c))
+                period = 8; // (the long bands are for the far NPC bodies on their coarse rate: a ship moving at full rate far off keeps the old band)
+            if (period == 1 || (poseTick + c.Id) % (uint)period == 0 || period > HotPoseTicks && poseTick + 1 == c.PoseHot)
+                _due.Add(c); // (past the hot window's length: its last change goes out as the window closes, whatever its band)
         }
         var bodies = world.Bodies;
         for (var k = 0; k < SleepingPerPacket && bodies.Count > 0; k++)

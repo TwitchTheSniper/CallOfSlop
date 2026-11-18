@@ -22,7 +22,9 @@
     "escortConvoy": { "amount": 5, "scale": ["values.cargo"] },
     "answerCall": { "amount": 3, "scale": ["loyalty"] },
     "refuseCall": { "amount": -10, "scale": ["loyalty"] },
-    "payTribute": { "amount": 1, "scale": ["greed"] }
+    "payTribute": { "amount": 1, "scale": ["greed"] },
+    "takeSite": { "amount": -10, "scale": ["values.planets"] },
+    "takePlanet": { "amount": -40, "scale": ["values.planets", "pride"] }
   },
   // Phase 3 (Karl's answer 2): a relation at -100 is a blood feud (it never moves: no peace is ever made), reached by a grave deed against a power
   // already at the floor whose pride is at least bloodPride; at "kindred" or above both ways for mergeMinutes, the weaker power joins the stronger.

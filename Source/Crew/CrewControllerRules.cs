@@ -91,7 +91,11 @@ public sealed class ControllerRules
 
     // ---- What a ship costs: its blueprint's bill -----------------------------------------------------------------------------------
 
-    public readonly record struct Bill(float Units, float Seconds, int Parts);
+    public readonly record struct Bill(float Units, float Seconds, int Parts, int Guns = 0)
+    {
+        /// <summary>Its strength in a fight nobody sees (phase 4's far layer): its guns, and its bulk.</summary>
+        public float Strength => 1 + 2f * Guns + Parts / 60f;
+    }
 
     private readonly Dictionary<string, Bill> _bills = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<int, (float Units, float Seconds)> _partBills = new();
@@ -102,14 +106,17 @@ public sealed class ControllerRules
         if (_bills.TryGetValue(bp.Name, out var b))
             return b;
         float units = 0, secs = 0;
+        var guns = 0;
         foreach (var step in bp.Steps)
         {
             var d = ConstructParts.Find(step.Part);
+            if (d is { Role: PartRole.Gun })
+                guns++;
             var (u, s) = d != null ? PartBill(d, 0) : (2f, 1f);
             units += u;
             secs += s;
         }
-        b = new Bill(MathF.Max(1, units * CostPerUnit), MathF.Max(MinBuildSeconds, secs * BuildSecondsScale), bp.Steps.Count);
+        b = new Bill(MathF.Max(1, units * CostPerUnit), MathF.Max(MinBuildSeconds, secs * BuildSecondsScale), bp.Steps.Count, guns);
         _bills[bp.Name] = b;
         return b;
     }

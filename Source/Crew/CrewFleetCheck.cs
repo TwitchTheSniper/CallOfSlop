@@ -31,10 +31,12 @@ public static class CrewFleetCheck
             ok &= Interrogate();
         if (which.Equals("powers", StringComparison.OrdinalIgnoreCase) || which.Equals("politics", StringComparison.OrdinalIgnoreCase))
             ok &= CrewPowersCheck.Run(which, seconds); // (phase 3: the controllers, CrewPowersCheck.cs)
+        if (which.Equals("territory", StringComparison.OrdinalIgnoreCase) || which.Equals("far", StringComparison.OrdinalIgnoreCase))
+            ok &= CrewTerritoryCheck.Run(which, seconds); // (phase 4: territory and the far layer, CrewTerritoryCheck.cs)
         if (which.Equals("scale", StringComparison.OrdinalIgnoreCase))
             ok &= Scale(int.TryParse(Arg("--fleet-scale"), out var n) ? n : 1000, int.TryParse(Arg("--fleet-awake"), out var k) ? k : 64,
                 int.TryParse(Arg("--group-size"), out var gs) ? Math.Clamp(gs, 1, CrewGroup.MaxShips) : CrewGroup.MaxShips, Arg("--crew-scale-ship") ?? "Bandit Helicopter 1",
-                seconds > 0 ? seconds : 5);
+                seconds > 0 ? seconds : 5, float.TryParse(Arg("--fleet-spread"), out var sp) ? sp : 0, byte.TryParse(Arg("--far-every"), out var fe) ? fe : ConstructFar.Every);
         Console.WriteLine($"fleet: {(ok ? "OK" : "FAILED")}");
         return ok ? 0 : 1;
     }
@@ -430,8 +432,10 @@ public static class CrewFleetCheck
     /// The scale target (1,000 faction ships as bodies near players): <paramref name="n"/> copies of a craft in groups, <paramref name="awake"/> of
     /// them driven near the person (the driver cap raised to match), the rest far. The admirals', the crews' and the world's own step timed.
     /// </summary>
-    private static bool Scale(int n, int awake, int groupSize, string craft, int seconds)
+    private static bool Scale(int n, int awake, int groupSize, string craft, int seconds, float spread, byte farEvery)
     {
+        var every0 = ConstructFar.Every;
+        ConstructFar.Every = farEvery; // (1: the far LOD off)
         var bp = Bp(craft);
         var place = VehicleDriveCheck.Place(1);
         var w = new ConstructWorld();
@@ -445,7 +449,8 @@ public static class CrewFleetCheck
         for (var i = 0; i < n; i++)
         {
             // The awake ones on a grid 70 m apart round the person (within 3 km), the rest 8 km out on a ring (asleep).
-            var at = i < awake ? new Vector3((i % side - side / 2) * 70, 0, (i / side - side / 2) * 70) : new Vector3(MathF.Cos(i * 0.01f) * 8000, 0, MathF.Sin(i * 0.01f) * 8000);
+            var gap = MathF.Max(70, spread / side);
+            var at = i < awake ? new Vector3((i % side - side / 2) * gap, 0, (i / side - side / 2) * gap) : new Vector3(MathF.Cos(i * 0.01f) * 8000, 0, MathF.Sin(i * 0.01f) * 8000);
             using (place.In())
             {
                 var c = CrewCheck.Build(w, bp, at, 0, place);
@@ -463,6 +468,8 @@ public static class CrewFleetCheck
             if (crew.Fleet.Of(g) is { } grp && w.Get(grp.Flagship) is { } f && f.WorldCom.Length() < 4000)
                 crew.Fleet.Command(g, OrderKind.GoTo, f.WorldCom + new Vector3(0, 80, -800));
         var people = new[] { Vector3.Zero };
+        w.People[0] = Vector3.Zero;
+        w.PeopleCount = 1; // (the far LOD: bodies past ConstructFar.Range from the person step every ConstructFar.Every ticks)
         crew.Fixed = null;
         for (var t = 0; t < 3 * World.TickRate; t++) // (warm up: the drivers taken, every group thought once)
             Tick(crew, w, q, place, people);
@@ -475,6 +482,11 @@ public static class CrewFleetCheck
         crew.Fleet.Ticks = crew.Fleet.Thinks = 0;
         crew.Fleet.Bytes = 0;
         double worldMs = 0, worstWorld = 0;
+        w.PhysicsMs = 0;
+        Array.Clear(w.StepMs);
+        ConstructFar.SimNear = ConstructFar.SimFar = 0;
+        Array.Clear(ConstructPhysics.PartMs);
+        var farSum = 0L;
         var ticks = seconds * World.TickRate;
         var b0 = GC.GetAllocatedBytesForCurrentThread();
         for (var t = 0; t < ticks; t++)
@@ -487,6 +499,7 @@ public static class CrewFleetCheck
                 var ms = (System.Diagnostics.Stopwatch.GetTimestamp() - w0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
                 worldMs += ms;
                 worstWorld = Math.Max(worstWorld, ms);
+                farSum += ConstructFar.LastFar;
             }
             crew.Events.Clear();
             crew.Fleet.News.Clear();
@@ -504,6 +517,29 @@ public static class CrewFleetCheck
         var fleetUs = crew.Fleet.CpuMs / Math.Max(1, crew.Fleet.Ticks) * 1000;
         var crewMs = crew.CpuMs / Math.Max(1, crew.Ticks);
         var worldAvg = worldMs / ticks;
+        float maxSpeed = 0, lowest = float.MaxValue, idleFast = 0;
+        int asleep = 0, idle = 0;
+        foreach (var c in bodies)
+        {
+            (maxSpeed, lowest) = (MathF.Max(maxSpeed, c.Vel.Length()), MathF.Min(lowest, c.WorldCom.Y));
+            asleep += c.Asleep ? 1 : 0;
+            if (crew.ShipOf(c.Id) is not { Ai: not null })
+                (idle, idleFast) = (idle + 1, MathF.Max(idleFast, c.Vel.Length() + c.AngVel.Length()));
+        }
+        Console.WriteLine($"fleet scale: {asleep} asleep at the end; {idle} undriven, the most moving of them at {idleFast:0.00} (speed + spin)");
+        Console.WriteLine($"fleet scale: physics {w.PhysicsMs / ticks:0.00} ms a tick of the world's step; far bodies {farSum / (double)ticks:0} on average, stepped {ConstructFar.SimNear / (double)ticks:0} near and {ConstructFar.SimFar / (double)ticks:0} far a tick (every {ConstructFar.Every} ticks past {ConstructFar.Range:0} m); fastest body {maxSpeed:0.0} m/s, lowest {lowest:0.0} m; the step's parts (links, power, weapons, logic, doors, physics, machines, rest) {string.Join(" ", w.StepMs.Select(x => (x / ticks).ToString("0.00")))} ms; physics' parts (list, bodies, contacts, solver, rest) {string.Join(" ", ConstructPhysics.PartMs.Select(x => (x / ticks).ToString("0.00")))} ms");
+        // The network: one client standing with the person, a big world's poses for 60 pose ticks (the movers near it every time, far ones less often).
+        var pw = new PacketWriter();
+        long poseBytes = 0, poses = 0;
+        var packets = 0;
+        for (uint pt = 1; pt <= 60; pt++)
+        {
+            ConstructNet.PoseMovers(w, pt);
+            poses += ConstructNet.WritePosesFor(pw, w, pt, pt, Vector3.Zero, (int)pt * 4, x => { poseBytes += x.Length; packets++; });
+            ConstructNet.PoseSent();
+        }
+        Console.WriteLine($"fleet scale: the network: {ConstructNet.MoverCount} movers; one client by the person gets {poses / 60.0:0} poses, {poseBytes / 60.0 / 1024:0.0} KB in {packets / 60.0:0.0} packets a pose tick");
+        ConstructFar.Every = every0;
         Console.WriteLine($"fleet scale: admirals {fleetUs:0.0} us a tick (worst {crew.Fleet.WorstMs * 1000:0} us, {crew.Fleet.Thinks} thinks in {ticks} ticks, {crew.Fleet.Bytes} bytes); crews {crewMs:0.00} ms a tick (worst {crew.WorstMs:0.00} ms, {crew.Bytes} bytes); " +
                           $"the world's step {worldAvg:0.00} ms a tick (worst {worstWorld:0.0} ms); {driven} driven, {moving} moving; all of it {crewMs + worldAvg:0.00} ms a tick against the 8 ms budget; {bytes} bytes allocated in all");
         CrewWorld.DriverCap = CrewWorld.MaxDrivers;

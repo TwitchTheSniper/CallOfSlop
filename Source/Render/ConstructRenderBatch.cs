@@ -111,7 +111,7 @@ public static partial class ConstructRender
         else
             foreach (var box in d.Boxes.AsSpan())
             {
-                if (box.Rig != BoxRig.None || box.Spin || box.Roll || box.IsLeaf || box.IsGlass || box.Pump != 0)
+                if (box.Rig != BoxRig.None || box.Shows != 0 || box.Spin || box.Roll || box.IsLeaf || box.IsGlass || box.Pump != 0)
                 {
                     n = -1;
                     break;

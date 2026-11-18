@@ -43,9 +43,22 @@ public sealed partial class Ui
         _cmdFocusShip = t.Id;
         _cmdFocusBody = -1;
         _cmdPan = Vec3d.Zero;
-        _cmdSpanWant = Math.Max(CommandMinSpan, t.Radius * 3.2); // (it fills about two thirds of the height)
+        _cmdSpanWant = Math.Max(CommandMinSpan, t.Radius * 2.2); // (it fills most of the height: the cut-in spot reads)
         _cmdBoardBanner = (seal ? "BOARDING: LEFT CLICK A DOOR OF " : "BOARDING: LEFT CLICK WHERE TO CUT INTO ") + CmdName(t) + "     RIGHT CLICK OR ESC: CANCEL";
         _cmdBoardHoverPart = -2;
+        _cmdCutOn = false;
+        _cmdCutPart = _cmdCutWant = -2;
+    }
+
+    /// <summary>For the window tool's <c>cmdboard</c>: the Board pick on <paramref name="t"/> for the picked craft's pod. Null, or why not.</summary>
+    public string? CommandBoardTry(Game g, Construct t, bool seal)
+    {
+        if (g.Constructs.Get(_cmdSel) is not { } carrier || Game.BoardPodOf(g.Constructs, carrier) == null)
+            return "the picked craft has no boarding pod docked";
+        if (carrier == t)
+            return "that is the carrier";
+        CmdBoardStart(carrier, t, seal);
+        return null;
     }
 
     /// <summary>Stop picking: the view goes back to what it showed before.</summary>
@@ -77,7 +90,7 @@ public sealed partial class Ui
     }
 
     /// <summary>Each frame while picking: the banner, and what a click under the cursor would do.</summary>
-    private void CmdBoardDraw(ImDrawListPtr dl, Game g, float fade)
+    private void CmdBoardDraw(ImDrawListPtr dl, Game g, float fade, double now)
     {
         if (_cmdBoardShip == 0 || !CmdBoardLive(g, out var t, out var k))
             return;
@@ -91,6 +104,8 @@ public sealed partial class Ui
             _cmdBoardHoverPart = part; // (the label is made when what is under the cursor changes, not each frame)
             _cmdBoardHoverText = part < 0 ? "" : _cmdBoardSeal ? "SEAL ON " + t.DefOf(part).Name.ToUpperInvariant() : "CUT IN HERE"; // (the host picks the hull piece the pod meets there)
         }
+        if (!_cmdBoardSeal)
+            CmdCutUpdate(g, t, part, now); // (where it would cut in, drawn on the hologram: UiCommandHolo.cs)
         if (part >= 0)
             CmdText(dl, m + new float2(16 * _scale, 12 * _scale), 12, CmdWhite, fade, _cmdBoardHoverText);
     }

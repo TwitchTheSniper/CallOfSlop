@@ -73,6 +73,7 @@ public struct InputCmd
     public bool Noclip; // creative Sandbox: the player wants to fly (GameNoclip.cs: a level on every input, filtered where it is simulated)
     public ushort RideBody; // contraption space: the construct this look is measured on (0: Yaw and Pitch are all there is; ConstructRideMove.cs)
     public float RideYaw, RidePitch; // the look in that construct's frame, about the rider's up
+    public float Roll; // a worn MMU's roll about the look (PilotGear.MmuAxes), quantised by World.QuantRoll; 0 otherwise
 }
 
 /// <summary>Everything movement depends on. Client prediction and the server run the same code on it.</summary>
@@ -359,6 +360,8 @@ public static partial class World
         using var _ = Body(s); // (a robot shell's frame: its size, for this body's move alone)
         if (s.Noclip || cmd.Noclip)
             NoclipMove.Step(ref s, cmd); // creative Sandbox's flight (NoclipMove.cs)
+        else if (PilotGear.MmuFree(s))
+            SimulateMmu(ref s, cmd);
         else if (s.RideUp != Vector3.Zero && ConstructRide.Step(ref s, cmd))
             return; // contraption space: this tick happened in the construct's frame (ConstructRideMove.cs)
         else
@@ -368,6 +371,48 @@ public static partial class World
             (GravityFrames.Curved ? SweptMover.Instance : Mover).Simulate(ref s, cmd); // a planet always uses the capsule mover (any "up")
         }
     }
+
+    /// <summary>
+    /// A worn MMU in vacuum is a vehicle (Karl, 2026-11-18; docs/sandbox/EVA.md): the walking movers get none of the move
+    /// keys (no walking, crouching or jumping; the feet stay on the pack's pedestals), and the pack's own step reads them.
+    /// Inside a ship they float in its frame (no deck gravity, the push turned into it: ConstructRide.MmuFloat), so its speed
+    /// never reaches them, and out through a hatch they leave the frame as from any jump; carried the old way, they get off.
+    /// In air (a planet) the pack is only a weak thruster on someone who walks: 2.5 m/s2 can't lift anyone off a world.
+    /// </summary>
+    private static void SimulateMmu(ref MoveState s, in InputCmd cmd)
+    {
+        var walk = cmd;
+        walk.Buttons &= ~PilotGear.MmuHeld;
+        if (s.RideBody != 0 && s.RideUp == Vector3.Zero)
+            ConstructRide.Leave(ref s, ConstructRide.Bodies?.Get(s.RideBody), momentum: true); // (carried the old way, not in a frame: off it)
+        if (s.RideUp != Vector3.Zero && s.RideBody != 0)
+        {
+            // In a construct's frame (inside a ship): float in it, the pack's push in it (ConstructRide.MmuFloat).
+            ConstructRide.MmuPush = PilotGear.MmuPush(ref s, cmd);
+            ConstructRide.MmuFloat = true;
+            bool framed;
+            try
+            {
+                framed = ConstructRide.Step(ref s, walk);
+            }
+            finally
+            {
+                ConstructRide.MmuFloat = false;
+                ConstructRide.MmuPush = Vector3.Zero;
+            }
+            if (framed)
+                return;
+            s.Grounded = false; // (out of the frame this tick: free, the push spent)
+            (GravityFrames.Curved ? SweptMover.Instance : Mover).Simulate(ref s, walk);
+            return;
+        }
+        PilotGear.Step(ref s, cmd);
+        s.Grounded = false; // (never footing: a floor's friction would brake them to the world's rest, not the ship's)
+        (GravityFrames.Curved ? SweptMover.Instance : Mover).Simulate(ref s, walk);
+    }
+
+    /// <summary>A roll as it goes on the wire (an i16 over half a turn), so the client predicts with what the server reads.</summary>
+    public static float QuantRoll(float roll) => (short)Math.Clamp(MathF.Round(WrapAngle(roll) / MathF.PI * 32767f), -32767, 32767) * (MathF.PI / 32767f);
 
     public const float MantleReach = 1.7f; // highest ledge you can climb, above your feet
 

@@ -359,9 +359,9 @@ public sealed partial class TorpedoFrigateParts
         Sock(p, "lampCockpit", xc, LCeil - 0.4, -1.9, s < 0 ? "+x" : "-x");
         Sock(p, "lampCabinF", xb, LCeil - 0.4, -0.35, s < 0 ? "+x" : "-x"); // (ahead of the locker on this wall)
         Sock(p, "lampCabinB", xb, LCeil - 0.4, 3.4, s < 0 ? "+x" : "-x");
-        Sock(p, "switchA", xc, LFt + 1.25, -1.15, s < 0 ? "+x" : "-x");
-        Sock(p, "switchB", xc, LFt + 1.0, -1.15, s < 0 ? "+x" : "-x");
-        Sock(p, "switchCabin", xb, LFt + 1.3, 0.9, s < 0 ? "+x" : "-x");
+        Sock(p, "switchA", xc, LFt + 1.25, -1.25, s < 0 ? "+x" : "-x");
+        Sock(p, "switchB", xc, LFt + 1.0, -1.25, s < 0 ? "+x" : "-x");
+        Sock(p, "switchCabin", xb, LFt + 1.3, 0.95, s < 0 ? "+x" : "-x");
         foreach (var (z, xh) in new[] { (LNoseZ, LCockW + LWallT), (LBulkZ, LCockW + LWallT), (LBulkZ, LCabW + LWallT), (LAftZ, LCabW + LWallT) })
         {
             LMustFit("side wall", z, xh, LFt);

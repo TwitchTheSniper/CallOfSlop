@@ -2255,8 +2255,16 @@ public sealed partial class ConstructWorld
     /// <summary>Server: trees grown back since the clients were last told (GameResources.cs).</summary>
     public readonly List<uint> GrownTrees = new(16);
 
+    /// <summary>The physics' time in all (ms; a tool reads and clears it).</summary>
+    public double PhysicsMs;
+
+    /// <summary>Server: where the people are this tick (the game sets them; a tool too): far NPC bodies step on a coarser rate (ConstructFar.cs). 0: off.</summary>
+    public readonly Vector3[] People = new Vector3[64];
+    public int PeopleCount;
+
     public void Step(IWorldQuery query, float dt)
     {
+        _stepAt = System.Diagnostics.Stopwatch.GetTimestamp();
         _partTally = -1; // (counted again when next asked)
         var perf = Perf.Measure(PerfArea.ConstructLogic); // the perf window's areas (Source/Perf): off, a bool test each
         StepLinks(); // couplings and wires between constructs (ConstructLinks.cs): resolved, broken when apart, their values
@@ -2264,9 +2272,12 @@ public sealed partial class ConstructWorld
         StepNoCollide(); // no-collide pairs (ConstructNoCollide.cs): each finds its parts, or goes
         StepConnectors(query); // ropes and springs (ConstructConnectors.cs): resolved, snapped when overloaded, what they hold woken
         StepWorldLinks(query, dt, Hands); // world links and hoses (WorldLinks.cs, ConstructHoses.cs): resolved, snapped when a free construct moves, their flow
+        StepPart(0);
+        ConstructFar.Mark(this); // (far NPC bodies: their logic, power and physics on a coarser rate)
         foreach (var c in Bodies)
         {
-            ConstructPower.Step(this, c, dt);
+            if (ConstructFar.LogicDue(c))
+                ConstructPower.Step(this, c, c.FarLogic > 1 ? dt * c.FarLogic : dt);
             ConstructRoutes.Step(this, c, dt); // (routed links: leaks, sparks, chutes)
             if (c.FluidLoadChanged)
             {
@@ -2280,11 +2291,15 @@ public sealed partial class ConstructWorld
             }
             ConstructDrive.ShiftKeys(c); // (the driver's R and sprint, before the logic step clears the seats' keys)
         }
+        StepPart(1);
         ConstructWeapons.Step(this, query, dt); // (before the logic: a gun's wires carry last tick's values, its gunner's keys this tick's)
+        StepPart(2);
         FlushSnaps(); // (world links that tore off this tick: WorldLinks.cs)
         RadioGather(); // (the wireless senders this tick: ConstructRadio.cs)
         foreach (var c in Bodies)
-            ConstructLogic.Step(this, c, dt);
+            if (ConstructFar.LogicDue(c))
+                ConstructLogic.Step(this, c, c.FarLogic > 1 ? dt * c.FarLogic : dt);
+        StepPart(3);
         ConstructBoost.Separate(this); // (decouplers that fired: bodies change only out here)
         ConstructOrdnance.Release(this, query); // (bomb racks that let go: the same)
         ConstructHoists.Step(this); // (reload hoists move a weapon from their magazines onto their launchers, a few times a second)
@@ -2293,9 +2308,13 @@ public sealed partial class ConstructWorld
         ConstructRide.SpawnIntoMotion(this); // (bodies made since the last step: into the motion of the frame they were made in)
         ConstructRide.BeforePhysics(this); // (each body's acceleration: riders thrown off by a crash)
         perf.Dispose();
+        StepPart(4);
         perf = Perf.Measure(PerfArea.ConstructPhysics);
-        ConstructPhysics.Step(this, query, dt);
+        var p0 = System.Diagnostics.Stopwatch.GetTimestamp();
+        ConstructFar.Physics(this, query, dt); // (every body, or the near ones then the far ones whose turn it is: ConstructFar.cs)
+        PhysicsMs += (System.Diagnostics.Stopwatch.GetTimestamp() - p0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
         OverloadDamage();
+        StepPart(5);
         perf.Dispose();
         perf = Perf.Measure(PerfArea.Production);
         AllocProfile.Mark("machines: ConstructRecycler");
@@ -2333,6 +2352,7 @@ public sealed partial class ConstructWorld
         LoadStep(server: true); // (what the bins hold counts in their bodies' mass: before the cargo step, which reads a carried body's)
         ConstructBreach.Step(this); // (boarding craft's hull grapples take hold or let go, their cutters burn: before the cargo step, which carries what they hold)
         ConstructCargo.Step(this); // (what frozen cargo volumes carry follows them; what entered is caught, what left is let go)
+        StepPart(6);
         perf.Dispose();
         ConstructGravity.Refresh(this); // (gravity wells and generators as they are now: ConstructGravity.cs)
         for (var i = Bodies.Count - 1; i >= 0; i--)
@@ -2345,5 +2365,19 @@ public sealed partial class ConstructWorld
             }
         }
         GridMoved(); // (the awake bodies moved: the broadphase is rebuilt at its next query)
+        StepPart(7);
+    }
+
+    /// <summary>Where the step's time goes (ms in all; a tool reads and clears it): links, power and routes, weapons, logic, doors and launchers,
+    /// physics, machines, the rest.</summary>
+    public readonly double[] StepMs = new double[8];
+    private long _stepAt;
+
+    private void StepPart(int k)
+    {
+        var now = System.Diagnostics.Stopwatch.GetTimestamp();
+        if (k > 0)
+            StepMs[k] += (now - _stepAt) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+        _stepAt = now;
     }
 }

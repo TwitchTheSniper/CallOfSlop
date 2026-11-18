@@ -690,6 +690,8 @@ public static partial class ConstructRender
             var tint = ConstructPaint.BoxColour(p.Paint, in box) * shade; // (the paint tool: a painted part's paintable boxes, ConstructPaint.cs)
             if (lit)
                 gfx.Draw(model, glow, opacity, mode: 2, shape: box.Shape);
+            else if (box.Shows != 0)
+                gfx.Draw(model, !p.Broken && (p.Out >= 0.5f) == (box.Shows == 1) ? box.Color : box.Color * (0.18f * shade), opacity, mode: 2, shape: box.Shape); // (a switch's state lamp: lit in its colour while on, or while off, dark otherwise)
             else if (box.Way != 0 && routerOn && (routerStuck ? MathF.Sin((float)Now * MathF.Tau * 3f) > 0 : routerWay == box.Way))
                 gfx.Draw(model, routerStuck ? RouterStuck : routerState == 2 ? RouterStore : RouterOrder, opacity, mode: 2, shape: box.Shape); // (its way lit: orange to an order, white to storage; every way blinking red while a piece is stuck)
             else if (box.Work == BoxWork.Glow && working)
