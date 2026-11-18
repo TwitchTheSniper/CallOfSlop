@@ -318,6 +318,8 @@ public readonly record struct CPartBox(Vector3 Center, Vector3 Half, Vector3 Col
     public byte Way { get; init; }
     /// <summary>"fence": true: a Conveyor Router's diverter, drawn turned about the deck's middle toward the way its last piece went.</summary>
     public bool Fence { get; init; }
+    /// <summary>"shows": "on" or "off": a switch's state lamp, drawn lit in its own colour while the part's output is on (1) or off (2), and dark otherwise; 0: none.</summary>
+    public byte Shows { get; init; }
 
     /// <summary>How a suspension's box moves with its wheel (<see cref="BoxRig"/>, "rig" in the file; docs/sandbox/CONSTRUCTS.md "Suspension types"). Its points are in the part's frame.</summary>
     public BoxRig Rig { get; init; }
@@ -1538,7 +1540,7 @@ public static partial class ConstructParts
         foreach (var b in boxes.EnumerateArray())
         {
             var where = $"boxes[{bi++}]";
-            Known(b, [.. BoxKeys, "status", "finish", "front", "rig", "pivot", "from", "to", "span", "key", "travel", "work", "axis", "way", "fence"], $"{file}, {where}");
+            Known(b, [.. BoxKeys, "status", "finish", "front", "rig", "pivot", "from", "to", "span", "key", "travel", "work", "axis", "way", "fence", "shows"], $"{file}, {where}");
             Vector3 min, max;
             if (Opt(b, "min") is { } mn && Opt(b, "max") is { } mx)
             {
@@ -1616,6 +1618,9 @@ public static partial class ConstructParts
                 made = detail && Num(wayBox, file, where + ".way") is >= 1 and <= 3 and var wn ? made with { Way = (byte)wn } : throw new ConstructPartException($"{file}: {where}.way is 1, 2 or 3 on a detail box");
             if (Opt(b, "fence") is { ValueKind: JsonValueKind.True })
                 made = detail ? made with { Fence = true } : throw new ConstructPartException($"{file}: {where}: only a detail box can be a \"fence\"");
+            if (Opt(b, "shows") is { } showsBox)
+                made = detail && glass == 0 && Str(showsBox, file, where + ".shows") is "on" or "off" ? made with { Shows = Str(showsBox, file, where + ".shows") == "on" ? (byte)1 : (byte)2 }
+                    : throw new ConstructPartException($"{file}: {where}.shows is \"on\" or \"off\" on an opaque detail box");
             if (Opt(b, "work") is { } wk)
             {
                 var kind = Str(wk, file, where + ".work") switch

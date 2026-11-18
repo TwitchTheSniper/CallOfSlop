@@ -106,7 +106,7 @@ public static unsafe partial class Program
             {
                 var back = words.Length > 0 && float.TryParse(words[0], inv, out var bk) ? bk : 1.2f;
                 var ticks = words.Length > 1 && float.TryParse(words[1], inv, out var tk) ? tk : 240f;
-                if (g.BoardWalkStart(me, back, out var face) is { } no)
+                if (g.BoardWalkStart(me, back, out var face, out var facePitch) is { } no)
                 {
                     WsFail("boardwalk: " + no);
                     return true;
@@ -114,7 +114,7 @@ public static unsafe partial class Program
                 me.NoclipWanted = false;
                 g.NoclipShot = false;
                 g.LookYaw = face;
-                g.LookPitch = 0;
+                g.LookPitch = facePitch;
                 _wsHold = GameAction.MoveForward;
                 _wsHoldUntil = System.Diagnostics.Stopwatch.GetTimestamp() + (long)(ticks / World.TickRate * System.Diagnostics.Stopwatch.Frequency);
                 WsSay($"[nav] boardwalk: {back:0.0} m behind the cutter, W for {ticks:0} ticks");

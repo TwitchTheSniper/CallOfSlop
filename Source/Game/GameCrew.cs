@@ -333,7 +333,7 @@ public sealed partial class Game : ICrewHost
                 for (var i = 0; i < Crew.ShipHigh; i++)
                 {
                     if (Crew.Ships[i] is not { Tier: not CrewTier.Asleep, Faction: not 0, Own: false, Prize: false } o || o == s || o.MemberCount == 0
-                        || (s.Own ? c.Owner == 255 || CrewStanding(o.Faction, c.Owner) >= 0 && !o.Foe(c.Owner) : !CrewShipFights(s, o))
+                        || (s.Own ? c.Owner == 255 || (CrewStanding(o.Faction, c.Owner) >= 0 || CrewStandingOn && Relations.PartyHoldsFire(o.Faction, c.Owner)) && !o.Foe(c.Owner) : !CrewShipFights(s, o))
                         || Constructs.Get(o.Body) is not { Wreck: false } oc)
                         continue;
                     var d2 = Vector3.DistanceSquared(oc.WorldCom, com);
@@ -377,7 +377,11 @@ public sealed partial class Game : ICrewHost
             return !(s.Mode == ShipAiMode.Strangers && c.Owner != 255 && Factions.Shares(c.Owner, p.Id));
         if (s.Own)
             return p.Id != c.Owner && !Factions.Shares(c.Owner, p.Id) && (s.Foe(p.Id) || FactionTable.RelationOf(c.Owner, p.Id) == FactionTable.Relations.War); // (a player's own crew: who hit it, or a faction at war with its owner's)
-        return s.Foe(p.Id) || CrewStanding(s.Faction, p.Id) < 0 || CrewStandingOn && CrewHelpsAgainst(c, s, p);
+        if (s.Foe(p.Id))
+            return true;
+        if (CrewStandingOn && Relations.PartyHoldsFire(s.Faction, p.Id))
+            return false; // (phase 5: a pact with their faction holds fire; one who shoots is a foe, and breaks it)
+        return CrewStanding(s.Faction, p.Id) < 0 || CrewStandingOn && CrewHelpsAgainst(c, s, p);
     }
 
     /// <summary>
@@ -404,7 +408,7 @@ public sealed partial class Game : ICrewHost
     private bool CrewHelpsAgainst(Construct c, CrewShip s, Player p)
     {
         var rel = Relations;
-        if (rel.Peek(s.Faction, p.Id) >= rel.Rules.FriendlyLine)
+        if (rel.Peek(s.Faction, p.Id) >= rel.Rules.FriendlyLine || rel.PartyHoldsFire(s.Faction, p.Id))
             return false;
         var sight = CrewPowers.KindOf(s.Faction)?.Sight ?? ShipAi.EngageRange;
         for (var i = 0; i < Crew.ShipHigh; i++)

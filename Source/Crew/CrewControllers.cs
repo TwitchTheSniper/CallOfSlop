@@ -51,6 +51,7 @@ public struct PowerMission
     public ushort GroupNumber;
     public byte Other; // a raid's victim, a defence's enemy
     public byte Caller; // a defence: who called
+    public byte CallerParty, CallerPerson; // phase 5: a defence for a player faction (its id) and the caller + 1, followed (not saved: a loaded one holds where it was called)
     public short OtherGroup; // a raid's target group, a defence's caller's group (slot), and its number
     public ushort OtherNumber;
     public Vector3 At;
@@ -66,6 +67,7 @@ public struct PowerMission
 public struct PowerCall
 {
     public byte Caller, Enemy;
+    public byte Party, Person; // phase 5: a player faction's call (Caller 0): the faction, and the caller + 1 (0: none)
     public Vector3 At;
     public short Group;
     public ushort Number;
@@ -104,6 +106,13 @@ public interface IPowerHost
     bool SiteAt(string planet, Vector2 at, out Vector3 world)
     {
         world = default;
+        return false;
+    }
+
+    /// <summary>Phase 5: where person <paramref name="player"/> is (alive, here); false: not.</summary>
+    bool PersonAt(byte player, out Vector3 at)
+    {
+        at = default;
         return false;
     }
 }
@@ -955,8 +964,13 @@ public sealed partial class PowerControllers
                     if (g.Order != OrderKind.Escort || g.OrderBody != cg.Flagship)
                         crew.Fleet.Command(m.Group, OrderKind.Escort, default, cg.Flagship);
                 }
-                else if (g.Order != OrderKind.GoTo || Vector3.Distance(g.OrderAt, m.At) > 50)
-                    crew.Fleet.Command(m.Group, OrderKind.GoTo, m.At);
+                else
+                {
+                    if (m.CallerPerson != 0 && host.PersonAt((byte)(m.CallerPerson - 1), out var person))
+                        m.At = person; // (phase 5: a player who called is followed)
+                    if (g.Order != OrderKind.GoTo || Vector3.Distance(g.OrderAt, m.At) > 50)
+                        crew.Fleet.Command(m.Group, OrderKind.GoTo, m.At);
+                }
                 if (contact || cg is { Enemy: > 0 })
                     m.QuietSince = Tick;
                 var near = flag != null && Vector3.Distance(flag.WorldCom, callerAlive ? w.Get(cg!.Flagship)!.WorldCom : m.At) < 600;
@@ -1106,6 +1120,11 @@ public sealed partial class PowerControllers
         for (; p.CallRead < CallTotal; p.CallRead++)
         {
             var c = Calls[p.CallRead % MaxCalls];
+            if (c.Party != 0)
+            {
+                HearParty(rel, p, a, def, c);
+                continue;
+            }
             if (c.Caller == a || Tick - c.Tick > 60L * T || rel.Gone[c.Caller] || !rel.Fights(a, c.Enemy))
                 continue;
             var pact = rel.PactOf(a, c.Caller);
@@ -1136,6 +1155,45 @@ public sealed partial class PowerControllers
             rel.Post(RelEvent.AnswerCall, c.Caller, a, 255, c.At);
             Say($"{Name(a)} answers {Name(c.Caller)}'s call against {Name(c.Enemy)}");
         }
+    }
+
+    /// <summary>Phase 5: a player faction calls its allies (the Faction window) against <paramref name="enemy"/> (0: whoever is fighting them) at <paramref name="at"/>.</summary>
+    public void CallForParty(byte party, byte person, byte enemy, Vector3 at)
+    {
+        Calls[CallTotal % MaxCalls] = new PowerCall { Party = party, Person = (byte)(person + 1), Enemy = enemy, At = at, Group = -1, Tick = Tick };
+        CallTotal++;
+    }
+
+    /// <summary>A faction's call: an ally answers (it must, as an ally's), a power neutral or better to the faction answers when loyal enough and it fights the foe.</summary>
+    private void HearParty(PowerRelations rel, Power p, byte a, NpcPowerDef def, in PowerCall c)
+    {
+        if (Tick - c.Tick > 60L * T || c.Enemy == a)
+            return;
+        var ally = rel.PartyPact(a, c.Party) == PactKind.Alliance;
+        var willing = ally || rel.PartyGet(a, c.Party) >= rel.Rules.NeutralLine && def.Loyalty >= 0.4f && c.Enemy != 0 && rel.Fights(a, c.Enemy);
+        if (!willing)
+            return;
+        foreach (var m in p.Missions)
+            if (m.Kind == MissionKind.Defend && m.CallerParty == c.Party)
+                return; // (already on its way)
+        var home = Home(p);
+        var near = home >= 0 && Vector3.Distance(p.Place[home], c.At) < Rules.CallRange;
+        var i = p.Plan.Defend && near ? Start(p, a, MissionKind.Defend, c.At, $"a player faction's call") : -1;
+        var who = rel.Table.Names[c.Party] is { Length: > 0 } n ? n : "a faction";
+        if (i < 0)
+        {
+            if (ally)
+            {
+                rel.NoteFor(c.Party, $"{Name(a)} can't answer your call: {(!p.Plan.Defend ? "it sends no help" : !near ? "you are too far from its places" : "it has no room for another mission")}.");
+                Say($"{Name(a)} doesn't answer its ally {who}'s call");
+            }
+            return;
+        }
+        ref var mi = ref p.Missions[i];
+        (mi.Caller, mi.CallerParty, mi.CallerPerson, mi.Other, mi.OtherGroup, mi.OtherNumber, mi.NeedArmed, mi.Armed) = (0, c.Party, c.Person, c.Enemy, -1, 0, (byte)p.Plan.DefendShips, ShipRole.Warship);
+        mi.StageAt = Tick - (long)(Rules.GatherMinutes * 60 * T) + 20L * T; // (urgent: it goes with what it has in 20 s)
+        rel.NoteFor(c.Party, $"{Name(a)} answers your call: its warships are on their way.");
+        Say($"{Name(a)} answers {who}'s call{(c.Enemy != 0 ? $" against {Name(c.Enemy)}" : "")}");
     }
 
     // ---- Merging (Karl's answer 2) -----------------------------------------------------------------------------------------------

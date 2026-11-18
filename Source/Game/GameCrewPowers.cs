@@ -171,6 +171,15 @@ public sealed partial class Game : IPowerHost
 
     bool IPowerHost.Sees(byte power, Vector3 at) => ((IPowerSight)this).Sees(power, at);
 
+    bool IPowerHost.PersonAt(byte player, out Vector3 at)
+    {
+        at = default;
+        if (!Players.TryGetValue(player, out var p) || !p.Alive)
+            return false;
+        at = p.Position;
+        return true;
+    }
+
     double IPowerHost.SpaceSeconds => Space is { } s ? s.Now.Seconds : -1;
 
     double IPowerHost.PlanetGap(string a, string b)

@@ -391,6 +391,7 @@ public sealed partial class Game : IDisposable
             Weapon = def.Id,
             SpeedPct = (byte)Math.Clamp((int)MathF.Round(speed * 100), 1, 200),
             Noclip = Local is { NoclipWanted: true },
+            Roll = MmuCmdRoll(), // a worn MMU's roll about the look (GameSandboxMmu.cs)
         });
     }
 
@@ -990,6 +991,8 @@ public sealed partial class Game : IDisposable
                 var c = _pendingInputs[_pendingInputs.Count - count + i];
                 _w.U16(c.RideBody).F32(c.RideYaw).F32(c.RidePitch);
             }
+        for (var i = _pendingInputs.Count - count; i < _pendingInputs.Count; i++)
+            _w.U16(unchecked((ushort)(short)MathF.Round(_pendingInputs[i].Roll / MathF.PI * 32767f))); // trailer: a worn MMU's roll (PilotGear.MmuAxes; protocol 358)
         Net.SendToServer(_w.Span, PacketReliability.UnreliableSequenced);
     }
 
@@ -2172,6 +2175,9 @@ public sealed partial class Game : IDisposable
                                 cmds[i].RideBody = 0;
                         }
                 }
+                if (r.Has(2 * read)) // a worn MMU's roll, a turn's half in an i16 per command (PilotGear.MmuAxes)
+                    for (var i = 0; i < read; i++)
+                        cmds[i].Roll = Math.Max((short)-32767, unchecked((short)r.U16())) * (MathF.PI / 32767f);
                 for (var i = 0; i < read; i++)
                 {
                     var cmd = cmds[i];
@@ -2433,6 +2439,9 @@ public sealed partial class Game : IDisposable
                 break;
             case (byte)Msg.Intel when !IsServer:
                 ReadIntel(ref r); // what a questioned officer gave up (GameCrewFleet.cs)
+                break;
+            case (byte)Msg.Contracts when !IsServer:
+                ReadContracts(ref r); // the powers' contracts for credits (GameCrewPolitics.cs)
                 break;
             case (byte)Msg.FactionMap when !IsServer:
                 ReadFactionMap(ref r); // planets' holders and the groups this player knows of (GameCrewTerritory.cs)
