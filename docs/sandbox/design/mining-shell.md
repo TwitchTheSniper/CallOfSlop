@@ -96,6 +96,20 @@ on the same channels. Decided (defaults; the user may change them):
    is a whole part (`"part"`), a frame's `fixed` slots are the ones the gantry may not change. Before building the station,
    show the user a layout image and get approval (user, 2026-11-17).
 
+## Defaults taken without the user (2026-11-18, the user away; each may be changed)
+
+- **Reach** of the drill arm is the ground drill's times the frame's size (5 m to 7.5 m), on both sides, so the scoops reach
+  the floor of the arm's 1.5 m hole and a held button keeps 30 a second (measured: 316, 619, 907 units at 10, 20, 30 s).
+- A 3 m spot still gives 1,200 units (the Drill Module's rule), so one spot lasts 40 s of the arm: step a few metres on.
+- **Saves**: a world saved while someone wears a shell stands it for the capture where they are, as worn and damaged, with
+  the hopper's load in its bin, and takes it away again in the same tick (`ShellStandForSave`): after a load the shell stands
+  there and its wearer is in the chair.
+- **Other bodies**: players push apart by each one's own radius; construct blocking, legs' feet, lifter pushes, the seat's
+  way out and ladders use the body's size. A lifter's wait for players standing under it (`PlayerSpots`) still uses a
+  person's size.
+- The shell's only tool is refused on the client with a line on screen (nothing sent) and on the server; a part picked up
+  or a seat left puts the drill back out within a sixth of a second.
+
 ## Not yet
 
 - A crew Miner job (none exists) and factions spawning Mining Shells.
