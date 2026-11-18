@@ -141,6 +141,7 @@ public static unsafe partial class Program
         LinkToolOut(g, h.Tool == ConstructTool.Linker);
         ConnectorToolOut(in h);
         ConstructRender.ShowWires = h.Tool == ConstructTool.Linker;
+        ConstructRoutes.LookBuried = ConstructRender.ShowWires; // (the tool's look ray reaches a link in a wall)
         ConstructRender.AimMotion = h.Tool == ConstructTool.Configure; // (a joint under the crosshair swings through its range as a ghost: JointSides, board item js01)
         ConstructRender.VolumesShown = h.Tool is not (ConstructTool.None or ConstructTool.Hands); // (cargo volumes: outlined in build mode)
         if (h.Tool != ConstructTool.Configure && (_cvBody != 0 || _cvArmed))
@@ -183,6 +184,8 @@ public static unsafe partial class Program
             _sbSeatKeys = 0;
             g.SandboxSend(CActKind.SeatKeys, part: 0);
         }
+        if (g.MmuSteering && Pressed(GameAction.SeatEject))
+            g.SandboxSend(CActKind.MmuOff); // (the flown MMU comes off where they are, no dock needed: GameSandboxEva.cs; in vacuum the seat's keys are live and the recent-parts wheel on L gives way, Keybinds.Resolve)
         if (SandboxSpawnInput(g, me))
             return true; // placing a spawn: Fire spawns, Aim stops (Program.SandboxSpawn.cs)
         if (SandboxBlueprintGhostInput(g, me))
@@ -259,6 +262,7 @@ public static unsafe partial class Program
                       ^ (aim.Verdict == AimVerdict.Refused ? (long)(aim.Why?.GetHashCode() ?? 1) << 3 : 0)
                       ^ (hit.Body.Loose && ToolUpgrades.Current.ModuleOf(d.Id) is { } module ? (g.SandboxHands.Level(me.Id, module.Stat) + 1L) * 7919L << 24 : 0) // (a tool upgrade: what you have of it)
                       ^ (h.Tool == ConstructTool.Hands ? h.Held == ConstructParts.None ? 1L << 59 : 1L << 58 : 0) // (hands out: what the click does, and whether they are full)
+                      ^ (d.Labelled && part.Text != null ? (long)part.Text.GetHashCode() * 6151L : 0) // (a switch's label)
                       ^ (g.CrewInfo.TryGetValue(hit.Body.Id, out var crewKey) ? (long)(crewKey.Faction * 256 + crewKey.Alive) * 104729L : 0); // (a crewed body's faction and crew)
             if (key != _sbLookKey)
             {
@@ -310,6 +314,7 @@ public static unsafe partial class Program
                     PartRole.Joint when d.JointType == JointType.Swivel => ConstructLinear.SwivelLook(hit.Body, hit.Part),
                     PartRole.Hinge or PartRole.Joint when JointSides.IsJoint(hit.Body, hit.Part, out var jointAt) => JointSides.Look(hit.Body, hit.Part, jointAt, near ? SandboxKeys.Do(use, "open or shut") : null),
                     PartRole.Hinge or PartRole.Joint when near => SandboxKeys.Line(d.Name, null, null, SandboxKeys.Do(use, "open or shut")),
+                    _ when d.LadderTop > 0 && near && !hit.Body.Loose && ConstructDoor.EventDoor(hit.Body, hit.Part) is var ldr and >= 0 && ldr != hit.Part && !Game.LadderOnShutDoor(hit.Body, hit.Part) => SandboxKeys.Line(d.Name, null, null, SandboxKeys.Do(use, "climb")), // (a ladder on an open door's leaf, the Dray's belly hatch: climbed; shut, its door's line below)
                     _ when ConstructDoor.Swings(hit.Body, hit.Part) => ConstructDoor.Look(hit.Body, hit.Part, near ? use : null), // (a door, or any panel hung on a hinge)
                     PartRole.Door when near => SandboxKeys.Line(d.Name, null, null, SandboxKeys.Do(use, "open or shut")),
                     PartRole.Logic => SandboxKeys.Line(d.Name, SandboxKeys.Join(setting, signal), unpowered),
@@ -323,6 +328,10 @@ public static unsafe partial class Program
                     _ when ConstructEdits.WreckedAlone(hit.Body) => SandboxKeys.Line(d.Name, SandboxKeys.Join($"wrecked, {d.Mass:0} kg", carriedIn), "haul it to a Recycler"),
                     _ => SandboxKeys.Line(d.Name, hp, null, !fits || aim.Verdict != AimVerdict.Can ? null : $"hold {SandboxKeys.Aim}: {(salvage ? "salvage" : "take off")}"),
                 };
+                if (d.Labelled && part.Text is { } label && _sbLookText != null)
+                    _sbLookText = _sbLookText.Replace(d.Name, label); // (a labelled switch, button, lever...: "Hangar lights: off"; LogicText.Name)
+                if (HullHoles.IsHoled(d) && _sbLookText != null)
+                    _sbLookText = _sbLookText.Replace(d.Name, HullHoles.Shown(d)); // (a cut or sealed part: its file part's name, not its key)
                 if (g.CrewLook(hit.Body.Id) is { } crewNote)
                     _sbLookText = $"{_sbLookText}  ({crewNote})"; // (a crewed body: its faction kind and crew, GameCrew.cs)
                 if (aim.Verdict == AimVerdict.Refused)

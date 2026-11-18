@@ -205,8 +205,10 @@ cells of 0.25 m or more (200 across at most), a level every 0.9 m or more, at mo
 once and again only when its parts change (about 5 ms and 2,900 lines for a Zero Day). Both holograms are cut from the parts'
 own boxes and hull skin shapes, not their bounds, so a welded hull piece no longer fills the rooms it walls. On the fine one
 the outer skin (lines beside cells open to the outside on that level) is bright, inner walls dim, outlines every other level;
-doors and hatches are green boxes. While picking a hull spot, once the cursor rests on a part for 0.12 s the view works the
-spot out as the host will (`Game.BoardPreview`: `BoardSpot`, then `BoardNearRoom`, with no log lines) and draws the hull piece
+doors and hatches are green boxes. While picking a hull spot, once the cursor rests on a part for 0.06 s the view works the
+spot out as the host will (`Game.BoardPreview`: `BoardSpot`, then `BoardNearRoom`'s search, with no log lines; the search
+costs up to a few hundred ms on a Zero Day, so it runs 2.5 ms a frame, one candidate at most past that, and each part's result
+is kept while the pick lasts; there are two close-hologram slots, so the carrier and its target don't take turns rebuilding) and draws the hull piece
 it cuts (amber box), the pod's skirt, the hole as `ConstructBreach.OpenHole` cuts it (1.1 by 2.1 m from the room's floor up,
 red when no room is found), the tunnel in to the room's wall, and the room behind as an outline on its floor (the fine grid's
 inside cells joined to where a person lands). The label says whether the room's floor is level with the pod's. Close up, a
@@ -285,7 +287,8 @@ docs/sandbox/design/faction-controllers.md section 6.2, so he chose docking alon
   (where it ejects). The ship lines up `NavDockOver` (30 m) off the port's box (phase Flying, "LINING UP WITH THE PORT"),
   then closes on the box's middle at `NavDockSink` (2 m/s, Docking). An unarmed or unpowered port has it wait there
   (DockWait, "WAITING: THE PORT ISN'T ARMED OR HAS NO POWER"); after a minute at the port without being taken the order
-  gives up and says why.
+  gives up and says why. A station's berths are come at down their approach lanes instead (docs/sandbox/constructs/station.md
+  "Approach lanes"): round the station to the lane's mouth, then straight in.
 - **In a sky** the stabilizer's autopilot flies it (Waypoint mode, written only when the point has moved a metre), and
   the port takes it as it takes any craft: a clamp's tractor from its pull's reach, a bay or a lock once it is in the box
   and slow. While it lines up no tractor takes it (`Construct.DockAway` held a tick ahead): a Shuttle drawn in by the
@@ -315,6 +318,9 @@ docs/sandbox/design/faction-controllers.md section 6.2, so he chose docking alon
 --window-shot out.png --map Glacier --blueprint "Zero Day Frigate" --calm --do "command 3000; spawnbp Shuttle; wait 120; letgo 2; cmdpick 2; hoist 1; wait 30; cmdpick 3; order dock 1; wait 2400; nav"
 --window-shot out.png --map Glacier --blueprint "Zero Day Frigate" --calm --do "command 60000; cmdpick 1; order orbit Glacier 5.5; wait 8000; letgo 2; wait 400; cmdpick 2; order dock 1; wait 3600; nav"
 ```
+
+- **A station** (Caledon Highport) is drawn as a station, not a ship, and its berths moor a ship rather than carry it, so a
+  ship carrying craft (the Zero Day) docks there too: docs/sandbox/constructs/station.md "In the game".
 
 ### Rendezvous (`Game/GameNavMeet.cs`)
 
@@ -438,6 +444,17 @@ the target.
 - The space clock (`SpaceMsg.Clock`) carries the host's Fuel use in space (a u8 percent, 326), so a client's card works
   out the same dV.
 
+## Whose ships you may order
+
+(Karl, 2026-11-18; `Game/GameShipControl.cs`.) A player gives orders only to a ship that is theirs, a faction mate's, or nobody's.
+A ship crewed by an NPC power (the Traders' Zero Day in the Zero Day start, any power's crewed ship), and a nobody's craft docked in
+or carried by one (its Shuttle), is that power's: it can be picked, read on its card (OWNER TRADERS), tracked, locked onto and
+fought, but the order menu and the card's buttons say "IT IS THE TRADERS' SHIP", and the host refuses its orders, a cancel
+included (`Game.CommandRefusal` in `NavOrderAct`). Another player's ship outside your faction is refused the same way. Its helm and
+the seats its crew fly and fight from can't be sat in, and its drones and robot shells can't be linked to.
+Boarded and taken (its crew surrendered: the Traders give up the moment anyone comes aboard), it is the captor's, with every
+nobody's craft it carries (`GameCrewBoard.CrewCaptureCraft`).
+
 ## What it doesn't do yet
 
 - **A jump within a system** (above, "Jump drives"): its cost is Karl's to decide.
@@ -446,7 +463,6 @@ the target.
 - Holding a place near a body burns fuel all the while (the ship hovers on its drive). A ship with no pilot and an
   empty tank falls.
 - Orders aren't saved, there are no queues or patrols, and one ship is ordered at a time (no box select).
-- Anyone may order any ship that takes orders: there is no ownership check yet.
 
 ## Trying it
 

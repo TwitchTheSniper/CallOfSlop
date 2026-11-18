@@ -290,6 +290,8 @@ public sealed partial class Game
         var target = r.U16();
         if (Space is not { } s || Constructs.Get(id) is not { } c)
             return "That ship is gone";
+        if (CommandRefusal(c, p.Id) is { } theirs)
+            return "You can't give it orders: " + theirs; // (only your own, your faction's or nobody's: GameShipControl.cs)
         if (kind == NavKind.None)
         {
             if (NavOf(id) is { } had)
@@ -371,6 +373,8 @@ public sealed partial class Game
             if (c.SpaceShip == 0 && SpaceEdge <= 0)
                 return "There is no way to space from here";
         }
+        if (c.MooredTo != 0)
+            StationCastOff(c); // (moored at a station: a new order casts it off, GameStations.cs)
         var o = NavOf(id);
         if (o == null)
         {

@@ -96,7 +96,83 @@ public static class HullHoles
         }
     }
 
-    private sealed record Made(ConstructPartDef Base, Hole[] Holes);
+    /// <summary>
+    /// A seal sleeve (Karl, 2026-11-18: the Limpet's door-shaped seal ring): a rectangular tube lofted from one opening to another in
+    /// the part's frame, four walls a few centimetres thick, drawn and colliding as hull plates, so nothing outside shows between a
+    /// boarding pod's door and the hole it cut. Each end: its middle (cm), its across and its up (thousandths), its inner half width and
+    /// half height (cm). Its key text starts with "s".
+    /// </summary>
+    public readonly record struct Sleeve(int Ax, int Ay, int Az, short Aux, short Auy, short Auz, short Avx, short Avy, short Avz, ushort Aw, ushort Ah,
+        int Bx, int By, int Bz, short Bux, short Buy, short Buz, short Bvx, short Bvy, short Bvz, ushort Bw, ushort Bh)
+    {
+        public const char Mark = 's';
+        public const float Wall = 0.05f; // m: its walls' thickness, outward of its opening
+
+        public string Text => string.Create(CultureInfo.InvariantCulture,
+            $"{Mark}{Ax},{Ay},{Az},{Aux},{Auy},{Auz},{Avx},{Avy},{Avz},{Aw},{Ah},{Bx},{By},{Bz},{Bux},{Buy},{Buz},{Bvx},{Bvy},{Bvz},{Bw},{Bh}");
+
+        public static Sleeve Of(Vector3 a, Vector3 aAcross, Vector3 aUp, float aHalfW, float aHalfH, Vector3 b, Vector3 bAcross, Vector3 bUp, float bHalfW, float bHalfH)
+        {
+            static int M(float v) => (int)MathF.Round(v * 100);
+            static short T(float v) => (short)Math.Clamp((int)MathF.Round(v * 1000), -1000, 1000);
+            static ushort C(float v) => (ushort)Math.Clamp((int)MathF.Round(v * 100), 1, 2000);
+            aAcross = Vector3.Normalize(aAcross);
+            aUp = Vector3.Normalize(aUp);
+            bAcross = Vector3.Normalize(bAcross);
+            bUp = Vector3.Normalize(bUp);
+            return new Sleeve(M(a.X), M(a.Y), M(a.Z), T(aAcross.X), T(aAcross.Y), T(aAcross.Z), T(aUp.X), T(aUp.Y), T(aUp.Z), C(aHalfW), C(aHalfH),
+                M(b.X), M(b.Y), M(b.Z), T(bAcross.X), T(bAcross.Y), T(bAcross.Z), T(bUp.X), T(bUp.Y), T(bUp.Z), C(bHalfW), C(bHalfH));
+        }
+
+        public static bool TryParse(string s, out Sleeve v)
+        {
+            v = default;
+            if (s.Length < 2 || s[0] != Mark)
+                return false;
+            var f = s[1..].Split(',');
+            if (f.Length != 22)
+                return false;
+            Span<int> n = stackalloc int[22];
+            for (var i = 0; i < 22; i++)
+                if (!int.TryParse(f[i], NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out n[i]))
+                    return false;
+            for (var e = 0; e < 2; e++)
+            {
+                var o = e * 11;
+                for (var i = 0; i < 3; i++)
+                    if (Math.Abs(n[o + i]) > 40000)
+                        return false;
+                for (var i = 3; i < 9; i++)
+                    if (Math.Abs(n[o + i]) > 1000)
+                        return false;
+                if (n[o + 3] == 0 && n[o + 4] == 0 && n[o + 5] == 0 || n[o + 6] == 0 && n[o + 7] == 0 && n[o + 8] == 0)
+                    return false;
+                if (n[o + 9] is < 1 or > 2000 || n[o + 10] is < 1 or > 2000)
+                    return false;
+            }
+            v = new Sleeve(n[0], n[1], n[2], (short)n[3], (short)n[4], (short)n[5], (short)n[6], (short)n[7], (short)n[8], (ushort)n[9], (ushort)n[10],
+                n[11], n[12], n[13], (short)n[14], (short)n[15], (short)n[16], (short)n[17], (short)n[18], (short)n[19], (ushort)n[20], (ushort)n[21]);
+            return true;
+        }
+
+        /// <summary>End <paramref name="e"/>'s (0: A, 1: B) corner <paramref name="k"/> (0..3 round it), grown by <paramref name="grow"/> m.</summary>
+        public Vector3 Corner(int e, int k, float grow)
+        {
+            Vector3 mid, u, v;
+            float w, h;
+            if (e == 0)
+                (mid, u, v, w, h) = (new Vector3(Ax, Ay, Az) / 100f, new Vector3(Aux, Auy, Auz), new Vector3(Avx, Avy, Avz), Aw / 100f, Ah / 100f);
+            else
+                (mid, u, v, w, h) = (new Vector3(Bx, By, Bz) / 100f, new Vector3(Bux, Buy, Buz), new Vector3(Bvx, Bvy, Bvz), Bw / 100f, Bh / 100f);
+            u = Vector3.Normalize(u);
+            v -= u * Vector3.Dot(v, u);
+            v = Vector3.Normalize(v);
+            float su = k is 1 or 2 ? 1 : -1, sv = k >= 2 ? 1 : -1;
+            return mid + u * (su * (w + grow)) + v * (sv * (h + grow));
+        }
+    }
+
+    private sealed record Made(ConstructPartDef Base, Hole[] Holes, Sleeve[] Sleeves);
 
     /// <summary>The tables, made on the first hole (a nested class, so a sweep or a look before any hole allocates nothing).</summary>
     private static class Store
@@ -136,6 +212,24 @@ public static class HullHoles
             return Store.Info.TryGetValue(d, out var m) ? m.Holes : [];
     }
 
+    /// <summary>The seal sleeves a part has (none for a whole part).</summary>
+    public static Sleeve[] SleevesOf(ConstructPartDef d)
+    {
+        if (!_used)
+            return [];
+        lock (Store.Interned)
+            return Store.Info.TryGetValue(d, out var m) ? m.Sleeves : [];
+    }
+
+    /// <summary>The name a person sees: the file part's, and what was done to it.</summary>
+    public static string Shown(ConstructPartDef d)
+    {
+        if (!IsHoled(d))
+            return d.Name;
+        var b = BaseOf(d);
+        return SleevesOf(d).Length > 0 && HolesOf(d).Length == 0 ? $"{b.Name} (sealed)" : $"{b.Name} (cut through)";
+    }
+
     public static bool IsHoled(ConstructPartDef d) => d.IsNamedRuntime && d.Name.StartsWith(Prefix, StringComparison.Ordinal);
 
     /// <summary>Can this file part take holes? Structure, plates, foundations and tanks with no moving, lit or worked boxes.</summary>
@@ -159,13 +253,31 @@ public static class HullHoles
     {
         var b = BaseOf(d);
         var had = HolesOf(d);
+        var sleeves = SleevesOf(d);
         if (Refusal(b) is { } why)
             return Refuse(why);
-        if (had.Length >= MaxHoles)
+        if (had.Length + sleeves.Length >= MaxHoles)
             return Refuse($"{MaxHoles} holes already");
         if (!Reaches(d, h))
             return Refuse(Misses);
-        var key = KeyOf(b, [.. had, h]);
+        return MakeKey(KeyOf(b, [.. had, h], sleeves));
+    }
+
+    /// <summary><paramref name="d"/> with a seal sleeve as well (<see cref="Sleeve"/>). Null: it can't take one (<see cref="LastRefusal"/>).</summary>
+    public static ConstructPartDef? WithSleeve(ConstructPartDef d, Sleeve v)
+    {
+        var b = BaseOf(d);
+        var had = HolesOf(d);
+        var sleeves = SleevesOf(d);
+        if (Refusal(b) is { } why)
+            return Refuse(why);
+        if (had.Length + sleeves.Length >= MaxHoles)
+            return Refuse($"{MaxHoles} holes already");
+        return MakeKey(KeyOf(b, had, [.. sleeves, v]));
+    }
+
+    private static ConstructPartDef? MakeKey(string key)
+    {
         if (key.Length > ConstructParts.MaxRuntimeName)
             return Refuse("the key is too long");
         LastRefusal = null;
@@ -179,11 +291,13 @@ public static class HullHoles
         return null;
     }
 
-    public static string KeyOf(ConstructPartDef b, IReadOnlyList<Hole> holes)
+    public static string KeyOf(ConstructPartDef b, IReadOnlyList<Hole> holes, IReadOnlyList<Sleeve>? sleeves = null)
     {
         var s = new StringBuilder(Prefix).Append(b.Name).Append(Split);
         for (var i = 0; i < holes.Count; i++)
             s.Append(i == 0 ? "" : ";").Append(holes[i].Text);
+        for (var i = 0; i < (sleeves?.Count ?? 0); i++)
+            s.Append(i + holes.Count == 0 ? "" : ";").Append(sleeves![i].Text);
         return s.Append(')').ToString();
     }
 
@@ -199,10 +313,21 @@ public static class HullHoles
         var list = name[(cut + Split.Length)..^1].Split(';');
         if (list.Length is 0 or > MaxHoles)
             return null;
-        var holes = new Hole[list.Length];
-        for (var i = 0; i < list.Length; i++)
-            if (!Hole.TryParse(list[i], out holes[i]))
+        var holes = new List<Hole>(list.Length);
+        var sleeves = new List<Sleeve>();
+        foreach (var e in list)
+        {
+            if (e.Length > 0 && e[0] == Sleeve.Mark)
+            {
+                if (!Sleeve.TryParse(e, out var v))
+                    return null;
+                sleeves.Add(v);
+            }
+            else if (Hole.TryParse(e, out var h))
+                holes.Add(h);
+            else
                 return null;
+        }
         if (ConstructParts.Find(baseName) is not { } b || Refusal(b) != null) // (before the lock: the first ask loads the parts)
             return null;
         _used = true;
@@ -217,7 +342,7 @@ public static class HullHoles
                 return have;
             }
             var clock = System.Diagnostics.Stopwatch.StartNew();
-            var made = Build(b, holes, name);
+            var made = Build(b, [.. holes], [.. sleeves], name);
             if (made != null && !Extrusion.Adopt(made))
             {
                 PartShapes.Release(made.OwnShapes);
@@ -230,7 +355,7 @@ public static class HullHoles
             Interned[name] = made;
             if (made != null)
             {
-                Info[made] = new Made(b, holes);
+                Info[made] = new Made(b, [.. holes], [.. sleeves]);
                 DefsMade++;
             }
             return made;
@@ -326,7 +451,7 @@ public static class HullHoles
 
     // ---- The cut -----------------------------------------------------------------------------------------------------
 
-    private static ConstructPartDef? Build(ConstructPartDef b, Hole[] holes, string name)
+    private static ConstructPartDef? Build(ConstructPartDef b, Hole[] holes, Sleeve[] sleeves, string name)
     {
         var outer = PartShapes.BeginCollect();
         ConstructPartDef? d = null;
@@ -348,9 +473,24 @@ public static class HullHoles
                     return null;
                 }
             }
-            if (!cutAny)
+            if (!cutAny && sleeves.Length == 0)
             {
                 LastRefusal = Misses;
+                return null;
+            }
+            var skinMin = b.HasSkin ? b.SkinMin : new Vector3(float.MaxValue);
+            var skinMax = b.HasSkin ? b.SkinMax : new Vector3(float.MinValue);
+            var look = Array.Find(b.Boxes, x => !x.Hidden && x.Shape == 0);
+            foreach (var v in sleeves)
+                for (var k = 0; k < 4; k++)
+                    if (SleeveWall(look, v, k, list) is { } at)
+                    {
+                        skinMin = Vector3.Min(skinMin, at.Center - at.Half);
+                        skinMax = Vector3.Max(skinMax, at.Center + at.Half);
+                    }
+            if (list.Count > ConstructParts.MaxBoxes)
+            {
+                LastRefusal = $"over {ConstructParts.MaxBoxes} boxes";
                 return null;
             }
             var solid = 0;
@@ -368,13 +508,15 @@ public static class HullHoles
             d = b.ShallowCopy();
             d.Name = name;
             d.File = "";
-            d.Description = $"{b.Description} Cut through ({holes.Length}).";
+            d.Description = holes.Length > 0 ? $"{b.Description} Cut through ({holes.Length})." : $"{b.Description} Sealed to a hull.";
             d.Boxes = boxes;
             d.SolidBoxes = solid;
             d.HasGlass = Array.Exists(boxes, x => x.IsGlass);
             d.Hulls = null; // (made again from the cut boxes on first use: ConvexHull.Of)
             d.HullCovers = null;
             d.HullSkin = null;
+            if (sleeves.Length > 0)
+                (d.HasSkin, d.SkinMin, d.SkinMax) = (true, skinMin, skinMax); // (the sleeve's walls are hull plates: they collide)
             d.Mass = Math.Clamp(b.Mass * SolidVolume(boxes, solid) / MathF.Max(SolidVolume(b.Boxes, b.SolidBoxes), 1e-6f), b.Mass * 0.1f, b.Mass);
             d.PhysicsOnly = true;
             d.PhysicsWhy = "holed";
@@ -393,6 +535,42 @@ public static class HullHoles
                 PartShapes.Release(shapes);
         }
     }
+
+    /// <summary>Wall <paramref name="k"/> of a sleeve (0: the floor, then round it) as a hull plate, added to <paramref name="into"/>; null when it can't be made.</summary>
+    private static CPartBox? SleeveWall(CPartBox look, in Sleeve v, int k, List<CPartBox> into)
+    {
+        var pts = new Vector3[8];
+        var n = 0;
+        for (var e = 0; e < 2; e++)
+            foreach (var c in (int[])[k, (k + 1) % 4])
+            {
+                pts[n++] = v.Corner(e, c, 0);
+                pts[n++] = v.Corner(e, c, Sleeve.Wall);
+            }
+        var mn = new Vector3(float.MaxValue);
+        var mx = new Vector3(float.MinValue);
+        foreach (var p in pts)
+            (mn, mx) = (Vector3.Min(mn, p), Vector3.Max(mx, p));
+        var centre = (mn + mx) * 0.5f;
+        var half = Vector3.Max((mx - mn) * 0.5f, new Vector3(0.0005f));
+        for (var i = 0; i < pts.Length; i++)
+            pts[i] -= centre;
+        try
+        {
+            var id = PartShapes.For(new PartBox { Shape = "hull", Size = half * 2, Points = pts });
+            var box = look with { Center = centre, Half = half, Shape = id, Front = 0, Detail = true, Hidden = false, Glass = 0, Glow = false, Paintable = false, Color = SleeveColour };
+            into.Add(box);
+            return box;
+        }
+        catch (WeaponFileException)
+        {
+            PiecesDropped++;
+            Console.WriteLine($"[holes] a seal sleeve's wall {k} couldn't be made: left out");
+            return null;
+        }
+    }
+
+    private static readonly Vector3 SleeveColour = new(0.11f, 0.12f, 0.125f); // (the gasket's black rubber)
 
     private static float SolidVolume(CPartBox[] boxes, int solid)
     {

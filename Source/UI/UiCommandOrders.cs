@@ -42,7 +42,7 @@ public sealed partial class Ui
             return;
         }
         _cmdAdmHasGround = false;
-        if (Game.NavProblem(c) is { } why && g.FleetGroupOf(c.Id) == null) // (a fleet group's ship takes its group's orders: UiCommandAdmiral.cs)
+        if (g.NavNoOrders(c) is { } why && g.FleetGroupOf(c.Id) == null) // (a fleet group's ship takes its group's orders: UiCommandAdmiral.cs)
         {
             CmdNote(CmdName(c) + " TAKES NO ORDERS: " + why.ToUpperInvariant());
             return;
@@ -88,7 +88,7 @@ public sealed partial class Ui
             _cmdOrderDockText = "DOCK WITH " + CmdName(t);
             _cmdOrderDockWhy = c.SpaceAway != 0 || t.SpaceAway != 0 ? "TOO FAR APART TO DOCK"
                 : cr.Space && !other.Space ? "IT IS IN SPACE: BRING IT DOWN INTO THE SKY FIRST"
-                : Game.NavDockFor(g.Constructs, t, c) < 0 ? "NO PORT AVAILABLE"
+                : Game.NavDockFor(g.Constructs, t, c) < 0 ? (t.IsStation && Game.NavDockNoFit(g.Constructs, t, c) ? "NO BERTH FITS" : "NO PORT AVAILABLE")
                 : "";
             _cmdOrderMeetText = "RENDEZVOUS WITH " + CmdName(t);
             _cmdOrderMeetWhy = c.CarriedBy == t.Id || t.CarriedBy == c.Id ? "" // (docked together: nothing to meet)
@@ -189,9 +189,9 @@ public sealed partial class Ui
             ImGuiSafe.TextColored(new float4(CmdAmber.X, CmdAmber.Y, CmdAmber.Z, 1f), _cmdOrderTitle);
             ImGui.Separator();
             var fleetShip = g.FleetGroupOf(_cmdOrderShip) != null;
-            if (_cmdOrderShut || g.Constructs.Get(_cmdOrderShip) is not { } c || Game.NavProblem(c) != null && !fleetShip)
+            if (_cmdOrderShut || g.Constructs.Get(_cmdOrderShip) is not { } c || g.NavNoOrders(c) != null && !fleetShip)
                 ImGui.CloseCurrentPopup();
-            else if (Game.NavProblem(c) != null)
+            else if (g.NavNoOrders(c) != null)
             {
                 if (CmdAdmOrders(g)) // (only its fleet group's orders: UiCommandAdmiral.cs)
                     ImGui.CloseCurrentPopup();
@@ -405,7 +405,7 @@ public sealed partial class Ui
         if (g.Constructs.Get(target) is not { } t || t == c)
             return "no such ship to dock with";
         if (Game.NavDockFor(g.Constructs, t, c) < 0)
-            return "NO PORT AVAILABLE";
+            return t.IsStation && Game.NavDockNoFit(g.Constructs, t, c) ? "NO BERTH FITS" : "NO PORT AVAILABLE";
         g.NavSend(c.Id, NavKind.Dock, s.Bubble.Body, Vec3d.Zero, 0, target);
         return null;
     }

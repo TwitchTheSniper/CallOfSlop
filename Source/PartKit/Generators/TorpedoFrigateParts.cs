@@ -882,14 +882,17 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
             Sock(p, $"suit{i}", Cx - Lw, Ft0 + 0.125, 30.75 + i * 0.85, "+x");
         Sock(p, "airlockLocker", Cx + Lw, Ft0 + 0.125, 33.3, "-x");
         Sock(p, "mmuDock", Cx + 3.3, Ft0 + 0.125, 34.0, "-z");
+        // The ship's air (docs/sandbox/EVA.md "Ship air"): the Life Support Unit and two Oxygen Tanks on engineering's port wall, aft of
+        // the bulkhead and forward of the Engineer's Panel.
+        Sock(p, "lifeSupport", Cx - Lw, Ft0 + 0.125, 34.8, "+x");
+        for (var i = 0; i < 2; i++)
+            Sock(p, $"o2Tank{i}", Cx - Lw, Ft0 + 0.125, 35.65 + i * 0.85, "+x");
         for (var i = 0; i < 4; i++) // (the Robot Shell Docks along the engineering bulkhead's forward face, port of its door: Karl, 2026-11-17)
             Sock(p, $"shellDock{i}", Cx - Lw + 0.2 + CrewFittingsParts.DockHalf + i * (2 * CrewFittingsParts.DockHalf + 0.01), Ft0 + 0.125, 34.0, "-z");
         Sock(p, "reactor", Cx + 3.1, Ft0, 35.5, "+y");
         Sock(p, "board", Cx + Lw, Ft0 + 0.9, 40.6, "-x");
         Sock(p, "panel", Cx - Lw, Ft0 + 0.6, 38.0, "+x");
-        Sock(p, "battery0", Cx - 3.9, Ft0, 39.0, "+y");
-        Sock(p, "battery1", Cx - 3.9, Ft0, 39.5, "+y");
-        Sock(p, "battery2", Cx - 3.9, Ft0, 40.0, "+y");
+        Sock(p, "battery", Cx - Lw + 0.41, Ft0, 39.9, "+y"); // (its Ship Battery Bank, back to the port wall: Karl, 2026-11-18)
         Sock(p, "capacitor", Cx + 2.4, Ft0, 37.0, "+y"); // (the railgun's Capacitor Bank, aft of the reactor: ship-works.md 8)
         Sock(p, "pipes", Cx - 2.7, Ft0 + 2.75, 34.25, "+z"); // (on the bulkhead's aft face)
         Sock(p, "toolRack", Cx + Lw, Ft0 + 0.9, 38.2, "-x");
@@ -2323,6 +2326,9 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
             Hang(bp, EvaParts.LockerName, la, $"suit{i}", "wall");
         Hang(bp, EvaParts.LockerName, la, "airlockLocker", "wall");
         EvaParts.FitDock(bp, Holder(bp, la, "mmuDock"), "mmuDock", placed["Zero Day Keel 4"]);
+        Hang(bp, EvaParts.LifeSupportName, la, "lifeSupport", "wall"); // (the ship's air: 28 person-hours with its two tanks)
+        for (var i = 0; i < 2; i++)
+            Hang(bp, EvaParts.OxygenTankName, la, $"o2Tank{i}", "wall");
         for (var i = 0; i < 4; i++)
             Hang(bp, "Robot Shell", Hang(bp, "Robot Shell Dock", la, $"shellDock{i}", "wall"), "dock", "back");
         foreach (var d in new[] { "doorBayL", "doorBayR", "doorAirlock", "doorEngine" })
@@ -2330,8 +2336,7 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         Hang(bp, "Zero Day Reactor", la, "reactor", "bottom");
         Hang(bp, "Power Board", la, "board", "back");
         Hang(bp, "Engineer's Panel", la, "panel", "back");
-        for (var i = 0; i < 3; i++)
-            Hang(bp, "Battery", la, $"battery{i}", "-y");
+        bp.HangTurned("Ship Battery Bank", Holder(bp, la, "battery"), "battery", "bottom", BuildingParts.RY270);
         Hang(bp, "Capacitor Bank M", la, "capacitor", "deck"); // (the railgun fires from it: Karl, 2026-11-17, energy guns fire from capacitors only)
         Hang(bp, "Pipe Bank", la, "pipes", "back");
         Hang(bp, "Tool Rack", la, "toolRack", "back");
@@ -2351,11 +2356,9 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         bp.Steps[fc]["config"] = flight;
         bp.Wires.Add((pilot, fc));
         var railModule = Hang(bp, "Turret Module", uf, "gunModule", "-y");
-        Hang(bp, "Chart Table", uf, "chart", "back");
         foreach (var (i, x, _) in LinkChairs)
             bp.HangTurned("Shell Control Chair", Holder(bp, uf, $"linkChair{i}"), $"linkChair{i}", "bottom", i == 0 ? BuildingParts.RY270 : BuildingParts.RY90);
         Paint(bp, Hang(bp, "Zero Day Locker", uf, "bridgeLocker", "wall"), Armour, "worn paint");
-        Hang(bp, "Chart Table", uf, "plot", "bottom");
         Paint(bp, Hang(bp, "Crash Couch", uf, "couchA", "wall"), "#2c3e58", "fabric");
         Paint(bp, Hang(bp, "Zero Day Locker", uf, "lockerA", "wall"), Blue, "worn paint");
         Paint(bp, Hang(bp, "Crash Couch", uf, "couchCaptain", "wall"), "#2c3e58", "fabric");

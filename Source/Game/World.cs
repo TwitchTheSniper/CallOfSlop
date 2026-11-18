@@ -74,6 +74,7 @@ public struct InputCmd
     public ushort RideBody; // contraption space: the construct this look is measured on (0: Yaw and Pitch are all there is; ConstructRideMove.cs)
     public float RideYaw, RidePitch; // the look in that construct's frame, about the rider's up
     public float Roll; // a worn MMU's roll about the look (PilotGear.MmuAxes), quantised by World.QuantRoll; 0 otherwise
+    public bool MmuCoast; // a worn MMU's dampeners off: with no key held it keeps its speed (false, the default: it brakes to the nearest craft's motion; PilotGear.MmuBrake)
 }
 
 /// <summary>Everything movement depends on. Client prediction and the server run the same code on it.</summary>
@@ -115,7 +116,7 @@ public struct MoveState
     // What they wear (PilotGear.cs): only ever set in Sandbox, so everything else pays one test.
     public byte Gear; // the backpack's parachute, glider and jetpack (bits; the server's)
     public byte Canopy; // open now, or burning
-    public byte GearDelay; // ticks until an ejection seat's parachute opens
+    public byte GearDelay; // ticks until an ejection seat's parachute opens; with a worn MMU (Gear's Mmu bit), the thrusting ticks into its tank's next unit (PilotGear.MmuPush)
     public ushort JetFuel;
     public bool GearJump; // the jump key last tick
 
@@ -936,6 +937,7 @@ public sealed class Player
     // On a ladder (ConstructRideLadder.cs; set each frame by GameSandbox, drawn by LadderAnim.cs): the ladder's frame as it is
     // drawn (its own frame to the world), its feet line (LadderGeom), and the feet in its frame. The body faces the ladder.
     public bool RenderLadder;
+    public bool RenderHandsUp; // a surrendered crew body (set each frame by GameSandbox from Game.HandsUp, drawn by PlayerRender): hands up, shaking
     public Matrix4x4 RenderLadderFrame = Matrix4x4.Identity;
     public Vector3 RenderLadderFeet;
     public LadderGeom RenderLadderGeom;

@@ -836,7 +836,7 @@ public static partial class Program
                         var keep = _lkCount;
                         if (_lkAutoRes is { State: RouteSearchState.Found } found && !LinkAutoTake(found))
                             _lkCount = keep;
-                        var why = ConstructRoutes.Check(g.Constructs, pc, _lkType, _lkFrom, _lkFromPort, _lkParent, _lkParentSeg, _lkJunction, _lkNodes.AsSpan(0, _lkCount), _lkPickPart, _lkPickPorts[pick]);
+                        var why = ConstructRoutes.Check(g.Constructs, pc, _lkType, _lkFrom, _lkFromPort, _lkParent, _lkParentSeg, _lkJunction, _lkNodes.AsSpan(0, _lkCount), _lkPickPart, _lkPickPorts[pick], tidy: true);
                         if (why != null)
                         {
                             _lkCount = keep;
@@ -888,14 +888,19 @@ public static partial class Program
                 if (aimed && hit.Body == mc && !onRoute)
                 {
                     RestPoint(hit, out var p, out var n);
-                    var at = ConstructRoutes.Snap(mc, mc.Routes[_lkMoveRoute].Type, p, Vector3.Zero, p - n * ConstructRoutes.Radius(mc.Routes[_lkMoveRoute].Type), n);
+                    var mt = mc.Routes[_lkMoveRoute].Type;
+                    var moveLay = ConstructRoutes.Buryable(mt) ? ConstructRoutes.Lay : LinkLay.Near;
+                    var moveLayWhy = ConstructRoutes.LaySurface(mc, mt, hit.Part, p, n, moveLay, out var ms, out var mn);
+                    var at = moveLay == LinkLay.Near
+                        ? ConstructRoutes.Snap(mc, mt, p, Vector3.Zero, p - n * ConstructRoutes.Radius(mt), n)
+                        : ConstructRoutes.Snap(mc, mt, p, Vector3.Zero, ms, mn); // (in the wall or past it, as the tool's lay says)
                     if (ConstructTrays.Snap(mc, hit.Part, p, out var lane))
                         at = lane; // (a Cable Tray or Clamp: its lane)
                     var mk = HashCode.Combine(at, hit.Part, _lkMoveRoute, _lkMoveNode, mc.RouteCount, 1);
                     if (mk != _lkCheckKey)
                     {
                         _lkCheckKey = mk;
-                        _lkCheckWhy = ConstructRoutes.CheckMove(mc, _lkMoveRoute, _lkMoveNode, at, (ushort)hit.Part);
+                        _lkCheckWhy = moveLayWhy ?? ConstructRoutes.CheckMove(mc, _lkMoveRoute, _lkMoveNode, at, (ushort)hit.Part);
                     }
                     _lkWhy = _lkCheckWhy;
                     RouteRender.PreviewBody = mc;
@@ -982,6 +987,12 @@ public static partial class Program
                 ConstructRoutes.Grade = (ConstructRoutes.GradeMode)(((int)ConstructRoutes.Grade + 1) % 4);
                 _lkCheckKey = 0;
             }
+            if (ConstructRoutes.Buryable(_lkType) && _lkAdj == LinkAdjust.None && Pressed(GameAction.Reload) && !_swallowClick)
+            {
+                // Where the cable or pipe goes against the walls (ConstructRoutesWalls.cs): in them, on this side, on their far side.
+                ConstructRoutes.Lay = ConstructRoutes.Lay switch { LinkLay.Wall => LinkLay.Near, LinkLay.Near => LinkLay.Far, _ => LinkLay.Wall };
+                _lkCheckKey = 0;
+            }
             LinkTail(rc, out var at, out var tailDir, out _);
             // The preview: the link so far, then the next point (a node on the surface, or the input that ends it).
             var n0 = LinkPreviewSoFar(rc);
@@ -1038,18 +1049,23 @@ public static partial class Program
                     ports = NearestPort(rc, endPart, p, out endPort, input: true);
                     next = ConstructRoutes.LivePort(rc, endPart, endPort, _lkType);
                 }
-                else
-                    next = ConstructRoutes.Snap(rc, _lkType, at, tailDir, p, nrm);
+                string? layWhy = null;
+                if (!input)
+                {
+                    // (in the wall: the node goes in its middle; on the far side: past its far face. ConstructRoutesWalls.cs)
+                    layWhy = ConstructRoutes.LaySurface(rc, _lkType, hit.Part, p, nrm, LinkLayNow, out var ls, out var ln);
+                    next = ConstructRoutes.Snap(rc, _lkType, at, tailDir, ls, ln);
+                }
                     if (hit.Body == rc && ConstructTrays.Snap(rc, hit.Part, p, out var lane))
                         next = lane; // (a Cable Tray or Clamp: its lane)
                 // (checked again only when the candidate changes: the reasons are made once, not every frame)
-                var ck = HashCode.Combine(next, endPart, endPort, _lkCount, hit.Part, (int)_lkType, rc.RouteCount);
+                var ck = HashCode.Combine(next, endPart, endPort, _lkCount, hit.Part, (int)_lkType, rc.RouteCount, (int)LinkLayNow);
                 if (ck != _lkCheckKey)
                 {
                     _lkCheckKey = ck;
                     _lkCheckWhy = input
-                        ? ports == 0 ? $"every port of the {d.Name} is taken" : ConstructRoutes.Check(g.Constructs, rc, _lkType, _lkFrom, _lkFromPort, _lkParent, _lkParentSeg, _lkJunction, _lkNodes.AsSpan(0, _lkCount), endPart, endPort, checkFrom: _lkCount)
-                        : ConstructRoutes.OpenPath(rc, _lkType, _lkFrom, _lkFromPort, _lkParent, _lkParentSeg, _lkJunction, _lkNodes.AsSpan(0, _lkCount), next, hit.Part);
+                        ? ports == 0 ? $"every port of the {d.Name} is taken" : ConstructRoutes.Check(g.Constructs, rc, _lkType, _lkFrom, _lkFromPort, _lkParent, _lkParentSeg, _lkJunction, _lkNodes.AsSpan(0, _lkCount), endPart, endPort, checkFrom: _lkCount, tidy: true)
+                        : layWhy ?? ConstructRoutes.OpenPath(rc, _lkType, _lkFrom, _lkFromPort, _lkParent, _lkParentSeg, _lkJunction, _lkNodes.AsSpan(0, _lkCount), next, hit.Part);
                 }
                 _lkWhy = _lkCheckWhy;
                 RouteRender.PreviewPts[n0] = next;
@@ -1268,7 +1284,7 @@ public static partial class Program
         var grade = LinkGrade();
         var key = (long)(grade + 128) << 56 ^ (long)ConstructRoutes.Grade << 60 ^ (long)_lkType ^ ((long)w.Mode << 12) ^ ((long)System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(_lkLabel) << 3) ^ ((long)_lkCount << 16) ^ ((long)_lkBody << 24) ^ (w.Highlight ? 1L << 50 : 0)
                   ^ ((long)(_lkWhy?.GetHashCode() ?? 0) << 20) ^ (_lkMoveRoute >= 0 ? 1L << 51 : 0) ^ ((long)g.SandboxWheelKey.GetHashCode() << 32)
-                  ^ (_lkFree ? 1L << 53 : 0) ^ ((long)_lkAdj << 54) ^ ((long)(_lkAdjCm & 0xff) << 40) ^ ((long)_settings.Bind(GameAction.FreeRouting) << 8) ^ (_lkWorld ? 1L << 49 : 0) ^ ((long)LoomHudKey << 4);
+                  ^ (_lkFree ? 1L << 53 : 0) ^ ((long)_lkAdj << 54) ^ ((long)(_lkAdjCm & 0xff) << 40) ^ ((long)_settings.Bind(GameAction.FreeRouting) << 8) ^ (_lkWorld ? 1L << 49 : 0) ^ ((long)LoomHudKey << 4) ^ ((long)LinkLayNow << 46);
         if (key == _lkHudKey)
         {
             g.SandboxWireFrom = _lkHud;
@@ -1280,6 +1296,8 @@ public static partial class Program
             type = $"{type} (world link)"; // (off its construct: Program.SandboxWorldLinks.cs)
         var free = Keybinds.NameOf(_settings, GameAction.FreeRouting);
         var why = _lkWhy != null ? $" - {_lkWhy}" : "";
+        if (_lkBody != 0 && !_lkWorld && ConstructRoutes.Buryable(_lkType))
+            why = $", {ConstructRoutes.LayName(LinkLayNow)} ({SandboxKeys.Reload}: change){why}";
         if (grade != NoGrade)
             why = $", next {(grade > 0 ? "+" : "")}{grade} deg (grade {ConstructRoutes.GradeName(ConstructRoutes.Grade)}, {SandboxKeys.Reload}: change){why}";
         var (fire, aim) = (SandboxKeys.Fire, SandboxKeys.Aim);

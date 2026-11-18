@@ -17,6 +17,9 @@ public sealed partial class Game : ICrewHost
     private readonly ushort[] _crewParts = new ushort[CrewWorld.MaxCrewPerBody];
     private int _crewSendAt;
 
+    /// <summary>ICrewHost: a ship under a command-view order (or a station hauler's leg) is flown by its flight computer, not its crew's pilot; a ship moored at a station's berth is left there (a pilot's key would cast it off).</summary>
+    public bool UnderOrders(Construct c) => c.MooredTo != 0 || NavOf(c.Id) != null;
+
     /// <summary>A tick, after the people's seats and before the constructs step: the crews think, man their seats and drive.</summary>
     private void SandboxCrewTick()
     {
@@ -34,6 +37,7 @@ public sealed partial class Game : ICrewHost
         CrewWorkTick();
         CrewMineTick(); // (miners off their posts: GameCrewMine.cs)
         CrewSendSeats();
+        HandsUpTick(); // (surrendered crew, hands up: GameCrewHandsUp.cs)
         CrewHireTick();
         CrewRosterSend();
     }
@@ -92,6 +96,7 @@ public sealed partial class Game : ICrewHost
         };
         Players[id] = bot;
         Spawn(bot, ServerTick, SandboxNow);
+        CrewArmsOnSpawn(bot); // (a sidearm at the station; the long gun is in the lockers: GameCrewDefend.cs)
         if (stand is { } at)
             CrewStandAt(bot, c, at); // (an engineer or a loader stands at its place)
         else if (!CrewSit(bot, c, part))

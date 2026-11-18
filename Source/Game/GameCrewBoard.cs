@@ -5,8 +5,9 @@ namespace CallOfSlop;
 /// <summary>
 /// Boarding (docs/sandbox/design/bot-brain.md section 8, phase 5), server only: what a crew does when hostile players come aboard. The captain's
 /// look (once a second while bodied) counts the boarders (a player riding the body or sitting in it), makes each one a foe (a deed), and weighs
-/// the faction's boarding acts against its state: boarders against defenders, morale, hull, whether the helm is manned. Hold keeps the stations
-/// (the pilot flies, the gunners fire outside); Repel stands the spares up from their couches to fight with their bodies' own bot brains; Flee runs
+/// the faction's boarding acts against its state: boarders against defenders, morale, hull, whether the helm is manned. every act but Surrender and
+/// Abandon stands the crew up and arms them from the lockers to hold the bridge and the breach (GameCrewDefend.cs `CrewDefends`: all but the pilot,
+/// a miner, an engineer kept for a scuttle, and the gunners while their ship fights another craft); Hold flies on as it was; Flee runs
 /// at full ahead; Call for help sends the same faction's crews within 3 km at the boarder; Abandon leaves the ship a derelict; Surrender leaves
 /// every station, hands up (the ship stops: rule 1); Scuttle sends the nearest engineer (only an engineer: kill them first and it can't be done) to a magazine or fuel tank to arm a charge
 /// (15 s), then counts down (90 s) and the point goes up as it would shot through. A player disarms it at the point with the attach tool's Fire
@@ -35,7 +36,7 @@ public sealed partial class Game
         {
             if (!p.Alive || p.CrewSlot >= 0 || !Aboard(p, c.Id))
                 continue;
-            if (!BoardFoe(c, s, p))
+            if (!BoardFoe(c, s, p) && !(def is { SurrenderAtOnce: true } && BoardGuest(c, p)))
                 continue; // (only those the crew's rules call hostile: never the owner, the owner's faction or a hired crew's employer)
             boarders++;
             if (first == 255)
@@ -55,9 +56,13 @@ public sealed partial class Game
             if (s.Boarded)
             {
                 s.Boarded = false;
+                s.BreachSet = false;
                 for (var i = 0; i < s.MemberCount; i++)
                     if (Crew.State[s.Members[i]] == CrewState.Fighting)
-                        Crew.State[s.Members[i]] = CrewState.Free; // (back to their stations: the next look's fill)
+                    {
+                        Crew.Nav.End(Crew.Nav.WalkerOf(s.Members[i])); // (a fighter's walk to a locker, a post or the boarder ends)
+                        Crew.State[s.Members[i]] = CrewState.Free;
+                    } // (back to their stations: the next look's fill)
                 Console.WriteLine($"[crew] construct {c.Id}: no boarders left aboard");
             }
             return s.ScStage > 0;
@@ -80,10 +85,14 @@ public sealed partial class Game
                 CrewCapture(c, s, first); // (a player's ship is never taken by killing its crew: it stays its owner's)
             return true;
         }
-        if (def == null || s.Act is BoardAct.Surrender or BoardAct.Abandon || s.Act == BoardAct.Scuttle && s.ScStage > 0)
-            return true; // (a terminal act holds; a crew with no faction holds its stations)
-        // The acts, weighed.
         var ratio = boarders / (float)Math.Max(1, defenders);
+        if (def == null || s.Act is BoardAct.Surrender or BoardAct.Abandon || s.Act == BoardAct.Scuttle && s.ScStage > 0)
+        {
+            if (s.Act is not (BoardAct.Surrender or BoardAct.Abandon))
+                CrewDefend(c, s, def, first, ratio); // (a crew with no faction holds its stations and its off-duty crew fight; so do the rest of a scuttling crew)
+            return true; // (a terminal act holds)
+        }
+        // The acts, weighed.
         s.Morale = Math.Clamp(s.Morale - 0.15f * ratio, 0, 1);
         var desperation = ratio * 0.5f + (1 - s.Morale) + (1 - s.Hull) * 0.5f;
         var helm = s.HelmOn(Crew);
@@ -99,26 +108,18 @@ public sealed partial class Game
         for (var k = 0; k < score.Length; k++)
             if (score[k] > score[(int)best])
                 best = (BoardAct)k;
-        if (!s.CalledHelp && def.Board[(int)BoardAct.CallForHelp] > 0)
+        if (def.SurrenderAtOnce)
+            best = BoardAct.Surrender; // (Karl, 2026-11-18: the Traders put their hands up as soon as anyone boards; no fight, no call for help)
+        else if (!s.CalledHelp && def.Board[(int)BoardAct.CallForHelp] > 0)
             CrewCallHelp(c, s, first);
         if (best != s.Act)
             Console.WriteLine($"[crew] construct {c.Id}: boarded by {boarders} ({defenders} crew left, morale {s.Morale * 100:0}%, desperation {desperation:0.00}): {best}");
         var was = s.Act;
         s.Act = best;
-        CrewRepelWalk(c, s, first);
+        if (best is not (BoardAct.Surrender or BoardAct.Abandon))
+            CrewDefend(c, s, def, first, ratio); // (they take up arms: lockers, posts at the bridge and the breach, GameCrewDefend.cs)
         switch (best)
         {
-            case BoardAct.Repel:
-                for (var i = 0; i < s.MemberCount; i++)
-                {
-                    var m = s.Members[i];
-                    if (Crew.Player[m] == 0 || Crew.State[m] != CrewState.Station || s.StKind[Crew.Station[m]] != CrewStationKind.Rest
-                        || !Players.TryGetValue((byte)(Crew.Player[m] - 1), out var bp))
-                        continue;
-                    Crew.Leave(m, CrewState.Fighting);
-                    SandboxStand(bp, teleport: true); // (up from the couch: its bot brain fights, CrewBodyFights)
-                }
-                break;
             case BoardAct.Flee:
                 s.Goal = CrewGoal.Flee;
                 s.Contact = first;
@@ -156,6 +157,7 @@ public sealed partial class Game
     {
         if (Crew.Player[m] != 0 && Players.TryGetValue((byte)(Crew.Player[m] - 1), out var bp))
             SandboxStand(bp, teleport: true);
+        Crew.Nav.End(Crew.Nav.WalkerOf(m)); // (a fighter stops where it is)
         Crew.Leave(m, CrewState.Surrendered);
     }
 
@@ -191,6 +193,9 @@ public sealed partial class Game
     /// Whether <paramref name="p"/> aboard counts as a boarder: someone the crew's faction rules call hostile (<see cref="Fights"/>: a foe or
     /// standing below 0, or the stabilizer's setting with no faction), and never the ship's owner or anyone in the owner's faction.
     /// </summary>
+    /// <summary>Anyone aboard but the ship's owner and the owner's faction: an uninvited guest, a boarder to a crew that surrenders at once (<see cref="NpcFactionDef.SurrenderAtOnce"/>).</summary>
+    private bool BoardGuest(Construct c, Player p) => p.Alive && p.CrewSlot < 0 && (c.Owner == 255 || p.Id != c.Owner && !Factions.Shares(c.Owner, p.Id));
+
     private bool BoardFoe(Construct c, CrewShip s, Player p)
     {
         if (c.Owner != 255 && (p.Id == c.Owner || Factions.Shares(c.Owner, p.Id)))
@@ -211,6 +216,7 @@ public sealed partial class Game
         {
             c.Owner = by;
             Constructs.StructureDirty.Add(c.Id);
+            CrewCaptureCraft(c, by, 0);
         }
         var prisoners = 0;
         for (var i = 0; i < s.MemberCount; i++)
@@ -225,6 +231,41 @@ public sealed partial class Game
         CrewNotice(c, prisoners > 0
             ? $"You took the ship. Its {prisoners} crew are your prisoners: release them, put them off once landed, hire them or hold them (Crew window)."
             : "You took the ship.");
+    }
+
+    /// <summary>
+    /// A taken ship's own craft go with it (Karl, 2026-11-18): every body it carries or holds docked (a Shuttle on its clamp, a Limpet
+    /// in its bay, cargo), and theirs in turn, that is nobody's or its power's becomes the captor's, and any crew of the power aboard
+    /// one gives up with the ship. Another party's craft held on it (a boarder's pod gripping the hull) is left as it is.
+    /// </summary>
+    private void CrewCaptureCraft(Construct c, byte by, int depth)
+    {
+        if (depth > 4)
+            return;
+        foreach (var d in Constructs.Bodies)
+        {
+            if (d.CarriedBy != c.Id || d == c || d.Owner != 255 || d.Wreck || d.PartCount == 0)
+                continue;
+            if (ConstructPlace.LimitRefusal(Constructs, by) is { } full)
+            {
+                Console.WriteLine($"[crew] construct {d.Id}, carried by the taken {c.Id}, stays nobody's: {full}");
+                continue;
+            }
+            d.Owner = by;
+            d.NpcFaction = 0;
+            Constructs.StructureDirty.Add(d.Id);
+            if (Crew.ShipOf(d.Id) is { Own: false, Prize: false } ds && ds.Faction != 0)
+            {
+                for (var i = 0; i < ds.MemberCount; i++)
+                    if (Crew.State[ds.Members[i]] is not (CrewState.Dead or CrewState.Surrendered))
+                        CrewSurrender(ds.Members[i]);
+                ds.Prize = true;
+                ds.Act = BoardAct.Surrender;
+                ds.SeatsDirty = ds.RosterDirty = true;
+            }
+            Console.WriteLine($"[crew] construct {d.Id}, carried by the taken {c.Id}, is player {by}'s too");
+            CrewCaptureCraft(d, by, depth + 1);
+        }
     }
 
     /// <summary>A line to everyone aboard or within <see cref="ScuttleHeard"/> m.</summary>
@@ -414,29 +455,8 @@ public sealed partial class Game
         return "";
     }
 
-    /// <summary>A crew body repelling boarders fights by its own bot brain (Game.cs's tick).</summary>
-    /// <summary>Repellers further than this (m) from the boarder they go for walk to them inside (CrewNav); closer, their bot brains fight.</summary>
+    /// <summary>A hunting guard stops this close (m) to the boarder it goes for, and fights from there (GameCrewDefend.cs).</summary>
     public const float RepelClose = 6;
-
-    /// <summary>Each look at a boarding: crew up to fight (Repel) walk through the ship to the first boarder, by CrewNav's path.</summary>
-    private void CrewRepelWalk(Construct c, CrewShip s, byte boarder)
-    {
-        if (s.Nav == null || !Players.TryGetValue(boarder, out var b) || !b.Alive)
-            return;
-        var to = c.ToLocal(b.Position);
-        for (var i = 0; i < s.MemberCount; i++)
-        {
-            var m = s.Members[i];
-            if (Crew.State[m] != CrewState.Fighting || Crew.Player[m] == 0 || !Players.TryGetValue((byte)(Crew.Player[m] - 1), out var bp) || !bp.Alive)
-                continue;
-            if (Vector3.Distance(c.ToLocal(bp.Position), to) < RepelClose)
-            {
-                Crew.Nav.End(Crew.Nav.WalkerOf(m)); // (close: its bot brain fights)
-                continue;
-            }
-            Crew.Errand(c, s, m, to, this, 2.5f);
-        }
-    }
 
     private bool CrewBodyFights(Player p) => p.CrewSlot >= 0 && p.CrewSlot < Crew.High && Crew.State[p.CrewSlot] == CrewState.Fighting;
 

@@ -111,7 +111,8 @@ public enum CActKind : byte
     Crew, // u16 body, u32 member uid, u8 CrewOrder: a crew order from the Crew window (protocol 332; GameCrewHire.cs)
     Dampeners, // u16 body (the seat's): the seated player flips that ship's inertia dampeners (protocol 340; ConstructFlight.ToggleDampeners)
     MouseSteer, // u16 body (the seat's): the seated player takes that ship's nose with the mouse, or lets it go (protocol 349; ConstructFlight.ToggleMouseSteer)
-    Fleet, // u8 FleetOp, u8 group slot, u16 body, u32 uid, vec at, u8 arg, f32 value: a player's fleet group from the command view (protocol 360; GameCrewFleetPlayers.cs)
+    MmuOff, // nothing: a worn MMU comes off the wearer's back where they are, a loose part holding its fuel (protocol 365; GameSandboxEva.cs)
+    Fleet, // u8 FleetOp, u8 group slot, u16 body, u32 uid, vec at, u8 arg, f32 value: a player's fleet group from the command view (protocol 367; GameCrewFleetPlayers.cs)
 }
 
 /// <summary>
@@ -338,6 +339,7 @@ public sealed partial class Game
         if (!SandboxOn)
             return;
         SandboxRules();
+        ShipAirTick(); // (once a second: who breathes each ship's air, and what it costs: GameShipAir.cs)
         Constructs.PlayerSpotCount = 0;
         foreach (var p in Players.Values)
         {
@@ -432,6 +434,7 @@ public sealed partial class Game
         Constructs.CrewBodies = Crew.IsBody; // (crew at the controls aren't a person taking over)
         Constructs.CrewWorks ??= Crew.Works; // (an NPC crew's machines work only manned: CrewGate)
         SandboxHands.CrewYield ??= CrewYield; // (a crew body stands up for a player who sits)
+        SandboxHands.SeatRefusal ??= ShipSeatRefusal; // (an NPC power's helm and gun seats are its crew's: GameShipControl.cs)
         Constructs.Hands ??= SandboxHandOf; // (a held hose follows its holder's hands)
         Constructs.Taught ??= AssemblerTaught; // (parts a story faction must teach first: GameStoryTech.cs)
         if (Constructs.PlayerEndCount > 0)
@@ -817,6 +820,7 @@ public sealed partial class Game
         SendFactions(to); // (before the constructs: who shares what, GameSandboxFactions.cs)
         SendPowerNewsTo(to); // (the NPC powers' news: GameCrewFactions.cs)
         SendContractsTo(to); // (the powers' contracts: GameCrewPolitics.cs)
+        SendStationsTo(to); // (the stations' markets and moorings: GameStationMarket.cs)
         if (Constructs.Designs.Count > 0)
         {
             PanelDesigns.Write(w, Constructs); // (the shared panel designs, before any order that names one)
@@ -1195,7 +1199,7 @@ public sealed partial class Game
                     return hoseWhy; // (a hose part: take, plug, unplug or hang back its hose; GameSandboxWorldLinks.cs)
                 if (Constructs.Get(body) is { Loose: true, PartCount: 1 } module && ToolUpgrades.Current.ModuleOf(module.Parts[0].Def) != null)
                     return hands.FitUpgrade(Constructs, p.Id, eye, module); // (a tool upgrade: fitted, ConstructEditsUpgrades.cs)
-                if (Constructs.Get(body) is { } lc && part < lc.PartCount && lc.DefOf(part).LadderTop > 0)
+                if (Constructs.Get(body) is { } lc && part < lc.PartCount && lc.DefOf(part).LadderTop > 0 && !LadderOnShutDoor(lc, part))
                     return SandboxGrabOn(p, lc, part, ladder: true); // (a vertical ladder: climbed up or down, ConstructRide.ClimbLadder)
                 if (Constructs.Get(body) is { } bc && part < bc.PartCount && bc.DefOf(part).Boarding)
                     return SandboxGrabOn(p, bc, part); // (a grab handle, a boarding ladder, a step plate: ba01)
@@ -1418,6 +1422,8 @@ public sealed partial class Game
                     return "not in a seat of that craft";
                 return ConstructFlight.ToggleDampeners(Constructs, craft);
             }
+            case CActKind.MmuOff:
+                return SandboxMmuOff(p); // (GameSandboxEva.cs)
             case CActKind.MouseSteer:
             {
                 var body = r.U16();
@@ -2122,6 +2128,9 @@ public sealed partial class Game
         return at.X < c.LocalMin.X || at.Y < c.LocalMin.Y || at.Z < c.LocalMin.Z || at.X > c.LocalMax.X || at.Y > c.LocalMax.Y || at.Z > c.LocalMax.Z;
     }
 
+    /// <summary>A ladder riding a shut event door's leaf (the Dray's belly hatch): F on it works the door (hands.Use) instead of a climb.</summary>
+    internal static bool LadderOnShutDoor(Construct c, int part) => ConstructDoor.EventDoor(c, part) is var d and >= 0 && d != part && !ConstructDoors.TargetOpen(c, d);
+
     internal string? SandboxGrabOn(Player p, Construct c, int part, bool ladder = false)
     {
         if (!p.Alive)
@@ -2310,13 +2319,12 @@ public sealed partial class Game
     private uint _stabSeat; // the seat whose look is held (body << 16 | part + 1; 0: none)
     private ushort _stabBody; // the body that point is on (0: the world)
     private Vector3 _stabAt;
-    private float _stabYaw, _stabPitch; // the look as the last frame left it: any other is the player's hand
 
     /// <summary>
     /// A Turret Module set to stabilised: with the mouse still, the local look stays on the point it was left on, on the ground or on a body, whatever the craft does.
     /// The look is the only thing that changes, so the guns follow it as they follow any gunner's and the server has nothing more to do.
     /// </summary>
-    private void SandboxStabilise(Construct c, int seat, uint key)
+    private void SandboxStabilise(Construct c, int seat, uint key, bool hold)
     {
         if (!ConstructModules.Stabilised(c, seat) || !c.SeatAims(seat))
         {
@@ -2324,18 +2332,15 @@ public sealed partial class Game
             return;
         }
         var eye = ConstructWeapons.SeatEye(c, seat);
-        if (_stabSeat == key && LookYaw == _stabYaw && LookPitch == _stabPitch)
+        if (_stabSeat == key && hold)
         {
             var to = (_stabBody != 0 && Constructs.Get(_stabBody) is { } on ? on.ToWorld(_stabAt) : _stabAt) - eye;
             var len = to.Length();
             if (len > 1f)
-            {
-                LookYaw = MathF.Atan2(to.X, -to.Z);
-                LookPitch = MathF.Asin(Math.Clamp(to.Y / len, -1, 1));
-            }
+                SetLookDir(to / len); // (the look's own frame: flat angles on a planet are off it)
             return;
         }
-        var look = World.Forward(LookYaw, LookPitch);
+        var look = LookDir(LookYaw, LookPitch);
         var d = World.Query.Raycast(eye, look, ConstructOrdnance.LookReach, QueryFilter.Shots);
         _stabSeat = key;
         _stabBody = 0;
@@ -2350,21 +2355,6 @@ public sealed partial class Game
     private uint _sbViewSeat; // the seat the local view last turned with (body << 16 | part + 1; 0: none)
     private bool _sbViewSteers; // that seat's look steered its ship's nose last frame (ConstructFlight.MouseSteers)
     private float _sbViewYaw;
-
-    /// <summary>
-    /// The local look turned to a seat's facing as the player sits: its heading, and its nose against the level here (a seat on a ship flying
-    /// nose down keeps her nose down; one on the level looks level). Without it the look kept the pitch the player had bending to the seat,
-    /// and a ship whose nose follows the look went after it.
-    /// </summary>
-    private void SeatLookForward(in Quaternion seat, Vector3 feet, float seatYaw)
-    {
-        var f = Vector3.Transform(-Vector3.UnitZ, seat);
-        var up = GravityFrames.UpAt(feet);
-        LookYaw = seatYaw;
-        LookPitch = Math.Clamp(MathF.Asin(Math.Clamp(Vector3.Dot(f, up), -1f, 1f)), -1.5f, 1.5f);
-        if (GravityFrames.Curved)
-            (LookYaw, LookPitch) = GravityFrames.Angles(LookFrame, f);
-    }
 
     private float _sbLookSent = float.NaN;
     private double _sbLookSentAt;
@@ -2465,6 +2455,7 @@ public sealed partial class Game
             p.RenderSeat = SeatKind.None;
             p.RenderRide = false;
             p.RenderLadder = false;
+            p.RenderHandsUp = HandsUp[p.Id] && p.Alive; // (surrendered crew: GameCrewHandsUp.cs)
             if (!p.Alive)
                 continue; // (RenderSeatWas stays: a ragdoll of a seated death starts seated)
             p.RenderSeatWas = SeatKind.None;
@@ -2510,34 +2501,22 @@ public sealed partial class Game
                 // The view turns with the seat, then stays inside the seat type's limits.
                 localSeat = ((uint)body << 16) | (uint)(part + 1); // (16 bits of part: << 8 mixed seats past part 255)
                 var steers = ConstructFlight.MouseSteers(c, part); // (a ship's nose follows the look: the look stays put and the ship comes round to it)
-                if (!steers && !c.SeatAims(part))
+                // The look is kept in the seat's frame and the camera takes the seat's up (GameSandbox.cs, SeatFrameLook): a ship in orbit is turned any
+                // way against the planet's up, and a look measured against the planet's up showed it tilted. A seat whose look steers the nose keeps the
+                // look's world direction (the ship comes round to it) but turns it about the seat's axes; in third person the orbit camera sets the look.
+                var mode = ThirdPerson.Active && ThirdPerson.Seated ? SeatLookMode.Given : steers ? SeatLookMode.World : SeatLookMode.Kept;
+                var frame = q;
+                if (!steers && c.SeatAims(part))
                 {
-                    // A seat that neither steers nor aims: the look is kept in the seat's own frame, and the camera takes the seat's up
-                    // (a ship in orbit is turned any way against the planet's up; the view was level with the planet, not the ship).
-                    SeatFrameLook(q, localSeat, lookKind, _sbViewSeat != localSeat);
-                    _sbViewSteers = false;
-                    _sbViewYaw = seatYaw;
-                    _stabSeat = 0;
-                    p.RenderLookYaw = _seatFYaw;
-                    p.RenderYaw = World.WrapAngle(seatYaw + _seatFYaw);
-                    _stabYaw = LookYaw;
-                    _stabPitch = LookPitch;
-                    SandboxSeatLookOut(_seatFYaw, now);
-                    continue;
+                    // A seat that aims: the look in the hull's frame, not the seat's (a gunner's seat on the turret it points turns with it, and its look would chase itself round).
+                    DrawnFrame(c, 0, out var hull, out _);
+                    frame = Quaternion.Normalize(hull * Rot24.Quat(c.Parts[part].Rot));
                 }
-                _seatFrameKey = 0;
-                if (_sbViewSeat != localSeat && kind != SeatKind.Gunner || steers && !_sbViewSteers && _sbViewSeat == localSeat)
-                    SeatLookForward(q, feet, seatYaw); // (just sat down, or just took the nose with the mouse: the view faces the way the seat does, so the ship doesn't swing round to wherever the look was)
+                SeatFrameLook(c, part, frame, localSeat, steers ? SeatKind.Gunner : lookKind, mode, _sbViewSeat != localSeat);
                 _sbViewSteers = steers;
-                if (!steers && (_sbViewSeat == localSeat && lookKind != SeatKind.Gunner || _sbViewSeat == localSeat && !c.SeatAims(part))) // (a gunner who points the turret looks where they look: the turret follows)
-                    LookYaw = World.WrapAngle(LookYaw + World.WrapAngle(seatYaw - _sbViewYaw));
                 _sbViewYaw = seatYaw;
-                SandboxStabilise(c, part, localSeat);
-                p.RenderLookYaw = SeatLocalYaw(LookYaw, seatYaw, steers ? SeatKind.Gunner : lookKind); // (and all the way round: it turns to whatever you look at)
-                LookYaw = World.WrapAngle(seatYaw + p.RenderLookYaw);
-                p.RenderYaw = LookYaw;
-                _stabYaw = LookYaw;
-                _stabPitch = LookPitch;
+                p.RenderLookYaw = frame == q ? _seatFYaw : SeatLocalYaw(SeatYaw(frame) + _seatFYaw, seatYaw, lookKind); // (relative to the seat itself, for the body and the server)
+                p.RenderYaw = World.WrapAngle(seatYaw + p.RenderLookYaw);
                 SandboxSeatLookOut(p.RenderLookYaw, now);
             }
             else
@@ -2556,50 +2535,128 @@ public sealed partial class Game
             _seatFrameKey = 0;
     }
 
-    private uint _seatFrameKey; // the seat whose look is kept in its own frame (body << 16 | part + 1; 0: none)
-    private Quaternion _seatFrameRot = Quaternion.Identity; // that seat as drawn this frame
-    private float _seatFYaw, _seatFPitch, _seatFWroteYaw, _seatFWrotePitch;
+    private enum SeatLookMode : byte { Kept, World, Given }
 
-    /// <summary>The camera's up seated in a seat whose look is kept in its frame (zero: none).</summary>
-    internal Vector3 SeatFrameUp => _seatFrameKey != 0 && Local is { Alive: true } ? Vector3.Transform(Vector3.UnitY, _seatFrameRot) : Vector3.Zero;
+    private uint _seatFrameKey; // the seat whose look is kept in its frame (body << 16 | part + 1; 0: none)
+    private SeatLookMode _seatFrameMode;
+    private Quaternion _seatFrameRot = Quaternion.Identity; // that seat as drawn this frame
+    private Vector3 _seatFDir = -Vector3.UnitZ; // the look's world direction
+    private float _seatFYaw, _seatFPitch, _seatFWroteYaw, _seatFWrotePitch; // the look in the seat's frame; the world look as last written or read
 
     /// <summary>
-    /// Takes a change to <see cref="LookYaw"/>/<see cref="LookPitch"/> since they were last written (the mouse) as a turn of the look in
-    /// the seat's frame. Called before the planet's transport too, which turns them without the player's hand (<see cref="SeatFrameRead"/>).
+    /// The camera's up, seated (zero: the planet's). First person: the seat's. Third person: the construct's, when its orbit camera turns with it
+    /// (<see cref="SeatOrbitRot"/>), else the planet's, as the orbit is measured against it.
+    /// </summary>
+    internal Vector3 SeatFrameUp
+    {
+        get
+        {
+            if (_seatFrameKey == 0 || Local is not { Alive: true })
+                return Vector3.Zero;
+            if (ThirdPerson.Active && ThirdPerson.Seated)
+                return SeatOrbitRot(out var r) ? Vector3.Transform(Vector3.UnitY, r) : Vector3.Zero;
+            return Vector3.Transform(Vector3.UnitY, _seatFrameRot);
+        }
+    }
+
+    /// <summary>
+    /// Seated in a ship (Ship keys, or a ship in space), not flying a drone: the third-person orbit camera turns with the ship's drawn pose (its yaw and
+    /// pitch are measured in the ship's frame, its up is the ship's), so in orbit it isn't levelled on the planet.
+    /// </summary>
+    internal bool SeatOrbitRot(out Quaternion rot)
+    {
+        rot = Quaternion.Identity;
+        if (!SandboxOn || LocalDrone() != null)
+            return false;
+        ref var h = ref SandboxHands.Hand(LocalId);
+        if (!h.Seated || Constructs.Get(h.SeatBody) is not { } c || !(ConstructFlight.ShipKeyed(c) || SpaceShipIdOf(c) != 0))
+            return false;
+        rot = IsServer ? Quaternion.Slerp(c.PrevRot, c.Rot, _alpha) : c.Rot;
+        return true;
+    }
+
+    /// <summary>A direction as the world look (<see cref="LookYaw"/>, <see cref="LookPitch"/> at <see cref="LookFrame"/>).</summary>
+    internal void SetLookDir(Vector3 dir)
+    {
+        (LookYaw, LookPitch) = GravityFrames.Curved ? GravityFrames.Angles(LookFrame, dir) : (MathF.Atan2(dir.X, -dir.Z), MathF.Asin(Math.Clamp(dir.Y, -1f, 1f)));
+        LookPitch = Math.Clamp(LookPitch, -1.55f, 1.55f);
+    }
+
+    /// <summary>
+    /// Takes a change to <see cref="LookYaw"/>/<see cref="LookPitch"/> since they were last written or read: the mouse, a turn in the seat's frame (about
+    /// the seat's up and across it, never the planet's); in third person, the look the orbit camera set. Called before the planet's transport too, which
+    /// turns them without the player's hand (<see cref="SeatFrameRead"/> after it).
     /// </summary>
     private void SeatFrameSync()
     {
         if (_seatFrameKey == 0)
             return;
-        _seatFYaw = World.WrapAngle(_seatFYaw + World.WrapAngle(LookYaw - _seatFWroteYaw));
-        _seatFPitch = Math.Clamp(_seatFPitch + LookPitch - _seatFWrotePitch, -1.55f, 1.55f);
+        var dy = World.WrapAngle(LookYaw - _seatFWroteYaw);
+        var dp = LookPitch - _seatFWrotePitch;
+        switch (_seatFrameMode)
+        {
+            case SeatLookMode.Given:
+                _seatFDir = LookDir(LookYaw, LookPitch);
+                ConstructRide.LookIn(_seatFrameRot, _seatFDir, out _seatFYaw, out _seatFPitch);
+                break;
+            case SeatLookMode.World:
+                ConstructRide.LookIn(_seatFrameRot, _seatFDir, out _seatFYaw, out _seatFPitch);
+                (_seatFYaw, _seatFPitch) = (World.WrapAngle(_seatFYaw + dy), Math.Clamp(_seatFPitch + dp, -1.55f, 1.55f));
+                _seatFDir = Vector3.Transform(World.Forward(_seatFYaw, _seatFPitch), _seatFrameRot);
+                break;
+            default:
+                (_seatFYaw, _seatFPitch) = (World.WrapAngle(_seatFYaw + dy), Math.Clamp(_seatFPitch + dp, -1.55f, 1.55f));
+                break;
+        }
         SeatFrameRead();
     }
 
     private void SeatFrameRead() => (_seatFWroteYaw, _seatFWrotePitch) = (LookYaw, LookPitch);
 
-    /// <summary>The local seated look in the seat's frame: kept there as the seat turns any way, inside the seat type's limits, and written back as a world look.</summary>
-    private void SeatFrameLook(in Quaternion seat, uint key, SeatKind kind, bool justSat)
+    /// <summary>
+    /// The local seated look, each frame with the seat as drawn now. <see cref="SeatLookMode.Kept"/>: kept in the seat's frame (it turns with the seat,
+    /// inside the seat type's limits). <see cref="SeatLookMode.World"/> (the look steers the ship's nose): kept in the world, the ship coming round to it.
+    /// <see cref="SeatLookMode.Given"/> (third person): the world look the orbit camera set. A stabilised Turret Module holds the look on its point while
+    /// the mouse is still. Written back as the world look every aim, tool and gun reads.
+    /// </summary>
+    private void SeatFrameLook(Construct c, int part, in Quaternion seat, uint key, SeatKind kind, SeatLookMode mode, bool justSat)
     {
-        if (_seatFrameKey != key)
+        if (_seatFrameKey != key || _seatFrameMode != mode)
         {
-            if (justSat)
-                (_seatFYaw, _seatFPitch) = (0f, 0f); // (just sat down: facing the way the seat does)
+            var face = justSat && mode != SeatLookMode.Given || mode == SeatLookMode.World && _seatFrameMode == SeatLookMode.Kept && _seatFrameKey == key;
+            _seatFrameRot = seat;
+            if (face)
+                (_seatFYaw, _seatFPitch) = (0f, 0f); // (just sat down, or just took the nose with the mouse: facing the way the seat does, so the ship doesn't swing round to wherever the look was)
             else
-                ConstructRide.LookIn(seat, LookDir(LookYaw, LookPitch), out _seatFYaw, out _seatFPitch); // (the mouse let go of the nose, or the seat stopped aiming: the look stays where it was)
-            _seatFrameKey = key;
+                ConstructRide.LookIn(seat, LookDir(LookYaw, LookPitch), out _seatFYaw, out _seatFPitch); // (the look stays where it was)
+            _seatFDir = Vector3.Transform(World.Forward(_seatFYaw, _seatFPitch), seat);
+            (_seatFrameKey, _seatFrameMode) = (key, mode);
             SeatFrameRead();
+            _stabSeat = 0;
+        }
+        var still = LookYaw == _seatFWroteYaw && LookPitch == _seatFWrotePitch;
+        SeatFrameSync();
+        _seatFrameRot = seat;
+        if (still && _stabSeat == key && ConstructModules.Stabilised(c, part) && c.SeatAims(part))
+        {
+            SandboxStabilise(c, part, key, hold: true); // (the mouse still: the look back on its point, whatever the craft did)
+            _seatFDir = LookDir(LookYaw, LookPitch);
+            ConstructRide.LookIn(seat, _seatFDir, out _seatFYaw, out _seatFPitch);
+            SeatFrameRead();
+            return;
+        }
+        if (mode == SeatLookMode.Kept)
+        {
+            var lim = SeatLookLimit(kind);
+            if (lim < MathF.PI)
+                _seatFYaw = Math.Clamp(_seatFYaw, -lim, lim);
+            _seatFDir = Vector3.Transform(World.Forward(_seatFYaw, _seatFPitch), seat);
         }
         else
-            SeatFrameSync();
-        var lim = SeatLookLimit(kind);
-        if (lim < MathF.PI)
-            _seatFYaw = Math.Clamp(_seatFYaw, -lim, lim);
-        _seatFPitch = Math.Clamp(_seatFPitch, -1.55f, 1.55f);
-        _seatFrameRot = seat;
-        var dir = Vector3.Transform(World.Forward(_seatFYaw, _seatFPitch), seat);
-        (LookYaw, LookPitch) = GravityFrames.Curved ? GravityFrames.Angles(LookFrame, dir) : (MathF.Atan2(dir.X, -dir.Z), MathF.Asin(Math.Clamp(dir.Y, -1f, 1f)));
-        LookPitch = Math.Clamp(LookPitch, -1.55f, 1.55f);
+            ConstructRide.LookIn(seat, _seatFDir, out _seatFYaw, out _seatFPitch);
+        if (mode != SeatLookMode.Given)
+            SetLookDir(_seatFDir);
+        SandboxStabilise(c, part, key, hold: false); // (the mouse moved: the stabilised point taken again)
         SeatFrameRead();
     }
 

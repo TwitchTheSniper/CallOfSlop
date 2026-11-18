@@ -33,6 +33,14 @@ public static partial class ConstructParts
             d.DockEject = Opt(dock, "eject") is { } ej ? Num(ej, file, "dock.eject") : 0f;
             Range(d.DockEject, 0, 60, file, "dock.eject");
         }
+        if (Opt(root, "clampArm") is { } arm)
+        {
+            Known(arm, ["shoulder", "stow", "reach"], $"{file}, clampArm");
+            d.ClampShoulder = Vec(Need(arm, "shoulder", $"{file}, clampArm"), file, "clampArm.shoulder");
+            d.ClampStow = Vec(Need(arm, "stow", $"{file}, clampArm"), file, "clampArm.stow");
+            d.ClampReach = Num(Need(arm, "reach", $"{file}, clampArm"), file, "clampArm.reach");
+            Range(d.ClampReach, 2, 200, file, "clampArm.reach");
+        }
         if (Opt(root, "breach") is { } br)
         {
             if (d.Logic != CLogic.Lamp)
@@ -101,6 +109,21 @@ public static partial class ConstructParts
             };
             if (d.Eva == EvaPart.Dock && (d.Role != PartRole.Seat || !d.Sockets.Any(s => s.Name == "mmu")))
                 throw new ConstructPartException($"{file}: an MMU dock is a seat with an \"mmu\" socket");
+        }
+        if (Opt(root, "air") is { } ab)
+        {
+            Known(ab, ["kind", "holds"], $"{file}, air");
+            d.Air = Str(Need(ab, "kind", $"{file}, air"), file, "air.kind") switch
+            {
+                "unit" => AirPart.Unit,
+                "tank" => AirPart.Tank,
+                var k => throw new ConstructPartException($"{file}: \"air\".\"kind\" is unit or tank, not \"{k}\""),
+            };
+            var holds = Num(Need(ab, "holds", $"{file}, air"), file, "air.holds");
+            Range(holds, 0, ushort.MaxValue, file, "air.holds");
+            d.AirHolds = (ushort)holds;
+            if (d.Eva != EvaPart.None)
+                throw new ConstructPartException($"{file}: an \"air\" part keeps its oxygen in the part's rounds: it can't be spacewalk gear too");
         }
         if (Opt(root, "jump") is { } jb)
         {

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Numerics;
 
 namespace CallOfSlop;
@@ -170,10 +171,15 @@ public sealed partial class ConstructWorld
             b.Fuel = c.Fuel;
             b.Charge = c.Charge;
             b.Cap = c.Cap;
+            b.StationTitle = c.StationTitle;
+            b.HaulRoute = c.HaulRoute;
+            b.HaulAtTo = c.HaulAtTo;
             b.Pos = c.Pos;
             b.Rot = c.Rot;
             if (c.HeldBy != 0 && BodyCarries.Count > 0 && ConstructLifters.CarryEnd(this, c, out var endPos, out var endRot))
                 (b.Pos, b.Rot) = (endPos, endRot); // (a submodule mid-carry is saved at its spot: the hand's carry isn't saved, ConstructLifterBodies.cs)
+            if (c.HeldBy != 0 && ConstructLifters.OnCabHook(this, c))
+                b.Frozen = false; // (a container on a cab's hook loads loose where it hung: the hold catches it again, or the hook takes it)
             b.Vel = c.Vel;
             b.AngVel = c.AngVel;
             b.CarriedBy = c.CarriedBy;
@@ -293,6 +299,9 @@ public sealed partial class ConstructWorld
     /// <summary>The setting key a body's Capacitor Banks' charge (kJ, ConstructPower.cs) is saved under, on its first part; an older save has none: empty.</summary>
     public const string CapKey = "body:cap";
 
+    /// <summary>A station's own name (Construct.StationTitle) is saved as this key plus the name, on its first part; a hauler's route as HaulKey plus its number, valued 1 on the leg to its second station.</summary>
+    public const string StationKey = "body:station:", HaulKey = "body:haul:";
+
     /// <summary>The setting key a Line Console's Made count (ProductionLines.Monitors.cs) is saved under; an older save has none: 0.</summary>
     public const string MadeKey = "line:made";
 
@@ -354,6 +363,16 @@ public sealed partial class ConstructWorld
         if (b.Cap > 0 && parts.Length > 0)
         {
             countAt.U16(0).U16(names.Key(CapKey)).F32(b.Cap); // (the body's, as a setting of its first part an older reader skips)
+            settings++;
+        }
+        if (!string.IsNullOrEmpty(b.StationTitle) && parts.Length > 0)
+        {
+            countAt.U16(0).U16(names.Key(StationKey + b.StationTitle)).F32(0);
+            settings++;
+        }
+        if (b.HaulRoute >= 0 && parts.Length > 0)
+        {
+            countAt.U16(0).U16(names.Key(HaulKey + b.HaulRoute.ToString(CultureInfo.InvariantCulture))).F32(b.HaulAtTo ? 1 : 0);
             settings++;
         }
         for (var i = 0; i < parts.Length; i++)
@@ -724,6 +743,9 @@ public sealed partial class ConstructWorld
         }
         var settings = r.Count(8);
         var capSaved = 0f;
+        var titleSaved = "";
+        sbyte haulSaved = -1;
+        var haulAtTo = false;
         ConstructFuse.Renumber? units = null;
         for (var k = 0; k < settings; k++)
         {
@@ -741,6 +763,17 @@ public sealed partial class ConstructWorld
             if (names.Keys[key] == CapKey)
             {
                 capSaved = float.IsFinite(v) ? v : 0;
+                continue;
+            }
+            if (names.Keys[key].StartsWith(StationKey, StringComparison.Ordinal))
+            {
+                titleSaved = names.Keys[key][StationKey.Length..];
+                continue;
+            }
+            if (names.Keys[key].StartsWith(HaulKey, StringComparison.Ordinal))
+            {
+                if (sbyte.TryParse(names.Keys[key].AsSpan(HaulKey.Length), NumberStyles.None, CultureInfo.InvariantCulture, out var hr))
+                    (haulSaved, haulAtTo) = (hr, v >= 0.5f);
                 continue;
             }
             if (names.Keys[key] == MadeKey)
@@ -1057,6 +1090,9 @@ public sealed partial class ConstructWorld
         c.Empty(); // (what follows is its fuel and charge, not a fresh part's)
         c.Fuel = fuel;
         c.Charge = float.IsFinite(charge) ? Math.Clamp(charge, 0, c.ChargeCapacity) : 0;
+        c.StationTitle = titleSaved;
+        c.HaulRoute = haulSaved;
+        c.HaulAtTo = haulAtTo;
         c.Cap = Math.Clamp(capSaved, 0, c.CapCapacity); // (the banks the rebuild found on its circuit)
         c.Gear = Math.Max(0, gear);
         ConstructNet.SetPower(c, ConstructNet.PowerFlags(c), (byte)c.Gear);

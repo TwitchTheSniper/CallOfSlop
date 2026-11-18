@@ -140,9 +140,12 @@ public sealed partial class Game
                 continue;
             }
             SpacePose(c, p, vel.ToVector3(), centre, dt);
+            if (_spacePosed.Count < _spacePosed.Capacity)
+                _spacePosed.Add(c);
             launched++;
         }
         SpaceLaunched = launched;
+        SpaceCollide(f, pose, dt); // (posed ships never meet in the step: they are kept apart here, GameSpaceCollide.cs)
         for (var k = 0; k < _spaceRiders.Count; k++)
             SpaceCarry(_spaceRiders[k]);
         _spaceRiders.Clear();
@@ -315,6 +318,14 @@ public sealed partial class Game
     /// </summary>
     private static void SpacePose(Construct c, Vector3 com, Vector3 vel, Vector3 centre, float dt)
     {
+        if (c.MooredTo != 0)
+        {
+            // Moored at a station's berth: its turn is the station's (GameStations.cs), never levelled or steered here.
+            c.Pos = com - Vector3.Transform(c.Com, c.Rot);
+            c.Vel = vel;
+            c.Asleep = false;
+            return;
+        }
         if (ConstructFlight.FliesShip(c))
         {
             // Flown on Ship keys: its own attitude, turned by its jets (SpaceLaunchBefore), never levelled.

@@ -275,16 +275,11 @@
       }
     },
     {
-      "part": "Battery",
+      "part": "Ship Battery XS",
       "on": 0,
-      "socket": "battery0",
-      "by": "-y"
-    },
-    {
-      "part": "Battery",
-      "on": 0,
-      "socket": "battery1",
-      "by": "-y"
+      "socket": "battery",
+      "by": "bottom",
+      "spin": 2
     },
     {
       "part": "Limpet Ladder",
@@ -375,20 +370,20 @@
       28
     ],
     [
-      45,
+      44,
+      45
+    ],
+    [
+      44,
       46
     ],
     [
-      45,
+      44,
       47
     ],
     [
-      45,
+      44,
       48
-    ],
-    [
-      45,
-      49
     ]
   ],
   "conduit": true

@@ -92,6 +92,8 @@ public sealed partial class Game
         Array.Clear(_opDone);
         _opOn = false;
         _opShip = 0;
+        _opHolds.Clear();
+        StationsReset(); // (stations' markets and haulers: GameStationMarket.cs)
         BreakdownReset(); // (GameSandboxBreakdowns.cs)
         FragmentsReset(); // (and the data centres: GameStoryFragments.cs)
         LoreReset(); // (and the things to look at: GameStoryLore.cs)
@@ -444,8 +446,11 @@ public sealed class OpeningScript
     public float Orbit = 3000; // its height over the ground (m; at least past the sky's edge)
     public Vector3[] Wake = []; // where people wake in it, in the ship's own metres (from its first part's middle), one each in turn
     /// <summary>A crewed ship of an NPC faction kind going round with the start's ship, <c>Behind</c> m back along its orbit (GameSpaceStart.cs).</summary>
-    public readonly record struct Companion(string Ship, string Faction, float Behind);
+    public readonly record struct Companion(string Ship, string Faction, float Behind, float Away = 0);
     public Companion[] Company = [];
+    /// <summary>A station built on its own circular orbit, <c>Orbit</c> m over the ground above the start, <c>Ahead</c> m on along it (GameSpaceStart.cs).</summary>
+    public readonly record struct Station(string Blueprint, float Orbit, float Ahead, string Name);
+    public Station[] Stations = [];
     public readonly BeatDef[] Beats = new BeatDef[(int)OpeningStage.Wake + 1];
     public string Problem = "";
 
@@ -488,6 +493,10 @@ public sealed class OpeningScript
                 t.Company = [.. co.EnumerateArray().Select(ReadCompanion)];
             if (t.Company.Length > 0 && t.Ship.Length == 0)
                 throw new FormatException("\"company\" goes with a ship start (\"ship\")");
+            if (root.TryGetProperty("stations", out var st))
+                t.Stations = [.. st.EnumerateArray().Select(ReadStation)];
+            if (t.Stations.Length > 0 && t.Ship.Length == 0)
+                throw new FormatException("\"stations\" go with a ship start (\"ship\")");
             var beats = root.GetProperty("beats");
             foreach (var (key, stage) in new[] { ("placeholder", OpeningStage.Out), ("wake", OpeningStage.Wake) })
             {
@@ -523,7 +532,29 @@ public sealed class OpeningScript
         var behind = Math.Clamp(e.TryGetProperty("behind", out var b) ? b.GetSingle() : 400f, -5000f, 5000f);
         if (MathF.Abs(behind) < 150f)
             behind = behind < 0 ? -150f : 150f;
-        return new Companion(ship, faction, behind);
+        // "away": held still that far out instead (m straight out from the planet past the player's ship, not on the orbit:
+        // Karl, 2026-11-18, a rival to find on the radar), under the far distance where a ship is parked (GameSpaceJump.cs)
+        var away = Math.Clamp(e.TryGetProperty("away", out var w) ? w.GetSingle() : 0f, 0f, 150_000f);
+        if (away > 0 && away < 1000f)
+            away = 1000f;
+        return new Companion(ship, faction, behind, away);
+    }
+
+    private static Station ReadStation(JsonElement e)
+    {
+        var bp = Text(e, "blueprint", "");
+        if (ConstructBuild.FindBlueprint(bp) == null)
+            throw new FormatException($"stations: no blueprint named \"{bp}\"");
+        // (high enough to clear the start's ship and its company by kilometres; at most 150 km, inside the bubble's 200 km reach from
+        // the origin on the ground (GameSpaceJump.SpaceFarDistance), past which a ship is parked away)
+        var orbit = Math.Clamp(e.TryGetProperty("orbit", out var o) ? o.GetSingle() : 40000f, 5000f, 150000f);
+        var ahead = Math.Clamp(e.TryGetProperty("ahead", out var a) ? a.GetSingle() : 0f, -50000f, 50000f);
+        // (its own name, when it isn't its pieces' section: a second Highport built as another power's station, its market found by
+        // that name in Crew/Stations.json; Karl, 2026-11-18)
+        var name = Text(e, "name", "");
+        if (name.Length > 0 && StationMarkets.Find(name) < 0)
+            throw new FormatException($"stations: no market named \"{name}\" in Crew/Stations.json");
+        return new Station(bp, orbit, ahead, name);
     }
 
     private static string Text(JsonElement e, string key, string fallback) =>

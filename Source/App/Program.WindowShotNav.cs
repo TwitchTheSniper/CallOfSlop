@@ -16,7 +16,7 @@ namespace CallOfSlop;
 /// </summary>
 public static unsafe partial class Program
 {
-    private static bool WsNavKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "command" or "cmdpick" or "order" or "nav" or "hoist" or "speed" or "travel" or "cmdview" or "rclick" or "rclickup" or "spacewalk" or "missile" or "missiles" or "letgo" or "orbit" or "boardwalk" or "cmdboard" or "mouse";
+    private static bool WsNavKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "command" or "cmdpick" or "order" or "nav" or "hoist" or "speed" or "travel" or "cmdview" or "rclick" or "rclickup" or "spacewalk" or "missile" or "missiles" or "letgo" or "orbit" or "boardwalk" or "cmdboard" or "mouse" or "ram" or "gapto" or "moorclear" or "stationsell" or "stationbuy" or "market";
 
     /// <summary>"order dock N": the picked craft docks with the Nth craft on the map (as cmdpick counts them).</summary>
     private static string? WsDockOrder(Game g, int n)
@@ -106,7 +106,7 @@ public static unsafe partial class Program
             {
                 var back = words.Length > 0 && float.TryParse(words[0], inv, out var bk) ? bk : 1.2f;
                 var ticks = words.Length > 1 && float.TryParse(words[1], inv, out var tk) ? tk : 240f;
-                if (g.BoardWalkStart(me, back, out var face) is { } no)
+                if (g.BoardWalkStart(me, back, out var face, out var facePitch) is { } no)
                 {
                     WsFail("boardwalk: " + no);
                     return true;
@@ -114,12 +114,65 @@ public static unsafe partial class Program
                 me.NoclipWanted = false;
                 g.NoclipShot = false;
                 g.LookYaw = face;
-                g.LookPitch = 0;
+                g.LookPitch = facePitch;
                 _wsHold = GameAction.MoveForward;
                 _wsHoldUntil = System.Diagnostics.Stopwatch.GetTimestamp() + (long)(ticks / World.TickRate * System.Diagnostics.Stopwatch.Frequency);
                 WsSay($"[nav] boardwalk: {back:0.0} m behind the cutter, W for {ticks:0} ticks");
                 WsWaitTicks((int)ticks + 10);
                 _wsQueue.EnqueueFront("me");
+                return true;
+            }
+            case "ram" when g.IsServer: // "ram N [SPEED] [GAP]" (host): the picked ship in space set GAP m (default 5) off the Nth craft's bounds, closing on it at SPEED m/s (default 5): do they meet? (GameSpaceCollide.cs)
+            {
+                var n = words.Length > 0 && int.TryParse(words[0], out var rk) ? rk : 1;
+                var speed = words.Length > 1 && float.TryParse(words[1], inv, out var rs) ? rs : 5f;
+                var gap = words.Length > 2 && float.TryParse(words[2], inv, out var rg) ? rg : 5f;
+                Construct? target = null;
+                var seen = 0;
+                foreach (var c in g.Constructs.Bodies)
+                    if (Ui.CmdIsCraft(c) && ++seen == Math.Max(1, n))
+                        target = c;
+                if (g.Constructs.Get(words.Length > 3 && ushort.TryParse(words[3], out var rid) ? rid : Ui.CommandPicked) is not { CarriedBy: 0 } ship || target == null || target == ship)
+                {
+                    WsFail("ram N [SPEED] [GAP] [ID]: pick a craft first (cmdpick, or its construct ID), loose or a ship in space, and another craft N");
+                    return true;
+                }
+                var from = ship.WorldCom - target.WorldCom;
+                var way = from.LengthSquared() > 1e-6f ? Vector3.Normalize(from) : Vector3.UnitX;
+                var at = target.WorldCom + way * (ship.Radius + target.Radius + gap);
+                var vel = target.Vel - way * speed;
+                if (ship.SpaceShip == 0)
+                {
+                    ship.Pos += at - ship.WorldCom; // (a loose body: past the edge and out of every frame it leaves the bubble as a ship, GameSpaceLaunch.cs)
+                    ship.PrevPos = ship.Pos;
+                    ship.Vel = vel;
+                    ship.AngVel = System.Numerics.Vector3.Zero;
+                    ship.KeepSpeed();
+                    ship.Wake();
+                }
+                WsSay(string.Create(inv, $"[nav] ram: construct {ship.Id} {(ship.SpaceShip == 0 ? "moved" : g.SpaceShove(ship, at - ship.WorldCom, vel - ship.Vel))} at {speed:0.0} m/s into construct {target.Id}, {ship.Radius + target.Radius + gap:0} m between centres"));
+                _wsWait = 3;
+                return true;
+            }
+            case "gapto": // "gapto N": the picked craft's centre against the Nth craft's, and how fast they close (after a "ram")
+            {
+                var n = words.Length > 0 && int.TryParse(words[0], out var gk) ? gk : 1;
+                Construct? target = null;
+                var seen = 0;
+                foreach (var c in g.Constructs.Bodies)
+                    if (Ui.CmdIsCraft(c) && ++seen == Math.Max(1, n))
+                        target = c;
+                if (g.Constructs.Get(words.Length > 1 && ushort.TryParse(words[1], out var gid) ? gid : Ui.CommandPicked) is not { } ship || target == null || target == ship)
+                {
+                    WsFail("gapto N: pick a craft first (cmdpick), and another craft N");
+                    return true;
+                }
+                var d = ship.WorldCom - target.WorldCom;
+                var close = d.LengthSquared() > 1e-6f ? -Vector3.Dot(ship.Vel - target.Vel, Vector3.Normalize(d)) : 0;
+                var touch = ConstructPhysics.ShipContact(g.Constructs, ship, target, World.TickDt, out var tn, out var tgap, out _) > 0
+                    ? string.Create(inv, $"; pieces {tgap:0.000} m apart along ({tn.X:0.00}, {tn.Y:0.00}, {tn.Z:0.00}), closing {-Vector3.Dot(ship.Vel - target.Vel, tn):0.00} m/s there") : "; pieces apart";
+                WsSay(string.Create(inv, $"[nav] gapto: construct {ship.Id} to {target.Id}: {d.Length():0.00} m between centres (radii {ship.Radius:0.0} + {target.Radius:0.0}), closing {close:0.00} m/s, {(ship.SpaceShip != 0 ? "space" : "sky")}/{(target.SpaceShip != 0 ? "space" : "sky")}{touch}"));
+                _wsWait = 1;
                 return true;
             }
             case "cmdview": // "cmdview YAW PITCH" (degrees): the view's turn and tilt
@@ -199,6 +252,8 @@ public static unsafe partial class Program
                     "cancel" => Ui.CommandOrder(g, NavKind.None, "", 0),
                     "come" => Ui.CommandOrder(g, NavKind.Come, "", 0),
                     "dock" when words.Length == 2 && int.TryParse(words[1], out var nth) => WsDockOrder(g, nth),
+                    "dockat" when words.Length == 2 && ushort.TryParse(words[1], out var dockId) => Ui.CommandDock(g, dockId), // (by construct id)
+                    "dock" when words is [_, "station"] => g.Constructs.Bodies.FirstOrDefault(b => b.IsStation) is { } st ? Ui.CommandDock(g, st.Id) : "no station on the map", // ("order dock station": the first station)
                     "meet" when words.Length is 2 or 3 && int.TryParse(words[1], out var mnth) => WsMeetOrder(g, mnth, words.Length == 3 && float.TryParse(words[2], inv, out var mgap) ? mgap : Game.NavMeetGap),
                     "orbit" or "goto" when words.Length == 3 && double.TryParse(words[2], inv, out var km) => Ui.CommandOrder(g, kind == "orbit" ? NavKind.Orbit : NavKind.GoTo, words[1], km),
                     _ => "order orbit BODY KM | order goto BODY KM | order ground M | order land M | order come | order dock N | order meet N [GAP] | order board N door|hull | order cancel",
@@ -208,6 +263,30 @@ public static unsafe partial class Program
                 _wsWait = 10;
                 return true;
             }
+            case "stationsell":
+                // "stationsell": the picked craft's cargo sold to the station it is moored at, as the station card's SELL CARGO sends it.
+                g.SandboxFaction(FactionOp.StationSell, Ui.CommandPicked);
+                return true;
+            case "stationbuy":
+                // "stationbuy K": the Kth good of the station the picked craft is moored at bought into it, as the card's BUY sends it.
+                g.SandboxFaction(FactionOp.StationBuy, Ui.CommandPicked, words.Length > 0 && int.TryParse(words[0], out var sbk) ? sbk : 0);
+                return true;
+            case "market":
+                // "market": every station's market as this peer has it (stock by good, who is moored), and this player's credits.
+                foreach (var m in g.StationMarketsHere.Values)
+                {
+                    var def = StationMarkets.All[m.Def];
+                    WsSay($"[market] {def.Name} (construct {m.Body}, {def.Power}): " + string.Join(", ", def.Goods.Select((gd, i) => $"{RecyclingTable.Current.NameOf(gd.Material)} {m.Stock[i]}"))
+                        + $"; moored: {string.Join(", ", m.Moored.Select(x => $"{x.Ship}@{x.Part}"))}");
+                }
+                WsSay($"[market] credits here: {g.CreditsHere}");
+                return true;
+            case "moorclear" when g.IsServer:
+                // (a test state: the picked craft may be moored again at once by the berth it was cast off from, as if it had flown out and back)
+                if (g.Constructs.Get(Ui.CommandPicked) is { } mc)
+                    mc.MoorAway = 0;
+                WsSay($"[nav] moorclear: construct {Ui.CommandPicked}, moored to {g.Constructs.Get(Ui.CommandPicked)?.MooredTo ?? 0}");
+                return true;
             case "nav":
             {
                 if (g.Space is not { } s)
@@ -226,7 +305,7 @@ public static unsafe partial class Program
                     c.WorldFrame(0, out var cq, out _);
                     var tilt = MathF.Acos(Math.Clamp(Vector3.Dot(Vector3.Transform(Vector3.UnitY, cq), ConstructPhysics.HoldUp(c.WorldCom)), -1, 1)) * 180 / MathF.PI; // (its deck against the ground's up)
                     WsSay(string.Create(inv, $"[nav] construct {c.Id} drive: {accel:0.00} m/s2, {(burn > 0 ? $"{c.FuelLeft / burn:0} s at full, dV {accel * c.FuelLeft / burn:0} m/s" : "no fuel burnt")}"));
-                    WsSay(string.Create(inv, $"[nav] construct {c.Id}: {(c.SpaceAway != 0 ? "parked" : c.SpaceShip != 0 ? "space" : "sky")}, {height:0} m up, tilt {tilt:0} deg, {c.Vel.Length():0.0} m/s, spin {c.AngVel.Length():0.00} rad/s{(c.CarriedBy != 0 ? $", held by {c.CarriedBy}" : "")}, mass {c.Mass / 1000:0.0} t, fuel {c.FuelLeft:0} L, thrust {c.ThrustShow:0.00}, nav throttle {c.NavThrottle:0.00}, takes orders: {Game.NavProblem(c) ?? "yes"}; order: {(o == null ? "none" : $"{Game.NavText(s.System, o)}, {o.Phase}, {o.Distance:0} m to go, {o.SpeedError:0.0} m/s off{(o.ArriveNs != 0 ? $", trip leaves day {o.DepartNs / 864e11:0.0}, arrives day {o.ArriveNs / 864e11:0.0}, {o.DvNeed / 1000:0.00} km/s" : "")}")}; space day {s.Now.Seconds / 86400:0.00} at {s.Speed}x{((c.SpaceAway != 0 ? g.SpaceAwayLine(c) : g.SpaceOrbitLine(c)) is { } line ? "; " + line : "")}{(g.Local is { Alive: true } you && c.SpaceShip == 0 ? $"; {Vector3.Distance(you.Position, c.WorldCom):0} m from you" : "")}"));
+                    WsSay(string.Create(inv, $"[nav] construct {c.Id}: {(c.SpaceAway != 0 ? "parked" : c.SpaceShip != 0 ? "space" : "sky")}, {height:0} m up, tilt {tilt:0} deg, {c.Vel.Length():0.0} m/s, spin {c.AngVel.Length():0.00} rad/s{(c.CarriedBy != 0 ? $", held by {c.CarriedBy}" : "")}{(c.MooredTo != 0 ? $", moored at {c.MooredTo}" : "")}, mass {c.Mass / 1000:0.0} t, fuel {c.FuelLeft:0} L, thrust {c.ThrustShow:0.00}, nav throttle {c.NavThrottle:0.00}, takes orders: {Game.NavProblem(c) ?? "yes"}; order: {(o == null ? "none" : $"{Game.NavText(s.System, o)}, {o.Phase}, {o.Distance:0} m to go, {o.SpeedError:0.0} m/s off{(o.ArriveNs != 0 ? $", trip leaves day {o.DepartNs / 864e11:0.0}, arrives day {o.ArriveNs / 864e11:0.0}, {o.DvNeed / 1000:0.00} km/s" : "")}")}; space day {s.Now.Seconds / 86400:0.00} at {s.Speed}x{((c.SpaceAway != 0 ? g.SpaceAwayLine(c) : g.SpaceOrbitLine(c)) is { } line ? "; " + line : "")}{(g.Local is { Alive: true } you && c.SpaceShip == 0 ? $"; {Vector3.Distance(you.Position, c.WorldCom):0} m from you" : "")}"));
                 }
                 return true;
             }

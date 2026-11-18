@@ -468,6 +468,18 @@
       "by": "wall"
     },
     {
+      "part": "Life Support Unit",
+      "on": 3,
+      "socket": "lifeSupport",
+      "by": "wall"
+    },
+    {
+      "part": "Oxygen Tank",
+      "on": 5,
+      "socket": "o2Tank0",
+      "by": "wall"
+    },
+    {
       "part": "MMU Dock",
       "on": 2,
       "socket": "mmuDock",
@@ -475,7 +487,7 @@
     },
     {
       "part": "Manned Manoeuvring Unit",
-      "on": 76,
+      "on": 78,
       "socket": "mmu",
       "by": "mount"
     },
@@ -516,11 +528,10 @@
       "by": "back"
     },
     {
-      "part": "Battery",
+      "part": "Ship Battery S",
       "on": 11,
       "socket": "battery",
-      "by": "-z",
-      "paint": "#3a3d3f"
+      "by": "wall"
     },
     {
       "part": "Bulkhead Light",
@@ -624,12 +635,6 @@
         "keys": "Ship",
         "mouseAim": true
       }
-    },
-    {
-      "part": "Chart Table",
-      "on": 20,
-      "socket": "chart",
-      "by": "back"
     },
     {
       "part": "Shell Control Chair",
@@ -858,71 +863,71 @@
   ],
   "wires": [
     [
-      87,
-      85
+      89,
+      87
     ],
     [
-      87,
-      86
-    ],
-    [
-      90,
+      89,
       88
     ],
     [
-      90,
-      89
+      92,
+      90
     ],
     [
-      93,
+      92,
       91
     ],
     [
-      93,
-      92
+      95,
+      93
     ],
     [
-      94,
-      96
+      95,
+      94
     ],
     [
-      122,
-      118
+      96,
+      98
     ],
     [
-      122,
+      123,
       119
     ],
     [
-      122,
+      123,
       120
     ],
     [
-      122,
+      123,
       121
     ],
     [
-      127,
-      123
+      123,
+      122
     ],
     [
-      127,
+      128,
       124
     ],
     [
-      127,
+      128,
       125
     ],
     [
-      127,
+      128,
       126
+    ],
+    [
+      128,
+      127
     ]
   ],
   "links": [
     {
       "type": "pipe",
       "from": 30,
-      "to": 76,
+      "to": 78,
       "fromPort": "Fuel out",
       "toPort": "Fuel in"
     }

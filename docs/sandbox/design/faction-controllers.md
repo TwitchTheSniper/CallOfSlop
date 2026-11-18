@@ -437,3 +437,23 @@ These settle section 12 and override sections 4, 5 and 7 where they differ.
 4. **Ships: use the existing ships as placeholders** per role for now so the systems can be tested; vehicle and ship generation is in progress and undecided, and the role lists and generation tools are to be filled out later.
 5. **SURVIVAL.md:** faction politics moves from ideas to decided, with powers made from kinds and a pointer here (done 2026-11-17).
 6. **Scale: go for 1,000 faction ships as real bodies near players now** (design for it from the start, measure as you go).
+
+## Stations: the powers' logistics points (Karl, 2026-11-18)
+
+Karl: "build it into the faction plan and implementation. The first gameplay loop is being able to dock with it and sell mined ores";
+"as a logistics point, it should show up on the friendly market as whatever goods are there to trade. Haulers from other neutral factions can
+then send ships to buy goods and take them back to their station"; then a second station "at a fixed place in another neutral faction's turf",
+to start testing logistics runs with ships.
+
+- **A station is a power's holding in orbit.** `Crew/Stations.json` names the power that holds each station (Caledon Highport: the Traders,
+  who hold Caledon Port) and its market. A power's standing with a player decides whether it trades with them (below 0: no).
+- **Built (phase S1):** the station in the command view, its berths mooring ships (any ship, its own craft aboard), its market (goods, stock,
+  prices) on its card, and selling a docked ship's ore for credits; a share of each sale goes into the power's stock as its trade
+  (docs/sandbox/constructs/station.md "Markets").
+- **Built (phase S2):** Glacier Watch, the Militia's station over Glacier (Karl chose Glacier: faction areas, harder routes, real fuel use),
+  arriving in a world in orbit at its station, buying at stations, and the powers' haulers: real crewed ships on a route between two stations,
+  docking at the one in the world being played and trading by orbit at the other, their cargo moving both markets' stock and the powers'
+  books (station.md "Markets"). Players can see goods move, and raid or escort the runs.
+- **Next:** haulers as Convoy missions of the controllers (escorts, routes chosen by what a station lacks), prices that follow stock, and
+  stations and runs kept in saves.
+

@@ -1,0 +1,114 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Dray Landing Leg",
+  "description": "A landing leg: a heavy strut and its ram on a broad pad. Six stand the Dray 2.9 m off the ground, room for a container under the well.",
+  "group": "Ship",
+  "section": "Dray hauler",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 1600.0,
+  "health": 6000,
+  "armour": 30,
+  "material": "steel",
+  "color": "#202326",
+  "attachSeconds": 8.0,
+  "boxes": [
+    {
+      "min": [
+        -0.36,
+        -0.7,
+        -0.36
+      ],
+      "max": [
+        0.36,
+        0.0,
+        0.36
+      ],
+      "color": "#264b67",
+      "finish": "worn paint"
+    },
+    {
+      "min": [
+        -0.365,
+        -0.62,
+        -0.365
+      ],
+      "max": [
+        0.365,
+        -0.52,
+        0.365
+      ],
+      "color": "#e0a020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.23,
+        -2.5,
+        -0.23
+      ],
+      "max": [
+        0.23,
+        -0.7,
+        0.23
+      ],
+      "color": "#9aa0a4",
+      "finish": "chrome"
+    },
+    {
+      "min": [
+        -0.44,
+        -2.55,
+        -0.44
+      ],
+      "max": [
+        0.44,
+        -2.4,
+        0.44
+      ],
+      "color": "#202326",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.75,
+        -2.8,
+        -0.75
+      ],
+      "max": [
+        0.75,
+        -2.55,
+        0.75
+      ],
+      "color": "#202326",
+      "finish": "rubber"
+    },
+    {
+      "min": [
+        0.37,
+        -2.38,
+        -0.07
+      ],
+      "max": [
+        0.47,
+        -0.08,
+        0.07
+      ],
+      "color": "#4a4e52",
+      "detail": true,
+      "finish": "steel"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+y"
+    }
+  ]
+}

@@ -392,6 +392,7 @@ public sealed partial class Game : IDisposable
             SpeedPct = (byte)Math.Clamp((int)MathF.Round(speed * 100), 1, 200),
             Noclip = Local is { NoclipWanted: true },
             Roll = MmuCmdRoll(), // a worn MMU's roll about the look (GameSandboxMmu.cs)
+            MmuCoast = MmuCoasting, // a worn MMU's dampeners off (GameSandboxMmu.cs)
         });
     }
 
@@ -954,7 +955,7 @@ public sealed partial class Game : IDisposable
         SepBuild(); // the other players' and bots' bodies as last heard (PlayerSeparation.cs)
         ClientTickTerrainStream(); // streamed ground made ready round the local player (GameTerrainStream.cs)
         if (SandboxOn && !IsServer)
-            Eva.Step(me, Eva.Fed(me, SandboxHands.Hand(me.Id).Seated)); // (the HUD's air on a joined client; the host hurts: GameSandboxEva.cs)
+            Eva.Step(me, OnShipAir(me), out _); // (the HUD's air on a joined client; the host hurts and bills the ship: GameSandboxEva.cs)
         if (me.Alive)
         {
             me.Sim.Frame = me.ShellFrame; // (a robot shell's size: Msg.Shell, never a snapshot)
@@ -993,6 +994,11 @@ public sealed partial class Game : IDisposable
             }
         for (var i = _pendingInputs.Count - count; i < _pendingInputs.Count; i++)
             _w.U16(unchecked((ushort)(short)MathF.Round(_pendingInputs[i].Roll / MathF.PI * 32767f))); // trailer: a worn MMU's roll (PilotGear.MmuAxes; protocol 358)
+        var coast = 0;
+        for (var i = 0; i < count; i++)
+            if (_pendingInputs[_pendingInputs.Count - count + i].MmuCoast)
+                coast |= 1 << i;
+        _w.U8((byte)coast); // trailer: a worn MMU's dampeners off, a bit per command (PilotGear.MmuBrake; protocol 364)
         Net.SendToServer(_w.Span, PacketReliability.UnreliableSequenced);
     }
 
@@ -1285,10 +1291,13 @@ public sealed partial class Game : IDisposable
                 }
                 SprintSpread.Tick(p, cmd.Buttons); // sprint inaccuracy (SprintSpread.cs)
             }
-            else if (p.CrewSlot >= 0 && (!CrewBodyFights(p) || Crew.Nav.WalkerOf(p.CrewSlot) >= 0)) // (a repeller on its way to a boarder walks: CrewNav)
+            else if (p.CrewSlot >= 0)
             {
                 using var _ = Perf.Measure(PerfArea.Bots);
-                CrewBodyTick(p); // (a crew member's body: its crew drives its seat, GameCrew.cs)
+                if (CrewBodyFights(p))
+                    CrewDefendTick(p); // (boarded: armed from the lockers, holding a post, shooting at boarders: GameCrewDefend.cs)
+                else
+                    CrewBodyTick(p); // (a crew member's body: its crew drives its seat, GameCrew.cs)
             }
             else if (p.Bot != null)
             {
@@ -2079,6 +2088,7 @@ public sealed partial class Game : IDisposable
                 SendSpaceState(sender); // the space bubble and its clock (GameSpace.cs)
                 SendNavState(sender); // the ships under orders (GameNav.cs)
                 SendCrewSeats(sender); // the crews' stand-ins (GameCrew.cs)
+                SendHandsUp(sender); // surrendered crew, hands up (GameCrewHandsUp.cs)
                 SendCrewRosters(sender); // own crews and prizes (GameCrewHire.cs)
                 SendLogicState(sender); // map logic: doors, lamps, levers, controlled movers (GameLogic.cs)
                 SendCorpseState(sender); // the bodies lying about (GameCorpses.cs)
@@ -2178,6 +2188,12 @@ public sealed partial class Game : IDisposable
                 if (r.Has(2 * read)) // a worn MMU's roll, a turn's half in an i16 per command (PilotGear.MmuAxes)
                     for (var i = 0; i < read; i++)
                         cmds[i].Roll = Math.Max((short)-32767, unchecked((short)r.U16())) * (MathF.PI / 32767f);
+                if (r.Has(1)) // a worn MMU's dampeners off, a bit per command (PilotGear.MmuBrake)
+                {
+                    var coast = r.U8();
+                    for (var i = 0; i < Math.Min(read, 8); i++)
+                        cmds[i].MmuCoast = (coast & (1 << i)) != 0;
+                }
                 for (var i = 0; i < read; i++)
                 {
                     var cmd = cmds[i];
@@ -2431,6 +2447,9 @@ public sealed partial class Game : IDisposable
             case (byte)Msg.CrewSeats when !IsServer:
                 ReadCrewSeats(ref r); // the crews' stand-ins (GameCrew.cs)
                 break;
+            case (byte)Msg.HandsUp when !IsServer:
+                ReadHandsUp(ref r); // surrendered crew, hands up (GameCrewHandsUp.cs)
+                break;
             case (byte)Msg.CrewRoster when !IsServer:
                 ReadCrewRoster(ref r); // own crews and prizes (GameCrewHire.cs)
                 break;
@@ -2439,6 +2458,9 @@ public sealed partial class Game : IDisposable
                 break;
             case (byte)Msg.Intel when !IsServer:
                 ReadIntel(ref r); // what a questioned officer gave up (GameCrewFleet.cs)
+                break;
+            case (byte)Msg.Stations when !IsServer:
+                ReadStations(ref r); // the stations' markets and moorings (GameStationMarket.cs)
                 break;
             case (byte)Msg.FleetGroups when !IsServer:
                 ReadFleetGroups(ref r); // the players' fleet groups this player may command (GameCrewFleetPlayers.cs)

@@ -1477,7 +1477,7 @@ public sealed partial class ConstructWorld
                 }
             }
             // Routed links (cables, pipes, shafts, chutes on the outside): hit like parts, each segment on its own.
-            if (c.RouteCount > 0 && ConstructRoutes.Ray(c, origin, dir, ref best, out var route, out var rseg, out var rp))
+            if (c.RouteCount > 0 && ConstructRoutes.Ray(c, origin, dir, ref best, out var route, out var rseg, out var rp, look, maxDist))
             {
                 found = true;
                 hit.Body = c;
@@ -2267,6 +2267,7 @@ public sealed partial class ConstructWorld
         _stepAt = System.Diagnostics.Stopwatch.GetTimestamp();
         _partTally = -1; // (counted again when next asked)
         var perf = Perf.Measure(PerfArea.ConstructLogic); // the perf window's areas (Source/Perf): off, a bool test each
+        var part = Perf.Measure(PerfArea.CLinks);
         StepLinks(); // couplings and wires between constructs (ConstructLinks.cs): resolved, broken when apart, their values
         StepHydraulics(); // (the circuits, a few times a second: ConstructHydraulics.cs)
         StepNoCollide(); // no-collide pairs (ConstructNoCollide.cs): each finds its parts, or goes
@@ -2274,11 +2275,17 @@ public sealed partial class ConstructWorld
         StepWorldLinks(query, dt, Hands); // world links and hoses (WorldLinks.cs, ConstructHoses.cs): resolved, snapped when a free construct moves, their flow
         StepPart(0);
         ConstructFar.Mark(this); // (far NPC bodies: their logic, power and physics on a coarser rate)
+        part.Dispose();
         foreach (var c in Bodies)
         {
+            part = Perf.Measure(PerfArea.CPower);
             if (ConstructFar.LogicDue(c))
                 ConstructPower.Step(this, c, c.FarLogic > 1 ? dt * c.FarLogic : dt);
+            part.Dispose();
+            part = Perf.Measure(PerfArea.CRoutes);
             ConstructRoutes.Step(this, c, dt); // (routed links: leaks, sparks, chutes)
+            part.Dispose();
+            part = Perf.Measure(PerfArea.CPower);
             if (c.FluidLoadChanged)
             {
                 c.FluidLoadChanged = false;
@@ -2290,16 +2297,24 @@ public sealed partial class ConstructWorld
                 Beacons.Dirty = true;
             }
             ConstructDrive.ShiftKeys(c); // (the driver's R and sprint, before the logic step clears the seats' keys)
+            part.Dispose();
         }
         StepPart(1);
+        part = Perf.Measure(PerfArea.CWeapons);
         ConstructWeapons.Step(this, query, dt); // (before the logic: a gun's wires carry last tick's values, its gunner's keys this tick's)
+        part.Dispose();
         StepPart(2);
+        part = Perf.Measure(PerfArea.CLinks);
         FlushSnaps(); // (world links that tore off this tick: WorldLinks.cs)
+        part.Dispose();
+        part = Perf.Measure(PerfArea.CLogicBlocks);
         RadioGather(); // (the wireless senders this tick: ConstructRadio.cs)
         foreach (var c in Bodies)
             if (ConstructFar.LogicDue(c))
                 ConstructLogic.Step(this, c, c.FarLogic > 1 ? dt * c.FarLogic : dt);
+        part.Dispose();
         StepPart(3);
+        part = Perf.Measure(PerfArea.CDoors);
         ConstructBoost.Separate(this); // (decouplers that fired: bodies change only out here)
         ConstructOrdnance.Release(this, query); // (bomb racks that let go: the same)
         ConstructHoists.Step(this); // (reload hoists move a weapon from their magazines onto their launchers, a few times a second)
@@ -2307,6 +2322,7 @@ public sealed partial class ConstructWorld
         ConstructDoors.Step(this); // (event doors: the wired ones' edges and the moving ones, nothing for an idle door)
         ConstructRide.SpawnIntoMotion(this); // (bodies made since the last step: into the motion of the frame they were made in)
         ConstructRide.BeforePhysics(this); // (each body's acceleration: riders thrown off by a crash)
+        part.Dispose();
         perf.Dispose();
         StepPart(4);
         perf = Perf.Measure(PerfArea.ConstructPhysics);

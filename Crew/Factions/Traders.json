@@ -57,6 +57,7 @@
       "scuttle": 0.1
     },
     "surrenderMorale": 0.5,
+    "atOnce": true,
     "scuttleDesperation": 0.9
   },
   "scuttle": {

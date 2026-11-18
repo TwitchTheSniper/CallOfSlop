@@ -23,6 +23,14 @@ public static class ConstructCarrier
     /// <summary>The pilot's key, pressed in <paramref name="c"/>.</summary>
     public static void PilotKey(ConstructWorld world, Construct c)
     {
+        if (c.MooredTo != 0)
+        {
+            world.Events.Add($"construct {c.MooredTo}: berth let go of construct {c.Id}");
+            (c.MoorAway, c.MoorAwayPart) = (c.MooredTo, c.MoorPart); // (not moored again until it has left the berth's box: GameStations.cs)
+            c.MooredTo = 0; // (a station's berth: GameStations.cs)
+            c.DockAway = world.CarrierClock + AwayTicks;
+            return;
+        }
         if (c.CarriedBy != 0)
         {
             LetGo(world, c);
@@ -139,7 +147,13 @@ public static class ConstructCarrier
         c.WorldFrame(p.Seg, out var q, out var t);
         var target = t + Vector3.Transform(centre, q);
         var reach = half.Length() + d.DockPull;
-        if ((world.CarrierClock + (uint)k) % ConstructCargo.ScanEvery == 0 && p.Mem == 0)
+        var look = (world.CarrierClock + (uint)k) % ConstructCargo.ScanEvery == 0;
+        if (look && c.CargoCount > 0 && ConstructCargo.OneCraft(d) && ConstructCargo.DockTaken(world, c, k, null))
+        {
+            p.Mem = 0; // (it holds a craft already: it pulls no second one onto it)
+            return;
+        }
+        if (look && p.Mem == 0)
         {
             var near = world.Near(target, reach, _near);
             var best = float.MaxValue;

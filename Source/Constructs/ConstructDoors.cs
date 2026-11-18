@@ -356,7 +356,7 @@ public static class ConstructDoors
     }
 
     /// <summary>Where door part <paramref name="part"/> is when shut, in the body frame (a slid-open hatch's place less its travel).</summary>
-    private static Vector3 ShutPos(Construct c, int part)
+    internal static Vector3 ShutPos(Construct c, int part)
     {
         ref var p = ref c.Parts[part];
         var dd = p.D.Door!;

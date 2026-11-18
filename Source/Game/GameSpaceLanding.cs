@@ -43,6 +43,7 @@ public sealed partial class Game
     /// bubble's own system, or any world of a system a ship has jumped to. Worked out for one bubble.
     /// </summary>
     private (int Galaxy, int Body, Map Map, double Edge)[] _landable = [];
+    private double[] _arrive = []; // by _landable's entry: how near a ship with someone seated aboard arrives in that world (a station's reach, else its edge: StationReach)
     private SpaceSession? _landableFor;
 
     /// <summary>The folder a planetoid left behind is kept in, inside a world's folder.</summary>
@@ -96,12 +97,19 @@ public sealed partial class Game
                 continue;
             var pos = sf.Ships.PositionOf(i);
             var t = sf.Ships.Time;
-            foreach (var (lg, b, m, edge) in _landable)
+            var crewed = false; // (someone seated aboard: they arrive out at a station's reach; anyone else's ship at the sky's edge)
+            foreach (var p in Players.Values)
+                crewed |= p.Bot == null && SeatedIn(p, c);
+            for (var k = 0; k < _landable.Length; k++)
             {
+                var (lg, b, m, edge) = _landable[k];
                 if (lg != g)
                     continue;
                 sf.System.StateOf(b, t, out var bp, out var bv);
                 var r = pos - bp;
+                var sky = edge;
+                if (crewed && k < _arrive.Length)
+                    edge = _arrive[k];
                 if (r.LengthSquared >= edge * edge)
                     continue;
                 if (g == s.GalaxyIndex && TravelToPlace(c, m, b))
@@ -112,13 +120,15 @@ public sealed partial class Game
                     _landNext = (c, m);
                     return;
                 }
+                if (r.LengthSquared >= sky * sky)
+                    continue; // (out at a station's reach and unable to arrive: it is held only at the sky's edge, as ever)
                 // Held at the edge until it can land: no closer, and no speed inwards.
                 var n = r.Normalized();
                 var v = sf.Ships.VelocityOf(i) - bv;
                 var vr = Vec3d.Dot(v, n);
                 if (vr < 0)
                     v -= n * vr;
-                sf.Ships.SetState(i, b, n * edge, v);
+                sf.Ships.SetState(i, b, n * sky, v);
                 if (SandboxNow > _landSaidAt + 3)
                 {
                     _landSaidAt = SandboxNow;
@@ -147,6 +157,9 @@ public sealed partial class Game
                 if (b != s.Bubble.Body && s.System.Bodies[b].Map is { } name && Maps.Find(name) is { Planetoid: not null } m && m != World.Map)
                     list.Add((-1, b, m, LandEdge(m)));
         _landable = list.ToArray();
+        _arrive = new double[_landable.Length];
+        for (var k = 0; k < _landable.Length; k++)
+            _arrive[k] = Math.Max(_landable[k].Edge, StationReach(_landable[k].Map)); // (out to a station's orbit: they arrive in orbit beside it, GameStationHaulers.cs)
     }
 
     /// <summary>

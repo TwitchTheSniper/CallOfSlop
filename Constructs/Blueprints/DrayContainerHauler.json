@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Dray Container Hauler",
-  "description": "A container hauler: a long hold for fourteen 20-foot containers with an overhead crane down its length and a well in its belly to lift them through, a small crew section forward and a drive room aft. Two big torch drives push it, each with its own engine in the drive room behind it, and attitude jets at the bow and stern move it about. (No legs, lamps or fittings yet.)",
+  "description": "A container hauler: a long hold for fourteen 20-foot containers with an overhead crane down its length and a well in its belly to lift them through, a small crew section forward and a drive room aft. Two big torch drives push it, each with its own engine in the drive room behind it, and attitude jets at the bow and stern move it about. It stands on six long legs over a container, opens its well and lifts the box up into its hold; lift jets hold it up, loaded, and its containers ride in three frozen cargo volumes.",
   "steps": [
     {
       "part": "Dray Keel"
@@ -609,6 +609,18 @@
       "by": "mount"
     },
     {
+      "part": "Life Support Unit",
+      "on": 31,
+      "socket": "lifeSupport",
+      "by": "wall"
+    },
+    {
+      "part": "Oxygen Tank",
+      "on": 31,
+      "socket": "o2Tank0",
+      "by": "wall"
+    },
+    {
       "part": "Robot Shell Dock",
       "on": 35,
       "socket": "shellDock0",
@@ -616,7 +628,7 @@
     },
     {
       "part": "Robot Shell",
-      "on": 98,
+      "on": 100,
       "socket": "dock",
       "by": "back"
     },
@@ -635,7 +647,7 @@
     },
     {
       "part": "Robot Shell",
-      "on": 101,
+      "on": 103,
       "socket": "dock",
       "by": "back"
     },
@@ -654,7 +666,7 @@
     },
     {
       "part": "Robot Shell",
-      "on": 104,
+      "on": 106,
       "socket": "dock",
       "by": "back"
     },
@@ -679,13 +691,13 @@
     },
     {
       "part": "Fuel Pump L",
-      "on": 108,
+      "on": 110,
       "socket": "back",
       "by": "front"
     },
     {
       "part": "Coolant Exchanger L",
-      "on": 109,
+      "on": 111,
       "socket": "back",
       "by": "front"
     },
@@ -703,13 +715,13 @@
     },
     {
       "part": "Fuel Pump L",
-      "on": 112,
+      "on": 114,
       "socket": "back",
       "by": "front"
     },
     {
       "part": "Coolant Exchanger L",
-      "on": 113,
+      "on": 115,
       "socket": "back",
       "by": "front"
     },
@@ -1001,12 +1013,456 @@
     },
     {
       "part": "Medium Crane Bridge",
-      "on": 138,
+      "on": 140,
       "socket": "-x.0.0",
       "by": "+x",
       "paint": "#e0a020",
       "finish": "hazard paint"
+    },
+    {
+      "part": "Dray Lift Jet",
+      "on": 7,
+      "socket": "lift0",
+      "by": "top"
+    },
+    {
+      "part": "Dray Lift Jet",
+      "on": 7,
+      "socket": "lift1",
+      "by": "top"
+    },
+    {
+      "part": "Dray Lift Jet",
+      "on": 8,
+      "socket": "lift2",
+      "by": "top"
+    },
+    {
+      "part": "Dray Lift Jet",
+      "on": 8,
+      "socket": "lift3",
+      "by": "top"
+    },
+    {
+      "part": "Dray Lift Jet",
+      "on": 21,
+      "socket": "lift4",
+      "by": "top"
+    },
+    {
+      "part": "Dray Lift Jet",
+      "on": 21,
+      "socket": "lift5",
+      "by": "top"
+    },
+    {
+      "part": "Dray Landing Leg",
+      "on": 7,
+      "socket": "leg0",
+      "by": "top",
+      "paint": "#264b67",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Dray Landing Leg",
+      "on": 7,
+      "socket": "leg1",
+      "by": "top",
+      "paint": "#264b67",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Dray Landing Leg",
+      "on": 20,
+      "socket": "leg2",
+      "by": "top",
+      "paint": "#264b67",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Dray Landing Leg",
+      "on": 20,
+      "socket": "leg3",
+      "by": "top",
+      "paint": "#264b67",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Dray Landing Leg",
+      "on": 21,
+      "socket": "leg4",
+      "by": "top",
+      "paint": "#264b67",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Dray Landing Leg",
+      "on": 21,
+      "socket": "leg5",
+      "by": "top",
+      "paint": "#264b67",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Dray Belly Hatch",
+      "on": 9,
+      "socket": "boarding",
+      "by": "hang"
+    },
+    {
+      "part": "Dray Boarding Ladder",
+      "on": 166,
+      "socket": "ladder",
+      "by": "foot",
+      "paint": "#202326",
+      "finish": "painted steel"
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 34,
+      "socket": "switchHatch",
+      "by": "back",
+      "config": {
+        "startOn": false
+      }
+    },
+    {
+      "part": "Flight Couch",
+      "on": 40,
+      "socket": "pilot",
+      "by": "bottom"
+    },
+    {
+      "part": "Flight Couch",
+      "on": 40,
+      "socket": "copilot",
+      "by": "bottom"
+    },
+    {
+      "part": "Dray Flight Computer",
+      "on": 40,
+      "socket": "computer",
+      "by": "bottom",
+      "config": {
+        "keys": "Ship",
+        "mouseAim": true
+      }
+    },
+    {
+      "part": "Dray Saddle Tank",
+      "on": 78,
+      "socket": "saddleL0",
+      "by": "pad"
+    },
+    {
+      "part": "Dray Saddle Tank",
+      "on": 51,
+      "socket": "saddleL1",
+      "by": "pad"
+    },
+    {
+      "part": "Dray Saddle Tank",
+      "on": 78,
+      "socket": "saddleR0",
+      "by": "pad"
+    },
+    {
+      "part": "Dray Saddle Tank",
+      "on": 51,
+      "socket": "saddleR1",
+      "by": "pad"
+    },
+    {
+      "part": "Dray Power Plant",
+      "on": 26,
+      "socket": "plant",
+      "by": "bottom"
+    },
+    {
+      "part": "Power Board",
+      "on": 26,
+      "socket": "board",
+      "by": "bottom"
+    },
+    {
+      "part": "Battery",
+      "on": 26,
+      "socket": "battery0",
+      "by": "-y"
+    },
+    {
+      "part": "Battery",
+      "on": 26,
+      "socket": "battery1",
+      "by": "-y"
+    },
+    {
+      "part": "Battery",
+      "on": 26,
+      "socket": "battery2",
+      "by": "-y"
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 67,
+      "socket": "lampBridgeL",
+      "by": "back",
+      "config": {
+        "colour": "#ff6050"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 69,
+      "socket": "lampBridgeR",
+      "by": "back",
+      "config": {
+        "colour": "#ff6050"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 71,
+      "socket": "switchBridge",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 31,
+      "socket": "lampMess",
+      "by": "back",
+      "config": {
+        "colour": "#ffe0b0"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 34,
+      "socket": "lampPassage",
+      "by": "back",
+      "config": {
+        "colour": "#fff0d0"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 33,
+      "socket": "switchMess",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 11,
+      "socket": "lampL0",
+      "by": "back",
+      "config": {
+        "colour": "#ffe8b0"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 12,
+      "socket": "lampR0",
+      "by": "back",
+      "config": {
+        "colour": "#ffe8b0"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 13,
+      "socket": "lampL1",
+      "by": "back",
+      "config": {
+        "colour": "#ffe8b0"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 14,
+      "socket": "lampR1",
+      "by": "back",
+      "config": {
+        "colour": "#ffe8b0"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 17,
+      "socket": "lampL3",
+      "by": "back",
+      "config": {
+        "colour": "#ffe8b0"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 19,
+      "socket": "lampR3",
+      "by": "back",
+      "config": {
+        "colour": "#ffe8b0"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 24,
+      "socket": "lampL4",
+      "by": "back",
+      "config": {
+        "colour": "#ffe8b0"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 25,
+      "socket": "lampR4",
+      "by": "back",
+      "config": {
+        "colour": "#ffe8b0"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 58,
+      "socket": "lampDriveL",
+      "by": "back",
+      "config": {
+        "colour": "#a0d0ff"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 59,
+      "socket": "lampDriveR",
+      "by": "back",
+      "config": {
+        "colour": "#a0d0ff"
+      }
+    },
+    {
+      "part": "Cargo Volume",
+      "on": 2,
+      "socket": "volume0",
+      "by": "-y",
+      "config": {
+        "startOn": true,
+        "sizeX": 8.0,
+        "sizeY": 3.4,
+        "sizeZ": 8.0,
+        "atX": 5.4,
+        "atY": 1.7,
+        "atZ": 0.0
+      }
+    },
+    {
+      "part": "Cargo Volume",
+      "on": 5,
+      "socket": "volume1",
+      "by": "-y",
+      "config": {
+        "startOn": true,
+        "sizeX": 8.0,
+        "sizeY": 3.4,
+        "sizeZ": 8.0,
+        "atX": 5.4,
+        "atY": 1.7,
+        "atZ": -0.8
+      }
+    },
+    {
+      "part": "Cargo Volume",
+      "on": 5,
+      "socket": "volume2",
+      "by": "-y",
+      "config": {
+        "startOn": true,
+        "sizeX": 8.0,
+        "sizeY": 3.4,
+        "sizeZ": 6.4,
+        "atX": 5.4,
+        "atY": 1.7,
+        "atZ": 0.0
+      }
+    },
+    {
+      "part": "Lifter Cab",
+      "on": 2,
+      "socket": "cab",
+      "by": "-y.0.0",
+      "paint": "#e0a020",
+      "finish": "hazard paint"
     }
   ],
-  "conduit": true
+  "wires": [
+    [
+      168,
+      166
+    ],
+    [
+      169,
+      171
+    ],
+    [
+      183,
+      181
+    ],
+    [
+      183,
+      182
+    ],
+    [
+      186,
+      184
+    ],
+    [
+      186,
+      185
+    ]
+  ],
+  "conduit": true,
+  "cargo": [
+    {
+      "part": "Cargo Container 20 ft",
+      "at": [
+        4.175,
+        2.745,
+        17.075
+      ],
+      "turn": 0
+    },
+    {
+      "part": "Cargo Container 20 ft",
+      "at": [
+        9.575,
+        2.745,
+        17.075
+      ],
+      "turn": 0
+    },
+    {
+      "part": "Cargo Container 20 ft",
+      "at": [
+        4.175,
+        2.745,
+        23.475
+      ],
+      "turn": 0
+    },
+    {
+      "part": "Cargo Container 20 ft",
+      "at": [
+        9.575,
+        2.745,
+        23.475
+      ],
+      "turn": 0
+    }
+  ]
 }

@@ -128,12 +128,14 @@ public static partial class ConstructPhysics
     }
 
     /// <summary>How a group moves this tick: the velocity at <paramref name="at"/> and the spin (the speed its motors may reach counts, so a stalled arm still looks ahead).</summary>
-    private static void GroupMotion(Construct c, int index, int seg, Vector3 at, out Vector3 v, out Vector3 w)
+    private static void GroupMotion(Construct c, int index, int seg, Vector3 at, out Vector3 v, out Vector3 w, bool posedMoves = false)
     {
         v = Vector3.Zero;
         w = Vector3.Zero;
-        if (_dyn[index])
+        if (_dyn[index] || posedMoves && c.SpaceShip != 0)
         {
+            // (between bodies, a ship out of the bubble is posed by its flight, not stepped, but it moves: as the solver's VelSide, so a loose
+            // piece aboard it at orbital speed is still beside it, not 3 m a tick away; the ground pass keeps a posed ship still)
             v = c.Vel + Vector3.Cross(c.AngVel, at - c.WorldCom);
             w = c.AngVel;
         }
@@ -725,8 +727,8 @@ public static partial class ConstructPhysics
             a.WorldFrame(sa, out var qa, out var ta);
             var fa = CFrame.Of(qa, ta);
             var midA = fa.Point(ca.Nodes[ca.Groups[ga].Root].Centre);
-            GroupMotion(a, ia, sa, midA, out var va, out var wa);
-            var speedA = va.Length() + wa.Length() * ca.Nodes[ca.Groups[ga].Root].Half.Length();
+            GroupMotion(a, ia, sa, midA, out var va, out var wa, posedMoves: true);
+            var spinA = wa.Length() * ca.Nodes[ca.Groups[ga].Root].Half.Length();
             for (var gb = 0; gb < cb.GroupCount; gb++)
             {
                 int sb = cb.Groups[gb].Seg;
@@ -737,9 +739,12 @@ public static partial class ConstructPhysics
                     continue;
                 ref readonly var fgb = ref fb[gb];
                 var midB = fgb.Point(cb.Nodes[cb.Groups[gb].Root].Centre);
-                GroupMotion(b, ib, sb, midB, out var vb, out var wb);
-                var speedB = vb.Length() + wb.Length() * cb.Nodes[cb.Groups[gb].Root].Half.Length();
-                var margin = Skin + (speedA + speedB) * dt;
+                GroupMotion(b, ib, sb, midB, out var vb, out var wb, posedMoves: true);
+                // How near pieces must be to meet this tick: by how fast the two groups close on each other, not by how fast each moves
+                // (two bodies coasting side by side in orbit at 200 m/s are still: summed speeds made a 7 m margin, every piece of a torpedo
+                // rack a candidate of the one taken off it, 2-3 frames a second; 2026-11-18).
+                var spinB = wb.Length() * cb.Nodes[cb.Groups[gb].Root].Half.Length();
+                var margin = Skin + ((va - vb).Length() + spinA + spinB) * dt;
                 var ba = new CFrame { X = fa.LocalDir(fgb.X), Y = fa.LocalDir(fgb.Y), Z = fa.LocalDir(fgb.Z), T = fa.Local(fgb.T) };
                 var count = ca.Pairs(ga, cb, gb, ba, margin, pairs);
                 var start = n;
@@ -823,6 +828,69 @@ public static partial class ConstructPhysics
             if (a.BeltCount > 0)
                 ct.Surf -= BeltVel(a, pa.Part);
         }
+    }
+
+    /// <summary>
+    /// Two ships out of the bubble: each is posed by its flight, not stepped, so the step never pairs them (GameSpaceCollide.cs
+    /// asks here instead). Their pieces' contact points this tick, as the step finds them (speculative by their closing speed,
+    /// swept when thin): the deepest gap and its normal (from <paramref name="b"/> into <paramref name="a"/>, the mean of the
+    /// points near that deepest) and where it is. Returns how many points; 0: apart.
+    /// </summary>
+    internal static int ShipContact(ConstructWorld world, Construct a, Construct b, float dt, out Vector3 normal, out float gap, out Vector3 at)
+    {
+        normal = at = Vector3.Zero;
+        gap = float.MaxValue;
+        var ca = a.Collider;
+        var cb = b.Collider;
+        var nc = world.FirstNoCollide(a, b);
+        var rel = a.Vel - b.Vel;
+        var spin = a.AngVel - b.AngVel;
+        var margin = Skin + rel.Length() * dt + spin.Length() * dt * MathF.Min(a.Radius, b.Radius);
+        var pairs = _pairBuf.AsSpan();
+        var n = 0;
+        for (var ga = 0; ga < ca.GroupCount; ga++)
+        {
+            int sa = ca.Groups[ga].Seg;
+            a.WorldFrame(sa, out var qa, out var ta);
+            var fa = CFrame.Of(qa, ta);
+            for (var gb = 0; gb < cb.GroupCount; gb++)
+            {
+                int sb = cb.Groups[gb].Seg;
+                if (nc >= 0 && world.NoCollideGroups(nc, a, sa, b, sb))
+                    continue;
+                b.WorldFrame(sb, out var qb, out var tb);
+                var fb = CFrame.Of(qb, tb);
+                var ba = new CFrame { X = fa.LocalDir(fb.X), Y = fa.LocalDir(fb.Y), Z = fa.LocalDir(fb.Z), T = fa.Local(fb.T) };
+                var count = ca.Pairs(ga, cb, gb, ba, margin, pairs);
+                var start = n;
+                var every = Spread(count, n);
+                for (var i = 0; i < count && n < MaxCand - 16; i += every)
+                {
+                    int la = pairs[i * 2], lb = pairs[i * 2 + 1];
+                    ref var pa = ref ca.Leaves[la];
+                    ref var pb = ref cb.Leaves[lb];
+                    if (pa.WheelIx >= 0 || pb.WheelIx >= 0)
+                        continue; // (a cylinder's leaf is the bounds of its travel; the wheel's boxes stand for it here)
+                    if (nc >= 0 && world.NoCollideParts(nc, a, sa, pa.Part, b, sb, pb.Part))
+                        continue;
+                    ca.World(la, fa, out var wa);
+                    cb.World(lb, fb, out var wb);
+                    n = Swept(wa, ca, fa, wb, cb, fb, rel, spin, margin, dt, n);
+                }
+                n = start + ReducePoints(_cand.AsSpan(start, n - start));
+            }
+        }
+        for (var k = 0; k < n; k++)
+            if (_cand[k].Gap < gap)
+            {
+                gap = _cand[k].Gap;
+                at = _cand[k].P;
+            }
+        for (var k = 0; k < n; k++)
+            if (_cand[k].Gap < gap + 0.05f)
+                normal += _cand[k].N;
+        normal = normal.LengthSquared() > 1e-12f ? Vector3.Normalize(normal) : Vector3.Zero;
+        return normal == Vector3.Zero ? 0 : n;
     }
 
     /// <summary>Would the held body's piece, moved, overlap a piece of <paramref name="b"/> it doesn't overlap now? (Only a new overlap refuses a step: pr02.)</summary>

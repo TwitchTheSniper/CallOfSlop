@@ -744,9 +744,7 @@ public sealed class MinerParts : IPartGenerator
         Hidden(p, Cx - 0.1, 0.0, ZT - 0.1, Cx + 0.1, 0.2, ZT);
         Sock(p, "ramp", Cx, 0.1, ZT, "+z");
         Sock(p, "reactor", Cx - 2.5, Ft0, 20.0, "+y");
-        Sock(p, "battery0", Cx - 3.85, Ft0, 18.6, "+y");
-        Sock(p, "battery1", Cx - 3.85, Ft0, 18.95, "+y");
-        Sock(p, "battery2", Cx - 3.85, Ft0, 19.3, "+y");
+        Sock(p, "battery", Cx - Lw + 0.26, Ft0, 18.95, "+y"); // (its Ship Battery M, back to the port wall: Karl, 2026-11-18)
         Sock(p, "board", Cx - Lw, Ft0 + 0.9, 21.9, "+x");
         Sock(p, "pipes", Cx - Lw, Ft0 + 2.75, 20.6, "+x");
         Sock(p, "panel", Cx + Lw, Ft0 + 0.6, 19.2, "-x");
@@ -754,6 +752,8 @@ public sealed class MinerParts : IPartGenerator
         for (var i = 0; i < 2; i++) // (Space Suit Lockers, then the MMU Dock by the ramp: out of it, the nacelles are a few metres aft)
             Sock(p, $"suit{i}", Cx - Lw, Ft0 + 0.125, 23.45 + i * 0.85, "+x");
         Sock(p, "mmuDock", Cx - Lw, Ft0 + 0.125, 25.35, "+x");
+        Sock(p, "lifeSupport", Cx - Lw, Ft0 + 0.125, 20.0, "+x"); // (the ship's air: the unit and a tank on the port wall, between the batteries and the Power Board)
+        Sock(p, "o2Tank0", Cx - Lw, Ft0 + 0.125, 20.85, "+x");
         Sock(p, "toolRack", Cx + Lw, Ft0 + 0.9, 24.0, "-x");
         for (var i = 0; i < 3; i++) // (the Robot Shell Docks down the starboard wall, by the ramp: Karl, 2026-11-17)
             Sock(p, $"shellDock{i}", Cx + Lw, Ft0 + 0.125, 20.3 + i * (2 * CrewFittingsParts.DockHalf + 0.02), "-x");
@@ -2001,14 +2001,15 @@ public sealed class MinerParts : IPartGenerator
         Door(bp, bay, "doorAft");
         // The cargo bay aft: engineering along its port side, the suit lockers, the ramp.
         bp.Hang("Magpie Power Plant", eng, "reactor", "bottom");
-        for (var i = 0; i < 3; i++)
-            bp.Hang("Battery", eng, $"battery{i}", "-y");
+        bp.HangTurned("Ship Battery M", eng, "battery", "bottom", BuildingParts.RY270);
         bp.Hang("Power Board", eng, "board", "back");
         bp.Hang("Pipe Bank", eng, "pipes", "back");
         bp.Hang("Engineer's Panel", eng, "panel", "back");
         for (var i = 0; i < 2; i++)
             bp.Hang(EvaParts.LockerName, eng, $"suit{i}", "wall");
         EvaParts.FitDock(bp, eng, "mmuDock", keel); // (its pack fed from the keel's tank)
+        bp.Hang(EvaParts.LifeSupportName, eng, "lifeSupport", "wall"); // (the ship's air: 16 person-hours with its tank)
+        bp.Hang(EvaParts.OxygenTankName, eng, "o2Tank0", "wall");
         bp.Hang("Tool Rack", eng, "toolRack", "back");
         for (var i = 0; i < 3; i++)
             bp.Hang("Robot Shell", bp.Hang("Robot Shell Dock", eng, $"shellDock{i}", "wall"), "dock", "back");
@@ -2021,7 +2022,6 @@ public sealed class MinerParts : IPartGenerator
         var fc = bp.Hang("Magpie Flight Computer", uf, "module", "bottom");
         bp.Steps[fc]["config"] = ShipParts.ShipFlight();
         bp.Wires.Add((pilot, fc));
-        bp.Hang("Chart Table", uf, "chart", "back");
         Paint(bp, bp.Hang("Magpie Locker", uf, "bridgeLocker", "wall"), Yellow2, "worn paint");
         Paint(bp, bp.Hang("Magpie Cargo Rack", uf, "shelf", "wall"), "#6b6f5a", "worn paint");
         bp.Hang("Magpie Bunk", uf, "couchA", "wall");

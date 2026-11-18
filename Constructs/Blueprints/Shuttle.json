@@ -267,28 +267,11 @@
       "spin": 1
     },
     {
-      "part": "Battery",
+      "part": "Ship Battery XS",
       "on": 0,
-      "socket": "batteryL0",
-      "by": "-y"
-    },
-    {
-      "part": "Battery",
-      "on": 0,
-      "socket": "batteryR0",
-      "by": "-y"
-    },
-    {
-      "part": "Battery",
-      "on": 0,
-      "socket": "batteryL1",
-      "by": "-y"
-    },
-    {
-      "part": "Battery",
-      "on": 0,
-      "socket": "batteryR1",
-      "by": "-y"
+      "socket": "battery",
+      "by": "bottom",
+      "spin": 2
     },
     {
       "part": "Bakelite Switch",
@@ -385,6 +368,14 @@
       34
     ],
     [
+      42,
+      43
+    ],
+    [
+      42,
+      44
+    ],
+    [
       45,
       46
     ],
@@ -393,20 +384,12 @@
       47
     ],
     [
-      48,
+      45,
+      48
+    ],
+    [
+      45,
       49
-    ],
-    [
-      48,
-      50
-    ],
-    [
-      48,
-      51
-    ],
-    [
-      48,
-      52
     ]
   ],
   "conduit": true

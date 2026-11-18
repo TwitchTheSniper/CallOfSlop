@@ -487,22 +487,11 @@
       "by": "bottom"
     },
     {
-      "part": "Battery",
+      "part": "Ship Battery M",
       "on": 3,
-      "socket": "battery0",
-      "by": "-y"
-    },
-    {
-      "part": "Battery",
-      "on": 3,
-      "socket": "battery1",
-      "by": "-y"
-    },
-    {
-      "part": "Battery",
-      "on": 3,
-      "socket": "battery2",
-      "by": "-y"
+      "socket": "battery",
+      "by": "bottom",
+      "spin": 2
     },
     {
       "part": "Power Board",
@@ -542,9 +531,21 @@
     },
     {
       "part": "Manned Manoeuvring Unit",
-      "on": 79,
+      "on": 77,
       "socket": "mmu",
       "by": "mount"
+    },
+    {
+      "part": "Life Support Unit",
+      "on": 3,
+      "socket": "lifeSupport",
+      "by": "wall"
+    },
+    {
+      "part": "Oxygen Tank",
+      "on": 3,
+      "socket": "o2Tank0",
+      "by": "wall"
     },
     {
       "part": "Tool Rack",
@@ -681,12 +682,6 @@
         "keys": "Ship",
         "mouseAim": true
       }
-    },
-    {
-      "part": "Chart Table",
-      "on": 5,
-      "socket": "chart",
-      "by": "back"
     },
     {
       "part": "Magpie Locker",
@@ -1056,47 +1051,47 @@
       98
     ],
     [
-      111,
+      110,
+      108
+    ],
+    [
+      110,
       109
     ],
     [
-      111,
-      110
+      113,
+      111
     ],
     [
-      114,
+      113,
       112
     ],
     [
-      114,
-      113
+      115,
+      114
     ],
     [
-      116,
-      115
+      134,
+      133
     ],
     [
-      135,
-      134
+      136,
+      135
     ],
     [
-      137,
-      136
+      139,
+      137
     ],
     [
-      140,
+      139,
       138
-    ],
-    [
-      140,
-      139
     ]
   ],
   "links": [
     {
       "type": "pipe",
       "from": 0,
-      "to": 79,
+      "to": 77,
       "fromPort": "Fuel out",
       "toPort": "Fuel in"
     }

@@ -23,7 +23,8 @@ public sealed partial class Ui
 
     // The hologram's colours.
     private static readonly Vector3 CmdCyan = new(0.42f, 0.90f, 1.00f), CmdDim = new(0.20f, 0.52f, 0.66f), CmdWhite = new(0.93f, 0.98f, 1f),
-        CmdAmber = new(1f, 0.74f, 0.28f), CmdRed = new(1f, 0.36f, 0.30f), CmdGreen = new(0.45f, 1f, 0.72f), CmdBack = new(0.008f, 0.035f, 0.06f);
+        CmdAmber = new(1f, 0.74f, 0.28f), CmdRed = new(1f, 0.36f, 0.30f), CmdGreen = new(0.45f, 1f, 0.72f), CmdBack = new(0.008f, 0.035f, 0.06f),
+        CmdStation = new(0.80f, 0.70f, 1f); // (a station: its glyph, name and berths)
 
     /// <summary>The narrowest and widest the view goes (metres up the screen).</summary>
     public const double CommandMinSpan = 12;
@@ -106,9 +107,9 @@ public sealed partial class Ui
         _cmdSpan = _cmdSpanWant * 6; // (it comes in from further out)
     }
 
-    /// <summary>Is this construct a craft the view shows: something that flies, or is in space?</summary>
+    /// <summary>Is this construct a craft the view shows: something that flies, is in space, or is a station?</summary>
     public static bool CmdIsCraft(Construct c) =>
-        c.PartCount > 0 && !c.Wreck && c.CarriedBy == 0 && (c.SpaceShip != 0 || c.StabCount > 0 || c.ThrusterCount > 0 && c.DriveSeat >= 0);
+        c.PartCount > 0 && !c.Wreck && c.CarriedBy == 0 && (c.SpaceShip != 0 || c.IsStation || c.StabCount > 0 || c.ThrusterCount > 0 && c.DriveSeat >= 0);
 
     /// <summary>The craft the local player sits in, else the nearest to them (0: none).</summary>
     private static ushort CmdNearestCraft(Game g)

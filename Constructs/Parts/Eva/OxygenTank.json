@@ -1,0 +1,247 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Oxygen Tank",
+  "description": "Two oxygen bottles on a wall frame: 12 person-hours more air for the ship's Life Support Unit. Its unit refills it in a planet's air. F reads it.",
+  "group": "Flight",
+  "section": "Pilot gear",
+  "role": "frame",
+  "tool": "wrench",
+  "air": {
+    "kind": "tank",
+    "holds": 720
+  },
+  "mass": 110.0,
+  "health": 250,
+  "armour": 3,
+  "material": "steel",
+  "color": "#5f8f5a",
+  "attachSeconds": 2.0,
+  "boxes": [
+    {
+      "min": [
+        -0.4,
+        0.0,
+        0.24
+      ],
+      "max": [
+        0.4,
+        1.8,
+        0.3
+      ],
+      "color": "#5c6166",
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -0.4,
+        0.0,
+        -0.15
+      ],
+      "max": [
+        0.4,
+        0.08,
+        0.24
+      ],
+      "color": "#2c3034",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.35,
+        0.08,
+        -0.12
+      ],
+      "max": [
+        -0.03,
+        1.45,
+        0.2
+      ],
+      "color": "#5f8f5a",
+      "finish": "gloss paint"
+    },
+    {
+      "min": [
+        -0.32,
+        1.45,
+        -0.09
+      ],
+      "max": [
+        -0.06,
+        1.55,
+        0.17
+      ],
+      "color": "#e4e4dc",
+      "detail": true,
+      "finish": "gloss paint"
+    },
+    {
+      "min": [
+        -0.23,
+        1.55,
+        0.0
+      ],
+      "max": [
+        -0.15,
+        1.63,
+        0.08
+      ],
+      "color": "#c9a24a",
+      "detail": true,
+      "finish": "brass"
+    },
+    {
+      "min": [
+        -0.355,
+        0.4,
+        -0.125
+      ],
+      "max": [
+        -0.025,
+        0.45,
+        0.205
+      ],
+      "color": "#d8a628",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.355,
+        1.1,
+        -0.125
+      ],
+      "max": [
+        -0.025,
+        1.15,
+        0.205
+      ],
+      "color": "#d8a628",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        0.03,
+        0.08,
+        -0.12
+      ],
+      "max": [
+        0.35,
+        1.45,
+        0.2
+      ],
+      "color": "#5f8f5a",
+      "finish": "gloss paint"
+    },
+    {
+      "min": [
+        0.06,
+        1.45,
+        -0.09
+      ],
+      "max": [
+        0.32,
+        1.55,
+        0.17
+      ],
+      "color": "#e4e4dc",
+      "detail": true,
+      "finish": "gloss paint"
+    },
+    {
+      "min": [
+        0.15,
+        1.55,
+        0.0
+      ],
+      "max": [
+        0.23,
+        1.63,
+        0.08
+      ],
+      "color": "#c9a24a",
+      "detail": true,
+      "finish": "brass"
+    },
+    {
+      "min": [
+        0.025,
+        0.4,
+        -0.125
+      ],
+      "max": [
+        0.355,
+        0.45,
+        0.205
+      ],
+      "color": "#d8a628",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        0.025,
+        1.1,
+        -0.125
+      ],
+      "max": [
+        0.355,
+        1.15,
+        0.205
+      ],
+      "color": "#d8a628",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.3,
+        1.63,
+        0.0
+      ],
+      "max": [
+        0.3,
+        1.69,
+        0.08
+      ],
+      "color": "#c9a24a",
+      "detail": true,
+      "finish": "brass"
+    },
+    {
+      "min": [
+        -0.04,
+        1.69,
+        0.0
+      ],
+      "max": [
+        0.04,
+        1.8,
+        0.24
+      ],
+      "color": "#c9a24a",
+      "detail": true,
+      "finish": "brass"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "wall",
+      "at": [
+        0.0,
+        0.125,
+        0.3
+      ],
+      "dir": "+z"
+    }
+  ]
+}

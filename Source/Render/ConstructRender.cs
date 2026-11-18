@@ -204,6 +204,7 @@ public static partial class ConstructRender
         ConnectorRender.NoCollideShow = false;
         SocketWeldRender.Clear();
         ShowWires = false;
+        ConstructRoutes.LookBuried = false;
         RouteRender.ClearPreview();
         WireFromBody = 0;
         WireFromPart = -1;
@@ -933,9 +934,20 @@ public static partial class ConstructRender
 
     public const float WheelTilt = 0.55f, WheelRadius = 0.17f;
 
+    /// <summary>A ship pilot's right hand on the Flight Couch's side stick, from the sitter's feet in the seat's frame (the left is mirrored).</summary>
+    public static readonly Vector3 StickAt = new(0.36f, 0.85f, -0.125f);
+
     /// <summary>Where the driver's hands hold the steering wheel (world), turned by the steering: right hand, left hand, and the rim's turn.</summary>
     public static void WheelGrips(Construct c, in Quaternion seat, Vector3 feet, out Vector3 right, out Vector3 left, out Quaternion rim)
     {
+        if (ConstructFlight.ShipKeyed(c))
+        {
+            // A ship has no wheel: the pilot's hands rest on the couch's side sticks.
+            rim = seat;
+            right = feet + Vector3.Transform(StickAt, seat);
+            left = feet + Vector3.Transform(StickAt with { X = -StickAt.X }, seat);
+            return;
+        }
         rim = seat * Quaternion.CreateFromAxisAngle(Vector3.UnitX, WheelTilt) * Quaternion.CreateFromAxisAngle(Vector3.UnitZ, -c.Steer * 2.5f);
         var centre = feet + Vector3.Transform(WheelAt, seat);
         right = centre + Vector3.Transform(new Vector3(WheelRadius, 0, 0), rim);
@@ -945,7 +957,7 @@ public static partial class ConstructRender
     /// <summary>The steering wheel of every drive seat (a rim of four bars, a hub and a column), turned by the steering.</summary>
     private static int DrawWheel(Renderer gfx, Construct c, float alpha, bool blendTicks)
     {
-        if (c.DriveSeat < 0 || c.DriveSeat >= c.PartCount || c.Parts[c.DriveSeat].Broken || c.Parts[c.DriveSeat].D.RemoteReceiver)
+        if (c.DriveSeat < 0 || c.DriveSeat >= c.PartCount || c.Parts[c.DriveSeat].Broken || c.Parts[c.DriveSeat].D.RemoteReceiver || ConstructFlight.ShipKeyed(c)) // (a ship is flown by the mouse and side sticks: no wheel)
             return 0;
         SeatPose(c, c.DriveSeat, alpha, blendTicks, out var seat, out var feet);
         WheelGrips(c, seat, feet, out var r, out var l, out var rim);

@@ -90,6 +90,15 @@ public sealed partial class Game
             }
             return;
         }
+        if (p.CrewSlot < 0 && PowerHolding(shell) is var power and not 0)
+        {
+            if (now - run.WhyAt > 4)
+            {
+                run.WhyAt = now;
+                SandboxHands.Notices.Add((p.Id, $"No link: that shell is the {PowerPossessive(power)}, worked by their crew")); // (GameShipControl.cs)
+            }
+            return;
+        }
         if (shell.PartCount > 1)
         {
             // A shell on a Robot Shell Dock (Karl, 2026-11-17): the dock unclamps it, and it is woken as one standing alone.

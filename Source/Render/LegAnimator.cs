@@ -222,7 +222,7 @@ public static class LegAnimator
         var stance = p.RenderStance;
         var seated = p.RenderSeat != SeatKind.None; // (carried by a construct: no gait, whatever the speed)
         var ladder = p.RenderLadder && !seated; // (climbing: hands and feet on the rungs, LadderAnim.cs)
-        var pack = !seated && !ladder && EvaRender.Wears(p) && Eva.Vacuum(p.RenderPosition); // (a worn MMU: feet on its pedestals, no gait or air pose: Karl, 2026-11-18)
+        var pack = !seated && EvaRender.Strapped(p); // (a worn MMU: feet on its pedestals, no gait or air pose: Karl, 2026-11-18)
         var vel = seated || ladder || pack ? Vector3.Zero : GravityFrames.ToLocal(pos, p.RenderVelocity); // (a planet: in the body's own frame)
         if (p.RenderRide)
         {
@@ -320,6 +320,10 @@ public static class LegAnimator
         if (seated)
         {
             SeatedLegs(ref st, pose, p.RenderSeat, p.RenderLookYaw);
+        }
+        else if (pack)
+        {
+            PackLegs(ref st, pose);
         }
         else if (ladder)
         {
@@ -748,6 +752,38 @@ public static class LegAnimator
             var hip = Vector3.Transform(new Vector3(side * 0.19f, -HipDrop, 0), pose.Pelvis);
             var target = new Vector3(side * 0.21f, 0.64f, -0.62f);
             var pole = Vector3.Normalize(new Vector3(side * 0.1f, 0.8f, -1f));
+            pose.Planted[i] = true;
+            pose.Lifted[i] = false;
+            Solve(pose, i, hip, target, pole, foot);
+        }
+    }
+
+    /// <summary>Where a worn MMU's wearer has their ankles (body space): knees bent forward, feet on the pack's pedestals (EvaRender.Pedestals sits under them).</summary>
+    public static readonly Vector3 PackAnkle = new(0.17f, 0.24f, -0.3f);
+
+    /// <summary>
+    /// Strapped into a worn MMU in vacuum (Karl, 2026-11-18: fixed on it, sat a little like a barber's chair but more
+    /// upright): the hips where standing puts them, so the torso and its pack don't move, the thighs forward and down, the
+    /// knees bent, the shins down to the feet on the pedestals. Fixed: no gait, no foot rays, whatever the drift.
+    /// </summary>
+    private static void PackLegs(ref State st, LegPose pose)
+    {
+        st.Phase = 0;
+        st.Cadence = 0;
+        st.Drop = 0;
+        st.PelvisH = StandPelvis;
+        st.Air = st.Fall = st.Mantle = st.Land = 0;
+        st.Locked0 = st.Locked1 = false;
+        pose.Pelvis = Matrix4x4.CreateTranslation(0, StandPelvis, 0);
+        pose.Drop = 0;
+        pose.Upper = Matrix4x4.Identity;
+        var foot = FootFrame(0, 0, Vector3.UnitY);
+        for (var i = 0; i < 2; i++)
+        {
+            var side = i == 0 ? 1f : -1f;
+            var hip = Vector3.Transform(new Vector3(side * 0.15f, -HipDrop, 0), pose.Pelvis);
+            var target = PackAnkle with { X = side * PackAnkle.X };
+            var pole = Vector3.Normalize(new Vector3(side * 0.05f, 0.2f, -1f));
             pose.Planted[i] = true;
             pose.Lifted[i] = false;
             Solve(pose, i, hip, target, pole, foot);

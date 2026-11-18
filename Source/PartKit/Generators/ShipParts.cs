@@ -808,13 +808,15 @@ public sealed class ShipParts : IPartGenerator
         Sock(p, "mmuDock", Cx + Lw, F0 + 0.125, 2.75, "-x");
         Sock(p, "suitR", Cx + Lw, F0 + 0.125, 3.8, "-x");
         Sock(p, "suitL", Cx - Lw, F0 + 0.125, 2.8, "+x");
+        Sock(p, "lifeSupport", Cx - Lw, F0 + 0.125, 5.97, "+x"); // (the ship's air: the unit and a tank on the port wall, in the gaps between the shelves)
+        Sock(p, "o2Tank0", Cx - Lw, F0 + 0.125, 8.93, "+x");
         Sock(p, "shellDock", Cx + Lw, F0 + 0.125, 7.0, "-x"); // (the one Robot Shell Dock, aft of the locker: Karl, 2026-11-17)
         Sock(p, "crate0", 2.4, F0, 10.6, "+y");
         Sock(p, "crate1", 3.2, F0, 10.6, "+y");
         Sock(p, "panelEng", 1.9, F0 + 0.6, 12.125, "+z");
         Sock(p, "boardEng", 8.0, F0 + 0.9, 12.125, "+z");
         Sock(p, "pipesEngL", 3.1, F0 + 2.6, 12.125, "+z");
-        Sock(p, "battery", 7.3, F0 + 2.2, 12.125, "+z");
+        Sock(p, "battery", 6.85, F0 + 0.125, 12.125, "+z"); // (its Ship Battery S stands on the floor against this wall: Karl, 2026-11-18)
         Sock(p, "switchHoldL", Cx - Lw, F0 + 1.3, 7.2, "+x");
         Sock(p, "switchHoldR", Cx + Lw, F0 + 1.3, 7.55, "-x"); // (aft of the Robot Shell Dock)
         Sock(p, "switchEng", 6.3, F0 + 1.3, 12.125, "+z");
@@ -2076,6 +2078,8 @@ public sealed class ShipParts : IPartGenerator
         Hang(bp, "Robot Shell", Hang(bp, "Robot Shell Dock", keel, "shellDock", "wall"), "dock", "back");
         Hang(bp, EvaParts.LockerName, keel, "suitR", "wall");
         Hang(bp, EvaParts.LockerName, keel, "suitL", "wall");
+        Hang(bp, EvaParts.LifeSupportName, keel, "lifeSupport", "wall"); // (the ship's air: 16 person-hours with its tank)
+        Hang(bp, EvaParts.OxygenTankName, keel, "o2Tank0", "wall");
         EvaParts.FitDock(bp, Holder(bp, keel, "mmuDock"), "mmuDock", saddles[1]); // (its pack fed from the starboard saddle tank, outside the wall)
         Hang(bp, "Requisition Crate", keel, "crate0", "-y");
         Hang(bp, "Requisition Crate", keel, "crate1", "-y");
@@ -2084,7 +2088,7 @@ public sealed class ShipParts : IPartGenerator
         Hang(bp, "Engineer's Panel", keel, "panelEng", "back");
         Hang(bp, "Power Board", keel, "boardEng", "back");
         Hang(bp, "Pipe Bank", keel, "pipesEngL", "back");
-        Paint(bp, Hang(bp, "Battery", keel, "battery", "-z"), "#3a3d3f");
+        Hang(bp, "Ship Battery S", keel, "battery", "wall");
         Switch(bp, keel, "switchHoldL", Lamp(bp, keel, "lampHoldL0"), Lamp(bp, keel, "lampHoldL1"));
         Switch(bp, keel, "switchHoldR", Lamp(bp, keel, "lampHoldR0"), Lamp(bp, keel, "lampHoldR1"));
         Switch(bp, keel, "switchEng", Lamp(bp, keel, "lampEngL"), Lamp(bp, keel, "lampEngR"));
@@ -2094,7 +2098,6 @@ public sealed class ShipParts : IPartGenerator
         var stab = Hang(bp, "Flight Stabilizer", deck, "module", "-y"); // (a small gyro: the attitude jets turn it)
         bp.Steps[stab]["config"] = ShipFlight();
         bp.Wires.Add((pilot, stab));
-        Hang(bp, "Chart Table", deck, "chart", "back");
         bp.HangTurned("Shell Control Chair", Holder(bp, deck, "linkChair"), "linkChair", "bottom", BuildingParts.R0);
         // The bedroom, the bathroom.
         Paint(bp, Hang(bp, "Iron Bed", deck, "bed", "wall"), "#6b4a2e", "worn paint");
