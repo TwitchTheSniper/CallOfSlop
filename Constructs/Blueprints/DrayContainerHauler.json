@@ -1104,10 +1104,27 @@
       "finish": "worn paint"
     },
     {
-      "part": "Dray Boarding Ladder",
+      "part": "Dray Belly Hatch",
       "on": 9,
       "socket": "boarding",
-      "by": "hull"
+      "by": "hang"
+    },
+    {
+      "part": "Dray Boarding Ladder",
+      "on": 166,
+      "socket": "ladder",
+      "by": "foot",
+      "paint": "#202326",
+      "finish": "painted steel"
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 34,
+      "socket": "switchHatch",
+      "by": "back",
+      "config": {
+        "startOn": false
+      }
     },
     {
       "part": "Flight Couch",
@@ -1385,24 +1402,28 @@
   ],
   "wires": [
     [
-      167,
-      169
+      168,
+      166
     ],
     [
-      181,
-      179
+      169,
+      171
     ],
     [
-      181,
-      180
+      183,
+      181
     ],
     [
-      184,
+      183,
       182
     ],
     [
-      184,
-      183
+      186,
+      184
+    ],
+    [
+      186,
+      185
     ]
   ],
   "conduit": true,

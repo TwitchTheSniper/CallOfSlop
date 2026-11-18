@@ -59,6 +59,15 @@ public sealed class HaulerParts : IPartGenerator
 
     private static readonly Rect Well = new(Cx - 1.45, 26.8, Cx + 1.45, 33.2); // the belly well under the middle lane of row 3
     private static readonly Rect BellyHatch = new(Cx + 1.8, 11.4, Cx + 3.05, 12.65); // the airlock's boarding shaft (2026-11-18: in from 2.4 m, so it stays inside the keel's flat, which is 3.15 m wide at its front: the sloped plate beside the flat sealed its outboard edge)
+    // The belly hatch and the boarding ladder on it (BellyHatchPart): the plate's faces, how far it slides down (its underside to the
+    // ground), the ladder's back (2 cm in front of the strut) and its rise from the plate to the deck.
+    private const string BellyHatchName = "Dray Belly Hatch";
+    private static double HatchX => BellyHatch.X0 + 0.625;
+    private static double HatchBottom => At(BellyHatch.Z1)[0].Y - 0.012;
+    private static double HatchTop => HatchBottom + 0.08;
+    private static double HatchTravel => HatchBottom - Ground - 0.005;
+    private static double LadderZ => BellyHatch.Z1 - 0.03;
+    private static double BoardRise => Ft0 - (HatchTop - HatchTravel);
     private static readonly Rect LadderHatch = new(Cx - 3.4, 11.8, Cx - 2.15, 13.05); // the suit room up to the aft hall (room behind it for the ladder's landing, before the hold's wall)
     private const double TrackY = -1.26; // the well doors' tracks' underside
 
@@ -832,7 +841,8 @@ public sealed class HaulerParts : IPartGenerator
         Sock(p, "lampMess", Cx - Lw, Ft0 + 2.3, 8.6, "+x");
         Sock(p, "lampPassage", Cx + 1.125, Ft0 + 2.3, 8.6, "-x"); // (the passage's starboard wall, between the store's door and the airlock's)
         Sock(p, "switchMess", Cx - 1.125, Ft0 + 1.3, 7.6, "-x");
-        Sock(p, "boarding", BellyHatch.X0 + 0.625, Ft0 - 0.125, BellyHatch.Z1, "-z");
+        Sock(p, "boarding", HatchX, Ft0 - 0.125, BellyHatch.Z1, "-z"); // (the belly hatch hangs here, at the deck's edge over the shaft's aft wall)
+        Sock(p, "switchHatch", Cx + 1.375, Ft0 + 1.3, 12.9, "+x"); // (the airlock's inboard wall: its switch opens and shuts the belly hatch)
         foreach (var (what, z) in new[] { ("lower deck front", ZFront - 0.25), ("lower deck back", ZHold) })
             foreach (var y in new[] { 0.0, Ft1 })
                 MustFit(what, z, Lw + 0.25, y);
@@ -1372,10 +1382,10 @@ public sealed class HaulerParts : IPartGenerator
         return p.Stats(1600, 8000, 35, 8.0);
     }
 
-    private static Part Ladder(string name, double rise, string desc, string sockName, double[] sockAt, string sockDir)
+    private static Part Ladder(string name, double rise, string desc, string sockName, double[] sockAt, string sockDir, double over = 1.0)
     {
         var p = new Part(name, Small, Section, desc, role: "frame", tool: "welder", material: "steel", color: Frame, group: Group);
-        var top = rise + 1.0;
+        var top = rise + over; // (its rails' top over the landing)
         p.Add(Box([-0.3, 0, -0.19], [0.3, top, -0.005], hidden: true));
         foreach (var x in new[] { -0.25, 0.25 })
         {
@@ -1389,6 +1399,35 @@ public sealed class HaulerParts : IPartGenerator
         p.Sock(sockName, sockAt, sockDir);
         p.Set(("ladder", rise));
         return p.Stats(60 + rise * 12, 400, 6, 3.0);
+    }
+
+    /// <summary>The belly hatch (Karl, 2026-11-18: the boarding ladder becomes a hatch, the ladder folding out of it): a plate that shuts the
+    /// boarding shaft flush under the keel, on a strut up the shaft's aft wall to the deck's edge, where it hangs. It slides down to the
+    /// ground (an event door, slide -y) and the Dray Boarding Ladder stands on it, riding it: shut, the ladder stands stowed up through
+    /// the airlock's floor; open, it runs from the ground up the shaft. Origin at its hanging socket on the deck's edge.</summary>
+    private static Part BellyHatchPart()
+    {
+        var p = new Part(BellyHatchName, Small, Section, "The Dray's belly hatch: a plate that shuts the boarding shaft under the keel. F (or the airlock's switch) slides it down to the ground, and the boarding ladder standing on it comes down with it.", role: "door", tool: "welder", material: "steel", color: Armour2, group: Group);
+        double[] S = [HatchX, Ft0 - 0.125, BellyHatch.Z1];
+        double[] L(double x, double y, double z) => [Py.Round(x - S[0], 4), Py.Round(y - S[1], 4), Py.Round(z - S[2], 4)];
+        void B(double x0, double y0, double z0, double x1, double y1, double z1, string? col, string? fin, bool detail = false, bool hidden = false) =>
+            p.Add(hidden ? Box(L(x0, y0, z0), L(x1, y1, z1), hidden: true) : Box(L(x0, y0, z0), L(x1, y1, z1), col!, detail: detail, shape: Kw(("finish", fin!))));
+        double x0 = BellyHatch.X0 - 0.02, x1 = BellyHatch.X1 + 0.02, z0 = BellyHatch.Z0 - 0.02, z1 = BellyHatch.Z1 - 0.035;
+        B(x0, HatchBottom, z0, x1, HatchTop, z1, Armour2, "plated steel"); // (the plate, its underside 1 cm under the keel's flat)
+        foreach (var i in Enumerable.Range(0, 4)) // (hazard chevrons on its underside)
+        {
+            var z = z0 + 0.15 + i * 0.3;
+            B(x0 + 0.1, HatchBottom - 0.008, z, x1 - 0.1, HatchBottom - 0.002, z + 0.12, Hazard, "hazard paint", detail: true);
+        }
+        B(x0 + 0.03, HatchTop + 0.002, z0 + 0.03, x0 + 0.13, HatchTop + 0.06, z1 - 0.03, Frame, "dirty steel", detail: true); // (stiffeners on its top)
+        B(x1 - 0.13, HatchTop + 0.002, z0 + 0.03, x1 - 0.03, HatchTop + 0.06, z1 - 0.03, Frame, "dirty steel", detail: true);
+        // The strut up the shaft's aft wall to the deck's edge: hidden where it meets the deck, a drawn post just in front of that.
+        B(HatchX - 0.3, HatchTop, BellyHatch.Z1 - 0.03, HatchX + 0.3, Ft0 - 0.01, BellyHatch.Z1, null, null, hidden: true);
+        B(HatchX - 0.28, HatchTop + 0.004, BellyHatch.Z1 - 0.028, HatchX + 0.28, Ft0 - 0.02, BellyHatch.Z1 - 0.004, Frame, "painted steel");
+        p.Sock("hang", [0, 0, 0], "+z");
+        p.Sock("ladder", L(HatchX, HatchTop, LadderZ - 0.1), "+y");
+        p.Set(("door", Kw(("kind", "slide"), ("axis", "-y"), ("travel", Py.Round(HatchTravel, 3)), ("seconds", 4.0), ("hang", "hang"))));
+        return p.Stats(500, 4000, 30, 6.0);
     }
 
     /// <summary>A saddle tank: a long drum on two cradles. Origin at the front cradle's foot, where it sits on its pad (+y up the tank).</summary>
@@ -1901,10 +1940,12 @@ public sealed class HaulerParts : IPartGenerator
         return s;
     }
 
-    private static void Switch(BuildingParts.Blueprint bp, int on, string sock, params int[] lamps)
+    private static void Switch(BuildingParts.Blueprint bp, int on, string sock, params int[] lamps) => Switch(bp, on, sock, true, lamps);
+
+    private static void Switch(BuildingParts.Blueprint bp, int on, string sock, bool startOn, params int[] lamps)
     {
         var s = Hang(bp, "Bakelite Switch", on, sock, "back");
-        bp.Steps[s]["config"] = new PyDict { ["startOn"] = true };
+        bp.Steps[s]["config"] = new PyDict { ["startOn"] = startOn };
         foreach (var l in lamps)
             bp.Wires.Add((s, l));
     }
@@ -1971,7 +2012,9 @@ public sealed class HaulerParts : IPartGenerator
             Hang(bp, "Dray Lift Jet", keel, $"lift{i}", "top");
         for (var i = 0; i < LegAt.Length; i++)
             Paint(bp, Hang(bp, "Dray Landing Leg", keel, $"leg{i}", "top"), Armour2, "worn paint");
-        Hang(bp, "Dray Boarding Ladder", lower, "boarding", "hull");
+        var hatch = Hang(bp, BellyHatchName, lower, "boarding", "hang"); // (the belly hatch, shut; the ladder stowed on it)
+        Paint(bp, bp.Hang("Dray Boarding Ladder", hatch, "ladder", "foot"), Frame, "painted steel");
+        Switch(bp, lower, "switchHatch", false, hatch); // (off: the hatch shut)
         // The bridge: the pilot flies through the flight computer between the couches and the screen (Ship keys, the mouse aims the nose).
         var pilot = Hang(bp, "Flight Couch", upper, "pilot", "bottom");
         Hang(bp, "Flight Couch", upper, "copilot", "bottom");
@@ -2042,7 +2085,8 @@ public sealed class HaulerParts : IPartGenerator
         [
             .. structure, WellDoor(-1), WellDoor(1), SideDoor(-1), SideDoor(1),
             Ladder("Dray Ladder", Ft1 - Ft0, "A ladder between the Dray's crew decks: F climbs it.", "bottom", [0, 0, -0.095], "-y"),
-            Ladder("Dray Boarding Ladder", Ft0 - Ground, "The Dray's boarding ladder, from the ground up its belly shaft into the airlock: F climbs it.", "hull", [0, Py.Round(Ft0 - 0.125 - Ground, 3), -0.005], "+z"),
+            Ladder("Dray Boarding Ladder", Py.Round(BoardRise, 3), "The Dray's boarding ladder: it stands on the belly hatch, stowed up through the airlock's floor while the hatch is shut, and runs from the ground up the shaft when it is open. F climbs it.", "foot", [0, 0, -0.1], "-y", over: -0.03),
+            BellyHatchPart(),
             LiftJet(), Leg(), PowerPlant(), FlightComputer(), SaddleTank(),
         ];
         var defs = new Dictionary<string, PyDict>();

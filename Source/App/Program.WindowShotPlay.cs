@@ -341,6 +341,18 @@ public static partial class Program
                 var (mat, amount) = RecyclingTable.Current.YieldOf(p);
                 WsSay(string.Create(ci, $"partinfo: {d.Name}{(d.RuntimeMade ? " (made)" : "")} (body {c.Id} part {part}): mass {c.PartMass(part):0.##} kg (def {d.Mass:0.##}), health {p.Health:0.#} of {d.Health:0.#}, armour {d.Armour:0.#}{(p.Broken ? ", wrecked" : "")}; recycles to {amount} {RecyclingTable.Current.NameOf(mat)}; cost cap {PressTable.Current.CostCapOf(d):0.##} kg; recipe {AssemblingTable.Current.Of(d.Id)?.Batch ?? "none"}; body {c.PartCount} parts, {c.Mass:0} kg"));
                 WsSay($"partinfo: a Welder's join here: {(ConstructPlace.FindJoin(g.Constructs, c, part, out var jp) ? $"yes, onto body {jp.Other!.Id}" : "none (no free socket of it meets another construct's, square)")}; anchored {c.Anchored}, loose {c.Loose}, segment {c.Parts[part].Seg}");
+                {
+                    var links = 0;
+                    for (var l = 0; l < c.LinkCount; l++)
+                        if (c.Links[l].A == part || c.Links[l].B == part)
+                        {
+                            links++;
+                            var o = c.Links[l].A == part ? c.Links[l].B : c.Links[l].A;
+                            WsSay($"partinfo: link to part {o} ({c.DefOf(o).Name})");
+                        }
+                    var dk = c.DoorOf(part);
+                    WsSay($"partinfo: {links} links; door {(dk < 0 ? "none" : c.Doors[dk].Part == part ? $"{dk} (its own)" : $"{dk}'s leaf (door part {c.Doors[dk].Part})")}; pos {p.Pos}");
+                }
                 if (c.ModEngines is { } mes)
                     for (var k = 0; k < c.ModCount; k++)
                     {

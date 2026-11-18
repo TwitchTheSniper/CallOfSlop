@@ -70,7 +70,11 @@ girders) along the hold's roof, a sensor mast, radiators over the drive room.
 - **Lift and legs.** Six Dray Lift Jets (2 MN each, whole parts with nothing inside) on pads under the keel's flat, inside the
   skids, clear of the well (z 16, 24, 42); six Dray Landing Legs outboard of the skids stand the keel 2.9 m off the ground (`Ground`),
   room for a container under the well. Loaded with 14 containers of 30 t it still lifts about twice its weight.
-- **Getting in.** The Dray Boarding Ladder runs from the ground up the belly shaft into the airlock (`--ladder-check`: up and down).
+- **Getting in.** The belly shaft is closed by the Dray Belly Hatch (Karl, 2026-11-18: no ladder hanging out in flight), a slide door that
+  drops 2.9 m to the ground in 4 s. The Dray Boarding Ladder stands on it as a door leaf, so while the hatch is shut it is stowed up
+  through the airlock's floor (a climb is refused) and with it open it runs from the ground to the airlock. The airlock's inboard switch
+  works it, as does F on the hatch from below or F on the stowed ladder (`GameSandbox` Use: a ladder on a shut door's leaf works the door).
+  `--ladder-check` climbs it only with the hatch open.
   `--check-building` doesn't follow ladders, so it still marks the decks cut off.
 - **Power.** The Dray Power Plant (600 kW, no fuel) on the drive room's deck starboard of the door, the Power Board beside it, three
   Batteries on the engine floor's starboard walkway. Lamps: two on the bridge and two in the mess and passage, each pair on a

@@ -1,0 +1,175 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Dray Belly Hatch",
+  "description": "The Dray's belly hatch: a plate that shuts the boarding shaft under the keel. F (or the airlock's switch) slides it down to the ground, and the boarding ladder standing on it comes down with it.",
+  "group": "Ship",
+  "section": "Dray hauler",
+  "role": "door",
+  "tool": "welder",
+  "door": {
+    "kind": "slide",
+    "axis": "-y",
+    "travel": 2.971,
+    "seconds": 4.0,
+    "hang": "hang"
+  },
+  "mass": 500.0,
+  "health": 4000,
+  "armour": 30,
+  "material": "steel",
+  "color": "#264b67",
+  "attachSeconds": 6.0,
+  "boxes": [
+    {
+      "min": [
+        -0.645,
+        -1.249,
+        -1.27
+      ],
+      "max": [
+        0.645,
+        -1.169,
+        -0.035
+      ],
+      "color": "#264b67",
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -0.545,
+        -1.262,
+        -1.12
+      ],
+      "max": [
+        0.545,
+        -1.246,
+        -1.0
+      ],
+      "color": "#e0a020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.545,
+        -1.262,
+        -0.82
+      ],
+      "max": [
+        0.545,
+        -1.246,
+        -0.7
+      ],
+      "color": "#e0a020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.545,
+        -1.262,
+        -0.52
+      ],
+      "max": [
+        0.545,
+        -1.246,
+        -0.4
+      ],
+      "color": "#e0a020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.545,
+        -1.262,
+        -0.22
+      ],
+      "max": [
+        0.545,
+        -1.246,
+        -0.1
+      ],
+      "color": "#e0a020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.615,
+        -1.167,
+        -1.24
+      ],
+      "max": [
+        -0.515,
+        -1.109,
+        -0.065
+      ],
+      "color": "#202326",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        0.515,
+        -1.167,
+        -1.24
+      ],
+      "max": [
+        0.615,
+        -1.109,
+        -0.065
+      ],
+      "color": "#202326",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.3,
+        -1.169,
+        -0.03
+      ],
+      "max": [
+        0.3,
+        0.115,
+        0.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.28,
+        -1.165,
+        -0.028
+      ],
+      "max": [
+        0.28,
+        0.105,
+        -0.004
+      ],
+      "color": "#202326",
+      "finish": "painted steel"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "hang",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "ladder",
+      "at": [
+        0.0,
+        -1.169,
+        -0.13
+      ],
+      "dir": "+y"
+    }
+  ]
+}

@@ -314,6 +314,7 @@ public static unsafe partial class Program
                     PartRole.Joint when d.JointType == JointType.Swivel => ConstructLinear.SwivelLook(hit.Body, hit.Part),
                     PartRole.Hinge or PartRole.Joint when JointSides.IsJoint(hit.Body, hit.Part, out var jointAt) => JointSides.Look(hit.Body, hit.Part, jointAt, near ? SandboxKeys.Do(use, "open or shut") : null),
                     PartRole.Hinge or PartRole.Joint when near => SandboxKeys.Line(d.Name, null, null, SandboxKeys.Do(use, "open or shut")),
+                    _ when d.LadderTop > 0 && near && !hit.Body.Loose && ConstructDoor.EventDoor(hit.Body, hit.Part) is var ldr and >= 0 && ldr != hit.Part && !Game.LadderOnShutDoor(hit.Body, hit.Part) => SandboxKeys.Line(d.Name, null, null, SandboxKeys.Do(use, "climb")), // (a ladder on an open door's leaf, the Dray's belly hatch: climbed; shut, its door's line below)
                     _ when ConstructDoor.Swings(hit.Body, hit.Part) => ConstructDoor.Look(hit.Body, hit.Part, near ? use : null), // (a door, or any panel hung on a hinge)
                     PartRole.Door when near => SandboxKeys.Line(d.Name, null, null, SandboxKeys.Do(use, "open or shut")),
                     PartRole.Logic => SandboxKeys.Line(d.Name, SandboxKeys.Join(setting, signal), unpowered),

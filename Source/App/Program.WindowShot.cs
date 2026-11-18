@@ -728,13 +728,15 @@ public static unsafe partial class Program
             case "poke": // host: a button pressed as F presses it on the server (ConstructEdits.Use: its hold time), for a check that needs no aim
             {
                 var (pc, ppart) = g.IsServer ? WsFind(g, arg) : (null, 0);
-                if (pc == null || pc.DefOf(ppart).Logic != CLogic.Button)
+                if (pc == null || pc.DefOf(ppart).Logic is not (CLogic.Button or CLogic.Switch))
                 {
-                    WsFail($"poke: no button \"{arg}\" (on the host or offline)");
+                    WsFail($"poke: no button or switch \"{arg}\" (on the host or offline)");
                     return;
                 }
                 ref var bp = ref pc.Parts[ppart];
-                if (ConstructConfig.Get(bp, bp.D, CfgKey.Latched, 0) >= 0.5f)
+                if (pc.DefOf(ppart).Logic == CLogic.Switch)
+                    bp.State ^= 1; // (a switch: flipped, as F flips a latched one)
+                else if (ConstructConfig.Get(bp, bp.D, CfgKey.Latched, 0) >= 0.5f)
                     bp.State ^= 1; // (latched: push on, push off)
                 else
                     bp.Count = (ushort)Math.Max(1, (int)MathF.Round(ConstructConfig.Get(bp, bp.D, CfgKey.Hold, ConstructLogic.ButtonSeconds) * World.TickRate));
@@ -938,6 +940,13 @@ public static unsafe partial class Program
                 if (c == null || part < 0 || c.DefOf(part).LadderTop <= 0 || end is not ("foot" or "top"))
                 {
                     WsFail("ladder PART[#n] foot|top (a ladder)");
+                    return;
+                }
+                if (verb == "ladderclimb" && Game.LadderOnShutDoor(c, part))
+                {
+                    var dw = ConstructDoors.Use(g.Constructs, c, part); // (as F on it does: CActKind.Use)
+                    WsSay($"ladder: F works its door: {(dw == "" ? "opening" : dw)}");
+                    _wsWait = 1;
                     return;
                 }
                 if (verb == "ladderclimb")
