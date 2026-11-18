@@ -176,7 +176,7 @@ public sealed partial class Ui
             CmdChrome(dl, session, s, fade, now, keyName);
             CmdRoster(dl, session, s, fade);
             CmdShipCard(dl, session, s, fade, now);
-            CmdBoardDraw(dl, session, fade); // (picking where to board: UiCommandBoard.cs)
+            CmdBoardDraw(dl, session, fade, now); // (picking where to board: UiCommandBoard.cs)
             CmdInput(session, s);
             CmdOrderPopup(session, s);
         }
