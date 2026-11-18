@@ -1,0 +1,29 @@
+{
+  "format": "call-of-slop-stations/1",
+  // The stations' markets (docs/sandbox/constructs/station.md "Markets"; Karl, 2026-11-18: "The first gameplay loop is being able to dock with
+  // it and sell mined ores" and "as a logistics point, it should show up on the friendly market as whatever goods are there to trade").
+  // A station is matched by its name (its pieces' section). "power": the NPC power that holds it (Crew/Factions, or a Powers folder): a power
+  // hostile to a player doesn't trade with them. Each good: "buy", what the station pays a unit (credits); "sell", what it asks a unit; "stock",
+  // what it holds at the start; "most", what it holds at most (it buys no more past that). "margin": the share of what a station pays that its
+  // power counts in its stock (the trade it does on it).
+  "margin": 0.25,
+  "stations": [
+    {
+      "name": "Caledon Highport",
+      "power": "Traders",
+      "planet": "Caledon",
+      "goods": [
+        { "good": "iron ore", "buy": 0.12, "sell": 0.18, "stock": 20000, "most": 200000 },
+        { "good": "copper ore", "buy": 0.2, "sell": 0.3, "stock": 8000, "most": 120000 },
+        { "good": "gold ore", "buy": 0.9, "sell": 1.35, "stock": 1000, "most": 40000 },
+        { "good": "levite ore", "buy": 1.6, "sell": 2.4, "stock": 200, "most": 20000 },
+        { "good": "stone", "buy": 0.02, "sell": 0.04, "stock": 5000, "most": 100000 },
+        { "good": "sand", "buy": 0.02, "sell": 0.04, "stock": 5000, "most": 100000 },
+        { "good": "helium", "buy": 0.5, "sell": 0.75, "stock": 2000, "most": 50000 },
+        { "good": "metal", "buy": 0.5, "sell": 0.8, "stock": 3000, "most": 30000 },
+        { "good": "steel", "buy": 0.8, "sell": 1.2, "stock": 4000, "most": 30000 },
+        { "good": "circuits", "buy": 3, "sell": 4.5, "stock": 500, "most": 5000 }
+      ]
+    }
+  ]
+}

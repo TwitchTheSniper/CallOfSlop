@@ -16,7 +16,7 @@ namespace CallOfSlop;
 /// </summary>
 public static unsafe partial class Program
 {
-    private static bool WsNavKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "command" or "cmdpick" or "order" or "nav" or "hoist" or "speed" or "travel" or "cmdview" or "rclick" or "rclickup" or "spacewalk" or "missile" or "missiles" or "letgo" or "orbit" or "boardwalk" or "cmdboard" or "mouse" or "moorclear";
+    private static bool WsNavKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "command" or "cmdpick" or "order" or "nav" or "hoist" or "speed" or "travel" or "cmdview" or "rclick" or "rclickup" or "spacewalk" or "missile" or "missiles" or "letgo" or "orbit" or "boardwalk" or "cmdboard" or "mouse" or "moorclear" or "stationsell" or "market";
 
     /// <summary>"order dock N": the picked craft docks with the Nth craft on the map (as cmdpick counts them).</summary>
     private static string? WsDockOrder(Game g, int n)
@@ -208,6 +208,20 @@ public static unsafe partial class Program
                 _wsWait = 10;
                 return true;
             }
+            case "stationsell":
+                // "stationsell": the picked craft's cargo sold to the station it is moored at, as the station card's SELL CARGO sends it.
+                g.SandboxFaction(FactionOp.StationSell, Ui.CommandPicked);
+                return true;
+            case "market":
+                // "market": every station's market as this peer has it (stock by good, who is moored), and this player's credits.
+                foreach (var m in g.StationMarketsHere.Values)
+                {
+                    var def = StationMarkets.All[m.Def];
+                    WsSay($"[market] {def.Name} (construct {m.Body}, {def.Power}): " + string.Join(", ", def.Goods.Select((gd, i) => $"{RecyclingTable.Current.NameOf(gd.Material)} {m.Stock[i]}"))
+                        + $"; moored: {string.Join(", ", m.Moored.Select(x => $"{x.Ship}@{x.Part}"))}");
+                }
+                WsSay($"[market] credits here: {g.CreditsHere}");
+                return true;
             case "moorclear" when g.IsServer:
                 // (a test state: the picked craft may be moored again at once by the berth it was cast off from, as if it had flown out and back)
                 if (g.Constructs.Get(Ui.CommandPicked) is { } mc)

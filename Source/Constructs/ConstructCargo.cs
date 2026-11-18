@@ -143,9 +143,10 @@ public static class ConstructCargo
     }
 
     /// <summary>Why <paramref name="b"/> can't be caught by carrier <paramref name="c"/> (null: it can).</summary>
+    /// <remarks>A station's berths never carry: they moor (Game.StationMoor, GameStations.cs).</remarks>
     public static bool Catchable(ConstructWorld world, Construct c, Construct b, ConstructPartDef volume)
     {
-        if (b == c || world.CarrierClock < b.DockAway || b.CarriedBy != 0 || b.CargoCount > 0 || b.PartCount == 0 || b.Anchored || b.Pinned || b.Frozen || b.GrabbedBy != 255)
+        if (b == c || c.IsStation || world.CarrierClock < b.DockAway || b.CarriedBy != 0 || b.CargoCount > 0 || b.PartCount == 0 || b.Anchored || b.Pinned || b.Frozen || b.GrabbedBy != 255)
             return false;
         if (volume.IsDock)
         {

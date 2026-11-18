@@ -751,7 +751,7 @@ public sealed partial class Ui
         if (c.IsStation)
         {
             var all = Game.StationBerths(g.Constructs, c, out var free);
-            k.Systems = string.Create(inv, $"STATION    {free} OF {all} BERTHS FREE{(c.GunCount > 0 ? $"    {c.GunCount} GUN{(c.GunCount == 1 ? "" : "S")}" : "")}");
+            k.Systems = string.Create(inv, $"{free} OF {all} FREE{(c.GunCount > 0 ? $"    {c.GunCount} GUN{(c.GunCount == 1 ? "" : "S")}" : "")}");
         }
 
         k.Problem = c.IsStation ? "A STATION: PICK A SHIP, THEN RIGHT CLICK HERE TO DOCK"
@@ -816,6 +816,11 @@ public sealed partial class Ui
             return;
         }
         ref var cr = ref _cmdCraft[at];
+        if (c.IsStation)
+        {
+            CmdStationCard(dl, g, s, c, cr, fade, now); // (its market and berths: UiCommandStation.cs)
+            return;
+        }
         if (_cmdCard.Id != c.Id || now - _cmdCard.Read > 0.25 || _cmdCard.Name == null)
             CmdCardRead(g, s, c, cr, now);
         ref var k = ref _cmdCard;

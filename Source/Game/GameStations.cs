@@ -119,7 +119,10 @@ public sealed partial class Game
         {
             _stationScan = 0;
             StationMoorScan(f);
+            StationMoorRecheck();
         }
+        if (ServerTick % World.TickRate == 7)
+            StationMarketTick(); // (GameStationMarket.cs)
         foreach (var c in Constructs.Bodies)
         {
             if (c.MooredTo == 0)
@@ -148,6 +151,29 @@ public sealed partial class Game
         f.Ships.SetState(i, primary, r + pose.Rot.Rotate(Vec3d.From(off)), v + pose.Rot.Rotate(Vec3d.From(Vector3.Cross(st.AngVel, off))));
         f.Ships.Thrust[i] = f.Ships.Thrust[j];
         c.NavThrottle = -1;
+    }
+
+    /// <summary>
+    /// Host: a moored ship's berth is a part index, and parts are renumbered when others come off: a ship no longer mostly inside its
+    /// berth's box looks for the berth whose box holds it, else it is cast off.
+    /// </summary>
+    private void StationMoorRecheck()
+    {
+        foreach (var c in Constructs.Bodies)
+        {
+            if (c.MooredTo == 0 || Constructs.Get(c.MooredTo) is not { } st)
+                continue;
+            if (c.MoorPart < st.PartCount && st.DefOf(c.MoorPart).IsDock && ConstructCargo.MostlyInside(st, c.MoorPart, c))
+                continue;
+            var found = -1;
+            for (var i = 0; i < st.PartCount && found < 0; i++)
+                if (st.DefOf(i).IsDock && !st.Parts[i].Broken && ConstructCargo.MostlyInside(st, i, c))
+                    found = i;
+            if (found >= 0)
+                c.MoorPart = (ushort)found;
+            else
+                StationCastOff(c);
+        }
     }
 
     /// <summary>How often (ticks) the host looks for ships come slowly into an empty station berth by hand.</summary>
