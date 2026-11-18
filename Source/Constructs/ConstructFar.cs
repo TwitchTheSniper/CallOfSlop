@@ -29,10 +29,25 @@ public static class ConstructFar
     public static void Physics(ConstructWorld world, IWorldQuery query, float dt)
     {
         var far = LastFar;
-        if (far == 0)
+        if (far == 0 || _tick % Every != 0)
         {
-            ConstructPhysics.Step(world, query, dt);
-            SimNear += ConstructPhysics.LastSimulated;
+            if (far == 0)
+            {
+                ConstructPhysics.Step(world, query, dt);
+                SimNear += ConstructPhysics.LastSimulated;
+                return;
+            }
+            // (not the far bodies' tick: the near pass alone, the far ones met as fixed obstacles)
+            try
+            {
+                (ConstructPhysics.PassTick, ConstructPhysics.Pass) = (_tick, 1);
+                ConstructPhysics.Step(world, query, dt);
+                SimNear += ConstructPhysics.LastSimulated;
+            }
+            finally
+            {
+                ConstructPhysics.Pass = 0;
+            }
             return;
         }
         try
@@ -52,24 +67,41 @@ public static class ConstructFar
     }
 
     /// <summary>Is a far body's logic and power due this tick (and so stepped by <see cref="Construct.FarLogic"/> ticks' time)?</summary>
-    public static bool LogicDue(Construct c) => c.FarLogic <= 1 || (_tick + c.Id) % c.FarLogic == 0;
+    public static bool LogicDue(Construct c) => c.FarLogic <= 1 || _tick % c.FarLogic == 0; // (one phase, as the physics)
 
     /// <summary>Ticks one logic step of <paramref name="c"/> stands for (a hold counted in ticks counts down by this).</summary>
     public static int StepTicks(Construct c) => c.FarLogic > 1 ? c.FarLogic : 1;
 
-    /// <summary>At the start of a world's step: which NPC bodies are far (their logic and power on the coarse rate; the awake ones' physics too).</summary>
+    /// <summary>Metres either side of <see cref="Range"/> a body must pass to change between near and far (so one at the line doesn't flicker).</summary>
+    public const float Hysteresis = 100;
+
+    /// <summary>
+    /// At the start of a world's step: which NPC bodies are far (their logic and power on the coarse rate; the awake ones' physics too). Every far
+    /// body steps on the same tick (one phase: they meet each other and their ropes' partners in one step). A body changes between near and far only
+    /// on the tick after that step, so no tick is stepped twice or skipped: its last near step ends where its first far step's time begins, and its
+    /// last far step covers every tick up to its first near one. A body that is taken in hand, coupled or roped to a near body is near at once.
+    /// </summary>
     public static void Mark(ConstructWorld world)
     {
         _tick++;
         var n = 0;
         var on = Range > 0 && Every > 1 && world.PeopleCount > 0;
+        var turn = _tick % Every == 1 % Every; // (the tick after the far step: the only one a body changes on)
         foreach (var c in world.Bodies)
         {
-            c.FarRate = c.FarLogic = 0;
             if (!on || c.NpcFaction == 0 || c.Owner != 255 || c.CarriedBy != 0 || c.GrabbedBy != 255 || c.NudgeBy != 255 || c.SpaceShip != 0)
+            {
+                c.FarRate = c.FarLogic = 0;
                 continue;
+            }
+            if (!turn)
+            {
+                n += c.FarRate > 1 ? 1 : 0;
+                continue; // (between turns it keeps what it is)
+            }
             var at = c.WorldCom;
-            var reach = Range + c.Radius;
+            var reach = (c.FarLogic > 1 ? Range - Hysteresis : Range + Hysteresis) + c.Radius;
+            c.FarRate = c.FarLogic = 0;
             var near = false;
             for (var k = 0; k < world.PeopleCount && !near; k++)
                 near = Vector3.DistanceSquared(world.People[k], at) < reach * reach;

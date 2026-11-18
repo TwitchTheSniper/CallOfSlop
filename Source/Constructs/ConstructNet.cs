@@ -1576,6 +1576,8 @@ public static partial class ConstructNet
             if (Priority(c))
                 continue;
             var period = PosePeriod(Vector3.Distance(c.WorldCom, at) - c.Radius);
+            if (period > 8 && c.FarRate <= 1 && c.FarLogic <= 1 && !Still(c))
+                period = 8; // (the long bands are for the far NPC bodies on their coarse rate: a ship moving at full rate far off keeps the old band)
             if (period == 1 || (poseTick + c.Id) % (uint)period == 0 || period > HotPoseTicks && poseTick + 1 == c.PoseHot)
                 _due.Add(c); // (past the hot window's length: its last change goes out as the window closes, whatever its band)
         }

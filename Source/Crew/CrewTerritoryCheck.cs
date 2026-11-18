@@ -69,7 +69,58 @@ public static class CrewTerritoryCheck
         }
     }
 
-    public static bool Run(string which, int seconds) => which.Equals("far", StringComparison.OrdinalIgnoreCase) ? FarCheck(seconds > 0 ? seconds : 240) : Territory(seconds > 0 ? seconds : 600);
+    public static bool Run(string which, int seconds) => which.ToLowerInvariant() switch
+    {
+        "far" => FarCheck(seconds > 0 ? seconds : 240) & FarContact(),
+        _ => Territory(seconds > 0 ? seconds : 600),
+    };
+
+    /// <summary>Far bodies' physics against what they touch: a far ship dropped onto an anchored deck and a second far ship dropped onto the first come to
+    /// rest where they do with a person beside them (every tick), not through the deck or each other.</summary>
+    private static bool FarContact()
+    {
+        var deckBp = ConstructBuild.FindBlueprint("Carrier Deck");
+        var heliBp = ConstructBuild.FindBlueprint("Bandit Helicopter 1");
+        if (deckBp == null || heliBp == null)
+        {
+            Console.WriteLine("fleet far contact: FAILED: no Carrier Deck or Bandit Helicopter 1");
+            return false;
+        }
+        var power = CrewPowers.ForKindName("Militia");
+        (Vector3 A, Vector3 B, int far) Drop(Vector3 person)
+        {
+            var place = VehicleDriveCheck.Place(1);
+            var w = new ConstructWorld();
+            var q = new SelfTest.DriveWorld();
+            var deck = CrewCheck.Build(w, deckBp, Vector3.Zero, 0, place);
+            deck.Anchored = true;
+            var a = CrewCheck.Build(w, heliBp, new Vector3(0, 0, 0), 0, place);
+            var b = CrewCheck.Build(w, heliBp, new Vector3(0.5f, 0, 0.3f), 0.4f, place);
+            a.Pos += new Vector3(0, 25 - a.Pos.Y, 0);
+            b.Pos += new Vector3(0, 40 - b.Pos.Y, 0);
+            foreach (var c in new[] { a, b })
+            {
+                c.NpcFaction = power; // (an NPC's body with nobody at its controls: it falls)
+                c.Wake();
+            }
+            w.People[0] = person;
+            w.PeopleCount = 1;
+            var farTicks = 0;
+            for (var t = 0; t < 8 * World.TickRate; t++)
+                using (place.In())
+                {
+                    w.Step(q, World.TickDt);
+                    farTicks += a.FarRate > 1 ? 1 : 0;
+                }
+            return (a.WorldCom, b.WorldCom, farTicks);
+        }
+        var near = Drop(new Vector3(30, 0, 0));
+        var far = Drop(new Vector3(3000, 0, 0));
+        var ok = far.far > 0 && near.far == 0 && Math.Abs(far.A.Y - near.A.Y) < 1.5f && Math.Abs(far.B.Y - near.B.Y) < 1.5f && Vector3.Distance(far.A, far.B) > 1.5f;
+        Console.WriteLine($"fleet far contact: near (every tick): first ship rests at {near.A.Y:0.00} m, second at {near.B.Y:0.00} m, {Vector3.Distance(near.A, near.B):0.0} m apart; " +
+                          $"far ({far.far} far ticks): {far.A.Y:0.00} m and {far.B.Y:0.00} m, {Vector3.Distance(far.A, far.B):0.0} m apart: {(ok ? "OK" : "FAILED")}");
+        return ok;
+    }
 
     private static string PowerFile(string name, string kind, string tag, IEnumerable<(string, int)> relations) =>
         $"{{ \"format\": \"call-of-slop-npc-power/1\", \"name\": \"{name}\", \"kind\": \"{kind}\", \"tag\": \"{tag}\", \"colour\": \"#808080\", " +

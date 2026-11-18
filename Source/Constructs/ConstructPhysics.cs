@@ -147,7 +147,7 @@ public static partial class ConstructPhysics
     private static bool InPass(Construct c) => Pass switch
     {
         1 => c.FarRate <= 1,
-        2 => c.FarRate > 1 && (PassTick + c.Id) % c.FarRate == 0,
+        2 => c.FarRate > 1 && PassTick % c.FarRate == 0, // (one phase for every far body: they meet each other, ropes and all, in the same step)
         _ => true,
     };
 
@@ -180,6 +180,12 @@ public static partial class ConstructPhysics
                 c.Rebuild();
             _ = c.Collider; // (made here, not when something first touches it mid-step)
             c.SimIndex = i;
+            if (Pass != 0 && !InPass(c))
+            {
+                // (another pass's body that one of this pass's touches: met as a fixed obstacle where it is, never moved, timed or posed here: ConstructFar.cs)
+                (_dyn[i], _jact[i], _invI[i]) = (false, false, default);
+                continue;
+            }
             if (c.NudgeBy == 255) // (a nudged body's are set with its pose: ConstructNudge.cs)
             {
                 c.PrevPos = c.Pos;
@@ -309,15 +315,7 @@ public static partial class ConstructPhysics
         LastWorldBodies = bodies.Count;
         if (!world.UseGrid)
         {
-            if (Pass != 0)
-            {
-                foreach (var c in bodies)
-                    if (InPass(c) || Pass == 2 && c.Asleep)
-                        _sim.Add(c);
-                LastSimulated = _sim.Count;
-                return _sim;
-            }
-            _sim.AddRange(bodies);
+            _sim.AddRange(bodies); // (a far pass too: the other pass's bodies are fixed obstacles in it)
             LastSimulated = _sim.Count;
             return _sim;
         }
@@ -347,8 +345,8 @@ public static partial class ConstructPhysics
             for (var j = 0; j < near.Count; j++)
             {
                 var b = near[j];
-                if (b.SimMark == stamp || Pass != 0 && !InPass(b) && (Pass == 1 || !b.Asleep))
-                    continue; // (another pass's body is not met: a far body touching a near one is rare, and never stepped twice in a tick)
+                if (b.SimMark == stamp)
+                    continue; // (another pass's body joins as a fixed obstacle: a far ship still lands on an anchored pad and meets a near one)
                 var reach = a.Radius + b.Radius + ConstructWorld.GridMargin;
                 if (Vector3.DistanceSquared(a.WorldCom, b.WorldCom) > reach * reach)
                     continue;
@@ -676,7 +674,7 @@ public static partial class ConstructPhysics
         var rot = Matrix4x4.CreateFromQuaternion(c.Rot);
         var lockedTouch = 0;
         var rimTurn = c.WheelCount <= RimEvery ? 1 : (c.WheelCount + RimEvery - 1) / RimEvery;
-        var rimAt = (int)((Pass == 2 && c.FarRate > 1 ? (PassTick + c.Id) / c.FarRate : _warmTick) % (uint)rimTurn); // (a far body: its own steps count, so every rim takes its turn)
+        var rimAt = (int)((Pass == 2 && c.FarRate > 1 ? PassTick / c.FarRate + c.Id : _warmTick) % (uint)rimTurn); // (a far body: its own steps count, so every rim takes its turn)
         // The body as this tick began: every tyre answers the same motion, so the order the wheels come in steers nothing.
         var vel0 = c.Vel;
         var spin0 = c.AngVel;
