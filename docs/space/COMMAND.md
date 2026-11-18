@@ -162,6 +162,20 @@ news named it (dim, with how many minutes ago, where it was then). A group of a 
 with brackets and THREAT. It all comes from `Msg.FactionMap`, once a second per player (`Game/GameCrewTerritory.cs`); labels are made only when it
 changes. Code: `Source/UI/UiCommandFactions.cs`. Window tool: `crewterritory [near|leave]` (`Program.WindowShotPlay.cs`).
 
+## Your fleet groups
+
+Bottom left, the FLEET GROUPS panel (docs/sandbox/design/faction-controllers.md phase 6): your own hired crews' ships as groups, you (or a hand of
+yours, job Admiral) their admiral. Pick a ship of yours with a hired crew: NEW GROUP: THIS SHIP, or NEW GROUP: CREWS NEAR ME (every one within 3 km),
+or ADD THIS SHIP to the picked group. A group's row says its order and how many of its ships hear you on the fleet net (aboard a ship with a radio part
+you reach 25 km, else your hand set 1.5 km; ships pass it on to each other); OUT OF REACH: no order gets through. Its buttons: HOLD, FORM ON ME,
+PULL BACK, STAND DOWN; COLUMN, LINE, WEDGE, SCREEN and the spacing; DOCTRINE (Crew/Fleet.json's, cycled: caution, discipline, skill, succession);
+TASK (a civilian task: its warships screen the flagship, which keeps going); ADMIRAL (you, or each hand in turn: a hand keeps command while you are
+away, and your orders must reach its ship); MAKE THIS THE FLAGSHIP and TAKE THIS SHIP OUT for the picked ship. With a group's ship picked, a right
+click adds GROUP orders to the order menu: on a craft ESCORT, ENGAGE (focus fire), SCREEN, FORM ON IT, CLOSE TO BOARD; on the ground GO HERE, PULL
+BACK HERE and a route's stops (LOAD, UNLOAD, MINE, DELIVER, PASS THROUGH, each with the panel's work time; the route loops). Your faction's leader may
+command your groups too. A nav order given to a group's ship takes it out of the group. Code: `Source/UI/UiCommandAdmiral.cs` (hooks in
+`UiCommand.cs`, `UiCommandOrders.cs`), the host's side `Source/Game/GameCrewFleetPlayers.cs`. Window tool: `crewadmiral ...`.
+
 ## Orders
 
 Eight kinds (`NavKind`), each for one ship, given by any player to any ship that takes orders. **A ship takes orders
