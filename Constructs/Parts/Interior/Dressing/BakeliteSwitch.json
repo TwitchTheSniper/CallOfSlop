@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Bakelite Switch",
-  "description": "A ship's wall switch. Lever down and the green lamp lit: on. Up and red: off. Wire it to a lamp.",
+  "description": "A ship's wall rocker switch. Green lamp lit: on. Red: off. Wire it to a lamp.",
   "group": "Interior",
   "section": "Dressing",
   "role": "logic",
@@ -101,36 +101,14 @@
     },
     {
       "min": [
-        -0.008,
-        -0.012,
-        0.064
+        -0.016,
+        -0.03,
+        0.062
       ],
       "max": [
-        0.008,
-        0.004,
-        0.12
-      ],
-      "color": "#9aa3ad",
-      "detail": true,
-      "paintable": false,
-      "finish": "steel",
-      "rig": "flip",
-      "pivot": [
-        0.0,
-        -0.004,
-        0.066
-      ]
-    },
-    {
-      "min": [
-        -0.017,
-        -0.017,
-        0.112
-      ],
-      "max": [
-        0.017,
-        0.009,
-        0.138
+        0.016,
+        0.022,
+        0.08
       ],
       "color": "#e08a2c",
       "detail": true,
@@ -139,7 +117,28 @@
       "pivot": [
         0.0,
         -0.004,
-        0.066
+        0.07
+      ]
+    },
+    {
+      "min": [
+        -0.013,
+        -0.027,
+        0.076
+      ],
+      "max": [
+        0.013,
+        -0.011,
+        0.088
+      ],
+      "color": "#f0a040",
+      "detail": true,
+      "paintable": false,
+      "rig": "flip",
+      "pivot": [
+        0.0,
+        -0.004,
+        0.07
       ]
     },
     {
