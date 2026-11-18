@@ -19,13 +19,22 @@ public sealed partial class InteriorParts
 
     private static PyDict? LitBox(double[] mn, double[] mx, string colour) => B(mn, mx, colour, true, ("paintable", false), ("glow", true));
 
-    /// <summary>A round brown light switch on a wall: a Switch in every way but its looks.</summary>
+    /// <summary>A ship's wall switch (Karl, 2026-11-18: bigger, square, the state plain to see): a squared housing on a mounting plate,
+    /// a lever in a gate that rocks down for on and up for off (the flip rig), and two state lamps, green under the gate lit while on
+    /// and red over it lit while off ("shows"). Still a Switch in every way but its looks; the name stays, as every blueprint uses it.</summary>
     private static Part BakeliteSwitch()
     {
-        var p = Hung("Bakelite Switch", "An old round light switch. On or off, with a clunk: wire it to a lamp.", role: "logic", color: Bakelite, mass: 0.5, health: 20, armour: 0, finish: "plastic");
-        p.Add(B([-0.05, -0.05, 0.0], [0.05, 0.05, 0.012], OldCream, false, ("finish", "gloss paint"))); // the plate
-        p.Add(Cyl([-0.038, -0.038, 0.012], [0.038, 0.038, 0.034], Bakelite, "+z"));
-        p.Add(B([-0.006, -0.004, 0.034], [0.006, 0.022, 0.052], "#a58a4e", true, ("paintable", false), ("finish", "brass"))); // the dolly
+        const string Housing = "#3a4048", Plate = "#22262b", Gate = "#111315", Cap = "#e08a2c", On = "#3dff7a", Off = "#ff3b2e";
+        var p = Hung("Bakelite Switch", "A ship's wall switch. Lever down and the green lamp lit: on. Up and red: off. Wire it to a lamp.", role: "logic", color: Housing, mass: 0.8, health: 30, armour: 1, finish: "plastic");
+        p.Add(B([-0.07, -0.068, 0.0], [0.07, 0.068, 0.012], Plate, false, ("finish", "plated steel"))); // the mounting plate
+        p.Add(B([-0.06, -0.062, 0.01], [0.06, 0.062, 0.062], Housing, false, ("finish", "gloss paint"))); // the housing
+        foreach (var x in new[] { -1.0, 1.0 })
+            p.Add(B([x < 0 ? -0.074 : 0.058, -0.05, 0.016], [x < 0 ? -0.058 : 0.074, 0.05, 0.05], Plate, true, ("finish", "dirty steel"))); // the side fins
+        p.Add(B([-0.02, -0.034, 0.054], [0.02, 0.026, 0.068], Gate, true, ("paintable", false))); // the lever's gate
+        p.Add(B([-0.008, -0.012, 0.064], [0.008, 0.004, 0.12], "#9aa3ad", true, ("paintable", false), ("finish", "steel"), ("rig", "flip"), ("pivot", new List<object?> { 0.0, -0.004, 0.066 }))); // the lever
+        p.Add(B([-0.017, -0.017, 0.112], [0.017, 0.009, 0.138], Cap, true, ("paintable", false), ("rig", "flip"), ("pivot", new List<object?> { 0.0, -0.004, 0.066 }))); // its grip
+        p.Add(B([-0.03, -0.056, 0.054], [0.03, -0.04, 0.07], On, true, ("paintable", false), ("shows", "on"))); // the on lamp, under the gate
+        p.Add(B([-0.03, 0.036, 0.054], [0.03, 0.052, 0.07], Off, true, ("paintable", false), ("shows", "off"))); // the off lamp, over it
         return p.Set(("logic", new PyDict { ["kind"] = "switch" }), ("config", new List<object?>
         {
             new PyDict { ["key"] = "startOn", ["label"] = "Starts on", ["group"] = "General", ["default"] = false, ["tooltip"] = "A newly built switch starts in the on position." },
