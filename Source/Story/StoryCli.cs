@@ -29,7 +29,7 @@ public static class StoryCli
         var rules = StoryRules.LoadFolder();
         foreach (var err in rules.Errors)
             Console.WriteLine($"  refused: {err}");
-        var castName = Arg(args, "--talk-sim") ?? "Penal Colony";
+        var castName = Arg(args, "--talk-sim") ?? "Frontier";
         if (rules.People.Cast(castName) is not { } cast)
         {
             Console.WriteLine($"No cast {castName}: {string.Join(", ", rules.People.Casts.Select(c => c.Name))}");
@@ -108,7 +108,7 @@ public static class StoryCli
         Console.WriteLine(Summary(rules));
         foreach (var err in rules.Errors)
             Console.WriteLine($"  refused: {err}");
-        var castName = Arg(args, "--storylet-sim") ?? "Penal Colony";
+        var castName = Arg(args, "--storylet-sim") ?? "Frontier";
         if (rules.People.Cast(castName) is not { } cast)
         {
             Console.WriteLine($"No cast {castName}: {string.Join(", ", rules.People.Casts.Select(c => c.Name))}");
