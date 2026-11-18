@@ -26,7 +26,7 @@ The user's second way to follow the ore ("tool racks for NPCs"): crew carry port
 - **The check**: `--crew-check --crew-mine [--seconds S] [--crew-shell] [--crew-far] [--post N]`: a host and a joined client on the Proving Ground,
   the post set down by ore and crewed (Raiders: no brief), stepped in game time. Measured (2-core box): rack drill, bodied: 2 trips, 1,200 iron
   ore tipped in 150 s, the client saw the hook empty and the body with the drill out; shell: 2,400 tipped in one trip, the shell woken again for
-  the next; far (records): 600 in 150 s. Protocol 354 (the new part file moves ids; CfgKey.ToolsOut; the job byte).
+  the next; far (records): 600 in 150 s. Protocol 355 (the new part file moves ids; CfgKey.ToolsOut; the job byte).
 
 ### Open (fourth builder)
 
