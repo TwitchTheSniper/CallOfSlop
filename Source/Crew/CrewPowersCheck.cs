@@ -13,8 +13,9 @@ namespace CallOfSlop;
 /// </summary>
 public static class CrewPowersCheck
 {
-    private sealed class Host(ConstructWorld w, CrewWorld crew, PowerControllers ctl, VehicleDriveCheck.CheckPlace place) : IPowerHost, IPowerSight
+    private sealed class Host(ConstructWorld w, CrewWorld crew, PowerControllers ctl0, VehicleDriveCheck.CheckPlace place) : IPowerHost, IPowerSight
     {
+        public PowerControllers ctl = ctl0;
         public Vector3 Person;
         public int Spawns, Docks;
         public double BuildMs; // (the tool builds at once, inside the think: the game's spawner builds in slices of its own)
@@ -203,6 +204,35 @@ public static class CrewPowersCheck
         back.Load(new PowerRelations(), saved);
         var roundTrip = back.SaveBytes().AsSpan().SequenceEqual(saved) && back.Powers[traders].Stock == ctl.Powers[traders].Stock && back.Powers[raiders].ShipCount() == ctl.Powers[raiders].ShipCount();
         Console.WriteLine($"  the controllers section: {saved.Length} bytes, reads back {(roundTrip ? "the same" : "DIFFERENT")}");
+        // A load: the ships out take up their own bodies again by their crews' uids (two a think), and no other.
+        var load = new PowerControllers { Rules = rules };
+        load.Load(rel, saved);
+        host.ctl = load;
+        rel.Might = load.Might;
+        for (var t = 0; t < 10 * World.TickRate; t++)
+            using (place.In())
+                load.Step(crew, w, rel, host);
+        var adopted = true;
+        var outs = 0;
+        foreach (var a in new[] { traders, raiders, militia })
+            foreach (var sh in ctl.Powers[a].Ships)
+                if (sh.State == PowerShipState.Out && sh.Body != 0)
+                {
+                    outs++;
+                    var found = Array.Exists(load.Powers[a].Ships, x => x.State == PowerShipState.Out && x.Body == sh.Body || x.State == PowerShipState.Hangar && x.Uid == sh.Uid); // (or docked since)
+                    if (!found)
+                    {
+                        var cs = crew.ShipOf(sh.Body);
+                        var uids = cs != null ? string.Join(",", Enumerable.Range(0, cs.MemberCount).Select(j => crew.Uid[cs.Members[j]])) : "none";
+                        var recs = string.Join(" ", load.Powers[a].Ships.Where(x => x.State != PowerShipState.None).Select(x => $"{x.State}/{x.Body}/{x.Uid}/{x.Mission}"));
+                        Console.WriteLine($"  not taken up: {CrewPowers.Of(a)!.Name}'s construct {sh.Body} (uid {sh.Uid}, mission {sh.Mission}, crew group {cs?.Group}, its uids {uids}); load's records: {recs}");
+                    }
+                    adopted &= found;
+                }
+        Console.WriteLine($"  after a load: {outs} ships out taken up again by their crews: {(adopted ? "each its own body (or docked since)" : "NOT ALL")}");
+        foreach (var l in load.Log)
+            Console.WriteLine($"  [powers] {l}");
+        roundTrip &= adopted;
         var ok = convoyFormed && escorted && raidFormed && raidEngaged && called && answered && defendRan && booksOk && neverNegative && roundTrip;
         Console.WriteLine($"fleet powers: convoy formed {Yes(convoyFormed)}, escorted {Yes(escorted)}, delivered {Yes(delivered)}; raid sent {Yes(raidFormed)}, engaged the convoy {Yes(raidEngaged)}, looted {Yes(looted)}; " +
                           $"call for help {Yes(called)}, the Militia answered {Yes(answered)} and went {Yes(defendRan)}; books match stock {Yes(booksOk)}, never below 0 {Yes(neverNegative)}; " +
@@ -281,6 +311,18 @@ public static class CrewPowersCheck
             Keep(militia, mercs, 100);
         });
         Check(mergedA == mercs && mergedB == militia && rel.Gone[mercs], $"kindred both ways for {rel.Rules.MergeMinutes} minutes: the weaker Mercenaries join the Militia ({(mergedA != 0 ? CrewPowers.Of(mergedA)!.Name : "none")})");
+        // -100 alone is no feud (worlds from before phase 3 clamped there): it moves.
+        Keep(raiders, militia, -100);
+        rel.Post(RelEvent.Release, raiders, militia, 255, default);
+        Check(!rel.Blood(raiders, militia) && rel.Get(raiders, militia) > -100, $"a relation at -100 with no feud moves as any other ({rel.Get(raiders, militia)})");
+        // Where the controllers don't run (Might unset: creative), no trade, tribute, blood or merging.
+        var off = new PowerRelations { Table = new FactionTable() };
+        off.Reset();
+        for (var k = 0; k < 8 * 60 * World.TickRate; k++)
+            off.Step();
+        for (var k = 0; k < 20; k++)
+            off.Post(RelEvent.DestroyShip, traders, raiders, 255, default);
+        Check(off.PactOf(traders, militia) != PactKind.Trade && !off.Blood(traders, raiders), $"with no controllers: no trade ({off.PactOf(traders, militia)}) and no blood feud ({off.Get(traders, raiders)})");
         // A save keeps the blood feud and the new pacts.
         var back = new PowerRelations { Table = new FactionTable(), Might = rel.Might };
         back.Load(rel.SaveBytes());

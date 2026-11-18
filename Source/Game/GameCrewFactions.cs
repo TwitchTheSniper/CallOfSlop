@@ -63,7 +63,8 @@ public sealed partial class Game : IPowerSight
     {
         var n = CrewPowers.Count;
         t.PowerCount = n;
-        Array.Copy(rel.Rel, t.PowerRel, t.PowerRel.Length);
+        for (var j = 0; j < t.PowerRel.Length; j++)
+            t.PowerRel[j] = rel.Shown(j); // (-100 only for a blood feud: phase 3)
         var k = 0;
         for (var i = 0; i < PowerRelations.MaxPacts && k < FactionTable.MaxPacts; i++)
             if (rel.PactK[i] != PactKind.None)

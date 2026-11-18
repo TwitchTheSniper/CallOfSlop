@@ -173,10 +173,10 @@ public static class WorldSaveWriter
             });
         if (s.Powers is { } powers)
             w.Section(PowersTag, () => w.I32(powers.Length).Bytes(powers)); // (the NPC powers' relations, Crew/CrewRelations.cs: a section of its own, so an older reader skips it)
-        if (s.Controllers is { } ctl)
-            w.Section(ControllersTag, () => w.I32(ctl.Length).Bytes(ctl)); // (the powers' controllers, Crew/CrewControllers.cs: after POWR, which it reads over; an older reader skips it)
         if (s.Fleet is { } fleet)
             w.Section(FleetTag, () => w.I32(fleet.Length).Bytes(fleet)); // (groups and admirals, Crew/CrewFleet.cs: a section of its own, so an older reader skips it)
+        if (s.Controllers is { } ctl)
+            w.Section(ControllersTag, () => w.I32(ctl.Length).Bytes(ctl)); // (the powers' controllers, Crew/CrewControllers.cs: after POWR and FLET; its missions find their groups again at each power's next think; an older reader skips it)
         if (s.LinkLedger is { } ledger)
             w.Section(LinkTag, () => w.Bytes(ledger)); // (the link ledger, LinkedLogisticsLedger.cs: a section of its own, so an older reader skips it)
         w.Section(Stores, () =>

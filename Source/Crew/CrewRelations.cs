@@ -223,7 +223,7 @@ public sealed class PowerRelations
 {
     public const int N = FactionTable.MaxStory, MaxPacts = 32, MaxNews = 32;
     public const int ThinkSeconds = 5;
-    /// <summary>A relation at this value is a blood feud: it never moves again (any other is kept above it, at -99 at worst).</summary>
+    /// <summary>A blood feud shows as this value (the grid sent to clients; the engine keeps the feud as a flag, <see cref="Feud"/>).</summary>
     public const int BloodValue = -100;
     private static int T => World.TickRate;
 
@@ -236,7 +236,17 @@ public sealed class PowerRelations
     private readonly long[] _kinSince = new long[N * N];
 
     /// <summary>How <paramref name="a"/> sees <paramref name="b"/> is a blood feud: no peace, ever.</summary>
-    public bool Blood(byte a, byte b) => a != b && a > 0 && b > 0 && a <= N && b <= N && Rel[(a - 1) * N + b - 1] <= BloodValue;
+    public bool Blood(byte a, byte b) => a != b && a > 0 && b > 0 && a <= N && b <= N && Feud[(a - 1) * N + b - 1];
+
+    /// <summary>How a sees b is a blood feud (Karl's answer 2): set by a grave deed at the floor, saved (POWR version 2), never cleared but by a new world.
+    /// A relation at -100 alone is no feud (worlds from before phase 3 clamped there).</summary>
+    public readonly bool[] Feud = new bool[N * N];
+
+    /// <summary>The value clients are shown: -100 only for a feud (others at -99 at worst), so the window's words need no flag on the wire.</summary>
+    public sbyte Shown(int k) => Feud[k] ? (sbyte)BloodValue : (sbyte)Math.Max((int)Rel[k], BloodValue + 1);
+
+    /// <summary>A gone power's heir: the power it merged into (0: wiped out, none).</summary>
+    public readonly byte[] MergedInto = new byte[N + 1];
 
     public RelationRules Rules = RelationRules.Current;
     public FactionTable Table = new(); // the factions table whose NPC rows hold the standings with players (the Game sets its own)
@@ -309,6 +319,8 @@ public sealed class PowerRelations
         Array.Clear(_thought);
         Array.Clear(_kinSince);
         Array.Clear(Gone);
+        Array.Clear(MergedInto);
+        Array.Clear(Feud);
         Array.Clear(News);
         NewsTotal = 0;
         for (var a = 1; a <= Count; a++)
@@ -459,10 +471,11 @@ public sealed class PowerRelations
         if (Def(victim) is not { } v || doerPower == victim || doerPower == 0 && doerPlayer == 255 || doerPower > Count || Gone[victim])
             return;
         var amount = Amount(e, v);
-        if (doerPower != 0 && e is RelEvent.DestroyShip or RelEvent.Capture or RelEvent.CaptureOfficer or RelEvent.RaidConvoy && Rel[(victim - 1) * N + doerPower - 1] <= BloodValue + 1 && v.Pride >= Rules.BloodPride && !Blood(victim, doerPower))
+        if (doerPower != 0 && e is RelEvent.DestroyShip or RelEvent.Capture or RelEvent.CaptureOfficer or RelEvent.RaidConvoy && Rel[(victim - 1) * N + doerPower - 1] <= BloodValue + 1 && v.Pride >= Rules.BloodPride && !Blood(victim, doerPower) && Might != null)
         {
-            // A grave deed against a power already at the floor: a blood feud, for good (Karl's answer 2).
+            // A grave deed against a power already at the floor: a blood feud, for good (Karl's answer 2; only where the controllers run: Might set).
             Set(victim, doerPower, BloodValue);
+            Feud[(victim - 1) * N + doerPower - 1] = true;
             Say($"{Name(victim)} swears a blood feud against {Name(doerPower)}");
         }
         if (doerPower != 0)
@@ -536,9 +549,9 @@ public sealed class PowerRelations
             return;
         var k = (a - 1) * N + b - 1;
         var was = Rel[k];
-        if (was <= BloodValue)
+        if (Feud[k])
             return; // (a blood feud never moves)
-        Rel[k] = (sbyte)Math.Clamp(was + delta, BloodValue + 1, 100); // (only a grave deed at the floor makes it blood: Post)
+        Rel[k] = (sbyte)Math.Clamp(was + delta, -100, 100);
         if (Rel[k] == was)
             return;
         Version++;
@@ -629,11 +642,12 @@ public sealed class PowerRelations
     }
 
     /// <summary>Power <paramref name="p"/> is gone for good (answer 5: wiped out; or merged): its pacts end, it thinks no more; news.</summary>
-    public void Fall(byte p, string line, bool quiet = false)
+    public void Fall(byte p, string line, bool quiet = false, byte into = 0)
     {
         if (p == 0 || p > Count || Gone[p])
             return;
         Gone[p] = true;
+        MergedInto[p] = into;
         for (var i = 0; i < MaxPacts; i++)
             if (PactK[i] != PactKind.None && (PactA[i] == p || PactB[i] == p))
                 PactK[i] = PactKind.None;
@@ -867,7 +881,7 @@ public sealed class PowerRelations
             if (b == a)
                 continue;
             var k = (a - 1) * N + b - 1;
-            if (PactOf(a, (byte)b) == PactKind.Ceasefire || Rel[k] <= BloodValue)
+            if (PactOf(a, (byte)b) == PactKind.Ceasefire || Feud[k])
                 continue; // (a ceasefire holds the grudge where it was set; a blood feud never fades)
             var to = Toward(Rel[k], def.RestTo[b], steps, Band[k] == RelBand.War);
             if (to != Rel[k])
@@ -945,7 +959,7 @@ public sealed class PowerRelations
 
     // ---- Saves (the world's Powers section) ------------------------------------------------------------------------------------------
 
-    public const byte SaveVersion = 1;
+    public const byte SaveVersion = 2; // (2: blood feuds, a bit a pair, after the news)
 
     /// <summary>
     /// u8 version; u8 n, n x text power name; n x n x i8 (row a: how a sees each); u8 pacts, each (u8 kind, u8 a, u8 b, i32 seconds held,
@@ -977,6 +991,15 @@ public sealed class PowerRelations
         w.U8((byte)news);
         for (var k = NewsTotal - news; k < NewsTotal; k++)
             w.Str(News[k % MaxNews]);
+        for (var a = 0; a < n; a++)
+            for (var b = 0; b < n; b += 8)
+            {
+                var bits = 0;
+                for (var j = 0; j < 8 && b + j < n; j++)
+                    if (Feud[a * N + b + j])
+                        bits |= 1 << j;
+                w.U8((byte)bits);
+            }
         return w.Span.ToArray();
     }
 
@@ -987,9 +1010,9 @@ public sealed class PowerRelations
         {
             var r = new SaveReader(bytes);
             var v = r.U8();
-            if (v != SaveVersion)
+            if (v is not (1 or SaveVersion))
             {
-                Console.WriteLine($"[crew] the world's powers section is of version {v} (this build reads {SaveVersion}): relations start from the power files");
+                Console.WriteLine($"[crew] the world's powers section is of version {v} (this build reads 1 and {SaveVersion}): relations start from the power files");
                 return;
             }
             int n = r.U8();
@@ -1045,6 +1068,16 @@ public sealed class PowerRelations
                 News[NewsTotal % MaxNews] = r.Str();
                 NewsTotal++;
             }
+            Array.Clear(Feud); // (version 1, from before blood feuds: none, whatever its values)
+            if (v >= 2)
+                for (var a = 0; a < n; a++)
+                    for (var b = 0; b < n; b += 8)
+                    {
+                        var bits = r.U8();
+                        for (var j = 0; j < 8 && b + j < n; j++)
+                            if ((bits >> j & 1) != 0 && map[a] != 0 && map[b + j] != 0 && map[a] != map[b + j])
+                                Feud[(map[a] - 1) * N + map[b + j] - 1] = true;
+                    }
             Version++;
         }
         catch (Exception ex) when (ex is WorldFileException or ArgumentException or IndexOutOfRangeException or InvalidDataException)

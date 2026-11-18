@@ -36,6 +36,7 @@ public struct PowerShip
     public short Bp; // into PowerControllers.Blueprints
     public ushort Body; // out: its construct (0 after a load until adopted)
     public float Hull; // its hull's share when it docked
+    public uint Uid; // out: its captain's (else a member's) crew uid, kept fresh: after a load it takes up the body whose crew holds that uid
     public long ReadyAt; // building: the tick it is done
     public sbyte Mission; // -1: free
 }
@@ -125,6 +126,9 @@ public sealed class PowerControllers
         public readonly PowerMission[] Missions = new PowerMission[MaxMissions];
         public long NextConvoy, Thought, UnpaidSince, TributeTicks;
         public int CallRead, Bought, Docked, Lost;
+        public int PlaceK = -1; // the generated place it lays next (-1: not laying)
+        public bool Relink; // after a load: its missions' groups are looked up again once the Fleet section is read
+        public byte Heir; // merged into (saved)
 
         public int Held()
         {
@@ -175,6 +179,7 @@ public sealed class PowerControllers
     public long Bytes;
     private int _next;
     private long _thinkAt, _dockedAt;
+    private int _adopts;
     private readonly Vector3[] _people = new Vector3[64];
     private int _peopleN;
     private readonly ushort[] _ids = new ushort[CrewGroup.MaxShips];
@@ -297,12 +302,21 @@ public sealed class PowerControllers
         p.Thought = Tick;
         var minutes = dt / (60.0 * T);
         _partAt = System.Diagnostics.Stopwatch.GetTimestamp();
+        _adopts = 0;
+        if (p.Relink)
+            Relink(crew, p, a);
         Books(rel, p, a, minutes);
         Part(0);
         if (_peopleN == 0)
             return; // (nobody on this world: phase 4's far layer moves what nobody sees)
-        if (!p.Started || !string.Equals(p.World, host.WorldKey, StringComparison.Ordinal))
+        if (p.Started && !string.Equals(p.World, host.WorldKey, StringComparison.Ordinal))
+            (p.Started, p.PlaceK) = (false, -1); // (another open world: its places are laid again)
+        if (!p.Started)
+        {
             Places(host, p, a);
+            if (!p.Started)
+                return; // (laying its places, one a think)
+        }
         Part(1);
         Upkeep(crew, w, host, p, a);
         Part(2);
@@ -381,43 +395,60 @@ public sealed class PowerControllers
     /// waypoints: a depot and a yard for Traders, a camp for Raiders; phase 4 puts outposts at key sites). A convoy's two face each other across the person.</summary>
     private void Places(IPowerHost host, Power p, byte a)
     {
-        p.Started = true;
-        p.World = host.WorldKey;
-        p.PlaceCount = 0;
-        foreach (var spec in p.Plan.PlaceList)
-            if ((spec.World.Length == 0 || spec.World == "*" || spec.World.Equals(p.World, StringComparison.OrdinalIgnoreCase)) && p.PlaceCount < MaxPlaces)
-                if (host.Ground(spec.At, out var g))
-                    AddPlace(p, spec.Name, g);
-                else
-                    Log.Add($"{Name(a)}: its place {spec.Name} at {spec.At} has no ground under it: left out");
-        if (p.PlaceCount == 0 && p.Plan.Places > 0)
+        if (p.PlaceK < 0)
+        {
+            // Begin: its plan's places for this world at once (a probe each), else one generated place a think (up to 16 probes each).
+            p.World = host.WorldKey;
+            p.PlaceCount = 0;
+            p.PlaceK = 0;
+            foreach (var spec in p.Plan.PlaceList)
+                if ((spec.World.Length == 0 || spec.World == "*" || spec.World.Equals(p.World, StringComparison.OrdinalIgnoreCase)) && p.PlaceCount < MaxPlaces)
+                    if (host.Ground(spec.At, out var g))
+                        AddPlace(p, spec.Name, g);
+                    else
+                        Log.Add($"{Name(a)}: its place {spec.Name} at {spec.At} has no ground under it: left out");
+            if (p.PlaceCount > 0)
+                p.PlaceK = p.Plan.Places; // (its plan names its places here: none generated)
+        }
+        var k = p.PlaceK;
+        if (k < p.Plan.Places && k < MaxPlaces)
         {
             var me = _people[0];
-            var seed = (uint)(a * 2654435761u ^ (uint)p.World.GetHashCode());
+            var seed = a * 2654435761u ^ StableHash(p.World);
             var bearing = (seed % 3600) / 3600f * MathF.Tau;
-            for (var k = 0; k < p.Plan.Places && k < MaxPlaces; k++)
+            var b = bearing + (k == 1 ? MathF.PI * 0.85f : k * 2.1f);
+            var (lo, hi) = PlacesNear > 0 ? (PlacesNear, PlacesNear * 1.5f) : (Rules.PlaceNear, Rules.PlaceFar);
+            var r = lo + (hi - lo) * ((seed >> (8 + k * 4)) % 16) / 15f;
+            var up = GravityFrames.Curved ? GravityFrames.UpAt(me) : Vector3.UnitY;
+            var east = Vector3.Normalize(Vector3.Cross(up, MathF.Abs(up.Z) < 0.9f ? Vector3.UnitZ : Vector3.UnitX));
+            var north = Vector3.Cross(east, up);
+            // Ground under it, else another bearing (and nearer, each four tries): a small map's edge.
+            for (var tries = 0; tries < 16; tries++)
             {
-                var b = bearing + (k == 1 ? MathF.PI * 0.85f : k * 2.1f);
-                var (lo, hi) = PlacesNear > 0 ? (PlacesNear, PlacesNear * 1.5f) : (Rules.PlaceNear, Rules.PlaceFar);
-                var r = lo + (hi - lo) * ((seed >> (8 + k * 4)) % 16) / 15f;
-                var up = GravityFrames.Curved ? GravityFrames.UpAt(me) : Vector3.UnitY;
-                var east = Vector3.Normalize(Vector3.Cross(up, MathF.Abs(up.Z) < 0.9f ? Vector3.UnitZ : Vector3.UnitX));
-                var north = Vector3.Cross(east, up);
-                // Ground under it, else another bearing (and nearer, each four tries): a small map's edge.
-                for (var tries = 0; tries < 16; tries++)
+                var bb = b + tries * 0.52f;
+                var rr = r * MathF.Pow(0.8f, tries / 4);
+                if (host.Ground(me + (east * MathF.Cos(bb) + north * MathF.Sin(bb)) * rr, out var g))
                 {
-                    var bb = b + tries * 0.52f;
-                    var rr = r * MathF.Pow(0.8f, tries / 4);
-                    if (host.Ground(me + (east * MathF.Cos(bb) + north * MathF.Sin(bb)) * rr, out var g))
-                    {
-                        AddPlace(p, k == 0 ? "home" : $"place {k + 1}", g);
-                        break;
-                    }
+                    AddPlace(p, k == 0 ? "home" : $"place {k + 1}", g);
+                    break;
                 }
             }
+            p.PlaceK = k + 1;
+            if (p.PlaceK < p.Plan.Places && p.PlaceK < MaxPlaces)
+                return;
         }
+        p.Started = true;
+        p.PlaceK = -1;
         if (p.PlaceCount > 0)
             Log.Add($"{Name(a)}: {p.PlaceCount} places on {p.World}: {string.Join(", ", Enumerable.Range(0, p.PlaceCount).Select(i => $"{p.PlaceName[i]} ({p.Place[i].X:0}, {p.Place[i].Z:0})"))}");
+    }
+
+    private static uint StableHash(string text)
+    {
+        var h = 2166136261u;
+        foreach (var ch in text)
+            h = (h ^ ch) * 16777619u;
+        return h;
     }
 
     private static void AddPlace(Power p, string name, Vector3 at)
@@ -512,8 +543,11 @@ public sealed class PowerControllers
                         s.State = PowerShipState.Building;
                     break;
                 case PowerShipState.Out:
-                    if (s.Body == 0)
+                    if (s.Body == 0 && _adopts < 2)
+                    {
+                        _adopts++; // (after a load: two a think, each a scan of the crews)
                         Adopt(crew, w, p, a, ref s);
+                    }
                     if (s.Body == 0)
                         break;
                     if (w.Get(s.Body) is not { Wreck: false } c || crew.ShipOf(s.Body) is not { } cs || cs.Prize || cs.Own || cs.Faction != a)
@@ -524,11 +558,33 @@ public sealed class PowerControllers
                         s.Mission = -1;
                         break;
                     }
+                    s.Uid = UidOf(crew, cs);
                     if (_dockedAt != Tick && s.Mission < 0 && cs.Group < 0 && home >= 0 && !p.Razed[home] && Vector3.Distance(c.WorldCom, p.Place[home]) < Rules.DockRange + c.Radius
                         && NearestPerson(c.WorldCom) > DockFrom)
                         Dock(crew, host, p, ref s, c, cs);
                     break;
             }
+        }
+    }
+
+    /// <summary>After a load, once the Fleet section is read: each mission's group by its slot and number, else the same power's group of that number;
+    /// none: the mission's ships go home (no news: nothing was lost).</summary>
+    private void Relink(CrewWorld crew, Power p, byte a)
+    {
+        p.Relink = false;
+        for (var i = 0; i < MaxMissions; i++)
+        {
+            ref var m = ref p.Missions[i];
+            if (m.Kind == MissionKind.None || m.Group < 0)
+                continue;
+            if (crew.Fleet.Of(m.Group) is { } g && g.Number == m.GroupNumber && g.Power == a)
+                continue;
+            m.Group = -1;
+            foreach (var o in crew.Fleet.Groups)
+                if (o.Live && o.Power == a && o.Number == m.GroupNumber)
+                    m.Group = (short)o.Slot;
+            if (m.Group < 0 && m.Stage == PowerMissionStage.Run)
+                (m.Stage, m.StageAt) = (PowerMissionStage.Return, Tick);
         }
     }
 
@@ -558,22 +614,27 @@ public sealed class PowerControllers
         crew.Fleet.Command(slot, OrderKind.GoTo, p.Place[home]);
     }
 
-    /// <summary>After a load: an out ship takes up the first crewed body of its power no other record holds (bodies' ids change in a save).</summary>
+    private static uint UidOf(CrewWorld crew, CrewShip cs) => cs.CaptainUid != 0 ? cs.CaptainUid : cs.MemberCount > 0 ? crew.Uid[cs.Members[0]] : 0;
+
+    /// <summary>After a load (bodies' ids change in a save): an out ship takes up the body of its power whose crew holds its saved uid, and that is in no
+    /// group but its mission's; none: the record is dropped (it was lost while the world was away, or its crew changed past knowing).</summary>
     private void Adopt(CrewWorld crew, ConstructWorld w, Power p, byte a, ref PowerShip s)
     {
-        for (var k = 0; k < crew.ShipHigh; k++)
+        var group = s.Mission >= 0 ? p.Missions[s.Mission].Group : (short)-1;
+        for (var k = 0; k < crew.ShipHigh && s.Uid != 0; k++)
         {
-            if (crew.Ships[k] is not { Own: false, Prize: false } cs || cs.Faction != a || w.Get(cs.Body) is not { Wreck: false })
+            if (crew.Ships[k] is not { Own: false, Prize: false } cs || cs.Faction != a || cs.Group >= 0 && cs.Group != group || w.Get(cs.Body) is not { Wreck: false })
                 continue;
-            var held = false;
-            foreach (var o in p.Ships)
-                held |= o.State == PowerShipState.Out && o.Body == cs.Body;
-            if (held)
+            var has = false;
+            for (var j = 0; j < cs.MemberCount && !has; j++)
+                has = crew.Uid[cs.Members[j]] == s.Uid;
+            if (!has)
                 continue;
             s.Body = cs.Body;
             return;
         }
-        s.State = PowerShipState.None; // (none left: it was lost while the world was away)
+        Log.Add($"{Name(a)}'s saved {Blueprints[s.Bp].Name} has no body now: dropped");
+        s.State = PowerShipState.None;
         s.Mission = -1;
     }
 
@@ -608,6 +669,7 @@ public sealed class PowerControllers
         }
         s.State = PowerShipState.Out;
         s.Body = c.Id;
+        s.Uid = UidOf(crew, cs);
         crew.Events.Add($"powers: {Name(a)}'s {Blueprints[s.Bp].Name} is out as construct {c.Id}");
     }
 
@@ -1077,10 +1139,11 @@ public sealed class PowerControllers
         pa.Paid += pa.Stock;
         pa.Stock = 0;
         pa.Fallen = true;
+        pa.Heir = b;
         Array.Clear(pa.Ships);
         for (var i = 0; i < MaxMissions; i++)
             End(pa, i);
-        rel.Fall(a, $"{Name(a)} joins {Name(b)}: they are one power now");
+        rel.Fall(a, $"{Name(a)} joins {Name(b)}: they are one power now", into: b); // (its other crews follow: the host re-tags them, Game.CrewPowersGone)
     }
 
     // ---- A tool's and the window's look ------------------------------------------------------------------------------------------
@@ -1123,7 +1186,7 @@ public sealed class PowerControllers
         for (var a = 1; a <= Count; a++)
         {
             var p = Powers[a];
-            w.Str(Name((byte)a)).U8((byte)((p.Fallen ? 1 : 0) | (p.Started ? 2 : 0)));
+            w.Str(Name((byte)a)).U8((byte)((p.Fallen ? 1 : 0) | (p.Started ? 2 : 0))).Str(p.Heir != 0 ? Name(p.Heir) : "");
             w.F64(p.Stock).F64(p.StartStock).F64(p.Earned).F64(p.Spent).F64(p.Looted).F64(p.Paid).F64(p.Received);
             w.Str(p.World).U8((byte)p.PlaceCount);
             for (var i = 0; i < p.PlaceCount; i++)
@@ -1132,7 +1195,7 @@ public sealed class PowerControllers
             foreach (var s in p.Ships)
                 if (s.State != PowerShipState.None)
                     w.U8((byte)(s.State == PowerShipState.Spawning ? PowerShipState.Building : s.State)).U8((byte)s.Role).Str(Blueprints[s.Bp].Name).F32(s.Hull)
-                        .I32((int)Math.Max(0, (s.ReadyAt - Tick) / T)).U8((byte)s.Mission);
+                        .I32((int)Math.Max(0, (s.ReadyAt - Tick) / T)).U8((byte)s.Mission).U32(s.State == PowerShipState.Out ? s.Uid : 0);
             var mn = 0;
             foreach (var m in p.Missions)
                 if (m.Kind != MissionKind.None)
@@ -1176,6 +1239,8 @@ public sealed class PowerControllers
                 var flags = r.U8();
                 p.Fallen = (flags & 1) != 0;
                 p.Started = (flags & 2) != 0;
+                p.Heir = CrewPowers.Find(r.Str());
+                p.Relink = true;
                 (p.Stock, p.StartStock, p.Earned, p.Spent, p.Looted, p.Paid, p.Received) = (r.F64(), r.F64(), r.F64(), r.F64(), r.F64(), r.F64(), r.F64());
                 p.World = r.Str();
                 p.PlaceCount = 0;
@@ -1200,6 +1265,7 @@ public sealed class PowerControllers
                     var hull = r.F32();
                     var ready = r.I32();
                     var mission = (sbyte)r.U8();
+                    var uid = r.U32();
                     var bp = Blueprints.FindIndex(b => b.Name.Equals(bpName, StringComparison.OrdinalIgnoreCase));
                     if (bp < 0 && ConstructBuild.FindBlueprint(bpName) is { } found)
                     {
@@ -1212,7 +1278,7 @@ public sealed class PowerControllers
                         Log.Add($"{name}'s saved ship \"{bpName}\" can't be kept (no such blueprint now): left out");
                         continue;
                     }
-                    p.Ships[i] = new PowerShip { State = st, Role = role, Bp = (short)bp, Hull = hull, ReadyAt = Tick + (long)ready * T, Mission = mission };
+                    p.Ships[i] = new PowerShip { State = st, Role = role, Bp = (short)bp, Hull = hull, ReadyAt = Tick + (long)ready * T, Mission = mission, Uid = uid };
                 }
                 int mc = r.U8();
                 for (var i = 0; i < mc; i++)
@@ -1236,7 +1302,7 @@ public sealed class PowerControllers
                 }
                 p.NextConvoy = Tick + (long)r.I32() * T;
                 if (p.Fallen && p.Id != 0)
-                    rel.Fall(p.Id, "", quiet: true);
+                    rel.Fall(p.Id, "", quiet: true, into: p.Heir);
             }
         }
         catch (Exception ex) when (ex is WorldFileException or ArgumentException or IndexOutOfRangeException or InvalidDataException)

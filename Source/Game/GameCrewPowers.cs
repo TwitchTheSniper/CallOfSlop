@@ -24,16 +24,80 @@ public sealed partial class Game : IPowerHost
         Controllers.Rules = ControllerRules.Current; // (Crew/Controllers.json and every plan's bills read here, at a world's start, never in a tick)
         Controllers.Reset();
         var rel = Relations;
-        rel.Might = Controllers.Might;
-        rel.Merge = (a, b) => Controllers.MergeInto(Crew, Constructs, Relations, a, b);
+        (rel.Might, rel.Merge) = (null, null); // (trade, tribute, blood feuds and merging only where the controllers run: CrewPowersTick)
+        Crew.LivePower ??= PowerLive;
+        _goneSeen = 0;
+    }
+
+    private ushort _goneSeen;
+
+    /// <summary>The power a crew of <paramref name="p"/> serves now: itself while it stands; gone, its heir (merged into), else another of its kind standing, else none (0).</summary>
+    public byte PowerLive(byte p)
+    {
+        var rel = _rel;
+        for (var hops = 0; hops < PowerRelations.N && p != 0 && p <= PowerRelations.N && rel.Gone[p]; hops++)
+        {
+            var heir = rel.MergedInto[p];
+            if (heir == 0)
+            {
+                var kind = CrewPowers.KindOf(p);
+                for (var q = (byte)1; q <= CrewPowers.Count; q++)
+                    if (!rel.Gone[q] && CrewPowers.KindOf(q) == kind)
+                        return q;
+                return 0;
+            }
+            p = heir;
+        }
+        return p;
+    }
+
+    /// <summary>A power newly gone (fallen or merged, or read so from a save): every crew and group still of it serves its heir now (or nobody).</summary>
+    private void CrewPowersGone(byte a)
+    {
+        var to = PowerLive(a);
+        for (var i = 0; i < Crew.ShipHigh; i++)
+            if (Crew.Ships[i] is { } s && s.Faction == a && Constructs.Get(s.Body) is { } c)
+            {
+                s.Faction = to;
+                c.NpcFaction = s.Own ? (byte)0 : to;
+                for (var j = 0; j < s.MemberCount; j++)
+                    if (Crew.Fac[s.Members[j]] == a)
+                        Crew.Fac[s.Members[j]] = to;
+                s.SeatsDirty = true;
+                if (to == 0 && s.Group >= 0)
+                    Crew.Fleet.Leave(Crew, s);
+            }
+        foreach (var g in Crew.Fleet.Groups)
+            if (g.Live && g.Power == a)
+                g.Power = to;
+        Console.WriteLine($"[powers] {CrewPowers.Of(a)?.Name} is gone: its crews serve {(to != 0 ? CrewPowers.Of(to)?.Name : "nobody")} now");
     }
 
     /// <summary>A tick, after the crews': the controllers think in turn; their news goes out with the powers'.</summary>
     private void CrewPowersTick()
     {
-        if (!PowersActive)
-            return;
         var rel = Relations;
+        var gone = (ushort)0;
+        for (var a = 1; a <= CrewPowers.Count && a <= 16; a++)
+            if (rel.Gone[a])
+                gone |= (ushort)(1 << (a - 1));
+        if (gone != _goneSeen)
+        {
+            for (var a = 1; a <= 16; a++)
+                if ((gone >> (a - 1) & 1) != 0 && (_goneSeen >> (a - 1) & 1) == 0)
+                    CrewPowersGone((byte)a); // (rare)
+            _goneSeen = gone;
+        }
+        if (FactionTable.PowerGone != gone)
+        {
+            FactionTable.PowerGone = gone;
+            FactionTable.Version++;
+        }
+        if (!PowersActive)
+        {
+            (rel.Might, rel.Merge) = (null, null); // (the controllers' politics stay off in creative)
+            return;
+        }
         rel.Might ??= Controllers.Might;
         rel.Merge ??= (a, b) => Controllers.MergeInto(Crew, Constructs, Relations, a, b);
         Controllers.Step(Crew, Constructs, rel, this);
@@ -48,15 +112,6 @@ public sealed partial class Game : IPowerHost
             foreach (var line in Controllers.News)
                 rel.Tell(line);
             Controllers.News.Clear();
-        }
-        var gone = (ushort)0;
-        for (var a = 1; a <= CrewPowers.Count && a <= 16; a++)
-            if (rel.Gone[a])
-                gone |= (ushort)(1 << (a - 1));
-        if (FactionTable.PowerGone != gone)
-        {
-            FactionTable.PowerGone = gone;
-            FactionTable.Version++;
         }
     }
 

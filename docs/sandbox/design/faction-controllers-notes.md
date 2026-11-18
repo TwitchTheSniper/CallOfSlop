@@ -315,3 +315,21 @@ Technical 2 393, British Gun Wagon 1 479.
   player's call and pacts with players are phase 5.
 - Fog for players (answer 7) is the command view's FACTIONS layer (phase 4); the controllers' own knowledge is fogged already.
 - Missions don't yet weigh their risk by the enemy's known strength beyond a raid's size check; abstract groups, presence and Take are phase 4.
+
+### Review fixes (2026-11-18)
+
+- A blood feud is a flag per pair (`PowerRelations.Feud`, POWR version 2 adds the bits), not the value -100: worlds from before (which clamped at
+  -100) load with no feuds. Clients are shown -100 only for a feud (`Shown`: others at -99 at worst), so no wire change was needed for it.
+- Trade, tribute, blood feuds and merging run only where the controllers do (`Might`/`Merge` set by `CrewPowersTick` while `PowersActive`): never in
+  creative.
+- A gone power (fallen or merged) crews nothing: `CrewWorld.LivePower` gives every new crew its heir (merged into), else another standing power of its
+  kind, else none; at the tick a power goes (or is read gone from a save) every crew and group still of it is re-tagged (`Game.CrewPowersGone`).
+  The heir is saved in CTRL.
+- After a load, a ship out takes up only the body whose crew holds its saved uid (the captain's, else a member's), and that is in no group but its
+  mission's; none: the record is dropped (logged). Two a think. Places are laid one a think; one ship docks a think.
+- CTRL is written after FLET, and each power's missions find their groups again (slot and number, else the number) at its first think after a load;
+  a mission whose group is gone sends its ships home quietly.
+- Checks: `politics` adds -100 without a feud moving, and no trade or feud with the controllers off; `powers` adds a load (each ship out takes up
+  its own body, or docked since). `--crew-relations` passed; `--selftest-only "Sandbox spawns, Save folder"` passed. Thinks past the first minute:
+  median 5 us, 99th 137 us; the worst (4 ms) with the box at load 13 and nothing logged in that second (taken for preemption; not measured quiet:
+  the box was never quiet).
