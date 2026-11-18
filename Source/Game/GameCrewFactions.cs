@@ -54,6 +54,7 @@ public sealed partial class Game : IPowerSight
             _relShown = rel.Version;
             ShowRelations(t, rel);
         }
+        PoliticsTick(rel); // (phase 5: pacts with player factions, contracts: GameCrewPolitics.cs)
         if (_newsSent != rel.NewsTotal)
             SendPowerNews(rel);
     }
@@ -81,6 +82,26 @@ public sealed partial class Game : IPowerSight
         for (var a = 1; a <= n && a <= 16; a++)
             if (rel.Gone[a])
                 t.PowerGone |= (ushort)(1 << (a - 1));
+        // Phase 5: pacts with player factions, offers and proposals, blood feuds (CrewPartyPacts.cs).
+        k = 0;
+        for (var i = 0; i < PowerRelations.MaxPartyPacts && k < FactionTable.MaxPacts; i++)
+            if (rel.PartyK[i] != PactKind.None)
+            {
+                (t.PartyPactKind[k], t.PartyPactPower[k], t.PartyPactParty[k]) = ((byte)rel.PartyK[i], (byte)(rel.PartyPower[i] - 1), rel.PartyOf[i]);
+                t.PartyPactHeld[k] = (ushort)Math.Min((rel.Tick - rel.PartyStart[i]) / (60 * World.TickRate), 0xFFFE);
+                t.PartyPactLeft[k] = rel.PartyEnd[i] == 0 ? (ushort)0xFFFF : (ushort)Math.Min(Math.Max(0, rel.PartyEnd[i] - rel.Tick) / (60 * World.TickRate) + 1, 0xFFFE);
+                k++;
+            }
+        t.PartyPactCount = k;
+        t.OfferCount = t.AskCount = 0;
+        for (var j = 0; j < rel.Offer.Length; j++)
+        {
+            if (rel.Offer[j] != PactKind.None && rel.Tick < rel.OfferUntil[j] && t.OfferCount < FactionTable.MaxPartyAsks)
+                (t.OfferPower[t.OfferCount], t.OfferParty[t.OfferCount], t.OfferKind[t.OfferCount++]) = ((byte)(j % PowerRelations.N), (byte)(j / PowerRelations.N), (byte)rel.Offer[j]);
+            if (rel.PartyAsk[j] != PactKind.None && t.AskCount < FactionTable.MaxPartyAsks)
+                (t.AskPower[t.AskCount], t.AskParty[t.AskCount], t.AskKind[t.AskCount++]) = ((byte)(j % PowerRelations.N), (byte)(j / PowerRelations.N), (byte)rel.PartyAsk[j]);
+        }
+        Array.Copy(rel.PartyFeud, t.PartyFeud, t.PartyFeud.Length);
         t.Version++;
     }
 
@@ -167,7 +188,12 @@ public sealed partial class Game : IPowerSight
             if (ship != null)
                 (s.FoeBody, s.FoeBodyAt) = (ship.Body, Crew.Tick); // (it answers fire, whatever its view: GameCrew.cs)
         }
-        rel.Post(e, s.Faction, power, player, at);
+        if (rel.Post(e, s.Faction, power, player, at))
+        {
+            if (player != 255)
+                s.UnmarkFoe(player); // (phase 5: a pact partner's stray hit, forgiven: the crew doesn't turn on them)
+            return;
+        }
         if (e is RelEvent.HitBody or RelEvent.HitCrew or RelEvent.KillCrew or RelEvent.DestroyShip && s.ContactBody != 0
             && Crew.ShipOf(s.ContactBody) is { Faction: not 0, Own: false } friend && friend.Faction != s.Faction)
             rel.Help(friend.Faction, power, player, at); // (s was fighting friend: whoever hurt s helped them)
@@ -413,6 +439,8 @@ public sealed partial class Game : IPowerSight
         rel.Load(bytes);
         _relShown = -1;
         _newsSent = rel.NewsTotal;
+        _notesRead = rel.NoteTotal;
+        _contractsSent = -1;
         PowerNews.Clear();
         PowerNewsAdd(rel, Math.Max(0, rel.NewsTotal - PowerRelations.MaxNews));
     }
@@ -430,6 +458,7 @@ public sealed partial class Game : IPowerSight
         CrewPowersClear(); // (the controllers from their plans: GameCrewPowers.cs; a saved world's follow from its Controllers section)
         _relShown = -1;
         _newsSent = _rel.NewsTotal;
+        PoliticsClear();
         PowerNews.Clear();
         Array.Clear(_credits);
         Array.Clear(_creditsStarted);

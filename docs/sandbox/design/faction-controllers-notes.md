@@ -428,3 +428,120 @@ groups between planets), 4 (far fights by strength, a closed world never opened)
    a place's Game asks the main Game's controllers (one layer), later.
 4. **Body cap.** Kept at 24 (`world.maxBodies`). Default: raise it once spawning is cheaper; the LOD above is what lets it go up.
 5. **Allies' sightings for fog.** Not shared yet (no pacts with players until phase 5). Default: an ally's groups and what its crews see, then.
+
+## Phase 5: players in the politics (built 2026-11-18, branch `claude/faction-players`)
+
+Built to section 10's phase 5 row, section 5.5 ("with players, pacts are proposed and answered through the Faction window"), section 7, the user's answer 9
+(allies help players: join fights near them, answer their calls) and Karl's answer 2 (phase 1's model and more pacts), with phase 3's question 5 (blood feuds
+with players) and phase 4's question 5 (an ally's groups known) taken up.
+
+### What a player sees
+
+- **Pacts (Faction window, F2, "Pacts with the world's powers").** Each power's row says the pact with your faction (minutes held or left) or none, its
+  standing, a proposal waiting, or BLOOD FEUD. The **leader** gets buttons for the pacts its standing allows: Ceasefire and Pay tribute below 0, Non-aggression
+  and Trade from neutral (20), Alliance from friendly (60); and Break pact. The power answers at its next think (a few seconds) by its own scoring, as it
+  answers another power: a ceasefire from anyone it fights unless it is aggressive (0.8) and hasn't lost enough to the faction (its pride line, phase 1's);
+  tribute when greedy enough; non-aggression and trade from neutral (trade only for a greedy power); an alliance when friendly, loyal and with an enemy in
+  common. Turned down, the notice says why, and the leader asks again after 5 minutes. A power offers a pact by itself when it wants one (a ceasefire when
+  it is losing, an alliance, trade or non-aggression as between powers): "Militia offers you a ceasefire", Accept or Decline, for 10 minutes. Members who
+  aren't leaders see the pacts and are told only the leader can act.
+- **What a pact does.** Its crews hold fire on the faction's people and their crewed ships, and the faction's hired crews on theirs, whatever the standing
+  (one who shoots is a foe again). A ceasefire lasts 30 minutes and lifts the standing to -40; a tribute costs the leader 150 credits every 10 minutes
+  (unpaid: it lapses, -20); a trade pact pays the leader 10 credits a minute (and the power's stock 20). Alliances and trade fall apart below 15,
+  non-aggression at war. An alliance: the power's crews fight anyone they see fighting the faction's people (phase 1's help rule), its groups are known to
+  the faction on the command view's FACTIONS layer (fog, phase 4), and it answers the faction's call.
+- **Breaking.** The leader's button, or a member's attack (8 stray hits a minute forgiven, as between powers; past that, deliberate). News for everyone
+  ("Client Co breaks its ceasefire with Militia"); the power takes `breakPact` (-40); every power that knows (in a pact with the victim or friendly to it, in
+  a pact with the faction, or with a crew that sees the leader) takes `breakPactHeard` (-15 by loyalty); the faction is told who heard, and the player
+  factions allied with it are told too.
+- **Call allies** (any member, once every 3 minutes a faction): the allied powers answer (Defend: warships go to the caller and follow them while the danger
+  lasts); a power neutral or better that fights the caller's foe answers at loyalty 0.4, as a power's call. Only where the controllers run (survival); in
+  creative the button says so (allies' crews nearby still fight).
+- **Blood feuds with factions:** a grave deed (a ship destroyed or taken, an officer captured, a convoy raided, a planet taken) against a power already at -99
+  by a faction's member, its pride 0.4 or more, where the controllers run: -100 for good, no pact, no contract, no decay. A person in no faction swears none
+  (their standing stops at -99).
+- **Contracts for credits ("Contracts for credits", seen by everyone, a lone player too).** Each power with a mind offers one in turn every 45 s (two open
+  at most each, 24 in the world, 15 minutes to take): escort one of its crewed ships (a convoy's flagship first) for 3 minutes within 400 m (300 credits, 20
+  minutes), deliver 40-160 units of a material (Relations.json's list) to its place in a ship within 60 m (100 + 2 a unit, 30 minutes), raid a power it
+  fights by destroying or taking one of its ships (400, 30 minutes). Taken by one whose standing with it is 0 or more, or whose faction holds a pact with it;
+  two at once; a raid on a power the faction holds a pact with is refused ("break it first"). Tracked once a second; done: paid and `contractDone` (+5);
+  failed (out of time, the ship lost, given up): `contractFailed` (-5). The taker's line shows how far along and how far away. Creative pays as survival does
+  (unlimited credits shown).
+
+### Where
+
+| What | Where |
+| --- | --- |
+| Pacts with factions, proposals, offers, breaking and who hears, feuds, wars' losses, notes for members, save bytes | `Source/Crew/CrewPartyPacts.cs` (`PowerRelations` partial); hooks in `CrewRelations.cs` (`Post`'s player path, `MovePlayer`, `Think`, `Decay`, `Fall`, save version 3) |
+| Contracts: offers, take, drop, work, raid deeds, save bytes | `Source/Crew/CrewContracts.cs` (`PowerContracts`, `IContractHost`), held by the relations (`PowerRelations.Contracts`) |
+| Numbers | `Crew/Relations.json`: events `contractDone`, `contractFailed`; blocks `players` and `contracts` |
+| The game's side: the window's acts, notices, tribute and trade credits, the contracts' host, `Msg.Contracts` | `Source/Game/GameCrewPolitics.cs`; fight rule in `GameCrew.cs` (`Fights`, own crews, `CrewHelpsAgainst`), `PowerRelations.ShipFights` |
+| A faction's call | `PowerControllers.CallForParty` / `HearParty` (`CrewControllers.cs`); `IPowerHost.PersonAt` (a Defend follows the caller) |
+| Window | `UI/UiFactionsPolitics.cs` (`DrawPartyPacts`, `DrawContracts`), from `UiFactions.cs` |
+| Tools | `--crew-check --crew-fleet players` (`Source/Crew/CrewPlayersCheck.cs`); window verb `crewpolitics [found NAME|invite|acceptinvite|standing POWER V|pact POWER KIND|accept POWER|break POWER|call|take N|drop N]` |
+
+### Saves and network
+
+- Saves: the `POWR` section's version 3 adds, after the feud bits, the pacts with factions (kind, power by index, faction id, seconds held and left,
+  hours kept, the next tribute), the factions' feuds, and the open and taken contracts (taker by name: taken up again when they come back; an escort's ship
+  by its captain's uid). Versions 1 and 2 read (no pacts with factions, no contracts). Faction ids are the world's own; a faction that ends loses its pacts,
+  feuds and standing at the powers' next thinks, so a new one in its id starts clean. No new save file. A Defend for a faction's call isn't kept as one: after
+  a load it holds where it was called.
+- Protocol 359 (main 358 at the merge): `Msg.Factions` ends with the pacts with factions, the powers' offers, the factions' proposals and the feuds with
+  factions; `FactionOp` gains Pact, PactAnswer, PactBreak, CallAllies, ContractTake and ContractDrop at its end; `Msg.Contracts` (all contracts, on change,
+  at most once a second, and to each joiner) in the slot of `RemovedColonyAlarm`.
+
+### Tried by hand (2026-11-18, the 2-core box shared)
+
+- `--crew-fleet players`: all OK: Traders and Militia allied; a faction at war with the Militia (-70) proposes a ceasefire, signed (-40, fire held); the
+  leader breaks it: news, the Militia -40 -> -80, its ally the Traders hear (30 -> 15; Salvagers too, friendly to the Militia); 8 stray hits forgiven, the
+  ninth breaks a second ceasefire; the Militia, beaten, offers a ceasefire and it is taken; an alliance with the Traders makes their crews fight the
+  Mercenaries fighting the faction's person, not otherwise; a tribute unpaid lapses; an unwanted alliance turned down and the ask held off; a blood feud
+  (Might set) refuses a ceasefire; contracts: escort, delivery and raid offered, a raid on a pact partner refused, a third refused, escort and delivery done
+  and paid (640), a raid done by a destroyed ship, an escort failed when its ship was lost; a save round trip keeps the pacts and a taken contract, the
+  feud too; a version 2 section reads. Relations 0.05 us a tick with 0 bytes allocated in 3,600 ticks; contracts 0.56 us a tick, nothing allocated
+  but an offer's or an end's line.
+- `--crew-fleet politics` and `--crew-relations` (with its host and joined client): OK, as before.
+- Window run (Glacier, survival, host and a joined client under xvfb, `crewpolitics`): the client founded Client Co and invited the host, who joined; the
+  host (a member, not the leader) asking for a pact was told "only your faction's leader can make or break pacts"; with the Militia at -70 the client leader
+  proposed a ceasefire and the Militia signed ("Client Co and Militia sign a ceasefire"), both peers' tables showing it; the client broke it: news, Militia
+  -40 -> -80, "Word gets around: Raiders, Salvagers, Traders think less of you", the Traders 70 -> 55 on both peers; the call went out (nobody answered: no
+  ally, the Militia now at war, the Traders no Defend plan); a contract from the Militia refused at -80. A second host run took a delivery contract, saved
+  the world through the real save (`saveworld`) and a third loaded it (`loadworld`): the non-aggression pact and the taken contract (its taker found again
+  by name) came back.
+
+### Not verified
+
+- A contract done in a running game (an escort by a real convoy, a delivery out of a real ship's bins, a raid by a real kill), the escort's 400 m measured
+  against a moving ship; a tribute or trade paid in credits in a game; an allied power's Defend group reaching and following a player; allied crews fighting
+  a faction's foes in a real fight (the engine's rule is checked, not bodies shooting); the window's buttons as drawn (no picture: driven by the verb);
+  the FACTIONS layer showing an ally's groups.
+
+### Questions (defaults taken)
+
+1. **Who may act.** Pacts: the leader only (the task's rule; the rank permission `FactionMay.Relations` is not used for them). Call allies: any member.
+   Contracts: anyone, a lone player too; pay to the taker. Agree?
+2. **Pacts open to factions:** ceasefire, non-aggression, trade, alliance and a tribute the faction pays. Vassalage (a faction serving a power, or a power
+   a faction) and a power paying a faction tribute are not offered. Default: later, if wanted.
+3. **Credits and units** are one for one where they meet (a faction's tribute and a trade pact into a power's stock).
+4. **A lone player** (no faction) makes no pacts and swears no feuds; their standing stops at -99.
+5. **Hearers of a broken pact** include powers in a pact with the breaker (they learn its word is worth little) and any that see it, even the victim's
+   enemies. Default kept; say if enemies of the victim should cheer instead (phase 1's +1/5 rule for deeds).
+6. **Contract kinds:** escort a crewed ship (no convoy needed, so creative has them), deliver to the power's place (in creative, or a power with no place
+   here: a meeting point 800 m from the taker), raid. Default: more kinds (salvage, bounty on a named captain) later.
+
+### Left
+
+- Player factions holding planets (phase 4's question 1) and players as admirals (phase 6).
+- A power's view of a faction's allies (a faction allied with a power's enemy is not yet thought less of).
+
+### Review fixes (2026-11-18)
+
+- Only a hit (`hitBody`, `hitCrew`) by a member on a pact partner may be stray (8 a minute); a kill, a ship sunk, a boarding or a capture breaks the pact at
+  once and counts in full. A forgiven hit is no deed (`PowerRelations.Post` returns true) and the game clears the foe mark the hit made
+  (`CrewShip.UnmarkFoe`), so an allied crew clipped by splash doesn't turn on the member.
+- A taken contract follows its taker by name: when they leave (their id goes to the next joiner) it is held for them, unworked and unpaid, its clock
+  stopped, and taken up again when someone of that name comes back; pay goes only to the taker present (`PowerContracts.Present`).
+- `Msg.Contracts`' read guard is 33 bytes an entry. Checks: `players` adds splash on a partner (forgiven, the ceasefire holds), a kill under a ceasefire
+  (breaks it) and the taker away (held); `--selftest-only "Packets, Save folder, Frame allocations, Interaction sweep"`, `--crew-relations`, `politics`
+  and `players`: all passed after merging main (protocol 359).

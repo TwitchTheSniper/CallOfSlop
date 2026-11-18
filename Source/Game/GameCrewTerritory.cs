@@ -85,7 +85,7 @@ public sealed partial class Game
             if (g.Task == FarTask.None || g.State == FarState.Gather)
                 continue;
             var onHere = g.Planet >= 0 && g.PosKnown && c.Territory.Planets[g.Planet].Equals(here, StringComparison.OrdinalIgnoreCase);
-            var seen = onHere && p.Alive && Vector3.Distance(at, g.Pos) < FactionSensorRange;
+            var seen = onHere && (p.Alive && Vector3.Distance(at, g.Pos) < FactionSensorRange || _rel.PartyAllied(g.Power, p.Id)); // (phase 5: an ally's groups are known to its faction)
             var reported = g.ReportedAt != 0 && c.Tick - g.ReportedAt < (long)(FactionReportSeconds * World.TickRate);
             if (!seen && !reported)
                 continue;
