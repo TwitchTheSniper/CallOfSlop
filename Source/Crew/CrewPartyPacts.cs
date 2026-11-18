@@ -252,53 +252,55 @@ public sealed partial class PowerRelations
     /// faction's proposal (a power not too aggressive takes a ceasefire from anyone it fights); else as its own offer (stricter, as between powers). Null: yes;
     /// else why not (the leader's notice).
     /// </summary>
-    public string? PartyWants(byte a, byte party, PactKind kind, bool asked)
+    private const string No = "no"; // (a power weighing its own offer: no reason worded, nothing allocated)
+
+    public string? PartyWants(byte a, byte party, PactKind kind, bool asked, bool explain = true)
     {
         var def = Def(a)!;
         var v = PartyGet(a, party);
         var cur = PartyPact(a, party);
         if (PartyFeud[PK(party, a)])
-            return $"{def.Name} has sworn a blood feud against you: no peace, ever";
+            return !explain ? No : $"{def.Name} has sworn a blood feud against you: no peace, ever";
         switch (kind)
         {
             case PactKind.Ceasefire:
                 if (cur != PactKind.None)
-                    return $"you already have a {PactName(cur)} with {def.Name}";
+                    return !explain ? No : $"you already have a {PactName(cur)} with {def.Name}";
                 if (v >= 0)
-                    return $"{def.Name} isn't fighting you: a ceasefire is for a war";
+                    return !explain ? No : $"{def.Name} isn't fighting you: a ceasefire is for a war";
                 if (PartyCeasefireWanted(a, party) || asked && def.Aggression < Rules.CeasefireRefuseAggression)
                     return null;
-                return $"{def.Name} wants to fight on: hurt them more first (their losses to you: {_partyLoss[PK(party, a)]})";
+                return !explain ? No : $"{def.Name} wants to fight on: hurt them more first (their losses to you: {_partyLoss[PK(party, a)]})";
             case PactKind.Tribute:
                 if (cur is not (PactKind.None or PactKind.Ceasefire))
-                    return $"you already have a {PactName(cur)} with {def.Name}";
+                    return !explain ? No : $"you already have a {PactName(cur)} with {def.Name}";
                 if (v >= 0)
-                    return $"{def.Name} isn't fighting you: there's nothing to pay for";
+                    return !explain ? No : $"{def.Name} isn't fighting you: there's nothing to pay for";
                 if (!asked)
                     return "a power never asks a faction for tribute";
-                return def.Greed >= Rules.TributeGreed ? null : $"{def.Name} won't be bought";
+                return def.Greed >= Rules.TributeGreed ? null : !explain ? No : $"{def.Name} won't be bought";
             case PactKind.NonAggression:
                 if (cur is not (PactKind.None or PactKind.Ceasefire))
-                    return $"you already have a {PactName(cur)} with {def.Name}";
+                    return !explain ? No : $"you already have a {PactName(cur)} with {def.Name}";
                 if (v < Rules.NeutralLine)
-                    return $"{def.Name} doesn't trust you enough: it needs to be neutral (it is at {v}, neutral is {Rules.NeutralLine})";
+                    return !explain ? No : $"{def.Name} doesn't trust you enough: it needs to be neutral (it is at {v}, neutral is {Rules.NeutralLine})";
                 return asked || PartyCommonEnemy(a, party, war: false) ? null : "no common enemy";
             case PactKind.Trade:
                 if (cur is not (PactKind.None or PactKind.Ceasefire or PactKind.NonAggression))
-                    return $"you already have a {PactName(cur)} with {def.Name}";
+                    return !explain ? No : $"you already have a {PactName(cur)} with {def.Name}";
                 if (v < Rules.NeutralLine)
-                    return $"{def.Name} doesn't trust you enough to trade: it needs to be neutral (it is at {v})";
+                    return !explain ? No : $"{def.Name} doesn't trust you enough to trade: it needs to be neutral (it is at {v})";
                 if (def.Greed < Rules.TradeGreed)
-                    return $"{def.Name} has no interest in trade";
+                    return !explain ? No : $"{def.Name} has no interest in trade";
                 return asked || Might != null && MightOf(a) > 0 ? null : "no economy";
             case PactKind.Alliance:
                 if (cur == PactKind.Alliance)
-                    return $"you are already allied with {def.Name}";
+                    return !explain ? No : $"you are already allied with {def.Name}";
                 if (v < Rules.FriendlyLine)
-                    return $"{def.Name} isn't friendly enough for an alliance: it needs {Rules.FriendlyLine} (it is at {v})";
+                    return !explain ? No : $"{def.Name} isn't friendly enough for an alliance: it needs {Rules.FriendlyLine} (it is at {v})";
                 if (def.Loyalty < Rules.AllianceLoyalty)
-                    return $"{def.Name} makes no alliances";
-                return PartyCommonEnemy(a, party, war: !asked) ? null : $"{def.Name} sees no common enemy to ally against";
+                    return !explain ? No : $"{def.Name} makes no alliances";
+                return PartyCommonEnemy(a, party, war: !asked) ? null : !explain ? No : $"{def.Name} sees no common enemy to ally against";
         }
         return "that is no pact a faction can make";
     }
@@ -519,9 +521,9 @@ public sealed partial class PowerRelations
                 continue;
             var cur = PartyPact(a, party);
             var want = cur == PactKind.None && PartyCeasefireWanted(a, party) ? PactKind.Ceasefire
-                : PartyWants(a, party, PactKind.Alliance, false) == null ? PactKind.Alliance
-                : PartyWants(a, party, PactKind.Trade, false) == null ? PactKind.Trade
-                : PartyWants(a, party, PactKind.NonAggression, false) == null ? PactKind.NonAggression
+                : PartyWants(a, party, PactKind.Alliance, false, false) == null ? PactKind.Alliance
+                : PartyWants(a, party, PactKind.Trade, false, false) == null ? PactKind.Trade
+                : PartyWants(a, party, PactKind.NonAggression, false, false) == null ? PactKind.NonAggression
                 : PactKind.None;
             if (want == PactKind.None)
                 continue;

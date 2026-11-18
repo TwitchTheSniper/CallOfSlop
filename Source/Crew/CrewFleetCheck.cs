@@ -31,6 +31,8 @@ public static class CrewFleetCheck
             ok &= Interrogate();
         if (which.Equals("powers", StringComparison.OrdinalIgnoreCase) || which.Equals("politics", StringComparison.OrdinalIgnoreCase))
             ok &= CrewPowersCheck.Run(which, seconds); // (phase 3: the controllers, CrewPowersCheck.cs)
+        if (which.Equals("players", StringComparison.OrdinalIgnoreCase))
+            ok &= CrewPlayersCheck.Run(); // (phase 5: players in the politics, CrewPlayersCheck.cs)
         if (which.Equals("territory", StringComparison.OrdinalIgnoreCase) || which.Equals("far", StringComparison.OrdinalIgnoreCase))
             ok &= CrewTerritoryCheck.Run(which, seconds); // (phase 4: territory and the far layer, CrewTerritoryCheck.cs)
         if (which.Equals("scale", StringComparison.OrdinalIgnoreCase))
