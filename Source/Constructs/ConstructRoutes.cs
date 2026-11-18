@@ -2137,10 +2137,11 @@ public static partial class ConstructRoutes
     /// <summary>The nearest link segment along a ray (world), within <paramref name="best"/>; true when one is nearer.</summary>
     private const int RayStride = 16;
 
-    public static bool Ray(Construct c, Vector3 origin, Vector3 dir, ref float best, out int route, out int seg, out Vector3 point, bool look = false)
+    public static bool Ray(Construct c, Vector3 origin, Vector3 dir, ref float best, out int route, out int seg, out Vector3 point, bool look = false, float reach = -1f)
     {
         var buriedToo = look && LookBuried; // (the linking tool out: a link in a wall just behind the surface; a bullet, or anyone else's look, passes it)
-        var reach = best;
+        if (reach < 0f)
+            reach = best; // (the ray's own length: a buried link is looked for behind the wall the ray already met, as far as it reaches)
         route = seg = -1;
         point = default;
         var found = false;

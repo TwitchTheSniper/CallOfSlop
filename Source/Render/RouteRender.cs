@@ -609,6 +609,9 @@ public static class RouteRender
             {
                 if (c.RouteCount == 0)
                     continue;
+                var far = c.Radius + BuriedShow + 2f; // (a body whose every part is out of reach: none of its links is walked; 2 m for the tick's blend)
+                if (Vector3.DistanceSquared(c.WorldCom, eye) > far * far)
+                    continue;
                 var framed = false;
                 for (var k = 0; k < c.RouteCount; k++)
                 {

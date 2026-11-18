@@ -51,7 +51,7 @@ public static partial class ConstructRoutes
     /// <summary>
     /// The surface point and normal a node clicked at <paramref name="p"/> (rest frame, normal <paramref name="n"/>) on
     /// <paramref name="part"/> snaps from for <paramref name="lay"/> (<see cref="Snap"/> puts the node one radius off them): for
-    /// <see cref="LinkLay.Wall"/> the wall's middle, for <see cref="LinkLay.Far"/> its far face. Null, or why the lay can't go there.
+    /// <see cref="LinkLay.Wall"/> the wall's middle, for <see cref="LinkLay.Far"/> its far face; on anything but a frame or a panel, its surface. Null, or why the lay can't go there.
     /// </summary>
     public static string? LaySurface(Construct c, RouteType type, int part, Vector3 p, Vector3 n, LinkLay lay, out Vector3 surface, out Vector3 normal)
     {
@@ -61,7 +61,7 @@ public static partial class ConstructRoutes
             return null;
         var d = c.DefOf(part);
         if (d.Role is not (PartRole.Frame or PartRole.Panel))
-            return $"a {Name(type)} goes in walls, floors and frames, not in the {d.Name}";
+            return null; // (a machine, a tank: on its surface, as near; whether a node may sit there at all is IsFixing's)
         var nn = n.LengthSquared() > 1e-6f ? Vector3.Normalize(n) : Vector3.UnitY;
         var inRest = c.Parts[part].Seg != 0;
         var depth = ExitAlongIn(c, part, p - nn * 0.002f, p - nn * (FarMax + 0.5f), inRest) + 0.002f;
@@ -131,7 +131,7 @@ public static partial class ConstructRoutes
         var wall = false;
         var grow = new Vector3(BuriedSlack);
         var hits = Construct.PartScratch;
-        var tree = seg == 0 && c.PartCount >= Construct.TreeMinParts && c.FreeformCount == 0;
+        var tree = TreeFits(c, seg); // (as the path checks ask it)
         var count = tree ? c.PartsInBox(Vector3.Min(a, b) - grow, Vector3.Max(a, b) + grow, hits) : c.PartCount;
         for (var at = 0; at < count && spans < t0s.Length; at++)
         {
