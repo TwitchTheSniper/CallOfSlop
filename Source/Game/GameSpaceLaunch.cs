@@ -326,9 +326,11 @@ public sealed partial class Game
             c.Asleep = false;
             return;
         }
-        if (ConstructFlight.FliesShip(c))
+        if (ConstructFlight.FliesShip(c) || c.ThrustPuppet)
         {
-            // Flown on Ship keys: its own attitude, turned by its jets (SpaceLaunchBefore), never levelled.
+            // Flown on Ship keys: its own attitude, turned by its jets (SpaceLaunchBefore), never levelled. So is a ship in an
+            // order's close work (a Dock order's lane, a Board order's pod: ThrustPuppet), whose spin the order sets: levelled here,
+            // a Zero Day came down a station's lane still 53 degrees off its berth and the clamp arm turned it in (Karl, 2026-11-18).
             var w = c.AngVel;
             var wl = w.Length();
             if (wl > 1e-7f)
