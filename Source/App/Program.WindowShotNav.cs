@@ -7,15 +7,25 @@ namespace CallOfSlop;
 /// <summary>
 /// The window tool's verbs for the command view and ship orders (docs/space/COMMAND.md "Trying it"):
 /// <c>command [SPAN]</c> opens the view (SPAN: metres up the screen), <c>cmdpick N</c> picks the Nth craft on the map (0: the
-/// nearest), <c>order orbit BODY KM</c>, <c>order goto BODY KM</c>, <c>order ground M</c>, <c>order land M</c>, <c>order come</c> and <c>order cancel</c> give the picked craft an order as the
+/// nearest), <c>order orbit BODY KM</c>, <c>order goto BODY KM</c>, <c>order ground M</c>, <c>order land M</c>, <c>order come</c>, <c>order dock N</c> (dock with the Nth craft, as cmdpick counts) and <c>order cancel</c> give the picked craft an order as the
 /// menu would, <c>nav</c> prints every craft and its order, <c>hoist KM</c> (host) puts the picked craft that far over the
 /// ground, at rest over it, <c>speed N</c> (host) asks for a time speed, <c>travel FUEL SHARE</c> (host) sets Settings > Gameplay's
-/// Fuel use in space and Trip fuel for the run (percents), and <c>rclick X,Y</c> is the right mouse button at a
+/// Fuel use in space and Trip fuel for the run (percents), and <c>letgo [ID]</c> (host) has the port holding the picked craft (or construct ID) let it go, and <c>rclick X,Y</c> is the right mouse button at a
 /// window pixel (the order menu).
 /// </summary>
 public static unsafe partial class Program
 {
-    private static bool WsNavKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "command" or "cmdpick" or "order" or "nav" or "hoist" or "speed" or "travel" or "cmdview" or "rclick" or "rclickup" or "spacewalk" or "missile" or "missiles";
+    private static bool WsNavKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "command" or "cmdpick" or "order" or "nav" or "hoist" or "speed" or "travel" or "cmdview" or "rclick" or "rclickup" or "spacewalk" or "missile" or "missiles" or "letgo";
+
+    /// <summary>"order dock N": the picked craft docks with the Nth craft on the map (as cmdpick counts them).</summary>
+    private static string? WsDockOrder(Game g, int n)
+    {
+        var seen = 0;
+        foreach (var c in g.Constructs.Bodies)
+            if (Ui.CmdIsCraft(c) && ++seen == Math.Max(1, n))
+                return Ui.CommandDock(g, c.Id);
+        return $"no craft {n} ({seen} on the map)";
+    }
 
     private static bool WsNavVerb(Game g, Player me, string verb, string arg)
     {
@@ -62,6 +72,19 @@ public static unsafe partial class Program
                 _wsWait = 3;
                 return true;
             }
+            case "letgo" when g.IsServer: // "letgo [ID]" (host): the picked craft (or construct ID) let go by the port that holds it, as its pilot's key does
+            {
+                var which = words.Length > 0 && ushort.TryParse(words[0], out var lid) ? lid : Ui.CommandPicked;
+                if (g.Constructs.Get(which) is not { CarriedBy: not 0 } held)
+                {
+                    WsFail("letgo: pick a craft a port holds first (cmdpick N)");
+                    return true;
+                }
+                ConstructCarrier.LetGo(g.Constructs, held);
+                WsSay($"[nav] construct {held.Id} let go");
+                _wsWait = 3;
+                return true;
+            }
             case "cmdview": // "cmdview YAW PITCH" (degrees): the view's turn and tilt
                 if (words.Length == 2 && float.TryParse(words[0], inv, out var yaw) && float.TryParse(words[1], inv, out var pitch))
                     Ui.CommandTurn(yaw * MathF.PI / 180, pitch * MathF.PI / 180);
@@ -105,8 +128,9 @@ public static unsafe partial class Program
                 {
                     "cancel" => Ui.CommandOrder(g, NavKind.None, "", 0),
                     "come" => Ui.CommandOrder(g, NavKind.Come, "", 0),
+                    "dock" when words.Length == 2 && int.TryParse(words[1], out var nth) => WsDockOrder(g, nth),
                     "orbit" or "goto" when words.Length == 3 && double.TryParse(words[2], inv, out var km) => Ui.CommandOrder(g, kind == "orbit" ? NavKind.Orbit : NavKind.GoTo, words[1], km),
-                    _ => "order orbit BODY KM | order goto BODY KM | order ground M | order land M | order come | order cancel",
+                    _ => "order orbit BODY KM | order goto BODY KM | order ground M | order land M | order come | order dock N | order cancel",
                 };
                 if (why != null)
                     WsFail("order: " + why);
