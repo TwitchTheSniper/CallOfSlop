@@ -6,11 +6,11 @@ using CallOfSlop.Space;
 namespace CallOfSlop;
 
 /// <summary>
-/// <c>--crew-check --crew-mine [--seconds S] [--crew-shell] [--post N]</c> (factory-generator-notes.md "Tool racks and crew miners"): a host and a joined
+/// <c>--crew-check --crew-mine [--seconds S] [--crew-shell] [--crew-far] [--post N]</c> (factory-generator-notes.md "Tool racks and crew miners"): a host and a joined
 /// client on localhost on the Proving Ground (creative). A Militia Extraction Post (seed N, with a Shell Control Chair and a Mining Shell standing on its
 /// road when <c>--crew-shell</c>) is set down near the map's first ore a tier 2 drill works, as a nobody's, and crewed; the host stands by it, so its
 /// crew have bodies. For S seconds (90) the miners' trips are run: each line says what they did. Then: ore tipped into the post's bin, the rack's
-/// drills back (or out) on host and client alike, and the client's view of the crew bodies. Exit 0 when the miners mined and the client agrees.
+/// drills back (or out) on host and client alike, and the client's view of the crew bodies. <c>--crew-far</c>: the host 600 m off, so the miner is a record on timers. Exit 0 when the miners mined and the client agrees.
 /// Allocates (a tool); real time, not a long simulation.
 /// </summary>
 public static class CrewMineCheck
@@ -21,6 +21,7 @@ public static class CrewMineCheck
         var seconds = int.TryParse(Arg("--seconds"), out var s) ? s : 90;
         var shell = args.Any(a => a.Equals("--crew-shell", StringComparison.OrdinalIgnoreCase));
         var seed = int.TryParse(Arg("--post"), out var ps) ? ps : 1;
+        var far = args.Any(a => a.Equals("--crew-far", StringComparison.OrdinalIgnoreCase)); // (the host 600 m off: the crew are records, the trips timers)
         var fails = new List<string>();
         void Say(string line) => Console.WriteLine($"[crew-mine] {line}");
         void Check(bool ok, string what)
@@ -82,13 +83,22 @@ public static class CrewMineCheck
         World.Enter(server.Place);
         var field = server.Constructs.Resources!;
         // The map's first ore a tier 2 drill works (not deep), nearest the middle.
+        // With --crew-far, the ore furthest from the map's north-west corner (where the people stand), so the crew are records.
         Vector3? ore = null;
-        for (var r = 0; r < 400 && ore == null; r += 6)
-            for (var a = 0; a < 32 && ore == null; a++)
+        var corner = new Vector2(-map.HalfX * 0.95f, map.HalfZ * 0.95f);
+        var bestFar = 0f;
+        for (var r = 0; r < 400 && (ore == null || far); r += 6)
+            for (var a = 0; a < 32 && (ore == null || far); a++)
             {
                 float x = r * MathF.Cos(a * MathF.Tau / 32), z = r * MathF.Sin(a * MathF.Tau / 32);
-                if (field.TappableAt(x, z) is { Deep: false, MinTier: <= Game.DrillTier } && field.TappableAt(x + 12, z) is { Deep: false } && field.TappableAt(x - 12, z) is { Deep: false })
+                if (MathF.Abs(x) > map.HalfX - 40 || MathF.Abs(z) > map.HalfZ - 40)
+                    continue;
+                if (field.TappableAt(x, z) is { Deep: false, MinTier: <= Game.DrillTier } && field.TappableAt(x + 12, z) is { Deep: false } && field.TappableAt(x - 12, z) is { Deep: false }
+                    && (!far || Vector2.Distance(new Vector2(x, z), corner) > bestFar))
+                {
                     ore = new Vector3(x, field.Ground(x, z), z);
+                    bestFar = Vector2.Distance(new Vector2(x, z), corner);
+                }
             }
         if (ore is not { } at)
         {
@@ -127,7 +137,14 @@ public static class CrewMineCheck
             }
             Say($"a Mining Shell stands on the post's road: {(ms != null ? $"construct {ms.Id}" : "refused")}");
         }
-        server.Local!.Teleport(post.ToWorld(new Vector3((post.LocalMin.X + post.LocalMax.X) * 0.5f, 0, post.LocalMax.Z + 8)) with { Y = ground.Y + 1 });
+        var stand = far ? new Vector3(corner.X, 0, corner.Y) : post.ToWorld(new Vector3((post.LocalMin.X + post.LocalMax.X) * 0.5f, 0, post.LocalMax.Z + 8));
+        foreach (var person in server.Players.Values.Where(p => p.Bot == null).ToList())
+            person.Teleport(ConstructWorld.Ground(World.Query, stand.X + person.Id * 2, stand.Z) + Vector3.UnitY); // (the host and the client's player both: a person near makes bodies)
+        World.Enter(client.Place);
+        if (client.Local is { } ann && server.Players.TryGetValue(ann.Id, out var annHost))
+            ann.Teleport(annHost.Position); // (the client moves its own player: the host's word alone is undone by its next input)
+        World.Enter(server.Place);
+        Say($"people: {string.Join(", ", server.Players.Values.Where(p => p.Bot == null).Select(p => $"{p.Name} {(p.Alive ? "alive" : "dead")} {Vector3.Distance(p.Position, post.WorldCom):0} m off"))}");
         server.CrewFactionVehicle(post);
         var crew = server.Crew.ShipOf(post.Id);
         Check(crew != null, $"the post is crewed: {(crew != null ? server.Crew.Describe(crew) : "no crew")}");
@@ -160,19 +177,19 @@ public static class CrewMineCheck
             {
                 nextSay = t + 10;
                 World.Enter(server.Place);
-                Say($"{t - (until - seconds):0} s: {server.MineLine()}; bin {(bin >= 0 && server.Constructs.StoreOf(post, bin) is { } bs ? bs.Amount : 0)}; rack out {(rack >= 0 ? ToolRacks.Out(post.Parts[rack]) : 0)}; {server.Crew.Describe(crew)}");
+                Say($"{t - (until - seconds):0} s: {server.MineLine()}; bin {(bin >= 0 && server.Constructs.StoreOf(post, bin) is { } bs ? bs.Amount : 0)}; rack out {(rack >= 0 ? ToolRacks.Out(post.Parts[rack]) : 0)}; people {string.Join("/", server.Players.Values.Where(p => p.Bot == null).Select(p => $"{p.Name} {Vector3.Distance(p.Position, post.WorldCom):0} m"))}; {server.Crew.Describe(crew)}");
             }
         }
         World.Enter(server.Place);
         var tipped = (bin >= 0 && server.Constructs.StoreOf(post, bin) is { } b1 ? b1.Amount : 0) - binStart;
         Say($"end ({seconds} s of game time in {clock.Elapsed.TotalSeconds:0} s): {server.MineLine()}");
         Check(server.MineTrips > 0 && server.MineTipped > 0, $"miners made {server.MineTrips} trip(s), tipping {server.MineTipped} ore ({tipped} more in the {(bin >= 0 ? post.DefOf(bin).Name : "bin")}, the drills' own besides); {server.MinePutThere} put there for want of headway");
-        if (!shell)
+        if (!shell && !far)
             Check(outSeen && clientOutSeen, $"a drill came off the rack on the host ({outSeen}) and the client saw its hook empty ({clientOutSeen})");
-        Check(shell || clientTool, $"the client saw a crew body with the drill out ({clientTool})");
+        Check(shell || far || clientTool, $"the client saw a crew body with the drill out ({clientTool})");
         World.Enter(client.Place);
         var bodies = client.Players.Values.Count(p => p.Id != client.LocalId && p.Name.StartsWith('['));
-        Check(bodies > 0, $"the client sees {bodies} crew bodies");
+        Check(far || bodies > 0, $"the client sees {bodies} crew bodies");
         Say(fails.Count == 0 ? "all did what they should" : $"{fails.Count} failed: {string.Join("; ", fails)}");
         return fails.Count;
     }
