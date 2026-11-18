@@ -34,6 +34,7 @@ public static class ConstructOrdnance
     public const int MaxHeld = ModularRack.MaxStations; // bombs a rack lets go of in turn (an Ordnance Rack's most stations)
     public const int RackInterval = World.TickRate / 3; // ticks between bombs while its input stays on
     public const int RackRetry = World.TickRate / 6; // ticks before it looks again at a blocked way down
+    private const byte HatchWait = 16; // CPart.State of a rack: a launch waits for a launch hatch to open (bits 2 and 4 are the salvo's)
     public const float DropClear = 8f; // m under a bomb that must be free of its own construct
     public const int BombClear = World.TickRate; // ticks a bomb passes its own construct
     public const float LookReach = 1500f; // m a gunner's look locks a missile out to, with no sight
@@ -215,7 +216,7 @@ public static class ConstructOrdnance
         for (var k = 0; k < c.RackCount; k++)
             if (c.Racks[k].Part == part)
                 held = c.Racks[k].Held;
-        var fire = on;
+        var fire = on || (p.State & HatchWait) != 0; // (a launch owed while its hatch opens: Drop clears it when it goes, or when nothing waits on a hatch)
         var d = p.D;
         if (d.IsModularRack && d.Rack.Layout != RackLayout.Drum && ConstructConfig.Get(p, d, CfgKey.FireOrder, 0) >= 0.5f)
         {
@@ -225,7 +226,7 @@ public static class ConstructOrdnance
             if (held == 0)
                 p.State &= unchecked((byte)~2);
             p.State = (byte)((p.State & ~4) | (on ? 4 : 0));
-            fire = (p.State & 2) != 0;
+            fire = (p.State & (2 | HatchWait)) != 0;
         }
         if (fire && p.Cool == 0 && world.ShellRoom && world.Drops.Count < world.Drops.Capacity)
             world.Drops.Add((c.Id, (ushort)part));
@@ -256,11 +257,20 @@ public static class ConstructOrdnance
     {
         Span<ushort> held = stackalloc ushort[MaxHeld];
         var n = Held(c, rack, held);
+        var waiting = false;
+        c.Parts[rack].State &= unchecked((byte)~HatchWait);
         for (var k = 0; k < n; k++)
         {
             int bomb = held[k];
-            if (Blocked(world, c, bomb, out _))
+            if (Blocked(world, c, bomb, out _, out var hatch))
+            {
+                if (hatch >= 0)
+                {
+                    ConstructDoors.OpenForLaunch(world, c, hatch); // (a shut launch hatch ahead: it opens, and the rack looks again soon)
+                    waiting = true;
+                }
                 continue;
+            }
             var def = c.DefOf(bomb);
             if (def.OrdStats != null)
             {
@@ -270,6 +280,7 @@ public static class ConstructOrdnance
                     return false;
                 c.Parts[rack].Cool = Interval(c.Parts[rack], c.DefOf(rack));
                 world.RemovePart(c, bomb);
+                ConstructDoors.Launched(c);
                 return true;
             }
             var ex = def.Explosive!;
@@ -286,13 +297,19 @@ public static class ConstructOrdnance
         }
         if (n > 0)
             c.Parts[rack].Cool = RackRetry; // (a closed door under them all: nothing happens, it looks again soon)
+        if (waiting)
+            c.Parts[rack].State |= HatchWait; // (its launch hatch is opening: the launch is owed, though a tap's input is already off)
         return false;
     }
 
     /// <summary>Is the way down from a bomb shut by its own construct (a closed bay door, a hull, a wheel)? An open door has swung out of the ray.</summary>
-    public static bool Blocked(ConstructWorld world, Construct c, int bomb, out ConstructPartDef? by)
+    public static bool Blocked(ConstructWorld world, Construct c, int bomb, out ConstructPartDef? by) => Blocked(world, c, bomb, out by, out _);
+
+    /// <summary>As above; <paramref name="hatch"/> is the shut launch hatch (ConstructDoors.LaunchHatchOf) that is all that blocks a launch, else -1.</summary>
+    public static bool Blocked(ConstructWorld world, Construct c, int bomb, out ConstructPartDef? by, out int hatch)
     {
         by = null;
+        hatch = -1;
         var rack = RackOf(c, bomb);
         var at = ReleaseAt(c, rack, bomb);
         var pull = ConstructShells.GravityAt(at);
@@ -305,7 +322,7 @@ public static class ConstructOrdnance
         var local = Vector3.Abs(Vector3.Transform(down, Quaternion.Conjugate(q)));
         var from = at + down * (Vector3.Dot(local, half) + 0.03f);
         var left = DropClear;
-        for (var tries = 0; tries < 4; tries++)
+        for (var tries = 0; tries < 8; tries++)
         {
             if (!world.Raycast(from, down, left, out var hit, only: c))
                 return false;
@@ -319,6 +336,8 @@ public static class ConstructOrdnance
                 continue;
             }
             by = hit.Body.DefOf(hit.Part);
+            if (rack >= 0 && Launches(c.DefOf(rack), c.DefOf(bomb)) && hit.Body == c)
+                hatch = ConstructDoors.LaunchHatchOf(c, hit.Part); // (a launch hatch shut over the port: it opens before the launch)
             return true;
         }
         return false;
@@ -364,8 +383,8 @@ public static class ConstructOrdnance
             return null;
         ConstructPartDef? by = null;
         for (var k = 0; k < n; k++)
-            if (!Blocked(world, c, held[k], out by))
-                return null;
+            if (!Blocked(world, c, held[k], out by, out var hatch) || hatch >= 0)
+                return null; // (a shut launch hatch opens when it fires)
         return by == null ? null : n > 0 && Launches(rd, c.DefOf(held[0])) ? $"the {by.Name} is in the way out" : $"the {by.Name} is in the way down";
     }
 
