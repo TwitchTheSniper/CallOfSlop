@@ -183,6 +183,7 @@ public static partial class ConstructRide
         s.RideSeg = (byte)seg;
         s.RideUp = up;
         s.RideClimb = 0;
+        s.RideLadder = 0;
         s.RideAir = 0;
         s.RideFree = 0;
         s.RideGripUp = Vector3.Zero;
@@ -209,7 +210,7 @@ public static partial class ConstructRide
         s.RideUp = Vector3.Normalize(up);
         s.RideLocal = local;
         s.RideVel = Vector3.Zero;
-        s.RideClimb = s.RideAir = s.RideFree = 0;
+        s.RideClimb = s.RideAir = s.RideFree = s.RideLadder = 0;
         s.Grounded = true;
         Place(ref s, c);
     }
@@ -250,9 +251,15 @@ public static partial class ConstructRide
                 var carry = CarrierVel(c, s.RideOn, s.RideClimbTo) * World.TickDt; // (climbing onto a moving lift: its end, and the climber, go with it)
                 s.RideClimbTo += carry;
                 s.RideLocal += carry;
+                if (s.RideLadder != 0)
+                {
+                    s.RideClimbNext += carry;
+                    s.RideClimbLast += carry;
+                }
             }
             s.RideLocal += (s.RideClimbTo - s.RideLocal) / s.RideClimb;
             s.RideClimb--;
+            NextLeg(ref s);
             s.RideVel = Vector3.Zero;
             Place(ref s, c);
             s.Grounded = s.RideClimb == 0;

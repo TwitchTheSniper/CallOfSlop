@@ -5,7 +5,7 @@ namespace CallOfSlop;
 /// <summary>
 /// <c>--ladder-check [BLUEPRINT,...]</c>: every vertical ladder (a part with "ladder") on the shipped blueprints that hold one
 /// (or the named ones) climbed headless, up from its foot and down from its top, through <see cref="ConstructRide.ClimbLadder"/>
-/// as the player's F does; a refusal names the part in the way. A dev tool: it allocates freely.
+/// as the player's F does, and played through to its end; a climb that ends inside something names it. A dev tool: it allocates freely.
 /// </summary>
 public static class LadderCheck
 {
@@ -44,7 +44,7 @@ public static class LadderCheck
                 if (d.LadderTop <= 0)
                     continue;
                 ladders++;
-                var (up, down) = (Try(c, i, false), Try(c, i, true));
+                var (up, down) = (Try(w, c, i, false), Try(w, c, i, true));
                 var ok = up == null && down == null;
                 bad += ok ? 0 : 1;
                 Console.WriteLine($"{bp.Name}: {d.Name} #{i}: up {up ?? "ok"}, down {down ?? "ok"}");
@@ -54,35 +54,34 @@ public static class LadderCheck
         return bad;
     }
 
-    /// <summary>One climb from the ladder's foot (or its top): null when it starts, else why not.</summary>
-    private static string? Try(Construct c, int part, bool fromTop)
+    /// <summary>
+    /// One climb from the ladder's foot (or its top), played through to its end in the movement step's climb as a player's F
+    /// starts it: null when it ends standing clear (a line names an end moved off its usual spot), else why not.
+    /// </summary>
+    private static string? Try(ConstructWorld w, Construct c, int part, bool fromTop)
     {
-        ref var p = ref c.Parts[part];
+        var p = c.Parts[part];
         var d = p.D;
-        var stand = World.PlayerRadius + 0.12f;
-        var cx = (d.BoundsMin.X + d.BoundsMax.X) * 0.5f;
-        var local = fromTop ? new Vector3(cx, d.LadderTop + 0.02f, d.BoundsMax.Z + stand) : new Vector3(cx, d.BoundsMin.Y + 0.02f, d.BoundsMin.Z - stand);
+        ConstructRide.LadderEnds(d, out var foot, out var top);
         c.WorldFrame(p.Seg, out var q, out var t);
-        var s = new MoveState { Position = t + Vector3.Transform(p.Pos + Rot24.Apply(p.Rot, local), q) };
-        var why = ConstructRide.ClimbLadder(ref s, c, part, World.HeightOf(Stance.Stand));
-        if (why == null)
-            return null;
-        if (!fromTop)
-        {
-            var top = t + Vector3.Transform(p.Pos + Rot24.Apply(p.Rot, new Vector3(cx, d.LadderTop + 0.02f, d.BoundsMax.Z + stand)), q);
-            var by = ConstructRide.BlockedBy(c, part, top, World.HeightOf(Stance.Stand));
-            if (by >= 0)
-            {
-                why += $" (in the way: {c.Parts[by].D.Name} #{by}, top at {c.ToLocal(top)}";
-                for (var b = 0; b < c.Parts[by].D.SolidBoxes; b++)
-                {
-                    c.BoxOf(by, b, out var centre, out var half);
-                    if (Vector3.Distance(centre, c.ToLocal(top)) < 2.5f)
-                        why += $"; box {centre - half} .. {centre + half}";
-                }
-                why += ")";
-            }
-        }
-        return why;
+        Vector3 ToWorld(Vector3 l) => t + Vector3.Transform(p.Pos + Rot24.Apply(p.Rot, l), q);
+        var height = World.HeightOf(Stance.Stand);
+        var s = new MoveState { Position = ToWorld(fromTop ? top : foot), Grounded = true };
+        var why = ConstructRide.ClimbLadder(ref s, c, part, height, frame: true);
+        if (why != null)
+            return why;
+        var ticks = 0;
+        while ((s.RideClimb > 0 || s.RideLadder != 0) && ticks++ < 2000)
+            ConstructRide.Begin(w, ref s, height, true, out _, out _);
+        if (s.RideLadder != 0)
+            return "the climb never ended";
+        var end = s.Position;
+        var nominal = ToWorld(fromTop ? foot : top);
+        var by = ConstructRide.BlockedBy(c, -1, end, height);
+        if (by >= 0)
+            return $"ends in {c.Parts[by].D.Name} #{by} at {c.ToLocal(end)}";
+        var moved = Vector3.Distance(end, nominal);
+        Console.WriteLine($"    {(fromTop ? "down" : "up")}: {ticks / (float)World.TickRate:0.0} s{(moved > 0.05f ? $", ends {moved:0.00} m from its usual spot (something stands there)" : "")}");
+        return null;
     }
 }

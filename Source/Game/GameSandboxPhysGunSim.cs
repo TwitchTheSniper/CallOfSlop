@@ -48,6 +48,8 @@ public sealed partial class Game
         {
             if (SimRiding(me))
                 return SimStop();
+            if (_simOn && _simBody != held.Id)
+                SimStop(); // (another piece taken while the last one flies on: that one fades from where it was drawn, no snap)
             if (!_simOn || _simBody != held.Id)
                 SimStart(held);
             _simFree = _simStill = false;
@@ -119,19 +121,27 @@ public sealed partial class Game
         var alpha = (float)Math.Clamp(MoverRenderTick - (_simTick - 1.0), 0, 1);
         var pos = Vector3.Lerp(_simPrevPos, _simPos, alpha);
         var rot = Quaternion.Normalize(Quaternion.Slerp(_simPrevRot, _simRot, alpha));
-        if (!_simFree)
         {
             // A wall or the floor the server stopped it at: never more than the old prediction's lead ahead of the server.
+            // Let go too (the flight has no contacts): only the server's own motion leads it then, so a piece let go on the
+            // floor stays on it rather than sinking until the server's pose has passed the let-go.
             var lead = (float)Math.Max(0, (_simTick - rt) * World.TickDt) + ConstructGrab.LeadSeconds;
-            var moving = Math.Clamp(_simAimSpeed / ConstructGrab.RestSpeed, 0f, 1f);
-            var allowed = MathF.Max(ConstructGrab.LeadMin * moving, ConstructGrab.RestLead) + MathF.Max(_simBodySpeed, _simAimSpeed) * lead;
+            var moving = _simFree ? 1f : Math.Clamp(_simAimSpeed / ConstructGrab.RestSpeed, 0f, 1f);
+            var allowed = MathF.Max(ConstructGrab.LeadMin * moving, ConstructGrab.RestLead) + (_simFree ? _simBodySpeed : MathF.Max(_simBodySpeed, _simAimSpeed)) * lead;
             var off = pos - _simServerPos;
             if (off.LengthSquared() > allowed * allowed)
             {
-                var back = off * (1f - allowed / off.Length());
+                var len = off.Length();
+                var back = off * (1f - allowed / len);
                 pos -= back;
                 _simPos -= back;
                 _simPrevPos -= back;
+                if (_simFree)
+                {
+                    var along = Vector3.Dot(_simVel, off / len); // (and it stops flying on that way: gravity on the floor, the push into a wall)
+                    if (along > 0)
+                        _simVel -= off / len * along;
+                }
             }
         }
         c.Pos = pos;
@@ -178,6 +188,7 @@ public sealed partial class Game
         _simSpin = c.Asleep ? Vector3.Zero : c.AngVel;
         _simTick = _moverTick;
         _simAimSpeed = _simBodySpeed = 0;
+        _simThrowSpeed = 0;
         _simAimWas = c.ToWorld(c.GrabLocal);
         Array.Clear(_simHistTick);
         SimRecord();

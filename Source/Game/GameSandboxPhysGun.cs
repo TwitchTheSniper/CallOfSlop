@@ -158,7 +158,7 @@ public sealed partial class Game
         h.GrabAskedAt = SandboxNow;
         _simStill = false;
         var creative = SandboxInfiniteParts; // (pg01: the client's flight of it takes the server's throw: ConstructEditsUpgrades.Throw)
-        _simThrowSpeed = !IsServer && Constructs.Get(_simBody) is { } thrown && SandboxHands.Has(LocalId, ToolStat.Throw, creative)
+        _simThrowSpeed = !IsServer && _simOn && !_simFree && Constructs.Get(_simBody) is { } thrown && SandboxHands.Has(LocalId, ToolStat.Throw, creative)
             ? MathF.Min(ConstructEdits.ThrowSpeed, SandboxHands.PullOf(LocalId, creative) / MathF.Max(thrown.Mass, 1f) * ConstructEdits.ThrowPullSeconds) : 0;
         PhysGunSend(CActKind.GrabThrow, 0, default, 0);
     }
