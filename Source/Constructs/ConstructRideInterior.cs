@@ -128,7 +128,7 @@ public static partial class ConstructRide
             if (d >= inside && d >= open)
                 continue;
             var feetW = c.ToWorld(spot);
-            if (!BodyFits(w, c, c, feetW, upW, height))
+            if (!BodyFits(w, c, c, feetW, upW, height) || !Headroom(w, c, feetW, upW, height, ref rays))
                 continue;
             rays++;
             var roofed = w.Raycast(feetW + upW * 0.5f, upW, InteriorRoof, out var roof, only: c) && roof.Body == c;
@@ -137,6 +137,33 @@ public static partial class ConstructRide
             else if (!roofed && d < open)
                 (open, openSpot) = (d, spot);
         }
+    }
+
+    /// <summary>
+    /// Room for a standing body by rays, which meet a hull's skin as the frame's mover does (<see cref="BodyFits"/> tests the
+    /// solid boxes only, and a skin stands off its rooms by up to metres: a spot under a bow's skin was popped up through it).
+    /// Up from the feet at the middle and round the body's edge, and out to each side at the waist and the head.
+    /// </summary>
+    private static bool Headroom(ConstructWorld w, Construct c, Vector3 feet, Vector3 up, float height, ref int rays)
+    {
+        var r = World.BodyRadius;
+        var side = Vector3.Normalize(Vector3.Cross(up, MathF.Abs(up.X) < 0.9f ? Vector3.UnitX : Vector3.UnitZ));
+        var fore = Vector3.Cross(up, side);
+        Span<Vector3> ways = [Vector3.Zero, side, -side, fore, -fore];
+        for (var k = 0; k < ways.Length; k++)
+        {
+            rays++;
+            if (w.Raycast(feet + up * 0.3f + ways[k] * (r * 0.9f), up, height - 0.3f, out var hit, only: c) && hit.Body == c)
+                return false;
+        }
+        for (var k = 1; k < ways.Length; k++)
+            for (var lift = 0.9f; lift < height; lift += 0.7f)
+            {
+                rays++;
+                if (w.Raycast(feet + up * lift, ways[k], r, out var hit, only: c) && hit.Body == c)
+                    return false;
+            }
+        return true;
     }
 
     /// <summary>A spot to stand beside the free seat of <paramref name="c"/> nearest <paramref name="from"/> (rest frame), on the construct itself.</summary>

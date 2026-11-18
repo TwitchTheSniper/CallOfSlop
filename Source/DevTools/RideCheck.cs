@@ -206,9 +206,11 @@ public static class RideCheck
         {
             var mid = (c.LocalMin + c.LocalMax) * 0.5f;
             var s = new MoveState { Position = c.ToWorld(mid with { X = c.LocalMax.X + 40f }), Noclip = true };
+            var clock = System.Diagnostics.Stopwatch.StartNew();
             World.Simulate(ref s, new InputCmd { SpeedPct = 100, NoclipBoard = c.Id, NoclipBoardAt = mid });
             if (s.NoclipExit)
                 NoclipMove.Leave(ref s, 0, w);
+            var ms = clock.Elapsed.TotalMilliseconds;
             var at = c.ToLocal(s.Position);
             var roofed = s.RideBody == c.Id && w.Raycast(s.Position + s.RideUpW * 0.5f, s.RideUpW, ConstructRide.InteriorRoof, out _, only: c);
             int grounded = 0, off = 0;
@@ -222,7 +224,7 @@ public static class RideCheck
                 off += s.RideBody != c.Id ? 1 : 0;
             }
             var drift = (c.ToLocal(s.Position) - at).Length();
-            Console.WriteLine($"  board inside key: set down at {at}, {(roofed ? "under its roof" : "NOT under a roof")}, grounded {grounded} of 120 ticks, out of its frame {off}, moved {drift:0.00} m in it");
+            Console.WriteLine($"  board inside key: set down at {at}, {(roofed ? "under its roof" : "NOT under a roof")}, grounded {grounded} of 120 ticks, out of its frame {off}, moved {drift:0.00} m in it, the search {ms:0.0} ms");
             return s.RideBody != c.Id || off > 0 || grounded < 100 ? 1 : 0;
         }
         finally
