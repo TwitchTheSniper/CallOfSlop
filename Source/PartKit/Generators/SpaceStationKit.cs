@@ -158,7 +158,7 @@ public sealed partial class SpaceStationParts
     private static string Cap(string s) => s.Length == 0 ? s : char.ToUpperInvariant(s[0]) + s[1..];
 
     /// <summary>One level's inside: floor finish, the pressure wall with a dado, the rooms' walls and doors, lamps.</summary>
-    private static void Interior(Part p, double f, double top, double h, double hi, Room[] rooms, int seed)
+    private static void Interior(Part p, double f, double top, double h, double hi, Room[] rooms, int seed, bool grating = true)
     {
         var a = h - HullT;
         // floor finish: deck plate inside the pressure wall, grating in the service gap
@@ -166,8 +166,11 @@ public sealed partial class SpaceStationParts
         Detail(p, -hi, f, CoreH, hi, f + 0.02, hi, DeckCol, DeckFin);
         Detail(p, -hi, f, -CoreH, -CoreH, f + 0.02, CoreH, DeckCol, DeckFin);
         Detail(p, CoreH, f, -CoreH, hi, f + 0.02, CoreH, DeckCol, DeckFin);
-        Detail(p, -a, f, -a, a, f + 0.015, -hi - 0.2, Truss, Grating);
-        Detail(p, -a, f, hi + 0.2, a, f + 0.015, a, Truss, Grating);
+        if (grating)
+        {
+            Detail(p, -a, f, -a, a, f + 0.015, -hi - 0.2, Truss, Grating);
+            Detail(p, -a, f, hi + 0.2, a, f + 0.015, a, Truss, Grating);
+        }
         // the pressure wall
         var t = 0.2;
         Solid(p, -hi - t, f, -hi - t, hi + t, top, -hi, Wall, Painted);
@@ -297,6 +300,12 @@ public sealed partial class SpaceStationParts
         {
             var r = Rect(a0, a1, c0, c1);
             StationLook.Detail(p, r.X0, y0, r.Z0, r.X1, y1, r.Z1, col, fin, glow);
+        }
+
+        public void Hidden(Part p, double a0, double a1, double c0, double c1, double y0, double y1)
+        {
+            var r = Rect(a0, a1, c0, c1);
+            StationLook.Hidden(p, r.X0, y0, r.Z0, r.X1, y1, r.Z1);
         }
 
         public double[] Pt(double a, double c, double y)
@@ -523,63 +532,6 @@ public sealed partial class SpaceStationParts
         Finish(t);
     }
 
-    // ---- the pad deck: a slab of pads for small craft on top of a block
-
-    private static void PadDeck(Kit k, string mod, double h, double y0, double y1, (double X, double N)[] pads, double inner, int seed)
-    {
-        var parts = new (string Name, double X0, double Z0, double X1, double Z1)[]
-        {
-            ("N", -h, -h, h, -inner), ("S", -h, inner, h, h), ("W", -h, -inner, -inner, inner), ("E", inner, -inner, h, inner), ("Mid", -inner, -inner, inner, inner),
-        };
-        var padNo = 0;
-        foreach (var (nm, x0, z0, x1, z1) in parts)
-        {
-            var p = k.Piece($"{mod} {nm}", "Part of the pad deck: a thick slab with landing pads on top for small craft (a docking hatch and a clamp on each), a ready room inside.", Plate2);
-            Solid(p, x0, y0, z0, x1, y1, z1, Plate2, Plated);
-            // the edge: a window strip and lamps where this piece is on the deck's rim
-            void Rim(char axis, double at, double u0, double u1, int s)
-            {
-                if (axis == 'z')
-                {
-                    Detail(p, u0 + 0.5, y0 + 2.2, at, u1 - 0.5, y0 + 2.9, at + s * 0.03, Window, glow: true);
-                    Detail(p, u0, y1 - 0.8, at, u1, y1, at + s * 0.025, Hazard, HazardFin);
-                }
-                else
-                {
-                    Detail(p, at, y0 + 2.2, u0 + 0.5, at + s * 0.03, y0 + 2.9, u1 - 0.5, Window, glow: true);
-                    Detail(p, at, y1 - 0.8, u0, at + s * 0.025, y1, u1, Hazard, HazardFin);
-                }
-            }
-            if (Math.Abs(z0 + h) < 0.01) Rim('z', -h, x0, x1, -1);
-            if (Math.Abs(z1 - h) < 0.01) Rim('z', h, x0, x1, 1);
-            if (Math.Abs(x0 + h) < 0.01) Rim('x', -h, z0, z1, -1);
-            if (Math.Abs(x1 - h) < 0.01) Rim('x', h, z0, z1, 1);
-            for (var i = 0; i < pads.Length; i++)
-            {
-                var (px, pn) = pads[i];
-                var pz = -pn;
-                if (px < x0 || px > x1 || pz < z0 || pz > z1)
-                    continue;
-                const double r = 6, b = 0.6;
-                Detail(p, px - r, y1, pz - r, px + r, y1 + 0.03, pz - r + b, Hazard, HazardFin);
-                Detail(p, px - r, y1, pz + r - b, px + r, y1 + 0.03, pz + r, Hazard, HazardFin);
-                Detail(p, px - r, y1, pz - r + b, px - r + b, y1 + 0.03, pz + r - b, Hazard, HazardFin);
-                Detail(p, px + r - b, y1, pz - r + b, px + r, y1 + 0.03, pz + r - b, Hazard, HazardFin);
-                Detail(p, px - r + b, y1, pz - r + b, px + r - b, y1 + 0.02, pz + r - b, HazardDark, Tread);
-                foreach (var (sx, sz) in Corners)
-                    Lamp(p, px + sx * (r - 0.3) - 0.2, y1 + 0.03, pz + sz * (r - 0.3) - 0.2, px + sx * (r - 0.3) + 0.2, y1 + 0.2, pz + sz * (r - 0.3) + 0.2);
-                var nm2 = $"pad{padNo}";
-                Sock(p, nm2 + "hatch", px, y1, pz + 0.69, "+y");
-                Sock(p, nm2 + "clamp", px + 3.5, y1, pz - 3.5, "+y", Medium);
-                k.Hangs.Add(new HangSpec((string)p.D["name"]!, nm2 + "hatch", "Docking Hatch", "base", null, null, null));
-                k.Hangs.Add(new HangSpec((string)p.D["name"]!, nm2 + "clamp", "Docking Clamp Medium", "-y",
-                    new PyDict { ["sizeX"] = 14, ["sizeY"] = 8, ["sizeZ"] = 14, ["atY"] = 4.5, ["atX"] = -3.5, ["atZ"] = 3.5 }, Hazard, HazardFin));
-                padNo++;
-            }
-            Finish(p);
-        }
-    }
-
     // ---- the crown's bridge band and mast
 
     private static void Band(Kit k, string mod, double h, double out_, double y0, double y1)
@@ -688,52 +640,207 @@ public sealed partial class SpaceStationParts
 
     // ---- radiators
 
-    /// <summary>A radiator vane from a block's wall at r0 out to r1, y0 to y1, in panels: a thin slab with fins, a frame round it,
-    /// the hot manifold glowing along its root.</summary>
-    private static void Radiator(Kit k, string mod, ArmFrame fr, double r0, double r1, double y0, double y1, double rootY0, double rootY1, int panels)
+    /// <summary>
+    /// A radiator boom from a block's wall at r0 out to r1, its axis at ym: a square truss with the coolant loop inside it, and on it
+    /// tapered radiator panels above and below in a row, hinged to the boom with gaps between them, tallest at the root (hRoot) and
+    /// shortest at the tip (hTip). The heat pipes on the panels glow at the root and cool to copper and steel outwards.
+    /// </summary>
+    private static void Radiator(Kit k, string mod, ArmFrame fr, double r0, double r1, double ym, double hRoot, double hTip, int segs)
     {
-        var len = (r1 - r0) / panels;
-        for (var i = 0; i < panels; i++)
+        var len = (r1 - r0) / segs;
+        double H(double a) => hRoot + (hTip - hRoot) * (a - r0) / (r1 - r0);
+        string[] pipeCol = [Glow, "#b86a3c", "#8d9398", "#8d9398"];
+        for (var i = 0; i < segs; i++)
         {
             double s0 = r0 + i * len, s1 = s0 + len;
-            var p = k.Piece($"{mod} {i + 1}", "A radiator panel: a thin slab with fins both sides, framed, edge-on to the sun.", RadiatorCol);
-            fr.Solid(p, s0, s1, -0.3, 0.3, y0, y1, RadiatorCol, Steel);
-            for (var y = y0 + 1.5; y < y1 - 1; y += 2.0)
-                fr.Detail(p, s0 + 0.3, s1 - 0.3, -0.42, 0.42, y, y + 0.5, "#a9afb4", Steel);
-            fr.Detail(p, s0, s1, -0.5, 0.5, y1 - 0.4, y1 + 0.2, Frame, Dirty);
-            fr.Detail(p, s0, s1, -0.5, 0.5, y0 - 0.2, y0 + 0.4, Frame, Dirty);
-            fr.Detail(p, s0 + 0.05, s1 - 0.05, -0.36, 0.36, y0 + 0.4, y0 + 0.9, Glow, glow: true);
+            var p = k.Piece($"{mod} {i + 1}", "A length of a radiator boom: a square truss carrying the coolant loop, and tapered radiator panels hinged above and below it, edge-on to the sun.", RadiatorCol);
+            // the boom: four chords, frames, diagonals, the coolant pipes
+            foreach (var (sc, sy) in Corners)
+                fr.Solid(p, s0, s1, sc < 0 ? -1.3 : 0.9, sc < 0 ? -0.9 : 1.3, sy < 0 ? ym - 1.3 : ym + 0.9, sy < 0 ? ym - 0.9 : ym + 1.3, Truss, Dirty);
+            var bays = Math.Max(2, (int)Math.Round(len / 3.5));
+            var bw = len / bays;
+            for (var b = 0; b <= bays; b++)
+            {
+                var a = s0 + b * bw;
+                double a0 = Math.Max(s0, a - 0.15), a1 = Math.Min(s1, a + 0.15);
+                fr.Detail(p, a0, a1, -1.25, 1.25, ym + 0.95, ym + 1.25, Frame, Dirty);
+                fr.Detail(p, a0, a1, -1.25, 1.25, ym - 1.25, ym - 0.95, Frame, Dirty);
+                fr.Detail(p, a0, a1, -1.25, -0.95, ym - 0.9, ym + 0.9, Frame, Dirty);
+                fr.Detail(p, a0, a1, 0.95, 1.25, ym - 0.9, ym + 0.9, Frame, Dirty);
+            }
+            for (var b = 0; b < bays; b++)
+            {
+                double a0 = s0 + b * bw + 0.2, a1 = s0 + (b + 1) * bw - 0.2;
+                var fl = b % 2 == 0 ? 1 : -1;
+                Bar(p, fr.Pt(a0, -1.1, ym - fl * 0.9), fr.Pt(a1, -1.1, ym + fl * 0.9), 0.18, Truss, Dirty);
+                Bar(p, fr.Pt(a0, 1.1, ym + fl * 0.9), fr.Pt(a1, 1.1, ym - fl * 0.9), 0.18, Truss, Dirty);
+            }
+            fr.Pipe(p, s0 + 0.02, s1 - 0.02, -0.4, ym, 0.3, i == 0 ? Tank : Pipe, Rusty);
+            fr.Pipe(p, s0 + 0.02, s1 - 0.02, 0.4, ym, 0.3, Water, Painted);
             if (i == 0)
             {
-                fr.Solid(p, s0, s0 + 3, -1.6, 1.6, rootY0, rootY1, Plate2, Plated);
-                fr.Detail(p, s0, s0 + 3.02, -1.65, 1.65, rootY0 + 1, rootY0 + 1.6, Hazard, HazardFin);
+                fr.Solid(p, s0, s0 + 2.5, -1.9, 1.9, ym - 2.4, ym + 2.4, Plate2, Plated);
+                fr.Detail(p, s0, s0 + 2.52, -1.95, 1.95, ym - 0.4, ym + 0.4, Hazard, HazardFin);
+                fr.Detail(p, s0 + 0.6, s0 + 1.9, 1.9, 1.96, ym + 1.0, ym + 1.4, LampCol, glow: true);
             }
-            if (i == panels - 1)
-                fr.Detail(p, s1, s1 + 0.3, -0.5, 0.5, y0 - 0.2, y1 + 0.2, Frame, Dirty);
+            // the panels, three a length, above and below
+            const int per = 3;
+            const double gap = 0.7;
+            var pw = (len - gap * per) / per;
+            for (var j = 0; j < per; j++)
+            {
+                var a0 = s0 + gap / 2 + j * (pw + gap);
+                if (i == 0 && j == 0)
+                    a0 += 2.2; // clear of the root mount
+                var a1 = s0 + gap / 2 + j * (pw + gap) + pw;
+                foreach (var up in new[] { 1, -1 })
+                {
+                    double yb = ym + up * 1.6, yt0 = yb + up * H(a0), yt1 = yb + up * H(a1);
+                    Hull(p, [fr.Pt(a0, -0.06, yb), fr.Pt(a0, 0.06, yb), fr.Pt(a1, -0.06, yb), fr.Pt(a1, 0.06, yb),
+                        fr.Pt(a0, -0.06, yt0), fr.Pt(a0, 0.06, yt0), fr.Pt(a1, -0.06, yt1), fr.Pt(a1, 0.06, yt1)], RadiatorCol, Steel);
+                    var hmin = Math.Min(H(a0), H(a1));
+                    var hy0 = up > 0 ? yb : yb - hmin;
+                    fr.Hidden(p, a0 + 0.02, a1 - 0.02, -0.05, 0.05, hy0, hy0 + hmin);
+                    // the heat pipes
+                    for (var a = a0 + 0.45; a < a1 - 0.3; a += 0.8)
+                    {
+                        var ht = H(a) - 0.2;
+                        double ry0 = up > 0 ? yb + 0.06 : yb - ht, ry1 = up > 0 ? yb + ht : yb - 0.06;
+                        if (i == 0)
+                            fr.Detail(p, a - 0.05, a + 0.05, -0.1, 0.1, ry0, ry1, pipeCol[i], glow: true);
+                        else
+                            fr.Detail(p, a - 0.05, a + 0.05, -0.1, 0.1, ry0, ry1, pipeCol[Math.Min(i, 3)], Steel);
+                    }
+                    // the frame: the outer edge, the two sides, the hinge
+                    Bar(p, fr.Pt(a0, 0, yt0), fr.Pt(a1, 0, yt1), 0.22, Frame, Dirty);
+                    double sy0 = up > 0 ? yb + 0.04 : yt0, sy1 = up > 0 ? yt0 : yb - 0.04;
+                    fr.Detail(p, a0 - 0.09, a0 + 0.09, -0.12, 0.12, sy0, sy1, Frame, Dirty);
+                    sy0 = up > 0 ? yb + 0.04 : yt1;
+                    sy1 = up > 0 ? yt1 : yb - 0.04;
+                    fr.Detail(p, a1 - 0.09, a1 + 0.09, -0.12, 0.12, sy0, sy1, Frame, Dirty);
+                    fr.Pipe(p, a0 + 0.3, a1 - 0.3, 0, ym + up * 1.45, 0.2, Frame, Dirty);
+                }
+            }
+            if (i == segs - 1)
+            {
+                fr.Detail(p, s1, s1 + 0.3, -1.3, 1.3, ym - 1.3, ym + 1.3, Frame, Dirty);
+                fr.Detail(p, s1 + 0.3, s1 + 0.45, -0.25, 0.25, ym - 0.25, ym + 0.25, NavRed, glow: true);
+            }
             Finish(p, 200);
         }
     }
 
-    // ---- a plain industrial module (a refinery) standing against a block
+    // ---- a space refinery: an open frame of process plant against a block
 
-    private static void Plant(Kit k, string name, string desc, double x0, double y0, double z0, double x1, double y1, double z1, int seed)
+    /// <summary>
+    /// A refinery against a block's wall face (wall: its distance from the axis, out: +1 east, -1 west), from y0 to y1, depth out from
+    /// the wall, hz either side: an open truss cage holding the ore hopper (the chute from the miners' arm lands on it), a crusher drum,
+    /// a smelter with glowing vent rings and its stack, two fractionating columns, gas spheres, radiator fins on its outer face and the
+    /// product duct back into the block.
+    /// </summary>
+    private static void Refinery(Kit k, string name, string desc, int outX, double wall, double y0, double y1, double depth, double hz)
     {
-        var p = k.Piece(name, desc, Plate2);
-        Solid(p, x0, y0, z0, x1, y1, z1, Plate2, Plated);
-        var outX = x0 + x1 > 0 ? 1 : -1;
-        var face = outX > 0 ? x1 : x0;
-        WallLook(p, 'x', outX, face, z0 + 0.5, z1 - 0.5, y0, y1, [y0 + 0.6, y0 + 10.6], false, seed);
-        WallLook(p, 'z', -1, z0, Math.Min(x0, x1) + 0.5, Math.Max(x0, x1) - 0.5, y0, y1, [y0 + 0.6, y0 + 10.6], false, seed + 1);
-        WallLook(p, 'z', 1, z1, Math.Min(x0, x1) + 0.5, Math.Max(x0, x1) - 0.5, y0, y1, [y0 + 0.6, y0 + 10.6], false, seed + 2);
-        // hoppers and stacks on the roof
-        double cxm = (x0 + x1) / 2, czm = (z0 + z1) / 2;
-        Shaped(p, cxm - 3, y1, czm - 3, cxm + 3, y1 + 4, czm + 3, Tank, Rusty, "wedge", "-y", ("taper", new List<object?> { 0.4, 0.4 }));
-        Cyl(p, 'y', x0 + (x1 - x0) * 0.2, 0, z0 + 2, 1.2, y1, y1 + 7, Plate2, Soot);
-        Cyl(p, 'y', x0 + (x1 - x0) * 0.2, 0, z1 - 2, 1.0, y1, y1 + 5.5, Plate2, Soot);
-        Lamp(p, x0 + (x1 - x0) * 0.2 - 0.2, y1 + 7, z0 + 1.8, x0 + (x1 - x0) * 0.2 + 0.2, y1 + 7.3, z0 + 2.2, NavRed);
-        for (var z = z0 + 2; z < z1 - 1; z += 4)
-            Cyl(p, 'y', face + outX * 0.62, 0, z, 0.6, y0 + 1, y1 - 1, Tank, Rusty);
-        Detail(p, Math.Min(face, face + outX * 0.05), y0 + 0.5, z0 + 1, Math.Max(face, face + outX * 0.05), y0 + 1.3, z1 - 1, Hazard, HazardFin);
+        var p = k.Piece(name, desc, Truss);
+        double X(double u) => outX * (wall + u);
+        void S(double u0, double u1, double ya, double yb, double z0, double z1, string col, string fin) => Solid(p, X(u0), ya, z0, X(u1), yb, z1, col, fin);
+        void D(double u0, double u1, double ya, double yb, double z0, double z1, string col, string? fin = null, bool glow = false) => Detail(p, X(u0), ya, z0, X(u1), yb, z1, col, fin, glow);
+        double[] Pt(double u, double y, double z) => [X(u), y, z];
+
+        // the cage: a deck, corner columns, top beams, a mid ring, braces
+        S(0, depth, y0, y0 + 1, -hz, hz, Plate2, Plated);
+        D(0.3, depth - 0.3, y0 + 1, y0 + 1.02, -hz + 0.3, hz - 0.3, Truss, Grating);
+        foreach (var u in new[] { (0.0, 1.2), (depth - 1.2, depth) })
+            foreach (var z in new[] { (-hz, -hz + 1.2), (hz - 1.2, hz) })
+                S(u.Item1, u.Item2, y0 + 1, y1 - 1, z.Item1, z.Item2, Truss, Dirty);
+        S(0, depth, y1 - 1, y1, -hz, -hz + 1.2, Truss, Dirty);
+        S(0, depth, y1 - 1, y1, hz - 1.2, hz, Truss, Dirty);
+        S(depth - 1.2, depth, y1 - 1, y1, -hz + 1.2, hz - 1.2, Truss, Dirty);
+        S(0, 1.2, y1 - 1, y1, -hz + 1.2, hz - 1.2, Truss, Dirty);
+        var ymid = (y0 + y1) / 2;
+        D(1.2, depth - 1.2, ymid - 0.35, ymid + 0.35, -hz + 0.1, -hz + 0.9, Truss, Dirty);
+        D(1.2, depth - 1.2, ymid - 0.35, ymid + 0.35, hz - 0.9, hz - 0.1, Truss, Dirty);
+        D(depth - 0.9, depth - 0.1, ymid - 0.35, ymid + 0.35, -hz + 1.2, hz - 1.2, Truss, Dirty);
+        foreach (var z in new[] { -hz + 0.5, hz - 0.5 })
+            foreach (var (ya, yb) in new[] { (y0 + 1.2, ymid - 0.5), (ymid + 0.5, y1 - 1.2) })
+            {
+                Bar(p, Pt(1.4, ya, z), Pt(depth / 2 - 0.2, yb, z), 0.3, Truss, Dirty);
+                Bar(p, Pt(depth - 1.4, ya, z), Pt(depth / 2 + 0.2, yb, z), 0.3, Truss, Dirty);
+            }
+        foreach (var (ya, yb) in new[] { (y0 + 1.2, ymid - 0.5), (ymid + 0.5, y1 - 1.2) })
+        {
+            Bar(p, Pt(depth - 0.5, ya, -hz + 1.4), Pt(depth - 0.5, yb, -0.2), 0.3, Truss, Dirty);
+            Bar(p, Pt(depth - 0.5, ya, hz - 1.4), Pt(depth - 0.5, yb, 0.2), 0.3, Truss, Dirty);
+        }
+        D(0, depth, y0 + 0.2, y0 + 0.8, -hz - 0.03, -hz, Hazard, HazardFin);
+        D(0, depth, y0 + 0.2, y0 + 0.8, hz, hz + 0.03, Hazard, HazardFin);
+
+        // the ore hopper under the chute, and the crusher drum it feeds
+        S(1.5, 6.5, y1 - 6, y1, -3, 3, Tank, Rusty);
+        D(1.4, 6.6, y1 - 1.2, y1 - 0.6, -3.1, 3.1, Frame, Dirty);
+        Shaped(p, Math.Min(X(1.7), X(6.3)), y1 - 8.5, -2.8, Math.Max(X(1.7), X(6.3)), y1 - 6, 2.8, Tank, Rusty, "wedge", "-y", ("taper", new List<object?> { 0.45, 0.45 }));
+        var drumY = y1 - 11.5;
+        Cyl(p, 'z', X(4), drumY, 0, 3, -6, 6, Plate3, Dirty);
+        foreach (var z in new[] { -4.5, 0.0, 4.5 })
+            Cyl(p, 'z', X(4), drumY, 0, 3.15, z - 0.25, z + 0.25, Frame, Dirty);
+        Cyl(p, 'z', X(4), drumY, 0, 1.1, -6.8, -6, Frame, Steel);
+        Cyl(p, 'z', X(4), drumY, 0, 1.1, 6, 6.8, Frame, Steel);
+        D(2.5, 5.5, drumY - 4.2, drumY - 3.4, -7.4, -5.6, Hazard, HazardFin); // the drive motor's mount
+        D(2.9, 5.1, drumY - 3.4, drumY - 1.2, -7.2, -5.8, Plate2, Painted);
+        Hidden(p, X(2), drumY - 2, -5.5, X(6), drumY + 2, 5.5);
+
+        // the conveyor from the crusher to the smelter
+        D(5.5, 9.0, y0 + 4.6, y0 + 5.2, -4.4, -2.6, Frame, Soot);
+        D(5.5, 9.0, y0 + 5.2, y0 + 5.45, -4.2, -2.8, Tank, Rusty);
+        for (var u = 6.0; u < 9; u += 1.4)
+            D(u, u + 0.2, y0 + 1.02, y0 + 4.6, -4.3, -4.1, Truss, Dirty);
+
+        // the smelter: a tall drum with glowing vent rings, a hood and a stack
+        double su = 11.5, sz = -3.5, sr = 3.2;
+        Cyl(p, 'y', X(su), 0, sz, sr, y0 + 1, y1 - 5, Plate3, Soot);
+        for (var y = y0 + 4; y < y1 - 7; y += 3)
+            GlowCyl(p, X(su), sz, sr + 0.06, y, y + 0.35, Glow);
+        Shaped(p, Math.Min(X(su - sr - 0.2), X(su + sr + 0.2)), y1 - 5, sz - sr - 0.2, Math.Max(X(su - sr - 0.2), X(su + sr + 0.2)), y1 - 2.5, sz + sr + 0.2, Plate2, Soot, "wedge", "+y", ("taper", new List<object?> { 0.35, 0.35 }));
+        Cyl(p, 'y', X(su), 0, sz, 0.8, y1 - 2.5, y1 + 6, Plate2, Soot);
+        Cyl(p, 'y', X(su), 0, sz, 0.95, y1 + 5.4, y1 + 6, Frame, Dirty);
+        Lamp(p, X(su) - 0.15, y1 + 6, sz - 0.15, X(su) + 0.15, y1 + 6.3, sz + 0.15, NavRed);
+        Hidden(p, X(su - 2.2), y0 + 1, sz - 2.2, X(su + 2.2), y1 - 5, sz + 2.2);
+        D(su - 1.2, su + 1.2, y0 + 1.5, y0 + 3.6, sz - sr - 0.1, sz - sr + 0.4, Frame, Dirty); // the tap hatch
+        Lamp(p, X(su - 0.9), y0 + 1.7, sz - sr - 0.16, X(su + 0.9), y0 + 2.0, sz - sr - 0.1, Glow);
+
+        // the product duct back into the block, ingots glowing in it
+        D(0, su - sr + 0.3, y0 + 1.2, y0 + 2.8, sz - 1.0, sz + 1.0, Plate2, Plated);
+        D(0.2, su - sr + 0.1, y0 + 2.8, y0 + 2.95, sz - 0.5, sz + 0.5, Glow, glow: true);
+
+        // two fractionating columns with ring platforms
+        foreach (var (cu, cz, cr, ct) in new[] { (15.0, 2.8, 1.3, y1 - 1.4), (15.0, 6.0, 1.0, y1 - 4.0) })
+        {
+            Cyl(p, 'y', X(cu), 0, cz, cr, y0 + 1, ct, Plate3, Painted);
+            for (var y = y0 + 4; y < ct - 1; y += 4)
+                Cyl(p, 'y', X(cu), 0, cz, cr + 0.6, y, y + 0.2, Frame, Grating);
+            Lamp(p, X(cu) - 0.15, ct, cz - 0.15, X(cu) + 0.15, ct + 0.2, cz + 0.15);
+        }
+
+        // gas spheres on saddles
+        foreach (var (gu, gz, gr, col) in new[] { (6.5, 5.0, 2.6, Water), (10.8, 5.6, 2.0, Oxygen) })
+        {
+            Sphere(p, X(gu), y0 + 1.6 + gr, gz, gr, col, Painted);
+            Cyl(p, 'y', X(gu), 0, gz, gr * 0.5, y0 + 1, y0 + 1.6 + gr * 0.4, Frame, Dirty);
+        }
+
+        // pipes: the feed main along the wall side and up to the columns
+        Cyl(p, 'x', 0, y1 - 2.2, 7.2, 0.35, Math.Min(X(1.2), X(15)), Math.Max(X(1.2), X(15)), Pipe, Dirty);
+        Cyl(p, 'x', 0, y0 + 7.5, -7.4, 0.3, Math.Min(X(1.2), X(depth - 1.2)), Math.Max(X(1.2), X(depth - 1.2)), Tank, Rusty);
+        Cyl(p, 'y', X(15), 0, 7.2, 0.3, y1 - 4.0, y1 - 2.2, Pipe, Dirty);
+
+        // radiator fins on the outer face, the hot end glowing
+        foreach (var z in new[] { -6.0, -2.4, 1.2, 4.8 })
+        {
+            D(depth + 0.02, depth + 4.5, y0 + 3, y1 - 3, z - 0.08, z + 0.08, RadiatorCol, Steel);
+            D(depth + 0.02, depth + 0.5, y0 + 3.2, y1 - 3.2, z - 0.12, z + 0.12, Glow, glow: true);
+            D(depth + 4.5, depth + 4.7, y0 + 2.9, y1 - 2.9, z - 0.15, z + 0.15, Frame, Dirty);
+        }
+        foreach (var z in new[] { -hz + 0.6, hz - 0.6 })
+            Lamp(p, X(depth) - 0.2, y1 - 0.4, z - 0.2, X(depth) + 0.2, y1 + 0.05, z + 0.2, z < 0 ? NavRed : NavGreen);
         Finish(p);
     }
 }

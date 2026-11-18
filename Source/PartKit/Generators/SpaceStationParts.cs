@@ -51,7 +51,7 @@ public sealed partial class SpaceStationParts : IPartGenerator
                 [3] = [new(-12, 6, 12, 12, "Control room", 's'), new(-12, -12, 12, -6, "Stores", 'n')],
             }));
         foreach (var (fr, nm) in new[] { (E, "E"), (W, "W"), (N, "N"), (S, "S") })
-            Radiator(k, $"Radiator {nm}", fr, 15, 78, 8, 40, 24, 36, 3);
+            Radiator(k, $"Radiator {nm}", fr, 15, 78, 30, 14, 7, 3);
 
         Spine(k, "Spine 1", 40, 48, 1);
         TankFarm(k, "Tank", 13, 48, 72, 21, 7.2, ["Reaction mass", "Reaction mass", "Water", "Reaction mass", "Reaction mass", "Oxygen", "Reaction mass", "Nitrogen"]);
@@ -60,8 +60,9 @@ public sealed partial class SpaceStationParts : IPartGenerator
         // freight: the warehouse, its refineries and the two Dray aprons with their container tunnels
         Block(k, "Warehouse", 25, 80, 110, new BlockOpts(Windows: false, Decks: false, Seed: 21, Job: "the warehouse", FloorExtra: Containers,
             Roof: (p, y) => { Pdc(p, 21, y, 21); Pdc(p, -21, y, -21); }));
-        Plant(k, "Refinery E", "A refinery against the warehouse's east wall: ore comes down the chute from the miners' arm, plate and ingots go into the warehouse.", 25, 84, -9, 43, 104, 9, 31);
-        Plant(k, "Refinery W", "A refinery against the warehouse's west wall: ore comes down the chute from the miners' arm, plate and ingots go into the warehouse.", -43, 84, -9, -25, 104, 9, 32);
+        const string refDesc = "A space refinery against the warehouse's {0} wall: an open truss cage of process plant. Ore comes down the chute from the miners' arm into the hopper, through the crusher drum to the smelter; gas goes to the columns and spheres, plate and ingots down the duct into the warehouse.";
+        Refinery(k, "Refinery E", string.Format(refDesc, "east"), 1, 25, 84, 104, 18, 9);
+        Refinery(k, "Refinery W", string.Format(refDesc, "west"), -1, 25, 84, 104, 18, 9);
         foreach (var (fr, nm) in new[] { (N, "N"), (S, "S") })
             Apron(k, $"Dray Apron {nm}", fr, 25, 95, 110, (48, 72), 86, 60.5, Dray.W, Dray.L, Dray.H, 40);
         Spine(k, "Spine 3", 110, 133, 3);
@@ -76,8 +77,8 @@ public sealed partial class SpaceStationParts : IPartGenerator
             }));
         foreach (var (fr, nm) in new[] { (E, "E"), (W, "W") })
         {
-            const double yb = 136.6, mid = 47.5, bottom = 131.5;
-            Arm(k, $"Miner Arm {nm}", fr, 13, 75, yb, [(mid - Magpie.L / 2, mid + Magpie.L / 2)], true, 50);
+            const double yb = 136.6, mid = 65, bottom = 131.5;
+            Arm(k, $"Miner Arm {nm}", fr, 13, 105, yb, [(mid - Magpie.L / 2, mid + Magpie.L / 2)], true, 50);
             foreach (var side in new[] { -1, 1 })
             {
                 var sn = side < 0 ? "L" : "R";
@@ -102,8 +103,8 @@ public sealed partial class SpaceStationParts : IPartGenerator
             }));
         foreach (var (fr, nm) in new[] { (N, "N"), (S, "S") })
         {
-            const double yb = 175.6, mid = 58.5, bottom = 172;
-            Arm(k, $"Frigate Arm {nm}", fr, 15, 97, yb, [(mid - ZeroDay.L / 2, mid + ZeroDay.L / 2)], false, 70);
+            const double yb = 175.6, mid = 80, bottom = 172;
+            Arm(k, $"Frigate Arm {nm}", fr, 15, 130, yb, [(mid - ZeroDay.L / 2, mid + ZeroDay.L / 2)], false, 70);
             foreach (var side in new[] { -1, 1 })
             {
                 var sn = side < 0 ? "L" : "R";
@@ -117,11 +118,40 @@ public sealed partial class SpaceStationParts : IPartGenerator
         }
         Spine(k, "Spine 5", 190, 200, 5);
 
-        // the commons, the pad deck on its roof, the ops crown over that
-        Block(k, "Commons", 22, 200, 234, new BlockOpts(Seed: 81, Job: "the commons", Rooms: CommonsRooms()));
-        PadDeck(k, "Pad Deck", 28, 234, 240, [(-21, 21), (0, 21), (21, 21), (-21, 0), (21, 0), (-21, -21), (0, -21), (21, -21)], 10, 90);
-        Spine(k, "Spine 6", 240, 256, 6);
-        Block(k, "Crown", 12, 256, 280, new BlockOpts(Seed: 101, Job: "the ops crown", Keep: 2.5, Roof: (p, y) => { Pdc(p, 9.5, y, 9.5); Pdc(p, -9.5, y, -9.5); },
+        // the commons: a hex concourse on the spine, the hub tower over it and six towers round it, varied in size, height, setback and
+        // look, with landing pads for small craft on the towers' roofs and sky bridges to the hub
+        HexBlock(k, "Concourse", 0, 0, 52, 200, 205, new HexOpts("the concourse", 81, Decks: false, Fit: "plaza", Greebles: false, WinCol: LampCol));
+        const double hubR = 20, hubTop = 249;
+        HexBlock(k, "Commons Hub", 0, 0, hubR, 205, hubTop, new HexOpts("the commons hub", 83, Rooms: HubRooms, Keep: 6, Antenna: false));
+        var towers = new (string Mod, string Job, double R, double Top, double UpR, double UpTop, string Fit, string Win, string BandC, char Style)[]
+        {
+            ("Hostel", "the hostel tower", 12, 236, 0, 0, "bunks", LampCol, StationLook.Band, 's'),
+            ("Hydro", "the hydroponics tower", 10, 222, 0, 0, "hydro", "#b8f5a8", Container4, 'b'),
+            ("Market", "the market tower", 13.5, 222, 10, 244, "stalls", Window, Hazard, 's'),
+            ("Clinic", "the clinic tower", 11, 228, 0, 0, "beds", "#d8f0ff", Container2, 'v'),
+            ("Exchange", "the exchange tower", 13, 228, 9.5, 240, "desks", Window, Container1, 's'),
+            ("Canteen", "the canteen tower", 10.5, 218, 0, 0, "tables", "#ff7ab8", Frame, 'b'),
+        };
+        for (var i = 0; i < towers.Length; i++)
+        {
+            var t = towers[i];
+            var th = (30 + 60 * i) * Math.PI / 180;
+            double dx = Math.Cos(th), dz = Math.Sin(th), d = hubR * Cos30 + 3.5 + t.R * Cos30;
+            double cx = Math.Round(d * dx, 2), cz = Math.Round(d * dz, 2);
+            var seed = 120 + i * 10;
+            double PadFor(double r) => Math.Min(6, Math.Round(0.634 * r - 0.5, 1));
+            var lowTop = t.Top;
+            HexBlock(k, t.Mod, cx, cz, t.R, 205, lowTop, new HexOpts(t.Job, seed, Fit: t.Fit, WinCol: t.Win, BandCol: t.BandC, WinStyle: t.Style, CoreHalf: 2.2,
+                PadR: t.UpR > 0 ? 0 : PadFor(t.R), Keep: t.UpR > 0 ? t.UpR + 0.5 : 0, Antenna: t.UpR == 0 && i % 2 == 0));
+            if (t.UpR > 0)
+                HexBlock(k, t.Mod + " Top", cx, cz, t.UpR, lowTop, t.UpTop, new HexOpts(t.Job + "'s upper storeys", seed + 5, Fit: t.Fit, WinCol: t.Win, BandCol: t.BandC,
+                    WinStyle: t.Style == 's' ? 'v' : 's', CoreHalf: 2.2, PadR: PadFor(t.UpR), Antenna: true));
+            var walls = k.Pieces.First(q => (string)q.D["name"]! == $"Highport {t.Mod} Walls");
+            var by = Math.Min(lowTop, hubTop) - 5.5;
+            SkyBridge(walls, (hubR * Cos30 - 0.1) * dx, (hubR * Cos30 - 0.1) * dz, cx - (t.R * Cos30 - 0.1) * dx, cz - (t.R * Cos30 - 0.1) * dz, by);
+        }
+        Spine(k, "Spine 6", hubTop, 263, 6);
+        Block(k, "Crown", 12, 263, 287, new BlockOpts(Seed: 101, Job: "the ops crown", Keep: 2.5, Roof: (p, y) => { Pdc(p, 9.5, y, 9.5); Pdc(p, -9.5, y, -9.5); },
             Rooms: new()
             {
                 [0] = [new(-9, 6, 9, 9, "Barracks", 's'), new(-9, -9, 9, -6, "Barracks", 'n')],
@@ -130,31 +160,24 @@ public sealed partial class SpaceStationParts : IPartGenerator
                 [3] = [new(-9, 6, 9, 9, "Bridge", 's'), new(-9, -9, 0, -6, "Traffic control", 'n'), new(0, -9, 9, -6, "Captain", 'n'), new(-9, -6, -6, 6, "Briefing", 'e'), new(6, -6, 9, 6, "Plot", 'w')],
                 [4] = [new(-9, 6, 9, 9, "Mast access", 's')],
             }));
-        Band(k, "Crown Band", 12, 2, 268.2, 272.4);
-        Mast(k, "Mast", 280, 306);
+        Band(k, "Crown Band", 12, 2, 275.2, 279.4);
+        Mast(k, "Mast", 287, 313);
         return k;
     }
 
-    private static Dictionary<int, Room[]> CommonsRooms()
+    /// <summary>The commons hub's rooms a level: north, south, west and east of the lift core.</summary>
+    private static string[] HubRooms(int level) => level switch
     {
-        Room[] Hostel() =>
-        [
-            new(-19, 8, -9.5, 19, "Bunks", 's'), new(-9.5, 8, 0, 19, "Bunks", 's'), new(0, 8, 9.5, 19, "Bunks", 's'), new(9.5, 8, 19, 19, "Bunks", 's'),
-            new(-19, -19, -9.5, -8, "Bunks", 'n'), new(-9.5, -19, 0, -8, "Bunks", 'n'), new(0, -19, 9.5, -8, "Bunks", 'n'), new(9.5, -19, 19, -8, "Bunks", 'n'),
-            new(-19, -8, -8, 8, "Washroom", 'e'), new(8, -8, 19, 8, "Washroom", 'w'),
-        ];
-        return new()
-        {
-            [0] = [new(-19, 8, 19, 19, "Customs hall", 's'), new(-19, -19, 3, -8, "Arrivals lounge", 'n'), new(3, -19, 19, -8, "Station security", 'n'), new(-19, -8, -8, 8, "Quarantine", 'e'), new(8, -8, 19, 8, "Cargo inspection", 'w')],
-            [1] = [new(-19, 8, 19, 19, "Market hall", 's'), new(-19, -19, -9.5, -8, "Trader", 'n'), new(-9.5, -19, 0, -8, "Trader", 'n'), new(0, -19, 9.5, -8, "Trader", 'n'), new(9.5, -19, 19, -8, "Trader", 'n'), new(-19, -8, -8, 8, "Exchange", 'e'), new(8, -8, 19, 8, "Bonded store", 'w')],
-            [2] = [new(-19, 8, 19, 19, "Market gallery", 's'), new(-19, -19, 0, -8, "Contracts", 'n'), new(0, -19, 19, -8, "Brokers", 'n'), new(-19, -8, -8, 8, "Stalls", 'e'), new(8, -8, 19, 8, "Stalls", 'w')],
-            [3] = [new(-19, 8, 19, 19, "Canteen", 's'), new(-19, -19, 0, -8, "Galley", 'n'), new(0, -19, 19, -8, "Cold store", 'n'), new(-19, -8, -8, 8, "Bar", 'e'), new(8, -8, 19, 8, "Washrooms", 'w')],
-            [4] = [new(-19, 8, 0, 19, "Clinic", 's'), new(0, 8, 19, 19, "Shell workshop", 's'), new(-19, -19, 0, -8, "Chapel", 'n'), new(0, -19, 19, -8, "Wards", 'n'), new(-19, -8, -8, 8, "Pharmacy", 'e'), new(8, -8, 19, 8, "Stores", 'w')],
-            [5] = Hostel(),
-            [6] = Hostel(),
-            [7] = [new(-19, 8, 0, 19, "Admin", 's'), new(0, 8, 19, 19, "Records", 's'), new(-19, -19, 0, -8, "Harbour office", 'n'), new(0, -19, 19, -8, "Meeting room", 'n')],
-        };
-    }
+        0 => ["Customs hall", "Arrivals lounge", "Quarantine", "Cargo inspection"],
+        1 => ["Market hall", "Traders", "Exchange", "Bonded store"],
+        2 => ["Market gallery", "Brokers", "Stalls", "Contracts"],
+        3 => ["Canteen", "Galley", "Bar", "Cold store"],
+        4 => ["Clinic", "Wards", "Pharmacy", "Chapel"],
+        5 => ["Station security", "Cells", "Armoury", "Records"],
+        6 => ["Admin", "Harbour office", "Meeting room", "Archive"],
+        7 or 8 => ["Bunks", "Bunks", "Washroom", "Washroom"],
+        _ => ["Harbourmaster", "Traffic office", "Comms", "Plant room"],
+    };
 
     /// <summary>The warehouse floor's stock: rows of 20-foot containers two high, and the overhead crane's rails along the walls.</summary>
     private static void Containers(Part p, double f)
@@ -390,7 +413,7 @@ public sealed partial class SpaceStationParts : IPartGenerator
         }
         BuildingParts.AddPartDefs(o, defs, Out);
         o.File($"{BpOut}/CaledonHighport.json", PyJson.Dumps(Blueprint(HighportName,
-            "Caledon Highport, the first space station: a 310 m tower with gravity down its spine. Pads for small craft on top, Zero Day berths on arms north and south, Magpie berths on arms east and west with ore chutes to the refineries, Dray aprons with a container lift into the warehouse; the commons and the ops crown above the docks, the tank farm, engineering, the reactor and its radiators below.",
+            "Caledon Highport, the first space station: a 310 m tower with gravity down its spine. A hex commons of seven towers with landing pads for small craft on their roofs, Zero Day berths on arms north and south, Magpie berths on arms east and west with ore chutes to the refineries, Dray aprons with a container lift into the warehouse; the ops crown above them, the tank farm, engineering, the reactor and its radiators below.",
             kit, order, origins, defs), 2) + "\n");
     }
 }

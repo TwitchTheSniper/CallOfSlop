@@ -1,0 +1,487 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Highport Hostel Deck 7",
+  "description": "The hostel tower's decks 7 to 7: hex slabs round the lift core, open floors and their fittings.",
+  "group": "Station",
+  "section": "Caledon Highport",
+  "role": "frame",
+  "tool": "welder",
+  "collider": "boxes",
+  "mass": 11170.5,
+  "health": 17405,
+  "armour": 40,
+  "material": "steel",
+  "color": "#9ba0a3",
+  "attachSeconds": 20.0,
+  "boxes": [
+    {
+      "min": [
+        -11.5076,
+        -2.825,
+        -10.3986
+      ],
+      "max": [
+        11.3176,
+        -2.525,
+        9.3686
+      ],
+      "color": "#868c90",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          11.3176,
+          -2.825,
+          -0.515
+        ],
+        [
+          11.3176,
+          -2.525,
+          -0.515
+        ],
+        [
+          5.6113,
+          -2.825,
+          9.3686
+        ],
+        [
+          5.6113,
+          -2.525,
+          9.3686
+        ],
+        [
+          -5.8013,
+          -2.825,
+          9.3686
+        ],
+        [
+          -5.8013,
+          -2.525,
+          9.3686
+        ],
+        [
+          -11.5076,
+          -2.825,
+          -0.515
+        ],
+        [
+          -11.5076,
+          -2.525,
+          -0.515
+        ],
+        [
+          -5.8013,
+          -2.825,
+          -10.3986
+        ],
+        [
+          -5.8013,
+          -2.525,
+          -10.3986
+        ],
+        [
+          5.6113,
+          -2.825,
+          -10.3986
+        ],
+        [
+          5.6113,
+          -2.525,
+          -10.3986
+        ]
+      ],
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -5.395,
+        -2.825,
+        -9.6949
+      ],
+      "max": [
+        5.205,
+        -2.525,
+        -2.715
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -5.395,
+        -2.825,
+        1.685
+      ],
+      "max": [
+        5.205,
+        -2.525,
+        8.6649
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -5.395,
+        -2.825,
+        -2.715
+      ],
+      "max": [
+        -2.295,
+        -2.525,
+        1.685
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        2.105,
+        -2.825,
+        -2.715
+      ],
+      "max": [
+        5.205,
+        -2.525,
+        1.685
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        5.205,
+        -2.825,
+        -7.3999
+      ],
+      "max": [
+        6.53,
+        -2.525,
+        6.3699
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -6.72,
+        -2.825,
+        -7.3999
+      ],
+      "max": [
+        -5.395,
+        -2.525,
+        6.3699
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        6.53,
+        -2.825,
+        -5.1049
+      ],
+      "max": [
+        7.855,
+        -2.525,
+        4.0749
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -8.045,
+        -2.825,
+        -5.1049
+      ],
+      "max": [
+        -6.72,
+        -2.525,
+        4.0749
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        7.855,
+        -2.825,
+        -2.81
+      ],
+      "max": [
+        9.18,
+        -2.525,
+        1.78
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -9.37,
+        -2.825,
+        -2.81
+      ],
+      "max": [
+        -8.045,
+        -2.525,
+        1.78
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -5.855,
+        -2.525,
+        -6.275
+      ],
+      "max": [
+        -3.755,
+        -0.325,
+        -5.175
+      ],
+      "color": "#aeb2b2",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -3.755,
+        -1.025,
+        -5.975
+      ],
+      "max": [
+        -3.725,
+        -0.725,
+        -5.475
+      ],
+      "color": "#ffd8a0",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -5.855,
+        -2.525,
+        -3.475
+      ],
+      "max": [
+        -3.755,
+        -0.325,
+        -2.375
+      ],
+      "color": "#aeb2b2",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -3.755,
+        -1.025,
+        -3.175
+      ],
+      "max": [
+        -3.725,
+        -0.725,
+        -2.675
+      ],
+      "color": "#ffd8a0",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -5.855,
+        -2.525,
+        2.125
+      ],
+      "max": [
+        -3.755,
+        -0.325,
+        3.225
+      ],
+      "color": "#aeb2b2",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -3.755,
+        -1.025,
+        2.425
+      ],
+      "max": [
+        -3.725,
+        -0.725,
+        2.925
+      ],
+      "color": "#ffd8a0",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -3.055,
+        -2.525,
+        -6.275
+      ],
+      "max": [
+        -0.955,
+        -0.325,
+        -5.175
+      ],
+      "color": "#aeb2b2",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -0.955,
+        -1.025,
+        -5.975
+      ],
+      "max": [
+        -0.925,
+        -0.725,
+        -5.475
+      ],
+      "color": "#ffd8a0",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.255,
+        -2.525,
+        -6.275
+      ],
+      "max": [
+        1.845,
+        -0.325,
+        -5.175
+      ],
+      "color": "#aeb2b2",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        1.845,
+        -1.025,
+        -5.975
+      ],
+      "max": [
+        1.875,
+        -0.725,
+        -5.475
+      ],
+      "color": "#ffd8a0",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        2.545,
+        -2.525,
+        -6.275
+      ],
+      "max": [
+        4.645,
+        -0.325,
+        -5.175
+      ],
+      "color": "#aeb2b2",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        4.645,
+        -1.025,
+        -5.975
+      ],
+      "max": [
+        4.675,
+        -0.725,
+        -5.475
+      ],
+      "color": "#ffd8a0",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -3.895,
+        3.215,
+        -4.315
+      ],
+      "max": [
+        -3.095,
+        3.275,
+        -3.515
+      ],
+      "color": "#ffd8a0",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        2.905,
+        3.215,
+        -4.315
+      ],
+      "max": [
+        3.705,
+        3.275,
+        -3.515
+      ],
+      "color": "#ffd8a0",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -3.895,
+        3.215,
+        2.485
+      ],
+      "max": [
+        -3.095,
+        3.275,
+        3.285
+      ],
+      "color": "#ffd8a0",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        2.905,
+        3.215,
+        2.485
+      ],
+      "max": [
+        3.705,
+        3.275,
+        3.285
+      ],
+      "color": "#ffd8a0",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "j0",
+      "at": [
+        -0.095,
+        -2.675,
+        -2.715
+      ],
+      "dir": "+z"
+    }
+  ]
+}

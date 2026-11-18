@@ -93,7 +93,7 @@ internal static class StationLook
         Shaped(p, cx - r, cy - r, cz - r, cx + r, cy + r, cz + r, color, finish, "sphere");
 
     /// <summary>A square bar from a to b, t across (a truss's diagonal): a hull of its eight corners, drawn only.</summary>
-    public static void Bar(Part p, double[] a, double[] b, double t, string color, string finish)
+    public static void Bar(Part p, double[] a, double[] b, double t, string color, string finish, bool glow = false)
     {
         var d = Unit(Sub(b, a));
         var helper = Math.Abs(d[1]) < 0.9 ? new double[] { 0, 1, 0 } : [1, 0, 0];
@@ -103,14 +103,29 @@ internal static class StationLook
         foreach (var e in new[] { a, b })
             foreach (var su in new[] { -1, 1 })
                 foreach (var sv in new[] { -1, 1 })
-                {
-                    var q = P(e[0] + (u[0] * su + v[0] * sv) * t / 2, e[1] + (u[1] * su + v[1] * sv) * t / 2, e[2] + (u[2] * su + v[2] * sv) * t / 2);
-                    pts.Add([R(q[0]), R(q[1]), R(q[2])]);
-                }
+                    pts.Add([e[0] + (u[0] * su + v[0] * sv) * t / 2, e[1] + (u[1] * su + v[1] * sv) * t / 2, e[2] + (u[2] * su + v[2] * sv) * t / 2]);
+        Hull(p, pts, color, finish, glow);
+    }
+
+    /// <summary>A drawn-only convex hull of points in the station's frame (slanted plates, hex prisms, tapered panels).</summary>
+    public static void Hull(Part p, IReadOnlyList<double[]> world, string color, string? finish, bool glow = false)
+    {
+        var pts = world.Select(q => P(q[0], q[1], q[2])).Select(q => new[] { R(q[0]), R(q[1]), R(q[2]) }).ToList();
         double[] mn = [.. Enumerable.Range(0, 3).Select(k => pts.Min(q => q[k]))], mx = [.. Enumerable.Range(0, 3).Select(k => pts.Max(q => q[k]))];
-        var shape = Kw(("shape", "hull"), ("points", pts.Select(q => (object?)q.Select(x => (object?)x).ToList()).ToList()), ("finish", finish));
+        var shape = Kw(("shape", "hull"), ("points", pts.Select(q => (object?)q.Select(x => (object?)x).ToList()).ToList()));
+        if (glow)
+        {
+            shape["glow"] = true;
+            shape["paintable"] = false;
+        }
+        else if (finish != null)
+            shape["finish"] = finish;
         p.Add(Box(mn, mx, color, detail: true, shape: shape));
     }
+
+    /// <summary>A glowing cylinder (a furnace's vent ring, a hot pipe).</summary>
+    public static void GlowCyl(Part p, double cx, double cz, double r, double y0, double y1, string color) =>
+        Shaped(p, cx - r, y0, cz - r, cx + r, y1, cz + r, color, Steel, "cylinder", "+y", ("glow", true), ("paintable", false));
 
     public static void Sock(Part p, string name, double x, double y, double z, string dir, Cls? cls = null) => p.Sock(name, P(x, y, z), dir, cls);
 
@@ -174,7 +189,7 @@ internal static class StationLook
     }
 
     /// <summary>Roof clutter: vent stacks, plant boxes and a pipe run, kept out of a middle square (keep) where something stands on it.</summary>
-    public static void Greebles(Part p, double x0, double x1, double z0, double z1, double y, double keep, int n, int seed)
+    public static void Greebles(Part p, double x0, double x1, double z0, double z1, double y, double keep, int n, int seed, double kx = 0, double kz = 0)
     {
         var placed = 0;
         for (var k = 0; placed < n && k < n * 6; k++)
@@ -183,7 +198,7 @@ internal static class StationLook
             var z = z0 + 1.5 + Rnd(seed, k + 300) * (z1 - z0 - 5);
             var w = 1.2 + Rnd(seed, k + 600) * 2.4;
             var d = 1.0 + Rnd(seed, k + 900) * 2.0;
-            if (x + w > -keep && x < keep && z + d > -keep && z < keep)
+            if (x + w > kx - keep && x < kx + keep && z + d > kz - keep && z < kz + keep)
                 continue;
             var kind = Rnd(seed, k + 1200);
             if (kind < 0.45)

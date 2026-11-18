@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Caledon Highport",
-  "description": "Caledon Highport, the first space station: a 310 m tower with gravity down its spine. Pads for small craft on top, Zero Day berths on arms north and south, Magpie berths on arms east and west with ore chutes to the refineries, Dray aprons with a container lift into the warehouse; the commons and the ops crown above the docks, the tank farm, engineering, the reactor and its radiators below.",
+  "description": "Caledon Highport, the first space station: a 310 m tower with gravity down its spine. A hex commons of seven towers with landing pads for small craft on their roofs, Zero Day berths on arms north and south, Magpie berths on arms east and west with ore chutes to the refineries, Dray aprons with a container lift into the warehouse; the ops crown above them, the tank farm, engineering, the reactor and its radiators below.",
   "steps": [
     {
       "part": "Highport Thrust Block"
@@ -55,30 +55,6 @@
       "by": "j0"
     },
     {
-      "part": "Highport Radiator E 1",
-      "on": 2,
-      "socket": "j7",
-      "by": "j0"
-    },
-    {
-      "part": "Highport Radiator W 1",
-      "on": 2,
-      "socket": "j8",
-      "by": "j0"
-    },
-    {
-      "part": "Highport Radiator N 1",
-      "on": 2,
-      "socket": "j9",
-      "by": "j0"
-    },
-    {
-      "part": "Highport Radiator S 1",
-      "on": 2,
-      "socket": "j10",
-      "by": "j0"
-    },
-    {
       "part": "Highport Engineering Roof",
       "on": 3,
       "socket": "j1",
@@ -97,49 +73,73 @@
       "by": "j1"
     },
     {
-      "part": "Highport Radiator E 2",
-      "on": 9,
-      "socket": "j3",
+      "part": "Highport Radiator N 1",
+      "on": 3,
+      "socket": "j7",
       "by": "j0"
     },
     {
-      "part": "Highport Radiator W 2",
-      "on": 10,
-      "socket": "j3",
+      "part": "Highport Radiator W 1",
+      "on": 4,
+      "socket": "j7",
       "by": "j0"
     },
     {
-      "part": "Highport Radiator N 2",
-      "on": 11,
-      "socket": "j3",
+      "part": "Highport Radiator S 1",
+      "on": 5,
+      "socket": "j7",
       "by": "j0"
     },
     {
-      "part": "Highport Radiator S 2",
-      "on": 12,
-      "socket": "j3",
+      "part": "Highport Radiator E 1",
+      "on": 6,
+      "socket": "j7",
       "by": "j0"
     },
     {
       "part": "Highport Spine 1",
-      "on": 13,
-      "socket": "j10",
+      "on": 9,
+      "socket": "j6",
       "by": "j0"
     },
     {
-      "part": "Highport Radiator E 3",
+      "part": "Highport Radiator N 2",
+      "on": 12,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Highport Radiator W 2",
+      "on": 13,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Highport Radiator S 2",
+      "on": 14,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Highport Radiator E 2",
+      "on": 15,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Highport Tank Frame",
       "on": 16,
       "socket": "j1",
       "by": "j0"
     },
     {
-      "part": "Highport Radiator W 3",
+      "part": "Highport Radiator N 3",
       "on": 17,
       "socket": "j1",
       "by": "j0"
     },
     {
-      "part": "Highport Radiator N 3",
+      "part": "Highport Radiator W 3",
       "on": 18,
       "socket": "j1",
       "by": "j0"
@@ -151,62 +151,62 @@
       "by": "j0"
     },
     {
-      "part": "Highport Tank Frame",
+      "part": "Highport Radiator E 3",
       "on": 20,
       "socket": "j1",
       "by": "j0"
     },
     {
       "part": "Highport Tank 1",
-      "on": 25,
+      "on": 21,
       "socket": "j1",
       "by": "j0"
     },
     {
       "part": "Highport Tank 2",
-      "on": 25,
+      "on": 21,
       "socket": "j2",
       "by": "j0"
     },
     {
       "part": "Highport Tank 3",
-      "on": 25,
+      "on": 21,
       "socket": "j3",
       "by": "j0"
     },
     {
       "part": "Highport Tank 4",
-      "on": 25,
+      "on": 21,
       "socket": "j4",
       "by": "j0"
     },
     {
       "part": "Highport Tank 5",
-      "on": 25,
+      "on": 21,
       "socket": "j5",
       "by": "j0"
     },
     {
       "part": "Highport Tank 6",
-      "on": 25,
+      "on": 21,
       "socket": "j6",
       "by": "j0"
     },
     {
       "part": "Highport Tank 7",
-      "on": 25,
+      "on": 21,
       "socket": "j7",
       "by": "j0"
     },
     {
       "part": "Highport Tank 8",
-      "on": 25,
+      "on": 21,
       "socket": "j8",
       "by": "j0"
     },
     {
       "part": "Highport Spine 2",
-      "on": 25,
+      "on": 21,
       "socket": "j9",
       "by": "j0"
     },
@@ -415,69 +415,9 @@
       "by": "j0"
     },
     {
-      "part": "Highport Miner Cradle WL 1",
-      "on": 64,
-      "socket": "j2",
-      "by": "j0"
-    },
-    {
-      "part": "Highport Miner Cradle WL 2",
-      "on": 64,
-      "socket": "j3",
-      "by": "j0"
-    },
-    {
-      "part": "Highport Miner Cradle WR 1",
-      "on": 64,
-      "socket": "j4",
-      "by": "j0"
-    },
-    {
-      "part": "Highport Miner Cradle WR 2",
-      "on": 64,
-      "socket": "j5",
-      "by": "j0"
-    },
-    {
-      "part": "Highport Miner Gantry W",
-      "on": 64,
-      "socket": "j6",
-      "by": "j0"
-    },
-    {
       "part": "Highport Miner Arm E 3",
       "on": 65,
       "socket": "j1",
-      "by": "j0"
-    },
-    {
-      "part": "Highport Miner Cradle EL 1",
-      "on": 65,
-      "socket": "j2",
-      "by": "j0"
-    },
-    {
-      "part": "Highport Miner Cradle EL 2",
-      "on": 65,
-      "socket": "j3",
-      "by": "j0"
-    },
-    {
-      "part": "Highport Miner Cradle ER 1",
-      "on": 65,
-      "socket": "j4",
-      "by": "j0"
-    },
-    {
-      "part": "Highport Miner Cradle ER 2",
-      "on": 65,
-      "socket": "j5",
-      "by": "j0"
-    },
-    {
-      "part": "Highport Miner Gantry E",
-      "on": 65,
-      "socket": "j6",
       "by": "j0"
     },
     {
@@ -487,440 +427,782 @@
       "by": "j0"
     },
     {
-      "part": "Highport Miner Cradle WL 3",
+      "part": "Highport Miner Arm W 4",
       "on": 68,
       "socket": "j1",
       "by": "j0"
     },
     {
-      "part": "Highport Miner Cradle WR 3",
+      "part": "Highport Miner Cradle WL 1",
       "on": 68,
       "socket": "j2",
       "by": "j0"
     },
     {
-      "part": "Highport Miner Cradle EL 3",
-      "on": 74,
+      "part": "Highport Miner Cradle WL 2",
+      "on": 68,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Highport Miner Cradle WR 1",
+      "on": 68,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Highport Miner Cradle WR 2",
+      "on": 68,
+      "socket": "j5",
+      "by": "j0"
+    },
+    {
+      "part": "Highport Miner Gantry W",
+      "on": 68,
+      "socket": "j6",
+      "by": "j0"
+    },
+    {
+      "part": "Highport Miner Arm E 4",
+      "on": 69,
       "socket": "j1",
       "by": "j0"
     },
     {
-      "part": "Highport Miner Cradle ER 3",
-      "on": 74,
+      "part": "Highport Miner Cradle EL 1",
+      "on": 69,
       "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Highport Miner Cradle EL 2",
+      "on": 69,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Highport Miner Cradle ER 1",
+      "on": 69,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Highport Miner Cradle ER 2",
+      "on": 69,
+      "socket": "j5",
+      "by": "j0"
+    },
+    {
+      "part": "Highport Miner Gantry E",
+      "on": 69,
+      "socket": "j6",
       "by": "j0"
     },
     {
       "part": "Highport Frigate Collar Floor",
-      "on": 80,
+      "on": 70,
       "socket": "j1",
       "by": "j0"
     },
     {
+      "part": "Highport Miner Arm W 5",
+      "on": 71,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Highport Miner Cradle WL 3",
+      "on": 71,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Highport Miner Cradle WR 3",
+      "on": 71,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Highport Miner Arm E 5",
+      "on": 77,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Highport Miner Cradle EL 3",
+      "on": 77,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Highport Miner Cradle ER 3",
+      "on": 77,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
       "part": "Highport Frigate Collar Wall N",
-      "on": 85,
+      "on": 83,
       "socket": "j1",
       "by": "j0"
     },
     {
       "part": "Highport Frigate Collar Wall W",
-      "on": 85,
+      "on": 83,
       "socket": "j2",
       "by": "j0"
     },
     {
       "part": "Highport Frigate Collar Wall S",
-      "on": 85,
+      "on": 83,
       "socket": "j3",
       "by": "j0"
     },
     {
       "part": "Highport Frigate Collar Wall E",
-      "on": 85,
+      "on": 83,
       "socket": "j4",
       "by": "j0"
     },
     {
       "part": "Highport Frigate Collar Deck 2",
-      "on": 85,
+      "on": 83,
       "socket": "j5",
       "by": "j0"
     },
     {
       "part": "Highport Frigate Collar Core",
-      "on": 85,
+      "on": 83,
       "socket": "j6",
       "by": "j0"
     },
     {
       "part": "Highport Frigate Collar Roof",
-      "on": 86,
+      "on": 90,
       "socket": "j1",
       "by": "j0"
     },
     {
       "part": "Highport Frigate Collar Deck 3",
-      "on": 86,
+      "on": 90,
       "socket": "j5",
       "by": "j0"
     },
     {
       "part": "Highport Frigate Collar Deck 4",
-      "on": 86,
+      "on": 90,
       "socket": "j6",
       "by": "j0"
     },
     {
       "part": "Highport Frigate Collar Deck 5",
-      "on": 86,
+      "on": 90,
       "socket": "j7",
       "by": "j1"
     },
     {
       "part": "Highport Frigate Arm N 1",
-      "on": 86,
+      "on": 90,
       "socket": "j8",
       "by": "j0"
     },
     {
       "part": "Highport Frigate Arm S 1",
-      "on": 88,
+      "on": 92,
       "socket": "j8",
       "by": "j0"
     },
     {
       "part": "Highport Spine 5",
-      "on": 92,
+      "on": 96,
       "socket": "j6",
       "by": "j0"
     },
     {
       "part": "Highport Frigate Arm N 2",
-      "on": 96,
+      "on": 100,
       "socket": "j1",
       "by": "j0"
     },
     {
       "part": "Highport Frigate Arm S 2",
-      "on": 97,
+      "on": 101,
       "socket": "j1",
       "by": "j0"
     },
     {
-      "part": "Highport Commons Floor",
-      "on": 98,
+      "part": "Highport Concourse Floor",
+      "on": 102,
       "socket": "j1",
       "by": "j0"
     },
     {
       "part": "Highport Frigate Arm N 3",
-      "on": 99,
+      "on": 103,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Highport Frigate Arm S 3",
+      "on": 104,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Highport Concourse Walls",
+      "on": 105,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Highport Concourse Core",
+      "on": 105,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Highport Frigate Arm N 4",
+      "on": 106,
       "socket": "j1",
       "by": "j0"
     },
     {
       "part": "Highport Frigate Cradle NL 1",
-      "on": 99,
+      "on": 106,
       "socket": "j2",
       "by": "j0"
     },
     {
       "part": "Highport Frigate Cradle NR 1",
-      "on": 99,
+      "on": 106,
       "socket": "j3",
       "by": "j0"
     },
     {
       "part": "Highport Frigate Gantry N1",
-      "on": 99,
+      "on": 106,
       "socket": "j4",
       "by": "j0"
     },
     {
-      "part": "Highport Frigate Arm S 3",
-      "on": 100,
+      "part": "Highport Frigate Arm S 4",
+      "on": 107,
       "socket": "j1",
       "by": "j0"
     },
     {
       "part": "Highport Frigate Cradle SL 1",
-      "on": 100,
+      "on": 107,
       "socket": "j2",
       "by": "j0"
     },
     {
       "part": "Highport Frigate Cradle SR 1",
-      "on": 100,
+      "on": 107,
       "socket": "j3",
       "by": "j0"
     },
     {
       "part": "Highport Frigate Gantry S1",
-      "on": 100,
+      "on": 107,
       "socket": "j4",
       "by": "j0"
     },
     {
-      "part": "Highport Commons Wall N",
-      "on": 101,
+      "part": "Highport Concourse Roof",
+      "on": 108,
       "socket": "j1",
       "by": "j0"
     },
     {
-      "part": "Highport Commons Wall W",
-      "on": 101,
-      "socket": "j2",
-      "by": "j0"
-    },
-    {
-      "part": "Highport Commons Wall S",
-      "on": 101,
-      "socket": "j3",
-      "by": "j0"
-    },
-    {
-      "part": "Highport Commons Wall E",
-      "on": 101,
-      "socket": "j4",
-      "by": "j0"
-    },
-    {
-      "part": "Highport Commons Deck 2",
-      "on": 101,
-      "socket": "j5",
-      "by": "j0"
-    },
-    {
-      "part": "Highport Commons Core",
-      "on": 101,
-      "socket": "j6",
-      "by": "j0"
-    },
-    {
-      "part": "Highport Frigate Arm N 4",
-      "on": 102,
+      "part": "Highport Frigate Arm N 5",
+      "on": 110,
       "socket": "j1",
       "by": "j0"
     },
     {
       "part": "Highport Frigate Cradle NL 2",
-      "on": 102,
+      "on": 110,
       "socket": "j2",
       "by": "j0"
     },
     {
-      "part": "Highport Frigate Cradle NL 3",
-      "on": 102,
+      "part": "Highport Frigate Cradle NR 2",
+      "on": 110,
       "socket": "j3",
       "by": "j0"
     },
     {
-      "part": "Highport Frigate Cradle NR 2",
-      "on": 102,
+      "part": "Highport Frigate Gantry N2",
+      "on": 110,
       "socket": "j4",
       "by": "j0"
     },
     {
-      "part": "Highport Frigate Cradle NR 3",
-      "on": 102,
-      "socket": "j5",
-      "by": "j0"
-    },
-    {
-      "part": "Highport Frigate Gantry N2",
-      "on": 102,
-      "socket": "j6",
-      "by": "j0"
-    },
-    {
-      "part": "Highport Frigate Arm S 4",
-      "on": 106,
+      "part": "Highport Frigate Arm S 5",
+      "on": 114,
       "socket": "j1",
       "by": "j0"
     },
     {
       "part": "Highport Frigate Cradle SL 2",
-      "on": 106,
+      "on": 114,
       "socket": "j2",
       "by": "j0"
     },
     {
-      "part": "Highport Frigate Cradle SL 3",
-      "on": 106,
+      "part": "Highport Frigate Cradle SR 2",
+      "on": 114,
       "socket": "j3",
       "by": "j0"
     },
     {
-      "part": "Highport Frigate Cradle SR 2",
-      "on": 106,
+      "part": "Highport Frigate Gantry S2",
+      "on": 114,
       "socket": "j4",
       "by": "j0"
     },
     {
-      "part": "Highport Frigate Cradle SR 3",
-      "on": 106,
+      "part": "Highport Commons Hub Floor",
+      "on": 118,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Highport Hostel Floor",
+      "on": 118,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Highport Hydro Floor",
+      "on": 118,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Highport Market Floor",
+      "on": 118,
       "socket": "j5",
       "by": "j0"
     },
     {
-      "part": "Highport Frigate Gantry S2",
-      "on": 106,
+      "part": "Highport Clinic Floor",
+      "on": 118,
       "socket": "j6",
       "by": "j0"
     },
     {
-      "part": "Highport Commons Roof",
-      "on": 110,
+      "part": "Highport Exchange Floor",
+      "on": 118,
+      "socket": "j7",
+      "by": "j0"
+    },
+    {
+      "part": "Highport Canteen Floor",
+      "on": 118,
+      "socket": "j8",
+      "by": "j0"
+    },
+    {
+      "part": "Highport Frigate Arm N 6",
+      "on": 119,
       "socket": "j1",
       "by": "j0"
     },
     {
-      "part": "Highport Commons Deck 3",
-      "on": 110,
-      "socket": "j5",
+      "part": "Highport Frigate Cradle NL 3",
+      "on": 119,
+      "socket": "j2",
       "by": "j0"
     },
     {
-      "part": "Highport Commons Deck 4",
-      "on": 110,
-      "socket": "j6",
+      "part": "Highport Frigate Cradle NR 3",
+      "on": 119,
+      "socket": "j3",
       "by": "j0"
     },
     {
-      "part": "Highport Commons Deck 5",
-      "on": 110,
-      "socket": "j7",
+      "part": "Highport Frigate Arm S 6",
+      "on": 123,
+      "socket": "j1",
       "by": "j0"
     },
     {
-      "part": "Highport Commons Deck 6",
-      "on": 110,
-      "socket": "j8",
+      "part": "Highport Frigate Cradle SL 3",
+      "on": 123,
+      "socket": "j2",
       "by": "j0"
     },
     {
-      "part": "Highport Commons Deck 7",
-      "on": 110,
-      "socket": "j9",
+      "part": "Highport Frigate Cradle SR 3",
+      "on": 123,
+      "socket": "j3",
       "by": "j0"
     },
     {
-      "part": "Highport Commons Deck 8",
-      "on": 110,
-      "socket": "j10",
-      "by": "j1"
+      "part": "Highport Commons Hub Walls",
+      "on": 127,
+      "socket": "j1",
+      "by": "j0"
     },
     {
-      "part": "Highport Pad Deck N",
+      "part": "Highport Commons Hub Deck 2",
+      "on": 127,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Highport Commons Hub Core",
+      "on": 127,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Highport Hostel Walls",
       "on": 128,
-      "socket": "j6",
+      "socket": "j1",
       "by": "j0"
     },
     {
-      "part": "Highport Pad Deck S",
+      "part": "Highport Hostel Core",
       "on": 128,
-      "socket": "j7",
+      "socket": "j2",
       "by": "j0"
     },
     {
-      "part": "Highport Pad Deck W",
-      "on": 128,
-      "socket": "j8",
+      "part": "Highport Hydro Walls",
+      "on": 129,
+      "socket": "j1",
       "by": "j0"
     },
     {
-      "part": "Highport Pad Deck E",
-      "on": 128,
-      "socket": "j9",
+      "part": "Highport Hydro Core",
+      "on": 129,
+      "socket": "j2",
       "by": "j0"
     },
     {
-      "part": "Highport Pad Deck Mid",
-      "on": 128,
-      "socket": "j10",
+      "part": "Highport Market Walls",
+      "on": 130,
+      "socket": "j1",
       "by": "j0"
     },
     {
-      "part": "Highport Spine 6",
-      "on": 139,
-      "socket": "j5",
+      "part": "Highport Market Core",
+      "on": 130,
+      "socket": "j2",
       "by": "j0"
     },
     {
-      "part": "Highport Crown Floor",
+      "part": "Highport Clinic Walls",
+      "on": 131,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Highport Clinic Core",
+      "on": 131,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Highport Exchange Walls",
+      "on": 132,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Highport Exchange Core",
+      "on": 132,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Highport Canteen Walls",
+      "on": 133,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Highport Canteen Core",
+      "on": 133,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Highport Commons Hub Roof",
       "on": 140,
       "socket": "j1",
       "by": "j0"
     },
     {
-      "part": "Highport Crown Wall N",
+      "part": "Highport Commons Hub Deck 3",
       "on": 141,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Highport Commons Hub Deck 4",
+      "on": 142,
+      "socket": "j4",
+      "by": "j2"
+    },
+    {
+      "part": "Highport Commons Hub Deck 5",
+      "on": 142,
+      "socket": "j5",
+      "by": "j2"
+    },
+    {
+      "part": "Highport Commons Hub Deck 6",
+      "on": 142,
+      "socket": "j6",
+      "by": "j2"
+    },
+    {
+      "part": "Highport Commons Hub Deck 7",
+      "on": 142,
+      "socket": "j7",
+      "by": "j2"
+    },
+    {
+      "part": "Highport Commons Hub Deck 8",
+      "on": 142,
+      "socket": "j8",
+      "by": "j2"
+    },
+    {
+      "part": "Highport Commons Hub Deck 9",
+      "on": 142,
+      "socket": "j9",
+      "by": "j2"
+    },
+    {
+      "part": "Highport Commons Hub Deck 10",
+      "on": 142,
+      "socket": "j10",
+      "by": "j2"
+    },
+    {
+      "part": "Highport Hostel Roof",
+      "on": 143,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Highport Hostel Decks 2-6",
+      "on": 144,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Highport Hostel Deck 7",
+      "on": 144,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Highport Hydro Roof",
+      "on": 145,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Highport Hydro Decks 2-4",
+      "on": 146,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Highport Market Roof",
+      "on": 147,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Highport Market Decks 2-4",
+      "on": 148,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Highport Clinic Roof",
+      "on": 149,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Highport Clinic Decks 2-5",
+      "on": 150,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Highport Exchange Roof",
+      "on": 151,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Highport Exchange Decks 2-5",
+      "on": 152,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Highport Canteen Roof",
+      "on": 153,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Highport Canteen Decks 2-3",
+      "on": 154,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Highport Spine 6",
+      "on": 155,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Highport Market Top Floor",
+      "on": 169,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Highport Exchange Top Floor",
+      "on": 173,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Highport Crown Floor",
+      "on": 177,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Highport Market Top Walls",
+      "on": 178,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Highport Market Top Core",
+      "on": 178,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Highport Exchange Top Walls",
+      "on": 179,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Highport Exchange Top Core",
+      "on": 179,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Highport Crown Wall N",
+      "on": 180,
       "socket": "j1",
       "by": "j0"
     },
     {
       "part": "Highport Crown Wall W",
-      "on": 141,
+      "on": 180,
       "socket": "j2",
       "by": "j0"
     },
     {
       "part": "Highport Crown Wall S",
-      "on": 141,
+      "on": 180,
       "socket": "j3",
       "by": "j0"
     },
     {
       "part": "Highport Crown Wall E",
-      "on": 141,
+      "on": 180,
       "socket": "j4",
       "by": "j0"
     },
     {
       "part": "Highport Crown Deck 2",
-      "on": 141,
+      "on": 180,
       "socket": "j5",
       "by": "j0"
     },
     {
       "part": "Highport Crown Core",
-      "on": 141,
+      "on": 180,
       "socket": "j6",
       "by": "j0"
     },
     {
+      "part": "Highport Market Top Roof",
+      "on": 181,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Highport Market Top Decks 2-5",
+      "on": 182,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Highport Exchange Top Roof",
+      "on": 183,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Highport Exchange Top Deck 2",
+      "on": 184,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
       "part": "Highport Crown Roof",
-      "on": 142,
+      "on": 185,
       "socket": "j1",
       "by": "j0"
     },
     {
       "part": "Highport Crown Deck 3",
-      "on": 142,
+      "on": 185,
       "socket": "j5",
       "by": "j0"
     },
     {
       "part": "Highport Crown Deck 4",
-      "on": 142,
+      "on": 185,
       "socket": "j6",
       "by": "j0"
     },
     {
       "part": "Highport Crown Deck 5",
-      "on": 142,
+      "on": 185,
       "socket": "j7",
       "by": "j1"
     },
     {
       "part": "Highport Crown Band",
-      "on": 142,
+      "on": 185,
       "socket": "j8",
       "by": "j0"
     },
     {
       "part": "Highport Mast",
-      "on": 148,
+      "on": 195,
       "socket": "j6",
       "by": "j0"
     },
@@ -958,7 +1240,7 @@
     },
     {
       "part": "Docking Clamp Large",
-      "on": 76,
+      "on": 79,
       "socket": "clamp",
       "by": "-y",
       "config": {
@@ -972,7 +1254,7 @@
     },
     {
       "part": "Docking Clamp Large",
-      "on": 78,
+      "on": 81,
       "socket": "clamp",
       "by": "-y",
       "config": {
@@ -986,7 +1268,7 @@
     },
     {
       "part": "Docking Clamp Large",
-      "on": 70,
+      "on": 73,
       "socket": "clamp",
       "by": "-y",
       "config": {
@@ -1000,7 +1282,7 @@
     },
     {
       "part": "Docking Clamp Large",
-      "on": 72,
+      "on": 75,
       "socket": "clamp",
       "by": "-y",
       "config": {
@@ -1014,7 +1296,7 @@
     },
     {
       "part": "Docking Clamp Large",
-      "on": 117,
+      "on": 120,
       "socket": "clamp",
       "by": "-y",
       "config": {
@@ -1028,7 +1310,7 @@
     },
     {
       "part": "Docking Clamp Large",
-      "on": 119,
+      "on": 121,
       "socket": "clamp",
       "by": "-y",
       "config": {
@@ -1042,7 +1324,7 @@
     },
     {
       "part": "Docking Clamp Large",
-      "on": 123,
+      "on": 124,
       "socket": "clamp",
       "by": "-y",
       "config": {
@@ -1070,14 +1352,14 @@
     },
     {
       "part": "Docking Hatch",
-      "on": 135,
-      "socket": "pad0hatch",
+      "on": 164,
+      "socket": "padhatch",
       "by": "base"
     },
     {
       "part": "Docking Clamp Medium",
-      "on": 135,
-      "socket": "pad0clamp",
+      "on": 164,
+      "socket": "padclamp",
       "by": "-y",
       "config": {
         "sizeX": 14,
@@ -1092,14 +1374,14 @@
     },
     {
       "part": "Docking Hatch",
-      "on": 135,
-      "socket": "pad1hatch",
+      "on": 167,
+      "socket": "padhatch",
       "by": "base"
     },
     {
       "part": "Docking Clamp Medium",
-      "on": 135,
-      "socket": "pad1clamp",
+      "on": 167,
+      "socket": "padclamp",
       "by": "-y",
       "config": {
         "sizeX": 14,
@@ -1114,14 +1396,14 @@
     },
     {
       "part": "Docking Hatch",
-      "on": 135,
-      "socket": "pad2hatch",
+      "on": 191,
+      "socket": "padhatch",
       "by": "base"
     },
     {
       "part": "Docking Clamp Medium",
-      "on": 135,
-      "socket": "pad2clamp",
+      "on": 191,
+      "socket": "padclamp",
       "by": "-y",
       "config": {
         "sizeX": 14,
@@ -1136,14 +1418,14 @@
     },
     {
       "part": "Docking Hatch",
-      "on": 136,
-      "socket": "pad3hatch",
+      "on": 171,
+      "socket": "padhatch",
       "by": "base"
     },
     {
       "part": "Docking Clamp Medium",
-      "on": 136,
-      "socket": "pad3clamp",
+      "on": 171,
+      "socket": "padclamp",
       "by": "-y",
       "config": {
         "sizeX": 14,
@@ -1158,14 +1440,14 @@
     },
     {
       "part": "Docking Hatch",
-      "on": 136,
-      "socket": "pad4hatch",
+      "on": 193,
+      "socket": "padhatch",
       "by": "base"
     },
     {
       "part": "Docking Clamp Medium",
-      "on": 136,
-      "socket": "pad4clamp",
+      "on": 193,
+      "socket": "padclamp",
       "by": "-y",
       "config": {
         "sizeX": 14,
@@ -1180,58 +1462,14 @@
     },
     {
       "part": "Docking Hatch",
-      "on": 136,
-      "socket": "pad5hatch",
+      "on": 175,
+      "socket": "padhatch",
       "by": "base"
     },
     {
       "part": "Docking Clamp Medium",
-      "on": 136,
-      "socket": "pad5clamp",
-      "by": "-y",
-      "config": {
-        "sizeX": 14,
-        "sizeY": 8,
-        "sizeZ": 14,
-        "atY": 4.5,
-        "atX": -3.5,
-        "atZ": 3.5
-      },
-      "paint": "#d9a441",
-      "finish": "hazard paint"
-    },
-    {
-      "part": "Docking Hatch",
-      "on": 137,
-      "socket": "pad6hatch",
-      "by": "base"
-    },
-    {
-      "part": "Docking Clamp Medium",
-      "on": 137,
-      "socket": "pad6clamp",
-      "by": "-y",
-      "config": {
-        "sizeX": 14,
-        "sizeY": 8,
-        "sizeZ": 14,
-        "atY": 4.5,
-        "atX": -3.5,
-        "atZ": 3.5
-      },
-      "paint": "#d9a441",
-      "finish": "hazard paint"
-    },
-    {
-      "part": "Docking Hatch",
-      "on": 138,
-      "socket": "pad7hatch",
-      "by": "base"
-    },
-    {
-      "part": "Docking Clamp Medium",
-      "on": 138,
-      "socket": "pad7clamp",
+      "on": 175,
+      "socket": "padclamp",
       "by": "-y",
       "config": {
         "sizeX": 14,
