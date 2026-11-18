@@ -287,7 +287,8 @@ docs/sandbox/design/faction-controllers.md section 6.2, so he chose docking alon
   (where it ejects). The ship lines up `NavDockOver` (30 m) off the port's box (phase Flying, "LINING UP WITH THE PORT"),
   then closes on the box's middle at `NavDockSink` (2 m/s, Docking). An unarmed or unpowered port has it wait there
   (DockWait, "WAITING: THE PORT ISN'T ARMED OR HAS NO POWER"); after a minute at the port without being taken the order
-  gives up and says why.
+  gives up and says why. A station's berths are come at down their approach lanes instead (docs/sandbox/constructs/station.md
+  "Approach lanes"): round the station to the lane's mouth, then straight in.
 - **In a sky** the stabilizer's autopilot flies it (Waypoint mode, written only when the point has moved a metre), and
   the port takes it as it takes any craft: a clamp's tractor from its pull's reach, a bay or a lock once it is in the box
   and slow. While it lines up no tractor takes it (`Construct.DockAway` held a tick ahead): a Shuttle drawn in by the

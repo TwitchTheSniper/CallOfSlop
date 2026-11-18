@@ -37,6 +37,7 @@ public struct CRouteNode
     public Vector3 Pos;
     public ushort Host; // the part it is fixed to (its segment carries it: links on jointed parts move with them)
     public float Health; // the segment from the previous point to this node
+    public bool Buried; // rebuilt: that segment lies in a wall (ConstructRoutes.SegmentBuried: hidden, and a bullet doesn't find it)
 }
 
 /// <summary>
@@ -65,6 +66,7 @@ public struct CRoute
     public float Share0; // its share where it starts (1 from a part; at a junction, the parent's flow there split evenly)
     public float Share; // its share of the source's flow at its input (data copies: 1)
     public ushort Bends; // segments meeting at an angle (a shaft's U joints)
+    public bool EndBuried; // the last segment lies in a wall (ConstructRoutes.SegmentBuried)
     public float RayRun; // the longest run of ConstructRoutes.RayStride segments (0: too short to matter): rays skip a run they can't touch
 
     // Server state
@@ -138,6 +140,7 @@ public static partial class ConstructRoutes
     public const float AngleSlackDeg = 3.5f; // nodes sit on the 1 cm grid: a snapped bend is within this of its step
     public const float Grid = 0.05f; // the node grid on a construct (rest frame)
     public const float MinSegment = 0.08f; // a segment at least this long
+    public const float MinEndSegment = 0.02f; // ... but the one into a device or out of it (a cable's dip from a switch into the wall behind it)
     public const float MaxSegment = 8f; // and at most this long: the only limit on a link's length is between its nodes (user, 2026-11-04)
     public const float LeakLitres = 0.5f; // a cut fuel pipe loses this much a second while the tank holds any
     public const float ChuteSeconds = 1f; // a chute moves one item (or a load of bulk) a second
@@ -731,6 +734,7 @@ public static partial class ConstructRoutes
         c.ShaftEdgeCount = 0;
         c.PowerEdgeCount = 0;
         RebuildFlex(c);
+        RebuildBuried(c); // (which cable and pipe segments lie in a wall: ConstructRoutesWalls.cs)
         Span<byte> branches = stackalloc byte[c.RouteNodeCount + 1];
         branches.Clear();
         for (var k = 0; k < c.RouteCount; k++)
@@ -928,10 +932,12 @@ public static partial class ConstructRoutes
     /// a migrated wire or fuel line (no nodes, checked for reach only). <paramref name="checkFrom"/>: see <see cref="PathRule"/>.
     /// </summary>
     public static string? Check(ConstructWorld? world, Construct c, RouteType type, int from, byte fromPort, int parent, int parentSeg, Vector3 junction,
-        ReadOnlySpan<CRouteNode> nodes, int to, byte toPort, bool straight = false, int checkFrom = 1)
+        ReadOnlySpan<CRouteNode> nodes, int to, byte toPort, bool straight = false, int checkFrom = 1, bool tidy = false)
     {
         if (CheckEnds(world, c, type, from, fromPort, parent, parentSeg, junction, nodes.Length, to, toPort) is { } why)
             return why;
+        if (tidy && Unfixed(c, type, parent != 255 ? -1 : from, to, nodes, Math.Max(0, checkFrom - 1)) is { } loose)
+            return loose;
         if (type == RouteType.Conveyor && parent != 255)
             return "a conveyor doesn't branch: a piece can't split";
         // The geometry: every point in the rest frame (each segment at joint angle 0), checked by the one path rule the
@@ -1126,7 +1132,7 @@ public static partial class ConstructRoutes
         for (var i = 1; i < n; i++)
         {
             var len = Vector3.Distance(pts[i - 1], pts[i]);
-            if (!straight && len < MinSegment)
+            if (!straight && len < (i == 1 && !junctionStart || closed && i == n - 1 ? MinEndSegment : MinSegment))
                 return "those nodes are too close together";
             along[i] = along[i - 1] + len;
             if (half && along[i] > reach)
@@ -1149,11 +1155,12 @@ public static partial class ConstructRoutes
         var graceEnd = closed ? half ? HalfShaftGrace(c, hosts[n - 1], toPort, pts[n - 1], pts[n - 2], inRest) : Grace(radius) + ExitAlongIn(c, hosts[n - 1], pts[n - 1], pts[n - 2], inRest) : 0f;
         // Nodes don't sink into a part (deeper than the embedding forgiveness), outside the grace.
         var last = closed ? n - 1 : n;
+        var walls = Buryable(type); // (a cable or pipe may run inside walls, floors and frames: ConstructRoutesWalls.cs)
         for (var i = checkFrom; i < last; i++)
         {
             if (along[i] <= graceStart || closed && length - along[i] <= graceEnd)
                 continue;
-            if (NodeSinks(c, pts[i], radius, frame: frame) is { } inside)
+            if (NodeSinks(c, pts[i], radius, frame: frame, walls: walls) is { } inside)
                 return $"that node would sink into the {c.DefOf(inside).Name}: place it on the surface";
         }
         // Segments don't pass through solid parts (the output and input themselves excepted on the end segments, where it
@@ -1170,7 +1177,7 @@ public static partial class ConstructRoutes
             var d = (b - a) / len;
             var skipA = i == 1 ? hosts[0] : -1;
             var skipB = closed && i == n - 1 && !half ? hosts[n - 1] : -1; // (a half shaft ends on the hub: the rest of its suspension, the mount, is in the way like any part)
-            if (SegmentBlocked(c, a + d * t0, a + d * t1, radius, skipA, skipB, frame) is { } wall)
+            if (SegmentBlocked(c, a + d * t0, a + d * t1, radius, skipA, skipB, frame, walls) is { } wall)
                 return $"it would pass through the {c.DefOf(wall).Name}: route it round (or through an opening)";
         }
         // The type's angle rule.
@@ -1312,27 +1319,30 @@ public static partial class ConstructRoutes
     }
 
     /// <summary>The solid part a node of a link of <paramref name="radius"/> at <paramref name="p"/> sinks into past the embedding forgiveness (rest frame), or null.</summary>
-    public static int? NodeSinks(Construct c, Vector3 p, float radius, int skipA = -1, int skipB = -1, int frame = -1)
+    public static int? NodeSinks(Construct c, Vector3 p, float radius, int skipA = -1, int skipB = -1, int frame = -1, bool walls = false)
     {
         var limit = -(EmbedDepth(radius) + EmbedSlack);
-        if (!TreeFits(c, frame))
+        if (!TreeFits(c, frame) && !walls)
         {
             var sd = SignedDistance(c, p, skipA, skipB, out var part, frame);
             return part >= 0 && sd < limit ? part : null;
         }
+        var tree = TreeFits(c, frame);
         // (a big body: only a part whose bounds hold the point can hold it deep enough)
         var hits = Construct.PartScratch;
-        var n = c.PartsInBox(p, p, hits);
+        var n = tree ? c.PartsInBox(p, p, hits) : c.PartCount;
         var best = limit;
         int? found = null;
         for (var h = 0; h < n; h++)
         {
-            var i = hits[h];
+            var i = tree ? hits[h] : h;
             if (i == skipA || i == skipB || frame >= 0 && c.FreeformCount > 0 && c.FrameOf(c.Parts[i].Seg) != frame)
                 continue;
             var d = c.DefOf(i);
             for (var b = 0; b < d.SolidBoxes; b++)
             {
+                if (walls && WallBox(d, b))
+                    continue; // (a cable or pipe may lie in a wall: ConstructRoutesWalls.cs)
                 c.BoxOf(i, b, out var centre, out var half);
                 var q = Vector3.Abs(p - centre) - half;
                 var sd = Vector3.Max(q, Vector3.Zero).Length() + MathF.Min(MathF.Max(q.X, MathF.Max(q.Y, q.Z)), 0f);
@@ -1354,11 +1364,11 @@ public static partial class ConstructRoutes
     private static bool TreeFits(Construct c, int frame) => c.PartCount >= Construct.TreeMinParts && (c.FreeformCount == 0 || frame == 0);
 
     /// <summary>The solid part a segment of a link of <paramref name="radius"/> passes through past the embedding forgiveness (each box shrunk by <see cref="EmbedDepth"/>), or null.</summary>
-    public static int? SegmentBlocked(Construct c, Vector3 a, Vector3 b, float radius, int skipA, int skipB, int frame = -1) =>
-        Blocked(c, a, b, -(EmbedDepth(radius) + EmbedSlack), skipA, skipB, frame);
+    public static int? SegmentBlocked(Construct c, Vector3 a, Vector3 b, float radius, int skipA, int skipB, int frame = -1, bool walls = false) =>
+        Blocked(c, a, b, -(EmbedDepth(radius) + EmbedSlack), skipA, skipB, frame, walls);
 
     /// <summary>The solid part segment ab passes through (each box grown by <paramref name="grow"/>, shrunk when negative), or null.</summary>
-    public static int? Blocked(Construct c, Vector3 a, Vector3 b, float grow, int skipA, int skipB, int frame = -1)
+    public static int? Blocked(Construct c, Vector3 a, Vector3 b, float grow, int skipA, int skipB, int frame = -1, bool walls = false)
     {
         var d = b - a;
         var tree = TreeFits(c, frame);
@@ -1372,6 +1382,8 @@ public static partial class ConstructRoutes
             var def = c.DefOf(i);
             for (var k = 0; k < def.SolidBoxes; k++)
             {
+                if (walls && WallBox(def, k))
+                    continue; // (a cable or pipe may pass through and lie in a wall, a floor or a frame: ConstructRoutesWalls.cs)
                 c.BoxOf(i, k, out var centre, out var half);
                 var h = half + new Vector3(grow);
                 if (h.X <= 0 || h.Y <= 0 || h.Z <= 0)
@@ -1565,6 +1577,8 @@ public static partial class ConstructRoutes
         }
         pts[n] = next;
         hosts[n++] = host;
+        if (Tidies(type) && host != (parent != 255 ? -1 : from) && !IsFixing(c.DefOf(host)))
+            return FixingWhy(c, type, host);
         return PathRule(c, type, pts[..n], hosts[..n], parent != 255, parent != 255 ? (byte)255 : fromPort, false, 255, checkFrom: nodes.Length) // (only the new end: the rest was checked as it was laid)
             ?? (type == RouteType.Conveyor ? ConveyorTurns(c, pts[..n], hosts[..n], nodes.Length) : null);
     }
@@ -2014,6 +2028,8 @@ public static partial class ConstructRoutes
         if (host >= c.PartCount)
             return "a node must sit on this construct";
         ref var r = ref c.Routes[route];
+        if (Tidies(r.Type) && host != r.To && host != r.Source && !IsFixing(c.DefOf(host)))
+            return FixingWhy(c, r.Type, host);
         for (var k = 0; k < c.RouteCount; k++)
             if (c.Routes[k].Parent == route && c.Routes[k].ParentNode == node)
                 return "a branch starts at that node: move the branch first";
@@ -2121,8 +2137,11 @@ public static partial class ConstructRoutes
     /// <summary>The nearest link segment along a ray (world), within <paramref name="best"/>; true when one is nearer.</summary>
     private const int RayStride = 16;
 
-    public static bool Ray(Construct c, Vector3 origin, Vector3 dir, ref float best, out int route, out int seg, out Vector3 point)
+    public static bool Ray(Construct c, Vector3 origin, Vector3 dir, ref float best, out int route, out int seg, out Vector3 point, bool look = false, float reach = -1f)
     {
+        var buriedToo = look && LookBuried; // (the linking tool out: a link in a wall just behind the surface; a bullet, or anyone else's look, passes it)
+        if (reach < 0f)
+            reach = best; // (the ray's own length: a buried link is looked for behind the wall the ray already met, as far as it reaches)
         route = seg = -1;
         point = default;
         var found = false;
@@ -2147,11 +2166,18 @@ public static partial class ConstructRoutes
                     }
                 }
                 var b = WorldPoint(c, k, i);
-                var d2 = Geometry.ClosestSegmentSegment(origin, origin + dir * best, a, b, out var onRay, out var onSeg);
+                var buried = SegmentBuried(c, k, i);
+                if (buried && !buriedToo)
+                {
+                    a = b;
+                    continue;
+                }
+                var limit = buried ? MathF.Min(reach, best + BuriedLookDepth) : best;
+                var d2 = Geometry.ClosestSegmentSegment(origin, origin + dir * limit, a, b, out var onRay, out var onSeg);
                 if (d2 <= radius * radius)
                 {
                     var t = Vector3.Dot(onRay - origin, dir);
-                    if (t >= 0 && t < best)
+                    if (t >= 0 && t < limit)
                     {
                         best = t;
                         route = k;

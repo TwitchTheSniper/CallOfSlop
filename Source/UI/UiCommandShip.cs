@@ -253,7 +253,7 @@ public sealed partial class Ui
     /// <summary>A craft's call sign: what its flight computer is called, and its number.</summary>
     private string CmdName(Construct c)
     {
-        var key = c.Id | (long)(c.StabCount > 0 && c.Stabs[0].Part < c.PartCount ? c.Parts[c.Stabs[0].Part].Def : 0) << 16 | (c.IsStation ? 1L << 40 : 0);
+        var key = c.Id | (long)(c.StabCount > 0 && c.Stabs[0].Part < c.PartCount ? c.Parts[c.Stabs[0].Part].Def : 0) << 16 | (c.IsStation ? 1L << 40 | (long)(c.StationTitle.GetHashCode() & 0x3FFFFF) << 41 : 0);
         if (!_cmdNames.TryGetValue(c.Id, out var name) || name.Key != key)
         {
             var kind = "CRAFT";
@@ -672,7 +672,8 @@ public sealed partial class Ui
         var name = _cmdBodyNames.Length > cr.Primary ? _cmdBodyNames[cr.Primary] : body.Name.ToUpperInvariant();
         var height = !cr.Space && World.Map.Planetoid is { } pl ? pl.Altitude(c.WorldCom) : r.Length - body.Radius; // (in the sky: over the ground under it)
         var ground = !cr.Space ? c.Vel.Length() : v.Length;
-        k.Status = c.MooredTo != 0 && g.Constructs.Get(c.MooredTo) is { } moor ? "DOCKED AT " + CmdName(moor) // (the host's word: GameStations.cs)
+        k.Status = g.IsServer && g.HaulLine(c.Id) is { } haul ? haul // (a station hauler's leg: GameStationHaulers.cs; the host's own word)
+            : c.MooredTo != 0 && g.Constructs.Get(c.MooredTo) is { } moor ? "DOCKED AT " + CmdName(moor) // (the host's word: GameStations.cs)
             : c.SpaceAway != 0 ? "DEEP SPACE, ROUND " + name
             : cr.Space ? "IN SPACE, ROUND " + name
             : !c.HoverOn && ground < 1 ? "DOWN ON " + name

@@ -1,0 +1,391 @@
+using System.Numerics;
+using CallOfSlop.Space;
+
+namespace CallOfSlop;
+
+/// <summary>
+/// Stations in their worlds and the haulers between them (docs/sandbox/design/faction-controllers.md "Stations", phase S2; Karl,
+/// 2026-11-18: "Haulers from other neutral factions can then send ships to buy goods and take them back to their station", a second
+/// station "at a fixed place in another neutral faction's turf" over Glacier, "we will then start testing logistics runs with ships").
+/// <para>
+/// A station with a <c>"blueprint"</c> in Crew/Stations.json is built in its planet's world, on a circular orbit its <c>"orbit"</c> up,
+/// the first time that world is played without it (Glacier Watch: the Militia's, over Glacier); it stays with that world from then on.
+/// </para>
+/// <para>
+/// Each route in <c>"haulers"</c> keeps its <c>"count"</c> of real ships, crewed by its power: one sets out from whichever of its
+/// stations is in the world being played (one a minute at most, so a lost hauler is replaced). A hauler bound for a station in this
+/// world, out in its space, docks there with the command view's Dock order; one bound for a station in another world (or still out of
+/// reach, parked far off) flies an Orbit order to that station's height round its planet, between planets on the real trip planner and
+/// its own fuel, and trades there once it is on that circle. At each end it sells what it carries that the station buys, fills its
+/// tanks, buys the leg's goods (paid from its power's stock), waits and sets off on the next leg. The stock moves between the markets
+/// and the powers' books carry it. A hauler's route and leg are saved with its ship (Construct.HaulRoute), so a loaded world's haulers go on.
+/// </para>
+/// </summary>
+public sealed partial class Game
+{
+    private enum HaulStage : byte { Going, Moored, Orbiting }
+
+    private sealed class HaulRun
+    {
+        public ushort Ship;
+        public int Route;
+        public bool AtTo; // the leg it is on: false, to the route's first station ("from"); true, to its second ("to")
+        public HaulStage Stage;
+        public long Since, RetryAt;
+        public string Last = ""; // the last line logged for its leg (so a refusal repeated every try is logged once)
+    }
+
+    private readonly List<HaulRun> _hauls = new(8);
+
+    /// <summary>A hauler docks from this near its station (m); farther off it closes on a circle this much under or over the station's (m); a Dock order it gives up after this long (s).</summary>
+    private const float HaulDockFrom = 6000, HaulPhaseBy = 8000, HaulDockMost = 600;
+    private long[] _haulNext = []; // by route: when the next hauler may set out
+    private bool _stationsBuilt; // this world's stations were looked for (StationsBuildTick)
+    private bool _haulAdopt; // a world was loaded or landed in: take up its saved haulers (HaulAdopt)
+    private long _stationsBuildAt;
+
+    /// <summary>Host: the body of the station whose market is <paramref name="def"/>, in this world (0: none here).</summary>
+    private ushort StationBodyOf(int def)
+    {
+        foreach (var m in StationMarketsHere.Values)
+            if (m.Def == def && Constructs.Get(m.Body) is { Wreck: false, IsStation: true })
+                return m.Body;
+        return 0;
+    }
+
+    /// <summary>The body index of a station's planet in <paramref name="s"/>'s system (-1: not there).</summary>
+    private static int StationPlanet(SpaceSession s, StationDef d) => d.Planet.Length > 0 ? s.System.IndexOf(d.Planet) : -1;
+
+    /// <summary>
+    /// How near a station's planet a ship with a player seated aboard comes into that planet's world (m from its centre): out to the
+    /// station's orbit and 20 km past it, so they arrive in orbit beside it instead of only at the sky's edge (GameSpaceLanding.cs). 0: no station there.
+    /// </summary>
+    internal static double StationReach(Map m)
+    {
+        double reach = 0;
+        foreach (var d in StationMarkets.All)
+            if (d.Orbit > 0 && m.Planetoid is { } pl && d.Planet.Equals(m.Name, StringComparison.OrdinalIgnoreCase))
+                reach = Math.Max(reach, pl.Radius + d.Orbit + 20_000);
+        return reach;
+    }
+
+    /// <summary>
+    /// Server: a station built in orbit, nobody's, going round on a circular orbit <paramref name="r"/> m from <paramref name="centre"/>,
+    /// over <paramref name="up"/> with its ring level and its spindle down. Null: it didn't build (logged).
+    /// </summary>
+    private Construct? StationBuild(ConstructBuild.Blueprint bp, string name, Vector3 centre, Vector3 up, Vector3 fwd, float r, double mu)
+    {
+        var z = -fwd;
+        var x = Vector3.Cross(up, z);
+        var rot = Quaternion.Normalize(Quaternion.CreateFromRotationMatrix(new Matrix4x4(x.X, x.Y, x.Z, 0, up.X, up.Y, up.Z, 0, z.X, z.Y, z.Z, 0, 0, 0, 0, 1)));
+        var c = ConstructBuild.Build(Constructs, bp, centre + up * r, rot, out var why);
+        if (c == null)
+        {
+            Log($"[station] {(name.Length > 0 ? name : bp.Name)} didn't build in orbit: {why}");
+            return null;
+        }
+        c.Rebuild();
+        c.Owner = 255; // (nobody's)
+        c.StationTitle = name;
+        var speed = (float)Math.Sqrt(mu / r);
+        c.Vel = fwd * speed;
+        c.PrevPos = c.Pos;
+        c.Wake();
+        StationMarketOf(c);
+        return c;
+    }
+
+    /// <summary>
+    /// Host, once a second, a few seconds into a world: a station listed with a blueprint for this world's planet that isn't here is built,
+    /// its orbit up over the map's middle (Glacier Watch over Glacier). Once a world.
+    /// </summary>
+    private void StationsBuildTick()
+    {
+        if (_stationsBuilt || ServerTick < _stationsBuildAt || !SandboxOn)
+            return;
+        _stationsBuilt = true;
+        if (World.Map.Planetoid is not { } pl || GravityFrames.Point is not { } planet || !StarSystems.ForMap(World.Map.Name, out var e, out var body))
+            return;
+        var all = StationMarkets.All;
+        for (var d = 0; d < all.Length; d++)
+        {
+            var def = all[d];
+            if (def.Blueprint.Length == 0 || !def.Planet.Equals(e.System.Bodies[body].Name, StringComparison.OrdinalIgnoreCase))
+                continue;
+            foreach (var c in Constructs.Bodies)
+                if (c.IsStation && !c.Wreck)
+                    StationMarketOf(c); // (a station this world kept has its market already)
+            if (StationBodyOf(d) != 0)
+                continue;
+            if (ConstructBuild.FindBlueprint(def.Blueprint) is not { } bp)
+            {
+                Log($"[station] {def.Name}: no blueprint {def.Blueprint}");
+                continue;
+            }
+            var up = -planet.Center;
+            up = up.LengthSquared() > 1 ? Vector3.Normalize(up) : Vector3.UnitY;
+            var side = Vector3.Cross(up, Vector3.UnitY);
+            if (side.LengthSquared() < 1e-4f)
+                side = Vector3.Cross(up, Vector3.UnitX);
+            var r = (float)pl.Radius + def.Orbit;
+            if (StationBuild(bp, def.Name, planet.Center, up, Vector3.Normalize(side), r, e.System.Bodies[body].Mu) is { } st)
+                Log($"[station] {def.Name} ({def.Blueprint}) built as construct {st.Id}, {def.Orbit / 1000:0.0} km up over {World.Map.Name}'s middle, held by {def.Power}");
+        }
+    }
+
+    /// <summary>
+    /// Server: a hauler for route <paramref name="ri"/> beside station <paramref name="st"/>, a kilometre and a half (and more for each
+    /// one out already) behind it on its orbit, going round with it, nobody's and crewed by the route's power. Null: none was built.
+    /// </summary>
+    private HaulRun? HaulerOut(int ri, Construct st, bool atTo)
+    {
+        var h = StationMarkets.Haulers[ri];
+        var power = CrewPowers.Find(h.Power);
+        if (power == 0 || ConstructBuild.FindBlueprint(h.Ship) is not { } bp || GravityFrames.Point is not { } planet)
+        {
+            Log($"[haul] route {ri} ({h.Power}): {(power == 0 ? "no such power" : "no blueprint " + h.Ship)}");
+            return null;
+        }
+        if (st.Dirty)
+            st.Rebuild();
+        var up = Vector3.Normalize(st.WorldCom - planet.Center);
+        var fwd = st.Vel.LengthSquared() > 1 ? Vector3.Normalize(st.Vel - up * Vector3.Dot(st.Vel, up)) : Vector3.Normalize(Vector3.Cross(up, Vector3.UnitX));
+        var z = -fwd;
+        var x = Vector3.Cross(up, z);
+        var rot = Quaternion.Normalize(Quaternion.CreateFromRotationMatrix(new Matrix4x4(x.X, x.Y, x.Z, 0, up.X, up.Y, up.Z, 0, z.X, z.Y, z.Z, 0, 0, 0, 0, 1)));
+        var c = ConstructBuild.Build(Constructs, bp, st.WorldCom - fwd * (1500f + 900f * _hauls.Count), rot, out var why);
+        if (c == null)
+        {
+            Log($"[haul] a {h.Ship} for {h.Power} didn't build in orbit: {why}");
+            return null;
+        }
+        c.Rebuild();
+        c.Owner = 255; // (nobody's: the power's)
+        c.Vel = st.Vel;
+        c.PrevPos = c.Pos;
+        c.Wake();
+        var crew = Crew.Crew(c, ShipAiMode.Strangers, faction: power);
+        if (Crew.Events.Count > 0)
+            CrewLog();
+        c.HaulRoute = (sbyte)ri;
+        c.HaulAtTo = atTo;
+        var r = new HaulRun { Ship = c.Id, Route = ri, AtTo = atTo, RetryAt = ServerTick + 5 * World.TickRate };
+        _hauls.Add(r);
+        Log($"[haul] construct {c.Id}, a {h.Ship} crewed by {h.Power} ({(crew != null ? Crew.Alive(crew) : 0)} aboard), sets out from {StationName(st)} on the run between {StationMarkets.All[h.From].Name} and {StationMarkets.All[h.To].Name}");
+        return r;
+    }
+
+    /// <summary>Host, once after a world is loaded or landed in: its saved haulers (Construct.HaulRoute) go on with their legs, so none is lost track of and no extra one sets out.</summary>
+    private void HaulAdopt(int routes)
+    {
+        _haulAdopt = false;
+        foreach (var c in Constructs.Bodies)
+        {
+            if (c.HaulRoute < 0 || c.PartCount == 0 || c.Wreck)
+                continue;
+            if (c.HaulRoute >= routes)
+            {
+                c.HaulRoute = -1; // (a route the data no longer has: a plain crewed ship now)
+                continue;
+            }
+            var known = false;
+            foreach (var run in _hauls)
+                known |= run.Ship == c.Id;
+            if (known)
+                continue;
+            _hauls.Add(new HaulRun { Ship = c.Id, Route = c.HaulRoute, AtTo = c.HaulAtTo, RetryAt = ServerTick + 5 * World.TickRate });
+            Log($"[haul] construct {c.Id} goes on hauling (route {c.HaulRoute}, bound for {StationMarkets.All[c.HaulAtTo ? StationMarkets.Haulers[c.HaulRoute].To : StationMarkets.Haulers[c.HaulRoute].From].Name})");
+        }
+    }
+
+    /// <summary>The route a hauler runs and the station it is bound for, for the command view's card (null: it is no hauler).</summary>
+    public string? HaulLine(ushort ship)
+    {
+        foreach (var run in _hauls)
+            if (run.Ship == ship)
+            {
+                var h = StationMarkets.Haulers[run.Route];
+                var to = StationMarkets.All[run.AtTo ? h.To : h.From].Name.ToUpperInvariant();
+                return run.Stage == HaulStage.Going ? "HAULING TO " + to : "TRADING AT " + to;
+            }
+        return null;
+    }
+
+    /// <summary>Host, once a second while space is up: the stations this world builds, each route's haulers, and each hauler's leg and trade.</summary>
+    private void StationHaulTick(SpaceSession s)
+    {
+        StationsBuildTick();
+        var routes = StationMarkets.Haulers;
+        if (routes.Length == 0)
+            return;
+        if (_haulNext.Length != routes.Length)
+        {
+            _haulNext = new long[routes.Length];
+            Array.Fill(_haulNext, ServerTick + 10 * World.TickRate); // (the first set out once the world has settled)
+        }
+        if (_haulAdopt)
+            HaulAdopt(routes.Length);
+        for (var i = _hauls.Count - 1; i >= 0; i--)
+            if (Constructs.Get(_hauls[i].Ship) is not { Wreck: false, PartCount: > 0 })
+            {
+                Log($"[haul] construct {_hauls[i].Ship} is gone: another sets out in a minute");
+                _haulNext[_hauls[i].Route] = Math.Max(_haulNext[_hauls[i].Route], ServerTick + 60 * World.TickRate);
+                _hauls.RemoveAt(i);
+            }
+        for (var ri = 0; ri < routes.Length; ri++)
+        {
+            if (ServerTick < _haulNext[ri])
+                continue;
+            var live = 0;
+            foreach (var run in _hauls)
+                if (run.Route == ri)
+                    live++;
+            if (live >= routes[ri].Count)
+                continue;
+            _haulNext[ri] = ServerTick + 60 * World.TickRate;
+            var from = StationBodyOf(routes[ri].From);
+            var to = StationBodyOf(routes[ri].To);
+            if (Constructs.Get(from != 0 ? from : to) is { SpaceAway: 0, SpaceShip: not 0 } st) // (a station here, in this world's space)
+                HaulerOut(ri, st, from == 0);
+        }
+        foreach (var run in _hauls)
+            if (Constructs.Get(run.Ship) is { } c)
+                HaulStep(s, run, c);
+    }
+
+    /// <summary>Host: one hauler's second: moored or on its station's circle, it trades and waits; else it is given its leg's order.</summary>
+    private void HaulStep(SpaceSession s, HaulRun run, Construct c)
+    {
+        var h = StationMarkets.Haulers[run.Route];
+        var def = run.AtTo ? h.To : h.From;
+        var d = StationMarkets.All[def];
+        var st = StationBodyOf(def);
+        var o = NavOf(c.Id);
+        var planet = StationPlanet(s, d);
+        var here = st != 0 && Constructs.Get(st) is { SpaceAway: 0, SpaceShip: not 0 }; // (the station is a body in this world's space)
+        var circling = !here && o is { Kind: NavKind.Orbit, Phase: NavPhase.Orbiting } && o.Body == planet;
+        if (run.Stage == HaulStage.Going && (st != 0 && c.MooredTo == st || circling))
+        {
+            run.Stage = circling ? HaulStage.Orbiting : HaulStage.Moored;
+            run.Since = ServerTick;
+            HaulTrade(run, c, h, def, st != 0 && c.MooredTo == st ? StationMarketOf(Constructs.Get(st)!) : MarketOfDef(def));
+            return;
+        }
+        if (run.Stage != HaulStage.Going)
+        {
+            if (ServerTick - run.Since < (long)(h.Wait * World.TickRate))
+                return;
+            run.AtTo = !run.AtTo; // (the next leg)
+            c.HaulAtTo = run.AtTo;
+            run.Stage = HaulStage.Going;
+            run.RetryAt = 0;
+            HaulStep(s, run, c);
+            return;
+        }
+        if (ServerTick < run.RetryAt)
+            return;
+        // Its order for this leg. A station here with the hauler out in this world's space: a circle a little under or over the station's
+        // (under when the station is ahead of it, so it gains on it; over when behind), which costs little fuel and brings it up beside it
+        // as time goes round, then the Dock order from a few kilometres off (2026-11-18: a Dock order flown straight across 40 km of
+        // orbit burned a Magpie's whole tank). Else the circle round the station's planet at its height.
+        var dock = here && c.SpaceAway == 0 && c.SpaceShip != 0;
+        var radius = planet >= 0 ? s.System.Bodies[planet].Radius + d.Orbit : 0;
+        var phasing = false;
+        if (dock && Constructs.Get(st) is { } sb && GravityFrames.Point is { } gp)
+        {
+            if (sb.Dirty)
+                sb.Rebuild();
+            var gap = sb.WorldCom - c.WorldCom;
+            if (gap.Length() > HaulDockFrom)
+            {
+                var stR = (sb.WorldCom - gp.Center).Length();
+                var ahead = Vector3.Dot(gap, c.Vel) > 0;
+                radius = stR + (ahead ? -HaulPhaseBy : HaulPhaseBy);
+                planet = s.Bubble.Body;
+                phasing = true;
+                dock = false;
+            }
+        }
+        if (dock ? o is { Kind: NavKind.Dock } && o.Target == st && ServerTick - run.Since < HaulDockMost * World.TickRate
+            : o is { Kind: NavKind.Orbit } && o.Body == planet && o.Phase != NavPhase.Short && (!phasing || Math.Abs(o.Radius - radius) < HaulPhaseBy * 2))
+            return; // (on its way)
+        if (dock && o is { Kind: NavKind.Dock })
+            NavEnd(o, c, "it didn't dock in time: it tries again"); // (a Dock order that stalls beside the port)
+        if (!dock && (planet < 0 || d.Orbit <= 0))
+        {
+            HaulSay(run, c, $"{d.Name} is in another world and its planet or orbit isn't known: it waits");
+            run.RetryAt = ServerTick + 60 * World.TickRate;
+            return;
+        }
+        if (c.Dirty)
+            c.Rebuild();
+        if (c.MooredTo != 0)
+            StationCastOff(c); // (an order isn't taken by a moored ship: NavDockCheck)
+        if (dock)
+            run.Since = ServerTick; // (when its Dock order was given)
+        var why = dock ? NavApply(s, c, NavKind.Dock, 0, Vec3d.Zero, 0, 255, h.Power + " hauler", null, out _, st)
+            : NavApply(s, c, NavKind.Orbit, planet, Vec3d.Zero, radius, 255, h.Power + " hauler", null, out _);
+        run.RetryAt = ServerTick + 30 * World.TickRate; // (an order that ends short of its station is given again after this)
+        HaulSay(run, c, why != null ? $"can't set out for {d.Name}: {why}"
+            : dock ? $"docks at {d.Name}"
+            : phasing ? FormattableString.Invariant($"closes on {d.Name} on a circle {(radius - s.System.Bodies[planet].Radius) / 1000:0} km up")
+            : FormattableString.Invariant($"sets out for {d.Name}, {d.Orbit / 1000:0} km up round {d.Planet}"));
+    }
+
+    private void HaulSay(HaulRun run, Construct c, string line)
+    {
+        if (line == run.Last)
+            return;
+        run.Last = line;
+        Log($"[haul] construct {c.Id} {line}");
+    }
+
+    /// <summary>Host: a hauler at its station (moored there, or on its circle when the station is in another world): it sells what it carries that the station buys, fills its tanks, then loads the leg's goods, paying from its power.</summary>
+    private void HaulTrade(HaulRun run, Construct c, StationHaulerDef h, int def, StationMarket? m)
+    {
+        if (m == null)
+            return;
+        var name = StationMarkets.All[def].Name;
+        var where = run.Stage == HaulStage.Orbiting ? $"{name} (on its circle: the station is in another world)" : name;
+        var pw = Controllers.Powers[CrewPowers.Find(h.Power)];
+        var cap = c.FuelCapacity();
+        if (c.Fuel < cap)
+        {
+            Log($"[haul] construct {c.Id} took on {cap - c.Fuel:0} L of fuel at {name}");
+            c.Fuel = cap; // (a station fills its haulers' tanks: a leg between planets takes most of a tank)
+        }
+        Span<int> sold = stackalloc int[StationMarkets.All[def].Goods.Length];
+        var value = StationTakeCargo(m, c, sold);
+        if (value > 0)
+        {
+            if (pw is { Fallen: false })
+            {
+                pw.Stock += value;
+                pw.Earned += value;
+            }
+            StationsVersion++;
+            Log($"[haul] construct {c.Id} ({h.Power}) sold {StationGoodsText(m, sold)} to {where} for {value:0} credits");
+        }
+        var goods = StationMarkets.All[def].Goods;
+        Span<int> bought = stackalloc int[goods.Length];
+        double cost = 0;
+        foreach (var mat in run.AtTo ? h.Back : h.Goods)
+            for (var k = 0; k < goods.Length; k++)
+                if (goods[k].Material == mat && goods[k].Sell > 0)
+                {
+                    var afford = pw is { Fallen: false } ? (int)Math.Min(int.MaxValue, Math.Max(0, Math.Floor((pw.Stock - cost) / goods[k].Sell))) : 0;
+                    var n = StationLoadCargo(m, c, k, afford);
+                    bought[k] += n;
+                    cost += n * (double)goods[k].Sell;
+                    break;
+                }
+        if (cost > 0 && pw != null)
+        {
+            pw.Stock -= cost;
+            pw.Spent += cost;
+            Log($"[haul] construct {c.Id} ({h.Power}) bought {StationGoodsText(m, bought)} at {where} for {cost:0} credits");
+        }
+        else if (value <= 0)
+            Log($"[haul] construct {c.Id} ({h.Power}) traded nothing at {where}");
+    }
+}

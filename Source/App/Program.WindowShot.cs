@@ -1853,7 +1853,7 @@ public static unsafe partial class Program
                 }
                 var ride = g.Constructs.Get(me.Sim.RideBody);
                 var height = World.Map.Planetoid is { } mpl ? (float)mpl.Altitude(me.Position) : me.Position.Y;
-                WsSay($"me: feet {me.Position:0.0}, {height:0} m up, alive {me.Alive}, grounded {me.Sim.Grounded}, stance {me.Sim.Stance}; velocity {me.Sim.Velocity.Length():0.0} m/s own (+{(ride == null ? 0 : ConstructRide.RiderSurfaceVel(ride, me.Sim, me.Position).Length()):0.0} the frame's), on segment {ConstructRide.Carrier(me.Sim)}; frame {(ride == null ? "none" : $"construct {ride.Id} at {ride.Vel.Length():0} m/s{(ride.SpaceShip != 0 ? $", in space (ship {ride.SpaceShip})" : "")}, local {me.Sim.RideLocal:0.00}")}; seated {g.SandboxHands.Hand(me.Id).Seated}; opening {g.OpeningLocal}");
+                WsSay($"me: feet {me.Position:0.0}, {height:0} m up, alive {me.Alive}, grounded {me.Sim.Grounded}, stance {me.Sim.Stance}; velocity {me.Sim.Velocity.Length():0.0} m/s own (+{(ride == null ? 0 : ConstructRide.RiderSurfaceVel(ride, me.Sim, me.Position).Length()):0.0} the frame's), on segment {ConstructRide.Carrier(me.Sim)}; frame {(ride == null ? "none" : $"construct {ride.Id} at {ride.Vel.Length():0} m/s{(ride.SpaceShip != 0 ? $", in space (ship {ride.SpaceShip})" : "")}, local {me.Sim.RideLocal:0.00}")}; seated {g.SandboxHands.Hand(me.Id).Seated}; opening {g.OpeningLocal}; eva {me.Eva}, pack fuel {me.Sim.JetFuel} of {Eva.MmuFull}");
                 return;
             }
             case "shot":

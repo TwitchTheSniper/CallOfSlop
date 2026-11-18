@@ -218,6 +218,7 @@ public sealed class PlayerRig
         _packDraw.Canopy = seated ? (byte)0 : p.Sim.Canopy;
         _packDraw.BodyFrame = upper;
         _packDraw.Mmu = EvaRender.Wears(p); // (a spacewalker's pack: EvaRender.cs)
+        _packDraw.Strapped = EvaRender.Strapped(p);
         if (_packDraw.Mmu)
             _packDraw.MmuFrame = EvaRender.OnBack(p) * upper;
         _packDraw.Time = time;

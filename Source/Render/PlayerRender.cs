@@ -80,7 +80,7 @@ public static class PlayerRender
         if (EvaRender.Wears(p))
         {
             var eo = new ToolGfxOut(g);
-            EvaRender.Emit(ref eo, EvaRender.OnBack(p) * up, p.Sim.Canopy == PilotGear.Burning, time); // Sandbox: a spacewalker's MMU on the suit's back
+            EvaRender.Emit(ref eo, EvaRender.OnBack(p) * up, p.Sim.Canopy == PilotGear.Burning, time, EvaRender.Strapped(p)); // Sandbox: a spacewalker's MMU on the suit's back
         }
         else if (p.Sim.Canopy != 0 && p.RenderSeat == SeatKind.None)
         {

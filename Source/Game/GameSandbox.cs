@@ -111,6 +111,7 @@ public enum CActKind : byte
     Crew, // u16 body, u32 member uid, u8 CrewOrder: a crew order from the Crew window (protocol 332; GameCrewHire.cs)
     Dampeners, // u16 body (the seat's): the seated player flips that ship's inertia dampeners (protocol 340; ConstructFlight.ToggleDampeners)
     MouseSteer, // u16 body (the seat's): the seated player takes that ship's nose with the mouse, or lets it go (protocol 349; ConstructFlight.ToggleMouseSteer)
+    MmuOff, // nothing: a worn MMU comes off the wearer's back where they are, a loose part holding its fuel (protocol 365; GameSandboxEva.cs)
 }
 
 /// <summary>
@@ -1418,6 +1419,8 @@ public sealed partial class Game
                     return "not in a seat of that craft";
                 return ConstructFlight.ToggleDampeners(Constructs, craft);
             }
+            case CActKind.MmuOff:
+                return SandboxMmuOff(p); // (GameSandboxEva.cs)
             case CActKind.MouseSteer:
             {
                 var body = r.U16();

@@ -10,6 +10,9 @@ public struct BodySnap
     public byte Owner, FrozenBy, CarrySeg;
     public bool Wreck, Asleep, Damaged, Pinned, Frozen, HoverOn;
     public int Root, Gear;
+    public string StationTitle; // (Construct.StationTitle, and its hauler's route below: saved as setting keys of its first part)
+    public sbyte HaulRoute;
+    public bool HaulAtTo;
     public float Fuel, Charge, Cap, HoverY; // (Cap: its Capacitor Banks' kJ, saved as a setting of its first part an older reader skips)
     public Vector3 Pos, Vel, AngVel, CarryPos;
     public Quaternion Rot, CarryRot;

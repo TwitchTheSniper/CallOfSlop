@@ -580,6 +580,9 @@ public sealed partial class SpaceStationParts
 
     // ---- the station
 
+    /// <summary>How much lower engineering, the radiators, the reactor and the drives sit for the frigate collar's level.</summary>
+    private const double FrigateDrop = 26;
+
     private static Kit RingStation()
     {
         var k = new Kit("Highport", HighportName);
@@ -611,22 +614,29 @@ public sealed partial class SpaceStationParts
         own.Add(Column(k, lat, "Spindle 3", -70, -96, 3, true));
         var dockB = DockCollar(k, lat, "Freight Collar", -96, -110);
         own.Add(dockB);
-        own.Add(Column(k, lat, "Spindle 4", -110, -128, 4, false));
-        var eng = Drum(k, lat, "Engineering", "Engineering at the spindle's foot: life support, water and power, the radiator booms' roots, the reactor under it.", 19, -128, -150, false, "engineering");
+        own.Add(Column(k, lat, "Spindle 4", -110, -122, 4, false));
+        var dockC = DockCollar(k, lat, "Frigate Collar", -122, -136);
+        own.Add(dockC);
+        // (below the frigate collar everything is FrigateDrop lower than before it had a level of its own)
+        const double d = FrigateDrop;
+        own.Add(Column(k, lat, "Spindle 5", -136, -128 - d, 5, true));
+        var eng = Drum(k, lat, "Engineering", "Engineering at the spindle's foot: life support, water and power, the radiator booms' roots, the reactor under it.", 19, -128 - d, -150 - d, false, "engineering");
         own.Add(eng);
-        Reactor(k, "Reactor", 8, -168, -158, 10, -150);
-        Thrusters(k, "Thrust Block", 11, -172, -168);
+        Reactor(k, "Reactor", 8, -168 - d, -158 - d, 10, -150 - d);
+        Thrusters(k, "Thrust Block", 11, -172 - d, -168 - d);
 
         var N = new ArmFrame(0, -1);
         var S = new ArmFrame(0, 1);
         var E = new ArmFrame(1, 0);
         var Wd = new ArmFrame(-1, 0);
 
-        // the dock collar: Zero Day berths on arms north and south, Magpie berths east and west, both sides of each arm
-        const double ybA = -66;
-        foreach (var (fr, nm, ship, off, s, gantry) in new[] { (N, "N", ZeroDay, 14.0, 18.0, true), (S, "S", ZeroDay, 14.0, 18.0, true), (E, "E", Magpie, 8.0, 13.0, false), (Wd, "W", Magpie, 8.0, 13.0, false) })
+        // one line of berths to a level (Karl 2026-11-18: "each z level can only have one line of ship docks"), so a ship comes in
+        // along its line from the arm's outer end: Magpie berths east and west on the dock collar, Zero Day berths north and south
+        // on the frigate collar, both sides of each arm
+        foreach (var (fr, nm, ship, off, s, gantry, yb, collar, dock) in new[] { (N, "N", ZeroDay, 14.0, 18.0, true, -132.0, "Frigate Collar", dockC), (S, "S", ZeroDay, 14.0, 18.0, true, -132.0, "Frigate Collar", dockC), (E, "E", Magpie, 8.0, 13.0, false, -66.0, "Dock Collar", dockA), (Wd, "W", Magpie, 8.0, 13.0, false, -66.0, "Dock Collar", dockA) })
         {
-            var r0 = lat.Reach("Dock Collar", dockA, fr.Dx, fr.Dz, ArmHalf);
+            var ybA = yb;
+            var r0 = lat.Reach(collar, dock, fr.Dx, fr.Dz, ArmHalf);
             var mid = r0 + off + ship.L / 2;
             var r1 = Math.Ceiling(mid + ship.L / 2 + 6);
             var who = ship == ZeroDay ? "Frigate" : "Miner";
@@ -638,6 +648,7 @@ public sealed partial class SpaceStationParts
                 Cradle(k, $"{who} Cradle {nm}{sn} 1", fr, side, mid - s, ybA, bottom, ship.W, ship.L, ship.H, false);
                 Cradle(k, $"{who} Cradle {nm}{sn} 2", fr, side, mid, ybA, bottom - 4, ship.W, ship.L, ship.H, true);
                 Cradle(k, $"{who} Cradle {nm}{sn} 3", fr, side, mid + s, ybA, bottom, ship.W, ship.L, ship.H, false);
+                ClampArmBase(k, $"{who} Clamp {nm}{sn}", fr, mid + side * (ship == ZeroDay ? 6 : 4), side, ybA, side, ship == ZeroDay ? ClampStowAlong : 11); // (SpaceStationClampArm.cs)
             }
             if (gantry)
                 Gantry(k, $"{who} Gantry {nm}", fr, mid - 1, ybA, ArmHalf + 3.5 + ship.W + 3, bottom + ship.H + 3);
@@ -658,6 +669,7 @@ public sealed partial class SpaceStationParts
                 Cradle(k, $"Freight Cradle {nm}{sn} 1", fr, side, mid - 22, ybB, bottom, Dray.W, Dray.L, Dray.H, false);
                 Cradle(k, $"Freight Cradle {nm}{sn} 2", fr, side, mid, ybB, bottom - 4, Dray.W, Dray.L, Dray.H, true);
                 Cradle(k, $"Freight Cradle {nm}{sn} 3", fr, side, mid + 22, ybB, bottom, Dray.W, Dray.L, Dray.H, false);
+                ClampArmBase(k, $"Freight Clamp {nm}{sn}", fr, mid + side * 6, side, ybB, side);
             }
         }
 
@@ -665,7 +677,7 @@ public sealed partial class SpaceStationParts
         foreach (var (fr, nm) in new[] { (N, "N"), (S, "S") })
         {
             var r0 = lat.Reach("engineering", eng, fr.Dx, fr.Dz, 2);
-            Radiator(k, $"Radiator {nm}", fr, r0, r0 + 66, -139, 12, 6, 3);
+            Radiator(k, $"Radiator {nm}", fr, r0, r0 + 66, -139 - FrigateDrop, 12, 6, 3);
         }
 
         lat.Emit();

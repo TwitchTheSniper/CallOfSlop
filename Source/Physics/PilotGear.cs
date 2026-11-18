@@ -205,8 +205,7 @@ public static class PilotGear
         var speed = rel.Length();
         if (speed < MmuStill || s.JetFuel == 0 || s.MantleTicks > 0 || !float.IsFinite(speed))
             return Vector3.Zero;
-        if (cmd.Seq % MmuBurnEvery == 0)
-            s.JetFuel--;
+        MmuBurn(ref s);
         s.Canopy = Burning;
         return rel * (MathF.Min(speed, MmuAccel * World.TickDt) / speed);
     }
@@ -225,9 +224,22 @@ public static class PilotGear
             return Vector3.Zero;
         MmuAxes(s.Position, cmd.Yaw, cmd.Pitch, cmd.Roll, out var fwd, out var right, out var upLook); // (the look in the gravity frame there: a planet's or an orbit's)
         var wish = fwd * f + right * r + upLook * u;
-        if (cmd.Seq % MmuBurnEvery == 0)
-            s.JetFuel--;
+        MmuBurn(ref s);
         s.Canopy = Burning; // (others see its puffs)
         return Vector3.Normalize(wish) * (MmuAccel * World.TickDt);
+    }
+
+    /// <summary>
+    /// A tick of the pack's push (a thrust or a brake): a unit of the tank every <see cref="MmuBurnEvery"/> of them, counted in
+    /// GearDelay (an ejection chute's, which a worn pack never opens, and sent with the move, so a client predicts the same).
+    /// Not by cmd.Seq: the host's own player's commands carry Seq 0, so its pack burned a unit every tick, twenty times too
+    /// fast (Karl, 2026-11-18: "incredibly inefficient").
+    /// </summary>
+    private static void MmuBurn(ref MoveState s)
+    {
+        if (++s.GearDelay < MmuBurnEvery)
+            return;
+        s.GearDelay = 0;
+        s.JetFuel--;
     }
 }

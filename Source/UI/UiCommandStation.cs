@@ -22,6 +22,7 @@ public sealed partial class Ui
         public string Held, Trade;
         public bool Trades;
         public string[] Goods;
+        public bool[] Buys; // good by good: can the local player buy it into the moored ship (stock left, the station sells it, they trade)
         public int GoodCount;
         public ushort Ship; // the moored ship the local player is aboard (0: none)
         public string ShipLine, SellLabel;
@@ -30,7 +31,7 @@ public sealed partial class Ui
 
     private static readonly string MarketHead = $"{"GOOD",-12}{"STOCK",9}   {"BUYS",6}   {"SELLS",6}   CR A UNIT";
 
-    private CmdStationText _cmdStation = new() { Held = "", Trade = "", Goods = new string[StationMarkets.MaxGoods], ShipLine = "", SellLabel = "" };
+    private CmdStationText _cmdStation = new() { Held = "", Trade = "", Goods = new string[StationMarkets.MaxGoods], Buys = new bool[StationMarkets.MaxGoods], ShipLine = "", SellLabel = "" };
 
     private void CmdStationRead(Game g, Construct c, double now)
     {
@@ -59,6 +60,7 @@ public sealed partial class Ui
         {
             var name = RecyclingTable.Current.NameOf(goods[i].Material).ToUpperInvariant();
             var full = goods[i].Buy > 0 && m.Stock[i] >= goods[i].Most;
+            k.Buys[k.GoodCount] = k.Trades && goods[i].Sell > 0 && m.Stock[i] > 0;
             k.Goods[k.GoodCount++] = string.Create(inv, $"{name,-12}{m.Stock[i],9:N0}   {(full ? "FULL" : goods[i].Buy.ToString("0.00", inv)),6}   {goods[i].Sell,6:0.00}");
         }
         // Aboard a ship moored here: what the station would pay for its bins.
@@ -88,7 +90,7 @@ public sealed partial class Ui
         ref var k = ref _cmdCard;
         ref var t = ref _cmdStation;
         var pad = 22 * _scale;
-        var w = 420 * _scale;
+        var w = 480 * _scale;
         var line = 19 * _scale;
         var rows = 6 + (k.Orbit.Length > 0 ? 1 : 0) + (t.GoodCount > 0 ? t.GoodCount + 2 : 0) + (t.Ship != 0 ? 3 : 1);
         var p0 = new float2(_cvOrg.X + _cvSize.X - pad - w, _cvOrg.Y + pad);
@@ -128,6 +130,10 @@ public sealed partial class Ui
             for (var i = 0; i < t.GoodCount; i++)
             {
                 CmdText(dl, new float2(x + col, y - 1 * _scale), 11.5f, CmdCyan, fade, t.Goods[i], 0, false);
+                // Aboard a ship moored here: BUY fills its bins with as much of the good as they hold and your credits pay for.
+                if (t.Ship != 0 && CmdButton(dl, new float2(p1.X - 66 * _scale, y - 2 * _scale), new float2(p1.X - 14 * _scale, y + 14 * _scale), "BUY",
+                        t.Buys[i] ? CmdGreen : CmdDim, fade, false, 10) && t.Buys[i])
+                    g.SandboxFaction(FactionOp.StationBuy, t.Ship, i);
                 y += line * 0.9f;
             }
             y += line * 0.3f;

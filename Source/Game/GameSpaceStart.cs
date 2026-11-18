@@ -86,12 +86,14 @@ public sealed partial class Game
         }
         c.Rebuild();
         c.Owner = 255; // (nobody's)
+        c.StationTitle = st.Name;
         var speed = (float)Math.Sqrt(mu / r);
         c.Vel = sf * speed;
         c.PrevPos = c.Pos;
         c.Wake();
-        Constructs.Events.Add($"opening: the station {st.Blueprint} as construct {c.Id}");
-        Log($"[opening] the station {st.Blueprint} is construct {c.Id}, {st.Orbit / 1000:0.0} km up, going round at {speed:0} m/s");
+        Constructs.Events.Add($"opening: the station {StationName(c)} as construct {c.Id}");
+        StationMarketOf(c);
+        Log($"[opening] the station {StationName(c)} ({st.Blueprint}) is construct {c.Id}, {st.Orbit / 1000:0.0} km up, going round at {speed:0} m/s");
     }
 
     /// <summary>
