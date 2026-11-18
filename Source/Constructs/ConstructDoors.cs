@@ -266,6 +266,8 @@ public static class ConstructDoors
             return "the door is wrecked";
         if (Locked(c, door))
             return "it's locked";
+        if (c.Parts[door].D.Door!.Gear != 0)
+            return "landing gear: B in a seat of the craft lowers and raises it"; // (worked as one: a single foot raised would drop that corner)
         var open = !TargetOpen(c, door);
         Command(world, c, k, open);
         for (var l = 0; l < c.LinkCount; l++)
@@ -416,8 +418,8 @@ public static class ConstructDoors
         for (var k = 0; k < c.DoorCount; k++)
             if (c.Parts[c.Doors[k].Part].D.Door is { Gear: 2, Held: true } dd && dd.Shift != Vector3.Zero && (c.Parts[c.Doors[k].Part].State & Moving) != 0)
                 f = MathF.Max(f, OpenFraction(c, k, byTicks: true));
-        if (f <= 0)
-            return;
+        if (f <= 0 || c.Anchored || c.Frozen)
+            return; // (a base held to the ground isn't lifted)
         var under = -FeetClear(c, f);
         if (under <= 0.001f || under > 2f)
             return; // (clear of the ground; or far under it, which isn't a pod's feet on the ground)
