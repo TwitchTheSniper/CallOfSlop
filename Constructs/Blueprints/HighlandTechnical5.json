@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 5 body 5 kit 5 wear 5, chassis 2 axles, front under the hood, inset 1 m, wishbone/swing arm, wing 0.5, cab style coachbuilt, language boat standard 2.06 m, flare 0.15, sheer 0.8, brow 0.79 1.5 m, tail 0.77 1 m, door left, cab boat cab, nose grille, fitting mascot, wear age 0.63 (1 rusty, 1 dirty, 0 sooty, 0 patched, 0 rusted out), body gun bay, cab enclosed, nose ram, rear porch, under stilts, layout gun bay 2 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Highland Technical 5",
-  "group": "Clan MacSlop",
+  "group": "Highland",
   "description": "A technical: a ram on the hood, an enclosed cab, a gun behind the cab, a drum on the rear porch. 1 gun.",
   "steps": [
     {"part": "Square Beam 1 m", "paint": "#33302b"},
@@ -70,10 +70,10 @@
     {"part": "Bull Bar", "on": 61, "socket": "front", "by": "back", "paint": "#c8102e"},
     {"part": "Plate Steel 0.5 m", "weld": {"on": 62, "pos": [0.131, 0.466, -1.289], "rot": [-0.7026, -0.0201, -0.0085, 0.7112]}, "paint": "#2b5a3a"},
     {"part": "Hull Loft (decoO UfV-)", "on": 61, "socket": "top", "by": "base"},
-    {"part": "Pipe Box", "on": 31, "socket": "top", "by": "base"},
-    {"part": "Saltire Flag", "on": 58, "socket": "front", "by": "base"},
-    {"part": "Saltire Flag", "on": 59, "socket": "front", "by": "base"},
-    {"part": "Saltire Flag", "on": 54, "socket": "front02", "by": "base"}
+    {"part": "Network Switch", "on": 58, "socket": "front", "by": "base"},
+    {"part": "Network Switch", "on": 59, "socket": "front", "by": "base"},
+    {"part": "Network Switch", "on": 54, "socket": "front02", "by": "base"},
+    {"part": "Satellite Dish", "on": 55, "socket": "front02", "by": "base"}
   ],
   "wires": [[29, 30], [30, 24], [44, 51], [51, 46]],
   "links": [

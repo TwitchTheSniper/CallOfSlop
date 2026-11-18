@@ -39,7 +39,29 @@ every path is the coordinator's; this file is what was done and what changed for
 
 ## 2. Old faction relics
 
-(in progress)
+- **The vehicle styles stay** (Raiders fly Bandit, Mercenaries British, Salvagers Scam, Traders IT and Highland): their
+  shapes, palettes and seeds are as they were. What went is the old factions' dressing and names: each style's Blueprints
+  tab group is now its style's name ("IT", "Scam", "Highland", "British"), its guns, model names (VehicleFamilyNames)
+  and room layouts are renamed for the faction that flies it, and its trophies, masts, gear and spikes are generic pieces.
+- **Bagpipes.** The Pipe Box, `ConstructPipes` (it ran once a second in the server tick), `MusicPipes` (the pipe tunes and
+  their renderer), the catalogue's pipe group, the "piper" slot (`Vehicle.Piper`) and the kit's Pipe Box check are gone.
+- **Parts gone** (with their generators' code, recipes and loot rows): the Highland set (HighlandParts: Saltire Flag,
+  Thistle, Coo Heid, Haggis on a Post, Wee Caber, Wee Keg, Whisky Cask, Pipe Box); British: Union Flag, Teapot, Rain
+  Gauge, Furled Brolly, Belisha Beacon, Queue Post, Pillar Box, Phone Box, Tea Urn; the scam call centre: Office Phone,
+  Call Headset, Gift Card Sign, Prize Wheel, Cubicle Desk; IT jokes: CRT Monitor, Employee of the Month, Cable Reel.
+  Kept as generic: Traffic Cone, Garden Gnome, Loudhailer, Phone Mast, Water Cooler, the Office set and the Fax Machine
+  (the office desk mechanic, GameSandboxOffice, still uses it), the Bandit set, the site, street and Brutalist parts.
+- **Buildings.** The Ministry's building helpers (BuildingParts.Ministry) went; the concrete palette is
+  BuildingParts.Concrete. The outposts went with section 3.
+- **Story.** Story/Factions (Ministry, Clan MacSlop, IT Department, Call Centre) and Scenarios/ITDepartment are gone; the
+  archived story loads with no factions (`--check-story` passes).
+- **Committed vehicles** regenerated once (188 of 238 changed, the 50 Bandit ones as they were; file and blueprint names
+  kept); `--gen-vehicles` is identical after, `--check-construct-parts` refuses nothing.
+- **Old saves.** A world or player blueprint with a removed part loses that part (REFUSED in the log, the body loads).
+  No wire change: parts are data, and part ids moved already under the protocol bump.
+- **Left alone.** Constructs/VehicleArmoury.json's per-style gun names (some are old-faction jokes: "Flak in a Teapot",
+  "Twa Dugs"); the planetoid and system descriptions (the map owner's, made by tools/planets/make_worlds.py); the office
+  desk's "IT Department" voice (Story/Office); the vehicle kit's history docs.
 
 ## 1. Levelling and prestige
 

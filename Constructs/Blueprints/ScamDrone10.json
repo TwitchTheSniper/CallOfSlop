@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Scam Drone 10",
-  "group": "The Call Centre",
+  "group": "Scam",
   "description": "A remote multirotor, 4 ducted fans on a hub. Fly it from a Remote Console on its channel: Shift climbs, Ctrl sinks, W A S D move and turn it.",
   "steps": [
     {"part": "6-Way Hub", "paint": "#2a2c30"},

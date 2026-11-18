@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 2 body 2 kit 2 wear 2, chassis 2 axles, front under the hood, inset 1 m, hydraulic/hydraulic, wing 0.5, cab style coachbuilt, language boat standard 2.38 m, flare 0.19, sheer 0.8, brow 0.76 1.5 m, tail 0.63 1 m, door left, cab boat cab, nose grille, fitting chrome grille, fitting mascot, lopsided left, wear age 0.72 (0 rusty, 2 dirty, 0 sooty, 0 patched, 0 rusted out), body gun bay+tank, cab enclosed, nose long hood, rear hitch, under tub, layout gun bay 2 m+tank 2 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Highland Scrap Tanker 2",
-  "group": "Clan MacSlop",
+  "group": "Highland",
   "description": "A scrap tanker: a long hood, an enclosed cab, a gun behind the cab, a big round tank of fuel, a tow hitch. 1 gun.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#2a2622"},
@@ -65,9 +65,10 @@
     {"part": "Hull Loft (hoodg UTV2WyWjXYXYVd ~6G06uM6ej5ez3P6017)", "on": 26, "socket": "+y", "by": "engine", "paint": "#e8e4d8"},
     {"part": "Hull Loft (decoG WbVvWj)", "on": 57, "socket": "front", "by": "base"},
     {"part": "Hull Loft (decoO UhV-)", "on": 57, "socket": "top", "by": "base"},
-    {"part": "Pipe Box", "on": 33, "socket": "top", "by": "base"},
     {"part": "Square Beam 0.5 m", "on": 9, "socket": "+y3", "by": "-z", "paint": "#2a2622"},
-    {"part": "Thistle", "on": 61, "socket": "+z", "by": "base"}
+    {"part": "Satellite Dish", "on": 60, "socket": "+z", "by": "base"},
+    {"part": "Square Beam 0.5 m", "on": 10, "socket": "+y3", "by": "-z", "paint": "#2a2622"},
+    {"part": "Network Switch", "on": 62, "socket": "+z", "by": "base"}
   ],
   "wires": [[31, 32], [32, 26], [47, 54], [54, 49], [54, 55]],
   "links": [

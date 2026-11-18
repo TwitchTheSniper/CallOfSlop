@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 3 body 3 kit 3 wear 3, chassis 2 axles, front under the hood, inset 1.25 m, wishbone/swing arm, wing 0.5, archetype bubble car, cab style pod, language bubble heavy 2.38 m, flare 0.28, crowned 0.6, brow 0.61 1.25 m, tail 0.61 0.75 m, door right, 12 facets, cab bubble capsule, 8 facets, nose rounded, fitting radome, wear age 0.3 (0 rusty, 0 dirty, 0 sooty, 0 patched, 0 rusted out), body boot, cab cab-over, nose flat, rear bare, under stilts, layout boot 2.8 m, plan 2
   "format": "call-of-slop-construct-blueprint/1",
   "name": "IT Concept 3",
-  "group": "IT Department",
+  "group": "IT",
   "description": "A concept car: a flat nose, a cab-over, a boot behind the cabin, the gun on a pedestal ahead of it. 1 gun.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#3b3f44"},

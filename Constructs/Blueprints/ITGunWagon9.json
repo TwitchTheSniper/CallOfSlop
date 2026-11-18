@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 9 body 9 kit 9 wear 9, chassis 2 axles, front under the hood, inset 1.25 m, leaf/leaf, wing 0.5, cab style pod, language van heavy 2.47 m, flare 0.25, plain 0.8, brow 0.64 1.25 m, tail 0.81 0.75 m, door right, 10 facets, cab van capsule, 7 facets, nose rounded, fitting radome, wear age 0.69 (0 rusty, 0 dirty, 0 sooty, 0 patched, 0 rusted out), body gun bay+gun bed, cab cab-over, nose flat, rear porch hitch, under tub, sides walls, layout gun bay 2 m+gun bed 2.5 m, plan 2
   "format": "call-of-slop-construct-blueprint/1",
   "name": "IT Gun Wagon 9",
-  "group": "IT Department",
+  "group": "IT",
   "description": "A gun wagon: a flat nose, a cab-over, a gun behind the cab, a gun bed, a drum on the rear porch over a tow hitch. 2 guns.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#3b3f44"},
@@ -88,9 +88,8 @@
     {"part": "Fuel Drum", "on": 76, "socket": "front33", "by": "-y"},
     {"part": "Tow Hitch", "on": 10, "socket": "+z", "by": "-z0"},
     {"part": "Hull Loft (decoR WVWP)", "on": 37, "socket": "top", "by": "base"},
-    {"part": "Network Switch", "on": 76, "socket": "front30", "by": "base"},
-    {"part": "Cable Reel", "on": 77, "socket": "front30", "by": "base"},
-    {"part": "Wi-Fi Mast", "on": 77, "socket": "front33", "by": "base"}
+    {"part": "Satellite Dish", "on": 76, "socket": "front30", "by": "base"},
+    {"part": "Network Switch", "on": 77, "socket": "front30", "by": "base"}
   ],
   "wires": [[34, 35], [35, 29], [53, 60], [60, 55], [60, 61], [64, 71], [71, 66], [71, 72]],
   "links": [

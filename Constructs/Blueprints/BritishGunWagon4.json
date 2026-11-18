@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 4 body 4 kit 4 wear 4, chassis 3 axles, tag 1.25 m, front set back, inset 1.75 m, wishbone/hydraulic/hydraulic, wing 0.5, cab style bus front, language bus heavy 2.38 m, flare 0.14, kick-up 0.9, brow 0.77 1 m, tail 0.75 1 m, door right, 9 facets, cab bus cab, 6 facets, nose rounded, wear age 0.75 (2 rusty, 7 dirty, 0 sooty, 0 patched, 1 rusted out), body hutch, cab enclosed, nose long hood, rear porch, under stilts, layout hutch 4 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "British Gun Wagon 4",
-  "group": "Ministry of Slop",
+  "group": "British",
   "description": "A gun wagon: a long hood, an enclosed cab, an ammo hutch and a stern gun on a flat deck, a drum on the rear porch. 1 gun.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#1b1c1e"},
@@ -120,11 +120,11 @@
     {"part": "Plate Steel 0.25 m", "on": 109, "socket": "-x2", "by": "-x", "paint": "#2b2a28"},
     {"part": "Fuel Drum", "on": 107, "socket": "front30", "by": "-y"},
     {"part": "Hull Loft (hoodr UYV2WyWjXIXEVd ~6O06eR6Wq60x4v12X3013)", "on": 27, "socket": "+y", "by": "engine", "paint": "#c8102e"},
-    {"part": "Garden Gnome", "on": 114, "socket": "top", "by": "base"},
+    {"part": "Traffic Cone", "on": 114, "socket": "top", "by": "base"},
     {"part": "Traffic Cone", "on": 35, "socket": "top", "by": "base"},
     {"part": "Garden Gnome", "on": 60, "socket": "front00", "by": "base"},
-    {"part": "Traffic Cone", "on": 85, "socket": "front00", "by": "base"},
-    {"part": "Belisha Beacon", "on": 77, "socket": "front00", "by": "base"}
+    {"part": "Hull Loft (decoJ W0)", "on": 85, "socket": "front00", "by": "base"},
+    {"part": "Long Iron Spike", "on": 75, "socket": "front00", "by": "base"}
   ],
   "wires": [[32, 33], [33, 27], [90, 97], [97, 92], [104, 101]],
   "hoses": [[102, 103]],

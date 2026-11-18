@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 17 body 17 kit 17 wear 17, chassis 2 axles, front forward, inset 1.75 m, hydraulic/hydraulic, wing 0.5, cab style box, language cabin standard 2.36 m, flare 0.04, stepped 0.8, brow 0.90 1 m, tail 0.80 1 m, door left, cab cabin cab, nose flat, lopsided right, wear age 0.71 (1 rusty, 3 dirty, 0 sooty, 1 patched, 0 rusted out), body gun bay+bed, cab enclosed, nose short hood, rear bare, under tub, sides walls, layout gun bay 2 m+bed 2 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Scam Technical 17",
-  "group": "The Call Centre",
+  "group": "Scam",
   "description": "A technical: a short hood, an enclosed cab, a gun behind the cab, an open bed. 1 gun.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#2a2c30"},
@@ -84,9 +84,10 @@
     {"part": "Hull Loft (hoodf UpV2WyWjXWXWVd ~7m07us014)", "on": 26, "socket": "+y", "by": "engine", "paint": "#21c45a"},
     {"part": "Slat Grille", "on": 76, "socket": "front", "by": "back", "paint": "#21c45a"},
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 74, "pos": [-1.073, 0.564, 4.995], "rot": [0.0029, -0.0138, 0.7081, 0.7059]}, "paint": "#b0b4b8"},
-    {"part": "Prize Wheel", "on": 76, "socket": "top", "by": "base"},
-    {"part": "Prize Wheel", "on": 48, "socket": "front", "by": "base"},
-    {"part": "Loudhailer", "on": 45, "socket": "front00", "by": "base"},
+    {"part": "Loudhailer", "on": 76, "socket": "top", "by": "base"},
+    {"part": "Hubcap Plate", "on": 34, "socket": "top", "by": "base"},
+    {"part": "Traffic Cone", "on": 48, "socket": "front", "by": "base"},
+    {"part": "Hubcap Plate", "on": 45, "socket": "front00", "by": "base"},
     {"part": "Plate Steel 0.5 m", "weld": {"on": 77, "pos": [0.132, 0.458, -0.757], "rot": [-0.6982, -0.0207, -0.0005, 0.7156]}, "paint": "#8a9096"}
   ],
   "wires": [[31, 32], [32, 26], [61, 72], [72, 63]],

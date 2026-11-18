@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 2 body 2 kit 2 wear 2, chassis 2 axles, front under the hood, inset 1.25 m, leaf/swing arm, wing 0.5, archetype early fastback, cab style coachbuilt, language fastback standard 2.02 m, flare 0.12, sloped 0.9, brow 0.74 1 m, tail 0.65 1.25 m, door right, cab fastback cab, nose grille, fitting mascot, lopsided right, wear age 1.08 (0 rusty, 3 dirty, 0 sooty, 0 patched, 0 rusted out), body boot, cab enclosed, nose ram, rear hitch, under stilts, layout boot 2.5 m, plan 3
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Highland Car 2",
-  "group": "Clan MacSlop",
+  "group": "Highland",
   "description": "A car: a ram on the hood, an enclosed cab, a boot behind the cabin, the gun on a pedestal ahead of it, a tow hitch. 1 gun.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#2a2622"},
@@ -66,9 +66,10 @@
     {"part": "Bull Bar", "on": 57, "socket": "front", "by": "back", "paint": "#c8102e"},
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 58, "pos": [0.124, 0.48, -1.373], "rot": [-0.6999, 0.0036, -0.0199, 0.7139]}, "paint": "#5b4a2f"},
     {"part": "Hull Loft (decoO UaV-)", "on": 57, "socket": "top", "by": "base"},
-    {"part": "Pipe Box", "on": 32, "socket": "top", "by": "base"},
     {"part": "Square Beam 0.5 m", "on": 43, "socket": "top", "by": "-z", "paint": "#2a2622"},
-    {"part": "Haggis on a Post", "on": 62, "socket": "+z", "by": "base"}
+    {"part": "Phone Mast", "on": 61, "socket": "+z", "by": "base"},
+    {"part": "Square Beam 0.5 m", "on": 37, "socket": "front10", "by": "-z", "paint": "#2a2622"},
+    {"part": "Long Iron Spike", "on": 63, "socket": "+z", "by": "base"}
   ],
   "wires": [[30, 31], [31, 25], [47, 54], [54, 49], [54, 55]],
   "links": [
