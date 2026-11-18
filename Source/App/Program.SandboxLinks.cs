@@ -644,7 +644,7 @@ public static partial class Program
         var hp = ConstructRoutes.SegmentHealth(c, k, hit.RouteSeg);
         var key = ((long)c.Id << 40) ^ ((long)k << 32) ^ ((long)hit.RouteSeg << 24) ^ (long)(hp * 10) ^ (repair ? 1L << 62 : 0) ^ ((long)h.Tool << 56)
                   ^ (r.FedEnd ? 1L << 61 : 0) ^ ((long)(r.Share * 100) << 12) ^ (c.FlexSectionCount > 0 ? ConstructRoutes.FlexKey(c, k) : 0) ^ ((long)jam << 4) ^ ((long)r.ConvW << 44)
-                  ^ ((long)c.PartCount << 20) ^ ((long)r.Source * 40503L) ^ ((long)r.To * 2654435761L) ^ ((long)r.ToPort << 50); // (the ends' labels: devices are numbered among the body's parts)
+                  ^ ((long)c.PartCount << 20) ^ ((long)r.Source * 40503L) ^ ((long)r.To * 2654435761L) ^ ((long)r.ToPort << 50) ^ ((long)r.SourcePort * 0x1E3779B97F4A7C15L) ^ ((long)r.Parent * 0x632BE59BD9B4E019L); // (the ends' labels: devices are numbered among the body's parts)
         if (key != _lkLookKey)
         {
             _lkLookKey = key;
