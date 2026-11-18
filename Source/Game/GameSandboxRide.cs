@@ -194,6 +194,20 @@ public sealed partial class Game
         Constructs.GridStale(); // (a grid built at the drawn poses goes: the server's next query builds it from the tick's)
     }
 
+    /// <summary>
+    /// Where a point of <paramref name="c"/> at its tick pose is drawn this frame: the host draws between its last two ticks,
+    /// so a screen anchor taken from the tick's pose (the configure panel beside its part) jumped by up to a tick's travel
+    /// each frame on a ship in orbit. Unchanged on a client (its bodies are drawn where they are) and inside RideDrawnPose.
+    /// </summary>
+    public Vector3 DrawnPoint(Construct c, Vector3 tickPoint)
+    {
+        if (!IsServer || RideDrawnHas(c))
+            return tickPoint;
+        var pos = Vector3.Lerp(c.PrevPos, c.Pos, _alpha);
+        var rot = Quaternion.Normalize(Quaternion.Slerp(c.PrevRot, c.Rot, _alpha));
+        return pos + Vector3.Transform(Vector3.Transform(tickPoint - c.Pos, Quaternion.Conjugate(c.Rot)), rot);
+    }
+
     /// <summary>Is <paramref name="c"/> at its drawn pose now (RideDrawnPose's set)?</summary>
     private bool RideDrawnHas(Construct c)
     {

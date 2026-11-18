@@ -129,6 +129,7 @@ public sealed partial class Ui
     /// <summary>Opens the panel on a part (the selection stays when it is of the same kind on the same construct; else it is cleared).</summary>
     public void OpenSandboxConfig(Construct c, int part)
     {
+        SandboxConfigTextFlush(); // (a label typed on the last part and left by a click on a wiring row: kept)
         part = ConstructLinear.Master(c, part); // (a stacked rail's settings are its running section's)
         var d = c.DefOf(part);
         if (_cfSelCount > 0 && (_cfBody != c.Id || _cfSel[0] >= c.PartCount || c.Parts[_cfSel[0]].Def != c.Parts[part].Def))
@@ -157,6 +158,7 @@ public sealed partial class Ui
 
     public void CloseSandboxConfig()
     {
+        SandboxConfigTextFlush(); // (a label typed and the panel closed with Esc, Close or a step away, before Enter: kept)
         SandboxConfigOpen = false;
         SandboxConfigCapture = -1;
         _cfPending = 0;
@@ -335,7 +337,7 @@ public sealed partial class Ui
         var vp = ImGui.GetMainViewport();
         var w = 430 * _scale;
         if (!_cfMoved && !ImGui.IsMouseDown(ImGuiMouseButton.Left))
-            ImGui.SetNextWindowPos(SandboxConfigAnchor(c, w), ImGuiCond.Always);
+            ImGui.SetNextWindowPos(SandboxConfigAnchor(game, c, w), ImGuiCond.Always);
         else if (_cfMoved && _cfPlace)
             ImGui.SetNextWindowPos(_cfPos, ImGuiCond.Always);
         _cfPlace = false;
@@ -503,6 +505,25 @@ public sealed partial class Ui
     /// <summary>Beside the part on the screen, on whichever side keeps it clear of the part (else on the right edge).</summary>
     private readonly ImInputString?[] _cfText = new ImInputString?[2];
     private long _cfTextKey = -1;
+    private readonly bool[] _cfTextDirty = new bool[2]; // (typed in and not sent yet)
+    private ushort _cfTextBody;
+    private int _cfTextPart;
+    private Game? _cfTextGame;
+
+    /// <summary>
+    /// Sends what was typed in the text boxes and not sent yet. ImGui reports a box's edit when it loses the keyboard in a
+    /// frame it is still drawn, so a label typed on a switch and left by Esc, Close, walking off or a click on a wiring row
+    /// (which opens another part's panel in the same box) was lost: Karl, 2026-11-18, "the switches' labels aren't visible".
+    /// </summary>
+    private void SandboxConfigTextFlush()
+    {
+        for (var slot = 0; slot < _cfTextDirty.Length; slot++)
+            if (_cfTextDirty[slot])
+            {
+                _cfTextDirty[slot] = false;
+                _cfTextGame?.SandboxPartText(_cfTextBody, _cfTextPart, slot, ImGuiSafe.Text(_cfText[slot]!));
+            }
+    }
 
     /// <summary>A sign's messages or a lamp bank's labels: sent when a box loses the keyboard or on Enter (LogicText.cs).</summary>
     private void SandboxConfigText(Game game, Construct c, int part, ConstructPartDef d)
@@ -510,6 +531,8 @@ public sealed partial class Ui
         if (d.TextSlots == 0 || part < 0 || part >= c.PartCount)
             return;
         var key = (long)c.Id << 20 | (uint)part;
+        if (key != _cfTextKey)
+            SandboxConfigTextFlush();
         ImGui.SeparatorText(d.IsRouter ? "Name"u8 : d.Labelled ? "Label"u8 : "Text"u8);
         for (var slot = 0; slot < d.TextSlots; slot++)
         {
@@ -517,21 +540,29 @@ public sealed partial class Ui
             if (key != _cfTextKey)
                 ImGuiSafe.SetInput(_cfText[slot]!, LogicText.Get(c.Parts[part], slot));
             ImGui.SetNextItemWidth(-1);
-            ImGui.InputText(slot == 0 ? "##cftext0"u8 : "##cftext1"u8, _cfText[slot]!);
-            if (ImGui.IsItemDeactivatedAfterEdit())
+            if (ImGui.InputText(slot == 0 ? "##cftext0"u8 : "##cftext1"u8, _cfText[slot]!))
+            {
+                _cfTextDirty[slot] = true;
+                (_cfTextBody, _cfTextPart, _cfTextGame) = (c.Id, part, game);
+            }
+            if (ImGui.IsItemDeactivatedAfterEdit() && _cfTextDirty[slot])
+            {
+                _cfTextDirty[slot] = false;
                 game.SandboxPartText(c.Id, part, slot, ImGuiSafe.Text(_cfText[slot]!));
+            }
             if (ImGui.IsItemHovered())
                 ImGuiSafe.SetTooltip(d.Labelled ? "What it is called in its look line and the wiring lists, e.g. Hangar lights (empty: its part name)." : d.IsRouter ? "Its name on the network board and in order notes (empty: its number)." : d.TextSlots == 2 ? slot == 0 ? "Shown with its wire off." : "Shown with its wire on." : "Labels, comma-separated.");
         }
         _cfTextKey = key;
     }
 
-    private float2 SandboxConfigAnchor(Construct c, float w)
+    private float2 SandboxConfigAnchor(Game game, Construct c, float w)
     {
         var vp = ImGui.GetMainViewport();
         var pos = new float2(vp.WorkPos.X + vp.WorkSize.X - w - 24 * _scale, vp.WorkPos.Y + vp.WorkSize.Y * 0.18f);
         var cam = Hud.Camera;
-        if (cam.Valid && Hud.Project(cam.ViewProj, ConstructRender.PartCentre(c, _cfPart), vp.WorkSize.X, vp.WorkSize.Y, out var sp, out _))
+        if (cam.Valid && Hud.Project(cam.ViewProj, game.DrawnPoint(c, ConstructRender.PartCentre(c, _cfPart)), // (where it is drawn: on the host the tick's pose is up to a tick's travel away, so the panel jumped on a ship in orbit)
+                 vp.WorkSize.X, vp.WorkSize.Y, out var sp, out _))
         {
             var x = sp.X + 70 * _scale;
             if (x + w > vp.WorkSize.X - 12 * _scale)
