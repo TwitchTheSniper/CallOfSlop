@@ -107,6 +107,8 @@ public sealed class NavOrder
     internal byte BoardSeg;
     internal System.Numerics.Vector3 BoardSpot, BoardOut, BoardUp, BoardDrop;
     internal System.Numerics.Quaternion BoardRot;
+    internal sbyte BoardSide; // host: which way (+1/-1 along the carrier's X) the pod leaves from under it, chosen once (0: not yet)
+    internal int BoardDropFor; // host: the ticks its drop out of the dock may take
     internal int BoardDoor = -1, BoardTicks, BoardAll;
 }
 
@@ -401,6 +403,8 @@ public sealed partial class Game
     {
         if (c != null)
         {
+            if (c.ThrustPuppet)
+                NavBoardJetsOut(c); // (a pod's jets lit by its Board order: GameNavBoard.cs)
             c.NavThrottle = -1;
             c.NavClimb = 0;
             c.NavLand = 0;
