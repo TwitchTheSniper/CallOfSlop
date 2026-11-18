@@ -27,6 +27,15 @@ public static unsafe partial class Program
         return $"no craft {n} ({seen} on the map)";
     }
 
+    private static string? WsMeetOrder(Game g, int n, float gap)
+    {
+        var seen = 0;
+        foreach (var c in g.Constructs.Bodies)
+            if (Ui.CmdIsCraft(c) && ++seen == Math.Max(1, n))
+                return Ui.CommandMeet(g, c.Id, gap);
+        return $"no craft {n} ({seen} on the map)";
+    }
+
     private static float Bulk(Construct c, int i)
     {
         c.PartBounds(i, out var mn, out var mx);
@@ -169,8 +178,9 @@ public static unsafe partial class Program
                     "cancel" => Ui.CommandOrder(g, NavKind.None, "", 0),
                     "come" => Ui.CommandOrder(g, NavKind.Come, "", 0),
                     "dock" when words.Length == 2 && int.TryParse(words[1], out var nth) => WsDockOrder(g, nth),
+                    "meet" when words.Length is 2 or 3 && int.TryParse(words[1], out var mnth) => WsMeetOrder(g, mnth, words.Length == 3 && float.TryParse(words[2], inv, out var mgap) ? mgap : Game.NavMeetGap),
                     "orbit" or "goto" when words.Length == 3 && double.TryParse(words[2], inv, out var km) => Ui.CommandOrder(g, kind == "orbit" ? NavKind.Orbit : NavKind.GoTo, words[1], km),
-                    _ => "order orbit BODY KM | order goto BODY KM | order ground M | order land M | order come | order dock N | order board N door|hull | order cancel",
+                    _ => "order orbit BODY KM | order goto BODY KM | order ground M | order land M | order come | order dock N | order meet N [GAP] | order board N door|hull | order cancel",
                 };
                 if (why != null)
                     WsFail("order: " + why);

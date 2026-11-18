@@ -30,7 +30,7 @@ the cursor is free and the game takes no input.
 | Right drag | Turn and tilt (the tilt stops at straight down) |
 | Click | Pick a craft or a body (its card opens on the right) |
 | Double click | Centre on it |
-| Right click | An order for the picked ship: on a world, an orbit; on a place in space, go there; on another craft, dock with it |
+| Right click | An order for the picked ship: on a world, an orbit; on a place in space, go there; on another craft, dock with it or meet it alongside |
 | SHIP / WORLD / MOONS / SYSTEM | Jump to that zoom, focus back to automatic |
 
 **The focus follows the zoom** while it is automatic: close in it is the picked ship (the player's own position with none
@@ -126,7 +126,7 @@ logistics layer it stays as it was when the view is closed and opened again. Cod
 
 ## Orders
 
-Six kinds (`NavKind`), each for one ship, given by any player to any ship that takes orders. **A ship takes orders
+Eight kinds (`NavKind`), each for one ship, given by any player to any ship that takes orders. **A ship takes orders
 when it has a working Flight Stabilizer** (the "flight computer"; `Game.NavProblem` says why not: a wreck, none fitted,
 wrecked, or held down). Orders are the host's (`Game.NavOrders`); they are not saved and end when the map changes.
 
@@ -137,6 +137,7 @@ wrecked, or held down). Orders are the host's (`Game.NavOrders`); they are not s
 | Fly to a spot over the ground | Right click the ground of the world it is flying over | The Flight Stabilizer's own waypoint autopilot, at the ship's present height |
 | Land on a spot | Right click the ground of the world you are on, LAND HERE (from its sky or from space) | Comes down into the sky over the spot if it is in space, flies over it and sets down on it ("Landing", below) |
 | Dock with another craft | Right click another craft, DOCK WITH <NAME> ("NO PORT AVAILABLE" when it has none free) | Flies to the point in front of a free docking port on it and in, until the port holds it ("Docking", below) |
+| Rendezvous with another craft | Right click another craft, set "m apart", RENDEZVOUS WITH <NAME> | Flies to its side, matches its motion (its orbit, or its burn) and holds there alongside, drive parallel to it, until cancelled ("Rendezvous", below) |
 | Come to me | Right click your own marker (YOU), COME TO ME, or COME TO ME on the card | You on the ground or in the sky: as a landing, on a spot beside you on the side it comes from, which follows you until it starts down. You out in space (over the sky's edge, on a spacewalk or another ship): it flies to you and holds beside you, matching your motion, until cancelled |
 
 The lowest orbit (`Game.NavMinOrbit`) is `NavEdgeMargin` (400 m) over a mapped world's sky edge, since inside the sky a
@@ -253,6 +254,37 @@ docs/sandbox/design/faction-controllers.md section 6.2, so he chose docking alon
 ```
 --window-shot out.png --map Glacier --blueprint "Zero Day Frigate" --calm --do "command 3000; spawnbp Shuttle; wait 120; letgo 2; cmdpick 2; hoist 1; wait 30; cmdpick 3; order dock 1; wait 2400; nav"
 --window-shot out.png --map Glacier --blueprint "Zero Day Frigate" --calm --do "command 60000; cmdpick 1; order orbit Glacier 5.5; wait 8000; letgo 2; wait 400; cmdpick 2; order dock 1; wait 3600; nav"
+```
+
+### Rendezvous (`Game/GameNavMeet.cs`)
+
+Karl, 2026-11-18: "one ship to match another ship's velocity or orbit and meet up alongside". `NavKind.Meet`: the order's
+`Target` is the other craft and its `Radius` the gap kept between the hulls (the menu's "m apart", 10 to 2000 m, 40 by
+default; `NavMeetGap`).
+
+- **Where it holds:** on the other craft's side (its own X axis, on the side the ship comes from, chosen once), both
+  their radii plus the gap from its middle. It follows that side as the other turns.
+- **In space** it flies the `GoTo` law in the other craft's moving frame: offset and velocity from it, `Avoid` round it
+  (coming from its far side the straight line runs through it) and round the world it is near, and the other's own
+  acceleration fed forward (measured from its velocity tick to tick: its gravity, and a burn of its own), so a ship in orbit
+  is matched without the drive fighting gravity. Far off the approach is planned on the whole drive, closer in it falls
+  towards `NavComeAccel` (5 m/s2) with distance (`NavMeetFar`, 20 km), since it turns to brake and an overshoot would hit
+  it. Within 30 m (or a quarter of the gap) and 1.5 m/s it is Hold ("ALONGSIDE, MATCHING ITS MOTION"): the drive rests
+  and the hull turns its drive parallel to the other's (that craft's strongest drive axis, looked for once a second).
+  Time is held at 1x while it holds, as any Hold is.
+- **Round another planet:** the order's world is the one the other craft is round now (`NavMeetBody`); a ship outside
+  that planet's reach flies the trip there first (planned, waited for, coasted, as an orbit's), and its own law takes over
+  when the trip hands it on.
+- **In a sky** (both bodies there) the stabilizer's autopilot flies it (Waypoint mode) to the point beside the other at
+  the other's height, written at most twice a second and only when it has moved 6 m. A ship in a sky climbs out to meet a
+  craft in space; one in space is refused a craft down in a sky ("bring it down into the sky first").
+- **It ends** when cancelled, the other craft is gone or wrecked, goes down into a sky from space, or the two dock.
+- **Wire** (protocol 349): `NavKind.Meet` at its end; the target and gap ride the order's existing target and radius.
+- **Trying it:** `order meet N [GAP]` (the Nth craft, as `cmdpick` counts). The Shuttle from a 9 km orbit to the Zero
+  Day's at 5.5 km (about 75 s to alongside):
+
+```
+--window-shot out.png --map Glacier --blueprint "Zero Day Frigate" --calm --do "command 60000; cmdpick 1; order orbit Glacier 5.5; wait 8000; letgo 2; wait 200; cmdpick 2; order orbit Glacier 9; wait 6000; order meet 1 60; wait 6000; nav"
 ```
 
 ## Time speed
