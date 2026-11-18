@@ -243,6 +243,15 @@ public sealed partial class Game
         var aimAt = centre + axis * (o.Phase is NavPhase.Docking or NavPhase.DockWait ? o.DockAlt : along + NavDockOver);
         var r = pos - pose.ToEcliptic(Vec3d.From(aimAt));
         aimAt = centre + axis * NavDockStep(o, armed, along, (float)r.Length, slip);
+        if (o.Phase is NavPhase.Docking or NavPhase.DockWait || r.Length < NavDockRcsNear && slip < NavDockRcsSlip)
+        {
+            NavDockRcs(f, i, pose, o, c, t, part, aimAt, o.Phase is NavPhase.Docking or NavPhase.DockWait ? NavDockSink + 1 : NavDockRcsSlip);
+            if (o.Still >= NavDockGiveUp)
+                NavEnd(o, c, armed ? "the port didn't take it" : "the port is not armed, or has no power");
+            return Vec3d.Zero;
+        }
+        if (c.ThrustPuppet)
+            NavBoardJetsOut(c); // (back out of close work: its main drive flies it again)
         var at = Vec3d.From(aimAt);
         var pp = pose.ToEcliptic(at);
         r = pos - pp;
@@ -254,6 +263,49 @@ public sealed partial class Game
         if (o.Still >= NavDockGiveUp)
             NavEnd(o, c, armed ? "the port didn't take it" : "the port is not armed, or has no power");
         return a;
+    }
+
+    /// <summary>Close to the port in space a ship comes in on its small jets, not by turning its main drive to each correction
+    /// (it twirled at its full turn rate over the port and swept its hull through the other ship): within this far of the point
+    /// it aims at (m) and this slow against it (m/s), and at most this hard (m/s²).</summary>
+    public const float NavDockRcsNear = 20, NavDockRcsSlip = 4, NavDockRcsAccel = 1.5f;
+
+    /// <summary>
+    /// Host, close work in space: the ship's speed against the port is steered straight to close on <paramref name="aim"/> (its
+    /// flight's velocity changed, as its RCS would), it turns upright with the port and stops turning, and its jets are lit for it
+    /// (<see cref="Construct.ThrustPuppet"/>: the thrust step pushes nothing meanwhile).
+    /// </summary>
+    private static void NavDockRcs(SpaceFlight f, int i, in FramePose pose, NavOrder o, Construct c, Construct t, int part, Vector3 aim, float most)
+    {
+        var dt = World.TickDt;
+        var here = c.WorldCom;
+        var to = aim - here;
+        var d = to.Length();
+        var speed = MathF.Min(most, MathF.Sqrt(NavDockRcsAccel * d)); // (half its push to brake with)
+        var want = t.PointVel(here) + (d > 1e-3f ? to / d * speed : Vector3.Zero);
+        var dv = want - c.Vel;
+        var step = NavDockRcsAccel * dt;
+        if (dv.LengthSquared() > step * step)
+            dv = Vector3.Normalize(dv) * step;
+        f.Ships.RelativeOf(i, out var primary, out var rel, out var vel);
+        f.Ships.SetState(i, primary, rel, vel + pose.Rot.Rotate(Vec3d.From(dv)));
+        c.NavThrottle = 0;
+        c.NavAim = Vector3.Zero;
+        // Upright with the port, turning with the other ship and no faster than 0.5 rad/s; its heading stays its own.
+        t.WorldFrame(t.Parts[part].Seg, out var q, out _);
+        var upB = Vector3.Transform(Vector3.UnitY, c.Rot);
+        var upC = Vector3.Transform(Vector3.UnitY, q);
+        var cross = Vector3.Cross(upB, upC);
+        var sin = cross.Length();
+        var angle = MathF.Atan2(sin, Vector3.Dot(upB, upC));
+        var spin = sin > 1e-4f ? cross / sin * MathF.Min(angle * 1.5f, 0.5f) : Vector3.Zero;
+        var dw = t.AngVel + spin - c.AngVel;
+        var turnStep = 2f * dt;
+        if (dw.LengthSquared() > turnStep * turnStep)
+            dw = Vector3.Normalize(dw) * turnStep;
+        c.AngVel += dw;
+        o.Distance = d;
+        NavBoardJets(c, dv / dt * 3, dw / dt); // (its flames, as a Board order's pod: GameNavBoard.cs)
     }
 
     /// <summary>

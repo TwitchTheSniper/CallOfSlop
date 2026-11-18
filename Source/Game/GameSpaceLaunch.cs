@@ -98,6 +98,16 @@ public sealed partial class Game
             if (c.SpaceAway != 0)
                 continue; // (parked: its ship is far out or in another system, GameSpaceJump.cs poses it)
             var i = f.Ships.IndexOfId(c.SpaceShip);
+            if (c.CarriedBy != 0)
+            {
+                // A port caught it out here (ConstructCargo.Scan): it rides its carrier from now on, so its own ship goes, or the
+                // flight posed it one way and the port the other every tick. Let go, it leaves the bubble again as a ship.
+                if (i >= 0)
+                    f.Ships.Remove(i);
+                c.SpaceShip = 0;
+                c.AngVel = Vector3.Zero;
+                continue;
+            }
             if (i < 0)
             {
                 SpaceEnter(c, null, 0, pose);
