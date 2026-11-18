@@ -415,7 +415,7 @@ public sealed partial class PowerRelations
             return false;
         if (theirPower != 0 && theirPower != b && Helps(a, theirPower))
             return true;
-        return theirPerson != 255 && Peek(a, theirPerson) >= Rules.FriendlyLine;
+        return theirPerson != 255 && (Peek(a, theirPerson) >= Rules.FriendlyLine || PartyAllied(a, theirPerson)); // (phase 5: an ally of their faction's fights its foes)
     }
 
     private readonly long[] _strayAt = new long[N * N];

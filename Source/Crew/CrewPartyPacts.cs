@@ -75,6 +75,9 @@ public sealed partial class PowerRelations
         Contracts.Clear();
     }
 
+    /// <summary>A line for one faction's members (the controllers': a call answered).</summary>
+    public void NoteFor(byte party, string text) => Note(party, text);
+
     private void Note(byte party, string text)
     {
         Notes[NoteTotal % Notes.Length] = (party, text);
