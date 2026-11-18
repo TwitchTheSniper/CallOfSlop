@@ -428,6 +428,7 @@ public sealed partial class Construct
     public int LaunchCount; // catapults, arrestor gear, pull docks and mooring masts (ConstructLauncher.cs, ConstructCarrier.cs): counted with the part caches
     public uint ArrestFree, DockAway; // server, ConstructWorld.CarrierClock: arrestor gear and docks leave it alone until then
     public bool ThrustPuppet; // server: a Board order flies it and sets its thrusters' levels for their flames only (GameNavBoard.cs): the thrust step leaves them and pushes nothing
+    public int BreachCut; // server: ticks its cutter has burned against the hull it grips; at ConstructBreach.HoleTicks it takes the hole out (HullHoles.cs)
     public bool BreachSealed; // server: gripped by a Board order (Game/GameNavBoard.cs): it holds while its grapples are on, hull under them or not (ConstructBreach)
 
     public const float RiderMass = 85f; // a player standing on a joint's segment, for its load

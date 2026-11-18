@@ -266,7 +266,7 @@ Technical 2 393, British Gun Wagon 1 479.
   name; a ship out is a record that takes up the first crewed body of its power again, since body ids change), missions (group by slot and
   number) and the next convoy. A world from before has none: every power starts from its plan. No new save file. Fallen powers are re-marked in
   the relations on load.
-- Protocol 352: `Msg.Factions` ends with u16 powers gone; pact kinds 4 to 6; -100 means a blood feud. Stocks, missions and ships are never sent.
+- Protocol 354 (main 353 at the merge): `Msg.Factions` ends with u16 powers gone; pact kinds 4 to 6; -100 means a blood feud. Stocks, missions and ships are never sent.
 
 ### Tried by hand (2026-11-18, the 2-core box shared with other builders)
 

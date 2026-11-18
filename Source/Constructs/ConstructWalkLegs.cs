@@ -171,7 +171,7 @@ public static partial class ConstructPhysics
     public static bool FeetBlockPlayer(Construct c, ref MoveState s, float height)
     {
         var stood = false;
-        var r = World.PlayerRadius;
+        var r = World.BodyRadius; // (a robot shell's frame: its size, World.Body)
         for (var k = 0; k < c.LegCount; k++)
         {
             if (!c.Parts[c.Legs[k].Part].Working)

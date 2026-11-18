@@ -920,6 +920,8 @@ public sealed partial class ConstructEdits
             Done.Add($"player {player}: took {top.Name} from the {d.Name} (construct {c.Id})");
             return null;
         }
+        if (Hoppers[player].Amount > 0 && TipHopper(world, player, c, part, d, st) is { } tipped)
+            return tipped.Length == 0 ? null : tipped; // (a robot shell's ore hopper tips first: ConstructEditsHopper.cs)
         if (Inventory == null)
             return "nothing to put in";
         var inv = Inventory.Of(player);

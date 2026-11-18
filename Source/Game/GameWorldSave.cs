@@ -182,7 +182,15 @@ public sealed partial class Game
     {
         var clock = Stopwatch.StartNew();
         var s = stashFolder != null ? new WorldSnapshot() : ws.Snapshot;
-        Constructs.CaptureInto(s, keep);
+        ShellStandForSave(); // (a worn shell is no construct: one stands where its wearer is for the capture, GameRobotShell.cs)
+        try
+        {
+            Constructs.CaptureInto(s, keep);
+        }
+        finally
+        {
+            ShellUnstandAfterSave();
+        }
         foreach (var p in Players.Values)
             if (WorldKnown(p))
                 WorldCatch(p, WorldRecordOf(ws, p));

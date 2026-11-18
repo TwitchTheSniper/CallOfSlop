@@ -496,7 +496,7 @@ public sealed partial class Game
         w.U8((byte)t.PactCount);
         for (var k = 0; k < t.PactCount; k++)
             w.U8(t.PactKindOf[k]).U8(t.PactA[k]).U8(t.PactB[k]).U16(t.PactHeld[k]).U16(t.PactLeft[k]);
-        w.U16(t.PowerGone); // (protocol 352: powers gone for good, faction-controllers.md phase 3)
+        w.U16(t.PowerGone); // (protocol 354: powers gone for good, faction-controllers.md phase 3)
     }
 
     private static void WriteFactionPairs(PacketWriter w, byte[] of)

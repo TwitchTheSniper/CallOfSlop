@@ -101,7 +101,7 @@ public sealed class FactionTable
     public int PactCount;
     public readonly byte[] PactKindOf = new byte[MaxPacts], PactA = new byte[MaxPacts], PactB = new byte[MaxPacts];
     public readonly ushort[] PactHeld = new ushort[MaxPacts], PactLeft = new ushort[MaxPacts];
-    /// <summary>Powers gone for good (phase 3: wiped out or merged), a bit per NPC row (protocol 352).</summary>
+    /// <summary>Powers gone for good (phase 3: wiped out or merged), a bit per NPC row (protocol 354).</summary>
     public ushort PowerGone;
 
     /// <summary>The standing each technology is taught at, per story faction in the order of <see cref="StoryTech"/> (its tier's lowest standing).</summary>

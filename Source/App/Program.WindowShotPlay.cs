@@ -16,7 +16,7 @@ public static partial class Program
     private static int _wsClipBodies, _wsClipLoose;
     private static bool _wsClipToolAsked;
 
-    private static bool WsPlayKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "sit" or "seated" or "getout" or "recycle" or "clip" or "partinfo" or "partlook" or "hands" or "cabto" or "damage" or "makeengine" or "standon" or "aimintake" or "feetup" or "cave" or "spawnbp" or "bringon" or "dropmotion" or "shellwear" or "shellleave" or "shellfix" or "shells";
+    private static bool WsPlayKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "sit" or "seated" or "getout" or "recycle" or "clip" or "partinfo" or "partlook" or "hands" or "cabto" or "damage" or "makeengine" or "standon" or "aimintake" or "feetup" or "cave" or "spawnbp" or "bringon" or "dropmotion" or "shellwear" or "shellleave" or "shellfix" or "shells" or "hopper";
 
     private static bool WsPlayVerb(Game g, Player me, string verb, string arg)
     {
@@ -99,6 +99,18 @@ public static partial class Program
                         break;
                     }
                 return true;
+            case "hopper": // "hopper": this peer's shell frame, its size (eye, hit box, mover scale) and its ore hopper as heard; the host adds the server's hopper (GameShellHopper.cs)
+            {
+                var f = ShellFrames.Of(me.ShellFrame);
+                using (World.Body(me.Sim))
+                    WsSay(FormattableString.Invariant($"hopper: in shell {me.InShell}, frame {me.ShellFrame} ({f.Name}, x{ShellFrames.ScaleOf(me):0.00}, pace x{Game.ShellMoveMult(me):0.00}), sim frame {me.Sim.Frame}, eye {Vector3.Distance(me.Eye, me.Position):0.00} m, height {World.HeightOf(me.Sim.Stance):0.00} m, radius {World.BodyRadius:0.00} m; heard {me.HopperAmount} {RecyclingTable.Current.NameOf(me.HopperMaterial)}")
+                        + (g.IsServer ? $"; server {g.SandboxHands.Hoppers[me.Id].Amount}/{g.SandboxHands.Hoppers[me.Id].Capacity} {RecyclingTable.Current.NameOf(g.SandboxHands.Hoppers[me.Id].Material)}" : "")
+                        + $"; inventory stone {g.SandboxInventory(me.Id).Materials[RecyclingTable.Current.IdOf("stone")]}, dirt {g.SandboxInventory(me.Id).Materials[RecyclingTable.Current.IdOf("dirt")]}");
+                foreach (var o in g.Players.Values)
+                    if (o != me)
+                        WsSay(string.Create(ci, $"hopper: player {o.Id} in shell {o.InShell}, frame {o.ShellFrame}, heard {o.HopperAmount} {RecyclingTable.Current.NameOf(o.HopperMaterial)}"));
+                return true;
+            }
             case "shellleave": // "shellleave": the Esc menu's Leave the shell
                 g.ShellAskLeave();
                 return true;

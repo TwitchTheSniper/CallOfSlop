@@ -43,7 +43,7 @@ public static partial class ConstructRide
     public static void LadderEnds(ConstructPartDef d, out Vector3 foot, out Vector3 top)
     {
         var cx = (d.BoundsMin.X + d.BoundsMax.X) * 0.5f;
-        var stand = World.PlayerRadius + 0.12f;
+        var stand = World.BodyRadius + 0.12f;
         foot = new Vector3(cx, d.BoundsMin.Y + 0.02f, d.BoundsMin.Z - stand);
         top = new Vector3(cx, d.LadderTop + 0.02f, d.BoundsMax.Z + stand);
     }
@@ -77,7 +77,7 @@ public static partial class ConstructRide
         var atTop = feetLocal.Y > (foot.Y + top.Y) * 0.5f;
         var from = atTop ? top : foot;
         var across = new Vector2(feetLocal.X - from.X, feetLocal.Z - from.Z).Length();
-        if (across > GrabReach + World.PlayerRadius || MathF.Abs(feetLocal.Y - from.Y) > 1.2f)
+        if (across > GrabReach + World.BodyRadius || MathF.Abs(feetLocal.Y - from.Y) > 1.2f)
             return "get to the ladder's foot or its top first";
         var up = Vector3.Normalize(Vector3.Transform(Vector3.UnitY, lq));
         var onEnd = ToWorld(atTop ? low : high); // (where the climb leaves the rungs)
@@ -240,7 +240,7 @@ public static partial class ConstructRide
             {
                 c.BoxOf(i, b, out var centre, out var half);
                 var rel = Vector3.Abs(lp - centre);
-                if (rel.X < half.X + World.PlayerRadius * 0.7f && rel.Z < half.Z + World.PlayerRadius * 0.7f && rel.Y < half.Y + height * 0.45f
+                if (rel.X < half.X + World.BodyRadius * 0.7f && rel.Z < half.Z + World.BodyRadius * 0.7f && rel.Y < half.Y + height * 0.45f
                     && !(i == onPart && rel.Y >= half.Y + height * 0.45f - 0.1f))
                     return true;
             }
