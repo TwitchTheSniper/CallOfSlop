@@ -1,0 +1,144 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Highport Warehouse Core",
+  "description": "The warehouse's lift core: two lifts and a freight lift, a door on every level.",
+  "group": "Station",
+  "section": "Caledon Highport",
+  "role": "frame",
+  "tool": "welder",
+  "collider": "boxes",
+  "mass": 432000.0,
+  "health": 522400,
+  "armour": 40,
+  "material": "steel",
+  "color": "#33383d",
+  "attachSeconds": 20.0,
+  "boxes": [
+    {
+      "min": [
+        -5.125,
+        -14.525,
+        -5.125
+      ],
+      "max": [
+        4.875,
+        14.275,
+        4.875
+      ],
+      "color": "#33383d",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -1.525,
+        -14.523,
+        -5.175
+      ],
+      "max": [
+        1.275,
+        -11.925,
+        -5.125
+      ],
+      "color": "#d9a441",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -1.225,
+        -14.525,
+        -5.205
+      ],
+      "max": [
+        0.975,
+        -12.225,
+        -5.125
+      ],
+      "color": "#aeb2b2",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -0.925,
+        -11.775,
+        -5.185
+      ],
+      "max": [
+        0.675,
+        -11.625,
+        -5.125
+      ],
+      "color": "#ffd8a0",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -1.525,
+        -14.523,
+        4.875
+      ],
+      "max": [
+        1.275,
+        -11.925,
+        4.925
+      ],
+      "color": "#d9a441",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -1.225,
+        -14.525,
+        4.875
+      ],
+      "max": [
+        0.975,
+        -12.225,
+        4.955
+      ],
+      "color": "#aeb2b2",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -0.925,
+        -11.775,
+        4.875
+      ],
+      "max": [
+        0.675,
+        -11.625,
+        4.935
+      ],
+      "color": "#ffd8a0",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "j0",
+      "at": [
+        -0.125,
+        -14.525,
+        -0.125
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j1",
+      "at": [
+        -0.125,
+        14.275,
+        -0.125
+      ],
+      "dir": "+y"
+    }
+  ]
+}

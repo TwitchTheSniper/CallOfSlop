@@ -1,0 +1,140 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Highport Tank 7",
+  "description": "A reaction mass tank: a sphere 14 m across on a strut from the frame, banded and stencilled.",
+  "group": "Station",
+  "section": "Caledon Highport",
+  "role": "frame",
+  "tool": "welder",
+  "collider": "boxes",
+  "mass": 123320.9,
+  "health": 151985,
+  "armour": 40,
+  "material": "steel",
+  "color": "#9a5436",
+  "attachSeconds": 20.0,
+  "boxes": [
+    {
+      "min": [
+        -5.125,
+        -5.165,
+        -4.765
+      ],
+      "max": [
+        4.955,
+        4.915,
+        5.315
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -7.285,
+        -7.325,
+        -6.925
+      ],
+      "max": [
+        7.115,
+        7.075,
+        7.475
+      ],
+      "color": "#9a5436",
+      "detail": true,
+      "shape": "sphere",
+      "finish": "rusty paint"
+    },
+    {
+      "min": [
+        -7.345,
+        -0.425,
+        -6.985
+      ],
+      "max": [
+        7.175,
+        0.175,
+        7.535
+      ],
+      "color": "#2b2f33",
+      "detail": true,
+      "shape": "cylinder",
+      "finish": "dirty steel",
+      "front": "+y"
+    },
+    {
+      "min": [
+        -4.045,
+        5.779,
+        -3.685
+      ],
+      "max": [
+        3.875,
+        6.379,
+        4.235
+      ],
+      "color": "#2b2f33",
+      "detail": true,
+      "shape": "cylinder",
+      "finish": "dirty steel",
+      "front": "+y"
+    },
+    {
+      "min": [
+        -4.045,
+        -6.629,
+        -3.685
+      ],
+      "max": [
+        3.875,
+        -6.029,
+        4.235
+      ],
+      "color": "#2b2f33",
+      "detail": true,
+      "shape": "cylinder",
+      "finish": "dirty steel",
+      "front": "+y"
+    },
+    {
+      "min": [
+        -0.885,
+        -0.925,
+        -6.125
+      ],
+      "max": [
+        0.715,
+        0.675,
+        -4.765
+      ],
+      "color": "#4c5359",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.435,
+        1.125,
+        -6.125
+      ],
+      "max": [
+        0.265,
+        1.825,
+        -4.765
+      ],
+      "color": "#7a6448",
+      "detail": true,
+      "shape": "cylinder",
+      "finish": "dirty steel",
+      "front": "+z"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "j0",
+      "at": [
+        -0.085,
+        -0.125,
+        -6.125
+      ],
+      "dir": "-z"
+    }
+  ]
+}

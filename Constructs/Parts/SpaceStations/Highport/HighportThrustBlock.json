@@ -1,0 +1,375 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Highport Thrust Block",
+  "description": "The thrust block under the reactor: four station-keeping drives that hold the station in its orbit.",
+  "group": "Station",
+  "section": "Caledon Highport",
+  "role": "frame",
+  "tool": "welder",
+  "collider": "boxes",
+  "mass": 435600.0,
+  "health": 526720,
+  "armour": 40,
+  "material": "steel",
+  "color": "#2b2f33",
+  "attachSeconds": 20.0,
+  "boxes": [
+    {
+      "min": [
+        -11.125,
+        1.875,
+        -11.125
+      ],
+      "max": [
+        10.875,
+        7.875,
+        10.875
+      ],
+      "color": "#868c90",
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -7.825,
+        -0.625,
+        -7.825
+      ],
+      "max": [
+        -4.425,
+        1.875,
+        -4.425
+      ],
+      "color": "#2b2f33",
+      "detail": true,
+      "shape": "cylinder",
+      "finish": "soot",
+      "front": "+y"
+    },
+    {
+      "min": [
+        -9.125,
+        -8.125,
+        -9.125
+      ],
+      "max": [
+        -3.125,
+        -0.625,
+        -3.125
+      ],
+      "color": "#4c5359",
+      "detail": true,
+      "shape": "tube",
+      "finish": "soot",
+      "front": "+y",
+      "inner": 0.86,
+      "ends": "open"
+    },
+    {
+      "min": [
+        -7.325,
+        -7.325,
+        -7.325
+      ],
+      "max": [
+        -4.925,
+        -7.025,
+        -4.925
+      ],
+      "color": "#ff7a3a",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -9.225,
+        -1.325,
+        -9.225
+      ],
+      "max": [
+        -3.025,
+        -0.725,
+        -3.025
+      ],
+      "color": "#d9a441",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        4.175,
+        -0.625,
+        -7.825
+      ],
+      "max": [
+        7.575,
+        1.875,
+        -4.425
+      ],
+      "color": "#2b2f33",
+      "detail": true,
+      "shape": "cylinder",
+      "finish": "soot",
+      "front": "+y"
+    },
+    {
+      "min": [
+        2.875,
+        -8.125,
+        -9.125
+      ],
+      "max": [
+        8.875,
+        -0.625,
+        -3.125
+      ],
+      "color": "#4c5359",
+      "detail": true,
+      "shape": "tube",
+      "finish": "soot",
+      "front": "+y",
+      "inner": 0.86,
+      "ends": "open"
+    },
+    {
+      "min": [
+        4.675,
+        -7.325,
+        -7.325
+      ],
+      "max": [
+        7.075,
+        -7.025,
+        -4.925
+      ],
+      "color": "#ff7a3a",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        2.775,
+        -1.325,
+        -9.225
+      ],
+      "max": [
+        8.975,
+        -0.725,
+        -3.025
+      ],
+      "color": "#d9a441",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -7.825,
+        -0.625,
+        4.175
+      ],
+      "max": [
+        -4.425,
+        1.875,
+        7.575
+      ],
+      "color": "#2b2f33",
+      "detail": true,
+      "shape": "cylinder",
+      "finish": "soot",
+      "front": "+y"
+    },
+    {
+      "min": [
+        -9.125,
+        -8.125,
+        2.875
+      ],
+      "max": [
+        -3.125,
+        -0.625,
+        8.875
+      ],
+      "color": "#4c5359",
+      "detail": true,
+      "shape": "tube",
+      "finish": "soot",
+      "front": "+y",
+      "inner": 0.86,
+      "ends": "open"
+    },
+    {
+      "min": [
+        -7.325,
+        -7.325,
+        4.675
+      ],
+      "max": [
+        -4.925,
+        -7.025,
+        7.075
+      ],
+      "color": "#ff7a3a",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -9.225,
+        -1.325,
+        2.775
+      ],
+      "max": [
+        -3.025,
+        -0.725,
+        8.975
+      ],
+      "color": "#d9a441",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        4.175,
+        -0.625,
+        4.175
+      ],
+      "max": [
+        7.575,
+        1.875,
+        7.575
+      ],
+      "color": "#2b2f33",
+      "detail": true,
+      "shape": "cylinder",
+      "finish": "soot",
+      "front": "+y"
+    },
+    {
+      "min": [
+        2.875,
+        -8.125,
+        2.875
+      ],
+      "max": [
+        8.875,
+        -0.625,
+        8.875
+      ],
+      "color": "#4c5359",
+      "detail": true,
+      "shape": "tube",
+      "finish": "soot",
+      "front": "+y",
+      "inner": 0.86,
+      "ends": "open"
+    },
+    {
+      "min": [
+        4.675,
+        -7.325,
+        4.675
+      ],
+      "max": [
+        7.075,
+        -7.025,
+        7.075
+      ],
+      "color": "#ff7a3a",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        2.775,
+        -1.325,
+        2.775
+      ],
+      "max": [
+        8.975,
+        -0.725,
+        8.975
+      ],
+      "color": "#d9a441",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -10.925,
+        7.475,
+        -11.235
+      ],
+      "max": [
+        -10.525,
+        7.775,
+        -11.135
+      ],
+      "color": "#ff3b2f",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        10.275,
+        7.475,
+        -11.235
+      ],
+      "max": [
+        10.675,
+        7.775,
+        -11.135
+      ],
+      "color": "#3bff74",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -10.925,
+        7.475,
+        10.885
+      ],
+      "max": [
+        -10.525,
+        7.775,
+        10.985
+      ],
+      "color": "#ff3b2f",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        10.275,
+        7.475,
+        10.885
+      ],
+      "max": [
+        10.675,
+        7.775,
+        10.985
+      ],
+      "color": "#3bff74",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "j0",
+      "at": [
+        -0.125,
+        7.875,
+        -0.125
+      ],
+      "dir": "+y"
+    }
+  ]
+}

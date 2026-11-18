@@ -1,0 +1,327 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Highport Dray Apron N Tunnel",
+  "description": "The container tunnel under a freight apron: containers ride down through the lift table and along it into the warehouse.",
+  "group": "Station",
+  "section": "Caledon Highport",
+  "role": "frame",
+  "tool": "welder",
+  "collider": "boxes",
+  "mass": 451200.0,
+  "health": 545440,
+  "armour": 40,
+  "material": "steel",
+  "color": "#9ba0a3",
+  "attachSeconds": 20.0,
+  "boxes": [
+    {
+      "min": [
+        -4.125,
+        -4.125,
+        -23.125
+      ],
+      "max": [
+        3.875,
+        3.875,
+        23.875
+      ],
+      "color": "#9ba0a3",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -4.155,
+        -1.325,
+        -22.125
+      ],
+      "max": [
+        -4.125,
+        -0.525,
+        22.875
+      ],
+      "color": "#a8d8ea",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -4.525,
+        -4.125,
+        19.615
+      ],
+      "max": [
+        -4.125,
+        3.875,
+        20.135
+      ],
+      "color": "#868c90",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -4.525,
+        -4.125,
+        13.615
+      ],
+      "max": [
+        -4.125,
+        3.875,
+        14.135
+      ],
+      "color": "#868c90",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -4.525,
+        -4.125,
+        7.615
+      ],
+      "max": [
+        -4.125,
+        3.875,
+        8.135
+      ],
+      "color": "#868c90",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -4.525,
+        -4.125,
+        1.615
+      ],
+      "max": [
+        -4.125,
+        3.875,
+        2.135
+      ],
+      "color": "#868c90",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -4.525,
+        -4.125,
+        -4.385
+      ],
+      "max": [
+        -4.125,
+        3.875,
+        -3.865
+      ],
+      "color": "#868c90",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -4.525,
+        -4.125,
+        -10.385
+      ],
+      "max": [
+        -4.125,
+        3.875,
+        -9.865
+      ],
+      "color": "#868c90",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -4.525,
+        -4.125,
+        -16.385
+      ],
+      "max": [
+        -4.125,
+        3.875,
+        -15.865
+      ],
+      "color": "#868c90",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        3.875,
+        -1.325,
+        -22.125
+      ],
+      "max": [
+        3.905,
+        -0.525,
+        22.875
+      ],
+      "color": "#a8d8ea",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        3.875,
+        -4.125,
+        19.615
+      ],
+      "max": [
+        4.275,
+        3.875,
+        20.135
+      ],
+      "color": "#868c90",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        3.875,
+        -4.125,
+        13.615
+      ],
+      "max": [
+        4.275,
+        3.875,
+        14.135
+      ],
+      "color": "#868c90",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        3.875,
+        -4.125,
+        7.615
+      ],
+      "max": [
+        4.275,
+        3.875,
+        8.135
+      ],
+      "color": "#868c90",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        3.875,
+        -4.125,
+        1.615
+      ],
+      "max": [
+        4.275,
+        3.875,
+        2.135
+      ],
+      "color": "#868c90",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        3.875,
+        -4.125,
+        -4.385
+      ],
+      "max": [
+        4.275,
+        3.875,
+        -3.865
+      ],
+      "color": "#868c90",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        3.875,
+        -4.125,
+        -10.385
+      ],
+      "max": [
+        4.275,
+        3.875,
+        -9.865
+      ],
+      "color": "#868c90",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        3.875,
+        -4.125,
+        -16.385
+      ],
+      "max": [
+        4.275,
+        3.875,
+        -15.865
+      ],
+      "color": "#868c90",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -4.125,
+        -4.125,
+        -23.225
+      ],
+      "max": [
+        3.875,
+        3.875,
+        -23.125
+      ],
+      "color": "#2b2f33",
+      "detail": true,
+      "finish": "dirty steel"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "j0",
+      "at": [
+        -0.125,
+        -0.125,
+        23.875
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "j1",
+      "at": [
+        -0.125,
+        3.875,
+        12.205
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j2",
+      "at": [
+        -0.125,
+        3.875,
+        -11.125
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j3",
+      "at": [
+        -0.125,
+        3.875,
+        -22.955
+      ],
+      "dir": "+y"
+    }
+  ]
+}

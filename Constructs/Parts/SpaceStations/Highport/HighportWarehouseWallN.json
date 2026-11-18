@@ -1,0 +1,418 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Highport Warehouse Wall N",
+  "description": "The warehouse's north hull wall: plate on ribs, the livery band, a window strip a deck.",
+  "group": "Station",
+  "section": "Caledon Highport",
+  "role": "frame",
+  "tool": "welder",
+  "collider": "boxes",
+  "mass": 108000.0,
+  "health": 133600,
+  "armour": 40,
+  "material": "steel",
+  "color": "#9ba0a3",
+  "attachSeconds": 20.0,
+  "boxes": [
+    {
+      "min": [
+        -25.125,
+        -14.525,
+        -0.125
+      ],
+      "max": [
+        24.875,
+        14.275,
+        0.375
+      ],
+      "color": "#9ba0a3",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -24.825,
+        11.175,
+        -0.147
+      ],
+      "max": [
+        24.575,
+        12.375,
+        -0.125
+      ],
+      "color": "#3c5a6c",
+      "detail": true,
+      "finish": "worn paint"
+    },
+    {
+      "min": [
+        -18.925,
+        -14.225,
+        -0.161
+      ],
+      "max": [
+        -18.825,
+        14.075,
+        -0.125
+      ],
+      "color": "#2b2f33",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -12.995,
+        -14.225,
+        -0.545
+      ],
+      "max": [
+        -12.255,
+        14.075,
+        -0.125
+      ],
+      "color": "#868c90",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -6.425,
+        -14.225,
+        -0.161
+      ],
+      "max": [
+        -6.325,
+        14.075,
+        -0.125
+      ],
+      "color": "#2b2f33",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.495,
+        -14.225,
+        -0.545
+      ],
+      "max": [
+        0.245,
+        14.075,
+        -0.125
+      ],
+      "color": "#868c90",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        6.075,
+        -14.225,
+        -0.161
+      ],
+      "max": [
+        6.175,
+        14.075,
+        -0.125
+      ],
+      "color": "#2b2f33",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        12.005,
+        -14.225,
+        -0.545
+      ],
+      "max": [
+        12.745,
+        14.075,
+        -0.125
+      ],
+      "color": "#868c90",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        18.575,
+        -14.225,
+        -0.161
+      ],
+      "max": [
+        18.675,
+        14.075,
+        -0.125
+      ],
+      "color": "#2b2f33",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        1.9365,
+        7.1892,
+        -0.14
+      ],
+      "max": [
+        4.0506,
+        8.4871,
+        -0.125
+      ],
+      "color": "#aeb2b2",
+      "detail": true,
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        5.158,
+        -5.42,
+        -0.14
+      ],
+      "max": [
+        8.9868,
+        -4.0519,
+        -0.125
+      ],
+      "color": "#aeb2b2",
+      "detail": true,
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -19.3273,
+        6.6609,
+        -0.14
+      ],
+      "max": [
+        -15.4808,
+        8.4489,
+        -0.125
+      ],
+      "color": "#868c90",
+      "detail": true,
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -16.679,
+        -6.8164,
+        -0.14
+      ],
+      "max": [
+        -13.0038,
+        -5.5285,
+        -0.125
+      ],
+      "color": "#aeb2b2",
+      "detail": true,
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        3.7347,
+        -11.4441,
+        -0.14
+      ],
+      "max": [
+        7.7342,
+        -9.8055,
+        -0.125
+      ],
+      "color": "#aeb2b2",
+      "detail": true,
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -17.3561,
+        -0.5575,
+        -0.14
+      ],
+      "max": [
+        -14.2899,
+        1.8493,
+        -0.125
+      ],
+      "color": "#aeb2b2",
+      "detail": true,
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        9.9265,
+        4.9234,
+        -0.14
+      ],
+      "max": [
+        13.1052,
+        7.5984,
+        -0.125
+      ],
+      "color": "#868c90",
+      "detail": true,
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -3.0047,
+        -7.3565,
+        -0.14
+      ],
+      "max": [
+        -0.1253,
+        -5.3914,
+        -0.125
+      ],
+      "color": "#868c90",
+      "detail": true,
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -23.1095,
+        4.3685,
+        -0.14
+      ],
+      "max": [
+        -20.6918,
+        6.3484,
+        -0.125
+      ],
+      "color": "#aeb2b2",
+      "detail": true,
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -0.7795,
+        4.2371,
+        -0.14
+      ],
+      "max": [
+        1.6591,
+        5.872,
+        -0.125
+      ],
+      "color": "#868c90",
+      "detail": true,
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -25.475,
+        -14.525,
+        -0.475
+      ],
+      "max": [
+        -24.125,
+        14.275,
+        -0.125
+      ],
+      "color": "#2b2f33",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -25.475,
+        -14.525,
+        -0.125
+      ],
+      "max": [
+        -25.125,
+        14.275,
+        0.875
+      ],
+      "color": "#2b2f33",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        23.875,
+        -14.525,
+        -0.475
+      ],
+      "max": [
+        25.225,
+        14.275,
+        -0.125
+      ],
+      "color": "#2b2f33",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        24.875,
+        -14.525,
+        -0.125
+      ],
+      "max": [
+        25.225,
+        14.275,
+        0.875
+      ],
+      "color": "#2b2f33",
+      "detail": true,
+      "finish": "dirty steel"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "j0",
+      "at": [
+        -0.125,
+        -14.525,
+        0.125
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j1",
+      "at": [
+        -0.125,
+        14.275,
+        0.125
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j2",
+      "at": [
+        -24.875,
+        -0.125,
+        0.375
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "j3",
+      "at": [
+        24.625,
+        -0.125,
+        0.375
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "j4",
+      "at": [
+        -0.125,
+        12.575,
+        -0.125
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j5",
+      "at": [
+        -0.125,
+        6.875,
+        -0.125
+      ],
+      "dir": "-z"
+    }
+  ]
+}

@@ -1,0 +1,348 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Highport Dray Apron N 1",
+  "description": "A length of a freight apron: a plated deck on girders, side rails a hauler's clamps run on, lamps along its edges.",
+  "group": "Station",
+  "section": "Caledon Highport",
+  "role": "frame",
+  "tool": "welder",
+  "collider": "boxes",
+  "mass": 361199.5,
+  "health": 437439,
+  "armour": 40,
+  "material": "steel",
+  "color": "#868c90",
+  "attachSeconds": 20.0,
+  "boxes": [
+    {
+      "min": [
+        -12.125,
+        -3.125,
+        -11.4583
+      ],
+      "max": [
+        11.875,
+        0.875,
+        11.875
+      ],
+      "color": "#868c90",
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -11.925,
+        0.875,
+        -11.4583
+      ],
+      "max": [
+        -10.725,
+        3.875,
+        11.875
+      ],
+      "color": "#d9a441",
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        10.475,
+        0.875,
+        -11.4583
+      ],
+      "max": [
+        11.675,
+        3.875,
+        11.875
+      ],
+      "color": "#d9a441",
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -10.625,
+        0.875,
+        -11.4083
+      ],
+      "max": [
+        10.375,
+        0.895,
+        11.825
+      ],
+      "color": "#4c5359",
+      "detail": true,
+      "finish": "tread plate"
+    },
+    {
+      "min": [
+        -11.625,
+        -3.725,
+        9.575
+      ],
+      "max": [
+        11.375,
+        -3.125,
+        10.175
+      ],
+      "color": "#2b2f33",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -12.185,
+        -0.325,
+        9.675
+      ],
+      "max": [
+        -12.125,
+        0.075,
+        10.075
+      ],
+      "color": "#ffd8a0",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        11.875,
+        -0.325,
+        9.675
+      ],
+      "max": [
+        11.935,
+        0.075,
+        10.075
+      ],
+      "color": "#ffd8a0",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -11.625,
+        -3.725,
+        4.575
+      ],
+      "max": [
+        11.375,
+        -3.125,
+        5.175
+      ],
+      "color": "#2b2f33",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -12.185,
+        -0.325,
+        4.675
+      ],
+      "max": [
+        -12.125,
+        0.075,
+        5.075
+      ],
+      "color": "#ffd8a0",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        11.875,
+        -0.325,
+        4.675
+      ],
+      "max": [
+        11.935,
+        0.075,
+        5.075
+      ],
+      "color": "#ffd8a0",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -11.625,
+        -3.725,
+        -0.425
+      ],
+      "max": [
+        11.375,
+        -3.125,
+        0.175
+      ],
+      "color": "#2b2f33",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -12.185,
+        -0.325,
+        -0.325
+      ],
+      "max": [
+        -12.125,
+        0.075,
+        0.075
+      ],
+      "color": "#ffd8a0",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        11.875,
+        -0.325,
+        -0.325
+      ],
+      "max": [
+        11.935,
+        0.075,
+        0.075
+      ],
+      "color": "#ffd8a0",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -11.625,
+        -3.725,
+        -5.425
+      ],
+      "max": [
+        11.375,
+        -3.125,
+        -4.825
+      ],
+      "color": "#2b2f33",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -12.185,
+        -0.325,
+        -5.325
+      ],
+      "max": [
+        -12.125,
+        0.075,
+        -4.925
+      ],
+      "color": "#ffd8a0",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        11.875,
+        -0.325,
+        -5.325
+      ],
+      "max": [
+        11.935,
+        0.075,
+        -4.925
+      ],
+      "color": "#ffd8a0",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -11.625,
+        -3.725,
+        -10.425
+      ],
+      "max": [
+        11.375,
+        -3.125,
+        -9.825
+      ],
+      "color": "#2b2f33",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -12.185,
+        -0.325,
+        -10.325
+      ],
+      "max": [
+        -12.125,
+        0.075,
+        -9.925
+      ],
+      "color": "#ffd8a0",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        11.875,
+        -0.325,
+        -10.325
+      ],
+      "max": [
+        11.935,
+        0.075,
+        -9.925
+      ],
+      "color": "#ffd8a0",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "j0",
+      "at": [
+        -0.125,
+        0.575,
+        11.875
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "j1",
+      "at": [
+        -0.125,
+        -1.425,
+        11.875
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "j2",
+      "at": [
+        -0.125,
+        -1.125,
+        -11.4583
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j3",
+      "at": [
+        -0.125,
+        -3.125,
+        0.205
+      ],
+      "dir": "-y"
+    }
+  ]
+}

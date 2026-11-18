@@ -1,0 +1,572 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Highport Frigate Gantry S1",
+  "description": "A repair gantry on an arm's rails: a beam over both berths, a trolley and a jointed manipulator over each ship (still: the arms don't move yet).",
+  "group": "Station",
+  "section": "Caledon Highport",
+  "role": "frame",
+  "tool": "welder",
+  "collider": "boxes",
+  "mass": 54883.2,
+  "health": 69860,
+  "armour": 40,
+  "material": "steel",
+  "color": "#d9a441",
+  "attachSeconds": 20.0,
+  "boxes": [
+    {
+      "min": [
+        2.675,
+        -4.125,
+        -0.625
+      ],
+      "max": [
+        3.475,
+        2.575,
+        1.375
+      ],
+      "color": "#d9a441",
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -3.725,
+        -4.125,
+        -0.625
+      ],
+      "max": [
+        -2.925,
+        2.575,
+        1.375
+      ],
+      "color": "#d9a441",
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -27.725,
+        2.575,
+        -0.925
+      ],
+      "max": [
+        27.475,
+        4.975,
+        1.675
+      ],
+      "color": "#d9a441",
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -27.728,
+        3.575,
+        -0.945
+      ],
+      "max": [
+        27.478,
+        3.975,
+        1.695
+      ],
+      "color": "#25272a",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        19.075,
+        1.375,
+        -1.225
+      ],
+      "max": [
+        21.875,
+        2.575,
+        1.975
+      ],
+      "color": "#2b2f33",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        17.7829,
+        -1.785,
+        0.125
+      ],
+      "max": [
+        20.6671,
+        1.535,
+        0.625
+      ],
+      "color": "#aeb2b2",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          20.2829,
+          1.535,
+          0.625
+        ],
+        [
+          20.6671,
+          1.215,
+          0.625
+        ],
+        [
+          20.2829,
+          1.535,
+          0.125
+        ],
+        [
+          20.6671,
+          1.215,
+          0.125
+        ],
+        [
+          17.7829,
+          -1.465,
+          0.625
+        ],
+        [
+          18.1671,
+          -1.785,
+          0.625
+        ],
+        [
+          17.7829,
+          -1.465,
+          0.125
+        ],
+        [
+          18.1671,
+          -1.785,
+          0.125
+        ]
+      ],
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        17.8098,
+        -3.9377,
+        0.175
+      ],
+      "max": [
+        19.6402,
+        -1.5123,
+        0.575
+      ],
+      "color": "#aeb2b2",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          18.1402,
+          -1.5123,
+          0.175
+        ],
+        [
+          17.8098,
+          -1.7377,
+          0.175
+        ],
+        [
+          18.1402,
+          -1.5123,
+          0.575
+        ],
+        [
+          17.8098,
+          -1.7377,
+          0.575
+        ],
+        [
+          19.6402,
+          -3.7123,
+          0.175
+        ],
+        [
+          19.3098,
+          -3.9377,
+          0.175
+        ],
+        [
+          19.6402,
+          -3.7123,
+          0.575
+        ],
+        [
+          19.3098,
+          -3.9377,
+          0.575
+        ]
+      ],
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        17.525,
+        -2.075,
+        -0.075
+      ],
+      "max": [
+        18.425,
+        -1.175,
+        0.825
+      ],
+      "color": "#2b2f33",
+      "detail": true,
+      "shape": "sphere",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        19.125,
+        -4.175,
+        0.025
+      ],
+      "max": [
+        19.825,
+        -3.475,
+        0.725
+      ],
+      "color": "#d9a441",
+      "detail": true,
+      "shape": "sphere",
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        19.355,
+        -4.325,
+        0.255
+      ],
+      "max": [
+        19.595,
+        -4.175,
+        0.495
+      ],
+      "color": "#ff7a3a",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        2.625,
+        2.515,
+        -0.225
+      ],
+      "max": [
+        3.125,
+        2.575,
+        0.975
+      ],
+      "color": "#ffd8a0",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        8.625,
+        2.515,
+        -0.225
+      ],
+      "max": [
+        9.125,
+        2.575,
+        0.975
+      ],
+      "color": "#ffd8a0",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        14.625,
+        2.515,
+        -0.225
+      ],
+      "max": [
+        15.125,
+        2.575,
+        0.975
+      ],
+      "color": "#ffd8a0",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        20.625,
+        2.515,
+        -0.225
+      ],
+      "max": [
+        21.125,
+        2.575,
+        0.975
+      ],
+      "color": "#ffd8a0",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -22.125,
+        1.375,
+        -1.225
+      ],
+      "max": [
+        -19.325,
+        2.575,
+        1.975
+      ],
+      "color": "#2b2f33",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -20.9171,
+        -1.785,
+        0.125
+      ],
+      "max": [
+        -18.0329,
+        1.535,
+        0.625
+      ],
+      "color": "#aeb2b2",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          -20.5329,
+          1.535,
+          0.125
+        ],
+        [
+          -20.9171,
+          1.215,
+          0.125
+        ],
+        [
+          -20.5329,
+          1.535,
+          0.625
+        ],
+        [
+          -20.9171,
+          1.215,
+          0.625
+        ],
+        [
+          -18.0329,
+          -1.465,
+          0.125
+        ],
+        [
+          -18.4171,
+          -1.785,
+          0.125
+        ],
+        [
+          -18.0329,
+          -1.465,
+          0.625
+        ],
+        [
+          -18.4171,
+          -1.785,
+          0.625
+        ]
+      ],
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -19.8902,
+        -3.9377,
+        0.175
+      ],
+      "max": [
+        -18.0598,
+        -1.5123,
+        0.575
+      ],
+      "color": "#aeb2b2",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          -18.3902,
+          -1.5123,
+          0.575
+        ],
+        [
+          -18.0598,
+          -1.7377,
+          0.575
+        ],
+        [
+          -18.3902,
+          -1.5123,
+          0.175
+        ],
+        [
+          -18.0598,
+          -1.7377,
+          0.175
+        ],
+        [
+          -19.8902,
+          -3.7123,
+          0.575
+        ],
+        [
+          -19.5598,
+          -3.9377,
+          0.575
+        ],
+        [
+          -19.8902,
+          -3.7123,
+          0.175
+        ],
+        [
+          -19.5598,
+          -3.9377,
+          0.175
+        ]
+      ],
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -18.675,
+        -2.075,
+        -0.075
+      ],
+      "max": [
+        -17.775,
+        -1.175,
+        0.825
+      ],
+      "color": "#2b2f33",
+      "detail": true,
+      "shape": "sphere",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -20.075,
+        -4.175,
+        0.025
+      ],
+      "max": [
+        -19.375,
+        -3.475,
+        0.725
+      ],
+      "color": "#d9a441",
+      "detail": true,
+      "shape": "sphere",
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -19.845,
+        -4.325,
+        0.255
+      ],
+      "max": [
+        -19.605,
+        -4.175,
+        0.495
+      ],
+      "color": "#ff7a3a",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -3.375,
+        2.515,
+        -0.225
+      ],
+      "max": [
+        -2.875,
+        2.575,
+        0.975
+      ],
+      "color": "#ffd8a0",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -9.375,
+        2.515,
+        -0.225
+      ],
+      "max": [
+        -8.875,
+        2.575,
+        0.975
+      ],
+      "color": "#ffd8a0",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -15.375,
+        2.515,
+        -0.225
+      ],
+      "max": [
+        -14.875,
+        2.575,
+        0.975
+      ],
+      "color": "#ffd8a0",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -21.375,
+        2.515,
+        -0.225
+      ],
+      "max": [
+        -20.875,
+        2.575,
+        0.975
+      ],
+      "color": "#ffd8a0",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "j0",
+      "at": [
+        3.075,
+        -4.125,
+        0.375
+      ],
+      "dir": "-y"
+    }
+  ]
+}
