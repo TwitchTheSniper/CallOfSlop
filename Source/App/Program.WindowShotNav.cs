@@ -16,7 +16,7 @@ namespace CallOfSlop;
 /// </summary>
 public static unsafe partial class Program
 {
-    private static bool WsNavKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "command" or "cmdpick" or "order" or "nav" or "hoist" or "speed" or "travel" or "cmdview" or "rclick" or "rclickup" or "spacewalk" or "missile" or "missiles" or "letgo" or "orbit" or "boardwalk" or "cmdboard" or "mouse" or "ram" or "gapto" or "moorclear" or "stationsell" or "market";
+    private static bool WsNavKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "command" or "cmdpick" or "order" or "nav" or "hoist" or "speed" or "travel" or "cmdview" or "rclick" or "rclickup" or "spacewalk" or "missile" or "missiles" or "letgo" or "orbit" or "boardwalk" or "cmdboard" or "mouse" or "ram" or "gapto" or "moorclear" or "stationsell" or "stationbuy" or "market";
 
     /// <summary>"order dock N": the picked craft docks with the Nth craft on the map (as cmdpick counts them).</summary>
     private static string? WsDockOrder(Game g, int n)
@@ -264,6 +264,10 @@ public static unsafe partial class Program
             case "stationsell":
                 // "stationsell": the picked craft's cargo sold to the station it is moored at, as the station card's SELL CARGO sends it.
                 g.SandboxFaction(FactionOp.StationSell, Ui.CommandPicked);
+                return true;
+            case "stationbuy":
+                // "stationbuy K": the Kth good of the station the picked craft is moored at bought into it, as the card's BUY sends it.
+                g.SandboxFaction(FactionOp.StationBuy, Ui.CommandPicked, words.Length > 0 && int.TryParse(words[0], out var sbk) ? sbk : 0);
                 return true;
             case "market":
                 // "market": every station's market as this peer has it (stock by good, who is moored), and this player's credits.

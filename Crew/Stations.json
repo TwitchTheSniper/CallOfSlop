@@ -6,7 +6,15 @@
   // hostile to a player doesn't trade with them. Each good: "buy", what the station pays a unit (credits); "sell", what it asks a unit; "stock",
   // what it holds at the start; "most", what it holds at most (it buys no more past that). "margin": the share of what a station pays that its
   // power counts in its stock (the trade it does on it).
+  // "haulers" (phase S2; Karl, 2026-11-18: "Haulers from other neutral factions can then send ships to buy goods and take them back to their
+  // station"): NPC ships a power runs between two stations, crewed by that power. Each buys "goods" at "from" (what it asks, up to what the
+  // ship's bins hold and what the station has), flies there with the Dock order, sells to "to" (what that one pays), loads that station's
+  // "back" goods and runs home: the stock moves, and the power's books pay and earn it. "ship" is a blueprint with bins; "count" ships run
+  // the route, "wait" seconds moored at each end. Haulers start with a ship start's stations (Story/Opening).
   "margin": 0.25,
+  "haulers": [
+    { "power": "Traders", "ship": "Magpie Mining Ship", "count": 1, "from": "Caledon Highport", "to": "Loch Watch", "goods": ["iron ore", "copper ore"], "back": ["steel"], "wait": 30 }
+  ],
   "stations": [
     {
       "name": "Caledon Highport",
@@ -21,8 +29,25 @@
         { "good": "sand", "buy": 0.02, "sell": 0.04, "stock": 5000, "most": 100000 },
         { "good": "helium", "buy": 0.5, "sell": 0.75, "stock": 2000, "most": 50000 },
         { "good": "metal", "buy": 0.5, "sell": 0.8, "stock": 3000, "most": 30000 },
-        { "good": "steel", "buy": 0.8, "sell": 1.2, "stock": 4000, "most": 30000 },
+        { "good": "steel", "buy": 1.05, "sell": 1.4, "stock": 4000, "most": 30000 },
         { "good": "circuits", "buy": 3, "sell": 4.5, "stock": 500, "most": 5000 }
+      ]
+    },
+    {
+      // The Militia's station over Caledon (Karl, 2026-11-18: a second station "at a fixed place in another neutral faction's turf"; the
+      // Militia hold Heather Mine, Glen Post and Loch Post below, Crew/Territory.json). Built from the Highport's blueprint for now, on a
+      // higher orbit (Story/Opening). They want ore for their refinery and sell its steel: the haulers' run.
+      "name": "Loch Watch",
+      "power": "Militia",
+      "planet": "Caledon",
+      "goods": [
+        { "good": "iron ore", "buy": 0.24, "sell": 0.3, "stock": 2000, "most": 150000 },
+        { "good": "copper ore", "buy": 0.34, "sell": 0.42, "stock": 1000, "most": 80000 },
+        { "good": "gold ore", "buy": 1.0, "sell": 1.5, "stock": 200, "most": 20000 },
+        { "good": "steel", "buy": 0.6, "sell": 0.85, "stock": 20000, "most": 60000 },
+        { "good": "metal", "buy": 0.45, "sell": 0.7, "stock": 6000, "most": 30000 },
+        { "good": "ammo", "buy": 1.5, "sell": 2.2, "stock": 3000, "most": 10000 },
+        { "good": "hydrogen", "buy": 0.3, "sell": 0.45, "stock": 8000, "most": 40000 }
       ]
     }
   ]

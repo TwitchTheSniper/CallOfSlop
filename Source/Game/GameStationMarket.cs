@@ -13,6 +13,15 @@ public sealed class StationDef
 /// <summary>A good a station trades: what it pays and asks a unit (credits), what it starts with and holds at most.</summary>
 public readonly record struct StationGood(byte Material, float Buy, float Sell, int Stock, int Most);
 
+/// <summary>A hauler route (Crew/Stations.json "haulers"): a power's ships buying goods at one station and selling them at another, and back.</summary>
+public sealed class StationHaulerDef
+{
+    public string Power = "", Ship = "";
+    public int From, To, Count = 1; // (stations by index in StationMarkets.All)
+    public byte[] Goods = [], Back = []; // materials loaded at From, and at To for the run home
+    public float Wait = 30; // seconds moored at each end
+}
+
 /// <summary>The stations' markets (Crew/Stations.json). A bad file is refused with a reason in the log, and no station has a market.</summary>
 public static class StationMarkets
 {
@@ -23,6 +32,11 @@ public static class StationMarkets
     private static float _margin = 0.25f;
 
     public static StationDef[] All => _all ??= Load(Path.Combine(AppFolders.Data, "Crew", "Stations.json"));
+
+    private static StationHaulerDef[] _haulers = [];
+
+    /// <summary>The hauler routes (empty when the file was refused).</summary>
+    public static StationHaulerDef[] Haulers { get { _ = All; return _haulers; } }
 
     /// <summary>The share of what a station pays that its power counts in its stock.</summary>
     public static float Margin { get { _ = All; return _margin; } }
@@ -80,7 +94,39 @@ public static class StationMarkets
             }
             if (list.Count > 255)
                 throw new FormatException("at most 255 stations");
-            Console.WriteLine($"[stations] {list.Count} station market(s) from {path}");
+            var haulers = new List<StationHaulerDef>();
+            if (root.TryGetProperty("haulers", out var hs))
+                foreach (var h in hs.EnumerateArray())
+                {
+                    int At(string key)
+                    {
+                        var n = h.GetProperty(key).GetString() ?? "";
+                        var i = list.FindIndex(x => x.Name.Equals(n, StringComparison.OrdinalIgnoreCase));
+                        return i >= 0 ? i : throw new FormatException($"haulers: no station named \"{n}\" for \"{key}\"");
+                    }
+                    byte[] Mats(string key, StationDef at) => h.TryGetProperty(key, out var gs) ? [.. gs.EnumerateArray().Select(g =>
+                    {
+                        var mat = RecyclingTable.Current.IdOf(g.GetString() ?? "");
+                        return mat != 0 && at.Goods.Any(x => x.Material == mat && x.Sell > 0) ? mat
+                            : throw new FormatException($"haulers: {at.Name} sells no \"{g.GetString()}\" (\"{key}\")");
+                    })] : [];
+                    var d = new StationHaulerDef
+                    {
+                        Power = h.GetProperty("power").GetString() ?? "",
+                        Ship = h.GetProperty("ship").GetString() ?? "",
+                        From = At("from"),
+                        To = At("to"),
+                        Count = Math.Clamp(h.TryGetProperty("count", out var cn) ? cn.GetInt32() : 1, 0, 8),
+                        Wait = Math.Clamp(h.TryGetProperty("wait", out var wt) ? wt.GetSingle() : 30f, 5f, 600f),
+                    };
+                    if (d.From == d.To)
+                        throw new FormatException("haulers: \"from\" and \"to\" are the same station");
+                    d.Goods = Mats("goods", list[d.From]);
+                    d.Back = Mats("back", list[d.To]);
+                    haulers.Add(d);
+                }
+            _haulers = [.. haulers];
+            Console.WriteLine($"[stations] {list.Count} station market(s) and {_haulers.Length} hauler route(s) from {path}");
             return [.. list];
         }
         catch (Exception ex) when (ex is IOException or JsonException or FormatException or KeyNotFoundException or InvalidOperationException)
@@ -220,7 +266,11 @@ public sealed partial class Game
                     (c.MooredTo, c.MoorPart) = (m.Body, part);
             }
             if (m.Def < StationMarkets.All.Length && StationMarkets.All[m.Def].Goods.Length == m.Stock.Length)
+            {
                 StationMarketsHere[m.Body] = m; // (a market this peer's data doesn't match is left out)
+                if (Constructs.Get(m.Body) is { } sb)
+                    sb.StationTitle = StationMarkets.All[m.Def].Name; // (its name, as the host's: a second Highport goes by its own)
+            }
         }
         StationsVersion++;
     }
@@ -267,21 +317,13 @@ public sealed partial class Game
         return value;
     }
 
-    /// <summary>Server: <paramref name="p"/> sells the ore and goods aboard moored ship <paramref name="shipId"/> to its station. Null: sold; else why not.</summary>
-    private string? StationSellAct(Player p, ushort shipId)
+    /// <summary>
+    /// Host: the station buys what <paramref name="ship"/>'s bins hold of the goods it buys, up to the room it has for each; <paramref name="sold"/>
+    /// gets the units by good. Returns what it pays (credits); the power holding it counts its margin on that as earned.
+    /// </summary>
+    private double StationTakeCargo(StationMarket m, Construct ship, Span<int> sold)
     {
-        if (Constructs.Get(shipId) is not { Wreck: false } ship)
-            return "that ship is gone";
-        if (ship.MooredTo == 0 || Constructs.Get(ship.MooredTo) is not { } st || StationMarketOf(st) is not { } m)
-            return "dock at a station's berth first";
-        if (!StationAboard(p, ship))
-            return "you need to be aboard the docked ship to sell its cargo";
-        var name = StationName(st);
-        var power = StationPower(m);
-        if (power != 0 && CrewStanding(power, p.Id) < 0)
-            return $"{CrewPowers.Of(power)?.Name ?? "they"} won't trade with you";
         var goods = StationMarkets.All[m.Def].Goods;
-        Span<int> sold = stackalloc int[goods.Length];
         double value = 0;
         for (var i = 0; i < ship.PartCount; i++)
         {
@@ -297,6 +339,84 @@ public sealed partial class Game
                     break;
                 }
         }
+        StationMargin(m, value);
+        return value;
+    }
+
+    /// <summary>
+    /// Host: up to <paramref name="most"/> units of good <paramref name="k"/> from the station's stock into <paramref name="ship"/>'s bins (those that
+    /// take it, an empty one or one holding it already). Returns the units loaded; they cost its asking price each.
+    /// </summary>
+    private int StationLoadCargo(StationMarket m, Construct ship, int k, int most)
+    {
+        var good = StationMarkets.All[m.Def].Goods[k];
+        var left = Math.Min(most, m.Stock[k]);
+        var put = 0;
+        for (var pass = 0; pass < 2 && left > 0; pass++) // (bins already holding it first, then empty ones)
+            for (var i = 0; i < ship.PartCount && left > 0; i++)
+            {
+                if (!ship.DefOf(i).IsBin || Constructs.StoreOf(ship, i) is not { } store || (pass == 0) != (store.Amount > 0))
+                    continue;
+                var n = Constructs.Deposit(ship, i, left, good.Material);
+                left -= n;
+                put += n;
+            }
+        m.Stock[k] -= put;
+        if (put > 0)
+        {
+            StationMargin(m, put * (double)good.Sell);
+            StationsVersion++;
+        }
+        return put;
+    }
+
+    /// <summary>Host: the station's power counts its margin on a trade of <paramref name="value"/> credits (its stock and its books).</summary>
+    private void StationMargin(StationMarket m, double value)
+    {
+        if (value <= 0 || StationPower(m) is not (> 0 and var power) || Controllers.Powers[power] is not { Fallen: false } pw)
+            return;
+        var share = value * StationMarkets.Margin;
+        pw.Stock += share; // (its trade on it: the books keep it as earned)
+        pw.Earned += share;
+    }
+
+    private static string StationGoodsText(StationMarket m, ReadOnlySpan<int> units)
+    {
+        var goods = StationMarkets.All[m.Def].Goods;
+        var what = new System.Text.StringBuilder();
+        for (var k = 0; k < goods.Length && k < units.Length; k++)
+            if (units[k] > 0)
+                what.Append(what.Length > 0 ? ", " : "").Append(units[k].ToString("N0", System.Globalization.CultureInfo.InvariantCulture)).Append(' ').Append(RecyclingTable.Current.NameOf(goods[k].Material));
+        return what.ToString();
+    }
+
+    /// <summary>Server: why <paramref name="p"/> can't trade from moored ship <paramref name="shipId"/> (null: they can), with its station's market.</summary>
+    private string? StationTradeCheck(Player p, ushort shipId, out Construct ship, out Construct st, out StationMarket m)
+    {
+        ship = st = null!;
+        m = null!;
+        if (Constructs.Get(shipId) is not { Wreck: false } s)
+            return "that ship is gone";
+        ship = s;
+        if (s.MooredTo == 0 || Constructs.Get(s.MooredTo) is not { } station || StationMarketOf(station) is not { } market)
+            return "dock at a station's berth first";
+        (st, m) = (station, market);
+        if (!StationAboard(p, s))
+            return "you need to be aboard the docked ship to trade";
+        var power = StationPower(m);
+        if (power != 0 && CrewStanding(power, p.Id) < 0)
+            return $"{CrewPowers.Of(power)?.Name ?? "they"} won't trade with you";
+        return null;
+    }
+
+    /// <summary>Server: <paramref name="p"/> sells the ore and goods aboard moored ship <paramref name="shipId"/> to its station. Null: sold; else why not.</summary>
+    private string? StationSellAct(Player p, ushort shipId)
+    {
+        if (StationTradeCheck(p, shipId, out var ship, out var st, out var m) is { } why)
+            return why;
+        var name = StationName(st);
+        Span<int> sold = stackalloc int[StationMarkets.All[m.Def].Goods.Length];
+        var value = StationTakeCargo(m, ship, sold);
         var total = 0;
         foreach (var s in sold)
             total += s;
@@ -304,19 +424,40 @@ public sealed partial class Game
             return $"nothing aboard is wanted at {name} (or it holds all it can of what you carry)";
         var credits = (long)Math.Floor(value);
         CreditsGive(p.Id, credits);
-        if (power != 0 && Controllers.Powers[power] is { Fallen: false } pw)
-        {
-            var share = value * StationMarkets.Margin;
-            pw.Stock += share; // (its trade on what it bought: the books keep it as earned)
-            pw.Earned += share;
-        }
         StationsVersion++;
-        var what = new System.Text.StringBuilder();
-        for (var k = 0; k < goods.Length; k++)
-            if (sold[k] > 0)
-                what.Append(what.Length > 0 ? ", " : "").Append(sold[k].ToString("N0", System.Globalization.CultureInfo.InvariantCulture)).Append(' ').Append(RecyclingTable.Current.NameOf(goods[k].Material));
+        var what = StationGoodsText(m, sold);
         SandboxHands.Notices.Add((p.Id, $"Sold {what} to {name} for {credits} credits."));
         Log($"[station] {p.Name} sold {what} from construct {ship.Id} to {name} for {credits} credits");
+        return null;
+    }
+
+    /// <summary>
+    /// Server: <paramref name="p"/> buys good <paramref name="k"/> of moored ship <paramref name="shipId"/>'s station: as much as its stock, the ship's
+    /// bins and their credits allow (Karl, 2026-11-18: the market shows "whatever goods are there to trade"). Null: bought; else why not.
+    /// </summary>
+    private string? StationBuyAct(Player p, ushort shipId, int k)
+    {
+        if (StationTradeCheck(p, shipId, out var ship, out var st, out var m) is { } why)
+            return why;
+        var goods = StationMarkets.All[m.Def].Goods;
+        var name = StationName(st);
+        if (k >= goods.Length || goods[k].Sell <= 0)
+            return $"{name} doesn't sell that";
+        if (m.Stock[k] <= 0)
+            return $"{name} has none left";
+        var price = (double)goods[k].Sell;
+        var afford = SandboxInfiniteParts ? int.MaxValue : (int)Math.Min(int.MaxValue, Math.Floor(CreditsOf(p.Id) / price));
+        if (afford <= 0)
+            return $"you can't afford a unit ({price:0.00} credits)";
+        var units = StationLoadCargo(m, ship, k, afford);
+        var good = RecyclingTable.Current.NameOf(goods[k].Material);
+        if (units == 0)
+            return $"no bin aboard has room for {good}";
+        var cost = (long)Math.Ceiling(units * price);
+        if (CreditsPay(p.Id, cost) is { } cant) // (it can't fail: afford was counted from the same balance)
+            return cant;
+        SandboxHands.Notices.Add((p.Id, $"Bought {units:N0} {good} from {name} for {cost} credits."));
+        Log($"[station] {p.Name} bought {units} {good} into construct {ship.Id} from {name} for {cost} credits");
         return null;
     }
 }

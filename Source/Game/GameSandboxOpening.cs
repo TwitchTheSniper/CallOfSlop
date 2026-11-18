@@ -93,6 +93,9 @@ public sealed partial class Game
         _opOn = false;
         _opShip = 0;
         _opHolds.Clear();
+        _hauls.Clear(); // (station haulers: GameStationHaulers.cs)
+        StationMarketsHere.Clear(); // (a new world's stations make theirs again)
+        StationsVersion++;
         BreakdownReset(); // (GameSandboxBreakdowns.cs)
         FragmentsReset(); // (and the data centres: GameStoryFragments.cs)
         LoreReset(); // (and the things to look at: GameStoryLore.cs)
@@ -448,7 +451,7 @@ public sealed class OpeningScript
     public readonly record struct Companion(string Ship, string Faction, float Behind, float Away = 0);
     public Companion[] Company = [];
     /// <summary>A station built on its own circular orbit, <c>Orbit</c> m over the ground above the start, <c>Ahead</c> m on along it (GameSpaceStart.cs).</summary>
-    public readonly record struct Station(string Blueprint, float Orbit, float Ahead);
+    public readonly record struct Station(string Blueprint, float Orbit, float Ahead, string Name);
     public Station[] Stations = [];
     public readonly BeatDef[] Beats = new BeatDef[(int)OpeningStage.Wake + 1];
     public string Problem = "";
@@ -548,7 +551,12 @@ public sealed class OpeningScript
         // the origin on the ground (GameSpaceJump.SpaceFarDistance), past which a ship is parked away)
         var orbit = Math.Clamp(e.TryGetProperty("orbit", out var o) ? o.GetSingle() : 40000f, 5000f, 150000f);
         var ahead = Math.Clamp(e.TryGetProperty("ahead", out var a) ? a.GetSingle() : 0f, -50000f, 50000f);
-        return new Station(bp, orbit, ahead);
+        // (its own name, when it isn't its pieces' section: a second Highport built as another power's station, its market found by
+        // that name in Crew/Stations.json; Karl, 2026-11-18)
+        var name = Text(e, "name", "");
+        if (name.Length > 0 && StationMarkets.Find(name) < 0)
+            throw new FormatException($"stations: no market named \"{name}\" in Crew/Stations.json");
+        return new Station(bp, orbit, ahead, name);
     }
 
     private static string Text(JsonElement e, string key, string fallback) =>

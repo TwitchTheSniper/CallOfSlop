@@ -405,6 +405,7 @@ public sealed partial class Construct
     public Vector3 MoorAt;
     public Quaternion MoorRot = Quaternion.Identity;
     public ushort MoorAway, MoorAwayPart; // host: the station berth it was cast off from, which won't moor it again until it has left that berth's box
+    public string StationTitle = ""; // a station's own name when it isn't its pieces' (a second Highport built as Loch Watch: Game.StationName); not saved
     public bool IsStation; // built of space station pieces (part group "Station": docs/sandbox/constructs/station.md): the command view shows it as a station
     public bool HasVolumeStore; // a Storage Volume: its box is drawn with the cargo volumes' (ConstructRenderCargo.cs)
     public bool HasRecycler; // a Recycler part: the recycler step looks at it (ConstructRecycler.cs)

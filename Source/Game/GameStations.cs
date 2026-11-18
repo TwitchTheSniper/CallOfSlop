@@ -11,9 +11,11 @@ namespace CallOfSlop;
 /// </summary>
 public sealed partial class Game
 {
-    /// <summary>A station's name: the section its pieces are listed under (Caledon Highport), else "Station".</summary>
+    /// <summary>A station's name: its own (<see cref="Construct.StationTitle"/>: the opening's, or its market's on a client), else the section its pieces are listed under (Caledon Highport), else "Station".</summary>
     public static string StationName(Construct c)
     {
+        if (c.StationTitle.Length > 0)
+            return c.StationTitle;
         for (var i = 0; i < c.PartCount; i++)
         {
             var d = c.Parts[i].D;
