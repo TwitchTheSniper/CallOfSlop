@@ -134,7 +134,7 @@ public static class RadarHud
         Hud.ShadowText(dl, new float2(edge - Hud.TextWidth(_keyLine, 12f * scale), ty), 12f * scale, _keyLine, Scope, 0.6f);
     }
 
-    private static readonly float[] Scales = [250f, 500f, 1000f, 2500f, 5000f, 10000f];
+    private static readonly float[] Scales = [250f, 500f, 1000f, 2500f, 5000f, 10000f, 25000f, 50000f, 100000f, 200000f];
 
     /// <summary>The scope's rim (m): the least of <see cref="Scales"/> that holds every contact, at most the radar's range.</summary>
     private static float ScopeRange(Game game, Construct c)
