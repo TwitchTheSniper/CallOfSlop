@@ -152,7 +152,10 @@ ORBIT, DRIVE OFF") and burns again only if the ship has drifted well off its cir
 Board, for a ship with a boarding pod docked on it (a craft with mag locks and a breaching cutter facing its nose: the Zero
 Day's Limpet, [limpet.md](../sandbox/constructs/limpet.md)). Pick the carrier, then right-click another craft: the part
 under the cursor (in its hologram; zoom in until it is large) is the spot, a door if one is under it, and the menu offers
-BOARD: SEAL ON THIS DOOR or BOARD: CUT IN HERE under the Dock line (zoomed out, or off the hull, it says how to pick a spot instead). The order goes on the pod (its card shows it): it flies out from under the
+BOARD: SEAL ON THIS DOOR or BOARD: CUT IN HERE under the Dock line. Zoomed out (or off its hull) it offers BOARD: CUT INTO
+ITS HULL... and BOARD: SEAL ON A DOOR... instead (Karl, 2026-11-18): the view flies to that craft and pins on it, a banner
+says what to click, the cursor's label names the door (or says CUT IN HERE), and a left click sends the order and puts the
+view back as it was; a right click or Esc puts it back with no order (UI/UiCommandBoard.cs). The order goes on the pod (its card shows it): it flies out from under the
 carrier, across, grips, then opens the door or cuts through and opens its own. On the wire its point is the target's id,
 the part and 1 for a door (protocol 342); the host works the spot and the way out of the skin there. The pod must be within
 3 km of the target. `order board N door|hull` (the window tool) gives it from a script.
