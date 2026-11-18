@@ -1,0 +1,11 @@
+{
+  // Landing leg pod M deploying (LegPodParts.cs): the canopy swings open, then the gantry comes down its rails while the foot's ram runs out of the sleeve.
+  "blueprint": "Landing Leg Pod M",
+  "title": "Landing leg pod M: deploy",
+  "steps": [
+    { "part": "Leg Pod Canopy Port M", "at": 0, "label": "Canopy opens" },
+    { "part": "Leg Pod Canopy Stbd M", "at": 0 },
+    { "part": "Leg Pod Gantry M", "at": 1.6, "label": "Gantry lowers, ram runs out" },
+    { "part": "Leg Pod Foot M", "at": 1.6 }
+  ]
+}
