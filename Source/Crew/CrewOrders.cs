@@ -16,6 +16,8 @@ public sealed partial class ShipAi
 
     private OrderKind _orderKind;
 
+    private static float Sq(float v) => v * v;
+
     private bool Ordered(out ShipOrder o)
     {
         if (Ship != null && Crew != null && Ship.Ordered(Crew.Tick))
@@ -91,8 +93,18 @@ public sealed partial class ShipAi
         // Height: the place's (a slot's: its flagship's), over the ground by the clearance at a place on the ground.
         var height = ConstructPhysics.HoldHeight(com);
         var want = ConstructPhysics.HoldHeight(to) + (o.Kind is OrderKind.Form or OrderKind.Escort or OrderKind.Screen ? 0 : MinClearance);
+        if (o.Kind is OrderKind.Form or OrderKind.Escort && _ground < MinClearance + o.At.Y)
+            want = MathF.Max(want, ConstructPhysics.HoldHeight(com) + (MinClearance + o.At.Y - _ground)); // (a slot's step up holds over low ground too)
         if (_ground < MinClearance)
             want = MathF.Max(want, height + (MinClearance - _ground));
+        // Crossing what it keeps station on (its slot swings round when that turns): over it, not into it.
+        if (o.Kind is OrderKind.Form or OrderKind.Escort or OrderKind.Screen && world.Get(o.Body) is { } anchor)
+        {
+            var off = com - anchor.WorldCom;
+            off -= up * Vector3.Dot(off, up);
+            if (off.LengthSquared() < Sq(anchor.Radius + c.Radius + 15))
+                want = MathF.Max(want, ConstructPhysics.HoldHeight(anchor.WorldCom) + anchor.Radius + c.Radius);
+        }
         var climb = Vector3.Dot(c.Vel, up);
         if (_ahead < MinClearance * 2 || want - height > 6 && climb < 25)
             pilot |= (ushort)Buttons.Sprint;
@@ -103,13 +115,19 @@ public sealed partial class ShipAi
         var look = GravityFrames.Angles(com, (fdist > SlotBand || face == default ? dir : face) * 100);
         var nose = Level(Vector3.Transform(-Vector3.UnitZ, c.Rot), up);
         var top = o.Speed > 0 ? o.Speed : o.Kind == OrderKind.Retreat ? OrderRun : OrderCruise;
+        if (Ship!.SpeedCap > 0 && Crew!.Tick < Ship.SpeedCapUntil && o.Kind != OrderKind.Retreat)
+            top = MathF.Min(top, Ship.SpeedCap); // (its escort can't fly faster: phase 6)
         var keepFwd = Vector3.Dot(keep, nose);
         var wantFwd = Math.Clamp(keepFwd + Vector3.Dot(flat, nose) * 0.12f, -15, top);
         var fwdNow = Vector3.Dot(c.Vel, nose);
         if (fdist > SlotBand && Vector3.Dot(nose, dir) < 0.3f)
             wantFwd = MathF.Min(wantFwd, 5); // (turn first)
         if (wantFwd - fwdNow > 2)
+        {
             pilot |= (ushort)Buttons.Forward;
+            if (wantFwd - fwdNow > 8 && Vector3.Dot(nose, dir) > 0.9f && fwdNow > Ship!.TopSpeed)
+                Ship.TopSpeed = fwdNow; // (full ahead and still short: about as fast as it goes)
+        }
         else if (wantFwd - fwdNow < -2)
             pilot |= (ushort)Buttons.Back;
         // Sideways inside the band (Q and E), so a slot is kept, not circled.
@@ -117,10 +135,11 @@ public sealed partial class ShipAi
         {
             var side = Vector3.Dot(flat, Vector3.Cross(nose, up));
             if (side > 4)
-                pilot |= ConstructParts.KeyRollRight;
+                pilot |= SlideRight;
             else if (side < -4)
-                pilot |= ConstructParts.KeyRollLeft;
+                pilot |= SlideLeft;
         }
+        pilot = Level(c, up, pilot);
         if (pilotOn)
             PilotSeat(c, pilot, look.Yaw, look.Pitch);
         else if (grace)

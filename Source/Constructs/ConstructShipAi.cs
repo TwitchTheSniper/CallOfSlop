@@ -54,6 +54,32 @@ public sealed partial class ShipAi
     public CrewWorld? Crew;
     public CrewShip? Ship;
     /// <summary>What it is doing, for the check's lines and a log (made when read: nothing on the tick).</summary>
+    /// <summary>The keys that slide it sideways (by its flight pattern: Scan).</summary>
+    private ushort SlideLeft = ConstructParts.KeyRollLeft, SlideRight = ConstructParts.KeyRollRight;
+
+    private bool _shipPattern;
+
+    /// <summary>
+    /// A ship-pattern craft holds no level of its own (ConstructFlight: "no level held"): a slide's push off its centre rolls it a little at a time
+    /// until it lies on its side, loses its lift and settles on the ground for good (phase 2's frigates that settled mid-route). Its pilot keeps it
+    /// level with Q and E, and stops sliding while it rights itself.
+    /// </summary>
+    private ushort Level(Construct c, Vector3 up, ushort keys)
+    {
+        if (!_shipPattern)
+            return keys;
+        var tilt = Vector3.Dot(Vector3.Transform(Vector3.UnitX, c.Rot), up); // (> 0: its right side is up)
+        if (MathF.Abs(tilt) < 0.03f)
+            return keys;
+        keys &= unchecked((ushort)~(ConstructParts.KeyRollLeft | ConstructParts.KeyRollRight));
+        if (MathF.Abs(tilt) > 0.12f)
+            keys &= unchecked((ushort)~(SlideLeft | SlideRight));
+        return (ushort)(keys | (tilt > 0 ? ConstructParts.KeyRollRight : ConstructParts.KeyRollLeft));
+    }
+
+    /// <summary>A check's look inside (CrewAdmiralsCheck): the clearances under and ahead, the pilot's keys.</summary>
+    public string Debug => FormattableString.Invariant($"ground {(_ground > 1e6 ? -1 : _ground):0} ahead {(_ahead > 1e6 ? -1 : _ahead):0} keys {_pilotKeys:X}");
+
     public string State => _state switch
     {
         1 => "no pilot's seat",
@@ -172,7 +198,13 @@ public sealed partial class ShipAi
                 _rackButton[_rackCount++] = (short)b;
             }
         }
-        c.CrewAims = _stab >= 0 && Ship is not { Own: true, Group: < 0 }; // (its stabilizer turns to where the crew's pilot looks, whatever its Mouse aim setting; never saved. A player's own crew flies it only in one of the player's fleet groups: phase 6)
+        c.CrewAims = _stab >= 0 && Ship is not { Own: true, Group: < 0 };
+        // Its slide keys: a ship-pattern craft (FlightPattern.Ship: the Zero Day) slides on A and D while the crew has its nose (Q and E roll it,
+        // and a frigate rolled on its side lost its lift and settled on the ground: faction-controllers-notes.md phase 6); a rotorcraft on Q and E.
+        var ship = _stab >= 0 && ConstructFlight.KeysOf(c, c.Parts[_stab], c.Parts[_stab].D) == FlightPattern.Ship;
+        _shipPattern = ship;
+        SlideLeft = ship ? (ushort)Buttons.Left : ConstructParts.KeyRollLeft;
+        SlideRight = ship ? (ushort)Buttons.Right : ConstructParts.KeyRollRight; // (its stabilizer turns to where the crew's pilot looks, whatever its Mouse aim setting; never saved. A player's own crew flies it only in one of the player's fleet groups: phase 6)
     }
 
     /// <summary>A Button wired into part <paramref name="part"/>, or -1.</summary>
@@ -221,7 +253,9 @@ public sealed partial class ShipAi
             _ground = Clearance(world, c, query, com, -up, 400);
             var way = c.Vel - up * Vector3.Dot(c.Vel, up);
             var far = way.Length() * LookAhead;
-            _ahead = far > 10 ? Clearance(world, c, query, com, way / way.Length(), far) : float.MaxValue;
+            _ahead = far > 10 ? Clearance(world, c, query, com, way / way.Length(), far, terrainOnly: Ordered(out var lo) && lo.Kind is OrderKind.Form or OrderKind.Escort or OrderKind.Screen) : float.MaxValue;
+            // (in a formation the ship ahead is its anchor or a group mate, kept clear by the slots' spacing: only the ground ahead makes it climb,
+            // or a formation behind a ship climbs for ever: faction-controllers-notes.md phase 6)
         }
         var pilotOn = Manned(_pilot);
         if (pilotOn)
@@ -278,8 +312,9 @@ public sealed partial class ShipAi
                 _strafe = (sbyte)-_strafe;
                 _strafeUntil = _tick + (6 + (int)(c.Id % 5)) * World.TickRate;
             }
-            pilot |= _strafe > 0 ? ConstructParts.KeyRollRight : ConstructParts.KeyRollLeft;
+            pilot |= _strafe > 0 ? SlideRight : SlideLeft;
         }
+        pilot = Level(c, up, pilot);
         _state = gap > StandBand ? 4 : gap < -StandBand ? 5 : 6;
         _stateDist = dist;
         var fleeing = Fleeing(ref pilot); // (its captain runs: nose away, full ahead; Source/Crew/CrewGround.cs)
@@ -509,10 +544,10 @@ public sealed partial class ShipAi
     }
 
     /// <summary>How far the ground or another body is from the ship's centre along a way, out to <paramref name="reach"/> (m), less the ship's own extent that way.</summary>
-    private static float Clearance(ConstructWorld world, Construct c, IWorldQuery query, Vector3 from, Vector3 way, float reach)
+    private static float Clearance(ConstructWorld world, Construct c, IWorldQuery query, Vector3 from, Vector3 way, float reach, bool terrainOnly = false)
     {
         var d = query.Raycast(from, way, reach + c.Radius, QueryFilter.All);
-        if (world.Raycast(from, way, d, out var hit, c) && hit.Distance < d)
+        if (!terrainOnly && world.Raycast(from, way, d, out var hit, c, ignoreCargo: true) && hit.Distance < d) // (not what it carries: a Zero Day's docked Limpet under it read as the ground 4 m down, and it climbed for ever)
             d = hit.Distance;
         var local = Vector3.Transform(way, Quaternion.Conjugate(c.Rot));
         var own = MathF.Abs(local.X) * MathF.Max(-c.LocalMin.X, c.LocalMax.X) + MathF.Abs(local.Y) * MathF.Max(c.Com.Y - c.LocalMin.Y, c.LocalMax.Y - c.Com.Y) + MathF.Abs(local.Z) * MathF.Max(-c.LocalMin.Z, c.LocalMax.Z);

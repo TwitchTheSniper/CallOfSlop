@@ -4,7 +4,7 @@ using CallOfSlop.VehicleKit;
 namespace CallOfSlop;
 
 /// <summary>
-/// <c>--crew-check --crew-fleet strike|screen|succession|convoy|mining|interrogate|scale|powers|politics|all [--seconds S] [--fleet-scale N] [--fleet-awake K]
+/// <c>--crew-check --crew-fleet strike|screen|succession|convoy|mining|interrogate|escort|scale|powers|politics|all [--seconds S] [--fleet-scale N] [--fleet-awake K]
 /// [--group-size G] [--crew-scale-ship NAME]</c> (docs/sandbox/design/faction-controllers.md phase 2): groups led by admirals, driven by their
 /// seated crews with no game (a tool's world: no bodies). Each prints what happened and a verdict; exit 0 when every part asked passed.
 /// </summary>
@@ -35,6 +35,8 @@ public static class CrewFleetCheck
             ok &= CrewPlayersCheck.Run(); // (phase 5: players in the politics, CrewPlayersCheck.cs)
         if (which.Equals("territory", StringComparison.OrdinalIgnoreCase) || which.Equals("far", StringComparison.OrdinalIgnoreCase))
             ok &= CrewTerritoryCheck.Run(which, seconds); // (phase 4: territory and the far layer, CrewTerritoryCheck.cs)
+        if (which.Equals("escort", StringComparison.OrdinalIgnoreCase))
+            ok &= CrewAdmiralsCheck.Run(args); // (phase 6: a player's hired ships escort their mining ship, CrewAdmiralsCheck.cs)
         if (which.Equals("scale", StringComparison.OrdinalIgnoreCase))
             ok &= Scale(int.TryParse(Arg("--fleet-scale"), out var n) ? n : 1000, int.TryParse(Arg("--fleet-awake"), out var k) ? k : 64,
                 int.TryParse(Arg("--group-size"), out var gs) ? Math.Clamp(gs, 1, CrewGroup.MaxShips) : CrewGroup.MaxShips, Arg("--crew-scale-ship") ?? "Bandit Helicopter 1",

@@ -172,6 +172,9 @@ public sealed class CrewShip
     public Vector3 TargetAt; // what its drivers fought last (CrewWorld.Drive), at TargetTick: its admiral's contacts
     public ushort TargetBody;
     public long TargetTick = long.MinValue / 2;
+    public float TopSpeed; // the fastest it was seen to fly at full ahead under an order (m/s; 0: not yet): what an escort can keep up with
+    public float SpeedCap; // m/s an escort asks of what it guards (0: none), until SpeedCapUntil: it flies no faster, so its escort keeps its slots
+    public long SpeedCapUntil;
     public bool OnNet; // it hears its group's fleet command network (a part that gives access, or its crew's voice within reach)
     public long CaptainAt; // the tick it thinks next
     public readonly ulong[] Foes = new ulong[4]; // players who have hit it (a bit each)
@@ -236,6 +239,8 @@ public sealed class CrewShip
         (DoerPlayer, DoerBody, DoerAt, FoeBody, FoeBodyAt) = (255, 0, 0, 0, 0);
         Group = -1;
         Order = default;
+        TopSpeed = SpeedCap = 0;
+        SpeedCapUntil = 0;
         CaptainUid = 0;
         Strength = 0;
         OnNet = false;

@@ -668,6 +668,24 @@ public sealed partial class CrewFleet
         var slotN = 0;
         var away = foes > 0 ? Vector3.Normalize(centre - _foeAt[0] + new Vector3(0.01f, 0, 0)) : Vector3.UnitZ;
         GroupOrder(crew, g, flag, out var groupKind, out var groupAt);
+        // The slots' spacing: the doctrine's, but never so tight that big ships touch (the biggest member's width, and what it guards).
+        var big = guard?.Radius ?? flag.Radius;
+        for (var k = 0; k < g.Count; k++)
+            big = MathF.Max(big, w.Get(g.Ships[k])!.Radius);
+        var span = big * 2 + 25;
+        // An escort that can't keep up asks what it guards to fly no faster than its slowest ship can, with a margin to catch up on a turn.
+        if (guard != null && crew.ShipOf(guard.Id) is { } gs)
+        {
+            var slowest = float.MaxValue;
+            for (var k = 0; k < g.Count; k++)
+                if (_heard[k] && crew.ShipOf(g.Ships[k]) is { TopSpeed: > 0 } es)
+                    slowest = MathF.Min(slowest, es.TopSpeed);
+            if (slowest < float.MaxValue)
+            {
+                gs.SpeedCap = slowest * 0.7f;
+                gs.SpeedCapUntil = until;
+            }
+        }
         var running = g.Order == OrderKind.Retreat;
         for (var k = 0; k < g.Count; k++)
         {
@@ -675,12 +693,13 @@ public sealed partial class CrewFleet
                 continue;
             var s = crew.ShipOf(g.Ships[k])!;
             var isFlag = g.Ships[k] == g.Flagship;
-            var armed = s.Strength > CrewWorld.HullOf(w.Get(s.Body)!) * 0.01f + 0.5f;
+            var sc = w.Get(s.Body)!;
+            var armed = s.Strength > CrewWorld.HullOf(sc) * 0.01f + 0.5f;
             ShipOrder o = default;
             if (g.Retreating)
                 o = new ShipOrder { Kind = OrderKind.Retreat, At = g.Order == OrderKind.Retreat ? g.OrderAt : _pos[k] + away * 2000 };
             else if (running)
-                o = new ShipOrder { Kind = isFlag ? OrderKind.Retreat : OrderKind.Form, At = isFlag ? g.OrderAt : Slot(g.Doctrine, ++slotN), Body = g.Flagship }; // (the whole group runs with its flagship, nobody stops to fight)
+                o = new ShipOrder { Kind = isFlag ? OrderKind.Retreat : OrderKind.Form, At = isFlag ? g.OrderAt : Slot(g.Doctrine, ++slotN, span), Body = g.Flagship }; // (the whole group runs with its flagship, nobody stops to fight)
             else if (g.Order == OrderKind.Board && g.OrderBody != 0 && armed)
                 o = new ShipOrder { Kind = OrderKind.Board, Body = g.OrderBody, Fight = true };
             else if (engage != 0 && armed)
@@ -696,19 +715,23 @@ public sealed partial class CrewFleet
             }
             else if (guard != null)
             {
-                // Every ship of the group (its flagship too) keeps a slot on what it guards; an escort's gunners fire from there.
+                // Every ship of the group (its flagship too) keeps a slot on what it guards; an escort's gunners fire from there. Slots step up by
+                // turns, so ships crossing to new slots as what they guard turns pass over each other, not into each other.
                 ++slotN;
                 o = g.Order switch
                 {
                     OrderKind.Screen => new ShipOrder { Kind = OrderKind.Screen, Body = guard.Id, At = new Vector3(0, 0, g.Doctrine.Spacing * (1 + (slotN - 1) % 3)), Fight = false },
-                    OrderKind.Escort => new ShipOrder { Kind = OrderKind.Escort, Body = guard.Id, At = Slot(g.Doctrine, slotN), Fight = false },
-                    _ => new ShipOrder { Kind = OrderKind.Form, Body = guard.Id, At = Slot(g.Doctrine, slotN), Fight = false },
+                    OrderKind.Escort => new ShipOrder { Kind = OrderKind.Escort, Body = guard.Id, At = Slot(g.Doctrine, slotN, span) + Step(slotN, big, sc), Fight = false },
+                    _ => new ShipOrder { Kind = OrderKind.Form, Body = guard.Id, At = Slot(g.Doctrine, slotN, span) + Step(slotN, big, sc), Fight = false },
                 };
             }
             else if (isFlag)
                 o = new ShipOrder { Kind = groupKind, At = groupAt, Body = g.OrderBody, Fight = !g.Civilian };
             else
-                o = new ShipOrder { Kind = OrderKind.Form, Body = g.Flagship, At = Slot(g.Doctrine, ++slotN), Fight = !g.Civilian || armed };
+            {
+                ++slotN;
+                o = new ShipOrder { Kind = OrderKind.Form, Body = g.Flagship, At = Slot(g.Doctrine, slotN, span) + Step(slotN, big, sc), Fight = !g.Civilian || armed };
+            }
             o.Until = until;
             s.Order = o;
         }
@@ -751,10 +774,13 @@ public sealed partial class CrewFleet
     /// <summary>A flagship this close to a route's point (m, plus half its size) is there.</summary>
     public const float ArriveBand = 50;
 
+    /// <summary>A slot's step up (m): 0, one, two ship's heights by turns (an aircraft's; a ground vehicle's order ignores the height).</summary>
+    private static Vector3 Step(int n, float big, Construct c) => c.StabCount > 0 ? new(0, (n - 1) % 3 * MathF.Min(30, big * 0.6f), 0) : default;
+
     /// <summary>A follower's slot (x right, z ahead of the flagship) by the doctrine's shape.</summary>
-    public static Vector3 Slot(FleetDoctrine d, int n)
+    public static Vector3 Slot(FleetDoctrine d, int n, float spacing = 0)
     {
-        var s = d.Spacing;
+        var s = MathF.Max(d.Spacing, spacing);
         var side = (n & 1) == 1 ? 1 : -1;
         var rank = (n + 1) / 2;
         return d.Formation switch

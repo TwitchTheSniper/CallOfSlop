@@ -13,7 +13,7 @@ public sealed partial class CrewFleet
     public readonly List<(string Owner, string Text)> Notices = new(16);
 
     /// <summary>An escort engages a threat only this close to what it guards (m); further off it keeps its station and its gunners fire from there.</summary>
-    public const float EscortBand = 450;
+    public const float EscortBand = 1000;
 
     /// <summary>A group's news: a power's to everyone, a player's to its owner.</summary>
     private void Say(CrewGroup g, string text)
