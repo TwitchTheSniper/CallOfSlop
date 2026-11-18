@@ -8,9 +8,10 @@ public sealed partial class Game
 {
     /// <summary>Host: <paramref name="p"/> in the first gripped pod, <paramref name="back"/> m behind its cutter's face, on its floor.
     /// <paramref name="yaw"/>: the look that faces the hole. Null, or why not.</summary>
-    internal string? BoardWalkStart(Player p, float back, out float yaw)
+    internal string? BoardWalkStart(Player p, float back, out float yaw, out float pitch)
     {
         yaw = 0;
+        pitch = 0;
         foreach (var pod in Constructs.Bodies)
         {
             if (!ConstructBreach.Gripped(Constructs, pod) || BoardPart(pod, BreachKind.Cutter) is var cutter && cutter < 0)
@@ -32,6 +33,13 @@ public sealed partial class Game
                 if (dot > best)
                     (best, yaw) = (dot, y);
             }
+            best = -2f;
+            for (var a = -60; a <= 60; a++)
+            {
+                var dot = Vector3.Dot(LookDir(yaw, a * 0.02f), level);
+                if (dot > best)
+                    (best, pitch) = (dot, a * 0.02f);
+            }
             // What lies ahead at knee, waist and head height (the pod's door, then the hole or the hull).
             var say = new System.Text.StringBuilder($"[nav] boardwalk: pod {pod.Id}, cutter face {pod.ToLocal(face):0.00}, doors open:");
             if (pod.EnsureDoors())
@@ -47,6 +55,21 @@ public sealed partial class Game
                 else
                     say.Append("clear 6 m");
             }
+            // Seen through the pod's door from head height: how many of a fan of rays across its opening find nothing (space, sky or ground).
+            var eye = feet + up * 1.6f;
+            var across = Vector3.Normalize(Vector3.Cross(level, up));
+            int open = 0, rays = 0, onSleeve = 0;
+            for (var i = 0; i < 21; i++)
+                for (var j = 0; j < 21; j++)
+                {
+                    var aim = face + across * (-0.53f + 1.06f * i / 20) + up * (-0.9f + 1.86f * j / 20);
+                    rays++;
+                    if (!Constructs.Raycast(eye, Vector3.Normalize(aim - eye), 60f, out var fh) || fh.Body == null)
+                        open++;
+                    else if (fh.Body == pod && HullHoles.SleevesOf(pod.DefOf(fh.Part)).Length > 0)
+                        onSleeve++;
+                }
+            say.Append(FormattableString.Invariant($"; through the door: {open} of {rays} rays see out, {onSleeve} on the seal sleeve"));
             Console.WriteLine(say.ToString());
             return null;
         }
