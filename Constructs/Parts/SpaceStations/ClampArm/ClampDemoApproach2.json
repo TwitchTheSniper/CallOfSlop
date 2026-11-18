@@ -1,0 +1,566 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Clamp Demo Approach 2",
+  "description": "Design aid for the clamp arm demo: the ship as a glass outline and the berth's approach lane as marker lamps.",
+  "group": "Station",
+  "section": "Clamp arm demo",
+  "role": "frame",
+  "tool": "welder",
+  "collider": "boxes",
+  "mass": 500.0,
+  "health": 4600,
+  "armour": 40,
+  "material": "steel",
+  "color": "#a8d8ea",
+  "attachSeconds": 20.0,
+  "boxes": [
+    {
+      "min": [
+        24.375,
+        -3.925,
+        -72.125
+      ],
+      "max": [
+        24.775,
+        -3.325,
+        -19.525
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -26.775,
+        -7.725,
+        -28.075
+      ],
+      "max": [
+        26.525,
+        6.975,
+        -10.975
+      ],
+      "color": "#a8d8ea",
+      "detail": true,
+      "glass": true,
+      "shape": "hull",
+      "points": [
+        [
+          -26.775,
+          -2.9175,
+          -22.5775
+        ],
+        [
+          -26.775,
+          -2.9175,
+          -16.4725
+        ],
+        [
+          -26.775,
+          -1.2675,
+          -14.8225
+        ],
+        [
+          -26.775,
+          3.5175,
+          -14.8225
+        ],
+        [
+          -26.775,
+          5.1675,
+          -16.4725
+        ],
+        [
+          -26.775,
+          5.1675,
+          -22.5775
+        ],
+        [
+          -26.775,
+          3.5175,
+          -24.2275
+        ],
+        [
+          -26.775,
+          -1.2675,
+          -24.2275
+        ],
+        [
+          -12.775,
+          -7.725,
+          -25.075
+        ],
+        [
+          -12.775,
+          -7.725,
+          -13.975
+        ],
+        [
+          -12.775,
+          -4.725,
+          -10.975
+        ],
+        [
+          -12.775,
+          3.975,
+          -10.975
+        ],
+        [
+          -12.775,
+          6.975,
+          -13.975
+        ],
+        [
+          -12.775,
+          6.975,
+          -25.075
+        ],
+        [
+          -12.775,
+          3.975,
+          -28.075
+        ],
+        [
+          -12.775,
+          -4.725,
+          -28.075
+        ],
+        [
+          26.525,
+          -7.725,
+          -25.075
+        ],
+        [
+          26.525,
+          -7.725,
+          -13.975
+        ],
+        [
+          26.525,
+          -4.725,
+          -10.975
+        ],
+        [
+          26.525,
+          3.975,
+          -10.975
+        ],
+        [
+          26.525,
+          6.975,
+          -13.975
+        ],
+        [
+          26.525,
+          6.975,
+          -25.075
+        ],
+        [
+          26.525,
+          3.975,
+          -28.075
+        ],
+        [
+          26.525,
+          -4.725,
+          -28.075
+        ]
+      ]
+    },
+    {
+      "min": [
+        26.575,
+        -2.775,
+        -24.925
+      ],
+      "max": [
+        26.875,
+        0.025,
+        -22.125
+      ],
+      "color": "#ff7a3a",
+      "detail": true,
+      "shape": "cylinder",
+      "finish": "steel",
+      "front": "+x"
+    },
+    {
+      "min": [
+        26.575,
+        -2.775,
+        -16.925
+      ],
+      "max": [
+        26.875,
+        0.025,
+        -14.125
+      ],
+      "color": "#ff7a3a",
+      "detail": true,
+      "shape": "cylinder",
+      "finish": "steel",
+      "front": "+x"
+    },
+    {
+      "min": [
+        -0.475,
+        -0.725,
+        -6.975
+      ],
+      "max": [
+        0.225,
+        -0.025,
+        -6.275
+      ],
+      "color": "#ffd8a0",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.475,
+        -0.725,
+        -0.975
+      ],
+      "max": [
+        0.225,
+        -0.025,
+        -0.275
+      ],
+      "color": "#ffb02e",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.475,
+        -0.725,
+        5.025
+      ],
+      "max": [
+        0.225,
+        -0.025,
+        5.725
+      ],
+      "color": "#ffd8a0",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.475,
+        -0.725,
+        11.025
+      ],
+      "max": [
+        0.225,
+        -0.025,
+        11.725
+      ],
+      "color": "#ffb02e",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.475,
+        -0.725,
+        17.025
+      ],
+      "max": [
+        0.225,
+        -0.025,
+        17.725
+      ],
+      "color": "#ffd8a0",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.475,
+        -0.725,
+        23.025
+      ],
+      "max": [
+        0.225,
+        -0.025,
+        23.725
+      ],
+      "color": "#ffb02e",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.475,
+        -0.725,
+        29.025
+      ],
+      "max": [
+        0.225,
+        -0.025,
+        29.725
+      ],
+      "color": "#ffd8a0",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.475,
+        -0.725,
+        35.025
+      ],
+      "max": [
+        0.225,
+        -0.025,
+        35.725
+      ],
+      "color": "#ffb02e",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.475,
+        -0.725,
+        41.025
+      ],
+      "max": [
+        0.225,
+        -0.025,
+        41.725
+      ],
+      "color": "#ffd8a0",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.475,
+        -0.725,
+        47.025
+      ],
+      "max": [
+        0.225,
+        -0.025,
+        47.725
+      ],
+      "color": "#ffb02e",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.475,
+        -0.725,
+        53.025
+      ],
+      "max": [
+        0.225,
+        -0.025,
+        53.725
+      ],
+      "color": "#ffd8a0",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.475,
+        -0.725,
+        59.025
+      ],
+      "max": [
+        0.225,
+        -0.025,
+        59.725
+      ],
+      "color": "#ffb02e",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.475,
+        -0.725,
+        65.025
+      ],
+      "max": [
+        0.225,
+        -0.025,
+        65.725
+      ],
+      "color": "#ffd8a0",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.475,
+        -0.725,
+        71.025
+      ],
+      "max": [
+        0.225,
+        -0.025,
+        71.725
+      ],
+      "color": "#ffb02e",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -29.775,
+        -10.875,
+        -19.675
+      ],
+      "max": [
+        -25.775,
+        -10.575,
+        -19.375
+      ],
+      "color": "#3fd0ff",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -29.925,
+        -10.725,
+        -19.673
+      ],
+      "max": [
+        -29.625,
+        -6.725,
+        -19.377
+      ],
+      "color": "#3fd0ff",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -29.775,
+        9.825,
+        -19.675
+      ],
+      "max": [
+        -25.775,
+        10.125,
+        -19.375
+      ],
+      "color": "#3fd0ff",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -29.925,
+        5.975,
+        -19.673
+      ],
+      "max": [
+        -29.625,
+        9.975,
+        -19.377
+      ],
+      "color": "#3fd0ff",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        25.525,
+        -10.875,
+        -19.675
+      ],
+      "max": [
+        29.525,
+        -10.575,
+        -19.375
+      ],
+      "color": "#3fd0ff",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        29.375,
+        -10.725,
+        -19.673
+      ],
+      "max": [
+        29.675,
+        -6.725,
+        -19.377
+      ],
+      "color": "#3fd0ff",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        25.525,
+        9.825,
+        -19.675
+      ],
+      "max": [
+        29.525,
+        10.125,
+        -19.375
+      ],
+      "color": "#3fd0ff",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        29.375,
+        5.975,
+        -19.673
+      ],
+      "max": [
+        29.675,
+        9.975,
+        -19.377
+      ],
+      "color": "#3fd0ff",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "j0",
+      "at": [
+        24.575,
+        -3.625,
+        -72.125
+      ],
+      "dir": "-z"
+    }
+  ]
+}
