@@ -20,6 +20,8 @@ public static partial class ConstructPreview
     {
         if (Flag(args, "--preview-shot") is { } shotOf)
             return Shot(shotOf, args);
+        if (Flag(args, "--anim-gallery") is { } animDir)
+            return AnimGallery(animDir);
         if (Flag(args, "--preview-gallery") is { } galleryDir)
             return Gallery(galleryDir, Flag(args, "--only"), Flag(args, "--group") ?? "Ship");
         var what = Flag(args, "--preview-construct") ?? "";
@@ -270,8 +272,11 @@ public static partial class ConstructPreview
                 if (bhi.Y - blo.Y < 0.6f) // (a slab, not a wall or a crate)
                     floors.Add((bhi.Y, (bhi.X - blo.X) * (bhi.Z - blo.Z), i));
             }
-            foreach (var b in d.Boxes)
+            _partFrames?.Add(Matrix4x4.CreateFromQuaternion(Rot24.Quat(p.Rot)) * Matrix4x4.CreateTranslation(p.Pos) * Matrix4x4.CreateFromQuaternion(q) * Matrix4x4.CreateTranslation(t));
+            for (var boxIndex = 0; boxIndex < d.Boxes.Length; boxIndex++)
             {
+                var b = d.Boxes[boxIndex];
+                var track = _trackOf?.Invoke(i, boxIndex) ?? (byte)0;
                 if (b.Hidden)
                 {
                     _skipped++;
@@ -328,6 +333,7 @@ public static partial class ConstructPreview
                     nrm.Add(n1);
                     nrm.Add(n2);
                     triLook.Add(look);
+                    _triTrack?.Add(track);
                 }
             }
             if (ConstructStoreVolume.Walled(p, d))
@@ -358,6 +364,7 @@ public static partial class ConstructPreview
                             nrm.Add(wn);
                             nrm.Add(wn);
                             triLook.Add(wlook);
+                            _triTrack?.Add(0);
                         }
                     }
                     if (k == 0)
@@ -373,6 +380,30 @@ public static partial class ConstructPreview
         if (_shotLinks)
             LinkTris(c);
 
+        var decksSb = new StringBuilder();
+        var decks = Decks(c, floors);
+        for (var i = 0; i < decks.Count; i++)
+            decksSb.Append(i > 0 ? "," : "").Append(JsonSerializer.Serialize(new object[] { decks[i].Name, MathF.Round(decks[i].Y, 3) }));
+        // The links (cables, pipes, chutes, shafts...) as the build laid them: [type, x, y, z, x, y, z, ...] from the output through the nodes to the input, rest frame.
+        var linksSb = new StringBuilder();
+        for (var r = 0; r < c.RouteCount; r++)
+        {
+            linksSb.Append(r > 0 ? "," : "").Append("[\"").Append(ConstructRoutes.TypeKey(c.Routes[r].Type)).Append('"');
+            for (var i = -1; i <= c.Routes[r].Count; i++)
+            {
+                var q = ConstructRoutes.RestPoint(c, r, i);
+                linksSb.Append(',').Append(F3(q.X)).Append(',').Append(F3(q.Y)).Append(',').Append(F3(q.Z));
+            }
+            linksSb.Append(']');
+        }
+        return Encode(bp.Name, bp.Description, bp.Steps.Count, c.Mass, pos, nrm, triLook, looks, parts.ToString(), decksSb.ToString(), linksSb.ToString(), _animWrite?.Invoke());
+
+        static string F3(float f) => f.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture);
+    }
+
+    /// <summary>The model's JSON from its triangles (see <see cref="Model"/>); <paramref name="extra"/> is put in before the closing brace (",\"anim\":...").</summary>
+    private static string Encode(string name, string description, int steps, float mass, List<Vector3> pos, List<Vector3> nrm, List<ushort> triLook, List<(string Hex, float Glass, bool Glow, string Finish, float Metal, float Rough)> looks, string parts, string decksJson, string linksJson, string? extra)
+    {
         // Quantise: positions to int16 over the largest extent, normals to int8.
         var lo = new Vector3(float.MaxValue);
         var hi = new Vector3(float.MinValue);
@@ -405,17 +436,13 @@ public static partial class ConstructPreview
         }
 
         var sb = new StringBuilder();
-        sb.Append("{\"format\":\"call-of-slop-preview/1\",\"name\":").Append(JsonSerializer.Serialize(bp.Name));
-        sb.Append(",\"description\":").Append(JsonSerializer.Serialize(bp.Description));
-        sb.Append(",\"steps\":").Append(bp.Steps.Count).Append(",\"mass\":").Append(MathF.Round(c.Mass));
+        sb.Append("{\"format\":\"call-of-slop-preview/1\",\"name\":").Append(JsonSerializer.Serialize(name));
+        sb.Append(",\"description\":").Append(JsonSerializer.Serialize(description));
+        sb.Append(",\"steps\":").Append(steps).Append(",\"mass\":").Append(MathF.Round(mass));
         sb.Append(",\"min\":[").Append(F(lo.X)).Append(',').Append(F(lo.Y)).Append(',').Append(F(lo.Z)).Append(']');
         sb.Append(",\"max\":[").Append(F(hi.X)).Append(',').Append(F(hi.Y)).Append(',').Append(F(hi.Z)).Append(']');
         sb.Append(",\"scale\":").Append(F(scale));
-        sb.Append(",\"decks\":[");
-        var decks = Decks(c, floors);
-        for (var i = 0; i < decks.Count; i++)
-            sb.Append(i > 0 ? "," : "").Append(JsonSerializer.Serialize(new object[] { decks[i].Name, MathF.Round(decks[i].Y, 3) }));
-        sb.Append(']');
+        sb.Append(",\"decks\":[").Append(decksJson).Append(']');
         sb.Append(",\"looks\":[");
         for (var i = 0; i < looks.Count; i++)
         {
@@ -423,25 +450,15 @@ public static partial class ConstructPreview
             sb.Append(i > 0 ? "," : "").Append(JsonSerializer.Serialize(new object[] { l.Hex, l.Glass, l.Glow ? 1 : 0, l.Finish, l.Metal, l.Rough }));
         }
         sb.Append("],\"parts\":[").Append(parts).Append(']');
-        // The links (cables, pipes, chutes, shafts...) as the build laid them: [type, x, y, z, x, y, z, ...] from the output through the nodes to the input, rest frame.
-        sb.Append(",\"links\":[");
-        for (var r = 0; r < c.RouteCount; r++)
-        {
-            sb.Append(r > 0 ? "," : "").Append("[\"").Append(ConstructRoutes.TypeKey(c.Routes[r].Type)).Append('"');
-            for (var i = -1; i <= c.Routes[r].Count; i++)
-            {
-                var q = ConstructRoutes.RestPoint(c, r, i);
-                sb.Append(',').Append(F3(q.X)).Append(',').Append(F3(q.Y)).Append(',').Append(F3(q.Z));
-            }
-            sb.Append(']');
-        }
-        sb.Append(']');
+        sb.Append(",\"links\":[").Append(linksJson).Append(']');
         sb.Append(",\"pos\":\"").Append(Convert.ToBase64String(pb)).Append('"');
         sb.Append(",\"nrm\":\"").Append(Convert.ToBase64String(nb)).Append('"');
-        sb.Append(",\"look\":\"").Append(Convert.ToBase64String(lb)).Append("\"}");
+        sb.Append(",\"look\":\"").Append(Convert.ToBase64String(lb)).Append('"');
+        if (extra != null)
+            sb.Append(extra);
+        sb.Append('}');
         return sb.ToString();
 
         static string F(float f) => f.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture);
-        static string F3(float f) => f.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture);
     }
 }

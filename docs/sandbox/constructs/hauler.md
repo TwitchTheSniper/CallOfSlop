@@ -68,10 +68,11 @@ girders) along the hold's roof, a sensor mast, radiators over the drive room.
   times its weight empty. Its pitch is slow (43 degrees in 6 s against the check's 55), as the Zero Day's is (33); a stiffer gyro
   made it roll over.
 - **Lift and legs.** Six Dray Lift Jets (2 MN each, whole parts with nothing inside) on pads under the keel's flat, inside the
-  skids, clear of the well (z 16, 24, 42); six Dray Landing Legs outboard of the skids stand the keel 2.9 m off the ground (`Ground`),
-  room for a container under the well. Loaded with 14 containers of 30 t it still lifts about twice its weight.
+  skids, clear of the well (z 16, 24, 42); six Landing Leg Pods XL (`LegPodParts`, z 20, 37 and 45.8 at
+  x 2.95 either side, on mounts 16 cm proud so their tops clear the skids) stand the keel about 3.4 m off the ground (`Ground`),
+  room for a container under the well. B in a seat opens their canopies and lowers the legs, and raises them again. Loaded with 14 containers of 30 t it still lifts about twice its weight.
 - **Getting in.** The belly shaft is closed by the Dray Belly Hatch (Karl, 2026-11-18: no ladder hanging out in flight), a slide door that
-  drops 2.9 m to the ground in 4 s. The Dray Boarding Ladder stands on it as a door leaf, so while the hatch is shut it is stowed up
+  drops in 4 s to half a metre off the ground (a step up: the leg pods stand the keel higher than the stowed ladder is long). The Dray Boarding Ladder stands on it as a door leaf, so while the hatch is shut it is stowed up
   through the airlock's floor (a climb is refused) and with it open it runs from the ground to the airlock. The airlock's inboard switch
   works it, as does F on the hatch from below or F on the stowed ladder (`GameSandbox` Use: a ladder on a shut door's leaf works the door).
   `--ladder-check` climbs it only with the hatch open.

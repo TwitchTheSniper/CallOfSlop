@@ -1,0 +1,46 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Landing Leg Pod XL",
+  "description": "A landing leg pod (XL) assembled: the housing, its two canopy leaves and the gantry with its leg, stowed. Weld the housing's top under a keel; open the canopy, then lower the gantry.",
+  "steps": [
+    {
+      "part": "Leg Pod Housing XL"
+    },
+    {
+      "part": "Leg Pod Canopy Port XL",
+      "on": 0,
+      "socket": "canopyL",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Canopy Stbd XL",
+      "on": 0,
+      "socket": "canopyR",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Strut XL",
+      "on": 0,
+      "socket": "strut",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Carriage XL",
+      "on": 0,
+      "socket": "carriage",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Brace XL",
+      "on": 4,
+      "socket": "brace",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Foot XL",
+      "on": 0,
+      "socket": "foot",
+      "by": "hang"
+    }
+  ]
+}

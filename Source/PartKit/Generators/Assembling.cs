@@ -482,7 +482,7 @@ public sealed class Assembling : IPartGenerator
     /// Folders added after saves held Assembler recipes by number (an Assembler's recipe setting is 1 + its place in its family's list): their
     /// rows go at the end of the file, in this order, so no older row moves. A new folder of parts goes at the end of this list.
     /// </summary>
-    private static readonly string[] LateFolders = ["LinkSupports"];
+    private static readonly string[] LateFolders = ["LinkSupports", "LegPods"];
 
     /// <summary>
     /// Hand-written recipes added after the table's rows were saved in worlds: they go after every older row, in the order

@@ -177,6 +177,8 @@ public static unsafe partial class Program
                 g.SandboxSend(CActKind.Dampeners, body: h.SeatBody); // (a ship's inertia dampeners off or on: ConstructFlight.ToggleDampeners)
             if (Pressed(GameAction.SeatMouseSteer) && g.Constructs.Get(h.SeatBody) is { } steered && ConstructFlight.HasMouseSteer(steered))
                 g.SandboxSend(CActKind.MouseSteer, body: h.SeatBody); // (the mouse takes the nose or lets it go: ConstructFlight.ToggleMouseSteer)
+            if (Pressed(GameAction.SeatGear) && g.Constructs.Get(h.SeatBody) is { } legged && ConstructDoors.HasGear(legged))
+                g.SandboxSend(CActKind.LandingGear, body: h.SeatBody); // (the landing leg pods out or in: ConstructDoors.ToggleGear)
             return true;
         }
         if (_sbSeatKeys > 0)
