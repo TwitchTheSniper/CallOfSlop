@@ -418,6 +418,48 @@
       "color": "#d8f0ff",
       "detail": true,
       "glow": true
+    },
+    {
+      "min": [
+        7.025,
+        3.095,
+        32.925
+      ],
+      "max": [
+        7.325,
+        3.12,
+        33.225
+      ],
+      "color": "#9aa1a6",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        3.225,
+        3.095,
+        27.725
+      ],
+      "max": [
+        3.525,
+        3.12,
+        28.025
+      ],
+      "color": "#9aa1a6",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        9.225,
+        3.095,
+        27.725
+      ],
+      "max": [
+        9.525,
+        3.12,
+        28.025
+      ],
+      "color": "#9aa1a6",
+      "finish": "painted plating"
     }
   ],
   "sockets": [
@@ -510,6 +552,33 @@
         29.375
       ],
       "dir": "+y"
+    },
+    {
+      "name": "relayAft",
+      "at": [
+        7.175,
+        3.095,
+        33.075
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "relayAftL",
+      "at": [
+        3.375,
+        3.095,
+        27.875
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "relayAftR",
+      "at": [
+        9.375,
+        3.095,
+        27.875
+      ],
+      "dir": "-y"
     },
     {
       "name": "j0",

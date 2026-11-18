@@ -1802,6 +1802,15 @@
       "by": "-x"
     },
     {
+      "part": "Input Reader",
+      "on": 260,
+      "socket": "+x",
+      "by": "-x",
+      "config": {
+        "setting": "jump"
+      }
+    },
+    {
       "part": "OR Gate",
       "on": 4,
       "socket": "relayL",
@@ -1811,6 +1820,24 @@
       "part": "OR Gate",
       "on": 4,
       "socket": "relayR",
+      "by": "+y"
+    },
+    {
+      "part": "OR Gate",
+      "on": 1,
+      "socket": "relayAft",
+      "by": "+y"
+    },
+    {
+      "part": "OR Gate",
+      "on": 1,
+      "socket": "relayAftL",
+      "by": "+y"
+    },
+    {
+      "part": "OR Gate",
+      "on": 1,
+      "socket": "relayAftR",
       "by": "+y"
     },
     {
@@ -1870,7 +1897,7 @@
     },
     {
       "part": "Ammo Box",
-      "on": 268,
+      "on": 272,
       "socket": "ammo",
       "by": "bottom"
     },
@@ -1918,37 +1945,37 @@
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 276,
+      "on": 280,
       "socket": "lug0",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 276,
+      "on": 280,
       "socket": "lug1",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 276,
+      "on": 280,
       "socket": "lug2",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 276,
+      "on": 280,
       "socket": "lug3",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 276,
+      "on": 280,
       "socket": "lug4",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 276,
+      "on": 280,
       "socket": "lug5",
       "by": "lug"
     },
@@ -1960,37 +1987,37 @@
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 283,
+      "on": 287,
       "socket": "lug0",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 283,
+      "on": 287,
       "socket": "lug1",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 283,
+      "on": 287,
       "socket": "lug2",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 283,
+      "on": 287,
       "socket": "lug3",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 283,
+      "on": 287,
       "socket": "lug4",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 283,
+      "on": 287,
       "socket": "lug5",
       "by": "lug"
     }
@@ -2125,7 +2152,7 @@
       249
     ],
     [
-      257,
+      259,
       261
     ],
     [
@@ -2133,48 +2160,72 @@
       262
     ],
     [
+      257,
+      263
+    ],
+    [
+      261,
+      264
+    ],
+    [
+      264,
+      265
+    ],
+    [
+      264,
+      266
+    ],
+    [
       178,
       181
     ],
     [
       181,
-      268
-    ],
-    [
-      198,
-      270
-    ],
-    [
-      198,
-      271
-    ],
-    [
-      198,
       272
     ],
     [
       198,
-      273
+      274
     ],
     [
-      274,
+      198,
       275
     ],
     [
+      198,
+      276
+    ],
+    [
+      198,
+      277
+    ],
+    [
+      278,
+      279
+    ],
+    [
       127,
-      276
-    ],
-    [
-      261,
-      276
-    ],
-    [
-      128,
-      283
+      280
     ],
     [
       262,
-      283
+      280
+    ],
+    [
+      265,
+      280
+    ],
+    [
+      128,
+      287
+    ],
+    [
+      263,
+      287
+    ],
+    [
+      266,
+      287
     ]
   ],
   "links": [
