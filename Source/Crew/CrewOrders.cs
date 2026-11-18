@@ -18,6 +18,23 @@ public sealed partial class ShipAi
 
     private static float Sq(float v) => v * v;
 
+    /// <summary>Under an order to keep station on a body (Form, Escort, Screen; or Screen's flagship), is that body across its line of fire to <paramref name="at"/>?</summary>
+    private bool WardInLine(ConstructWorld world, Vector3 com, Vector3 at) =>
+        Ordered(out var o) && o.Kind is OrderKind.Form or OrderKind.Escort or OrderKind.Screen && world.Get(o.Body) is { } ward && InLine(ward, com, at);
+
+    /// <summary>Is body <paramref name="b"/> across the line from <paramref name="from"/> to <paramref name="to"/> (nearer than the target, within its size and a margin)?</summary>
+    private static bool InLine(Construct b, Vector3 from, Vector3 to)
+    {
+        var d = to - from;
+        var len = d.Length();
+        if (len < 1)
+            return false;
+        var along = Vector3.Dot(b.WorldCom - from, d / len);
+        if (along <= 0 || along >= len)
+            return false;
+        return Vector3.DistanceSquared(from + d / len * along, b.WorldCom) < Sq(b.Radius + 8);
+    }
+
     private bool Ordered(out ShipOrder o)
     {
         if (Ship != null && Crew != null && Ship.Ordered(Crew.Tick))
@@ -145,6 +162,9 @@ public sealed partial class ShipAi
         else if (grace)
             Seat(c, _pilot, (ushort)(_pilotKeys & ~ConstructParts.KeyFire), _pilotYaw, _pilotPitch);
         var dist = has ? Vector3.Distance(t.At, com) : 0;
+        // What it keeps station on (or screens) in the line of fire: its gunners hold, or they shoot through it (a Traders' escort behind its
+        // flagship took the flagship's crew out from behind: faction-controllers-notes.md phase 6).
+        var blocked = has && WardInLine(world, com, t.At);
         for (var s = 0; s < _seatCount; s++)
         {
             int seat = _seats[s];
@@ -158,7 +178,7 @@ public sealed partial class ShipAi
                 continue;
             }
             var (gl, fire) = Gunnery(world, c, seat, t, dist, fixedGuns: false);
-            GunSeat(c, s, (ushort)(CPart.Occupied | (fire ? ConstructParts.KeyFire : 0)), gl.Yaw, gl.Pitch);
+            GunSeat(c, s, (ushort)(CPart.Occupied | (fire && !blocked ? ConstructParts.KeyFire : 0)), gl.Yaw, gl.Pitch);
         }
         return true;
     }

@@ -318,12 +318,13 @@ public sealed partial class ShipAi
         _state = gap > StandBand ? 4 : gap < -StandBand ? 5 : 6;
         _stateDist = dist;
         var fleeing = Fleeing(ref pilot); // (its captain runs: nose away, full ahead; Source/Crew/CrewGround.cs)
+        var held = WardInLine(world, com, t.At); // (what its admiral has it guard is in the line of fire: nobody fires through it, Source/Crew/CrewOrders.cs)
 
         // The guns: each seat looks at where its guns' rounds meet the target, and fires when a gun on it bears and reaches.
         if (pilotOn)
         {
             var (pilotLook, pilotFire) = fleeing ? (GravityFrames.Angles(com, -dir * 100), false) : Gunnery(world, c, _pilot, t, dist, fixedGuns: true);
-            if (pilotFire)
+            if (pilotFire && !held)
                 pilot |= ConstructParts.KeyFire;
             PilotSeat(c, pilot, pilotLook.Yaw, pilotLook.Pitch);
         }
@@ -337,13 +338,13 @@ public sealed partial class ShipAi
             if (PointDefence(world, c, s))
                 continue; // (a missile coming for it first)
             var (look, fire) = Gunnery(world, c, seat, t, dist, fixedGuns: false);
-            GunSeat(c, s, (ushort)(CPart.Occupied | (fire ? ConstructParts.KeyFire : 0)), look.Yaw, look.Pitch);
+            GunSeat(c, s, (ushort)(CPart.Occupied | (fire && !held ? ConstructParts.KeyFire : 0)), look.Yaw, look.Pitch);
         }
         if (!pilotOn)
             return; // (the racks and flares are the pilot's buttons)
 
         // The racks: one launch at a time, taking turns, at a ship or a car (a seeker wants something that moves), with the target off the nose.
-        if (!fleeing && _rackCount > 0 && t.Body != 0 && dist is > LaunchMin and < LaunchMax && _tick >= _launchAt)
+        if (!fleeing && !held && _rackCount > 0 && t.Body != 0 && dist is > LaunchMin and < LaunchMax && _tick >= _launchAt)
         {
             var nose = Vector3.Transform(-Vector3.UnitZ, c.Rot); // (the racks' ports face forward)
             if (Vector3.Dot(nose, dir) > MathF.Cos(LaunchCone * MathF.PI / 180))

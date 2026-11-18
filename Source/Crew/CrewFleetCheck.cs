@@ -365,7 +365,7 @@ public static class CrewFleetCheck
             if (t % (10 * World.TickRate) == 10 * World.TickRate - 1)
                 Console.WriteLine($"  {(t + 1) / World.TickRate,3} s: {string.Join("; ", ships.Select(b => $"{b.Id}: {crew.ShipOf(b.Id)?.Ai?.State ?? "no driver"} at {b.Vel.Length():0} m/s, {b.WorldCom.Y:0} m up, helm {(crew.ShipOf(b.Id) is { } hs && hs.HelmOn(crew) ? "manned" : "EMPTY")}, keys {(crew.ShipOf(b.Id) is { Helm: >= 0 } ks ? b.Parts[ks.StPart[ks.Helm]].Keys : 0):X}, nose to its way {Vector3.Dot(Vector3.Normalize(Vector3.Transform(-Vector3.UnitZ, b.Rot) with { Y = 0 }), b.Vel.LengthSquared() > 1 ? Vector3.Normalize(b.Vel with { Y = 0 }) : Vector3.Zero):0.0}"))}");
         }
-        var looped = crew.ShipOf(g.Flagship) is { Order.Kind: OrderKind.Mine } && arrivals.Count >= 2;
+        var looped = arrivals.Count >= 3 && arrivals[2] == 0 || crew.ShipOf(g.Flagship) is { Order.Kind: OrderKind.Mine } && arrivals.Count >= 2; // (a third arrival at the mine, or on its way back to it)
         var ok = arrivals.Count >= 2 && arrivals[0] == 0 && arrivals[1] == 1 && looped;
         Console.WriteLine($"fleet mining: route points reached in order: {string.Join(", ", arrivals.Select(a => a == 0 ? "mine" : "deliver"))}{(looped ? ", then back to mine" : "")}: {(ok ? "OK" : "FAILED")}");
         return ok;
