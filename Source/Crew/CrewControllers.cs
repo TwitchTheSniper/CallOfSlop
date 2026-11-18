@@ -158,6 +158,8 @@ public sealed class PowerControllers
     private readonly short[][][] _fleet = new short[N + 1][][]; // [power][role] blueprint indices
 
     public readonly List<string> News = new(16);
+    /// <summary>Log lines (the host prints them): kept apart so a think that logs is not counted as allocating in a steady tick.</summary>
+    public readonly List<string> Log = new(16);
     public double CpuMs, WorstMs;
     public int Ticks, Thinks;
     public long Bytes;
@@ -249,7 +251,7 @@ public sealed class PowerControllers
             return;
         var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
         var b0 = GC.GetAllocatedBytesForCurrentThread();
-        var e0 = News.Count + crew.Events.Count;
+        var e0 = News.Count + crew.Events.Count + Log.Count;
         _thinkAt = Tick + Math.Max(1, (int)(Rules.ThinkSeconds * T) / Count);
         if (_next >= Count)
             _next = 0;
@@ -258,7 +260,7 @@ public sealed class PowerControllers
         Think(crew, w, rel, host, a);
         Thinks++;
         var ms = (System.Diagnostics.Stopwatch.GetTimestamp() - t0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
-        if (News.Count + crew.Events.Count == e0)
+        if (News.Count + crew.Events.Count + Log.Count == e0)
             Bytes += GC.GetAllocatedBytesForCurrentThread() - b0; // (a think that said nothing allocates nothing)
         CpuMs += ms;
         if (Ticks++ > 10)
@@ -377,7 +379,7 @@ public sealed class PowerControllers
             }
         }
         if (p.PlaceCount > 0)
-            Console.WriteLine($"[powers] {Name(a)}: {p.PlaceCount} places on {p.World}: {string.Join(", ", Enumerable.Range(0, p.PlaceCount).Select(i => $"{p.PlaceName[i]} ({p.Place[i].X:0}, {p.Place[i].Z:0})"))}");
+            Log.Add($"{Name(a)}: {p.PlaceCount} places on {p.World}: {string.Join(", ", Enumerable.Range(0, p.PlaceCount).Select(i => $"{p.PlaceName[i]} ({p.Place[i].X:0}, {p.Place[i].Z:0})"))}");
     }
 
     private static void AddPlace(Power p, string name, Vector3 at)
@@ -392,8 +394,6 @@ public sealed class PowerControllers
         var r2 = Rules.RazeRange * Rules.RazeRange;
         for (var i = 0; i < p.PlaceCount; i++)
         {
-            if (p.Razed[i])
-                continue;
             var enemy = false;
             foreach (var g in crew.Fleet.Groups)
                 if (g.Live && g.Power != a && rel.Fights(g.Power, a) && w.Get(g.Flagship) is { } f && Vector3.DistanceSquared(f.WorldCom, p.Place[i]) < r2)
@@ -401,13 +401,28 @@ public sealed class PowerControllers
                     enemy = true;
                     break;
                 }
-            if (enemy)
-                foreach (var s in p.Ships)
-                    if (s.State == PowerShipState.Out && w.Get(s.Body) is { } c && Vector3.DistanceSquared(c.WorldCom, p.Place[i]) < r2)
-                    {
-                        enemy = false;
-                        break;
-                    }
+            var own = false;
+            foreach (var s in p.Ships)
+                if (s.State == PowerShipState.Out && w.Get(s.Body) is { } c && Vector3.DistanceSquared(c.WorldCom, p.Place[i]) < r2)
+                {
+                    own = true;
+                    break;
+                }
+            if (p.Razed[i])
+            {
+                // Lost: its own ships standing there with no enemy near take it back in the same time.
+                if (!own || enemy)
+                    p.EnemySince[i] = 0;
+                else if (p.EnemySince[i] == 0)
+                    p.EnemySince[i] = Tick;
+                else if (Tick - p.EnemySince[i] >= (long)(Rules.RazeSeconds * T))
+                {
+                    (p.Razed[i], p.EnemySince[i]) = (false, 0);
+                    Say($"{Name(a)} takes back its {p.PlaceName[i]}");
+                }
+                continue;
+            }
+            enemy &= !own;
             if (!enemy)
                 p.EnemySince[i] = 0;
             else if (p.EnemySince[i] == 0)
@@ -420,12 +435,13 @@ public sealed class PowerControllers
         }
     }
 
+    /// <summary>Where its ships go home to: its first place it holds, else its first place (to take it back); -1: none.</summary>
     private int Home(Power p)
     {
         for (var i = 0; i < p.PlaceCount; i++)
             if (!p.Razed[i])
                 return i;
-        return -1;
+        return p.PlaceCount > 0 ? 0 : -1;
     }
 
     private float NearestPerson(Vector3 at)
@@ -447,7 +463,7 @@ public sealed class PowerControllers
             ref var s = ref p.Ships[i];
             switch (s.State)
             {
-                case PowerShipState.Building when Tick >= s.ReadyAt && home >= 0:
+                case PowerShipState.Building when Tick >= s.ReadyAt && home >= 0 && !p.Razed[home]:
                     if (Bodies() >= Rules.MaxBodies || NearestPerson(p.Place[home]) < Rules.SpawnFromPeople)
                         break; // (out of sight only, and within the world's cap)
                     var at = host.Ground(p.Place[home] + new Vector3((i % 4 - 1.5f) * 14, 0, (i / 4 % 4 - 1.5f) * 18));
@@ -468,7 +484,7 @@ public sealed class PowerControllers
                         s.Mission = -1;
                         break;
                     }
-                    if (s.Mission < 0 && cs.Group < 0 && home >= 0 && Vector3.Distance(c.WorldCom, p.Place[home]) < Rules.DockRange + c.Radius
+                    if (s.Mission < 0 && cs.Group < 0 && home >= 0 && !p.Razed[home] && Vector3.Distance(c.WorldCom, p.Place[home]) < Rules.DockRange + c.Radius
                         && NearestPerson(c.WorldCom) > Rules.DockFromPeople)
                         Dock(crew, host, p, ref s, c, cs);
                     break;
@@ -544,7 +560,7 @@ public sealed class PowerControllers
             return;
         if (c == null || crew.ShipOf(c.Id) is not { } cs || cs.Faction != a)
         {
-            Console.WriteLine($"[powers] {Name(a)}'s {Blueprints[s.Bp].Name} wasn't set down{(c != null ? " crewed" : "")}: {why}");
+            Log.Add($"{Name(a)}'s {Blueprints[s.Bp].Name} wasn't set down{(c != null ? " crewed" : "")}: {why}");
             s.State = PowerShipState.Building;
             s.ReadyAt = Tick + 30L * T;
             return;
@@ -592,7 +608,7 @@ public sealed class PowerControllers
                 p.Spent += bill.Units;
                 p.Bought++;
                 p.Ships[i] = new PowerShip { State = PowerShipState.Building, Role = role, Bp = bp, Hull = 1, ReadyAt = Tick + (long)(bill.Seconds * T), Mission = (sbyte)m };
-                Console.WriteLine($"[powers] {Name(a)} buys a {Blueprints[bp].Name} ({role}) for {bill.Units:0}: {p.Stock:0} left; ready in {bill.Seconds:0} s");
+                Log.Add($"{Name(a)} buys a {Blueprints[bp].Name} ({role}) for {bill.Units:0}: {p.Stock:0} left; ready in {bill.Seconds:0} s");
                 return true;
             }
         return false;
@@ -635,7 +651,7 @@ public sealed class PowerControllers
         if (i < 0)
             return -1;
         p.Missions[i] = new PowerMission { Kind = kind, Stage = PowerMissionStage.Gather, Group = -1, OtherGroup = -1, At = at, Started = Tick, StageAt = Tick, ReadTick = Tick };
-        Console.WriteLine($"[powers] {Name(a)}: a {kind} mission ({why})");
+        Log.Add($"{Name(a)}: a {kind} mission ({why})");
         return i;
     }
 
@@ -705,12 +721,14 @@ public sealed class PowerControllers
         }
     }
 
-    /// <summary>A group's cargo ships (unarmed) still with it.</summary>
-    private static int CargoIn(CrewWorld crew, ConstructWorld w, CrewGroup g)
+    /// <summary>A group's cargo ships still with it (by its power's records: a cargo hauler may carry a gun).</summary>
+    private int CargoIn(CrewWorld crew, ConstructWorld w, CrewGroup g)
     {
         var n = 0;
-        for (var k = 0; k < g.Count; k++)
-            if (crew.ShipOf(g.Ships[k]) is { } s && w.Get(g.Ships[k]) is { } c && s.Strength <= CrewWorld.HullOf(c) * 0.01f + 0.5f)
+        if (g.Power == 0 || g.Power > N)
+            return 0;
+        foreach (var s in Powers[g.Power].Ships)
+            if (s.State == PowerShipState.Out && s.Role == ShipRole.Cargo && s.Body != 0 && crew.ShipOf(s.Body) is { } cs && cs.Group == g.Slot && w.Get(s.Body) is { Wreck: false })
                 n++;
         return n;
     }
@@ -838,7 +856,7 @@ public sealed class PowerControllers
         {
             if (timeout && Tick - m.StageAt > (long)(Rules.GatherMinutes * 120 * T))
             {
-                Console.WriteLine($"[powers] {Name(a)}'s {m.Kind} mission gives up: its ships didn't come (stock {p.Stock:0})");
+                Log.Add($"{Name(a)}'s {m.Kind} mission gives up: its ships didn't come (stock {p.Stock:0})");
                 End(p, i);
             }
             return;
@@ -908,7 +926,7 @@ public sealed class PowerControllers
                     s.Mission = -1;
                 continue;
             }
-            if (Vector3.Distance(c.WorldCom, p.Place[home]) < Rules.DockRange + c.Radius && NearestPerson(c.WorldCom) > Rules.DockFromPeople)
+            if (!p.Razed[home] && Vector3.Distance(c.WorldCom, p.Place[home]) < Rules.DockRange + c.Radius && NearestPerson(c.WorldCom) > Rules.DockFromPeople)
                 Dock(crew, host, p, ref s, c, cs);
             else
                 left++;
@@ -1099,7 +1117,7 @@ public sealed class PowerControllers
             var v = r.U8();
             if (v != SaveVersion)
             {
-                Console.WriteLine($"[powers] the world's controllers section is of version {v} (this build reads {SaveVersion}): every power starts from its plan");
+                Log.Add($"the world's controllers section is of version {v} (this build reads {SaveVersion}): every power starts from its plan");
                 return;
             }
             int n = r.U8();
@@ -1109,7 +1127,7 @@ public sealed class PowerControllers
                 var id = CrewPowers.Find(name);
                 var p = id > 0 && Name(id).Equals(name, StringComparison.OrdinalIgnoreCase) ? Powers[id] : new Power();
                 if (p.Id == 0)
-                    Console.WriteLine($"[powers] the world's controllers name power \"{name}\", which isn't read now: left out");
+                    Log.Add($"the world's controllers name power \"{name}\", which isn't read now: left out");
                 var flags = r.U8();
                 p.Fallen = (flags & 1) != 0;
                 p.Started = (flags & 2) != 0;
@@ -1146,7 +1164,7 @@ public sealed class PowerControllers
                     }
                     if (bp < 0 || p.Id == 0 || i >= MaxShips || st is not (PowerShipState.Building or PowerShipState.Hangar or PowerShipState.Out) || role >= ShipRole.Count)
                     {
-                        Console.WriteLine($"[powers] {name}'s saved ship \"{bpName}\" can't be kept (no such blueprint now): left out");
+                        Log.Add($"{name}'s saved ship \"{bpName}\" can't be kept (no such blueprint now): left out");
                         continue;
                     }
                     p.Ships[i] = new PowerShip { State = st, Role = role, Bp = (short)bp, Hull = hull, ReadyAt = Tick + (long)ready * T, Mission = mission };
@@ -1178,7 +1196,7 @@ public sealed class PowerControllers
         }
         catch (Exception ex) when (ex is WorldFileException or ArgumentException or IndexOutOfRangeException or InvalidDataException)
         {
-            Console.WriteLine($"[powers] the world's controllers section doesn't read ({ex.Message}): every power starts from its plan");
+            Log.Add($"the world's controllers section doesn't read ({ex.Message}): every power starts from its plan");
             Reset();
         }
     }

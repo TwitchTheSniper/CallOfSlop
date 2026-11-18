@@ -37,6 +37,12 @@ public sealed partial class Game : IPowerHost
         rel.Might ??= Controllers.Might;
         rel.Merge ??= (a, b) => Controllers.MergeInto(Crew, Constructs, Relations, a, b);
         Controllers.Step(Crew, Constructs, rel, this);
+        if (Controllers.Log.Count > 0)
+        {
+            foreach (var line in Controllers.Log)
+                Console.WriteLine($"[powers] {line}");
+            Controllers.Log.Clear();
+        }
         if (Controllers.News.Count > 0)
         {
             foreach (var line in Controllers.News)
@@ -96,6 +102,9 @@ public sealed partial class Game : IPowerHost
         if (!CrewStandingOn)
             return;
         Controllers.Load(Relations, bytes);
+        foreach (var line in Controllers.Log)
+            Console.WriteLine($"[powers] {line}");
+        Controllers.Log.Clear();
         _relShown = -1;
     }
 }

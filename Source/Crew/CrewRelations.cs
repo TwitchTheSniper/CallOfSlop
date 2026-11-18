@@ -459,7 +459,7 @@ public sealed class PowerRelations
         if (Def(victim) is not { } v || doerPower == victim || doerPower == 0 && doerPlayer == 255 || doerPower > Count || Gone[victim])
             return;
         var amount = Amount(e, v);
-        if (doerPower != 0 && Attack(e) && e != RelEvent.HitCrew && e != RelEvent.HitBody && Rel[(victim - 1) * N + doerPower - 1] <= BloodValue + 1 && v.Pride >= Rules.BloodPride && !Blood(victim, doerPower))
+        if (doerPower != 0 && e is RelEvent.DestroyShip or RelEvent.Capture or RelEvent.CaptureOfficer or RelEvent.RaidConvoy && Rel[(victim - 1) * N + doerPower - 1] <= BloodValue + 1 && v.Pride >= Rules.BloodPride && !Blood(victim, doerPower))
         {
             // A grave deed against a power already at the floor: a blood feud, for good (Karl's answer 2).
             Set(victim, doerPower, BloodValue);
@@ -712,7 +712,7 @@ public sealed class PowerRelations
 
     /// <summary>Trade (Karl's answer 2): both neutral or better, no war, and one of them greedy enough to want the business.</summary>
     private bool TradeWanted(byte a, byte b) => BandOf(a, b) >= RelBand.Neutral && BandOf(b, a) >= RelBand.Neutral
-        && MathF.Max(Def(a)!.Greed, Def(b)!.Greed) >= Rules.TradeGreed && Might != null;
+        && MathF.Max(Def(a)!.Greed, Def(b)!.Greed) >= Rules.TradeGreed && Might != null && MightOf(a) > 0 && MightOf(b) > 0; // (both with an economy)
 
     /// <summary>Tribute: <paramref name="a"/> would pay <paramref name="b"/> for peace: a ceasefire it wants, much the weaker, and not too proud.</summary>
     private bool TributeWanted(byte a, byte b) => Might != null && CeasefireWanted(a, b) && MightOf(a) < MightOf(b) * Rules.TributeWeaker && Def(a)!.Pride < Rules.TributePride;

@@ -6,7 +6,7 @@
   "format": "call-of-slop-npc-controllers/1",
   "think": { "seconds": 5 },
   "world": { "maxBodies": 24, "spawnFromPeople": 600, "dockFromPeople": 400, "dockRange": 150 },
-  "places": { "near": 1200, "far": 2200, "razeSeconds": 60, "razeRange": 300 },
+  "places": { "near": 1200, "far": 2200, "razeSeconds": 180, "razeRange": 300 },
   "cost": { "perUnit": 1, "buildSecondsScale": 0.05, "minBuildSeconds": 8, "repairShare": 1 },
   "missions": {
     "convoyEveryMinutes": 4,

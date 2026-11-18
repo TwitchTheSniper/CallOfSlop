@@ -56,7 +56,7 @@ public sealed class ControllerRules
     public float PlaceNear = 1200, PlaceFar = 2200; // m from the first person: a power's places on an open world its plan names none on
     public float CostPerUnit = 1, BuildSecondsScale = 0.05f, MinBuildSeconds = 8, RepairShare = 1;
     public float ConvoyEveryMinutes = 4, CargoValue = 900, RaidSight = 3000, RaidLoot = 0.5f, CallRange = 5000, DefendMinutes = 4, QuietSeconds = 40;
-    public float GatherMinutes = 4, RunMinutes = 12, PatrolMinutes = 8, RazeSeconds = 60, RazeRange = 300, DwellSeconds = 8;
+    public float GatherMinutes = 4, RunMinutes = 12, PatrolMinutes = 8, RazeSeconds = 180, RazeRange = 300, DwellSeconds = 8;
     public readonly Dictionary<string, PowerPlan> Kinds = new(StringComparer.OrdinalIgnoreCase);
 
     private static ControllerRules? _current;
@@ -73,7 +73,7 @@ public sealed class ControllerRules
         if (_plans.TryGetValue(id, out var p))
             return p;
         var def = CrewPowers.Of(id);
-        var kind = def != null && Kinds.TryGetValue(def.Kind.Name, out var k) ? k : new PowerPlan();
+        var kind = def != null && Kinds.TryGetValue(def.Kind.Name, out var k) ? k : new PowerPlan { Start = 0, Income = 0 }; // (a kind with no plan has no economy: it fields nothing, trades nothing)
         p = kind;
         if (def != null && def.PlanText.Length > 0)
             try
