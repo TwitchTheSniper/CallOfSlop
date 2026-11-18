@@ -81,5 +81,29 @@ public sealed partial class Game
     }
 
     /// <summary>The roll this command carries: the attitude's up measured about the look, as the server will rebuild it; 0 when the MMU doesn't steer.</summary>
-    private float MmuCmdRoll() => _mmuOn && MmuSteering ? World.QuantRoll(PilotGear.MmuRollOf(LookFrame, LookYaw, LookPitch, _mmuUp)) : 0f;
+    /// <summary>
+    /// The local player's MMU dampeners off (Karl, 2026-11-18: an inertia setting for the pack, as a ship's seat has on Z): off,
+    /// the pack keeps what speed it has; on (the default), with no key held it brakes them to the nearest craft's motion
+    /// (PilotGear.MmuBrake). Sent with each command; kept until toggled again (a new pack, a respawn: still the player's choice).
+    /// </summary>
+    public bool MmuCoasting { get; private set; }
+
+    /// <summary>The dampener key while flying the pack: flips it and says so.</summary>
+    public void MmuToggleDampers()
+    {
+        MmuCoasting = !MmuCoasting;
+        SandboxSay(MmuCoasting ? "MMU inertia dampeners OFF: you keep your speed" : "MMU inertia dampeners ON: holding still against the nearest craft");
+    }
+
+        private float MmuCmdRoll() => _mmuOn && MmuSteering ? World.QuantRoll(PilotGear.MmuRollOf(LookFrame, LookYaw, LookPitch, _mmuUp)) : 0f;
+
+    /// <summary>The window tool's "mmu" (host): a suit and a full MMU on the host's own player, for pictures and tries.</summary>
+    public void WsGiveMmu(Player p)
+    {
+        p.Eva |= Eva.Suit | Eva.Mmu;
+        p.SuitAir = Eva.SuitSeconds;
+        p.Sim.JetFuel = p.MmuFuel = Eva.MmuFull;
+        p.Sim.Gear = SandboxWorn(p);
+        BroadcastRoster();
+    }
 }

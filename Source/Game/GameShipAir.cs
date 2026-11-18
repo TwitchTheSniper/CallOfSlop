@@ -11,6 +11,26 @@ public sealed partial class Game
     public Construct? ShipAirOf(Player p) =>
         ShipAir.Aboard(p, SandboxHands.Hand(p.Id)) is var b and not 0 ? ShipAir.AirBody(Constructs, Constructs.Get(b)) : null;
 
+    /// <summary>
+    /// The HUD's ship (UI/UiVitalsPanel.cs): the one whose air the local player breathes, its sums fresh. A joined client counts the
+    /// people it sees aboard (the server's count also has crew records with no body near).
+    /// </summary>
+    public Construct? ShipAirForHud(Player me)
+    {
+        if (!Eva.Breathes(me) || ShipAirOf(me) is not { } ship)
+            return null;
+        ShipAir.Survey(ship);
+        if (!IsServer)
+        {
+            var n = 0;
+            foreach (var o in Players.Values)
+                if (o.Alive && !o.InShell && ShipAirOf(o) == ship)
+                    n++;
+            ship.AirAboard = (byte)Math.Min(255, n);
+        }
+        return ship;
+    }
+
     /// <summary>Is <paramref name="p"/> breathing a ship's air this tick?</summary>
     public bool OnShipAir(Player p) => ShipAir.Pressurised(ShipAirOf(p));
 

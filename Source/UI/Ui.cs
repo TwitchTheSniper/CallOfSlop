@@ -234,6 +234,7 @@ public sealed partial class Ui : IDisposable
         if (!arena)
         {
             DrawShellPanel(game, pos, size); // a worn-in robot shell's parts, bottom left (UiShellPanel.cs)
+            DrawVitalsPanel(game, pos, size); // a person's health and air, bottom left, in place of the health bar (UiVitalsPanel.cs)
             DrawShellWear(game); // a worn robot shell's glitches, static and brown-outs (UiShellWear.cs)
             DrawShellLink(game); // the robot shell chair's helmet coming down, black and its lamps (UiShellLink.cs)
         }

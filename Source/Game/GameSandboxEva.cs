@@ -304,7 +304,7 @@ public sealed partial class Game
 
 public sealed partial class Game
 {
-    private SbText _sbEva, _sbEvaDock, _sbShipAir;
+    private SbText _sbEvaDock;
 
     /// <summary>The HUD's spacewalk lines: the air, the MMU's fuel and keys; strapped into a dock, its lines alone (true).</summary>
     private bool SandboxEvaHud(Player me, in SandboxHand h, List<HudLine> lines, Vector4 white, Vector4 dim, Vector4 orange, Vector4 red)
@@ -320,37 +320,8 @@ public sealed partial class Game
             lines.Add(new HudLine(mmu >= 0 ? SandboxKeys.EvaDock : SandboxKeys.GetOut, dim));
             return true;
         }
-        var ship = Eva.Breathes(me) ? ShipAirOf(me) : null;
-        if (ship != null)
-        {
-            // The ship's air (GameShipAir.cs): how long it lasts for everyone aboard. A joined client counts the people it sees aboard.
-            ShipAir.Survey(ship);
-            if (!IsServer)
-            {
-                var n = 0;
-                foreach (var o in Players.Values)
-                    if (o.Alive && !o.InShell && ShipAirOf(o) == ship)
-                        n++;
-                ship.AirAboard = (byte)Math.Min(255, n);
-            }
-            if (_sbShipAir.Stale(ship.AirUnits * 1024L + ship.AirAboard * 2 + (ship.AirWorks ? 1 : 0) + ((long)ship.AirMax << 32)))
-                _sbShipAir.Text = ShipAir.Line(ship);
-            lines.Add(new HudLine(_sbShipAir.Text, ship.AirUnits <= 0 ? red : ship.AirUnits * 4 <= ship.AirMax ? orange : white));
-        }
-        var shipAir = ShipAir.Pressurised(ship);
-        var air = Eva.Breathes(me) && (me.Eva & Eva.Suit) != 0 | (!shipAir && Eva.Vacuum(me.Position));
+        // The air (suit, breath, the ship's) and the MMU's fuel are on the vitals panel, bottom left (UI/UiVitalsPanel.cs: Karl, 2026-11-18).
         var mmuOn = (me.Eva & Eva.Mmu) != 0;
-        if (!air && !mmuOn)
-            return false;
-        var key = (long)me.Eva + ((long)MathF.Ceiling(me.Breath) << 2) + ((long)MathF.Ceiling(me.SuitAir / 60) << 8) + ((long)(me.Sim.JetFuel * 100 / Eva.MmuFull) << 20) + (Eva.Vacuum(me.Position) ? 1L << 30 : 0) + (shipAir ? 1L << 31 : 0);
-        if (_sbEva.Stale(key))
-        {
-            var line = Eva.AirLine(me, shipAir);
-            var pack = mmuOn ? $"MMU fuel {me.Sim.JetFuel * 100 / Eva.MmuFull}%" : null;
-            _sbEva.Text = line != null && pack != null ? $"{line}, {pack}" : line ?? pack ?? "";
-        }
-        if (_sbEva.Text.Length > 0)
-            lines.Add(new HudLine(_sbEva.Text, me.Breath < Eva.BreathSeconds || me.SuitAir <= 0 && !shipAir && Eva.Vacuum(me.Position) ? red : (me.Eva & Eva.Suit) != 0 && me.SuitAir < 300 ? orange : white));
         if (mmuOn && !h.Seated)
             lines.Add(new HudLine(SandboxKeys.EvaFly, dim));
         return false;
