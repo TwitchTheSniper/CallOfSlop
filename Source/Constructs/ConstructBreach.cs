@@ -393,6 +393,66 @@ public static class ConstructBreach
             c.Wake();
         }
         Console.WriteLine(FormattableString.Invariant($"[breach] construct {b.Id} cut a hole {HoleHalfW * 2:0.0} by {halfH * 2:0.0} m, {len:0.0} m deep, into construct {c.Id}: {holed} parts holed, {burned} burned{(inRoom ? "" : ", no room behind it")}"));
-        return holed + burned > 0;
+        if (holed + burned == 0)
+            return false;
+        var end = at + down * (inRoom ? MathF.Max(room - 0.1f, 0.5f) : HoleBlind - 0.05f) + up * ((bottom + top) * 0.5f);
+        Seal(world, b, cutter, at, end, Vector3.Cross(up, down), up, halfH - SealInset);
+        return true;
+    }
+
+    private const float SealInset = 0.015f; // m: the seal sleeve's opening inside the hole's edge, so its walls hide the cut faces
+    private const float SealDoorHalfH = HoleTall * 0.5f - 0.07f; // m: the sleeve's half height at the pod's door
+
+    /// <summary>
+    /// Server (Karl, 2026-11-18: the Limpet seals and pressurises against the ship with a door-shaped seal ring, so you can't see outside):
+    /// pod <paramref name="b"/> lines the way from its cutter's face (<paramref name="from"/>, square to the pod) to the far end of the hole
+    /// (<paramref name="to"/>, its across and up the hole's) with a seal sleeve on the part nearest its cutter that can take one
+    /// (HullHoles.Sleeve: four walls that draw and collide as hull plates).
+    /// </summary>
+    private static void Seal(ConstructWorld world, Construct b, int cutter, Vector3 from, Vector3 to, Vector3 toAcross, Vector3 toUp, float toHalfH)
+    {
+        var best = -1;
+        var bestD = float.MaxValue;
+        for (var j = 0; j < b.PartCount; j++)
+        {
+            if (b.Parts[j].Broken || b.Rides(j))
+                continue;
+            var d = b.DefOf(j);
+            if (HullHoles.Refusal(HullHoles.BaseOf(d)) != null)
+                continue;
+            Freeform.PartBox(b, j, out var bq, out var bc, out var bh);
+            var l = Vector3.Abs(Vector3.Transform(from - bc, Quaternion.Conjugate(bq))) - bh;
+            var gap = Vector3.Max(l, Vector3.Zero).Length();
+            if (gap < bestD)
+                (bestD, best) = (gap, j);
+        }
+        if (best < 0 || bestD > 1f)
+        {
+            Console.WriteLine($"[breach] construct {b.Id}: no part by its cutter can take a seal sleeve: left unsealed");
+            return;
+        }
+        b.WorldFrame(b.Parts[cutter].Seg, out var cq, out _);
+        var podAcross = Vector3.Transform(Rot24.Apply(b.Parts[cutter].Rot, Vector3.UnitX), cq); // (the cutter's frame: x across its ring, z down the door)
+        var podUp = Vector3.Transform(Rot24.Apply(b.Parts[cutter].Rot, Vector3.UnitZ), cq);
+        if (Vector3.Dot(toAcross, podAcross) < 0)
+            toAcross = -toAcross; // (its corners go round the same way at both ends, or the walls twist across the way in)
+        if (Vector3.Dot(toUp, podUp) < 0)
+            toUp = -toUp;
+        Freeform.PartWorld(b, best, out var pos, out var rot);
+        var iq = Quaternion.Conjugate(rot);
+        Vector3 L(Vector3 w) => Vector3.Transform(w - pos, iq);
+        Vector3 Dir(Vector3 w) => Vector3.Transform(w, iq);
+        var v = HullHoles.Sleeve.Of(L(from), Dir(podAcross), Dir(podUp), HoleHalfW + 0.02f, SealDoorHalfH,
+            L(to), Dir(toAcross), Dir(toUp), HoleHalfW - SealInset, toHalfH);
+        var def = b.DefOf(best);
+        if (HullHoles.WithSleeve(def, v) is not { } sealedDef)
+        {
+            Console.WriteLine($"[breach] construct {b.Id}: its {def.Name} can't take a seal sleeve ({HullHoles.LastRefusal}): left unsealed");
+            return;
+        }
+        b.Parts[best].Def = sealedDef.Id;
+        b.Dirty = true;
+        world.StructureDirty.Add(b.Id);
+        world.Events.Add($"construct {b.Id}: its seal sleeve closed round the hole");
     }
 }

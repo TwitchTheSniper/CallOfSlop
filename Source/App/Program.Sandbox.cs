@@ -323,6 +323,8 @@ public static unsafe partial class Program
                     _ when ConstructEdits.WreckedAlone(hit.Body) => SandboxKeys.Line(d.Name, SandboxKeys.Join($"wrecked, {d.Mass:0} kg", carriedIn), "haul it to a Recycler"),
                     _ => SandboxKeys.Line(d.Name, hp, null, !fits || aim.Verdict != AimVerdict.Can ? null : $"hold {SandboxKeys.Aim}: {(salvage ? "salvage" : "take off")}"),
                 };
+                if (HullHoles.IsHoled(d) && _sbLookText != null)
+                    _sbLookText = _sbLookText.Replace(d.Name, HullHoles.Shown(d)); // (a cut or sealed part: its file part's name, not its key)
                 if (g.CrewLook(hit.Body.Id) is { } crewNote)
                     _sbLookText = $"{_sbLookText}  ({crewNote})"; // (a crewed body: its faction kind and crew, GameCrew.cs)
                 if (aim.Verdict == AimVerdict.Refused)
