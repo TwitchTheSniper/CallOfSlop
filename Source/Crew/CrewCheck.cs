@@ -18,6 +18,8 @@ public static class CrewCheck
     public static int Cli(string[] args)
     {
         string? Arg(string name) => args.SkipWhile(a => !a.Equals(name, StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault();
+        if (Arg("--crew-fleet") is { } fleet)
+            return CrewFleetCheck.Run(fleet, args); // (groups and admirals: CrewFleetCheck.cs)
         if (args.Any(a => a.Equals("--crew-relations", StringComparison.OrdinalIgnoreCase)))
             return CrewRelationsCheck.Run(args); // (relations that change through play: CrewRelationsCheck.cs)
         var at = Array.FindIndex(args, a => a.Equals("--crew-check", StringComparison.OrdinalIgnoreCase));
@@ -55,7 +57,7 @@ public static class CrewCheck
 
     private static byte _faction;
 
-    private static Construct Build(ConstructWorld w, ConstructBuild.Blueprint bp, Vector3 ground, float yaw, VehicleDriveCheck.CheckPlace place)
+    internal static Construct Build(ConstructWorld w, ConstructBuild.Blueprint bp, Vector3 ground, float yaw, VehicleDriveCheck.CheckPlace place)
     {
         var job = new ConstructBuild.GroundJob(w, bp, null);
         while (!job.Step(1000))
@@ -581,7 +583,7 @@ public static class CrewCheck
         ConstructRide.BeforePhysics(w);
     }
 
-    private static void Flush(CrewWorld crew, bool quiet = false)
+    internal static void Flush(CrewWorld crew, bool quiet = false)
     {
         if (!quiet)
             foreach (var e in crew.Events)
@@ -589,7 +591,7 @@ public static class CrewCheck
         crew.Events.Clear();
     }
 
-    private static float Health(Construct c)
+    internal static float Health(Construct c)
     {
         var h = 0f;
         for (var i = 0; i < c.PartCount; i++)

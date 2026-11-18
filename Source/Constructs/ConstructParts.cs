@@ -461,6 +461,9 @@ public sealed partial class ConstructPartDef
     public int SolidBoxes; // how many of Boxes are solid
     internal ConvexHull[]? Hulls; // its convex colliders, made on first use (ConstructHulls)
     internal bool[]? HullCovers; // per solid box: a hull stands for it
+    internal bool[]? HullSkin; // per hull: made from a "hull" shape (a plate of skin a player stands on as well: ConstructRideMove.Gather)
+    public bool HasSkin; // a "hull" shaped detail box collides (ConstructHulls): SkinMin..SkinMax reaches past the solid boxes' bounds
+    public Vector3 SkinMin, SkinMax; // the "hull" shapes' bounds in the part's frame (Construct.ReachBounds)
     public bool ColliderBoxes; // "collider": "boxes": its hidden solid boxes collide whatever its shapes (ConstructHulls)
     public bool HasGlass; // a box of it is a see-through glass pane ("glass": true): it shatters into small debris when it breaks
     public CSocket[] Sockets = [];
@@ -882,7 +885,7 @@ public sealed partial class ConstructPartDef
         PartRole.FluidTank => IsEnvelope ? 1 : 0, // a lift cell's vent
         PartRole.Burner => 2, // throttle, hold height
         PartRole.Hose => HoseCarry == HoseCarry.Data && HoseEnd == HoseEnd.Outlet ? 1 : 0, // a data lead's outlet: the signal it sends down the lead
-        PartRole.Storage => IsExtruder ? DataIn.Length : IsGatherer || IsRecycler || IsRefiner || IsAssembler || IsPress || IsBeacon || IsTerminal || IsCraftTerminal ? 1 : 0, // (an Extruder: Run and Cut, a Wheel Former and Mode) a module's, Recycler's, production machine's or beacon's Run: on/off (ConstructGatherer.HeldOff)
+        PartRole.Storage => IsExtruder ? DataIn.Length : IsGatherer || IsRecycler || IsRefiner || IsAssembler || IsPress || IsBeacon || IsTerminal || IsCraftTerminal || IsAuger ? 1 : 0, // (an Extruder: Run and Cut, a Wheel Former and Mode) a module's, Recycler's, production machine's or beacon's Run: on/off (ConstructGatherer.HeldOff)
         PartRole.Logic => Logic switch
         {
             CLogic.Button or CLogic.Lever or CLogic.AnalogLever or CLogic.Switch or CLogic.Plate or CLogic.Speed or CLogic.Proximity or CLogic.FuelGauge or CLogic.ChargeGauge => 0,
@@ -1640,6 +1643,17 @@ public static partial class ConstructParts
         d.UseBoxes = Enumerable.Range(0, d.Boxes.Length).Where(k => d.Boxes[k].Use || d.Boxes[k].Rig is BoxRig.Lever or BoxRig.Knob or BoxRig.Slide or BoxRig.Stick).ToArray(); // (an Analog Lever's rig is its handle)
         d.SolidBoxes = list.Count(x => !x.Detail);
         d.HasGlass = list.Any(x => x.IsGlass);
+        // A "hull" shape (a plate of a ship's skin) collides where it is drawn (ConstructHulls), so the part's reach takes it in;
+        // its BoundsMin..BoundsMax stays the solid boxes' (sockets, snaps and the kit measure those).
+        d.SkinMin = new Vector3(float.MaxValue);
+        d.SkinMax = new Vector3(float.MinValue);
+        foreach (var b in list)
+            if (b.Detail && b.Shape != 0 && PartShapes.KindOf(b.Shape) == "hull")
+            {
+                d.HasSkin = true;
+                d.SkinMin = Vector3.Min(d.SkinMin, b.Center - b.Half);
+                d.SkinMax = Vector3.Max(d.SkinMax, b.Center + b.Half);
+            }
         d.BoundsMin = new Vector3(float.MaxValue);
         d.BoundsMax = new Vector3(float.MinValue);
         foreach (var b in d.Boxes.AsSpan(0, d.SolidBoxes))

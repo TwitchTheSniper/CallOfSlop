@@ -13,7 +13,7 @@ namespace CallOfSlop;
 public static class ConstructRadar
 {
     /// <summary>The longest "radar.range" a part file may have (m).</summary>
-    public const float MaxRange = 10000f;
+    public const float MaxRange = 200000f;
 
     /// <summary>Lighter bodies (a loose part, a crate) are not contacts (kg).</summary>
     public const float MinMass = 250f;

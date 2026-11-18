@@ -193,6 +193,7 @@ public static class ConstructCargo
         }
         b.CarriedBy = 0;
         b.CarryTag = 0;
+        b.BreachSealed = false;
         b.Wake();
         world.StructureDirty.Add(b.Id);
         world.CargoChanged = true;
@@ -221,6 +222,17 @@ public static class ConstructCargo
     {
         foreach (var b in world.Bodies)
             if (b.CarriedBy != 0 && world.Get(b.CarriedBy) is { } c && c.CarriedBy == 0)
+                Follow(c, b);
+    }
+
+    /// <summary>
+    /// Host, after the space step has posed the ships out of the bubble (GameSpaceLaunch.cs, which runs after the constructs'
+    /// step): what they carry follows them again, or it would be drawn a tick behind and shake against its cradle. Allocates nothing.
+    /// </summary>
+    public static void FollowPosed(ConstructWorld world)
+    {
+        foreach (var b in world.Bodies)
+            if (b.CarriedBy != 0 && world.Get(b.CarriedBy) is { SpaceShip: not 0, CarriedBy: 0 } c)
                 Follow(c, b);
     }
 

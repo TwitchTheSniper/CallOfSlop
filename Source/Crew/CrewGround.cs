@@ -106,7 +106,10 @@ public sealed partial class ShipAi
             _stateDist = dist;
             return Drive(world, c, com + Level(com - t.At, up) * 60, GroundClose * 2, up, stopAt: false);
         }
-        var leader = brief is { ConvoyIndex: > 0, Leader: not 0 } && world.Get(brief.Leader) is { Wreck: false } l && l.Id != c.Id ? l : null;
+        if (OrderDrive(world, c, has, up, out var ordered))
+            return ordered; // (its admiral's order: Source/Crew/CrewOrders.cs)
+        var loose = Ship != null && Crew != null && Ship.Ordered(Crew.Tick) && Ship.Order.Kind is OrderKind.Engage or OrderKind.Board; // (told to fight: out of its convoy place)
+        var leader = !loose && brief is { ConvoyIndex: > 0, Leader: not 0 } && world.Get(brief.Leader) is { Wreck: false } l && l.Id != c.Id ? l : null;
         if (leader != null)
         {
             // A follower: its place in the leader's frame (as set down), and the leader's speed, a little more to catch up.
@@ -134,7 +137,7 @@ public sealed partial class ShipAi
             _gWay = Level(Vector3.Transform(c.DriveFwd, c.Rot), up);
             _gHomeSet = true;
         }
-        var convoyLead = brief is { Convoy: not 0, ConvoyIndex: 0 };
+        var convoyLead = !loose && brief is { Convoy: not 0, ConvoyIndex: 0 };
         if (convoyLead)
         {
             // The leader drives out and back; its gunners and the followers' fight what comes, the convoy doesn't stop for it.

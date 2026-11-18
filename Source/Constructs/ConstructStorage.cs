@@ -517,7 +517,7 @@ public static class ConstructStorage
     internal static void ParseStorage(ConstructPartDef d, JsonElement b, string file)
     {
         var bw = $"{file}, storage";
-        ConstructParts.Known(b, ["ammoStore", "gasLitres", "slots", "bulk", "maxMass", "gunBench", "ordnanceBench", "recycler", "gather", "refine", "assemble", "extrude", "wheel", "panel", "cut", "beacon", "scoop", "terminal", "press", "pieces"], bw);
+        ConstructParts.Known(b, ["ammoStore", "gasLitres", "slots", "bulk", "maxMass", "gunBench", "ordnanceBench", "recycler", "gather", "refine", "assemble", "extrude", "wheel", "panel", "cut", "beacon", "scoop", "terminal", "press", "pieces", "auger"], bw);
         if (ConstructParts.Opt(b, "pieces") is { } pc)
         {
             // A Piece Rack (ConstructConveyor.cs): whole pieces by kind, the largest section and length it holds and how many.
@@ -723,6 +723,8 @@ public static class ConstructStorage
         }
         if (ConstructParts.Opt(b, "scoop") is { } scoop)
             ConstructScoops.Parse(d, scoop, file, bw);
+        if (ConstructParts.Opt(b, "auger") is { } au)
+            ConstructAugers.Parse(d, au, file, bw);
         if (ConstructParts.Opt(b, "assemble") is { } asm)
             ConstructAssembling.ParseBlock(d, asm, file, slots.Count);
         if (ConstructParts.Opt(b, "extrude") is { } ex)

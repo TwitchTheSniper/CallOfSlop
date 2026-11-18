@@ -210,6 +210,7 @@ public sealed partial class Game
         s.Opening = OpeningCapture(); // (GameSandboxOpening.cs)
         s.Start = StartCapture(); // (GameStoryStart.cs)
         s.CrewFactions = CrewFactionBytes(); // (the NPC powers' standings with player factions: GameCrewFactions.cs)
+        s.Fleet = IsServer ? Crew.Fleet.SaveBytes() : null; // (groups and admirals: Crew/CrewFleet.cs)
         s.Powers = PowersBytes(); // (the powers' relations among themselves, pacts and news: GameCrewFactions.cs)
         s.LinkLedger = Keep == null && stashFolder == null && (LinkLedger.Ends.Count > 0 || LinkLedger.Lines.Count > 0) ? LinkLedger.SaveBytes() : null; // (the host's main world keeps the ledger: linked-logistics.md section 8)
         s.OpCount = 0;
@@ -284,7 +285,7 @@ public sealed partial class Game
         rec.SteamId = TrustedSteamId(p) is not 0 and var steam ? steam : rec.SteamId;
         rec.HasPlace = p.Alive && !InLobby;
         rec.Pos = p.Position;
-        var riding = p.Alive && p.Sim.RideUp != default;
+        var riding = p.Alive && p.Sim.RideUp != default && !p.Sim.Noclip; // (a noclip flyer in a ship's frame may be in its hull: saved at their world spot, so the load finds them room)
         (rec.RideBody, rec.RideSeg, rec.RideLocal, rec.RideUp) = (riding ? p.Sim.RideBody : (ushort)0, p.Sim.RideSeg, p.Sim.RideLocal, p.Sim.RideUp);
         ref var hand = ref SandboxHands.Hand(p.Id);
         var spaceSeat = p.Alive && hand.Seated && Constructs.Get(hand.SeatBody) is { SpaceShip: not 0 };
@@ -613,6 +614,9 @@ public sealed partial class Game
             case WorldSaveWriter.CrewTag:
                 WorldReadCrew(r, ws); // (credits and NPC standings: GameCrewFactions.cs)
                 break;
+            case WorldSaveWriter.FleetTag:
+                Crew.Fleet.Load(Crew, r.Bytes(r.I32())); // (groups and admirals: their ships rejoin from their crew blocks)
+                break;
             case WorldSaveWriter.PowersTag:
                 WorldReadPowers(r); // (the NPC powers' relations, pacts and news: GameCrewFactions.cs)
                 break;
@@ -777,6 +781,12 @@ public sealed partial class Game
         s.Cut = new (uint, int)[r.Count(8)];
         for (var k = 0; k < s.Cut.Length; k++)
             s.Cut[k] = (r.U32(), r.I32());
+        if (r.Has(4)) // (drill spots: saves from 2026-11-17 on)
+        {
+            s.Spots = new (uint, int)[r.Count(8)];
+            for (var k = 0; k < s.Spots.Length; k++)
+                s.Spots[k] = (r.U32(), r.I32());
+        }
         if (World.Map.Resources?.Restore(s) is { } note)
             Console.WriteLine($"[worlds] {ws.Meta.Name}: {note}");
     }

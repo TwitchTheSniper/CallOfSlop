@@ -22,6 +22,7 @@ public struct SnapPlayer
     public byte RideSeg;
     public Vector3 RideLocal;
     public Vector3 RideUp; // contraption space: their up in its rest frame (protocol 130; zero: not; ConstructRideMove.cs)
+    public ushort RideLadder; // climbing this ladder (a part of RideBody) + 1 (protocol 345; 0: not on one; ConstructRideLadder.cs)
     public bool Noclip; // Sandbox: flying with no collision (protocol 126; NoclipMove.cs)
     public byte Canopy; // Sandbox: open or burning (protocol 176; PilotGear.cs)
 }
@@ -62,6 +63,9 @@ public struct SnapOwn
     public byte RideSeg, RideAir, RideClimb, RideFree, RideGrip; // RideGrip: a grip face's up axis (0: none; else 1 + axis * 2 + (negative ? 1 : 0))
     public byte RideOn; // contraption space: the moving segment carrying them in the body's frame (protocol 325; ConstructRideMove.cs)
     public Vector3 RideLocal, RideClimbTo;
+    public byte RideLadder; // a ladder's climb (protocol 345; ConstructRideLadder.cs): its flags, the ladder, and the later legs' ends
+    public ushort RideLadderPart;
+    public Vector3 RideClimbNext, RideClimbLast;
     public Vector3 RideUp, RideVel; // contraption space (protocol 130): their up and own velocity in the frame (ConstructRideMove.cs)
     public bool Worn; // what they wear follows (PilotGear.cs)
     public byte Gear, Canopy, GearDelay;
@@ -122,7 +126,7 @@ public struct PlayerMask : IEquatable<PlayerMask>
 ///   the mantling flag says an extension follows: mantle ticks, then the mantle target (9 bytes), or ticks 0 and a seat
 ///   (+4 bytes: construct id, seat part; protocol 80: a seated player, whose yaw is then relative to the seat's facing), or
 ///   254 and a ride (+16 bytes: construct id, segment, the feet in its frame at 1/256 m; protocol 102, ConstructRide.cs; the rider's up, 3 x i8, protocol 130),
-///   or 253 alone (+1 byte: noclip, protocol 126; NoclipMove.cs);
+///   or 253 alone (+1 byte: noclip, protocol 126; NoclipMove.cs), or 248 and a ride's bytes (noclip in a moving construct's frame, protocol 341);
 ///   slow entries (20 bytes): id, kills, deaths, primary, secondary, kits, perks, frenzy level, frenzy class (+ buffs bit; protocol 26).
 /// Slow entries go out for a player while their slow fields changed in the last half second (so a lost packet is
 /// covered), and every 8th snapshot for everyone (late joiners catch up in ~0.25 s). If a snapshot still doesn't fit
@@ -137,8 +141,11 @@ public static class Snapshot
     public const int SeatBytes = 4; // (protocol 80)
     public const int RideBytes = 16; // (protocol 102: kind 254, construct, segment, the feet in its frame; protocol 130: the rider's up, 3 x i8)
     public const byte RideKind = 254;
+    public const byte RideLadderKind = 247; // (protocol 345: as RideKind, then u16 the ladder climbed + 1; ConstructRideLadder.cs)
+    public const int LadderBytes = 2;
     public const int NoclipBytes = 1; // (protocol 126: kind 253 alone: flying)
     public const byte NoclipKind = 253;
+    public const byte RideNoclipKind = 248; // (protocol 341: a ride's bytes, flying in noclip in a moving construct's frame; NoclipMove.cs)
     public const byte CanopyKind = 249; // (protocol 176: + the Canopy, 250..252, alone: PilotGear.cs)
     public const int SlowBytes = 20; // 16 + frenzy level and class (protocol 26) + 2 (kits are 4 bytes each since protocol 46)
     public const int OwnBytes = 1 + 24 + SlowBytes; // +12 while mantling
@@ -175,7 +182,7 @@ public static class Snapshot
 
     private static float UpOf(byte b) => (sbyte)b / 127f;
 
-    public static int FastSize(in SnapPlayer p) => FastBytes + (p.SeatBody != 0 ? SeatBytes : p.RideBody != 0 ? RideBytes : p.Noclip || p.Canopy != 0 ? NoclipBytes : p.MantleTicks > 0 ? MantleBytes : 0);
+    public static int FastSize(in SnapPlayer p) => FastBytes + (p.SeatBody != 0 ? SeatBytes : p.RideBody != 0 ? RideBytes + (p.RideLadder != 0 && !p.Noclip ? LadderBytes : 0) : p.Noclip || p.Canopy != 0 ? NoclipBytes : p.MantleTicks > 0 ? MantleBytes : 0);
 
     public static void WriteFast(PacketWriter w, in SnapPlayer p)
     {
@@ -195,8 +202,13 @@ public static class Snapshot
         if (seated)
             w.U8(0).U16(p.SeatBody).U16(p.SeatPart);
         else if (riding)
-            w.U8(RideKind).U16(p.RideBody).U8(p.RideSeg).U24(Q24(p.RideLocal.X)).U24(Q24(p.RideLocal.Y)).U24(Q24(p.RideLocal.Z))
+        {
+            var climbing = !p.Noclip && p.RideLadder != 0;
+            w.U8(p.Noclip ? RideNoclipKind : climbing ? RideLadderKind : RideKind).U16(p.RideBody).U8(p.RideSeg).U24(Q24(p.RideLocal.X)).U24(Q24(p.RideLocal.Y)).U24(Q24(p.RideLocal.Z))
                 .U8(UpByte(p.RideUp.X)).U8(UpByte(p.RideUp.Y)).U8(UpByte(p.RideUp.Z));
+            if (climbing)
+                w.U16(p.RideLadder);
+        }
         else if (flying)
             w.U8(NoclipKind);
         else if (worn)
@@ -243,13 +255,17 @@ public static class Snapshot
                     p.SeatPart = r.U16();
                 }
             }
-            else if (p.MantleTicks == RideKind && r.Has(RideBytes - 1))
+            else if (p.MantleTicks is RideKind or RideNoclipKind or RideLadderKind && r.Has(RideBytes - 1))
             {
+                p.Noclip = p.MantleTicks == RideNoclipKind;
+                var ladder = p.MantleTicks == RideLadderKind;
                 p.MantleTicks = 0;
                 p.RideBody = r.U16();
                 p.RideSeg = r.U8();
                 p.RideLocal = new Vector3(D24(r.U24()), D24(r.U24()), D24(r.U24()));
                 p.RideUp = new Vector3(UpOf(r.U8()), UpOf(r.U8()), UpOf(r.U8()));
+                if (ladder && r.Has(LadderBytes))
+                    p.RideLadder = r.U16();
             }
             else if (r.Has(MantleBytes - 1))
                 p.MantleTo = new Vector3(D24(r.U24()), D24(r.U24()), D24(r.U24()));
@@ -318,7 +334,11 @@ public static class Snapshot
         {
             w.U16(o.RideBody).U8(o.RideSeg).U8(o.RideAir).U8(o.RideClimb).U8(o.RideFree).U8(o.RideGrip).U8(o.RideOn).Vec(o.RideLocal).Vec(o.RideUp).Vec(o.RideVel);
             if (o.RideClimb > 0)
-                w.Vec(o.RideClimbTo);
+            {
+                w.Vec(o.RideClimbTo).U8(o.RideLadder);
+                if (o.RideLadder != 0)
+                    w.U16(o.RideLadderPart).Vec(o.RideClimbNext).Vec(o.RideClimbLast); // (protocol 345: a ladder's climb, ConstructRideLadder.cs)
+            }
         }
         if (o.Worn)
             w.U8(o.Gear).U8(o.Canopy).U8(o.GearDelay).U16(o.JetFuel).U8((byte)(o.GearJump ? 1 : 0));
@@ -354,9 +374,18 @@ public static class Snapshot
             o.RideVel = r.Vec();
             if (o.RideClimb > 0)
             {
-                if (!r.Has(12 + SlowBytes))
+                if (!r.Has(13 + SlowBytes))
                     return null;
                 o.RideClimbTo = r.Vec();
+                o.RideLadder = r.U8();
+                if (o.RideLadder != 0)
+                {
+                    if (!r.Has(26 + SlowBytes))
+                        return null;
+                    o.RideLadderPart = r.U16();
+                    o.RideClimbNext = r.Vec();
+                    o.RideClimbLast = r.Vec();
+                }
             }
         }
         if ((flags & 8) != 0)

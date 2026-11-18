@@ -1,0 +1,222 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Limpet Ladder",
+  "description": "The ladder at the Limpet's aft wall, up through its receiver and, docked, on through the Zero Day's docking hatch into its lower deck: F climbs it.",
+  "group": "Ship",
+  "section": "Limpet",
+  "role": "frame",
+  "tool": "welder",
+  "ladder": 4.037,
+  "mass": 98.4,
+  "health": 400,
+  "armour": 6,
+  "material": "steel",
+  "color": "#1f2226",
+  "attachSeconds": 3.0,
+  "boxes": [
+    {
+      "min": [
+        -0.3,
+        0.0,
+        -0.19
+      ],
+      "max": [
+        0.3,
+        1.89,
+        -0.005
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.28,
+        0.0,
+        -0.18
+      ],
+      "max": [
+        -0.22,
+        1.89,
+        -0.12
+      ],
+      "color": "#9aa0a4",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -0.27,
+        0.5,
+        -0.12
+      ],
+      "max": [
+        -0.23,
+        0.56,
+        -0.01
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.27,
+        1.5,
+        -0.12
+      ],
+      "max": [
+        -0.23,
+        1.56,
+        -0.01
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        0.22,
+        0.0,
+        -0.18
+      ],
+      "max": [
+        0.28,
+        1.89,
+        -0.12
+      ],
+      "color": "#9aa0a4",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        0.23,
+        0.5,
+        -0.12
+      ],
+      "max": [
+        0.27,
+        0.56,
+        -0.01
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        0.23,
+        1.5,
+        -0.12
+      ],
+      "max": [
+        0.27,
+        1.56,
+        -0.01
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.22,
+        0.28,
+        -0.165
+      ],
+      "max": [
+        0.22,
+        0.32,
+        -0.135
+      ],
+      "color": "#e0b020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.22,
+        0.58,
+        -0.165
+      ],
+      "max": [
+        0.22,
+        0.62,
+        -0.135
+      ],
+      "color": "#e0b020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.22,
+        0.88,
+        -0.165
+      ],
+      "max": [
+        0.22,
+        0.92,
+        -0.135
+      ],
+      "color": "#e0b020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.22,
+        1.18,
+        -0.165
+      ],
+      "max": [
+        0.22,
+        1.22,
+        -0.135
+      ],
+      "color": "#e0b020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.22,
+        1.48,
+        -0.165
+      ],
+      "max": [
+        0.22,
+        1.52,
+        -0.135
+      ],
+      "color": "#e0b020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.22,
+        1.78,
+        -0.165
+      ],
+      "max": [
+        0.22,
+        1.82,
+        -0.135
+      ],
+      "color": "#e0b020",
+      "detail": true,
+      "finish": "hazard paint"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        -0.095
+      ],
+      "dir": "-y"
+    }
+  ]
+}

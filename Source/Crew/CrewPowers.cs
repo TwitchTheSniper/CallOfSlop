@@ -15,6 +15,7 @@ public sealed class NpcPowerDef
     public NpcFactionDef Kind = null!;
     /// <summary>False: its relations never move by themselves (no decay, no pacts) and it takes no third party's part: Player Crew, Test Hostile.</summary>
     public bool Controller = true;
+    public string Doctrine = ""; // its admirals' doctrine (Crew/Fleet.json; empty: its kind's)
     // Operating parameters (section 3.1): 0.5 is "as the kind's numbers say" (an event's amount is scaled by 0.5 + parameter).
     public float Aggression = 0.5f, Greed = 0.5f, Loyalty = 0.5f, Forgiveness = 0.5f, Pride = 0.5f, Caution = 1f;
     public float ValueCrew = 0.5f, ValueShips = 0.5f, ValueCargo = 0.5f, ValuePlanets = 0.5f;
@@ -181,6 +182,7 @@ public static class CrewPowers
             Tag = Text(root, "tag", FactionTable.TagMax) is { Length: > 0 } t ? t : TagOf(name),
             Controller = root.TryGetProperty("controller", out var c) ? c.GetBoolean() : kind.Controller,
             Colour = ColourOf(name),
+            Doctrine = Text(root, "doctrine", 32),
         };
         if (root.TryGetProperty("colour", out var col))
         {

@@ -219,6 +219,7 @@ public enum CfgKey : byte
     ShellWear0, ShellWear1, ShellWear2, ShellWear3, // Robot Shell: its works' wear, two bytes a setting (not on the panel; ShellWear.cs)
     ShellDamage, // Robot Shell: health it has lost (shells don't heal: a repair with the attach tool or a crew engineer puts it back; not on the panel)
     Dampeners, // Flight Stabilizer on Ship keys: its inertia dampeners (off: the keys only burn, and it coasts; the seat's dampener key flips it: ConstructFlight.ToggleDampeners)
+    Walls, // Storage Volume: on, its box is a walled open-topped bin (four walls and a floor inside the box, solid; ConstructStoreVolume.Walled)
     COUNT,
 }
 
@@ -772,7 +773,7 @@ public static class ConstructConfig
 
     private static string DefaultType(CfgKey k) => k switch
     {
-        CfgKey.StartOn or CfgKey.Latched or CfgKey.Grip or CfgKey.Invert or CfgKey.Wrap or CfgKey.Pushable or CfgKey.Stabilised => "toggle",
+        CfgKey.StartOn or CfgKey.Latched or CfgKey.Grip or CfgKey.Invert or CfgKey.Wrap or CfgKey.Pushable or CfgKey.Stabilised or CfgKey.Walls => "toggle",
         CfgKey.Profile => "choice",
         CfgKey.RunMode or CfgKey.LinePage or CfgKey.OrderKind or CfgKey.OrderMaterial => "choice",
         CfgKey.SteerKind => "choice",
@@ -837,6 +838,7 @@ public static class ConstructConfig
                 CfgKey.StartOn => d.Logic is CLogic.Timer or CLogic.Switch or CLogic.Toggle or CLogic.Cargo || d.IsSpawner,
                 CfgKey.SizeX or CfgKey.SizeY or CfgKey.SizeZ or CfgKey.AtX or CfgKey.AtY or CfgKey.AtZ => ConstructCargo.HasBox(d),
                 CfgKey.Hole => d.IsEnvelope,
+                CfgKey.Walls => d.IsVolumeStore,
                 CfgKey.Reverse => d.Surface is { Control: > 0 } || d.Rotor != null || d.ThrustGimbal > 0,
                 CfgKey.Trim => d.Surface is { Control: > 0 },
                 CfgKey.Hand or CfgKey.Pusher or CfgKey.TorqueMix or CfgKey.BladeLost or (>= CfgKey.Blade0 and <= CfgKey.Blade3) => d.Rotor != null,
