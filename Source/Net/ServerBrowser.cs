@@ -597,7 +597,15 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 346: groups and admirals (docs/sandbox/design/faction-controllers.md phase 2; GameCrewFleet.cs): Msg.CrewSeats ends with u16 captain's name, u16
     //   admiral's name aboard (0xFFFF: none), u16 group number (0: none); Msg.Intel at the end of Msg; CrewOrder gains Interrogate, Ransom, Interrogator;
     //   Msg.CrewRoster's job byte has bit 7 for an officer prisoner.
-    public const ushort ProtocolVersion = 346;
+    // 347: time speed to 1,000,000x (SpaceClock.MaxSpeed): Msg.Space's clock speed may pass 100,000, which an older client clamped, so its
+    //   clock ran ten times slow between the host's clock packets.
+    // 348: removals (docs/removals-notes.md). The penal colony went: Msg.Tutorial, ColonyAlarm,
+    //   Depot, Quarry, Labour, LabourHands, Breakout, Errand, LabourDay, LabourIncident and Objective (the "what next" line) keep their slots as Removed*, never sent,
+    //   and the colony's lore and building parts move part ids, as do the old factions' dressing parts (the Pipe Box and the
+    //   rest). Levelling and prestige went: the roster entry loses prestige, level and hat (3 bytes, before the look), the
+    //   Loadout message loses its hat byte and the prestige and level after it, and the Hello keeps two zero bytes where
+    //   prestige and level were, so the protocol version after them stays where every build reads it.
+    public const ushort ProtocolVersion = 348;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

@@ -8,7 +8,7 @@ public enum BodyPaint : byte
     Shirt, ShirtDark, Sleeve, Vest, Pouch, Accent, Skin, SkinShade, Hair, Gear, GearDark, Eyes,
 }
 
-/// <summary>What a body wears on its head when no prestige hat is on (a hat replaces it; hair stays only at the back).</summary>
+/// <summary>What a body wears on its head when no uniform cap is on (a hat replaces it; hair stays only at the back).</summary>
 public enum Headwear : byte
 {
     Hair, Buzz, Helmet, Cap, Bandana,
@@ -180,7 +180,7 @@ public sealed class BodyParts : IRenderable
 /// (<see cref="LegAnimator.LegParts"/>) and arms (<see cref="ArmRig"/>): a shirt with chest, abdomen and shoulders that meet
 /// the arms, a plate carrier (front and back plates, cummerbund, mag pouches, a team patch), collar and neck; a head with
 /// cranium, jaw, brow, nose, eyes and ears, plus hair or headwear and a beard per seeded variant (bots by personality).
-/// The head node, the cranium top and its width are where the old head box was, so prestige hats sit exactly as before
+/// The head node, the cranium top and its width are where the old head box was, so hats sit exactly as before
 /// (a hat replaces the headwear). Presentation only: hit boxes come from <see cref="World.Hitbox(Vector3, Stance, float)"/>.
 /// Zombies get a torn-shirt, green-skinned variant of the same shapes (<see cref="DrawZombieUpper"/>).
 /// </summary>
@@ -310,7 +310,7 @@ public static class BodyModel
     /// <summary>
     /// The look for a player: a hash of the name (or the id when there is no name), so it is the same on every machine and
     /// every match. Bots pick headwear by personality (Anchors and Tacticians wear helmets, Marksmen caps, Rushers
-    /// bandanas or buzz cuts...); people get a mix (a prestige hat replaces it).
+    /// bandanas or buzz cuts...); people get a mix (a uniform's cap replaces it).
     /// </summary>
     public static BodyVariant VariantFor(string name, byte id)
     {
@@ -395,7 +395,7 @@ public static class BodyModel
     }
 
     /// <summary>
-    /// Fills <paramref name="torso"/> (torso frame) and <paramref name="head"/> (head node frame) for a stance. With a prestige
+    /// Fills <paramref name="torso"/> (torso frame) and <paramref name="head"/> (head node frame) for a stance. With a
     /// hat on (<paramref name="hat"/>) the headwear is left off (hair keeps only its back part, under the hat). In a
     /// <paramref name="uniform"/> the plate carrier gives way to the uniform's own boxes (its hat is the hat).
     /// </summary>
@@ -445,7 +445,7 @@ public static class BodyModel
         return open > 0 ? Matrix4x4.CreateRotationX(open * TalkMouth.Nod) * at : at;
     }
 
-    /// <summary>How many headwear parts <see cref="Build"/> adds for a variant, with or without a prestige hat (the hat's own boxes not counted).</summary>
+    /// <summary>How many headwear parts <see cref="Build"/> adds for a variant, with or without a hat (the hat's own boxes not counted).</summary>
     public static int HeadwearCount(in BodyVariant v, bool hat) =>
         !hat ? HeadwearParts[(int)v.Headwear].Length : v.Headwear == Headwear.Hair ? 1 : 0;
 

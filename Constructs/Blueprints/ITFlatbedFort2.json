@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 2 body 2 kit 2 wear 2, chassis 3 axles, pusher 1.5 m, front forward, inset 1.25 m, leaf/leaf/leaf, wing 0.5, cab style glasshouse, language van standard 2.45 m, flare 0.07, raked 0.8, brow 0.72 1.5 m, tail 0.86 1 m, door left, 11 facets, cab pod cab, 8 facets, nose rounded, trim fairing on 5 bay sides, wear age 0.38 (1 rusty, 3 dirty, 0 sooty, 0 patched, 0 rusted out), body room+gun bed, cab enclosed, nose short hood, rear porch hitch, under stilts, flank bare, sides rails, roof none, layout room(Brow T,Door,Tail T)+gun bed 3 m, plan 2
   "format": "call-of-slop-construct-blueprint/1",
   "name": "IT Flatbed Fort 2",
-  "group": "IT Department",
+  "group": "IT",
   "description": "A flatbed fort: a short hood, an enclosed cab, a walk-in hull with loot, a gun bed, a drum on the rear porch over a tow hitch. 2 guns.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#3b3f44"},
@@ -170,10 +170,10 @@
     {"part": "Hull Loft (hoodr UsV2WyWjXIXEVd ~6e078A7GM7GW70h68s4e-2X3013)", "on": 31, "socket": "+y", "by": "engine", "paint": "#f2c400"},
     {"part": "Bar Grille", "on": 162, "socket": "front", "by": "back", "paint": "#f2c400"},
     {"part": "Plate Steel 0.5 m", "weld": {"on": 163, "pos": [0.125, 0.41, -0.712], "rot": [-0.7035, 0.0001, -0.005, 0.7106]}, "paint": "#d8d0b8"},
-    {"part": "CRT Monitor", "on": 162, "socket": "top", "by": "base"},
-    {"part": "Office Plant", "on": 39, "socket": "top", "by": "base"},
-    {"part": "CRT Monitor", "on": 152, "socket": "front", "by": "base"},
-    {"part": "Cable Reel", "on": 116, "socket": "front", "by": "base"},
+    {"part": "Office Plant", "on": 162, "socket": "top", "by": "base"},
+    {"part": "Desk Fan", "on": 39, "socket": "top", "by": "base"},
+    {"part": "Office Plant", "on": 152, "socket": "front", "by": "base"},
+    {"part": "Network Switch", "on": 98, "socket": "front00", "by": "base"},
     {"part": "Hull Loft (trimf2 XaW5 ~Bu0C8KCOeCWxCnFD1ZCntCAAA2O8YS6wV3oY02Y ~Cm0D8VDO-EHTEPaEPyEQREIxDZPBBl7xv4R_03_)", "on": 81, "socket": "+x0", "by": "base", "paint": "#1f4e8c"},
     {"part": "Hull Loft (trimf0 XaW5 ~Cm0D8VDO-EHTEPaEPyEQREIxDZPBBl7xv4R_03_ ~Bu0C8KCOeCWxCnFD1ZCntCAAA2O8YS6wV3oY02Y)", "on": 81, "socket": "-x0", "by": "base", "paint": "#1f4e8c"},
     {"part": "Hull Loft (trimf2 YMW5 ~Cm0D8VDO-EHTEPaEPyEQREIxDZPBBl7xv4R_03_ =)", "on": 82, "socket": "-x0", "by": "base", "paint": "#1f4e8c"},

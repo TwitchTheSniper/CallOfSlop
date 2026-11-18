@@ -191,8 +191,6 @@ public sealed partial class Ui : IDisposable
         ImString.SharedStorage.Reset(); // strings built this frame are no longer needed
     }
 
-    /// <summary>The local player's progression (set by Program).</summary>
-    public Progress Progress = new();
     private ThrowableDef? _hoverThrowable;
 
     /// <summary>Opens the loadout screen in a match (on the overview of the loadout you're using).</summary>
@@ -235,12 +233,6 @@ public sealed partial class Ui : IDisposable
         var arena = game.Module.ArenaExtras;
         if (!arena)
         {
-            DrawTutorial(game, pos, size, settings); // the warden's induction, top left (UiTutorial.cs)
-            DrawQuarry(game, pos, size, settings); // the first Ministry duty, the quarry, once the induction is over (UiQuarry.cs)
-            DrawBreakout(game, pos, size); // the convicts' break-out, once the night is on (UiBreakout.cs)
-            DrawErrand(game, pos, size, settings); // an errand on a works yard machine, when none of those holds the place (UiErrand.cs)
-            DrawDepot(game, pos, size, settings); // the Orbital Depot's steps, there once the quarry is done (UiDepot.cs)
-            DrawObjective(game, pos, size, settings); // the "what next" goal, there when none of those is (UiObjectives.cs)
             DrawShellWear(game); // a worn robot shell's glitches, static and brown-outs (UiShellWear.cs)
             DrawShellLink(game); // the robot shell chair's helmet coming down, black and its lamps (UiShellLink.cs)
         }
@@ -387,9 +379,6 @@ public sealed partial class Ui : IDisposable
         DrawOwnStreakEntities(game, now, pos, size); // your turret / drone's health (UiKillNotice.cs)
         DrawKillNotices(game, now, pos, size); // "KILLED Ash" under the crosshair (UiKillNotice.cs)
 
-        if (arena)
-            DrawXpHud(now, pos, size);
-
         // ---- Centre messages --------------------------------------------------------
         if (!local.Alive && !MenuOpen && game.TravelBanner is { } travelling)
             CenterText(size, pos, travelling, 0.38f); // free travel: landing on another planetoid, or on the way back (GameTravelMeet.cs)
@@ -431,18 +420,6 @@ public sealed partial class Ui : IDisposable
                 ImGui.TextColored(hpCol, "DEAD"u8);
             ImGui.PopFont();
             ImGuiSafe.TextColored(Dim, $"Kills {local.Kills}   Deaths {local.Deaths}");
-            ImGui.PushStyleColor(ImGuiCol.PlotHistogram, Orange);
-            ImGui.ProgressBar(Progress.LevelFraction, new float2(220 * _scale, 6 * _scale), ""u8);
-            ImGui.PopStyleColor();
-            if (Progress.Prestige > 0) // prestige (Progression.cs)
-            {
-                ImGuiSafe.TextColored(Dim, $"P{Progress.Prestige} ");
-                ImGui.SameLine(0, 0);
-            }
-            if (Progress.Level >= CallOfSlop.Progress.MaxLevel)
-                ImGuiSafe.TextColored(Dim, $"Level {Progress.Level} (max)");
-            else
-                ImGuiSafe.TextColored(Dim, $"Level {Progress.Level}  {Progress.XpIntoLevel}/{CallOfSlop.Progress.XpForNext(Progress.Level)} XP");
             if (local.Alive)
                 ImGuiSafe.TextColored(local.Sim.Stance == Stance.Stand ? Dim : Orange, local.Sim.Stance switch
                 {
@@ -468,44 +445,6 @@ public sealed partial class Ui : IDisposable
             }
         }
         ImGui.End();
-    }
-
-    /// <summary>XP: popups by the crosshair, the level-up banner, the new attachment banner (the bar is under the health).</summary>
-    private void DrawXpHud(double now, float2 pos, float2 size)
-    {
-        var prog = Progress;
-        ImGui.SetNextWindowPos(new float2(pos.X + size.X / 2 + 60 * _scale, pos.Y + size.Y / 2 - 20 * _scale), ImGuiCond.Always, new float2(0, 0.5f));
-        if (ImGui.Begin("##xp"u8, Overlay))
-        {
-            foreach (var x in prog.Popups)
-            {
-                var age = now - x.Time;
-                if (age > 2.2)
-                    continue;
-                var alpha = (float)Math.Clamp(2.2 - age, 0, 1);
-                ImGuiSafe.TextColored(new float4(1f, 0.85f, 0.3f, alpha), $"+{x.Amount} {x.Text}");
-            }
-        }
-        ImGui.End();
-        if (now - prog.LevelUpTime < 5)
-        {
-            ImGui.SetNextWindowPos(new float2(pos.X + size.X / 2, pos.Y + size.Y * 0.18f), ImGuiCond.Always, new float2(0.5f, 0.5f));
-            if (ImGui.Begin("##levelup"u8, Overlay))
-            {
-                ImGui.PushFont(default, 26);
-                ImGuiSafe.TextColored(Orange, prog.LevelUpBanner);
-                ImGui.PopFont();
-            }
-            ImGui.End();
-        }
-
-        if (now - prog.AttachmentBannerTime < 4)
-        {
-            ImGui.SetNextWindowPos(new float2(pos.X + size.X / 2, pos.Y + size.Y * 0.24f), ImGuiCond.Always, new float2(0.5f, 0.5f));
-            if (ImGui.Begin("##attachunlock"u8, Overlay))
-                ImGuiSafe.TextColored(new float4(0.4f, 0.95f, 1f, 1f), $"NEW ATTACHMENT  -  {prog.AttachmentBanner}");
-            ImGui.End();
-        }
     }
 
     /// <summary>The best kill count among the others and who has it (the first such in the player table; null alone). No LINQ: no lambda captures per frame.</summary>
@@ -643,7 +582,7 @@ public sealed partial class Ui : IDisposable
                     ImGui.TableNextColumn();
                     ImGui.Text($"{rank++}");
                     ImGui.TableNextColumn();
-                    ImGuiSafe.TextColored(new float4(c.X, c.Y, c.Z, 1), (p.Id == game.LocalId ? $"{game.NameOf(p.Id)} (you)" : game.NameOf(p.Id)) + game.RankTag(p) + game.VoiceTag(p, Brutal.GlfwApi.Glfw.Time)); // talking / muted (GameVoice.cs)
+                    ImGuiSafe.TextColored(new float4(c.X, c.Y, c.Z, 1), (p.Id == game.LocalId ? $"{game.NameOf(p.Id)} (you)" : game.NameOf(p.Id)) + game.VoiceTag(p, Brutal.GlfwApi.Glfw.Time)); // talking / muted (GameVoice.cs)
                     ImGui.TableNextColumn();
                     ImGui.Text($"{p.Kills}");
                     ImGui.TableNextColumn();
@@ -718,7 +657,7 @@ public sealed partial class Ui : IDisposable
                     var col = new float4(c.X, c.Y, c.Z, 1);
                     ImGui.TableNextRow();
                     ImGui.TableNextColumn();
-                    ImGuiSafe.TextColored(col, (p.Id == game.LocalId ? $"{game.NameOf(p.Id)} (you)" : game.NameOf(p.Id)) + game.RankTag(p) + game.VoiceTag(p, Brutal.GlfwApi.Glfw.Time)); // talking / muted (GameVoice.cs)
+                    ImGuiSafe.TextColored(col, (p.Id == game.LocalId ? $"{game.NameOf(p.Id)} (you)" : game.NameOf(p.Id)) + game.VoiceTag(p, Brutal.GlfwApi.Glfw.Time)); // talking / muted (GameVoice.cs)
                     ImGuiSafe.TextColored(col, $"{game.NameOf(p.Id)}{(p.Id == game.LocalId ? " (you)" : "")}");
                     ImGui.TableNextColumn();
                     DrawLevelCell(game, p);
@@ -746,22 +685,10 @@ public sealed partial class Ui : IDisposable
 
     private void DrawGunsmithList(Audio audio, WeaponDef w)
     {
-        var prog = Progress;
-        var wxp = prog.WeaponXp(w.Id);
-        var maxXp = Attachments.MaxXp(w);
         var kit = KitOf(w);
         var options = Attachments.For(w);
         ImGuiSafe.TextColored(Orange, w.Name);
-        ImGuiSafe.TextColored(Dim, options.Count == 0
-            ? "This weapon takes no attachments."
-            : $"Weapon XP {Math.Min(wxp, maxXp):N0} / {maxXp:N0}  -  {options.Count(a => wxp >= Attachments.UnlockXp(w, a))} / {options.Count} attachments unlocked");
-        if (options.Count > 0)
-        {
-            ImGui.PushStyleColor(ImGuiCol.PlotHistogram, new float4(0.4f, 0.95f, 1f, 1f));
-            ImGui.ProgressBar(Math.Clamp(wxp / (float)maxXp, 0f, 1f), new float2(-1, 6 * _scale), ""u8);
-            ImGui.PopStyleColor();
-            ImGui.TextColored(Dim, "Earn weapon XP with kills using this gun (+100, headshot +50), plus +150 per match as your primary (+75 as your secondary)."u8);
-        }
+        ImGuiSafe.TextColored(Dim, options.Count == 0 ? "This weapon takes no attachments." : $"{options.Count} attachments");
         AttachmentDef? hovered = null;
         for (var si = 0; si < Attachments.SlotCount; si++)
         {
@@ -771,30 +698,18 @@ public sealed partial class Ui : IDisposable
                 continue;
             ImGui.SeparatorText(Attachments.SlotName(slot));
             var current = Attachments.Slot(kit, slot);
-            // On a gun that starts scoped (snipers) the empty optic slot is its iron sights, an unlock of their own.
-            var ironsNeed = slot == AttachSlot.Optic ? Attachments.IronSightsXp(w) : 0;
+            // (On a gun that starts scoped, the empty optic slot is its iron sights.)
             var noneName = slot == AttachSlot.Optic ? Attachments.NoOpticName(w) : "None";
-            if (wxp < ironsNeed)
-                ImGui.PushStyleColor(ImGuiCol.Text, Dim);
-            if (ImGui.Selectable(wxp >= ironsNeed ? $"{noneName}##none{si}" : $"[LOCKED] {noneName}  -  {ironsNeed:N0} weapon XP##none{si}", current == 0) && wxp >= ironsNeed)
+            if (ImGui.Selectable($"{noneName}##none{si}", current == 0))
                 SetKitOf(audio, w, Attachments.With(kit, slot, 0));
-            if (wxp < ironsNeed)
-                ImGui.PopStyleColor();
             foreach (var a in inSlot)
             {
-                var need = Attachments.UnlockXp(w, a);
-                var unlocked = wxp >= need;
-                var label = unlocked ? $"{a.Name}##a{si}_{a.Index}" : $"[LOCKED] {a.Name}  -  {need:N0} weapon XP##a{si}_{a.Index}";
-                if (!unlocked)
-                    ImGui.PushStyleColor(ImGuiCol.Text, Dim);
-                if (ImGui.Selectable(label, current == a.Index) && unlocked)
+                if (ImGui.Selectable($"{a.Name}##a{si}_{a.Index}", current == a.Index))
                 {
                     kit = Attachments.With(kit, slot, a.Index);
                     SetKitOf(audio, w, kit);
                     audio.Effect(Sfx.HitTick, 0.4f);
                 }
-                if (!unlocked)
-                    ImGui.PopStyleColor();
                 if (ImGui.IsItemHovered())
                     hovered = a;
             }
@@ -804,7 +719,6 @@ public sealed partial class Ui : IDisposable
 
     private void DrawGunsmithDetails(Audio audio, WeaponDef w)
     {
-        var prog = Progress;
         var kit = KitOf(w);
         if (_hoverAttachment is { } a)
         {
@@ -817,9 +731,6 @@ public sealed partial class Ui : IDisposable
                 ImGuiSafe.TextColored(Green, $"+ {pro}");
             foreach (var con in a.Cons)
                 ImGuiSafe.TextColored(Red, $"- {con}");
-            var need = Attachments.UnlockXp(w, a);
-            if (prog.WeaponXp(w.Id) < need)
-                ImGuiSafe.TextColored(Red, $"Locked - needs {need:N0} weapon XP on the {w.Name} ({prog.WeaponXp(w.Id):N0} so far, about {MathF.Ceiling((need - prog.WeaponXp(w.Id)) / 1000f)} more match(es)).");
             ImGui.Separator();
             ImGui.TextColored(Dim, "With this attachment:"u8);
             DrawStats(audio, Attachments.Apply(w, Attachments.With(kit, a.Slot, a.Index)));
@@ -860,8 +771,6 @@ public sealed partial class Ui : IDisposable
         {
             ImGui.Text($"Radius: {t.Radius:0} m");
         }
-        if (!Progress.IsUnlocked(t.Kind))
-            ImGuiSafe.TextColored(Red, $"Locked - reach level {CallOfSlop.Progress.UnlockLevel(t.Kind)}.");
         ImGui.Spacing();
         ImGuiSafe.TextColored(Dim, t.IsEquipment ? "Use it with your Use equipment key (E by default)." : "Throw it with your Throw grenade key (G by default).");
     }

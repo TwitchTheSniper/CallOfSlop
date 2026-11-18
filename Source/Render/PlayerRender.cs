@@ -40,7 +40,7 @@ public static class PlayerRender
             rot = LadderAnim.BodyRot(p); // on a ladder: facing it (LadderAnim.cs)
         var at = Matrix4x4.CreateTranslation(p.RenderPosition);
         var color = p.Color;
-        var hat = HatRender.HatFor(p); // prestige hat (HatRender.cs)
+        var hat = HatRender.HatFor(p); // a uniform's cap (HatRender.cs)
 
         if (!p.Alive)
         {

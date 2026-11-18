@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 13 body 13 kit 13 wear 13, chassis 2 axles, front under the hood, inset 1 m, coil/hydraulic, wing 0.5, cab style box, language cabin standard 2.54 m, flare 0.07, sloped 0.8, brow 0.82 1.25 m, tail 0.80 1 m, door right, cab cabin cab, nose flat, wear age 0.75 (3 rusty, 7 dirty, 0 sooty, 0 patched, 0 rusted out), body gun bay+bed, cab enclosed, nose short hood, rear bare, under stilts, sides walls, layout gun bay 2 m+bed 2 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Scam Technical 13",
-  "group": "The Call Centre",
+  "group": "Scam",
   "description": "A technical: a short hood, an enclosed cab, a gun behind the cab, an open bed. 1 gun.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#2a2c30"},
@@ -94,8 +94,9 @@
     {"part": "Wide Arch Fender", "on": 84, "socket": "-x0", "by": "mount", "paint": "#ff3d8b"},
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 86, "pos": [-0.802, 0.281, -0.38], "rot": [-0.0065, -0.0165, 0.7038, 0.7102]}, "paint": "#9aa0a6"},
     {"part": "Loudhailer", "on": 81, "socket": "front10", "by": "base"},
-    {"part": "Prize Wheel", "on": 84, "socket": "top", "by": "base"},
-    {"part": "Prize Wheel", "on": 58, "socket": "front", "by": "base"}
+    {"part": "Traffic Cone", "on": 84, "socket": "top", "by": "base"},
+    {"part": "Hubcap Plate", "on": 34, "socket": "top", "by": "base"},
+    {"part": "Traffic Cone", "on": 58, "socket": "front", "by": "base"}
   ],
   "wires": [[31, 32], [32, 26], [69, 79], [79, 71]],
   "links": [

@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 3 axles, pusher 1.25 m, front forward, inset 2.25 m, hydraulic/leaf/leaf, wing 0.5, cab style glasshouse, language pod standard 2.66 m, flare 0.02, sloped 0.8, brow 0.74 1.25 m, tail 0.78 1.25 m, door left, 11 facets, upper saloon over bays 1 to 3, cut 2.34 m, storey 2.13 m, stair right at 2.25 m back, cab pod cab, 8 facets, nose rounded, space upper saloon, fitting radome, pods podb on 2 bay sides, trim fairing on 11 bay sides, wear age 0.64 (4 rusty, 4 dirty, 0 sooty, 0 patched, 0 rusted out), body room, cab enclosed, nose short hood, rear gun deck, under skirted, flank panniers, roof none, layout room(Brow T,Door,Bay T-N,Bay N-L,Bay L,Bay L,Tail L), plan 2
   "format": "call-of-slop-construct-blueprint/1",
   "name": "IT War Bus 1",
-  "group": "IT Department",
+  "group": "IT",
   "description": "A war bus: a short hood, an enclosed cab, a walk-in hull with loot, a stern gun deck. 2 guns.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#3b3f44"},
@@ -200,8 +200,8 @@
     {"part": "Slat Grille", "on": 191, "socket": "front", "by": "back", "paint": "#0f7bd8"},
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 192, "pos": [0.127, 0.424, -0.766], "rot": [-0.7097, -0.0049, -0.0064, 0.7045]}, "paint": "#a7abae"},
     {"part": "Hull Loft (decoR WSWQ)", "on": 39, "socket": "top", "by": "base"},
-    {"part": "CRT Monitor", "on": 191, "socket": "top", "by": "base"},
-    {"part": "Cable Reel", "on": 151, "socket": "front", "by": "base"},
+    {"part": "Office Plant", "on": 191, "socket": "top", "by": "base"},
+    {"part": "Network Switch", "on": 151, "socket": "front", "by": "base"},
     {"part": "Hull Loft (podb XaWCXfWa ~Ce0DOWDmyDn0E1XE9uEA2DwYDYpDB3BxXBZg03g ~B80BmTC0iC8xCHOCPsCI5CAKBYnBZDBZaBZg03g)", "on": 120, "socket": "+x0", "by": "base", "paint": "#d8d0b8"},
     {"part": "Hull Loft (podb XBWCXjWX ~B80BmTC0iC8xCHOCHdCPsCI5CAKBYnBZDBZaBZg03g ~Ce0DOSDmuDmyE1KE9mE1uDwCDAeBx2BZOBZdBZg03g)", "on": 121, "socket": "+x0", "by": "base", "paint": "#a7abae"},
     {"part": "Hull Loft (trimf0 XzW5 ~B80BmOC8nC8yCHACPZC9uC9yBYKAQh8g_63D3BM03M ~Ce0DOWDmyDn0DvGE1XE9uEA2DwYDYpDB3BxXBZg03g)", "on": 115, "socket": "+x0", "by": "base", "paint": "#1f4e8c"},

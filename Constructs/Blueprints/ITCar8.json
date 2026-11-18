@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 8 body 8 kit 8 wear 8, chassis 2 axles, front under the hood, inset 1.5 m, leaf/hydraulic, wing 0.5, archetype supercar, cab style glasshouse, language superwedge standard 2.18 m, flare 0.04, tapered 1.0, brow 0.57 1.25 m, tail 0.66 1.25 m, door left, 10 facets, cab superwedge capsule, 7 facets, nose rounded, fitting radome, wear age 0.37 (0 rusty, 0 dirty, 0 sooty, 0 patched, 0 rusted out), body boot, cab cab-over, nose flat, rear hitch, under tub, layout boot 3 m, plan 2
   "format": "call-of-slop-construct-blueprint/1",
   "name": "IT Car 8",
-  "group": "IT Department",
+  "group": "IT",
   "description": "A car: a flat nose, a cab-over, a boot behind the cabin, the gun on a pedestal ahead of it, a tow hitch. 1 gun.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#3b3f44"},

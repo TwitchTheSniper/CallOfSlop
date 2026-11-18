@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 2 body 2 kit 2 wear 2, chassis 2 axles, front set back, inset 1.5 m, swing arm/trailing arm, wing 0.5, archetype carriage, cab style town cab, language carriage standard 2.43 m, flare 0.04, crowned 0.7, brow 0.71 1.5 m, tail 0.69 1.5 m, door right, 11 facets, cab carriage caged cab, 8 facets, nose rounded, balcony r, trim livery on 7 bay sides, wear age 0.71 (2 rusty, 7 dirty, 0 sooty, 0 patched, 0 rusted out), body room, cab caged, nose long hood, rear porch hitch, under skirted, flank panniers, roof none, layout room(Brow L,Bay L-T,Door,Tail T)
   "format": "call-of-slop-construct-blueprint/1",
   "name": "British Wagon 2",
-  "group": "Ministry of Slop",
+  "group": "British",
   "description": "A wagon: a long hood, a caged cab, a walk-in hull with loot, a drum on the rear porch over a tow hitch. 1 gun.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#1b1c1e"},
@@ -111,9 +111,9 @@
     {"part": "Ammo Reel", "on": 100, "socket": "top", "by": "-y"},
     {"part": "Ammo Socket", "on": 95, "socket": "top", "by": "bottom"},
     {"part": "Lever", "on": 79, "socket": "lever", "by": "-y"},
-    {"part": "Pillar Box", "on": 50, "socket": "front31", "by": "foot10", "spin": 2},
-    {"part": "Crew Bench", "on": 56, "socket": "centre +y", "by": "foot01"},
-    {"part": "Tea Urn", "on": 60, "socket": "front01", "by": "foot00", "spin": 1},
+    {"part": "Shelf Bay 1", "on": 55, "socket": "front31", "by": "-y.3.1", "spin": 1},
+    {"part": "Ammo Container", "on": 60, "socket": "front02", "by": "-y", "spin": 1},
+    {"part": "Traffic Cone", "on": 106, "socket": "+y.1.0", "by": "base"},
     {"part": "Square Beam 0.75 m", "on": 8, "socket": "+y7", "by": "-x0", "spin": 1, "paint": "#1b1c1e"},
     {"part": "Square Beam 0.75 m", "on": 109, "socket": "+x0", "by": "-x0", "spin": 1, "paint": "#1b1c1e"},
     {"part": "Plate Steel 1 m", "on": 110, "socket": "+x0", "by": "back02", "spin": 3, "paint": "#b5121b"},
@@ -125,10 +125,9 @@
     {"part": "Fuel Drum", "on": 111, "socket": "front33", "by": "-y"},
     {"part": "Tow Hitch", "on": 9, "socket": "+z", "by": "-z0"},
     {"part": "Hull Loft (hoodr UZV2WyWjXIXEVd ~7807mB80L80W7uh78r5O-2n1011)", "on": 29, "socket": "+y", "by": "engine", "paint": "#012169"},
-    {"part": "Teapot", "on": 119, "socket": "top", "by": "base"},
-    {"part": "Rain Gauge", "on": 37, "socket": "top", "by": "base"},
-    {"part": "Queue Post", "on": 111, "socket": "front00", "by": "base"},
-    {"part": "Queue Post", "on": 114, "socket": "front", "by": "base"},
+    {"part": "Hull Loft (decoJ W0)", "on": 119, "socket": "top", "by": "base"},
+    {"part": "Hull Loft (decoJ W0)", "on": 111, "socket": "front00", "by": "base"},
+    {"part": "Hull Loft (decoJ W0)", "on": 114, "socket": "front", "by": "base"},
     {"part": "Garden Gnome", "on": 116, "socket": "front", "by": "base"},
     {"part": "Hull Loft (triml7 XaW5 ~B00BmKCGdCexCnFCfZC9sBA99IP6QX3Qb02b ~CW0DGTDuxEXPEvtEgKE2oCxEApc7Zn43t03t)", "on": 79, "socket": "+x0", "by": "base", "paint": "#e8dfc8"},
     {"part": "Hull Loft (triml2 XaW5 ~CW0DGTDuxEXPEvtEgKE2oCxEApc7Zn43t03t ~B00BmKCGdCexCnFCfZC9sBA99IP6QX3Qb02b)", "on": 79, "socket": "-x0", "by": "base", "paint": "#e8dfc8"},
@@ -136,7 +135,8 @@
     {"part": "Hull Loft (triml7 XaW5 ~CW0DGWDmyDv0EfWEvuEw0EgXE31CxWApv7a644C04C ~CW0DGTDWiDuxEHAEXPEvtEgKE2oCxEApc7Zn43t03t)", "on": 80, "socket": "-x0", "by": "base", "paint": "#e8dfc8"},
     {"part": "Hull Loft (triml5 YMW5 ~CW0DGWDmyDv0EfWEvuEw0EgXE31CxWApv7a644C04C =)", "on": 81, "socket": "-x0", "by": "base", "paint": "#e8dfc8"},
     {"part": "Hull Loft (triml3 XaW5 ~CW0DGWDmyDv0EfWEvuEw0EgXE31CxWApv7a644C04C ~BG0C0KCWeCuyD1GCvaCPuBQC9YR82V6YZ52b3Qd02d)", "on": 84, "socket": "+x0", "by": "base", "paint": "#e8dfc8"},
-    {"part": "Hull Loft (triml6 XaW5 ~BG0C0KCWeCuyD1GCvaCPuBQC9YR82V6YZ52b3Qd02d ~CW0DGWDmyDv0EfWEvuEw0EgXE31CxWApv7a644C04C)", "on": 84, "socket": "-x0", "by": "base", "paint": "#e8dfc8"}
+    {"part": "Hull Loft (triml6 XaW5 ~BG0C0KCWeCuyD1GCvaCPuBQC9YR82V6YZ52b3Qd02d ~CW0DGWDmyDv0EfWEvuEw0EgXE31CxWApv7a644C04C)", "on": 84, "socket": "-x0", "by": "base", "paint": "#e8dfc8"},
+    {"part": "Long Iron Spike", "on": 37, "socket": "top", "by": "base"}
   ],
   "wires": [[34, 35], [35, 29], [91, 99], [99, 95], [105, 102]],
   "hoses": [[103, 104]],
@@ -147,5 +147,5 @@
     {"type": "feed", "from": 102, "to": 103, "fromPort": "Ammo out", "toPort": "Ammo in", "laid": true},
     {"type": "pipe", "from": 117, "to": 29, "nodes": [[-0.75, 0.82, 5.31], [-0.75, 0.55, 5.31], [-0.17, 0.55, 5.31], [-0.17, 0.55, 1.375], [-0.17, 0.05, 1.375], [-0.17, 0.05, -0.245], [-0.17, 0.62, -0.245], [-0.17, 0.62, -0.75]], "laid": true}
   ],
-  "loot": [{"step": 106, "table": "british"}, {"step": 107, "table": "british"}]
+  "loot": [{"step": 106, "table": "british"}]
 }

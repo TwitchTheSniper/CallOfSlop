@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 7 body 7 kit 7 wear 7, chassis 2 axles, front set back, inset 1.75 m, swing arm/trailing arm, wing 0.5, cab style glasshouse, language pod heavy 2.20 m, flare 0.17, sloped 0.8, brow 0.70 1 m, tail 0.70 1.25 m, door left, 10 facets, cab pod cab, 7 facets, nose rounded, wear age 0.79 (1 rusty, 4 dirty, 0 sooty, 0 patched, 0 rusted out), body hutch, cab enclosed, nose short hood, rear porch, under tub, layout hutch 4 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "IT Gun Wagon 7",
-  "group": "IT Department",
+  "group": "IT",
   "description": "A gun wagon: a short hood, an enclosed cab, an ammo hutch and a stern gun on a flat deck, a drum on the rear porch. 1 gun.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#3b3f44"},
@@ -116,11 +116,11 @@
     {"part": "Plate Steel 0.25 m", "on": 104, "socket": "-z3", "by": "-x", "paint": "#8e9296"},
     {"part": "Fuel Drum", "on": 103, "socket": "front33", "by": "-y"},
     {"part": "Hull Loft (hoodr UtV2WyWjXIXEVd ~7m080C80P80c7mo68z3H5015)", "on": 27, "socket": "+y", "by": "engine", "paint": "#c0392b"},
-    {"part": "CRT Monitor", "on": 110, "socket": "top", "by": "base"},
-    {"part": "Employee of the Month", "on": 35, "socket": "top", "by": "base"},
-    {"part": "Cable Reel", "on": 52, "socket": "front00", "by": "base"},
-    {"part": "Cable Reel", "on": 59, "socket": "front13", "by": "base"},
-    {"part": "Cable Reel", "on": 71, "socket": "front00", "by": "base"},
+    {"part": "Office Plant", "on": 110, "socket": "top", "by": "base"},
+    {"part": "Office Plant", "on": 35, "socket": "top", "by": "base"},
+    {"part": "Network Switch", "on": 52, "socket": "front00", "by": "base"},
+    {"part": "Network Switch", "on": 59, "socket": "front13", "by": "base"},
+    {"part": "Network Switch", "on": 71, "socket": "front00", "by": "base"},
     {"part": "Satellite Dish", "on": 72, "socket": "front00", "by": "base"}
   ],
   "wires": [[32, 33], [33, 27], [84, 93], [93, 86], [100, 97]],

@@ -82,7 +82,10 @@ inside the hull, in one room with engineering.
   OR Gate under the torpedo room's ceiling at its fore end on each side; the mess's to one in the passage between the suit bay
   and the airlock, then one each side at the torpedo room's aft end (a wire reaches 8 m); each side's gates are wired to its
   bay's magazine. The mouse stays the PDCs'. A launch's way-out ray passes the bay the rack hangs in (its convex collider
-  closes the port: `ConstructOrdnance.Blocked`), so the magazines let go. Launched in space a torpedo coasts 7 minutes after
+  closes the port: `ConstructOrdnance.Blocked`), so the magazines let go. The sponson's nose is flat between two lips that
+  fair into the hull (Karl, 2026-11-18: the full cowl closed the port), and an armoured **Zero Day Torpedo Hatch** hinged
+  on its outboard edge covers the port: a launch that finds it shut swings it a quarter turn forward along the flank (1 s),
+  the torpedo goes once it is clear, and it shuts 4 s after the last (big-systems.md "Launch hatches"). Launched in space a torpedo coasts 7 minutes after
   its motor (about 120 km; weapons.md "Flight").
 - The Zero Day Railgun along the spine, fixed forward and aimed by the ship (the pilot fires it). Each slug takes 15 MJ from the Capacitor Bank M in engineering, aft of the reactor (ship-works.md 8; energy guns fire from capacitors only): two full slugs and a bit, one refilled in 10 s.
 - Four Zero Day PDCs on barbettes on the beam, run from the two gun stations (ops and the mess). Each turns on a **Turret

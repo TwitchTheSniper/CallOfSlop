@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front under the hood, inset 2 m, coil/hydraulic, wing 0.5, cab style kiosk, language cabin standard 2.42 m, flare 0.06, plain 0.7, brow 0.75 1 m, tail 0.81 1 m, door left, upper dropped: no roof left for a gun, cab cabin capsule, nose flat, balcony g, fitting roof sign, trim signboards on 9 bay sides, wear age 0.53 (4 rusty, 4 dirty, 1 sooty, 0 patched, 0 rusted out), body gap+room, cab cab-over, nose flat, rear porch, under skirted, flank loaded, roof none, layout gap 1 m+room(Brow T,Door,Bay T-L,Bay L-T,Bay T-L,Tail L)
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Scam War Bus 1",
-  "group": "The Call Centre",
+  "group": "Scam",
   "description": "A war bus: a flat nose, a cab-over, bare rails behind the cab, a walk-in hull with loot, a drum on the rear porch. 1 gun.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#2a2c30"},
@@ -139,13 +139,13 @@
     {"part": "Ammo Reel", "on": 128, "socket": "top", "by": "-y"},
     {"part": "Ammo Socket", "on": 122, "socket": "left", "by": "right"},
     {"part": "Lever", "on": 100, "socket": "lever", "by": "-y"},
-    {"part": "Cubicle Desk", "on": 69, "socket": "front01", "by": "foot10", "spin": 1},
-    {"part": "Cubicle Desk", "on": 60, "socket": "front33", "by": "foot00", "spin": 2},
-    {"part": "Cubicle Desk", "on": 59, "socket": "front30", "by": "foot00", "spin": 2},
+    {"part": "Crate Stack", "on": 70, "socket": "front02", "by": "foot00", "spin": 1},
+    {"part": "Shelf Bay 1", "on": 58, "socket": "front23", "by": "-y.0.1", "spin": 2},
     {"part": "Water Cooler", "on": 62, "socket": "front00", "by": "foot00", "spin": 2},
-    {"part": "Cubicle Desk", "on": 58, "socket": "front31", "by": "foot00", "spin": 2},
     {"part": "Ammo Container", "on": 72, "socket": "front02", "by": "-y", "spin": 1},
     {"part": "Loudhailer", "on": 61, "socket": "front30", "by": "base", "spin": 3},
+    {"part": "Loudhailer", "on": 135, "socket": "+y.1.0", "by": "base"},
+    {"part": "Hubcap Plate", "on": 135, "socket": "+y.1.1", "by": "base"},
     {"part": "Square Beam 0.75 m", "on": 11, "socket": "+y2", "by": "-x0", "spin": 1, "paint": "#2a2c30"},
     {"part": "Square Beam 0.75 m", "on": 141, "socket": "+x0", "by": "-x0", "spin": 1, "paint": "#2a2c30"},
     {"part": "Plate Steel 1 m", "on": 142, "socket": "+x2", "by": "back02", "paint": "#8a9096"},
@@ -155,7 +155,7 @@
     {"part": "Plate Steel 0.25 m", "on": 144, "socket": "+z1", "by": "-x", "paint": "#7d8a92"},
     {"part": "Fuel Drum", "on": 143, "socket": "front30", "by": "-y"},
     {"part": "Hull Loft (decoS XIWAWcW0)", "on": 37, "socket": "top", "by": "base", "paint": "#ff3d8b"},
-    {"part": "Gift Card Sign", "on": 143, "socket": "front03", "by": "base"},
+    {"part": "Loudhailer", "on": 143, "socket": "front03", "by": "base"},
     {"part": "Hull Loft (trimg3 XaW5 ~CO0CWyDAHDwL02s ~D80DGyEB0Ex603o)", "on": 100, "socket": "+x0", "by": "base", "paint": "#ffd400"},
     {"part": "Hull Loft (trimg4 XaW5 ~D80DGyEB0Ex603o ~CO0CWyDAHDwL02s)", "on": 100, "socket": "-x0", "by": "base", "paint": "#ffd400"},
     {"part": "Hull Loft (trimg2 XaW5 ~D80DGyEB0Ex603o ~D80DGyEAfEwk03L)", "on": 104, "socket": "+x0", "by": "base", "paint": "#ffd400"},
@@ -175,5 +175,5 @@
     {"type": "feed", "from": 130, "to": 131, "fromPort": "Ammo out", "toPort": "Ammo in", "laid": true},
     {"type": "pipe", "from": 148, "to": 29, "nodes": [[1.25, 0.82, 9.05], [1.25, 0.55, 9.05], [0.67, 0.55, 9.05], [0.67, 0.55, 2.125], [0.67, 0.05, 2.125], [0.67, 0.05, 0.505], [0.67, 0.25, 0.505], [-0.17, 0.25, 0.505], [-0.17, 0.62, 0.505], [-0.17, 0.62, 0]], "laid": true}
   ],
-  "loot": [{"step": 134, "table": "scam"}, {"step": 135, "table": "scam"}, {"step": 136, "table": "scam"}, {"step": 138, "table": "scam"}]
+  "loot": [{"step": 134, "table": "scam"}, {"step": 135, "table": "scam"}]
 }

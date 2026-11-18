@@ -9,8 +9,8 @@ CallOfSlop.exe --bench [SPOTS] [--out FILE.json] [--frames N] [--settle N] [--si
 CallOfSlop.exe --bench-compare BASE.json NEW.json [--noise PCT]
 ```
 
-- `--bench` with no file runs `tools/bench/glacier.json` (found by walking up from the exe): the Glacier story world in
-  survival with the colony built, the opening skipped, no cold storm (`--storm` keeps it), VSync and every frame cap off,
+- `--bench` with no file runs `tools/bench/glacier.json` (found by walking up from the exe): the Glacier world in
+  survival on the any-map start, no cold storm (`--storm` keeps it), VSync and every frame cap off,
   a 1600x900 window. For each spot it flies the camera there, waits `settle` frames (900) for streaming and the GPU to
   settle, then measures `frames` frames (900). About 65 s on the 4070 Ti. It opens a window on the user's screen and uses
   a throwaway copy of the saves.
@@ -79,11 +79,16 @@ time something new, add a `PerfArea` (and its name and parent in `Perf.cs`) and 
 ## Spots files
 
 `tools/bench/*.json`: `map`, `survival`, `calm`, `start` (a story start), `size`, `settle`, `frames`, and `spots`, each a
-`name` and a `view` in the window tool's tour form `TARGET | DIST,UP,BEARING` (Program.WindowShotTour.cs: a colony
-building's blueprint name, `outpost N`, `geo LAT,LON`, `body N` or `X,Y,Z`; the eye DIST m out on a compass bearing
+`name` and a `view` in the window tool's tour form `TARGET | DIST,UP,BEARING` (Program.WindowShotTour.cs: `geo LAT,LON`,
+`body N` or `X,Y,Z`; the eye DIST m out on a compass bearing
 and UP m above, looking at it), with an optional `settle` and `frames` of its own. Keep names stable, because compare
 matches spots by name; add a spot rather than move one. The play-test tour (`tools/playtest/tour.ps1`) uses the same
 `perf` action, so its spots print `[bench]` lines too.
+
+**Older baselines are not comparable (2026-11-17).** The penal colony, its outposts and the spaceport were removed, and
+with them nine of the ten spots (colony_overview, colony_eye, muster_board, boiler_smoke, barracks, quarry_gangs,
+outpost1_checkpoint, spaceport, spaceport_pad). Only `spine_ridge` is left, and the world round it no longer has the colony
+in it, so take a new baseline before comparing; the numbers below are history.
 
 ## First numbers (2026-11-13, 4070 Ti, 1600x900, calm; other threads' game windows may have been open)
 

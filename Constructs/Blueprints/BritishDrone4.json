@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "British Drone 4",
-  "group": "Ministry of Slop",
+  "group": "British",
   "description": "A small scout drone on a Drone Frame. Fly it from a Remote Console on its channel: Shift climbs, Ctrl sinks, W A S D move and turn it.",
   "steps": [
     {"part": "Drone Frame", "paint": "#1b1c1e"},

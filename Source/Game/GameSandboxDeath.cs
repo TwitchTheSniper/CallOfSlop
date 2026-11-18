@@ -7,7 +7,7 @@ namespace CallOfSlop;
 public enum SurvivalDeath : byte
 {
     Respawn, // back at the world's spawn points, as before these options
-    Checkpoint, // back at the last checkpoint: the last bunk you lay in, else the penal colony's cell block
+    Checkpoint, // back at the last checkpoint: the last bunk you lay in, else the world's spawn points
     Permadeath, // one life: dead is dead in this world
 }
 
@@ -15,15 +15,14 @@ public enum SurvivalDeath : byte
 public enum RespawnSpot : byte
 {
     Spawn, // the world's spawn points
-    Colony, // the penal colony's cell block (GameSandboxOpening.cs)
+    Colony, // (the penal colony's cell block until 2026-11-17: never sent now, the byte stays for the wire)
     Bunk, // their bunk
 }
 
 /// <summary>
 /// Survival world options for death (docs/sandbox/DEATH.md), chosen when the world is made and kept with it: respawn, respawn
 /// at the last checkpoint, or permadeath, and whether a death drops the backpack. A checkpoint is the last Bunk the player
-/// lay in (on any construct: a ship's bunk travels with it), else, once the penal colony stands, its cell block (where the
-/// story first wakes them). The server decides; each player's client hears where they will wake and whether they are dead
+/// lay in (on any construct: a ship's bunk travels with it), else the world's spawn points. The server decides; each player's client hears where they will wake and whether they are dead
 /// for good (<see cref="Msg.Fate"/>). Creative worlds keep the plain respawn whatever the option says.
 /// </summary>
 public sealed partial class Game
@@ -194,13 +193,10 @@ public sealed partial class Game
         return -1;
     }
 
-    private bool SandboxColonyStands => _opColony != 0 && Constructs.Get(_opColony) != null;
-
     /// <summary>Server: where a respawn would put this player now.</summary>
     private RespawnSpot SandboxSpotOf(byte id) =>
         !SandboxCheckpoints ? RespawnSpot.Spawn
         : SandboxBunkOf(id, out _) >= 0 ? RespawnSpot.Bunk
-        : SandboxColonyStands ? RespawnSpot.Colony
         : RespawnSpot.Spawn;
 
     /// <summary>Server: tell a person's client where they will wake and whether they are dead for good, when that changed.</summary>
@@ -240,7 +236,6 @@ public sealed partial class Game
         : SandboxRespawnSpot switch
         {
             RespawnSpot.Bunk => "You will wake in your bunk.",
-            RespawnSpot.Colony => "You will wake in the penal colony's cell block. Lie in a Bunk to make it your checkpoint.",
             _ => SandboxDeathRule == SurvivalDeath.Checkpoint ? "You will wake at the world's spawn points. Lie in a Bunk to make it your checkpoint." : null,
         };
 
@@ -264,8 +259,6 @@ public sealed partial class Game
             _sbBunk[p.Id] = default;
             SandboxHands.Notices.Add((p.Id, "Your bunk is gone: lie in another to make it your checkpoint"));
         }
-        if (SandboxColonyStands)
-            OpeningToColony(p); // (the cell block's floor, where the story first woke them: GameSandboxOpening.cs)
         SandboxFateSend(p);
     }
 

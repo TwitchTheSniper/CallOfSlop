@@ -33,13 +33,12 @@ public sealed class Settings
     public ulong WorldKey; // who this PC is to a saved world (made once, sent to the host: GameWorldSave.cs)
     public int WorldAutosaveMinutes = 5; // minutes between a saved world's autosaves (0: off)
     public string StoryStart = ""; // a new world's start (Story/Starts, by id; "": the first offered, the rust bucket): the Single player and Multiplayer pages (GameStoryStart.cs)
-    public bool SurvivalTutorial; // Survival's Tutorial tickbox: the penal colony's induction, in a world of its own (StoryStarts.Tutorial)
 
     /// <summary>
-    /// The start a new game plays: the tutorial's in Survival with its tickbox, else the one named (a tool's --start may name
-    /// any), else the first offered (StoryStarts.Picked: the menus always store an offered one).
+    /// The start a new game plays: the one named (a tool's --start may name any), else the first offered
+    /// (StoryStarts.Picked: the menus always store an offered one).
     /// </summary>
-    public string PlayedStartId => SandboxSurvival && SurvivalTutorial && StoryStarts.Tutorial is { } t ? t.Id : StoryStarts.Find(StoryStart)?.Id ?? StoryStarts.Picked(StoryStart).Id;
+    public string PlayedStartId => StoryStarts.Picked(StoryStart).Id;
     public bool SandboxSurvival; // hosting Sandbox: Survival rather than Creative (the lobby room's Match tab; GameSandboxSurvival.cs)
     public SurvivalDeath SandboxDeath = SurvivalDeath.Checkpoint; // survival's death rule for a new world (GameSandboxDeath.cs)
     public bool SandboxKeepPack; // ...and a death keeps the backpack
@@ -48,7 +47,7 @@ public sealed class Settings
     public int SandboxMaxPerPlayer = ConstructPlace.MaxPerPlayer; // ...and how many constructs each player may own (0: no limit)
     public int TripFuelPercent = 50; // host setting, Settings > Gameplay "Trip fuel": the share of a ship's dV an order to another planet may spend (more is a quicker trip: GameNavTrip.cs)
     public int SpaceFuelPercent = 100; // host setting, Settings > Gameplay "Fuel use in space": the share of their fuel thrusters burn in space (ConstructPhysics.SpaceFuelScale)
-    public int TimeSpeedMost = 100_000; // host setting, Settings > Gameplay "Fastest time speed": the command view's time speed goes no faster (docs/space/COMMAND.md)
+    public int TimeSpeedMost = 1_000_000; // host setting, Settings > Gameplay "Fastest time speed": the command view's time speed goes no faster (docs/space/COMMAND.md)
     public bool TravelTogether; // host setting: a ship lands on another planetoid only with everyone aboard (off: free travel, each lands alone; docs/space/FREE-TRAVEL.md)
     public readonly List<string> SandboxFavorites = new(); // Sandbox: the parts favorited in the Tab inventory, by name (UiSandboxParts.cs)
     public bool SmartRotation = true; // Sandbox: the ghost's first turn is smart rotation's guess (Constructs/SmartRotation.cs); off: the fixed order
@@ -457,7 +456,6 @@ public sealed class Settings
                     case "world_autosave" when int.TryParse(v, out var was): s.WorldAutosaveMinutes = Math.Clamp(was, 0, 120); break;
                     case "sandbox_survival": s.SandboxSurvival = v == "1"; break;
                     case "story_start": s.StoryStart = v.Trim(); break;
-                    case "survival_tutorial": s.SurvivalTutorial = v.Trim() == "1"; break;
                     case "sandbox_death" when int.TryParse(v, out var sd): s.SandboxDeath = (SurvivalDeath)Math.Clamp(sd, 0, (int)SurvivalDeath.Permadeath); break;
                     case "sandbox_keep_pack": s.SandboxKeepPack = v == "1"; break;
                     case "sandbox_max_bodies" when int.TryParse(v, out var smb): s.SandboxMaxBodies = Math.Clamp(smb, 100, ConstructWorld.MostBodies); break;
@@ -627,7 +625,6 @@ public sealed class Settings
                     $"world_autosave={WorldAutosaveMinutes}",
                     $"sandbox_survival={(SandboxSurvival ? 1 : 0)}",
                     $"story_start={StoryStart}",
-                    $"survival_tutorial={(SurvivalTutorial ? 1 : 0)}",
                     $"sandbox_death={(int)SandboxDeath}",
                     $"sandbox_keep_pack={(SandboxKeepPack ? 1 : 0)}",
                     $"sandbox_max_bodies={SandboxMaxBodies}",

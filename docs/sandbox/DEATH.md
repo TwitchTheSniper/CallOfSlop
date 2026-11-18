@@ -1,7 +1,6 @@
 # Death in a survival world
 
-Code: `Source/Game/GameSandboxDeath.cs`. Survival worlds (the crash landing, the Ministry's penal colony, the warden's
-induction) choose what a death means when the world is made. Creative worlds always respawn as before.
+Code: `Source/Game/GameSandboxDeath.cs`. Survival worlds choose what a death means when the world is made. Creative worlds always respawn as before.
 
 ## The options
 
@@ -23,10 +22,8 @@ own; they are greyed out once a world is picked, as the map and mode are. The wo
    made in the Assembler from cloth and steel). Lie in it (Use) and it is your checkpoint; you wake lying in it, and get up
    as from any seat. A bunk on a ship or truck travels with it, so a mothership can carry everyone's checkpoint. If someone
    is in it you wake on top of it. If the bunk is destroyed, or its construct is gone, you are told and fall back to 2.
-2. **The penal colony's cell block**, once the colony stands: where the story first wakes you.
-3. Otherwise the world's spawn points.
-
-Tutorial steps and other story beats are not checkpoints: the induction carries on from where it was whatever happens.
+2. Otherwise the world's spawn points. (The penal colony's cell block was the second checkpoint until the colony was
+   removed, 2026-11-17; `RespawnSpot.Colony` keeps its byte on the wire and is never sent.)
 
 ## How it works
 

@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front set back, inset 1.25 m, leaf/leaf, wing 0.5, cab style box, language cabin heavy 2.48 m, flare 0.14, plain 0.7, brow 0.89 1 m, tail 0.89 0.75 m, door left, cab cabin cab, nose flat, lopsided right, wear age 0.96 (2 rusty, 2 dirty, 0 sooty, 0 patched, 0 rusted out), body gun bay, cab enclosed, nose long hood, rear porch hitch, under tub, layout gun bay 2 m, plan 3
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Scam Tanker Rig 1",
-  "group": "The Call Centre",
+  "group": "Scam",
   "description": "A tanker rig: a long hood, an enclosed cab, a gun behind the cab, a drum on the rear porch over a tow hitch. 1 gun.",
   "steps": [
     {"part": "Square Beam 0.75 m", "paint": "#2a2c30"},
@@ -79,9 +79,9 @@
     {"part": "Hull Loft (hoodf UTV2WyWjXWXWVd ~6m06uu015)", "on": 29, "socket": "+y", "by": "engine", "paint": "#ffd400"},
     {"part": "Slat Grille", "on": 71, "socket": "front", "by": "back", "paint": "#7d8a92"},
     {"part": "Plate Steel 0.5 m", "weld": {"on": 72, "pos": [0.124, 0.462, -1.962], "rot": [-0.7181, 0.0064, 0.0175, 0.6957]}, "paint": "#7d8a92"},
-    {"part": "Call Headset", "on": 71, "socket": "top", "by": "base"},
+    {"part": "Loudhailer", "on": 71, "socket": "top", "by": "base"},
     {"part": "Loudhailer", "on": 37, "socket": "top", "by": "base"},
-    {"part": "Loudhailer", "on": 64, "socket": "front03", "by": "base"}
+    {"part": "Traffic Cone", "on": 68, "socket": "front", "by": "base"}
   ],
   "wires": [[34, 35], [35, 29], [50, 60], [60, 52]],
   "links": [

@@ -55,7 +55,6 @@ public sealed partial class Ui
     public bool PauseOpen;
     private bool _pauseSettings;
     private ImInputString? _nameInput;
-    private bool _confirmReset;
     private ImInputString? _addressInput;
     private int _portInput;
 
@@ -232,11 +231,10 @@ public sealed partial class Ui
                 {
                     Title("Single player");
                     PlayStylePicker(s);
-                    var tutorial = TutorialPicker(s);
-                    var savedWorld = !tutorial && DrawSinglePlayerWorld(s); // (a saved world brings its own map, mode and start: UiWorlds.cs)
-                    if (!tutorial && !savedWorld)
+                    var savedWorld = DrawSinglePlayerWorld(s); // (a saved world brings its own map, mode and start: UiWorlds.cs)
+                    if (!savedWorld)
                         StartPicker(s);
-                    if (s.SandboxSurvival && !savedWorld && !tutorial)
+                    if (s.SandboxSurvival && !savedWorld)
                         DeathPicker(ref s.SandboxDeath, ref s.SandboxKeepPack); // (survival's death rules: GameSandboxDeath.cs)
                     s.Bots = 0;
                     ImGui.Spacing();
@@ -250,8 +248,6 @@ public sealed partial class Ui
                     {
                         if (!savedWorld)
                             ApplyStartMap(s);
-                        if (tutorial)
-                            DropSinglePlayerWorld(); // (the tutorial is a world of its own, never the one picked: UiWorlds.cs)
                         s.Save();
                         action = LobbyAction.SinglePlayer;
                     }
@@ -264,8 +260,7 @@ public sealed partial class Ui
                 {
                     Title($"Multiplayer - up to {Game.MaxPeople} players over LAN or the internet (each map has its own limit)");
                     PlayStylePicker(s);
-                    if (!TutorialPicker(s))
-                        StartPicker(s);
+                    StartPicker(s);
                     var problem = StartMapProblem(s);
                     if (problem != null)
                         ImGuiSafe.TextColored(Orange, problem);
@@ -381,28 +376,6 @@ public sealed partial class Ui
     }
 
     /// <summary>
-    /// Survival's Tutorial tickbox (Karl, 2026-11-14): the Ministry's penal colony and the warden's induction, in a world of
-    /// its own that is never saved (StoryStarts.Tutorial). True: ticked, so the start, the map and the world are the tutorial's.
-    /// </summary>
-    private bool TutorialPicker(Settings s)
-    {
-        if (!s.SandboxSurvival || StoryStarts.Tutorial is not { } tut)
-            return false;
-        ImGui.Checkbox("Tutorial: the Ministry's penal colony"u8, ref s.SurvivalTutorial);
-        if (ImGui.IsItemHovered())
-            ImGui.SetItemTooltip("Learn the keys and the tools from the warden's induction, in the penal colony on Glacier. It is a world of its own and isn't saved: untick it to play your own world."u8);
-        if (s.SurvivalTutorial)
-        {
-            ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + 640 * _scale);
-            ImGuiSafe.TextColored(Dim, tut.About);
-            ImGui.TextColored(Dim, "A world of its own, not saved: untick it to play your own world."u8);
-            ImGui.PopTextWrapPos();
-        }
-        ImGui.Spacing();
-        return s.SurvivalTutorial;
-    }
-
-    /// <summary>
     /// A new world's start (Story/Starts, docs/story/STARTS.md), as radio buttons in the menus' order (the rust bucket
     /// first), and what it is; an any-map start picks its map here.
     /// </summary>
@@ -431,7 +404,7 @@ public sealed partial class Ui
             MapPicker(s);
     }
 
-    /// <summary>The start a new game plays (Settings.PlayedStartId: the tutorial's with its tickbox).</summary>
+    /// <summary>The start a new game plays (Settings.PlayedStartId).</summary>
     private static StoryStart PlayedStart(Settings s) => StoryStarts.Find(s.PlayedStartId) ?? StoryStarts.Default;
 
     /// <summary>Why START can't play the start picked (no Sandbox map for it), or null.</summary>
@@ -626,68 +599,6 @@ public sealed partial class Ui
         ImGui.Spacing();
     }
 
-    /// <summary>
-    /// The level heading, XP bar, prestige button and next unlock. The main menu passes <paramref name="compact"/>: every
-    /// line wraps at the button width (so a long unlock name can't stretch the panel) and the XP values and the
-    /// "every level unlocks" blurb are left to the Loadouts > Progression page, which draws the full version.
-    /// </summary>
-    private void LevelSummary(bool compact = false)
-    {
-        var p = Progress;
-        var wrapFrom = ImGui.GetCursorPosX();
-        if (compact)
-            ImGui.PushTextWrapPos(wrapFrom + MenuButtonWidth * _scale);
-        ImGui.PushFont(default, 22);
-        ImGuiSafe.TextColored(Orange, $"{PrestigePrefix(p)}LEVEL {p.Level}");
-        ImGui.PopFont();
-        ImGui.SameLine();
-        ImGuiSafe.TextColored(Dim, p.Level >= CallOfSlop.Progress.MaxLevel
-            ? (compact ? $"  max level - {p.Xp} XP" : $"  max level - {p.Xp} XP, {p.Kills} kills, {p.Headshots} headshots")
-            : $"  {p.XpIntoLevel} / {CallOfSlop.Progress.XpForNext(p.Level)} XP to level {p.Level + 1}");
-        ImGui.PushStyleColor(ImGuiCol.PlotHistogram, Orange);
-        ImGui.ProgressBar(p.LevelFraction, new float2(MenuButtonWidth * _scale, 10 * _scale), ""u8);
-        ImGui.PopStyleColor();
-        PrestigeButton(compact); // UiPrestige.cs
-        if (p.NextUnlock is { } next)
-            ImGuiSafe.TextColored(Dim, $"Next unlock: {next.Name} ({next.Kind.ToLowerInvariant()}) at level {next.Level}");
-        if (compact)
-        {
-            ImGui.PopTextWrapPos();
-            ImGui.Spacing();
-            return;
-        }
-        ImGuiSafe.TextColored(Dim, $"Kill +{CallOfSlop.Progress.KillXp} XP   Headshot kill +{CallOfSlop.Progress.HeadshotBonus}   Grenade kill +{CallOfSlop.Progress.GrenadeBonus}   Match +{CallOfSlop.Progress.MatchXp}   Win +{CallOfSlop.Progress.WinXp}");
-        ImGuiSafe.TextColored(Dim, $"Every level unlocks something: weapons, grenades, perks and up to {CallOfSlop.Progress.MaxLoadoutSlots} loadout slots. Each gun also earns its own weapon XP for attachments (3-7 matches to max one out).");
-        ImGui.Spacing();
-    }
-
-    private void ProgressionTable()
-    {
-        var p = Progress;
-        var height = MathF.Min(460 * _scale, ImGui.GetMainViewport().WorkSize.Y * 0.5f);
-        if (!ImGui.BeginTable("##prog"u8, 3, ImGuiTableFlags.RowBg | ImGuiTableFlags.BordersInnerV | ImGuiTableFlags.ScrollY, new float2(720 * _scale, height)))
-            return;
-        ImGui.TableSetupColumn("Level"u8, ImGuiTableColumnFlags.WidthFixed, 70 * _scale);
-        ImGui.TableSetupColumn("XP"u8, ImGuiTableColumnFlags.WidthFixed, 90 * _scale);
-        ImGui.TableSetupColumn("Unlocks"u8, ImGuiTableColumnFlags.WidthStretch);
-        ImGui.TableHeadersRow();
-        for (var level = 1; level <= CallOfSlop.Progress.MaxLevel; level++)
-        {
-            var reached = p.Level >= level;
-            var unlocks = string.Join(", ", p.UnlocksAt(level).Select(CallOfSlop.Progress.Describe));
-            ImGui.TableNextRow();
-            ImGui.TableNextColumn();
-            ImGuiSafe.TextColored(reached ? Green : Dim, $"{level}");
-            ImGui.TableNextColumn();
-            ImGuiSafe.TextColored(Dim, $"{CallOfSlop.Progress.TotalFor(level)}");
-            ImGui.TableNextColumn();
-            ImGui.PushStyleColor(ImGuiCol.Text, reached ? new float4(1, 1, 1, 1) : Dim);
-            ImGuiSafe.TextWrapped(unlocks.Length > 0 ? unlocks : "-");
-            ImGui.PopStyleColor();
-        }
-        ImGui.EndTable();
-    }
-
     /// <summary>Shown under a bot slider at 0: what a match with nobody else in it does.</summary>
     private void TestModeHint()
     {
@@ -826,8 +737,8 @@ public sealed partial class Ui
     }
     private float _pendingUiScale = -1;
 
-    private static readonly int[] TimeSpeedChoices = [10, 100, 1000, 10_000, 100_000];
-    private static readonly string[] TimeSpeedLabels = ["10x", "100x", "1000x", "10000x", "100000x"];
+    private static readonly int[] TimeSpeedChoices = [10, 100, 1000, 10_000, 100_000, 1_000_000];
+    private static readonly string[] TimeSpeedLabels = ["10x", "100x", "1000x", "10000x", "100000x", "1000000x"];
 
     /// <summary>Settings > Gameplay: how ships travel between planets (Karl, 2026-11-16). Host settings: in a joined game the host's count.</summary>
     private void GameplaySettings(Settings s, float w)
@@ -906,30 +817,6 @@ public sealed partial class Ui
             ImGui.SliderFloat("Field of view"u8, ref s.Fov, 60f, 110f, "%.0f deg"u8);
             ImGui.Checkbox("Show network stats"u8, ref s.ShowNetStats);
 
-            ImGui.Spacing();
-            ImGui.SeparatorText("Progression"u8);
-            ImGui.Text($"Level {Progress.Level}  ({Progress.Xp} XP, {Progress.Kills} kills)");
-            if (!_confirmReset)
-            {
-                if (ImGui.Button("Reset level"u8))
-                    _confirmReset = true;
-                ImGui.SameLine();
-                ImGui.TextColored(Dim, "Back to level 1 - all unlocks lock again."u8);
-            }
-            else
-            {
-                ImGui.TextColored(Red, "Reset to level 1 and lose all XP and unlocks? This can't be undone."u8);
-                if (ImGui.Button("Yes, reset"u8))
-                {
-                    Progress.Reset();
-                    LoadoutStore.Selected = 0; // only one loadout slot at level 1 (locked picks fall back to defaults when used)
-                    LoadoutStore.Save();
-                    _confirmReset = false;
-                }
-                ImGui.SameLine();
-                if (ImGui.Button("Cancel"u8))
-                    _confirmReset = false;
-            }
             // Where the saves live (SavePaths.cs): they carry over to new builds automatically.
             ImGui.Spacing();
             ImGui.SeparatorText("Saves"u8);
@@ -937,7 +824,7 @@ public sealed partial class Ui
             if (ImGui.Button("Open save folder"u8))
                 SavePaths.OpenFolder();
             ImGui.SameLine();
-            ImGui.TextColored(Dim, "Progress, loadouts and settings carry over to new builds."u8);
+            ImGui.TextColored(Dim, "Loadouts and settings carry over to new builds."u8);
             if (SavePaths.Warning is { } saveWarning)
                 ImGuiSafe.TextColored(Red, saveWarning);
             UpdateSettings(s); // Updates: check at startup, Check for updates (UiUpdates.cs)

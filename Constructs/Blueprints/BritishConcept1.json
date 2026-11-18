@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 2 axles, front set back, inset 1.25 m, hydraulic/leaf, wing 0.5, archetype streamliner, cab style bus front, language streamliner heavy 2.30 m, flare 0.18, tapered 0.9, brow 0.58 1.25 m, tail 0.58 1 m, door right, 9 facets, cab streamliner cab, 6 facets, nose rounded, wear age 0.32 (0 rusty, 0 dirty, 0 sooty, 0 patched, 0 rusted out), body boot, cab enclosed, nose long hood, rear bare, under stilts, layout boot 3.3 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "British Concept 1",
-  "group": "Ministry of Slop",
+  "group": "British",
   "description": "A concept car: a long hood, an enclosed cab, a boot behind the cabin, the gun on a pedestal ahead of it. 1 gun.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#2b2a28"},
@@ -74,8 +74,8 @@
     {"part": "Plate Steel 0.5 m", "weld": {"on": 65, "pos": [0.122, 0.369, -2.006], "rot": [-0.7137, 0.0107, -0.0019, 0.7004]}, "paint": "#c8102e"},
     {"part": "Traffic Cone", "on": 64, "socket": "top", "by": "base"},
     {"part": "Traffic Cone", "on": 33, "socket": "top", "by": "base"},
-    {"part": "Square Beam 0.5 m", "on": 37, "socket": "front01", "by": "-z", "paint": "#2b2a28"},
-    {"part": "Furled Brolly", "on": 69, "socket": "+z", "by": "base"}
+    {"part": "Square Beam 0.5 m", "on": 12, "socket": "+y0", "by": "-z", "paint": "#2b2a28"},
+    {"part": "Long Iron Spike", "on": 69, "socket": "+z", "by": "base"}
   ],
   "wires": [[30, 31], [31, 25], [47, 63], [63, 49]],
   "links": [

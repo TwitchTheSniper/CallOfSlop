@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 2 body 2 kit 2 wear 2, chassis 2 axles, front forward, inset 1.75 m, hydraulic/leaf, wing 0.5, archetype carriage, cab style coachbuilt, language carriage standard 2.46 m, flare 0.03, crowned 0.7, brow 0.75 1.5 m, tail 0.68 1.25 m, door right, cab carriage cab, nose grille, fitting mascot, lopsided left, pods podl on 1 bay sides, trim clinker on 6 bay sides, wear age 0.84 (5 rusty, 12 dirty, 0 sooty, 0 patched, 0 rusted out), body room, cab enclosed, nose ram, rear porch, under stilts, flank panniers, roof none, layout room(Brow T,Bay T,Door,Tail T)
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Highland Wagon 2",
-  "group": "Clan MacSlop",
+  "group": "Highland",
   "description": "A wagon: a ram on the hood, an enclosed cab, a walk-in hull with loot, a drum on the rear porch. 1 gun.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#33302b"},
@@ -109,8 +109,8 @@
     {"part": "Ammo Reel", "on": 98, "socket": "top", "by": "-y"},
     {"part": "Ammo Socket", "on": 93, "socket": "left", "by": "right"},
     {"part": "Lever", "on": 80, "socket": "lever", "by": "-y"},
-    {"part": "Whisky Cask", "on": 57, "socket": "front12", "by": "foot00", "spin": 1},
-    {"part": "Whisky Cask", "on": 57, "socket": "front17", "by": "foot10", "spin": 1},
+    {"part": "Tall Shelf Bay 1", "on": 57, "socket": "front17", "by": "-y.3.0", "spin": 1},
+    {"part": "Traffic Cone", "on": 104, "socket": "+y.1.0", "by": "base"},
     {"part": "Square Beam 0.75 m", "on": 10, "socket": "+y0", "by": "-x0", "spin": 1, "paint": "#33302b"},
     {"part": "Square Beam 0.75 m", "on": 106, "socket": "+x0", "by": "-x0", "spin": 1, "paint": "#33302b"},
     {"part": "Plate Steel 1 m", "on": 107, "socket": "+x0", "by": "back02", "spin": 3, "paint": "#2a2622"},
@@ -123,17 +123,17 @@
     {"part": "Ram Plow", "on": 114, "socket": "front", "by": "back", "paint": "#e8e4d8"},
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 115, "pos": [0.125, 0.34, -1.169], "rot": [-0.6943, 0.0012, -0, 0.7197]}, "paint": "#2b5a3a"},
     {"part": "Hull Loft (decoO UYV-)", "on": 114, "socket": "top", "by": "base"},
-    {"part": "Pipe Box", "on": 36, "socket": "top", "by": "base"},
-    {"part": "Wee Keg", "on": 110, "socket": "front", "by": "base"},
-    {"part": "Coo Heid", "on": 111, "socket": "front", "by": "base"},
-    {"part": "Coo Heid", "on": 112, "socket": "front", "by": "base"},
+    {"part": "Traffic Cone", "on": 110, "socket": "front", "by": "base"},
+    {"part": "Garden Gnome", "on": 111, "socket": "front", "by": "base"},
+    {"part": "Garden Gnome", "on": 112, "socket": "front", "by": "base"},
     {"part": "Hull Loft (podl XBWCY2WZ ~Ce0E0yE91EvuF21E38C3t7yC04G ~Ce0E8_F1uF1-EYWE33C3n7y604B)", "on": 81, "socket": "-x0", "by": "base", "paint": "#6a4527"},
     {"part": "Hull Loft (trimr9 XzW5 ~B00COiCWyD1OCXuCI8AQe6ws02v ~Ce0E8_F1uF1-EYWE33C3n7y604B)", "on": 80, "socket": "+x0", "by": "base", "paint": "#2b5a3a"},
     {"part": "Hull Loft (trimr0 XzW5 ~Ce0E8_F1uF1-EYWE33C3n7y604B ~B00COiCWyD1OCXuCI8AQe6ws02v)", "on": 80, "socket": "-x0", "by": "base", "paint": "#5b4a2f"},
     {"part": "Hull Loft (trimr5 XBW5 ~Ce0E8_F1uF1-EYWE33C3n7y604B ~Ce0E0yE91EvuF21E38C3t7yC04G)", "on": 81, "socket": "+x0", "by": "base", "paint": "#8c2a2a"},
     {"part": "Hull Loft (trimr5 YMW5 ~Ce0E0yE91EvuF21E38C3t7yC04G =)", "on": 82, "socket": "-x0", "by": "base", "paint": "#8c2a2a"},
     {"part": "Hull Loft (trimr7 XaW5 ~Ce0E0yE91EvuF21E38C3t7yC04G ~B80COdCeyCvFCXaCHwAQN6wa02d)", "on": 85, "socket": "+x0", "by": "base", "paint": "#8c2a2a"},
-    {"part": "Hull Loft (trimr9 XaW5 ~B80COdCeyCvFCXaCHwAQN6wa02d ~Ce0E0yE91EvuF21E38C3t7yC04G)", "on": 85, "socket": "-x0", "by": "base", "paint": "#8c2a2a"}
+    {"part": "Hull Loft (trimr9 XaW5 ~B80COdCeyCvFCXaCHwAQN6wa02d ~Ce0E0yE91EvuF21E38C3t7yC04G)", "on": 85, "socket": "-x0", "by": "base", "paint": "#8c2a2a"},
+    {"part": "Phone Mast", "on": 36, "socket": "top", "by": "base"}
   ],
   "wires": [[33, 34], [34, 28], [87, 97], [97, 91], [103, 100]],
   "hoses": [[101, 102]],
@@ -144,5 +144,5 @@
     {"type": "feed", "from": 100, "to": 101, "fromPort": "Ammo out", "toPort": "Ammo in", "laid": true},
     {"type": "pipe", "from": 113, "to": 28, "nodes": [[-0.75, 0.82, 6.3], [-0.75, 0.55, 6.3], [-0.17, 0.55, 6.3], [-0.17, 0.55, 2.375], [-0.17, 0.05, 2.375], [-0.17, 0.05, 0.755], [-0.17, 0.62, 0.755], [-0.17, 0.62, 0.25]], "laid": true}
   ],
-  "loot": [{"step": 104, "table": "highland"}, {"step": 105, "table": "highland"}]
+  "loot": [{"step": 104, "table": "highland"}]
 }

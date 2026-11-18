@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 4 body 4 kit 4 wear 4, chassis 2 axles, front under the hood, inset 1.75 m, swing arm/trailing arm, wing 0.5, cab style bus front, language coach standard 2.38 m, flare 0.04, raked 0.6, brow 0.72 1.5 m, tail 0.88 1.25 m, door right, 8 facets, upper deck over bays 2 to 5, cut 2.18 m, bulwark 1.01 m, stair left at 2.75 m back, cab coach capsule, 6 facets, nose rounded, balcony r, space upper deck, fitting destination board, trim livery on 13 bay sides, wear age 0.66 (5 rusty, 5 dirty, 0 sooty, 0 patched, 0 rusted out), body room, cab cab-over, nose flat, rear gun deck, under stilts, flank loaded, roof none, layout room(Brow L,Bay L-T,Door,Bay T,Bay T-L,Bay L-T,Tail T), plan 2
   "format": "call-of-slop-construct-blueprint/1",
   "name": "British Double Decker 4",
-  "group": "Ministry of Slop",
+  "group": "British",
   "description": "A double-decker bus: a flat nose, a cab-over, a walk-in hull with loot, a stern gun deck. 1 gun.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#1b1c1e"},
@@ -164,12 +164,10 @@
     {"part": "Turret Module", "on": 145, "socket": "+x", "by": "-x"},
     {"part": "Scrap Bunk", "on": 72, "socket": "front34", "by": "foot10"},
     {"part": "Crate Stack", "on": 69, "socket": "centre +y", "by": "foot00", "spin": 1},
-    {"part": "Phone Box", "on": 72, "socket": "front20", "by": "foot10", "spin": 1},
-    {"part": "Tea Urn", "on": 74, "socket": "front13", "by": "foot00", "spin": 2},
-    {"part": "Union Flag", "on": 111, "socket": "up52", "by": "base", "spin": 2},
+    {"part": "Traffic Cone", "on": 111, "socket": "up53", "by": "base", "spin": 2},
     {"part": "Hull Loft (decoD WoWMUSVy)", "on": 39, "socket": "top", "by": "base"},
-    {"part": "Queue Post", "on": 125, "socket": "front01", "by": "base"},
-    {"part": "Queue Post", "on": 138, "socket": "front", "by": "base"},
+    {"part": "Hull Loft (decoJ W0)", "on": 125, "socket": "front01", "by": "base"},
+    {"part": "Hull Loft (decoJ W0)", "on": 129, "socket": "front01", "by": "base"},
     {"part": "Hull Loft (triml3 YMW5 ~BO0BmQBupBuyC1DBvcBXkAv_8II4QR02R ~Cu0DGZDOyDX5DveDvkDgBCgi9h65BI03I)", "on": 105, "socket": "+x0", "by": "base", "paint": "#c8102e"},
     {"part": "Hull Loft (triml0 YMW5 ~Cu0DGZDOyDX5DveDvkDgBCgi9h65BI03I ~BO0BmQBupBuyC1DBvcBXkAv_8II4QR02R)", "on": 105, "socket": "-x0", "by": "base", "paint": "#004225"},
     {"part": "Hull Loft (triml3 XBW5 ~Cu0DGZDOyDX5DveDvkDgBCgi9h65BI03I ~Cu0DGdDOyDfEE1kE1sDoADgTCh3BZQ03Q)", "on": 106, "socket": "+x0", "by": "base", "paint": "#004225"},
@@ -182,12 +180,14 @@
     {"part": "Hull Loft (triml8 XBW5 ~Cu0DGbDOyDfBE1mDgLCgwBZMBZQ03Q ~Cu0DGfDOyDfIE1kE1xDgaChCBZQ03Q)", "on": 112, "socket": "+x0", "by": "base", "paint": "#004225"},
     {"part": "Hull Loft (triml7 XBW5 ~Cu0DGfDOyDfIE1kE1xDgaChCBZQ03Q ~Cu0DGbDOyDfBE1mDgLCgwBZMBZQ03Q)", "on": 112, "socket": "-x0", "by": "base", "paint": "#004225"},
     {"part": "Hull Loft (triml7 XzW5 ~Cu0D0KDGfDOyDfIE1kE1xDgaChCBZQ03Q ~Bm0BuIC0bC8yCHACXlCIKBIu8ZJ6RQ03Q)", "on": 113, "socket": "+x0", "by": "base", "paint": "#004225"},
-    {"part": "Hull Loft (triml6 XzW5 ~Bm0BuIC0bC8yCHACXlCIKBIu8ZJ6RQ03Q ~Cu0D0KDGfDOyDfIE1kE1xDgaChCBZQ03Q)", "on": 113, "socket": "-x0", "by": "base", "paint": "#004225"}
+    {"part": "Hull Loft (triml6 XzW5 ~Bm0BuIC0bC8yCHACXlCIKBIu8ZJ6RQ03Q ~Cu0D0KDGfDOyDfIE1kE1xDgaChCBZQ03Q)", "on": 113, "socket": "-x0", "by": "base", "paint": "#004225"},
+    {"part": "Square Beam 0.5 m", "on": 71, "socket": "front00", "by": "-z", "paint": "#1b1c1e"},
+    {"part": "Long Iron Spike", "on": 176, "socket": "+z", "by": "base"}
   ],
   "wires": [[37, 38], [38, 32], [145, 156], [156, 147]],
   "links": [
     {"type": "shaft", "from": 33, "to": 10, "fromPort": "Output shaft", "toPort": "Input shaft"},
     {"type": "pipe", "from": 142, "to": 32, "nodes": [[1.5, 0.82, 9.05], [1.5, 0.55, 9.05], [0.67, 0.55, 9.05], [0.67, 0.55, 2.125], [0.67, 0.05, 2.125], [0.67, 0.05, 0.505], [0.67, 0.25, 0.505], [-0.17, 0.25, 0.505], [-0.17, 0.62, 0.505], [-0.17, 0.62, 0]], "laid": true}
   ],
-  "loot": [{"step": 157, "table": "british"}, {"step": 158, "table": "british"}, {"step": 159, "table": "british"}]
+  "loot": [{"step": 157, "table": "british"}, {"step": 158, "table": "british"}]
 }

@@ -107,6 +107,8 @@ public sealed class NavOrder
     internal byte BoardSeg;
     internal System.Numerics.Vector3 BoardSpot, BoardOut, BoardUp, BoardDrop;
     internal System.Numerics.Quaternion BoardRot;
+    internal sbyte BoardSide; // host: which way (+1/-1 along the carrier's X) the pod leaves from under it, chosen once (0: not yet)
+    internal int BoardDropFor; // host: the ticks its drop out of the dock may take
     internal int BoardDoor = -1, BoardTicks, BoardAll;
 }
 
@@ -216,6 +218,14 @@ public sealed partial class Game
             // (2026-11-16: at 100,000x the card said "falls back" for a ship the host had 2 km over Glacier).
             if (!IsServer && SpaceShipIdOf(c) is var ship and not 0 && s.SampleShip(ship, t, out pos, out vel))
                 return true;
+            // The host's likewise: its construct is posed at the last tick, and a frame drawn between ticks at
+            // 100,000x is up to half an hour later, so the path drawn from the pose against bodies at the frame's time
+            // jumped about every frame (2026-11-17). The ship's own orbit carried to the time moves with them.
+            if (IsServer && c.SpaceShip != 0 && s.Flight is { } hf && hf.Ships.IndexOfId(c.SpaceShip) is var hi and >= 0)
+            {
+                hf.Ships.StateAt(hi, t, out pos, out vel);
+                return true;
+            }
             var pose = s.Bubble.PoseAt(t);
             var com = Vec3d.From(c.WorldCom);
             pos = pose.ToEcliptic(com);
@@ -229,8 +239,7 @@ public sealed partial class Game
             var i = f.Ships.IndexOfId(c.SpaceShip);
             if (i < 0)
                 return false;
-            pos = f.Ships.PositionOf(i);
-            vel = f.Ships.VelocityOf(i);
+            f.Ships.StateAt(i, t, out pos, out vel); // (carried to the time asked: a frame between ticks)
             return true;
         }
         return s.SampleShip(c.SpaceShip, t, out pos, out vel);
@@ -401,6 +410,8 @@ public sealed partial class Game
     {
         if (c != null)
         {
+            if (c.ThrustPuppet)
+                NavBoardJetsOut(c); // (a pod's jets lit by its Board order: GameNavBoard.cs)
             c.NavThrottle = -1;
             c.NavClimb = 0;
             c.NavLand = 0;

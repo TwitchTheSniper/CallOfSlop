@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 1 body 1 kit 1 wear 1, chassis 3 axles, tandem 1.5 m, front under the hood, inset 1.75 m, leaf/leaf, wing 0.75, cab style tourer, language boat standard 2.19 m, flare 0.05, sheer 0.8, brow 0.81 1.25 m, tail 0.78 0.75 m, door left, cab boat cab, nose grille, wear age 0.68 (1 rusty, 3 dirty, 0 sooty, 0 patched, 0 rusted out), body gun bay+tank, cab enclosed, nose long hood, rear hitch, under stilts, layout gun bay 2 m+tank 3 m
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Highland Scrap Tanker 1",
-  "group": "Clan MacSlop",
+  "group": "Highland",
   "description": "A scrap tanker: a long hood, an enclosed cab, a gun behind the cab, a big round tank of fuel, a tow hitch. 1 gun.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#2a2622"},
@@ -80,8 +80,9 @@
     {"part": "Wide Arch Fender", "on": 69, "socket": "-x0", "by": "mount", "paint": "#e8e4d8"},
     {"part": "Tread Plate 0.5 m", "weld": {"on": 70, "pos": [0.135, 0.421, -1.368], "rot": [-0.698, -0.0298, -0.0013, 0.7155]}, "paint": "#1f4a2e"},
     {"part": "Plate Steel 0.5 m", "weld": {"on": 71, "pos": [1.316, 0.582, -0.37], "rot": [0.0169, 0.001, -0.716, 0.6978]}, "paint": "#23395d"},
-    {"part": "Pipe Box", "on": 69, "socket": "top", "by": "base"},
-    {"part": "Thistle", "on": 41, "socket": "top", "by": "base"}
+    {"part": "Traffic Cone", "on": 69, "socket": "top", "by": "base"},
+    {"part": "Square Beam 0.5 m", "on": 11, "socket": "+y1", "by": "-z", "paint": "#2a2622"},
+    {"part": "Phone Mast", "on": 76, "socket": "+z", "by": "base"}
   ],
   "wires": [[38, 39], [39, 32], [59, 66], [66, 61], [66, 67]],
   "links": [

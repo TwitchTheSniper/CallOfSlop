@@ -152,7 +152,10 @@ ORBIT, DRIVE OFF") and burns again only if the ship has drifted well off its cir
 Board, for a ship with a boarding pod docked on it (a craft with mag locks and a breaching cutter facing its nose: the Zero
 Day's Limpet, [limpet.md](../sandbox/constructs/limpet.md)). Pick the carrier, then right-click another craft: the part
 under the cursor (in its hologram; zoom in until it is large) is the spot, a door if one is under it, and the menu offers
-BOARD: SEAL ON THIS DOOR or BOARD: CUT IN HERE under the Dock line (zoomed out, or off the hull, it says how to pick a spot instead). The order goes on the pod (its card shows it): it flies out from under the
+BOARD: SEAL ON THIS DOOR or BOARD: CUT IN HERE under the Dock line. Zoomed out (or off its hull) it offers BOARD: CUT INTO
+ITS HULL... and BOARD: SEAL ON A DOOR... instead (Karl, 2026-11-18): the view flies to that craft and pins on it, a banner
+says what to click, the cursor's label names the door (or says CUT IN HERE), and a left click sends the order and puts the
+view back as it was; a right click or Esc puts it back with no order (UI/UiCommandBoard.cs). The order goes on the pod (its card shows it): it flies out from under the
 carrier, across, grips, then opens the door or cuts through and opens its own. On the wire its point is the target's id,
 the part and 1 for a door (protocol 342); the host works the spot and the way out of the skin there. The pod must be within
 3 km of the target. `order board N door|hull` (the window tool) gives it from a script.
@@ -257,11 +260,17 @@ docs/sandbox/design/faction-controllers.md section 6.2, so he chose docking alon
 Karl, 2026-11-16: ships coast between planets in real time, and the player speeds time up from the command view. (It
 was the "time warp" of the F7 Space window until then; warp no longer means changing time: docs/archive/space/TIME-WARP.md.)
 
-- **The buttons** (host only) sit under the clock, top left: II (pause), 1x, 10x, 100x, 1K, 10K, 100K
-  (`Game.RequestTimeSpeed`). A joined player sees the clock and its speed, not the buttons.
+- **The buttons** (host only) sit under the clock, top left: II (pause), 1x, 10x, 100x, 1K, 10K, 100K, 1M
+  (`Game.RequestTimeSpeed`). A joined player sees the clock and its speed, not the buttons. A button asks for its speed
+  whatever the settings say; the settings' limit holds the clock and the clock line says so.
 - **What holds it lower** (the clock line says which): any ship in space burning (`SpaceTimeRule`: "A SHIP IS
   BURNING"); a ship under orders about to burn ("SLOWED FOR A BURN": `Game.NavSpeedCap`, see below); the ships' own
-  step budget (`SpaceShips.MaxSpeed`); the host's Settings > Gameplay "Fastest time speed".
+  step budget (`SpaceShips.MaxSpeed`: also a ship on rails nearing a sphere of influence, or a coasting ship whose orbit
+  dips under a world's sky, `SpaceShips.Sky`); the host's Settings > Gameplay "Fastest time speed".
+- **Over 10K ships go on rails** (2026-11-17, `SpaceTimeRule.WarpRailsAbove`): a coasting ship whose other bodies' pull
+  is under 2% of its primary's flies its own two-body orbit (the patched conic, as space games do at high warp), exact
+  and as cheap at 1M as at 1x, so a moon's tide no longer holds time near 15,000x and the drawn orbit stands still. At
+  10K and under they fly the full model as before. Notes: docs/space/warp-notes.md.
 - Life in a bubble (walking, building, a ship in a sky) runs at 60 Hz whatever the clock does; only the sky, the
   orbits and ships in space go faster.
 
@@ -272,7 +281,7 @@ target's planet: `NavTrip.Crosses`) is a **trip**: the transfer conics Hohmann f
 2026-11-16: "flip and burn level of realism", "faster than Hohmann but has the same traits"). Frostreach is real-sized:
 its planets are 0.35 to 4 AU from a star of 1.8 suns, and they go round at 20 to 67 km/s. A Magpie (4.3 g, 26 km/s of dV
 at full fuel use) reaches Mille from Glacier in about 400 days of game time on half its tank; at 100K that is about six
-minutes. Cinder, deep in the star's well, is out of its reach (36 km/s at the least): a ship with more dV, or the "Fuel
+minutes, at 1M about 35 seconds. Cinder, deep in the star's well, is out of its reach (36 km/s at the least): a ship with more dV, or the "Fuel
 use in space" setting, gets there.
 
 1. **Plan** (`NavTrip.Search`, a few departures a tick: `Game.NavPlanPerTick`, time held at 1x for the second it
@@ -288,7 +297,8 @@ use in space" setting, gets there.
    its full pull wobbles a low orbit's shape by kilometres over the days (Slopolis round Glacier): the orbit may
    wander, and is trimmed towards a circle (at 1x, seconds) only when its low point nears the sky's edge (under which
    the ship would be a physics body in the bubble again) or its high point nears the edge of the world's reach.
-   Round a small world time runs at what the ship's steps allow (about 15,000x round Glacier), not the full 100K.
+   Round a small world time ran at what the ship's steps allowed (about 15,000x round Glacier) until ships went on rails
+   above 10K (2026-11-17): a parked orbit now runs at the full 1M, and on rails it doesn't wander.
 3. **Depart**: the burn out, closed-loop, re-solved every tick for the planned arrival from where the ship really is
    (minutes at 4 g), bent round any body in the way (`NavGuidance.Avoid`).
 4. **Coast** round the star with the drive off; every half second (`NavCoastCheck`) it solves again and burns back onto
@@ -312,7 +322,7 @@ than the plan said.
 | --- | --- | --- |
 | Trip fuel | 50% | The share of a ship's dV one trip may spend (10 to 95%; `Game.TripShare`). More is quicker; less leaves fuel for the way home |
 | Fuel use in space | 100% | The share of their fuel thrusters burn in space (10 to 100%; `ConstructPhysics.SpaceFuelScale`, sent to clients with the space clock). At 25% a Magpie carries about 100 km/s and reaches any planet in 120 to 170 days |
-| Fastest time speed | 100000x | The fastest the command view's time speed runs (`Game.TimeSpeedMost`) |
+| Fastest time speed | 1000000x | The fastest the command view's time speed runs (`Game.TimeSpeedMost`) |
 
 `--trip-check [FILE] [--accel A] [--dv DV] [--share S] [--day D]` prints the trip an order would plan between every pair
 of planets (default Frostreach, a Magpie leaving on day 0): when it leaves, how long it takes and its dV.

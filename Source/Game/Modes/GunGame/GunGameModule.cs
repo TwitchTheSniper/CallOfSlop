@@ -1,7 +1,7 @@
 namespace CallOfSlop;
 
 /// <summary>
-/// Gun Game's weapon ladder: the weapons in the order Progression unlocks them (starters first), cut down to
+/// Gun Game's weapon ladder: the weapons in the weapon list's order, cut down to
 /// <see cref="Steps"/> evenly spaced steps so a match doesn't take 50 kills. The first step is the first weapon of the
 /// unlock order and the last step is the last one. Everyone plays the ladder whatever they have unlocked.
 /// </summary>
@@ -26,7 +26,7 @@ public static class GunGame
             {
                 _builtFrom = Weapons.All;
                 // Launchers sit out: a rocket a kill would turn the climb into a splash fest (and their ammo is limited).
-                var order = Progress.All.Where(u => u.Weapon is { IsLauncher: false }).Select(u => u.Weapon!).Distinct().ToList();
+                var order = Weapons.All.Where(w => !w.IsLauncher && w.Slot is Slot.Primary or Slot.Secondary).ToList(); // (the weapon list's order: the unlock table it climbed went with levelling, 2026-11-17)
                 _ladder = Build(order.Count > 0 ? order : [Weapons.DefaultPrimary]);
             }
             return _ladder;

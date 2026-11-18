@@ -52,8 +52,6 @@ public sealed class CMedia
 
     /// <summary>Where a page's own video or audio is by the shared clock.</summary>
     public float InnerPosition(uint tick) => Inner == 1 && tick >= InnerTick ? InnerAt + (tick - InnerTick) * World.TickDt : InnerAt;
-    internal bool PipesDriven; // a Pipe Box's construct had a driver at the last check (ConstructPipes.cs; the server's own, never sent or saved)
-    internal byte PipesIdle; // seconds since its driver left, while it plays
 
     public string? Entry => Index < List.Length ? List[Index] : null;
 
@@ -85,7 +83,6 @@ public static class ConstructMedia
             return;
         ConstructParts.Known(m, ["hear", "near", "width", "height", "web", "pipes"], $"{file}, media");
         d.IsMedia = true;
-        d.MediaPipes = ConstructParts.Opt(m, "pipes") is { ValueKind: JsonValueKind.True }; // (a Pipe Box: ConstructPipes.cs)
         d.IsWeb = ConstructParts.Opt(m, "web") is { ValueKind: JsonValueKind.True };
         d.MediaHear = ConstructParts.Num(ConstructParts.Need(m, "hear", $"{file}, media"), file, "media.hear");
         d.MediaNear = ConstructParts.Num(ConstructParts.Need(m, "near", $"{file}, media"), file, "media.near");

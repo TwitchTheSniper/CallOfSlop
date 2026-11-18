@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 3 body 3 kit 3 wear 3, chassis 2 axles, front under the hood, inset 1.25 m, coil/leaf, wing 0.5, cab style bus front, language coach heavy 2.82 m, flare 0.20, raked 1.0, brow 0.67 1.25 m, tail 0.82 1 m, door left, 9 facets, upper saloon over bays 1 to 4, cut 2.36 m, storey 2.14 m, stair right at 2.25 m back, cab coach capsule, 6 facets, nose rounded, balcony r, space upper saloon, fitting destination board, trim livery on 9 bay sides, wear age 0.58 (5 rusty, 6 dirty, 0 sooty, 0 patched, 0 rusted out), body gap+room, cab cab-over, nose flat, rear gun deck, under tub, flank panniers, roof none, layout gap 1 m+room(Brow T,Bay T-N,Bay N-T,Door,Bay T-L,Tail L)
   "format": "call-of-slop-construct-blueprint/1",
   "name": "British War Bus 3",
-  "group": "Ministry of Slop",
+  "group": "British",
   "description": "A war bus: a flat nose, a cab-over, bare rails behind the cab, a walk-in hull with loot, a stern gun deck. 1 gun.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#2b2a28"},
@@ -154,9 +154,9 @@
     {"part": "Turret Module", "on": 139, "socket": "+x", "by": "-x"},
     {"part": "Scrap Bunk", "on": 53, "socket": "front03", "by": "foot11", "spin": 3},
     {"part": "Crew Bench", "on": 56, "socket": "centre +y", "by": "foot00"},
-    {"part": "Traffic Cone", "on": 98, "socket": "up2", "by": "base", "spin": 1},
+    {"part": "Loudhailer", "on": 98, "socket": "up1", "by": "base"},
     {"part": "Hull Loft (decoD WoWMURVy)", "on": 39, "socket": "top", "by": "base"},
-    {"part": "Traffic Cone", "on": 122, "socket": "front", "by": "base"},
+    {"part": "Garden Gnome", "on": 123, "socket": "front", "by": "base"},
     {"part": "Hull Loft (triml5 XzW5 ~BG0BePBmnBmyC9AD9ZD1kCnxBYI8gX5Af02f ~Cm0D8cDGyE1DFvkFvqFoQFYjFB0DpaCpi03i)", "on": 94, "socket": "+x0", "by": "base", "paint": "#e8dfc8"},
     {"part": "Hull Loft (triml2 XzW5 ~Cm0D8cDGyE1DFvkFvqFoQFYjFB0DpaCpi03i ~BG0BePBmnBmyC9AD9ZD1kCnxBYI8gX5Af02f)", "on": 94, "socket": "-x0", "by": "base", "paint": "#e8dfc8"},
     {"part": "Hull Loft (triml7 XBW5 ~BG0BWcBeyC9DD1kD1pCwPCQ_BZZBZi03i ~Cm0D0MD8hDGyEnMFvkFw1FoiFBMERi03i)", "on": 98, "socket": "+x0", "by": "base", "paint": "#e8dfc8"},
@@ -165,8 +165,7 @@
     {"part": "Hull Loft (triml4 XaW5 ~Cm0D8hDGyEnMFvkFw1FoiFBMERi03i ~Cm0D8fDGyEPIFvkFvwFoZFBCE3i03i)", "on": 103, "socket": "+x0", "by": "base", "paint": "#e8dfc8"},
     {"part": "Hull Loft (triml1 XaW5 ~Cm0D8fDGyEPIFvkFvwFoZFBCE3i03i ~Cm0D8hDGyEnMFvkFw1FoiFBMERi03i)", "on": 103, "socket": "-x0", "by": "base", "paint": "#e8dfc8"},
     {"part": "Hull Loft (triml0 XaW5 ~Cm0D0KD8fDGyEPIFvkFvwFoZFYuFBCE3i03i ~Be0C0YC8yCP5DneDnkDgADAiBpD8xX5Ji03i)", "on": 104, "socket": "+x0", "by": "base", "paint": "#e8dfc8"},
-    {"part": "Hull Loft (triml9 XaW5 ~Be0C0YC8yCP5DneDnkDgADAiBpD8xX5Ji03i ~Cm0D0KD8fDGyEPIFvkFvwFoZFYuFBCE3i03i)", "on": 104, "socket": "-x0", "by": "base", "paint": "#c8102e"},
-    {"part": "Rain Gauge", "on": 135, "socket": "front", "by": "base"}
+    {"part": "Hull Loft (triml9 XaW5 ~Be0C0YC8yCP5DneDnkDgADAiBpD8xX5Ji03i ~Cm0D0KD8fDGyEPIFvkFvwFoZFYuFBCE3i03i)", "on": 104, "socket": "-x0", "by": "base", "paint": "#c8102e"}
   ],
   "wires": [[36, 37], [37, 31], [139, 146], [146, 141]],
   "links": [

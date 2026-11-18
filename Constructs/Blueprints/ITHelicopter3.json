@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "IT Helicopter 3",
-  "group": "IT Department",
+  "group": "IT",
   "description": "A light helicopter on skids, a cab round its seat. Shift climbs, Ctrl sinks, W and S lean it on, Q and E sideways, A and D turn.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#3b3f44"},

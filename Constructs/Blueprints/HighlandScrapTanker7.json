@@ -2,7 +2,7 @@
   // kit 5; seeds chassis 7 body 7 kit 7 wear 7, chassis 3 axles, tandem 1.5 m, front under the hood, inset 1.5 m, strut/strut, wing 0.75, cab style coachbuilt, language boat standard 2.16 m, flare 0.12, sheer 0.8, brow 0.80 1.5 m, tail 0.61 1 m, door right, cab boat cab, nose grille, fitting mascot, wear age 1.06 (1 rusty, 10 dirty, 0 sooty, 1 patched, 1 rusted out), body gun bay+tank+bed, cab enclosed, nose long hood, rear hitch, under stilts, sides walls, layout gun bay 2 m+tank 2 m+bed 2 m, plan 2
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Highland Scrap Tanker 7",
-  "group": "Clan MacSlop",
+  "group": "Highland",
   "description": "A scrap tanker: a long hood, an enclosed cab, a gun behind the cab, a big round tank of fuel, an open bed, a tow hitch. 1 gun.",
   "steps": [
     {"part": "Square Beam 2 m", "paint": "#33302b"},
@@ -103,12 +103,13 @@
     {"part": "Tread Plate 0.5 m", "weld": {"on": 85, "pos": [-1.046, 0.653, 6.747], "rot": [-0.016, -0.0097, 0.7185, 0.6953]}, "paint": "#1f4a2e"},
     {"part": "Tread Plate 0.5 m", "weld": {"on": 86, "pos": [-1.063, 0.556, 7.259], "rot": [-0.0066, 0.0249, 0.6917, 0.7218]}, "paint": "#23395d"},
     {"part": "Hull Loft (decoO UZV-)", "on": 90, "socket": "top", "by": "base"},
-    {"part": "Pipe Box", "on": 42, "socket": "top", "by": "base"},
-    {"part": "Wee Caber", "on": 84, "socket": "front11", "by": "base"},
-    {"part": "Wee Caber", "on": 86, "socket": "front00", "by": "base"},
-    {"part": "Wee Caber", "on": 87, "socket": "front11", "by": "base"},
-    {"part": "Wee Keg", "on": 59, "socket": "front11", "by": "base"},
-    {"part": "Coo Heid", "on": 63, "socket": "front13", "by": "base"},
+    {"part": "Iron Spike", "on": 84, "socket": "front11", "by": "base"},
+    {"part": "Iron Spike", "on": 86, "socket": "front00", "by": "base"},
+    {"part": "Iron Spike", "on": 87, "socket": "front11", "by": "base"},
+    {"part": "Traffic Cone", "on": 42, "socket": "top", "by": "base"},
+    {"part": "Traffic Cone", "on": 59, "socket": "front11", "by": "base"},
+    {"part": "Garden Gnome", "on": 63, "socket": "front13", "by": "base"},
+    {"part": "Satellite Dish", "on": 61, "socket": "front07", "by": "base"},
     {"part": "Plate Steel 0.5 m", "weld": {"on": 91, "pos": [0.118, 0.51, -1.346], "rot": [-0.7093, 0.0233, 0.0094, 0.7045]}, "paint": "#7b1e22"}
   ],
   "wires": [[39, 40], [40, 33], [72, 82], [82, 74]],

@@ -99,6 +99,7 @@ public sealed partial class Ui
         _cmdFocusAuto = true;
         _cmdFocusBody = -1;
         _cmdFocusShip = 0;
+        _cmdBoardShip = 0; // (a Board pick left open when the view shut is dropped)
         _cmdFocusKey = int.MinValue;
         _cmdPan = _cmdGlide = Vec3d.Zero;
         _cmdSpanWant = session.Constructs.Get(_cmdSel) is { } c ? Math.Max(40, c.Radius * 5.5) : 4000;
@@ -174,6 +175,7 @@ public sealed partial class Ui
             CmdChrome(dl, session, s, fade, now, keyName);
             CmdRoster(dl, session, s, fade);
             CmdShipCard(dl, session, s, fade, now);
+            CmdBoardDraw(dl, session, fade); // (picking where to board: UiCommandBoard.cs)
             CmdInput(session, s);
             CmdOrderPopup(session, s);
         }
@@ -693,8 +695,8 @@ public sealed partial class Ui
     // ---------------------------------------------------------------------------------------------------------------
 
     private CmdLabel _cmdClock, _cmdScale;
-    private static readonly int[] CmdSpeeds = [0, 1, 10, 100, 1000, 10_000, 100_000];
-    private static readonly string[] CmdSpeedLabels = ["II", "1x", "10x", "100x", "1K", "10K", "100K"];
+    private static readonly int[] CmdSpeeds = [0, 1, 10, 100, 1000, 10_000, 100_000, 1_000_000];
+    private static readonly string[] CmdSpeedLabels = ["II", "1x", "10x", "100x", "1K", "10K", "100K", "1M"];
     private static readonly string[] CmdHeldText = ["", "   (A SHIP IS BURNING)", "   (SLOWED FOR A BURN)", "   (SHIPS' LIMIT)", "   (SETTINGS' LIMIT)"];
 
     /// <summary>Why the time runs slower than the host asked (an index into <see cref="CmdHeldText"/>; 0: it doesn't, or this is a client).</summary>
@@ -743,7 +745,7 @@ public sealed partial class Ui
             {
                 var q0 = p0 + new float2(k * (tw + 3 * _scale), 76 * _scale);
                 if (CmdButton(dl, q0, q0 + new float2(tw, 19 * _scale), CmdSpeedLabels[k], k == 0 ? CmdAmber : CmdCyan, fade, hf.RequestedSpeed == CmdSpeeds[k], 11))
-                    g.RequestTimeSpeed(Math.Min(CmdSpeeds[k], Math.Max(1, g.TimeSpeedMost)));
+                    g.RequestTimeSpeed(CmdSpeeds[k]); // (the settings' limit holds it, and the clock line says so)
             }
         }
 
@@ -881,11 +883,13 @@ public sealed partial class Ui
             if (!ImGui.IsMouseDown(ImGuiMouseButton.Left))
             {
                 _cmdHeldL = false;
-                if (!_cmdDragL)
+                if (!_cmdDragL && _cmdBoardShip != 0)
+                    CmdBoardClick(g, m); // (picking where to board: UiCommandBoard.cs)
+                else if (!_cmdDragL)
                     CmdPick(g, s, m, ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left));
             }
         }
-        if (free && ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
+        if (free && _cmdBoardShip == 0 && ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
             CmdPick(g, s, m, true);
 
         // Right: a click orders, a drag turns the view.
@@ -907,7 +911,12 @@ public sealed partial class Ui
             if (!ImGui.IsMouseDown(ImGuiMouseButton.Right))
             {
                 _cmdHeldR = false;
-                if (!_cmdDragR)
+                if (!_cmdDragR && _cmdBoardShip != 0)
+                {
+                    CmdNote("BOARDING CANCELLED");
+                    CmdBoardEnd();
+                }
+                else if (!_cmdDragR)
                     CmdOrderAt(g, s, m);
             }
         }
