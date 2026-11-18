@@ -126,8 +126,8 @@ public static class NoclipMove
                 return planet.Center + d / len * max;
             return len < 2f ? planet.Center + (len > 1e-3f ? d / len : Vector3.UnitY) * 2f : feet; // (the planet's very centre has no up)
         }
-        feet.X = Math.Clamp(feet.X, -map.HalfX + World.PlayerRadius, map.HalfX - World.PlayerRadius);
-        feet.Z = Math.Clamp(feet.Z, -map.HalfZ + World.PlayerRadius, map.HalfZ - World.PlayerRadius);
+        feet.X = Math.Clamp(feet.X, -map.HalfX + World.BodyRadius, map.HalfX - World.BodyRadius);
+        feet.Z = Math.Clamp(feet.Z, -map.HalfZ + World.BodyRadius, map.HalfZ - World.BodyRadius);
         var terrain = map.TerrainCollision;
         feet.Y = Math.Clamp(feet.Y, (terrain?.Data.LowestGround ?? 0f) - Floor, (terrain?.Data.HighestGround ?? 0f) + Ceiling);
         return feet;
@@ -154,7 +154,7 @@ public static class NoclipMove
     {
         var solid = GravityFrames.Curved
             ? World.Physics.OverlapCapsule(SweptMover.CapsuleAt(feet, Stance.Stand, up), new QueryFilter(QueryLayers.Static | QueryLayers.Movers | QueryLayers.Boundary, tick))
-            : MoverPhysics.BlockedAll(feet, World.PlayerHeight, tick);
-        return solid || bodies != null && bodies.BodyIn(feet, World.PlayerHeight);
+            : MoverPhysics.BlockedAll(feet, World.BodyHeight, tick);
+        return solid || bodies != null && bodies.BodyIn(feet, World.BodyHeight);
     }
 }

@@ -16,14 +16,14 @@ public static partial class Program
     private static int _wsClipBodies, _wsClipLoose;
     private static bool _wsClipToolAsked;
 
-    private static bool WsPlayKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "sit" or "seated" or "getout" or "recycle" or "clip" or "partinfo" or "partlook" or "hands" or "cabto" or "damage" or "makeengine" or "standon" or "aimintake" or "feetup" or "cave" or "spawnbp" or "bringon" or "dropmotion" or "shellwear" or "shellleave" or "shellfix" or "shells";
+    private static bool WsPlayKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "sit" or "seated" or "getout" or "recycle" or "clip" or "partinfo" or "partlook" or "hands" or "cabto" or "damage" or "makeengine" or "standon" or "aimintake" or "feetup" or "cave" or "spawnbp" or "bringon" or "dropmotion" or "shellwear" or "shellleave" or "shellfix" or "shells" or "hopper";
 
     private static bool WsPlayVerb(Game g, Player me, string verb, string arg)
     {
         var ci = System.Globalization.CultureInfo.InvariantCulture;
         switch (verb)
         {
-            case "shells" when g.IsServer: // host: every shell in flight: kind, age, where it is from the body that fired it, its speed against it, its target; and each body's radar lock
+            case "shells" when g.IsServer: // host: "shells [look|lock]": every shell in flight: kind, age, where it is from the body that fired it, its speed against it, its target; and each body's radar lock
             {
                 var w = g.Constructs;
                 foreach (var b in w.Bodies)
@@ -35,6 +35,8 @@ public static partial class Program
                         WsSay(string.Create(ci, $"shells: contact body {ct.Id}, {Vector3.Distance(ct.WorldCom, rc.WorldCom):0} m"));
                 if (arg == "look" && g.RadarContactCount > 0 && w.Get(g.RadarContacts[0]) is { } first)
                     WsLook(g, me.Eye, first.WorldCom); // ("shells look": the look turned onto the nearest contact, as the mouse would turn it)
+                if (arg == "lock" && g.RadarContactCount > 0 && w.Get(g.RadarContacts[0]) is { } locked)
+                    WsSay($"shells: lock {(g.RadarPick(me.Eye, Vector3.Normalize(locked.WorldCom - me.Eye)) ? "taken" : "refused")}"); // ("shells lock": the radar key's lock on the nearest contact, wherever a seat lets the look turn)
                 WsSay($"shells: {w.ShellCount} in flight");
                 for (var k = 0; k < w.ShellCount; k++)
                 {
@@ -99,6 +101,18 @@ public static partial class Program
                         break;
                     }
                 return true;
+            case "hopper": // "hopper": this peer's shell frame, its size (eye, hit box, mover scale) and its ore hopper as heard; the host adds the server's hopper (GameShellHopper.cs)
+            {
+                var f = ShellFrames.Of(me.ShellFrame);
+                using (World.Body(me.Sim))
+                    WsSay(FormattableString.Invariant($"hopper: in shell {me.InShell}, frame {me.ShellFrame} ({f.Name}, x{ShellFrames.ScaleOf(me):0.00}, pace x{Game.ShellMoveMult(me):0.00}), sim frame {me.Sim.Frame}, eye {Vector3.Distance(me.Eye, me.Position):0.00} m, height {World.HeightOf(me.Sim.Stance):0.00} m, radius {World.BodyRadius:0.00} m; heard {me.HopperAmount} {RecyclingTable.Current.NameOf(me.HopperMaterial)}")
+                        + (g.IsServer ? $"; server {g.SandboxHands.Hoppers[me.Id].Amount}/{g.SandboxHands.Hoppers[me.Id].Capacity} {RecyclingTable.Current.NameOf(g.SandboxHands.Hoppers[me.Id].Material)}" : "")
+                        + $"; inventory stone {g.SandboxInventory(me.Id).Materials[RecyclingTable.Current.IdOf("stone")]}, dirt {g.SandboxInventory(me.Id).Materials[RecyclingTable.Current.IdOf("dirt")]}");
+                foreach (var o in g.Players.Values)
+                    if (o != me)
+                        WsSay(string.Create(ci, $"hopper: player {o.Id} in shell {o.InShell}, frame {o.ShellFrame}, heard {o.HopperAmount} {RecyclingTable.Current.NameOf(o.HopperMaterial)}"));
+                return true;
+            }
             case "shellleave": // "shellleave": the Esc menu's Leave the shell
                 g.ShellAskLeave();
                 return true;
@@ -113,6 +127,14 @@ public static partial class Program
             case "crewfaction": // "crewfaction NAME": host, a test state: the first crewed body's crew is of that NPC faction kind
                 if (g.IsServer)
                     Console.WriteLine($"[windowshot] crewfaction: {g.CrewSetFaction(arg)}");
+                return true;
+            case "crewgroup": // "crewgroup NAME": host, a test state: every crewed body's crew is of that power, formed into one patrol group
+                if (g.IsServer)
+                    Console.WriteLine($"[windowshot] crewgroup: {g.CrewGroupAll(arg)}");
+                return true;
+            case "crewown": // "crewown": host, a test state: the last crewed body becomes this player's own crew
+                if (g.IsServer)
+                    Console.WriteLine($"[windowshot] crewown: {g.CrewMakeOwn(me)}");
                 return true;
             case "crewdisarm": // "crewdisarm": host, a server shortcut: this player is put by the first crewed body's scuttle charge and starts its disarm (the Mend act's server path)
                 if (g.IsServer)
@@ -141,6 +163,12 @@ public static partial class Program
                 Console.WriteLine($"[windowshot] crewfleet: {(g.IsServer ? g.CrewFleetLines() : $"{g.IntelMarks.Count} intel marks")}");
                 foreach (var body in g.CrewInfo.Keys)
                     Console.WriteLine($"[windowshot] crewfleet: look line of {body}: {g.CrewLook(body)}"); // (as this peer has it: Msg.CrewSeats)
+                return true;
+            case "crewpowers": // "crewpowers [near]": host: each power's stock, ships and missions (near: its places laid again 300-450 m round this player); a client: the news and powers gone (faction-controllers.md phase 3)
+                Console.WriteLine($"[windowshot] crewpowers: {(g.IsServer ? g.CrewPowersLine(arg) : $"{g.PowerNews.Count} news lines, last \"{g.PowerNews.LastOrDefault()}\"; powers gone {g.FactionTable.PowerGone:X4}; grid {g.FactionTable.PowerCount} powers, {g.FactionTable.PactCount} pacts")}");
+                return true;
+            case "crewterritory": // "crewterritory [near|leave]": host: planets, sites and far groups (near: a far Take group put 3.5 km from this player; leave: the far ranges shrunk so nobody counts as near: its bodies collapse); a client: its map (faction-controllers.md phase 4)
+                Console.WriteLine($"[windowshot] crewterritory: {(g.IsServer ? g.CrewTerritoryLine(me, arg) : g.FactionMapLine())}");
                 return true;
             case "crewofficer": // "crewofficer question|ransom": host: this player questions or ransoms the first officer prisoner
                 if (g.IsServer)

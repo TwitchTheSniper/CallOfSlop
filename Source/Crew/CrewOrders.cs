@@ -131,6 +131,8 @@ public sealed partial class ShipAi
             int seat = _seats[s];
             if (seat >= c.PartCount || !SeatFree(c, seat) || c.Parts[seat].Broken || !Manned(seat))
                 continue;
+            if (PointDefence(world, c, s))
+                continue; // (a missile coming for it first: ConstructShipAi.cs)
             if (!has)
             {
                 GunSeat(c, s, CPart.Occupied, c.Parts[seat].AimYaw, c.Parts[seat].AimPitch);

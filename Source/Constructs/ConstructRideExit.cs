@@ -91,7 +91,7 @@ public static partial class ConstructRide
 
     private static bool BodyFits(ConstructWorld w, Construct c, Construct deck, Vector3 feet, Vector3 up, float height)
     {
-        var r = World.PlayerRadius * 0.9f;
+        var r = World.BodyRadius * 0.9f; // (a robot shell's frame: its size, World.Body)
         var a = feet + up * (r + 0.02f); // (the bottom of the body clears the floor by this)
         var b = feet + up * MathF.Max(r + 0.02f, height - r);
         if (!w.CapsuleClear(c, a, b, r) || (deck != c && !w.CapsuleClear(deck, a, b, r)))

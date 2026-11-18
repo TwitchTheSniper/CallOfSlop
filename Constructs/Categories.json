@@ -101,6 +101,7 @@
     { "section": "Scoops", "to": ["Production", "Scoops"] },
     { "section": "Factory", "to": ["Production", "Bunkers"] },
     { "section": "Factory shell", "to": ["Buildings", "Roofs"] },
+    { "section": "Link supports", "to": ["Storage and Logistics", "Conveyors"] },
     { "section": "Presses", "to": ["Production", "Presses"] },
     { "section": "Remote", "to": ["Seats and Logic", "Remote and cameras"] },
     { "section": "Shells", "to": ["Seats and Logic", "Remote and cameras"] },

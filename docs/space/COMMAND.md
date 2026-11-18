@@ -7,7 +7,7 @@ ship with a working flight computer then flies there by itself. It is the first 
 
 - **Key:** Home (`GameAction.CommandView`, rebindable; M is the Mirror Table's). Esc closes the order menu, then the view.
   Sandbox only, on a map that is in a star system (`Game.Space`); elsewhere the key says why not.
-- **Code:** the picture `Source/UI/UiCommand.cs`, the ships in it and the ship card `UiCommandShip.cs`, the order menu
+- **Code:** the picture `Source/UI/UiCommand.cs`, the ships in it and the ship card `UiCommandShip.cs`, the crews on it `UiCommandCrew.cs`, the order menu
   `UiCommandOrders.cs`, the key `Source/App/Program.Command.cs`; the orders `Source/Game/GameNav.cs`, trips between
   planets `Source/Game/GameNavTrip.cs`; the steering maths `Source/Space/NavGuidance.cs`, the transfer planner
   `Source/Space/NavTrip.cs`.
@@ -67,9 +67,10 @@ What a commander wants to know about a ship without boarding it (`CmdCardRead`, 
 | HULL, FUEL, POWER | Bars: parts still working, litres of fuel of its tanks' room, stored energy |
 | DRIVE | Acceleration at full thrust (and in g) and the thrust itself |
 | BURN | Time at full thrust on the fuel aboard, and the change of speed that buys (dV) |
-| CARGO, CREW | What its holds carry, who is aboard |
+| CARGO | What its holds carry |
 | SYSTEMS | Flight computer (and whether its autopilot is on), jump drive, guns and thrusters, counted |
 | ORDER, NOW | Its order and what it is doing about it; why it takes none ("NO FLIGHT COMPUTER") |
+| FACTION, COMMAND, PEOPLE, CREW | Who holds it and how they stand with you, its group and admiral, the people aboard, its crew ("The crews layer", below) |
 
 Buttons: CANCEL ORDER, a one-click "ORBIT <BODY> LOW", CENTRE. A picked body has a small card of its own (what it is a
 planet or moon of, radius, gravity at the ground, how far out it is and its time round, whether it can be landed on).
@@ -102,6 +103,33 @@ when the view is closed and opened again. Code: `Source/UI/UiCommandLinks.cs`.
   factories, 128 links, 32 legs; `LinkedLogistics.PartCount` is kept per rebuild); a label string is made only when its
   key changes. A frame projects the nodes and draws lines.
 
+## The crews layer
+
+Karl, 2026-11-18: "visualising crews etc for the ships on the RTS view", in the view's own style. The **CREWS** tickbox (top
+middle, left of MISSILES; on by default) turns the map's part of it on and off; the card's rows are always there. Code:
+`Source/UI/UiCommandCrew.cs`.
+
+- **Under a craft's name:** who holds it and its crew in one line: "FLAGSHIP  MILITIA G1  CAPT ZED  CREW 10", "YOUR CREW  8 ABOARD"
+  or "PRIZE  3 PRISONERS". Its colour is how that power stands with you, as the faction window reads it: red below 0 (its crews
+  fight you), amber wary (under 20), cyan neutral (under 60), green friendly, yours or a prize.
+- **Groups:** a chevron over each flagship, and a dashed line running from every other ship of its group to it.
+- **On a hologram:** a dot at each seat a crew member works with no body (the stand-ins), and one at each body aboard: a person
+  green with a ring, a crew body in its power's colour, a ring turning on whoever has the helm.
+- **On the card:** FACTION (the power and its standing in words and number, YOUR CREW, PRIZE, PLAYER BUILT or NOBODY), COMMAND
+  (its group and its admiral: "ADMIRAL IKE'S FLAGSHIP", or "UNDER ADMIRAL IKE" for the others), PEOPLE (players in its seats,
+  PILOT and SHELL marked, and how many stand on its decks), CREW. A crew of yours or a prize is listed member by member (up to
+  eight, then "AND N MORE"): job, name, a ten-cell health bar and what they are doing (AT THE HELM, ON A GUN, MOVING, FIGHTING,
+  PRISONER, OFFICER ...). Anyone else's crew is only its captain and how many are alive, and how many sit at stations as
+  stand-ins: what a peer can see from outside.
+- **Multiplayer:** nothing new on the wire. It reads what every peer already has: `Game.CrewInfo` and `CrewStandIns`
+  (Msg.CrewSeats), `Game.CrewRosters` (Msg.CrewRoster: own crews and prizes only), the factions table's standings, and the players.
+  `Game.PlayerIsBot` tells a crew body from a person on a client from the host's roster byte.
+- **Cost:** off, one bool check. On, the map line is made only when its crew, standing or command changes (a key per craft);
+  the group lines are a pass over the flagships on the map; the card's rows are made with the rest of the card, four times a second.
+- **Window tool:** `crewgroup POWER` (every crewed body of that power, in one patrol group) and `crewown` (the last crewed body
+  becomes yours) are test states for it, for example:
+  `--map Glacier --calm --blueprint "Zero Day Frigate (crewed)" --do "look 90 0; spawnbp Zero Day Frigate (crewed); look 180 0; spawnbp Zero Day Frigate (crewed); wait 120; crewown; crewgroup Militia; wait 300; command 500; cmdpick 3"`.
+
 ## The missiles layer
 
 Karl, 2026-11-17: "Missiles show up on command view. Add a tickbox to show missiles, their target and their projected
@@ -123,6 +151,16 @@ logistics layer it stays as it was when the view is closed and opened again. Cod
   turn, burn, target, aim, a flare drawing it), so a joined client draws the same missiles from its own copy.
 - **Cost:** off, one bool check a frame. On, at most 96 missiles a frame, each 40 steps (a gravity and an air read a
   step); a label's text is made at most four times a second.
+
+## The factions layer
+
+The FACTIONS button (right of LOGISTICS) turns on the NPC powers' map (docs/sandbox/design/faction-controllers.md phase 4; Karl's answer 3): each
+planet ringed in its holder's colour with its tag and share of control (a dashed ring in the leader's colour and white when contested), and the faction
+groups this player knows of as triangles in their power's colour, labelled with a guess at what they do (STRIKE, DEFENCE, GARRISON, RETURNING) and
+their ships. Fog of war (the user's answer 7): a group shows only while it is on this player's world within 8 km of them, or for five minutes after the
+news named it (dim, with how many minutes ago, where it was then). A group of a power hostile to the player out to take a site, or within 3 km, is red
+with brackets and THREAT. It all comes from `Msg.FactionMap`, once a second per player (`Game/GameCrewTerritory.cs`); labels are made only when it
+changes. Code: `Source/UI/UiCommandFactions.cs`. Window tool: `crewterritory [near|leave]` (`Program.WindowShotPlay.cs`).
 
 ## Orders
 
@@ -160,6 +198,20 @@ view back as it was; a right click or Esc puts it back with no order (UI/UiComma
 carrier, across, grips, then opens the door or cuts through and opens its own. On the wire its point is the target's id,
 the part and 1 for a door (protocol 342); the host works the spot and the way out of the skin there. The pod must be within
 3 km of the target. `order board N door|hull` (the window tool) gives it from a script.
+
+**The close hologram and the cut-in preview** (UI/UiCommandHolo.cs, Karl 2026-11-18: "you cannot see where you're cutting").
+The picked craft, or the craft being boarded, once it is over about 220 px across is cut again finer: one craft at a time,
+cells of 0.25 m or more (200 across at most), a level every 0.9 m or more, at most 12,000 lines (bigger cells past that), built
+once and again only when its parts change (about 5 ms and 2,900 lines for a Zero Day). Both holograms are cut from the parts'
+own boxes and hull skin shapes, not their bounds, so a welded hull piece no longer fills the rooms it walls. On the fine one
+the outer skin (lines beside cells open to the outside on that level) is bright, inner walls dim, outlines every other level;
+doors and hatches are green boxes. While picking a hull spot, once the cursor rests on a part for 0.12 s the view works the
+spot out as the host will (`Game.BoardPreview`: `BoardSpot`, then `BoardNearRoom`, with no log lines) and draws the hull piece
+it cuts (amber box), the pod's skirt, the hole as `ConstructBreach.OpenHole` cuts it (1.1 by 2.1 m from the room's floor up,
+red when no room is found), the tunnel in to the room's wall, and the room behind as an outline on its floor (the fine grid's
+inside cells joined to where a person lands). The label says whether the room's floor is level with the pod's. Close up, a
+part's middle within 2 m of the cursor counts as under it (12 to 48 px). Window tool: `cmdboard N door|hull` starts the
+pick, `mouse X,Y` rests the cursor.
 
 ### How a ship flies one (`Game.ServerTickNav`, before the launch step each tick)
 

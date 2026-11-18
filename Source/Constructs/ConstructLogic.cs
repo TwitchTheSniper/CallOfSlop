@@ -201,14 +201,14 @@ public static class ConstructLogic
                         }
                         next = p.Count > 0 ? 1 : 0;
                         if (p.Count > 0)
-                            p.Count--;
+                            p.Count = (ushort)Math.Max(0, p.Count - ConstructFar.StepTicks(c)); // (a far body's step is several ticks)
                         break;
                     case CLogic.Switch:
                     case CLogic.KeySwitch:
                         // (a Switch set not latched is a button: on for its hold time)
                         next = (p.State & 1) != 0 || p.Count > 0 ? 1 : 0;
                         if (p.Count > 0)
-                            p.Count--;
+                            p.Count = (ushort)Math.Max(0, p.Count - ConstructFar.StepTicks(c));
                         break;
                     case CLogic.Cargo:
                     {

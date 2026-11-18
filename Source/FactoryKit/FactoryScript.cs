@@ -24,6 +24,7 @@ public sealed class FactoryScript : BlueprintScript
     private readonly Dictionary<int, VPart> _of = new();
     private readonly List<(VPart Lamp, float X)> _lamps = new();
     private VPart? _switch;
+    private bool _shellChair; // (--crew-check --crew-mine --crew-shell: a Shell Control Chair beside the Drill Rack, so a miner may wear a Mining Shell)
     private int _cable; // (cables side by side, never on one line)
 
     private static readonly Orient Front = new(Vector3.UnitY, Vector3.UnitY, Vector3.UnitZ, Vector3.UnitZ); // own +z to the road
@@ -53,6 +54,14 @@ public sealed class FactoryScript : BlueprintScript
     /// <summary>The built part of a programme object (its index in the body as the blueprint builds it), or -1.</summary>
     public int IndexOf(FactoryObject o) => _of.TryGetValue(o.Id, out var v) ? v.Index : -1;
 
+    /// <summary>
+    /// The floor tiles people and vehicles cross, each with the clear height a link over it keeps (conveyor-inclines.md section 6: 2.4 m
+    /// over the aisle, 4.5 m over the vehicle lane): --factory-check finds any chute or conveyor lower than that over one.
+    /// </summary>
+    public readonly List<(VPart Tile, float Clear)> Walkways = new();
+
+    public const float AisleClear = 2.4f, LaneClear = 4.5f;
+
     /// <summary>Stages 1 to 4 (the programme and the plan), no parts: what <c>--gen-factory --plan</c> prints, under a second.</summary>
     public static (FactoryProgramme P, FactoryPlan Plan, FactoryFunction F, FactoryStyle S) Planned(FactoryBrief brief)
     {
@@ -65,10 +74,10 @@ public sealed class FactoryScript : BlueprintScript
         return (p, plan, f, style);
     }
 
-    public static FactoryScript Build(FactoryBrief brief)
+    public static FactoryScript Build(FactoryBrief brief, bool shellChair = false)
     {
         var (p, plan, f, style) = Planned(brief);
-        var s = new FactoryScript(brief, f, style, p, plan);
+        var s = new FactoryScript(brief, f, style, p, plan) { _shellChair = shellChair };
         s.Lay();
         return s;
     }
@@ -89,6 +98,7 @@ public sealed class FactoryScript : BlueprintScript
         for (var k = 0; k < Programme.Edges.Count; k++)
             Edge(Programme.Edges[k], Plan.Lanes[k]);
         Console_();
+        DrillRack();
         if (Plan.Shell == "shed")
             foreach (var (zone, r, _) in Plan.Zones.Where(z => z.Zone == 'P'))
                 Shed(r);
@@ -220,11 +230,13 @@ public sealed class FactoryScript : BlueprintScript
         {
             Paint(t, Style.Colour(_paint.Fork("lane"), "lane"));
             Finish(t, "concrete");
+            Walkways.Add((t, LaneClear));
         }
         else if (z > -(FactoryPlan.RoadDepth + FactoryPlan.AisleDepth) && zone is 'P' or 'S')
         {
             Paint(t, Style.Colour(_paint.Fork("aisle"), "aisle"));
             Finish(t, "painted deck plate");
+            Walkways.Add((t, AisleClear));
         }
         else
         {
@@ -335,6 +347,22 @@ public sealed class FactoryScript : BlueprintScript
         }
         Paint(drill, Style.Colour(_paint.Fork("machine"), "machine"));
         return drill;
+    }
+
+    /// <summary>
+    /// An extraction post's Drill Rack (factory-generator-notes.md "Tool racks and crew miners"): three portable drills for its crew's miners, who
+    /// carry them to ore past the drills' reach. It stands in the first drill zone's band at the aisle's edge, a metre in from the zone's west
+    /// end, facing the aisle, so a miner works it from the walkway and the drill runs behind stay clear.
+    /// </summary>
+    private void DrillRack()
+    {
+        if (Function.Name != "extraction" || Plan.Cells.FirstOrDefault(c => c.Obj.Role == "drill") is not { } first)
+            return;
+        var x = FactoryPlan.Snap(first.Rect.X0 + 1.0f);
+        var rack = On("Drill Rack", x, -(FactoryPlan.RoadDepth + FactoryPlan.AisleDepth) - 0.75f, Front);
+        Paint(rack, Style.Colour(_paint.Fork("rack"), "frame"));
+        if (_shellChair)
+            On("Shell Control Chair", x + 1.5f, -(FactoryPlan.RoadDepth + FactoryPlan.AisleDepth) - 0.75f, Back);
     }
 
     /// <summary>A 3x3 rail's base to its carriage's top socket (metres).</summary>

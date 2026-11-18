@@ -58,6 +58,7 @@ public sealed partial class Game
     private void ShellResetAll()
     {
         Array.Clear(_sh);
+        Array.Clear(SandboxHands.Hoppers);
         foreach (var p in Players.Values)
         {
             p.InShell = false;
@@ -125,7 +126,7 @@ public sealed partial class Game
     }
 
     /// <summary>Server: the player wakes in the shell. Their body's state is kept, the shell's construct goes, and they stand where it stood.</summary>
-    private void ShellEnter(Player p, ref SandboxHand h, Construct chair, int seat, Construct shell)
+    private void ShellEnter(Player p, ref SandboxHand h, Construct chair, int seat, Construct shell, bool crew = false)
     {
         ref var run = ref _sh[p.Id];
         if (h.RemoteBody != 0)
@@ -144,6 +145,9 @@ public sealed partial class Game
         run.Channel = ConstructShell.ChannelOf(sp);
         run.Owner = shell.Owner;
         ShellWear.Read(sp, sp.D, ref p.ShellWear); // (its works' wear goes with them: GameShellWear.cs)
+        p.ShellFrame = ShellFrames.FrameOf(sp.D); // (its frame: size, pace, modules; Constructs/Shells.json)
+        p.Sim.Frame = p.ShellFrame;
+        HopperOn(p, shell); // (an ore hopper's load goes with them: GameShellHopper.cs)
         var shellHp = ShellWear.HealthOf(sp, sp.D); // (as damaged as it was left: shells don't heal, Health.cs)
         run.Acc = default;
         run.Sent = p.ShellWear;
@@ -155,12 +159,13 @@ public sealed partial class Game
         SandboxHands.PackDirty.Add(p.Id);
         var tool = h.Tool;
         h = SandboxHand.Empty;
-        h.Tool = tool == ConstructTool.None ? ConstructTool.Hands : tool;
+        h.Tool = ShellFrames.Of(ShellFrames.FrameOf(sp.D)).ForcedTool ?? (tool == ConstructTool.None ? ConstructTool.Hands : tool); // (a frame's only tool: the Mining Shell's drill arm)
         var feet = shell.ToWorld(sp.Pos) + GravityFrames.UpAt(shell.WorldCom) * 0.03f; // (its part's feet: a shell cut off a dock keeps its place in the ship's frame)
         var fwd = Vector3.Transform(-Vector3.UnitZ, shell.Rot * Rot24.Quat(sp.Rot));
         ShellWoke(p, shell);
-        var firstShell = !HasFirst(p.Id, Milestone.Shell);
-        FirstReached(p, Milestone.Shell); // (GameMilestones.cs)
+        var firstShell = !crew && !HasFirst(p.Id, Milestone.Shell);
+        if (!crew)
+            FirstReached(p, Milestone.Shell); // (GameMilestones.cs; a crew miner's body has none: GameCrewMine.cs)
         var kit = firstShell && ShellSparesKit(p); // (a few spare works for the first shell: GameShellWear.cs)
         Constructs.Remove(shell);
         p.Teleport(feet);
@@ -170,7 +175,8 @@ public sealed partial class Game
         p.InShell = true;
         (p.ShellChair, p.ShellSeat) = (chair.Id, (ushort)seat); // (their body is drawn sitting there: ShellBodyOf)
         ShellBroadcast(p);
-        SandboxHands.Notices.Add((p.Id, kit ? "You wake in the robot shell, a pouch of shell spares in your inventory (fit them with the attach tool). Esc menu > Leave the shell."
+        if (!crew)
+            SandboxHands.Notices.Add((p.Id, kit ? "You wake in the robot shell, a pouch of shell spares in your inventory (fit them with the attach tool). Esc menu > Leave the shell."
             : "You wake in the robot shell. Your body is safe in the chair: Esc menu > Leave the shell."));
         Log($"[shell] {p.Name} wakes in a shell (chair {chair.Id}, channel {run.Channel})");
     }
@@ -196,14 +202,17 @@ public sealed partial class Game
             SandboxHands.Drop(Constructs, p.Id, feet, yaw);
         if (SandboxHands.Packs[p.Id].Items > 0)
             SandboxHands.DropPack(Constructs, p.Id, feet, yaw);
+        var standing = false;
         if (!lost && run.ShellDef != null && ConstructBuild.PlaceNew(Constructs, run.ShellDef, feet, yaw) is { } stood)
         {
+            standing = true;
             ConstructConfig.Put(ref stood.Parts[0], run.ShellDef, CfgKey.Channel, run.Channel);
             ShellWear.Write(ref stood.Parts[0], run.ShellDef, p.ShellWear); // (it stands as worn as they left it)
             ShellWear.PutHealth(ref stood.Parts[0], run.ShellDef, p.Health); // (and as damaged)
             stood.Owner = run.Owner;
             stood.Frozen = dock == null; // (it stands as it was left until someone moves it; one for a dock is clamped on first)
             stood.Rebuild();
+            HopperOff(p, stood, feet); // (the hopper's load back into the part's bin: GameShellHopper.cs)
             Constructs.StructureDirty.Add(stood.Id);
             if (dock != null && SandboxHands.ClipOnDock(Constructs, p.Id, dock, dockPart, stood) is { } stuck)
             {
@@ -212,6 +221,8 @@ public sealed partial class Game
                 stood.Rebuild();
             }
         }
+        if (!standing)
+            HopperOff(p, null, feet); // (destroyed, or no room to stand it: the load spills where it fell)
         if (run.Pack != null)
         {
             SandboxHands.Packs[p.Id] = run.Pack;
@@ -242,6 +253,8 @@ public sealed partial class Game
         p.InShell = false;
         p.ShellChair = p.ShellSeat = 0;
         p.ShellWear = default;
+        p.ShellFrame = 0;
+        p.Sim.Frame = 0;
         run.On = false;
         run.Spent = true; // (still in the chair: they stand up before it links again)
         run.Pack = null;
@@ -261,6 +274,8 @@ public sealed partial class Game
             ref var run = ref _sh[p.Id];
             if (!run.On)
                 continue;
+            HopperSync(p); // (its ore hopper's load to every peer: GameShellHopper.cs)
+            ShellForceTool(p); // (a frame's only tool stays out)
             var chair = Constructs.Get(run.Chair);
             var seat = chair?.SeatOf(p.Id) ?? -1;
             if (chair == null || seat < 0 || chair.Parts[seat].Broken)
@@ -312,6 +327,8 @@ public sealed partial class Game
             why = "too far from the dock";
         else if (dp.Broken)
             why = $"the {dp.D.Name} is wrecked";
+        else if (_sh[p.Id].ShellDef is { } worn && worn.Name != dp.D.ToolDockFits)
+            why = $"a {worn.Name} doesn't fit a {dp.D.Name}"; // (the Mining Shell is too big for one: docs/sandbox/design/mining-shell.md)
         else if (SandboxHands.DockRefusal(c, p.Id) is { } no)
             why = no;
         else
@@ -348,6 +365,51 @@ public sealed partial class Game
     /// <summary>Server: a player leaves the game: back in their body first, so their record is the body's and the shell stands.</summary>
     internal void ShellLeaveGame(Player p) => ShellReturn(p, lost: false, "");
 
+    private readonly List<Construct> _shSaved = [];
+
+    /// <summary>Is this body a world save's stand-in for a worn shell (only while a save captures)?</summary>
+    private bool ShellSaveStandIn(Construct c) => _shSaved.Count > 0 && _shSaved.Contains(c);
+
+    /// <summary>
+    /// Server, before a world save's capture: each worn shell stands for a moment where its wearer is, as worn and as damaged, with
+    /// its ore hopper's load in its bin, so the save holds it (the record holds their body in the chair: <see cref="ShellCatch"/>).
+    /// The capture is the same tick, and <see cref="ShellUnstandAfterSave"/> takes them away again: no peer hears of them. A save is
+    /// rare, so the list may allocate.
+    /// </summary>
+    private void ShellStandForSave()
+    {
+        _shSaved.Clear();
+        foreach (var p in Players.Values)
+        {
+            ref var run = ref _sh[p.Id];
+            if (!run.On || run.ShellDef == null)
+                continue;
+            if (ConstructBuild.PlaceNew(Constructs, run.ShellDef, p.Position, p.Yaw) is not { } c)
+            {
+                Log($"[shell] {p.Name}'s worn {run.ShellDef.Name} isn't in this save: the world is full");
+                continue;
+            }
+            ConstructConfig.Put(ref c.Parts[0], run.ShellDef, CfgKey.Channel, run.Channel);
+            ShellWear.Write(ref c.Parts[0], run.ShellDef, p.ShellWear);
+            ShellWear.PutHealth(ref c.Parts[0], run.ShellDef, p.Health);
+            c.Owner = run.Owner;
+            c.Frozen = true;
+            c.Rebuild();
+            ref var hp = ref SandboxHands.Hoppers[p.Id];
+            if (hp.Amount > 0 && Constructs.Deposit(c, 0, hp.Amount, hp.Material) < hp.Amount)
+                Log($"[shell] {p.Name}'s hopper didn't all fit the saved {run.ShellDef.Name}'s bin");
+            _shSaved.Add(c);
+        }
+    }
+
+    /// <summary>Server, after the capture: the stand-ins go (the wearers still wear their shells).</summary>
+    private void ShellUnstandAfterSave()
+    {
+        foreach (var c in _shSaved)
+            Constructs.Remove(c, quiet: true); // (no peer heard of it: no gone message, no unbolt clunk at the wearer)
+        _shSaved.Clear();
+    }
+
     /// <summary>Server, a world save's record of someone in a shell: their body's place, health, hands and backpack.</summary>
     private void ShellCatch(Player p, WorldPlayer rec)
     {
@@ -370,7 +432,8 @@ public sealed partial class Game
 
     // ---- The wire ---------------------------------------------------------------------------------------------------
 
-    /// <summary>Server: who wears a shell, to everyone (<see cref="Msg.Shell"/>: u8 player, u8 on, u16 chair, u16 seat, 8 x u8 the works' wear).</summary>
+    /// <summary>Server: who wears a shell, to everyone (<see cref="Msg.Shell"/>: u8 player, u8 on, u16 chair, u16 seat, 8 x u8 the works' wear,
+    /// u8 frame, u8 hopper material, u16 hopper units; protocol 353).</summary>
     private void ShellBroadcast(Player p)
     {
         if (Net.IsOffline)
@@ -379,6 +442,7 @@ public sealed partial class Game
         w.Begin(Msg.Shell).U8(p.Id).U8(p.InShell ? (byte)1 : (byte)0).U16(p.ShellChair).U16(p.ShellSeat);
         for (var k = 0; k < ShellWear.Works; k++)
             w.U8(p.ShellWear[k]);
+        ShellWriteFrame(w, p);
         Net.Broadcast(w.Span, PacketReliability.ReliableOrdered);
     }
 
@@ -392,6 +456,7 @@ public sealed partial class Game
                 w.Begin(Msg.Shell).U8(p.Id).U8(1).U16(p.ShellChair).U16(p.ShellSeat);
                 for (var k = 0; k < ShellWear.Works; k++)
                     w.U8(p.ShellWear[k]);
+                ShellWriteFrame(w, p);
                 Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
             }
     }
@@ -406,11 +471,19 @@ public sealed partial class Game
         ShellCond wear = default;
         for (var k = 0; k < ShellWear.Works; k++)
             wear[k] = r.U8();
+        if (!r.Has(4))
+            return;
+        var frame = r.U8();
+        var hopMat = r.U8();
+        var hopAmt = r.U16();
         if (Players.TryGetValue(id, out var p))
         {
             p.InShell = on;
             (p.ShellChair, p.ShellSeat) = on ? (chair, seat) : ((ushort)0, (ushort)0);
             p.ShellWear = on ? wear : default;
+            p.ShellFrame = on ? frame : (byte)0;
+            p.Sim.Frame = p.ShellFrame; // (its size: the mover reads it, World.Body)
+            (p.HopperMaterial, p.HopperAmount) = on ? (hopMat, hopAmt) : ((byte)0, (ushort)0);
         }
     }
 
@@ -548,16 +621,14 @@ public sealed partial class Game
     /// <summary>The Esc menu's button: leave the shell and wake in the chair.</summary>
     public void ShellAskLeave() => SandboxSend(CActKind.ShellLeave);
 
-    private SbText _sbShell;
-
-    /// <summary>The HUD's line while this PC's player wears a shell.</summary>
+    /// <summary>
+    /// The HUD's lines while this PC's player wears a shell. The shell's health and its works' are not lines: the bottom-left panel
+    /// shows them (UI/UiShellPanel.cs; Karl, 2026-11-18).
+    /// </summary>
     private void ShellHud(Player me, List<HudLine> lines, Vector4 orange, Vector4 dim)
     {
         if (!me.InShell)
             return;
-        if (_sbShell.Stale(me.Health))
-            _sbShell.Text = $"ROBOT SHELL  {me.Health * 100 / World.MaxHealth}%  -  no self-repair, your body waits in the chair (Esc menu: leave the shell)";
-        lines.Add(new HudLine(_sbShell.Text, orange));
-        ShellWearHud(me, lines, orange, dim); // (its worn works: GameShellWear.cs)
+        HopperHud(me, lines, dim); // (an ore hopper's load: GameShellHopper.cs)
     }
 }

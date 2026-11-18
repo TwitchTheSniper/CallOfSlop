@@ -11,11 +11,12 @@ namespace CallOfSlop;
 /// menu would, <c>nav</c> prints every craft and its order, <c>hoist KM</c> (host) puts the picked craft that far over the
 /// ground, at rest over it, <c>speed N</c> (host) asks for a time speed, <c>travel FUEL SHARE</c> (host) sets Settings > Gameplay's
 /// Fuel use in space and Trip fuel for the run (percents), and <c>letgo [ID]</c> (host) has the port holding the picked craft (or construct ID) let it go, and <c>rclick X,Y</c> is the right mouse button at a
-/// window pixel (the order menu).
+/// window pixel (the order menu), <c>cmdboard N door|hull</c> starts the Board pick on the Nth craft for the picked carrier (as the
+/// menu's Board buttons do) and <c>mouse X,Y</c> rests the mouse at a window pixel (the pick's hover and cut-in preview).
 /// </summary>
 public static unsafe partial class Program
 {
-    private static bool WsNavKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "command" or "cmdpick" or "order" or "nav" or "hoist" or "speed" or "travel" or "cmdview" or "rclick" or "rclickup" or "spacewalk" or "missile" or "missiles" or "letgo" or "orbit";
+    private static bool WsNavKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "command" or "cmdpick" or "order" or "nav" or "hoist" or "speed" or "travel" or "cmdview" or "rclick" or "rclickup" or "spacewalk" or "missile" or "missiles" or "letgo" or "orbit" or "boardwalk" or "cmdboard" or "mouse";
 
     /// <summary>"order dock N": the picked craft docks with the Nth craft on the map (as cmdpick counts them).</summary>
     private static string? WsDockOrder(Game g, int n)
@@ -99,6 +100,26 @@ public static unsafe partial class Program
                 ConstructCarrier.LetGo(g.Constructs, held);
                 WsSay($"[nav] construct {held.Id} let go");
                 _wsWait = 3;
+                return true;
+            }
+            case "boardwalk" when g.IsServer: // "boardwalk [BACK] [TICKS]" (host): into a gripped pod BACK m behind its cutter, then W held towards its hole (ConstructBreach.OpenHole)
+            {
+                var back = words.Length > 0 && float.TryParse(words[0], inv, out var bk) ? bk : 1.2f;
+                var ticks = words.Length > 1 && float.TryParse(words[1], inv, out var tk) ? tk : 240f;
+                if (g.BoardWalkStart(me, back, out var face) is { } no)
+                {
+                    WsFail("boardwalk: " + no);
+                    return true;
+                }
+                me.NoclipWanted = false;
+                g.NoclipShot = false;
+                g.LookYaw = face;
+                g.LookPitch = 0;
+                _wsHold = GameAction.MoveForward;
+                _wsHoldUntil = System.Diagnostics.Stopwatch.GetTimestamp() + (long)(ticks / World.TickRate * System.Diagnostics.Stopwatch.Frequency);
+                WsSay($"[nav] boardwalk: {back:0.0} m behind the cutter, W for {ticks:0} ticks");
+                WsWaitTicks((int)ticks + 10);
+                _wsQueue.EnqueueFront("me");
                 return true;
             }
             case "cmdview": // "cmdview YAW PITCH" (degrees): the view's turn and tilt
@@ -259,6 +280,32 @@ public static unsafe partial class Program
                 io.AddMousePosEvent(px, py);
                 io.AddMouseButtonEvent(1, true);
                 _wsQueue.EnqueueFront("rclickup");
+                _wsWait = 3;
+                return true;
+            }
+            case "cmdboard": // "cmdboard N door|hull": the Board pick on the Nth craft (cmdpick's count) for the picked carrier
+            {
+                Construct? bt = null;
+                var bseen = 0;
+                if (words.Length == 2 && int.TryParse(words[0], out var bnth))
+                    foreach (var c in g.Constructs.Bodies)
+                        if (Ui.CmdIsCraft(c) && ++bseen == Math.Max(1, bnth))
+                            bt = c;
+                var bwhy = bt == null ? $"no craft \"{arg}\" (cmdboard N door|hull)" : Ui.CommandBoardTry(g, bt, words[1].ToLowerInvariant() == "door");
+                if (bwhy != null)
+                    WsFail("cmdboard: " + bwhy);
+                _wsWait = 20;
+                return true;
+            }
+            case "mouse": // "mouse X,Y": the mouse rests at a window pixel
+            {
+                if (arg.Split(',') is not [var mx, var my] || !float.TryParse(mx, inv, out var px) || !float.TryParse(my, inv, out var py))
+                {
+                    WsFail($"mouse X,Y: \"{arg}\"");
+                    return true;
+                }
+                Ui.ToolMouse = true;
+                Brutal.ImGuiApi.ImGui.GetIO().AddMousePosEvent(px, py);
                 _wsWait = 3;
                 return true;
             }

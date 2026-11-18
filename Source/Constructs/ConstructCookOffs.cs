@@ -65,8 +65,9 @@ public sealed partial class ConstructWorld
     /// <summary>
     /// The nearest shell that can be set off along a ray (a capsule along its way, as long as its part and as wide), before <paramref name="maxDist"/>.
     /// Server, for hitscan rounds: the construct guns', flying rounds' and players' (<c>Game.SandboxShellShot</c>).
+    /// <paramref name="flak"/>: a flak fuse (m) the capsule is widened by, so a round passing that close bursts on it (a point-defence gun's).
     /// </summary>
-    public bool RayShell(Vector3 o, Vector3 dir, float maxDist, out float dist, out int shell)
+    public bool RayShell(Vector3 o, Vector3 dir, float maxDist, out float dist, out int shell, float flak = 0f)
     {
         dist = maxDist;
         shell = -1;
@@ -77,6 +78,7 @@ public sealed partial class ConstructWorld
                 continue;
             var radius = MathF.Max(s.Size.X, s.Size.Y) * 0.5f + 0.1f;
             var half = MathF.Max(0f, s.Size.Z * 0.5f - radius);
+            radius += flak;
             var sp = s.Vel.LengthSquared();
             var axis = sp > 1f ? s.Vel / MathF.Sqrt(sp) : Vector3.Transform(-Vector3.UnitZ, s.Rot);
             // Cheap reject: the ray's nearest point to the shell's centre.

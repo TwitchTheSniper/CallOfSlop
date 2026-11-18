@@ -628,6 +628,7 @@ public sealed partial class ConstructPartDef
     /// <summary>Uses power on an electrical construct (logic parts, moving joints, anything with a draw; the engine's starter separately).</summary>
     public bool Electric => Role == PartRole.Logic && Logic != CLogic.Cargo && Logic != CLogic.FlightStabilizer && Logic != CLogic.Decoupler && Logic != CLogic.BombRack && !IsSeatModule || Role == PartRole.Joint && JointType is not (JointType.Steering or JointType.Flex or JointType.Slider or JointType.Swivel) && RailDrive != RailDriveKind.Shaft || PowerDraw > 0 || FuelKind == EngineFuel.Electric && Role == PartRole.Engine || MotorTorque > 0 || Role == PartRole.Thruster && ThrustFuel == EngineFuel.Electric || Rotor is { MotorKw: > 0 }; // (steering is mechanical)
     // Weapons (milestone 3; ConstructWeapons.cs)
+    public float GunFlak; // a heavy gun's flak fuse (m): its rounds burst passing this close to a missile or bomb in the air (a point-defence gun's)
     public float GunThrust, GunBurn, GunTurn, GunProx, GunCrater; // a heavy gun's shell (ConstructOrdnance.cs): its push (m/s2), seconds it burns, turn (degrees a second), proximity fuse (m), crater (m)
     public int GunShell = -1; // a heavy gun's ShellKind ("shell"); -1: its rounds are rounds
     public SightKind Sight; // "sight": bolted to a gun, what it adds (ConstructOrdnance.cs)
@@ -833,6 +834,9 @@ public sealed partial class ConstructPartDef
     public float RemoteRange, CameraFov;
     public bool ShellBody; // a Robot Shell: a body a player wakes in from a Shell Control Chair (ConstructShell.cs)
     public float ShellRange; // a Shell Control Chair: how far its shells may be, metres (0: not a chair)
+    public ConstructTool RackTool; // a Tool Rack: the hand tool it holds (ToolRacks.cs; None: not a rack)
+    public Vector3[] RackHooks = []; // ...where each tool hangs (the part's frame: the tool's grip, its bit down)
+    public bool IsToolRack => RackHooks.Length > 0;
     public Vector3 CameraAt;
     public bool IsPress, IsLathe, IsPressDie; // ConstructPress.cs
     public PressBayDef[] PressBays = [];
@@ -1224,6 +1228,8 @@ public static partial class ConstructParts
             return Extrusion.Parse(name); // (a piece names itself: a blueprint's extrusion)
         if (name.StartsWith(Pressed.Prefix, StringComparison.Ordinal))
             return Pressed.Parse(name); // (a pressed part names itself, a preset's key its catalogue part: Pressed.cs)
+        if (name.StartsWith(HullHoles.Prefix, StringComparison.Ordinal))
+            return HullHoles.Parse(name); // (a part a cutter holed names itself, its base and its holes: HullHoles.cs)
         if (name.StartsWith(HullLoft.Prefix, StringComparison.Ordinal) || HullLoft.IsPanelName(name) || HullLoft.IsCutName(name))
             return HullLoft.Parse(name); // (a lofted hull bay names itself too: HullLoft.cs)
         if (name.StartsWith(ModularRack.Prefix, StringComparison.OrdinalIgnoreCase) || name.StartsWith(ModularRack.LegacyPrefix, StringComparison.OrdinalIgnoreCase))
@@ -1337,7 +1343,7 @@ public static partial class ConstructParts
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "finish", "friction", "collider",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "fluidTank", "seat", "hinge", "joint", "logic",
         "transmission", "battery", "capacitor", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "yield", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "retired", "hydraulics", "toolOnly", "tray", "walk", "boarding", "ladder", "toolDock", "damaged", "stage", "faces", "faceAxis", "router",
-        "sight", "ordnance", "mooring", "wear", "eva", "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "dieExtension", "runOut", "enginePiece", "sizeClass", "generator", "thruster", "burner", "flame", "rotor", "surface", "smoke", "dock", "breach", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "shell", "office", "requisition", "media", "speaker", "leg", "stabiliser", "door", "lifter", "craneRail", "lifterCab", "radar", "works", "worksPiece", "logiLink",
+        "sight", "ordnance", "mooring", "wear", "eva", "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "dieExtension", "runOut", "enginePiece", "sizeClass", "generator", "thruster", "burner", "flame", "rotor", "surface", "smoke", "dock", "breach", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "shell", "office", "requisition", "media", "speaker", "leg", "stabiliser", "door", "lifter", "craneRail", "lifterCab", "radar", "works", "worksPiece", "logiLink", "toolRack",
     ];
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, a contoured shape with its settings (index 8 up to the last), and the glass flag (last).</summary>
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, and a contoured shape with its settings.</summary>
@@ -1941,6 +1947,7 @@ public static partial class ConstructParts
         ParseNamedPorts(d, root, file); // (link ports by function: ConstructPorts.cs)
         ConstructRemote.Parse(d, root, file); // (the wireless seat link and cameras: ConstructRemote.cs)
         ConstructShell.Parse(d, root, file); // (robot shells and their chairs: ConstructShell.cs)
+        ToolRacks.Parse(d, root, file); // (a Tool Rack: hand tools a crew takes and returns, ToolRacks.cs)
         ConstructPanels.Parse(d, root, file); // (display panels: DisplayPanel.cs)
         ConstructMedia.Parse(d, root, file);
         ConstructSpeakers.Parse(d, root, file);
@@ -2187,7 +2194,7 @@ public static partial class ConstructParts
     /// </summary>
     private static void ParseGun(ConstructPartDef d, JsonElement b, string file, string bw)
     {
-        Known(b, ["shell", "thrust", "burn", "turn", "prox", "crater", "receiver", "action", "damage", "rpm", "spread", "range", "maxRange", "mag", "reload", "pellets", "speed", "flags", "blast", "blastDamage", "muzzle", "fx", "kick", "soundOf", "energy"], bw);
+        Known(b, ["shell", "thrust", "burn", "turn", "prox", "crater", "receiver", "action", "damage", "rpm", "spread", "range", "maxRange", "mag", "reload", "pellets", "speed", "flags", "blast", "blastDamage", "muzzle", "fx", "kick", "soundOf", "energy", "flak"], bw);
         d.GunMaxRange = Opt(b, "maxRange") is { } mr ? Num(mr, file, "gun.maxRange") : 300f;
         Range(d.GunMaxRange, 1, 1000, file, "gun.maxRange");
         d.GunKick = Opt(b, "kick") is { } kick ? Num(kick, file, "gun.kick") : 0f;
@@ -2266,6 +2273,8 @@ public static partial class ConstructParts
         foreach (var f in d.GunFlags)
             if (f is not ("penetrating" or "explosive" or "incendiary"))
                 throw new ConstructPartException($"{file}: \"gun.flags\": \"{f}\" (a heavy gun's flags are penetrating, explosive, incendiary)");
+        d.GunFlak = Opt(b, "flak") is { } fk ? Num(fk, file, "gun.flak") : 0f;
+        Range(d.GunFlak, 0, 10, file, "gun.flak");
         d.GunBlast = Opt(b, "blast") is { } bl ? Num(bl, file, "gun.blast") : 0f;
         Range(d.GunBlast, 0, 60, file, "gun.blast");
         d.GunBlastDamage = Opt(b, "blastDamage") is { } bd ? Num(bd, file, "gun.blastDamage") : d.GunDamage;

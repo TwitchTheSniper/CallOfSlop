@@ -80,6 +80,7 @@ public static partial class Program
     /// <summary>The link being routed is dropped (the tool put away, the construct gone, Esc).</summary>
     private static void LinkReset()
     {
+        ConstructRoutes.Grade = ConstructRoutes.GradeMode.Free; // (each link starts free: the snap never carries over unseen, a world link's included)
         _lkBody = 0;
         _lkFrom = -1;
         _lkParent = 255;
@@ -975,6 +976,12 @@ public static partial class Program
         if (_lkBody != 0 && g.Constructs.Get(_lkBody) is { } rc)
         {
             _lkFree = Down(GameAction.FreeRouting);
+            if (_lkType is RouteType.Chute or RouteType.Conveyor && _lkAdj == LinkAdjust.None && Pressed(GameAction.Reload) && !_swallowClick)
+            {
+                // The grade the next segment is laid at (conveyor-inclines.md section 7: free in 5 degree steps, level, 20 or 40 degrees).
+                ConstructRoutes.Grade = (ConstructRoutes.GradeMode)(((int)ConstructRoutes.Grade + 1) % 4);
+                _lkCheckKey = 0;
+            }
             LinkTail(rc, out var at, out var tailDir, out _);
             // The preview: the link so far, then the next point (a node on the surface, or the input that ends it).
             var n0 = LinkPreviewSoFar(rc);
@@ -1237,6 +1244,18 @@ public static partial class Program
         (_lkConvSentW, _lkConvSentH) = (_lkConvW, _lkConvH);
     }
 
+    private const int NoGrade = 999;
+
+    /// <summary>The grade of the next segment the preview shows (whole degrees), for a chute or a conveyor being routed by hand; else <see cref="NoGrade"/>.</summary>
+    private static int LinkGrade()
+    {
+        if (_lkBody == 0 || _lkFree || _lkType is not (RouteType.Chute or RouteType.Conveyor) || _linkWheel.Mode != LinkMode.Link || RouteRender.PreviewCount < 2)
+            return NoGrade;
+        var d = RouteRender.PreviewPts[RouteRender.PreviewCount - 1] - RouteRender.PreviewPts[RouteRender.PreviewCount - 2];
+        var len = d.Length();
+        return len < 1e-3f ? NoGrade : (int)MathF.Round(MathF.Asin(Math.Clamp(d.Y / len, -1f, 1f)) * 180f / MathF.PI);
+    }
+
     private static void LinkHud(Game g)
     {
         var w = _linkWheel;
@@ -1246,7 +1265,8 @@ public static partial class Program
             _lkHudKey = -1;
             return;
         }
-        var key = (long)_lkType ^ ((long)w.Mode << 12) ^ ((long)System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(_lkLabel) << 3) ^ ((long)_lkCount << 16) ^ ((long)_lkBody << 24) ^ (w.Highlight ? 1L << 50 : 0)
+        var grade = LinkGrade();
+        var key = (long)(grade + 128) << 56 ^ (long)ConstructRoutes.Grade << 60 ^ (long)_lkType ^ ((long)w.Mode << 12) ^ ((long)System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(_lkLabel) << 3) ^ ((long)_lkCount << 16) ^ ((long)_lkBody << 24) ^ (w.Highlight ? 1L << 50 : 0)
                   ^ ((long)(_lkWhy?.GetHashCode() ?? 0) << 20) ^ (_lkMoveRoute >= 0 ? 1L << 51 : 0) ^ ((long)g.SandboxWheelKey.GetHashCode() << 32)
                   ^ (_lkFree ? 1L << 53 : 0) ^ ((long)_lkAdj << 54) ^ ((long)(_lkAdjCm & 0xff) << 40) ^ ((long)_settings.Bind(GameAction.FreeRouting) << 8) ^ (_lkWorld ? 1L << 49 : 0) ^ ((long)LoomHudKey << 4);
         if (key == _lkHudKey)
@@ -1260,6 +1280,8 @@ public static partial class Program
             type = $"{type} (world link)"; // (off its construct: Program.SandboxWorldLinks.cs)
         var free = Keybinds.NameOf(_settings, GameAction.FreeRouting);
         var why = _lkWhy != null ? $" - {_lkWhy}" : "";
+        if (grade != NoGrade)
+            why = $", next {(grade > 0 ? "+" : "")}{grade} deg (grade {ConstructRoutes.GradeName(ConstructRoutes.Grade)}, {SandboxKeys.Reload}: change){why}";
         var (fire, aim) = (SandboxKeys.Fire, SandboxKeys.Aim);
         _lkHud = _lkAdj != LinkAdjust.None
             ? $"Node {(_lkAdjCm > 0 ? "+" : "")}{_lkAdjCm} cm: scroll (Ctrl: 5 cm), release {fire} on green: place, {aim}: cancel{why}"

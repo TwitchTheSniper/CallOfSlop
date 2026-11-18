@@ -182,7 +182,15 @@ public sealed partial class Game
     {
         var clock = Stopwatch.StartNew();
         var s = stashFolder != null ? new WorldSnapshot() : ws.Snapshot;
-        Constructs.CaptureInto(s, keep);
+        ShellStandForSave(); // (a worn shell is no construct: one stands where its wearer is for the capture, GameRobotShell.cs)
+        try
+        {
+            Constructs.CaptureInto(s, keep);
+        }
+        finally
+        {
+            ShellUnstandAfterSave();
+        }
         foreach (var p in Players.Values)
             if (WorldKnown(p))
                 WorldCatch(p, WorldRecordOf(ws, p));
@@ -211,6 +219,7 @@ public sealed partial class Game
         s.Start = StartCapture(); // (GameStoryStart.cs)
         s.CrewFactions = CrewFactionBytes(); // (the NPC powers' standings with player factions: GameCrewFactions.cs)
         s.Fleet = IsServer ? Crew.Fleet.SaveBytes() : null; // (groups and admirals: Crew/CrewFleet.cs)
+        s.Controllers = ControllersBytes(); // (the powers' controllers: GameCrewPowers.cs)
         s.Powers = PowersBytes(); // (the powers' relations among themselves, pacts and news: GameCrewFactions.cs)
         s.LinkLedger = Keep == null && stashFolder == null && (LinkLedger.Ends.Count > 0 || LinkLedger.Lines.Count > 0) ? LinkLedger.SaveBytes() : null; // (the host's main world keeps the ledger: linked-logistics.md section 8)
         s.OpCount = 0;
@@ -608,6 +617,9 @@ public sealed partial class Game
                 break;
             case WorldSaveWriter.PowersTag:
                 WorldReadPowers(r); // (the NPC powers' relations, pacts and news: GameCrewFactions.cs)
+                break;
+            case WorldSaveWriter.ControllersTag:
+                WorldReadControllers(r); // (the powers' stocks, places, ships and missions: GameCrewPowers.cs)
                 break;
             case WorldSaveWriter.FirstsTag:
                 WorldReadFirsts(r, ws); // (milestones for firsts: GameMilestones.cs)

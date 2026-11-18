@@ -184,6 +184,7 @@ public sealed partial class Game
         ResetSandboxSpawns(); // (no spawns queued, no spawned zombies: GameSandboxSpawns.cs)
         _vehicleSpawn?.Reset(); // (no faction vehicles on the way: GameSandboxVehicles.cs)
         Crew.Clear(this); // (no crews from the last world: GameCrew.cs)
+        MineReset(); // (nor their miners: GameCrewMine.cs)
         CrewFactionsClear(); // (nor standings: GameCrewFactions.cs; a saved world's follow from its Crew section)
         CrewStandIns.Clear();
         CrewInfo.Clear();
@@ -287,13 +288,15 @@ public sealed partial class Game
         var c = Constructs.Get(h.SeatBody);
         if (SandboxHands.Stand(Constructs, p.Id) is not { } feet || !teleport)
             return;
+        p.Sim.Frame = p.ShellFrame;
+        using var body = World.Body(p.Sim); // (a robot shell's frame: the deck it stands on and the spot beside the seat fit its size)
         int seat = h.SeatPart; // (Stand brought it up to date)
         var vel = Vector3.Zero;
         if (c != null && seat < c.PartCount)
         {
             vel = ConstructRide.SurfaceVel(c, c.Parts[seat].Seg, ConstructEdits.SeatFeet(c, seat));
             if ((vel.LengthSquared() > 1f || !ConstructRide.GroundUnder(feet))
-                && ConstructRide.ExitDeck(Constructs, c, seat, World.PlayerHeight, vel, out var deck, out var seg, out var spot))
+                && ConstructRide.ExitDeck(Constructs, c, seat, World.BodyHeight, vel, out var deck, out var seg, out var spot))
             {
                 p.Teleport(spot);
                 p.Sim.Velocity = vel;
@@ -308,7 +311,7 @@ public sealed partial class Game
         foreach (var t in tries)
         {
             var at = World.ClampToArena(t);
-            if (World.Blocked(at) && t != tries[^1])
+            if (World.Blocked(at, World.BodyHeight) && t != tries[^1])
                 continue;
             p.Teleport(at);
             if (vel.LengthSquared() > 1f)
@@ -389,8 +392,16 @@ public sealed partial class Game
                 SandboxEject(p, c, seat);
                 continue;
             }
-            c.Parts[seat].AimYaw = p.Yaw; // (a gunner points the guns with their look; ConstructWeapons.cs)
-            c.Parts[seat].AimPitch = p.Pitch;
+            // A gunner points the guns with their look (ConstructWeapons.cs). The look is the player's, at their own place; the seat's is read at
+            // the construct's centre (GunnerPoint, the modules, mouse aim), so on a planet's curved frames it is carried there: at a frigate's
+            // gun station 30 m off its centre the frames differ enough to put rounds metres off at 200 m.
+            if (GravityFrames.Curved)
+                (c.Parts[seat].AimYaw, c.Parts[seat].AimPitch) = GravityFrames.Angles(c.WorldCom, GravityFrames.Forward(p.Position, p.Yaw, p.Pitch));
+            else
+            {
+                c.Parts[seat].AimYaw = p.Yaw;
+                c.Parts[seat].AimPitch = p.Pitch;
+            }
             if (c.Parts[seat].D.LifterCab)
                 ConstructLifters.CabInput(Constructs, c, seat, b, p.Yaw); // (a Lifter Cab's keys for its lifter's step, before the logic tick clears them: ConstructLifterCab.cs)
             if (seat == c.DriveSeat && !c.Parts[seat].D.LifterCab) // (a Lifter Cab never drives: its keys move the hook, even linked to a Driving Module)
@@ -426,6 +437,7 @@ public sealed partial class Game
             SandboxHarpoonTick(); // (lines on players: their ends and who still holds them, GameSandboxHarpoon.cs)
         SandboxCrewTick(); // (crews man and work their ships' seats: GameCrew.cs, Source/Crew/CrewWorld.cs)
         AllocProfile.Mark("sandbox: constructs");
+        Constructs.PeopleCount = InterestPoints(Constructs.People); // (far NPC bodies step on a coarser rate: ConstructFar.cs)
         using (Perf.Measure(PerfArea.Constructs))
             Constructs.Step(World.Query, World.TickDt);
         AllocProfile.Mark("sandbox: after constructs");
@@ -1031,6 +1043,8 @@ public sealed partial class Game
             case CActKind.Tool:
             {
                 var asked = ConstructToolWire.From(r.U8());
+                if (ShellToolRefusal(p, asked) is { } only)
+                    return only; // (a shell frame whose module is its only tool: the Mining Shell's drill arm, GameShellHopper.cs)
                 return hands.SetTool(p.Id, StoryArmsTool(p, asked), Constructs, eye, p.Yaw); // (no gun in a story world: GameStoryArms.cs)
             }
             case CActKind.NudgeBegin:
@@ -1632,6 +1646,11 @@ public sealed partial class Game
     /// </summary>
     private bool SandboxToolGated(ref ushort part)
     {
+        if (Local is { } wearer && ShellToolRefusal(wearer, (ConstructTool)part) is { } only)
+        {
+            SandboxSay(only); // (the server refuses it the same way: GameShellHopper.cs)
+            return true;
+        }
         if (part == (ushort)ConstructTool.None && Local is { } me && StoryUnarmed(me))
             part = (ushort)ConstructTool.Hands; // (no gun in a story world: bare hands, shown at once as the server will; GameStoryArms.cs)
         return false;
@@ -2074,6 +2093,7 @@ public sealed partial class Game
             ConstructRide.Clear(ref s); // (a seat is its own frame)
             return;
         }
+        using var body = World.Body(s); // (a robot shell's frame: its size against the constructs too)
         Constructs.BlockPlayer(ref s, World.HeightOf(s.Stance), IsServer, p.Id, frame: p.FramedRider, doors: p.Bot == null || NavGraph.Current.SiteOf(s.Position, 2f) < 0);
         if (Constructs.LiftBodies.Count > 0 && p.Bot == null)
             ConstructLifterPush.Block(Constructs, ref s, World.HeightOf(s.Stance), _sepAtTick != 0 ? _sepAtTick : MoverPhysics.Clock, IsServer); // (a Loader Arm's piece in the air pushes them aside, or waits for them: ConstructLifterPush.cs)
@@ -2108,6 +2128,7 @@ public sealed partial class Game
             return "not while noclipping";
         // (it moved on since the player aimed: a little more reach the faster it goes)
         var slack = c.Anchored || c.Asleep ? 0 : MathF.Min((c.Vel - p.Sim.Velocity).Length(), 12f) * 0.15f;
+        using var body = World.Body(p.Sim); // (a robot shell's size on the rungs)
         var why = ladder ? ConstructRide.ClimbLadder(ref p.Sim, c, part, World.HeightOf(Stance.Stand), frame: p.FramedRider)
             : ConstructRide.GrabOn(ref p.Sim, c, part, World.HeightOf(p.Sim.Stance), slack, frame: p.FramedRider);
         if (why == null)
@@ -2412,6 +2433,7 @@ public sealed partial class Game
         if (Constructs.Bodies.Count == 0)
         {
             _sbViewSeat = 0;
+            _seatFrameKey = 0;
             foreach (var p in Players.Values)
             {
                 p.RenderSeat = SeatKind.None;
@@ -2484,6 +2506,22 @@ public sealed partial class Game
                 // The view turns with the seat, then stays inside the seat type's limits.
                 localSeat = ((uint)body << 16) | (uint)(part + 1); // (16 bits of part: << 8 mixed seats past part 255)
                 var steers = ConstructFlight.MouseSteers(c, part); // (a ship's nose follows the look: the look stays put and the ship comes round to it)
+                if (!steers && !c.SeatAims(part))
+                {
+                    // A seat that neither steers nor aims: the look is kept in the seat's own frame, and the camera takes the seat's up
+                    // (a ship in orbit is turned any way against the planet's up; the view was level with the planet, not the ship).
+                    SeatFrameLook(q, localSeat, lookKind, _sbViewSeat != localSeat);
+                    _sbViewSteers = false;
+                    _sbViewYaw = seatYaw;
+                    _stabSeat = 0;
+                    p.RenderLookYaw = _seatFYaw;
+                    p.RenderYaw = World.WrapAngle(seatYaw + _seatFYaw);
+                    _stabYaw = LookYaw;
+                    _stabPitch = LookPitch;
+                    SandboxSeatLookOut(_seatFYaw, now);
+                    continue;
+                }
+                _seatFrameKey = 0;
                 if (_sbViewSeat != localSeat && kind != SeatKind.Gunner || steers && !_sbViewSteers && _sbViewSeat == localSeat)
                     SeatLookForward(q, feet, seatYaw); // (just sat down, or just took the nose with the mouse: the view faces the way the seat does, so the ship doesn't swing round to wherever the look was)
                 _sbViewSteers = steers;
@@ -2510,6 +2548,55 @@ public sealed partial class Game
         _sbViewSeat = localSeat;
         if (localSeat != 0 || Local is not { Alive: true })
             _rideView = 0;
+        if (_seatFrameKey != localSeat)
+            _seatFrameKey = 0;
+    }
+
+    private uint _seatFrameKey; // the seat whose look is kept in its own frame (body << 16 | part + 1; 0: none)
+    private Quaternion _seatFrameRot = Quaternion.Identity; // that seat as drawn this frame
+    private float _seatFYaw, _seatFPitch, _seatFWroteYaw, _seatFWrotePitch;
+
+    /// <summary>The camera's up seated in a seat whose look is kept in its frame (zero: none).</summary>
+    internal Vector3 SeatFrameUp => _seatFrameKey != 0 && Local is { Alive: true } ? Vector3.Transform(Vector3.UnitY, _seatFrameRot) : Vector3.Zero;
+
+    /// <summary>
+    /// Takes a change to <see cref="LookYaw"/>/<see cref="LookPitch"/> since they were last written (the mouse) as a turn of the look in
+    /// the seat's frame. Called before the planet's transport too, which turns them without the player's hand (<see cref="SeatFrameRead"/>).
+    /// </summary>
+    private void SeatFrameSync()
+    {
+        if (_seatFrameKey == 0)
+            return;
+        _seatFYaw = World.WrapAngle(_seatFYaw + World.WrapAngle(LookYaw - _seatFWroteYaw));
+        _seatFPitch = Math.Clamp(_seatFPitch + LookPitch - _seatFWrotePitch, -1.55f, 1.55f);
+        SeatFrameRead();
+    }
+
+    private void SeatFrameRead() => (_seatFWroteYaw, _seatFWrotePitch) = (LookYaw, LookPitch);
+
+    /// <summary>The local seated look in the seat's frame: kept there as the seat turns any way, inside the seat type's limits, and written back as a world look.</summary>
+    private void SeatFrameLook(in Quaternion seat, uint key, SeatKind kind, bool justSat)
+    {
+        if (_seatFrameKey != key)
+        {
+            if (justSat)
+                (_seatFYaw, _seatFPitch) = (0f, 0f); // (just sat down: facing the way the seat does)
+            else
+                ConstructRide.LookIn(seat, LookDir(LookYaw, LookPitch), out _seatFYaw, out _seatFPitch); // (the mouse let go of the nose, or the seat stopped aiming: the look stays where it was)
+            _seatFrameKey = key;
+            SeatFrameRead();
+        }
+        else
+            SeatFrameSync();
+        var lim = SeatLookLimit(kind);
+        if (lim < MathF.PI)
+            _seatFYaw = Math.Clamp(_seatFYaw, -lim, lim);
+        _seatFPitch = Math.Clamp(_seatFPitch, -1.55f, 1.55f);
+        _seatFrameRot = seat;
+        var dir = Vector3.Transform(World.Forward(_seatFYaw, _seatFPitch), seat);
+        (LookYaw, LookPitch) = GravityFrames.Curved ? GravityFrames.Angles(LookFrame, dir) : (MathF.Atan2(dir.X, -dir.Z), MathF.Asin(Math.Clamp(dir.Y, -1f, 1f)));
+        LookPitch = Math.Clamp(LookPitch, -1.55f, 1.55f);
+        SeatFrameRead();
     }
 
     // ---- Riding in a construct's frame (ConstructRide.cs; board items rf01, ba01) ---------------------------------------

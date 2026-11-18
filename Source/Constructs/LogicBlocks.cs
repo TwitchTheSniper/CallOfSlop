@@ -201,7 +201,7 @@ public static class LogicBlocks
                 return ConstructConfig.Get(p, d, CfgKey.Value, 0);
             case CLogic.Numpad:
             case CLogic.CodeLock:
-                return LogicInputs.Step(ref p, d);
+                return LogicInputs.Step(ref p, d, ConstructFar.StepTicks(c));
             case CLogic.Display:
                 if (d.DataIn.Length > 1)
                 {
@@ -346,7 +346,7 @@ public static class LogicSensors
         p.Mem = health;
         if (p.Count == 0)
             return 0;
-        p.Count--;
+        p.Count = (ushort)Math.Max(0, p.Count - ConstructFar.StepTicks(c)); // (a far body's logic step is several ticks: ConstructFar.cs)
         return 1;
     }
 }

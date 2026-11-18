@@ -15,7 +15,7 @@ namespace CallOfSlop;
 /// <item>slopes: ground whose normal is within <see cref="World.MaxSlopeDeg"/> of "up" is walkable; steeper ground is a wall
 /// when walking and something you slide down otherwise. Terrain follows <see cref="SlopeRules"/> instead (the footprint's
 /// slope, grip, slower uphill, capped and steerable slides), exactly like the classic mover;</item>
-/// <item>stances: stand and crouch are capsules of radius <see cref="World.PlayerRadius"/>, 1.8 and 1.2 m tall; prone is a
+/// <item>stances: stand and crouch are capsules of radius <see cref="World.BodyRadius"/>, 1.8 and 1.2 m tall; prone is a
 /// 0.6 m ball of radius 0.3. Getting up needs room for the taller capsule;</item>
 /// <item>mantling: the classic ledge search with capsule room checks, then the same glide;</item>
 /// <item>movers: carried and given momentum like the classic mover (<see cref="MoverPhysics.BeginTick"/>, EndTick), pushed by
@@ -73,7 +73,7 @@ public sealed class SweptMover : IMover
     }
 
     /// <summary>Capsule radius of a stance.</summary>
-    public static float RadiusOf(Stance s) => s == Stance.Prone ? ProneRadius : World.PlayerRadius;
+    public static float RadiusOf(Stance s) => s == Stance.Prone ? ProneRadius * World.BodyScale : World.BodyRadius;
 
     /// <summary>The body capsule of a stance standing at <paramref name="feet"/> with the given up direction.</summary>
     public static Capsule CapsuleAt(Vector3 feet, Stance stance, Vector3 up)
@@ -121,8 +121,8 @@ public sealed class SweptMover : IMover
 
         // Everything the capsule can touch this tick, gathered once.
         var reach = s.Velocity.Length() * dt + World.StepHeight + SnapDown + MinStepForward + 0.5f;
-        var lo = Vector3.Min(s.Position, s.Position + up * World.PlayerHeight) - new Vector3(reach);
-        var hi = Vector3.Max(s.Position, s.Position + up * World.PlayerHeight) + new Vector3(reach);
+        var lo = Vector3.Min(s.Position, s.Position + up * World.BodyHeight) - new Vector3(reach);
+        var hi = Vector3.Max(s.Position, s.Position + up * World.BodyHeight) + new Vector3(reach);
         AllocProfile.Mark("move: gather"); // (the benchmark's slow-tick trace: AllocProfile.cs)
         phys.Gather(lo, hi, new QueryFilter(QueryLayers.Static | QueryLayers.Movers | QueryLayers.Boundary, _tick), _shapes);
         AllocProfile.Mark("move: walk");
@@ -154,7 +154,7 @@ public sealed class SweptMover : IMover
         if (_terrain != null)
         {
             var gap = s.Position.Y - _terrain.HeightAt(s.Position.X, s.Position.Z);
-            onTerrain = gap < 1f && gap < World.PlayerRadius * (1f / SlopeRules.SupportNormal(_terrain, s.Position.X, s.Position.Z).Y - 1f) + 0.15f;
+            onTerrain = gap < 1f && gap < World.BodyRadius * (1f / SlopeRules.SupportNormal(_terrain, s.Position.X, s.Position.Z).Y - 1f) + 0.15f;
         }
         if (onTerrain)
         {
@@ -569,10 +569,10 @@ public sealed class SweptMover : IMover
     {
         if (phys.Gravity is PointGravity planet)
             return World.ClampToSky(feet, planet); // a planet: only a ceiling far above (the ground holds players up)
-        feet.X = Math.Clamp(feet.X, -phys.HalfX + World.PlayerRadius, phys.HalfX - World.PlayerRadius);
-        feet.Z = Math.Clamp(feet.Z, -phys.HalfZ + World.PlayerRadius, phys.HalfZ - World.PlayerRadius);
+        feet.X = Math.Clamp(feet.X, -phys.HalfX + World.BodyRadius, phys.HalfX - World.BodyRadius);
+        feet.Z = Math.Clamp(feet.Z, -phys.HalfZ + World.BodyRadius, phys.HalfZ - World.BodyRadius);
         if (phys.Map?.Boundary is { } boundary)
-            feet = boundary.ClampFeet(feet, World.PlayerRadius); // the barrier stops the capsule; this is the safety net
+            feet = boundary.ClampFeet(feet, World.BodyRadius); // the barrier stops the capsule; this is the safety net
         if (phys.Terrain is { } terrain)
         {
             feet.Y = Math.Clamp(feet.Y, terrain.Data.LowestGround - 5, terrain.Data.HighestGround + 60);

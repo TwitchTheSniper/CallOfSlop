@@ -426,7 +426,11 @@ coil spins and its tip lights the map while it holds something). The keys are th
   is coupled to and any pair of pieces that overlap already (left to the contacts: pr02, where a trailer on its ball blocked
   every step, so the held thing only turned with the look), and of a coupled pair the held one leads on the hitch while the other follows (`Contact.KinA/KinB`). A held body never sleeps. The holder's own
   client draws the piece at the pose its aim asks for now (`ConstructGrab.Predict`, no protocol change), never further from
-  the server's pose than 15 cm plus 0.2 s of the motion in hand; other players see the server's motion.
+  the server's pose than 15 cm plus 0.2 s of the motion in hand; other players see the server's motion. Since pg01 a
+  joined holder steps the piece by the server's own spring (`ConstructGrab.Follow`, GameSandboxPhysGunSim.cs), so it swings
+  and trails as on the host; since pg02 that runs in the frame of the deck the holder stands on (the deck's motion carries
+  it), and a held joint not in a chain is stepped by the beam's joint rule (GameSandboxPhysGunSimJoint.cs). A chain still
+  draws the server's angles.
 - **Strength** (pr02; were 200 kN, 8 kN and 40 m/s2): 1.5 MN in creative (at most 120 m/s2, so a 15 t truck gets 100 m/s2), things up to 60 t (a tier 5 Foundry is 48 t); survival 150 kN, up to 5,000 kg where a player starts (user, 2026-11-10; Karl's 2026-11-08 1,500 kg; was 20 kN and 500 kg), raised per player by [tool upgrades](../TOOL-UPGRADES.md) (heavier: "too
   heavy for the physics gun"), so heavy things are slow to pull.
 - **Refused**: players (a construct with anyone in a seat), anything anchored to the ground (a foundation, a pinned

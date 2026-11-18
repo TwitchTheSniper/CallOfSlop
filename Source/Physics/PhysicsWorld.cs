@@ -551,7 +551,7 @@ public sealed class PhysicsWorld : IWorldQuery
         public bool Visit(int item)
         {
             var w = W;
-            const float r = World.PlayerRadius;
+            var r = World.BodyRadius;
             if (item < w._boxCount)
             {
                 if (!w.BoxWanted(item, Layers, Ignore))
@@ -619,24 +619,24 @@ public sealed class PhysicsWorld : IWorldQuery
         if ((filter.Layers & QueryLayers.Tree) != 0 && StaticCount > 0)
         {
             EnsureTree();
-            const float r = World.PlayerRadius;
+            var r = World.BodyRadius;
             var v = new BodyVisitor { W = this, Feet = feet, Height = height, Layers = filter.Layers, Ignore = filter.Ignore };
             if (_tree.Overlap(new Vector3(feet.X - r, feet.Y, feet.Z - r), new Vector3(feet.X + r, feet.Y + height, feet.Z + r), ref v))
                 return true;
         }
-        if ((filter.Layers & QueryLayers.Trunks) != 0 && Forest is { } forest && forest.BodyInTrunk(feet, height, World.PlayerRadius))
+        if ((filter.Layers & QueryLayers.Trunks) != 0 && Forest is { } forest && forest.BodyInTrunk(feet, height, World.BodyRadius))
             return true;
         if ((filter.Layers & QueryLayers.Movers) != 0 && HasMovers)
         {
             foreach (ref readonly var b in MoverPhysics.At(_map!, filter.MoverTick))
                 if (feet.Y < b.Top - 0.001f && feet.Y + height > b.Bottom + 0.001f && !Ignored(filter.Ignore, ShapeKind.Mover, b.Mover)
-                    && MoverPhysics.CircleOverlap(b, feet.X, feet.Z, World.PlayerRadius, out _))
+                    && MoverPhysics.CircleOverlap(b, feet.X, feet.Z, World.BodyRadius, out _))
                     return true;
         }
         if ((filter.Layers & QueryLayers.MoverSweeps) != 0)
             foreach (var s in _sweeps)
-                if (feet.Y < s.Max.Y - 0.001f && feet.Y + height > s.Min.Y + 0.001f && feet.X + World.PlayerRadius > s.Min.X && feet.X - World.PlayerRadius < s.Max.X
-                    && feet.Z + World.PlayerRadius > s.Min.Z && feet.Z - World.PlayerRadius < s.Max.Z)
+                if (feet.Y < s.Max.Y - 0.001f && feet.Y + height > s.Min.Y + 0.001f && feet.X + World.BodyRadius > s.Min.X && feet.X - World.BodyRadius < s.Max.X
+                    && feet.Z + World.BodyRadius > s.Min.Z && feet.Z - World.BodyRadius < s.Max.Z)
                     return true;
         return false;
     }

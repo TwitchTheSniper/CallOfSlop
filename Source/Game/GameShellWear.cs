@@ -120,7 +120,7 @@ public sealed partial class Game
     }
 
     /// <summary>Both sides: how fast a player in a shell moves, as a share (1: not in a shell, or nothing wrong; GameShellWear.cs).</summary>
-    public static float ShellMoveMult(Player? p) => p is { InShell: true } ? ShellWear.Current.MoveShare(p.ShellWear) : 1f;
+    public static float ShellMoveMult(Player? p) => p is { InShell: true } ? ShellWear.Current.MoveShare(p.ShellWear) * ShellFrames.Of(p.ShellFrame).Speed : 1f; // (and its frame's pace: Constructs/Shells.json)
 
     /// <summary>
     /// Server, from <see cref="DamagePlayer"/>: a hit on someone in a shell, by the part it landed on (Karl, 2026-11-18). An arm or a leg:
@@ -134,6 +134,8 @@ public sealed partial class Game
         ref var run = ref _sh[victim.Id];
         if (!run.On)
             return amount;
+        if (victim.ShellFrame != 0 && amount > 0)
+            amount = Math.Max(1, (int)MathF.Round(amount * ShellFrames.Of(victim.ShellFrame).Damage)); // (its frame's plating: the Mining Shell's x0.7)
         var t = ShellWear.Current;
         if (t.Problem.Length > 0)
             return amount;
@@ -487,36 +489,6 @@ public sealed partial class Game
     }
 
     // ---- Both sides: the HUD and what it looks and sounds like ----------------------------------------------------------
-
-    private SbText _sbShellWear;
-
-    /// <summary>The HUD's line of worn works while this PC's player wears a shell (nothing when all is well).</summary>
-    private void ShellWearHud(Player me, List<HudLine> lines, Vector4 orange, Vector4 dim)
-    {
-        var t = ShellWear.Current;
-        long key = 1;
-        var any = false;
-        for (var k = 0; k < ShellWear.Works; k++)
-        {
-            var w = me.ShellWear[k];
-            key = key * 131 + (t.Worn(w) || w >= ShellWear.Failed ? ShellWear.Pct(w) + 1 : 0);
-            any |= t.Worn(w) || w >= ShellWear.Failed;
-        }
-        if (!any)
-            return;
-        if (_sbShellWear.Stale(key))
-        {
-            var sb = new System.Text.StringBuilder("SHELL WEAR:");
-            for (var k = 0; k < ShellWear.Works; k++)
-            {
-                var w = me.ShellWear[k];
-                if (t.Worn(w) || w >= ShellWear.Failed)
-                    sb.Append(sb.Length > 11 ? ", " : " ").Append(ShellWear.ShortOf((ShellWork)k)).Append(w >= ShellWear.Failed ? " FAILED" : $" {ShellWear.Pct(w)}%");
-            }
-            _sbShellWear.Text = sb.ToString();
-        }
-        lines.Add(new HudLine(_sbShellWear.Text, dim));
-    }
 
     /// <summary>What this PC's player's shell does to the view this frame (Ui/UiShellWear.cs draws it).</summary>
     public struct ShellView

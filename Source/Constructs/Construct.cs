@@ -301,6 +301,10 @@ public sealed partial class Construct
     public Vector3 GrabFrameVel, GrabFrameSpin; // held by a rider: their deck's motion, on top of which the piece is moved (ConstructGrab.Drive)
     public bool Asleep;
     public int SleepTicks;
+    /// <summary>Server: far from every person (ConstructFar.cs): its physics steps once every this many ticks, by that many ticks' time (0 or 1: every tick).</summary>
+    public byte FarRate;
+    /// <summary>Server: far from every person, awake or asleep (ConstructFar.cs): its logic and power step once every this many ticks, by that many ticks' time.</summary>
+    public byte FarLogic;
     public bool Fresh; // server: made since the physics last stepped; one nobody gave a motion takes its frame's (ConstructRideSpawn.cs)
     // Cargo volumes (decision 21; ConstructCargo.cs). Carried: this body rides kinematically in a frozen cargo volume of
     // construct CarriedBy (0: free), at CarryPos / CarryRot in the frame of that volume part's segment (CarrySeg); the
@@ -340,6 +344,12 @@ public sealed partial class Construct
     // Server: the speed it came into the world with, past the physics' speed limit (cut off a fast ship, it keeps the ship's
     // speed; ConstructRide.SpawnIntoMotion sets it, ConstructPhysics.Integrate lets it slow and never speed up past it). 0: none.
     internal float SpeedKept;
+    // Server: the ship in space whose frame this loose body is in (GameSpaceLaunch.cs, SpaceCarry): not a ship of its own,
+    // but carried by that ship's motion; where it was in that frame at the last carry, there in the world, and the ship's
+    // turn and speed there then. 0: none.
+    internal ushort SpaceRide;
+    internal Vector3 SpaceRideLocal, SpaceRideWorld, SpaceRideVel;
+    internal Quaternion SpaceRideRot;
 
     /// <summary>Server: its velocity was just set from a moving frame (let go, cut free): it keeps that speed past the physics' limit.</summary>
     internal void KeepSpeed() => SpeedKept = Vel.Length();
@@ -428,6 +438,7 @@ public sealed partial class Construct
     public int LaunchCount; // catapults, arrestor gear, pull docks and mooring masts (ConstructLauncher.cs, ConstructCarrier.cs): counted with the part caches
     public uint ArrestFree, DockAway; // server, ConstructWorld.CarrierClock: arrestor gear and docks leave it alone until then
     public bool ThrustPuppet; // server: a Board order flies it and sets its thrusters' levels for their flames only (GameNavBoard.cs): the thrust step leaves them and pushes nothing
+    public int BreachCut; // server: ticks its cutter has burned against the hull it grips; at ConstructBreach.HoleTicks it takes the hole out (HullHoles.cs)
     public bool BreachSealed; // server: gripped by a Board order (Game/GameNavBoard.cs): it holds while its grapples are on, hull under them or not (ConstructBreach)
 
     public const float RiderMass = 85f; // a player standing on a joint's segment, for its load

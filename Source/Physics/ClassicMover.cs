@@ -278,7 +278,7 @@ public sealed class ClassicMover : IMover
         var boxes = phys.Boxes;
         var H = height;
         var wasGrounded = grounded;
-        const float r = World.PlayerRadius;
+        var r = World.BodyRadius;
 
         // ---- Vertical ----
         velocity.Y -= World.Gravity * dt * World.GravityScale;
@@ -347,7 +347,7 @@ public sealed class ClassicMover : IMover
         // Only boxes that reach the strip swept by this move can stop it, so walk the short list of those, in map order. If
         // a wall pushes us back out of the strip (we started inside a box), carry on with every box after the current one,
         // exactly as a scan over the whole map would.
-        const float r = World.PlayerRadius;
+        var r = World.BodyRadius;
         float x0 = MathF.Min(feet.X, p.X) - r, x1 = MathF.Max(feet.X, p.X) + r;
         float z0 = MathF.Min(feet.Z, p.Z) - r, z1 = MathF.Max(feet.Z, p.Z) + r;
         var near = Near(phys, x0, z0, x1, z1);
@@ -472,10 +472,10 @@ public sealed class ClassicMover : IMover
     }
 
     private static bool OverlapsXZ(Vector3 feet, Box box) =>
-        feet.X + World.PlayerRadius > box.Min.X
-        && feet.X - World.PlayerRadius < box.Max.X
-        && feet.Z + World.PlayerRadius > box.Min.Z
-        && feet.Z - World.PlayerRadius < box.Max.Z;
+        feet.X + World.BodyRadius > box.Min.X
+        && feet.X - World.BodyRadius < box.Max.X
+        && feet.Z + World.BodyRadius > box.Min.Z
+        && feet.Z - World.BodyRadius < box.Max.Z;
 }
 
 /// <summary>The input side of movement, the same for every mover: wish direction, wanted stance, speed.</summary>
