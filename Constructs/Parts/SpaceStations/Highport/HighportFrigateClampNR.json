@@ -1,0 +1,120 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Highport Frigate Clamp NR",
+  "description": "A berth's clamp arm: a turntable on the docking arm's top. Its telescoping boom reaches out to a ship at the end of the berth's approach lane, its magnetic clamp takes the hull and it draws the ship in to the berth.",
+  "group": "Station",
+  "section": "Caledon Highport",
+  "role": "frame",
+  "tool": "welder",
+  "collider": "boxes",
+  "clampArm": {
+    "shoulder": [
+      -0.525,
+      2.875,
+      6.225
+    ],
+    "stow": [
+      -0.525,
+      4.175,
+      -6.975
+    ],
+    "reach": 60.0
+  },
+  "mass": 940.8,
+  "health": 5129,
+  "armour": 40,
+  "material": "steel",
+  "color": "#2b2f33",
+  "attachSeconds": 20.0,
+  "boxes": [
+    {
+      "min": [
+        -1.925,
+        -1.125,
+        4.825
+      ],
+      "max": [
+        0.875,
+        -0.325,
+        7.625
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.675,
+        -1.122,
+        4.075
+      ],
+      "max": [
+        1.625,
+        -0.325,
+        8.375
+      ],
+      "color": "#2b2f33",
+      "detail": true,
+      "shape": "cylinder",
+      "finish": "dirty steel",
+      "front": "+y"
+    },
+    {
+      "min": [
+        -2.695,
+        -0.775,
+        4.055
+      ],
+      "max": [
+        1.645,
+        -0.625,
+        8.395
+      ],
+      "color": "#d9a441",
+      "detail": true,
+      "shape": "cylinder",
+      "finish": "hazard paint",
+      "front": "+y"
+    },
+    {
+      "min": [
+        -2.525,
+        -1.122,
+        -8.975
+      ],
+      "max": [
+        1.475,
+        -0.055,
+        -4.975
+      ],
+      "color": "#2b2f33",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -2.545,
+        -0.825,
+        -7.275
+      ],
+      "max": [
+        1.495,
+        -0.625,
+        -6.675
+      ],
+      "color": "#ffd8a0",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "j0",
+      "at": [
+        -0.525,
+        -1.125,
+        6.225
+      ],
+      "dir": "-y"
+    }
+  ]
+}

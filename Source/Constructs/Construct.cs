@@ -404,6 +404,10 @@ public sealed partial class Construct
     public ushort MooredTo, MoorPart;
     public Vector3 MoorAt;
     public Quaternion MoorRot = Quaternion.Identity;
+    public Vector3 MoorFromAt; // host: where a ship the clamp arm caught lay when it took it (station frame), drawn in to MoorAt as MoorDraw goes 0 to 1
+    public Quaternion MoorFromRot = Quaternion.Identity;
+    public float MoorDraw = 1f, MoorDrawRate; // how far the draw-in has gone (1: in the berth) and its pace a second
+    public ClampArmSet? ClampArms; // a station's berth clamp arms (ConstructClampArms.cs), found when first asked for
     public ushort MoorAway, MoorAwayPart; // host: the station berth it was cast off from, which won't moor it again until it has left that berth's box
     public bool IsStation; // built of space station pieces (part group "Station": docs/sandbox/constructs/station.md): the command view shows it as a station
     public bool HasVolumeStore; // a Storage Volume: its box is drawn with the cargo volumes' (ConstructRenderCargo.cs)

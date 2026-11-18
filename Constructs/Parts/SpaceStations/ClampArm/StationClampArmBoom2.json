@@ -1,0 +1,87 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Station Clamp Arm Boom 2",
+  "description": "A clamp arm's telescoping boom section (drawn where the arm reaches).",
+  "group": "Station",
+  "section": "Clamp arm",
+  "role": "frame",
+  "tool": "welder",
+  "collider": "boxes",
+  "mass": 500.0,
+  "health": 4600,
+  "armour": 40,
+  "material": "steel",
+  "color": "#9ba0a3",
+  "attachSeconds": 20.0,
+  "boxes": [
+    {
+      "min": [
+        -0.325,
+        -0.325,
+        0.875
+      ],
+      "max": [
+        0.075,
+        0.075,
+        1.275
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -1.475,
+        -1.475,
+        -0.125
+      ],
+      "max": [
+        1.225,
+        1.225,
+        12.875
+      ],
+      "color": "#aeb2b2",
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -1.6,
+        -1.6,
+        12.375
+      ],
+      "max": [
+        1.35,
+        1.35,
+        12.915
+      ],
+      "color": "#d9a441",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -1.62,
+        -1.62,
+        12.555
+      ],
+      "max": [
+        1.37,
+        1.37,
+        12.695
+      ],
+      "color": "#3fd0ff",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "root",
+      "at": [
+        -0.125,
+        -0.125,
+        -0.125
+      ],
+      "dir": "-z"
+    }
+  ]
+}

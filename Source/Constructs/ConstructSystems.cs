@@ -33,6 +33,14 @@ public static partial class ConstructParts
             d.DockEject = Opt(dock, "eject") is { } ej ? Num(ej, file, "dock.eject") : 0f;
             Range(d.DockEject, 0, 60, file, "dock.eject");
         }
+        if (Opt(root, "clampArm") is { } arm)
+        {
+            Known(arm, ["shoulder", "stow", "reach"], $"{file}, clampArm");
+            d.ClampShoulder = Vec(Need(arm, "shoulder", $"{file}, clampArm"), file, "clampArm.shoulder");
+            d.ClampStow = Vec(Need(arm, "stow", $"{file}, clampArm"), file, "clampArm.stow");
+            d.ClampReach = Num(Need(arm, "reach", $"{file}, clampArm"), file, "clampArm.reach");
+            Range(d.ClampReach, 2, 200, file, "clampArm.reach");
+        }
         if (Opt(root, "breach") is { } br)
         {
             if (d.Logic != CLogic.Lamp)
