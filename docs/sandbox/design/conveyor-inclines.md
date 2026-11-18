@@ -3,7 +3,7 @@
 The user, 2026-11-17: conveyors, chutes and other logistics pieces should go **up and over** an aisle, so a factory's aisles
 aren't crisscrossed with chutes and machines. For that a conveyor needs a better way to climb: today a conveyor that must
 rise runs flat, turns abruptly into a vertical leg and turns back to flat, instead of one straight conveyor climbing at an
-incline. Nothing here is built yet.
+incline. Built on `claude/conveyor-inclines` (2026-11-17) as the user's answer at the end asks: what was built is listed there.
 
 ## 1. Where things stand (main, 2026-11-17)
 
@@ -206,3 +206,25 @@ its spacing.
 - **No behaviour change:** no slope limits by bed, no refusal of rising chutes, no speed or capacity change on a slope, no new lift parts that change how material moves, no power for lifts. Links move pieces and material exactly as today.
 - **What changes is how a link is laid out and drawn:** the router and the link tool lay a rise as one straight inclined run with smooth curved transitions, not flat, vertical, flat; runs can go up and over an aisle at a set clearance (2.4 m walkways, 4.5 m vehicle lanes) on drawn supports (trestles, bridges as looks or simple structural parts); the factory kit routes its links overhead so aisles stay clear.
 - Keep the link's path data compatible (saves and wire bump only if the stored path changes shape); old links draw as before.
+
+### What was built (2026-11-17, visual routing only)
+
+- **Grade bends** (`ConstructRoutes.BendRule(type, from, to)`, `GradeOnly`): a chute's or conveyor's change of grade alone, up to a
+  right angle, is any angle; plan turns keep their 45 degree steps. No bed kinds, no limits, no new refusals, no `Bed`/`Graded`
+  fields: nothing in a save or on the wire changed, so no protocol bump.
+- **Vertical curves** (`RouteCurves`): drawn by `RouteRender.Curve` (3 to 8 pieces, a few mm fatter or thinner by turns: no
+  coplanar faces) and ridden by `ConstructConveyor.Pose`/`OnCurve` for 2 to 80 degree grade changes. The link's length and a
+  piece's distance along it are the straight segments' as before; the curve moves only where a piece inside its window is drawn
+  (and where the server drops it if the link goes).
+- **The tool**: Reload while routing a chute or conveyor cycles the grade snap (free 5 degree steps, level, 20, 40;
+  `ConstructRoutes.Grade`, `GradeTurn`); the HUD shows the next segment's grade. Not the G key: G is the grenade, live in Sandbox.
+- **The router**: `RouteSearch.DirectRamp` (two ports in a row at different heights: one incline, a sideways jog when off line)
+  and `Ramps` (a lattice route's flat - vertical - flat as an incline where it fits), each checked with the server's rule. The
+  `VerticalCost` search weight was not added.
+- **Supports** (part kit `link_supports`, Constructs/Parts/LinkSupports): Trestle and Trestle Post 1 to 8 m, Link Bridge 4/6/8 m,
+  saddles as `tray` lanes. The shell's rafters got no saddles (the pipe rack).
+- **Not built**, as the answer rules out: bed kinds and grade limits, Piece Lift, Bucket Elevator, Spiral Chute, power for lifts,
+  refusing rising chutes. **The factory kit** already lays its chutes on the service strip behind the machines, never across the
+  aisle or the road, so no overhead layer was needed at today's spacing; `--factory-check` now fails a chute or conveyor under the
+  clearance (2.4 m aisle, 4.5 m vehicle lane) over a walkway tile (`FactoryScript.Walkways`), and the three refineries and the
+  extraction post pass it.
