@@ -1592,10 +1592,13 @@ public sealed partial class Game : IDisposable
         amount = StreakArmorAbsorb(victim, amount, head, kind, now); // Ballistic Vests and the Juggernaut suit (KillStreaksMore.cs)
         if (amount <= 0)
             return false;
-        amount = ShellHit(victim, amount); // (a robot shell's plating, and the hit's wear: GameShellWear.cs)
+        var shellPart = victim.InShell ? (head ? BloodPart.Head : BloodOnHit(victim, attacker, kind, from)) : BloodPart.None; // (a shell's hit goes by where it lands)
+        if (victim.InShell && head)
+            victim.Blood = BloodMarks.AddHit(victim.Blood, BloodPart.Head, BloodMarks.SectorOfPart(BloodPart.Head));
+        amount = ShellHit(victim, amount, shellPart); // (a robot shell: the part hit, its plating and the hit's wear: GameShellWear.cs)
         var healthBefore = victim.Health;
         victim.Health -= amount;
-        var hitPart = BloodOnHit(victim, attacker, kind, from); // the blood marks: body part and direction (BodyBlood.cs)
+        var hitPart = victim.InShell ? shellPart : BloodOnHit(victim, attacker, kind, from); // the blood marks: body part and direction (BodyBlood.cs)
         if (victim.Team == SbPeopleTeam)
             LockdownAssault(attacker, victim, now); // (the penal colony's staff: the lockdown, GameColonyLockdown.cs)
         if (victim.Health > 0)
