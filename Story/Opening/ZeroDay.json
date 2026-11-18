@@ -14,6 +14,10 @@
   // A crewed ship of another faction on the same orbit (GameSpaceStart.OpeningCompanion): the Traders are neutral to players
   // (Crew/Factions/Traders.json) and fly the IT style, so a Zero Day suits them. "behind": m back along the orbit (- ahead).
   "company": [{ "ship": "Zero Day Frigate", "faction": "Traders", "behind": 400 }],
+  // Caledon Highport, the station (Karl, 2026-11-18: "around 40km"): on its own circular orbit 40 km up over the start, about
+  // 93 m/s, so it drifts against the ship's lower, faster orbit (GameSpaceStart.OpeningStation). Caledon's pull there is under 2% of
+  // the ground's; its reach (Hill sphere) runs out near 16,000 km, so no height near the world is wholly out of its gravity.
+  "stations": [{ "blueprint": "Caledon Highport", "orbit": 40000 }],
   "beats": {
     "placeholder": { "time": 4.0, "caption": "The torpedo racks click over on their safeties. Below, Caledon turns, green glens under snow-capped bens." },
     "wake": { "time": 3.5, "lines": [] }
