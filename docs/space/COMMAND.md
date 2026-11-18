@@ -161,6 +161,20 @@ carrier, across, grips, then opens the door or cuts through and opens its own. O
 the part and 1 for a door (protocol 342); the host works the spot and the way out of the skin there. The pod must be within
 3 km of the target. `order board N door|hull` (the window tool) gives it from a script.
 
+**The close hologram and the cut-in preview** (UI/UiCommandHolo.cs, Karl 2026-11-18: "you cannot see where you're cutting").
+The picked craft, or the craft being boarded, once it is over about 220 px across is cut again finer: one craft at a time,
+cells of 0.25 m or more (200 across at most), a level every 0.9 m or more, at most 12,000 lines (bigger cells past that), built
+once and again only when its parts change (about 5 ms and 2,900 lines for a Zero Day). Both holograms are cut from the parts'
+own boxes and hull skin shapes, not their bounds, so a welded hull piece no longer fills the rooms it walls. On the fine one
+the outer skin (lines beside cells open to the outside on that level) is bright, inner walls dim, outlines every other level;
+doors and hatches are green boxes. While picking a hull spot, once the cursor rests on a part for 0.12 s the view works the
+spot out as the host will (`Game.BoardPreview`: `BoardSpot`, then `BoardNearRoom`, with no log lines) and draws the hull piece
+it cuts (amber box), the pod's skirt, the hole as `ConstructBreach.OpenHole` cuts it (1.1 by 2.1 m from the room's floor up,
+red when no room is found), the tunnel in to the room's wall, and the room behind as an outline on its floor (the fine grid's
+inside cells joined to where a person lands). The label says whether the room's floor is level with the pod's. Close up, a
+part's middle within 2 m of the cursor counts as under it (12 to 48 px). Window tool: `cmdboard N door|hull` starts the
+pick, `mouse X,Y` rests the cursor.
+
 ### How a ship flies one (`Game.ServerTickNav`, before the launch step each tick)
 
 - **In a sky** (`NavInSky`): the order works the Flight Stabilizer's autopilot through `ConstructFlight.NavEngage`, as

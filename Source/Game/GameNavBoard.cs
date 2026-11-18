@@ -213,7 +213,7 @@ public sealed partial class Game
                 up = BoardUpOf(outward);
                 found = true;
             }
-            if (!found)
+            if (!found && !_boardQuiet)
                 Console.WriteLine($"[nav] board: no flat patch of construct {t.Id}'s hull within {BoardFlatReach:0} m of its {t.DefOf(part).Name} on any side: the pod goes for the spot itself");
         }
         spot = Vector3.Transform(at - tt, inv);
@@ -703,7 +703,8 @@ public sealed partial class Game
     /// nearest part's flat patch that has one (the parts round the picked one, nearest first); failing a level one, the nearest with any
     /// room behind it. Nothing found: the spot stays as picked.
     /// </summary>
-    private void BoardNearRoom(Construct t, Construct pod, int part, ref byte seg, ref Vector3 spot, ref Vector3 outward, ref Vector3 up, ref int hitPart)
+    /// <returns>1: a room level with the pod's floor; 2: a room, not level; 0: none found.</returns>
+    private int BoardNearRoom(Construct t, Construct pod, int part, ref byte seg, ref Vector3 spot, ref Vector3 outward, ref Vector3 up, ref int hitPart)
     {
         if (t.Dirty)
             t.Rebuild();
@@ -743,11 +744,57 @@ public sealed partial class Game
                 }
                 if (h2 < 0 || h2 >= t.PartCount || HullHoles.Refusal(HullHoles.BaseOf(t.DefOf(h2))) != null)
                     continue; // (a hatch, a machine: the cutter can't hole it, only burn it whole)
-                if (i != part || fp >= 0)
+                if ((i != part || fp >= 0) && !_boardQuiet)
                     Console.WriteLine($"[nav] board: the pod cuts in by construct {t.Id}'s {t.DefOf(h2).Name}{(pass == 0 ? ", its floor level with the room's" : ", into a room whose floor isn't level with its own")} (picked: its {t.DefOf(part).Name})");
                 (seg, spot, outward, up, hitPart) = (s2, p2, o2, u2, h2);
-                return;
+                return pass == 0 ? 1 : 2;
             }
-        Console.WriteLine($"[nav] board: no room behind any hull near construct {t.Id}'s {t.DefOf(part).Name}: the pod cuts in where it was told");
+        if (!_boardQuiet)
+            Console.WriteLine($"[nav] board: no room behind any hull near construct {t.Id}'s {t.DefOf(part).Name}: the pod cuts in where it was told");
+        return 0;
+    }
+
+    private bool _boardQuiet; // (the command view's preview runs the same picks: no log lines)
+
+    /// <summary>
+    /// The command view's preview of a Board order on the hull by <paramref name="part"/> (UiCommandBoard.cs), on host or client: where
+    /// the pod would cut in as <see cref="NavBoardAct"/> picks it (<see cref="BoardSpot"/>, then <see cref="BoardNearRoom"/>) and the hole's
+    /// frame as <see cref="ConstructBreach.OpenHole"/> takes it, all in <paramref name="t"/>'s rest frame: <paramref name="at"/> on the skin,
+    /// <paramref name="outward"/> out of it, <paramref name="up"/> the hole's up. <paramref name="room"/>: 1 a room behind level with the pod's
+    /// floor, 2 a room not level, 0 none (<paramref name="feet"/> on that room's floor, <paramref name="deep"/> how far in it begins).
+    /// <paramref name="cut"/>: the hull piece it cuts. False: no pod, or no hull there.
+    /// </summary>
+    public bool BoardPreview(Construct carrier, Construct t, int part, out Vector3 at, out Vector3 outward, out Vector3 up, out int room, out Vector3 feet, out float deep, out int cut)
+    {
+        (at, outward, up, feet, room, deep, cut) = (default, default, default, default, 0, 0, -1);
+        if (t.Dirty || part < 0 || part >= t.PartCount || BoardPodOf(Constructs, carrier) is not { } pod)
+            return false;
+        _boardQuiet = true;
+        try
+        {
+            if (!BoardSpot(t, part, true, out var seg, out var spot, out var o, out var u, out var hit))
+                return false;
+            room = BoardNearRoom(t, pod, part, ref seg, ref spot, ref o, ref u, ref hit);
+            cut = hit;
+            t.WorldFrame(seg, out var q, out var tt);
+            var w = tt + Vector3.Transform(spot, q);
+            var down = ConstructBreach.Level(t, -Vector3.Transform(o, q));
+            var upw = Vector3.Transform(Vector3.UnitY, t.Rot);
+            upw -= down * Vector3.Dot(upw, down);
+            upw = upw.LengthSquared() > 0.05f ? Vector3.Normalize(upw) : Vector3.Transform(u, q);
+            var inv = Quaternion.Conjugate(t.Rot);
+            at = t.ToLocal(w);
+            outward = -Vector3.Normalize(Vector3.Transform(down, inv));
+            up = Vector3.Normalize(Vector3.Transform(upw, inv));
+            if (ConstructBreach.RoomBehind(Constructs, t, w, down, out var f, out deep))
+                feet = t.ToLocal(f);
+            else
+                room = 0;
+            return true;
+        }
+        finally
+        {
+            _boardQuiet = false;
+        }
     }
 }
