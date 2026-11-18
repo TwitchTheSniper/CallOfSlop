@@ -32,6 +32,9 @@ public static class EvaRender
     /// <summary>Does this player wear an MMU now: on their back, alive, not seated (seated in its dock, the dock's own part is drawn).</summary>
     public static bool Wears(Player p) => (p.Eva & Eva.Mmu) != 0 && p.Alive && p.RenderSeat == SeatKind.None && MmuDef != null;
 
+    /// <summary>Is a worn MMU flown now (vacuum, off a ladder): the wearer strapped in, knees bent, the boots on its pedestals (LegAnimator.PackLegs)? In air they walk, and the pedestals aren't drawn.</summary>
+    public static bool Strapped(Player p) => Wears(p) && !p.RenderLadder && Eva.Vacuum(p.RenderPosition);
+
     /// <summary>The pack's frame (its latch at the suit's attach point, +z away from the back) in the upper body's frame, for the player's stance.</summary>
     public static Matrix4x4 OnBack(Player p)
     {
@@ -40,15 +43,16 @@ public static class EvaRender
     }
 
     /// <summary>The pack, and while it fires (<paramref name="burning"/>) a puff off each corner quad; <paramref name="m"/> is the pack frame -> the drawing space.</summary>
-    public static void Emit<T>(ref T o, in Matrix4x4 m, bool burning, double time) where T : struct, IToolBoxOut
+    public static void Emit<T>(ref T o, in Matrix4x4 m, bool burning, double time, bool strapped) where T : struct, IToolBoxOut
     {
         if (MmuDef is not { } d)
             return;
         foreach (ref readonly var b in d.Boxes.AsSpan())
             if (!b.Hidden)
                 o.Box(b.Model(0, b.Center) * m, b.Color, 0, b.Shape, b.Glass);
-        foreach (var (c, size, colour) in Pedestals)
-            o.Box(Matrix4x4.CreateScale(size) * Matrix4x4.CreateTranslation(c) * m, colour, 0);
+        if (strapped)
+            foreach (var (c, size, colour) in Pedestals)
+                o.Box(Matrix4x4.CreateScale(size) * Matrix4x4.CreateTranslation(c) * m, colour, 0);
         if (!burning)
             return;
         // Cold gas: short pale puffs off the quads, flickering one after another.
@@ -67,8 +71,12 @@ public static class EvaRender
 
     private static readonly Vector3 Puff = new(0.86f, 0.88f, 0.9f);
 
-    /// <summary>Where the wearer's soles are in the pack frame, standing (the torso's middle 1.15 m over the feet, the latch 2 cm under it and 0.455 m behind).</summary>
-    private const float SoleY = -1.13f, FeetZ = -0.455f;
+    /// <summary>
+    /// Where the wearer's soles are in the pack frame: the torso's middle stands 1.15 m over the feet (the latch 2 cm under
+    /// it, 0.455 m behind the ankles), and strapped in the knees bend, the ankles at <see cref="LegAnimator.PackAnkle"/>
+    /// (Karl, 2026-11-18: a barber's chair, more upright), so the soles sit that much higher and further forward.
+    /// </summary>
+    private static readonly float SoleY = -1.13f + LegAnimator.PackAnkle.Y - LegAnimator.AnkleHeight, FeetZ = -0.455f + LegAnimator.PackAnkle.Z; // (before Pedestals: initialised in order)
 
     /// <summary>
     /// The foot pedestals (Karl, 2026-11-18: a worn MMU is a vehicle, the feet rest on it, no walking): from the frame's foot

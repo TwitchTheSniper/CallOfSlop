@@ -116,7 +116,7 @@ public static class SandboxKeys
         PilotUndock = $"{K(GameAction.SeatHook)}: undock";
         PilotEject = $"{K(GameAction.SeatEject)}: eject";
         EvaDock = $"{K(GameAction.SeatEject)}: detach and fly the MMU, {Use}: get out (it stays docked)";
-        EvaFly = $"MMU: mouse turns and pitches, {K(GameAction.SeatRollLeft)}/{K(GameAction.SeatRollRight)}: roll, {K(GameAction.MoveForward)}/{K(GameAction.MoveBack)}: along the look, {K(GameAction.MoveLeft)}/{K(GameAction.MoveRight)}: across, {K(GameAction.Jump)}/{K(GameAction.CrouchHold)}: up/down, {K(GameAction.SeatDampeners)}: inertia dampeners";
+        EvaFly = $"MMU: mouse turns and pitches, {K(GameAction.SeatRollLeft)}/{K(GameAction.SeatRollRight)}: roll, {K(GameAction.MoveForward)}/{K(GameAction.MoveBack)}: along the look, {K(GameAction.MoveLeft)}/{K(GameAction.MoveRight)}: across, {K(GameAction.Jump)}/{K(GameAction.CrouchHold)}: up/down, {K(GameAction.SeatDampeners)}: inertia dampeners, {K(GameAction.SeatEject)}: take it off";
         PilotOpenChute = $"{K(GameAction.Jump)}: parachute";
         PilotOpenGlider = $"{K(GameAction.Jump)}: glider";
         PilotCut = $"{K(GameAction.Jump)}: cut away";
