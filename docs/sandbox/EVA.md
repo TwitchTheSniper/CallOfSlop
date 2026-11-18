@@ -23,7 +23,7 @@ A ship's air is limited and runs out sooner the more people are aboard. Code: `S
 - **Docked craft.** A body with no life support of its own that is carried or gripped by one that has (the Shuttle in its cradle, the Limpet on a hull) breathes its carrier's (`ShipAir.AirBody`).
 - **Spawned full, built empty.** Air parts in a blueprint the game spawns come full; a Building Station's build (`ConstructWorld.PlayerBuild`) and a part placed by hand come empty in Survival.
 - **The time is real time.** The command view's faster time doesn't drain it (space time isn't world ticks).
-- **HUD.** Aboard a ship with a unit, a line: `Ship air 74%, 3 h 20 min for 9 aboard` (orange under a quarter, red when gone). A joined client counts the people it sees aboard, so its time can read longer than the host's when crew have no bodies near. F on a unit or a tank gives its own share and the ship's line.
+- **HUD.** The vitals panel, bottom left in Sandbox in place of the health bar (`UI/UiVitalsPanel.cs`, Karl 2026-11-18; the robot shell panel's look): health, the suit's air (or NO SUIT), breath while it is held, the ship's air with its time left aboard a ship with a unit, and the MMU's fuel while worn. A joined client counts the people it sees aboard, so its time can read longer than the host's when crew have no bodies near. F on a unit or a tank gives its own share and the ship's line.
 
 | Ship | Fitted | Air (person-hours) | Lasts |
 | --- | --- | --- | --- |

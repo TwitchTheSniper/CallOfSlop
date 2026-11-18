@@ -2611,9 +2611,12 @@ public static unsafe partial class Program
             var hp = Math.Clamp(local.Health / (float)World.MaxHealth, 0f, 1f);
             float m = 30 * k, bw = 300 * k, bh = 18 * k, inset = 3 * k;
             var left = safeLeft + m;
-            Gfx.Rect(left, m, bw, bh, black, 0.5f);
-            Gfx.Rect(left + inset, m + inset, (bw - 2 * inset) * hp, bh - 2 * inset, HealthBarColor(local, hp, now), 0.95f);
-            DrawHealthExtras(local, left, m, bw, bh, k, now); // regen glow and Last Stand shield pips (Program.Health.cs)
+            if (!_game.SandboxOn) // (Sandbox: the vitals panel or the shell's says it, Ui/UiVitalsPanel.cs)
+            {
+                Gfx.Rect(left, m, bw, bh, black, 0.5f);
+                Gfx.Rect(left + inset, m + inset, (bw - 2 * inset) * hp, bh - 2 * inset, HealthBarColor(local, hp, now), 0.95f);
+                DrawHealthExtras(local, left, m, bw, bh, k, now); // regen glow and Last Stand shield pips (Program.Health.cs)
+            }
 
             // Ammo bar (bottom-right) or reload progress; none seated in a Sandbox seat, where no hand gun fires (Game.ServerShot)
             if (!_game.SandboxSeatedHere)
