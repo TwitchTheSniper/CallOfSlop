@@ -608,7 +608,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 349: mouse steering key in a ship's seat: CActKind.MouseSteer (u16 body) at its end (flips the Flight Stabilizer's Mouse aim setting).
     // 350: the rendezvous order (Game/GameNavMeet.cs): NavKind gains Meet at its end (Target: the craft met, Radius: the gap kept, m).
     // 351: conveyor inclines: the 27 link support parts (Constructs/Parts/LinkSupports) move the part ids after them.
-    public const ushort ProtocolVersion = 351;
+    // 352: faction controllers (faction-controllers.md phase 3): Msg.Factions ends with u16 powers gone for good; pact kinds 4-6 (trade, tribute, vassalage); a relation of -100 is a blood feud.
+    public const ushort ProtocolVersion = 352;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

@@ -432,6 +432,8 @@ public static unsafe partial class Program
         _lagMs = FlagValue(args, "--lag");
         _lossPct = FlagValue(args, "--loss");
         _forceNoUpnp = args.Any(a => a.Equals("--no-upnp", StringComparison.OrdinalIgnoreCase));
+        if (Array.FindIndex(args, a => a.Equals("--powers", StringComparison.OrdinalIgnoreCase)) is var pi and >= 0 && pi + 1 < args.Length)
+            Game.PowersForce = args[pi + 1].Equals("on", StringComparison.OrdinalIgnoreCase); // (faction controllers: on in survival only, else as asked: GameCrewPowers.cs)
         _freeTravel = args.Any(a => a.Equals("--free-travel", StringComparison.OrdinalIgnoreCase)); // (dev, free travel step 2: GameTravel.cs)
         _frameCapOff = _windowShot || _shotTool || perfShot || megaWindow || _glBench; // these measure frame rates: never capped (Program.FrameCap.cs)
         RenderCaps.ReadArgs(args); // --gl41, --gl-no=... (RenderCaps.cs)

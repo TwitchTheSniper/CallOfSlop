@@ -76,6 +76,10 @@ public sealed partial class Game : IPowerSight
                 k++;
             }
         t.PactCount = k;
+        t.PowerGone = 0;
+        for (var a = 1; a <= n && a <= 16; a++)
+            if (rel.Gone[a])
+                t.PowerGone |= (ushort)(1 << (a - 1));
         t.Version++;
     }
 
@@ -422,6 +426,7 @@ public sealed partial class Game : IPowerSight
         _questioning.Clear(); // (officer prisoners are the Fleet section's: CrewFleet.Officers)
         IntelMarks.Clear();
         Relations.Reset(); // (every relation from the power files, nobody met: a saved world's follow from its Powers and Crew sections)
+        CrewPowersClear(); // (the controllers from their plans: GameCrewPowers.cs; a saved world's follow from its Controllers section)
         _relShown = -1;
         _newsSent = _rel.NewsTotal;
         PowerNews.Clear();

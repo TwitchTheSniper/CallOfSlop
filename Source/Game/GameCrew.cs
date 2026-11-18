@@ -27,6 +27,7 @@ public sealed partial class Game : ICrewHost
         CrewFactionsTick();
         Crew.Step(Constructs, World.Query, this, _crewPeople.AsSpan(0, n));
         CrewFleetTick(); // (groups' news, questioning: GameCrewFleet.cs)
+        CrewPowersTick(); // (the faction controllers: GameCrewPowers.cs)
         if (Crew.Events.Count > 0)
             CrewLog();
         CrewWorkTick();
@@ -39,11 +40,11 @@ public sealed partial class Game : ICrewHost
     /// A nobody's ground vehicle or walker just set down (a faction vehicle, a convoy's member) gets a crew in its seats (bot-brain.md phase 2:
     /// it moves only with a driver aboard). Aircraft and ships are crewed by their pilots and stabilizers; a player's vehicle never is.
     /// </summary>
-    public void CrewFactionVehicle(Construct c)
+    public void CrewFactionVehicle(Construct c, byte power = 0)
     {
         if (!IsServer || c.Owner != 255 || c.Wreck || c.StabCount > 0 || c.DriveSeat < 0 && !CrewWorks(c) || Crew.Has(c.Id))
             return;
-        Crew.Crew(c, ShipAiMode.Strangers, faction: CrewFactionFor(c));
+        Crew.Crew(c, ShipAiMode.Strangers, faction: power != 0 ? power : CrewFactionFor(c)); // (a power's own ship: its power, GameCrewPowers.cs)
         CrewFleetVehicle(c); // (a convoy's member: its group under an admiral, GameCrewFleet.cs)
         CrewLog();
     }
