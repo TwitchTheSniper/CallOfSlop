@@ -276,6 +276,8 @@ public static partial class ConstructNet
                         if ((ShellKind)e.Muzzle != ShellKind.Bomb)
                             w.Vec(e.Half);
                         w.F32(e.AirPush).F32(e.TurnAir).F32(e.TurnBurn).F32(e.Drag).F32(e.Lift).F32(e.MinSpeed).U16(e.Wait).U16(e.Deploy).U8((byte)e.Flags).Vec(e.Aim).U32((uint)Math.Max(0, e.Life));
+                        if ((e.Flags & ShellFlags.Boost) != 0)
+                            w.Vec(e.Bore).U16(e.Boost); // (protocol 357: a rack launch's straight run)
                     }
                 }
                 if (ShellLooks.Carries((ShellKind)e.Muzzle))
@@ -359,7 +361,12 @@ public static partial class ConstructNet
                         e.Flags = (ShellFlags)r.U8();
                         e.Aim = r.Vec();
                         e.Life = (int)Math.Min(r.U32(), int.MaxValue);
-                        if (!float.IsFinite(e.AirPush + e.TurnAir + e.TurnBurn + e.Drag + e.Lift + e.MinSpeed + e.Aim.X + e.Aim.Y + e.Aim.Z))
+                        if ((e.Flags & ShellFlags.Boost) != 0)
+                        {
+                            e.Bore = r.Vec();
+                            e.Boost = r.U16();
+                        }
+                        if (!float.IsFinite(e.AirPush + e.TurnAir + e.TurnBurn + e.Drag + e.Lift + e.MinSpeed + e.Aim.X + e.Aim.Y + e.Aim.Z + e.Bore.X + e.Bore.Y + e.Bore.Z))
                             throw new MalformedPacketException("a designed shell's flight that isn't a number");
                     }
                 }

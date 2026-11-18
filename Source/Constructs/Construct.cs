@@ -344,6 +344,12 @@ public sealed partial class Construct
     // Server: the speed it came into the world with, past the physics' speed limit (cut off a fast ship, it keeps the ship's
     // speed; ConstructRide.SpawnIntoMotion sets it, ConstructPhysics.Integrate lets it slow and never speed up past it). 0: none.
     internal float SpeedKept;
+    // Server: the ship in space whose frame this loose body is in (GameSpaceLaunch.cs, SpaceCarry): not a ship of its own,
+    // but carried by that ship's motion; where it was in that frame at the last carry, there in the world, and the ship's
+    // turn and speed there then. 0: none.
+    internal ushort SpaceRide;
+    internal Vector3 SpaceRideLocal, SpaceRideWorld, SpaceRideVel;
+    internal Quaternion SpaceRideRot;
 
     /// <summary>Server: its velocity was just set from a moving frame (let go, cut free): it keeps that speed past the physics' limit.</summary>
     internal void KeepSpeed() => SpeedKept = Vel.Length();

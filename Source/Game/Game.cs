@@ -374,8 +374,10 @@ public sealed partial class Game : IDisposable
     private InputCmd SampleLocalInput(uint seq)
     {
         RideLookSync(); // (before the planet's transport: a look change since the last frame counts in the construct's frame)
+        SeatFrameSync(); // (the same for a seat's frame: GameSandbox.cs)
         TransportLook();
         RideLookRead();
+        SeatFrameRead();
         var def = Active.Def;
         var speed = LocalMoveSpeed(def);
         var ride = RideInput(); // contraption space: the look in the construct's frame (GameSandboxRide.cs)

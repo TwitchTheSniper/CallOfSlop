@@ -487,7 +487,7 @@ with players) and phase 4's question 5 (an ally's groups known) taken up.
   by its captain's uid). Versions 1 and 2 read (no pacts with factions, no contracts). Faction ids are the world's own; a faction that ends loses its pacts,
   feuds and standing at the powers' next thinks, so a new one in its id starts clean. No new save file. A Defend for a faction's call isn't kept as one: after
   a load it holds where it was called.
-- Protocol 357 (main 356 at the start): `Msg.Factions` ends with the pacts with factions, the powers' offers, the factions' proposals and the feuds with
+- Protocol 358 (main 357 at the merge): `Msg.Factions` ends with the pacts with factions, the powers' offers, the factions' proposals and the feuds with
   factions; `FactionOp` gains Pact, PactAnswer, PactBreak, CallAllies, ContractTake and ContractDrop at its end; `Msg.Contracts` (all contracts, on change,
   at most once a second, and to each joiner) in the slot of `RemovedColonyAlarm`.
 

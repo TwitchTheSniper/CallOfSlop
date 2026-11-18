@@ -126,7 +126,7 @@ too, since it is combat rather than wear.
   - Power: sluggish (pace down to 80 %, flat 65 %) and a brown-out now and then (the screen dims, a whine falls and comes back).
   - Processor: a glitch now and then (a torn band across the view, a bit-crushed stutter). Optics: static over the view, a soft crackle.
   - Plating: thin plating lets more of a hit through (up to 1.4x, cracked 1.5x).
-  - The HUD's shell line lists what is worn; a notice says when a work turns worn (at most once a minute) or fails.
+  - The shell panel bottom left (UI/UiShellPanel.cs: a hologram of the shell and a row per work, cyan sound, amber worn, red failing) shows health and every work; a notice says when a work turns worn (at most once a minute) or fails.
   The faults come seldom when just worn (about a minute apart) and closer as the work nears failure; every sound is short and soft.
 - **Maintenance.** Aim the attach tool at a standing shell (its look line says what each work is at and what LMB does), or a
   crew engineer does it:
