@@ -13,7 +13,7 @@ namespace CallOfSlop.VehicleKit.Generators;
 public sealed class Excavator(FactionStyle style) : VehicleShape(style)
 {
     public override string Shape => "Excavator";
-    public override IReadOnlyList<int> Seeds => [1, 2, 3];
+    public override IReadOnlyList<int> Seeds => [1, 14, 24]; // (--sweep-vehicle --seeds 30: the most different, 0.28 apart)
 
     public override VehicleCheckOptions? Checks => new() { MaxParts = 300, MaxMass = 16000, MinDistance = 8, MinTurn = 30, MinStability = 0.5f, MaxYawDrift = 20 }; // (stability: built with its boom upright, as excavators travel, on tracks 2.1 m apart)
 
@@ -32,7 +32,7 @@ public sealed class Excavator(FactionStyle style) : VehicleShape(style)
         v.Heavy();
 
         // ---- The undercarriage: rails, a Wide Differential at the back and a Track on a Stiff Suspension each side, the track reaching forward.
-        var rails = d.Pick((float[])[3.25f, 3.5f, 3.75f]);
+        var rails = d.Pick((float[])[3.25f, 3.5f, 3.75f, 4f]);
         v.Ladder(-1.675f, rails, 0.625f, 0.75f, "Wide Differential");
         foreach (var side in new[] { "-x", "+x" })
         {
@@ -67,7 +67,7 @@ public sealed class Excavator(FactionStyle style) : VehicleShape(style)
         // at a few degrees' give with a tier-1 drill; a Motor Hinge Medium would take a medium socket the house hasn't got.)
         const float boomX = 0.75f; // (at 0.625 the bucket hinge fell between the stick's sockets)
         var boomHinge = v.Put("Motor Hinge 3x3 Medium", new Vector3(boomX, deckY + 0.375f, front - Vehicle.Half), new Orient(Vector3.UnitX, Vector3.UnitY, Vector3.UnitY, -Vector3.UnitX), 0.2f, cross, "base"); // (its axis to the left: a positive angle lays the boom forward)
-        var boomLong = d.Pick((float[])[2.5f, 2.75f]); // (2 + 0.5, 2 + 0.75)
+        var boomLong = d.Pick((float[])[2.5f, 2.75f, 3f]); // (2 + 0.5, 2 + 0.75, 2 + 1)
         var boomBase = v.SocketPoint(boomHinge, "leaf");
         var boom = Run(v, boomHinge, "leaf", boomBase, Vector3.UnitY, boomLong);
         // ---- The stick: a Motor Hinge 3x3 on the boom's front near its top, its leaf forward, the stick out forward from it.
@@ -124,7 +124,7 @@ public sealed class Excavator(FactionStyle style) : VehicleShape(style)
         var battery = v.Onto(genset, "-x", "Battery", "+x", 0);
 
         v.Deck("house", deckY, new Vehicle.Rect(-1.125f, 1.125f, front - Vehicle.Half, rear - 0.25f), "deck", [footHole, sillHole]);
-        var shell = d.Fork("cab").Pick((string[])["Roll Cage", "Tin Roof Cab", "Chop Top Cab"]);
+        var shell = d.Fork("cab").Pick((string[])["Roll Cage", "Tin Roof Cab", "Chop Top Cab", "Mesh Guard Cage"]);
         v.Panels["cabshell"] = [v.Stand(shell, new Vector3(-0.5f, deckY + 2 * Vehicle.Half, seatZ + 0.5f), Orient.Forward, shellSill, "footL", 0.2f)];
         if (d.Fork("lamp").Chance(0.6))
             try
@@ -135,6 +135,28 @@ public sealed class Excavator(FactionStyle style) : VehicleShape(style)
             {
                 // (no room on this shell's top: none)
             }
+
+        // ---- Dress by seed: a push bar on the nose (a small dozer's), and armour plates hung on the power pack's sides as counterweight.
+        var dress = d.Fork("dress");
+        if (dress.Chance(0.5))
+            try
+            {
+                v.RamBars(0.375f, v.NoseZ + 0.375f, dress.Fork("ram"));
+            }
+            catch (VehicleKitException)
+            {
+                // (no room on this nose: none)
+            }
+        if (dress.Chance(0.5))
+            foreach (var side in (string[])["+x", "-x"])
+                try
+                {
+                    v.PaintAll([v.Onto(genset, side == "+x" ? "+x" : "-z", "Armour Plate 0.5 m", null, null, clear: true)], "body", dress.Fork("plate"));
+                }
+                catch (VehicleKitException)
+                {
+                    // (a face taken: that side bare)
+                }
 
         // ---- Paint.
         var paint = d.Fork("paint");
