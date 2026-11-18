@@ -1043,22 +1043,11 @@
       "by": "back"
     },
     {
-      "part": "Battery",
+      "part": "Ship Battery Bank",
       "on": 1,
-      "socket": "battery0",
-      "by": "-y"
-    },
-    {
-      "part": "Battery",
-      "on": 1,
-      "socket": "battery1",
-      "by": "-y"
-    },
-    {
-      "part": "Battery",
-      "on": 1,
-      "socket": "battery2",
-      "by": "-y"
+      "socket": "battery",
+      "by": "bottom",
+      "spin": 2
     },
     {
       "part": "Capacitor Bank M",
@@ -1618,19 +1607,55 @@
     },
     {
       "part": "Turret Ring S",
+      "on": 233,
+      "socket": "top",
+      "by": "base"
+    },
+    {
+      "part": "Motor Hinge",
+      "on": 237,
+      "socket": "top",
+      "by": "base"
+    },
+    {
+      "part": "Zero Day PDC",
+      "on": 238,
+      "socket": "leaf",
+      "by": "bottom"
+    },
+    {
+      "part": "Turret Ring S",
+      "on": 234,
+      "socket": "top",
+      "by": "base"
+    },
+    {
+      "part": "Motor Hinge",
+      "on": 240,
+      "socket": "top",
+      "by": "base"
+    },
+    {
+      "part": "Zero Day PDC",
+      "on": 241,
+      "socket": "leaf",
+      "by": "bottom"
+    },
+    {
+      "part": "Turret Ring S",
       "on": 235,
       "socket": "top",
       "by": "base"
     },
     {
       "part": "Motor Hinge",
-      "on": 239,
+      "on": 243,
       "socket": "top",
       "by": "base"
     },
     {
       "part": "Zero Day PDC",
-      "on": 240,
+      "on": 244,
       "socket": "leaf",
       "by": "bottom"
     },
@@ -1642,49 +1667,13 @@
     },
     {
       "part": "Motor Hinge",
-      "on": 242,
-      "socket": "top",
-      "by": "base"
-    },
-    {
-      "part": "Zero Day PDC",
-      "on": 243,
-      "socket": "leaf",
-      "by": "bottom"
-    },
-    {
-      "part": "Turret Ring S",
-      "on": 237,
-      "socket": "top",
-      "by": "base"
-    },
-    {
-      "part": "Motor Hinge",
-      "on": 245,
-      "socket": "top",
-      "by": "base"
-    },
-    {
-      "part": "Zero Day PDC",
       "on": 246,
-      "socket": "leaf",
-      "by": "bottom"
-    },
-    {
-      "part": "Turret Ring S",
-      "on": 238,
-      "socket": "top",
-      "by": "base"
-    },
-    {
-      "part": "Motor Hinge",
-      "on": 248,
       "socket": "top",
       "by": "base"
     },
     {
       "part": "Zero Day PDC",
-      "on": 249,
+      "on": 247,
       "socket": "leaf",
       "by": "bottom"
     },
@@ -1766,13 +1755,13 @@
     },
     {
       "part": "Turret Module",
-      "on": 255,
+      "on": 253,
       "socket": "module",
       "by": "-x"
     },
     {
       "part": "Input Reader",
-      "on": 257,
+      "on": 255,
       "socket": "+x",
       "by": "-x",
       "config": {
@@ -1793,13 +1782,13 @@
     },
     {
       "part": "Turret Module",
-      "on": 259,
+      "on": 257,
       "socket": "module",
       "by": "-x"
     },
     {
       "part": "Input Reader",
-      "on": 261,
+      "on": 259,
       "socket": "+x",
       "by": "-x",
       "config": {
@@ -1906,7 +1895,7 @@
     },
     {
       "part": "Ammo Box",
-      "on": 275,
+      "on": 273,
       "socket": "ammo",
       "by": "bottom"
     },
@@ -1954,37 +1943,37 @@
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 283,
+      "on": 281,
       "socket": "lug0",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 283,
+      "on": 281,
       "socket": "lug1",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 283,
+      "on": 281,
       "socket": "lug2",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 283,
+      "on": 281,
       "socket": "lug3",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 283,
+      "on": 281,
       "socket": "lug4",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 283,
+      "on": 281,
       "socket": "lug5",
       "by": "lug"
     },
@@ -1996,37 +1985,37 @@
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 290,
+      "on": 288,
       "socket": "lug0",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 290,
+      "on": 288,
       "socket": "lug1",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 290,
+      "on": 288,
       "socket": "lug2",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 290,
+      "on": 288,
       "socket": "lug3",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 290,
+      "on": 288,
       "socket": "lug4",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 290,
+      "on": 288,
       "socket": "lug5",
       "by": "lug"
     }
@@ -2061,187 +2050,187 @@
       138
     ],
     [
-      174,
-      172
+      172,
+      170
     ],
     [
-      174,
+      172,
+      171
+    ],
+    [
+      175,
       173
     ],
     [
-      177,
-      175
+      175,
+      174
     ],
     [
-      177,
+      178,
       176
     ],
     [
-      180,
-      178
+      178,
+      177
     ],
     [
-      180,
-      179
+      179,
+      181
     ],
     [
-      181,
-      183
+      200,
+      198
     ],
     [
-      202,
-      200
+      200,
+      199
     ],
     [
-      202,
+      203,
       201
     ],
     [
-      205,
-      203
+      203,
+      202
     ],
     [
-      205,
+      206,
       204
     ],
     [
-      208,
-      206
+      206,
+      205
     ],
     [
-      208,
-      207
+      227,
+      225
     ],
     [
-      229,
-      227
+      227,
+      226
     ],
     [
       229,
       228
     ],
     [
-      231,
+      232,
       230
     ],
     [
-      234,
-      232
+      232,
+      231
     ],
     [
-      234,
-      233
+      254,
+      255
+    ],
+    [
+      255,
+      239
+    ],
+    [
+      255,
+      242
+    ],
+    [
+      254,
+      256
+    ],
+    [
+      258,
+      259
+    ],
+    [
+      259,
+      245
+    ],
+    [
+      259,
+      248
+    ],
+    [
+      258,
+      260
     ],
     [
       256,
-      257
-    ],
-    [
-      257,
-      241
-    ],
-    [
-      257,
-      244
-    ],
-    [
-      256,
-      258
-    ],
-    [
-      260,
       261
     ],
     [
-      261,
-      247
-    ],
-    [
-      261,
-      250
-    ],
-    [
-      260,
+      256,
       262
     ],
     [
-      258,
+      260,
       263
     ],
     [
-      258,
+      263,
       264
     ],
     [
-      262,
+      263,
       265
     ],
     [
-      265,
-      266
+      179,
+      182
     ],
     [
-      265,
-      267
+      182,
+      273
     ],
     [
-      181,
-      184
-    ],
-    [
-      184,
+      197,
       275
     ],
     [
-      199,
+      197,
+      276
+    ],
+    [
+      197,
       277
     ],
     [
-      199,
+      197,
       278
     ],
     [
-      199,
-      279
-    ],
-    [
-      199,
+      279,
       280
     ],
     [
-      281,
-      282
-    ],
-    [
       126,
-      283
+      281
     ],
     [
-      263,
-      283
-    ],
-    [
-      266,
-      283
-    ],
-    [
-      127,
-      290
+      261,
+      281
     ],
     [
       264,
-      290
+      281
     ],
     [
-      267,
-      290
+      127,
+      288
+    ],
+    [
+      262,
+      288
+    ],
+    [
+      265,
+      288
     ]
   ],
   "links": [
     {
       "type": "feed",
-      "from": 251,
-      "to": 239,
+      "from": 249,
+      "to": 237,
       "fromPort": "Ammo out",
       "toPort": "Ammo in",
       "nodes": [
@@ -2265,8 +2254,8 @@
     },
     {
       "type": "feed",
-      "from": 252,
-      "to": 242,
+      "from": 250,
+      "to": 240,
       "fromPort": "Ammo out",
       "toPort": "Ammo in",
       "nodes": [
@@ -2290,8 +2279,8 @@
     },
     {
       "type": "feed",
-      "from": 253,
-      "to": 245,
+      "from": 251,
+      "to": 243,
       "fromPort": "Ammo out",
       "toPort": "Ammo in",
       "nodes": [
@@ -2315,8 +2304,8 @@
     },
     {
       "type": "feed",
-      "from": 254,
-      "to": 248,
+      "from": 252,
+      "to": 246,
       "fromPort": "Ammo out",
       "toPort": "Ammo in",
       "nodes": [

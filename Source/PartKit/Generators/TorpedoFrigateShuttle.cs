@@ -290,10 +290,7 @@ public sealed partial class TorpedoFrigateParts
         // (the lockers stand against the side walls ahead of the seats, facing in, Karl's ask; the batteries between the seats and the engines)
         Sock(p, "lockerL", -(LCabW - 0.3), LFt, 0.45, "+y"); // (Space Suit Lockers, 0.6 m deep: backs to the walls)
         Sock(p, "lockerR", LCabW - 0.3, LFt, 0.45, "+y");
-        foreach (var (s, n) in new[] { (-1, "batteryL0"), (1, "batteryR0") })
-            Sock(p, n, s * 1.05, LFt, 3.15, "+y");
-        foreach (var (s, n) in new[] { (-1, "batteryL1"), (1, "batteryR1") })
-            Sock(p, n, s * 1.05, LFt, 3.4, "+y");
+        Sock(p, "battery", -(LCabW - 0.17), LFt, 3.3, "+y"); // (its Ship Battery XS, back to the port wall: Karl, 2026-11-18)
         foreach (var z in new[] { LNoseZ, LBulkZ })
             LMustFit("cockpit floor", z, floorW, LFt);
         foreach (var z in new[] { LBulkZ, LAftZ })
@@ -735,8 +732,7 @@ public sealed partial class TorpedoFrigateParts
         // (a Space Suit Locker's back is its +z: RY270 puts it to -x, against the port wall, and RY90 to +x)
         bp.HangTurned(EvaParts.LockerName, belly, "lockerL", "bottom", BuildingParts.RY270);
         bp.HangTurned(EvaParts.LockerName, belly, "lockerR", "bottom", BuildingParts.RY90);
-        foreach (var n in new[] { "batteryL0", "batteryR0", "batteryL1", "batteryR1" })
-            bp.Hang("Battery", belly, n, "-y");
+        bp.HangTurned("Ship Battery XS", belly, "battery", "bottom", BuildingParts.RY270);
         // Lights: the cockpit's and the cabin's, on the starboard cockpit switch; the cabin's switch by the hatch.
         int Lamp(int on, string sock, string colour)
         {
