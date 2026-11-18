@@ -196,8 +196,8 @@ public static class ConstructDrillDrive
         if (feed >= 0)
         {
             ref var f = ref c.ShaftFeeds![feed];
-            if (!ConstructPhysics.DriveOn(c))
-                state = ShaftState.EngineOff;
+            if (!ConstructPhysics.DriveAsked(c))
+                state = ShaftState.EngineOff; // (an engine a generator set runs turns no drill)
             else if ((f.GateMask & ~c.GateOpen) != 0)
                 state = ShaftState.ClutchOut;
             else
@@ -231,7 +231,7 @@ public static class ConstructDrillDrive
     /// <summary>The torque the drills take off the engine this tick at <paramref name="rpm"/> (<see cref="Construct.ShaftShare"/>: how much of it the engine can carry).</summary>
     public static float Carry(Construct c, ConstructPartDef e, float rpm, float amount)
     {
-        var load = c.ShaftLoad + c.RailLoad + c.HydLoad + c.RotorLoad + c.LegLoad; // (walker legs on a shaft: ConstructWalkLegs.cs)
+        var load = c.ShaftLoad + c.RailLoad + c.HydLoad + c.RotorLoad + c.LegLoad + c.GenLoad; // (walker legs on a shaft: ConstructWalkLegs.cs; generator heads: ConstructGenset.cs)
         if (load <= 0)
         {
             c.ShaftShare = 1;
@@ -255,7 +255,7 @@ public static class ConstructDrillDrive
             return;
         }
         var demand = MathF.Abs(throttle);
-        var want = (e.IdleRpm + demand * (e.MaxRpm * 0.95f - e.IdleRpm)) * c.ShaftShare;
+        var want = ConstructGenset.Governs(c) ? c.GenRpm : (e.IdleRpm + demand * (e.MaxRpm * 0.95f - e.IdleRpm)) * c.ShaftShare; // (a generator set governs its speed: it sheds load rather than be pulled down)
         if (c.RpmGovern > 0)
             want = MathF.Min(want, c.RpmGovern); // (a rotor's hub: ConstructRotor.cs)
         c.Rpm += Math.Clamp(want - c.Rpm, -e.MaxRpm * 2 * dt, e.MaxRpm * 2 * dt);

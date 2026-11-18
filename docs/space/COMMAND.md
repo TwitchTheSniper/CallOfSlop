@@ -233,7 +233,7 @@ docs/sandbox/design/faction-controllers.md section 6.2, so he chose docking alon
   the host docks it (`NavDockCatch`): out of the flight, set upright in the middle of a pull dock's box and caught
   (`ConstructCargo.Catch`), so it rides the other ship as any docked craft does. A ship in a sky climbs out first to dock
   with one in space; one in space is refused a port down in a sky ("bring it down into the sky first").
-- **Wire** (protocol 339): `CActKind.NavOrder` ends with the target construct, `Msg.Nav` with the target and the port.
+- **Wire** (protocol 341): `CActKind.NavOrder` ends with the target construct, `Msg.Nav` with the target and the port.
 - **Trying it:** `order dock N` (dock with the Nth craft, as `cmdpick` counts) and `letgo [ID]` (host: the port holding
   a craft lets it go). A Shuttle onto the Zero Day's clamp, in the sky and in orbit:
 

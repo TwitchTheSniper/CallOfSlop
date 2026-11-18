@@ -618,7 +618,7 @@ public static partial class ConstructPhysics
         var fwdBody = Vector3.Transform(c.DriveFwd, c.Rot);
         var com = c.WorldCom;
         var share = c.Mass / MathF.Max(1, c.WheelCount - c.LeadCount + c.SpringCount); // (a track's raised stretches carry nothing at rest)
-        var driving = c.CanDrive && DriveOn(c); // (the power step starts and stops the engine: ConstructPower.cs)
+        var driving = c.CanDrive && DriveAsked(c); // (a generator set's run drives no wheels; the power step starts and stops the engine: ConstructPower.cs)
         var throttle = DriveThrottle(c); // a wired engine runs on its signal
         var steer = ConstructDrive.SteerNow(c);
         var brake = c.Brake || c.BrakeSignal >= 0.999f;
@@ -938,7 +938,17 @@ public static partial class ConstructPhysics
     private const float HeadingHold = 0.9f;
 
     /// <summary>Is the engine asked to run this tick: a driver in the seat, or a run signal wired into it (board item cs03: no seat needed)?</summary>
-    public static bool DriveOn(Construct c) => (c.Driven || c.EngineWired || c.SteerRuns || c.RotorRuns) && c.EngineRunning && c.StallTicks == 0;
+    public static bool DriveOn(Construct c) => (c.Driven || c.EngineWired || c.SteerRuns || c.RotorRuns || c.GenRuns) && c.EngineRunning && c.StallTicks == 0;
+
+    /// <summary>
+    /// Is the engine running for its drive line: a driver, a wire, a steering or rotor signal? <see cref="DriveOn"/> without a generator set's own run
+    /// (ConstructGenset.cs): an engine a set starts turns its Generator Heads, never the wheels, propellers, shaft rails or drills on the same line.
+    /// </summary>
+    public static bool DriveAsked(Construct c) => (c.Driven || c.EngineWired || c.SteerRuns || c.RotorRuns) && c.EngineRunning && c.StallTicks == 0;
+
+    /// <summary>Does the running engine turn its power take-offs: not when only a generator set runs it (server; a client reads the pose's set state).</summary>
+    public static bool PtoLive(Construct c) => c.EngineRunning && (!c.GenRuns || c.Driven || c.EngineWired || c.SteerRuns || c.RotorRuns)
+        && !(c.GenHeads > 0 && (c.Gen is GenState.Running or GenState.Overloaded or GenState.Starting) && c.Driver == 255 && !c.EngineWired && !c.SteerRuns && !c.RotorRuns);
 
     /// <summary>The throttle this tick: a wired engine's signal (its throttle port, or its one input), else the driver's.</summary>
     public static float DriveThrottle(Construct c) => c.EngineWired ? c.EngineSignal : c.Throttle;
@@ -952,7 +962,7 @@ public static partial class ConstructPhysics
     private static void Powertrain(Construct c, bool free, float dt)
     {
         var on = DriveOn(c);
-        var throttle = ConstructRotor.EngineThrottle(c, DriveThrottle(c));
+        var throttle = ConstructGenset.Throttle(c, ConstructRotor.EngineThrottle(c, DriveThrottle(c))); // (a generator set governs an engine nobody drives)
         var steer = ConstructDrive.SteerNow(c);
         if (free)
         {
@@ -962,7 +972,7 @@ public static partial class ConstructPhysics
         for (var k = 0; k < c.WheelCount; k++)
             c.Wheels[k].Touching = false; // (an anchored body doesn't roll on its wheels: they turn in the air, at the engine's speed)
         ConstructDrive.Tick(c, on, throttle, steer, 0, dt);
-        var driving = c.CanDrive && on;
+        var driving = c.CanDrive && DriveAsked(c); // (a generator set's run turns no wheels)
         for (var k = 0; k < c.WheelCount; k++)
         {
             ref var w = ref c.Wheels[k];
@@ -1298,8 +1308,8 @@ public static partial class ConstructPhysics
     {
         var v = Vector3.Zero;
         var c = _bodies[body];
-        if (_dyn[body])
-            v = c.Vel + Vector3.Cross(c.AngVel, r);
+        if (_dyn[body] || c.SpaceShip != 0)
+            v = c.Vel + Vector3.Cross(c.AngVel, r); // (a ship out of the bubble is posed by its flight, not stepped, but it moves: what touches it meets it at its speed, GameSpaceLaunch.cs)
         for (var k = 0; k < un; k++)
         {
             int slot = _chainSlot[u0 + k];
@@ -1779,7 +1789,7 @@ public static partial class ConstructPhysics
     /// </summary>
     private static float PtoTurn(Construct c, int hinge)
     {
-        if (hinge < 0 || hinge >= c.PartCount || !c.PtoDriven[hinge] || !c.EngineRunning || c.Engine < 0 || c.Engine >= c.PartCount)
+        if (hinge < 0 || hinge >= c.PartCount || !c.PtoDriven[hinge] || !PtoLive(c) || c.Engine < 0 || c.Engine >= c.PartCount)
             return 0;
         var max = c.EngineDef.MaxRpm;
         return max > 0 ? Math.Clamp(c.Rpm / max, 0, 1) * (DriveThrottle(c) < 0 ? -1 : 1) : 0;

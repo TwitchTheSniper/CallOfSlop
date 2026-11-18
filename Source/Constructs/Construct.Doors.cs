@@ -21,6 +21,7 @@ public struct CDoor
     public bool Wired; // a wire runs into one of its ports: the server reads them each tick (edges only)
     public bool Seen; // the ports below hold a reading (no edge on the first)
     public bool LastOpen, LastToggle;
+    public bool DockSeen, Mated, MateNow, ShutDue; // a docking hatch ("dock": true): looked at once, mated at the last look, at this one, and to shut once nobody is in it (ConstructDoors.StepDocks)
     public float StartF; // how far open it was drawn when it last started moving (0 shut, 1 open)
     public double StartAt; // and when, on ConstructRender.Now's clock
 }
@@ -37,6 +38,7 @@ public sealed partial class Construct
     public int DoorCount;
     public ushort[] DoorLeaves = [];
     public int DoorLeafCount;
+    public int DoorDockCount; // docking hatches among them (ConstructDoors.StepDocks)
     public int DoorMovingCount, DoorWiredCount; // (the server's step looks at a body only while one is above 0)
     public int DoorEpoch; // goes up whenever the door list is built again (the merged meshes plan again, leaving door parts out: ConstructRenderBatch.cs)
     private int _doorStamp = -1;
@@ -65,7 +67,7 @@ public sealed partial class Construct
                 _doorOld = new CDoor[Doors.Length];
             Array.Copy(Doors, _doorOld, oldCount);
         }
-        DoorCount = DoorLeafCount = DoorMovingCount = DoorWiredCount = 0;
+        DoorCount = DoorLeafCount = DoorMovingCount = DoorWiredCount = DoorDockCount = 0;
         foreach (var i in Specials)
         {
             ref var p = ref Parts[i];
@@ -105,6 +107,9 @@ public sealed partial class Construct
                 dr.Seen = _doorOld[o].Seen;
                 dr.LastOpen = _doorOld[o].LastOpen;
                 dr.LastToggle = _doorOld[o].LastToggle;
+                dr.DockSeen = _doorOld[o].DockSeen;
+                dr.Mated = _doorOld[o].Mated;
+                dr.ShutDue = _doorOld[o].ShutDue;
             }
             else
             {
@@ -165,6 +170,8 @@ public sealed partial class Construct
         {
             if (Doors[k].Wired)
                 DoorWiredCount++;
+            if (Parts[Doors[k].Part].D.Door!.Dock)
+                DoorDockCount++;
             if ((Parts[Doors[k].Part].State & ConstructDoors.Moving) != 0)
                 DoorMovingCount++;
         }
@@ -213,6 +220,20 @@ public sealed partial class Construct
     /// meshes (door parts aren't in them), the tree's shape. Costs the depth of the trees, not the part count; allocates nothing.
     /// A part the collider has in another form (a hull, fused, merged) has it built again when next asked for, as before.
     /// </summary>
+    /// <summary>How many collider leaves part <paramref name="part"/> has (as ConstructCollider.Build makes them): its solid boxes
+    /// no hull stands for, and its hulls (a ship door's skin plates), or one for its bounds.</summary>
+    private int ColliderLeaves(int part)
+    {
+        var d = Parts[part].D;
+        var hulls = ConstructHulls.Of(d);
+        var n = hulls.Length;
+        var boxes = SolidCount(part);
+        for (var b = 0; b < boxes; b++)
+            if (hulls.Length == 0 || !ConstructHulls.Covered(d, b))
+                n++;
+        return Math.Max(1, n);
+    }
+
     internal void DoorPartMoved(int part, Vector3 oldMin, Vector3 oldMax, Vector3 oldPos, byte r)
     {
         if (DoorSums(part))
@@ -221,12 +242,12 @@ public sealed partial class Construct
             StructBounds(part, out var smn, out var smx);
             GrowBounds(smn, smx); // (the face it left stays out: loose, never short)
         }
-        RestBounds(part, out var mn, out var mx);
+        ReachBounds(part, out var mn, out var mx); // (as the part tree holds it: ConstructDoors.Place passes the old one so)
         ref var p = ref Parts[part];
         if (_collider != null && !_colliderStale)
         {
-            if (FuseRough(part) || MergeOf[part] != 0 || p.D.IsEnvelope || Rides(part) || ConstructHulls.Of(p.D).Length > 0
-                || !_collider.MovePart(part, Math.Max(1, SolidCount(part)), oldMin, oldMax, oldPos, p.Pos, r))
+            if (FuseRough(part) || MergeOf[part] != 0 || p.D.IsEnvelope || Rides(part)
+                || !_collider.MovePart(part, ColliderLeaves(part), oldMin, oldMax, oldPos, p.Pos, r))
                 ColliderChanged();
         }
         if (_treeParts >= 0 && !TreeMove(part, oldMin, oldMax, mn, mx))

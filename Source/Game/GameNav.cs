@@ -111,7 +111,7 @@ public sealed class NavOrder
 /// A Land or Come order sets the ship down: from space it comes down into the sky over its spot, flies there on its
 /// autopilot and comes down on it (<see cref="Construct.NavLand"/>), and the order ends once it is down, its stabilizer at rest.
 /// <para>
-/// The wire (protocol 339): <c>CActKind.NavOrder</c> from a client, and <see cref="Msg.Nav"/> from the host to everyone
+/// The wire (protocol 341): <c>CActKind.NavOrder</c> from a client, and <see cref="Msg.Nav"/> from the host to everyone
 /// when an order starts, changes phase or ends, and to each joiner.
 /// </para>
 /// </summary>

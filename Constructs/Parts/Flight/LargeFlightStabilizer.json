@@ -597,6 +597,14 @@
       "default": 0
     },
     {
+      "key": "dampeners",
+      "type": "toggle",
+      "label": "Inertia dampeners",
+      "group": "Control",
+      "default": true,
+      "tooltip": "Ship keys: on, it cancels its drift and stops when let go. Off, it coasts and the keys only burn: match a ship by hand. The seat's dampener key flips it. The autopilot and orders fly with them on."
+    },
+    {
       "key": "aiCrew",
       "type": "choice",
       "label": "AI crew",
