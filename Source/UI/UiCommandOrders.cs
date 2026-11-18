@@ -300,7 +300,7 @@ public sealed partial class Ui
             deep[k] = (float)Vec3d.Dot(e, _cvDir);
         }
         var com = t.Com;
-        var reach = 12 * _scale;
+        var reach = Math.Clamp(2f * (float)_cvScale, 12 * _scale, 48 * _scale); // (close up, the part nearest the eye within 2 m of the cursor: a big hull piece's middle is far from its edge)
         float bestDeep = float.MaxValue, doorDeep = float.MaxValue;
         var doorPart = -1;
         for (var i = 0; i < t.PartCount; i++)

@@ -469,6 +469,8 @@ public static class OrdnanceFlight
         }
         if ((f.Fuses & OrdFuse.Timer) != 0)
             s.Fuse = s.Fuse > 0 ? Math.Min(s.Fuse, (int)(f.Timer * World.TickRate)) : (int)(f.Timer * World.TickRate);
+        if (rail && design.Kind == OrdKind.Missile)
+            BoostOff(c, ref s, at, fwd);
         Lock(world, c, rack, ref s, f, at, fwd, query);
         var id = world.AddShell(s);
         if (id == 0)
@@ -476,6 +478,32 @@ public static class OrdnanceFlight
         s.Id = id;
         world.AddFire(Out(s, c.Id, (ushort)rack).WithLook(c, part));
         return true;
+    }
+
+    /// <summary>m a rack-launched missile runs straight past its own craft's round before its seeker steers it.</summary>
+    public const float BoostClear = 15f;
+    /// <summary>The longest straight run off a rack, s (a weak motor on a big ship still turns in the end).</summary>
+    public const float BoostMax = 3f;
+
+    /// <summary>
+    /// A missile off an Ordnance Rack or a rail fires its motor as it leaves and runs straight out along the rack until it is
+    /// clear of its own craft, and only then does its seeker turn it (Karl, 2026-11-18: the Zero Day's torpedoes, fired facing
+    /// away from their target, turned straight back and dropped through the ship like bombs). The run lasts until it has gone
+    /// from the rack out of the craft's round (<see cref="Construct.Radius"/> about its centre of mass) and <see cref="BoostClear"/>
+    /// on, at its first stage's push, at most <see cref="BoostMax"/>; it passes its own craft that long. Every PC flies it alike.
+    /// </summary>
+    private static void BoostOff(Construct c, ref CShell s, Vector3 at, Vector3 fwd)
+    {
+        var from = at - c.WorldCom;
+        var b = Vector3.Dot(from, fwd);
+        var inside = c.Radius * c.Radius - (from.LengthSquared() - b * b);
+        var way = (inside > 0 ? MathF.Max(0, -b + MathF.Sqrt(inside)) : 0) + BoostClear; // (out of the round along the rack, and on)
+        var push = s.Thrust + (RailKick >= s.MinSpeed ? s.AirPush * MathF.Min(1f, ConstructAir.Density(at)) : 0);
+        var t = push > 0.1f ? (-RailKick + MathF.Sqrt(RailKick * RailKick + 2 * push * way)) / push : way / RailKick;
+        s.Boost = s.Wait + (int)MathF.Ceiling(MathF.Min(t, BoostMax) * World.TickRate);
+        s.Bore = fwd;
+        s.Flags |= ShellFlags.Boost;
+        s.Clear = Math.Max(s.Clear, s.Boost + World.TickRate / 2);
     }
 
     /// <summary>Its numbers for stage <paramref name="k"/>: the push as m/s2 of what is still flying, how long, the gimbal's turn.</summary>
@@ -505,6 +533,7 @@ public static class OrdnanceFlight
         Ext = (byte)((s.Flags & ShellFlags.Designed) != 0 ? 1 : 0),
         AirPush = s.AirPush, TurnAir = s.TurnAir, TurnBurn = s.TurnBurn, Drag = s.Drag, Lift = s.Lift, MinSpeed = s.MinSpeed,
         Wait = (ushort)Math.Min(s.Wait, ushort.MaxValue), Deploy = (ushort)Math.Min(s.Deploy, ushort.MaxValue), Flags = s.Flags & ~ShellFlags.Mine, Aim = s.Aim, Life = s.Life,
+        Bore = s.Bore, Boost = (ushort)Math.Min(s.Boost, ushort.MaxValue),
     };
 
     // ---- Seekers -----------------------------------------------------------------------------------------------------
@@ -718,6 +747,19 @@ public static class OrdnanceFlight
         var speed = s.Vel.Length();
         var air = MathF.Min(1f, ConstructAir.Density(s.Pos));
         var burning = false;
+        if ((s.Flags & ShellFlags.Boost) != 0 && s.Age < s.Boost)
+        {
+            // Off its rack, straight: the motor pushes along the rack's way, nothing turns it, until it is clear of its craft (BoostOff).
+            if (s.Wait > 0)
+                s.Wait--;
+            else if (s.Burn > 0)
+            {
+                s.Burn--;
+                s.Vel += s.Bore * ((s.Thrust + (speed >= s.MinSpeed ? s.AirPush * air : 0)) * dt);
+                s.Vel -= ConstructShells.GravityAt(s.Pos) * dt; // (its motor holds it on the line: it doesn't sag off a rack under a planet)
+            }
+            return;
+        }
         if (s.Wait > 0)
             s.Wait--;
         else if (s.Burn > 0)
