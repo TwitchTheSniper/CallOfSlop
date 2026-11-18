@@ -33,11 +33,23 @@ public static class MachineSounds
     /// <summary>Does this part hum?</summary>
     public static bool Hums(ConstructPartDef d) => d.Role == PartRole.Generator && d.PlantFuel == EngineFuel.None && d.PlantShaft <= 0 && d.PlantRate >= MinKw; // (a Generator Head is heard as its engine: ConstructGenset.cs)
 
+    /// <summary>
+    /// Reactors hum at all. Off for now (Karl, 2026-11-18: a loud noise repeating in the Zero Day's engine room that
+    /// didn't sound right): every voice stays stopped until the hum is remade and this is turned back on.
+    /// </summary>
+    public static readonly bool HumOn = false;
+
     /// <summary>Every Sandbox frame, host and clients: the nearest reactors' hums.</summary>
     public static void Frame(ConstructWorld world, Audio audio, Vector3 listener, float dt)
     {
         if (!audio.Enabled)
             return;
+        if (!HumOn)
+        {
+            for (var v = 0; v < Voices; v++)
+                audio.MachineLoopStop(v);
+            return;
+        }
         var count = 0;
         foreach (var c in world.Bodies)
         {
