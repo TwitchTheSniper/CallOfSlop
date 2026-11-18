@@ -91,7 +91,7 @@ public sealed partial class Game
         ref var p = ref target.Parts[part];
         target.WorldFrame(p.Seg, out var q, out var t);
         var local = p.D.DockEject > 0 ? Rot24.Apply(p.Rot, -Vector3.UnitZ) : Rot24.Apply(p.Rot, Vector3.UnitY); // (a bay is flown into by its mouth, where it ejects)
-        if (target.IsStation && target.DockLanesFor == target.PartCount && target.DockLanes is { } lanes && part < lanes.Length && lanes[part] >= 0)
+        if (target.IsStation && target.DockLanesFor == target.RebuildStamp && target.DockLanes is { } lanes && part < lanes.Length && lanes[part] >= 0)
             local = Game.LaneAxis(lanes[part]); // (a station's berth is flown into along its clear way in: Game.StationLanes)
         along = MathF.Abs(local.X) * half.X + MathF.Abs(local.Y) * half.Y + MathF.Abs(local.Z) * half.Z;
         axis = Vector3.Transform(local, q);

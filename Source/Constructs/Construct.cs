@@ -410,8 +410,10 @@ public sealed partial class Construct
     public ClampArmSet? ClampArms; // a station's berth clamp arms (ConstructClampArms.cs), found when first asked for
     public ushort MoorAway, MoorAwayPart; // host: the station berth it was cast off from, which won't moor it again until it has left that berth's box
     public sbyte[]? DockLanes; // a station's berths: the way in to each (an axis of its box: 0-5 for +X -X +Y -Y +Z -Z in its segment's frame; -1 none), worked out once (Game.StationLanes)
-    public int DockLanesFor = -1; // the part count they were worked out for
-    public string StationTitle = ""; // a station's own name when it isn't its pieces' (a second Highport built as Loch Watch: Game.StationName); not saved
+    public int DockLanesFor = -1; // the RebuildStamp they were worked out at
+    public string StationTitle = ""; // a station's own name when it isn't its pieces' (a second Highport built as Glacier Watch: Game.StationName); saved as a setting key (WorldSaveBodies.StationKey)
+    public sbyte HaulRoute = -1; // a station hauler's route (Crew/Stations.json "haulers"; -1: none), saved so a loaded world's haulers go on (WorldSaveBodies.HaulKey)
+    public bool HaulAtTo; // the hauler's leg: bound for its route's second station
     public bool IsStation; // built of space station pieces (part group "Station": docs/sandbox/constructs/station.md): the command view shows it as a station
     public bool HasVolumeStore; // a Storage Volume: its box is drawn with the cargo volumes' (ConstructRenderCargo.cs)
     public bool HasRecycler; // a Recycler part: the recycler step looks at it (ConstructRecycler.cs)

@@ -18,7 +18,7 @@ namespace CallOfSlop;
 /// reach, parked far off) flies an Orbit order to that station's height round its planet, between planets on the real trip planner and
 /// its own fuel, and trades there once it is on that circle. At each end it sells what it carries that the station buys, fills its
 /// tanks, buys the leg's goods (paid from its power's stock), waits and sets off on the next leg. The stock moves between the markets
-/// and the powers' books carry it. Not saved: a loaded world's haulers are plain crewed ships, and new ones set out.
+/// and the powers' books carry it. A hauler's route and leg are saved with its ship (Construct.HaulRoute), so a loaded world's haulers go on.
 /// </para>
 /// </summary>
 public sealed partial class Game
@@ -41,6 +41,7 @@ public sealed partial class Game
     private const float HaulDockFrom = 6000, HaulPhaseBy = 8000, HaulDockMost = 600;
     private long[] _haulNext = []; // by route: when the next hauler may set out
     private bool _stationsBuilt; // this world's stations were looked for (StationsBuildTick)
+    private bool _haulAdopt; // a world was loaded or landed in: take up its saved haulers (HaulAdopt)
     private long _stationsBuildAt;
 
     /// <summary>Host: the body of the station whose market is <paramref name="def"/>, in this world (0: none here).</summary>
@@ -166,10 +167,35 @@ public sealed partial class Game
         var crew = Crew.Crew(c, ShipAiMode.Strangers, faction: power);
         if (Crew.Events.Count > 0)
             CrewLog();
+        c.HaulRoute = (sbyte)ri;
+        c.HaulAtTo = atTo;
         var r = new HaulRun { Ship = c.Id, Route = ri, AtTo = atTo, RetryAt = ServerTick + 5 * World.TickRate };
         _hauls.Add(r);
         Log($"[haul] construct {c.Id}, a {h.Ship} crewed by {h.Power} ({(crew != null ? Crew.Alive(crew) : 0)} aboard), sets out from {StationName(st)} on the run between {StationMarkets.All[h.From].Name} and {StationMarkets.All[h.To].Name}");
         return r;
+    }
+
+    /// <summary>Host, once after a world is loaded or landed in: its saved haulers (Construct.HaulRoute) go on with their legs, so none is lost track of and no extra one sets out.</summary>
+    private void HaulAdopt(int routes)
+    {
+        _haulAdopt = false;
+        foreach (var c in Constructs.Bodies)
+        {
+            if (c.HaulRoute < 0 || c.PartCount == 0 || c.Wreck)
+                continue;
+            if (c.HaulRoute >= routes)
+            {
+                c.HaulRoute = -1; // (a route the data no longer has: a plain crewed ship now)
+                continue;
+            }
+            var known = false;
+            foreach (var run in _hauls)
+                known |= run.Ship == c.Id;
+            if (known)
+                continue;
+            _hauls.Add(new HaulRun { Ship = c.Id, Route = c.HaulRoute, AtTo = c.HaulAtTo, RetryAt = ServerTick + 5 * World.TickRate });
+            Log($"[haul] construct {c.Id} goes on hauling (route {c.HaulRoute}, bound for {StationMarkets.All[c.HaulAtTo ? StationMarkets.Haulers[c.HaulRoute].To : StationMarkets.Haulers[c.HaulRoute].From].Name})");
+        }
     }
 
     /// <summary>The route a hauler runs and the station it is bound for, for the command view's card (null: it is no hauler).</summary>
@@ -197,6 +223,8 @@ public sealed partial class Game
             _haulNext = new long[routes.Length];
             Array.Fill(_haulNext, ServerTick + 10 * World.TickRate); // (the first set out once the world has settled)
         }
+        if (_haulAdopt)
+            HaulAdopt(routes.Length);
         for (var i = _hauls.Count - 1; i >= 0; i--)
             if (Constructs.Get(_hauls[i].Ship) is not { Wreck: false, PartCount: > 0 })
             {
@@ -248,6 +276,7 @@ public sealed partial class Game
             if (ServerTick - run.Since < (long)(h.Wait * World.TickRate))
                 return;
             run.AtTo = !run.AtTo; // (the next leg)
+            c.HaulAtTo = run.AtTo;
             run.Stage = HaulStage.Going;
             run.RetryAt = 0;
             HaulStep(s, run, c);

@@ -210,7 +210,8 @@ public sealed partial class Game
             }
         if (!travel)
             _marketByDef = [];
-        _hauls.Clear(); // (the haulers here went with the world left behind: new ones set out, StationHaulTick)
+        _hauls.Clear(); // (the haulers here went with the world left behind; this world's saved ones are taken up again: HaulAdopt)
+        _haulAdopt = true;
         _haulNext = [];
         _stationsBuilt = false;
         _stationsBuildAt = ServerTick + 5 * World.TickRate;

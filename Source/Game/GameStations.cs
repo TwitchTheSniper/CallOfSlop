@@ -137,10 +137,13 @@ public sealed partial class Game
     /// </summary>
     public void StationLanes(Construct t)
     {
-        if (!t.IsStation || t.DockLanesFor == t.PartCount && t.DockLanes != null)
+        if (!t.IsStation)
             return;
         if (t.Dirty)
             t.Rebuild();
+        if (t.DockLanesFor == t.RebuildStamp && t.DockLanes != null)
+            return;
+        var was = t.DockLanes is { Length: var wl } && wl == t.PartCount ? t.DockLanes : null; // (a rebuild that kept the parts: only a changed lane is logged)
         var lanes = new sbyte[t.PartCount];
         Array.Fill(lanes, (sbyte)-1);
         Span<int> order = stackalloc int[6];
@@ -206,10 +209,11 @@ public sealed partial class Game
                     (best, bestFar, bestBy) = (k, near, nearPart);
             }
             lanes[i] = (sbyte)best;
-            Log($"[station] {StationName(t)}: berth {i} ({t.DefOf(i).Name}) is flown into {(bestFar < 0 ? "along a clear lane" : $"along its best lane (blocked {bestFar:0} m out by {(bestBy >= 0 ? t.DefOf(bestBy).Name : "?")} {bestBy})")}, {"+x -x +y -y +z -z".Split(' ')[best]} of its box{(best == upK ? " (up out of the clamp)" : best == outEnd ? " (its outer end)" : "")}");
+            if (was == null || was[i] != best)
+                Log($"[station] {StationName(t)}: berth {i} ({t.DefOf(i).Name}) is flown into {(bestFar < 0 ? "along a clear lane" : $"along its best lane (blocked {bestFar:0} m out by {(bestBy >= 0 ? t.DefOf(bestBy).Name : "?")} {bestBy})")}, {"+x -x +y -y +z -z".Split(' ')[best]} of its box{(best == upK ? " (up out of the clamp)" : best == outEnd ? " (its outer end)" : "")}");
         }
         t.DockLanes = lanes;
-        t.DockLanesFor = t.PartCount;
+        t.DockLanesFor = t.RebuildStamp;
     }
 
     /// <summary>
