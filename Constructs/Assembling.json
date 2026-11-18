@@ -2187,6 +2187,7 @@
     {"output": "Trestle Post 6 m", "materials": {"steel": 60, "concrete": 12}, "seconds": 11.0},
     {"output": "Trestle Post 7 m", "materials": {"steel": 69, "concrete": 14}, "seconds": 12.3},
     {"output": "Trestle Post 8 m", "materials": {"steel": 78, "concrete": 16}, "seconds": 13.6},
-    {"output": "Mining Shell", "materials": {"steel": 70, "copper": 14, "rubber": 8}, "parts": {"Circuit Board": 3}, "seconds": 60, "minTier": 2}
+    {"output": "Mining Shell", "materials": {"steel": 70, "copper": 14, "rubber": 8}, "parts": {"Circuit Board": 3}, "seconds": 60, "minTier": 2},
+    {"output": "Drill Rack", "materials": {"steel": 24, "copper": 4, "rubber": 2}, "seconds": 30}
   ]
 }

@@ -65,6 +65,7 @@ public sealed class SceneNode
     internal Matrix4x4 _world = Matrix4x4.Identity;
     internal bool _localStale; // TRS changed; _local must be recomposed
     internal bool _dirty; // the world matrix of this subtree is out of date
+    internal Scene? _queuedIn; // the scene whose dirty queue holds this node now (once at most: Scene.Enqueue)
 
     /// <summary>Bumped every time the world matrix is recomputed (lets consumers skip unchanged nodes).</summary>
     public int WorldVersion { get; internal set; }

@@ -489,6 +489,7 @@ public sealed class Assembling : IPartGenerator
     private static List<PyDict> LateHand() =>
     [
         Rec("Mining Shell", 60, 2, m: [("steel", 70), ("copper", 14), ("rubber", 8)], p: [("Circuit Board", 3)]), // (docs/sandbox/design/mining-shell.md)
+        Rec("Drill Rack", 30, 1, m: [("steel", 24), ("copper", 4), ("rubber", 2)]), // (its three portable drills come with it: factory-generator-notes.md "Tool racks and crew miners")
     ];
 
     /// <summary>The recipes file: the header, then one recipe a line (json.dumps with its default separators).</summary>

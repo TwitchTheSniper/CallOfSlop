@@ -31,6 +31,7 @@ public sealed partial class Game : ICrewHost
         if (Crew.Events.Count > 0)
             CrewLog();
         CrewWorkTick();
+        CrewMineTick(); // (miners off their posts: GameCrewMine.cs)
         CrewSendSeats();
         CrewHireTick();
         CrewRosterSend();
@@ -137,6 +138,8 @@ public sealed partial class Game : ICrewHost
     {
         if (!Players.TryGetValue(player, out var p) || p.CrewSlot < 0)
             return;
+        if (p.InShell)
+            ShellReturn(p, lost: false, ""); // (a miner in a Mining Shell: back to the chair first, the shell left standing: GameCrewMine.cs)
         if (SandboxHands.Hand(p.Id).Seated)
             SandboxHands.Stand(Constructs, p.Id);
         SandboxHands.Hand(p.Id).Edit = EditKind.None;
@@ -232,6 +235,8 @@ public sealed partial class Game : ICrewHost
             return;
         if (CrewWalkTick(p))
             return;
+        if (CrewMineBody(p))
+            return; // (a miner on the ground: GameCrewMine.cs)
         ref var h = ref SandboxHands.Hand(p.Id);
         var yaw = p.Yaw;
         var pitch = p.Pitch;
