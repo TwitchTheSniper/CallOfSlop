@@ -34,6 +34,7 @@ public sealed partial class Game
         var best = -1;
         var bestD = float.MaxValue;
         var bestArmed = false;
+        var bestFit = false;
         var from = ship.WorldCom;
         for (var i = 0; i < target.PartCount; i++)
         {
@@ -41,10 +42,32 @@ public sealed partial class Game
                 continue;
             var armed = ConstructCargo.IsFrozen(target.Parts[i]);
             var d = Vector3.DistanceSquared(NavDockCentre(target, i, out _, out _), from);
-            if (armed && !bestArmed || armed == bestArmed && d < bestD)
-                (best, bestD, bestArmed) = (i, d, armed);
+            // A station's berths are each made for a ship's size: one the ship fits takes it first, the snuggest of those (a Magpie
+            // goes to a Magpie's berth, not a frigate's), then any.
+            var fit = false;
+            if (target.IsStation)
+            {
+                fit = BerthFits(target, i, ship, out var room);
+                if (fit)
+                    d = room;
+            }
+            if (fit && !bestFit || fit == bestFit && (armed && !bestArmed || armed == bestArmed && d < bestD))
+                (best, bestD, bestArmed, bestFit) = (i, d, armed, fit);
         }
         return best;
+    }
+
+    /// <summary>Does <paramref name="ship"/> fit berth <paramref name="part"/>'s box (its sizes, longest to shortest, each within the box's), and the box's room to spare (m³)?</summary>
+    private static bool BerthFits(Construct station, int part, Construct ship, out float room)
+    {
+        ConstructCargo.Box(station, part, out _, out var half);
+        var s = ship.LocalMax - ship.LocalMin;
+        Span<float> a = [half.X * 2, half.Y * 2, half.Z * 2];
+        Span<float> b = [s.X, s.Y, s.Z];
+        a.Sort();
+        b.Sort();
+        room = a[0] * a[1] * a[2] - b[0] * b[1] * b[2];
+        return b[0] <= a[0] * 1.05f && b[1] <= a[1] * 1.05f && b[2] <= a[2] * 1.05f;
     }
 
     /// <summary>Can <paramref name="ship"/> dock at part <paramref name="part"/> of <paramref name="target"/>: a working port, strong enough, holding nothing else?</summary>
@@ -68,6 +91,8 @@ public sealed partial class Game
         ref var p = ref target.Parts[part];
         target.WorldFrame(p.Seg, out var q, out var t);
         var local = p.D.DockEject > 0 ? Rot24.Apply(p.Rot, -Vector3.UnitZ) : Rot24.Apply(p.Rot, Vector3.UnitY); // (a bay is flown into by its mouth, where it ejects)
+        if (target.IsStation && target.DockLanesFor == target.RebuildStamp && target.DockLanes is { } lanes && part < lanes.Length && lanes[part] >= 0)
+            local = Game.LaneAxis(lanes[part]); // (a station's berth is flown into along its clear way in: Game.StationLanes)
         along = MathF.Abs(local.X) * half.X + MathF.Abs(local.Y) * half.Y + MathF.Abs(local.Z) * half.Z;
         axis = Vector3.Transform(local, q);
         return t + Vector3.Transform(centre, q);
@@ -87,6 +112,7 @@ public sealed partial class Game
             return "It carries a craft or cargo of its own: no port takes it so"; // (ConstructCargo.Catchable: no cargo in cargo; a station's berth moors it instead: GameStations.cs)
         if (c.MooredTo != 0)
             return "It is moored at a station: give it another order to cast off";
+        StationLanes(t); // (a station's berths' ways in, once: GameStations.cs)
         port = NavDockFor(Constructs, t, c);
         return port < 0 ? "No port available on " + t.DisplayName() : null;
     }
@@ -107,6 +133,7 @@ public sealed partial class Game
             NavEnd(o, c, "the ship it was to dock with went down into the sky");
             return false;
         }
+        StationLanes(t); // (a station rebuilt: its lanes again)
         if (o.TargetPart >= t.PartCount || !t.DefOf(o.TargetPart).IsDock)
             o.DockLook = World.TickRate; // (the other ship was edited: its port is looked for again now, before anything reads it)
         if (++o.DockLook >= World.TickRate)
@@ -248,9 +275,23 @@ public sealed partial class Game
         var aimAt = centre + axis * (o.Phase is NavPhase.Docking or NavPhase.DockWait ? o.DockAlt : along + NavDockOver);
         var r = pos - pose.ToEcliptic(Vec3d.From(aimAt));
         aimAt = centre + axis * NavDockStep(o, armed, along, (float)r.Length, slip);
-        if (o.Phase is NavPhase.Docking or NavPhase.DockWait || r.Length < NavDockRcsNear && slip < NavDockRcsSlip)
+        // A station's berth has a lane (Karl, 2026-11-18: "a landing path for each station, such that the way to get into each dock is as
+        // you'd expect"): the ship flies round the station to the lane's mouth, out past the station along the berth's clear way in, then
+        // comes down the lane on its small jets, turned as it will lie in the berth, instead of straight at the port across the station.
+        var lane = false;
+        if (t.IsStation && o.Phase is not (NavPhase.Docking or NavPhase.DockWait))
         {
-            NavDockRcs(f, i, pose, o, c, t, part, aimAt, o.Phase is NavPhase.Docking or NavPhase.DockWait ? NavDockSink + 1 : NavDockRcsSlip);
+            if (StationLaneAim(t, centre, axis, along, com, out var mouth))
+                lane = true; // (in the lane: down it to the point over the berth)
+            else
+            {
+                aimAt = mouth; // (to the lane's mouth, or round the station towards it)
+                o.Phase = NavPhase.Flying;
+            }
+        }
+        if (o.Phase is NavPhase.Docking or NavPhase.DockWait || lane || r.Length < NavDockRcsNear && slip < NavDockRcsSlip)
+        {
+            NavDockRcs(f, i, pose, o, c, t, part, aimAt, o.Phase is NavPhase.Docking or NavPhase.DockWait ? NavDockSink + 1 : lane ? NavDockLaneSpeed : NavDockRcsSlip);
             if (o.Still >= NavDockGiveUp)
                 NavEnd(o, c, armed ? "the port didn't take it" : "the port is not armed, or has no power");
             return Vec3d.Zero;
@@ -274,6 +315,9 @@ public sealed partial class Game
     /// (it twirled at its full turn rate over the port and swept its hull through the other ship): within this far of the point
     /// it aims at (m) and this slow against it (m/s), and at most this hard (m/s²).</summary>
     public const float NavDockRcsNear = 20, NavDockRcsSlip = 4, NavDockRcsAccel = 1.5f;
+
+    /// <summary>How fast a ship comes down a station's lane (m/s), and how far off the lane's line it may be and still count as in it (m).</summary>
+    public const float NavDockLaneSpeed = 8, NavDockLaneWidth = 25;
 
     /// <summary>
     /// Host, close work in space: the ship's speed against the port is steered straight to close on <paramref name="aim"/> (its
@@ -304,6 +348,17 @@ public sealed partial class Game
         var sin = cross.Length();
         var angle = MathF.Atan2(sin, Vector3.Dot(upB, upC));
         var spin = sin > 1e-4f ? cross / sin * MathF.Min(angle * 1.5f, 0.5f) : Vector3.Zero;
+        if (t.IsStation)
+        {
+            // Turned as it will lie in the berth (its up the berth's, its long way along the box's), so it slides in clear of the arms.
+            var err = Quaternion.Normalize(StationMoorRot(t, part, c) * Quaternion.Conjugate(c.Rot));
+            if (err.W < 0)
+                err = new Quaternion(-err.X, -err.Y, -err.Z, -err.W);
+            var vs = new Vector3(err.X, err.Y, err.Z);
+            var vl = vs.Length();
+            var turn = 2 * MathF.Atan2(vl, err.W);
+            spin = vl > 1e-5f ? vs / vl * MathF.Min(turn * 1.5f, 0.5f) : Vector3.Zero;
+        }
         var dw = t.AngVel + spin - c.AngVel;
         var turnStep = 2f * dt;
         if (dw.LengthSquared() > turnStep * turnStep)

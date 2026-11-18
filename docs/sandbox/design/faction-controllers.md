@@ -450,7 +450,10 @@ to start testing logistics runs with ships.
 - **Built (phase S1):** the station in the command view, its berths mooring ships (any ship, its own craft aboard), its market (goods, stock,
   prices) on its card, and selling a docked ship's ore for credits; a share of each sale goes into the power's stock as its trade
   (docs/sandbox/constructs/station.md "Markets").
-- **Next (phase S2):** a second station in another neutral power's turf, and the powers' haulers: a Convoy mission (section 3.3) between two
-  stations, a hauler buying at one station what the other lacks and selling it there, its cargo moving the two markets' stock, so players
-  see goods move and can raid or escort the runs.
+- **Built (phase S2):** Glacier Watch, the Militia's station over Glacier (Karl chose Glacier: faction areas, harder routes, real fuel use),
+  arriving in a world in orbit at its station, buying at stations, and the powers' haulers: real crewed ships on a route between two stations,
+  docking at the one in the world being played and trading by orbit at the other, their cargo moving both markets' stock and the powers'
+  books (station.md "Markets"). Players can see goods move, and raid or escort the runs.
+- **Next:** haulers as Convoy missions of the controllers (escorts, routes chosen by what a station lacks), prices that follow stock, and
+  stations and runs kept in saves.
 

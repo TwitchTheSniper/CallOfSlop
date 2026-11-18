@@ -29,6 +29,8 @@ public enum FactionOp : byte
     ContractDrop, // u8 slot, u16 serial: give a contract you hold up (it fails)
     // Protocol 361 (stations: GameStationMarket.cs).
     StationSell, // u16 ship: sell the ore and goods in the bins of the moored ship you are aboard to its station
+    // Protocol 366.
+    StationBuy, // u16 ship, u8 good: buy as much of one of its station's goods as the moored ship's bins and your credits take
 }
 
 /// <summary>
@@ -331,6 +333,8 @@ public sealed partial class Game
                 return PoliticsAct(p, op, ref r); // (GameCrewPolitics.cs)
             case FactionOp.StationSell:
                 return StationSellAct(p, r.U16()); // (GameStationMarket.cs)
+            case FactionOp.StationBuy:
+                return StationBuyAct(p, r.U16(), r.U8());
         }
         return "unknown faction action";
     }
@@ -861,6 +865,9 @@ public sealed partial class Game
                 break;
             case FactionOp.StationSell:
                 w.U16((ushort)a);
+                break;
+            case FactionOp.StationBuy:
+                w.U16((ushort)a).U8((byte)b);
                 break;
         }
         if (IsServer)

@@ -236,7 +236,7 @@ public sealed partial class SpaceStationParts : IPartGenerator
         }
         BuildingParts.AddPartDefs(o, defs, Out);
         o.File($"{BpOut}/CaledonHighport.json", PyJson.Dumps(Blueprint(HighportName,
-            "Caledon Highport, the first space station: a ring of sixteen habitat segments 264 m across round one hexagonal hub under a command dome, joined by three spokes. Landing pads for Shuttles and Limpets on the ring's roof, hangars in its walls; under the hub a docking spindle with the customs drum, a dock collar with Zero Day berths north and south and Magpie berths east and west, a freight collar with Dray berths, and engineering with its radiators, the reactor and the station-keeping drives at its foot.",
+            "Caledon Highport, the first space station: a ring of sixteen habitat segments 264 m across round one hexagonal hub under a command dome, joined by three spokes. Landing pads for Shuttles and Limpets on the ring's roof, hangars in its walls; under the hub a docking spindle with the customs drum, a dock collar with Magpie berths east and west, a freight collar with Dray berths, a frigate collar with Zero Day berths north and south (one line of berths to a level), and engineering with its radiators, the reactor and the station-keeping drives at its foot.",
             kit, order, origins, defs), 2) + "\n");
 
         // the clamp arm demo (a design draft: SpaceStationClampArm.cs)
