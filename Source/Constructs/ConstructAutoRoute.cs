@@ -1663,8 +1663,65 @@ public sealed class RouteSearch
         if (_ask.Parent == 255 && (_hasPrev || _sDir != Vector3.Zero) && !_loose && !_pierced)
             n = TidyEnd(n, true);
         if (_ask.Type is RouteType.Conveyor or RouteType.Chute && _ask.Conduit <= 0f && !_loose && !_pierced)
+        {
+            if (DirectRamp(out var m))
+                return Nodes(m, true);
             n = Ramps(n);
+        }
         return Nodes(n, true);
+    }
+
+    /// <summary>
+    /// Two ports facing each other along one level way at different heights (machines in a row, one up on a trestle or a deck): the
+    /// route laid by hand as a fitter would, out of the start, a sideways jog at the start's height when they are off line, one
+    /// straight incline and in, kept when it passes the whole server check. It stands in for the lattice's result, whose rise is a
+    /// vertical leg that may wander round the parts beside it. False when the ends don't line up or nothing fits.
+    /// </summary>
+    private bool DirectRamp(out int n)
+    {
+        n = 0;
+        if (!_closed || _sDir == Vector3.Zero || _gDir == Vector3.Zero || MathF.Abs(_sDir.Y) > 0.01f || Vector3.Dot(_sDir, -_gDir) < 0.999f)
+            return false;
+        var d = Vector3.Normalize(new Vector3(_sDir.X, 0, _sDir.Z));
+        var v = _g - _s;
+        var rise = v.Y;
+        var ahead = Vector3.Dot(v, d);
+        var side = new Vector3(v.X, 0, v.Z) - d * ahead;
+        var jog = side.Length() > 0.01f;
+        if (MathF.Abs(rise) < RampMinRise || ahead <= 0f)
+            return false;
+        var stub = MathF.Max(_endStub, _minRun);
+        var used = 2f * stub + (jog ? _minRun : 0f);
+        for (var g = 0; g < RampDeg.Length; g++)
+        {
+            var rad = RampDeg[g] * MathF.PI / 180f;
+            var run = MathF.Abs(rise) / MathF.Tan(rad);
+            var spare = ahead - used - run; // (the curves at its foot and crest are drawn within the level runs either side: RouteCurves keeps each to under half a run)
+            if (spare < 0f)
+                continue;
+            var m = 0;
+            _ramp[m++] = _s;
+            var at = _s + d * stub;
+            if (jog)
+            {
+                _ramp[m++] = at;
+                at += side;
+                _ramp[m++] = at;
+                at += d * _minRun;
+            }
+            at += d * (spare * 0.5f);
+            _ramp[m++] = at;
+            at += d * run + Vector3.UnitY * rise;
+            _ramp[m++] = at;
+            _ramp[m++] = _g;
+            m = Collapse(_ramp, m);
+            if (Build(_ramp, m, out _, out _) != null)
+                continue;
+            Array.Copy(_ramp, _path, m);
+            n = m;
+            return true;
+        }
+        return false;
     }
 
     // ---- The ramp pass (docs/sandbox/design/conveyor-inclines.md section 4; the look of the route only) ---------------------------
