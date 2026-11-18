@@ -180,7 +180,8 @@ public sealed partial class Game
     /// constructs are hit, and reach measured, where the last tick put them: on a ship at orbital speed that is metres apart,
     /// so a part beside a seated or standing rider read as too far away, or the ray missed it. A rider's eye moves with the
     /// construct it is in (in the construct's frame, so the ship's speed drops out); anyone else's to their own tick position.
-    /// A client draws its constructs where it hits them already, so nothing changes there.
+    /// A client draws its constructs where it hits them already, so nothing changes there. Inside <see cref="RideDrawnPose"/>
+    /// the ridden body stands at its drawn pose, so the eye stays where it is drawn.
     /// </summary>
     internal void AimToTick(Player me, ref Vector3 eye, ref Vector3 dir)
     {
@@ -190,6 +191,8 @@ public sealed partial class Game
         var body = h.Seated ? h.SeatBody : me.Sim.RideBody;
         if (body != 0 && Constructs.Get(body) is { } c)
         {
+            if (c == _rideDrawn)
+                return; // (RideDrawnPose has put this body where it is drawn, under the drawn eye already: moving the eye too put it (a - a^2) of a tick's travel off, a metre at orbital speed, so the look flickered on and off seats and ladders as the frame's blend changed)
             var pos = Vector3.Lerp(c.PrevPos, c.Pos, _alpha);
             var rot = Quaternion.Slerp(c.PrevRot, c.Rot, _alpha);
             var turn = Quaternion.Normalize(c.Rot * Quaternion.Conjugate(rot));
