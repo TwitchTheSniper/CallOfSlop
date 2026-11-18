@@ -19,6 +19,14 @@ public static partial class ConstructRide
     /// <summary>The world a frame step finds its construct in (the game sets it before a player's step).</summary>
     public static ConstructWorld? Bodies;
 
+    /// <summary>
+    /// Set for one <see cref="Step"/> by World.SimulateMmu (docs/sandbox/EVA.md "Flying"): a worn MMU in vacuum floats in the
+    /// frame (no deck gravity, no footing's friction) and <see cref="MmuPush"/> (a world velocity change, the pack's this tick)
+    /// is added in it. Inside a moving ship the pack flies in the ship's own frame, so nothing about the ship's speed reaches it.
+    /// </summary>
+    internal static bool MmuFloat;
+    internal static Vector3 MmuPush;
+
     /// <summary>A frozen build's own floor is only ridden when its up leans further than this from the world's (cos 15 degrees): a level base needs no frame.</summary>
     public const float AnchoredLevel = 0.966f;
 
@@ -723,6 +731,14 @@ public static partial class ConstructRide
         var control = s.KnockTicks > 0
             ? (s.Grounded ? Knockback.StaggerGroundControl : Knockback.StaggerAirControl)
             : s.Grounded ? 14f : 3f;
+        var gravity = World.Gravity * World.GravityScale;
+        if (MmuFloat)
+        {
+            s.RideVel += Vector3.Transform(MmuPush, Quaternion.Conjugate(q)); // (the pack's push, into the segment's frame)
+            s.Grounded = false; // (never footing: it floats, and a floor stops it)
+            control = 0;
+            gravity = 0;
+        }
         // Carried by a moving segment under the feet (a lift deck, a turntable): moved with it in the body's frame, its
         // motion this tick at the feet (the velocity half a step on: a turn carries them round it, not out of it).
         var onVel = Vector3.Zero;
@@ -739,7 +755,7 @@ public static partial class ConstructRide
         var m = SweptMover.Instance;
         var reach = s.RideVel.Length() * World.TickDt + World.StepHeight + SweptMover.SnapDown + SweptMover.MinStepForward + 0.5f;
         Gather(w, c, s.RideSeg, s.RideLocal, up, reach);
-        m.FrameStep(ref s.RideLocal, ref s.RideVel, ref s.Grounded, ref s.Stance, up, wish * speed, control, World.Gravity * World.GravityScale,
+        m.FrameStep(ref s.RideLocal, ref s.RideVel, ref s.Grounded, ref s.Stance, up, wish * speed, control, gravity,
             cmd.Buttons, World.JumpSpeed * (s.MovePerk == PerkId.Parkour ? Perks.ParkourJump : 1f));
         _groundBody = null;
         _groundPart = -1;

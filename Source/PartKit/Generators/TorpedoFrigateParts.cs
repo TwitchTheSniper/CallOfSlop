@@ -560,12 +560,13 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
     private static void DoorSock(Part p, string name, bool alongX, double a, double c, double floor) =>
         Sock(p, name, alongX ? a : c, floor + 1.125, alongX ? c : a, alongX ? "+x" : "+z");
 
-    /// <summary>A safety rail round a hatch on three sides, open at its back edge (+z), where the ladder lands people.</summary>
-    private static void HatchRail(Part p, Rect h, double y)
+    /// <summary>A safety rail round a hatch on three sides, open at its back edge (+z), where the ladder lands people (<paramref name="sides"/>: its sides the hatch's whole length, for one with no ladder).</summary>
+    private static void HatchRail(Part p, Rect h, double y, bool sides = false)
     {
+        var end = sides ? h.Z1 : h.Z1 - 0.3;
         Solid(p, h.X0 - 0.06, y, h.Z0 - 0.06, h.X1 + 0.06, y + 1.0, h.Z0, Frame, "painted steel");
-        Solid(p, h.X0 - 0.06, y, h.Z0, h.X0, y + 1.0, h.Z1 - 0.3, Frame, "painted steel");
-        Solid(p, h.X1, y, h.Z0, h.X1 + 0.06, y + 1.0, h.Z1 - 0.3, Frame, "painted steel");
+        Solid(p, h.X0 - 0.06, y, h.Z0, h.X0, y + 1.0, end, Frame, "painted steel");
+        Solid(p, h.X1, y, h.Z0, h.X1 + 0.06, y + 1.0, end, Frame, "painted steel");
         Detail(p, h.X0 - 0.075, y + 0.96, h.Z0 - 0.075, h.X1 + 0.075, y + 1.04, h.Z0 + 0.015, Hazard, "hazard paint");
         Detail(p, h.X0 - 0.12, y, h.Z1, h.X1 + 0.12, y + 0.012, h.Z1 + 0.12, Hazard, "hazard paint");
     }
@@ -579,7 +580,29 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
 
     // ---- the keel: the hull's underside, the fuel under the lower deck, the legs, the lift jets and the boarding shaft
 
-    private static readonly Rect BellyHatch = new(Cx + 2.6, 30.6, Cx + 3.85, 31.85);
+    // The airlock's way out under the keel (Karl, 2026-11-18): 2 m by 1.6 m, so a spacewalker on an MMU flies out of it; no ladder.
+    // Its outboard 1.5 m is cut through the sloped plate beside the keel's flat (the old 1.25 m shaft half under that plate was sealed).
+    private static readonly Rect BellyHatch = new(Cx + 2.3, 30.45, Cx + 4.3, 32.05);
+    private const double KeelFlatHalf = 2.8; // the keel flat's half width along the aft stations (Mid's P0)
+
+    /// <summary>The keel's underside at <paramref name="x"/> across the aft stations (14 m to 38 m): the flat, then the plate up to the lower chine.</summary>
+    private static double KeelUnder(double x)
+    {
+        var h = Math.Abs(x - Cx);
+        return h <= Mid[0].Item1 ? Mid[0].Item2 : Mid[0].Item2 + (h - Mid[0].Item1) * (Mid[1].Item2 - Mid[0].Item2) / (Mid[1].Item1 - Mid[0].Item1);
+    }
+
+    /// <summary>Facet k of side s from za to zb with the belly hatch's outboard part cut out of it: three plates round the hole (u along z, v across).</summary>
+    private static void FacetHatch(Part p, int k, int s, double za, double zb, Rect h, string color, string finish)
+    {
+        var dz = k % 2 == 1 ? FacetStagger : 0;
+        double[] Q(double u, double v) { var q = OnFacet(k, s, za, zb, u, v); return Sh([q[0], q[1], q[2] + dz + (u < 0.5 ? FacetTrim : -FacetTrim)]); }
+        double u0 = (h.Z0 - za) / (zb - za), u1 = (h.Z1 - za) / (zb - za);
+        var v1 = (Math.Abs(h.X1 - Cx) - Mid[k - 1].Item1) / (Mid[k].Item1 - Mid[k - 1].Item1);
+        Quad(p, Q(0, 0), Q(0, 1), Q(u0, 1), Q(u0, 0), color, finish);
+        Quad(p, Q(u1, 0), Q(u1, 1), Q(1, 1), Q(1, 0), color, finish);
+        Quad(p, Q(u0, v1), Q(u0, 1), Q(u1, 1), Q(u1, v1), color, finish);
+    }
     /// <summary>The Limpet's shaft (TorpedoFrigateLimpet.cs): from the passage by the airlock down through the keel into the pod's receiver, on the centreline.</summary>
     private const double LimpetLiningFoot = 0.18; // the Limpet shaft's lining stops this far over the keel: under it the docking hatch slides aft
     private static readonly Rect LimpetShaft = new(Cx - 0.55, LimpetRecvZ - 0.55, Cx + 0.55, LimpetRecvZ + 0.55);
@@ -603,10 +626,26 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
                 Facet(p, 0, 1, za, zb, Armour, "plated steel");
             foreach (var s in new[] { -1, 1 })
             {
-                Facet(p, 1, s, za, zb, Skin2, "painted plating");
+                var hatch = s > 0 && za <= BellyHatch.Z0 && zb >= BellyHatch.Z1; // (the belly hatch's outboard part goes through this plate)
+                if (hatch)
+                    FacetHatch(p, 1, s, za, zb, BellyHatch, Skin2, "painted plating");
+                else
+                    Facet(p, 1, s, za, zb, Skin2, "painted plating");
                 if (za >= 20 && zb <= 30)
                     continue; // (the torpedo sponson covers the chine here)
-                Plates(p, 1, s, za, zb, 1);
+                if (hatch)
+                {
+                    Plates(p, 1, s, BellyHatch.Z1 + 0.25, zb, 1); // (the armour aft of the hatch; its hazard frame on the plate)
+                    var u0 = (BellyHatch.Z0 - za) / (zb - za);
+                    var u1 = (BellyHatch.Z1 - za) / (zb - za);
+                    var v1 = (BellyHatch.X1 - Cx - Mid[0].Item1) / (Mid[1].Item1 - Mid[0].Item1);
+                    var du = 0.12 / (zb - za);
+                    FStrip(p, 1, s, za, zb, u0 - du, u0 - 0.0006, 0.004, v1 + 0.04, 0.012, Hazard, "hazard paint");
+                    FStrip(p, 1, s, za, zb, u1 + 0.0006, u1 + du, 0.004, v1 + 0.04, 0.012, Hazard, "hazard paint");
+                    FStrip(p, 1, s, za, zb, u0 + 0.0006, u1 - 0.0006, v1 + 0.004, v1 + 0.04, 0.012, Hazard, "hazard paint");
+                }
+                else
+                    Plates(p, 1, s, za, zb, 1);
                 Chine(p, 1, s, za == SpZ1 ? za + 0.005 : za, zb, 0.22, 0.1, Armour2); // (its end by the sponson kept off the beam chine's)
             }
             // Keel strakes: two dark ribs along the flat, a link-blue stripe between them.
@@ -630,14 +669,17 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
                     Hidden(p, r.X0, ya, r.Z0, r.X1, yt, r.Z1);
             }
         }
-        // The shaft's lining: four plates down to the keel, hazard round its mouth.
+        // The shaft's lining: four plates down to the keel's underside (the flat, then the sloped plate outboard), hazard round its mouth.
         var hy = At(31)[0].Y;
-        foreach (var (x0, z0, x1, z1, e) in new[] { (shaft.X0, shaft.Z0, shaft.X1, shaft.Z0, 0.0), (shaft.X0, shaft.Z1, shaft.X1, shaft.Z1, 0.0),
-            (shaft.X0, shaft.Z0 + 0.025, shaft.X0, shaft.Z1 - 0.025, 0.005), (shaft.X1, shaft.Z0 + 0.025, shaft.X1, shaft.Z1 - 0.025, 0.005) })
-            Plate(p, [P(x0, hy + 0.01 + e, z0), P(x1, hy + 0.01 + e, z1), P(x1, -0.01 - e, z1), P(x0, -0.01 - e, z0)], Grate, "dirty steel"); // (the sides between the ends, a little taller)
-        Detail(p, shaft.X0 - 0.12, hy - 0.03, shaft.Z0 - 0.12, shaft.X1 + 0.12, hy - 0.004, shaft.Z0, Hazard, "hazard paint");
-        Detail(p, shaft.X0 - 0.12, hy - 0.03, shaft.Z1, shaft.X1 + 0.12, hy - 0.004, shaft.Z1 + 0.12, Hazard, "hazard paint");
-        Detail(p, shaft.X0 + 0.1, hy - 0.03, shaft.Z0 - 0.4, shaft.X1 - 0.1, hy - 0.004, shaft.Z0 - 0.25, Red, glow: true);
+        var kink = Cx + KeelFlatHalf;
+        foreach (var (z, e) in new[] { (shaft.Z0, 0.0), (shaft.Z1, 0.0) })
+            Plate(p, [P(shaft.X0, hy + 0.01 + e, z), P(kink, hy + 0.01 + e, z), P(shaft.X1, KeelUnder(shaft.X1) + 0.01 + e, z), P(shaft.X1, -0.01 - e, z), P(shaft.X0, -0.01 - e, z)], Grate, "dirty steel");
+        foreach (var x in new[] { shaft.X0, shaft.X1 })
+            Plate(p, [P(x, KeelUnder(x) + 0.015, shaft.Z0 + 0.025), P(x, KeelUnder(x) + 0.015, shaft.Z1 - 0.025), P(x, -0.015, shaft.Z1 - 0.025), P(x, -0.015, shaft.Z0 + 0.025)], Grate, "dirty steel"); // (the sides between the ends, a little taller)
+        Detail(p, shaft.X0 - 0.12, hy - 0.03, shaft.Z0 - 0.12, kink - 0.02, hy - 0.004, shaft.Z0, Hazard, "hazard paint"); // (on the flat; on the sloped plate the keel's strips)
+        Detail(p, shaft.X0 - 0.12, hy - 0.03, shaft.Z1, kink - 0.02, hy - 0.004, shaft.Z1 + 0.12, Hazard, "hazard paint");
+        Detail(p, shaft.X0 - 0.12, hy - 0.03, shaft.Z0 + 0.003, shaft.X0, hy - 0.004, shaft.Z1 - 0.003, Hazard, "hazard paint");
+        Detail(p, shaft.X0 + 0.05, hy - 0.03, shaft.Z0 - 0.3, kink - 0.05, hy - 0.004, shaft.Z0 - 0.15, Red, glow: true);
         // The Limpet's shaft: lined the same way, rungs up its aft side (the pod's ladder climbs on through it), a hazard frame round
         // its mouth under the keel; the pod's Docking Clamp hangs beside it, to port.
         var ls = limpetShaft;
@@ -796,7 +838,7 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         // The airlock: a chamber to starboard over the boarding shaft, its inner door off the passage; the suit bay to port.
         WallRun(p, true, Cx + 1.75, Cx + Lw, 30.25, y0, y1);
         WallRun(p, false, 30.375, 34.0, Cx + 1.875, y0, y1, Door(32.25));
-        HatchRail(p, BellyHatch, Ft0);
+        HatchRail(p, BellyHatch, Ft0, sides: true); // (the MMU's way out: no ladder, the dock aft of its open edge)
         HatchRail(p, LimpetShaft, Ft0); // (the way down into the Limpet, open at its aft edge where its ladder lands)
         // The bulkhead into engineering.
         WallRun(p, true, Cx - Lw, Cx + Lw, 34.125, y0, y1, Door(Cx - 0.75));
@@ -833,7 +875,6 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         DoorSock(p, "doorBayR", false, 26.4, Cx + Lw + 0.125, Ft0);
         DoorSock(p, "doorAirlock", false, 32.25, Cx + 1.875, Ft0);
         DoorSock(p, "doorEngine", true, Cx - 0.75, 34.125, Ft0);
-        Sock(p, "boarding", BellyHatch.X0 + 0.625, Ft0 - 0.125, BellyHatch.Z1, "-z");
         // Fittings: Space Suit Lockers in the bay (0.8 m wide), one more and the MMU Dock in the airlock by the boarding shaft (its upright
         // on the bulkhead, clear of the locker and the hatch's rail), more torpedo crates, engineering's reactor, boards, batteries, pipes
         // and the ladder up.
@@ -2248,8 +2289,7 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         foreach (var piece in new[] { bow, stern })
             foreach (var n in new[] { "rcsTopL", "rcsTopR", "rcsSideL", "rcsSideR" })
                 Hang(bp, "Heavy RCS Thruster", piece, n, "base");
-        // Ladders: the boarding ladder up the shaft, two between the decks.
-        Hang(bp, "Zero Day Boarding Ladder", la, "boarding", "hull");
+        // Ladders: two between the decks (the boarding shaft has none: Karl, 2026-11-18, it is the MMU's way out).
         Hang(bp, "Zero Day Ladder", lf, "ladder", "bottom");
         Hang(bp, "Zero Day Ladder", la, "ladder", "bottom");
         // Lower deck fore: the server room (the IT style's own), the armoury, the torpedo room.
@@ -2454,7 +2494,6 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
             Jet("Zero Day Retro Jet", $"A retro jet in the Zero Day's cheek: {RetroForce / 1e6:0.0} MN forward, to slow it down.", RetroForce, 1.0),
             Leg(),
             Ladder("Zero Day Ladder", Ft1 - Ft0, "A ladder between the Zero Day's decks: F climbs it.", "bottom", [0, 0, -0.095], "-y"),
-            Ladder("Zero Day Boarding Ladder", Ft0 - Ground, "The Zero Day's boarding ladder, from the ground up the shaft into the airlock: F climbs it.", "hull", [0, Ft0 - Ground - 0.125, -0.005], "+z"),
             Railgun(), Pdc(), Countermeasures(), Reactor(), FlightComputer(), Locker(), TorpedoHatch(),
         ];
         var defs = new Dictionary<string, PyDict>();
