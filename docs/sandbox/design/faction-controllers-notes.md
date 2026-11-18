@@ -629,3 +629,16 @@ fleet command network; doctrine; 256 groups) and Karl's answer 3 (fleet orders i
 2. **Hired hands at the helm:** only in a group (the old rule, "never the helm", kept outside one). Default kept.
 3. **A player admiral never pulls back by itself;** a hand admiral weighs strength like the powers'. Default kept.
 4. **Escort band** 1 km from the ward and the escort's speed cap at 0.7 of its slowest ship: numbers in code (`CrewFleet.EscortBand`), not data yet.
+
+### Review fixes (2026-11-18)
+
+- A ward slows only while an escort is falling behind its slot (30 m behind along the ward's way), to 0.8 of that escort's top speed, and the ask
+  lapses 3 s after; the top speed is a running mean of its full-ahead speed, rising and falling with its load and damage (it applies to the powers'
+  Defend escorts too). `escort`: median 39 m, 90th 115 m.
+- Players' groups are keyed on the owner's saved identity (world key, else verified Steam id), not the name (unique only among those online): a
+  namesake of an away owner can't command or stand them down, and a rename keeps them. FLET version 3 adds the key; a version 2 group is claimed once by
+  its owner's name. A ship is taken out of a group only when another player present owns it.
+- A power's escort group fights what it sees, as in phase 2 (Fight on, no band); a player's escort keeps its slot and goes in for threats within
+  1.8 km of its ward.
+- In a formation the look-ahead skips only the ward and the group's own ships: the ground, bases, stations and anyone else's ships ahead make it climb.
+- `--selftest-only "Packets, Frame allocations, Save folder"`, `--crew-fleet all`, `escort`, `powers`: OK.

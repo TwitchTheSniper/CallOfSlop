@@ -693,7 +693,7 @@ public sealed partial class CrewFleet
             }
             if (slowest < float.MaxValue)
             {
-                gs.SpeedCap = MathF.Max(5, slowest * 0.85f);
+                gs.SpeedCap = MathF.Max(5, slowest * 0.8f);
                 gs.SpeedCapUntil = crew.Tick + (long)(Rules.ThinkNear * 3 * World.TickRate);
             }
         }
@@ -783,7 +783,7 @@ public sealed partial class CrewFleet
     private static Vector3 Flat(Vector3 v) => v with { Y = 0 };
 
     /// <summary>An escort this far (m) behind its slot along its ward's way is falling behind: the ward slows for it.</summary>
-    public const float FallBehind = 60;
+    public const float FallBehind = 30;
 
     /// <summary>A flagship this close to a route's point (m, plus half its size) is there.</summary>
     public const float ArriveBand = 50;
