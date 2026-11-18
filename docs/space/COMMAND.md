@@ -246,6 +246,14 @@ docs/sandbox/design/faction-controllers.md section 6.2, so he chose docking alon
   the host docks it (`NavDockCatch`): out of the flight, set upright in the middle of a pull dock's box and caught
   (`ConstructCargo.Catch`), so it rides the other ship as any docked craft does. A ship in a sky climbs out first to dock
   with one in space; one in space is refused a port down in a sky ("bring it down into the sky first").
+- **Close work in space** (`NavDockRcs`, 2026-11-18): within `NavDockRcsNear` (20 m) of the point it aims at and under
+  `NavDockRcsSlip` (4 m/s) against it, and all the way in once lined up, the ship no longer turns its main drive to each
+  correction (it twirled at its full turn rate over the port and swept its hull through the other ship): its speed against
+  the port is steered straight (its flight's velocity changed, at most `NavDockRcsAccel`, 1.5 m/s², as its small jets would,
+  lit for show by `ThrustPuppet`), and it turns upright with the port. No port's tractor works out of the bubble
+  (`ConstructCarrier.Tractor`: both ships are posed by their flights, so its pull was undone every tick while its spin and its
+  push back on the carrier stayed, and both ships tumbled), and a ship a port catches there by its box (`ConstructCargo.Scan`)
+  leaves the flight and rides the carrier (`SpaceLaunchAfter`); let go, it leaves the bubble again as a ship.
 - **Wire** (protocol 342): `CActKind.NavOrder` ends with the target construct, `Msg.Nav` with the target and the port.
 - **Trying it:** `order dock N` (dock with the Nth craft, as `cmdpick` counts) and `letgo [ID]` (host: the port holding
   a craft lets it go). A Shuttle onto the Zero Day's clamp, in the sky and in orbit:
