@@ -59,7 +59,7 @@ public static partial class Program
         if (verb == "beside" && g.Local is { } self)
         {
             // "beside M": host, every other player set down M m to the host's right, facing as the host faces; a client
-            // waits (up to 60 s) until it stands there, then takes the host's look
+            // waits (up to 60 s) until it stands there (by straight distance: on a round world's side too), then takes the host's look
             var right = Vector3.Normalize(Vector3.Cross(g.LookDir(self.Yaw, 0), GravityFrames.UpAt(self.Position)));
             var m = float.TryParse(arg, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var bm) ? bm : 3f;
             if (g.IsServer)
@@ -74,7 +74,7 @@ public static partial class Program
                 return true;
             }
             var host = g.Players.Values.FirstOrDefault(q => q != self && q.Alive);
-            if (host == null || MathF.Abs(Vector2.Distance(new Vector2(host.Position.X, host.Position.Z), new Vector2(self.Position.X, self.Position.Z)) - m) > 1f)
+            if (host == null || MathF.Abs(Vector3.Distance(host.Position, self.Position) - m) > 1f)
             {
                 if (_wsWaitPeerFrames++ < 60 * 2)
                 {
