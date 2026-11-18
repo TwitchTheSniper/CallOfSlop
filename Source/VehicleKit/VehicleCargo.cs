@@ -24,7 +24,7 @@ public sealed record SpareProfile(double Mags, double Boxes, double Crates, doub
 
 /// <summary>
 /// The tables the cargo pass reads (additive: Styles.cs and the generators are untouched). <see cref="ByRole"/>: what each role carries; <see cref="ByStyle"/>: how much more a style
-/// carries than the table, of ammo and of spares (the Bandits scavenge everything, the IT Department travels light). A style not named takes 1 and 1.
+/// carries than the table, of ammo and of spares (the Bandits scavenge everything, the IT style travels light). A style not named takes 1 and 1.
 /// </summary>
 public static class VehicleCargoTables
 {

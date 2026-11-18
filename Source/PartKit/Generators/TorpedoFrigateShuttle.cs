@@ -5,7 +5,7 @@ namespace CallOfSlop.PartKit.Generators;
 /// <summary>
 /// The shuttle, the Zero Day's boarding pod (Karl, 2026-11-17: "Add a boarding shuttle to the Day Zero", his pick of four: a
 /// reusable hull-cutting pod on the spine, first called the Limpet and renamed the Shuttle when he saw it; docs/sandbox/constructs/shuttle.md). About 10 m long and 4 m across: a faceted wedge in
-/// the IT Department's paint, a cockpit for its pilot and a cabin for four boarders that runs to the stern, where its two drives'
+/// the IT style's paint, a cockpit for its pilot and a cabin for four boarders that runs to the stern, where its two drives'
 /// engines (a Drive Core XS each) stand on the floor. It rides a Docking Clamp in a cradle on the Zero Day's roof, its docking
 /// hatch in the cabin floor over the Zero Day's own on the cradle: both open while the clamp holds it (ConstructDoors.StepDocks).
 /// It can also set its four hull grapples down on a ship's hull and grip it (ConstructBreach.cs: it rides on that body from then

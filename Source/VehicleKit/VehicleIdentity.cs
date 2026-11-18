@@ -109,12 +109,13 @@ public static class VehicleIdentity
 
     private static readonly string[] BanditDress = ["Iron Spike", "Long Iron Spike", "Skull Trophy", "Horned Skull", "Hubcap Plate"];
     private static readonly string[] ItMasts = ["Satellite Dish", "Wi-Fi Mast", "Router Antenna"];
-    private static readonly string[] ItGear = ["CRT Monitor", "Network Switch", "Cable Reel", "Office Plant", "Desk Fan", "Employee of the Month", "Server Rack", "Computer", "Fax Machine"];
+    private static readonly string[] ItGear = ["Network Switch", "Office Plant", "Desk Fan", "Server Rack", "Computer", "Fax Machine"];
     private static readonly string[] ScamMasts = ["Phone Mast", "Loudhailer"];
-    private static readonly string[] ScamGear = ["Office Phone", "Call Headset", "Gift Card Sign", "Prize Wheel", "Cubicle Desk", "Water Cooler"];
-    private static readonly string[] HighlandDress = ["Saltire Flag", "Thistle", "Coo Heid", "Haggis on a Post", "Wee Caber", "Wee Keg", "Whisky Cask"];
-    private static readonly string[] BritishFlags = ["Union Flag", "Belisha Beacon", "Furled Brolly", "Rain Gauge"];
-    private static readonly string[] BritishTea = ["Teapot", "Traffic Cone", "Garden Gnome", "Queue Post", "Pillar Box", "Phone Box", "Tea Urn"];
+    private static readonly string[] ScamGear = ["Hubcap Plate", "Traffic Cone", "Water Cooler"];
+    private static readonly string[] HighlandMasts = ["Satellite Dish", "Phone Mast"];
+    private static readonly string[] HighlandDress = ["Traffic Cone", "Garden Gnome", "Network Switch", "Iron Spike", "Long Iron Spike"];
+    private static readonly string[] BritishMasts = ["Loudhailer", "Satellite Dish", "Long Iron Spike"];
+    private static readonly string[] BritishGear = [HullLoft.JerryCan, "Traffic Cone", "Garden Gnome"];
 
     private static readonly WeakPointRule Tyres = new("tyres", PartPick.ByRole("tyres"), MinSides: 2, MinBearings: 4, Min: 2, When: "");
     private static readonly WeakPointRule Fuel = new("fuel", PartPick.ByRole("fuel"), MinSides: 2, MinBearings: 2, When: ""); // (a trailer's barrel too)
@@ -176,13 +177,13 @@ public static class VehicleIdentity
             },
             WeakPoints = [new("antenna", PartPick.Of(ItMasts), MinSides: 2, MinBearings: 2), Tyres, Fuel],
         },
-        // Phone masts and loudhailers, phones, headsets, GIFT CARDS signs, a prize wheel, cubicles round the water cooler (VEHICLEKIT.md, "The Call Centre style").
+        // Phone masts and loudhailers, hubcaps and cones, crates round the water cooler (VEHICLEKIT.md, "The Scam style").
         ["Scam"] = new()
         {
             Marks =
             [
                 new("phone mast or loudhailer", PartPick.Of(ScamMasts)),
-                new("call centre gear", PartPick.Of(ScamGear)),
+                new("salvage gear", PartPick.Of(ScamGear)),
             ],
             Parts = Merge(W(1, ScamMasts), W(1, ScamGear), W(1, "trim signboards", "deco roof sign"), W(0.5, "Server Rack", "Computer", "Slat Grille")),
             Modules = new()
@@ -193,39 +194,39 @@ public static class VehicleIdentity
             },
             WeakPoints = [new("antenna", PartPick.Of(ScamMasts), MinSides: 2, MinBearings: 2), Tyres, Fuel],
         },
-        // A Pipe Box on every vehicle with a seat, Saltires on the roofs, thistles, haggis and a coo's heid, wee cabers, kegs and casks (VEHICLEKIT.md, "The Highland style").
+        // Dishes and phone masts on the roofs, cones, gnomes and spikes (VEHICLEKIT.md, "The Highland style").
         ["Highland"] = new()
         {
             Marks =
             [
-                new("Pipe Box", PartPick.Of("Pipe Box")),
-                new("clan dressing", PartPick.Of(HighlandDress)),
+                new("dish or mast", PartPick.Of(HighlandMasts)),
+                new("hauler's dressing", PartPick.Of(HighlandDress)),
             ],
-            Parts = Merge(W(1, HighlandDress), W(1.5, "Pipe Box"), W(1, "trim clinker", "deco mascot", "deco chrome grille"), W(0.5, "Bull Bar", "Ram Plow", "Wood Planks")),
+            Parts = Merge(W(1, HighlandDress), W(1.5, HighlandMasts), W(1, "trim clinker", "deco mascot", "deco chrome grille"), W(0.5, "Bull Bar", "Ram Plow", "Wood Planks")),
             Modules = new()
             {
                 ["nose"] = new() { ["long hood"] = 1, ["ram"] = 1, ["short hood"] = 0.5 },
                 ["cab"] = new() { ["caged"] = 1, ["enclosed"] = 0.8, ["armoured"] = 0.5, ["crew"] = 0.8, ["merged"] = 0.5 },
                 ["flank"] = new() { ["panniers"] = 1, ["loaded"] = 0.8, ["bare"] = 0.6 },
             },
-            WeakPoints = [new("pipe box", PartPick.Of("Pipe Box"), MinSides: 2, MinBearings: 2), Tyres, Fuel],
+            WeakPoints = [new("antenna", PartPick.Of(HighlandMasts), MinSides: 2, MinBearings: 2, Optional: true), Tyres, Fuel],
         },
-        // Union Flags, Belisha beacons and brollies, teapots, cones and gnomes, queue posts, pillar boxes and phone boxes round a tea urn (VEHICLEKIT.md, "The British style").
+        // Loudhailers, dishes and long spikes, jerry cans, cones and gnomes (VEHICLEKIT.md, "The British style").
         ["British"] = new()
         {
             Marks =
             [
-                new("flags, beacons or brollies", PartPick.Of(BritishFlags)),
-                new("tea, cones or a queue", PartPick.Of(BritishTea)),
+                new("loudhailers, dishes or spikes", PartPick.Of(BritishMasts)),
+                new("cans, cones or gnomes", PartPick.Of(BritishGear)),
             ],
-            Parts = Merge(W(1, BritishFlags), W(1, BritishTea), W(1, "trim livery", "deco destination board"), W(0.5, "Slat Grille", "Tin Roof Cab", "Windscreen Frame")),
+            Parts = Merge(W(1, BritishMasts), W(1, BritishGear), W(1, "trim livery", "deco destination board"), W(0.5, "Slat Grille", "Tin Roof Cab", "Windscreen Frame")),
             Modules = new()
             {
                 ["cab"] = new() { ["enclosed"] = 1, ["cab-over"] = 0.8, ["caged"] = 0.2, ["crew"] = 0.8, ["merged"] = 0.8 },
                 ["nose"] = new() { ["long hood"] = 1, ["short hood"] = 0.8, ["flat"] = 0.8, ["ram"] = 0.2 },
                 ["flank"] = new() { ["bare"] = 1, ["panniers"] = 0.6, ["loaded"] = 0.3 },
             },
-            WeakPoints = [new("flag or beacon", PartPick.Of(BritishFlags), MinSides: 2, MinBearings: 2, Optional: true), Tyres, Fuel],
+            WeakPoints = [new("mast", PartPick.Of("Loudhailer", "Satellite Dish"), MinSides: 2, MinBearings: 2, Optional: true), Tyres, Fuel],
         },
     };
 
@@ -252,7 +253,7 @@ public static class VehicleIdentity
     private static readonly Dictionary<string, StyleSignature> _derived = new(StringComparer.Ordinal);
 
     /// <summary>
-    /// A signature for a style that names none (Militia, a new faction): its dressing slots' parts ("spike", "trophy", "mast", "gear", "piper") are its characteristic parts,
+    /// A signature for a style that names none (Militia, a new faction): its dressing slots' parts ("spike", "trophy", "mast", "gear") are its characteristic parts,
     /// and a vehicle with a seat carries one of them; weak points are the tyres and the fuel. A style with no dressing slots has no marks.
     /// </summary>
     public static StyleSignature Derived(FactionStyle st)
@@ -261,7 +262,7 @@ public static class VehicleIdentity
         {
             if (_derived.TryGetValue(st.Name, out var have))
                 return have;
-            var dress = new[] { "spike", "trophy", "mast", "gear", "piper" }.Where(st.Parts.ContainsKey).SelectMany(k => st.Parts[k]).Distinct().ToArray();
+            var dress = new[] { "spike", "trophy", "mast", "gear" }.Where(st.Parts.ContainsKey).SelectMany(k => st.Parts[k]).Distinct().ToArray();
             var sig = new StyleSignature
             {
                 Marks = dress.Length > 0 ? [new StyleMark("its dressing", PartPick.Of(dress))] : [],

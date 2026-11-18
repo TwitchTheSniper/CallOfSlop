@@ -82,7 +82,6 @@ public static class EngineKitSpeed
             speeds[t] = new Vector2(c.Vel.X, c.Vel.Z).Length();
             top = MathF.Max(top, speeds[t]);
             if (t % World.TickRate == World.TickRate - 1)
-                ConstructPipes.Tick(w, (uint)t);
         }
         float At(float v)
         {

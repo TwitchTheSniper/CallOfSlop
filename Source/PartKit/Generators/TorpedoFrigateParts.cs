@@ -3,10 +3,10 @@ using static CallOfSlop.PartKit.PartKitMath;
 namespace CallOfSlop.PartKit.Generators;
 
 /// <summary>
-/// The Zero Day, the IT Department's torpedo frigate (Karl, 2026-11-15: "a state of the art faction torpedo frigate. Sleek lines, bigger
+/// The Zero Day, a torpedo frigate in the IT style (Karl, 2026-11-15: "a state of the art faction torpedo frigate. Sleek lines, bigger
 /// than the Halberd, countermeasures, torpedo bay on the side, rail gun, thruster the width of the ship ... make the levels run the length
 /// of the ship instead. Try and make doors, features etc what you'd expect from a space ship"; the faction "renowned for their powerful,
-/// state-of-the-art ships"). The IT Department is the tech faction, so it is theirs (docs/sandbox/constructs/torpedo-frigate.md).
+/// state-of-the-art ships"). IT is the tech style, so it is theirs (the Traders fly it) (docs/sandbox/constructs/torpedo-frigate.md).
 ///
 /// Unlike the Halberd (a tower of storeys) it flies level: two decks the length of the ship inside a lofted, faceted hull (a chisel
 /// nose, sides that flare out to a sharp beam line and lean in above it, a flat keel and a flat spine), armour slabs standing proud of a
@@ -30,7 +30,7 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
     private const double H = 0.125; // half a cell
     private const double T = 0.04; // a drawn plate's thickness
 
-    // The paint (the IT Department's, made for a warship): graphite armour over a pale case-grey skin, corporate blue panels, lanyard
+    // The paint (the IT style's, made for a warship): graphite armour over a pale case-grey skin, corporate blue panels, lanyard
     // yellow at doors and hatches, link-blue lights, failed-build red for warnings.
     private const string Skin = "#bdb9ad", Skin2 = "#a9a59a", Armour = "#3b4148", Armour2 = "#30353b", Blue = "#2c5aa0", Frame = "#1f2226",
         Hazard = "#e0b020", Glow = "#5ac8ff", Red = "#e0402c", Glass = "#6f9ec0",
@@ -862,7 +862,7 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
                 Plates(p, 3, s, za, zb, 4, 0.12, 0.9);
                 Plates(p, 4, s, za, zb, 5);
                 Chine(p, 3, s, za, zb, 0.25, 0.12, Armour);
-                // A link-blue light strip under the beam's rail, the IT Department's mark.
+                // A link-blue light strip under the beam's rail, the IT style's mark.
                 FStrip(p, 3, s, za, zb, 0.03, 0.97, 0.04, 0.065, 0.025, Glow, glow: true);
             }
         // Shoulder blocks on the upper chine either side of the bridge, and a lower one on the beam under them.
@@ -989,7 +989,7 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         Sock(p, "med1", Cx + 1.85, Ft1 + 0.8, 34.0, "-z");
         Sock(p, "cabinet", Cx + Uw, Ft1 + 0.85, 27.3, "-x");
         Sock(p, "medLocker", Cx + 1.125, Ft1 + 0.125, 29.0, "+x");
-        // The mess: galley, coffee, the table (with the office plant on it: it is the IT Department's ship), the aft gunnery station.
+        // The mess: galley, coffee, the table (with the office plant on it: it is an IT-style ship), the aft gunnery station.
         Sock(p, "stove", Cx - Uw, Ft1 + 0.45, 35.6, "+x");
         Sock(p, "coffee", Cx - Uw, Ft1 + 0.125, 36.6, "+x");
         Sock(p, "messLocker", Cx + Uw, Ft1 + 0.125, 36.2, "-x"); // (starboard: the port magazine's container stands where it was)
@@ -2100,8 +2100,8 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
     private static PyDict Blueprint(Dictionary<string, PyDict> defs, bool crewed = false)
     {
         var bp = crewed
-            ? new BuildingParts.Blueprint("Zero Day Frigate (crewed)", "The Zero Day with an IT Department crew aboard: it lifts off, closes on the nearest player, you included, and fights with its railgun, turrets and torpedoes. Sit at its helm to take it.", defs, maxSteps: 420)
-            : new BuildingParts.Blueprint("Zero Day Frigate", "The IT Department's torpedo frigate: two decks the length of a sleek armoured hull, a rotary torpedo bay in each flank, a spinal railgun, four point-defence turrets, flare launchers and four drive bells across the stern, each with its own engine.", defs, maxSteps: 420);
+            ? new BuildingParts.Blueprint("Zero Day Frigate (crewed)", "The Zero Day with a crew aboard: it lifts off, closes on the nearest player, you included, and fights with its railgun, turrets and torpedoes. Sit at its helm to take it.", defs, maxSteps: 420)
+            : new BuildingParts.Blueprint("Zero Day Frigate", "A torpedo frigate: two decks the length of a sleek armoured hull, a rotary torpedo bay in each flank, a spinal railgun, four point-defence turrets, flare launchers and four drive bells across the stern, each with its own engine.", defs, maxSteps: 420);
         bp.Conduit = true;
         double[] zero = [0, 0, 0];
         var placed = new Dictionary<string, int>();
@@ -2129,7 +2129,7 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         Hang(bp, "Zero Day Boarding Ladder", la, "boarding", "hull");
         Hang(bp, "Zero Day Ladder", lf, "ladder", "bottom");
         Hang(bp, "Zero Day Ladder", la, "ladder", "bottom");
-        // Lower deck fore: the server room (the IT Department's own), the armoury, the torpedo room.
+        // Lower deck fore: the server room (the IT style's own), the armoury, the torpedo room.
         for (var i = 0; i < 4; i++)
         {
             Hang(bp, "Server Rack", lf, $"serverL{i}", "foot00");

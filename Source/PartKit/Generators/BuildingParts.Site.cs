@@ -73,7 +73,7 @@ public sealed partial class BuildingParts
             Pipes(s, L, PipeY, bands: n >= 4);
             return s.Stats(120 * L, 150, 15, 2.0);
         }
-        var p = new BPart($"Heating Main {F(L)} m", SectionSite, "Lagged heating pipes on a trestle, above the frozen ground.", role: "foundation", tool: "welder", material: "concrete", color: MinWeathered);
+        var p = new BPart($"Heating Main {F(L)} m", SectionSite, "Lagged heating pipes on a trestle, above the frozen ground.", role: "foundation", tool: "welder", material: "concrete", color: ConcreteWeathered);
         var m = L / 2;
         p.FBox(m - 0.3, 0, 0, m + 0.3, 0.15, MainW); // the footing
         p.FBox(m - 0.125, 0.15, 0.1, m + 0.125, 0.63, 0.35);
@@ -99,7 +99,7 @@ public sealed partial class BuildingParts
     private static BPart HeatingRiser()
     {
         const double T = 0.5, Top = 3.6, High = 3.25;
-        var p = new BPart("Heating Main Riser", SectionSite, "A pylon that lifts the heating mains over a road.", role: "foundation", tool: "welder", material: "concrete", color: MinWeathered);
+        var p = new BPart("Heating Main Riser", SectionSite, "A pylon that lifts the heating mains over a road.", role: "foundation", tool: "welder", material: "concrete", color: ConcreteWeathered);
         p.FBox(0, 0, 0, T, Top, MainW);
         p.FBox(-0.05, Top, -0.05, T + 0.05, Top + 0.1, MainW + 0.05, BrutDark, detail: true); // the cap
         foreach (var (z, n) in new[] { (PipeA, "a"), (PipeB, "b") })
@@ -115,7 +115,7 @@ public sealed partial class BuildingParts
     /// <summary>A valve chamber: a concrete box where the mains end or turn, a hand wheel on its lid. A notice goes on "f".</summary>
     private static BPart ValveChamber()
     {
-        var p = new BPart("Heating Valve Chamber", SectionSite, "Where the heating mains turn or end: a valve under a concrete lid.", role: "foundation", tool: "welder", material: "concrete", color: MinWeathered);
+        var p = new BPart("Heating Valve Chamber", SectionSite, "Where the heating mains turn or end: a valve under a concrete lid.", role: "foundation", tool: "welder", material: "concrete", color: ConcreteWeathered);
         p.CBox(0, 0, 0, 6, 5, 6);
         p.FBox(-0.04, 1.25, -0.04, 1.54, 1.31, 1.54, BrutDark, detail: true); // the lid
         p.FBox(0.71, 1.31, 0.71, 0.79, 1.47, 0.79, SiteBand, detail: true); // the spindle
@@ -146,7 +146,7 @@ public sealed partial class BuildingParts
     /// <summary>A gate pier: 1 m square and 3.25 m tall under a cap. A lamp, a name and a warning on its front (-z), the battery behind.</summary>
     private static BPart GatePier()
     {
-        var p = new BPart("Concrete Gate Pier", SectionSite, "A pier beside the way in: a lamp, a name and a warning.", role: "foundation", tool: "welder", material: "concrete", color: MinWeathered);
+        var p = new BPart("Concrete Gate Pier", SectionSite, "A pier beside the way in: a lamp, a name and a warning.", role: "foundation", tool: "welder", material: "concrete", color: ConcreteWeathered);
         p.CBox(0, 0, 0, 4, 13, 4);
         p.FBox(-0.1, 3.25, -0.1, 1.1, 3.45, 1.1, BrutDark, detail: true); // the cap
         p.Sock("lamp", [0.5 - H, 2.75 - H, -H], "-z");
@@ -157,7 +157,7 @@ public sealed partial class BuildingParts
     }
 
     /// <summary>The flag's footing (1 m square, 0.5 m tall; on a road slab's top sockets), a length of mast, and the top length
-    /// with the Ministry's flag frozen stiff on it.</summary>
+    /// with a flag frozen stiff on it.</summary>
     private static BPart FlagBase()
     {
         var p = MatPart("Flagpole Base", "concrete", SectionSite, "The footing of a flagpole.");
@@ -177,7 +177,7 @@ public sealed partial class BuildingParts
         p.CSock("t", (0, 14, 0), "+y", must: true);
         if (top)
         {
-            p.FBox(0.25, 2.55, 0.105, 1.85, 3.55, 0.145, MinGreen, detail: true); // the flag, frozen stiff
+            p.FBox(0.25, 2.55, 0.105, 1.85, 3.55, 0.145, ConcreteGreen, detail: true); // the flag, frozen stiff
             p.FBox(0.25, 2.95, 0.1, 1.85, 3.15, 0.15, "#d8d2bf", detail: true); // (its cream band)
             p.FBox(-0.04, 3.75, -0.04, 0.29, 3.83, 0.29, SiteBand, detail: true); // the truck
         }
@@ -192,7 +192,7 @@ public sealed partial class BuildingParts
         p.CBox(7, 0, 0, 8, 9, 1);
         p.CBox(1, 4, 0, 7, 9, 1);
         p.CBox(0, 9, -1, 8, 10, 2); // the hood
-        p.FBox(0.3, 1.05, -0.012, 1.7, 2.2, 0, MinGreen, detail: true); // (the board's painted field)
+        p.FBox(0.3, 1.05, -0.012, 1.7, 2.2, 0, ConcreteGreen, detail: true); // (the board's painted field)
         p.CSock("b0", (0, 0, 0), "-y", must: true);
         p.CSock("b7", (7, 0, 0), "-y", must: true);
         p.Sock("n0", [0.75 - H, 1.9 - H, -H], "-z");
@@ -205,10 +205,10 @@ public sealed partial class BuildingParts
     private static BPart LancashireBoiler()
     {
         const string Iron = "#3d3835", Plate = "#2e2b29";
-        var p = new BPart("Lancashire Boiler", SectionSite, "An old drum boiler on its saddles. Older than the colony.", role: "frame", tool: "welder", material: "steel", color: Iron);
+        var p = new BPart("Lancashire Boiler", SectionSite, "An old drum boiler on its saddles. Older than anyone here.", role: "frame", tool: "welder", material: "steel", color: Iron);
         p.CBox(0, 0, 0, 6, 7, 12, hidden: true);
-        p.FBox(0.1, 0, 0.4, 1.4, 0.45, 0.8, MinWeathered); // the saddles
-        p.FBox(0.1, 0, 2.2, 1.4, 0.45, 2.6, MinWeathered);
+        p.FBox(0.1, 0, 0.4, 1.4, 0.45, 0.8, ConcreteWeathered); // the saddles
+        p.FBox(0.1, 0, 2.2, 1.4, 0.45, 2.6, ConcreteWeathered);
         p.FBox(0, 0.25, 0.05, 1.5, 1.75, 3.0, Iron, detail: true, shape: Cyl("+z", 20)); // the drum
         p.FBox(-0.03, 0.22, 0, 1.53, 1.78, 0.08, Plate, detail: true, shape: Cyl("+z", 20)); // the front plate
         foreach (var z in new[] { 1.0, 2.0 })
@@ -227,10 +227,10 @@ public sealed partial class BuildingParts
     private static BPart FencePanel()
     {
         const double L = 4.0, Hm = 2.5;
-        var p = new BPart("Concrete Fence Panel 4 m", SectionSite, "A precast panel of the outer fence, wire over it.", role: "foundation", tool: "welder", material: "concrete", color: MinConcrete);
+        var p = new BPart("Concrete Fence Panel 4 m", SectionSite, "A precast panel of the outer fence, wire over it.", role: "foundation", tool: "welder", material: "concrete", color: ConcreteGrey);
         p.CBox(0, 0, 0, 16, 10, 1);
         foreach (var x in new[] { 0.0, L - 0.3 })
-            p.FBox(x, 0, -0.06, x + 0.3, Hm + 0.1, C + 0.06, MinWeathered); // the posts
+            p.FBox(x, 0, -0.06, x + 0.3, Hm + 0.1, C + 0.06, ConcreteWeathered); // the posts
         for (var k = 0; k < 3; k++)
         {
             var x = 0.45 + k * 1.07;
@@ -248,18 +248,18 @@ public sealed partial class BuildingParts
         return p.Stats(1800 * L * Hm * 0.15, 3000, 30, 6.0);
     }
 
-    /// <summary>A leaf of a sliding gate on its kerb: a steel frame of bars 4 m long and 2.4 m tall, in the Ministry's green.
+    /// <summary>A leaf of a sliding gate on its kerb: a steel frame of bars 4 m long and 2.4 m tall, in a dark green.
     /// Two end to end close an 8 m way; parked along the inside of the fence they leave it open.</summary>
     private static BPart SlidingGate()
     {
         const double L = 4.0;
-        var p = new BPart("Sliding Gate Leaf 4 m", SectionSite, "A leaf of a sliding gate on its kerb.", role: "foundation", tool: "welder", material: "steel", color: MinGreen);
-        p.FBox(0, 0, 0, L, 0.12, C, MinWeathered); // the kerb and its rail
+        var p = new BPart("Sliding Gate Leaf 4 m", SectionSite, "A leaf of a sliding gate on its kerb.", role: "foundation", tool: "welder", material: "steel", color: ConcreteGreen);
+        p.FBox(0, 0, 0, L, 0.12, C, ConcreteWeathered); // the kerb and its rail
         p.FBox(0, 0.12, 0.06, L, 2.4, 0.19, hidden: true);
         foreach (var y in new[] { 0.2, 2.3 })
-            p.FBox(0, y, 0.06, L, y + 0.1, 0.19, MinGreen, detail: true);
+            p.FBox(0, y, 0.06, L, y + 0.1, 0.19, ConcreteGreen, detail: true);
         for (var k = 0; k < 9; k++)
-            p.FBox(k * 0.4875, 0.3, 0.09, k * 0.4875 + 0.1, 2.3, 0.16, MinGreen, detail: true);
+            p.FBox(k * 0.4875, 0.3, 0.09, k * 0.4875 + 0.1, 2.3, 0.16, ConcreteGreen, detail: true);
         p.Sock("l", [-H, 0.06 - H, C / 2 - H], "-x");
         p.Sock("r", [L - H, 0.06 - H, C / 2 - H], "+x");
         return p.Stats(450, 1500, 25, 5.0);

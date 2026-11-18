@@ -367,7 +367,7 @@ public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int F
                 // (phase 5: slatted frame rooms, an armoured fighting deck over the middle, armoured stowage pods)
                 Cage = 0, CageKind = 's', Uppers = [("none", 2.5), ("deck", 0.4)], UpperShareMin = 0.5f, UpperShareMax = 0.9f, BulwarkMin = 1.1f, BulwarkMax = 1.25f, Pods = [('a', 0.5)], PodMax = 2,
                 // (phase 7a: orderly olive panels with a rack rail, inset; caged bulkhead lamps; racks, few loose things)
-                Lining = 'm', Window = 's', WindowChance = 0.6, LiningInset = 0.8, Clutter = 0.25f, Props = ["Ammo Crate", "Small Fuel Tank", "Cable Reel"], Fill = 0.6f, Gear = 2,
+                Lining = 'm', Window = 's', WindowChance = 0.6, LiningInset = 0.8, Clutter = 0.25f, Props = ["Ammo Crate", "Small Fuel Tank", "Network Switch"], Fill = 0.6f, Gear = 2,
                 // (phase 6: slatted balconies are data, left at 0 (rooms read as Highland's with them); stowage loaded on one side; slatted rooms and decks retuned as signatures)
                 Balcony = 0, BalconyKind = 's', Asym = 0.35, AsymAmount = 0.6f, AsymPod = 0.6,
                 CabTallMin = 1.55f, CabTallMax = 1.65f, RakeMin = 0.18f, RakeMax = 0.24f, CapsuleRakeMin = 0.65f, CapsuleRakeMax = 0.8f, HoodCrownMin = 0.16f, HoodCrownMax = 0.19f, HoodHalfMin = 0.58f, HoodHalfMax = 0.62f, BeltMin = 1.08f, BeltMax = 1.12f, CabHalfMin = 0.9f, CabHalfMax = 0.94f,
@@ -415,7 +415,7 @@ public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int F
                 // (phase 5: a portacabin stacked on the portacabin; kiosks are data, left at 0: they washed out its signboards)
                 Uppers = [("none", 1.5), ("saloon", 1.5)], UpperShareMin = 0.5f, UpperShareMax = 1f, UpperTallMin = 2.1f, UpperTallMax = 2.25f, UpperNarrow = 0.97f, Pods = [('k', 0)], PodMax = 2,
                 // (phase 7a: showy panels, a gold rail and pink neon, inset; phones, headsets and signs about)
-                Lining = 's', Window = 'b', WindowChance = 0.85, LiningInset = 0.75, Clutter = 0.6f, Props = ["Office Phone", "Call Headset", "Gift Card Sign", "Loudhailer", "CRT Monitor"], Fill = 0.8f, Gear = 1,
+                Lining = 's', Window = 'b', WindowChance = 0.85, LiningInset = 0.75, Clutter = 0.6f, Props = ["Hubcap Plate", "Traffic Cone", "Loudhailer", "Water Cooler"], Fill = 0.8f, Gear = 1,
                 // (phase 6: a showy balcony with a sign band at every door it fits, deep; kiosks down one side when lopsided)
                 Balcony = 1, BalconyKind = 'g', BalconyLenMin = 1.3f, BalconyDepthMin = 0.95f, BalconyDepthMax = 1.1f, Asym = 0.4, AsymAmount = 0.7f, AsymPod = 0.7,
                 CabTallMin = 1.8f, CabTallMax = 1.95f, RakeMin = 0.03f, RakeMax = 0.08f, CapsuleRakeMin = 0.3f, CapsuleRakeMax = 0.42f, HoodCrownMin = 0.2f, HoodCrownMax = 0.24f, BeltMin = 1.0f, BeltMax = 1.04f, CabHalfMin = 0.92f, CabHalfMax = 0.95f,
@@ -439,7 +439,7 @@ public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int F
                 // (phase 5: an open deck behind a bulwark in the boat's lines; a stock wagon of timber stakes now and then; clinker lockers are data, left at 0)
                 Cage = 0, CageKind = 't', Uppers = [("none", 2), ("deck", 0.4)], UpperShareMin = 0.4f, UpperShareMax = 0.7f, BulwarkMin = 0.95f, BulwarkMax = 1.1f, Pods = [('l', 0)], PodMax = 2,
                 // (phase 7a: timber planking following the boat's lines, lanterns; kegs and a thistle)
-                Lining = 't', Window = 'p', WindowChance = 0.75, LiningInset = 0.1, Clutter = 0.45f, Props = ["Wee Keg", "Thistle", "Wee Keg"], Fill = 0.9f, Gear = 1,
+                Lining = 't', Window = 'p', WindowChance = 0.75, LiningInset = 0.1, Clutter = 0.45f, Props = ["Traffic Cone", "Garden Gnome", "Traffic Cone"], Fill = 0.9f, Gear = 1,
                 // (phase 6: a timber veranda at every door it fits, deep, its signature in place of the deck and the stock wagon; lockers on one side now and then)
                 Balcony = 1, BalconyKind = 't', BalconyLenMin = 1.3f, BalconyDepthMin = 0.95f, BalconyDepthMax = 1.15f, Asym = 0.3, AsymAmount = 0.5f, AsymPod = 0.5,
                 CabTallMin = 1.62f, CabTallMax = 1.74f, RakeMin = 0.08f, RakeMax = 0.16f, HoodCrownMin = 0.22f, HoodCrownMax = 0.26f, HoodHalfMin = 0.48f, HoodHalfMax = 0.54f, CabHalfMin = 0.86f, CabHalfMax = 0.9f, HoodReach = 0.1f,
@@ -463,7 +463,7 @@ public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int F
                 // (phase 5: the double deck: an upper saloon flush with the walls, over most of the room)
                 Uppers = [("saloon", 5), ("none", 0.5)], UpperShareMin = 0.9f, UpperShareMax = 1f, UpperTallMin = 2.06f, UpperTallMax = 2.16f, UpperNarrow = 1f,
                 // (phase 7a: moquette under a dado, cream panelling over it, following the bus's curves; dome lamps; a teapot, a gnome, a flag)
-                Lining = 'u', Window = 't', WindowChance = 0.95, LiningInset = 0.2, Clutter = 0.35f, Props = ["Teapot", "Garden Gnome", "Union Flag", "Traffic Cone"], Fill = 0.8f, Gear = 1,
+                Lining = 'u', Window = 't', WindowChance = 0.95, LiningInset = 0.2, Clutter = 0.35f, Props = ["Garden Gnome", "Traffic Cone", "Loudhailer"], Fill = 0.8f, Gear = 1,
                 // (phase 6: a wrought-rail platform at every door it fits; even)
                 Balcony = 1, BalconyKind = 'r', BalconyRailMin = 1.0f, BalconyRailMax = 1.1f, Asym = 0.05, AsymAmount = 0.3f,
                 CabTallMin = 1.72f, CabTallMax = 1.86f, RakeMin = 0.1f, RakeMax = 0.18f, CapsuleRakeMin = 0.2f, CapsuleRakeMax = 0.38f, BeltMin = 0.94f, BeltMax = 1.0f,

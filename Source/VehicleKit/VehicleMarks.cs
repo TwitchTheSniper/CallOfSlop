@@ -4,7 +4,7 @@ namespace CallOfSlop.VehicleKit;
 
 /// <summary>
 /// Kit 2's guaranteed marks (docs/vehiclekit/VEHICLEKIT.md, "Identity and weak points"): after the dressing, every mark the style's signature asks of this vehicle
-/// (<see cref="StyleSignature.Marks"/>) that isn't there gets one of its parts, as the Pipe Box pass stands its box. Each mark rolls on its own fork of the seed, so
+/// (<see cref="StyleSignature.Marks"/>) that isn't there gets one of its parts, as a dressing pass stands its piece. Each mark rolls on its own fork of the seed, so
 /// nothing else of the seed moves, and it tries a ranked list of spots: up-facing sockets on a room's roof, the cab, the hood, a roof rack, the bed, the porch; then a
 /// short post of frame beam on the vehicle's rearmost free top socket, with the mark on its tip; then sideways on the headboard and the flanks. Nothing it stands up
 /// rises into a turret's sweep (a gun turning would pass through it, and its rounds hit it), and a post goes up only where the room over it was tested first, as

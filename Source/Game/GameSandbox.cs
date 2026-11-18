@@ -327,7 +327,6 @@ public sealed partial class Game
         if (ServerTick % World.TickRate == 0)
         {
             ConstructMedia.Tick(Constructs, ServerTick); // (the game's own tracks end by the clock)
-            ConstructPipes.Tick(Constructs, ServerTick); // (Pipe Boxes strike up when someone drives)
         }
         SandboxNow = now;
         if (!SandboxOn)

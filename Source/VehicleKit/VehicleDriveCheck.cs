@@ -85,7 +85,6 @@ public static class VehicleDriveCheck
         c.Driver = 1;
         c.DriverSeat = c.DriveSeat;
         using (place.In())
-            ConstructPipes.Tick(w, 0); // (as the server does once a second: the fuel reaches the engine)
         var p0 = c.WorldCom;
         var f0 = Vector3.Transform(c.SeatForward(), c.Rot);
         var fwd = Vector3.Normalize(new Vector3(f0.X, 0, f0.Z));
