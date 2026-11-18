@@ -65,7 +65,7 @@ public sealed partial class Ui
     };
 
     /// <summary>A relation's band in a word (faction-controllers.md section 5.2: the window's grid; the numbers are on hover).</summary>
-    private static string BandWord(int v) => v switch { <= -50 => "WAR", < 0 => "hostile", < 20 => "wary", < 60 => "neutral", _ => "friendly" };
+    private static string BandWord(int v) => v switch { <= PowerRelations.BloodValue => "BLOOD", <= -50 => "WAR", < 0 => "hostile", < 20 => "wary", < 60 => "neutral", < 90 => "friendly", _ => "kin" };
 
     private static float4 BandColour(int v) => v switch
     {
@@ -73,10 +73,11 @@ public sealed partial class Ui
         < 0 => new float4(1f, 0.6f, 0.3f, 1f),
         < 20 => new float4(0.85f, 0.85f, 0.5f, 1f),
         < 60 => new float4(0.75f, 0.75f, 0.75f, 1f),
-        _ => new float4(0.45f, 0.9f, 0.5f, 1f),
+        < 90 => new float4(0.45f, 0.9f, 0.5f, 1f),
+        _ => new float4(0.5f, 0.85f, 1f, 1f),
     };
 
-    private static string PactWord(byte k) => k switch { 1 => "Ceasefire", 2 => "Non-aggression", 3 => "Alliance", _ => "Pact" };
+    private static string PactWord(byte k) => k switch { 1 => "Ceasefire", 2 => "Non-aggression", 3 => "Alliance", 4 => "Trade", 5 => "Tribute", 6 => "Vassalage", _ => "Pact" };
 
     /// <summary>
     /// How the world's powers see each other (docs/sandbox/design/faction-controllers.md section 7): the grid (row: how that power sees each
@@ -125,7 +126,8 @@ public sealed partial class Ui
                 var a = _powShown[i];
                 ImGui.TableNextRow();
                 ImGui.TableNextColumn();
-                ImGuiSafe.TextColored(Orange, t.StoryNames[a]);
+                var gone = (t.PowerGone >> a & 1) != 0; // (phase 3: wiped out or merged into another)
+                ImGuiSafe.TextColored(gone ? Dim : Orange, gone ? $"{t.StoryNames[a]} (gone)" : t.StoryNames[a]);
                 for (var j = 0; j < m; j++)
                 {
                     var b = _powShown[j];
@@ -148,7 +150,13 @@ public sealed partial class Ui
             if (t.PactA[k] >= t.StoryNames.Length || t.PactB[k] >= t.StoryNames.Length)
                 continue;
             var left = t.PactLeft[k] == 0xFFFF ? "" : $", {t.PactLeft[k]} min left";
-            ImGuiSafe.TextWrapped($"{PactWord(t.PactKindOf[k])}: {t.StoryNames[t.PactA[k]]} and {t.StoryNames[t.PactB[k]]} ({t.PactHeld[k]} min{left})");
+            var (pa, pb) = (t.StoryNames[t.PactA[k]], t.StoryNames[t.PactB[k]]);
+            ImGuiSafe.TextWrapped(t.PactKindOf[k] switch
+            {
+                (byte)PactKind.Tribute => $"Tribute: {pa} pays {pb} ({t.PactHeld[k]} min)",
+                (byte)PactKind.Vassalage => $"Vassalage: {pa} serves {pb} ({t.PactHeld[k]} min)",
+                _ => $"{PactWord(t.PactKindOf[k])}: {pa} and {pb} ({t.PactHeld[k]} min{left})",
+            });
         }
         if (game.PowerNews.Count > 0)
         {

@@ -1,0 +1,41 @@
+{
+  // The faction controllers (docs/sandbox/design/faction-controllers.md section 3, phase 3): how often each thinks, the world's caps on their bodies,
+  // where they lay their places on an open world, what ships cost (each blueprint's real bill: its parts' Assembling recipes down to raw units),
+  // the missions' numbers, and a plan per kind. A power file's "plan" (Crew/Powers/*.json) replaces its kind's keys one by one.
+  // The fleets are placeholders (Karl's answer 4: existing vehicles per role until ship and vehicle generation is settled).
+  "format": "call-of-slop-npc-controllers/1",
+  "think": { "seconds": 5 },
+  "world": { "maxBodies": 24, "spawnFromPeople": 600, "dockFromPeople": 400, "dockRange": 150 },
+  "places": { "near": 1200, "far": 2200, "razeSeconds": 180, "razeRange": 300 },
+  "cost": { "perUnit": 1, "buildSecondsScale": 0.05, "minBuildSeconds": 8, "repairShare": 1 },
+  "missions": {
+    "convoyEveryMinutes": 4,
+    "cargoValue": 900,
+    "raidSight": 3000,
+    "raidLoot": 0.5,
+    "callRange": 5000,
+    "defendMinutes": 4,
+    "quietSeconds": 40,
+    "gatherMinutes": 4,
+    "runMinutes": 12,
+    "patrolMinutes": 8,
+    "dwellSeconds": 8
+  },
+  "kinds": {
+    "Traders": {
+      "start": 4000, "income": 30, "ships": 8, "groups": 3, "places": 2,
+      "fleet": { "cargo": ["IT Box Truck 1"], "escort": ["IT Technical 2"] },
+      "missions": { "convoy": { "cargo": 1, "escorts": 2 } }
+    },
+    "Raiders": {
+      "start": 2500, "income": 10, "ships": 6, "groups": 2, "places": 1,
+      "fleet": { "raider": ["Bandit Buggy 1", "Bandit Technical 1"] },
+      "missions": { "raid": { "ships": 2 } }
+    },
+    "Militia": {
+      "start": 3500, "income": 25, "ships": 6, "groups": 2, "places": 1,
+      "fleet": { "warship": ["British Technical 2", "British Gun Wagon 1"] },
+      "missions": { "defend": { "ships": 2 } }
+    }
+  }
+}

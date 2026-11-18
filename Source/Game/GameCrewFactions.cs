@@ -63,7 +63,8 @@ public sealed partial class Game : IPowerSight
     {
         var n = CrewPowers.Count;
         t.PowerCount = n;
-        Array.Copy(rel.Rel, t.PowerRel, t.PowerRel.Length);
+        for (var j = 0; j < t.PowerRel.Length; j++)
+            t.PowerRel[j] = rel.Shown(j); // (-100 only for a blood feud: phase 3)
         var k = 0;
         for (var i = 0; i < PowerRelations.MaxPacts && k < FactionTable.MaxPacts; i++)
             if (rel.PactK[i] != PactKind.None)
@@ -76,6 +77,10 @@ public sealed partial class Game : IPowerSight
                 k++;
             }
         t.PactCount = k;
+        t.PowerGone = 0;
+        for (var a = 1; a <= n && a <= 16; a++)
+            if (rel.Gone[a])
+                t.PowerGone |= (ushort)(1 << (a - 1));
         t.Version++;
     }
 
@@ -422,6 +427,7 @@ public sealed partial class Game : IPowerSight
         _questioning.Clear(); // (officer prisoners are the Fleet section's: CrewFleet.Officers)
         IntelMarks.Clear();
         Relations.Reset(); // (every relation from the power files, nobody met: a saved world's follow from its Powers and Crew sections)
+        CrewPowersClear(); // (the controllers from their plans: GameCrewPowers.cs; a saved world's follow from its Controllers section)
         _relShown = -1;
         _newsSent = _rel.NewsTotal;
         PowerNews.Clear();

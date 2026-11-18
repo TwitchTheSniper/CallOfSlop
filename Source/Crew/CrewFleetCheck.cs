@@ -4,7 +4,7 @@ using CallOfSlop.VehicleKit;
 namespace CallOfSlop;
 
 /// <summary>
-/// <c>--crew-check --crew-fleet strike|screen|succession|convoy|mining|interrogate|scale|all [--seconds S] [--fleet-scale N] [--fleet-awake K]
+/// <c>--crew-check --crew-fleet strike|screen|succession|convoy|mining|interrogate|scale|powers|politics|all [--seconds S] [--fleet-scale N] [--fleet-awake K]
 /// [--group-size G] [--crew-scale-ship NAME]</c> (docs/sandbox/design/faction-controllers.md phase 2): groups led by admirals, driven by their
 /// seated crews with no game (a tool's world: no bodies). Each prints what happened and a verdict; exit 0 when every part asked passed.
 /// </summary>
@@ -29,6 +29,8 @@ public static class CrewFleetCheck
             ok &= Mining(seconds > 0 ? seconds : 200);
         if (Is("interrogate"))
             ok &= Interrogate();
+        if (which.Equals("powers", StringComparison.OrdinalIgnoreCase) || which.Equals("politics", StringComparison.OrdinalIgnoreCase))
+            ok &= CrewPowersCheck.Run(which, seconds); // (phase 3: the controllers, CrewPowersCheck.cs)
         if (which.Equals("scale", StringComparison.OrdinalIgnoreCase))
             ok &= Scale(int.TryParse(Arg("--fleet-scale"), out var n) ? n : 1000, int.TryParse(Arg("--fleet-awake"), out var k) ? k : 64,
                 int.TryParse(Arg("--group-size"), out var gs) ? Math.Clamp(gs, 1, CrewGroup.MaxShips) : CrewGroup.MaxShips, Arg("--crew-scale-ship") ?? "Bandit Helicopter 1",
