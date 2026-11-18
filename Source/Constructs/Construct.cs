@@ -301,6 +301,10 @@ public sealed partial class Construct
     public Vector3 GrabFrameVel, GrabFrameSpin; // held by a rider: their deck's motion, on top of which the piece is moved (ConstructGrab.Drive)
     public bool Asleep;
     public int SleepTicks;
+    /// <summary>Server: far from every person (ConstructFar.cs): its physics steps once every this many ticks, by that many ticks' time (0 or 1: every tick).</summary>
+    public byte FarRate;
+    /// <summary>Server: far from every person, awake or asleep (ConstructFar.cs): its logic and power step once every this many ticks, by that many ticks' time.</summary>
+    public byte FarLogic;
     public bool Fresh; // server: made since the physics last stepped; one nobody gave a motion takes its frame's (ConstructRideSpawn.cs)
     // Cargo volumes (decision 21; ConstructCargo.cs). Carried: this body rides kinematically in a frozen cargo volume of
     // construct CarriedBy (0: free), at CarryPos / CarryRot in the frame of that volume part's segment (CarrySeg); the
