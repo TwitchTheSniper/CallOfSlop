@@ -454,6 +454,7 @@ public sealed partial class ConstructWorld
         GantryJobCount = 0; // (and the Shell Gantries' swaps: ConstructGantry.cs)
         PodJobCount = 0; // (and the shell pods' folds: ConstructShellPod.cs)
         PodReleaseCount = 0;
+        PodAuthority = false; // (the pods' first tick in the next world gives any untagged docked shell its tag)
         Designs.Clear(); // (a world's shared panel designs go with it: PanelDesigns.cs)
         DesignStamp++;
         foreach (var c in Bodies)
@@ -524,9 +525,9 @@ public sealed partial class ConstructWorld
     /// </summary>
     /// <param name="quiet">a body no peer ever heard of, gone in the tick it came (a world save's stand-in for a worn shell): no
     /// gone message, no building sound, no story note.</param>
-    public void Remove(Construct c, bool keepRiders = false, bool quiet = false)
+    public void Remove(Construct c, bool keepRiders = false, bool quiet = false, bool leaving = false)
     {
-        if (PodAuthority && (c.PodCount > 0 || c.Dirty))
+        if (PodAuthority && !leaving && (c.PodCount > 0 || c.Dirty)) // (leaving: packed and going on elsewhere, a travel's: its pods keep their shells)
             for (var i = 0; i < c.PartCount; i++)
                 if (c.DefOf(i).ShellPod != null)
                     ConstructShellPod.Release(this, c, i); // (a body that goes lets its pods' shells out, unless a join copied them: ConstructShellPod.cs)

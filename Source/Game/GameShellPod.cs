@@ -101,6 +101,8 @@ public sealed partial class Game
     private void PodTick()
     {
         var world = Constructs;
+        if (!world.PodAuthority)
+            PodTagAll(world); // (the first tick of a world: a shell docked before tags gets one, so a join's copy is known)
         world.PodAuthority = true; // (this world releases docked shells from pods that go: ConstructShellPod.Release)
         if (world.PodReleaseCount > 0)
             ConstructShellPod.StandReleases(world);
@@ -154,6 +156,15 @@ public sealed partial class Game
                 PodUnload(world, c, i, ref pp, d);
             }
         }
+    }
+
+    /// <summary>Server, a world's first pod tick: every docked shell without a tag is given one. Once a world: not per tick.</summary>
+    private static void PodTagAll(ConstructWorld world)
+    {
+        foreach (var c in world.Bodies)
+            for (var i = 0; i < c.PartCount; i++)
+                if (c.Parts[i].D.ShellPod != null && ConstructShellPod.Holds(c.Parts[i]) && ConstructShellPod.TagIn(c.Parts[i]) == 0)
+                    ConstructConfig.Put(ref c.Parts[i], c.Parts[i].D, CfgKey.PodTag, Random.Shared.Next(1, 1 << 24));
     }
 
     /// <summary>Server: a docked shell's power cell charges while its pod has power (its other works are a service's, not a charge's).</summary>

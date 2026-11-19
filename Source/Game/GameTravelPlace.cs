@@ -327,7 +327,7 @@ public sealed partial class Game
         var gone = Constructs.Bodies.Where(c => Aboard(ship, c)).ToList();
         f.Ships.Remove(si);
         foreach (var c in gone)
-            Constructs.Remove(c, keepRiders: true); // (its riders went with its copy)
+            Constructs.Remove(c, keepRiders: true, leaving: true); // (its riders went with its copy; leaving: its shell pods' shells went with it too)
         foreach (var (here, hid) in riders)
         {
             _visitors.RemoveAll(x => x.HostId == hid);
