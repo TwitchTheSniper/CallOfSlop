@@ -251,6 +251,8 @@ public static partial class ConstructPhysics
                 }
                 if (c.SpringCount > 0 || c.SpringRiders > 0 || c.SpringLanding != 0)
                     SpringFeet(c, query, _invI[i], dt);
+                if (c.GearFootCount > 0)
+                    GearFeet(c, query, _invI[i], dt); // (landing legs' springs: ConstructPhysicsGear.cs)
                 if (c.LegCount > 0 && c.GrabbedBy == 255)
                 {
                     Walk(world, c, query, dt); // (the gait brain: ConstructWalk.cs)
