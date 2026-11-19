@@ -2305,7 +2305,7 @@ public static partial class ConstructNet
                 c.NetRawRt = double.NaN;
                 var t = (float)Math.Clamp((now - c.NetAt) / span, 0, 1.5);
                 // A little past the last pose (at its velocity) so a moving body doesn't stop and start between packets.
-                c.Pos = t <= 1 ? Vector3.Lerp(c.NetFromPos, c.NetPos, t) : c.NetPos + c.Vel * (float)((t - 1) * span);
+                c.Pos = t <= 1 ? Vector3.Lerp(c.NetFromPos, c.NetPos, t) : c.NetPos + HistVel(c) * (float)((t - 1) * span);
                 c.Rot = t >= 1 ? c.NetRot : Quaternion.Slerp(c.NetFromRot, c.NetRot, t);
                 SampleFeet(c, double.NaN); // (as last heard)
             }

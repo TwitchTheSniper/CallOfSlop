@@ -56,6 +56,7 @@ public sealed partial class Game
             var force = c.ThrusterCount > 0 ? ConstructPhysics.SpaceThrust(c, dt, out torque) : Vector3.Zero;
             var a = c.Mass > 0 ? Vec3d.From(force) / c.Mass : Vec3d.Zero;
             f.Ships.Thrust[i] = pose.Rot.Rotate(a); // (game axes to the ecliptic's)
+            c.SpaceAccel = a.ToVector3(); // (what its drive gives it this tick: what loose bodies aboard feel, ConstructFrames.cs)
             if (ConstructFlight.FliesShip(c))
             {
                 // Its jets turn it, as in the bubble (the stabilizer damps the turn it asks for).

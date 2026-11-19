@@ -107,6 +107,7 @@ public static class ConstructFrames
         c.FrameVel = Vector3.Transform(c.Vel - c.FrameV, iq);
         c.FrameSpin = Vector3.Transform(c.AngVel - f.AngVel, iq);
         Pull(c, f, com);
+        FreeFall(c, f, seed: true);
         Joins++;
     }
 
@@ -148,9 +149,30 @@ public static class ConstructFrames
             if (ConstructGravity.Wells > 0)
                 c.FrameG += ConstructGravity.WellsAt(com, c.Id);
         }
+    }
+
+    /// <summary>
+    /// A ship out of the bubble is posed after the step, so its change of motion can't meet its loose bodies in the solve. The
+    /// carry gives them its whole change of velocity (an orbit's fall and all), and what of it they should feel goes into their
+    /// next step as a pull (<see cref="Construct.FrameFree"/>, like the deck's gravity, so the contacts take it smoothly): the
+    /// change less the ship's free fall (its change less what its drive gave, smoothed, <see cref="Construct.FrameGrav"/>),
+    /// so the drive and a hit are felt and an orbit is rest. Nothing is felt at a raised time speed (a tick is more space time).
+    /// </summary>
+    private static void FreeFall(Construct c, Construct f, bool seed)
+    {
         c.FrameFree = Vector3.Zero;
-        if (f.SpaceShip != 0 && GravityFrames.Point is { } pg && pg.FreeFall(f.WorldCom, out var free))
-            c.FrameFree = free;
+        if (f.SpaceShip == 0)
+            return;
+        if (seed)
+        {
+            c.FrameGrav = GravityFrames.Point is { } pg && pg.FreeFall(f.WorldCom, out var g) ? g : Vector3.Zero;
+            return;
+        }
+        if (SpaceTimeSpeed > 1)
+            return;
+        var a = (f.Vel - c.FrameVc0) * World.TickRate;
+        c.FrameGrav += (a - f.SpaceAccel - c.FrameGrav) * 0.1f;
+        c.FrameFree = c.FrameGrav - a;
     }
 
     /// <summary>
@@ -182,7 +204,6 @@ public static class ConstructFrames
                 var f = w.Get(c.Frame);
                 if (f == null || f.PartCount == 0 || f.Anchored || f.CarriedBy != 0 || f.Frame != 0 || !CanRide(c))
                 {
-                    if (Trace) Console.WriteLine($"[frames] {c.Id} leaves {c.Frame}: frame gone/changed or can't ride");
                     Leave(c); // (the frame went, froze or was caught; or the body was caught, frozen or pinned)
                     continue;
                 }
@@ -220,6 +241,8 @@ public static class ConstructFrames
         }
         var dt = c.FrameDt;
         c.FrameDt = 0;
+        var frameDv = posed ? f.Vel - c.FrameVc0 : Vector3.Zero; // (a posed frame's change of velocity since the last carry)
+        FreeFall(c, f, seed: false);
         var (lastPos, lastRot) = (c.FramePos, c.FrameRot);
         var stepped = dt > 0 && !c.Asleep;
         var com = c.WorldCom;
@@ -252,7 +275,7 @@ public static class ConstructFrames
             // Carried with no step: woken when the frame's acceleration at it (the free fall in space aside) would move it.
             if (SpaceTimeSpeed <= 1 || !posed)
             {
-                var a = (fv - c.FrameV) * World.TickRate - c.FrameFree;
+                var a = (fv - c.FrameV - frameDv) * World.TickRate - c.FrameFree; // (the frame's turning at it, and what of its change is felt)
                 c.FrameFelt += (a.Length() - c.FrameFelt) * 0.3f;
                 if (c.FrameFelt > WakeFelt)
                     c.Wake();
@@ -262,9 +285,7 @@ public static class ConstructFrames
         else if (stepped)
         {
             c.FrameFelt = 0; // (awake: what it feels is its motion; the measure starts again when it next sleeps)
-            var v = c.Vel;
-            if (posed && SpaceTimeSpeed > 1)
-                v += f.Vel - c.FrameVc0; // (at a raised time speed the ship's change of motion is many ticks of space time: carried, not felt)
+            var v = c.Vel + frameDv; // (a posed frame's change carried; what of it is felt comes in the next step, FreeFall)
             c.FrameVel = Vector3.Transform(v - fv, fiq);
             c.FrameSpin = Vector3.Transform(c.AngVel - f.AngVel, fiq);
         }
@@ -278,11 +299,6 @@ public static class ConstructFrames
         c.FrameGround = false;
         var local = Vector3.Transform(at - f.Pos, fiq);
         if (!ConstructRide.InFrame(f, local, c.FrameUp) || grounded && fv.LengthSquared() > GroundLeaveSpeed * GroundLeaveSpeed)
-        {
-            if (Trace) Console.WriteLine($"[frames] {c.Id} leaves {c.Frame}: local {local} grounded {grounded} fv {fv.Length():0.0} vel {c.Vel.Length():0.0} rel {c.FrameVel}");
             Leave(c); // (out through a hatch, off an open deck, or held by the ground under it: the world's from here, at its own speed)
-        }
-        if (Trace && _tick % 30 == 0) Console.WriteLine($"[frames] {c.Id} t{_tick} local {c.FramePos} rel {c.FrameVel} asleep {c.Asleep} st {c.SleepTicks} spin {c.FrameSpin} dt {dt} fmove {(f.Pos - f.PrevPos) * World.TickRate} fvel {f.Vel} cvel {c.Vel} cmove {(c.Pos - c.PrevPos) * World.TickRate}");
     }
-    public static bool Trace = Environment.GetEnvironmentVariable("COS_FRAMES_TRACE") == "1";
 }

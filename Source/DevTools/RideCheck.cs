@@ -30,6 +30,7 @@ public static class RideCheck
         World.SetMap(yard);
         HeldOnly = args.Any(a => a.Equals("--held", StringComparison.OrdinalIgnoreCase));
         LooseOnly = args.Any(a => a.Equals("--loose", StringComparison.OrdinalIgnoreCase));
+        LooseMany = int.Parse(Arg("--loose-many", "0"));
         if (LooseOnly)
         {
             LooseSpeeds = Arg("--speeds", args.Any(a => a.Equals("--speed", StringComparison.OrdinalIgnoreCase)) ? Arg("--speed", "10") : "0,60,120,200")
@@ -431,6 +432,7 @@ public static class RideCheck
 
     private static bool HeldOnly, LooseOnly;
     private static float[] LooseSpeeds = [0, 60, 120, 200];
+    private static int LooseMany;
 
     /// <summary>What carries the loose bodies of a posed ship (one out of the bubble) once it is posed: the game's own pass for them (GameSpace.cs).</summary>
     private static void CarryPosed(ConstructWorld w) => ConstructFrames.After(w, posed: true);
@@ -472,6 +474,22 @@ public static class RideCheck
                 Console.WriteLine("  loose: a block found no frame");
         }
         thrown.Vel += Vector3.Transform(new Vector3(2f, 1f, -2f), c.Rot);
+        // "--loose-many N": N more blocks set down in a heap round the two spots (the step's cost with many bodies aboard).
+        var extra = new List<Construct>();
+        for (var k = 0; k < LooseMany; k++)
+        {
+            var spot = k % 2 == 0 ? spotA : spotB;
+            var at = spot + new Vector3((k / 2 % 3 - 1) * 0.6f, 0.5f + k / 6 * 0.45f, (k / 6 % 3 - 1) * 0.6f);
+            if (ConstructBuild.PlaceNew(w, block, c.ToWorld(at), 0) is not { } b)
+                continue;
+            b.Rebuild();
+            b.Vel = c.PointVel(b.WorldCom);
+            b.AngVel = c.AngVel;
+            b.Fresh = false;
+            if (ConstructFrames.Find(w, b, posed) is { } f)
+                ConstructFrames.Join(b, f);
+            extra.Add(b);
+        }
         var loose = new[] { rest, thrown };
         var lastL = new Vector3[3];
         Vector3 L(Construct b) => c.ToLocal(b.WorldCom);
@@ -510,6 +528,7 @@ public static class RideCheck
             w.Step(World.Query, World.TickDt);
             if (posed)
             {
+                c.SpaceAccel = (vel - c.Vel) * World.TickRate; // (as its drive would: Game.SpaceLaunchBefore)
                 Pose(w, c, c.Pos + vel * World.TickDt, Quaternion.CreateFromAxisAngle(Vector3.UnitY, ang.Y * World.TickDt) * c.Rot, vel, ang);
                 c.SpaceShip = 60000;
                 CarryPosed(w);
@@ -530,7 +549,7 @@ public static class RideCheck
             for (var k = 1; k <= 4; k++)
             {
                 var d = Drawn(rest, k / 4f);
-                if (t > phases[ph].From + 60 && ph != 2)
+                if (t > phases[ph].From + (ph == 2 ? 10 : 60))
                     jump[ph] = MathF.Max(jump[ph], Vector3.Distance(d, prevDrawn));
                 prevDrawn = d;
             }
@@ -548,6 +567,10 @@ public static class RideCheck
         }
         var relT = (thrown.Vel - c.PointVel(thrown.WorldCom)).Length();
         line.Append(FormattableString.Invariant($" thrown: in frame {inB}, {relT:0.00} m/s against the deck at the end, moved {Vector3.Distance(L(thrown), startT[0]):0.0} m from a second in;"));
+        if (extra.Count > 0)
+            line.Append(FormattableString.Invariant($" {extra.Count} more: {extra.Count(b => b.Asleep)} asleep at the end, {extra.Count(b => b.Frame == c.Id)} in its frame;"));
+        foreach (var b in extra)
+            w.Remove(b);
         line.Append(FormattableString.Invariant($" rest block in frame {inA} (in the ship's {(rest.Frame == c.Id ? "frame" : "WORLD")}); step {msSum / 654:0.00} ms mean, {msMax:0.00} most{lost}"));
         Console.WriteLine(line.ToString());
         w.Remove(rest);
@@ -615,6 +638,7 @@ public static class RideCheck
             w.Step(World.Query, World.TickDt);
             if (posed)
             {
+                c.SpaceAccel = (vel - c.Vel) * World.TickRate; // (as its drive would: Game.SpaceLaunchBefore)
                 Pose(w, c, c.Pos + vel * World.TickDt, Quaternion.CreateFromAxisAngle(Vector3.UnitY, ang.Y * World.TickDt) * c.Rot, vel, ang);
                 c.Anchored = false;
                 CarryPosed(w);

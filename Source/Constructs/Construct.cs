@@ -355,12 +355,14 @@ public sealed partial class Construct
     // it (world axes: the deck's gravity, a generator's, the free fall a ship in space has), the frame's motion at its centre and
     // its turn at the last carry (world), where its centre and the frame were then, the time the physics stepped it since, the
     // acceleration it feels at rest (smoothed: what wakes it), and whether its frame pose is still to be taken from the world.
-    internal Vector3 FrameUp = Vector3.UnitY, FrameG, FrameFree, FrameV, FrameW, FrameX0, FrameC0, FrameVc0;
+    internal Vector3 FrameUp = Vector3.UnitY, FrameG, FrameFree, FrameGrav, FrameV, FrameW, FrameX0, FrameC0, FrameVc0;
     internal Quaternion FrameQ0 = Quaternion.Identity;
     internal float FrameDt, FrameFelt;
     internal bool FrameNew, FrameGround; // (FrameGround: the last step had it touch the map)
     /// <summary>Server: in a frame whose pose it has (not still to be joined from the world): the physics reads its speed against the frame's.</summary>
     internal bool Framed => Frame != 0 && !FrameNew;
+    // Server: a ship out of the bubble: the acceleration its drive gave it this tick (game axes; GameSpaceLaunch.SpaceLaunchBefore).
+    internal Vector3 SpaceAccel;
     // Server and client: loose bodies in this construct's frame at the last carry (most constructs: 0).
     internal int FrameRiders;
     // Client: the newest pose heard was in a frame (Frame), so the pose history holds frame poses.

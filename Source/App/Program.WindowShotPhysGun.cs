@@ -20,7 +20,7 @@ public static partial class Program
     private static Quaternion _wsSwingRel0;
     private static float _wsSwingDrift, _wsSwingDriftRest;
 
-    private static bool WsHeldKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "swing" or "waitpeer" or "beside" or "pitch" or "aimat" or "bodies" or "loose";
+    private static bool WsHeldKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "swing" or "waitpeer" or "beside" or "pitch" or "aimat" or "bodies" or "loose" or "framewatch";
 
     private static bool WsHeldVerb(Game g, string verb, string arg)
     {
@@ -46,8 +46,9 @@ public static partial class Program
                 WsFail($"aimat: no construct {arg}");
                 return true;
             }
-            WsLook(g, eyeOf.Eye, body.WorldCom);
-            WsSay(FormattableString.Invariant($"aimat: construct {id} at {body.WorldCom:0.0}, {Vector3.Distance(eyeOf.Eye, body.WorldCom):0.0} m"));
+            var eyeAt = g.RiderDrawnEye(eyeOf); // (on a moving deck the eye as the deck is drawn: a client draws bodies behind its own predicted eye)
+            WsLook(g, eyeAt, body.WorldCom);
+            WsSay(FormattableString.Invariant($"aimat: construct {id} at {body.WorldCom:0.0}, {Vector3.Distance(eyeAt, body.WorldCom):0.0} m"));
             _wsWait = 3;
             return true;
         }
@@ -77,6 +78,17 @@ public static partial class Program
             var made = ConstructBuild.PlaceNew(g.Constructs, def, new FreePlacement { Pos = at, Rot = deck });
             WsSay(FormattableString.Invariant($"loose: {(made == null ? "not placed" : $"body {made.Id}, {made.Mass:0} kg, at {at:0.0}")}"));
             _wsWait = 10;
+            return true;
+        }
+        if (verb == "framewatch")
+        {
+            // "framewatch SECS": every frame for SECS s, each loose body within 400 m in a moving construct's frame (the host's
+            // Frame, a client's NetFrame) drawn against its frame as drawn: the largest jump a frame, its drift and its speed
+            // through the frame, then a line each (local-frame-physics.md: on screen nothing should drift from the deck)
+            _wsFwSecs = float.TryParse(arg, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var fs) ? fs : 3f;
+            _wsFwStart = Stopwatch.GetTimestamp();
+            _wsFw.Clear();
+            _wsWait = Math.Max(_wsWait, 2);
             return true;
         }
         if (verb == "pitch")
@@ -141,9 +153,48 @@ public static partial class Program
         return true;
     }
 
+    private static long _wsFwStart;
+    private static float _wsFwSecs;
+    private static readonly Dictionary<ushort, (Vector3 First, Vector3 Last, float Jump, int Frames, ushort Frame)> _wsFw = new();
+
+    /// <summary>Once a frame: a running framewatch reads the loose bodies against their frames as both are drawn.</summary>
+    private static void WsFrameWatch(Game g, Player me)
+    {
+        if (_wsFwStart == 0)
+            return;
+        foreach (var b in g.Constructs.Bodies)
+        {
+            var fid = g.IsServer ? b.Frame : b.NetFrame;
+            if (fid == 0 || g.Constructs.Get(fid) is not { } f || Vector3.Distance(b.WorldCom, me.Position) > 400f)
+                continue;
+            var fp = g.DrawnPoint(f, f.Pos);
+            var fx = g.DrawnPoint(f, f.Pos + Vector3.Transform(Vector3.UnitX, f.Rot)) - fp;
+            var fy = g.DrawnPoint(f, f.Pos + Vector3.Transform(Vector3.UnitY, f.Rot)) - fp;
+            var fz = Vector3.Cross(fx, fy);
+            var bp = g.DrawnPoint(b, b.WorldCom) - fp;
+            var local = new Vector3(Vector3.Dot(bp, fx), Vector3.Dot(bp, fy), Vector3.Dot(bp, fz));
+            if (_wsFw.TryGetValue(b.Id, out var e) && e.Frame == fid)
+                _wsFw[b.Id] = (e.First, local, MathF.Max(e.Jump, Vector3.Distance(local, e.Last)), e.Frames + 1, fid);
+            else
+                _wsFw[b.Id] = (local, local, 0, 1, fid);
+        }
+        _wsWait = Math.Max(_wsWait, 2);
+        if (Stopwatch.GetElapsedTime(_wsFwStart).TotalSeconds < _wsFwSecs)
+            return;
+        foreach (var (id, e) in _wsFw)
+            if (g.Constructs.Get(id) is { } b)
+                WsSay(FormattableString.Invariant($"framewatch: {(g.IsServer ? "host" : "client")} body {id} ({b.DefOf(0).Name}) in {e.Frame}: {e.Frames} frames, jump {e.Jump * 1000:0.0} mm a frame most, drift {Vector3.Distance(e.First, e.Last):0.000} m, at {e.Last:0.00}, {(b.Asleep ? "asleep" : "awake")}, speed through it {(g.IsServer ? b.FrameVel.Length() : b.NetFrameVel.Length()):0.00} m/s; frame at {g.Constructs.Get(e.Frame)?.Vel.Length() ?? 0:0} m/s"));
+        if (_wsFw.Count == 0)
+            WsSay("framewatch: no loose body in a frame near");
+        _wsFwStart = 0;
+        _wsWait = 0;
+    }
+
     /// <summary>Once a frame: a running swing turns the look and reads the held piece's lag.</summary>
     private static void WsHeldFrame()
     {
+        if (_session is { } fg && fg.Local is { } fme)
+            WsFrameWatch(fg, fme);
         if (_wsSwingStart == 0 || _session is not { } g || g.Local is not { } me)
             return;
         var now = Stopwatch.GetTimestamp();
