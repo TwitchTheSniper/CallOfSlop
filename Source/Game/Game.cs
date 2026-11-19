@@ -1005,7 +1005,7 @@ public sealed partial class Game : IDisposable
         for (var i = 0; i < count; i++)
             if (_pendingInputs[_pendingInputs.Count - count + i].NoclipBoard != 0)
                 board |= 1 << i;
-        _w.U8((byte)board); // trailer: the Board inside key, a bit per command, then each one's construct and aim (ConstructRideInterior.cs; protocol 368)
+        _w.U8((byte)board); // trailer: the Board inside key, a bit per command, then each one's construct and aim (ConstructRideInterior.cs; protocol 369)
         for (var i = 0; i < count; i++)
             if ((board & 1 << i) != 0)
             {
@@ -2486,6 +2486,9 @@ public sealed partial class Game : IDisposable
                 break;
             case (byte)Msg.Stations when !IsServer:
                 ReadStations(ref r); // the stations' markets and moorings (GameStationMarket.cs)
+                break;
+            case (byte)Msg.FleetGroups when !IsServer:
+                ReadFleetGroups(ref r); // the players' fleet groups this player may command (GameCrewFleetPlayers.cs)
                 break;
             case (byte)Msg.Contracts when !IsServer:
                 ReadContracts(ref r); // the powers' contracts for credits (GameCrewPolitics.cs)

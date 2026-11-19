@@ -31,6 +31,9 @@ public sealed class FleetDoctrine
     public FleetSuccession Succession = FleetSuccession.Captain;
     public float Delay = 10; // s of disarray while command passes (no new orders)
     public float Resistance = 0.5f; // 0-1: how hard its officers are to interrogate (each officer varies about it)
+
+    /// <summary>A copy a player's group may change (its shape and spacing: phase 6) without changing the power's.</summary>
+    public FleetDoctrine Copy() => (FleetDoctrine)MemberwiseClone();
 }
 
 /// <summary>

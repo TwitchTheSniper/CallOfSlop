@@ -177,6 +177,9 @@ public sealed class CrewShip
     public Vector3 TargetAt; // what its drivers fought last (CrewWorld.Drive), at TargetTick: its admiral's contacts
     public ushort TargetBody;
     public long TargetTick = long.MinValue / 2;
+    public float TopSpeed; // the fastest it was seen to fly at full ahead under an order (m/s; 0: not yet): what an escort can keep up with
+    public float SpeedCap; // m/s an escort asks of what it guards (0: none), until SpeedCapUntil: it flies no faster, so its escort keeps its slots
+    public long SpeedCapUntil;
     public bool OnNet; // it hears its group's fleet command network (a part that gives access, or its crew's voice within reach)
     public long CaptainAt; // the tick it thinks next
     public readonly ulong[] Foes = new ulong[4]; // players who have hit it (a bit each)
@@ -241,6 +244,8 @@ public sealed class CrewShip
         (DoerPlayer, DoerBody, DoerAt, FoeBody, FoeBodyAt) = (255, 0, 0, 0, 0);
         Group = -1;
         Order = default;
+        TopSpeed = SpeedCap = 0;
+        SpeedCapUntil = 0;
         CaptainUid = 0;
         Strength = 0;
         OnNet = false;
@@ -1179,6 +1184,15 @@ public sealed class CrewWorld
                 State[m0] = CrewState.Free;
             }
         }
+        // A player's own hands take the helm only while their ship is in one of the player's fleet groups (phase 6: its admiral flies it); out of
+        // one, whoever is at the helm stands down and the ship is its owner's to fly again.
+        if (s.Own && s.Group < 0 && s.Helm >= 0 && s.Helm < s.StCount && s.StMember[s.Helm] is var hm and >= 0)
+        {
+            Unseat(s, hm);
+            State[hm] = CrewState.Free;
+            s.Ai?.Release(c);
+            Events.Add($"construct {c.Id}: crew member {Uid[hm]} stands down from the helm (no fleet group)");
+        }
         for (var pass = 0; pass < 10; pass++)
         {
             var kind = pass switch
@@ -1188,7 +1202,7 @@ public sealed class CrewWorld
             };
             for (var st = 0; st < s.StCount; st++)
             {
-                if (s.StKind[st] != kind || s.Own && kind == CrewStationKind.Helm || s.StMember[st] >= 0 || Sitter(c, s.StPart[st]) != 0 || (Standing(kind) ? c.Parts[s.StPart[st]].Health <= 0 : c.Parts[s.StPart[st]].Broken) || Coming(s, st))
+                if (s.StKind[st] != kind || s.Own && kind == CrewStationKind.Helm && s.Group < 0 || s.StMember[st] >= 0 || Sitter(c, s.StPart[st]) != 0 || (Standing(kind) ? c.Parts[s.StPart[st]].Health <= 0 : c.Parts[s.StPart[st]].Broken) || Coming(s, st))
                     continue;
                 var m = Nearest(c, s, st, kind);
                 if (m < 0)
@@ -1507,6 +1521,8 @@ public sealed class CrewWorld
                 has = true;
             }
             ai.Step(w, c, q, has, t);
+            if (s.Own && c.CrewAims && ai.Boarded(c, this))
+                c.CrewAims = false; // (a player's own ship in a group: its owner at the helm flies it, the hands keep the guns)
         }
     }
 

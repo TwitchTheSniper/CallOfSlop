@@ -16,6 +16,7 @@
     "Raiders": { "caution": 0.8, "discipline": 0.2, "skill": 0.4, "formation": "wedge", "spacing": 40, "succession": "break", "delaySeconds": 0, "resistance": 0.3 },
     "Traders": { "caution": 1.6, "discipline": 0.4, "skill": 0.3, "formation": "column", "spacing": 45, "succession": "captain", "delaySeconds": 15, "resistance": 0.4 },
     "Mercenaries": { "caution": 1.0, "discipline": 0.7, "skill": 0.8, "formation": "wedge", "spacing": 60, "succession": "captain", "delaySeconds": 5, "resistance": 0.6 },
+    "Player Crew": { "caution": 1.0, "discipline": 0.9, "skill": 0.6, "formation": "wedge", "spacing": 60, "succession": "captain", "delaySeconds": 6, "resistance": 0.6 },
     "Salvagers": { "caution": 1.4, "discipline": 0.3, "skill": 0.3, "formation": "column", "spacing": 50, "succession": "flagship", "delaySeconds": 12, "resistance": 0.4 }
   }
 }

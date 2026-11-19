@@ -1,14 +1,14 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Highport Miner Cradle WR 2",
-  "description": "A berth's middle cradle: a post down the arm's side, a beam under the ship with a docking clamp on it, and the boarding tube to the ship's side.",
+  "description": "A berth's clamp bracket: a post down the arm's side, a short bracket under its edge with the berth's docking clamp, and the boarding tube to the ship's side.",
   "group": "Station",
   "section": "Caledon Highport",
   "role": "frame",
   "tool": "welder",
   "collider": "boxes",
-  "mass": 22454.4,
-  "health": 30945,
+  "mass": 16808.4,
+  "health": 24170,
   "armour": 40,
   "material": "steel",
   "color": "#4c5359",
@@ -17,41 +17,41 @@
     {
       "min": [
         -1.375,
-        -8.925,
-        10.875
+        -9.325,
+        1.875
       ],
       "max": [
         0.225,
-        7.875,
-        11.875
+        9.875,
+        2.875
       ],
       "color": "#4c5359",
       "finish": "dirty steel"
     },
     {
       "min": [
-        -1.375,
-        -8.925,
-        -12.425
+        -2.775,
+        -9.325,
+        -2.325
       ],
       "max": [
-        0.225,
-        -6.725,
-        10.875
+        1.625,
+        -7.125,
+        1.875
       ],
       "color": "#4c5359",
       "finish": "dirty steel"
     },
     {
       "min": [
-        -1.395,
-        -6.745,
-        8.675
+        -2.795,
+        -7.145,
+        1.075
       ],
       "max": [
-        0.245,
-        -6.713,
-        9.875
+        1.645,
+        -7.113,
+        1.675
       ],
       "color": "#d9a441",
       "detail": true,
@@ -59,14 +59,14 @@
     },
     {
       "min": [
-        -1.395,
-        -6.745,
-        6.275
+        -2.795,
+        -7.145,
+        -0.125
       ],
       "max": [
-        0.245,
-        -6.713,
-        7.475
+        1.645,
+        -7.113,
+        0.475
       ],
       "color": "#d9a441",
       "detail": true,
@@ -74,177 +74,29 @@
     },
     {
       "min": [
-        -1.395,
-        -6.745,
-        3.875
+        -2.795,
+        -7.145,
+        -1.325
       ],
       "max": [
-        0.245,
-        -6.713,
-        5.075
+        1.645,
+        -7.113,
+        -0.725
       ],
       "color": "#d9a441",
       "detail": true,
       "finish": "hazard paint"
-    },
-    {
-      "min": [
-        -1.395,
-        -6.745,
-        1.475
-      ],
-      "max": [
-        0.245,
-        -6.713,
-        2.675
-      ],
-      "color": "#d9a441",
-      "detail": true,
-      "finish": "hazard paint"
-    },
-    {
-      "min": [
-        -1.395,
-        -6.745,
-        -0.925
-      ],
-      "max": [
-        0.245,
-        -6.713,
-        0.275
-      ],
-      "color": "#d9a441",
-      "detail": true,
-      "finish": "hazard paint"
-    },
-    {
-      "min": [
-        -1.395,
-        -6.745,
-        -3.325
-      ],
-      "max": [
-        0.245,
-        -6.713,
-        -2.125
-      ],
-      "color": "#d9a441",
-      "detail": true,
-      "finish": "hazard paint"
-    },
-    {
-      "min": [
-        -1.395,
-        -6.745,
-        -5.725
-      ],
-      "max": [
-        0.245,
-        -6.713,
-        -4.525
-      ],
-      "color": "#d9a441",
-      "detail": true,
-      "finish": "hazard paint"
-    },
-    {
-      "min": [
-        -1.395,
-        -6.745,
-        -8.125
-      ],
-      "max": [
-        0.245,
-        -6.713,
-        -6.925
-      ],
-      "color": "#d9a441",
-      "detail": true,
-      "finish": "hazard paint"
-    },
-    {
-      "min": [
-        -1.395,
-        -6.745,
-        -10.525
-      ],
-      "max": [
-        0.245,
-        -6.713,
-        -9.325
-      ],
-      "color": "#d9a441",
-      "detail": true,
-      "finish": "hazard paint"
-    },
-    {
-      "min": [
-        -0.75,
-        -7.9709,
-        -11.5216
-      ],
-      "max": [
-        -0.4,
-        7.4209,
-        11.4716
-      ],
-      "color": "#4c5359",
-      "detail": true,
-      "shape": "hull",
-      "points": [
-        [
-          -0.75,
-          7.4209,
-          11.2784
-        ],
-        [
-          -0.75,
-          7.1291,
-          11.4716
-        ],
-        [
-          -0.4,
-          7.4209,
-          11.2784
-        ],
-        [
-          -0.4,
-          7.1291,
-          11.4716
-        ],
-        [
-          -0.75,
-          -7.6791,
-          -11.5216
-        ],
-        [
-          -0.75,
-          -7.9709,
-          -11.3284
-        ],
-        [
-          -0.4,
-          -7.6791,
-          -11.5216
-        ],
-        [
-          -0.4,
-          -7.9709,
-          -11.3284
-        ]
-      ],
-      "finish": "dirty steel"
     },
     {
       "min": [
         -1.975,
-        1.875,
-        8.475
+        3.875,
+        -0.525
       ],
       "max": [
         0.825,
-        4.875,
-        10.875
+        6.875,
+        1.875
       ],
       "color": "#9ba0a3",
       "finish": "painted plating"
@@ -252,13 +104,13 @@
     {
       "min": [
         -1.075,
-        -6.725,
-        8.475
+        -4.675,
+        -0.525
       ],
       "max": [
         -0.075,
-        1.875,
-        10.875
+        3.875,
+        1.875
       ],
       "color": "#4c5359",
       "finish": "dirty steel"
@@ -266,13 +118,13 @@
     {
       "min": [
         -2.075,
-        1.775,
-        8.325
+        3.775,
+        -0.575
       ],
       "max": [
         0.925,
-        4.975,
-        8.475
+        6.975,
+        -0.525
       ],
       "color": "#d9a441",
       "detail": true,
@@ -281,13 +133,13 @@
     {
       "min": [
         -1.675,
-        2.075,
-        8.255
+        4.075,
+        -0.615
       ],
       "max": [
         0.525,
-        4.675,
-        8.325
+        6.675,
+        -0.575
       ],
       "color": "#ffd8a0",
       "detail": true,
@@ -300,8 +152,8 @@
       "name": "clamp",
       "at": [
         -0.575,
-        -6.725,
-        -0.775
+        -7.125,
+        -0.175
       ],
       "dir": "+y",
       "class": "large"
@@ -310,8 +162,8 @@
       "name": "j0",
       "at": [
         -0.575,
-        1.375,
-        11.875
+        3.375,
+        2.875
       ],
       "dir": "+z"
     }

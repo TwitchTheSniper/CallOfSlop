@@ -454,6 +454,7 @@ public sealed partial class Game : IPowerSight
         Crew.Fleet.Rules = FleetRules.Current; // (Crew/Fleet.json read here too)
         _questioning.Clear(); // (officer prisoners are the Fleet section's: CrewFleet.Officers)
         IntelMarks.Clear();
+        FleetViewsClear(); // (players' fleet groups: GameCrewFleetPlayers.cs; a saved world's come back with its Fleet section)
         Relations.Reset(); // (every relation from the power files, nobody met: a saved world's follow from its Powers and Crew sections)
         CrewPowersClear(); // (the controllers from their plans: GameCrewPowers.cs; a saved world's follow from its Controllers section)
         _relShown = -1;
