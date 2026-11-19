@@ -110,6 +110,62 @@ public static unsafe partial class Program
                 }
                 return true;
             }
+            case "sendremove":
+            {
+                // "inv sendremove NAME": this peer's remove action for part NAME, as holding aim on it sends it (a joined client's own path).
+                if (WsFind(g, rest) is not ({ } c, var part) || part < 0)
+                {
+                    WsFail($"inv sendremove: no part \"{rest}\"");
+                    return true;
+                }
+                g.SandboxSend(CActKind.Remove, body: c.Id, part: (ushort)part);
+                WsSay($"inv sendremove: {c.DefOf(part).Name}#{part} of construct {c.Id}");
+                return true;
+            }
+            case "standon" when g.IsServer:
+            {
+                // "inv standon NAME" (host): every player stood on the middle of part NAME's top (its body's up), to ride it.
+                if (WsFind(g, rest) is not ({ } c, var part) || part < 0)
+                {
+                    WsFail($"inv standon: no part \"{rest}\"");
+                    return true;
+                }
+                c.WorldFrame(c.Parts[part].Seg, out var q, out var t);
+                c.PartBounds(part, out var mn, out var mx);
+                var top = t + System.Numerics.Vector3.Transform(new System.Numerics.Vector3((mn.X + mx.X) * 0.5f, mx.Y + 0.05f, (mn.Z + mx.Z) * 0.5f), q);
+                foreach (var pl in g.Players.Values)
+                    if (pl.Id < Game.MaxPeople)
+                    {
+                        pl.Teleport(top);
+                        if (c.Anchored)
+                            continue;
+                        ConstructRide.Join(ref pl.Sim, c, c.Parts[part].Seg, ConstructRide.UpFor(c, GravityFrames.UpAt(top)), System.Numerics.Vector3.Zero); // (in its frame from the first tick: set down at rest, a ship in orbit ran them over at 180 m/s)
+                        pl.Sim.Grounded = true;
+                    }
+                WsSay($"inv standon: players to {top:0.0} on {c.DefOf(part).Name}#{part} of construct {c.Id}");
+                return true;
+            }
+            case "takeoff" when g.IsServer:
+            {
+                // "inv takeoff NAME" (host): the host's player takes part NAME off its body with the real remove edit, from beside it.
+                if (WsFind(g, rest) is not ({ } c, var part) || part < 0)
+                {
+                    WsFail($"inv takeoff: no part \"{rest}\"");
+                    return true;
+                }
+                ref var h = ref hands.Hands[me.Id];
+                var d = c.DefOf(part);
+                h.Tool = d.Tool == ConstructTool.None ? ConstructTool.Welder : d.Tool;
+                var eye = ConstructEdits.ReachPoint(c, part, c.WorldCom);
+                var why = hands.BeginRemove(g.Constructs, me.Id, eye, c.Id, part, g.SandboxNow);
+                if (why == null && h.Edit == EditKind.Remove)
+                {
+                    h.Start = g.SandboxNow - h.Duration; // (the timed edit done now)
+                    hands.Tick(g.Constructs, g.SandboxNow, _ => eye);
+                }
+                WsSay($"inv takeoff: {d.Name}#{part} of construct {c.Id}: {why ?? "begun"} (edit {h.Edit})");
+                return true;
+            }
             case "takeback" when g.IsServer:
             {
                 // For every player, the nearest loose body that is this part, taken apart with the real remove edit (its tool, from beside it).

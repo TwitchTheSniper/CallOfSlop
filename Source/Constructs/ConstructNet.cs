@@ -1108,7 +1108,7 @@ public static partial class ConstructNet
             var signal = (sbyte)r.U8() / 10f;
             if (ConstructParts.Get(def) is not { } pd || turn >= Rot24.Count)
                 throw new MalformedPacketException($"construct part {i}: unknown type {def} or turn {turn}");
-            if (setting > 0 && setting >= pd.Settings.Length)
+            if (setting > 0 && setting >= pd.Settings.Length && pd.Yield == 0) // (a material bundle's Setting is its material id, not a row of its settings: WorldSaveBodies reads it the same way)
                 throw new MalformedPacketException($"construct part {i}: setting {setting} of a {pd.Name}");
             c.Parts[c.PartCount++] = new CPart { Def = def, Pos = p, Rot = turn, Seg = seg, Health = hp, Broken = broken, Setting = setting, Out = signal, OutNext = signal };
         }
