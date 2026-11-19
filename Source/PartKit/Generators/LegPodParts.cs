@@ -38,7 +38,16 @@ public sealed class LegPodParts : IPartGenerator
     /// <summary>A size: its letter, its scale on the L (the Zero Day's), and the masses. Reach: the pad's sole under the pod's top, deployed.</summary>
     private sealed record Size(string L, double K, double HousingMass, double GantryMass, double LeafMass, double Health)
     {
+        /// <summary>The pad's sole under the pod's top with the leg down and its spring out (in the air).</summary>
         public double Reach => Py.Round((-CrankY + StrutLen * Sn + PadTop + PadT) * K, 2);
+
+        /// <summary>...and standing at 1 g, the spring in by its sag (<see cref="Sag"/>): where a ship's ground is.</summary>
+        public double Standing => Py.Round((-CrankY + StrutLen * Sn + PadTop + PadT - Sag) * K, 2);
+
+        public double Travel => Py.Round(Oleo * K, 4);
+
+        /// <summary>The spring's frequency (Hz) for a sag of <see cref="Sag"/> L metres at the game's 1 g (World.Gravity): x = g / w^2, whatever the craft weighs.</summary>
+        public double Hz => Py.Round(Math.Sqrt(18.0 / (Sag * K)) / (2 * Math.PI), 3);
     }
 
     private static readonly Size[] Sizes =
@@ -49,8 +58,8 @@ public sealed class LegPodParts : IPartGenerator
         new("XL", 1.25, 2900, 1750, 470, 9000), // (the Zero Day's and the Dray's: their keels stand about 3.2 m up)
     ];
 
-    /// <summary>Where a size's pad stands under the pod's top, its legs down (a ship's ground: its keel's mount less this).</summary>
-    public static double ReachOf(string size) => Sizes.First(s => s.L == size).Reach;
+    /// <summary>Where a size's pad stands under the pod's top, its legs down and its spring in under the ship's weight (a ship's ground: its keel's mount less this).</summary>
+    public static double ReachOf(string size) => Sizes.First(s => s.L == size).Standing;
 
     /// <summary>
     /// A whole pod of size <paramref name="size"/> hung by its housing's top on socket <paramref name="sock"/> of step <paramref name="on"/>
@@ -330,7 +339,11 @@ public sealed class LegPodParts : IPartGenerator
     // drawing swings; the carriage settles by its slide and the foot by the ankle's move, so the pad's collider is where it stands.
 
     private const double CrankY = -0.5, CrankZ = -1.15, Unfurl = 45, StrutW = 0.16, StrutH = 0.12, KneeAt = 1.0, Rod = 1.1, RailY = -0.28, BraceX = 0.25;
-    private const double PadW = 0.5, PadL = 0.42, PadTop = 0.22, PadT = 0.18; // the foot: half width, half length, its top under the ankle, its thickness
+    private const double PadW = 0.5, PadL = 0.42, PadTop = 0.30, PadT = 0.18; // the foot: half width, half length, its top under the ankle (spring out), its thickness
+    // The foot's suspension (Karl, 2026-11-19: "add suspension to the landing gear"): the pad hangs on a chrome oleo rod that slides up
+    // into the plate under the ankle's clevis by up to Oleo, and at 1 g sits Sag in (1 cm under the old stance: PadTop was 0.22 before the spring). Its step at full squash stops 1 cm under the plate.
+    // The plate sits just under the strut's ankle eye (StrutH round the ankle), and the pad's step stops just under the plate.
+    private const double Oleo = 0.11, Sag = 0.07, RodR = 0.045;
     private const double BayEnd = 1.65; // the stern end wall's inner face (the foot's pad stows against it)
     private static double AnkleZ0 => BayEnd - PadL; // the ankle stowed (the foot's pad reaches the end wall)
     private static double StrutLen => AnkleZ0 - CrankZ;
@@ -442,26 +455,35 @@ public sealed class LegPodParts : IPartGenerator
     {
         var k = s.K;
         var p = new Part($"Leg Pod Foot {s.L}", Small, Section,
-            $"A landing leg pod's foot ({s.L}): a broad rectangular pad on a clevis round the strut's ankle. It rides the ankle down and back without turning, so the pad stays level, and stands {Py.G(s.Reach)} m under the pod's top. A generic ship fitting: it fits any ship.",
+            $"A landing leg pod's foot ({s.L}): a broad rectangular pad on a sprung oleo under a clevis round the strut's ankle. It rides the ankle down and back without turning, so the pad stays level; on the ground its spring gives up to {Py.G(Py.Round(s.Travel * 100, 0))} cm and it stands {Py.G(s.Standing)} m under the pod's top. A generic ship fitting: it fits any ship.",
             role: "door", tool: "welder", material: "steel", color: Armour, group: Group);
         double ay = CrankY, az = AnkleZ0, top = ay - PadTop, bot = top - PadT;
-        // The clevis: two cheeks either side of the ankle eye, the ankle pin through them, a block down to the pad.
+        double plate = ay - StrutH - 0.005; // (the clevis's bottom plate's top, under the strut's ankle eye)
+        // The clevis: two cheeks either side of the ankle eye, the ankle pin through them, a plate across under them, a hazard band round it.
         foreach (var sx in new[] { -1.0, 1.0 })
-            D(p, k, sx * (StrutW + 0.012), ay - 0.08, az - 0.14, sx * (StrutW + 0.07), top + 0.004, az + 0.14, Frame, "dirty steel");
+            D(p, k, sx * (StrutW + 0.012), plate + 0.004, az - 0.14, sx * (StrutW + 0.07), ay + 0.08, az + 0.14, Frame, "dirty steel");
         Across(p, k, ay, az, 0.05, -StrutW - 0.08, StrutW + 0.08, Chrome, "chrome");
-        D(p, k, -StrutW - 0.07, top + 0.004, az - 0.18, StrutW + 0.07, top + 0.05, az + 0.18, Armour2, "plated steel");
-        // The pad: a stepped armoured plate, a hazard band round its rim, a rubber sole.
-        D(p, k, -PadW, bot + 0.04, az - PadL, PadW, top, az + PadL, Armour, "plated steel");
-        D(p, k, -PadW + 0.06, top, az - PadL + 0.06, PadW - 0.06, top + 0.004 + 0.03, az + PadL - 0.06, Armour2, "plated steel");
-        D(p, k, -PadW - 0.006, bot + 0.04, az - PadL - 0.006, PadW + 0.006, bot + 0.075, az + PadL + 0.006, Hazard, "hazard paint");
-        D(p, k, -PadW + 0.03, bot, az - PadL + 0.03, PadW - 0.03, bot + 0.04, az + PadL - 0.03, Rubber, "rubber");
-        D(p, k, -0.2, top + 0.034, az + PadL - 0.05, 0.2, top + 0.05, az + PadL - 0.02, Glow, "", glow: true);
-        // Collision: the pad, and the clevis block (it settles where it is drawn: it rides the ankle without turning).
+        D(p, k, -StrutW - 0.07, plate - 0.03, az - 0.16, StrutW + 0.07, plate, az + 0.16, Armour2, "plated steel");
+        D(p, k, -StrutW - 0.076, plate - 0.026, az - 0.166, StrutW + 0.076, plate - 0.01, az + 0.166, Hazard, "hazard paint");
+        // What the spring moves ("oleo": up by the squash): the chrome rod, the pad, its step, its rim, its sole and its lamp.
+        void M(double x0, double y0, double z0, double x1, double y1, double z1, string col, string finish, bool glow = false) =>
+            p.Add(Box(Pt(k, Math.Min(x0, x1), Math.Min(y0, y1), Math.Min(z0, z1)), Pt(k, Math.Max(x0, x1), Math.Max(y0, y1), Math.Max(z0, z1)), col, detail: true,
+                shape: glow ? Kw(("glow", true), ("paintable", false), ("rig", "oleo")) : Kw(("finish", finish), ("rig", "oleo"))));
+        p.Add(Box(Pt(k, -RodR, top + 0.03, az - RodR), Pt(k, RodR, plate - 0.01, az + RodR), Chrome, detail: true,
+            shape: Kw(("shape", "cylinder"), ("segments", 16), ("front", "+y"), ("finish", "chrome"), ("rig", "oleo"))));
+        // (the rod runs from the pad's step up through the plate: the plate hides its top, the ankle eye it at full squash)
+        M(-PadW, bot + 0.04, az - PadL, PadW, top, az + PadL, Armour, "plated steel");
+        M(-PadW + 0.06, top, az - PadL + 0.06, PadW - 0.06, top + 0.004 + 0.03, az + PadL - 0.06, Armour2, "plated steel");
+        M(-PadW - 0.006, bot + 0.04, az - PadL - 0.006, PadW + 0.006, bot + 0.075, az + PadL + 0.006, Hazard, "hazard paint");
+        M(-PadW + 0.03, bot, az - PadL + 0.03, PadW - 0.03, bot + 0.04, az + PadL - 0.03, Rubber, "rubber");
+        M(-0.2, top + 0.034, az + PadL - 0.05, 0.2, top + 0.05, az + PadL - 0.02, Glow, "", glow: true);
+        // Collision: the pad (spring out: it meets the ground only past the spring's travel), and the clevis's plate.
         Hidden(p, k, -PadW, bot, az - PadL, PadW, top, az + PadL);
-        Hidden(p, k, -StrutW - 0.07, top, az - 0.18, StrutW + 0.07, top + 0.05, az + 0.18);
+        Hidden(p, k, -StrutW - 0.07, plate - 0.03, az - 0.16, StrutW + 0.07, plate, az + 0.16);
         p.Sock("hang", Pt(k, 0, (top + bot) / 2, az + PadL), "+z");
         p.Set(("door", Kw(("kind", "swing"), ("axis", "+x"), ("held", true), ("seconds", 3.5), ("hang", "hang"), ("gear", "leg"),
-            ("link", Kw(("crank", V3(k, 0, CrankY, CrankZ)), ("crankAxis", "+x"), ("crankAngle", Unfurl), ("knee", V3(k, 0, ay, az)), ("ride", true))))));
+            ("link", Kw(("crank", V3(k, 0, CrankY, CrankZ)), ("crankAxis", "+x"), ("crankAngle", Unfurl), ("knee", V3(k, 0, ay, az)), ("ride", true))),
+            ("spring", Kw(("travel", s.Travel), ("hz", s.Hz), ("damping", 0.6))))));
         return p.Stats(s.GantryMass * 0.23, s.Health * 0.6, 30, 4.0);
     }
 

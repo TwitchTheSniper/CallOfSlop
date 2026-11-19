@@ -425,6 +425,10 @@ public static partial class ConstructRender
         gfx.Draw(Matrix4x4.CreateScale(size) * basis * Matrix4x4.CreateTranslation((a + b) * 0.5f), colour, 1f, mode: 0);
     }
 
+    /// <summary>A sprung landing foot's pad, up its part's +y by the squash this peer sees (<see cref="CDoor.Shown"/>).</summary>
+    private static Matrix4x4 OleoMove(Construct c, int part, in CPart p) =>
+        c.DoorOfListed(part) is var k and >= 0 && c.Doors[k].Shown > 0 ? Matrix4x4.CreateTranslation(Rot24.Apply(p.Rot, Vector3.UnitY) * c.Doors[k].Shown) : Matrix4x4.Identity;
+
     /// <summary>A hand control's moving box, out of its rest pose: a lever's handle and a knob by the value, a slider along it, a rocker and a cap by whether the part is on.</summary>
     private static Matrix4x4 ControlMove(in CPartBox box, in CPart p, Vector3 leverAxis, float leverAngle)
     {
@@ -666,7 +670,9 @@ public static partial class ConstructRender
             }
             if (box.IsLeaf && d.Surface is { Control: > 0 } flap)
                 model *= FlapTurn(c, i, flap, in p); // (a control surface's leaf, on the hinge in the part)
-            if (box.Rig >= BoxRig.Lever)
+            if (box.Rig == BoxRig.Oleo)
+                model *= OleoMove(c, i, in p);
+            else if (box.Rig >= BoxRig.Lever)
                 model *= ControlMove(in box, in p, leverAxis, leverAngle);
             else if (box.Rig != BoxRig.None)
                 model = rig.Model(in box, in p, model);
@@ -1743,7 +1749,7 @@ public static partial class ConstructRender
     {
         foreach (var c in world.Bodies)
         {
-            if (c.WheelCount == 0 || now < c.FitAt)
+            if (c.WheelCount == 0 && c.GearFootCount == 0 || now < c.FitAt)
                 continue;
             // Rays as fast as the ticks only for a wheel that's moving and close enough for it to show (by the clock, so a
             // faster frame rate doesn't buy more of them); bodies take their turns by id.
@@ -1753,6 +1759,7 @@ public static partial class ConstructRender
             var up = Vector3.Transform(Vector3.UnitY, c.Rot);
             for (var k = 0; k < c.WheelCount; k++)
                 ConstructPhysics.FitWheel(c, query, k, up);
+            ConstructPhysics.FitGear(world, c, query, up); // (sprung landing feet: ConstructPhysicsGear.cs)
         }
     }
 
