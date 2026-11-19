@@ -82,6 +82,8 @@ public static partial class ConstructRide
         c.SpeedKept = c.Vel.Length(); // (and the frame's speed even past the physics' limit: ConstructPhysics.Integrate)
         c.Asleep = false;
         c.SleepTicks = 0;
+        if (c.Frame == 0 && frame.Frame == 0 && frame.SpaceShip == 0 && ConstructFrames.CanRide(c) && ConstructFrames.CanCarry(frame, c))
+            ConstructFrames.Join(c, frame); // (and is in its frame from now on: local-frame-physics.md)
         return true;
     }
 

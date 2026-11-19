@@ -313,6 +313,7 @@ public sealed partial class Game
         p.SteamId = _steamIds.GetValueOrDefault(id); // and the Steam ids with it (GameSteam.cs)
         p.Teleport(e.Position);
         Players[id] = p;
+        ApplyHeardShell(p); // (wearing a robot shell when we joined: GameRobotShell.cs)
         return p;
     }
 

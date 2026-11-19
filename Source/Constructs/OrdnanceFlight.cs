@@ -556,7 +556,8 @@ public static class OrdnanceFlight
                 for (var e = c.FirstLink(rack); e >= 0; e = c.NextLink(e))
                     if (c.DefOf(c.OtherEnd(e)) is { Sight: SightKind.Seeker } head && c.Parts[c.OtherEnd(e)].Working)
                     {
-                        s.Target = ConstructRadar.Target(world, c, at, head.SightReach) is var held and > 0 ? held
+                        s.Target = ConstructRadar.Target(world, c, at, float.MaxValue) is var held and > 0 ? held // (the radar's lock at any range it holds it; the head's own look reaches SightReach)
+                           
                             : ConstructOrdnance.Seek(world, c, at, fwd, head.SightReach, MathF.Cos(head.SightCone * MathF.PI / 180f), query);
                         s.Flags |= ShellFlags.FlareProne;
                         break;

@@ -25,6 +25,7 @@ public sealed class ShellModule
     public float Speed = 1, Damage = 1; // "speed", "damage": times the frame's pace and the hits it takes while fitted (1: no change)
     public byte Index; // its place in the file's "modules" (a wire and save byte: a new module goes at the end)
     public ConstructTool? Tool; // "tool": while the shell is worn this is its only tool (the Drill Arm's ground drill; the user, 2026-11-17)
+    public bool View; // "view": in first person its wearer sees the module's own model (the one on the shell: ShellKitNodes) in place of its tool's (the user, 2026-11-19)
 }
 
 /// <summary>
@@ -249,6 +250,12 @@ public static class ShellFrames
             if (m.TryGetProperty("tool", out var tl))
                 mod.Tool = Enum.TryParse<ConstructTool>(tl.GetString(), true, out var tool) && ConstructToolWire.From((byte)tool) == tool && tool != ConstructTool.None
                     ? tool : throw new FormatException($"module \"{mod.Name}\": no tool \"{tl.GetString()}\"");
+            if (m.TryGetProperty("view", out var vw))
+            {
+                mod.View = vw.GetBoolean();
+                if (mod.View && (mod.Tool == null || mod.Kind != ShellModuleKind.Drill))
+                    throw new FormatException($"module \"{mod.Name}\": \"view\" needs a \"tool\" and a kind with a model of its own (drill)");
+            }
             if (!modules.TryAdd(mod.Name, mod))
                 throw new FormatException($"module \"{mod.Name}\" twice");
             if (mod.Part.Length > 0 && order.Exists(o => o.Part == mod.Part))
