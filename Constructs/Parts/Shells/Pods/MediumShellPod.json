@@ -150,7 +150,7 @@
         0.08,
         0.884
       ],
-      "color": "#5f6870",
+      "color": "#22262b",
       "detail": true,
       "paintable": false,
       "finish": "tread plate"
@@ -258,7 +258,7 @@
         1.5045,
         0.89
       ],
-      "color": "#38d0e8",
+      "color": "#1e7f8e",
       "detail": true,
       "paintable": false
     },
@@ -273,7 +273,7 @@
         1.5045,
         -0.872
       ],
-      "color": "#38d0e8",
+      "color": "#1e7f8e",
       "detail": true,
       "paintable": false
     },
@@ -320,7 +320,7 @@
         1.5045,
         0.89
       ],
-      "color": "#38d0e8",
+      "color": "#1e7f8e",
       "detail": true,
       "paintable": false
     },
@@ -335,7 +335,7 @@
         1.5045,
         0.89
       ],
-      "color": "#38d0e8",
+      "color": "#1e7f8e",
       "detail": true,
       "paintable": false
     },

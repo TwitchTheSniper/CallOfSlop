@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Small Flush Shell Pod",
-  "description": "Parks a robot shell (up to 2 m tall) when nobody wears it: walk the shell into the frame that rises out of it and press F: you wake in your chair and the pod folds the shell away. Wake in it again from a Shell Control Chair. A docked shell charges from the grid and can't be damaged or taken. Flush: the pod sinks into the floor, wall or ceiling it is welded to, its lid in a hazard coaming 3 cm over the surface.",
+  "description": "Parks a robot shell (up to 2 m tall) when nobody wears it: walk the shell into the frame that rises out of it and press F: you wake in your chair and the pod folds the shell away. Wake in it again from a Shell Control Chair. A docked shell charges from the grid and can't be damaged or taken. Flush: the pod sinks into the floor, wall or ceiling it is welded to, its lid in a hazard coaming 3 cm over the surface; what it goes in must be as deep as the pod (stacked floors, a foundation, a hull).",
   "group": "Logic",
   "section": "Shells",
   "role": "panel",
@@ -121,7 +121,7 @@
         -0.89,
         0.554
       ],
-      "color": "#5f6870",
+      "color": "#22262b",
       "detail": true,
       "paintable": false,
       "finish": "tread plate"
@@ -229,7 +229,7 @@
         0.0405,
         0.56
       ],
-      "color": "#38d0e8",
+      "color": "#1e7f8e",
       "detail": true,
       "paintable": false
     },
@@ -244,7 +244,7 @@
         0.0405,
         -0.542
       ],
-      "color": "#38d0e8",
+      "color": "#1e7f8e",
       "detail": true,
       "paintable": false
     },
@@ -291,7 +291,7 @@
         0.0405,
         0.56
       ],
-      "color": "#38d0e8",
+      "color": "#1e7f8e",
       "detail": true,
       "paintable": false
     },
@@ -306,7 +306,7 @@
         0.0405,
         0.56
       ],
-      "color": "#38d0e8",
+      "color": "#1e7f8e",
       "detail": true,
       "paintable": false
     }

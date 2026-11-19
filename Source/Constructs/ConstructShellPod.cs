@@ -96,8 +96,8 @@ public static class ConstructShellPod
                 c.PocketHost = [];
             return;
         }
-        if (c.PocketHost.Length < c.PartCount)
-            c.PocketHost = new byte[c.PartCount + 16];
+        if (c.PocketHost.Length != c.PartCount)
+            c.PocketHost = new byte[c.PartCount]; // (its length is the part count it was found for: a reader checks it, so a removal before the rebuild reads nothing)
         else
             Array.Clear(c.PocketHost);
         for (var q = 0; q < c.PodCount; q++)
@@ -119,6 +119,46 @@ public static class ConstructShellPod
                     c.PocketHost[i] = 1;
             }
         }
+    }
+
+    /// <summary>
+    /// Why a flush pod can't go where placing puts it (<paramref name="pos"/>, <paramref name="rot"/> in <paramref name="c"/>'s rest
+    /// frame), or null: its body sinks <see cref="ShellPodDef.Depth"/> under the surface, and a surface thinner than that leaves it
+    /// sticking out of the far side (the coordinator, 2026-11-19). Points down the body's middle and its corners must each be inside
+    /// a part of the body (a floor, a stack of them, a foundation, a hull). Allocates nothing.
+    /// </summary>
+    public static string? DepthRefusal(Construct c, ConstructPartDef def, Vector3 pos, byte rot)
+    {
+        if (def.ShellPod is not { Flush: true } pd)
+            return null;
+        var below = pd.Depth - pd.Top; // (the body's depth under the surface)
+        var down = Rot24.Apply(rot, -Vector3.UnitY);
+        var ax = Rot24.Apply(rot, Vector3.UnitX) * (pd.Half - Wall);
+        var az = Rot24.Apply(rot, Vector3.UnitZ) * (pd.Half - Wall);
+        var covered = 0f;
+        const int Steps = 8;
+        for (var k = 1; k <= Steps; k++)
+        {
+            var at = pos + down * (below * k / Steps - 0.01f);
+            if (!Covered(c, at) || !Covered(c, at + ax + az) || !Covered(c, at - ax - az) || !Covered(c, at + ax - az) || !Covered(c, at - ax + az))
+                break;
+            covered = below * k / Steps;
+        }
+        return covered >= below - 0.011f ? null
+            : $"a {def.Name} sinks {below:0.##} m into what it goes on, and this is about {covered:0.##} m deep: set it in something thicker (stacked floors, a foundation) or use the bolted-on {ClassNames[pd.Class]} Shell Pod";
+    }
+
+    private static bool Covered(Construct c, Vector3 at)
+    {
+        for (var i = 0; i < c.PartCount; i++)
+        {
+            if (c.Parts[i].D.ShellPod != null)
+                continue;
+            c.PartBounds(i, out var mn, out var mx);
+            if (at.X > mn.X && at.X < mx.X && at.Y > mn.Y && at.Y < mx.Y && at.Z > mn.Z && at.Z < mx.Z)
+                return true;
+        }
+        return false;
     }
 
     public static readonly string[] ClassNames = ["Tiny", "Small", "Medium", "Large", "Huge"];

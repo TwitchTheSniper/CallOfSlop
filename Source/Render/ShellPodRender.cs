@@ -13,7 +13,7 @@ namespace CallOfSlop;
 public static class ShellPodRender
 {
     public const float DrawNear = 80f;
-    private static readonly Vector3 Cap = new(0.13f, 0.15f, 0.17f), Post = new(0.34f, 0.38f, 0.42f), Plate = new(0.36f, 0.39f, 0.42f),
+    private static readonly Vector3 Cap = new(0.13f, 0.15f, 0.17f), Post = new(0.34f, 0.38f, 0.42f), Plate = new(0.2f, 0.22f, 0.25f),
         Hazard = new(0.95f, 0.69f, 0.12f), Button = new(0.82f, 0.16f, 0.12f), Lamp = new(0.22f, 0.82f, 0.9f),
         LampEmpty = new(0.3f, 0.92f, 0.38f), LampBusy = new(1f, 0.62f, 0.12f), LampBroken = new(0.95f, 0.18f, 0.12f);
 
@@ -127,7 +127,8 @@ public static class ShellPodRender
         // The platform: from the pod's floor up to the lid.
         var plat = bot + 0.08f + lift * (pd.Top - 0.012f - (bot + 0.08f));
         if (lift > 0.01f || shell)
-            Box(gfx, m, new Vector3(0, plat - 0.02f, 0), new Vector3(inner * 2 - 0.06f, 0.04f, inner * 2 - 0.06f), Plate);
+            gfx.Draw(Matrix4x4.CreateScale(inner * 2 - 0.06f, 0.04f, inner * 2 - 0.06f) * Matrix4x4.CreateTranslation(0, plat - 0.02f, 0) * m, Plate,
+                surface: Surfaces.Code(Surfaces.Id("tread plate"), 0f)); // (dark tread plate: the pocket reads deep)
         if (!shell || ConstructParts.Find(ShellFrames.Of(frame).Part) is not { } sd)
             return;
         DrawShell(gfx, world.PodJobs[k], sd, ShellFrames.Of(frame), c, part, m, rot, pos, plat, fold, slide, fwd);
@@ -186,9 +187,10 @@ public static class ShellPodRender
         {
             var hinge = Matrix4x4.CreateRotationZ(s * a) * Matrix4x4.CreateTranslation(s * hx, top - Thick, 0) * m; // (hinged at the lower outer edge: open, a flap hangs inside it)
             gfx.Draw(Matrix4x4.CreateScale(len, Thick, zh * 2) * Matrix4x4.CreateTranslation(-s * len * 0.5f, Thick * 0.5f, 0) * hinge, Cap);
-            // A hazard band along the edge where they meet, and a grip slot beside it.
-            gfx.Draw(Matrix4x4.CreateScale(0.05f, 0.006f, zh * 2 - 0.1f) * Matrix4x4.CreateTranslation(-s * (len - 0.035f), Thick + 0.002f, 0) * hinge, Hazard);
-            gfx.Draw(Matrix4x4.CreateScale(0.03f, 0.006f, MathF.Min(0.24f, zh)) * Matrix4x4.CreateTranslation(-s * (len - 0.1f), Thick + 0.002f, 0) * hinge, Post);
+            // A hazard band just inside the rim along each flap's hinge edge (the pair reads as one hatch with a border, not a
+            // double door), and a grip slot by the edge where they meet.
+            gfx.Draw(Matrix4x4.CreateScale(0.035f, 0.006f, zh * 2 - 0.1f) * Matrix4x4.CreateTranslation(-s * 0.045f, Thick + 0.002f, 0) * hinge, Hazard);
+            gfx.Draw(Matrix4x4.CreateScale(0.03f, 0.006f, MathF.Min(0.24f, zh)) * Matrix4x4.CreateTranslation(-s * (len - 0.05f), Thick + 0.002f, 0) * hinge, Post);
         }
     }
 
