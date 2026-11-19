@@ -400,7 +400,7 @@ public sealed class ShellParts : IPartGenerator
             p.Add(MachineLook.D([-w + t + 0.003, bot + t + 0.003, Math.Min(s * w, s * (w - t))], [w - t - 0.003, top - rim * 0.5, Math.Max(s * w, s * (w - t))], MachineLook.Base)); // the z walls
         }
         var lining = bot + ConstructShellPod.Lining; // (the lining floor's top)
-        p.Add(MachineLook.D([-w + t + 0.006, bot + t + 0.003, -w + t + 0.006], [w - t - 0.006, lining, w - t - 0.006], MachineLook.Steel, "tread plate")); // the lining's floor, under the platform: deck plate
+        p.Add(MachineLook.D([-w + t + 0.006, bot + t + 0.003, -w + t + 0.006], [w - t - 0.006, lining, w - t - 0.006], "#5f6870", "tread plate")); // the lining's floor, under the platform: deck plate
         // The pocket's lined walls: painted plating a step lighter than the lid, 4 mm in front of the walls, from the lining's floor up under the rim, so an open
         // pod reads as a lined cubby, not a box sunk through the floor (the user, 2026-11-19).
         foreach (var s in new[] { -1.0, 1.0 })

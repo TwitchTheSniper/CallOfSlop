@@ -66,7 +66,6 @@ public static partial class ConstructRender
     {
         public Renderer.MergedMesh Mesh;
         public Matrix4x4 Frame;
-        public int Cut; // (its body's openings round flush pods' pockets: Renderer.Cuts.cs)
     }
 
     private static readonly Dictionary<Construct, MergeSet> _merges = new();
@@ -198,6 +197,13 @@ public static partial class ConstructRender
         for (var i = 0; i < n; i++)
         {
             var nb = MergeBoxes(c, i);
+            if (nb > 0 && i < c.PocketHost.Length && c.PocketHost[i] != 0)
+            {
+                // A surface a flush pod sinks into: walked, so its boxes alone take the cut mark (Renderer.Cuts.cs).
+                _partEntry[i] = -1;
+                set.Walked[set.WalkedCount++] = i;
+                continue;
+            }
             if (nb == 0)
             {
                 _partEntry[i] = -1;
@@ -482,7 +488,10 @@ public static partial class ConstructRender
                 LastMergedWaiting++;
                 for (var m = 0; m < ch.MemberCount; m++)
                     if (ch.Members[m] < c.PartCount)
+                    {
+                        HostCut(gfx, c, ch.Members[m]);
                         n += DrawPart(gfx, world, c, ch.Members[m], body, alpha, 1f);
+                    }
                 continue;
             }
             if (ch.LookDue || check && ((k + set.Draws / MergeCheckFrames) & 1) == 0) // (half the chunks each check: each every 8 draws)
@@ -516,7 +525,7 @@ public static partial class ConstructRender
             }
             if (_mergeQueued == _mergeQueue.Length)
                 Array.Resize(ref _mergeQueue, _mergeQueue.Length * 2); // (grows to the busiest frame once)
-            _mergeQueue[_mergeQueued++] = new MergeDraw { Mesh = ch.Gl, Frame = frame, Cut = gfx.CutCode };
+            _mergeQueue[_mergeQueued++] = new MergeDraw { Mesh = ch.Gl, Frame = frame };
             LastMergedChunks++;
             LastBatchBoxes += ch.Gl.Slots;
             n += ch.Gl.Slots;
@@ -527,6 +536,7 @@ public static partial class ConstructRender
             var i = set.Walked[k];
             if (i >= c.PartCount)
                 continue;
+            HostCut(gfx, c, i);
             n += DrawPart(gfx, world, c, i, body, alpha, 1f);
             if (c.Parts[i].Store != 0)
                 n += DrawStored(gfx, world, c, i, body, alpha);
@@ -574,7 +584,7 @@ public static partial class ConstructRender
         gfx.Relative = true; // (the frames are relative to the render origin already)
         for (var k = 0; k < _mergeQueued; k++)
         {
-            gfx.DrawMerged(_mergeQueue[k].Mesh, in _mergeQueue[k].Frame, _mergeQueue[k].Cut);
+            gfx.DrawMerged(_mergeQueue[k].Mesh, in _mergeQueue[k].Frame);
             _mergeQueue[k].Mesh = null!;
         }
         gfx.Relative = rel;

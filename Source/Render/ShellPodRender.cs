@@ -13,7 +13,7 @@ namespace CallOfSlop;
 public static class ShellPodRender
 {
     public const float DrawNear = 80f;
-    private static readonly Vector3 Cap = new(0.13f, 0.15f, 0.17f), Post = new(0.34f, 0.38f, 0.42f), Plate = new(0.6f, 0.63f, 0.66f),
+    private static readonly Vector3 Cap = new(0.13f, 0.15f, 0.17f), Post = new(0.34f, 0.38f, 0.42f), Plate = new(0.36f, 0.39f, 0.42f),
         Hazard = new(0.95f, 0.69f, 0.12f), Button = new(0.82f, 0.16f, 0.12f), Lamp = new(0.22f, 0.82f, 0.9f),
         LampEmpty = new(0.3f, 0.92f, 0.38f), LampBusy = new(1f, 0.62f, 0.12f), LampBroken = new(0.95f, 0.18f, 0.12f);
 
@@ -120,9 +120,10 @@ public static class ShellPodRender
         }
         // The status lamp on the rim's corner: green empty, amber with a shell in it or at work, red broken.
         var rimTop = ConstructShellPod.RimTop(pd);
-        var lampAt = pd.Half - 0.035f;
+        var lampAt = pd.Half - 0.03f; // (on the rim's outer half, clear of the trim along its inner edge)
         var status = pp.Broken ? LampBroken : shell || ConstructShellPod.Holds(pp) ? LampBusy : LampEmpty;
-        gfx.Draw(Matrix4x4.CreateScale(0.03f, 0.012f, 0.03f) * Matrix4x4.CreateTranslation(lampAt, rimTop + 0.004f, -lampAt) * m, status, mode: 2);
+        gfx.Draw(Matrix4x4.CreateScale(0.066f, 0.01f, 0.066f) * Matrix4x4.CreateTranslation(lampAt, rimTop + 0.003f, -lampAt) * m, Cap); // its dark bezel, so it reads on the hazard paint
+        gfx.Draw(Matrix4x4.CreateScale(0.05f, 0.014f, 0.05f) * Matrix4x4.CreateTranslation(lampAt, rimTop + 0.011f, -lampAt) * m, status, mode: 2); // a glowing lens, 5 cm
         // The platform: from the pod's floor up to the lid.
         var plat = bot + 0.08f + lift * (pd.Top - 0.012f - (bot + 0.08f));
         if (lift > 0.01f || shell)

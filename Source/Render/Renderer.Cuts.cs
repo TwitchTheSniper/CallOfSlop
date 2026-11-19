@@ -7,12 +7,12 @@ namespace CallOfSlop;
 /// <summary>
 /// Openings (the user, 2026-11-19): a flush shell pod sinks into the floor, wall or ceiling it is welded to, and the surface part
 /// it sits in must not be drawn across its pocket. Each frame <see cref="ConstructRender"/> lists the flush pods' pockets nearest
-/// the eye here (<see cref="AddCut"/>, at most <see cref="CutMax"/>, grouped by body), as boxes from the render origin. Boxes
-/// drawn while <see cref="CutCode"/> names a body's own run of them carry the cut mark (mode + 4 x code) and are drawn by the
-/// <c>CUTS</c> variant of the box programs, which drops their fragments inside one of those openings. Everything else is drawn
-/// by the plain programs, which have no discard (it would cost early depth testing). A pocket stays clear of the pod's own
-/// boxes (inside its rim, above its lining: ShellParts.Pod) and below its lid's top, so neither the pod nor what stands on its
-/// lid is cut; its lid, frame and shell are drawn later unmarked (ShellPodRender.cs). Allocates nothing.
+/// the eye here (<see cref="AddCut"/>, at most <see cref="CutMax"/>, grouped by body), as boxes from the render origin. Only the
+/// surfaces a pod sinks into (Construct.PocketHost: parts whose bounds meet a pocket, never a pod) are drawn with the cut mark
+/// (mode + 4 x code: <see cref="CutCode"/>, their body's own run of openings), by the <c>CUTS</c> variant of the instanced box
+/// program, which drops their fragments inside one of those openings; a big body walks them rather than merging them. The pod
+/// itself and everything else keeps the plain programs, which have no discard (it would cost early depth testing). Its lid,
+/// frame and shell are drawn later, unmarked (ShellPodRender.cs). Allocates nothing.
 /// </summary>
 public sealed unsafe partial class Renderer
 {
@@ -20,7 +20,7 @@ public sealed unsafe partial class Renderer
     public const int CutMax = 16;
 
     private readonly float[] _cuts = new float[CutMax * 12];
-    private int _cutCount, _cutVersion = 1, _cutInst, _cutMerged;
+    private int _cutCount, _cutVersion = 1, _cutInst;
 
     // Cut-marked boxes, apart from the plain batch: drawn by the instanced program's cut variant.
     private readonly float[] _cutBatch = new float[BatchMax * BatchFloats];
@@ -79,7 +79,7 @@ public sealed unsafe partial class Renderer
     }
 
     /// <summary>The mode a box is drawn with: with the cut mark while <see cref="CutCode"/> is set.</summary>
-    private int CutMode(int mode) => CutCode > 0 && _cutCount > 0 && mode < 4 && _instReady ? mode + 4 * CutCode : mode;
+    private int CutMode(int mode) => CutCode > 0 && _cutCount > 0 && mode < 4 && _instReady && !_bloodOn ? mode + 4 * CutCode : mode; // (a box with blood keeps it, uncut)
 
     /// <summary>The list into the bound cut program, if its copy is older.</summary>
     private void PushCuts(int loc, ref int version)

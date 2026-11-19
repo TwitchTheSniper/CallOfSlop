@@ -80,6 +80,47 @@ public static class ConstructShellPod
         half = new Vector3(h, (hi - lo) * 0.5f, h);
     }
 
+    /// <summary>
+    /// With the caches (ConstructConveyor.BuildRacks): the parts a flush pod's pocket opens, the surfaces it sinks into (bounds
+    /// overlapping its pocket in the rest frame, not a pod). Only their boxes are drawn with the cut mark (Renderer.Cuts.cs): the pod
+    /// itself and everything else of the body keep the plain programs. Allocates only when the body grows.
+    /// </summary>
+    public static void FindHosts(Construct c)
+    {
+        var flush = false;
+        for (var q = 0; q < c.PodCount && !flush; q++)
+            flush = c.Pods[q] < c.PartCount && c.Parts[c.Pods[q]].D.ShellPod is { Flush: true };
+        if (!flush)
+        {
+            if (c.PocketHost.Length > 0)
+                c.PocketHost = [];
+            return;
+        }
+        if (c.PocketHost.Length < c.PartCount)
+            c.PocketHost = new byte[c.PartCount + 16];
+        else
+            Array.Clear(c.PocketHost);
+        for (var q = 0; q < c.PodCount; q++)
+        {
+            int k = c.Pods[q];
+            if (k >= c.PartCount || c.Parts[k].D.ShellPod is not { Flush: true } pd)
+                continue;
+            ref var pp = ref c.Parts[k];
+            Pocket(pd, out var centre, out var half);
+            var at = pp.Pos + Rot24.Apply(pp.Rot, centre);
+            var h = Rot24.ApplyHalf(pp.Rot, half);
+            Vector3 lo = at - h, hi = at + h;
+            for (var i = 0; i < c.PartCount; i++)
+            {
+                if (i == k || c.Parts[i].D.ShellPod != null) // (in the rest frame: a surface on another segment, a freeform weld's, counts too)
+                    continue;
+                c.PartBounds(i, out var mn, out var mx);
+                if (mn.X < hi.X && mx.X > lo.X && mn.Y < hi.Y && mx.Y > lo.Y && mn.Z < hi.Z && mx.Z > lo.Z)
+                    c.PocketHost[i] = 1;
+            }
+        }
+    }
+
     public static readonly string[] ClassNames = ["Tiny", "Small", "Medium", "Large", "Huge"];
     public static readonly float[] ClassHeights = [1, 2, 5, 15, 30];
 
@@ -450,4 +491,5 @@ public sealed partial class Construct
 {
     public ushort[] Pods = []; // its shell pods (made with the caches: ConstructConveyor.BuildRacks), for drawing their frames and the pods' tick
     public int PodCount;
+    public byte[] PocketHost = []; // by part: 1 when it is a surface a flush pod's pocket opens (ConstructShellPod.FindHosts; empty with no flush pod)
 }

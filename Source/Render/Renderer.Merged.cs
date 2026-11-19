@@ -36,15 +36,14 @@ public sealed unsafe partial class Renderer
         public int Bytes => XformCap + LookCap;
     }
 
-    private GlProgram _mergeProgram, _mergeCutProgram;
+    private GlProgram _mergeProgram;
     private bool _mergeReady, _mergeBroken, _mergeOn;
-    private MergeLoc _mLoc, _mcLoc;
-    private int _mergeCode = -1; // the cut code the bound merged program draws with (0: the plain one; -1: none bound yet)
+    private MergeLoc _mLoc;
 
-    /// <summary>A merged program's uniform locations (Cut, Code: -1 in the plain one).</summary>
+    /// <summary>The merged program's uniform locations.</summary>
     private struct MergeLoc
     {
-        public int ViewProj, Body, Origin, Cam, Fog, FogRange, Glow, Cut, Code;
+        public int ViewProj, Body, Origin, Cam, Fog, FogRange, Glow;
     }
 
     /// <summary>Merged draws and the slots in them since the last read (the bench, the F9 window).</summary>
@@ -53,16 +52,16 @@ public sealed unsafe partial class Renderer
     /// <summary>Can draw groups be drawn here (a real GL context, and the shader was made)?</summary>
     public bool MergedMeshes => Recorder == null && !_mergeBroken && (_mergeReady || InitMerged());
 
-    /// <summary>The merged program, plain or with the openings (<c>CUTS</c>); throws if it doesn't link.</summary>
-    private GlProgram MakeMerged(string vsSrc, bool cuts, out MergeLoc loc)
+    /// <summary>The merged program (never the openings' variant: the surfaces a flush pod opens are walked, Renderer.Cuts.cs); throws if it doesn't link.</summary>
+    private GlProgram MakeMerged(string vsSrc, out MergeLoc loc)
     {
         var vs = CreateShader(GlShaderType.Vertex).SetSource(RenderCaps.Glsl(vsSrc)).Compile();
-        var fs = CreateShader(GlShaderType.Fragment).SetSource(RenderCaps.Glsl(InstancedFragment(cuts))).Compile();
+        var fs = CreateShader(GlShaderType.Fragment).SetSource(RenderCaps.Glsl(InstancedFragment(false))).Compile();
         var program = CreateProgram();
         Native.glAttachShader(program, vs);
         Native.glAttachShader(program, fs);
         Native.glLinkProgram(program);
-        GlDebug.Label(GL_PROGRAM, program.Id, cuts ? "Renderer.mergeCutProgram" : "Renderer.mergeProgram");
+        GlDebug.Label(GL_PROGRAM, program.Id, "Renderer.mergeProgram");
         int linked;
         Native.glGetProgramiv(program, GL_LINK_STATUS, &linked);
         if (linked == 0)
@@ -84,7 +83,6 @@ public sealed unsafe partial class Renderer
         {
             ViewProj = Loc("uViewProj\0"u8), Body = Loc("uBody\0"u8), Origin = Loc("uOrigin\0"u8), Cam = Loc("uCam\0"u8),
             Fog = Loc("uFog\0"u8), FogRange = Loc("uFogRange\0"u8), Glow = Loc("uGlowAlpha\0"u8),
-            Cut = cuts ? Loc("uCut\0"u8) : -1, Code = cuts ? Loc("uCutCode\0"u8) : -1,
         };
         Native.glUniform1i(Loc("uTex\0"u8), 0);
         return program;
@@ -106,7 +104,6 @@ public sealed unsafe partial class Renderer
                 uniform mat4 uBody;
                 uniform vec3 uOrigin;
                 uniform float uGlowAlpha;
-                uniform float uCutCode; // the cut variant: this group's body's openings (Renderer.Cuts.cs; 0 in the plain one)
                 out vec3 vWorld;
                 out vec3 vRel;
                 out vec3 vNormal;
@@ -134,14 +131,13 @@ public sealed unsafe partial class Renderer
                     vBodyN = mat3(inst) * aNormal;
                     vUpL = vec3(model[0].y, model[1].y, model[2].y) / max(vSize, vec3(1e-6));
                     bool glow = iLook.w < 0.0;
-                    vModeI = (glow ? 2.0 : 0.0) + 4.0 * uCutCode;
+                    vModeI = glow ? 2.0 : 0.0;
                     vColorI = vec4(iLook.rgb, glow ? uGlowAlpha : 1.0);
                     vLayerI = glow ? 0.0 : iLook.w;
                     gl_Position = uViewProj * w;
                 }
                 """;
-            _mergeProgram = MakeMerged(vsSrc, false, out _mLoc);
-            _mergeCutProgram = MakeMerged(vsSrc, true, out _mcLoc); // (boxes round flush pods' pockets: Renderer.Cuts.cs)
+            _mergeProgram = MakeMerged(vsSrc, out _mLoc);
             _program.Use();
             var err = GlDebug.Error();
             if (err != 0)
@@ -241,13 +237,10 @@ public sealed unsafe partial class Renderer
         if (_shapeVersion != PartShapes.Version)
             UploadShapes(); // (every shape a group names is in the box buffer)
         _mergeOn = true;
-        if (_cutCount > 0)
-            MergedUniforms(_mergeCutProgram, in _mcLoc);
         MergedUniforms(_mergeProgram, in _mLoc);
-        _mergeCode = 0;
     }
 
-    /// <summary>A merged program's per-frame uniforms: the camera, fog, glow mark and (the cut variant) openings. Leaves it bound.</summary>
+    /// <summary>The merged program's per-frame uniforms: the camera, fog and glow mark. Leaves it bound.</summary>
     private void MergedUniforms(GlProgram program, in MergeLoc loc)
     {
         program.Use();
@@ -259,32 +252,15 @@ public sealed unsafe partial class Renderer
         Native.glUniform3f(loc.Fog, FogColor.X, FogColor.Y, FogColor.Z);
         Native.glUniform2f(loc.FogRange, FogRange.X, FogRange.Y);
         Native.glUniform1f(loc.Glow, MarkGlow ? 0f : 1f);
-        if (loc.Cut >= 0)
-            PushCuts(loc.Cut, ref _cutMerged);
     }
 
     /// <summary>Draws a group at <paramref name="frame"/> (its frame's pose; relative to the origin while <see cref="Relative"/>). Between <see cref="BeginMerged"/> and <see cref="EndMerged"/>.</summary>
-    public void DrawMerged(MergedMesh m, in Matrix4x4 frame, int cutCode = 0)
+    public void DrawMerged(MergedMesh m, in Matrix4x4 frame)
     {
         if (!_mergeOn || m.Slots == 0 || m.Vao.Id == 0)
             return;
-        if (_cutCount == 0)
-            cutCode = 0;
-        if (cutCode != _mergeCode)
-        {
-            // (a body round flush pods: the cut variant with its openings, Renderer.Cuts.cs; the plain one for the rest)
-            if (cutCode == 0)
-                _mergeProgram.Use();
-            else
-            {
-                if (_mergeCode <= 0)
-                    _mergeCutProgram.Use();
-                Native.glUniform1f(_mcLoc.Code, cutCode);
-            }
-            _mergeCode = cutCode;
-        }
         var f = FromOrigin(frame);
-        Native.glUniformMatrix4fv(cutCode == 0 ? _mLoc.Body : _mcLoc.Body, 1, false, &f.M11);
+        Native.glUniformMatrix4fv(_mLoc.Body, 1, false, &f.M11);
         m.Vao.Bind();
         for (var g = 0; g < m.Groups; g++)
         {
@@ -311,7 +287,6 @@ public sealed unsafe partial class Renderer
         if (!_mergeOn)
             return;
         _mergeOn = false;
-        _mergeCode = -1;
         Native.glBindBuffer(GL_ARRAY_BUFFER, _vbo);
         _program.Use();
         _vao.Bind();

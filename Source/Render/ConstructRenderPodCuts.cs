@@ -13,7 +13,11 @@ public static partial class ConstructRender
     private static readonly float[] _pocketDist = new float[Renderer.CutMax];
     private static readonly Construct?[] _cutBody = new Construct?[Renderer.CutMax];
     private static readonly int[] _cutCode = new int[Renderer.CutMax];
-    private static int _pocketCount, _cutBodies;
+    private static int _pocketCount, _cutBodies, _bodyCut, _cutStamp;
+
+    /// <summary>Before drawing part <paramref name="i"/> of the body being drawn: the cut mark if it is a surface one of its flush pods sinks into (Construct.PocketHost).</summary>
+    private static void HostCut(Renderer gfx, Construct c, int i) =>
+        gfx.CutCode = _glassCut = _bodyCut != 0 && i < c.PocketHost.Length && c.PocketHost[i] != 0 ? _bodyCut : 0;
 
     /// <summary>The cut code of a body's own openings this frame (0: none; Renderer.CutRun).</summary>
     private static int CutCodeOf(Construct c)
@@ -29,11 +33,13 @@ public static partial class ConstructRender
     /// <summary>
     /// Before the bodies are drawn: the flush shell pods' pockets nearest the eye (at most <see cref="Renderer.CutMax"/>, within
     /// <see cref="PocketNear"/>) as this frame's openings (Renderer.Cuts.cs), grouped body by body from each body's frame as it is
-    /// drawn, so its boxes are cut by its own pockets alone (<see cref="CutCodeOf"/>). Allocates nothing.
+    /// drawn, so the surfaces its pods sink into are cut by its own pockets alone (<see cref="CutCodeOf"/>, <see cref="HostCut"/>).
+    /// Allocates nothing.
     /// </summary>
     private static void GatherPocketCuts(Renderer gfx, ConstructWorld world, float alpha, bool blendTicks)
     {
         gfx.ClearCuts();
+        _cutStamp++;
         _pocketCount = _cutBodies = 0;
         Array.Clear(_pocketBody);
         Array.Clear(_cutBody);
@@ -42,7 +48,7 @@ public static partial class ConstructRender
         var eye = gfx.CameraPosition;
         foreach (var c in world.Bodies)
         {
-            if (c.PodCount == 0 || (AwayOnly != 0 ? c.Id != AwayOnly : c.SpaceAway != 0))
+            if (c.PodCount == 0 || c.PocketHost.Length == 0 || (AwayOnly != 0 ? c.Id != AwayOnly : c.SpaceAway != 0))
                 continue;
             if (Vector3.DistanceSquared(c.WorldCom, eye) > (PocketNear + c.Radius) * (PocketNear + c.Radius))
                 continue;
