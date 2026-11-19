@@ -317,7 +317,9 @@ Verified (2026-11-18, the Zero Day): Raiders, Mercenaries, Militia: 3-4 crew up,
 bulkhead door on the boarder; with `--mortal` each crew killed the boarder (4-6 rounds). Losses: Raiders scuttled, Militia and Mercenaries
 surrendered, nobody fought on after. Traders surrender at once (their rules), so nobody stands up. `--crew-check` fight: 78 us a tick.
 
-Unverified: a boarding in flight or in orbit (the check's ship is landed); the Limpet's cut hole as the breach (the breach is where the
+**Follow-up (Karl, 2026-11-19, in-game):** boarding the Traders' Zero Day in orbit woke nobody: every crew on a ship out of the bubble (`Construct.SpaceShip`) was kept Asleep, so its captain never looked and nothing boarded it. Crews in orbit now take their tier by the people's distance as on the ground (only a ship parked in another system, `SpaceAway`, sleeps), but get no driver there: `ShipAi`'s height hold and guns are the ground's and would fly a posed ship off its orbit. Tried in the Zero Day start: up the Traders' ladder, ten bodies, surrender, ship taken. Still open: crews in orbit don't fly or fire their guns (torpedo lock and point defence included) unless a flight computer's order flies them.
+
+Unverified: a boarding in flight (the check's ship is landed); the Limpet's cut hole as the breach (the breach is where the
 first boarder stood); two boarders; a client's view of a crew body crouching.
 
 Seen, not fixed: a ship built over the ground drops about 2 m at up to 7 m/s as it settles, and riders on its decks (crew bodies and the
