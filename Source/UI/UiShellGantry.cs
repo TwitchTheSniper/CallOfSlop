@@ -21,6 +21,9 @@ public sealed partial class Ui
     private readonly bool[] _gnFixed = new bool[ShellFrames.SlotCount];
     private readonly int[] _gnCurrent = new int[ShellFrames.SlotCount];
     private int[] _gnOnTable = [];
+    private string[] _gnRow = new string[ShellFrames.SlotCount]; // each slot's line, made when the state changes (not each frame)
+    private string[][] _gnBtn = []; // [slot][module]: its button's label; null: no button
+    private long _gnKey = -1;
 
     /// <summary>The window tool: the next frame presses the button of module <c>Module</c> (by name) for slot <c>Slot</c>.</summary>
     public (int Slot, string Module)? ShellGantryAuto;
@@ -29,7 +32,7 @@ public sealed partial class Ui
 
     public void OpenShellGantry(ushort body, int part)
     {
-        (_gnBody, _gnPart, _gnFilledAt) = (body, part, 0);
+        (_gnBody, _gnPart, _gnFilledAt, _gnKey) = (body, part, 0, -1);
         ShellGantryOpen = true;
     }
 
@@ -66,8 +69,31 @@ public sealed partial class Ui
         for (var i = 0; i < all.Length; i++)
             _gnOnTable[i] = ConstructGantry.OnTable(world, tb, table, all[i]);
         var k = ConstructGantry.JobAt(world, c.Id, part);
+        var key = (long)(shell?.Id ?? 0) * 31 + (tb?.Id ?? 0) + (k >= 0 ? (world.GantryJobs[k].New + 1) << 20 : 0) + (_gnCreative ? 1L << 40 : 0) + frame * 7919L;
+        for (var s = 0; s < ShellFrames.SlotCount; s++)
+            key = key * 131 + _gnCurrent[s] + 2;
+        for (var i = 0; i < all.Length; i++)
+            key = key * 37 + _gnOnTable[i];
+        if (key == _gnKey && _gnBtn.Length == ShellFrames.SlotCount)
+            return; // (nothing changed: the rows' text stays)
+        _gnKey = key;
         _gnBusy = k >= 0 && world.GantryJobs[k].New - 1 is var n and >= 0 && n < all.Length
             ? $"Working: the {ConstructGantry.ArmNames[world.GantryJobs[k].Arm]} arm fits a {all[n].Name} to the {ShellFrames.SlotLabel(world.GantryJobs[k].Slot)}" : "";
+        if (_gnBtn.Length != ShellFrames.SlotCount)
+            _gnBtn = new string[ShellFrames.SlotCount][];
+        for (var s = 0; s < ShellFrames.SlotCount; s++)
+        {
+            var label = ShellFrames.SlotLabel(s);
+            _gnRow[s] = $"{char.ToUpperInvariant(label[0])}{label[1..]}: {_gnFitted[s]}{(_gnFixed[s] ? "  (fixed)" : "")}";
+            if (_gnBtn[s] == null || _gnBtn[s].Length != all.Length)
+                _gnBtn[s] = new string[all.Length];
+            for (var i = 0; i < all.Length; i++)
+            {
+                var m = all[i];
+                _gnBtn[s][i] = shell == null || _gnFixed[s] || m.Part.Length == 0 || m.Slot != ShellFrames.SlotKind(s) || m.Index == _gnCurrent[s] || m.Kind is ShellModuleKind.Hopper or ShellModuleKind.Drill
+                    ? null! : $"Fit {m.Name} ({_gnOnTable[i]} on table)"; // (a button label is no printf text: kept as made)
+            }
+        }
     }
 
     /// <summary>The panel (between NewFrame and Render). True while it stays open.</summary>
@@ -100,15 +126,13 @@ public sealed partial class Ui
             for (var s = 0; s < ShellFrames.SlotCount; s++)
             {
                 ImGui.PushID(s);
-                var label = ShellFrames.SlotLabel(s);
-                ImGuiSafe.TextColored(StHead, $"{char.ToUpperInvariant(label[0])}{label[1..]}: {_gnFitted[s]}{(_gnFixed[s] ? "  (fixed)" : "")}");
-                if (_gnHasShell && !_gnFixed[s])
+                ImGuiSafe.TextColored(StHead, _gnRow[s]);
+                if (_gnHasShell && !_gnFixed[s] && s < _gnBtn.Length)
                 {
                     var any = false;
-                    for (var i = 0; i < all.Length; i++)
+                    for (var i = 0; i < all.Length && i < _gnBtn[s].Length; i++)
                     {
-                        var m = all[i];
-                        if (m.Part.Length == 0 || m.Slot != ShellFrames.SlotKind(s) || m.Index == _gnCurrent[s] || m.Kind is ShellModuleKind.Hopper or ShellModuleKind.Drill)
+                        if (_gnBtn[s][i] == null)
                             continue;
                         if (any)
                             ImGui.SameLine();
@@ -116,7 +140,7 @@ public sealed partial class Ui
                         var have = _gnOnTable[i] > 0 || _gnCreative;
                         ImGui.PushID(i);
                         ImGui.BeginDisabled(!have || _gnBusy.Length > 0);
-                        if (ImGui.SmallButton(ImGuiSafe.Escape($"Fit {m.Name} ({_gnOnTable[i]} on table)")))
+                        if (ImGui.SmallButton(_gnBtn[s][i]))
                             (pickSlot, pickModule) = (s, i);
                         ImGui.EndDisabled();
                         ImGui.PopID();

@@ -28,7 +28,7 @@ public sealed partial class Game
             return "too far away";
         if (!ConstructRecycler.Powered(Constructs, c, part))
             return "the Shell Gantry has no power";
-        return GantryStart(c, part, gd, slot, mod);
+        return GantryStart(c, part, gd, slot, mod, p.Id);
     }
 
     /// <summary>Client (or the host itself): fit module <paramref name="module"/> (its index) into slot <paramref name="slot"/> of the gantry's shell. The server says why not.</summary>
@@ -40,7 +40,7 @@ public sealed partial class Game
     }
 
     /// <summary>Server: the checks of a swap and its start. Null, or why not.</summary>
-    internal string? GantryStart(Construct c, int part, ShellGantryDef gd, int slot, int module)
+    internal string? GantryStart(Construct c, int part, ShellGantryDef gd, int slot, int module, byte player)
     {
         var world = Constructs;
         if (ConstructGantry.JobAt(world, c.Id, part) >= 0)
@@ -55,6 +55,10 @@ public sealed partial class Game
         var m = all[module];
         if (ConstructGantry.ShellIn(world, c, part) is not { } shell)
             return "no shell stands in the bay: walk one in and leave it, or set one down there";
+        if (shell.Owner != 255 && shell.Owner != player && !Factions.Shares(shell.Owner, player))
+            return $"that shell is {Players.GetValueOrDefault(shell.Owner)?.Name ?? $"player {shell.Owner}"}'s: only they (or their faction) may change it"; // (a chair's rule for waking it: ConstructShell.Find)
+        if (SandboxConfigRefusal(shell, player) is { } notYours)
+            return notYours; // (and the configure rule, as for the gantry)
         ref var sp = ref shell.Parts[0];
         var frame = ShellFrames.FrameOf(sp.D);
         if (ShellFrames.FitRefusal(frame, slot, m) is { } why)
@@ -73,15 +77,13 @@ public sealed partial class Game
         var creative = world.Creative;
         if (table < 0 && !creative)
             return "no Shell Parts Table behind the rear frame in its arms' reach: place one there";
-        var taken = false;
-        if (tb != null && table >= 0 && world.StoreOf(tb, table) is { } st)
-        {
-            ConstructRackPack.Ensure(tb.DefOf(table), st);
-            if (ConstructRackPack.LastOf(st, (ushort)nd.Id, out var slab, out var lane) && world.RackTakeAt(tb, table, slab, lane) != null)
-                taken = true;
-        }
-        if (!taken && !creative)
+        if (tb != null && tb != c && (tb.Owner != 255 && tb.Owner != player && !Factions.Shares(tb.Owner, player) ? "that parts table is someone else's" : SandboxConfigRefusal(tb, player)) is { } notYourTable)
+            return notYourTable; // (and a table on another body: its modules are its owner's)
+        var onTable = ConstructGantry.OnTable(world, tb, table, m) > 0;
+        if (!onTable && !creative)
             return $"no {nd.Name} on the parts table: make one (an Assembler) and put it there";
+        // (the module stays on the table until the fit, when it is taken and the old one set down in the same tick: a save or a world
+        // stopping mid-swap finds the shell with its old module and the table with the new one, nothing lost or doubled)
         ref var j = ref world.GantryJobs[world.GantryJobCount++];
         j = new GantryJob
         {
@@ -89,14 +91,11 @@ public sealed partial class Game
             Slot = (byte)slot, Old = (byte)(old != null ? old.Index + 1 : 0), New = (byte)(m.Index + 1), Arm = ConstructGantry.ArmOf(slot),
             Start = ConstructConveyor.Clock,
         };
-        _gantryTaken[world.GantryJobCount - 1] = taken;
         shell.Wake();
         GantrySend(j, true, 0, null);
-        Log($"[gantry] {c.DefOf(part).Name} on body {c.Id}: {old?.Name ?? "nothing"} off the {sp.D.Name}'s {ShellFrames.SlotLabel(slot)}, {m.Name} on ({(taken ? "from its table" : "creative")})");
+        Log($"[gantry] {c.DefOf(part).Name} on body {c.Id}: {old?.Name ?? "nothing"} off the {sp.D.Name}'s {ShellFrames.SlotLabel(slot)}, {m.Name} on ({(onTable ? "from its table" : "creative")})");
         return null;
     }
-
-    private readonly bool[] _gantryTaken = new bool[ConstructGantry.MaxJobs]; // (server, per job: the new module came off the table, so it goes back there if the job stops)
 
     /// <summary>Server, each Sandbox tick: the swaps under way, ended, stopped or fitted. Walks only the jobs (none: nothing).</summary>
     private void GantryTick()
@@ -120,7 +119,11 @@ public sealed partial class Game
             }
             if (j.Old != 255 && t >= ConstructGantry.TFitted)
             {
-                GantryFit(ref j, c!, shell!, k);
+                if (GantryFit(ref j, c!, shell!) is { } why)
+                {
+                    GantryStop(k, c, why);
+                    continue;
+                }
                 j.Old = 255; // (fitted: the arm only goes back to rest)
             }
             if (t >= ConstructGantry.Duration)
@@ -128,21 +131,31 @@ public sealed partial class Game
         }
     }
 
-    /// <summary>Server: the module goes on and the old one onto the table (or loose by it, or away in creative with no table).</summary>
-    private void GantryFit(ref GantryJob j, Construct c, Construct shell, int k)
+    /// <summary>Server, in one tick: the new module off the table and onto the shell, the old one onto the table (or loose by it, or away in creative with no table). Null, or why it couldn't.</summary>
+    private string? GantryFit(ref GantryJob j, Construct c, Construct shell)
     {
         var world = Constructs;
+        var all = ShellFrames.Modules;
+        if (j.New == 0 || j.New - 1 >= all.Length || ConstructParts.Find(all[j.New - 1].Part) is not { } nd)
+            return "its module isn't known";
+        var taken = false;
+        if (world.Get(j.TableBody) is { } tb && j.Table < tb.PartCount && tb.Parts[j.Table].D.GantryTable && world.StoreOf(tb, j.Table) is { } st)
+        {
+            ConstructRackPack.Ensure(tb.DefOf(j.Table), st);
+            taken = ConstructRackPack.LastOf(st, (ushort)nd.Id, out var slab, out var lane) && world.RackTakeAt(tb, j.Table, slab, lane) != null;
+        }
+        if (!taken && !world.Creative)
+            return $"the {nd.Name} left the parts table before the arm fitted it";
         ref var sp = ref shell.Parts[0];
         Span<byte> kit = stackalloc byte[ShellFrames.SlotCount];
         ShellFrames.ReadKit(sp, sp.D, kit);
         kit[j.Slot] = j.New;
         ShellFrames.WriteKit(ref sp, sp.D, kit);
         world.StructureDirty.Add(shell.Id); // (peers hear its settings: CBody)
-        var all = ShellFrames.Modules;
         if (j.Old > 0 && j.Old - 1 < all.Length && ConstructParts.Find(all[j.Old - 1].Part) is { } od)
             GantryPutBack(c, j.Part, j.TableBody, j.Table, od, "the old module");
-        _gantryTaken[k] = false;
-        Log($"[gantry] body {c.Id}: the {sp.D.Name}'s {ShellFrames.SlotLabel(j.Slot)} is a {(j.New > 0 && j.New - 1 < all.Length ? all[j.New - 1].Name : "?")} now");
+        Log($"[gantry] body {c.Id}: the {sp.D.Name}'s {ShellFrames.SlotLabel(j.Slot)} is a {all[j.New - 1].Name} now");
+        return null;
     }
 
     /// <summary>Server: a module's part onto the table, else loose beside the gantry's rear frame (said in the log, never lost silently).</summary>
@@ -171,14 +184,10 @@ public sealed partial class Game
             Log($"[gantry] {what}, a {d.Name}, is lost: no room on the table and none in the world");
     }
 
-    /// <summary>Server: a job stopped before its fit: the new module back to the table (the shell keeps the old one).</summary>
+    /// <summary>Server: a job stopped before its fit (the shell keeps the old module, the table the new one: nothing moved yet).</summary>
     private void GantryStop(int k, Construct? c, string why)
     {
-        ref var j = ref Constructs.GantryJobs[k];
-        var all = ShellFrames.Modules;
-        if (_gantryTaken[k] && j.New > 0 && j.New - 1 < all.Length && ConstructParts.Find(all[j.New - 1].Part) is { } nd)
-            GantryPutBack(c, j.Part, j.TableBody, j.Table, nd, "the module it carried");
-        Log($"[gantry] body {j.Body}: stopped ({why})");
+        Log($"[gantry] body {Constructs.GantryJobs[k].Body}{(c == null ? " (gone)" : "")}: stopped ({why})");
         GantryEnd(k);
     }
 
@@ -189,8 +198,6 @@ public sealed partial class Game
         var j = world.GantryJobs[k];
         var last = world.GantryJobCount - 1;
         world.GantryJobs[k] = world.GantryJobs[last];
-        _gantryTaken[k] = _gantryTaken[last];
-        _gantryTaken[last] = false;
         world.GantryJobCount = last;
         if (IsServer)
             GantrySend(j, false, 0, null);

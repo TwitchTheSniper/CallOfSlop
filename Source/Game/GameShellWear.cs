@@ -134,8 +134,8 @@ public sealed partial class Game
         ref var run = ref _sh[victim.Id];
         if (!run.On)
             return amount;
-        if (victim.ShellFrame != 0 && amount > 0)
-            amount = Math.Max(1, (int)MathF.Round(amount * ShellFrames.Worn(victim).Damage)); // (its frame's plating: the Mining Shell's x0.7)
+        if (amount > 0 && ShellFrames.Worn(victim).Damage != 1f)
+            amount = Math.Max(1, (int)MathF.Round(amount * ShellFrames.Worn(victim).Damage)); // (its frame's plating and its modules': the Mining Shell's x0.7, a Plated Head's x0.9; a stock Robot Shell is x1, untouched)
         var t = ShellWear.Current;
         if (t.Problem.Length > 0)
             return amount;
