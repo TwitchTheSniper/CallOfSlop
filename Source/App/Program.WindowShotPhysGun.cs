@@ -4,7 +4,7 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// The window tool's physics gun check (pg01): "swing RATE SECS [DIST] [pitch]" (DIST: the hold distance, as the wheel sets it; pitch: the look turns up, not round: a joint held across its axis) turns the look at RATE degrees a second for SECS seconds
+/// The window tool's physics gun check (pg01): "swing RATE SECS [DIST] [pitch|turn]" (DIST: the hold distance, as the wheel sets it; pitch: the look turns up, not round: a joint held across its axis; turn: the look stays and the held piece turns about up, as F and the mouse turn it) turns the look at RATE degrees a second for SECS seconds
 /// (as the mouse would), then holds it still for 1.5 s, and prints every few frames how far the held piece's grab point is
 /// drawn from the crosshair's point (m) and at what angle off the look (degrees), on this peer. A host and a joined client
 /// running the same swing should print the same lag (the client's piece is simulated by the server's spring:
@@ -13,7 +13,7 @@ namespace CallOfSlop;
 public static partial class Program
 {
     private static long _wsSwingStart, _wsSwingLast;
-    private static bool _wsSwingPitch;
+    private static bool _wsSwingPitch, _wsSwingTurn;
     private static float _wsSwingRate, _wsSwingSecs, _wsSwingMax, _wsSwingSum, _wsSwingRest;
     private static int _wsSwingFrames, _wsSwingN, _wsWaitPeerFrames;
     private static bool _wsSwingRelHave; // (the piece's turn against the view, taken at the script's first swing: start with a still one, "swing 0 1")
@@ -139,12 +139,13 @@ public static partial class Program
         var bits = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
         if (bits.Length < 2 || !float.TryParse(bits[0], ci, out _wsSwingRate) || !float.TryParse(bits[1], ci, out _wsSwingSecs))
         {
-            WsFail("swing RATE SECS [DIST] [pitch]");
+            WsFail("swing RATE SECS [DIST] [pitch|turn]");
             return true;
         }
         if (bits.Length > 2 && float.TryParse(bits[2], ci, out var dist))
             _pgDist = dist; // (as the wheel sets it)
         _wsSwingPitch = bits.Length > 3 && bits[3].Equals("pitch", StringComparison.OrdinalIgnoreCase);
+        _wsSwingTurn = bits.Length > 3 && bits[3].Equals("turn", StringComparison.OrdinalIgnoreCase); // (the held piece turned as F and the mouse turn it, the look held still)
         _wsSwingStart = _wsSwingLast = Stopwatch.GetTimestamp();
         _wsSwingMax = _wsSwingSum = _wsSwingRest = 0;
         _wsSwingFrames = _wsSwingN = 0;
@@ -200,7 +201,9 @@ public static partial class Program
         var t = (float)Stopwatch.GetElapsedTime(_wsSwingStart, now).TotalSeconds;
         var dt = (float)Stopwatch.GetElapsedTime(_wsSwingLast, now).TotalSeconds;
         _wsSwingLast = now;
-        if (t < _wsSwingSecs && _wsSwingPitch)
+        if (t < _wsSwingSecs && _wsSwingTurn)
+            _pgRel = ConstructGrab.Turn(_pgRel, _wsSwingRate * MathF.PI / 180f * dt, 0);
+        else if (t < _wsSwingSecs && _wsSwingPitch)
             g.LookPitch = Math.Clamp(g.LookPitch + _wsSwingRate * MathF.PI / 180f * dt, -1.5f, 1.5f);
         else if (t < _wsSwingSecs)
             g.LookYaw += _wsSwingRate * MathF.PI / 180f * dt;

@@ -87,6 +87,7 @@ public static partial class ConstructPhysics
     }
 
     private static readonly Contact[] _contacts = new Contact[MaxContacts];
+    private static bool _anyHeld; // this step: a body is held in a physics gun (HeldBoost runs)
     private static int _contactCount;
     // Per body this tick, by its index in the physics' list (the awake bodies and what they touch: board item cl01). The
     // arrays grow with the most bodies ever simulated at once (an allocation only when that grows), never per tick.
@@ -164,6 +165,7 @@ public static partial class ConstructPhysics
                 bodies[i].Rebuild(); // (before the joints are laid out: a rebuild can change them)
         LayOutJoints(bodies, n);
         _contactCount = 0;
+        _anyHeld = false;
         _chainCount = 0;
         _activeCount = 0;
         LastRays = 0;
@@ -217,6 +219,7 @@ public static partial class ConstructPhysics
                 }
                 if (c.GrabbedBy != 255)
                 {
+                    _anyHeld = true;
                     if (c.Driven)
                     {
                         // (the gun wins: a driver's keys do nothing while it is held, so the wheels and thrusters don't fight the beam)
@@ -290,6 +293,8 @@ public static partial class ConstructPhysics
         Lap(2, ref t0);
         Solve(dt);
         Lap(3, ref t0);
+        if (_anyHeld)
+            HeldBoost(bodies, n, dt); // (the physics gun's speed build-up in flight: ConstructGrab.FlightBoost)
         ConnectorLoads(world, dt);
         WarmStore();
         SleepTogether();
@@ -348,6 +353,33 @@ public static partial class ConstructPhysics
     /// cl01): the awake ones (free and moving, or with moving joints), the sleeping ones a joint motor may wake, the held
     /// and the changed ones, and everything those touch (the broadphase) or are coupled to, so a sleeping body costs nothing.
     /// </summary>
+    /// <summary>
+    /// After the solve, when a body is held: a contact that pushed on a held body (or nearly touches it) marks it touched,
+    /// then each held body's flight boost steps (<see cref="ConstructGrab.FlightBoost"/>). No allocation; one pass over this
+    /// tick's contacts.
+    /// </summary>
+    private static void HeldBoost(List<Construct> bodies, int n, float dt)
+    {
+        for (var k = 0; k < _contactCount; k++)
+        {
+            ref var ct = ref _contacts[k];
+            if (ct.Bilateral || ct.Soft || ct.Beam > 0 || ct.Jn <= 0 && ct.Gap > ConstructGrab.FlightTouchGap)
+                continue; // (a coupling, a spring or the beam's own row isn't the piece meeting something)
+            if (ct.A >= 0 && ct.A < n && bodies[ct.A].GrabbedBy != 255)
+                bodies[ct.A].GrabTouch = true;
+            if (ct.B >= 0 && ct.B < n && bodies[ct.B].GrabbedBy != 255)
+                bodies[ct.B].GrabTouch = true;
+        }
+        for (var i = 0; i < n; i++)
+        {
+            var c = bodies[i];
+            if (c.GrabbedBy == 255)
+                continue;
+            ConstructGrab.FlightBoost(c, dt);
+            c.GrabTouch = false;
+        }
+    }
+
     private static List<Construct> SimList(ConstructWorld world)
     {
         var bodies = world.Bodies;

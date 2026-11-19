@@ -430,7 +430,7 @@ public sealed partial class Game
             return "it is anchored to the ground";
         var cap = SandboxHands.LiftOf(player, creative);
         if (c.Mass > cap)
-            return $"too heavy for the physics gun ({c.Mass:0} kg; {cap:0} kg at most{(creative ? "" : " in survival")})";
+            return $"too heavy for the physics gun ({c.Mass:0} kg; {cap:0} kg at most{(creative ? "" : " in survival" + ConstructGrab.HeavyHint)})";
         return creative ? null : ConstructGrab.Defended(c, player, SandboxAliveAt, SandboxNameOf);
     }
 

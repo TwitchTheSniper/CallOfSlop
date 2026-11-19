@@ -252,7 +252,7 @@ public sealed partial class Game
             return;
         }
         if (beam)
-            ConstructGrab.Follow(_simPos, _simRot, com, _simGrabLocal, ref _simVel, ref _simSpin, aim, wantRot, accel, Vector3.Zero, Vector3.Zero, dt);
+            ConstructGrab.Follow(_simPos, _simRot, com, _simGrabLocal, ref _simVel, ref _simSpin, aim, wantRot, accel, Vector3.Zero, Vector3.Zero, dt, false, SandboxHands.Hand(LocalId).GrabBoost); // (the server's flight boost, from the hands)
         // ConstructPhysics.Integrate: the gentle damping, the limits, then the move about the centre of mass.
         _simVel *= 0.999f;
         _simSpin *= 0.985f;
