@@ -105,6 +105,7 @@ public static class PartKit
         new Generators.InteriorParts(),
         new Generators.ShipWorksParts(), // (ship works: the drives' nozzles, mounts, works and pods any ship builds from)
         new Generators.CrewFittingsParts(), // (the couches, the gunnery console, the coffee station and the robot cradle the ships hang: before them)
+        new Generators.StyleSheetParts(), // (the style grading sheet's drafts: several looks of one item, group Style, unlisted)
         new Generators.EvaParts(), // (spacewalk gear: the suit locker, the MMU and its dock)
         new Generators.ShipBatteryParts(), // (ship batteries XS to Bank: a ship's circuit store)
         new Generators.LegPodParts(), // (landing leg pods S to L: a housing, two canopy leaves and a gantry with its leg)
