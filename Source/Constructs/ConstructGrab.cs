@@ -79,8 +79,7 @@ public static class ConstructGrab
     /// about the world's Y (<see cref="YawQ(float)"/>) turned a held piece about the wrong axis as the look swept, and
     /// the mouse turned it the wrong way (user, 2026-11-18).
     /// </summary>
-    public static Quaternion YawQ(Vector3 at, float yaw) => PgOld ? YawQ(yaw) : Quaternion.Normalize(TangentQ(at) * YawQ(yaw));
-    public static readonly bool PgOld = Environment.GetEnvironmentVariable("PG_OLD") != null; // TEMP
+    public static Quaternion YawQ(Vector3 at, float yaw) => Quaternion.Normalize(TangentQ(at) * YawQ(yaw));
 
     /// <summary>The gravity frame a player's look is measured in at <paramref name="at"/> (x right, y up, -z north), as a turn; identity on a plain map.</summary>
     public static Quaternion TangentQ(Vector3 at)
@@ -824,8 +823,11 @@ public sealed partial class ConstructEdits
                 Notices.Add((player, boarded));
             return;
         }
-        // (a rider's look moves with their deck: the step below moves both on by the deck's speed, so the piece keeps its place in the frame)
-        c.GrabTarget = eye + look * h.GrabDist + frameVel * World.TickDt;
+        // (a rider's look moves with their deck: the beam's point is where the look is now, as the piece is, and the step below
+        // moves both on by the deck's speed (GrabFrameVel in Follow), so the piece keeps its place in the frame. A target led
+        // by a tick of the deck's travel as well held the piece that far ahead of the crosshair, 4.7 m in a ship in orbit, and
+        // into the walls: user, 2026-11-18)
+        c.GrabTarget = eye + look * h.GrabDist;
         c.GrabRot = ConstructGrab.LookQ(h, eye, yaw) * h.GrabRel;
         c.GrabFrameVel = frameVel;
         c.GrabFrameSpin = frameSpin;
