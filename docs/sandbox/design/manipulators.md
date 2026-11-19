@@ -14,5 +14,5 @@ Direction from the user; no design yet. Recorded so the queue's builders and the
 
 ## Open
 
-- The small limit (mass and size) for the player's physics gun in Survival.
+- **Small limit: 3 t** (user, 2026-11-19): the Survival physics gun lifts up to 3 t; heavier pieces need an arm or a shell. Size limit not stated.
 - Whether existing upgrade items are refunded, removed or repurposed.
