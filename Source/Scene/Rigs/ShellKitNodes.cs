@@ -77,10 +77,12 @@ public sealed class ShellKitNodes
     // ---- First person (a module with "view" in Shells.json: its wearer sees its own model in the hands' place) ----------------
 
     /// <summary>Where the drill arm's forearm sits in first person (camera space, -Z forward), about the drill's axis at the elbow.</summary>
-    private static readonly Vector3 ViewAt = new(0.3f, -0.34f, -0.1f), ForearmAxis = new(0.4725f, 1.38f, 0f);
+    private static readonly Vector3 ViewAt = new(0.3f, -0.31f, -0.2f), ForearmAxis = new(0.4725f, 1.38f, 0f);
 
     /// <summary>The drill arm's forearm turned in to the crosshair a little and up a little, as it reaches forward.</summary>
-    private static readonly Quaternion ViewHold = Quaternion.CreateFromYawPitchRoll(0.1f, 0.06f, 0f);
+    private static readonly Quaternion ViewHold = Quaternion.CreateFromYawPitchRoll(0.06f, 0.1f, 0f);
+
+    private static readonly Vector3 ViewCard = new(0.0f, -0.17f, -0.42f);
 
     private static ToolModel? _drillView;
     private static float _drillViewScale;
@@ -108,8 +110,8 @@ public sealed class ShellKitNodes
             SpinAxis = Vector3.UnitZ, SpinPivot = Vector3.Zero, Motion = ToolMotion.Push, Amount = 0.02f * k, Rate = 14, Spin = 45,
             SpinBoxes = boxes.Count(b => b.Spin), Arm = true, ViewAt = ViewAt * k,
         };
-        // Its screen: where every tool's is from the eye (inboard of the arm, low, clear of the crosshair), on a stalk from the housing's inboard side.
-        var at = ToolDisplay.ViewGrip + ToolDisplay.HeldAt;
+        // Its screen: inboard of the arm, low and clear of the crosshair (left of where a hand tool's is, the arm being wider), on a stalk from the housing's inboard side.
+        var at = ViewCard;
         var inv = Quaternion.Conjugate(ViewHold);
         var face = Vector3.Normalize(-at);
         var up = Vector3.Normalize(Vector3.UnitY - face * face.Y);
