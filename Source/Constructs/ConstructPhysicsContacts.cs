@@ -238,6 +238,16 @@ public static partial class ConstructPhysics
     /// <summary>Does <paramref name="wheels"/>'s wheel stand on <paramref name="other"/>, on its ray, as on the map (<see cref="DeckMassShare"/>)?</summary>
     private static bool WheelGround(Construct wheels, Construct other) => other.Anchored || other.Mass >= wheels.Mass * DeckMassShare;
 
+    /// <summary>A sprung landing foot's give against a deck (a body its rays stand on: <see cref="WheelGround"/>), the pad flat on it; else 0.</summary>
+    private static float PairFootGive(Construct a, int partA, Construct b, int partB, Vector3 n)
+    {
+        if (a.GearFootCount > 0 && WheelGround(a, b) && MathF.Abs(Vector3.Dot(n, Vector3.Transform(Vector3.UnitY, a.Rot))) > 0.7f && ConstructDoors.FootGive(a, partA) is var ga and > 0)
+            return ga;
+        if (b.GearFootCount > 0 && WheelGround(b, a) && MathF.Abs(Vector3.Dot(n, Vector3.Transform(Vector3.UnitY, b.Rot))) > 0.7f && ConstructDoors.FootGive(b, partB) is var gb and > 0)
+            return gb;
+        return 0;
+    }
+
     /// <summary>The map and the ground against every piece of a moving construct.</summary>
     private static void WorldCompound(Construct c, short index, IWorldQuery query, float dt)
     {
@@ -286,7 +296,10 @@ public static partial class ConstructPhysics
             if (un < 0)
                 return;
             WheelContact(c, leaf, out var tyre, out var bounce);
-            if (Add(index, -1, p.P, p.N, p.Gap, leaf.WheelIx >= 0 ? RollFriction * tyre : WorldFriction, u0, un))
+            var gap = p.Gap;
+            if (c.GearFootCount > 0 && ConstructDoors.FootGive(c, leaf.Part) is var give and > 0 && Vector3.Dot(p.N, Vector3.Transform(Vector3.UnitY, c.Rot)) > 0.7f)
+                gap += give; // (a sprung landing foot: its spring has the ground first, its pad is the bump stop: ConstructPhysicsGear.cs)
+            if (Add(index, -1, p.P, p.N, gap, leaf.WheelIx >= 0 ? RollFriction * tyre : WorldFriction, u0, un))
             {
                 _chainCount += un;
                 ref var ct = ref _contacts[_contactCount - 1];
@@ -826,7 +839,10 @@ public static partial class ConstructPhysics
             // A free wheel rolls along what can stop it (a wall, another vehicle). Anything else its tread carries.
             var rollA = pa.WheelIx >= 0 && !a.Anchored && WheelGround(a, b);
             var rollB = pb.WheelIx >= 0 && !b.Anchored && WheelGround(b, a);
-            if (!Add(ia, ib, p.P, p.N, p.Gap, (rollA || rollB ? RollFriction : BodyFriction) * tyreA * tyreB, ua, na, ub, nb))
+            var gap = p.Gap;
+            if ((a.GearFootCount | b.GearFootCount) > 0)
+                gap += PairFootGive(a, pa.Part, b, pb.Part, p.N); // (a sprung landing foot on a deck: its spring has it first)
+            if (!Add(ia, ib, p.P, p.N, gap, (rollA || rollB ? RollFriction : BodyFriction) * tyreA * tyreB, ua, na, ub, nb))
                 return;
             ref var ct = ref _contacts[_contactCount - 1];
             ct.Key = WarmKey(a.Id, b.Id, pa.Seg, a.ToLocal(p.P));

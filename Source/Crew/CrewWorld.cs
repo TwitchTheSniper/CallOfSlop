@@ -1028,7 +1028,9 @@ public sealed class CrewWorld
         foreach (var at in people)
             near = MathF.Min(near, Vector3.Distance(at, com));
         s.Near = near;
-        var tier = c.SpaceShip != 0 ? CrewTier.Asleep
+        // A ship out of the bubble (in orbit: Construct.SpaceShip) wakes as one on the ground does, so a boarder in orbit meets a crew that stands
+        // up, fights or surrenders (Karl, 2026-11-19: the Traders' Zero Day slept through his boarding); only one parked in another system sleeps.
+        var tier = c.SpaceAway != 0 ? CrewTier.Asleep
             : near < BodyRange || s.Tier == CrewTier.Bodied && near < BodyDrop ? CrewTier.Bodied
             : near < SeatedRange || s.Tier != CrewTier.Asleep && near < SeatedDrop ? CrewTier.Seated
             : CrewTier.Asleep;
@@ -1049,12 +1051,12 @@ public sealed class CrewWorld
             }
             return;
         }
-        if (s.Prize && s.Ai != null)
+        if ((s.Prize || c.SpaceShip != 0) && s.Ai != null)
         {
             s.Ai.Release(c);
-            FreeAi(s); // (taken: its crew are prisoners, nobody drives for them)
+            FreeAi(s); // (taken: its crew are prisoners, nobody drives for them; in orbit the driver's height hold and guns don't fly a posed ship yet)
         }
-        if (!s.Air && !s.Prize && s.Ai == null && _aiOut < DriverCap)
+        if (!s.Air && !s.Prize && c.SpaceShip == 0 && s.Ai == null && _aiOut < DriverCap)
         {
             s.Ai = _aiPool.Count > 0 ? _aiPool.Pop() : new ShipAi(s.Body, s.Mode);
             s.Ai.Reset(s.Body, s.Mode);

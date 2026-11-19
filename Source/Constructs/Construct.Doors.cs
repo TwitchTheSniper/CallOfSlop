@@ -24,6 +24,9 @@ public struct CDoor
     public bool DockSeen, Mated, MateNow, ShutDue; // a docking hatch ("dock": true): looked at once, mated at the last look, at this one, and to shut once nobody is in it (ConstructDoors.StepDocks)
     public float StartF; // how far open it was drawn when it last started moving (0 shut, 1 open)
     public double StartAt; // and when, on ConstructRender.Now's clock
+    public float Squash, PrevSquash; // a sprung landing foot's (CDoorDef.SpringTravel): how far its spring is in, metres (server physics: ConstructPhysics.GearFeet)
+    public float Shown; // ...and as drawn on this peer (ConstructPhysics.FitGear)
+    public bool Touch; // its spring is on the ground
 }
 
 public sealed partial class Construct
@@ -42,6 +45,7 @@ public sealed partial class Construct
     public int DoorMovingCount, DoorWiredCount; // (the server's step looks at a body only while one is above 0)
     public int GearTicks; // server: ticks until a gear key's second half (ConstructDoors.ToggleGear); not saved
     public bool GearOut; // ...and which way it goes: true lowers the legs (after the canopy), false shuts the canopy (after the legs)
+    public int GearFootCount; // sprung landing feet among them (CDoorDef.SpringTravel: ConstructPhysics.GearFeet)
     public int DoorHeldCount; // "held" doors (ConstructDoors.cs: drawn at their open pose while open, so the drawing looks them up)
     public int LaunchHatchHold; // server: ticks until the launch hatches opened for its launches shut (0: none is held open; ConstructDoors.OpenForLaunch)
     public int DoorEpoch; // goes up whenever the door list is built again (the merged meshes plan again, leaving door parts out: ConstructRenderBatch.cs)
@@ -71,7 +75,7 @@ public sealed partial class Construct
                 _doorOld = new CDoor[Doors.Length];
             Array.Copy(Doors, _doorOld, oldCount);
         }
-        DoorCount = DoorLeafCount = DoorMovingCount = DoorWiredCount = DoorDockCount = DoorHeldCount = 0;
+        DoorCount = DoorLeafCount = DoorMovingCount = DoorWiredCount = DoorDockCount = DoorHeldCount = GearFootCount = 0;
         foreach (var i in Specials)
         {
             ref var p = ref Parts[i];
@@ -114,6 +118,10 @@ public sealed partial class Construct
                 dr.DockSeen = _doorOld[o].DockSeen;
                 dr.Mated = _doorOld[o].Mated;
                 dr.ShutDue = _doorOld[o].ShutDue;
+                dr.Squash = _doorOld[o].Squash;
+                dr.PrevSquash = _doorOld[o].PrevSquash;
+                dr.Shown = _doorOld[o].Shown;
+                dr.Touch = _doorOld[o].Touch;
             }
             else
             {
@@ -180,6 +188,8 @@ public sealed partial class Construct
                 DoorMovingCount++;
             if (Parts[Doors[k].Part].D.Door!.Held)
                 DoorHeldCount++;
+            if (Parts[Doors[k].Part].D.Door!.SpringTravel > 0)
+                GearFootCount++;
         }
         DoorEpoch++;
     }

@@ -277,6 +277,8 @@ public static partial class ConstructParts
         {
             case "hub":
                 return box with { Rig = BoxRig.Hub };
+            case "oleo":
+                return box with { Rig = BoxRig.Oleo }; // (a sprung landing foot's pad: drawn up by the squash, the part's +y)
             case "arm":
                 if (pivot == null)
                     throw new ConstructPartException($"{file}: {where}: an \"arm\" rig needs its \"pivot\"");
@@ -310,7 +312,7 @@ public static partial class ConstructParts
                     SpanTo = span.Y,
                 };
             default:
-                throw new ConstructPartException($"{file}: {where}.rig is \"hub\", \"arm\", \"leg\", \"lever\", \"knob\", \"slide\", \"flip\" or \"press\"");
+                throw new ConstructPartException($"{file}: {where}.rig is \"hub\", \"arm\", \"leg\", \"oleo\", \"lever\", \"knob\", \"slide\", \"flip\" or \"press\"");
         }
     }
 
