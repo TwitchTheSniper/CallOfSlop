@@ -23,6 +23,7 @@ public struct RouteAsk
     public bool Exact; // a conduit's: guess by the true cost to the goal (a pass over the lattice first), for a search the plain guess loses its way in
     public LinkLay Lay; // a cable's or pipe's: laid in the walls it runs along, or on their far side (ConstructRoutesWalls.cs; Near: as found)
     public bool Tidy; // the tool's: nodes on structure only, and no run along a fitting (ConstructRoutes.IsFixing)
+    public ConstructRoutes.GradeMode Grade; // the tool's grade snap for a chute or conveyor (ConstructRoutes.Grade): the straight way's slopes keep to it (ConstructAutoRouteDirect.cs)
     public float Conduit; // a pre-built's wiring (ConstructConduit.cs), above 1: the cost a metre off every surface, so it runs along walls, floors and ceilings like conduit (0: the tool's own route)
 }
 
@@ -109,6 +110,7 @@ public sealed partial class RouteSearch
     private enum Phase : byte
     {
         Idle,
+        Direct, // the straight way's candidates, checked a few a frame (ConstructAutoRouteDirect.cs)
         Gather,
         Raster,
         Flood,
@@ -267,7 +269,7 @@ public sealed partial class RouteSearch
         var h = Mix(Mix(Mix(1234567L, a.C.Id), a.C.RebuildStamp), (long)a.Type);
         h = Mix(Mix(Mix(Mix(h, a.From), a.FromPort), a.Parent), a.ParentSeg);
         h = Mix(Mix(Mix(Mix(h, a.Junction), a.Count), a.To), a.ToPort);
-        h = Mix(Mix(Mix(Mix(h, a.OpenAt), a.OpenHost), a.C.RouteCount), BitConverter.SingleToInt32Bits(a.Conduit) + a.ConduitGap * 7919L + (a.Exact ? 104729L : 0L) + (long)a.Lay * 15485863L + (a.Tidy ? 32452843L : 0L));
+        h = Mix(Mix(Mix(Mix(h, a.OpenAt), a.OpenHost), a.C.RouteCount), BitConverter.SingleToInt32Bits(a.Conduit) + a.ConduitGap * 7919L + (a.Exact ? 104729L : 0L) + (long)a.Lay * 15485863L + (a.Tidy ? 32452843L : 0L) + (long)a.Grade * 49979687L);
         for (var i = 0; i < a.Count; i++)
             h = Mix(Mix(h, a.Nodes[i].Pos), a.Nodes[i].Host);
         return h == 0 ? 1 : h;
@@ -420,8 +422,11 @@ public sealed partial class RouteSearch
             Done(RouteSearchState.Failed, "a drive shaft goes into a drive port");
             return;
         }
-        if (Direct())
-            return; // (a straight run, a slope or a turn or two that passes the server's check: no lattice needed; ConstructAutoRouteDirect.cs)
+        if (DirectStart())
+        {
+            _phase = Phase.Direct; // (a straight run, a slope or a turn or two: checked under the frame's budget, the lattice only if none passes)
+            return;
+        }
         BeginStage();
     }
 
@@ -625,6 +630,10 @@ public sealed partial class RouteSearch
         {
             switch (_phase)
             {
+                case Phase.Direct:
+                    if (!DirectSlice(end))
+                        return null;
+                    break;
                 case Phase.Gather:
                     if (!GatherSlice(c, end))
                         return null;

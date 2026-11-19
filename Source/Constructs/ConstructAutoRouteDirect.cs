@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Numerics;
 
 namespace CallOfSlop;
@@ -14,28 +15,35 @@ namespace CallOfSlop;
 /// the route. Only when none does (a part in the way, a port facing away) does the lattice search go round things. A route to a
 /// waypoint keeps the lattice's square arrival, which the player's next leg turns from in its steps; pipes and cables keep the
 /// lattice too: the tool fixes them to structure and runs them along walls (<see cref="ConstructRoutes.Tidies"/>). Nothing about
-/// what a link carries is touched: a shorter link is only its geometry. Nothing allocates.
+/// what a link carries is touched: a shorter link is only its geometry (the user chose straight direct routes, 2026-11-19), but a
+/// conveyor is never shorter than the longest piece its output makes (<see cref="LongestPiece"/>), and its slopes keep to the tool's
+/// grade snap (<see cref="RouteAsk.Grade"/>: level, 20 or 40 degrees). The candidates are made at once (arithmetic only) and checked
+/// a few a frame under the search's budget (<see cref="DirectSlice"/>). Nothing allocates.
 /// </summary>
 public sealed partial class RouteSearch
 {
     public const float DirectPortDeg = 45f + ConstructRoutes.AngleSlackDeg; // the most a straight run may leave or enter a port off its facing (a conveyor's plan step)
     private const int DirectMax = 64; // candidate routes
     private const int DirectBuilds = 16; // ... checked with the server's rule at most, best first
-    private const float DirectNodeCost = 2f; // metres a node is worth: fewer nodes first, then the shorter
+    private const float DirectNodeCost = 2f;
+    private const float DirectMinConveyor = 1f; // m: the shortest straight-way conveyor from a maker whose longest piece isn't known (the 1 m blank of production.md, 2026-11-13)
+    private const float DirectGradeSlackDeg = 1.5f; // a sloped leg within this of the tool's snapped grade (nodes sit on the 1 cm grid) // metres a node is worth: fewer nodes first, then the shorter
 
     private readonly Vector3[] _dirC = new Vector3[DirectMax * 2];
     private readonly byte[] _dirN = new byte[DirectMax];
     private readonly float[] _dirScore = new float[DirectMax];
     private readonly int[] _dirOrder = new int[DirectMax];
     private readonly Vector3[] _dirPath = new Vector3[4];
-    private int _dirCount;
+    private int _dirCount, _dirAt, _dirTries;
+    private float _dirMinLen; // a conveyor's: no shorter than the longest piece its output makes (production.md, 2026-11-13)
 
-    /// <summary>The straight route, or one or two turns, when one passes: the search is done (Found). False: search the lattice.</summary>
-    private bool Direct()
+    /// <summary>The straight way's candidates, best first. False when there are none (or the link isn't a chute's or conveyor's into an input): search the lattice.</summary>
+    private bool DirectStart()
     {
         if (!_flat || !_closed || _ask.Type is not (RouteType.Conveyor or RouteType.Chute) || _ask.Conduit > 0f || _loose || _lay != LinkLay.Near)
             return false;
         _dirCount = 0;
+        _dirMinLen = _ask.Type == RouteType.Conveyor ? LongestPiece() : 0f;
         var w = _width > 0f ? _width : 0f;
         var stub = MathF.Max(StubMin, w > 0f ? w : _radius * 4f);
         var d0 = _ask.Parent != 255 ? Vector3.Zero : _hasPrev ? _prevDir : _sDir; // (the way on from the start: its port's, or the last node's)
@@ -130,17 +138,46 @@ public sealed partial class RouteSearch
             }
             _dirOrder[j + 1] = k;
         }
-        var tries = Math.Min(_dirCount, DirectBuilds);
-        for (var i = 0; i < tries; i++)
+        _dirTries = Math.Min(_dirCount, DirectBuilds);
+        _dirAt = 0;
+        return true;
+    }
+
+    /// <summary>
+    /// The candidates checked with the server's rule, best first, until <paramref name="end"/> (at least one a call, so it gets on):
+    /// true when done (the first that passes is the route; none: the lattice's stages begin), false when out of time.
+    /// </summary>
+    private bool DirectSlice(long end)
+    {
+        for (var checkedNow = 0; _dirAt < _dirTries; _dirAt++, checkedNow++)
         {
-            var k = _dirOrder[i];
-            var n = DirectPath(k);
+            if (checkedNow > 0 && Stopwatch.GetTimestamp() >= end)
+                return false;
+            var n = DirectPath(_dirOrder[_dirAt]);
             if (Build(_dirPath, n, out var total, out var length) != null)
                 continue;
             Done(RouteSearchState.Found, null, total - _ask.Count, length, BedWidth(total));
             return true;
         }
-        return false;
+        BeginStage();
+        return true;
+    }
+
+    /// <summary>
+    /// The longest piece a conveyor from this output may carry (m): an Extruder's (or a Former's) longest cut as it is set, and at
+    /// least <see cref="DirectMinConveyor"/> for any other maker, whose pieces aren't known here. A straight way shorter than this is
+    /// left to the lattice: a conveyor into a machine shorter than its piece can't take it on (production.md, 2026-11-13).
+    /// </summary>
+    private float LongestPiece()
+    {
+        var c = _ask.C;
+        var least = DirectMinConveyor;
+        if (_ask.Parent == 255 && _ask.From >= 0 && _ask.From < c.PartCount && c.DefOf(_ask.From).IsExtruder)
+        {
+            ConstructExtruder.Reach(c, _ask.From, out _, out _, out var longest);
+            least = MathF.Max(least, longest + ConstructConveyor.Gap);
+        }
+        return least;
     }
 
     private void AddCorner(Vector3 end, Vector3 dir, float along)
@@ -151,6 +188,32 @@ public sealed partial class RouteSearch
     }
 
     private static Vector3 Plan(Vector3 v) => new(v.X, 0f, v.Z);
+
+    /// <summary>The tool's grade snap (<see cref="RouteAsk.Grade"/>): level only, or slopes at its 20 or 40 degrees; a level or upright leg always does.</summary>
+    private bool GradeOk(Vector3 dir)
+    {
+        var plan = MathF.Sqrt(dir.X * dir.X + dir.Z * dir.Z);
+        if (plan < 0.03f)
+            return true; // (straight up or down: the plain steps make that corner)
+        var deg = MathF.Abs(MathF.Atan2(dir.Y, plan)) * 180f / MathF.PI;
+        if (deg < 0.5f)
+            return true;
+        return _ask.Grade switch
+        {
+            ConstructRoutes.GradeMode.Level => false,
+            ConstructRoutes.GradeMode.Gentle => MathF.Abs(deg - ConstructRoutes.GentleDeg) <= DirectGradeSlackDeg,
+            ConstructRoutes.GradeMode.Steep => MathF.Abs(deg - ConstructRoutes.SteepDeg) <= DirectGradeSlackDeg,
+            _ => true,
+        };
+    }
+
+    /// <summary>The snapped grade's slope (degrees), or 0 for free or level.</summary>
+    private float SnapDeg => _ask.Grade switch
+    {
+        ConstructRoutes.GradeMode.Gentle => ConstructRoutes.GentleDeg,
+        ConstructRoutes.GradeMode.Steep => ConstructRoutes.SteepDeg,
+        _ => 0f,
+    };
 
     /// <summary>
     /// Two corners by a port that faces up or down: <paramref name="over"/> straight out of it, and a level run of a few lengths
@@ -163,7 +226,10 @@ public sealed partial class RouteSearch
             return;
         way /= plan;
         var reach = Plan(atGoal ? over - _s : _g - over).Length();
-        Span<float> runs = [stub, stub * 2f, reach * 0.5f];
+        // (with the grade snapped, a run that leaves the climb or the drop at that grade)
+        var snap = SnapDeg;
+        var graded = snap > 0f ? reach - MathF.Abs(atGoal ? over.Y - _s.Y : _g.Y - over.Y) / MathF.Tan(snap * MathF.PI / 180f) : -1f;
+        Span<float> runs = [stub, stub * 2f, reach * 0.5f, graded];
         foreach (var run in runs)
         {
             if (run < 0.05f || run > reach - 0.05f)
@@ -219,6 +285,8 @@ public sealed partial class RouteSearch
                 return;
             length += len;
             var dir = d / len;
+            if (!GradeOk(dir))
+                return;
             if (i == 1)
             {
                 var leave = DirectLeaves(dir);
@@ -246,6 +314,8 @@ public sealed partial class RouteSearch
                 room = MathF.Min(room, len / share);
             bentBefore = bentAfter;
         }
+        if (_alongSoFar + length < _dirMinLen)
+            return; // (shorter than the longest piece it carries: the lattice's longer way)
         if (_width > 0f && room + 0.005f < _width)
             return; // (a turn that would narrow the bed: the lattice keeps the width)
         // (the same route twice: once is enough)

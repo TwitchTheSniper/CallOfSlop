@@ -219,8 +219,8 @@ its spacing.
   `ConstructRoutes.Grade`, `GradeTurn`; back to free when the link ends); the HUD shows the next segment's grade. Not the G key: G
   is the grenade, live in Sandbox.
 - **The router.** A ramp pass (section 4) was built and dropped in review: an incline in place of a vertical leg makes the link
-  shorter, which changes travel time and how many pieces fit. On 2026-11-19 the user asked for the straight path first, so the
-  router now tries a straight run or incline before the lattice (power-and-links.md "The straight way first"); the transfer code
+  shorter, which changes travel time and how many pieces fit. On 2026-11-19 the user chose straight direct routes over that rule, so
+  the router now tries a straight run or incline before the lattice (power-and-links.md "The straight way first"); the transfer code
   is untouched, only the geometry is shorter.
 - **Supports** (part kit `link_supports`, Constructs/Parts/LinkSupports): Trestle and Trestle Post 1 to 8 m, Link Bridge 4/6/8 m,
   saddles as `tray` lanes; their recipes go after every older Assembling row (`Assembling.LateFolders`), so saved Assemblers keep

@@ -310,8 +310,10 @@ stands in the usual form: `Pipe to Engine: route found, 5 nodes, 6.2 m - LMB: co
   where the heights differ: a grade change is free), one turn (where the way out meets the way in, or a 45 degree leg), two turns
   (out, across, in; or a climb, a level run and straight down into a port that faces up or a machine entered from above). A run
   leaves and enters a port within 45 degrees of its facing free, out of its side at the lattice's side price, never back into it;
-  no candidate doubles back or narrows a conveyor's bed; each passes the server's whole check. The first that passes is the route
-  (at most 16 checks, a few hundredths of a millisecond); only when none does is the lattice searched. A waypoint keeps the
+  no candidate doubles back or narrows a conveyor's bed, a conveyor is never shorter than the longest piece its output makes (an
+  Extruder's longest cut, else 1 m: production lesson 2026-11-13), slopes keep to the tool's grade snap (Level: none; 20 or 40
+  degrees), and each passes the server's whole check. The first that passes is the route (at most 16 checks, run under the
+  search's 2 ms a frame); only when none does is the lattice searched. A waypoint keeps the
   lattice's square arrival, and pipes and cables keep the lattice (they are fixed to structure). On the Production Showcase's
   port pairs (`--route-ends`) conveyor turns fell from 181 to 123 and length from 845 to 744 m, chutes from 190 to 97 turns.
 - **Cables, pipes and chutes** search a lattice of box faces: the planes one link radius off each box, the two ends' planes and a stub off
