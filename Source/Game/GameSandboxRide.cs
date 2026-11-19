@@ -161,6 +161,10 @@ public sealed partial class Game
             foreach (var b in Constructs.Bodies) // (a list: no allocation)
                 if (b.CarriedBy == root.Id && b != c)
                     RideDrawnAdd(b);
+        if (root.SpaceShip != 0 || c.SpaceShip != 0 || SandboxHands.Hand(me.Id).GrabBody != 0)
+            foreach (var b in Constructs.Bodies) // (a list: no allocation)
+                if (b != c && b != root && b.CarriedBy != root.Id && ((b.SpaceRide != 0 && (b.SpaceRide == root.Id || b.SpaceRide == c.Id)) || b.GrabbedBy == me.Id))
+                    RideDrawnAdd(b); // (loose in the ship's frame in space, or in this player's beam: they move with the deck, so they are aimed at as drawn too, or at orbital speed the ray from the drawn eye passed a tick's travel from them)
         Constructs.GridStale(); // (the broadphase sees these bodies where they are drawn until RideTickPose: one built in this window must not serve the next tick)
     }
 

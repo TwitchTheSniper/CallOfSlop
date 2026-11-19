@@ -20,7 +20,7 @@ public static partial class Program
     private static Quaternion _wsSwingRel0;
     private static float _wsSwingDrift, _wsSwingDriftRest;
 
-    private static bool WsHeldKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "swing" or "waitpeer" or "beside" or "pitch" or "aimat";
+    private static bool WsHeldKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "swing" or "waitpeer" or "beside" or "pitch" or "aimat" or "bodies" or "loose";
 
     private static bool WsHeldVerb(Game g, string verb, string arg)
     {
@@ -38,8 +38,10 @@ public static partial class Program
         }
         if (verb == "aimat" && g.Local is { } eyeOf)
         {
-            // "aimat N": the look turned to construct N's centre of mass
-            if (!ushort.TryParse(arg, out var id) || g.Constructs.Get(id) is not { } body)
+            // "aimat N|PART": the look turned to construct N's centre of mass (or the body holding PART)
+            if (!ushort.TryParse(arg, out var id))
+                id = WsFind(g, arg.Trim()).C?.Id ?? 0; // (or a part's name: "aimat Chest@new")
+            if (g.Constructs.Get(id) is not { } body)
             {
                 WsFail($"aimat: no construct {arg}");
                 return true;
@@ -47,6 +49,34 @@ public static partial class Program
             WsLook(g, eyeOf.Eye, body.WorldCom);
             WsSay(FormattableString.Invariant($"aimat: construct {id} at {body.WorldCom:0.0}, {Vector3.Distance(eyeOf.Eye, body.WorldCom):0.0} m"));
             _wsWait = 3;
+            return true;
+        }
+        if (verb == "bodies" && g.Local is { } nearOf)
+        {
+            // "bodies [M]": the bodies within M m (default 30) of this player: id, parts, first part, distance, held or carried
+            var m = float.TryParse(arg, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var bm) ? bm : 30f;
+            foreach (var b in g.Constructs.Bodies)
+                if (b.PartCount > 0 && Vector3.Distance(b.WorldCom, nearOf.Position) < m + b.Radius)
+                    WsSay(FormattableString.Invariant($"bodies: {b.Id} {b.DefOf(0).Name} x{b.PartCount}, {Vector3.Distance(b.WorldCom, nearOf.Position):0.0} m, {b.Mass:0} kg{(b.CarriedBy != 0 ? $", carried by {b.CarriedBy}" : "")}{(b.Anchored ? ", anchored" : "")}{(b.SpaceShip != 0 ? ", a ship" : "")}"));
+            return true;
+        }
+        if (verb == "loose" && g.IsServer && g.Local is { } placer)
+        {
+            // "loose PART DIST": host, a new loose body of one PART DIST m along the look (aboard a moving ship it takes the
+            // ship's motion as every new body does: ConstructRide.SpawnIntoMotion), turned as the deck stands under the player
+            var cut = arg.LastIndexOf(' ');
+            var name = cut > 0 ? arg[..cut].Trim() : arg.Trim();
+            var d = cut > 0 && float.TryParse(arg[(cut + 1)..], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var dd) ? dd : 2.5f;
+            if (ConstructParts.Find(name) is not { } def)
+            {
+                WsFail($"loose: no part \"{name}\"");
+                return true;
+            }
+            var deck = placer.Sim.RideUp != Vector3.Zero && g.Constructs.Get(placer.Sim.RideBody) is { } rb ? rb.Rot : ConstructGrab.TangentQ(placer.Position);
+            var at = placer.Eye + g.LookDir(g.LookYaw, g.LookPitch) * d;
+            var made = ConstructBuild.PlaceNew(g.Constructs, def, new FreePlacement { Pos = at, Rot = deck });
+            WsSay(FormattableString.Invariant($"loose: {(made == null ? "not placed" : $"body {made.Id}, {made.Mass:0} kg, at {at:0.0}")}"));
+            _wsWait = 10;
             return true;
         }
         if (verb == "pitch")
@@ -82,7 +112,7 @@ public static partial class Program
                     _wsWait = 30;
                     return true;
                 }
-                WsFail("beside: the host never set this player beside it");
+                WsFail(FormattableString.Invariant($"beside: the host never set this player beside it (host {(host == null ? "unseen" : $"{Vector3.Distance(host.Position, self.Position):0.0} m away")})"));
                 return true;
             }
             _wsWaitPeerFrames = 0;
@@ -129,13 +159,14 @@ public static partial class Program
         if (h.GrabBody != 0 && g.Constructs.Get(h.GrabBody) is { } c)
         {
             var look = g.LookDir(g.LookYaw, g.LookPitch);
-            var eye = me.RenderEye;
+            var eye = g.RiderDrawnEye(me); // (on a deck, the eye as the deck is drawn)
             var at = c.ToWorld(h.GrabLocal);
             if (h.GrabSeg != 0 && h.GrabSeg <= c.JointCount)
             {
                 c.WorldFrame(h.GrabSeg, out var sq, out var st); // (a held joint: the point is in its segment's frame)
                 at = st + Vector3.Transform(h.GrabLocal, sq);
             }
+            at = g.DrawnPoint(c, at); // (the host draws between its last two ticks: the point where it is drawn, as the eye is)
             var lag = Vector3.Distance(at, eye + look * _pgDist);
             // The piece's turn against the view's own yaw frame (built from the look and the up the player stands to, not
             // from the code's frame): with no turn key it should stay put as the look sweeps, in any gravity frame.
