@@ -56,6 +56,7 @@ public sealed partial class Game
             var force = c.ThrusterCount > 0 ? ConstructPhysics.SpaceThrust(c, dt, out torque) : Vector3.Zero;
             var a = c.Mass > 0 ? Vec3d.From(force) / c.Mass : Vec3d.Zero;
             f.Ships.Thrust[i] = pose.Rot.Rotate(a); // (game axes to the ecliptic's)
+            c.SpaceAccel = a.ToVector3(); // (what its drive gives it this tick: what loose bodies aboard feel, ConstructFrames.cs)
             if (ConstructFlight.FliesShip(c))
             {
                 // Its jets turn it, as in the bubble (the stabilizer damps the turn it asks for).
@@ -88,15 +89,19 @@ public sealed partial class Game
             if (c.SpaceShip == 0)
             {
                 if (c.Anchored || c.Asleep || c.PartCount == 0 || c.CarriedBy != 0 || c.GrabbedBy != 255 || c.Frozen || c.Pinned || NavBoarding(c))
-                {
-                    c.SpaceRide = 0; // (held, carried or at rest: no ship's frame carries it)
-                    continue; // (a pod flying to board stays a body of the bubble: GameNavBoard.cs)
-                }
+                    continue; // (held, carried or at rest; a pod flying to board stays a body of the bubble: GameNavBoard.cs)
+                if (c.Frame != 0 && Constructs.Get(c.Frame) != null)
+                    continue; // (loose in a moving construct's frame: it goes out with its frame, never as a ship of its own; in space carried once the ships are posed, ConstructFrames.After)
                 var com = c.WorldCom;
-                if (SpaceLaunched > 0 && SpaceRideFind(c, com, centre, edge))
-                    continue; // (loose in a ship in space: carried by its frame, after the ships are posed below)
                 if (Vector3.DistanceSquared(com, centre) <= edge * edge)
                     continue;
+                if (SpaceLaunched > 0 && c.Frame == 0 && ConstructFrames.CanRide(c) && ConstructFrames.Find(Constructs, c, posed: true) is { } ship)
+                {
+                    // Inside a ship out here (Karl 2026-11-18: a part taken off inside a ship in orbit fell out through its
+                    // stern as a ship of its own): it joins that ship's frame where it is once the ship is posed this tick.
+                    (c.Frame, c.FrameNew) = (ship.Id, true);
+                    continue;
+                }
                 if (!SpaceLeave(f, pose, c))
                     continue;
             }
@@ -146,109 +151,6 @@ public sealed partial class Game
         }
         SpaceLaunched = launched;
         SpaceCollide(f, pose, dt); // (posed ships never meet in the step: they are kept apart here, GameSpaceCollide.cs)
-        for (var k = 0; k < _spaceRiders.Count; k++)
-            SpaceCarry(_spaceRiders[k]);
-        _spaceRiders.Clear();
-    }
-
-    /// <summary>Host: loose bodies in ships' frames this tick (SpaceRideFind), carried once every ship is posed.</summary>
-    private readonly List<Construct> _spaceRiders = new(64);
-
-    /// <summary>
-    /// Host: is loose body <paramref name="c"/> inside a ship in space (its bounds, padded as a rider's frame is)? Such a ship
-    /// is posed by its flight, not stepped, and at speed, under thrust, turning or at a raised time speed it would leave a
-    /// body there behind or run its walls through it (a part taken off inside a ship in orbit fell out through its stern,
-    /// Karl 2026-11-18). So the body stays a body of the bubble, carried by that ship's motion each tick
-    /// (<see cref="SpaceCarry"/>), with the physics moving it within the ship and the ship's walls stopping it. False (and
-    /// no longer carried) when it is in no ship's frame: then it is a ship of its own past the edge, as before.
-    /// </summary>
-    private bool SpaceRideFind(Construct c, Vector3 com, Vector3 centre, float edge)
-    {
-        if (c.SpaceRide != 0 && Constructs.Get(c.SpaceRide) is { SpaceShip: not 0, SpaceAway: 0 })
-        {
-            // Carried already: whether it is still in the frame is asked where the carry puts it (its ship may be posed
-            // already this tick, far on at a raised time speed).
-            if (_spaceRiders.Count < _spaceRiders.Capacity)
-                _spaceRiders.Add(c);
-            return true;
-        }
-        var near = edge - SpaceEdgeHysteresis - 100f;
-        var ship = Vector3.DistanceSquared(com, centre) > near * near ? SpaceShipAround(com, c) : null;
-        if (ship == null)
-        {
-            c.SpaceRide = 0;
-            return false;
-        }
-        if (c.SpaceRide != ship.Id)
-        {
-            c.SpaceRide = ship.Id; // (just come into its frame: carried from the next tick, from where it is now)
-            SpaceRideNote(c, ship, com);
-            return true;
-        }
-        if (_spaceRiders.Count < _spaceRiders.Capacity)
-            _spaceRiders.Add(c);
-        return true;
-    }
-
-    private readonly List<Construct> _spaceNear = new(32);
-
-    /// <summary>The ship in space (posed here, not parked) whose frame holds point <paramref name="at"/>, the smallest when they nest; else null.</summary>
-    private Construct? SpaceShipAround(Vector3 at, Construct skip)
-    {
-        var near = Constructs.Near(at, ConstructRide.BoundsAbove + 1f, _spaceNear);
-        Construct? best = null;
-        var bestSize = float.MaxValue;
-        for (var i = 0; i < near.Count; i++)
-        {
-            var s = near[i];
-            if (s == skip || s.SpaceShip == 0 || s.SpaceAway != 0 || s.PartCount == 0)
-                continue;
-            var iq = Quaternion.Conjugate(s.Rot);
-            if (!ConstructRide.InFrame(s, Vector3.Transform(at - s.Pos, iq), Vector3.Transform(GravityFrames.UpAt(at), iq)))
-                continue;
-            var size = (s.LocalMax - s.LocalMin).LengthSquared();
-            if (size < bestSize)
-                (best, bestSize) = (s, size);
-        }
-        return best;
-    }
-
-    /// <summary>Where loose body <paramref name="c"/> is in ship <paramref name="ship"/>'s frame now, for the next carry.</summary>
-    private static void SpaceRideNote(Construct c, Construct ship, Vector3 com)
-    {
-        c.SpaceRideLocal = ship.ToLocal(com);
-        c.SpaceRideWorld = com;
-        c.SpaceRideVel = ship.PointVel(com);
-        c.SpaceRideRot = ship.Rot;
-    }
-
-    /// <summary>
-    /// Host, after the ships are posed: loose body <paramref name="c"/> moves with the ship whose frame it is in. What the
-    /// physics moved it since the last carry, less what it would have moved going along with the ship, is its own move in
-    /// the ship; the ship's new pose places it, and it takes the ship's speed there and its turn, keeping its own on top.
-    /// </summary>
-    private void SpaceCarry(Construct c)
-    {
-        if (Constructs.Get(c.SpaceRide) is not { SpaceShip: not 0 } ship)
-        {
-            c.SpaceRide = 0;
-            return;
-        }
-        var dt = World.TickDt;
-        var com = c.WorldCom;
-        var own = com - c.SpaceRideWorld - c.SpaceRideVel * dt; // (its move within the ship, in the world)
-        var local = c.SpaceRideLocal + Vector3.Transform(own, Quaternion.Conjugate(c.SpaceRideRot));
-        var turn = Quaternion.Normalize(ship.Rot * Quaternion.Conjugate(c.SpaceRideRot)); // (the ship's turn since)
-        var at = ship.ToWorld(local);
-        var rel = Vector3.Transform(c.Vel - c.SpaceRideVel, turn);
-        c.Rot = Quaternion.Normalize(turn * c.Rot);
-        c.Pos = at - Vector3.Transform(c.Com, c.Rot);
-        c.Vel = ship.PointVel(at) + rel;
-        c.KeepSpeed(); // (the ship's speed, past the physics' limit)
-        SpaceRideNote(c, ship, at);
-        var iq = Quaternion.Conjugate(ship.Rot);
-        if (!ConstructRide.InFrame(ship, Vector3.Transform(at - ship.Pos, iq), Vector3.Transform(GravityFrames.UpAt(at), iq)))
-            c.SpaceRide = 0; // (out of its frame: on its own from the next tick, a ship of its own past the edge)
     }
 
     /// <summary>Host: a construct past the edge becomes a ship (false: the system holds no more ships).</summary>

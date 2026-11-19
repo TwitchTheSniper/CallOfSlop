@@ -189,6 +189,8 @@ public sealed partial class ConstructWorld
             b.CarryPos = c.CarryPos;
             b.CarryRot = c.CarryRot;
             b.SpaceShip = c.SpaceShip;
+            b.Frame = c.Framed ? c.Frame : (ushort)0;
+            (b.FramePos, b.FrameRot) = (c.FramePos, c.FrameRot);
             b.Brief = c.Brief;
             b.Conveyed = c.ConveyedCount > 0 ? c.Conveyed.AsSpan(0, c.ConveyedCount).ToArray() : null; // (a save is rare: a copy is fine)
             if (b.Conveyed != null)
@@ -302,6 +304,12 @@ public sealed partial class ConstructWorld
     /// <summary>A station's own name (Construct.StationTitle) is saved as this key plus the name, on its first part; a hauler's route as HaulKey plus its number, valued 1 on the leg to its second station.</summary>
     public const string StationKey = "body:station:", HaulKey = "body:haul:";
 
+    /// <summary>The setting key the moving construct whose frame a loose body is in (ConstructFrames.cs) is saved under, on its first part, valued its id; an older save has none: it joins a frame by itself.</summary>
+    public const string FrameKey = "body:frame";
+
+    /// <summary>The frame pose's keys after <see cref="FrameKey"/>: its place and turn in the frame.</summary>
+    private static readonly string[] FramePoseKeys = [":x", ":y", ":z", ":qx", ":qy", ":qz", ":qw"];
+
     /// <summary>The setting key a Line Console's Made count (ProductionLines.Monitors.cs) is saved under; an older save has none: 0.</summary>
     public const string MadeKey = "line:made";
 
@@ -360,6 +368,13 @@ public sealed partial class ConstructWorld
         var countAt = new SaveWriter(4096);
         var settings = 0;
         Dictionary<uint, int>? fused = null; // (the fused units, numbered 1, 2, ... in this body: ConstructFuse.cs)
+        if (b.Frame != 0 && parts.Length > 0)
+        {
+            countAt.U16(0).U16(names.Key(FrameKey)).F32(b.Frame); // (and its pose in that frame: a ship in space comes back posed by its flight, a tick off its saved pose)
+            for (var k = 0; k < 7; k++)
+                countAt.U16(0).U16(names.Key(FrameKey + FramePoseKeys[k])).F32(k < 3 ? b.FramePos[k] : k == 3 ? b.FrameRot.X : k == 4 ? b.FrameRot.Y : k == 5 ? b.FrameRot.Z : b.FrameRot.W);
+            settings += 8;
+        }
         if (b.Cap > 0 && parts.Length > 0)
         {
             countAt.U16(0).U16(names.Key(CapKey)).F32(b.Cap); // (the body's, as a setting of its first part an older reader skips)
@@ -743,6 +758,9 @@ public sealed partial class ConstructWorld
         }
         var settings = r.Count(8);
         var capSaved = 0f;
+        ushort frameSaved = 0;
+        Span<float> framePose = stackalloc float[7];
+        var framePoseHave = 0;
         var titleSaved = "";
         sbyte haulSaved = -1;
         var haulAtTo = false;
@@ -758,6 +776,21 @@ public sealed partial class ConstructWorld
             {
                 if (float.IsFinite(v) && v >= 1 && v < 1 << 24)
                     parts[part].Fuse = (units ??= new ConstructFuse.Renumber()).Tag((int)v); // (new tags: a unit is one by its number in this body)
+                continue;
+            }
+            if (names.Keys[key].StartsWith(FrameKey + ":", StringComparison.Ordinal))
+            {
+                var fk = Array.IndexOf(FramePoseKeys, names.Keys[key][FrameKey.Length..]);
+                if (fk >= 0 && float.IsFinite(v))
+                {
+                    framePose[fk] = v;
+                    framePoseHave |= 1 << fk;
+                }
+                continue;
+            }
+            if (names.Keys[key] == FrameKey)
+            {
+                frameSaved = float.IsFinite(v) && v >= 1 && v <= ushort.MaxValue ? (ushort)v : (ushort)0;
                 continue;
             }
             if (names.Keys[key] == CapKey)
@@ -1060,6 +1093,11 @@ public sealed partial class ConstructWorld
         c.CarryPos = carryPos;
         c.CarryRot = carryRot;
         c.SpaceShip = ship;
+        (c.Frame, c.FrameNew) = (frameSaved, frameSaved != 0); // (aboard a moving construct: back in its frame after the first step, from the saved poses: ConstructFrames.Carry)
+        var fq = new Quaternion(framePose[3], framePose[4], framePose[5], framePose[6]);
+        c.FrameLoaded = frameSaved != 0 && framePoseHave == 127 && fq.LengthSquared() > 0.5f && new Vector3(framePose[0], framePose[1], framePose[2]).Length() < 4000;
+        if (c.FrameLoaded)
+            (c.FramePos, c.FrameRot) = (new Vector3(framePose[0], framePose[1], framePose[2]), Quaternion.Normalize(fq)); // (placed by it when the frame is next carried)
         for (var i = 0; i < n; i++)
         {
             ref var p = ref c.Parts[i];

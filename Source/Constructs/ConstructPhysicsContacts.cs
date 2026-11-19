@@ -132,7 +132,7 @@ public static partial class ConstructPhysics
     {
         v = Vector3.Zero;
         w = Vector3.Zero;
-        if (_dyn[index] || posedMoves && c.SpaceShip != 0)
+        if (_dyn[index] || posedMoves && (c.SpaceShip != 0 || c.CarriedBy != 0 || c.Frame != 0))
         {
             // (between bodies, a ship out of the bubble is posed by its flight, not stepped, but it moves: as the solver's VelSide, so a loose
             // piece aboard it at orbital speed is still beside it, not 3 m a tick away; the ground pass keeps a posed ship still)
@@ -724,10 +724,10 @@ public static partial class ConstructPhysics
     /// posed by its flight after the step (GameSpaceLaunch.cs), where it will be at the step's end, so a loose body beside it,
     /// still where it was at the step's start, met it a tick's travel on (3.5 m at 208 m/s in orbit): a Board order's pod let go
     /// under the Zero Day's keel was met jammed in it, and the friction held it there (Karl, 2026-11-18). Its velocity times the
-    /// step, so the two meet as they are; nothing for a body carried in its frame (SpaceCarry puts it at the ship's new pose too).
+    /// step, so the two meet as they are; nothing for a body carried in its frame (ConstructFrames.Carry puts it at the ship's new pose too).
     /// </summary>
     internal static Vector3 PosedBack(Construct posed, Construct other, float dt) =>
-        posed.SpaceShip != 0 && other.SpaceShip == 0 && other.SpaceRide != posed.Id ? posed.Vel * dt : Vector3.Zero;
+        posed.SpaceShip != 0 && other.SpaceShip == 0 && other.Frame != posed.Id ? posed.Vel * dt : Vector3.Zero;
 
     /// <summary>Every piece of the pair against every piece near it, through the trees of each rigid group of each.</summary>
     private static void PairContacts(Construct a, short ia, Construct b, short ib, float dt)
@@ -807,8 +807,12 @@ public static partial class ConstructPhysics
                 n = start + ReducePoints(_cand.AsSpan(start, n - start));
             }
         }
-        var moving = _dyn[ia] && (a.Vel.LengthSquared() >= StillSpeed2 || a.AngVel.LengthSquared() >= StillSpeed2);
-        var movingB = _dyn[ib] && (b.Vel.LengthSquared() >= StillSpeed2 || b.AngVel.LengthSquared() >= StillSpeed2);
+        // (in a moving frame, moving is through the frame: a hull doesn't wake what sleeps on it, nor one crate the next; the
+        // frame's own changes of motion wake them, ConstructFrames.Carry)
+        var framePair = a.Frame == b.Id || b.Frame == a.Id;
+        var same = a.Frame != 0 && a.Frame == b.Frame;
+        var moving = !framePair && _dyn[ia] && ((same ? a.Vel - a.FrameV : a.Vel).LengthSquared() >= StillSpeed2 || (same ? a.AngVel - a.FrameW : a.AngVel).LengthSquared() >= StillSpeed2);
+        var movingB = !framePair && _dyn[ib] && ((same ? b.Vel - b.FrameV : b.Vel).LengthSquared() >= StillSpeed2 || (same ? b.AngVel - b.FrameW : b.AngVel).LengthSquared() >= StillSpeed2);
         for (var k = 0; k < n; k++)
         {
             ref var p = ref _cand[k];

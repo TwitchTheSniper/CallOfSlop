@@ -203,7 +203,7 @@ public sealed partial class Game : ICrewHost
         h.Edit = EditKind.None;
         var at = c.ToWorld(rest + new Vector3(0, 0.03f, 0));
         p.Teleport(at);
-        p.Sim.Velocity = c.Asleep || c.Anchored ? Vector3.Zero : c.PointVel(at);
+        p.Sim.Velocity = c.MovePointVel(at);
         ConstructRide.End(ref p.Sim, null, c, 0, Vector3.Zero, frame: true); // (the ship's own frame, as a person rides it: CrewNav's walks need it)
         for (var i = 0; i < Player.HistorySize; i++)
             p.History[i] = new HistoryEntry { Position = p.Position, Yaw = p.Yaw }; // (a sleeping body isn't woken to place its crew)

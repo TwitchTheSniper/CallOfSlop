@@ -2159,7 +2159,7 @@ public sealed partial class Game
         if (p.Sim.Noclip)
             return "not while noclipping";
         // (it moved on since the player aimed: a little more reach the faster it goes)
-        var slack = c.Anchored || c.Asleep ? 0 : MathF.Min((c.Vel - p.Sim.Velocity).Length(), 12f) * 0.15f;
+        var slack = !c.MovesNow ? 0 : MathF.Min((c.Vel - p.Sim.Velocity).Length(), 12f) * 0.15f;
         using var body = World.Body(p.Sim); // (a robot shell's size on the rungs)
         var why = ladder ? ConstructRide.ClimbLadder(ref p.Sim, c, part, World.HeightOf(Stance.Stand), frame: p.FramedRider)
             : ConstructRide.GrabOn(ref p.Sim, c, part, World.HeightOf(p.Sim.Stance), slack, frame: p.FramedRider);
