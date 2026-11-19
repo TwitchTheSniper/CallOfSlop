@@ -370,6 +370,10 @@ public sealed partial class Construct
     // Client: the newest pose heard was in a frame (Frame), so the pose history holds frame poses.
     internal ushort NetFrame;
     internal Vector3 NetFrameVel, NetFrameSpin;
+    // Server: the ship whose dock let this craft go, while they may still overlap (its cradle pose lay into the hull): the physics
+    // drops their contacts until the first step they are clear (ConstructPhysics.LooseFromCarrier). 0: none.
+    internal ushort LooseFrom;
+    internal byte LooseClear; // (steps in a row it has been clear of it)
 
     /// <summary>Server: its velocity was just set from a moving frame (let go, cut free): it keeps that speed past the physics' limit.</summary>
     internal void KeepSpeed() => SpeedKept = Vel.Length();

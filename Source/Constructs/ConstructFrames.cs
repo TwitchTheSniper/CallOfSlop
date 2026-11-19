@@ -119,6 +119,8 @@ public static class ConstructFrames
     {
         if (c.Frame == 0)
             return;
+        if (c.LooseFrom == c.Frame)
+            (c.LooseFrom, c.LooseClear) = (0, 0); // (out of the frame of the ship that let it go: clear of it)
         c.Frame = 0;
         c.FrameNew = false;
         c.FrameDt = 0;
@@ -145,7 +147,9 @@ public static class ConstructFrames
     /// </summary>
     private static void Pull(Construct c, Construct f, Vector3 com, bool grounded = false)
     {
-        if (grounded && f.SpaceShip == 0)
+        if (c.LooseFrom == f.Id)
+            c.FrameG = Vector3.Zero; // (just let go by this ship's dock: its contacts with the hull it may lie into are dropped, so no deck pull drops it through; ConstructPhysics.LooseFromCarrier)
+        else if (grounded && f.SpaceShip == 0)
             c.FrameG = GravityFrames.Curved || GravityFrames.HookCount > 0 ? ConstructGravity.GravityFor(c, com) : new Vector3(0, -ConstructPhysics.GravityAccel, 0); // (held by the map: the world's pull, not a tilted deck's; a wheel fallen off a car that leans on that corner topples as it would beside it)
         else if (ConstructGravity.Generators > 0 && ConstructGravity.GenAt(com, c.Id) >= 0)
             c.FrameG = ConstructGravity.GravityFor(c, com);
