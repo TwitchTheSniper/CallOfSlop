@@ -16,71 +16,6 @@ public sealed partial class StyleSheetParts
     private static Kit Mod(string item, string section, string letter, string title, string desc, double H) =>
         Reactor("", 1, desc, H, $"Style {item} {letter} {title}", section);
 
-    /// <summary>The battery's block: a profile across x with the top front and back edges chamfered.</summary>
-    private static void Block(Kit k, double y0, double y1, double hx = W, double hz = W, string col = Mid, double ch = 0.12) =>
-        k.Profile(-hx, hx, [(y0, -hz), (y0, hz), (y1 - ch, hz), (y1, hz - ch), (y1, -hz + ch), (y1 - ch, -hz)], col, "painted steel");
-
-    /// <summary>The battery's louvres down the +-x sides: a dark recess and slats.</summary>
-    private static void Louvres(Kit k, double y0, double y1, int rows, double hx = W, double hz = W)
-    {
-        foreach (var sx in new[] { -1.0, 1.0 })
-        {
-            k.Box(sx * hx - 0.012, y0, -hz + 0.12, sx * hx + 0.004 * sx, y1, hz - 0.12, Dark, "dirty steel");
-            for (var i = 0; i < rows; i++)
-            {
-                var y = y0 + 0.04 + i * (y1 - y0 - 0.1) / Math.Max(1, rows - 1);
-                k.Box(sx * hx, y, -hz + 0.14, sx * (hx + 0.04), y + 0.022, hz - 0.14, Body, "painted steel");
-            }
-        }
-    }
-
-    /// <summary>The battery's status strip: a dark bar with lit pips, the first <paramref name="lit"/> in the part's colour.</summary>
-    private static void Strip(Kit k, double x0, double x1, double y, int lit, string on, double zf = W)
-    {
-        k.Box(x0, y, zf - 0.004, x1, y + 0.07, zf + 0.014, Dark, "plastic");
-        var n = (int)((x1 - x0 - 0.03) / 0.06);
-        for (var i = 0; i < n; i++)
-            k.Glow(x0 + 0.03 + i * 0.06, y + 0.02, zf + 0.008, x0 + 0.07 + i * 0.06, y + 0.05, zf + 0.02, i < lit ? on : Amber);
-    }
-
-    /// <summary>A vertical gauge: a dark backing, <paramref name="segs"/> segments, the lowest <paramref name="lit"/> lit.</summary>
-    private static void Gauge(Kit k, double x0, double x1, double y0, double y1, int segs, int lit, string on, double zf = W)
-    {
-        k.Box(x0, y0, zf - 0.006, x1, y1, zf + 0.012, Dark, "plastic");
-        var step = (y1 - y0 - 0.03) / segs;
-        for (var i = 0; i < segs; i++)
-        {
-            var (a, b) = (y0 + 0.02 + i * step, y0 + 0.02 + (i + 1) * step - 0.012);
-            if (i < lit)
-                k.Glow(x0 + 0.015, a, zf + 0.006, x1 - 0.015, b, zf + 0.018, on);
-            else
-                k.Paint(x0 + 0.015, a, zf + 0.006, x1 - 0.015, b, zf + 0.018, Mid);
-        }
-    }
-
-    /// <summary>The battery's hazard band round the foot, with locker E's chevrons in dark on its sides and front corners.</summary>
-    private static void Foot(Kit k, double hx = W, double hz = W)
-    {
-        k.Box(-hx - 0.006, 0.078, -hz - 0.006, hx + 0.006, 0.15, hz + 0.006, HazardY, "hazard paint");
-        var n = (int)((2 * hz - 0.08) / 0.11);
-        foreach (var sx in new[] { -1.0, 1.0 })
-        {
-            for (var i = 0; i < n; i++)
-            {
-                var z = -n * 0.11 / 2 + i * 0.11 + 0.01;
-                k.Profile(sx * (hx + 0.002), sx * (hx + 0.013), [(0.092, z), (0.092, z + 0.03), (0.136, z + 0.07), (0.136, z + 0.04)], Dark, "dirty steel");
-            }
-            if (hx > 0.3) // (a chevron each side of the coupling block)
-            {
-                var x = sx > 0 ? 0.25 : -0.32;
-                k.Face(hz + 0.002, hz + 0.013, [(x, 0.092), (x + 0.03, 0.092), (x + 0.07, 0.136), (x + 0.04, 0.136)], Dark, "dirty steel");
-            }
-        }
-    }
-
-    /// <summary>A deck over the hazard band's top, for parts with no block standing on it (else the band reads as a yellow floor).</summary>
-    private static void Deck(Kit k) => k.Box(-W + 0.004, 0.146, -W + 0.004, W - 0.004, 0.164, W - 0.004, Body, "dirty steel");
-
     private static (double X, double Y)[] Cut(double cx, double w, double y0, double y1, double c) =>
         [(cx - w + c, y0), (cx + w - c, y0), (cx + w, y0 + c), (cx + w, y1 - c), (cx + w - c, y1), (cx - w + c, y1), (cx - w, y1 - c), (cx - w, y0 + c)];
 
@@ -156,257 +91,279 @@ public sealed partial class StyleSheetParts
             return new[] { q[0], py + y * Math.Cos(a) + z * Math.Sin(a), pz - y * Math.Sin(a) + z * Math.Cos(a) };
         });
 
+
+    // ---- Step 3, round 2 (Karl, 2026-11-19: "add more variety to them, getting away from the generic bits such as the shape
+    // and the power bar"): each variant has its own silhouette, not the battery block, and no pip strip. What stays shared is
+    // the palette, one accent a part, locker E's sealed hatches and rams, locker A's hoods and pulls, used where they fit.
+
+    /// <summary>An octagon in plan (a box with its upright corners cut by c), from y0 to y1.</summary>
+    private static IEnumerable<double[]> Oct(double hx, double hz, double c, double y0, double y1)
+    {
+        foreach (var y in new[] { y0, y1 })
+            foreach (var sx in new[] { -1.0, 1.0 })
+                foreach (var sz in new[] { -1.0, 1.0 })
+                {
+                    yield return [sx * hx, y, sz * (hz - c)];
+                    yield return [sx * (hx - c), y, sz * hz];
+                }
+    }
+
+    /// <summary>A square frustum: half sizes (hx0, hz0) at y0 to (hx1, hz1) at y1.</summary>
+    private static IEnumerable<double[]> Frustum(double hx0, double hz0, double hx1, double hz1, double y0, double y1)
+    {
+        foreach (var (hx, hz, y) in new[] { (hx0, hz0, y0), (hx1, hz1, y1) })
+            foreach (var sx in new[] { -1.0, 1.0 })
+                foreach (var sz in new[] { -1.0, 1.0 })
+                    yield return [sx * hx, y, sz * hz];
+    }
+
+    /// <summary>A strut from p0 to p1, t thick (a square section across x and z: for upright or sloping members).</summary>
+    private static IEnumerable<double[]> Brace(double[] p0, double[] p1, double t)
+    {
+        foreach (var p in new[] { p0, p1 })
+            foreach (var dx in new[] { -t, t })
+                foreach (var dz in new[] { -t, t })
+                    yield return [p[0] + dx, p[1], p[2] + dz];
+    }
+
+    /// <summary>A round dial on a face at z = zf: dark bezel, lit face, a needle.</summary>
+    private static void Dial(Kit k, double x, double y, double r, string col, double zf = W)
+    {
+        k.Hull(CylZ(x, y, r, zf - 0.004, zf + 0.014), Dark, "plastic");
+        k.Hull(CylZ(x, y, r * 0.74, zf + 0.008, zf + 0.02), col, "", glow: true);
+        k.Box(x - 0.006, y - 0.006, zf + 0.016, x + r * 0.6, y + 0.006, zf + 0.028, Trim, "steel");
+    }
+
+    /// <summary>One lamp in a dark bezel on a face at z = zf.</summary>
+    private static void Lamp(Kit k, double x, double y, string col, double zf = W, double s = 0.03)
+    {
+        k.Box(x - s, y - s, zf - 0.004, x + s, y + s, zf + 0.012, Dark, "plastic");
+        k.Glow(x - s * 0.6, y - s * 0.6, zf + 0.006, x + s * 0.6, y + s * 0.6, zf + 0.018, col);
+    }
+
+    /// <summary>Two skid rails along z under a part that stands on legs or a frame, chevrons on their front ends.</summary>
+    private static void Skids(Kit k, double x = 0.3)
+    {
+        foreach (var sx in new[] { -1.0, 1.0 })
+        {
+            k.Box(sx * (x - 0.03), 0.078, -0.33, sx * (x + 0.03), 0.13, 0.33, Body, "painted steel");
+            k.Box(sx * (x - 0.03), 0.082, 0.326, sx * (x + 0.03), 0.126, 0.338, HazardY, "hazard paint");
+        }
+    }
+
     // ---------------------------------------------------------------- Capacitor banks (ice)
     private const string Caps = "Capacitor banks";
 
     private static Part CapA()
     {
-        const double H = 1.1;
-        var k = Mod("Capacitor", Caps, "A", "Block", "A: the battery block, shorter: a sealed service hatch, a tall charge gauge in ice under a lit hood, terminal posts on top.", H);
-        Block(k, 0.078, H);
-        Louvres(k, 0.2, H - 0.2, 5);
-        Hatch(k, -0.16, 0.15, 0.27, 0.78, Ice);
-        Gauge(k, 0.08, 0.26, 0.27, 0.78, 8, 6, Ice);
-        Hood(k, -0.34, 0.34, 0.84, Ice);
-        Strip(k, -0.27, 0.27, 0.9, 6, Ice);
-        foreach (var sx in new[] { -1.0, 1.0 })
+        var k = Mod("Capacitor", Caps, "A", "Coil stack", "A: a stack of armoured discs on an octagonal base, the charge glowing ice between them, insulators and a terminal on top.", 1.38);
+        k.Hull(Oct(0.36, 0.36, 0.11, 0.078, 0.2), Body, "painted steel");
+        k.Hull(Cyl(0, 0, 0.24, 0.196, 1.06, 8), Ice, "", glow: true);
+        for (var i = 0; i < 5; i++)
         {
-            k.Hull(Cyl(sx * 0.17, -0.08, 0.05, H - 0.01, H + 0.06, 8), Dark, "plastic");
-            k.Hull(Cyl(sx * 0.17, -0.08, 0.032, H + 0.056, H + 0.1, 8), sx < 0 ? Trim : HazardY, "steel");
+            var y = 0.26 + i * 0.18;
+            k.Hull(Cyl(0, 0, i % 2 == 0 ? 0.31 : 0.29, y, y + 0.1, 8), i % 2 == 0 ? Mid : Body, "painted steel");
         }
-        Foot(k);
+        k.Hull(Cyl(0, 0, 0.14, 1.056, 1.12, 8), Trim, "painted steel");
+        k.Hull(Cyl(0, 0, 0.1, 1.116, 1.18, 8), Dark, "plastic");
+        k.Hull(Cyl(0, 0, 0.12, 1.176, 1.22, 8), Trim, "painted steel");
+        k.Hull(Cyl(0, 0, 0.04, 1.216, 1.32, 8), Bare, "steel");
+        k.Hull(Cyl(0, 0, 0.07, 1.316, 1.37, 8), HazardY, "hazard paint");
+        foreach (var sx in new[] { -1.0, 1.0 })
+            k.Box(sx * 0.27 - 0.04, 0.12, 0.356, sx * 0.27 + 0.04, 0.17, 0.372, HazardY, "hazard paint");
         return k.P;
     }
 
     private static Part CapB()
     {
-        var k = Mod("Capacitor", Caps, "B", "Stacked", "B: three armoured capacitor slabs stacked between corner posts, the charge glowing ice in the gaps, a lit pull and tag on each.", 1.08);
+        var k = Mod("Capacitor", Caps, "B", "Slabs", "B: three slabs of different depths stacked off-line in two side frames, ice light in the gaps, a lit pull on each.", 1.12);
+        Skids(k, 0.33);
+        double[] th = [0.26, 0.2, 0.3], dz = [0.03, -0.04, 0.0], hw = [0.3, 0.32, 0.28];
+        var y = 0.15;
         for (var i = 0; i < 3; i++)
         {
-            var y = 0.16 + i * 0.3;
-            k.Paint(-W + 0.02, y, -W + 0.02, W - 0.02, y + 0.24, W - 0.02, i == 1 ? Body : Mid);
+            k.Paint(-hw[i], y, -0.27 + dz[i], hw[i], y + th[i], 0.27 + dz[i], i == 1 ? Body : Mid);
             if (i < 2)
-                k.Glow(-W + 0.06, y + 0.234, -W + 0.06, W - 0.06, y + 0.306, W - 0.06, Ice);
-            Pull(k, -0.2, y + 0.04, y + 0.2, Ice, W - 0.02);
-            k.Box(-0.1, y + 0.08, W - 0.024, 0.1, y + 0.16, W - 0.006, Trim, "steel"); // (a label plate)
-            k.Glow(0.16, y + 0.09, W - 0.024, 0.22, y + 0.15, W - 0.008, i == 2 ? Amber : Ice);
+                k.Glow(-0.24, y + th[i] - 0.006, -0.22, 0.24, y + th[i] + 0.066, 0.22, Ice);
+            Pull(k, -hw[i] + 0.08 + i * 0.16, y + 0.04, y + th[i] - 0.04, Ice, 0.27 + dz[i]);
+            y += th[i] + 0.06;
         }
-        k.Box(-W + 0.03, 0.148, -W + 0.03, W - 0.03, 0.164, W - 0.03, Dark, "dirty steel"); // (the slabs' seat)
         foreach (var sx in new[] { -1.0, 1.0 })
+        {
             foreach (var sz in new[] { -1.0, 1.0 })
-                k.Box(sx * (W - 0.035), 0.146, sz * (W - 0.035), sx * (W + 0.012), 1.06, sz * (W + 0.012), Body, "painted steel");
-        Foot(k);
+                k.Box(sx * 0.335, 0.126, sz * 0.28, sx * 0.365, 1.1, sz * 0.24, Body, "painted steel");
+            k.Box(sx * 0.335, 1.07, -0.28, sx * 0.365, 1.1, 0.28, Body, "painted steel");
+            k.Box(sx * 0.326, 0.5, -0.24, sx * 0.338, 0.54, 0.24, Dark, "steel"); // (a tie)
+        }
         return k.P;
     }
 
     private static Part CapC()
     {
-        const double H = 1.32;
-        var k = Mod("Capacitor", Caps, "C", "Twin cans", "C: the battery block cut down to a plinth with a sealed hatch, two upright capacitor cans on it with lit rings, bussed across the top.", H);
-        Block(k, 0.078, 0.56, ch: 0.06);
-        Louvres(k, 0.18, 0.48, 3);
-        Hatch(k, -0.17, 0.15, 0.27, 0.5, Ice, bar: false);
-        Strip(k, 0.02, 0.32, 0.36, 3, Ice);
-        foreach (var sx in new[] { -1.0, 1.0 })
+        var k = Mod("Capacitor", Caps, "C", "Triple cans", "C: three upright capacitor cans on an octagonal sled, lit rings at staggered heights, brass bus bars to a central terminal.", 1.3);
+        k.Hull(Oct(0.36, 0.36, 0.12, 0.078, 0.18), Body, "painted steel");
+        (double X, double Z, double Ring)[] cans = [(0, -0.17, 0.5), (-0.17, 0.12, 0.72), (0.17, 0.12, 0.94)];
+        foreach (var (x, z, ring) in cans)
         {
-            var x = sx * 0.17;
-            k.Hull(Cyl(x, 0, 0.15, 0.556, 0.64, 8), Body, "painted steel");
-            k.Hull(Cyl(x, 0, 0.135, 0.636, 1.24, 8), Mid, "painted steel");
-            k.Hull(Cyl(x, 0, 0.143, 0.88, 0.94, 8), Ice, "", glow: true);
-            k.Hull(Cyl(x, 0, 0.1, 1.236, 1.29, 8), Trim, "painted steel");
+            k.Hull(Cyl(x, z, 0.135, 0.176, 0.26, 8), Dark, "dirty steel");
+            k.Hull(Cyl(x, z, 0.12, 0.256, 1.12, 8), Mid, "painted steel");
+            k.Hull(Cyl(x, z, 0.127, ring, ring + 0.06, 8), Ice, "", glow: true);
+            k.Hull(Cyl(x, z, 0.085, 1.116, 1.17, 8), Trim, "painted steel");
         }
-        k.Box(-0.2, 1.286, -0.03, 0.2, 1.32, 0.03, Amber, "brass");
-        Foot(k);
+        k.Box(-0.19, 1.166, 0.1, 0.19, 1.2, 0.14, Amber, "brass");
+        k.Box(-0.02, 1.166, -0.19, 0.02, 1.2, 0.12, Amber, "brass");
+        k.Hull(Cyl(0, 0.0, 0.04, 1.16, 1.28, 8), Bare, "steel");
         return k.P;
     }
 
     private static Part CapD()
     {
-        const double H = 1.0;
-        var k = Mod("Capacitor", Caps, "D", "Heat sink", "D: the battery block crowned with a heat-sink fin array, one big sealed high-voltage hatch with an ice discharge pull beside it.", H + 0.2);
-        Block(k, 0.078, H, ch: 0.08);
-        Louvres(k, 0.2, 0.84, 4);
-        Hatch(k, -0.06, 0.26, 0.27, 0.76, Ice);
-        k.Box(-0.11, 0.62, W + 0.022, -0.01, 0.7, W + 0.034, HazardY, "hazard paint"); // (the HV plate)
-        Pull(k, 0.29, 0.3, 0.74, Ice);
-        Strip(k, -0.27, 0.27, 0.82, 5, Ice);
-        for (var i = 0; i < 7; i++)
+        var k = Mod("Capacitor", Caps, "D", "Wedge sink", "D: a wedge with a raked front holding a glowing discharge tube in clamps, a sealed HV hatch below, heat-sink fins along its back.", 1.16);
+        k.Profile(-W, W, [(0.078, -W), (0.078, W), (0.48, W), (0.94, 0.0), (0.94, -W)], Mid, "painted steel");
+        Hatch(k, -0.04, 0.24, 0.27, 0.44, Ice, bar: false);
+        k.Box(-0.09, 0.33, W + 0.012, 0.01, 0.39, W + 0.03, HazardY, "hazard paint");
+        Lamp(k, 0.3, 0.36, Ice);
+        var (ty, tz) = (0.71, 0.188);
+        k.Hull(CylX(ty, tz, 0.045, -0.3, 0.3), Ice, "", glow: true);
+        foreach (var x in new[] { -0.33, -0.05, 0.25 })
+            k.Hull(CylX(ty, tz, 0.06, x, x + 0.08), Bare, "steel");
+        for (var i = 0; i < 8; i++)
         {
-            var x = -0.27 + i * 0.09;
-            k.Box(x - 0.012, H - 0.006, -0.25, x + 0.012, H + 0.19, 0.25, Bare, "steel");
+            var x = -0.315 + i * 0.09;
+            k.Box(x - 0.012, 0.934, -0.34, x + 0.012, 1.14, -0.03, Bare, "steel");
         }
-        k.Box(-0.3, H + 0.19, -0.03, 0.3, H + 0.214, 0.03, Body, "painted steel"); // (the fins' tie bar)
-        Foot(k);
+        foreach (var sx in new[] { -1.0, 1.0 })
+            k.Hull(TipX(CylZ(sx * 0.2, 0.62, 0.05, -0.02, 0.05), 0.62, 0.0, 0), Dark, "plastic"); // (cable glands on the slope's foot)
         return k.P;
     }
 
     private static Part CapE()
     {
-        var k = Mod("Capacitor", Caps, "E", "Rack", "E: an open rack of four slide-in capacitor cartridges, each with a lit pull channel and charge lamps, under a lit hood.", 1.34);
-        k.Box(-W, 0.078, -W, W, 0.12, W, Body, "painted steel");
-        k.Box(-W, 1.26, -W, W, 1.3, W, Body, "painted steel");
-        k.Box(-0.33, 0.116, -W + 0.004, 0.33, 1.264, -0.34, Dark, "dirty steel");
+        var k = Mod("Capacitor", Caps, "E", "Cartridges", "E: a cabinet of four upright slide-in cartridges, one half drawn out, each with an ice edge light and a grip, under a lit hood.", 1.34);
+        k.Box(-W, 0.078, -W, W, 0.13, W, Body, "painted steel");
+        k.Box(-W, 1.24, -W, W, 1.29, W, Body, "painted steel");
+        k.Box(-0.35, 0.126, -W + 0.004, 0.35, 1.244, -0.33, Dark, "dirty steel");
         foreach (var sx in new[] { -1.0, 1.0 })
-            foreach (var sz in new[] { -1.0, 1.0 })
-                k.Box(sx * 0.33, 0.116, sz * 0.33, sx * (W + 0.004), 1.264, sz * (W + 0.004), Mid, "painted steel");
+            k.Box(sx * 0.35, 0.126, -W + 0.004, sx * (W + 0.004), 1.244, W - 0.004, Mid, "painted steel");
+        double[] xs = [-0.255, -0.085, 0.085, 0.255];
         for (var i = 0; i < 4; i++)
         {
-            var y = 0.15 + i * 0.275;
-            k.Paint(-0.31, y, -0.32, 0.31, y + 0.23, 0.33, i % 2 == 0 ? Mid : Body);
-            foreach (var sx in new[] { -1.0, 1.0 })
-                k.Box(sx * 0.305, y - 0.024, -0.32, sx * 0.322, y + 0.004, 0.32, Dark, "steel"); // (its rail)
-            k.Box(-0.2, y + 0.075, 0.326, 0.2, y + 0.155, 0.346, Dark, "plastic"); // (the pull channel, across)
-            k.Glow(-0.17, y + 0.105, 0.336, 0.17, y + 0.125, 0.352, Ice);
-            k.Glow(0.24, y + 0.09, 0.326, 0.28, y + 0.14, 0.342, i < 3 ? Green : Amber);
+            var out_ = i == 2 ? 0.12 : 0.0;
+            k.Paint(xs[i] - 0.07, 0.15, -0.31 + out_, xs[i] + 0.07, 1.2, 0.33 + out_, i % 2 == 0 ? Mid : Body);
+            k.Glow(xs[i] + 0.04, 0.3, 0.326 + out_, xs[i] + 0.056, 1.0, 0.34 + out_, i == 2 ? Amber : Ice);
+            k.Box(xs[i] - 0.05, 1.06, 0.326 + out_, xs[i] + 0.03, 1.1, 0.37 + out_, Bare, "steel");
+            Lamp(k, xs[i] - 0.02, 0.22, i == 2 ? Amber : Green, 0.33 + out_, 0.022);
         }
-        Hood(k, -W, W, 1.3, Ice, W - 0.02);
+        Hood(k, -W, W, 1.29, Ice, W - 0.02);
         return k.P;
     }
 
     // ---------------------------------------------------------------- Life support (teal)
     private const string Life = "Life support";
 
-    /// <summary>A front fan: a dark recess, a teal glow behind horizontal grille slats and a hub.</summary>
-    private static void FrontFan(Kit k, double cx, double cy, double r, double zf = W)
-    {
-        k.Box(cx - r - 0.04, cy - r - 0.04, zf - 0.01, cx + r + 0.04, cy + r + 0.04, zf + 0.002, Dark, "dirty steel");
-        k.Hull(CylZ(cx, cy, r, zf - 0.006, zf + 0.006), Teal, "", glow: true);
-        for (var i = 0; i < 5; i++)
-        {
-            var y = cy - r + 0.02 + i * (2 * r - 0.06) / 4;
-            k.Box(cx - r - 0.02, y, zf + 0.008, cx + r + 0.02, y + 0.022, zf + 0.022, Bare, "steel");
-        }
-        k.Hull(CylZ(cx, cy, 0.045, zf + 0.004, zf + 0.036), Body, "painted steel");
-    }
-
     private static Part LifeA()
     {
-        const double H = 1.3;
-        var k = Mod("Life Support", Life, "A", "Block", "A: the battery block with a big fan behind a grille on its front, washed teal by a hood over it, an outlet vent on top.", H);
-        Block(k, 0.078, H);
-        Louvres(k, 0.2, H - 0.2, 6);
-        FrontFan(k, 0, 0.55, 0.2);
-        Hood(k, -0.3, 0.3, 0.84, Teal);
-        Strip(k, -0.27, 0.27, 0.92, 5, Teal);
-        k.Box(-0.2, H - 0.006, -0.2, 0.2, H + 0.05, 0.12, Body, "painted steel");
-        for (var i = 0; i < 4; i++)
-            k.Box(-0.18, H + 0.046, -0.17 + i * 0.075, 0.18, H + 0.066, -0.13 + i * 0.075, Dark, "dirty steel");
-        Deck(k);
-        Foot(k);
+        var k = Mod("Life Support", Life, "A", "Fan drum", "A: an upright octagonal drum with a big teal-lit fan in its top, an intake ring at its foot, a sealed hatch and dial on its front face.", 0.96);
+        k.Hull(Cyl(0, 0, 0.35, 0.078, 0.88, 8), Mid, "painted steel");
+        k.Hull(Cyl(0, 0, 0.356, 0.2, 0.32, 8), Dark, "dirty steel");
+        k.Hull(Cyl(0, 0, 0.36, 0.25, 0.27, 8), Teal, "", glow: true);
+        k.Hull(Cyl(0, 0, 0.36, 0.876, 0.92, 8), Body, "painted steel");
+        k.Hull(Cyl(0, 0, 0.29, 0.9, 0.93, 8), Teal, "", glow: true);
+        foreach (var t in new[] { -0.2, 0.0, 0.2 })
+        {
+            k.Box(-0.3, 0.926, t - 0.012, 0.3, 0.944, t + 0.012, Bare, "steel");
+            k.Box(t - 0.012, 0.926, -0.3, t + 0.012, 0.944, 0.3, Bare, "steel");
+        }
+        k.Hull(Cyl(0, 0, 0.06, 0.94, 0.97, 8), Body, "painted steel");
+        Hatch(k, 0, 0.11, 0.36, 0.7, Teal, 0.323, bar: false);
+        Dial(k, 0, 0.78, 0.045, Teal, 0.323);
         return k.P;
     }
 
     private static Part LifeB()
     {
-        var k = Mod("Life Support", Life, "B", "Scrubber", "B: a battery-block plinth with a sealed hatch, two scrubber canisters on it with lit pull channels down their fronts, piped over the top.", 1.44);
-        Block(k, 0.078, 0.56, ch: 0.06);
-        Louvres(k, 0.18, 0.48, 3);
-        Hatch(k, -0.17, 0.15, 0.27, 0.5, Teal, bar: false);
-        Strip(k, 0.02, 0.32, 0.36, 3, Teal);
+        var k = Mod("Life Support", Life, "B", "Scrubbers", "B: three scrubber canisters on an open frame deck, green lit pulls down them, a blue manifold over the top, a blower under the deck.", 1.4);
         foreach (var sx in new[] { -1.0, 1.0 })
+            foreach (var sz in new[] { -1.0, 1.0 })
+                k.Box(sx * 0.3, 0.078, sz * 0.3, sx * 0.34, 0.3, sz * 0.34, Body, "painted steel");
+        k.Box(-0.35, 0.296, -0.35, 0.35, 0.34, 0.35, Mid, "painted steel");
+        k.Box(-0.2, 0.12, -0.2, 0.2, 0.3, 0.2, Dark, "dirty steel");
+        Lamp(k, 0, 0.21, Teal, 0.2);
+        foreach (var x in new[] { -0.22, 0.0, 0.22 })
         {
-            var x = sx * 0.17;
-            k.Hull(Cyl(x, 0.02, 0.13, 0.556, 1.34, 8), Trim, "painted steel");
-            k.Hull(Cyl(x, 0.02, 0.137, 0.64, 0.68, 8), Body, "painted steel");
-            k.Hull(Cyl(x, 0.02, 0.137, 1.22, 1.26, 8), Body, "painted steel");
-            Pull(k, x, 0.7, 1.2, Green, 0.14);
-            k.Hull(Cyl(x, 0.02, 0.06, 1.336, 1.4, 8), Body, "painted steel");
+            k.Hull(Cyl(x, 0.04, 0.1, 0.336, 1.18, 8), Trim, "painted steel");
+            k.Hull(Cyl(x, 0.04, 0.106, 0.42, 0.46, 8), Body, "painted steel");
+            Pull(k, x, 0.5, 1.1, Green, 0.13);
+            k.Hull(Cyl(x, 0.04, 0.04, 1.176, 1.26, 8), Bare, "steel");
         }
-        k.Box(-0.2, 1.37, -0.01, 0.2, 1.43, 0.05, Coolant, "painted steel");
-        k.Box(-0.03, 1.37, -0.3, 0.03, 1.43, 0.05, Coolant, "painted steel");
-        k.Box(-0.03, 0.556, -0.3, 0.03, 1.43, -0.24, Coolant, "painted steel");
-        Foot(k);
+        k.Box(-0.3, 1.25, 0.0, 0.3, 1.32, 0.08, Coolant, "painted steel");
+        k.Box(0.27, 0.34, -0.03, 0.33, 1.32, 0.03, Coolant, "painted steel");
         return k.P;
     }
 
     private static Part LifeC()
     {
-        const double H = 1.75, hx = 0.3;
-        var k = Mod("Life Support", Life, "C", "Tower", "C: a tall narrow battery block: intake louvres up top, a tall sealed service door on a hinge ram, a lit outlet grille at its foot.", H);
-        Block(k, 0.078, H, hx, W, ch: 0.1);
-        Louvres(k, 0.2, H - 0.2, 8, hx);
-        k.Box(-0.24, 1.34, W - 0.008, 0.24, 1.6, W + 0.004, Dark, "dirty steel");
+        var k = Mod("Life Support", Life, "C", "Taper tower", "C: a tall tower narrowing to the top, intake louvres across its head, a tall sealed door on a hinge ram, a lit outlet grille at its foot.", 1.75);
+        k.Hull(Frustum(0.36, 0.34, 0.24, 0.34, 0.078, 1.7), Mid, "painted steel");
+        k.Box(-0.25, 1.66, -0.3, 0.25, 1.75, 0.3, Body, "painted steel");
         for (var i = 0; i < 4; i++)
-            k.Box(-0.23, 1.36 + i * 0.06, W + 0.004, 0.23, 1.382 + i * 0.06, W + 0.04, Body, "painted steel");
-        Hatch(k, 0, 0.22, 0.56, 1.26, Green);
-        Ram(k, -0.27, W + 0.06, 0.66, 1.16, -0.31);
-        k.Box(-0.24, 0.24, W - 0.008, 0.24, 0.46, W + 0.004, Dark, "dirty steel");
-        k.Glow(-0.21, 0.27, W - 0.004, 0.21, 0.43, W + 0.008, Teal);
+            k.Box(-0.2, 1.34 + i * 0.07, 0.336, 0.2, 1.364 + i * 0.07, 0.37, Body, "painted steel");
+        k.Box(-0.21, 1.32, 0.33, 0.21, 1.62, 0.346, Dark, "dirty steel");
+        Hatch(k, 0.02, 0.16, 0.56, 1.24, Green, 0.34);
+        Ram(k, -0.2, 0.39, 0.66, 1.14, -0.2);
+        k.Box(-0.27, 0.2, 0.332, 0.27, 0.44, 0.346, Dark, "dirty steel");
+        k.Glow(-0.24, 0.23, 0.336, 0.24, 0.41, 0.35, Teal);
         for (var i = 0; i < 3; i++)
-            k.Box(-0.23, 0.29 + i * 0.05, W + 0.01, 0.23, 0.312 + i * 0.05, W + 0.024, Bare, "steel");
-        Foot(k, hx);
+            k.Box(-0.26, 0.25 + i * 0.05, 0.352, 0.26, 0.272 + i * 0.05, 0.366, Bare, "steel");
         return k.P;
     }
 
     private static Part LifeD()
     {
-        const double H = 0.86;
-        var k = Mod("Life Support", Life, "D", "Twin fans", "D: a low battery block with two fans set in its top, teal under the grilles, two small sealed hatches and the strip on the front.", H + 0.1);
-        Block(k, 0.078, H, ch: 0.06);
-        Louvres(k, 0.2, H - 0.12, 4);
+        var k = Mod("Life Support", Life, "D", "Side fans", "D: a lying drum with a big fan in each end, teal behind the grilles, a sealed hatch and dial on its belly-front, on two saddles.", 0.88);
+        const double cy = 0.47, r = 0.34;
         foreach (var sx in new[] { -1.0, 1.0 })
-            Hatch(k, sx * 0.19, 0.13, 0.28, 0.6, Teal, bar: false);
-        Strip(k, -0.27, 0.27, 0.68, 4, Teal);
+            k.Box(sx * 0.08, 0.078, -0.24, sx * 0.2, 0.24, 0.24, Body, "painted steel");
+        k.Hull(CylX(cy, 0, r, -0.27, 0.27), Mid, "painted steel");
         foreach (var sx in new[] { -1.0, 1.0 })
         {
-            var x = sx * 0.165;
-            k.Hull(Cyl(x, -0.04, 0.165, H - 0.006, H + 0.06, 8), Body, "painted steel");
-            k.Hull(Cyl(x, -0.04, 0.13, H + 0.04, H + 0.07, 8), Teal, "", glow: true);
-            k.Box(x - 0.15, H + 0.074, -0.055, x + 0.15, H + 0.094, -0.025, Bare, "steel");
-            k.Box(x - 0.015, H + 0.074, -0.19, x + 0.015, H + 0.094, 0.11, Bare, "steel");
+            k.Hull(CylX(cy, 0, 0.32, sx * 0.266, sx * 0.34), Body, "painted steel");
+            k.Hull(CylX(cy, 0, 0.26, sx * 0.336, sx * 0.348), Teal, "", glow: true);
+            foreach (var t in new[] { -0.16, -0.05, 0.06, 0.17 })
+                k.Box(sx * 0.344, cy + t - 0.012, -0.25, sx * 0.362, cy + t + 0.012, 0.25, Bare, "steel");
+            k.Hull(CylX(cy, 0, 0.05, sx * 0.34, sx * 0.37), Body, "painted steel");
         }
-        Foot(k);
+        Hatch(k, -0.06, 0.12, cy - 0.11, cy + 0.11, Teal, 0.314, bar: false);
+        Dial(k, 0.15, cy, 0.05, Teal, 0.314);
         return k.P;
     }
 
     private static Part LifeE()
     {
-        const double H = 1.25, hx = 0.215;
-        var k = Mod("Life Support", Life, "E", "Bottles", "E: a narrow battery block with oxygen bottles strapped down both sides in place of the louvres, a fan under a hood and a gauge on its front.", H);
-        Block(k, 0.078, H, hx, W, ch: 0.1);
-        FrontFan(k, 0, 0.8, 0.12);
-        Hood(k, -hx + 0.02, hx - 0.02, 1.02, Teal);
-        Gauge(k, -0.15, -0.03, 0.26, 0.6, 5, 4, Teal);
-        Pull(k, 0.09, 0.26, 0.6, Teal);
+        var k = Mod("Life Support", Life, "E", "Bottle rack", "E: six upright oxygen bottles racked either side of a slim spine, green bands at their shoulders, a regulator head with teal dials.", 1.22);
+        k.Box(-0.08, 0.078, -0.32, 0.08, 1.06, 0.32, Mid, "painted steel");
+        k.Box(-0.34, 1.02, -0.1, 0.34, 1.12, 0.1, Body, "painted steel");
+        k.Box(-W, 0.078, -0.34, W, 0.12, 0.34, Body, "painted steel");
         foreach (var sx in new[] { -1.0, 1.0 })
-            foreach (var cy in new[] { 0.36, 0.64 })
+        {
+            foreach (var z in new[] { -0.22, 0.0, 0.22 })
             {
-                var x = sx * 0.29;
-                k.Hull(CylZ(x, cy, 0.1, -0.3, 0.3), Trim, "painted steel");
-                k.Hull(CylZ(x, cy, 0.104, 0.0, 0.04), Green, "", glow: true);
-                foreach (var z in new[] { -0.2, 0.16 })
-                    k.Hull(CylZ(x, cy, 0.107, z, z + 0.035), Dark, "dirty steel");
-                k.Hull(CylZ(x, cy, 0.03, 0.296, 0.35), Bare, "steel");
+                var x = sx * 0.23;
+                k.Hull(Cyl(x, z, 0.1, 0.116, 0.86, 8), Trim, "painted steel");
+                k.Hull(Cyl(x, z, 0.104, 0.74, 0.78, 8), Green, "", glow: true);
+                k.Hull(Cyl(x, z, 0.06, 0.856, 0.93, 8), Body, "painted steel");
+                k.Hull(Cyl(x, z, 0.02, 0.926, 1.024, 8), Bare, "steel");
             }
-        foreach (var sx in new[] { -1.0, 1.0 })
-            foreach (var z in new[] { -0.2, 0.16 })
-                k.Box(sx * 0.212, 0.24, z + 0.005, sx * 0.226, 0.76, z + 0.03, Dark, "steel"); // (the strap's back plate)
-        Foot(k, hx);
+            k.Box(sx * 0.32, 0.36, -0.34, sx * 0.345, 0.4, 0.34, Dark, "steel"); // (the rack's strap)
+        }
+        Dial(k, -0.035, 1.07, 0.035, Teal, 0.1);
+        Dial(k, 0.045, 0.9, 0.035, Teal, 0.32);
+        Lamp(k, 0.0, 0.6, Green, 0.32, 0.024);
         return k.P;
     }
 
     // ---------------------------------------------------------------- Sensors (cyan)
     private const string Sens = "Sensors";
-
-    private static Part SensA()
-    {
-        const double H = 0.9;
-        var k = Mod("Sensor", Sens, "A", "Block", "A: the battery block, short, two sealed hatches and a cyan slot, a mast on top carrying a small dish and a beacon.", 1.75);
-        Block(k, 0.078, H, ch: 0.08);
-        Louvres(k, 0.2, 0.74, 4);
-        foreach (var sx in new[] { -1.0, 1.0 })
-            Hatch(k, sx * 0.21, 0.12, 0.28, 0.64, Cyan, bar: false);
-        Pull(k, 0, 0.28, 0.64, Cyan);
-        Strip(k, -0.27, 0.27, 0.7, 5, Cyan);
-        k.Hull(Cyl(0, -0.1, 0.09, H - 0.006, H + 0.08, 8), Body, "painted steel");
-        k.Hull(Cyl(0, -0.1, 0.035, H + 0.076, 1.66, 8), Bare, "steel");
-        k.Hull(TipX(CylZ(0, 1.42, 0.22, -0.1, -0.05), 1.42, -0.1, 0.35), Trim, "painted steel");
-        k.Hull(TipX(CylZ(0, 1.42, 0.025, -0.054, 0.12), 1.42, -0.1, 0.35), Dark, "plastic");
-        k.Hull(TipX(CylZ(0, 1.42, 0.02, 0.116, 0.15), 1.42, -0.1, 0.35), Cyan, "", glow: true);
-        k.Hull(Cyl(0, -0.1, 0.03, 1.656, 1.7, 8), Red, "", glow: true);
-        Foot(k);
-        return k.P;
-    }
 
     /// <summary>A dome: rings at 0, 30 and 60 degrees and the crown point (25 points).</summary>
     private static IEnumerable<double[]> Dome(double R, double y0, int sides = 8)
@@ -420,31 +377,49 @@ public sealed partial class StyleSheetParts
         yield return [0, y0 + R, 0];
     }
 
+    /// <summary>A small dish on a mast's head: its back, the feed, a cyan horn (tipped up by tilt).</summary>
+    private static void SmallDish(Kit k, double cy, double cz, double r, double tilt)
+    {
+        k.Hull(TipX(RingZ(0, cy, r, cz + 0.05).Concat(RingZ(0, cy, r * 0.35, cz - 0.04)), cy, cz, tilt), Trim, "painted steel");
+        k.Hull(TipX(CylZ(0, cy, 0.018, cz + 0.046, cz + 0.2), cy, cz, tilt), Dark, "plastic");
+        k.Hull(TipX(CylZ(0, cy, 0.026, cz + 0.196, cz + 0.23), cy, cz, tilt), Cyan, "", glow: true);
+    }
+
+    private static Part SensA()
+    {
+        var k = Mod("Sensor", Sens, "A", "Pedestal", "A: a tapered pedestal with a service box on its front, a collar, a mast with a small dish and a red beacon.", 1.72);
+        k.Hull(Frustum(0.34, 0.34, 0.17, 0.17, 0.078, 0.62), Mid, "painted steel");
+        k.Box(-0.13, 0.2, 0.12, 0.13, 0.44, 0.31, Body, "painted steel");
+        Hatch(k, 0, 0.09, 0.23, 0.41, Cyan, 0.31, bar: false);
+        k.Hull(Cyl(0, 0, 0.2, 0.616, 0.68, 8), Body, "painted steel");
+        k.Hull(Cyl(0, 0, 0.205, 0.636, 0.656, 8), Cyan, "", glow: true);
+        k.Hull(Cyl(0, 0, 0.035, 0.676, 1.64, 8), Bare, "steel");
+        SmallDish(k, 1.38, 0.0, 0.2, 0.35);
+        k.Hull(Cyl(0, 0, 0.03, 1.636, 1.68, 8), Red, "", glow: true);
+        return k.P;
+    }
+
     private static Part SensB()
     {
-        const double H = 0.78;
-        var k = Mod("Sensor", Sens, "B", "Dome", "B: a low battery block under a radome, a cyan band round the dome's foot, a hood and strip over a sealed hatch.", 1.15);
-        Block(k, 0.078, H, ch: 0.08);
-        Louvres(k, 0.2, 0.66, 3);
-        Hatch(k, -0.12, 0.2, 0.27, 0.56, Cyan);
-        Gauge(k, 0.16, 0.3, 0.27, 0.56, 4, 3, Cyan);
-        Hood(k, -0.34, 0.34, 0.6, Cyan);
-        k.Hull(Cyl(0, 0, 0.3, H - 0.006, H + 0.05, 8), Body, "painted steel");
-        k.Hull(Cyl(0, 0, 0.305, H + 0.046, H + 0.08, 8), Cyan, "", glow: true);
-        k.Hull(Dome(0.29, H + 0.076), Trim, "plastic");
-        Foot(k);
+        var k = Mod("Sensor", Sens, "B", "Radome", "B: a radome on a vented octagonal drum, a cyan band where they meet, a small sealed hatch and lamps on the drum.", 0.86);
+        k.Hull(Cyl(0, 0, 0.34, 0.078, 0.5, 8), Mid, "painted steel");
+        foreach (var y in new[] { 0.16, 0.22, 0.28 })
+            foreach (var sx in new[] { -1.0, 1.0 })
+                k.Box(sx * 0.31, y, -0.08, sx * 0.322, y + 0.03, 0.08, Dark, "dirty steel");
+        k.Hull(Cyl(0, 0, 0.346, 0.46, 0.5, 8), Cyan, "", glow: true);
+        k.Hull(Dome(0.32, 0.496), Trim, "plastic");
+        Hatch(k, -0.04, 0.08, 0.27, 0.42, Cyan, 0.314, bar: false);
+        Lamp(k, 0.09, 0.36, Green, 0.314, 0.02);
+        Lamp(k, 0.09, 0.28, Cyan, 0.314, 0.02);
         return k.P;
     }
 
     private static Part SensC()
     {
-        const double H = 0.7;
-        var k = Mod("Sensor", Sens, "C", "Array", "C: a low battery block with a tilted phased-array panel on top, its tiles edged in cyan, a sealed hatch and strip below.", 1.4);
-        Block(k, 0.078, H, ch: 0.06);
-        Louvres(k, 0.2, 0.6, 3);
-        Hatch(k, -0.13, 0.2, 0.27, 0.52, Cyan, bar: false);
-        Strip(k, 0.12, 0.33, 0.42, 3, Cyan);
-        Pull(k, 0.22, 0.27, 0.4, Cyan);
+        var k = Mod("Sensor", Sens, "C", "Array", "C: a tilted phased-array panel, its tiles edged in cyan, on a raked wedge base with three lamps across its front.", 1.3);
+        k.Profile(-W, W, [(0.078, -W), (0.078, W), (0.36, W), (0.58, -0.1), (0.58, -W)], Mid, "painted steel");
+        foreach (var (x, c) in new[] { (-0.2, Cyan), (0.0, Cyan), (0.2, Green) })
+            Lamp(k, x, 0.3, c);
         const double py = 0.98, pz = 0.0, tilt = 0.5;
         IEnumerable<double[]> Slab(double x0, double x1, double y0, double y1, double z0, double z1) =>
             TipX(new[] { x0, x1 }.SelectMany(x => new[] { y0, y1 }.SelectMany(y => new[] { z0, z1 }.Select(z => new[] { x, y, z }))), py, pz, tilt);
@@ -453,27 +428,27 @@ public sealed partial class StyleSheetParts
         for (var i = 0; i < 3; i++)
             for (var j = 0; j < 3; j++)
                 k.Hull(Slab(-0.3 + i * 0.2 + 0.006, -0.3 + (i + 1) * 0.2 - 0.006, py - 0.26 + j * 0.173 + 0.006, py - 0.26 + (j + 1) * 0.173 - 0.006, 0.03, 0.05), Dark, "plastic");
-        k.Box(-0.06, H - 0.006, -0.2, 0.06, 0.95, -0.08, Body, "painted steel"); // (its strut)
-        Foot(k);
+        k.Box(-0.06, 0.576, -0.24, 0.06, 0.95, -0.08, Body, "painted steel"); // (its strut)
         return k.P;
     }
 
     private static Part SensD()
     {
-        const double H = 0.5;
-        var k = Mod("Sensor", Sens, "D", "Mast", "D: a squat battery block under a lattice mast, a crossarm with cyan lamps at its ends and a red beacon on top.", 2.0);
-        Block(k, 0.078, H, ch: 0.06);
-        Louvres(k, 0.18, 0.42, 3);
-        Hatch(k, -0.15, 0.17, 0.26, 0.44, Cyan, bar: false);
-        Strip(k, 0.06, 0.32, 0.32, 3, Cyan);
+        var k = Mod("Sensor", Sens, "D", "Braced mast", "D: a lattice mast on a low octagonal base, braced by four struts, a crossarm with cyan lamps and whips, a red beacon on top.", 2.0);
+        k.Hull(Oct(0.34, 0.34, 0.12, 0.078, 0.26), Body, "painted steel");
         foreach (var sx in new[] { -1.0, 1.0 })
             foreach (var sz in new[] { -1.0, 1.0 })
-                k.Box(sx * 0.06 - 0.014, H - 0.006, sz * 0.06 - 0.014, sx * 0.06 + 0.014, 1.86, sz * 0.06 + 0.014, Bare, "steel");
+            {
+                k.Box(sx * 0.06 - 0.014, 0.256, sz * 0.06 - 0.014, sx * 0.06 + 0.014, 1.86, sz * 0.06 + 0.014, Bare, "steel");
+                k.Hull(Brace([sx * 0.26, 0.256, sz * 0.26], [sx * 0.08, 0.9, sz * 0.08], 0.012), Mid, "painted steel");
+            }
         for (var i = 0; i < 5; i++)
         {
-            var y = H + 0.18 + i * 0.27;
+            var y = 0.42 + i * 0.29;
             k.Box(-0.08, y, -0.08, 0.08, y + 0.03, 0.08, Body, "painted steel");
         }
+        k.Box(-0.1, 0.256, 0.1, 0.1, 0.46, 0.24, Mid, "painted steel");
+        Lamp(k, 0, 0.36, Cyan, 0.24, 0.022);
         k.Box(-0.36, 1.56, -0.02, 0.36, 1.6, 0.02, Body, "painted steel");
         foreach (var sx in new[] { -1.0, 1.0 })
         {
@@ -483,30 +458,26 @@ public sealed partial class StyleSheetParts
         }
         k.Box(-0.09, 1.856, -0.09, 0.09, 1.88, 0.09, Body, "painted steel");
         k.Hull(Cyl(0, 0, 0.035, 1.876, 1.93, 8), Red, "", glow: true);
-        Foot(k);
         return k.P;
     }
 
     private static Part SensE()
     {
-        const double H = 0.6;
-        var k = Mod("Sensor", Sens, "E", "Dish", "E: a battery block with a turntable and yoke carrying a tracking dish, an elevation ram at its back, a cyan feed horn.", 1.5);
-        Block(k, 0.078, H, ch: 0.06);
-        Louvres(k, 0.18, 0.52, 3);
-        Hatch(k, -0.13, 0.2, 0.26, 0.5, Cyan, bar: false);
-        Strip(k, 0.12, 0.33, 0.4, 3, Cyan);
-        k.Hull(Cyl(0, 0, 0.26, H - 0.006, H + 0.06, 8), Body, "painted steel");
-        k.Hull(Cyl(0, 0, 0.262, H + 0.012, H + 0.03, 8), Cyan, "", glow: true);
+        var k = Mod("Sensor", Sens, "E", "Tracker", "E: a squat turret drum with a lit turntable, a yoke carrying a big tracking dish, an elevation ram behind, a cyan feed horn.", 1.42);
+        const double H = 0.4;
+        k.Hull(Cyl(0, 0, 0.34, 0.078, H, 8), Mid, "painted steel");
+        Lamp(k, 0.0, 0.32, Cyan, 0.314, 0.024);
+        k.Hull(Cyl(0, 0, 0.3, H - 0.004, H + 0.07, 8), Body, "painted steel");
+        k.Hull(Cyl(0, 0, 0.305, H + 0.02, H + 0.04, 8), Cyan, "", glow: true);
         foreach (var sx in new[] { -1.0, 1.0 })
-            k.Box(sx * 0.19, H + 0.056, -0.05, sx * 0.23, 1.06, 0.05, Mid, "painted steel");
-        const double cy = 1.02, tilt = 0.5;
-        k.Hull(TipX(RingZ(0, cy, 0.33, 0.07).Concat(RingZ(0, cy, 0.13, -0.07)), cy, 0, tilt), Trim, "painted steel");
-        k.Hull(TipX(RingZ(0, cy, 0.29, 0.066).Concat(RingZ(0, cy, 0.29, 0.08)), cy, 0, tilt), Dark, "plastic");
+            k.Box(sx * 0.19, H + 0.066, -0.05, sx * 0.23, 0.98, 0.05, Mid, "painted steel");
+        const double cy = 0.94, tilt = 0.5;
+        k.Hull(TipX(RingZ(0, cy, 0.34, 0.07).Concat(RingZ(0, cy, 0.13, -0.07)), cy, 0, tilt), Trim, "painted steel");
+        k.Hull(TipX(RingZ(0, cy, 0.3, 0.066).Concat(RingZ(0, cy, 0.3, 0.08)), cy, 0, tilt), Dark, "plastic");
         k.Hull(TipX(CylZ(0, cy, 0.02, 0.076, 0.3), cy, 0, tilt), Bare, "steel");
         k.Hull(TipX(CylZ(0, cy, 0.04, 0.296, 0.35), cy, 0, tilt), Cyan, "", glow: true);
         k.Hull(TipX(CylZ(0, cy, 0.06, -0.2, -0.066), cy, 0, tilt), Body, "painted steel");
-        Ram(k, 0, -0.26, H + 0.08, 0.86, 0);
-        Foot(k);
+        Ram(k, 0, -0.24, H + 0.1, 0.8, 0);
         return k.P;
     }
 
@@ -515,93 +486,95 @@ public sealed partial class StyleSheetParts
 
     private static Part FuelA()
     {
-        const double H = 1.3;
-        var k = Mod("Fuel", Fuel, "A", "Block", "A: the battery block as a tank: an amber sight gauge under a lit hood, a sealed hatch over the pump, a red filler cap on top.", H);
-        Block(k, 0.078, H);
-        Louvres(k, 0.2, H - 0.2, 6);
-        Hatch(k, -0.16, 0.15, 0.27, 0.82, Amber);
-        Gauge(k, 0.08, 0.26, 0.27, 0.82, 9, 6, Amber);
-        Hood(k, -0.34, 0.34, 0.88, Amber);
-        Strip(k, -0.27, 0.27, 0.95, 6, Amber);
-        k.Hull(Cyl(0.18, -0.16, 0.07, H - 0.01, H + 0.05, 8), Body, "painted steel");
-        k.Hull(Cyl(0.18, -0.16, 0.055, H + 0.046, H + 0.09, 8), RedPaint, "painted steel");
-        Foot(k);
+        var k = Mod("Fuel", Fuel, "A", "Can", "A: a tall cut-corner fuel can with X ribs pressed in its sides, carry handles and a red filler on top, an amber sight tube down its front.", 1.3);
+        k.Hull(Oct(0.3, 0.36, 0.08, 0.078, 1.2), Mid, "painted steel");
+        foreach (var sx in new[] { -1.0, 1.0 })
+        {
+            k.Hull(Brace([sx * 0.31, 0.2, -0.26], [sx * 0.31, 1.08, 0.26], 0.016), Body, "painted steel");
+            k.Hull(Brace([sx * 0.314, 0.2, 0.26], [sx * 0.314, 1.08, -0.26], 0.016), Body, "painted steel");
+        }
+        foreach (var z in new[] { -0.16, 0.0, 0.16 })
+            k.Box(-0.16, 1.196, z - 0.015, 0.16, 1.25, z + 0.015, Body, "painted steel");
+        k.Hull(Cyl(0.0, -0.28, 0.06, 1.196, 1.27, 8), Bare, "steel");
+        k.Hull(Cyl(0.0, -0.28, 0.07, 1.266, 1.3, 8), RedPaint, "painted steel");
+        k.Box(0.12, 0.22, 0.356, 0.22, 1.08, 0.372, Dark, "plastic");
+        k.Glow(0.145, 0.25, 0.366, 0.195, 0.78, 0.38, Amber);
+        Hatch(k, -0.1, 0.13, 0.27, 0.6, Amber, 0.36, bar: false);
         return k.P;
     }
 
     private static Part FuelB()
     {
-        var k = Mod("Fuel", Fuel, "B", "Lying tank", "B: a tank lying across two battery-block saddles, amber band at its middle, a valve box with a lit window and red wheel on the front.", 0.84);
+        var k = Mod("Fuel", Fuel, "B", "Lying tank", "B: a tank lying across two saddles on skids, an amber band at its middle, a valve box with a lit window and red wheel on the front.", 0.84);
         k.Hull(CylX(0.5, 0, 0.3, -0.34, 0.34), Mid, "painted steel");
         foreach (var sx in new[] { -1.0, 1.0 })
         {
             k.Hull(CylX(0.5, 0, 0.22, sx * 0.336, sx * 0.372), Body, "painted steel");
-            k.Profile(sx * 0.19, sx * 0.26, [(0.078, -0.32), (0.078, 0.32), (0.3, 0.32), (0.36, 0.26), (0.36, -0.26), (0.3, -0.32)], Body, "painted steel");
+            k.Profile(sx * 0.19, sx * 0.26, [(0.126, -0.32), (0.126, 0.32), (0.3, 0.32), (0.36, 0.26), (0.36, -0.26), (0.3, -0.32)], Body, "painted steel");
             k.Hull(CylX(0.5, 0, 0.31, sx * 0.196, sx * 0.24), Dark, "dirty steel");
         }
+        Skids(k, 0.225);
         k.Hull(CylX(0.5, 0, 0.306, -0.04, 0.04), Amber, "", glow: true);
         k.Box(-0.11, 0.26, 0.22, 0.11, 0.44, 0.33, Body, "painted steel");
         k.Box(-0.08, 0.3, 0.326, 0.0, 0.4, 0.34, Dark, "plastic");
         k.Glow(-0.07, 0.31, 0.334, -0.01, 0.39, 0.344, Amber);
         k.Hull(CylZ(0.055, 0.35, 0.04, 0.326, 0.37), RedPaint, "painted steel");
-        Deck(k);
-        Foot(k);
         return k.P;
     }
 
     private static Part FuelC()
     {
-        var k = Mod("Fuel", Fuel, "C", "Caged tank", "C: an upright tank in a square cage of corner posts, an amber level gauge down its front, a hood at the cage's head.", 1.52);
+        var k = Mod("Fuel", Fuel, "C", "Caged tank", "C: an upright tank in a square cage of corner posts, an amber sight tube on the front post, a hood at the cage's head.", 1.52);
         k.Box(-W, 0.078, -W, W, 0.12, W, Body, "painted steel");
         k.Hull(Cyl(0, 0, 0.3, 0.116, 1.38, 8), Mid, "painted steel");
         k.Hull(Cyl(0, 0, 0.21, 1.376, 1.44, 8), Body, "painted steel");
         k.Hull(Cyl(0, 0, 0.306, 0.3, 0.34, 8), Dark, "dirty steel");
         k.Hull(Cyl(0, 0, 0.306, 1.2, 1.24, 8), Dark, "dirty steel");
-        Gauge(k, -0.06, 0.06, 0.4, 1.16, 8, 5, Amber, 0.277);
         foreach (var sx in new[] { -1.0, 1.0 })
             foreach (var sz in new[] { -1.0, 1.0 })
                 k.Box(sx * 0.32, 0.116, sz * 0.32, sx * (W + 0.004), 1.5, sz * (W + 0.004), Body, "painted steel");
         k.Box(-W, 1.46, -W, W, 1.5, -0.32, Body, "painted steel");
         k.Box(-W, 1.462, -0.32, -0.32, 1.498, 0.32, Body, "painted steel");
         k.Box(0.32, 1.462, -0.32, W, 1.498, 0.32, Body, "painted steel");
+        k.Box(0.326, 0.26, W + 0.002, 0.372, 1.3, W + 0.024, Dark, "plastic");
+        k.Glow(0.338, 0.29, W + 0.012, 0.36, 0.9, W + 0.03, Amber);
         Hood(k, -0.32, 0.32, 1.46, Amber, 0.34);
         k.Hull(Cyl(0.1, -0.1, 0.05, 1.436, 1.5, 8), RedPaint, "painted steel");
-        Deck(k);
-        Foot(k);
         return k.P;
     }
 
     private static Part FuelD()
     {
-        var k = Mod("Fuel", Fuel, "D", "Bottles", "D: two tall fuel bottles at the back piped into a battery-block pump housing at the front, with a sealed hatch and amber flow gauge.", 1.4);
-        k.Profile(-0.34, 0.34, [(0.078, 0.0), (0.078, W), (0.62, W), (0.7, W - 0.08), (0.7, 0.0)], Mid, "painted steel");
-        Hatch(k, -0.14, 0.17, 0.27, 0.58, Amber);
-        Gauge(k, 0.12, 0.28, 0.27, 0.58, 5, 3, Amber);
+        var k = Mod("Fuel", Fuel, "D", "Bottles", "D: two tall fuel bottles at the back piped into a round pump with a finned motor on top, an amber dial and sealed hatch on the pump.", 1.36);
         foreach (var sx in new[] { -1.0, 1.0 })
         {
             var x = sx * 0.17;
             k.Hull(Cyl(x, -0.18, 0.15, 0.078, 1.24, 8), Trim, "painted steel");
             k.Hull(Cyl(x, -0.18, 0.155, 0.9, 0.96, 8), Amber, "", glow: true);
             k.Hull(Cyl(x, -0.18, 0.1, 1.236, 1.3, 8), Body, "painted steel");
-            k.Box(x - 0.025, 1.296, -0.2, x + 0.025, 1.34, 0.1, Bare, "steel");
-            k.Box(x - 0.025, 0.696, 0.05, x + 0.025, 1.344, 0.1, Bare, "steel");
+            k.Box(x - 0.025, 1.296, -0.2, x + 0.025, 1.34, 0.08, Bare, "steel");
+            k.Box(x - 0.025, 0.62, 0.03, x + 0.025, 1.344, 0.08, Bare, "steel");
         }
-        Foot(k);
+        k.Hull(Cyl(0, 0.1, 0.2, 0.078, 0.5, 8), Mid, "painted steel");
+        k.Box(-0.15, 0.496, 0.0, 0.15, 0.66, 0.2, Body, "painted steel");
+        for (var i = 0; i < 4; i++)
+            k.Box(-0.17, 0.52 + i * 0.035, -0.01, 0.17, 0.536 + i * 0.035, 0.21, Bare, "steel");
+        Hatch(k, 0.0, 0.07, 0.14, 0.33, Amber, 0.285, bar: false);
+        Dial(k, 0.0, 0.42, 0.04, Amber, 0.285);
         return k.P;
     }
 
     private static Part FuelE()
     {
-        var k = Mod("Fuel", Fuel, "E", "Sphere", "E: a pressure sphere in a collar on a battery-block plinth, amber band round it, the plinth's hatch and strip below.", 1.24);
-        Block(k, 0.078, 0.42, ch: 0.05);
-        Louvres(k, 0.17, 0.38, 2);
-        Hatch(k, -0.17, 0.15, 0.25, 0.38, Amber, bar: false);
-        Strip(k, 0.03, 0.31, 0.28, 3, Amber);
-        k.Hull(Cyl(0, 0, 0.24, 0.416, 0.56, 8), Body, "painted steel");
-        Sphere(k, 0.33, 0.84, Amber);
-        k.Hull(Cyl(0, 0, 0.05, 1.15, 1.22, 8), Trim, "painted steel");
-        k.Hull(Cyl(0, 0, 0.04, 1.216, 1.25, 8), RedPaint, "painted steel");
-        Foot(k);
+        var k = Mod("Fuel", Fuel, "E", "Sphere", "E: a pressure sphere held in a collar on four struts over an octagonal pedestal, an amber band round it, a valve crown.", 1.2);
+        k.Hull(Oct(0.34, 0.34, 0.12, 0.078, 0.28), Body, "painted steel");
+        Lamp(k, 0.22, 0.2, Amber, 0.34, 0.022);
+        foreach (var (x, z) in new[] { (0.0, 0.26), (0.0, -0.26), (0.26, 0.0), (-0.26, 0.0) })
+            k.Box(x - 0.025, 0.276, z - 0.025, x + 0.025, 0.47, z + 0.025, Mid, "painted steel");
+        k.Hull(Cyl(0, 0, 0.3, 0.44, 0.5, 8), Body, "painted steel");
+        Sphere(k, 0.33, 0.8, Amber);
+        k.Hull(Cyl(0, 0, 0.05, 1.11, 1.18, 8), Trim, "painted steel");
+        k.Hull(Cyl(0, 0, 0.04, 1.176, 1.21, 8), RedPaint, "painted steel");
         return k.P;
     }
 
@@ -610,95 +583,87 @@ public sealed partial class StyleSheetParts
 
     private static Part MagA()
     {
-        const double H = 1.1;
-        var k = Mod("Magazine", Mags, "A", "Block", "A: the battery block as a magazine: a big sealed loading hatch with a red seal, a round-count gauge, a hood, a top hatch rimmed in hazard paint.", H);
-        Block(k, 0.078, H);
-        Louvres(k, 0.2, H - 0.2, 5);
-        Hatch(k, -0.09, 0.22, 0.27, 0.78, Red);
-        Gauge(k, 0.18, 0.3, 0.27, 0.78, 8, 5, Amber);
-        Hood(k, -0.34, 0.34, 0.84, Red);
-        Strip(k, -0.27, 0.27, 0.9, 4, Green);
-        k.Box(-0.18, H - 0.006, -0.18, 0.18, H + 0.03, 0.08, HazardY, "hazard paint");
-        k.Box(-0.15, H + 0.026, -0.15, 0.15, H + 0.05, 0.05, Body, "painted steel");
-        Foot(k);
+        var k = Mod("Magazine", Mags, "A", "Stepped crate", "A: a two-step ammo crate: a heavy lower box with a red-sealed loading hatch, a stepped-back top with a round counter, a hazard-rimmed lid on rams.", 1.08);
+        k.Box(-W, 0.078, -W, W, 0.52, W, Mid, "painted steel");
+        k.Box(-0.3, 0.516, -0.33, 0.3, 0.96, 0.24, Body, "painted steel");
+        Hatch(k, -0.06, 0.24, 0.27, 0.46, Red);
+        Lamp(k, 0.3, 0.36, Red);
+        Dial(k, -0.12, 0.74, 0.07, Amber, 0.24);
+        Lamp(k, 0.12, 0.74, Green, 0.24);
+        k.Box(-0.24, 0.956, -0.27, 0.24, 0.986, 0.18, HazardY, "hazard paint");
+        k.Box(-0.21, 0.982, -0.24, 0.21, 1.01, 0.15, Dark, "dirty steel");
+        foreach (var sx in new[] { -1.0, 1.0 })
+            k.Box(sx * (W - 0.004), 0.28, -0.1, sx * (W + 0.03), 0.32, 0.1, Bare, "steel"); // (a carry handle)
         return k.P;
     }
 
     private static Part MagB()
     {
-        var k = Mod("Magazine", Mags, "B", "Drum", "B: a rotary drum magazine between two chamfered end plates, a red-lit hub on the front, the battery's strip and louvres on the plates.", 0.94);
+        var k = Mod("Magazine", Mags, "B", "Drum", "B: a rotary drum magazine between two end plates on skids, a red-lit hub on the front, lit pulls either side of it.", 0.94);
+        Skids(k, 0.3);
         foreach (var sz in new[] { -1.0, 1.0 })
-            k.Profile(-0.34, 0.34, [(0.078, sz * 0.296), (0.078, sz * 0.336), (0.92, sz * 0.336), (0.92, sz * 0.296)], Mid, "painted steel");
+            k.Profile(-0.34, 0.34, [(0.126, sz * 0.296), (0.126, sz * 0.336), (0.92, sz * 0.336), (0.92, sz * 0.296)], Mid, "painted steel");
         k.Hull(CylZ(0, 0.52, 0.3, -0.3, 0.3), Body, "painted steel");
         foreach (var z in new[] { -0.2, -0.07, 0.06, 0.19 })
             k.Hull(CylZ(0, 0.52, 0.306, z, z + 0.03), Dark, "dirty steel");
         k.Hull(CylZ(0, 0.52, 0.12, 0.332, 0.346), Red, "", glow: true);
         k.Hull(CylZ(0, 0.52, 0.08, 0.334, 0.37), Bare, "steel");
-        Strip(k, -0.3, 0.3, 0.8, 4, Green, 0.336);
         k.Box(-0.33, 0.86, -0.3, 0.33, 0.914, 0.3, Body, "painted steel"); // (the feed housing over the drum)
         Pull(k, -0.27, 0.26, 0.7, Red, 0.336);
         Pull(k, 0.27, 0.26, 0.7, Red, 0.336);
-        Deck(k);
-        Foot(k);
         return k.P;
     }
 
     private static Part MagC()
     {
-        const double H = 1.2;
-        var k = Mod("Magazine", Mags, "C", "Drawers", "C: the battery block with three ammo drawers, each with a lit pull channel across it and a state lamp (one red: empty), under a hood.", H);
-        Block(k, 0.078, H);
-        Louvres(k, 0.2, H - 0.2, 6);
+        var k = Mod("Magazine", Mags, "C", "Tiered", "C: three tiers stepping back like stairs, an ammo drawer in each riser with a red lit pull and a state lamp (one red: empty).", 1.04);
         for (var i = 0; i < 3; i++)
         {
-            var y = 0.27 + i * 0.24;
-            k.Face(W - 0.004, W + 0.018, Cut(0, 0.31, y, y + 0.2, 0.04), Mid, "painted steel");
-            k.Box(-0.18, y + 0.07, W + 0.014, 0.18, y + 0.13, W + 0.032, Dark, "plastic");
-            k.Glow(-0.15, y + 0.09, W + 0.024, 0.15, y + 0.11, W + 0.04, Red);
-            k.Glow(0.23, y + 0.08, W + 0.014, 0.27, y + 0.12, W + 0.03, i == 2 ? Red : Green);
-            k.Box(-0.29, y + 0.07, W + 0.014, -0.22, y + 0.13, W + 0.026, HazardY, "hazard paint");
+            var (y, zf) = (0.078 + i * 0.32, W - i * 0.15);
+            k.Paint(-W + i * 0.02, y, -W, W - i * 0.02, y + 0.324, zf, Mid);
+            k.Face(zf - 0.004, zf + 0.018, Cut(-0.04, 0.28, y + 0.09, y + 0.28, 0.04), Body, "painted steel");
+            k.Box(-0.2, y + 0.16, zf + 0.014, 0.12, y + 0.21, zf + 0.03, Dark, "plastic");
+            k.Glow(-0.18, y + 0.175, zf + 0.022, 0.1, y + 0.195, zf + 0.036, Red);
+            Lamp(k, 0.3, y + 0.19, i == 0 ? Red : Green, zf, 0.022);
         }
-        Hood(k, -0.34, 0.34, 1.0, Red);
-        Foot(k);
         return k.P;
     }
 
     private static Part MagD()
     {
-        const double H = 0.72;
-        var k = Mod("Magazine", Mags, "D", "Belt box", "D: a low battery block with a belt feed chute rising from its back to the gun above, links showing, a sealed hatch and red ready lamp.", 1.4);
-        Block(k, 0.078, H, ch: 0.06);
-        Louvres(k, 0.18, 0.6, 3);
-        Hatch(k, -0.1, 0.22, 0.27, 0.56, Red);
-        Gauge(k, 0.2, 0.31, 0.27, 0.56, 4, 3, Amber);
-        Strip(k, -0.27, 0.27, 0.6, 3, Green);
-        k.Box(-0.09, H - 0.006, -0.22, 0.09, 1.3, -0.08, Mid, "painted steel");
-        k.Box(-0.09, 1.22, -0.08, 0.09, 1.3, 0.16, Mid, "painted steel");
-        for (var i = 0; i < 6; i++)
-            k.Box(-0.065, H + 0.04 + i * 0.08, -0.084, 0.065, H + 0.08 + i * 0.08, -0.068, Amber, "brass");
-        k.Glow(-0.03, 1.3 - 0.004, 0.08, 0.03, 1.32, 0.14, Red);
-        Foot(k);
+        var k = Mod("Magazine", Mags, "D", "Belt box", "D: a raked belt box with a feed chute rising from its back to the gun above, brass links showing, a sealed hatch and red ready lamp.", 1.4);
+        k.Profile(-W, W, [(0.078, -W), (0.078, W), (0.45, W), (0.68, 0.0), (0.68, -W)], Mid, "painted steel");
+        Hatch(k, -0.1, 0.2, 0.26, 0.42, Red);
+        Lamp(k, 0.27, 0.36, Red);
+        k.Box(-0.09, 0.676, -0.22, 0.09, 1.3, -0.08, Body, "painted steel");
+        k.Box(-0.09, 1.22, -0.08, 0.09, 1.3, 0.16, Body, "painted steel");
+        for (var i = 0; i < 7; i++)
+            k.Box(-0.065, 0.72 + i * 0.07, -0.084, 0.065, 0.756 + i * 0.07, -0.068, Amber, "brass");
+        k.Glow(-0.03, 1.296, 0.08, 0.03, 1.32, 0.14, Red);
         return k.P;
     }
 
     private static Part MagE()
     {
-        const double H = 1.0;
-        var k = Mod("Magazine", Mags, "E", "Armoured", "E: a battery block in add-on armour: a heavy hatch on two hinge rams, red warning slit, blow-out panels on top edged in hazard paint.", H + 0.06);
-        Block(k, 0.078, H, W - 0.02, W - 0.02, Body);
+        var k = Mod("Magazine", Mags, "E", "Armoured", "E: a faceted armoured magazine like a turret's hull: a heavy hatch between two hinge rams, blow-out panels on top edged in hazard paint.", 1.0);
+        var pts = new List<double[]>();
         foreach (var sx in new[] { -1.0, 1.0 })
-            k.Box(sx * (W - 0.024), 0.18, -0.3, sx * (W + 0.012), 0.86, 0.3, Mid, "painted steel");
-        Hatch(k, 0, 0.27, 0.22, 0.76, Red, W - 0.02);
+            foreach (var sz in new[] { -1.0, 1.0 })
+            {
+                pts.Add([sx * W, 0.078, sz * W]);
+                pts.Add([sx * W, 0.46, sz * W]);
+                pts.Add([sx * 0.27, 0.92, sz > 0 ? 0.14 : -0.3]);
+            }
+        k.Hull(pts, Mid, "painted steel");
+        Hatch(k, 0, 0.2, 0.26, 0.44, Red);
         foreach (var sx in new[] { -1.0, 1.0 })
-            Ram(k, sx * 0.33, W + 0.03, 0.28, 0.7, sx * 0.33);
-        k.Box(-0.26, 0.82, W - 0.026, 0.26, 0.86, W - 0.008, Dark, "plastic");
-        k.Glow(-0.24, 0.83, W - 0.016, 0.24, 0.85, W - 0.004, Red);
+            Ram(k, sx * 0.29, W + 0.03, 0.27, 0.43, sx * 0.29);
         foreach (var sx in new[] { -1.0, 1.0 })
         {
-            k.Box(sx * 0.02, H - 0.006, -0.22, sx * 0.24, H + 0.03, 0.2, HazardY, "hazard paint");
-            k.Box(sx * 0.04, H + 0.026, -0.2, sx * 0.22, H + 0.05, 0.18, Dark, "dirty steel");
+            k.Box(sx * 0.02, 0.916, -0.26, sx * 0.23, 0.946, 0.1, HazardY, "hazard paint");
+            k.Box(sx * 0.04, 0.942, -0.24, sx * 0.21, 0.966, 0.08, Dark, "dirty steel");
         }
-        Foot(k, W - 0.02, W - 0.02);
+        k.Glow(-0.2, 0.89, 0.13, 0.2, 0.912, 0.16, Red);
         return k.P;
     }
 
