@@ -69,15 +69,15 @@ public sealed partial class Game
             Log($"[gantry] REFUSED: module {m.Name}'s part \"{m.Part}\" isn't loaded");
             return $"no part named {m.Part}";
         }
-        var table = ConstructGantry.TableOf(c, part);
+        var table = ConstructGantry.TableOf(world, c, part, out var tb);
         var creative = world.Creative;
         if (table < 0 && !creative)
-            return "no Shell Parts Table behind the bay in its arms' reach: place one there, on the same base";
+            return "no Shell Parts Table behind the rear frame in its arms' reach: place one there";
         var taken = false;
-        if (table >= 0 && world.StoreOf(c, table) is { } st)
+        if (tb != null && table >= 0 && world.StoreOf(tb, table) is { } st)
         {
-            ConstructRackPack.Ensure(c.DefOf(table), st);
-            if (ConstructRackPack.LastOf(st, (ushort)nd.Id, out var slab, out var lane) && world.RackTakeAt(c, table, slab, lane) != null)
+            ConstructRackPack.Ensure(tb.DefOf(table), st);
+            if (ConstructRackPack.LastOf(st, (ushort)nd.Id, out var slab, out var lane) && world.RackTakeAt(tb, table, slab, lane) != null)
                 taken = true;
         }
         if (!taken && !creative)
@@ -85,7 +85,7 @@ public sealed partial class Game
         ref var j = ref world.GantryJobs[world.GantryJobCount++];
         j = new GantryJob
         {
-            Body = c.Id, Part = (ushort)part, Shell = shell.Id, Table = table >= 0 ? (ushort)table : ushort.MaxValue,
+            Body = c.Id, Part = (ushort)part, Shell = shell.Id, TableBody = tb?.Id ?? 0, Table = table >= 0 ? (ushort)table : ushort.MaxValue,
             Slot = (byte)slot, Old = (byte)(old != null ? old.Index + 1 : 0), New = (byte)(m.Index + 1), Arm = ConstructGantry.ArmOf(slot),
             Start = ConstructConveyor.Clock,
         };
@@ -140,16 +140,16 @@ public sealed partial class Game
         world.StructureDirty.Add(shell.Id); // (peers hear its settings: CBody)
         var all = ShellFrames.Modules;
         if (j.Old > 0 && j.Old - 1 < all.Length && ConstructParts.Find(all[j.Old - 1].Part) is { } od)
-            GantryPutBack(c, j.Part, j.Table, od, "the old module");
+            GantryPutBack(c, j.Part, j.TableBody, j.Table, od, "the old module");
         _gantryTaken[k] = false;
         Log($"[gantry] body {c.Id}: the {sp.D.Name}'s {ShellFrames.SlotLabel(j.Slot)} is a {(j.New > 0 && j.New - 1 < all.Length ? all[j.New - 1].Name : "?")} now");
     }
 
     /// <summary>Server: a module's part onto the table, else loose beside the gantry's rear frame (said in the log, never lost silently).</summary>
-    private void GantryPutBack(Construct? c, int part, ushort table, ConstructPartDef d, string what)
+    private void GantryPutBack(Construct? c, int part, ushort tableBody, ushort table, ConstructPartDef d, string what)
     {
         var world = Constructs;
-        if (c != null && table < c.PartCount && c.Parts[table].D.GantryTable && world.RackPut(c, table, d))
+        if (world.Get(tableBody) is { } tb && table < tb.PartCount && tb.Parts[table].D.GantryTable && world.RackPut(tb, table, d))
             return;
         if (c == null || part >= c.PartCount)
         {
@@ -177,7 +177,7 @@ public sealed partial class Game
         ref var j = ref Constructs.GantryJobs[k];
         var all = ShellFrames.Modules;
         if (_gantryTaken[k] && j.New > 0 && j.New - 1 < all.Length && ConstructParts.Find(all[j.New - 1].Part) is { } nd)
-            GantryPutBack(c, j.Part, j.Table, nd, "the module it carried");
+            GantryPutBack(c, j.Part, j.TableBody, j.Table, nd, "the module it carried");
         Log($"[gantry] body {j.Body}: stopped ({why})");
         GantryEnd(k);
     }
@@ -204,7 +204,7 @@ public sealed partial class Game
         var w = SbW;
         w.Begin(Msg.Gantry).U16(j.Body).U16(j.Part).U8(on ? (byte)1 : (byte)0);
         if (on)
-            w.U16(j.Shell).U16(j.Table).U8(j.Slot).U8(j.Old == 255 ? (byte)0 : j.Old).U8(j.New).U8(j.Arm).F32((float)run);
+            w.U16(j.Shell).U16(j.TableBody).U16(j.Table).U8(j.Slot).U8(j.Old == 255 ? (byte)0 : j.Old).U8(j.New).U8(j.Arm).F32((float)run);
         if (to is { } g)
             Net.SendTo(g, w.Span, PacketReliability.ReliableOrdered);
         else
@@ -236,7 +236,7 @@ public sealed partial class Game
             }
             return;
         }
-        var j = new GantryJob { Body = body, Part = part, Shell = r.U16(), Table = r.U16(), Slot = r.U8(), Old = r.U8(), New = r.U8(), Arm = r.U8() };
+        var j = new GantryJob { Body = body, Part = part, Shell = r.U16(), TableBody = r.U16(), Table = r.U16(), Slot = r.U8(), Old = r.U8(), New = r.U8(), Arm = r.U8() };
         j.Start = ConstructConveyor.Clock - Math.Clamp(r.F32(), 0, ConstructGantry.Duration);
         if (j.Arm >= ConstructGantry.ArmCount || j.Slot >= ShellFrames.SlotCount)
             return;

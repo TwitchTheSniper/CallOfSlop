@@ -16,7 +16,7 @@ public struct GantryJob
 {
     public ushort Body, Part; // the gantry
     public ushort Shell; // the standing shell's construct
-    public ushort Table; // the parts table's part on the gantry's construct (ushort.MaxValue: none, in creative)
+    public ushort TableBody, Table; // the parts table: its body and part (0 and ushort.MaxValue: none, in creative)
     public byte Slot; // ShellFrames.Slots
     public byte Old, New; // 1 + the module's index going off and going on
     public byte Arm; // which arm (ConstructGantry.ArmOf)
@@ -27,8 +27,8 @@ public struct GantryJob
 /// The Shell Gantry (docs/sandbox/design/mining-shell.md "Shell Gantry layout"; the user, 2026-11-18): a square bay, 5 m each way, open at
 /// the front, where a Robot Shell stands facing out; five arms on its rear frame (left upper and lower, right upper and lower, one over the
 /// head) take a module off the shell, set it on the Shell Parts Table behind the bay and fit the one chosen in its place. The table is a
-/// part of its own (a Piece Rack by its <c>storage.pieces</c>), on the gantry's construct and within the arms' reach behind the rear frame:
-/// that is its link to the gantry, as a lifter serves what is in its reach. A swap is the server's, timed (<see cref="Duration"/>), and
+/// part of its own (a Piece Rack by its <c>storage.pieces</c>), on the gantry's construct or standing on its own, within the arms' reach
+/// behind the rear frame: that is its link to the gantry, as a lifter serves what is in its reach. A swap is the server's, timed (<see cref="Duration"/>), and
 /// every peer hears it (<see cref="Msg.Gantry"/>) and draws the arm on its way (GantryRender.cs). The shell's choice is kept in its
 /// part's settings (<see cref="ShellFrames.WriteKit"/>), so it rides saves and the shell wakes with it.
 /// </summary>
@@ -119,34 +119,50 @@ public static class ConstructGantry
         return feet.X >= gd.BayMin.X && feet.X <= gd.BayMax.X && feet.Z >= gd.BayMin.Z && feet.Z <= gd.BayMax.Z && feet.Y >= gd.BayMin.Y - 0.3f && feet.Y <= gd.BayMax.Y - 1;
     }
 
-    /// <summary>The parts table the gantry's arms reach: a Shell Parts Table on its own construct, behind the rear frame, within every arm's reach. -1: none.</summary>
-    public static int TableOf(Construct c, int part)
+    /// <summary>
+    /// The parts table the gantry's arms reach: a Shell Parts Table behind the rear frame within every arm's reach, on the gantry's own
+    /// construct or on another body (a table set down on the ground beside it). -1: none. Walks nearby bodies: never per tick.
+    /// </summary>
+    public static int TableOf(ConstructWorld world, Construct c, int part, out Construct? table)
     {
+        table = null;
         if (c.DefOf(part).Gantry is not { } gd)
             return -1;
         var best = -1;
         var near = float.MaxValue;
-        foreach (var i in c.Specials)
-        {
-            if (i == part || !c.Parts[i].D.GantryTable || c.Parts[i].Broken)
-                continue;
-            var at = TablePoint(c, part, i);
-            if (at.Z < gd.BayMax.Z)
-                continue; // (behind the rear frame only)
-            var far = 0f;
-            for (var k = 0; k < ArmCount; k++)
-                far = MathF.Max(far, Vector3.Distance(at, gd.Arms[k]));
-            if (far <= gd.Reach && far < near)
-                (best, near) = (i, far);
-        }
+        Look(c, part, gd, c, ref best, ref near, ref table);
+        Freeform.PartWorld(c, part, out var pos, out var rot);
+        var back = pos + Vector3.Transform(new Vector3(0, 2, gd.BayMax.Z + 1), rot);
+        var r = gd.Reach + 4;
+        foreach (var b in world.Bodies)
+            if (b != c && b.PieceRackCount > 0 && Vector3.DistanceSquared(b.WorldCom, back) < (r + b.Radius) * (r + b.Radius))
+                Look(c, part, gd, b, ref best, ref near, ref table);
         return best;
     }
 
-    /// <summary>Where the arms set a module down on table part <paramref name="table"/>: the middle of its hold's floor, in the gantry part's frame.</summary>
-    public static Vector3 TablePoint(Construct c, int part, int table)
+    private static void Look(Construct c, int part, ShellGantryDef gd, Construct b, ref int best, ref float near, ref Construct? table)
     {
-        ConstructRackPack.Hold(c.DefOf(table), out var lo, out var hi);
-        Freeform.PartWorld(c, table, out var tp, out var tr);
+        for (var k = 0; k < b.PieceRackCount; k++)
+        {
+            int i = b.PieceRacks[k];
+            if (i >= b.PartCount || !b.Parts[i].D.GantryTable || b.Parts[i].Broken)
+                continue;
+            var at = TablePoint(c, part, b, i);
+            if (at.Z < gd.BayMax.Z)
+                continue; // (behind the rear frame only)
+            var far = 0f;
+            for (var a = 0; a < ArmCount; a++)
+                far = MathF.Max(far, Vector3.Distance(at, gd.Arms[a]));
+            if (far <= gd.Reach && far < near)
+                (best, near, table) = (i, far, b);
+        }
+    }
+
+    /// <summary>Where the arms set a module down on table part <paramref name="table"/> of <paramref name="tb"/>: the middle of its hold's floor, in the gantry part's frame.</summary>
+    public static Vector3 TablePoint(Construct c, int part, Construct tb, int table)
+    {
+        ConstructRackPack.Hold(tb.DefOf(table), out var lo, out var hi);
+        Freeform.PartWorld(tb, table, out var tp, out var tr);
         var w = tp + Vector3.Transform(new Vector3((lo.X + hi.X) * 0.5f, lo.Y + 0.15f, (lo.Z + hi.Z) * 0.5f), tr);
         return ToPart(c, part, w);
     }
@@ -238,9 +254,9 @@ public static class ConstructGantry
     }
 
     /// <summary>How many of a module's part lie on a table (0: no table, or none).</summary>
-    public static int OnTable(ConstructWorld world, Construct c, int table, ShellModule m)
+    public static int OnTable(ConstructWorld world, Construct? tb, int table, ShellModule m)
     {
-        if (table < 0 || m.Part.Length == 0 || ConstructParts.Find(m.Part) is not { } d || world.StoreOf(c, table) is not { } st)
+        if (tb == null || table < 0 || m.Part.Length == 0 || ConstructParts.Find(m.Part) is not { } d || world.StoreOf(tb, table) is not { } st)
             return 0;
         return ConstructCrafting.Holds(st, (ushort)d.Id);
     }
@@ -249,13 +265,13 @@ public static class ConstructGantry
     public static string Look(ConstructWorld world, Construct c, int part)
     {
         var shell = ShellIn(world, c, part);
-        var table = TableOf(c, part);
+        var table = TableOf(world, c, part, out var tb);
         var j = JobAt(world, c.Id, part);
         var what = j >= 0 && ShellFrames.Modules is { } all && world.GantryJobs[j].New - 1 is var n and >= 0 && n < all.Length
             ? $"fitting a {all[n].Name} to the {ShellFrames.SlotLabel(world.GantryJobs[j].Slot)}"
             : shell != null ? $"{shell.Parts[0].D.Name} in the bay" : "the bay is empty";
-        var tb = table >= 0 ? $"parts table: {world.StoreOf(c, table)?.ItemCount ?? 0} parts" : "no Shell Parts Table behind it in its arms' reach";
-        return $"Shell Gantry: {what}, {tb} - {SandboxKeys.Use}: its panel";
+        var tl = table >= 0 && tb != null ? $"parts table: {world.StoreOf(tb, table)?.ItemCount ?? 0} parts" : "no Shell Parts Table behind it in its arms' reach";
+        return $"Shell Gantry: {what}, {tl} - {SandboxKeys.Use}: its panel";
     }
 }
 

@@ -41,7 +41,7 @@ public sealed partial class Ui
         if (_gnOnTable.Length != all.Length)
             _gnOnTable = new int[all.Length];
         var shell = ConstructGantry.ShellIn(world, c, part);
-        var table = ConstructGantry.TableOf(c, part);
+        var table = ConstructGantry.TableOf(world, c, part, out var tb);
         _gnCreative = world.Creative;
         _gnHasShell = shell != null;
         Span<byte> kit = stackalloc byte[ShellFrames.SlotCount];
@@ -54,8 +54,8 @@ public sealed partial class Ui
         }
         else
             _gnShell = "No shell in the bay: walk a shell in and leave it (Esc menu > Leave the shell), or set one down there.";
-        _gnTable = table >= 0 ? $"Parts table: {world.StoreOf(c, table)?.ItemCount ?? 0} parts on it"
-            : _gnCreative ? "No Shell Parts Table in reach (creative: modules come free)" : "No Shell Parts Table behind the rear frame in the arms' reach: place one there, on the same base.";
+        _gnTable = table >= 0 && tb != null ? $"Parts table: {world.StoreOf(tb, table)?.ItemCount ?? 0} parts on it"
+            : _gnCreative ? "No Shell Parts Table in reach (creative: modules come free)" : "No Shell Parts Table behind the rear frame in the arms' reach: place one there.";
         for (var s = 0; s < ShellFrames.SlotCount; s++)
         {
             var m = shell != null ? ShellFrames.ModuleAt(frame, kit, s) : null;
@@ -64,7 +64,7 @@ public sealed partial class Ui
             _gnFixed[s] = shell != null && ShellFrames.Of(frame).Fixed[s];
         }
         for (var i = 0; i < all.Length; i++)
-            _gnOnTable[i] = ConstructGantry.OnTable(world, c, table, all[i]);
+            _gnOnTable[i] = ConstructGantry.OnTable(world, tb, table, all[i]);
         var k = ConstructGantry.JobAt(world, c.Id, part);
         _gnBusy = k >= 0 && world.GantryJobs[k].New - 1 is var n and >= 0 && n < all.Length
             ? $"Working: the {ConstructGantry.ArmNames[world.GantryJobs[k].Arm]} arm fits a {all[n].Name} to the {ShellFrames.SlotLabel(world.GantryJobs[k].Slot)}" : "";

@@ -285,7 +285,7 @@ public sealed class ShellParts : IPartGenerator
     /// <summary>The Shell Parts Table: a steel table that holds whole modules for a Shell Gantry (a Piece Rack by its storage.pieces), with a Piece in at its -z end.</summary>
     private static Part Table()
     {
-        var p = new Part("Shell Parts Table", Small, Section, "Holds robot shell modules for a Shell Gantry: place it behind the gantry's rear frame, on the same base, within its arms' reach. Put modules on it by hand or by conveyor; F takes one off.",
+        var p = new Part("Shell Parts Table", Small, Section, "Holds robot shell modules for a Shell Gantry: place it behind the gantry's rear frame, within its arms' reach. Put modules on it by hand or by conveyor; F takes one off.",
             role: "storage", tool: "welder", group: "Logic", color: MachineLook.Base);
         const double x = 0.6, z = 1.2, y = 0.86, t = 0.06;
         foreach (var sx in new[] { -1.0, 1.0 })

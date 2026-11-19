@@ -46,7 +46,7 @@ public static class GantryRender
     {
         var t = now - j.Start;
         var slot = world.Get(j.Shell) is { PartCount: 1 } shell ? ConstructGantry.ToPart(c, part, ConstructGantry.SlotPoint(shell, j.Slot)) : (gd.BayMin + gd.BayMax) * 0.5f;
-        var table = j.Table < c.PartCount && c.Parts[j.Table].D.GantryTable ? ConstructGantry.TablePoint(c, part, j.Table) : gd.Arms[j.Arm] + new Vector3(0, -1.2f, 1.4f);
+        var table = world.Get(j.TableBody) is { } tb && j.Table < tb.PartCount && tb.Parts[j.Table].D.GantryTable ? ConstructGantry.TablePoint(c, part, tb, j.Table) : gd.Arms[j.Arm] + new Vector3(0, -1.2f, 1.4f);
         var hand = ConstructGantry.Hand(gd, j.Arm, slot, table, t, out var carry);
         DrawArm(gfx, gd, frame, j.Arm, hand);
         var all = ShellFrames.Modules;

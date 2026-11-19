@@ -638,7 +638,7 @@ public static unsafe partial class Program
         // The Replacer: the click swaps the aimed part (Program.SandboxAids.cs).
         if (_buildMode == BuildMode.Replace && SandboxReplaceInput(g, in h, aimed, hit, held))
             return true;
-        // The gantry's build plane: a ray that meets nothing crosses it (Program.SandboxShellGantry.cs).
+        // The gantry's build plane: a ray that meets nothing crosses it (Program.SandboxGantry.cs).
         if (!aimed && held != null && GantryPlaneHit(g, eye, dir, out var planeHit))
         {
             aimed = true;
