@@ -1759,7 +1759,7 @@ public static partial class ConstructRender
             var up = Vector3.Transform(Vector3.UnitY, c.Rot);
             for (var k = 0; k < c.WheelCount; k++)
                 ConstructPhysics.FitWheel(c, query, k, up);
-            ConstructPhysics.FitGear(c, query, up); // (sprung landing feet: ConstructPhysicsGear.cs)
+            ConstructPhysics.FitGear(world, c, query, up); // (sprung landing feet: ConstructPhysicsGear.cs)
         }
     }
 

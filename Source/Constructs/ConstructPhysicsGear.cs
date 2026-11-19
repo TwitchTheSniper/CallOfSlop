@@ -42,7 +42,7 @@ public static partial class ConstructPhysics
             return;
         var up = Vector3.Transform(Vector3.UnitY, c.Rot);
         var com = c.WorldCom;
-        Span<float> shares = stackalloc float[Math.Min(c.DoorCount, 64)];
+        Span<float> shares = stackalloc float[c.DoorCount]; // (at most Construct.MaxDoors: 4 KB)
         FootShares(c, shares);
         for (var k = 0; k < c.DoorCount; k++)
         {
@@ -168,7 +168,7 @@ public static partial class ConstructPhysics
     /// Every peer, as it draws (with the wheels: ConstructRender.FitWheels): how far each lowered sprung foot is pressed in, from a
     /// ray to the ground under it, eased so a client's few poses a second don't make it jump. The host's drawing uses it too.
     /// </summary>
-    public static void FitGear(Construct c, IWorldQuery query, Vector3 up)
+    public static void FitGear(ConstructWorld world, Construct c, IWorldQuery query, Vector3 up)
     {
         if (c.GearFootCount == 0 || c.DoorCount == 0)
             return;
@@ -188,8 +188,8 @@ public static partial class ConstructPhysics
             var want = 0f;
             if (query.Raycast(origin, -up, travel + 0.02f, QueryFilter.All, out var hit))
                 want = Math.Clamp(travel + 0.02f - hit.Distance, 0, travel);
-            else if (c.Doors[k].Touch)
-                want = dr.Squash; // (on a deck the ray here doesn't see: the host's physics has it)
+            else if (DeckUnder(world, c, origin, -up, travel + 0.02f) is { } d)
+                want = Math.Clamp(travel + 0.02f - d, 0, travel); // (a station's or a carrier's deck: the map's ray doesn't see bodies)
             dr.Shown = float.Lerp(dr.Shown, want, 0.5f);
         }
     }
