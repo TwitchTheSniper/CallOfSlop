@@ -188,5 +188,5 @@ Drafted with the user over three pictures; build to this once the user approves 
   x0.90 (Runner Legs and the Plated Head); the Mining Shell's back and right arm refused as fixed, its leg swapped; a joined client
   sees the job, the kit and the table, and its own ask is made (and refused "too far away" when it was); a world save and load keep
   the kit and the table's contents; the panel opens on F and closes on Esc.
-- **Not yet**: the standing or worn shell drawn with its modules (a Plated Head looks like an Optics Head); a crew Miner using the
-  gantry; arm sounds.
+- **Not yet**: the standing shell drawn with its modules (the worn one is, 2026-11-19: "How a worn shell shows its modules" above);
+  a crew Miner using the gantry; arm sounds.
