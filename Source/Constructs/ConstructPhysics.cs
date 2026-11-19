@@ -1311,16 +1311,55 @@ public static partial class ConstructPhysics
                 if (a.CarriedBy == b.Id || b.CarriedBy == a.Id || a.CarriedBy != 0 && a.CarriedBy == b.CarriedBy || a.HeldBy == b.Id || b.HeldBy == a.Id)
                     continue; // (a carrier and what its frozen cargo volumes carry don't collide, nor a lifter's body and what its hook holds)
                 var reach = a.Radius + b.Radius + (a.Vel - b.Vel).Length() * dt;
-                if (Vector3.DistanceSquared(a.WorldCom - PosedBack(a, b, dt), b.WorldCom - PosedBack(b, a, dt)) > reach * reach) // (a ship out of the bubble met where it was at the step's start: PosedBack)
+                if (Vector3.DistanceSquared(a.WorldCom, b.WorldCom) > reach * reach)
                     continue;
                 if (_dyn[i] && b.Asleep && !b.Anchored && b.WheelCount + b.SpringCount > 0 && (a.Vel.LengthSquared() >= StillSpeed2 || a.AngVel.LengthSquared() >= StillSpeed2))
                     b.Wake(); // (a deck under way: wheels hold a body clear of the parts, so no contact would wake it; others wake when they touch)
                 else if (_jact[i] && b.Asleep && !b.Anchored && b.CarriedBy == 0 && JointMoves(a))
                     b.Wake(); // (a lift or a ramp under it: the same)
                 Exclusion((short)i, (short)j);
+                var loose = a.LooseFrom == b.Id || b.LooseFrom == a.Id;
+                var (contactsWere, chainsWere, jointsWere) = (_contactCount, _chainCount, LastJointContacts);
                 PairContacts(a, (short)i, b, (short)j, dt);
+                if (loose)
+                    LooseFromCarrier(a, _dyn[i], b, _dyn[j], contactsWere, chainsWere, jointsWere);
             }
         }
+    }
+
+    /// <summary>Overlap past this (m) between a craft just let go and the ship that held it: still in its cradle (a resting contact sits about <see cref="Slop"/> deep).</summary>
+    private const float LooseOverlap = 2 * Slop;
+
+    /// <summary>Steps in a row a craft let go must be clear of the ship that held it before they meet as any two bodies (the first step after the let-go may not pair them yet).</summary>
+    private const byte LooseClearSteps = 10;
+
+    /// <summary>
+    /// A craft just let go by a dock (<see cref="Construct.LooseFrom"/>) and the ship that held it: a docked craft's pose may lie a
+    /// few centimetres into its cradle or the hull round it (carried, they never met), and let go, those pieces caught it, the
+    /// friction holding it against its own jets (the Limpet under the Zero Day's keel, the Shuttle in its cradle, in orbit; Karl,
+    /// 2026-11-18 and 19). So while the pair overlaps deeper than a resting contact, that step's contacts between them are dropped;
+    /// once it has been clear <see cref="LooseClearSteps"/> steps in a row they meet as any two bodies from then on. Only a ship out
+    /// of the bubble lets go this way (weightless with it, nothing falls through): in a sky a craft on its cradle is held as before.
+    /// </summary>
+    private static void LooseFromCarrier(Construct a, bool aMoves, Construct b, bool bMoves, int contactsWere, int chainsWere, int jointsWere)
+    {
+        for (var k = contactsWere; k < _contactCount; k++)
+            if (_contacts[k].Gap < -LooseOverlap)
+            {
+                (_contactCount, _chainCount, LastJointContacts) = (contactsWere, chainsWere, jointsWere);
+                a.LooseClear = b.LooseClear = 0;
+                return;
+            }
+        LooseCleared(a, aMoves, b);
+        LooseCleared(b, bMoves, a);
+    }
+
+    private static void LooseCleared(Construct c, bool moves, Construct from)
+    {
+        if (c.LooseFrom != from.Id || !moves)
+            return; // (only judged while it is stepped: asleep, only the carrier's moving joints are met, not its hull)
+        if (++c.LooseClear >= LooseClearSteps)
+            (c.LooseFrom, c.LooseClear) = (0, 0);
     }
 
     // ---- The solver: contacts, motors and limits on generalised velocities ------------------------------------------

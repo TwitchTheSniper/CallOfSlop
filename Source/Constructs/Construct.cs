@@ -348,6 +348,10 @@ public sealed partial class Construct
     // but carried by that ship's motion; where it was in that frame at the last carry, there in the world, and the ship's
     // turn and speed there then. 0: none.
     internal ushort SpaceRide;
+    // Server: the ship whose dock let this craft go, while they may still overlap (its cradle pose lay into the hull): the physics
+    // drops their contacts until the first step they are clear (ConstructPhysics.LooseFromCarrier). 0: none.
+    internal ushort LooseFrom;
+    internal byte LooseClear; // (steps in a row it has been clear of it)
     internal Vector3 SpaceRideLocal, SpaceRideWorld, SpaceRideVel;
     internal Quaternion SpaceRideRot;
 

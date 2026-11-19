@@ -207,6 +207,8 @@ public static class ConstructCargo
             b.AngVel = c.AngVel;
             b.KeepSpeed(); // (a ship's speed in orbit is far past the physics' limit for a free body: it keeps it, Construct.SpeedKept)
             world.Events.Add($"construct {c.Id}: let construct {b.Id} go");
+            if (c.SpaceShip != 0)
+                (b.LooseFrom, b.LooseClear) = (c.Id, 0); // (a ship in space: it may lie into its cradle, clear of it before they meet, ConstructPhysics.LooseFromCarrier)
         }
         b.CarriedBy = 0;
         b.CarryTag = 0;
