@@ -43,7 +43,7 @@ public struct RouteAsk
 /// the key), and a construct changed under a search restarts it. Each Step takes the construct afresh, and a result's host
 /// parts are only used through the checks the caller runs on them (the stale index lesson).
 /// </summary>
-public sealed class RouteSearch
+public sealed partial class RouteSearch
 {
     public const int MaxPoints = 1 << 20; // lattice points (2 MB, about 100 planes an axis)
     public const int MaxStates = 1 << 18; // points with a direction reached (a search that needs more gives up)
@@ -420,6 +420,8 @@ public sealed class RouteSearch
             Done(RouteSearchState.Failed, "a drive shaft goes into a drive port");
             return;
         }
+        if (Direct())
+            return; // (a straight run, a slope or a turn or two that passes the server's check: no lattice needed; ConstructAutoRouteDirect.cs)
         BeginStage();
     }
 
