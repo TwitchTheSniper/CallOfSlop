@@ -981,8 +981,8 @@ public static class ConstructConfig
         {
             var e = d.Config[s];
             var v = At(p, d, s);
-            if (v == (e.Bound ? d.DefaultSetting : e.Default) || e.Id == CfgKey.ToolsOut)
-                continue; // (a Tool Rack's empty hooks are its crew's trips, never a blueprint's: ToolRacks.cs)
+            if (v == (e.Bound ? d.DefaultSetting : e.Default) || e.Id == CfgKey.ToolsOut || e.Id is >= CfgKey.ShellKit0 and <= CfgKey.ShellKit2)
+                continue; // (a Tool Rack's empty hooks are its crew's trips, never a blueprint's: ToolRacks.cs; nor a shell's gantry-fitted modules: a printed or pasted shell starts with its frame's, ShellFrames.cs)
             parts.Add($"\"{e.Key}\": " + e.Type switch
             {
                 CfgType.Toggle => v >= 0.5f ? "true" : "false",
