@@ -756,6 +756,9 @@ public sealed class Player
     [MatchState]
     public byte ShellFrame; // in a shell: its frame (Constructs/Shells.json, ShellFrames.cs; 0 the Robot Shell); every peer hears it with Msg.Shell
     [MatchState]
+    public byte[] ShellMods = new byte[ShellFrames.SlotCount]; // in a shell: its kit, a byte a slot (0: the frame's module; else 1 + a module's index: the Shell Gantry); every peer hears it with Msg.Shell
+    public readonly ShellFrame ShellKit = new(); // the shell as fitted (ShellFrames.Worn): ShellFrames.Refit after ShellFrame or ShellMods change
+    [MatchState]
     public byte HopperMaterial; // in a shell with an ore hopper: what it holds (a material id, 0 empty), as every peer last heard it
     [MatchState]
     public ushort HopperAmount; // ...and how much (units)
@@ -875,6 +878,7 @@ public sealed class Player
         ShellChair = ShellSeat = 0;
         ShellWear = default;
         ShellFrame = HopperMaterial = 0;
+        Array.Clear(ShellMods);
         HopperAmount = 0;
         SbOwner = 255;
         SbBody = SbTag = SbBoarding = 0;

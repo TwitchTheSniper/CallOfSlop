@@ -155,6 +155,8 @@ public sealed partial class Game
         run.Owner = shell.Owner;
         ShellWear.Read(sp, sp.D, ref p.ShellWear); // (its works' wear goes with them: GameShellWear.cs)
         p.ShellFrame = ShellFrames.FrameOf(sp.D); // (its frame: size, pace, modules; Constructs/Shells.json)
+        ShellFrames.ReadKit(sp, sp.D, p.ShellMods); // (and its own modules, as a Shell Gantry fitted them)
+        ShellFrames.Refit(p);
         p.Sim.Frame = p.ShellFrame;
         HopperOn(p, shell); // (an ore hopper's load goes with them: GameShellHopper.cs)
         var shellHp = ShellWear.HealthOf(sp, sp.D); // (as damaged as it was left: shells don't heal, Health.cs)
@@ -168,7 +170,7 @@ public sealed partial class Game
         SandboxHands.PackDirty.Add(p.Id);
         var tool = h.Tool;
         h = SandboxHand.Empty;
-        h.Tool = ShellFrames.Of(ShellFrames.FrameOf(sp.D)).ForcedTool ?? (tool == ConstructTool.None ? ConstructTool.Hands : tool); // (a frame's only tool: the Mining Shell's drill arm)
+        h.Tool = ShellFrames.Worn(p).ForcedTool ?? (tool == ConstructTool.None ? ConstructTool.Hands : tool); // (a frame's only tool: the Mining Shell's drill arm)
         var feet = shell.ToWorld(sp.Pos) + GravityFrames.UpAt(shell.WorldCom) * 0.03f; // (its part's feet: a shell cut off a dock keeps its place in the ship's frame)
         var fwd = Vector3.Transform(-Vector3.UnitZ, shell.Rot * Rot24.Quat(sp.Rot));
         ShellWoke(p, shell);
@@ -217,6 +219,7 @@ public sealed partial class Game
             standing = true;
             ConstructConfig.Put(ref stood.Parts[0], run.ShellDef, CfgKey.Channel, run.Channel);
             ShellWear.Write(ref stood.Parts[0], run.ShellDef, p.ShellWear); // (it stands as worn as they left it)
+            ShellFrames.WriteKit(ref stood.Parts[0], run.ShellDef, p.ShellMods); // (with the modules it was woken with)
             ShellWear.PutHealth(ref stood.Parts[0], run.ShellDef, p.Health); // (and as damaged)
             stood.Owner = run.Owner;
             stood.Frozen = dock == null; // (it stands as it was left until someone moves it; one for a dock is clamped on first)
@@ -263,6 +266,8 @@ public sealed partial class Game
         p.ShellChair = p.ShellSeat = 0;
         p.ShellWear = default;
         p.ShellFrame = 0;
+        Array.Clear(p.ShellMods);
+        ShellFrames.Refit(p);
         p.Sim.Frame = 0;
         run.On = false;
         run.Spent = true; // (still in the chair: they stand up before it links again)
@@ -401,6 +406,7 @@ public sealed partial class Game
             ConstructConfig.Put(ref c.Parts[0], run.ShellDef, CfgKey.Channel, run.Channel);
             ShellWear.Write(ref c.Parts[0], run.ShellDef, p.ShellWear);
             ShellWear.PutHealth(ref c.Parts[0], run.ShellDef, p.Health);
+            ShellFrames.WriteKit(ref c.Parts[0], run.ShellDef, p.ShellMods);
             c.Owner = run.Owner;
             c.Frozen = true;
             c.Rebuild();
@@ -442,7 +448,7 @@ public sealed partial class Game
     // ---- The wire ---------------------------------------------------------------------------------------------------
 
     /// <summary>Server: who wears a shell, to everyone (<see cref="Msg.Shell"/>: u8 player, u8 on, u16 chair, u16 seat, 8 x u8 the works' wear,
-    /// u8 frame, u8 hopper material, u16 hopper units; protocol 353).</summary>
+    /// u8 frame, u8 hopper material, u16 hopper units; protocol 353; then a byte a module slot, its kit: protocol 370).</summary>
     private void ShellBroadcast(Player p)
     {
         if (Net.IsOffline)
@@ -485,6 +491,9 @@ public sealed partial class Game
         var frame = r.U8();
         var hopMat = r.U8();
         var hopAmt = r.U16();
+        Span<byte> kit = stackalloc byte[ShellFrames.SlotCount];
+        for (var k = 0; k < kit.Length; k++)
+            kit[k] = r.Has(1) ? r.U8() : (byte)0; // (its modules: protocol 370)
         if (Players.TryGetValue(id, out var p))
         {
             p.InShell = on;
@@ -492,6 +501,9 @@ public sealed partial class Game
             p.ShellWear = on ? wear : default;
             p.ShellFrame = on ? frame : (byte)0;
             p.Sim.Frame = p.ShellFrame; // (its size: the mover reads it, World.Body)
+            for (var k = 0; k < kit.Length; k++)
+                p.ShellMods[k] = on ? kit[k] : (byte)0;
+            ShellFrames.Refit(p);
             (p.HopperMaterial, p.HopperAmount) = on ? (hopMat, hopAmt) : ((byte)0, (ushort)0);
         }
     }

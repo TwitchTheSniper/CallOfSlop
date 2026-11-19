@@ -221,6 +221,7 @@ public enum CfgKey : byte
     Dampeners, // Flight Stabilizer on Ship keys: its inertia dampeners (off: the keys only burn, and it coasts; the seat's dampener key flips it: ConstructFlight.ToggleDampeners)
     Walls, // Storage Volume: on, its box is a walled open-topped bin (four walls and a floor inside the box, solid; ConstructStoreVolume.Walled)
     ToolsOut, // Tool Rack: which hooks' tools a crew member has taken, a bit each (not on the panel; ToolRacks.cs)
+    ShellKit0, ShellKit1, ShellKit2, // Robot Shell: the module in each slot, a byte a slot, two a setting (0: its frame's; not on the panel; ShellFrames.cs, the Shell Gantry)
     COUNT,
 }
 
@@ -781,6 +782,7 @@ public static class ConstructConfig
         CfgKey.SteerKind => "choice",
         CfgKey.MaskA or CfgKey.MaskB or CfgKey.MaskC or CfgKey.MaskD => "mask",
         >= CfgKey.ShellWear0 and <= CfgKey.ShellWear3 => "mask",
+        >= CfgKey.ShellKit0 and <= CfgKey.ShellKit2 => "mask",
         CfgKey.Colour or CfgKey.Ink => "colour",
         CfgKey.Ramp => "choice",
         CfgKey.Keys or CfgKey.ApMode or CfgKey.AiCrew or CfgKey.Setting or CfgKey.Mode or CfgKey.Operator or CfgKey.Units or CfgKey.Unit or CfgKey.Recipe or CfgKey.MirrorAxis or CfgKey.Fluid or CfgKey.Material => "choice",
@@ -858,7 +860,7 @@ public static class ConstructConfig
                 CfgKey.Grip => d.Role == PartRole.Panel || d.Walk != WalkKind.None,
                 CfgKey.Profile or CfgKey.Width or CfgKey.Height or CfgKey.Wall or CfgKey.CutLength => d.IsExtruder && !d.IsPanelFormer || ProductionLines.IsConsole(d), // (a console's: its next bill line)
                 CfgKey.MaskA or CfgKey.MaskB or CfgKey.MaskC or CfgKey.MaskD => d.IsExtruder && !d.IsPanelFormer,
-                (>= CfgKey.ShellWear0 and <= CfgKey.ShellWear3) or CfgKey.ShellDamage => d.ShellBody,
+                (>= CfgKey.ShellWear0 and <= CfgKey.ShellWear3) or CfgKey.ShellDamage or (>= CfgKey.ShellKit0 and <= CfgKey.ShellKit2) => d.ShellBody,
                 CfgKey.ToolsOut => d.IsToolRack, // (ToolRacks.cs)
                 CfgKey.RunMode => d.IsWheelFormer && !d.IsPanelFormer,
                 CfgKey.AmmoType => d.Role is PartRole.AmmoBox or PartRole.Storage,

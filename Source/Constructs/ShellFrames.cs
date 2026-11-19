@@ -10,9 +10,10 @@ public enum ShellModuleKind : byte
     Hopper, // loose ore on the back: the shell part's own bin (its storage.bulk) is the hopper (GameShellHopper.cs)
     Hand, // an arm that holds the tools, as a person's
     Drill, // an arm that is a drill, always out: the ground drill's scoop taps ore into the hopper (GameShellHopper.cs)
+    Leg, // a leg (its "speed" is the shell's pace; the Shell Gantry's lower arms fit them)
 }
 
-/// <summary>One module from Constructs/Shells.json: a name, the slot kind it fits ("head", "back", "arm") and its kind's numbers.</summary>
+/// <summary>One module from Constructs/Shells.json: a name, the slot kind it fits ("head", "back", "arm", "leg") and its kind's numbers.</summary>
 public sealed class ShellModule
 {
     public string Name = "", Slot = "";
@@ -20,7 +21,9 @@ public sealed class ShellModule
     public float Rate; // a drill: ore tapped a second while it is drilling a deposit
     public int Tier = 1; // a drill: the Drill Module tier it works as (a deposit's minTier)
     public string[] Takes = []; // a hopper: the materials it holds (Recycling.json names)
-    public string Part = ""; // "part": the construct part this module is off the shell (the Shell Gantry's table, mining-shell.md; none yet)
+    public string Part = ""; // "part": the construct part this module is off the shell (on a Shell Gantry's parts table; mining-shell.md "Shell Gantry"); "": it is never taken off
+    public float Speed = 1, Damage = 1; // "speed", "damage": times the frame's pace and the hits it takes while fitted (1: no change)
+    public byte Index; // its place in the file's "modules" (a wire and save byte: a new module goes at the end)
     public ConstructTool? Tool; // "tool": while the shell is worn this is its only tool (the Drill Arm's ground drill; the user, 2026-11-17)
 }
 
@@ -31,7 +34,7 @@ public sealed class ShellFrame
     public float Scale = 1, Speed = 1, Damage = 1;
     public string[] Jobs = [];
     public ShellModule?[] Modules = new ShellModule?[ShellFrames.SlotCount];
-    public bool[] Fixed = new bool[ShellFrames.SlotCount]; // a slot customisation may not change (none can be changed yet)
+    public bool[] Fixed = new bool[ShellFrames.SlotCount]; // a slot the Shell Gantry may not change (the Mining Shell's hopper and drill arm)
 
     /// <summary>The tool a module forces while the shell is worn (the first slot's that names one), or null: any tool.</summary>
     public ConstructTool? ForcedTool
@@ -77,10 +80,37 @@ public sealed class ShellFrame
 public static class ShellFrames
 {
     public const string Format = "call-of-slop-shells/1";
-    public const int SlotCount = 4;
+    public const int SlotCount = 6;
 
-    /// <summary>The slots in their fixed order (a wire and save order: a new slot goes at the end).</summary>
-    public static readonly string[] Slots = ["head", "back", "leftArm", "rightArm"];
+    /// <summary>The slots in their fixed order (a wire and save order: a new slot goes at the end; the legs came with the Shell Gantry).</summary>
+    public static readonly string[] Slots = ["head", "back", "leftArm", "rightArm", "leftLeg", "rightLeg"];
+
+    /// <summary>The kind of module slot <paramref name="i"/> takes: "head", "back", "arm" or "leg".</summary>
+    public static string SlotKind(int i) => i switch { 0 => "head", 1 => "back", 2 or 3 => "arm", _ => "leg" };
+
+    /// <summary>A slot's name for a player ("left arm").</summary>
+    public static string SlotLabel(int i) => i switch { 0 => "head", 1 => "back", 2 => "left arm", 3 => "right arm", 4 => "left leg", _ => "right leg" };
+
+    private static ShellModule[] _modules = [];
+
+    /// <summary>Every module in file order (its <see cref="ShellModule.Index"/>).</summary>
+    public static ShellModule[] Modules
+    {
+        get
+        {
+            _ = All;
+            return _modules;
+        }
+    }
+
+    /// <summary>The module a part stands for off the shell (its <c>"part"</c>), or null.</summary>
+    public static ShellModule? ModuleOfPart(string partName)
+    {
+        foreach (var m in Modules)
+            if (m.Part.Length > 0 && m.Part == partName)
+                return m;
+        return null;
+    }
 
     public static string FilePath => Path.Combine(AppFolders.Data, "Constructs", "Shells.json");
 
@@ -132,6 +162,7 @@ public static class ShellFrames
     {
         var f = new ShellFrame { Name = "Standard", Part = "Robot Shell" };
         f.Modules[2] = f.Modules[3] = new ShellModule { Name = "Hand", Slot = "arm", Kind = ShellModuleKind.Hand };
+        _modules = [f.Modules[2]!];
         return f;
     }
 
@@ -169,6 +200,7 @@ public static class ShellFrames
             if (slots[i].GetString() != Slots[i])
                 throw new FormatException($"\"slots\"[{i}] must be \"{Slots[i]}\" (the order is the wire's)");
         var modules = new Dictionary<string, ShellModule>();
+        var order = new List<ShellModule>();
         foreach (var m in root.GetProperty("modules").EnumerateArray())
         {
             var mod = new ShellModule
@@ -176,9 +208,14 @@ public static class ShellFrames
                 Name = m.GetProperty("name").GetString() ?? "",
                 Slot = m.GetProperty("slot").GetString() ?? "",
                 Kind = Enum.TryParse<ShellModuleKind>(m.GetProperty("kind").GetString(), true, out var k) ? k : throw new FormatException($"module \"{m.GetProperty("name").GetString()}\": unknown kind \"{m.GetProperty("kind").GetString()}\""),
+                Index = order.Count < 254 ? (byte)order.Count : throw new FormatException("\"modules\": at most 254"),
             };
-            if (mod.Slot is not ("head" or "back" or "arm"))
-                throw new FormatException($"module \"{mod.Name}\": \"slot\" is \"head\", \"back\" or \"arm\"");
+            if (mod.Slot is not ("head" or "back" or "arm" or "leg"))
+                throw new FormatException($"module \"{mod.Name}\": \"slot\" is \"head\", \"back\", \"arm\" or \"leg\"");
+            if (m.TryGetProperty("speed", out _))
+                mod.Speed = Num(m, "speed", 0.5f, 1.5f);
+            if (m.TryGetProperty("damage", out _))
+                mod.Damage = Num(m, "damage", 0.5f, 1.5f);
             if (mod.Kind == ShellModuleKind.Drill)
             {
                 mod.Rate = Num(m, "rate", 0.1f, 1000);
@@ -200,6 +237,9 @@ public static class ShellFrames
                     ? tool : throw new FormatException($"module \"{mod.Name}\": no tool \"{tl.GetString()}\"");
             if (!modules.TryAdd(mod.Name, mod))
                 throw new FormatException($"module \"{mod.Name}\" twice");
+            if (mod.Part.Length > 0 && order.Exists(o => o.Part == mod.Part))
+                throw new FormatException($"module \"{mod.Name}\": part \"{mod.Part}\" is another module's");
+            order.Add(mod);
         }
         var list = new List<ShellFrame>();
         foreach (var f in root.GetProperty("frames").EnumerateArray())
@@ -222,7 +262,7 @@ public static class ShellFrames
                 var name = mn.GetString() ?? "";
                 if (!modules.TryGetValue(name, out var mod))
                     throw new FormatException($"frame \"{fr.Name}\": no module named \"{name}\"");
-                var kind = i >= 2 ? "arm" : Slots[i];
+                var kind = SlotKind(i);
                 if (mod.Slot != kind)
                     throw new FormatException($"frame \"{fr.Name}\": \"{name}\" goes in a {mod.Slot} slot, not {Slots[i]}");
                 fr.Modules[i] = mod;
@@ -237,6 +277,9 @@ public static class ShellFrames
                 }
             if (fr.Find(ShellModuleKind.Drill) != null && fr.Find(ShellModuleKind.Hopper) == null)
                 throw new FormatException($"frame \"{fr.Name}\": a drill arm needs a hopper on the back to put its ore in");
+            for (var i = 0; i < SlotCount; i++)
+                if (fr.Modules[i] == null)
+                    throw new FormatException($"frame \"{fr.Name}\": no module in its {Slots[i]} slot");
             if (list.Any(o => o.Name == fr.Name || o.Part == fr.Part))
                 throw new FormatException($"frame \"{fr.Name}\": a name or part used twice");
             list.Add(fr);
@@ -245,7 +288,95 @@ public static class ShellFrames
             throw new FormatException("\"frames\": 1 to 255");
         if (list[0].Scale != 1 || list[0].Speed != 1 || list[0].Damage != 1 || list[0].Part != "Robot Shell")
             throw new FormatException("frame 0 is the Robot Shell, at scale, speed and damage 1 (every older shell is it)");
+        _modules = [.. order];
         return [.. list];
+    }
+
+    // ---- A shell's own modules (the Shell Gantry; mining-shell.md "Shell Gantry layout") ---------------------------------
+    // A kit is a byte a slot (Slots order): 0, the frame's own module; else 1 + the module's Index. A standing shell keeps it in three
+    // hidden settings (CfgKey.ShellKit0..2, two slots a setting), so it rides saves, blueprints and CBody; worn, it is the player's
+    // ShellMods and every peer hears it with Msg.Shell. A shell saved before the gantry has none: every slot its frame's.
+
+    private static readonly CfgKey[] KitKeys = [CfgKey.ShellKit0, CfgKey.ShellKit1, CfgKey.ShellKit2];
+
+    /// <summary>Every shell part has these (ConstructConfig.Parse, through ShellWear.AddSettings): its kit, hidden.</summary>
+    public static void AddSettings(ConstructPartDef d, List<CConfigDef> list)
+    {
+        foreach (var k in KitKeys)
+            if (!list.Exists(e => e.Id == k))
+                list.Add(new CConfigDef { Key = ConstructConfig.KeyName(k), Id = k, Type = CfgType.Mask, Hidden = true, Label = "Shell modules", Group = "Shell", Tooltip = "Not on the panel: the Shell Gantry sets them." });
+    }
+
+    /// <summary>A standing shell's kit, read from its part's settings.</summary>
+    public static void ReadKit(in CPart p, ConstructPartDef d, Span<byte> kit)
+    {
+        for (var s = 0; s < KitKeys.Length; s++)
+        {
+            var v = (int)ConstructConfig.Get(p, d, KitKeys[s], 0);
+            kit[s * 2] = (byte)(v & 0xFF);
+            kit[s * 2 + 1] = (byte)(v >> 8 & 0xFF);
+        }
+    }
+
+    /// <summary>...and written back.</summary>
+    public static void WriteKit(ref CPart p, ConstructPartDef d, ReadOnlySpan<byte> kit)
+    {
+        for (var s = 0; s < KitKeys.Length; s++)
+            ConstructConfig.Put(ref p, d, KitKeys[s], kit[s * 2] | kit[s * 2 + 1] << 8);
+    }
+
+    /// <summary>The module in slot <paramref name="slot"/> of a shell of frame <paramref name="frame"/> with kit <paramref name="kit"/>.</summary>
+    public static ShellModule? ModuleAt(byte frame, ReadOnlySpan<byte> kit, int slot)
+    {
+        var f = Of(frame);
+        var k = (uint)slot < (uint)kit.Length ? kit[slot] : (byte)0;
+        if (k == 0 || f.Fixed[slot])
+            return f.Modules[slot];
+        var all = Modules;
+        return k - 1 < all.Length && all[k - 1].Slot == SlotKind(slot) ? all[k - 1] : f.Modules[slot];
+    }
+
+    /// <summary>
+    /// Fills <paramref name="into"/> with frame <paramref name="frame"/> as fitted with <paramref name="kit"/>: the frame's numbers, each
+    /// slot's module, its pace and the hits it takes times its modules'. No allocation (a player's own <see cref="Player.ShellKit"/>).
+    /// </summary>
+    public static void Fit(ShellFrame into, byte frame, ReadOnlySpan<byte> kit)
+    {
+        var f = Of(frame);
+        (into.Name, into.Part, into.Scale, into.Jobs) = (f.Name, f.Part, f.Scale, f.Jobs);
+        float speed = f.Speed, damage = f.Damage;
+        for (var i = 0; i < SlotCount; i++)
+        {
+            var m = ModuleAt(frame, kit, i);
+            into.Modules[i] = m;
+            into.Fixed[i] = f.Fixed[i];
+            if (m != null)
+                (speed, damage) = (speed * m.Speed, damage * m.Damage);
+        }
+        (into.Speed, into.Damage) = (speed, damage);
+    }
+
+    /// <summary>A player's shell as fitted now (their frame and kit; refitted by <see cref="Refit"/> whenever either changes).</summary>
+    public static ShellFrame Worn(Player p) => p.ShellKit;
+
+    /// <summary>After a player's <see cref="Player.ShellFrame"/> or <see cref="Player.ShellMods"/> changed.</summary>
+    public static void Refit(Player p) => Fit(p.ShellKit, p.ShellFrame, p.ShellMods);
+
+    /// <summary>Why <paramref name="m"/> can't go in slot <paramref name="slot"/> of a shell of frame <paramref name="frame"/> (null: it can).</summary>
+    public static string? FitRefusal(byte frame, int slot, ShellModule m)
+    {
+        var f = Of(frame);
+        if ((uint)slot >= SlotCount)
+            return "no such slot";
+        if (f.Fixed[slot])
+            return $"the {f.Part}'s {SlotLabel(slot)} is fixed: the gantry can't change it";
+        if (m.Slot != SlotKind(slot))
+            return $"a {m.Name} goes in a {m.Slot} slot, not the {SlotLabel(slot)}";
+        if (m.Part.Length == 0)
+            return $"a {m.Name} is never taken off a shell";
+        if (m.Kind is ShellModuleKind.Hopper or ShellModuleKind.Drill)
+            return $"a {m.Name} is built into its shell";
+        return null;
     }
 
     private static float Num(JsonElement e, string key, float min, float max)

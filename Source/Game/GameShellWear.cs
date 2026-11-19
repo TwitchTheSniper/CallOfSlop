@@ -120,7 +120,7 @@ public sealed partial class Game
     }
 
     /// <summary>Both sides: how fast a player in a shell moves, as a share (1: not in a shell, or nothing wrong; GameShellWear.cs).</summary>
-    public static float ShellMoveMult(Player? p) => p is { InShell: true } ? ShellWear.Current.MoveShare(p.ShellWear) * ShellFrames.Of(p.ShellFrame).Speed : 1f; // (and its frame's pace: Constructs/Shells.json)
+    public static float ShellMoveMult(Player? p) => p is { InShell: true } ? ShellWear.Current.MoveShare(p.ShellWear) * ShellFrames.Worn(p).Speed : 1f; // (and its frame's pace: Constructs/Shells.json)
 
     /// <summary>
     /// Server, from <see cref="DamagePlayer"/>: a hit on someone in a shell, by the part it landed on (Karl, 2026-11-18). An arm or a leg:
@@ -135,7 +135,7 @@ public sealed partial class Game
         if (!run.On)
             return amount;
         if (victim.ShellFrame != 0 && amount > 0)
-            amount = Math.Max(1, (int)MathF.Round(amount * ShellFrames.Of(victim.ShellFrame).Damage)); // (its frame's plating: the Mining Shell's x0.7)
+            amount = Math.Max(1, (int)MathF.Round(amount * ShellFrames.Worn(victim).Damage)); // (its frame's plating: the Mining Shell's x0.7)
         var t = ShellWear.Current;
         if (t.Problem.Length > 0)
             return amount;

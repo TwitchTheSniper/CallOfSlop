@@ -189,6 +189,7 @@ public sealed class ShellWear
         if (!list.Exists(e => e.Id == CfgKey.ShellDamage))
             list.Add(new CConfigDef { Key = ConstructConfig.KeyName(CfgKey.ShellDamage), Id = CfgKey.ShellDamage, Type = CfgType.Number, Min = 0, Max = World.MaxHealth, Step = 1,
                 Hidden = true, Label = "Shell damage", Group = "Shell", Tooltip = "Not on the panel." });
+        ShellFrames.AddSettings(d, list); // (its modules: the Shell Gantry)
     }
 
     /// <summary>

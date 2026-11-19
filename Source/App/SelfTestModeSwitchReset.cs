@@ -179,6 +179,8 @@ public static partial class SelfTest
         "RenderRideBody", "RenderRideRel", "RenderRideFeet",
         // what the server dresses them in (Uniforms.cs): kept across matches, set again from the roster
         "Uniform",
+        // a worn shell's fitted modules, worked out again from ShellFrame and ShellMods (ShellFrames.Refit)
+        "ShellKit",
     };
 
     /// <summary>Every [MatchState] field of Player is back to a new player's value after ResetForMatch, and every other field is listed as persistent: a new field can't be forgotten.</summary>
