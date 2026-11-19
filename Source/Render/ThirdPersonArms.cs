@@ -237,8 +237,9 @@ public static class ThirdPersonArms
     /// <summary>A driver's hands on the steering wheel (the grips the seat pass put on the player), after <see cref="Animate"/>: the arms re-posed onto the rim.</summary>
     public static void WheelHands(Player p, in Matrix4x4 body)
     {
-        Right.Root = new Vector3(0.33f, 1.38f, 0.1f);
-        Left.Root = new Vector3(-0.33f, 1.38f, 0f);
+        var spread = ShellSpread(p); // (a shell holds the wheel from outside its shoulders, as everything else)
+        Right.Root = new Vector3(StandShoulderX + spread, 1.38f, 0.1f);
+        Left.Root = new Vector3(-StandShoulderX - spread, 1.38f, 0f);
         Right.Solve(new HandTarget(p.RenderWheelR, p.RenderWheelRot, HandShape.Wrap), body, Vector3.Zero);
         Left.Solve(new HandTarget(p.RenderWheelL, p.RenderWheelRot, HandShape.Wrap), body, Vector3.Zero);
     }

@@ -1378,7 +1378,10 @@ public static unsafe partial class Program
             return null;
         foreach (var m in ShellFrames.Worn(me).Modules)
             if (m is { View: true, Tool: not null })
-                return ShellKitNodes.ViewModel(m, ShellFrames.ScaleOf(me));
+            {
+                var (arm, accent) = ShellKitNodes.ColoursOf(me);
+                return ShellKitNodes.ViewModel(m, ShellFrames.ScaleOf(me), arm, accent);
+            }
         return null;
     }
 

@@ -256,7 +256,11 @@ public sealed class PlayerRig
 
         _kit.Pose(p, seated); // (after the arms: a drill arm hides the right one)
         if (_kit.DrillShown)
+        {
             Right.Root.Visible = false;
+            if (_tool.Visible && _toolDraw.Frame.Model is { Tool: { } held } && held == ShellFrames.Worn(p).Find(ShellModuleKind.Drill)?.Tool)
+                _tool.Visible = false; // (the drill arm is the tool it forces: no hand-held one beside it)
+        }
         else if (!Right.Root.Visible)
             Right.Root.Visible = true;
         var frac = Math.Clamp(p.Health / (float)World.MaxHealth, 0f, 1f);

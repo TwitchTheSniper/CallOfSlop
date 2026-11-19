@@ -16,21 +16,33 @@ public sealed class ShellKitNodes
     private static readonly Vector3 HopMin = new(-0.31f, 1.395f, 0.245f), HopMax = new(0.31f, 2.18f, 0.755f); // ShellParts.HopperMin/Max
     private static readonly Vector3 Elbow = new(0.47f, 1.5f, 0f);
 
-    /// <summary>One box of an arm module (the Mining Shell part's metres); <see cref="Forearm"/>: it turns with the look about the elbow; <see cref="Spins"/>: it spins while it digs (first person).</summary>
-    private readonly record struct ArmBox(Vector3 Lo, Vector3 Hi, Vector3 Color, bool Forearm, bool Spins);
+    /// <summary>How an arm box is painted: its own colour, the shell's arm colour (the player's, as its other arm), or the shell's accent.</summary>
+    private enum ArmPaint : byte { Own, Arm, Accent }
 
-    /// <summary>The drill arm: what other players see on the shell and what its wearer sees in first person (<see cref="ViewModel"/>).</summary>
+    /// <summary>One box of an arm module (the Mining Shell part's metres); <see cref="Forearm"/>: it turns with the look about the elbow; <see cref="Spins"/>: it spins while it digs (first person).</summary>
+    private readonly record struct ArmBox(Vector3 Lo, Vector3 Hi, Vector3 Color, bool Forearm, bool Spins, ArmPaint Paint = ArmPaint.Own);
+
+    /// <summary>
+    /// The drill arm: what other players see on the shell and what its wearer sees in first person (<see cref="ViewModel"/>). In the
+    /// shell's arm colour with a steel collar; the bit in its accent, the cutting end in hazard paint (look.md "mark what bites").
+    /// </summary>
     private static readonly ArmBox[] DrillArm =
     [
         new(new(0.36f, 2.04f, -0.15f), new(0.585f, 2.295f, 0.15f), Joint, false, false), // shoulder
-        new(new(0.39f, 1.5f, -0.09f), new(0.555f, 2.055f, 0.09f), Steel, false, false), // upper arm
-        new(new(0.4f, 1.26f, -0.42f), new(0.545f, 1.497f, 0.08f), Joint, true, false), // housing
-        new(new(0.385f, 1.24f, -0.12f), new(0.56f, 1.52f, 0.03f), Dark, true, false), // motor collar
-        new(new(0.425f, 1.3f, -0.62f), new(0.52f, 1.46f, -0.41f), Bit, true, true), // bit
-        new(new(0.445f, 1.33f, -0.8f), new(0.5f, 1.43f, -0.61f), Bit, true, true),
-        new(new(0.46f, 1.355f, -0.9f), new(0.485f, 1.405f, -0.79f), Bit, true, true),
+        new(new(0.39f, 1.5f, -0.09f), new(0.555f, 2.055f, 0.09f), Steel, false, false, ArmPaint.Arm), // upper arm
+        new(new(0.4f, 1.26f, -0.42f), new(0.545f, 1.497f, 0.08f), Joint, true, false, ArmPaint.Arm), // housing
+        new(new(0.385f, 1.24f, -0.12f), new(0.56f, 1.52f, 0.03f), Steel, true, false), // motor collar
+        new(new(0.425f, 1.3f, -0.62f), new(0.52f, 1.46f, -0.41f), Bit, true, true, ArmPaint.Accent), // bit
+        new(new(0.445f, 1.33f, -0.8f), new(0.5f, 1.43f, -0.61f), Bit, true, true, ArmPaint.Accent),
+        new(new(0.46f, 1.355f, -0.9f), new(0.485f, 1.405f, -0.79f), Hazard, true, true), // the cutting end
         new(new(0.39f, 1.505f, -0.41f), new(0.555f, 1.53f, -0.2f), Hazard, true, false), // hazard band
     ];
+
+    /// <summary>A box's colour on a shell of these colours.</summary>
+    private static Vector3 PaintOf(in ArmBox b, Vector3 arm, Vector3 accent) => b.Paint switch { ArmPaint.Arm => arm, ArmPaint.Accent => accent, _ => b.Color };
+
+    /// <summary>The shell's arm colour and accent for a player (the arms' sleeve, BodyColors.Robot's accent).</summary>
+    public static (Vector3 Arm, Vector3 Accent) ColoursOf(Player p) => (BodyModel.ArmsFor(p).Sleeve, BodyColors.Robot(p.Color).Accent);
 
     private static readonly Vector3 Shoulder = new(0.4725f, 2.2f, 0f); // where the drill arm turns at the shoulder when it lies
 
@@ -70,60 +82,69 @@ public sealed class ShellKitNodes
         _ore.Visible = false;
         _arm = _root.Add("drill_arm");
         _drill = _arm.Add("drill");
-        foreach (var b in DrillArm)
-            BoxIn(b.Forearm ? _drill : _arm, b.Lo, b.Hi, b.Color);
+        for (var i = 0; i < DrillArm.Length; i++)
+            _armBoxes[i] = BoxIn(DrillArm[i].Forearm ? _drill : _arm, DrillArm[i].Lo, DrillArm[i].Hi, DrillArm[i].Color);
     }
+
+    private readonly SceneNode[] _armBoxes = new SceneNode[DrillArm.Length];
+    private Vector3 _armColour = new(float.NaN), _accent;
 
     // ---- First person (a module with "view" in Shells.json: its wearer sees its own model in the hands' place) ----------------
 
     /// <summary>Where the drill arm's forearm sits in first person (camera space, -Z forward), about the drill's axis at the elbow.</summary>
     private static readonly Vector3 ViewAt = new(0.3f, -0.31f, -0.2f), ForearmAxis = new(0.4725f, 1.38f, 0f);
 
-    /// <summary>The drill arm's forearm turned in to the crosshair a little and up a little, as it reaches forward.</summary>
-    private static readonly Quaternion ViewHold = Quaternion.CreateFromYawPitchRoll(0.06f, 0.1f, 0f);
+    /// <summary>The drill arm's forearm turned from <paramref name="from"/> to point at <paramref name="point"/> (camera space): the crosshair's line at the ground drill's reach, where it digs.</summary>
+    private static Quaternion AimAt(Vector3 from, Vector3 point)
+    {
+        var d = point - from;
+        return Quaternion.CreateFromYawPitchRoll(MathF.Atan2(-d.X, -d.Z), MathF.Atan2(d.Y, MathF.Sqrt(d.X * d.X + d.Z * d.Z)), 0f);
+    }
 
-    private static readonly Vector3 ViewCard = new(0.0f, -0.17f, -0.42f);
+    private static readonly Vector3 ViewCard = new(-0.12f, -0.17f, -0.42f);
 
     private static ToolModel? _drillView;
     private static float _drillViewScale;
+    private static Vector3 _drillViewArm, _drillViewAccent;
 
     /// <summary>
     /// The model its wearer sees in first person in place of the tool <paramref name="m"/> forces, at the frame's size
     /// <paramref name="scale"/>: the module's own boxes (the ones the rig draws on the shell), or null when it has no view. Built once
     /// a size; drawn by ToolRender like a tool's, without the person's right arm (<see cref="ToolModel.Arm"/>).
     /// </summary>
-    public static ToolModel? ViewModel(ShellModule m, float scale)
+    public static ToolModel? ViewModel(ShellModule m, float scale, Vector3 arm, Vector3 accent)
     {
         if (!m.View || m.Kind != ShellModuleKind.Drill)
             return null;
-        if (_drillView != null && _drillViewScale == scale)
+        if (_drillView != null && _drillViewScale == scale && _drillViewArm == arm && _drillViewAccent == accent)
             return _drillView;
         var k = scale / Built;
+        var hold = AimAt(ViewAt * k, new Vector3(0, 0, -DiggingTable.Current.Reach * scale)); // (a shell reaches as far as its size: GameSandboxSculpt)
         var boxes = new List<ToolBox>();
         foreach (var b in DrillArm)
             if (b.Forearm)
-                boxes.Add(new ToolBox(((b.Lo + b.Hi) * 0.5f - ForearmAxis) * k, (b.Hi - b.Lo) * k, b.Color, b.Spins, false));
+                boxes.Add(new ToolBox(((b.Lo + b.Hi) * 0.5f - ForearmAxis) * k, (b.Hi - b.Lo) * k, PaintOf(b, arm, accent), b.Spins, false));
         var model = new ToolModel
         {
-            Name = m.Name, Key = "shell-" + m.Name.ToLowerInvariant().Replace(' ', '-'), Tool = m.Tool, Boxes = [.. boxes], Hold = ViewHold,
+            Name = m.Name, Key = "shell-" + m.Name.ToLowerInvariant().Replace(' ', '-'), Tool = m.Tool, Boxes = [.. boxes], Hold = hold,
             Grip = new ToolHand(Vector3.Zero, Quaternion.Identity, HandShape.Wrap), Tip = new Vector3(0, 0, -0.9f) * k,
             SpinAxis = Vector3.UnitZ, SpinPivot = Vector3.Zero, Motion = ToolMotion.Push, Amount = 0.02f * k, Rate = 14, Spin = 45,
             SpinBoxes = boxes.Count(b => b.Spin), Arm = true, ViewAt = ViewAt * k,
         };
         // Its screen: inboard of the arm, low and clear of the crosshair (left of where a hand tool's is, the arm being wider), on a stalk from the housing's inboard side.
         var at = ViewCard;
-        var inv = Quaternion.Conjugate(ViewHold);
+        var inv = Quaternion.Conjugate(hold);
         var face = Vector3.Normalize(-at);
         var up = Vector3.Normalize(Vector3.UnitY - face * face.Y);
         var mount = new Vector3(-0.075f, 0.02f, -0.2f) * k;
         model.Display = new ToolDisplay(Vector3.Transform(at - ViewAt * k, inv), Vector3.Transform(face, inv), Vector3.Transform(up, inv), ToolDisplay.DefaultSize, ToolDisplay.DefaultRows, mount);
-        (_drillView, _drillViewScale) = (model, scale);
+        (_drillView, _drillViewScale, _drillViewArm, _drillViewAccent) = (model, scale, arm, accent);
         return model;
     }
 
     private static Vector3 Hex(int rgb) => new(((rgb >> 16) & 255) / 255f, ((rgb >> 8) & 255) / 255f, (rgb & 255) / 255f);
 
-    private static void BoxIn(SceneNode parent, Vector3 lo, Vector3 hi, Vector3 color) =>
+    private static SceneNode BoxIn(SceneNode parent, Vector3 lo, Vector3 hi, Vector3 color) =>
         parent.Add("box", Matrix4x4.CreateScale(hi - lo) * Matrix4x4.CreateTranslation((lo + hi) * 0.5f), Renderable.Box(color));
 
     /// <summary>This frame's look: which modules show, the hopper's load, the drill along the look.</summary>
@@ -171,6 +192,13 @@ public sealed class ShellKitNodes
         }
         if (DrillShown)
         {
+            var (armC, accent) = ColoursOf(p);
+            if (armC != _armColour || accent != _accent)
+            {
+                (_armColour, _accent) = (armC, accent);
+                for (var i = 0; i < DrillArm.Length; i++)
+                    _armBoxes[i].Renderable.Color = PaintOf(DrillArm[i], armC, accent);
+            }
             var pitch = seated ? 0f : Math.Clamp(p.RenderPitch, -1.2f, 1.2f) - (stance == 2 ? MathF.PI / 2 : 0f);
             _drill.SetLocalMatrix(Matrix4x4.CreateTranslation(-Elbow) * Matrix4x4.CreateRotationX(pitch) * Matrix4x4.CreateTranslation(Elbow));
         }
