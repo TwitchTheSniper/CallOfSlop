@@ -81,14 +81,31 @@ public static class ShellPodRender
         ConstructShellPod.StandFeet(c, part, frame, out var fwd, out var length);
         var bot = pd.Top - pd.Depth;
         var inner = pd.Half - 0.1f;
-        // The lid: closed it sits 2 mm under the rim's top; out, it is the frame's head.
-        var capTop = pd.Top - 0.002f + extend * length;
-        Box(gfx, m, new Vector3(0, capTop - 0.03f, 0), new Vector3(inner * 2 - 0.01f, 0.06f, inner * 2 - 0.01f), Cap);
-        Box(gfx, m, new Vector3(0, capTop + 0.002f, -inner + 0.06f), new Vector3(inner * 2 - 0.12f, 0.006f, 0.05f), Hazard);
-        if (extend > 0.01f)
+        // A flush pod's lid is two flaps under its rim: they swing down against the pocket's walls first (FlapShare of the
+        // frame's rise), then the frame's head comes up out of the pocket. A bolted-on pod's lid is the head itself.
+        var open = 1f;
+        var head = extend;
+        var capBase = pd.Top - 0.002f;
+        var capHalf = inner - 0.005f;
+        if (pd.Flush)
+        {
+            open = Math.Clamp(extend / FlapShare, 0, 1);
+            head = Math.Clamp((extend - FlapShare) / (1 - FlapShare), 0, 1);
+            capBase = FlapTop(pd) - 0.004f;
+            capHalf = pd.Half - 0.125f;
+            Flaps(gfx, m, pd, open);
+        }
+        // The head: closed it sits 2 mm under the rim's top (a flush pod's waits under its flaps); out, it tops the frame.
+        var capTop = capBase + head * (pd.Top - 0.002f + length - capBase);
+        if (!pd.Flush || open >= 1f)
+        {
+            Box(gfx, m, new Vector3(0, capTop - 0.03f, 0), new Vector3(capHalf * 2 - 0.01f, 0.06f, capHalf * 2 - 0.01f), Cap);
+            Box(gfx, m, new Vector3(0, capTop + 0.002f, -capHalf + 0.06f), new Vector3(capHalf * 2 - 0.12f, 0.006f, 0.05f), Hazard);
+        }
+        if (extend > 0.01f && (!pd.Flush || open >= 1f))
         {
             var px = pd.Half - 0.16f;
-            var y0 = pd.Top - 0.06f;
+            var y0 = pd.Flush ? bot + 0.1f : pd.Top - 0.06f; // (a flush pod's posts stand up from its floor)
             var y1 = capTop - 0.06f;
             foreach (var s in (ReadOnlySpan<float>)[-1f, 1f])
                 Box(gfx, m, new Vector3(s * px, (y0 + y1) * 0.5f, 0), new Vector3(0.08f, MathF.Max(0.01f, y1 - y0), 0.08f), Post);
@@ -136,6 +153,34 @@ public static class ShellPodRender
             ref readonly var box = ref sd.Boxes[bx];
             if (!box.Hidden)
                 gfx.Draw(box.Model(0, box.Center) * Limb(fd, k, box.Center, fold) * place, box.Color, shape: box.Shape);
+        }
+    }
+
+    /// <summary>The share of a flush pod's frame rise its lid's flaps take to swing open.</summary>
+    public const float FlapShare = 0.3f;
+
+    /// <summary>The top of a flush pod's closed flaps: 4 mm under its rim, which hides their outer edges.</summary>
+    private static float FlapTop(ShellPodDef pd) => pd.Top - ConstructShellPod.Rim * 0.5f - 0.001f;
+
+    /// <summary>
+    /// A flush pod's lid: two flaps meeting in the middle, hinged at their outer edges just inside the walls' lining; opened
+    /// (<paramref name="open"/> 1) they hang straight down against it, clear of the platform rising between them.
+    /// </summary>
+    private static void Flaps(Renderer gfx, in Matrix4x4 m, ShellPodDef pd, float open)
+    {
+        const float Thick = 0.03f;
+        var hx = pd.Half - ConstructShellPod.Wall - 0.016f; // (the lining's face is 12 mm in from the wall's: 4 mm clear)
+        var len = hx - 0.002f; // (4 mm apart in the middle)
+        var zh = hx - 0.004f;
+        var top = FlapTop(pd);
+        var a = open * open * (3 - 2 * open) * MathF.PI * 0.5f;
+        foreach (var s in (ReadOnlySpan<float>)[-1f, 1f])
+        {
+            var hinge = Matrix4x4.CreateRotationZ(s * a) * Matrix4x4.CreateTranslation(s * hx, top - Thick, 0) * m; // (hinged at the lower outer edge: open, a flap hangs inside it)
+            gfx.Draw(Matrix4x4.CreateScale(len, Thick, zh * 2) * Matrix4x4.CreateTranslation(-s * len * 0.5f, Thick * 0.5f, 0) * hinge, Cap);
+            // A hazard band along the edge where they meet, and a grip slot beside it.
+            gfx.Draw(Matrix4x4.CreateScale(0.05f, 0.006f, zh * 2 - 0.1f) * Matrix4x4.CreateTranslation(-s * (len - 0.035f), Thick + 0.002f, 0) * hinge, Hazard);
+            gfx.Draw(Matrix4x4.CreateScale(0.03f, 0.006f, MathF.Min(0.24f, zh)) * Matrix4x4.CreateTranslation(-s * (len - 0.1f), Thick + 0.002f, 0) * hinge, Post);
         }
     }
 

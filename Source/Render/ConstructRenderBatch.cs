@@ -66,6 +66,7 @@ public static partial class ConstructRender
     {
         public Renderer.MergedMesh Mesh;
         public Matrix4x4 Frame;
+        public bool Cut; // (its body opens over flush pods' pockets: Renderer.Cuts.cs)
     }
 
     private static readonly Dictionary<Construct, MergeSet> _merges = new();
@@ -515,7 +516,7 @@ public static partial class ConstructRender
             }
             if (_mergeQueued == _mergeQueue.Length)
                 Array.Resize(ref _mergeQueue, _mergeQueue.Length * 2); // (grows to the busiest frame once)
-            _mergeQueue[_mergeQueued++] = new MergeDraw { Mesh = ch.Gl, Frame = frame };
+            _mergeQueue[_mergeQueued++] = new MergeDraw { Mesh = ch.Gl, Frame = frame, Cut = gfx.Cutting };
             LastMergedChunks++;
             LastBatchBoxes += ch.Gl.Slots;
             n += ch.Gl.Slots;
@@ -573,7 +574,7 @@ public static partial class ConstructRender
         gfx.Relative = true; // (the frames are relative to the render origin already)
         for (var k = 0; k < _mergeQueued; k++)
         {
-            gfx.DrawMerged(_mergeQueue[k].Mesh, in _mergeQueue[k].Frame);
+            gfx.DrawMerged(_mergeQueue[k].Mesh, in _mergeQueue[k].Frame, _mergeQueue[k].Cut);
             _mergeQueue[k].Mesh = null!;
         }
         gfx.Relative = rel;

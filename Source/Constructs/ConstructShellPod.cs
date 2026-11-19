@@ -57,6 +57,23 @@ public static class ConstructShellPod
     public const float NearRise = 6f; // m: a worn shell this near an empty pod that takes it raises its frame (fully at half this)
 
     /// <summary>The size classes by a shell's standing height (the user, 2026-11-18). Large and Huge pods are for later.</summary>
+    /// <summary>
+    /// A pod's body as the part kit draws it (ShellParts.Pod): its walls' thickness, the rim's width round the opening and the
+    /// height of its floor's lining above its bottom. A flush pod's pocket (the opening the surface round it is not drawn
+    /// across: <see cref="Pocket"/>) stays inside the rim and above the lining, so none of the pod's own boxes is in it.
+    /// </summary>
+    public const float Wall = 0.06f, Rim = 0.09f, Lining = 0.08f;
+
+    /// <summary>A flush pod's pocket in its part's frame: the box the surface it sinks into is not drawn in (Renderer.Cuts.cs).</summary>
+    public static void Pocket(ShellPodDef pd, out Vector3 centre, out Vector3 half)
+    {
+        var lo = pd.Top - pd.Depth + Lining + 0.005f; // (5 mm above the lining's top)
+        var hi = pd.Top - 0.001f; // (the surface's top is at 0: a skin up to 3 mm proud of it goes too; the rim is 3 mm higher still)
+        var h = pd.Half - Rim + 0.005f; // (5 mm under the rim, so its inner edge hides where the surface stops)
+        centre = new Vector3(0, (lo + hi) * 0.5f, 0);
+        half = new Vector3(h, (hi - lo) * 0.5f, h);
+    }
+
     public static readonly string[] ClassNames = ["Tiny", "Small", "Medium", "Large", "Huge"];
     public static readonly float[] ClassHeights = [1, 2, 5, 15, 30];
 

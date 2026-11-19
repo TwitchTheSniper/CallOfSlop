@@ -20,6 +20,7 @@ public sealed unsafe partial class Renderer
         uniform mat4 uModel;
         uniform vec3 uOrigin; // the render origin (SetCameraAt): uModel and uMVP are relative to it, so far from the map's middle nothing shakes
         out vec3 vWorld;
+        out vec3 vRel;         // the point from the render origin (a flush pod's opening: CutGlsl)
         out vec3 vNormal;
         out vec3 vLocal;       // the point in the box, metres from its middle (a material's detail stays on a moving part)
         out vec3 vLocalN;      // the box's own face normal
@@ -29,7 +30,8 @@ public sealed unsafe partial class Renderer
         flat out vec3 vUpL;    // the world's up in the box (a material's weather)
         void main()
         {
-            vWorld = (uModel * vec4(aPos, 1.0)).xyz + uOrigin;
+            vRel = (uModel * vec4(aPos, 1.0)).xyz;
+            vWorld = vRel + uOrigin;
             vNormal = mat3(uModel) * aNormal;
             vSize = vec3(length(uModel[0].xyz), length(uModel[1].xyz), length(uModel[2].xyz));
             vLocal = aPos * vSize;
@@ -47,6 +49,7 @@ public sealed unsafe partial class Renderer
     private static readonly string FragmentSrc = "#version 410 core\n" + Lighting.Glsl + Surfaces.Glsl + """
 
         in vec3 vWorld;
+        in vec3 vRel;
         in vec3 vNormal;
         in vec3 vLocal;
         in vec3 vLocalN;
@@ -65,7 +68,24 @@ public sealed unsafe partial class Renderer
         uniform float uBloodN;
         uniform vec3 uBloodCol;
         uniform vec2 uBloodRot;
+        // Openings (Renderer.Cuts.cs): up to CutMax boxes, three rows each taking a point from the render origin into the box's
+        // unit cube; a fragment of a box drawn with the cut mark (mode + 4) inside one is not drawn: a flush pod's pocket.
+        uniform vec4 uCut[48];
+        uniform float uCutN;
         out vec4 FragColor;
+
+        bool InCut()
+        {
+            vec4 p = vec4(vRel, 1.0);
+            int n = int(uCutN + 0.5);
+            for (int i = 0; i < n; i++)
+            {
+                vec3 q = vec3(dot(uCut[i * 3], p), dot(uCut[i * 3 + 1], p), dot(uCut[i * 3 + 2], p));
+                if (max(abs(q.x), max(abs(q.y), abs(q.z))) < 1.0)
+                    return true;
+            }
+            return false;
+        }
 
         float BloodHash(vec3 p)
         {
@@ -100,8 +120,15 @@ public sealed unsafe partial class Renderer
 
         void main()
         {
+            float mode = uMode;
+            if (mode > 3.5)
+            {
+                mode -= 4.0;
+                if (InCut())
+                    discard;
+            }
             vec3 col = uColor.rgb;
-            if (uMode > 1.5)
+            if (mode > 1.5)
             {
                 FragColor = uColor;
                 return;
@@ -110,7 +137,7 @@ public sealed unsafe partial class Renderer
                 col = Bleed(col);
 
             vec3 n = normalize(vNormal);
-            if (uMode > 0.5)
+            if (mode > 0.5)
             {
                 // Planar mapping in world space, one repeat per 2 m. Side faces keep "up" as v.
                 vec2 uv = abs(n.y) > 0.5 ? vWorld.xz : (abs(n.x) > 0.5 ? vec2(vWorld.z, vWorld.y) : vec2(vWorld.x, vWorld.y));
@@ -120,7 +147,7 @@ public sealed unsafe partial class Renderer
 
             // Hemisphere ambient + sun, plus a little rim light on the sides so box edges read.
             float rim = 0.12 * (1.0 - abs(n.y));
-            if (uSurfQ.x > 0.5 && uLayer >= 7.0 && uMode < 0.5) // a shared material (Surfaces.cs); Low, the rows of the old textures and everything else: the classic light
+            if (uSurfQ.x > 0.5 && uLayer >= 7.0 && mode < 0.5) // a shared material (Surfaces.cs); Low, the rows of the old textures and everything else: the classic light
                 col = SurfaceLit(col, n, vWorld, vLocal, vLocalN, vSize, uLayer, vBody, vBodyN, normalize(vUpL)) + col * rim * 0.5 * gLitAmb;
             else
                 col = ApplyLightAt(col, n, 0.0, vWorld) + col * rim * gLitAmb;
@@ -412,6 +439,7 @@ public sealed unsafe partial class Renderer
         Native.glUniform3f(_iLocCam, cam.X, cam.Y, cam.Z);
         Native.glUniform3f(_iLocFog, FogColor.X, FogColor.Y, FogColor.Z);
         Native.glUniform2f(_iLocFogRange, FogRange.X, FogRange.Y);
+        PushCutsInst();
         PerfCounters.Draw(36, _batchCount); // the perf window's counters (Source/Perf/PerfCounters.cs)
         if (RenderCaps.PersistentBuffers && Ring() is { } ring)
         {
@@ -520,6 +548,7 @@ public sealed unsafe partial class Renderer
                 uniform mat4 uBody;
                 uniform vec3 uOrigin;
                 out vec3 vWorld;
+                out vec3 vRel;
                 out vec3 vNormal;
                 out vec3 vLocal;
                 out vec3 vLocalN;
@@ -535,6 +564,7 @@ public sealed unsafe partial class Renderer
                     mat4 inst = mat4(iM0, iM1, iM2, iM3);
                     mat4 model = uBody * inst;
                     vec4 w = model * vec4(aPos, 1.0);
+                    vRel = w.xyz;
                     vWorld = w.xyz + uOrigin;
                     vNormal = mat3(model) * aNormal;
                     vSize = vec3(length(iM0.xyz), length(iM1.xyz), length(iM2.xyz));
@@ -799,6 +829,7 @@ public sealed unsafe partial class Renderer
         var layer = surface > 0 ? surface : (float)material; // (a shared material's code, Surfaces.Code; else the old texture layer)
         if (MarkGlow && mode == 2 && !_blendOn)
             alpha = 0f; // (this pixel glows: PostFx reads the mark, and with blending off it changes nothing else)
+        mode = CutMode(mode); // (a body round flush pods: their pockets aren't drawn on it, Renderer.Cuts.cs)
         if (_batching)
         {
             if (!_bloodOn && shape == 0 && (_batchBlended || !_blendOn))
@@ -826,6 +857,8 @@ public sealed unsafe partial class Renderer
         Native.glUniformMatrix4fv(_locModel, 1, false, &m.M11);
         Native.glUniform4f(_locColor, color.X, color.Y, color.Z, alpha);
         Native.glUniform1f(_locMode, mode);
+        if (mode >= 4)
+            PushCutsLone();
         if (shape == 0)
         {
             PerfCounters.Draw(36); // the perf window's counters (Source/Perf/PerfCounters.cs)

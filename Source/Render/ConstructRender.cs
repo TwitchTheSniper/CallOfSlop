@@ -235,6 +235,7 @@ public static partial class ConstructRender
             PanelRender.BeginWorld(gfx.CameraPosition - gfx.Origin, Vector3.Normalize(-new Vector3(viewInverse.M31, viewInverse.M32, viewInverse.M33)));
         var cam = gfx.CameraPosition;
         int culled = 0, lod = 0;
+        gfx.ClearCuts(); // (flush pods' pockets: AddPodCuts, Renderer.Cuts.cs)
         gfx.BeginBatch(); // (the small bodies' boxes in one instanced draw, not a draw each)
         var merge = MergeOn && gfx.MergedMeshes; // (static parts as merged meshes: ConstructRenderBatch.cs)
         BeginMergedFrame();
@@ -271,6 +272,7 @@ public static partial class ConstructRender
                 continue;
             }
             AllocProfile.Mark("cr: body parts");
+            gfx.Cutting = c.PodCount > 0 && AddPodCuts(gfx, c, body, blendTicks ? alpha : 1f); // (the surfaces round its flush pods open over their pockets)
             if (!merge || !DrawMergedBody(gfx, world, c, body, blendTicks ? alpha : 1f, cull, ref n)) // (too few static boxes, or merging off: part by part)
                 for (var i = 0; i < c.PartCount; i++)
                 {
@@ -278,6 +280,7 @@ public static partial class ConstructRender
                     if (c.Parts[i].Store != 0)
                         n += DrawStored(gfx, world, c, i, body, blendTicks ? alpha : 1f);
                 }
+            gfx.Cutting = false;
             AllocProfile.Mark("cr: panels, volumes, wheel");
             if (c.PanelParts.Length > 0 && !CameraFeeds.InPass)
                 PanelRender.Gather(gfx, world, c, body, blendTicks ? alpha : 1f, cull ? _planes : default, Now); // (display panels near the eye and facing it)

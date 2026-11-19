@@ -62,7 +62,9 @@ public sealed unsafe partial class Renderer
                 uniform mat4 uBody;
                 uniform vec3 uOrigin;
                 uniform float uGlowAlpha;
+                uniform float uCutOn; // this group's boxes take the openings (Renderer.Cuts.cs)
                 out vec3 vWorld;
+                out vec3 vRel;
                 out vec3 vNormal;
                 out vec3 vLocal;
                 out vec3 vLocalN;
@@ -78,6 +80,7 @@ public sealed unsafe partial class Renderer
                     mat4 inst = mat4(vec4(iR0.xyz, 0.0), vec4(iR1.xyz, 0.0), vec4(iR2.xyz, 0.0), vec4(iR0.w, iR1.w, iR2.w, 1.0));
                     mat4 model = uBody * inst;
                     vec4 w = model * vec4(aPos, 1.0);
+                    vRel = w.xyz;
                     vWorld = w.xyz + uOrigin;
                     vNormal = mat3(model) * aNormal;
                     vSize = vec3(length(iR0.xyz), length(iR1.xyz), length(iR2.xyz));
@@ -87,7 +90,7 @@ public sealed unsafe partial class Renderer
                     vBodyN = mat3(inst) * aNormal;
                     vUpL = vec3(model[0].y, model[1].y, model[2].y) / max(vSize, vec3(1e-6));
                     bool glow = iLook.w < 0.0;
-                    vModeI = glow ? 2.0 : 0.0;
+                    vModeI = (glow ? 2.0 : 0.0) + (uCutOn > 0.5 ? 4.0 : 0.0);
                     vColorI = vec4(iLook.rgb, glow ? uGlowAlpha : 1.0);
                     vLayerI = glow ? 0.0 : iLook.w;
                     gl_Position = uViewProj * w;
@@ -236,13 +239,23 @@ public sealed unsafe partial class Renderer
         Native.glUniform3f(_mLocFog, FogColor.X, FogColor.Y, FogColor.Z);
         Native.glUniform2f(_mLocFogRange, FogRange.X, FogRange.Y);
         Native.glUniform1f(_mLocGlow, MarkGlow ? 0f : 1f);
+        PushCutsMerged();
+        MergedCutOn(false);
+        _mergeCutOn = false;
     }
 
+    private bool _mergeCutOn;
+
     /// <summary>Draws a group at <paramref name="frame"/> (its frame's pose; relative to the origin while <see cref="Relative"/>). Between <see cref="BeginMerged"/> and <see cref="EndMerged"/>.</summary>
-    public void DrawMerged(MergedMesh m, in Matrix4x4 frame)
+    public void DrawMerged(MergedMesh m, in Matrix4x4 frame, bool cut = false)
     {
         if (!_mergeOn || m.Slots == 0 || m.Vao.Id == 0)
             return;
+        if (cut != _mergeCutOn)
+        {
+            MergedCutOn(cut); // (a body round flush pods: Renderer.Cuts.cs)
+            _mergeCutOn = cut;
+        }
         var f = FromOrigin(frame);
         Native.glUniformMatrix4fv(_mLocBody, 1, false, &f.M11);
         m.Vao.Bind();

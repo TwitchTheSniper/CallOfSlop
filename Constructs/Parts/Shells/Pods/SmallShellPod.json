@@ -127,6 +127,66 @@
     },
     {
       "min": [
+        -0.56,
+        0.081,
+        -0.554
+      ],
+      "max": [
+        -0.544,
+        0.954,
+        0.554
+      ],
+      "color": "#30363d",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.546,
+        0.085,
+        -0.56
+      ],
+      "max": [
+        0.546,
+        0.95,
+        -0.544
+      ],
+      "color": "#30363d",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.544,
+        0.083,
+        -0.554
+      ],
+      "max": [
+        0.56,
+        0.952,
+        0.554
+      ],
+      "color": "#30363d",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.546,
+        0.085,
+        0.544
+      ],
+      "max": [
+        0.546,
+        0.95,
+        0.56
+      ],
+      "color": "#30363d",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
         -0.624,
         0.958,
         -0.624
@@ -159,6 +219,36 @@
     },
     {
       "min": [
+        -0.56,
+        0.9885,
+        -0.56
+      ],
+      "max": [
+        -0.542,
+        1.0045,
+        0.56
+      ],
+      "color": "#38d0e8",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.539,
+        0.9885,
+        -0.56
+      ],
+      "max": [
+        0.539,
+        1.0045,
+        -0.542
+      ],
+      "color": "#38d0e8",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
         0.53,
         0.958,
         -0.624
@@ -188,6 +278,36 @@
       "detail": true,
       "paintable": false,
       "finish": "hazard paint"
+    },
+    {
+      "min": [
+        0.542,
+        0.9885,
+        -0.56
+      ],
+      "max": [
+        0.56,
+        1.0045,
+        0.56
+      ],
+      "color": "#38d0e8",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.539,
+        0.9885,
+        0.542
+      ],
+      "max": [
+        0.539,
+        1.0045,
+        0.56
+      ],
+      "color": "#38d0e8",
+      "detail": true,
+      "paintable": false
     },
     {
       "min": [
