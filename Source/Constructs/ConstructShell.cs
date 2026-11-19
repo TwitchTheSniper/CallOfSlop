@@ -81,8 +81,8 @@ public static class ConstructShell
                 continue;
             }
             ref var p = ref d.Parts[0];
-            if (d == chair || !p.D.ShellBody || p.Broken || ChannelOf(p) != channel)
-                continue;
+            if (d == chair || !p.D.ShellBody || p.Broken || ChannelOf(p) != channel || ConstructGantry.Holds(world, d.Id))
+                continue; // (a shell a Shell Gantry is working on waits for it)
             var g = Vector3.DistanceSquared(d.WorldCom, at);
             if (g < near)
                 (near, best, part) = (g, d, 0);

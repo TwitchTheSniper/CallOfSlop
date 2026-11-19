@@ -225,8 +225,147 @@ public sealed class ShellParts : IPartGenerator
         }));
     }
 
+
+    // ---- The Shell Gantry (the user, 2026-11-18; docs/sandbox/design/mining-shell.md "Shell Gantry layout"): a square bay 5 m each
+    // way, open at the front, five arms on its rear frame (drawn by GantryRender.cs from "shellGantry.arms"), and a parts table of its
+    // own placed behind the rear frame in the arms' reach. Modules off a shell are whole parts that lie on the table (Constructs/Shells.json
+    // names each module's "part"). The look (look.md "Machine look"): dark frame, the bay's front in hazard, orange along the bay, white
+    // at the ways in.
+
+    /// <summary>The arms' shoulders on the rear frame, in ConstructGantry.ArmNames order: left upper, left lower, right upper, right lower, head.</summary>
+    public static readonly double[][] GantryArms = [[-1.4, 3.4, 2.4], [-1.1, 1.0, 2.4], [1.4, 3.4, 2.4], [1.1, 1.0, 2.4], [0, 4.6, 2.4]];
+
+    private static Part Gantry()
+    {
+        const double h = 0.08, w = 2.5, post = 0.22, top = 5.36, beam = 0.2; // the deck's top; the bay's half width and depth; the frame
+        var p = new Part("Shell Gantry", Small, Section, "A vertical gantry a robot shell stands in, facing out of its open front: its five arms take a module off the shell and fit another from a Shell Parts Table placed behind it. Walk a shell in and leave it, then use the gantry's panel. Needs power.",
+            role: "panel", tool: "welder", group: "Logic", color: MachineLook.Base);
+        // The deck, a stand mat in the middle and hazard along the open front.
+        p.Add(Box([-w - post, 0, -w - post], [w + post, h, w + post], MachineLook.Base));
+        p.Add(MachineLook.D([-0.45, h - 0.002, -0.45], [0.45, h + 0.006, 0.45], MachineLook.In));
+        MachineLook.Hazard(p, [-w, h - 0.002, -w - post + 0.01], [w, h + 0.01, -w + 0.15]);
+        // Four corner posts and the top ring of beams between them (3 mm inside the posts' faces).
+        foreach (var sx in new[] { -1.0, 1.0 })
+            foreach (var sz in new[] { -1.0, 1.0 })
+                p.Add(Box([Math.Min(sx * w, sx * (w + post)), h, Math.Min(sz * w, sz * (w + post))], [Math.Max(sx * w, sx * (w + post)), top, Math.Max(sz * w, sz * (w + post))], Dark));
+        foreach (var sx in new[] { -1.0, 1.0 })
+            p.Add(Box([Math.Min(sx * (w + 0.003), sx * (w + post - 0.003)), top - beam, -w + 0.003], [Math.Max(sx * (w + 0.003), sx * (w + post - 0.003)), top - 0.003, w - 0.003], Joint));
+        foreach (var sz in new[] { -1.0, 1.0 })
+            p.Add(Box([-w + 0.003, top - beam, Math.Min(sz * (w + 0.003), sz * (w + post - 0.003))], [w - 0.003, top - 0.003, Math.Max(sz * (w + 0.003), sz * (w + post - 0.003))], Joint));
+        p.Add(MachineLook.D([-w, top - beam + 0.04, -w - post - 0.008], [w, top - 0.04, -w - post + 0.004], MachineLook.Out)); // (orange across the front beam: the bay)
+        // The rear frame: two uprights and three rails, where the arms' shoulders sit (the lower arms at 1 m, the upper at 3.4 m, the head's at 4.6 m).
+        foreach (var x in new[] { -0.75, 0.6 })
+            p.Add(Box([x, h + 0.003, w + 0.03], [x + 0.15, top - beam - 0.003, w + post - 0.03], Joint));
+        foreach (var (y0, y1) in new[] { (0.93, 1.07), (3.32, 3.48), (4.55, 4.68) })
+            p.Add(Box([-w + 0.003, y0, w + 0.02], [w - 0.003, y1, w + post - 0.02], Dark));
+        foreach (var a in GantryArms)
+            p.Add(MachineLook.D([a[0] - 0.2, a[1] - 0.2, w + post - 0.015], [a[0] + 0.2, a[1] + 0.2, w + post + 0.006], MachineLook.Accent)); // (a mount plate behind each shoulder)
+        // The control console outside the front right post, its screen towards the front.
+        double cx0 = w + post + 0.05, cx1 = cx0 + 0.55;
+        p.Add(Box([cx0, h, -w - post], [cx1, 1.1, -w + 0.25], MachineLook.Base));
+        p.Add(Box([cx0 + 0.03, 1.1, -w - post + 0.03], [cx1 - 0.03, 1.5, -w - post + 0.15], Dark));
+        p.Add(MachineLook.D([cx0 + 0.06, 1.14, -w - post + 0.018], [cx1 - 0.06, 1.46, -w - post + 0.03], Visor));
+        p.Add(MachineLook.D([cx0 + 0.08, 1.1, -w - post + 0.2], [cx0 + 0.2, 1.12, -w - post + 0.32], MachineLook.Accent));
+        p.Add(MachineLook.D([cx1 - 0.2, 1.1, -w - post + 0.2], [cx1 - 0.08, 1.12, -w - post + 0.32], MachineLook.Stop));
+        p.Add(MachineLook.D([cx0 + 0.04, h + 0.02, -w - post - 0.008], [cx1 - 0.04, h + 0.14, -w - post + 0.004], MachineLook.In)); // (its kick plate: the way to it)
+        p.Sock("bottom", [0, 0, 0], "-y");
+        foreach (var (n, x, z) in new[] { ("bottom fl", -2.0, -2.0), ("bottom fr", 2.0, -2.0), ("bottom bl", -2.0, 2.0), ("bottom br", 2.0, 2.0) })
+            p.Sock(n, [x, 0, z], "-y");
+        p.Stats(2200, 2400, 6, seconds: 15.0);
+        p.Set(("power", 120), ("onBreak", "disable"),
+            ("shellGantry", new PyDict
+            {
+                ["bay"] = Py.L(Py.L(-w, h, -w), Py.L(w, h + 5, w)),
+                ["arms"] = Py.L(GantryArms.Select(a => (object?)Py.L(a[0], a[1], a[2])).ToArray()),
+                ["reach"] = 4.0,
+            }));
+        return p;
+    }
+
+    /// <summary>The Shell Parts Table: a steel table that holds whole modules for a Shell Gantry (a Piece Rack by its storage.pieces), with a Piece in at its -z end.</summary>
+    private static Part Table()
+    {
+        var p = new Part("Shell Parts Table", Small, Section, "Holds robot shell modules for a Shell Gantry: place it behind the gantry's rear frame, on the same base, within its arms' reach. Put modules on it by hand or by conveyor; F takes one off.",
+            role: "storage", tool: "welder", group: "Logic", color: MachineLook.Base);
+        const double x = 0.6, z = 1.2, y = 0.86, t = 0.06;
+        foreach (var sx in new[] { -1.0, 1.0 })
+            foreach (var sz in new[] { -1.0, 1.0 })
+                p.Add(Box([Math.Min(sx * (x - 0.02), sx * (x - 0.12)), 0, Math.Min(sz * (z - 0.02), sz * (z - 0.12))], [Math.Max(sx * (x - 0.02), sx * (x - 0.12)), y + 0.003, Math.Max(sz * (z - 0.02), sz * (z - 0.12))], Dark));
+        p.Add(Box([-x, y, -z], [x, y + t, z], MachineLook.Base));
+        p.Add(MachineLook.D([-x + 0.04, y + t - 0.002, -z + 0.04], [x - 0.04, y + t + 0.006, z - 0.04], MachineLook.Steel, "steel"));
+        foreach (var sx in new[] { -1.0, 1.0 })
+            p.Add(MachineLook.D([Math.Min(sx * (x - 0.004), sx * (x - 0.034)), y + t - 0.004, -z + 0.004], [Math.Max(sx * (x - 0.004), sx * (x - 0.034)), y + t + 0.04, z - 0.004], MachineLook.Accent));
+        for (var k = 1; k < 4; k++)
+            p.Add(MachineLook.D([-x + 0.06, y + t + 0.004, -z + k * 0.6 - 0.012], [x - 0.06, y + t + 0.01, -z + k * 0.6 + 0.012], MachineLook.Ink)); // (slot marks across the top)
+        p.Add(MachineLook.D([-0.4, y + 0.004, -z - 0.008], [0.4, y + t - 0.004, -z + 0.004], MachineLook.In)); // (the way in at the -z end)
+        p.Sock("bottom", [0, 0, 0], "-y");
+        p.Stats(120, 500, 3);
+        p.Set(("shellGantry", new PyDict { ["table"] = true }),
+            ("storage", Kw(("pieces", Kw(("section", Py.L(1.0, 0.95)), ("length", 2.2), ("count", 60),
+                ("hold", Py.L(Py.L(-0.55, Py.Round(y + t + 0.012, 3), -1.15), Py.L(0.55, 1.9, 1.15))))))),
+            ("ports", Py.L(Kw(("name", "Piece in"), ("type", "conveyor"), ("dir", "in"), ("at", Py.L(0, Py.Round(y + t * 0.5, 3), -z)), ("face", "-z"), ("opening", Py.L(1.0, 0.9))))));
+        return p;
+    }
+
+    /// <summary>A robot shell module as a part (Constructs/Shells.json "part"): what a Shell Gantry takes off and fits, made on the Assembler.</summary>
+    private static Part Module(string name, string desc, double mass, Action<Part> look)
+    {
+        var p = new Part(name, Small, Section, desc + " A Shell Gantry fits it to a robot shell from its parts table.", tool: "wrench", group: "Logic", color: Steel);
+        look(p);
+        p.Sock("bottom", [0, 0, 0], "-y");
+        p.Stats(mass, 60, 2, 2);
+        return p;
+    }
+
+    private static void Leg(Part p, double k, bool runner)
+    {
+        PyDict? B(double[] lo, double[] hi, string? c = null, bool detail = false) => Box([lo[0] * k, lo[1] * k, lo[2] * k], [hi[0] * k, hi[1] * k, hi[2] * k], c, detail: detail);
+        p.Add(B([-0.075, 0.0, -0.15], [0.075, 0.07, 0.09], Dark)); // foot
+        p.Add(B([-0.065, 0.06, -0.07], [0.065, 0.47, 0.07], Joint)); // shin
+        p.Add(B([-0.07, 0.45, -0.085], [0.07, 0.53, 0.085], Dark, detail: true)); // knee
+        p.Add(B([-0.06, 0.52, -0.075], [0.06, 0.88, 0.075])); // thigh
+        p.Add(B([-0.045, 0.86, -0.045], [0.045, 0.94, 0.045], Dark, detail: true)); // the hip's coupling
+        if (runner)
+            p.Add(B([-0.02, 0.1, 0.073], [0.02, 0.44, 0.1], Lamp, detail: true)); // a spring strut behind the shin
+        if (k > 1)
+            p.Add(B([-0.07, 0.15, -0.088], [0.07, 0.4, -0.072], Joint, detail: true)); // a shin plate
+    }
+
+    private static void Head(Part p, bool plated)
+    {
+        p.Add(Box([-0.06, 0, -0.06], [0.06, 0.1, 0.06], Dark)); // neck
+        p.Add(Box([-0.135, 0.08, -0.14], [0.135, 0.35, 0.125])); // head
+        p.Add(Box([-0.11, 0.17, -0.158], [0.11, 0.25, -0.12], Visor, detail: true)); // visor
+        p.Add(Box([0.07, 0.34, -0.015], [0.09, 0.46, 0.015], Dark, detail: true)); // aerial
+        if (!plated)
+            return;
+        p.Add(Box([-0.15, 0.27, -0.16], [0.15, 0.37, 0.142], Joint, detail: true)); // a brow plate over the crown
+        foreach (var sx in new[] { -1.0, 1.0 })
+            p.Add(Box([Math.Min(sx * 0.137, sx * 0.157), 0.1, -0.12], [Math.Max(sx * 0.137, sx * 0.157), 0.3, 0.11], Joint, detail: true)); // cheek plates
+    }
+
+    private static IEnumerable<(string, Part)> Modules()
+    {
+        yield return ("Modules", Module("Shell Optics Head", "A robot shell's standard head: the visor, its cameras and an aerial.", 6, p => Head(p, plated: false)));
+        yield return ("Modules", Module("Shell Plated Head", "A robot shell's head under armour plates: the shell takes a tenth less from hits.", 11, p => Head(p, plated: true)));
+        yield return ("Modules", Module("Shell Power Pack", "A Robot Shell's power pack, worn on its back.", 9, p =>
+        {
+            p.Add(Box([-0.16, 0, -0.045], [0.16, 0.37, 0.045], Dark));
+            p.Add(Box([-0.12, 0.29, -0.049], [0.12, 0.32, -0.04], Lamp, detail: true));
+        }));
+        yield return ("Modules", Module("Shell Hand", "A robot shell's forearm and hand, which hold its tools.", 4, p =>
+        {
+            p.Add(Box([-0.05, 0, -0.05], [0.05, 0.11, 0.05], Dark)); // hand
+            p.Add(Box([-0.055, 0.1, -0.055], [0.055, 0.37, 0.055], Joint)); // forearm
+            p.Add(Box([-0.065, 0.35, -0.065], [0.065, 0.4, 0.065], Dark, detail: true)); // the elbow's coupling
+        }));
+        yield return ("Modules", Module("Shell Standard Leg", "A Robot Shell's leg: hip to foot.", 8, p => Leg(p, 1, runner: false)));
+        yield return ("Modules", Module("Shell Heavy Leg", "A Mining Shell's leg, half again the size of a standard one.", 24, p => Leg(p, 1.5, runner: false)));
+        yield return ("Modules", Module("Shell Runner Leg", "A sprung robot shell leg: a pair of them make the shell a tenth faster.", 7, p => Leg(p, 1, runner: true)));
+    }
+
     public void Make(PartOutput o)
     {
-        WriteParts(o, Out, [("", Shell()), ("", MiningShell()), ("", Chair()), .. Spares()]);
+        WriteParts(o, Out, [("", Shell()), ("", MiningShell()), ("", Chair()), .. Spares(), ("Gantry", Gantry()), ("Gantry", Table()), .. Modules()]);
     }
 }

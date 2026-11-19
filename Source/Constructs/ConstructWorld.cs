@@ -451,6 +451,7 @@ public sealed partial class ConstructWorld
     public void Clear()
     {
         LiftClear(); // (the lifters' states go with the bodies: ConstructLifters.cs)
+        GantryJobCount = 0; // (and the Shell Gantries' swaps: ConstructGantry.cs)
         Designs.Clear(); // (a world's shared panel designs go with it: PanelDesigns.cs)
         DesignStamp++;
         foreach (var c in Bodies)

@@ -1,0 +1,241 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Shell Parts Table",
+  "description": "Holds robot shell modules for a Shell Gantry: place it behind the gantry's rear frame, on the same base, within its arms' reach. Put modules on it by hand or by conveyor; F takes one off.",
+  "group": "Logic",
+  "section": "Shells",
+  "role": "storage",
+  "tool": "welder",
+  "mass": 120.0,
+  "health": 500,
+  "armour": 3,
+  "material": "steel",
+  "color": "#22262b",
+  "attachSeconds": 2.5,
+  "shellGantry": {
+    "table": true
+  },
+  "storage": {
+    "pieces": {
+      "section": [
+        1.0,
+        0.95
+      ],
+      "length": 2.2,
+      "count": 60,
+      "hold": [
+        [
+          -0.55,
+          0.932,
+          -1.15
+        ],
+        [
+          0.55,
+          1.9,
+          1.15
+        ]
+      ]
+    }
+  },
+  "ports": [
+    {
+      "name": "Piece in",
+      "type": "conveyor",
+      "dir": "in",
+      "at": [
+        0,
+        0.89,
+        -1.2
+      ],
+      "face": "-z",
+      "opening": [
+        1.0,
+        0.9
+      ]
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -0.58,
+        0.0,
+        -1.18
+      ],
+      "max": [
+        -0.48,
+        0.863,
+        -1.08
+      ],
+      "color": "#30363d"
+    },
+    {
+      "min": [
+        -0.58,
+        0.0,
+        1.08
+      ],
+      "max": [
+        -0.48,
+        0.863,
+        1.18
+      ],
+      "color": "#30363d"
+    },
+    {
+      "min": [
+        0.48,
+        0.0,
+        -1.18
+      ],
+      "max": [
+        0.58,
+        0.863,
+        -1.08
+      ],
+      "color": "#30363d"
+    },
+    {
+      "min": [
+        0.48,
+        0.0,
+        1.08
+      ],
+      "max": [
+        0.58,
+        0.863,
+        1.18
+      ],
+      "color": "#30363d"
+    },
+    {
+      "min": [
+        -0.6,
+        0.86,
+        -1.2
+      ],
+      "max": [
+        0.6,
+        0.92,
+        1.2
+      ],
+      "color": "#22262b"
+    },
+    {
+      "min": [
+        -0.56,
+        0.914,
+        -1.16
+      ],
+      "max": [
+        0.56,
+        0.93,
+        1.16
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.596,
+        0.916,
+        -1.196
+      ],
+      "max": [
+        -0.566,
+        0.96,
+        1.196
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.566,
+        0.916,
+        -1.196
+      ],
+      "max": [
+        0.596,
+        0.96,
+        1.196
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.54,
+        0.919,
+        -0.612
+      ],
+      "max": [
+        0.54,
+        0.935,
+        -0.588
+      ],
+      "color": "#15171a",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.54,
+        0.919,
+        -0.012
+      ],
+      "max": [
+        0.54,
+        0.935,
+        0.012
+      ],
+      "color": "#15171a",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.54,
+        0.919,
+        0.588
+      ],
+      "max": [
+        0.54,
+        0.935,
+        0.612
+      ],
+      "color": "#15171a",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.4,
+        0.864,
+        -1.208
+      ],
+      "max": [
+        0.4,
+        0.916,
+        -1.196
+      ],
+      "color": "#ecebe4",
+      "detail": true,
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

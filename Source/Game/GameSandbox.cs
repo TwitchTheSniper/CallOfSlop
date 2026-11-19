@@ -114,6 +114,7 @@ public enum CActKind : byte
     MmuOff, // nothing: a worn MMU comes off the wearer's back where they are, a loose part holding its fuel (protocol 365; GameSandboxEva.cs)
     LandingGear, // u16 body (the seat's): the seated player lowers or raises that craft's landing leg pods (protocol 367; ConstructDoors.ToggleGear)
     Fleet, // u8 FleetOp, u8 group slot, u16 body, u32 uid, vec at, u8 arg, f32 value: a player's fleet group from the command view (protocol 368; GameCrewFleetPlayers.cs)
+    Gantry, // u16 body, u16 part, u8 slot, u8 module index: a Shell Gantry fits that module to its shell (protocol 370; GameShellGantry.cs)
 }
 
 /// <summary>
@@ -471,6 +472,7 @@ public sealed partial class Game
         OpeningTick(now); // (the survival opening's beats: GameSandboxOpening.cs)
         BreakdownTick(); // (the rust bucket's breakdowns: GameSandboxBreakdowns.cs)
         ShellTick(); // (worn robot shells keep their link: GameRobotShell.cs)
+        GantryTick(); // (Shell Gantries' swaps: GameShellGantry.cs)
         ShellWearTick(); // (...and wear a little: GameShellWear.cs)
         FirstsTick(); // (a first flight in a craft of your own: GameMilestones.cs)
         StoryArmsTick(); // (no stock gun in a story world: GameStoryArms.cs)
@@ -828,6 +830,7 @@ public sealed partial class Game
             Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
         }
         ShellSendAll(to); // (who wears a robot shell: GameRobotShell.cs)
+        GantrySendAll(to); // (Shell Gantries at work: GameShellGantry.cs)
         if (Constructs.UseGrid)
         {
             SandboxStreamStart(to);
@@ -1298,6 +1301,8 @@ public sealed partial class Game
             }
             case CActKind.Station:
                 return SandboxStationAct(ref r, p, eye);
+            case CActKind.Gantry:
+                return SandboxGantryAct(ref r, p, eye); // (GameShellGantry.cs)
             case CActKind.Link:
                 return SandboxLinkAct(ref r, p); // (GameSandboxLinked.cs)
             case CActKind.Lifter:
