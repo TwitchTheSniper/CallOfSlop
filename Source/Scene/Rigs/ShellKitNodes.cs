@@ -26,17 +26,26 @@ public sealed class ShellKitNodes
     /// The drill arm: what other players see on the shell and what its wearer sees in first person (<see cref="ViewModel"/>). In the
     /// shell's arm colour with a steel collar; the bit in its accent, the cutting end in hazard paint (look.md "mark what bites").
     /// </summary>
-    private static readonly ArmBox[] DrillArm =
-    [
-        new(new(0.36f, 2.04f, -0.15f), new(0.585f, 2.295f, 0.15f), Joint, false, false), // shoulder
-        new(new(0.39f, 1.5f, -0.09f), new(0.555f, 2.055f, 0.09f), Steel, false, false, ArmPaint.Arm), // upper arm
-        new(new(0.4f, 1.26f, -0.42f), new(0.545f, 1.497f, 0.08f), Joint, true, false, ArmPaint.Arm), // housing
-        new(new(0.385f, 1.24f, -0.12f), new(0.56f, 1.52f, 0.03f), Steel, true, false), // motor collar
-        new(new(0.425f, 1.3f, -0.62f), new(0.52f, 1.46f, -0.41f), Bit, true, true, ArmPaint.Accent), // bit
-        new(new(0.445f, 1.33f, -0.8f), new(0.5f, 1.43f, -0.61f), Bit, true, true, ArmPaint.Accent),
-        new(new(0.46f, 1.355f, -0.9f), new(0.485f, 1.405f, -0.79f), Hazard, true, true), // the cutting end
-        new(new(0.39f, 1.505f, -0.41f), new(0.555f, 1.53f, -0.2f), Hazard, true, false), // hazard band
-    ];
+    private static readonly ArmBox[] DrillArm = MakeDrillArm();
+
+    private static ArmBox[] MakeDrillArm()
+    {
+        var a = new List<ArmBox>
+        {
+            new(new(0.36f, 2.04f, -0.15f), new(0.585f, 2.295f, 0.15f), Joint, false, false), // shoulder
+            new(new(0.39f, 1.5f, -0.09f), new(0.555f, 2.055f, 0.09f), Steel, false, false, ArmPaint.Arm), // upper arm
+            new(new(0.4f, 1.26f, -0.42f), new(0.545f, 1.497f, 0.08f), Joint, true, false, ArmPaint.Arm), // housing
+            new(new(0.385f, 1.24f, -0.12f), new(0.56f, 1.52f, 0.03f), Steel, true, false), // motor collar
+            new(new(0.39f, 1.505f, -0.41f), new(0.555f, 1.53f, -0.2f), Hazard, true, false), // hazard band
+        };
+        // The bit, as the Mining Shell part has it (ShellParts.DrillBit): the collar in the shell's accent, the cone and its spiral of
+        // flutes spinning as it digs, the point in hazard paint.
+        foreach (var (lo, hi, c, _) in PartKit.Generators.ShellParts.DrillBit)
+            a.Add(new ArmBox(V(lo), V(hi), c switch { 'h' => Hazard, 'd' => Dark, _ => Bit }, true, c != 'a', c == 'a' ? ArmPaint.Accent : ArmPaint.Own));
+        return [.. a];
+    }
+
+    private static Vector3 V(double[] v) => new((float)v[0], (float)v[1], (float)v[2]);
 
     /// <summary>A box's colour on a shell of these colours.</summary>
     private static Vector3 PaintOf(in ArmBox b, Vector3 arm, Vector3 accent) => b.Paint switch { ArmPaint.Arm => arm, ArmPaint.Accent => accent, _ => b.Color };

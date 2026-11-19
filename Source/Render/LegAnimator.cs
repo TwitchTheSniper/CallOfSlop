@@ -207,7 +207,7 @@ public static class LegAnimator
     private static readonly Vector3[] Hock = new Vector3[2];
 
     /// <summary>A hock leg's thigh and shin, times a person's (<see cref="Thigh"/>, <see cref="Shin"/>): the hock stands high, so shorter bones keep its knee from folding flat.</summary>
-    public const float HockBones = 0.8f;
+    public const float HockBones = 0.55f;
 
     private static void SetHocks(Player p)
     {

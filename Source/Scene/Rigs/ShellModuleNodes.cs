@@ -62,11 +62,15 @@ public sealed class ShellModuleNodes
 
     /// <summary>A tool arm, in a person's standing metres (right side; the left mirrors it): its shoulder, upper arm, and the elbow its forearm turns about.</summary>
     private const float ToolK = 1.25f;
-    private static readonly Vector3 ToolShoulderLo = new(0.37f, 1.27f, -0.11f), ToolShoulderHi = new(0.52f, 1.45f, 0.11f);
-    private static readonly Vector3 ToolUpperLo = new(0.395f, 0.97f, -0.07f), ToolUpperHi = new(0.495f, 1.3f, 0.07f);
-    private static readonly Vector3 ToolElbowLo = new(0.385f, 0.94f, -0.085f), ToolElbowHi = new(0.505f, 1.06f, 0.085f);
-    public static readonly Vector3 ToolElbow = new(0.445f, 1.0f, 0f);
-    private static readonly Vector3 ToolShoulder = new(0.445f, 1.36f, 0f);
+    // (Out past the torso's shoulder block, 0.4 m: a forearm's widest tool, the Sprayer's can, stays clear of the chest and hips.)
+    private static readonly Vector3 ToolShoulderLo = new(0.425f, 1.27f, -0.11f), ToolShoulderHi = new(0.575f, 1.45f, 0.11f);
+    private static readonly Vector3 ToolUpperLo = new(0.45f, 0.97f, -0.07f), ToolUpperHi = new(0.55f, 1.3f, 0.07f);
+    private static readonly Vector3 ToolElbowLo = new(0.44f, 0.94f, -0.085f), ToolElbowHi = new(0.56f, 1.06f, 0.085f);
+    public static readonly Vector3 ToolElbow = new(0.5f, 1.0f, 0f);
+    private static readonly Vector3 ToolShoulder = new(0.5f, 1.36f, 0f);
+
+    /// <summary>How far a tool arm's forearm follows the look down and up (radians): looking at the feet it stops short of the hips and thighs.</summary>
+    private const float ToolPitchDown = -0.45f, ToolPitchUp = 1.1f;
     private static readonly Vector3 Steel = Hex(0x8b949c), Joint = Hex(0x56606a), Dark = Hex(0x30363d);
 
     /// <summary>A Hand's wrist on its part: boxes below it are the hand, which the rig's own hand shapes draw (they hold the tools).</summary>
@@ -168,7 +172,7 @@ public sealed class ShellModuleNodes
         }
         if (ToolShown[0] || ToolShown[1])
         {
-            var pitch = seated ? 0f : Math.Clamp(p.RenderPitch, -1.2f, 1.2f) - (stance == 2 ? MathF.PI / 2 : 0f);
+            var pitch = seated ? 0f : Math.Clamp(p.RenderPitch, ToolPitchDown, ToolPitchUp) - (stance == 2 ? MathF.PI / 2 : 0f);
             for (var j = 0; j < 2; j++)
                 if (ToolShown[j])
                 {

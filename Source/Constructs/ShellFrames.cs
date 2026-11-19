@@ -54,17 +54,8 @@ public sealed class ShellFrame
     public bool[] Fixed = new bool[ShellFrames.SlotCount]; // a slot the Shell Gantry may not change (the Mining Shell's hopper and drill arm)
     public ShellFold Fold = new(); // "fold": how it folds into a shell pod (docs/sandbox/design/shell-pod.md; ShellPodRender.cs)
 
-    /// <summary>The tool a module forces while the shell is worn (the first slot's that names one), or null: any tool.</summary>
-    public ConstructTool? ForcedTool
-    {
-        get
-        {
-            foreach (var m in Modules)
-                if (m?.Tool is { } t)
-                    return t;
-            return null;
-        }
-    }
+    /// <summary>The tool a module forces while the shell is worn (a drill arm's first: the Mining Shell keeps its drill whatever its other arm is; else the first slot's that names one), or null: any tool.</summary>
+    public ConstructTool? ForcedTool => ToolModule?.Tool;
 
     /// <summary>Whether a shell fitted so may hold <paramref name="tool"/>: any tool when no module names one, else only the tools its modules are.</summary>
     public bool Allows(ConstructTool tool)
@@ -94,6 +85,9 @@ public sealed class ShellFrame
     {
         get
         {
+            foreach (var m in Modules)
+                if (m?.Tool != null && m.Kind == ShellModuleKind.Drill)
+                    return m;
             foreach (var m in Modules)
                 if (m?.Tool != null)
                     return m;
@@ -300,8 +294,8 @@ public static class ShellFrames
                     if (mod.Hock == 0 || hk.GetArrayLength() != 2)
                         throw new FormatException($"module \"{mod.Name}\": \"hock\" is [up, back] and needs a hock in its \"joints\"");
                     (mod.HockUp, mod.HockBack) = (hk[0].GetSingle(), hk[1].GetSingle());
-                    if (mod.HockUp is < 0.05f or > 0.4f || mod.HockBack is < -0.2f or > 0.3f)
-                        throw new FormatException($"module \"{mod.Name}\": \"hock\" up 0.05 to 0.4, back -0.2 to 0.3");
+                    if (mod.HockUp is < 0.05f or > 0.6f || mod.HockBack is < -0.2f or > 0.3f)
+                        throw new FormatException($"module \"{mod.Name}\": \"hock\" up 0.05 to 0.6, back -0.2 to 0.3");
                 }
                 else if (mod.Hock > 0)
                     throw new FormatException($"module \"{mod.Name}\": a hock in its \"joints\" needs \"hock\": [up, back]");
