@@ -29,6 +29,53 @@ public sealed partial class Game
             me.NoclipWanted = !me.NoclipWanted && NoclipAllowed(me);
     }
 
+    // Server: each player's search for a floor inside the construct they are held in (MoveState.NoclipHold), by id.
+    private readonly ConstructRide.InteriorSearch?[] _holdSearch = new ConstructRide.InteriorSearch?[256];
+
+    /// <summary>
+    /// Server, after everyone's moves: a player held in a construct's frame for a set-down inside (out of noclip in its hull,
+    /// or the Board inside key) has the search for a floor stepped on, <see cref="ConstructRide.InteriorBudgetMs"/> a tick at
+    /// most; found, they are set down there, standing in its frame (a snapshot says so and the client's prediction follows);
+    /// none, out of it as anyone leaving noclip is (<see cref="NoclipMove.Leave"/>). One search per player at a time.
+    /// </summary>
+    private void NoclipHoldTick()
+    {
+        foreach (var p in Players.Values)
+        {
+            var search = _holdSearch[p.Id];
+            ref var s = ref p.Sim;
+            if (!s.NoclipHold || !s.Noclip || !p.Alive || Constructs.Get(s.RideBody) is not { PartCount: > 0 } c)
+            {
+                if (search is { Active: true })
+                    search.Stop();
+                if (s.NoclipHold && (!s.Noclip || !p.Alive))
+                    s.NoclipHold = false;
+                continue;
+            }
+            if (c.Dirty)
+                c.Rebuild();
+            search ??= _holdSearch[p.Id] = new ConstructRide.InteriorSearch();
+            if (!search.Active || search.Body != c.Id || search.Parts != c.PartCount)
+                search.Begin(Constructs, c, s.Position, World.HeightOf(Stance.Stand));
+            if (!search.Step(ConstructRide.InteriorBudgetMs))
+                continue;
+            p.NoclipWanted = false;
+            if (search.Found)
+            {
+                ConstructRide.NoclipSetDown(ref s, c, search.Spot);
+                Constructs.Events.Add($"player {p.Id} set down inside construct {c.Id} at {search.Spot:0.0} ({search.Rays} rays, {search.Ticks} ticks, {search.WorstMs:0.00} ms at worst a tick)");
+            }
+            else
+            {
+                s.NoclipHold = s.Noclip = false;
+                NoclipMove.Leave(ref s, MoverPhysics.Clock, Constructs); // (nowhere inside to stand: out of it, onto its deck)
+                Constructs.Events.Add($"player {p.Id}: no floor inside construct {c.Id} ({search.Rays} rays), out of it instead");
+            }
+            p.PrevPosition = s.Position; // (drawn from the spot, not slid there from where they hung)
+            (p.PrevRideBody, p.PrevRideSeg, p.PrevRideLocal) = (s.RideBody, s.RideSeg, s.RideLocal);
+        }
+    }
+
     // The Board inside key's ask, until the next input takes it (Program.Noclip.cs).
     private ushort _boardBody;
     private Vector3 _boardAt;

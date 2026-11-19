@@ -1337,6 +1337,8 @@ public sealed partial class Game : IDisposable
                 Up = p.Sim.RideUp != Vector3.Zero ? p.Sim.RideUpW : Vector3.Zero, RideBody = p.Sim.RideUp != Vector3.Zero ? p.Sim.RideBody : (ushort)0, RideSeg = p.Sim.RideSeg, RideLocal = p.Sim.RideLocal };
         }
 
+        if (SandboxOn)
+            NoclipHoldTick(); // creative: a flyer held in a hull, set down inside once a floor is found (GameNoclip.cs)
         AllocProfile.Mark("carts, snapshots");
         if (Carts.Count > 0 || BuilderRange || Mode == GameMode.Zombies)
             ServerTickCarts(now); // push carts, parked and manned (GameZombies.cs): after the players move, so a stuck cart holds its owner
@@ -1414,6 +1416,7 @@ public sealed partial class Game : IDisposable
         {
             var guess = p.LastInput;
             guess.Seq = p.LastProcessedSeq + 1;
+            guess.NoclipBoard = 0; // (a press, not a held key: never guessed again)
             if (guess.Tick != 0)
                 guess.Tick++; // the next command's stamp: what the client predicted it at (movers, player separation)
             ApplyCmd(p, guess);

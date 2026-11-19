@@ -125,6 +125,7 @@ public struct MoveState
     public byte Frame; // a robot shell's frame (Constructs/Shells.json, ShellFrames.cs; 0: a person's size): the server's, from Msg.Shell on a client; never in a snapshot
     public bool Noclip; // flying with no collision (NoclipMove.cs; creative Sandbox)
     public bool NoclipExit; // just left it: the shared step after the move finds room (Game.NoclipLeft; never sent)
+    public bool NoclipHold; // left it inside a construct's hull (or with Board inside): held still in its frame, Noclip still on, while the server finds a floor inside (Game.NoclipHoldTick; a snapshot's ride kind 246)
 }
 
 /// <summary>Shared rules: tick rate, player physics, movement and ray casts against the current map.</summary>
@@ -863,7 +864,7 @@ public sealed class Player
     public void ResetForMatch(bool restoreLoadout)
     {
         NoclipWanted = false;
-        Sim.Noclip = Sim.NoclipExit = false;
+        Sim.Noclip = Sim.NoclipExit = Sim.NoclipHold = false;
         Sim.Gear = Sim.Canopy = Sim.GearDelay = Sim.Frame = 0;
         SbSpawned = false;
         InShell = false; // (the server ends any shell run at a new match: ShellResetAll)

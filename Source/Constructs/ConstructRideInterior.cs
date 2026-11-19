@@ -1,12 +1,16 @@
+using System.Diagnostics;
 using System.Numerics;
 
 namespace CallOfSlop;
 
 /// <summary>
-/// Noclip boarding (creative Sandbox; docs/sandbox/constructs/overview-and-playing.md "Noclip"): a flyer who leaves noclip in a
-/// construct's frame, or who boards one with the Board inside key (<see cref="InputCmd.NoclipBoard"/>), is set down inside its
-/// hull, not pushed up out of it onto the roof. The search runs in the construct's rest frame, along its rider's up, so a ship
-/// in a banking turn or in orbit is the same search as a parked truck, on the server, in a client's prediction and its replays.
+/// Noclip boarding (creative Sandbox; docs/sandbox/constructs/overview-and-playing.md "Noclip"): a flyer who leaves noclip
+/// inside a construct's hull, or who boards one with the Board inside key (<see cref="InputCmd.NoclipBoard"/>), is set down on
+/// a floor inside it, not pushed up out of it onto the roof. The shared step only holds them still in its frame
+/// (<see cref="MoveState.NoclipHold"/>); the server looks for the floor over a few ticks (<see cref="InteriorSearch"/>, at
+/// most <see cref="InteriorBudgetMs"/> a tick per player: a ray through a capital ship costs 50-100 us) and then sets them
+/// down (Game.NoclipHoldTick). The search runs in the construct's rest frame along its rider's up, so a ship in a banking
+/// turn or in orbit is the same search as a parked truck, and the ship moving between its ticks changes nothing.
 /// </summary>
 public static partial class ConstructRide
 {
@@ -16,51 +20,163 @@ public static partial class ConstructRide
     /// <summary>A floor counts as inside when the construct is over it within this (m): a deck under its own roof.</summary>
     public const float InteriorRoof = 8f;
 
+    /// <summary>The server's time for one player's search in one tick (ms).</summary>
+    public const double InteriorBudgetMs = 1.0;
+
     /// <summary>The first pass looks for floors this far (m) above and below the start only.</summary>
     private const float WindowAbove = 2.5f, WindowBelow = 6f;
 
     /// <summary>Seats looked at for a standing spot beside them, when no floor under a roof is found.</summary>
-    private const int InteriorSeats = 24;
-
-    // The last search (replays of the same input ask again): body, start and shape, and the spot found, in the rest frame.
-    private static ushort _inBody;
-    private static int _inParts;
-    private static Vector3 _inFrom, _inSpot;
-    private static bool _inFound;
+    private const int InteriorSeats = 4;
 
     /// <summary>
-    /// A place to stand inside construct <paramref name="c"/> nearest world point <paramref name="from"/>: a walkable floor
-    /// with room for the body under the construct's own roof, else a spot beside one of its seats, else the nearest floor of
-    /// it with headroom (an open truck bed). False: nowhere on it a body fits.
+    /// Shared step: is a flyer leaving noclip in frame <paramref name="c"/> inside its hull (within its bounds, and under its
+    /// own roof or in its geometry)? Then they are held for a set-down inside; hovering over an open deck, they aren't, and
+    /// drop onto it as before.
     /// </summary>
-    public static bool InteriorSpot(ConstructWorld w, Construct c, Vector3 from, float height, out Vector3 feet)
+    public static bool NoclipInsideHull(ref MoveState s, Construct c)
     {
-        if (c.Dirty)
-            c.Rebuild();
-        var local = c.ToLocal(from);
-        if (_inBody == c.Id && _inParts == c.PartCount && Vector3.DistanceSquared(_inFrom, local) < 1e-4f)
-        {
-            feet = c.ToWorld(_inSpot);
-            return _inFound;
-        }
-        _inFound = Search(w, c, local, height, out var spot);
-        (_inBody, _inParts, _inFrom, _inSpot) = (c.Id, c.PartCount, local, spot);
-        feet = c.ToWorld(spot);
-        return _inFound;
+        if (Bodies is not { } w)
+            return false;
+        var iq = Quaternion.Conjugate(c.Rot);
+        var up = s.RideUpW != Vector3.Zero ? s.RideUpW : Vector3.Normalize(Vector3.Transform(s.RideUp, c.Rot));
+        if (!InFrame(c, c.ToLocal(s.Position), Vector3.Transform(up, iq), 0f, 0f))
+            return false;
+        if (w.Raycast(s.Position + up * 0.5f, up, InteriorRoof, out var roof, only: c) && roof.Body == c)
+            return true;
+        var r = World.BodyRadius;
+        return !w.CapsuleClear(c, s.Position + up * (r + 0.05f), s.Position + up * (World.HeightOf(Stance.Stand) - r), r);
     }
 
-    /// <summary>The last search's rays and columns (for --ride-check's line).</summary>
-    internal static int InteriorLastRays, InteriorLastColumns;
-
-    private static bool Search(ConstructWorld w, Construct c, Vector3 from, float height, out Vector3 best)
+    /// <summary>Shared step: held still in frame <paramref name="c"/>, noclip on, while the server finds them a floor inside.</summary>
+    public static void NoclipHoldStill(ref MoveState s, Construct c)
     {
-        InteriorLastColumns = 0;
-        best = from;
+        s.NoclipHold = true;
+        s.Noclip = true;
+        s.NoclipExit = false;
+        s.Grounded = false;
+        s.Stance = Stance.Stand;
+        s.MantleTicks = 0;
+        s.RideVel = Vector3.Zero;
+        s.RideOn = 0;
+        Place(ref s, c);
+    }
+
+    /// <summary>
+    /// Shared step: a flyer using the Board inside key on construct <paramref name="body"/> goes into its frame at
+    /// <paramref name="at"/> (where they aimed, in its rest frame), to be held there for a set-down inside. False: no such construct here.
+    /// </summary>
+    public static bool NoclipBoardInto(ref MoveState s, ushort body, Vector3 at)
+    {
+        if (Bodies?.Get(body) is not { PartCount: > 0 } c || !float.IsFinite(at.X + at.Y + at.Z))
+            return false;
+        if (c.Dirty)
+            c.Rebuild();
+        if (!InFrame(c, at, Vector3.UnitY, BoundsPad, BoundsPad))
+            at = Vector3.Clamp(at, c.LocalMin, c.LocalMax); // (a stale or made-up aim: inside its bounds)
+        s.Position = c.ToWorld(at);
+        Join(ref s, c, 0, UpFor(c, GravityFrames.UpAt(s.Position)), Vector3.Zero);
+        return true;
+    }
+
+    /// <summary>Server: a held flyer set down at <paramref name="spot"/> (rest frame) of <paramref name="c"/>, standing still in its frame.</summary>
+    public static void NoclipSetDown(ref MoveState s, Construct c, Vector3 spot)
+    {
+        var feet = c.ToWorld(spot);
+        s.NoclipHold = s.Noclip = s.NoclipExit = false;
+        s.RideBody = c.Id;
+        s.RideSeg = 0;
+        s.RideOn = 0;
+        s.RideUp = UpFor(c, GravityFrames.UpAt(feet));
+        s.RideLocal = spot;
+        s.RideVel = Vector3.Zero;
+        s.RideAir = s.RideClimb = s.RideFree = s.RideLadder = 0;
+        s.Stance = Stance.Stand;
+        s.Grounded = true;
+        Place(ref s, c);
+    }
+
+    /// <summary>A whole search at once (the ride check's): the floor inside <paramref name="c"/> nearest world point <paramref name="from"/>.</summary>
+    public static bool InteriorSpot(ConstructWorld w, Construct c, Vector3 from, float height, out Vector3 feet)
+    {
+        var search = new InteriorSearch();
+        search.Begin(w, c, from, height);
+        while (!search.Step(double.MaxValue)) { }
+        feet = c.ToWorld(search.Spot);
+        return search.Found;
+    }
+
+    /// <summary>
+    /// One player's search for a place to stand inside a construct, stepped a slice at a time: a walkable floor with room for
+    /// the body (the frame mover's own shapes, skin included) under the construct's own roof, nearest the start; else a spot
+    /// beside one of its seats; else the nearest floor with headroom (an open truck bed). <see cref="Spot"/> is in the rest frame.
+    /// </summary>
+    public sealed class InteriorSearch
+    {
+        public ushort Body;
+        public int Parts;
+        public bool Active, Found;
+        public Vector3 Spot;
+        public int Rays, Columns, Ticks;
+        public double Ms, WorstMs;
+        private IEnumerator<int>? _run;
+
+        public void Begin(ConstructWorld w, Construct c, Vector3 fromWorld, float height)
+        {
+            if (c.Dirty)
+                c.Rebuild();
+            Body = c.Id;
+            Parts = c.PartCount;
+            Active = true;
+            Found = false;
+            Rays = Columns = Ticks = 0;
+            Ms = WorstMs = 0;
+            Spot = c.ToLocal(fromWorld);
+            _run = Run(this, w, c, Spot, height);
+        }
+
+        /// <summary>Works on for up to <paramref name="budgetMs"/>; true when it is over (<see cref="Found"/> says how).</summary>
+        public bool Step(double budgetMs)
+        {
+            if (_run == null)
+                return true;
+            var start = Stopwatch.GetTimestamp();
+            Ticks++;
+            var done = false;
+            while (true)
+            {
+                if (!_run.MoveNext())
+                {
+                    done = true;
+                    break;
+                }
+                if (Stopwatch.GetElapsedTime(start).TotalMilliseconds >= budgetMs)
+                    break;
+            }
+            var ms = Stopwatch.GetElapsedTime(start).TotalMilliseconds;
+            Ms += ms;
+            WorstMs = Math.Max(WorstMs, ms);
+            if (done)
+            {
+                Active = false;
+                _run = null;
+            }
+            return done;
+        }
+
+        public void Stop()
+        {
+            Active = false;
+            _run = null;
+        }
+    }
+
+    /// <summary>The search itself, one ray (or one room test) between yields.</summary>
+    private static IEnumerator<int> Run(InteriorSearch me, ConstructWorld w, Construct c, Vector3 from, float height)
+    {
         var upL = Vector3.Normalize(UpFor(c, GravityFrames.UpAt(c.ToWorld(from))));
-        var upW = Vector3.Normalize(Vector3.Transform(upL, c.Rot));
         var e1 = Vector3.Normalize(Vector3.Cross(upL, MathF.Abs(upL.X) < 0.9f ? Vector3.UnitX : Vector3.UnitZ));
         var e2 = Vector3.Cross(upL, e1);
-        // The bounds along the three directions.
         Vector3 lo = new(float.MaxValue), hi = new(float.MinValue);
         for (var k = 0; k < 8; k++)
         {
@@ -73,25 +189,24 @@ public static partial class ConstructRide
         var step = MathF.Max(0.75f, MathF.Sqrt(area / InteriorColumns));
         var a0 = Vector3.Dot(from, e1);
         var b0 = Vector3.Dot(from, e2);
+        var h0 = Vector3.Dot(from, upL);
         var reach = (int)MathF.Ceiling(MathF.Max(MathF.Max(a0 - lo.X, hi.X - a0), MathF.Max(b0 - lo.Y, hi.Y - b0)) / step) + 1;
         float inside = float.MaxValue, open = float.MaxValue;
-        var openSpot = from;
-        var rays = 0;
+        Vector3 best = from, openSpot = from;
         // Ring by ring round the start, nearest first: a ring further out than the best spot inside can't beat it. First only
         // the decks near the start's height (a ray through a whole capital ship's height meets hundreds of parts), then all.
-        var h0 = Vector3.Dot(from, upL);
         for (var pass = 0; pass < 2 && inside == float.MaxValue; pass++)
         {
             var low = pass == 0 ? MathF.Max(lo.Z, h0 - WindowBelow) : lo.Z;
             var high = pass == 0 ? MathF.Min(hi.Z, h0 + WindowAbove) : hi.Z;
             if (pass == 1 && low >= h0 - WindowBelow && high <= h0 + WindowAbove)
                 break; // (the first pass saw it all)
-            for (var ring = 0; ring <= reach && rays < InteriorRays; ring++)
+            for (var ring = 0; ring <= reach && me.Rays < InteriorRays; ring++)
             {
                 if ((ring - 1) * step > MathF.Sqrt(inside))
                     break;
-                for (var i = -ring; i <= ring && rays < InteriorRays; i++)
-                    for (var j = -ring; j <= ring && rays < InteriorRays; j++)
+                for (var i = -ring; i <= ring && me.Rays < InteriorRays; i++)
+                    for (var j = -ring; j <= ring && me.Rays < InteriorRays; j++)
                     {
                         if (Math.Max(Math.Abs(i), Math.Abs(j)) != ring)
                             continue;
@@ -99,64 +214,97 @@ public static partial class ConstructRide
                         var b = b0 + j * step;
                         if (a < lo.X - 0.5f || a > hi.X + 0.5f || b < lo.Y - 0.5f || b > hi.Y + 0.5f)
                             continue;
-                        InteriorLastColumns++;
-                        Column(w, c, e1 * a + e2 * b, upL, upW, low, high, from, height, ref rays, ref inside, ref best, ref open, ref openSpot);
+                        me.Columns++;
+                        var across = e1 * a + e2 * b;
+                        // Down the column, floor after floor.
+                        var top = high + 0.5f;
+                        var bottom = low - 0.5f;
+                        for (var guard = 0; guard < 32 && top > bottom && me.Rays < InteriorRays; guard++)
+                        {
+                            var upW = Vector3.Normalize(Vector3.Transform(upL, c.Rot));
+                            me.Rays++;
+                            var got = w.Raycast(c.ToWorld(across + upL * top), -upW, top - bottom, out var hit, only: c) && hit.Body == c;
+                            var hitDist = hit.Distance;
+                            var hitPart = hit.Part;
+                            var normalL = got ? Vector3.Transform(hit.Normal, Quaternion.Conjugate(c.Rot)) : default;
+                            yield return 0;
+                            if (!got)
+                                break;
+                            if (hitDist < 0.02f)
+                            {
+                                top -= 0.3f; // (starting inside a solid box: past it a little)
+                                continue;
+                            }
+                            var spot = across + upL * (top - hitDist + 0.02f);
+                            top -= hitDist + 0.05f;
+                            if (Vector3.Dot(normalL, upL) < World.MinWalkNormalY || hitPart < 0 || hitPart >= c.PartCount || c.IsRaycastWheel(hitPart))
+                                continue;
+                            var d = Vector3.DistanceSquared(spot, from);
+                            if (d >= inside)
+                                continue; // (no nearer than the best spot inside: nothing more to learn here)
+                            me.Rays++;
+                            upW = Vector3.Normalize(Vector3.Transform(upL, c.Rot));
+                            var feetW = c.ToWorld(spot);
+                            var roofed = w.Raycast(feetW + upW * 0.5f, upW, InteriorRoof, out var roof, only: c) && roof.Body == c;
+                            yield return 0;
+                            if (!roofed && (d >= open || inside < float.MaxValue))
+                                continue;
+                            var fits = FrameRoom(w, c, spot, upL, height);
+                            if (fits)
+                            {
+                                upW = Vector3.Normalize(Vector3.Transform(upL, c.Rot));
+                                fits = BodyFits(w, c, c, c.ToWorld(spot), upW, height);
+                            }
+                            yield return 0;
+                            if (!fits)
+                                continue;
+                            if (roofed)
+                                (inside, best) = (d, spot);
+                            else
+                                (open, openSpot) = (d, spot);
+                        }
                     }
             }
         }
-        InteriorLastRays = rays;
         if (inside < float.MaxValue)
-            return true;
-        // No floor under a roof: beside the seat nearest the start, standing.
-        if (SeatSpot(w, c, from, height, out var seatSpot))
         {
-            best = seatSpot;
-            return true;
+            (me.Found, me.Spot) = (true, best);
+            yield break;
+        }
+        // No floor under a roof: beside the free seat nearest the start, standing; one seat a slice.
+        var seats = new int[InteriorSeats];
+        var dist = new float[InteriorSeats];
+        var n = 0;
+        for (var i = 0; i < c.PartCount; i++)
+        {
+            ref var p = ref c.Parts[i];
+            if (p.D.Role != PartRole.Seat || p.D.RemoteReceiver || p.Broken)
+                continue;
+            var d = Vector3.DistanceSquared(c.ToLocal(ConstructEdits.SeatFeet(c, i)), from);
+            if (n == InteriorSeats && d >= dist[n - 1])
+                continue;
+            var k = n < InteriorSeats ? n++ : n - 1;
+            for (; k > 0 && dist[k - 1] > d; k--)
+                (seats[k], dist[k]) = (seats[k - 1], dist[k - 1]);
+            (seats[k], dist[k]) = (i, d);
+        }
+        for (var k = 0; k < n; k++)
+        {
+            var seat = seats[k];
+            if (seat >= c.PartCount)
+                continue;
+            var vel = SurfaceVel(c, c.Parts[seat].Seg, ConstructEdits.SeatFeet(c, seat));
+            var ok = ExitDeck(w, c, seat, height, vel, out var deck, out _, out var feet) && deck == c;
+            var local = c.ToLocal(feet);
+            yield return 0;
+            if (ok)
+            {
+                (me.Found, me.Spot) = (true, local);
+                yield break;
+            }
         }
         if (open < float.MaxValue)
-        {
-            best = openSpot;
-            return true;
-        }
-        return false;
-    }
-
-    /// <summary>Down one column of the construct, floor after floor: the nearest one with room under a roof, and the nearest with room at all.</summary>
-    private static void Column(ConstructWorld w, Construct c, Vector3 across, Vector3 upL, Vector3 upW, float low, float high, Vector3 from, float height,
-        ref int rays, ref float inside, ref Vector3 best, ref float open, ref Vector3 openSpot)
-    {
-        var top = high + 0.5f;
-        var bottom = low - 0.5f;
-        for (var guard = 0; guard < 32 && top > bottom && rays < InteriorRays; guard++)
-        {
-            var origin = c.ToWorld(across + upL * top);
-            rays++;
-            if (!w.Raycast(origin, -upW, top - bottom, out var hit, only: c) || hit.Body != c)
-                return;
-            if (hit.Distance < 0.02f)
-            {
-                top -= 0.3f; // (starting inside a solid box: past it a little)
-                continue;
-            }
-            top -= hit.Distance + 0.05f;
-            if (Vector3.Dot(hit.Normal, upW) < World.MinWalkNormalY || hit.Part < 0 || hit.Part >= c.PartCount || c.IsRaycastWheel(hit.Part))
-                continue;
-            var spot = c.ToLocal(hit.Point + upW * 0.02f);
-            var d = Vector3.DistanceSquared(spot, from);
-            if (d >= inside)
-                continue; // (no nearer than the best spot inside: nothing more to learn here)
-            var feetW = c.ToWorld(spot);
-            rays++;
-            var roofed = w.Raycast(feetW + upW * 0.5f, upW, InteriorRoof, out var roof, only: c) && roof.Body == c;
-            if (!roofed && (d >= open || inside < float.MaxValue))
-                continue;
-            if (!FrameRoom(w, c, spot, upL, height) || !BodyFits(w, c, c, feetW, upW, height))
-                continue;
-            if (roofed)
-                (inside, best) = (d, spot);
-            else
-                (open, openSpot) = (d, spot);
-        }
+            (me.Found, me.Spot) = (true, openSpot);
     }
 
     /// <summary>
@@ -174,84 +322,6 @@ public static partial class ConstructRide
         for (var i = 0; i < shapes.Length; i++)
             if (CapsuleContact.Separation(shapes[i], p, e, r, out _, out _) < -0.01f)
                 return false;
-        return true;
-    }
-
-    /// <summary>A spot to stand beside the free seat of <paramref name="c"/> nearest <paramref name="from"/> (rest frame), on the construct itself.</summary>
-    private static bool SeatSpot(ConstructWorld w, Construct c, Vector3 from, float height, out Vector3 spot)
-    {
-        spot = from;
-        Span<int> seats = stackalloc int[InteriorSeats];
-        Span<float> dist = stackalloc float[InteriorSeats];
-        var n = 0;
-        for (var i = 0; i < c.PartCount; i++)
-        {
-            ref var p = ref c.Parts[i];
-            if (p.D.Role != PartRole.Seat || p.D.RemoteReceiver || p.Broken)
-                continue;
-            var d = Vector3.DistanceSquared(c.ToLocal(ConstructEdits.SeatFeet(c, i)), from);
-            var k = n < InteriorSeats ? n++ : InteriorSeats - 1;
-            if (k == InteriorSeats - 1 && n == InteriorSeats && d >= dist[k])
-                continue;
-            for (; k > 0 && dist[k - 1] > d; k--)
-            {
-                seats[k] = seats[k - 1];
-                dist[k] = dist[k - 1];
-            }
-            seats[k] = i;
-            dist[k] = d;
-        }
-        for (var k = 0; k < n; k++)
-        {
-            var seat = seats[k];
-            var vel = SurfaceVel(c, c.Parts[seat].Seg, ConstructEdits.SeatFeet(c, seat));
-            if (ExitDeck(w, c, seat, height, vel, out var deck, out _, out var feet) && deck == c)
-            {
-                spot = c.ToLocal(feet);
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /// <summary>
-    /// Shared step: a noclip flyer leaving it with the Board inside key on construct <paramref name="body"/> goes into its frame
-    /// at <paramref name="at"/> (where they aimed, in its rest frame), for <see cref="NoclipInside"/> to set them down inside.
-    /// False: no such construct here.
-    /// </summary>
-    public static bool NoclipBoardInto(ref MoveState s, ushort body, Vector3 at)
-    {
-        if (Bodies?.Get(body) is not { PartCount: > 0 } c || !float.IsFinite(at.X + at.Y + at.Z))
-            return false;
-        if (c.Dirty)
-            c.Rebuild();
-        if (!InFrame(c, at, Vector3.UnitY, BoundsPad, BoundsPad))
-            at = Vector3.Clamp(at, c.LocalMin, c.LocalMax); // (a stale or made-up aim: inside its bounds)
-        s.Position = c.ToWorld(at);
-        Join(ref s, c, 0, UpFor(c, GravityFrames.UpAt(s.Position)), Vector3.Zero);
-        return true;
-    }
-
-    /// <summary>
-    /// Someone just left noclip in a construct's frame (<see cref="NoclipMove.Leave"/>): set down on the nearest floor inside its
-    /// hull (<see cref="InteriorSpot"/>), standing still in its frame. False: not in a frame, or nowhere on it to stand.
-    /// </summary>
-    public static bool NoclipInside(ref MoveState s, ConstructWorld w)
-    {
-        if (s.RideUp == Vector3.Zero || s.RideBody == 0 || w.Get(s.RideBody) is not { } c || s.RideSeg > c.JointCount)
-            return false;
-        if (!InteriorSpot(w, c, s.Position, World.HeightOf(Stance.Stand), out var feet))
-            return false;
-        s.RideSeg = 0;
-        s.RideOn = 0;
-        s.RideUp = UpFor(c, GravityFrames.UpAt(feet));
-        s.RideLocal = c.ToLocal(feet);
-        s.RideVel = Vector3.Zero;
-        s.RideAir = s.RideClimb = s.RideFree = s.RideLadder = 0;
-        s.Stance = Stance.Stand;
-        s.Grounded = true;
-        Place(ref s, c);
-        w.Events.Add($"a noclip flyer was set down inside construct {c.Id} at {s.RideLocal:0.0}");
         return true;
     }
 }

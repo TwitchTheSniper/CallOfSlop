@@ -55,15 +55,25 @@ public static class NoclipMove
     public static void Step(ref MoveState s, in InputCmd cmd)
     {
         var frame = ConstructRide.NoclipFrame(ref s); // (in a moving construct: flying in its frame, so it doesn't leave them behind)
-        if (cmd.NoclipBoard != 0 && ConstructRide.NoclipBoardInto(ref s, cmd.NoclipBoard, cmd.NoclipBoardAt))
-            frame = ConstructRide.Bodies?.Get(cmd.NoclipBoard); // (the Board inside key: into the aimed construct's frame, then set down inside it as they leave)
-        if (!cmd.Noclip || cmd.NoclipBoard != 0)
+        var board = cmd.NoclipBoard != 0 && ConstructRide.NoclipBoardInto(ref s, cmd.NoclipBoard, cmd.NoclipBoardAt);
+        if (board)
+            frame = ConstructRide.Bodies?.Get(cmd.NoclipBoard); // (the Board inside key: into the aimed construct's frame, then set down inside it)
+        if (!cmd.Noclip || board)
         {
+            // Inside a construct's hull (or boarding it): held still in its frame, noclip on, while the server finds a floor
+            // inside over a few ticks (Game.NoclipHoldTick); it then sets them down. A hold stays a hold until then.
+            if (frame != null && (board || s.NoclipHold && s.Noclip || ConstructRide.NoclipInsideHull(ref s, frame)))
+            {
+                ConstructRide.NoclipHoldStill(ref s, frame);
+                return;
+            }
+            s.NoclipHold = false;
             s.Noclip = false;
             s.NoclipExit = true;
             s.RideFree = frame != null ? (byte)0 : Flung; // (the speed stays: a flick at something, carried until they land; in a frame, it carries them on to its deck)
             return;
         }
+        s.NoclipHold = false; // (flying again: a set-down being looked for is off)
         if (!s.Noclip)
         {
             s.Noclip = true;
@@ -137,14 +147,12 @@ public static class NoclipMove
 
     /// <summary>
     /// The tick after someone left noclip (<see cref="MoveState.NoclipExit"/>; the game's shared step, server and prediction):
-    /// in a construct's frame, set down on a floor inside its hull (<see cref="ConstructRide.NoclipInside"/>); else out of
-    /// whatever they are in (<see cref="ExitSpot"/>), staying in a frame they were in.
+    /// out of whatever they are in (<see cref="ExitSpot"/>), staying in a frame they were in, onto its deck. (Inside a hull
+    /// they don't come here: they are held for a set-down inside, <see cref="MoveState.NoclipHold"/>.)
     /// </summary>
     public static void Leave(ref MoveState s, uint tick, ConstructWorld? bodies)
     {
         s.NoclipExit = false;
-        if (bodies != null && ConstructRide.NoclipInside(ref s, bodies))
-            return;
         s.Position = ExitSpot(s.Position, tick, bodies);
         s.RideWorld = s.Position;
         ConstructRide.NoclipLanded(ref s); // (in a moving construct's frame: they stay in it, on its deck)
