@@ -749,6 +749,8 @@ public static unsafe partial class Program
                 }
             }
         }
+        // The attach tool: RMB breaks the one seam under the crosshair, Shift+RMB takes the part off (Program.SandboxWeldSeam.cs).
+        SandboxWeldSeamInput(g, me, in h, aimed, hit);
         // Taking a part off: hold aim on it with the tool it needs.
         if (h.Tool != ConstructTool.None && aimed && Pressed(GameAction.Aim) && !hit.Body.Loose && hit.SlotPlus1 == 0) // (a stored part is taken with F, not a tool)
         {

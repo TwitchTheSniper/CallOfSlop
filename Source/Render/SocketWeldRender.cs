@@ -31,8 +31,15 @@ public static class SocketWeldRender
     private static float _pullFor; // seconds to draw the streak: 0 none
     private static double _pullEnd = -1; // on the clock Draw is given, set on its first frame
 
+    /// <summary>The weld seam under the crosshair (Program.SandboxWeldSeam.cs): a flat box in the rest frame of its body's segment, drawn on the body as it is drawn; <see cref="SeamOk"/> false: it can't be broken (grey).</summary>
+    public static Construct? SeamBody;
+    public static int SeamSeg;
+    public static Vector3 SeamMin, SeamMax;
+    public static bool SeamOk;
+
     public static void Clear()
     {
+        SeamBody = null;
         MarkerCount = 0;
         PointOn = TargetOn = TetherOn = false;
         Hot = -1;
@@ -64,6 +71,8 @@ public static class SocketWeldRender
     {
         MarkersDrawn = 0;
         var pulse = 0.55f + 0.25f * MathF.Sin((float)now * 6f);
+        if (SeamBody is { } sb)
+            DrawSeam(gfx, sb, pulse);
         for (var k = 0; k < MarkerCount; k++)
         {
             ref var m = ref Markers[k];
@@ -140,6 +149,46 @@ public static class SocketWeldRender
         var y = Vector3.Cross(n, x);
         Bar(gfx, p - x * 0.09f, p + x * 0.09f, 0.008f, col, 0.8f);
         Bar(gfx, p - y * 0.09f, p + y * 0.09f, 0.008f, col, 0.8f);
+    }
+
+    /// <summary>The seam that RMB breaks: its outline and a lit strip over it, hot red-orange, or grey when it can't be broken.</summary>
+    private static void DrawSeam(Renderer gfx, Construct c, float pulse)
+    {
+        if (SeamSeg < 0 || SeamSeg > c.JointCount)
+            return;
+        c.WorldFrame(SeamSeg, out var q, out var t);
+        var col = SeamOk ? new Vector3(1f, 0.3f, 0.1f) : new Vector3(0.55f, 0.55f, 0.6f);
+        var centre = t + Vector3.Transform((SeamMin + SeamMax) * 0.5f, q);
+        var size = SeamMax - SeamMin;
+        gfx.Draw(Matrix4x4.CreateScale(size) * Matrix4x4.CreateFromQuaternion(q) * Matrix4x4.CreateTranslation(centre), col, SeamOk ? 0.25f + 0.3f * pulse : 0.3f, mode: 2);
+        // The edges along the face (the thin axis's edges are skipped: millimetres).
+        var thick = SeamOk ? 0.018f : 0.012f;
+        for (var e = 0; e < 12; e++)
+        {
+            var axis = e / 4;
+            var bits = e % 4;
+            if ((axis == 0 ? size.X : axis == 1 ? size.Y : size.Z) < 0.02f)
+                continue;
+            Vector3 a = SeamMin, b = SeamMax;
+            var u = (bits & 1) != 0;
+            var v = (bits & 2) != 0;
+            switch (axis)
+            {
+                case 0:
+                    a = new Vector3(SeamMin.X, u ? SeamMax.Y : SeamMin.Y, v ? SeamMax.Z : SeamMin.Z);
+                    b = a with { X = SeamMax.X };
+                    break;
+                case 1:
+                    a = new Vector3(u ? SeamMax.X : SeamMin.X, SeamMin.Y, v ? SeamMax.Z : SeamMin.Z);
+                    b = a with { Y = SeamMax.Y };
+                    break;
+                default:
+                    a = new Vector3(u ? SeamMax.X : SeamMin.X, v ? SeamMax.Y : SeamMin.Y, SeamMin.Z);
+                    b = a with { Z = SeamMax.Z };
+                    break;
+            }
+            Bar(gfx, t + Vector3.Transform(a, q), t + Vector3.Transform(b, q), thick, col, 0.95f);
+        }
     }
 
     /// <summary>A thin box from <paramref name="a"/> to <paramref name="b"/>.</summary>
