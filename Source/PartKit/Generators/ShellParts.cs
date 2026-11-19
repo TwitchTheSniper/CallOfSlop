@@ -375,7 +375,7 @@ public sealed class ShellParts : IPartGenerator
     private static readonly (string Name, string Class, double W, double D, int Bin)[] PodSizes =
         [("Tiny", "tiny", 0.35, 0.55, 0), ("Small", "small", 0.62, 1.0, 0), ("Medium", "medium", 0.95, 1.5, HopperUnits)];
 
-    private const string Trim = "#1e7f8e"; // a pod's rim trim
+    private const string Trim = "#155a64"; // a pod's rim trim (deep teal: a brighter one goes near-white on its sunlit side)
 
     private static Part Pod((string Name, string Class, double W, double D, int Bin) z, bool flush)
     {
