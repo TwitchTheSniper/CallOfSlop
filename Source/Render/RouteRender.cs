@@ -184,6 +184,7 @@ public static class RouteRender
             LifterRender.Draw(gfx, world); // (Loader Arms: the boom, the hand and the piece on its move)
         ClampArmRender.Draw(gfx, world); // (station berths' clamp arms: the boom and head where each reaches)
         GantryRender.Draw(gfx, world); // (Shell Gantries' five arms, at rest or on a swap: GantryRender.cs)
+        ShellPodRender.Draw(gfx, world); // (shell pods' lids, frames and the shells folding in or out: ShellPodRender.cs)
         UseFrameRender.Draw(gfx, world, gfx.CameraPosition); // (the selector out: frames round sub-blueprint uses)
         gfx.EndBatch();
         LastSegments = n;

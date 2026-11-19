@@ -389,6 +389,8 @@ public static unsafe partial class Program
         }
         if (aimed && hit.RoutePlus1 == 0 && hit.Part >= 0 && hit.Part < hit.Body.PartCount && hit.Body.DefOf(hit.Part).Gantry != null)
             g.SandboxLookText = ShellGantryLook(g, hit.Body, hit.Part); // (a Shell Gantry: its bay, its table, its work: Program.SandboxShellGantry.cs)
+        ShellPodRender.Gather(g); // (who wears a shell: an empty pod's frame rises as one comes near)
+        var podFrame = ShellPodFrame(g, me, aimed, hit); // (in a shell, in an empty pod's frame: F docks it, Program.SandboxShellPod.cs)
         var terminalTook = TerminalFrame(g, me, in h, aimed, hit, storeNear); // (a Smart Terminal under the crosshair takes the wheel, the use key and reload: Program.SandboxTerminal.cs)
         var feet = me.Position;
         var nearRack = World.Map.Sandbox is { } sb && Vector3.Distance(feet with { Y = 0 }, sb.Rack) <= 4.5f;
@@ -421,7 +423,9 @@ public static unsafe partial class Program
             if (Pressed(GameAction.Interact))
                 g.SandboxSend(CActKind.Use, body: hit.Body.Id, part: (ushort)hit.Part);
         }
-        if (talkTook)
+        if (podFrame.Body != null && Pressed(GameAction.Interact))
+            g.SandboxSend(CActKind.Use, body: podFrame.Body.Id, part: (ushort)podFrame.Part); // (the pod's button: the server folds the shell away)
+        else if (talkTook)
         {
             // (the use key went to a person, or would: nothing behind them takes it)
         }

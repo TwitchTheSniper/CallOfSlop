@@ -222,6 +222,11 @@ public enum CfgKey : byte
     Walls, // Storage Volume: on, its box is a walled open-topped bin (four walls and a floor inside the box, solid; ConstructStoreVolume.Walled)
     ToolsOut, // Tool Rack: which hooks' tools a crew member has taken, a bit each (not on the panel; ToolRacks.cs)
     ShellKit0, ShellKit1, ShellKit2, // Robot Shell: the module in each slot, a byte a slot, two a setting (0: its frame's; not on the panel; ShellFrames.cs, the Shell Gantry)
+    PodShell, // shell pod: the docked shell's frame + 1 (0: empty; not on the panel; ConstructShellPod.cs). A pod also keeps the shell's ShellWear, ShellDamage and ShellKit
+    PodChannel, // shell pod: the docked shell's channel (not on the panel)
+    PodOwner, // shell pod: the docked shell's owner (255 nobody; not on the panel)
+    PodOre, // shell pod: the docked Mining Shell's hopper material still to empty (a RecyclingTable id; not on the panel)
+    PodOreUnits, // shell pod: ...and how much
     COUNT,
 }
 
@@ -553,7 +558,8 @@ public static class ConstructConfig
             AddRotorSettings(d, list);
         if (d.Door != null)
             ConstructDoors.AddSettings(d, list);
-        ShellWear.AddSettings(d, list); // (a Robot Shell's wear, hidden)
+        ShellWear.AddSettings(d, list); // (a Robot Shell's wear, hidden; a shell pod's docked shell's too)
+        ConstructShellPod.AddSettings(d, list); // (what a shell pod holds, hidden)
         ToolRacks.AddSettings(d, list); // (a Tool Rack's tools out, hidden)
         AddThrowSettings(d, list);
         // Every part that shows text: its size (last, so a part file's own settings keep their slots).
@@ -860,7 +866,8 @@ public static class ConstructConfig
                 CfgKey.Grip => d.Role == PartRole.Panel || d.Walk != WalkKind.None,
                 CfgKey.Profile or CfgKey.Width or CfgKey.Height or CfgKey.Wall or CfgKey.CutLength => d.IsExtruder && !d.IsPanelFormer || ProductionLines.IsConsole(d), // (a console's: its next bill line)
                 CfgKey.MaskA or CfgKey.MaskB or CfgKey.MaskC or CfgKey.MaskD => d.IsExtruder && !d.IsPanelFormer,
-                (>= CfgKey.ShellWear0 and <= CfgKey.ShellWear3) or CfgKey.ShellDamage or (>= CfgKey.ShellKit0 and <= CfgKey.ShellKit2) => d.ShellBody,
+                (>= CfgKey.ShellWear0 and <= CfgKey.ShellWear3) or CfgKey.ShellDamage or (>= CfgKey.ShellKit0 and <= CfgKey.ShellKit2) => d.ShellBody || d.ShellPod != null, // (a pod keeps its docked shell's: ConstructShellPod.cs)
+                >= CfgKey.PodShell and <= CfgKey.PodOreUnits => d.ShellPod != null,
                 CfgKey.ToolsOut => d.IsToolRack, // (ToolRacks.cs)
                 CfgKey.RunMode => d.IsWheelFormer && !d.IsPanelFormer,
                 CfgKey.AmmoType => d.Role is PartRole.AmmoBox or PartRole.Storage,
@@ -983,6 +990,8 @@ public static class ConstructConfig
             var v = At(p, d, s);
             if (v == (e.Bound ? d.DefaultSetting : e.Default) || e.Id == CfgKey.ToolsOut)
                 continue; // (a Tool Rack's empty hooks are its crew's trips, never a blueprint's: ToolRacks.cs)
+            if (d.ShellPod != null && e.Hidden)
+                continue; // (a shell pod's docked shell is never a blueprint's: printing one would make a shell; ConstructShellPod.cs)
             parts.Add($"\"{e.Key}\": " + e.Type switch
             {
                 CfgType.Toggle => v >= 0.5f ? "true" : "false",

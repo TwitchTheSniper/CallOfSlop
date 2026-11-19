@@ -452,6 +452,7 @@ public sealed partial class ConstructWorld
     {
         LiftClear(); // (the lifters' states go with the bodies: ConstructLifters.cs)
         GantryJobCount = 0; // (and the Shell Gantries' swaps: ConstructGantry.cs)
+        PodJobCount = 0; // (and the shell pods' folds: ConstructShellPod.cs)
         Designs.Clear(); // (a world's shared panel designs go with it: PanelDesigns.cs)
         DesignStamp++;
         foreach (var c in Bodies)
@@ -671,6 +672,8 @@ public sealed partial class ConstructWorld
         if (c.DefOf(index).IsReceiverGun && c.MergeOf[index] != 0)
             index = ConstructMerge.Settle(this, c, index, index); // (a merged receiver's cell: the rest re-merge, its centre parts move or pop off)
         var def = c.DefOf(index);
+        if (def.ShellPod != null)
+            ConstructShellPod.Release(this, c, index); // (a shell pod that goes stands its shell first)
         if (c.Parts[index].Store != 0)
             Spill(c, index); // (a container that goes spills what it holds: physical storage)
         c.FuseNoteRemoval(index); // (a fused part: does its unit still hold together without it? ConstructFuse.cs)
@@ -1054,6 +1057,8 @@ public sealed partial class ConstructWorld
                 return true;
             }
         }
+        if (c.DefOf(part).ShellPod != null)
+            ConstructShellPod.Release(this, c, part); // (a wrecked shell pod lets its shell out)
         if (p.Store != 0)
             if (!c.DefOf(part).IsBeacon && !c.DefOf(part).IsTerminal) // (a beacon holds nothing; a terminal's tray stays with the wreck: its store stays with the wreck, which says so on the look line and the HUD)
                 Spill(c, part); // (a destroyed container spills what it holds)

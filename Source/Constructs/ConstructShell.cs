@@ -37,7 +37,8 @@ public static class ConstructShell
 
     /// <summary>
     /// The nearest shell a sitter of this chair may wake in: on its channel, within its range, theirs or nobody's (or their
-    /// faction's). A shell standing alone (<paramref name="part"/> 0 of its own construct), or one clamped on a Robot Shell Dock
+    /// faction's). A shell standing alone (<paramref name="part"/> 0 of its own construct), one docked in a shell pod (<paramref name="part"/>
+    /// is the pod: ConstructShellPod.cs, the caller unfolds it first), or one clamped on a Robot Shell Dock
     /// (Karl, 2026-11-17: <paramref name="part"/> is the shell's part in the ship; the caller cuts it free). Null: none
     /// (<paramref name="why"/> says why).
     /// </summary>
@@ -54,6 +55,23 @@ public static class ConstructShell
         var fitted = false;
         foreach (var d in world.Bodies)
         {
+            if (d.PodCount > 0 && Vector3.DistanceSquared(d.WorldCom, at) <= (range + d.Radius) * (range + d.Radius))
+            {
+                // Shells docked in shell pods (docs/sandbox/design/shell-pod.md): the pod keeps the shell's owner and channel.
+                for (var q = 0; q < d.PodCount; q++)
+                {
+                    int i = d.Pods[q];
+                    if (i >= d.PartCount || d.Parts[i].Broken || !ConstructShellPod.Holds(d.Parts[i]) || ConstructShellPod.ChannelIn(d.Parts[i]) != channel)
+                        continue;
+                    var o = ConstructShellPod.OwnerIn(d.Parts[i]);
+                    if (o != 255 && o != player && !Factions.Shares(o, player))
+                        continue;
+                    d.WorldFrame(d.Parts[i].Seg, out var pq, out var pt);
+                    var f = Vector3.DistanceSquared(pt + Vector3.Transform(d.Parts[i].Pos, pq), at);
+                    if (f < near)
+                        (near, best, part) = (f, d, i);
+                }
+            }
             if (d.PartCount == 0 || d.Owner != 255 && d.Owner != player && !Factions.Shares(d.Owner, player))
                 continue;
             if (d.PartCount > 1)

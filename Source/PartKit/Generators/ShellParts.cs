@@ -364,8 +364,79 @@ public sealed class ShellParts : IPartGenerator
         yield return ("Modules", Module("Shell Runner Leg", "A sprung robot shell leg: a pair of them make the shell a tenth faster.", 7, p => Leg(p, 1, runner: true)));
     }
 
+    // ---- Shell storage pods (the user, 2026-11-18; docs/sandbox/design/shell-pod.md): one shell a pod, in three size classes by the
+    // shell's standing height. Each size is a pair: bolted onto the surface, or flush (its body below the socket, recessed into the
+    // surface it is welded to, only its lid 4 mm proud). Placed on any face: a floor, a wall or a ceiling. The pod's body is drawn
+    // here; its lid, the frame that rises out of it and the platform the shell stands on move, so ShellPodRender.cs draws them from
+    // "shellPod". Its solid is one hidden box (the closed pod; flush: the lid's slab only, so it doesn't meet the surface it sinks into).
+    // A Medium pod is also a bin: a Mining Shell's hopper empties into it, and its Chute out takes the ore on.
+
+    /// <summary>The sizes: name, class, half width, depth (about half the class's shipped shell), bin units (0: none).</summary>
+    private static readonly (string Name, string Class, double W, double D, int Bin)[] PodSizes =
+        [("Tiny", "tiny", 0.35, 0.55, 0), ("Small", "small", 0.62, 1.0, 0), ("Medium", "medium", 0.95, 1.5, HopperUnits)];
+
+    private static Part Pod((string Name, string Class, double W, double D, int Bin) z, bool flush)
+    {
+        var (w, dp) = (z.W, z.D);
+        var top = flush ? 0.004 : dp; // the lid's top: flush, 4 mm proud of the surface (z-fighting.md)
+        var bot = top - dp;
+        var name = flush ? $"{z.Name} Flush Shell Pod" : $"{z.Name} Shell Pod";
+        var size = z.Class switch { "tiny" => "1 m", "small" => "2 m", _ => "5 m" };
+        var desc = $"Parks a robot shell (up to {size} tall) when nobody wears it: walk the shell into the frame that rises out of it and press F: you wake in your chair and the pod folds the shell away. Wake in it again from a Shell Control Chair. A docked shell charges from the grid and can't be damaged or taken"
+            + (z.Bin > 0 ? "; a Mining Shell's hopper empties into the pod, and its Chute out takes the ore on." : ".")
+            + (flush ? " Flush: the pod sinks into the floor, wall or ceiling it is welded to, its lid level with the surface." : " Weld it onto a floor, a wall or a ceiling.");
+        var p = new Part(name, Small, Section, desc, role: z.Bin > 0 ? "storage" : "panel", tool: "welder", group: "Logic", color: MachineLook.Base);
+        const double t = 0.06, rim = 0.09; // the walls' thickness, the rim's width
+        // The solid: the closed pod (flush: only its lid's slab, which sits in the 1 cm the build allows into the surface).
+        p.Add(Box([-w, flush ? top - 0.01 : 0, -w], [w, top, w], hidden: true));
+        // The body: four walls, a floor inside, a dark lining (3 mm in from the walls), the rim round the opening in hazard.
+        p.Add(MachineLook.D([-w, bot, -w], [w, bot + t, w], MachineLook.Base)); // floor
+        foreach (var s in new[] { -1.0, 1.0 })
+        {
+            p.Add(MachineLook.D([Math.Min(s * w, s * (w - t)), bot + t + 0.003, -w], [Math.Max(s * w, s * (w - t)), top - rim * 0.5, w], MachineLook.Base)); // the x walls
+            p.Add(MachineLook.D([-w + t + 0.003, bot + t + 0.003, Math.Min(s * w, s * (w - t))], [w - t - 0.003, top - rim * 0.5, Math.Max(s * w, s * (w - t))], MachineLook.Base)); // the z walls
+        }
+        p.Add(MachineLook.D([-w + t + 0.006, bot + t + 0.003, -w + t + 0.006], [w - t - 0.006, bot + t + 0.02, w - t - 0.006], Dark)); // the lining's floor, under the platform
+        foreach (var s in new[] { -1.0, 1.0 })
+        {
+            p.Add(MachineLook.D([Math.Min(s * (w - rim), s * (w + 0.004)), top - rim * 0.5 + 0.003, -w - 0.004], [Math.Max(s * (w - rim), s * (w + 0.004)), top - 0.003, w + 0.004], MachineLook.Accent, "hazard paint")); // the rim, x sides
+            p.Add(MachineLook.D([-w + rim + 0.003, top - rim * 0.5 + 0.003, Math.Min(s * (w - rim), s * (w + 0.004))], [w - rim - 0.003, top - 0.003, Math.Max(s * (w - rim), s * (w + 0.004))], MachineLook.Accent, "hazard paint")); // z sides
+        }
+        if (!flush)
+        {
+            // Bolted on: a flange round the foot with a bolt at each corner, and a status lamp and a vent on its front.
+            p.Add(MachineLook.D([-w - 0.06, 0, -w - 0.06], [w + 0.06, 0.035, w + 0.06], Dark));
+            foreach (var sx in new[] { -1.0, 1.0 })
+                foreach (var sz in new[] { -1.0, 1.0 })
+                    p.Add(MachineLook.D([sx * (w + 0.03) - 0.018, 0.035, sz * (w + 0.03) - 0.018], [sx * (w + 0.03) + 0.018, 0.06, sz * (w + 0.03) + 0.018], MachineLook.Steel, "steel"));
+            p.Add(MachineLook.D([-0.1, top * 0.55, -w - 0.012], [0.1, top * 0.55 + 0.04, -w + 0.004], Visor)); // the status lamp
+            p.Add(MachineLook.D([-w * 0.6, top * 0.18, -w - 0.01], [w * 0.6, top * 0.18 + 0.12, -w + 0.004], Joint)); // a vent plate
+        }
+        p.Sock("bottom", [0, 0, 0], "-y");
+        p.Stats(z.Class switch { "tiny" => 45, "small" => 180, _ => 420 }, z.Class switch { "tiny" => 300, "small" => 700, _ => 1200 }, 6, seconds: z.Class == "medium" ? 8.0 : 4.0);
+        var pod = new PyDict { ["class"] = z.Class, ["half"] = w, ["top"] = Py.Round(top, 3), ["depth"] = dp, ["flush"] = flush };
+        p.Set(("power", z.Class switch { "tiny" => 30, "small" => 80, _ => 150 }), ("onBreak", "disable"), ("shellPod", pod));
+        if (z.Bin > 0)
+        {
+            var lo = Py.L(-w + 0.12, Py.Round(bot + 0.09, 3), -w + 0.12);
+            var hi = Py.L(w - 0.12, Py.Round(bot + 0.3, 3), w - 0.12);
+            p.Set(("storage", new PyDict { ["bulk"] = new PyDict { ["material"] = "any", ["capacity"] = z.Bin, ["min"] = lo, ["max"] = hi } }),
+                ("ports", Py.L(Kw(("name", "Chute out"), ("type", "chute"), ("dir", "out"), ("at", Py.L(w, Py.Round(bot + dp * 0.3, 3), 0)), ("face", "+x")))));
+        }
+        return p;
+    }
+
+    private static IEnumerable<(string, Part)> Pods()
+    {
+        foreach (var z in PodSizes)
+        {
+            yield return ("Pods", Pod(z, flush: false));
+            yield return ("Pods", Pod(z, flush: true));
+        }
+    }
+
     public void Make(PartOutput o)
     {
-        WriteParts(o, Out, [("", Shell()), ("", MiningShell()), ("", Chair()), .. Spares(), ("Gantry", Gantry()), ("Gantry", Table()), .. Modules()]);
+        WriteParts(o, Out, [("", Shell()), ("", MiningShell()), ("", Chair()), .. Spares(), ("Gantry", Gantry()), ("Gantry", Table()), .. Modules(), .. Pods()]);
     }
 }
