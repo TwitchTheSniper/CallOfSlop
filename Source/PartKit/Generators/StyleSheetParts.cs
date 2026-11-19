@@ -528,13 +528,14 @@ public sealed class StyleSheetParts : IPartGenerator
             var a0 = i * 2 * Math.PI / segs + 0.05;
             var a1 = (i + 1) * 2 * Math.PI / segs - 0.05;
             k.Hull(Ring2(big, radial, vertical, cy, a0, a1), Mid, "painted steel");
-            k.Hull(Arc(big + radial - 0.004, big + radial + 0.014, cy - vertical * 0.4, cy + vertical * 0.4, a0 + 0.035, a1 - 0.035), Body, "painted steel"); // (the coil band)
-            if (i % 3 == 0) // (an injector on top of every third segment)
+            if (i % 2 == 0) // (a coil band on every other segment: triangle cull, Karl 2026-11-19)
+                k.Hull(Arc(big + radial - 0.004, big + radial + 0.014, cy - vertical * 0.4, cy + vertical * 0.4, a0 + 0.035, a1 - 0.035), Body, "painted steel");
+            if (i % 3 == 0) // (an injector on top of every third segment: two boxes, not two prisms)
             {
                 var am = (a0 + a1) / 2;
                 var (x, z) = (big * Math.Cos(am), big * Math.Sin(am));
-                k.Hull(Cyl(x, z, 0.03, cy + vertical - 0.004, cy + vertical + 0.07, 8), Bare, "steel");
-                k.Hull(Cyl(x, z, 0.018, cy + vertical + 0.066, cy + vertical + 0.09, 8), Plasma, "", glow: true);
+                k.Box(x - 0.028, cy + vertical - 0.004, z - 0.028, x + 0.028, cy + vertical + 0.07, z + 0.028, Bare, "steel");
+                k.Glow(x - 0.017, cy + vertical + 0.066, z - 0.017, x + 0.017, cy + vertical + 0.09, z + 0.017, Plasma);
             }
         }
         for (var i = 0; i < segs; i++)
@@ -592,25 +593,25 @@ public sealed class StyleSheetParts : IPartGenerator
     /// <summary>The containment sphere (C's) as six bands, a lit band round its equator with lips.</summary>
     private static void Sphere(Kit k, double R, double cy, string band)
     {
-        for (var la = 0; la < 6; la++)
+        // Three hulls of three rings of ten (a hull has at most 32 corners): half the buried caps six bands had.
+        for (var part = 0; part < 3; part++)
         {
-            double Rr(int i) => R * Math.Cos(-Math.PI / 2 + i * Math.PI / 6);
-            double Y(int i) => cy + R * Math.Sin(-Math.PI / 2 + i * Math.PI / 6);
             var pts = new List<double[]>();
-            foreach (var i in new[] { la, la + 1 })
+            foreach (var i in new[] { part * 2, part * 2 + 1, part * 2 + 2 })
             {
-                var rr = Math.Max(Rr(i), 0.02);
-                for (var lo = 0; lo < 12; lo++)
+                var phi = -Math.PI / 2 + i * Math.PI / 6;
+                var rr = Math.Max(R * Math.Cos(phi), 0.02);
+                for (var lo = 0; lo < 10; lo++)
                 {
-                    var th = (lo + 0.5) * 2 * Math.PI / 12;
-                    pts.Add([rr * Math.Cos(th), Y(i), rr * Math.Sin(th)]);
+                    var th = (lo + 0.5) * 2 * Math.PI / 10;
+                    pts.Add([rr * Math.Cos(th), cy + R * Math.Sin(phi), rr * Math.Sin(th)]);
                 }
             }
-            k.Hull(pts, la is 2 or 3 ? Mid : Body, "painted steel");
+            k.Hull(pts, part == 1 ? Mid : Body, "painted steel");
         }
-        k.Hull(Cyl(0, 0, R * 1.012, cy - 0.035, cy + 0.035, 16, 0.25), band, "", glow: true);
-        k.Hull(Cyl(0, 0, R * 1.045, cy + 0.045, cy + 0.075, 16, 0.25), Body, "painted steel");
-        k.Hull(Cyl(0, 0, R * 1.045, cy - 0.077, cy - 0.047, 16, 0.25), Body, "painted steel");
+        k.Hull(Cyl(0, 0, R * 1.012, cy - 0.035, cy + 0.035, 10, 0.5), band, "", glow: true);
+        k.Hull(Cyl(0, 0, R * 1.045, cy + 0.045, cy + 0.075, 10, 0.5), Body, "painted steel");
+        k.Hull(Cyl(0, 0, R * 1.045, cy - 0.077, cy - 0.047, 10, 0.5), Body, "painted steel");
     }
 
     /// <summary>R2 C: the sphere with more to it: a cradle collar the legs stand under, injector ports, a crown and coolant lines.</summary>
@@ -641,9 +642,9 @@ public sealed class StyleSheetParts : IPartGenerator
                     P(R + 0.095, cy + 0.135, -0.02), P(R + 0.095, cy + 0.135, 0.02), P(R + 0.095, cy + 0.175, -0.02), P(R + 0.095, cy + 0.175, 0.02)], Violet, "", glow: true);
         }
         // The crown: a cap ring and a stub, two coolant lines from it down the back to the plate and round to the coupling.
-        k.Hull(Cyl(0, 0, 0.13, cy + R - 0.03, cy + R + 0.06, 12), Trim, "painted steel");
-        k.Hull(Cyl(0, 0, 0.07, cy + R + 0.056, cy + R + 0.16, 12), Body, "painted steel");
-        k.Hull(Cyl(0, 0, 0.04, cy + R + 0.156, cy + R + 0.2, 12), Hot, "", glow: true);
+        k.Hull(Cyl(0, 0, 0.13, cy + R - 0.03, cy + R + 0.06, 8), Trim, "painted steel");
+        k.Hull(Cyl(0, 0, 0.07, cy + R + 0.056, cy + R + 0.16, 8), Body, "painted steel");
+        k.Hull(Cyl(0, 0, 0.04, cy + R + 0.156, cy + R + 0.2, 8), Hot, "", glow: true);
         foreach (var sx in new[] { -1.0, 1.0 })
         {
             k.Box(sx * 0.06 - 0.025, cy + R + 0.08, -0.4, sx * 0.06 + 0.025, cy + R + 0.13, 0.0, Coolant, "painted steel");
@@ -723,12 +724,12 @@ public sealed class StyleSheetParts : IPartGenerator
         k.Hull(Cyl(0, 0, 0.08, 0.078, cy - R + 0.03), Body, "painted steel");
         k.Hull(Cyl(0, 0, 0.13, 0.078, 0.2), Mid, "painted steel");
         Sphere(k, R, cy, Hot);
-        TokamakRing(k, 0.36, 0.1, 0.12, cy, 16);
+        TokamakRing(k, 0.36, 0.1, 0.12, cy, 12);
         foreach (var sx in new[] { -1.0, 1.0 })
             foreach (var sz in new[] { -1.0, 1.0 })
                 k.Box(sx * 0.255 - 0.035, 0.075, sz * 0.255 - 0.035, sx * 0.255 + 0.035, cy - 0.12 + 0.02, sz * 0.255 + 0.035, Bare, "steel");
-        k.Hull(Cyl(0, 0, 0.07, cy + R - 0.02, cy + R + 0.12, 12), Trim, "painted steel");
-        k.Hull(Cyl(0, 0, 0.04, cy + R + 0.116, cy + R + 0.16, 12), Plasma, "", glow: true);
+        k.Hull(Cyl(0, 0, 0.07, cy + R - 0.02, cy + R + 0.12, 8), Trim, "painted steel");
+        k.Hull(Cyl(0, 0, 0.04, cy + R + 0.116, cy + R + 0.16, 8), Plasma, "", glow: true);
         k.Box(-0.025, cy + R + 0.04, -0.03, 0.025, cy + R + 0.09, 0.3, Coolant, "painted steel");
         k.Box(-0.025, cy + 0.05, 0.27, 0.025, cy + R + 0.09, 0.32, Coolant, "painted steel");
         return k.P;
