@@ -1,9 +1,9 @@
 {
   "format": "call-of-slop-construct-part/1",
-  "name": "Style Reactor D Block 1x1",
-  "description": "D: a square armoured block built for servicing: louvred radiator sides, bolted access panels, a lit inspection slot and a status strip.",
+  "name": "Style Battery Bank A 1x1",
+  "description": "Battery bank draft (Karl, 2026-11-19: reactor round 1's D read as a battery bank, his favourite look): louvred radiator sides, two bolted access panels apart, a lit charge slot and a status strip.",
   "group": "Style",
-  "section": "Reactors",
+  "section": "Battery banks",
   "role": "frame",
   "tool": "welder",
   "sizeClass": "medium",
@@ -639,7 +639,7 @@
     },
     {
       "min": [
-        -0.3958,
+        -0.296,
         0.2,
         0.372
       ],
@@ -655,12 +655,12 @@
     },
     {
       "min": [
-        -0.135,
+        -0.125,
         0.24,
         0.388
       ],
       "max": [
-        -0.105,
+        -0.095,
         0.27,
         0.402
       ],
@@ -671,12 +671,12 @@
     },
     {
       "min": [
-        -0.3708,
+        -0.281,
         0.24,
         0.388
       ],
       "max": [
-        -0.3408,
+        -0.251,
         0.27,
         0.402
       ],
@@ -687,12 +687,12 @@
     },
     {
       "min": [
-        -0.135,
+        -0.125,
         0.93,
         0.388
       ],
       "max": [
-        -0.105,
+        -0.095,
         0.96,
         0.402
       ],
@@ -703,12 +703,12 @@
     },
     {
       "min": [
-        -0.3708,
+        -0.281,
         0.93,
         0.388
       ],
       "max": [
-        -0.3408,
+        -0.251,
         0.96,
         0.402
       ],
@@ -724,7 +724,7 @@
         0.372
       ],
       "max": [
-        0.3958,
+        0.296,
         0.98,
         0.392
       ],
@@ -735,12 +735,12 @@
     },
     {
       "min": [
-        0.105,
+        0.095,
         0.24,
         0.388
       ],
       "max": [
-        0.135,
+        0.125,
         0.27,
         0.402
       ],
@@ -751,12 +751,12 @@
     },
     {
       "min": [
-        0.3408,
+        0.251,
         0.24,
         0.388
       ],
       "max": [
-        0.3708,
+        0.281,
         0.27,
         0.402
       ],
@@ -767,12 +767,12 @@
     },
     {
       "min": [
-        0.105,
+        0.095,
         0.93,
         0.388
       ],
       "max": [
-        0.135,
+        0.125,
         0.96,
         0.402
       ],
@@ -783,12 +783,12 @@
     },
     {
       "min": [
-        0.3408,
+        0.251,
         0.93,
         0.388
       ],
       "max": [
-        0.3708,
+        0.281,
         0.96,
         0.402
       ],
