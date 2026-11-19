@@ -196,5 +196,9 @@ Built 2026-11-19 (`ConstructGantry.cs`, `GameShellGantry.cs`, `GantryRender.cs`;
 - **Stops and saves:** as before, a swap stops (its new module stays on the table) if the shell or the gantry goes; the clamp opens when
   none is left. Swaps aren't saved: a save mid-change writes the shell loose (not frozen, if the clamp froze it) with the modules fitted so
   far, and the table with the rest.
+- **Tried** (window runs, `shellgantry setup|fit|state`): a Robot Shell's left leg seen gone from the pull to the fit, carried, set
+  down and the new one brought and fitted; the clamp's ram and jaws on a Robot and a Mining Shell, the lamp red then green; a head
+  queued behind a leg ran after its fit; asking the same slot again refused; a joined client heard both swaps (the queued one too) and
+  the kit after. Not tried: a save mid-change of a shell the clamp froze, a grab refused while clamped, a client's view in a picture.
 - **Not yet:** the new module is drawn in the arm while the table still shows it until the fit (the table holds it till then, so a stop
   loses nothing); the module parts' look differs from the shell's own boxes, so the fit swaps one look for the other at the slot.
