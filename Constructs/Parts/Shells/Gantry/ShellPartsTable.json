@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Shell Parts Table",
-  "description": "Holds robot shell modules for a Shell Gantry: place it behind the gantry's rear frame, on the same base, within its arms' reach. Put modules on it by hand or by conveyor; F takes one off.",
+  "description": "Holds robot shell modules for a Shell Gantry: place it behind the gantry's rear frame, within its arms' reach. Put modules on it by hand or by conveyor; F takes one off.",
   "group": "Logic",
   "section": "Shells",
   "role": "storage",
