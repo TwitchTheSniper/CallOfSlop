@@ -266,7 +266,26 @@ host and client draw them on the deck at 0.0-1.1 mm a frame, asleep, at the same
 5 s, 2.6 g) presses them into the bulkhead; a world save and load keeps them aboard. A British Flatbed Fort at 17 m/s with
 three blocks on its bed: 0.1-0.4 mm a frame on both, a hard brake slides them 0.6-0.8 m forward on both, the same rest spots.
 
-**Not settled**: pressed against a bulkhead under the in-game 2.6 g burn the blocks are drawn with up to 2 cm a frame of jitter
-on host and client, though their pose in the frame moves under a millimetre a tick and the headless check shows none; a
-joined client's physics-gun grab was not tried through (the tool's aim missed before the `aimat` fix); crews still ride the
-plain way (phase 3).
+**After the merge review (2026-11-19)**:
+- A body can be asleep and moving (asleep in its frame, at the frame's velocity): every reader that took a sleeping body's
+  velocity as zero asks `Construct.MovesNow`/`MoveVel`/`MoveSpin`/`MovePointVel` (riders' surface velocity and spin, a part's
+  shove and hit on a player, a cut-free part's turn, a crew body's step-off, the client's held-piece prediction).
+- A moving segment of the frame within reach of a body asleep in it (a tailgate, a lift, a door; `JointMovesNear`, so a
+  turret turning on the far side doesn't) wakes it, and it rests on that segment as any body does. A frame that stops and
+  sleeps lets its bodies go (a still frame is the world's); they join again when it moves.
+- A body that carries frame bodies may join a frame: its own come with it (`Rehome`); frames don't nest.
+- A frame body is aboard for a landing and for free travel (`Game.Aboard` follows `Frame` as it does `CarriedBy`), and
+  never leaves the bubble as a ship of its own while it has a frame.
+- Looking for a frame costs a test per loose body against this pass's moving constructs (at most 64; past that the
+  broadphase), with no query when nothing moves near.
+- The move through the frame is the physics' own sum of the body's relative steps (`Construct.FrameMove`), never the
+  difference of two world positions kilometres out; the world's pose is taken only when something outside the step moved it
+  (over 5 cm off). The felt pull of a posed ship is its drive's acceleration as the ship sums it (`SpaceAccel`), plus any
+  change over 3 m/s2 off the drive and the smoothed fall (a hit). Logged through a 2.6 g burn: the frame pose moved under
+  0.3 mm a tick and the residual was 0.02 m/s2. The 2-3 cm "jitter" was the window tool's measure (frame axes from 1 m
+  differences of points 9 km out); measured by the frame's drawn turn it is 1 mm a frame.
+- A frame pose that isn't finite or is past 4 km goes on the wire as a world pose; a client that reads one anyway keeps the
+  body in the world's frame and logs it, never dropping the body's Full.
+
+**Not settled**: a joined client's physics-gun grab aboard was not tried through (the tool's aim missed before the `aimat`
+fix); crews still ride the plain way (phase 3).
