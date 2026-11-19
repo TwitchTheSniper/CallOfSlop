@@ -606,7 +606,7 @@ public static class RideCheck
             var vel = Vector3.Transform(-Vector3.UnitZ, c.Rot) * speed * k;
             var ang = new Vector3(0, turn * k, 0);
             if (!posed)
-                Pose(w, c, c.Pos, c.Rot, vel, ang); // (its speed and turn set; the step moves it, as a driven ship)
+                Drive(w, c, vel, ang); // (its speed and turn set; the step moves it, as a driven ship)
             ref var hh = ref hands.Hand(0);
             hh.RideTurn = c.Rot;
             var eye = c.ToWorld(eyeL);
