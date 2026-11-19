@@ -396,6 +396,12 @@ public static unsafe partial class Program
         if (d.LengthSquared() < 1e-6f)
             return;
         d = Vector3.Normalize(d);
+        if (GravityFrames.Curved)
+        {
+            (g.LookYaw, g.LookPitch) = GravityFrames.Angles(g.LookFrame, d); // (the look's angles are in the gravity frame there, as Game.LookDir reads them: a round world's side)
+            g.LookPitch = Math.Clamp(g.LookPitch, -1.5f, 1.5f);
+            return;
+        }
         g.LookYaw = MathF.Atan2(d.X, -d.Z);
         g.LookPitch = Math.Clamp(MathF.Asin(Math.Clamp(d.Y, -1f, 1f)), -1.5f, 1.5f);
     }

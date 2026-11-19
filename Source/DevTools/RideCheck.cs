@@ -28,7 +28,8 @@ public static class RideCheck
         }
         yard.RestoreProps();
         World.SetMap(yard);
-        var bad = Lift(speed);
+        HeldOnly = args.Any(a => a.Equals("--held", StringComparison.OrdinalIgnoreCase));
+        var bad = HeldOnly ? 0 : Lift(speed);
         foreach (var name in names.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
             bad += One(name, speed, turn, spots);
         Console.WriteLine($"ride check: {bad} lapse(s)");
@@ -54,6 +55,16 @@ public static class RideCheck
         var found = Spots(c, maxSpots);
         found.AddRange(Spots(c, 4, joints: true));
         Console.WriteLine($"  {found.Count} standing spots");
+        if (HeldOnly)
+        {
+            var heldBad = 0;
+            for (var k = 0; k < Math.Min(found.Count, 3); k++)
+            {
+                heldBad += Held(w, c, found[k].Item2, speed, turn, posed: false);
+                heldBad += Held(w, c, found[k].Item2, speed, turn, posed: true);
+            }
+            return heldBad;
+        }
         var lapses = 0;
         var clock = 0;
         var home = c.Pos;
@@ -392,6 +403,97 @@ public static class RideCheck
                 return i;
             }
         return -1;
+    }
+
+    private static bool HeldOnly;
+
+    /// <summary>
+    /// "--held": a player standing at <paramref name="local"/> (the ship's frame) holds a Frame Block in the physics gun 2 m
+    /// out along a look fixed in the ship's frame while the ship moves and turns, as the server runs it (the beam's aim and
+    /// the frame's motion, then the physics step; posed: a ship out of the bubble, not stepped, posed after the step). The
+    /// held point should stay on the beam's point in the ship's frame, and its turn on the ship's: printed are how far it
+    /// sits off, how far it jumps tick to tick in the ship's frame, and how far it turns against the ship.
+    /// </summary>
+    private static int Held(ConstructWorld w, Construct c, Vector3 local, float speed, float turn, bool posed)
+    {
+        var home = c.Pos;
+        var homeRot = c.Rot;
+        var eyeL = local + new Vector3(0, 1.6f, 0);
+        var lookL = Vector3.Normalize(new Vector3(0, -0.25f, -1f));
+        const float dist = 2f;
+        var block = ConstructParts.Need("Frame Block");
+        if (ConstructBuild.PlaceNew(w, block, c.ToWorld(eyeL + lookL * dist) - new Vector3(0, 0.25f, 0), 0) is not { } held)
+            return 0;
+        held.Rebuild();
+        held.Vel = c.PointVel(held.WorldCom);
+        held.AngVel = c.AngVel;
+        var hands = new ConstructEdits();
+        ref var h = ref hands.Hand(0);
+        h.Tool = ConstructTool.PhysicsGun;
+        h.RideBody = c.Id;
+        h.RideSeg = 0;
+        h.RideTurn = c.Rot;
+        var grab = hands.Grab(w, 0, c.ToWorld(eyeL), 0, held.Id, held.Com);
+        if (grab != null)
+        {
+            Console.WriteLine($"  held ({(posed ? "posed" : "stepped")}): not grabbed: {grab}");
+            w.Remove(held);
+            return 0;
+        }
+        hands.Hand(0).GrabDist = dist;
+        if (posed)
+            c.SpaceShip = 60000; // (as a ship out of the bubble: not stepped, its velocity given to the solver)
+        float offMax = 0, offSum = 0, jumpMax = 0, turnMax = 0;
+        var n = 0;
+        var lastRel = Vector3.Zero;
+        var rot0 = Quaternion.Identity;
+        for (var t = 0; t < 60 * 8; t++)
+        {
+            var k = MathF.Min(1f, t / 120f);
+            var vel = Vector3.Transform(-Vector3.UnitZ, c.Rot) * speed * k;
+            var ang = new Vector3(0, turn * k, 0);
+            if (!posed)
+                Pose(w, c, c.Pos, c.Rot, vel, ang); // (its speed and turn set; the step moves it, as a driven ship)
+            ref var hh = ref hands.Hand(0);
+            hh.RideTurn = c.Rot;
+            var eye = c.ToWorld(eyeL);
+            var look = Vector3.Transform(lookL, c.Rot);
+            hands.GrabTick(w, 0, eye, look, 0, ConstructRide.SurfaceVel(c, 0, eye + look * dist), ConstructRide.SurfaceSpin(c, 0));
+            w.Step(World.Query, World.TickDt);
+            if (posed)
+            {
+                Pose(w, c, c.Pos + vel * World.TickDt, Quaternion.CreateFromAxisAngle(Vector3.UnitY, ang.Y * World.TickDt) * c.Rot, vel, ang);
+                c.Anchored = false;
+            }
+            if (held.GrabbedBy != 0)
+            {
+                Console.WriteLine($"  held ({(posed ? "posed" : "stepped")}): let go at t{t}");
+                break;
+            }
+            var rel = c.ToLocal(held.ToWorld(held.GrabLocal)); // (where the held point is in the ship's frame now; the eye is posed with the ship next tick)
+            var relRot = Quaternion.Normalize(Quaternion.Conjugate(c.Rot) * held.Rot);
+            if (t == 150)
+                rot0 = relRot;
+            if (t > 150)
+            {
+                var off = Vector3.Distance(rel, eyeL + lookL * dist);
+                offMax = MathF.Max(offMax, off);
+                offSum += off;
+                n++;
+                jumpMax = MathF.Max(jumpMax, Vector3.Distance(rel, lastRel));
+                turnMax = MathF.Max(turnMax, 2f * MathF.Acos(Math.Clamp(MathF.Abs(Quaternion.Dot(relRot, rot0)), 0f, 1f)) * 180f / MathF.PI);
+            }
+            lastRel = rel;
+            if (t == 60 * 8 - 1)
+                Console.WriteLine(FormattableString.Invariant($"    last: off {rel - (eyeL + lookL * dist):0.000} in the ship's frame, held speed {held.Vel.Length():0.00} m/s against the ship's there {c.PointVel(held.WorldCom).Length():0.00}"));
+        }
+        Console.WriteLine(FormattableString.Invariant($"  held ({(posed ? "posed" : "stepped")}) from {local:0.0} at {speed:0} m/s, turning {turn * 180f / MathF.PI:0} deg/s: off the beam's point {(n > 0 ? offSum / n : 0):0.000} m mean, {offMax:0.000} m most; jumps {jumpMax * 1000:0.0} mm a tick most in the ship's frame; turned {turnMax:0.00} deg against the ship"));
+        hands.Release(w, 0);
+        w.Remove(held);
+        c.SpaceShip = 0;
+        c.Pos = c.PrevPos = home;
+        c.Rot = c.PrevRot = homeRot;
+        return offMax > 0.25f || jumpMax > 0.02f ? 1 : 0;
     }
 
     /// <summary>A construct moved as the physics would: its pose, velocity and turn, its acceleration noted.</summary>
