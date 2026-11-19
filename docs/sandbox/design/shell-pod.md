@@ -17,20 +17,23 @@ A place to park a robot shell when nobody wears it. Drafted with the user by cli
 
 - **Parts** (part kit `shell_parts`, `Constructs/Parts/Shells/Pods`): six, a pair per size: **Tiny / Small / Medium Shell Pod** (bolted
   on: a flange and corner bolts, a status lamp and a vent on the front) and **Tiny / Small / Medium Flush Shell Pod** (the body below its
-  socket, sunk into the floor, wall or ceiling it is welded to, the lid 4 mm proud). One `bottom` socket each, so either goes on any
+  socket, sunk into the floor, wall or ceiling it is welded to, the lid at its solid's top 3 cm over the surface in a hazard coaming). One `bottom` socket each, so either goes on any
   face; flush or bolted is chosen by which part is placed (one core part with a placing option would have needed solid boxes that
   change with the option: a flush body overlaps the surface it sinks into, which the build refuses). Footprints 0.7 / 1.24 / 1.9 m,
   depths 0.55 / 1.0 / 1.5 m (about half the class's shipped shell). Power 30 / 80 / 150 W. `"shellPod": {"class", "half", "top",
   "depth", "flush"}` (`ConstructShellPod.cs`). Recipes appended at the end of the Assembler's table (`Assembling.cs` `LateHand`).
   Protocol 371 (part ids move; `Msg.ShellPod` in the slot of `RemovedLabourHands`; `CfgKey.PodShell..PodOreUnits`).
 - **A flush pod is a pocket** (the user, 2026-11-19: it looked as if the shell clipped through the floor). The surface it sinks into
-  is not drawn over its opening: each frame the near flush pods' pockets (`ConstructShellPod.Pocket`, inside the rim, from the
-  lining up to 4 cm over the surface, so the surface's seams go too) are listed as openings (`Renderer.Cuts.cs`, at most 16 within
-  60 m: `ConstructRender.AddPodCuts`), and the boxes of the body holding them carry a cut mark that the box shader's three programs
-  (alone, instanced, merged) drop inside an opening. No pod box is inside its own pocket, so nothing of the pod is cut; its lid, frame
-  and shell are drawn after, unmarked. Inside: dark lined walls and floor, a cyan trim on the rim; the lid is two flaps under the rim
-  that swing down against the walls over the first 30 % of the frame's rise, then the frame's head comes up (`ShellPodRender.Flaps`).
-  Render only: no wire or save change.
+  is not drawn over its opening. Each frame the flush pods nearest the eye (at most 16 within 60 m) give their pockets
+  (`ConstructShellPod.Pocket`: inside the rim, from the lining up to 1 mm under the lid's top, so the surface's seams go but what
+  stands on the lid doesn't) as openings, grouped by body (`ConstructRender.GatherPocketCuts`, `Renderer.Cuts.cs`). The boxes of a
+  body with openings carry a cut mark naming its own run of them and are drawn by the `CUTS` variant of the instanced and merged
+  box programs (one at a time for shapes, blended boxes and glass); every other draw keeps the plain programs, which have no
+  discard. No pod box is in its own pocket; its lid, frame and shell are drawn after, unmarked. Inside: plating a step lighter
+  than the lid, a tread-plate floor, a cyan trim on the rim and a status lamp on its corner (green empty, amber docked or at work,
+  red broken). The lid is two flaps at the solid's top inside a coaming 3 mm higher; they swing down against the walls over the
+  first 30 % of the frame's rise, then the frame's head comes up between its posts (`ShellPodRender.Flaps`). Render only: no wire
+  or save change. Not cut: the headless recorder's draws.
 - **Fits**: a shell's class by its standing height (1.8 m x the frame's scale); it docks in a pod of its class or larger (an assumption
   of the rule "docks only in its size class or larger").
 - **The frame** (`ShellPodRender.cs`): the lid rises on two posts along the face's normal (the button panel on the right post, a lamp on
