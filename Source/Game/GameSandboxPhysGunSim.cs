@@ -224,8 +224,8 @@ public sealed partial class Game
         var inv = Quaternion.Conjugate(_simFq);
         _simPos = _simPrevPos = Vector3.Transform(c.Pos - _simFt, inv);
         _simRot = _simPrevRot = Quaternion.Normalize(inv * c.Rot);
-        _simVel = Vector3.Transform((c.Asleep ? Vector3.Zero : c.Vel) - SimFrameVel(c.Pos), inv);
-        _simSpin = Vector3.Transform((c.Asleep ? Vector3.Zero : c.AngVel) - SimFrameSpin(), inv);
+        _simVel = Vector3.Transform(c.MoveVel - SimFrameVel(c.Pos), inv);
+        _simSpin = Vector3.Transform(c.MoveSpin - SimFrameSpin(), inv);
         _simTick = _moverTick;
         _simCmds = _moverCmds;
         _simAimSpeed = _simBodySpeed = 0;
