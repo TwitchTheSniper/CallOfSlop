@@ -25,7 +25,8 @@ public struct DockedShell
 /// <summary>A pod's fold or unfold under way (server: its own; a client: as heard with <see cref="Msg.ShellPod"/>).</summary>
 public struct PodJob
 {
-    public ushort Body, Part; // the pod
+    public ushort Body, Part; // the pod (its part index as last seen: the server finds it again by Tag)
+    public int Tag; // the docked shell's tag (server: ConstructShellPod.PartOfTag)
     public byte Phase; // ConstructShellPod.Dock or Wake
     public byte Frame; // the shell's frame (Shells.json)
     public byte Player; // a wake: who wakes in it
@@ -98,6 +99,7 @@ public static class ConstructShellPod
         Add(CfgKey.PodOwner, "Its owner", 255);
         Add(CfgKey.PodOre, "Hopper material", 255);
         Add(CfgKey.PodOreUnits, "Hopper load", 100000);
+        Add(CfgKey.PodTag, "Docked tag", 1 << 24);
     }
 
     // ---- What a pod holds ------------------------------------------------------------------------------------------
@@ -110,6 +112,33 @@ public static class ConstructShellPod
     public static int ChannelIn(in CPart p) => (int)ConstructConfig.Get(p, p.D, CfgKey.PodChannel, 1);
 
     public static byte OwnerIn(in CPart p) => (byte)ConstructConfig.Get(p, p.D, CfgKey.PodOwner, 255);
+
+    /// <summary>The docked shell's tag (0: none, or a pod docked before tags: it is given one at its next dock).</summary>
+    public static int TagIn(in CPart p) => p.D.ShellPod == null ? 0 : (int)ConstructConfig.Get(p, p.D, CfgKey.PodTag, 0);
+
+    /// <summary>The pod part of <paramref name="c"/> whose docked shell has <paramref name="tag"/> (its last index first), or -1.</summary>
+    public static int PartOfTag(Construct c, int tag, int hint)
+    {
+        if (tag == 0)
+            return (uint)hint < (uint)c.PartCount && c.DefOf(hint).ShellPod != null ? hint : -1;
+        if ((uint)hint < (uint)c.PartCount && c.DefOf(hint).ShellPod != null && TagIn(c.Parts[hint]) == tag)
+            return hint;
+        for (var i = 0; i < c.PartCount; i++)
+            if (c.DefOf(i).ShellPod != null && TagIn(c.Parts[i]) == tag)
+                return i;
+        return -1;
+    }
+
+    /// <summary>Does any part of <paramref name="c"/> hold a docked shell? (a wreck that does isn't cleared away)</summary>
+    public static bool HoldsAny(Construct c)
+    {
+        if (c.PodCount == 0 && !c.Dirty)
+            return false;
+        for (var i = 0; i < c.PartCount; i++)
+            if (c.DefOf(i).ShellPod != null && Holds(c.Parts[i]))
+                return true;
+        return false;
+    }
 
     /// <summary>A frame's size class by its standing height.</summary>
     public static int ClassOf(byte frame)
@@ -211,6 +240,7 @@ public static class ConstructShellPod
         ShellWear.PutHealth(ref pp, d, health);
         ConstructConfig.Put(ref pp, d, CfgKey.PodOre, oreUnits > 0 ? ore : 0);
         ConstructConfig.Put(ref pp, d, CfgKey.PodOreUnits, Math.Max(0, oreUnits));
+        ConstructConfig.Put(ref pp, d, CfgKey.PodTag, Random.Shared.Next(1, 1 << 24));
         world.StructureDirty.Add(c.Id); // (peers hear the pod holds it: CBody)
     }
 
@@ -277,21 +307,28 @@ public static class ConstructShellPod
 
     private static void Clear(ref CPart pp, ConstructPartDef d)
     {
-        foreach (var k in (ReadOnlySpan<CfgKey>)[CfgKey.PodShell, CfgKey.PodOre, CfgKey.PodOreUnits, CfgKey.ShellWear0, CfgKey.ShellWear1, CfgKey.ShellWear2, CfgKey.ShellWear3, CfgKey.ShellDamage, CfgKey.ShellKit0, CfgKey.ShellKit1, CfgKey.ShellKit2])
+        foreach (var k in (ReadOnlySpan<CfgKey>)[CfgKey.PodShell, CfgKey.PodOre, CfgKey.PodOreUnits, CfgKey.ShellWear0, CfgKey.ShellWear1, CfgKey.ShellWear2, CfgKey.ShellWear3, CfgKey.ShellDamage, CfgKey.ShellKit0, CfgKey.ShellKit1, CfgKey.ShellKit2, CfgKey.PodTag])
             ConstructConfig.Put(ref pp, d, k, 0);
     }
 
     /// <summary>
-    /// Server: a pod that is going (taken off, broken, wrecked) lets its shell out first, so a docked shell is never lost with its
-    /// pod (ConstructWorld.RemovePart, RemoveParts, SpillAll and a break call this). The shell is read out of the pod and stands
-    /// at the pod's frame on the next pod tick (<see cref="ConstructWorld.PodReleases"/>: these run inside other walks of the
-    /// bodies, where a new body may not be made). Nothing when it holds none.
+    /// Server: a pod that is going (taken off, broken, wrecked, its whole body removed) lets its shell out first, so a docked shell is
+    /// never lost with its pod (ConstructWorld.Remove, RemovePart, RemoveParts, SpillAll and a break call this). A pod whose docked shell
+    /// another body's pod also holds (the same tag: its body was joined into another, which copied it) has nothing to release. The
+    /// shell is read out of the pod and queued (<see cref="ConstructWorld.PodReleases"/>): these run inside other walks of the bodies,
+    /// where a new body may not be made; the next pod tick, or a world save before it (<see cref="StandReleases"/>), stands it. Only the
+    /// server's world releases (<see cref="ConstructWorld.PodAuthority"/>): a client's copy of a body goes when the server says so.
     /// </summary>
     public static void Release(ConstructWorld world, Construct c, int part)
     {
-        if ((uint)part >= (uint)c.PartCount || !Holds(c.Parts[part]))
+        if (!world.PodAuthority || (uint)part >= (uint)c.PartCount || !Holds(c.Parts[part]))
             return;
         ref var pp = ref c.Parts[part];
+        var tag = TagIn(pp);
+        if (tag != 0)
+            foreach (var b in world.Bodies)
+                if (b != c && PartOfTag(b, tag, -1) >= 0)
+                    return; // (a copy holds it: a join moved it there)
         var s = Read(pp);
         var feet = StandFeet(c, part, s.Frame, out var fwd, out _);
         var name = pp.D.Name;
@@ -304,6 +341,25 @@ public static class ConstructShellPod
         }
         world.PodReleases[world.PodReleaseCount++] = (s, feet, YawOf(fwd));
         world.Events.Add($"[pod] construct {c.Id}: its {name} went with a shell in it: the shell stands where its frame was");
+    }
+
+    /// <summary>Server: the shells out of pods that went stand now (each pod tick, and before a world is saved). Returns how many stood.</summary>
+    public static int StandReleases(ConstructWorld world)
+    {
+        var n = 0;
+        for (var r = 0; r < world.PodReleaseCount; r++)
+        {
+            var (s, feet, yaw) = world.PodReleases[r];
+            if (Stand(world, s, feet, yaw, "shell pod") is { } stood)
+            {
+                n++;
+                world.Events.Add($"[pod] a shell out of a pod that went stands as construct {stood.Id}");
+            }
+            else
+                world.Events.Add($"[pod] a shell out of a pod that went had no room to stand: lost");
+        }
+        world.PodReleaseCount = 0;
+        return n;
     }
 
     // ---- Jobs -------------------------------------------------------------------------------------------------------
@@ -364,6 +420,7 @@ public sealed partial class ConstructWorld
     public int PodJobCount;
     public readonly (DockedShell Shell, Vector3 Feet, float Yaw)[] PodReleases = new (DockedShell, Vector3, float)[16]; // shells out of pods that went, to stand next pod tick (GameShellPod.cs)
     public int PodReleaseCount;
+    public bool PodAuthority; // this world is the server's: a pod that goes releases its shell (set by the pods' tick; a client's world never)
 }
 
 public sealed partial class Construct

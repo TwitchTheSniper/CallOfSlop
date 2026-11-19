@@ -453,6 +453,7 @@ public sealed partial class ConstructWorld
         LiftClear(); // (the lifters' states go with the bodies: ConstructLifters.cs)
         GantryJobCount = 0; // (and the Shell Gantries' swaps: ConstructGantry.cs)
         PodJobCount = 0; // (and the shell pods' folds: ConstructShellPod.cs)
+        PodReleaseCount = 0;
         Designs.Clear(); // (a world's shared panel designs go with it: PanelDesigns.cs)
         DesignStamp++;
         foreach (var c in Bodies)
@@ -525,6 +526,10 @@ public sealed partial class ConstructWorld
     /// gone message, no building sound, no story note.</param>
     public void Remove(Construct c, bool keepRiders = false, bool quiet = false)
     {
+        if (PodAuthority && (c.PodCount > 0 || c.Dirty))
+            for (var i = 0; i < c.PartCount; i++)
+                if (c.DefOf(i).ShellPod != null)
+                    ConstructShellPod.Release(this, c, i); // (a body that goes lets its pods' shells out, unless a join copied them: ConstructShellPod.cs)
         if (c.ConveyedCount > 0)
         {
             if (!keepRiders)
@@ -2187,6 +2192,11 @@ public sealed partial class ConstructWorld
                 }
             if (now - c.IdleSince < seconds)
                 continue;
+            if (ConstructShellPod.HoldsAny(c))
+            {
+                c.IdleSince = now; // (a wreck with a robot shell docked in it stays: ConstructShellPod.cs)
+                continue;
+            }
             Events.Add($"wreck {c.Id} ({c.PartCount} part(s)) cleared away after {seconds:0} s alone");
             Remove(c);
             gone++;

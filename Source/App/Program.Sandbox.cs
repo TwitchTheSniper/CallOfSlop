@@ -423,7 +423,7 @@ public static unsafe partial class Program
             if (Pressed(GameAction.Interact))
                 g.SandboxSend(CActKind.Use, body: hit.Body.Id, part: (ushort)hit.Part);
         }
-        if (podFrame.Body != null && Pressed(GameAction.Interact))
+        if (podFrame.Body != null && Pressed(GameAction.Interact) && !talkTook && !magFill && !leverTook && !terminalTook && !_scrTook)
             g.SandboxSend(CActKind.Use, body: podFrame.Body.Id, part: (ushort)podFrame.Part); // (the pod's button: the server folds the shell away)
         else if (talkTook)
         {

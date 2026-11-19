@@ -7,7 +7,7 @@ namespace CallOfSlop;
 /// row ahead (1 a Small pod bolted on the floor, 2 a Medium flush in the floor, 3 a Small bolted under a ceiling, 4 a Medium flush in a
 /// ceiling: those two hang frozen in the air, their faces down; 5 and 6 Medium pods bolted on the floor, with bins), a Robot Shell (channel 1) and a Mining Shell (channel 2) to the left
 /// and two Shell Control Chairs (channels 1 and 2) to the right; "shellpod go N [PLAYER]" (host, a test state) stands a player in pod
-/// N's frame; "shellpod dock" presses the button of the pod this player stands in (the use key's own message); "shellpod state" says
+/// N's frame; "shellpod remove N" (host) removes pod N's body; "shellpod dock" presses the button of the pod this player stands in (the use key's own message); "shellpod state" says
 /// what this peer sees.
 /// </summary>
 public static partial class Program
@@ -89,6 +89,18 @@ public static partial class Program
                 who.Teleport(feet + Vector3.UnitY * 0.05f);
                 who.Yaw = ConstructShellPod.YawOf(f);
                 WsSay($"shellpod go: player {who.Id} to pod {n + 1} (body {c.Id}) at {feet.X:0.0},{feet.Y:0.00},{feet.Z:0.0}");
+                return;
+            }
+            case "remove" when g.IsServer: // "shellpod remove N": a server shortcut: pod N's whole body removed (as a wreck cleared away or a body picked up), its shell let out
+            {
+                var n = int.TryParse(rest, out var v) ? v - 1 : -1;
+                if ((uint)n >= (uint)_wsPods.Count || w.Get(_wsPods[n]) is not { } c)
+                {
+                    WsFail($"shellpod remove N: no pod {n + 1}");
+                    return;
+                }
+                w.Remove(c);
+                WsSay($"shellpod remove: pod {n + 1} (body {c.Id}) removed; {w.PodReleaseCount} shell(s) waiting to stand");
                 return;
             }
             case "dock":

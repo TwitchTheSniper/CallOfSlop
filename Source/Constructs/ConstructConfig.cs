@@ -227,6 +227,7 @@ public enum CfgKey : byte
     PodOwner, // shell pod: the docked shell's owner (255 nobody; not on the panel)
     PodOre, // shell pod: the docked Mining Shell's hopper material still to empty (a RecyclingTable id; not on the panel)
     PodOreUnits, // shell pod: ...and how much
+    PodTag, // shell pod: a number for the docked shell (1 to 2^24), so a job, a copy of the pod and its release find it whatever its part index (not on the panel)
     COUNT,
 }
 
@@ -867,7 +868,7 @@ public static class ConstructConfig
                 CfgKey.Profile or CfgKey.Width or CfgKey.Height or CfgKey.Wall or CfgKey.CutLength => d.IsExtruder && !d.IsPanelFormer || ProductionLines.IsConsole(d), // (a console's: its next bill line)
                 CfgKey.MaskA or CfgKey.MaskB or CfgKey.MaskC or CfgKey.MaskD => d.IsExtruder && !d.IsPanelFormer,
                 (>= CfgKey.ShellWear0 and <= CfgKey.ShellWear3) or CfgKey.ShellDamage or (>= CfgKey.ShellKit0 and <= CfgKey.ShellKit2) => d.ShellBody || d.ShellPod != null, // (a pod keeps its docked shell's: ConstructShellPod.cs)
-                >= CfgKey.PodShell and <= CfgKey.PodOreUnits => d.ShellPod != null,
+                >= CfgKey.PodShell and <= CfgKey.PodTag => d.ShellPod != null,
                 CfgKey.ToolsOut => d.IsToolRack, // (ToolRacks.cs)
                 CfgKey.RunMode => d.IsWheelFormer && !d.IsPanelFormer,
                 CfgKey.AmmoType => d.Role is PartRole.AmmoBox or PartRole.Storage,

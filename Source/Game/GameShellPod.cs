@@ -31,7 +31,9 @@ public sealed partial class Game
         ref var pp = ref c.Parts[part];
         var frame = p.ShellFrame;
         var mid = p.Position + GravityFrames.UpAt(p.Position) * (World.PlayerHeight * ShellFrames.ScaleOf(frame) * 0.5f);
-        if (pp.Broken)
+        if (c.Loose)
+            why = $"weld the {pp.D.Name} onto a floor, a wall or a ceiling first";
+        else if (pp.Broken)
             why = $"the {pp.D.Name} is wrecked";
         else if (ConstructShellPod.Holds(pp))
             why = $"the {pp.D.Name} holds a shell already";
@@ -53,7 +55,7 @@ public sealed partial class Game
         if (!ConstructShellPod.Holds(c.Parts[part]))
             return true; // (ShellReturn said why: nothing to fold)
         ref var j = ref world.PodJobs[world.PodJobCount++];
-        j = new PodJob { Body = c.Id, Part = (ushort)part, Phase = ConstructShellPod.Dock, Frame = frame, Start = ConstructConveyor.Clock, From = from, Yaw = yaw };
+        j = new PodJob { Body = c.Id, Part = (ushort)part, Tag = ConstructShellPod.TagIn(c.Parts[part]), Phase = ConstructShellPod.Dock, Frame = frame, Start = ConstructConveyor.Clock, From = from, Yaw = yaw };
         PodSend(j, true, 0, null);
         Log($"[pod] {p.Name} docks a {ShellFrames.Of(frame).Part} in the {pp.D.Name} on body {c.Id}");
         return true;
@@ -89,7 +91,7 @@ public sealed partial class Game
             return;
         var frame = (byte)ConstructShellPod.FrameIn(pod.Parts[part]);
         ref var j = ref world.PodJobs[world.PodJobCount++];
-        j = new PodJob { Body = pod.Id, Part = (ushort)part, Phase = ConstructShellPod.Wake, Frame = frame, Player = p.Id, Chair = chair.Id, Start = ConstructConveyor.Clock };
+        j = new PodJob { Body = pod.Id, Part = (ushort)part, Tag = ConstructShellPod.TagIn(pod.Parts[part]), Phase = ConstructShellPod.Wake, Frame = frame, Player = p.Id, Chair = chair.Id, Start = ConstructConveyor.Clock };
         PodSend(j, true, 0, null);
         SandboxHands.Notices.Add((p.Id, $"The {pod.DefOf(part).Name} opens and your shell unfolds..."));
         Log($"[pod] {p.Name} wakes the {ShellFrames.Of(frame).Part} in the {pod.DefOf(part).Name} on body {pod.Id}");
@@ -99,15 +101,9 @@ public sealed partial class Game
     private void PodTick()
     {
         var world = Constructs;
-        for (var r = 0; r < world.PodReleaseCount; r++)
-        {
-            var (s, feet, yaw) = world.PodReleases[r];
-            if (ConstructShellPod.Stand(world, s, feet, yaw, "shell pod") is { } stood)
-                Log($"[pod] a shell out of a pod that went stands as construct {stood.Id}");
-            else
-                Log($"[pod] a shell out of a pod that went had no room to stand: lost");
-        }
-        world.PodReleaseCount = 0;
+        world.PodAuthority = true; // (this world releases docked shells from pods that go: ConstructShellPod.Release)
+        if (world.PodReleaseCount > 0)
+            ConstructShellPod.StandReleases(world);
         if (world.PodJobCount > 0)
         {
             var now = ConstructConveyor.Clock;
@@ -115,10 +111,17 @@ public sealed partial class Game
             {
                 ref var j = ref world.PodJobs[k];
                 var c = world.Get(j.Body);
-                if (c == null || j.Part >= c.PartCount || c.DefOf(j.Part).ShellPod == null || c.Parts[j.Part].Broken)
+                var at = c == null ? -1 : ConstructShellPod.PartOfTag(c, j.Tag, j.Part); // (by its shell's tag: a part taken off elsewhere moves the indices)
+                if (c == null || at < 0 || c.Parts[at].Broken)
                 {
                     PodEnd(k);
                     continue;
+                }
+                if (at != j.Part)
+                {
+                    PodSend(j, false, 0, null); // (peers drop the job at its old index and hear it at the new one)
+                    j.Part = (ushort)at;
+                    PodSend(j, true, now - j.Start, null);
                 }
                 var t = now - j.Start;
                 if (j.Phase == ConstructShellPod.Dock && t >= ConstructShellPod.DockSeconds)
@@ -190,7 +193,10 @@ public sealed partial class Game
         Players.TryGetValue(j.Player, out var p);
         var chair = world.Get(j.Chair);
         var seat = p != null && chair != null ? chair.SeatOf(p.Id) : -1;
-        if (p != null && seat >= 0 && !chair!.Parts[seat].Broken && !_sh[p.Id].On && ConstructShellPod.Holds(c.Parts[part]))
+        var owner = ConstructShellPod.OwnerIn(c.Parts[part]);
+        var mayWake = p != null && (owner == 255 || owner == p.Id || Factions.Shares(owner, p.Id))
+            && seat >= 0 && ConstructShellPod.ChannelIn(c.Parts[part]) == ConstructShell.ChannelOf(chair!.Parts[seat]); // (asked again at the stand: Find's checks)
+        if (p != null && mayWake && seat >= 0 && !chair!.Parts[seat].Broken && !_sh[p.Id].On && ConstructShellPod.Holds(c.Parts[part]) && ConstructShellPod.TagIn(c.Parts[part]) == j.Tag)
         {
             var feet = ConstructShellPod.StandFeet(c, part, (byte)ConstructShellPod.FrameIn(c.Parts[part]), out var fwd, out _);
             if (ConstructShellPod.TakeOut(world, c, part, feet, ConstructShellPod.YawOf(fwd)) is { } stood)
