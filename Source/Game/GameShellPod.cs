@@ -114,6 +114,16 @@ public sealed partial class Game
                 ref var j = ref world.PodJobs[k];
                 var c = world.Get(j.Body);
                 var at = c == null ? -1 : ConstructShellPod.PartOfTag(c, j.Tag, j.Part); // (by its shell's tag: a part taken off elsewhere moves the indices)
+                if (at < 0 && j.Tag != 0 && PodMoved(world, j.Tag) is { } moved)
+                {
+                    // (its pod went to another body: a split, as a broken weld seam makes, gives the piece a new id)
+                    PodSend(j, false, 0, null);
+                    c = moved;
+                    at = ConstructShellPod.PartOfTag(moved, j.Tag, -1);
+                    j.Body = moved.Id;
+                    j.Part = (ushort)at;
+                    PodSend(j, true, now - j.Start, null);
+                }
                 if (c == null || at < 0 || c.Parts[at].Broken)
                 {
                     PodEnd(k);
@@ -289,5 +299,15 @@ public sealed partial class Game
             k = world.PodJobCount++;
         }
         world.PodJobs[k] = j;
+    }
+
+    /// <summary>The body whose pod holds the docked shell with <paramref name="tag"/> (a pod job whose body lost it), or null.</summary>
+    private static Construct? PodMoved(ConstructWorld world, int tag)
+    {
+        foreach (var b in world.Bodies)
+            if (b.PodCount > 0 || b.Dirty)
+                if (ConstructShellPod.PartOfTag(b, tag, -1) >= 0)
+                    return b;
+        return null;
     }
 }

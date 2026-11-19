@@ -695,6 +695,21 @@ angle and offset, then attach it to the vehicle exactly where it is. [Point atta
   the socket and point attachments don't apply; a red click is refused with the reason.
 - **Preview** while aiming: both parts outlined and the attachment bead drawn between their closest points, green when the attachment
   is allowed and red when not, the reason on the look line. A part in your hands goes on a socket as in any mode.
+- **Breaking one seam** (any mode; user, 2026-11-19): with the attach tool out, the seam between the aimed part and its
+  neighbour nearest the crosshair (every socket link between those two parts) is lit as a red-orange strip and outline on
+  their shared face, seen faintly through parts too (grey when it can't be broken, with the reason); the look line names
+  both parts. **RMB breaks only that seam**: the parts stay where they are, held through any other seams, and if it was the
+  last way between two halves the lighter half (by mass, then parts) splits off as a body of its own where it is and the
+  heavier keeps the body, its id, fuel, seats and orders, wherever the root is. One press breaks one seam: held, it neither
+  breaks more nor turns into a take-off. A fused unit the cut runs through is flooded again (`FuseNoteCut`), and a pod's
+  fold or wake follows its pod to the split-off body (`GameShellPod.PodMoved`).
+  **Shift+RMB** is the old take-off of the whole part (all its seams). Instant, survival too; refused across a joint (take
+  the joint off), inside one merged gun, on someone else's construct, a driven one or a contested one, and out of reach.
+  A part with no seam (alone) is taken off by RMB as before. Code: `Source/Constructs/ConstructSeams.cs` (the rules, the
+  pick, the face, `ConstructWorld.BreakSeam`, `ConstructEdits.BreakSeam`), `Source/App/Program.SandboxWeldSeam.cs` (the
+  input, cached by the aim's 2 cm cell and the body's rebuild stamp: no allocation a frame), `SocketWeldRender.DrawSeam`.
+  Network (protocol 373): `CActKind.SeamBreak` (u16 body, u16 part, u16 other part) at the end of `CActKind`; the server
+  checks reach, rights and that the seam exists.
 - **Cutting** (either mode): the attach tool's aim (RMB) on a freeform join (within 0.6 m of anywhere along its bead, on either of its two
   parts) cuts it: the piece falls away as a body of its own where it is, moving as it moved. Destroying the anchor part
   (or the attached-on part) detaches it like any part.
@@ -806,7 +821,7 @@ body keeps the piece on the construct's Rot24 grid: the two merge as a join does
 on the centimetre grid. Any other angle, a face point, a socket of another kind, or a target on a joint's or a freeform
 piece's segment joins the piece as a fixed-pose rigid segment, exactly as a freeform attachment does
 (`JointType.Fixed`, `ConstructWorld.FreeformWeld`; at most 192 a construct, no wheels on such a piece). The attach tool cuts
-either free again (a grid part with RMB held, a freeform join with RMB on its bead).
+either free again (a grid part's seams one at a time with RMB, the whole part with Shift+RMB held, a freeform join with RMB on its bead).
 
 **Wheels.** A wheel's axle onto a suspension's axle socket always goes on the grid, at any spin (a wheel turned about
 its own axle is the same wheel: it snaps to the nearest grid turn), and a rolling piece (a wheel or a suspension, no
