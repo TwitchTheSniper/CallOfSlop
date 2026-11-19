@@ -11,6 +11,7 @@ public enum ShellModuleKind : byte
     Hand, // an arm that holds the tools, as a person's
     Drill, // an arm that is a drill, always out: the ground drill's scoop taps ore into the hopper (GameShellHopper.cs)
     Leg, // a leg (its "speed" is the shell's pace; the Shell Gantry's lower arms fit them)
+    Tool, // an arm that is a tool (its "tool"): held forward along the look like the drill arm, drawn from its part's model (ShellLooks.cs)
 }
 
 /// <summary>One module from Constructs/Shells.json: a name, the slot kind it fits ("head", "back", "arm", "leg") and its kind's numbers.</summary>
@@ -26,6 +27,8 @@ public sealed class ShellModule
     public byte Index; // its place in the file's "modules" (a wire and save byte: a new module goes at the end)
     public ConstructTool? Tool; // "tool": while the shell is worn this is its only tool (the Drill Arm's ground drill; the user, 2026-11-17)
     public bool View; // "view": in first person its wearer sees the module's own model (the one on the shell: ShellKitNodes) in place of its tool's (the user, 2026-11-19)
+    public float Hip, Knee, Hock, Ankle; // a leg's "joints": heights on its part's model (the part's metres; Hock 0: none), where the rig's bones take its boxes (ShellLooks.cs)
+    public float HockUp, HockBack; // a leg's "hock": where its hock stands above and behind the ankle (a person's metres): the rig walks it digitigrade (LegAnimator)
 }
 
 /// <summary>
@@ -61,6 +64,29 @@ public sealed class ShellFrame
                     return t;
             return null;
         }
+    }
+
+    /// <summary>Whether a shell fitted so may hold <paramref name="tool"/>: any tool when no module names one, else only the tools its modules are.</summary>
+    public bool Allows(ConstructTool tool)
+    {
+        var any = false;
+        foreach (var m in Modules)
+            if (m?.Tool is { } t)
+            {
+                if (t == tool)
+                    return true;
+                any = true;
+            }
+        return !any;
+    }
+
+    /// <summary>The module that is the tool <paramref name="tool"/> (a tool arm, the drill arm), or null.</summary>
+    public ShellModule? ModuleFor(ConstructTool tool)
+    {
+        foreach (var m in Modules)
+            if (m?.Tool == tool)
+                return m;
+        return null;
     }
 
     /// <summary>The module that forces <see cref="ForcedTool"/> (for its name in a refusal), or null.</summary>
@@ -253,8 +279,32 @@ public static class ShellFrames
             if (m.TryGetProperty("view", out var vw))
             {
                 mod.View = vw.GetBoolean();
-                if (mod.View && (mod.Tool == null || mod.Kind != ShellModuleKind.Drill))
-                    throw new FormatException($"module \"{mod.Name}\": \"view\" needs a \"tool\" and a kind with a model of its own (drill)");
+                if (mod.View && (mod.Tool == null || mod.Kind is not (ShellModuleKind.Drill or ShellModuleKind.Tool)))
+                    throw new FormatException($"module \"{mod.Name}\": \"view\" needs a \"tool\" and a kind with a model of its own (drill, tool)");
+            }
+            if (mod.Kind == ShellModuleKind.Tool && (mod.Tool == null || mod.Slot != "arm" || mod.Part.Length == 0))
+                throw new FormatException($"module \"{mod.Name}\": a tool module is an arm with a \"tool\" and a \"part\" (its model)");
+            if (mod.Kind == ShellModuleKind.Leg && mod.Part.Length > 0)
+            {
+                if (!m.TryGetProperty("joints", out var jt))
+                    throw new FormatException($"module \"{mod.Name}\": a leg with a part says its \"joints\" (hip, knee, ankle heights on the part)");
+                mod.Hip = Num(jt, "hip", 0.2f, 3f);
+                mod.Knee = Num(jt, "knee", 0.1f, 3f);
+                mod.Ankle = Num(jt, "ankle", 0f, 1f);
+                if (jt.TryGetProperty("hock", out _))
+                    mod.Hock = Num(jt, "hock", 0.05f, 2f);
+                if (!(mod.Hip > mod.Knee && mod.Knee > MathF.Max(mod.Hock, mod.Ankle) && (mod.Hock == 0 || mod.Hock > mod.Ankle)))
+                    throw new FormatException($"module \"{mod.Name}\": \"joints\" go down: hip, knee, hock, ankle");
+                if (m.TryGetProperty("hock", out var hk))
+                {
+                    if (mod.Hock == 0 || hk.GetArrayLength() != 2)
+                        throw new FormatException($"module \"{mod.Name}\": \"hock\" is [up, back] and needs a hock in its \"joints\"");
+                    (mod.HockUp, mod.HockBack) = (hk[0].GetSingle(), hk[1].GetSingle());
+                    if (mod.HockUp is < 0.05f or > 0.4f || mod.HockBack is < -0.2f or > 0.3f)
+                        throw new FormatException($"module \"{mod.Name}\": \"hock\" up 0.05 to 0.4, back -0.2 to 0.3");
+                }
+                else if (mod.Hock > 0)
+                    throw new FormatException($"module \"{mod.Name}\": a hock in its \"joints\" needs \"hock\": [up, back]");
             }
             if (!modules.TryAdd(mod.Name, mod))
                 throw new FormatException($"module \"{mod.Name}\" twice");

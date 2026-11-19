@@ -317,41 +317,169 @@ public sealed class ShellParts : IPartGenerator
         return p;
     }
 
-    private static void Leg(Part p, double k, bool runner)
+    // A worn shell draws each module from these boxes (Scene/Rigs/ShellLooks.cs), so each look is told apart at a glance (the user,
+    // 2026-11-19: "more visual variance between them"): a leg by its "joints" in Constructs/Shells.json (the heights its rig bones take
+    // its boxes at; keep a box's middle in its bone's band), a head on the person's head, an arm's elbow coupling at its top and its
+    // tool at its foot. Boxes that meet overlap by 3 mm or more, never on one plane (z-fighting.md).
+
+    /// <summary>The Standard Leg: a person's leg in steel. Joints: hip 0.9, knee 0.49, ankle 0.09.</summary>
+    private static void StandardLeg(Part p)
     {
-        PyDict? B(double[] lo, double[] hi, string? c = null, bool detail = false) => Box([lo[0] * k, lo[1] * k, lo[2] * k], [hi[0] * k, hi[1] * k, hi[2] * k], c, detail: detail);
-        p.Add(B([-0.075, 0.0, -0.15], [0.075, 0.07, 0.09], Dark)); // foot
-        p.Add(B([-0.065, 0.06, -0.07], [0.065, 0.47, 0.07], Joint)); // shin
-        p.Add(B([-0.07, 0.45, -0.085], [0.07, 0.53, 0.085], Dark, detail: true)); // knee
-        p.Add(B([-0.06, 0.52, -0.075], [0.06, 0.88, 0.075])); // thigh
-        p.Add(B([-0.045, 0.86, -0.045], [0.045, 0.94, 0.045], Dark, detail: true)); // the hip's coupling
-        if (runner)
-            p.Add(B([-0.02, 0.1, 0.073], [0.02, 0.44, 0.1], Lamp, detail: true)); // a spring strut behind the shin
-        if (k > 1)
-            p.Add(B([-0.07, 0.15, -0.088], [0.07, 0.4, -0.072], Joint, detail: true)); // a shin plate
+        p.Add(Box([-0.07, 0.0, -0.15], [0.07, 0.05, 0.08], Dark)); // sole
+        p.Add(Box([-0.06, 0.047, -0.13], [0.06, 0.095, 0.06], Joint)); // the foot's top
+        p.Add(Box([-0.045, 0.07, -0.04], [0.045, 0.13, 0.04], Dark, detail: true)); // ankle
+        p.Add(Box([-0.055, 0.11, -0.06], [0.055, 0.47, 0.06], Joint)); // shin
+        p.Add(Box([-0.065, 0.44, -0.08], [0.065, 0.54, 0.075], Dark, detail: true)); // knee
+        p.Add(Box([-0.05, 0.46, -0.092], [0.05, 0.53, -0.078], Steel, detail: true)); // knee cap
+        p.Add(Box([-0.062, 0.52, -0.07], [0.062, 0.88, 0.07])); // thigh
+        p.Add(Box([-0.045, 0.86, -0.045], [0.045, 0.94, 0.045], Dark, detail: true)); // the hip's coupling
     }
 
-    private static void Head(Part p, bool plated)
+    /// <summary>
+    /// The Heavy Leg (built at the Mining Shell's 1.5x): thick and armoured, a wide flat foot, plates over the shin, knee and thigh and a
+    /// ram behind the shin in hazard paint. Joints: hip 1.35, knee 0.735, ankle 0.15.
+    /// </summary>
+    private static void HeavyLeg(Part p)
     {
-        p.Add(Box([-0.06, 0, -0.06], [0.06, 0.1, 0.06], Dark)); // neck
-        p.Add(Box([-0.135, 0.08, -0.14], [0.135, 0.35, 0.125])); // head
-        p.Add(Box([-0.11, 0.17, -0.158], [0.11, 0.25, -0.12], Visor, detail: true)); // visor
-        p.Add(Box([0.07, 0.34, -0.015], [0.09, 0.46, 0.015], Dark, detail: true)); // aerial
-        if (!plated)
-            return;
-        p.Add(Box([-0.15, 0.27, -0.16], [0.15, 0.37, 0.142], Joint, detail: true)); // a brow plate over the crown
+        const string Hazard = "#e0a020";
+        p.Add(Box([-0.16, 0.0, -0.28], [0.16, 0.06, 0.17], Dark)); // the wide sole
+        p.Add(Box([-0.14, 0.057, -0.22], [0.14, 0.13, 0.13], Joint)); // the foot's top
+        p.Add(Box([-0.12, 0.04, -0.29], [0.12, 0.11, -0.215], Steel, detail: true)); // the toe plate
+        p.Add(Box([-0.1, 0.11, -0.1], [0.1, 0.21, 0.1], Dark)); // ankle block
+        p.Add(Box([-0.1, 0.19, -0.095], [0.1, 0.72, 0.095], Joint)); // shin core
+        p.Add(Box([-0.125, 0.24, -0.13], [0.125, 0.67, -0.09])); // the shin plate
         foreach (var sx in new[] { -1.0, 1.0 })
-            p.Add(Box([Math.Min(sx * 0.137, sx * 0.157), 0.1, -0.12], [Math.Max(sx * 0.137, sx * 0.157), 0.3, 0.11], Joint, detail: true)); // cheek plates
+            p.Add(Box([Math.Min(sx * 0.097, sx * 0.122), 0.27, -0.08], [Math.Max(sx * 0.097, sx * 0.122), 0.64, 0.08], Steel, detail: true)); // side plates
+        p.Add(Box([-0.028, 0.26, 0.09], [0.028, 0.66, 0.135], Hazard, detail: true)); // the ram behind the shin
+        p.Add(Box([-0.115, 0.69, -0.12], [0.115, 0.79, 0.115], Dark)); // knee
+        p.Add(Box([-0.095, 0.66, -0.16], [0.095, 0.82, -0.117], Steel, detail: true)); // the knee guard
+        p.Add(Box([-0.13, 0.77, -0.12], [0.13, 1.3, 0.12])); // thigh
+        foreach (var sx in new[] { -1.0, 1.0 })
+            p.Add(Box([Math.Min(sx * 0.127, sx * 0.155), 0.84, -0.1], [Math.Max(sx * 0.127, sx * 0.155), 1.24, 0.1], Joint, detail: true)); // thigh plates
+        p.Add(Box([-0.09, 1.28, -0.09], [0.09, 1.41, 0.09], Dark, detail: true)); // the hip's coupling
+    }
+
+    /// <summary>
+    /// The Runner Leg: slim and digitigrade (the rig walks it with its hock behind and above the foot, Shells.json "hock"): a thin
+    /// thigh with a spring, a shin, a hock joint, a long metatarsal and three clawed toes with a spur, the springs in amber. Standing it is
+    /// straight, joint over joint. Joints: hip 0.94, knee 0.6, hock 0.3, ankle 0.06.
+    /// </summary>
+    private static void RunnerLeg(Part p)
+    {
+        p.Add(Box([-0.028, 0.0, -0.21], [0.028, 0.045, 0.02], Dark)); // the middle toe
+        foreach (var sx in new[] { -1.0, 1.0 })
+            p.Add(Box([Math.Min(sx * 0.035, sx * 0.08), 0.0, -0.16], [Math.Max(sx * 0.035, sx * 0.08), 0.04, 0.0], Dark)); // the side toes
+        p.Add(Box([-0.018, 0.0, 0.015], [0.018, 0.035, 0.1], Dark, detail: true)); // the spur behind
+        p.Add(Box([-0.024, 0.02, -0.235], [0.024, 0.042, -0.205], Steel, detail: true)); // the middle claw
+        p.Add(Box([-0.045, 0.03, -0.045], [0.045, 0.085, 0.045], Joint)); // the ball joint
+        p.Add(Box([-0.032, 0.075, -0.032], [0.032, 0.29, 0.032])); // the metatarsal
+        p.Add(Box([-0.012, 0.1, -0.05], [0.012, 0.27, -0.03], Lamp, detail: true)); // its spring, in front
+        p.Add(Box([-0.05, 0.27, -0.05], [0.05, 0.335, 0.05], Dark)); // the hock (its middle in the shin's band: it turns with the shin)
+        p.Add(Box([-0.04, 0.32, -0.045], [0.04, 0.6, 0.045], Joint)); // shin
+        p.Add(Box([-0.015, 0.35, 0.044], [0.015, 0.57, 0.075], Lamp, detail: true)); // the spring strut behind the shin
+        p.Add(Box([-0.055, 0.575, -0.06], [0.055, 0.645, 0.06], Dark, detail: true)); // knee
+        p.Add(Box([-0.058, 0.63, -0.062], [0.058, 0.92, 0.062])); // thigh
+        p.Add(Box([-0.016, 0.66, -0.088], [0.016, 0.89, -0.06], Lamp, detail: true)); // its spring, in front
+        p.Add(Box([-0.04, 0.9, -0.04], [0.04, 0.97, 0.04], Dark, detail: true)); // the hip's coupling
+    }
+
+    /// <summary>The Optics Head: a narrow camera head, two lens barrels forward, a sensor dome and an aerial.</summary>
+    private static void OpticsHead(Part p)
+    {
+        p.Add(Box([-0.055, 0, -0.055], [0.055, 0.1, 0.055], Dark)); // neck
+        p.Add(Box([-0.115, 0.08, -0.13], [0.115, 0.32, 0.12])); // head
+        p.Add(Box([-0.1, 0.12, -0.143], [0.1, 0.29, -0.127], Dark, detail: true)); // the face plate
+        foreach (var sx in new[] { -1.0, 1.0 })
+        {
+            p.Add(Box([Math.Min(sx * 0.022, sx * 0.088), 0.17, -0.205], [Math.Max(sx * 0.022, sx * 0.088), 0.24, -0.14], Joint)); // a lens barrel
+            p.Add(Box([Math.Min(sx * 0.03, sx * 0.08), 0.178, -0.211], [Math.Max(sx * 0.03, sx * 0.08), 0.232, -0.199], Visor, detail: true)); // its lens
+        }
+        p.Add(Box([-0.055, 0.317, -0.06], [0.055, 0.365, 0.05], Joint, detail: true)); // the sensor dome
+        p.Add(Box([0.07, 0.317, 0.03], [0.088, 0.47, 0.048], Dark, detail: true)); // aerial
+        p.Add(Box([0.066, 0.44, 0.026], [0.092, 0.474, 0.052], Visor, detail: true)); // its tip lamp
+    }
+
+    /// <summary>The Plated Head: a wide armoured helm, a slit visor under a heavy brow, a jaw guard, cheek plates and a crest.</summary>
+    private static void PlatedHead(Part p)
+    {
+        p.Add(Box([-0.065, 0, -0.065], [0.065, 0.1, 0.065], Dark)); // neck
+        p.Add(Box([-0.15, 0.07, -0.15], [0.15, 0.33, 0.14], Joint)); // the helm
+        p.Add(Box([-0.165, 0.27, -0.172], [0.165, 0.345, 0.155])); // the brow plate over the crown
+        p.Add(Box([-0.12, 0.195, -0.158], [0.12, 0.222, -0.146], Visor, detail: true)); // the slit visor
+        p.Add(Box([-0.13, 0.075, -0.175], [0.13, 0.185, -0.12])); // the jaw guard
+        foreach (var sx in new[] { -1.0, 1.0 })
+            p.Add(Box([Math.Min(sx * 0.147, sx * 0.172), 0.09, -0.135], [Math.Max(sx * 0.147, sx * 0.172), 0.268, 0.125], Steel, detail: true)); // cheek plates
+        p.Add(Box([-0.03, 0.342, -0.16], [0.03, 0.385, 0.14], Dark, detail: true)); // the crest
+        p.Add(Box([-0.1, 0.1, -0.18], [-0.04, 0.12, -0.172], Dark, detail: true)); // vent slots on the jaw guard
+        p.Add(Box([0.04, 0.1, -0.18], [0.1, 0.12, -0.172], Dark, detail: true));
+    }
+
+    /// <summary>An arm module's elbow coupling at its top (the rig turns it about there): 0.4 m up.</summary>
+    private static void Elbow(Part p, double w)
+    {
+        p.Add(Box([-w, 0.36, -w], [w, 0.42, w], Dark)); // the elbow's coupling
+        p.Add(Box([-w - 0.006, 0.375, -w * 0.6], [w + 0.006, 0.405, w * 0.6], Joint, detail: true)); // its pin
+    }
+
+    /// <summary>The tool arms (the user, 2026-11-19: "add a few more arms for the different tools in the game"): each is its tool while worn.</summary>
+    private static IEnumerable<(string, Part)> ToolArms()
+    {
+        const string Hazard = "#e0a020", Orange = "#e07020", Copper = "#b87333", Glow = "#7fe0ff", Blade = "#c9ced4", Red = "#c03030";
+        yield return ("Modules", Module("Shell Welder Arm", "A robot shell arm that is an attach tool: a torch head and its gas bottle. Worn, it fits and welds parts.", 6, p =>
+        {
+            Elbow(p, 0.065);
+            p.Add(Box([-0.06, 0.12, -0.06], [0.06, 0.365, 0.06], Orange)); // the housing, the welder's orange
+            p.Add(Box([-0.045, 0.06, -0.045], [0.045, 0.125, 0.045], Dark)); // the torch's collar
+            p.Add(Box([-0.022, 0.0, -0.022], [0.022, 0.065, 0.022], Copper)); // the nozzle
+            p.Add(Box([0.057, 0.16, -0.035], [0.105, 0.34, 0.035], Joint, detail: true)); // the gas bottle along its side
+            p.Add(Box([0.068, 0.335, -0.022], [0.094, 0.36, 0.022], Copper, detail: true)); // its valve
+            p.Add(Box([-0.063, 0.2, -0.063], [0.063, 0.225, 0.063], Hazard, detail: true)); // a hazard band
+        }));
+        yield return ("Modules", Module("Shell Cutter Arm", "A robot shell arm that is a remover: a guarded saw disc. Worn, it cuts parts away.", 7, p =>
+        {
+            Elbow(p, 0.06);
+            p.Add(Box([-0.055, 0.2, -0.055], [0.055, 0.365, 0.055], Joint)); // the forearm
+            p.Add(Box([-0.045, 0.15, -0.05], [0.045, 0.205, 0.05], Dark)); // the motor
+            p.Add(Box([-0.012, 0.004, -0.13], [0.012, 0.21, 0.13], Blade)); // the disc, edge on
+            p.Add(Box([-0.016, 0.09, -0.016], [0.016, 0.125, 0.016], Dark, detail: true)); // its hub
+            p.Add(Box([-0.03, 0.17, -0.14], [0.03, 0.235, 0.14], Red, detail: true)); // the guard over its top
+            p.Add(Box([-0.014, 0.0, -0.06], [0.014, 0.016, 0.06], Hazard, detail: true)); // the teeth's mark
+        }));
+        yield return ("Modules", Module("Shell Grip Arm", "A robot shell arm that is a physics gun: three claws round a field emitter. Worn, it grabs and moves whole constructs.", 6, p =>
+        {
+            Elbow(p, 0.06);
+            p.Add(Box([-0.055, 0.15, -0.055], [0.055, 0.365, 0.055], Joint)); // the forearm
+            p.Add(Box([-0.08, 0.1, -0.08], [0.08, 0.155, 0.08], Dark)); // the claw ring
+            p.Add(Box([-0.035, 0.07, -0.035], [0.035, 0.105, 0.035], Glow)); // the emitter
+            p.Add(Box([-0.015, 0.0, -0.085], [0.015, 0.105, -0.06], Steel)); // the claws: front, and one each side behind
+            p.Add(Box([-0.085, 0.0, 0.03], [-0.06, 0.105, 0.06], Steel));
+            p.Add(Box([0.06, 0.0, 0.03], [0.085, 0.105, 0.06], Steel));
+            p.Add(Box([-0.058, 0.25, -0.058], [0.058, 0.27, 0.058], Glow, detail: true)); // a field band
+        }));
+        yield return ("Modules", Module("Shell Sprayer Arm", "A robot shell arm that is a paint tool: a paint can and its nozzle. Worn, it colours parts.", 5, p =>
+        {
+            Elbow(p, 0.06);
+            p.Add(Box([-0.055, 0.22, -0.055], [0.055, 0.365, 0.055], Joint)); // the forearm
+            p.Add(Box([-0.07, 0.07, -0.07], [0.07, 0.225, 0.07], "#3a7fd0")); // the paint can
+            p.Add(Box([-0.073, 0.12, -0.073], [0.073, 0.16, 0.073], "#e0e4e8", detail: true)); // its label band
+            p.Add(Box([-0.025, 0.02, -0.025], [0.025, 0.075, 0.025], Dark)); // the nozzle's body
+            p.Add(Box([-0.012, 0.0, -0.012], [0.012, 0.025, 0.012], "#d04090", detail: true)); // its tip
+        }));
     }
 
     private static IEnumerable<(string, Part)> Modules()
     {
-        yield return ("Modules", Module("Shell Optics Head", "A robot shell's standard head: the visor, its cameras and an aerial.", 6, p => Head(p, plated: false)));
-        yield return ("Modules", Module("Shell Plated Head", "A robot shell's head under armour plates: the shell takes a tenth less from hits.", 11, p => Head(p, plated: true)));
+        yield return ("Modules", Module("Shell Optics Head", "A robot shell's standard head: two camera lenses, a sensor dome and an aerial.", 6, OpticsHead));
+        yield return ("Modules", Module("Shell Plated Head", "A robot shell's armoured helm with a slit visor: the shell takes a tenth less from hits.", 11, PlatedHead));
         yield return ("Modules", Module("Shell Power Pack", "A Robot Shell's power pack, worn on its back.", 9, p =>
         {
-            p.Add(Box([-0.16, 0, -0.045], [0.16, 0.37, 0.045], Dark));
-            p.Add(Box([-0.12, 0.29, -0.049], [0.12, 0.32, -0.04], Lamp, detail: true));
+            p.Add(Box([-0.16, 0, -0.06], [0.16, 0.37, 0.06], Dark)); // the case
+            foreach (var x in new[] { -0.105, 0.035 })
+                p.Add(Box([x, 0.367, -0.04], [x + 0.07, 0.41, 0.04], Joint)); // two cell caps on top
+            p.Add(Box([-0.12, 0.29, -0.066], [0.12, 0.32, -0.057], Lamp, detail: true)); // the charge band
+            for (var k = 0; k < 4; k++)
+                p.Add(Box([-0.12, 0.07 + 0.045 * k, -0.068], [0.12, 0.09 + 0.045 * k, -0.057], Joint, detail: true)); // vent fins
+            p.Add(Box([0.157, 0.05, -0.03], [0.175, 0.3, 0.03], Joint, detail: true)); // a cable down its side
         }));
         yield return ("Modules", Module("Shell Hand", "A robot shell's forearm and hand, which hold its tools.", 4, p =>
         {
@@ -359,9 +487,11 @@ public sealed class ShellParts : IPartGenerator
             p.Add(Box([-0.055, 0.1, -0.055], [0.055, 0.37, 0.055], Joint)); // forearm
             p.Add(Box([-0.065, 0.35, -0.065], [0.065, 0.4, 0.065], Dark, detail: true)); // the elbow's coupling
         }));
-        yield return ("Modules", Module("Shell Standard Leg", "A Robot Shell's leg: hip to foot.", 8, p => Leg(p, 1, runner: false)));
-        yield return ("Modules", Module("Shell Heavy Leg", "A Mining Shell's leg, half again the size of a standard one.", 24, p => Leg(p, 1.5, runner: false)));
-        yield return ("Modules", Module("Shell Runner Leg", "A sprung robot shell leg: a pair of them make the shell a tenth faster.", 7, p => Leg(p, 1, runner: true)));
+        yield return ("Modules", Module("Shell Standard Leg", "A Robot Shell's leg: hip to foot.", 8, StandardLeg));
+        yield return ("Modules", Module("Shell Heavy Leg", "A Mining Shell's armoured leg, half again the size of a standard one, on a wide foot.", 24, HeavyLeg));
+        yield return ("Modules", Module("Shell Runner Leg", "A sprung, digitigrade robot shell leg on clawed toes: a pair of them make the shell a tenth faster.", 7, RunnerLeg));
+        foreach (var a in ToolArms())
+            yield return a;
     }
 
     // ---- Shell storage pods (the user, 2026-11-18; docs/sandbox/design/shell-pod.md): one shell a pod, in three size classes by the

@@ -13,7 +13,11 @@
   // works, it taps "rate" units a second of its ore into the hopper). A module's "tool" is the shell's only tool while it is
   // worn (the tool wheel, the number keys and the gun are refused; leaving the shell gives the body's tools back), and with "view":
   // true its wearer sees the module's own model in first person in place of that tool's (the drill arm reaching forward; the
-  // rig's own boxes, ShellKitNodes.cs). leg: a leg.
+  // rig's own boxes, ShellKitNodes.cs). tool: an arm that IS a tool (its "tool"; "view" too), held forward along the look like the drill
+  // arm and drawn from its part's model; a shell with tool arms uses only their tools (the tool wheel offers each). leg: a leg.
+  // How a worn shell shows each module (ShellLooks.cs): the module's part model on the rig. A leg says its part's "joints" (heights in
+  // the part's metres, hip, knee and ankle; a sprung leg adds its hock between knee and ankle) and, with a hock, "hock": [up, back],
+  // where its hock stands above and behind the ankle in a person's metres: the rig then walks it digitigrade (LegAnimator.Hock).
   // Any module may say "speed" (times the shell's pace) and "damage" (times the hits it takes), 1 if not said. A module with a
   // "part" comes off on a Shell Gantry as that part, onto its parts table, and that part is fitted back (mining-shell.md "Shell
   // Gantry"); one with none is never taken off. A module's place in the list is its byte on the wire and in a shell's save: a new
@@ -24,10 +28,15 @@
     { "name": "Ore Hopper", "slot": "back", "kind": "hopper", "takes": ["iron ore", "copper ore", "gold ore", "levite ore", "stone", "sand"] },
     { "name": "Hand", "slot": "arm", "kind": "hand", "part": "Shell Hand" },
     { "name": "Drill Arm", "slot": "arm", "kind": "drill", "rate": 30, "tier": 2, "tool": "GroundDrill", "view": true },
-    { "name": "Standard Leg", "slot": "leg", "kind": "leg", "part": "Shell Standard Leg" },
-    { "name": "Heavy Leg", "slot": "leg", "kind": "leg", "part": "Shell Heavy Leg" },
-    { "name": "Runner Leg", "slot": "leg", "kind": "leg", "part": "Shell Runner Leg", "speed": 1.05 },
-    { "name": "Plated Head", "slot": "head", "kind": "head", "part": "Shell Plated Head", "damage": 0.9 }
+    { "name": "Standard Leg", "slot": "leg", "kind": "leg", "part": "Shell Standard Leg", "joints": { "hip": 0.9, "knee": 0.49, "ankle": 0.09 } },
+    { "name": "Heavy Leg", "slot": "leg", "kind": "leg", "part": "Shell Heavy Leg", "joints": { "hip": 1.35, "knee": 0.735, "ankle": 0.15 } },
+    { "name": "Runner Leg", "slot": "leg", "kind": "leg", "part": "Shell Runner Leg", "speed": 1.05,
+      "joints": { "hip": 0.94, "knee": 0.6, "hock": 0.3, "ankle": 0.06 }, "hock": [0.24, 0.1] },
+    { "name": "Plated Head", "slot": "head", "kind": "head", "part": "Shell Plated Head", "damage": 0.9 },
+    { "name": "Welder Arm", "slot": "arm", "kind": "tool", "part": "Shell Welder Arm", "tool": "Welder", "view": true },
+    { "name": "Cutter Arm", "slot": "arm", "kind": "tool", "part": "Shell Cutter Arm", "tool": "Remover", "view": true },
+    { "name": "Grip Arm", "slot": "arm", "kind": "tool", "part": "Shell Grip Arm", "tool": "PhysicsGun", "view": true },
+    { "name": "Sprayer Arm", "slot": "arm", "kind": "tool", "part": "Shell Sprayer Arm", "tool": "Paint", "view": true }
   ],
   "frames": [
     { "name": "Standard", "part": "Robot Shell", "scale": 1, "speed": 1, "damage": 1,

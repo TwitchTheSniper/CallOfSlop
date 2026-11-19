@@ -15,9 +15,12 @@ public sealed class PlayerRig
     public readonly GunRig Gun;
     public readonly ArmNodes Right, Left;
     public readonly SceneNode Pelvis;
-    public readonly SceneNode[] Thighs = new SceneNode[2], Shins = new SceneNode[2], Feet = new SceneNode[2];
+    public readonly SceneNode[] Thighs = new SceneNode[2], Shins = new SceneNode[2], Feet = new SceneNode[2], Metas = new SceneNode[2]; // (Metas: a hock leg's metatarsal, under the shin: ShellLooks)
     private readonly SceneNode _frame, _upper, _gear, _pelvisBox, _tool;
     private readonly ShellKitNodes _kit; // a robot shell frame's modules: the ore hopper, the drill arm (ShellKitNodes.cs)
+    private readonly ShellLooks _looks; // a worn shell's fitted modules from their parts' models: head, back, arms, legs (ShellLooks.cs)
+    private readonly bool[] _legsHidden = new bool[2];
+    private bool _headHidden, _pelvisShell;
     private readonly ToolNode _toolDraw = new();
     private readonly PackNode _packDraw = new(); // (the gear node's own draw: the backpack, before the gun and arms)
     private readonly SceneNode[] _stances = new SceneNode[3]; // Stand, Crouch, Prone
@@ -68,6 +71,7 @@ public sealed class PlayerRig
                 var bone = parts[k].Bone switch { 1 => Thighs[i], 2 => Shins[i], _ => Feet[i] };
                 _legBoxes[i * parts.Length + k] = bone.Add("box", Matrix4x4.CreateScale(parts[k].Size) * Matrix4x4.CreateTranslation(parts[k].Center), Renderable.Box(Vector3.One));
             }
+            Metas[i] = Shins[i].Add("meta" + sfx);
         }
 
         _gear = _frame.Add("upper_gear");
@@ -87,6 +91,7 @@ public sealed class PlayerRig
         _corpseHat = _frame.Add("corpse_hat");
         _corpseHat.Visible = false;
         _kit = new ShellKitNodes(_gear);
+        _looks = new ShellLooks(_gear, _heads, Thighs, Shins, Metas, Feet, Right.Fore, Left.Fore);
     }
 
     private SceneNode MakeStance(int stance)
@@ -157,13 +162,14 @@ public sealed class PlayerRig
         Root.SetLocalMatrix(size == 1f ? Matrix4x4.Identity : Matrix4x4.CreateTranslation(-body.Translation) * Matrix4x4.CreateScale(size) * Matrix4x4.CreateTranslation(body.Translation));
         var color = p.Color;
         var legUniform = BodyModel.UniformOf(p);
-        if (color != _color || legUniform != _legUniform)
+        if (color != _color || legUniform != _legUniform || p.InShell != _pelvisShell)
         {
             _color = color;
             _legUniform = legUniform;
+            _pelvisShell = p.InShell;
             _corpse.Renderable.Color = color * 0.4f;
             var lc = BodyModel.LegsFor(p); // (a uniform's trousers and boots)
-            _pelvisBox.Renderable.Color = lc.Of(LegAnimator.PelvisPart.Paint);
+            _pelvisBox.Renderable.Color = p.InShell ? BodyColors.Robot(color).Pouch : lc.Of(LegAnimator.PelvisPart.Paint); // (a shell's hips: its dark joints)
             var parts = LegAnimator.LegParts;
             for (var i = 0; i < _legBoxes.Length; i++)
                 _legBoxes[i].Renderable.Color = lc.Of(parts[i % parts.Length].Paint);
@@ -197,7 +203,9 @@ public sealed class PlayerRig
             Thighs[i].SetLocalMatrix(legs.ThighLocal[i]);
             Shins[i].SetLocalMatrix(legs.ShinLocal[i]);
             Feet[i].SetLocalMatrix(legs.FootLocal[i]);
+            Metas[i].SetLocalMatrix(legs.MetaLocal[i]);
         }
+        PoseLooks(p);
         if (legsOnly)
             return;
         BodyBloodRender.PlacePlayer(p, legs, body, stance); // blood marks by health (bound around this rig's draws)
@@ -255,17 +263,39 @@ public sealed class PlayerRig
         }
 
         _kit.Pose(p, seated); // (after the arms: a drill arm hides the right one)
-        if (_kit.DrillShown)
-        {
-            Right.Root.Visible = false;
-            if (_tool.Visible && _toolDraw.Frame.Model is { Tool: { } held } && held == ShellFrames.Worn(p).Find(ShellModuleKind.Drill)?.Tool)
-                _tool.Visible = false; // (the drill arm is the tool it forces: no hand-held one beside it)
-        }
-        else if (!Right.Root.Visible)
-            Right.Root.Visible = true;
+        var rightOff = _kit.DrillShown || _looks.ToolShown[0];
+        if (Right.Root.Visible == rightOff)
+            Right.Root.Visible = !rightOff;
+        if (Left.Root.Visible == _looks.ToolShown[1])
+            Left.Root.Visible = !_looks.ToolShown[1];
+        Right.Robot(_looks.HandShown[0]);
+        Left.Robot(_looks.HandShown[1]);
+        if (_tool.Visible && _toolDraw.Frame.Model is { Tool: { } held } && p.InShell
+            && (_kit.DrillShown && held == ShellFrames.Worn(p).Find(ShellModuleKind.Drill)?.Tool || held == _looks.ToolOf[0] || held == _looks.ToolOf[1]))
+            _tool.Visible = false; // (the arm is the tool it forces: no hand-held one beside it)
         var frac = Math.Clamp(p.Health / (float)World.MaxHealth, 0f, 1f);
         _health.SetLocalMatrix(Matrix4x4.CreateScale(0.8f * frac, 0.06f, 0.06f) * Matrix4x4.CreateTranslation(0, barY, 0));
         _health.Renderable.Color = Vector3.Lerp(new Vector3(1, 0.1f, 0.1f), new Vector3(0.2f, 1, 0.2f), frac);
+    }
+
+    /// <summary>A worn shell's modules (ShellLooks): refitted when they change; the person's head and leg boxes hidden under them.</summary>
+    private void PoseLooks(Player p)
+    {
+        _looks.Pose(p, p.RenderSeat != SeatKind.None, ThirdPersonArms.Rigs.Right);
+        for (var i = 0; i < 2; i++)
+            if (_looks.LegShown[i] != _legsHidden[i])
+            {
+                _legsHidden[i] = _looks.LegShown[i];
+                var n = LegAnimator.LegParts.Length;
+                for (var k = 0; k < n; k++)
+                    _legBoxes[i * n + k].Visible = !_legsHidden[i];
+            }
+        if (_looks.HeadShown != _headHidden)
+        {
+            _headHidden = _looks.HeadShown;
+            foreach (var h in _headParts)
+                h.Hidden = _headHidden;
+        }
     }
 
     /// <summary>The gun in hand (posed by <see cref="ThirdPersonArms"/>) and both arms on it.</summary>

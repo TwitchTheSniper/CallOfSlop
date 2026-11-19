@@ -171,21 +171,27 @@ public sealed partial class Game
     /// </summary>
     internal static string? ShellToolRefusal(Player p, ConstructTool asked)
     {
-        if (!p.InShell || p.ShellFrame == 0)
+        if (!p.InShell)
             return null;
         var f = ShellFrames.Worn(p);
-        if (f.ForcedTool is not { } only || asked == only)
+        if (f.Allows(asked))
             return null;
-        return $"the {f.Part}'s only tool is its {f.ToolModule!.Name}: leave the shell for your own tools";
+        string? first = null, second = null;
+        foreach (var m in f.Modules)
+            if (m?.Tool != null)
+                (first, second) = first == null ? (m.Name, second) : (first, second ?? m.Name);
+        return second == null || second == first
+            ? $"the {f.Part}'s only tool is its {first}: leave the shell for your own tools"
+            : $"the {f.Part}'s tools are its arms ({first}, {second}): leave the shell for your own tools";
     }
 
     /// <summary>Server, from <see cref="ShellTick"/>: a worn shell with a forced tool has it out (after a seat, a part picked up, a wake).</summary>
     private void ShellForceTool(Player p)
     {
-        if (p.ShellFrame == 0 || ShellFrames.Worn(p).ForcedTool is not { } only)
+        if (!p.InShell || ShellFrames.Worn(p).ForcedTool is not { } only)
             return;
         ref var h = ref SandboxHands.Hand(p.Id);
-        if (h.Tool != only && !h.Seated)
+        if (!ShellFrames.Worn(p).Allows(h.Tool) && !h.Seated)
             SandboxHands.SetTool(p.Id, only, Constructs, p.Eye, p.Yaw);
     }
 

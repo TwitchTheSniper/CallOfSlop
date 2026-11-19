@@ -79,6 +79,14 @@ public sealed class ArmNodes
             Paint(c);
     }
 
+    /// <summary>A robot shell's Hand module draws this arm's forearm (ShellLooks): the sleeve's elbow, forearm and cuff are hidden while <paramref name="on"/>.</summary>
+    public void Robot(bool on)
+    {
+        if (_forearm.Visible != on)
+            return;
+        _elbow.Visible = _forearm.Visible = _cuff.Visible = !on;
+    }
+
     /// <summary>Shows the carried magazine / shells for this frame (as <see cref="Arms.DrawCarry"/> draws them), or hides it.</summary>
     public void Carry(bool carrying, HandShape shape, in ArmAnchorSet a)
     {

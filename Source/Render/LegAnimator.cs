@@ -38,6 +38,9 @@ public sealed class LegPose
     public readonly Matrix4x4[] Thigh = new Matrix4x4[2], Shin = new Matrix4x4[2], Foot = new Matrix4x4[2];
     public readonly Matrix4x4[] ThighLocal = new Matrix4x4[2], ShinLocal = new Matrix4x4[2], FootLocal = new Matrix4x4[2];
 
+    /// <summary>A hock leg's metatarsal (a robot shell's Runner Leg: <see cref="LegAnimator"/> "hock"): from the hock down to the foot's ball, -Z along it; MetaLocal is relative to the shin. Without a hock it is the foot's frame (nothing is drawn on it).</summary>
+    public readonly Matrix4x4[] Meta = new Matrix4x4[2], MetaLocal = new Matrix4x4[2];
+
     // ---- Diagnostics (the self-test and the smoke log read these) ----
     public readonly float[] GroundY = new float[2], RayY = new float[2]; // smoothed and raw ground height under each foot (world)
     public readonly Vector3[] Target = new Vector3[2], Ankle = new Vector3[2], AnkleWorld = new Vector3[2];
@@ -196,6 +199,24 @@ public static class LegAnimator
     /// Animates <paramref name="p"/>'s legs at <paramref name="now"/> (the game clock) into <see cref="Pose"/>. Calling it
     /// twice at the same time gives the same pose (state only advances with time).
     /// </summary>
+    /// <summary>
+    /// Per leg this pose (0 right, 1 left): where a digitigrade leg's hock stands from its foot, in the foot's frame (up, back; zero: a
+    /// person's leg). A robot shell's leg module says it (Constructs/Shells.json "hock": the Runner Leg): the thigh and shin reach for
+    /// the hock instead of the ankle, the knee forward and the hock behind it, and a metatarsal runs down from it to the foot's ball.
+    /// </summary>
+    private static readonly Vector3[] Hock = new Vector3[2];
+
+    private static void SetHocks(Player p)
+    {
+        Hock[0] = Hock[1] = Vector3.Zero;
+        if (!p.InShell)
+            return;
+        var mods = ShellFrames.Worn(p).Modules;
+        for (var i = 0; i < 2; i++)
+            if (mods[i == 0 ? 5 : 4] is { HockUp: > 0 } m)
+                Hock[i] = new Vector3(0, m.HockUp, m.HockBack);
+    }
+
     public static LegPose Animate(Player p, double now)
     {
         // The same player at the same moment again (e.g. the scene graph and the reference drawing both posing it): same pose.
@@ -215,6 +236,7 @@ public static class LegAnimator
         _cacheSeat = p.RenderSeat;
         _cacheLook = p.RenderLookYaw;
         var t0 = Stopwatch.GetTimestamp();
+        SetHocks(p);
         ref var st = ref States[p.Id];
         var pose = Pose;
         var pos = p.RenderPosition;
@@ -565,6 +587,7 @@ public static class LegAnimator
                 pose.Thigh[hopLeg] *= hop;
                 pose.Shin[hopLeg] *= hop;
                 pose.Foot[hopLeg] *= hop;
+                pose.Meta[hopLeg] *= hop;
             }
         }
 
@@ -577,6 +600,7 @@ public static class LegAnimator
             pose.ThighLocal[i] = pose.Thigh[i] * invPelvis;
             pose.ShinLocal[i] = pose.Shin[i] * ArmNodes.RigidInverse(pose.Thigh[i]);
             pose.FootLocal[i] = pose.Foot[i] * ArmNodes.RigidInverse(pose.Shin[i]);
+            pose.MetaLocal[i] = pose.Meta[i] * ArmNodes.RigidInverse(pose.Shin[i]);
             pose.AnkleWorld[i] = Vector3.Transform(pose.Ankle[i], body);
         }
         if (!seated && p.InShell)
@@ -590,8 +614,8 @@ public static class LegAnimator
                     pose.ThighLocal[i] = none * pose.ThighLocal[i];
                     pose.Thigh[i] = none * pose.Thigh[i];
                     pose.Shin[i] = none * pose.Thigh[i];
-                    pose.Foot[i] = none * pose.Thigh[i];
-                    pose.ShinLocal[i] = pose.FootLocal[i] = Matrix4x4.Identity;
+                    pose.Foot[i] = pose.Meta[i] = none * pose.Thigh[i];
+                    pose.ShinLocal[i] = pose.FootLocal[i] = pose.MetaLocal[i] = Matrix4x4.Identity;
                 }
         }
         pose.Phase = st.Phase;
@@ -828,13 +852,30 @@ public static class LegAnimator
     private static void Solve(LegPose pose, int i, Vector3 hip, Vector3 target, Vector3 pole, in Matrix4x4 footRot)
     {
         pose.Target[i] = target;
-        pose.Reached[i] = Arms.SolveTwoBone(hip, target, Thigh, Shin, pole, out var knee, out var ankle);
-        pose.Thigh[i] = Arms.BoneFrame(hip, knee, pole);
-        pose.Shin[i] = Arms.BoneFrame(knee, ankle, pole);
-        var f = footRot;
-        f.Translation = ankle;
-        pose.Foot[i] = f;
-        pose.Ankle[i] = ankle;
+        var hock = Hock[i];
+        if (hock == Vector3.Zero)
+        {
+            pose.Reached[i] = Arms.SolveTwoBone(hip, target, Thigh, Shin, pole, out var knee, out var ankle);
+            pose.Thigh[i] = Arms.BoneFrame(hip, knee, pole);
+            pose.Shin[i] = Arms.BoneFrame(knee, ankle, pole);
+            var f = footRot;
+            f.Translation = ankle;
+            pose.Foot[i] = pose.Meta[i] = f;
+            pose.Ankle[i] = ankle;
+            return;
+        }
+        // Digitigrade: the thigh and shin reach the hock (up and behind the foot's ball, in the foot's frame), the metatarsal runs
+        // down and forward from it to the ball, which stands where a person's ankle would.
+        var up = Vector3.TransformNormal(hock, footRot);
+        pose.Reached[i] = Arms.SolveTwoBone(hip, target + up, Thigh, Shin, pole, out var k, out var h);
+        var ball = h - up;
+        pose.Thigh[i] = Arms.BoneFrame(hip, k, pole);
+        pose.Shin[i] = Arms.BoneFrame(k, h, pole);
+        pose.Meta[i] = Arms.BoneFrame(h, ball, pole);
+        var foot = footRot;
+        foot.Translation = ball;
+        pose.Foot[i] = foot;
+        pose.Ankle[i] = ball;
     }
 
     /// <summary>A foot's rotation in body space: its yaw, toe pitch, then tilted (a little) to the ground normal.</summary>
