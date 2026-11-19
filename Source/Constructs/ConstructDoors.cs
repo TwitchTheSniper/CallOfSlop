@@ -39,6 +39,10 @@ public sealed class CDoorDef
     public bool Held;
     public Vector3 Shift; // a held door's settle, the part's frame
     public byte Gear; // "gear": "canopy" (1) or "leg" (2): a landing leg pod's, worked together by a seat's gear key (ConstructDoors.ToggleGear)
+    // "spring": a landing leg's foot that gives (Karl, 2026-11-19: suspension on the landing gear). Settled open, its pad stands on a
+    // raycast spring (ConstructPhysics.GearFeet) and its solid boxes meet the ground only past the travel (a bump stop); its "oleo" boxes
+    // are drawn up by the squash. A held door's only. SpringTravel 0: none.
+    public float SpringTravel, SpringHz, SpringDamp;
     public int Ticks => Math.Max(1, (int)MathF.Round(Seconds * World.TickRate));
 }
 
@@ -86,7 +90,7 @@ public static class ConstructDoors
         var where = $"{file}, door";
         if (d.Role != PartRole.Door)
             throw new ConstructPartException($"{file}: only a part with \"role\": \"door\" has a \"door\" block");
-        ConstructParts.Known(b, ["kind", "axis", "pivot", "angle", "travel", "seconds", "hang", "dock", "launch", "link", "held", "gear"], where);
+        ConstructParts.Known(b, ["kind", "axis", "pivot", "angle", "travel", "seconds", "hang", "dock", "launch", "link", "held", "gear", "spring"], where);
         var dd = new CDoorDef();
         var kind = ConstructParts.Str(ConstructParts.Need(b, "kind", where), file, "door.kind");
         dd.Slide = kind switch
@@ -135,6 +139,20 @@ public static class ConstructDoors
         dd.Launch = ConstructParts.Opt(b, "launch") is { } ln && ln.ValueKind == JsonValueKind.True;
         if (ConstructParts.Opt(b, "link") is { } lk)
             dd.Link = ParseLink(dd, lk, file);
+        if (ConstructParts.Opt(b, "spring") is { } sp)
+        {
+            var sw = where + ".spring";
+            ConstructParts.Known(sp, ["travel", "hz", "damping"], sw);
+            if (!dd.Held || dd.Gear != 2)
+                throw new ConstructPartException($"{file}: a door.spring is on a \"held\" landing leg (\"gear\": \"leg\")");
+            dd.SpringTravel = ConstructParts.Num(ConstructParts.Need(sp, "travel", sw), file, "door.spring.travel");
+            dd.SpringHz = ConstructParts.Num(ConstructParts.Need(sp, "hz", sw), file, "door.spring.hz");
+            dd.SpringDamp = ConstructParts.Opt(sp, "damping") is { } dp ? ConstructParts.Num(dp, file, "door.spring.damping") : 0.5f;
+            if (dd.SpringTravel is < 0.02f or > 0.9f)
+                throw new ConstructPartException($"{file}: \"door.spring.travel\" is 0.02 to 0.9 metres (under the ground's depth: ConstructPhysicsContacts.MaxGroundDepth)");
+            if (dd.SpringHz is < 0.3f or > 10f || dd.SpringDamp is < 0f or > 2f)
+                throw new ConstructPartException($"{file}: \"door.spring.hz\" is 0.3 to 10, \"damping\" 0 to 2");
+        }
         d.Door = dd;
         d.DataIn = ["Open", "Toggle", "Lock"]; // (In, In1, In2: high opens and low shuts; a rise toggles; high locks F out)
     }
@@ -367,7 +385,7 @@ public static class ConstructDoors
         if (state == 0)
             return "this craft has no landing leg pods";
         var lower = state == 1;
-        if (!lower && FeetClear(c, 0f) < GearStandClear)
+        if (!lower && (FeetClear(c, 0f) < GearStandClear || FeetOnDeck(world, c)))
             return "the craft stands on its legs: lift off first";
         c.GearOut = lower;
         var first = lower ? (byte)1 : (byte)2;
@@ -378,6 +396,37 @@ public static class ConstructDoors
                 ticks = Math.Max(ticks, dd.Ticks);
         c.GearTicks = ticks + 3; // (a few ticks' gap, so the second half starts from a settled first)
         return null;
+    }
+
+    /// <summary>
+    /// A sprung landing foot's give (<see cref="CDoorDef.SpringTravel"/>) if part <paramref name="part"/> is one, settled open and still,
+    /// else 0: its solid boxes meet the ground this much deeper (a bump stop at the end of the spring's travel). From the list as built (no build).
+    /// </summary>
+    public static float FootGive(Construct c, int part)
+    {
+        if (c.GearFootCount == 0 || c.DoorOfListed(part) is not (var k and >= 0) || c.Doors[k].Part != part)
+            return 0;
+        ref var p = ref c.Parts[part];
+        return p.D.Door!.SpringTravel > 0 && (p.State & Moving) == 0 && SettledOpen(c, part) ? p.D.Door.SpringTravel : 0;
+    }
+
+    /// <summary>Do the lowered feet stand on a deck (a station's, a carrier's): within <see cref="GearStandClear"/> of one under any foot.</summary>
+    private static bool FeetOnDeck(ConstructWorld world, Construct c)
+    {
+        var down = -Vector3.Transform(Vector3.UnitY, c.Rot);
+        for (var k = 0; k < c.DoorCount; k++)
+        {
+            var part = c.Doors[k].Part;
+            ref var p = ref c.Parts[part];
+            if (p.D.Door is not { Gear: 2, Held: true } dd || dd.Shift == Vector3.Zero || !SettledOpen(c, part))
+                continue;
+            c.PartBounds(part, out var mn, out var mx);
+            var sole = c.ToWorld(new Vector3((mn.X + mx.X) * 0.5f, mn.Y, (mn.Z + mx.Z) * 0.5f));
+            var give = dd.SpringTravel;
+            if (ConstructPhysics.DeckUnder(world, c, sole - down * (give + 0.5f), down, give + 0.5f + GearStandClear) != null)
+                return true;
+        }
+        return false;
     }
 
     /// <summary>Feet this close over the ground (m) are stood on: the gear key won't raise them.</summary>

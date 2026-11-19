@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Leg Pod Housing L",
-  "description": "A landing leg pod's housing (L): an armoured pod welded under a keel by its top, hollow, with the gantry's rails on its end walls. Hang its two canopy leaves and its gantry on it; the leg stands 2.58 m under the pod's top when lowered. A generic ship fitting: it fits any ship.",
+  "description": "A landing leg pod's housing (L): an armoured pod welded under a keel by its top, hollow, with the gantry's rails on its end walls. Hang its two canopy leaves and its gantry on it; the leg stands 2.66 m under the pod's top when lowered. A generic ship fitting: it fits any ship.",
   "group": "Ship",
   "section": "Ship fittings",
   "role": "frame",
@@ -3914,7 +3914,7 @@
       "name": "foot",
       "at": [
         0.0,
-        -0.81,
+        -0.89,
         1.65
       ],
       "dir": "-z"
