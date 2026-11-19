@@ -138,14 +138,7 @@ public static class ThirdPersonArms
             left = HandTarget.Blend(left, HandTarget.Blend(mag, down, ViewModelAnimator.Hump(reload, 0.28f, 0.42f, 0.5f, 0.66f)), toMag);
         }
 
-        var (rr, lr) = p.RenderStance switch
-        {
-            Stance.Crouch => (new Vector3(0.33f, 0.8f, 0.05f), new Vector3(-0.33f, 0.8f, -0.05f)),
-            Stance.Prone => (new Vector3(0.25f, 0.32f, -0.45f), new Vector3(-0.25f, 0.32f, -0.5f)),
-            _ => (new Vector3(0.33f, 1.38f, 0.1f), new Vector3(-0.33f, 1.38f, 0f)),
-        };
-        Right.Root = rr;
-        Left.Root = lr;
+        SetShoulders(p);
         Right.Solve(right, body, Vector3.Zero);
         Left.Solve(left, body, Vector3.Zero);
         _colors = BodyModel.ArmsFor(p); // (a uniform's sleeves and gloves)
@@ -156,10 +149,10 @@ public static class ThirdPersonArms
     }
 
     /// <summary>
-    /// Poses both arms onto hand targets in the world (a Sandbox tool or a carried part instead of a gun; ToolRender.cs),
-    /// from the shoulders of <paramref name="p"/>'s stance in <paramref name="body"/>. Call <see cref="Draw"/> right after.
+    /// Both shoulders for <paramref name="p"/>'s stance (body space). A robot shell's arms hang outside its shoulder block, clear of
+    /// the torso (<see cref="ShellSpread"/>; a person's start inside their shoulders, under the sleeves).
     /// </summary>
-    public static void PoseHands(Player p, in HandTarget right, in HandTarget left, in Matrix4x4 body)
+    private static void SetShoulders(Player p)
     {
         var (rr, lr) = p.RenderStance switch
         {
@@ -167,8 +160,29 @@ public static class ThirdPersonArms
             Stance.Prone => (new Vector3(0.25f, 0.32f, -0.45f), new Vector3(-0.25f, 0.32f, -0.5f)),
             _ => (new Vector3(0.33f, 1.38f, 0.1f), new Vector3(-0.33f, 1.38f, 0f)),
         };
-        Right.Root = rr;
-        Left.Root = lr;
+        var spread = ShellSpread(p);
+        Right.Root = rr + new Vector3(spread, 0, 0);
+        Left.Root = lr - new Vector3(spread, 0, 0);
+    }
+
+    /// <summary>
+    /// How much further out from the middle a player's arms, and what they hold, sit in a robot shell (a person's metres; the rig is
+    /// drawn at the frame's size, so every frame gets it to its size): the arm just outside the shoulder block, from the
+    /// torso's own shoulder part and the arm's thickness. 0 out of a shell.
+    /// </summary>
+    public static float ShellSpread(Player p) => p.InShell ? ShellSpreadBy : 0f;
+
+    private static readonly float ShellSpreadBy = BodyModel.TorsoParts[2].Size.X * 0.5f + Right.Thick * 0.35f - StandShoulderX; // (the arm's inner face just inside the block's)
+
+    private const float StandShoulderX = 0.33f; // a person's standing shoulder (SetShoulders)
+
+    /// <summary>
+    /// Poses both arms onto hand targets in the world (a Sandbox tool or a carried part instead of a gun; ToolRender.cs),
+    /// from the shoulders of <paramref name="p"/>'s stance in <paramref name="body"/>. Call <see cref="Draw"/> right after.
+    /// </summary>
+    public static void PoseHands(Player p, in HandTarget right, in HandTarget left, in Matrix4x4 body)
+    {
+        SetShoulders(p);
         Right.Solve(right, body, Vector3.Zero);
         Left.Solve(left, body, Vector3.Zero);
         _colors = BodyModel.ArmsFor(p); // (a uniform's sleeves and gloves)
@@ -202,6 +216,7 @@ public static class ThirdPersonArms
             Stance.Crouch => new Vector3(0.3f, 0.82f, -0.3f),
             _ => new Vector3(0.3f, 1.3f, -0.25f),
         };
+        gunAt.X += ShellSpread(p);
         return Matrix4x4.CreateScale(1.3f) * Matrix4x4.CreateRotationX(p.RenderPitch) * Matrix4x4.CreateTranslation(gunAt) * body;
     }
 
