@@ -440,10 +440,10 @@ public sealed class ShellParts : IPartGenerator
             Elbow(p, 0.06);
             p.Add(Box([-0.055, 0.2, -0.055], [0.055, 0.365, 0.055], Joint)); // the forearm
             p.Add(Box([-0.045, 0.15, -0.05], [0.045, 0.205, 0.05], Dark)); // the motor
-            p.Add(Box([-0.012, 0.004, -0.13], [0.012, 0.21, 0.13], Blade)); // the disc, edge on
+            p.Add(Box([-0.012, 0.0, -0.13], [0.012, 0.21, 0.13], Blade)); // the disc, edge on
             p.Add(Box([-0.016, 0.09, -0.016], [0.016, 0.125, 0.016], Dark, detail: true)); // its hub
             p.Add(Box([-0.03, 0.17, -0.14], [0.03, 0.235, 0.14], Red, detail: true)); // the guard over its top
-            p.Add(Box([-0.014, 0.0, -0.06], [0.014, 0.016, 0.06], Hazard, detail: true)); // the teeth's mark
+            p.Add(Box([-0.014, 0.02, -0.136], [0.014, 0.16, -0.122], Hazard, detail: true)); // the teeth's mark on its leading edge
         }));
         yield return ("Modules", Module("Shell Grip Arm", "A robot shell arm that is a physics gun: three claws round a field emitter. Worn, it grabs and moves whole constructs.", 6, p =>
         {
@@ -462,8 +462,8 @@ public sealed class ShellParts : IPartGenerator
             p.Add(Box([-0.055, 0.22, -0.055], [0.055, 0.365, 0.055], Joint)); // the forearm
             p.Add(Box([-0.07, 0.07, -0.07], [0.07, 0.225, 0.07], "#3a7fd0")); // the paint can
             p.Add(Box([-0.073, 0.12, -0.073], [0.073, 0.16, 0.073], "#e0e4e8", detail: true)); // its label band
-            p.Add(Box([-0.025, 0.02, -0.025], [0.025, 0.075, 0.025], Dark)); // the nozzle's body
-            p.Add(Box([-0.012, 0.0, -0.012], [0.012, 0.025, 0.012], "#d04090", detail: true)); // its tip
+            p.Add(Box([-0.025, 0.0, -0.025], [0.025, 0.075, 0.025], Dark)); // the nozzle's body
+            p.Add(Box([-0.028, 0.006, -0.028], [0.028, 0.022, 0.028], "#d04090", detail: true)); // its tip's band
         }));
     }
 

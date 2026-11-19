@@ -328,8 +328,21 @@ public sealed class ShellModuleNodes
     }
 
     /// <summary>A module's part, when it is of the kind and its part is known (else null: nothing drawn for it here).</summary>
-    private static ConstructPartDef? PartOf(ShellModule? m, ShellModuleKind kind) =>
-        m != null && m.Kind == kind && m.Part.Length > 0 ? ConstructParts.Find(m.Part) : null;
+    private static ConstructPartDef? PartOf(ShellModule? m, ShellModuleKind kind)
+    {
+        if (m == null || m.Kind != kind || m.Part.Length == 0)
+            return null;
+        if (ConstructParts.Find(m.Part) is { } d)
+            return d;
+        if (!_missing[m.Index])
+        {
+            _missing[m.Index] = true;
+            Console.WriteLine($"[shells] the {m.Name} module's part \"{m.Part}\" isn't loaded (refused or gone): a worn shell draws nothing for it");
+        }
+        return null;
+    }
+
+    private static readonly bool[] _missing = new bool[256];
 
     // ---- First person (a tool arm's "view"): its forearm where the drill arm's is, aimed down the crosshair ----------------
 
