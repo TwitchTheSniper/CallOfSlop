@@ -23,6 +23,14 @@ A place to park a robot shell when nobody wears it. Drafted with the user by cli
   depths 0.55 / 1.0 / 1.5 m (about half the class's shipped shell). Power 30 / 80 / 150 W. `"shellPod": {"class", "half", "top",
   "depth", "flush"}` (`ConstructShellPod.cs`). Recipes appended at the end of the Assembler's table (`Assembling.cs` `LateHand`).
   Protocol 371 (part ids move; `Msg.ShellPod` in the slot of `RemovedLabourHands`; `CfgKey.PodShell..PodOreUnits`).
+- **A flush pod is a pocket** (the user, 2026-11-19: it looked as if the shell clipped through the floor). The surface it sinks into
+  is not drawn over its opening: each frame the near flush pods' pockets (`ConstructShellPod.Pocket`, inside the rim, from the
+  lining up to 4 cm over the surface, so the surface's seams go too) are listed as openings (`Renderer.Cuts.cs`, at most 16 within
+  60 m: `ConstructRender.AddPodCuts`), and the boxes of the body holding them carry a cut mark that the box shader's three programs
+  (alone, instanced, merged) drop inside an opening. No pod box is inside its own pocket, so nothing of the pod is cut; its lid, frame
+  and shell are drawn after, unmarked. Inside: dark lined walls and floor, a cyan trim on the rim; the lid is two flaps under the rim
+  that swing down against the walls over the first 30 % of the frame's rise, then the frame's head comes up (`ShellPodRender.Flaps`).
+  Render only: no wire or save change.
 - **Fits**: a shell's class by its standing height (1.8 m x the frame's scale); it docks in a pod of its class or larger (an assumption
   of the rule "docks only in its size class or larger").
 - **The frame** (`ShellPodRender.cs`): the lid rises on two posts along the face's normal (the button panel on the right post, a lamp on
