@@ -234,8 +234,8 @@ either segment; 2 to 80 degrees, so a flat-to-vertical corner keeps its elbow), 
 link carries changes: its length, a piece's distance along it, the speed, gaps, junctions and every timing still come from the
 straight segments between its nodes, and old links keep their nodes. While routing a chute or conveyor, Reload cycles the grade the
 next node is snapped to (free in 5 degree steps, level, 20, 40; `ConstructRoutes.Grade`, back to free when the link ends), and the
-HUD shows the next segment's grade. The auto-router is unchanged: an incline is the player's own geometry, laid by hand (a ramp
-substitution in auto-route was tried and dropped: a shorter route carries differently). **Trestles**, **Trestle Posts** (1 to 8 m)
+HUD shows the next segment's grade. The auto-router tries a chute's or conveyor's straight way first, inclines included (user,
+2026-11-19, below: "The straight way first"); a shorter link is only its geometry, and no transfer rule changed. **Trestles**, **Trestle Posts** (1 to 8 m)
 and **Link Bridges** (4, 6, 8 m) carry links over an aisle (part kit `link_supports`; their Assembling rows go after every older
 row, `Assembling.LateFolders`); their tops are saddles (a `tray` block), so a node snaps to a lane's centreline 0.12 m over the top.
 `--factory-check` fails a factory whose chute or conveyor is under 2.4 m over its aisle or 4.5 m over its vehicle lane.
@@ -305,6 +305,17 @@ stands in the usual form: `Pipe to Engine: route found, 5 nodes, 6.2 m - LMB: co
 - **The straight line comes first.** A straight link that fits is used as it is when it is a shaft's, under 75 cm, or square with the
   construct's axes. A longer diagonal goes to the router for a tidier square route, and comes back as the straight line
   only if no square route exists.
+- **The straight way first** (chutes and conveyors into an input; user, 2026-11-19; `ConstructAutoRouteDirect.cs`, `RouteSearch.Direct`).
+  Before the lattice, the router tries what a fitter lays by eye, fewest nodes first, then the shortest: one straight run (sloped
+  where the heights differ: a grade change is free), one turn (where the way out meets the way in, or a 45 degree leg), two turns
+  (out, across, in; or a climb, a level run and straight down into a port that faces up or a machine entered from above). A run
+  leaves and enters a port within 45 degrees of its facing free, out of its side at the lattice's side price, never back into it;
+  no candidate doubles back or narrows a conveyor's bed, a conveyor is never shorter than the longest piece its output makes (an
+  Extruder's longest cut, else 1 m: production lesson 2026-11-13), slopes keep to the tool's grade snap (Level: none; 20 or 40
+  degrees), and each passes the server's whole check. The first that passes is the route (at most 16 checks, run under the
+  search's 2 ms a frame); only when none does is the lattice searched. A waypoint keeps the
+  lattice's square arrival, and pipes and cables keep the lattice (they are fixed to structure). On the Production Showcase's
+  port pairs (`--route-ends`) conveyor turns fell from 181 to 123 and length from 845 to 744 m, chutes from 190 to 97 turns.
 - **Cables, pipes and chutes** search a lattice of box faces: the planes one link radius off each box, the two ends' planes and a stub off
   them (a Hanan grid: the shortest square route round axis-aligned boxes lies on it), thinned to at least 5 cm apart. Edges a box
   touches are marked in a grid, which is what keeps A* cheap: looking up an edge costs one array read. A* runs over (point, direction),

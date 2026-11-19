@@ -370,6 +370,10 @@ public sealed partial class Construct
     // Client: the newest pose heard was in a frame (Frame), so the pose history holds frame poses.
     internal ushort NetFrame;
     internal Vector3 NetFrameVel, NetFrameSpin;
+    // Server: the ship whose dock let this craft go, while they may still overlap (its cradle pose lay into the hull): the physics
+    // drops their contacts until the first step they are clear (ConstructPhysics.LooseFromCarrier). 0: none.
+    internal ushort LooseFrom;
+    internal byte LooseClear; // (steps in a row it has been clear of it)
 
     /// <summary>Server: its velocity was just set from a moving frame (let go, cut free): it keeps that speed past the physics' limit.</summary>
     internal void KeepSpeed() => SpeedKept = Vel.Length();
@@ -715,10 +719,12 @@ public sealed partial class Construct
 
     /// <summary>
     /// Is it moving in the world? Anchored or asleep it is still, except asleep in a moving construct's frame
-    /// (ConstructFrames.cs), where it is carried at the frame's motion (its Vel and AngVel are the frame's there).
+    /// (ConstructFrames.cs), where it is carried at the frame's motion (its Vel and AngVel are the frame's there), or carried
+    /// by another (a craft docked in a ship's clamp or bay: ConstructCargo.Follow sets its Vel and AngVel; a docked Limpet's
+    /// floor taken off in orbit left its riders at rest, 2026-11-19).
     /// Every reader that takes a sleeping body's velocity as zero asks this instead.
     /// </summary>
-    public bool MovesNow => !Anchored && (!Asleep || Frame != 0);
+    public bool MovesNow => !Anchored && (!Asleep || Frame != 0 || CarriedBy != 0);
 
     /// <summary>Its world velocity, zero when it isn't moving (<see cref="MovesNow"/>).</summary>
     public Vector3 MoveVel => MovesNow ? Vel : Vector3.Zero;

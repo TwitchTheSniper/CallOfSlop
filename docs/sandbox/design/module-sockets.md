@@ -661,7 +661,7 @@ where reachable (5). Small by hand, large by machinery (6). Whole metres, 3x3 no
 the physical module, odd creations allowed (8). Faction choice by tags and stats with trade-offs; prices from the bill and
 demand (9). Retrofit the main ships (10). Modules built and customised freely in the world, with custom sockets (11).
 
-## 18. Still open (each with the default the text assumes)
+## 18. Settled by default (user approved the design with these, 2026-11-19)
 
 1. **Cutting a lofted hull.** The main ships' hulls are lofted parts, and today only formed panels and flat plates can be
    cut (`HullLoft.Cuts.cs`). Recommended: generators leave the openings for the retrofits, and in play an opening socket on
@@ -687,3 +687,8 @@ These override the text above where they differ.
 9. **Faction and NPC choice:** modules carry types and stats that factions and NPCs weigh when choosing modules for ships: a farming faction looks for harvesting modules; a combat group looks for turrets, armour, missile bays, reactors and thrusters. Stats decide between candidates with trade-offs: a faster engine is preferred where possible, but its greater power cost is weighed. (Prices: no separate rule given; default stays the material bill, with demand shaped by these preferences.)
 10. **Existing ships:** retrofit the main ships with sockets (engine, reactor, turret and others), rather than only adding a showcase ship.
 11. **Free-built modules (2026-11-19):** "Modules can also be customized by players adding pieces as they wish, welding them onto the module socket, allowing unique form and function to develop with the custom sockets as well." A module is whatever is welded onto its plug, built in the world like any construct (fitted or loose), its type, stats and look worked out from its parts; players can add sockets to modules; saving it as a design is optional.
+
+
+## Approval (2026-11-19)
+
+The user approved this design with the three defaults in section 18. Build starts at phase 1 (the standard, proud, by hand).
