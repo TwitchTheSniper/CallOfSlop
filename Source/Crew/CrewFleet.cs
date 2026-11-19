@@ -118,6 +118,22 @@ public sealed class CrewGroup
     public long RevealedUntil; // positions shown to those who learnt them (interrogation)
     public readonly ulong[] RevealedTo = new ulong[4];
 
+    // Phase 6 (faction-controllers.md 7, "players as admirals"): a player's own hired crews as a group. OwnerName is the player's (kept in the
+    // save: a player's id changes between sessions); Owner their id while they are here (255: away). The admiral is the player
+    // (PlayerAdmiral) or one of their hands aboard a member, job Admiral. The game writes where the player is and how far they reach the fleet
+    // net (Commander*) once a second; the player commands from the command view, through the server, while the net carries it.
+    public string OwnerName = ""; // (shown; who they are is OwnerKey)
+    public ulong OwnerKey; // the owner's saved identity (their world key, or Steam id): names are unique only among those online
+    public byte Owner = 255;
+    public bool PlayerAdmiral;
+    public bool CommanderHere;
+    public Vector3 CommanderAt;
+    public float CommanderReach;
+    public ushort CommanderBody; // the body the player is aboard (0: on foot): "form on me"
+    public bool CommanderHeard; // at its last think the player reached the group's net (a crew admiral's group: their orders are relayed)
+
+    public bool Players => OwnerName.Length > 0;
+
     public bool Civilian => Task is GroupTask.Convoy or GroupTask.Mining or GroupTask.Haul or GroupTask.Trade or GroupTask.Construction;
 
     public void Clear()
@@ -141,6 +157,12 @@ public sealed class CrewGroup
         RingHead = RingCount = Dropped = 0;
         RevealedUntil = 0;
         Array.Clear(RevealedTo);
+        OwnerName = "";
+        OwnerKey = 0;
+        Owner = 255;
+        PlayerAdmiral = CommanderHere = CommanderHeard = false;
+        CommanderBody = 0;
+        CommanderReach = 0;
     }
 
     public void Post(FleetReport kind, ushort body, ushort other, long tick)
@@ -162,7 +184,7 @@ public sealed class CrewGroup
 /// that hears it. Captains keep their own judgement inside an order (their Flee is held off by the doctrine's discipline). Losing the admiral
 /// (killed, taken, cut off) runs the doctrine's succession. Server only; fixed arrays, a fixed number of group slots looked at a tick.
 /// </summary>
-public sealed class CrewFleet
+public sealed partial class CrewFleet
 {
     public const int MaxGroups = 256;
 
@@ -357,6 +379,9 @@ public sealed class CrewFleet
         for (var k = 0; k < g.Count; k++)
             if (crew.ShipOf(g.Ships[k]) is { } s)
             {
+                if (g.Players && g.AdmiralUid != 0 && Holds(crew, s, g.AdmiralUid) is var adm and >= 0 && crew.Job[adm] == CrewJob.Admiral)
+                    crew.Job[adm] = CrewJob.Spare; // (a player's admiral is one of their hands again)
+                s.SeatsDirty = true;
                 s.Group = -1;
                 if (s.Order.Kind != OrderKind.Retreat)
                     s.Order = default; // (a broken group's runners keep running until their order lapses)
@@ -439,9 +464,9 @@ public sealed class CrewFleet
 
     // ---- The admirals' thinking ---------------------------------------------------------------------------------------------------
 
-    private readonly float[] _reach = new float[CrewGroup.MaxShips];
-    private readonly Vector3[] _pos = new Vector3[CrewGroup.MaxShips];
-    private readonly bool[] _heard = new bool[CrewGroup.MaxShips];
+    private readonly float[] _reach = new float[CrewGroup.MaxShips + 1]; // (+1: a player admiral's own node on the net)
+    private readonly Vector3[] _pos = new Vector3[CrewGroup.MaxShips + 1];
+    private readonly bool[] _heard = new bool[CrewGroup.MaxShips + 1];
     private readonly ushort[] _foes = new ushort[CrewGroup.MaxShips];
     private readonly Vector3[] _foeAt = new Vector3[CrewGroup.MaxShips];
     private readonly float[] _foeStr = new float[CrewGroup.MaxShips];
@@ -478,7 +503,7 @@ public sealed class CrewFleet
         // Members: gone ones leave; positions, reach, strength (again after a rebuild).
         for (var k = g.Count - 1; k >= 0; k--)
         {
-            if (crew.ShipOf(g.Ships[k]) is not { } s || w.Get(g.Ships[k]) is not { Wreck: false } c || s.Prize || s.Own)
+            if (crew.ShipOf(g.Ships[k]) is not { } s || w.Get(g.Ships[k]) is not { Wreck: false } c || s.Prize || s.Own != g.Players)
             {
                 if (crew.ShipOf(g.Ships[k]) is { } gone)
                 {
@@ -496,7 +521,7 @@ public sealed class CrewFleet
         }
         if (g.Count == 0)
         {
-            News.Add($"{PowerName(g.Power)}'s group {g.Number} is gone");
+            Say(g, $"{GroupName(g)} is gone");
             Dissolve(crew, g, "no ship left");
             return;
         }
@@ -519,34 +544,45 @@ public sealed class CrewFleet
             g.Dropped = 0;
         }
 
-        // The admiral: alive, free and aboard a member; else succession by doctrine.
-        var adm = AdmiralOf(crew, g);
-        if (adm < 0 && !Succeed(crew, w, g, host))
-            return;
-        adm = AdmiralOf(crew, g);
-        if (adm < 0 || crew.Tick < g.DisarrayUntil)
-            return; // (disarray: no new orders; captains finish their last ones, then are on their own)
+        // The admiral: alive, free and aboard a member; else succession by doctrine. A player's group led by the player: the player, while here.
+        int root;
+        if (g.Players && g.PlayerAdmiral)
+        {
+            if (!g.CommanderHere)
+            {
+                g.OnNet = 0;
+                g.CommanderHeard = false;
+                return; // (its admiral is away: captains keep their last orders a while, then are on their own)
+            }
+            _pos[g.Count] = g.CommanderAt;
+            _reach[g.Count] = g.CommanderReach;
+            root = g.Count;
+            if (g.Flagship == 0 || Array.IndexOf(g.Ships, g.Flagship, 0, g.Count) < 0)
+                g.Flagship = g.Ships[0];
+        }
+        else
+        {
+            var adm = AdmiralOf(crew, g);
+            if (adm < 0 && !Succeed(crew, w, g, host))
+                return;
+            if (g.Players && g.PlayerAdmiral)
+                return; // (command passed to the player: next think)
+            adm = AdmiralOf(crew, g);
+            if (adm < 0 || crew.Tick < g.DisarrayUntil)
+                return; // (disarray: no new orders; captains finish their last ones, then are on their own)
+            root = -1;
+            for (var k = 0; k < g.Count; k++)
+                if (g.Ships[k] == g.Flagship)
+                    root = k;
+            if (root < 0)
+                return;
+            _pos[g.Count] = g.CommanderAt;
+            _reach[g.Count] = g.CommanderHere ? g.CommanderReach : 0;
+        }
 
-        // The net: who hears the admiral, from its ship outwards through members in reach of each other.
-        var root = -1;
-        for (var k = 0; k < g.Count; k++)
-        {
-            _heard[k] = false;
-            if (g.Ships[k] == g.Flagship)
-                root = k;
-        }
-        if (root < 0)
-            return;
-        _heard[root] = true;
-        for (var changed = true; changed;)
-        {
-            changed = false;
-            for (var a = 0; a < g.Count; a++)
-                if (_heard[a])
-                    for (var b = 0; b < g.Count; b++)
-                        if (!_heard[b] && Vector3.DistanceSquared(_pos[a], _pos[b]) <= MathF.Max(_reach[a], _reach[b]) * MathF.Max(_reach[a], _reach[b]))
-                            _heard[b] = changed = true;
-        }
+        // The net: who hears the admiral, from its seat outwards through members in reach of each other (and the player, who relays through it).
+        Spread(g.Count + (g.Players && g.CommanderHere ? 1 : 0), root);
+        g.CommanderHeard = g.Players && g.CommanderHere && _heard[g.Count];
         g.OnNet = 0;
         for (var k = 0; k < g.Count; k++)
         {
@@ -560,6 +596,11 @@ public sealed class CrewFleet
             if (_heard[k])
                 g.OnNet++;
         }
+        if (g.OnNet == 0)
+            return; // (nobody hears it: a player admiral out of reach)
+        var centreK = root < g.Count ? root : Array.IndexOf(g.Ships, g.Flagship, 0, g.Count);
+        if (centreK < 0)
+            centreK = 0;
 
         // Contacts: what its captains are fighting (each one's target, fresh), and their strength.
         var foes = 0;
@@ -584,29 +625,34 @@ public sealed class CrewFleet
             g.Post(FleetReport.Contact, _foes[0], 0, crew.Tick);
         g.Enemy = enemy;
 
-        // No fixed break line: it pulls back when what it has left falls under half the ratio its doctrine wants, and comes in again past it.
+        // No fixed break line: it pulls back when what it has left falls under half the ratio its doctrine wants, and comes in again past it. A
+        // player leading their own group decides that themselves (the Retreat order).
         var ratio = enemy > 0 ? strength / enemy : float.MaxValue;
         var want = g.Doctrine.Caution * (g.Civilian ? 1.5f : 1f);
-        var retreat = enemy > 0 && (g.Retreating ? ratio < want : ratio < want * 0.5f);
+        var retreat = !(g.Players && g.PlayerAdmiral) && enemy > 0 && (g.Retreating ? ratio < want : ratio < want * 0.5f);
         if (retreat != g.Retreating)
         {
             g.Retreating = retreat;
             g.Post(retreat ? FleetReport.Retreat : FleetReport.Command, g.Flagship, 0, crew.Tick);
             crew.Events.Add($"fleet: group {g.Number}: Admiral {CrewNames.Of(g.AdmiralName)} {(retreat ? "pulls back" : "turns to fight")} (strength {strength:0} against {enemy:0}, wants {want:0.0} to 1)");
             if (retreat)
-                News.Add($"{PowerName(g.Power)}'s group {g.Number} pulls back under Admiral {CrewNames.Of(g.AdmiralName)}");
+                Say(g, $"{GroupName(g)} pulls back under Admiral {CrewNames.Of(g.AdmiralName)}");
         }
 
         // The focus: the best target by threat over what it takes to kill (a low skill: the nearest).
         g.Focus = 0;
-        var centre = _pos[root];
+        var centre = _pos[centreK];
+        // What it guards (an Escort or Screen order on a body not of the group), and an Engage order's own target.
+        var guard = g.Order is OrderKind.Escort or OrderKind.Form or OrderKind.Screen && g.OrderBody != 0 && Array.IndexOf(g.Ships, g.OrderBody, 0, g.Count) < 0
+                    && w.Get(g.OrderBody) is { Wreck: false } ? w.Get(g.OrderBody) : null;
+        var engage = g.Order == OrderKind.Engage && g.OrderBody != 0 && w.Get(g.OrderBody) is { Wreck: false } ? g.OrderBody : (ushort)0;
         if (foes > 0)
         {
             var best = float.MinValue;
             for (var f = 0; f < foes; f++)
             {
-                if (_foes[f] == 0)
-                    continue;
+                if (_foes[f] == 0 || g.Players && guard != null && g.Order == OrderKind.Escort && Vector3.DistanceSquared(_foeAt[f], guard.WorldCom) > EscortBand * EscortBand)
+                    continue; // (an escort keeps station against what is still far from its charge: its gunners fire from there)
                 var d = Vector3.Distance(_foeAt[f], centre);
                 var hp = w.Get(_foes[f]) is { } fc ? CrewWorld.HullOf(fc) * 0.01f + 1 : 1;
                 var score = g.Doctrine.Skill * (_foeStr[f] / hp) * 1000 - (1 - g.Doctrine.Skill) * d;
@@ -624,33 +670,78 @@ public sealed class CrewFleet
         var slotN = 0;
         var away = foes > 0 ? Vector3.Normalize(centre - _foeAt[0] + new Vector3(0.01f, 0, 0)) : Vector3.UnitZ;
         GroupOrder(crew, g, flag, out var groupKind, out var groupAt);
+        // The slots' spacing: the doctrine's, but never so tight that big ships touch (the biggest member's width, and what it guards).
+        var big = guard?.Radius ?? flag.Radius;
+        for (var k = 0; k < g.Count; k++)
+            big = MathF.Max(big, w.Get(g.Ships[k])!.Radius);
+        var span = big * 2 + 25;
+        // An escort falling behind its slot (behind it along what it guards' way, and as fast as it goes) asks what it guards to fly a little under
+        // that escort's speed until it is back; the ask lapses a few seconds after the last think that saw one behind.
+        if (guard != null && crew.ShipOf(guard.Id) is { } gs)
+        {
+            var up = GravityFrames.UpAt(guard.WorldCom);
+            var fwd = ShipAi.Heading(guard, up);
+            var right = Vector3.Cross(fwd, up);
+            var slowest = float.MaxValue;
+            for (var k = 0; k < g.Count; k++)
+            {
+                if (!_heard[k] || crew.ShipOf(g.Ships[k]) is not { TopSpeed: > 0 } es || es.Order.Kind is not (OrderKind.Escort or OrderKind.Form) || es.Order.Body != guard.Id)
+                    continue;
+                var slot = guard.WorldCom + right * es.Order.At.X + fwd * es.Order.At.Z;
+                if (Vector3.Dot(slot - _pos[k], fwd) > FallBehind)
+                    slowest = MathF.Min(slowest, es.TopSpeed);
+            }
+            if (slowest < float.MaxValue)
+            {
+                gs.SpeedCap = MathF.Max(5, slowest * 0.8f);
+                gs.SpeedCapUntil = crew.Tick + (long)(Rules.ThinkNear * 3 * World.TickRate);
+            }
+        }
+        var running = g.Order == OrderKind.Retreat;
         for (var k = 0; k < g.Count; k++)
         {
             if (!_heard[k])
                 continue;
             var s = crew.ShipOf(g.Ships[k])!;
             var isFlag = g.Ships[k] == g.Flagship;
-            var armed = s.Strength > CrewWorld.HullOf(w.Get(s.Body)!) * 0.01f + 0.5f;
+            var sc = w.Get(s.Body)!;
+            var armed = s.Strength > CrewWorld.HullOf(sc) * 0.01f + 0.5f;
             ShipOrder o = default;
             if (g.Retreating)
                 o = new ShipOrder { Kind = OrderKind.Retreat, At = g.Order == OrderKind.Retreat ? g.OrderAt : _pos[k] + away * 2000 };
+            else if (running)
+                o = new ShipOrder { Kind = isFlag ? OrderKind.Retreat : OrderKind.Form, At = isFlag ? g.OrderAt : Slot(g.Doctrine, ++slotN, span), Body = g.Flagship }; // (the whole group runs with its flagship, nobody stops to fight)
             else if (g.Order == OrderKind.Board && g.OrderBody != 0 && armed)
                 o = new ShipOrder { Kind = OrderKind.Board, Body = g.OrderBody, Fight = true };
+            else if (engage != 0 && armed)
+                o = new ShipOrder { Kind = OrderKind.Engage, Body = engage, Fight = true }; // (its admiral named the target: the whole group on it)
             else if (g.Focus != 0 && armed && !(g.Civilian && isFlag))
             {
-                // Warships fight: focus fire, or with civilians to keep, a screen between them and the threat.
-                o = g.Civilian && foes > 0
-                    ? new ShipOrder { Kind = OrderKind.Screen, Body = g.Flagship, Threat = g.Focus, At = new Vector3(0, 0, g.Doctrine.Spacing * (1 + slotN % 3)), Fight = true }
+                // Warships fight: focus fire, or with civilians to keep (its own, or the body it guards), a screen between them and the threat.
+                var keep = g.Order == OrderKind.Screen && guard != null ? guard.Id : g.Civilian ? g.Flagship : (ushort)0;
+                o = keep != 0
+                    ? new ShipOrder { Kind = OrderKind.Screen, Body = keep, Threat = g.Focus, At = new Vector3(0, 0, g.Doctrine.Spacing * (1 + slotN % 3)), Fight = true }
                     : new ShipOrder { Kind = OrderKind.Engage, Body = g.Focus, Fight = true };
                 slotN++;
+            }
+            else if (guard != null)
+            {
+                // Every ship of the group (its flagship too) keeps a slot on what it guards; an escort's gunners fire from there. Slots step up by
+                // turns, so ships crossing to new slots as what they guard turns pass over each other, not into each other.
+                ++slotN;
+                o = g.Order switch
+                {
+                    OrderKind.Screen => new ShipOrder { Kind = OrderKind.Screen, Body = guard.Id, At = new Vector3(0, 0, g.Doctrine.Spacing * (1 + (slotN - 1) % 3)), Fight = false },
+                    OrderKind.Escort => new ShipOrder { Kind = OrderKind.Escort, Body = guard.Id, At = Slot(g.Doctrine, slotN, span) + Step(slotN, big, sc), Fight = !g.Players }, // (a power's escort fights what it sees, as before; a player's keeps its slot until the admiral's band sends it in)
+                    _ => new ShipOrder { Kind = OrderKind.Form, Body = guard.Id, At = Slot(g.Doctrine, slotN, span) + Step(slotN, big, sc), Fight = false },
+                };
             }
             else if (isFlag)
                 o = new ShipOrder { Kind = groupKind, At = groupAt, Body = g.OrderBody, Fight = !g.Civilian };
             else
             {
-                o = new ShipOrder { Kind = OrderKind.Form, Body = g.Flagship, At = Slot(g.Doctrine, ++slotN), Fight = !g.Civilian || armed };
-                if (g.Order == OrderKind.Escort && g.OrderBody != 0)
-                    o = new ShipOrder { Kind = OrderKind.Escort, Body = g.OrderBody, At = Slot(g.Doctrine, slotN), Fight = true };
+                ++slotN;
+                o = new ShipOrder { Kind = OrderKind.Form, Body = g.Flagship, At = Slot(g.Doctrine, slotN, span) + Step(slotN, big, sc), Fight = !g.Civilian || armed };
             }
             o.Until = until;
             s.Order = o;
@@ -685,19 +776,25 @@ public sealed class CrewFleet
         }
         else if (g.Order == OrderKind.Retreat)
             at = g.OrderAt;
-        else if (g.Order is OrderKind.Hold or OrderKind.None)
-            kind = OrderKind.None; // (the flagship's captain holds, patrols or drives out and back as its drivers do: a spawner's convoy's leader)
+        else if (g.Order is OrderKind.Hold or OrderKind.None or OrderKind.Escort or OrderKind.Form or OrderKind.Screen or OrderKind.Engage)
+            kind = OrderKind.None; // (Escort, Form or Screen on itself or a body gone, an Engage with no target left: it holds) // (the flagship's captain holds, patrols or drives out and back as its drivers do: a spawner's convoy's leader)
     }
 
     private static Vector3 Flat(Vector3 v) => v with { Y = 0 };
 
+    /// <summary>An escort this far (m) behind its slot along its ward's way is falling behind: the ward slows for it.</summary>
+    public const float FallBehind = 30;
+
     /// <summary>A flagship this close to a route's point (m, plus half its size) is there.</summary>
     public const float ArriveBand = 50;
 
+    /// <summary>A slot's step up (m): 0, one, two ship's heights by turns (an aircraft's; a ground vehicle's order ignores the height).</summary>
+    private static Vector3 Step(int n, float big, Construct c) => c.StabCount > 0 ? new(0, (n - 1) % 3 * MathF.Min(30, big * 0.6f), 0) : default;
+
     /// <summary>A follower's slot (x right, z ahead of the flagship) by the doctrine's shape.</summary>
-    public static Vector3 Slot(FleetDoctrine d, int n)
+    public static Vector3 Slot(FleetDoctrine d, int n, float spacing = 0)
     {
-        var s = d.Spacing;
+        var s = MathF.Max(d.Spacing, spacing);
         var side = (n & 1) == 1 ? 1 : -1;
         var rank = (n + 1) / 2;
         return d.Formation switch
@@ -743,7 +840,8 @@ public sealed class CrewFleet
             var name = CrewNames.Of(g.AdmiralName);
             g.Post(FleetReport.AdmiralLost, g.Flagship, 0, crew.Tick);
             crew.Events.Add($"fleet: group {g.Number} lost Admiral {name} ({g.Doctrine.Name} doctrine: {g.Doctrine.Succession})");
-            News.Add($"Admiral {name} of {PowerName(g.Power)} is lost: group {g.Number} {(g.Doctrine.Succession == FleetSuccession.Break ? "scatters" : "is in disarray")}");
+            Say(g, g.Players ? $"Admiral {name} of {GroupName(g)} is lost: command passes after {g.Doctrine.Delay:0} s"
+                : $"Admiral {name} of {PowerName(g.Power)} is lost: group {g.Number} {(g.Doctrine.Succession == FleetSuccession.Break ? "scatters" : "is in disarray")}");
             g.AdmiralUid = 0;
             g.LeaderlessSince = crew.Tick;
             g.DisarrayUntil = crew.Tick + (long)(g.Doctrine.Delay * World.TickRate);
@@ -772,6 +870,12 @@ public sealed class CrewFleet
                 best = s;
             }
         }
+        if (best == null && g.Players)
+        {
+            g.PlayerAdmiral = true; // (a player's group: its owner leads it)
+            Say(g, $"Nobody is left to lead {GroupName(g)}: you are its admiral");
+            return false;
+        }
         if (best == null)
         {
             crew.Events.Add($"fleet: group {g.Number}: no ship can carry an admiral ({g.Doctrine.Succession}): it goes home");
@@ -793,7 +897,7 @@ public sealed class CrewFleet
         g.Post(FleetReport.Command, best.Body, 0, crew.Tick);
         var secs = (crew.Tick - g.LeaderlessSince) / (float)World.TickRate;
         crew.Events.Add($"fleet: group {g.Number}: Captain {CrewNames.Of(g.AdmiralName)} (construct {best.Body}) takes command, {secs:0.0} s after the admiral was lost");
-        News.Add($"Captain {CrewNames.Of(g.AdmiralName)} takes command of {PowerName(g.Power)}'s group {g.Number}");
+        Say(g, $"Captain {CrewNames.Of(g.AdmiralName)} takes command of {GroupName(g)}");
         return true;
     }
 
@@ -853,6 +957,9 @@ public sealed class CrewFleet
 
     private static string PowerName(byte power) => CrewPowers.Of(power)?.Name ?? "Someone";
 
+    /// <summary>"Militia's group 3", or a player's "your group 2".</summary>
+    private static string GroupName(CrewGroup g) => g.Players ? $"your group {g.Number}" : $"{PowerName(g.Power)}'s group {g.Number}";
+
     /// <summary>A report from a captain (the crew's look): into its group's ring.</summary>
     public void Report(CrewWorld crew, CrewShip s, FleetReport kind, ushort other)
     {
@@ -869,7 +976,7 @@ public sealed class CrewFleet
 
     // ---- Saves (the world's Fleet section: WorldSaveWriter.FleetTag; each ship's group in its crew block) -------------------------------
 
-    public const byte SaveVersion = 1;
+    public const byte SaveVersion = 3; // (2: phase 6, each group ends with its owner's name, the player-admiral flag, its shape and spacing; 3: and the owner's key; 1 and 2 still read)
 
     /// <summary>Every live group's header (its ships rejoin from their crew blocks); null: none.</summary>
     public byte[]? SaveBytes()
@@ -887,6 +994,7 @@ public sealed class CrewFleet
             for (var i = 0; i < g.RouteCount; i++)
                 wr.Vec(g.Route[i]).U8((byte)g.RouteWork[i]);
             wr.U8((byte)g.RouteAt).F32(g.Dwell).U8((byte)((g.Loop ? 1 : 0) | (g.Retreating ? 2 : 0))).F32(g.Strength0).I32(g.Losses);
+            wr.Str(g.OwnerName).U8((byte)(g.PlayerAdmiral ? 1 : 0)).U8((byte)g.Doctrine.Formation).F32(g.Doctrine.Spacing).U16(g.Flagship).U64(g.OwnerKey); // (2; the flagship by id only as a hint: body ids change, so a player-led group's anchor is found again among its ships)
         }
         wr.U16((ushort)Math.Min(Officers.Count, 65535));
         foreach (var (uid, o) in Officers)
@@ -902,7 +1010,7 @@ public sealed class CrewFleet
         {
             var r = new SaveReader(bytes);
             var v = r.U8();
-            if (v != SaveVersion)
+            if (v is < 1 or > SaveVersion)
             {
                 Console.WriteLine($"[fleet] the Fleet section is of version {v} (this build reads {SaveVersion}): no groups");
                 return;
@@ -938,6 +1046,24 @@ public sealed class CrewFleet
                 g.Retreating = (flags & 2) != 0;
                 g.Strength0 = r.F32();
                 g.Losses = r.I32();
+                if (v >= 2)
+                {
+                    g.OwnerName = r.Str();
+                    g.PlayerAdmiral = r.U8() != 0;
+                    var shape = (FleetFormation)Math.Min((int)r.U8(), (int)FleetFormation.Screen);
+                    var spacing = Math.Clamp(r.F32(), MinSpacing, MaxSpacing);
+                    r.U16();
+                    if (v >= 3)
+                        g.OwnerKey = r.U64();
+                    if (g.Players)
+                    {
+                        g.Doctrine = g.Doctrine.Copy();
+                        g.Doctrine.Formation = shape;
+                        g.Doctrine.Spacing = spacing;
+                        if (g.Order is OrderKind.Escort or OrderKind.Form or OrderKind.Screen or OrderKind.Engage or OrderKind.Board)
+                            g.Order = OrderKind.Hold; // (an order's body isn't kept: body ids change)
+                    }
+                }
                 if (g.Power == 0)
                 {
                     Console.WriteLine($"[fleet] saved group {g.Number} was of power \"{pname}\", which isn't read now: left off");
@@ -968,6 +1094,9 @@ public sealed class CrewFleet
             Clear();
         }
     }
+
+    /// <summary>A player's group's spacing (m) is kept between these.</summary>
+    public const float MinSpacing = 15, MaxSpacing = 400;
 
     /// <summary>A loaded group waits this long for its ships before its admiral thinks (s).</summary>
     public const float LoadGraceSeconds = 20;

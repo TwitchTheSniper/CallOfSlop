@@ -1,0 +1,216 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Leg Pod Foot L",
+  "description": "A landing leg pod's foot (L): a broad rectangular pad on a clevis round the strut's ankle. It rides the ankle down and back without turning, so the pad stays level, and stands 2.58 m under the pod's top. A generic ship fitting: it fits any ship.",
+  "group": "Ship",
+  "section": "Ship fittings",
+  "role": "door",
+  "tool": "welder",
+  "door": {
+    "kind": "swing",
+    "axis": "+x",
+    "held": true,
+    "seconds": 3.5,
+    "hang": "hang",
+    "gear": "leg",
+    "link": {
+      "crank": [
+        0.0,
+        -0.5,
+        -1.15
+      ],
+      "crankAxis": "+x",
+      "crankAngle": 45.0,
+      "knee": [
+        0.0,
+        -0.5,
+        1.23
+      ],
+      "ride": true
+    }
+  },
+  "mass": 207.0,
+  "health": 3600,
+  "armour": 30,
+  "material": "steel",
+  "color": "#3b4148",
+  "attachSeconds": 4.0,
+  "boxes": [
+    {
+      "min": [
+        -0.228,
+        -0.716,
+        1.09
+      ],
+      "max": [
+        -0.172,
+        -0.58,
+        1.37
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        0.172,
+        -0.716,
+        1.09
+      ],
+      "max": [
+        0.23,
+        -0.58,
+        1.37
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.24,
+        -0.55,
+        1.18
+      ],
+      "max": [
+        0.24,
+        -0.45,
+        1.28
+      ],
+      "color": "#9aa0a4",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+x",
+      "finish": "chrome"
+    },
+    {
+      "min": [
+        -0.23,
+        -0.716,
+        1.05
+      ],
+      "max": [
+        0.228,
+        -0.67,
+        1.41
+      ],
+      "color": "#30353b",
+      "detail": true,
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -0.5,
+        -0.86,
+        0.81
+      ],
+      "max": [
+        0.5,
+        -0.72,
+        1.65
+      ],
+      "color": "#3b4148",
+      "detail": true,
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -0.44,
+        -0.72,
+        0.87
+      ],
+      "max": [
+        0.44,
+        -0.686,
+        1.59
+      ],
+      "color": "#30353b",
+      "detail": true,
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -0.506,
+        -0.86,
+        0.804
+      ],
+      "max": [
+        0.506,
+        -0.825,
+        1.656
+      ],
+      "color": "#e0b020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.47,
+        -0.9,
+        0.84
+      ],
+      "max": [
+        0.47,
+        -0.86,
+        1.62
+      ],
+      "color": "#1a1b1d",
+      "detail": true,
+      "finish": "rubber"
+    },
+    {
+      "min": [
+        -0.2,
+        -0.686,
+        1.6
+      ],
+      "max": [
+        0.2,
+        -0.67,
+        1.63
+      ],
+      "color": "#5ac8ff",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.5,
+        -0.9,
+        0.81
+      ],
+      "max": [
+        0.5,
+        -0.72,
+        1.65
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.23,
+        -0.72,
+        1.05
+      ],
+      "max": [
+        0.23,
+        -0.67,
+        1.41
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "hang",
+      "at": [
+        0.0,
+        -0.81,
+        1.65
+      ],
+      "dir": "+z"
+    }
+  ]
+}

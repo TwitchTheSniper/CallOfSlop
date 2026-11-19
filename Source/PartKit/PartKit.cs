@@ -107,6 +107,7 @@ public static class PartKit
         new Generators.CrewFittingsParts(), // (the couches, the gunnery console, the coffee station and the robot cradle the ships hang: before them)
         new Generators.EvaParts(), // (spacewalk gear: the suit locker, the MMU and its dock)
         new Generators.ShipBatteryParts(), // (ship batteries XS to Bank: a ship's circuit store)
+        new Generators.LegPodParts(), // (landing leg pods S to L: a housing, two canopy leaves and a gantry with its leg)
         new Generators.ShipParts(), // (the rust bucket: its blueprint uses the building and interior parts)
         new Generators.MinerParts(), // (the Magpie mining ship)
         new Generators.TorpedoFrigateParts(), // (the Zero Day torpedo frigate: likewise)

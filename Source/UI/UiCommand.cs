@@ -178,6 +178,7 @@ public sealed partial class Ui
             CmdChrome(dl, session, s, fade, now, keyName);
             CmdRoster(dl, session, s, fade);
             CmdShipCard(dl, session, s, fade, now);
+            CmdAdmiral(dl, session, fade); // (your fleet groups, bottom left: UiCommandAdmiral.cs)
             CmdBoardDraw(dl, session, fade, now); // (picking where to board: UiCommandBoard.cs)
             CmdInput(session, s);
             CmdOrderPopup(session, s);

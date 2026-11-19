@@ -1,0 +1,11 @@
+{
+  // An Animation gallery timing file (tools/preview/README.md, "The Animation gallery"): the Dray's side doors, then its well doors.
+  "blueprint": "Dray Container Hauler",
+  "title": "Dray: side doors, then well doors",
+  "steps": [
+    { "part": "Dray Side Door L", "at": 0, "label": "Side doors open" },
+    { "part": "Dray Side Door R", "at": 0 },
+    { "part": "Dray Well Door L", "at": 1.5, "label": "Well doors open" },
+    { "part": "Dray Well Door R", "at": 1.5 }
+  ]
+}

@@ -1,0 +1,346 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Leg Pod Carriage XL",
+  "description": "A landing leg pod's carriage (XL): a yellow cross beam on the bay's rails carrying the brace's pin. It runs 0.97 m forward as the strut swings down, and back to stow. A generic ship fitting: it fits any ship.",
+  "group": "Ship",
+  "section": "Ship fittings",
+  "role": "door",
+  "tool": "welder",
+  "door": {
+    "kind": "slide",
+    "axis": "-z",
+    "travel": 0.9733,
+    "seconds": 3.5,
+    "hang": "hang",
+    "gear": "leg",
+    "link": {
+      "crank": [
+        0.0,
+        -0.625,
+        -1.4375
+      ],
+      "crankAxis": "+x",
+      "crankAngle": 45.0,
+      "knee": [
+        0.0,
+        -0.625,
+        -0.1875
+      ],
+      "pin": [
+        0.0,
+        -0.35,
+        1.1597
+      ],
+      "rail": "-z"
+    }
+  },
+  "mass": 350.0,
+  "health": 4500,
+  "armour": 30,
+  "material": "steel",
+  "color": "#e0b020",
+  "attachSeconds": 4.0,
+  "boxes": [
+    {
+      "min": [
+        -0.6,
+        -0.4313,
+        1.0347
+      ],
+      "max": [
+        0.6,
+        -0.2688,
+        1.2847
+      ],
+      "color": "#e0b020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.665,
+        -0.4563,
+        1.0097
+      ],
+      "max": [
+        -0.6,
+        -0.2438,
+        1.3097
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.6625,
+        -0.2625,
+        1.1222
+      ],
+      "max": [
+        -0.6125,
+        -0.1875,
+        1.1972
+      ],
+      "color": "#9aa0a4",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+x",
+      "finish": "chrome"
+    },
+    {
+      "min": [
+        -0.475,
+        -0.2688,
+        1.0972
+      ],
+      "max": [
+        -0.375,
+        -0.2188,
+        1.2222
+      ],
+      "color": "#5ac8ff",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.2,
+        -0.4463,
+        1.0472
+      ],
+      "max": [
+        -0.125,
+        -0.4263,
+        1.2722
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.375,
+        -0.4463,
+        1.0472
+      ],
+      "max": [
+        -0.3,
+        -0.4263,
+        1.2722
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.55,
+        -0.4463,
+        1.0472
+      ],
+      "max": [
+        -0.475,
+        -0.4263,
+        1.2722
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        0.6,
+        -0.4563,
+        1.0097
+      ],
+      "max": [
+        0.665,
+        -0.2438,
+        1.3097
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        0.6125,
+        -0.2625,
+        1.1222
+      ],
+      "max": [
+        0.6625,
+        -0.1875,
+        1.1972
+      ],
+      "color": "#9aa0a4",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+x",
+      "finish": "chrome"
+    },
+    {
+      "min": [
+        0.375,
+        -0.2688,
+        1.0972
+      ],
+      "max": [
+        0.475,
+        -0.2188,
+        1.2222
+      ],
+      "color": "#5ac8ff",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.125,
+        -0.4463,
+        1.0472
+      ],
+      "max": [
+        0.2,
+        -0.4263,
+        1.2722
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        0.3,
+        -0.4463,
+        1.0472
+      ],
+      "max": [
+        0.375,
+        -0.4263,
+        1.2722
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        0.475,
+        -0.4463,
+        1.0472
+      ],
+      "max": [
+        0.55,
+        -0.4263,
+        1.2722
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.375,
+        -0.4313,
+        1.0097
+      ],
+      "max": [
+        0.375,
+        -0.2688,
+        1.3097
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.6875,
+        -0.4313,
+        1.0097
+      ],
+      "max": [
+        -0.5625,
+        -0.2688,
+        1.3097
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.5625,
+        -0.4313,
+        1.0097
+      ],
+      "max": [
+        0.6875,
+        -0.2688,
+        1.3097
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.5625,
+        -0.4313,
+        1.0097
+      ],
+      "max": [
+        -0.375,
+        -0.2688,
+        1.3097
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.375,
+        -0.4313,
+        1.2347
+      ],
+      "max": [
+        0.5625,
+        -0.2688,
+        1.3097
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.375,
+        -0.4313,
+        1.0097
+      ],
+      "max": [
+        0.5625,
+        -0.2688,
+        1.0847
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "hang",
+      "at": [
+        0.6875,
+        -0.35,
+        1.2597
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "brace",
+      "at": [
+        0.375,
+        -0.35,
+        1.1597
+      ],
+      "dir": "+x"
+    }
+  ]
+}

@@ -112,6 +112,8 @@ public enum CActKind : byte
     Dampeners, // u16 body (the seat's): the seated player flips that ship's inertia dampeners (protocol 340; ConstructFlight.ToggleDampeners)
     MouseSteer, // u16 body (the seat's): the seated player takes that ship's nose with the mouse, or lets it go (protocol 349; ConstructFlight.ToggleMouseSteer)
     MmuOff, // nothing: a worn MMU comes off the wearer's back where they are, a loose part holding its fuel (protocol 365; GameSandboxEva.cs)
+    LandingGear, // u16 body (the seat's): the seated player lowers or raises that craft's landing leg pods (protocol 367; ConstructDoors.ToggleGear)
+    Fleet, // u8 FleetOp, u8 group slot, u16 body, u32 uid, vec at, u8 arg, f32 value: a player's fleet group from the command view (protocol 368; GameCrewFleetPlayers.cs)
 }
 
 /// <summary>
@@ -1019,6 +1021,8 @@ public sealed partial class Game
                 return ShellLeaveAct(p); // robot shells (GameRobotShell.cs)
             case CActKind.NavOrder:
                 return NavOrderAct(p, ref r); // an order for a ship from the command view (GameNav.cs)
+            case CActKind.Fleet:
+                return FleetAct(p, ref r); // a player's fleet group (GameCrewFleetPlayers.cs)
             case CActKind.Talk:
             {
                 var person = r.U8();
@@ -1429,6 +1433,14 @@ public sealed partial class Game
                     return "not in a seat of that craft";
                 return ConstructFlight.ToggleMouseSteer(Constructs, craft);
             }
+            case CActKind.LandingGear:
+            {
+                var body = r.U16();
+                ref var sh = ref hands.Hand(p.Id);
+                if (!sh.Seated || sh.SeatBody != body || Constructs.Get(body) is not { } craft)
+                    return "not in a seat of that craft";
+                return ConstructDoors.ToggleGear(Constructs, craft);
+            }
             case CActKind.StoreIn:
             case CActKind.TakeStored:
             {
@@ -1601,6 +1613,7 @@ public sealed partial class Game
                 break;
             case CActKind.Dampeners:
             case CActKind.MouseSteer:
+            case CActKind.LandingGear:
                 w.U16(body);
                 break;
             case CActKind.SeatKeys:
@@ -2917,6 +2930,8 @@ public sealed partial class Game
             {
                 lines.Add(new HudLine(jump, jump.StartsWith("Jump drive: ") && !jump.Contains(" ly, ") ? orange : white)); // (GameSpaceJump.cs)
             }
+            if (ConstructDoors.GearState(car) is var gear and > 0)
+                lines.Add(new HudLine(gear == 2 ? SandboxKeys.GearRaise : SandboxKeys.GearLower, dim)); // (the landing leg pods: ConstructDoors.ToggleGear)
             if (car.GunCount > 0)
             {
                 var carGun = Math.Max(0, GunOfSeat(car, h.SeatPart));

@@ -49,9 +49,7 @@ public sealed partial class SpaceStationParts
         {
             var mid = mids[i];
             var n = i + 1;
-            Cradle(k, $"Cradle {n} 1", fr, 1, mid - 18, yb, bottom, ship.W, ship.L, ship.H, false);
             Cradle(k, $"Cradle {n} 2", fr, 1, mid, yb, bottom - 4, ship.W, ship.L, ship.H, true);
-            Cradle(k, $"Cradle {n} 3", fr, 1, mid + 18, yb, bottom, ship.W, ship.L, ship.H, false);
             var (pose, shipC) = steps[i];
             ClampArm(k, $"Clamp Arm {n}", mid, yb + ArmH, pose, shipC - 3, shipTop);
             Approach(k, $"Approach {n}", mid, yb, shipC, bottom, ship, pose, stage, mid + pitch / 2 - 8);

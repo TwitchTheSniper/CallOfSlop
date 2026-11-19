@@ -393,46 +393,46 @@ public sealed partial class SpaceStationParts
     }
 
     /// <summary>
-    /// A berth cradle hung off an arm's side (side +1 or -1) at along a: a post down the arm's side and a beam out under the ship.
-    /// The middle cradle of a berth is 4 m lower and carries a Docking Clamp Large (its box set to the ship) and the boarding tube.
+    /// A berth's clamp bracket hung off an arm's side (side +1 or -1) at along a: a post down the arm's side and a short bracket under
+    /// its edge carrying a Docking Clamp Large, its box set out beside the arm where the ship lies (Karl, 2026-11-18: nothing under the
+    /// ship, only the docking crane holds it; the cradle beams it rested on went through its hull), and the boarding tube to the
+    /// ship's side. Only the berth's clamp has one (<paramref name="clamp"/> false makes nothing).
     /// </summary>
     private static void Cradle(Kit k, string name, ArmFrame fr, int side, double a, double yb, double top, double shipW, double shipL, double shipH, bool clamp)
     {
-        var p = k.Piece(name, clamp
-            ? "A berth's middle cradle: a post down the arm's side, a beam under the ship with a docking clamp on it, and the boarding tube to the ship's side."
-            : "A berth cradle: a post down the arm's side and a beam under the ship, padded where the hull rests on it.", Truss);
-        double c0 = side * ArmHalf, reach = ArmHalf + 3.5 + shipW + 2.5;
-        double Cs(double v) => side * v;
-        fr.Solid(p, a - 0.8, a + 0.8, Math.Min(c0, Cs(ArmHalf + 1)), Math.Max(c0, Cs(ArmHalf + 1)), top - 2.2, yb + ArmH, Truss, Dirty);
-        fr.Solid(p, a - 0.8, a + 0.8, Math.Min(Cs(ArmHalf + 1), Cs(reach)), Math.Max(Cs(ArmHalf + 1), Cs(reach)), top - 2.2, top, Truss, Dirty);
-        for (var v = ArmHalf + 2; v + 1.2 < reach; v += 2.4)
-            fr.Detail(p, a - 0.82, a + 0.82, Math.Min(Cs(v), Cs(v + 1.2)), Math.Max(Cs(v), Cs(v + 1.2)), top - 0.02, top + 0.012, Hazard, HazardFin);
-        Bar(p, fr.Pt(a, Cs(ArmHalf + 0.5), yb + ArmH - 0.6), fr.Pt(a, Cs(reach - 1), top - 1.1), 0.35, Truss, Dirty);
-        var mid = ArmHalf + 3.5 + shipW / 2;
         if (!clamp)
+            return;
+        var p = k.Piece(name, "A berth's clamp bracket: a post down the arm's side, a short bracket under its edge with the berth's docking clamp, and the boarding tube to the ship's side.", Truss);
+        // (the bracket hangs 2.4 m lower than the old cradle beam, so the clamp's 2.4 m foot on it stays under the ship's keel, and the
+        // clamp stands just past the post)
+        const double drop = 2.4;
+        double c0 = side * ArmHalf, low = top - drop, outer = ArmHalf + 5.2;
+        double Cs(double v) => side * v;
+        fr.Solid(p, a - 0.8, a + 0.8, Math.Min(c0, Cs(ArmHalf + 1)), Math.Max(c0, Cs(ArmHalf + 1)), low - 2.2, yb + ArmH, Truss, Dirty);
+        fr.Solid(p, a - 2.2, a + 2.2, Math.Min(Cs(ArmHalf + 1), Cs(outer)), Math.Max(Cs(ArmHalf + 1), Cs(outer)), low - 2.2, low, Truss, Dirty);
+        for (var v = ArmHalf + 1.2; v + 0.6 < outer; v += 1.2)
+            fr.Detail(p, a - 2.22, a + 2.22, Math.Min(Cs(v), Cs(v + 0.6)), Math.Max(Cs(v), Cs(v + 0.6)), low - 0.02, low + 0.012, Hazard, HazardFin);
+        var clampV = ArmHalf + 3.05; // (the clamp's 4 m foot just past the post)
+        var mid = ArmHalf + 3.5 + shipW / 2;
+        var (x, z) = fr.At(a, Cs(clampV));
+        var (bx, bz) = fr.At(a, Cs(mid));
+        Sock(p, "clamp", x, low, z, "+y", Large);
+        // the boarding tube from the arm's walkway to the ship's side, at walkway height
+        fr.Solid(p, a - 1.4, a + 1.4, Math.Min(Cs(ArmHalf + 1), Cs(ArmHalf + 3.4)), Math.Max(Cs(ArmHalf + 1), Cs(ArmHalf + 3.4)), yb + 1, yb + 4.0, Plate, Painted);
+        fr.Solid(p, a - 0.5, a + 0.5, Math.Min(Cs(ArmHalf + 1), Cs(ArmHalf + 3.4)), Math.Max(Cs(ArmHalf + 1), Cs(ArmHalf + 3.4)), top + 0.05, yb + 1, Truss, Dirty);
+        fr.Detail(p, a - 1.5, a + 1.5, Math.Min(Cs(ArmHalf + 3.4), Cs(ArmHalf + 3.45)), Math.Max(Cs(ArmHalf + 3.4), Cs(ArmHalf + 3.45)), yb + 0.9, yb + 4.1, Hazard, HazardFin);
+        fr.Detail(p, a - 1.1, a + 1.1, Math.Min(Cs(ArmHalf + 3.45), Cs(ArmHalf + 3.49)), Math.Max(Cs(ArmHalf + 3.45), Cs(ArmHalf + 3.49)), yb + 1.2, yb + 3.8, LampCol, glow: true);
+        var cfg = new PyDict
         {
-            foreach (var v in new[] { mid - shipW * 0.3, mid + shipW * 0.3 })
-                fr.Detail(p, a - 0.6, a + 0.6, Math.Min(Cs(v - 0.8), Cs(v + 0.8)), Math.Max(Cs(v - 0.8), Cs(v + 0.8)), top, top + 0.3, HazardDark, "rubber");
-        }
-        else
-        {
-            var (x, z) = fr.At(a, Cs(mid));
-            Sock(p, "clamp", x, top, z, "+y", Large);
-            // the boarding tube from the arm's walkway to the ship's side, at walkway height
-            fr.Solid(p, a - 1.4, a + 1.4, Math.Min(Cs(ArmHalf + 1), Cs(ArmHalf + 3.4)), Math.Max(Cs(ArmHalf + 1), Cs(ArmHalf + 3.4)), yb + 1, yb + 4.0, Plate, Painted);
-            fr.Solid(p, a - 0.5, a + 0.5, Math.Min(Cs(ArmHalf + 1), Cs(ArmHalf + 3.4)), Math.Max(Cs(ArmHalf + 1), Cs(ArmHalf + 3.4)), top, yb + 1, Truss, Dirty);
-            fr.Detail(p, a - 1.5, a + 1.5, Math.Min(Cs(ArmHalf + 3.4), Cs(ArmHalf + 3.55)), Math.Max(Cs(ArmHalf + 3.4), Cs(ArmHalf + 3.55)), yb + 0.9, yb + 4.1, Hazard, HazardFin);
-            fr.Detail(p, a - 1.1, a + 1.1, Math.Min(Cs(ArmHalf + 3.55), Cs(ArmHalf + 3.62)), Math.Max(Cs(ArmHalf + 3.55), Cs(ArmHalf + 3.62)), yb + 1.2, yb + 3.8, LampCol, glow: true);
-            var cfg = new PyDict
-            {
-                ["sizeX"] = Math.Min(96, fr.Dx != 0 ? shipL + 6 : shipW + 4),
-                ["sizeY"] = Math.Min(96, shipH + 4),
-                ["sizeZ"] = Math.Min(96, fr.Dx != 0 ? shipW + 4 : shipL + 6),
-                ["atY"] = R(2 + shipH / 2),
-                ["startOn"] = true, // (armed from the start: a station's berths hold what docks: the command view's Dock order and by hand)
-            };
-            k.Hangs.Add(new HangSpec((string)p.D["name"]!, "clamp", "Docking Clamp Large", "-y", cfg, Hazard, HazardFin));
-        }
+            ["sizeX"] = Math.Min(96, fr.Dx != 0 ? shipL + 6 : shipW + 4),
+            ["sizeY"] = Math.Min(96, shipH + 4),
+            ["sizeZ"] = Math.Min(96, fr.Dx != 0 ? shipW + 4 : shipL + 6),
+            ["atX"] = R(bx - x), // (the box out beside the arm, where the ship lies, not over the clamp)
+            ["atY"] = R(drop + 2 + shipH / 2), // (the box where it was over the old cradle beam)
+            ["atZ"] = R(bz - z),
+            ["startOn"] = true, // (armed from the start: a station's berths hold what docks: the command view's Dock order and by hand)
+        };
+        k.Hangs.Add(new HangSpec((string)p.D["name"]!, "clamp", "Docking Clamp Large", "-y", cfg, Hazard, HazardFin));
         Finish(p);
     }
 

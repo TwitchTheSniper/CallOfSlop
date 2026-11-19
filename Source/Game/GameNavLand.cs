@@ -65,6 +65,8 @@ public sealed partial class Game
             o.Phase = NavPhase.Landing;
             o.Still = -60; // (a second to start down before sitting still counts)
             Console.WriteLine($"[nav] construct {c.Id} is over its spot: coming down");
+            if (ConstructDoors.GearState(c) == 1)
+                ConstructDoors.ToggleGear(Constructs, c); // (its landing leg pods come down on the way: it lands on its feet)
         }
         c.NavLand = NavLandSpeed;
         // Down: it sits still near the ground while it is asked down. Still for long anywhere else (a repulsor field or

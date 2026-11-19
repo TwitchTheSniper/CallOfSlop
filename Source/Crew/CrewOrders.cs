@@ -16,6 +16,25 @@ public sealed partial class ShipAi
 
     private OrderKind _orderKind;
 
+    private static float Sq(float v) => v * v;
+
+    /// <summary>Under an order to keep station on a body (Form, Escort, Screen; or Screen's flagship), is that body across its line of fire to <paramref name="at"/>?</summary>
+    private bool WardInLine(ConstructWorld world, Vector3 com, Vector3 at) =>
+        Ordered(out var o) && o.Kind is OrderKind.Form or OrderKind.Escort or OrderKind.Screen && world.Get(o.Body) is { } ward && InLine(ward, com, at);
+
+    /// <summary>Is body <paramref name="b"/> across the line from <paramref name="from"/> to <paramref name="to"/> (nearer than the target, within its size and a margin)?</summary>
+    private static bool InLine(Construct b, Vector3 from, Vector3 to)
+    {
+        var d = to - from;
+        var len = d.Length();
+        if (len < 1)
+            return false;
+        var along = Vector3.Dot(b.WorldCom - from, d / len);
+        if (along <= 0 || along >= len)
+            return false;
+        return Vector3.DistanceSquared(from + d / len * along, b.WorldCom) < Sq(b.Radius + 8);
+    }
+
     private bool Ordered(out ShipOrder o)
     {
         if (Ship != null && Crew != null && Ship.Ordered(Crew.Tick))
@@ -31,7 +50,7 @@ public sealed partial class ShipAi
     private float StandOffNow => Ordered(out var o) && o.Kind == OrderKind.Board ? BoardRange : StandOff;
 
     /// <summary>A body's way ahead, level: a ship's nose, a vehicle's drive forward.</summary>
-    private static Vector3 Heading(Construct f, Vector3 up) => Level(Vector3.Transform(f.StabCount > 0 ? -Vector3.UnitZ : f.DriveFwd, f.Rot), up);
+    internal static Vector3 Heading(Construct f, Vector3 up) => Level(Vector3.Transform(f.StabCount > 0 ? -Vector3.UnitZ : f.DriveFwd, f.Rot), up);
 
     /// <summary>Where its order puts it (world), the way to face there, and the velocity to keep with; false: no place (fight or hold as ever).</summary>
     private static bool OrderPoint(ConstructWorld world, Construct c, in ShipOrder o, Vector3 up, out Vector3 to, out Vector3 face, out Vector3 keep)
@@ -91,8 +110,18 @@ public sealed partial class ShipAi
         // Height: the place's (a slot's: its flagship's), over the ground by the clearance at a place on the ground.
         var height = ConstructPhysics.HoldHeight(com);
         var want = ConstructPhysics.HoldHeight(to) + (o.Kind is OrderKind.Form or OrderKind.Escort or OrderKind.Screen ? 0 : MinClearance);
+        if (o.Kind is OrderKind.Form or OrderKind.Escort && _ground < MinClearance + o.At.Y)
+            want = MathF.Max(want, ConstructPhysics.HoldHeight(com) + (MinClearance + o.At.Y - _ground)); // (a slot's step up holds over low ground too)
         if (_ground < MinClearance)
             want = MathF.Max(want, height + (MinClearance - _ground));
+        // Crossing what it keeps station on (its slot swings round when that turns): over it, not into it.
+        if (o.Kind is OrderKind.Form or OrderKind.Escort or OrderKind.Screen && world.Get(o.Body) is { } anchor)
+        {
+            var off = com - anchor.WorldCom;
+            off -= up * Vector3.Dot(off, up);
+            if (off.LengthSquared() < Sq(anchor.Radius + c.Radius + 15))
+                want = MathF.Max(want, ConstructPhysics.HoldHeight(anchor.WorldCom) + anchor.Radius + c.Radius);
+        }
         var climb = Vector3.Dot(c.Vel, up);
         if (_ahead < MinClearance * 2 || want - height > 6 && climb < 25)
             pilot |= (ushort)Buttons.Sprint;
@@ -103,13 +132,19 @@ public sealed partial class ShipAi
         var look = GravityFrames.Angles(com, (fdist > SlotBand || face == default ? dir : face) * 100);
         var nose = Level(Vector3.Transform(-Vector3.UnitZ, c.Rot), up);
         var top = o.Speed > 0 ? o.Speed : o.Kind == OrderKind.Retreat ? OrderRun : OrderCruise;
+        if (Ship!.SpeedCap > 0 && Crew!.Tick < Ship.SpeedCapUntil && o.Kind != OrderKind.Retreat)
+            top = MathF.Min(top, Ship.SpeedCap); // (its escort is falling behind: phase 6; the ask lapses a few seconds after they catch up)
         var keepFwd = Vector3.Dot(keep, nose);
         var wantFwd = Math.Clamp(keepFwd + Vector3.Dot(flat, nose) * 0.12f, -15, top);
         var fwdNow = Vector3.Dot(c.Vel, nose);
         if (fdist > SlotBand && Vector3.Dot(nose, dir) < 0.3f)
             wantFwd = MathF.Min(wantFwd, 5); // (turn first)
         if (wantFwd - fwdNow > 2)
+        {
             pilot |= (ushort)Buttons.Forward;
+            if (wantFwd - fwdNow > 8 && Vector3.Dot(nose, dir) > 0.9f && fwdNow > 1)
+                Ship!.TopSpeed = Ship.TopSpeed <= 0 ? fwdNow : Ship.TopSpeed + (fwdNow - Ship.TopSpeed) * 0.02f; // (full ahead and still short: about as fast as it goes now, a running mean that rises and falls with its load and damage)
+        }
         else if (wantFwd - fwdNow < -2)
             pilot |= (ushort)Buttons.Back;
         // Sideways inside the band (Q and E), so a slot is kept, not circled.
@@ -117,15 +152,19 @@ public sealed partial class ShipAi
         {
             var side = Vector3.Dot(flat, Vector3.Cross(nose, up));
             if (side > 4)
-                pilot |= ConstructParts.KeyRollRight;
+                pilot |= SlideRight;
             else if (side < -4)
-                pilot |= ConstructParts.KeyRollLeft;
+                pilot |= SlideLeft;
         }
+        pilot = Level(c, up, pilot);
         if (pilotOn)
             PilotSeat(c, pilot, look.Yaw, look.Pitch);
         else if (grace)
             Seat(c, _pilot, (ushort)(_pilotKeys & ~ConstructParts.KeyFire), _pilotYaw, _pilotPitch);
         var dist = has ? Vector3.Distance(t.At, com) : 0;
+        // What it keeps station on (or screens) in the line of fire: its gunners hold, or they shoot through it (a Traders' escort behind its
+        // flagship took the flagship's crew out from behind: faction-controllers-notes.md phase 6).
+        var blocked = has && WardInLine(world, com, t.At);
         for (var s = 0; s < _seatCount; s++)
         {
             int seat = _seats[s];
@@ -139,7 +178,7 @@ public sealed partial class ShipAi
                 continue;
             }
             var (gl, fire) = Gunnery(world, c, seat, t, dist, fixedGuns: false);
-            GunSeat(c, s, (ushort)(CPart.Occupied | (fire ? ConstructParts.KeyFire : 0)), gl.Yaw, gl.Pitch);
+            GunSeat(c, s, (ushort)(CPart.Occupied | (fire && !blocked ? ConstructParts.KeyFire : 0)), gl.Yaw, gl.Pitch);
         }
         return true;
     }

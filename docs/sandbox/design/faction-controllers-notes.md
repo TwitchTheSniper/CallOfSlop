@@ -545,3 +545,100 @@ with players) and phase 4's question 5 (an ally's groups known) taken up.
 - `Msg.Contracts`' read guard is 33 bytes an entry. Checks: `players` adds splash on a partner (forgiven, the ceasefire holds), a kill under a ceasefire
   (breaks it) and the taker away (held); `--selftest-only "Packets, Save folder, Frame allocations, Interaction sweep"`, `--crew-relations`, `politics`
   and `players`: all passed after merging main (protocol 359).
+
+## Phase 6: player admirals (built 2026-11-18, branch `claude/faction-player-admirals`)
+
+Built to section 10's phase 6 row, section 7 ("players as admirals"), the user's answers on admirals (a role in the hierarchy, combat and civilian; the
+fleet command network; doctrine; 256 groups) and Karl's answer 3 (fleet orders in his command view, beside the FACTIONS layer).
+
+### What a player sees
+
+- **Fleet groups (command view, bottom left: `docs/space/COMMAND.md` "Your fleet groups").** A ship of yours with a hired crew starts a group, or joins
+  the picked one; "crews near me" takes every one within 3 km (12 ships a group, 16 groups a player, the world's 256 shared with the powers). You are
+  its admiral, or one of your hands (job Admiral) aboard a member: a hand keeps the group going while you are away, and your orders reach it only over
+  the net. Your faction's leader may command your groups too (owner or leader: checked on the host).
+- **Orders** (the panel and the right-click menu): Hold, Form on me (the body you are aboard; on foot, come to me), Go here, Engage (the whole group on
+  one target), Escort (every ship a slot on what it guards, its gunners firing from there, and in to fight what comes within 1 km of it), Screen,
+  Close to board, Pull back (to a point, or home); a civilian route of up to 8 stops (load, unload, mine, deliver, pass through; each with a work time;
+  looped); formation (column, line, wedge, screen) and spacing; doctrine (any of Crew/Fleet.json's: caution, discipline, skill, succession); task (a
+  civilian task: warships screen the flagship and it keeps going). A player admiral's group never pulls back by itself (you decide); a hand admiral
+  weighs strength as the powers' admirals do. Succession by doctrine (default "Player Crew": captain, 6 s); with nobody left to lead, you lead it.
+- **The fleet net carries orders:** aboard a ship with a radio part you reach 25 km, else your hand set 1.5 km; ships pass it on to each other. Out of
+  reach, the act is refused ("no ship of group 2 hears you: out of reach of the fleet net ...") and the panel says OUT OF REACH.
+- **Hired hands take the helm only in a group** (they never did before: "never the helm unless a player orders it"); out of one, the helm hand stands
+  down. Your own seat at the helm is yours: they keep the guns. A nav order (Karl's orders) given to a group's ship takes it out of the group; a group
+  order ends its ships' nav orders. A ship given away leaves its group.
+
+### Phase 2's leftovers fixed (they blocked the done-when)
+
+- **Loose air formations, frigates settling to the ground:** three causes. (1) A Zero Day's docked Limpet (a body it carries) was read as the ground 4 m
+  under it, so every frigate under orders climbed for ever (up to 200 m over its slot): clearance rays skip what the body carries. (2) Under orders and in
+  the fight's strafe a ship-pattern craft (FlightPattern.Ship, the Zero Day) slid on Q and E, which roll it; it rolled onto its side, lost lift and
+  settled for good: slide keys come from the flight pattern (A and D for a ship), and its pilot holds it level with Q and E (`ShipAi.Level`). (3) Ships
+  crossed into each other when their anchor turned: slots are spaced by the biggest member (twice its size plus 25 m) and stepped up by turns in the air,
+  a ship climbs over its anchor, and a ship ahead in the formation no longer reads as an obstacle to climb over.
+- **Escorts can't keep up:** a ship's top speed is learnt as it flies full ahead under orders; an escort asks what it guards (any crewed ship) to fly at
+  most 0.7 of its slowest ship's.
+- **Friendly fire:** a ship under Form, Escort or Screen holds fire (guns and racks) while its ward is across the line (the base's screen check lost five
+  crew a run to it: now none).
+- Helicopters under the crews' flying: not looked into (the checks use Zero Days, as before).
+
+### Where
+
+| What | Where |
+| --- | --- |
+| Players' groups: form, join, leave, admiral, flagship, route stops, the commander's reach on the net, orders into the admiral code | `Source/Crew/CrewFleetPlayers.cs`; `Think` in `CrewFleet.cs` (the player's node on the net, guard and Engage orders, spacing, speed cap) |
+| Formation flying fixes | `Source/Crew/CrewOrders.cs`, `Source/Constructs/ConstructShipAi.cs` (`Clearance`, `Level`, slide keys, `WardInLine`) |
+| Own hands at the helm in a group | `CrewWorld.Fill`, `ShipAi.Scan` (`CrewAims`) |
+| The host's side: acts, owner and leader checks, the net check, commanders once a second, `Msg.FleetGroups`, nav orders | `Source/Game/GameCrewFleetPlayers.cs`; `NavOrderAct` (GameNav.cs) |
+| The panel and the menu's group orders | `Source/UI/UiCommandAdmiral.cs`; hooks in `UiCommand.cs`, `UiCommandOrders.cs` |
+| Tools | `--crew-check --crew-fleet escort [--seconds S] [--no-raider] [--escort-ship NAME] [--miner NAME] [--every S]` (`Source/Crew/CrewAdmiralsCheck.cs`); window verb `crewadmiral ships N BP / LEAD|lead|new [all|lead]|use N|add|order KIND [ID|lead|crewed|ride]|formation|spacing|doctrine|task|admiral hand|me|stop WORK X Z S|disband|show` |
+
+### Saves and network
+
+- Saves: the `FLET` section's version 2 ends each group with its owner's name, the player-admiral flag, its shape and spacing (and the flagship's id as
+  a hint). Version 1 reads. A player's group with an Escort, Form, Screen, Engage or Board order comes back holding (bodies' ids change). The owner is
+  found again by name when they come back. No new save file.
+- Protocol 368 (main 367 at the merge): `CActKind.Fleet` at the end of CActKind (u8 FleetOp, u8 slot, u16 body, u32 uid, vec, u8 arg, f32 value);
+  `Msg.FleetGroups` (once a second, only when it changed, to each player for the groups they may command; no strings) in RemovedObjective's slot.
+
+### Tried by hand (2026-11-18, the 2-core box shared, load 7 to 10)
+
+- `--crew-fleet escort` (three hired Zero Days escort the player's hired Magpie Mining Ship on a mine-and-deliver route; a Raiders frigate comes):
+  formed on the miner at rest 17-25 m off their slots; on the way median 38 m, 90th 111 m (past 100 m only while a turn swings the slots round);
+  the miner flew its route at 18 m/s (capped by its escort); with the raider within 1 km all three engaged and took it to 36%; the miner lost its
+  cockpit (the raider fired on it from 760 m first). Admirals 1-2 us a tick, 0 bytes.
+- Phase 2's `strike`, `succession`, `convoy`, `mining` (now loops twice: it no longer climbs), `interrogate`, `screen` (8 of 8): OK after the fixes.
+  `--selftest-only "Packets, Save folder, Sandbox spawns"`: passed.
+- Window runs (Glacier, survival, host and joined client under xvfb, `crewadmiral`): three Zero Days and a Magpie set down with hired crews; group 1
+  escorting the Magpie, group 3 the Magpie on a two-stop route: all on the net, hands at the helm, the Magpie mining, the escorts 80-140 m off their
+  slots on the host's slow frames; the client, leader of the host's faction, saw both groups and changed the shape and the order (the host accepted
+  them); the look lines read "Player Crew group 1, crew of 7". The world saved (`saveworld`) and loaded in a third run: both groups and the route back,
+  the escort holding; an order after the load reached them. The panel drew in the command view (own check).
+
+### Not verified
+
+- The panel's buttons and the right-click group orders clicked by hand (driven through the act by the verb; the menu was not opened).
+- A hand as admiral in play (the act runs; nobody watched it lead while the player was away); a cut-off net in play; Board and Screen by players'
+  groups; ground vehicles in players' groups; helicopters.
+- The worst admiral tick on a loaded box was 3-4 ms once in two checks (load average 10; 0.2-0.4 ms on a quieter box).
+
+### Questions (defaults taken)
+
+1. **Who may command a player's group:** its owner and their faction's leader. Members of the faction? Default: no.
+2. **Hired hands at the helm:** only in a group (the old rule, "never the helm", kept outside one). Default kept.
+3. **A player admiral never pulls back by itself;** a hand admiral weighs strength like the powers'. Default kept.
+4. **Escort band** 1 km from the ward and the escort's speed cap at 0.7 of its slowest ship: numbers in code (`CrewFleet.EscortBand`), not data yet.
+
+### Review fixes (2026-11-18)
+
+- A ward slows only while an escort is falling behind its slot (30 m behind along the ward's way), to 0.8 of that escort's top speed, and the ask
+  lapses 3 s after; the top speed is a running mean of its full-ahead speed, rising and falling with its load and damage (it applies to the powers'
+  Defend escorts too). `escort`: median 39 m, 90th 115 m.
+- Players' groups are keyed on the owner's saved identity (world key, else verified Steam id), not the name (unique only among those online): a
+  namesake of an away owner can't command or stand them down, and a rename keeps them. FLET version 3 adds the key; a version 2 group is claimed once by
+  its owner's name. A ship is taken out of a group only when another player present owns it.
+- A power's escort group fights what it sees, as in phase 2 (Fight on, no band); a player's escort keeps its slot and goes in for threats within
+  1.8 km of its ward.
+- In a formation the look-ahead skips only the ward and the group's own ships: the ground, bases, stations and anyone else's ships ahead make it climb.
+- `--selftest-only "Packets, Frame allocations, Save folder"`, `--crew-fleet all`, `escort`, `powers`: OK.
