@@ -58,9 +58,9 @@ public static class ConstructShell
             if (d.PodCount > 0 && Vector3.DistanceSquared(d.WorldCom, at) <= (range + d.Radius) * (range + d.Radius))
             {
                 // Shells docked in shell pods (docs/sandbox/design/shell-pod.md): the pod keeps the shell's owner and channel.
-                for (var q = 0; q < d.PodCount; q++)
+                for (var pk = 0; pk < d.PodCount; pk++)
                 {
-                    int i = d.Pods[q];
+                    int i = d.Pods[pk];
                     if (i >= d.PartCount || d.Parts[i].Broken || !ConstructShellPod.Holds(d.Parts[i]) || ConstructShellPod.ChannelIn(d.Parts[i]) != channel)
                         continue;
                     var o = ConstructShellPod.OwnerIn(d.Parts[i]);

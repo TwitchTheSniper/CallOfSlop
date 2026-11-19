@@ -371,7 +371,7 @@ public sealed class ShellParts : IPartGenerator
     // "shellPod". Its solid is one hidden box (the closed pod; flush: the lid's slab only, so it doesn't meet the surface it sinks into).
     // A Medium pod is also a bin: a Mining Shell's hopper empties into it, and its Chute out takes the ore on.
 
-    /// <summary>The sizes: name, class, half width, depth (about half the class's shipped shell), bin units (0: none).</summary>
+    /// <summary>The sizes: name, class, half width, depth (about half the class's shipped shell), bin units (0: none; the bolted-on pod's only).</summary>
     private static readonly (string Name, string Class, double W, double D, int Bin)[] PodSizes =
         [("Tiny", "tiny", 0.35, 0.55, 0), ("Small", "small", 0.62, 1.0, 0), ("Medium", "medium", 0.95, 1.5, HopperUnits)];
 
@@ -383,12 +383,13 @@ public sealed class ShellParts : IPartGenerator
         var name = flush ? $"{z.Name} Flush Shell Pod" : $"{z.Name} Shell Pod";
         var size = z.Class switch { "tiny" => "1 m", "small" => "2 m", _ => "5 m" };
         var desc = $"Parks a robot shell (up to {size} tall) when nobody wears it: walk the shell into the frame that rises out of it and press F: you wake in your chair and the pod folds the shell away. Wake in it again from a Shell Control Chair. A docked shell charges from the grid and can't be damaged or taken"
-            + (z.Bin > 0 ? "; a Mining Shell's hopper empties into the pod, and its Chute out takes the ore on." : ".")
+            + (z.Bin > 0 && !flush ? "; a Mining Shell's hopper empties into the pod, and its Chute out takes the ore on." : z.Bin > 0 ? "; a Mining Shell keeps its hopper's load in it (the bolted-on pod empties it)." : ".")
             + (flush ? " Flush: the pod sinks into the floor, wall or ceiling it is welded to, its lid level with the surface." : " Weld it onto a floor, a wall or a ceiling.");
-        var p = new Part(name, Small, Section, desc, role: z.Bin > 0 ? "storage" : "panel", tool: "welder", group: "Logic", color: MachineLook.Base);
+        var bin = flush ? 0 : z.Bin; // (a flush pod's body is in the surface, so no bin: a part's bin fills inside its solid; its Mining Shell keeps its load)
+        var p = new Part(name, Small, Section, desc, role: bin > 0 ? "storage" : "panel", tool: "welder", group: "Logic", color: MachineLook.Base);
         const double t = 0.06, rim = 0.09; // the walls' thickness, the rim's width
-        // The solid: the closed pod (flush: only its lid's slab, which sits in the 1 cm the build allows into the surface).
-        p.Add(Box([-w, flush ? top - 0.01 : 0, -w], [w, top, w], hidden: true));
+        // The solid: the closed pod (flush: a 3 cm slab over the surface, where its lid is: a thinner box would be only a detail).
+        p.Add(Box([-w, 0, -w], [w, flush ? 0.03 : top, w], hidden: true));
         // The body: four walls, a floor inside, a dark lining (3 mm in from the walls), the rim round the opening in hazard.
         p.Add(MachineLook.D([-w, bot, -w], [w, bot + t, w], MachineLook.Base)); // floor
         foreach (var s in new[] { -1.0, 1.0 })
@@ -416,7 +417,7 @@ public sealed class ShellParts : IPartGenerator
         p.Stats(z.Class switch { "tiny" => 45, "small" => 180, _ => 420 }, z.Class switch { "tiny" => 300, "small" => 700, _ => 1200 }, 6, seconds: z.Class == "medium" ? 8.0 : 4.0);
         var pod = new PyDict { ["class"] = z.Class, ["half"] = w, ["top"] = Py.Round(top, 3), ["depth"] = dp, ["flush"] = flush };
         p.Set(("power", z.Class switch { "tiny" => 30, "small" => 80, _ => 150 }), ("onBreak", "disable"), ("shellPod", pod));
-        if (z.Bin > 0)
+        if (bin > 0)
         {
             var lo = Py.L(-w + 0.12, Py.Round(bot + 0.09, 3), -w + 0.12);
             var hi = Py.L(w - 0.12, Py.Round(bot + 0.3, 3), w - 0.12);

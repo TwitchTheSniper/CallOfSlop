@@ -1,0 +1,313 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Small Shell Pod",
+  "description": "Parks a robot shell (up to 2 m tall) when nobody wears it: walk the shell into the frame that rises out of it and press F: you wake in your chair and the pod folds the shell away. Wake in it again from a Shell Control Chair. A docked shell charges from the grid and can't be damaged or taken. Weld it onto a floor, a wall or a ceiling.",
+  "group": "Logic",
+  "section": "Shells",
+  "role": "panel",
+  "tool": "welder",
+  "mass": 180.0,
+  "health": 700,
+  "armour": 6,
+  "material": "steel",
+  "color": "#22262b",
+  "attachSeconds": 4.0,
+  "power": 80,
+  "onBreak": "disable",
+  "shellPod": {
+    "class": "small",
+    "half": 0.62,
+    "top": 1.0,
+    "depth": 1.0,
+    "flush": false
+  },
+  "boxes": [
+    {
+      "min": [
+        -0.62,
+        0.0,
+        -0.62
+      ],
+      "max": [
+        0.62,
+        1.0,
+        0.62
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.62,
+        -0.003,
+        -0.62
+      ],
+      "max": [
+        0.62,
+        0.06,
+        0.62
+      ],
+      "color": "#22262b",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.62,
+        0.063,
+        -0.62
+      ],
+      "max": [
+        -0.56,
+        0.955,
+        0.62
+      ],
+      "color": "#22262b",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.557,
+        0.063,
+        -0.62
+      ],
+      "max": [
+        0.557,
+        0.955,
+        -0.56
+      ],
+      "color": "#22262b",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.56,
+        0.063,
+        -0.62
+      ],
+      "max": [
+        0.62,
+        0.955,
+        0.62
+      ],
+      "color": "#22262b",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.557,
+        0.063,
+        0.56
+      ],
+      "max": [
+        0.557,
+        0.955,
+        0.62
+      ],
+      "color": "#22262b",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.554,
+        0.063,
+        -0.554
+      ],
+      "max": [
+        0.554,
+        0.08,
+        0.554
+      ],
+      "color": "#30363d",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.624,
+        0.958,
+        -0.624
+      ],
+      "max": [
+        -0.53,
+        0.997,
+        0.624
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.527,
+        0.958,
+        -0.624
+      ],
+      "max": [
+        0.527,
+        0.997,
+        -0.53
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        0.53,
+        0.958,
+        -0.624
+      ],
+      "max": [
+        0.624,
+        0.997,
+        0.624
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.527,
+        0.958,
+        0.53
+      ],
+      "max": [
+        0.527,
+        0.997,
+        0.624
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.68,
+        0.0,
+        -0.68
+      ],
+      "max": [
+        0.68,
+        0.035,
+        0.68
+      ],
+      "color": "#30363d",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.668,
+        0.035,
+        -0.668
+      ],
+      "max": [
+        -0.632,
+        0.06,
+        -0.632
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.668,
+        0.035,
+        0.632
+      ],
+      "max": [
+        -0.632,
+        0.06,
+        0.668
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.632,
+        0.035,
+        -0.668
+      ],
+      "max": [
+        0.668,
+        0.06,
+        -0.632
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.632,
+        0.035,
+        0.632
+      ],
+      "max": [
+        0.668,
+        0.06,
+        0.668
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.1,
+        0.55,
+        -0.632
+      ],
+      "max": [
+        0.1,
+        0.59,
+        -0.616
+      ],
+      "color": "#38d0e8",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.372,
+        0.18,
+        -0.63
+      ],
+      "max": [
+        0.372,
+        0.3,
+        -0.616
+      ],
+      "color": "#56606a",
+      "detail": true,
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

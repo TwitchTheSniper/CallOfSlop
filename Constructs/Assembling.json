@@ -2236,6 +2236,12 @@
     {"output": "Shell Hand", "materials": {"steel": 4, "rubber": 1}, "seconds": 10, "minTier": 2},
     {"output": "Shell Standard Leg", "materials": {"steel": 7, "rubber": 1}, "seconds": 12, "minTier": 2},
     {"output": "Shell Heavy Leg", "materials": {"steel": 20, "rubber": 3}, "seconds": 20, "minTier": 2},
-    {"output": "Shell Runner Leg", "materials": {"steel": 6, "copper": 2, "rubber": 3}, "seconds": 18, "minTier": 2}
+    {"output": "Shell Runner Leg", "materials": {"steel": 6, "copper": 2, "rubber": 3}, "seconds": 18, "minTier": 2},
+    {"output": "Tiny Shell Pod", "materials": {"steel": 14, "copper": 2}, "parts": {"Circuit Board": 1}, "seconds": 15},
+    {"output": "Tiny Flush Shell Pod", "materials": {"steel": 12, "copper": 2}, "parts": {"Circuit Board": 1}, "seconds": 15},
+    {"output": "Small Shell Pod", "materials": {"steel": 60, "copper": 8, "rubber": 4}, "parts": {"Circuit Board": 2}, "seconds": 30, "minTier": 2},
+    {"output": "Small Flush Shell Pod", "materials": {"steel": 54, "copper": 8, "rubber": 4}, "parts": {"Circuit Board": 2}, "seconds": 30, "minTier": 2},
+    {"output": "Medium Shell Pod", "materials": {"steel": 140, "copper": 16, "rubber": 8}, "parts": {"Circuit Board": 3}, "seconds": 50, "minTier": 2},
+    {"output": "Medium Flush Shell Pod", "materials": {"steel": 128, "copper": 16, "rubber": 8}, "parts": {"Circuit Board": 3}, "seconds": 50, "minTier": 2}
   ]
 }
