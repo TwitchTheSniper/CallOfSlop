@@ -82,7 +82,7 @@ public static partial class Program
                     who = g.Players.Values.FirstOrDefault(o => o != me && o.InShell) ?? me;
                 if ((uint)n >= (uint)_wsPods.Count || w.Get(_wsPods[n]) is not { } c || !who.InShell)
                 {
-                    WsFail($"shellpod go N [other]: no pod {n + 1}, or that player isn't in a shell");
+                    WsSay($"shellpod go N [other]: no pod {n + 1}, or that player isn't in a shell"); // (not a failure: a script waiting on another window asks again)
                     return;
                 }
                 var feet = ConstructShellPod.StandFeet(c, 0, who.ShellFrame, out var f, out _);
