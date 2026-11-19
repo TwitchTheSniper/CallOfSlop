@@ -147,7 +147,7 @@ public sealed partial class Game
         SpaceLaunched = launched;
         SpaceCollide(f, pose, dt); // (posed ships never meet in the step: they are kept apart here, GameSpaceCollide.cs)
         for (var k = 0; k < _spaceRiders.Count; k++)
-            SpaceCarry(_spaceRiders[k]);
+            SpaceCarry(Constructs, _spaceRiders[k]);
         _spaceRiders.Clear();
     }
 
@@ -214,7 +214,7 @@ public sealed partial class Game
     }
 
     /// <summary>Where loose body <paramref name="c"/> is in ship <paramref name="ship"/>'s frame now, for the next carry.</summary>
-    private static void SpaceRideNote(Construct c, Construct ship, Vector3 com)
+    internal static void SpaceRideNote(Construct c, Construct ship, Vector3 com)
     {
         c.SpaceRideLocal = ship.ToLocal(com);
         c.SpaceRideWorld = com;
@@ -227,9 +227,9 @@ public sealed partial class Game
     /// physics moved it since the last carry, less what it would have moved going along with the ship, is its own move in
     /// the ship; the ship's new pose places it, and it takes the ship's speed there and its turn, keeping its own on top.
     /// </summary>
-    private void SpaceCarry(Construct c)
+    internal static void SpaceCarry(ConstructWorld w, Construct c)
     {
-        if (Constructs.Get(c.SpaceRide) is not { SpaceShip: not 0 } ship)
+        if (w.Get(c.SpaceRide) is not { SpaceShip: not 0 } ship)
         {
             c.SpaceRide = 0;
             return;

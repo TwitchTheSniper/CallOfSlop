@@ -29,7 +29,16 @@ public static class RideCheck
         yard.RestoreProps();
         World.SetMap(yard);
         HeldOnly = args.Any(a => a.Equals("--held", StringComparison.OrdinalIgnoreCase));
-        var bad = HeldOnly ? 0 : Lift(speed);
+        LooseOnly = args.Any(a => a.Equals("--loose", StringComparison.OrdinalIgnoreCase));
+        if (LooseOnly)
+        {
+            LooseSpeeds = Arg("--speeds", args.Any(a => a.Equals("--speed", StringComparison.OrdinalIgnoreCase)) ? Arg("--speed", "10") : "0,60,120,200")
+                .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+                .Select(x => float.Parse(x, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
+            if (names == "Rust Bucket,Zero Day Frigate,Magpie Mining Ship")
+                names += ",British Box Truck 1";
+        }
+        var bad = HeldOnly || LooseOnly ? 0 : Lift(speed);
         foreach (var name in names.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
             bad += One(name, speed, turn, spots);
         Console.WriteLine($"ride check: {bad} lapse(s)");
@@ -55,6 +64,21 @@ public static class RideCheck
         var found = Spots(c, maxSpots);
         found.AddRange(Spots(c, 4, joints: true));
         Console.WriteLine($"  {found.Count} standing spots");
+        if (LooseOnly)
+        {
+            var looseBad = 0;
+            if (found.Count < 2)
+            {
+                Console.WriteLine("  loose: fewer than two standing spots");
+                return 0;
+            }
+            foreach (var v in LooseSpeeds)
+            {
+                looseBad += Loose(w, c, found[0].Item2, found[found.Count / 2].Item2, v, turn, posed: false);
+                looseBad += Loose(w, c, found[0].Item2, found[found.Count / 2].Item2, v, turn, posed: true);
+            }
+            return looseBad;
+        }
         if (HeldOnly)
         {
             var heldBad = 0;
@@ -405,7 +429,142 @@ public static class RideCheck
         return -1;
     }
 
-    private static bool HeldOnly;
+    private static bool HeldOnly, LooseOnly;
+    private static float[] LooseSpeeds = [0, 60, 120, 200];
+
+    /// <summary>What carries the loose bodies of a posed ship (one out of the bubble) once it is posed: the game's own step for them.</summary>
+    private static void CarryPosed(ConstructWorld w, Construct ship, Construct[] loose)
+    {
+        foreach (var b in loose)
+            if (b.SpaceRide != 0)
+                Game.SpaceCarry(w, b);
+    }
+
+    /// <summary>
+    /// "--loose" (local-frame-physics.md phase 0): loose bodies aboard a moving ship, as the server steps them. A Frame Block is
+    /// set down resting on a deck spot and another is thrown across the ship from a second spot (3 m/s in the ship's frame);
+    /// the ship cruises straight (3 s), turns at <paramref name="turn"/> (4 s), brakes at 8 m/s2 (2 s) and runs on (2 s),
+    /// stepped (a driven ship in the bubble) or posed (out of the bubble, posed after the step). Printed per phase: the
+    /// resting block's drift in the ship's frame, its largest drawn jump in the ship's frame (the host's blend of the two
+    /// poses at a quarter, half and three quarters of a tick), its ticks asleep, the thrown block's state, and the step's CPU.
+    /// </summary>
+    private static int Loose(ConstructWorld w, Construct c, Vector3 spotA, Vector3 spotB, float speed, float turn, bool posed)
+    {
+        var home = c.Pos;
+        var homeRot = c.Rot;
+        var block = ConstructParts.Need("Frame Block");
+        var fwd0 = Vector3.Transform(-Vector3.UnitZ, c.Rot);
+        Pose(w, c, c.Pos, c.Rot, fwd0 * speed, Vector3.Zero);
+        if (posed)
+            c.SpaceShip = 60000;
+        var rest = ConstructBuild.PlaceNew(w, block, c.ToWorld(spotA + new Vector3(0, 0.3f, 0)), 0);
+        var thrown = ConstructBuild.PlaceNew(w, block, c.ToWorld(spotB + new Vector3(0, 1.0f, 0)), 0);
+        if (rest == null || thrown == null)
+        {
+            Console.WriteLine("  loose: blocks not placed");
+            return 0;
+        }
+        foreach (var b in new[] { rest, thrown })
+        {
+            b.Rebuild();
+            b.Vel = c.PointVel(b.WorldCom);
+            b.AngVel = c.AngVel;
+            b.KeepSpeed();
+            b.Fresh = false;
+            if (posed)
+            {
+                b.SpaceRide = c.Id;
+                Game.SpaceRideNote(b, c, b.WorldCom);
+            }
+        }
+        thrown.Vel += Vector3.Transform(new Vector3(2f, 1f, -2f), c.Rot);
+        var loose = new[] { rest, thrown };
+        var lastL = new Vector3[3];
+        Vector3 L(Construct b) => c.ToLocal(b.WorldCom);
+        Vector3 Drawn(Construct b, float a)
+        {
+            var sp = Vector3.Lerp(c.PrevPos, c.Pos, a);
+            var sq = Quaternion.Slerp(c.PrevRot, c.Rot, a);
+            var bp = Vector3.Lerp(b.PrevPos, b.Pos, a);
+            var bq = Quaternion.Slerp(b.PrevRot, b.Rot, a);
+            return Vector3.Transform(bp + Vector3.Transform(b.Com, bq) - sp, Quaternion.Conjugate(sq));
+        }
+        var phases = new (string Name, int From, int To)[] { ("cruise", 0, 180), ("turn", 180, 420), ("brake", 420, 540), ("after", 540, 660) };
+        var start = new Vector3[phases.Length];
+        var startT = new Vector3[phases.Length];
+        var jump = new float[phases.Length];
+        var asleep = new int[phases.Length];
+        double msSum = 0, msMax = 0;
+        var v = speed;
+        var prevDrawn = Vector3.Zero;
+        var lost = "";
+        for (var t = 0; t < 660; t++)
+        {
+            var ph = t < 180 ? 0 : t < 420 ? 1 : t < 540 ? 2 : 3;
+            if (t == (ph == 0 ? 60 : phases[ph].From))
+            {
+                start[ph] = L(rest); // (the cruise from a second in: the block is set down 0.3 m over the deck)
+                startT[ph] = L(thrown);
+            }
+            if (ph == 2)
+                v = MathF.Max(0, v - 8f * World.TickDt);
+            var ang = ph == 1 ? new Vector3(0, turn, 0) : Vector3.Zero;
+            var vel = Vector3.Transform(-Vector3.UnitZ, c.Rot) * v;
+            if (!posed)
+                Pose(w, c, c.Pos, c.Rot, vel, ang);
+            var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+            w.Step(World.Query, World.TickDt);
+            if (posed)
+            {
+                Pose(w, c, c.Pos + vel * World.TickDt, Quaternion.CreateFromAxisAngle(Vector3.UnitY, ang.Y * World.TickDt) * c.Rot, vel, ang);
+                c.SpaceShip = 60000;
+                CarryPosed(w, c, loose);
+            }
+            var ms = (System.Diagnostics.Stopwatch.GetTimestamp() - t0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+            if (t > 5)
+            {
+                msSum += ms;
+                msMax = Math.Max(msMax, ms);
+            }
+            asleep[ph] += rest.Asleep ? 1 : 0;
+            if (w.Get(rest.Id) != rest || w.Get(thrown.Id) != thrown)
+            {
+                lost = " (a block went)";
+                break;
+            }
+            // The drawn jumps: three blends a tick, each against the last, for the resting block only, after it settled.
+            for (var k = 1; k <= 4; k++)
+            {
+                var d = Drawn(rest, k / 4f);
+                if (t > phases[ph].From + 60 && ph != 2)
+                    jump[ph] = MathF.Max(jump[ph], Vector3.Distance(d, prevDrawn));
+                prevDrawn = d;
+            }
+        }
+        var iq = Quaternion.Conjugate(c.Rot);
+        var upL = Vector3.Transform(GravityFrames.UpAt(rest.WorldCom), iq);
+        var inA = ConstructRide.InFrame(c, L(rest), upL);
+        var inB = ConstructRide.InFrame(c, L(thrown), upL);
+        var line = new System.Text.StringBuilder();
+        line.Append(FormattableString.Invariant($"  loose ({(posed ? "posed" : "stepped")}) at {speed:0} m/s:"));
+        for (var k = 0; k < phases.Length; k++)
+        {
+            var end = k + 1 < phases.Length ? start[k + 1] : L(rest);
+            line.Append(FormattableString.Invariant($" {phases[k].Name} drift {Vector3.Distance(end, start[k]):0.000} m, jump {jump[k] * 1000:0} mm, asleep {asleep[k]}/{phases[k].To - phases[k].From};"));
+        }
+        var relT = (thrown.Vel - c.PointVel(thrown.WorldCom)).Length();
+        line.Append(FormattableString.Invariant($" thrown: in frame {inB}, {relT:0.00} m/s against the deck at the end, moved {Vector3.Distance(L(thrown), startT[0]):0.0} m from a second in;"));
+        line.Append(FormattableString.Invariant($" rest block in frame {inA}; step {msSum / 654:0.00} ms mean, {msMax:0.00} most{lost}"));
+        Console.WriteLine(line.ToString());
+        w.Remove(rest);
+        w.Remove(thrown);
+        c.SpaceShip = 0;
+        c.Pos = c.PrevPos = home;
+        c.Rot = c.PrevRot = homeRot;
+        c.Vel = c.AngVel = Vector3.Zero;
+        var cruiseDrift = Vector3.Distance(start[1], start[0]);
+        return !inA || cruiseDrift > 0.05f || jump[0] > 0.05f ? 1 : 0;
+    }
 
     /// <summary>
     /// "--held": a player standing at <paramref name="local"/> (the ship's frame) holds a Frame Block in the physics gun 2 m
