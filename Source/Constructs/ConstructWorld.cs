@@ -1837,7 +1837,7 @@ public sealed partial class ConstructWorld
                         // move for them). The player's own speed into it never counts (running into a parked car is no
                         // impact); moving away with it takes the speed off (ba01's gentle sides: jogging alongside is safe).
                         var pv = c == ride ? c.SegPointVel(p.Seg, wclosest) - c.SegPointVel(s.RideSeg, wclosest)
-                            : (c.Anchored || c.Asleep ? Vector3.Zero : c.PointVel(wclosest)) + c.SegPointVel(p.Seg, wclosest) - rideVel;
+                            : (ConstructRide.Still(c) ? Vector3.Zero : c.PointVel(wclosest)) + c.SegPointVel(p.Seg, wclosest) - rideVel;
                         var pn = pv.X * nx + pv.Z * nz;
                         // Assist 2: jumping into a construct's ledge (up to a vault's reach) climbs onto it, in its frame.
                         if (s.Velocity.Y > 1f && pn - vn > 0.5f && Vault(c, i, upLocal, centre, half, t, q, wclosest, nx, nz, ref s, height, frame))

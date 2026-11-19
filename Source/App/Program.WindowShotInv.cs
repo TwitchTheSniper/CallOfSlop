@@ -135,7 +135,13 @@ public static unsafe partial class Program
                 var top = t + System.Numerics.Vector3.Transform(new System.Numerics.Vector3((mn.X + mx.X) * 0.5f, mx.Y + 0.05f, (mn.Z + mx.Z) * 0.5f), q);
                 foreach (var pl in g.Players.Values)
                     if (pl.Id < Game.MaxPeople)
+                    {
                         pl.Teleport(top);
+                        if (c.Anchored)
+                            continue;
+                        ConstructRide.Join(ref pl.Sim, c, c.Parts[part].Seg, ConstructRide.UpFor(c, GravityFrames.UpAt(top)), System.Numerics.Vector3.Zero); // (in its frame from the first tick: set down at rest, a ship in orbit ran them over at 180 m/s)
+                        pl.Sim.Grounded = true;
+                    }
                 WsSay($"inv standon: players to {top:0.0} on {c.DefOf(part).Name}#{part} of construct {c.Id}");
                 return true;
             }

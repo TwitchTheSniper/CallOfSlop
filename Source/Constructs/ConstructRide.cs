@@ -126,7 +126,14 @@ public static partial class ConstructRide
 
     /// <summary>The velocity of the surface of segment <paramref name="seg"/> at a world point (the body's motion, linear and turning, and its joints').</summary>
     public static Vector3 SurfaceVel(Construct c, int seg, Vector3 at) =>
-        (c.Anchored || c.Asleep ? Vector3.Zero : c.PointVel(at)) + c.SegPointVel(seg, at);
+        (Still(c) ? Vector3.Zero : c.PointVel(at)) + c.SegPointVel(seg, at);
+
+    /// <summary>
+    /// Is the body not moving at all? Anchored, or asleep and not carried: a carried body (a craft docked in a ship's clamp or
+    /// bay) sleeps but moves with its carrier (<see cref="ConstructCargo.Follow"/> sets its Vel and AngVel), so its riders leave
+    /// it, and its hull meets people, at the ship's speed (a docked Limpet's floor taken off in orbit left them at rest, 2026-11-19).
+    /// </summary>
+    public static bool Still(Construct c) => c.Anchored || c.Asleep && c.CarriedBy == 0;
 
     /// <summary>Is standing on this segment riding it? (An anchored build's own floor never moves: no frame needed.)</summary>
     public static bool Rideable(Construct c, int seg) => !c.Anchored || seg != 0;
@@ -234,7 +241,7 @@ public static partial class ConstructRide
         s.RideLocal += Vector3.Transform(d, iq);
         var to = t + Vector3.Transform(s.RideLocal, q);
         // The relative velocity turns with the frame.
-        var spin = (c.Anchored || c.Asleep ? Vector3.Zero : c.AngVel) + SegSpin(c, s.RideSeg);
+        var spin = (Still(c) ? Vector3.Zero : c.AngVel) + SegSpin(c, s.RideSeg);
         var angle = spin.Length() * World.TickDt;
         if (angle > 1e-6f)
             s.Velocity = Vector3.Transform(s.Velocity, Quaternion.CreateFromAxisAngle(spin / spin.Length(), angle));
@@ -403,7 +410,7 @@ public static partial class ConstructRide
     }
 
     /// <summary>The whole turn rate of segment <paramref name="seg"/>'s frame (world axes): the body's and its joints'.</summary>
-    public static Vector3 SurfaceSpin(Construct c, int seg) => (c.Anchored || c.Asleep ? Vector3.Zero : c.AngVel) + SegSpin(c, seg);
+    public static Vector3 SurfaceSpin(Construct c, int seg) => (Still(c) ? Vector3.Zero : c.AngVel) + SegSpin(c, seg);
 
     /// <summary>The shortest turn taking unit vector <paramref name="from"/> to <paramref name="to"/>.</summary>
     public static Quaternion TurnBetween(Vector3 from, Vector3 to)
