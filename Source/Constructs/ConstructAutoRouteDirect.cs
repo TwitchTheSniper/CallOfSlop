@@ -4,20 +4,22 @@ namespace CallOfSlop;
 
 /// <summary>
 /// The straight way first (user, 2026-11-19: "conveyor placement should try to take a straight path to its destination"): before
-/// the lattice is built, a chute's or conveyor's auto-route tries the routes a fitter would lay by eye, fewest nodes first and then
-/// the shortest: one straight run (sloped where the ends are at different heights: a grade change is free on a chute or conveyor,
-/// <see cref="ConstructRoutes.BendRule(RouteType, Vector3, Vector3)"/>), one turn (where the way out of the start meets the way into
-/// the goal, or a 45 degree leg), then two (out of the start, across, into the goal). Each leaves its port and enters the goal's
-/// within <see cref="DirectPortDeg"/> of the port's facing, keeps a conveyor's turns as roomy as its bed is wide, and passes the
-/// server's whole check (<see cref="Build"/>); the first that passes is the route. Only when none does (a part in the way, a port
-/// facing away) does the lattice search go round things. Pipes and cables keep the lattice: the tool fixes them to structure and
-/// runs them along walls (<see cref="ConstructRoutes.Tidies"/>). Nothing about what a link carries is touched: a shorter link is
-/// only its geometry. Nothing allocates.
+/// the lattice is built, a chute's or conveyor's auto-route into an input tries the routes a fitter would lay by eye, fewest nodes
+/// first and then the shortest: one straight run (sloped where the ends are at different heights: a grade change is free on a chute
+/// or conveyor, <see cref="ConstructRoutes.BendRule(RouteType, Vector3, Vector3)"/>), one turn (where the way out of the start meets
+/// the way into the goal, or a 45 degree leg), two turns (out, across, in; or a climb, a level run and straight down into a port
+/// that faces up, or over a machine into one entered from above). Each leaves its port and enters the goal's as the lattice allows
+/// (<see cref="PortCost"/>: near its facing free, out of its side at a price, never back into it), never doubles back, keeps a
+/// conveyor's turns as roomy as its bed is wide, and passes the server's whole check (<see cref="Build"/>); the first that passes is
+/// the route. Only when none does (a part in the way, a port facing away) does the lattice search go round things. A route to a
+/// waypoint keeps the lattice's square arrival, which the player's next leg turns from in its steps; pipes and cables keep the
+/// lattice too: the tool fixes them to structure and runs them along walls (<see cref="ConstructRoutes.Tidies"/>). Nothing about
+/// what a link carries is touched: a shorter link is only its geometry. Nothing allocates.
 /// </summary>
 public sealed partial class RouteSearch
 {
     public const float DirectPortDeg = 45f + ConstructRoutes.AngleSlackDeg; // the most a straight run may leave or enter a port off its facing (a conveyor's plan step)
-    private const int DirectMax = 48; // candidate routes
+    private const int DirectMax = 64; // candidate routes
     private const int DirectBuilds = 16; // ... checked with the server's rule at most, best first
     private const float DirectNodeCost = 2f; // metres a node is worth: fewer nodes first, then the shorter
 
@@ -65,6 +67,26 @@ public sealed partial class RouteSearch
             AddCorner(_g, d1, back);
             AddCorner(_g, d1, back * 0.5f);
         }
+        // A port facing up or down (a Cargo Dock's Piece in, a hopper's mouth): over it and straight down into it, after a climb and a
+        // level run toward it; or out of such a start, level, then a slope into the goal (grade bends only, so a 45 degree step isn't needed).
+        // (a level goal port may be entered from above too, at a side arrival's price, as the lattice allows: over the machine and down)
+        var over = d1 != Vector3.Zero && MathF.Abs(d1.Y) > 0.9f ? d1 : _closed ? Vector3.UnitY : Vector3.Zero;
+        if (over != Vector3.Zero)
+            for (var i = 0; i < 2; i++)
+            {
+                var c1 = _g + over * (stub * (i + 1));
+                AddOver(c1, Plan(c1 - _s), stub, true);
+                if (d0 != Vector3.Zero && MathF.Abs(d0.Y) < 0.1f)
+                    AddOver(c1, Plan(d0), stub, true);
+            }
+        if (d0 != Vector3.Zero && MathF.Abs(d0.Y) > 0.9f)
+            for (var i = 0; i < 2; i++)
+            {
+                var c0 = _s + d0 * (stub * (i + 1));
+                AddOver(c0, Plan(_g - c0), stub, false);
+                if (d1 != Vector3.Zero && MathF.Abs(d1.Y) < 0.1f)
+                    AddOver(c0, -Plan(d1), stub, false);
+            }
         // Two turns: out of the start, across (square, at 45 degrees or sloped), into the goal.
         if (d0 != Vector3.Zero && d1 != Vector3.Zero)
         {
@@ -130,6 +152,29 @@ public sealed partial class RouteSearch
 
     private static Vector3 Plan(Vector3 v) => new(v.X, 0f, v.Z);
 
+    /// <summary>
+    /// Two corners by a port that faces up or down: <paramref name="over"/> straight out of it, and a level run of a few lengths
+    /// along <paramref name="way"/> (in plan) toward it (<paramref name="atGoal"/>) or away from it, so the rest is one climb or drop.
+    /// </summary>
+    private void AddOver(Vector3 over, Vector3 way, float stub, bool atGoal)
+    {
+        var plan = way.Length();
+        if (plan < 0.05f)
+            return;
+        way /= plan;
+        var reach = Plan(atGoal ? over - _s : _g - over).Length();
+        Span<float> runs = [stub, stub * 2f, reach * 0.5f];
+        foreach (var run in runs)
+        {
+            if (run < 0.05f || run > reach - 0.05f)
+                continue;
+            if (atGoal)
+                AddDirect(2, over - way * run, over);
+            else
+                AddDirect(2, over, over + way * run);
+        }
+    }
+
     /// <summary>Where the start's way and the goal's (in plan) meet: <paramref name="t"/> out of the start, <paramref name="u"/> out of the goal; false when parallel or behind either.</summary>
     private static bool MeetPlan(Vector3 s, Vector3 d0, Vector3 g, Vector3 d1, out float t, out float u)
     {
@@ -165,6 +210,7 @@ public sealed partial class RouteSearch
         var cos = MathF.Cos(ConstructRoutes.ConveyorBendDeg * MathF.PI / 180f);
         var room = float.MaxValue;
         var bentBefore = false;
+        var extra = 0f; // (a side departure or arrival)
         for (var i = 1; i < n; i++)
         {
             var d = p[i] - p[i - 1];
@@ -173,10 +219,20 @@ public sealed partial class RouteSearch
                 return;
             length += len;
             var dir = d / len;
-            if (i == 1 && !DirectLeaves(dir))
-                return;
-            if (i == n - 1 && _closed && _gDir != Vector3.Zero && !PortOk(dir, -_gDir))
-                return;
+            if (i == 1)
+            {
+                var leave = DirectLeaves(dir);
+                if (leave < 0f)
+                    return;
+                extra += leave;
+            }
+            if (i == n - 1 && _closed && _gDir != Vector3.Zero)
+            {
+                var arrive = PortCost(dir, -_gDir);
+                if (arrive < 0f)
+                    return;
+                extra += arrive;
+            }
             var bentAfter = false;
             if (i + 1 < n)
             {
@@ -196,7 +252,7 @@ public sealed partial class RouteSearch
         for (var k = 0; k < _dirCount; k++)
             if (_dirN[k] == corners && Vector3.DistanceSquared(_dirC[k * 2], _dirC[_dirCount * 2]) < 1e-6f && Vector3.DistanceSquared(_dirC[k * 2 + 1], _dirC[_dirCount * 2 + 1]) < 1e-6f)
                 return;
-        _dirScore[_dirCount] = corners * DirectNodeCost + length;
+        _dirScore[_dirCount] = corners * DirectNodeCost + length + extra;
         _dirCount++;
     }
 
@@ -210,32 +266,36 @@ public sealed partial class RouteSearch
         return n;
     }
 
-    /// <summary>The first leg's way: out of a port near its facing, on from the last node by the bend rule, any way from a junction.</summary>
-    private bool DirectLeaves(Vector3 dir)
+    /// <summary>The first leg's price for its way (-1: not allowed): out of a port by <see cref="PortCost"/>, on from the last node by the bend rule, any way from a junction.</summary>
+    private float DirectLeaves(Vector3 dir)
     {
         if (_ask.Parent != 255)
-            return true;
+            return 0f;
         if (_hasPrev)
-            return _prevDir == Vector3.Zero || ConstructRoutes.BendRule(_ask.Type, _prevDir, dir) == null;
-        return _sDir == Vector3.Zero || PortOk(dir, _sDir);
+            return _prevDir == Vector3.Zero || ConstructRoutes.BendRule(_ask.Type, _prevDir, dir) == null ? 0f : -1f;
+        return _sDir == Vector3.Zero ? 0f : PortCost(dir, _sDir);
     }
 
     /// <summary>
-    /// A way within <see cref="DirectPortDeg"/> of a port's: in plan for a level port (the grade is free: a chute or conveyor may climb
-    /// or drop straight out of it, as one laid by hand does), else in full.
+    /// A way's price at a port, as the lattice prices it (<see cref="StartFlat"/>): within <see cref="DirectPortDeg"/> of its facing
+    /// free (in plan for a level port: the grade is free, a chute or conveyor may climb or drop straight out of it as one laid by hand
+    /// does), out of its side (up or down out of a level port too) <see cref="SideCost"/>, back into it never (-1).
     /// </summary>
-    private static bool PortOk(Vector3 dir, Vector3 port)
+    private static float PortCost(Vector3 dir, Vector3 port)
     {
         var cos = MathF.Cos(DirectPortDeg * MathF.PI / 180f);
+        if (Vector3.Dot(dir, port) < -0.3f)
+            return -1f;
         if (MathF.Abs(port.Y) < 0.1f)
         {
             var a = new Vector2(dir.X, dir.Z);
             var la = a.Length();
             if (la < 0.03f)
-                return false; // (straight up or down out of a level port: the lattice's business)
+                return SideCost;
             var b = Vector2.Normalize(new Vector2(port.X, port.Z));
-            return Vector2.Dot(a / la, b) >= cos;
+            var pd = Vector2.Dot(a / la, b);
+            return pd >= cos ? 0f : pd >= -0.3f ? SideCost : -1f;
         }
-        return Vector3.Dot(dir, port) >= cos;
+        return Vector3.Dot(dir, port) >= cos ? 0f : SideCost;
     }
 }
