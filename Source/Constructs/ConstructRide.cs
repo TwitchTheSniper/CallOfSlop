@@ -114,7 +114,7 @@ public static partial class ConstructRide
             var c = bodies[i];
             if (c.FarRate > 1 && c.Vel == c.VelBefore && !c.Asleep)
                 continue; // (a far body between its steps: its last step's acceleration stands: ConstructFar.cs)
-            var a = c.Anchored || c.Asleep ? Vector3.Zero : (c.Vel - c.VelBefore) / (World.TickDt * (c.FarRate > 1 ? c.FarRate : 1)); // (a far step is that many ticks' change)
+            var a = !c.MovesNow ? Vector3.Zero : (c.Vel - c.VelBefore) / (World.TickDt * (c.FarRate > 1 ? c.FarRate : 1)); // (a far step is that many ticks' change)
             c.Accel = Vector3.Lerp(c.Accel, a, 0.5f);
             c.VelThen = c.VelBefore;
             c.VelBefore = c.Vel;
@@ -126,7 +126,7 @@ public static partial class ConstructRide
 
     /// <summary>The velocity of the surface of segment <paramref name="seg"/> at a world point (the body's motion, linear and turning, and its joints').</summary>
     public static Vector3 SurfaceVel(Construct c, int seg, Vector3 at) =>
-        (c.Anchored || c.Asleep ? Vector3.Zero : c.PointVel(at)) + c.SegPointVel(seg, at);
+        c.MovePointVel(at) + c.SegPointVel(seg, at);
 
     /// <summary>Is standing on this segment riding it? (An anchored build's own floor never moves: no frame needed.)</summary>
     public static bool Rideable(Construct c, int seg) => !c.Anchored || seg != 0;
@@ -234,7 +234,7 @@ public static partial class ConstructRide
         s.RideLocal += Vector3.Transform(d, iq);
         var to = t + Vector3.Transform(s.RideLocal, q);
         // The relative velocity turns with the frame.
-        var spin = (c.Anchored || c.Asleep ? Vector3.Zero : c.AngVel) + SegSpin(c, s.RideSeg);
+        var spin = c.MoveSpin + SegSpin(c, s.RideSeg);
         var angle = spin.Length() * World.TickDt;
         if (angle > 1e-6f)
             s.Velocity = Vector3.Transform(s.Velocity, Quaternion.CreateFromAxisAngle(spin / spin.Length(), angle));
@@ -403,7 +403,7 @@ public static partial class ConstructRide
     }
 
     /// <summary>The whole turn rate of segment <paramref name="seg"/>'s frame (world axes): the body's and its joints'.</summary>
-    public static Vector3 SurfaceSpin(Construct c, int seg) => (c.Anchored || c.Asleep ? Vector3.Zero : c.AngVel) + SegSpin(c, seg);
+    public static Vector3 SurfaceSpin(Construct c, int seg) => c.MoveSpin + SegSpin(c, seg);
 
     /// <summary>The shortest turn taking unit vector <paramref name="from"/> to <paramref name="to"/>.</summary>
     public static Quaternion TurnBetween(Vector3 from, Vector3 to)

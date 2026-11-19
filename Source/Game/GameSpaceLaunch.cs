@@ -90,8 +90,8 @@ public sealed partial class Game
             {
                 if (c.Anchored || c.Asleep || c.PartCount == 0 || c.CarriedBy != 0 || c.GrabbedBy != 255 || c.Frozen || c.Pinned || NavBoarding(c))
                     continue; // (held, carried or at rest; a pod flying to board stays a body of the bubble: GameNavBoard.cs)
-                if (c.Frame != 0 && Constructs.Get(c.Frame) is { SpaceShip: not 0 })
-                    continue; // (loose in a ship in space: carried by its frame once the ships are posed, ConstructFrames.After)
+                if (c.Frame != 0 && Constructs.Get(c.Frame) != null)
+                    continue; // (loose in a moving construct's frame: it goes out with its frame, never as a ship of its own; in space carried once the ships are posed, ConstructFrames.After)
                 var com = c.WorldCom;
                 if (Vector3.DistanceSquared(com, centre) <= edge * edge)
                     continue;

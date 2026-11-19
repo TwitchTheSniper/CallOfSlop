@@ -153,7 +153,7 @@ public static partial class ConstructNet
         if (c.CarriedBy != 0)
             w.U8(c.CarrySeg).Vec(c.CarryPos).F32(c.CarryRot.X).F32(c.CarryRot.Y).F32(c.CarryRot.Z).F32(c.CarryRot.W);
         // Protocol 372: in a moving construct's frame (ConstructFrames.cs): the frame, and the pose in it.
-        var framed = c.Framed;
+        var framed = FramedOk(c);
         w.U16(framed ? c.Frame : (ushort)0);
         if (framed)
             w.Vec(c.FramePos).F32(c.FrameRot.X).F32(c.FrameRot.Y).F32(c.FrameRot.Z).F32(c.FrameRot.W);
@@ -1199,9 +1199,13 @@ public static partial class ConstructNet
         {
             framePos = r.Vec();
             var fr = new Quaternion(r.F32(), r.F32(), r.F32(), r.F32());
-            if (frame == id || !float.IsFinite(framePos.X + framePos.Y + framePos.Z + fr.X + fr.Y + fr.Z + fr.W) || fr.LengthSquared() < 0.5f || framePos.Length() > 4000)
-                throw new MalformedPacketException("a framed construct's pose that doesn't fit");
-            frameRot = Quaternion.Normalize(fr);
+            if (frame == id || !float.IsFinite(framePos.X + framePos.Y + framePos.Z + fr.X + fr.Y + fr.Z + fr.W) || fr.LengthSquared() < 0.5f || framePos.Length() > FramedMost)
+            {
+                Console.WriteLine($"[net] construct {id}: a frame pose that doesn't fit (frame {frame}, at {framePos}): taken in the world's frame");
+                (frame, framePos) = ((ushort)0, Vector3.Zero); // (the body itself is kept, drawn at its world pose: never dropped for this)
+            }
+            else
+                frameRot = Quaternion.Normalize(fr);
         }
         int welds = r.U8(); // protocol 97: the freeform welds
         var posed = 0;
@@ -1361,7 +1365,7 @@ public static partial class ConstructNet
             var asleep = Still(c);
             if (w.Length + (asleep ? DigestSleeping : DigestAwake) > PacketWriter.Mtu - 8)
                 break;
-            var framed = asleep && c.Framed; // (protocol 372: asleep in a moving frame, its pose in that frame, which is what the client holds)
+            var framed = asleep && FramedOk(c); // (protocol 372: asleep in a moving frame, its pose in that frame, which is what the client holds)
             w.U16(c.Id).U32(StructureHash(c)).U8((byte)((asleep ? 1 : 0) | (framed ? 2 : 0)));
             if (asleep)
             {
@@ -1691,7 +1695,7 @@ public static partial class ConstructNet
     /// <summary>A joint's load against its rating in a byte: hundredths, up to 2.55 (the bar's end).</summary>
     public static byte OverByte(float over) => (byte)Math.Clamp(MathF.Round(over * 100), 0, 255);
 
-    private static int PoseSize(Construct c) => PoseBytes + (c.Framed ? 2 : 0) + Math.Min(c.JointCount, PoseJoints) * 5 + 4 + (c.HasLogic ? Math.Min(SignalParts(c), PoseSignals) : 0) + 3 + Math.Min(c.RotorCount + c.ControlCount, PoseAir) + WalkSize(c) + (c.CapCapacity > 0 ? 1 : 0) + (c.PlantCount > 0 ? 2 + (c.Gen != GenState.None ? 6 : 0) : 0); // (+ 1: the capacitors' share, protocol 331; + 1: the plants', 335; + 1 the generator set's state, + 6 with a set, 339)
+    private static int PoseSize(Construct c) => PoseBytes + (FramedOk(c) ? 2 : 0) + Math.Min(c.JointCount, PoseJoints) * 5 + 4 + (c.HasLogic ? Math.Min(SignalParts(c), PoseSignals) : 0) + 3 + Math.Min(c.RotorCount + c.ControlCount, PoseAir) + WalkSize(c) + (c.CapCapacity > 0 ? 1 : 0) + (c.PlantCount > 0 ? 2 + (c.Gen != GenState.None ? 6 : 0) : 0); // (+ 1: the capacitors' share, protocol 331; + 1: the plants', 335; + 1 the generator set's state, + 6 with a set, 339)
 
     /// <summary>Rotors and control surfaces a pose carries at most: a window that turns (protocol 120).</summary>
     public const int PoseAir = 24;
@@ -1753,7 +1757,7 @@ public static partial class ConstructNet
     private static void WritePose(PacketWriter w, Construct c)
     {
         // (protocol 372: a body in a moving construct's frame sends its pose and motion in that frame: ConstructFrames.cs)
-        var framed = c.Framed;
+        var framed = FramedOk(c);
         var q = framed ? c.FrameRot : c.Rot;
         if (q.W < 0)
             q = -q;
@@ -2143,6 +2147,14 @@ public static partial class ConstructNet
             c.Rot = Quaternion.Normalize(FromRotVec(c.NetOffRot) * rawRot);
         }
     }
+
+    /// <summary>A framed body's frame pose a client may take (protocol 372): finite and within this of the frame's origin (m).</summary>
+    public const float FramedMost = 4000f;
+
+    /// <summary>Server: does <paramref name="c"/> go on the wire in its frame? A frame pose that isn't finite or is past <see cref="FramedMost"/> goes as the world's, so no client drops it.</summary>
+    internal static bool FramedOk(Construct c) =>
+        c.Framed && float.IsFinite(c.FramePos.X + c.FramePos.Y + c.FramePos.Z + c.FrameRot.X + c.FrameRot.Y + c.FrameRot.Z + c.FrameRot.W)
+        && c.FramePos.LengthSquared() < FramedMost * FramedMost && c.FrameVel.LengthSquared() < 1e8f;
 
     /// <summary>Client: the velocity a body's pose history moves at (in its frame when the history is a frame's: protocol 372).</summary>
     private static Vector3 HistVel(Construct c) => c.NetFrame != 0 ? c.NetFrameVel : c.Vel;

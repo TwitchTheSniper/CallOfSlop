@@ -1348,7 +1348,15 @@ public static partial class ConstructPhysics
                 if (a.CarriedBy == b.Id || b.CarriedBy == a.Id || a.CarriedBy != 0 && a.CarriedBy == b.CarriedBy || a.HeldBy == b.Id || b.HeldBy == a.Id)
                     continue; // (a carrier and what its frozen cargo volumes carry don't collide, nor a lifter's body and what its hook holds)
                 if (a.Frame == b.Id && a.Asleep || b.Frame == a.Id && b.Asleep)
-                    continue; // (asleep in its frame: carried by it rigidly, ConstructFrames.Carry; it wakes when the frame's motion changes, or something else touches it)
+                {
+                    // Asleep in its frame: carried by it rigidly (ConstructFrames.Carry), so no contact with it; it wakes when the
+                    // frame's motion changes, something else touches it, or a moving segment of the frame (a tailgate, a lift, a
+                    // door, a turret) is within reach: then it rests on that as any body does.
+                    var (frame, fi2, sleeper) = a.Frame == b.Id ? (b, j, a) : (a, i, b);
+                    if (!_jact[fi2] || !JointMovesNear(frame, sleeper.WorldCom, sleeper.Radius))
+                        continue;
+                    sleeper.Wake();
+                }
                 var reach = a.Radius + b.Radius + (a.Vel - b.Vel).Length() * dt;
                 if (Vector3.DistanceSquared(a.WorldCom - PosedBack(a, b, dt), b.WorldCom - PosedBack(b, a, dt)) > reach * reach) // (a ship out of the bubble met where it was at the step's start: PosedBack)
                     continue;
@@ -1806,6 +1814,7 @@ public static partial class ConstructPhysics
         var air = GravityFrames.Point != null ? AirAt(c.WorldCom) : 1f;
         var rel = c.Vel - c.FrameV;
         var spinRel = c.AngVel - c.FrameW;
+        var solveV = c.FrameV;
         c.FrameV = f.PointVel(c.WorldCom); // (the frame after its step: what the speed through it is measured against from here, Sleep and the carry)
         c.FrameW = f.AngVel;
         if (!c.AeroFlying)
@@ -1821,7 +1830,14 @@ public static partial class ConstructPhysics
         c.Vel = c.FrameV + rel;
         c.AngVel = c.FrameW + spinRel;
         c.FrameDt += dt; // (stepped: the carry takes its move through the frame)
-        var com = c.WorldCom + (c.Vel + _pushV[index]) * dt;
+        var step = (c.Vel + _pushV[index]) * dt;
+        // Its move through the frame, summed in small numbers for the carry (ConstructFrames.Carry): a posed frame stood through the
+        // step and was met at its motion there; a stepped one moved by its own step's (its centre's velocity and push).
+        var fi = f.SimIndex;
+        var frameStep = f.SpaceShip != 0 || f.SpaceAway != 0 ? solveV * dt
+            : (uint)fi < (uint)_bodies.Count && ReferenceEquals(_bodies[fi], f) && _dyn[fi] ? (f.Vel + _pushV[fi]) * dt : Vector3.Zero;
+        c.FrameMove += step - frameStep;
+        var com = c.WorldCom + step;
         var w = c.AngVel + _pushW[index];
         var spin = new Quaternion(w.X, w.Y, w.Z, 0) * c.Rot;
         var rot = new Quaternion(c.Rot.X + 0.5f * dt * spin.X, c.Rot.Y + 0.5f * dt * spin.Y, c.Rot.Z + 0.5f * dt * spin.Z, c.Rot.W + 0.5f * dt * spin.W);
@@ -2245,6 +2261,29 @@ public static partial class ConstructPhysics
             c.Vel += f.Vel * loss + Vector3.Cross(spin, c.WorldCom - f.WorldCom);
             c.AngVel += spin;
         }
+    }
+
+    /// <summary>
+    /// Does a moving joint of <paramref name="c"/> carry anything near world point <paramref name="at"/> (what its segment carries,
+    /// its centre as the joints stand now and its spread, plus <paramref name="reach"/>)? A ship's turret turning on its far side
+    /// leaves the cargo asleep in its hold; a tailgate under it does not.
+    /// </summary>
+    private static bool JointMovesNear(Construct c, Vector3 at, float reach)
+    {
+        Vector3? local = null;
+        for (var j = 0; j < c.JointCount; j++)
+        {
+            ref var jt = ref c.Joints[j];
+            if (jt.Freeform || MathF.Abs(jt.Vel) <= 0.02f)
+                continue;
+            var seg = j + 1;
+            local ??= c.ToLocal(at);
+            var spread = MathF.Sqrt(MathF.Max(c.SegSpin[seg], 0) / MathF.Max(c.SegMass[seg], 1f)) * 2f + 2f;
+            var r = spread + reach;
+            if (Vector3.DistanceSquared(local.Value, c.SegNow[seg]) <= r * r)
+                return true;
+        }
+        return false;
     }
 
     /// <summary>Bodies in a moving frame that touched the map this step (ConstructFrames.Carry: held by the ground, they leave it).</summary>

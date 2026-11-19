@@ -36,6 +36,9 @@ public static class ConstructFrames
     /// <summary>A body asleep in a frame wakes when the frame's acceleration at it (less the free fall) passes this (m/s2, smoothed): braking, a turn, a hit.</summary>
     public const float WakeFelt = 1.5f;
 
+    /// <summary>A body's own sum of its moves through its frame is trusted unless the world's pose says it moved this much more (m): something outside the step moved it.</summary>
+    public const float MoveTrust = 0.05f;
+
     /// <summary>A body touching the map leaves a frame moving faster than this past it (m/s): the ground through an open bay holds it, not the ship.</summary>
     public const float GroundLeaveSpeed = 1f;
 
@@ -126,6 +129,7 @@ public static class ConstructFrames
     /// <summary>The frame's motion at <paramref name="c"/>'s centre now, and where both are: what the next carry measures from.</summary>
     private static void Note(Construct c, Construct f, Vector3 com)
     {
+        c.FrameMove = Vector3.Zero;
         c.FrameV = f.PointVel(com);
         c.FrameW = f.AngVel;
         c.FrameX0 = com;
@@ -170,10 +174,19 @@ public static class ConstructFrames
         }
         if (SpaceTimeSpeed > 1)
             return;
+        // The drive's push is felt as it is (the ship's own sum); the rest of the change is the fall, smoothed, which the flight's
+        // integrator gives a tick at a time a little unevenly; only a change far off it (a hit, a ram) is felt as well.
         var a = (f.Vel - c.FrameVc0) * World.TickRate;
-        c.FrameGrav += (a - f.SpaceAccel - c.FrameGrav) * 0.1f;
-        c.FrameFree = c.FrameGrav - a;
+        var rest = a - f.SpaceAccel - c.FrameGrav;
+        c.FrameGrav += rest * 0.1f;
+        c.FrameFree = -f.SpaceAccel - (rest.LengthSquared() > HitFelt * HitFelt ? rest : Vector3.Zero);
+        _dbgRest = rest.Length();
     }
+    private static float _dbgRest;
+    private static readonly bool Dbg = Environment.GetEnvironmentVariable("COS_FRAMES_DBG") == "1";
+
+    /// <summary>A ship out of the bubble's change of motion this far (m/s2) off its drive and its fall is a hit, and is felt.</summary>
+    public const float HitFelt = 3f;
 
     /// <summary>
     /// Server, after a step: every body in a frame of the pass's kind (<paramref name="posed"/>: ships out of the bubble, posed
@@ -196,15 +209,32 @@ public static class ConstructFrames
                     LastBodies++;
                 }
         }
+        // The moving constructs that could be frames in this pass: a loose body is looked up in the broadphase only near one
+        // (a thousand pieces of debris on the ground with nothing moving cost a test each, no query).
+        _candCount = 0;
+        var overflow = false;
+        if (search)
+            for (var i = 0; i < bodies.Count; i++)
+            {
+                var f = bodies[i];
+                if ((f.SpaceShip != 0) != posed || f.PartCount == 0 || f.Anchored || f.CarriedBy != 0 || f.Frame != 0 || f.SpaceAway != 0 || !Moving(f))
+                    continue;
+                if (_candCount == _cand.Length)
+                {
+                    overflow = true;
+                    break;
+                }
+                _cand[_candCount++] = f;
+            }
         for (var i = 0; i < bodies.Count; i++)
         {
             var c = bodies[i];
             if (c.Frame != 0)
             {
                 var f = w.Get(c.Frame);
-                if (f == null || f.PartCount == 0 || f.Anchored || f.CarriedBy != 0 || f.Frame != 0 || !CanRide(c))
+                if (f == null || f.PartCount == 0 || f.Anchored || f.CarriedBy != 0 || f.Frame != 0 || !CanRide(c) || f.Asleep && f.SpaceShip == 0)
                 {
-                    Leave(c); // (the frame went, froze or was caught; or the body was caught, frozen or pinned)
+                    Leave(c); // (the frame went, froze, was caught or stopped and sleeps: a still frame is the world's; or the body was caught, frozen or pinned)
                     continue;
                 }
                 if ((f.SpaceShip != 0) != posed)
@@ -212,11 +242,48 @@ public static class ConstructFrames
                 Carry(c, f, posed);
                 continue;
             }
-            if (!search || c.Asleep || c.FrameRiders > 0 || !CanRide(c) || (_tick + c.Id) % SearchEvery != 0)
+            if (!search || _candCount == 0 || c.Asleep || !CanRide(c) || (_tick + c.Id) % SearchEvery != 0 || !overflow && !NearCandidate(c))
                 continue;
             if (Find(w, c, posed) is { } frame)
+            {
                 Join(c, frame);
+                if (c.FrameRiders > 0)
+                    Rehome(w, c, frame); // (a truck with a crate aboard driven into a moving carrier: the crate comes into the carrier's frame too)
+            }
         }
+    }
+
+    private static readonly Construct[] _cand = new Construct[64];
+    private static int _candCount;
+
+    /// <summary>Is <paramref name="c"/> within reach of one of this pass's moving constructs (their spheres, padded as a frame is)?</summary>
+    private static bool NearCandidate(Construct c)
+    {
+        var at = c.WorldCom;
+        for (var k = 0; k < _candCount; k++)
+        {
+            var f = _cand[k];
+            if (f == c)
+                continue;
+            var reach = f.Radius + c.Radius + ConstructRide.BoundsAbove + 1f;
+            if (Vector3.DistanceSquared(at, f.WorldCom) <= reach * reach)
+                return true;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// <paramref name="c"/> has just joined <paramref name="frame"/> and carried bodies of its own: they come into that frame
+    /// too, where they are (frames don't nest; a crate in a truck in a carrier rides the carrier's, and meets the truck's bed
+    /// in the solve as two bodies of one frame). Rare: a whole-list pass, no allocation.
+    /// </summary>
+    private static void Rehome(ConstructWorld w, Construct c, Construct frame)
+    {
+        foreach (var b in w.Bodies)
+            if (b.Frame == c.Id)
+                Join(b, frame);
+        frame.FrameRiders += c.FrameRiders;
+        c.FrameRiders = 0;
     }
 
     /// <summary>
@@ -262,23 +329,36 @@ public static class ConstructFrames
         var com = c.WorldCom;
         if (stepped)
         {
+            // Its move through the frame is the physics' own sum of its relative steps (ConstructPhysics.IntegrateFramed,
+            // Construct.FrameMove: small numbers), never the difference of two world positions kilometres out, which loses a
+            // millimetre a tick to the floats' grain and shook a block pressed to a bulkhead. Something else that moved it
+            // (a tool, a push outside the step) shows as the world's pose disagreeing, and that is taken instead.
+            var lastComL = lastPos + Vector3.Transform(c.Com, lastRot);
+            Vector3 comL;
             if (posed || f.SpaceAway != 0)
             {
-                var own = com - c.FrameX0 - c.FrameV * dt; // (its move in the world less the hull's motion where it was)
-                var iq0 = Quaternion.Conjugate(c.FrameQ0);
-                var comL = lastPos + Vector3.Transform(c.Com, lastRot) + Vector3.Transform(own, iq0);
+                comL = lastComL + Vector3.Transform(c.FrameMove, Quaternion.Conjugate(c.FrameQ0));
+                var own = com - c.FrameX0 - c.FrameV * dt; // (the world's word: its move less the hull's motion where it was)
+                if (Vector3.DistanceSquared(own, c.FrameMove) > MoveTrust * MoveTrust)
+                    comL = lastComL + Vector3.Transform(own, Quaternion.Conjugate(c.FrameQ0));
                 var spun = c.FrameW * dt;
                 var turned = Quaternion.Normalize(new Quaternion(spun * 0.5f, 1f) * c.FrameQ0); // (the frame's turn in the step, as the solver met it)
                 c.FrameRot = Quaternion.Normalize(Quaternion.Conjugate(turned) * c.Rot);
-                c.FramePos = comL - Vector3.Transform(c.Com, c.FrameRot);
             }
             else
             {
                 var iq = Quaternion.Conjugate(f.Rot);
+                var r0 = Vector3.Transform(lastComL - f.Com, c.FrameQ0); // (from the frame's centre, in the world's axes, at the last carry)
+                comL = Vector3.Transform(r0 + c.FrameMove, iq) + f.Com;
+                var world = Vector3.Transform(com - f.Pos, iq);
+                if (Vector3.DistanceSquared(world, comL) > MoveTrust * MoveTrust)
+                    comL = world;
                 c.FrameRot = Quaternion.Normalize(iq * c.Rot);
-                c.FramePos = Vector3.Transform(c.Pos - f.Pos, iq);
             }
+            c.FramePos = comL - Vector3.Transform(c.Com, c.FrameRot);
         }
+        if (Dbg && posed && !c.Asleep)
+            Console.WriteLine(FormattableString.Invariant($"[framedbg] {c.Id} felt {c.FrameFree.Length():0.00} acc {f.SpaceAccel.Length():0.00} rest {_dbgRest:0.00} dpos {(c.FramePos - lastPos).Length() * 1000:0.00} mm move {c.FrameMove.Length() * 1000:0.00} frel {c.FrameVel.Length():0.000} prev {(f.PrevPos - f.Pos).Length():0.000}"));
         c.Rot = Quaternion.Normalize(f.Rot * c.FrameRot);
         c.Pos = f.Pos + Vector3.Transform(c.FramePos, f.Rot);
         var at = c.WorldCom;

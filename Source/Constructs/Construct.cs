@@ -355,7 +355,7 @@ public sealed partial class Construct
     // it (world axes: the deck's gravity, a generator's, the free fall a ship in space has), the frame's motion at its centre and
     // its turn at the last carry (world), where its centre and the frame were then, the time the physics stepped it since, the
     // acceleration it feels at rest (smoothed: what wakes it), and whether its frame pose is still to be taken from the world.
-    internal Vector3 FrameUp = Vector3.UnitY, FrameG, FrameFree, FrameGrav, FrameV, FrameW, FrameX0, FrameC0, FrameVc0;
+    internal Vector3 FrameUp = Vector3.UnitY, FrameG, FrameFree, FrameGrav, FrameMove, FrameV, FrameW, FrameX0, FrameC0, FrameVc0;
     internal Quaternion FrameQ0 = Quaternion.Identity;
     internal float FrameDt, FrameFelt;
     internal bool FrameNew, FrameGround, FrameLoaded; // (FrameGround: the last step had it touch the map; FrameLoaded: FramePos/FrameRot came with it from a save)
@@ -710,6 +710,22 @@ public sealed partial class Construct
 
     /// <summary>Velocity of a world point carried by the body.</summary>
     public Vector3 PointVel(Vector3 world) => Vel + Vector3.Cross(AngVel, world - WorldCom);
+
+    /// <summary>
+    /// Is it moving in the world? Anchored or asleep it is still, except asleep in a moving construct's frame
+    /// (ConstructFrames.cs), where it is carried at the frame's motion (its Vel and AngVel are the frame's there).
+    /// Every reader that takes a sleeping body's velocity as zero asks this instead.
+    /// </summary>
+    public bool MovesNow => !Anchored && (!Asleep || Frame != 0);
+
+    /// <summary>Its world velocity, zero when it isn't moving (<see cref="MovesNow"/>).</summary>
+    public Vector3 MoveVel => MovesNow ? Vel : Vector3.Zero;
+
+    /// <summary>Its world turn rate, zero when it isn't moving (<see cref="MovesNow"/>).</summary>
+    public Vector3 MoveSpin => MovesNow ? AngVel : Vector3.Zero;
+
+    /// <summary>A world point's velocity carried by the body, zero when it isn't moving (<see cref="MovesNow"/>).</summary>
+    public Vector3 MovePointVel(Vector3 world) => MovesNow ? PointVel(world) : Vector3.Zero;
 
     /// <summary>Segment <paramref name="seg"/>'s pose: rest frame -> body frame (q * v + t).</summary>
     public void SegPose(int seg, out Quaternion q, out Vector3 t)

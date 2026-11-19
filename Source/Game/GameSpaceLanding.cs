@@ -240,14 +240,15 @@ public sealed partial class Game
         return linked ? "unhook it from what it is coupled, wired, piped or tied to first" : null;
     }
 
-    /// <summary>Is this body the ship or something it carries (cargo held in a cargo volume, however deep)?</summary>
+    /// <summary>Is this body the ship or something it carries (cargo held in a cargo volume, or loose in its frame: ConstructFrames.cs, however deep)?</summary>
     private bool Aboard(Construct ship, Construct c)
     {
         for (var guard = 0; guard < 16 && c != null; guard++)
         {
             if (c == ship)
                 return true;
-            if (c.CarriedBy == 0 || Constructs.Get(c.CarriedBy) is not { } up)
+            var by = c.CarriedBy != 0 ? c.CarriedBy : c.Frame;
+            if (by == 0 || Constructs.Get(by) is not { } up)
                 return false;
             c = up;
         }
