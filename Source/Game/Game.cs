@@ -393,6 +393,8 @@ public sealed partial class Game : IDisposable
             Noclip = Local is { NoclipWanted: true },
             Roll = MmuCmdRoll(), // a worn MMU's roll about the look (GameSandboxMmu.cs)
             MmuCoast = MmuCoasting, // a worn MMU's dampeners off (GameSandboxMmu.cs)
+            NoclipBoard = NoclipBoardTake(out var boardAt), // the Board inside key, once (GameNoclip.cs)
+            NoclipBoardAt = boardAt,
         });
     }
 
@@ -999,6 +1001,17 @@ public sealed partial class Game : IDisposable
             if (_pendingInputs[_pendingInputs.Count - count + i].MmuCoast)
                 coast |= 1 << i;
         _w.U8((byte)coast); // trailer: a worn MMU's dampeners off, a bit per command (PilotGear.MmuBrake; protocol 364)
+        var board = 0;
+        for (var i = 0; i < count; i++)
+            if (_pendingInputs[_pendingInputs.Count - count + i].NoclipBoard != 0)
+                board |= 1 << i;
+        _w.U8((byte)board); // trailer: the Board inside key, a bit per command, then each one's construct and aim (ConstructRideInterior.cs; protocol 369)
+        for (var i = 0; i < count; i++)
+            if ((board & 1 << i) != 0)
+            {
+                var c = _pendingInputs[_pendingInputs.Count - count + i];
+                _w.U16(c.NoclipBoard).F32(c.NoclipBoardAt.X).F32(c.NoclipBoardAt.Y).F32(c.NoclipBoardAt.Z);
+            }
         Net.SendToServer(_w.Span, PacketReliability.UnreliableSequenced);
     }
 
@@ -1324,6 +1337,8 @@ public sealed partial class Game : IDisposable
                 Up = p.Sim.RideUp != Vector3.Zero ? p.Sim.RideUpW : Vector3.Zero, RideBody = p.Sim.RideUp != Vector3.Zero ? p.Sim.RideBody : (ushort)0, RideSeg = p.Sim.RideSeg, RideLocal = p.Sim.RideLocal };
         }
 
+        if (SandboxOn)
+            NoclipHoldTick(); // creative: a flyer held in a hull, set down inside once a floor is found (GameNoclip.cs)
         AllocProfile.Mark("carts, snapshots");
         if (Carts.Count > 0 || BuilderRange || Mode == GameMode.Zombies)
             ServerTickCarts(now); // push carts, parked and manned (GameZombies.cs): after the players move, so a stuck cart holds its owner
@@ -1401,6 +1416,7 @@ public sealed partial class Game : IDisposable
         {
             var guess = p.LastInput;
             guess.Seq = p.LastProcessedSeq + 1;
+            guess.NoclipBoard = 0; // (a press, not a held key: never guessed again)
             if (guess.Tick != 0)
                 guess.Tick++; // the next command's stamp: what the client predicted it at (movers, player separation)
             ApplyCmd(p, guess);
@@ -2193,6 +2209,18 @@ public sealed partial class Game : IDisposable
                     var coast = r.U8();
                     for (var i = 0; i < Math.Min(read, 8); i++)
                         cmds[i].MmuCoast = (coast & (1 << i)) != 0;
+                }
+                if (r.Has(1)) // the Board inside key, a bit per command (ConstructRideInterior.cs: filtered in ApplyCmd)
+                {
+                    var board = r.U8();
+                    for (var i = 0; i < Math.Min(read, 8); i++)
+                        if ((board & (1 << i)) != 0 && r.Has(14))
+                        {
+                            cmds[i].NoclipBoard = r.U16();
+                            cmds[i].NoclipBoardAt = new Vector3(r.F32(), r.F32(), r.F32());
+                            if (!float.IsFinite(cmds[i].NoclipBoardAt.X + cmds[i].NoclipBoardAt.Y + cmds[i].NoclipBoardAt.Z))
+                                cmds[i].NoclipBoard = 0;
+                        }
                 }
                 for (var i = 0; i < read; i++)
                 {

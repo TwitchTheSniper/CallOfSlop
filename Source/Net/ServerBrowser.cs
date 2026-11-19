@@ -629,7 +629,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 367: landing leg pods (Karl, 2026-11-18): CActKind.LandingGear (u16 body) at its end; doors gain "held" poses and riding links (drawn, not sent).
     // 368: players as admirals (faction-controllers.md phase 6): CActKind.Fleet at the end of CActKind (a player's fleet group from the command
     //   view); Msg.FleetGroups takes the slot of RemovedObjective (Msg is full).
-    public const ushort ProtocolVersion = 368;
+    // 369: noclip Board inside (creative Sandbox): the input packet ends with a u8 of board bits, one per command, then per set bit a u16 construct and 3 f32 (its rest-frame aim; InputCmd.NoclipBoard); a snapshot fast entry's ride kind 246 is a flyer held for a set-down inside (MoveState.NoclipHold).
+    public const ushort ProtocolVersion = 369;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

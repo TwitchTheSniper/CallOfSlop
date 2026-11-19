@@ -24,6 +24,7 @@ public struct SnapPlayer
     public Vector3 RideUp; // contraption space: their up in its rest frame (protocol 130; zero: not; ConstructRideMove.cs)
     public ushort RideLadder; // climbing this ladder (a part of RideBody) + 1 (protocol 345; 0: not on one; ConstructRideLadder.cs)
     public bool Noclip; // Sandbox: flying with no collision (protocol 126; NoclipMove.cs)
+    public bool NoclipHold; // creative: out of noclip in a construct's frame, held still while the server finds a floor inside (ConstructRideInterior.cs; ride kind 246)
     public byte Canopy; // Sandbox: open or burning (protocol 176; PilotGear.cs)
 }
 
@@ -145,6 +146,7 @@ public static class Snapshot
     public const int LadderBytes = 2;
     public const int NoclipBytes = 1; // (protocol 126: kind 253 alone: flying)
     public const byte NoclipKind = 253;
+    public const byte RideNoclipHoldKind = 246; // (protocol 369: as RideNoclipKind, held still in the frame while the server finds a floor inside; ConstructRideInterior.cs)
     public const byte RideNoclipKind = 248; // (protocol 341: a ride's bytes, flying in noclip in a moving construct's frame; NoclipMove.cs)
     public const byte CanopyKind = 249; // (protocol 176: + the Canopy, 250..252, alone: PilotGear.cs)
     public const int SlowBytes = 20; // 16 + frenzy level and class (protocol 26) + 2 (kits are 4 bytes each since protocol 46)
@@ -204,7 +206,7 @@ public static class Snapshot
         else if (riding)
         {
             var climbing = !p.Noclip && p.RideLadder != 0;
-            w.U8(p.Noclip ? RideNoclipKind : climbing ? RideLadderKind : RideKind).U16(p.RideBody).U8(p.RideSeg).U24(Q24(p.RideLocal.X)).U24(Q24(p.RideLocal.Y)).U24(Q24(p.RideLocal.Z))
+            w.U8(p.Noclip ? (p.NoclipHold ? RideNoclipHoldKind : RideNoclipKind) : climbing ? RideLadderKind : RideKind).U16(p.RideBody).U8(p.RideSeg).U24(Q24(p.RideLocal.X)).U24(Q24(p.RideLocal.Y)).U24(Q24(p.RideLocal.Z))
                 .U8(UpByte(p.RideUp.X)).U8(UpByte(p.RideUp.Y)).U8(UpByte(p.RideUp.Z));
             if (climbing)
                 w.U16(p.RideLadder);
@@ -255,9 +257,10 @@ public static class Snapshot
                     p.SeatPart = r.U16();
                 }
             }
-            else if (p.MantleTicks is RideKind or RideNoclipKind or RideLadderKind && r.Has(RideBytes - 1))
+            else if (p.MantleTicks is RideKind or RideNoclipKind or RideNoclipHoldKind or RideLadderKind && r.Has(RideBytes - 1))
             {
-                p.Noclip = p.MantleTicks == RideNoclipKind;
+                p.Noclip = p.MantleTicks is RideNoclipKind or RideNoclipHoldKind;
+                p.NoclipHold = p.MantleTicks == RideNoclipHoldKind;
                 var ladder = p.MantleTicks == RideLadderKind;
                 p.MantleTicks = 0;
                 p.RideBody = r.U16();

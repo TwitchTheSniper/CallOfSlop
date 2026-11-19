@@ -50,6 +50,7 @@ public sealed partial class Game
         RideBody = p.Alive ? p.Sim.RideBody : (ushort)0, RideSeg = p.Sim.RideSeg, RideLocal = p.Sim.RideLocal, RideUp = p.Sim.RideUp,
         RideLadder = p.Alive && p.Sim.RideBody != 0 && p.Sim.RideLadder != 0 ? (ushort)(p.Sim.RideLadderPart + 1) : (ushort)0,
         Noclip = p.Alive && p.Sim.Noclip,
+        NoclipHold = p.Alive && p.Sim.Noclip && p.Sim.NoclipHold,
         Canopy = p.Alive ? p.Sim.Canopy : (byte)0,
     };
 
@@ -298,7 +299,7 @@ public sealed partial class Game
     private static MoveState MoveOf(in SnapPlayer e, PerkSet perks) => new()
     {
         Position = e.Position, Velocity = e.Velocity, Grounded = e.Grounded, Stance = e.Stance, MantleTicks = e.MantleTicks, MantleTo = e.MantleTo,
-        MovePerk = perks.Movement, BoostTicks = e.Boost, Noclip = e.Noclip, Canopy = e.Canopy,
+        MovePerk = perks.Movement, BoostTicks = e.Boost, Noclip = e.Noclip, NoclipHold = e.NoclipHold, Canopy = e.Canopy,
         RideBody = e.RideBody, RideSeg = e.RideSeg, RideLocal = e.RideLocal, RideWorld = e.Position, RideUp = e.RideUp, RideUpW = e.RideUp, // (RideUpW: the frame's turn is put in by SandboxRideRender and the adopt)
     };
 

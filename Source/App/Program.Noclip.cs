@@ -1,4 +1,5 @@
 using Brutal.ImGuiApi;
+using System.Numerics;
 using Brutal.Numerics;
 
 namespace CallOfSlop;
@@ -28,9 +29,42 @@ public static partial class Program
         return Down(GameAction.CrouchHold) || Down(GameAction.CrouchToggle) || Down(GameAction.Prone) ? b | Buttons.Crouch : b;
     }
 
+    /// <summary>How far (m) the Board inside key reaches along the look.</summary>
+    private const float NoclipBoardReach = 2000f;
+
+    /// <summary>The Board inside key: the construct under the crosshair (or the one whose frame they fly in), and where the look met it.</summary>
+    private static void NoclipBoardInput(Game g, Player me)
+    {
+        SandboxAimRay(g, me, out var eye, out var dir);
+        Construct? c = null;
+        var at = Vector3.Zero;
+        if (g.Constructs.Raycast(eye, dir, NoclipBoardReach, out var hit) && hit.Body is { PartCount: > 0 } aimed)
+            (c, at) = (aimed, aimed.ToLocal(hit.Point));
+        else if (me.Sim.RideBody != 0 && g.Constructs.Get(me.Sim.RideBody) is { } ridden)
+            (c, at) = (ridden, ridden.ToLocal(me.Position));
+        if (c == null)
+        {
+            AudioSystem.Effect(Sfx.HitTick, 0.5f);
+            return;
+        }
+        g.NoclipBoardAsk(c.Id, at);
+    }
+
     private static readonly float4 NoclipColour = new(1f, 0.82f, 0.3f, 0.95f);
 
     /// <summary>The note under the crosshair's top while flying (from the Sandbox ImGui pass).</summary>
+    private static string _boardHint = "";
+    private static int _boardHintKey = int.MaxValue; // (no key has this code: the first call makes the note)
+
+    /// <summary>The note under NOCLIP: the Board inside key (made again only when the key changes: no string a frame).</summary>
+    private static string NoclipBoardHint()
+    {
+        var key = _settings.Bind(GameAction.NoclipBoard);
+        if (key != _boardHintKey)
+            (_boardHintKey, _boardHint) = (key, $"{Keybinds.Name(key)}: board the ship you aim at, inside");
+        return _boardHint;
+    }
+
     private static void DrawNoclipHud()
     {
         if (_game is not { SandboxOn: true, Local: { Alive: true, Sim.Noclip: true } } || _wsNoHands || Ui.CommandOpen) // (the window tool's --no-hands: a scene picture shows no flying note)
@@ -39,6 +73,12 @@ public static partial class Program
         var fast = _down[(int)GameAction.Sprint];
         var text = fast ? "NOCLIP - FAST"u8 : "NOCLIP"u8;
         var s = Ui.Scale;
-        ImGui.GetForegroundDrawList().AddText(new float2(size.X * 0.5f - (fast ? 62 : 30) * s, 64 * s), ImGui.GetColorU32(NoclipColour), text);
+        var draw = ImGui.GetForegroundDrawList();
+        draw.AddText(new float2(size.X * 0.5f - (fast ? 62 : 30) * s, 64 * s), ImGui.GetColorU32(NoclipColour), text);
+        if (_settings.Bind(GameAction.NoclipBoard) != Keybinds.Unbound)
+        {
+            var hint = NoclipBoardHint();
+            draw.AddText(new float2(size.X * 0.5f - hint.Length * 3.5f * s, 82 * s), ImGui.GetColorU32(NoclipColour with { W = 0.7f }), hint);
+        }
     }
 }

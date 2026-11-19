@@ -127,6 +127,8 @@ public static unsafe partial class Program
         LeverSettle(g, now); // (a value just let go stays as shown until the server's answer is in: Program.SandboxLever.cs)
         if (Pressed(GameAction.Noclip) && g.NoclipCreative)
             g.ToggleNoclip(); // creative only (GameNoclip.cs; the server has the last word)
+        if (Pressed(GameAction.NoclipBoard) && g.NoclipAllowed(me))
+            NoclipBoardInput(g, me); // creative only: set down inside the construct aimed at (Program.Noclip.cs)
         // (3, the wrench's key, stays bound and takes out the attach tool as well; 4 and 5 are the kill-streak keys by default, and Sandbox has no streaks: the attach tool and the linking tool take them)
         if (Pressed(GameAction.Weapon3) || Pressed(GameAction.Weapon4) || Pressed(GameAction.Streak1))
             g.SandboxSend(CActKind.Tool, part: (byte)(h.Tool == ConstructTool.Welder ? ConstructTool.None : ConstructTool.Welder));

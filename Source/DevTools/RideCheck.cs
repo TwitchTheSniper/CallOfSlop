@@ -190,7 +190,74 @@ public static class RideCheck
         }
         c.Pos = c.PrevPos = home - Vector3.Transform(-Vector3.UnitZ, c.Rot) * MathF.Min(speed * 2.5f, 120f); // (back over the yard, and short of it by half the flight: the map's edge clamps a flyer too; past 50 m/s the yard is too small, try it in space)
         lapses += NoclipBoard(w, c, speed);
+        lapses += NoclipBoardKey(w, c, speed);
         return lapses;
+    }
+
+    /// <summary>
+    /// The Board inside key (ConstructRideInterior.cs): a noclip flyer 40 m off the moving ship's side aims at its middle and
+    /// presses it; they must be set down inside, under its roof, and stay on that floor while it flies on.
+    /// </summary>
+    /// <summary>
+    /// A flyer held in <paramref name="c"/>'s frame for a set-down inside: the server's search stepped a slice a tick as
+    /// Game.NoclipHoldTick steps it, the ship flying on and the flyer held in it meanwhile, then set down.
+    /// </summary>
+    private static string Settle(ConstructWorld w, Construct c, ref MoveState s, float speed)
+    {
+        if (!s.NoclipHold)
+            return "NOT held";
+        var search = new ConstructRide.InteriorSearch();
+        search.Begin(w, c, s.Position, World.HeightOf(Stance.Stand));
+        var moved = 0f;
+        var start = c.ToLocal(s.Position);
+        while (!search.Step(ConstructRide.InteriorBudgetMs) && search.Ticks < 600)
+        {
+            var vel = Vector3.Transform(-Vector3.UnitZ, c.Rot) * speed;
+            Pose(w, c, c.Pos + vel * World.TickDt, c.Rot, vel, Vector3.Zero);
+            World.Simulate(ref s, new InputCmd { SpeedPct = 100, RideBody = s.RideBody });
+            moved = MathF.Max(moved, (c.ToLocal(s.Position) - start).Length());
+        }
+        if (search.Found)
+            ConstructRide.NoclipSetDown(ref s, c, search.Spot);
+        else
+        {
+            s.NoclipHold = s.Noclip = false;
+            NoclipMove.Leave(ref s, 0, w);
+        }
+        return string.Create(System.Globalization.CultureInfo.InvariantCulture,
+            $"held {search.Ticks} ticks (drifted {moved:0.00} m in the frame), {search.Rays} rays down {search.Columns} columns, {search.WorstMs:0.00} ms at worst a tick, {search.Ms:0.0} ms in all{(search.Found ? "" : ", NO floor inside")}");
+    }
+
+    private static int NoclipBoardKey(ConstructWorld w, Construct c, float speed)
+    {
+        var was = ConstructRide.Bodies;
+        ConstructRide.Bodies = w;
+        try
+        {
+            var mid = (c.LocalMin + c.LocalMax) * 0.5f;
+            var s = new MoveState { Position = c.ToWorld(mid with { X = c.LocalMax.X + 40f }), Noclip = true };
+            World.Simulate(ref s, new InputCmd { SpeedPct = 100, NoclipBoard = c.Id, NoclipBoardAt = mid });
+            var held = Settle(w, c, ref s, speed);
+            var at = c.ToLocal(s.Position);
+            var roofed = s.RideBody == c.Id && w.Raycast(s.Position + s.RideUpW * 0.5f, s.RideUpW, ConstructRide.InteriorRoof, out _, only: c);
+            int grounded = 0, off = 0;
+            for (var k = 0; k < 60 * 2; k++)
+            {
+                var vel = Vector3.Transform(-Vector3.UnitZ, c.Rot) * speed;
+                Pose(w, c, c.Pos + vel * World.TickDt, c.Rot, vel, Vector3.Zero);
+                World.Simulate(ref s, new InputCmd { SpeedPct = 100, RideBody = s.RideBody });
+                w.BlockPlayer(ref s, World.HeightOf(s.Stance), server: true, who: 1);
+                grounded += s.Grounded && s.RideBody == c.Id ? 1 : 0;
+                off += s.RideBody != c.Id ? 1 : 0;
+            }
+            var drift = (c.ToLocal(s.Position) - at).Length();
+            Console.WriteLine($"  board inside key: set down at {at}, {(roofed ? "under its roof" : "NOT under a roof")}, grounded {grounded} of 120 ticks, out of its frame {off}, moved {drift:0.00} m in it; {held}");
+            return s.RideBody != c.Id || off > 0 || grounded < 100 ? 1 : 0;
+        }
+        finally
+        {
+            ConstructRide.Bodies = was;
+        }
     }
 
     /// <summary>
@@ -228,13 +295,11 @@ public static class RideCheck
             Console.WriteLine($"  noclip in: {(caught < 0 ? "NEVER caught" : $"caught at t{caught}")}, out of its frame {lost} ticks after, at {inside} (bounds {c.LocalMin} .. {c.LocalMax})");
             // Leaving noclip there: the game finds room (Game.NoclipLeft), then they ride its frame.
             World.Simulate(ref s, new InputCmd { Yaw = yaw, SpeedPct = 100, RideBody = s.RideBody });
+            var held = s.NoclipHold ? Settle(w, c, ref s, speed) : "not held (not inside its hull)";
             if (s.NoclipExit)
-            {
-                s.NoclipExit = false;
-                s.Position = NoclipMove.ExitSpot(s.Position, 0, w);
-                s.RideWorld = s.Position;
-                ConstructRide.NoclipLanded(ref s);
-            }
+                NoclipMove.Leave(ref s, 0, w); // (as Game.NoclipLeft: out of what they are in, onto its deck)
+            var roofed = s.RideBody == c.Id && w.Raycast(s.Position + s.RideUpW * 0.5f, s.RideUpW, ConstructRide.InteriorRoof, out _, only: c);
+            Console.WriteLine($"  noclip set down at {c.ToLocal(s.Position)}, {(roofed ? "under its roof (inside)" : "with no roof over it")}; {held}");
             var grounded = 0;
             var off = 0;
             for (var k = 0; k < 60 * 3; k++, t++)

@@ -90,6 +90,7 @@ public enum GameAction
     SeatDampeners, // binds version 29: in a seat, a ship's inertia dampeners off or on (ConstructFlight.ToggleDampeners) on Z, which is Prone outside a seat
     SeatMouseSteer, // binds version 30: in a seat, take a ship's nose with the mouse or let it go to look round (ConstructFlight.ToggleMouseSteer) on M, which is Mirror outside a seat
     SeatGear, // binds version 31: in a seat, a craft's landing leg pods out or in (ConstructDoors.ToggleGear) on B
+    NoclipBoard, // binds version 32: creative Sandbox, set down inside the construct aimed at (Source/Constructs/ConstructRideInterior.cs) on End
     COUNT,
 }
 
@@ -210,7 +211,7 @@ public static class Keybinds
             GameAction.ToolWheel or GameAction.Stow or GameAction.DrawPack or GameAction.RotateLeft or GameAction.RotateRight or GameAction.RotateUp
                 or GameAction.RotateDown or GameAction.RollLeft or GameAction.RollRight or GameAction.SandboxInventory or GameAction.FreeRouting or GameAction.SnapSwitch or GameAction.RecentParts
                 or GameAction.ThirdPerson or GameAction.ThirdPersonSide or GameAction.SandboxDrop or GameAction.Noclip or GameAction.BuildMirror or GameAction.BuildLine or GameAction.BuildReplace
-                or GameAction.BuildGantry or GameAction.BuildPlaneUp or GameAction.BuildPlaneDown or GameAction.GantryOrbit or GameAction.SelectMove or GameAction.SelectCopy or GameAction.SelectPaint or GameAction.SelectWeld or GameAction.SelectSave or GameAction.SelectTool or GameAction.StoryWindow or GameAction.FactionWindow or GameAction.Logbook => BindContext.Sandbox,
+                or GameAction.BuildGantry or GameAction.BuildPlaneUp or GameAction.BuildPlaneDown or GameAction.GantryOrbit or GameAction.SelectMove or GameAction.SelectCopy or GameAction.SelectPaint or GameAction.SelectWeld or GameAction.SelectSave or GameAction.SelectTool or GameAction.StoryWindow or GameAction.FactionWindow or GameAction.Logbook or GameAction.NoclipBoard => BindContext.Sandbox,
             // (Sandbox has no scoreboard at all; its inventory is GameAction.SandboxInventory, the Zombies parts inventory stays on its own key)
             GameAction.SeatRollLeft or GameAction.SeatRollRight or GameAction.SeatHook or GameAction.SeatEject or GameAction.SeatRadar or GameAction.SeatDampeners or GameAction.SeatMouseSteer or GameAction.SeatGear => BindContext.Seat,
             GameAction.SpectateNext or GameAction.SpectatePrev or GameAction.Scoreboard or GameAction.Inventory or GameAction.DropItem => BindContext.NotSandbox,
@@ -422,6 +423,7 @@ public static class Keybinds
         Key(GlfwKey.Z), // Inertia dampeners, in a seat: binds version 29 (shares Prone's Z, which a seat doesn't read)
         Key(GlfwKey.M), // Mouse steering on or off, in a seat: binds version 30 (shares Mirror's M, which a seat doesn't read)
         Key(GlfwKey.B), // Landing gear out or in, in a seat: binds version 31
+        Key(GlfwKey.End), // Board inside (creative Sandbox): binds version 32
     ];
 
     /// <summary>
@@ -460,8 +462,9 @@ public static class Keybinds
     /// 28: the command view (Sandbox) on Home added (same rule).
     /// 29: Inertia dampeners in a seat on Z added (same rule; it shares Prone's key, which does nothing in a seat, see <see cref="Overlap"/>).
     /// 30: Mouse steering in a seat on M added (same rule; it shares Mirror's and the selector's M, which a seat doesn't read).
+    /// 31: Landing gear in a seat on B added (same rule). 32: Board inside (creative Sandbox) on End added (same rule).
     /// </summary>
-    public const int DefaultsVersion = 31;
+    public const int DefaultsVersion = 32;
 
     /// <summary>Default keys that changed, per binds version: (version that changed it, action, old default, new default).</summary>
     private static readonly (int Version, int Index, int Old, int New)[] Changes =
@@ -528,6 +531,7 @@ public static class Keybinds
         (29, (int)GameAction.SeatDampeners, Unbound, Key(GlfwKey.Z)),
         (30, (int)GameAction.SeatMouseSteer, Unbound, Key(GlfwKey.M)),
         (31, (int)GameAction.SeatGear, Unbound, Key(GlfwKey.B)),
+        (32, (int)GameAction.NoclipBoard, Unbound, Key(GlfwKey.End)),
     ];
 
     /// <summary>
@@ -702,6 +706,7 @@ public static class Keybinds
             GameAction.SeatDampeners => "Inertia dampeners on or off (in a ship's seat: off, it coasts and the keys only burn)",
             GameAction.SeatMouseSteer => "Mouse steering on or off (in a ship's seat: on, the mouse steers the nose; off, it looks round and A/D turn)",
             GameAction.SeatGear => "Landing gear out or in (in a seat of a craft with landing leg pods: the canopy opens, then the legs come down)",
+            GameAction.NoclipBoard => "Board inside (creative Sandbox: set down on a floor inside the ship or vehicle you aim at, riding with it)",
             _ => a.ToString(),
         };
 
