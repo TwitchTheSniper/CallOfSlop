@@ -498,3 +498,5 @@ unchanged).
 These override the text above where they differ.
 
 1. **Socket kinds:** sockets are universal by default (a generic socket takes any module of its size), but some sockets are restricted to one kind. An engine socket only ever takes engines (a life support module can't go in one). A second reactor must be possible (reactor modules fit generic sockets as well as reactor sockets). A **turret bay** is itself a module: fitted to a socket, it gives turret sockets that turret modules then attach to.
+2. **Size match:** exact; a smaller module goes in a bigger socket through an adapter module.
+3. **Openings in Survival:** the socket cuts the hull itself (an opening-style socket cuts its well when placed, at a cost in time and power), not the Laser Cutter by hand.
