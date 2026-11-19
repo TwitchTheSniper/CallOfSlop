@@ -6,34 +6,52 @@ namespace CallOfSlop;
 
 /// <summary>
 /// Openings (the user, 2026-11-19): a flush shell pod sinks into the floor, wall or ceiling it is welded to, and the surface part
-/// it sits in must not be drawn across its pocket. Each frame <see cref="ConstructRender"/> lists the near flush pods' pockets
-/// here (<see cref="AddCut"/>, at most <see cref="CutMax"/>), as boxes from the render origin; boxes drawn while
-/// <see cref="Cutting"/> is set (the body that holds the pods) carry the cut mark (mode + 4) and the box shader drops their
-/// fragments inside any of them (<c>InCut</c> in <see cref="FragmentSrc"/>). A pocket box stays clear of the pod's own boxes
-/// (inside its rim, above its lining: ShellParts.Pod), so the pod needs no exemption; its lid, frame and shell are drawn later
-/// unmarked (ShellPodRender.cs). The three box programs (alone, instanced, merged) take the list when they next draw after
-/// it changed. Allocates nothing.
+/// it sits in must not be drawn across its pocket. Each frame <see cref="ConstructRender"/> lists the flush pods' pockets nearest
+/// the eye here (<see cref="AddCut"/>, at most <see cref="CutMax"/>, grouped by body), as boxes from the render origin. Boxes
+/// drawn while <see cref="CutCode"/> names a body's own run of them carry the cut mark (mode + 4 x code) and are drawn by the
+/// <c>CUTS</c> variant of the box programs, which drops their fragments inside one of those openings. Everything else is drawn
+/// by the plain programs, which have no discard (it would cost early depth testing). A pocket stays clear of the pod's own
+/// boxes (inside its rim, above its lining: ShellParts.Pod) and below its lid's top, so neither the pod nor what stands on its
+/// lid is cut; its lid, frame and shell are drawn later unmarked (ShellPodRender.cs). Allocates nothing.
 /// </summary>
 public sealed unsafe partial class Renderer
 {
-    /// <summary>The most openings a frame (the shader's <c>uCut</c> holds three rows each).</summary>
+    /// <summary>The most openings a frame (the shader's <c>uCut</c> holds three rows each; a code's count fits in five bits).</summary>
     public const int CutMax = 16;
 
     private readonly float[] _cuts = new float[CutMax * 12];
-    private int _cutCount, _cutVersion = 1, _cutLone, _cutInst, _cutMerged;
-    private int _locCut = -2, _locCutN = -2, _iLocCut = -2, _iLocCutN = -2, _mLocCut = -2, _mLocCutN = -2, _mLocCutOn = -2;
+    private int _cutCount, _cutVersion = 1, _cutInst, _cutMerged;
 
-    /// <summary>While set, boxes drawn carry the cut mark: the openings listed this frame are not drawn on them.</summary>
-    public bool Cutting;
+    // Cut-marked boxes, apart from the plain batch: drawn by the instanced program's cut variant.
+    private readonly float[] _cutBatch = new float[BatchMax * BatchFloats];
+    private int _cutBatchCount;
+    private readonly float[] _cutOne = new float[BatchFloats];
+    private GlVertexArray _cutOneVao;
+    private GlBuffer _cutOneVbo;
+
+    /// <summary>
+    /// While above zero, boxes drawn carry the cut mark for a run of this frame's openings (<see cref="CutRun"/>: a body's own),
+    /// and aren't drawn inside them. Zero: plain boxes.
+    /// </summary>
+    public int CutCode;
 
     /// <summary>The openings so far this frame.</summary>
     public int CutCount => _cutCount;
 
+    /// <summary>Can boxes be cut here (the cut program was made)?</summary>
+    public bool CanCut => Recorder == null && !_instBroken && (_instReady || InitInstanced());
+
+    /// <summary>The cut code for openings first..first+count-1 (0: none).</summary>
+    public static int CutRun(int first, int count) => count <= 0 ? 0 : first * 32 + count;
+
     /// <summary>Starts a frame's (or a camera pass's) list of openings.</summary>
     public void ClearCuts()
     {
+        CutCode = 0;
         if (_cutCount == 0)
             return;
+        if (_cutBatchCount > 0)
+            FlushBatch(); // (the boxes marked for the old list go out with it)
         _cutCount = 0;
         _cutVersion++;
     }
@@ -60,40 +78,73 @@ public sealed unsafe partial class Renderer
         return true;
     }
 
-    /// <summary>The mode a box is drawn with: with the cut mark while <see cref="Cutting"/>.</summary>
-    private int CutMode(int mode) => Cutting && _cutCount > 0 && mode < 4 ? mode + 4 : mode;
+    /// <summary>The mode a box is drawn with: with the cut mark while <see cref="CutCode"/> is set.</summary>
+    private int CutMode(int mode) => CutCode > 0 && _cutCount > 0 && mode < 4 && _instReady ? mode + 4 * CutCode : mode;
 
-    /// <summary>The list into a program (bound) whose copy is older.</summary>
-    private void PushCuts(GlProgram program, ref int locCut, ref int locCutN, ref int version)
+    /// <summary>The list into the bound cut program, if its copy is older.</summary>
+    private void PushCuts(int loc, ref int version)
     {
-        if (version == _cutVersion)
+        if (version == _cutVersion || _cutCount == 0)
             return;
         version = _cutVersion;
-        if (locCut == -2)
-        {
-            fixed (byte* p = "uCut\0"u8)
-                locCut = Native.glGetUniformLocation(program, p);
-            fixed (byte* p = "uCutN\0"u8)
-                locCutN = Native.glGetUniformLocation(program, p);
-        }
-        if (locCut >= 0 && _cutCount > 0)
-            fixed (float* p = _cuts)
-                Native.glUniform4fv(locCut, _cutCount * 3, p);
-        if (locCutN >= 0)
-            Native.glUniform1f(locCutN, _cutCount);
+        fixed (float* p = _cuts)
+            Native.glUniform4fv(loc, _cutCount * 3, p);
     }
 
-    private void PushCutsLone() => PushCuts(_program, ref _locCut, ref _locCutN, ref _cutLone);
-    private void PushCutsInst() => PushCuts(_instProgram, ref _iLocCut, ref _iLocCutN, ref _cutInst);
-    private void PushCutsMerged() => PushCuts(_mergeProgram, ref _mLocCut, ref _mLocCutN, ref _cutMerged);
-
-    /// <summary>The merged program's per-group mark (bound).</summary>
-    private void MergedCutOn(bool on)
+    /// <summary>A cut-marked box into the cut batch (opaque, a plain box). Flushes both batches when it fills.</summary>
+    private void BatchCut(in Matrix4x4 m, Vector3 color, float alpha, int mode, float layer)
     {
-        if (_mLocCutOn == -2)
-            fixed (byte* p = "uCutOn\0"u8)
-                _mLocCutOn = Native.glGetUniformLocation(_mergeProgram, p);
-        if (_mLocCutOn >= 0)
-            Native.glUniform1f(_mLocCutOn, on && _cutCount > 0 ? 1f : 0f);
+        WriteInstance(_cutBatch, _cutBatchCount * BatchFloats, m, color, alpha, mode, layer);
+        if (++_cutBatchCount == BatchMax)
+            FlushBatch();
+    }
+
+    private static void WriteInstance(float[] b, int o, in Matrix4x4 m, Vector3 color, float alpha, int mode, float layer)
+    {
+        b[o] = m.M11; b[o + 1] = m.M12; b[o + 2] = m.M13; b[o + 3] = m.M14;
+        b[o + 4] = m.M21; b[o + 5] = m.M22; b[o + 6] = m.M23; b[o + 7] = m.M24;
+        b[o + 8] = m.M31; b[o + 9] = m.M32; b[o + 10] = m.M33; b[o + 11] = m.M34;
+        b[o + 12] = m.M41; b[o + 13] = m.M42; b[o + 14] = m.M43; b[o + 15] = m.M44;
+        b[o + 16] = color.X; b[o + 17] = color.Y; b[o + 18] = color.Z; b[o + 19] = alpha;
+        b[o + 20] = mode; b[o + 21] = layer;
+    }
+
+    /// <summary>
+    /// One cut-marked box (a contoured shape, a blended box, or one drawn outside a batch) at once, by the instanced program's cut
+    /// variant from a buffer of its own: the plain box program never takes the openings. <paramref name="m"/> is from the origin.
+    /// </summary>
+    private void DrawCutOne(in Matrix4x4 m, Vector3 color, float alpha, int mode, float layer, int shape)
+    {
+        int first = 0, count = 36;
+        if (shape != 0)
+        {
+            if (_shapeVersion != PartShapes.Version)
+                UploadShapes();
+            if (shape + 1 >= _shapeFirst.Count)
+                return;
+            (first, count) = (_shapeFirst[shape], _shapeFirst[shape + 1] - _shapeFirst[shape]);
+        }
+        if (_cutOneVao.Id == 0)
+        {
+            _cutOneVao = GenVertexArray();
+            _cutOneVao.Bind();
+            _cutOneVbo = GenBuffer();
+            Native.glBindBuffer(GL_ARRAY_BUFFER, _cutOneVbo);
+            Native.glBufferData(GL_ARRAY_BUFFER, BatchFloats * sizeof(float), null, GL_STREAM_DRAW);
+            GlDebug.Label(GL_VERTEX_ARRAY, _cutOneVao.Id, "Renderer.cutOne");
+            BoxInstanceAttributes(_cutOneVbo);
+        }
+        WriteInstance(_cutOne, 0, m, color, alpha, mode, layer);
+        InstanceUniforms(_instCutProgram, in _icLoc);
+        _cutOneVao.Bind();
+        Native.glBindBuffer(GL_ARRAY_BUFFER, _cutOneVbo);
+        Native.glBufferData(GL_ARRAY_BUFFER, BatchFloats * sizeof(float), null, GL_STREAM_DRAW); // orphan
+        fixed (float* p = _cutOne)
+            Native.glBufferSubData(GL_ARRAY_BUFFER, 0, BatchFloats * sizeof(float), p);
+        PerfCounters.Draw(count);
+        Native.glDrawArraysInstanced(GL_TRIANGLES, first, count, 1);
+        Native.glBindBuffer(GL_ARRAY_BUFFER, _vbo);
+        _program.Use();
+        _vao.Bind();
     }
 }

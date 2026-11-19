@@ -64,11 +64,17 @@ public static class ConstructShellPod
     /// </summary>
     public const float Wall = 0.06f, Rim = 0.09f, Lining = 0.08f;
 
+    /// <summary>A flush pod's lid top over the surface: its solid's top, where a foot stands (its closed flaps are drawn there).</summary>
+    public const float FlushLid = 0.03f;
+
+    /// <summary>The top of a pod's rim: a flush pod's stands 3 mm over its lid, a bolted-on pod's 3 mm under its top.</summary>
+    public static float RimTop(ShellPodDef pd) => pd.Flush ? pd.Top + 0.003f : pd.Top - 0.003f;
+
     /// <summary>A flush pod's pocket in its part's frame: the box the surface it sinks into is not drawn in (Renderer.Cuts.cs).</summary>
     public static void Pocket(ShellPodDef pd, out Vector3 centre, out Vector3 half)
     {
         var lo = pd.Top - pd.Depth + Lining + 0.005f; // (5 mm above the lining's top)
-        var hi = pd.Top + 0.036f; // (the surface's top is at 0: its seams, studs and skins up to 4 cm proud of it go too)
+        var hi = pd.Top - 0.001f; // (the surface's top is at 0: its seams, studs and skins up to 3 cm proud of it go too; a part standing on the lid doesn't)
         var h = pd.Half - Rim + 0.005f; // (5 mm under the rim, so its inner edge hides where the surface stops)
         centre = new Vector3(0, (lo + hi) * 0.5f, 0);
         half = new Vector3(h, (hi - lo) * 0.5f, h);

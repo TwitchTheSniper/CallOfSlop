@@ -14,7 +14,8 @@ public static class ShellPodRender
 {
     public const float DrawNear = 80f;
     private static readonly Vector3 Cap = new(0.13f, 0.15f, 0.17f), Post = new(0.34f, 0.38f, 0.42f), Plate = new(0.6f, 0.63f, 0.66f),
-        Hazard = new(0.95f, 0.69f, 0.12f), Button = new(0.82f, 0.16f, 0.12f), Lamp = new(0.22f, 0.82f, 0.9f);
+        Hazard = new(0.95f, 0.69f, 0.12f), Button = new(0.82f, 0.16f, 0.12f), Lamp = new(0.22f, 0.82f, 0.9f),
+        LampEmpty = new(0.3f, 0.92f, 0.38f), LampBusy = new(1f, 0.62f, 0.12f), LampBroken = new(0.95f, 0.18f, 0.12f);
 
     private static readonly (Vector3 At, byte Frame)[] _wearers = new (Vector3, byte)[64];
     private static int _wearerCount;
@@ -81,8 +82,9 @@ public static class ShellPodRender
         ConstructShellPod.StandFeet(c, part, frame, out var fwd, out var length);
         var bot = pd.Top - pd.Depth;
         var inner = pd.Half - 0.1f;
-        // A flush pod's lid is two flaps under its rim: they swing down against the pocket's walls first (FlapShare of the
-        // frame's rise), then the frame's head comes up out of the pocket. A bolted-on pod's lid is the head itself.
+        // A flush pod's lid is two flaps inside its rim, their tops at its solid's top (walked on): they swing down against the
+        // pocket's walls first (FlapShare of the frame's rise), then the frame's head comes up out of the pocket between its two
+        // posts. A bolted-on pod's lid is the head itself.
         var open = 1f;
         var head = extend;
         var capBase = pd.Top - 0.002f;
@@ -91,8 +93,8 @@ public static class ShellPodRender
         {
             open = Math.Clamp(extend / FlapShare, 0, 1);
             head = Math.Clamp((extend - FlapShare) / (1 - FlapShare), 0, 1);
-            capBase = FlapTop(pd) - 0.004f;
-            capHalf = pd.Half - 0.125f;
+            capBase = pd.Top - 0.1f;
+            capHalf = pd.Half - 0.198f; // (3 mm inside the posts, which flank it)
             Flaps(gfx, m, pd, open);
         }
         // The head: closed it sits 2 mm under the rim's top (a flush pod's waits under its flaps); out, it tops the frame.
@@ -105,8 +107,8 @@ public static class ShellPodRender
         if (extend > 0.01f && (!pd.Flush || open >= 1f))
         {
             var px = pd.Half - 0.16f;
-            var y0 = pd.Flush ? bot + 0.1f : pd.Top - 0.06f; // (a flush pod's posts stand up from its floor)
-            var y1 = capTop - 0.06f;
+            var y0 = pd.Top - 0.06f;
+            var y1 = pd.Flush ? capTop - 0.002f : capTop - 0.06f; // (a flush pod's posts run up beside its head: it reads as held)
             foreach (var s in (ReadOnlySpan<float>)[-1f, 1f])
                 Box(gfx, m, new Vector3(s * px, (y0 + y1) * 0.5f, 0), new Vector3(0.08f, MathF.Max(0.01f, y1 - y0), 0.08f), Post);
             // The button panel on the right post, at a hand's height in the frame, and a lamp on each post's head.
@@ -116,6 +118,11 @@ public static class ShellPodRender
             foreach (var s in (ReadOnlySpan<float>)[-1f, 1f])
                 Box(gfx, m, new Vector3(s * px, y1 - 0.04f, -0.045f), new Vector3(0.05f, 0.03f, 0.012f), Lamp);
         }
+        // The status lamp on the rim's corner: green empty, amber with a shell in it or at work, red broken.
+        var rimTop = ConstructShellPod.RimTop(pd);
+        var lampAt = pd.Half - 0.035f;
+        var status = pp.Broken ? LampBroken : shell || ConstructShellPod.Holds(pp) ? LampBusy : LampEmpty;
+        gfx.Draw(Matrix4x4.CreateScale(0.03f, 0.012f, 0.03f) * Matrix4x4.CreateTranslation(lampAt, rimTop + 0.004f, -lampAt) * m, status, mode: 2);
         // The platform: from the pod's floor up to the lid.
         var plat = bot + 0.08f + lift * (pd.Top - 0.012f - (bot + 0.08f));
         if (lift > 0.01f || shell)
@@ -159,8 +166,8 @@ public static class ShellPodRender
     /// <summary>The share of a flush pod's frame rise its lid's flaps take to swing open.</summary>
     public const float FlapShare = 0.3f;
 
-    /// <summary>The top of a flush pod's closed flaps: 4 mm under its rim, which hides their outer edges.</summary>
-    private static float FlapTop(ShellPodDef pd) => pd.Top - ConstructShellPod.Rim * 0.5f - 0.001f;
+    /// <summary>The top of a flush pod's closed flaps: 2 mm under its solid's top (where a foot stands), 5 mm under its rim.</summary>
+    private static float FlapTop(ShellPodDef pd) => pd.Top - 0.002f;
 
     /// <summary>
     /// A flush pod's lid: two flaps meeting in the middle, hinged at their outer edges just inside the walls' lining; opened
