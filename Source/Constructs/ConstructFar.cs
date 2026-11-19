@@ -113,6 +113,19 @@ public static class ConstructFar
             c.FarRate = Every;
             n++;
         }
+        if (on)
+            foreach (var c in world.Bodies)
+            {
+                // A loose body in a moving construct's frame steps at its frame's rate (ConstructFrames.cs): met as a fixed
+                // obstacle by a far frame between its steps (or meeting one), it would be braked against a deck that moves on.
+                if (c.Frame == 0 || c.GrabbedBy != 255 || c.NudgeBy != 255 || world.Get(c.Frame) is not { } f || f.FarRate == c.FarRate && f.FarLogic == c.FarLogic)
+                    continue;
+                if (!turn && (c.FarRate > 1 || f.FarRate > 1))
+                    continue; // (rates change on the turn tick only: no tick stepped twice or skipped)
+                var rate = c.Asleep || c.Anchored ? (byte)0 : f.FarRate;
+                n += (rate > 1 ? 1 : 0) - (c.FarRate > 1 ? 1 : 0);
+                (c.FarRate, c.FarLogic) = (rate, f.FarLogic);
+            }
         for (var k = 0; k < world.CouplingCount && n > 0; k++)
         {
             ref var cp = ref world.Couplings[k];

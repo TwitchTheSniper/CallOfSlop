@@ -232,8 +232,12 @@ public static partial class SelfTest
                     bad.Add($"{c.Id} awake, its last pose {server.ServerTick - k.NetTick} ticks old");
                 continue;
             }
-            var off = Vector3.Distance(k.NetPos, c.Pos);
-            var turn = 2 * MathF.Acos(Math.Clamp(MathF.Abs(Quaternion.Dot(k.NetRot, c.Rot)), 0, 1)) * 180 / MathF.PI;
+            // (a body in a moving construct's frame is heard in that frame: protocol 372, ConstructFrames.cs)
+            if (k.NetFrame != (c.Framed ? c.Frame : 0))
+                bad.Add($"{c.Id} heard in frame {k.NetFrame} (host {(c.Framed ? c.Frame : 0)})");
+            var (hostPos, hostRot) = k.NetFrame != 0 ? (c.FramePos, c.FrameRot) : (c.Pos, c.Rot);
+            var off = Vector3.Distance(k.NetPos, hostPos);
+            var turn = 2 * MathF.Acos(Math.Clamp(MathF.Abs(Quaternion.Dot(k.NetRot, hostRot)), 0, 1)) * 180 / MathF.PI;
             if (off > 0.02f || turn > 1f)
                 bad.Add($"{c.Id} {off * 100:0} cm, {turn:0.0} deg off");
             if (k.Asleep != c.Asleep)

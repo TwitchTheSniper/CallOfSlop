@@ -252,6 +252,7 @@ public sealed partial class Game
                 c.SpaceAway = 0;
                 Constructs.StructureDirty.Add(c.Id);
             }
+        RemapFrames(idAs); // (loose bodies in the ship's frame: their frame's new id)
         Constructs.AfterLoad(Constructs.NextTagNow);
         if (skipped > 0)
             Constructs.RelinkAfterSkips();

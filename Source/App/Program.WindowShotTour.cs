@@ -18,7 +18,7 @@ public static partial class Program
     private static long _wsPerfLast;
     private static readonly List<double> _wsPerfMs = [];
 
-    private static bool WsTourKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "places" or "view" or "perf" or "skip" or "open" or "what";
+    private static bool WsTourKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "places" or "view" or "lookat" or "perf" or "skip" or "open" or "what";
 
     private static void WsTourSettings(string[] args)
     {
@@ -125,6 +125,19 @@ public static partial class Program
                 WsSay($"[place] bodies {g.Constructs.Bodies.Count}, players {g.Players.Count}");
                 return true;
             }
+            case "lookat": // "lookat TARGET": the look turned to a target (as "view" takes it) from where the eye is: a joined client, whose jumps the host takes back, looks at the host
+            {
+                if (WsTourTarget(g, arg.Trim(), me) is not { } target)
+                {
+                    WsFail($"lookat TARGET (body N, geo LAT,LON, other or X,Y,Z): \"{arg}\"");
+                    return true;
+                }
+                var to = target - me.Eye;
+                (g.LookYaw, g.LookPitch) = GravityFrames.Curved ? GravityFrames.Angles(me.Position, to) : (MathF.Atan2(to.X, -to.Z), MathF.Asin(Math.Clamp(Vector3.Normalize(to).Y, -1f, 1f)));
+                WsSay(FormattableString.Invariant($"lookat: {to.Length():0.0} m away"));
+                _wsWait = 3;
+                return true;
+            }
             case "view":
             {
                 var bar = arg.LastIndexOf('|');
@@ -156,10 +169,15 @@ public static partial class Program
     {
         if (what.Equals("other", StringComparison.OrdinalIgnoreCase)) // (another player's eye: the host looking at a joined client's face, a suit's helmet)
         {
+            Player? first = null;
             foreach (var other in g.Players.Values)
                 if (other != me && other.Alive)
-                    return other.Eye;
-            return null;
+                {
+                    if (other.InShell)
+                        return other.Eye; // (one in a robot shell first: the chair's sleeper beside it is not who is looked for)
+                    first ??= other;
+                }
+            return first?.Eye;
         }
         if (what.StartsWith("geo ", StringComparison.OrdinalIgnoreCase))
         {

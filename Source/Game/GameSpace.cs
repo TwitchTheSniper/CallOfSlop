@@ -97,6 +97,8 @@ public sealed partial class Game
         SpaceLaunchAfter(f); // (constructs past the sky's edge become ships; ships pose their constructs or come back in)
         SpaceJumpStep(Space); // (jump drives charge and jump; constructs in other systems are posed: GameSpaceJump.cs)
         ConstructCargo.FollowPosed(Constructs); // (what the posed ships carry, where they now are)
+        ConstructFrames.SpaceTimeSpeed = (float)f.Clock.Speed;
+        ConstructFrames.After(Constructs, posed: true, search: SpaceLaunched > 0); // (loose bodies aboard the posed ships: carried by their new poses, ConstructFrames.cs)
         SpaceLandingStep(Space, f); // (a ship within another planetoid's sky lands there, everyone aboard: GameSpaceLanding.cs)
         if (f.Clock.Speed != _spaceSentSpeed || SpaceFuelPercent != _spaceSentFuel)
         {

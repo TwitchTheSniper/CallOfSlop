@@ -132,7 +132,7 @@ public static partial class ConstructPhysics
     {
         v = Vector3.Zero;
         w = Vector3.Zero;
-        if (_dyn[index] || posedMoves && c.SpaceShip != 0)
+        if (_dyn[index] || posedMoves && (c.SpaceShip != 0 || c.CarriedBy != 0 || c.Frame != 0))
         {
             // (between bodies, a ship out of the bubble is posed by its flight, not stepped, but it moves: as the solver's VelSide, so a loose
             // piece aboard it at orbital speed is still beside it, not 3 m a tick away; the ground pass keeps a posed ship still)
@@ -795,8 +795,12 @@ public static partial class ConstructPhysics
                 n = start + ReducePoints(_cand.AsSpan(start, n - start));
             }
         }
-        var moving = _dyn[ia] && (a.Vel.LengthSquared() >= StillSpeed2 || a.AngVel.LengthSquared() >= StillSpeed2);
-        var movingB = _dyn[ib] && (b.Vel.LengthSquared() >= StillSpeed2 || b.AngVel.LengthSquared() >= StillSpeed2);
+        // (in a moving frame, moving is through the frame: a hull doesn't wake what sleeps on it, nor one crate the next; the
+        // frame's own changes of motion wake them, ConstructFrames.Carry)
+        var framePair = a.Frame == b.Id || b.Frame == a.Id;
+        var same = a.Frame != 0 && a.Frame == b.Frame;
+        var moving = !framePair && _dyn[ia] && ((same ? a.Vel - a.FrameV : a.Vel).LengthSquared() >= StillSpeed2 || (same ? a.AngVel - a.FrameW : a.AngVel).LengthSquared() >= StillSpeed2);
+        var movingB = !framePair && _dyn[ib] && ((same ? b.Vel - b.FrameV : b.Vel).LengthSquared() >= StillSpeed2 || (same ? b.AngVel - b.FrameW : b.AngVel).LengthSquared() >= StillSpeed2);
         for (var k = 0; k < n; k++)
         {
             ref var p = ref _cand[k];
