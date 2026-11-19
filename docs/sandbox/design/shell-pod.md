@@ -1,6 +1,6 @@
 # Shell storage pod (design, user 2026-11-18)
 
-A place to park a robot shell when nobody wears it. Drafted with the user by clickable questions and two pictures; build once the user approves the picture. The Shell Gantry (mining-shell.md) is a separate station.
+A place to park a robot shell when nobody wears it. Drafted with the user by clickable questions and two pictures; Approved to build (user, 2026-11-18): build it all after the Shell Gantry merges (both change Shells.json). The Shell Gantry (mining-shell.md) is a separate station.
 
 ## The user's answers (2026-11-18)
 
