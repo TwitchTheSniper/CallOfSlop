@@ -31,7 +31,7 @@ public sealed partial class RouteSearch
     /// <summary>The straight route, or one or two turns, when one passes: the search is done (Found). False: search the lattice.</summary>
     private bool Direct()
     {
-        if (!_flat || _ask.Type is not (RouteType.Conveyor or RouteType.Chute) || _ask.Conduit > 0f || _loose || _lay != LinkLay.Near)
+        if (!_flat || !_closed || _ask.Type is not (RouteType.Conveyor or RouteType.Chute) || _ask.Conduit > 0f || _loose || _lay != LinkLay.Near)
             return false;
         _dirCount = 0;
         var w = _width > 0f ? _width : 0f;
@@ -79,6 +79,18 @@ public sealed partial class RouteSearch
                 for (var j = 0; j < us.Length; j++)
                     if (ts[i] > 0.01f && us[j] > 0.01f)
                         AddDirect(2, _s + d0 * ts[i], _g + d1 * us[j]);
+            // (and the leg across square to either end's way: a U between ports facing the same way, a Z between ports not in line)
+            var dd = Vector3.Dot(Plan(d0), Plan(d1));
+            if (MathF.Abs(dd) > 0.5f)
+                for (var i = 0; i < ts.Length; i++)
+                {
+                    var b = (ts[i] - Vector3.Dot(Plan(v), Plan(d0))) / dd; // (the goal's run that puts the far corner level with the near one along d0)
+                    if (ts[i] > 0.01f && b > 0.01f)
+                        AddDirect(2, _s + d0 * ts[i], _g + d1 * b);
+                    var a = (us[i] + Vector3.Dot(Plan(v), Plan(d1))) / dd;
+                    if (us[i] > 0.01f && a > 0.01f)
+                        AddDirect(2, _s + d0 * a, _g + d1 * us[i]);
+                }
         }
         if (_dirCount == 0)
             return false;
@@ -169,8 +181,8 @@ public sealed partial class RouteSearch
             if (i + 1 < n)
             {
                 var next = Vector3.Normalize(p[i + 1] - p[i]);
-                if (ConstructRoutes.BendRule(_ask.Type, dir, next) != null)
-                    return;
+                if (ConstructRoutes.BendRule(_ask.Type, dir, next) != null || Vector3.Dot(dir, next) < -0.06f)
+                    return; // (no turn past a right angle: a route that doubles back is never the straight way)
                 bentAfter = Vector3.Dot(dir, next) < cos;
             }
             var share = (bentBefore ? 0.5f : 0f) + (bentAfter ? 0.5f : 0f);
