@@ -37,7 +37,7 @@ public static partial class Program
     {
         World = g.Constructs, C = c, Type = _lkType, From = _lkFrom, FromPort = _lkFromPort, Parent = _lkParent, ParentSeg = _lkParentSeg, Junction = _lkJunction,
         Nodes = _lkNodes, Count = _lkCount, To = to, ToPort = port, OpenAt = openAt, OpenHost = openHost,
-        Lay = LinkLayNow, Tidy = true, Conduit = LinkLayNow != LinkLay.Near ? ConstructConduit.AirWall : 0f, // (in the walls: it runs along them, as a pre-built's wiring does)
+        Lay = LinkLayNow, Tidy = true, Grade = ConstructRoutes.Grade, Conduit = LinkLayNow != LinkLay.Near ? ConstructConduit.AirWall : 0f, // (in the walls: it runs along them, as a pre-built's wiring does)
     };
 
     /// <summary>The lay of the link being routed: the tool's setting for a cable or pipe (<see cref="ConstructRoutes.Lay"/>), else on the surface.</summary>

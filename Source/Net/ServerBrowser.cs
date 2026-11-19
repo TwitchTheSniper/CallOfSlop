@@ -635,9 +635,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 372: local-frame physics (docs/sandbox/design/local-frame-physics.md): a loose body in a moving construct's frame sends its pose in that frame
     //   (CPose: pose flag 16, then a u16 frame after the plants' block, and the pose's position, turn, velocity and spin are the frame's); a Full
     //   ends its carried block with a u16 frame and, when set, the frame pose (vec, 4 f32); a digest's sleeping entry flag 2: the pose is the frame's, a u16 frame follows.
-    // 373: robot shell tool arms (Welder, Cutter, Grip and Sprayer Arm): four module part files move part ids; Shells.json modules gain
+    // 373: weld seams (user, 2026-11-19; ConstructSeams.cs): CActKind.SeamBreak (u16 body, u16 part, u16 other part) at the end of CActKind: the attach tool's RMB breaks one seam.
+    // 374: robot shell tool arms (Welder, Cutter, Grip and Sprayer Arm): four module part files move part ids; Shells.json modules gain
     //   "tool" kind (a module byte the wire already carries in Msg.Shell's kit).
-    public const ushort ProtocolVersion = 373;
+    public const ushort ProtocolVersion = 374;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

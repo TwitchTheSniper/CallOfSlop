@@ -114,7 +114,7 @@ public static partial class ConstructRide
             var c = bodies[i];
             if (c.FarRate > 1 && c.Vel == c.VelBefore && !c.Asleep)
                 continue; // (a far body between its steps: its last step's acceleration stands: ConstructFar.cs)
-            var a = !c.MovesNow ? Vector3.Zero : (c.Vel - c.VelBefore) / (World.TickDt * (c.FarRate > 1 ? c.FarRate : 1)); // (a far step is that many ticks' change)
+            var a = !c.MovesNow || c.CarriedBy != 0 ? Vector3.Zero : (c.Vel - c.VelBefore) / (World.TickDt * (c.FarRate > 1 ? c.FarRate : 1)); // (a carried craft throws no rider as before: its carrier's jolts are the carrier's; a far step is that many ticks' change)
             c.Accel = Vector3.Lerp(c.Accel, a, 0.5f);
             c.VelThen = c.VelBefore;
             c.VelBefore = c.Vel;

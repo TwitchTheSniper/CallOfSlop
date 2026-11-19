@@ -119,6 +119,8 @@ public static class ConstructFrames
     {
         if (c.Frame == 0)
             return;
+        if (c.LooseFrom == c.Frame)
+            (c.LooseFrom, c.LooseClear) = (0, 0); // (out of the frame of the ship that let it go: clear of it)
         c.Frame = 0;
         c.FrameNew = false;
         c.FrameDt = 0;
@@ -143,9 +145,13 @@ public static class ConstructFrames
     /// along the up they take (a gravity generator's box gives its own), and wells as everywhere; in space the free fall the ship
     /// itself feels (<see cref="Construct.FrameFree"/>), so the orbit is rest in the frame.
     /// </summary>
-    private static void Pull(Construct c, Construct f, Vector3 com)
+    private static void Pull(Construct c, Construct f, Vector3 com, bool grounded = false)
     {
-        if (ConstructGravity.Generators > 0 && ConstructGravity.GenAt(com, c.Id) >= 0)
+        if (c.LooseFrom == f.Id)
+            c.FrameG = Vector3.Zero; // (just let go by this ship's dock: its contacts with the hull it may lie into are dropped, so no deck pull drops it through; ConstructPhysics.LooseFromCarrier)
+        else if (grounded && f.SpaceShip == 0)
+            c.FrameG = GravityFrames.Curved || GravityFrames.HookCount > 0 ? ConstructGravity.GravityFor(c, com) : new Vector3(0, -ConstructPhysics.GravityAccel, 0); // (held by the map: the world's pull, not a tilted deck's; a wheel fallen off a car that leans on that corner topples as it would beside it)
+        else if (ConstructGravity.Generators > 0 && ConstructGravity.GenAt(com, c.Id) >= 0)
             c.FrameG = ConstructGravity.GravityFor(c, com);
         else
         {
@@ -382,10 +388,10 @@ public static class ConstructFrames
         c.AngVel = f.AngVel + Vector3.Transform(c.FrameSpin, f.Rot);
         c.PrevPos = f.PrevPos + Vector3.Transform(lastPos, f.PrevRot);
         c.PrevRot = Quaternion.Normalize(f.PrevRot * lastRot);
-        Note(c, f, at);
-        Pull(c, f, at);
         var grounded = c.FrameGround;
         c.FrameGround = false;
+        Note(c, f, at);
+        Pull(c, f, at, grounded);
         var local = Vector3.Transform(at - f.Pos, fiq);
         if (!ConstructRide.InFrame(f, local, c.FrameUp) || grounded && fv.LengthSquared() > GroundLeaveSpeed * GroundLeaveSpeed)
             Leave(c); // (out through a hatch, off an open deck, or held by the ground under it: the world's from here, at its own speed)
