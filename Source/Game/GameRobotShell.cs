@@ -504,18 +504,57 @@ public sealed partial class Game
         Span<byte> kit = stackalloc byte[ShellFrames.SlotCount];
         for (var k = 0; k < kit.Length; k++)
             kit[k] = r.Has(1) ? r.U8() : (byte)0; // (its modules: protocol 370)
-        if (Players.TryGetValue(id, out var p))
+        var found = Players.TryGetValue(id, out var p);
+        var heard = found ? _shellScratch : new ShellHeard(); // (a hopper's load is sent as it fills: no allocation for a known player)
+        (heard.On, heard.Chair, heard.Seat, heard.Wear, heard.Frame, heard.HopMat, heard.HopAmt) = (on, chair, seat, wear, frame, hopMat, hopAmt);
+        kit.CopyTo(heard.Kit);
+        if (found)
         {
-            p.InShell = on;
-            (p.ShellChair, p.ShellSeat) = on ? (chair, seat) : ((ushort)0, (ushort)0);
-            p.ShellWear = on ? wear : default;
-            p.ShellFrame = on ? frame : (byte)0;
-            p.Sim.Frame = p.ShellFrame; // (its size: the mover reads it, World.Body)
-            for (var k = 0; k < kit.Length; k++)
-                p.ShellMods[k] = on ? kit[k] : (byte)0;
-            ShellFrames.Refit(p);
-            (p.HopperMaterial, p.HopperAmount) = on ? (hopMat, hopAmt) : ((byte)0, (ushort)0);
+            _shellHeard.Remove(id);
+            ApplyShell(p!, heard);
+            return;
         }
+        // A joiner hears who wears a shell straight after the welcome, before the snapshot that makes their players: kept by id
+        // until then (GetOrAddRemote), as the roster's cosmetics are.
+        if (on)
+            _shellHeard[id] = heard;
+        else
+            _shellHeard.Remove(id);
+        Log($"[shell] player {id} {(on ? "in" : "out of")} a shell before their first snapshot: kept for it");
+    }
+
+    /// <summary>A <see cref="Msg.Shell"/> heard on a client, kept for a player not yet in <see cref="Players"/>.</summary>
+    private sealed class ShellHeard
+    {
+        public bool On;
+        public ushort Chair, Seat, HopAmt;
+        public ShellCond Wear;
+        public byte Frame, HopMat;
+        public readonly byte[] Kit = new byte[ShellFrames.SlotCount];
+    }
+
+    private readonly Dictionary<byte, ShellHeard> _shellHeard = new();
+    private readonly ShellHeard _shellScratch = new();
+
+    /// <summary>Client: a new remote player (GameSnapshots.GetOrAddRemote) takes the shell state heard for them before it.</summary>
+    private void ApplyHeardShell(Player p)
+    {
+        if (_shellHeard.Remove(p.Id, out var heard))
+            ApplyShell(p, heard);
+    }
+
+    private static void ApplyShell(Player p, ShellHeard h)
+    {
+        var on = h.On;
+        p.InShell = on;
+        (p.ShellChair, p.ShellSeat) = on ? (h.Chair, h.Seat) : ((ushort)0, (ushort)0);
+        p.ShellWear = on ? h.Wear : default;
+        p.ShellFrame = on ? h.Frame : (byte)0;
+        p.Sim.Frame = p.ShellFrame; // (its size: the mover reads it, World.Body)
+        for (var k = 0; k < h.Kit.Length; k++)
+            p.ShellMods[k] = on ? h.Kit[k] : (byte)0;
+        ShellFrames.Refit(p);
+        (p.HopperMaterial, p.HopperAmount) = on ? (h.HopMat, h.HopAmt) : ((byte)0, (ushort)0);
     }
 
     // ---- The link-up as this PC's player sees it (Karl, 2026-11-14) ---------------------------------------------------
