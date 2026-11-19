@@ -152,6 +152,11 @@ public static partial class ConstructNet
         w.U16(c.CarriedBy);
         if (c.CarriedBy != 0)
             w.U8(c.CarrySeg).Vec(c.CarryPos).F32(c.CarryRot.X).F32(c.CarryRot.Y).F32(c.CarryRot.Z).F32(c.CarryRot.W);
+        // Protocol 372: in a moving construct's frame (ConstructFrames.cs): the frame, and the pose in it.
+        var framed = c.Framed;
+        w.U16(framed ? c.Frame : (ushort)0);
+        if (framed)
+            w.Vec(c.FramePos).F32(c.FrameRot.X).F32(c.FrameRot.Y).F32(c.FrameRot.Z).F32(c.FrameRot.W);
         // Protocol 97: the freeform welds (board item fw01): each one's joint, welded-on part and fixed pose (exact floats).
         var fwAt = w.Length;
         w.U8(0);
@@ -1187,6 +1192,17 @@ public static partial class ConstructNet
                 throw new MalformedPacketException("a carried construct's pose that doesn't fit");
             c.CarryRot = Quaternion.Normalize(cr);
         }
+        var frame = r.U16(); // protocol 372: in a moving construct's frame
+        var framePos = Vector3.Zero;
+        var frameRot = Quaternion.Identity;
+        if (frame != 0)
+        {
+            framePos = r.Vec();
+            var fr = new Quaternion(r.F32(), r.F32(), r.F32(), r.F32());
+            if (frame == id || !float.IsFinite(framePos.X + framePos.Y + framePos.Z + fr.X + fr.Y + fr.Z + fr.W) || fr.LengthSquared() < 0.5f || framePos.Length() > 4000)
+                throw new MalformedPacketException("a framed construct's pose that doesn't fit");
+            frameRot = Quaternion.Normalize(fr);
+        }
         int welds = r.U8(); // protocol 97: the freeform welds
         var posed = 0;
         for (var k = 0; k < welds; k++)
@@ -1240,16 +1256,23 @@ public static partial class ConstructNet
         SetDrive(c, rpm, note);
         c.ThrustShow = thrust;
         c.SmokeLevel = smoke;
+        if (newer)
+            FrameSwitch(world, c, frame);
+        var (histPos, histRot) = newer && c.NetFrame != 0 ? (framePos, frameRot) : (pos, rot); // (a framed body's history is in its frame)
         if (fresh)
         {
-            c.Pos = c.PrevPos = c.NetPos = c.NetFromPos = pos;
-            c.Rot = c.PrevRot = c.NetRot = c.NetFromRot = rot;
+            c.Pos = c.PrevPos = pos;
+            c.Rot = c.PrevRot = rot;
+            c.NetPos = c.NetFromPos = histPos;
+            c.NetRot = c.NetFromRot = histRot;
             c.NetHistReset();
             if (tick != 0)
-                c.NetHistAdd(tick, pos, rot);
+                c.NetHistAdd(tick, histPos, histRot);
         }
         else if (newer)
-            SetTarget(c, pos, rot, now, tick);
+            SetTarget(c, histPos, histRot, now, tick);
+        if (newer && c.NetFrame != 0)
+            c.NetFrameVel = c.NetFrameSpin = Vector3.Zero;
         if (newer)
         {
             c.Vel = vel;
@@ -1313,7 +1336,7 @@ public static partial class ConstructNet
     /// <summary>Ticks between body digests (2 s; protocol 101).</summary>
     public const int DigestEvery = 120;
 
-    private const int DigestSleeping = 2 + 4 + 1 + 12 + 8, DigestAwake = 2 + 4 + 1;
+    private const int DigestSleeping = 2 + 4 + 1 + 12 + 8 + 2, DigestAwake = 2 + 4 + 1;
 
     /// <summary>
     /// Server: one chunk of the body digest (protocol 101), from body <paramref name="from"/>; returns where the next
@@ -1338,13 +1361,16 @@ public static partial class ConstructNet
             var asleep = Still(c);
             if (w.Length + (asleep ? DigestSleeping : DigestAwake) > PacketWriter.Mtu - 8)
                 break;
-            w.U16(c.Id).U32(StructureHash(c)).U8((byte)(asleep ? 1 : 0));
+            var framed = asleep && c.Framed; // (protocol 372: asleep in a moving frame, its pose in that frame, which is what the client holds)
+            w.U16(c.Id).U32(StructureHash(c)).U8((byte)((asleep ? 1 : 0) | (framed ? 2 : 0)));
             if (asleep)
             {
-                var q = c.Rot;
+                var q = framed ? c.FrameRot : c.Rot;
                 if (q.W < 0)
                     q = -q;
-                w.Vec(c.Pos).U16(S16((short)MathF.Round(q.X * 32767))).U16(S16((short)MathF.Round(q.Y * 32767))).U16(S16((short)MathF.Round(q.Z * 32767))).U16(S16((short)MathF.Round(q.W * 32767)));
+                w.Vec(framed ? c.FramePos : c.Pos).U16(S16((short)MathF.Round(q.X * 32767))).U16(S16((short)MathF.Round(q.Y * 32767))).U16(S16((short)MathF.Round(q.Z * 32767))).U16(S16((short)MathF.Round(q.W * 32767)));
+                if (framed)
+                    w.U16(c.Frame);
             }
             n++;
         }
@@ -1373,9 +1399,11 @@ public static partial class ConstructNet
         {
             var id = r.U16();
             var hash = r.U32();
-            var asleep = (r.U8() & 1) != 0;
+            var sleepFlags = r.U8();
+            var asleep = (sleepFlags & 1) != 0;
             var pos = Vector3.Zero;
             var rot = Quaternion.Identity;
+            ushort frame = 0;
             if (asleep)
             {
                 pos = r.Vec();
@@ -1383,6 +1411,8 @@ public static partial class ConstructNet
                 if (!float.IsFinite(pos.X + pos.Y + pos.Z) || rot.LengthSquared() < 0.5f)
                     throw new MalformedPacketException("a body digest pose that isn't a number");
                 rot = Quaternion.Normalize(rot);
+                if ((sleepFlags & 2) != 0)
+                    frame = r.U16(); // (protocol 372: the pose is in that construct's frame, as the client's history is)
             }
             var c = world.Get(id);
             var wrong = c == null || StructureHash(c) != hash;
@@ -1390,7 +1420,7 @@ public static partial class ConstructNet
             {
                 c.DigestRound = world.DigestRound;
                 if (!wrong && asleep && c.NetTick <= tick) // (the digest's "asleep" is the server's Still: an anchored body without joints counts though awake, and sends no pose saying so, so it is still here too; 2026-11-16: every such body was sent whole again every round)
-                    wrong = !(c.Asleep || c.Anchored && c.JointCount == 0) || Vector3.DistanceSquared(c.NetPos, pos) > 0.02f * 0.02f || MathF.Abs(Quaternion.Dot(c.NetRot, rot)) < 0.99996f; // (2 cm, about 1 degree)
+                    wrong = !(c.Asleep || c.Anchored && c.JointCount == 0) || c.NetFrame != frame || Vector3.DistanceSquared(c.NetPos, pos) > 0.02f * 0.02f || MathF.Abs(Quaternion.Dot(c.NetRot, rot)) < 0.99996f; // (2 cm, about 1 degree)
             }
             if (wrong && world.ResyncCount < world.Resync.Length)
                 world.Resync[world.ResyncCount++] = id;
@@ -1661,7 +1691,7 @@ public static partial class ConstructNet
     /// <summary>A joint's load against its rating in a byte: hundredths, up to 2.55 (the bar's end).</summary>
     public static byte OverByte(float over) => (byte)Math.Clamp(MathF.Round(over * 100), 0, 255);
 
-    private static int PoseSize(Construct c) => PoseBytes + Math.Min(c.JointCount, PoseJoints) * 5 + 4 + (c.HasLogic ? Math.Min(SignalParts(c), PoseSignals) : 0) + 3 + Math.Min(c.RotorCount + c.ControlCount, PoseAir) + WalkSize(c) + (c.CapCapacity > 0 ? 1 : 0) + (c.PlantCount > 0 ? 2 + (c.Gen != GenState.None ? 6 : 0) : 0); // (+ 1: the capacitors' share, protocol 331; + 1: the plants', 335; + 1 the generator set's state, + 6 with a set, 339)
+    private static int PoseSize(Construct c) => PoseBytes + (c.Framed ? 2 : 0) + Math.Min(c.JointCount, PoseJoints) * 5 + 4 + (c.HasLogic ? Math.Min(SignalParts(c), PoseSignals) : 0) + 3 + Math.Min(c.RotorCount + c.ControlCount, PoseAir) + WalkSize(c) + (c.CapCapacity > 0 ? 1 : 0) + (c.PlantCount > 0 ? 2 + (c.Gen != GenState.None ? 6 : 0) : 0); // (+ 1: the capacitors' share, protocol 331; + 1: the plants', 335; + 1 the generator set's state, + 6 with a set, 339)
 
     /// <summary>Rotors and control surfaces a pose carries at most: a window that turns (protocol 120).</summary>
     public const int PoseAir = 24;
@@ -1722,16 +1752,19 @@ public static partial class ConstructNet
 
     private static void WritePose(PacketWriter w, Construct c)
     {
-        var q = c.Rot;
+        // (protocol 372: a body in a moving construct's frame sends its pose and motion in that frame: ConstructFrames.cs)
+        var framed = c.Framed;
+        var q = framed ? c.FrameRot : c.Rot;
         if (q.W < 0)
             q = -q;
-        w.U16(c.Id).Vec(c.Pos)
+        var (vel, ang) = framed ? (c.FrameVel, c.FrameSpin) : (c.Vel, c.AngVel);
+        w.U16(c.Id).Vec(framed ? c.FramePos : c.Pos)
             .U16(S16((short)MathF.Round(q.X * 32767))).U16(S16((short)MathF.Round(q.Y * 32767))).U16(S16((short)MathF.Round(q.Z * 32767))).U16(S16((short)MathF.Round(q.W * 32767)))
-            .U16(S16(Cm(c.Vel.X / 4))).U16(S16(Cm(c.Vel.Y / 4))).U16(S16(Cm(c.Vel.Z / 4)))
-            .U16(S16(Mrad(c.AngVel.X))).U16(S16(Mrad(c.AngVel.Y))).U16(S16(Mrad(c.AngVel.Z))) // (protocol 102: riders leave with the deck's turning speed too; ConstructRide.cs)
+            .U16(S16(Cm(vel.X / 4))).U16(S16(Cm(vel.Y / 4))).U16(S16(Cm(vel.Z / 4)))
+            .U16(S16(Mrad(ang.X))).U16(S16(Mrad(ang.Y))).U16(S16(Mrad(ang.Z))) // (protocol 102: riders leave with the deck's turning speed too; ConstructRide.cs)
             .U8(unchecked((byte)(sbyte)Math.Clamp(MathF.Round(c.Steer * 100), -127, 127)))
             .U8(c.Driver)
-            .U8((byte)((c.Asleep ? PoseAsleep : 0) | (c.LegCount > 0 ? PoseWalker : 0) | (c.CapCapacity > 0 ? PoseCap : 0) | (c.PlantCount > 0 ? PosePlant : 0))) // (protocol 229: a walk block follows the rotors; 331: the capacitors' share after it; 335: the plants' share after that)
+            .U8((byte)((c.Asleep ? PoseAsleep : 0) | (c.LegCount > 0 ? PoseWalker : 0) | (c.CapCapacity > 0 ? PoseCap : 0) | (c.PlantCount > 0 ? PosePlant : 0) | (framed ? PoseFrame : 0))) // (protocol 229: a walk block follows the rotors; 331: the capacitors' share after it; 335: the plants' share after that)
             .U8((byte)MathF.Round(ConstructPower.Share(c) * 255)).U8(PowerFlags(c)).U8(GearOut(c)).F32(c.Fuel) // (protocol 83; 117: a float, a capital tank holds millions of litres)
             .U16(RpmOut(c)).U8((byte)c.Note) // (protocol 86)
             .U8(ShareOut(c.ThrustShow)).U8(ShareOut(MathF.Max(c.SmokeLevel, c.BurnShow))); // (protocol 117)
@@ -1759,6 +1792,8 @@ public static partial class ConstructNet
             if (c.Gen != GenState.None)
                 w.F32(c.GenMax).U8(GenOutByte(c)).U8(GenDemandByte(c));
         }
+        if (framed)
+            w.U16(c.Frame); // (protocol 372: the frame whose pose this is)
         // The signal parts' values, in part order (only with logic: the client knows which parts they are): the first
         // ordinal (u16) and how many (u16): all of them, or a window that turns (protocol 117).
         var at = w.Length;
@@ -1880,6 +1915,7 @@ public static partial class ConstructNet
                     c.GenDemand = genDraw;
                 }
             }
+            var frame = (sleepByte & PoseFrame) != 0 ? r.U16() : (ushort)0; // (protocol 372: the pose is in this construct's frame)
             int signalFrom = r.U16();
             int signals = r.U16();
             var sigs = c != null && !stale ? Signals(c) : default;
@@ -1891,7 +1927,15 @@ public static partial class ConstructNet
             }
             if (c == null || stale || !float.IsFinite(pos.X + pos.Y + pos.Z) || q.LengthSquared() < 0.5f)
                 continue;
+            FrameSwitch(world, c, frame);
             SetTarget(c, pos, Quaternion.Normalize(q), now, tick);
+            if (c.NetFrame != 0)
+            {
+                // (the frame's motion: the world's comes from the frame's drawn motion every frame, FrameFollow)
+                (c.NetFrameVel, c.NetFrameSpin) = (vel, ang);
+                if (world.Get(c.NetFrame) is { } f)
+                    (vel, ang) = (f.PointVel(f.ToWorld(pos)) + Vector3.Transform(vel, f.Rot), f.AngVel + Vector3.Transform(ang, f.Rot));
+            }
             c.Vel = vel;
             c.AngVel = ang;
             c.Steer = steer;
@@ -1923,7 +1967,7 @@ public static partial class ConstructNet
         if (rt >= ticks[n - 1])
         {
             var ahead = (float)Math.Min(rt - ticks[n - 1], MaxAheadTicks) * World.TickDt;
-            c.Pos = c.NetHistPos[n - 1] + (c.Asleep ? Vector3.Zero : c.Vel * ahead);
+            c.Pos = c.NetHistPos[n - 1] + (c.Asleep ? Vector3.Zero : HistVel(c) * ahead);
             c.Rot = c.NetHistRot[n - 1];
             return;
         }
@@ -2041,8 +2085,8 @@ public static partial class ConstructNet
         var gap = rt - c.NetRawRt; // (NaN when there was no raw sample last frame)
         if (!(gap > 0 && gap < 30))
         {
-            c.NetRawVel = c.Asleep ? Vector3.Zero : c.Vel;
-            c.NetRawSpin = c.Asleep ? Vector3.Zero : c.AngVel;
+            c.NetRawVel = c.Asleep ? Vector3.Zero : HistVel(c);
+            c.NetRawSpin = c.Asleep ? Vector3.Zero : c.NetFrame != 0 ? c.NetFrameSpin : c.AngVel;
             if (!(gap == 0))
             {
                 c.NetOffPos = c.NetOffVel = c.NetOffRot = c.NetOffSpin = Vector3.Zero;
@@ -2098,6 +2142,111 @@ public static partial class ConstructNet
             c.Pos = raw + c.NetOffPos;
             c.Rot = Quaternion.Normalize(FromRotVec(c.NetOffRot) * rawRot);
         }
+    }
+
+    /// <summary>Client: the velocity a body's pose history moves at (in its frame when the history is a frame's: protocol 372).</summary>
+    private static Vector3 HistVel(Construct c) => c.NetFrame != 0 ? c.NetFrameVel : c.Vel;
+
+    /// <summary>
+    /// Client, every frame after the poses are blended: each body whose history is in a moving construct's frame (local-frame
+    /// physics, ConstructFrames.cs) is drawn where that frame is drawn now, its blended frame pose carried by it, its world
+    /// motion the frame's there plus its own; so it cannot drift from the deck on screen. Allocates nothing.
+    /// </summary>
+    public static void FrameFollow(ConstructWorld world)
+    {
+        foreach (var c in world.Bodies)
+        {
+            if (c.NetFrame == 0)
+                continue;
+            if (world.Get(c.NetFrame) is not { } f)
+            {
+                FrameSwitch(world, c, 0); // (its frame went: drawn where its history last put it, in the world)
+                continue;
+            }
+            var (lp, lq) = (c.Pos, c.Rot); // (Blend sampled the frame pose into these)
+            c.Pos = f.Pos + Vector3.Transform(lp, f.Rot);
+            c.Rot = Quaternion.Normalize(f.Rot * lq);
+            var at = c.WorldCom;
+            c.Vel = f.PointVel(at) + (c.Asleep ? Vector3.Zero : Vector3.Transform(c.NetFrameVel, f.Rot));
+            c.AngVel = f.AngVel + (c.Asleep ? Vector3.Zero : Vector3.Transform(c.NetFrameSpin, f.Rot));
+        }
+    }
+
+    /// <summary>
+    /// Client: body <paramref name="c"/>'s poses are from now on in construct <paramref name="to"/>'s frame (0: the world's).
+    /// The history heard so far is turned into the new frame by where the old and the new frame were drawn at each pose's tick,
+    /// so a body that comes into a frame or leaves one is drawn on through it without a jump.
+    /// </summary>
+    internal static void FrameSwitch(ConstructWorld world, Construct c, ushort to)
+    {
+        if (c.NetFrame == to)
+            return;
+        var from = c.NetFrame != 0 ? world.Get(c.NetFrame) : null;
+        var into = to != 0 ? world.Get(to) : null;
+        if (to != 0 && into == null)
+            to = 0; // (a frame this client doesn't hold yet: the pose is taken as it is; the next one sorts it)
+        for (var k = 0; k < c.NetHistCount; k++)
+        {
+            var p = c.NetHistPos[k];
+            var q = c.NetHistRot[k];
+            if (from != null)
+            {
+                FrameAt(from, c.NetHistTick[k], out var fp, out var fq);
+                (p, q) = (fp + Vector3.Transform(p, fq), Quaternion.Normalize(fq * q));
+            }
+            if (into != null)
+            {
+                FrameAt(into, c.NetHistTick[k], out var ip, out var iq);
+                var inv = Quaternion.Conjugate(iq);
+                (p, q) = (Vector3.Transform(p - ip, inv), Quaternion.Normalize(inv * q));
+            }
+            c.NetHistPos[k] = p;
+            c.NetHistRot[k] = q;
+        }
+        // The untimed path's two poses, by where the frames are now.
+        for (var k = 0; k < 2; k++)
+        {
+            var p = k == 0 ? c.NetPos : c.NetFromPos;
+            var q = k == 0 ? c.NetRot : c.NetFromRot;
+            if (from != null)
+                (p, q) = (from.Pos + Vector3.Transform(p, from.Rot), Quaternion.Normalize(from.Rot * q));
+            if (into != null)
+            {
+                var inv = Quaternion.Conjugate(into.Rot);
+                (p, q) = (Vector3.Transform(p - into.Pos, inv), Quaternion.Normalize(inv * q));
+            }
+            if (k == 0)
+                (c.NetPos, c.NetRot) = (p, q);
+            else
+                (c.NetFromPos, c.NetFromRot) = (p, q);
+        }
+        c.NetHistVer++;
+        c.NetRawRt = c.NetRawRt0 = double.NaN; // (the smoothing starts again in the new frame)
+        c.NetOffPos = c.NetOffVel = c.NetOffRot = c.NetOffSpin = Vector3.Zero;
+        c.NetFrame = to;
+        c.Frame = to;
+        if (to == 0)
+            c.NetFrameVel = c.NetFrameSpin = Vector3.Zero;
+        else if (into != null)
+        {
+            var inv = Quaternion.Conjugate(into.Rot);
+            c.NetFrameVel = Vector3.Transform(c.Vel - into.PointVel(c.WorldCom), inv);
+            c.NetFrameSpin = Vector3.Transform(c.AngVel - into.AngVel, inv);
+        }
+    }
+
+    /// <summary>Client: where frame <paramref name="f"/> is drawn at server tick <paramref name="tick"/> (its own pose history; as it is now when it has none).</summary>
+    private static void FrameAt(Construct f, uint tick, out Vector3 pos, out Quaternion rot)
+    {
+        if (f.NetHistCount == 0)
+        {
+            (pos, rot) = (f.Pos, f.Rot);
+            return;
+        }
+        var (p, q) = (f.Pos, f.Rot);
+        SampleAt(f, tick);
+        (pos, rot) = (f.Pos, f.Rot);
+        (f.Pos, f.Rot) = (p, q);
     }
 
     private static void Damp(ref Vector3 x, ref Vector3 v, float t, float e)
@@ -2174,6 +2323,7 @@ public static partial class ConstructNet
                 ro.Angle = ro.Omega > 0 ? (ro.Angle + ro.Sense * ro.Omega * dt) % MathF.Tau : 0; // (drawn turning, from its speed in the pose)
             }
         }
+        FrameFollow(world); // (bodies in a moving construct's frame, where their frames are drawn now: protocol 372)
         ConstructCargo.FollowAll(world); // (what frozen cargo volumes carry, where their carriers are drawn now)
         world.GridMoved(); // (the client's broadphase: its ray tests and player blocking see the bodies where they are drawn)
     }

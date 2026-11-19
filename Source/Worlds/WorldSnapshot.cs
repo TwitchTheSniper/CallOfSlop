@@ -6,7 +6,7 @@ namespace CallOfSlop;
 /// <summary>A body's own fields in a <see cref="WorldSnapshot"/>; its parts, links, joints and routes are slices of the snapshot's arrays.</summary>
 public struct BodySnap
 {
-    public ushort Id, CarriedBy, CarryTag, CarryPart, SpaceShip;
+    public ushort Id, CarriedBy, CarryTag, CarryPart, SpaceShip, Frame; // (Frame: the moving construct whose frame it is in, ConstructFrames.cs)
     public byte Owner, FrozenBy, CarrySeg;
     public bool Wreck, Asleep, Damaged, Pinned, Frozen, HoverOn;
     public int Root, Gear;

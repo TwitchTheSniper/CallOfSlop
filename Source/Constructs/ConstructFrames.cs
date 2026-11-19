@@ -52,7 +52,7 @@ public static class ConstructFrames
 
     /// <summary>May <paramref name="c"/> ride a frame (a loose, free body that carries none itself)?</summary>
     public static bool CanRide(Construct c) =>
-        c.PartCount > 0 && !c.Anchored && c.CarriedBy == 0 && c.SpaceShip == 0 && !c.Frozen && !c.Pinned && c.HeldBy == 0 && c.NudgeBy == 255;
+        c.PartCount > 0 && !c.Anchored && c.CarriedBy == 0 && c.SpaceShip == 0 && !c.Frozen && !c.Pinned && c.HeldBy == 0 && c.NudgeBy == 255 && c.LegCount == 0; // (a walker's feet are drawn in the world: not in a frame)
 
     /// <summary>May <paramref name="f"/> be <paramref name="c"/>'s frame (free, bigger and heavier, in no frame itself)?</summary>
     public static bool CanCarry(Construct f, Construct c) =>

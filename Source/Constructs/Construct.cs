@@ -365,7 +365,7 @@ public sealed partial class Construct
     internal int FrameRiders;
     // Client: the newest pose heard was in a frame (Frame), so the pose history holds frame poses.
     internal ushort NetFrame;
-    internal Vector3 NetFrameVel;
+    internal Vector3 NetFrameVel, NetFrameSpin;
 
     /// <summary>Server: its velocity was just set from a moving frame (let go, cut free): it keeps that speed past the physics' limit.</summary>
     internal void KeepSpeed() => SpeedKept = Vel.Length();
