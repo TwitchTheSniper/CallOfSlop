@@ -492,3 +492,9 @@ unchanged).
    maker's own asking price for player modules sold through a station.
 10. **Existing ships.** Recommended: leave the shipped ships as they are and add one showcase ship built on sockets. Else:
     rework the Zero Day's PDC rings and drives into sockets and modules.
+
+## The user's answers (2026-11-19)
+
+These override the text above where they differ.
+
+1. **Socket kinds:** sockets are universal by default (a generic socket takes any module of its size), but some sockets are restricted to one kind. An engine socket only ever takes engines (a life support module can't go in one). A second reactor must be possible (reactor modules fit generic sockets as well as reactor sockets). A **turret bay** is itself a module: fitted to a socket, it gives turret sockets that turret modules then attach to.
