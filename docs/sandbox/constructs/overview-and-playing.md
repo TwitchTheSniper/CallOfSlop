@@ -379,6 +379,16 @@ Creative worlds only (the map's `infiniteParts`; the same test as the physics gu
   `NoclipMoved`) until clear of the padded frame (`InFrame`). Leaving noclip there finds room as anywhere, then the spot goes
   into the frame (`NoclipLanded`) and they fall onto its deck, not left behind. A snapshot sends such a flyer as a ride with
   extension kind 248 (protocol 341). `--ride-check` ends each ship with this (a still flyer in its path).
+- **Set down inside (2026-11-18).** Leaving noclip in a construct's frame no longer climbs straight up out of the hull:
+  `NoclipMove.Leave` asks `ConstructRide.InteriorSpot` (ConstructRideInterior.cs) for the nearest walkable floor with room
+  for a standing body (the frame mover's own shapes, skin included, `FrameRoom`) under the construct's roof (8 m), else a
+  spot beside a seat (`ExitDeck`), else the nearest floor with headroom (an open truck bed); only with none does the old
+  climb run. The search runs in the rest frame along the rider's up, columns in rings round the start, decks near the
+  start's height first, at most 2,400 rays; the last answer is kept for the client's replays. **Board inside** (End,
+  `GameAction.NoclipBoard`, creative only) aims the look at any construct up to 2 km away (or the one they fly in) and sets
+  them down inside it the same way, riding it: the input carries the body and the aim in its rest frame
+  (`InputCmd.NoclipBoard`, a trailer, protocol 369), so the server and the prediction step it alike. About 5-10 ms on the
+  Zero Day or the Titan Walker, once per press; `--ride-check` prints the time and the spot for each ship.
 - **Speeds.** 10 m/s, Sprint 40 m/s. Sprint held on keeps building to 240 m/s in about 5 s, worked out from the velocity alone,
   so it needs no state or wheel and a snapshot carries it.
 - **Bounds.** The map's rectangle, 200 m under the lowest ground to 2 km over the highest; a shaped map's outline isn't
