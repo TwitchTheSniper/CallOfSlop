@@ -180,10 +180,7 @@ public static class ConstructFrames
         var rest = a - f.SpaceAccel - c.FrameGrav;
         c.FrameGrav += rest * 0.1f;
         c.FrameFree = -f.SpaceAccel - (rest.LengthSquared() > HitFelt * HitFelt ? rest : Vector3.Zero);
-        _dbgRest = rest.Length();
     }
-    private static float _dbgRest;
-    private static readonly bool Dbg = Environment.GetEnvironmentVariable("COS_FRAMES_DBG") == "1";
 
     /// <summary>A ship out of the bubble's change of motion this far (m/s2) off its drive and its fall is a hit, and is felt.</summary>
     public const float HitFelt = 3f;
@@ -357,8 +354,6 @@ public static class ConstructFrames
             }
             c.FramePos = comL - Vector3.Transform(c.Com, c.FrameRot);
         }
-        if (Dbg && posed && !c.Asleep)
-            Console.WriteLine(FormattableString.Invariant($"[framedbg] {c.Id} felt {c.FrameFree.Length():0.00} acc {f.SpaceAccel.Length():0.00} rest {_dbgRest:0.00} dpos {(c.FramePos - lastPos).Length() * 1000:0.00} mm move {c.FrameMove.Length() * 1000:0.00} frel {c.FrameVel.Length():0.000} prev {(f.PrevPos - f.Pos).Length():0.000}"));
         c.Rot = Quaternion.Normalize(f.Rot * c.FrameRot);
         c.Pos = f.Pos + Vector3.Transform(c.FramePos, f.Rot);
         var at = c.WorldCom;

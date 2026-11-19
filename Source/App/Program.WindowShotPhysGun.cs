@@ -167,12 +167,11 @@ public static partial class Program
             var fid = g.IsServer ? b.Frame : b.NetFrame;
             if (fid == 0 || g.Constructs.Get(fid) is not { } f || Vector3.Distance(b.WorldCom, me.Position) > 400f)
                 continue;
+            // (the frame's drawn turn as a turn, not from the differences of points kilometres out: their floats' grain
+            // turned the axes by a milliradian, 2-3 cm at 24 m)
             var fp = g.DrawnPoint(f, f.Pos);
-            var fx = g.DrawnPoint(f, f.Pos + Vector3.Transform(Vector3.UnitX, f.Rot)) - fp;
-            var fy = g.DrawnPoint(f, f.Pos + Vector3.Transform(Vector3.UnitY, f.Rot)) - fp;
-            var fz = Vector3.Cross(fx, fy);
-            var bp = g.DrawnPoint(b, b.WorldCom) - fp;
-            var local = new Vector3(Vector3.Dot(bp, fx), Vector3.Dot(bp, fy), Vector3.Dot(bp, fz));
+            var fq = g.IsServer && fp != f.Pos ? Quaternion.Normalize(Quaternion.Slerp(f.PrevRot, f.Rot, g.TickAlpha)) : f.Rot;
+            var local = Vector3.Transform(g.DrawnPoint(b, b.WorldCom) - fp, Quaternion.Conjugate(fq));
             if (_wsFw.TryGetValue(b.Id, out var e) && e.Frame == fid)
                 _wsFw[b.Id] = (e.First, local, MathF.Max(e.Jump, Vector3.Distance(local, e.Last)), e.Frames + 1, fid);
             else
