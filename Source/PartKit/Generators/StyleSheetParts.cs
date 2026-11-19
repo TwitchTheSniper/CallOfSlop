@@ -78,7 +78,7 @@ public sealed class StyleSheetParts : IPartGenerator
     private static Kit Locker(string name, string desc, string color)
     {
         var p = new Part(name, Small, Lockers, desc, role: "storage", tool: "wrench", material: "steel", color: color, group: Group);
-        p.Set(("finish", "painted steel"));
+        p.Set(("finish", "painted steel"), ("collider", "boxes")); // (the hidden shell collides; the looks' hulls don't)
         foreach (var (mn, mx) in new (double[], double[])[]
         {
             ([-0.3, 0, -0.25], [0.3, 0.085, 0.2]), ([-0.3, 1.75, -0.25], [0.3, 1.9, 0.2]), ([-0.3, 0.085, -0.25], [0.3, 1.75, -0.215]),
@@ -257,6 +257,259 @@ public sealed class StyleSheetParts : IPartGenerator
         return k.P;
     }
 
+
+    // ---- Reactors (Karl, 2026-11-19: "let's try reactors using the new component sizing system"). Each is a reactor module as
+    // docs/sandbox/design/module-sockets.md draws one: whatever stands on a Module Plug, the plug plate a whole-metre footprint
+    // (1x1, 2x2, 3x3 here) with bolts every 0.5 m round its rim, lifting lugs at the corners and its coupling block on the +z
+    // edge. Every variant is drawn from the footprint n, so one look makes all three sizes. Proud style: it stands on the plate.
+    private const string Reactors = "Reactors";
+    private const string Plasma = "#6fe9ff", Hot = "#ffd27a", Violet = "#b98cff", Coolant = "#3f7fd8";
+
+    private static double R4(double v) => Py.Round(v, 4);
+
+    /// <summary>A reactor module's part: the plug plate, its bolts, lugs and couplings, a hidden solid for what collides.</summary>
+    private static Kit Reactor(string look, int n, string desc, double height)
+    {
+        var name = $"Style Reactor {look} {n}x{n}";
+        var p = new Part(name, Medium, Reactors, desc, role: "frame", tool: "welder", material: "steel", color: Body, group: Group);
+        p.Set(("finish", "painted steel"), ("collider", "boxes"));
+        var h = n / 2.0;
+        p.Add(Box([-h, 0, -h], [h, R4(height * 0.92), h], Body, hidden: true)); // (what collides: the module's bulk)
+        var k = new Kit(p);
+        // The plug plate: 80 mm, bolts every 0.5 m round the rim, a lifting lug at each corner, the coupling block on +z.
+        k.Box(-h, 0, -h, h, 0.08, h, Dark, "dirty steel");
+        for (var i = 0; i < n * 2; i++)
+        {
+            var u = -h + 0.25 + i * 0.5;
+            foreach (var (x, z) in new[] { (u, -h + 0.06), (u, h - 0.06), (-h + 0.06, u), (h - 0.06, u) })
+                k.Box(x - 0.022, 0.07, z - 0.022, x + 0.022, 0.1, z + 0.022, Bare, "steel");
+        }
+        foreach (var sx in new[] { -1.0, 1.0 })
+            foreach (var sz in new[] { -1.0, 1.0 })
+                k.Box(sx * (h - 0.14), 0.07, sz * (h - 0.16), sx * (h - 0.1), 0.2, sz * (h - 0.1), HazardY, "hazard paint");
+        k.Box(-0.2, 0.07, h - 0.16, 0.2, 0.24, h - 0.03, Mid, "painted steel"); // (the coupling block)
+        k.Glow(-0.15, 0.17, h - 0.031, -0.1, 0.21, h - 0.02, Green); // (power: live)
+        k.Glow(-0.05, 0.17, h - 0.031, 0.0, 0.21, h - 0.02, Plasma); // (data)
+        k.Box(0.06, 0.12, h - 0.034, 0.16, 0.2, h - 0.02, Coolant, "painted steel"); // (coolant)
+        p.Sock("bottom", [0, 0, 0], "-y", Medium);
+        p.Stats(1500 * n * n, 900 * n * n, 12, 6.0);
+        return k;
+    }
+
+    /// <summary>An upright prism's points round (cx, cz): <paramref name="sides"/> corners at radius r, from y0 to y1.</summary>
+    private static IEnumerable<double[]> Cyl(double cx, double cz, double r, double y0, double y1, int sides = 8, double turn = 0.5)
+    {
+        for (var i = 0; i < sides; i++)
+        {
+            var a = (i + turn) * 2 * Math.PI / sides;
+            yield return [cx + r * Math.Cos(a), y0, cz + r * Math.Sin(a)];
+            yield return [cx + r * Math.Cos(a), y1, cz + r * Math.Sin(a)];
+        }
+    }
+
+    /// <summary>A piece of a ring about the y axis: from angle a0 to a1, radius rIn to rOut, height y0 to y1 (a stave, a ring segment).</summary>
+    private static IEnumerable<double[]> Arc(double rIn, double rOut, double y0, double y1, double a0, double a1)
+    {
+        foreach (var a in new[] { a0, a1 })
+            foreach (var r in new[] { rIn, rOut })
+                foreach (var y in new[] { y0, y1 })
+                    yield return [r * Math.Cos(a), y, r * Math.Sin(a)];
+    }
+
+    /// <summary>A square-section ring segment about the y axis: radius big +/- tube, height cy +/- tube, angle a0 to a1.</summary>
+    private static IEnumerable<double[]> Torus(double big, double tube, double cy, double a0, double a1)
+    {
+        return Arc(big - tube, big + tube, cy - tube, cy + tube, a0, a1);
+    }
+
+    /// <summary>A: the ring. A tokamak's square-section ring in armoured segments, the plasma showing in the gaps, round a central column.</summary>
+    private static Part TokamakReactor(int n)
+    {
+        var H = 1.0 + 0.55 * n;
+        var k = Reactor("A Ring", n, "A: a tokamak ring in armoured segments, cyan plasma showing in the gaps, round a central column on four legs.", H);
+        var big = 0.3 * n + 0.04;
+        var tube = 0.07 + 0.045 * n;
+        var cy = H * 0.5;
+        const int segs = 12;
+        for (var i = 0; i < segs; i++)
+        {
+            var a0 = i * 2 * Math.PI / segs + 0.06;
+            var a1 = (i + 1) * 2 * Math.PI / segs - 0.06;
+            k.Hull(Torus(big, tube, cy, a0, a1), Mid, "painted steel");
+            k.Hull(Arc(big + tube - 0.004, big + tube + 0.012, cy - tube * 0.35, cy + tube * 0.35, a0 + 0.04, a1 - 0.04), Body, "painted steel"); // (a band on its outer face)
+        }
+        for (var i = 0; i < segs; i++) // (the plasma: a thinner ring inside, split between the armour's joints)
+            k.Hull(Torus(big, tube * 0.72, cy, (i - 0.5) * 2 * Math.PI / segs + 0.01, (i + 0.5) * 2 * Math.PI / segs - 0.01), Plasma, "", glow: true);
+        // The central column and its cap.
+        k.Hull(Cyl(0, 0, 0.11 + 0.06 * n, 0.08, H * 0.94), Body, "painted steel");
+        k.Hull(Cyl(0, 0, 0.14 + 0.07 * n, H * 0.94 - 0.004, H), Trim, "painted steel");
+        k.Hull(Cyl(0, 0, 0.06 + 0.03 * n, H - 0.004, H + 0.05), Hot, "", glow: true);
+        // Four legs from the plate's corners up to the ring.
+        foreach (var sx in new[] { -1.0, 1.0 })
+            foreach (var sz in new[] { -1.0, 1.0 })
+            {
+                var lx = sx * (big * 0.72); var lz = sz * (big * 0.72); var w = 0.035 + 0.015 * n;
+                k.Box(lx - w, 0.075, lz - w, lx + w, cy - tube + 0.02, lz + w, Bare, "steel");
+            }
+        // Coolant lines from the coupling block up the column.
+        k.Box(0.08, 0.2, 0.0, 0.13, 0.4, n / 2.0 - 0.12, Coolant, "painted steel");
+        return k.P;
+    }
+
+    /// <summary>B: the core. An upright armoured core of staves, light through the gaps, in a square cage with fins on two sides.</summary>
+    private static Part CoreReactor(int n)
+    {
+        var H = 1.1 + 0.6 * n;
+        var k = Reactor("B Core", n, "B: an upright core of armoured staves with hot white light between them, held in a square cage, radiator fins on two sides.", H);
+        var r = 0.17 + 0.12 * n;
+        const int staves = 10;
+        k.Hull(Cyl(0, 0, r - 0.03, 0.12, H - 0.16, staves, 0), Ice, "", glow: true); // (the light inside)
+        for (var i = 0; i < staves; i++)
+        {
+            var a0 = i * 2 * Math.PI / staves + 0.07;
+            var a1 = (i + 1) * 2 * Math.PI / staves - 0.07;
+            k.Hull(Arc(r - 0.05, r + 0.03, 0.18, H - 0.22, a0, a1), Mid, "painted steel");
+        }
+        k.Hull(Cyl(0, 0, r + 0.06, 0.08, 0.2, staves, 0), Body, "painted steel"); // (the foot ring)
+        k.Hull(Cyl(0, 0, r + 0.06, H - 0.24, H - 0.1, staves, 0), Body, "painted steel"); // (the head ring)
+        k.Hull(Cyl(0, 0, r * 0.6, H - 0.104, H, staves, 0), Trim, "painted steel"); // (the cap)
+        // The cage: four corner posts and square frames at the foot and head.
+        var c = n / 2.0 - 0.12;
+        foreach (var sx in new[] { -1.0, 1.0 })
+            foreach (var sz in new[] { -1.0, 1.0 })
+                k.Box(sx * c - 0.04, 0.078, sz * c - 0.04, sx * c + 0.04, H + 0.02, sz * c + 0.04, Dark, "steel");
+        foreach (var y in new[] { 0.3, H - 0.06 })
+        {
+            k.Box(-c + 0.042, y, -c - 0.03, c - 0.042, y + 0.06, -c + 0.03, Dark, "steel");
+            k.Box(-c + 0.042, y, c - 0.03, c - 0.042, y + 0.06, c + 0.03, Dark, "steel");
+            k.Box(-c - 0.03, y + 0.004, -c + 0.042, -c + 0.03, y + 0.064, c - 0.042, Dark, "steel");
+            k.Box(c - 0.03, y + 0.004, -c + 0.042, c + 0.03, y + 0.064, c - 0.042, Dark, "steel");
+        }
+        // Radiator fins on the +-x sides, between the cage and the core.
+        var fins = 3 + 2 * n;
+        foreach (var sx in new[] { -1.0, 1.0 })
+            for (var i = 0; i < fins; i++)
+            {
+                var y = 0.45 + i * (H - 0.8) / Math.Max(1, fins - 1);
+                k.Box(sx * (r + 0.07), y, -r * 0.7, sx * (c - 0.045), y + 0.025, r * 0.7, Trim, "painted steel");
+            }
+        foreach (var sx in new[] { -1.0, 1.0 }) // (the fins' spines: a bar each side ties them to the cage's frames, and pipes them into the core)
+        {
+            k.Box(sx * (c - 0.085), 0.36, -0.07, sx * (c - 0.033), H - 0.07, 0.07, Coolant, "painted steel");
+            k.Box(sx * (r + 0.02), 0.32, -0.05, sx * (c - 0.08), 0.4, 0.05, Coolant, "painted steel");
+        }
+        return k.P;
+    }
+
+    /// <summary>C: the sphere. A faceted containment sphere in a four-strut cradle, a lit band round its equator.</summary>
+    private static Part SphereReactor(int n)
+    {
+        var R = 0.26 + 0.17 * n;
+        var cy = 0.16 + R + 0.12 * n;
+        var H = cy + R;
+        var k = Reactor("C Sphere", n, "C: a faceted containment sphere held in a four-strut cradle, a violet band of light round its equator, pipes into its crown.", H);
+        // The sphere as six bands (a hull has at most 32 corners): each band the frustum between two rings of 12.
+        for (var la = 0; la < 6; la++)
+        {
+            double Ring(int i) => R * Math.Cos(-Math.PI / 2 + i * Math.PI / 6);
+            double Y(int i) => cy + R * Math.Sin(-Math.PI / 2 + i * Math.PI / 6);
+            var band = new List<double[]>();
+            foreach (var i in new[] { la, la + 1 })
+            {
+                var rr = Math.Max(Ring(i), 0.02);
+                for (var lo = 0; lo < 12; lo++)
+                {
+                    var th = (lo + 0.5) * 2 * Math.PI / 12;
+                    band.Add([rr * Math.Cos(th), Y(i), rr * Math.Sin(th)]);
+                }
+            }
+            k.Hull(band, la is 2 or 3 ? Mid : Body, "painted steel");
+        }
+        // The band: a short lit ring just proud of the equator, with an armour lip above and below.
+        k.Hull(Cyl(0, 0, R * 1.01, cy - 0.03 - 0.01 * n, cy + 0.03 + 0.01 * n, 16, 0.25), Violet, "", glow: true);
+        k.Hull(Cyl(0, 0, R * 1.04, cy + 0.04 + 0.01 * n, cy + 0.07 + 0.012 * n, 16, 0.25), Body, "painted steel");
+        k.Hull(Cyl(0, 0, R * 1.04, cy - 0.072 - 0.012 * n, cy - 0.042 - 0.01 * n, 16, 0.25), Body, "painted steel");
+        // The cradle: four struts from the plate's corners in to the band's lower lip.
+        var c = n / 2.0 - 0.18;
+        var w = 0.04 + 0.015 * n;
+        foreach (var (sx, sz) in new[] { (-1.0, -1.0), (1.0, -1.0), (-1.0, 1.0), (1.0, 1.0) })
+        {
+            var x0 = sx * c; var z0 = sz * c; var x1 = sx * R * 0.72; var z1 = sz * R * 0.72; var yTop = cy - 0.07 - 0.012 * n;
+            k.Hull([[x0 - w, 0.075, z0 - w], [x0 + w, 0.075, z0 - w], [x0 - w, 0.075, z0 + w], [x0 + w, 0.075, z0 + w],
+                    [x1 - w, yTop, z1 - w], [x1 + w, yTop, z1 - w], [x1 - w, yTop, z1 + w], [x1 + w, yTop, z1 + w]], Dark, "steel");
+        }
+        // Pipes into the crown.
+        foreach (var sx in new[] { -1.0, 1.0 })
+            k.Hull(Cyl(sx * R * 0.3, 0, 0.035 + 0.01 * n, cy + R * 0.8, H + 0.12, 8), Coolant, "painted steel");
+        k.Box(-R * 0.3 - 0.07, H + 0.1, -0.07, R * 0.3 + 0.07, H + 0.16, 0.07, Coolant, "painted steel");
+        return k.P;
+    }
+
+    /// <summary>D: the block. Square and service-minded: an armoured box, radiator louvres, a lit inspection slot, access panels, a status strip.</summary>
+    private static Part BlockReactor(int n)
+    {
+        var H = 0.9 + 0.5 * n;
+        var k = Reactor("D Block", n, "D: a square armoured block built for servicing: louvred radiator sides, bolted access panels, a lit inspection slot and a status strip.", H);
+        var h = n / 2.0 - 0.124; // (inside the corner lugs)
+        k.Profile(-h, h, [(0.078, -h), (0.078, h), (H - 0.12, h), (H, h - 0.12), (H, -h + 0.12), (H - 0.12, -h)], Mid, "painted steel");
+        // Louvres down the +-x sides.
+        var rows = 4 + 3 * n;
+        foreach (var sx in new[] { -1.0, 1.0 })
+        {
+            k.Box(sx * h - 0.012, 0.2, -h + 0.12, sx * h + 0.004 * sx, H - 0.2, h - 0.12, Dark, "dirty steel");
+            for (var i = 0; i < rows; i++)
+            {
+                var y = 0.24 + i * (H - 0.5) / Math.Max(1, rows - 1);
+                k.Box(sx * h, y, -h + 0.14, sx * (h + 0.04), y + 0.022, h - 0.14, Body, "painted steel");
+            }
+        }
+        // The front (+z): two bolted access panels, the inspection slot between them, a status strip.
+        var pw = Math.Min(0.5, h * 0.42);
+        foreach (var sx in new[] { -1.0, 1.0 })
+        {
+            k.Box(sx * 0.08, 0.2, h - 0.004, sx * (0.08 + pw * 2), H * 0.7, h + 0.016, Body, "painted steel");
+            foreach (var by in new[] { 0.24, H * 0.7 - 0.05 })
+                foreach (var bx in new[] { 0.12, 0.04 + pw * 2 })
+                    k.Box(sx * bx - 0.015, by, h + 0.012, sx * bx + 0.015, by + 0.03, h + 0.026, Bare, "steel");
+        }
+        k.Box(-0.06, 0.24, h - 0.006, 0.06, H * 0.7 - 0.04, h + 0.012, Dark, "plastic");
+        k.Glow(-0.035, 0.28, h + 0.006, 0.035, H * 0.7 - 0.08, h + 0.018, Hot); // (the slot: the core's glow seen through it)
+        k.Box(-h + 0.1, H * 0.78, h - 0.004, h - 0.1, H * 0.78 + 0.07, h + 0.014, Dark, "plastic");
+        for (var i = 0; i < 6; i++)
+            k.Glow(-h + 0.13 + i * 0.06, H * 0.78 + 0.02, h + 0.008, -h + 0.17 + i * 0.06, H * 0.78 + 0.05, h + 0.02, i < 4 ? Green : Amber);
+        // Hazard band round the foot.
+        k.Box(-h - 0.006, 0.078, -h - 0.006, h + 0.006, 0.15, h + 0.006, HazardY, "hazard paint");
+        return k.P;
+    }
+
+    /// <summary>E: the cells. A grid of fuel cells, each a canister with a lit ring, bussed together on top. Grows by cells, not by scale.</summary>
+    private static Part CellReactor(int n)
+    {
+        var H = 1.0 + 0.3 * n;
+        var k = Reactor("E Cells", n, "E: a grid of fuel cells, each a steel canister with a lit ring, bussed together across the top. A bigger socket holds more cells, not bigger ones.", H);
+        var per = n + 1;
+        var pitch = (n - 0.3) / per;
+        var r = pitch * 0.36;
+        for (var i = 0; i < per; i++)
+            for (var j = 0; j < per; j++)
+            {
+                var x = -(n - 0.3) / 2 + pitch * (i + 0.5);
+                var z = -(n - 0.3) / 2 + pitch * (j + 0.5);
+                k.Hull(Cyl(x, z, r, 0.078, H - 0.16, 8), Mid, "painted steel");
+                k.Hull(Cyl(x, z, r * 1.06, H * 0.55, H * 0.55 + 0.05, 8), Teal, "", glow: true);
+                k.Hull(Cyl(x, z, r * 1.08, 0.075, 0.14, 8), Body, "painted steel");
+                k.Hull(Cyl(x, z, r * 0.7, H - 0.164, H - 0.08, 8), Trim, "painted steel");
+            }
+        // Bus bars across the tops, one per row.
+        for (var j = 0; j < per; j++)
+        {
+            var z = -(n - 0.3) / 2 + pitch * (j + 0.5);
+            k.Box(-(n - 0.3) / 2 + 0.05, H - 0.09, z - 0.03, (n - 0.3) / 2 - 0.05, H - 0.04, z + 0.03, Amber, "brass");
+        }
+        k.Box(-0.04, H - 0.05, -(n - 0.3) / 2 + 0.05, 0.04, H - 0.01, (n - 0.3) / 2 - 0.05, Amber, "brass"); // (the main bus)
+        return k.P;
+    }
+
     /// <summary>A vertical cylinder's points (eight sides), from y0 to y1.</summary>
     private static IEnumerable<double[]> Ring(double x, double y1, double z, double r, double yA, double yB)
     {
@@ -272,7 +525,10 @@ public sealed class StyleSheetParts : IPartGenerator
     public void Make(PartOutput o)
     {
         o.Own(Out);
-        foreach (var p in new[] { ServiceLocker(), TwinLocker(), ArmouredLocker(), DisplayLocker(), PressureLocker() })
+        var all = new List<Part> { ServiceLocker(), TwinLocker(), ArmouredLocker(), DisplayLocker(), PressureLocker() };
+        foreach (var n in new[] { 1, 2, 3 })
+            all.AddRange([TokamakReactor(n), CoreReactor(n), SphereReactor(n), BlockReactor(n), CellReactor(n)]);
+        foreach (var p in all)
         {
             var d = p.Json();
             o.File($"{Out}/{FileName((string)d["name"]!)}", PyJson.Dumps(d, 2) + "\n");
