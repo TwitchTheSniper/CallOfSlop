@@ -186,3 +186,87 @@ These override the text above where they differ.
 1. **Acceleration felt by loose items: fully.** Items aboard slide and tumble when the ship brakes, turns or is hit: in the ship's frame they feel the frame's acceleration (and its turning: the ship's angular acceleration, centrifugal and Coriolis as the maths gives) as a real force, so a steady cruise feels like rest and a hard manoeuvre throws things. Players keep today's feel unless the user says otherwise.
 2. **Gravity aboard in space: follow the player.** Loose items get gravity aboard exactly when and where players do (deck gravity, gravity generators); weightless where a player would float.
 3. **Plan: straight to the full fix** (phases 0 to 2 in one builder): measure first with a loose-item mode in `--ride-check` (a dev check, not a self-test), then ship-local truth for everything aboard (option B), with the quick-fix items folded in.
+
+## What was built (2026-11-19)
+
+Phases 0 to 2 in one branch (`claude/local-frame-physics`), option B with the user's answers.
+
+**Phase 0: `--ride-check --loose`** (DevTools/RideCheck.cs, a dev check, not a self-test). On the Rust Bucket, the Zero Day,
+the Magpie and the British Box Truck 1, at 0, 60, 120 and 200 m/s, stepped (a driven ship in the bubble) and posed (out of
+it, posed after the step): a Frame Block resting on a deck spot and one thrown across from another (3 m/s), through 3 s of
+cruise, 4 s of a 10 deg/s turn, 2 s of braking at 8 m/s2 and 2 s on. Per phase: the resting block's drift in the ship's frame,
+its largest drawn jump in the ship's frame (the host's blend of the two poses, four samples a tick), its ticks asleep, the
+thrown block's state, the step's CPU. `--loose-many N` adds N blocks heaped round the two spots. A stepped ship is driven as
+its engines would (`Drive`: its speed after the step's pull and air damping is the one asked, past the free body's limit);
+set flat, as the first baseline did, the ship itself lurched every tick and stopped at 60 m/s, so that baseline was redone
+(and `--held` stepped uses `Drive` too).
+
+**Before and after** (resting block; "lost" = fell out of the frame and was removed):
+
+| | before | after |
+| --- | --- | --- |
+| Cruise drift, stepped, 60 / 120 / 200 m/s | 0.002 / 1.6-2.5 / 6-26 m, Zero Day lost at 200, truck lost at 120+ | 0.000 at every speed, every ship |
+| Cruise drift, posed, 60 / 120 / 200 m/s | 0.9-5.2 / 23-26 / 41-48 m, lost at 120+ | 0.000 |
+| Drawn jump in the frame, cruise | up to 18 mm (posed 60), 79-175 mm (posed 120-200) | 0 mm |
+| Asleep in cruise (of 180 ticks) | 0 at speed | 130 (from a second in) |
+| Thrown block at the end | lost at 120+ | at rest in the frame |
+| `--held` posed, off the beam's point | 0.10-0.42 m at 10 m/s, 0.10-4.3 m at 120 | 0.000 m on 14 of 18 spots (the rest pressed into geometry, as before) |
+| `--held` stepped | 0.018 m (10 and 120) | 0.018 at 10, 0.028 at 120 |
+| Step CPU, Zero Day 200 m/s, +60 blocks | stepped 3.6 ms mean, 76 most; posed 1.2 / 22.8 | 4.2 / 32; 1.1 / 12.8 (the old run lost most blocks) |
+
+In the turn and the braking the block now slides as the frame's acceleration throws it (the user's answer 1): 3-4 m to the
+wall in a 10 deg/s turn at speed (35 m/s2 at 200 m/s), and the truck's block, on its open bed's edge, is thrown off it at
+120 m/s and more. `--ride-check` (walking, lift, spawned plates, noclip) is unchanged: 0 lapses.
+
+**Phase 1 and 2: frame bodies** (Constructs/ConstructFrames.cs). A loose body inside a moving construct's bounds (tight to
+join: `SpawnPad`, `SpawnAbove`; the rider's pads to stay) joins its frame: `Construct.Frame`, its pose in the frame
+(`FramePos`, `FrameRot`) and its motion through it (`FrameVel`, `FrameSpin`) are its truth; Pos, Rot, Vel and AngVel are the
+world's copies, set from the frame's pose after every step. A frame is free, bigger (1.5x the radius, 2x the mass), in no
+frame itself and not carried; the smallest wins. Walkers don't ride (their feet are drawn in the world).
+
+- **The step** (ConstructPhysics): a framed body's pull is the one a player there feels (the deck's gravity along the up a
+  rider takes, `UpFor`, chosen when it joins; a gravity generator's box; wells) instead of the world's. Damping, the speed
+  limit, the spin limit and sleep read its motion through the frame; it is integrated after every frame is, against the
+  frame's motion as the solve met it, its frame part taken as the frame's after its own step (`IntegrateFramed`). Before the
+  solve it is given what the frame's air damping will take off the frame (`FrameLead`: a cruising drive puts that back each
+  tick, so at 200 m/s the hull met its cargo 0.2 m/s a tick faster than either moved, 12 m/s2, and a block slid aft). A
+  body at rest in its frame sleeps on it (not tied to the moving hull's sleep, not woken by its touch) and is carried with no
+  step and no contact with its frame; the frame's acceleration at it (smoothed, over 1.5 m/s2) wakes it. A framed body
+  touching the map while its frame moves past at 1 m/s leaves.
+- **The carry** (`ConstructFrames.After`, end of the world's step for stepped frames and after the space step for posed
+  ones): a stepped frame: its pose in the frame's new pose; a posed one (which stood at its last pose through the step and
+  met it at its velocity there): its move less the frame's motion there. Its world velocity is kept, so the frame's changes
+  of motion are felt as the world's maths gives them (braking, turning, centrifugal and Coriolis). A ship out of the bubble
+  can't meet its cargo in the solve, so the carry gives the bodies its whole change of velocity and the part to be felt
+  comes as a pull in their next step (`FrameFree`: the change less the ship's free fall, its change less what its drive
+  gave, `Construct.SpaceAccel`, smoothed), so the drive and a hit are felt and an orbit is rest; nothing is felt at a raised
+  time speed. Its last pose is where the frame's last pose held it (the host's blend). Joining and leaving keep the world pose
+  and velocity, so neither jumps.
+- **Space**: `SpaceRide`/`SpaceCarry` are gone (folded in); a loose body inside a ship out there joins its frame in the space
+  step instead of becoming a ship (`FrameNew`), and `PosedBack` exempts bodies in the posed ship's frame. Bodies aboard a ship
+  parked far out are carried asleep.
+- **Contacts**: the solver gives a carried body (cargo) and a body asleep in a frame their velocity (`VelSide`, `GroupMotion`),
+  as it did posed ships. A crate in a docked craft rides the outer ship's frame and meets the docked craft at its speed.
+- **Physics gun**: a held piece is a frame body like any other; the spring (`ConstructGrab.Follow`, shared with the client's
+  prediction) is unchanged, with the frame's velocity at the beam point.
+- **Net** (protocol 372): a framed body's pose goes in its frame (`CPose` flag 16 and a u16 frame; the Full and the digest
+  likewise). A client keeps its pose history in that frame and draws it from the frame's drawn pose every frame
+  (`ConstructNet.FrameFollow`); entering or leaving a frame turns the history over by the frames' poses at each pose's tick
+  (`FrameSwitch`), so nothing jumps.
+- **Saves**: a framed body keeps its frame and its frame pose (`body:frame` keys on its first part, which an older reader
+  skips); loaded, it is placed by that pose once its frame is carried (a ship in space comes back posed by its flight, a tick
+  off where its construct was saved). An old save loads and its bodies join by themselves.
+- **Far layer**: a framed body steps at its frame's rate (`ConstructFar.Mark`).
+- Dev: the window tool's `framewatch SECS` (each loose body near drawn against its frame as drawn: the largest jump a frame,
+  drift, speed through it), and `aimat` aims from the drawn eye (on a client's moving deck the predicted eye is ahead of the
+  drawn bodies).
+
+**Tried by hand** (xvfb, host and joined client at `--lag=100`): the Zero Day start in orbit at 208 m/s, three loose blocks:
+host and client draw them on the deck at 0.0-1.1 mm a frame, asleep, at the same frame poses; a retro burn (208 to 94 m/s in
+5 s, 2.6 g) presses them into the bulkhead; a world save and load keeps them aboard. A British Flatbed Fort at 17 m/s with
+three blocks on its bed: 0.1-0.4 mm a frame on both, a hard brake slides them 0.6-0.8 m forward on both, the same rest spots.
+
+**Not settled**: pressed against a bulkhead under the in-game 2.6 g burn the blocks are drawn with up to 2 cm a frame of jitter
+on host and client, though their pose in the frame moves under a millimetre a tick and the headless check shows none; a
+joined client's physics-gun grab was not tried through (the tool's aim missed before the `aimat` fix); crews still ride the
+plain way (phase 3).

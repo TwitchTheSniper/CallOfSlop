@@ -14,7 +14,8 @@ public struct BodySnap
     public sbyte HaulRoute;
     public bool HaulAtTo;
     public float Fuel, Charge, Cap, HoverY; // (Cap: its Capacitor Banks' kJ, saved as a setting of its first part an older reader skips)
-    public Vector3 Pos, Vel, AngVel, CarryPos;
+    public Vector3 Pos, Vel, AngVel, CarryPos, FramePos; // (FramePos, FrameRot: its pose in Frame's frame)
+    public Quaternion FrameRot;
     public Quaternion Rot, CarryRot;
     public int Parts, PartCount, Links, LinkCount, Joints, JointCount, Routes, RouteCount, Nodes, Tracks, TrackCount, TrackParts;
     public CRider[]? Conveyed; // pieces riding its conveyors (ConstructConveyor.cs; written after the brief)

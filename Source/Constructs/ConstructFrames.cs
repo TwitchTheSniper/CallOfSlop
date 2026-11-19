@@ -229,7 +229,21 @@ public static class ConstructFrames
     {
         if (c.FrameNew)
         {
-            Join(c, f); // (from a save, or joined in the space step: its frame pose from the world as it is now)
+            if (c.FrameLoaded)
+            {
+                // From a save: placed by its saved frame pose (a ship in space comes back posed by its flight, not where its
+                // construct was saved), still with the frame, awake so it settles.
+                if (c.Dirty)
+                    c.Rebuild();
+                c.Rot = Quaternion.Normalize(f.Rot * c.FrameRot);
+                c.Pos = f.Pos + Vector3.Transform(c.FramePos, f.Rot);
+                (c.PrevPos, c.PrevRot) = (c.Pos, c.Rot);
+                c.Vel = f.PointVel(c.WorldCom);
+                c.AngVel = f.AngVel;
+                c.Wake();
+                c.FrameLoaded = false;
+            }
+            Join(c, f); // (or joined in the space step: its frame pose from the world as it is now)
             return;
         }
         if (c.Dirty)
