@@ -92,7 +92,7 @@ public sealed class ShellKitNodes
     // ---- First person (a module with "view" in Shells.json: its wearer sees its own model in the hands' place) ----------------
 
     /// <summary>Where the drill arm's forearm sits in first person (camera space, -Z forward), about the drill's axis at the elbow.</summary>
-    private static readonly Vector3 ViewAt = new(0.3f, -0.31f, -0.2f), ForearmAxis = new(0.4725f, 1.38f, 0f);
+    private static readonly Vector3 ViewAt = new(0.28f, -0.38f, -0.25f), ForearmAxis = new(0.4725f, 1.38f, 0f);
 
     /// <summary>The drill arm's forearm turned from <paramref name="from"/> to point at <paramref name="point"/> (camera space): the crosshair's line at the ground drill's reach, where it digs.</summary>
     private static Quaternion AimAt(Vector3 from, Vector3 point)
@@ -131,13 +131,14 @@ public sealed class ShellKitNodes
             SpinAxis = Vector3.UnitZ, SpinPivot = Vector3.Zero, Motion = ToolMotion.Push, Amount = 0.02f * k, Rate = 14, Spin = 45,
             SpinBoxes = boxes.Count(b => b.Spin), Arm = true, ViewAt = ViewAt * k,
         };
-        // Its screen: inboard of the arm, low and clear of the crosshair (left of where a hand tool's is, the arm being wider), on a stalk from the housing's inboard side.
+        // Its screen: inboard of the arm, low and clear of the crosshair (left of where a hand tool's is, the arm being wider).
         var at = ViewCard;
         var inv = Quaternion.Conjugate(hold);
         var face = Vector3.Normalize(-at);
         var up = Vector3.Normalize(Vector3.UnitY - face * face.Y);
-        var mount = new Vector3(-0.075f, 0.02f, -0.2f) * k;
-        model.Display = new ToolDisplay(Vector3.Transform(at - ViewAt * k, inv), Vector3.Transform(face, inv), Vector3.Transform(up, inv), ToolDisplay.DefaultSize, ToolDisplay.DefaultRows, mount);
+        var cardAt = Vector3.Transform(at - ViewAt * k, inv);
+        var cardNormal = Vector3.Transform(face, inv);
+        model.Display = new ToolDisplay(cardAt, cardNormal, Vector3.Transform(up, inv), ToolDisplay.DefaultSize, ToolDisplay.DefaultRows, cardAt - cardNormal * 0.012f); // (no stalk: it floats beside the arm, clear of it)
         (_drillView, _drillViewScale, _drillViewArm, _drillViewAccent) = (model, scale, arm, accent);
         return model;
     }
