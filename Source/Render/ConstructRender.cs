@@ -632,11 +632,15 @@ public static partial class ConstructRender
         var routerStuck = false;
         var routerFence = 0f;
         var routerOn = d.HasRouterBoxes && !p.Broken && ConstructRecycler.Powered(world, c, i) && ConstructLogistics.ShowOf(c, i, out routerWay, out routerState, out routerStuck, out routerFence); // (a Conveyor Router: its lamps and fence show its last choice)
+        var offSlots = d.ShellBody && world.GantryJobCount > 0 ? ConstructGantry.OffSlots(world, c.Id, ConstructConveyor.Clock) : 0; // (a module a Shell Gantry's arm has off: its boxes aren't drawn)
+        var boxSlots = offSlots != 0 ? ConstructGantry.BoxSlots(d) : null;
         for (var b = 0; b < d.Boxes.Length; b++)
         {
             ref readonly var box = ref d.Boxes[b];
             if (box.Hidden || box.IsLeaf && !railShown)
                 continue; // (a shaped part's stepped collision: its shape is drawn instead)
+            if (boxSlots != null && boxSlots[b] < 8 && (offSlots >> boxSlots[b] & 1) != 0)
+                continue;
             c.BoxOf(i, b, out var centre, out var half);
             if (box.Spin && d.Rotor != null)
             {

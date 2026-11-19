@@ -20,7 +20,19 @@ public struct GantryJob
     public byte Slot; // ShellFrames.Slots
     public byte Old, New; // 1 + the module's index going off and going on
     public byte Arm; // which arm (ConstructGantry.ArmOf)
-    public double Start; // ConstructConveyor.Clock when it began (a client: when it heard it, less the time already run)
+    public double Start; // ConstructConveyor.Clock when it began (a client: when it heard it, less the time already run); later than now: queued behind another slot's
+}
+
+/// <summary>
+/// A Shell Gantry's waist clamp on the shell in its bay (both peers; ConstructGantry.Hold): closed from the first swap's start, open again
+/// from when its last swap ended. An entry stays until its opening is drawn, then is reused. Render and bookkeeping only: the hold
+/// itself is the server's (the shell frozen and <see cref="Construct.HeldBy"/> the gantry).
+/// </summary>
+public struct GantryLock
+{
+    public ushort Body, Part, Shell;
+    public bool Froze; // server: the clamp froze the shell (it wasn't frozen before), so it unfreezes it when it opens
+    public double Since, Until; // when it began to close; when it began to open (-1: still held)
 }
 
 /// <summary>
@@ -37,9 +49,17 @@ public static class ConstructGantry
     public const int ArmCount = 5;
     public const int MaxJobs = 32;
 
-    // The swap's times (s): the arm reaches the slot, unclips the module, carries it to the table, sets it down and takes the new
-    // one, carries it back, fits it, and goes back to rest.
-    public const double TAtShell = 1.2, TUnclipped = 2.0, TAtTable = 3.5, TSwapped = 4.0, TBack = 5.5, TFitted = 6.3, Duration = 7.5;
+    // The swap's times (s; docs/sandbox/design/mining-shell.md "Swap animation"): the arm reaches behind the slot, moves in and grips the
+    // module, unbolts it, pulls it out (from here the shell is drawn without it), carries it to the table, sets it down, moves over and
+    // grips the new one, carries it back, pushes it in, bolts it (the fit: the kit is written, the shell drawn whole again) and goes
+    // back to rest.
+    public const double TAtShell = 1.2, TGripped = 1.6, TUnbolted = 2.2, TPulled = 2.7, TAtTable = 4.2, TSetDown = 4.5, TSwapped = 4.9,
+        TBack = 6.4, TInserted = 6.8, TFitted = 7.4, Duration = 8.6;
+
+    /// <summary>The waist clamp's times (s): it closes on the shell when the first swap begins and opens when the last one ends.</summary>
+    public const double LockClose = 0.8, LockOpen = 0.8;
+
+    public const string HeldText = "a Shell Gantry's clamp holds it while its arms work: wait for the swap to end";
 
     /// <summary>The arm that works on a slot: the upper arms a side's arm (and the right upper the back), the lower arms the legs, the head arm the head.</summary>
     public static byte ArmOf(int slot) => slot switch { 0 => 4, 1 => 2, 2 => 0, 3 => 2, 4 => 1, _ => 3 };
@@ -188,34 +208,85 @@ public static class ConstructGantry
     public static Vector3 RestOf(ShellGantryDef gd, int arm) => gd.Arms[arm] + new Vector3(0, -0.55f, -0.6f);
 
     /// <summary>
-    /// Where a job's hand is at <paramref name="t"/> seconds in, in the gantry part's frame, from the slot's and the table's points (also
-    /// in that frame), and what it carries: 0 nothing, 1 the old module, 2 the new one (3: the old one lies on the table, the new in hand).
+    /// Which way a slot's module comes off, in the shell's own frame (a person's metres; times the frame's scale): the head up and back,
+    /// the back pack straight back, an arm outwards and a little back, a leg back. The hand waits there before it goes in.
     /// </summary>
-    public static Vector3 Hand(ShellGantryDef gd, int arm, Vector3 slot, Vector3 table, double t, out int carry)
+    public static Vector3 AwayOf(int slot) => slot switch
+    {
+        0 => new Vector3(0, 0.22f, 0.2f),
+        1 => new Vector3(0, 0, 0.32f),
+        2 => new Vector3(-0.3f, 0, 0.1f),
+        3 => new Vector3(0.3f, 0, 0.1f),
+        _ => new Vector3(0, 0, 0.32f),
+    };
+
+    /// <summary>Where the arms set an old module down and take the new one from, beside the table's middle (the gantry part's frame).</summary>
+    public static Vector3 SetDownOf(Vector3 table) => table + new Vector3(0, 0, -0.25f);
+    public static Vector3 PickUpOf(Vector3 table) => table + new Vector3(0, 0, 0.25f);
+
+    /// <summary>
+    /// Where a job's hand is at <paramref name="t"/> seconds in, in the gantry part's frame, from the slot's point, the way its module comes
+    /// off (<paramref name="away"/>, already in that frame and size) and the table's point; what it carries (0 nothing, 1 the old module,
+    /// 2 nothing with the old one on the table, 3 the new one with the old one on the table) and how far its gripper is shut (0 to 1).
+    /// Before 0 (queued) and after <see cref="Duration"/> it is at rest.
+    /// </summary>
+    public static Vector3 Hand(ShellGantryDef gd, int arm, Vector3 slot, Vector3 away, Vector3 table, double t, out int carry, out float grip)
     {
         var rest = RestOf(gd, arm);
-        var slotOff = slot + new Vector3(0, 0, 0.25f); // (the hand works the module from behind the shell)
-        carry = t < TUnclipped ? 0 : t < TSwapped ? 1 : t < TFitted ? 3 : 0;
+        var off = slot + away;
+        var down = SetDownOf(table);
+        var pick = PickUpOf(table);
+        var lift = Vector3.UnitY * 0.15f;
+        carry = t < TUnbolted ? 0 : t < TSetDown ? 1 : t < TSwapped ? 2 : t < TFitted ? 3 : 0;
+        grip = MathF.Min(Ramp(t, TGripped - 0.2, TGripped), 1 - Ramp(t, TSetDown, TSetDown + 0.15))
+            + Ramp(t, TSwapped - 0.2, TSwapped) - Ramp(t, TFitted, TFitted + 0.2);
+        grip = Math.Clamp(grip, 0, 1);
+        if (t <= 0)
+            return rest;
         if (t < TAtShell)
-            return Path(rest, slotOff, t / TAtShell);
-        if (t < TUnclipped)
-            return Vector3.Lerp(slotOff, slot, (float)((t - TAtShell) / (TUnclipped - TAtShell)) * 0.6f);
+            return Path(rest, off, t / TAtShell);
+        if (t < TGripped)
+            return Vector3.Lerp(off, slot, Smooth((t - TAtShell) / (TGripped - TAtShell)));
+        if (t < TUnbolted)
+            return slot;
+        if (t < TPulled)
+            return Vector3.Lerp(slot, off, Smooth((t - TUnbolted) / (TPulled - TUnbolted)));
         if (t < TAtTable)
-            return Path(slot, table, (t - TUnclipped) / (TAtTable - TUnclipped));
+            return Path(off, down + lift, (t - TPulled) / (TAtTable - TPulled));
+        if (t < TSetDown)
+            return Vector3.Lerp(down + lift, down, Smooth((t - TAtTable) / (TSetDown - TAtTable)));
         if (t < TSwapped)
-            return table;
+        {
+            var s = Smooth((t - TSetDown) / (TSwapped - TSetDown));
+            return Vector3.Lerp(down, pick, s) + lift * MathF.Sin(MathF.PI * s);
+        }
         if (t < TBack)
-            return Path(table, slot, (t - TSwapped) / (TBack - TSwapped));
+            return Path(pick, off, (t - TSwapped) / (TBack - TSwapped));
+        if (t < TInserted)
+            return Vector3.Lerp(off, slot, Smooth((t - TBack) / (TInserted - TBack)));
         if (t < TFitted)
             return slot;
-        return Path(slotOff, rest, Math.Min(1, (t - TFitted) / (Duration - TFitted)));
+        const double Out = 0.35; // (straight back out before it swings home)
+        if (t < TFitted + Out)
+            return Vector3.Lerp(slot, off, Smooth((t - TFitted) / Out));
+        return Path(off, rest, Math.Min(1, (t - TFitted - Out) / (Duration - TFitted - Out)));
+    }
+
+    /// <summary>Is the arm turning bolts at <paramref name="t"/> (unbolting the old module or bolting the new one)?</summary>
+    public static bool Bolting(double t) => t >= TGripped && t < TUnbolted || t >= TInserted && t < TFitted;
+
+    private static float Ramp(double t, double a, double b) => (float)Math.Clamp((t - a) / (b - a), 0, 1);
+
+    private static float Smooth(double s)
+    {
+        var f = (float)Math.Clamp(s, 0, 1);
+        return f * f * (3 - 2 * f);
     }
 
     /// <summary>A smooth move from a to b, lifted over the middle (the hand clears the frame and the shell's shoulders).</summary>
     private static Vector3 Path(Vector3 a, Vector3 b, double s)
     {
-        var f = (float)Math.Clamp(s, 0, 1);
-        f = f * f * (3 - 2 * f);
+        var f = Smooth(s);
         return Vector3.Lerp(a, b, f) + Vector3.UnitY * (0.45f * MathF.Sin(MathF.PI * f));
     }
 
@@ -242,6 +313,160 @@ public static class ConstructGantry
             if (world.GantryJobs[k].Body == body && world.GantryJobs[k].Part == part)
                 return k;
         return -1;
+    }
+
+    /// <summary>The job at gantry (<paramref name="body"/>, <paramref name="part"/>) on slot <paramref name="slot"/>, or -1.</summary>
+    public static int JobAt(ConstructWorld world, ushort body, int part, int slot)
+    {
+        for (var k = 0; k < world.GantryJobCount; k++)
+            if (world.GantryJobs[k].Body == body && world.GantryJobs[k].Part == part && world.GantryJobs[k].Slot == slot)
+                return k;
+        return -1;
+    }
+
+    /// <summary>The job arm <paramref name="arm"/> of a gantry is working at <paramref name="now"/> (the one begun last; -1: it rests).</summary>
+    public static int ArmJob(ConstructWorld world, ushort body, int part, int arm, double now)
+    {
+        var best = -1;
+        for (var k = 0; k < world.GantryJobCount; k++)
+        {
+            ref var j = ref world.GantryJobs[k];
+            if (j.Body == body && j.Part == part && j.Arm == arm && j.Start <= now && (best < 0 || j.Start > world.GantryJobs[best].Start))
+                best = k;
+        }
+        return best;
+    }
+
+    /// <summary>
+    /// When a new swap on <paramref name="arm"/> of a gantry may begin: now, or after the swaps already asked of it (queued, so one
+    /// change of several slots runs as a sequence): behind another arm's fit (that arm only goes home after it), behind the same arm's end.
+    /// </summary>
+    public static double NextStart(ConstructWorld world, ushort body, int part, int arm, double now)
+    {
+        var at = now;
+        for (var k = 0; k < world.GantryJobCount; k++)
+        {
+            ref var j = ref world.GantryJobs[k];
+            if (j.Body == body && j.Part == part)
+                at = Math.Max(at, j.Start + (j.Arm == arm ? Duration : TFitted));
+        }
+        return at;
+    }
+
+    /// <summary>The slots of shell <paramref name="shell"/> whose module is off at <paramref name="now"/> (a bit a slot): from the pull to the fit. No job: 0.</summary>
+    public static int OffSlots(ConstructWorld world, ushort shell, double now)
+    {
+        var mask = 0;
+        for (var k = 0; k < world.GantryJobCount; k++)
+        {
+            ref var j = ref world.GantryJobs[k];
+            if (j.Shell == shell && now - j.Start is var t && t >= TUnbolted && t < TFitted)
+                mask |= 1 << j.Slot;
+        }
+        return mask;
+    }
+
+    /// <summary>
+    /// Which slot each of a shell part's boxes belongs to (255: the torso's, never taken off), from where the box sits in a person-sized
+    /// shell (the part kit's ShellParts.Robot): the head, visor and aerial; the back pack; a forearm and hand; a thigh, knee, shin and
+    /// foot. Made once a part type (render only).
+    /// </summary>
+    public static byte[] BoxSlots(ConstructPartDef d)
+    {
+        if (d.ShellBoxSlots is { } made && made.Length == d.Boxes.Length)
+            return made;
+        var scale = MathF.Max(0.1f, ShellFrames.Of(ShellFrames.FrameOf(d)).Scale);
+        var map = new byte[d.Boxes.Length];
+        for (var b = 0; b < map.Length; b++)
+        {
+            var c = d.Boxes[b].Center / scale;
+            var ax = MathF.Abs(c.X);
+            map[b] = c.Y > 1.55f && ax < 0.15f && c.Z < 0.13f ? (byte)0
+                : c.Z > 0.13f && ax < 0.2f && c.Y > 1.0f && c.Y < 1.5f ? (byte)1
+                : ax > 0.25f && ax < 0.4f && c.Y > 0.6f && c.Y < 1.02f && MathF.Abs(c.Z) < 0.1f ? (byte)(c.X < 0 ? 2 : 3)
+                : ax > 0.03f && ax < 0.2f && c.Y < 0.88f && MathF.Abs(c.Z) < 0.15f ? (byte)(c.X < 0 ? 4 : 5)
+                : (byte)255;
+        }
+        d.ShellBoxSlots = map;
+        return map;
+    }
+
+    // ---- The waist clamp -------------------------------------------------------------------------------------------
+
+    /// <summary>The clamp entry of a gantry (held or still opening), or -1.</summary>
+    public static int LockAt(ConstructWorld world, ushort body, int part)
+    {
+        for (var k = 0; k < world.GantryLockCount; k++)
+            if (world.GantryLocks[k].Body == body && world.GantryLocks[k].Part == part)
+                return k;
+        return -1;
+    }
+
+    /// <summary>Has a gantry's clamp finished opening (its entry free for another)?</summary>
+    public static bool LockDone(in GantryLock l, double now) => l.Until >= 0 && now - l.Until > LockOpen;
+
+    /// <summary>
+    /// The clamp of a gantry closes on <paramref name="shell"/> (both peers, as a swap begins or is heard): an entry made, reused or
+    /// closed again if it was opening. Returns its index (-1: no room, nothing drawn) and whether it is new (the server freezes the shell then).
+    /// </summary>
+    public static int Hold(ConstructWorld world, ushort body, int part, ushort shell, double now, out bool fresh)
+    {
+        fresh = false;
+        var k = LockAt(world, body, part);
+        if (k >= 0)
+        {
+            ref var l = ref world.GantryLocks[k];
+            if (l.Until < 0 && l.Shell == shell)
+            {
+                l.Since = Math.Min(l.Since, now); // (a joiner hearing a swap under way after a queued one: shut already)
+                return k;
+            }
+            if (!LockDone(l, now) && l.Shell == shell)
+            {
+                var shut = Shut(l, now); // (opening: it closes again from where it is)
+                l.Since = now - shut * LockClose;
+                l.Until = -1;
+                return k;
+            }
+        }
+        else
+        {
+            for (var i = 0; i < world.GantryLockCount && k < 0; i++)
+                if (LockDone(world.GantryLocks[i], now))
+                    k = i;
+            if (k < 0 && world.GantryLockCount < world.GantryLocks.Length)
+                k = world.GantryLockCount++;
+            if (k < 0)
+                return -1;
+        }
+        world.GantryLocks[k] = new GantryLock { Body = body, Part = (ushort)part, Shell = shell, Since = now, Until = -1 };
+        fresh = true;
+        return k;
+    }
+
+    /// <summary>Does any swap of this gantry remain (so its clamp stays shut)?</summary>
+    public static bool AnyJob(ConstructWorld world, ushort body, int part)
+    {
+        for (var k = 0; k < world.GantryJobCount; k++)
+            if (world.GantryJobs[k].Body == body && world.GantryJobs[k].Part == part)
+                return true;
+        return false;
+    }
+
+    /// <summary>How shut a clamp is at <paramref name="now"/>: 0 open, 1 shut on the shell.</summary>
+    public static float Shut(in GantryLock l, double now)
+    {
+        var closed = Ramp(now - l.Since, 0, LockClose);
+        return l.Until < 0 ? closed : MathF.Min(Ramp(l.Until - l.Since, 0, LockClose), 1 - Ramp(now - l.Until, 0, LockOpen));
+    }
+
+    /// <summary>Server: did a gantry's clamp freeze this shell (so a save writes it loose, as it will stand when the swap is over)?</summary>
+    public static bool ClampFroze(ConstructWorld world, ushort shell)
+    {
+        for (var k = 0; k < world.GantryLockCount; k++)
+            if (world.GantryLocks[k].Shell == shell && world.GantryLocks[k].Until < 0 && world.GantryLocks[k].Froze)
+                return true;
+        return false;
     }
 
     /// <summary>Is this shell in a gantry's hands (it can't be woken or taken while it is)?</summary>
@@ -280,6 +505,9 @@ public sealed partial class ConstructWorld
     /// <summary>The Shell Gantries' swaps under way (ConstructGantry.cs): the server's own; a client's as heard. A fixed array: nothing allocates.</summary>
     public readonly GantryJob[] GantryJobs = new GantryJob[ConstructGantry.MaxJobs];
     public int GantryJobCount;
+    /// <summary>The gantries' waist clamps, held or opening (ConstructGantry.Hold): a fixed array, entries reused once open.</summary>
+    public readonly GantryLock[] GantryLocks = new GantryLock[ConstructGantry.MaxJobs];
+    public int GantryLockCount;
 }
 
 public sealed partial class Construct
