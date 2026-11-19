@@ -117,3 +117,12 @@ on the same channels. Decided (defaults; the user may change them):
 - A crew Miner job (none exists) and factions spawning Mining Shells.
 - The seated pose, a first-person view of the drill arm (the third-person rig draws it), drill sounds of its own.
 - Tiers of drill arm (data: a second `drill` module with another `tier`).
+
+## Shell Gantry layout (user, 2026-11-18)
+
+Drafted with the user over three pictures; build to this once the user approves the final picture.
+
+- **Bay:** square, 5 m x 5 m, 5 m tall (the Mining Shell is 2.7 m). The shell walks in from the front (or its wearer wakes into it from a chair) and stands facing the front; the front stays open.
+- **Parts table:** behind the bay, past the rear frame; a hold like the Building Station's, a slot per module (one tall slot for a hopper).
+- **Arms:** five, all mounted on the rear frame: two on the left (upper, lower), two on the right (upper, lower) and one reaching over the head. Each reaches round from the rear, takes a module off the suit, sets it on the table and fits the chosen one.
+- **What each arm works on:** upper arm per side = that side's arm module; lower arm per side = that side's leg; head arm = the head. This adds **left leg and right leg slots** to `Shells.json` (new slots go at the end of `slots`: the order is the wire's). The back pack (hopper) is fitted by an upper arm. A frame's `fixed` slots are never changed by the gantry.
