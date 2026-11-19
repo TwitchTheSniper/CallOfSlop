@@ -526,7 +526,7 @@ public sealed class StyleSheetParts : IPartGenerator
     {
         o.Own(Out);
         var all = new List<Part> { ServiceLocker(), TwinLocker(), ArmouredLocker(), DisplayLocker(), PressureLocker() };
-        foreach (var n in new[] { 1, 2, 3 })
+        foreach (var n in new[] { 1 }) // (Karl, 2026-11-19: one size, 1x1, for starters; the looks are drawn from n for later sizes)
             all.AddRange([TokamakReactor(n), CoreReactor(n), SphereReactor(n), BlockReactor(n), CellReactor(n)]);
         foreach (var p in all)
         {
