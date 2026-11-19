@@ -1,11 +1,11 @@
 {
   "format": "call-of-slop-map/1",
   "name": "Crumb",
-  "description": "Crumb, Mille's moonlet in Frostreach (Systems/Frostreach.json): a 600 m lump of rubble with a sixth of a world's pull, pocked with craters and streaked with iron, stone and sand. Close to home and easy to lift off from: where a new mining crew starts.",
+  "description": "Crumb, Mille's moonlet in Frostreach (Systems/Frostreach.json): a 2.4 km lump of rubble with a sixth of a world's pull, pocked with craters and streaked with iron, stone and sand. Close to home and easy to lift off from: where a new mining crew starts.",
   "author": "Call of Slop",
   "order": 7,
-  "halfX": 2000,
-  "halfZ": 2000,
+  "halfX": 5200,
+  "halfZ": 5200,
   "maxPlayers": 8,
   "skybox": {
     "preset": "dusk",
@@ -27,7 +27,7 @@
     "ambient": 0.7
   },
   "planetoid": {
-    "radius": 600,
+    "radius": 2400,
     "cell": 2,
     "strength": 1.5,
     "surface": {
@@ -37,13 +37,13 @@
       "sand": "#8a7c66",
       "dirtSlope": 14,
       "rockSlope": 28,
-      "sandBelow": -18
+      "sandBelow": -36
     },
     "features": [
       {
         "type": "noise",
-        "amplitude": 38,
-        "scale": 520,
+        "amplitude": 76,
+        "scale": 2080,
         "octaves": 4,
         "seed": 71
       },
@@ -51,8 +51,8 @@
         "type": "mountain",
         "lat": -20,
         "lon": 140,
-        "radius": 260,
-        "height": 70,
+        "radius": 1040,
+        "height": 140,
         "seed": 72,
         "ridges": 0.4,
         "erosion": 0.5,
@@ -62,8 +62,8 @@
         "type": "mountain",
         "lat": 10,
         "lon": 300,
-        "radius": 200,
-        "height": 50,
+        "radius": 800,
+        "height": 100,
         "seed": 73,
         "ridges": 0.3,
         "erosion": 0.5,
@@ -73,50 +73,50 @@
         "type": "crater",
         "lat": -60,
         "lon": 40,
-        "radius": 130,
-        "depth": 45
+        "radius": 520,
+        "depth": 90
       },
       {
         "type": "crater",
         "lat": 20,
         "lon": 200,
-        "radius": 110,
-        "depth": 35
+        "radius": 440,
+        "depth": 70
       },
       {
         "type": "crater",
         "lat": 45,
         "lon": 90,
-        "radius": 70,
-        "depth": 22
+        "radius": 280,
+        "depth": 44
       },
       {
         "type": "crater",
         "lat": -10,
         "lon": 30,
-        "radius": 90,
-        "depth": 30
+        "radius": 360,
+        "depth": 60
       },
       {
         "type": "crater",
         "lat": 60,
         "lon": 260,
-        "radius": 55,
-        "depth": 18
+        "radius": 220,
+        "depth": 36
       },
       {
         "type": "crater",
         "lat": -35,
         "lon": 250,
-        "radius": 60,
-        "depth": 20
+        "radius": 240,
+        "depth": 40
       },
       {
         "type": "crater",
         "lat": 5,
         "lon": 120,
-        "radius": 40,
-        "depth": 14
+        "radius": 160,
+        "depth": 28
       },
       {
         "type": "noise",
@@ -137,7 +137,7 @@
         "lat": 90,
         "lon": 0,
         "radius": 70,
-        "height": 6,
+        "height": 12,
         "edge": 150
       }
     ]
@@ -159,44 +159,44 @@
     [
       [
         -6,
-        604.889,
+        2411.901,
         -40
       ],
       [
         6,
-        604.889,
+        2411.901,
         -40
       ],
       [
         -12,
-        605.051,
+        2411.941,
         -36
       ],
       [
         12,
-        605.051,
+        2411.941,
         -36
       ]
     ],
     [
       [
         -6,
-        604.889,
+        2411.901,
         40
       ],
       [
         6,
-        604.889,
+        2411.901,
         40
       ],
       [
         -12,
-        605.051,
+        2411.941,
         36
       ],
       [
         12,
-        605.051,
+        2411.941,
         36
       ]
     ]
@@ -204,13 +204,13 @@
   "hills": [
     {
       "x": 30,
-      "y": 604.513,
+      "y": 2411.627,
       "z": 30,
       "radius": 6
     },
     {
       "x": -30,
-      "y": 604.513,
+      "y": 2411.627,
       "z": -30,
       "radius": 6
     }
@@ -218,54 +218,54 @@
   "flags": [
     [
       0,
-      604.827,
+      2412.08,
       -45
     ],
     [
       0,
-      604.827,
+      2412.08,
       45
     ]
   ],
   "ops": [
     {
       "op": "SurfaceSpawn",
-      "lat": 88.67634,
+      "lat": 89.66744,
       "lon": 22.5
     },
     {
       "op": "SurfaceSpawn",
-      "lat": 88.67634,
+      "lat": 89.66744,
       "lon": 67.5
     },
     {
       "op": "SurfaceSpawn",
-      "lat": 88.67634,
+      "lat": 89.66744,
       "lon": 112.5
     },
     {
       "op": "SurfaceSpawn",
-      "lat": 88.67634,
+      "lat": 89.66744,
       "lon": 157.5
     },
     {
       "op": "SurfaceSpawn",
-      "lat": 88.67634,
+      "lat": 89.66744,
       "lon": 202.5
     },
     {
       "op": "SurfaceSpawn",
-      "lat": 88.67634,
+      "lat": 89.66744,
       "lon": 247.5
     },
     {
       "op": "SurfaceSpawn",
-      "lat": 88.67634,
+      "lat": 89.66744,
       "lon": 292.5
     },
     {
       "op": "SurfaceSpawn",
-      "lat": 88.67634,
+      "lat": 89.66744,
       "lon": 337.5
     },
     {

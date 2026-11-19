@@ -6,8 +6,9 @@
   "warden": "",
   "wreck": "",
   "ship": "Zero Day Frigate", // the blueprint everyone wakes aboard (Source/PartKit/Generators/TorpedoFrigateParts.cs)
-  "orbit": 3200, // m over the ground (Karl, 2026-11-17: over Caledon, a bigger world with more pull, not Crumb): past
-  // Caledon's sky edge (the map's 8.6 km half width, 2.6 km up) and GameSpaceStart's margin, clear of Ben Slop; about 207 m/s round
+  "orbit": 5800, // m over the ground (Karl, 2026-11-17: over Caledon, a bigger world with more pull, not Crumb): past
+  // Caledon's sky edge (the map's 29.2 km half width, 5.2 km up since the 4x worlds of 2026-11-19) and GameSpaceStart's margin,
+  // clear of Ben Slop (about 2.3 km); about 465 m/s round
   // Where people wake, one each in turn, in the ship's own metres from its first part's middle (TorpedoFrigateParts' metres
   // less 0.125): cabin A, the captain's cabin, cabin B, the upper corridor, the mess, and the lower deck's torpedo room.
   "wake": [[4.175, 3.385, 21.875], [8.375, 3.385, 22.175], [4.175, 3.385, 27.875], [6.375, 3.385, 24.375], [6.375, 3.385, 37.875], [6.375, 0.135, 27.875]],
@@ -18,8 +19,8 @@
   // 80 km out, so 81 to 99 km from the ship as it goes round: always inside the 100 km radar and the torpedoes' reach.
   "company": [{ "ship": "Zero Day Frigate", "faction": "Traders", "behind": 400 }, { "ship": "Zero Day Frigate", "faction": "Mercenaries", "away": 80000 }],
   // Caledon Highport, the station (Karl, 2026-11-18: "around 40km"): on its own circular orbit 40 km up over the start, about
-  // 93 m/s, so it drifts against the ship's lower, faster orbit (GameSpaceStart.OpeningStation). Caledon's pull there is under 2% of
-  // the ground's; its reach (Hill sphere) runs out near 16,000 km, so no height near the world is wholly out of its gravity.
+  // 315 m/s (4x worlds, 2026-11-19), so it drifts against the ship's lower, faster orbit (GameSpaceStart.OpeningStation). Caledon's pull there is 14% of
+  // the ground's; its reach (Hill sphere) runs out near 40,000 km, so no height near the world is wholly out of its gravity.
   "stations": [{ "blueprint": "Caledon Highport", "orbit": 40000 }],
   "beats": {
     "placeholder": { "time": 4.0, "caption": "The torpedo racks click over on their safeties. Below, Caledon turns, green glens under snow-capped bens." },
