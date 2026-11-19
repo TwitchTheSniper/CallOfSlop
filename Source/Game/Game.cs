@@ -2436,6 +2436,9 @@ public sealed partial class Game : IDisposable
             case (byte)Msg.Gantry when !IsServer && r.Has(5):
                 ReadGantry(ref r); // a Shell Gantry's swap (GameShellGantry.cs)
                 break;
+            case (byte)Msg.ShellPod when !IsServer && r.Has(5):
+                ReadShellPod(ref r); // a shell pod's fold or unfold (GameShellPod.cs)
+                break;
             case (byte)Msg.StandIn when !IsServer:
                 ReadStandIn(ref r); // STAND-IN: the story's placeholder craft (Source/StandIns/GameStandIns.cs)
                 break;

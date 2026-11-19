@@ -24,6 +24,9 @@ public sealed partial class ConstructWorld
         for (var i = 0; i < c.PartCount && i < doomed.Length; i++)
             if (doomed[i] && c.DefOf(i).IsReceiverGun && c.MergeOf[i] != 0)
                 return RemovePartsOneByOne(c, doomed, n); // (a merged receiver's cell re-merges the rest: ConstructMerge.Settle, one at a time)
+        for (var i = 0; i < c.PartCount && i < doomed.Length; i++)
+            if (doomed[i] && c.DefOf(i).ShellPod != null)
+                ConstructShellPod.Release(this, c, i); // (a shell pod that goes stands its shell first)
         if (n >= c.PartCount)
         {
             SpillAll(c);
@@ -71,8 +74,12 @@ public sealed partial class ConstructWorld
     public void SpillAll(Construct c)
     {
         for (var i = 0; i < c.PartCount; i++)
+        {
+            if (c.DefOf(i).ShellPod != null)
+                ConstructShellPod.Release(this, c, i); // (a shell pod stands its shell first)
             if (c.Parts[i].Store != 0)
                 Spill(c, i);
+        }
     }
 
     /// <summary>

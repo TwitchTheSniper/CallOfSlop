@@ -99,6 +99,11 @@ public sealed partial class Game
             }
             return;
         }
+        if (shell.DefOf(shellPart).ShellPod != null)
+        {
+            PodWakeAsk(p, c, shell, shellPart, now); // (a shell docked in a pod: it unfolds first, GameShellPod.cs)
+            return;
+        }
         if (shell.PartCount > 1)
         {
             // A shell on a Robot Shell Dock (Karl, 2026-11-17): the dock unclamps it, and it is woken as one standing alone.
@@ -196,7 +201,7 @@ public sealed partial class Game
     /// Server: back to the body. Lost: the shell was destroyed (nothing stands again); otherwise it stands where they were.
     /// Whatever the shell carried is set down where it stands (or fell). <paramref name="why"/> is said to them.
     /// </summary>
-    private void ShellReturn(Player p, bool lost, string why, Construct? dock = null, int dockPart = -1)
+    private void ShellReturn(Player p, bool lost, string why, Construct? dock = null, int dockPart = -1, Construct? pod = null, int podPart = -1)
     {
         ref var run = ref _sh[p.Id];
         if (!run.On)
@@ -214,7 +219,12 @@ public sealed partial class Game
         if (SandboxHands.Packs[p.Id].Items > 0)
             SandboxHands.DropPack(Constructs, p.Id, feet, yaw);
         var standing = false;
-        if (!lost && run.ShellDef != null && ConstructBuild.PlaceNew(Constructs, run.ShellDef, feet, yaw) is { } stood)
+        if (!lost && pod != null && run.ShellDef != null && (uint)podPart < (uint)pod.PartCount)
+        {
+            standing = true; // (into a shell pod: kept in its settings, no part: GameShellPod.cs)
+            PodKeep(p, pod, podPart, run.ShellDef, run.Channel, run.Owner);
+        }
+        else if (!lost && run.ShellDef != null && ConstructBuild.PlaceNew(Constructs, run.ShellDef, feet, yaw) is { } stood)
         {
             standing = true;
             ConstructConfig.Put(ref stood.Parts[0], run.ShellDef, CfgKey.Channel, run.Channel);
@@ -274,7 +284,7 @@ public sealed partial class Game
         run.Pack = null;
         ShellBroadcast(p);
         SandboxHands.Notices.Add((p.Id, why));
-        Log($"[shell] {p.Name} back in their body ({(lost ? "shell destroyed" : dock != null ? "shell to its dock" : "shell left standing")}): {why}");
+        Log($"[shell] {p.Name} back in their body ({(lost ? "shell destroyed" : dock != null ? "shell to its dock" : pod != null ? "shell into a pod" : "shell left standing")}): {why}");
         ShellBack(p, lost);
     }
 

@@ -182,6 +182,7 @@ public sealed partial class Game
     {
         var clock = Stopwatch.StartNew();
         var s = stashFolder != null ? new WorldSnapshot() : ws.Snapshot;
+        ConstructShellPod.StandReleases(Constructs); // (a shell out of a pod that went this tick stands before the capture: ConstructShellPod.cs)
         ShellStandForSave(); // (a worn shell is no construct: one stands where its wearer is for the capture, GameRobotShell.cs)
         try
         {

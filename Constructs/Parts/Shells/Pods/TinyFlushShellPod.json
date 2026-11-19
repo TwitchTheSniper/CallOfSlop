@@ -1,0 +1,204 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Tiny Flush Shell Pod",
+  "description": "Parks a robot shell (up to 1 m tall) when nobody wears it: walk the shell into the frame that rises out of it and press F: you wake in your chair and the pod folds the shell away. Wake in it again from a Shell Control Chair. A docked shell charges from the grid and can't be damaged or taken. Flush: the pod sinks into the floor, wall or ceiling it is welded to, its lid level with the surface.",
+  "group": "Logic",
+  "section": "Shells",
+  "role": "panel",
+  "tool": "welder",
+  "mass": 45.0,
+  "health": 300,
+  "armour": 6,
+  "material": "steel",
+  "color": "#22262b",
+  "attachSeconds": 4.0,
+  "power": 30,
+  "onBreak": "disable",
+  "shellPod": {
+    "class": "tiny",
+    "half": 0.35,
+    "top": 0.004,
+    "depth": 0.55,
+    "flush": true
+  },
+  "boxes": [
+    {
+      "min": [
+        -0.35,
+        0.0,
+        -0.35
+      ],
+      "max": [
+        0.35,
+        0.03,
+        0.35
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.35,
+        -0.546,
+        -0.35
+      ],
+      "max": [
+        0.35,
+        -0.486,
+        0.35
+      ],
+      "color": "#22262b",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.35,
+        -0.483,
+        -0.35
+      ],
+      "max": [
+        -0.29,
+        -0.041,
+        0.35
+      ],
+      "color": "#22262b",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.287,
+        -0.483,
+        -0.35
+      ],
+      "max": [
+        0.287,
+        -0.041,
+        -0.29
+      ],
+      "color": "#22262b",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.29,
+        -0.483,
+        -0.35
+      ],
+      "max": [
+        0.35,
+        -0.041,
+        0.35
+      ],
+      "color": "#22262b",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.287,
+        -0.483,
+        0.29
+      ],
+      "max": [
+        0.287,
+        -0.041,
+        0.35
+      ],
+      "color": "#22262b",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.284,
+        -0.483,
+        -0.284
+      ],
+      "max": [
+        0.284,
+        -0.466,
+        0.284
+      ],
+      "color": "#30363d",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.354,
+        -0.038,
+        -0.354
+      ],
+      "max": [
+        -0.26,
+        0.001,
+        0.354
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.257,
+        -0.038,
+        -0.354
+      ],
+      "max": [
+        0.257,
+        0.001,
+        -0.26
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        0.26,
+        -0.038,
+        -0.354
+      ],
+      "max": [
+        0.354,
+        0.001,
+        0.354
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.257,
+        -0.038,
+        0.26
+      ],
+      "max": [
+        0.257,
+        0.001,
+        0.354
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

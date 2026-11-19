@@ -502,6 +502,13 @@ public sealed class Assembling : IPartGenerator
         Rec("Shell Standard Leg", 12, 2, m: [("steel", 7), ("rubber", 1)]),
         Rec("Shell Heavy Leg", 20, 2, m: [("steel", 20), ("rubber", 3)]),
         Rec("Shell Runner Leg", 18, 2, m: [("steel", 6), ("copper", 2), ("rubber", 3)]),
+        // Shell storage pods (docs/sandbox/design/shell-pod.md), bolted on and flush
+        Rec("Tiny Shell Pod", 15, 1, m: [("steel", 14), ("copper", 2)], p: [("Circuit Board", 1)]),
+        Rec("Tiny Flush Shell Pod", 15, 1, m: [("steel", 12), ("copper", 2)], p: [("Circuit Board", 1)]),
+        Rec("Small Shell Pod", 30, 2, m: [("steel", 60), ("copper", 8), ("rubber", 4)], p: [("Circuit Board", 2)]),
+        Rec("Small Flush Shell Pod", 30, 2, m: [("steel", 54), ("copper", 8), ("rubber", 4)], p: [("Circuit Board", 2)]),
+        Rec("Medium Shell Pod", 50, 2, m: [("steel", 140), ("copper", 16), ("rubber", 8)], p: [("Circuit Board", 3)]),
+        Rec("Medium Flush Shell Pod", 50, 2, m: [("steel", 128), ("copper", 16), ("rubber", 8)], p: [("Circuit Board", 3)]),
     ];
 
     /// <summary>The recipes file: the header, then one recipe a line (json.dumps with its default separators).</summary>

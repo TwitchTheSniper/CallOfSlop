@@ -27,6 +27,19 @@ public sealed class ShellModule
     public ConstructTool? Tool; // "tool": while the shell is worn this is its only tool (the Drill Arm's ground drill; the user, 2026-11-17)
 }
 
+/// <summary>
+/// How a shell frame folds into a shell pod (Shells.json's "fold"; docs/sandbox/design/shell-pod.md): it kneels (thighs forward by
+/// <see cref="Hip"/> degrees, shins back under them by <see cref="Knee"/>), bends its body forward (<see cref="Bend"/>, negative),
+/// draws its arms in (each shoulder and elbow, degrees forward), sinks its head into its shoulders (<see cref="Head"/>) and comes down
+/// by <see cref="Drop"/> and back by <see cref="Shift"/>; lengths are in a person's metres, times the frame's scale. Folded it is about
+/// <see cref="Height"/> tall (the same units): a ceiling pod hangs it by its top.
+/// </summary>
+public sealed class ShellFold
+{
+    public float Hip = 90, Knee = -160, Bend = -35, LeftShoulder = 50, RightShoulder = 50, LeftElbow = 60, RightElbow = 60;
+    public float Head = 0.2f, Drop = 0.72f, Shift = 0.15f, Height = 0.95f;
+}
+
 /// <summary>One shell frame: a body (its part), its size and pace, and the module in each slot (<see cref="ShellFrames.Slots"/> order).</summary>
 public sealed class ShellFrame
 {
@@ -35,6 +48,7 @@ public sealed class ShellFrame
     public string[] Jobs = [];
     public ShellModule?[] Modules = new ShellModule?[ShellFrames.SlotCount];
     public bool[] Fixed = new bool[ShellFrames.SlotCount]; // a slot the Shell Gantry may not change (the Mining Shell's hopper and drill arm)
+    public ShellFold Fold = new(); // "fold": how it folds into a shell pod (docs/sandbox/design/shell-pod.md; ShellPodRender.cs)
 
     /// <summary>The tool a module forces while the shell is worn (the first slot's that names one), or null: any tool.</summary>
     public ConstructTool? ForcedTool
@@ -275,6 +289,31 @@ public static class ShellFrames
                         throw new FormatException($"frame \"{fr.Name}\": \"fixed\": no slot \"{e.GetString()}\"");
                     fr.Fixed[i] = true;
                 }
+            if (f.TryGetProperty("fold", out var fo))
+            {
+                var fd = fr.Fold;
+                foreach (var pr in fo.EnumerateObject())
+                {
+                    var v = pr.Value.ValueKind == JsonValueKind.Number ? pr.Value.GetSingle() : throw new FormatException($"frame \"{fr.Name}\": fold.{pr.Name} is a number");
+                    var angle = MathF.Abs(v) <= 180;
+                    var length = v is >= -0.5f and <= 1.5f;
+                    switch (pr.Name)
+                    {
+                        case "hip" when angle: fd.Hip = v; break;
+                        case "knee" when angle: fd.Knee = v; break;
+                        case "bend" when angle: fd.Bend = v; break;
+                        case "leftShoulder" when angle: fd.LeftShoulder = v; break;
+                        case "rightShoulder" when angle: fd.RightShoulder = v; break;
+                        case "leftElbow" when angle: fd.LeftElbow = v; break;
+                        case "rightElbow" when angle: fd.RightElbow = v; break;
+                        case "head" when length: fd.Head = v; break;
+                        case "drop" when length: fd.Drop = v; break;
+                        case "shift" when length: fd.Shift = v; break;
+                        case "height" when v is > 0.2f and <= 2: fd.Height = v; break;
+                        default: throw new FormatException($"frame \"{fr.Name}\": fold.{pr.Name}: unknown, or out of range (angles -180 to 180 degrees, lengths -0.5 to 1.5, height to 2)");
+                    }
+                }
+            }
             if (fr.Find(ShellModuleKind.Drill) != null && fr.Find(ShellModuleKind.Hopper) == null)
                 throw new FormatException($"frame \"{fr.Name}\": a drill arm needs a hopper on the back to put its ore in");
             for (var i = 0; i < SlotCount; i++)

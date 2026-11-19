@@ -800,6 +800,8 @@ public sealed partial class ConstructEdits
             return "only loose parts can be picked up";
         if (world.StoreOf(c, 0) is { Empty: false })
             return $"empty the {c.DefOf(0).Name} first";
+        if (ConstructShellPod.Holds(c.Parts[0]))
+            return $"a robot shell is docked in the {c.DefOf(0).Name}: wake in it and walk it out first";
         if (Reachable(eye, c.WorldCom, ConstructBuild.UseReach) is { } far)
             return far;
         var def = c.DefOf(0);

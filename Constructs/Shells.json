@@ -3,7 +3,9 @@
   // the user, 2026-11-17). A frame is a shell body: the part that stands as it, its size ("scale", 1 a person), its pace
   // ("speed", times a person's), the hits it takes ("damage", times a person's), the jobs it suits and the module in each slot.
   // "fixed" slots can't be changed by the Shell Gantry. A frame's place in the list is its byte on the wire: frame 0 is the Robot
-  // Shell with the numbers every shell had before; a new frame goes at the end.
+  // Shell with the numbers every shell had before; a new frame goes at the end. "fold" is how it folds into a shell pod
+  // (docs/sandbox/design/shell-pod.md; ShellFold in ShellFrames.cs): degrees at the hip, knee, waist ("bend"), shoulders and
+  // elbows, and how far the head sinks, the body drops and moves back, and its folded height, in a person's metres.
   "format": "call-of-slop-shells/1",
   "slots": ["head", "back", "leftArm", "rightArm", "leftLeg", "rightLeg"], // the order is the wire's: a new slot goes at the end
   // A module's "kind" is what the code knows: head, pack, hopper (the shell part's own bin is the hopper; "takes" what it
@@ -27,9 +29,13 @@
   ],
   "frames": [
     { "name": "Standard", "part": "Robot Shell", "scale": 1, "speed": 1, "damage": 1,
-      "slots": { "head": "Optics Head", "back": "Power Pack", "leftArm": "Hand", "rightArm": "Hand", "leftLeg": "Standard Leg", "rightLeg": "Standard Leg" } },
+      "slots": { "head": "Optics Head", "back": "Power Pack", "leftArm": "Hand", "rightArm": "Hand", "leftLeg": "Standard Leg", "rightLeg": "Standard Leg" },
+      "fold": { "hip": 90, "knee": -160, "bend": -35, "leftShoulder": 50, "rightShoulder": 50, "leftElbow": 60, "rightElbow": 60, "head": 0.2, "drop": 0.72, "shift": 0.15, "height": 0.95 } },
     { "name": "Mining", "part": "Mining Shell", "scale": 1.5, "speed": 0.85, "damage": 0.7, "jobs": ["miner"],
       "slots": { "head": "Optics Head", "back": "Ore Hopper", "leftArm": "Hand", "rightArm": "Drill Arm", "leftLeg": "Heavy Leg", "rightLeg": "Heavy Leg" },
-      "fixed": ["back", "rightArm"] }
+      "fixed": ["back", "rightArm"],
+      // Folded: it kneels with its back straighter (the hopper stays upright), its hand in its lap and the drill arm laid forward
+      // across its knees.
+      "fold": { "hip": 90, "knee": -160, "bend": -15, "leftShoulder": 45, "rightShoulder": 80, "leftElbow": 70, "rightElbow": 0, "head": 0.22, "drop": 0.72, "shift": 0.05, "height": 1.0 } }
   ]
 }

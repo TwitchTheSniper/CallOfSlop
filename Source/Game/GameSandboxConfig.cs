@@ -49,6 +49,19 @@ public sealed partial class Game
             _cfgValues[k] = r.F32();
         }
         var refusal = Constructs.Get(body) is { } c ? SandboxConfigRefusal(c, p.Id) : null;
+        if (Constructs.Get(body) is { } hc && _cfgParts[0] < hc.PartCount)
+        {
+            // Hidden settings are state the server keeps (a docked shell, wear, a door's place): never a client's to set. Dropped, so a
+            // panel that sends a part's whole list still sets the rest.
+            var d = hc.DefOf(_cfgParts[0]);
+            var kept = 0;
+            for (var k = 0; k < m; k++)
+                if (_cfgSlots[k] >= d.Config.Length || !d.Config[_cfgSlots[k]].Hidden)
+                    (_cfgSlots[kept], _cfgValues[kept++]) = (_cfgSlots[k], _cfgValues[k]);
+            if (m > 0 && kept == 0)
+                return "that setting isn't on the panel";
+            m = kept;
+        }
         return SandboxHands.Configure(Constructs, p.Id, eye, body, _cfgParts.AsSpan(0, n), _cfgSlots.AsSpan(0, m), _cfgValues.AsSpan(0, m), refusal);
     }
 

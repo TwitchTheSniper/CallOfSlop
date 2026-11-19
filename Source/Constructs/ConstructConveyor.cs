@@ -315,8 +315,15 @@ public static class ConstructConveyor
         c.PieceRackCount = 0;
         c.ToolRackCount = 0;
         c.GantryCount = 0;
+        c.PodCount = 0;
         foreach (var i in c.Specials)
         {
+            if (c.Parts[i].D.ShellPod != null)
+            {
+                if (c.Pods.Length == c.PodCount)
+                    Array.Resize(ref c.Pods, Math.Max(2, c.PodCount * 2));
+                c.Pods[c.PodCount++] = (ushort)i; // (a shell pod: its frame is drawn, ShellPodRender.cs, and GameShellPod.cs ticks it)
+            }
             if (c.Parts[i].D.Gantry != null)
             {
                 if (c.Gantries.Length == c.GantryCount)

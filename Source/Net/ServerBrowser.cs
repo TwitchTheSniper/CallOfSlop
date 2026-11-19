@@ -631,7 +631,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   view); Msg.FleetGroups takes the slot of RemovedObjective (Msg is full).
     // 369: noclip Board inside (creative Sandbox): the input packet ends with a u8 of board bits, one per command, then per set bit a u16 construct and 3 f32 (its rest-frame aim; InputCmd.NoclipBoard); a snapshot fast entry's ride kind 246 is a flyer held for a set-down inside (MoveState.NoclipHold).
     // 370: the Shell Gantry (docs/sandbox/design/mining-shell.md "Shell Gantry"): Constructs/Shells.json gains leg slots and module parts, so part ids move; Msg.Shell ends with a byte a module slot (the worn kit); CfgKey gains ShellKit0..2; Msg.Gantry (the slot of RemovedLabour) carries a gantry's swap; CActKind.Gantry at the end of CActKind.
-    public const ushort ProtocolVersion = 370;
+    // 371: shell storage pods (docs/sandbox/design/shell-pod.md): six pod part files move part ids; CfgKey gains PodShell..PodOreUnits; Msg.ShellPod (the slot of RemovedLabourHands) carries a pod's fold or unfold.
+    public const ushort ProtocolVersion = 371;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

@@ -473,6 +473,7 @@ public sealed partial class Game
         BreakdownTick(); // (the rust bucket's breakdowns: GameSandboxBreakdowns.cs)
         ShellTick(); // (worn robot shells keep their link: GameRobotShell.cs)
         GantryTick(); // (Shell Gantries' swaps: GameShellGantry.cs)
+        PodTick(); // (shell pods' folds, and their docked shells' charge: GameShellPod.cs)
         ShellWearTick(); // (...and wear a little: GameShellWear.cs)
         FirstsTick(); // (a first flight in a craft of your own: GameMilestones.cs)
         StoryArmsTick(); // (no stock gun in a story world: GameStoryArms.cs)
@@ -831,6 +832,7 @@ public sealed partial class Game
         }
         ShellSendAll(to); // (who wears a robot shell: GameRobotShell.cs)
         GantrySendAll(to); // (Shell Gantries at work: GameShellGantry.cs)
+        PodSendAll(to); // (shell pods at work: GameShellPod.cs)
         if (Constructs.UseGrid)
         {
             SandboxStreamStart(to);
@@ -1207,6 +1209,8 @@ public sealed partial class Game
                     return SandboxGrabOn(p, lc, part, ladder: true); // (a vertical ladder: climbed up or down, ConstructRide.ClimbLadder)
                 if (Constructs.Get(body) is { } bc && part < bc.PartCount && bc.DefOf(part).Boarding)
                     return SandboxGrabOn(p, bc, part); // (a grab handle, a boarding ladder, a step plate: ba01)
+                if (ShellPodUse(p, body, part, out var podded))
+                    return podded; // (in a robot shell, F in an empty shell pod's frame: folded away, back to the body; GameShellPod.cs)
                 if (ShellDockUse(p, eye, body, part, out var docked))
                     return docked; // (in a robot shell, F on a free Robot Shell Dock: clamped on, back to the body; GameRobotShell.cs)
                 var used = hands.Use(Constructs, p.Id, eye, body, part);

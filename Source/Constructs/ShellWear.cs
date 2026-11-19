@@ -181,8 +181,8 @@ public sealed class ShellWear
     /// <summary>Every Robot Shell has these (ConstructConfig.Parse): its works' wear, two a setting, hidden (they ride saves and CBody).</summary>
     public static void AddSettings(ConstructPartDef d, List<CConfigDef> list)
     {
-        if (!d.ShellBody)
-            return;
+        if (!d.ShellBody && d.ShellPod == null)
+            return; // (a shell pod keeps its docked shell's wear, damage and kit: ConstructShellPod.cs)
         foreach (var k in Keys)
             if (!list.Exists(e => e.Id == k))
                 list.Add(new CConfigDef { Key = ConstructConfig.KeyName(k), Id = k, Type = CfgType.Mask, Hidden = true, Label = "Shell wear", Group = "Shell", Tooltip = "Not on the panel." });

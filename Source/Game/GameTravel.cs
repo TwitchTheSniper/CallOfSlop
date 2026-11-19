@@ -323,7 +323,7 @@ public sealed partial class Game
         if (Space?.Flight is { } f && f.Ships.IndexOfId(ship.SpaceShip) is var si and >= 0)
             f.Ships.Remove(si);
         foreach (var c in gone)
-            Constructs.Remove(c, keepRiders: true); // (its riders went with its copy)
+            Constructs.Remove(c, keepRiders: true, leaving: true); // (its riders went with its copy; leaving: its shell pods' shells went with it too)
         foreach (var p in riders)
         {
             p.Alive = false;
