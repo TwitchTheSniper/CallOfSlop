@@ -387,6 +387,8 @@ public static unsafe partial class Program
             }
             g.SandboxLookText = _sbLifterText;
         }
+        if (aimed && hit.RoutePlus1 == 0 && hit.Part >= 0 && hit.Part < hit.Body.PartCount && hit.Body.DefOf(hit.Part).Gantry != null)
+            g.SandboxLookText = ShellGantryLook(g, hit.Body, hit.Part); // (a Shell Gantry: its bay, its table, its work: Program.SandboxShellGantry.cs)
         var terminalTook = TerminalFrame(g, me, in h, aimed, hit, storeNear); // (a Smart Terminal under the crosshair takes the wheel, the use key and reload: Program.SandboxTerminal.cs)
         var feet = me.Position;
         var nearRack = World.Map.Sandbox is { } sb && Vector3.Distance(feet with { Y = 0 }, sb.Rack) <= 4.5f;
@@ -461,6 +463,8 @@ public static unsafe partial class Program
                 OpenLinkedPanel(hit.Body, hit.Part); // (a linked logistics part: Program.SandboxLinked.cs)
             else if (aimed && !join && !hit.Body.Loose && LifterUse(hit.Body, hit.Part, hit.Distance)) // (the Welder's join first)
                 OpenLifterPanel(hit.Body, hit.Part); // (a Loader Arm or a Crane Bridge: its points and hand orders, Program.SandboxLifter.cs)
+            else if (aimed && !join && !hit.Body.Loose && ShellGantryUse(hit.Body, hit.Part, hit.Distance))
+                OpenShellGantryPanel(hit.Body, hit.Part); // (a Shell Gantry: its shell's modules, Program.SandboxShellGantry.cs)
             else if (join)
                 g.SandboxSend(CActKind.Join, body: hit.Body.Id, part: (ushort)hit.Part);
             else if (aimed && hit.Distance <= ConstructBuild.UseReach && hit.Body is { Loose: true, PartCount: 1 } && ToolUpgrades.Current.ModuleOf(hit.Body.Parts[0].Def) != null)
@@ -634,7 +638,7 @@ public static unsafe partial class Program
         // The Replacer: the click swaps the aimed part (Program.SandboxAids.cs).
         if (_buildMode == BuildMode.Replace && SandboxReplaceInput(g, in h, aimed, hit, held))
             return true;
-        // The gantry's build plane: a ray that meets nothing crosses it (Program.SandboxGantry.cs).
+        // The gantry's build plane: a ray that meets nothing crosses it (Program.SandboxShellGantry.cs).
         if (!aimed && held != null && GantryPlaneHit(g, eye, dir, out var planeHit))
         {
             aimed = true;

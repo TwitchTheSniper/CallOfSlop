@@ -68,6 +68,7 @@ public static unsafe partial class Program
             SetCommandOpen(false);
             Ui.CloseDesigner();
             Ui.CloseLifter();
+            Ui.CloseShellGantry();
             Ui.CloseLinked();
             _linkWheel.ResetMode();
             _lkMarkN = 0;
@@ -125,6 +126,7 @@ public static unsafe partial class Program
             DrawCraftingInMatch(now);
             DrawDesignerInMatch(now);
             DrawLifterInMatch(now);
+            DrawShellGantryInMatch(now);
             DrawLinkedInMatch(now);
             DrawToolWheelEditorInMatch();
             DrawSandboxTrackInMatch();

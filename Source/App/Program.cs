@@ -1221,7 +1221,7 @@ public static unsafe partial class Program
     // Input
     // =====================================================================
 
-    private static bool MenusOpen => DimmingMenusOpen || Ui.WeatherMapOpen || Ui.StoryOpen || Ui.FactionsOpen || Ui.JobBoardOpen || Ui.LogbookOpen || Ui.CommandOpen || Ui.SandboxPartsOpen || Ui.SandboxConfigOpen || Ui.ConnectorPanelOpen || Ui.ToolWheelEditorOpen || Ui.SandboxTrackOpen || Ui.SandboxPaintPickerOpen || Ui.SandboxTexturePickerOpen || Ui.SandboxMaterialPickerOpen || Ui.ReplacePickerOpen || Ui.BlueprintSaveOpen || Ui.OrdnanceBenchOpen || Ui.RecipePickerOpen || Ui.CraftingOpen || Ui.DesignerOpen || Ui.LifterOpen || Ui.LinkedOpen; // (and the Sandbox parts menu and settings panel, which free the mouse but don't dim the scene)
+    private static bool MenusOpen => DimmingMenusOpen || Ui.WeatherMapOpen || Ui.StoryOpen || Ui.FactionsOpen || Ui.JobBoardOpen || Ui.LogbookOpen || Ui.CommandOpen || Ui.SandboxPartsOpen || Ui.SandboxConfigOpen || Ui.ConnectorPanelOpen || Ui.ToolWheelEditorOpen || Ui.SandboxTrackOpen || Ui.SandboxPaintPickerOpen || Ui.SandboxTexturePickerOpen || Ui.SandboxMaterialPickerOpen || Ui.ReplacePickerOpen || Ui.BlueprintSaveOpen || Ui.OrdnanceBenchOpen || Ui.RecipePickerOpen || Ui.CraftingOpen || Ui.DesignerOpen || Ui.LifterOpen || Ui.LinkedOpen || Ui.ShellGantryOpen; // (and the Sandbox parts menu and settings panel, which free the mouse but don't dim the scene)
 
     /// <summary>The menus that dim the scene behind them (Ui.SceneDim): a Zombies workbench too; the lobby room; the Audio mixer, weapon tweak, perf and prop editor windows.</summary>
     private static bool DimmingMenusOpen => Ui.MenuOpen || Ui.PauseOpen || Ui.BenchRun != null || Ui.InventoryOpen || InLobbyRoom || Ui.AudioMixerOpen || Ui.WeaponTweaksOpen || Ui.PerfWindowOpen || Ui.PropEditorOpen;
@@ -1294,6 +1294,13 @@ public static unsafe partial class Program
         if (key == GlfwKey.Escape && Ui.LinkedOpen)
         {
             Ui.CloseLinked(); // Esc closes a linked logistics part's panel
+            if (!MenusOpen)
+                SetMouseCaptured(true);
+            return;
+        }
+        if (key == GlfwKey.Escape && Ui.ShellGantryOpen)
+        {
+            Ui.CloseShellGantry(); // Esc closes a Shell Gantry's panel
             if (!MenusOpen)
                 SetMouseCaptured(true);
             return;
@@ -1497,7 +1504,7 @@ public static unsafe partial class Program
         if (_session != null && _mouseCaptured && Math.Abs(offset.Y) > 0.1 && PhysGunScroll(offset.Y))
             return; // (the physics gun holding something: the wheel pulls it in or pushes it out; Program.PhysicsGun.cs)
         if (_session != null && _mouseCaptured && Math.Abs(offset.Y) > 0.1 && GantryScroll(offset.Y))
-            return; // (the Build Gantry's camera: the wheel zooms it; Program.SandboxGantry.cs)
+            return; // (the Build Gantry's camera: the wheel zooms it; Program.SandboxShellGantry.cs)
         if (_session != null && _mouseCaptured && Math.Abs(offset.Y) > 0.1 && LeverScroll(offset.Y))
             return; // (aiming at an Analog Lever: the wheel nudges it; Program.SandboxLever.cs)
         if (_session != null && _mouseCaptured && Math.Abs(offset.Y) > 0.1 && ThirdPersonScroll(offset.Y))
@@ -1744,7 +1751,7 @@ public static unsafe partial class Program
         wheelOpen |= SocketWeldMouse(delta); // Sandbox: the welder's socket weld, step 3: mouse X spins the piece (Program.SandboxSocketWeld.cs)
         wheelOpen |= PointWeldMouse(delta); // ...and the point weld's (Program.SandboxPointWeld.cs)
         wheelOpen |= SelectMouse(delta); // ...and the selector's marquee (Program.SandboxSelect.cs)
-        wheelOpen |= GantryMouse(delta); // Sandbox: the Build Gantry's camera has the mouse (Program.SandboxGantry.cs)
+        wheelOpen |= GantryMouse(delta); // Sandbox: the Build Gantry's camera has the mouse (Program.SandboxShellGantry.cs)
         wheelOpen |= LeverMouse(delta); // Sandbox: a hand on an Analog Lever: the mouse moves it (Program.SandboxLever.cs)
 
         if (_game.MmuSteering && Pressed(GameAction.SeatDampeners))
@@ -1902,7 +1909,7 @@ public static unsafe partial class Program
             if (_mouseCaptured && (Down(GameAction.CrouchHold) || Down(GameAction.CrouchToggle) || Down(GameAction.Prone)))
                 buttons |= Buttons.Crouch;
         }
-        buttons = GantryButtons(buttons); // (the Build Gantry's camera: the body stays parked, Program.SandboxGantry.cs)
+        buttons = GantryButtons(buttons); // (the Build Gantry's camera: the body stays parked, Program.SandboxShellGantry.cs)
         _game.HeldButtons = buttons;
         _game.AimHeld = (_mouseCaptured && Down(GameAction.Aim) && !SandboxHoldsTrigger) ; // (Sandbox: aim takes parts off with a tool out)
 
@@ -2060,7 +2067,7 @@ public static unsafe partial class Program
             eye = new Vector3(MathF.Sin(a) * 26f, 14f, MathF.Cos(a) * 26f);
             fwd = Vector3.Normalize(-eye + new Vector3(0, 1, 0));
         }
-        var tp = local != null && (GantryCamera(ref eye, ref fwd) || ThirdPersonCamera(local, ref eye, ref fwd)); // Sandbox: the Build Gantry's camera (Program.SandboxGantry.cs), third person (Program.ThirdPerson.cs)
+        var tp = local != null && (GantryCamera(ref eye, ref fwd) || ThirdPersonCamera(local, ref eye, ref fwd)); // Sandbox: the Build Gantry's camera (Program.SandboxShellGantry.cs), third person (Program.ThirdPerson.cs)
         _game.Audio.SetListener(eye, fwd);
         var shake = Vector3.Zero;
         if (_game.Shake > 0.01f)
