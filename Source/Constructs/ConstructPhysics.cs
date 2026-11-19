@@ -197,7 +197,7 @@ public static partial class ConstructPhysics
                 c.Wake(); // (held by a physics gun: never asleep, ConstructGrab.cs)
             if (c.Asleep && c.MovingJoints > 0)
                 WakeCheck(c);
-            _dyn[i] = !c.Anchored && !c.Asleep && c.CarriedBy == 0 && c.SpaceShip == 0 && c.NudgeBy == 255; // (out of the bubble: posed by its space ship, GameSpaceLaunch.cs; cargo in a frozen volume rides kinematically: ConstructCargo.cs)
+            _dyn[i] = !c.Anchored && !c.Asleep && c.CarriedBy == 0 && c.SpaceShip == 0 && c.NudgeBy == 255 && !c.FramePending; // (out of the bubble: posed by its space ship, GameSpaceLaunch.cs; cargo in a frozen volume rides kinematically: ConstructCargo.cs)
             _jact[i] = !c.Asleep && c.MovingJoints > 0 && c.CarriedBy == 0; // (freeform welds are rigid: their parts are hull points)
             _invI[i] = _dyn[i] ? c.InvInertiaWorld() : default;
             var weight = g;
@@ -1347,6 +1347,8 @@ public static partial class ConstructPhysics
                 var b = bodies[j];
                 if (a.CarriedBy == b.Id || b.CarriedBy == a.Id || a.CarriedBy != 0 && a.CarriedBy == b.CarriedBy || a.HeldBy == b.Id || b.HeldBy == a.Id)
                     continue; // (a carrier and what its frozen cargo volumes carry don't collide, nor a lifter's body and what its hook holds)
+                if (a.FramePending || b.FramePending)
+                    continue; // (loaded, waiting to be placed by its frame: ConstructFrames.Carry)
                 if (a.Frame == b.Id && a.Asleep || b.Frame == a.Id && b.Asleep)
                 {
                     // Asleep in its frame: carried by it rigidly (ConstructFrames.Carry), so no contact with it; it wakes when the

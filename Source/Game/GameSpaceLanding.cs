@@ -240,6 +240,22 @@ public sealed partial class Game
         return linked ? "unhook it from what it is coupled, wired, piped or tied to first" : null;
     }
 
+    /// <summary>
+    /// After a ship and what it carries were read into free ids (a landing, free travel): each loose body's frame
+    /// (ConstructFrames.cs) is its frame's new id, or none when that didn't come; it is placed by its saved frame pose when
+    /// its frame is next carried, wherever the ship now is (Construct.FrameLoaded), and kept out of the step until then.
+    /// </summary>
+    internal void RemapFrames(Dictionary<ushort, ushort> idAs)
+    {
+        foreach (var (_, now) in idAs)
+            if (Constructs.Get(now) is { Frame: not 0 } c)
+            {
+                c.Frame = idAs.TryGetValue(c.Frame, out var f) ? f : (ushort)0;
+                if (c.Frame == 0)
+                    (c.FrameNew, c.FrameLoaded) = (false, false);
+            }
+    }
+
     /// <summary>Is this body the ship or something it carries (cargo held in a cargo volume, or loose in its frame: ConstructFrames.cs, however deep)?</summary>
     private bool Aboard(Construct ship, Construct c)
     {
@@ -369,6 +385,7 @@ public sealed partial class Game
         foreach (var (_, now) in idAs)
             if (Constructs.Get(now) is { CarriedBy: not 0 } cargo)
                 cargo.CarriedBy = idAs.TryGetValue(cargo.CarriedBy, out var up) ? up : (ushort)0;
+        RemapFrames(idAs);
         // Ships: the ship flies on from its own; a construct of the planetoid arrived at that was in space flies on from
         // its ship if that still flies (else it is a body again where it was kept).
         foreach (var c in Constructs.Bodies)

@@ -57,9 +57,9 @@ public static class ConstructFrames
     public static bool CanRide(Construct c) =>
         c.PartCount > 0 && !c.Anchored && c.CarriedBy == 0 && c.SpaceShip == 0 && !c.Frozen && !c.Pinned && c.HeldBy == 0 && c.NudgeBy == 255 && c.LegCount == 0; // (a walker's feet are drawn in the world: not in a frame)
 
-    /// <summary>May <paramref name="f"/> be <paramref name="c"/>'s frame (free, bigger and heavier, in no frame itself)?</summary>
+    /// <summary>May <paramref name="f"/> be <paramref name="c"/>'s frame (free, bigger and heavier, in no frame itself, not moved by the nudge tool: a nudged pose is set, not stepped, so the step can't carry what rides it)?</summary>
     public static bool CanCarry(Construct f, Construct c) =>
-        f != c && f.PartCount > 0 && !f.Anchored && f.CarriedBy == 0 && f.Frame == 0 && f.SpaceAway == 0
+        f != c && f.PartCount > 0 && !f.Anchored && f.CarriedBy == 0 && f.Frame == 0 && f.SpaceAway == 0 && f.NudgeBy == 255
         && f.Radius > c.Radius * 1.5f && f.Mass > c.Mass * 2f;
 
     private static bool Moving(Construct f) =>
@@ -214,7 +214,7 @@ public static class ConstructFrames
             for (var i = 0; i < bodies.Count; i++)
             {
                 var f = bodies[i];
-                if ((f.SpaceShip != 0) != posed || f.PartCount == 0 || f.Anchored || f.CarriedBy != 0 || f.Frame != 0 || f.SpaceAway != 0 || !Moving(f))
+                if ((f.SpaceShip != 0) != posed || f.PartCount == 0 || f.Anchored || f.CarriedBy != 0 || f.Frame != 0 || f.SpaceAway != 0 || f.NudgeBy != 255 || !Moving(f))
                     continue;
                 if (_candCount == _cand.Length)
                 {
@@ -229,7 +229,7 @@ public static class ConstructFrames
             if (c.Frame != 0)
             {
                 var f = w.Get(c.Frame);
-                if (f == null || f.PartCount == 0 || f.Anchored || f.CarriedBy != 0 || f.Frame != 0 || !CanRide(c) || f.Asleep && f.SpaceShip == 0)
+                if (f == null || f.PartCount == 0 || f.Anchored || f.CarriedBy != 0 || f.Frame != 0 || f.NudgeBy != 255 || !CanRide(c) || f.Asleep && f.SpaceShip == 0)
                 {
                     Leave(c); // (the frame went, froze, was caught or stopped and sleeps: a still frame is the world's; or the body was caught, frozen or pinned)
                     continue;

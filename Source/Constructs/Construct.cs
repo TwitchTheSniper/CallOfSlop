@@ -361,6 +361,8 @@ public sealed partial class Construct
     internal bool FrameNew, FrameGround, FrameLoaded; // (FrameGround: the last step had it touch the map; FrameLoaded: FramePos/FrameRot came with it from a save)
     /// <summary>Server: in a frame whose pose it has (not still to be joined from the world): the physics reads its speed against the frame's.</summary>
     internal bool Framed => Frame != 0 && !FrameNew;
+    /// <summary>Server: loaded with a frame pose and not yet placed by its frame (its world pose is the save's, maybe another place's): not stepped, met by nothing.</summary>
+    internal bool FramePending => FrameNew && FrameLoaded;
     // Server: a ship out of the bubble: the acceleration its drive gave it this tick (game axes; GameSpaceLaunch.SpaceLaunchBefore).
     internal Vector3 SpaceAccel;
     // Server and client: loose bodies in this construct's frame at the last carry (most constructs: 0).
