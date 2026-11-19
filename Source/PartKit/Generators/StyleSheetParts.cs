@@ -12,7 +12,7 @@ namespace CallOfSlop.PartKit.Generators;
 /// Each variant keeps the crew locker's footprint (0.6 x 0.45 x 1.9 m), sockets and two storage shelves, so whichever is
 /// picked can stand where a locker stands now. The front is +z, the wall behind is -z.
 /// </summary>
-public sealed class StyleSheetParts : IPartGenerator
+public sealed partial class StyleSheetParts : IPartGenerator
 {
     public string Name => "style_sheet";
 
@@ -752,7 +752,8 @@ public sealed class StyleSheetParts : IPartGenerator
         o.Own(Out);
         var all = new List<Part> { ServiceLocker(), TwinLocker(), ArmouredLocker(), DisplayLocker(), PressureLocker() };
         all.AddRange([RingReactor2(), HousedRingReactor(), SphereReactor2(), BlockReactor2(), SphereRingReactor()]); // (reactors round 2; round 1 is in git)
-        all.Add(BlockReactor(1, battery: true)); // (round 1's D kept as a battery bank draft, Karl 2026-11-19)
+        all.Add(BlockReactor(1, battery: true));
+        all.AddRange(Modules()); // (step 3: five parts in the battery bank's look, A to E each) // (round 1's D kept as a battery bank draft, Karl 2026-11-19)
         foreach (var p in all)
         {
             var d = p.Json();
