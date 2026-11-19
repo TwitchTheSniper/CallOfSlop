@@ -105,7 +105,7 @@ public sealed partial class Game
             vel = ConstructRide.SurfaceVel(c, h.RideSeg, p.Eye + look * h.GrabDist);
             spin = ConstructRide.SurfaceSpin(c, h.RideSeg);
         }
-        SandboxHands.GrabTick(Constructs, p.Id, p.Eye, look, p.Yaw, vel, spin);
+        SandboxHands.GrabTick(Constructs, p.Id, p.Eye, look, p.Yaw, vel, spin, p.Position); // (the yaw is measured at the feet, as the look above)
     }
 
     /// <summary>

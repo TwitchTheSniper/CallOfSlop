@@ -81,7 +81,7 @@ public sealed partial class Game
                 var local = new Vector3((short)r.U16(), (short)r.U16(), (short)r.U16()) / 100f;
                 int part = r.U16();
                 var leaf = r.U8() != 0;
-                return hands.Grab(Constructs, p.Id, p.Eye, p.Yaw, body, local, part == ushort.MaxValue ? -1 : part, leaf);
+                return hands.Grab(Constructs, p.Id, p.Eye, p.Yaw, body, local, part == ushort.MaxValue ? -1 : part, leaf, p.Position);
             }
             case CActKind.GrabSteer:
             {
@@ -286,7 +286,7 @@ public sealed partial class Game
         var eye = me.RenderEye;
         var target = eye + look * _sbPredDist;
         ref var hand = ref SandboxHands.Hand(LocalId);
-        var lookQ = ConstructGrab.LookQ(hand, eye, LookYaw);
+        var lookQ = ConstructGrab.LookQ(hand, LookFrame, LookYaw); // (the yaw is measured at LookFrame, as LookDir reads it)
         var turn = Quaternion.Normalize(lookQ * _sbPredRel);
         float speed = 0, spin = 0;
         if (_sbPredHave && dt > 1e-4f)

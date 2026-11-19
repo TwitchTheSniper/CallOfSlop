@@ -29,8 +29,29 @@ public static partial class Program
     private static string _pgLookText = "";
     private static readonly List<Construct> _pgNear = new(32);
 
-    /// <summary>The turn the held piece's relative turn is kept in (ConstructGrab.LookQ): the look's yaw in the gravity frame at this player's eye, or a rider's in their deck's frame.</summary>
-    private static Quaternion PhysGunLookQ(Game g, float yaw) => ConstructGrab.LookQ(g.SandboxHands.Hand(g.LocalId), g.Local?.Eye ?? Vector3.Zero, yaw);
+    /// <summary>The turn the held piece's relative turn is kept in (ConstructGrab.LookQ): the look's yaw in the gravity frame where it is measured (Game.LookFrame, the feet), or a rider's in their deck's frame.</summary>
+    private static Quaternion PhysGunLookQ(Game g, float yaw) => ConstructGrab.LookQ(g.SandboxHands.Hand(g.LocalId), g.LookFrame, yaw);
+
+    private static Quaternion _pgTangent = Quaternion.Identity, _pgLookWas = Quaternion.Identity;
+    private static bool _pgTangentHave;
+
+    /// <summary>
+    /// Every frame while holding: the gravity frame the held piece's turn is kept in jumps when the frame does (gravity
+    /// flipped, a Gravity Generator's field entered or left): the turn relative to the look is re-based by that jump, so the
+    /// piece keeps its turn in the world and only the player's own look turns it. Walking round a planet moves the frame a
+    /// little each frame and is followed as before. A rider's look is kept in their deck's frame (nothing to re-base).
+    /// </summary>
+    private static void PhysGunFrameKeep(Game g)
+    {
+        var lookQ = PhysGunLookQ(g, g.LookYaw);
+        var tangent = g.SandboxHands.Hand(g.LocalId).RideBody != 0 ? Quaternion.Identity : ConstructGrab.TangentQ(g.LookFrame);
+        if (_pgTangentHave && MathF.Abs(Quaternion.Dot(tangent, _pgTangent)) < MathF.Cos(FrameJumpDeg * MathF.PI / 360f))
+            _pgRel = Quaternion.Normalize(Quaternion.Conjugate(lookQ) * _pgLookWas * _pgRel); // (the world turn it had a frame ago, in the new frame)
+        (_pgTangent, _pgLookWas, _pgTangentHave) = (tangent, lookQ, true);
+    }
+
+    /// <summary>A change of the gravity frame larger than this in one frame (degrees) is a jump, not a walk round a world.</summary>
+    private const float FrameJumpDeg = 3f;
 
     /// <summary>Radians the held thing turns per pixel of mouse movement.</summary>
     private const float PhysGunTurnPerPixel = 0.006f;
@@ -290,6 +311,7 @@ public static partial class Program
                     c.WorldFrame(j >= 0 ? j + 1 : c.Parts[freePart].Seg, out var fq, out var ft);
                     _pgDist = Math.Clamp(leaf ? leafDist : hit.Distance, ConstructGrab.MinDist, range);
                     _pgRel = Quaternion.Identity;
+                    _pgTangentHave = false;
                     PhysGunSnapEnd(g);
                     g.SandboxGrab(c.Id, Vector3.Transform(at - ft, Quaternion.Conjugate(fq)), freePart, leaf, (byte)(j + 1));
                 }
@@ -298,6 +320,7 @@ public static partial class Program
                     var c = hit.Body;
                     _pgDist = Math.Clamp(hit.Distance, ConstructGrab.MinDist, range);
                     _pgRel = Quaternion.Normalize(Quaternion.Conjugate(PhysGunLookQ(g, g.LookYaw)) * c.Rot);
+                    _pgTangentHave = false; // (a new hold: no frame to re-base from)
                     _pgAccYaw = _pgAccPitch = 0;
                     PhysGunSnapEnd(g);
                     if (ConstructPress.MachineOf(c, hit.Part) >= 0 || ConstructOrdnance.RackOf(c, hit.Part) >= 0)
@@ -320,6 +343,7 @@ public static partial class Program
         else
         {
             PhysGunSnapHold(g);
+            PhysGunFrameKeep(g);
             if (_pgScroll != 0)
             {
                 _pgDist = Math.Clamp(_pgDist + (float)_pgScroll * MathF.Max(0.25f, _pgDist * 0.12f), ConstructGrab.MinDist, range);

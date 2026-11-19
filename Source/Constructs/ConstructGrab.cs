@@ -608,7 +608,7 @@ public sealed partial class ConstructEdits
     /// The physics gun takes hold of construct <paramref name="body"/> at <paramref name="local"/> (its body frame, where
     /// the beam met it), keeping that point's distance and the thing's turn relative to the look. Null, or why not.
     /// </summary>
-    public string? Grab(ConstructWorld world, byte player, Vector3 eye, float yaw, ushort body, Vector3 local, int part = -1, bool leaf = false)
+    public string? Grab(ConstructWorld world, byte player, Vector3 eye, float yaw, ushort body, Vector3 local, int part = -1, bool leaf = false, Vector3? lookAt = null)
     {
         ref var h = ref Hands[player];
         if (part >= 0 && h.Tool == ConstructTool.PhysicsGun && !h.Seated && world.Get(body) is { } holder && ConstructPress.MachineOf(holder, part) is var machine and >= 0)
@@ -666,7 +666,7 @@ public sealed partial class ConstructEdits
         h.GrabSeg = 0;
         h.GrabLocal = local;
         h.GrabDist = Math.Clamp(dist, ConstructGrab.MinDist, GrabRange(player));
-        h.GrabRel = Quaternion.Normalize(Quaternion.Conjugate(ConstructGrab.LookQ(h, eye, yaw)) * c.Rot);
+        h.GrabRel = Quaternion.Normalize(Quaternion.Conjugate(ConstructGrab.LookQ(h, lookAt ?? eye, yaw)) * c.Rot); // (lookAt: where the look's yaw is measured, the holder's feet)
         h.Edit = EditKind.None;
         Done.Add($"player {player}: grabbed construct {body} with the physics gun");
         return null;
@@ -802,7 +802,7 @@ public sealed partial class ConstructEdits
     }
 
     /// <summary>Every tick for every living player: the held thing follows their look (or is let go when it can't be held any more).</summary>
-    public void GrabTick(ConstructWorld world, byte player, Vector3 eye, Vector3 look, float yaw, Vector3 frameVel = default, Vector3 frameSpin = default)
+    public void GrabTick(ConstructWorld world, byte player, Vector3 eye, Vector3 look, float yaw, Vector3 frameVel = default, Vector3 frameSpin = default, Vector3? lookAt = null)
     {
         ref var h = ref Hands[player];
         if (h.GrabBody == 0)
@@ -828,7 +828,7 @@ public sealed partial class ConstructEdits
         // by a tick of the deck's travel as well held the piece that far ahead of the crosshair, 4.7 m in a ship in orbit, and
         // into the walls: user, 2026-11-18)
         c.GrabTarget = eye + look * h.GrabDist;
-        c.GrabRot = ConstructGrab.LookQ(h, eye, yaw) * h.GrabRel;
+        c.GrabRot = ConstructGrab.LookQ(h, lookAt ?? eye, yaw) * h.GrabRel; // (lookAt: where the look's yaw is measured, the holder's feet: GravityFrames.Forward(p.Position, ...))
         c.GrabFrameVel = frameVel;
         c.GrabFrameSpin = frameSpin;
         if (frameVel != Vector3.Zero)
