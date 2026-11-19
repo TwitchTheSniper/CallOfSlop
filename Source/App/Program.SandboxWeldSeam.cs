@@ -13,18 +13,30 @@ public static partial class Program
     private static long _seamKey = long.MinValue, _seamTextKey = long.MinValue;
     private static int _seamOther = -1, _seamSocket = -1;
     private static string? _seamWhy;
+    private static bool _seamHeld; // the RMB that broke a seam is still down
     private static Vector3 _seamMin, _seamMax;
     private static string _seamText = "";
 
-    /// <summary>Every frame with the attach tool out, before the take-off check: lights the seam under the crosshair and sends its break on RMB (then the press is spent).</summary>
-    private static void SandboxWeldSeamInput(Game g, Player me, in SandboxHand h, bool aimed, in ConstructHit hit)
+    /// <summary>
+    /// Every frame with the attach tool out, before the take-off check: lights the seam under the crosshair and sends its break on
+    /// RMB. True: this frame's press was the seam's (the take-off below must not also act on it). One press breaks one seam: the
+    /// press is left as it is (so held, it is not a new press next frame), and <see cref="_seamHeld"/> keeps a held RMB that broke a
+    /// seam from turning into a take-off until it is let go.
+    /// </summary>
+    private static bool SandboxWeldSeamInput(Game g, Player me, in SandboxHand h, bool aimed, in ConstructHit hit)
     {
+        if (_seamHeld)
+        {
+            if (Down(GameAction.Aim) && !Pressed(GameAction.Aim))
+                return true; // (still the press that broke a seam; a new press, let go out of this path, is new)
+            _seamHeld = false;
+        }
         if (h.Tool != ConstructTool.Welder || h.Seated || !aimed || hit.SlotPlus1 != 0 || hit.RoutePlus1 != 0 || hit.Distance > ConstructBuild.Reach
             || hit.Body.Loose || hit.Part < 0 || hit.Part >= hit.Body.PartCount || SocketWeldBusy || PointWeldBusy)
-            return;
+            return false;
         var shift = Down(GameAction.Sprint) || SweepPointHeld;
         if (shift)
-            return; // (Shift+RMB: the old take-off of the whole part, below)
+            return false; // (Shift+RMB: the old take-off of the whole part, below)
         var c = hit.Body;
         var seg = c.Parts[hit.Part].Seg;
         c.WorldFrame(seg, out var q, out var t);
@@ -44,7 +56,7 @@ public static partial class Program
             }
         }
         if (_seamOther < 0 || _seamOther >= c.PartCount)
-            return; // (no seam: RMB takes it off as before)
+            return false; // (no seam: RMB takes it off as before)
         var why = _seamWhy ?? (c.Driver != 255 ? "someone is driving it" : null) ?? ConstructEdits.SalvageRefusal(c, me.Id) ?? AimContested(g, c, me.Id);
         SocketWeldRender.SeamBody = c;
         SocketWeldRender.SeamSeg = seg;
@@ -68,15 +80,16 @@ public static partial class Program
         }
         g.SandboxLookText = _seamText;
         if (!Pressed(GameAction.Aim))
-            return;
-        _down[(int)GameAction.Aim] = false; // (not also taking the part off)
+            return false;
+        _seamHeld = true; // (held on, it is neither another seam nor a take-off)
         if (why != null)
         {
             g.SandboxSay(why);
             BuildSounds.Play(BuildSound.Refuse, default);
-            return;
+            return true;
         }
         g.SandboxSend(CActKind.SeamBreak, body: c.Id, part: (ushort)hit.Part, socket: (ushort)_seamOther);
         _seamKey = long.MinValue; // (the body changes: looked for again)
+        return true;
     }
 }

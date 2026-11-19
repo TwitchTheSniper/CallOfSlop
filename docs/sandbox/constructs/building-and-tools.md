@@ -699,7 +699,10 @@ angle and offset, then attach it to the vehicle exactly where it is. [Point atta
   neighbour nearest the crosshair (every socket link between those two parts) is lit as a red-orange strip and outline on
   their shared face, seen faintly through parts too (grey when it can't be broken, with the reason); the look line names
   both parts. **RMB breaks only that seam**: the parts stay where they are, held through any other seams, and if it was the
-  last way between two halves the half without the root splits off as a body of its own where it is (as a freeform cut).
+  last way between two halves the lighter half (by mass, then parts) splits off as a body of its own where it is and the
+  heavier keeps the body, its id, fuel, seats and orders, wherever the root is. One press breaks one seam: held, it neither
+  breaks more nor turns into a take-off. A fused unit the cut runs through is flooded again (`FuseNoteCut`), and a pod's
+  fold or wake follows its pod to the split-off body (`GameShellPod.PodMoved`).
   **Shift+RMB** is the old take-off of the whole part (all its seams). Instant, survival too; refused across a joint (take
   the joint off), inside one merged gun, on someone else's construct, a driven one or a contested one, and out of reach.
   A part with no seam (alone) is taken off by RMB as before. Code: `Source/Constructs/ConstructSeams.cs` (the rules, the

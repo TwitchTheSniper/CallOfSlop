@@ -6,7 +6,7 @@ namespace CallOfSlop;
 /// Weld seams (user, 2026-11-19): the attach tool's RMB breaks one seam at a time instead of taking the whole part off.
 /// A seam is every socket link between two parts on the same segment (a part may meet a neighbour at several sockets: one
 /// seam). Breaking it cuts those links only; the parts stay where they are, held through any other seams, and when it was
-/// the last way between two halves of the body the smaller side splits off as a body of its own where it is, as a cut
+/// the last way between two halves of the body the lighter side splits off as a body of its own where it is, as a cut
 /// freeform attachment does (<see cref="ConstructWorld.FreeformCut"/>). Shift+RMB is the old take-off of the whole part.
 /// The client picks the seam under the crosshair and draws it (Program.SandboxWeldSeam.cs, SocketWeldRender); the server
 /// checks the same rules here (<see cref="ConstructEdits.BreakSeam"/>). Nothing here allocates.
@@ -152,8 +152,9 @@ public sealed partial class ConstructWorld
         }
         c.LinkCount = ln;
         c.LinksChanged();
+        c.FuseNoteCut(a, b); // (a fused unit the cut runs through is flooded again at the rebuild: ConstructFuse.cs)
         var owner = c.Owner;
-        var piece = Resplit(c, out _);
+        var piece = SeamSplit(c, a, b);
         if (piece != null)
         {
             piece.Wreck = false; // (cut free, not broken off)
@@ -163,6 +164,57 @@ public sealed partial class ConstructWorld
         }
         Events.Add($"construct {c.Id}: seam between parts {a} and {b} broken ({cut} link{(cut == 1 ? "" : "s")}){(piece != null ? $", construct {piece.Id} split off" : "")}");
         return piece;
+    }
+
+    /// <summary>
+    /// After a seam's links went: when <paramref name="a"/> and <paramref name="b"/> no longer meet any way round, the lighter
+    /// side (by mass, then parts) splits off as a body of its own where it is and the heavier keeps the body (its id, fuel,
+    /// charge, seats and orders), whichever side the root is on. Returns the piece split off, or null.
+    /// </summary>
+    private Construct? SeamSplit(Construct c, int a, int b)
+    {
+        using var scratch = Scratch.Begin();
+        Span<int> comp = scratch.Take<int>(c.PartCount);
+        for (var i = 0; i < c.PartCount; i++)
+            comp[i] = -1;
+        Flood(c, a, 0, comp);
+        if (comp[b] == 0)
+        {
+            c.Wake();
+            StructureDirty.Add(c.Id);
+            return null; // (they still meet round another way: nothing comes off)
+        }
+        Flood(c, b, 1, comp);
+        float massA = 0, massB = 0;
+        int nA = 0, nB = 0;
+        for (var i = 0; i < c.PartCount; i++)
+        {
+            if (comp[i] == 0)
+            {
+                massA += c.DefOf(i).Mass;
+                nA++;
+            }
+            else if (comp[i] == 1)
+            {
+                massB += c.DefOf(i).Mass;
+                nB++;
+            }
+        }
+        if (massB > massA || massB == massA && nB > nA)
+            for (var i = 0; i < c.PartCount; i++)
+                comp[i] = comp[i] == 0 ? 1 : comp[i] == 1 ? 0 : comp[i]; // (b's side is the bigger: it keeps the body)
+        var comps = 2;
+        for (var i = 0; i < c.PartCount; i++)
+            if (comp[i] == -1)
+                Flood(c, i, comps++, comp); // (anything already apart: as a resplit does)
+        Construct? first = null;
+        for (var k = 1; k < comps; k++)
+            first ??= SplitOff(c, comp, k);
+        Compact(c, comp, 0);
+        c.Dirty = true;
+        c.Wake();
+        StructureDirty.Add(c.Id);
+        return first;
     }
 }
 
