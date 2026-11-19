@@ -171,7 +171,8 @@ public static partial class Program
                 return true;
             }
             case "where": // where this player is, and what they sit in
-                WsSay($"[where] at {me.Position:0}, seated {g.SandboxHands.Hand(me.Id).Seated}");
+                WsSay($"[where] at {me.Position:0}, seated {g.SandboxHands.Hand(me.Id).Seated}, noclip {me.Sim.Noclip}, riding {me.Sim.RideBody} at {me.Sim.RideLocal:0.00} grounded {me.Sim.Grounded}"
+                    + (g.Constructs.Get(me.Sim.RideBody) is { } wc && me.Sim.RideUp != Vector3.Zero ? $", roof over {g.Constructs.Raycast(me.Position + me.Sim.RideUpW * 0.5f, me.Sim.RideUpW, ConstructRide.InteriorRoof, out _, only: wc)}" : ""));
                 return true;
             case "standing": // host: the four convicts' feelings for this player and the break-out's qualities
                 WsSay("[standing] " + g.StoryStanding(me, ["Dot Pruett", "Wren Haskett", "Ambrose Thale", "Hester Mossop", "Sergeant Bellweather"], ["Crew", "Suspicion", "Grassed", "Inducted", "Parcel", "Contraband", "Escaped"]));
