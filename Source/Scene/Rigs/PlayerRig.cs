@@ -15,10 +15,10 @@ public sealed class PlayerRig
     public readonly GunRig Gun;
     public readonly ArmNodes Right, Left;
     public readonly SceneNode Pelvis;
-    public readonly SceneNode[] Thighs = new SceneNode[2], Shins = new SceneNode[2], Feet = new SceneNode[2], Metas = new SceneNode[2]; // (Metas: a hock leg's metatarsal, under the shin: ShellLooks)
+    public readonly SceneNode[] Thighs = new SceneNode[2], Shins = new SceneNode[2], Feet = new SceneNode[2], Metas = new SceneNode[2]; // (Metas: a hock leg's metatarsal, under the shin: ShellModuleNodes)
     private readonly SceneNode _frame, _upper, _gear, _pelvisBox, _tool;
     private readonly ShellKitNodes _kit; // a robot shell frame's modules: the ore hopper, the drill arm (ShellKitNodes.cs)
-    private readonly ShellLooks _looks; // a worn shell's fitted modules from their parts' models: head, back, arms, legs (ShellLooks.cs)
+    private readonly ShellModuleNodes _looks; // a worn shell's fitted modules from their parts' models: head, back, arms, legs (ShellModuleNodes.cs)
     private readonly bool[] _legsHidden = new bool[2];
     private bool _headHidden, _pelvisShell;
     private readonly ToolNode _toolDraw = new();
@@ -91,7 +91,7 @@ public sealed class PlayerRig
         _corpseHat = _frame.Add("corpse_hat");
         _corpseHat.Visible = false;
         _kit = new ShellKitNodes(_gear);
-        _looks = new ShellLooks(_gear, _heads, Thighs, Shins, Metas, Feet, Right.Fore, Left.Fore);
+        _looks = new ShellModuleNodes(_gear, _heads, Thighs, Shins, Metas, Feet, Right.Fore, Left.Fore);
     }
 
     private SceneNode MakeStance(int stance)
@@ -278,7 +278,7 @@ public sealed class PlayerRig
         _health.Renderable.Color = Vector3.Lerp(new Vector3(1, 0.1f, 0.1f), new Vector3(0.2f, 1, 0.2f), frac);
     }
 
-    /// <summary>A worn shell's modules (ShellLooks): refitted when they change; the person's head and leg boxes hidden under them.</summary>
+    /// <summary>A worn shell's modules (ShellModuleNodes): refitted when they change; the person's head and leg boxes hidden under them.</summary>
     private void PoseLooks(Player p)
     {
         _looks.Pose(p, p.RenderSeat != SeatKind.None, ThirdPersonArms.Rigs.Right);

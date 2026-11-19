@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Shell Optics Head",
-  "description": "A robot shell's standard head: the visor, its cameras and an aerial. A Shell Gantry fits it to a robot shell from its parts table.",
+  "description": "A robot shell's standard head: two camera lenses, a sensor dome and an aerial. A Shell Gantry fits it to a robot shell from its parts table.",
   "group": "Logic",
   "section": "Shells",
   "role": "frame",
@@ -15,55 +15,137 @@
   "boxes": [
     {
       "min": [
-        -0.06,
+        -0.055,
         0.0,
-        -0.06
+        -0.055
       ],
       "max": [
-        0.06,
+        0.055,
         0.1,
-        0.06
+        0.055
       ],
       "color": "#30363d"
     },
     {
       "min": [
-        -0.135,
+        -0.115,
         0.08,
-        -0.14
+        -0.13
       ],
       "max": [
-        0.135,
-        0.35,
-        0.125
+        0.115,
+        0.32,
+        0.12
       ]
     },
     {
       "min": [
-        -0.11,
-        0.17,
-        -0.158
+        -0.1,
+        0.12,
+        -0.143
       ],
       "max": [
-        0.11,
-        0.25,
-        -0.12
+        0.1,
+        0.29,
+        -0.127
+      ],
+      "color": "#30363d",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.088,
+        0.17,
+        -0.205
+      ],
+      "max": [
+        -0.022,
+        0.24,
+        -0.14
+      ],
+      "color": "#56606a"
+    },
+    {
+      "min": [
+        -0.08,
+        0.178,
+        -0.211
+      ],
+      "max": [
+        -0.03,
+        0.232,
+        -0.199
       ],
       "color": "#38d0e8",
       "detail": true
     },
     {
       "min": [
-        0.07,
-        0.34,
-        -0.015
+        0.022,
+        0.17,
+        -0.205
       ],
       "max": [
-        0.09,
-        0.46,
-        0.015
+        0.088,
+        0.24,
+        -0.14
+      ],
+      "color": "#56606a"
+    },
+    {
+      "min": [
+        0.03,
+        0.178,
+        -0.211
+      ],
+      "max": [
+        0.08,
+        0.232,
+        -0.199
+      ],
+      "color": "#38d0e8",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.055,
+        0.317,
+        -0.06
+      ],
+      "max": [
+        0.055,
+        0.365,
+        0.05
+      ],
+      "color": "#56606a",
+      "detail": true
+    },
+    {
+      "min": [
+        0.07,
+        0.317,
+        0.03
+      ],
+      "max": [
+        0.088,
+        0.47,
+        0.048
       ],
       "color": "#30363d",
+      "detail": true
+    },
+    {
+      "min": [
+        0.066,
+        0.44,
+        0.026
+      ],
+      "max": [
+        0.092,
+        0.474,
+        0.052
+      ],
+      "color": "#38d0e8",
       "detail": true
     }
   ],

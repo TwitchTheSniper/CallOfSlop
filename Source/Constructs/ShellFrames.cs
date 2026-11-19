@@ -11,7 +11,7 @@ public enum ShellModuleKind : byte
     Hand, // an arm that holds the tools, as a person's
     Drill, // an arm that is a drill, always out: the ground drill's scoop taps ore into the hopper (GameShellHopper.cs)
     Leg, // a leg (its "speed" is the shell's pace; the Shell Gantry's lower arms fit them)
-    Tool, // an arm that is a tool (its "tool"): held forward along the look like the drill arm, drawn from its part's model (ShellLooks.cs)
+    Tool, // an arm that is a tool (its "tool"): held forward along the look like the drill arm, drawn from its part's model (ShellModuleNodes.cs)
 }
 
 /// <summary>One module from Constructs/Shells.json: a name, the slot kind it fits ("head", "back", "arm", "leg") and its kind's numbers.</summary>
@@ -27,7 +27,7 @@ public sealed class ShellModule
     public byte Index; // its place in the file's "modules" (a wire and save byte: a new module goes at the end)
     public ConstructTool? Tool; // "tool": while the shell is worn this is its only tool (the Drill Arm's ground drill; the user, 2026-11-17)
     public bool View; // "view": in first person its wearer sees the module's own model (the one on the shell: ShellKitNodes) in place of its tool's (the user, 2026-11-19)
-    public float Hip, Knee, Hock, Ankle; // a leg's "joints": heights on its part's model (the part's metres; Hock 0: none), where the rig's bones take its boxes (ShellLooks.cs)
+    public float Hip, Knee, Hock, Ankle; // a leg's "joints": heights on its part's model (the part's metres; Hock 0: none), where the rig's bones take its boxes (ShellModuleNodes.cs)
     public float HockUp, HockBack; // a leg's "hock": where its hock stands above and behind the ankle (a person's metres): the rig walks it digitigrade (LegAnimator)
 }
 

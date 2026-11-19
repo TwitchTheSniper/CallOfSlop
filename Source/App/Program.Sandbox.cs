@@ -1377,7 +1377,7 @@ public static unsafe partial class Program
         if (!me.InShell || ShellFrames.Worn(me).ModuleFor(tool) is not { View: true } m)
             return null;
         if (m.Kind == ShellModuleKind.Tool)
-            return ShellLooks.ViewModel(m, ShellFrames.ScaleOf(me));
+            return ShellModuleNodes.ViewModel(m, ShellFrames.ScaleOf(me));
         var (arm, accent) = ShellKitNodes.ColoursOf(me);
         return ShellKitNodes.ViewModel(m, ShellFrames.ScaleOf(me), arm, accent);
     }

@@ -317,7 +317,7 @@ public sealed class ShellParts : IPartGenerator
         return p;
     }
 
-    // A worn shell draws each module from these boxes (Scene/Rigs/ShellLooks.cs), so each look is told apart at a glance (the user,
+    // A worn shell draws each module from these boxes (Scene/Rigs/ShellModuleNodes.cs), so each look is told apart at a glance (the user,
     // 2026-11-19: "more visual variance between them"): a leg by its "joints" in Constructs/Shells.json (the heights its rig bones take
     // its boxes at; keep a box's middle in its bone's band), a head on the person's head, an arm's elbow coupling at its top and its
     // tool at its foot. Boxes that meet overlap by 3 mm or more, never on one plane (z-fighting.md).

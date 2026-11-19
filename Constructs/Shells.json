@@ -15,7 +15,7 @@
   // true its wearer sees the module's own model in first person in place of that tool's (the drill arm reaching forward; the
   // rig's own boxes, ShellKitNodes.cs). tool: an arm that IS a tool (its "tool"; "view" too), held forward along the look like the drill
   // arm and drawn from its part's model; a shell with tool arms uses only their tools (the tool wheel offers each). leg: a leg.
-  // How a worn shell shows each module (ShellLooks.cs): the module's part model on the rig. A leg says its part's "joints" (heights in
+  // How a worn shell shows each module (ShellModuleNodes.cs): the module's part model on the rig. A leg says its part's "joints" (heights in
   // the part's metres, hip, knee and ankle; a sprung leg adds its hock between knee and ankle) and, with a hock, "hock": [up, back],
   // where its hock stands above and behind the ankle in a person's metres: the rig then walks it digitigrade (LegAnimator.Hock).
   // Any module may say "speed" (times the shell's pace) and "damage" (times the hits it takes), 1 if not said. A module with a

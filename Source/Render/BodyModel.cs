@@ -101,7 +101,7 @@ public sealed class BodyParts : IRenderable
     public int Count;
     public bool ShowDetail = true;
 
-    /// <summary>Drawn as nothing (a robot shell's head module stands in for the head: ShellLooks).</summary>
+    /// <summary>Drawn as nothing (a robot shell's head module stands in for the head: ShellModuleNodes).</summary>
     public bool Hidden;
 
     /// <summary>How far the jaw is down this frame (m, in this frame's units; 0 shut): set from <see cref="TalkMouth"/> before drawing.</summary>

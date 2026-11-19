@@ -12,7 +12,7 @@ namespace CallOfSlop;
 /// <see cref="ShellFrames.Worn"/>, so a Shell Gantry's swap shows at once on every peer (Msg.Shell refits it). Nodes are made when a
 /// module changes, never per frame; nothing allocates in a steady frame.
 /// </summary>
-public sealed class ShellLooks
+public sealed class ShellModuleNodes
 {
     /// <summary>A group of box nodes refilled when a module changes: made as needed, the rest hidden.</summary>
     private sealed class Pool(SceneNode parent)
@@ -99,7 +99,7 @@ public sealed class ShellLooks
     /// <summary>Per arm (0 right, 1 left): the tool arm's tool, while one is drawn.</summary>
     public readonly ConstructTool?[] ToolOf = new ConstructTool?[2];
 
-    public ShellLooks(SceneNode gear, SceneNode[] heads, SceneNode[] thighs, SceneNode[] shins, SceneNode[] metas, SceneNode[] feet, SceneNode rightFore, SceneNode leftFore)
+    public ShellModuleNodes(SceneNode gear, SceneNode[] heads, SceneNode[] thighs, SceneNode[] shins, SceneNode[] metas, SceneNode[] feet, SceneNode rightFore, SceneNode leftFore)
     {
         for (var i = 0; i < 3; i++)
             _heads[i] = new Pool(heads[i].Add("shell_head"));
@@ -281,10 +281,11 @@ public sealed class ShellLooks
             var h = b.Half * 2;
             int bone;
             float top, along;
+            var bones = hock ? LegAnimator.HockBones : 1f;
             if (c.Y >= m.Knee)
-                (bone, top, along) = (0, m.Hip, LegAnimator.Thigh / (m.Hip - m.Knee));
+                (bone, top, along) = (0, m.Hip, LegAnimator.Thigh * bones / (m.Hip - m.Knee));
             else if (c.Y >= low)
-                (bone, top, along) = (1, m.Knee, LegAnimator.Shin / (m.Knee - low));
+                (bone, top, along) = (1, m.Knee, LegAnimator.Shin * bones / (m.Knee - low));
             else if (hock && c.Y >= m.Ankle)
                 (bone, top, along) = (2, m.Hock, metaLen / (m.Hock - m.Ankle));
             else
@@ -332,7 +333,7 @@ public sealed class ShellLooks
 
     // ---- First person (a tool arm's "view"): its forearm where the drill arm's is, aimed down the crosshair ----------------
 
-    private static readonly Vector3 ViewAt = new(0.19f, -0.25f, -0.17f), ViewCard = new(-0.12f, -0.17f, -0.42f);
+    private static readonly Vector3 ViewAt = new(0.22f, -0.25f, -0.34f), ViewCard = new(-0.12f, -0.17f, -0.42f);
     private static readonly ToolModel?[] _views = new ToolModel?[256];
     private static readonly float[] _viewScales = new float[256];
 
@@ -346,7 +347,7 @@ public sealed class ShellLooks
             return null;
         if (_views[m.Index] is { } cached && _viewScales[m.Index] == scale)
             return cached;
-        var k = ToolK * scale * 0.7f; // (in first person the arm is nearer the eye than a shoulder is: drawn a little smaller)
+        var k = ToolK * scale * 0.55f; // (in first person the arm is nearer the eye than a shoulder is: drawn smaller)
         var top = Top(d) - 0.03f;
         var boxes = new List<ToolBox>();
         var reach = 0f;

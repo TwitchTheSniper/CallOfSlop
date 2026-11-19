@@ -79,7 +79,7 @@ public sealed class ArmNodes
             Paint(c);
     }
 
-    /// <summary>A robot shell's Hand module draws this arm's forearm (ShellLooks): the sleeve's elbow, forearm and cuff are hidden while <paramref name="on"/>.</summary>
+    /// <summary>A robot shell's Hand module draws this arm's forearm (ShellModuleNodes): the sleeve's elbow, forearm and cuff are hidden while <paramref name="on"/>.</summary>
     public void Robot(bool on)
     {
         if (_forearm.Visible != on)

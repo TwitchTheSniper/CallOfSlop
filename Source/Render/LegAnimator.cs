@@ -206,6 +206,9 @@ public static class LegAnimator
     /// </summary>
     private static readonly Vector3[] Hock = new Vector3[2];
 
+    /// <summary>A hock leg's thigh and shin, times a person's (<see cref="Thigh"/>, <see cref="Shin"/>): the hock stands high, so shorter bones keep its knee from folding flat.</summary>
+    public const float HockBones = 0.8f;
+
     private static void SetHocks(Player p)
     {
         Hock[0] = Hock[1] = Vector3.Zero;
@@ -867,7 +870,7 @@ public static class LegAnimator
         // Digitigrade: the thigh and shin reach the hock (up and behind the foot's ball, in the foot's frame), the metatarsal runs
         // down and forward from it to the ball, which stands where a person's ankle would.
         var up = Vector3.TransformNormal(hock, footRot);
-        pose.Reached[i] = Arms.SolveTwoBone(hip, target + up, Thigh, Shin, pole, out var k, out var h);
+        pose.Reached[i] = Arms.SolveTwoBone(hip, target + up, Thigh * HockBones, Shin * HockBones, pole, out var k, out var h);
         var ball = h - up;
         pose.Thigh[i] = Arms.BoneFrame(hip, k, pole);
         pose.Shin[i] = Arms.BoneFrame(k, h, pole);

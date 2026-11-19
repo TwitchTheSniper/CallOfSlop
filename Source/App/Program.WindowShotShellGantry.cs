@@ -6,7 +6,7 @@ namespace CallOfSlop;
 /// The window tool's Shell Gantry verbs (ConstructGantry.cs): "shellgantry setup [SHELL]" (host) stands a gantry 9 m ahead facing the
 /// player, a Shell Parts Table behind its rear frame with a Plated Head and two Runner Legs on it, a shell (default the Robot Shell)
 /// in its bay and a Shell Control Chair 3 m to the player's right; "shellgantry fit SLOT MODULE" asks the nearest gantry for a swap through the panel's own message (either peer);
-/// "shellgantry state" says what this peer sees: the jobs, the bay's shell and its modules, the table, and this player's worn kit.
+/// "shellgantry kit SLOT MODULE" (host, a test state) fits the worn shell's slot at once; "shellgantry state" says what this peer sees: the jobs, the bay's shell and its modules, the table, and this player's worn kit.
 /// </summary>
 public static partial class Program
 {
@@ -79,6 +79,25 @@ public static partial class Program
                 }
                 g.SandboxGantry(gc.Id, gc.Gantries[0], slot, mod);
                 WsSay($"shellgantry fit: asked gantry {gc.Id} for a {ShellFrames.Modules[mod].Name} in the {ShellFrames.Slots[slot]}");
+                return;
+            }
+            case "kit" when g.IsServer: // "shellgantry kit [other] SLOT MODULE": host, a test state: the worn shell's slot (another player's: other) holds that module at once (no gantry), every peer told
+            {
+                if (rest.StartsWith("other ", StringComparison.OrdinalIgnoreCase))
+                {
+                    rest = rest[6..];
+                    me = g.Players.Values.FirstOrDefault(o => o != me && o.InShell) ?? me;
+                }
+                var p = rest.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
+                var slot = p.Length > 0 ? Array.FindIndex(ShellFrames.Slots, s => s.Equals(p[0], StringComparison.OrdinalIgnoreCase)) : -1;
+                var mod = p.Length > 1 ? Array.FindIndex(ShellFrames.Modules, m => m.Name.Equals(p[1], StringComparison.OrdinalIgnoreCase)) : -1;
+                if (slot < 0 || mod < 0 || !me.InShell || ShellFrames.Modules[mod].Slot != ShellFrames.SlotKind(slot))
+                {
+                    WsFail($"shellgantry kit SLOT MODULE: \"{rest}\" (worn: {me.InShell})");
+                    return;
+                }
+                g.ShellKitTest(me, slot, ShellFrames.Modules[mod]);
+                WsSay($"shellgantry kit: the worn shell's {ShellFrames.Slots[slot]} is a {ShellFrames.Modules[mod].Name}");
                 return;
             }
             default:

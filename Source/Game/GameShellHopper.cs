@@ -185,6 +185,15 @@ public sealed partial class Game
             : $"the {f.Part}'s tools are its arms ({first}, {second}): leave the shell for your own tools";
     }
 
+    /// <summary>Server, a window tool's test state ("shellgantry kit"): the worn shell's slot holds <paramref name="m"/> at once, every peer told.</summary>
+    internal void ShellKitTest(Player p, int slot, ShellModule m)
+    {
+        p.ShellMods[slot] = (byte)(m.Index + 1);
+        ShellFrames.Refit(p);
+        ShellBroadcast(p);
+        ShellForceTool(p);
+    }
+
     /// <summary>Server, from <see cref="ShellTick"/>: a worn shell with a forced tool has it out (after a seat, a part picked up, a wake).</summary>
     private void ShellForceTool(Player p)
     {

@@ -86,7 +86,7 @@ on the same channels. Decided (defaults; the user may change them):
 ### How a worn shell shows its modules (the user, 2026-11-19)
 
 "The shell parts that are currently equipped should be visually apparent on a possessed shell", with "more visual variance"
-between the limbs and "a runner leg should look more digitigrade than human". `Scene/Rigs/ShellLooks.cs` draws every fitted
+between the limbs and "a runner leg should look more digitigrade than human". `Scene/Rigs/ShellModuleNodes.cs` draws every fitted
 module on the wearer's rig from its own part's model (ShellParts.cs), read from the worn kit, so a gantry swap shows at once on
 every peer: the head on the person's head node (their head hidden), the back module on the back (the ore hopper and the drill
 arm, which have no part, stay ShellKitNodes'), a Hand's forearm over the arm's, a tool arm out of the shoulder with its forearm
