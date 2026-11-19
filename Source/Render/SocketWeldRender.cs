@@ -72,7 +72,18 @@ public static class SocketWeldRender
         MarkersDrawn = 0;
         var pulse = 0.55f + 0.25f * MathF.Sin((float)now * 6f);
         if (SeamBody is { } sb)
-            DrawSeam(gfx, sb, pulse);
+        {
+            gfx.SetDepthTest(false); // (seen through the parts, faint: a seam is often behind the part aimed at)
+            try
+            {
+                DrawSeam(gfx, sb, pulse, 0.4f);
+            }
+            finally
+            {
+                gfx.SetDepthTest(true);
+            }
+            DrawSeam(gfx, sb, pulse, 1f);
+        }
         for (var k = 0; k < MarkerCount; k++)
         {
             ref var m = ref Markers[k];
@@ -152,7 +163,7 @@ public static class SocketWeldRender
     }
 
     /// <summary>The seam that RMB breaks: its outline and a lit strip over it, hot red-orange, or grey when it can't be broken.</summary>
-    private static void DrawSeam(Renderer gfx, Construct c, float pulse)
+    private static void DrawSeam(Renderer gfx, Construct c, float pulse, float fade)
     {
         if (SeamSeg < 0 || SeamSeg > c.JointCount)
             return;
@@ -160,7 +171,7 @@ public static class SocketWeldRender
         var col = SeamOk ? new Vector3(1f, 0.3f, 0.1f) : new Vector3(0.55f, 0.55f, 0.6f);
         var centre = t + Vector3.Transform((SeamMin + SeamMax) * 0.5f, q);
         var size = SeamMax - SeamMin;
-        gfx.Draw(Matrix4x4.CreateScale(size) * Matrix4x4.CreateFromQuaternion(q) * Matrix4x4.CreateTranslation(centre), col, SeamOk ? 0.25f + 0.3f * pulse : 0.3f, mode: 2);
+        gfx.Draw(Matrix4x4.CreateScale(size) * Matrix4x4.CreateFromQuaternion(q) * Matrix4x4.CreateTranslation(centre), col, (SeamOk ? 0.25f + 0.3f * pulse : 0.3f) * fade, mode: 2);
         // The edges along the face (the thin axis's edges are skipped: millimetres).
         var thick = SeamOk ? 0.018f : 0.012f;
         for (var e = 0; e < 12; e++)
@@ -187,7 +198,7 @@ public static class SocketWeldRender
                     b = a with { Z = SeamMax.Z };
                     break;
             }
-            Bar(gfx, t + Vector3.Transform(a, q), t + Vector3.Transform(b, q), thick, col, 0.95f);
+            Bar(gfx, t + Vector3.Transform(a, q), t + Vector3.Transform(b, q), thick, col, 0.95f * fade);
         }
     }
 

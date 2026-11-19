@@ -51,20 +51,22 @@ public static partial class Program
         SocketWeldRender.SeamMin = _seamMin;
         SocketWeldRender.SeamMax = _seamMax;
         SocketWeldRender.SeamOk = why == null;
-        if (SocketWeldRender.Hot < 0) // (a socket marker under the crosshair keeps the socket attach's line)
+        // The look line names both parts; on a socket marker the socket attach's line comes first, the seam's after it.
+        var before = SocketWeldRender.Hot >= 0 ? g.SandboxLookText : null;
+        var tk = key * 31 + SandboxKeys.Stamp + (why?.GetHashCode() ?? 7) * 1_000_033L + (before != null ? System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(before) * 7919L : 0);
+        if (tk != _seamTextKey)
         {
-            var tk = key * 31 + SandboxKeys.Stamp + (why?.GetHashCode() ?? 7) * 1_000_033L;
-            if (tk != _seamTextKey)
-            {
-                _seamTextKey = tk;
-                var a = c.DefOf(hit.Part).Name;
-                var b = c.DefOf(_seamOther).Name;
-                _seamText = why != null
-                    ? SandboxKeys.Line($"Seam {a} - {b}", null, why, SandboxKeys.Do($"{SandboxKeys.Sprint}+{SandboxKeys.Aim}", "take the part off"))
-                    : SandboxKeys.Line($"Seam {a} - {b}", null, null, $"{SandboxKeys.Do(SandboxKeys.Aim, "break this seam")}, {SandboxKeys.Do($"{SandboxKeys.Sprint}+{SandboxKeys.Aim}", "take the part off")}");
-            }
-            g.SandboxLookText = _seamText;
+            _seamTextKey = tk;
+            var a = c.DefOf(hit.Part).Name;
+            var b = c.DefOf(_seamOther).Name;
+            var take = SandboxKeys.Do($"{SandboxKeys.Sprint}+{SandboxKeys.Aim}", "take the part off");
+            _seamText = why != null
+                ? SandboxKeys.Line($"Seam {a} - {b}", null, why, take)
+                : SandboxKeys.Line($"Seam {a} - {b}", null, null, $"{SandboxKeys.Do(SandboxKeys.Aim, "break this seam")}, {take}");
+            if (before is { Length: > 0 })
+                _seamText = $"{before}  |  {_seamText}";
         }
+        g.SandboxLookText = _seamText;
         if (!Pressed(GameAction.Aim))
             return;
         _down[(int)GameAction.Aim] = false; // (not also taking the part off)
