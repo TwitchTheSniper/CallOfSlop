@@ -501,3 +501,9 @@ These override the text above where they differ.
 2. **Size match:** exact; a smaller module goes in a bigger socket through an adapter module.
 3. **Openings in Survival:** the socket cuts the hull itself (an opening-style socket cuts its well when placed, at a cost in time and power), not the Laser Cutter by hand.
 4. **Fixing:** modules are welded onto the ship. Larger modules need supporting machinery to fit: large arms that move the pieces into place, with visible welding and hole-cutting gear on the arms (they do the socket's hull cut and the weld).
+5. **Swapping:** any time, in flight too, if the module can be reached (and, for large modules, the machinery is there).
+6. **Who fits:** small modules by hand (physics gun / F at the socket); large ones need the fitting arms or a station.
+7. **Sizes:** sockets and modules grow in whole metres. Build up to 3x3 m now; plan the formats, limits and machinery for sizes up to about 30x30 m.
+8. **Trade and handling:** there are no crates or abstract items. A module is always the physical thing: it keeps its appearance and is moved around physically, so an installed module and one lying on a shelf are the same object. Players may make odd creations (a reactor with turrets on it, and nothing else).
+9. **Faction and NPC choice:** modules carry types and stats that factions and NPCs weigh when choosing modules for ships: a farming faction looks for harvesting modules; a combat group looks for turrets, armour, missile bays, reactors and thrusters. Stats decide between candidates with trade-offs: a faster engine is preferred where possible, but its greater power cost is weighed. (Prices: no separate rule given; default stays the material bill, with demand shaped by these preferences.)
+10. **Existing ships:** retrofit the main ships with sockets (engine, reactor, turret and others), rather than only adding a showcase ship.
