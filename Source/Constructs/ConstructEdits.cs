@@ -540,7 +540,7 @@ public sealed partial class ConstructEdits
                     {
                         freed.Owner = player;
                         freed.Vel = vel;
-                        freed.AngVel = ConstructRide.Still(c) ? Vector3.Zero : c.AngVel; // (cut loose from a turning ship: turning with it)
+                        freed.AngVel = c.MoveSpin; // (cut loose from a turning ship: turning with it)
                         return $"ok: {def.Name} cut free of construct {from} as construct {freed.Id} (physics-only: {def.PhysicsWhy})";
                     }
                     // (the world is full: counted, as below)

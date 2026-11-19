@@ -11,7 +11,9 @@
   // A module's "kind" is what the code knows: head, pack, hopper (the shell part's own bin is the hopper; "takes" what it
   // holds), hand (holds the tools), drill (always out: while ground drill scoops land on a deposit a Drill Module of "tier"
   // works, it taps "rate" units a second of its ore into the hopper). A module's "tool" is the shell's only tool while it is
-  // worn (the tool wheel, the number keys and the gun are refused; leaving the shell gives the body's tools back). leg: a leg.
+  // worn (the tool wheel, the number keys and the gun are refused; leaving the shell gives the body's tools back), and with "view":
+  // true its wearer sees the module's own model in first person in place of that tool's (the drill arm reaching forward; the
+  // rig's own boxes, ShellKitNodes.cs). leg: a leg.
   // Any module may say "speed" (times the shell's pace) and "damage" (times the hits it takes), 1 if not said. A module with a
   // "part" comes off on a Shell Gantry as that part, onto its parts table, and that part is fitted back (mining-shell.md "Shell
   // Gantry"); one with none is never taken off. A module's place in the list is its byte on the wire and in a shell's save: a new
@@ -21,7 +23,7 @@
     { "name": "Power Pack", "slot": "back", "kind": "pack", "part": "Shell Power Pack" },
     { "name": "Ore Hopper", "slot": "back", "kind": "hopper", "takes": ["iron ore", "copper ore", "gold ore", "levite ore", "stone", "sand"] },
     { "name": "Hand", "slot": "arm", "kind": "hand", "part": "Shell Hand" },
-    { "name": "Drill Arm", "slot": "arm", "kind": "drill", "rate": 30, "tier": 2, "tool": "GroundDrill" },
+    { "name": "Drill Arm", "slot": "arm", "kind": "drill", "rate": 30, "tier": 2, "tool": "GroundDrill", "view": true },
     { "name": "Standard Leg", "slot": "leg", "kind": "leg", "part": "Shell Standard Leg" },
     { "name": "Heavy Leg", "slot": "leg", "kind": "leg", "part": "Shell Heavy Leg" },
     { "name": "Runner Leg", "slot": "leg", "kind": "leg", "part": "Shell Runner Leg", "speed": 1.05 },
