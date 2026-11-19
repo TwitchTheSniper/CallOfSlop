@@ -432,13 +432,8 @@ public static class RideCheck
     private static bool HeldOnly, LooseOnly;
     private static float[] LooseSpeeds = [0, 60, 120, 200];
 
-    /// <summary>What carries the loose bodies of a posed ship (one out of the bubble) once it is posed: the game's own step for them.</summary>
-    private static void CarryPosed(ConstructWorld w, Construct ship, Construct[] loose)
-    {
-        foreach (var b in loose)
-            if (b.SpaceRide != 0)
-                Game.SpaceCarry(w, b);
-    }
+    /// <summary>What carries the loose bodies of a posed ship (one out of the bubble) once it is posed: the game's own pass for them (GameSpace.cs).</summary>
+    private static void CarryPosed(ConstructWorld w) => ConstructFrames.After(w, posed: true);
 
     /// <summary>
     /// "--loose" (local-frame-physics.md phase 0): loose bodies aboard a moving ship, as the server steps them. A Frame Block is
@@ -471,11 +466,10 @@ public static class RideCheck
             b.AngVel = c.AngVel;
             b.KeepSpeed();
             b.Fresh = false;
-            if (posed)
-            {
-                b.SpaceRide = c.Id;
-                Game.SpaceRideNote(b, c, b.WorldCom);
-            }
+            if (ConstructFrames.Find(w, b, posed) is { } f)
+                ConstructFrames.Join(b, f); // (as the game joins one made aboard: ConstructRide.IntoMotion, Game.SpaceLaunchAfter)
+            else
+                Console.WriteLine("  loose: a block found no frame");
         }
         thrown.Vel += Vector3.Transform(new Vector3(2f, 1f, -2f), c.Rot);
         var loose = new[] { rest, thrown };
@@ -511,14 +505,14 @@ public static class RideCheck
             var ang = ph == 1 ? new Vector3(0, turn, 0) : Vector3.Zero;
             var vel = Vector3.Transform(-Vector3.UnitZ, c.Rot) * v;
             if (!posed)
-                Pose(w, c, c.Pos, c.Rot, vel, ang);
+                Drive(w, c, vel, ang);
             var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
             w.Step(World.Query, World.TickDt);
             if (posed)
             {
                 Pose(w, c, c.Pos + vel * World.TickDt, Quaternion.CreateFromAxisAngle(Vector3.UnitY, ang.Y * World.TickDt) * c.Rot, vel, ang);
                 c.SpaceShip = 60000;
-                CarryPosed(w, c, loose);
+                CarryPosed(w);
             }
             var ms = (System.Diagnostics.Stopwatch.GetTimestamp() - t0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
             if (t > 5)
@@ -554,7 +548,7 @@ public static class RideCheck
         }
         var relT = (thrown.Vel - c.PointVel(thrown.WorldCom)).Length();
         line.Append(FormattableString.Invariant($" thrown: in frame {inB}, {relT:0.00} m/s against the deck at the end, moved {Vector3.Distance(L(thrown), startT[0]):0.0} m from a second in;"));
-        line.Append(FormattableString.Invariant($" rest block in frame {inA}; step {msSum / 654:0.00} ms mean, {msMax:0.00} most{lost}"));
+        line.Append(FormattableString.Invariant($" rest block in frame {inA} (in the ship's {(rest.Frame == c.Id ? "frame" : "WORLD")}); step {msSum / 654:0.00} ms mean, {msMax:0.00} most{lost}"));
         Console.WriteLine(line.ToString());
         w.Remove(rest);
         w.Remove(thrown);
@@ -623,6 +617,7 @@ public static class RideCheck
             {
                 Pose(w, c, c.Pos + vel * World.TickDt, Quaternion.CreateFromAxisAngle(Vector3.UnitY, ang.Y * World.TickDt) * c.Rot, vel, ang);
                 c.Anchored = false;
+                CarryPosed(w);
             }
             if (held.GrabbedBy != 0)
             {
@@ -653,6 +648,17 @@ public static class RideCheck
         c.Pos = c.PrevPos = home;
         c.Rot = c.PrevRot = homeRot;
         return offMax > 0.25f || jumpMax > 0.02f ? 1 : 0;
+    }
+
+    /// <summary>
+    /// A stepped ship driven as its engines would: its velocity and turn set before the step so that after it (the pull, the air's
+    /// damping) they are <paramref name="vel"/> and <paramref name="ang"/>, and its speed past the free body's limit, as a flying
+    /// ship's is. (Set flat, the step's damping and limit made the ship itself lurch every tick and stop at 60 m/s.)
+    /// </summary>
+    private static void Drive(ConstructWorld w, Construct c, Vector3 vel, Vector3 ang)
+    {
+        Pose(w, c, c.Pos, c.Rot, vel / 0.999f - ConstructGravity.GravityFor(c, c.WorldCom) * World.TickDt, ang / 0.985f);
+        c.SpeedKept = c.Vel.Length() + 1f;
     }
 
     /// <summary>A construct moved as the physics would: its pose, velocity and turn, its acceleration noted.</summary>

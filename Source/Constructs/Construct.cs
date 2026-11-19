@@ -344,12 +344,28 @@ public sealed partial class Construct
     // Server: the speed it came into the world with, past the physics' speed limit (cut off a fast ship, it keeps the ship's
     // speed; ConstructRide.SpawnIntoMotion sets it, ConstructPhysics.Integrate lets it slow and never speed up past it). 0: none.
     internal float SpeedKept;
-    // Server: the ship in space whose frame this loose body is in (GameSpaceLaunch.cs, SpaceCarry): not a ship of its own,
-    // but carried by that ship's motion; where it was in that frame at the last carry, there in the world, and the ship's
-    // turn and speed there then. 0: none.
-    internal ushort SpaceRide;
-    internal Vector3 SpaceRideLocal, SpaceRideWorld, SpaceRideVel;
-    internal Quaternion SpaceRideRot;
+    // Local-frame physics (docs/sandbox/design/local-frame-physics.md, ConstructFrames.cs): the moving construct whose frame this
+    // loose body is in (0: none). Its truth is its pose in that frame (FramePos, FrameRot: its origin and turn in the frame's
+    // body axes) and its motion through it (FrameVel, FrameSpin, the frame's axes); Pos, Rot, Vel and AngVel are kept as the
+    // world's copies, for drawing, rays, contacts with outside things and leaving. A client keeps Frame and the local pose too.
+    internal ushort Frame;
+    internal Vector3 FramePos, FrameVel, FrameSpin;
+    internal Quaternion FrameRot = Quaternion.Identity;
+    // Server: the deck's up in the frame's axes (the up a rider there takes, chosen when it joined), the pull the next step gives
+    // it (world axes: the deck's gravity, a generator's, the free fall a ship in space has), the frame's motion at its centre and
+    // its turn at the last carry (world), where its centre and the frame were then, the time the physics stepped it since, the
+    // acceleration it feels at rest (smoothed: what wakes it), and whether its frame pose is still to be taken from the world.
+    internal Vector3 FrameUp = Vector3.UnitY, FrameG, FrameFree, FrameV, FrameW, FrameX0, FrameC0, FrameVc0;
+    internal Quaternion FrameQ0 = Quaternion.Identity;
+    internal float FrameDt, FrameFelt;
+    internal bool FrameNew, FrameGround; // (FrameGround: the last step had it touch the map)
+    /// <summary>Server: in a frame whose pose it has (not still to be joined from the world): the physics reads its speed against the frame's.</summary>
+    internal bool Framed => Frame != 0 && !FrameNew;
+    // Server and client: loose bodies in this construct's frame at the last carry (most constructs: 0).
+    internal int FrameRiders;
+    // Client: the newest pose heard was in a frame (Frame), so the pose history holds frame poses.
+    internal ushort NetFrame;
+    internal Vector3 NetFrameVel;
 
     /// <summary>Server: its velocity was just set from a moving frame (let go, cut free): it keeps that speed past the physics' limit.</summary>
     internal void KeepSpeed() => SpeedKept = Vel.Length();

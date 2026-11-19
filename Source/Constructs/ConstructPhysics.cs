@@ -203,9 +203,18 @@ public static partial class ConstructPhysics
             var weight = g;
             if (_dyn[i])
             {
-                weight = GravityFrames.Curved || GravityFrames.HookCount > 0 ? ConstructGravity.GravityFor(c, c.WorldCom) : g;
-                if (c.SpaceRide == 0) // (loose in a ship in space: weightless with it, the ship's flight carries the pull, Game/GameSpaceLaunch.cs)
+                if (c.Framed)
+                {
+                    // In a moving construct's frame (ConstructFrames.cs): the pull a player standing there feels (the deck's,
+                    // a generator's), and in space the ship's own free fall, which its flight gives the ship too.
+                    weight = c.FrameG;
+                    c.Vel += weight * ((1 - c.AntiShare) * dt) + c.FrameFree * dt;
+                }
+                else
+                {
+                    weight = GravityFrames.Curved || GravityFrames.HookCount > 0 ? ConstructGravity.GravityFor(c, c.WorldCom) : g;
                     c.Vel += weight * ((1 - c.AntiShare) * dt); // (a planet: towards its centre, from where the body is; Anti-Grav takes its share off)
+                }
                 if (c.GrabbedBy != 255)
                 {
                     if (c.Driven)
@@ -267,6 +276,7 @@ public static partial class ConstructPhysics
         }
         Lap(1, ref t0);
         _world = world;
+        FrameLead(n);
         ApplyDeckPushes(n, dt);
         CouplingExclusions(world, n);
         BodyContacts(world, n, dt);
@@ -281,15 +291,42 @@ public static partial class ConstructPhysics
         ConnectorLoads(world, dt);
         WarmStore();
         SleepTogether();
+        FrameGround();
+        var framed = 0;
         for (var i = 0; i < n; i++)
         {
             var c = bodies[i];
+            if (_dyn[i] && c.Framed && _world?.Get(c.Frame) is { } f)
+            {
+                // (in a moving frame: integrated after every frame is, against the frame's motion as the solve met it and as it is
+                // after its own step: ConstructFrames.cs)
+                c.FrameV = f.PointVel(c.WorldCom);
+                c.FrameW = f.AngVel;
+                framed++;
+            }
+        }
+        for (var i = 0; i < n; i++)
+        {
+            var c = bodies[i];
+            if (framed > 0 && _dyn[i] && c.Framed && _world?.Get(c.Frame) != null)
+                continue;
             if (_dyn[i])
                 Integrate(c, i, dt);
             if (_jact[i])
                 IntegrateJoints(c, i, dt);
             if (_dyn[i] || _jact[i])
                 Sleep(c);
+        }
+        for (var i = 0; i < n && framed > 0; i++)
+        {
+            var c = bodies[i];
+            if (!_dyn[i] || !c.Framed || _world?.Get(c.Frame) is not { } f)
+                continue;
+            framed--;
+            IntegrateFramed(c, f, i, dt);
+            if (_jact[i])
+                IntegrateJoints(c, i, dt);
+            Sleep(c);
         }
         Lap(4, ref t0);
     }
@@ -1308,10 +1345,12 @@ public static partial class ConstructPhysics
                 var b = bodies[j];
                 if (a.CarriedBy == b.Id || b.CarriedBy == a.Id || a.CarriedBy != 0 && a.CarriedBy == b.CarriedBy || a.HeldBy == b.Id || b.HeldBy == a.Id)
                     continue; // (a carrier and what its frozen cargo volumes carry don't collide, nor a lifter's body and what its hook holds)
+                if (a.Frame == b.Id && a.Asleep || b.Frame == a.Id && b.Asleep)
+                    continue; // (asleep in its frame: carried by it rigidly, ConstructFrames.Carry; it wakes when the frame's motion changes, or something else touches it)
                 var reach = a.Radius + b.Radius + (a.Vel - b.Vel).Length() * dt;
                 if (Vector3.DistanceSquared(a.WorldCom - PosedBack(a, b, dt), b.WorldCom - PosedBack(b, a, dt)) > reach * reach) // (a ship out of the bubble met where it was at the step's start: PosedBack)
                     continue;
-                if (_dyn[i] && b.Asleep && !b.Anchored && b.WheelCount + b.SpringCount > 0 && (a.Vel.LengthSquared() >= StillSpeed2 || a.AngVel.LengthSquared() >= StillSpeed2))
+                if (_dyn[i] && b.Asleep && !b.Anchored && b.Frame != a.Id && b.WheelCount + b.SpringCount > 0 && (a.Vel.LengthSquared() >= StillSpeed2 || a.AngVel.LengthSquared() >= StillSpeed2))
                     b.Wake(); // (a deck under way: wheels hold a body clear of the parts, so no contact would wake it; others wake when they touch)
                 else if (_jact[i] && b.Asleep && !b.Anchored && b.CarriedBy == 0 && JointMoves(a))
                     b.Wake(); // (a lift or a ramp under it: the same)
@@ -1345,8 +1384,8 @@ public static partial class ConstructPhysics
     {
         var v = Vector3.Zero;
         var c = _bodies[body];
-        if (_dyn[body] || c.SpaceShip != 0)
-            v = c.Vel + Vector3.Cross(c.AngVel, r); // (a ship out of the bubble is posed by its flight, not stepped, but it moves: what touches it meets it at its speed, GameSpaceLaunch.cs)
+        if (_dyn[body] || c.SpaceShip != 0 || c.CarriedBy != 0 || c.Frame != 0)
+            v = c.Vel + Vector3.Cross(c.AngVel, r); // (a ship out of the bubble is posed by its flight, not stepped, but it moves: what touches it meets it at its speed, GameSpaceLaunch.cs; so do cargo carried by its carrier and a body asleep in a moving frame, both posed by what carries them)
         for (var k = 0; k < un; k++)
         {
             int slot = _chainSlot[u0 + k];
@@ -1755,6 +1794,48 @@ public static partial class ConstructPhysics
     }
 
     /// <summary>
+    /// <see cref="Integrate"/> for a body in a moving construct's frame (ConstructFrames.cs): the damping, the speed limit and the
+    /// spin limit act on its motion through the frame (against the frame's motion at it as the solve met it, <see cref="Construct.FrameV"/>),
+    /// never on the frame's own, so a crate on a deck at 200 m/s feels no false drag, no speed ceiling and no false spin; the frame's
+    /// part of its motion is the frame's after the frame's own step (its air's damping, its limits). Then the same step as any body.
+    /// </summary>
+    private static void IntegrateFramed(Construct c, Construct f, int index, float dt)
+    {
+        var air = GravityFrames.Point != null ? AirAt(c.WorldCom) : 1f;
+        var rel = c.Vel - c.FrameV;
+        var spinRel = c.AngVel - c.FrameW;
+        c.FrameV = f.PointVel(c.WorldCom); // (the frame after its step: what the speed through it is measured against from here, Sleep and the carry)
+        c.FrameW = f.AngVel;
+        if (!c.AeroFlying)
+            rel *= air >= 1 ? 0.999f : 1 - 0.001f * air;
+        spinRel *= 0.985f;
+        var top = air >= 1 ? c.AeroFlying ? AirTable.Current.FlightTop : MaxSpeed : MathF.Min(MaxFlightSpeed, MaxSpeed / MathF.Max(air, 1e-3f));
+        var v2 = rel.LengthSquared();
+        if (v2 > top * top)
+            rel *= top / MathF.Sqrt(v2);
+        var w2 = spinRel.LengthSquared();
+        if (w2 > MaxSpin * MaxSpin)
+            spinRel *= MaxSpin / MathF.Sqrt(w2);
+        c.Vel = c.FrameV + rel;
+        c.AngVel = c.FrameW + spinRel;
+        c.FrameDt += dt; // (stepped: the carry takes its move through the frame)
+        var com = c.WorldCom + (c.Vel + _pushV[index]) * dt;
+        var w = c.AngVel + _pushW[index];
+        var spin = new Quaternion(w.X, w.Y, w.Z, 0) * c.Rot;
+        var rot = new Quaternion(c.Rot.X + 0.5f * dt * spin.X, c.Rot.Y + 0.5f * dt * spin.Y, c.Rot.Z + 0.5f * dt * spin.Z, c.Rot.W + 0.5f * dt * spin.W);
+        c.Rot = Quaternion.Normalize(rot);
+        c.Pos = com - Vector3.Transform(c.Com, c.Rot);
+        if (!float.IsFinite(c.Pos.X + c.Pos.Y + c.Pos.Z))
+        {
+            c.Pos = c.PrevPos;
+            c.Rot = c.PrevRot;
+            c.Vel = c.FrameV;
+            c.AngVel = c.FrameW;
+            c.FrameDt = 0;
+        }
+    }
+
+    /// <summary>
     /// A joint's load this tick: gravity on what it carries (its segment and everything hanging on it, and the riders),
     /// about its axis (N m) or along it (N), and the inertia it moves with; its axis and pivot in the world.
     /// </summary>
@@ -2140,6 +2221,41 @@ public static partial class ConstructPhysics
     /// (a sleeping body is something else to the solve, and if the bottom of a stack dropped off that way, block by block,
     /// each change shook what stands on it, until it fell). Both ways through the list, so it crosses a chain in one tick.
     /// </summary>
+    /// <summary>
+    /// Bodies in a stepped frame (ConstructFrames.cs) are given, before the solve, what their frame's air damping will take off it
+    /// after the solve (its <see cref="Integrate"/>): a cruising ship's drive puts that back each tick before the solve, so the
+    /// hull met its cargo 0.2 m/s a tick faster at 200 m/s than either moved (12 m/s2, more than a deck's friction holds) and
+    /// a block on its deck slid aft. The damping is the hull's air, which nothing inside feels; a frame that slows by it
+    /// (coasting) still slows its cargo through the contacts.
+    /// </summary>
+    private static void FrameLead(int n)
+    {
+        for (var i = 0; i < n; i++)
+        {
+            if (!_dyn[i])
+                continue;
+            var c = _bodies[i];
+            if (!c.Framed || _world?.Get(c.Frame) is not { } f || (uint)f.SimIndex >= (uint)n || !ReferenceEquals(_bodies[f.SimIndex], f) || !_dyn[f.SimIndex])
+                continue;
+            var air = GravityFrames.Point != null ? AirAt(f.WorldCom) : 1f;
+            var loss = f.AeroFlying ? 0 : air >= 1 ? 0.001f : 0.001f * air;
+            var spin = f.AngVel * (1 - 0.985f);
+            c.Vel += f.Vel * loss + Vector3.Cross(spin, c.WorldCom - f.WorldCom);
+            c.AngVel += spin;
+        }
+    }
+
+    /// <summary>Bodies in a moving frame that touched the map this step (ConstructFrames.Carry: held by the ground, they leave it).</summary>
+    private static void FrameGround()
+    {
+        for (var i = 0; i < _contactCount; i++)
+        {
+            ref var ct = ref _contacts[i];
+            if (ct.B < 0 && ct.Jn > 0 && _dyn[ct.A] && _bodies[ct.A].Frame != 0)
+                _bodies[ct.A].FrameGround = true;
+        }
+    }
+
     private static void SleepTogether()
     {
         for (var pass = 0; pass < 2; pass++)
@@ -2149,6 +2265,8 @@ public static partial class ConstructPhysics
                 if (ct.B < 0 || ct.Jn <= 0 || ct.Bilateral || !_dyn[ct.A] || !_dyn[ct.B])
                     continue;
                 Construct a = _bodies[ct.A], b = _bodies[ct.B];
+                if (a.Frame == b.Id || b.Frame == a.Id)
+                    continue; // (a body at rest in a moving frame sleeps on it: its frame carries it, ConstructFrames.cs)
                 a.SleepTicks = b.SleepTicks = Math.Min(a.SleepTicks, b.SleepTicks);
             }
     }
@@ -2157,7 +2275,10 @@ public static partial class ConstructPhysics
     {
         // (a long body's far end moves at its spin times its length: a 300 m hull is not still at what a buggy is)
         var still2 = Pass == 2 && c.FarRate > 1 ? StillSpeed2 * c.FarRate * c.FarRate : StillSpeed2; // (a far body's coarse step jitters more: nobody is near to see it creep: ConstructFar.cs)
-        var still = c.Anchored || c.Vel.LengthSquared() < still2 && c.AngVel.LengthSquared() * MathF.Max(1, c.Radius * c.Radius / 64f) < still2;
+        var framed = c.Framed; // (in a moving construct's frame: still in it, not in the world, ConstructFrames.cs)
+        var v = framed ? c.Vel - c.FrameV : c.Vel;
+        var w = framed ? c.AngVel - c.FrameW : c.AngVel;
+        var still = c.Anchored || v.LengthSquared() < still2 && w.LengthSquared() * MathF.Max(1, c.Radius * c.Radius / 64f) < still2;
         still &= (!c.Driven || (c.Throttle == 0 && c.SteerInput == 0 && c.LiftInput == 0 && c.RollInput == 0)) && !(c.EngineWired && c.EngineSignal != 0) && c.SteerSignal == 0 && !c.HoverOn && !c.ActiveSignal && !c.StabLive && c.ThrustShow <= 0 && !c.RotorLive;
         for (var j = 0; j < c.JointCount && still; j++)
         {
@@ -2173,7 +2294,7 @@ public static partial class ConstructPhysics
         if (c.SleepTicks >= SleepAfterTicks)
         {
             c.Asleep = true;
-            c.Vel = c.AngVel = Vector3.Zero;
+            (c.Vel, c.AngVel) = framed ? (c.FrameV, c.FrameW) : (Vector3.Zero, Vector3.Zero); // (asleep in a frame: carried by it, ConstructFrames.Carry)
             for (var j = 0; j < c.JointCount; j++)
             {
                 c.Joints[j].Vel = 0;
