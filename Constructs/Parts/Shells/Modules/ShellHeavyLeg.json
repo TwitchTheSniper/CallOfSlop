@@ -1,0 +1,108 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Shell Heavy Leg",
+  "description": "A Mining Shell's leg, half again the size of a standard one. A Shell Gantry fits it to a robot shell from its parts table.",
+  "group": "Logic",
+  "section": "Shells",
+  "role": "frame",
+  "tool": "wrench",
+  "mass": 24.0,
+  "health": 60,
+  "armour": 2,
+  "material": "steel",
+  "color": "#8b949c",
+  "attachSeconds": 2,
+  "boxes": [
+    {
+      "min": [
+        -0.1125,
+        0.0,
+        -0.225
+      ],
+      "max": [
+        0.1125,
+        0.105,
+        0.135
+      ],
+      "color": "#30363d"
+    },
+    {
+      "min": [
+        -0.0975,
+        0.09,
+        -0.105
+      ],
+      "max": [
+        0.0975,
+        0.705,
+        0.105
+      ],
+      "color": "#56606a"
+    },
+    {
+      "min": [
+        -0.105,
+        0.675,
+        -0.1275
+      ],
+      "max": [
+        0.105,
+        0.795,
+        0.1275
+      ],
+      "color": "#30363d",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.09,
+        0.78,
+        -0.1125
+      ],
+      "max": [
+        0.09,
+        1.32,
+        0.1125
+      ]
+    },
+    {
+      "min": [
+        -0.0675,
+        1.29,
+        -0.0675
+      ],
+      "max": [
+        0.0675,
+        1.41,
+        0.0675
+      ],
+      "color": "#30363d",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.105,
+        0.225,
+        -0.132
+      ],
+      "max": [
+        0.105,
+        0.6,
+        -0.108
+      ],
+      "color": "#56606a",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

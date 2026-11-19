@@ -19,7 +19,7 @@ public static partial class Program
     private static int _wsClipBodies, _wsClipLoose;
     private static bool _wsClipToolAsked;
 
-    private static bool WsPlayKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "sit" or "seated" or "getout" or "recycle" or "clip" or "partinfo" or "partlook" or "hands" or "cabto" or "damage" or "makeengine" or "standon" or "aimintake" or "feetup" or "cave" or "spawnbp" or "bringon" or "dropmotion" or "shellwear" or "shellleave" or "shellfix" or "shells" or "hopper";
+    private static bool WsPlayKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "sit" or "seated" or "getout" or "recycle" or "clip" or "partinfo" or "partlook" or "hands" or "cabto" or "damage" or "makeengine" or "standon" or "aimintake" or "feetup" or "cave" or "spawnbp" or "bringon" or "dropmotion" or "shellwear" or "shellleave" or "shellfix" or "shells" or "hopper" or "shellgantry";
 
     private static bool WsPlayVerb(Game g, Player me, string verb, string arg)
     {
@@ -116,6 +116,9 @@ public static partial class Program
                         WsSay(string.Create(ci, $"hopper: player {o.Id} in shell {o.InShell}, frame {o.ShellFrame}, heard {o.HopperAmount} {RecyclingTable.Current.NameOf(o.HopperMaterial)}"));
                 return true;
             }
+            case "shellgantry": // "shellgantry setup|fit SLOT MODULE|state": the Shell Gantry (Program.WindowShotShellGantry.cs)
+                WsShellGantry(g, me, arg);
+                return true;
             case "shellleave": // "shellleave": the Esc menu's Leave the shell
                 g.ShellAskLeave();
                 return true;

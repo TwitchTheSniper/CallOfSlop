@@ -492,6 +492,16 @@ public sealed class Assembling : IPartGenerator
     [
         Rec("Mining Shell", 60, 2, m: [("steel", 70), ("copper", 14), ("rubber", 8)], p: [("Circuit Board", 3)]), // (docs/sandbox/design/mining-shell.md)
         Rec("Drill Rack", 30, 1, m: [("steel", 24), ("copper", 4), ("rubber", 2)]), // (its three portable drills come with it: factory-generator-notes.md "Tool racks and crew miners")
+        // The Shell Gantry, its parts table and the shell modules it fits (docs/sandbox/design/mining-shell.md "Shell Gantry layout")
+        Rec("Shell Gantry", 90, 2, m: [("steel", 420), ("copper", 30), ("rubber", 12)], p: [("Circuit Board", 4)]),
+        Rec("Shell Parts Table", 10, 1, m: [("steel", 22)]),
+        Rec("Shell Optics Head", 12, 2, m: [("steel", 4), ("copper", 2)], p: [("Circuit Board", 1)]),
+        Rec("Shell Plated Head", 16, 2, m: [("steel", 10), ("copper", 2)], p: [("Circuit Board", 1)]),
+        Rec("Shell Power Pack", 14, 2, m: [("steel", 6), ("copper", 6)]),
+        Rec("Shell Hand", 10, 2, m: [("steel", 4), ("rubber", 1)]),
+        Rec("Shell Standard Leg", 12, 2, m: [("steel", 7), ("rubber", 1)]),
+        Rec("Shell Heavy Leg", 20, 2, m: [("steel", 20), ("rubber", 3)]),
+        Rec("Shell Runner Leg", 18, 2, m: [("steel", 6), ("copper", 2), ("rubber", 3)]),
     ];
 
     /// <summary>The recipes file: the header, then one recipe a line (json.dumps with its default separators).</summary>

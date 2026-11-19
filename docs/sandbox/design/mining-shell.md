@@ -127,3 +127,46 @@ Drafted with the user over three pictures; build to this once the user approves 
 - **Arms:** five, all mounted on the rear frame: two on the left (upper, lower), two on the right (upper, lower) and one reaching over the head. Each reaches round from the rear, takes a module off the suit, sets it on the table and fits the chosen one.
 - **What each arm works on:** upper arm per side = that side's arm module; lower arm per side = that side's leg; head arm = the head. This adds **left leg and right leg slots** to `Shells.json` (new slots go at the end of `slots`: the order is the wire's). The back pack (hopper) is fitted by an upper arm. A frame's `fixed` slots are never changed by the gantry.
 - **Bay and table are separate parts** (user, 2026-11-18): the parts table is placed on its own behind the bay and linked to it like a machine's hold; the gantry arms must still reach it, so it is placed within their reach behind the rear frame.
+
+## What was built (Shell Gantry, 2026-11-18)
+
+- **Slots and modules** (`Constructs/Shells.json`, `ShellFrames.cs`): `leftLeg` and `rightLeg` at the end of `slots` (six now; a `leg`
+  slot kind). New modules at the end of `modules`: Standard Leg, Heavy Leg, Runner Leg (`"speed": 1.05` each, so a pair is x1.10) and
+  Plated Head (`"damage": 0.9`). Any module may carry `speed` and `damage` (times the frame's; 1 if not said). The Robot Shell's legs
+  are Standard Legs, the Mining Shell's Heavy Legs: no number changed for either. Every module that comes off has a `"part"`; the Ore
+  Hopper and the Drill Arm have none (they are the Mining Shell's `fixed` slots and are never taken off).
+- **A shell's own kit.** A byte a slot (0: its frame's module, else 1 + the module's index), kept in three hidden mask settings on every
+  shell part (`CfgKey.ShellKit0..2`, `ShellFrames.ReadKit/WriteKit`): it rides world saves, blueprints and CBody. Worn, it is
+  `Player.ShellMods`, fitted into `Player.ShellKit` (`ShellFrames.Refit`, no allocation), which every rule reads (`ShellFrames.Worn`:
+  pace, hits, the hopper, the drill, the forced tool). `Msg.Shell` ends with the six bytes. A shell saved before has no kit: every
+  slot its frame's.
+- **Parts** (part kit `shell_parts`): **Shell Gantry** (`Shells/Gantry`; a 5.5 m deck, a 5 x 5 x 5 m bay open at the front, four posts, a
+  top ring, a rear frame with three rails where the five shoulders sit, a console with a screen at the front right; 120 W;
+  `"shellGantry": {"bay", "arms", "reach": 4}`), **Shell Parts Table** (a Piece Rack by `storage.pieces`, 1.2 x 2.4 m, 60 pieces up to
+  1 x 0.95 x 2.2 m, a Piece in; `"shellGantry": {"table": true}`) and seven module parts (`Shells/Modules`: Shell Optics Head, Plated
+  Head, Power Pack, Hand, Standard Leg, Heavy Leg, Runner Leg). Their Assembler recipes are appended at the end of the table
+  (`Assembling.cs` `LateHand`: saved recipe numbers keep).
+- **The table's link** (default, the user away): the table is linked to the gantry by being in its arms' reach: a Shell Parts Table
+  whose hold's middle is behind the rear frame and within 4 m of all five shoulders, on the gantry's construct or standing on its own
+  (set down on the ground behind it). No wire or conveyor is needed.
+- **The swap** (`ConstructGantry.cs`, `GameShellGantry.cs`, `CActKind.Gantry`, `Msg.Gantry` in the slot of `RemovedLabour`; protocol 370).
+  F on the gantry opens its panel (`UiShellGantry.cs`, `Program.SandboxShellGantry.cs`; Esc and the local reset close it): the shell
+  in the bay, the table, and a row a slot with a button for each module that fits there and how many lie on the table. The server
+  checks reach (8 m), power, who may, a shell standing alone in the bay (its feet inside it), the slot (`fixed`, kind, a part), the
+  table and that the module is on it (creative: it comes free, with or without a table), takes it off the table and starts a 7.5 s
+  job on the slot's arm (head arm: head; right upper: right arm and the back; left upper: left arm; the lower arms: the legs). The
+  arm reaches the slot (1.2 s), unclips (to 2 s), carries the old module to the table (3.5 s), sets it down and takes the new one
+  (4 s), carries it back (5.5 s), fits it (6.3 s: the shell's kit is written and the old module's part goes onto the table, else
+  loose behind the gantry, always with a log line) and goes back to rest. A job stops, the new module back on the table, if the
+  shell or the gantry goes or the shell leaves the bay before the fit. A shell in a job can't be woken. One job a gantry; a
+  joiner hears the jobs under way.
+- **Seen** (`GantryRender.cs`): the five arms (shoulder, two links, elbow, gripper) at rest, and the working arm on its path with the
+  module's part at true size in its grip, a work lamp while it unclips and fits; the same pose on host and client from the job's
+  clock. The shell itself looks the same whatever its modules (not drawn yet).
+- **Tried** (window runs, the window tool's `shellgantry setup|fit SLOT MODULE|state`): a Robot Shell's left leg, right leg and head
+  swapped from the table, the old modules on the table after; a second ask while busy refused; worn after, the pace x1.10 and hits
+  x0.90 (Runner Legs and the Plated Head); the Mining Shell's back and right arm refused as fixed, its leg swapped; a joined client
+  sees the job, the kit and the table, and its own ask is made (and refused "too far away" when it was); a world save and load keep
+  the kit and the table's contents; the panel opens on F and closes on Esc.
+- **Not yet**: the standing or worn shell drawn with its modules (a Plated Head looks like an Optics Head); a crew Miner using the
+  gantry; arm sounds.

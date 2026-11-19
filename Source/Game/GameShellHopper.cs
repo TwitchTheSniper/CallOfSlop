@@ -24,7 +24,7 @@ public sealed partial class Game
     {
         ref var hp = ref SandboxHands.Hoppers[p.Id];
         hp = default;
-        var frame = ShellFrames.Of(p.ShellFrame);
+        var frame = ShellFrames.Worn(p);
         if (frame.Find(ShellModuleKind.Hopper) is not { } mod || shell.PartCount < 1 || !shell.DefOf(0).IsBin)
             return;
         hp.Module = mod;
@@ -67,7 +67,12 @@ public sealed partial class Game
     }
 
     /// <summary>The frame, hopper material and load at the end of <see cref="Msg.Shell"/> (protocol 353).</summary>
-    private static void ShellWriteFrame(PacketWriter w, Player p) => w.U8(p.InShell ? p.ShellFrame : (byte)0).U8(p.InShell ? p.HopperMaterial : (byte)0).U16(p.InShell ? p.HopperAmount : (ushort)0);
+    private static void ShellWriteFrame(PacketWriter w, Player p)
+    {
+        w.U8(p.InShell ? p.ShellFrame : (byte)0).U8(p.InShell ? p.HopperMaterial : (byte)0).U16(p.InShell ? p.HopperAmount : (ushort)0);
+        for (var k = 0; k < ShellFrames.SlotCount; k++)
+            w.U8(p.InShell ? p.ShellMods[k] : (byte)0); // (its kit: the Shell Gantry, protocol 370)
+    }
 
     /// <summary>
     /// Server, a ground drill scoop at <paramref name="at"/> by someone in a shell with a drill arm: the deposit under it is tapped
@@ -76,7 +81,7 @@ public sealed partial class Game
     /// </summary>
     private void ShellDrillTap(Player p, Vector3 at, double now)
     {
-        if (!p.InShell || ShellFrames.Of(p.ShellFrame).Find(ShellModuleKind.Drill) is not { } drill || Constructs.Resources is not { } field)
+        if (!p.InShell || ShellFrames.Worn(p).Find(ShellModuleKind.Drill) is not { } drill || Constructs.Resources is not { } field)
             return;
         ref var hp = ref SandboxHands.Hoppers[p.Id];
         if (hp.Capacity <= 0 || hp.Module == null)
@@ -141,7 +146,7 @@ public sealed partial class Game
     /// </summary>
     private bool ShellDrillBored(Player p, Vector3 at)
     {
-        if (!p.InShell || p.ShellFrame == 0 || ShellFrames.Of(p.ShellFrame).Find(ShellModuleKind.Drill) is not { } drill || Constructs.Resources is not { } field)
+        if (!p.InShell || p.ShellFrame == 0 || ShellFrames.Worn(p).Find(ShellModuleKind.Drill) is not { } drill || Constructs.Resources is not { } field)
             return false;
         var kind = field.Planet != null ? field.TappableAt(at) : field.TappableAt(at.X, at.Z);
         if (kind == null || kind.MinTier > drill.Tier || kind.Deep)
@@ -168,7 +173,7 @@ public sealed partial class Game
     {
         if (!p.InShell || p.ShellFrame == 0)
             return null;
-        var f = ShellFrames.Of(p.ShellFrame);
+        var f = ShellFrames.Worn(p);
         if (f.ForcedTool is not { } only || asked == only)
             return null;
         return $"the {f.Part}'s only tool is its {f.ToolModule!.Name}: leave the shell for your own tools";
@@ -177,7 +182,7 @@ public sealed partial class Game
     /// <summary>Server, from <see cref="ShellTick"/>: a worn shell with a forced tool has it out (after a seat, a part picked up, a wake).</summary>
     private void ShellForceTool(Player p)
     {
-        if (p.ShellFrame == 0 || ShellFrames.Of(p.ShellFrame).ForcedTool is not { } only)
+        if (p.ShellFrame == 0 || ShellFrames.Worn(p).ForcedTool is not { } only)
             return;
         ref var h = ref SandboxHands.Hand(p.Id);
         if (h.Tool != only && !h.Seated)
@@ -198,7 +203,7 @@ public sealed partial class Game
     /// <summary>The HUD's hopper line while this PC's player wears a shell with one (from <see cref="ShellHud"/>).</summary>
     private void HopperHud(Player me, List<HudLine> lines, Vector4 dim)
     {
-        if (ShellFrames.Of(me.ShellFrame).Find(ShellModuleKind.Hopper) == null)
+        if (ShellFrames.Worn(me).Find(ShellModuleKind.Hopper) == null)
             return;
         var key = me.HopperAmount * 256 + me.HopperMaterial;
         if (_sbHopper.Stale(key))

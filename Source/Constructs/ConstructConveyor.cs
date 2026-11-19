@@ -314,8 +314,15 @@ public static class ConstructConveyor
     {
         c.PieceRackCount = 0;
         c.ToolRackCount = 0;
+        c.GantryCount = 0;
         foreach (var i in c.Specials)
         {
+            if (c.Parts[i].D.Gantry != null)
+            {
+                if (c.Gantries.Length == c.GantryCount)
+                    Array.Resize(ref c.Gantries, Math.Max(2, c.GantryCount * 2));
+                c.Gantries[c.GantryCount++] = (ushort)i; // (a Shell Gantry: its arms are drawn, GantryRender.cs)
+            }
             if (c.Parts[i].D.IsToolRack)
             {
                 if (c.ToolRacks.Length == c.ToolRackCount)
