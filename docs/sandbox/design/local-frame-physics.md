@@ -178,3 +178,11 @@ the deck's frame at any speed, and loose bodies asleep aboard a flying ship.
    ship's up, like players), or float unless a gravity generator holds them?
 3. **May phase 0 add a loose-body mode to `--ride-check`?** It is a dev command, not a self-test section.
 4. **Order.** Phase 1 first and judge the result, or go straight on to phase 2?
+
+## The user's answers (2026-11-19)
+
+These override the text above where they differ.
+
+1. **Acceleration felt by loose items: fully.** Items aboard slide and tumble when the ship brakes, turns or is hit: in the ship's frame they feel the frame's acceleration (and its turning: the ship's angular acceleration, centrifugal and Coriolis as the maths gives) as a real force, so a steady cruise feels like rest and a hard manoeuvre throws things. Players keep today's feel unless the user says otherwise.
+2. **Gravity aboard in space: follow the player.** Loose items get gravity aboard exactly when and where players do (deck gravity, gravity generators); weightless where a player would float.
+3. **Plan: straight to the full fix** (phases 0 to 2 in one builder): measure first with a loose-item mode in `--ride-check` (a dev check, not a self-test), then ship-local truth for everything aboard (option B), with the quick-fix items folded in.
