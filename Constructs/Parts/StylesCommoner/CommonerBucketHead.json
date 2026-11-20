@@ -1,10 +1,10 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Commoner Bucket Head",
-  "description": "Commoner bucket head (draft, set 2): a steel toilet bowl on a welded pedestal with a vacuum hose to the wall, a seat cut from plywood, a hand-written sign about the lever, a mop bucket and a roll of paper on a bent coat-hanger.",
+  "description": "Commoner bucket head (draft, set 2): a steel toilet bowl on a welded pedestal with a vacuum hose to the wall, a seat cut from plywood, a hand-written sign about the lever, a mop bucket and a roll of paper on a bent coat-hanger. You can sit on it.",
   "group": "StyleCommoner",
   "section": "Commoner style",
-  "role": "frame",
+  "role": "seat",
   "tool": "wrench",
   "finish": "worn paint",
   "collider": "boxes",
@@ -14,6 +14,13 @@
   "material": "steel",
   "color": "#d6c9a8",
   "attachSeconds": 2.0,
+  "seat": {
+    "at": [
+      0,
+      -0.11,
+      0
+    ]
+  },
   "boxes": [
     {
       "min": [
@@ -1014,6 +1021,81 @@
       ],
       "paintable": false,
       "finish": "fabric"
+    },
+    {
+      "min": [
+        -0.3,
+        1.18,
+        -0.35
+      ],
+      "max": [
+        -0.08,
+        1.2,
+        -0.336
+      ],
+      "color": "#8b8c88",
+      "detail": true,
+      "finish": "fabric",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.045,
+        0.04,
+        0.12
+      ],
+      "max": [
+        0.075,
+        0.28,
+        0.131
+      ],
+      "color": "#7a4a2c",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          0.045,
+          0.28,
+          0.12
+        ],
+        [
+          0.075,
+          0.28,
+          0.12
+        ],
+        [
+          0.0555,
+          0.04,
+          0.12
+        ],
+        [
+          0.0645,
+          0.04,
+          0.12
+        ],
+        [
+          0.045,
+          0.28,
+          0.131
+        ],
+        [
+          0.075,
+          0.28,
+          0.131
+        ],
+        [
+          0.0555,
+          0.04,
+          0.131
+        ],
+        [
+          0.0645,
+          0.04,
+          0.131
+        ]
+      ],
+      "paintable": false,
+      "finish": "rust"
     }
   ],
   "sockets": [

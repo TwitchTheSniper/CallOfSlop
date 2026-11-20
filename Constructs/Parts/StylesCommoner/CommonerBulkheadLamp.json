@@ -1,0 +1,464 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Commoner Bulkhead Lamp",
+  "description": "Commoner bulkhead lamp (draft, set 3): an oval bulkhead lamp in a cast frame bolted to the wall, three bars across a lens gone amber with age, a cracked corner with a dab of sealant, paint over the bolts from the last time someone painted the wall round it.",
+  "group": "StyleCommoner",
+  "section": "Commoner style",
+  "role": "logic",
+  "tool": "wrench",
+  "finish": "worn paint",
+  "collider": "boxes",
+  "mass": 40.0,
+  "health": 200,
+  "armour": 2,
+  "material": "steel",
+  "color": "#d6c9a8",
+  "attachSeconds": 2.0,
+  "logic": {
+    "kind": "lamp",
+    "mains": true
+  },
+  "power": 40.0,
+  "config": [
+    {
+      "key": "colour",
+      "type": "colour",
+      "label": "Colour",
+      "group": "Light",
+      "default": "#ffc978",
+      "tooltip": "The colour it glows when lit."
+    },
+    {
+      "key": "brightness",
+      "label": "Brightness",
+      "group": "Light",
+      "unit": "%",
+      "min": 10,
+      "max": 200,
+      "step": 1,
+      "default": 100,
+      "tooltip": "How bright it glows."
+    },
+    {
+      "key": "blink",
+      "label": "Blink",
+      "group": "Light",
+      "unit": "Hz",
+      "min": 0,
+      "max": 10,
+      "step": 0.1,
+      "default": 0,
+      "tooltip": "Flashes this many times a second while lit (0: steady)."
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -0.16,
+        1.5,
+        -0.25
+      ],
+      "max": [
+        0.16,
+        1.75,
+        -0.15
+      ],
+      "color": "#d6c9a8",
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.1352,
+        1.4898,
+        -0.25
+      ],
+      "max": [
+        0.1352,
+        1.7602,
+        -0.21
+      ],
+      "color": "#d6c9a8",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          0.1352,
+          1.6612,
+          -0.25
+        ],
+        [
+          0.099,
+          1.724,
+          -0.25
+        ],
+        [
+          0.0362,
+          1.7602,
+          -0.25
+        ],
+        [
+          -0.0362,
+          1.7602,
+          -0.25
+        ],
+        [
+          -0.099,
+          1.724,
+          -0.25
+        ],
+        [
+          -0.1352,
+          1.6612,
+          -0.25
+        ],
+        [
+          -0.1352,
+          1.5888,
+          -0.25
+        ],
+        [
+          -0.099,
+          1.526,
+          -0.25
+        ],
+        [
+          -0.0362,
+          1.4898,
+          -0.25
+        ],
+        [
+          0.0362,
+          1.4898,
+          -0.25
+        ],
+        [
+          0.099,
+          1.526,
+          -0.25
+        ],
+        [
+          0.1352,
+          1.5888,
+          -0.25
+        ],
+        [
+          0.1256,
+          1.6586,
+          -0.21
+        ],
+        [
+          0.0919,
+          1.7169,
+          -0.21
+        ],
+        [
+          0.0336,
+          1.7506,
+          -0.21
+        ],
+        [
+          -0.0336,
+          1.7506,
+          -0.21
+        ],
+        [
+          -0.0919,
+          1.7169,
+          -0.21
+        ],
+        [
+          -0.1256,
+          1.6586,
+          -0.21
+        ],
+        [
+          -0.1256,
+          1.5914,
+          -0.21
+        ],
+        [
+          -0.0919,
+          1.5331,
+          -0.21
+        ],
+        [
+          -0.0336,
+          1.4994,
+          -0.21
+        ],
+        [
+          0.0336,
+          1.4994,
+          -0.21
+        ],
+        [
+          0.0919,
+          1.5331,
+          -0.21
+        ],
+        [
+          0.1256,
+          1.5914,
+          -0.21
+        ]
+      ],
+      "paintable": false,
+      "finish": "worn paint"
+    },
+    {
+      "min": [
+        -0.0966,
+        1.5284,
+        -0.21
+      ],
+      "max": [
+        0.0966,
+        1.7216,
+        -0.18
+      ],
+      "color": "#ffc978",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          0.0966,
+          1.6509,
+          -0.21
+        ],
+        [
+          0.0707,
+          1.6957,
+          -0.21
+        ],
+        [
+          0.0259,
+          1.7216,
+          -0.21
+        ],
+        [
+          -0.0259,
+          1.7216,
+          -0.21
+        ],
+        [
+          -0.0707,
+          1.6957,
+          -0.21
+        ],
+        [
+          -0.0966,
+          1.6509,
+          -0.21
+        ],
+        [
+          -0.0966,
+          1.5991,
+          -0.21
+        ],
+        [
+          -0.0707,
+          1.5543,
+          -0.21
+        ],
+        [
+          -0.0259,
+          1.5284,
+          -0.21
+        ],
+        [
+          0.0259,
+          1.5284,
+          -0.21
+        ],
+        [
+          0.0707,
+          1.5543,
+          -0.21
+        ],
+        [
+          0.0966,
+          1.5991,
+          -0.21
+        ],
+        [
+          0.0966,
+          1.6509,
+          -0.18
+        ],
+        [
+          0.0707,
+          1.6957,
+          -0.18
+        ],
+        [
+          0.0259,
+          1.7216,
+          -0.18
+        ],
+        [
+          -0.0259,
+          1.7216,
+          -0.18
+        ],
+        [
+          -0.0707,
+          1.6957,
+          -0.18
+        ],
+        [
+          -0.0966,
+          1.6509,
+          -0.18
+        ],
+        [
+          -0.0966,
+          1.5991,
+          -0.18
+        ],
+        [
+          -0.0707,
+          1.5543,
+          -0.18
+        ],
+        [
+          -0.0259,
+          1.5284,
+          -0.18
+        ],
+        [
+          0.0259,
+          1.5284,
+          -0.18
+        ],
+        [
+          0.0707,
+          1.5543,
+          -0.18
+        ],
+        [
+          0.0966,
+          1.5991,
+          -0.18
+        ]
+      ],
+      "paintable": false,
+      "glow": true
+    },
+    {
+      "min": [
+        -0.12,
+        1.57,
+        -0.18
+      ],
+      "max": [
+        0.12,
+        1.585,
+        -0.166
+      ],
+      "color": "#d6c9a8",
+      "detail": true,
+      "finish": "worn paint",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.12,
+        1.62,
+        -0.18
+      ],
+      "max": [
+        0.12,
+        1.635,
+        -0.166
+      ],
+      "color": "#d6c9a8",
+      "detail": true,
+      "finish": "worn paint",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.12,
+        1.67,
+        -0.18
+      ],
+      "max": [
+        0.12,
+        1.685,
+        -0.166
+      ],
+      "color": "#d6c9a8",
+      "detail": true,
+      "finish": "worn paint",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.132,
+        1.615,
+        -0.21
+      ],
+      "max": [
+        -0.108,
+        1.635,
+        -0.198
+      ],
+      "color": "#d6c9a8",
+      "detail": true,
+      "finish": "worn paint",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.108,
+        1.615,
+        -0.21
+      ],
+      "max": [
+        0.132,
+        1.635,
+        -0.198
+      ],
+      "color": "#d6c9a8",
+      "detail": true,
+      "finish": "worn paint",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.06,
+        1.54,
+        -0.185
+      ],
+      "max": [
+        0.1,
+        1.57,
+        -0.174
+      ],
+      "color": "#9a9c98",
+      "detail": true,
+      "finish": "rubber",
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        1.5,
+        -0.2
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "wall",
+      "at": [
+        0.0,
+        1.625,
+        -0.25
+      ],
+      "dir": "-z"
+    }
+  ]
+}

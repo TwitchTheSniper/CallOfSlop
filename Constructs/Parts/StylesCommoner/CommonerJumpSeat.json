@@ -1,10 +1,10 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Commoner Jump Seat",
-  "description": "Commoner jump seat (draft, set 2): a fold-down jump seat on the wall, its canvas sling patched, the frame hinged on rusty pins, a strap to hold it up and a hook for a helmet.",
+  "description": "Commoner jump seat (draft, set 2): a fold-down jump seat on the wall, its canvas sling patched, the frame hinged on rusty pins, a strap to hold it up and a hook for a helmet. A seat you can sit in.",
   "group": "StyleCommoner",
   "section": "Commoner style",
-  "role": "frame",
+  "role": "seat",
   "tool": "wrench",
   "finish": "worn paint",
   "collider": "boxes",
@@ -14,6 +14,13 @@
   "material": "steel",
   "color": "#d6c9a8",
   "attachSeconds": 2.0,
+  "seat": {
+    "at": [
+      0,
+      -0.06,
+      0
+    ]
+  },
   "boxes": [
     {
       "min": [
@@ -485,6 +492,137 @@
       "color": "#a3a199",
       "detail": true,
       "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.0426,
+        0.92,
+        -0.2124
+      ],
+      "max": [
+        0.2274,
+        1.04,
+        -0.0276
+      ],
+      "color": "#565b3a",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          0.2181,
+          0.92,
+          -0.0856
+        ],
+        [
+          0.1694,
+          0.92,
+          -0.0369
+        ],
+        [
+          0.1006,
+          0.92,
+          -0.0369
+        ],
+        [
+          0.0519,
+          0.92,
+          -0.0856
+        ],
+        [
+          0.0519,
+          0.92,
+          -0.1544
+        ],
+        [
+          0.1006,
+          0.92,
+          -0.2031
+        ],
+        [
+          0.1694,
+          0.92,
+          -0.2031
+        ],
+        [
+          0.2181,
+          0.92,
+          -0.1544
+        ],
+        [
+          0.2274,
+          1.04,
+          -0.0817
+        ],
+        [
+          0.1733,
+          1.04,
+          -0.0276
+        ],
+        [
+          0.0967,
+          1.04,
+          -0.0276
+        ],
+        [
+          0.0426,
+          1.04,
+          -0.0817
+        ],
+        [
+          0.0426,
+          1.04,
+          -0.1583
+        ],
+        [
+          0.0967,
+          1.04,
+          -0.2124
+        ],
+        [
+          0.1733,
+          1.04,
+          -0.2124
+        ],
+        [
+          0.2274,
+          1.04,
+          -0.1583
+        ]
+      ],
+      "paintable": false,
+      "finish": "worn paint"
+    },
+    {
+      "min": [
+        -0.18,
+        0.12,
+        -0.25
+      ],
+      "max": [
+        -0.1,
+        0.35,
+        -0.235
+      ],
+      "color": "#7d8085",
+      "detail": true,
+      "finish": "rusty paint",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.188,
+        0.468,
+        0.1
+      ],
+      "max": [
+        0.188,
+        0.481,
+        0.17
+      ],
+      "color": "#8b8c88",
+      "detail": true,
+      "finish": "fabric",
       "paintable": false
     }
   ],

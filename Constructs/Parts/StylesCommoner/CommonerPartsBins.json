@@ -1,15 +1,31 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Commoner Parts Bins",
-  "description": "Commoner parts bins (draft, set 2): a louvred panel on the wall full of little plastic bins in four colours, labels written on tape, one bin cracked and taped, nuts and washers spilled on the shelf under them.",
+  "description": "Commoner parts bins (draft, set 2): a louvred panel on the wall full of little plastic bins in four colours, labels written on tape, one bin cracked and taped, nuts and washers spilled on the shelf under them. Holds small parts.",
   "group": "StyleCommoner",
   "section": "Commoner style",
-  "role": "frame",
+  "role": "storage",
   "tool": "wrench",
   "finish": "worn paint",
   "collider": "boxes",
+  "storage": {
+    "slots": [
+      {
+        "min": [
+          -0.47,
+          0.53,
+          -0.22
+        ],
+        "max": [
+          0.47,
+          1.37,
+          -0.08
+        ]
+      }
+    ]
+  },
   "mass": 40.0,
-  "health": 200,
+  "health": 220,
   "armour": 2,
   "material": "steel",
   "color": "#d6c9a8",
@@ -18,13 +34,83 @@
     {
       "min": [
         -0.5,
-        0.0,
+        0.5,
+        -0.25
+      ],
+      "max": [
+        0.5,
+        0.52,
+        -0.05
+      ],
+      "color": "#d6c9a8",
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.5,
+        1.38,
         -0.25
       ],
       "max": [
         0.5,
         1.4,
         -0.05
+      ],
+      "color": "#d6c9a8",
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.5,
+        0.52,
+        -0.25
+      ],
+      "max": [
+        0.5,
+        1.38,
+        -0.23
+      ],
+      "color": "#d6c9a8",
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.5,
+        0.52,
+        -0.07
+      ],
+      "max": [
+        0.5,
+        1.38,
+        -0.05
+      ],
+      "color": "#d6c9a8",
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.5,
+        0.52,
+        -0.23
+      ],
+      "max": [
+        -0.48,
+        1.38,
+        -0.07
+      ],
+      "color": "#d6c9a8",
+      "hidden": true
+    },
+    {
+      "min": [
+        0.48,
+        0.52,
+        -0.23
+      ],
+      "max": [
+        0.5,
+        1.38,
+        -0.07
       ],
       "color": "#d6c9a8",
       "hidden": true
@@ -1940,6 +2026,81 @@
       "detail": true,
       "finish": "steel",
       "paintable": false
+    },
+    {
+      "min": [
+        -0.15,
+        0.82,
+        -0.079
+      ],
+      "max": [
+        0.02,
+        0.84,
+        -0.068
+      ],
+      "color": "#8b8c88",
+      "detail": true,
+      "finish": "fabric",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.3875,
+        0.62,
+        -0.22
+      ],
+      "max": [
+        0.4125,
+        1.0,
+        -0.209
+      ],
+      "color": "#7a4a2c",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          0.3875,
+          1.0,
+          -0.22
+        ],
+        [
+          0.4125,
+          1.0,
+          -0.22
+        ],
+        [
+          0.3963,
+          0.62,
+          -0.22
+        ],
+        [
+          0.4037,
+          0.62,
+          -0.22
+        ],
+        [
+          0.3875,
+          1.0,
+          -0.209
+        ],
+        [
+          0.4125,
+          1.0,
+          -0.209
+        ],
+        [
+          0.3963,
+          0.62,
+          -0.209
+        ],
+        [
+          0.4037,
+          0.62,
+          -0.209
+        ]
+      ],
+      "paintable": false,
+      "finish": "rust"
     }
   ],
   "sockets": [
@@ -1947,7 +2108,7 @@
       "name": "bottom",
       "at": [
         0.0,
-        0.0,
+        0.5,
         -0.15
       ],
       "dir": "-y"
@@ -1956,7 +2117,7 @@
       "name": "wall",
       "at": [
         0.0,
-        0.125,
+        0.625,
         -0.25
       ],
       "dir": "-z"
