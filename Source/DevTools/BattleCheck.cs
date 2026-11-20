@@ -4,8 +4,8 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// <c>--battle-check [SHIP] [--shots N] [--per-tick K] [--gun NAME] [--range M] [--seed S] [--focus F] [--blasts N [--blast-damage D] [--blast-radius R]]</c>: a capital ship under railgun
-/// fire, headless (docs/sandbox/design/capital-battles.md). The ship (default the Mainframe) is built on the Proving Ground and
+/// <c>--battle-check [SHIP] [--idle --ground [--map NAME]] [--shots N] [--per-tick K] [--gun NAME] [--range M] [--seed S] [--focus F] [--blasts N [--blast-damage D] [--blast-radius R]]</c>: a capital ship under railgun
+/// fire, headless (docs/sandbox/design/capital-battles.md). The ship (default the Zero Day) is built on the Proving Ground and
 /// held still in the air; a Zero Day (for its railgun) is held far off; then N shots are fired at it from its broadside, K in a
 /// tick, each at a random point on its middle, through the real round (<see cref="ConstructWeapons.ShotFrom"/>), and a world
 /// tick is stepped after each volley. It reports what each volley did (parts hit, parts broken, pieces split off, the bores
@@ -17,16 +17,16 @@ public static class BattleCheck
     {
         string Arg(string name, string def) => args.SkipWhile(a => !a.Equals(name, StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() ?? def;
         var inv = System.Globalization.CultureInfo.InvariantCulture;
-        var name = Arg("--battle-check", "Mainframe");
+        var name = Arg("--battle-check", "Zero Day");
         if (name.StartsWith("--"))
-            name = "Mainframe";
+            name = "Zero Day";
         var shots = int.Parse(Arg("--shots", "40"), inv);
         var perTick = Math.Max(1, int.Parse(Arg("--per-tick", "1"), inv));
         var gunName = Arg("--gun", "Zero Day Railgun");
         var range = float.Parse(Arg("--range", "300"), inv);
         var rng = new Random(int.Parse(Arg("--seed", "1"), inv));
         float? focus = Arg("--focus", "") is { Length: > 0 } fs ? float.Parse(fs, inv) : null; // (every shot within 6 m of this share along the ship, -0.5 to 0.5: to break it there)
-        if (Maps.Find("Proving Ground") is not { } yard)
+        if (Maps.Find(Arg("--map", "Proving Ground")) is not { } yard)
         {
             Console.WriteLine("no Proving Ground map");
             return 1;
@@ -60,6 +60,28 @@ public static class BattleCheck
         {
             Console.WriteLine($"{name}: doesn't build (or no Zero Day Frigate)");
             return 1;
+        }
+        if (args.Contains("--idle") && args.Contains("--ground"))
+        {
+            var dt0 = 1f / World.TickRate;
+            var sw1 = Stopwatch.StartNew();
+            for (var round = 0; round < 12; round++)
+            {
+                Array.Clear(ConstructPhysics.PartMs);
+                var phys = 0.0;
+                var worst = 0.0;
+                for (var i = 0; i < 60; i++)
+                {
+                    var p0 = Stopwatch.GetTimestamp();
+                    w.Step(World.Query, dt0);
+                    var e = Stopwatch.GetElapsedTime(p0).TotalMilliseconds;
+                    phys += e;
+                    worst = Math.Max(worst, e);
+                }
+                var pm = ConstructPhysics.PartMs;
+                Console.WriteLine($"ground {round}: world step {phys / 60:0.000} ms a tick (worst {worst:0.00}); physics list {pm[0] / 60:0.000}, bodies {pm[1] / 60:0.000}, contacts {pm[2] / 60:0.000}, solve {pm[3] / 60:0.000}, rest {pm[4] / 60:0.000}; asleep {ship.Asleep}, speed {ship.Vel.Length():0.000}, spin {ship.AngVel.Length():0.00000} (x radius {ship.AngVel.Length() * MathF.Max(1, ship.Radius / 8f):0.0000}), sleep ticks {ship.SleepTicks}, hover {ship.HoverOn} stab {ship.StabLive} thrust {ship.ThrustShow:0.00} active {ship.ActiveSignal}, bodies {w.Bodies.Count}, contacts {ConstructPhysics.LastContacts}, rays {ConstructPhysics.LastRays}");
+            }
+            return 0;
         }
         Hold(w, w.Bodies.ToArray(), new Vector3(0, 400f, 0));
         var shooter = ConstructBuild.BuildOnGround(w, gunBp, ConstructWorld.Ground(World.Query, 0, 0), 0, out _);
@@ -123,6 +145,37 @@ public static class BattleCheck
             w.Step(World.Query, dt);
         var baseMs = sw.Elapsed.TotalMilliseconds / 20;
         Console.WriteLine($"baseline tick {baseMs:0.00} ms ({w.Bodies.Count} bodies)");
+        if (args.Contains("--idle"))
+        {
+            // Where an idle tick goes: the physics' parts, the ship left free on the ground (not held) with --free.
+            if (args.Contains("--free"))
+                foreach (var b in w.Bodies)
+                    if (b == ship)
+                    {
+                        b.Anchored = false;
+                        b.Pos -= new Vector3(0, 400f, 0);
+                        b.PrevPos = b.Pos;
+                    }
+            for (var round = 0; round < 6; round++)
+            {
+                Array.Clear(ConstructPhysics.PartMs);
+                sw.Restart();
+                var phys = 0.0;
+                for (var i = 0; i < 60; i++)
+                {
+                    var p0 = Stopwatch.GetTimestamp();
+                    ConstructPhysics.Step(w, World.Query, dt);
+                    phys += Stopwatch.GetElapsedTime(p0).TotalMilliseconds;
+                }
+                var pm = ConstructPhysics.PartMs;
+                Console.WriteLine($"idle {round}: physics alone {phys / 60:0.000} ms a tick (list {pm[0] / 60:0.000}, bodies {pm[1] / 60:0.000}, contacts {pm[2] / 60:0.000}, solve {pm[3] / 60:0.000}, rest {pm[4] / 60:0.000}); ship asleep {ship.Asleep}, anchored {ship.Anchored}, speed {ship.Vel.Length():0.000}");
+                sw.Restart();
+                for (var i = 0; i < 60; i++)
+                    w.Step(World.Query, dt);
+                Console.WriteLine($"   world step {sw.Elapsed.TotalMilliseconds / 60:0.000} ms a tick");
+            }
+            return 0;
+        }
 
         double roundMs = 0, markMs = 0, rebuildMs = 0, tickMs = 0, worstTick = 0, worstRound = 0;
         var startParts = ship.PartCount;

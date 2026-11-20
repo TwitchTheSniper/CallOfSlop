@@ -128,7 +128,7 @@ too, since it is combat rather than wear.
   on a 5 % step or a failure. Standing: four hidden Mask settings of the shell's part (`ShellWear0..3`, two works each), so it
   rides saves, blueprints and CBody.
 - **What shows.** Below `worn` (40 %) a work shows its fault, more strongly towards failure; at 0 it has failed.
-  - Legs: a worn leg limps (the swing foot drags, pace down to 80 %); a lost leg is folded away and the shell hops (50 %, both 30 %),
+  - Legs: a worn leg limps (the swing foot drags, pace down to 80 %); a lost leg is folded away and the shell hops (50 %); with both lost it lies down and crawls on its arms (prone, at a prone pace; 70 % with an arm hanging, 40 % both; `Game.ShellCrawlFilter`),
     with the servo grind heard by everyone near.
   - Arms: shaky arms fit parts slower (up to 1.35x the time, one lost 1.6x, both 2.2x: `ShellFitSlow`).
   - Power: sluggish (pace down to 80 %, flat 65 %) and a brown-out now and then (the screen dims, a whine falls and comes back).

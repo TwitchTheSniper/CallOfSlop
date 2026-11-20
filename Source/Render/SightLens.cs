@@ -279,7 +279,7 @@ public static unsafe class SightLens
         var spec = Sights.Spec(d);
         _spec = spec;
         _kind = d.Optic;
-        _mvp = Matrix4x4.CreateTranslation(lens.Center) * pose * vmProj;
+        _mvp = Matrix4x4.CreateTranslation(lens.Center) * pose * Renderer.GpuProjection(vmProj); // (the gun went through SetCamera: same depth convention)
         _round = lens.Round;
         _squareRim = lens.SquareRim;
         _lens = new Vector2(lens.HalfW, lens.HalfH);

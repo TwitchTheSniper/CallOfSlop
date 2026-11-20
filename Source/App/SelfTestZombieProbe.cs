@@ -292,7 +292,7 @@ public static partial class SelfTest
     private static void ProbeFrame(Game g, ProbePeer p, Vector3 at, Vector3 fwd, Matrix4x4 proj, Vector2 fog, double now)
     {
         var eye = at - fwd * 7f + new Vector3(0, 3.5f, 0);
-        var vp = Matrix4x4.CreateLookAt(eye, at + fwd * 20f, Vector3.UnitY) * proj;
+        var vp = Matrix4x4.CreateLookAt(eye, at + fwd * 20f, Vector3.UnitY) * Renderer.GpuProjection(proj); // (the depth convention the frustum planes read)
         ZombieAnim.SetFrustum(vp);
         foreach (var z in g.Horde)
             g.ZombieAnimInputFor(z, now, out _);

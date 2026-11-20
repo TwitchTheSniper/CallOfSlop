@@ -451,6 +451,14 @@ public static unsafe partial class Program
         RenderCaps.ReadArgs(args); // --gl41, --gl-no=... (RenderCaps.cs)
         if (args.Any(a => a.Equals("--no-merge", StringComparison.OrdinalIgnoreCase)))
             ConstructRender.MergeOn = false; // constructs drawn box by box, as before merged meshes (docs/render/MERGED-MESHES.md)
+        if (args.Any(a => a.Equals("--no-occlusion", StringComparison.OrdinalIgnoreCase)))
+            ConstructRender.OcclusionOn = false; // merged chunks drawn whether or not something hides them (ConstructRenderOcclusion.cs)
+        if (args.Any(a => a.Equals("--no-eye-steady", StringComparison.OrdinalIgnoreCase)))
+            ConstructRender.OcclusionEyeMove = 0; // (throwaway: the branch's behaviour, for comparing)
+        if (args.Any(a => a.Equals("--no-chunk-lod", StringComparison.OrdinalIgnoreCase)))
+            ConstructRender.ChunkLodOn = false; // every merged box drawn however far (the far detail level, ConstructRenderBatch.cs)
+        if (FlagAfter(args, "--lod-px", 0) is var lodPx and > 0)
+            (ConstructRender.LodPixels, ConstructRender.LodPixelsForced) = (lodPx, true); // the far detail level drops boxes under this many pixels (default 1, the Video settings' Far detail)
         (_cliStartRound, var roundValue) = ZombiesRoundFlag(args); // --zombies-round N (or =N): the next Zombies runs start at round N
         _cliTestKit = args.Any(a => a.Equals("--test-kit", StringComparison.OrdinalIgnoreCase));
         var plain = SavePaths.WithoutSaveDir(args).Where(a => !a.StartsWith("--") && !ReferenceEquals(a, roundValue)).ToArray();
@@ -1056,6 +1064,7 @@ public static unsafe partial class Program
             CrashLog.Phase = "ui draw";
             using (Perf.Measure(PerfArea.UiDraw))
             {
+                Gfx.Present(); // the scene target (reversed float depth) to the window, under the UI
                 Ui.EndFrame();
                 Gfx.Rebind(); // (ImGui's renderer leaves its program unbound: ImGuiRenderer.cs)
                 if (Ui.Thumbs.Count > 0)
@@ -2047,6 +2056,7 @@ public static unsafe partial class Program
 
         MediaDirector.Frame(_session, AudioSystem, now); // screens and music players near this player (Source/Media)
         DrawCameraFeed(now); // a watched camera's picture, only if a screen near this player asked for one (Program.CameraFeeds.cs)
+        Gfx.BeginScene(fb.X, fb.Y); // (reversed depth: the world into a float depth buffer; Present copies it out before the UI)
         Gfx.BeginFrame(fb.X, fb.Y, World.Map.Sky);
 
         // ---- Camera ---------------------------------------------------------
@@ -2222,7 +2232,7 @@ public static unsafe partial class Program
 
         pass.Dispose();
         pass = Perf.Pass(PerfArea.PostFx, PerfGpuPass.Occlusion);
-        PostFx.ApplyAo(Gfx, fb.X, fb.Y, proj); // (High: over the opaque world, under the effects)
+        PostFx.ApplyAo(Gfx, fb.X, fb.Y, Gfx.Proj); // (the projection as the GPU took it: reversed depth reads back by it; High: over the opaque world, under the effects)
         pass.Dispose();
 
         // ---- Tracers --------------------------------------------------------

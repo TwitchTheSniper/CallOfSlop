@@ -1,0 +1,36 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Wall Bay Flight Computer",
+  "group": "In-wall bays",
+  "description": "A flight computer in an in-wall bay: the card cage wears, the drawer under it holds memory modules.",
+  "steps": [
+    {
+      "part": "Wall Bay",
+      "spin": 2
+    },
+    {
+      "part": "Flight Computer Insert",
+      "on": 0,
+      "socket": "insert",
+      "by": "bay"
+    },
+    {
+      "part": "Twist Latch",
+      "on": 1,
+      "socket": "latch",
+      "by": "hang"
+    },
+    {
+      "part": "Memory Module Drawer",
+      "on": 1,
+      "socket": "supply",
+      "by": "hang"
+    },
+    {
+      "part": "Computer Card Cage",
+      "on": 1,
+      "socket": "wear",
+      "by": "hang"
+    }
+  ]
+}

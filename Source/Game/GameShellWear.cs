@@ -14,7 +14,7 @@ public struct ShellWearAcc
 /// Robot shell wear in the game (Karl, 2026-11-17; the numbers are Constructs/ShellWear.json, the rules Source/Constructs/ShellWear.cs;
 /// docs/sandbox/constructs/joints-and-logic.md "Robot shell wear"). Mild: in Survival a shell's eight works wear while someone wears it (legs while it walks,
 /// arms while a tool is out, the rest all the time) and hits wear its plating and one other work. A work below its worn mark shows:
-///  - a leg actuator limps (the leg drags, 80 % pace); failed, the leg is lost and the shell hops on the other (50 %);
+///  - a leg actuator limps (the leg drags, 80 % pace); failed, the leg is lost and the shell hops on the other (50 %); both lost, it crawls prone on its arms;
 ///  - an arm actuator shakes: the attach tool's fitting takes longer (up to 1.35x; failed, the arm hangs: 1.6x, both 2.2x);
 ///  - the power cell is sluggish (down to 80 % pace, flat 65 %) and browns out now and then: the view dims with a falling whine;
 ///  - the processor glitches now and then: the view tears for a moment with a short digital chirp;
@@ -121,6 +121,26 @@ public sealed partial class Game
 
     /// <summary>Both sides: how fast a player in a shell moves, as a share (1: not in a shell, or nothing wrong; GameShellWear.cs).</summary>
     public static float ShellMoveMult(Player? p) => p is { InShell: true } ? ShellWear.Current.MoveShare(p.ShellWear) * ShellFrames.Worn(p).Speed : 1f; // (and its frame's pace: Constructs/Shells.json)
+
+    private const Buttons ShellCrawlStrip = Buttons.Jump | Buttons.Sprint | Buttons.Crouch;
+
+    /// <summary>Does this player wear a shell with both legs lost (it can't stand: it crawls on its arms)?</summary>
+    public static bool ShellLegless(Player? p) =>
+        p is { InShell: true } && p.ShellWear[(int)ShellWork.LegL] >= ShellWear.Failed && p.ShellWear[(int)ShellWork.LegR] >= ShellWear.Failed;
+
+    /// <summary>
+    /// Both sides, the input that moves a player (after <see cref="Player.LastInput"/> is kept, so a seat's keys are untouched): a
+    /// shell with both legs lost lies on the ground and crawls on its arms (prone, no jump, sprint or getting up) instead of floating
+    /// at a standing height on nothing (Sean, 2026-11-20). Only on the ground: in the air, on a ladder, seated or in noclip the keys
+    /// are as pressed. The client predicts and replays with the same state, so it stays in step with the server.
+    /// </summary>
+    private InputCmd ShellCrawlFilter(Player p, in MoveState s, InputCmd cmd)
+    {
+        if (!ShellLegless(p) || !s.Grounded || s.Noclip || cmd.Noclip || s.RideLadder != 0 || s.MantleTicks > 0 || SandboxHands.Hand(p.Id).Seated)
+            return cmd;
+        cmd.Buttons = (cmd.Buttons & ~ShellCrawlStrip) | Buttons.Prone;
+        return cmd;
+    }
 
     /// <summary>
     /// Server, from <see cref="DamagePlayer"/>: a hit on someone in a shell, by the part it landed on (Karl, 2026-11-18). An arm or a leg:

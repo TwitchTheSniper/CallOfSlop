@@ -32,7 +32,7 @@ public static class GantryRender
                 int part = c.Gantries[g];
                 if (part >= c.PartCount || c.Parts[part].Broken || c.DefOf(part).Gantry is not { } gd)
                     continue;
-                Freeform.PartWorld(c, part, out var pos, out var rot);
+                ConstructRender.PartDrawn(c, part, out var pos, out var rot); // (as its body is drawn this frame: no jitter on a moving body)
                 var frame = Matrix4x4.CreateFromQuaternion(rot) * Matrix4x4.CreateTranslation(pos);
                 for (var a = 0; a < ConstructGantry.ArmCount; a++)
                 {
@@ -140,7 +140,7 @@ public static class GantryRender
         if (k >= 0 && world.Get(world.GantryLocks[k].Shell) is { PartCount: 1 } shell && !ConstructGantry.LockDone(world.GantryLocks[k], now))
         {
             shut = ConstructGantry.Shut(world.GantryLocks[k], now);
-            Freeform.PartWorld(shell, 0, out var sp, out var sr);
+            ConstructRender.PartDrawn(shell, 0, out var sp, out var sr);
             var scale = ShellFrames.Of(ShellFrames.FrameOf(shell.Parts[0].D)).Scale;
             var reach = Smooth(shut / 0.6f); // (the ram runs out, then the jaws swing in)
             var on = sp + Vector3.Transform(new Vector3(0, YokeY, YokeZ) * scale, sr);

@@ -369,8 +369,7 @@ public sealed unsafe class FoliageRenderer
         _planes[1] = c4 - c1; // right
         _planes[2] = c4 + c2; // bottom
         _planes[3] = c4 - c2; // top
-        _planes[4] = c4 + c3; // near (the looser GL-style plane; it never culls anything visible)
-        _planes[5] = c4 - c3; // far
+        Renderer.DepthPlanes(c3, c4, out _planes[4], out _planes[5]); // near, far (either depth convention)
     }
 
     private bool InFrustum(Vector3 min, Vector3 max)

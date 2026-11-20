@@ -1,0 +1,13 @@
+{
+  // In-wall bay (WallBayParts.cs): four deep drawers, each runs out on its runners when its face is pressed.
+  "blueprint": "Wall Bay Drawers",
+  "title": "0.5 m bay: drawers",
+  "shelf": "In-wall bays 0.5 m",
+  "description": "Four drawers that slide out 0.42 m: boots and an extinguisher, a tool tray, spares bins, rations.",
+  "steps": [
+    { "part": "Stow Drawer 4", "at": 0, "label": "Top drawer" },
+    { "part": "Stow Drawer 3", "at": 0.7, "label": "Third" },
+    { "part": "Stow Drawer 2", "at": 1.4, "label": "Second" },
+    { "part": "Stow Drawer 1", "at": 2.1, "label": "Bottom" }
+  ]
+}

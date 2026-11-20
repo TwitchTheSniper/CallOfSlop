@@ -964,7 +964,7 @@ public sealed partial class Game : IDisposable
         if (me.Alive)
         {
             me.Sim.Frame = me.ShellFrame; // (a robot shell's size: Msg.Shell, never a snapshot)
-            World.Simulate(ref me.Sim, cmd);
+            World.Simulate(ref me.Sim, ShellCrawlFilter(me, me.Sim, cmd)); // (a legless shell crawls: GameShellWear.cs)
             ZBlockPlayer(me, ref me.Sim); // predicted like the server
             if (Constructs.PlayerEndCount > 0)
                 TetherPlayer(me.Id, ref me.Sim); // on a harpoon line (GameSandboxHarpoon.cs), predicted like the server
@@ -1044,7 +1044,7 @@ public sealed partial class Game : IDisposable
             foreach (var cmd in _pendingInputs)
             {
                 _sepAtTick = cmd.Tick; // (the other bodies carried on to it: PlayerSeparation.cs)
-                World.Simulate(ref state, cmd);
+                World.Simulate(ref state, ShellCrawlFilter(me, state, cmd));
                 ZBlockPlayer(me, ref state); // (the zombies as last heard)
                 if (Constructs.PlayerEndCount > 0)
                     TetherPlayer(me.Id, ref state);
@@ -1299,7 +1299,7 @@ public sealed partial class Game : IDisposable
                 {
                     using var _ = Perf.Measure(PerfArea.Players);
                     p.Sim.Frame = p.ShellFrame;
-                    World.Simulate(ref p.Sim, cmd);
+                    World.Simulate(ref p.Sim, ShellCrawlFilter(p, p.Sim, cmd)); // (a legless shell crawls: GameShellWear.cs)
                     ZBlockPlayer(p, ref p.Sim); // out of zombie bodies (ZombieBlock.cs)
                     if (Constructs.PlayerEndCount > 0)
                         TetherPlayer(p.Id, ref p.Sim); // on a harpoon line (GameSandboxHarpoon.cs)
@@ -1378,7 +1378,7 @@ public sealed partial class Game : IDisposable
         if (p.Alive)
         {
             p.Sim.Frame = p.ShellFrame; // (a robot shell's size, GameRobotShell.cs)
-            World.Simulate(ref p.Sim, cmd);
+            World.Simulate(ref p.Sim, ShellCrawlFilter(p, p.Sim, cmd)); // (a legless shell crawls on its arms: GameShellWear.cs)
             _sepAtTick = p.Bot == null ? cmd.Tick : 0; // a client's input meets the bodies at its stamped tick (PlayerSeparation.cs)
             ZBlockPlayer(p, ref p.Sim); // out of zombie bodies (ZombieBlock.cs)
             _sepAtTick = 0;

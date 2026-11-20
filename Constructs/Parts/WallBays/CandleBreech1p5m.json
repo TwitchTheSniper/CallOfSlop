@@ -1,0 +1,333 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Candle Breech 1.5m",
+  "description": "An oxygen generator's breech (1.5 m deep): press it and the breech runs out of the furnace with its candle in the cradle; a spent candle comes out, a fresh one goes in.",
+  "group": "Interior",
+  "section": "In-wall bays",
+  "role": "door",
+  "tool": "wrench",
+  "finish": "painted steel",
+  "collider": "boxes",
+  "door": {
+    "kind": "slide",
+    "axis": "+z",
+    "travel": 1.15,
+    "seconds": 2.2,
+    "hang": "hang"
+  },
+  "mass": 90.0,
+  "health": 600,
+  "armour": 6,
+  "material": "steel",
+  "color": "#7c838c",
+  "attachSeconds": 2.0,
+  "boxes": [
+    {
+      "min": [
+        0.435,
+        0.62,
+        0.0
+      ],
+      "max": [
+        0.455,
+        0.64,
+        0.02
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.44,
+        0.628,
+        -0.012
+      ],
+      "max": [
+        0.44,
+        1.192,
+        0.018
+      ],
+      "color": "#2a2e33",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -0.24,
+        0.67,
+        0.004
+      ],
+      "max": [
+        0.24,
+        1.15,
+        0.05
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 24,
+      "front": "+z",
+      "finish": "plated steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.19,
+        0.72,
+        0.03
+      ],
+      "max": [
+        0.19,
+        1.1,
+        0.062
+      ],
+      "color": "#e0b020",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 24,
+      "front": "+z",
+      "finish": "gloss paint",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.05,
+        0.86,
+        0.05
+      ],
+      "max": [
+        0.05,
+        0.96,
+        0.07
+      ],
+      "color": "#f0a830",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+z",
+      "finish": "plastic",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.3,
+        0.72,
+        0.015
+      ],
+      "max": [
+        0.38,
+        1.1,
+        0.04
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "rubber",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.2,
+        0.65,
+        -1.4
+      ],
+      "max": [
+        0.2,
+        0.67,
+        -0.012
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "finish": "tread plate",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.42,
+        0.65,
+        -1.4
+      ],
+      "max": [
+        -0.2,
+        0.67,
+        -0.8
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.435,
+        0.65,
+        -1.4
+      ],
+      "max": [
+        -0.42,
+        0.68,
+        -0.8
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.2,
+        0.65,
+        -1.4
+      ],
+      "max": [
+        0.42,
+        0.67,
+        -0.8
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.42,
+        0.65,
+        -1.4
+      ],
+      "max": [
+        0.435,
+        0.68,
+        -0.8
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.1,
+        0.67,
+        -1.25
+      ],
+      "max": [
+        0.1,
+        0.72,
+        -1.22
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.1,
+        0.67,
+        -0.98
+      ],
+      "max": [
+        0.1,
+        0.72,
+        -0.95
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.07,
+        0.7,
+        -1.3
+      ],
+      "max": [
+        0.07,
+        0.84,
+        -0.9
+      ],
+      "color": "#e0402c",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+z",
+      "finish": "gloss paint",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.072,
+        0.698,
+        -1.18
+      ],
+      "max": [
+        0.072,
+        0.842,
+        -1.13
+      ],
+      "color": "#dfe4e2",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+z",
+      "finish": "gloss paint",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.05,
+        0.72,
+        -0.9
+      ],
+      "max": [
+        0.05,
+        0.82,
+        -0.87
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+z",
+      "finish": "plastic",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.44,
+        0.62,
+        -0.012
+      ],
+      "max": [
+        0.44,
+        1.2,
+        0.018
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.2,
+        0.65,
+        -1.4
+      ],
+      "max": [
+        0.2,
+        0.67,
+        -0.012
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "hang",
+      "at": [
+        0.445,
+        0.63,
+        0.0
+      ],
+      "dir": "-z"
+    }
+  ]
+}

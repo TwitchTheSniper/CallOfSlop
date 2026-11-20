@@ -121,13 +121,15 @@ public sealed class ShellWear
     public float Fault(byte wear) => wear >= Failed ? 1 : Math.Clamp((WornPct - Pct(wear)) / WornPct, 0f, 1f);
 
     /// <summary>
-    /// How fast a shell in this condition moves, as a share of a body's: a worn leg limps (down to 80 %), a lost one hops (50 %, both: 30 %),
-    /// a tired power cell is sluggish (down to 80 %, flat 65 %). 1: nothing wrong.
+    /// How fast a shell in this condition moves, as a share of a body's: a worn leg limps (down to 80 %), a lost one hops (50 %); with both
+    /// lost it crawls on its arms at a prone body's pace (<see cref="Game.ShellLegless"/>: the stance already slows it), slower with an arm
+    /// hanging (70 %, both 40 %); a tired power cell is sluggish (down to 80 %, flat 65 %). 1: nothing wrong.
     /// </summary>
     public float MoveShare(in ShellCond c)
     {
         var lost = (c[(int)ShellWork.LegL] >= Failed ? 1 : 0) + (c[(int)ShellWork.LegR] >= Failed ? 1 : 0);
-        var k = lost switch { 2 => 0.3f, 1 => 0.5f, _ => 1f };
+        var arms = (c[(int)ShellWork.ArmL] >= Failed ? 1 : 0) + (c[(int)ShellWork.ArmR] >= Failed ? 1 : 0);
+        var k = lost switch { 2 => arms switch { 2 => 0.4f, 1 => 0.7f, _ => 1f }, 1 => 0.5f, _ => 1f };
         if (lost == 0)
             k *= 1f - 0.2f * MathF.Max(Fault(c[(int)ShellWork.LegL]), Fault(c[(int)ShellWork.LegR]));
         var power = c[(int)ShellWork.Power];
