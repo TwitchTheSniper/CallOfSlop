@@ -202,7 +202,9 @@ Built 2026-11-19 (`ConstructGantry.cs`, `GameShellGantry.cs`, `GantryRender.cs`;
 - **Tried** (window runs, `shellgantry setup|fit|state`): a Robot Shell's left leg seen gone from the pull to the fit, carried, set
   down and the new one brought and fitted; the clamp's ram and jaws on a Robot and a Mining Shell, the lamp red then green; a head
   queued behind a leg ran after its fit; asking the same slot again refused; a joined client heard both swaps (the queued one too) and
-  the kit after. Not tried: a save mid-change of a shell the clamp froze, a grab refused while clamped, a client's view in a picture.
+  the kit after. Later: the gantry driven at 3 m/s turning (`shellgantry drive`) kept the clamped shell in its frame to the
+  millimetre; a save mid-change loaded the shell loose with its old kit; the physics gun on a clamped shell was refused. Not tried: a
+  part removal renumbering a gantry mid-swap, a client's view in a picture.
 - **The module carried** is the shell's own slot (its boxes, in its paint: `GantryRender.DrawSlot`), so what leaves the shell is what
   the arm holds; set down, it stands on the table's floor; the new one's copy on the table is hidden while the arm holds it
   (`ConstructGantry.CarriedOff`, `RouteRender.DrawRacks`). The deck is light deck plate (look review).
