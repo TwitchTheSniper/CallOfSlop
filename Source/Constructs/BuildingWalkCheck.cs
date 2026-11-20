@@ -97,10 +97,39 @@ public static class BuildingWalkCheck
         // A ramp or a hatch (an event door turning about a level axis: the rust bucket's chin) is walked on: it is opened and kept.
         var walked = new HashSet<int>();
         c.EnsureDoors();
+        // Landing gear (a leg pod's canopy and legs) comes down first, and the craft stands on its feet as GearLift stands it:
+        // the belly hatch slides down as far as the ground under a craft on its legs.
+        var gear = false;
+        for (var k = 0; k < c.DoorCount; k++)
+            if (c.Parts[c.Doors[k].Part].D.Door is { Gear: > 0 })
+            {
+                ConstructDoors.Settle(c, k, true);
+                walked.Add(c.Doors[k].Part);
+                gear = true;
+            }
+        if (gear)
+        {
+            var low = float.MaxValue;
+            for (var i = 0; i < c.PartCount; i++)
+                for (var k = 0; k < c.SolidCount(i); k++)
+                {
+                    c.SolidBox(i, k, out var centre, out var half);
+                    c.WorldFrame(c.Parts[i].Seg, out var gq, out var gt);
+                    var m = Matrix4x4.CreateFromQuaternion(gq);
+                    low = MathF.Min(low, gt.Y + Vector3.Transform(centre, gq).Y - (MathF.Abs(m.M12) * half.X + MathF.Abs(m.M22) * half.Y + MathF.Abs(m.M32) * half.Z));
+                }
+            if (low < SelfTest.BuildingY)
+                c.Pos += Vector3.UnitY * (SelfTest.BuildingY - low);
+        }
         for (var k = 0; k < c.DoorCount; k++)
         {
             var dp = c.Doors[k].Part;
-            if (c.Parts[dp].D.Door is { Slide: false } dd && MathF.Abs(Rot24.Apply(c.Parts[dp].Rot, ConstructParts.DirVector(dd.Axis)).Y) < 0.5f)
+            if (walked.Contains(dp))
+                continue;
+            var carriesLadder = false; // (a door with a ladder on its leaf, the Dray's belly hatch: open, the ladder comes down with it)
+            for (var i = 0; i < c.PartCount && !carriesLadder; i++)
+                carriesLadder = i != dp && c.DefOf(i).LadderTop > 0 && ConstructDoor.EventDoor(c, i) == dp;
+            if (carriesLadder || c.Parts[dp].D.Door is { Slide: false } dd && MathF.Abs(Rot24.Apply(c.Parts[dp].Rot, ConstructParts.DirVector(dd.Axis)).Y) < 0.5f)
             {
                 ConstructDoors.Settle(c, k, true);
                 walked.Add(dp);
@@ -271,8 +300,57 @@ public static class BuildingWalkCheck
         }
         ReadOnlySpan<(int, int)> dirs = [(1, 0), (-1, 0), (0, 1), (0, -1)];
         // A fixed ladder joins the floor at its foot (in front of it) and the landing behind its top, both ways, as
-        // ConstructRide.ClimbLadder takes a body up and down it.
-        var ladders = new List<((int Col, int K) Foot, (int Col, int K) Top)>();
+        // ConstructRide.ClimbLadder takes a body up and down it; and a body may grab it from anywhere in reach of an end
+        // (GrabReach across, 1.2 m up or down, nothing solid between), climbing to the other end.
+        var ladders = new List<((int Col, int K) From, (int Col, int K) To)>();
+        bool ClearLine(Vector3 a, Vector3 b)
+        {
+            var d = b - a;
+            foreach (var bb in boxes)
+            {
+                float t0 = 0, t1 = 1;
+                for (var ax = 0; ax < 3 && t0 <= t1; ax++)
+                {
+                    float o = a[ax], v = d[ax], lo2 = bb.Min[ax], hi2 = bb.Max[ax];
+                    if (MathF.Abs(v) < 1e-6f)
+                    {
+                        if (o < lo2 || o > hi2)
+                            t1 = -1;
+                        continue;
+                    }
+                    float ta = (lo2 - o) / v, tb = (hi2 - o) / v;
+                    t0 = MathF.Max(t0, MathF.Min(ta, tb));
+                    t1 = MathF.Min(t1, MathF.Max(ta, tb));
+                }
+                if (t0 <= t1)
+                    return false;
+            }
+            return true;
+        }
+        void Grabs((int, int) to, (int, int) here, Vector3 end)
+        {
+            var reachAcross = ConstructRide.GrabReach + World.PlayerRadius;
+            var n = (int)MathF.Ceiling(reachAcross / G);
+            int cx0 = (int)((end.X - x0) / G), cz0 = (int)((end.Z - z0) / G);
+            for (var ix = cx0 - n; ix <= cx0 + n; ix++)
+                for (var iz = cz0 - n; iz <= cz0 + n; iz++)
+                {
+                    if (ix < 0 || iz < 0 || ix >= nx || iz >= nz)
+                        continue;
+                    float px = x0 + (ix + 0.5f) * G, pz = z0 + (iz + 0.5f) * G;
+                    if ((px - end.X) * (px - end.X) + (pz - end.Z) * (pz - end.Z) > reachAcross * reachAcross)
+                        continue;
+                    var col = ix * nz + iz;
+                    for (var k = 0; k < cols[col].Length; k++)
+                        if (cols[col][k].Fit && MathF.Abs(cols[col][k].Top - end.Y) <= 1.2f && (col, k) != to
+                            && ClearLine(new Vector3(px, cols[col][k].Top + 1.0f, pz), end + new Vector3(0, 1.0f, 0)))
+                        {
+                            ladders.Add(((col, k), to));
+                            if (cols[col][k].Top < cols[here.Item1][here.Item2].Top - World.StepHeight)
+                                ladders.Add((here, (col, k))); // (and off the end's landing, a drop the walk's steps don't take: the Dray's belly hatch stops a step and more up)
+                        }
+                }
+        }
         for (var i = 0; i < c.PartCount; i++)
         {
             ref var lp = ref c.Parts[i];
@@ -284,28 +362,43 @@ public static class BuildingWalkCheck
             var cx = (ld.BoundsMin.X + ld.BoundsMax.X) * 0.5f;
             var footAt = lt + Vector3.Transform(lp.Pos + Rot24.Apply(lp.Rot, new Vector3(cx, ld.BoundsMin.Y + 0.02f, ld.BoundsMin.Z - stand)), lq);
             var topAt = lt + Vector3.Transform(lp.Pos + Rot24.Apply(lp.Rot, new Vector3(cx, ld.LadderTop + 0.02f, ld.BoundsMax.Z + stand)), lq);
+            // (the spot itself, else the nearest that fits within the climb's exit search, ConstructRideLadder.LadderExit)
             (int, int) NodeAt(Vector3 at)
             {
-                int ix = (int)((at.X - x0) / G), iz = (int)((at.Z - z0) / G);
-                if (ix < 0 || iz < 0 || ix >= nx || iz >= nz)
-                    return (-1, -1);
-                var col = ix * nz + iz;
-                var best = -1;
-                for (var k = 0; k < cols[col].Length; k++)
-                    if (cols[col][k].Top <= at.Y + World.StepHeight && cols[col][k].Top >= at.Y - World.StepHeight)
-                        best = k;
-                return best >= 0 && cols[col][best].Fit ? (col, best) : (-1, -1);
+                var (bestCol, bestK, bestD) = (-1, -1, float.MaxValue);
+                var reach = (int)MathF.Ceiling(ConstructRide.LadderExitReach / G);
+                int cx0 = (int)((at.X - x0) / G), cz0 = (int)((at.Z - z0) / G);
+                for (var ix = cx0 - reach; ix <= cx0 + reach; ix++)
+                    for (var iz = cz0 - reach; iz <= cz0 + reach; iz++)
+                    {
+                        if (ix < 0 || iz < 0 || ix >= nx || iz >= nz)
+                            continue;
+                        var d2 = MathF.Pow(x0 + (ix + 0.5f) * G - at.X, 2) + MathF.Pow(z0 + (iz + 0.5f) * G - at.Z, 2);
+                        if (d2 > ConstructRide.LadderExitReach * ConstructRide.LadderExitReach || d2 >= bestD)
+                            continue;
+                        var col = ix * nz + iz;
+                        for (var k = 0; k < cols[col].Length; k++)
+                            if (cols[col][k].Fit && cols[col][k].Top <= at.Y + World.StepHeight && cols[col][k].Top >= at.Y - World.StepHeight)
+                                (bestCol, bestK, bestD) = (col, k, d2);
+                    }
+                return (bestCol, bestK);
             }
             if (NodeAt(footAt) is var f && f.Item1 >= 0 && NodeAt(topAt) is var u && u.Item1 >= 0)
+            {
                 ladders.Add((f, u));
+                ladders.Add((u, f));
+                Grabs(u, f, footAt);
+                Grabs(f, u, topAt);
+            }
             else
                 notes.Add($"the {ld.Name} has no room to stand at its foot or its top");
         }
         void Climb(Queue<(int, int)> q, (int, int) at, int bit)
         {
-            foreach (var (foot, top) in ladders)
+            foreach (var (from, to) in ladders)
             {
-                var other = at == foot ? top : at == top ? foot : (-1, -1);
+                // (forward: on from the climb's start; back: who can climb into a spot that leaves)
+                var other = bit == 1 ? (at == from ? to : (-1, -1)) : (at == to ? from : (-1, -1));
                 if (other.Item1 >= 0 && (cols[other.Item1][other.Item2].Reach & bit) == 0)
                 {
                     cols[other.Item1][other.Item2].Reach |= (byte)bit;
@@ -327,6 +420,41 @@ public static class BuildingWalkCheck
                             fwd.Enqueue((col, k));
                         }
                 }
+        // A docking hatch is a way in too (the Zero Day is boarded from its Limpet or Shuttle, or by MMU, not from the ground): a
+        // craft docked on it lets its people out at the floor round the hatch's shaft, the nearest one up or down it, as a
+        // ladder's head does (within its exit reach, nothing solid between).
+        for (var i = 0; i < c.PartCount; i++)
+        {
+            if (c.DefOf(i).Door is not { Dock: true })
+                continue;
+            c.ShapeBounds(i, out var hmn, out var hmx);
+            c.WorldFrame(c.Parts[i].Seg, out var hq, out var ht);
+            var ha = ht + Vector3.Transform(hmn, hq);
+            var hb = ht + Vector3.Transform(hmx, hq);
+            var hlo = Vector3.Min(ha, hb);
+            var hhi = Vector3.Max(ha, hb);
+            var hc = (hlo + hhi) * 0.5f;
+            const float ShaftSpan = 6f;
+            var reachOut = ConstructRide.LadderExitReach;
+            for (var ix = Math.Max(0, (int)((hlo.X - reachOut - x0) / G)); ix <= Math.Min(nx - 1, (int)((hhi.X + reachOut - x0) / G)); ix++)
+                for (var iz = Math.Max(0, (int)((hlo.Z - reachOut - z0) / G)); iz <= Math.Min(nz - 1, (int)((hhi.Z + reachOut - z0) / G)); iz++)
+                {
+                    var col = ix * nz + iz;
+                    float px = x0 + (ix + 0.5f) * G, pz = z0 + (iz + 0.5f) * G;
+                    for (var k = 0; k < cols[col].Length; k++)
+                    {
+                        ref var n = ref cols[col][k];
+                        if (!n.Fit || n.Part < 0 || n.Reach == 3 || MathF.Abs(n.Top - hc.Y) > ShaftSpan)
+                            continue;
+                        var shaftTop = new Vector3(hc.X, n.Top + 0.5f, hc.Z);
+                        if (ClearLine(hc + new Vector3(0, MathF.Sign(n.Top - hc.Y) * 0.1f, 0), shaftTop) && ClearLine(new Vector3(px, n.Top + 0.5f, pz), shaftTop))
+                        {
+                            n.Reach = 3;
+                            fwd.Enqueue((col, k));
+                        }
+                    }
+                }
+        }
         var back = new Queue<(int, int)>(fwd);
         while (fwd.Count > 0)
         {
@@ -445,14 +573,18 @@ public static class BuildingWalkCheck
                 continue; // (a leaf lying level is a hatch in a floor or a keel, the Magpie's well doors: nobody walks through it)
             if (MathF.Max(mx.X - mn.X, mx.Z - mn.Z) < 0.6f)
                 continue; // (a leaf narrower than a person is no doorway: the foot of the Magpie's boarding ladder)
+            if (c.DefOf(i).Door is { Launch: true })
+                continue; // (a launch hatch over a torpedo port, the Zero Day's flanks: it opens for what is fired, not for people)
             if (mx.Y - mn.Y < 1.2f)
                 continue; // (a leaf lower than a stooping person is a hatch reached into, not walked through: a pod's Service Hatch over its engine)
             var mid = (mn + mx) * 0.5f;
             var thinX = mx.X - mn.X < mx.Z - mn.Z;
             foreach (var side in new[] { -1f, 1f })
             {
+                // (0.9 m out, or 0.6: a doorway onto a passage a body just fits, the Dray's airlock beside its shaft)
                 var p = mid + (thinX ? new Vector3(side * 0.9f, 0, 0) : new Vector3(0, 0, side * 0.9f));
-                if (!UsableNear(p.X, p.Z, mn.Y - 0.75f, mn.Y + 0.6f, 0.2f))
+                var p6 = mid + (thinX ? new Vector3(side * 0.6f, 0, 0) : new Vector3(0, 0, side * 0.6f));
+                if (!UsableNear(p.X, p.Z, mn.Y - 0.75f, mn.Y + 0.6f, 0.2f) && !UsableNear(p6.X, p6.Z, mn.Y - 0.75f, mn.Y + 0.6f, 0.2f))
                     fails.Add($"nobody stands {(side < 0 ? "on one side" : "on the other side")} of the {c.DefOf(i).Name} at {Spot(c, mid.X, mn.Y, mid.Z)}: the doorway's landing is blocked or cut off");
             }
         }
@@ -512,6 +644,10 @@ public static class BuildingWalkCheck
         }
 
         // 4. Stairs: a standing person climbs each straight flight from its foot to its head (the game's own walker).
+        // (with every door open, as F leaves it: a flight may start just through a doorway, the Dray's drive room)
+        for (var k = 0; k < c.DoorCount; k++)
+            if (!walked.Contains(c.Doors[k].Part))
+                ConstructDoors.Settle(c, k, true);
         for (var i = 0; i < c.PartCount; i++)
         {
             var d = c.DefOf(i);
