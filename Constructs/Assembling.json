@@ -2242,6 +2242,9 @@
     {"output": "Small Shell Pod", "materials": {"steel": 60, "copper": 8, "rubber": 4}, "parts": {"Circuit Board": 2}, "seconds": 30, "minTier": 2},
     {"output": "Small Flush Shell Pod", "materials": {"steel": 54, "copper": 8, "rubber": 4}, "parts": {"Circuit Board": 2}, "seconds": 30, "minTier": 2},
     {"output": "Medium Shell Pod", "materials": {"steel": 140, "copper": 16, "rubber": 8}, "parts": {"Circuit Board": 3}, "seconds": 50, "minTier": 2},
-    {"output": "Medium Flush Shell Pod", "materials": {"steel": 128, "copper": 16, "rubber": 8}, "parts": {"Circuit Board": 3}, "seconds": 50, "minTier": 2}
+    {"output": "Medium Flush Shell Pod", "materials": {"steel": 128, "copper": 16, "rubber": 8}, "parts": {"Circuit Board": 3}, "seconds": 50, "minTier": 2},
+    {"output": "Service Locker", "materials": {"steel": 10, "glass": 1}, "seconds": 8, "minTier": 2},
+    {"output": "Pressure Locker", "materials": {"steel": 12, "rubber": 2, "glass": 1}, "seconds": 10, "minTier": 2},
+    {"output": "Ship Battery Module", "materials": {"steel": 24, "copper": 30}, "parts": {"Wiring Loom": 2}, "seconds": 40, "minTier": 3}
   ]
 }
