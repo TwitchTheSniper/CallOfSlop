@@ -197,6 +197,13 @@ public static partial class ConstructRender
         for (var i = 0; i < n; i++)
         {
             var nb = MergeBoxes(c, i);
+            if (nb > 0 && i < c.PocketHost.Length && c.PocketHost[i] != 0)
+            {
+                // A surface a flush pod sinks into: walked, so its boxes alone take the cut mark (Renderer.Cuts.cs).
+                _partEntry[i] = -1;
+                set.Walked[set.WalkedCount++] = i;
+                continue;
+            }
             if (nb == 0)
             {
                 _partEntry[i] = -1;
@@ -481,7 +488,10 @@ public static partial class ConstructRender
                 LastMergedWaiting++;
                 for (var m = 0; m < ch.MemberCount; m++)
                     if (ch.Members[m] < c.PartCount)
+                    {
+                        HostCut(gfx, c, ch.Members[m]);
                         n += DrawPart(gfx, world, c, ch.Members[m], body, alpha, 1f);
+                    }
                 continue;
             }
             if (ch.LookDue || check && ((k + set.Draws / MergeCheckFrames) & 1) == 0) // (half the chunks each check: each every 8 draws)
@@ -526,6 +536,7 @@ public static partial class ConstructRender
             var i = set.Walked[k];
             if (i >= c.PartCount)
                 continue;
+            HostCut(gfx, c, i);
             n += DrawPart(gfx, world, c, i, body, alpha, 1f);
             if (c.Parts[i].Store != 0)
                 n += DrawStored(gfx, world, c, i, body, alpha);
