@@ -25,11 +25,59 @@ public static class ConstructGrab
     /// </summary>
     public const float Strength = 1_500_000f, MaxMass = 20_000_000f, SurvivalStrength = SurvivalMaxMass * ToolUpgrades.PullPerKg, SurvivalMaxMass = 5000f, NudgeMaxMass = 1500f;
 
+    /// <summary>
+    /// The heaviest thing the physics gun takes in survival whatever its Lift level (kg; user, 2026-11-19: "3t is good").
+    /// Heavier pieces are for arms and shells (docs/sandbox/design/manipulators.md). A Lift module fitted still raises the
+    /// beam's pull (<see cref="ConstructEdits.PullOf"/>), so it moves what it may lift faster; it no longer raises this.
+    /// </summary>
+    public const float SurvivalLiftCap = 3000f;
+
+    /// <summary>What a refusal for weight adds in survival: where a heavier piece goes instead.</summary>
+    public const string HeavyHint = ": bigger pieces need an arm or a shell";
+
     /// <summary>The most the beam accelerates anything (m/s2, on top of holding it up against gravity; was 40): light parts don't snap about.</summary>
     public const float MaxAccel = 120f;
 
     /// <summary>The spring: the gap closes over about this long (s), at most this fast (m/s); the turn likewise (s, rad/s). Were 0.1 s, 18 m/s, 0.12 s, 9 rad/s.</summary>
     public const float SettleTime = 0.06f, MaxPull = 30f, TurnTime = 0.07f, MaxTurn = 15f;
+
+    /// <summary>
+    /// The speed build-up in flight (user, 2026-11-19: "the physics gun movement speed should build as the player keeps moving
+    /// an object around ... only if the object is in flight"): while a held piece touches nothing and moves faster than
+    /// <see cref="FlightMoveSpeed"/> (m/s, against its holder's frame), its boost climbs from 1 to <see cref="FlightBoostMax"/>
+    /// over <see cref="FlightBoostSeconds"/> (s, linear); the beam's top speed (<see cref="MaxPull"/>) and its acceleration
+    /// (<see cref="MaxAccel"/> included) are times the boost. A contact (pushing on it, or within <see cref="FlightTouchGap"/>
+    /// m), a stop (slower than <see cref="FlightStopSpeed"/>) or a let-go puts it back to 1 at once; between the two speeds it holds.
+    /// </summary>
+    public const float FlightBoostMax = 3f, FlightBoostSeconds = 2f, FlightMoveSpeed = 1.5f, FlightStopSpeed = 0.5f, FlightTouchGap = 0.02f;
+
+    /// <summary>
+    /// The fastest the beam moves a held piece against its holder's frame, boosted or not (m/s): the free-body limit on
+    /// the ground (<see cref="ConstructPhysics.MaxSpeed"/>), a metre a tick, so the contacts' reach and <see cref="NearStep"/>
+    /// still bound what a fast piece can pass through. The boost's acceleration goes on to 3x; its top speed stops here (2x).
+    /// </summary>
+    public const float HeldTopSpeed = ConstructPhysics.MaxSpeed;
+
+    /// <summary>Server, each physics step after the solve, for a held body: its flight boost steps (<see cref="FlightBoostMax"/>).</summary>
+    public static void FlightBoost(Construct c, float dt)
+    {
+        // The grab point's own speed, the one the beam moves (a long piece spun in place about it builds nothing), against
+        // its holder's frame at that point (a turning ship's deck moves each point at its own speed).
+        var at = c.ToWorld(c.GrabLocal);
+        var own = (c.Vel + Vector3.Cross(c.AngVel, at - c.WorldCom) - c.GrabFrameVel - Vector3.Cross(c.GrabFrameSpin, at - c.GrabTarget)).LengthSquared();
+        if (c.GrabTouch || own < FlightStopSpeed * FlightStopSpeed || !float.IsFinite(own))
+            c.GrabBoost = 1f;
+        else if (own > FlightMoveSpeed * FlightMoveSpeed)
+            c.GrabBoost = MathF.Min(FlightBoostMax, c.GrabBoost + (FlightBoostMax - 1f) * dt / FlightBoostSeconds);
+    }
+
+    /// <summary>The boost as a byte on the wire (0: none, 255: <see cref="FlightBoostMax"/>), and back.</summary>
+    public static byte BoostByte(float boost) => (byte)Math.Clamp((int)MathF.Round((boost - 1f) / (FlightBoostMax - 1f) * 255f), 0, 255);
+
+    public static float BoostOf(byte b) => 1f + b / 255f * (FlightBoostMax - 1f);
+
+    /// <summary>A joined holder's asked turn is followed over about this long (s; pc01: it arrives in steps, ~30 a second).</summary>
+    public const float SteerSmooth = 0.05f;
 
     /// <summary>The share of the beam's acceleration the spring plans to brake with (the rest is margin for gravity and contacts).</summary>
     public const float BrakeShare = 0.7f;
@@ -105,7 +153,7 @@ public static class ConstructGrab
     {
         var vel = c.Vel;
         var spin = c.AngVel;
-        Follow(c.Pos, c.Rot, c.Com, c.GrabLocal, ref vel, ref spin, c.GrabTarget, c.GrabRot, c.GrabAccel, c.GrabFrameVel, c.GrabFrameSpin, dt, nearOther);
+        Follow(c.Pos, c.Rot, c.Com, c.GrabLocal, ref vel, ref spin, c.GrabTarget, c.GrabRot, c.GrabAccel, c.GrabFrameVel, c.GrabFrameSpin, dt, nearOther, c.GrabBoost);
         c.Vel = vel;
         c.AngVel = spin;
     }
@@ -115,9 +163,12 @@ public static class ConstructGrab
     /// joined holder's own prediction of it (GameSandboxPhysGun.cs: the same swing and lag as the host's).
     /// </summary>
     public static void Follow(Vector3 pos, Quaternion rot, Vector3 com, Vector3 grabLocal, ref Vector3 vel, ref Vector3 angVel, Vector3 target, Quaternion wantRot,
-        float accel, Vector3 frameVel, Vector3 frameSpin, float dt, bool nearOther = false)
+        float accel, Vector3 frameVel, Vector3 frameSpin, float dt, bool nearOther = false, float boost = 1f)
     {
-        var maxPull = nearOther ? MathF.Min(MaxPull, NearStep / dt) : MaxPull; // (another construct close by: a step short enough that the overlap tests can't be jumped)
+        boost = Math.Clamp(boost, 1f, FlightBoostMax); // (the speed build-up in flight: FlightBoost)
+        accel *= boost; // (accel is MaxAccel at most: AccelFor)
+        var top = MathF.Min(MaxPull * boost, HeldTopSpeed); // (boosted, never past HeldTopSpeed: a metre a tick at most)
+        var maxPull = nearOther ? MathF.Min(top, NearStep / dt) : top; // (another construct close by: a step short enough that the overlap tests can't be jumped)
         var maxTurn = nearOther ? MathF.Min(MaxTurn, NearTurn) : MaxTurn;
         // The turn first: the rotation still to go, as an axis and angle, closed over TurnTime.
         var q = wantRot * Quaternion.Conjugate(rot);
@@ -175,7 +226,7 @@ public static class ConstructGrab
     /// Why the beam can't move this joint on its own, or null (peers work it out alike; holds by others and the contested rule
     /// are the caller's). Only what has no motor moves: an Actuator is run by its Set signal and a shaft rail's screw doesn't back-drive.
     /// </summary>
-    public static string? LeafRefusal(Construct c, int part, bool leaf, bool creative, float lift = SurvivalMaxMass)
+    public static string? LeafRefusal(Construct c, int part, bool leaf, bool creative, float lift = SurvivalLiftCap)
     {
         var r = leaf && c.Parts[part].D.IsRail ? c.RailRun(part) : -1;
         var drive = r >= 0 && r < c.RailCount ? c.DefOf(c.Rails[r].Drive).RailDrive : RailDriveKind.Free;
@@ -196,7 +247,7 @@ public static class ConstructGrab
                 return "someone is on it";
         var cap = creative ? MaxMass : lift;
         if (c.SegMass[j + 1] > cap)
-            return $"too heavy for the physics gun ({c.SegMass[j + 1]:0} kg; {cap:0} kg at most{(creative ? "" : " in survival")})";
+            return $"too heavy for the physics gun ({c.SegMass[j + 1]:0} kg; {cap:0} kg at most{(creative ? "" : " in survival" + HeavyHint)})";
         return null;
     }
 
@@ -580,7 +631,7 @@ public sealed partial class ConstructEdits
     }
 
     /// <summary>Decision 19 (survival only; creative is unrestricted): why this player may not edit or grab this construct now, or null.</summary>
-    public string? Contested(Construct c, byte player) => c.HeldBy != 0 ? ConstructStation.HeldText : InfiniteParts ? null : ConstructGrab.Defended(c, player, AliveAt, NameOf);
+    public string? Contested(Construct c, byte player) => c.HeldBy != 0 ? (c.PartCount == 1 && c.Parts[0].D.ShellBody ? ConstructGantry.HeldText : ConstructStation.HeldText) : InfiniteParts ? null : ConstructGrab.Defended(c, player, AliveAt, NameOf);
 
     /// <summary>How far this player's beam holds something (their reach: <see cref="ReachOf"/>).</summary>
     public float GrabRange(byte player) => ReachOf(player, InfiniteParts);
@@ -600,7 +651,7 @@ public sealed partial class ConstructEdits
             return "it is anchored to the ground";
         var cap = LiftOf(player, InfiniteParts);
         if (c.Mass > cap)
-            return $"too heavy for the physics gun ({c.Mass:0} kg; {cap:0} kg at most{(InfiniteParts ? "" : " in survival")})";
+            return $"too heavy for the physics gun ({c.Mass:0} kg; {cap:0} kg at most{(InfiniteParts ? "" : " in survival" + ConstructGrab.HeavyHint)})";
         return Contested(c, player);
     }
 
@@ -657,6 +708,7 @@ public sealed partial class ConstructEdits
         if (c.CarriedBy != 0)
             ConstructCargo.Release(world, c); // (taken out of a frozen cargo volume: it isn't caught again while held)
         c.GrabbedBy = player;
+        c.GrabBoost = 1f;
         c.GrabLocal = local;
         c.GrabTarget = at;
         c.GrabRot = c.Rot;
@@ -667,6 +719,7 @@ public sealed partial class ConstructEdits
         h.GrabLocal = local;
         h.GrabDist = Math.Clamp(dist, ConstructGrab.MinDist, GrabRange(player));
         h.GrabRel = Quaternion.Normalize(Quaternion.Conjugate(ConstructGrab.LookQ(h, lookAt ?? eye, yaw)) * c.Rot); // (lookAt: where the look's yaw is measured, the holder's feet)
+        h.GrabRelWant = default; // (a new hold: no asked turn waiting)
         h.Edit = EditKind.None;
         Done.Add($"player {player}: grabbed construct {body} with the physics gun");
         return null;
@@ -770,13 +823,22 @@ public sealed partial class ConstructEdits
     }
 
     /// <summary>The client's wheel and turn: the held thing's distance and its turn relative to the look's yaw.</summary>
-    public void SteerGrab(byte player, float dist, Quaternion rel)
+    /// <param name="smooth">A joined holder's (pc01): the turn arrives in steps, ~30 a second and bunched by the network, and
+    /// each step taken at once spun the piece in jerks (up to 8 rad/s for a steady 2): <see cref="SandboxHand.GrabRel"/> follows
+    /// it over <see cref="ConstructGrab.SteerSmooth"/> in <see cref="GrabTick"/>. The host's own steer is every frame: at once.</param>
+    public void SteerGrab(byte player, float dist, Quaternion rel, bool smooth = false)
     {
         ref var h = ref Hands[player];
         if (h.GrabBody == 0 || !float.IsFinite(dist + rel.X + rel.Y + rel.Z + rel.W) || rel.LengthSquared() < 0.5f)
             return;
         h.GrabDist = Math.Clamp(dist, ConstructGrab.MinDist, GrabRange(player));
-        h.GrabRel = Quaternion.Normalize(rel);
+        if (smooth)
+            h.GrabRelWant = Quaternion.Normalize(rel);
+        else
+        {
+            h.GrabRel = Quaternion.Normalize(rel);
+            h.GrabRelWant = default;
+        }
     }
 
     /// <summary>Lets go (it keeps the speed it had: a flick throws it, as before pr01).</summary>
@@ -798,6 +860,7 @@ public sealed partial class ConstructEdits
     private static void LetGo(Construct c)
     {
         c.GrabbedBy = 255;
+        c.GrabBoost = 1f;
         c.Wake();
     }
 
@@ -828,6 +891,12 @@ public sealed partial class ConstructEdits
         // by a tick of the deck's travel as well held the piece that far ahead of the crosshair, 4.7 m in a ship in orbit, and
         // into the walls: user, 2026-11-18)
         c.GrabTarget = eye + look * h.GrabDist;
+        if (h.GrabRelWant.LengthSquared() > 0.5f)
+        {
+            // (a joined holder's turn, followed smoothly: SteerGrab)
+            var want = Quaternion.Dot(h.GrabRel, h.GrabRelWant) < 0 ? -h.GrabRelWant : h.GrabRelWant;
+            h.GrabRel = Quaternion.Normalize(Quaternion.Slerp(h.GrabRel, want, 1f - MathF.Exp(-(float)World.TickDt / ConstructGrab.SteerSmooth)));
+        }
         c.GrabRot = ConstructGrab.LookQ(h, lookAt ?? eye, yaw) * h.GrabRel; // (lookAt: where the look's yaw is measured, the holder's feet: GravityFrames.Forward(p.Position, ...))
         c.GrabFrameVel = frameVel;
         c.GrabFrameSpin = frameSpin;

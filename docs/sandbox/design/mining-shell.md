@@ -83,6 +83,26 @@ on the same channels. Decided (defaults; the user may change them):
   in the back slot", the renderer draws each slot's module. So customisation only adds modules (data, a look and, for a new
   kind, its rule) and a way to choose them (UI, and a per-shell record of the choice in the part's config).
 
+### How a worn shell shows its modules (the user, 2026-11-19)
+
+"The shell parts that are currently equipped should be visually apparent on a possessed shell", with "more visual variance"
+between the limbs and "a runner leg should look more digitigrade than human". `Scene/Rigs/ShellModuleNodes.cs` draws every fitted
+module on the wearer's rig from its own part's model (ShellParts.cs), read from the worn kit, so a gantry swap shows at once on
+every peer: the head on the person's head node (their head hidden), the back module on the back (the ore hopper and the drill
+arm, which have no part, stay ShellKitNodes'), a Hand's forearm over the arm's, a tool arm out of the shoulder with its forearm
+turned with the look, and a leg's boxes on the leg's bones by its `"joints"` (heights on its part: hip, knee, optional hock,
+ankle). A leg with a `"hock": [up, back]` walks digitigrade: `LegAnimator` reaches the thigh and shin for the hock, up and behind
+the foot's ball, and a metatarsal runs down to the ball (the knee forward, the hock back). The looks: Standard Leg a person's
+leg, Heavy Leg thick with plates and a wide foot, Runner Leg slim on clawed toes with amber springs; Optics Head two lens
+barrels and a dome, Plated Head a helm with a slit visor; Power Pack a case with cell caps and vents.
+
+**Tool arms** (`"kind": "tool"`, a `"tool"` and a `"part"`): the Welder Arm (attach tool), Cutter Arm (remover), Grip Arm
+(physics gun) and Sprayer Arm (paint). A gantry fits them in either arm slot. Defaults taken: a shell with any tool module
+(these, or the drill arm) holds only those modules' tools (the tool wheel and number keys refuse the rest, as for the Mining
+Shell's drill; with two tool arms either is picked); the arm is its tool's look in third person (no held tool beside it) and
+in first person (its forearm, aimed at the crosshair, on the right whichever side it is fitted); the immediate-mode body
+(`PlayerRender.DrawImmediate`, off by default) draws the person as before.
+
 ## The user's answers (2026-11-17)
 
 1. **Collision**: 1.5x, as built (it crouches through doors; ship decks are crouch-only).
@@ -153,12 +173,12 @@ Drafted with the user over three pictures; build to this once the user approves 
   F on the gantry opens its panel (`UiShellGantry.cs`, `Program.SandboxShellGantry.cs`; Esc and the local reset close it): the shell
   in the bay, the table, and a row a slot with a button for each module that fits there and how many lie on the table. The server
   checks reach (8 m), power, who may, a shell standing alone in the bay (its feet inside it), the slot (`fixed`, kind, a part), the
-  table and that the module is on it (creative: it comes free, with or without a table), takes it off the table and starts a 7.5 s
+  table and that the module is on it (creative: it comes free, with or without a table), takes it off the table and starts an 8.6 s
   job on the slot's arm (head arm: head; right upper: right arm and the back; left upper: left arm; the lower arms: the legs). The
   arm reaches the slot (1.2 s), unclips (to 2 s), carries the old module to the table (3.5 s), sets it down and takes the new one
   (4 s), carries it back (5.5 s), fits it (6.3 s: the shell's kit is written and the old module's part goes onto the table, else
   loose behind the gantry, always with a log line) and goes back to rest. A job stops, the new module back on the table, if the
-  shell or the gantry goes or the shell leaves the bay before the fit. A shell in a job can't be woken. One job a gantry; a
+  shell or the gantry goes or the shell leaves the bay before the fit. A shell in a job can't be woken. One job a gantry (since "Swap animation" below: several, queued, under a waist clamp, 8.6 s each); a
   joiner hears the jobs under way.
 - **Seen** (`GantryRender.cs`): the five arms (shoulder, two links, elbow, gripper) at rest, and the working arm on its path with the
   module's part at true size in its grip, a work lamp while it unclips and fits; the same pose on host and client from the job's
@@ -168,5 +188,53 @@ Drafted with the user over three pictures; build to this once the user approves 
   x0.90 (Runner Legs and the Plated Head); the Mining Shell's back and right arm refused as fixed, its leg swapped; a joined client
   sees the job, the kit and the table, and its own ask is made (and refused "too far away" when it was); a world save and load keep
   the kit and the table's contents; the panel opens on F and closes on Esc.
-- **Not yet**: the standing or worn shell drawn with its modules (a Plated Head looks like an Optics Head); a crew Miner using the
-  gantry; arm sounds.
+- **Not yet**: the standing shell drawn with its modules (the worn one is, 2026-11-19: "How a worn shell shows its modules" above);
+  a crew Miner using the gantry; arm sounds.
+
+## Swap animation (user, 2026-11-19)
+
+"Add animations for the shell being disassembled and reassembled on the gantry. Add some locking mechanism that holds the torso in place."
+Built 2026-11-19 (`ConstructGantry.cs`, `GameShellGantry.cs`, `GantryRender.cs`; protocol 377). Defaults chosen with the user away:
+
+- **Waist clamp.** A ram from a housing on the rear frame's lower rail (between the lower arms' shoulders) runs out to a yoke behind the
+  shell's hips, then two jaws on the yoke's ends swing in round the pelvis on hinge knuckles at the hip's sides (10 cm deep, hazard yellow with black bands outside and on the tooth), a tooth round each front corner with a lamp on its face, red while it grips (0.8 s: the ram the first 60%, the
+  jaws the rest). The hips were chosen because the arms hang beside the torso and the Mining Shell's hopper sits on its back: the yoke
+  passes under the hopper's floor. A lamp on the housing is red while shut, green open. It closes when a change's first swap begins and
+  opens (0.8 s) when its last ends or is stopped. While shut the server holds the shell: `HeldBy` the gantry (no grab, nudge, edit
+  or waking: "a Shell Gantry's clamp holds it while its arms work") and posed every tick where it stood in the gantry part's frame
+  (`Game.GantryPin`), never frozen: a gantry aboard a moving ship keeps its shell riding the ship's frame (`Construct.GantryHold` lets a
+  held shell ride), posed in that frame; beside a still gantry it is left asleep. Only a shell in a clamp is drawn part by part (the
+  merged meshes leave it out while `GantryHold`).
+- **One swap (8.6 s):** the arm reaches behind the slot (1.2), goes in and shuts its gripper (1.6), unbolts with a turning nut runner and a
+  work lamp (2.2), pulls the module out along the slot's way off (head up and back, back pack back, an arm outwards, a leg back) (2.7),
+  carries it to the table (4.2), sets it down beside the table's middle (4.5), moves over and grips the new one (4.9), carries it back
+  (6.4), pushes it in (6.8), bolts it (7.4: the fit, as before) and goes home (8.6). From 2.2 to 7.4 the shell is drawn without that
+  slot's boxes (head, visor and aerial; back pack; forearm and hand; thigh, knee, shin and foot: `ConstructGantry.BoxSlots`, classified
+  by where each box sits in a person-sized shell); with a leg off the shell hangs in the clamp.
+- **A change of several slots** is one request a slot, as before, but asking while the gantry works no longer refuses: it queues. A swap
+  starts when the same arm's last one has ended, or when another arm's last one has fitted (that arm is only going home). A slot already
+  asked is refused; a module needs one on the table for each queued swap that wants it. The panel lists the swaps "now" and "next".
+- **Network:** each swap is a `Msg.Gantry` with its slot (an off names its swap) and its seconds run, negative while queued; every peer
+  draws the clamp and the arms from those, nothing per frame on the wire. A joiner hears the swaps under way and sees the clamp shut.
+- **Stops and saves:** as before, a swap stops (its new module stays on the table) if the shell or the gantry goes; the clamp opens when
+  none is left. Swaps and clamps aren't saved (a world's clear drops both): a save mid-change writes the shell where it stands, loose,
+  with the modules fitted so far, and the table with the rest.
+- **Tried** (window runs, `shellgantry setup|fit|state`): a Robot Shell's left leg seen gone from the pull to the fit, carried, set
+  down and the new one brought and fitted; the clamp's ram and jaws on a Robot and a Mining Shell, the lamp red then green; a head
+  queued behind a leg ran after its fit; asking the same slot again refused; a joined client heard both swaps (the queued one too) and
+  the kit after. Later: the gantry driven at 3 m/s turning (`shellgantry drive`) kept the clamped shell in its frame to the
+  millimetre; a save mid-change loaded the shell loose with its old kit; the physics gun on a clamped shell was refused. Not tried: a
+  part removal renumbering a gantry or a table mid-swap (two gantries on one body), a client's view in a picture. The carried module
+  is the standing shell's own slot, so a new Runner Leg is carried looking like the leg it replaces (the standing shell isn't drawn
+  with its modules yet).
+- **The module carried** is the shell's own slot (its boxes, in its paint, tone and finish: `GantryRender.DrawSlot`; a leg comes off up and back, clear of the deck), so what leaves the shell is what
+  the arm holds; set down, it stands on the table's floor; the new one's copy on the table is hidden while the arm holds it
+  (`ConstructGantry.CarriedOff`, `RouteRender.DrawRacks`). The deck is light deck plate (look review).
+- **Robustness:** a swap and its clamp know the gantry part and the parts table by their places on their bodies, so a removal that
+  renumbers the parts finds them again (the peers hear the swaps again under the new indices; a big body's late gantry list falls back
+  to every part) or stops the swap; the swaps of a gantry that went end first, under their old indices, so two gantries on one body
+  never share a clamp's key; a clamp never poses the shell in another part's
+  frame. A joiner hears the swaps before the bodies come: the shell is marked held when it arrives (`ConstructGantry.Refresh`).
+- **Not yet:** the old module set down on the table turns into the module part's own look at the fit; with a gantry moving and
+  the shell not yet in its frame (a few ticks before the frame pass takes it), only the pin holds it against gravity (its contacts
+  with the gantry are skipped as `HeldBy`).

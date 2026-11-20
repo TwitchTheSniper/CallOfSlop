@@ -843,6 +843,7 @@ public sealed partial class ConstructPartDef
     public bool CameraScreen => Array.Exists(Panels, x => x.Source == "camera");
     public float RemoteRange, CameraFov;
     public bool ShellBody; // a Robot Shell: a body a player wakes in from a Shell Control Chair (ConstructShell.cs)
+    public byte[]? ShellBoxSlots; // render: the slot each box belongs to, made on first use (ConstructGantry.BoxSlots: a module off on a gantry hides its boxes)
     public float ShellRange; // a Shell Control Chair: how far its shells may be, metres (0: not a chair)
     public ShellGantryDef? Gantry; // a Shell Gantry: its bay and arms (ConstructGantry.cs)
     public ShellPodDef? ShellPod; // a shell storage pod: its size class and lid (ConstructShellPod.cs)

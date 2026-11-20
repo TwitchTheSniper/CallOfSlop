@@ -6,17 +6,26 @@ its system file. Together they are the game's map: the rust bucket and the Survi
 (docs/story/STARTS.md), and one saved world holds every world the group lands on. Every map there is written by `tools/planets/make_worlds.py`: change a world in the script and run it,
 then look at it with `--check-planetoid` (docs/planets/PLANETS.md "Making a world").
 
+**Four times the size (Karl, 2026-11-19).** The Frostreach worlds are written at their old size in the script and grown
+there (`GROW`, `grown`): each is the same planet magnified, its big shapes (mountains, craters, rifts, ridges, broad noise,
+the regions of terraces, crevasse and drift fields) four times wider and twice as tall, so slopes are half as steep, while
+what is underfoot (fine noise, crevasses, drifts, caves) and each site's own flat ground keep their metres. The snow and
+sand lines, the clouds and the sky's edge (5.2 km up, not 2.6) grow with the heights. Mille grows by 4/3 only (a hollow
+world is at most 4 km), Redrock (the Dev system's) not at all. Surface gravity is unchanged, so orbits go twice as fast;
+the moons' orbits in `Systems/Frostreach.json` are four times as far. Past 16 km a float steps by 2-4 mm, so the physics
+keeps what floats can't hold (PLANETS.md "Origin").
+
 | System | World | Radius, gravity | Ground | Faction home | Why go |
 | --- | --- | --- | --- | --- | --- |
 | Dev (Slopstar) | Planetoid (`Maps/Dev`) | 10 km, 18 | temperate hills, two mountains | Ministry of Slop: the penal colony | where the story starts; data centre 1 |
 | Dev | Bluestone (`Maps/Dev`) | 3 km, 9 | blue-grey, one big mountain | none | the first trip out |
 | Dev | Redrock | 4 km, 9 | red desert: mesa country in the north, the Gash (a 5 km canyon), the Steps, a dune sea | a Ministry mining concession | a practice landing before the first jump |
-| Frostreach | Cinder | 5 km, 12 | black basalt and craters, lava-coloured low ground, long fissures; one face always to its red sun | the Call Centre: the Call Floor | data centre on the night side |
-| Frostreach | Glacier | 8 km, 14 | snowfields, blue ice ridges, four nunataks, the Rent (a 9 km crevasse), the Mirror (a frozen lake), the Shelves | the IT Department: the Server Farm | data centre at the bottom of the Rent |
-| Frostreach | Caledon | 6 km, 11 | bens with snow on top, long glens, heather slopes, bog | Clan MacSlop: the Glen | data centre in a corrie under Ben Slop |
-| Frostreach | Mille | 3 km, 8 | hollow: a golden crust stepped in layers, 220 m thick, round a glowing cavity | none for now (the faith was removed, 2026-11-11) | data centre inside the cavity |
-| Frostreach (moonlet of Mille) | Crumb | 600 m, 1.5 | a grey lump of rubble pocked with craters; the sky's edge only 1.4 km up (`"sky"` in make_worlds.py) | none | the Magpie start wakes over it (docs/story/STARTS.md): iron, stone and sand, the ores a tier 1 drill works |
-| Frostreach (moon of Glacier) | Slopolis | 3.5 km, 10 | one city over the north (docs/planets/CITY.md), hills beyond | none: the free port | towers, streets, the elevated loop |
+| Frostreach | Cinder | 20 km, 12 | black basalt and craters, lava-coloured low ground, long fissures; one face always to its red sun | the Call Centre: the Call Floor | data centre on the night side |
+| Frostreach | Glacier | 32 km, 14 | snowfields, blue ice ridges, four nunataks, the Rent (a 36 km crevasse), the Mirror (a frozen lake), the Shelves | the IT Department: the Server Farm | data centre at the bottom of the Rent |
+| Frostreach | Caledon | 24 km, 11 | bens with snow on top, long glens, heather slopes, bog | Clan MacSlop: the Glen | data centre in a corrie under Ben Slop |
+| Frostreach | Mille | 4 km, 8 | hollow: a golden crust stepped in layers, 254 m thick, round a glowing cavity | none for now (the faith was removed, 2026-11-11) | data centre inside the cavity |
+| Frostreach (moonlet of Mille) | Crumb | 2.4 km, 1.5 | a grey lump of rubble pocked with craters; the sky's edge only 2.8 km up (`"sky"` in make_worlds.py) | none | the Magpie start wakes over it (docs/story/STARTS.md): iron, stone and sand, the ores a tier 1 drill works |
+| Frostreach (moon of Glacier) | Slopolis | 14 km, 10 | one city over the north (docs/planets/CITY.md), hills beyond | none: the free port | towers, streets, the elevated loop |
 
 ## Places kept flat
 

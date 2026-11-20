@@ -456,7 +456,7 @@ public static class SocketWeld
             mover.SegPose(mover.Parts[i].Seg, out var sq, out var st);
             var pq = Quaternion.Normalize(rot * sq);
             var pt = pos + Vector3.Transform(st, rot);
-            for (var b = 0; b < d.SolidBoxes; b++)
+            for (var b = 0; b < ConstructBuild.PlaceSolids(d); b++) // (a flush pod: its lid; its body sinks into what it goes on)
             {
                 mover.BoxOf(i, b, out var bc, out var bh);
                 var obb = new Obb(pt + Vector3.Transform(bc, pq), Vector3.Max(bh - new Vector3(0.012f), new Vector3(0.004f)), pq);

@@ -507,10 +507,19 @@ public static class RouteRender
             var centre = Vector3.Transform((rd.BoundsMin + rd.BoundsMax) * 0.5f, frame);
             var reach = ConstructConveyor.RackDrawNear + (rd.BoundsMax - rd.BoundsMin).Length() * 0.5f;
             var near = Vector3.DistanceSquared(eye, centre) < reach * reach;
+            var hide = rd.GantryTable && world.GantryJobCount > 0 ? ConstructGantry.CarriedOff(world, c.Id, part, ConstructConveyor.Clock) : -1; // (a module a gantry's arm carries: its copy here isn't drawn)
             for (var s = 0; s < st.SlabN; s++)
             {
                 if (ConstructParts.Get(st.Slabs![s].Def) is not { } d || d.Boxes.Length == 0)
                     continue;
+                var skipLane = -1;
+                if (hide >= 0 && st.Slabs[s].Def == hide)
+                {
+                    for (var l = st.Slabs[s].Lanes - 1; l >= 0 && skipLane < 0; l--)
+                        if (st.SlabLanes![s * ConstructRackPack.MaxLanes + l] > 0)
+                            skipLane = l; // (the top piece of the last lane: the one the fit takes, ConstructRackPack.LastOf)
+                    hide = -1;
+                }
                 if (!near)
                 {
                     ConstructRackPack.SlabBox(rd, st, s, d, out var mn, out var mx);
@@ -520,6 +529,8 @@ public static class RouteRender
                 for (var l = 0; l < st.Slabs[s].Lanes; l++)
                 {
                     int n = st.SlabLanes![s * ConstructRackPack.MaxLanes + l];
+                    if (l == skipLane)
+                        n--;
                     for (var y = 0; y < n; y++)
                     {
                         var m = Matrix4x4.CreateTranslation(ConstructRackPack.Origin(rd, st.Slabs[s], d, l, y)) * frame;

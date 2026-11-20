@@ -287,7 +287,7 @@ public static partial class ConstructRender
                 PanelRender.Gather(gfx, world, c, body, blendTicks ? alpha : 1f, cull ? _planes : default, Now); // (display panels near the eye and facing it)
             if (c.HasLogic || c.HasVolumeStore)
                 n += DrawVolumes(gfx, c, body, blendTicks ? alpha : 1f); // (cargo volumes: a logic part each)
-            if (c.Frozen || c.FrozenPieces > 0)
+            if ((c.Frozen || c.FrozenPieces > 0) && !NoAimGlow) // (nor in a --no-hands scene picture: the map's own frozen props)
             {
                 // Frozen by the physics gun: an icy outline round each part of each frozen piece (ConstructGrab.cs): one box round the whole would read
                 // as its collider, and it is not. A big construct shows the frost tint alone.
@@ -636,11 +636,15 @@ public static partial class ConstructRender
         var routerStuck = false;
         var routerFence = 0f;
         var routerOn = d.HasRouterBoxes && !p.Broken && ConstructRecycler.Powered(world, c, i) && ConstructLogistics.ShowOf(c, i, out routerWay, out routerState, out routerStuck, out routerFence); // (a Conveyor Router: its lamps and fence show its last choice)
+        var offSlots = d.ShellBody && world.GantryJobCount > 0 ? ConstructGantry.OffSlots(world, c.Id, ConstructConveyor.Clock) : 0; // (a module a Shell Gantry's arm has off: its boxes aren't drawn)
+        var boxSlots = offSlots != 0 ? ConstructGantry.BoxSlots(d) : null;
         for (var b = 0; b < d.Boxes.Length; b++)
         {
             ref readonly var box = ref d.Boxes[b];
             if (box.Hidden || box.IsLeaf && !railShown)
                 continue; // (a shaped part's stepped collision: its shape is drawn instead)
+            if (boxSlots != null && boxSlots[b] < 8 && (offSlots >> boxSlots[b] & 1) != 0)
+                continue;
             c.BoxOf(i, b, out var centre, out var half);
             if (box.Spin && d.Rotor != null)
             {
@@ -1374,7 +1378,7 @@ public static partial class ConstructRender
         }
         DrawSelection(gfx, pulse);
         DrawBlueprintGhost(gfx, pulse); // (ConstructRenderBlueprintGhost.cs)
-        if (AimBody is { } ab && AimPart >= 0 && AimPart < ab.PartCount)
+        if (AimBody is { } ab && AimPart >= 0 && AimPart < ab.PartCount && !NoAimGlow)
         {
             if ((AimRefused || AimHands) && !AimOnPage)
                 DrawAimGlow(gfx, ab, AimPart);
@@ -1391,6 +1395,9 @@ public static partial class ConstructRender
     /// region; a panel hung on a hinge, its door handle or a hand's width at its free edge (<see cref="ConstructDoor"/>); a part
     /// with none of those, or something loose (all of it comes up in the hands), glows whole.
     /// </summary>
+    /// <summary>The window tool's --no-hands: no aim glow and no frozen outlines in a scene picture.</summary>
+    public static bool NoAimGlow;
+
     private static void DrawAimGlow(Renderer gfx, Construct c, int part)
     {
         ref var p = ref c.Parts[part];

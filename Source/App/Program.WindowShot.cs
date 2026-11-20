@@ -78,6 +78,7 @@ public static unsafe partial class Program
         _wsAt = Val("--at") is { } at ? WsVec(at) : null;
         _wsCalm = args.Any(a => a.Equals("--calm", StringComparison.OrdinalIgnoreCase)); // (no cold storm: a site is seen whole)
         _wsNoHands = args.Any(a => a.Equals("--no-hands", StringComparison.OrdinalIgnoreCase));
+        ConstructRender.NoAimGlow = _wsNoHands; // (and no HUD: Program.cs)
         _wsDusk = float.TryParse(Val("--dusk"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var dk) ? Math.Clamp(dk, 0f, 1f) : 0f; // (a dusk on any map: its light dimmed, lamps throwing their dark light; Program.Storm.cs)
         _wsLookAt = Val("--look-at") is { } la ? WsVec(la) : null;
         _wsSpawnAt = Val("--spawn-at") is { } sa ? WsVec(sa) : null;

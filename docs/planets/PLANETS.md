@@ -25,7 +25,7 @@ The top-level `"planetoid"` object (MapFile.cs calls `Planetoid.Parse`):
 
 | Key | Default | Meaning |
 | --- | --- | --- |
-| `radius` | 10000 | Radius of the ground at height 0 (500 to 16000 m). |
+| `radius` | 10000 | Radius of the ground at height 0 (500 to 40000 m). |
 | `cell` | 2 | About this many metres per cell; rounded so a face has a power of two of them. |
 | `strength` | 11 | Gravity at the surface (m/s2). The Dev map uses 18, the game's usual. |
 | `base` | 0 | Height before any feature. |
@@ -36,12 +36,15 @@ The top-level `"planetoid"` object (MapFile.cs calls `Planetoid.Parse`):
 **Origin.** The centre is the World's origin (Karl, 2026-11-04), and the +Y pole (latitude 90) is at `(0, radius +
 height, 0)`: that's where spawns and play start. A map file's own points (`teamSpawns`, `hills`, `flags`) are World
 points, so they carry the radius in Y. With the origin in the middle, every spot on the ground is about a radius from
-it, so float precision is the same all round: under 16 km (floats step in 1 mm there) a resting vehicle sleeps and
-driving is as smooth on the far side as at the pole. Before, the pole was the origin, the far side was 20 km out (2 mm
-steps), and a parked Buggy there never slept. A planetoid much past 16 km radius needs positions kept in double
-precision (not done). World saves record the centre (`Origin` section) and an older save is moved onto the new one as
+it, so float precision is the same all round. Under 16 km floats step in 1 mm; past it 2 mm, past 32 km 4 mm (Karl's 4x
+worlds of 2026-11-19: Glacier is 32 km). Before, the pole was the origin, the far side was 20 km out, and a parked Buggy
+there never slept. Now what moves in small steps keeps what floats can't hold of its place from step to step, in doubles:
+construct bodies (`Construct.PosRest`, `ConstructPhysics.Place`), ragdolls (stepped relative to an anchor near the body
+with their gathered shapes, `Ragdoll.ToLocal`/`ToWorld`) and thrown things (`Projectile.PosRest`). On a 32 km test copy of
+the Dev map, blocks, plates, a buggy, ragdolls and grenades settle as they do at 10 km. Gibs and prop debris (short-lived)
+and players (who move in steps far over a float's) still step in the World's floats. World saves record the centre (`Origin` section) and an older save is moved onto the new one as
 it loads (docs/sandbox/WORLD-SAVES.md). The map gets point gravity
-towards the centre unless it gives its own `"gravity"`; `halfX`/`halfZ` (up to 12600) set the top of the sky as on any
+towards the centre unless it gives its own `"gravity"`; `halfX`/`halfZ` (up to 40000) set the top of the sky as on any
 planet map. Surface ops (`SurfaceSpawn`, `SurfaceBlock`, `SurfaceMesh`...) place things on the planetoid's ground by
 latitude and longitude.
 

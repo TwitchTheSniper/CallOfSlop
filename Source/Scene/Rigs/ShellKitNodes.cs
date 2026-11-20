@@ -12,7 +12,7 @@ namespace CallOfSlop;
 public sealed class ShellKitNodes
 {
     private const float Built = 1.5f; // the size the boxes below are in (the Mining Shell's)
-    private static readonly Vector3 Steel = Hex(0x8b949c), Dark = Hex(0x30363d), Joint = Hex(0x56606a), Ore = Hex(0x5a4a3c), Bit = Hex(0xc9ced4), Hazard = Hex(0xe0a020);
+    private static readonly Vector3 Steel = Hex(0x8b949c), Dark = Hex(0x30363d), Joint = Hex(0x56606a), Light = Hex(0xc4c9ce), Ore = Hex(0x5a4a3c), Bit = Hex(0xc9ced4), Hazard = Hex(0xe0a020);
     private static readonly Vector3 HopMin = new(-0.31f, 1.395f, 0.245f), HopMax = new(0.31f, 2.18f, 0.755f); // ShellParts.HopperMin/Max
     private static readonly Vector3 Elbow = new(0.47f, 1.5f, 0f);
 
@@ -26,17 +26,26 @@ public sealed class ShellKitNodes
     /// The drill arm: what other players see on the shell and what its wearer sees in first person (<see cref="ViewModel"/>). In the
     /// shell's arm colour with a steel collar; the bit in its accent, the cutting end in hazard paint (look.md "mark what bites").
     /// </summary>
-    private static readonly ArmBox[] DrillArm =
-    [
-        new(new(0.36f, 2.04f, -0.15f), new(0.585f, 2.295f, 0.15f), Joint, false, false), // shoulder
-        new(new(0.39f, 1.5f, -0.09f), new(0.555f, 2.055f, 0.09f), Steel, false, false, ArmPaint.Arm), // upper arm
-        new(new(0.4f, 1.26f, -0.42f), new(0.545f, 1.497f, 0.08f), Joint, true, false, ArmPaint.Arm), // housing
-        new(new(0.385f, 1.24f, -0.12f), new(0.56f, 1.52f, 0.03f), Steel, true, false), // motor collar
-        new(new(0.425f, 1.3f, -0.62f), new(0.52f, 1.46f, -0.41f), Bit, true, true, ArmPaint.Accent), // bit
-        new(new(0.445f, 1.33f, -0.8f), new(0.5f, 1.43f, -0.61f), Bit, true, true, ArmPaint.Accent),
-        new(new(0.46f, 1.355f, -0.9f), new(0.485f, 1.405f, -0.79f), Hazard, true, true), // the cutting end
-        new(new(0.39f, 1.505f, -0.41f), new(0.555f, 1.53f, -0.2f), Hazard, true, false), // hazard band
-    ];
+    private static readonly ArmBox[] DrillArm = MakeDrillArm();
+
+    private static ArmBox[] MakeDrillArm()
+    {
+        var a = new List<ArmBox>
+        {
+            new(new(0.36f, 2.04f, -0.15f), new(0.585f, 2.295f, 0.15f), Joint, false, false), // shoulder
+            new(new(0.39f, 1.5f, -0.09f), new(0.555f, 2.055f, 0.09f), Steel, false, false, ArmPaint.Arm), // upper arm
+            new(new(0.4f, 1.26f, -0.42f), new(0.545f, 1.497f, 0.08f), Joint, true, false, ArmPaint.Arm), // housing
+            new(new(0.385f, 1.24f, -0.12f), new(0.56f, 1.52f, 0.03f), Steel, true, false), // motor collar
+            new(new(0.39f, 1.505f, -0.41f), new(0.555f, 1.53f, -0.2f), Hazard, true, false), // hazard band
+        };
+        // The bit, as the Mining Shell part has it (ShellParts.DrillBit): the collar in the shell's accent, the cone and its spiral of
+        // flutes spinning as it digs, the point in hazard paint.
+        foreach (var (lo, hi, c, _) in PartKit.Generators.ShellParts.DrillBit)
+            a.Add(new ArmBox(V(lo), V(hi), c switch { 'h' => Hazard, 'd' => Dark, _ => Bit }, true, c != 'a', c == 'a' ? ArmPaint.Accent : ArmPaint.Own));
+        return [.. a];
+    }
+
+    private static Vector3 V(double[] v) => new((float)v[0], (float)v[1], (float)v[2]);
 
     /// <summary>A box's colour on a shell of these colours.</summary>
     private static Vector3 PaintOf(in ArmBox b, Vector3 arm, Vector3 accent) => b.Paint switch { ArmPaint.Arm => arm, ArmPaint.Accent => accent, _ => b.Color };
@@ -72,10 +81,12 @@ public sealed class ShellKitNodes
         _root.Visible = false; // (its matrix: the stance's, in Pose)
         _hopper = _root.Add("hopper");
         BoxIn(_hopper, new(-0.36f, 1.35f, 0.2f), new(0.36f, 1.39f, 0.8f), Dark); // floor
-        BoxIn(_hopper, new(-0.36f, 1.393f, 0.2f), new(0.36f, 2.25f, 0.24f), Ore); // front wall
-        BoxIn(_hopper, new(-0.36f, 1.393f, 0.76f), new(0.36f, 2.25f, 0.8f), Ore); // back wall
-        BoxIn(_hopper, new(-0.358f, 1.393f, 0.243f), new(-0.322f, 2.2f, 0.757f), Ore); // side walls
-        BoxIn(_hopper, new(0.322f, 1.393f, 0.243f), new(0.358f, 2.2f, 0.757f), Ore);
+        BoxIn(_hopper, new(-0.36f, 1.393f, 0.2f), new(0.36f, 2.25f, 0.24f), Joint); // front wall (steel walls: the ore inside is what is brown)
+        BoxIn(_hopper, new(-0.36f, 1.393f, 0.76f), new(0.36f, 2.25f, 0.8f), Joint); // back wall
+        BoxIn(_hopper, new(-0.358f, 1.393f, 0.243f), new(-0.322f, 2.2f, 0.757f), Joint); // side walls
+        BoxIn(_hopper, new(0.322f, 1.393f, 0.243f), new(0.358f, 2.2f, 0.757f), Joint);
+        BoxIn(_hopper, new(-0.3f, 1.42f, 0.797f), new(-0.26f, 2.2f, 0.826f), Light); // ribs up its back
+        BoxIn(_hopper, new(0.26f, 1.42f, 0.797f), new(0.3f, 2.2f, 0.826f), Light);
         BoxIn(_hopper, new(-0.364f, 2.253f, 0.196f), new(0.364f, 2.28f, 0.245f), Hazard); // lips
         BoxIn(_hopper, new(-0.364f, 2.253f, 0.755f), new(0.364f, 2.28f, 0.804f), Hazard);
         _ore = _hopper.Add("ore", Matrix4x4.Identity, Renderable.Box(Ore));
@@ -101,7 +112,7 @@ public sealed class ShellKitNodes
         return Quaternion.CreateFromYawPitchRoll(MathF.Atan2(-d.X, -d.Z), MathF.Atan2(d.Y, MathF.Sqrt(d.X * d.X + d.Z * d.Z)), 0f);
     }
 
-    private static readonly Vector3 ViewCard = new(-0.12f, -0.17f, -0.42f);
+    private static readonly Vector3 ViewCard = new(0.12f, -0.17f, -0.42f); // (the screen is wanted near here, built into the drill's housing: ToolDisplay.Fit)
 
     private static ToolModel? _drillView;
     private static float _drillViewScale;
@@ -131,14 +142,10 @@ public sealed class ShellKitNodes
             SpinAxis = Vector3.UnitZ, SpinPivot = Vector3.Zero, Motion = ToolMotion.Push, Amount = 0.02f * k, Rate = 14, Spin = 45,
             SpinBoxes = boxes.Count(b => b.Spin), Arm = true, ViewAt = ViewAt * k,
         };
-        // Its screen: inboard of the arm, low and clear of the crosshair (left of where a hand tool's is, the arm being wider).
-        var at = ViewCard;
-        var inv = Quaternion.Conjugate(hold);
-        var face = Vector3.Normalize(-at);
-        var up = Vector3.Normalize(Vector3.UnitY - face * face.Y);
-        var cardAt = Vector3.Transform(at - ViewAt * k, inv);
-        var cardNormal = Vector3.Transform(face, inv);
-        model.Display = new ToolDisplay(cardAt, cardNormal, Vector3.Transform(up, inv), ToolDisplay.DefaultSize, ToolDisplay.DefaultRows, cardAt - cardNormal * 0.012f); // (no stalk: it floats beside the arm, clear of it)
+        // Its screen, built into the drill's housing where it is read (ToolDisplay.Fit): in the arm's colour, with its trim.
+        model.Display = ToolDisplay.Fit(model.Boxes, hold, ViewAt * k, ViewCard, ToolDisplay.DefaultSize, ToolDisplay.DefaultRows);
+        if (model.Display == null)
+            Console.WriteLine($"[shells] the {m.Name} has no place on its housing for a screen: the drill's lines stay on the HUD");
         (_drillView, _drillViewScale, _drillViewArm, _drillViewAccent) = (model, scale, arm, accent);
         return model;
     }
@@ -189,7 +196,12 @@ public sealed class ShellKitNodes
             // about the shoulder before the torso lies down, so it points where they look along the ground).
             _stance = stance;
             _root.SetLocalMatrix(StanceFrames[stance]);
-            _arm.SetLocalMatrix(stance == 2 ? Matrix4x4.CreateTranslation(-Shoulder) * Matrix4x4.CreateRotationX(MathF.PI) * Matrix4x4.CreateTranslation(Shoulder) : Matrix4x4.Identity);
+            _arm.SetLocalMatrix(stance switch
+            {
+                2 => Matrix4x4.CreateTranslation(-Shoulder) * Matrix4x4.CreateRotationX(MathF.PI) * Matrix4x4.CreateTranslation(Shoulder),
+                1 => Matrix4x4.CreateTranslation(0.1f, 0.15f, 0f), // (crouched: up and out, over the knees)
+                _ => Matrix4x4.Identity,
+            });
         }
         if (DrillShown)
         {
@@ -200,7 +212,8 @@ public sealed class ShellKitNodes
                 for (var i = 0; i < DrillArm.Length; i++)
                     _armBoxes[i].Renderable.Color = PaintOf(DrillArm[i], armC, accent);
             }
-            var pitch = seated ? 0f : Math.Clamp(p.RenderPitch, -1.2f, 1.2f) - (stance == 2 ? MathF.PI / 2 : 0f);
+            // Held a little over the look, never down into the hips or thighs (crouched, over the knees): the reviewer, 2026-11-19.
+            var pitch = seated ? 0f : Math.Clamp(p.RenderPitch + (stance == 0 ? 0.12f : stance == 1 ? 0.35f : 0f), stance == 0 ? -0.3f : stance == 1 ? 0.25f : -0.2f, 1.2f) - (stance == 2 ? MathF.PI / 2 : 0f);
             _drill.SetLocalMatrix(Matrix4x4.CreateTranslation(-Elbow) * Matrix4x4.CreateRotationX(pitch) * Matrix4x4.CreateTranslation(Elbow));
         }
     }

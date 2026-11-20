@@ -1,11 +1,11 @@
 {
   "format": "call-of-slop-map/1",
   "name": "Caledon",
-  "description": "Caledon, the 6 km highland world of Frostreach (Systems/Frostreach.json): steep bens with snow on their tops, long glens between them, heather on the slopes and bog in the low ground. Clan MacSlop's Glen runs through its middle.",
+  "description": "Caledon, the 24 km highland world of Frostreach (Systems/Frostreach.json): steep bens with snow on their tops, long glens between them, heather on the slopes and bog in the low ground. Clan MacSlop's Glen runs through its middle.",
   "author": "Call of Slop",
   "order": 4,
-  "halfX": 8600,
-  "halfZ": 8600,
+  "halfX": 29200,
+  "halfZ": 29200,
   "maxPlayers": 8,
   "skybox": {
     "preset": "overcast",
@@ -19,7 +19,7 @@
     "clouds": {
       "coverage": 0.72,
       "density": 0.6,
-      "altitude": 1600,
+      "altitude": 3200,
       "speed": 14
     },
     "haze": {
@@ -28,7 +28,7 @@
     }
   },
   "planetoid": {
-    "radius": 6000,
+    "radius": 24000,
     "cell": 2,
     "strength": 11,
     "surface": {
@@ -39,21 +39,21 @@
       "snow": "#e8eef0",
       "dirtSlope": 17,
       "rockSlope": 36,
-      "sandBelow": -70,
-      "snowAbove": 520
+      "sandBelow": -140,
+      "snowAbove": 1040
     },
     "features": [
       {
         "type": "noise",
-        "amplitude": 120,
-        "scale": 2400,
+        "amplitude": 240,
+        "scale": 9600,
         "octaves": 6,
         "seed": 81
       },
       {
         "type": "noise",
-        "amplitude": 110,
-        "scale": 1300,
+        "amplitude": 220,
+        "scale": 5200,
         "octaves": 5,
         "seed": 12,
         "ridged": true
@@ -62,8 +62,8 @@
         "type": "mountain",
         "lat": 62,
         "lon": 140,
-        "radius": 1700,
-        "height": 940,
+        "radius": 6800,
+        "height": 1880,
         "seed": 43,
         "ridges": 0.8,
         "erosion": 0.8,
@@ -73,8 +73,8 @@
         "type": "mountain",
         "lat": 40,
         "lon": 100,
-        "radius": 1300,
-        "height": 700,
+        "radius": 5200,
+        "height": 1400,
         "seed": 44,
         "ridges": 0.8,
         "erosion": 0.8,
@@ -84,8 +84,8 @@
         "type": "mountain",
         "lat": 48,
         "lon": 190,
-        "radius": 1200,
-        "height": 640,
+        "radius": 4800,
+        "height": 1280,
         "seed": 45,
         "ridges": 0.7,
         "erosion": 0.8,
@@ -95,8 +95,8 @@
         "type": "mountain",
         "lat": 10,
         "lon": 300,
-        "radius": 1500,
-        "height": 780,
+        "radius": 6000,
+        "height": 1560,
         "seed": 46,
         "ridges": 0.8,
         "erosion": 0.8,
@@ -106,8 +106,8 @@
         "type": "mountain",
         "lat": -25,
         "lon": 30,
-        "radius": 1400,
-        "height": 720,
+        "radius": 5600,
+        "height": 1440,
         "seed": 47,
         "ridges": 0.8,
         "erosion": 0.7,
@@ -117,8 +117,8 @@
         "type": "mountain",
         "lat": -40,
         "lon": 200,
-        "radius": 1600,
-        "height": 820,
+        "radius": 6400,
+        "height": 1640,
         "seed": 48,
         "ridges": 0.8,
         "erosion": 0.8,
@@ -128,8 +128,8 @@
         "type": "mountain",
         "lat": -65,
         "lon": 110,
-        "radius": 1100,
-        "height": 560,
+        "radius": 4400,
+        "height": 1120,
         "seed": 49,
         "ridges": 0.7,
         "erosion": 0.8,
@@ -139,8 +139,8 @@
         "type": "mountain",
         "lat": 20,
         "lon": 240,
-        "radius": 1000,
-        "height": 520,
+        "radius": 4000,
+        "height": 1040,
         "seed": 50,
         "ridges": 0.7,
         "erosion": 0.8,
@@ -150,8 +150,8 @@
         "type": "mountain",
         "lat": 70,
         "lon": 300,
-        "radius": 1200,
-        "height": 600,
+        "radius": 4800,
+        "height": 1200,
         "seed": 52,
         "ridges": 0.8,
         "erosion": 0.8,
@@ -161,8 +161,8 @@
         "type": "mountain",
         "lat": -10,
         "lon": 150,
-        "radius": 1100,
-        "height": 540,
+        "radius": 4400,
+        "height": 1080,
         "seed": 53,
         "ridges": 0.7,
         "erosion": 0.8,
@@ -172,8 +172,8 @@
         "type": "mountain",
         "lat": -55,
         "lon": 320,
-        "radius": 1300,
-        "height": 680,
+        "radius": 5200,
+        "height": 1360,
         "seed": 54,
         "ridges": 0.8,
         "erosion": 0.8,
@@ -183,8 +183,8 @@
         "type": "mountain",
         "lat": 35,
         "lon": 20,
-        "radius": 1200,
-        "height": 620,
+        "radius": 4800,
+        "height": 1240,
         "seed": 55,
         "ridges": 0.8,
         "erosion": 0.8,
@@ -195,11 +195,11 @@
         "lat": 30,
         "lon": 150,
         "bearing": 55,
-        "length": 6200,
-        "width": 620,
-        "depth": 190,
+        "length": 24800,
+        "width": 2480,
+        "depth": 380,
         "floor": 0.4,
-        "wander": 420,
+        "wander": 1680,
         "seed": 21
       },
       {
@@ -207,11 +207,11 @@
         "lat": 52,
         "lon": 160,
         "bearing": 140,
-        "length": 2600,
-        "width": 420,
-        "depth": 150,
+        "length": 10400,
+        "width": 1680,
+        "depth": 300,
         "floor": 0.35,
-        "wander": 260,
+        "wander": 1040,
         "seed": 22
       },
       {
@@ -219,11 +219,11 @@
         "lat": -30,
         "lon": 110,
         "bearing": 100,
-        "length": 4400,
-        "width": 520,
-        "depth": 170,
+        "length": 17600,
+        "width": 2080,
+        "depth": 340,
         "floor": 0.4,
-        "wander": 360,
+        "wander": 1440,
         "seed": 23
       },
       {
@@ -231,11 +231,11 @@
         "lat": 0,
         "lon": 270,
         "bearing": 10,
-        "length": 3200,
-        "width": 460,
-        "depth": 160,
+        "length": 12800,
+        "width": 1840,
+        "depth": 320,
         "floor": 0.35,
-        "wander": 300,
+        "wander": 1200,
         "seed": 24
       },
       {
@@ -257,7 +257,7 @@
         "lat": 30,
         "lon": 150,
         "radius": 160,
-        "height": -100,
+        "height": -200,
         "edge": 220
       },
       {
@@ -265,7 +265,7 @@
         "lat": 60,
         "lon": 152,
         "radius": 70,
-        "height": 640,
+        "height": 1280,
         "edge": 140
       },
       {
@@ -273,7 +273,7 @@
         "lat": 90,
         "lon": 0,
         "radius": 70,
-        "height": 30,
+        "height": 60,
         "edge": 150
       }
     ]
@@ -291,44 +291,44 @@
     [
       [
         -6,
-        6030.104,
+        24060.206,
         -40
       ],
       [
         6,
-        6030.104,
+        24060.206,
         -40
       ],
       [
         -12,
-        6030.121,
+        24060.21,
         -36
       ],
       [
         12,
-        6030.121,
+        24060.21,
         -36
       ]
     ],
     [
       [
         -6,
-        6030.104,
+        24060.206,
         40
       ],
       [
         6,
-        6030.104,
+        24060.206,
         40
       ],
       [
         -12,
-        6030.121,
+        24060.21,
         36
       ],
       [
         12,
-        6030.121,
+        24060.21,
         36
       ]
     ]
@@ -336,13 +336,13 @@
   "hills": [
     {
       "x": 30,
-      "y": 6029.851,
+      "y": 24059.963,
       "z": 30,
       "radius": 6
     },
     {
       "x": -30,
-      "y": 6029.851,
+      "y": 24059.963,
       "z": -30,
       "radius": 6
     }
@@ -350,54 +350,54 @@
   "flags": [
     [
       0,
-      6030.332,
+      24060.458,
       -45
     ],
     [
       0,
-      6030.332,
+      24060.458,
       45
     ]
   ],
   "ops": [
     {
       "op": "SurfaceSpawn",
-      "lat": 89.86697,
+      "lat": 89.96666,
       "lon": 22.5
     },
     {
       "op": "SurfaceSpawn",
-      "lat": 89.86697,
+      "lat": 89.96666,
       "lon": 67.5
     },
     {
       "op": "SurfaceSpawn",
-      "lat": 89.86697,
+      "lat": 89.96666,
       "lon": 112.5
     },
     {
       "op": "SurfaceSpawn",
-      "lat": 89.86697,
+      "lat": 89.96666,
       "lon": 157.5
     },
     {
       "op": "SurfaceSpawn",
-      "lat": 89.86697,
+      "lat": 89.96666,
       "lon": 202.5
     },
     {
       "op": "SurfaceSpawn",
-      "lat": 89.86697,
+      "lat": 89.96666,
       "lon": 247.5
     },
     {
       "op": "SurfaceSpawn",
-      "lat": 89.86697,
+      "lat": 89.96666,
       "lon": 292.5
     },
     {
       "op": "SurfaceSpawn",
-      "lat": 89.86697,
+      "lat": 89.96666,
       "lon": 337.5
     },
     {

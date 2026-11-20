@@ -17,7 +17,7 @@ public static partial class ConstructRender
 
     /// <summary>Before drawing part <paramref name="i"/> of the body being drawn: the cut mark if it is a surface one of its flush pods sinks into (Construct.PocketHost).</summary>
     private static void HostCut(Renderer gfx, Construct c, int i) =>
-        gfx.CutCode = _glassCut = _bodyCut != 0 && i < c.PocketHost.Length && c.PocketHost[i] != 0 ? _bodyCut : 0;
+        gfx.CutCode = _glassCut = _bodyCut != 0 && c.PocketHost.Length == c.PartCount && c.PocketHost[i] != 0 ? _bodyCut : 0; // (a length off the part count: parts went since the hosts were found, so their numbers moved)
 
     /// <summary>The cut code of a body's own openings this frame (0: none; Renderer.CutRun).</summary>
     private static int CutCodeOf(Construct c)
@@ -48,7 +48,7 @@ public static partial class ConstructRender
         var eye = gfx.CameraPosition;
         foreach (var c in world.Bodies)
         {
-            if (c.PodCount == 0 || c.PocketHost.Length == 0 || (AwayOnly != 0 ? c.Id != AwayOnly : c.SpaceAway != 0))
+            if (c.PodCount == 0 || c.PocketHost.Length == 0 || c.PocketHost.Length != c.PartCount || (AwayOnly != 0 ? c.Id != AwayOnly : c.SpaceAway != 0))
                 continue;
             if (Vector3.DistanceSquared(c.WorldCom, eye) > (PocketNear + c.Radius) * (PocketNear + c.Radius))
                 continue;

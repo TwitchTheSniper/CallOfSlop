@@ -452,6 +452,7 @@ public sealed partial class ConstructWorld
     {
         LiftClear(); // (the lifters' states go with the bodies: ConstructLifters.cs)
         GantryJobCount = 0; // (and the Shell Gantries' swaps: ConstructGantry.cs)
+        GantryLockCount = 0; // (and their clamps: a stale held one would hold a shell of the next world)
         PodJobCount = 0; // (and the shell pods' folds: ConstructShellPod.cs)
         PodReleaseCount = 0;
         PodAuthority = false; // (the pods' first tick in the next world gives any untagged docked shell its tag)

@@ -1,0 +1,147 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Shell Grip Arm",
+  "description": "A robot shell arm that is a physics gun: three claws round a field emitter. Worn, it grabs and moves whole constructs. A Shell Gantry fits it to a robot shell from its parts table.",
+  "group": "Logic",
+  "section": "Shells",
+  "role": "frame",
+  "tool": "wrench",
+  "mass": 6.0,
+  "health": 60,
+  "armour": 2,
+  "material": "steel",
+  "color": "#8b949c",
+  "attachSeconds": 2,
+  "boxes": [
+    {
+      "min": [
+        -0.06,
+        0.36,
+        -0.06
+      ],
+      "max": [
+        0.06,
+        0.42,
+        0.06
+      ],
+      "color": "#30363d"
+    },
+    {
+      "min": [
+        -0.066,
+        0.375,
+        -0.036
+      ],
+      "max": [
+        0.066,
+        0.405,
+        0.036
+      ],
+      "color": "#56606a",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.055,
+        0.15,
+        -0.055
+      ],
+      "max": [
+        0.055,
+        0.365,
+        0.055
+      ],
+      "color": "#56606a"
+    },
+    {
+      "min": [
+        -0.08,
+        0.1,
+        -0.08
+      ],
+      "max": [
+        0.08,
+        0.155,
+        0.08
+      ],
+      "color": "#30363d"
+    },
+    {
+      "min": [
+        -0.035,
+        0.07,
+        -0.035
+      ],
+      "max": [
+        0.035,
+        0.105,
+        0.035
+      ],
+      "color": "#7fe0ff"
+    },
+    {
+      "min": [
+        -0.015,
+        0.0,
+        -0.085
+      ],
+      "max": [
+        0.015,
+        0.105,
+        -0.06
+      ],
+      "color": "#8b949c"
+    },
+    {
+      "min": [
+        -0.085,
+        0.0,
+        0.03
+      ],
+      "max": [
+        -0.06,
+        0.105,
+        0.06
+      ],
+      "color": "#8b949c"
+    },
+    {
+      "min": [
+        0.06,
+        0.0,
+        0.03
+      ],
+      "max": [
+        0.085,
+        0.105,
+        0.06
+      ],
+      "color": "#8b949c"
+    },
+    {
+      "min": [
+        -0.058,
+        0.25,
+        -0.058
+      ],
+      "max": [
+        0.058,
+        0.27,
+        0.058
+      ],
+      "color": "#7fe0ff",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

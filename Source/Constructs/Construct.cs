@@ -289,6 +289,7 @@ public sealed partial class Construct
     public bool Pinned; // set down "anchored to the ground" (creative's free placement toggle): held still without a foundation
     public bool Frozen; // the physics gun froze it where it is (ConstructGrab.cs): held still like an anchored one until grabbed or unfrozen
     public ushort HeldBy; // server: the construct whose Building Station builds it, frozen in its bay (ConstructStation.cs; 0: nobody): no edits, no grab, no seat until released
+    public bool GantryHold; // both peers: a Shell Gantry's clamp holds this shell (ConstructGantry.Hold; the server also sets HeldBy): it still rides a frame, and it is drawn part by part
     public byte FrozenBy = 255; // ...by this player (unfreeze-all frees only your own; 255: nobody's now)
     // The physics gun holding it (server; ConstructGrab.cs): the player, the grab point (body frame), where the beam wants
     // that point and the body's turn, and how hard it may pull. 255: nobody holds it (the physics then never looks further).
@@ -299,6 +300,8 @@ public sealed partial class Construct
     public Quaternion GrabRot = Quaternion.Identity;
     public float GrabAccel;
     public Vector3 GrabFrameVel, GrabFrameSpin; // held by a rider: their deck's motion, on top of which the piece is moved (ConstructGrab.Drive)
+    public float GrabBoost = 1f; // held: how much faster the beam moves it after a while carried in the air (ConstructGrab.FlightBoost; 1: none)
+    public bool GrabTouch; // held: a contact pushed on it this tick (the physics step sets it; the boost reads and clears it)
     public bool Asleep;
     public int SleepTicks;
     /// <summary>Server: far from every person (ConstructFar.cs): its physics steps once every this many ticks, by that many ticks' time (0 or 1: every tick).</summary>
@@ -330,6 +333,11 @@ public sealed partial class Construct
 
     // Pose: the body frame's origin and turn in the world.
     public Vector3 Pos;
+    // Server: what of the physics' true position a float at this distance can't hold (m, under one float step of Pos): kept
+    // from step to step so a body far from the World's origin (a 32 km planet's ground, Karl's 4x worlds of 2026-11-19) moves by
+    // its true small steps and rests where it rests, instead of rounding to the 2-4 mm float grid each tick and never settling
+    // (ConstructPhysics.Place). A write to Pos from elsewhere leaves it stale but still under a float step: harmless.
+    public Vector3 PosRest;
     public Quaternion Rot = Quaternion.Identity;
     public Vector3 PrevPos;
     public Quaternion PrevRot = Quaternion.Identity;
