@@ -44,6 +44,10 @@ The Zero Day's 8-person boarding pod, docked under its keel: the command view's 
 
 A cargo ship round a hold of fourteen container slots, an overhead crane on rails and a belly well with sliding doors, two big drives with their engines in a drive room aft, and attitude jets; no legs, lamps or fittings yet.
 
+## [The Sheaf field barge](constructs/sheaf.md), 2 KB
+
+A first try at the space farmers' flying field on the Dray's frame: two fields of raised beds under a pitched glass roof with grow lights, a packing bay between them; a draft, no recipes.
+
 ## [Ship works](design/ship-works.md), 48 KB (the design)
 
 Engines and turrets with insides: a ship's drive over 500 kN has works behind it through the hull (Drive Core, Fuel Pump,

@@ -1,0 +1,111 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Sheaf Crew Lower Wall 6",
+  "description": "A wall of the Sheaf's crew lower, with its door frames and what is fixed to it.",
+  "group": "Ship",
+  "section": "Sheaf field barge",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 486.0,
+  "health": 3500,
+  "armour": 25,
+  "material": "steel",
+  "color": "#c2c4b2",
+  "attachSeconds": 6.0,
+  "boxes": [
+    {
+      "min": [
+        2.875,
+        0.125,
+        10.25
+      ],
+      "max": [
+        5.75,
+        3.125,
+        10.5
+      ],
+      "color": "#c2c4b2",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        2.925,
+        0.128,
+        10.238
+      ],
+      "max": [
+        5.7,
+        0.875,
+        10.512
+      ],
+      "color": "#5d6b45",
+      "detail": true,
+      "finish": "painted plating"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "shellDock0",
+      "at": [
+        3.475,
+        0.25,
+        10.5
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "shellDock1",
+      "at": [
+        4.345,
+        0.25,
+        10.5
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "shellDock2",
+      "at": [
+        5.215,
+        0.25,
+        10.5
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "j0",
+      "at": [
+        4.315,
+        0.125,
+        10.375
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j1",
+      "at": [
+        2.875,
+        1.625,
+        10.375
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j2",
+      "at": [
+        5.75,
+        1.625,
+        10.375
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "j3",
+      "at": [
+        4.315,
+        3.125,
+        10.375
+      ],
+      "dir": "+y"
+    }
+  ]
+}

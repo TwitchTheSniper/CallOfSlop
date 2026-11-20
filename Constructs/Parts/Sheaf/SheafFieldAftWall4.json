@@ -1,0 +1,108 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Sheaf Field Aft Wall 4",
+  "description": "A wall of the Sheaf's field aft, with its door frames and what is fixed to it.",
+  "group": "Ship",
+  "section": "Sheaf field barge",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 700.0,
+  "health": 3500,
+  "armour": 25,
+  "material": "steel",
+  "color": "#a3ab95",
+  "attachSeconds": 6.0,
+  "boxes": [
+    {
+      "min": [
+        0.875,
+        0.125,
+        39.475
+      ],
+      "max": [
+        1.125,
+        7.125,
+        45.75
+      ],
+      "color": "#a3ab95",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        0.863,
+        0.128,
+        39.525
+      ],
+      "max": [
+        1.137,
+        0.875,
+        45.7
+      ],
+      "color": "#6f7d4c",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        1.129,
+        0.875,
+        42.555
+      ],
+      "max": [
+        1.245,
+        7.121,
+        42.795
+      ],
+      "color": "#2a2d24",
+      "detail": true,
+      "finish": "dirty steel"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "lampL4",
+      "at": [
+        1.125,
+        3.475,
+        44.275
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "j0",
+      "at": [
+        0.995,
+        0.125,
+        42.615
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j1",
+      "at": [
+        0.995,
+        3.625,
+        45.75
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "j2",
+      "at": [
+        0.995,
+        3.625,
+        39.475
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j3",
+      "at": [
+        0.875,
+        1.975,
+        42.615
+      ],
+      "dir": "-x"
+    }
+  ]
+}

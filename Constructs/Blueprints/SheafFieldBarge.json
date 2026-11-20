@@ -1,0 +1,1419 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Sheaf Field Barge",
+  "description": "A flying field: a farm co-op's barge that grows food in orbit and sells it to stations. Two long fields of raised beds under a greenhouse roof, grow lights hung over every bed, a packing bay between them with side doors and a well through the floor for a container, a small crew section forward under a tall cab and a drive room aft. Two torch drives push it, lift jets and six legs set it down on a farm world",
+  "steps": [
+    {
+      "part": "Sheaf Keel"
+    },
+    {
+      "part": "Sheaf Packing Bay",
+      "on": 0,
+      "socket": "j0",
+      "by": "j0"
+    },
+    {
+      "part": "Sheaf Field Fore",
+      "on": 1,
+      "socket": "j1",
+      "by": "j9"
+    },
+    {
+      "part": "Sheaf Packing Wall 1",
+      "on": 1,
+      "socket": "j2",
+      "by": "j1"
+    },
+    {
+      "part": "Sheaf Packing Wall 2",
+      "on": 1,
+      "socket": "j3",
+      "by": "j1"
+    },
+    {
+      "part": "Sheaf Field Aft",
+      "on": 1,
+      "socket": "j4",
+      "by": "j3"
+    },
+    {
+      "part": "Sheaf Keel 2",
+      "on": 2,
+      "socket": "j0",
+      "by": "j3"
+    },
+    {
+      "part": "Sheaf Keel 3",
+      "on": 2,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Sheaf Keel 4",
+      "on": 2,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Sheaf Crew Lower Deck",
+      "on": 2,
+      "socket": "j3",
+      "by": "j13"
+    },
+    {
+      "part": "Sheaf Field Fore Wall 1",
+      "on": 2,
+      "socket": "j4",
+      "by": "j9"
+    },
+    {
+      "part": "Sheaf Field Fore Wall 2",
+      "on": 2,
+      "socket": "j5",
+      "by": "j0"
+    },
+    {
+      "part": "Sheaf Field Fore Wall 3",
+      "on": 2,
+      "socket": "j6",
+      "by": "j0"
+    },
+    {
+      "part": "Sheaf Field Fore Wall 4",
+      "on": 2,
+      "socket": "j7",
+      "by": "j0"
+    },
+    {
+      "part": "Sheaf Field Fore Wall 5",
+      "on": 2,
+      "socket": "j8",
+      "by": "j0"
+    },
+    {
+      "part": "Sheaf Packing Hull Port 5",
+      "on": 3,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Sheaf Field Aft Wall 2",
+      "on": 3,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Sheaf Packing Hull Stbd 5",
+      "on": 4,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Sheaf Field Aft Wall 3",
+      "on": 4,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Sheaf Keel 6",
+      "on": 5,
+      "socket": "j0",
+      "by": "j0"
+    },
+    {
+      "part": "Sheaf Keel 7",
+      "on": 5,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Sheaf Keel 8",
+      "on": 5,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Sheaf Field Aft Wall 1",
+      "on": 5,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Sheaf Field Aft Wall 4",
+      "on": 5,
+      "socket": "j7",
+      "by": "j0"
+    },
+    {
+      "part": "Sheaf Field Aft Wall 5",
+      "on": 5,
+      "socket": "j8",
+      "by": "j0"
+    },
+    {
+      "part": "Sheaf Drive Room",
+      "on": 5,
+      "socket": "j9",
+      "by": "j1"
+    },
+    {
+      "part": "Sheaf Crew Lower Hull Port 2",
+      "on": 6,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Sheaf Crew Lower Hull Stbd 2",
+      "on": 6,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Sheaf Keel 1",
+      "on": 9,
+      "socket": "j0",
+      "by": "j0"
+    },
+    {
+      "part": "Sheaf Crew Lower Wall 1",
+      "on": 9,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Sheaf Crew Lower Wall 2",
+      "on": 9,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Sheaf Crew Lower Wall 3",
+      "on": 9,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Sheaf Crew Lower Wall 4",
+      "on": 9,
+      "socket": "j5",
+      "by": "j0"
+    },
+    {
+      "part": "Sheaf Crew Lower Wall 5",
+      "on": 9,
+      "socket": "j6",
+      "by": "j0"
+    },
+    {
+      "part": "Sheaf Crew Lower Wall 6",
+      "on": 9,
+      "socket": "j7",
+      "by": "j0"
+    },
+    {
+      "part": "Sheaf Crew Lower Wall 7",
+      "on": 9,
+      "socket": "j8",
+      "by": "j0"
+    },
+    {
+      "part": "Sheaf Crew Lower Hull Port 1",
+      "on": 9,
+      "socket": "j9",
+      "by": "j0"
+    },
+    {
+      "part": "Sheaf Crew Lower Hull Stbd 1",
+      "on": 9,
+      "socket": "j11",
+      "by": "j0"
+    },
+    {
+      "part": "Sheaf Bow",
+      "on": 9,
+      "socket": "j14",
+      "by": "j0"
+    },
+    {
+      "part": "Sheaf Crew Upper Deck",
+      "on": 10,
+      "socket": "j4",
+      "by": "j24"
+    },
+    {
+      "part": "Sheaf Crew Upper Wall 4",
+      "on": 10,
+      "socket": "j5",
+      "by": "j4"
+    },
+    {
+      "part": "Sheaf Crew Upper Wall 7",
+      "on": 10,
+      "socket": "j6",
+      "by": "j4"
+    },
+    {
+      "part": "Sheaf Crew Upper Wall 13",
+      "on": 10,
+      "socket": "j7",
+      "by": "j3"
+    },
+    {
+      "part": "Sheaf Crew Upper Ceiling",
+      "on": 10,
+      "socket": "j8",
+      "by": "j17"
+    },
+    {
+      "part": "Sheaf Field Fore Hull Port 3",
+      "on": 10,
+      "socket": "j12",
+      "by": "j0"
+    },
+    {
+      "part": "Sheaf Field Fore Hull Stbd 3",
+      "on": 10,
+      "socket": "j13",
+      "by": "j0"
+    },
+    {
+      "part": "Sheaf Field Fore Hull Port 4",
+      "on": 13,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Sheaf Field Fore Hull Stbd 4",
+      "on": 14,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Sheaf Spine",
+      "on": 15,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Sheaf Field Aft Hull Port 6",
+      "on": 16,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Sheaf Field Aft Hull Stbd 6",
+      "on": 18,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Sheaf Drive Room Hull Port 8",
+      "on": 21,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Sheaf Drive Room Hull Stbd 8",
+      "on": 21,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Sheaf Field Aft Hull Port 7",
+      "on": 22,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Sheaf Field Aft Hull Stbd 7",
+      "on": 22,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Sheaf Drive Room Wall 1",
+      "on": 22,
+      "socket": "j5",
+      "by": "j0"
+    },
+    {
+      "part": "Sheaf Drive Room Wall 2",
+      "on": 22,
+      "socket": "j6",
+      "by": "j0"
+    },
+    {
+      "part": "Sheaf Drive Room Ceiling",
+      "on": 22,
+      "socket": "j7",
+      "by": "j0"
+    },
+    {
+      "part": "Sheaf Stern",
+      "on": 25,
+      "socket": "j6",
+      "by": "j0"
+    },
+    {
+      "part": "Sheaf Crew Upper Hull Port 1",
+      "on": 26,
+      "socket": "j3",
+      "by": "j2"
+    },
+    {
+      "part": "Sheaf Crew Upper Hull Port 2",
+      "on": 26,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Sheaf Crew Upper Hull Stbd 1",
+      "on": 27,
+      "socket": "j3",
+      "by": "j2"
+    },
+    {
+      "part": "Sheaf Crew Upper Hull Stbd 2",
+      "on": 27,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Sheaf Crew Upper Wall 1",
+      "on": 38,
+      "socket": "j3",
+      "by": "j4"
+    },
+    {
+      "part": "Sheaf Crew Upper Wall 2",
+      "on": 39,
+      "socket": "j8",
+      "by": "j0"
+    },
+    {
+      "part": "Sheaf Crew Upper Wall 3",
+      "on": 39,
+      "socket": "j9",
+      "by": "j0"
+    },
+    {
+      "part": "Sheaf Crew Upper Wall 5",
+      "on": 39,
+      "socket": "j11",
+      "by": "j0"
+    },
+    {
+      "part": "Sheaf Crew Upper Wall 6",
+      "on": 39,
+      "socket": "j12",
+      "by": "j0"
+    },
+    {
+      "part": "Sheaf Crew Upper Wall 8",
+      "on": 39,
+      "socket": "j14",
+      "by": "j0"
+    },
+    {
+      "part": "Sheaf Crew Upper Wall 9",
+      "on": 39,
+      "socket": "j15",
+      "by": "j0"
+    },
+    {
+      "part": "Sheaf Crew Upper Wall 10",
+      "on": 39,
+      "socket": "j16",
+      "by": "j0"
+    },
+    {
+      "part": "Sheaf Crew Upper Wall 11",
+      "on": 39,
+      "socket": "j17",
+      "by": "j0"
+    },
+    {
+      "part": "Sheaf Crew Upper Wall 12",
+      "on": 39,
+      "socket": "j18",
+      "by": "j0"
+    },
+    {
+      "part": "Sheaf Spine 1",
+      "on": 43,
+      "socket": "j18",
+      "by": "j0"
+    },
+    {
+      "part": "Sheaf Spine 2",
+      "on": 43,
+      "socket": "j19",
+      "by": "j0"
+    },
+    {
+      "part": "Sheaf Spine 3",
+      "on": 44,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Sheaf Spine 4",
+      "on": 46,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Sheaf Spine 6",
+      "on": 49,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Sheaf Spine 7",
+      "on": 53,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Sheaf Spine 8",
+      "on": 58,
+      "socket": "j6",
+      "by": "j0"
+    },
+    {
+      "part": "Bulkhead Door 1.5x2.25 m",
+      "on": 32,
+      "socket": "doorMess",
+      "by": "hang",
+      "paint": "#a43a24",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Bulkhead Door 1.5x2.25 m",
+      "on": 32,
+      "socket": "doorSuit",
+      "by": "hang",
+      "paint": "#a43a24",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Bulkhead Door 1.5x2.25 m",
+      "on": 33,
+      "socket": "doorStore",
+      "by": "hang",
+      "paint": "#a43a24",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Bulkhead Door 1.5x2.25 m",
+      "on": 33,
+      "socket": "doorAirlock",
+      "by": "hang",
+      "paint": "#a43a24",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Bulkhead Door 1.5x2.25 m",
+      "on": 68,
+      "socket": "doorBridge",
+      "by": "hang",
+      "paint": "#a43a24",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Bulkhead Door 1.5x2.25 m",
+      "on": 69,
+      "socket": "doorCabinA",
+      "by": "hang",
+      "paint": "#a43a24",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Bulkhead Door 1.5x2.25 m",
+      "on": 70,
+      "socket": "doorCabinB",
+      "by": "hang",
+      "paint": "#a43a24",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Bulkhead Door 1.5x2.25 m",
+      "on": 42,
+      "socket": "doorHead",
+      "by": "hang",
+      "paint": "#a43a24",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Bulkhead Door 1.5x2.25 m",
+      "on": 10,
+      "socket": "doorHold",
+      "by": "hang",
+      "paint": "#a43a24",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Bulkhead Door 1.5x2.25 m",
+      "on": 22,
+      "socket": "doorDrive",
+      "by": "hang",
+      "paint": "#a43a24",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Sheaf Ladder",
+      "on": 9,
+      "socket": "ladder",
+      "by": "bottom"
+    },
+    {
+      "part": "Space Suit Locker",
+      "on": 30,
+      "socket": "suit0",
+      "by": "wall"
+    },
+    {
+      "part": "Space Suit Locker",
+      "on": 31,
+      "socket": "suit1",
+      "by": "wall"
+    },
+    {
+      "part": "MMU Dock",
+      "on": 31,
+      "socket": "mmuDock",
+      "by": "wall"
+    },
+    {
+      "part": "Manned Manoeuvring Unit",
+      "on": 93,
+      "socket": "mmu",
+      "by": "mount"
+    },
+    {
+      "part": "Life Support Unit",
+      "on": 30,
+      "socket": "lifeSupport",
+      "by": "wall"
+    },
+    {
+      "part": "Oxygen Tank",
+      "on": 30,
+      "socket": "o2Tank0",
+      "by": "wall"
+    },
+    {
+      "part": "Robot Shell Dock",
+      "on": 34,
+      "socket": "shellDock0",
+      "by": "wall"
+    },
+    {
+      "part": "Robot Shell",
+      "on": 97,
+      "socket": "dock",
+      "by": "back"
+    },
+    {
+      "part": "Shell Control Chair",
+      "on": 9,
+      "socket": "linkChair0",
+      "by": "bottom",
+      "spin": 1
+    },
+    {
+      "part": "Robot Shell Dock",
+      "on": 34,
+      "socket": "shellDock1",
+      "by": "wall"
+    },
+    {
+      "part": "Robot Shell",
+      "on": 100,
+      "socket": "dock",
+      "by": "back"
+    },
+    {
+      "part": "Shell Control Chair",
+      "on": 9,
+      "socket": "linkChair1",
+      "by": "bottom",
+      "spin": 1
+    },
+    {
+      "part": "Robot Shell Dock",
+      "on": 34,
+      "socket": "shellDock2",
+      "by": "wall"
+    },
+    {
+      "part": "Robot Shell",
+      "on": 103,
+      "socket": "dock",
+      "by": "back"
+    },
+    {
+      "part": "Shell Control Chair",
+      "on": 9,
+      "socket": "linkChair2",
+      "by": "bottom",
+      "spin": 1
+    },
+    {
+      "part": "Drive Nozzle L",
+      "on": 58,
+      "socket": "drive0",
+      "by": "mount"
+    },
+    {
+      "part": "Drive Core L",
+      "on": 58,
+      "socket": "engine0",
+      "by": "front"
+    },
+    {
+      "part": "Fuel Pump L",
+      "on": 107,
+      "socket": "back",
+      "by": "front"
+    },
+    {
+      "part": "Coolant Exchanger L",
+      "on": 108,
+      "socket": "back",
+      "by": "front"
+    },
+    {
+      "part": "Drive Nozzle L",
+      "on": 58,
+      "socket": "drive1",
+      "by": "mount"
+    },
+    {
+      "part": "Drive Core L",
+      "on": 58,
+      "socket": "engine1",
+      "by": "front"
+    },
+    {
+      "part": "Fuel Pump L",
+      "on": 111,
+      "socket": "back",
+      "by": "front"
+    },
+    {
+      "part": "Coolant Exchanger L",
+      "on": 112,
+      "socket": "back",
+      "by": "front"
+    },
+    {
+      "part": "Engineer's Panel",
+      "on": 55,
+      "socket": "panel",
+      "by": "back"
+    },
+    {
+      "part": "Steel Stair Flight 1.5 m",
+      "on": 25,
+      "socket": "stair",
+      "by": "b0_0",
+      "paint": "#6b6f63",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 38,
+      "socket": "rcsUpL",
+      "by": "base",
+      "paint": "#2a2d24",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 38,
+      "socket": "rcsUpR",
+      "by": "base",
+      "paint": "#2a2d24",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 38,
+      "socket": "rcsDownL",
+      "by": "base",
+      "paint": "#2a2d24",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 38,
+      "socket": "rcsDownR",
+      "by": "base",
+      "paint": "#2a2d24",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 38,
+      "socket": "rcsOutL",
+      "by": "base",
+      "paint": "#2a2d24",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 38,
+      "socket": "rcsOutR",
+      "by": "base",
+      "paint": "#2a2d24",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 38,
+      "socket": "rcsAlongL",
+      "by": "base",
+      "paint": "#2a2d24",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 38,
+      "socket": "rcsAlongR",
+      "by": "base",
+      "paint": "#2a2d24",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 58,
+      "socket": "rcsUpL",
+      "by": "base",
+      "paint": "#2a2d24",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 58,
+      "socket": "rcsUpR",
+      "by": "base",
+      "paint": "#2a2d24",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 58,
+      "socket": "rcsDownL",
+      "by": "base",
+      "paint": "#2a2d24",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 58,
+      "socket": "rcsDownR",
+      "by": "base",
+      "paint": "#2a2d24",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 58,
+      "socket": "rcsOutL",
+      "by": "base",
+      "paint": "#2a2d24",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 58,
+      "socket": "rcsOutR",
+      "by": "base",
+      "paint": "#2a2d24",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 58,
+      "socket": "rcsAlongL",
+      "by": "base",
+      "paint": "#2a2d24",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 58,
+      "socket": "rcsAlongR",
+      "by": "base",
+      "paint": "#2a2d24",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Sheaf Well Door L",
+      "on": 8,
+      "socket": "wellDoorL",
+      "by": "hang",
+      "paint": "#6b6f63",
+      "finish": "plated steel"
+    },
+    {
+      "part": "Sheaf Well Door R",
+      "on": 8,
+      "socket": "wellDoorR",
+      "by": "hang",
+      "paint": "#6b6f63",
+      "finish": "plated steel"
+    },
+    {
+      "part": "Sheaf Side Door L",
+      "on": 15,
+      "socket": "sideDoorL",
+      "by": "hang",
+      "paint": "#cdbd8c",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Sheaf Side Door R",
+      "on": 17,
+      "socket": "sideDoorR",
+      "by": "hang",
+      "paint": "#cdbd8c",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Sheaf Lift Jet",
+      "on": 7,
+      "socket": "lift0",
+      "by": "top"
+    },
+    {
+      "part": "Sheaf Lift Jet",
+      "on": 7,
+      "socket": "lift1",
+      "by": "top"
+    },
+    {
+      "part": "Sheaf Lift Jet",
+      "on": 8,
+      "socket": "lift2",
+      "by": "top"
+    },
+    {
+      "part": "Sheaf Lift Jet",
+      "on": 8,
+      "socket": "lift3",
+      "by": "top"
+    },
+    {
+      "part": "Sheaf Lift Jet",
+      "on": 20,
+      "socket": "lift4",
+      "by": "top"
+    },
+    {
+      "part": "Sheaf Lift Jet",
+      "on": 20,
+      "socket": "lift5",
+      "by": "top"
+    },
+    {
+      "part": "Leg Pod Housing XL",
+      "on": 7,
+      "socket": "leg0",
+      "by": "top"
+    },
+    {
+      "part": "Leg Pod Canopy Port XL",
+      "on": 142,
+      "socket": "canopyL",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Canopy Stbd XL",
+      "on": 142,
+      "socket": "canopyR",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Strut XL",
+      "on": 142,
+      "socket": "strut",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Carriage XL",
+      "on": 142,
+      "socket": "carriage",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Brace XL",
+      "on": 146,
+      "socket": "brace",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Foot XL",
+      "on": 142,
+      "socket": "foot",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Housing XL",
+      "on": 7,
+      "socket": "leg1",
+      "by": "top"
+    },
+    {
+      "part": "Leg Pod Canopy Port XL",
+      "on": 149,
+      "socket": "canopyL",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Canopy Stbd XL",
+      "on": 149,
+      "socket": "canopyR",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Strut XL",
+      "on": 149,
+      "socket": "strut",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Carriage XL",
+      "on": 149,
+      "socket": "carriage",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Brace XL",
+      "on": 153,
+      "socket": "brace",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Foot XL",
+      "on": 149,
+      "socket": "foot",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Housing XL",
+      "on": 19,
+      "socket": "leg2",
+      "by": "top"
+    },
+    {
+      "part": "Leg Pod Canopy Port XL",
+      "on": 156,
+      "socket": "canopyL",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Canopy Stbd XL",
+      "on": 156,
+      "socket": "canopyR",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Strut XL",
+      "on": 156,
+      "socket": "strut",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Carriage XL",
+      "on": 156,
+      "socket": "carriage",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Brace XL",
+      "on": 160,
+      "socket": "brace",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Foot XL",
+      "on": 156,
+      "socket": "foot",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Housing XL",
+      "on": 19,
+      "socket": "leg3",
+      "by": "top"
+    },
+    {
+      "part": "Leg Pod Canopy Port XL",
+      "on": 163,
+      "socket": "canopyL",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Canopy Stbd XL",
+      "on": 163,
+      "socket": "canopyR",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Strut XL",
+      "on": 163,
+      "socket": "strut",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Carriage XL",
+      "on": 163,
+      "socket": "carriage",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Brace XL",
+      "on": 167,
+      "socket": "brace",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Foot XL",
+      "on": 163,
+      "socket": "foot",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Housing XL",
+      "on": 20,
+      "socket": "leg4",
+      "by": "top"
+    },
+    {
+      "part": "Leg Pod Canopy Port XL",
+      "on": 170,
+      "socket": "canopyL",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Canopy Stbd XL",
+      "on": 170,
+      "socket": "canopyR",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Strut XL",
+      "on": 170,
+      "socket": "strut",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Carriage XL",
+      "on": 170,
+      "socket": "carriage",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Brace XL",
+      "on": 174,
+      "socket": "brace",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Foot XL",
+      "on": 170,
+      "socket": "foot",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Housing XL",
+      "on": 20,
+      "socket": "leg5",
+      "by": "top"
+    },
+    {
+      "part": "Leg Pod Canopy Port XL",
+      "on": 177,
+      "socket": "canopyL",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Canopy Stbd XL",
+      "on": 177,
+      "socket": "canopyR",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Strut XL",
+      "on": 177,
+      "socket": "strut",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Carriage XL",
+      "on": 177,
+      "socket": "carriage",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Brace XL",
+      "on": 181,
+      "socket": "brace",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Foot XL",
+      "on": 177,
+      "socket": "foot",
+      "by": "hang"
+    },
+    {
+      "part": "Sheaf Belly Hatch",
+      "on": 9,
+      "socket": "boarding",
+      "by": "hang"
+    },
+    {
+      "part": "Sheaf Boarding Ladder",
+      "on": 184,
+      "socket": "ladder",
+      "by": "foot",
+      "paint": "#2a2d24",
+      "finish": "painted steel"
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 33,
+      "socket": "switchHatch",
+      "by": "back",
+      "config": {
+        "startOn": false
+      }
+    },
+    {
+      "part": "Flight Couch",
+      "on": 39,
+      "socket": "pilot",
+      "by": "bottom"
+    },
+    {
+      "part": "Flight Couch",
+      "on": 39,
+      "socket": "copilot",
+      "by": "bottom"
+    },
+    {
+      "part": "Sheaf Flight Computer",
+      "on": 39,
+      "socket": "computer",
+      "by": "bottom",
+      "config": {
+        "keys": "Ship",
+        "mouseAim": true
+      }
+    },
+    {
+      "part": "Sheaf Power Plant",
+      "on": 25,
+      "socket": "plant",
+      "by": "bottom"
+    },
+    {
+      "part": "Power Board",
+      "on": 25,
+      "socket": "board",
+      "by": "bottom"
+    },
+    {
+      "part": "Battery",
+      "on": 25,
+      "socket": "battery0",
+      "by": "-y"
+    },
+    {
+      "part": "Battery",
+      "on": 25,
+      "socket": "battery1",
+      "by": "-y"
+    },
+    {
+      "part": "Battery",
+      "on": 25,
+      "socket": "battery2",
+      "by": "-y"
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 64,
+      "socket": "lampBridgeL",
+      "by": "back",
+      "config": {
+        "colour": "#ff6050"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 66,
+      "socket": "lampBridgeR",
+      "by": "back",
+      "config": {
+        "colour": "#ff6050"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 68,
+      "socket": "switchBridge",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 30,
+      "socket": "lampMess",
+      "by": "back",
+      "config": {
+        "colour": "#ffe0b0"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 33,
+      "socket": "lampPassage",
+      "by": "back",
+      "config": {
+        "colour": "#fff0d0"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 32,
+      "socket": "switchMess",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 11,
+      "socket": "lampL0",
+      "by": "back",
+      "config": {
+        "colour": "#ffe8b0"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 12,
+      "socket": "lampR0",
+      "by": "back",
+      "config": {
+        "colour": "#ffe8b0"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 13,
+      "socket": "lampL1",
+      "by": "back",
+      "config": {
+        "colour": "#ffe8b0"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 14,
+      "socket": "lampR1",
+      "by": "back",
+      "config": {
+        "colour": "#ffe8b0"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 16,
+      "socket": "lampL3",
+      "by": "back",
+      "config": {
+        "colour": "#ffe8b0"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 18,
+      "socket": "lampR3",
+      "by": "back",
+      "config": {
+        "colour": "#ffe8b0"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 23,
+      "socket": "lampL4",
+      "by": "back",
+      "config": {
+        "colour": "#ffe8b0"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 24,
+      "socket": "lampR4",
+      "by": "back",
+      "config": {
+        "colour": "#ffe8b0"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 55,
+      "socket": "lampDriveL",
+      "by": "back",
+      "config": {
+        "colour": "#a0d0ff"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 56,
+      "socket": "lampDriveR",
+      "by": "back",
+      "config": {
+        "colour": "#a0d0ff"
+      }
+    }
+  ],
+  "wires": [
+    [
+      186,
+      184
+    ],
+    [
+      187,
+      189
+    ],
+    [
+      197,
+      195
+    ],
+    [
+      197,
+      196
+    ],
+    [
+      200,
+      198
+    ],
+    [
+      200,
+      199
+    ]
+  ],
+  "conduit": true
+}

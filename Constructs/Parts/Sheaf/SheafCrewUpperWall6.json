@@ -1,0 +1,93 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Sheaf Crew Upper Wall 6",
+  "description": "A wall of the Sheaf's crew upper, with its door frames and what is fixed to it.",
+  "group": "Ship",
+  "section": "Sheaf field barge",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 336.0,
+  "health": 3500,
+  "armour": 25,
+  "material": "steel",
+  "color": "#c2c4b2",
+  "attachSeconds": 6.0,
+  "boxes": [
+    {
+      "min": [
+        10.875,
+        3.375,
+        9.0
+      ],
+      "max": [
+        11.125,
+        6.375,
+        11.25
+      ],
+      "color": "#c2c4b2",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        10.863,
+        3.378,
+        9.05
+      ],
+      "max": [
+        11.137,
+        4.125,
+        11.2
+      ],
+      "color": "#5d6b45",
+      "detail": true,
+      "finish": "painted plating"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "j0",
+      "at": [
+        10.995,
+        3.375,
+        10.125
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j1",
+      "at": [
+        10.995,
+        4.875,
+        9.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j2",
+      "at": [
+        10.995,
+        4.875,
+        11.25
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "j3",
+      "at": [
+        10.995,
+        6.375,
+        10.125
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j4",
+      "at": [
+        11.125,
+        4.125,
+        10.125
+      ],
+      "dir": "+x"
+    }
+  ]
+}

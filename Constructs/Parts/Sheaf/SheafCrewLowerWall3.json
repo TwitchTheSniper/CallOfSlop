@@ -1,0 +1,138 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Sheaf Crew Lower Wall 3",
+  "description": "A wall of the Sheaf's crew lower, with its door frames and what is fixed to it.",
+  "group": "Ship",
+  "section": "Sheaf field barge",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 486.0,
+  "health": 3500,
+  "armour": 25,
+  "material": "steel",
+  "color": "#c2c4b2",
+  "attachSeconds": 6.0,
+  "boxes": [
+    {
+      "min": [
+        10.875,
+        0.125,
+        4.875
+      ],
+      "max": [
+        11.125,
+        3.125,
+        13.75
+      ],
+      "color": "#c2c4b2",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        10.863,
+        0.128,
+        4.925
+      ],
+      "max": [
+        11.137,
+        0.875,
+        13.7
+      ],
+      "color": "#5d6b45",
+      "detail": true,
+      "finish": "painted plating"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "suit1",
+      "at": [
+        10.875,
+        0.25,
+        13.175
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "mmuDock",
+      "at": [
+        10.875,
+        0.25,
+        10.475
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j0",
+      "at": [
+        10.995,
+        0.125,
+        8.075
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j1",
+      "at": [
+        10.995,
+        1.625,
+        4.875
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j2",
+      "at": [
+        10.875,
+        1.625,
+        9.755
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j3",
+      "at": [
+        11.125,
+        1.855,
+        7.995
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "j4",
+      "at": [
+        11.125,
+        1.855,
+        12.435
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "j5",
+      "at": [
+        10.995,
+        3.125,
+        9.995
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j6",
+      "at": [
+        10.995,
+        3.125,
+        6.815
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j7",
+      "at": [
+        10.995,
+        1.625,
+        13.75
+      ],
+      "dir": "+z"
+    }
+  ]
+}

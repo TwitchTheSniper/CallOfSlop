@@ -1,0 +1,142 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Sheaf Packing Wall 1",
+  "description": "A wall of the Sheaf's packing, with its door frames and what is fixed to it.",
+  "group": "Ship",
+  "section": "Sheaf field barge",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 700.0,
+  "health": 3500,
+  "armour": 25,
+  "material": "steel",
+  "color": "#a3ab95",
+  "attachSeconds": 6.0,
+  "boxes": [
+    {
+      "min": [
+        0.875,
+        0.125,
+        26.675
+      ],
+      "max": [
+        1.125,
+        7.125,
+        26.755
+      ],
+      "color": "#a3ab95",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        0.875,
+        2.925,
+        26.755
+      ],
+      "max": [
+        1.125,
+        7.125,
+        32.995
+      ],
+      "color": "#a3ab95",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        0.855,
+        0.127,
+        26.685
+      ],
+      "max": [
+        1.145,
+        2.995,
+        26.752
+      ],
+      "color": "#2a2e26",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        0.855,
+        0.127,
+        32.998
+      ],
+      "max": [
+        1.145,
+        2.995,
+        33.065
+      ],
+      "color": "#2a2e26",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        0.855,
+        2.928,
+        26.755
+      ],
+      "max": [
+        1.145,
+        2.995,
+        32.995
+      ],
+      "color": "#d9861c",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        0.875,
+        0.125,
+        32.995
+      ],
+      "max": [
+        1.125,
+        7.125,
+        33.075
+      ],
+      "color": "#a3ab95",
+      "finish": "painted plating"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "j0",
+      "at": [
+        0.995,
+        3.625,
+        26.675
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j1",
+      "at": [
+        0.995,
+        0.125,
+        33.035
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j2",
+      "at": [
+        0.875,
+        4.625,
+        29.875
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j3",
+      "at": [
+        0.995,
+        3.625,
+        33.075
+      ],
+      "dir": "+z"
+    }
+  ]
+}

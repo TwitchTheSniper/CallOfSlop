@@ -1,0 +1,172 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Sheaf Crew Upper Wall 10",
+  "description": "A wall of the Sheaf's crew upper, with its door frames and what is fixed to it.",
+  "group": "Ship",
+  "section": "Sheaf field barge",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 336.0,
+  "health": 3500,
+  "armour": 25,
+  "material": "steel",
+  "color": "#c2c4b2",
+  "attachSeconds": 6.0,
+  "boxes": [
+    {
+      "min": [
+        7.625,
+        3.375,
+        9.0
+      ],
+      "max": [
+        7.875,
+        6.375,
+        9.475
+      ],
+      "color": "#c2c4b2",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        7.625,
+        5.625,
+        9.475
+      ],
+      "max": [
+        7.875,
+        6.375,
+        10.975
+      ],
+      "color": "#c2c4b2",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        7.613,
+        3.378,
+        9.05
+      ],
+      "max": [
+        7.887,
+        4.125,
+        9.425
+      ],
+      "color": "#5d6b45",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        7.605,
+        3.377,
+        9.405
+      ],
+      "max": [
+        7.895,
+        5.695,
+        9.472
+      ],
+      "color": "#2a2e26",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        7.605,
+        3.377,
+        10.978
+      ],
+      "max": [
+        7.895,
+        5.695,
+        11.045
+      ],
+      "color": "#2a2e26",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        7.605,
+        5.628,
+        9.475
+      ],
+      "max": [
+        7.895,
+        5.695,
+        10.975
+      ],
+      "color": "#d9861c",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        7.625,
+        3.375,
+        10.975
+      ],
+      "max": [
+        7.875,
+        6.375,
+        11.25
+      ],
+      "color": "#c2c4b2",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        7.613,
+        3.378,
+        11.025
+      ],
+      "max": [
+        7.887,
+        4.125,
+        11.2
+      ],
+      "color": "#5d6b45",
+      "detail": true,
+      "finish": "painted plating"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "doorCabinB",
+      "at": [
+        7.75,
+        4.5,
+        9.475
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "j0",
+      "at": [
+        7.755,
+        3.375,
+        9.235
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j1",
+      "at": [
+        7.755,
+        4.875,
+        9.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j2",
+      "at": [
+        7.755,
+        6.375,
+        10.225
+      ],
+      "dir": "+y"
+    }
+  ]
+}

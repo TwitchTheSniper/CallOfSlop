@@ -1,0 +1,342 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Sheaf Crew Lower Deck",
+  "description": "The Sheaf's crew section, lower deck: the mess, the stores, the suit room with the ladder up, the airlock over the boarding shaft and the door aft into the hold.",
+  "group": "Ship",
+  "section": "Sheaf field barge",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 5600.0,
+  "health": 16000,
+  "armour": 30,
+  "material": "steel",
+  "color": "#8b9a62",
+  "attachSeconds": 15.0,
+  "boxes": [
+    {
+      "min": [
+        2.625,
+        -0.125,
+        4.625
+      ],
+      "max": [
+        11.125,
+        0.125,
+        11.275
+      ],
+      "color": "#4d4f45",
+      "finish": "painted deck plate"
+    },
+    {
+      "min": [
+        2.625,
+        -0.125,
+        12.525
+      ],
+      "max": [
+        11.125,
+        0.125,
+        13.75
+      ],
+      "color": "#4d4f45",
+      "finish": "painted deck plate"
+    },
+    {
+      "min": [
+        2.625,
+        -0.125,
+        11.275
+      ],
+      "max": [
+        9.175,
+        0.125,
+        12.525
+      ],
+      "color": "#4d4f45",
+      "finish": "painted deck plate"
+    },
+    {
+      "min": [
+        9.925,
+        -0.125,
+        11.275
+      ],
+      "max": [
+        11.125,
+        0.125,
+        12.525
+      ],
+      "color": "#4d4f45",
+      "finish": "painted deck plate"
+    },
+    {
+      "min": [
+        5.975,
+        0.125,
+        4.975
+      ],
+      "max": [
+        7.975,
+        0.137,
+        13.625
+      ],
+      "color": "#3b3d35",
+      "detail": true,
+      "finish": "painted grating"
+    },
+    {
+      "min": [
+        9.115,
+        0.125,
+        11.215
+      ],
+      "max": [
+        9.985,
+        1.125,
+        11.275
+      ],
+      "color": "#2a2d24",
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        9.115,
+        0.125,
+        11.275
+      ],
+      "max": [
+        9.175,
+        1.125,
+        12.225
+      ],
+      "color": "#2a2d24",
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        9.925,
+        0.125,
+        11.275
+      ],
+      "max": [
+        9.985,
+        1.125,
+        12.225
+      ],
+      "color": "#2a2d24",
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        9.1,
+        1.085,
+        11.2
+      ],
+      "max": [
+        10.0,
+        1.165,
+        11.29
+      ],
+      "color": "#d9861c",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        9.055,
+        0.125,
+        12.525
+      ],
+      "max": [
+        10.045,
+        0.137,
+        12.645
+      ],
+      "color": "#d9861c",
+      "detail": true,
+      "finish": "hazard paint"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "ladder",
+      "at": [
+        4.1,
+        0.125,
+        12.73
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "linkChair0",
+      "at": [
+        10.375,
+        0.125,
+        6.275
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "linkChair1",
+      "at": [
+        10.375,
+        0.125,
+        7.275
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "linkChair2",
+      "at": [
+        10.375,
+        0.125,
+        8.275
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "boarding",
+      "at": [
+        9.55,
+        0.0,
+        12.525
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j0",
+      "at": [
+        6.875,
+        -0.125,
+        7.995
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j1",
+      "at": [
+        6.875,
+        -0.125,
+        13.095
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j2",
+      "at": [
+        6.875,
+        0.125,
+        4.755
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j3",
+      "at": [
+        2.755,
+        0.125,
+        8.075
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j4",
+      "at": [
+        10.995,
+        0.125,
+        8.075
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j5",
+      "at": [
+        5.875,
+        0.125,
+        6.375
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j6",
+      "at": [
+        8.125,
+        0.125,
+        9.125
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j7",
+      "at": [
+        4.315,
+        0.125,
+        10.375
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j8",
+      "at": [
+        9.565,
+        0.125,
+        9.755
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j9",
+      "at": [
+        2.625,
+        -0.005,
+        7.995
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j10",
+      "at": [
+        2.625,
+        -0.005,
+        11.895
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j11",
+      "at": [
+        11.125,
+        -0.005,
+        7.995
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "j12",
+      "at": [
+        11.125,
+        -0.005,
+        11.895
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "j13",
+      "at": [
+        6.875,
+        -0.005,
+        13.75
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "j14",
+      "at": [
+        6.875,
+        -0.005,
+        4.625
+      ],
+      "dir": "-z"
+    }
+  ]
+}

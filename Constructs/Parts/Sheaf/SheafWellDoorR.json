@@ -1,0 +1,199 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Sheaf Well Door R",
+  "description": "A leaf of the Sheaf's belly door: a ribbed steel plate under the keel that slides to starboard to open the cargo well.",
+  "group": "Ship",
+  "section": "Sheaf field barge",
+  "role": "door",
+  "tool": "welder",
+  "door": {
+    "kind": "slide",
+    "axis": "+x",
+    "travel": 1.5,
+    "seconds": 4.0,
+    "hang": "hang"
+  },
+  "mass": 1600.0,
+  "health": 8000,
+  "armour": 35,
+  "material": "steel",
+  "color": "#6b6f63",
+  "attachSeconds": 8.0,
+  "boxes": [
+    {
+      "min": [
+        -0.72,
+        -0.145,
+        -0.1
+      ],
+      "max": [
+        0.72,
+        -0.005,
+        6.8
+      ],
+      "color": "#6b6f63",
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -0.5,
+        -0.22,
+        0.05
+      ],
+      "max": [
+        -0.4,
+        -0.141,
+        6.65
+      ],
+      "color": "#2a2d24",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.05,
+        -0.22,
+        0.05
+      ],
+      "max": [
+        0.05,
+        -0.141,
+        6.65
+      ],
+      "color": "#2a2d24",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        0.4,
+        -0.22,
+        0.05
+      ],
+      "max": [
+        0.5,
+        -0.141,
+        6.65
+      ],
+      "color": "#2a2d24",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.67,
+        -0.2,
+        0.35
+      ],
+      "max": [
+        0.67,
+        -0.142,
+        0.45
+      ],
+      "color": "#2a2d24",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.67,
+        -0.2,
+        1.53
+      ],
+      "max": [
+        0.67,
+        -0.142,
+        1.63
+      ],
+      "color": "#2a2d24",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.67,
+        -0.2,
+        2.71
+      ],
+      "max": [
+        0.67,
+        -0.142,
+        2.81
+      ],
+      "color": "#2a2d24",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.67,
+        -0.2,
+        3.89
+      ],
+      "max": [
+        0.67,
+        -0.142,
+        3.99
+      ],
+      "color": "#2a2d24",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.67,
+        -0.2,
+        5.07
+      ],
+      "max": [
+        0.67,
+        -0.142,
+        5.17
+      ],
+      "color": "#2a2d24",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.67,
+        -0.2,
+        6.25
+      ],
+      "max": [
+        0.67,
+        -0.142,
+        6.35
+      ],
+      "color": "#2a2d24",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.718,
+        -0.16,
+        0.0
+      ],
+      "max": [
+        -0.47,
+        -0.144,
+        6.7
+      ],
+      "color": "#d9861c",
+      "detail": true,
+      "finish": "hazard paint"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "hang",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+y"
+    }
+  ]
+}
