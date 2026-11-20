@@ -235,6 +235,7 @@ public static partial class ConstructRender
             PanelRender.BeginWorld(gfx.CameraPosition - gfx.Origin, Vector3.Normalize(-new Vector3(viewInverse.M31, viewInverse.M32, viewInverse.M33)));
         var cam = gfx.CameraPosition;
         int culled = 0, lod = 0;
+        GatherPocketCuts(gfx, world, alpha, blendTicks); // (the nearest flush pods' pockets: ConstructRenderPodCuts.cs, Renderer.Cuts.cs)
         gfx.BeginBatch(); // (the small bodies' boxes in one instanced draw, not a draw each)
         var merge = MergeOn && gfx.MergedMeshes; // (static parts as merged meshes: ConstructRenderBatch.cs)
         BeginMergedFrame();
@@ -271,13 +272,16 @@ public static partial class ConstructRender
                 continue;
             }
             AllocProfile.Mark("cr: body parts");
+            _bodyCut = CutCodeOf(c); // (the surfaces its flush pods sink into open over their pockets: HostCut)
             if (!merge || !DrawMergedBody(gfx, world, c, body, blendTicks ? alpha : 1f, cull, ref n)) // (too few static boxes, or merging off: part by part)
                 for (var i = 0; i < c.PartCount; i++)
                 {
+                    HostCut(gfx, c, i);
                     n += DrawPart(gfx, world, c, i, body, blendTicks ? alpha : 1f, 1f);
                     if (c.Parts[i].Store != 0)
                         n += DrawStored(gfx, world, c, i, body, blendTicks ? alpha : 1f);
                 }
+            gfx.CutCode = _glassCut = _bodyCut = 0;
             AllocProfile.Mark("cr: panels, volumes, wheel");
             if (c.PanelParts.Length > 0 && !CameraFeeds.InPass)
                 PanelRender.Gather(gfx, world, c, body, blendTicks ? alpha : 1f, cull ? _planes : default, Now); // (display panels near the eye and facing it)
@@ -1605,7 +1609,11 @@ public static partial class ConstructRender
         public Vector3 Color;
         public float Alpha;
         public ushort Shape;
+        public int Cut; // (its body's openings: a glass floor round a flush pod, Renderer.Cuts.cs)
+        public int CutStamp; // (the openings' list it was queued against: another pass's list doesn't count)
     }
+
+    private static int _glassCut; // the cut code of the part being drawn, for the glass it queues
 
     private static readonly GlassBox[] _glass = new GlassBox[MaxGlass];
     private static readonly float[] _glassKey = new float[MaxGlass];
@@ -1622,7 +1630,7 @@ public static partial class ConstructRender
     {
         if (GlassCount >= MaxGlass)
             return false;
-        _glass[GlassCount++] = new GlassBox { Model = model, Color = colour, Alpha = Math.Clamp(alpha, 0.05f, 0.95f), Shape = shape };
+        _glass[GlassCount++] = new GlassBox { Model = model, Color = colour, Alpha = Math.Clamp(alpha, 0.05f, 0.95f), Shape = shape, Cut = _glassCut, CutStamp = _cutStamp };
         return true;
     }
 
@@ -1672,6 +1680,7 @@ public static partial class ConstructRender
             var sheen = graze * graze;
             var colour = Vector3.Lerp(g.Color, GlassSheen, 0.35f * sheen);
             var alpha = g.Alpha + (0.85f - g.Alpha) * 0.6f * sheen * graze;
+            gfx.CutCode = g.CutStamp == _cutStamp ? g.Cut : 0; // (a glass floor round a flush pod opens over its pocket too, while the list it was cut against stands: Renderer.Cuts.cs)
             gfx.Draw(m, colour, alpha, mode: 0, shape: g.Shape);
             drawn++;
             if (g.Shape != 0)
@@ -1697,6 +1706,7 @@ public static partial class ConstructRender
                 }
             }
         }
+        gfx.CutCode = 0;
         gfx.Relative = false;
         LastGlass = drawn;
     }
