@@ -52,7 +52,7 @@
       "kind": "Rocket"
     }
   ],
-  "mass": 1800.0,
+  "mass": 500.0,
   "health": 6000,
   "armour": 15,
   "material": "steel",

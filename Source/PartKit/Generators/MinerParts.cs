@@ -1318,7 +1318,7 @@ public sealed class MinerParts : IPartGenerator
         p.Set(("thruster", Kw(("force", DriveForce), ("spool", 1.5), ("exhaust", "+z"), ("at", Py.L(0, 0, 1.7)), ("burnRate", Py.Round(DriveForce / 1e6 * Burn, 4)), ("gimbal", 12), ("gimbalRate", 20))), ("ports", Py.L(BigDriveParts.PipePort("Fuel in", "in", [0, 0.7, 0.2], "+y", "fuel"))));
         Works.Head(p, Works.Table(), "torch", DriveForce, nacelle: true); // (its engine is in the nacelle behind it: mended through the hatch, outside; ship-works.md 15)
         p.Set(("flame", Py.L(Kw(("at", Py.L(0, 0, 1.7)), ("dir", "+z"), ("radius", 0.95), ("length", 5.0), ("kind", "Rocket")))));
-        return p.Stats(1800, 6000, 15, 8.0);
+        return p.Stats(500, 6000, 15, 8.0); // (500 kg: it was 1800, less its 3x3 socket's plate and plug, 1.3 t, so the stern weighs what it did and the nose comes round as before)
     }
 
     /// <summary>A jet in a squat housing: lift (down) or retro (forward). Origin at its root; the bell along -y.</summary>
