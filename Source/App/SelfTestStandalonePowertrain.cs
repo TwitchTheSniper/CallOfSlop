@@ -158,15 +158,18 @@ public static partial class SelfTest
         var from = crate.WorldCom;
         SpRun(w, q, 40);
         var moved = Vector3.Dot(crate.WorldCom - from, fwd);
-        var bytes = GC.GetAllocatedBytesForCurrentThread();
+        var first = GC.GetAllocatedBytesForCurrentThread();
         SpRun(w, q, 60); // (still turning: steady state)
-        bytes = GC.GetAllocatedBytesForCurrentThread() - bytes;
+        first = GC.GetAllocatedBytesForCurrentThread() - first;
         var omega = c.Wheels[0].Omega;
         var live = ConstructPhysics.EngineLive(c);
+        // A one-off runtime allocation landed in this window once on Linux CI (3320 B, PR 359's shard 3/3; Windows passed
+        // the same shard and the section alone saw 0 B): the least of identical rounds counts (tests-and-ci.md, 2026-11-20).
+        var bytes = RecheckAllocBytes(first, () => SpRun(w, q, 60));
         // Off again: the wheel runs down and the base leaves the active list.
         c.Parts[sw].State = 0;
         var stop = SpUntil(w, q, 240, () => !ConstructPhysics.EngineLive(c) && c.Wheels[0].Omega == 0);
-        Line($"anchored wheel: engine off {engineOff}, the crate moved {still * 1000:0} mm sitting on it; switched on: running after {started} ticks, the wheel at {omega:0.0} rad/s ({c.DefOf(c.Engine).Name} {c.Rpm:0} rpm now), the crate carried {moved:0.00} m forward in 40 ticks, live {live}, {bytes} B in the next 60 ticks; off: stopped after {stop} ticks");
+        Line($"anchored wheel: engine off {engineOff}, the crate moved {still * 1000:0} mm sitting on it; switched on: running after {started} ticks, the wheel at {omega:0.0} rad/s ({c.DefOf(c.Engine).Name} {c.Rpm:0} rpm now), the crate carried {moved:0.00} m forward in 40 ticks, live {live}, {bytes} B in the next 60 ticks (the first round {first} B); off: stopped after {stop} ticks");
         if (!engineOff || still > 0.02f)
             Fail("standalone powertrain: an anchored base's engine with no run signal shouldn't turn its wheel or move the crate on it");
         if (started < 0 || moved < 0.12f || !live)
@@ -212,11 +215,14 @@ public static partial class SelfTest
         c.Parts[sw].State = 1;
         var p1 = c.WorldCom;
         SpRun(w, q, 120);
-        var bytes = GC.GetAllocatedBytesForCurrentThread();
+        var first = GC.GetAllocatedBytesForCurrentThread();
         SpRun(w, q, 120);
-        bytes = GC.GetAllocatedBytesForCurrentThread() - bytes;
+        first = GC.GetAllocatedBytesForCurrentThread() - first;
         var dist = Vector3.Dot(c.WorldCom - p1, fwd);
-        Line($"seatless cart: parked {parked * 1000:0} mm; switched on, throttle {c.EngineSignal:0.0} (logic), {dist:0.0} m forward in 4 s, gear {c.Gear + 1}, {c.Rpm:0} rpm, {bytes} B in its last 2 s");
+        var gear = c.Gear + 1;
+        var rpm = c.Rpm;
+        var bytes = RecheckAllocBytes(first, () => SpRun(w, q, 120)); // (the least of identical rounds, as the anchored base's)
+        Line($"seatless cart: parked {parked * 1000:0} mm; switched on, throttle {c.EngineSignal:0.0} (logic), {dist:0.0} m forward in 4 s, gear {gear}, {rpm:0} rpm, {bytes} B in its last 2 s (the first round {first} B)");
         if (parked > 0.05f)
             Fail("standalone powertrain: the seatless cart moved with its engine switched off");
         if (dist < 3f || MathF.Abs(c.EngineSignal - 0.5f) > 0.01f)
@@ -387,13 +393,14 @@ public static partial class SelfTest
             return;
         var settled = SpUntil(w, q, 120, () => ConstructPhysics.LastSimulated == 0);
         var sw = new System.Diagnostics.Stopwatch();
-        var bytes = GC.GetAllocatedBytesForCurrentThread();
+        var first = GC.GetAllocatedBytesForCurrentThread();
         sw.Start();
         SpRun(w, q, 120);
         sw.Stop();
         var ms = sw.Elapsed.TotalMilliseconds / 120;
-        bytes = GC.GetAllocatedBytesForCurrentThread() - bytes;
+        first = GC.GetAllocatedBytesForCurrentThread() - first;
         var idle = ConstructPhysics.LastSimulated;
+        var bytes = RecheckAllocBytes(first, () => SpRun(w, q, 120)); // (the least of identical rounds, as the anchored base's)
         Line($"idle world: {bases.Count} anchored engines off, {idle} simulated after {settled} ticks, {ms:0.000} ms a tick, {bytes} B in 120 ticks");
         if (settled < 0 || idle != 0)
             Fail($"standalone powertrain: an idle world of anchored engines should simulate nothing ({idle} bodies)");
