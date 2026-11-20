@@ -14,6 +14,47 @@ public sealed partial class ConstructEdits
 {
     public const float ModuleLift = 0.05f; // m: a module taken off is set this far off its plate, along the plate's normal
 
+    /// <summary>
+    /// For the window tool's <c>modsock fit PART</c> (host): the nearest loose module of plate <paramref name="plate"/>'s size is set still
+    /// 0.6 m off its face, as a player's physics gun would hold it, then F on the plate runs (the hand's or a fitter's whole fit).
+    /// </summary>
+    public string? ModuleFitNear(ConstructWorld world, byte player, Construct c, int plate)
+    {
+        if (c.Dirty)
+            c.Rebuild();
+        var si = ModuleSockets.SocketOfPlate(c, plate);
+        if (si < 0)
+            return "not a tracked socket";
+        var s = c.ModSockets[si];
+        c.SocketAt(s.Plate, c.DefOf(s.Plate).ModSocket, out var faceAt, out _);
+        var wface = c.ToWorld(faceAt);
+        var wdir = Vector3.Transform(Rot24.Apply(c.Parts[s.Plate].Rot, Vector3.UnitY), c.Rot);
+        Construct? best = null;
+        var bestDist = 30f;
+        foreach (var o in world.Bodies)
+        {
+            if (o == c)
+                continue;
+            if (o.Dirty)
+                o.Rebuild();
+            foreach (var m in o.Modules)
+                if (m.Socket < 0 && o.DefOf(m.Plug).ModW == s.W && o.DefOf(m.Plug).ModL == s.L && Vector3.Distance(o.ToWorld(o.Com), wface) < bestDist)
+                    (best, bestDist) = (o, Vector3.Distance(o.ToWorld(o.Com), wface));
+        }
+        if (best == null)
+            return $"no loose {ModuleSocketTable.SizeText(s.W, s.L)} module within 30 m";
+        best.SocketAt(best.Modules[0].Plug, best.DefOf(best.Modules[0].Plug).ModSocket, out var pat, out _);
+        best.Pos += wface + wdir * 0.6f - best.ToWorld(pat);
+        best.PrevPos = best.Pos;
+        best.Vel = Vector3.Zero;
+        best.SocketAt(best.Modules[0].Plug, best.DefOf(best.Modules[0].Plug).ModSocket, out pat, out _);
+        var why = ModuleUseLogged(world, player, c, plate);
+        return why == null ? null : $"{why} (body {best.Id}: its plug {Vector3.Distance(best.ToWorld(pat), wface):0.00} m from the face)";
+    }
+
+    /// <summary>For the window tool's <c>modsock use PART</c> (host): F on a plate or a fitted module's part, as a player's F.</summary>
+    public string? ModuleUseNow(ConstructWorld world, byte player, Construct c, int part) => ModuleUseLogged(world, player, c, part);
+
     private string? ModuleUseLogged(ConstructWorld world, byte player, Construct c, int part)
     {
         var why = ModuleUse(world, player, c, part);
@@ -140,7 +181,7 @@ public sealed partial class ConstructEdits
         }
         foreach (var o in world.Bodies)
         {
-            if (o == c || o.Driver != 255 || o.CarriedBy != 0 || o.HeldBy != 0 || Vector3.Distance(o.Pos, wface) > o.Radius + pull)
+            if (o == c || o.Driver != 255 || o.CarriedBy != 0 || o.HeldBy != 0 || Vector3.Distance(o.ToWorld(o.Com), wface) > o.Radius + pull) // (Radius is from the centre of mass: a module cut off a ship keeps the ship's origin, metres away)
                 continue;
             if (o.Dirty)
                 o.Rebuild();

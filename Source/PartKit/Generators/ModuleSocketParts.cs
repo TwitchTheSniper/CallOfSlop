@@ -126,6 +126,7 @@ public sealed class ModuleSocketParts : IPartGenerator
         Plate(p, w, l, Back, PlateTop);
         p.Add(Box([w - 0.5 - 0.2, PlateTop - Drawn - 0.01, -0.5 + 0.14], [w - 0.5 - 0.14, PlateTop + 0.003, -0.5 + 0.2], LampC, detail: true)); // the lamp: the last box
         BackSockets(p, w, l, Back, "-y");
+        p.Sock("bc", [(w - 1) * 0.5, Back, (l - 1) * 0.5], "-y", Small); // (phase 6: the back's middle, so a plate goes centred on a Small mount: after every older socket)
         var area = w * l;
         p.Stats(area * 85, 120 + area * Medium.HealthM2, Medium.Armour, seconds: 3.0 + area);
         p.Set(("onBreak", "detach"), ("moduleSocket", Kw(("w", w), ("l", l))), ("ports", PipePorts(w, l, Back, "in", "-y")));
@@ -144,10 +145,11 @@ public sealed class ModuleSocketParts : IPartGenerator
         double cx = (w - 1) * 0.5, cz = (l - 1) * 0.5;
         p.Add(Box([cx - 0.1, Back, cz - 0.1], [cx + 0.1, Back + 0.012, cz + 0.1], hidden: true)); // (the socket's solid face)
         // The lifting lugs: a block at each corner with an eye over it (inside the footprint, so never out of the room).
-        foreach (var (lx, lz) in new[] { (x0 + 0.02, z0 + 0.02), (x1 - 0.11, z0 + 0.02), (x0 + 0.02, z1 - 0.11), (x1 - 0.11, z1 - 0.11) })
+        // (each 7.5 cm square, 1 cm in from the plug's edge: a part 1.8 m across, as a Zero Day Reactor, stands between a 2x2 plug's lugs)
+        foreach (var (lx, lz) in new[] { (x0 + 0.01, z0 + 0.01), (x1 - 0.085, z0 + 0.01), (x0 + 0.01, z1 - 0.085), (x1 - 0.085, z1 - 0.085) })
         {
-            p.Add(Box([lx, y1, lz], [lx + 0.09, y1 + 0.06, lz + 0.09], LugC));
-            p.Add(Box([lx + 0.025, y1 + 0.06, lz + 0.03], [lx + 0.065, y1 + 0.1, lz + 0.06], BoltC, detail: true));
+            p.Add(Box([lx, y1, lz], [lx + 0.075, y1 + 0.06, lz + 0.075], LugC));
+            p.Add(Box([lx + 0.02, y1 + 0.06, lz + 0.025], [lx + 0.055, y1 + 0.1, lz + 0.05], BoltC, detail: true));
         }
         // The keying notch, matching the plate's corner.
         p.Add(Box([-0.5 + 0.13, y1 - 0.02, -0.5 + 0.13], [-0.5 + 0.25, y1 + 0.004, -0.5 + 0.25], LugC, detail: true));
@@ -164,6 +166,8 @@ public sealed class ModuleSocketParts : IPartGenerator
         for (var i = 0; i < w; i++)
             for (var j = 0; j < l; j++)
                 p.Sock($"s{i}.{j}", [i, y1, j], "+y", Small);
+        if (w % 2 == 0 || l % 2 == 0)
+            p.Sock("tc", [(w - 1) * 0.5, y1, (l - 1) * 0.5], "+y", Small); // (phase 6: the top's middle where no cell's is, so one part stands centred: last)
         var area = w * l;
         p.Stats(area * 60, 100 + area * Medium.HealthM2, Medium.Armour, seconds: 3.0 + area);
         p.Set(("onBreak", "detach"), ("modulePlug", Kw(("w", w), ("l", l))), ("ports", PipePorts(w, l, y1, "out", "+y")));
@@ -222,6 +226,27 @@ public sealed class ModuleSocketParts : IPartGenerator
         ("Reactor3x3", "Module Reactor 3x3", 3, 3, "reactor", ["reactor"], "a Magpie Power Plant: 400 kW", [("Magpie Power Plant", "s1.1", "bottom")]),
         ("BigReactor3x3", "Module Big Reactor 3x3", 3, 3, "reactor", ["reactor"], "a Zero Day Reactor: 3 MW, heavy", [("Zero Day Reactor", "s1.1", "bottom")]),
     ];
+
+    /// <summary>A plug's Small socket in its top's middle: a cell's middle when both sides are odd, else "tc".</summary>
+    public static string CentreTop(int w, int l) => w % 2 == 1 && l % 2 == 1 ? $"s{w / 2}.{l / 2}" : "tc";
+
+    /// <summary>
+    /// A module design's blueprint text for another generator (the ships' retrofits, module-sockets.md 11): a plug of W x L, then each
+    /// part (name, the step it goes on, that step's socket, its own socket, spin), the plug being step 0.
+    /// </summary>
+    public static string DesignText(string name, int w, int l, string primary, string[] tags, string about, string by, (string Part, int On, string Socket, string By, int Spin)[] parts)
+    {
+        var steps = new List<string> { $"    {{ \"part\": \"Module Plug {Size(w, l)}\" }}" };
+        foreach (var (part, on, sock, own, spin) in parts)
+            steps.Add($"    {{ \"part\": \"{part}\", \"on\": {on}, \"socket\": \"{sock}\", \"by\": \"{own}\"{(spin != 0 ? $", \"spin\": {spin}" : "")} }}");
+        return "{\n" +
+            "  \"format\": \"call-of-slop-construct-blueprint/1\",\n" +
+            $"  \"name\": \"{name}\",\n" +
+            $"  \"description\": \"A {Size(w, l)} module: {about}. Written by the part kit ({by}).\",\n" +
+            $"  \"module\": {{ \"w\": {w}, \"l\": {l}, \"primary\": \"{primary}\", \"tags\": [{string.Join(", ", tags.Select(t => $"\"{t}\""))}] }},\n" +
+            "  \"steps\": [\n" + string.Join(",\n", steps) + "\n  ]\n" +
+            "}\n";
+    }
 
     private static string ShippedText((string File, string Name, int W, int L, string Primary, string[] Tags, string About, (string Part, string On, string By)[] Parts) m)
     {

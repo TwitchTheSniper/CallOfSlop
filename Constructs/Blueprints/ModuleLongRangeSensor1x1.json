@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Module Long Range Sensor 1x1",
+  "description": "A 1x1 module: a Long Range Sensor: the radar's scope in every seat. Written by the part kit (ship).",
+  "module": { "w": 1, "l": 1, "primary": "sensor", "tags": ["sensor"] },
+  "steps": [
+    { "part": "Module Plug 1x1" },
+    { "part": "Long Range Sensor", "on": 0, "socket": "s0.0", "by": "-y" }
+  ]
+}

@@ -4185,7 +4185,7 @@
     {"part": "Floodlight Medium", "on": 4165, "spin": 20, "at": [-12.43, -8.0, -24.0], "also": [[4165, "+x4", "+z"]], "paint": "#1f2226", "finish": "dirty steel"},
     {"part": "Floodlight Medium", "on": 4165, "spin": 20, "at": [-12.43, -8.0, -8.0], "also": [[4165, "+x5", "+z"]], "paint": "#1f2226", "finish": "dirty steel"},
     {"part": "Floodlight Medium", "on": 4165, "spin": 20, "at": [-12.43, -8.0, 8.0], "also": [[4165, "+x7", "+z"]], "paint": "#1f2226", "finish": "dirty steel"},
-    {"part": "Docking Clamp Large", "on": 2464, "spin": 3, "at": [0.0, -2.06, -20.0], "also": [[2464, "-x2", "-y"]], "config": {"startOn": true, "sizeX": 22, "sizeY": 18, "sizeZ": 64, "atX": 0.08, "atY": 21.65, "atZ": -5.23}},
+    {"part": "Docking Clamp Large", "on": 2464, "spin": 3, "at": [0.0, -2.06, -20.0], "also": [[2464, "-x2", "-y"]], "config": {"startOn": true, "sizeX": 22, "sizeY": 18, "sizeZ": 64, "atX": 0.09, "atY": 21.65, "atZ": -5.25}},
     {"part": "Extrusion plate 290x40x9600 steel", "on": 13, "spin": 9, "at": [-27.0, 1.45, 92.0], "also": [[13, "+y8", "-x1"], [14, "+y0", "-x3"]], "paint": "#1f2226", "finish": "dirty steel"},
     {"part": "Robot Shell Dock", "on": 4182, "spin": 20, "at": [-26.82, 0.0, 93.0], "also": [[4182, "base", "centre -z"], [13, "+y7", "wall"]], "paint": "#1f2226", "finish": "dirty steel"},
     {"part": "Robot Shell", "on": 4183, "socket": "dock", "by": "back"},

@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Module Rust Engine Block 3x3",
+  "description": "A 3x3 module: the rust bucket's old fusion bottle, the engine room's centrepiece. Written by the part kit (ship).",
+  "module": { "w": 3, "l": 3, "primary": "utility", "tags": ["utility"] },
+  "steps": [
+    { "part": "Module Plug 3x3" },
+    { "part": "Ship Engine Block", "on": 0, "socket": "s1.1", "by": "bottom" }
+  ]
+}

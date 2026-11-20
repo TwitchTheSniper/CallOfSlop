@@ -795,6 +795,8 @@ public sealed partial class ConstructWorld
             baseSeg = BaseSeg(c, comp, k, c.Parts[i].Seg);
         }
         c.WorldFrame(baseSeg, out var q, out var t);
+        if (_scrapCutOff && ScrapPiece(c, comp, k))
+            return null; // (a few small parts left hanging off a capital-sized body when one was shot away: scrap drawn only, ConstructBreakUp.cs)
         var wreck = MegaDebrisLeft == 0 ? null : Create(t, q); // (a massive blast past its debris: the piece is gone, ConstructMegaBlast.cs)
         if (wreck != null)
             SubBlueprints.CopyTable(c, wreck); // (its parts keep their sub-blueprint uses)
@@ -1032,6 +1034,8 @@ public sealed partial class ConstructWorld
             taken = dealt * ConstructRotor.Hit(this, c, part, dealt, _rayRotor == (c.Id, part) ? _rayBlade : -2);
             _rayRotor = (0, -1);
         }
+        if (ConstructBreakUp.Big(c))
+            ConstructBreakUp.Hit(this, c, part, taken, DamageAt); // (a big body: where it was hurt weakens its structure there, ConstructBreakUp.cs)
         ConstructEngine.HealthChanging(c, part, p.Health - taken); // (a modular engine's cylinder starting to misfire)
         p.Health -= taken;
         c.Wake();
@@ -1100,6 +1104,18 @@ public sealed partial class ConstructWorld
             RemovePart(c, part);
             return true;
         }
+        if (ConstructBreakUp.Big(c) && ConstructBreakUp.Scrappable(c, part))
+        {
+            // Off a capital-sized body, a small part goes as scrap drawn only (a body each would be hundreds in a battle): ConstructBreakUp.cs.
+            Events.Add($"construct {c.Id}: {d.Name} shot to scrap");
+            c.PartBounds(part, out var smn, out var smx);
+            var sc = t + Vector3.Transform((smn + smx) * 0.5f, q);
+            AddFire(new CFireEvent { Kind = CFireKind.Scrap, At = sc, Half = Vector3.Min((smx - smn) * 0.5f, new Vector3(2.5f)), To = c.PointVel(sc) });
+            _scrapCutOff = true; // (what that leaves hanging goes the same way, SplitOff)
+            RemovePart(c, part);
+            _scrapCutOff = false;
+            return true;
+        }
         Events.Add($"construct {c.Id}: {d.Name} broke off");
         var debris = p with { Seg = 0, Broken = true, Health = 0, SitterPlus1 = 0, Store = 0 };
         c.PartBounds(part, out var mn, out var mx);
@@ -1109,7 +1125,9 @@ public sealed partial class ConstructWorld
         outward.Y = 0;
         outward = outward.LengthSquared() > 1e-4f ? Vector3.Normalize(outward) * 2.5f : Vector3.Zero;
         var spin = c.AngVel;
+        _scrapCutOff = ConstructBreakUp.Big(c);
         RemovePart(c, part);
+        _scrapCutOff = false;
         if (MegaDebrisLeft != 0 && HasRoom() && Create(t, q) is { } piece) // (a blast past its wrecks: the part is gone)
         {
             if (MegaDebrisLeft > 0)
@@ -1132,12 +1150,15 @@ public sealed partial class ConstructWorld
         var ownDebris = MegaDebrisLeft < 0; // (a blast inside another's walk shares its count)
         if (ownDebris)
             MegaDebrisLeft = BlastDebris(radius);
+        var at = DamageAt;
+        DamageAt = centre; // (break-up: a blast hurts the structure where it went off)
         try
         {
             return BlastOnce(centre, radius, maxDamage);
         }
         finally
         {
+            DamageAt = at;
             if (ownDebris)
                 MegaDebrisLeft = -1;
         }
@@ -2320,6 +2341,7 @@ public sealed partial class ConstructWorld
         StepPart(1);
         part = Perf.Measure(PerfArea.CWeapons);
         ConstructWeapons.Step(this, query, dt); // (before the logic: a gun's wires carry last tick's values, its gunner's keys this tick's)
+        ConstructBreakUp.Step(this, ++BreakTicks); // (big bodies hurt this tick: does one snap where its structure was shot away? ConstructBreakUp.cs)
         part.Dispose();
         StepPart(2);
         part = Perf.Measure(PerfArea.CLinks);
