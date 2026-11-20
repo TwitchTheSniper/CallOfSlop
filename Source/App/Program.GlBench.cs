@@ -250,6 +250,7 @@ public static unsafe partial class Program
                     }
                     else if (_benchMove > 0 && f >= 0)
                         BenchShimmer(c, nc, ReadFrame(), _window.FramebufferSize.X, _window.FramebufferSize.Y);
+                    Gfx.Present();
                     _window.SwapBuffers();
                     if (f < 0)
                         continue;
@@ -432,6 +433,7 @@ public static unsafe partial class Program
     {
         var fb = _window.FramebufferSize;
         var pixels = new byte[fb.X * fb.Y * 4];
+        Gfx.Present(); // (the scene target's picture, if one is bound)
         Native.glPixelStorei(GL_PACK_ALIGNMENT, 1);
         fixed (byte* p = pixels)
             Native.glReadPixels(0, 0, fb.X, fb.Y, GL_RGBA, GL_UNSIGNED_BYTE, p);
@@ -443,6 +445,7 @@ public static unsafe partial class Program
     {
         var fb = _window.FramebufferSize;
         Glfw.SetTime(ShotTime + frame / 60.0); // a steady 60 fps clock: wind, flicker and the horde move as in play
+        Gfx.BeginScene(fb.X, fb.Y); // (reversed depth: as the game draws, into the float depth target)
         Gfx.BeginFrame(fb.X, fb.Y, map.Sky);
         var drift = BenchDrift(eye, target, frame); // (--bench-move: the camera alone moves; the bench's constructs stay put)
         var be = eye + drift;

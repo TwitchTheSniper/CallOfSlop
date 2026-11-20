@@ -86,6 +86,7 @@ public static unsafe partial class Program
         var fb = _window.FramebufferSize;
         int w = fb.X, h = fb.Y;
         var pixels = new byte[w * h * 4];
+        Gfx.Present(); // (the scene target's picture, if one is still bound: reversed depth)
         OpenGl.Native.glPixelStorei(OpenGl.GL_PACK_ALIGNMENT, 1);
         fixed (byte* p = pixels)
             OpenGl.Native.glReadPixels(0, 0, w, h, OpenGl.GL_RGBA, OpenGl.GL_UNSIGNED_BYTE, p);

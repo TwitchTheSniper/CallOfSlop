@@ -303,7 +303,7 @@ public static partial class SelfTest
             var view = Matrix4x4.CreateLookAt(eye, g + ta * 3f, up);
             var proj = Matrix4x4.CreatePerspectiveFieldOfView(1.1f, 16f / 9f, 0.05f, 30000f);
             Span<Vector4> planes = stackalloc Vector4[6];
-            TerrainRenderer.FrustumPlanes(view * proj, planes);
+            TerrainRenderer.FrustumPlanes(view * Renderer.GpuProjection(proj), planes);
             for (var k = 0; k < 400; k++)
             {
                 r.Update(eye, planes);

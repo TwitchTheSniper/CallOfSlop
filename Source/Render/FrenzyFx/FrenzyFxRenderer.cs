@@ -134,7 +134,7 @@ public sealed unsafe class FrenzyFxRenderer
         _log.ViewInstances += n;
         Window.ViewInstances += n;
         if (n > 0)
-            Pass(gfx, vmProj, Vector3.Zero, n);
+            Pass(gfx, Renderer.GpuProjection(vmProj), Vector3.Zero, n); // (the depth convention the gun was drawn in)
         _timer?.EndPass(PassView);
     }
 
