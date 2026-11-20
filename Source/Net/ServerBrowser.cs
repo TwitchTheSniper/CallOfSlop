@@ -657,7 +657,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 385: capital battles (docs/sandbox/design/capital-battles.md): CFireKind.Bore (a round's way through constructs, every PC marks the holes) and CFireKind.Scrap (a small part shot off a
     //   capital-sized body is drawn only, no wreck body);
     //   a gun's "pierce" budget (the Zero Day Railgun's file changes).
-    public const ushort ProtocolVersion = 385;
+    // 386: the store pool's handles run to 4096, not 1024 (ConstructWorld.MaxStores: two Mainframes in one world, the capital duel start).
+    public const ushort ProtocolVersion = 386;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;
