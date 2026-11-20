@@ -28,7 +28,7 @@ public sealed class ShellParts : IPartGenerator
         var p = new Part("Robot Shell", Small, Section, $"A robot body. Sit in a Shell Control Chair on its channel, within {Py.G(Range / 1000.0)} km, to wake in it: if it is destroyed you only wake in the chair again.", tool: "wrench", group: "Logic", color: Steel);
         Robot(p, 1, drill: false);
         p.Sock("bottom", [0, 0, 0], "-y");
-        p.Sock("back", [0, 1.25, 0.2], "+z");
+        p.Sock("back", [0, 1.25, 0.2], "+z"); // (on the Power Pack's case)
         p.Stats(38, 160, 3, 3);
         p.Set(("shell", new PyDict { ["body"] = true }), ("config", Py.L(Channel())), ("centreSockets", false));
         return p;
@@ -55,32 +55,79 @@ public sealed class ShellParts : IPartGenerator
     /// </summary>
     private static void Robot(Part p, double k, bool drill, bool forearms = true)
     {
+        // The core (torso, shoulders, upper arms, pelvis, neck) is the shell's own; every slot whose module has a part is drawn from
+        // that module's own boxes, set where a worn shell and ShellFittedLooks put them (the user, 2026-11-20: "the default models are
+        // all made out of the old parts"). ConstructGantry.BoxSlots finds each slot's boxes by that same placement.
         PyDict? B(double[] lo, double[] hi, string? c = null, bool detail = false) => Box([lo[0] * k, lo[1] * k, lo[2] * k], [hi[0] * k, hi[1] * k, hi[2] * k], c, detail: detail);
         foreach (var s in new[] { -1, 1 })
         {
-            double x0 = Math.Min(s * 0.045, s * 0.175), x1 = Math.Max(s * 0.045, s * 0.175);
-            p.Add(B([x0 - 0.01, 0.0, -0.15], [x1 + 0.01, 0.07, 0.09], Dark)); // feet
-            p.Add(B([x0, 0.06, -0.07], [x1, 0.47, 0.07], Joint)); // shins
-            p.Add(B([x0 - 0.005, 0.45, -0.085], [x1 + 0.005, 0.53, 0.085], Dark, detail: true)); // knees
-            p.Add(B([x0 + 0.005, 0.52, -0.075], [x1 - 0.005, 0.88, 0.075], drill ? Light : null)); // thighs (the Mining Shell's in the lighter plate tone: look review 2026-11-19, "still mostly dark grey")
             double a0 = Math.Min(s * 0.26, s * 0.37), a1 = Math.Max(s * 0.26, s * 0.37);
             p.Add(B([a0 - 0.02, 1.36, -0.1], [a1 + 0.02, 1.53, 0.1], Joint)); // shoulders
-            p.Add(B([a0, 1.0, -0.06], [a1, 1.37, 0.06], drill ? Light : null)); // upper arms
-            if (drill && s > 0 || !forearms)
-                continue; // (the right forearm is the drill: MiningShell; the Construction Shell's are its tool arms)
-            p.Add(B([a0 + 0.005, 0.74, -0.055], [a1 - 0.005, 1.01, 0.055], Joint)); // forearms
-            p.Add(B([a0 + 0.01, 0.64, -0.05], [a1 - 0.01, 0.75, 0.05], Dark, detail: true)); // hands
+            p.Add(B([a0, 1.0, -0.06], [a1, 1.37, 0.06], drill ? Light : null)); // upper arms (the Mining Shell's in the lighter plate tone: look review 2026-11-19, "still mostly dark grey")
         }
         p.Add(B([-0.2, 0.86, -0.11], [0.2, 1.02, 0.1], Dark)); // pelvis
         p.Add(B([-0.245, 1.0, -0.135], [0.245, 1.5, 0.125])); // torso
         p.Add(B([-0.17, 1.13, -0.16], [0.17, 1.42, -0.12], Joint, detail: true)); // chest plate
         p.Add(B([-0.05, 1.22, -0.172], [0.05, 1.27, -0.15], Lamp, detail: true)); // status lamp
-        if (!drill)
-            p.Add(B([-0.16, 1.07, 0.11], [0.16, 1.44, 0.2], Dark)); // power pack on the back (the Mining Shell's hopper is its own)
         p.Add(B([-0.06, 1.48, -0.06], [0.06, 1.58, 0.06], Dark)); // neck
-        p.Add(B([-0.135, 1.56, -0.14], [0.135, 1.83, 0.125], drill ? Light : null)); // head
-        p.Add(B([-0.11, 1.65, -0.158], [0.11, 1.73, -0.12], Visor)); // visor
-        p.Add(B([0.07, 1.82, -0.015], [0.09, 1.96, 0.015], Dark, detail: true)); // aerial
+        // The frame's own modules (Constructs/Shells.json "slots"): the Mining Shell's hopper and drill are its own boxes.
+        ModuleOnBody(p, OpticsHead, k, 0);
+        if (!drill)
+            ModuleOnBody(p, PowerPack, k, 1);
+        if (forearms)
+        {
+            ModuleOnBody(p, Hand, k, 2);
+            if (!drill)
+                ModuleOnBody(p, Hand, k, 3);
+        }
+        Action<Part> leg = drill || !forearms ? HeavyLeg : StandardLeg;
+        var hip = drill || !forearms ? HeavyHip : StandardHip;
+        ModuleOnBody(p, leg, k, 4, hip);
+        ModuleOnBody(p, leg, k, 5, hip);
+    }
+
+    /// <summary>The Standard and Heavy Legs' hip heights on their parts (Constructs/Shells.json "joints"): a leg stands at a shell's 0.9 m hip.</summary>
+    private const double StandardHip = 0.9, HeavyHip = 1.35;
+
+    /// <summary>
+    /// A module's look on a standing shell's body in slot <paramref name="slot"/> (head, back, left arm, right arm, left leg, right leg),
+    /// placed as ShellFittedLooks.Place places a fitted one (keep the two the same: the gantry finds a slot's boxes by it), times
+    /// <paramref name="k"/>: a head on the neck, a back module behind the torso facing out, an arm hung from the elbow, a leg from the hip
+    /// to the ground (<paramref name="hip"/>: its hip on its part). A left arm or leg is mirrored. Every key of a box is kept.
+    /// </summary>
+    private static void ModuleOnBody(Part p, Action<Part> look, double k, int slot, double hip = 0)
+    {
+        var t = new Part("module", Small, Section, "");
+        look(t);
+        var mirror = slot is 2 or 4 ? -1.0 : 1.0;
+        var size = slot >= 4 && hip > 0.1 ? k * 0.9 / hip : k;
+        var turn = slot == 1;
+        double[] at = slot switch
+        {
+            0 => [0, 1.485, 0],
+            1 => [0, 1.07, 0.14],
+            2 or 3 => [0.315 * mirror, 0.62, 0],
+            _ => [0.11 * mirror, 0, 0],
+        };
+        foreach (var b in t.Boxes)
+        {
+            var mn = ((List<object?>)b["min"]!).Select(Py.D).ToArray();
+            var mx = ((List<object?>)b["max"]!).Select(Py.D).ToArray();
+            var lo = new double[3];
+            var hi = new double[3];
+            for (var a = 0; a < 3; a++)
+            {
+                var flip = a == 0 && (mirror < 0) != turn || a == 2 && turn ? -1.0 : 1.0;
+                var (u, v) = (mn[a] * flip * size + at[a] * k, mx[a] * flip * size + at[a] * k);
+                (lo[a], hi[a]) = (Math.Min(u, v), Math.Max(u, v));
+            }
+            if (Box(lo, hi, b.Get("color") as string, detail: Py.Truthy(b.Get("detail")), hidden: Py.Truthy(b.Get("hidden")), glass: Py.Truthy(b.Get("glass"))) is not { } nb)
+                continue;
+            foreach (var (key, value) in b)
+                if (key is not ("min" or "max" or "color" or "detail" or "hidden" or "glass"))
+                    nb[key] = value;
+            p.Add(nb);
+        }
     }
 
     /// <summary>The hopper's bulk box (the part's storage): inside its walls, open at the top. Also where the game draws the ore.</summary>
@@ -543,23 +590,6 @@ public sealed class ShellParts : IPartGenerator
     }
 
     /// <summary>
-    /// An arm module's look set onto a standing shell's body (the Construction Shell's fixed arms): its boxes times <paramref name="k"/>,
-    /// moved so its tool end hangs at the robot's hand height (0.64 m a person's) at <paramref name="x"/> (a person's metres).
-    /// </summary>
-    private static void ArmOnBody(Part p, Action<Part> look, double k, double x)
-    {
-        var t = new Part("arm", Small, Section, "");
-        look(t);
-        foreach (var b in t.Boxes)
-        {
-            var mn = ((List<object?>)b["min"]!).Select(Py.D).ToArray();
-            var mx = ((List<object?>)b["max"]!).Select(Py.D).ToArray();
-            double[] lo = [(mn[0] + x) * k, (mn[1] + 0.62) * k, mn[2] * k], hi = [(mx[0] + x) * k, (mx[1] + 0.62) * k, mx[2] * k];
-            p.Add(Box(lo, hi, b.Get("color") as string, detail: Py.Truthy(b.Get("detail"))));
-        }
-    }
-
-    /// <summary>
     /// The Construction Shell (docs/sandbox/design/construction-shell.md): the robot at 2.8x, 5.04 m standing, for pieces too big for the
     /// survival physics gun (manipulators.md). Frame "Construction" in Constructs/Shells.json: a fixed Grip Arm (right) and Welder Arm
     /// (left), Heavy Legs. Its standing part shows both arms in place of forearms and hands.
@@ -569,8 +599,8 @@ public sealed class ShellParts : IPartGenerator
         const double K = 2.8;
         var p = new Part("Construction Shell", Small, Section, $"A 5 m robot body for big pieces: a grip arm lifts up to 15 t and a welder arm welds what it holds onto a build. Wake in it from a Shell Control Chair on its channel, within {Py.G(Range / 1000.0)} km. Too big for doors, seats and pods: it works outside and in hangars.", tool: "wrench", group: "Logic", color: Steel);
         Robot(p, K, drill: false, forearms: false);
-        ArmOnBody(p, GripArm, K, 0.315); // (the right arm: +x, as the Mining Shell's drill)
-        ArmOnBody(p, WelderArm, K, -0.315);
+        ModuleOnBody(p, GripArm, K, 3); // (the right arm: +x, as the Mining Shell's drill)
+        ModuleOnBody(p, WelderArm, K, 2);
         foreach (var x in new[] { -0.235, 0.18 })
             p.Add(Box([x * K, 1.2 * K, -0.142 * K], [(x + 0.055) * K, 1.235 * K, -0.13 * K], ArmHazard, detail: true)); // hazard flashes on the torso's front, either side of its chest plate
         p.Sock("bottom", [0, 0, 0], "-y");
@@ -616,26 +646,32 @@ public sealed class ShellParts : IPartGenerator
         }));
     }
 
+    /// <summary>The Shell Power Pack's look (module metres: its foot on the origin, its front, the lamps, towards -z).</summary>
+    private static void PowerPack(Part p)
+    {
+        p.Add(Box([-0.16, 0, -0.06], [0.16, 0.37, 0.06], Dark)); // the case
+        foreach (var x in new[] { -0.105, 0.035 })
+            p.Add(Box([x, 0.367, -0.04], [x + 0.07, 0.41, 0.04], Light)); // two cell caps on top
+        p.Add(Box([-0.12, 0.29, -0.066], [0.12, 0.32, -0.057], Lamp, detail: true)); // the charge band
+        for (var k = 0; k < 4; k++)
+            p.Add(Box([-0.12, 0.07 + 0.045 * k, -0.068], [0.12, 0.09 + 0.045 * k, -0.057], Joint, detail: true)); // vent fins
+        p.Add(Box([0.157, 0.05, -0.03], [0.175, 0.3, 0.03], Joint, detail: true)); // a cable down its side
+    }
+
+    /// <summary>The Shell Hand's look (module metres: the hand at the foot, the elbow's coupling on top).</summary>
+    private static void Hand(Part p)
+    {
+        p.Add(Box([-0.05, 0, -0.05], [0.05, 0.11, 0.05], Dark)); // hand
+        p.Add(Box([-0.055, 0.1, -0.055], [0.055, 0.37, 0.055], Joint)); // forearm
+        p.Add(Box([-0.065, 0.35, -0.065], [0.065, 0.4, 0.065], Dark, detail: true)); // the elbow's coupling
+    }
+
     private static IEnumerable<(string, Part)> Modules()
     {
         yield return ("Modules", Module("Shell Optics Head", "A robot shell's standard head: two camera lenses, a sensor dome and an aerial.", 6, OpticsHead));
         yield return ("Modules", Module("Shell Plated Head", "A robot shell's armoured helm with a slit visor: the shell takes a tenth less from hits.", 11, PlatedHead));
-        yield return ("Modules", Module("Shell Power Pack", "A Robot Shell's power pack, worn on its back.", 9, p =>
-        {
-            p.Add(Box([-0.16, 0, -0.06], [0.16, 0.37, 0.06], Dark)); // the case
-            foreach (var x in new[] { -0.105, 0.035 })
-                p.Add(Box([x, 0.367, -0.04], [x + 0.07, 0.41, 0.04], Light)); // two cell caps on top
-            p.Add(Box([-0.12, 0.29, -0.066], [0.12, 0.32, -0.057], Lamp, detail: true)); // the charge band
-            for (var k = 0; k < 4; k++)
-                p.Add(Box([-0.12, 0.07 + 0.045 * k, -0.068], [0.12, 0.09 + 0.045 * k, -0.057], Joint, detail: true)); // vent fins
-            p.Add(Box([0.157, 0.05, -0.03], [0.175, 0.3, 0.03], Joint, detail: true)); // a cable down its side
-        }));
-        yield return ("Modules", Module("Shell Hand", "A robot shell's forearm and hand, which hold its tools.", 4, p =>
-        {
-            p.Add(Box([-0.05, 0, -0.05], [0.05, 0.11, 0.05], Dark)); // hand
-            p.Add(Box([-0.055, 0.1, -0.055], [0.055, 0.37, 0.055], Joint)); // forearm
-            p.Add(Box([-0.065, 0.35, -0.065], [0.065, 0.4, 0.065], Dark, detail: true)); // the elbow's coupling
-        }));
+        yield return ("Modules", Module("Shell Power Pack", "A Robot Shell's power pack, worn on its back.", 9, PowerPack));
+        yield return ("Modules", Module("Shell Hand", "A robot shell's forearm and hand, which hold its tools.", 4, Hand));
         yield return ("Modules", Module("Shell Standard Leg", "A Robot Shell's leg: hip to foot.", 8, StandardLeg));
         yield return ("Modules", Module("Shell Heavy Leg", "A Mining Shell's armoured leg, half again the size of a standard one, on a wide foot.", 24, HeavyLeg));
         yield return ("Modules", Module("Shell Runner Leg", "A sprung, digitigrade robot shell leg on clawed toes: a pair of them make the shell a tenth faster.", 7, RunnerLeg));

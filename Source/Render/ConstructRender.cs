@@ -241,6 +241,7 @@ public static partial class ConstructRender
         LogicDisplays.Sample(world, Now);
         GlassCount = 0;
         LastBatchBoxes = LastBatchWalked = 0;
+        ShellRigsBegin();
         var cull = !gfx.ViewProj.IsIdentity; // (no camera yet, a headless renderer: everything, part by part)
         CullPlanes(gfx.ViewProj);
         PanelRender.Begin();
@@ -531,6 +532,8 @@ public static partial class ConstructRender
         }
         else if ((c.DoorMovingCount | c.DoorHeldCount) > 0 && c.MovingDoorOf(i) is var door and >= 0)
             seg = ConstructDoors.DrawPose(c, door); // (an event door on its way, or a held one open: ConstructDoors.cs)
+        if (d.ShellBody && QueueShellRig(gfx, world, c, i, seg, body, opacity))
+            return 0; // (a robot shell nobody wears: drawn as a worn one, Game.DrawStandingShells)
         // A raycast wheel: down its suspension, turning, steering.
         var wheel = Matrix4x4.Identity;
         var spinAxis = Vector3.UnitX;
