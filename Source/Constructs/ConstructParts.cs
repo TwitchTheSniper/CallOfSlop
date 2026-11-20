@@ -1251,6 +1251,8 @@ public static partial class ConstructParts
             return HullLoft.Parse(name); // (a lofted hull bay names itself too: HullLoft.cs)
         if (name.StartsWith(ModularRack.Prefix, StringComparison.OrdinalIgnoreCase) || name.StartsWith(ModularRack.LegacyPrefix, StringComparison.OrdinalIgnoreCase))
             return ModularRack.Parse(name); // (a rack of a shape no file has names itself too, an old Modular Bomb Rack's as well)
+        if (name.StartsWith(ProcShips.ProcShipParts.Prefix, StringComparison.Ordinal))
+            return ProcShips.ProcShipParts.Parse(name); // (a procedural ship's piece names its ship and itself: Source/ProcShips, docs/procships/PROCSHIPS.md)
         if (_byName.Value.TryGetValue(name, out var hit) && hit.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
             return hit; // (a blueprint names a part a step: a lookup, not a walk over every part)
         if (PartMaterials.Parse(name) is { } remade)
