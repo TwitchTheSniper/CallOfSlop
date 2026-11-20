@@ -425,6 +425,8 @@ public static partial class ConstructLifters
                 switch (l.State)
                 {
                     case LiftState.Idle:
+                        if (ld.Fitter)
+                            break; // (a Module Fitter does module jobs only: ConstructModuleFitters.cs gives it work)
                         // Works (liftMode): 0 Auto (a station's step first, then carries: phase 4), 1 Station only, 2 Carry only, 3 Off.
                         var mode = (int)ConstructConfig.Get(c.Parts[l.Part], c.DefOf(l.Part), CfgKey.LiftMode, 0);
                         if (l.OrderN > 0 && !ConstructExtruder.RunHeld(c, l.Part) && decisions < DecisionsAStep && ++l.OrderLook >= CarryLook)

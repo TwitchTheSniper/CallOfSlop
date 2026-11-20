@@ -178,6 +178,8 @@ public sealed partial class ConstructWorld
             b.Rot = c.Rot;
             if (c.HeldBy != 0 && BodyCarries.Count > 0 && ConstructLifters.CarryEnd(this, c, out var endPos, out var endRot))
                 (b.Pos, b.Rot) = (endPos, endRot); // (a submodule mid-carry is saved at its spot: the hand's carry isn't saved, ConstructLifterBodies.cs)
+            if (c.HeldBy != 0 && ModuleFitters.Holds(this, c.Id))
+                b.Frozen = false; // (a module a Module Fitter carries or welds loads loose at its seat: the job isn't saved, F starts it again)
             if (c.HeldBy != 0 && ConstructLifters.OnCabHook(this, c))
                 b.Frozen = false; // (a container on a cab's hook loads loose where it hung: the hold catches it again, or the hook takes it)
             b.Vel = c.Vel;

@@ -28,18 +28,49 @@ public static class ModuleFitters
 
     public enum Phase : byte { Carry, Weld, Cut, CarryOff, WeldOff }
 
+    /// <summary>A part a job holds on to: its index, re-found by its def, place and turn when the body is renumbered (a cut, a removal).</summary>
+    public struct PartRef
+    {
+        public int Part;
+        public ushort Def;
+        public Vector3 Pos;
+        public byte Rot;
+
+        public static PartRef Of(Construct c, int part) => part < 0 || part >= c.PartCount ? new PartRef { Part = -1 } : new PartRef { Part = part, Def = c.Parts[part].Def, Pos = c.Parts[part].Pos, Rot = c.Parts[part].Rot };
+
+        /// <summary>Is it still there (re-found if its index moved)? Cheap when it didn't; one pass over the parts when it did.</summary>
+        public bool Find(Construct c)
+        {
+            if (Part < 0)
+                return false;
+            if (Part < c.PartCount && Is(c, Part))
+                return true;
+            for (var i = 0; i < c.PartCount; i++)
+                if (Is(c, i))
+                {
+                    Part = i;
+                    return true;
+                }
+            Part = -1;
+            return false;
+        }
+
+        private readonly bool Is(Construct c, int i) => c.Parts[i].Def == Def && c.Parts[i].Rot == Rot && Vector3.DistanceSquared(c.Parts[i].Pos, Pos) < 1e-6f;
+    }
+
     public sealed class Job
     {
         public ushort Ship, Module; // the construct the socket is on, the module's body (while it is one)
-        public int Plate; // the socket's plate (a stand's, for a take-off's last weld)
-        public ushort PlateDef;
-        public int From = -1; // a take-off: the socket it came off
+        public PartRef Plate; // the socket's plate (a stand's, for a take-off's last weld)
+        public PartRef From; // a take-off: the socket it came off (Part -1 otherwise)
+        public PartRef Stand; // a take-off: the stand reserved for it
+        public PartRef Fitter; // the Module Fitter reserved for it
         public byte Turn;
         public Vector3 Rel; // the module body's offset in the ship's frame at its seat
         public Phase Phase;
         public float Seconds, Done;
-        public string Fitter = "";
-        public bool Waiting;
+        public string FitterName = "Module Fitter";
+        public bool Waiting, Blocked;
     }
 
     private sealed class WorldJobs
@@ -62,14 +93,65 @@ public static class ModuleFitters
         return r;
     }
 
-    /// <summary>Is a fitter's job on plate <paramref name="plate"/> of <paramref name="c"/> (or on the module body <paramref name="body"/>)?</summary>
+    /// <summary>Is a fitter's job on plate <paramref name="plate"/> of <paramref name="c"/> (as its socket, the socket it left or its stand), or on the module body <paramref name="body"/>?</summary>
     public static bool Busy(ConstructWorld world, Construct c, int plate, ushort body = 0)
     {
         var wj = ByWorld.GetOrCreateValue(world);
         foreach (var j in wj.Jobs)
-            if (j.Ship == c.Id && (j.Plate == plate || j.From == plate) || body != 0 && j.Module == body)
+            if (j.Ship == c.Id && (j.Plate.Part == plate || j.From.Part == plate || j.Stand.Part == plate) || body != 0 && j.Module == body)
                 return true;
         return false;
+    }
+
+    /// <summary>Does a fitter's job hold body <paramref name="body"/> (carrying or welding it)? A save keeps such a body loose (WorldSaveBodies.cs).</summary>
+    public static bool Holds(ConstructWorld world, ushort body)
+    {
+        if (!ByWorld.TryGetValue(world, out var wj))
+            return false;
+        foreach (var j in wj.Jobs)
+            if (j.Module == body)
+                return true;
+        return false;
+    }
+
+    /// <summary>
+    /// An idle, working, powered Module Fitter of <paramref name="c"/> that no job has reserved, whose reach holds both points (world),
+    /// and whose payload takes <paramref name="kg"/>: its part, or -1 and why none.
+    /// </summary>
+    private static int IdleFitter(ConstructWorld world, WorldJobs wj, Construct c, Vector3 a, Vector3 b, float kg, out string why)
+    {
+        why = "no Module Fitter on this construct";
+        if (!world.LiftSeen.TryGetValue(c.Id, out var lb))
+            return -1;
+        int busy = 0, far = 0, heavy = 0;
+        for (var i = 0; i < lb.N; i++)
+        {
+            var l = lb.Lifts[i];
+            if (l.Part >= c.PartCount || ConstructLifters.DefOf(c, l.Part) is not { Fitter: true } ld || c.Parts[l.Part].Broken)
+                continue;
+            var taken = l.State != LiftState.Idle || l.CarryBody != 0 || !ConstructRecycler.Powered(world, c, l.Part);
+            foreach (var j in wj.Jobs)
+                taken |= j.Ship == c.Id && j.Fitter.Part == l.Part;
+            if (taken)
+            {
+                busy++;
+                continue;
+            }
+            if (kg > ld.Payload)
+            {
+                heavy++;
+                continue;
+            }
+            ConstructLifters.Frame(c, l.Part, ld, out _, out var lr, out var shoulder);
+            if (!ConstructLifters.InReach(ld, shoulder, lr, a, ConstructLifters.SafeLift, out _) || !ConstructLifters.InReach(ld, shoulder, lr, b, ConstructLifters.SafeLift, out _))
+            {
+                far++;
+                continue;
+            }
+            return l.Part;
+        }
+        why = heavy > 0 ? $"too heavy for the Module Fitter: {kg / 1000f:0.#} t" : far > 0 ? "no Module Fitter reaches both the module and the socket" : busy > 0 ? "every Module Fitter is busy (or has no power)" : why;
+        return -1;
     }
 
     /// <summary>
@@ -84,16 +166,22 @@ public static class ModuleFitters
         var s = c.ModSockets[si];
         if (Busy(world, c, s.Plate, body.Id))
             return "a Module Fitter is already at work on it";
-        if (!ConstructLifters.CarryBody(world, c, -1, body, pos, rot, out var who, out var why, fitter: true))
+        if (body.Dirty)
+            body.Rebuild();
+        var fitter = IdleFitter(world, wj, c, body.WorldCom, pos, body.Mass, out var why);
+        if (fitter < 0)
             return why;
-        wj.Jobs.Add(new Job { Ship = c.Id, Module = body.Id, Plate = s.Plate, PlateDef = c.Parts[s.Plate].Def, Turn = turn, Rel = rel, Phase = Phase.Carry, Fitter = who });
+        if (!ConstructLifters.CarryBody(world, c, -1, body, pos, rot, out var who, out why, fitter: true, onlyPart: fitter))
+            return why;
+        wj.Jobs.Add(new Job { Ship = c.Id, Module = body.Id, Plate = PartRef.Of(c, s.Plate), From = PartRef.Of(c, -1), Stand = PartRef.Of(c, -1), Fitter = PartRef.Of(c, fitter),
+            Turn = turn, Rel = rel, Phase = Phase.Carry, FitterName = who });
         world.Events.Add($"construct {c.Id}: the {who} carries module body {body.Id} to socket part {s.Plate}");
         return null;
     }
 
     /// <summary>
     /// Server: a fitter of <paramref name="c"/> cuts the seam of the module on socket <paramref name="si"/> and sets it on a free
-    /// Module Stand of its size on the same construct. Null when started.
+    /// Module Stand of its size on the same construct. The fitter and the stand are reserved before the cut starts. Null when started.
     /// </summary>
     public static string? TakeOff(ConstructWorld world, Construct c, int si)
     {
@@ -103,31 +191,37 @@ public static class ModuleFitters
         var s = c.ModSockets[si];
         if (Busy(world, c, s.Plate))
             return "a Module Fitter is already at work on it";
-        if (FreeStand(c, s.W, s.L, -1) < 0)
+        var stand = FreeStand(world, c, s.W, s.L);
+        if (stand < 0)
             return $"no free {ModuleSocketTable.SizeText(s.W, s.L)} Module Stand on this construct to set it on (a fitter takes a module off onto a stand)";
+        c.SocketAt(s.Plate, c.DefOf(s.Plate).ModSocket, out var faceAt, out _);
+        c.SocketAt(stand, c.DefOf(stand).ModSocket, out var standAt, out _);
+        var fitter = IdleFitter(world, wj, c, c.ToWorld(faceAt), c.ToWorld(standAt), s.Module >= 0 ? c.Modules[s.Module].Mass : 0, out var why);
+        if (fitter < 0)
+            return why;
         var t = ModuleSocketTable.Current;
-        var job = new Job { Ship = c.Id, Plate = s.Plate, PlateDef = c.Parts[s.Plate].Def, From = s.Plate, Phase = Phase.Cut, Fitter = "Module Fitter",
-            Seconds = world.Creative && !world.TimedMachines ? 0 : Perimeter(s.W, s.L) / t.FitterS.Cut };
+        var job = new Job { Ship = c.Id, Plate = PartRef.Of(c, s.Plate), From = PartRef.Of(c, s.Plate), Stand = PartRef.Of(c, stand), Fitter = PartRef.Of(c, fitter), Phase = Phase.Cut,
+            FitterName = c.DefOf(fitter).Name, Seconds = world.Creative && !world.TimedMachines ? 0 : Perimeter(s.W, s.L) / t.FitterS.Cut };
         wj.Jobs.Add(job);
         SetWeld(world, c, s.Plate, -MathF.Max(0.1f, job.Seconds));
-        world.Events.Add(FormattableString.Invariant($"construct {c.Id}: a Module Fitter cuts the seam of the module on socket part {s.Plate}: {job.Seconds:0} s"));
+        world.Events.Add(FormattableString.Invariant($"construct {c.Id}: the {job.FitterName} cuts the seam of the module on socket part {s.Plate}, for the stand part {stand}: {job.Seconds:0} s"));
         return null;
     }
 
     private static float Perimeter(int w, int l) => 2f * (w + l);
 
-    /// <summary>A free Module Stand of size W x L on <paramref name="c"/> (nothing on it, no job at it), or -1.</summary>
-    private static int FreeStand(Construct c, int w, int l, int skip)
+    /// <summary>A free Module Stand of size W x L on <paramref name="c"/> (nothing on it or in its room, no job at it or reserving it), or -1.</summary>
+    private static int FreeStand(ConstructWorld world, Construct c, int w, int l)
     {
         foreach (var s in c.ModSockets)
-            if (s.Stand && s.Module < 0 && s.W == w && s.L == l && s.Plate != skip && s.InTheWay < 0)
+            if (s.Stand && s.Module < 0 && s.W == w && s.L == l && s.InTheWay < 0 && !Busy(world, c, s.Plate))
                 return s.Plate;
         return -1;
     }
 
     private static void SetWeld(ConstructWorld world, Construct c, int plate, float seconds)
     {
-        if (plate >= c.PartCount || c.DefOf(plate).ModPart != ModPart.Socket)
+        if (plate < 0 || plate >= c.PartCount || c.DefOf(plate).ModPart != ModPart.Socket)
             return;
         ref var p = ref c.Parts[plate];
         ConstructConfig.Put(ref p, p.D, CfgKey.ModWeld, seconds);
@@ -173,12 +267,20 @@ public static class ModuleFitters
         m.Wake();
     }
 
+    /// <summary>Someone or something (a player, a loose body) where the module goes: it waits for them (the hand's own check, SocketWeld.Overlap).</summary>
+    private static string? Blocked(ConstructWorld world, Construct c, Construct m, Job j) =>
+        SocketWeld.Overlap(world, null, m, c, c.ToWorld(j.Rel), Quaternion.Normalize(c.Rot * Rot24.Quat(j.Turn)), world.PlayerSpots.AsSpan(0, world.PlayerSpotCount));
+
     /// <summary>One look at a job: true when it is over.</summary>
     private static bool Look(ConstructWorld world, Job j)
     {
         var c = world.Get(j.Ship);
-        if (c == null || j.Plate >= c.PartCount || c.Parts[j.Plate].Def != j.PlateDef || c.Parts[j.Plate].Broken)
+        if (c == null || !j.Plate.Find(c) || c.Parts[j.Plate.Part].Broken)
             return End(world, j, c, "its socket went");
+        if (!j.Fitter.Find(c) || c.Parts[j.Fitter.Part].Broken)
+            return End(world, j, c, "its Module Fitter is wrecked or gone");
+        if (j.Stand.Part >= 0 && !j.Stand.Find(c))
+            return End(world, j, c, "its stand went");
         if (c.Dirty)
             c.Rebuild();
         var dt = StepEvery / (float)World.TickRate;
@@ -192,43 +294,37 @@ public static class ModuleFitters
                     return false; // (still on its way)
                 if (m.HeldBy != c.Id)
                     return End(world, j, c, "the fitter let go of it");
-                j.Phase = j.Phase == Phase.Carry ? Phase.Weld : Phase.WeldOff;
-                j.Seconds = world.Creative && !world.TimedMachines ? 0 : Perimeter(c.DefOf(j.Plate).ModW, c.DefOf(j.Plate).ModL) / ModuleSocketTable.Current.FitterS.Weld;
-                j.Done = 0;
-                SetWeld(world, c, j.Plate, MathF.Max(0.1f, j.Seconds));
                 Hold(c, m, j);
-                world.Events.Add(FormattableString.Invariant($"construct {c.Id}: the {j.Fitter} welds module body {m.Id} on socket part {j.Plate}: {j.Seconds:0} s"));
+                if (Wait(world, j, c, m))
+                    return false;
+                j.Phase = j.Phase == Phase.Carry ? Phase.Weld : Phase.WeldOff;
+                j.Seconds = world.Creative && !world.TimedMachines ? 0 : Perimeter(c.DefOf(j.Plate.Part).ModW, c.DefOf(j.Plate.Part).ModL) / ModuleSocketTable.Current.FitterS.Weld;
+                j.Done = 0;
+                SetWeld(world, c, j.Plate.Part, MathF.Max(0.1f, j.Seconds));
+                world.Events.Add(FormattableString.Invariant($"construct {c.Id}: the {j.FitterName} welds module body {m.Id} on socket part {j.Plate.Part}: {j.Seconds:0} s"));
                 return false;
             }
             case Phase.Weld or Phase.WeldOff:
             {
                 if (world.Get(j.Module) is not { } m || m.HeldBy != c.Id)
                     return End(world, j, c, "the module went");
-                if (!Burn(world, c, j, dt))
+                if (Wait(world, j, c, m) || !Burn(world, c, j, dt))
                     return false;
-                var si = ModuleSockets.SocketOfPlate(c, j.Plate);
+                var si = ModuleSockets.SocketOfPlate(c, j.Plate.Part);
                 if (si < 0 || c.ModSockets[si].Module >= 0)
                     return End(world, j, c, "the socket is taken");
-                var plug = -1;
-                foreach (var mm in m.Modules)
-                    if (mm.Socket < 0 && !mm.OnStand)
-                    {
-                        plug = mm.Plug;
-                        break;
-                    }
                 if (m.Dirty)
                     m.Rebuild();
-                if (plug < 0 && m.Modules.Length > 0)
-                    plug = m.Modules[0].Plug;
+                var plug = OuterPlug(m);
                 if (plug < 0)
                     return End(world, j, c, "the module came apart");
                 if (world.CanMerge(c, m) is { } merge)
                     return End(world, j, c, merge);
-                var plateDef = c.DefOf(j.Plate);
+                var plateDef = c.DefOf(j.Plate.Part);
                 var plugDef = m.DefOf(plug);
                 m.HeldBy = 0;
                 m.Frozen = false;
-                var plan = new JoinPlan { Other = m, PartA = j.Plate, SockA = plateDef.ModSocket, PartB = plug, SockB = plugDef.ModSocket, Turn = j.Turn, Offset = j.Rel };
+                var plan = new JoinPlan { Other = m, PartA = j.Plate.Part, SockA = plateDef.ModSocket, PartB = plug, SockB = plugDef.ModSocket, Turn = j.Turn, Offset = j.Rel };
                 var from = m.Id;
                 var parts = m.PartCount;
                 if (!world.Merge(c, plan))
@@ -237,23 +333,23 @@ public static class ModuleFitters
                     return End(world, j, c, "it can't be fitted");
                 }
                 j.Module = 0;
-                world.Events.Add($"construct {c.Id}: the {j.Fitter} welded module construct {from} ({parts} parts) onto socket part {j.Plate}");
+                world.Events.Add($"construct {c.Id}: the {j.FitterName} welded module construct {from} ({parts} parts) onto socket part {j.Plate.Part}");
                 return End(world, j, c, null);
             }
             case Phase.Cut:
             {
                 if (!Burn(world, c, j, dt))
                     return false;
-                var si = ModuleSockets.SocketOfPlate(c, j.Plate);
+                var si = ModuleSockets.SocketOfPlate(c, j.Plate.Part);
                 if (si < 0 || c.ModSockets[si].Module < 0)
                     return End(world, j, c, "nothing is fitted there now");
                 var s = c.ModSockets[si];
                 var mod = c.Modules[s.Module];
                 if (mod.Bridged)
                     return End(world, j, c, "that module is welded to more than its socket");
-                var stand = FreeStand(c, s.W, s.L, -1);
-                if (stand < 0)
-                    return End(world, j, c, "no free Module Stand of its size");
+                var standSi = ModuleSockets.SocketOfPlate(c, j.Stand.Part);
+                if (standSi < 0 || c.ModSockets[standSi].Module >= 0 || c.ModSockets[standSi].InTheWay >= 0)
+                    return End(world, j, c, "its stand is taken");
                 var of = c.ModuleOf!;
                 var take = new bool[c.Modules.Length];
                 take[s.Module] = true;
@@ -265,7 +361,6 @@ public static class ModuleFitters
                             take[k] = more = true;
                 }
                 var marks = new bool[c.PartCount];
-                var before = 0;
                 var count = 0;
                 for (var q = 0; q < c.PartCount; q++)
                     if (of[q] >= 0 && take[of[q]])
@@ -274,48 +369,64 @@ public static class ModuleFitters
                             return End(world, j, c, "someone is sitting in it");
                         marks[q] = true;
                         count++;
-                        if (q < stand)
-                            before++;
                     }
                 if (count >= c.PartCount)
                     return End(world, j, c, "that's the whole construct");
-                SetWeld(world, c, j.Plate, 0);
+                SetWeld(world, c, j.Plate.Part, 0);
                 if (world.CutOut(c, marks, 255) is not { } piece)
                     return End(world, j, c, "the world is full");
                 c.Rebuild();
                 piece.Rebuild();
-                stand -= before; // (the stand's index after the cut: parts before it went)
-                var standSi = ModuleSockets.SocketOfPlate(c, stand);
-                if (standSi < 0 || piece.Modules.Length == 0)
+                // (the cut renumbered the ship: every part the job holds is found again by its place)
+                if (!j.Stand.Find(c) || !j.Fitter.Find(c) || ModuleSockets.SocketOfPlate(c, j.Stand.Part) is var standAfter && standAfter < 0)
                 {
                     piece.Wake();
-                    return End(world, j, c, "the stand moved");
+                    return End(world, j, c, "its stand or fitter went with the module");
                 }
-                var plug = piece.Modules[0].Plug;
-                foreach (var pm in piece.Modules)
-                    if (ModuleSockets.PlateOf(piece, pm.Plug) < 0)
-                    {
-                        plug = pm.Plug; // (the outer module: its plug is on no plate of the piece)
-                        break;
-                    }
-                if (ConstructEdits.SeatPose(c, c.ModSockets[standSi], piece, plug, out var turn, out var rel, out var rot, out var pos) is { } noTurn)
+                var plug = OuterPlug(piece);
+                if (plug < 0)
+                {
+                    piece.Wake();
+                    return End(world, j, c, "the module came apart");
+                }
+                if (ConstructEdits.SeatPose(c, c.ModSockets[standAfter], piece, plug, out var turn, out var rel, out var rot, out var pos) is { } noTurn)
                 {
                     piece.Wake();
                     return End(world, j, c, noTurn);
                 }
                 piece.Frozen = true;
-                if (!ConstructLifters.CarryBody(world, c, -1, piece, pos, rot, out var who, out var why, fitter: true))
+                if (!ConstructLifters.CarryBody(world, c, -1, piece, pos, rot, out var who, out var why, fitter: true, onlyPart: j.Fitter.Part))
                 {
                     piece.Frozen = false;
                     piece.Wake();
                     return End(world, j, c, why);
                 }
-                (j.Module, j.Plate, j.PlateDef, j.Turn, j.Rel, j.Phase, j.Fitter, j.Done, j.From) = (piece.Id, stand, c.Parts[stand].Def, turn, rel, Phase.CarryOff, who, 0, -1);
-                world.Events.Add($"construct {c.Id}: the {who} cut module {piece.Id} free and carries it to the stand part {stand}");
+                (j.Module, j.Plate, j.Turn, j.Rel, j.Phase, j.FitterName, j.Done) = (piece.Id, j.Stand, turn, rel, Phase.CarryOff, who, 0);
+                j.From = PartRef.Of(c, -1);
+                world.Events.Add($"construct {c.Id}: the {who} cut module {piece.Id} free and carries it to the stand part {j.Stand.Part}");
                 return false;
             }
         }
         return End(world, j, c, "no such phase");
+    }
+
+    /// <summary>The outer module's plug of a loose module body (its plug on no plate of the body), or -1.</summary>
+    private static int OuterPlug(Construct m)
+    {
+        foreach (var pm in m.Modules)
+            if (ModuleSockets.PlateOf(m, pm.Plug) < 0)
+                return pm.Plug;
+        return -1;
+    }
+
+    /// <summary>True while something is where the module goes (logged once a block): the job waits, the module held clear of nothing new.</summary>
+    private static bool Wait(ConstructWorld world, Job j, Construct c, Construct m)
+    {
+        var why = Blocked(world, c, m, j);
+        if (why != null && !j.Blocked)
+            world.Events.Add($"construct {c.Id}: the {j.FitterName} waits at socket part {j.Plate.Part}: {why}");
+        j.Blocked = why != null;
+        return j.Blocked;
     }
 
     /// <summary>The weld or cut runs on while the ship has power for it: true when it is done.</summary>
@@ -326,7 +437,7 @@ public static class ModuleFitters
         if (!c.Electrical || !c.PowerOn)
         {
             if (!j.Waiting)
-                world.Events.Add(FormattableString.Invariant($"construct {c.Id}: the {j.Fitter}'s {(j.Phase == Phase.Cut ? "cut" : "weld")} waits: it needs {ModuleSocketTable.Current.FitterS.Power / 1000:0.#} kW"));
+                world.Events.Add(FormattableString.Invariant($"construct {c.Id}: the {j.FitterName}'s {(j.Phase == Phase.Cut ? "cut" : "weld")} waits: it needs {ModuleSocketTable.Current.FitterS.Power / 1000:0.#} kW"));
             j.Waiting = true;
             return false;
         }
@@ -340,15 +451,17 @@ public static class ModuleFitters
     {
         if (c != null)
             c.ModFitWatts = 0; // (another job on the same ship adds its draw again at the next look)
-        if (c != null && j.Plate < c.PartCount)
-            SetWeld(world, c, j.Plate, 0);
+        if (c != null && j.Plate.Find(c))
+            SetWeld(world, c, j.Plate.Part, 0);
+        if (c != null && j.From.Part >= 0 && j.From.Find(c))
+            SetWeld(world, c, j.From.Part, 0);
         if (j.Module != 0 && world.Get(j.Module) is { } m && c != null && m.HeldBy == c.Id && ConstructLifters.CarryingBody(world, m.Id) == null)
         {
             m.HeldBy = 0;
             ConstructEdits.Unfreeze(world, m); // (a job that stops leaves the module where it is, loose)
         }
         if (why != null)
-            Console.WriteLine($"[modules] construct {j.Ship}: the {j.Fitter}'s job on part {j.Plate} stopped: {why}");
+            Console.WriteLine($"[modules] construct {j.Ship}: the {j.FitterName}'s job on part {j.Plate.Part} stopped: {why}");
         return true;
     }
 
