@@ -66,10 +66,20 @@ public sealed partial class ConstructEdits
                 return $"the module weighs {m.Mass / 1000f:0.#} t: by hand up to {ConstructGrab.SurvivalMaxMass / 1000f:0.#} t";
         }
         var of = c.ModuleOf!;
+        // The module and every submodule on it (a turret on a turret bay): modules whose plug sits on a plate of one taken.
+        var take = new bool[c.Modules.Length];
+        take[s.Module] = true;
+        for (var more = true; more;)
+        {
+            more = false;
+            for (var k = 0; k < c.Modules.Length; k++)
+                if (!take[k] && ModuleSockets.PlateOf(c, c.Modules[k].Plug) is var pl and >= 0 && of[pl] >= 0 && take[of[pl]])
+                    take[k] = more = true;
+        }
         var marks = new bool[c.PartCount];
         var count = 0;
         for (var j = 0; j < c.PartCount; j++)
-            if (of[j] == s.Module)
+            if (of[j] >= 0 && take[of[j]])
             {
                 if (c.DefOf(j).Role == PartRole.Seat && c.Parts[j].SitterPlus1 != 0)
                     return "someone is sitting in it: they get out first";

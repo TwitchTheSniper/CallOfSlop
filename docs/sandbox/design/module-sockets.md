@@ -692,3 +692,41 @@ These override the text above where they differ.
 ## Approval (2026-11-19)
 
 The user approved this design with the three defaults in section 18. Build starts at phase 1 (the standard, proud, by hand).
+
+## What was built (builder, 2026-11-20)
+
+**Phase 1 (the standard, proud, by hand): built.** `Constructs/ModuleSockets.json` (`ModuleSocketTable.cs`); the part kit's
+`module_sockets` (`ModuleSocketParts.cs`) makes Module Socket, Module Plug and Module Stand in 1x1, 1x2, 1x3, 2x2, 2x3 and 3x3
+(Constructs/Parts/Modules, the Tab inventory's Ship Modules; Assembler recipes appended after every older row,
+`Assembling.LaterFolders`); `SocketKind.Module` and six settings (ModKind, ModStyle, ModDepth, ModAbove, ModKeyed,
+ModPrimary); the rebuild's plug flood, live tags, primary tag and stats, each socket's room and what is in it
+(`ModuleSockets.cs`); fit and take-off by F (`ConstructEditsModules.cs`), the attach tool's socket weld and part placing
+under the fit's rules; a saved one-module selection writes a `"module"` block (`ModuleBlueprints.cs`); protocol 378.
+Tried by hand on a test rig, host and joined client: tags and look lines, fit from a stand, take-off, back to the stand,
+a restricted socket's refusal, building on a fitted module and its room refusal. The window verb `modsock state` prints
+every socket and module.
+
+**Phase 2 (wells and cuts): partly.** Flush and opening styles work where the well's column is already open: the room is
+the well (and the room above for opening), a flush module fits when its face is within 1 cm of the depth, and anything in
+the column is named. Not built: the socket's own cutting ring (time, power, kerf, slug, salvage), cut parts made by the
+socket, the Module Well liner, the rim band and the joint sweep.
+
+**Phase 3 (couplings and submodules): partly.** Built: ratings, turret bays and adapters as modules a player builds (a
+plate welded onto a module is a submodule socket; the plug flood stops at its face; taking a module off takes its
+submodules with it). Not built: data, pipe, ammo and chute pass-throughs, the engine plate as a works mount, shipped
+adapter blueprints, the Modules tab.
+
+**Phases 4 to 7: not started** (the S fitter, faction choice and generators, the retrofits, markets).
+
+Defaults taken (no questions asked):
+- The plate is placed at the well's foot; Well depth is measured from its face up to the surface (the design's "plate at the
+  foot of a well", without the plate moving itself down).
+- Module membership comes from the plug flood at every rebuild, not from `CPart.Use`: an unsaved module needs no use
+  record, and nothing new is sent or saved for it. Saved designs are plain blueprints with a `"module"` block.
+- A module is saved as a module automatically when the selection is exactly one module (no separate "Save as module" button).
+- F fits and takes off at once (no 5 s + 1 s a tonne timer); the attach tool's socket weld keeps its own fit time.
+- The hand's mass limit is `ConstructGrab.SurvivalMaxMass` (the physics gun's Survival lift), so it follows that constant.
+- `turret` is any gun on the module, fixed or on a joint.
+- A Module Stand is the bench as well; F on a socket also fits a module stored on a stand of the same construct.
+- A late refusal after a module was lifted off its stand (someone standing where it goes) leaves it loose beside the stand.
+- Changing the room or style while a module is fitted is allowed; it is checked at the next fit.
