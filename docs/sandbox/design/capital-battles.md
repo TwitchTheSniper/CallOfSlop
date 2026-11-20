@@ -50,7 +50,12 @@ PN79Syp1w9HwMJzfpEipQU) and its spike, draft PR 201 (not for merging). Test ship
   along it, charged once (`SameSteps`).
 - **Missiles and torpedoes** burst on the hull as before (no bore); a shell's blast now sets `DamageAt` as a part blast does, so
   break-up is hurt where it went off.
-- **Break-up** now applies to any free body of `MinBreakParts` (200) parts or more, a medium ship such as the Zero Day (337) too;
+- An explosive bore that comes out of what it is in with nothing within `BurstGap` (3 m) bursts there (inside a room, or just past
+  the far hull), never in a ship behind; an incendiary one sets the part it went in through alight.
+- What is mended between looks takes its share of a body's break-up hurt off (`ConstructBreakUp.Mended`), so a ship welded back to
+  full health holds as it did.
+- **Break-up** now applies to any free body of `MinBreakParts` (200) parts or more with no wheels (a truck's axles aren't cut by a
+  plane), a medium ship such as the Zero Day (337) too;
   each side of a snap needs a sixth of the body's parts (`SideOf`: 30 to 160). Scrap (small parts drawn only) stays for bodies of
   1,024 or more. `--battle-check "Zero Day Frigate" --shots 0 --blasts 12 --torpedo --focus 0` puts the Zero Day's own torpedo's
   warhead (19 m, 340) on the hull, one spot: it snapped in two at the fourth (2026-11-20, cloud box).

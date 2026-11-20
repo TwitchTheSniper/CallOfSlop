@@ -31,6 +31,7 @@ public static class ConstructBores
     public const float CostBase = 40f; // budget a part takes whatever it is
     public const float CostArmour = 12f; // ...and per armour point per metre of it the round crossed
     public const float MaxGap = 400f; // metres a bore looks ahead for the next part before it flies on as a round
+    public const float BurstGap = 3f; // ...and one that doesn't fly on (an explosive round): out of what it is in and this far clear, it bursts there
     public const float FloorShare = 0.35f; // the damage a round with no budget left still does, as a share
     public const int MaxSpalls = 8; // exits a shot throws spall from
     public const int SpallRays = 3;
@@ -143,12 +144,12 @@ public static class ConstructBores
                     Console.WriteLine($"    same part again {same.Distance:0.000} m on: stepped to {from}");
             }
             // The gap to the next part: the ground stops it, and anyone standing in the gap is hit on its way.
-            var reach = MaxGap;
+            var reach = speed > 1f ? MaxGap : BurstGap;
             var ground = false;
             if (query != null)
             {
-                var g = query.Raycast(from, dir, MaxGap, QueryFilter.Shots);
-                if (g < MaxGap - 1e-3f)
+                var g = query.Raycast(from, dir, reach, QueryFilter.Shots);
+                if (g < reach - 1e-3f)
                 {
                     reach = g;
                     ground = true;

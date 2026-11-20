@@ -22,8 +22,8 @@ public static class ConstructBreakUp
     /// <summary>A body that sheds small parts as scrap: capital-sized and free (an anchored base keeps its parts to salvage).</summary>
     public static bool Big(Construct c) => c.PartCount >= MinParts && !c.Anchored;
 
-    /// <summary>A body that breaks up by planes: a medium ship or bigger, free.</summary>
-    public static bool BreaksUp(Construct c) => c.PartCount >= MinBreakParts && !c.Anchored;
+    /// <summary>A body that breaks up by planes: a capital ship, or a medium ship of no wheels (a truck's axles and suspension aren't cut by a plane), free.</summary>
+    public static bool BreaksUp(Construct c) => !c.Anchored && (c.PartCount >= MinParts || c.PartCount >= MinBreakParts && c.WheelCount == 0);
 
     /// <summary>Parts either side of a plane it may snap at: <see cref="MinSide"/> on a capital ship, a sixth of a smaller one's (no slivers off the break).</summary>
     public static int SideOf(Construct c) => Math.Clamp(c.PartCount / 6, MinSideSmall, MinSide);
@@ -101,8 +101,35 @@ public static class ConstructBreakUp
         c.BreakBase = new float[planes];
         c.BreakHurt = new float[planes];
         c.BreakParts = c.PartCount;
+        c.BreakFull = c.BreakLow = HealthSum(c);
         using var scratch = Scratch.Begin();
         Strength(c, c.BreakBase, scratch.Take<float>(c.PartCount));
+    }
+
+    private static float HealthSum(Construct c)
+    {
+        var h = 0f;
+        for (var i = 0; i < c.PartCount; i++)
+            h += c.Parts[i].Broken ? 0f : c.Parts[i].Health;
+        return h;
+    }
+
+    /// <summary>
+    /// What was mended since the last look takes its share of the hurt off: a ship shot up and welded back to full health holds as it
+    /// did (the hurt counts damage where it landed, which a patch's health on a big plate barely shows).
+    /// </summary>
+    private static void Mended(Construct c)
+    {
+        if (c.BreakHurt is not { } hurt)
+            return;
+        var now = HealthSum(c);
+        if (now > c.BreakLow && c.BreakFull > c.BreakLow)
+        {
+            var keep = Math.Clamp((c.BreakFull - now) / (c.BreakFull - c.BreakLow), 0f, 1f);
+            for (var k = 0; k < hurt.Length; k++)
+                hurt[k] *= keep;
+        }
+        c.BreakLow = MathF.Min(c.BreakFull, now);
     }
 
     /// <summary>Each plane's strength into <paramref name="s"/> (the part centres along the axis into <paramref name="centre"/>).</summary>
@@ -183,6 +210,7 @@ public static class ConstructBreakUp
     private static bool Look(ConstructWorld world, Construct c)
     {
         var planes = c.BreakBase!.Length;
+        Mended(c);
         using var scratch = Scratch.Begin();
         var s = scratch.Take<float>(planes);
         var centre = scratch.Take<float>(c.PartCount);
@@ -243,6 +271,7 @@ public sealed partial class Construct
     internal float BreakMin;
     internal bool BreakDue;
     internal int BreakParts; // (how many parts it had when its base was taken)
+    internal float BreakFull, BreakLow; // (its health in all when its base was taken, and at the last look: what was mended in between takes hurt off)
 }
 
 public sealed partial class ConstructWorld

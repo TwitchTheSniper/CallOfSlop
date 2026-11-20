@@ -1498,6 +1498,12 @@ public static class ConstructWeapons
                 // A bore: through part after part on its budget, out into whatever is next (ConstructBores.cs).
                 // An explosive round's stops where its budget runs out (or at the last part it came out of) and bursts there, below.
                 var flies = (g.Effects & GunEffect.Explosive) == 0 ? g.RoundV : 0f;
+                if ((g.Effects & GunEffect.Incendiary) != 0)
+                {
+                    world.Ignite(body, part); // (what it went in through burns, as a round that stops there would light it)
+                    if (body.SealCount > 0)
+                        ConstructSeal.IgniteAt(world, body, at);
+                }
                 hit |= ConstructBores.Through(world, own.Id, ch, dir, dealt, g.Pierce, g.RoundV, flies, 0f, own.Owner, g.Def.Id, out end, query);
                 break;
             }
