@@ -1910,7 +1910,7 @@ public sealed partial class Game : IDisposable
                 flags |= 1;
             if (hit is { } h)
             {
-                var head = World.IsHeadshot(h.At.Position, h.At.Stance, h.At.Yaw, end, h.At.Up);
+                var head = World.IsHeadshot(h.At.Position, h.At.Stance, h.At.Yaw, end, h.At.Up, ShellFrames.ScaleOf(h.P)); // (a robot shell's frame: its head is where its size puts it)
                 var dmg = ray.Damage * def.DamageMultAt(dist + flown) * (head ? def.HeadMult : 1f) * pen
                           * Perks.AttackMult(shooter.Perks, dist, d, h.At.Yaw, h.P.Health, melee: false);
                 AddShotDamage(damage, h.P, dmg);

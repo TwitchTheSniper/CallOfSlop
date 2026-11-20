@@ -645,7 +645,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   off names its swap: a gantry runs several, queued), and an on's seconds run is negative while it waits its turn.
     // 378: module sockets (docs/sandbox/design/module-sockets.md): new parts (Constructs/Parts/Modules: plates, plugs and stands) move the part ids;
     //   SocketKind.Module at the end; CfgKey ModKind, ModStyle, ModDepth, ModAbove, ModKeyed, ModPrimary at the end of the settings.
-    public const ushort ProtocolVersion = 378;
+    // 380: the Half Shell (docs/sandbox/design/half-shell.md): a new shell part file moves part ids; Shells.json gains frame 2 (Half, scale 0.5).
+    public const ushort ProtocolVersion = 380;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

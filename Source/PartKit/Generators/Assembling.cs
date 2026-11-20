@@ -492,6 +492,7 @@ public sealed class Assembling : IPartGenerator
     private static List<(string? Folder, PyDict? Row)> Tail() =>
     [
         ("Modules", null), // (module sockets: plates, plugs and stands, docs/sandbox/design/module-sockets.md)
+        (null, Rec("Half Shell", 20, 2, m: [("steel", 12), ("copper", 4), ("rubber", 2)], p: [("Circuit Board", 1)])), // (docs/sandbox/design/half-shell.md)
     ];
 
     /// <summary>

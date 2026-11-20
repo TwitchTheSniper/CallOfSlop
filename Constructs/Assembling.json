@@ -2267,6 +2267,7 @@
     {"output": "Module Stand 1x3", "materials": {"steel": 66, "concrete": 13}, "seconds": 11.9, "minTier": 2},
     {"output": "Module Stand 2x2", "materials": {"steel": 88, "concrete": 18}, "seconds": 15.2, "minTier": 2},
     {"output": "Module Stand 2x3", "materials": {"steel": 132, "concrete": 26}, "seconds": 21.8, "minTier": 2},
-    {"output": "Module Stand 3x3", "materials": {"steel": 198, "concrete": 40}, "seconds": 31.7, "minTier": 2}
+    {"output": "Module Stand 3x3", "materials": {"steel": 198, "concrete": 40}, "seconds": 31.7, "minTier": 2},
+    {"output": "Half Shell", "materials": {"steel": 12, "copper": 4, "rubber": 2}, "parts": {"Circuit Board": 1}, "seconds": 20, "minTier": 2}
   ]
 }

@@ -5,7 +5,8 @@
   // "fixed" slots can't be changed by the Shell Gantry. A frame's place in the list is its byte on the wire: frame 0 is the Robot
   // Shell with the numbers every shell had before; a new frame goes at the end. "fold" is how it folds into a shell pod
   // (docs/sandbox/design/shell-pod.md; ShellFold in ShellFrames.cs): degrees at the hip, knee, waist ("bend"), shoulders and
-  // elbows, and how far the head sinks, the body drops and moves back, and its folded height, in a person's metres.
+  // elbows, and how far the head sinks, the body drops and moves back, and its folded height, in a person's metres. "lift" (0.1 to 2,
+  // 1 if not said) is the share of the survival physics gun's limit its wearer lifts; "sit": false refuses seats.
   "format": "call-of-slop-shells/1",
   "slots": ["head", "back", "leftArm", "rightArm", "leftLeg", "rightLeg"], // the order is the wire's: a new slot goes at the end
   // A module's "kind" is what the code knows: head, pack, hopper (the shell part's own bin is the hopper; "takes" what it
@@ -47,6 +48,12 @@
       "fixed": ["back", "rightArm"],
       // Folded: it kneels with its back straighter (the hopper stays upright), its hand in its lap and the drill arm laid forward
       // across its knees.
-      "fold": { "hip": 90, "knee": -160, "bend": -15, "leftShoulder": 45, "rightShoulder": 80, "leftElbow": 70, "rightElbow": 0, "head": 0.22, "drop": 0.72, "shift": 0.05, "height": 1.0 } }
+      "fold": { "hip": 90, "knee": -160, "bend": -15, "leftShoulder": 45, "rightShoulder": 80, "leftElbow": 70, "rightElbow": 0, "head": 0.22, "drop": 0.72, "shift": 0.05, "height": 1.0 } },
+    // The Half Shell (docs/sandbox/design/half-shell.md): the Robot Shell at half size, for crawl spaces, ducts and low decks. Its
+    // modules are the Robot Shell's own, drawn at its size. "lift": its physics gun takes this share of the survival limit;
+    // "sit": false, it is refused by seats (it would sit below the controls). It folds into a Tiny pod as a Robot Shell does.
+    { "name": "Half", "part": "Half Shell", "scale": 0.5, "speed": 0.9, "damage": 1.3, "lift": 0.5, "sit": false, "jobs": ["crawler"],
+      "slots": { "head": "Optics Head", "back": "Power Pack", "leftArm": "Hand", "rightArm": "Hand", "leftLeg": "Standard Leg", "rightLeg": "Standard Leg" },
+      "fold": { "hip": 90, "knee": -160, "bend": -35, "leftShoulder": 50, "rightShoulder": 50, "leftElbow": 60, "rightElbow": 60, "head": 0.2, "drop": 0.72, "shift": 0.15, "height": 0.95 } }
   ]
 }

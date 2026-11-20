@@ -35,6 +35,21 @@ public sealed class ShellParts : IPartGenerator
     }
 
     /// <summary>
+    /// The Half Shell (docs/sandbox/design/half-shell.md): the Robot Shell at half a person's size, 0.9 m standing, for crawl spaces,
+    /// ducts and the space under low decks. Frame "Half" in Constructs/Shells.json (scale 0.5): its modules are the Robot Shell's.
+    /// </summary>
+    private static Part HalfShell()
+    {
+        var p = new Part("Half Shell", Small, Section, $"A small robot body half a person's size: it walks under low decks and through ducts and small hatches, lifts half what a person lifts and is too small for seats. Wake in it from a Shell Control Chair on its channel, within {Py.G(Range / 1000.0)} km. It docks in a Tiny Shell Pod.", tool: "wrench", group: "Logic", color: Steel);
+        Robot(p, 0.5, drill: false);
+        p.Sock("bottom", [0, 0, 0], "-y");
+        p.Sock("back", [0, 0.625, 0.1], "+z");
+        p.Stats(12, 80, 2, 2);
+        p.Set(("shell", new PyDict { ["body"] = true }), ("config", Py.L(Channel())), ("centreSockets", false));
+        return p;
+    }
+
+    /// <summary>
     /// The robot's body at <paramref name="k"/> times a person's size (the Robot Shell is 1; the Mining Shell, Constructs/Shells.json's
     /// "scale", 1.5). <paramref name="drill"/>: the right arm's forearm and hand are left off for the drill arm.
     /// </summary>
@@ -668,6 +683,6 @@ public sealed class ShellParts : IPartGenerator
 
     public void Make(PartOutput o)
     {
-        WriteParts(o, Out, [("", Shell()), ("", MiningShell()), ("", Chair()), .. Spares(), ("Gantry", Gantry()), ("Gantry", Table()), .. Modules(), .. Pods()]);
+        WriteParts(o, Out, [("", Shell()), ("", MiningShell()), ("", HalfShell()), ("", Chair()), .. Spares(), ("Gantry", Gantry()), ("Gantry", Table()), .. Modules(), .. Pods()]);
     }
 }
