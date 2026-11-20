@@ -500,6 +500,8 @@ public static unsafe partial class Program
             // angle, and a wall of them square on, both 24 m on a side, from the camera's feet outwards.
             var plate = ConstructParts.Need("Plate Steel 2 m");
             var texWall = args.Any(a => a.Equals("--bench-wall-textures", StringComparison.OrdinalIgnoreCase));
+            // --bench-wall-finish NAME: the floor's plates take that material (a pattern's shimmer at a grazing angle: "deck plate")
+            var floorFinish = args.SkipWhile(a => !a.Equals("--bench-wall-finish", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } fn ? Surfaces.Id(fn) : (byte)0;
             for (var k = 0; k < 2; k++)
             {
                 var turn = k == 0 ? Quaternion.Identity : Quaternion.CreateFromAxisAngle(Vector3.UnitX, MathF.PI / 2);
@@ -509,7 +511,9 @@ public static unsafe partial class Program
                     for (var z = 0; z < 12; z++)
                     {
                         var i = _benchWorld.AddPart(wall, plate, new Vector3(x * 2.02f - 12f, 0, -z * 2.02f), 0);
-                        if (i >= 0 && (x + z) % 2 == 0)
+                        if (i >= 0 && k == 0 && floorFinish != 0)
+                            wall.Parts[i].Finish = floorFinish;
+                        else if (i >= 0 && (x + z) % 2 == 0)
                             wall.Parts[i].Paint = 0x01000000u | 0x8a8e92u;
                         if (i >= 0 && k == 1 && texWall)
                         {
