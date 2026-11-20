@@ -40,7 +40,8 @@ A place to park a robot shell when nobody wears it. Drafted with the user by cli
   face (`ShellPodRender.Flange`; the depth is `ConstructShellPod.SurfaceDepth` down its middle, kept per pod in
   `Construct.PodSurface` with the caches). A deep enough surface keeps the full pocket and no flange. Placing on a socket is
   refused only when the body past the surface would run into another part of the body (`BodyRefusal`); a freeform weld isn't
-  checked. The surfaces a pocket opens are found with the caches (`FindHosts`), keyed to the part count.
+  checked. The surfaces a pocket opens are found with the caches (`FindHosts`), keyed to the part count; depths and hosts are
+  measured in the body's frame (a freeform weld's part sits in its own segment's frame: `BodyBounds`).
 - **Fits**: a shell's class by its standing height (1.8 m x the frame's scale); it docks in a pod of its class or larger (an assumption
   of the rule "docks only in its size class or larger").
 - **The frame** (`ShellPodRender.cs`): the lid rises on two posts along the face's normal (the button panel on the right post, a lamp on
