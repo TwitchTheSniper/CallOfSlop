@@ -1808,6 +1808,19 @@ public static partial class ConstructPhysics
 
     // ---- Integration, joints, sleep -------------------------------------------------------------------------------
 
+    /// <summary>
+    /// Moves a body's origin by <paramref name="move"/> (a step's small numbers: its centre's travel and the turn's change of
+    /// arm), summed with what floats couldn't hold of its earlier steps (<see cref="Construct.PosRest"/>) in doubles. Far from the
+    /// World's origin a float steps by millimetres (2 mm past 16 km, 4 mm past 32 km), and rounding each tick's pose to that
+    /// grid kicked resting bodies awake and let slow ones creep or stall (Karl's 4x worlds, 2026-11-19); this keeps the truth.
+    /// </summary>
+    private static void Place(Construct c, Vector3 move)
+    {
+        double x = (double)c.Pos.X + c.PosRest.X + move.X, y = (double)c.Pos.Y + c.PosRest.Y + move.Y, z = (double)c.Pos.Z + c.PosRest.Z + move.Z;
+        c.Pos = new Vector3((float)x, (float)y, (float)z);
+        c.PosRest = new Vector3((float)(x - c.Pos.X), (float)(y - c.Pos.Y), (float)(z - c.Pos.Z));
+    }
+
     private static void Integrate(Construct c, int index, float dt)
     {
         // Gentle damping (air, the axles' losses) keeps a still body from creeping.
@@ -1833,16 +1846,17 @@ public static partial class ConstructPhysics
         var w2 = c.AngVel.LengthSquared();
         if (w2 > MaxSpin * MaxSpin)
             c.AngVel *= MaxSpin / MathF.Sqrt(w2);
-        var com = c.WorldCom + (c.Vel + _pushV[index]) * dt;
+        var arm = Vector3.Transform(c.Com, c.Rot);
         var w = c.AngVel + _pushW[index];
         var spin = new Quaternion(w.X, w.Y, w.Z, 0) * c.Rot;
         var rot = new Quaternion(c.Rot.X + 0.5f * dt * spin.X, c.Rot.Y + 0.5f * dt * spin.Y, c.Rot.Z + 0.5f * dt * spin.Z, c.Rot.W + 0.5f * dt * spin.W);
         c.Rot = Quaternion.Normalize(rot);
-        c.Pos = com - Vector3.Transform(c.Com, c.Rot);
+        Place(c, (c.Vel + _pushV[index]) * dt + arm - Vector3.Transform(c.Com, c.Rot));
         if (!float.IsFinite(c.Pos.X + c.Pos.Y + c.Pos.Z))
         {
             // Never let a bad step poison the world: put it back still.
             c.Pos = c.PrevPos;
+            c.PosRest = Vector3.Zero;
             c.Rot = c.PrevRot;
             c.Vel = c.AngVel = Vector3.Zero;
         }
@@ -1882,15 +1896,16 @@ public static partial class ConstructPhysics
         var frameStep = f.SpaceShip != 0 || f.SpaceAway != 0 ? solveV * dt
             : (uint)fi < (uint)_bodies.Count && ReferenceEquals(_bodies[fi], f) && _dyn[fi] ? (f.Vel + _pushV[fi]) * dt : Vector3.Zero;
         c.FrameMove += step - frameStep;
-        var com = c.WorldCom + step;
+        var arm = Vector3.Transform(c.Com, c.Rot);
         var w = c.AngVel + _pushW[index];
         var spin = new Quaternion(w.X, w.Y, w.Z, 0) * c.Rot;
         var rot = new Quaternion(c.Rot.X + 0.5f * dt * spin.X, c.Rot.Y + 0.5f * dt * spin.Y, c.Rot.Z + 0.5f * dt * spin.Z, c.Rot.W + 0.5f * dt * spin.W);
         c.Rot = Quaternion.Normalize(rot);
-        c.Pos = com - Vector3.Transform(c.Com, c.Rot);
+        Place(c, step + arm - Vector3.Transform(c.Com, c.Rot));
         if (!float.IsFinite(c.Pos.X + c.Pos.Y + c.Pos.Z))
         {
             c.Pos = c.PrevPos;
+            c.PosRest = Vector3.Zero;
             c.Rot = c.PrevRot;
             c.Vel = c.FrameV;
             c.AngVel = c.FrameW;

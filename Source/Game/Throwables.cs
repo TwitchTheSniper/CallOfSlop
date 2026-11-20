@@ -310,10 +310,10 @@ public static class Throwables
             }
             var move = p.Vel * h;
             var len = move.Length();
-            var pos = p.Pos;
+            var step = move;
             if (len > 1e-6f && World.Query.Raycast(p.Pos, move / len, len + ProjectileRadius, filter, out var hit))
             {
-                pos = p.Pos + move / len * MathF.Max(0f, hit.Distance - ProjectileRadius);
+                step = move / len * MathF.Max(0f, hit.Distance - ProjectileRadius);
                 var n = hit.Normal;
                 var vn = Vector3.Dot(p.Vel, n);
                 if (vn < 0)
@@ -332,11 +332,23 @@ public static class Throwables
                 }
                 touched = true;
             }
-            else
-                pos += move;
+            // (the step summed with what floats couldn't hold of the earlier ones, in doubles: a radius out a float steps by
+            // 2-4 mm, more than a resting throw's sub-step, so rounding each one left it hovering and sliding: Karl's 4x worlds)
+            double x = (double)p.Pos.X + p.PosRest.X + step.X, y = (double)p.Pos.Y + p.PosRest.Y + step.Y, z = (double)p.Pos.Z + p.PosRest.Z + step.Z;
+            var pos = new Vector3((float)x, (float)y, (float)z);
             if (World.Query.PointInside(pos, ProjectileRadius * 0.5f, filter))
-                pos = p.Pos; // never into something (a corner the ray slipped past)
-            p.Pos = World.ClampToArena(pos);
+            {
+                // Never into something (a corner the ray slipped past, or a face it lies against, which far out a float's
+                // millimetres can hide from the ray): it stays, and stops going that way, so it doesn't push on for ever.
+                var sl = step.Length();
+                if (sl > 1e-7f && Vector3.Dot(p.Vel, step) > 0)
+                    p.Vel -= step / sl * Vector3.Dot(p.Vel, step / sl);
+                touched = true;
+                continue;
+            }
+            var kept = World.ClampToArena(pos);
+            p.PosRest = kept == pos ? new Vector3((float)(x - pos.X), (float)(y - pos.Y), (float)(z - pos.Z)) : Vector3.Zero;
+            p.Pos = kept;
         }
         return touched;
     }
@@ -503,6 +515,7 @@ public sealed class Projectile
     public ThrowableKind Kind;
     public byte Owner;
     public Vector3 Pos;
+    public Vector3 PosRest; // (on a planetoid: what of its true place Pos's floats can't hold, a radius out from the centre: Throwables.StepCurved)
     public Vector3 Vel;
     public double Born;
     public bool Stuck;
