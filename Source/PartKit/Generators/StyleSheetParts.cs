@@ -473,90 +473,193 @@ public sealed class StyleSheetParts : IPartGenerator
         return s.P.Stats(60, 320, 6, 2.0);
     }
 
-    // ---- The life support module: a 1x1 module on the standard Module Plug look, Data 1 and Coolant A.
+    // ---- The life support module, round 2 (Karl, 2026-11-20: round 1 didn't say "this is life support"). A 1x1 module on the
+    // standard Module Plug look, Data 1 and Coolant A. Every take now carries the things that say "air" on a real ship: a duct
+    // trunk out of the top to the ceiling, pressure gauges, and oxygen bottles, scrubber cartridges, valves or a fan where you
+    // can see them. O2 bottles are white with a green shoulder; valve wheels are the take's trim (red on the Armoured plant).
+
+    private const string GaugeFace = "#ecebe4", O2White = "#e4e5e1", O2Green = "#2f8a4c", ValveRed = "#b3302a", Water = "#5aa9d6";
+
+    /// <summary>Points of a disc facing +z: centre (x, y), radius r, from z0 to z1.</summary>
+    private static IEnumerable<double[]> ZDisc(double x, double y, double z0, double z1, double r, int sides = 12) =>
+        FittingLookParts.Cyl(x, y, r, 0, 1, sides).Select(q => new[] { q[0], q[2], z0 + q[1] * (z1 - z0) });
+
+    /// <summary>A round pressure gauge on a +z face: dark bezel, pale face, a needle.</summary>
+    private static void Gauge(S s, double x, double y, double z, double r, double needle = 0.6)
+    {
+        s.K.Hull(ZDisc(x, y, z - 0.004, z + 0.022, r), s.C.Dark, "steel");
+        s.K.Hull(ZDisc(x, y, z + 0.018, z + 0.03, r * 0.8), GaugeFace, "plastic");
+        var (dx, dy) = (Math.Cos(needle * Math.PI), Math.Sin(needle * Math.PI));
+        s.K.Hull([[x - dy * 0.006, y + dx * 0.006, z + 0.028], [x + dy * 0.006, y - dx * 0.006, z + 0.028], [x + dx * r * 0.7, y + dy * r * 0.7, z + 0.028],
+            [x - dy * 0.006, y + dx * 0.006, z + 0.04], [x + dy * 0.006, y - dx * 0.006, z + 0.04], [x + dx * r * 0.7, y + dy * r * 0.7, z + 0.04]], "#202020", "plastic");
+    }
+
+    /// <summary>An oxygen bottle standing at (x, z): white body, green shoulder, a valve on top.</summary>
+    private static void Bottle(S s, double x, double z, double r, double y0, double y1)
+    {
+        s.K.Hull(FittingLookParts.Cyl(x, z, r, y0, y1 - r * 0.9, 10), O2White, "gloss paint");
+        s.K.Hull(FittingLookParts.Cyl(x, z, r * 1.07, y1 - r * 0.9 - 0.012, y1 - r * 0.6, 10).Concat(FittingLookParts.Cyl(x, z, r * 0.45, y1 - 0.004, y1, 10)), O2Green, "gloss paint");
+        s.K.Hull(FittingLookParts.Cyl(x, z, r * 0.25, y1 - 0.006, y1 + 0.05, 6), s.C.Trim, "chrome");
+        s.K.Hull(FittingLookParts.Cyl(x, z, r * 0.4, y1 + 0.045, y1 + 0.06, 8), s.C.Dark, "plastic");
+    }
+
+    /// <summary>A valve hand wheel facing +z: an eight-piece rim and two spokes.</summary>
+    private static void Wheel(S s, double x, double y, double z, double r, string col)
+    {
+        for (var i = 0; i < 8; i++)
+        {
+            double a0 = i * Math.PI / 4, a1 = (i + 1) * Math.PI / 4, ri = r * 0.78;
+            var pts = new List<double[]>();
+            foreach (var a in new[] { a0, a1 })
+                foreach (var rr in new[] { ri, r })
+                    foreach (var zz in new[] { z, z + 0.016 })
+                        pts.Add([x + rr * Math.Cos(a), y + rr * Math.Sin(a), zz]);
+            s.K.Hull(pts, col, "painted steel");
+        }
+        s.K.Box(x - r * 0.8, y - 0.007, z + 0.002, x + r * 0.8, y + 0.007, z + 0.013, col, "painted steel");
+        s.K.Box(x - 0.007, y - r * 0.8, z + 0.003, x + 0.007, y + r * 0.8, z + 0.014, col, "painted steel");
+        s.K.Hull(ZDisc(x, y, z - 0.03, z + 0.02, 0.024, 8), s.C.Trim, "steel"); // (the stem)
+    }
+
+    /// <summary>The air trunk out of the top: a round duct to the ceiling with a flexible bellows and a flange.</summary>
+    private static void Duct(S s, double x, double z, double r, double y0, double y1, string col, string finish)
+    {
+        s.K.Hull(FittingLookParts.Cyl(x, z, r + 0.03, y0 - 0.004, y0 + 0.04, 12), s.C.Dark, "steel"); // (the collar)
+        s.K.Hull(FittingLookParts.Cyl(x, z, r, y0 + 0.036, y1 - 0.006, 12), col, finish);
+        for (var i = 0; i < 4; i++) // (bellows)
+            s.K.Hull(FittingLookParts.Cyl(x, z, r + (i % 2 == 0 ? 0.016 : 0.01), y0 + 0.08 + i * 0.035, y0 + 0.1 + i * 0.035, 12), s.C.Dark, "rubber");
+        s.K.Hull(FittingLookParts.Cyl(x, z, r + 0.025, y1 - 0.03, y1, 12), s.C.Trim, s.C.TrimF); // (the ceiling flange)
+    }
 
     private static Part LifeSupport(Co c)
     {
         var desc = c.L switch
         {
-            'A' => "two filter canisters in a recessed front bay lit warm from below, a fan grille on top.",
-            'B' => "a white tower with a round intake on its face, a cool light ring set back inside it.",
-            'C' => "an armoured box with a guarded pipe manifold on the front and amber light behind its vent slots.",
-            'D' => "slate with bronze corner posts, a louvred intake and a downlight over the service panel.",
-            _ => "navy with a tall slot window down the front, the filter column lit ice inside it.",
+            'A' => "a scrubber rack: two pull-out CO2 cartridges with handles, twin gauges over them, an O2 bottle on its side, warm light between the drawers, the air trunk up top.",
+            'B' => "an oxygen plant: three O2 bottles stood in an open lit bay, a gauge bank over them, a fan intake under them, the air trunk up top.",
+            'C' => "an air plant with its pipework outside: a manifold with three red valve wheels and gauges, two O2 bottles strapped to the sides, amber light under the header, a heavy trunk.",
+            'D' => "an air handler: a big fan behind a round grille, bronze gauges, a sight glass on the humidity tank, a downlight over the filter door, the trunk with a damper lever.",
+            _ => "an oxygen electrolyser: a lit column of water with bubbles rising in it behind a slot, a water tank on its side, the O2 line up into the trunk through a valve, a gauge.",
         };
-        var H = 1.3;
+        var H = 1.2;
         var k = FittingLookParts.Reactor("", 1, $"{c.L} ({c.Title}): A life support unit: " + desc, H, $"Style Life Support {c.L} {c.Title}", "Life support", ["Data 1", "Coolant A"], group: Group);
         var s = new S(k, c);
         var h = 0.376;
         double F = h; // (front face)
-        s.Body(-h, 0.078, -h, h, H, h);
+        var top = 1.75; // (the trunk reaches the ceiling over a 1.2 m unit)
         switch (c.L)
         {
             case 'A':
-                s.Dark(-0.3, 0.25, F - 0.12, 0.3, 1.0, F + 0.004, "steel"); // (the bay)
-                foreach (var x in new[] { -0.15, 0.15 })
+                s.Body(-h, 0.078, -h, h, H, h);
+                foreach (var (y0, y1) in new[] { (0.22, 0.52), (0.58, 0.88) })
                 {
-                    s.K.Hull(FittingLookParts.Cyl(x, F - 0.06, 0.09, 0.3, 0.95, 10), c.Trim, c.TrimF);
-                    s.K.Hull(FittingLookParts.Cyl(x, F - 0.06, 0.095, 0.4, 0.43, 10), c.Dark, "rubber");
-                    s.K.Hull(FittingLookParts.Cyl(x, F - 0.06, 0.095, 0.8, 0.83, 10), c.Dark, "rubber");
+                    s.Panel(-0.32, y0, F - 0.004, 0.32, y1, F + 0.022, 0.01);
+                    s.Trim(-0.12, (y0 + y1) / 2 - 0.018, F + 0.02, 0.12, (y0 + y1) / 2 + 0.018, F + 0.05, 0.006);
+                    s.Faint(0.22, y1 - 0.06, F + 0.018, 0.27, y1 - 0.04, F + 0.028);
                 }
-                s.Light(-0.29, 0.255, F - 0.11, 0.29, 0.268, F - 0.004);
-                s.Panel(-0.32, 1.0, F - 0.004, 0.32, 1.06, F + 0.03, 0.01); // (the lip over the bay)
-                s.Dark(-0.25, H - 0.004, -0.25, 0.25, H + 0.02, 0.25, "steel");
-                for (var i = 0; i < 6; i++)
-                    s.Trim(-0.24, H + 0.004, -0.22 + i * 0.088, 0.24, H + 0.03, -0.2 + i * 0.088);
+                s.Dark(-0.32, 0.52, F - 0.008, 0.32, 0.58, F + 0.004);
+                s.Light(-0.3, 0.535, F - 0.004, 0.3, 0.565, F + 0.008);
+                Gauge(s, -0.14, 1.02, F, 0.07, 0.75);
+                Gauge(s, 0.14, 1.02, F, 0.07, 0.4);
+                Bottle(s, 0.43, 0.12, 0.05, 0.2, 0.95);
+                foreach (var y in new[] { 0.35, 0.8 })
+                    s.Dark(0.37, y, 0.06, 0.485, y + 0.03, 0.18, "steel"); // (its straps)
+                Duct(s, 0, -0.05, 0.13, H, top, c.Trim, c.TrimF);
                 break;
             case 'B':
-                s.Shell(-h - 0.01, 0.078, -h - 0.01, h + 0.01, 0.3, h + 0.01, c.Panel, c.BodyF, 0.05);
-                s.K.Hull(FittingLookParts.Cyl(0, 0.75, 0.24, 0, 1, 12).Select(q => new[] { q[0], q[2], F - 0.004 + q[1] * 0.024 }), c.Panel, c.BodyF);
-                s.K.Hull(FittingLookParts.Cyl(0, 0.75, 0.2, 0, 1, 12).Select(q => new[] { q[0], q[2], F + 0.012 + q[1] * 0.016 }), c.Light, "", glow: true);
-                s.K.Hull(FittingLookParts.Cyl(0, 0.75, 0.185, 0, 1, 12).Select(q => new[] { q[0], q[2], F + 0.014 + q[1] * 0.02 }), c.Dark, "steel");
-                for (var i = 0; i < 5; i++)
-                    s.Trim(-0.17 + i * 0.085 - 0.006, 0.6, F + 0.03, -0.17 + i * 0.085 + 0.006, 0.9, F + 0.042);
-                s.Faint(-0.08, 1.15, F - 0.004, 0.08, 1.17, F + 0.008);
+                // The body built round an open bay, so the bottles in it show.
+                s.Body(-h, 0.078, -h, h, H, F - 0.156, 0.05);
+                s.Body(-h, 0.078, F - 0.17, -0.3, H, F, 0.03);
+                s.Body(0.3, 0.078, F - 0.17, h, H, F, 0.03);
+                s.Body(-0.304, 0.078, F - 0.166, 0.304, 0.42, F - 0.004, 0.02);
+                s.Body(-0.304, 0.95, F - 0.166, 0.304, H - 0.004, F - 0.004, 0.02);
+                s.Dark(-0.3, 0.42, F - 0.16, 0.3, 0.95, F - 0.152, "steel"); // (the bay's back)
+                foreach (var x in new[] { -0.19, 0.0, 0.19 })
+                    Bottle(s, x, F - 0.08, 0.075, 0.43, 0.86);
+                s.Light(-0.29, 0.94, F - 0.15, 0.29, 0.952, F - 0.004); // (lit from the bay's lid)
+                s.Panel(-0.33, 0.95, F - 0.004, 0.33, 1.0, F + 0.03, 0.012);
+                s.K.Hull(ZDisc(0, 0.26, F - 0.004, F + 0.016, 0.13), c.Panel, c.BodyF);
+                s.K.Hull(ZDisc(0, 0.26, F + 0.01, F + 0.024, 0.11), c.Dark, "steel");
+                for (var i = 0; i < 4; i++)
+                    s.Trim(-0.1, 0.19 + i * 0.045, F + 0.02, 0.1, 0.2 + i * 0.045 + 0.012, F + 0.032);
+                foreach (var x in new[] { -0.18, 0.0, 0.18 })
+                    Gauge(s, x, 1.1, F, 0.05, x < 0 ? 0.7 : x > 0 ? 0.3 : 0.5);
+                Duct(s, 0, -0.05, 0.14, H, top, c.Body, c.BodyF);
                 break;
             case 'C':
+                s.Body(-0.33, 0.078, -h, 0.33, H, 0.28, 0.06);
                 foreach (var sx in new[] { -1.0, 1.0 })
-                    foreach (var sz in new[] { -1.0, 1.0 })
-                        s.Bumper(sx * h, sz * h, 0.2, H - 0.03, sx, sz);
-                for (var i = 0; i < 4; i++)
                 {
-                    s.Dark(-0.28, 0.95 + i * 0.07, F - 0.004, 0.28, 0.98 + i * 0.07, F + 0.006, "steel");
-                    s.Light(-0.26, 0.958 + i * 0.07, F - 0.006, 0.26, 0.972 + i * 0.07, F + 0.004);
+                    s.Bumper(sx * 0.33, 0.28, 0.12, H - 0.04, sx, 1);
+                    Bottle(s, sx * 0.42, -0.12, 0.06, 0.2, 1.0);
+                    foreach (var y in new[] { 0.36, 0.8 })
+                        s.Shell(sx > 0 ? 0.33 : -0.49, y, -0.2, sx > 0 ? 0.49 : -0.33, y + 0.035, -0.04, c.Trim, "steel", 0.006);
                 }
+                s.K.Hull(FittingLookParts.Cyl(0, 0, 0.035, 0, 1, 8).Select(q => new[] { -0.3 + q[1] * 0.6, 0.86 + q[0], 0.33 + q[2] }), c.Trim, "steel"); // (the header)
+                s.Light(-0.28, 0.8, 0.282, 0.28, 0.812, 0.31);
                 foreach (var x in new[] { -0.2, 0.0, 0.2 })
-                    s.K.Hull(FittingLookParts.Cyl(x, F + 0.05, 0.03, 0.25, 0.85, 8), c.Trim, "steel");
-                s.Trim(-0.3, 0.3, F + 0.0, 0.3, 0.34, F + 0.1);
-                s.Trim(-0.3, 0.78, F + 0.0, 0.3, 0.82, F + 0.1);
-                s.Panel(-0.32, 0.2, F + 0.09, 0.32, 0.25, F + 0.11, 0.008); // (the guard rail)
-                foreach (var y in new[] { 0.3, 0.8 })
-                    foreach (var x in new[] { -0.3, 0.3 })
-                        s.BoltZ(x, y + 0.02, F + 0.1);
+                {
+                    s.K.Hull(FittingLookParts.Cyl(x, 0.33, 0.025, 0.25, 0.86, 8), c.Trim, "steel");
+                    s.K.Hull(FittingLookParts.Cyl(x, 0.33, 0.034, 0.5, 0.58, 8), c.Dark, "steel"); // (the valve body)
+                    Wheel(s, x, 0.54, 0.38, 0.06, ValveRed);
+                }
+                s.Dark(-0.32, 0.2, 0.28, 0.32, 0.25, 0.37, "steel");
+                Gauge(s, -0.17, 1.03, 0.28, 0.06, 0.7);
+                Gauge(s, 0.17, 1.03, 0.28, 0.06, 0.45);
+                Duct(s, 0, -0.08, 0.15, H, top, c.Panel, "painted plating");
                 break;
             case 'D':
+                s.Body(-h, 0.078, -h, h, H, h);
                 foreach (var sx in new[] { -1.0, 1.0 })
                     foreach (var sz in new[] { -1.0, 1.0 })
                         s.Trim(sx > 0 ? h - 0.05 : -h - 0.008, 0.08, sz > 0 ? h - 0.05 : -h - 0.008, sx > 0 ? h + 0.008 : -h + 0.05, H + 0.01, sz > 0 ? h + 0.008 : -h + 0.05, 0.006);
-                for (var i = 0; i < 8; i++)
-                    s.Panel(-0.27, 0.78 + i * 0.05, F - 0.004, 0.27, 0.8 + i * 0.05, F + 0.022, 0.004);
-                s.Panel(-0.27, 0.2, F - 0.004, 0.27, 0.66, F + 0.014, 0.006);
-                s.Trim(-0.29, 0.7, F - 0.004, 0.29, 0.73, F + 0.06, 0.006);
-                s.Light(-0.25, 0.694, F + 0.012, 0.25, 0.704, F + 0.05);
-                s.Faint(0.18, 0.56, F + 0.012, 0.22, 0.6, F + 0.022);
+                s.K.Hull(ZDisc(0, 0.72, F - 0.004, F + 0.02, 0.24, 16), c.Trim, c.TrimF);
+                s.K.Hull(ZDisc(0, 0.72, F + 0.006, F + 0.024, 0.215, 16), c.Dark, "steel");
+                for (var i = 0; i < 5; i++) // (the fan's blades behind the grille)
+                {
+                    var a = i * 2 * Math.PI / 5;
+                    (double X, double Y)[] blade = [(Math.Cos(a) * 0.03, 0.72 + Math.Sin(a) * 0.03), (Math.Cos(a + 0.5) * 0.19, 0.72 + Math.Sin(a + 0.5) * 0.19), (Math.Cos(a + 0.9) * 0.19, 0.72 + Math.Sin(a + 0.9) * 0.19)];
+                    s.K.Face(F + 0.022, F + 0.034, blade, c.Panel, "painted steel");
+                }
+                for (var i = 0; i < 6; i++) // (grille bars)
+                    s.Trim(-0.2 + 0.004 * Math.Abs(i - 2.5), 0.56 + i * 0.064, F + 0.034, 0.2 - 0.004 * Math.Abs(i - 2.5), 0.572 + i * 0.064, F + 0.046, 0.003);
+                s.K.Hull(ZDisc(0, 0.72, F + 0.03, F + 0.05, 0.04, 8), c.Trim, c.TrimF);
+                s.Panel(-0.3, 0.16, F - 0.004, 0.3, 0.42, F + 0.014, 0.006); // (the filter door)
+                s.Shell(-0.32, 0.44, F - 0.004, 0.32, 0.47, F + 0.05, c.Trim, c.TrimF, 0.006);
+                s.Light(-0.28, 0.434, F + 0.012, 0.28, 0.446, F + 0.044);
+                Gauge(s, -0.22, 1.08, F, 0.055, 0.7);
+                Gauge(s, 0.0, 1.08, F, 0.055, 0.5);
+                s.K.Hull(FittingLookParts.Cyl(0.43, 0.0, 0.05, 0.25, 0.9, 10), c.Body, c.BodyF); // (the humidity tank, on the side)
+                s.Dark(0.475, 0.35, -0.02, 0.49, 0.8, 0.02);
+                s.K.Glow(0.481, 0.37, -0.012, 0.494, 0.6, 0.012, Water); // (its sight glass, water to 60%)
+                Duct(s, 0, -0.05, 0.13, H, top, c.Body, c.BodyF);
+                s.Trim(0.13, 1.42, -0.06, 0.26, 1.44, -0.04, 0.004); // (the damper lever)
                 break;
             default:
-                s.Dark(-0.07, 0.25, F - 0.03, 0.07, 1.15, F + 0.004, "steel");
-                s.K.Hull(FittingLookParts.Cyl(0, F - 0.045, 0.04, 0.27, 1.13, 8), c.Light, "", glow: true);
-                for (var i = 0; i < 6; i++)
-                    s.Trim(-0.06, 0.32 + i * 0.14, F - 0.004, 0.06, 0.34 + i * 0.14, F + 0.01);
+                s.Body(-h, 0.078, -h, h, H, h);
+                s.Dark(-0.09, 0.2, F - 0.06, 0.09, 1.0, F + 0.004, "steel");
+                s.K.Hull(FittingLookParts.Cyl(0, F - 0.03, 0.06, 0.22, 0.98, 10), Water, "", glow: true);
+                for (var i = 0; i < 9; i++) // (bubbles)
+                {
+                    var bx = ((i * 37) % 7 - 3) * 0.012;
+                    var by = 0.28 + i * 0.075;
+                    s.K.Box(bx - 0.008, by - 0.008, F + 0.022, bx + 0.008, by + 0.008, F + 0.034, "#f2fbff", "plastic");
+                }
                 foreach (var sx in new[] { -1.0, 1.0 })
-                    s.Shell(sx > 0 ? 0.12 : -0.3, 0.3, F - 0.004, sx > 0 ? 0.3 : -0.12, 1.1, F + 0.012, "#1b1f24", "carbon weave", 0.008);
-                s.Faint(0.15, 1.18, F - 0.004, 0.27, 1.2, F + 0.008);
+                    s.Shell(sx > 0 ? 0.13 : -0.3, 0.2, F - 0.004, sx > 0 ? 0.3 : -0.13, 1.0, F + 0.012, "#1b1f24", "carbon weave", 0.008);
+                s.K.Hull(FittingLookParts.Cyl(-0.43, 0.0, 0.055, 0.2, 0.95, 10), c.Panel, c.BodyF); // (the water tank)
+                s.K.Hull(FittingLookParts.Cyl(-0.43, 0.0, 0.058, 0.6, 0.63, 10), c.Trim, c.TrimF);
+                // The O2 line: up the front from the column's head into the trunk, through a valve.
+                s.K.Hull(FittingLookParts.Cyl(0.22, F + 0.04, 0.018, 1.0, 1.2, 8), c.Trim, c.TrimF);
+                s.K.Hull(FittingLookParts.Cyl(0.0, 0.0, 0.015, 0, 1, 8).Select(q => new[] { q[1] * 0.205, 1.0 + q[0], F + 0.04 + q[2] }), c.Trim, c.TrimF);
+                Wheel(s, 0.22, 1.1, F + 0.06, 0.045, c.Trim);
+                Gauge(s, -0.2, 1.1, F, 0.055, 0.6);
+                Duct(s, 0, -0.05, 0.13, H, top, c.Panel, c.BodyF);
                 break;
         }
         return s.P.Stats(500, 900, 8, 6.0);
     }
+
 
     public void Make(PartOutput o)
     {
