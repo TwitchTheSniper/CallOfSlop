@@ -267,8 +267,15 @@ public sealed partial class StyleSheetParts : IPartGenerator
 
     private static double R4(double v) => Py.Round(v, 4);
 
-    /// <summary>A reactor module's part: the plug plate, its bolts, lugs and couplings, a hidden solid for what collides.</summary>
-    private static Kit Reactor(string look, int n, string desc, double height, string? name = null, string section = Reactors)
+    /// <summary>
+    /// A module's part (docs/sandbox/design/module-sockets.md, approved 2026-11-19): the Module Plug in its standard look, which
+    /// every maker keeps (sections 2.1, 2.6, 4.3): an 80 mm plate on the whole-metre footprint, bolts every 0.5 m round the rim,
+    /// a lifting lug in each corner inside the footprint. Its couplings sit on the inner face (2.5), so nothing hangs off the
+    /// edge; where the module takes a coupling, a gland on the plug's top face marks the port it plugs into, at the table's
+    /// place (13.1: Data 1 at 0.15/0.15, Fuel A at 0.85/0.15, Coolant A 0.85/0.5, Chute A the middle, Ammo 0.5/0.85, from the
+    /// back-left corner). Power needs no gland: it crosses through the frame. Proud style; a hidden solid is what collides.
+    /// </summary>
+    private static Kit Reactor(string look, int n, string desc, double height, string? name = null, string section = Reactors, string[]? ports = null)
     {
         name ??= $"Style Reactor {look} {n}x{n}";
         var p = new Part(name, Medium, section, desc, role: "frame", tool: "welder", material: "steel", color: Body, group: Group);
@@ -276,7 +283,6 @@ public sealed partial class StyleSheetParts : IPartGenerator
         var h = n / 2.0;
         p.Add(Box([-h, 0, -h], [h, R4(height * 0.92), h], Body, hidden: true)); // (what collides: the module's bulk)
         var k = new Kit(p);
-        // The plug plate: 80 mm, bolts every 0.5 m round the rim, a lifting lug at each corner, the coupling block on +z.
         k.Box(-h, 0, -h, h, 0.08, h, Dark, "dirty steel");
         for (var i = 0; i < n * 2; i++)
         {
@@ -286,14 +292,36 @@ public sealed partial class StyleSheetParts : IPartGenerator
         }
         foreach (var sx in new[] { -1.0, 1.0 })
             foreach (var sz in new[] { -1.0, 1.0 })
-                k.Box(sx * (h - 0.14), 0.07, sz * (h - 0.16), sx * (h - 0.1), 0.2, sz * (h - 0.1), HazardY, "hazard paint");
-        k.Box(-0.2, 0.07, h - 0.16, 0.2, 0.24, h - 0.03, Mid, "painted steel"); // (the coupling block)
-        k.Glow(-0.15, 0.17, h - 0.031, -0.1, 0.21, h - 0.02, Green); // (power: live)
-        k.Glow(-0.05, 0.17, h - 0.031, 0.0, 0.21, h - 0.02, Plasma); // (data)
-        k.Box(0.06, 0.12, h - 0.034, 0.16, 0.2, h - 0.02, Coolant, "painted steel"); // (coolant)
+            {
+                k.Box(sx * (h - 0.1), 0.07, sz * (h - 0.1), sx * (h - 0.035), 0.16, sz * (h - 0.035), HazardY, "hazard paint");
+                k.Box(sx * (h - 0.085), 0.156, sz * (h - 0.085), sx * (h - 0.05), 0.2, sz * (h - 0.05), Dark, "steel"); // (the eye)
+            }
+        foreach (var port in ports ?? ["Data 1", "Fuel A"])
+            Gland(k, n, port);
         p.Sock("bottom", [0, 0, 0], "-y", Medium);
         p.Stats(1500 * n * n, 900 * n * n, 12, 6.0);
         return k;
+    }
+
+    /// <summary>Where a coupling's port sits on an n x n plug (module-sockets.md 13.1), from the back-left corner.</summary>
+    private static (double X, double Z) PortAt(int n, string port)
+    {
+        var (u, v) = port switch
+        {
+            "Data 1" => (0.15, 0.15), "Fuel A" => (0.85, 0.15), "Coolant A" => (0.85, 0.5), "Chute A" => (0.5, 0.5), "Ammo" => (0.5, 0.85),
+            _ => throw new ArgumentException($"no port {port}"),
+        };
+        return (R4(-n / 2.0 + u * n), R4(-n / 2.0 + v * n));
+    }
+
+    /// <summary>A port's gland on the plug's top face, in the coupling's colour.</summary>
+    private static void Gland(Kit k, int n, string port)
+    {
+        var (x, z) = PortAt(n, port);
+        var (col, glow) = port switch { "Data 1" => (Plasma, true), "Fuel A" => (Amber, false), "Coolant A" => (Coolant, false), "Ammo" => (HazardY, false), _ => (Mid, false) };
+        var r = port is "Ammo" or "Chute A" ? 0.09 : 0.045;
+        k.Hull(Cyl(x, z, r, 0.076, 0.11, 8), Dark, "dirty steel");
+        k.Hull(Cyl(x, z, r * 0.6, 0.106, 0.124, 8), col, glow ? "" : "painted steel", glow);
     }
 
     /// <summary>An upright prism's points round (cx, cz): <paramref name="sides"/> corners at radius r, from y0 to y1.</summary>
@@ -450,7 +478,7 @@ public sealed partial class StyleSheetParts : IPartGenerator
     {
         var H = 0.9 + 0.5 * n;
         var k = battery
-            ? Reactor("", n, "Battery bank draft (Karl, 2026-11-19: reactor round 1's D read as a battery bank, his favourite look): louvred radiator sides, two bolted access panels apart, a lit charge slot and a status strip.", H, $"Style Battery Bank A {n}x{n}", "Battery banks")
+            ? Reactor("", n, "Battery bank draft (Karl, 2026-11-19: reactor round 1's D read as a battery bank, his favourite look): louvred radiator sides, two bolted access panels apart, a lit charge slot and a status strip.", H, $"Style Battery Bank A {n}x{n}", "Battery banks", ["Data 1"])
             : Reactor("D Block", n, "D: a square armoured block built for servicing: louvred radiator sides, bolted access panels, a lit inspection slot and a status strip.", H);
         var h = n / 2.0 - 0.124; // (inside the corner lugs)
         k.Profile(-h, h, [(0.078, -h), (0.078, h), (H - 0.12, h), (H, h - 0.12), (H, -h + 0.12), (H - 0.12, -h)], Mid, "painted steel");

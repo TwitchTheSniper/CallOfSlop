@@ -13,8 +13,15 @@ public sealed partial class StyleSheetParts
     private const double W = 0.376; // (the battery's half width: inside the plate's corner lugs)
     private const string RedPaint = "#b8402f";
 
-    private static Kit Mod(string item, string section, string letter, string title, string desc, double H) =>
-        Reactor("", 1, desc, H, $"Style {item} {letter} {title}", section);
+    /// <summary>A module draft on its plug, with the glands of the couplings its kind takes (power crosses through the frame).</summary>
+    private static Kit Mod(string item, string section, string letter, string title, string desc, double H, int n = 1)
+    {
+        string[] ports = section switch { Fuel => ["Fuel A", "Data 1"], Mags => ["Ammo", "Data 1"], _ => ["Data 1"] };
+        var k = Reactor("", n, desc, H, $"Style {item} {letter} {title}", section, ports);
+        if (n > 1)
+            k.P.Stats(4000, 900 * n * n, 12, 6.0); // (under the by-hand limit, 5 t: module-sockets.md 6.1)
+        return k;
+    }
 
     private static (double X, double Y)[] Cut(double cx, double w, double y0, double y1, double c) =>
         [(cx - w + c, y0), (cx + w - c, y0), (cx + w, y0 + c), (cx + w, y1 - c), (cx + w - c, y1), (cx - w + c, y1), (cx - w, y1 - c), (cx - w, y0 + c)];
@@ -578,92 +585,126 @@ public sealed partial class StyleSheetParts
         return k.P;
     }
 
-    // ---------------------------------------------------------------- Magazines (red)
+    // ---------------------------------------------------------------- Magazines (red), 2x2
+    // A 1x1 plug has no Ammo coupling (module-sockets.md 2.5: it starts at 2x2), so magazines are 2x2 modules, each designed at
+    // that size, not scaled. Each feeds the Ammo port at the front middle of the plug through a hazard-rimmed feed throat.
     private const string Mags = "Magazines";
+
+    /// <summary>The feed throat over the Ammo port: a box down onto the plug, a hazard rim and a ready lamp.</summary>
+    private static void Throat(Kit k, double z0, double y1)
+    {
+        var (_, z) = PortAt(2, "Ammo");
+        k.Box(-0.16, 0.078, z0, 0.16, y1, z + 0.14, Body, "painted steel");
+        k.Box(-0.17, y1 - 0.05, z0, 0.17, y1 - 0.02, z + 0.15, HazardY, "hazard paint");
+        Lamp(k, 0, y1 - 0.12, Red, z + 0.14, 0.025);
+    }
 
     private static Part MagA()
     {
-        var k = Mod("Magazine", Mags, "A", "Stepped crate", "A: a two-step ammo crate: a heavy lower box with a red-sealed loading hatch, a stepped-back top with a round counter, a hazard-rimmed lid on rams.", 1.08);
-        k.Box(-W, 0.078, -W, W, 0.52, W, Mid, "painted steel");
-        k.Box(-0.3, 0.516, -0.33, 0.3, 0.96, 0.24, Body, "painted steel");
-        Hatch(k, -0.06, 0.24, 0.27, 0.46, Red);
-        Lamp(k, 0.3, 0.36, Red);
-        Dial(k, -0.12, 0.74, 0.07, Amber, 0.24);
-        Lamp(k, 0.12, 0.74, Green, 0.24);
-        k.Box(-0.24, 0.956, -0.27, 0.24, 0.986, 0.18, HazardY, "hazard paint");
-        k.Box(-0.21, 0.982, -0.24, 0.21, 1.01, 0.15, Dark, "dirty steel");
+        var k = Mod("Magazine", Mags, "A", "Stepped crate", "A (2x2): a two-step ammo crate: a heavy lower box with two red-sealed loading hatches, a stepped-back top with a round counter, a hazard-rimmed lid on rams, the feed throat down to the Ammo port.", 1.72, 2);
+        k.Box(-0.85, 0.078, -0.85, 0.85, 0.9, 0.55, Mid, "painted steel");
+        k.Box(-0.7, 0.896, -0.75, 0.7, 1.6, 0.35, Body, "painted steel");
+        Throat(k, 0.5, 0.46);
         foreach (var sx in new[] { -1.0, 1.0 })
-            k.Box(sx * (W - 0.004), 0.28, -0.1, sx * (W + 0.03), 0.32, 0.1, Bare, "steel"); // (a carry handle)
+        {
+            Hatch(k, sx * 0.52, 0.24, 0.28, 0.78, Red, 0.55);
+            k.Box(sx * 0.85 - 0.004 * sx, 0.5, -0.2, sx * 0.88, 0.56, 0.2, Bare, "steel"); // (a carry handle)
+        }
+        Dial(k, -0.3, 1.25, 0.12, Amber, 0.35);
+        Lamp(k, 0.1, 1.25, Green, 0.35, 0.04);
+        Lamp(k, 0.3, 1.25, Red, 0.35, 0.04);
+        k.Box(-0.6, 1.596, -0.66, 0.6, 1.63, 0.26, HazardY, "hazard paint");
+        k.Box(-0.56, 1.626, -0.62, 0.56, 1.66, 0.22, Dark, "dirty steel");
+        foreach (var sx in new[] { -1.0, 1.0 })
+            Ram(k, sx * 0.62, -0.79, 1.0, 1.5, sx * 0.62);
         return k.P;
     }
 
     private static Part MagB()
     {
-        var k = Mod("Magazine", Mags, "B", "Drum", "B: a rotary drum magazine between two end plates on skids, a red-lit hub on the front, lit pulls either side of it.", 0.94);
-        Skids(k, 0.3);
-        foreach (var sz in new[] { -1.0, 1.0 })
-            k.Profile(-0.34, 0.34, [(0.126, sz * 0.296), (0.126, sz * 0.336), (0.92, sz * 0.336), (0.92, sz * 0.296)], Mid, "painted steel");
-        k.Hull(CylZ(0, 0.52, 0.3, -0.3, 0.3), Body, "painted steel");
-        foreach (var z in new[] { -0.2, -0.07, 0.06, 0.19 })
-            k.Hull(CylZ(0, 0.52, 0.306, z, z + 0.03), Dark, "dirty steel");
-        k.Hull(CylZ(0, 0.52, 0.12, 0.332, 0.346), Red, "", glow: true);
-        k.Hull(CylZ(0, 0.52, 0.08, 0.334, 0.37), Bare, "steel");
-        k.Box(-0.33, 0.86, -0.3, 0.33, 0.914, 0.3, Body, "painted steel"); // (the feed housing over the drum)
-        Pull(k, -0.27, 0.26, 0.7, Red, 0.336);
-        Pull(k, 0.27, 0.26, 0.7, Red, 0.336);
+        var k = Mod("Magazine", Mags, "B", "Twin drums", "B (2x2): two rotary drums side by side between end plates on rails, red-lit hubs on the front plate, a feed housing across the top and the feed throat down to the Ammo port.", 1.32, 2);
+        foreach (var sx in new[] { -1.0, 1.0 })
+            k.Box(sx * 0.62, 0.078, -0.9, sx * 0.74, 0.14, 0.9, Body, "painted steel");
+        k.Paint(-0.95, 0.136, -0.72, 0.95, 1.2, -0.64, Mid);
+        k.Paint(-0.95, 0.136, 0.4, 0.95, 1.2, 0.48, Mid);
+        foreach (var sx in new[] { -1.0, 1.0 })
+        {
+            var x = sx * 0.46;
+            k.Hull(CylZ(x, 0.66, 0.42, -0.646, 0.404), Body, "painted steel");
+            foreach (var z in new[] { -0.45, -0.2, 0.05 })
+                k.Hull(CylZ(x, 0.66, 0.426, z, z + 0.05), Dark, "dirty steel");
+            k.Hull(CylZ(x, 0.66, 0.16, 0.476, 0.49), Red, "", glow: true);
+            k.Hull(CylZ(x, 0.66, 0.1, 0.478, 0.53), Bare, "steel");
+            Pull(k, sx * 0.88, 0.3, 1.0, Red, 0.48);
+        }
+        k.Box(-0.9, 1.196, -0.68, 0.9, 1.3, 0.44, Body, "painted steel");
+        Throat(k, 0.476, 0.4);
         return k.P;
     }
 
     private static Part MagC()
     {
-        var k = Mod("Magazine", Mags, "C", "Tiered", "C: three tiers stepping back like stairs, an ammo drawer in each riser with a red lit pull and a state lamp (one red: empty).", 1.04);
+        var k = Mod("Magazine", Mags, "C", "Tiered", "C (2x2): three wide tiers stepping back like stairs, two ammo drawers in each riser with red lit pulls and state lamps (one red: empty), the Ammo port fed under the bottom tier.", 1.36, 2);
         for (var i = 0; i < 3; i++)
         {
-            var (y, zf) = (0.078 + i * 0.32, W - i * 0.15);
-            k.Paint(-W + i * 0.02, y, -W, W - i * 0.02, y + 0.324, zf, Mid);
-            k.Face(zf - 0.004, zf + 0.018, Cut(-0.04, 0.28, y + 0.09, y + 0.28, 0.04), Body, "painted steel");
-            k.Box(-0.2, y + 0.16, zf + 0.014, 0.12, y + 0.21, zf + 0.03, Dark, "plastic");
-            k.Glow(-0.18, y + 0.175, zf + 0.022, 0.1, y + 0.195, zf + 0.036, Red);
-            Lamp(k, 0.3, y + 0.19, i == 0 ? Red : Green, zf, 0.022);
+            var (y, zf) = (0.078 + i * 0.42, 0.85 - i * 0.36);
+            k.Paint(-0.9 + i * 0.03, y, -0.9, 0.9 - i * 0.03, y + 0.424, zf, i == 1 ? Body : Mid);
+            foreach (var sx in new[] { -1.0, 1.0 })
+            {
+                var cx = sx * 0.43;
+                k.Face(zf - 0.004, zf + 0.018, Cut(cx, 0.36, y + 0.1, y + 0.36, 0.05), Body, "painted steel");
+                k.Box(cx - 0.22, y + 0.2, zf + 0.014, cx + 0.16, y + 0.26, zf + 0.03, Dark, "plastic");
+                k.Glow(cx - 0.2, y + 0.218, zf + 0.022, cx + 0.14, y + 0.242, zf + 0.036, Red);
+                Lamp(k, cx + 0.25, y + 0.395, i == 0 && sx > 0 ? Red : Green, zf, 0.02);
+            }
         }
         return k.P;
     }
 
     private static Part MagD()
     {
-        var k = Mod("Magazine", Mags, "D", "Belt box", "D: a raked belt box with a feed chute rising from its back to the gun above, brass links showing, a sealed hatch and red ready lamp.", 1.4);
-        k.Profile(-W, W, [(0.078, -W), (0.078, W), (0.45, W), (0.68, 0.0), (0.68, -W)], Mid, "painted steel");
-        Hatch(k, -0.1, 0.2, 0.26, 0.42, Red);
-        Lamp(k, 0.27, 0.36, Red);
-        k.Box(-0.09, 0.676, -0.22, 0.09, 1.3, -0.08, Body, "painted steel");
-        k.Box(-0.09, 1.22, -0.08, 0.09, 1.3, 0.16, Body, "painted steel");
-        for (var i = 0; i < 7; i++)
-            k.Box(-0.065, 0.72 + i * 0.07, -0.084, 0.065, 0.756 + i * 0.07, -0.068, Amber, "brass");
-        k.Glow(-0.03, 1.296, 0.08, 0.03, 1.32, 0.14, Red);
+        var k = Mod("Magazine", Mags, "D", "Belt feed", "D (2x2): a wide raked belt box, twin feed chutes rising from its back to the guns above with brass links showing, the feed throat down to the Ammo port in front, a sealed hatch.", 2.4, 2);
+        k.Profile(-0.88, 0.88, [(0.078, -0.88), (0.078, 0.46), (0.62, 0.46), (1.0, -0.2), (1.0, -0.88)], Mid, "painted steel");
+        Throat(k, 0.42, 0.42);
+        Hatch(k, -0.55, 0.24, 0.22, 0.56, Red, 0.46);
+        Dial(k, 0.55, 0.38, 0.1, Amber, 0.46);
+        foreach (var sx in new[] { -1.0, 1.0 })
+        {
+            var x = sx * 0.4;
+            k.Box(x - 0.11, 0.996, -0.7, x + 0.11, 2.3, -0.5, Body, "painted steel");
+            k.Box(x - 0.11, 2.2, -0.5, x + 0.11, 2.3, -0.2, Body, "painted steel");
+            for (var i = 0; i < 14; i++)
+                k.Box(x - 0.08, 1.06 + i * 0.08, -0.504, x + 0.08, 1.1 + i * 0.08, -0.488, Amber, "brass");
+            k.Glow(x - 0.04, 2.296, -0.36, x + 0.04, 2.32, -0.26, Red);
+        }
         return k.P;
     }
 
     private static Part MagE()
     {
-        var k = Mod("Magazine", Mags, "E", "Armoured", "E: a faceted armoured magazine like a turret's hull: a heavy hatch between two hinge rams, blow-out panels on top edged in hazard paint.", 1.0);
+        var k = Mod("Magazine", Mags, "E", "Armoured", "E (2x2): a faceted armoured hull like a turret's, a heavy hatch between two hinge rams, four blow-out panels on top edged in hazard paint, the feed throat under its brow.", 1.66, 2);
         var pts = new List<double[]>();
         foreach (var sx in new[] { -1.0, 1.0 })
             foreach (var sz in new[] { -1.0, 1.0 })
             {
-                pts.Add([sx * W, 0.078, sz * W]);
-                pts.Add([sx * W, 0.46, sz * W]);
-                pts.Add([sx * 0.27, 0.92, sz > 0 ? 0.14 : -0.3]);
+                pts.Add([sx * 0.9, 0.078, sz > 0 ? 0.5 : -0.9]);
+                pts.Add([sx * 0.9, 0.72, sz > 0 ? 0.5 : -0.9]);
+                pts.Add([sx * 0.62, 1.6, sz > 0 ? 0.1 : -0.7]);
             }
         k.Hull(pts, Mid, "painted steel");
-        Hatch(k, 0, 0.2, 0.26, 0.44, Red);
+        Throat(k, 0.46, 0.4);
+        Hatch(k, 0, 0.3, 0.42, 0.68, Red, 0.5, bar: false);
         foreach (var sx in new[] { -1.0, 1.0 })
-            Ram(k, sx * 0.29, W + 0.03, 0.27, 0.43, sx * 0.29);
+            Ram(k, sx * 0.42, 0.54, 0.44, 0.66, sx * 0.42);
         foreach (var sx in new[] { -1.0, 1.0 })
-        {
-            k.Box(sx * 0.02, 0.916, -0.26, sx * 0.23, 0.946, 0.1, HazardY, "hazard paint");
-            k.Box(sx * 0.04, 0.942, -0.24, sx * 0.21, 0.966, 0.08, Dark, "dirty steel");
-        }
-        k.Glow(-0.2, 0.89, 0.13, 0.2, 0.912, 0.16, Red);
+            foreach (var sz in new[] { 0.0, 1.0 })
+            {
+                var (z0, z1) = (-0.64 + sz * 0.38, -0.3 + sz * 0.38);
+                k.Box(sx * 0.04, 1.596, z0, sx * 0.54, 1.63, z1, HazardY, "hazard paint");
+                k.Box(sx * 0.07, 1.626, z0 + 0.03, sx * 0.51, 1.654, z1 - 0.03, Dark, "dirty steel");
+            }
+        foreach (var sx in new[] { -1.0, 1.0 })
+            k.Glow(sx * 0.2 - 0.12, 0.74, 0.47, sx * 0.2 + 0.12, 0.77, 0.51, Red);
         return k.P;
     }
 
