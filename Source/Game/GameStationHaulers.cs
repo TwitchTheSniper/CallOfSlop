@@ -373,11 +373,10 @@ public sealed partial class Game
             for (var k = 0; k < goods.Length; k++)
                 if (goods[k].Material == mat && goods[k].Sell > 0)
                 {
-                    var price = (double)m.SellAt(k); // (at the stock before the load: prices follow stock)
-                    var afford = pw is { Fallen: false } ? (int)Math.Min(int.MaxValue, Math.Max(0, Math.Floor((pw.Stock - cost) / price))) : 0;
-                    var n = StationLoadCargo(m, c, k, afford);
+                    var afford = pw is { Fallen: false } ? m.Afford(k, Math.Max(0, pw.Stock - cost)) : 0; // (priced across the stock the load moves)
+                    var n = StationLoadCargo(m, c, k, afford, out var paid);
                     bought[k] += n;
-                    cost += n * price;
+                    cost += paid;
                     break;
                 }
         if (cost > 0 && pw != null)
