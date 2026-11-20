@@ -11,6 +11,7 @@
     "kind": "core",
     "serves": 40000000.0
   },
+  "collider": "boxes",
   "mass": 600000.0,
   "health": 300000,
   "armour": 40,

@@ -169,6 +169,7 @@ public sealed partial class MainframeParts
         foreach (var (i, x, y) in new[] { (0, -14.0, -14.0), (1, 14.0, -14.0), (2, -14.0, 14.0), (3, 14.0, 14.0) })
             p.Sock($"c{i}", [x, y, 0], "+z");
         p.Set(("fuelTank", Kw(("capacity", MountFuel))), ("ports", Py.L(BigDriveParts.PipePort("Fuel out", "out", [0, 14.5, -1.2], "-z", "fuel"))));
+        p.Set(("collider", "boxes")); // (the plate collides; the bell's seat is a look)
         Works.Mount(p);
         return p.Stats(800_000, 1_500_000, 60, 60.0);
     }
@@ -189,6 +190,7 @@ public sealed partial class MainframeParts
         p.Set(("thruster", Kw(("force", BellForce), ("spool", 6.0), ("exhaust", "+z"), ("at", Py.L(0, 0, 26)), ("burnRate", Py.Round(BellForce / 1e6 * BellBurn, 4)))), ("ports", Py.L(BigDriveParts.PipePort("Fuel in", "in", [0, 10, 0.9], "+y", "fuel"))));
         p.Set(("flame", Py.L(Kw(("at", Py.L(0, 0, 26)), ("dir", "+z"), ("radius", 11.0), ("length", 90.0), ("kind", "Rocket")))));
         Works.Head(p, Works.Table(), "torch", BellForce);
+        p.Set(("collider", "boxes")); // (the hidden boxes collide; the bell's 32-sided rings are looks)
         return p.Stats(400_000, 400_000, 50, 60.0);
     }
 
@@ -212,7 +214,7 @@ public sealed partial class MainframeParts
         Det(p, A(-0.8, r + 0.08, -l * 0.5 - 0.6), A(0.8, r + 0.1, -l * 0.5 + 0.6), Screen, "", glow: true);
         p.Sock("back", [0, 0, 0], "+z");
         p.Sock("front", [0, 0, -l], "-z");
-        p.Set(("onBreak", "disable"), ("worksPiece", Kw(("kind", kind), ("serves", BellForce))));
+        p.Set(("onBreak", "disable"), ("worksPiece", Kw(("kind", kind), ("serves", BellForce))), ("collider", "boxes")); // (the hidden box collides, as the ship works' pieces do)
         return p.Stats(mass, mass / 2, 40, 40.0);
     }
 
@@ -236,7 +238,7 @@ public sealed partial class MainframeParts
     /// <summary>An attitude jet: a bell 3 m across on a collar, bolted by its back to a face of an RCS block, pushing away from its mouth.</summary>
     private static Part AttitudeJet()
     {
-        var p = Own(JetName, $"One of the Mainframe's attitude jets, {JetForce / 1e6:0} MN out of a bell 3 m across. Eight blocks of four at the ship's ends point up, down, out, fore and aft, so the flight computer turns the ship about any axis, slides it and slows it.", role: "thruster", tool: "wrench", color: Frame);
+        var p = Own(JetName, $"One of the Mainframe's attitude jets, {JetForce / 1e6:0} MN out of a bell 3 m across. Eight blocks of three at the ship's ends point up or down, out and forward, so the flight computer turns the ship about any axis, slides it and slows it.", role: "thruster", tool: "wrench", color: Frame);
         Hid(p, A(-1.2, -1.2, 0), A(1.2, 1.2, 3.3));
         Cyl(p, 0, 0, 1.25, 0.003, 0.7, Armour, "plated steel", segments: 16); // (the collar)
         Cyl(p, 0, 0, 1.32, 0.52, 0.78, Copper, "copper", segments: 16);

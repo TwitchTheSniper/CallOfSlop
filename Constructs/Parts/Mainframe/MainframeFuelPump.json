@@ -11,6 +11,7 @@
     "kind": "pump",
     "serves": 40000000.0
   },
+  "collider": "boxes",
   "mass": 250000.0,
   "health": 125000,
   "armour": 40,

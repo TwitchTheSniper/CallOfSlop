@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Mainframe Attitude Jet",
-  "description": "One of the Mainframe's attitude jets, 8 MN out of a bell 3 m across. Eight blocks of four at the ship's ends point up, down, out, fore and aft, so the flight computer turns the ship about any axis, slides it and slows it.",
+  "description": "One of the Mainframe's attitude jets, 8 MN out of a bell 3 m across. Eight blocks of three at the ship's ends point up or down, out and forward, so the flight computer turns the ship about any axis, slides it and slows it.",
   "group": "Ship",
   "section": "Mainframe",
   "role": "thruster",

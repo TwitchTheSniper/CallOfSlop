@@ -356,8 +356,8 @@ public sealed partial class MainframeParts
         var y = YardDeck;
         Stand(w, "Large Laser Cutter", -17, y + 0.56, 612);
         Stand(w, "Large Laser Cutter", 17, y + 0.56, 612);
-        Stand(w, "Large Extruder", -24, y, 646);
-        Stand(w, "Large Extruder", 8, y, 646);
+        Stand(w, "Large Extruder", -24, y + 2, 646); // (its frame's feet are 2 m under its origin, as the cutter's are 0.56 m)
+        Stand(w, "Large Extruder", 8, y + 2, 646);
         Stand(w, "Medium Panel Former", -4, y, 676);
         Stand(w, "Medium Panel Former", 8, y, 676);
         foreach (var x in (ReadOnlySpan<double>)[-26, -22, 22, 26])
@@ -444,8 +444,9 @@ public sealed partial class MainframeParts
 
     /// <summary>
     /// The attitude jets: a block at each edge of the spine and of the keel, fore and aft (eight), each with a jet out to its side, one
-    /// out from the hull (up on the spine, down on the keel) and one fore and one aft. Far apart along the ship they turn it about every
-    /// axis; together they slide it, and the fore ones slow it without a flip.
+    /// out from the hull (up on the spine, down on the keel) and one forward. Far apart along the ship they turn it about every axis;
+    /// together they slide it, and the forward ones slow it without a flip. None points aft: a Ship thruster over 500 kN that pushes
+    /// the craft forward is a main drive and needs works and an engine (ShipWorks.JetMost, the vehicle check), and the bells push it.
     /// </summary>
     private static void Rcs(Writer w, Dictionary<(int, int), Plane> planes)
     {
@@ -461,7 +462,7 @@ public sealed partial class MainframeParts
                     var (v, u) = pl.Of(new D3(x, f == 4 ? spine : keel, z));
                     var block = OnPlane(w, pl, RcsBlockName, v, Thick(SkinH) / 2 + 0.004, u, 0, new Look(Armour, "plated steel"), keep: faces);
                     var outward = pl.V.X * s > 0 ? "+x" : "-x"; // (the block's side away from the centreline)
-                    foreach (var face in (ReadOnlySpan<string>)[outward, "+y", "+z", "-z"])
+                    foreach (var face in (ReadOnlySpan<string>)[outward, "+y", "-z"]) // (its +z face is aft: no jet there, as above)
                         w.OnSocket(block, face, JetName, "mount", w.FirstTurn(block, face, JetName, "mount"), look: new Look(Frame, "dirty steel"));
                 }
     }

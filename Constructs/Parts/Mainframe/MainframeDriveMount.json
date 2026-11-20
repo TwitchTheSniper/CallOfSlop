@@ -23,6 +23,7 @@
       "face": "-z"
     }
   ],
+  "collider": "boxes",
   "worksPiece": {
     "kind": "mount"
   },

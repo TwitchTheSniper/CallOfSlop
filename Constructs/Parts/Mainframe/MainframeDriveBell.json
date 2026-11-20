@@ -51,6 +51,7 @@
       "exchanger"
     ]
   },
+  "collider": "boxes",
   "mass": 400000.0,
   "health": 400000,
   "armour": 50,
