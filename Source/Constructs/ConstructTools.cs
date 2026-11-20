@@ -53,18 +53,6 @@ public sealed class ToolModel
     public Vector3? ViewAt;
 }
 
-/// <summary>A tool's screen in tool space: its centre, the way it faces, its top, its size, its text rows, and where its stalk meets the tool.</summary>
-public sealed record ToolDisplay(Vector3 At, Vector3 Normal, Vector3 Up, Vector2 Size, int Rows, Vector3 Mount)
-{
-    /// <summary>The screen's place as it is held (before the tool's "hold" turn) from the grip: beside the tool, inboard of it and low, clear of the crosshair, the tool's back end and a carried part. The same on every tool, so it is found without looking.</summary>
-    public static readonly Vector3 HeldAt = new(-0.14f, 0.06f, 0.04f);
-    public static readonly Vector2 DefaultSize = new(0.17f, 0.098f);
-    public const int DefaultRows = 6;
-
-    /// <summary>The grip stands here in first person (ToolRender.FirstPerson); the screen turns to the eye from there.</summary>
-    public static readonly Vector3 ViewGrip = new(0.21f, -0.22f, -0.44f);
-}
-
 /// <summary>A tool model file that can't be used: the reason names the file and the problem.</summary>
 public sealed class ToolModelException(string message) : Exception(message);
 
@@ -274,8 +262,7 @@ public static class ConstructTools
         }
         if (Opt(root, "display") is { } dis)
         {
-            Known(dis, ["mount", "size", "rows"], $"{file}, display");
-            var mount = Vec(Need(dis, "mount", file + ", display"), file, "display.mount");
+            Known(dis, ["size", "rows"], $"{file}, display");
             var size = ToolDisplay.DefaultSize;
             if (Opt(dis, "size") is { ValueKind: JsonValueKind.Array } sz && sz.GetArrayLength() == 2)
                 size = new Vector2(Num(sz[0], file, "display.size"), Num(sz[1], file, "display.size"));
@@ -283,10 +270,8 @@ public static class ConstructTools
             Range(size.Y, 0.03f, 0.3f, file, "display.size");
             var rows = Opt(dis, "rows") is { } rw ? (int)Num(rw, file, "display.rows") : ToolDisplay.DefaultRows;
             Range(rows, 1, PanelCard.MaxLines, file, "display.rows");
-            var inv = Quaternion.Conjugate(m.Hold);
-            var face = Vector3.Normalize(-(ToolDisplay.ViewGrip + ToolDisplay.HeldAt));
-            var up = Vector3.Normalize(Vector3.UnitY - face * face.Y);
-            m.Display = new ToolDisplay(Vector3.Transform(ToolDisplay.HeldAt, inv), Vector3.Transform(face, inv), Vector3.Transform(up, inv), size, rows, mount);
+            m.Display = ToolDisplay.Fit(m.Boxes, m.Hold, ToolDisplay.ViewGrip, ToolDisplay.HandTarget, size, rows)
+                        ?? throw new ToolModelException($"{file}: \"display\": no place on the tool's body takes a {size.X:0.###} by {size.Y:0.###} m screen near where it is read");
         }
         return m;
     }

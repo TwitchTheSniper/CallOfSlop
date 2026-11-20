@@ -362,7 +362,7 @@ public sealed class ShellModuleNodes
 
     // ---- First person (a tool arm's "view"): its forearm where the drill arm's is, aimed down the crosshair ----------------
 
-    private static readonly Vector3 ViewAt = new(0.22f, -0.25f, -0.34f), ViewCard = new(-0.12f, -0.17f, -0.42f);
+    private static readonly Vector3 ViewAt = new(0.22f, -0.25f, -0.34f), ViewCard = new(0.1f, -0.17f, -0.42f); // (the screen is wanted near here, built into the forearm: ToolDisplay.Fit)
     private static readonly ToolModel?[] _views = new ToolModel?[256];
     private static readonly float[] _viewScales = new float[256];
 
@@ -399,12 +399,9 @@ public sealed class ShellModuleNodes
             Amount = own.Amount, Rate = own.Rate, Sparks = own.Sparks != null ? tip : null, Light = own.Light != null ? tip : null,
             Beam = own.Beam != null ? tip : null, BeamLength = own.BeamLength, Arm = true, ViewAt = at,
         };
-        var inv = Quaternion.Conjugate(hold);
-        var face = Vector3.Normalize(-ViewCard);
-        var up = Vector3.Normalize(Vector3.UnitY - face * face.Y);
-        var cardAt = Vector3.Transform(ViewCard - at, inv);
-        var cardNormal = Vector3.Transform(face, inv);
-        model.Display = new ToolDisplay(cardAt, cardNormal, Vector3.Transform(up, inv), ToolDisplay.DefaultSize, ToolDisplay.DefaultRows, cardAt - cardNormal * 0.012f);
+        model.Display = ToolDisplay.Fit(model.Boxes, hold, at, ViewCard, ToolDisplay.DefaultSize, ToolDisplay.DefaultRows);
+        if (model.Display == null)
+            Console.WriteLine($"[shells] the {m.Name} arm has no place on its forearm for a screen: its tool's lines stay on the HUD");
         (_views[m.Index], _viewScales[m.Index]) = (model, scale);
         return model;
     }

@@ -29,21 +29,6 @@
     },
     {
       "min": [
-        3.675,
-        3.378,
-        8.113
-      ],
-      "max": [
-        9.075,
-        4.125,
-        8.387
-      ],
-      "color": "#2c5aa0",
-      "detail": true,
-      "finish": "painted plating"
-    },
-    {
-      "min": [
         4.275,
         4.575,
         8.359
@@ -71,6 +56,136 @@
       "color": "#2a5878",
       "detail": true,
       "glow": true
+    },
+    {
+      "min": [
+        3.929,
+        4.452,
+        8.365
+      ],
+      "max": [
+        5.871,
+        4.542,
+        8.415
+      ],
+      "color": "#2a2e33",
+      "detail": true,
+      "shape": "bevel",
+      "radius": 0.35,
+      "edges": "long",
+      "front": "+x",
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        3.929,
+        4.546,
+        8.365
+      ],
+      "max": [
+        5.871,
+        4.568,
+        8.397
+      ],
+      "color": "#5ac8ff",
+      "detail": true,
+      "glow": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        6.879,
+        4.452,
+        8.365
+      ],
+      "max": [
+        8.821,
+        4.542,
+        8.415
+      ],
+      "color": "#2a2e33",
+      "detail": true,
+      "shape": "bevel",
+      "radius": 0.35,
+      "edges": "long",
+      "front": "+x",
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        6.879,
+        4.546,
+        8.365
+      ],
+      "max": [
+        8.821,
+        4.568,
+        8.397
+      ],
+      "color": "#5ac8ff",
+      "detail": true,
+      "glow": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        4.055,
+        3.712,
+        8.365
+      ],
+      "max": [
+        5.065,
+        4.408,
+        8.382
+      ],
+      "color": "#3a4147",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        5.235,
+        3.712,
+        8.365
+      ],
+      "max": [
+        6.29,
+        4.408,
+        8.382
+      ],
+      "color": "#3a4147",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        6.46,
+        3.712,
+        8.365
+      ],
+      "max": [
+        7.515,
+        4.408,
+        8.382
+      ],
+      "color": "#3a4147",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        7.685,
+        3.712,
+        8.365
+      ],
+      "max": [
+        8.695,
+        4.408,
+        8.382
+      ],
+      "color": "#3a4147",
+      "detail": true,
+      "finish": "painted plating"
     }
   ],
   "sockets": [
