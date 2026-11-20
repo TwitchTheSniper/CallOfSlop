@@ -767,11 +767,34 @@ own clearance check (the lifter's path is used as is), a Cut job for sockets wit
 fitters for Building Station uses, and MFIT saves (a save mid-job keeps the module where it was; a stale ModWeld is cleared at the
 plate's next rebuild; F starts the job again).
 
+**Phase 5 (faction choice and generators): partly built** (builder, 2026-11-20). Each faction file may carry a `"modules"` block
+(9.1: `tags` by the table's tag names, `stats` speed, power, fuel, mass, cost, `needs` accel, powerMargin, minGuns, `pick`), read by
+`ModuleWants.Parse` into `NpcFactionDef.Modules`; Militia, Raiders, Traders, Salvagers and Mercenaries have one (Player Crew and
+Test Hostile none). `ModuleChoice.cs` holds 9.2 as pure functions: `Fits` (exact size; engine, reactor and turret sockets by primary
+tag, a turret socket also takes a turret bay; anything in a generic one), `Score` (wanted tags' benefits against the best candidate's
+stat, less power drawn past the ship's spare over the power made, less mass and bill over the ship's mass, plus an engine's
+acceleration over the need, capped at 1), `Choose` (one of the best `pick` by the dice) and `Order` (engines, reactors, turrets, then
+generic). `--module-choice SHIP --faction F [--seed N]` builds the ship flat, scores every shipped module design for each free socket
+in that order, prints the table and the pick (to callofslop.log), adds each pick to the ship's summary and reports the needs. Shipped
+module designs, written by the part kit beside the adapters (`Constructs/Blueprints/Module*.json`): RCS 1x1, RCS Quad 2x2, Gun 1x1,
+Twin Gun 2x2, Tank 1x1, Battery 1x1, Reactor 3x3 (a Magpie Power Plant, 400 kW) and Big Reactor 3x3 (a Zero Day Reactor, 3 MW).
+Tried: `--module-choice "Zz Module Choice Rig"` (a test rig, not committed: a 1x1 engine, a 1x1 generic, a 2x2 turret, a 3x3 reactor
+and a 2x2 generic socket on five Foundations) for Militia (the 400 kW reactor, guns in the generic 2x2), Traders and Salvagers (the
+tank, the 3 MW reactor, an adapter): the trade-offs show in the scores.
+Not built in phase 5: the passes that act on the needs (a swap for power, acceleration or guns: the needs are only reported), the
+fuel term (a module's burn isn't summed), a bill from recipes (the bill is the mass), `BlueprintScript.Socket` / `Module` and a ship
+generator filling its sockets, `--gen-module` and faction-styled designs, and choice at a controller's refit.
+
+**Phases 6 and 7: not started** (the retrofits, markets). Where to resume: phase 5's `BlueprintScript.Socket(w, l, kind, style,
+depth, above, at, turn)` and `Module(socket, name)` (a socket laid by the kit's build rules, a module blueprint merged onto it as a
+use), then `--gen-module`, then phase 6 starting with the rust bucket (`ShipParts.cs`; read `git log` on the Zero Day's generator
+first: it just got room cladding).
+
 Test rigs (not committed; in `bin/Release/net10.0/Constructs/Blueprints/`): `ZzModWellRig.json` (a 1x1 socket under a deck plate on
 frame blocks; `timed; modsock style 2 [DEPTH]` starts a timed cut), `ZzModSweepRig.json` (the same with a turntable module on a stand
 beside it), `ZzModPipeRig.json` (a tank piped through a fitted 1x1 engine module to an RCS thruster), `ZzModFeedRig.json` (an Ammo Container fed
 through a 1x1 module to an AA Gun, a Lever wired through Data 1 to a Lamp on the module), `ZzModFitterRig.json` and
-`ZzModFitterOffRig.json` (above; run with `inv survival on`). Window verbs: `modsock state`
+`ZzModFitterOffRig.json` (above; run with `inv survival on`), `ZzModChoiceRig.json` (above). Window verbs: `modsock state`
 (sockets, modules, pipes, feeds and chutes and their sources, wires, guns and what feeds them, the draw) and `modsock style N [DEPTH]` (host).
 
 Defaults taken (no questions asked):
@@ -807,3 +830,7 @@ Defaults taken (no questions asked):
 - (Phase 4) The fitter is F-driven: F on a socket uses the hand when the hand may (Creative always, unless `timed`), else a fitter
   aboard. A fitter works only on its own construct's sockets and stands. A take-off by a fitter goes to a free stand of the module's
   size on the same construct (no floor set-down). A weld or cut needs the circuit's power and waits without it.
+- (Phase 5) A plug's `top.i.j` sockets are Medium: a Small part (a power plant, a thruster) goes on the cell-middle `s{i}.{j}` or
+  the quarter-point `t..` sockets. Shipped module designs are the part kit's output (module_sockets), not `--gen-module`'s yet.
+- (Phase 5) A module's bill is its mass until recipes are summed; a candidate's stats come from a flat build of its blueprint, its
+  submodules included.
