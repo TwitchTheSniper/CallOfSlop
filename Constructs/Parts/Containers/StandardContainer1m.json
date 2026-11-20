@@ -1,8 +1,8 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Standard Container 1m",
-  "description": "A standard 1 m cargo container: three 1x1x1 m slots in a row, each a cradle a module stands on, and a hatch the whole length of each side that swings up to an awning. A crane's hook takes it by its roof; it stands on its four corner castings, and clamps at its feet lock it onto a container under it.",
-  "group": "Style",
+  "description": "A standard 1 m cargo container: three 1x1x1 m slots in a row, each a cradle a module stands on, and a hatch the whole length of each side that swings up to an awning. A crane's spreader takes it whole by its four top corner castings; it stands on its four bottom ones, and clamps at its feet lock it onto a container under it.",
+  "group": "Storage",
   "section": "Cargo containers",
   "role": "frame",
   "tool": "welder",
@@ -326,6 +326,22 @@
     },
     {
       "min": [
+        -0.71,
+        -0.008,
+        -1.69
+      ],
+      "max": [
+        -0.62,
+        0.003,
+        -1.64
+      ],
+      "color": "#1b1714",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
         -0.753,
         -1.5,
         1.58
@@ -382,6 +398,22 @@
         -0.753,
         -0.05,
         1.7
+      ],
+      "color": "#1b1714",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.71,
+        -0.008,
+        1.64
+      ],
+      "max": [
+        -0.62,
+        0.003,
+        1.69
       ],
       "color": "#1b1714",
       "detail": true,
@@ -454,6 +486,22 @@
     },
     {
       "min": [
+        0.62,
+        -0.008,
+        -1.69
+      ],
+      "max": [
+        0.71,
+        0.003,
+        -1.64
+      ],
+      "color": "#1b1714",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
         0.58,
         -1.5,
         1.58
@@ -510,6 +558,22 @@
         0.759,
         -0.05,
         1.7
+      ],
+      "color": "#1b1714",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.62,
+        -0.008,
+        1.64
+      ],
+      "max": [
+        0.71,
+        0.003,
+        1.69
       ],
       "color": "#1b1714",
       "detail": true,
@@ -1111,70 +1175,6 @@
       ],
       "paintable": false,
       "finish": "dirty steel"
-    },
-    {
-      "min": [
-        -0.3,
-        -0.03,
-        -0.3
-      ],
-      "max": [
-        0.3,
-        -0.008,
-        0.3
-      ],
-      "color": "#f2c400",
-      "detail": true,
-      "finish": "hazard paint",
-      "paintable": false
-    },
-    {
-      "min": [
-        -0.22,
-        -0.013,
-        -0.22
-      ],
-      "max": [
-        0.22,
-        -0.002,
-        0.22
-      ],
-      "color": "#1b1714",
-      "detail": true,
-      "finish": "steel",
-      "paintable": false
-    },
-    {
-      "min": [
-        -0.08,
-        -0.03,
-        -0.56
-      ],
-      "max": [
-        0.08,
-        -0.004,
-        -0.44
-      ],
-      "color": "#2b2f35",
-      "detail": true,
-      "finish": "steel",
-      "paintable": false
-    },
-    {
-      "min": [
-        -0.08,
-        -0.03,
-        0.44
-      ],
-      "max": [
-        0.08,
-        -0.004,
-        0.56
-      ],
-      "color": "#2b2f35",
-      "detail": true,
-      "finish": "steel",
-      "paintable": false
     },
     {
       "min": [

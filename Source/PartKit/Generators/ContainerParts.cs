@@ -6,7 +6,7 @@ namespace CallOfSlop.PartKit.Generators;
 /// <summary>
 /// Standard cargo containers, a draft for the Animation gallery (Karl, 2026-11-20: "Cargo containers follow the sizes of socket items. So a
 /// container ... will hold 3 2 x 2 x 2 parts ... a hatch spanning one side which can open and see the parts. If the hatch is closed, the
-/// parts aren't rendered"). One standard any power's ships carry; loaded and unloaded whole (a crane's hook, a robot shell) and emptied by
+/// parts aren't rendered"). One standard any power's ships carry; loaded and unloaded whole (a crane's spreader, a robot shell) and emptied by
 /// NPCs once ashore.
 ///
 /// <b>The rule.</b> A container of size N (1, 2 or 3 m: the module socket standard's whole metres) holds three N x N x N slots in a row.
@@ -15,14 +15,16 @@ namespace CallOfSlop.PartKit.Generators;
 /// stored, nothing couples), so a container carries modules (a plug with anything welded on) the way a rack does, and a Module Fitter
 /// or a hand takes them off it the same way.
 ///
-/// <b>The hatch</b> is the whole +x long side, one leaf hinged along its top edge: it swings out and up 90 degrees to a flat awning over
-/// the slots, never higher than the roof, so containers stacked or racked side by side still open, and a shell or a fitter reaches every
-/// slot from the side. Not yet in the game: the contents not drawn while it is shut (the plan is a body flag set by the hatch's door
+/// <b>The hatches</b>: each long side is one leaf hinged along its top edge, swinging out and up 90 degrees to a flat awning over the
+/// slots, never higher than the roof, so containers stacked or racked side by side still open, and a shell or a fitter reaches every
+/// slot from either side. <b>Corner clamps</b> on the foot castings flip down over the top castings of a container below and lock a
+/// stack. Not yet in the game: the contents not drawn while the hatches are shut (the plan is a body flag set by the hatches' door
 /// state, read by the renderer: parts on a cradle of a shut container are skipped).
 ///
-/// Frame, shared by every part: origin the roof's middle (a crane's hook takes it there, as the Dray's container), y down to -H at the
-/// feet, x across (+x the hatch side), z along. Writes Constructs/Parts/Containers (group Style: unlisted and no recipe while a draft) and
-/// a loaded draft blueprint per size beside its timing file in tools/preview/anim.
+/// Frame, shared by every part: origin the roof's middle, y down to -H at the feet, x across, z along. A crane takes it whole by its four
+/// top corner castings (a spreader, Karl 2026-11-20: "a box where they grab the container as a whole"), never by a port on the roof.
+/// Writes Constructs/Parts/Containers (Parts tab: Storage and Logistics > Chests and cargo; recipes at the end of Assembling's Tail) and
+/// a loaded blueprint per size beside its timing file in tools/preview/anim for the Animation gallery.
 /// </summary>
 public sealed class ContainerParts : IPartGenerator
 {
@@ -31,7 +33,7 @@ public sealed class ContainerParts : IPartGenerator
     private const string Out = "Constructs/Parts/Containers";
     private const string AnimOut = "tools/preview/anim";
     private const string Section = "Cargo containers";
-    private const string Group = StyleSheetParts.Group; // (unlisted while a draft: Constructs/Categories.json)
+    private const string Group = "Storage"; // (the Parts tab's Storage and Logistics > Chests and cargo: Constructs/Categories.json)
 
     // Paint: the Traders' corporate blue shell (paintable), a dark frame, lanyard yellow at what moves, a pale lit inside.
     private const string Shell = "#2a64a8", ShellRib = "#245893", FrameC = "#2b2f35", Casting = "#1e2125", Hazard = "#f2c400", HazardDark = "#1b1714",
@@ -81,7 +83,7 @@ public sealed class ContainerParts : IPartGenerator
     private static Part Container()
     {
         var k = K(ContainerName(N), "frame",
-            $"A standard {N} m cargo container: three {N}x{N}x{N} m slots in a row, each a cradle a module stands on, and a hatch the whole length of each side that swings up to an awning. A crane's hook takes it by its roof; it stands on its four corner castings, and clamps at its feet lock it onto a container under it.",
+            $"A standard {N} m cargo container: three {N}x{N}x{N} m slots in a row, each a cradle a module stands on, and a hatch the whole length of each side that swings up to an awning. A crane's spreader takes it whole by its four top corner castings; it stands on its four bottom ones, and clamps at its feet lock it onto a container under it.",
             Medium);
         double w = W2, l = L2, y0 = -H;
         // Solids: the floor, the roof and the ends (both long sides are open: each hatch's own leaf closes its side).
@@ -112,6 +114,8 @@ public sealed class ContainerParts : IPartGenerator
                     // (the pocket on the side face and the end face: dark slots a twist lock goes into)
                     var ym = (ya + yb) / 2;
                     k.Box(sx * (w + 0.003), ym - 0.035, sz * (l - 0.12), sx * (w + 0.009), ym + 0.035, sz * (l - 0.05), HazardDark, "steel");
+                    if (yb == 0.0) // (the top face's pocket, where a spreader's twist lock goes in: the castings are what a crane grabs)
+                        k.Box(sx * (w - 0.13), -0.008, sz * (l - 0.11), sx * (w - 0.04), 0.003, sz * (l - 0.06), HazardDark, "steel");
                 }
         // Each end: a recessed panel with an X brace across it, and on the +z end the data plate and the slot lamps' repeater.
         foreach (var sz in new[] { -1, 1 })
@@ -125,7 +129,7 @@ public sealed class ContainerParts : IPartGenerator
         k.Paint(-w + F + 0.06, -F - 0.42, ze, -w + F + 0.5, -F - 0.12, ze + 0.012, Paper); // (the data plate: owner, size, mass)
         for (var i = 0; i < 4; i++)
             k.Box(-w + F + 0.1, -F - 0.38 + i * 0.065, ze + 0.012, -w + F + 0.1 + (i == 0 ? 0.32 : 0.22), -F - 0.36 + i * 0.065, ze + 0.018, HazardDark, "plastic");
-        // The roof: plating between the rails, an X brace either half, two lifting eyes and the hook's pad in the middle.
+        // The roof: plating between the rails and an X brace either half.
         k.Paint(-w + F, -F + 0.03, -l + F, w - F, -0.03, l - F, Shell);
         foreach (var sz in new[] { -1, 1 })
         {
@@ -133,12 +137,7 @@ public sealed class ContainerParts : IPartGenerator
             Brace(k, "y", -0.03, -0.012, -w + F + 0.05, z0, w - F - 0.05, z1, 0.09, FrameC, "dirty steel");
             Brace(k, "y", -0.03, -0.009, -w + F + 0.05, z1, w - F - 0.05, z0, 0.09, FrameC, "dirty steel");
         }
-        k.Box(-0.3, -0.03, -0.3, 0.3, -0.008, 0.3, Hazard, "hazard paint"); // (the hook's pad)
-        k.Box(-0.22, -0.008, -0.22, 0.22, -0.002, 0.22, HazardDark, "steel");
-        foreach (var sz in new[] { -1, 1 })
-        {
-            k.Box(-0.08, -0.03, sz * 0.5 - 0.06, 0.08, -0.004, sz * 0.5 + 0.06, FrameC, "steel"); // (a lifting eye, sunk in the roof either side of the hook's pad: nothing stands above the roof, so a container stacks on it)
-        }
+        // (no hook pad: a crane's spreader takes the container whole by its four top castings, twist locks into their pockets)
         // Each hatch side's sill: hazard stripes the hatch shuts onto.
         var stripes = (int)Math.Round((2 * l - 2 * F) / 0.4);
         foreach (var sx in new[] { -1, 1 })
@@ -193,7 +192,7 @@ public sealed class ContainerParts : IPartGenerator
                 Solid(k, cx - 0.06, y0 + 0.075, sz * (l - 0.01), cx + 0.06, y0 + 0.095, sz * (l + ClampOff));
                 k.P.Sock($"clamp.{c++}", [Py.Round(cx, 3), y0 + 0.085, Py.Round(sz * (l + ClampOff), 4)], sz > 0 ? "+z" : "-z");
             }
-        // The cradles' sockets on the floor, the hook's on the roof, its feet under it and under each casting.
+        // The cradles' sockets on the floor, the spreader's reference on the roof, its feet under it and under each casting.
         for (var s = 0; s < 3; s++)
             k.P.Sock($"slot{s}", [0, FloorY, SlotZ(s)], "+y");
         k.P.Sock("top", [0, 0, 0], "+y");

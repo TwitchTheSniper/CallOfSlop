@@ -2367,6 +2367,16 @@
     {"output": "Jacked Strut", "materials": {"steel": 16, "planks": 1}, "seconds": 6},
     {"output": "Old Fridge", "materials": {"steel": 14, "rubber": 2}, "seconds": 10},
     {"output": "Bucket Toilet", "materials": {"steel": 8, "rubber": 3, "planks": 1}, "seconds": 6},
-    {"output": "Parts Bins", "materials": {"steel": 6, "rubber": 4}, "seconds": 6}
+    {"output": "Parts Bins", "materials": {"steel": 6, "rubber": 4}, "seconds": 6},
+    {"output": "Container Cradle 1x1", "materials": {"steel": 9, "concrete": 2}, "seconds": 3.3, "minTier": 2},
+    {"output": "Container Cradle 2x2", "materials": {"steel": 36, "concrete": 7}, "seconds": 7.4, "minTier": 2},
+    {"output": "Container Cradle 3x3", "materials": {"steel": 81, "concrete": 16}, "seconds": 14.2, "minTier": 2},
+    {"output": "Container Corner Clamp", "materials": {"steel": 3}, "parts": {"Bearing": 1}, "seconds": 2.4, "minTier": 2},
+    {"output": "Standard Container 1m", "materials": {"steel": 128, "concrete": 26}, "seconds": 21.1, "minTier": 2},
+    {"output": "Standard Container 1m Hatch", "materials": {"steel": 16}, "parts": {"Bearing": 2}, "seconds": 4.5, "minTier": 2},
+    {"output": "Standard Container 2m", "materials": {"steel": 388, "concrete": 78}, "seconds": 60.1, "minTier": 2},
+    {"output": "Standard Container 2m Hatch", "materials": {"steel": 59}, "parts": {"Bearing": 6}, "seconds": 10.9, "minTier": 2},
+    {"output": "Standard Container 3m", "materials": {"steel": 788, "concrete": 158}, "seconds": 120.1, "minTier": 2},
+    {"output": "Standard Container 3m Hatch", "materials": {"steel": 128}, "parts": {"Bearing": 13}, "seconds": 21.2, "minTier": 2}
   ]
 }

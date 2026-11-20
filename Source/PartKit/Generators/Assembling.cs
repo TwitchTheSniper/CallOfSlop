@@ -315,7 +315,7 @@ public sealed class Assembling : IPartGenerator
         ["Copper Coil"] = 2, ["Wiring Loom"] = 2, ["Servo Motor"] = 2, ["Circuit Board"] = 3, ["Control Unit"] = 3,
     };
 
-    private static readonly string[] SkipFolders = ["Spawn", "Components", "Press/Dies", "Wings", "Lore", "ShipWorks", "Shells/Spares", "SpaceStations", "Containers"]; // (dies come from a Die Lathe, or the start kit; the colony's lore items are its own; the standard containers are a draft with no recipe yet)
+    private static readonly string[] SkipFolders = ["Spawn", "Components", "Press/Dies", "Wings", "Lore", "ShipWorks", "Shells/Spares", "SpaceStations"]; // (dies come from a Die Lathe, or the start kit; the colony's lore items are its own)
     // (the old ammo modules: a box's setting does it now) (a data centre's terminal is found, never made: docs/archive/story/FRAGMENTS.md)
     private static readonly string[] SkipNames = ["Material Bundle", "Construct Core", "Data Centre Terminal", "Chest Lid", "Lid Hinge", "FMJ Rounds", "AP Rounds", "HE Rounds", "Incendiary Rounds"];
     private const int MaxUnits = 2000;
@@ -616,6 +616,17 @@ public sealed class Assembling : IPartGenerator
         (null, null, Rec("Old Fridge", 10, 1, m: [("steel", 14), ("rubber", 2)])),
         (null, null, Rec("Bucket Toilet", 6, 1, m: [("steel", 8), ("rubber", 3), ("planks", 1)])),
         (null, null, Rec("Parts Bins", 6, 1, m: [("steel", 6), ("rubber", 4)])),
+        // (standard cargo containers, Karl 2026-11-20: ContainerParts; their recipes worked out from the part files)
+        ("Containers", "Container Cradle 1x1", null),
+        ("Containers", "Container Cradle 2x2", null),
+        ("Containers", "Container Cradle 3x3", null),
+        ("Containers", "Container Corner Clamp", null),
+        ("Containers", "Standard Container 1m", null),
+        ("Containers", "Standard Container 1m Hatch", null),
+        ("Containers", "Standard Container 2m", null),
+        ("Containers", "Standard Container 2m Hatch", null),
+        ("Containers", "Standard Container 3m", null),
+        ("Containers", "Standard Container 3m Hatch", null),
     ];
 
     /// <summary>

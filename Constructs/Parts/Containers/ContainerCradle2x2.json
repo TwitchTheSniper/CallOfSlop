@@ -2,7 +2,7 @@
   "format": "call-of-slop-construct-part/1",
   "name": "Container Cradle 2x2",
   "description": "A 2x2 m cradle on a cargo container's floor: a flat module stand, so a module set on it is stored there (nothing couples) and travels with the container.",
-  "group": "Style",
+  "group": "Storage",
   "section": "Cargo containers",
   "role": "frame",
   "tool": "welder",
