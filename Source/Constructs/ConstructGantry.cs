@@ -28,15 +28,19 @@ public struct GantryJob
 /// <summary>
 /// A Shell Gantry's waist clamp on the shell in its bay (both peers; ConstructGantry.Hold): closed from the first swap's start, open again
 /// from when its last swap ended. An entry stays until its opening is drawn, then is reused. The hold itself is the server's: the shell
-/// is <see cref="Construct.HeldBy"/> the gantry and posed every tick where it stood in the gantry part's frame (Game.GantryPin), so it
-/// goes with a gantry aboard a moving ship (riding its frame) and is never frozen in the world.
+/// is <see cref="Construct.HeldBy"/> the gantry and posed every tick in the gantry part's frame (Game.GantryPin): shut on it where it
+/// stood (or lay), the clamp lifts it upright to <see cref="ConstructGantry.HoldPoint"/> and holds it there, and once the last swap ends
+/// it sets it down on its feet before the jaws open. It goes with a gantry aboard a moving ship (riding its frame) and is never frozen.
 /// </summary>
 public struct GantryLock
 {
     public ushort Body, Part, Shell;
     public Vector3 PartAt; // server: the gantry part's place on its body (as GantryJob.PartAt)
-    public Vector3 At; // server: the shell's origin in the gantry part's frame when the clamp shut
-    public Quaternion Turn; // ...and its turn there
+    public Vector3 From; // server: the shell's origin in the gantry part's frame where this move began (shut on it, or set down from)
+    public Quaternion FromTurn; // ...and its turn there
+    public Vector3 At; // server: where the move ends (lifted while held; down on the bay's floor while lowering)
+    public Quaternion Turn; // ...and its turn there (upright, facing out of the bay)
+    public bool Lowering; // server: its last swap ended and it is setting the shell down (still held until it has)
     public double Since, Until; // when it began to close; when it began to open (-1: still held)
 }
 
@@ -63,6 +67,29 @@ public static class ConstructGantry
 
     /// <summary>The waist clamp's times (s): it closes on the shell when the first swap begins and opens when the last one ends.</summary>
     public const double LockClose = 0.8, LockOpen = 0.8;
+
+    /// <summary>
+    /// The clamp's lift (s): once its jaws are shut it lifts the shell upright off the bay's floor (done by 1.3 s, as the first arm
+    /// reaches the shell at <see cref="TAtShell"/>), and when the last swap ends it sets it down on its feet before the jaws open.
+    /// </summary>
+    public const double LockLift = 0.5;
+
+    /// <summary>How high the clamp holds a shell's feet off the bay's floor (m).</summary>
+    public const float LiftHeight = 0.2f;
+
+    /// <summary>Where a held shell's feet are in the gantry part's frame: the bay's middle, lifted <see cref="LiftHeight"/> off its floor (<paramref name="up"/> false: on it).</summary>
+    public static Vector3 HoldPoint(ShellGantryDef gd, bool up) =>
+        new((gd.BayMin.X + gd.BayMax.X) * 0.5f, gd.BayMin.Y + 0.01f + (up ? LiftHeight : 0), (gd.BayMin.Z + gd.BayMax.Z) * 0.5f);
+
+    /// <summary>
+    /// How far the clamp's move is (0: at <see cref="GantryLock.From"/>, 1: at <see cref="GantryLock.At"/>), eased: while held, the lift
+    /// after the jaws shut; while lowering, the way down.
+    /// </summary>
+    public static float Carry(in GantryLock l, double now)
+    {
+        var s = l.Lowering ? Ramp(now - l.Until, 0, LockLift) : Ramp(now - l.Since, LockClose, LockClose + LockLift);
+        return s * s * (3 - 2 * s);
+    }
 
     public const string HeldText = "a Shell Gantry's clamp holds it while its arms work: wait for the swap to end";
 
@@ -484,7 +511,7 @@ public static class ConstructGantry
     }
 
     /// <summary>Has a gantry's clamp finished opening (its entry free for another)?</summary>
-    public static bool LockDone(in GantryLock l, double now) => l.Until >= 0 && now - l.Until > LockOpen;
+    public static bool LockDone(in GantryLock l, double now) => l.Until >= 0 && now - l.Until > LockLift + LockOpen;
 
     /// <summary>
     /// The clamp of a gantry closes on <paramref name="shell"/> (both peers, as a swap begins or is heard): an entry made, reused or
@@ -538,7 +565,7 @@ public static class ConstructGantry
     public static float Shut(in GantryLock l, double now)
     {
         var closed = Ramp(now - l.Since, 0, LockClose);
-        return l.Until < 0 ? closed : MathF.Min(Ramp(l.Until - l.Since, 0, LockClose), 1 - Ramp(now - l.Until, 0, LockOpen));
+        return l.Until < 0 ? closed : MathF.Min(Ramp(l.Until - l.Since, 0, LockClose), 1 - Ramp(now - l.Until, LockLift, LockLift + LockOpen)); // (shut while it sets the shell down)
     }
 
     /// <summary>Is this shell in a gantry's hands (it can't be woken or taken while it is)?</summary>
