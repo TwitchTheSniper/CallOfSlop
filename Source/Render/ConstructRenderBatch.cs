@@ -46,9 +46,12 @@ public static partial class ConstructRender
         public int[] SlotPart = []; // slot k's member (its place in Members: an edit can renumber the parts) and box
         public byte[] SlotBox = [];
         public bool Dirty = true, LookDue = true;
+        public bool Lamps; // a member is a lamp: its looks are checked every check
         public Vector3 Centre; // a sphere round its boxes, in the segment's frame
         public float Radius;
         public Vector3 Min, Max; // its boxes' bounds in the segment's frame (the occlusion query's box)
+        public Vector3 EyeAt; // the eye in its own frame when its query was last asked for, and in which occlusion frame
+        public int EyeFrame = -1;
     }
 
     private sealed class MergeSet
@@ -72,6 +75,7 @@ public static partial class ConstructRender
         public Matrix4x4 Frame;
         public int Detail; // the smallest size class drawn (the far detail level)
         public bool Test; // drawn only where last frame's occlusion query saw its box (ConstructRenderOcclusion.cs)
+        public bool Use; // the eye has hardly moved against this chunk since that query: its result still speaks for it
         public Vector3 Min, Max; // the query's box, in the frame
     }
 
@@ -82,6 +86,8 @@ public static partial class ConstructRender
     private static readonly Dictionary<(long, int), int> _oldChunk = new();
     private static int[] _partEntry = [], _wheelMark = [], _memberAt = [];
     private static int _wheelToken;
+    private static int[] _partWaiting = [];
+    private static int _waitToken;
     private static long[] _eKey = [], _eGeo = [];
     private static int[] _eSub = [], _eSeg = [], _eCount = [], _eBoxes = [], _eFirst = [];
     private static bool[] _oldClaimed = [];
@@ -104,7 +110,13 @@ public static partial class ConstructRender
     public static long MergedBytes { get; private set; }
 
     /// <summary>(RuntimeParts) Freed run-time parts are let go (the cache fills again as types are drawn).</summary>
-    internal static void ForgetRuntime() => _defBoxes.Clear();
+    internal static void ForgetRuntime()
+    {
+        _defBoxes.Clear();
+        _defPanes.Clear();
+    }
+
+    private static readonly HashSet<ConstructPartDef> _defPanes = new(ReferenceEqualityComparer.Instance as IEqualityComparer<ConstructPartDef>); // merged types with glass panes to draw alone
 
     /// <summary>Drawn boxes of a type that never moves or changes on its own, or -1.</summary>
     internal static int StaticBoxes(ConstructPartDef d) // (also the preview export's cost line)
@@ -118,6 +130,8 @@ public static partial class ConstructRender
             || d.HasWork || d.HasRouterBoxes || d.HasEngineBoxes || d.Rotor != null || d.TrackRays > 0 || d.Logic is CLogic.AnalogLever || d.Surface is { Control: > 0 })
             n = -1;
         else
+        {
+            var panes = false;
             foreach (var box in d.Boxes.AsSpan())
             {
                 if (box.Rig != BoxRig.None || box.Shows != 0 || box.Spin || box.Roll || box.IsLeaf || box.Pump != 0)
@@ -125,9 +139,15 @@ public static partial class ConstructRender
                     n = -1;
                     break;
                 }
+                panes |= box.IsGlass && !box.Hidden;
                 if (!box.Hidden && !box.IsGlass)
                     n++;
             }
+            if (panes && d.Logic == CLogic.Lamp)
+                n = -1; // (a lit lamp's glass glows with the rest of it: DrawPart's order, so it is walked)
+            if (panes && n >= 0)
+                _defPanes.Add(d); // (by its boxes as they are now, not HasGlass: a run-time def's boxes arrive later)
+        }
         _defBoxes[d] = n;
         return n;
     }
@@ -216,7 +236,7 @@ public static partial class ConstructRender
     {
         ref var p = ref c.Parts[i];
         var d = p.D;
-        if (p.Seg != 0 || p.Burn > 0 || d.HasWork || d.Rotor != null || d.Role is PartRole.Joint or PartRole.Suspension || d.IsRail || d.HasRig || d.TrackRays > 0
+        if (p.Seg != 0 || p.Burn > 0 || d.HasWork || d.Logic == CLogic.AnalogLever || d.Rotor != null || d.Role is PartRole.Joint or PartRole.Suspension || d.IsRail || d.HasRig || d.TrackRays > 0
             || _wheelMark[i] == _wheelToken || c.DoorCount > 0 && c.DoorOfListed(i) >= 0 || c.MergeOf[i] != 0 || c.EngineOf[i] != 0 || d.ShellBody)
             return new Vector4(0, 0, 0, -1);
         c.PartBounds(i, out var mn, out var mx);
@@ -318,7 +338,7 @@ public static partial class ConstructRender
                     set.Walked[set.WalkedCount++] = i;
                 continue;
             }
-            if (c.Parts[i].Store != 0 || c.Parts[i].D.HasGlass)
+            if (c.Parts[i].Store != 0 || _defPanes.Contains(c.Parts[i].D))
                 set.Extra[set.ExtraCount++] = i; // (its own opaque boxes merged; what it holds and its panes drawn alone)
             if (nb == 0)
             {
@@ -416,6 +436,9 @@ public static partial class ConstructRender
             Array.Copy(_memberAt, _eFirst[e], ch.Members, 0, _eCount[e]);
             ch.MemberCount = _eCount[e];
             ch.LookDue = true;
+            ch.Lamps = false;
+            for (var m = 0; m < ch.MemberCount && !ch.Lamps; m++)
+                ch.Lamps = c.Parts[ch.Members[m]].D.Logic == CLogic.Lamp;
             made[e] = ch;
         }
         for (var k = 0; k < oldCount; k++)
@@ -602,7 +625,7 @@ public static partial class ConstructRender
     }
 
     private static string WalkWhy(ConstructPartDef d) =>
-        d.Role == PartRole.Joint ? "joint" : d.IsRail ? "rail" : d.HasRig ? "rig" : d.HasGlass ? "glass" : d.HasDial ? "dial" : d.IsBeacon ? "beacon"
+        d.Role == PartRole.Joint ? "joint" : d.IsRail ? "rail" : d.HasRig ? "rig" : d.HasDial ? "dial" : d.IsBeacon ? "beacon"
         : d.IsTerminal ? "terminal" : d.IsSpawner ? "spawner" : d.IsOrdnance ? "ordnance" : d.HasWork ? "work" : d.HasRouterBoxes ? "router"
         : d.HasEngineBoxes ? "engine" : d.Rotor != null ? "rotor" : d.TrackRays > 0 ? "track" : d.Logic is CLogic.AnalogLever ? "lever" : d.Logic is CLogic.Lamp ? "lamp"
         : d.Surface is { Control: > 0 } ? "surface" : "box flags";
@@ -641,6 +664,12 @@ public static partial class ConstructRender
         }
         var n = 0;
         var origin = gfx.Origin;
+        if (++_waitToken == int.MaxValue)
+        {
+            Array.Clear(_partWaiting);
+            _waitToken = 1;
+        }
+        var previewed = PreviewBody == c; // (a lamp's panel is open: its chunk's looks follow the colour being picked every frame)
         for (var k = 0; k < set.ChunkCount; k++)
         {
             var ch = set.Chunks[k];
@@ -654,15 +683,17 @@ public static partial class ConstructRender
             {
                 // Waiting its turn to be rebuilt: drawn part by part, as it was before merged meshes.
                 LastMergedWaiting++;
+                Grow(ref _partWaiting, c.PartCount);
                 for (var m = 0; m < ch.MemberCount; m++)
                     if (ch.Members[m] < c.PartCount)
                     {
+                        _partWaiting[ch.Members[m]] = _waitToken;
                         HostCut(gfx, c, ch.Members[m]);
                         n += DrawPart(gfx, world, c, ch.Members[m], body, alpha, 1f);
                     }
                 continue;
             }
-            if (ch.LookDue || check && ((k + set.Draws / MergeCheckFrames) & 1) == 0) // (half the chunks each check: each every 8 draws)
+            if (ch.LookDue || ch.Lamps && (check || previewed) || check && ((k + set.Draws / MergeCheckFrames) & 1) == 0) // (half the chunks each check: each every 8 draws; a chunk with lamps every check, so a row of lamps across chunks switches together)
             {
                 var look = ChunkLook(c, ch);
                 if (look != ch.Look || ch.LookDue)
@@ -681,6 +712,7 @@ public static partial class ConstructRender
             }
             var detail = LodClasses - 1;
             var test = false;
+            var use = false;
             if (cull)
             {
                 var at = Vector3.Transform(ch.Centre, frame) + origin;
@@ -695,10 +727,12 @@ public static partial class ConstructRender
                 var away = Vector3.Distance(at, _lodEye) - ch.Radius;
                 detail = DetailAt(away);
                 test = OcclusionWanted(ch, away); // (ConstructRenderOcclusion.cs: big enough to be worth a query, and the eye not by it)
+                if (test)
+                    use = OcclusionEyeSteady(gfx, ch, in frame);
             }
             if (_mergeQueued == _mergeQueue.Length)
                 Array.Resize(ref _mergeQueue, _mergeQueue.Length * 2); // (grows to the busiest frame once)
-            _mergeQueue[_mergeQueued++] = new MergeDraw { Mesh = ch.Gl, Frame = frame, Detail = detail, Test = test, Min = ch.Min, Max = ch.Max };
+            _mergeQueue[_mergeQueued++] = new MergeDraw { Mesh = ch.Gl, Frame = frame, Detail = detail, Test = test, Use = use, Min = ch.Min, Max = ch.Max };
             LastMergedChunks++;
             var drawnSlots = ch.Gl.SlotsUpTo(detail);
             LastBatchBoxes += drawnSlots;
@@ -729,8 +763,8 @@ public static partial class ConstructRender
             if (i >= c.PartCount || cull && OffScreen(in set.ExtraSphere[k], in body, origin))
                 continue;
             HostCut(gfx, c, i);
-            if (c.Parts[i].D.HasGlass)
-                n += DrawPanes(gfx, c, i, body, alpha);
+            if (_defPanes.Contains(c.Parts[i].D) && !(_partWaiting.Length > i && _partWaiting[i] == _waitToken))
+                n += DrawPanes(gfx, c, i, body, alpha); // (not while its chunk waits its rebuild: DrawPart drew its panes above)
             if (c.Parts[i].Store != 0)
                 n += DrawStored(gfx, world, c, i, body, alpha);
         }
@@ -812,7 +846,7 @@ public static partial class ConstructRender
         for (var k = 0; k < _mergeQueued; k++)
         {
             ref var q = ref _mergeQueue[k];
-            gfx.DrawMerged(q.Mesh, in q.Frame, q.Detail, q.Test && _occlusionUse);
+            gfx.DrawMerged(q.Mesh, in q.Frame, q.Detail, q.Test && q.Use && _occlusionUse);
         }
         gfx.Relative = rel;
         gfx.EndMerged();

@@ -72,6 +72,19 @@ public static unsafe partial class Program
             configs.Add("no occlusion"); // merged chunks drawn even where hidden (ConstructRenderOcclusion.cs)
             configs.Add("no far detail"); // every merged box drawn however far (the far detail level)
         }
+        if (_benchLag)
+        {
+            configs.Clear();
+            configs.Add("all on");
+            configs.Add("no occlusion");
+        }
+        if (args.Any(a => a.Equals("--bench-lod-only", StringComparison.OrdinalIgnoreCase)))
+        {
+            configs.Clear();
+            configs.Add("all on");
+            configs.Add("no far detail");
+        }
+        ConstructRender.OcclusionGap = double.MaxValue; // (the configurations take turns: an occlusion frame's neighbour can be a slow "no merge" one)
         var occOn = ConstructRender.OcclusionOn;
         var lodOn = ConstructRender.ChunkLodOn;
         var gpu = GlGpuStamps.Create(2);
@@ -119,6 +132,12 @@ public static unsafe partial class Program
                 var size = mx - mn;
                 var r = size.Length() * 0.5f;
                 views.Add(("far", mid + new Vector3(0.8f, 0.45f, 0.9f) * r * 1.6f, mid, 1.2f));
+                if (args.SkipWhile(a => !a.Equals("--bench-ship-far", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault()?.Split(',') is { Length: > 0 } fars)
+                {
+                    views.Clear();
+                    foreach (var fm in fars)
+                        views.Add(($"far{fm}", mid + Vector3.Normalize(new Vector3(0.8f, 0.45f, 0.9f)) * float.Parse(fm, CultureInfo.InvariantCulture), mid, 1.2f));
+                }
                 views.Add(("beside", mid + new Vector3(size.X * 0.5f + 60f, size.Y * 0.2f, size.Z * 0.15f), mid + new Vector3(0, 0, size.Z * 0.3f), 1.2f));
                 var axis = size.X >= size.Z ? Vector3.UnitX : Vector3.UnitZ;
                 var len = Vector3.Dot(size, axis);
@@ -200,7 +219,36 @@ public static unsafe partial class Program
                                 pictureFailures++;
                         }
                     }
-                    if (_benchMove > 0 && f >= 0)
+                    if (_benchLag && f >= 0)
+                    {
+                        var lpx = ReadFrame();
+                        if (c == 0)
+                            _lagRef = lpx;
+                        else if (_lagRef != null && _lagRef.Length == lpx.Length)
+                        {
+                            var differ = 0;
+                            for (var i = 0; i < lpx.Length; i += 4)
+                                if (Math.Max(Math.Max(Math.Abs(lpx[i] - _lagRef[i]), Math.Abs(lpx[i + 1] - _lagRef[i + 1])), Math.Abs(lpx[i + 2] - _lagRef[i + 2])) > 8)
+                                    differ++;
+                            _lagFrames++;
+                            if (differ > 0)
+                                _lagBad++;
+                            _lagSum += differ;
+                            if (differ > _lagWorst)
+                            {
+                                _lagWorst = differ;
+                                _lagWorstFrame = f / nc;
+                                if (shots)
+                                {
+                                    _shotFull = _benchFull;
+                                    SaveScreenshot($"lag_{Slug(map.Name)}_{view.Name}_noocc");
+                                    _lagWorstRef = (byte[])_lagRef.Clone();
+                                    _lagWorstPx = lpx;
+                                }
+                            }
+                        }
+                    }
+                    else if (_benchMove > 0 && f >= 0)
                         BenchShimmer(c, nc, ReadFrame(), _window.FramebufferSize.X, _window.FramebufferSize.Y);
                     _window.SwapBuffers();
                     if (f < 0)
@@ -241,6 +289,36 @@ public static unsafe partial class Program
                     cpu[k] = Stopwatch.GetElapsedTime(t0, t1).TotalMilliseconds;
                     full[k] = Stopwatch.GetElapsedTime(t0, t2).TotalMilliseconds;
                     gpuMs[k] = gpu != null && gpu.Ready(1) ? (gpu.Read(1) - (double)gpu.Read(0)) / 1e6 : -1;
+                }
+                if (_benchLag)
+                {
+                    var total = _window.FramebufferSize.X * _window.FramebufferSize.Y;
+                    Console.WriteLine(string.Create(CultureInfo.InvariantCulture,
+                        $"[glbench] lag {map.Name} {view.Name}: {_lagBad} of {_lagFrames} frames differ from no occlusion; mean {_lagSum / Math.Max(_lagFrames, 1.0):0} px, worst {_lagWorst} px ({100.0 * _lagWorst / total:0.00}% of the picture) at frame {_lagWorstFrame}; move {_benchMove} mm, turn {_benchTurn} mdeg, jump every {_benchJump}, origin {(_benchOriginEye ? "eye" : "zero")}"));
+                    if (shots && _lagWorstRef != null && _lagWorstPx != null)
+                    {
+                        // a difference picture: red where the occlusion frame differs
+                        var fbs = _window.FramebufferSize;
+                        using var fsd = File.Create(Path.Combine(AppContext.BaseDirectory, $"lagdiff_{Slug(view.Name)}.ppm"));
+                        var hdr = System.Text.Encoding.ASCII.GetBytes($"P6\n{fbs.X} {fbs.Y}\n255\n");
+                        fsd.Write(hdr);
+                        var row = new byte[fbs.X * 3];
+                        for (var y = fbs.Y - 1; y >= 0; y--)
+                        {
+                            for (var x = 0; x < fbs.X; x++)
+                            {
+                                var i = (y * fbs.X + x) * 4;
+                                var dd = Math.Max(Math.Max(Math.Abs(_lagWorstPx[i] - _lagWorstRef[i]), Math.Abs(_lagWorstPx[i + 1] - _lagWorstRef[i + 1])), Math.Abs(_lagWorstPx[i + 2] - _lagWorstRef[i + 2])) > 8;
+                                row[x * 3] = dd ? (byte)255 : _lagWorstRef[i];
+                                row[x * 3 + 1] = dd ? (byte)0 : _lagWorstRef[i + 1];
+                                row[x * 3 + 2] = dd ? (byte)0 : _lagWorstRef[i + 2];
+                            }
+                            fsd.Write(row);
+                        }
+                    }
+                    _lagBad = _lagFrames = _lagWorst = _lagWorstFrame = 0;
+                    _lagSum = 0;
+                    _lagRef = _lagWorstRef = _lagWorstPx = null;
                 }
                 var boxes = Gfx.BatchBoxes / Math.Max((frames + 10) * nc, 1);
                 if (_benchMove > 0 && _shimSum != null && _shimN != null)
@@ -367,8 +445,28 @@ public static unsafe partial class Program
         Glfw.SetTime(ShotTime + frame / 60.0); // a steady 60 fps clock: wind, flicker and the horde move as in play
         Gfx.BeginFrame(fb.X, fb.Y, map.Sky);
         var drift = BenchDrift(eye, target, frame); // (--bench-move: the camera alone moves; the bench's constructs stay put)
-        Gfx.SetCamera(Matrix4x4.CreateLookAt(eye + drift, target + drift, Vector3.UnitY),
-            Matrix4x4.CreatePerspectiveFieldOfView(fov, fb.X / (float)Math.Max(fb.Y, 1), 0.05f, map.FarPlane));
+        var be = eye + drift;
+        var bt = target + drift;
+        if (_benchJump > 0 && Math.Max(frame, 0) / _benchJump % 2 == 1)
+        {
+            var jf = target - eye;
+            jf.Y = 0;
+            jf = jf.LengthSquared() > 1e-4f ? Vector3.Normalize(jf) : new Vector3(0, 0, -1);
+            var off = new Vector3(-jf.Z, 0, jf.X) * _benchJumpBy;
+            be += off;
+            bt += off;
+        }
+        if (_benchTurn != 0)
+        {
+            var fr = Math.Max(frame, 0);
+            var deg = _benchTurnSwing > 0 ? _benchTurnSwing * MathF.Sin(fr * (_benchTurn * 0.001f) / _benchTurnSwing) : fr * _benchTurn * 0.001f; // (a swing: its fastest is the turn rate)
+            bt = be + Vector3.Transform(bt - be, Quaternion.CreateFromAxisAngle(Vector3.UnitY, deg * MathF.PI / 180f));
+        }
+        var bproj = Matrix4x4.CreatePerspectiveFieldOfView(fov, fb.X / (float)Math.Max(fb.Y, 1), 0.05f, MathF.Max(map.FarPlane, _benchFar));
+        if (_benchOriginEye)
+            Gfx.SetCameraAt(be, Matrix4x4.CreateLookAt(Vector3.Zero, bt - be, Vector3.UnitY), bproj);
+        else
+            Gfx.SetCamera(Matrix4x4.CreateLookAt(be, bt, Vector3.UnitY), bproj);
         Gfx.SetFog(map.Sky, map.FogStart, map.FogEnd);
         ApplyVideoLevels();
         DrawArena();
@@ -382,6 +480,12 @@ public static unsafe partial class Program
         Gfx.SetFog(map.Sky, 0, 0);
     }
 
+    private static bool _benchLag, _benchOriginEye;
+    private static int _benchFar;
+    private static int _benchTurn, _benchJump, _benchTurnSwing, _benchJumpBy = 30; // millidegrees a frame; frames between jumps; a swing of that many degrees; metres
+    private static byte[]? _lagRef, _lagWorstRef, _lagWorstPx;
+    private static int _lagBad, _lagFrames, _lagWorst, _lagWorstFrame;
+    private static long _lagSum;
     private static int _benchFx;
     private static int _benchMove; // mm a frame (--bench-move): sideways, plus half of it forward
     private static bool _benchFull;
@@ -444,7 +548,14 @@ public static unsafe partial class Program
         _settings.Particles = (VideoLevel)Math.Clamp(FlagAfter(args, "--bench-particles", (int)_settings.Particles), 0, 2);
         _settings.PostEffects = (VideoLevel)Math.Clamp(FlagAfter(args, "--bench-post", (int)_settings.PostEffects), 0, 2);
         _benchFx = Math.Clamp(FlagAfter(args, "--bench-fx", 0), 0, 500000);
-        _benchMove = Math.Clamp(FlagAfter(args, "--bench-move", 0), 0, 1000);
+        _benchMove = Math.Clamp(FlagAfter(args, "--bench-move", 0), 0, 100000);
+        _benchLag = args.Any(a => a.Equals("--bench-lag", StringComparison.OrdinalIgnoreCase));
+        _benchOriginEye = args.Any(a => a.Equals("--bench-origin-eye", StringComparison.OrdinalIgnoreCase));
+        _benchTurn = FlagAfter(args, "--bench-turn", 0);
+        _benchTurnSwing = FlagAfter(args, "--bench-turn-swing", 0);
+        _benchJump = FlagAfter(args, "--bench-jump", 0);
+        _benchJumpBy = FlagAfter(args, "--bench-jump-by", 30);
+        _benchFar = FlagAfter(args, "--bench-far", 0);
         _benchDist = Math.Clamp(FlagAfter(args, "--bench-dist", 24), 3, 400);
         _benchFull = args.Any(a => a.Equals("--bench-full", StringComparison.OrdinalIgnoreCase));
         _benchEdit = args.Any(a => a.Equals("--bench-edit", StringComparison.OrdinalIgnoreCase)) ? Math.Clamp(FlagAfter(args, "--frames", 60), 5, 2000) - 12 : 0;

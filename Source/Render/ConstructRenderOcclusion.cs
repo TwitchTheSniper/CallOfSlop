@@ -26,6 +26,8 @@ public static partial class ConstructRender
     private static bool _occlusionUse, _occlusionQuery;
     private static Vector3 _occEye, _occFwd;
     private static int _occFrameSeen = -1;
+    private static long _occStamp;
+    public static double OcclusionGap = 0.25; // seconds between main view frames past which last frame's results aren't used (the bench, whose configurations take turns on a slow software GPU, lifts it)
 
     /// <summary>Merged chunks left to the GPU's query result and queries issued, last frame (the F9 window, the bench).</summary>
     public static int LastOccTested { get; private set; }
@@ -52,17 +54,22 @@ public static partial class ConstructRender
     /// <summary>The start of the constructs pass: whether this frame tests chunks and draws by last frame's tests.</summary>
     private static void OcclusionBegin(Renderer gfx)
     {
+        _occlusionQuery = _occlusionUse = false;
+        if (CameraFeeds.InPass)
+            return; // (a feed's pass neither asks nor uses queries, and leaves the main view's counters alone)
         LastOccTested = gfx.OccludedTested;
         LastOccQueries = gfx.OcclusionQueries;
         gfx.OccludedTested = gfx.OcclusionQueries = 0;
-        _occlusionQuery = _occlusionUse = false;
-        if (!OcclusionOn || !OcclusionSetting || !MergeOn || CameraFeeds.InPass || gfx.ViewProj.IsIdentity || !gfx.OcclusionQueriesOn)
+        if (!OcclusionOn || !OcclusionSetting || !MergeOn || gfx.ViewProj.IsIdentity || !gfx.OcclusionQueriesOn)
             return;
+        var stamp = System.Diagnostics.Stopwatch.GetTimestamp();
+        var fresh = System.Diagnostics.Stopwatch.GetElapsedTime(_occStamp, stamp).TotalSeconds < OcclusionGap; // (frames that drew no world, a minimised window: the results are from however long ago)
+        _occStamp = stamp;
         if (!Matrix4x4.Invert(gfx.ViewRelative, out var inv))
             return;
         var eye = gfx.CameraPosition - gfx.Origin; // (from the render origin: aboard a ship in orbit the eye moves kilometres a second in the world and hardly at all against what it sees)
         var fwd = Vector3.Normalize(-new Vector3(inv.M31, inv.M32, inv.M33));
-        var steady = _occFrameSeen == gfx.OcclusionFrame && Vector3.DistanceSquared(eye, _occEye) < OcclusionJump * OcclusionJump && Vector3.Dot(fwd, _occFwd) > OcclusionTurn;
+        var steady = fresh && _occFrameSeen == gfx.OcclusionFrame && Vector3.DistanceSquared(eye, _occEye) < OcclusionJump * OcclusionJump && Vector3.Dot(fwd, _occFwd) > OcclusionTurn;
         gfx.OcclusionFrame++;
         _occFrameSeen = gfx.OcclusionFrame;
         _occEye = eye;
@@ -73,6 +80,24 @@ public static partial class ConstructRender
 
     /// <summary>Is a chunk worth testing: queries on this frame, big enough, and the eye not at it (a box round the eye fails its own test at the near plane).</summary>
     private static bool OcclusionWanted(MergeChunk ch, float away) => _occlusionQuery && ch.Gl.Slots >= OcclusionMinSlots && away > OcclusionNear;
+
+    /// <summary>The eye's move against one chunk (in the chunk's own frame) past which last frame's query says nothing about this one.</summary>
+    public static float OcclusionEyeMove = 2f;
+
+    /// <summary>
+    /// Has the eye hardly moved against this chunk since its query was asked for? Measured in the chunk's own frame, so it
+    /// holds whatever the render origin is (the eye itself in third person and on a spacewalk), for a camera cut, a ship
+    /// passing at speed, a body whose pose snapped and a segment swinging on its joint.
+    /// </summary>
+    private static bool OcclusionEyeSteady(Renderer gfx, MergeChunk ch, in Matrix4x4 frame)
+    {
+        var rel = _occEye - frame.Translation; // (both from the render origin)
+        var local = new Vector3(rel.X * frame.M11 + rel.Y * frame.M12 + rel.Z * frame.M13, rel.X * frame.M21 + rel.Y * frame.M22 + rel.Z * frame.M23, rel.X * frame.M31 + rel.Y * frame.M32 + rel.Z * frame.M33);
+        var steady = OcclusionEyeMove <= 0 || ch.EyeFrame == gfx.OcclusionFrame - 1 && Vector3.DistanceSquared(local, ch.EyeAt) < OcclusionEyeMove * OcclusionEyeMove;
+        ch.EyeAt = local;
+        ch.EyeFrame = gfx.OcclusionFrame;
+        return steady;
+    }
 
     /// <summary>After the opaque constructs are drawn: each queued chunk that wants it, its box tested against the depth.</summary>
     private static void QueryMerged(Renderer gfx)

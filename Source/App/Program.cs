@@ -445,6 +445,8 @@ public static unsafe partial class Program
             ConstructRender.MergeOn = false; // constructs drawn box by box, as before merged meshes (docs/render/MERGED-MESHES.md)
         if (args.Any(a => a.Equals("--no-occlusion", StringComparison.OrdinalIgnoreCase)))
             ConstructRender.OcclusionOn = false; // merged chunks drawn whether or not something hides them (ConstructRenderOcclusion.cs)
+        if (args.Any(a => a.Equals("--no-eye-steady", StringComparison.OrdinalIgnoreCase)))
+            ConstructRender.OcclusionEyeMove = 0; // (throwaway: the branch's behaviour, for comparing)
         if (args.Any(a => a.Equals("--no-chunk-lod", StringComparison.OrdinalIgnoreCase)))
             ConstructRender.ChunkLodOn = false; // every merged box drawn however far (the far detail level, ConstructRenderBatch.cs)
         if (FlagAfter(args, "--lod-px", 0) is var lodPx and > 0)

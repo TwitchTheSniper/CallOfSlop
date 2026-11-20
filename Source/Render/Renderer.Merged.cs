@@ -327,7 +327,7 @@ public sealed unsafe partial class Renderer
     private GlProgram _occProgram;
     private GlVertexArray _occVao;
     private int _occMvp = -1;
-    private bool _occReady, _occBroken, _occOn, _occCull;
+    private bool _occReady, _occBroken, _occOn;
 
     /// <summary>The occlusion frame: counted once a main view frame (ConstructRender), so a query from the frame before can be told from an older one.</summary>
     public int OcclusionFrame;
@@ -396,7 +396,7 @@ public sealed unsafe partial class Renderer
         }
     }
 
-    /// <summary>Starts a run of <see cref="QueryMerged"/> calls: the box program, colour and depth writes off, both faces (the eye can be inside a box).</summary>
+    /// <summary>Starts a run of <see cref="QueryMerged"/> calls: the box program, colour and depth writes off (face culling as the box pass has it: the eye is never inside a tested box).</summary>
     public void BeginOcclusion()
     {
         if (!OcclusionQueriesOn)
@@ -404,9 +404,6 @@ public sealed unsafe partial class Renderer
         _occOn = true;
         _occProgram.Use();
         _occVao.Bind();
-        _occCull = Native.glIsEnabled((GlEnum)GL_CULL_FACE);
-        if (_occCull)
-            Native.glDisable(GlCapability.CullFace);
         Native.glColorMask(false, false, false, false);
         Native.glDepthMask(false);
     }
@@ -450,8 +447,6 @@ public sealed unsafe partial class Renderer
         _occOn = false;
         Native.glColorMask(true, true, true, true);
         Native.glDepthMask(true);
-        if (_occCull)
-            Native.glEnable(GlCapability.CullFace);
         Native.glBindBuffer(GL_ARRAY_BUFFER, _vbo);
         _program.Use();
         _vao.Bind();

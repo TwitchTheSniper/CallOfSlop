@@ -29,8 +29,9 @@ Merged all the same since 2026-11-20 (the 1 km Mainframe walked 28,000 boxes a f
   drawn each frame (`MergeSet.Extra`, `DrawStored`).
 - **A part with glass**: its opaque boxes are in its chunk; only its panes are drawn each frame, blended as before
   (`DrawPanes`).
-- **Lamps**: a lamp's lit look (on or off, its colour, the configure panel's preview) is part of its chunk's looks, so a
-  switch shows within 8 drawn frames, as paint does.
+- **Lamps**: a lamp's lit look (on or off, its colour) is part of its chunk's looks. A chunk with lamps is checked on
+  every check (4 drawn frames), so a row of lamps across chunks switches together, and every frame while a lamp's
+  configure panel is open on that body, so the colour preview follows the slider. A lamp with glass is walked.
 - **Designed ordnance**: merged with its wings folded, as it sits until it drops (`FoldWing` in `BuildChunk`).
 
 A body with fewer than `MergeMinBoxes` (24) static boxes is walked whole: its own draws would cost more than its boxes do
@@ -90,8 +91,12 @@ the GPU nothing; from a room, what is behind its walls costs nothing.
 - **Not tested**: a chunk whose sphere is within `OcclusionNear` (4 m) of the eye (a box round the eye is cut by the near
   plane); small chunks (a query costs about what they do); the camera feeds' passes (not the view of the frame before).
 - **Stale results are never used**: a chunk is drawn untested unless its query was issued the occlusion frame before
-  (`MergedMesh.QueryFrame`), a rebuilt chunk forgets its query, and a frame after the eye moved 6 m or turned about 10
-  degrees against the render origin (a cut, a teleport, a picture from elsewhere) draws everything.
+  (`MergedMesh.QueryFrame`) and the eye has moved under `OcclusionEyeMove` (2 m) in that chunk's own frame since
+  (`OcclusionEyeSteady`: it holds whatever the render origin is, and covers a camera cut, a third person toggle, a ship
+  passing at speed, a snapped pose and a segment on its joint). A rebuilt chunk forgets its query, and a frame after the
+  eye turned about 10 degrees, or after a quarter of a second with no world drawn (a minimised window), draws everything.
+  `--gl-bench ... --bench-lag [--bench-origin-eye] [--bench-jump N --bench-jump-by M] [--bench-move MM] [--bench-turn MDEG]`
+  draws every frame both ways and counts the pixels that differ (2026-11-20: 0 on 150 m cuts every 4th frame).
 - **The cost of being a frame late**: a chunk that comes out from behind something is drawn one frame after it could first
   be seen. If that ever shows as flicker at an edge, raise `OcclusionPad`; Video settings: **Skip hidden parts**;
   `--no-occlusion`.
