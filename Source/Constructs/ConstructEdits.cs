@@ -45,6 +45,7 @@ public struct SandboxHand
     public ushort GrabBody; // the physics gun holds this construct (0: nothing; ConstructGrab.cs)
     public Vector3 GrabLocal; // ...at this point (its body frame)
     public float GrabDist; // ...this far out along the look
+    public Quaternion GrabRelWant; // the server's: a joined holder's last asked turn, which GrabRel follows smoothly (ConstructGrab.SteerSmooth; zero: none waiting)
     public float GrabBoost; // a client's: the server's flight boost of the held body (ConstructGrab.FlightBoost; 0 or 1: none), for its own prediction
     public byte GrabSeg; // a free joint's segment: the beam moves that alone, GrabLocal in its frame (0: the whole construct, ConstructGrab.cs)
     public ushort GrabHinge; // ...and the joint's part, to tell it from another once the construct has changed

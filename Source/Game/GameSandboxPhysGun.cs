@@ -87,7 +87,7 @@ public sealed partial class Game
             {
                 var dist = r.U16() / 100f;
                 var q = new Quaternion((short)r.U16() / 32767f, (short)r.U16() / 32767f, (short)r.U16() / 32767f, (short)r.U16() / 32767f);
-                hands.SteerGrab(p.Id, dist, q);
+                hands.SteerGrab(p.Id, dist, q, smooth: p.Id != LocalId); // (a joined holder's turn arrives in steps: followed smoothly, pc01)
                 return null;
             }
             case CActKind.GrabRelease:

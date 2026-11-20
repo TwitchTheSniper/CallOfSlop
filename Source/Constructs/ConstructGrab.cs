@@ -66,6 +66,9 @@ public static class ConstructGrab
 
     public static float BoostOf(byte b) => 1f + b / 255f * (FlightBoostMax - 1f);
 
+    /// <summary>A joined holder's asked turn is followed over about this long (s; pc01: it arrives in steps, ~30 a second).</summary>
+    public const float SteerSmooth = 0.05f;
+
     /// <summary>The share of the beam's acceleration the spring plans to brake with (the rest is margin for gravity and contacts).</summary>
     public const float BrakeShare = 0.7f;
 
@@ -705,6 +708,7 @@ public sealed partial class ConstructEdits
         h.GrabLocal = local;
         h.GrabDist = Math.Clamp(dist, ConstructGrab.MinDist, GrabRange(player));
         h.GrabRel = Quaternion.Normalize(Quaternion.Conjugate(ConstructGrab.LookQ(h, lookAt ?? eye, yaw)) * c.Rot); // (lookAt: where the look's yaw is measured, the holder's feet)
+        h.GrabRelWant = default; // (a new hold: no asked turn waiting)
         h.Edit = EditKind.None;
         Done.Add($"player {player}: grabbed construct {body} with the physics gun");
         return null;
@@ -808,13 +812,22 @@ public sealed partial class ConstructEdits
     }
 
     /// <summary>The client's wheel and turn: the held thing's distance and its turn relative to the look's yaw.</summary>
-    public void SteerGrab(byte player, float dist, Quaternion rel)
+    /// <param name="smooth">A joined holder's (pc01): the turn arrives in steps, ~30 a second and bunched by the network, and
+    /// each step taken at once spun the piece in jerks (up to 8 rad/s for a steady 2): <see cref="SandboxHand.GrabRel"/> follows
+    /// it over <see cref="ConstructGrab.SteerSmooth"/> in <see cref="GrabTick"/>. The host's own steer is every frame: at once.</param>
+    public void SteerGrab(byte player, float dist, Quaternion rel, bool smooth = false)
     {
         ref var h = ref Hands[player];
         if (h.GrabBody == 0 || !float.IsFinite(dist + rel.X + rel.Y + rel.Z + rel.W) || rel.LengthSquared() < 0.5f)
             return;
         h.GrabDist = Math.Clamp(dist, ConstructGrab.MinDist, GrabRange(player));
-        h.GrabRel = Quaternion.Normalize(rel);
+        if (smooth)
+            h.GrabRelWant = Quaternion.Normalize(rel);
+        else
+        {
+            h.GrabRel = Quaternion.Normalize(rel);
+            h.GrabRelWant = default;
+        }
     }
 
     /// <summary>Lets go (it keeps the speed it had: a flick throws it, as before pr01).</summary>
@@ -867,6 +880,12 @@ public sealed partial class ConstructEdits
         // by a tick of the deck's travel as well held the piece that far ahead of the crosshair, 4.7 m in a ship in orbit, and
         // into the walls: user, 2026-11-18)
         c.GrabTarget = eye + look * h.GrabDist;
+        if (h.GrabRelWant.LengthSquared() > 0.5f)
+        {
+            // (a joined holder's turn, followed smoothly: SteerGrab)
+            var want = Quaternion.Dot(h.GrabRel, h.GrabRelWant) < 0 ? -h.GrabRelWant : h.GrabRelWant;
+            h.GrabRel = Quaternion.Normalize(Quaternion.Slerp(h.GrabRel, want, 1f - MathF.Exp(-(float)World.TickDt / ConstructGrab.SteerSmooth)));
+        }
         c.GrabRot = ConstructGrab.LookQ(h, lookAt ?? eye, yaw) * h.GrabRel; // (lookAt: where the look's yaw is measured, the holder's feet: GravityFrames.Forward(p.Position, ...))
         c.GrabFrameVel = frameVel;
         c.GrabFrameSpin = frameSpin;

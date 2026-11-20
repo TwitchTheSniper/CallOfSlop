@@ -132,27 +132,29 @@ public sealed partial class Game
         var serverPos = Vector3.Transform(c.Pos - _simFt, inv);
         var serverRot = Quaternion.Normalize(inv * c.Rot);
         // Ease the predicted path towards the server's pose of the same tick (c.Pos/Rot: the blended pose of the drawn tick).
+        // The position eased is the grab point's, and the turn is eased about it (pc01, user 2026-11-19: "when rotating objects,
+        // the client has strange behavior"): the turn the mouse asks for reaches the server a round trip late, on its own
+        // unreliable message, not on the mover clock, so while it turns the server's pose of a tick is turned less than the one
+        // predicted for it. Eased by the body's origin, that gap in the turn became a gap in position (a long piece held by its
+        // middle swung its origin metres round), the grab point was dragged off the crosshair, and the spring in the
+        // prediction pulled back against it: the drawn piece flailed. About the grab point a gap in the turn stays a turn.
         var rt = Constructs.NetRenderTick;
+        var gl = _simGrabLocal;
         if (SimHistoryAt(rt, out var hp, out var hr))
         {
             var a = 1f - MathF.Exp(-dt / SimReconcileSeconds);
-            var dp = (serverPos - hp) * a;
+            var dp = (serverPos + Vector3.Transform(gl, serverRot) - hp - Vector3.Transform(gl, hr)) * a;
             var er = Quaternion.Normalize(serverRot * Quaternion.Conjugate(hr));
             if (er.W < 0)
                 er = -er;
             var dq = Quaternion.Normalize(Quaternion.Slerp(Quaternion.Identity, er, a));
             if (float.IsFinite(dp.X + dp.Y + dp.Z + dq.W))
             {
-                _simPos += dp;
-                _simPrevPos += dp;
-                _simRot = Quaternion.Normalize(dq * _simRot);
-                _simPrevRot = Quaternion.Normalize(dq * _simPrevRot);
+                SimTurnAbout(ref _simPos, ref _simRot, dp, dq, gl);
+                SimTurnAbout(ref _simPrevPos, ref _simPrevRot, dp, dq, gl);
                 for (var i = 0; i < SimHistory; i++)
                     if (_simHistTick[i] != 0)
-                    {
-                        _simHistPos[i] += dp;
-                        _simHistRot[i] = Quaternion.Normalize(dq * _simHistRot[i]);
-                    }
+                        SimTurnAbout(ref _simHistPos[i], ref _simHistRot[i], dp, dq, gl);
             }
         }
         // The drawn piece between the last two predicted ticks, as the local player is drawn.
@@ -166,7 +168,9 @@ public sealed partial class Game
             var lead = (float)Math.Max(0, (_simTick - rt) * World.TickDt) + ConstructGrab.LeadSeconds;
             var moving = _simFree ? 1f : Math.Clamp(_simAimSpeed / ConstructGrab.RestSpeed, 0f, 1f);
             var allowed = MathF.Max(ConstructGrab.LeadMin * moving, ConstructGrab.RestLead) + (_simFree ? _simBodySpeed : MathF.Max(_simBodySpeed, _simAimSpeed)) * lead;
-            var off = pos - serverPos;
+            // (held, the grab points are compared: a piece turned ahead of the server's turns about the point the beam holds,
+            // and its origin moves with the turn; pc01. Let go, the origins, as nothing holds it)
+            var off = _simFree ? pos - serverPos : pos + Vector3.Transform(gl, rot) - serverPos - Vector3.Transform(gl, serverRot);
             if (off.LengthSquared() > allowed * allowed)
             {
                 var len = off.Length();
@@ -272,6 +276,14 @@ public sealed partial class Game
         }
         _simTick++;
         SimRecord();
+    }
+
+    /// <summary>A pose moved by <paramref name="dp"/> and turned by <paramref name="dq"/> about its own point <paramref name="local"/> (pc01).</summary>
+    private static void SimTurnAbout(ref Vector3 pos, ref Quaternion rot, Vector3 dp, Quaternion dq, Vector3 local)
+    {
+        var at = pos + Vector3.Transform(local, rot);
+        rot = Quaternion.Normalize(dq * rot);
+        pos = at + dp - Vector3.Transform(local, rot);
     }
 
     private void SimRecord()
