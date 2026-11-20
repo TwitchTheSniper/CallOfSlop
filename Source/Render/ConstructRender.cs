@@ -238,7 +238,7 @@ public static partial class ConstructRender
         GatherPocketCuts(gfx, world, alpha, blendTicks); // (the nearest flush pods' pockets: ConstructRenderPodCuts.cs, Renderer.Cuts.cs)
         gfx.BeginBatch(); // (the small bodies' boxes in one instanced draw, not a draw each)
         var merge = MergeOn && gfx.MergedMeshes; // (static parts as merged meshes: ConstructRenderBatch.cs)
-        BeginMergedFrame();
+        BeginMergedFrame(gfx);
         var loopT0 = System.Diagnostics.Stopwatch.GetTimestamp();
         foreach (var c in world.Bodies)
         {
@@ -310,6 +310,7 @@ public static partial class ConstructRender
         var loopT1 = System.Diagnostics.Stopwatch.GetTimestamp();
         FlushMerged(gfx);
         gfx.EndBatch();
+        QueryMerged(gfx); // (each queued chunk's box against what was just drawn: next frame draws it only if any of it showed, ConstructRenderOcclusion.cs)
         LoopMs += System.Diagnostics.Stopwatch.GetElapsedTime(loopT0, loopT1).TotalMilliseconds;
         FlushMs += System.Diagnostics.Stopwatch.GetElapsedTime(loopT1).TotalMilliseconds;
         AllocProfile.Mark("cr: sweep, links, tracks, routes, panels");

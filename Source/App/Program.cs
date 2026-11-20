@@ -451,6 +451,14 @@ public static unsafe partial class Program
         RenderCaps.ReadArgs(args); // --gl41, --gl-no=... (RenderCaps.cs)
         if (args.Any(a => a.Equals("--no-merge", StringComparison.OrdinalIgnoreCase)))
             ConstructRender.MergeOn = false; // constructs drawn box by box, as before merged meshes (docs/render/MERGED-MESHES.md)
+        if (args.Any(a => a.Equals("--no-occlusion", StringComparison.OrdinalIgnoreCase)))
+            ConstructRender.OcclusionOn = false; // merged chunks drawn whether or not something hides them (ConstructRenderOcclusion.cs)
+        if (args.Any(a => a.Equals("--no-eye-steady", StringComparison.OrdinalIgnoreCase)))
+            ConstructRender.OcclusionEyeMove = 0; // (throwaway: the branch's behaviour, for comparing)
+        if (args.Any(a => a.Equals("--no-chunk-lod", StringComparison.OrdinalIgnoreCase)))
+            ConstructRender.ChunkLodOn = false; // every merged box drawn however far (the far detail level, ConstructRenderBatch.cs)
+        if (FlagAfter(args, "--lod-px", 0) is var lodPx and > 0)
+            (ConstructRender.LodPixels, ConstructRender.LodPixelsForced) = (lodPx, true); // the far detail level drops boxes under this many pixels (default 1, the Video settings' Far detail)
         (_cliStartRound, var roundValue) = ZombiesRoundFlag(args); // --zombies-round N (or =N): the next Zombies runs start at round N
         _cliTestKit = args.Any(a => a.Equals("--test-kit", StringComparison.OrdinalIgnoreCase));
         var plain = SavePaths.WithoutSaveDir(args).Where(a => !a.StartsWith("--") && !ReferenceEquals(a, roundValue)).ToArray();

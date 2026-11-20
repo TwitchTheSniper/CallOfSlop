@@ -67,7 +67,26 @@ public static unsafe partial class Program
         if (RenderCaps.Gl46 && !args.Any(a => a.Equals("--bench-one", StringComparison.OrdinalIgnoreCase))) // (--bench-one: "all on" alone)
             configs.AddRange(RenderCaps.Experiments.Select(e => "no " + e.Name).Append("all off"));
         if (_benchWorld != null && !args.Any(a => a.Equals("--bench-one", StringComparison.OrdinalIgnoreCase)))
+        {
             configs.Add("no merge"); // constructs box by box, as before merged meshes (docs/render/MERGED-MESHES.md)
+            configs.Add("no occlusion"); // merged chunks drawn even where hidden (ConstructRenderOcclusion.cs)
+            configs.Add("no far detail"); // every merged box drawn however far (the far detail level)
+        }
+        if (_benchLag)
+        {
+            configs.Clear();
+            configs.Add("all on");
+            configs.Add("no occlusion");
+        }
+        if (args.Any(a => a.Equals("--bench-lod-only", StringComparison.OrdinalIgnoreCase)))
+        {
+            configs.Clear();
+            configs.Add("all on");
+            configs.Add("no far detail");
+        }
+        ConstructRender.OcclusionGap = double.MaxValue; // (the configurations take turns: an occlusion frame's neighbour can be a slow "no merge" one)
+        var occOn = ConstructRender.OcclusionOn;
+        var lodOn = ConstructRender.ChunkLodOn;
         var gpu = GlGpuStamps.Create(2);
         _passGpu = GlGpuStamps.Create(BenchPassNames.Length);
         _passOn = true;
@@ -101,6 +120,33 @@ public static unsafe partial class Program
                 views.Clear();
                 views.Add(("view", s0 + new Vector3(v[0], v[1], v[2]), s0 + new Vector3(v[3], v[4], v[5]), 1.2f));
             }
+            if (args.Any(a => a.Equals("--bench-ship-views", StringComparison.OrdinalIgnoreCase)) && _benchWorld != null && _benchWorld.Bodies.MaxBy(b => b.PartCount) is { } ship)
+            {
+                // --bench-ship-views: round the biggest bench body (a capital ship): far off, alongside, and at points inside it
+                // along its length (the occlusion and far detail cases), in place of the map's views.
+                views.Clear();
+                _benchShipViews = true;
+                var mn = ship.LocalMin + ship.Pos;
+                var mx = ship.LocalMax + ship.Pos;
+                var mid = (mn + mx) * 0.5f;
+                var size = mx - mn;
+                var r = size.Length() * 0.5f;
+                views.Add(("far", mid + new Vector3(0.8f, 0.45f, 0.9f) * r * 1.6f, mid, 1.2f));
+                if (args.SkipWhile(a => !a.Equals("--bench-ship-far", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault()?.Split(',') is { Length: > 0 } fars)
+                {
+                    views.Clear();
+                    foreach (var fm in fars)
+                        views.Add(($"far{fm}", mid + Vector3.Normalize(new Vector3(0.8f, 0.45f, 0.9f)) * float.Parse(fm, CultureInfo.InvariantCulture), mid, 1.2f));
+                }
+                views.Add(("beside", mid + new Vector3(size.X * 0.5f + 60f, size.Y * 0.2f, size.Z * 0.15f), mid + new Vector3(0, 0, size.Z * 0.3f), 1.2f));
+                var axis = size.X >= size.Z ? Vector3.UnitX : Vector3.UnitZ;
+                var len = Vector3.Dot(size, axis);
+                for (var k = 0; k < 3; k++)
+                {
+                    var at = mid + axis * len * (k - 1) * 0.3f;
+                    views.Add(($"inside{k}", at, at + axis * 20f, 1.2f));
+                }
+            }
             for (var i = 0; i < Math.Min(2, map.Spawns.Count) && views.Count > 0 && views[0].Name != "view"; i++)
             {
                 var s = map.Spawns[i * (map.Spawns.Count - 1)];
@@ -119,6 +165,13 @@ public static unsafe partial class Program
                 var mergedCalls = new long[nc];
                 var dLoop = new double[nc];
                 var dFlush = new double[nc];
+                var tris = new double[nc];
+                var dropped = new double[nc];
+                var walked = new double[nc];
+                var walkCulled = new double[nc];
+                var hiddenChunks = new double[nc];
+                var hiddenSlots = new double[nc];
+                var testedChunks = new double[nc];
                 Gfx.BatchBoxes = Gfx.BatchDraws = 0;
                 for (var f = -10 * nc; f < frames * nc && !_window.ShouldClose; f++) // 10 warm-up frames each (render data is built on the first)
                 {
@@ -126,6 +179,8 @@ public static unsafe partial class Program
                     foreach (var (e, _) in RenderCaps.Experiments)
                         RenderCaps.Force(e, !(configs[c] == "all off" || configs[c] == "no " + e));
                     ConstructRender.MergeOn = configs[c] != "no merge";
+                    ConstructRender.OcclusionOn = occOn && configs[c] != "no occlusion";
+                    ConstructRender.ChunkLodOn = lodOn && configs[c] != "no far detail";
                     Glfw.PollEvents();
                     Native.glFinish();
                     _passMarks = 0;
@@ -164,7 +219,36 @@ public static unsafe partial class Program
                                 pictureFailures++;
                         }
                     }
-                    if (_benchMove > 0 && f >= 0)
+                    if (_benchLag && f >= 0)
+                    {
+                        var lpx = ReadFrame();
+                        if (c == 0)
+                            _lagRef = lpx;
+                        else if (_lagRef != null && _lagRef.Length == lpx.Length)
+                        {
+                            var differ = 0;
+                            for (var i = 0; i < lpx.Length; i += 4)
+                                if (Math.Max(Math.Max(Math.Abs(lpx[i] - _lagRef[i]), Math.Abs(lpx[i + 1] - _lagRef[i + 1])), Math.Abs(lpx[i + 2] - _lagRef[i + 2])) > 8)
+                                    differ++;
+                            _lagFrames++;
+                            if (differ > 0)
+                                _lagBad++;
+                            _lagSum += differ;
+                            if (differ > _lagWorst)
+                            {
+                                _lagWorst = differ;
+                                _lagWorstFrame = f / nc;
+                                if (shots)
+                                {
+                                    _shotFull = _benchFull;
+                                    SaveScreenshot($"lag_{Slug(map.Name)}_{view.Name}_noocc");
+                                    _lagWorstRef = (byte[])_lagRef.Clone();
+                                    _lagWorstPx = lpx;
+                                }
+                            }
+                        }
+                    }
+                    else if (_benchMove > 0 && f >= 0)
                         BenchShimmer(c, nc, ReadFrame(), _window.FramebufferSize.X, _window.FramebufferSize.Y);
                     _window.SwapBuffers();
                     if (f < 0)
@@ -186,6 +270,17 @@ public static unsafe partial class Program
                     }
                     drawCalls[c] += _benchConstructDraws; // (the constructs pass's draw calls)
                     mergedCalls[c] += _benchMergedDraws;
+                    tris[c] += _benchConstructTris;
+                    dropped[c] += ConstructRender.LastLodDropped;
+                    walked[c] += ConstructRender.LastBatchWalked;
+                    walkCulled[c] += ConstructRender.LastWalkedCulled;
+                    if (_benchWorld != null && ConstructRender.MergeOn)
+                    {
+                        var (hc, hs, ht) = ConstructRender.BenchHidden(Gfx); // (after the glFinish above: the results are in)
+                        hiddenChunks[c] += hc;
+                        hiddenSlots[c] += hs;
+                        testedChunks[c] += ht;
+                    }
                     dLoop[c] += ConstructRender.LoopMs;
                     dFlush[c] += ConstructRender.FlushMs;
                     propDraws[c] += PropGfx.LastDraws; // this frame's prop draw calls and visible runs
@@ -194,6 +289,36 @@ public static unsafe partial class Program
                     cpu[k] = Stopwatch.GetElapsedTime(t0, t1).TotalMilliseconds;
                     full[k] = Stopwatch.GetElapsedTime(t0, t2).TotalMilliseconds;
                     gpuMs[k] = gpu != null && gpu.Ready(1) ? (gpu.Read(1) - (double)gpu.Read(0)) / 1e6 : -1;
+                }
+                if (_benchLag)
+                {
+                    var total = _window.FramebufferSize.X * _window.FramebufferSize.Y;
+                    Console.WriteLine(string.Create(CultureInfo.InvariantCulture,
+                        $"[glbench] lag {map.Name} {view.Name}: {_lagBad} of {_lagFrames} frames differ from no occlusion; mean {_lagSum / Math.Max(_lagFrames, 1.0):0} px, worst {_lagWorst} px ({100.0 * _lagWorst / total:0.00}% of the picture) at frame {_lagWorstFrame}; move {_benchMove} mm, turn {_benchTurn} mdeg, jump every {_benchJump}, origin {(_benchOriginEye ? "eye" : "zero")}"));
+                    if (shots && _lagWorstRef != null && _lagWorstPx != null)
+                    {
+                        // a difference picture: red where the occlusion frame differs
+                        var fbs = _window.FramebufferSize;
+                        using var fsd = File.Create(Path.Combine(AppContext.BaseDirectory, $"lagdiff_{Slug(view.Name)}.ppm"));
+                        var hdr = System.Text.Encoding.ASCII.GetBytes($"P6\n{fbs.X} {fbs.Y}\n255\n");
+                        fsd.Write(hdr);
+                        var row = new byte[fbs.X * 3];
+                        for (var y = fbs.Y - 1; y >= 0; y--)
+                        {
+                            for (var x = 0; x < fbs.X; x++)
+                            {
+                                var i = (y * fbs.X + x) * 4;
+                                var dd = Math.Max(Math.Max(Math.Abs(_lagWorstPx[i] - _lagWorstRef[i]), Math.Abs(_lagWorstPx[i + 1] - _lagWorstRef[i + 1])), Math.Abs(_lagWorstPx[i + 2] - _lagWorstRef[i + 2])) > 8;
+                                row[x * 3] = dd ? (byte)255 : _lagWorstRef[i];
+                                row[x * 3 + 1] = dd ? (byte)0 : _lagWorstRef[i + 1];
+                                row[x * 3 + 2] = dd ? (byte)0 : _lagWorstRef[i + 2];
+                            }
+                            fsd.Write(row);
+                        }
+                    }
+                    _lagBad = _lagFrames = _lagWorst = _lagWorstFrame = 0;
+                    _lagSum = 0;
+                    _lagRef = _lagWorstRef = _lagWorstPx = null;
                 }
                 var boxes = Gfx.BatchBoxes / Math.Max((frames + 10) * nc, 1);
                 if (_benchMove > 0 && _shimSum != null && _shimN != null)
@@ -211,6 +336,12 @@ public static unsafe partial class Program
                     var pd = propDraws[c] / Math.Max(n[c], 1.0);
                     Console.WriteLine(string.Create(CultureInfo.InvariantCulture,
                         $"[glbench] {map.Name,-22} {view.Name,-8} {configs[c],-14} cpu {mc,7:0.000}  frame {mf,8:0.000}  gpu {(mg >= 0 ? mg.ToString("0.000", CultureInfo.InvariantCulture) : "n/a"),8}  ({n[c]} frames, {drawCalls[c] / Math.Max(n[c], 1.0):0} construct draw calls ({mergedCalls[c] / Math.Max(n[c], 1.0):0} merged), bodies {dLoop[c] / Math.Max(n[c], 1):0.000} ms + flush {dFlush[c] / Math.Max(n[c], 1):0.000} ms{(zombies > 0 ? $", {boxes} batched boxes a frame" : "")}{(pd > 0 ? $", props {pd:0.0} draw calls for {propRuns[c] / Math.Max(n[c], 1.0):0.0} runs" : "")})"));
+                    if (_benchWorld != null)
+                    {
+                        var nn = Math.Max(n[c], 1.0);
+                        Console.WriteLine(string.Create(CultureInfo.InvariantCulture,
+                            $"[glbench]   constructs {configs[c],-14} {tris[c] / nn / 1000:0.0}k triangles sent, far detail left out {dropped[c] / nn:0} box slots, walked parts {walked[c] / nn:0} ({walkCulled[c] / nn:0} off screen), occlusion: {hiddenChunks[c] / nn:0} of {testedChunks[c] / nn:0} tested chunks hidden ({hiddenSlots[c] / nn:0} slots)"));
+                    }
                     var key = $"{map.Name}|{configs[c]}";
                     totals.TryGetValue(key, out var acc);
                     totals[key] = (acc.Cpu + mc, acc.Full + mf, acc.Gpu + Math.Max(mg, 0), acc.Views + 1);
@@ -314,8 +445,28 @@ public static unsafe partial class Program
         Glfw.SetTime(ShotTime + frame / 60.0); // a steady 60 fps clock: wind, flicker and the horde move as in play
         Gfx.BeginFrame(fb.X, fb.Y, map.Sky);
         var drift = BenchDrift(eye, target, frame); // (--bench-move: the camera alone moves; the bench's constructs stay put)
-        Gfx.SetCamera(Matrix4x4.CreateLookAt(eye + drift, target + drift, Vector3.UnitY),
-            Matrix4x4.CreatePerspectiveFieldOfView(fov, fb.X / (float)Math.Max(fb.Y, 1), 0.05f, map.FarPlane));
+        var be = eye + drift;
+        var bt = target + drift;
+        if (_benchJump > 0 && Math.Max(frame, 0) / _benchJump % 2 == 1)
+        {
+            var jf = target - eye;
+            jf.Y = 0;
+            jf = jf.LengthSquared() > 1e-4f ? Vector3.Normalize(jf) : new Vector3(0, 0, -1);
+            var off = new Vector3(-jf.Z, 0, jf.X) * _benchJumpBy;
+            be += off;
+            bt += off;
+        }
+        if (_benchTurn != 0)
+        {
+            var fr = Math.Max(frame, 0);
+            var deg = _benchTurnSwing > 0 ? _benchTurnSwing * MathF.Sin(fr * (_benchTurn * 0.001f) / _benchTurnSwing) : fr * _benchTurn * 0.001f; // (a swing: its fastest is the turn rate)
+            bt = be + Vector3.Transform(bt - be, Quaternion.CreateFromAxisAngle(Vector3.UnitY, deg * MathF.PI / 180f));
+        }
+        var bproj = Matrix4x4.CreatePerspectiveFieldOfView(fov, fb.X / (float)Math.Max(fb.Y, 1), 0.05f, MathF.Max(map.FarPlane, _benchFar));
+        if (_benchOriginEye)
+            Gfx.SetCameraAt(be, Matrix4x4.CreateLookAt(Vector3.Zero, bt - be, Vector3.UnitY), bproj);
+        else
+            Gfx.SetCamera(Matrix4x4.CreateLookAt(be, bt, Vector3.UnitY), bproj);
         Gfx.SetFog(map.Sky, map.FogStart, map.FogEnd);
         ApplyVideoLevels();
         DrawArena();
@@ -329,6 +480,12 @@ public static unsafe partial class Program
         Gfx.SetFog(map.Sky, 0, 0);
     }
 
+    private static bool _benchLag, _benchOriginEye;
+    private static int _benchFar;
+    private static int _benchTurn, _benchJump, _benchTurnSwing, _benchJumpBy = 30; // millidegrees a frame; frames between jumps; a swing of that many degrees; metres
+    private static byte[]? _lagRef, _lagWorstRef, _lagWorstPx;
+    private static int _lagBad, _lagFrames, _lagWorst, _lagWorstFrame;
+    private static long _lagSum;
     private static int _benchFx;
     private static int _benchMove; // mm a frame (--bench-move): sideways, plus half of it forward
     private static bool _benchFull;
@@ -379,6 +536,7 @@ public static unsafe partial class Program
     private static double[]? _shimSum;
     private static int[]? _shimN;
     private static float _benchDist = 24f;
+    private static bool _benchShipViews;
 
     /// <summary>
     /// <c>--bench-fx N</c>: about N particles alive (smoke columns and flames in front of the camera, a blast now and then) through the
@@ -390,7 +548,14 @@ public static unsafe partial class Program
         _settings.Particles = (VideoLevel)Math.Clamp(FlagAfter(args, "--bench-particles", (int)_settings.Particles), 0, 2);
         _settings.PostEffects = (VideoLevel)Math.Clamp(FlagAfter(args, "--bench-post", (int)_settings.PostEffects), 0, 2);
         _benchFx = Math.Clamp(FlagAfter(args, "--bench-fx", 0), 0, 500000);
-        _benchMove = Math.Clamp(FlagAfter(args, "--bench-move", 0), 0, 1000);
+        _benchMove = Math.Clamp(FlagAfter(args, "--bench-move", 0), 0, 100000);
+        _benchLag = args.Any(a => a.Equals("--bench-lag", StringComparison.OrdinalIgnoreCase));
+        _benchOriginEye = args.Any(a => a.Equals("--bench-origin-eye", StringComparison.OrdinalIgnoreCase));
+        _benchTurn = FlagAfter(args, "--bench-turn", 0);
+        _benchTurnSwing = FlagAfter(args, "--bench-turn-swing", 0);
+        _benchJump = FlagAfter(args, "--bench-jump", 0);
+        _benchJumpBy = FlagAfter(args, "--bench-jump-by", 30);
+        _benchFar = FlagAfter(args, "--bench-far", 0);
         _benchDist = Math.Clamp(FlagAfter(args, "--bench-dist", 24), 3, 400);
         _benchFull = args.Any(a => a.Equals("--bench-full", StringComparison.OrdinalIgnoreCase));
         _benchEdit = args.Any(a => a.Equals("--bench-edit", StringComparison.OrdinalIgnoreCase)) ? Math.Clamp(FlagAfter(args, "--frames", 60), 5, 2000) - 12 : 0;
@@ -433,7 +598,7 @@ public static unsafe partial class Program
     }
 
     private static ConstructWorld? _benchWorld;
-    private static int _benchConstructDraws, _benchMergedDraws;
+    private static int _benchConstructDraws, _benchMergedDraws, _benchConstructTris;
     private static long _benchConstructAlloc;
     private static readonly Dictionary<Construct, (Vector3 Pos, Quaternion Rot)> _benchHome = new();
 
@@ -527,6 +692,10 @@ public static unsafe partial class Program
                 made++;
             }
         }
+        if (args.Any(a => a.Equals("--bench-walked", StringComparison.OrdinalIgnoreCase)))
+            foreach (var c in _benchWorld.Bodies)
+                foreach (var (wn, wp, wb, why) in ConstructRender.WalkedTypes(c).Take(40))
+                    Console.WriteLine($"[glbench] walked: {wn,-40} {wp,5} parts {wb,7} boxes  ({why})");
         var boxes = ConstructParts.All.Sum(d => d.Boxes.Length);
         Console.WriteLine($"[glbench] constructs: {made} bodies, {parts} parts");
         Console.WriteLine($"[glbench] materials: {ConstructParts.All.Count} part types, {boxes} boxes at {System.Runtime.CompilerServices.Unsafe.SizeOf<CPartBox>()} B a box, {BoxLooks.Count} looks at {System.Runtime.CompilerServices.Unsafe.SizeOf<BoxLooks.Row>()} B a look, {Surfaces.File.Rows.Length} materials ({SurfaceGpu.Bytes} B on the GPU); merged mesh slot {(Renderer.MergeXformFloats + Renderer.MergeLookFloats) * sizeof(float)} B");
@@ -581,6 +750,8 @@ public static unsafe partial class Program
         var turn = Quaternion.CreateFromAxisAngle(Vector3.UnitY, yaw);
         foreach (var c in _benchWorld.Bodies)
         {
+            if (_benchShipViews)
+                break; // (the views are placed round the ship where it stands)
             if (!_benchHome.TryGetValue(c, out var home))
                 _benchHome[c] = home = (c.Pos, c.Rot);
             c.Pos = c.PrevPos = at + Vector3.Transform(home.Pos, turn);
@@ -588,6 +759,7 @@ public static unsafe partial class Program
         }
         ConstructRender.Now = Glfw.Time;
         var draws0 = PerfCounters.Draws;
+        var tris0 = PerfCounters.Triangles;
         Gfx.MergedDraws = 0;
         var alloc0 = GC.GetAllocatedBytesForCurrentThread();
         ConstructRender.Draw(Gfx, _benchWorld, 1f, blendTicks: false);
@@ -595,6 +767,7 @@ public static unsafe partial class Program
             _benchConstructAlloc = Math.Max(_benchConstructAlloc, GC.GetAllocatedBytesForCurrentThread() - alloc0); // (steady frames: edits allocate, by design)
         ConstructRender.DrawGlass(Gfx, eye);
         _benchConstructDraws = PerfCounters.Draws - draws0;
+        _benchConstructTris = PerfCounters.Triangles - tris0;
         _benchMergedDraws = Gfx.MergedDraws;
         Gfx.SetBlend(false);
         Gfx.SetDepthWrite(true);

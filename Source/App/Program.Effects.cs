@@ -15,6 +15,10 @@ public static unsafe partial class Program
         Fx.On = !_smokeNoFx;
         (PostFx.Level, PostFx.BloomOn, PostFx.HazeOn, PostFx.AoOn) = (_settings.PostEffects, _settings.Bloom, _settings.HeatHaze, _settings.AmbientOcclusion);
         Gfx.MarkGlow = LightGrid.MarkGlow = PostFx.Bloom;
+        ConstructRender.OcclusionSetting = _settings.HiddenCulling;
+        ConstructRender.ChunkLodSetting = _settings.FarDetail != VideoLevel.High;
+        if (!ConstructRender.LodPixelsForced)
+            ConstructRender.LodPixels = _settings.FarDetail == VideoLevel.Low ? 2.5f : 1f;
     }
 
     private static bool _smokeNoFx;
