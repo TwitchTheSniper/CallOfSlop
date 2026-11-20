@@ -57,6 +57,70 @@ public static class ConstructShellPod
     public const float NearRise = 6f; // m: a worn shell this near an empty pod that takes it raises its frame (fully at half this)
 
     /// <summary>The size classes by a shell's standing height (the user, 2026-11-18). Large and Huge pods are for later.</summary>
+    /// <summary>
+    /// A pod's body as the part kit draws it (ShellParts.Pod): its walls' thickness, the rim's width round the opening and the
+    /// height of its floor's lining above its bottom. A flush pod's pocket (the opening the surface round it is not drawn
+    /// across: <see cref="Pocket"/>) stays inside the rim and above the lining, so none of the pod's own boxes is in it.
+    /// </summary>
+    public const float Wall = 0.06f, Rim = 0.09f, Lining = 0.08f;
+
+    /// <summary>A flush pod's lid top over the surface: its solid's top, where a foot stands (its closed flaps are drawn there).</summary>
+    public const float FlushLid = 0.03f;
+
+    /// <summary>The top of a pod's rim: a flush pod's stands 3 mm over its lid, a bolted-on pod's 3 mm under its top.</summary>
+    public static float RimTop(ShellPodDef pd) => pd.Flush ? pd.Top + 0.003f : pd.Top - 0.003f;
+
+    /// <summary>A flush pod's pocket in its part's frame: the box the surface it sinks into is not drawn in (Renderer.Cuts.cs).</summary>
+    public static void Pocket(ShellPodDef pd, out Vector3 centre, out Vector3 half)
+    {
+        var lo = pd.Top - pd.Depth + Lining + 0.005f; // (5 mm above the lining's top)
+        var hi = pd.Top - 0.001f; // (the surface's top is at 0: its seams, studs and skins up to 3 cm proud of it go too; a part standing on the lid doesn't)
+        var h = pd.Half - Rim + 0.005f; // (5 mm under the rim, so its inner edge hides where the surface stops)
+        centre = new Vector3(0, (lo + hi) * 0.5f, 0);
+        half = new Vector3(h, (hi - lo) * 0.5f, h);
+    }
+
+    /// <summary>
+    /// With the caches (ConstructConveyor.BuildRacks): the parts a flush pod's pocket opens, the surfaces it sinks into (bounds
+    /// overlapping its pocket in the rest frame, not a pod). Only their boxes are drawn with the cut mark (Renderer.Cuts.cs): the pod
+    /// itself and everything else of the body keep the plain programs. Allocates only when the body grows.
+    /// </summary>
+    public static void FindHosts(Construct c)
+    {
+        var flush = false;
+        for (var q = 0; q < c.PodCount && !flush; q++)
+            flush = c.Pods[q] < c.PartCount && c.Parts[c.Pods[q]].D.ShellPod is { Flush: true };
+        if (!flush)
+        {
+            if (c.PocketHost.Length > 0)
+                c.PocketHost = [];
+            return;
+        }
+        if (c.PocketHost.Length < c.PartCount)
+            c.PocketHost = new byte[c.PartCount + 16];
+        else
+            Array.Clear(c.PocketHost);
+        for (var q = 0; q < c.PodCount; q++)
+        {
+            int k = c.Pods[q];
+            if (k >= c.PartCount || c.Parts[k].D.ShellPod is not { Flush: true } pd)
+                continue;
+            ref var pp = ref c.Parts[k];
+            Pocket(pd, out var centre, out var half);
+            var at = pp.Pos + Rot24.Apply(pp.Rot, centre);
+            var h = Rot24.ApplyHalf(pp.Rot, half);
+            Vector3 lo = at - h, hi = at + h;
+            for (var i = 0; i < c.PartCount; i++)
+            {
+                if (i == k || c.Parts[i].D.ShellPod != null) // (in the rest frame: a surface on another segment, a freeform weld's, counts too)
+                    continue;
+                c.PartBounds(i, out var mn, out var mx);
+                if (mn.X < hi.X && mx.X > lo.X && mn.Y < hi.Y && mx.Y > lo.Y && mn.Z < hi.Z && mx.Z > lo.Z)
+                    c.PocketHost[i] = 1;
+            }
+        }
+    }
+
     public static readonly string[] ClassNames = ["Tiny", "Small", "Medium", "Large", "Huge"];
     public static readonly float[] ClassHeights = [1, 2, 5, 15, 30];
 
@@ -427,4 +491,5 @@ public sealed partial class Construct
 {
     public ushort[] Pods = []; // its shell pods (made with the caches: ConstructConveyor.BuildRacks), for drawing their frames and the pods' tick
     public int PodCount;
+    public byte[] PocketHost = []; // by part: 1 when it is a surface a flush pod's pocket opens (ConstructShellPod.FindHosts; empty with no flush pod)
 }

@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Tiny Flush Shell Pod",
-  "description": "Parks a robot shell (up to 1 m tall) when nobody wears it: walk the shell into the frame that rises out of it and press F: you wake in your chair and the pod folds the shell away. Wake in it again from a Shell Control Chair. A docked shell charges from the grid and can't be damaged or taken. Flush: the pod sinks into the floor, wall or ceiling it is welded to, its lid level with the surface.",
+  "description": "Parks a robot shell (up to 1 m tall) when nobody wears it: walk the shell into the frame that rises out of it and press F: you wake in your chair and the pod folds the shell away. Wake in it again from a Shell Control Chair. A docked shell charges from the grid and can't be damaged or taken. Flush: the pod sinks into the floor, wall or ceiling it is welded to, its lid in a hazard coaming 3 cm over the surface.",
   "group": "Logic",
   "section": "Shells",
   "role": "panel",
@@ -17,7 +17,7 @@
   "shellPod": {
     "class": "tiny",
     "half": 0.35,
-    "top": 0.004,
+    "top": 0.03,
     "depth": 0.55,
     "flush": true
   },
@@ -38,12 +38,12 @@
     {
       "min": [
         -0.35,
-        -0.546,
+        -0.52,
         -0.35
       ],
       "max": [
         0.35,
-        -0.486,
+        -0.46,
         0.35
       ],
       "color": "#22262b",
@@ -53,12 +53,12 @@
     {
       "min": [
         -0.35,
-        -0.483,
+        -0.457,
         -0.35
       ],
       "max": [
         -0.29,
-        -0.041,
+        -0.015,
         0.35
       ],
       "color": "#22262b",
@@ -68,12 +68,12 @@
     {
       "min": [
         -0.287,
-        -0.483,
+        -0.457,
         -0.35
       ],
       "max": [
         0.287,
-        -0.041,
+        -0.015,
         -0.29
       ],
       "color": "#22262b",
@@ -83,12 +83,12 @@
     {
       "min": [
         0.29,
-        -0.483,
+        -0.457,
         -0.35
       ],
       "max": [
         0.35,
-        -0.041,
+        -0.015,
         0.35
       ],
       "color": "#22262b",
@@ -98,12 +98,12 @@
     {
       "min": [
         -0.287,
-        -0.483,
+        -0.457,
         0.29
       ],
       "max": [
         0.287,
-        -0.041,
+        -0.015,
         0.35
       ],
       "color": "#22262b",
@@ -113,27 +113,88 @@
     {
       "min": [
         -0.284,
-        -0.483,
+        -0.457,
         -0.284
       ],
       "max": [
         0.284,
-        -0.466,
+        -0.44,
         0.284
       ],
-      "color": "#30363d",
+      "color": "#5f6870",
+      "detail": true,
+      "paintable": false,
+      "finish": "tread plate"
+    },
+    {
+      "min": [
+        -0.29,
+        -0.439,
+        -0.284
+      ],
+      "max": [
+        -0.274,
+        -0.016,
+        0.284
+      ],
+      "color": "#56606a",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.276,
+        -0.435,
+        -0.29
+      ],
+      "max": [
+        0.276,
+        -0.02,
+        -0.274
+      ],
+      "color": "#56606a",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.274,
+        -0.437,
+        -0.284
+      ],
+      "max": [
+        0.29,
+        -0.018,
+        0.284
+      ],
+      "color": "#56606a",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.276,
+        -0.435,
+        0.274
+      ],
+      "max": [
+        0.276,
+        -0.02,
+        0.29
+      ],
+      "color": "#56606a",
       "detail": true,
       "paintable": false
     },
     {
       "min": [
         -0.354,
-        -0.038,
+        -0.012,
         -0.354
       ],
       "max": [
         -0.26,
-        0.001,
+        0.033,
         0.354
       ],
       "color": "#f2b01e",
@@ -144,12 +205,12 @@
     {
       "min": [
         -0.257,
-        -0.038,
+        -0.012,
         -0.354
       ],
       "max": [
         0.257,
-        0.001,
+        0.033,
         -0.26
       ],
       "color": "#f2b01e",
@@ -159,13 +220,43 @@
     },
     {
       "min": [
+        -0.29,
+        0.0245,
+        -0.29
+      ],
+      "max": [
+        -0.272,
+        0.0405,
+        0.29
+      ],
+      "color": "#38d0e8",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.269,
+        0.0245,
+        -0.29
+      ],
+      "max": [
+        0.269,
+        0.0405,
+        -0.272
+      ],
+      "color": "#38d0e8",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
         0.26,
-        -0.038,
+        -0.012,
         -0.354
       ],
       "max": [
         0.354,
-        0.001,
+        0.033,
         0.354
       ],
       "color": "#f2b01e",
@@ -176,18 +267,48 @@
     {
       "min": [
         -0.257,
-        -0.038,
+        -0.012,
         0.26
       ],
       "max": [
         0.257,
-        0.001,
+        0.033,
         0.354
       ],
       "color": "#f2b01e",
       "detail": true,
       "paintable": false,
       "finish": "hazard paint"
+    },
+    {
+      "min": [
+        0.272,
+        0.0245,
+        -0.29
+      ],
+      "max": [
+        0.29,
+        0.0405,
+        0.29
+      ],
+      "color": "#38d0e8",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.269,
+        0.0245,
+        0.272
+      ],
+      "max": [
+        0.269,
+        0.0405,
+        0.29
+      ],
+      "color": "#38d0e8",
+      "detail": true,
+      "paintable": false
     }
   ],
   "sockets": [

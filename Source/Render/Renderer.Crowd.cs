@@ -152,6 +152,7 @@ public sealed unsafe partial class Renderer
         uniform vec3 uDbgA;
         uniform vec3 uDbgB;
         out vec3 vWorld;
+        out vec3 vRel; // (the box shader's opening test: a crowd is never cut)
         out vec3 vNormal;
         out vec3 vLocal;
         out vec3 vLocalN;
@@ -183,6 +184,7 @@ public sealed unsafe partial class Renderer
             // Turned to its yaw (World.FlatForward: yaw 0 faces -z).
             vec3 w = vec3(local.x * c - local.z * s, local.y, local.x * s + local.z * c) + vec3(iXZ.x, iYPhase.x + uBaseY, iXZ.y);
             vWorld = w;
+            vRel = w;
             vNormal = normalize(vec3(n.x * c - n.z * s, n.y, n.x * s + n.z * c));
             // The box's own frame, for the shared materials' patterns (the box shader's inputs, as Renderer's instanced
             // draw writes them): a crowd that leaves them out doesn't link, and nothing of it is drawn.
