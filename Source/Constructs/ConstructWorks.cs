@@ -474,15 +474,20 @@ public static class ConstructWorks
 
     /// <summary>
     /// An engine socket's plate bolted onto a mount (a retrofit's plate on a pod's tail plate, module-sockets.md 11) passes the mount
-    /// through: the drive's engine is behind that tail plate, on its line. A plate on anything else is the mount itself.
+    /// through when that mount has a drive piece on the head's thrust line: the drive's engine is behind that tail plate. Otherwise the
+    /// plate is the mount itself (a Drive Core bolted to its back on the line, a plate on a Hull Mount beside it).
     /// </summary>
-    private static int MountUnder(Construct c, int plate)
+    private static int MountUnder(Construct c, int head, int plate)
     {
+        var (at, dir) = ThrustLine(c, head);
         for (var e = c.FirstLink(plate); e >= 0; e = c.NextLink(e))
         {
             var o = c.OtherEnd(e);
-            if (c.Parts[o].D.WorksKind == WorksKind.Mount)
-                return o;
+            if (c.Parts[o].D.WorksKind != WorksKind.Mount)
+                continue;
+            for (var f = c.FirstLink(o); f >= 0; f = c.NextLink(f))
+                if (c.OtherEnd(f) is var p && IsDrivePiece(c.Parts[p].D) && OnLine(c, p, at, dir))
+                    return o;
         }
         return plate;
     }
@@ -503,7 +508,7 @@ public static class ConstructWorks
                     if (d.WorksKind == WorksKind.Mount)
                         return o;
                     if (d.ModPart == ModPart.Plug && ModuleSockets.EngineMountOf(c, o) is var plate and >= 0)
-                        return MountUnder(c, plate); // (a module's thruster on its plug: an engine socket's plate is its mount, module-sockets.md 2.2)
+                        return MountUnder(c, head, plate); // (a module's thruster on its plug: an engine socket's plate is its mount, module-sockets.md 2.2)
                     if (d.HasJoint && n < queue.Length && queue[..n].IndexOf((ushort)o) < 0)
                         queue[n++] = (ushort)o;
                 }
