@@ -52,6 +52,9 @@ public sealed partial class ConstructEdits
         return why == null ? null : $"{why} (body {best.Id}: its plug {Vector3.Distance(best.ToWorld(pat), wface):0.00} m from the face)";
     }
 
+    /// <summary>For the window tool's <c>modsock use PART</c> (host): F on a plate or a fitted module's part, as a player's F.</summary>
+    public string? ModuleUseNow(ConstructWorld world, byte player, Construct c, int part) => ModuleUseLogged(world, player, c, part);
+
     private string? ModuleUseLogged(ConstructWorld world, byte player, Construct c, int part)
     {
         var why = ModuleUse(world, player, c, part);

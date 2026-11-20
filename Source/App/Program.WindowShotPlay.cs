@@ -689,6 +689,18 @@ public static partial class Program
                     }
                 return true;
             }
+            case "modsock" when arg.StartsWith("use ", StringComparison.OrdinalIgnoreCase): // host: "modsock use PART": F on that plate or module part (take off, or fit what is near), whatever the crosshair finds
+            {
+                var (uc, upart) = WsFind(g, arg[4..].Trim());
+                if (!g.IsServer || uc == null)
+                {
+                    WsFail($"modsock use: {(uc == null ? $"no part \"{arg[4..].Trim()}\"" : "on the host")}");
+                    return true;
+                }
+                WsSay($"modsock: use on {uc.DefOf(upart).Name} part {upart}: {g.SandboxHands.ModuleUseNow(g.Constructs, me.Id, uc, upart) ?? "done"}");
+                _wsWait = 20;
+                return true;
+            }
             case "modsock" when arg.StartsWith("fit ", StringComparison.OrdinalIgnoreCase): // host: "modsock fit PART": the nearest loose module of that plate's size held 0.6 m off its face, then F on the plate
             {
                 var (fc, fpart) = WsFind(g, arg[4..].Trim());

@@ -2000,7 +2000,7 @@ public sealed class MinerParts : IPartGenerator
         Door(bp, bay, "doorFore");
         Door(bp, bay, "doorAft");
         // The cargo bay aft: engineering along its port side, the suit lockers, the ramp.
-        ShipParts.FittedModule(bp, ShipParts.ModuleSocket(bp, eng, "reactor", 2, 2, kind: 2), 2, 2, "Magpie Power Plant", "bottom"); // (a 2x2 reactor socket: the plant stands inside the plug's lugs)
+        ShipParts.FittedModule(bp, ShipParts.ModuleSocket(bp, eng, "reactor", 2, 2, kind: 2, above: 2.75), 2, 2, "Magpie Power Plant", "bottom"); // (a 2x2 reactor socket, its room 2.75 m up, under the mess deck: the plant stands inside the plug's lugs)
         bp.HangTurned("Ship Battery M", eng, "battery", "bottom", BuildingParts.RY270);
         bp.Hang("Power Board", eng, "board", "back");
         bp.Hang("Pipe Bank", eng, "pipes", "back");
