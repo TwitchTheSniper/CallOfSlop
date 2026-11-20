@@ -1,8 +1,8 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Consumables Rack 1m",
-  "description": "A consumables rack in an in-wall bay (1 m deep, draft): twist the latch and the rack runs out with the ship's stock on it: water pouches, rations, scrubber canisters, oxygen candles and filter cartridges.",
-  "group": "Style",
+  "description": "A consumables rack in an in-wall bay (1 m deep): twist the latch and the rack runs out with the ship's stock on it: water pouches, rations, scrubber canisters, oxygen candles and filter cartridges.",
+  "group": "Interior",
   "section": "In-wall bays",
   "role": "door",
   "tool": "wrench",

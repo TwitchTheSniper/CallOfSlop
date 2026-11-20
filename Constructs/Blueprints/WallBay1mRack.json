@@ -1,7 +1,8 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Wall Bay 1m Rack",
-  "description": "A 1 m in-wall bay (draft) with deep shelves, two loads deep, that pull out of the wall.",
+  "group": "In-wall bays",
+  "description": "A 1 m in-wall bay with deep shelves, two loads deep, that pull out of the wall.",
   "steps": [
     {
       "part": "Wall Bay 1m",

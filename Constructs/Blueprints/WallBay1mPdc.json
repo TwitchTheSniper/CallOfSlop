@@ -1,7 +1,8 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Wall Bay 1m PDC Feed",
-  "description": "A PDC feed in a 1 m in-wall bay (draft): the belt feeder wears, the drawer under it holds ammo cans.",
+  "group": "In-wall bays",
+  "description": "A PDC feed in a 1 m in-wall bay: the belt feeder wears, the drawer under it holds ammo cans.",
   "steps": [
     {
       "part": "Wall Bay 1m",

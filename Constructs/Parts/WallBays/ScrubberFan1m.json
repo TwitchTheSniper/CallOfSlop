@@ -1,8 +1,8 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Scrubber Fan 1m",
-  "description": "A CO2 scrubber's fan cassette (1 m deep, draft): the part that wears. Its grille is the panel under the canister tray; pull it and the fan runs out on its tray to be swapped.",
-  "group": "Style",
+  "description": "A CO2 scrubber's fan cassette (1 m deep): the part that wears. Its grille is the panel under the canister tray; pull it and the fan runs out on its tray to be swapped.",
+  "group": "Interior",
   "section": "In-wall bays",
   "role": "door",
   "tool": "wrench",

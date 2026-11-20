@@ -1,8 +1,8 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Toilet Insert 1m",
-  "description": "An in-wall bay's toilet insert (1 m deep, draft): the waste tank and vacuum fan at the back, a padded back rest, a grab bar, the urine funnel on its hose and a wipes dispenser over the pan.",
-  "group": "Style",
+  "description": "An in-wall bay's toilet insert (1 m deep): the waste tank and vacuum fan at the back, a padded back rest, a grab bar, the urine funnel on its hose and a wipes dispenser over the pan.",
+  "group": "Interior",
   "section": "In-wall bays",
   "role": "frame",
   "tool": "wrench",

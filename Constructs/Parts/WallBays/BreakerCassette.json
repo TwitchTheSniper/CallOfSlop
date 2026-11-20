@@ -1,8 +1,8 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Breaker Cassette",
-  "description": "A breaker panel's cassette (draft): the part that wears. Its face is the panel, three rows of breakers, one tripped red; it runs out on its tray with the breakers' bodies and the bus stabs behind.",
-  "group": "Style",
+  "description": "A breaker panel's cassette: the part that wears. Its face is the panel, three rows of breakers, one tripped red; it runs out on its tray with the breakers' bodies and the bus stabs behind.",
+  "group": "Interior",
   "section": "In-wall bays",
   "role": "door",
   "tool": "wrench",

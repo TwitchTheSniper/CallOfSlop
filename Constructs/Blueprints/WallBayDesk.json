@@ -1,7 +1,8 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Wall Bay Desk",
-  "description": "An in-wall bay (draft) with a desk that flips down from the wall.",
+  "group": "In-wall bays",
+  "description": "An in-wall bay with a desk that flips down from the wall.",
   "steps": [
     {
       "part": "Wall Bay",

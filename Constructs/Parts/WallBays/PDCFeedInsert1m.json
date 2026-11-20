@@ -1,8 +1,8 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "PDC Feed Insert 1m",
-  "description": "An in-wall PDC feed (1 m deep, draft): the belt chute up to the mount, the feeder's cassette (the part that wears) over a drawer of ammo cans (the consumable).",
-  "group": "Style",
+  "description": "An in-wall PDC feed (1 m deep): the belt chute up to the mount, the feeder's cassette (the part that wears) over a drawer of ammo cans (the consumable).",
+  "group": "Interior",
   "section": "In-wall bays",
   "role": "frame",
   "tool": "wrench",

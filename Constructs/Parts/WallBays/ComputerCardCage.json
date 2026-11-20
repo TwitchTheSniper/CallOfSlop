@@ -1,8 +1,8 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Computer Card Cage",
-  "description": "A flight computer's card cage (draft): the part that wears. It runs out with nine cards standing in their guide and the cage's fan behind them.",
-  "group": "Style",
+  "description": "A flight computer's card cage: the part that wears. It runs out with nine cards standing in their guide and the cage's fan behind them.",
+  "group": "Interior",
   "section": "In-wall bays",
   "role": "door",
   "tool": "wrench",

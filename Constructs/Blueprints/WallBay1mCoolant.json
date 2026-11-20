@@ -1,7 +1,8 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Wall Bay 1m Coolant Pump",
-  "description": "A coolant pump in a 1 m in-wall bay (draft): the pump's cassette wears, the drawer under it holds coolant jugs.",
+  "group": "In-wall bays",
+  "description": "A coolant pump in a 1 m in-wall bay: the pump's cassette wears, the drawer under it holds coolant jugs.",
   "steps": [
     {
       "part": "Wall Bay 1m",

@@ -1,7 +1,8 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Wall Bay Breakers",
-  "description": "A breaker panel in an in-wall bay (draft): the breaker cassette wears, the fuse drawer under it holds the fuses.",
+  "group": "In-wall bays",
+  "description": "A breaker panel in an in-wall bay: the breaker cassette wears, the fuse drawer under it holds the fuses.",
   "steps": [
     {
       "part": "Wall Bay",

@@ -1,8 +1,8 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Fuse Drawer",
-  "description": "A breaker panel's fuse drawer (draft): the consumable. Twist the latch and it runs out with cartridge fuses in a rack and cartons of spares on the shelf over them.",
-  "group": "Style",
+  "description": "A breaker panel's fuse drawer: the consumable. Twist the latch and it runs out with cartridge fuses in a rack and cartons of spares on the shelf over them.",
+  "group": "Interior",
   "section": "In-wall bays",
   "role": "door",
   "tool": "wrench",

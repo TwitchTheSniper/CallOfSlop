@@ -1,8 +1,8 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Jump Seat Insert",
-  "description": "An in-wall bay's jump seat insert (draft): a padded back with a four-point harness, a kick panel, the seat's hinge, and a helmet locker over it.",
-  "group": "Style",
+  "description": "An in-wall bay's jump seat insert: a padded back with a four-point harness, a kick panel, the seat's hinge, and a helmet locker over it.",
+  "group": "Interior",
   "section": "In-wall bays",
   "role": "frame",
   "tool": "wrench",

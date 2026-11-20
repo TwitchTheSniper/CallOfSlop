@@ -1,8 +1,8 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "CO2 Scrubber Insert 1m",
-  "description": "An in-wall CO2 scrubber (1 m deep, draft): the fan's cassette (the part that wears) under the canister tray (the consumable), the manifold and duct behind them, a CO2 readout over them.",
-  "group": "Style",
+  "description": "An in-wall CO2 scrubber (1 m deep): the fan's cassette (the part that wears) under the canister tray (the consumable), the manifold and duct behind them, a CO2 readout over them.",
+  "group": "Interior",
   "section": "In-wall bays",
   "role": "frame",
   "tool": "wrench",

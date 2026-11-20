@@ -1,8 +1,8 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Reclaimer Pump 1m",
-  "description": "A water reclaimer's pump cassette (1 m deep, draft): the part that wears. Pull the panel under the filter drawer and the pump runs out on its tray to be swapped.",
-  "group": "Style",
+  "description": "A water reclaimer's pump cassette (1 m deep): the part that wears. Pull the panel under the filter drawer and the pump runs out on its tray to be swapped.",
+  "group": "Interior",
   "section": "In-wall bays",
   "role": "door",
   "tool": "wrench",

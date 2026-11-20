@@ -1,8 +1,8 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Propellant Bottle Drawer 1m",
-  "description": "An RCS feed's drawer (draft): the consumable. Twist the latch and it runs out with propellant bottles in cradles, two rows deep.",
-  "group": "Style",
+  "description": "An RCS feed's drawer: the consumable. Twist the latch and it runs out with propellant bottles in cradles, two rows deep.",
+  "group": "Interior",
   "section": "In-wall bays",
   "role": "door",
   "tool": "wrench",

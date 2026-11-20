@@ -1,8 +1,8 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "RCS Valve Block 1m",
-  "description": "An RCS feed's valve block (draft): the part that wears. It runs out with four valves on the manifold, the seals on its face and the ports back to the feed lines.",
-  "group": "Style",
+  "description": "An RCS feed's valve block: the part that wears. It runs out with four valves on the manifold, the seals on its face and the ports back to the feed lines.",
+  "group": "Interior",
   "section": "In-wall bays",
   "role": "door",
   "tool": "wrench",

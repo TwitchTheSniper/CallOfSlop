@@ -1,7 +1,8 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Wall Bay 1m RCS Feed",
-  "description": "An RCS feed in a 1 m in-wall bay (draft): the valve block wears, the drawer under it holds propellant bottles.",
+  "group": "In-wall bays",
+  "description": "An RCS feed in a 1 m in-wall bay: the valve block wears, the drawer under it holds propellant bottles.",
   "steps": [
     {
       "part": "Wall Bay 1m",

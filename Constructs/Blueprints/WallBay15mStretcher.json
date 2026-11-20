@@ -1,7 +1,8 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Wall Bay 1.5m Stretcher",
-  "description": "A 1.5 m in-wall bay (draft) with a stretcher drawer under a med cabinet.",
+  "group": "In-wall bays",
+  "description": "A 1.5 m in-wall bay with a stretcher drawer under a med cabinet.",
   "steps": [
     {
       "part": "Wall Bay 1.5m",

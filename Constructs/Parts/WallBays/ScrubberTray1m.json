@@ -1,8 +1,8 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Scrubber Tray 1m",
-  "description": "A CO2 scrubber's canister tray (1 m deep, draft): twist the latch and it runs out with its absorbent canisters; a spent one shows a red band, a fresh one green. Swap them from the stores.",
-  "group": "Style",
+  "description": "A CO2 scrubber's canister tray (1 m deep): twist the latch and it runs out with its absorbent canisters; a spent one shows a red band, a fresh one green. Swap them from the stores.",
+  "group": "Interior",
   "section": "In-wall bays",
   "role": "door",
   "tool": "wrench",

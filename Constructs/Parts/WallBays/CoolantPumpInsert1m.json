@@ -1,8 +1,8 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Coolant Pump Insert 1m",
-  "description": "An in-wall coolant pump (1 m deep, draft): the loop's pipes up into the void, the couplers the pump's hoses plug into, the pump's cassette (the part that wears) over a drawer of coolant (the consumable).",
-  "group": "Style",
+  "description": "An in-wall coolant pump (1 m deep): the loop's pipes up into the void, the couplers the pump's hoses plug into, the pump's cassette (the part that wears) over a drawer of coolant (the consumable).",
+  "group": "Interior",
   "section": "In-wall bays",
   "role": "frame",
   "tool": "wrench",

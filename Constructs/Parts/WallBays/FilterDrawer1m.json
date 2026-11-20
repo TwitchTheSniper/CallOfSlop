@@ -1,8 +1,8 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Filter Drawer 1m",
-  "description": "A water reclaimer's filter drawer (1 m deep, draft): twist the latch and it runs out with its cartridges standing in a row (pre-filter, carbon, membrane) and a spare set behind.",
-  "group": "Style",
+  "description": "A water reclaimer's filter drawer (1 m deep): twist the latch and it runs out with its cartridges standing in a row (pre-filter, carbon, membrane) and a spare set behind.",
+  "group": "Interior",
   "section": "In-wall bays",
   "role": "door",
   "tool": "wrench",

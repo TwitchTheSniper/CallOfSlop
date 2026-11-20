@@ -1,8 +1,8 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Belt Feeder Cassette 1m",
-  "description": "A PDC feed's feeder cassette (draft): the part that wears. It runs out with the feeder, its sprocket on top and a length of belt coming out of it.",
-  "group": "Style",
+  "description": "A PDC feed's feeder cassette: the part that wears. It runs out with the feeder, its sprocket on top and a length of belt coming out of it.",
+  "group": "Interior",
   "section": "In-wall bays",
   "role": "door",
   "tool": "wrench",

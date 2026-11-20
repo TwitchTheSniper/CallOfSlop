@@ -1,8 +1,8 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Component Bay Insert 1.5m",
-  "description": "An in-wall bay's component insert (1.5 m deep, draft): a service panel under the sled, a gauge panel over it, the sled's rails and the bay's power plug at the back.",
-  "group": "Style",
+  "description": "An in-wall bay's component insert (1.5 m deep): a service panel under the sled, a gauge panel over it, the sled's rails and the bay's power plug at the back.",
+  "group": "Interior",
   "section": "In-wall bays",
   "role": "frame",
   "tool": "wrench",

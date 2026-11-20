@@ -1,7 +1,8 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Wall Bay 1.5m MMU",
-  "description": "A 1.5 m in-wall bay (draft): its door swings aside and a sled brings a spacewalk pack out into the room.",
+  "group": "In-wall bays",
+  "description": "A 1.5 m in-wall bay: its door swings aside and a sled brings a spacewalk pack out into the room.",
   "steps": [
     {
       "part": "Wall Bay 1.5m",

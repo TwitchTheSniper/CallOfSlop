@@ -4,7 +4,7 @@ using static CallOfSlop.PartKit.PartKitMath;
 namespace CallOfSlop.PartKit.Generators;
 
 /// <summary>
-/// The hull airlock, a DRAFT for the Animation gallery (Karl, 2026-11-20: "Let's try adding an airlock to the outer hull"): a one-person
+/// The hull airlock, first drafted for the Animation gallery (Karl, 2026-11-20: "Let's try adding an airlock to the outer hull"): a one-person
 /// chamber through the 1.5 m void between the lining and the hull. A pressure door fills the lining's opening (the bay's 0.9 x 1.9 m),
 /// held by the twist latch on its jamb, and swings into the room on its left hinge; the outer hatch is an armoured plate that slides
 /// aside along rails on the hull's outside. Inside: tread plate, ribs, handrails, roof lamps, a cycle panel and lamps, a tether reel,
@@ -31,7 +31,7 @@ public sealed partial class WallBayParts
 
     private static Part AirlockChamber()
     {
-        var k = K("Airlock Chamber", "frame", $"A hull airlock (draft): a one-person chamber {Py.G(D)} m through the void, from a pressure door in the interior lining to a hatch in the hull that slides aside outside. Its air pumps back into a tank in the void before the outer hatch opens. Shown with the lining, deck and hull round it.");
+        var k = K("Airlock Chamber", "frame", $"A hull airlock: a one-person chamber {Py.G(D)} m through the void, from a pressure door in the interior lining to a hatch in the hull that slides aside outside. Its air pumps back into a tank in the void before the outer hatch opens. It comes as a wall section: its own deck, lining either side and the hull behind.");
         double hz = HullZ, ao = ArmO, ro = RingO;
         // The deck (room side) and the void's floor grating, wider on the right where the open hatch lies; the lining; the sill.
         k.Paint(-Sw, -0.06, -0.005, AirHullX, 0, 0.62, Deck, "painted deck plate");
@@ -163,7 +163,7 @@ public sealed partial class WallBayParts
 
     private static Part AirlockInnerDoor()
     {
-        var k = Mover("Airlock Inner Door", "An airlock's inner pressure door (draft): twist the latch on its jamb and it swings into the room on its left hinge; a porthole shows the chamber.", "inner", [0, InnerY, 0]);
+        var k = Mover("Airlock Inner Door", "An airlock's inner pressure door: twist the latch on its jamb and it swings into the room on its left hinge; a porthole shows the chamber.", "inner", [0, InnerY, 0]);
         const double Z0 = -0.04, Z1 = 0.012;
         // The slab round the porthole (four pieces), its glass, the ring round it; the blue band and a hazard kick strip; a pull on the
         // latch side, hinge knuckles on the left, a lit label at the top.
@@ -193,7 +193,7 @@ public sealed partial class WallBayParts
 
     private static Part AirlockOuterHatch()
     {
-        var k = K("Airlock Outer Hatch", "door", "An airlock's outer hull hatch (draft): an armoured plate on rollers that slides aside along rails on the outside of the hull.", Armour2);
+        var k = K("Airlock Outer Hatch", "door", "An airlock's outer hull hatch: an armoured plate on rollers that slides aside along rails on the outside of the hull.", Armour2);
         double z0 = HatchOut, z1 = HatchIn;
         // (its hang socket on the +z face of a small tab at the top rail, meeting the chamber's tab there)
         Solid(k, -0.5, Y1 + 0.08, z1 - 0.02, -0.48, Y1 + 0.1, z1);

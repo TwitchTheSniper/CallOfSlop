@@ -1,8 +1,8 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Component Bay Cover 1.5m",
-  "description": "The cover of an in-wall component bay (draft): a hinged panel that flips up on its top edge.",
-  "group": "Style",
+  "description": "The cover of an in-wall component bay: a hinged panel that flips up on its top edge.",
+  "group": "Interior",
   "section": "In-wall bays",
   "role": "door",
   "tool": "wrench",

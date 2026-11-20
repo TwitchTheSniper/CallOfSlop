@@ -1,8 +1,8 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Airlock Inner Door",
-  "description": "An airlock's inner pressure door (draft): twist the latch on its jamb and it swings into the room on its left hinge; a porthole shows the chamber.",
-  "group": "Style",
+  "description": "An airlock's inner pressure door: twist the latch on its jamb and it swings into the room on its left hinge; a porthole shows the chamber.",
+  "group": "Interior",
   "section": "In-wall bays",
   "role": "door",
   "tool": "wrench",

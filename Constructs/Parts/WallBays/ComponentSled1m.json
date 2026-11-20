@@ -1,8 +1,8 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Component Sled 1m",
-  "description": "A sled in an in-wall component bay (1 m deep, draft): it runs out on the bay's rails with what it carries (here a power cell, a long one in the deep bay) and unplugs as it goes.",
-  "group": "Style",
+  "description": "A sled in an in-wall component bay (1 m deep): it runs out on the bay's rails with what it carries (here a power cell, a long one in the deep bay) and unplugs as it goes.",
+  "group": "Interior",
   "section": "In-wall bays",
   "role": "door",
   "tool": "wrench",

@@ -1,8 +1,8 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Fuel Rod Drawer 1.5m",
-  "description": "A reactor's fuel drawer (draft): the consumable. Behind a shield plate; twist the latch and it runs out with fuel rods in two rows, their tips green (one red: spent).",
-  "group": "Style",
+  "description": "A reactor's fuel drawer: the consumable. Behind a shield plate; twist the latch and it runs out with fuel rods in two rows, their tips green (one red: spent).",
+  "group": "Interior",
   "section": "In-wall bays",
   "role": "door",
   "tool": "wrench",

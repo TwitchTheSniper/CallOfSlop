@@ -1,8 +1,8 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Candle Drawer 1.5m",
-  "description": "The spare candle drawer under an oxygen generator (1.5 m deep, draft): press it and it runs out with fresh oxygen candles in two layers.",
-  "group": "Style",
+  "description": "The spare candle drawer under an oxygen generator (1.5 m deep): press it and it runs out with fresh oxygen candles in two layers.",
+  "group": "Interior",
   "section": "In-wall bays",
   "role": "door",
   "tool": "wrench",

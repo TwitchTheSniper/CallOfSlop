@@ -1,8 +1,8 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Flight Computer Insert",
-  "description": "An in-wall flight computer (0.5 m deep, draft): its card cage (the part that wears) over a drawer of memory modules, the data trunk behind.",
-  "group": "Style",
+  "description": "An in-wall flight computer (0.5 m deep): its card cage (the part that wears) over a drawer of memory modules, the data trunk behind.",
+  "group": "Interior",
   "section": "In-wall bays",
   "role": "frame",
   "tool": "wrench",

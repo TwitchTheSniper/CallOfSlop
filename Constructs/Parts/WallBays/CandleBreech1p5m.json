@@ -1,8 +1,8 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Candle Breech 1.5m",
-  "description": "An oxygen generator's breech (1.5 m deep, draft): twist the latch and the breech runs out of the furnace with its candle in the cradle; a spent candle comes out, a fresh one goes in.",
-  "group": "Style",
+  "description": "An oxygen generator's breech (1.5 m deep): twist the latch and the breech runs out of the furnace with its candle in the cradle; a spent candle comes out, a fresh one goes in.",
+  "group": "Interior",
   "section": "In-wall bays",
   "role": "door",
   "tool": "wrench",

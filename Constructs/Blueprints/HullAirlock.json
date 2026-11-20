@@ -1,7 +1,8 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Hull Airlock",
-  "description": "A hull airlock (draft): a pressure door with a twist latch in the interior lining, a one-person chamber through the 1.5 m void, and a hatch that slides aside along rails outside the hull.",
+  "group": "In-wall bays",
+  "description": "A hull airlock: a pressure door with a twist latch in the interior lining, a one-person chamber through the 1.5 m void, and a hatch that slides aside along rails outside the hull.",
   "steps": [
     {
       "part": "Airlock Chamber",

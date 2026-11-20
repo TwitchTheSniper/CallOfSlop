@@ -1,8 +1,8 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Water Reclaimer Insert 1m",
-  "description": "An in-wall water reclaimer (1 m deep, draft): the pump's cassette (the part that wears) under the filter drawer (the consumable), the tank over them with its level on the panel, the manifold behind.",
-  "group": "Style",
+  "description": "An in-wall water reclaimer (1 m deep): the pump's cassette (the part that wears) under the filter drawer (the consumable), the tank over them with its level on the panel, the manifold behind.",
+  "group": "Interior",
   "section": "In-wall bays",
   "role": "frame",
   "tool": "wrench",

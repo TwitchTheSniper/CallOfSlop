@@ -1,7 +1,8 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Wall Bay Drawers",
-  "description": "An in-wall bay (draft) with four deep drawers.",
+  "group": "In-wall bays",
+  "description": "An in-wall bay with four deep drawers.",
   "steps": [
     {
       "part": "Wall Bay",

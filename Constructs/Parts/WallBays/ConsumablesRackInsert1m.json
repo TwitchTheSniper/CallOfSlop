@@ -1,8 +1,8 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Consumables Rack Insert 1m",
-  "description": "An in-wall bay's consumables rack insert (1 m deep, draft): the top and bottom runners a tall rack runs out on, and the twist latch's socket.",
-  "group": "Style",
+  "description": "An in-wall bay's consumables rack insert (1 m deep): the top and bottom runners a tall rack runs out on, and the twist latch's socket.",
+  "group": "Interior",
   "section": "In-wall bays",
   "role": "frame",
   "tool": "wrench",

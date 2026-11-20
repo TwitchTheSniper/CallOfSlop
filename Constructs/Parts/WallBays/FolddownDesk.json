@@ -1,8 +1,8 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Fold-down Desk",
-  "description": "A fold-down desk in an in-wall bay (draft): a waist-high panel that flips down on its foot to a worktop with a keyboard.",
-  "group": "Style",
+  "description": "A fold-down desk in an in-wall bay: a waist-high panel that flips down on its foot to a worktop with a keyboard.",
+  "group": "Interior",
   "section": "In-wall bays",
   "role": "door",
   "tool": "wrench",

@@ -1,8 +1,8 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Coolant Pump Cassette 1m",
-  "description": "A coolant pump's cassette (draft): the part that wears. It runs out with the pump and its motor on a base plate, the hoses back to the loop's couplers.",
-  "group": "Style",
+  "description": "A coolant pump's cassette: the part that wears. It runs out with the pump and its motor on a base plate, the hoses back to the loop's couplers.",
+  "group": "Interior",
   "section": "In-wall bays",
   "role": "door",
   "tool": "wrench",

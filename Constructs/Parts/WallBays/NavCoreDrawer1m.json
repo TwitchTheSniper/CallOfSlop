@@ -1,8 +1,8 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Nav Core Drawer 1m",
-  "description": "A sensor rack's drawer (draft): twist the latch and it runs out with the nav chart data cores standing in their rack, their tops lit (one amber: a chart past its date).",
-  "group": "Style",
+  "description": "A sensor rack's drawer: twist the latch and it runs out with the nav chart data cores standing in their rack, their tops lit (one amber: a chart past its date).",
+  "group": "Interior",
   "section": "In-wall bays",
   "role": "door",
   "tool": "wrench",

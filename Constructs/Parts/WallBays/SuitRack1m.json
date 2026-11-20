@@ -1,8 +1,8 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Suit Rack 1m",
-  "description": "A suit rack in an in-wall bay (1 m deep, draft): press the face and a pressure suit on its hanger runs right out of the wall, side-on, with two spare bottles at its feet.",
-  "group": "Style",
+  "description": "A suit rack in an in-wall bay (1 m deep): press the face and a pressure suit on its hanger runs right out of the wall, side-on, with two spare bottles at its feet.",
+  "group": "Interior",
   "section": "In-wall bays",
   "role": "door",
   "tool": "wrench",

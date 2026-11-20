@@ -1,8 +1,8 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Damage Control Insert",
-  "description": "An in-wall damage control locker (0.5 m deep, draft): spare door actuators over a drawer of hull patch plates and sealant foam.",
-  "group": "Style",
+  "description": "An in-wall damage control locker (0.5 m deep): spare door actuators over a drawer of hull patch plates and sealant foam.",
+  "group": "Interior",
   "section": "In-wall bays",
   "role": "frame",
   "tool": "wrench",

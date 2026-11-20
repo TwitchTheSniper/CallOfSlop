@@ -1,7 +1,8 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Wall Bay 1.5m Reactor Fuel",
-  "description": "A reactor fuel loader in a 1.5 m in-wall bay (draft): the control rod cassette wears, the shielded drawer under it holds fuel rods.",
+  "group": "In-wall bays",
+  "description": "A reactor fuel loader in a 1.5 m in-wall bay: the control rod cassette wears, the shielded drawer under it holds fuel rods.",
   "steps": [
     {
       "part": "Wall Bay 1.5m",

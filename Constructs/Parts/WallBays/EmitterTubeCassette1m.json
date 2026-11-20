@@ -1,8 +1,8 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Emitter Tube Cassette 1m",
-  "description": "A sensor rack's emitter cassette (draft): the part that wears. It runs out with the radar's emitter tube in its cradles: a finned copper body, a glass end that glows while it works, the flange at the back.",
-  "group": "Style",
+  "description": "A sensor rack's emitter cassette: the part that wears. It runs out with the radar's emitter tube in its cradles: a finned copper body, a glass end that glows while it works, the flange at the back.",
+  "group": "Interior",
   "section": "In-wall bays",
   "role": "door",
   "tool": "wrench",

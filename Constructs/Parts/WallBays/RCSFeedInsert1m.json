@@ -1,8 +1,8 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "RCS Feed Insert 1m",
-  "description": "An in-wall RCS feed (1 m deep, draft): the feed lines up to the thrusters, the couplers the valve block plugs into, the block's cassette (the part that wears) over a drawer of propellant bottles (the consumable).",
-  "group": "Style",
+  "description": "An in-wall RCS feed (1 m deep): the feed lines up to the thrusters, the couplers the valve block plugs into, the block's cassette (the part that wears) over a drawer of propellant bottles (the consumable).",
+  "group": "Interior",
   "section": "In-wall bays",
   "role": "frame",
   "tool": "wrench",

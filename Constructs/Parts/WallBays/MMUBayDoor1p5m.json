@@ -1,8 +1,8 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "MMU Bay Door 1.5m",
-  "description": "The door of a spacewalk pack bay (1.5 m deep, draft): a full-height lining panel that swings aside on its left edge, then the pack's sled runs out.",
-  "group": "Style",
+  "description": "The door of a spacewalk pack bay (1.5 m deep): a full-height lining panel that swings aside on its left edge, then the pack's sled runs out.",
+  "group": "Interior",
   "section": "In-wall bays",
   "role": "door",
   "tool": "wrench",

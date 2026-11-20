@@ -4,7 +4,7 @@ using static CallOfSlop.PartKit.PartKitMath;
 namespace CallOfSlop.PartKit.Generators;
 
 /// <summary>
-/// Ship systems in the in-wall bays, a DRAFT for the Animation gallery (Karl, 2026-11-20: "look at my conversation around subsystems
+/// Ship systems in the in-wall bays, first drafted for the Animation gallery (Karl, 2026-11-20: "look at my conversation around subsystems
 /// and their related components and see if you can incorporate these into the in-wall system"; the brainstorm in the project chat
 /// listed each system's parts, the sub-parts that wear and what it uses up). Every system fill follows the brainstorm's rule: the
 /// module has two service slots, a part that wears in the upper <b>cassette</b> and a consumable in the lower <b>drawer</b>, with a
@@ -107,12 +107,12 @@ public sealed partial class WallBayParts
 
     private static Part[] Breakers()
     {
-        var i = SysInsert("Breaker Panel Insert", $"An in-wall breaker panel ({Py.G(D)} m deep, draft): the power bus behind, its breaker cassette (the part that wears) over a fuse drawer (the consumable), wear and supply bars over them.", Amber, 4, 5);
+        var i = SysInsert("Breaker Panel Insert", $"An in-wall breaker panel ({Py.G(D)} m deep): the power bus behind, its breaker cassette (the part that wears) over a fuse drawer (the consumable), wear and supply bars over them.", Amber, 4, 5);
         foreach (var x in new[] { -0.2, 0.0, 0.2 })
             i.Box(x - 0.02, Y0 + 0.08, -D + 0.06, x + 0.02, WearY1 - 0.05, -D + 0.075, CopperC, "copper");
         Rod(i, 0.28, 1.5, -D + 0.02, 0.34, Y1 + 0.25, -D + 0.08, "+y", Frame, "rubber");
 
-        var (c, t, _) = SysCassette("Breaker Cassette", "A breaker panel's cassette (draft): the part that wears. Its face is the panel, three rows of breakers, one tripped red; it runs out on its tray with the breakers' bodies and the bus stabs behind.", Amber);
+        var (c, t, _) = SysCassette("Breaker Cassette", "A breaker panel's cassette: the part that wears. Its face is the panel, three rows of breakers, one tripped red; it runs out on its tray with the breakers' bodies and the bus stabs behind.", Amber);
         for (var r = 0; r < 3; r++)
             for (var j = 0; j < 7; j++)
             {
@@ -126,7 +126,7 @@ public sealed partial class WallBayParts
         foreach (var x in new[] { -0.2, 0.0, 0.2 })
             c.Box(x - 0.015, t + 0.11, -0.37, x + 0.015, t + 0.15, -0.33, CopperC, "copper");
 
-        var (d, s, zb) = SysDrawer("Fuse Drawer", "A breaker panel's fuse drawer (draft): the consumable. Twist the latch and it runs out with cartridge fuses in a rack and cartons of spares on the shelf over them.", Amber);
+        var (d, s, zb) = SysDrawer("Fuse Drawer", "A breaker panel's fuse drawer: the consumable. Twist the latch and it runs out with cartridge fuses in a rack and cartons of spares on the shelf over them.", Amber);
         d.Box(-0.38, s, -0.36, 0.38, s + 0.05, -0.04, Dark, "plastic");
         foreach (var x in new[] { -0.27, -0.09, 0.09, 0.27 })
             foreach (var z in new[] { -0.08, -0.16, -0.24, -0.32 })
@@ -148,11 +148,11 @@ public sealed partial class WallBayParts
 
     private static Part[] Computer()
     {
-        var i = SysInsert("Flight Computer Insert", $"An in-wall flight computer ({Py.G(D)} m deep, draft): its card cage (the part that wears) over a drawer of memory modules, the data trunk behind.", Green, 5, 4);
+        var i = SysInsert("Flight Computer Insert", $"An in-wall flight computer ({Py.G(D)} m deep): its card cage (the part that wears) over a drawer of memory modules, the data trunk behind.", Green, 5, 4);
         foreach (var x in new[] { -0.29, -0.21 })
             Rod(i, x - 0.03, 1.5, -D + 0.02, x + 0.03, Y1 + 0.25, -D + 0.08, "+y", PipeBlue, "rubber");
 
-        var (c, t, _) = SysCassette("Computer Card Cage", "A flight computer's card cage (draft): the part that wears. It runs out with nine cards standing in their guide and the cage's fan behind them.", Green);
+        var (c, t, _) = SysCassette("Computer Card Cage", "A flight computer's card cage: the part that wears. It runs out with nine cards standing in their guide and the cage's fan behind them.", Green);
         foreach (var sx in new[] { -1.0, 1.0 })
             c.Box(sx * 0.314, t, -0.36, sx * 0.326, t + 0.4, -0.04, Steel, "aluminium");
         foreach (var (z0, z1) in new[] { (-0.36, -0.34), (-0.06, -0.04) })
@@ -169,7 +169,7 @@ public sealed partial class WallBayParts
         Rod(c, -0.12, t + 0.08, -0.355, 0.12, t + 0.32, -0.338, "+z", Frame, "plastic", 20);
         Rod(c, -0.03, t + 0.17, -0.343, 0.03, t + 0.23, -0.332, "+z", Steel, "steel");
 
-        var (d, s, zb) = SysDrawer("Memory Module Drawer", "A flight computer's spares drawer (draft): twist the latch and it runs out with memory modules standing in foam and spare cards bagged on the shelf.", Green);
+        var (d, s, zb) = SysDrawer("Memory Module Drawer", "A flight computer's spares drawer: twist the latch and it runs out with memory modules standing in foam and spare cards bagged on the shelf.", Green);
         d.Box(-0.38, s, -0.36, 0.38, s + 0.08, -0.04, Foam, "rubber");
         foreach (var x in new[] { -0.24, -0.08, 0.08, 0.24 })
             foreach (var z in new[] { -0.08, -0.13, -0.18, -0.23, -0.28, -0.33 })
@@ -184,9 +184,9 @@ public sealed partial class WallBayParts
 
     private static Part[] DamageControl()
     {
-        var i = SysInsert("Damage Control Insert", $"An in-wall damage control locker ({Py.G(D)} m deep, draft): spare door actuators over a drawer of hull patch plates and sealant foam.", Hazard, 6, 4);
+        var i = SysInsert("Damage Control Insert", $"An in-wall damage control locker ({Py.G(D)} m deep): spare door actuators over a drawer of hull patch plates and sealant foam.", Hazard, 6, 4);
 
-        var (c, t, _) = SysCassette("Actuator Spares Rack", "A damage control locker's spares rack (draft): two spare door actuators in their cradles, for the door that wears out.", Hazard);
+        var (c, t, _) = SysCassette("Actuator Spares Rack", "A damage control locker's spares rack: two spare door actuators in their cradles, for the door that wears out.", Hazard);
         foreach (var z0 in new[] { -0.12, -0.28 })
         {
             foreach (var x in new[] { -0.25, 0.0 })
@@ -197,7 +197,7 @@ public sealed partial class WallBayParts
             c.Box(0.297, t + 0.045, z0 - 0.02, 0.33, t + 0.085, z0 + 0.02, Dark, "dirty steel");
         }
 
-        var (d, s, _) = SysDrawer("Patch and Foam Drawer", "A damage control locker's drawer (draft): the consumables. Twist the latch and it runs out with hull patch plates standing in a rack and cans of sealant foam.", Hazard);
+        var (d, s, _) = SysDrawer("Patch and Foam Drawer", "A damage control locker's drawer: the consumables. Twist the latch and it runs out with hull patch plates standing in a rack and cans of sealant foam.", Hazard);
         d.Box(-0.4, s, -0.3, -0.02, s + 0.04, -0.04, Dark, "rubber");
         foreach (var z in new[] { -0.07, -0.11, -0.15, -0.19, -0.23 })
         {
@@ -218,13 +218,13 @@ public sealed partial class WallBayParts
 
     private static Part[] Coolant()
     {
-        var i = SysInsert("Coolant Pump Insert", $"An in-wall coolant pump ({Py.G(D)} m deep, draft): the loop's pipes up into the void, the couplers the pump's hoses plug into, the pump's cassette (the part that wears) over a drawer of coolant (the consumable).", Teal, 4, 3);
+        var i = SysInsert("Coolant Pump Insert", $"An in-wall coolant pump ({Py.G(D)} m deep): the loop's pipes up into the void, the couplers the pump's hoses plug into, the pump's cassette (the part that wears) over a drawer of coolant (the consumable).", Teal, 4, 3);
         foreach (var x in new[] { -0.3, 0.3 })
             Rod(i, x - 0.03, 1.5, -D + 0.025, x + 0.03, Y1 + 0.25, -D + 0.085, "+y", x < 0 ? Teal : PipeBlue, "painted steel");
         foreach (var x in new[] { -0.22, 0.22 })
             Rod(i, x - 0.035, 1.07, -D + 0.06, x + 0.035, 1.14, -D + 0.1, "+z", BrassC, "brass");
 
-        var (c, t, _) = SysCassette("Coolant Pump Cassette", "A coolant pump's cassette (draft): the part that wears. It runs out with the pump and its motor on a base plate, the hoses back to the loop's couplers.", Teal);
+        var (c, t, _) = SysCassette("Coolant Pump Cassette", "A coolant pump's cassette: the part that wears. It runs out with the pump and its motor on a base plate, the hoses back to the loop's couplers.", Teal);
         c.Box(-0.2, t, -0.7, 0.2, t + 0.03, -0.12, Dark, "dirty steel");
         Rod(c, -0.12, t + 0.03, -0.62, 0.12, t + 0.27, -0.32, "+z", Motor, "painted steel", 20);
         Rod(c, -0.1, t + 0.05, -0.66, 0.1, t + 0.25, -0.617, "+z", Frame, "dirty steel", 20);
@@ -237,7 +237,7 @@ public sealed partial class WallBayParts
             Rod(c, x - 0.035, t + 0.095, -0.889, x + 0.035, t + 0.165, -0.858, "+z", BrassC, "brass");
         }
 
-        var (d, s, _) = SysDrawer("Coolant Jug Drawer", "A coolant pump's drawer (draft): the consumable. Twist the latch and it runs out with jugs of coolant to top the loop up.", Teal);
+        var (d, s, _) = SysDrawer("Coolant Jug Drawer", "A coolant pump's drawer: the consumable. Twist the latch and it runs out with jugs of coolant to top the loop up.", Teal);
         foreach (var x in new[] { -0.27, -0.09, 0.09, 0.27 })
             foreach (var z in new[] { -0.16, -0.42, -0.68 })
             {
@@ -252,13 +252,13 @@ public sealed partial class WallBayParts
 
     private static Part[] Rcs()
     {
-        var i = SysInsert("RCS Feed Insert", $"An in-wall RCS feed ({Py.G(D)} m deep, draft): the feed lines up to the thrusters, the couplers the valve block plugs into, the block's cassette (the part that wears) over a drawer of propellant bottles (the consumable).", Orange, 3, 4);
+        var i = SysInsert("RCS Feed Insert", $"An in-wall RCS feed ({Py.G(D)} m deep): the feed lines up to the thrusters, the couplers the valve block plugs into, the block's cassette (the part that wears) over a drawer of propellant bottles (the consumable).", Orange, 3, 4);
         foreach (var x in new[] { -0.3, 0.3 })
             Rod(i, x - 0.03, 1.5, -D + 0.025, x + 0.03, Y1 + 0.25, -D + 0.085, "+y", Orange, "painted steel");
         foreach (var x in new[] { -0.2, 0.2 })
             Rod(i, x - 0.03, 1.015, -D + 0.06, x + 0.03, 1.075, -D + 0.1, "+z", BrassC, "brass");
 
-        var (c, t, _) = SysCassette("RCS Valve Block", "An RCS feed's valve block (draft): the part that wears. It runs out with four valves on the manifold, the seals on its face and the ports back to the feed lines.", Orange);
+        var (c, t, _) = SysCassette("RCS Valve Block", "An RCS feed's valve block: the part that wears. It runs out with four valves on the manifold, the seals on its face and the ports back to the feed lines.", Orange);
         c.Box(-0.3, t, -0.62, 0.3, t + 0.16, -0.2, Steel, "aluminium");
         foreach (var x in new[] { -0.21, -0.07, 0.07, 0.21 })
         {
@@ -273,7 +273,7 @@ public sealed partial class WallBayParts
             Rod(c, x - 0.03, t + 0.045, -0.889, x + 0.03, t + 0.105, -0.857, "+z", BrassC, "brass");
         }
 
-        var (d, s, zb) = SysDrawer("Propellant Bottle Drawer", "An RCS feed's drawer (draft): the consumable. Twist the latch and it runs out with propellant bottles in cradles, two rows deep.", Orange);
+        var (d, s, zb) = SysDrawer("Propellant Bottle Drawer", "An RCS feed's drawer: the consumable. Twist the latch and it runs out with propellant bottles in cradles, two rows deep.", Orange);
         void Bottles(double y)
         {
             foreach (var z in new[] { -0.66, -0.24 })
@@ -296,11 +296,11 @@ public sealed partial class WallBayParts
 
     private static Part[] Sensors()
     {
-        var i = SysInsert("Sensor Rack Insert", $"An in-wall sensor rack ({Py.G(D)} m deep, draft): the waveguide up to the antenna, the flange the emitter tube seats into, its cassette (the part that wears) over a drawer of nav chart data cores.", Glow, 3, 5);
+        var i = SysInsert("Sensor Rack Insert", $"An in-wall sensor rack ({Py.G(D)} m deep): the waveguide up to the antenna, the flange the emitter tube seats into, its cassette (the part that wears) over a drawer of nav chart data cores.", Glow, 3, 5);
         i.Box(0.14, 1.5, -D + 0.02, 0.26, Y1 + 0.25, -D + 0.08, CopperC, "copper");
         i.Box(-0.11, 1.02, -D + 0.06, 0.11, 1.2, -D + 0.1, BrassC, "brass");
 
-        var (c, t, _) = SysCassette("Emitter Tube Cassette", "A sensor rack's emitter cassette (draft): the part that wears. It runs out with the radar's emitter tube in its cradles: a finned copper body, a glass end that glows while it works, the flange at the back.", Glow);
+        var (c, t, _) = SysCassette("Emitter Tube Cassette", "A sensor rack's emitter cassette: the part that wears. It runs out with the radar's emitter tube in its cradles: a finned copper body, a glass end that glows while it works, the flange at the back.", Glow);
         foreach (var z in new[] { -0.7, -0.28 })
             c.Box(-0.12, t, z - 0.02, 0.12, t + 0.08, z + 0.02, Frame, "rubber");
         Rod(c, -0.07, t + 0.07, -0.78, 0.07, t + 0.21, -0.22, "+z", CopperC, "copper", 20);
@@ -310,7 +310,7 @@ public sealed partial class WallBayParts
         c.Glow(-0.025, t + 0.115, -0.103, 0.025, t + 0.165, -0.09, Glow);
         c.Box(-0.1, t + 0.05, -0.83, 0.1, t + 0.23, -0.777, BrassC, "brass");
 
-        var (d, s, _) = SysDrawer("Nav Core Drawer", "A sensor rack's drawer (draft): twist the latch and it runs out with the nav chart data cores standing in their rack, their tops lit (one amber: a chart past its date).", Glow);
+        var (d, s, _) = SysDrawer("Nav Core Drawer", "A sensor rack's drawer: twist the latch and it runs out with the nav chart data cores standing in their rack, their tops lit (one amber: a chart past its date).", Glow);
         d.Box(-0.36, s, -0.52, 0.36, s + 0.08, -0.06, Dark, "plastic");
         var n = 0;
         foreach (var z in new[] { -0.14, -0.29, -0.44 })
@@ -327,10 +327,10 @@ public sealed partial class WallBayParts
 
     private static Part[] Pdc()
     {
-        var i = SysInsert("PDC Feed Insert", $"An in-wall PDC feed ({Py.G(D)} m deep, draft): the belt chute up to the mount, the feeder's cassette (the part that wears) over a drawer of ammo cans (the consumable).", Red, 5, 3);
+        var i = SysInsert("PDC Feed Insert", $"An in-wall PDC feed ({Py.G(D)} m deep): the belt chute up to the mount, the feeder's cassette (the part that wears) over a drawer of ammo cans (the consumable).", Red, 5, 3);
         i.Box(-0.13, 1.45, -D + 0.02, 0.13, Y1 + 0.25, -D + 0.16, Steel, "dirty steel");
 
-        var (c, t, _) = SysCassette("Belt Feeder Cassette", "A PDC feed's feeder cassette (draft): the part that wears. It runs out with the feeder, its sprocket on top and a length of belt coming out of it.", Red);
+        var (c, t, _) = SysCassette("Belt Feeder Cassette", "A PDC feed's feeder cassette: the part that wears. It runs out with the feeder, its sprocket on top and a length of belt coming out of it.", Red);
         c.Box(-0.22, t, -0.62, 0.22, t + 0.3, -0.24, Olive, "matte paint");
         Rod(c, -0.2, t + 0.22, -0.52, 0.2, t + 0.38, -0.36, "+x", Steel, "dirty steel", 16);
         c.Box(-0.05, t + 0.238, -0.245, 0.05, t + 0.252, -0.05, Frame, "dirty steel");
@@ -340,7 +340,7 @@ public sealed partial class WallBayParts
             Rod(c, 0.057, t + 0.254, z - 0.008, 0.085, t + 0.27, z + 0.008, "+x", CopperC, "copper", 10);
         }
 
-        var (d, s, _) = SysDrawer("Ammo Can Drawer", "A PDC feed's drawer (draft): the consumable. Twist the latch and it runs out with six cans of linked rounds.", Red);
+        var (d, s, _) = SysDrawer("Ammo Can Drawer", "A PDC feed's drawer: the consumable. Twist the latch and it runs out with six cans of linked rounds.", Red);
         foreach (var x in new[] { -0.27, 0.0, 0.27 })
             foreach (var z in new[] { -0.24, -0.64 })
             {
@@ -356,11 +356,11 @@ public sealed partial class WallBayParts
 
     private static Part[] ReactorFuel()
     {
-        var i = SysInsert("Reactor Fuel Insert", $"An in-wall reactor fuel loader ({Py.G(D)} m deep, draft): two heavy conduits to the reactor, the control rod cassette (the part that wears) over a shielded drawer of fuel rods (the consumable).", Lime, 4, 2);
+        var i = SysInsert("Reactor Fuel Insert", $"An in-wall reactor fuel loader ({Py.G(D)} m deep): two heavy conduits to the reactor, the control rod cassette (the part that wears) over a shielded drawer of fuel rods (the consumable).", Lime, 4, 2);
         foreach (var x in new[] { -0.28, 0.28 })
             Rod(i, x - 0.06, 1.45, -D + 0.02, x + 0.06, Y1 + 0.25, -D + 0.14, "+y", Steel, "dirty steel", 16);
 
-        var (c, t, _) = SysCassette("Control Rod Cassette", "A reactor's control rod cassette (draft): the part that wears. It runs 1.4 m out with six control rods between their end plates and spacer grids.", Lime);
+        var (c, t, _) = SysCassette("Control Rod Cassette", "A reactor's control rod cassette: the part that wears. It runs 1.4 m out with six control rods between their end plates and spacer grids.", Lime);
         foreach (var z0 in new[] { -1.32, -0.14 })
             c.Box(-0.18, t, z0, 0.18, t + 0.24, z0 + 0.03, Steel, "plated steel");
         foreach (var z in new[] { -0.93, -0.53 })
@@ -370,7 +370,7 @@ public sealed partial class WallBayParts
                 Rod(c, x - 0.025, y, -1.293, x + 0.025, y + 0.05, -0.137, "+z", Dark, "dirty steel");
         c.Box(-0.06, t + 0.237, -0.135, 0.06, t + 0.32, -0.115, Hazard, "hazard paint");
 
-        var (d, s, _) = SysDrawer("Fuel Rod Drawer", "A reactor's fuel drawer (draft): the consumable. Behind a shield plate; twist the latch and it runs out with fuel rods in two rows, their tips green (one red: spent).", Lime);
+        var (d, s, _) = SysDrawer("Fuel Rod Drawer", "A reactor's fuel drawer: the consumable. Behind a shield plate; twist the latch and it runs out with fuel rods in two rows, their tips green (one red: spent).", Lime);
         d.Box(-0.42, Y0 + 0.04, 0.015, 0.26, SupY1 - 0.16, 0.035, Armour2, "plated steel");
         foreach (var z in new[] { -1.0, -0.6, -0.3 })
             d.Box(-0.36, s, z - 0.02, 0.36, s + 0.17, z + 0.02, Dark, "plated steel");

@@ -1,8 +1,8 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Murphy Bed",
-  "description": "A Murphy bed in an in-wall bay (draft): the bay's whole face flips down on its foot to a made bed. Press the bar at the top.",
-  "group": "Style",
+  "description": "A Murphy bed in an in-wall bay: the bay's whole face flips down on its foot to a made bed. Press the bar at the top.",
+  "group": "Interior",
   "section": "In-wall bays",
   "role": "door",
   "tool": "wrench",

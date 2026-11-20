@@ -1,7 +1,8 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Wall Bay Damage Control",
-  "description": "A damage control locker in an in-wall bay (draft): spare door actuators over hull patch plates and sealant foam.",
+  "group": "In-wall bays",
+  "description": "A damage control locker in an in-wall bay: spare door actuators over hull patch plates and sealant foam.",
   "steps": [
     {
       "part": "Wall Bay",

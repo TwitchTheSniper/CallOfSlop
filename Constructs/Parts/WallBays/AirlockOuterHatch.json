@@ -1,8 +1,8 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Airlock Outer Hatch",
-  "description": "An airlock's outer hull hatch (draft): an armoured plate on rollers that slides aside along rails on the outside of the hull.",
-  "group": "Style",
+  "description": "An airlock's outer hull hatch: an armoured plate on rollers that slides aside along rails on the outside of the hull.",
+  "group": "Interior",
   "section": "In-wall bays",
   "role": "door",
   "tool": "wrench",

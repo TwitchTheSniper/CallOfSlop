@@ -1,8 +1,8 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Jump Seat",
-  "description": "An in-wall jump seat (draft): a lining panel that flips down on its foot to a cushioned seat. Press it and it drops.",
-  "group": "Style",
+  "description": "An in-wall jump seat: a lining panel that flips down on its foot to a cushioned seat. Press it and it drops.",
+  "group": "Interior",
   "section": "In-wall bays",
   "role": "door",
   "tool": "wrench",

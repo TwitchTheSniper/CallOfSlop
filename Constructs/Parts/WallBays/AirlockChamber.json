@@ -1,8 +1,8 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Airlock Chamber",
-  "description": "A hull airlock (draft): a one-person chamber 1.5 m through the void, from a pressure door in the interior lining to a hatch in the hull that slides aside outside. Its air pumps back into a tank in the void before the outer hatch opens. Shown with the lining, deck and hull round it.",
-  "group": "Style",
+  "description": "A hull airlock: a one-person chamber 1.5 m through the void, from a pressure door in the interior lining to a hatch in the hull that slides aside outside. Its air pumps back into a tank in the void before the outer hatch opens. It comes as a wall section: its own deck, lining either side and the hull behind.",
+  "group": "Interior",
   "section": "In-wall bays",
   "role": "frame",
   "tool": "wrench",
