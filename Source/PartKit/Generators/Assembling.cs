@@ -485,14 +485,36 @@ public sealed class Assembling : IPartGenerator
     private static readonly string[] LateFolders = ["LinkSupports", "LegPods"];
 
     /// <summary>
-    /// Every recipe added from the module sockets on (2026-11-20), in the order added: a folder of parts (its rows in file order) or a
-    /// hand-written row. LateFolders and LateHand are closed: a new folder or a new hand row goes at the END of this list, never into
-    /// them, so no row already in a saved world moves (an Assembler's recipe setting is 1 + its row's place in its family's list).
+    /// Every recipe added from the module sockets on (2026-11-20), in the order added: one part of a folder (its recipe worked out from the
+    /// part file) or a hand-written row. Closed, row by row: a new row goes at the END of this list, never into it, so no row already in a
+    /// saved world moves (an Assembler's recipe setting is 1 + its row's place in its family's list). That is why it names parts one by one
+    /// and never takes a whole folder: a new part file in a folder would land among the folder's rows and shift every row after it. A part
+    /// in a folder named here that has no row of its own is refused ("give it a row at the end of Tail"). LateFolders and LateHand are
+    /// closed too.
     /// </summary>
-    private static List<(string? Folder, PyDict? Row)> Tail() =>
+    private static List<(string? Folder, string? Part, PyDict? Row)> Tail() =>
     [
-        ("Modules", null), // (module sockets: plates, plugs and stands, docs/sandbox/design/module-sockets.md)
-        (null, Rec("Module Fitter S", 47.6, 4, m: [("steel", 304)], p: [("Servo Motor", 8), ("Control Unit", 2)])), // (module sockets phase 4: an explicit row, so no open folder moves a saved recipe's index)
+        // (module sockets: plates, plugs and stands, docs/sandbox/design/module-sockets.md; in the folder's file order of 2026-11-20)
+        ("Modules", "Module Plug 1x1", null),
+        ("Modules", "Module Plug 1x2", null),
+        ("Modules", "Module Plug 1x3", null),
+        ("Modules", "Module Plug 2x2", null),
+        ("Modules", "Module Plug 2x3", null),
+        ("Modules", "Module Plug 3x3", null),
+        ("Modules", "Module Socket 1x1", null),
+        ("Modules", "Module Socket 1x2", null),
+        ("Modules", "Module Socket 1x3", null),
+        ("Modules", "Module Socket 2x2", null),
+        ("Modules", "Module Socket 2x3", null),
+        ("Modules", "Module Socket 3x3", null),
+        ("Modules", "Module Stand 1x1", null),
+        ("Modules", "Module Stand 1x2", null),
+        ("Modules", "Module Stand 1x3", null),
+        ("Modules", "Module Stand 2x2", null),
+        ("Modules", "Module Stand 2x3", null),
+        ("Modules", "Module Stand 3x3", null),
+        (null, null, Rec("Half Shell", 20, 2, m: [("steel", 12), ("copper", 4), ("rubber", 2)], p: [("Circuit Board", 1)])), // (docs/sandbox/design/half-shell.md)
+        ("Modules/Fitters", "Module Fitter S", null), // (module sockets phase 4: the Module Fitter S)
     ];
 
     /// <summary>
@@ -556,10 +578,11 @@ public sealed class Assembling : IPartGenerator
         var lateHand = LateHand();
         var tailSpec = Tail();
         var tailFolders = tailSpec.Where(t => t.Folder != null).Select(t => t.Folder!).ToHashSet(StringComparer.Ordinal);
+        var tailParts = tailSpec.Where(t => t.Part != null).Select(t => t.Part!).ToHashSet(StringComparer.Ordinal);
         var hand = recipes.Concat(lateHand).Concat(tailSpec.Where(t => t.Row != null).Select(t => t.Row!)).Select(r => (string)r["output"]!).ToHashSet();
         var tail = new List<PyDict>();
         var late = new List<PyDict>();
-        var byFolder = new Dictionary<string, List<PyDict>>(StringComparer.Ordinal);
+        var byPart = new Dictionary<string, PyDict>(StringComparer.Ordinal);
         foreach (var (p, folder) in known)
         {
             var name = (string)p["name"]!;
@@ -568,17 +591,27 @@ public sealed class Assembling : IPartGenerator
                 continue;
             if (Py.Truthy(p.Get("retired"))) // (a retired part loads and runs but has no recipe: the tier cylinders, sized-parts answer 8)
                 continue;
-            (tailFolders.Contains(folder) ? (byFolder.TryGetValue(folder, out var fl) ? fl : byFolder[folder] = []) : LateFolders.Contains(folder) ? late : tail).Add(MachineOf(p, folder) != "" ? FlightRecipe(p, folder) : LongTail(p));
+            var row = MachineOf(p, folder) != "" ? FlightRecipe(p, folder) : LongTail(p);
+            if (tailFolders.Contains(folder))
+            {
+                if (!tailParts.Contains(name))
+                    throw new InvalidOperationException($"assembling: {name} is a new part in {folder}, a folder Tail lists part by part: give it a row at the end of Tail (saved recipe numbers keep)");
+                byPart[name] = row;
+            }
+            else
+                (LateFolders.Contains(folder) ? late : tail).Add(row);
         }
         // (stable: a family's recipes are in file order, and the plain Assembler's keep their places)
         recipes.AddRange(tail.OrderBy(r => r.Get("machine") as string ?? "", StringComparer.Ordinal));
         recipes.AddRange(late); // (after every older row: a saved Assembler keeps the number of its recipe)
         recipes.AddRange(lateHand); // (and the hand-written rows added since)
-        foreach (var (folder, row) in tailSpec) // (then everything added from the module sockets on, in the order added)
+        foreach (var (folder, part, row) in tailSpec) // (then everything added from the module sockets on, in the order added)
             if (row != null)
                 recipes.Add(row);
-            else if (byFolder.TryGetValue(folder!, out var rows))
-                recipes.AddRange(rows);
+            else if (byPart.TryGetValue(part!, out var pr))
+                recipes.Add(pr);
+            else
+                throw new InvalidOperationException($"assembling: Tail names {part} in {folder}, but no such part is there (or it has a hand row)");
         var byName = new Dictionary<string, PyDict>();
         foreach (var (p, _) in known)
             byName[(string)p["name"]!] = p;

@@ -29,8 +29,14 @@ public sealed partial class ConstructEdits
     /// <summary>Has this player a function (creative: every one)?</summary>
     public bool Has(byte player, ToolStat s, bool creative) => StatOf(player, s, creative) >= 0.5f;
 
-    /// <summary>The heaviest thing this player's physics gun takes (kg): survival's stops at <see cref="ConstructGrab.SurvivalLiftCap"/> whatever the Lift level.</summary>
-    public float LiftOf(byte player, bool creative) => creative ? StatOf(player, ToolStat.Lift, true) : MathF.Min(StatOf(player, ToolStat.Lift, false), ConstructGrab.SurvivalLiftCap);
+    /// <summary>
+    /// The heaviest thing this player's physics gun takes (kg): survival's stops at <see cref="ConstructGrab.SurvivalLiftCap"/> whatever the Lift level,
+    /// times the worn shell frame's "lift" (<see cref="LiftShare"/>: a Half Shell lifts half; docs/sandbox/design/half-shell.md).
+    /// </summary>
+    public float LiftOf(byte player, bool creative) => creative ? StatOf(player, ToolStat.Lift, true) : MathF.Min(StatOf(player, ToolStat.Lift, false), ConstructGrab.SurvivalLiftCap) * (LiftShare?.Invoke(player) ?? 1f);
+
+    /// <summary>The game's: the share of the survival lift a player's body has (a worn shell frame's "lift"; 1 for a person).</summary>
+    public Func<byte, float>? LiftShare;
 
     /// <summary>How hard this player's beam pulls (N): creative's fixed strength, or the Lift level's share (uncapped: a Lift module still makes the beam stronger).</summary>
     public float PullOf(byte player, bool creative) => creative ? ConstructGrab.Strength : StatOf(player, ToolStat.Lift, false) * ToolUpgrades.PullPerKg;

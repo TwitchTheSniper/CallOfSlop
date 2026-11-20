@@ -49,6 +49,8 @@ public sealed class ShellFrame
 {
     public string Name = "", Part = "";
     public float Scale = 1, Speed = 1, Damage = 1;
+    public float Lift = 1; // "lift": the share of the survival physics gun's limit its wearer lifts (the Half Shell's 0.5; docs/sandbox/design/half-shell.md)
+    public bool Sit = true; // "sit": false, seats refuse its wearer (the Half Shell: it would sit below a seat's controls)
     public string[] Jobs = [];
     public ShellModule?[] Modules = new ShellModule?[ShellFrames.SlotCount];
     public bool[] Fixed = new bool[ShellFrames.SlotCount]; // a slot the Shell Gantry may not change (the Mining Shell's hopper and drill arm)
@@ -317,6 +319,10 @@ public static class ShellFrames
                 Speed = Num(f, "speed", 0.2f, 2f),
                 Damage = Num(f, "damage", 0.1f, 5f),
             };
+            if (f.TryGetProperty("lift", out _))
+                fr.Lift = Num(f, "lift", 0.1f, 2f);
+            if (f.TryGetProperty("sit", out var sit))
+                fr.Sit = sit.GetBoolean();
             if (f.TryGetProperty("jobs", out var jobs))
                 fr.Jobs = [.. jobs.EnumerateArray().Select(e => e.GetString() ?? "")];
             var sl = f.GetProperty("slots");
@@ -376,7 +382,7 @@ public static class ShellFrames
         }
         if (list.Count == 0 || list.Count > 255)
             throw new FormatException("\"frames\": 1 to 255");
-        if (list[0].Scale != 1 || list[0].Speed != 1 || list[0].Damage != 1 || list[0].Part != "Robot Shell")
+        if (list[0].Scale != 1 || list[0].Speed != 1 || list[0].Damage != 1 || list[0].Lift != 1 || !list[0].Sit || list[0].Part != "Robot Shell")
             throw new FormatException("frame 0 is the Robot Shell, at scale, speed and damage 1 (every older shell is it)");
         _modules = [.. order];
         return [.. list];
@@ -433,7 +439,7 @@ public static class ShellFrames
     public static void Fit(ShellFrame into, byte frame, ReadOnlySpan<byte> kit)
     {
         var f = Of(frame);
-        (into.Name, into.Part, into.Scale, into.Jobs) = (f.Name, f.Part, f.Scale, f.Jobs);
+        (into.Name, into.Part, into.Scale, into.Jobs, into.Lift, into.Sit) = (f.Name, f.Part, f.Scale, f.Jobs, f.Lift, f.Sit);
         float speed = f.Speed, damage = f.Damage;
         for (var i = 0; i < SlotCount; i++)
         {

@@ -390,6 +390,9 @@ public sealed partial class Game
     /// <summary>Server: a player leaves the game: back in their body first, so their record is the body's and the shell stands.</summary>
     internal void ShellLeaveGame(Player p) => ShellReturn(p, lost: false, "");
 
+    /// <summary>The share of the survival physics gun's lift a player's body has (<see cref="ConstructEdits.LiftShare"/>): a worn shell frame's "lift", else 1.</summary>
+    private float ShellLiftShare(byte player) => Players.TryGetValue(player, out var p) && p.InShell ? ShellFrames.Worn(p).Lift : 1f;
+
     private readonly List<Construct> _shSaved = [];
 
     /// <summary>Is this body a world save's stand-in for a worn shell (only while a save captures)?</summary>

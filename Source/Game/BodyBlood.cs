@@ -94,12 +94,15 @@ public static class BloodMarks
         return (int)MathF.Round(a / MathF.Tau * 16f + 16f) & 15;
     }
 
-    /// <summary>The body part a hit at <paramref name="point"/> landed on, for a body at <paramref name="feet"/> in <paramref name="stance"/> facing <paramref name="yaw"/>.</summary>
-    public static BloodPart Classify(Vector3 feet, Stance stance, float yaw, Vector3 point)
+    /// <summary>
+    /// The body part a hit at <paramref name="point"/> landed on, for a body at <paramref name="feet"/> in <paramref name="stance"/> facing <paramref name="yaw"/>;
+    /// <paramref name="scale"/>: the body's size (a robot shell's frame), as the server's headshot check takes it.
+    /// </summary>
+    public static BloodPart Classify(Vector3 feet, Stance stance, float yaw, Vector3 point, float scale = 1f)
     {
-        if (World.IsHeadshot(feet, stance, yaw, point))
+        if (World.IsHeadshot(feet, stance, yaw, point, default, scale))
             return BloodPart.Head;
-        var rel = point - feet;
+        var rel = (point - feet) / scale; // (in a person's metres: the limbs' bounds below are a person's)
         var lx = Vector3.Dot(rel, World.FlatRight(yaw));
         var lf = Vector3.Dot(rel, World.FlatForward(yaw));
         if (stance == Stance.Prone)

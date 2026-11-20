@@ -49,6 +49,8 @@ public sealed partial class Game
     /// <summary>Server (<see cref="ConstructEdits.SeatRefusal"/>): an NPC power's helm, and the seats its crew fly and fight from, are theirs.</summary>
     private string? ShipSeatRefusal(Construct c, int part, byte player)
     {
+        if (Players.TryGetValue(player, out var who) && who.InShell && !ShellFrames.Worn(who).Sit)
+            return $"a {ShellFrames.Worn(who).Part} is too small for a seat: its controls are out of reach"; // (docs/sandbox/design/half-shell.md)
         var f = PowerHolding(c);
         if (f == 0)
             return null;
