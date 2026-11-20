@@ -24,19 +24,25 @@ kit, and the body-size rules that already take a frame's `scale`.
   the person's pull.
 - **Reach.** A frame larger than a person reaches that much further with its attach tool and its physics gun
   (`ShellFrame.Reach` = max(1, scale); `ConstructEdits.ReachShare`, `BuildReachOf`): the attach tool's 4.5 m becomes 12.6 m
-  and the beam's 12 m survival reach 33.6 m. From an eye 4.48 m up a person's reach barely meets the ground. Both sides read it:
-  the server's `AttachReach`, `WeldReach` and line building, the client's aim ray, ghosts and socket-weld markers. Other tools
-  (paint, remover, configure, wires) keep a person's reach: the shell has only its two arms' tools anyway.
+  and the beam's 12 m survival reach 33.6 m. From an eye 4.48 m up a person's reach barely meets the ground. Every attach tool
+  reach reads it on both sides: fitting (`AttachReach`), a new construct on the ground (`BeginPlaceNew`, the client's ground ghost),
+  F join (`Join`, `SandboxAim`), taking a part off, replace, seams, freeform welds and cuts, picking a part into the hands, socket
+  and point welds, line building, and the client's aim ray, ghosts and markers. Other tools (paint, texture, material, fuse,
+  no-collide, wires, connectors, the remover, tracks) keep a person's reach: the shell holds only its two arms' tools.
 - **Arms: both fixed** (`"fixed": ["leftArm", "rightArm"]`). The Grip Arm is its physics gun, the Welder Arm its attach tool; with
   tool arms only those tools are offered (mining-shell.md "Tool arms"). They are the same modules a Robot Shell can wear, drawn at
   the frame's size (`ShellModuleNodes`), so no separate "heavy" modules: the frame is what lifts 15 t. Why fixed: no Shell Gantry
   holds a 5 m shell (`GameShellGantry.GantryTallest`, 3 m: "too tall for the Shell Gantry"), so a swappable slot could never be
   swapped; a gantry its size would change that.
 - **Grip holds while welding.** A worn shell with a physics gun arm and a welder arm (`ShellFrame.GripWelds`) that switches from
-  the gun to the welder while holding a piece freezes it where it is (`ConstructGrab` GrabTick: the physics gun's own Freeze)
-  instead of dropping it: "the grip holds it where it is: weld it on". The welder's socket weld then moves the frozen piece onto
-  the build (a frozen body is a piece that moves: `SocketWeld.PieceRefusal`). A Robot Shell fitted with both arms on a gantry
-  does the same. RMB while holding still freezes as before.
+  the gun to the welder while holding a piece, or a mechanism's piece, freezes it where it is (`ConstructGrab.GripWeldHold`: the
+  physics gun's own Freeze) instead of dropping it: "the grip holds it where it is: weld it on". If the freeze is refused (the
+  holder stands on the piece) it is let go with the reason. **Aboard a moving craft** (the holder's frame moving or turning) it is
+  let go instead, with "the grip let it go: a piece can't be held still aboard a moving craft (stop the craft to weld it on)": a
+  freeze holds a body still in the world, so the craft would fly away from it (review, 2026-11-20; chosen over freezing in the
+  craft's frame, which the physics gun's freeze has no way to do). The welder's socket weld then moves the frozen piece onto the
+  build (a frozen body is a piece that moves: `SocketWeld.PieceRefusal`). A Robot Shell fitted with both arms on a gantry does the
+  same. RMB while holding still freezes as before.
 - **Welding at its scale.** The weld rules are the welder's, with the reach above; a big piece's fit time is its part's attach
   seconds (a Large Girder 12 m: 8 s, LMB held).
 - **Seats.** `"sit": false`: every seat refuses it, "a Construction Shell is too big for a seat" (the Half Shell keeps "too small").
@@ -66,12 +72,15 @@ Window verbs `cshell` (host: a Construction Shell on channel 4, a Robot Shell, i
 - Host: woke in it from the chair (frame 3, eye 4.48, height 5.04, radius 1.12, pace x0.75); grabbed a 12 t Large Girder 12 m with
   the Grip Arm and lifted it to 8-9 m; switched to the welder: frozen in the grip; socket-welded its end onto the column from 8 m
   (8 s held): "SocketWeld ok ... on the grid".
+- After the review (host): F join of a girder stood on the column from 8.6 m ("joined construct 34 into construct 35"), and a Frame
+  Block placed as a new construct on the ground about 10 m out ("PlaceNew ok").
 - Joined client: the same chain over the network (woke, lifted, the grip froze the piece on the switch, welded 12 t on); the host
   saw the client's shell at its size with its arms.
 - Shots for a look review: `/tmp/cs-shots/` (beside a person and a Robot Shell, lifting in third and first person, a joined client lifting).
 
 ## Not yet
 
+- The moving-craft let-go was not tried by hand (no moving craft in the test yard).
 - Walking it about at length, crouching and prone, ladders and doors; a headshot; a Large pod.
 - A Shell Gantry its size (both arms are fixed until then), a crew builder job.
 - Robotic arm stations (manipulators.md): the other half of the user's direction.
