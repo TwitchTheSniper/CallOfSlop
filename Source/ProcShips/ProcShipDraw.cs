@@ -20,6 +20,8 @@ internal sealed class ProcShipDraw
 
     // The skeleton's paint: a pale skin over a graphite keel and spine, graphite chine rails, the ship's accent along the beam and on
     // its airlocks, hazard yellow at the doors and hatches; inside, pale walls on a dark deck under a light ceiling.
+    public const string Glass = "#8fc8e8", Copper = "#b0703c";
+
     public const string Skin = "#b4b8ba", Skin2 = "#a1a6a9", Skin3 = "#c3c6c8", Dark = "#3a4046", Dark2 = "#2c3136", Frame = "#1f2226",
         Hazard = "#e0b020", Wall = "#c4c8ca", WallTrim = "#2a2e33", Deck = "#4a4f55", Light = "#d8f0ff", Pad = "#2a2e33";
 
@@ -27,6 +29,9 @@ internal sealed class ProcShipDraw
     private readonly ProcShipPlan _p;
     private readonly string _code;
     private readonly string _accent;
+
+    // The skin's paint for this ship (a stealth ship's is graphite, matt).
+    private readonly string _skin, _skin2, _skin3, _dark, _dark2;
     private readonly Dictionary<string, Part> _pieces = new(StringComparer.Ordinal);
     private readonly List<string> _order = [];
     public readonly Dictionary<string, (string Role, int Band, int Side)> Roles = new(StringComparer.Ordinal);
@@ -43,6 +48,9 @@ internal sealed class ProcShipDraw
         _p = p;
         _code = code;
         _accent = p.Accent;
+        (_skin, _skin2, _skin3, _dark, _dark2) = p.Role == ProcRole.Stealth
+            ? ("#454b51", "#3c4247", "#4d5359", "#2a2e33", "#202428")
+            : (Skin, Skin2, Skin3, Dark, Dark2);
     }
 
     public static string NameOf(string code, string label) => $"{ProcShipParts.Prefix}{code} {label}";
@@ -73,6 +81,9 @@ internal sealed class ProcShipDraw
         "walls" => $"Walls of procedural ship {_code} ({label}), with their door frames.",
         "lock" => $"An airlock housing of procedural ship {_code}: a passage out through the void and the skin to its outer door.",
         "nacelle" => $"An engine nacelle of procedural ship {_code} ({label}): its skin and the core its engine plate stands on, on a pylon from the hull.",
+        "prong" => $"A prong of procedural ship {_code}'s forked bow ({label}): its skin and its core, welded to the bow's root face.",
+        "barrel" => $"A length of procedural ship {_code}'s spinal railgun ({label}): the barrel and its rails.",
+        "mouth" => $"The lined tunnel through procedural ship {_code}'s bow into the room its mouth opens.",
         _ => $"A piece of procedural ship {_code} ({label}).",
     };
 
@@ -127,20 +138,20 @@ internal sealed class ProcShipDraw
         p.Add(Box(mn, mx, color, detail: true, glass: glass, shape: shape));
     }
 
-    private static void Quad(Part p, double[] a, double[] b, double[] c, double[] d, string color, string finish = "painted plating", bool square = false)
+    private static void Quad(Part p, double[] a, double[] b, double[] c, double[] d, string color, string finish = "painted plating", bool square = false, bool glass = false)
     {
         var n = Cross(Sub(b, a), Sub(c, a));
         if (Dot(n, n) < 1e-10)
         {
-            Plate(p, [a, c, d], color, finish, square: square);
+            Plate(p, [a, c, d], color, finish, glass: glass, square: square);
             return;
         }
         if (Math.Abs(Dot(Unit(n), Sub(d, a))) < 0.08)
-            Plate(p, [a, b, c, d], color, finish, square: square);
+            Plate(p, [a, b, c, d], color, finish, glass: glass, square: square);
         else
         {
-            Plate(p, [a, b, c], color, finish, square: square);
-            Plate(p, [a, c, d], color, finish, square: square);
+            Plate(p, [a, b, c], color, finish, glass: glass, square: square);
+            Plate(p, [a, c, d], color, finish, glass: glass, square: square);
         }
     }
 
@@ -235,7 +246,7 @@ internal sealed class ProcShipDraw
     /// Facet k of side s from za to zb, with a hole from (hz0, v0) to (hz1, v1) when given (u along z, v across): the plates round it.
     /// The odd facets sit 6 mm aft of the even ones and each stops 1.5 mm short of its band's ends (the Zero Day's stagger).
     /// </summary>
-    private void Facet(Part p, int k, int s, double za, double zb, string color, string finish, (double Z0, double Z1, double V0, double V1)? hole = null)
+    private void Facet(Part p, int k, int s, double za, double zb, string color, string finish, (double Z0, double Z1, double V0, double V1)? hole = null, bool glass = false)
     {
         var dz = k % 2 == 1 ? FacetStagger : 0;
         double[] At(double u, double v)
@@ -245,7 +256,7 @@ internal sealed class ProcShipDraw
         }
         if (hole is not { } h)
         {
-            Quad(p, At(0, 0), At(0, 1), At(1, 1), At(1, 0), color, finish, square: true);
+            Quad(p, At(0, 0), At(0, 1), At(1, 1), At(1, 0), color, finish, square: true, glass: glass);
             return;
         }
         double u0 = Math.Clamp((h.Z0 - za) / (zb - za), 0, 1), u1 = Math.Clamp((h.Z1 - za) / (zb - za), 0, 1);
@@ -344,6 +355,10 @@ internal sealed class ProcShipDraw
         foreach (var s in p.Sockets)
             if (s.PadMin is { } a && s.PadMax is { } b)
                 _voidHoles.Add([a[0], a[1], a[2], b[0], b[1], b[2]]); // (exactly: the void touches the pad, which is welded to it)
+        if (p.Barrel is { } bar)
+            _voidHoles.Add([-bar.HX, bar.Y - bar.HY, bar.Z0 - 1, bar.HX, bar.Y + bar.HY, p.Front[0]]); // (exactly: the void holds the barrel fore of the rooms)
+        if (p.Mouth is { } mo)
+            _voidHoles.Add([-mo.HalfW - MouthLining, mo.Y0, -1, mo.HalfW + MouthLining, mo.Y1 + MouthLining, mo.Z1]);
 
         for (var bi = 0; bi + 1 < _bands.Length; bi++)
             Band(bi, _bands[bi], _bands[bi + 1]);
@@ -353,6 +368,12 @@ internal sealed class ProcShipDraw
         for (var d = 0; d < h.Decks; d++)
             DeckPieces(d);
         Slabs();
+        foreach (var pr in h.Prongs)
+            Prong(pr);
+        if (p.Barrel is { } barrel)
+            Barrel(barrel);
+        if (p.Mouth is { } mouth)
+            MouthTunnel(mouth);
         foreach (var l in p.Locks)
             Lock(l);
         foreach (var t in p.Hatches)
@@ -371,11 +392,11 @@ internal sealed class ProcShipDraw
         return i;
     }
 
-    private Part Keel(int bi) => Piece($"Keel {bi + 1}", "keel", bi, 0, Dark);
+    private Part Keel(int bi) => Piece($"Keel {bi + 1}", "keel", bi, 0, _dark);
 
-    private Part SpineP(int bi) => Piece($"Spine {bi + 1}", "spine", bi, 0, Dark);
+    private Part SpineP(int bi) => Piece($"Spine {bi + 1}", "spine", bi, 0, _dark);
 
-    private Part Side(int bi, int s) => Piece($"Hull {(s < 0 ? "P" : "S")}{bi + 1}", "hull", bi, s);
+    private Part Side(int bi, int s) => Piece($"Hull {(s < 0 ? "P" : "S")}{bi + 1}", "hull", bi, s, _skin);
 
     /// <summary>A band of the hull: its facets (with the holes the airlocks and hatches go through), the chine rails and the stripe, and the void behind the skin.</summary>
     private void Band(int bi, double za, double zb)
@@ -384,6 +405,10 @@ internal sealed class ProcShipDraw
         var p = _p;
         var constant = za >= h.MidZ0 - 1e-6 && zb <= h.MidZ1 + 1e-6;
         var inWell = h.HasWell && za >= h.WellZ0 - 1e-6 && zb <= h.WellZ1 + 1e-6;
+        var cage = inWell && h.Cage; // (a cage's shell: frames over the chine, open between them)
+        // A glazed dome: the bow's upper flares in glass (and its sides when the beam line is up on the top deck: never over a bridge).
+        var dome = h.Bow == ProcBow.Dome && zb <= h.BowZ1 + 1e-6;
+        var domeSides = dome && h.BeamY >= ProcHullShape.FloorLo(h.Decks - 1) - 0.1;
         // The facets: the keel's flat and the lower flares to the keel piece, the sides to the side pieces, the upper flares and the
         // spine's flat to the spine (over a barge's well, the bulwarks' flares and rims to the sides: the spine is open there).
         foreach (var k in new[] { 0, 1, 2, 3, 4, 5 })
@@ -392,13 +417,15 @@ internal sealed class ProcShipDraw
                 var piece = k <= 1 ? Keel(bi) : k >= 4 && !inWell ? SpineP(bi) : Side(bi, s);
                 var (color, finish) = k switch
                 {
-                    0 => (Dark, "plated steel"),
-                    1 => (Skin2, "painted plating"),
-                    2 => (Skin, "painted plating"),
-                    3 => (Skin3, "painted plating"),
-                    4 => (Skin2, "painted plating"),
-                    _ => (Dark, "plated steel"),
+                    0 => (_dark, "plated steel"),
+                    1 => (_skin2, "painted plating"),
+                    2 => (_skin, "painted plating"),
+                    3 => (_skin3, "painted plating"),
+                    4 => (_skin2, "painted plating"),
+                    _ => (_dark, "plated steel"),
                 };
+                if (cage && k >= 4)
+                    continue; // (the cage's sides over the chine and its top are frames: CageFrames)
                 if (inWell && k == 5)
                 {
                     var hw = h.Mid[4].H;
@@ -420,7 +447,8 @@ internal sealed class ProcShipDraw
                     var hw = h.Mid[4].H;
                     hole = (dt.Z0, dt.Z1, (hw - dt.X1) / (2 * hw), (hw - dt.X0) / (2 * hw));
                 }
-                Facet(piece, k, s, za, zb, color, finish, hole);
+                var glass = dome && (k == 4 || k == 3 && domeSides);
+                Facet(piece, k, s, za, zb, glass ? Glass : color, finish, hole, glass);
             }
         // The chine rail along the beam and the accent stripe over it (not across an airlock's housing).
         foreach (var s in new[] { -1, 1 })
@@ -429,7 +457,7 @@ internal sealed class ProcShipDraw
             var piece = Side(bi, s);
             if (lk == null)
             {
-                Chine(piece, 2, s, za, zb, 0.09, 0.07, Dark);
+                Chine(piece, 2, s, za, zb, 0.09, 0.07, _dark);
                 if (zb - za > 0.6)
                     FStrip(piece, 3, s, za, zb, 0.02, 0.98, 0.05, 0.12, 0.012, _accent);
             }
@@ -437,17 +465,19 @@ internal sealed class ProcShipDraw
             {
                 if (lk.Z0 - za > 0.3)
                 {
-                    Chine(piece, 2, s, za, lk.Z0, 0.09, 0.07, Dark);
+                    Chine(piece, 2, s, za, lk.Z0, 0.09, 0.07, _dark);
                     FStrip(piece, 3, s, za, zb, 0.02, (lk.Z0 - 0.06 - za) / (zb - za), 0.05, 0.12, 0.012, _accent);
                 }
                 if (zb - lk.Z1 > 0.3)
                 {
-                    Chine(piece, 2, s, lk.Z1, zb, 0.09, 0.07, Dark);
+                    Chine(piece, 2, s, lk.Z1, zb, 0.09, 0.07, _dark);
                     FStrip(piece, 3, s, za, zb, (lk.Z1 + 0.06 - za) / (zb - za), 0.98, 0.05, 0.12, 0.012, _accent);
                 }
             }
         }
-        if (inWell)
+        if (cage)
+            CageFrames(bi, za, zb);
+        else if (inWell)
             WellSides(bi, za, zb);
         if (h.HasWell && Math.Abs(zb - h.WellZ0) < 1e-6)
             WellEnd(SpineP(bi), h.WellZ0, 1);
@@ -514,7 +544,8 @@ internal sealed class ProcShipDraw
             if (j <= last)
                 Split(ProcHullShape.FloorTop(j), ProcHullShape.Ceil(j), p.W(j, zm), "side", 1.1);
         }
-        Split(ProcHullShape.FloorTop(last + 1), h.TopY, well, well > 0 ? "side" : "spine", 0.6);
+        if (!(well > 0 && h.Cage))
+            Split(ProcHullShape.FloorTop(last + 1), h.TopY, well, well > 0 ? "side" : "spine", 0.6); // (a cage's shell is open over its roof)
         foreach (var (y0, y1, occ, kind) in layers)
         {
             var xo = Math.Floor((new[] { h.SkinHalf(za, y0), h.SkinHalf(za, y1), h.SkinHalf(zb, y0), h.SkinHalf(zb, y1) }.Min() - 0.06) * 100) / 100;
@@ -545,7 +576,7 @@ internal sealed class ProcShipDraw
         foreach (var s in new[] { -1, 1 })
         {
             var piece = Side(bi, s);
-            Detail(piece, s * (wh - 0.024), h.Roof + 0.004, za + 0.002, s * (wh + 0.006), h.TopY - 0.034, zb - 0.002, Skin2, "painted plating");
+            Detail(piece, s * (wh - 0.024), h.Roof + 0.004, za + 0.002, s * (wh + 0.006), h.TopY - 0.034, zb - 0.002, _skin2, "painted plating");
             Detail(piece, s * (wh - 0.07), h.TopY - 0.015, za + 0.003, s * (wh + 0.05), h.TopY + 0.05, zb - 0.003, _accent, "painted plating");
         }
     }
@@ -555,7 +586,7 @@ internal sealed class ProcShipDraw
     {
         var h = _h;
         var wh = h.WellHalf;
-        Detail(piece, -wh, h.Roof + 0.007, wellAft > 0 ? z - 0.03 : z - 0.004, wh, h.TopY - 0.03, wellAft > 0 ? z + 0.004 : z + 0.03, Skin2, "painted plating");
+        Detail(piece, -wh, h.Roof + 0.007, wellAft > 0 ? z - 0.03 : z - 0.004, wh, h.TopY - 0.03, wellAft > 0 ? z + 0.004 : z + 0.03, _skin2, "painted plating");
         Detail(piece, -wh - 0.054, h.TopY - 0.012, wellAft > 0 ? z - 0.05 : z - 0.07, wh + 0.054, h.TopY + 0.055, wellAft > 0 ? z + 0.07 : z + 0.05, _accent, "painted plating");
     }
 
@@ -586,12 +617,12 @@ internal sealed class ProcShipDraw
                 var f = (e + 1) % 8;
                 var dz = e % 2 == 1 ? FacetStagger : 0;
                 double za = rings[i].Z + FacetTrim + dz, zb = rings[i + 1].Z - FacetTrim + dz;
-                var col = i == 0 ? Dark : e % 2 == 0 ? Skin : Skin2;
+                var col = i == 0 ? _dark : e % 2 == 0 ? _skin : _skin2;
                 Quad(piece, At(a[e], za), At(a[f], za), At(b[f], zb), At(b[e], zb), col, i == 0 ? "plated steel" : "painted plating", square: true);
             }
         }
-        Plate(piece, [.. Oct(rings[0].K).Select(q => At(q, rings[0].Z + 0.002))], Dark2, "plated steel");
-        Plate(piece, [.. Oct(rings[^1].K).Select(q => At(q, rings[^1].Z))], Dark2, "plated steel");
+        Plate(piece, [.. Oct(rings[0].K).Select(q => At(q, rings[0].Z + 0.002))], _dark2, "plated steel");
+        Plate(piece, [.. Oct(rings[^1].K).Select(q => At(q, rings[^1].Z))], _dark2, "plated steel");
         // The accent band round the body just behind the nose, 1.2 cm proud (the odd faces' 4 mm aft).
         var o = Oct(1.0);
         for (var e = 0; e < 8; e++)
@@ -609,7 +640,7 @@ internal sealed class ProcShipDraw
             double a = Math.Max(n.PZ0, _bands[bi]), b = Math.Min(n.PZ1, _bands[bi + 1]);
             if (b - a < 0.05)
                 continue;
-            Solid(Side(bi, n.Side), n.Side * n.PIn, n.Y - n.PT, a, n.Side * (n.X - core), n.Y + n.PT, b, Dark2, "plated steel");
+            Solid(Side(bi, n.Side), n.Side * n.PIn, n.Y - n.PT, a, n.Side * (n.X - core), n.Y + n.PT, b, _dark2, "plated steel");
         }
     }
 
@@ -626,8 +657,231 @@ internal sealed class ProcShipDraw
                 o.Add(Sh([-q[i].H, q[i].Y, st.Z + dz]));
             return [.. o];
         }
-        Plate(Keel(0), Ring(_h.Stations[0], 0.0), Dark, "plated steel");
-        Plate(Piece("Stern", "stern", _bands.Length - 2, 0, Dark), Ring(_h.Stations[^1], 0.0), Dark2, "plated steel");
+        var bow = Ring(_h.Stations[0], 0.0);
+        (double X0, double Y0, double X1, double Y1)? hole = _p.Barrel is { } b && b.Z0 <= _h.HullZ0 + 1e-6
+            ? (-b.HX - 0.01, b.Y - b.HY - 0.01, b.HX + 0.01, b.Y + b.HY + 0.01)
+            : _p.Mouth is { } m ? (-m.HalfW - MouthLining - 0.01, m.Y0 - 0.01, m.HalfW + MouthLining + 0.01, m.Y1 + MouthLining + 0.01) : null;
+        // (a fork's root face is a big face: painted as the skin, the berth between the prongs dark)
+        var face = _h.Prongs.Count > 0 ? _skin2 : _dark;
+        if (hole is not { } hh)
+            Plate(Keel(0), bow, face, "plated steel");
+        else
+            foreach (var piece in Around(bow, hh))
+                Plate(Keel(0), piece, face, "plated steel");
+        if (_h.Prongs.Count > 0)
+        {
+            // The berth's back between the prongs, 6 mm proud of the root face (cut round the muzzle): hazard edges on a salvage
+            // berth, copper bars over and under the muzzle between a lancer's rails (each 6 to 8 mm proud of the back's face).
+            var pr = _h.Prongs[0];
+            double sx = pr.X - pr.SX - 0.03, y0 = pr.Y - pr.SY + 0.12, y1 = pr.Y + pr.SY - 0.12, z = _h.HullZ0 - 0.006;
+            double[][] back = [Sh([-sx, y0, z]), Sh([sx, y0, z]), Sh([sx, y1, z]), Sh([-sx, y1, z])];
+            foreach (var piece in hole is { } h2 ? Around(back, h2) : [back])
+                Plate(Keel(0), piece, _dark, "plated steel");
+            if (_p.Barrel is { } br)
+            {
+                foreach (var yb in new[] { br.Y - br.HY - 0.2, br.Y + br.HY + 0.12 })
+                    if (yb > y0 + 0.05 && yb + 0.08 < y1 - 0.05)
+                        Detail(Keel(0), -br.HX - 0.25, yb, z - T / 2 - 0.008, br.HX + 0.25, yb + 0.08, z - T / 2 + 0.006, Copper, "plated steel");
+            }
+            else
+                foreach (var yb in new[] { y0 + 0.04, y1 - 0.14 })
+                    Detail(Keel(0), -sx + 0.04, yb, z - T / 2 - 0.006, sx - 0.04, yb + 0.1, z - T / 2 + 0.006, Hazard, "hazard paint");
+        }
+        Plate(Piece("Stern", "stern", _bands.Length - 2, 0, _dark), Ring(_h.Stations[^1], 0.0), _dark2, "plated steel");
+
+        // The plate round an opening: over it, under it, and either side of it (those 3 mm aft: no shared plane).
+        IEnumerable<double[][]> Around(double[][] poly, (double X0, double Y0, double X1, double Y1) o)
+        {
+            var band = Clip(Clip(poly, 1, o.Y0 - H, true), 1, o.Y1 - H, false);
+            foreach (var (piece, dz) in new[] { (Clip(poly, 1, o.Y1 - H, true), 0.0), (Clip(poly, 1, o.Y0 - H, false), 0.0), (Clip(band, 0, o.X0 - H, false), 0.003), (Clip(band, 0, o.X1 - H, true), 0.003) })
+                if (piece.Length >= 3)
+                    yield return [.. piece.Select(q => new[] { q[0], q[1], q[2] + dz })];
+        }
+    }
+
+    /// <summary>A convex polygon (part frame) clipped to one side of a plane square to an axis: the points with v[axis] over c (above) or under it.</summary>
+    private static double[][] Clip(double[][] poly, int axis, double c, bool above)
+    {
+        var o = new List<double[]>();
+        bool In(double[] q) => above ? q[axis] >= c - 1e-9 : q[axis] <= c + 1e-9;
+        for (var i = 0; i < poly.Length; i++)
+        {
+            double[] a = poly[i], b = poly[(i + 1) % poly.Length];
+            if (In(a))
+                o.Add(a);
+            if (In(a) != In(b))
+            {
+                var t = (c - a[axis]) / (b[axis] - a[axis]);
+                o.Add([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t]);
+            }
+        }
+        // (drop repeats: a polygon clipped at a corner)
+        var keep = new List<double[]>();
+        foreach (var q in o)
+            if (keep.Count == 0 || Math.Abs(keep[^1][0] - q[0]) + Math.Abs(keep[^1][1] - q[1]) > 1e-4)
+                keep.Add(q);
+        if (keep.Count > 1 && Math.Abs(keep[0][0] - keep[^1][0]) + Math.Abs(keep[0][1] - keep[^1][1]) < 1e-4)
+            keep.RemoveAt(keep.Count - 1);
+        return Area(keep) < 0.01 ? [] : [.. keep];
+
+        static double Area(List<double[]> q)
+        {
+            var a = 0.0;
+            for (var i = 0; i < q.Count; i++)
+                a += q[i][0] * q[(i + 1) % q.Count][1] - q[(i + 1) % q.Count][0] * q[i][1];
+            return Math.Abs(a) / 2;
+        }
+    }
+
+    // ---- the bows' own pieces
+
+    /// <summary>The mouth tunnel's lining: its walls' and ceiling's thickness.</summary>
+    public const double MouthLining = 0.15;
+
+    private Part ProngP(int side) => Piece($"Prong {(side < 0 ? "P" : "S")}", "prong", 0, side);
+
+    /// <summary>
+    /// A fork's prong: a chamfered box pod from the bow's tip back to the root face (its skin between rings, the odd faces 6 mm aft,
+    /// a dark nose and its cap, an accent band behind the nose), its solid core against the root face; a lancer's carry the
+    /// railgun's rails down their inner faces.
+    /// </summary>
+    private void Prong(ProcProng pr)
+    {
+        var piece = ProngP(pr.Side);
+        double cx = pr.Side * pr.X, cy = pr.Y;
+        (double X, double Y)[] Oct(double k)
+        {
+            double sx = pr.SX * k, sy = pr.SY * k, c = pr.C * k;
+            return [(sx, -(sy - c)), (sx, sy - c), (sx - c, sy), (-(sx - c), sy), (-sx, sy - c), (-sx, -(sy - c)), (-(sx - c), -sy), (sx - c, -sy)];
+        }
+        double[] At((double X, double Y) q, double z) => Sh([cx + q.X, cy + q.Y, z]);
+        var rings = pr.Rings;
+        for (var i = 0; i + 1 < rings.Length; i++)
+        {
+            var a = Oct(rings[i].K);
+            var b = Oct(rings[i + 1].K);
+            for (var e = 0; e < 8; e++)
+            {
+                var f = (e + 1) % 8;
+                var dz = e % 2 == 1 ? FacetStagger : 0;
+                double za = rings[i].Z + FacetTrim + dz, zb = rings[i + 1].Z - FacetTrim + (i + 2 == rings.Length ? -FacetStagger : dz);
+                var col = i == 0 ? _dark : e % 2 == 0 ? _skin : _skin2;
+                Quad(piece, At(a[e], za), At(a[f], za), At(b[f], zb), At(b[e], zb), col, i == 0 ? "plated steel" : "painted plating", square: true);
+            }
+        }
+        Plate(piece, [.. Oct(rings[0].K).Select(q => At(q, rings[0].Z + 0.002))], _dark2, "plated steel");
+        // The accent band round it behind the nose, 1.2 cm proud.
+        var o = Oct(1.0);
+        for (var e = 0; e < 8; e++)
+        {
+            var f = (e + 1) % 8;
+            double mx = (o[e].X + o[f].X) / 2, my = (o[e].Y + o[f].Y) / 2, l = Math.Sqrt(mx * mx + my * my);
+            double ox = mx / l * 0.012, oy = my / l * 0.012, dz = e % 2 == 1 ? 0.004 : 0;
+            double z0 = pr.Body + 0.4 + dz, z1 = pr.Body + 0.7 + dz;
+            Plate(piece, [At((o[e].X + ox, o[e].Y + oy), z0), At((o[f].X + ox, o[f].Y + oy), z0), At((o[f].X + ox, o[f].Y + oy), z1), At((o[e].X + ox, o[e].Y + oy), z1)], _accent);
+        }
+        Hidden(piece, cx - pr.SX + 0.1, cy - pr.SY + 0.1, pr.Body, cx + pr.SX - 0.1, cy + pr.SY - 0.1, pr.Z1);
+        if (_p.Barrel != null)
+        {
+            // The rails: two copper strips down the inner face either side of the barrel's axis, from behind the nose to the root,
+            // with dark mounts between (the inner face's straight part bounds them).
+            var x = pr.Inner - pr.Side * 0.012;
+            double lo = cy - (pr.SY - pr.C) + 0.1, hi = cy + (pr.SY - pr.C) - 0.1, by = _p.Barrel.Y, bh = _p.Barrel.HY;
+            foreach (var yr in new[] { Math.Clamp(by - bh * 0.6, lo, hi), Math.Clamp(by + bh * 0.6, lo, hi) })
+                Detail(piece, x - 0.012, yr - 0.09, pr.Body + 0.2, x + 0.012, yr + 0.09, pr.Z1 - 0.05, Copper, "plated steel");
+            for (var z = pr.Body + 0.8; z < pr.Z1 - 0.5; z += 1.6)
+                Detail(piece, x - 0.03, Math.Max(lo, by - bh * 0.35), z, x + 0.03, Math.Min(hi, by + bh * 0.35), z + 0.3, _dark2, "plated steel");
+        }
+    }
+
+    /// <summary>
+    /// A lancer's spinal railgun: the barrel in lengths (one per band) along the lowest deck's centreline with copper rails along its
+    /// top and sides, saddles under it to the floor inside the rooms (the void holds it fore of them), the breech block in
+    /// engineering, and a muzzle collar at the bow.
+    /// </summary>
+    private void Barrel(ProcBarrel b)
+    {
+        var p = _p;
+        double ft = ProcHullShape.FloorTop(0), y0 = b.Y - b.HY, y1 = b.Y + b.HY;
+        var walls = p.Walls.Where(w => w.Deck == 0 && w.AlongX).Select(w => w.C).ToList();
+        for (var bi = 0; bi + 1 < _bands.Length; bi++)
+        {
+            double za = Math.Max(bi == 0 ? b.Z0 : _bands[bi], b.Z0), zb = Math.Min(_bands[bi + 1], b.BreechZ0);
+            if (zb - za < 0.05)
+                continue;
+            var piece = Piece($"Barrel {bi + 1}", "barrel", bi, 0, _dark2);
+            Solid(piece, -b.HX, y0, za, b.HX, y1, zb, _dark2, "plated steel");
+            Detail(piece, -0.12, y1, za + 0.004, 0.12, y1 + 0.02, zb - 0.004, Copper, "plated steel");
+            foreach (var sd in new[] { -1, 1 })
+                Detail(piece, sd * b.HX, b.Y - 0.08, za + 0.004, sd * (b.HX + 0.02), b.Y + 0.08, zb - 0.004, Copper, "plated steel");
+            // Saddles to the floor every 2.5 m inside the rooms, clear of the walls' arches.
+            for (var z = Math.Ceiling((Math.Max(za, p.Front[0] + ProcShipPlan.Wall) + 0.4) / 2.5) * 2.5; z + 0.3 <= zb - 0.2; z += 2.5)
+                if (!walls.Any(c => Math.Abs(c - (z + 0.15)) < 0.45))
+                {
+                    Solid(piece, -b.HX - 0.08, ft, z, b.HX + 0.08, y0, z + 0.3, _dark, "plated steel");
+                    Detail(piece, -b.HX - 0.1, ft + 0.004, z - 0.02, b.HX + 0.1, ft + 0.06, z + 0.32, Hazard, "hazard paint");
+                }
+        }
+        // The breech: a block standing on engineering's floor, the barrel's end in it.
+        var breech = Piece("Breech", "barrel", BandOf((b.BreechZ0 + b.Z1) / 2), 0, _dark);
+        Solid(breech, -ProcShipPlan.BreechHalf, ft, b.BreechZ0, ProcShipPlan.BreechHalf, b.Y + ProcShipPlan.BreechHalfH, b.Z1, _dark, "plated steel");
+        Detail(breech, -ProcShipPlan.BreechHalf - 0.012, b.Y + 0.1, b.BreechZ0 + 0.2, ProcShipPlan.BreechHalf + 0.012, b.Y + 0.22, b.Z1 - 0.2, _accent, "painted plating");
+        Detail(breech, -0.3, b.Y + ProcShipPlan.BreechHalfH, b.Z1 - 0.6, 0.3, b.Y + ProcShipPlan.BreechHalfH + 0.012, b.Z1 - 0.2, Light, "painted plating", glow: true);
+        // The muzzle collar: a frame round the barrel's end (the lance's, proud of its tip; the fork's, at the root face between the rails).
+        var piece0 = Piece($"Barrel {BandOf(Math.Max(0, b.Z0)) + 1}", "barrel", BandOf(Math.Max(0, b.Z0)), 0, _dark2);
+        double c0 = b.Z0 <= _h.HullZ0 - 0.1 ? b.Z0 + 0.004 : b.Z0 - 0.25, c1 = b.Z0 <= _h.HullZ0 - 0.1 ? b.Z0 + 0.3 : b.Z0 - 0.025;
+        const double r = 0.16, g = 0.004;
+        Detail(piece0, -b.HX - r, y1 + g, c0, b.HX + r, y1 + r, c1, _dark, "plated steel");
+        Detail(piece0, -b.HX - r, y0 - r, c0, b.HX + r, y0 - g, c1, _dark, "plated steel");
+        Detail(piece0, -b.HX - r, y0 - g + 0.001, c0 + 0.003, -b.HX - g, y1 + g - 0.001, c1 - 0.003, _dark, "plated steel");
+        Detail(piece0, b.HX + g, y0 - g + 0.001, c0 + 0.003, b.HX + r, y1 + g - 0.001, c1 - 0.003, _dark, "plated steel");
+        Detail(piece0, -b.HX - r - 0.012, b.Y - 0.05, c0 + 0.05, -b.HX - r, b.Y + 0.05, c1 - 0.05, _accent, "painted plating");
+        Detail(piece0, b.HX + r, b.Y - 0.05, c0 + 0.05, b.HX + r + 0.012, b.Y + 0.05, c1 - 0.05, _accent, "painted plating");
+    }
+
+    /// <summary>
+    /// A mouth's tunnel from the bow to the room block's fore wall: its lined walls and ceiling, the lowest floor carried forward as
+    /// its lip, a hazard frame round the opening and a light strip down the ceiling.
+    /// </summary>
+    private void MouthTunnel(ProcMouth m)
+    {
+        var piece = Piece("Mouth", "mouth", 0, 0, _dark2);
+        double w = m.HalfW, l = MouthLining, z0 = -0.04, z1 = m.Z1, ft = ProcHullShape.FloorTop(m.D0);
+        Solid(piece, -w - l, ft, z0, -w, m.Y1, z1, _dark2, "plated steel");
+        Solid(piece, w, ft, z0, w + l, m.Y1, z1, _dark2, "plated steel");
+        Solid(piece, -w - l, m.Y1, z0, w + l, m.Y1 + l, z1, _dark2, "plated steel");
+        var floor = FloorAt(m.D0, 0, m.Z1 + 0.1) ?? throw new ProcShipException("the mouth: no floor behind it");
+        Solid(floor, -w - l, m.Y0, z0, w + l, ft, z1, Deck, "deck plate");
+        // The hazard frame on the opening's face and the light.
+        Detail(piece, -w - l - 0.004, ft + 0.004, z0 - 0.016, -w + 0.06, m.Y1 + l + 0.004, z0 - 0.002, Hazard, "hazard paint");
+        Detail(piece, w - 0.06, ft + 0.004, z0 - 0.016, w + l + 0.004, m.Y1 + l + 0.004, z0 - 0.002, Hazard, "hazard paint");
+        Detail(piece, -w + 0.065, m.Y1 - 0.06, z0 - 0.016, w - 0.065, m.Y1 + l + 0.004, z0 - 0.002, Hazard, "hazard paint");
+        Detail(piece, -0.08, m.Y1 - 0.025, z0 + 0.3, 0.08, m.Y1, z1 - 0.3, Light, glow: true);
+        Detail(floor, -w + 0.2, ft, z0 + 0.1, -w + 0.32, ft + 0.008, z1 - 0.1, Hazard, "hazard paint");
+        Detail(floor, w - 0.32, ft, z0 + 0.1, w - 0.2, ft + 0.008, z1 - 0.1, Hazard, "hazard paint");
+    }
+
+    /// <summary>
+    /// A cage hull's shell over its well, in one band: posts at the skin from the roof to the top, a mid rail and a top rail (in the
+    /// accent, the coaming) between them, open between: the hollow shell an ice hauler's chunks ride in.
+    /// </summary>
+    private void CageFrames(int bi, double za, double zb)
+    {
+        var h = _h;
+        double y0 = h.Roof, y1 = h.TopY - 0.06, xo = Math.Min(h.At(za)[4].H, h.At(zb)[4].H) - 0.08, xi = xo - 0.22;
+        var n = Math.Max(1, (int)Math.Ceiling((zb - za - 0.4) / 2.5));
+        foreach (var s in new[] { -1, 1 })
+        {
+            var piece = Side(bi, s);
+            for (var k = 0; k <= n; k++)
+            {
+                var z = za + 0.2 + (zb - za - 0.62) * k / n;
+                Solid(piece, s * xi, y0, z, s * xo, y1, z + 0.22, _dark, "plated steel");
+            }
+            Solid(piece, s * (xi + 0.02), y1 - 0.2, za + 0.005, s * (xo - 0.02), y1 - 0.02, zb - 0.005, _accent, "painted plating");
+            var ym = (y0 + y1) / 2;
+            Solid(piece, s * (xi + 0.03), ym - 0.07, za + 0.006, s * (xo - 0.03), ym + 0.07, zb - 0.006, _dark2, "plated steel");
+        }
     }
 
     // ---- the decks
@@ -711,11 +965,14 @@ internal sealed class ProcShipDraw
         var at = w.A0;
         foreach (var g in w.Gaps.OrderBy(g => g.A))
         {
+            var full = g.Head >= y1 - y0 - 1e-6;
+            var jamb = full ? y1 - 0.004 : y0 + g.Head + 0.07;
             Run(at, g.A, y0, y1, Wall, "painted plating", th, false);
             Run(g.A, g.A + g.W, y0 + g.Head, y1, Wall, "painted plating", th, false);
-            Run(g.A - 0.07, g.A, y0, y0 + g.Head + 0.07, WallTrim, "painted steel", th + 0.02, true);
-            Run(g.A + g.W, g.A + g.W + 0.07, y0, y0 + g.Head + 0.07, WallTrim, "painted steel", th + 0.02, true);
-            Run(g.A, g.A + g.W, y0 + g.Head, y0 + g.Head + 0.07, Hazard, "hazard paint", th + 0.02, true);
+            Run(g.A - 0.07, g.A, y0, jamb, WallTrim, "painted steel", th + 0.02, true);
+            Run(g.A + g.W, g.A + g.W + 0.07, y0, jamb, WallTrim, "painted steel", th + 0.02, true);
+            if (!full)
+                Run(g.A, g.A + g.W, y0 + g.Head, y0 + g.Head + 0.07, Hazard, "hazard paint", th + 0.02, true);
             at = g.A + g.W;
         }
         Run(at, w.A1, y0, y1, Wall, "painted plating", th, false);
@@ -876,19 +1133,19 @@ internal sealed class ProcShipDraw
     /// <summary>A side airlock's housing: a passage 1.6 m wide and 2.4 m high out from the lobby's outer wall through the void and the skin, its outer door in its end wall.</summary>
     private void Lock(ProcLock l)
     {
-        var p = Piece($"Lock {(l.Side < 0 ? "P" : "S")}", "lock", BandOf((l.Z0 + l.Z1) / 2), l.Side, Dark);
+        var p = Piece($"Lock {(l.Side < 0 ? "P" : "S")}", "lock", BandOf((l.Z0 + l.Z1) / 2), l.Side, _dark);
         var s = l.Side;
         double X(double v) => s * v;
         double ft = ProcHullShape.FloorTop(l.Deck), a = l.A, xi = l.XIn, xo = l.XOut;
         void Box(double x0, double y0, double z0, double x1, double y1, double z1, string color, string finish) => Solid(p, X(x0), y0, z0, X(x1), y1, z1, color, finish);
         var slab = Math.Max(_p.WMax(l.Deck, l.Z0, l.Z1), l.Deck > 0 ? _p.WMax(l.Deck - 1, l.Z0, l.Z1) : 0); // (a wider deck under it: its ceiling is the floor there)
-        Box(Math.Max(xi, slab), l.Y0, l.Z0, xo, ft, l.Z1, Dark, "plated steel"); // the floor
-        Box(xi, ft + 2.4, l.Z0, xo, l.Y1, l.Z1, Dark, "plated steel"); // the roof
-        Box(xi, ft, l.Z0, xo, ft + 2.4, a - 0.05, Dark, "plated steel"); // fore, where the outer door slides
-        Box(xi, ft, a + 1.55, xo, ft + 2.4, l.Z1, Dark, "plated steel"); // aft
-        Box(xo - 0.25, ft + 2.25, a - 0.05, xo, ft + 2.4, a + 1.55, Dark, "plated steel"); // over the outer doorway
-        Box(xo - 0.25, ft, a - 0.05, xo, ft + 2.25, a, Dark, "plated steel");
-        Box(xo - 0.25, ft, a + 1.5, xo, ft + 2.25, a + 1.55, Dark, "plated steel");
+        Box(Math.Max(xi, slab), l.Y0, l.Z0, xo, ft, l.Z1, _dark, "plated steel"); // the floor
+        Box(xi, ft + 2.4, l.Z0, xo, l.Y1, l.Z1, _dark, "plated steel"); // the roof
+        Box(xi, ft, l.Z0, xo, ft + 2.4, a - 0.05, _dark, "plated steel"); // fore, where the outer door slides
+        Box(xi, ft, a + 1.55, xo, ft + 2.4, l.Z1, _dark, "plated steel"); // aft
+        Box(xo - 0.25, ft + 2.25, a - 0.05, xo, ft + 2.4, a + 1.55, _dark, "plated steel"); // over the outer doorway
+        Box(xo - 0.25, ft, a - 0.05, xo, ft + 2.25, a, _dark, "plated steel");
+        Box(xo - 0.25, ft, a + 1.5, xo, ft + 2.25, a + 1.55, _dark, "plated steel");
         // Its look: a hazard frame round the outer doorway, the accent band round the housing's face, a deck plate inside.
         void D(double x0, double y0, double z0, double x1, double y1, double z1, string c, string f, bool glow = false) => Detail(p, X(x0), y0, z0, X(x1), y1, z1, c, f, glow);
         D(xo, ft - 0.08, a - 0.14, xo + 0.016, ft + 2.34, a - 0.05, Hazard, "hazard paint");
@@ -918,10 +1175,10 @@ internal sealed class ProcShipDraw
         Solid(p, x0, ly0, i0 - 0.1, x1, ly1, i0, Frame, "dirty steel");
         Solid(p, x0, ly0, i1, x1, ly1, i1 + 0.1, Frame, "dirty steel");
         // The sill: round the opening, then on under the slot (1.6 m aft).
-        Solid(p, x0 - 0.1, st - 0.1, i0 - 0.1, x1 + 0.1, st, t.Z0, Dark2, "plated steel");
-        Solid(p, x0 - 0.1, st - 0.1, t.Z0, x0, st, t.Z1 + 1.66, Dark2, "plated steel");
-        Solid(p, x1, st - 0.1, t.Z0, x1 + 0.1, st, t.Z1 + 1.66, Dark2, "plated steel");
-        Solid(p, x0, st - 0.1, t.Z1, x1, st, t.Z1 + 1.66, Dark2, "plated steel");
+        Solid(p, x0 - 0.1, st - 0.1, i0 - 0.1, x1 + 0.1, st, t.Z0, _dark2, "plated steel");
+        Solid(p, x0 - 0.1, st - 0.1, t.Z0, x0, st, t.Z1 + 1.66, _dark2, "plated steel");
+        Solid(p, x1, st - 0.1, t.Z0, x1 + 0.1, st, t.Z1 + 1.66, _dark2, "plated steel");
+        Solid(p, x0, st - 0.1, t.Z1, x1, st, t.Z1 + 1.66, _dark2, "plated steel");
         // Hazard paint round the opening (on the sill's top, inside the lid's reach) and a light in the shaft.
         Detail(p, x0 - 0.1, st - 0.012, i0 - 0.1, x0 + 0.004, st + 0.004, t.Z1 + 0.05, Hazard, "hazard paint");
         Detail(p, x1 - 0.004, st - 0.012, i0 - 0.1, x1 + 0.1, st + 0.004, t.Z1 + 0.05, Hazard, "hazard paint");
@@ -942,13 +1199,23 @@ internal sealed class ProcShipDraw
             {
                 piece = s.Where switch
                 {
-                    "transom" => Piece("Stern", "stern", _bands.Length - 2, 0, Dark),
+                    "transom" => Piece("Stern", "stern", _bands.Length - 2, 0, _dark),
                     "spine" => SpineP(BandOf((a[2] + b[2]) / 2)),
                     "keel" => Keel(BandOf((a[2] + b[2]) / 2)),
+                    "bow" => Keel(0),
+                    "prong" => ProngP(a[0] < 0 ? -1 : 1),
+                    "mast" => SpineP(BandOf((a[2] + b[2]) / 2)),
                     "nacelle" => NacelleP(_h.Nacelles.First(n => n.Side == (a[0] < 0 ? -1 : 1))),
                     _ => Side(BandOf((a[2] + b[2]) / 2), a[0] < 0 ? -1 : 1),
                 };
                 Solid(piece, a[0], a[1], a[2], b[0], b[1], b[2], Pad, "dirty steel");
+                if (s.Where == "mast")
+                {
+                    // Its post from inside the spine up to the head, with a lamp near the top.
+                    double zc = (a[2] + b[2]) / 2;
+                    Solid(piece, -0.12, _h.TopY - 0.3, zc - 0.12, 0.12, a[1], zc + 0.12, _dark2, "plated steel");
+                    Detail(piece, -0.135, a[1] - 0.35, zc - 0.135, 0.135, a[1] - 0.25, zc + 0.135, _accent, "painted plating", glow: true);
+                }
             }
             else
                 piece = FloorAt(s.Deck, s.Sock[0], s.Sock[2]) ?? throw new ProcShipException($"socket {s.Name}: no floor under it"); // (the piece under the socket itself: the plate may lie across two)

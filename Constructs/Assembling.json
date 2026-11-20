@@ -2270,6 +2270,15 @@
     {"output": "Module Stand 3x3", "materials": {"steel": 198, "concrete": 40}, "seconds": 31.7, "minTier": 2},
     {"output": "Half Shell", "materials": {"steel": 12, "copper": 4, "rubber": 2}, "parts": {"Circuit Board": 1}, "seconds": 20, "minTier": 2},
     {"output": "Module Fitter S", "materials": {"steel": 304}, "parts": {"Servo Motor": 8, "Control Unit": 2}, "seconds": 47.6, "minTier": 4},
-    {"output": "Construction Shell", "materials": {"steel": 220, "copper": 30, "rubber": 16}, "parts": {"Circuit Board": 6}, "seconds": 120, "minTier": 2}
+    {"output": "Construction Shell", "materials": {"steel": 220, "copper": 30, "rubber": 16}, "parts": {"Circuit Board": 6}, "seconds": 120, "minTier": 2},
+    {"output": "Module Plug 4x4", "materials": {"steel": 192, "concrete": 38}, "seconds": 30.8, "minTier": 2},
+    {"output": "Module Plug 4x6", "materials": {"steel": 288, "concrete": 58}, "seconds": 45.2, "minTier": 2},
+    {"output": "Module Plug 6x6", "materials": {"steel": 432, "concrete": 86}, "seconds": 66.8, "minTier": 2},
+    {"output": "Module Socket 4x4", "materials": {"steel": 272, "concrete": 54}, "seconds": 42.8, "minTier": 2},
+    {"output": "Module Socket 4x6", "materials": {"steel": 408, "concrete": 82}, "seconds": 63.2, "minTier": 2},
+    {"output": "Module Socket 6x6", "materials": {"steel": 612, "concrete": 122}, "seconds": 93.8, "minTier": 2},
+    {"output": "Module Stand 4x4", "materials": {"steel": 352, "concrete": 70}, "seconds": 54.8, "minTier": 2},
+    {"output": "Module Stand 4x6", "materials": {"steel": 528, "concrete": 106}, "seconds": 81.2, "minTier": 2},
+    {"output": "Module Stand 6x6", "materials": {"steel": 792, "concrete": 158}, "seconds": 120.8, "minTier": 2}
   ]
 }

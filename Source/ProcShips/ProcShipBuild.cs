@@ -78,6 +78,7 @@ public sealed class ProcShip
         var dice = DiceOf(spec);
         var traits = new List<(string Key, string Value)>();
         var role = ProcShipSpec.RoleOf(spec, dice);
+        var fit = ProcFit.Roll(spec, role, dice);
         ProcHullShape hull = null!;
         ProcShipPlan plan = null!;
         // A hull too small for its rooms (a lobby that doesn't fit amidships, a deck too narrow for its ladder) is made again a size
@@ -88,8 +89,8 @@ public sealed class ProcShip
             traits.Clear();
             try
             {
-                hull = ProcHullShape.Make(spec, role, dice, traits, grow);
-                plan = ProcShipPlan.Make(spec, role, hull, dice, traits);
+                hull = ProcHullShape.Make(spec, role, fit, dice, traits, grow);
+                plan = ProcShipPlan.Make(spec, role, fit, hull, dice, traits);
                 break;
             }
             catch (ProcShipException e)

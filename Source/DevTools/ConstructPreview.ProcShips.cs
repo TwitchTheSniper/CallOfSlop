@@ -72,8 +72,9 @@ public static partial class ConstructPreview
             ships.Add(new JsonObject
             {
                 ["code"] = spec.Code, ["title"] = spec.Title, ["seed"] = spec.Seed, ["class"] = spec.Class.ToString().ToLowerInvariant(),
-                ["hull"] = ship.Hull.Style.ToString().ToLowerInvariant(), ["role"] = ship.Hull.Role.ToString().ToLowerInvariant(), ["nacelles"] = ship.Hull.Nacelles.Count > 0,
-                ["decks"] = ship.Hull.Decks, ["length"] = Math.Round(ship.Hull.Length, 1),
+                ["hull"] = ship.Hull.Style.ToString().ToLowerInvariant(), ["bow"] = ship.Hull.Bow.ToString().ToLowerInvariant(),
+                ["role"] = ship.Hull.Role.ToString().ToLowerInvariant(), ["nacelles"] = ship.Hull.Nacelles.Count > 0,
+                ["decks"] = ship.Hull.Decks, ["length"] = Math.Round(ship.Hull.Length, 1), ["fit"] = FitJson(ship.Plan.Kit),
                 ["file"] = "models/" + file, ["kb"] = json.Length / 1024, ["parts"] = parts, ["steps"] = ship.Steps, ["tris"] = _tris, ["traits"] = traits,
             });
             Console.WriteLine($"{spec.Title} ({spec.Code}): {parts} parts, {_tris} triangles, {json.Length / 1024} KB");
@@ -224,7 +225,7 @@ public static partial class ConstructPreview
             roles[name] = role;
         var o = new JsonObject
         {
-            ["code"] = ship.Spec.Code, ["title"] = ship.Spec.Title, ["generator"] = ProcShipSpec.Version, ["accent"] = p.Accent,
+            ["code"] = ship.Spec.Code, ["title"] = ship.Spec.Title, ["generator"] = ProcShipSpec.Version, ["accent"] = p.Accent, ["fit"] = FitJson(p.Kit),
             ["traits"] = traits, ["decks"] = decks, ["rooms"] = rooms, ["doors"] = doors, ["locks"] = locks, ["hatches"] = hatches,
             ["ladders"] = ladders, ["sockets"] = sockets, ["roles"] = roles,
         };
@@ -232,4 +233,11 @@ public static partial class ConstructPreview
 
         static double R(float v) => Math.Round(v, 3);
     }
+
+    /// <summary>What a ship spent its points on (ProcShipFit.cs): the class's points, the reactors' and the drive's costs, the payload left.</summary>
+    private static JsonObject FitJson(ProcFit f) => new()
+    {
+        ["points"] = f.Points, ["reactorSize"] = f.ReactorSize, ["reactors"] = f.Reactors, ["reactorCost"] = f.ReactorCost,
+        ["drive"] = f.Drive.ToString().ToLowerInvariant(), ["driveCost"] = ProcFit.DriveCost(f.Drive), ["payload"] = f.Payload,
+    };
 }

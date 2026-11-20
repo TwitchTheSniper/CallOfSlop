@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-module-sockets/1",
   "_comment": "The module socket standard (docs/sandbox/design/module-sockets.md 13.1; ModuleSocketTable.cs). Order of kinds, styles and tags is the wire's: new ones at the end.",
-  "sizes": { "most": 30, "built": ["1x1", "1x2", "1x3", "2x2", "2x3", "3x3"] },
+  "sizes": { "most": 30, "built": ["1x1", "1x2", "1x3", "2x2", "2x3", "3x3", "4x4", "4x6", "6x6"] },
   "rating": { "massPerM2": 3000, "thrustPerM2": 250000 },
   "kinds": ["generic", "engine", "reactor", "turret"],
   "styles": ["proud", "flush", "opening"],

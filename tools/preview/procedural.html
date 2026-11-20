@@ -37,6 +37,11 @@ p { margin: 0; }
 .head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
 .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; font: 12px var(--mono); font-variant-numeric: tabular-nums; }
 .stats div { display: flex; flex-direction: column; min-width: 0; } .stats span { color: var(--muted); font: 10px var(--body); text-transform: uppercase; letter-spacing: .08em; }
+.budget { display: flex; flex-direction: column; gap: 5px; }
+.budget .bar { display: flex; gap: 2px; height: 10px; }
+.budget .bar i { flex: 1; border-radius: 2px; } .budget i.r { background: #2f9e48; } .budget i.d { background: #f26419; } .budget i.p { background: #3478e8; }
+.budget .keys { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 11.5px; color: var(--muted); }
+.budget .keys b { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
 .seg, .chips { display: flex; flex-wrap: wrap; gap: 5px; }
 button { font: 12px var(--body); color: var(--fg); background: transparent; border: 1px solid var(--line); border-radius: 4px; padding: 4px 9px; cursor: pointer; }
 button:hover:not(:disabled) { border-color: var(--muted); }
@@ -122,6 +127,7 @@ table.traits td:first-child { color: var(--muted); width: 42%; padding-right: 8p
   <div class="field" role="group" aria-label="Filter the ships">
     <span>Class</span><div class="seg" id="fClass"></div>
     <span>Hull</span><div class="seg" id="fHull"></div>
+    <span>Bow</span><div class="seg" id="fBow"></div>
     <span>Decks</span><div class="seg" id="fDecks"></div>
     <span>Role</span><div class="seg" id="fRole"></div>
     <span>Drive</span><div class="seg" id="fDrive"></div>
@@ -134,9 +140,10 @@ table.traits td:first-child { color: var(--muted); width: 42%; padding-right: 8p
     <h3>Ask the generator for a ship</h3>
     <div class="field">
       <span>Class</span><select id="aClass"><option value="C">Corvette</option><option value="F" selected>Frigate</option><option value="D">Destroyer</option></select>
-      <span>Hull</span><select id="aHull"><option value="">Any</option><option value="c">Chisel</option><option value="d">Dart</option><option value="b">Block</option><option value="a">Barge (open cargo well)</option><option value="s">Stepped (tall over long)</option></select>
+      <span>Hull</span><select id="aHull"><option value="">Any</option><option value="c">Chisel</option><option value="d">Dart</option><option value="b">Block</option><option value="a">Barge (open cargo well)</option><option value="s">Stepped (tall over long)</option><option value="k">Kite (faceted, low)</option><option value="o">Cage (open shell for ice)</option></select>
+      <span>Bow</span><select id="aBow"><option value="">Any</option><option value="q">The hull's own</option><option value="p">Lance (long cone)</option><option value="y">Fork (prongs, a berth or rails)</option><option value="h">Hammer (a bar across)</option><option value="u">Mouth (a bay opening)</option><option value="w">Dome (glazed)</option><option value="j">Jaw (a lip with cutters)</option></select>
       <span>Decks</span><select id="aDecks"><option value="">Any</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select>
-      <span>Role</span><select id="aRole"><option value="">Any</option><option value="g">Gunship</option><option value="f">Freighter</option><option value="m">Miner</option><option value="t">Tender</option><option value="l">Liner</option></select>
+      <span>Role</span><select id="aRole"><option value="">Any</option><option value="g">Gunship</option><option value="r">Lancer (spinal railgun)</option><option value="x">Carrier</option><option value="e">Comms</option><option value="z">Stealth</option><option value="f">Freighter</option><option value="m">Miner</option><option value="v">Salvager</option><option value="i">Ice hauler</option><option value="t">Tender</option><option value="l">Liner</option></select>
       <span>Seed</span><input id="aSeed" type="number" min="1" max="99999" step="1" inputmode="numeric" placeholder="any">
     </div>
     <label class="row hint" for="aNacelles"><input type="checkbox" id="aNacelles"> Engines out on nacelles (pylons off the flanks)</label>
@@ -158,6 +165,11 @@ table.traits td:first-child { color: var(--muted); width: 42%; padding-right: 8p
     <p class="desc" id="desc"></p>
   </div>
   <div class="stats" id="stats"></div>
+  <div class="budget" id="budget" hidden>
+    <h3>What it spent its size on</h3>
+    <div class="bar" id="budgetBar" role="img"></div>
+    <div class="keys" id="budgetKeys"></div>
+  </div>
   <div class="sect" style="padding-top:0;border:0">
     <div class="field">
       <span>Look</span><div class="seg" id="looks" role="group" aria-label="Look at the ship"></div>
@@ -268,9 +280,13 @@ const KIND_USE = { corridor: "passage", lobby: "passage", engineering: "work", w
 const USES = { command: ["Command", "#3b78dc"], living: ["Living", "#37a055"], work: ["Work", "#d9702b"], stores: ["Stores", "#9563d1"], weapons: ["Weapons", "#d3344a"], bays: ["Bays and hangars", "#c4a21c"], passage: ["Passage", "#7f8a93"], other: ["Other", "#a89668"] };
 const useOf = r => ROOM_USE[r.name] || KIND_USE[r.kind] || "other";
 const WAYS = { door: ["Door", "#14a9bd"], lock: ["Airlock", "#ef8a17"], hatch: ["Hatch", "#d0347f"], ladder: ["Ladder", "#d9b310"] };
-const SOCKETS = { engine: ["Engine", "#f26419"], turret: ["Turret", "#d92f2f"], reactor: ["Reactor", "#2f9e48"], cargo: ["Cargo", "#3478e8"],
-  container: ["Container", "#5b5fd6"], drill: ["Drill", "#a8682a"], flank: ["Flank", "#a24fc4"] };
-const WHERE = { transom: "transom", nacelle: "nacelle's tail", spine: "spine", floor: "floor", well: "cargo well's floor, open to space", keel: "keel, facing down", flank: "flank" };
+const SOCKETS = { engine: ["Engine", "#f26419"], turret: ["Turret", "#d92f2f"], reactor: ["Reactor", "#2f9e48"], capacitor: ["Capacitor", "#7bc043"],
+  cargo: ["Cargo", "#3478e8"], container: ["Container", "#5b5fd6"], "ice chunk": ["Ice chunk", "#7fd1e8"], craft: ["Craft pad", "#c4a21c"],
+  "launch bay": ["Launch bay", "#e0b020"], "barge berth": ["Barge berth", "#b8862b"], drill: ["Drill", "#a8682a"], cutter: ["Cutter", "#8a5a2b"],
+  clamp: ["Salvage clamp", "#d27c2c"], arm: ["Salvage arm", "#b06a3a"], dish: ["Dish", "#2aa6a0"], antenna: ["Antenna", "#22c3b6"],
+  sensor: ["Sensor", "#1b8fb0"], flank: ["Flank", "#a24fc4"] };
+const WHERE = { transom: "transom", nacelle: "nacelle's tail", spine: "spine", floor: "floor", well: "open well's floor, open to space", keel: "keel, facing down",
+  flank: "flank", tip: "hammer's tip", prong: "prong's inner face", mast: "mast's top", bow: "bow's lip, facing forward" };
 // (a room over several decks: "decks 1 to 2"; else the deck's name)
 const roomDecks = r => r.top != null && r.top > r.deck ? `decks ${r.deck + 1} to ${r.top + 1}` : P && P.decks[r.deck] ? P.decks[r.deck].name.toLowerCase() : "deck " + (r.deck + 1);
 const ROLE_TEXT = { keel: "outer hull: the keel, its plating and the void over it", spine: "outer hull: the spine, its plating and the void under it",
@@ -560,6 +576,18 @@ function fillShipPanel() {
   const stat = (k, v) => { const d = el("div"); d.append(el("span", null, k), String(v)); st.appendChild(d); };
   stat("Length", trait("Length") || size[2].toFixed(1) + " m"); stat("Beam", trait("Beam") || size[0].toFixed(1) + " m"); stat("Decks", P ? P.decks.length : "-"); stat("Mass", (M.mass / 1000).toFixed(0) + " t");
   stat("Rooms", trait("Rooms") || "-"); stat("Pieces", trait("Pieces") || "-"); stat("Parts", M.parts.length); stat("Steps", M.steps);
+  // The fit: the class's points as cells, the reactors', the drive's and what is left for guns, cargo and craft.
+  const fit = P && P.fit; $("budget").hidden = !fit;
+  if (fit) {
+    const bar = $("budgetBar"), keys = $("budgetKeys"); bar.textContent = ""; keys.textContent = "";
+    const parts = [["r", fit.reactorCost, `${fit.reactors === 2 ? "twin " : ""}${fit.reactorSize} m reactor${fit.reactors === 2 ? "s" : ""}`, "#2f9e48"],
+      ["d", fit.driveCost, `${fit.drive} drive`, "#f26419"], ["p", fit.payload, "payload (guns, cargo, craft)", "#3478e8"]];
+    for (const [c, n, text, colour] of parts) {
+      for (let i = 0; i < n; i++) bar.appendChild(el("i", c));
+      const k = el("span"), sw = el("b"); sw.style.background = colour; k.append(sw, `${text}: ${n}`); keys.appendChild(k);
+    }
+    bar.setAttribute("aria-label", `${fit.points} points: reactors ${fit.reactorCost}, drive ${fit.driveCost}, payload ${fit.payload}`);
+  }
   const tb = $("traits"); tb.textContent = "";
   for (const [k, v] of (P ? P.traits : [])) { const tr = el("tr"); tr.append(el("td", null, k), el("td", null, v)); tb.appendChild(tr); }
   $("picked").hidden = true;
@@ -620,17 +648,20 @@ renderer.setAnimationLoop(() => { controls.update(); renderer.render(scene, came
 // ---- the gallery: models/index.json lists the ships made (and the ones that couldn't be); #CODE or #CODE--section names a view
 let index = null;
 const cache = new Map();
-const filters = { cls: store.get("cls") || "", hull: store.get("hull") || "", decks: store.get("decks") || "", role: store.get("role") || "", drive: store.get("drive") || "" };
+const filters = { cls: store.get("cls") || "", hull: store.get("hull") || "", bow: store.get("bow") || "", decks: store.get("decks") || "", role: store.get("role") || "", drive: store.get("drive") || "" };
 const CLASSES = [["", "Any"], ["corvette", "Corvette"], ["frigate", "Frigate"], ["destroyer", "Destroyer"]];
-const HULLS = [["", "Any"], ["chisel", "Chisel"], ["dart", "Dart"], ["block", "Block"], ["barge", "Barge"], ["stepped", "Stepped"]];
+const HULLS = [["", "Any"], ["chisel", "Chisel"], ["dart", "Dart"], ["block", "Block"], ["barge", "Barge"], ["stepped", "Stepped"], ["kite", "Kite"], ["cage", "Cage"]];
+const BOWS = [["", "Any"], ["family", "Hull's own"], ["lance", "Lance"], ["fork", "Fork"], ["hammer", "Hammer"], ["mouth", "Mouth"], ["dome", "Dome"], ["jaw", "Jaw"]];
 const DECKS = [["", "Any"], ["1", "1"], ["2", "2"], ["3", "3"], ["4", "4"], ["5", "5"]];
-const ROLES = [["", "Any"], ["gunship", "Gunship"], ["freighter", "Freighter"], ["miner", "Miner"], ["tender", "Tender"], ["liner", "Liner"]];
+const ROLES = [["", "Any"], ["gunship", "Gunship"], ["lancer", "Lancer"], ["carrier", "Carrier"], ["comms", "Comms"], ["stealth", "Stealth"], ["freighter", "Freighter"],
+  ["miner", "Miner"], ["salvager", "Salvager"], ["icehauler", "Ice hauler"], ["tender", "Tender"], ["liner", "Liner"]];
+const roleWord = r => r === "icehauler" ? "ice hauler" : r;
 const DRIVES = [["", "Any"], ["hull", "In the hull"], ["nacelles", "On nacelles"]];
 function seg(boxId, opts, key) {
   const box = $(boxId); box.textContent = "";
   for (const [v, text] of opts) { const b = el("button", null, text); b.type = "button"; b.setAttribute("aria-pressed", filters[key] === v); b.onclick = () => { filters[key] = v; store.set(key, v); seg(boxId, opts, key); fillList(); }; box.appendChild(b); }
 }
-const matches = s => (!filters.cls || s.class === filters.cls) && (!filters.hull || s.hull === filters.hull) && (!filters.decks || String(s.decks) === filters.decks)
+const matches = s => (!filters.cls || s.class === filters.cls) && (!filters.hull || s.hull === filters.hull) && (!filters.bow || (s.bow || "family") === filters.bow) && (!filters.decks || String(s.decks) === filters.decks)
   && (!filters.role || s.role === filters.role) && (!filters.drive || (filters.drive === "nacelles") === !!s.nacelles);
 function pips(n) { const s = el("span", "pips"); s.setAttribute("aria-label", n ? `graded ${n} of 5` : "not graded"); for (let i = 1; i <= 5; i++) s.appendChild(el("i", i <= n ? "on" : null)); return s; }
 function fillList() {
@@ -640,7 +671,7 @@ function fillList() {
   for (const s of list) {
     const li = el("li"), b = el("button"); b.type = "button";
     const mid = el("span"); mid.append(el("span", null, s.title));
-    mid.appendChild(el("small", null, [s.role, s.hull + " hull", s.nacelles ? "nacelles" : "", `${s.decks} deck${s.decks === 1 ? "" : "s"}`, `${s.length} m`].filter(Boolean).join(", ")));
+    mid.appendChild(el("small", null, [roleWord(s.role), s.hull + " hull", s.bow && s.bow !== "family" ? s.bow + " bow" : "", s.nacelles ? "nacelles" : "", `${s.decks} deck${s.decks === 1 ? "" : "s"}`, `${s.length} m`].filter(Boolean).join(", ")));
     const g = latestGrade(s.code), right = el("span"); right.appendChild(pips(g)); if (notesFor(s.code).length) right.appendChild(el("span", "dot"));
     b.append(el("b", null, s.code), mid, right);
     b.setAttribute("aria-current", ship && ship.code === s.code);
@@ -686,7 +717,7 @@ async function open(hash) {
   setLook(lk || "outside", true); fillList();
 }
 addEventListener("hashchange", () => open(location.hash.slice(1)));
-seg("fClass", CLASSES, "cls"); seg("fHull", HULLS, "hull"); seg("fDecks", DECKS, "decks"); seg("fRole", ROLES, "role"); seg("fDrive", DRIVES, "drive");
+seg("fClass", CLASSES, "cls"); seg("fHull", HULLS, "hull"); seg("fBow", BOWS, "bow"); seg("fDecks", DECKS, "decks"); seg("fRole", ROLES, "role"); seg("fDrive", DRIVES, "drive");
 fetch("models/index.json").then(r => { if (!r.ok) throw new Error(r.status + " " + r.statusText); return r.json(); }).then(idx => {
   index = idx;
   const n = idx.ships.length, byClass = c => idx.ships.filter(s => s.class === c).length;
@@ -699,7 +730,7 @@ function tab(t) { document.body.dataset.tab = t; $("tabShips").setAttribute("ari
 $("tabShips").onclick = () => tab("ships"); $("tabShip").onclick = () => tab("ship"); tab("ships");
 
 // ---- feedback and requests, kept in the artifact's database (absent when the page runs outside claude.ai)
-const TAGS = ["Hull", "Role", "Rooms", "Tall rooms", "Corridors", "Airlocks", "Hatches", "Ladders", "Sockets", "Nacelles", "Size", "Looks"];
+const TAGS = ["Hull", "Bow", "Role", "Fit", "Rooms", "Tall rooms", "Corridors", "Airlocks", "Hatches", "Ladders", "Sockets", "Nacelles", "Size", "Looks"];
 const STATES = { new: "New", taken: "Taken up", done: "Done", declined: "Not changed", queued: "Queued", made: "Made", refused: "Refused" };
 let db = null, users = null, me = null, writable = null, notes = [], requests = [], dataState = "off", busy = false, grade = 0, lastSent = 0;
 const tagOn = new Set();
@@ -748,14 +779,18 @@ function writeFailed(e, where) {
 $("fb").onsubmit = e => { e.preventDefault(); sendNote(false); };
 $("sendRoll").onclick = () => sendNote(true);
 
-// Asking for a ship: a code the game understands (class letter, seed, then what is fixed: the hull's letter, n for nacelles, the
-// deck count, after a hyphen when it follows the seed, and the role's letter, as ProcShipSpec.Code writes it).
-const HULL_LETTER = { chisel: "c", dart: "d", block: "b", barge: "a", stepped: "s" }, HULL_OF = { c: "chisel", d: "dart", b: "block", a: "barge", s: "stepped" };
-const ROLE_LETTER = { gunship: "g", freighter: "f", miner: "m", tender: "t", liner: "l" }, ROLE_OF = { g: "gunship", f: "freighter", m: "miner", t: "tender", l: "liner" };
+// Asking for a ship: a code the game understands (class letter, seed, then what is fixed: the hull's letter, the bow's, n for
+// nacelles, the deck count, after a hyphen when it follows the seed, and the role's letter, as ProcShipSpec.Code writes it).
+const HULL_LETTER = { chisel: "c", dart: "d", block: "b", barge: "a", stepped: "s", kite: "k", cage: "o" };
+const HULL_OF = Object.fromEntries(Object.entries(HULL_LETTER).map(([k, v]) => [v, k]));
+const BOW_LETTER = { family: "q", lance: "p", fork: "y", hammer: "h", mouth: "u", dome: "w", jaw: "j" };
+const BOW_OF = Object.fromEntries(Object.entries(BOW_LETTER).map(([k, v]) => [v, k]));
+const ROLE_LETTER = { gunship: "g", freighter: "f", miner: "m", tender: "t", liner: "l", lancer: "r", carrier: "x", comms: "e", stealth: "z", salvager: "v", icehauler: "i" };
+const ROLE_OF = Object.fromEntries(Object.entries(ROLE_LETTER).map(([k, v]) => [v, k]));
 $("askOpen").onclick = () => {
   const f = $("ask"), opening = f.hidden; f.hidden = !opening; $("askOpen").setAttribute("aria-expanded", opening);
   if (opening) {
-    $("aClass").value = { corvette: "C", frigate: "F", destroyer: "D" }[filters.cls] || $("aClass").value; $("aHull").value = HULL_LETTER[filters.hull] || "";
+    $("aClass").value = { corvette: "C", frigate: "F", destroyer: "D" }[filters.cls] || $("aClass").value; $("aHull").value = HULL_LETTER[filters.hull] || ""; $("aBow").value = BOW_LETTER[filters.bow] || "";
     $("aNacelles").checked = filters.drive === "nacelles"; $("aDecks").value = filters.decks; $("aRole").value = ROLE_LETTER[filters.role] || "";
     say("aState", db ? "" : "Asking needs the gallery on claude.ai, signed in.");
   }
@@ -764,13 +799,13 @@ $("aCancel").onclick = () => { $("ask").hidden = true; $("askOpen").setAttribute
 $("ask").onsubmit = async e => {
   e.preventDefault(); if (!db || busy) return;
   const seedIn = parseInt($("aSeed").value, 10), seed = seedIn >= 1 && seedIn <= 99999 ? seedIn : 1 + Math.floor(Math.random() * 99999);
-  const cls = $("aClass").value, hull = $("aHull").value, decks = $("aDecks").value, role = $("aRole").value, nacelles = $("aNacelles").checked;
-  const code = cls + seed + hull + (nacelles ? "n" : "") + (decks && !hull && !nacelles ? "-" : "") + decks + role;
+  const cls = $("aClass").value, hull = $("aHull").value, bow = $("aBow").value, decks = $("aDecks").value, role = $("aRole").value, nacelles = $("aNacelles").checked;
+  const code = cls + seed + hull + bow + (nacelles ? "n" : "") + (decks && !hull && !bow && !nacelles ? "-" : "") + decks + role;
   if (index && index.ships.some(s => s.code === code)) { say("aState", code + " is made already: showing it.", "ok"); setHash(code, ""); return; }
   if (requests.some(r => r.code === code && r.state === "queued")) { say("aState", code + " is queued already."); return; }
   busy = true; say("aState", "Queueing...");
   try {
-    await db.collection("requests").add({ code, class: { C: "corvette", F: "frigate", D: "destroyer" }[cls], hull: HULL_OF[hull] || null, decks: decks ? +decks : null, role: ROLE_OF[role] || null, nacelles, seed,
+    await db.collection("requests").add({ code, class: { C: "corvette", F: "frigate", D: "destroyer" }[cls], hull: HULL_OF[hull] || null, bow: BOW_OF[bow] || null, decks: decks ? +decks : null, role: ROLE_OF[role] || null, nacelles, seed,
       note: $("aNote").value.trim().slice(0, 2000), by: me, at: new Date().toISOString(), state: "queued" });
     say("aState", `Queued ${code}. It is made the next time a session works on the gallery.`, "ok"); $("aNote").value = ""; $("aSeed").value = "";
   } catch (err) { writeFailed(err, "aState"); }

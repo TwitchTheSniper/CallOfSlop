@@ -516,6 +516,16 @@ public sealed class Assembling : IPartGenerator
         (null, null, Rec("Half Shell", 20, 2, m: [("steel", 12), ("copper", 4), ("rubber", 2)], p: [("Circuit Board", 1)])), // (docs/sandbox/design/half-shell.md)
         ("Modules/Fitters", "Module Fitter S", null), // (module sockets phase 4: the Module Fitter S)
         (null, null, Rec("Construction Shell", 120, 2, m: [("steel", 220), ("copper", 30), ("rubber", 16)], p: [("Circuit Board", 6)])), // (docs/sandbox/design/construction-shell.md)
+        // (the big module sockets, 2026-11-20: the procedural ships' large and huge reactors, heavy drives and berths)
+        ("Modules", "Module Plug 4x4", null),
+        ("Modules", "Module Plug 4x6", null),
+        ("Modules", "Module Plug 6x6", null),
+        ("Modules", "Module Socket 4x4", null),
+        ("Modules", "Module Socket 4x6", null),
+        ("Modules", "Module Socket 6x6", null),
+        ("Modules", "Module Stand 4x4", null),
+        ("Modules", "Module Stand 4x6", null),
+        ("Modules", "Module Stand 6x6", null),
     ];
 
     /// <summary>

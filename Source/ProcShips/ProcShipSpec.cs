@@ -6,30 +6,41 @@ namespace CallOfSlop.ProcShips;
 public enum ProcClass { Corvette, Frigate, Destroyer }
 
 /// <summary>
-/// The hull's family: a chisel nose and flared flanks (the Zero Day's), a long tapering dart, a chamfered block, a wide barge with an
-/// open cargo well along its back, or a stepped hull (a tall block of decks over one long low deck).
+/// The hull's family, its section: a chisel nose and flared flanks (the Zero Day's), a long tapering dart, a chamfered block, a wide
+/// barge with an open cargo well along its back, a stepped hull (a tall block of decks over one long low deck), a kite (a low, flat,
+/// sharply faceted stealth section, widest at one chine) or a cage (a barge whose deep well is a hollow shell of ring frames, where an
+/// ice hauler carries its chunks). New families go at the end.
 /// </summary>
-public enum ProcHull { Chisel, Dart, Block, Barge, Stepped }
+public enum ProcHull { Chisel, Dart, Block, Barge, Stepped, Kite, Cage }
 
-/// <summary>What the ship is for: it sets its rooms, the spaces that span decks (holds, hangars, torpedo bays, atria) and its sockets.</summary>
-public enum ProcRole { Gunship, Freighter, Miner, Tender, Liner }
+/// <summary>
+/// The bow, by what it is for: the family's own (a chisel's knife, a dart's needle, a block's face, a barge's rake, a kite's flat
+/// blade), a lance (a long cone ending in a spinal railgun's muzzle), a fork (two prongs either side of a slot: a salvage berth, a
+/// repair berth or a railgun's rails), a hammer (a wide sensor bar on a neck), a mouth (a blunt face open into a hangar or a cargo
+/// hold), a dome (a glazed observation dome) or a jaw (a raked dozer face with a lip for cutters).
+/// </summary>
+public enum ProcBow { Family, Lance, Fork, Hammer, Mouth, Dome, Jaw }
+
+/// <summary>What the ship is for: it sets its bow, its rooms, the spaces that span decks (holds, hangars, torpedo bays, atria), its sides and its sockets. New roles go at the end.</summary>
+public enum ProcRole { Gunship, Freighter, Miner, Tender, Liner, Lancer, Carrier, Comms, Stealth, Salvager, IceHauler }
 
 /// <summary>
 /// What a procedural ship is asked for (docs/procships/PROCSHIPS.md): a seed, its class and anything the user fixed. Everything not
 /// fixed comes from the seed, each choice from its own stream of the dice (<see cref="ProcDice.For"/>), so a later generator that makes
 /// a new choice leaves the old ones as they were and a grade on "Frigate 17's hull" still means the same hull.
 /// </summary>
-public sealed record ProcShipSpec(int Seed, ProcClass Class, ProcHull? Hull = null, int? Decks = null, ProcRole? Role = null, bool Nacelles = false)
+public sealed record ProcShipSpec(int Seed, ProcClass Class, ProcHull? Hull = null, int? Decks = null, ProcRole? Role = null, bool Nacelles = false, ProcBow? Bow = null)
 {
     /// <summary>The generator's version: a new version may change what a seed makes (the gallery says which made each ship).</summary>
-    public const int Version = 2;
+    public const int Version = 3;
 
     public const int MaxSeed = 99999, MaxDecks = 5;
 
     /// <summary>
-    /// A short code that names the ship in its pieces' names: the class's letter, the seed, then what was fixed: the hull's letter, n for
-    /// nacelles, the decks, the role's letter ("F17", "F17d", "F17b3", "F17an2f"). A deck count straight after the seed takes a hyphen
-    /// ("F5-3f", Frigate 5 with 3 decks, a freighter), or it would read as the seed's last digit ("F53f", Frigate 53, a freighter).
+    /// A short code that names the ship in its pieces' names: the class's letter, the seed, then what was fixed: the hull's letter, the
+    /// bow's letter, n for nacelles, the decks, the role's letter ("F17", "F17d", "F17b3", "F17an2f", "F17cy2v"). A deck count straight
+    /// after the seed takes a hyphen ("F5-3f", Frigate 5 with 3 decks, a freighter), or it would read as the seed's last digit ("F53f",
+    /// Frigate 53, a freighter). The letter sets never share a letter, so every part is optional.
     /// </summary>
     public string Code
     {
@@ -38,17 +49,19 @@ public sealed record ProcShipSpec(int Seed, ProcClass Class, ProcHull? Hull = nu
             var s = ClassLetter(Class) + Seed.ToString(CultureInfo.InvariantCulture);
             if (Hull is { } h)
                 s += HullLetter(h);
+            if (Bow is { } b)
+                s += BowLetter(b);
             if (Nacelles)
                 s += "n";
             if (Decks is { } d)
-                s += (Hull == null && !Nacelles ? "-" : "") + d.ToString(CultureInfo.InvariantCulture);
+                s += (Hull == null && Bow == null && !Nacelles ? "-" : "") + d.ToString(CultureInfo.InvariantCulture);
             if (Role is { } r)
                 s += RoleLetter(r);
             return s;
         }
     }
 
-    /// <summary>The ship's name: "Frigate 17", with what was fixed ("Frigate 17, dart hull, nacelles, 3 decks, freighter").</summary>
+    /// <summary>The ship's name: "Frigate 17", with what was fixed ("Frigate 17, dart hull, fork bow, nacelles, 3 decks, salvager").</summary>
     public string Title
     {
         get
@@ -56,57 +69,86 @@ public sealed record ProcShipSpec(int Seed, ProcClass Class, ProcHull? Hull = nu
             var s = $"{Class} {Seed}";
             if (Hull is { } h)
                 s += $", {h.ToString().ToLowerInvariant()} hull";
+            if (Bow is { } b)
+                s += $", {BowWord(b)} bow";
             if (Nacelles)
                 s += ", nacelles";
             if (Decks is { } d)
                 s += $", {d} deck{(d == 1 ? "" : "s")}";
             if (Role is { } r)
-                s += $", {r.ToString().ToLowerInvariant()}";
+                s += $", {RoleWord(r)}";
             return s;
         }
     }
 
+    /// <summary>A role as words ("ice hauler").</summary>
+    public static string RoleWord(ProcRole r) => r == ProcRole.IceHauler ? "ice hauler" : r.ToString().ToLowerInvariant();
+
+    public static string BowWord(ProcBow b) => b.ToString().ToLowerInvariant();
+
     public static string ClassLetter(ProcClass c) => c switch { ProcClass.Corvette => "C", ProcClass.Frigate => "F", _ => "D" };
 
-    public static string HullLetter(ProcHull h) => h switch { ProcHull.Chisel => "c", ProcHull.Dart => "d", ProcHull.Block => "b", ProcHull.Barge => "a", _ => "s" };
+    // The letter sets (hulls, bows, n, roles) share no letter: a code's parts are all optional and still read one way.
+    private const string HullLetters = "cdbasko", BowLetters = "qpyhuwj", RoleLetters = "gfmtlrxezvi";
 
-    public static string RoleLetter(ProcRole r) => r switch { ProcRole.Gunship => "g", ProcRole.Freighter => "f", ProcRole.Miner => "m", ProcRole.Tender => "t", _ => "l" };
+    public static string HullLetter(ProcHull h) => HullLetters[(int)h].ToString();
+
+    /// <summary>The bow's letter: q fixes the family's own bow (no letter leaves the bow to the dice, by role).</summary>
+    public static string BowLetter(ProcBow b) => BowLetters[(int)b].ToString();
+
+    public static string RoleLetter(ProcRole r) => RoleLetters[(int)r].ToString();
 
     private static readonly Dictionary<string, ProcHull> HullWords = new(StringComparer.Ordinal)
     {
         ["chisel"] = ProcHull.Chisel, ["dart"] = ProcHull.Dart, ["block"] = ProcHull.Block, ["barge"] = ProcHull.Barge, ["stepped"] = ProcHull.Stepped, ["tower"] = ProcHull.Stepped,
+        ["kite"] = ProcHull.Kite, ["cage"] = ProcHull.Cage, ["caged"] = ProcHull.Cage, ["shell"] = ProcHull.Cage,
+    };
+
+    private static readonly Dictionary<string, ProcBow> BowWords = new(StringComparer.Ordinal)
+    {
+        ["lance"] = ProcBow.Lance, ["spear"] = ProcBow.Lance, ["fork"] = ProcBow.Fork, ["forked"] = ProcBow.Fork, ["prongs"] = ProcBow.Fork, ["hammer"] = ProcBow.Hammer,
+        ["hammerhead"] = ProcBow.Hammer, ["mouth"] = ProcBow.Mouth, ["dome"] = ProcBow.Dome, ["jaw"] = ProcBow.Jaw, ["dozer"] = ProcBow.Jaw, ["shovel"] = ProcBow.Jaw,
     };
 
     private static readonly Dictionary<string, ProcRole> RoleWords = new(StringComparer.Ordinal)
     {
         ["gunship"] = ProcRole.Gunship, ["warship"] = ProcRole.Gunship, ["freighter"] = ProcRole.Freighter, ["hauler"] = ProcRole.Freighter, ["cargo"] = ProcRole.Freighter,
-        ["miner"] = ProcRole.Miner, ["mining"] = ProcRole.Miner, ["tender"] = ProcRole.Tender, ["carrier"] = ProcRole.Tender, ["liner"] = ProcRole.Liner, ["passenger"] = ProcRole.Liner,
+        ["miner"] = ProcRole.Miner, ["mining"] = ProcRole.Miner, ["tender"] = ProcRole.Tender, ["liner"] = ProcRole.Liner, ["passenger"] = ProcRole.Liner,
+        ["lancer"] = ProcRole.Lancer, ["railgun"] = ProcRole.Lancer, ["spinal"] = ProcRole.Lancer, ["carrier"] = ProcRole.Carrier, ["comms"] = ProcRole.Comms,
+        ["sensor"] = ProcRole.Comms, ["picket"] = ProcRole.Comms, ["stealth"] = ProcRole.Stealth, ["prowler"] = ProcRole.Stealth, ["salvager"] = ProcRole.Salvager,
+        ["salvage"] = ProcRole.Salvager, ["ice"] = ProcRole.IceHauler, ["icehauler"] = ProcRole.IceHauler,
     };
 
     /// <summary>
-    /// A spec from text: a code ("F17", "f17d3", "D5b", "F17an2f", "F5-3f") or words ("frigate 17", "17 dart 3 decks", "corvette 4 block",
-    /// "destroyer 9 stepped liner", "frigate 3 chisel nacelles gunship"). Null when it names no seed or a word it doesn't know.
+    /// A spec from text: a code ("F17", "f17d3", "D5b", "F17an2f", "F5-3f", "D4by3v") or words ("frigate 17", "17 dart 3 decks",
+    /// "corvette 4 block", "destroyer 9 stepped liner", "frigate 3 chisel nacelles gunship", "frigate 8 fork bow salvager", "destroyer
+    /// 2 cage ice hauler"). Null when it names no seed or a word it doesn't know.
     /// </summary>
     public static ProcShipSpec? Parse(string text)
     {
         text = text.Trim();
         if (text.Length == 0)
             return null;
-        // A code: a class letter, digits, then an optional hull letter, n (nacelles), deck digit (after a hyphen when it follows the
-        // seed) and role letter.
-        var m = System.Text.RegularExpressions.Regex.Match(text, "^([CFD])(\\d{1,5})([cdbas])?(n)?(-?[1-5])?([gfmtl])?$", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        // A code: a class letter, digits, then an optional hull letter, bow letter, n (nacelles), deck digit (after a hyphen when it
+        // follows the seed) and role letter.
+        var m = System.Text.RegularExpressions.Regex.Match(text, $"^([CFD])(\\d{{1,5}})([{HullLetters}])?([{BowLetters}])?(n)?(-?[1-5])?([{RoleLetters}])?$", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
         if (m.Success)
         {
             var cls = char.ToUpperInvariant(m.Groups[1].Value[0]) switch { 'C' => ProcClass.Corvette, 'F' => ProcClass.Frigate, _ => ProcClass.Destroyer };
-            ProcHull? hull = m.Groups[3].Success ? char.ToLowerInvariant(m.Groups[3].Value[0]) switch { 'c' => ProcHull.Chisel, 'd' => ProcHull.Dart, 'b' => ProcHull.Block, 'a' => ProcHull.Barge, _ => ProcHull.Stepped } : null;
-            int? decks = m.Groups[5].Success ? m.Groups[5].Value[^1] - '0' : null;
-            ProcRole? role = m.Groups[6].Success ? char.ToLowerInvariant(m.Groups[6].Value[0]) switch { 'g' => ProcRole.Gunship, 'f' => ProcRole.Freighter, 'm' => ProcRole.Miner, 't' => ProcRole.Tender, _ => ProcRole.Liner } : null;
+            ProcHull? hull = m.Groups[3].Success ? (ProcHull)HullLetters.IndexOf(char.ToLowerInvariant(m.Groups[3].Value[0])) : null;
+            ProcBow? bow = m.Groups[4].Success ? (ProcBow)BowLetters.IndexOf(char.ToLowerInvariant(m.Groups[4].Value[0])) : null;
+            int? decks = m.Groups[6].Success ? m.Groups[6].Value[^1] - '0' : null;
+            ProcRole? role = m.Groups[7].Success ? (ProcRole)RoleLetters.IndexOf(char.ToLowerInvariant(m.Groups[7].Value[0])) : null;
             var seed = int.Parse(m.Groups[2].Value, CultureInfo.InvariantCulture);
-            return seed is >= 1 and <= MaxSeed ? new ProcShipSpec(seed, cls, hull, decks, role, m.Groups[4].Success) : null;
+            // A hyphen only where the decks follow the seed straight (so each ship has one code).
+            if (m.Groups[6].Success && m.Groups[6].Value.StartsWith('-') != (hull == null && bow == null && !m.Groups[5].Success))
+                return null;
+            return seed is >= 1 and <= MaxSeed ? new ProcShipSpec(seed, cls, hull, decks, role, m.Groups[5].Success, bow) : null;
         }
         ProcClass? c = null;
         ProcHull? hl = null;
         ProcRole? rl = null;
+        ProcBow? bw = null;
         var nacelles = false;
         int? dk = null, sd = null;
         var words = text.ToLowerInvariant().Replace(',', ' ').Split(' ', StringSplitOptions.RemoveEmptyEntries);
@@ -117,6 +159,8 @@ public sealed record ProcShipSpec(int Seed, ProcClass Class, ProcHull? Hull = nu
                 c = pc;
             else if (HullWords.TryGetValue(w, out var ph))
                 hl = ph;
+            else if (BowWords.TryGetValue(w, out var pb))
+                bw = pb;
             else if (RoleWords.TryGetValue(w, out var pr))
                 rl = pr;
             else if (w is "nacelles" or "nacelle")
@@ -133,19 +177,25 @@ public sealed record ProcShipSpec(int Seed, ProcClass Class, ProcHull? Hull = nu
                     continue; // (the deck count, read with its word)
                 sd ??= n;
             }
-            else if (w is not ("hull" or "seed" or "with" or "a" or "an"))
+            else if (w is not ("hull" or "seed" or "with" or "a" or "an" or "bow" or "hauler" or "ship"))
                 return null;
         }
-        return sd is { } seedOf ? new ProcShipSpec(seedOf, c ?? ProcClass.Frigate, hl, dk, rl, nacelles) : null;
+        return sd is { } seedOf ? new ProcShipSpec(seedOf, c ?? ProcClass.Frigate, hl, dk, rl, nacelles, bw) : null;
     }
 
-    /// <summary>The role a spec has: the one fixed, else the dice's, weighted by class.</summary>
-    public static ProcRole RoleOf(ProcShipSpec spec, ProcDice dice) => spec.Role ?? spec.Class switch
+    /// <summary>The role a spec has: the one fixed, else the dice's, weighted by class (version 3: eleven roles).</summary>
+    public static ProcRole RoleOf(ProcShipSpec spec, ProcDice dice) => spec.Role ?? dice.For("ship.role3").Weighted<ProcRole>(spec.Class switch
     {
-        ProcClass.Corvette => dice.For("ship.role").Weighted((ProcRole.Gunship, 0.34), (ProcRole.Freighter, 0.2), (ProcRole.Miner, 0.26), (ProcRole.Tender, 0.08), (ProcRole.Liner, 0.12)),
-        ProcClass.Frigate => dice.For("ship.role").Weighted((ProcRole.Gunship, 0.3), (ProcRole.Freighter, 0.22), (ProcRole.Miner, 0.14), (ProcRole.Tender, 0.16), (ProcRole.Liner, 0.18)),
-        _ => dice.For("ship.role").Weighted((ProcRole.Gunship, 0.34), (ProcRole.Freighter, 0.2), (ProcRole.Miner, 0.08), (ProcRole.Tender, 0.2), (ProcRole.Liner, 0.18)),
-    };
+        ProcClass.Corvette => [(ProcRole.Gunship, 0.15), (ProcRole.Freighter, 0.1), (ProcRole.Miner, 0.14), (ProcRole.Tender, 0.04), (ProcRole.Liner, 0.06), (ProcRole.Lancer, 0.1),
+            (ProcRole.Carrier, 0.03), (ProcRole.Comms, 0.1), (ProcRole.Stealth, 0.14), (ProcRole.Salvager, 0.1), (ProcRole.IceHauler, 0.04)],
+        ProcClass.Frigate => [(ProcRole.Gunship, 0.12), (ProcRole.Freighter, 0.09), (ProcRole.Miner, 0.07), (ProcRole.Tender, 0.07), (ProcRole.Liner, 0.08), (ProcRole.Lancer, 0.11),
+            (ProcRole.Carrier, 0.1), (ProcRole.Comms, 0.08), (ProcRole.Stealth, 0.08), (ProcRole.Salvager, 0.1), (ProcRole.IceHauler, 0.1)],
+        _ => [(ProcRole.Gunship, 0.13), (ProcRole.Freighter, 0.08), (ProcRole.Miner, 0.04), (ProcRole.Tender, 0.06), (ProcRole.Liner, 0.08), (ProcRole.Lancer, 0.12),
+            (ProcRole.Carrier, 0.16), (ProcRole.Comms, 0.07), (ProcRole.Stealth, 0.03), (ProcRole.Salvager, 0.09), (ProcRole.IceHauler, 0.14)],
+    });
+
+    /// <summary>Is the role a warship's (it arms first and carries little)?</summary>
+    public static bool Warship(ProcRole r) => r is ProcRole.Gunship or ProcRole.Lancer or ProcRole.Stealth;
 }
 
 /// <summary>

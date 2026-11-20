@@ -47,10 +47,10 @@ public sealed class ModuleSocketTable
 {
     public const string Format = "call-of-slop-module-sockets/1";
     public const int MostSide = 30; // the formats' planned limit (whole metres): sockets and modules up to 30x30
-    public const int BuiltSide = 3; // what the part kit builds now (1x1 to 3x3)
+    public const int BuiltSide = 6; // what the part kit builds now (1x1 to 3x3, and 4x4, 4x6, 6x6)
 
     public int Most = MostSide;
-    public List<(int W, int L)> Built = [(1, 1), (1, 2), (1, 3), (2, 2), (2, 3), (3, 3)];
+    public List<(int W, int L)> Built = [(1, 1), (1, 2), (1, 3), (2, 2), (2, 3), (3, 3), (4, 4), (4, 6), (6, 6)];
     public float MassPerM2 = 3000, ThrustPerM2 = 250_000;
     public float DepthStep = 0.25f, DepthMost = 2f; // depth: steps, and at most this x the short side
     public float AboveStep = 0.5f, AboveMost = 4f; // above: steps, and at most this x the long side

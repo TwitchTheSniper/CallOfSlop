@@ -22,7 +22,7 @@ public sealed class ModuleSocketParts : IPartGenerator
     private const string Group = "Ship Modules";
     private const string PlateC = "#3d444c", RimC = "#d8a320", BoltC = "#8c939b", PlugC = "#c9a21c", PlugTopC = "#5a6168", LugC = "#2b2f34", LampC = "#39465a", FrameC = "#4a525b";
 
-    private static readonly (int W, int L)[] Sizes = [(1, 1), (1, 2), (1, 3), (2, 2), (2, 3), (3, 3)];
+    private static readonly (int W, int L)[] Sizes = [(1, 1), (1, 2), (1, 3), (2, 2), (2, 3), (3, 3), (4, 4), (4, 6), (6, 6)]; // (4 to 6 m: the procedural ships' big reactors, heavy drives and berths, 2026-11-20)
 
     private const double Back = -0.5; // a plate's back (the bottom of its first cell)
     private const double PlateTop = -0.38; // the plate's face, where its "module" socket is
@@ -67,18 +67,28 @@ public sealed class ModuleSocketParts : IPartGenerator
     private static readonly (string Name, string Type, double U, double V, int Area)[] Others =
         [("Ammo A", "feed", 0.5, 0.15, 1), ("Chute A", "chute", 0.5, 0.85, 4), ("Chute B", "chute", 0.85, 0.85, 9)];
 
-    /// <summary>The back's sockets: Medium at each metre cell, Small on the 0.5 m grid inside each.</summary>
+    /// <summary>
+    /// The back's sockets: Medium at each metre cell, Small on the 0.5 m grid inside each (a plate over 3 x 3 m: inside its corner cells
+    /// only, so it stays inside a part's 64 sockets; it still bolts onto a Small hull by any corner, and the rest weld where they meet).
+    /// </summary>
     private static void BackSockets(Part p, int w, int l, double y, string dir)
     {
         for (var i = 0; i < w; i++)
             for (var j = 0; j < l; j++)
             {
                 p.Sock($"back.{i}.{j}", [i, y, j], dir);
+                if (!Dense(w, l) && !Corner(w, l, i, j))
+                    continue;
                 for (var a = 0; a < 2; a++)
                     for (var b = 0; b < 2; b++)
                         p.Sock($"b{i}{a}.{j}{b}", [i - 0.25 + a * 0.5, y, j - 0.25 + b * 0.5], dir, Small);
             }
     }
+
+    /// <summary>Is a size small enough for a Small socket on the 0.5 m grid of every cell (up to 3 x 3 m)?</summary>
+    private static bool Dense(int w, int l) => w * l <= 9;
+
+    private static bool Corner(int w, int l, int i, int j) => (i == 0 || i == w - 1) && (j == 0 || j == l - 1);
 
     /// <summary>The bolts round a plate's rim, every 0.5 m, standing on its drawn face (detail).</summary>
     private static void Bolts(Part p, int w, int l, double top)
@@ -156,12 +166,15 @@ public sealed class ModuleSocketParts : IPartGenerator
             for (var j = 0; j < l; j++)
             {
                 p.Sock($"top.{i}.{j}", [i, y1, j], "+y");
+                if (!Dense(w, l) && !Corner(w, l, i, j))
+                    continue; // (over 3 x 3 m: the Small grid on the corner cells only, as on the plate's back)
                 for (var a = 0; a < 2; a++)
                     for (var b = 0; b < 2; b++)
                         p.Sock($"t{i}{a}.{j}{b}", [i - 0.25 + a * 0.5, y1, j - 0.25 + b * 0.5], "+y", Small);
             }
-        // A Small part in each cell's middle (one 0.5 m wide clears the corner lugs): after every older socket, since saves keep links by socket index.
-        for (var i = 0; i < w; i++)
+        // A Small part in each cell's middle (one 0.5 m wide clears the corner lugs): after every older socket, since saves keep links by
+        // socket index (over 3 x 3 m none: the Medium socket there takes a part, and a part's sockets stop at 64).
+        for (var i = 0; i < w && Dense(w, l); i++)
             for (var j = 0; j < l; j++)
                 p.Sock($"s{i}.{j}", [i, y1, j], "+y", Small);
         var area = w * l;
