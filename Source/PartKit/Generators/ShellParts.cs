@@ -152,10 +152,18 @@ public sealed class ShellParts : IPartGenerator
     /// carrying the cables, consoles with small lamps on both arms and the link helmet hung from the spine, down over the
     /// sitter's head. The solid boxes are the old chair's (the seated pose fits them); the machinery is detail. Faces that
     /// meet are 3 mm or more apart (z-fighting.md). The link-up seen from inside it is Ui/UiShellLink.cs.
+    /// The helmet, its arm and the rod the arm rides on are a "helmet" rig (Sean, 2026-11-20): they stand <see cref="HelmetLift"/>
+    /// up in the part file, clear of a sitter's head, and are drawn down by it while someone sits in the chair or wears a shell
+    /// from it (ConstructRender.HelmetDrop). The coordinates below are the helmet down, on the sitter; <c>U</c> lifts them.
     /// </summary>
+    /// <summary>How far a Shell Control Chair's helmet stands up off a sitter's head when the chair is empty.</summary>
+    private const double HelmetLift = 0.3;
+
     private static Part Chair()
     {
         const string Pad = "#262c33", Metal = "#4a535c", Cable = "#14171a", Green = "#56e07a";
+        var helmet = Kw(("rig", "helmet"), ("travel", HelmetLift));
+        double U(double y) => y + HelmetLift; // (a helmet box's height as it stands, up)
         var p = new Part("Shell Control Chair", Small, Section, $"A link couch: sit in it and its helmet wakes you in the nearest free Robot Shell on its channel, up to {Py.G(Range / 1000.0)} km away. Your body waits here.", role: "seat", tool: "wrench", group: "Logic", color: Seat);
         p.Add(Box([-0.28, 0, -0.3], [0.28, 0.42, 0.3], hidden: true)); // the couch's solid (the seated pose fits it); drawn below as a pedestal
         p.Add(Box([-0.28, 0.4, 0.22], [0.28, 1.15, 0.34], Dark)); // back (solid)
@@ -175,10 +183,10 @@ public sealed class ShellParts : IPartGenerator
             p.Add(Box(Lo(0.3, 0.6, -0.25, 0.35), Hi(0.3, 0.63, 0.18, 0.35), Joint, detail: true)); // the arm rail
             p.Add(Box(Lo(0.315, 0.42, 0.06, 0.335), Hi(0.315, 0.6, 0.09, 0.335), Joint, detail: true)); // its strut
             p.Add(Box(Lo(0.29, 0.633, -0.25, 0.36), Hi(0.29, 0.67, 0.0, 0.36), Joint, detail: true)); // the console
-            p.Add(Box(Lo(0.31, 0.06, 0.26, 0.27), Hi(0.31, 1.08, 0.3, 0.27), Cable, detail: true)); // a cable down outside the back
-            p.Add(Box(Lo(0.31, 1.04, 0.2, 0.23), Hi(0.31, 1.08, 0.26, 0.23), Cable, detail: true)); // into the helmet's side
-            p.Add(Box(Lo(0.235, 1.03, -0.2, 0.175), Hi(0.235, 1.347, 0.22, 0.175), Dark, detail: true)); // the helmet's side
-            p.Add(Box(Lo(0.235, 1.24, -0.2, 0.239), Hi(0.235, 1.27, 0.22, 0.239), Visor, detail: true)); // its lamp band
+            p.Add(Box(Lo(0.31, 0.06, 0.26, 0.27), Hi(0.31, U(1.08), 0.3, 0.27), Cable, detail: true)); // a cable down outside the back (up to where the helmet's lead meets it raised)
+            p.Add(Box(Lo(0.31, U(1.04), 0.2, 0.23), Hi(0.31, U(1.08), 0.26, 0.23), Cable, detail: true, shape: helmet)); // into the helmet's side
+            p.Add(Box(Lo(0.235, U(1.03), -0.2, 0.175), Hi(0.235, U(1.347), 0.22, 0.175), Dark, detail: true, shape: helmet)); // the helmet's side
+            p.Add(Box(Lo(0.235, U(1.24), -0.2, 0.239), Hi(0.235, U(1.27), 0.22, 0.239), Visor, detail: true, shape: helmet)); // its lamp band
         }
         p.Add(Box([0.31, 0.673, -0.22], [0.34, 0.682, -0.19], Lamp, detail: true)); // console lamps: the link lamp, amber
         p.Add(Box([0.31, 0.673, -0.16], [0.34, 0.682, -0.13], Green, detail: true));
@@ -190,13 +198,14 @@ public sealed class ShellParts : IPartGenerator
         p.Add(Box([-0.03, 0.006, 0.455], [0.03, 0.063, 0.7], Cable, detail: true)); // the conduit along the floor
         foreach (var (y, c) in new[] { (0.7, Visor), (0.85, Green), (1.0, Visor), (1.15, Green) })
             p.Add(Box([0.045, y, 0.45], [0.062, y + 0.03, 0.455], c, detail: true)); // lamps down the spine
-        p.Add(Box([-0.08, 1.444, -0.04], [0.08, 1.52, 0.343], Metal, detail: true)); // the helmet's arm
-        p.Add(Box([-0.23, 1.35, -0.2], [0.23, 1.44, 0.22], Dark, detail: true)); // the helmet: crown
-        p.Add(Box([-0.175, 1.06, 0.16], [0.175, 1.347, 0.22], Dark, detail: true)); // its back
-        p.Add(Box([-0.175, 1.24, 0.22], [0.175, 1.27, 0.224], Visor, detail: true)); // the lamp band round its back
-        p.Add(Box([-0.175, 1.28, -0.2], [0.175, 1.347, -0.14], Dark, detail: true)); // its brow
-        p.Add(Box([-0.172, 1.06, -0.17], [0.172, 1.14, -0.135], Visor, detail: true)); // its visor over the eyes
-        p.Add(Box([-0.12, 1.523, -0.06], [0.12, 1.54, 0.12], Joint, detail: true)); // the vent plate on the arm
+        p.Add(Box([-0.035, U(1.114), 0.37], [0.035, U(1.514), 0.42], Joint, detail: true, shape: helmet)); // the rod the arm rides up and down on, out of the spine's top
+        p.Add(Box([-0.09, U(1.444), -0.04], [0.09, U(1.524), 0.46], Metal, detail: true, shape: helmet)); // the helmet's arm, its collar round the spine's top
+        p.Add(Box([-0.23, U(1.35), -0.2], [0.23, U(1.44), 0.22], Dark, detail: true, shape: helmet)); // the helmet: crown
+        p.Add(Box([-0.175, U(1.06), 0.16], [0.175, U(1.347), 0.22], Dark, detail: true, shape: helmet)); // its back
+        p.Add(Box([-0.175, U(1.24), 0.22], [0.175, U(1.27), 0.224], Visor, detail: true, shape: helmet)); // the lamp band round its back
+        p.Add(Box([-0.175, U(1.28), -0.2], [0.175, U(1.347), -0.14], Dark, detail: true, shape: helmet)); // its brow
+        p.Add(Box([-0.172, U(1.06), -0.17], [0.172, U(1.14), -0.135], Visor, detail: true, shape: helmet)); // its visor over the eyes
+        p.Add(Box([-0.12, U(1.527), -0.06], [0.12, U(1.544), 0.12], Joint, detail: true, shape: helmet)); // the vent plate on the arm
         p.Sock("bottom", [0, 0, 0], "-y");
         p.Sock("back", [0, 0.6, 0.34], "+z");
         p.Sock("+x", [0.36, 0.2, 0], "+x");
