@@ -893,7 +893,7 @@ public sealed partial class Construct
 
     /// <summary>
     /// The seam links (<see cref="SeamLinks"/>): free structural sockets of parts in different freeform frames that meet within
-    /// the tolerance, face to face. Nothing allocates.
+    /// the tolerance, face to face. Allocates its scratch (only bodies with freeform welds, on a full rebuild).
     /// </summary>
     private void BuildSeamLinks()
     {
@@ -910,45 +910,107 @@ public sealed partial class Construct
         }
         var cosLimit = -MathF.Cos(SeamAngleDeg * MathF.PI / 180f);
         var pad = new Vector3(SeamTolerance + 0.01f);
+        // The pairs whose bounds meet, by a sweep along the body's longest axis (every pair tested was 16 million on a 5,700-part
+        // capital ship, 67 ms a rebuild), then taken in the order the pair loop took them (i, then j), so the links come out exactly as they did.
+        var lo = new Vector3(float.MaxValue);
+        var hi = new Vector3(float.MinValue);
         for (var i = 0; i < PartCount; i++)
         {
-            if (Parts[i].Broken)
+            lo = Vector3.Min(lo, mn[i]);
+            hi = Vector3.Max(hi, mx[i]);
+        }
+        var ext = hi - lo;
+        var ax = ext.X >= ext.Y && ext.X >= ext.Z ? 0 : ext.Y >= ext.Z ? 1 : 2;
+        var order = new int[PartCount];
+        var keys = new float[PartCount];
+        for (var i = 0; i < PartCount; i++)
+        {
+            order[i] = i;
+            keys[i] = mn[i][ax];
+        }
+        Array.Sort(keys, order);
+        var pairs = new List<long>();
+        for (var a = 0; a < PartCount; a++)
+        {
+            var pi = order[a];
+            if (Parts[pi].Broken)
                 continue;
-            for (var j = i + 1; j < PartCount; j++)
+            for (var b = a + 1; b < PartCount; b++)
             {
-                if (frame[i] == frame[j] || Parts[j].Broken)
+                var pj = order[b];
+                if (mn[pj][ax] - pad.X > mx[pi][ax])
+                    break; // (sorted by their low end on the axis: none further on can meet it)
+                if (frame[pi] == frame[pj] || Parts[pj].Broken)
                     continue;
-                if (mn[i].X - pad.X > mx[j].X || mn[j].X - pad.X > mx[i].X || mn[i].Y - pad.Y > mx[j].Y || mn[j].Y - pad.Y > mx[i].Y
-                    || mn[i].Z - pad.Z > mx[j].Z || mn[j].Z - pad.Z > mx[i].Z)
+                if (mn[pi].X - pad.X > mx[pj].X || mn[pj].X - pad.X > mx[pi].X || mn[pi].Y - pad.Y > mx[pj].Y || mn[pj].Y - pad.Y > mx[pi].Y
+                    || mn[pi].Z - pad.Z > mx[pj].Z || mn[pj].Z - pad.Z > mx[pi].Z)
                     continue;
-                var di = Parts[i].D;
-                var dj = Parts[j].D;
-                for (var s = 0; s < di.Sockets.Length; s++)
+                pairs.Add(pi < pj ? (long)pi << 32 | (uint)pj : (long)pj << 32 | (uint)pi);
+            }
+        }
+        pairs.Sort();
+        // Each part's free structural sockets in the rest frame, made once (a cut plate has dozens and is in many pairs).
+        var first = new int[PartCount];
+        Array.Fill(first, -1);
+        var socks = new List<(int S, Vector3 At, Vector3 Dir)>();
+        var near = new Vector3(SeamTolerance + 0.5f); // (a socket further than this outside the other part's bounds meets none of its sockets)
+        foreach (var pair in pairs)
+        {
+            var i = (int)(pair >> 32);
+            var j = (int)(pair & 0xffffffff);
+            FreeSockets(i, first, socks);
+            FreeSockets(j, first, socks);
+            var ei = first[i] + SockCount(i, first, socks);
+            var ej = first[j] + SockCount(j, first, socks);
+            for (var a = first[i]; a < ei; a++)
+            {
+                var (s, pa, da) = socks[a];
+                if (SeamUsed(i, s) || pa.X < mn[j].X - near.X || pa.X > mx[j].X + near.X || pa.Y < mn[j].Y - near.Y || pa.Y > mx[j].Y + near.Y
+                    || pa.Z < mn[j].Z - near.Z || pa.Z > mx[j].Z + near.Z)
+                    continue;
+                for (var b = first[j]; b < ej; b++)
                 {
-                    if (di.Sockets[s].Kind != SocketKind.Struct || di.HasJoint && s == di.LeafIndex || SocketUsed(i, s) || SeamUsed(i, s))
+                    var (t, pb, db) = socks[b];
+                    if (SeamUsed(j, t))
                         continue;
-                    SocketAt(i, s, out var ai, out var ri);
-                    var pa = ToRest(Parts[i].Seg, ai);
-                    var da = DirToRest(Parts[i].Seg, ConstructParts.DirVector(ri));
-                    for (var t = 0; t < dj.Sockets.Length; t++)
+                    if (Vector3.DistanceSquared(pa, pb) > SeamTolerance * SeamTolerance || Vector3.Dot(da, db) > cosLimit)
+                        continue;
+                    if (SeamCount < MaxSeamLinks)
                     {
-                        if (dj.Sockets[t].Kind != SocketKind.Struct || dj.HasJoint && t == dj.LeafIndex || SocketUsed(j, t) || SeamUsed(j, t))
-                            continue;
-                        SocketAt(j, t, out var aj, out var rj);
-                        if (Vector3.DistanceSquared(pa, ToRest(Parts[j].Seg, aj)) > SeamTolerance * SeamTolerance
-                            || Vector3.Dot(da, DirToRest(Parts[j].Seg, ConstructParts.DirVector(rj))) > cosLimit)
-                            continue;
-                        if (SeamCount < MaxSeamLinks)
-                        {
-                            if (SeamCount == SeamLinks.Length)
-                                Array.Resize(ref SeamLinks, Math.Min(MaxSeamLinks, Math.Max(16, SeamCount * 2)));
-                            SeamLinks[SeamCount++] = new CLink { A = (ushort)i, SA = (byte)s, B = (ushort)j, SB = (byte)t };
-                        }
-                        break;
+                        if (SeamCount == SeamLinks.Length)
+                            Array.Resize(ref SeamLinks, Math.Min(MaxSeamLinks, Math.Max(16, SeamCount * 2)));
+                        SeamLinks[SeamCount++] = new CLink { A = (ushort)i, SA = (byte)s, B = (ushort)j, SB = (byte)t };
                     }
+                    break;
                 }
             }
         }
+    }
+
+    /// <summary>Part <paramref name="i"/>'s free structural sockets (not its joint's leaf, no link on them) into <paramref name="socks"/> from <c>first[i]</c>, once.</summary>
+    private void FreeSockets(int i, int[] first, List<(int S, Vector3 At, Vector3 Dir)> socks)
+    {
+        if (first[i] >= 0)
+            return;
+        first[i] = socks.Count;
+        var d = Parts[i].D;
+        for (var s = 0; s < d.Sockets.Length; s++)
+        {
+            if (d.Sockets[s].Kind != SocketKind.Struct || d.HasJoint && s == d.LeafIndex || SocketUsed(i, s))
+                continue;
+            SocketAt(i, s, out var at, out var r);
+            socks.Add((s, ToRest(Parts[i].Seg, at), DirToRest(Parts[i].Seg, ConstructParts.DirVector(r))));
+        }
+        socks.Add((-1, default, default)); // (the end of its run)
+    }
+
+    /// <summary>How many sockets part <paramref name="i"/> has in <paramref name="socks"/> (up to its end mark).</summary>
+    private static int SockCount(int i, int[] first, List<(int S, Vector3 At, Vector3 Dir)> socks)
+    {
+        var n = 0;
+        while (socks[first[i] + n].S >= 0)
+            n++;
+        return n;
     }
 
     private bool SeamUsed(int part, int socket)

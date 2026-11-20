@@ -285,6 +285,11 @@ public sealed partial class Game : IConstructTargets
 
     private void ConstructFireFx(in CFireEvent e, double now)
     {
+        if (e.Kind is CFireKind.Bore or CFireKind.Scrap)
+        {
+            BoreFx(e, now); // (GameSandboxBores.cs)
+            return;
+        }
         if (e.Kind == CFireKind.RoundOut)
         {
             if (!IsServer)

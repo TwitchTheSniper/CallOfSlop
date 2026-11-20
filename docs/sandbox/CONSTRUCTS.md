@@ -146,6 +146,7 @@ Construct weapons (a craft's radar and lock among them), merged receivers, weapo
 - Merged receivers
 - Weapon builder parts in Sandbox
 - The Gun Workbench (wp01, part 2)
+- Capital battles: railgun bores through whole ships, spall, holes drawn on every PC, break-up, scrap (design/capital-battles.md)
 
 ## [Flight](constructs/flight.md), 37 KB
 

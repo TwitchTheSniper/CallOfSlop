@@ -290,6 +290,10 @@ public static partial class ConstructNet
             }
             else if (e.Kind == CFireKind.RoundOut)
                 w.Vec(e.At).Vec(e.To);
+            else if (e.Kind == CFireKind.Bore)
+                w.Vec(e.At).Vec(e.To).U8((byte)Math.Clamp((int)MathF.Round(e.Radius * 100), 1, 255)); // (protocol 384: calibre in cm)
+            else if (e.Kind == CFireKind.Scrap)
+                w.Vec(e.At).Vec(e.To).U8(HalfByte(e.Half.X)).U8(HalfByte(e.Half.Y)).U8(HalfByte(e.Half.Z)); // (protocol 384)
             else if (e.Kind == CFireKind.ShellLand)
                 w.U16(e.Shell).Vec(e.At).F32(e.Radius).U8(e.Muzzle).U8(e.Ext); // (protocol 150; the look, protocol 195: MegaLook)
             else if (e.Kind == CFireKind.ShellStop)
@@ -382,6 +386,10 @@ public static partial class ConstructNet
             }
             else if (kind == CFireKind.RoundOut)
                 e = new CFireEvent { Kind = kind, At = r.Vec(), To = r.Vec() };
+            else if (kind == CFireKind.Bore)
+                e = new CFireEvent { Kind = kind, At = r.Vec(), To = r.Vec(), Radius = r.U8() / 100f };
+            else if (kind == CFireKind.Scrap)
+                e = new CFireEvent { Kind = kind, At = r.Vec(), To = r.Vec(), Half = new Vector3(r.U8(), r.U8(), r.U8()) * 0.01f };
             else if (kind == CFireKind.ShellLand)
                 e = new CFireEvent { Kind = kind, Shell = r.U16(), At = r.Vec(), Radius = r.F32(), Muzzle = r.U8(), Ext = r.U8() };
             else if (kind == CFireKind.ShellStop)

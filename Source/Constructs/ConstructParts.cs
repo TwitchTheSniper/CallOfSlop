@@ -645,7 +645,7 @@ public sealed partial class ConstructPartDef
     public WorksKind WorksKind; // "worksPiece": {"kind"}: a mount, or the kind of works it is
     public float WorksServes; // "worksPiece": {"serves"}: what it carries, in its kind's unit (N of thrust, kW of beam, kg of ordnance)
     public string GunReceiver = "", GunAction = ""; // a gun on a weapon builder receiver (its action: the receiver's stock one unless named)
-    public float GunDamage, GunRpm, GunSpread, GunRange, GunReload, GunSpeed, GunBlast, GunBlastDamage, GunKick; // a heavy gun's own numbers
+    public float GunDamage, GunRpm, GunSpread, GunRange, GunReload, GunSpeed, GunBlast, GunBlastDamage, GunKick, GunPierce; // a heavy gun's own numbers (GunPierce: a bore's energy budget, ConstructBores.cs)
     public float GunMaxRange = 300f; // how far its rounds reach at all
     public int GunMag, GunPellets = 1;
     public string[] GunFlags = [];
@@ -2226,11 +2226,13 @@ public static partial class ConstructParts
     /// </summary>
     private static void ParseGun(ConstructPartDef d, JsonElement b, string file, string bw)
     {
-        Known(b, ["shell", "thrust", "burn", "turn", "prox", "crater", "receiver", "action", "damage", "rpm", "spread", "range", "maxRange", "mag", "reload", "pellets", "speed", "flags", "blast", "blastDamage", "muzzle", "fx", "kick", "soundOf", "energy", "flak"], bw);
+        Known(b, ["shell", "thrust", "burn", "turn", "prox", "crater", "receiver", "action", "damage", "rpm", "spread", "range", "maxRange", "mag", "reload", "pellets", "speed", "flags", "blast", "blastDamage", "muzzle", "fx", "kick", "soundOf", "energy", "flak", "pierce"], bw);
         d.GunMaxRange = Opt(b, "maxRange") is { } mr ? Num(mr, file, "gun.maxRange") : 300f;
         Range(d.GunMaxRange, 1, 1000, file, "gun.maxRange");
         d.GunKick = Opt(b, "kick") is { } kick ? Num(kick, file, "gun.kick") : 0f;
         Range(d.GunKick, 0, 100000, file, "gun.kick");
+        d.GunPierce = Opt(b, "pierce") is { } pierce ? Num(pierce, file, "gun.pierce") : 0f; // (a penetrating round's energy budget: ConstructBores.cs)
+        Range(d.GunPierce, 0, 1000000, file, "gun.pierce");
         d.GunFx = GunFx.Bullet;
         if (Opt(b, "fx") is { } fx)
         {
