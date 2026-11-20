@@ -10,7 +10,8 @@ namespace CallOfSlop;
 /// The command view's station card (docs/sandbox/constructs/station.md "Markets"; Karl, 2026-11-18: a station "should show up on the friendly
 /// market as whatever goods are there to trade", and the first loop is docking there and selling mined ore): who holds it and whether they
 /// trade with you, its berths, its market (each good's stock, what it pays and asks), and, when you are aboard a ship moored at one of its
-/// berths, SELL CARGO with what the station would pay for what that ship's bins hold.
+/// berths, TRADE CARGO with what the station would put on your tab for what that ship's bins hold, and its parts to take or trade (no credits:
+/// what a station's power owes you is your tab with it, Game/GameTabs.cs).
 /// </summary>
 public sealed partial class Ui
 {
@@ -23,15 +24,17 @@ public sealed partial class Ui
         public bool Trades;
         public string[] Goods;
         public bool[] Buys; // good by good: can the local player buy it into the moored ship (stock left, the station sells it, they trade)
+        public bool[] Sells; // a part by its row: does the local player carry one the station takes (goods' rows: false)
+        public string Tab; // what the station's power owes the local player
         public int GoodCount;
         public ushort Ship; // the moored ship the local player is aboard (0: none)
         public string ShipLine, SellLabel;
         public bool CanSell;
     }
 
-    private static readonly string MarketHead = $"{"GOOD",-12}{"STOCK",9}   {"BUYS",6}   {"SELLS",6}   CR A UNIT";
+    private static readonly string MarketHead = $"{"GOOD",-12}{"STOCK",9}   {"BUYS",6}   {"SELLS",6}   VALUE A UNIT";
 
-    private CmdStationText _cmdStation = new() { Held = "", Trade = "", Goods = new string[StationMarkets.MaxGoods], Buys = new bool[StationMarkets.MaxGoods], ShipLine = "", SellLabel = "" };
+    private CmdStationText _cmdStation = new() { Held = "", Trade = "", Goods = new string[StationMarkets.MaxGoods], Buys = new bool[StationMarkets.MaxGoods], Sells = new bool[StationMarkets.MaxGoods], Tab = "", ShipLine = "", SellLabel = "" };
 
     private void CmdStationRead(Game g, Construct c, double now)
     {
@@ -55,13 +58,35 @@ public sealed partial class Ui
         k.Held = (CrewPowers.Of(power)?.Name ?? "NOBODY").ToUpperInvariant();
         k.Trades = power == 0 || me == null || g.CrewStanding(power, me.Id) >= 0;
         k.Trade = k.Trades ? "TRADES WITH YOU" : "WON'T TRADE WITH YOU";
+        k.Tab = me == null || power == 0 ? "" : g.TabUnlimited ? "UNLIMITED (CREATIVE)" : string.Create(inv, $"THEY OWE YOU {g.TabOf(me.Id, power):N0}");
         var goods = StationMarkets.All[m.Def].Goods;
         for (var i = 0; i < goods.Length && i < m.Stock.Length; i++)
         {
             var name = RecyclingTable.Current.NameOf(goods[i].Material).ToUpperInvariant();
             var full = goods[i].Buy > 0 && m.Stock[i] >= goods[i].Most;
             k.Buys[k.GoodCount] = k.Trades && goods[i].Sell > 0 && m.Stock[i] > 0;
+            k.Sells[k.GoodCount] = false;
             k.Goods[k.GoodCount++] = string.Create(inv, $"{name,-12}{m.Stock[i],9:N0}   {(full ? "FULL" : goods[i].Buy.ToString("0.00", inv)),6}   {goods[i].Sell,6:0.00}");
+        }
+        // Its parts (Karl, 2026-11-20: parts are physical and carry a value): BUY takes one into a Storage Volume of the moored ship you are
+        // aboard, SELL trades every one its stores hold.
+        var parts = StationMarkets.All[m.Def].Parts;
+        Construct? aboard = null;
+        if (me != null)
+            foreach (var (ship, _) in m.Moored)
+                if (g.Constructs.Get(ship) is { } sh && g.StationAboard(me, sh))
+                    aboard = sh;
+        for (var j = 0; j < parts.Length && goods.Length + j < m.Stock.Length && k.GoodCount < k.Goods.Length; j++)
+        {
+            var i = goods.Length + j;
+            var pd = ConstructParts.Def(parts[j].Part);
+            var name = (pd?.Name ?? "?").ToUpperInvariant();
+            if (name.Length > 12)
+                name = name[..12];
+            var full = parts[j].Buy > 0 && m.Stock[i] >= parts[j].Most;
+            k.Buys[k.GoodCount] = k.Trades && parts[j].Sell > 0 && m.Stock[i] > 0;
+            k.Sells[k.GoodCount] = k.Trades && parts[j].Buy > 0 && !full && aboard != null && g.StationShipParts(aboard, parts[j].Part) > 0;
+            k.Goods[k.GoodCount++] = string.Create(inv, $"{name,-12}{m.Stock[i],9:N0}   {(full ? "FULL" : parts[j].Buy.ToString("0.0", inv)),6}   {parts[j].Sell,6:0.0}");
         }
         // Aboard a ship moored here: what the station would pay for its bins.
         if (me == null)
@@ -76,7 +101,7 @@ public sealed partial class Ui
             k.CanSell = k.Trades && units > 0;
             k.SellLabel = !k.Trades ? "THEY WON'T BUY FROM YOU"
                 : units == 0 ? "NOTHING ABOARD IS WANTED HERE"
-                : string.Create(inv, $"SELL CARGO: {units:N0} UNITS FOR {Math.Floor(value):N0} CR");
+                : string.Create(inv, $"TRADE CARGO: {units:N0} UNITS FOR {Math.Floor(value):N0} ON YOUR TAB");
             break;
         }
     }
@@ -90,9 +115,9 @@ public sealed partial class Ui
         ref var k = ref _cmdCard;
         ref var t = ref _cmdStation;
         var pad = 22 * _scale;
-        var w = 480 * _scale;
+        var w = 540 * _scale; // (room for a part row's SELL beside its BUY)
         var line = 19 * _scale;
-        var rows = 6 + (k.Orbit.Length > 0 ? 1 : 0) + (t.GoodCount > 0 ? t.GoodCount + 2 : 0) + (t.Ship != 0 ? 3 : 1);
+        var rows = 6 + (t.Tab.Length > 0 ? 1 : 0) + (k.Orbit.Length > 0 ? 1 : 0) + (t.GoodCount > 0 ? t.GoodCount + 2 : 0) + (t.Ship != 0 ? 3 : 1);
         var p0 = new float2(_cvOrg.X + _cvSize.X - pad - w, _cvOrg.Y + pad);
         var p1 = p0 + new float2(w, 64 * _scale + rows * line + 60 * _scale);
         CmdPlate(dl, p0, p1, fade, CmdStation);
@@ -121,6 +146,8 @@ public sealed partial class Ui
         Row(dl, "BERTHS", k.Systems, CmdStation, ref y);
         Row(dl, "HELD BY", t.Held, CmdWhite, ref y);
         Row(dl, "TRADE", t.Trade, t.Trades ? CmdGreen : CmdRed, ref y);
+        if (t.Tab.Length > 0)
+            Row(dl, "YOUR TAB", t.Tab, CmdAmber, ref y); // (no credits: what they owe you, spendable only with them: GameTabs.cs)
         if (t.GoodCount > 0)
         {
             y += 6 * _scale;
@@ -130,10 +157,14 @@ public sealed partial class Ui
             for (var i = 0; i < t.GoodCount; i++)
             {
                 CmdText(dl, new float2(x + col, y - 1 * _scale), 11.5f, CmdCyan, fade, t.Goods[i], 0, false);
-                // Aboard a ship moored here: BUY fills its bins with as much of the good as they hold and your credits pay for.
+                // Aboard a ship moored here: BUY fills its bins with as much of the good as they hold and your tab pays for (a part: one, into a Storage
+                // Volume aboard); SELL, on a part's row, trades every one the ship's stores hold.
                 if (t.Ship != 0 && CmdButton(dl, new float2(p1.X - 66 * _scale, y - 2 * _scale), new float2(p1.X - 14 * _scale, y + 14 * _scale), "BUY",
                         t.Buys[i] ? CmdGreen : CmdDim, fade, false, 10) && t.Buys[i])
                     g.SandboxFaction(FactionOp.StationBuy, t.Ship, i);
+                if (t.Ship != 0 && t.Sells[i] && CmdButton(dl, new float2(p1.X - 122 * _scale, y - 2 * _scale), new float2(p1.X - 70 * _scale, y + 14 * _scale), "SELL",
+                        CmdAmber, fade, false, 10))
+                    g.SandboxFaction(FactionOp.StationSellPart, t.Ship, i);
                 y += line * 0.9f;
             }
             y += line * 0.3f;

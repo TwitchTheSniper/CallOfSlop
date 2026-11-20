@@ -50,7 +50,8 @@ Karl says otherwise.
 - **Ships see other ships** (radar and lock-on).
 - **The reactor cap is a balance device.** A ship scales through burst, which costs hull space for capacitors; that stops
   missile and meme-boat spam. Station reactors are heavier and hold more, and don't pay their way on a ship.
-- **Currency is in.** When it arrives and what is bought and sold are not set. NPCs have needs and wants.
+- **No currency: barter and a tab (Karl, 2026-11-20,** replacing "currency is in"). Goods and parts are physical and carry a value; an uneven
+  trade leaves a tab the power owes you, spendable only with that power, wiped by war or the power's fall (`Game/GameTabs.cs`). NPCs have needs and wants.
 - **NPC factions are kinds,** such as traders and mercenaries, details not fixed. The story's factions (IT Department, Clan
   MacSlop, the scammers, the Ministry of Slop) are archived with the story; the player faction system (F2) stays.
 - **NPCs are streamlined into assets;** the storylets stay archived.
@@ -62,7 +63,7 @@ Karl says otherwise.
 ### Open
 
 - Diplomacy: unknown.
-- Currency: when, and what is traded.
+- Trade: which goods each power needs, and how parts it buys get fitted.
 - Asteroids (none in the game yet) and a radar display (missile seekers, the Fire Director and the Long Range Sensor part
   exist; no display does).
 - Which resource each planet holds and how scarce it is; how a faction defends its planet (patrols, outposts, convoys to

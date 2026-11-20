@@ -3,7 +3,9 @@
   // The stations' markets (docs/sandbox/constructs/station.md "Markets"; Karl, 2026-11-18: "The first gameplay loop is being able to dock with
   // it and sell mined ores" and "as a logistics point, it should show up on the friendly market as whatever goods are there to trade").
   // A station is matched by its name (its pieces' section). "power": the NPC power that holds it (Crew/Factions, or a Powers folder): a power
-  // hostile to a player doesn't trade with them. Each good: "buy", what the station pays a unit (credits); "sell", what it asks a unit; "stock",
+  // hostile to a player doesn't trade with them. There are no credits (Karl, 2026-11-20: barter, option C): what a station pays goes on the seller's tab
+  // with its power, spendable only with that power, and what it asks comes off it (Game/GameTabs.cs). Each good: "buy", what the station pays a unit
+  // (value on a tab); "sell", what it asks a unit; "stock",
   // what it holds at the start; "most", what it holds at most (it buys no more past that). "margin": the share of what a station pays that its
   // power counts in its stock (the trade it does on it).
   // "haulers" (phase S2; Karl, 2026-11-18: "Haulers from other neutral factions can then send ships to buy goods and take them back to their
@@ -13,6 +15,17 @@
   // the route, "wait" seconds moored at each end. A hauler sets out from whichever of its stations is in the world being played
   // (Game/GameStationHaulers.cs); a station's "orbit" (km) is where it meets one at a station in another world.
   "margin": 0.25,
+  // What things are worth (value, in the old credit prices): a unit of each material, and a part from its Assembling recipe (its materials at these values
+  // and the parts in it at theirs) times "work". A part with no recipe is worth "noRecipe". A station's part trades at its value times "partBuy" (what
+  // it pays) and "partSell" (what it asks) unless the station's own row says "buy" or "sell". A material not listed is worth 0.5.
+  "values": {
+    "work": 1.25, "noRecipe": 2, "partBuy": 0.8, "partSell": 1.25,
+    "dirt": 0.01, "stone": 0.03, "sand": 0.03, "wood": 0.1, "planks": 0.2, "concrete": 0.1,
+    "iron ore": 0.15, "copper ore": 0.25, "gold ore": 1.1, "levite ore": 2,
+    "metal": 0.65, "steel": 1.2, "copper": 0.8, "gold": 3, "bronze": 1, "levite": 6,
+    "glass": 0.3, "rubber": 0.4, "cloth": 0.3, "laminate": 0.6, "circuits": 3.75,
+    "hydrogen": 0.4, "helium": 0.6, "oxidiser": 0.4, "ammo": 1.8
+  },
   "haulers": [
     { "power": "Traders", "ship": "Magpie Mining Ship", "count": 1, "from": "Caledon Highport", "to": "Glacier Watch", "goods": ["iron ore", "copper ore"], "back": ["steel"], "wait": 30 }
   ],
@@ -33,6 +46,15 @@
         { "good": "metal", "buy": 0.5, "sell": 0.8, "stock": 3000, "most": 30000 },
         { "good": "steel", "buy": 1.05, "sell": 1.4, "stock": 4000, "most": 30000 },
         { "good": "circuits", "buy": 3, "sell": 4.5, "stock": 500, "most": 5000 }
+      ],
+      // Parts (physical: taken into your inventory one at a time, and every one you carry traded at once), priced from their value.
+      "parts": [
+        { "part": "Battery", "stock": 6, "most": 20 },
+        { "part": "Fuel Tank", "stock": 4, "most": 12 },
+        { "part": "Cold Gas Thruster", "stock": 8, "most": 24 },
+        { "part": "Light Rocket Engine", "stock": 2, "most": 6 },
+        { "part": "Docking Hatch", "stock": 2, "most": 6 },
+        { "part": "Bulkhead Light", "stock": 10, "most": 30 }
       ]
     },
     {

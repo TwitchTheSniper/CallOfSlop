@@ -40,7 +40,7 @@ public static class CrewPlayersCheck
             return true;
         }
 
-        public void Pay(byte player, int credits) => Paid += credits;
+        public void Pay(byte player, byte power, int value) => Paid += value;
         public void Tell(byte player, string line) => Told.Add(line);
         public byte PlayerNamed(string name) => name == "Ada" && AdaHere ? (byte)0 : (byte)255;
         public bool AnyoneFor(byte power) => true;

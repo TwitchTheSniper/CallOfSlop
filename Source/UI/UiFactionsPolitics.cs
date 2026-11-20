@@ -5,7 +5,7 @@ namespace CallOfSlop;
 
 /// <summary>
 /// The Faction window's politics (docs/sandbox/design/faction-controllers.md phase 5): a faction's pacts with the world's powers (a leader proposes,
-/// takes an offer or breaks one; the server decides: GameCrewPolitics.cs), the call for allies' help, and the powers' contracts for credits anyone may
+/// takes an offer or breaks one; the server decides: GameCrewPolitics.cs), the call for allies' help, and the powers' contracts (paid on a tab: GameTabs.cs) anyone may
 /// take. Drawn only while the window is open.
 /// </summary>
 public sealed partial class Ui
@@ -121,7 +121,7 @@ public sealed partial class Ui
         if (game.ContractsCount == 0)
             return;
         ImGui.Separator();
-        ImGuiSafe.TextColored(Orange, "Contracts for credits");
+        ImGuiSafe.TextColored(Orange, "Contracts (paid on your tab with the power)");
         ImGuiSafe.TextColored(Dim, "A power gives work to those it trusts (standing 0 or more, or a pact). Done, it pays and thinks better of you; failed, it thinks less.");
         for (var i = 0; i < game.ContractsCount; i++)
         {
@@ -131,7 +131,7 @@ public sealed partial class Ui
             switch (c.State)
             {
                 case ContractState.Offered:
-                    ImGuiSafe.TextWrapped($"{what}. Pay {c.Pay} credits ({c.Until / 60 + 1} min to take it).");
+                    ImGuiSafe.TextWrapped($"{what}. Pay {c.Pay} on your tab ({c.Until / 60 + 1} min to take it).");
                     ImGui.SameLine();
                     if (ImGui.SmallButton("Take"u8))
                         game.SandboxFaction(FactionOp.ContractTake, c.Body, c.Serial);

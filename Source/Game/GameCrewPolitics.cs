@@ -74,20 +74,20 @@ public sealed partial class Game : IContractHost
             if (k == PactKind.Tribute && rel.PartyDue[i] != 0 && rel.Tick >= rel.PartyDue[i])
             {
                 var cost = rel.Rules.TributeCredits;
-                var why = CreditsPay(payer, cost);
+                var why = TabPay(payer, power, cost); // (tribute comes off the payer's tab with that power: GameTabs.cs)
                 rel.TributePaid(i, why == null);
                 if (why == null)
                 {
-                    FactionTell(payer, $"You paid {CrewPowers.Of(power)?.Name} {cost} credits of tribute for your faction.");
+                    FactionTell(payer, $"You paid {CrewPowers.Of(power)?.Name} {cost} of tribute off your tab with them, for your faction.");
                     if (PowersActive && power <= PowerControllers.N)
-                        Controllers.Powers[power].Stock += cost; // (credits and a power's units are taken one for one)
+                        Controllers.Powers[power].Stock += cost; // (a tab's value and a power's units are taken one for one)
                 }
                 else
                     FactionTellAll(party, $"The tribute to {CrewPowers.Of(power)?.Name} went unpaid ({why}): it lapses.");
             }
             else if (k == PactKind.Trade && minute)
             {
-                CreditsGive(payer, rel.Rules.TradeCredits);
+                TabGive(payer, power, rel.Rules.TradeCredits); // (a trade pact's share goes on the payer's tab with that power)
                 if (PowersActive && power <= PowerControllers.N)
                 {
                     Controllers.Powers[power].Stock += rel.Rules.TradePerMinute;
@@ -288,7 +288,7 @@ public sealed partial class Game : IContractHost
         return true;
     }
 
-    void IContractHost.Pay(byte player, int credits) => CreditsGive(player, credits);
+    void IContractHost.Pay(byte player, byte power, int value) => TabGive(player, power, value); // (on the taker's tab with the power that offered it)
 
     void IContractHost.Tell(byte player, string line)
     {

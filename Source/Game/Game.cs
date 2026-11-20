@@ -2490,8 +2490,8 @@ public sealed partial class Game : IDisposable
             case (byte)Msg.CrewRoster when !IsServer:
                 ReadCrewRoster(ref r); // own crews and prizes (GameCrewHire.cs)
                 break;
-            case (byte)Msg.Credits when !IsServer:
-                ReadCredits(ref r); // this player's credits (GameCrewHire.cs)
+            case (byte)Msg.Tabs when !IsServer:
+                ReadTabs(ref r); // what each power owes this player (GameTabs.cs)
                 break;
             case (byte)Msg.Intel when !IsServer:
                 ReadIntel(ref r); // what a questioned officer gave up (GameCrewFleet.cs)
