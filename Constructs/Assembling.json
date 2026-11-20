@@ -1602,7 +1602,7 @@
     {"output": "Magpie Bunk", "materials": {"steel": 20}, "parts": {"Tyre Carcass": 2}, "seconds": 5.0},
     {"output": "Magpie Cargo Rack", "materials": {"steel": 14, "rubber": 3}, "seconds": 4.1},
     {"output": "Magpie Drill Bay", "materials": {"steel": 2000, "concrete": 400}, "seconds": 180.0},
-    {"output": "Magpie Drive", "materials": {"steel": 360}, "parts": {"Gear Set": 20}, "seconds": 56.0},
+    {"output": "Magpie Drive", "materials": {"steel": 100}, "parts": {"Gear Set": 10}, "seconds": 17.0},
     {"output": "Magpie Engine Deck", "materials": {"steel": 2000, "concrete": 400}, "seconds": 180.0},
     {"output": "Magpie Flight Computer", "materials": {"steel": 60, "copper": 100}, "parts": {"Circuit Board": 6}, "seconds": 11.0, "minTier": 3},
     {"output": "Magpie Fold Desk", "materials": {"steel": 11, "concrete": 2}, "seconds": 3.6},

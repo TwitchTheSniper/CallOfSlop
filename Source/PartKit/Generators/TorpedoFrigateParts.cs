@@ -903,7 +903,7 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
             Sock(p, $"o2Tank{i}", Cx - Lw, Ft0 + 0.125, 35.65 + i * 0.85, "+x");
         for (var i = 0; i < 4; i++) // (the Robot Shell Docks along the engineering bulkhead's forward face, port of its door: Karl, 2026-11-17)
             Sock(p, $"shellDock{i}", Cx - Lw + 0.2 + CrewFittingsParts.DockHalf + i * (2 * CrewFittingsParts.DockHalf + 0.01), Ft0 + 0.125, 34.0, "-z");
-        Sock(p, "reactor", Cx + 3.1, Ft0, 35.5, "+y");
+        Sock(p, "reactor", Cx + 3.1, Ft0, 35.4, "+y"); // (35.4: its 2x2 module socket's room clears the Capacitor Bank aft)
         Sock(p, "board", Cx + Lw, Ft0 + 0.9, 40.6, "-x");
         Sock(p, "panel", Cx - Lw, Ft0 + 0.6, 38.0, "+x");
         Sock(p, "battery", Cx - Lw + 0.41, Ft0, 39.9, "+y"); // (its Ship Battery Bank, back to the port wall: Karl, 2026-11-18)
@@ -1830,7 +1830,7 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         foreach (var y in new[] { 0.95, 1.9 })
             Prism(p, [.. Enumerable.Range(0, 10).Select(i => O(y, 0.8, i))], [.. Enumerable.Range(0, 10).Select(i => O(y + 0.08, 0.8, i))], Frame, "dirty steel");
         foreach (var (x, z, col) in new[] { (0.82, 0.0, PipeBlue), (-0.82, 0.0, PipeBlue), (0.0, 0.82, PipeRed), (0.0, -0.82, PipeRed) })
-            p.Add(Box([x - 0.06, 0.25, z - 0.06], [x + 0.06, 2.95, z + 0.06], col, detail: true, shape: Kw(("finish", "painted steel"))));
+            p.Add(Box([x - 0.06, 0.25, z - 0.06], [x + 0.06, 2.72, z + 0.06], col, detail: true, shape: Kw(("finish", "painted steel")))); // (2.72: on its module plug, 0.22 m up, they stop under the deck)
         p.Add(Box([-0.6, 0.25, -0.6], [0.6, 2.6, 0.6], hidden: true));
         p.Add(Box([-0.84, 0.25, -0.86], [-0.5, 0.5, -0.82], Hazard, detail: true, shape: Kw(("finish", "hazard paint"))));
         p.Sock("bottom", [0, 0, 0], "-y");
@@ -2334,7 +2334,7 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
             Hang(bp, "Robot Shell", Hang(bp, "Robot Shell Dock", la, $"shellDock{i}", "wall"), "dock", "back");
         foreach (var d in new[] { "doorBayL", "doorBayR", "doorAirlock", "doorEngine" })
             Door(bp, la, d);
-        Hang(bp, "Zero Day Reactor", la, "reactor", "bottom");
+        ShipParts.FittedModule(bp, ShipParts.ModuleSocket(bp, Holder(bp, la, "reactor"), "reactor", 2, 2, kind: 2, above: 2.75), 2, 2, "Zero Day Reactor", "bottom"); // (a module on a 2x2 reactor socket, between its plug's lugs, module-sockets.md 11; the bells, 2.9 m apart and 2.7 m wide, wait for sockets past 3x3)
         Hang(bp, "Power Board", la, "board", "back");
         Hang(bp, "Engineer's Panel", la, "panel", "back");
         bp.HangTurned("Ship Battery Bank", Holder(bp, la, "battery"), "battery", "bottom", BuildingParts.RY270);
@@ -2521,6 +2521,7 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         o.File($"{BpOut}/Shuttle.json", PyJson.Dumps(ShuttleBlueprint(defs, shuttleOrder), 2) + "\n");
         o.File($"{BpOut}/Limpet.json", PyJson.Dumps(LimpetBlueprint(defs, limpetOrder), 2) + "\n");
         o.File($"{BpOut}/ZeroDayFrigate.json", PyJson.Dumps(Blueprint(defs), 2) + "\n");
+        o.File($"{BpOut}/ModuleZeroDayReactor2x2.json", ModuleSocketParts.DesignText("Module Zero Day Reactor 2x2", 2, 2, "reactor", ["reactor"], "a Zero Day Reactor on a 2x2 plug: 3 MW, heavy", "torpedo frigate", [("Zero Day Reactor", 0, ModuleSocketParts.CentreTop(2, 2), "bottom", 0)]));
         o.File($"{BpOut}/ZeroDayFrigateCrewed.json", PyJson.Dumps(Blueprint(defs, crewed: true), 2) + "\n");
     }
 }

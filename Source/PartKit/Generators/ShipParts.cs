@@ -1177,7 +1177,7 @@ public sealed class ShipParts : IPartGenerator
         Sock(p, "cargo", Cx - 0.5, RoofDeck, 9.0, "+y");
         Sock(p, "crane", Cx + 1.7, RoofDeck, 12.4, "+y");
         Sock(p, "mast", Cx - 1.6, RoofDeck, 5.2, "+y");
-        Sock(p, "sensor", Cx - 0.7, RoofDeck, 5.2, "+y"); // (the Long Range Sensor beside the mast: the radar's scope)
+        Sock(p, "sensor", Cx - 0.4, RoofDeck, 5.2, "+y"); // (the Long Range Sensor beside the mast, the radar's scope: on a 1x1 module socket, its plate clear of the mast)
         Sock(p, "radL", Cx - RadX, 6.3, RadZ, "-x");
         Sock(p, "radR", Cx + RadX, 6.3, RadZ, "+x");
         return p;
@@ -1787,7 +1787,7 @@ public sealed class ShipParts : IPartGenerator
         foreach (var z in new[] { -0.5, 0.0, 0.5 })
             Prism(p, [.. Enumerable.Range(0, 8).Select(i => O(z - 0.05, 0.84, i))], [.. Enumerable.Range(0, 8).Select(i => O(z + 0.05, 0.84, i))], Stripe, "hazard paint");
         p.Add(Box([-0.2, 1.9, -0.2], [0.2, 2.25, 0.2], "#3a3836", shape: Kw(("finish", "steel"))));
-        p.Add(Box([-0.08, 2.25, -0.08], [0.08, 2.6, 0.08], "#8a8e8a", shape: Kw(("finish", "steel"))));
+        p.Add(Box([-0.08, 2.25, -0.08], [0.08, 2.48, 0.08], "#8a8e8a", shape: Kw(("finish", "steel")))); // (2.48: on its 3x3 module plug, 0.22 m up, it clears the deck over it)
         p.Add(Box([-0.9, 0.6, 0.86], [-0.5, 1.0, 0.9], "#40ff90", detail: true, shape: Kw(("glow", true))));
         p.Add(Box([0.5, 0.6, 0.86], [0.9, 0.7, 0.9], "#ffb030", detail: true, shape: Kw(("glow", true))));
         p.Sock("bottom", [0, 0, 0], "-y");
@@ -2033,6 +2033,37 @@ public sealed class ShipParts : IPartGenerator
             bp.Wires.Add((s, l));
     }
 
+    /// <summary>A Module Socket W x L centred on step <paramref name="on"/>'s socket, with its kind (the table's order) and keying. Its step.</summary>
+    internal static int ModuleSocket(BuildingParts.Blueprint bp, int on, string sock, int w, int l, int kind = 0, bool keyed = false, double above = 0)
+    {
+        var s = bp.Hang($"Module Socket {w}x{l}", on, sock, "bc");
+        var cfg = new PyDict();
+        if (kind != 0)
+            cfg["modKind"] = kind;
+        if (keyed)
+            cfg["modKeyed"] = 1;
+        if (above > 0)
+            cfg["modAbove"] = above;
+        if (cfg.Count > 0)
+            bp.Steps[s]["config"] = cfg;
+        return s;
+    }
+
+    /// <summary>A module fitted to a plate: its plug, then <paramref name="part"/> by <paramref name="by"/> on the plug's middle, unturned in the ship as it stood before the retrofit. The part's step.</summary>
+    internal static int FittedModule(BuildingParts.Blueprint bp, int plate, int w, int l, string part, string by)
+    {
+        var plug = bp.Hang($"Module Plug {w}x{l}", plate, "module", "module");
+        return bp.HangTurned(part, plug, ModuleSocketParts.CentreTop(w, l), by, BuildingParts.R0);
+    }
+
+    /// <summary>The rust bucket's module designs (module-sockets.md 11): what its sockets hold, to fit again or swap in.</summary>
+    internal static readonly (string File, string Name, int W, int L, string Primary, string Part, string By, string About)[] Designs =
+    [
+        ("RustDrive2x2", "Module Rust Drive 2x2", 2, 2, "engine", "Rust Bucket Drive", "front", "the rust bucket's main drive, for a keyed engine socket on a pod's tail plate (its Drive Core stays in the pod)"),
+        ("RustEngineBlock3x3", "Module Rust Engine Block 3x3", 3, 3, "utility", "Ship Engine Block", "bottom", "the rust bucket's old fusion bottle, the engine room's centrepiece"),
+        ("LongRangeSensor1x1", "Module Long Range Sensor 1x1", 1, 1, "sensor", "Long Range Sensor", "-y", "a Long Range Sensor: the radar's scope in every seat"),
+    ];
+
     private static BuildingParts.Blueprint Blueprint(Dictionary<string, PyDict> defs)
     {
         var bp = new BuildingParts.Blueprint("Rust Bucket", "Your ship: a patched two-deck tramp with a blunt bridge over its cargo ramp, a cockpit, two cabins, hydroponics, a galley, a hold and an engine room.", defs, maxSteps: 200);
@@ -2047,7 +2078,9 @@ public sealed class ShipParts : IPartGenerator
         var saddles = new[] { Hang(bp, "Rust Bucket Saddle Tank L", keel, "saddleL", "hull"), Hang(bp, "Rust Bucket Saddle Tank R", keel, "saddleR", "hull") };
         foreach (var pod in pods)
         {
-            bp.Hang("Rust Bucket Drive", pod, "drive", "front");
+            // The main drive is a module (module-sockets.md 11): a keyed 2x2 engine socket on the tail plate, the drive on its plug; the
+            // Drive Core stays inside behind the plate, the pod being the drive's mount (ConstructWorks.MountUnder).
+            FittedModule(bp, ModuleSocket(bp, pod, "drive", 2, 2, kind: 1, keyed: true), 2, 2, "Rust Bucket Drive", "front");
             bp.Hang("Drive Core S", pod, "core", "front"); // (its engine, inside the housing on the drive's axis, bolted to the tail plate)
             Works.HangHatch(bp, pod, pod == pods[0] ? -1 : 1);
             bp.Hang("Rust Bucket Lift Jet", pod, "lift", "top");
@@ -2064,10 +2097,10 @@ public sealed class ShipParts : IPartGenerator
         Hang(bp, "Rust Bucket Ramp", keel, "ramp", "hang");
         Hang(bp, "Steel Wide Stair 3 m", keel, "stair", "b0_0");
         // The gear on the roof.
-        Paint(bp, Hang(bp, "Rust Bucket Deck Cargo", roof, "cargo", "bottom"), "#3f5e6a", "rusty paint");
+        Paint(bp, Hang(bp, "Rust Bucket Deck Cargo", roof, "cargo", "bottom"), "#3f5e6a", "rusty paint"); // (4 m long: a module when sockets pass 3x3)
         Hang(bp, "Rust Bucket Crane", roof, "crane", "bottom");
         Hang(bp, "Rust Bucket Mast", roof, "mast", "bottom");
-        Hang(bp, "Long Range Sensor", roof, "sensor", "-y"); // (the radar's scope in every seat; no missile rack, so no lock: ConstructRadar.CanLock)
+        FittedModule(bp, ModuleSocket(bp, Holder(bp, roof, "sensor"), "sensor", 1, 1), 1, 1, "Long Range Sensor", "-y"); // (the radar's scope in every seat; no missile rack, so no lock: ConstructRadar.CanLock)
         Hang(bp, "Rust Bucket Radiator L", roof, "radL", "root");
         Hang(bp, "Rust Bucket Radiator R", roof, "radR", "root");
         // The hold: shelving down the port side, a tool rack and a locker opposite, two crates by the stair.
@@ -2084,7 +2117,7 @@ public sealed class ShipParts : IPartGenerator
         Hang(bp, "Requisition Crate", keel, "crate0", "-y");
         Hang(bp, "Requisition Crate", keel, "crate1", "-y");
         // The engine room. (The Engineer's Panel is where the breakdowns are seen to: GameSandboxBreakdowns reads its name.)
-        Hang(bp, "Ship Engine Block", keel, "engine", "bottom");
+        FittedModule(bp, ModuleSocket(bp, Holder(bp, keel, "engine"), "engine", 3, 3, above: 2.5), 3, 3, "Ship Engine Block", "bottom"); // (a generic 3x3 socket, its room 2.5 m up under the deck: the block is 2 m wide, past a 2x2 plug's lugs; it makes no power, so a reactor module may take its place)
         Hang(bp, "Engineer's Panel", keel, "panelEng", "back");
         Hang(bp, "Power Board", keel, "boardEng", "back");
         Hang(bp, "Pipe Bank", keel, "pipesEngL", "back");
@@ -2154,5 +2187,7 @@ public sealed class ShipParts : IPartGenerator
         BuildingParts.AddPartDefs(o, defs, Out);
         var bp = Blueprint(defs);
         o.File($"{BpOut}/RustBucket.json", PyJson.Dumps(bp.Json(), 2) + "\n");
+        foreach (var m in Designs)
+            o.File($"{BpOut}/Module{m.File}.json", ModuleSocketParts.DesignText(m.Name, m.W, m.L, m.Primary, [m.Primary], m.About, "ship", [(m.Part, 0, ModuleSocketParts.CentreTop(m.W, m.L), m.By, 0)]));
     }
 }
