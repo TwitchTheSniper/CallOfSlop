@@ -113,6 +113,7 @@ public static class PartKit
         new Generators.LegPodParts(), // (landing leg pods S to L: a housing, two canopy leaves and a gantry with its leg)
         new Generators.WallBayParts(), // (in-wall bays: a bay in the lining, an insert, its pull-outs; ship systems; the hull airlock)
         new Generators.ModuleSocketParts(), // (module sockets: plates, plugs and stands, docs/sandbox/design/module-sockets.md)
+        new Generators.ContainerParts(), // (standard cargo containers: a draft for the Animation gallery, unlisted, no recipe)
         new Generators.ShipParts(), // (the rust bucket: its blueprint uses the building and interior parts)
         new Generators.RoamerParts(), // (the Roamer, the rust bucket's camper sister: reuses its drives, jets, legs and fittings, so after it)
         new Generators.MinerParts(), // (the Magpie mining ship)

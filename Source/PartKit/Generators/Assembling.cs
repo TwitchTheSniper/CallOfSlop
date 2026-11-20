@@ -616,6 +616,17 @@ public sealed class Assembling : IPartGenerator
         (null, null, Rec("Old Fridge", 10, 1, m: [("steel", 14), ("rubber", 2)])),
         (null, null, Rec("Bucket Toilet", 6, 1, m: [("steel", 8), ("rubber", 3), ("planks", 1)])),
         (null, null, Rec("Parts Bins", 6, 1, m: [("steel", 6), ("rubber", 4)])),
+        // (standard cargo containers, Karl 2026-11-20: ContainerParts; their recipes worked out from the part files)
+        ("Containers", "Container Cradle 1x1", null),
+        ("Containers", "Container Cradle 2x2", null),
+        ("Containers", "Container Cradle 3x3", null),
+        ("Containers", "Container Corner Clamp", null),
+        ("Containers", "Standard Container 1m", null),
+        ("Containers", "Standard Container 1m Hatch", null),
+        ("Containers", "Standard Container 2m", null),
+        ("Containers", "Standard Container 2m Hatch", null),
+        ("Containers", "Standard Container 3m", null),
+        ("Containers", "Standard Container 3m Hatch", null),
         // (the Roamer, Karl 2026-11-20: RoamerParts; in the folder's file order of 2026-11-20)
         ("Roamer", "Roamer Air Unit", null),
         ("Roamer", "Roamer Canopy", null),

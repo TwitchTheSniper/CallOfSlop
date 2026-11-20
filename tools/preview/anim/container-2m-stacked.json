@@ -1,0 +1,12 @@
+{
+  // Standard cargo containers (ContainerParts.cs, --gen-parts containers): the corner clamps flip down, then both side hatches swing up to awnings.
+  "blueprint": "blueprints/container-2m-stacked.json",
+  "title": "Standard container 2 m: stacked and clamped",
+  "shelf": "Cargo containers",
+  "description": "Two 2 m containers, one on the other: the top one's corner clamps flip down over the castings under it and lock the stack, then all four hatches swing up. 2.5 x 2.5 x 6.5 m outside, three 2x2x2 m slots, each a cradle a module stands on. Each long side is one hatch hinged at the top: it swings out and up to an awning, never above the roof, so stacked or racked containers still open. A clamp on each foot casting locks it onto a container below. In the game the contents won't be drawn while the hatches are shut.",
+  "seconds": 5,
+  "steps": [
+    { "part": "Container Corner Clamp", "at": 0.2, "label": "Clamps lock the stack" },
+    { "part": "Standard Container 2m Hatch", "at": 1.6, "label": "Hatches swing up" }
+  ]
+}

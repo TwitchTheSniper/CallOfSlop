@@ -1,0 +1,271 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Container Cradle 2x2",
+  "description": "A 2x2 m cradle on a cargo container's floor: a flat module stand, so a module set on it is stored there (nothing couples) and travels with the container.",
+  "group": "Storage",
+  "section": "Cargo containers",
+  "role": "frame",
+  "tool": "welder",
+  "sizeClass": "medium",
+  "finish": "painted plating",
+  "collider": "boxes",
+  "moduleSocket": {
+    "w": 2,
+    "l": 2,
+    "stand": true,
+    "above": 2.15
+  },
+  "mass": 180.0,
+  "health": 840,
+  "armour": 20,
+  "material": "steel",
+  "color": "#3d444c",
+  "attachSeconds": 5.0,
+  "boxes": [
+    {
+      "min": [
+        -0.5,
+        0.002,
+        -0.5
+      ],
+      "max": [
+        1.5,
+        0.041,
+        1.5
+      ],
+      "color": "#3d444c",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -0.38,
+        0.041,
+        -0.38
+      ],
+      "max": [
+        1.38,
+        0.057,
+        1.38
+      ],
+      "color": "#3d444c",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -0.496,
+        0.041,
+        -0.496
+      ],
+      "max": [
+        1.496,
+        0.057,
+        -0.38
+      ],
+      "color": "#d8a320",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.496,
+        0.041,
+        1.38
+      ],
+      "max": [
+        1.496,
+        0.057,
+        1.496
+      ],
+      "color": "#d8a320",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.496,
+        0.041,
+        -0.38
+      ],
+      "max": [
+        -0.38,
+        0.057,
+        1.38
+      ],
+      "color": "#d8a320",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        1.38,
+        0.041,
+        -0.38
+      ],
+      "max": [
+        1.496,
+        0.057,
+        1.38
+      ],
+      "color": "#d8a320",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.47,
+        0.047,
+        -0.47
+      ],
+      "max": [
+        -0.43,
+        0.063,
+        -0.43
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+y",
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.47,
+        0.047,
+        1.43
+      ],
+      "max": [
+        -0.43,
+        0.063,
+        1.47
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+y",
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        1.43,
+        0.047,
+        -0.47
+      ],
+      "max": [
+        1.47,
+        0.063,
+        -0.43
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+y",
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        1.43,
+        0.047,
+        1.43
+      ],
+      "max": [
+        1.47,
+        0.063,
+        1.47
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+y",
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.494,
+        0.0,
+        0.35
+      ],
+      "max": [
+        -0.446,
+        0.061,
+        0.65
+      ],
+      "color": "#2b2f35",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        1.446,
+        0.0,
+        0.35
+      ],
+      "max": [
+        1.494,
+        0.061,
+        0.65
+      ],
+      "color": "#2b2f35",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.4,
+        0.048,
+        0.4
+      ],
+      "max": [
+        0.6,
+        0.06,
+        0.6
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.5,
+        0.0,
+        -0.5
+      ],
+      "max": [
+        1.5,
+        0.041,
+        1.5
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "module",
+      "at": [
+        0.5,
+        0.06,
+        0.5
+      ],
+      "dir": "+y",
+      "kind": "module"
+    },
+    {
+      "name": "base",
+      "at": [
+        0.5,
+        0.0,
+        0.5
+      ],
+      "dir": "-y"
+    }
+  ]
+}
