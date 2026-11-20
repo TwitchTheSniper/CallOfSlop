@@ -350,23 +350,36 @@ public static partial class SelfTest
         for (var i = 0; i < t.CountX - 1; i++)
             t.Edits.CellFaces(i, j, ref faces);
         var faceMs = sw.Elapsed.TotalMilliseconds;
-        // A ray over a well-dug map.
-        // The least of three rounds: a shared CI runner's hiccup in one round isn't the ray's cost (61.5 against 60 on Windows).
-        var rayUs = double.MaxValue;
-        for (var round = 0; round < 3; round++)
+        // A ray over a well-dug map, judged once its code is warm: the quickest of nine rounds on this thread's CPU clock
+        // (ThreadCpu, SelfTestCpuRatio.cs) after 0.4 s of the same rounds (the tiered JIT optimises a hot method in the
+        // background once 100 ms pass with no new methods to compile). Timed straight after the craters, the least of
+        // three Stopwatch rounds caught the ray's unoptimised code and the runner's other work: 40-43 us on the cloud box
+        // against 22-36 warm, and right at the budget on main's Windows runners, where it missed whatever had merged
+        // (tests-and-ci.md, 2026-11-20). The cold first round is logged, not judged.
+        var dir = Vector3.Normalize(new Vector3(0.1f, -0.15f, 1));
+        void Rays()
         {
-            sw.Restart();
             for (var k = 0; k < 1000; k++)
-                sum += tc.Raycast(new Vector3(-25 + k % 50, h0 + 3, -25), Vector3.Normalize(new Vector3(0.1f, -0.15f, 1)), 60);
-            rayUs = Math.Min(rayUs, sw.Elapsed.TotalMilliseconds);
+                sum += tc.Raycast(new Vector3(-25 + k % 50, h0 + 3, -25), dir, 60);
         }
-        DigLine($"queries allocate {alloc} B; a crater takes {craterMs:0.000} ms; {t.Edits.TouchedCells} dug cells give {faces.N} faces in {faceMs:0.0} ms; a ray across them {rayUs:0.00} us ({sum:0})");
+        Action rays = Rays; // (1000 rays a round: a round's ms are one ray's us)
+        var coldUs = ThreadCpu.TimeMs(rays);
+        GC.Collect(); // (a collection of the start-up's garbage running beside the rounds would share their cache)
+        GC.WaitForPendingFinalizers();
+        for (var warm = Stopwatch.StartNew(); warm.Elapsed.TotalMilliseconds < 400;)
+            rays();
+        var rayUs = double.MaxValue;
+        for (var round = 0; round < 9; round++)
+            rayUs = Math.Min(rayUs, ThreadCpu.TimeMs(rays));
+        DigLine($"queries allocate {alloc} B; a crater takes {craterMs:0.000} ms; {t.Edits.TouchedCells} dug cells give {faces.N} faces in {faceMs:0.0} ms; " +
+                $"a ray across them {rayUs:0.00} us once warm ({ThreadCpu.Kind}; cold {coldUs:0.00} us) ({sum:0})");
         if (alloc > 0)
             Fail($"terrain queries on dug ground allocated {alloc} B");
         if (craterMs > 0.5)
             Fail($"a crater took {craterMs:0.000} ms (budget 0.5 ms)");
         if (rayUs > 60)
-            Fail($"a ray across dug ground took {rayUs:0.00} us (budget 60)");
+            Fail($"a ray across dug ground took {rayUs:0.00} us once warm (budget 60; cold {coldUs:0.00} us)");
+        Fail($"DIAG (temporary) dug-ground ray on the {ThreadCpu.Kind}: warm {rayUs:0.00} us, cold {coldUs:0.00} us");
         m.RestoreProps();
     }
 
