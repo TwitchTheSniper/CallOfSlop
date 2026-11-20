@@ -376,7 +376,7 @@ public sealed class FreighterParts : IPartGenerator
     }
 
     /// <summary>A convex solid between two outlines (drawn only).</summary>
-    private static void Prism(Part p, double[][] a, double[][] b, string color, string finish, bool glow = false)
+    private static void Prism(Part p, double[][] a, double[][] b, string color, string finish, bool glow = false, bool glass = false)
     {
         var both = a.Concat(b).Select(q => q.Select(x => Py.Round(x, 4)).ToArray()).ToList();
         double[] mn = [.. Enumerable.Range(0, 3).Select(k => both.Min(q => q[k]))];
@@ -384,9 +384,9 @@ public sealed class FreighterParts : IPartGenerator
         var shape = Kw(("shape", "hull"), ("points", both.Select(q => (object?)q.Select(x => (object?)x).ToList()).ToList()), ("paintable", false));
         if (glow)
             shape["glow"] = true;
-        else
+        else if (!glass)
             shape["finish"] = finish;
-        p.Add(Box(mn, mx, color, detail: true, shape: shape));
+        p.Add(Box(mn, mx, color, detail: true, glass: glass, shape: shape));
     }
 
     private static void Solid(Part p, double x0, double y0, double z0, double x1, double y1, double z1, string color, string? finish = null)
@@ -1122,7 +1122,7 @@ public sealed class FreighterParts : IPartGenerator
     /// shrinking rings, with a dark rim where it meets the glass and a hidden block back to the cockpit's nose void.</summary>
     private static Part NoseCap()
     {
-        var p = Big("Packet Nose Cap", "The Packet's nose cap: a rounded plate dome sealing the front of the glass cockpit, with the nav beacon on its face.", color: Skin);
+        var p = Big("Packet Nose Cap", "The Packet's nose cap: a rounded glass dome sealing the front of the glass cockpit in a dark rim, with the nav beacon at its tip.", color: Skin);
         const double cy = 1.35;
         var sec = At(Zt);
         double[][] Ring(double dz, double k)
@@ -1135,8 +1135,8 @@ public sealed class FreighterParts : IPartGenerator
         }
         (double Dz, double K)[] rings = [(0.004, 1.012), (0.16, 0.985), (0.32, 0.9), (0.46, 0.74), (0.56, 0.5), (0.6, 0.22)];
         for (var i = 0; i + 1 < rings.Length; i++)
-            Prism(p, Ring(rings[i].Dz, rings[i].K), Ring(rings[i + 1].Dz, rings[i + 1].K), i == 0 ? Frame : i == 1 ? Armour : Skin, "painted plating");
-        // A beacon lamp on the face, and the stripe across it.
+            Prism(p, Ring(rings[i].Dz, rings[i].K), Ring(rings[i + 1].Dz, rings[i + 1].K), i == 0 ? Frame : Glass, i == 0 ? "painted plating" : "glass", glass: i > 0); // (Karl, 2026-11-20: glass, in the dark rim)
+        // A beacon lamp at the tip.
         Detail(p, Cx - 0.08, cy + 0.32, Zt - 0.62, Cx + 0.08, cy + 0.46, Zt - 0.55, Red, glow: true);
         Hidden(p, Cx - 0.6, Ft, Zt - 0.3, Cx + 0.6, 1.9, ZCkFloor - 0.45);
         return p.Stats(900, 6000, 30, 10.0);

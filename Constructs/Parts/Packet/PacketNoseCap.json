@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Packet Nose Cap",
-  "description": "The Packet's nose cap: a rounded plate dome sealing the front of the glass cockpit, with the nav beacon on its face.",
+  "description": "The Packet's nose cap: a rounded glass dome sealing the front of the glass cockpit in a dark rim, with the nav beacon at its tip.",
   "group": "Ship",
   "section": "Packet freighter",
   "role": "frame",
@@ -143,8 +143,9 @@
         2.5055,
         -27.785
       ],
-      "color": "#1f4e8c",
+      "color": "#86a9b8",
       "detail": true,
+      "glass": true,
       "shape": "hull",
       "points": [
         [
@@ -248,8 +249,7 @@
           -27.945
         ]
       ],
-      "paintable": false,
-      "finish": "painted plating"
+      "paintable": false
     },
     {
       "min": [
@@ -262,8 +262,9 @@
         2.395,
         -27.945
       ],
-      "color": "#d8d0b8",
+      "color": "#86a9b8",
       "detail": true,
+      "glass": true,
       "shape": "hull",
       "points": [
         [
@@ -367,8 +368,7 @@
           -28.085
         ]
       ],
-      "paintable": false,
-      "finish": "painted plating"
+      "paintable": false
     },
     {
       "min": [
@@ -381,8 +381,9 @@
         2.187,
         -28.085
       ],
-      "color": "#d8d0b8",
+      "color": "#86a9b8",
       "detail": true,
+      "glass": true,
       "shape": "hull",
       "points": [
         [
@@ -486,8 +487,7 @@
           -28.185
         ]
       ],
-      "paintable": false,
-      "finish": "painted plating"
+      "paintable": false
     },
     {
       "min": [
@@ -500,8 +500,9 @@
         1.875,
         -28.185
       ],
-      "color": "#d8d0b8",
+      "color": "#86a9b8",
       "detail": true,
+      "glass": true,
       "shape": "hull",
       "points": [
         [
@@ -605,8 +606,7 @@
           -28.225
         ]
       ],
-      "paintable": false,
-      "finish": "painted plating"
+      "paintable": false
     },
     {
       "min": [
