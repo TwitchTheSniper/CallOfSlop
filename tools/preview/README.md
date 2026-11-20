@@ -25,7 +25,8 @@ fetches its models, so to look at it there serve DIR over http on localhost and 
 `--procship-gallery DIR [--per N] [--seeds "F17,C3d"] [--add]` writes the procedural ship generator's ships (Source/ProcShips,
 `docs/procships/PROCSHIPS.md`) as the same kind of models, each with its plan laid over it (`"proc"`: rooms, doors, airlocks,
 hatches, ladders and module sockets in the model's frame), and `DIR/index.html` from `tools/preview/procedural.html`, a page
-of its own: a ship list with filters and Roll, looks (Outside, Section, No skin, one per deck), the skin, interior, ways
+of its own: a ship list with filters and Roll, looks (Outside, Cutaway, Section, No skin, one per deck; the cutaway is a
+shader that throws away fragments inside boxes, as planes can't cut a notch), the three cuts, the skin, interior, ways
 through and sockets drawn or hidden, the plan marked, and grades, notes and requests kept in the artifact's database for the
 next session that works on the generator. The Artifact is https://claude.ai/artifact/EcWdMmsYpbjndGutjc6pmK; PROCSHIPS.md
 "Working the feedback" says how to republish it and answer the notes.

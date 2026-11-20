@@ -54,11 +54,11 @@ Each ship takes 0.1 to 1 s to make (a destroyer the longest); a gallery of 40 ab
 
 https://claude.ai/artifact/EcWdMmsYpbjndGutjc6pmK (a copy of the files is in the project's `procedural-gallery/` folder). The left panel lists the ships, filtered by class, hull and decks; **Roll a ship** shows one nobody has graded yet. The right panel shows the one on show:
 
-- **Look**: Outside, **Section** (cut down the middle, looked at from starboard: skin, void and rooms in one view), **No skin** (the interior on its own, the sockets floating where the skin carries them) and one button per deck (cut at chest height, like a floor plan). **Draw** turns the hull skin, interior, ways through and socket plates on and off; **Mark** lays the plan over it: rooms tinted by use (command, living, work, stores, weapons, passage), the ways in (doors, airlocks, hatches, ladders) and the sockets by kind (engine, turret, reactor, cargo).
+- **Look**: Outside, **Cutaway** (the skin and the outer walls of the rooms along one side taken off between the lowest floor and the top ceiling, so every room on that side opens, deck over deck, as in a doll's house; starboard, or port when only the port has airlocks; floors, inner walls and the ways through stay), **Section** (cut down the middle, looked at from starboard: skin, void and rooms in one view), **No skin** (the interior on its own, the sockets floating where the skin carries them) and one button per deck (cut at chest height, like a floor plan). **Cut** slides three planes through any look: Height (takes away what is above), Side (what is to starboard) and Length (what is aft). **Draw** turns the hull skin, interior, ways through and socket plates on and off; **Mark** lays the plan over it: rooms tinted by use (command, living, work, stores, weapons, passage), the ways in (doors, airlocks, hatches, ladders) and the sockets by kind (engine, turret, reactor, cargo).
 - Hovering a part names it and the room it is in; clicking picks it, and the next note is about it ("On: D1 Floor 3, in the corridor").
 - **Feedback**: a grade 1 to 5, what it is about (Hull, Rooms, Corridors, Airlocks, Hatches, Ladders, Sockets, Size, Looks), a note, and "about the generator in general". **Ask for one** queues a code (a random seed unless one is given).
 
-Addresses: `#F17`, `#F17--section`, `#F17--noskin`, `#F17--deck-2`.
+Addresses: `#F17`, `#F17--cutaway`, `#F17--section`, `#F17--noskin`, `#F17--deck-2`.
 
 ### Working the feedback
 

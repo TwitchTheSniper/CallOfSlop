@@ -53,7 +53,9 @@ select, input[type=number], input[type=text], textarea { width: 100%; font: 12.5
 select option { background: var(--bg); color: var(--fg); }
 textarea { resize: vertical; min-height: 64px; line-height: 1.4; }
 input[type=range] { flex: 1; min-width: 0; accent-color: var(--accent); }
-label.cut { display: flex; align-items: center; gap: 8px; } label.cut span { min-width: 58px; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; }
+.field > span.top { align-self: start; padding-top: 3px; }
+.cuts { display: flex; flex-direction: column; gap: 3px; }
+label.cut { display: flex; align-items: center; gap: 8px; } label.cut span { min-width: 44px; color: var(--muted); font-size: 11.5px; }
 label.cut output { font: 12px var(--mono); min-width: 46px; text-align: right; }
 details > summary { cursor: pointer; color: var(--muted); font: 600 10.5px var(--body); text-transform: uppercase; letter-spacing: .09em; list-style: none; }
 details > summary::before { content: "+ "; } details[open] > summary::before { content: "- "; }
@@ -168,15 +170,13 @@ table.traits td:first-child { color: var(--muted); width: 42%; padding-right: 8p
         <button id="mLabels" aria-pressed="true">Labels</button>
       </div>
       <span>View</span><div class="seg" id="views"><button data-v="iso">3/4</button><button data-v="side">Side</button><button data-v="top">Top</button><button data-v="bow">Bow</button><button data-v="stern">Stern</button><button id="tSpin" aria-pressed="false">Turn</button></div>
+      <span class="top">Cut</span><div class="cuts">
+        <label class="cut" for="cutY" title="Take away everything above this height"><span>Height</span><input id="cutY" type="range" min="0" max="1000" value="1000"><output id="cutYv">top</output></label>
+        <label class="cut" for="cutX" title="Take away everything to starboard of this line"><span>Side</span><input id="cutX" type="range" min="0" max="1000" value="1000"><output id="cutXv">off</output></label>
+        <label class="cut" for="cutZ" title="Take away everything aft of this line"><span>Length</span><input id="cutZ" type="range" min="0" max="1000" value="1000"><output id="cutZv">off</output></label>
+      </div>
     </div>
     <div class="legend" id="legend"></div>
-    <details><summary>Cuts</summary>
-      <div style="display:flex;flex-direction:column;gap:6px">
-        <label class="cut" for="cutY"><span>Height</span><input id="cutY" type="range" min="0" max="1000" value="1000"><output id="cutYv">top</output></label>
-        <label class="cut" for="cutX"><span>Side</span><input id="cutX" type="range" min="0" max="1000" value="1000"><output id="cutXv">off</output></label>
-        <label class="cut" for="cutZ"><span>Length</span><input id="cutZ" type="range" min="0" max="1000" value="1000"><output id="cutZv">off</output></label>
-      </div>
-    </details>
     <p class="picked" id="picked" hidden></p>
   </div>
   <details class="sect" id="traitsBox"><summary>What the dice chose</summary><table class="traits" id="traits"></table></details>
@@ -222,6 +222,25 @@ const clipTop = new THREE.Plane(new THREE.Vector3(0, -1, 0), 1e6), clipLo = new 
 const clipX = new THREE.Plane(new THREE.Vector3(-1, 0, 0), 1e6), clipZ = new THREE.Plane(new THREE.Vector3(0, 0, -1), 1e6);
 const clips = [clipTop, clipLo, clipX, clipZ];
 const cutActive = () => clips.some(c => c.constant < 1e5);
+// The cutaway takes boxes out of the ship, which planes can't (a plane takes away a half-space): each notched material throws away the
+// fragments inside its own set of boxes, the skin's set or the rooms' (shader uniforms shared by every material of that set).
+const NOTCH_MOST = 32;
+const notchSet = () => ({ lo: { value: new Float32Array(NOTCH_MOST * 3) }, hi: { value: new Float32Array(NOTCH_MOST * 3) }, n: { value: 0 }, boxes: [] });
+const notchSkin = notchSet(), notchRooms = notchSet(), openRooms = new Set(); // (openRooms: the rooms the cutaway opened)
+function notchShader(s) { // (one function for every notched material, so they share their programs; each brings its own set)
+  const set = this.userData.notch;
+  s.uniforms.notchLo = set.lo; s.uniforms.notchHi = set.hi; s.uniforms.notchN = set.n;
+  s.vertexShader = "varying vec3 vNotch;\n" + s.vertexShader.replace("#include <begin_vertex>", "#include <begin_vertex>\n\tvNotch = (modelMatrix * vec4(transformed, 1.0)).xyz;");
+  s.fragmentShader = "uniform vec3 notchLo[" + NOTCH_MOST + "];\nuniform vec3 notchHi[" + NOTCH_MOST + "];\nuniform int notchN;\nvarying vec3 vNotch;\n" +
+    s.fragmentShader.replace("#include <clipping_planes_fragment>", "#include <clipping_planes_fragment>\n\tfor (int i = 0; i < " + NOTCH_MOST + "; i++) { if (i >= notchN) break; if (all(greaterThan(vNotch, notchLo[i])) && all(lessThan(vNotch, notchHi[i]))) discard; }");
+}
+function notched(m, set) { m.userData.notch = set; m.onBeforeCompile = notchShader; return m; }
+function setNotch(set, boxes) {
+  if (boxes.length > NOTCH_MOST) console.warn(`cutaway: ${boxes.length} boxes, only ${NOTCH_MOST} cut`);
+  set.boxes = boxes.slice(0, NOTCH_MOST); set.n.value = set.boxes.length;
+  set.boxes.forEach((b, i) => { set.lo.value.set(b.slice(0, 3), i * 3); set.hi.value.set(b.slice(3, 6), i * 3); });
+}
+const inNotch = (set, p) => set.boxes.some(b => p.x > b[0] && p.y > b[1] && p.z > b[2] && p.x < b[3] && p.y < b[4] && p.z < b[5]);
 const labelsEl = $("labels");
 function resize() { const w = view.clientWidth, h = view.clientHeight; renderer.setSize(w, h, false); camera.aspect = w / Math.max(1, h); camera.updateProjectionMatrix(); }
 new ResizeObserver(resize).observe(view); resize();
@@ -312,7 +331,10 @@ function show(model, entry) {
   const byLayer = Object.fromEntries(LAYERS.map(l => [l, []]));
   for (let t = 0; t < look16.length; t++) byLayer[partLayer[triPart[t]]].push(t);
   const mat = () => new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8, metalness: 0.15, side: THREE.DoubleSide, clippingPlanes: clips });
-  for (const l of LAYERS) { const m = new THREE.Mesh(geometry(byLayer[l], pos16, nrm8), mat()); m.visible = layerOn[l]; layerMesh[l] = m; scene.add(m); }
+  for (const l of LAYERS) {
+    const m = new THREE.Mesh(geometry(byLayer[l], pos16, nrm8), l === "skin" ? notched(mat(), notchSkin) : l === "interior" ? notched(mat(), notchRooms) : mat());
+    m.visible = layerOn[l]; layerMesh[l] = m; scene.add(m);
+  }
   size = [0, 1, 2].map(a => Math.max(0.01, M.max[a] - M.min[a]));
   centre = new THREE.Vector3(...[0, 1, 2].map(a => (M.min[a] + M.max[a]) / 2));
   radius = Math.max(0.5, Math.hypot(...size) / 2);
@@ -327,11 +349,11 @@ function show(model, entry) {
 }
 
 // The plan's marks, from the model's "proc": rooms as tinted boxes, the ways in, the module sockets.
-function addLabel(text, p, group, colour, inside) {
+function addLabel(text, p, group, colour, inside, room = null) {
   const s = el("span", null, text); s.style.background = colour; s.style.display = "none";
   const c = new THREE.Color(colour); if (0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b > 0.35) s.style.color = "#14181b"; // (dark text on a light mark; c is linear)
   labelsEl.appendChild(s);
-  labels.push({ el: s, p, group, inside, w: 12 + text.length * 6.2, on: false, tx: "" });
+  labels.push({ el: s, p, group, inside, room, w: 12 + text.length * 6.2, on: false, tx: "" });
 }
 function labelShow(L, on, tx) {
   if (L.on !== on) { L.on = on; L.el.style.display = on ? "" : "none"; }
@@ -352,7 +374,7 @@ function buildMarks() {
     const use = useOf(r), [label, colour] = USES[use], b = r.box;
     boxMark(marks.rooms, b, colour, 0.14, null, 0.04);
     rooms.push({ r, use, box: new THREE.Box3(new THREE.Vector3(b[0], b[1], b[2]), new THREE.Vector3(b[3], b[4], b[5])) });
-    addLabel(r.name, new THREE.Vector3((b[0] + b[3]) / 2, b[1] + 1.1, (b[2] + b[5]) / 2), "rooms", colour, true);
+    addLabel(r.name, new THREE.Vector3((b[0] + b[3]) / 2, b[1] + 1.1, (b[2] + b[5]) / 2), "rooms", colour, true, r);
   }
   for (const d of P.doors) {
     const lock = d.kind !== "door", [, colour] = WAYS[lock ? "lock" : "door"], a = d.at;
@@ -400,10 +422,11 @@ function applyVisibility() {
 const pv = new THREE.Vector3(), placed = [];
 function drawLabels() {
   if (!labels.length) return;
-  const w = view.clientWidth, h = view.clientHeight, open = !layerOn.skin || cutActive();
+  const w = view.clientWidth, h = view.clientHeight, notchOn = notchRooms.boxes.length > 0, open = !layerOn.skin || cutActive() || notchOn;
   const shown = [];
   for (const L of labels) {
-    let ok = markOn.labels && markOn[L.group] && (!L.inside || open) && clips.every(c => c.distanceToPoint(L.p) >= 0);
+    let ok = markOn.labels && markOn[L.group] && (!L.inside || open) && clips.every(c => c.distanceToPoint(L.p) >= 0)
+      && !(notchOn && L.room && !openRooms.has(L.room)); // (in the cutaway, only the rooms it opened: the others are shut behind walls)
     if (ok) { pv.copy(L.p).project(camera); ok = pv.z < 1 && Math.abs(pv.x) < 1.05 && Math.abs(pv.y) < 1.05; }
     if (ok) shown.push({ L, x: (pv.x + 1) / 2 * w, y: (1 - pv.y) / 2 * h, d: camera.position.distanceToSquared(L.p) }); else labelShow(L, false);
   }
@@ -416,21 +439,56 @@ function drawLabels() {
   }
 }
 
-// ---- looks: whole ship, a section down the middle, no skin, or one deck cut at chest height
+// ---- looks: whole ship, a cutaway, a section down the middle, no skin, or one deck cut at chest height
 const VIEWS = { iso: [-1, 0.7, -1.1], side: [-1, 0.05, 0], top: [0.001, 1, 0.0001], bow: [0, 0.15, -1], stern: [0, 0.2, 1] }; // (the bow is -z, port is -x)
 // How far back to stand for the ship's sphere to fill the narrower of the view's two angles (k under 1 stands closer: a long ship seen
 // at an angle is shorter on the screen than its sphere).
 function fit(k) { const v = camera.fov * Math.PI / 180, h = 2 * Math.atan(Math.tan(v / 2) * camera.aspect); return radius / Math.tan(Math.min(v, h) / 2) * k; }
 function aim(dir, at = centre, dist = fit(0.92)) { controls.target.copy(at); camera.position.copy(at).add(new THREE.Vector3(...dir).normalize().multiplyScalar(dist)); controls.update(); }
 document.querySelectorAll("#views button[data-v]").forEach(b => b.onclick = () => aim(VIEWS[b.dataset.v], controls.target.clone(), fit(b.dataset.v === "side" || b.dataset.v === "top" ? 1.02 : 0.92)));
-function resetCuts() { for (const c of clips) c.constant = 1e6; cutY.value = cutX.value = cutZ.value = 1000; cutY.oninput(true); cutX.oninput(true); cutZ.oninput(true); }
+function resetCuts() {
+  for (const c of clips) c.constant = 1e6; cutY.value = cutX.value = cutZ.value = 1000; cutY.oninput(true); cutX.oninput(true); cutZ.oninput(true);
+  setNotch(notchSkin, []); setNotch(notchRooms, []); openRooms.clear();
+}
+// The cutaway: on one side (starboard, or port when only the port has airlocks) the skin comes off over the decks' height and the
+// room block's length, and so does the outer wall of every room on that side, between its floor and its ceiling; each of those rooms
+// opens to that side, deck over deck, as in a doll's house. Floors, ceilings, the inner walls, airlocks, doors, hatches, ladders
+// and sockets stay. Rooms side by side along one wall line share a box: it takes only what lies outboard of their wall's inner face.
+function cutaway() {
+  const side = P.locks.length && P.locks.every(l => l.side === "port") ? -1 : 1, R = P.rooms, e = 0.004, t = 0.03, far = 1e3;
+  const face = b => side > 0 ? b[3] : b[0], open = [];
+  for (const r of R) { // (a room opens when no rooms on its deck cover half its length on that side)
+    const b = r.box; let cover = 0;
+    for (const q of R) {
+      if (q === r || q.deck !== r.deck || (side > 0 ? q.box[0] < b[3] - 0.01 : q.box[3] > b[0] + 0.01)) continue;
+      cover += Math.max(0, Math.min(b[5], q.box[5]) - Math.max(b[2], q.box[2]));
+    }
+    if (cover < 0.5 * (b[5] - b[2])) { open.push(r); openRooms.add(r); }
+  }
+  open.sort((a, b) => a.deck - b.deck || face(a.box) - face(b.box) || a.box[2] - b.box[2]);
+  const runs = [];
+  for (const r of open) {
+    const b = r.box, last = runs[runs.length - 1];
+    if (last && last.deck === r.deck && Math.abs(last.face - face(b)) < 0.01 && b[2] - last.z1 <= 0.3) last.z1 = Math.max(last.z1, b[5]);
+    else runs.push({ deck: r.deck, face: face(b), y0: b[1], y1: b[4], z0: b[2], z1: b[5] });
+  }
+  // (t past the wall's inner face takes its kick strip and door jambs too; e keeps the floor's, ceiling's and end walls' faces)
+  setNotch(notchRooms, runs.map(u => side > 0 ? [u.face - t, u.y0 + e, u.z0 + e, far, u.y1 - e, u.z1 - e] : [-far, u.y0 + e, u.z0 + e, u.face + t, u.y1 - e, u.z1 - e]));
+  const y0 = Math.min(...R.map(r => r.box[1])), y1 = Math.max(...R.map(r => r.box[4])), z0 = Math.min(...R.map(r => r.box[2])), z1 = Math.max(...R.map(r => r.box[5]));
+  setNotch(notchSkin, [side > 0 ? [centre.x, y0 + e, z0, far, y1 - e, z1] : [-far, y0 + e, z0, centre.x, y1 - e, z1]]);
+  return side;
+}
 function setLook(k, quiet) {
   if (!M) return;
   look = k; resetCuts();
   Object.assign(layerOn, { skin: true, interior: true, ways: true, sockets: true });
   const decks = P ? P.decks : [];
   const dk = /^deck-(\d+)$/.exec(k);
-  if (k === "section") {
+  if (k === "cutaway" && P && P.rooms.length) {
+    const side = cutaway();
+    Object.assign(markOn, { rooms: true, ways: true, sockets: true });
+    aim([side, 0.4, -0.3], centre, fit(1.1));
+  } else if (k === "section") {
     clipX.constant = centre.x + 0.35; syncSlider(cutX, 0, clipX.constant);
     Object.assign(markOn, { rooms: true, ways: true, sockets: true });
     aim([1, 0.32, -0.18], centre, fit(0.98));
@@ -451,9 +509,12 @@ function setLook(k, quiet) {
 }
 function fillLooks() {
   const box = $("looks"); box.textContent = "";
-  const opts = [["outside", "Outside"], ["section", "Section"], ["noskin", "No skin"]];
-  if (P) P.decks.forEach((d, i) => opts.push(["deck-" + (i + 1), d.name]));
-  for (const [k, text] of opts) { const b = el("button", null, text); b.setAttribute("aria-pressed", look === k); b.onclick = () => setLook(k); box.appendChild(b); }
+  const opts = [["outside", "Outside", "The whole ship"],
+    ["cutaway", "Cutaway", "One side's skin and the outer walls of the rooms along it taken off: those rooms open, deck over deck"],
+    ["section", "Section", "Cut down the middle, seen from starboard: skin, void and rooms in one view"],
+    ["noskin", "No skin", "The interior on its own, the sockets floating where the skin carries them"]];
+  if (P) P.decks.forEach((d, i) => opts.push(["deck-" + (i + 1), d.name, d.name + " cut at chest height, like a floor plan"]));
+  for (const [k, text, tip] of opts) { const b = el("button", null, text); b.title = tip; b.setAttribute("aria-pressed", look === k); b.onclick = () => setLook(k); box.appendChild(b); }
 }
 const toggle = (id, fn) => { const b = $(id); b.onclick = () => { const on = b.getAttribute("aria-pressed") !== "true"; b.setAttribute("aria-pressed", on); fn(on); }; };
 toggle("lSkin", on => { layerOn.skin = on; applyVisibility(); });
@@ -504,7 +565,8 @@ function hit(ev) {
   ray.setFromCamera(mouse, camera);
   const objs = LAYERS.filter(l => layerOn[l]).map(l => layerMesh[l]);
   for (const k of ["ways", "sockets"]) if (markOn[k]) objs.push(...marks[k].children.filter(o => o.isMesh));
-  const h = ray.intersectObjects(objs, false).find(h => clips.every(c => c.distanceToPoint(h.point) >= -1e-3));
+  const gone = h => h.object === layerMesh.skin ? inNotch(notchSkin, h.point) : h.object === layerMesh.interior && inNotch(notchRooms, h.point);
+  const h = ray.intersectObjects(objs, false).find(h => clips.every(c => c.distanceToPoint(h.point) >= -1e-3) && !gone(h));
   if (!h) return null;
   const at = h.point.toArray().map(v => Math.round(v * 100) / 100);
   if (h.object.userData.info) return { mark: h.object.userData.info, at };
