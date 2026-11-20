@@ -1006,6 +1006,13 @@ public sealed partial class Ui
             ImGui.TextColored(Dim, "Low: none. Medium: a glow round lamps, flames and screens, and heat haze over flames. High: a wider glow, and soft shade in corners."u8);
 
             ImGui.Spacing();
+            ImGui.Text("Big ships"u8);
+            ImGui.Checkbox("Skip hidden parts##ships"u8, ref s.HiddenCulling);
+            ImGui.TextColored(Dim, "Rooms and fittings behind hulls and walls aren't drawn. Faster on big ships; turn it off if parts flicker as you turn."u8);
+            VideoLevelRow("Far detail"u8, "fardetail", ref s.FarDetail);
+            ImGui.TextColored(Dim, "Small fittings far away: Low leaves them out sooner, Medium once they are under a pixel, High draws everything at any distance."u8);
+
+            ImGui.Spacing();
             ImGui.Text("Lighting"u8);
             var lightQ = (int)s.Lighting;
             for (var i = 0; i <= (int)LightingQuality.Full; i++)

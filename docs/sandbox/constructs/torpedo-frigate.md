@@ -33,6 +33,25 @@ graphite cabinet with a raked top, louvres, a recessed pull, a badge reader with
 light down its hinge side. Only its door takes the blueprint's paint (yellow at the airlock, blue in the cabins, white in
 the med bay).
 
+## Interior wall cladding
+
+Karl (2026-11-20): low-poly indoor cladding with a military interior look. `TorpedoFrigateCladding.cs` (`Clad`) runs once all four
+decks are drawn and before `SplitDeck`, and lines every room face of every wall run (the old blue dado is gone): a dark kick plate,
+bays of about 1.3 m between dark vertical ribs, a chamfered gunmetal panel below a bump rail with a blue stripe, a battleship-grey
+panel above (an ID plate on every other bay, a louvred vent on every third lower bay), and a service run under the ceiling (a duct
+channel, a grey conduit and a colour-coded pipe on brackets, capped at each end). All of it is drawn only (no collision, no mass)
+and goes with its wall's piece (`CladWall`), so a wall shot off takes its lining.
+
+- **Only the room side.** A face is clad when a point 0.4 m off it is over a deck's floor plan and another wall of that deck runs
+  beyond it. An outer wall's far side, the gap between the inner wall and the skin, is never clad, so in-wall storage can use it.
+- **Fittings first.** Cladding stops round anything already on a face (door frames, consoles, screens, walls that meet it) and
+  round the room's sockets: ribs, the rail, pipes, vents and plates keep clear of a socket; a panel row parts round a fitting hung
+  on the face (a switch is barely proud of the wall) and goes thin behind one stood against it, so an empty socket leaves no hole.
+- **By room use**, switched off (Karl tried it, 2026-11-20, and kept one lining everywhere; `CladByRoom` true brings it back): bridge and ops darker with a lit cyan stripe and amber tags; armoury, torpedo room,
+  airlock and engineering a hazard-blocked kick plate and more vents; cabins and mess warmer grey, no vents; med bay and head pale
+  with a green stripe; the server room dark, lit and vented every bay; corridors plain (`RoomAt`, `LiningOf`).
+- About 43,000 triangles (the ship went from about 80,700 to 123,300), all in the walls' merged static meshes.
+
 ## The hull
 
 A lofted hull of six facets (keel, four sides, spine) through stations from the chisel bow (z -3.5) to the stern (46.5). Neighbouring facets' ends are staggered (`FacetStagger`) so no two plates share a plane where they cross.

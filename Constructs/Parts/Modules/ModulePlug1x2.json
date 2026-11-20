@@ -1,0 +1,349 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Module Plug 1x2",
+  "description": "The base of a 1x2 m module: weld anything onto it, then fit it to a Module Socket of its size. Its lugs are where arms grip it.",
+  "group": "Ship Modules",
+  "section": "Module sockets",
+  "role": "frame",
+  "tool": "welder",
+  "sizeClass": "medium",
+  "mass": 120.0,
+  "health": 460,
+  "armour": 24,
+  "material": "steel",
+  "color": "#c9a21c",
+  "attachSeconds": 5.0,
+  "onBreak": "detach",
+  "modulePlug": {
+    "w": 1,
+    "l": 2
+  },
+  "ports": [
+    {
+      "name": "Fuel A",
+      "type": "pipe",
+      "dir": "out",
+      "fluid": "fuel",
+      "at": [
+        0.35,
+        -0.4,
+        -0.2
+      ],
+      "face": "+y"
+    },
+    {
+      "name": "Ammo A",
+      "type": "feed",
+      "dir": "out",
+      "at": [
+        0.0,
+        -0.4,
+        -0.2
+      ],
+      "face": "+y"
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -0.495,
+        -0.488,
+        -0.495
+      ],
+      "max": [
+        0.495,
+        -0.42,
+        1.495
+      ],
+      "color": "#c9a21c"
+    },
+    {
+      "min": [
+        -0.465,
+        -0.42,
+        -0.465
+      ],
+      "max": [
+        0.465,
+        -0.4,
+        1.465
+      ],
+      "color": "#5a6168"
+    },
+    {
+      "min": [
+        -0.1,
+        -0.5,
+        0.4
+      ],
+      "max": [
+        0.1,
+        -0.488,
+        0.6
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.485,
+        -0.4,
+        -0.485
+      ],
+      "max": [
+        -0.41,
+        -0.34,
+        -0.41
+      ],
+      "color": "#2b2f34"
+    },
+    {
+      "min": [
+        -0.465,
+        -0.34,
+        -0.46
+      ],
+      "max": [
+        -0.43,
+        -0.3,
+        -0.435
+      ],
+      "color": "#8c939b",
+      "detail": true
+    },
+    {
+      "min": [
+        0.41,
+        -0.4,
+        -0.485
+      ],
+      "max": [
+        0.485,
+        -0.34,
+        -0.41
+      ],
+      "color": "#2b2f34"
+    },
+    {
+      "min": [
+        0.43,
+        -0.34,
+        -0.46
+      ],
+      "max": [
+        0.465,
+        -0.3,
+        -0.435
+      ],
+      "color": "#8c939b",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.485,
+        -0.4,
+        1.41
+      ],
+      "max": [
+        -0.41,
+        -0.34,
+        1.485
+      ],
+      "color": "#2b2f34"
+    },
+    {
+      "min": [
+        -0.465,
+        -0.34,
+        1.435
+      ],
+      "max": [
+        -0.43,
+        -0.3,
+        1.46
+      ],
+      "color": "#8c939b",
+      "detail": true
+    },
+    {
+      "min": [
+        0.41,
+        -0.4,
+        1.41
+      ],
+      "max": [
+        0.485,
+        -0.34,
+        1.485
+      ],
+      "color": "#2b2f34"
+    },
+    {
+      "min": [
+        0.43,
+        -0.34,
+        1.435
+      ],
+      "max": [
+        0.465,
+        -0.3,
+        1.46
+      ],
+      "color": "#8c939b",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.37,
+        -0.42,
+        -0.37
+      ],
+      "max": [
+        -0.25,
+        -0.396,
+        -0.25
+      ],
+      "color": "#2b2f34",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "module",
+      "at": [
+        0.0,
+        -0.5,
+        0.5
+      ],
+      "dir": "-y",
+      "kind": "module"
+    },
+    {
+      "name": "top.0.0",
+      "at": [
+        0.0,
+        -0.4,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "t00.00",
+      "at": [
+        -0.25,
+        -0.4,
+        -0.25
+      ],
+      "dir": "+y",
+      "class": "small"
+    },
+    {
+      "name": "t00.01",
+      "at": [
+        -0.25,
+        -0.4,
+        0.25
+      ],
+      "dir": "+y",
+      "class": "small"
+    },
+    {
+      "name": "t01.00",
+      "at": [
+        0.25,
+        -0.4,
+        -0.25
+      ],
+      "dir": "+y",
+      "class": "small"
+    },
+    {
+      "name": "t01.01",
+      "at": [
+        0.25,
+        -0.4,
+        0.25
+      ],
+      "dir": "+y",
+      "class": "small"
+    },
+    {
+      "name": "top.0.1",
+      "at": [
+        0.0,
+        -0.4,
+        1.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "t00.10",
+      "at": [
+        -0.25,
+        -0.4,
+        0.75
+      ],
+      "dir": "+y",
+      "class": "small"
+    },
+    {
+      "name": "t00.11",
+      "at": [
+        -0.25,
+        -0.4,
+        1.25
+      ],
+      "dir": "+y",
+      "class": "small"
+    },
+    {
+      "name": "t01.10",
+      "at": [
+        0.25,
+        -0.4,
+        0.75
+      ],
+      "dir": "+y",
+      "class": "small"
+    },
+    {
+      "name": "t01.11",
+      "at": [
+        0.25,
+        -0.4,
+        1.25
+      ],
+      "dir": "+y",
+      "class": "small"
+    },
+    {
+      "name": "s0.0",
+      "at": [
+        0.0,
+        -0.4,
+        0.0
+      ],
+      "dir": "+y",
+      "class": "small"
+    },
+    {
+      "name": "s0.1",
+      "at": [
+        0.0,
+        -0.4,
+        1.0
+      ],
+      "dir": "+y",
+      "class": "small"
+    },
+    {
+      "name": "tc",
+      "at": [
+        0.0,
+        -0.4,
+        0.5
+      ],
+      "dir": "+y",
+      "class": "small"
+    }
+  ]
+}

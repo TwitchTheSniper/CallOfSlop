@@ -29,14 +29,35 @@ public sealed partial class ConstructEdits
     /// <summary>Has this player a function (creative: every one)?</summary>
     public bool Has(byte player, ToolStat s, bool creative) => StatOf(player, s, creative) >= 0.5f;
 
-    /// <summary>The heaviest thing this player's physics gun takes (kg).</summary>
-    public float LiftOf(byte player, bool creative) => StatOf(player, ToolStat.Lift, creative);
+    /// <summary>
+    /// The heaviest thing this player's physics gun takes (kg): survival's stops at <see cref="ConstructGrab.SurvivalLiftCap"/> whatever the Lift level,
+    /// times the worn shell frame's "lift" (<see cref="LiftShare"/>: a Half Shell lifts half; docs/sandbox/design/half-shell.md).
+    /// </summary>
+    public float LiftOf(byte player, bool creative) => creative ? StatOf(player, ToolStat.Lift, true) : MathF.Min(StatOf(player, ToolStat.Lift, false), ConstructGrab.SurvivalLiftCap) * (LiftShare?.Invoke(player) ?? 1f);
 
-    /// <summary>How hard this player's beam pulls (N): creative's fixed strength, or the lift's share.</summary>
-    public float PullOf(byte player, bool creative) => creative ? ConstructGrab.Strength : LiftOf(player, false) * ToolUpgrades.PullPerKg;
+    /// <summary>The game's: the share of the survival lift a player's body has (a worn shell frame's "lift"; 1 for a person).</summary>
+    public Func<byte, float>? LiftShare;
 
-    /// <summary>How far this player's beam reaches (m).</summary>
-    public float ReachOf(byte player, bool creative) => StatOf(player, ToolStat.Reach, creative);
+    /// <summary>
+    /// How hard this player's beam pulls (N): creative's fixed strength, or the Lift level's share (uncapped: a Lift module still makes the beam stronger),
+    /// times a worn frame's lift share above 1 (the Construction Shell's 5: its 15 t moves as briskly as a person's 3 t; a smaller share keeps the pull).
+    /// </summary>
+    public float PullOf(byte player, bool creative) => creative ? ConstructGrab.Strength : StatOf(player, ToolStat.Lift, false) * ToolUpgrades.PullPerKg * MathF.Max(1f, LiftShare?.Invoke(player) ?? 1f);
+
+    /// <summary>How far this player's beam reaches (m): times a big frame's reach (<see cref="ReachShare"/>).</summary>
+    public float ReachOf(byte player, bool creative) => StatOf(player, ToolStat.Reach, creative) * (ReachShare?.Invoke(player) ?? 1f);
+
+    /// <summary>
+    /// The game's: how much further than a person a player's body reaches with the attach tool and the physics gun (a worn frame's
+    /// <see cref="ShellFrame.Reach"/>: the Construction Shell's 2.8; 1 for a person and every smaller frame). Both sides set it.
+    /// </summary>
+    public Func<byte, float>? ReachShare;
+
+    /// <summary>The attach tool's reach for this player (m): <see cref="ConstructBuild.Reach"/>, times a big frame's reach. The weld and fit checks measure by it.</summary>
+    public float BuildReachOf(byte player) => ConstructBuild.Reach * (ReachShare?.Invoke(player) ?? 1f);
+
+    /// <summary>The game's: does this player's body hold a piece in its grip while it welds (a worn frame with a grip arm and a welder arm: <see cref="ShellFrame.GripWelds"/>)?</summary>
+    public Func<byte, bool>? GripHolds;
 
     /// <summary>How far this player's beam catches something (m): its reach, or twice it with the tractor beam (what it catches is reeled in to its reach).</summary>
     public float CatchOf(byte player, bool creative) => ReachOf(player, creative) * (Has(player, ToolStat.Tractor, creative) ? 2 : 1);

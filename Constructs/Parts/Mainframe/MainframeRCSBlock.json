@@ -1,0 +1,242 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Mainframe RCS Block",
+  "description": "An attitude jet block on the Mainframe's hull: an armoured housing over a 50 kl tank, an Attitude Jet on its outer side, its top and its fore and aft faces.",
+  "group": "Ship",
+  "section": "Mainframe",
+  "role": "fueltank",
+  "tool": "welder",
+  "fuelTank": {
+    "capacity": 50000.0
+  },
+  "ports": [
+    {
+      "name": "Fuel out",
+      "type": "pipe",
+      "dir": "out",
+      "fluid": "fuel",
+      "at": [
+        1.6,
+        3.2,
+        1.6
+      ],
+      "face": "+y"
+    }
+  ],
+  "mass": 60000.0,
+  "health": 120000,
+  "armour": 50,
+  "material": "steel",
+  "color": "#3b4148",
+  "attachSeconds": 30.0,
+  "boxes": [
+    {
+      "min": [
+        -2.6,
+        0.0,
+        -2.6
+      ],
+      "max": [
+        2.6,
+        3.2,
+        2.6
+      ],
+      "color": "#3b4148",
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -2.3,
+        3.2,
+        -2.3
+      ],
+      "max": [
+        2.3,
+        3.45,
+        2.3
+      ],
+      "color": "#30353b",
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -2.612,
+        0.3,
+        -2.612
+      ],
+      "max": [
+        -2.35,
+        2.9,
+        -2.35
+      ],
+      "color": "#e0b020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -2.17,
+        3.45,
+        -2.17
+      ],
+      "max": [
+        -1.93,
+        3.51,
+        -1.93
+      ],
+      "color": "#5ac8ff",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -2.612,
+        0.3,
+        2.35
+      ],
+      "max": [
+        -2.35,
+        2.9,
+        2.612
+      ],
+      "color": "#e0b020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -2.17,
+        3.45,
+        1.93
+      ],
+      "max": [
+        -1.93,
+        3.51,
+        2.17
+      ],
+      "color": "#5ac8ff",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        2.35,
+        0.3,
+        -2.612
+      ],
+      "max": [
+        2.612,
+        2.9,
+        -2.35
+      ],
+      "color": "#e0b020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        1.93,
+        3.45,
+        -2.17
+      ],
+      "max": [
+        2.17,
+        3.51,
+        -1.93
+      ],
+      "color": "#5ac8ff",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        2.35,
+        0.3,
+        2.35
+      ],
+      "max": [
+        2.612,
+        2.9,
+        2.612
+      ],
+      "color": "#e0b020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        1.93,
+        3.45,
+        1.93
+      ],
+      "max": [
+        2.17,
+        3.51,
+        2.17
+      ],
+      "color": "#5ac8ff",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+x",
+      "at": [
+        2.6,
+        1.6,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -2.6,
+        1.6,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        3.45,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        1.6,
+        2.6
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        1.6,
+        -2.6
+      ],
+      "dir": "-z"
+    }
+  ]
+}

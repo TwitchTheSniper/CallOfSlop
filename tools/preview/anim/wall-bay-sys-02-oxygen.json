@@ -1,0 +1,12 @@
+{
+  // In-wall bay (WallBayParts.cs): an oxygen candle furnace; twist the handle, the breech runs out with its candle.
+  "blueprint": "Wall Bay 1.5m O2 Generator",
+  "title": "Oxygen generator (1.5 m bay)",
+  "shelf": "In-wall ship systems",
+  "description": "A furnace that burns oxygen candles. Twist the handle and the breech runs 1.15 m out of the chamber with its candle in the cradle: a spent candle comes out, a fresh one goes in. Spare candles in the drawer under it, which opens with a press.",
+  "steps": [
+    { "part": "Twist Latch", "at": 0, "label": "Twist the handle" },
+    { "part": "Candle Breech 1.5m", "at": 0.6, "label": "Consumable: the candle" },
+    { "part": "Candle Drawer 1.5m", "at": 3, "label": "Spare candles" }
+  ]
+}

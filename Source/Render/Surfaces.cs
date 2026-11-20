@@ -173,18 +173,35 @@ public static class Surfaces
                 float sy = SurfLine(0.5 - c.y, 0.012, pq.y, 1.0) * inner.y;
                 return -max(sx, sy) * 2.0;
             }
+            if (kind == 7) // diamond: tread plate's raised bars on a flat plate, each cell's at right angles to its neighbours'
+            {
+                // A bar in each 1-unit cell along a diagonal, 0.58 long and 0.14 wide; around it the plate is flat, so the plate
+                // reads as plate with crisp bars, not as a corrugation (the sine ribs of "tread" were soft light and dark bands
+                // 1 / scale apart on a whole deck). Each bar's cover is box-filtered by the pixel and fades to its share of the
+                // area (0 about the mean) before a pixel spans half a cell, so a far or grazing deck is an even shade.
+                vec2 c = fract(p) - 0.5;
+                float s = mod(floor(p.x) + floor(p.y), 2.0) > 0.5 ? 1.0 : -1.0;
+                float d = length(vec2(max(abs(c.x + s * c.y) * 0.7071 - 0.22, 0.0), (c.x - s * c.y) * 0.7071));
+                const float hw = 0.07, share = 0.44 * 2.0 * hw + 3.1416 * hw * hw;
+                float w = max(f, 0.6 * hw); // (a bar's rounded shoulder, or the pixel: High's slope then has no hard edge to sparkle on)
+                float cover = 1.0 - smoothstep(hw - 0.5 * w, hw + 0.5 * w, d);
+                return (mix(cover, share, smoothstep(hw, 4.0 * hw, f)) - share) * 1.1;
+            }
             return 0.0;
         }
 
         // A surface at world point p, normal n: lp is the point in the box (metres from its middle), ln its face's normal there, size
         // the box (0: no box edges to wear, a prop), and code the row with the box's wear in its fraction (Surfaces.Code). bp and bn
         // are the point and the face's normal in the body (a detail texture runs on across a body's boxes and stays on it as it
-        // moves), and up the world's up in the box (a wall's v runs up it, and its weather hangs from its top).
+        // moves), and up the world's up in the box (a wall's v runs up it, and its weather hangs from its top). pd is p in small
+        // numbers (from the render origin), for its screen derivatives: dFdx of a world point kilometres out is float rounding,
+        // not the pixel (24 km out on a planetoid a step is 2 mm, a pixel up close a fraction of one), and the bumps' frame from
+        // it sparkled from pixel quad to pixel quad as the camera moved (the Worn Flight Couch's fabric, 2026-11-20).
         // uSurfQ.x is the setting: 1 Medium, 2 High (Low never comes here: it takes the classic light). All of it is maths on what the
         // pixel already has: no textures. Every detail is filtered by the pixel's own size (its uv's screen derivatives), so it
         // fades to its mean where it would be finer than a pixel instead of crawling as the camera moves, and fades out between
         // 18 and 60 m besides, so a far hull pays for the light and nothing else.
-        vec3 SurfaceLit(vec3 base, vec3 n, vec3 p, vec3 lp, vec3 ln, vec3 size, float code, vec3 bp, vec3 bn, vec3 up)
+        vec3 SurfaceLit(vec3 base, vec3 n, vec3 p, vec3 pd, vec3 lp, vec3 ln, vec3 size, float code, vec3 bp, vec3 bn, vec3 up)
         {
             int row = int(code);
             float wear = fract(code) / 0.99;
@@ -218,7 +235,7 @@ public static class Surfaces
             vec3 abn = abs(bn);
             vec2 buv = abn.y > abn.x && abn.y > abn.z ? bp.xz : abn.x > abn.z ? vec2(bp.z, bp.y) : vec2(bp.x, bp.y);
             vec2 bdx = dFdx(buv), bdy = dFdy(buv);
-            vec3 dpx = dFdx(p), dpy = dFdy(p);
+            vec3 dpx = dFdx(pd), dpy = dFdy(pd);
             if (hs.y > hs.x) // (streaks and grain run the long way of the face)
             {
                 uv = uv.yx;
@@ -279,7 +296,7 @@ public static class Surfaces
             if (near > 0.0)
             {
                 vec2 off = vec2(float(row) * 3.1, dot(size, vec3(7.3, 3.7, 11.1)));
-                vec2 puv = rd.x > 5.5 ? uv : uv + off; // (panels are fitted to the box: no offset)
+                vec2 puv = abs(rd.x - 6.0) < 0.5 ? uv : uv + off; // (panels are fitted to the box: no offset)
                 if (rd.x > 0.5 && rd.z > 0.0)
                 {
                     int kind = int(rd.x + 0.5);
@@ -289,12 +306,16 @@ public static class Surfaces
                     if (uSurfQ.x > 1.5)
                     {
                         // High: the pattern tilts the normal a little (its slope along u and v), so light catches it. The step
-                        // is at least the pixel, so the slope is filtered the same way as the pattern.
+                        // is at least the pixel, so the slope is filtered the same way as the pattern. The slope goes along the
+                        // face's own u and v in the world (the frame from the derivatives, as the detail texture's bumps): a
+                        // fixed world tangent tilted a bar or a rib sideways, along its own length (until 2026-11-19).
                         float e = max(0.012, fp);
                         float hu = SurfPattern(kind, puv + vec2(e, 0.0), rd.y, fp, hs) * rd.z * near - h;
                         float hv = SurfPattern(kind, puv + vec2(0.0, e), rd.y, fp, hs) * rd.z * near - h;
-                        vec3 t = normalize(cross(n, abs(n.y) < 0.9 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0)));
-                        nn = normalize(nn - (t * hu + cross(n, t) * hv) * 1.2 * (0.012 / e));
+                        vec3 q2 = cross(dpy, n), q1 = cross(n, dpx);
+                        vec3 tu = q2 * dx.x + q1 * dy.x, tv = q2 * dx.y + q1 * dy.y;
+                        float im = inversesqrt(max(max(dot(tu, tu), dot(tv, tv)), 1e-24));
+                        nn = normalize(nn - (tu * hu + tv * hv) * im * 1.2 * (0.012 / e));
                     }
                 }
                 float nw = mix(0.5, SurfNoise(uv * 5.0 + off), SurfKeep(1.0, fp * 5.0));
@@ -360,7 +381,7 @@ public sealed class SurfaceFile
     public readonly Dictionary<string, byte> Bulk = new(StringComparer.OrdinalIgnoreCase);
     public readonly byte[] Props = new byte[(int)Material.Count];
 
-    public static readonly string[] PatternNames = ["none", "brushed", "speckle", "grain", "weave", "tread", "panel"];
+    public static readonly string[] PatternNames = ["none", "brushed", "speckle", "grain", "weave", "tread", "panel", "diamond"];
 
     /// <summary>Why the file was refused, if it was.</summary>
     public string Refused = "";

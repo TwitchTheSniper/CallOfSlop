@@ -378,8 +378,8 @@ public static class ConstructWorks
         {
             ref var p = ref c.Parts[c.WorksPieces[k]];
             var d = p.D;
-            if (d.WorksKind == WorksKind.Mount)
-                continue;
+            if (d.WorksKind == WorksKind.Mount || d.ModPart == ModPart.Socket)
+                continue; // (a mount, or an engine socket's plate standing as one, serves nothing)
             var cell = c.WorksPieceAsm[k] * KindCount + (int)d.WorksKind;
             c.WorksAll[cell] = (byte)Math.Min(255, c.WorksAll[cell] + 1);
             if (!p.Working)
@@ -472,6 +472,26 @@ public static class ConstructWorks
         return -1;
     }
 
+    /// <summary>
+    /// An engine socket's plate bolted onto a mount (a retrofit's plate on a pod's tail plate, module-sockets.md 11) passes the mount
+    /// through when that mount has a drive piece on the head's thrust line: the drive's engine is behind that tail plate. Otherwise the
+    /// plate is the mount itself (a Drive Core bolted to its back on the line, a plate on a Hull Mount beside it).
+    /// </summary>
+    private static int MountUnder(Construct c, int head, int plate)
+    {
+        var (at, dir) = ThrustLine(c, head);
+        for (var e = c.FirstLink(plate); e >= 0; e = c.NextLink(e))
+        {
+            var o = c.OtherEnd(e);
+            if (c.Parts[o].D.WorksKind != WorksKind.Mount)
+                continue;
+            for (var f = c.FirstLink(o); f >= 0; f = c.NextLink(f))
+                if (c.OtherEnd(f) is var p && IsDrivePiece(c.Parts[p].D) && OnLine(c, p, at, dir))
+                    return o;
+        }
+        return plate;
+    }
+
     /// <summary>From a head down the joints it stands on (a gun's hinge and ring) to the first mount it touches, or -1.</summary>
     private static int FindMount(Construct c, int head, Span<ushort> queue)
     {
@@ -487,6 +507,8 @@ public static class ConstructWorks
                     var d = c.Parts[o].D;
                     if (d.WorksKind == WorksKind.Mount)
                         return o;
+                    if (d.ModPart == ModPart.Plug && ModuleSockets.EngineMountOf(c, o) is var plate and >= 0)
+                        return MountUnder(c, head, plate); // (a module's thruster on its plug: an engine socket's plate is its mount, module-sockets.md 2.2)
                     if (d.HasJoint && n < queue.Length && queue[..n].IndexOf((ushort)o) < 0)
                         queue[n++] = (ushort)o;
                 }

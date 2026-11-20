@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Module Battery 1x1",
+  "description": "A 1x1 module: a Battery. Written by the part kit (module_sockets).",
+  "module": { "w": 1, "l": 1, "primary": "power-store", "tags": ["power-store"] },
+  "steps": [
+    { "part": "Module Plug 1x1" },
+    { "part": "Battery", "on": 0, "socket": "s0.0", "by": "-y" }
+  ]
+}

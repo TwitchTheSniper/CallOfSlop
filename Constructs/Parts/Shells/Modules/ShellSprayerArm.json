@@ -1,0 +1,191 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Shell Sprayer Arm",
+  "description": "A robot shell arm that is a paint tool: a paint can and its nozzle. Worn, it colours parts. A Shell Gantry fits it to a robot shell from its parts table.",
+  "group": "Logic",
+  "section": "Shells",
+  "role": "frame",
+  "tool": "wrench",
+  "mass": 5.0,
+  "health": 60,
+  "armour": 2,
+  "material": "steel",
+  "color": "#8b949c",
+  "attachSeconds": 2,
+  "boxes": [
+    {
+      "min": [
+        -0.06,
+        0.36,
+        -0.06
+      ],
+      "max": [
+        0.06,
+        0.42,
+        0.06
+      ],
+      "color": "#3a7fd0"
+    },
+    {
+      "min": [
+        -0.072,
+        0.369,
+        -0.03
+      ],
+      "max": [
+        -0.056,
+        0.411,
+        0.03
+      ],
+      "color": "#8b949c",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.073,
+        0.375,
+        -0.036
+      ],
+      "max": [
+        -0.056,
+        0.405,
+        0.036
+      ],
+      "color": "#8b949c",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.084,
+        0.382,
+        -0.008
+      ],
+      "max": [
+        -0.068,
+        0.398,
+        0.008
+      ],
+      "color": "#30363d",
+      "detail": true
+    },
+    {
+      "min": [
+        0.056,
+        0.369,
+        -0.03
+      ],
+      "max": [
+        0.072,
+        0.411,
+        0.03
+      ],
+      "color": "#8b949c",
+      "detail": true
+    },
+    {
+      "min": [
+        0.056,
+        0.375,
+        -0.036
+      ],
+      "max": [
+        0.073,
+        0.405,
+        0.036
+      ],
+      "color": "#8b949c",
+      "detail": true
+    },
+    {
+      "min": [
+        0.068,
+        0.382,
+        -0.008
+      ],
+      "max": [
+        0.084,
+        0.398,
+        0.008
+      ],
+      "color": "#30363d",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.055,
+        0.22,
+        -0.055
+      ],
+      "max": [
+        0.055,
+        0.365,
+        0.055
+      ],
+      "color": "#56606a"
+    },
+    {
+      "min": [
+        -0.07,
+        0.07,
+        -0.07
+      ],
+      "max": [
+        0.07,
+        0.225,
+        0.07
+      ],
+      "color": "#3a7fd0"
+    },
+    {
+      "min": [
+        -0.073,
+        0.12,
+        -0.073
+      ],
+      "max": [
+        0.073,
+        0.16,
+        0.073
+      ],
+      "color": "#e0e4e8",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.025,
+        0.02,
+        -0.025
+      ],
+      "max": [
+        0.025,
+        0.075,
+        0.025
+      ],
+      "color": "#30363d"
+    },
+    {
+      "min": [
+        -0.032,
+        0.0,
+        -0.032
+      ],
+      "max": [
+        0.032,
+        0.024,
+        0.032
+      ],
+      "color": "#98a1a9"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

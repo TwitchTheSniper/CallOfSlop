@@ -77,7 +77,11 @@ public static unsafe class SnowRenderer
         void main()
         {
             vec2 p = vec2(float((gl_VertexID << 1) & 2), float(gl_VertexID & 2)) * 2.0 - 1.0;
+        #if REVZ
+            gl_Position = vec4(p, 0.0, 1.0); // on the far plane (0, reversed depth): only where nothing was drawn (the sky)
+        #else
             gl_Position = vec4(p, 1.0, 1.0); // on the far plane: only where nothing was drawn (the sky)
+        #endif
         }
         """;
 

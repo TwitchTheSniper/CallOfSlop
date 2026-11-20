@@ -59,6 +59,8 @@ public static class SandboxAim
         public Construct Body;
         public int Part;
         public float Distance;
+        public float BuildReach; // the attach tool's reach for this player (ConstructEdits.BuildReachOf: a big shell frame's further); 0: a person's
+        public readonly float AttachReach => BuildReach > 0 ? BuildReach : ConstructBuild.Reach;
         public float ComDistance; // from the eye to the body's centre of mass (a loose part is picked up within reach of that; 0: don't ask)
         public int SlotPlus1; // the hit is on a stored part (taken with F, not a tool)
         public byte Player;
@@ -126,7 +128,7 @@ public static class SandboxAim
                         return AimCall.No;
                     if (t.OnSeam)
                         return AimCall.Ok;
-                    if (t.Distance <= ConstructBuild.Reach && ConstructPlace.FindJoin(t.World, c, t.Part, out _))
+                    if (t.Distance <= t.AttachReach && ConstructPlace.FindJoin(t.World, c, t.Part, out _))
                         return SalvageOrContested(t);
                     if (c.Loose && d.PhysicsOnly && !t.Freeform)
                         return SalvageOrContested(t); // (a physics-only piece: the socket weld's source)
@@ -288,6 +290,8 @@ public static class SandboxAim
         }
         if (d.ToolDock)
             return p.Broken ? AimCall.Refuse($"the {d.Name} is wrecked") : AimCall.Ok;
+        if (d.ModPart == ModPart.Socket || d.ModPart == ModPart.Plug && ModuleSockets.ModuleOfPart(c, t.Part) is var mp and >= 0 && (c.Modules[mp].Socket >= 0 || c.Modules[mp].OnStand))
+            return p.Broken ? AimCall.Refuse($"the {d.Name} is wrecked") : AimCall.Ok; // (F fits or takes off a module: ConstructEditsModules.cs)
         if (d.Air != AirPart.None)
             return p.Broken ? AimCall.Refuse($"the {d.Name} is wrecked") : AimCall.Ok; // (its reading: GameShipAir.cs)
         if (d.Eva == EvaPart.Locker)

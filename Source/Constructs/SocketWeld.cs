@@ -337,7 +337,28 @@ public static class SocketWeld
             return "that socket is gone";
         if (leaf && LockRefusal(target, w.Part, mover, pos, rot) is { } locks)
             return locks;
+        if (!src.Face && !w.Face && (mover.DefOf(part).Sockets[socket].Kind == SocketKind.Module || target.DefOf(w.Part).Sockets[w.Socket].Kind == SocketKind.Module)
+            && ModuleWeldRefusal(world, mover, part, target, w.Part, degrees, pos, rot, src, w) is { } module)
+            return module;
         return Overlap(world, q, mover, target, pos, rot, feet);
+    }
+
+    /// <summary>A socket weld onto a Module socket (module-sockets.md 6.1): a module's plug onto a free plate, on the turn grid, by the fit's rules. Null, or why not.</summary>
+    private static string? ModuleWeldRefusal(ConstructWorld world, Construct mover, int part, Construct target, int plate, float degrees, Vector3 pos, Quaternion rot, in WeldTarget src, in WeldTarget w)
+    {
+        if (mover.DefOf(part).ModPart != ModPart.Plug || target.DefOf(plate).ModPart != ModPart.Socket)
+            return "a module goes on by its plug, onto a Module Socket's face";
+        if (!OnRotGrid(mover, src, target, w, degrees))
+            return "a module sits square on its socket: turn it in steps of 90 degrees";
+        if (mover.Dirty)
+            mover.Rebuild();
+        if (target.Dirty)
+            target.Rebuild();
+        var si = ModuleSockets.SocketOfPlate(target, plate);
+        var mi = ModuleSockets.ModuleOfPart(mover, part);
+        if (si < 0 || mi < 0)
+            return "that socket or module isn't ready yet";
+        return ModuleSockets.FitRefusal(target, si, mover, mi, rot, pos, byHand: true, world.Creative);
     }
 
     /// <summary>What stops this body being the piece that moves, wherever it is and whatever the pose (step 1 says so; a frozen body is not held: it moves). Null, or why not.</summary>
@@ -435,7 +456,7 @@ public static class SocketWeld
             mover.SegPose(mover.Parts[i].Seg, out var sq, out var st);
             var pq = Quaternion.Normalize(rot * sq);
             var pt = pos + Vector3.Transform(st, rot);
-            for (var b = 0; b < d.SolidBoxes; b++)
+            for (var b = 0; b < ConstructBuild.PlaceSolids(d); b++) // (a flush pod: its lid; its body sinks into what it goes on)
             {
                 mover.BoxOf(i, b, out var bc, out var bh);
                 var obb = new Obb(pt + Vector3.Transform(bc, pq), Vector3.Max(bh - new Vector3(0.012f), new Vector3(0.004f)), pq);

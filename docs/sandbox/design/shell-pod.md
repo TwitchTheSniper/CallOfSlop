@@ -34,6 +34,28 @@ A place to park a robot shell when nobody wears it. Drafted with the user by cli
   red broken). The lid is two flaps at the solid's top inside a coaming 3 mm higher; they swing down against the walls over the
   first 30 % of the frame's rise, then the frame's head comes up between its posts (`ShellPodRender.Flaps`). Render only: no wire
   or save change. Not cut: the headless recorder's draws.
+- **The frame's pistons** (the user, 2026-11-20): each side of the rising frame is two telescoping pistons, not a plain post,
+  with a lighting truss between them (three chords along the side, zig-zag webbing on each face, alternate struts 2 mm either
+  side of the face so no two share a plane) and a teal cap on each top stage (`ShellPodRender.Piston`, `Truss`). The stages
+  are stowed nested in the pod, 4 mm apart in height, their tops under the lid; they draw out thinnest first, each keeping 6 cm
+  in the one below, as many as the full rise needs (2 to 7). Every size and mount; the platform rises between the two sides.
+- **A flush pod's body is solid** (round 5): its second hidden box is the body, so a player under a thin deck bumps into the
+  housing and no part goes into it; placing tests a flush pod's lid alone (`ConstructBuild.PlaceSolids`, also the clipboard's
+  paste). The far-side check (`BodyRefusal`) runs after the overlap test, among the parts near the pod's column (the part tree),
+  in the rest frame (`Construct.RestPose`: a hinge's angle now doesn't count).
+  Round 6: socket and point welds, smart rotation and route walls also take a flush pod's lid alone; swapping the part a pod
+  sits in tests pods by their lids (`Blocked(..., podLids)`); a paste runs the far-side check (`ConstructClip.PodRefusal`);
+  the body box meets players and parts but not the ground (`ConstructCollider.Leaf.NoGround`, when the pod isn't alone: a
+  loose pod stands on its body), so a thin deck lying on the ground isn't shoved up; and the far-side answer is kept per pose
+  and build (64 poses), so a held pod's ghost doesn't redo it every frame.
+- **Shallow flush** (the user, 2026-11-19, over a refusal): a flush pod goes on a surface thinner than its body too (a Tiny one in
+  a 0.25 m wooden floor). Its lid is flush and its pocket cut through the surface as ever; the rest of its body stands proud on
+  the far side (below a floor, above a ceiling, behind a wall) as a housing, ringed by a flange with corner bolts 3 mm off the far
+  face (`ShellPodRender.Flange`; the depth is `ConstructShellPod.SurfaceDepth` down its middle, kept per pod in
+  `Construct.PodSurface` with the caches). A deep enough surface keeps the full pocket and no flange. Placing on a socket is
+  refused only when the body past the surface would run into another part of the body (`BodyRefusal`); a freeform weld isn't
+  checked. The surfaces a pocket opens are found with the caches (`FindHosts`), keyed to the part count; depths and hosts are
+  measured in the body's frame (a freeform weld's part sits in its own segment's frame: `BodyBounds`).
 - **Fits**: a shell's class by its standing height (1.8 m x the frame's scale); it docks in a pod of its class or larger (an assumption
   of the rule "docks only in its size class or larger").
 - **The frame** (`ShellPodRender.cs`): the lid rises on two posts along the face's normal (the button panel on the right post, a lamp on

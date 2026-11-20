@@ -262,7 +262,7 @@ public sealed partial class CommonerFittingParts
             Tube(k, 1, -0.28, -0.2, 0.82, 1.0, 0.006, Copper, "copper", 4); // (the aerial lead up the wall)
             k.Box(-0.06, 0.53, -0.2, 0.18, 0.55, -0.12, "#7a3a2a", "fabric"); // (the log book)
         });
-        yield return Seat(F("Jump Seat", "A fold-down jump seat on the wall, its canvas sling patched and the frame hinged on rusty pins, with a hook for a helmet. Sit in it with F.", [-0.25, 0, -0.25], [0.25, 1.2, 0.25], role: "seat", draw: k =>
+        yield return Seat(F("Sling Jump Seat", "A fold-down jump seat on the wall, its canvas sling patched and the frame hinged on rusty pins, with a hook for a helmet. Sit in it with F.", [-0.25, 0, -0.25], [0.25, 1.2, 0.25], role: "seat", draw: k =>
         {
             k.Box(-0.22, 0.35, -0.25, 0.22, 1.15, -0.22, Steel, "rusty paint");
             foreach (var sx in new[] { -0.2, 0.2 })

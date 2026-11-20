@@ -6,6 +6,28 @@
     "IT",
     "Highland"
   ],
+  "modules": {
+    "tags": {
+      "cargo": 1.0,
+      "engine": 0.7,
+      "armour": 0.6,
+      "power-store": 0.5,
+      "sensor": 0.3
+    },
+    "stats": {
+      "speed": 0.5,
+      "power": 0.6,
+      "fuel": 0.6,
+      "mass": 0.5,
+      "cost": 0.7
+    },
+    "needs": {
+      "accel": 1.0,
+      "powerMargin": 1.15,
+      "minGuns": 0
+    },
+    "pick": 2
+  },
   "stance": {
     "players": "neutral",
     "factions": {

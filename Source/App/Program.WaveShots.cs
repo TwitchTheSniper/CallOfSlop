@@ -71,7 +71,7 @@ public static unsafe partial class Program
             g.SelfTestZombiesTick(now);
             foreach (var z in g.Horde)
                 z.RenderPos = z.Position; // (no client interpolation here)
-            ZombieAnim.SetFrustum(viewM * proj);
+            ZombieAnim.SetFrustum(viewM * Renderer.GpuProjection(proj));
             Crowd.Prepare(g, eye, now, fog); // (the drawing every tick, as in the game, so the agents carry on)
         }
         void Shoot(int k)

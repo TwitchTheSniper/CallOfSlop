@@ -6,7 +6,7 @@ namespace CallOfSlop.PartKit.Generators;
 /// <summary>
 /// Ship fittings in the commoners' look (Karl, 2026-11-20: "winnebago vibe. Think space commoner, they're just trying to get by,
 /// it looks as though it's way past its expiry date and from an older generation"). These are the parts Karl kept from the
-/// Commoner Style Sheet's rounds (since archived): a jump seat, an old fridge, a bucket toilet, parts bins, a water tote, an
+/// Commoner Style Sheet's rounds (since archived): a sling jump seat, an old fridge, a bucket toilet, parts bins, a water tote, an
 /// oxygen generator (a Life Support Unit in this look), a radio set, a jacked strut, and the worn ladder (liked, though "too nice"
 /// for the look). The drafts that weren't kept are in this file's git history (claude/project-thread-0ubdx9, PR 354).
 ///

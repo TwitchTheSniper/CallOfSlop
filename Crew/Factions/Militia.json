@@ -5,6 +5,29 @@
   "styles": [
     "Militia"
   ],
+  "modules": {
+    "tags": {
+      "turret": 1.0,
+      "armour": 0.9,
+      "reactor": 0.7,
+      "engine": 0.6,
+      "sensor": 0.5,
+      "power-store": 0.4
+    },
+    "stats": {
+      "speed": 0.5,
+      "power": 0.7,
+      "fuel": 0.3,
+      "mass": 0.4,
+      "cost": 0.4
+    },
+    "needs": {
+      "accel": 1.2,
+      "powerMargin": 1.2,
+      "minGuns": 2
+    },
+    "pick": 3
+  },
   "stance": {
     "players": "wary",
     "factions": {

@@ -5,7 +5,10 @@
   // "fixed" slots can't be changed by the Shell Gantry. A frame's place in the list is its byte on the wire: frame 0 is the Robot
   // Shell with the numbers every shell had before; a new frame goes at the end. "fold" is how it folds into a shell pod
   // (docs/sandbox/design/shell-pod.md; ShellFold in ShellFrames.cs): degrees at the hip, knee, waist ("bend"), shoulders and
-  // elbows, and how far the head sinks, the body drops and moves back, and its folded height, in a person's metres.
+  // elbows, and how far the head sinks, the body drops and moves back, and its folded height, in a person's metres. "lift" (0.1 to 10,
+  // 1 if not said) is the share of the survival physics gun's limit its wearer lifts (above 1 the beam's pull grows with it);
+  // "sit": false refuses seats. "scale" is 0.5 to 3; a frame larger than a person also reaches that much further with its
+  // attach tool and physics gun (docs/sandbox/design/construction-shell.md).
   "format": "call-of-slop-shells/1",
   "slots": ["head", "back", "leftArm", "rightArm", "leftLeg", "rightLeg"], // the order is the wire's: a new slot goes at the end
   // A module's "kind" is what the code knows: head, pack, hopper (the shell part's own bin is the hopper; "takes" what it
@@ -13,7 +16,11 @@
   // works, it taps "rate" units a second of its ore into the hopper). A module's "tool" is the shell's only tool while it is
   // worn (the tool wheel, the number keys and the gun are refused; leaving the shell gives the body's tools back), and with "view":
   // true its wearer sees the module's own model in first person in place of that tool's (the drill arm reaching forward; the
-  // rig's own boxes, ShellKitNodes.cs). leg: a leg.
+  // rig's own boxes, ShellKitNodes.cs). tool: an arm that IS a tool (its "tool"; "view" too), held forward along the look like the drill
+  // arm and drawn from its part's model; a shell with tool arms uses only their tools (the tool wheel offers each). leg: a leg.
+  // How a worn shell shows each module (ShellModuleNodes.cs): the module's part model on the rig. A leg says its part's "joints" (heights in
+  // the part's metres, hip, knee and ankle; a sprung leg adds its hock between knee and ankle) and, with a hock, "hock": [up, back],
+  // where its hock stands above and behind the ankle in a person's metres: the rig then walks it digitigrade (LegAnimator.Hock).
   // Any module may say "speed" (times the shell's pace) and "damage" (times the hits it takes), 1 if not said. A module with a
   // "part" comes off on a Shell Gantry as that part, onto its parts table, and that part is fitted back (mining-shell.md "Shell
   // Gantry"); one with none is never taken off. A module's place in the list is its byte on the wire and in a shell's save: a new
@@ -24,10 +31,15 @@
     { "name": "Ore Hopper", "slot": "back", "kind": "hopper", "takes": ["iron ore", "copper ore", "gold ore", "levite ore", "stone", "sand"] },
     { "name": "Hand", "slot": "arm", "kind": "hand", "part": "Shell Hand" },
     { "name": "Drill Arm", "slot": "arm", "kind": "drill", "rate": 30, "tier": 2, "tool": "GroundDrill", "view": true },
-    { "name": "Standard Leg", "slot": "leg", "kind": "leg", "part": "Shell Standard Leg" },
-    { "name": "Heavy Leg", "slot": "leg", "kind": "leg", "part": "Shell Heavy Leg" },
-    { "name": "Runner Leg", "slot": "leg", "kind": "leg", "part": "Shell Runner Leg", "speed": 1.05 },
-    { "name": "Plated Head", "slot": "head", "kind": "head", "part": "Shell Plated Head", "damage": 0.9 }
+    { "name": "Standard Leg", "slot": "leg", "kind": "leg", "part": "Shell Standard Leg", "joints": { "hip": 0.9, "knee": 0.49, "ankle": 0.09 } },
+    { "name": "Heavy Leg", "slot": "leg", "kind": "leg", "part": "Shell Heavy Leg", "joints": { "hip": 1.35, "knee": 0.735, "ankle": 0.15 } },
+    { "name": "Runner Leg", "slot": "leg", "kind": "leg", "part": "Shell Runner Leg", "speed": 1.05,
+      "joints": { "hip": 0.94, "knee": 0.74, "hock": 0.5, "ankle": 0.09 }, "hock": [0.4, 0.2] },
+    { "name": "Plated Head", "slot": "head", "kind": "head", "part": "Shell Plated Head", "damage": 0.9 },
+    { "name": "Welder Arm", "slot": "arm", "kind": "tool", "part": "Shell Welder Arm", "tool": "Welder", "view": true },
+    { "name": "Cutter Arm", "slot": "arm", "kind": "tool", "part": "Shell Cutter Arm", "tool": "Remover", "view": true },
+    { "name": "Grip Arm", "slot": "arm", "kind": "tool", "part": "Shell Grip Arm", "tool": "PhysicsGun", "view": true },
+    { "name": "Sprayer Arm", "slot": "arm", "kind": "tool", "part": "Shell Sprayer Arm", "tool": "Paint", "view": true }
   ],
   "frames": [
     { "name": "Standard", "part": "Robot Shell", "scale": 1, "speed": 1, "damage": 1,
@@ -38,6 +50,20 @@
       "fixed": ["back", "rightArm"],
       // Folded: it kneels with its back straighter (the hopper stays upright), its hand in its lap and the drill arm laid forward
       // across its knees.
-      "fold": { "hip": 90, "knee": -160, "bend": -15, "leftShoulder": 45, "rightShoulder": 80, "leftElbow": 70, "rightElbow": 0, "head": 0.22, "drop": 0.72, "shift": 0.05, "height": 1.0 } }
+      "fold": { "hip": 90, "knee": -160, "bend": -15, "leftShoulder": 45, "rightShoulder": 80, "leftElbow": 70, "rightElbow": 0, "head": 0.22, "drop": 0.72, "shift": 0.05, "height": 1.0 } },
+    // The Half Shell (docs/sandbox/design/half-shell.md): the Robot Shell at half size, for crawl spaces, ducts and low decks. Its
+    // modules are the Robot Shell's own, drawn at its size. "lift": its physics gun takes this share of the survival limit;
+    // "sit": false, it is refused by seats (it would sit below the controls). It folds into a Tiny pod as a Robot Shell does.
+    { "name": "Half", "part": "Half Shell", "scale": 0.5, "speed": 0.9, "damage": 1.3, "lift": 0.5, "sit": false, "jobs": ["crawler"],
+      "slots": { "head": "Optics Head", "back": "Power Pack", "leftArm": "Hand", "rightArm": "Hand", "leftLeg": "Standard Leg", "rightLeg": "Standard Leg" },
+      "fold": { "hip": 90, "knee": -160, "bend": -35, "leftShoulder": 50, "rightShoulder": 50, "leftElbow": 60, "rightElbow": 60, "head": 0.2, "drop": 0.72, "shift": 0.15, "height": 0.95 } },
+    // The Construction Shell (docs/sandbox/design/construction-shell.md): a 5 m frame for big pieces, which the survival physics
+    // gun no longer lifts (manipulators.md). A fixed Grip Arm (its physics gun) and a fixed Welder Arm (its attach tool), each drawn
+    // at its size; "lift" 5 takes five times survival's 3 t (15 t) and its beam pulls five times as hard. Too big for seats
+    // ("sit": false) and for any pod built yet (5.04 m standing is the Large class).
+    { "name": "Construction", "part": "Construction Shell", "scale": 2.8, "speed": 0.75, "damage": 0.6, "lift": 5, "sit": false, "jobs": ["builder"],
+      "slots": { "head": "Optics Head", "back": "Power Pack", "leftArm": "Welder Arm", "rightArm": "Grip Arm", "leftLeg": "Heavy Leg", "rightLeg": "Heavy Leg" },
+      "fixed": ["leftArm", "rightArm"],
+      "fold": { "hip": 90, "knee": -160, "bend": -35, "leftShoulder": 50, "rightShoulder": 50, "leftElbow": 60, "rightElbow": 60, "head": 0.2, "drop": 0.72, "shift": 0.15, "height": 0.95 } }
   ]
 }

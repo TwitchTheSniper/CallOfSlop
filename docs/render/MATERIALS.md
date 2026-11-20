@@ -37,7 +37,7 @@ already has, with no textures:
 
 - `vLocal`, `vLocalN`, `vSize` (the point in the box in metres, its face, its size) keep detail on a moving part, which a world-space
   texture can't, and give the distance to the box's edges, which is the edge wear.
-- Patterns: brushed, speckle, grain, weave, tread, panel. They fade out between 18 and 60 m, so a far hull pays for the light only.
+- Patterns: brushed, speckle, grain, weave, tread (ribs: rubber), panel, diamond (tread plate's raised bars on a flat plate: tread plate and the deck plates, 2026-11-19; their old sine ribs read as soft light and dark bands across a whole deck). They fade out between 18 and 60 m, so a far hull pays for the light only.
 - **Filtered by the pixel** (2026-11-07, see "Shimmer and the grid" below): every detail fades to its own mean as it gets finer
   than a pixel, from the face's uv's screen derivatives; lines (seams, grooves, worn edges) are drawn with their cover spread
   over the pixel. Nothing crawls as the camera moves.
@@ -105,7 +105,7 @@ hull plates, wall plates and door panels covered in a grid of lines as if they w
 Measured with `--gl-bench "Construct Yard" --bench-wall --bench-move 8 --bench-dist 3 --bench-view "0,1.7,0,0,1.0,-10"`: a floor
 and a wall of 2 m steel plates, half painted grey, the camera gliding 8 mm a frame, and the mean second difference in time of
 each channel over the middle of the picture (`[glbench] shimmer`: a pattern that crawls makes it jump; llvmpipe, 960x540, 14
-frames). Low draws no patterns, so it is the floor (edges, terrain):
+frames; `--bench-wall-finish "deck plate"` lays the floor in one material). Low draws no patterns, so it is the floor (edges, terrain):
 
 | Materials | Before | After |
 | --- | --- | --- |

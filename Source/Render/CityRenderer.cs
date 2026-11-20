@@ -865,7 +865,7 @@ public sealed unsafe partial class CityRenderer
         var origin = gfx.Origin;
         // The apron first, pushed back in depth: at a distance the depth buffer can't tell 15 cm apart.
         Native.glEnable(GlCapability.PolygonOffsetFill);
-        Native.glPolygonOffset(4f, 64f);
+        Renderer.PolygonOffset(4f, 64f);
         for (var k = 0; k < n; k++)
         {
             ref readonly var c = ref geo.Chunks[_order[k]];
@@ -1053,8 +1053,7 @@ public sealed unsafe partial class CityRenderer
         _planes[1] = c4 - c1;
         _planes[2] = c4 + c2;
         _planes[3] = c4 - c2;
-        _planes[4] = c4 + c3;
-        _planes[5] = c4 - c3;
+        Renderer.DepthPlanes(c3, c4, out _planes[4], out _planes[5]); // near, far (either depth convention)
         for (var i = 0; i < 6; i++)
         {
             var len = new Vector3(_planes[i].X, _planes[i].Y, _planes[i].Z).Length();

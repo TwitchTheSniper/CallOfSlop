@@ -510,11 +510,11 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
 
     private static Gap Door(double a) => new(a, 1.5, 0, DoorH);
 
-    /// <summary>A wall 0.25 m thick centred on c, along x (alongX) or z from a0 to a1, from the floor's top y0 to y1, with its gaps; a blue
-    /// dado on both faces, dark jambs and a hazard head on each doorway, glass in a window.</summary>
+    /// <summary>A wall 0.25 m thick centred on c, along x (alongX) or z from a0 to a1, from the floor's top y0 to y1, with its gaps; dark
+    /// jambs and a hazard head on each doorway, glass in a window. Its faces are clad later (Clad), once the room's fittings are drawn.</summary>
     private static void WallRun(Part p, bool alongX, double a0, double a1, double c, double y0, double y1, params Gap[] gaps)
     {
-        (Walls.TryGetValue(p, out var ws) ? ws : Walls[p] = []).Add(new WallLine(alongX, a0, a1, c, y0, y1)); // (each run is a piece of its own: Split)
+        (Walls.TryGetValue(p, out var ws) ? ws : Walls[p] = []).Add(new WallLine(alongX, a0, a1, c, y0, y1, gaps)); // (each run is a piece of its own: Split)
         void Run(double a, double b, double ya, double yb, string col, string fin, double th, bool detail)
         {
             if (b - a < 0.02 || yb - ya < 0.02)
@@ -548,8 +548,6 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
                 }
                 Run(g.A - 0.05, g.A + g.W + 0.05, y0 + g.Sill - 0.06, y0 + g.Sill, WallTrim, "painted steel", 0.14, true);
             }
-            else
-                Run(at + 0.05, g.A - 0.05, y0 + 0.003, y0 + 0.75, WallLow, "painted plating", 0.137, true);
             // The frame: dark jambs, a hazard head.
             Run(g.A - 0.07, g.A, y0, y0 + g.Head + 0.07, WallTrim, "painted steel", 0.145, true);
             Run(g.A + g.W, g.A + g.W + 0.07, y0, y0 + g.Head + 0.07, WallTrim, "painted steel", 0.145, true);
@@ -557,7 +555,6 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
             at = g.A + g.W;
         }
         Run(at, a1, y0, y1, Wall, "painted plating", 0.125, false);
-        Run(at + 0.05, a1 - 0.05, y0 + 0.003, y0 + 0.75, WallLow, "painted plating", 0.137, true);
     }
 
     /// <summary>The socket a door hangs by in a wall's doorway (from Gap a): on the wall's centre line at the doorway's start.</summary>
@@ -906,7 +903,7 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
             Sock(p, $"o2Tank{i}", Cx - Lw, Ft0 + 0.125, 35.65 + i * 0.85, "+x");
         for (var i = 0; i < 4; i++) // (the Robot Shell Docks along the engineering bulkhead's forward face, port of its door: Karl, 2026-11-17)
             Sock(p, $"shellDock{i}", Cx - Lw + 0.2 + CrewFittingsParts.DockHalf + i * (2 * CrewFittingsParts.DockHalf + 0.01), Ft0 + 0.125, 34.0, "-z");
-        Sock(p, "reactor", Cx + 3.1, Ft0, 35.5, "+y");
+        Sock(p, "reactor", Cx + 3.1, Ft0, 35.4, "+y"); // (35.4: its 2x2 module socket's room clears the Capacitor Bank aft)
         Sock(p, "board", Cx + Lw, Ft0 + 0.9, 40.6, "-x");
         Sock(p, "panel", Cx - Lw, Ft0 + 0.6, 38.0, "+x");
         Sock(p, "battery", Cx - Lw + 0.41, Ft0, 39.9, "+y"); // (its Ship Battery Bank, back to the port wall: Karl, 2026-11-18)
@@ -1753,6 +1750,9 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
     private const double RailLen = 32.5;
     private const double RailEnergy = 15000; // kJ a slug takes from the capacitors (ship-works.md 8): the Capacitor Bank M aboard holds two and a bit, and refills one in 10 s, its rate of fire
 
+    /// <summary>The railgun slug's energy budget (ConstructBores.cs): what it spends going through part after part, the whole way through a capital ship.</summary>
+    private const double RailPierce = 3000;
+
     private static Part Railgun()
     {
         var p = new Part("Zero Day Railgun", Small, Section, "The Zero Day's railgun: one slug at great speed through anything in a line, each shot 15 MJ from the ship's Capacitor Bank. Laid along the spine, so the ship is the aim.", role: "gun", tool: "welder", material: "steel", color: Armour, group: Group);
@@ -1776,7 +1776,7 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
             p.Add(Box([-0.505, 0.0, z], [0.505, 0.705, z + 0.14], Hazard, detail: true, shape: Kw(("finish", "hazard paint"))));
         p.Sock("back", [0, 0, 0], "-y");
         p.Sock("ammo", [0, 0.7, -2.0], "+y");
-        p.Set(("gun", Kw(("damage", 900), ("rpm", 6), ("spread", 0.04), ("range", 800), ("mag", 1), ("reload", 7.0), ("energy", RailEnergy), ("flags", Py.L("penetrating")), ("kick", 3500), ("fx", "cannon"), ("speed", 1100), ("soundOf", "Leviathan .50"), ("muzzle", Py.L(0, 0.3, Py.Round(-RailLen - 0.42, 4))))), ("centreSockets", false));
+        p.Set(("gun", Kw(("damage", 900), ("rpm", 6), ("spread", 0.04), ("range", 800), ("mag", 1), ("reload", 7.0), ("energy", RailEnergy), ("flags", Py.L("penetrating")), ("kick", 3500), ("pierce", RailPierce), ("fx", "cannon"), ("speed", 1100), ("soundOf", "Leviathan .50"), ("muzzle", Py.L(0, 0.3, Py.Round(-RailLen - 0.42, 4))))), ("centreSockets", false));
         return p.Stats(9000, 6000, 30, 12.0);
     }
 
@@ -1833,7 +1833,7 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         foreach (var y in new[] { 0.95, 1.9 })
             Prism(p, [.. Enumerable.Range(0, 10).Select(i => O(y, 0.8, i))], [.. Enumerable.Range(0, 10).Select(i => O(y + 0.08, 0.8, i))], Frame, "dirty steel");
         foreach (var (x, z, col) in new[] { (0.82, 0.0, PipeBlue), (-0.82, 0.0, PipeBlue), (0.0, 0.82, PipeRed), (0.0, -0.82, PipeRed) })
-            p.Add(Box([x - 0.06, 0.25, z - 0.06], [x + 0.06, 2.95, z + 0.06], col, detail: true, shape: Kw(("finish", "painted steel"))));
+            p.Add(Box([x - 0.06, 0.25, z - 0.06], [x + 0.06, 2.72, z + 0.06], col, detail: true, shape: Kw(("finish", "painted steel")))); // (2.72: on its module plug, 0.22 m up, they stop under the deck)
         p.Add(Box([-0.6, 0.25, -0.6], [0.6, 2.6, 0.6], hidden: true));
         p.Add(Box([-0.84, 0.25, -0.86], [-0.5, 0.5, -0.82], Hazard, detail: true, shape: Kw(("finish", "hazard paint"))));
         p.Sock("bottom", [0, 0, 0], "-y");
@@ -1914,7 +1914,7 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
     // face it is on; wherever two pieces' solid boxes touch they get a facing socket pair (Connect): one pair places a piece (PlaceOrder,
     // out from the keel), the game welds the rest (ConstructBuild.AutoLink), so a piece shot off leaves the others welded.
 
-    private readonly record struct WallLine(bool AlongX, double A0, double A1, double C, double Y0, double Y1);
+    private readonly record struct WallLine(bool AlongX, double A0, double A1, double C, double Y0, double Y1, Gap[] Gaps);
 
     private static readonly Dictionary<Part, List<WallLine>> Walls = [];
     private static readonly Dictionary<Part, List<(Rect[] Plan, double Y0, double Y1)>> Floors = [];
@@ -1974,6 +1974,8 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         Part WallPiece(int i) => wallPieces[i] ??= Big($"Zero Day {shortName} Wall {i + 1}", $"A wall of the Zero Day's {low} deck ({shortName.ToLowerInvariant()}), with its door frames and what is on its faces.", color: Wall);
         Part Of(PyDict b)
         {
+            if (CladWall.TryGetValue(b, out var cw))
+                return WallPiece(cw);
             double[] mn = Vd(b, "min"), mx = Vd(b, "max"), c = Mid3(b);
             foreach (var alongX in new[] { true, false })
                 if (WallOf(c, alongX ? mx[2] - mn[2] : mx[0] - mn[0], alongX, false) is int i)
@@ -2335,7 +2337,7 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
             Hang(bp, "Robot Shell", Hang(bp, "Robot Shell Dock", la, $"shellDock{i}", "wall"), "dock", "back");
         foreach (var d in new[] { "doorBayL", "doorBayR", "doorAirlock", "doorEngine" })
             Door(bp, la, d);
-        Hang(bp, "Zero Day Reactor", la, "reactor", "bottom");
+        ShipParts.FittedModule(bp, ShipParts.ModuleSocket(bp, Holder(bp, la, "reactor"), "reactor", 2, 2, kind: 2, above: 2.75), 2, 2, "Zero Day Reactor", "bottom"); // (a module on a 2x2 reactor socket, between its plug's lugs, module-sockets.md 11; the bells, 2.9 m apart and 2.7 m wide, wait for sockets past 3x3)
         Hang(bp, "Power Board", la, "board", "back");
         Hang(bp, "Engineer's Panel", la, "panel", "back");
         bp.HangTurned("Ship Battery Bank", Holder(bp, la, "battery"), "battery", "bottom", BuildingParts.RY270);
@@ -2481,13 +2483,17 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
     {
         Walls.Clear();
         Floors.Clear();
+        CladWall.Clear();
         SockOwner.Clear();
         var structure = new List<Part>();
         structure.AddRange(SplitBands(Keel(), "Keel", 40.0)); // (the aft band, where the fuel leaves for the drive, keeps the keel's name and its tankage)
-        structure.AddRange(SplitDeck(LowerFore(), "Lower Fore"));
-        structure.AddRange(SplitDeck(LowerAft(), "Lower Aft"));
-        structure.AddRange(SplitDeck(UpperFore(), "Upper Fore"));
-        structure.AddRange(SplitDeck(UpperAft(), "Upper Aft"));
+        Part[] decks = [LowerFore(), LowerAft(), UpperFore(), UpperAft()]; // (all drawn before any is clad: Clad reads every deck's walls)
+        foreach (var d in decks)
+            Clad(d);
+        structure.AddRange(SplitDeck(decks[0], "Lower Fore"));
+        structure.AddRange(SplitDeck(decks[1], "Lower Aft"));
+        structure.AddRange(SplitDeck(decks[2], "Upper Fore"));
+        structure.AddRange(SplitDeck(decks[3], "Upper Aft"));
         structure.AddRange(SplitBands(Spine(), "Spine", 12.0)); // (the band over the bridge, where it sits on the upper deck)
         structure.AddRange([Bow(), SternPart(), Sponson(-1), Sponson(1)]);
         Connect(structure);
@@ -2518,6 +2524,7 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         o.File($"{BpOut}/Shuttle.json", PyJson.Dumps(ShuttleBlueprint(defs, shuttleOrder), 2) + "\n");
         o.File($"{BpOut}/Limpet.json", PyJson.Dumps(LimpetBlueprint(defs, limpetOrder), 2) + "\n");
         o.File($"{BpOut}/ZeroDayFrigate.json", PyJson.Dumps(Blueprint(defs), 2) + "\n");
+        o.File($"{BpOut}/ModuleZeroDayReactor2x2.json", ModuleSocketParts.DesignText("Module Zero Day Reactor 2x2", 2, 2, "reactor", ["reactor"], "a Zero Day Reactor on a 2x2 plug: 3 MW, heavy", "torpedo frigate", [("Zero Day Reactor", 0, ModuleSocketParts.CentreTop(2, 2), "bottom", 0)]));
         o.File($"{BpOut}/ZeroDayFrigateCrewed.json", PyJson.Dumps(Blueprint(defs, crewed: true), 2) + "\n");
     }
 }

@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Module Adapter 3x3 to 2x2",
+  "description": "A 3x3 module whose top is a 2x2 Module Socket: fit it, then fit a 2x2 module on it. Written by the part kit (module_sockets).",
+  "module": { "w": 3, "l": 3, "primary": "utility", "tags": ["utility"] },
+  "steps": [
+    { "part": "Module Plug 3x3" },
+    { "part": "Module Socket 2x2", "on": 0, "socket": "t01.01", "by": "b00.00" }
+  ]
+}

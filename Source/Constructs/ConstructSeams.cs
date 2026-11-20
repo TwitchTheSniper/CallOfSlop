@@ -245,7 +245,7 @@ public sealed partial class ConstructEdits
             return theirs;
         if (Contested(c, player) is { } defended)
             return defended;
-        if (Reachable(eye, ReachPoint(c, a, eye), ConstructBuild.Reach) is { } far)
+        if (Reachable(eye, ReachPoint(c, a, eye), BuildReachOf(player)) is { } far)
             return far;
         for (var i = 0; i < Hands.Length; i++)
             if (Hands[i].Edit != EditKind.None && (Hands[i].Body == c.Id || Hands[i].Body2 == c.Id))

@@ -25,7 +25,7 @@ public static partial class Program
     /// <summary>Every frame with the welder out (before the held part's ghosts, which freeform mode turns off).</summary>
     private static void SandboxFreeformInput(Game g, ref SandboxHand h, Vector3 eye, Vector3 dir, bool aimed, in ConstructHit hit)
     {
-        var inReach = aimed && hit.Distance <= ConstructBuild.Reach && hit.SlotPlus1 == 0 && hit.RoutePlus1 == 0;
+        var inReach = aimed && hit.Distance <= BuildReach(g) && hit.SlotPlus1 == 0 && hit.RoutePlus1 == 0;
         // Either mode: the aim on a freeform seam cuts it free.
         if (inReach && hit.Body.FreeformCount > 0 && Freeform.SeamAt(hit.Body, hit.Part, hit.Point) is var seam and >= 0)
         {

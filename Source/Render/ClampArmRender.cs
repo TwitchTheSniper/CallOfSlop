@@ -60,7 +60,7 @@ public static class ClampArmRender
         if (a.Part >= st.PartCount || st.Parts[a.Part].Broken)
             return;
         var d = st.DefOf(a.Part);
-        Freeform.PartWorld(st, a.Part, out var pos, out var rot);
+        ConstructRender.PartDrawn(st, a.Part, out var pos, out var rot); // (as its body is drawn this frame: no jitter on a moving station)
         var frame = Matrix4x4.CreateFromQuaternion(rot) * Matrix4x4.CreateTranslation(pos);
         var shoulder = d.ClampShoulder;
         var gap = a.Wrist - shoulder;

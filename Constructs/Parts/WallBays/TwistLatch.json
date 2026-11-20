@@ -1,0 +1,144 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Twist Latch",
+  "description": "A big twist handle on an in-wall bay's jamb: press it and it turns a quarter turn outward. The fill opens on its own press.",
+  "group": "Interior",
+  "section": "In-wall bays",
+  "role": "door",
+  "tool": "wrench",
+  "finish": "painted steel",
+  "collider": "boxes",
+  "door": {
+    "kind": "swing",
+    "axis": "+z",
+    "pivot": [
+      0.51,
+      1.01,
+      0.06
+    ],
+    "angle": -90.0,
+    "seconds": 0.6,
+    "hang": "hang"
+  },
+  "mass": 4.0,
+  "health": 200,
+  "armour": 3,
+  "material": "steel",
+  "color": "#e0b020",
+  "attachSeconds": 1.0,
+  "boxes": [
+    {
+      "min": [
+        0.435,
+        1.0,
+        0.0
+      ],
+      "max": [
+        0.455,
+        1.02,
+        0.02
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.445,
+        0.945,
+        0.021
+      ],
+      "max": [
+        0.575,
+        1.075,
+        0.045
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 20,
+      "front": "+z",
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.465,
+        0.965,
+        0.045
+      ],
+      "max": [
+        0.555,
+        1.055,
+        0.085
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+z",
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.482,
+        1.04,
+        0.05
+      ],
+      "max": [
+        0.538,
+        1.31,
+        0.082
+      ],
+      "color": "#e0b020",
+      "detail": true,
+      "finish": "gloss paint",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.448,
+        1.28,
+        0.042
+      ],
+      "max": [
+        0.572,
+        1.34,
+        0.1
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+x",
+      "finish": "rubber",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.498,
+        0.998,
+        0.079
+      ],
+      "max": [
+        0.522,
+        1.022,
+        0.09
+      ],
+      "color": "#5ad070",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "hang",
+      "at": [
+        0.445,
+        1.01,
+        0.0
+      ],
+      "dir": "-z"
+    }
+  ]
+}

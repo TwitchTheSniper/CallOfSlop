@@ -5,6 +5,29 @@
   "styles": [
     "British"
   ],
+  "modules": {
+    "tags": {
+      "turret": 1.0,
+      "missile": 0.9,
+      "armour": 0.8,
+      "reactor": 0.7,
+      "engine": 0.7,
+      "sensor": 0.4
+    },
+    "stats": {
+      "speed": 0.8,
+      "power": 0.6,
+      "fuel": 0.3,
+      "mass": 0.4,
+      "cost": 0.5
+    },
+    "needs": {
+      "accel": 1.5,
+      "powerMargin": 1.15,
+      "minGuns": 2
+    },
+    "pick": 3
+  },
   "stance": {
     "players": "hostile",
     "factions": {

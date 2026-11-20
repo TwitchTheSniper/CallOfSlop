@@ -175,7 +175,8 @@ public sealed partial class Game
         SandboxHands.PackDirty.Add(p.Id);
         var tool = h.Tool;
         h = SandboxHand.Empty;
-        h.Tool = ShellFrames.Worn(p).ForcedTool ?? (tool == ConstructTool.None ? ConstructTool.Hands : tool); // (a frame's only tool: the Mining Shell's drill arm)
+        tool = tool == ConstructTool.None ? ConstructTool.Hands : tool;
+        h.Tool = ShellFrames.Worn(p).Allows(tool) ? tool : ShellFrames.Worn(p).ForcedTool ?? tool; // (a frame's only tools: the Mining Shell's drill arm, a tool arm the gantry fitted)
         var feet = shell.ToWorld(sp.Pos) + GravityFrames.UpAt(shell.WorldCom) * 0.03f; // (its part's feet: a shell cut off a dock keeps its place in the ship's frame)
         var fwd = Vector3.Transform(-Vector3.UnitZ, shell.Rot * Rot24.Quat(sp.Rot));
         ShellWoke(p, shell);
@@ -388,6 +389,15 @@ public sealed partial class Game
 
     /// <summary>Server: a player leaves the game: back in their body first, so their record is the body's and the shell stands.</summary>
     internal void ShellLeaveGame(Player p) => ShellReturn(p, lost: false, "");
+
+    /// <summary>The share of the survival physics gun's lift a player's body has (<see cref="ConstructEdits.LiftShare"/>): a worn shell frame's "lift", else 1.</summary>
+    private float ShellLiftShare(byte player) => Players.TryGetValue(player, out var p) && p.InShell ? ShellFrames.Worn(p).Lift : 1f;
+
+    /// <summary>How much further a player's body reaches with the attach tool and the beam (<see cref="ConstructEdits.ReachShare"/>): a big worn frame's size, else 1.</summary>
+    private float ShellReachShare(byte player) => Players.TryGetValue(player, out var p) && p.InShell ? ShellFrames.Worn(p).Reach : 1f;
+
+    /// <summary>Does a player's worn shell hold a piece in its grip while it welds (<see cref="ConstructEdits.GripHolds"/>)?</summary>
+    private bool ShellGripHolds(byte player) => Players.TryGetValue(player, out var p) && p.InShell && ShellFrames.Worn(p).GripWelds;
 
     private readonly List<Construct> _shSaved = [];
 

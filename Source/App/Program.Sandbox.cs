@@ -218,7 +218,8 @@ public static unsafe partial class Program
 
         // What the crosshair is on.
         SandboxAimRay(g, me, out var eye, out var dir); // (third person: the camera's ray, from the point nearest you; Program.ThirdPerson.cs)
-        var reachLook = GantryOn ? GantryMaxDist() + _gDist : ConstructBuild.Reach + 1; // (the Build Gantry's camera sees as far as its range)
+        var buildReach = BuildReach(g); // (a big shell frame reaches further: ConstructEdits.BuildReachOf)
+        var reachLook = GantryOn ? GantryMaxDist() + _gDist : buildReach + 1; // (the Build Gantry's camera sees as far as its range)
         var wall = World.RaycastWorld(eye, dir, reachLook);
         var aimed = g.Constructs.Raycast(eye, dir, MathF.Min(wall, reachLook), out var hit, look: true, noTracks: h.Tool is not (ConstructTool.Tracks or ConstructTool.Configure)); // (only these act on the band: bullets hit it, other tools reach what it runs on)
         BalanceFrame(g, in h, aimed, hit, now); // (centre of mass, lift and thrust on a flyer: Program.SandboxFlight.cs)
@@ -257,7 +258,7 @@ public static unsafe partial class Program
                       ^ (d.PlantShaft > 0 ? ConstructGenset.LookKey(hit.Body) * 31L : 0) // (a generator head's readout)
                       ^ (ConstructWorks.Has(d) ? ConstructWorks.LookKey(hit.Body, hit.Part) << 8 : d.Name == Game.BreakdownPanel ? ConstructWorks.PanelKey(hit.Body) << 8 : 0) // (ship works: a head's cap, a piece's load, the panel's report)
                       ^ (ConstructCargo.IsVolume(d) ? (long)CarriedBy(g.Constructs, hit.Body) << 44 : 0) ^ (hit.Body.CarriedBy != 0 ? 1L << 63 : 0) // (a cargo volume's load; carried)
-                      ^ (d.Role == PartRole.Seat || d.IsSeatModule ? (long)hit.Body.RebuildStamp * 1000003L : 0) // (a seat's or a module's links)
+                      ^ (d.Role == PartRole.Seat || d.IsSeatModule ? (long)hit.Body.RebuildStamp * 1000003L ^ (me.InShell ? me.ShellFrame + 1L : 0) * 15485863L : 0) // (a seat's or a module's links; the shell frame worn: a Half Shell can't sit)
                       ^ (d.HasJoint ? (long)hit.Body.PartCount << 41 ^ (long)hit.Body.JointCount << 21 : 0) // (a joint's two part counts)
                       ^ (ConstructDoor.Swings(hit.Body, hit.Part) ? ConstructDoor.IsOpen(hit.Body, hit.Part) ? 3L << 45 : 1L << 45 : 0) // (a door: open or shut)
                       ^ (d.IsRail ? ConstructLinear.LookKey(hit.Body, hit.Part) << 8 : 0) // (where a rail's carriage is, and how it stands)
@@ -334,6 +335,8 @@ public static unsafe partial class Program
                 };
                 if (d.Labelled && part.Text is { } label && _sbLookText != null)
                     _sbLookText = _sbLookText.Replace(d.Name, label); // (a labelled switch, button, lever...: "Hangar lights: off"; LogicText.Name)
+                if (ModuleSockets.LookText(hit.Body, hit.Part) is { } modLook)
+                    _sbLookText = d.ModPart == ModPart.Socket ? SandboxKeys.Line(d.Name, modLook) : $"{_sbLookText}  ({modLook})"; // (module sockets: the socket's state, or the module a part is in, ModuleSockets.cs)
                 if (HullHoles.IsHoled(d) && _sbLookText != null)
                     _sbLookText = _sbLookText.Replace(d.Name, HullHoles.Shown(d)); // (a cut or sealed part: its file part's name, not its key)
                 if (g.CrewLook(hit.Body.Id) is { } crewNote)
@@ -399,7 +402,7 @@ public static unsafe partial class Program
         // The welder on a part that touches another construct: F joins the two into one (decision 27: only the welder
         // attaches a piece; its three-step socket weld moves one into place: Program.SandboxSocketWeld.cs).
         JoinPlan jplan = default;
-        var join = h.Tool == ConstructTool.Welder && aimed && hit.Distance <= ConstructBuild.Reach && hit.Part >= 0 && hit.Body.DefOf(hit.Part).Role != PartRole.Hitch && ConstructPlace.FindJoin(g.Constructs, hit.Body, hit.Part, out jplan);
+        var join = h.Tool == ConstructTool.Welder && aimed && hit.Distance <= buildReach && hit.Part >= 0 && hit.Body.DefOf(hit.Part).Role != PartRole.Hitch && ConstructPlace.FindJoin(g.Constructs, hit.Body, hit.Part, out jplan);
         if (join)
         {
             var jk = hit.Body.Id | ((long)jplan.Other!.Id << 16) | ((long)hit.Part << 32) | ((long)h.Tool << 48);
@@ -654,7 +657,7 @@ public static unsafe partial class Program
         if (h.Tool != ConstructTool.None && held != null && !slotted && !SandboxFreeformOn(h) && !ConstructBuild.ToolFits(h.Tool, held))
         {
             // (hr01: the other tool's part: no ghost, no socket markers, only the reason)
-            if (aimed || wall <= ConstructBuild.Reach + 0.5f)
+            if (aimed || wall <= BuildReach(g) + 0.5f)
                 g.SandboxLookText = $"Needs the {held.Tool.Label()}";
         }
         else if (h.Tool != ConstructTool.None && held != null && !slotted && !SandboxFreeformOn(h)) // (freeform welding: the held part isn't fitted)
@@ -662,7 +665,7 @@ public static unsafe partial class Program
             ConstructRender.GhostDef = held;
             if (aimed)
                 SandboxHeldOnConstruct(g, in h, hit, held, eye, dir, now, ScreenSize, Gfx.ViewProj);
-            else if (!aimed && wall <= ConstructBuild.Reach + 0.5f && World.Query.Raycast(eye, dir, ConstructBuild.Reach + 0.5f, QueryFilter.All, out var surf))
+            else if (!aimed && wall <= BuildReach(g) + 0.5f && World.Query.Raycast(eye, dir, BuildReach(g) + 0.5f, QueryFilter.All, out var surf)) // (a big shell frame reaches the ground further: ConstructEdits.BuildReachOf)
             {
                 if (_settings.SnapBuild)
                 {
@@ -848,7 +851,7 @@ public static unsafe partial class Program
             if (ConstructRender.GhostValid)
                 gh = shown with { Variant = v };
             // (what the server's click will ask of the reach: ConstructEdits.AttachReach; the gantry's own reach is the server's to judge)
-            var outOfReach = !GantryOn && ConstructEdits.AttachReach(eye, c, gh.Part, gh.Socket, in gh) != null;
+            var outOfReach = !GantryOn && ConstructEdits.AttachReach(eye, c, gh.Part, gh.Socket, in gh, reach: BuildReach(g)) != null;
             ConstructRender.GhostValid &= !outOfReach;
             SandboxSnapShown(g, c, held, in gh, now);
             SandboxJointGhostText(g, c.DefOf(gh.Part), gh.Socket, held, v / 4);
@@ -930,8 +933,8 @@ public static unsafe partial class Program
             return "no local player";
         ref var h = ref g.SandboxHands.Hand(me.Id);
         var held = ConstructParts.Get(h.Held);
-        var wall = World.RaycastWorld(eye, dir, ConstructBuild.Reach + 1);
-        var aimed = g.Constructs.Raycast(eye, dir, MathF.Min(wall, ConstructBuild.Reach + 1), out var hit, noTracks: true);
+        var wall = World.RaycastWorld(eye, dir, BuildReach(g) + 1);
+        var aimed = g.Constructs.Raycast(eye, dir, MathF.Min(wall, BuildReach(g) + 1), out var hit, noTracks: true);
         if (held == null || h.Tool == ConstructTool.None || !aimed)
             return $"nothing held or aimed (held {held?.Name ?? "none"}, tool {h.Tool}, aimed {aimed})";
         if (!ConstructBuild.ToolFits(h.Tool, held))
@@ -1252,8 +1255,9 @@ public static unsafe partial class Program
         var taken = c.Parts[part].SitterPlus1 != 0 || c.Driver != 255 && part == c.DriveSeat;
         var broken = c.Parts[part].Broken;
         var kind = c.SeatKindOf(part);
+        var small = _game.Local is { InShell: true } me && !ShellFrames.Worn(me).Sit ? $"a {ShellFrames.Worn(me).Part} is too small for a seat" : null; // (the server's refusal: GameShipControl.ShipSeatRefusal)
         return SandboxKeys.Line(d.Name, broken ? "wrecked" : taken ? "taken" : kind == SeatKind.Driver ? "driver's seat" : ConstructModules.HasTurret(c, part) ? "gunner's seat" : "free",
-            broken ? null : ConstructModules.Problem(c, part) ?? ConstructRemote.SeatProblem(_game.Constructs, c, part), near && !taken && !broken ? SandboxKeys.Do(SandboxKeys.Use, kind == SeatKind.Driver ? "drive" : kind == SeatKind.Gunner ? "man the gun" : "sit") : null);
+            broken ? null : small ?? ConstructModules.Problem(c, part) ?? ConstructRemote.SeatProblem(_game.Constructs, c, part), near && !taken && !broken && small == null ? SandboxKeys.Do(SandboxKeys.Use, kind == SeatKind.Driver ? "drive" : kind == SeatKind.Gunner ? "man the gun" : "sit") : null);
     }
 
     /// <summary>A Capacitor Bank on the look line: what the ship's banks hold and how fast the circuit refills them (ship-works.md 8).</summary>
@@ -1346,7 +1350,7 @@ public static unsafe partial class Program
             Tool = h.Tool, Held = ConstructParts.Get(h.Held), Now = now, Velocity = me.Sim.Velocity, Grounded = me.Sim.Grounded,
             Using = h.Edit != EditKind.None || (h.Tool == ConstructTool.Linker && _lkBody != 0) || (h.Tool == ConstructTool.PhysicsGun && h.GrabBody != 0) || (h.Tool == ConstructTool.Configure && Ui.SandboxConfigOpen) || (h.Tool == ConstructTool.GroundDrill && _sculpt.Busy), // (the linking tool: while a link is being routed; the physics gun: while it holds)
         };
-        input.Module = WornArmView(me);
+        input.Module = WornArmView(me, h.Tool);
         var drawn = ToolRender.FirstPerson(input, ref _sbTool, out var shown);
         if (shown == ConstructTool.None && _sbToolShown != ConstructTool.None && h.Tool == ConstructTool.None)
             _game.EquipUntil = Math.Max(_game.EquipUntil, now + _game.Active.Def.EquipTime); // the tool is down: the gun comes up
@@ -1373,18 +1377,15 @@ public static unsafe partial class Program
         return true;
     }
 
-    /// <summary>A worn shell's module that is seen in first person in place of the tool it forces (Shells.json "view"), as a model at the frame's size, or null.</summary>
-    private static ToolModel? WornArmView(Player me)
+    /// <summary>A worn shell's module that is seen in first person in place of the tool in hand (Shells.json "view": the drill arm, a tool arm), as a model at the frame's size, or null.</summary>
+    private static ToolModel? WornArmView(Player me, ConstructTool tool)
     {
-        if (!me.InShell)
+        if (!me.InShell || ShellFrames.Worn(me).ModuleFor(tool) is not { View: true } m)
             return null;
-        foreach (var m in ShellFrames.Worn(me).Modules)
-            if (m is { View: true, Tool: not null })
-            {
-                var (arm, accent) = ShellKitNodes.ColoursOf(me);
-                return ShellKitNodes.ViewModel(m, ShellFrames.ScaleOf(me), arm, accent);
-            }
-        return null;
+        if (m.Kind == ShellModuleKind.Tool)
+            return ShellModuleNodes.ViewModel(m, ShellFrames.ScaleOf(me));
+        var (arm, accent) = ShellKitNodes.ColoursOf(me);
+        return ShellKitNodes.ViewModel(m, ShellFrames.ScaleOf(me), arm, accent);
     }
 
     private static readonly PanelCard _toolCard = new();
@@ -1407,7 +1408,7 @@ public static unsafe partial class Program
     /// </summary>
     private static void DrawToolCard(Game g, Player me, in SandboxHand h, ConstructTool shown, double now)
     {
-        if (ToolRender.ViewModelFor(h.Tool, WornArmView(me)) is not { Display: { } ds } || h.Tool is ConstructTool.None or ConstructTool.Hands)
+        if (ToolRender.ViewModelFor(h.Tool, WornArmView(me, h.Tool)) is not { Display: { } ds } || h.Tool is ConstructTool.None or ConstructTool.Hands)
             return;
         g.SandboxToolCardFrame = CrashLog.Frame;
         if (shown != h.Tool || _sbTool.Model?.Display is not { } on)

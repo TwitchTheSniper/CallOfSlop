@@ -49,7 +49,7 @@ public readonly record struct Orient(Vector3 OwnA, Vector3 WantA, Vector3 OwnB =
 /// <see cref="Onto"/> takes a socket by name. <see cref="Text"/> writes the ordinary blueprint file.
 /// Places are in vehicle coordinates: x right, y up, -z forward, the origin where <see cref="Root"/> says.
 /// </summary>
-public class BlueprintScript
+public partial class BlueprintScript
 {
     /// <summary>How far from the wanted centre a part may land before <see cref="Put"/> refuses (sockets are on a 0.25 m grid).</summary>
     public const float DefaultReach = 0.07f;

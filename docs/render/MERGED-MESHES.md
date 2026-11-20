@@ -18,9 +18,21 @@ A part is merged when nothing about it moves or changes on its own. These are wa
 
 - joints and rails (their leaf side moves, an overloaded one is tinted), suspensions and every box with a rig, wheels and
   track units, rotors and spinning or rolling boxes, a modular engine's parts (they rock and pump), control surfaces
-- levers, buttons and lamps (their boxes move or light), dials, beacons and terminals (a lamp box), spawners
-- glass (blended, drawn after the opaque world), designed ordnance (its wings fold), a merged gun's parts (drawn bigger)
-- a part that is burning or holds stored parts, for as long as it does
+- levers and buttons (their boxes move or light), dials, beacons and terminals (a lamp box), spawners, machines with work boxes
+- a lamp set to blink, a merged gun's parts (drawn bigger), an event door's parts, a surface a flush pod sinks into
+- a part that is burning, for as long as it does
+
+Merged all the same since 2026-11-20 (the 1 km Mainframe walked 28,000 boxes a frame, most of them still: `--gl-bench
+... --bench-walked` lists a body's walked parts by type and why):
+
+- **A part that holds stored parts** (racks, lockers, shelving): its own boxes are in its chunk; only what it holds is
+  drawn each frame (`MergeSet.Extra`, `DrawStored`).
+- **A part with glass**: its opaque boxes are in its chunk; only its panes are drawn each frame, blended as before
+  (`DrawPanes`).
+- **Lamps**: a lamp's lit look (on or off, its colour) is part of its chunk's looks. A chunk with lamps is checked on
+  every check (4 drawn frames), so a row of lamps across chunks switches together, and every frame while a lamp's
+  configure panel is open on that body, so the colour preview follows the slider. A lamp with glass is walked.
+- **Designed ordnance**: merged with its wings folded, as it sits until it drops (`FoldWing` in `BuildChunk`).
 
 A body with fewer than `MergeMinBoxes` (24) static boxes is walked whole: its own draws would cost more than its boxes do
 in the shared instanced batch. Outlines, ghosts, selection and the frozen outline are drawn over the top as before.
@@ -47,11 +59,68 @@ where the float maths runs in another order. One program for both GL tiers (`#ve
   part index); the rest are rebuilt.
 - **Budget**: at most `MergeBudgetBoxes` (8,192) boxes are rebuilt a frame (one chunk always goes); a chunk waiting its
   turn is drawn part by part that frame, so a big edit never stalls and never shows a stale shape.
-- **Culling**: a body is culled whole as before (`CullLevel`), then each chunk by its sphere against the view.
+- **Culling**: a body is culled whole as before (`CullLevel`), then each chunk by its sphere against the view. A walked
+  part of a merged body is skipped when its own sphere is out of view (`WalkSphere`), unless it moves on a joint, a door or
+  a wheel, burns or smokes.
 - **Memory**: 64 bytes a box on the GPU, plus a few bytes a box on the CPU (each slot's member and box). Bodies not drawn
   for 600 frames give their buffers back.
 - Nothing allocates in a steady frame (the GL bench prints the most the constructs pass allocated in one). Planning and
   rebuilds allocate only when something changed.
+
+## Far detail
+
+A chunk's slots are sorted by shape, then by **size class**, biggest first (`SizeClass`: the square root of a box's two
+biggest sides, in five classes at 4 m, 1 m, 25 cm and 6 cm; a glowing box or a lamp's two classes up, so lights read from
+afar). `MergedMesh.GroupClassEnd` holds, for each shape group, how many of its first slots are of each class or bigger, so
+a far chunk draws only the head of each group: no second copy of anything, no rebuild as the eye moves. A class is left
+out once its biggest box would be under `LodPixels` pixels (1; the projection's scale and the view's height give pixels a
+metre) at the chunk's nearest side. On a 1080p view at the default field of view that is 6 cm boxes past about 50 m,
+25 cm past 190 m, 1 m past 770 m. Video settings: **Far detail** (Low 2.5 pixels, Medium 1, High: every box at any
+distance); `--no-chunk-lod`, `--lod-px N`.
+
+## Occlusion
+
+`ConstructRenderOcclusion.cs`. After the opaque constructs are drawn, each merged chunk of the main view with at least
+`OcclusionMinSlots` (48) slots has its bounds (half a metre bigger) drawn as a box with colour and depth writes off inside
+an occlusion query. The next frame draws that chunk inside `glBeginConditionalRender(query, GL_QUERY_NO_WAIT)`: the GPU
+skips it if no sample of its box passed, and the CPU never reads a result or waits. From outside, a ship's inside costs
+the GPU nothing; from a room, what is behind its walls costs nothing.
+
+- **Holes**: a query tests against the depth actually drawn, so a hole shot or cut in a wall shows what is behind it on
+  the next frame. Glass is not in the depth when the queries run, so what is behind a window is always seen.
+- **Not tested**: a chunk whose sphere is within `OcclusionNear` (4 m) of the eye (a box round the eye is cut by the near
+  plane); small chunks (a query costs about what they do); the camera feeds' passes (not the view of the frame before).
+- **Stale results are never used**: a chunk is drawn untested unless its query was issued the occlusion frame before
+  (`MergedMesh.QueryFrame`) and the eye has moved under `OcclusionEyeMove` (2 m) in that chunk's own frame since
+  (`OcclusionEyeSteady`: it holds whatever the render origin is, and covers a camera cut, a third person toggle, a ship
+  passing at speed, a snapped pose and a segment on its joint). A rebuilt chunk forgets its query, and a frame after the
+  eye turned about 10 degrees, or after a quarter of a second with no world drawn (a minimised window), draws everything.
+  `--gl-bench ... --bench-lag [--bench-origin-eye] [--bench-jump N --bench-jump-by M] [--bench-move MM] [--bench-turn MDEG]`
+  draws every frame both ways and counts the pixels that differ (2026-11-20: 0 on 150 m cuts every 4th frame).
+- **The cost of being a frame late**: a chunk that comes out from behind something is drawn one frame after it could first
+  be seen. If that ever shows as flicker at an edge, raise `OcclusionPad`; Video settings: **Skip hidden parts**;
+  `--no-occlusion`.
+
+The CPU still submits a hidden chunk's draw calls (it doesn't know the answer); what is saved is the GPU's vertex and
+pixel work. Ways on: read the results back a few frames late to skip the calls too, and rooms and portals for interiors.
+
+### Numbers (2026-11-20, the Mainframe: 5,684 parts, about 1 M triangles; Mesa llvmpipe under xvfb, 640x360, the 4.6 path)
+
+`--gl-bench "Proving Ground" --bench-bp Mainframe --bench-ship-views --bench-shots` (views far off, alongside and three
+inside along its length, the ship standing still; configurations "no occlusion" and "no far detail" beside "no merge").
+
+| | Before | After |
+| --- | --- | --- |
+| Boxes walked one by one each frame | about 28,000 | 363 parts' moving boxes |
+| Construct draw calls (alongside / inside) | 5,155 | 1,909 / 2,152 |
+| Body walk CPU | 44 ms | 1.8 to 2.9 ms |
+| Triangles sent (alongside / inside) | about 1,000 k | 342 k / 342 k (537 k / 769 k without far detail) |
+| Chunks the queries found hidden (alongside / inside) | | 28 of 33 / 65 of 66 tested |
+| Frame (alongside / inside) | 80 ms | 21 ms / 29 ms (39 / 43 without occlusion) |
+
+Pictures: "no occlusion" matched pixel for pixel in every view; "no far detail" differed by at most 7 of 230,400 pixels
+(sub-pixel lamps); "no merge" by up to 257 (0.1%), on rows of lamps a pixel or less tall, where the two paths round edges
+differently. llvmpipe draws on the CPU, so these frame times say what work went, not what a GPU gains: measure on the PC.
 
 ## Draw groups and fused units
 
@@ -79,8 +148,9 @@ frame, so the parts that move (above) should stay lean; designed ordnance keeps 
 
 ## Measuring
 
-`--gl-bench MAP --bench-bp "A,B" [--bench-copies N] [--bench-capital PARTS] [--bench-edit] [--bench-shots]` adds a "no merge"
-configuration, prints the constructs pass's draw calls and CPU (the body loop, then the flush that draws the merged chunks
+`--gl-bench MAP --bench-bp "A,B" [--bench-copies N] [--bench-capital PARTS] [--bench-edit] [--bench-shots] [--bench-walked]
+[--bench-ship-views]` adds "no merge", "no occlusion" and "no far detail"
+configurations, prints the constructs pass's draw calls and CPU (the body loop, then the flush that draws the merged chunks
 and the box batch), the merged meshes' chunks, slots and GPU bytes, and with `--bench-shots` compares every picture with the
 merged one. `--bench-edit` paints, damages and removes parts while it draws, the same in every configuration.
 

@@ -96,8 +96,10 @@ public static class ConstructShellPod
                 c.PocketHost = [];
             return;
         }
-        if (c.PocketHost.Length < c.PartCount)
-            c.PocketHost = new byte[c.PartCount + 16];
+        if (c.PodSurface.Length < c.PodCount)
+            c.PodSurface = new float[c.Pods.Length];
+        if (c.PocketHost.Length != c.PartCount)
+            c.PocketHost = new byte[c.PartCount]; // (its length is the part count it was found for: a reader checks it, so a removal before the rebuild reads nothing)
         else
             Array.Clear(c.PocketHost);
         for (var q = 0; q < c.PodCount; q++)
@@ -106,19 +108,192 @@ public static class ConstructShellPod
             if (k >= c.PartCount || c.Parts[k].D.ShellPod is not { Flush: true } pd)
                 continue;
             ref var pp = ref c.Parts[k];
+            c.PodSurface[q] = SurfaceDepth(c, pd, pp.Seg, pp.Pos, pp.Rot, k);
             Pocket(pd, out var centre, out var half);
-            var at = pp.Pos + Rot24.Apply(pp.Rot, centre);
-            var h = Rot24.ApplyHalf(pp.Rot, half);
+            PodAxes(c, pp.Seg, pp.Pos, pp.Rot, out var at0, out var down, out var x, out var z);
+            var at = at0 + x * centre.X - down * centre.Y + z * centre.Z; // (in the body's frame: a freeform weld's parts sit on segments of their own)
+            var h = Vector3.Abs(x) * half.X + Vector3.Abs(down) * half.Y + Vector3.Abs(z) * half.Z;
             Vector3 lo = at - h, hi = at + h;
-            for (var i = 0; i < c.PartCount; i++)
+            Gather(c, lo, hi);
+            for (var n = 0; n < _nearCount; n++)
             {
-                if (i == k || c.Parts[i].D.ShellPod != null) // (in the rest frame: a surface on another segment, a freeform weld's, counts too)
+                var i = _near[n];
+                if (i == k || i >= c.PartCount || c.Parts[i].D.ShellPod != null)
                     continue;
-                c.PartBounds(i, out var mn, out var mx);
+                BodyBounds(c, i, out var mn, out var mx);
                 if (mn.X < hi.X && mx.X > lo.X && mn.Y < hi.Y && mx.Y > lo.Y && mn.Z < hi.Z && mx.Z > lo.Z)
                     c.PocketHost[i] = 1;
             }
         }
+    }
+
+    // The parts near a pod's column (Gather): a big body's part tree, so a held pod's ghost doesn't scan every part each frame.
+    private static readonly int[] _near = new int[Construct.MaxParts];
+    private static int _nearCount;
+
+    /// <summary>The parts whose bounds may meet the box <paramref name="lo"/>..<paramref name="hi"/> (body frame) into _near; every part when the body has freeform welds (their frames differ: as ConstructBuild.Blocked).</summary>
+    private static void Gather(Construct c, Vector3 lo, Vector3 hi)
+    {
+        if (c.FreeformCount > 0)
+        {
+            _nearCount = 0;
+            for (var i = 0; i < c.PartCount; i++)
+                _near[_nearCount++] = i;
+            return;
+        }
+        _nearCount = c.PartsInBox(lo, hi, _near);
+    }
+
+    /// <summary>Part <paramref name="i"/>'s bounds in the body's rest frame: its segment's rest pose applied (a freeform weld's part sits in its own segment's frame; a hinge at rest, whatever its angle now).</summary>
+    private static void BodyBounds(Construct c, int i, out Vector3 mn, out Vector3 mx)
+    {
+        c.PartBounds(i, out mn, out mx);
+        var seg = c.Parts[i].Seg;
+        if (seg <= 0)
+            return;
+        c.RestPose(seg, out var q, out var t);
+        var mid = t + Vector3.Transform((mn + mx) * 0.5f, q);
+        var h = (mx - mn) * 0.5f;
+        var r = Matrix4x4.CreateFromQuaternion(q);
+        var wh = new Vector3(
+            MathF.Abs(r.M11) * h.X + MathF.Abs(r.M21) * h.Y + MathF.Abs(r.M31) * h.Z,
+            MathF.Abs(r.M12) * h.X + MathF.Abs(r.M22) * h.Y + MathF.Abs(r.M32) * h.Z,
+            MathF.Abs(r.M13) * h.X + MathF.Abs(r.M23) * h.Y + MathF.Abs(r.M33) * h.Z);
+        mn = mid - wh;
+        mx = mid + wh;
+    }
+
+    /// <summary>A pod at <paramref name="pos"/>, <paramref name="rot"/> on segment <paramref name="seg"/>, in the body's rest frame: its socket point and its axes.</summary>
+    private static void PodAxes(Construct c, int seg, Vector3 pos, byte rot, out Vector3 at, out Vector3 down, out Vector3 x, out Vector3 z)
+    {
+        c.RestPose(seg, out var q, out var t);
+        at = t + Vector3.Transform(pos, q);
+        down = Vector3.Transform(Rot24.Apply(rot, -Vector3.UnitY), q);
+        x = Vector3.Transform(Rot24.Apply(rot, Vector3.UnitX), q);
+        z = Vector3.Transform(Rot24.Apply(rot, Vector3.UnitZ), q);
+    }
+
+    private static bool In(Vector3 p, Vector3 mn, Vector3 mx) => p.X > mn.X && p.X < mx.X && p.Y > mn.Y && p.Y < mx.Y && p.Z > mn.Z && p.Z < mx.Z;
+
+    /// <summary>
+    /// How deep the surface under a flush pod at <paramref name="pos"/>, <paramref name="rot"/> on segment <paramref name="seg"/> is
+    /// down its middle: through the parts of the body that touch end to end, from the socket. A pod whose body is deeper than that
+    /// is shallow flush (the user, 2026-11-19): its lid is flush and its pocket cut as ever, and the rest of its body stands proud
+    /// on the far side as a housing, with a flange where it comes through (ShellPodRender.cs). Leaves the parts near its column in
+    /// _near for <see cref="BodyRefusal"/>. Allocates nothing.
+    /// </summary>
+    public static float SurfaceDepth(Construct c, ShellPodDef pd, int seg, Vector3 pos, byte rot, int skip = -1)
+    {
+        PodAxes(c, seg, pos, rot, out var at0, out var down, out var x, out var z);
+        var foot = (Vector3.Abs(x) + Vector3.Abs(z)) * pd.Half + new Vector3(0.02f);
+        var end = at0 + down * pd.Depth;
+        Gather(c, Vector3.Min(at0, end) - foot, Vector3.Max(at0, end) + foot);
+        var depth = 0f;
+        for (var guard = 0; guard < 64; guard++)
+        {
+            var at = at0 + down * (depth + 0.002f);
+            var deepest = -1f;
+            for (var n = 0; n < _nearCount; n++)
+            {
+                var i = _near[n];
+                if (i == skip || i >= c.PartCount || c.Parts[i].D.ShellPod != null)
+                    continue;
+                BodyBounds(c, i, out var mn, out var mx);
+                if (!In(at, mn, mx))
+                    continue;
+                // Where the line down leaves this box (slabs).
+                var exit = float.MaxValue;
+                for (var a = 0; a < 3; a++)
+                    if (MathF.Abs(down[a]) > 1e-5f)
+                        exit = MathF.Min(exit, ((down[a] > 0 ? mx[a] : mn[a]) - at[a]) / down[a]);
+                deepest = MathF.Max(deepest, depth + 0.002f + exit);
+            }
+            if (deepest <= depth + 0.002f)
+                break;
+            depth = deepest;
+        }
+        return depth;
+    }
+
+    /// <summary>
+    /// Why a flush pod can't go where placing puts it, or null (ConstructBuild.Place runs it after its overlap test). A surface
+    /// thinner than its body is fine (shallow flush: the body stands proud on the far side); it is refused only when that body would
+    /// run into another part of the body beyond the surface: points down its middle and corners past the surface's depth must be
+    /// clear. In the rest frame, among the parts near its column. Allocates nothing.
+    /// </summary>
+    public static string? BodyRefusal(Construct c, ConstructPartDef def, Vector3 pos, byte rot, int seg)
+    {
+        if (def.ShellPod is not { Flush: true } pd)
+            return null;
+        // A held pod's ghost asks for every socket and turn near it each frame: the same pose on the same build gives the same answer.
+        for (var k = 0; k < _seen.Length; k++)
+        {
+            ref var e = ref _seen[k];
+            if (e.Body == c.Id && e.Stamp == c.RebuildStamp && e.Parts == c.PartCount && ReferenceEquals(e.Def, def) && e.Pos == pos && e.Rot == rot && e.Seg == seg)
+                return e.Why;
+        }
+        var why = BodyRefusalNow(c, def, pd, pos, rot, seg);
+        _seen[_seenNext] = new SeenPose { Body = c.Id, Stamp = c.RebuildStamp, Parts = c.PartCount, Def = def, Pos = pos, Rot = rot, Seg = seg, Why = why };
+        _seenNext = (_seenNext + 1) % _seen.Length;
+        return why;
+    }
+
+    private struct SeenPose
+    {
+        public int Body, Stamp, Parts, Seg;
+        public ConstructPartDef? Def;
+        public Vector3 Pos;
+        public byte Rot;
+        public string? Why;
+    }
+
+    private static readonly SeenPose[] _seen = new SeenPose[64];
+    private static int _seenNext;
+
+    private static string? BodyRefusalNow(Construct c, ConstructPartDef def, ShellPodDef pd, Vector3 pos, byte rot, int seg)
+    {
+        var below = pd.Depth - pd.Top; // (the body's depth under the surface)
+        var deep = SurfaceDepth(c, pd, seg, pos, rot);
+        if (deep >= below - 0.01f)
+            return null;
+        PodAxes(c, seg, pos, rot, out var at0, out var down, out var x, out var z);
+        var ax = x * (pd.Half - 0.01f);
+        var az = z * (pd.Half - 0.01f);
+        const int Steps = 6;
+        for (var k = 0; k <= Steps; k++)
+        {
+            var d = deep + 0.03f + (below - deep - 0.04f) * k / Steps; // (past the surface's far face and its flange, to the body's foot)
+            if (d >= below)
+                break;
+            var at = at0 + down * d;
+            var hit = Inside(c, at);
+            if (hit < 0)
+                hit = Inside(c, at + ax + az);
+            if (hit < 0)
+                hit = Inside(c, at - ax - az);
+            if (hit < 0)
+                hit = Inside(c, at + ax - az);
+            if (hit < 0)
+                hit = Inside(c, at - ax + az);
+            if (hit >= 0)
+                return $"the {def.Name}'s body ({below:0.##} m deep) would run into the {c.DefOf(hit).Name} past the surface ({deep:0.##} m): leave it room on the far side";
+        }
+        return null;
+    }
+
+    /// <summary>The first part near the column (_near, not a pod) whose bounds hold <paramref name="at"/> (rest frame), or -1.</summary>
+    private static int Inside(Construct c, Vector3 at)
+    {
+        for (var n = 0; n < _nearCount; n++)
+        {
+            var i = _near[n];
+            if (i >= c.PartCount || c.Parts[i].D.ShellPod != null)
+                continue;
+            BodyBounds(c, i, out var mn, out var mx);
+            if (In(at, mn, mx))
+                return i;
+        }
+        return -1;
     }
 
     public static readonly string[] ClassNames = ["Tiny", "Small", "Medium", "Large", "Huge"];
@@ -491,5 +666,6 @@ public sealed partial class Construct
 {
     public ushort[] Pods = []; // its shell pods (made with the caches: ConstructConveyor.BuildRacks), for drawing their frames and the pods' tick
     public int PodCount;
+    public float[] PodSurface = []; // by pod (Pods' order): a flush pod's surface depth (ConstructShellPod.SurfaceDepth; FindHosts), for its flange
     public byte[] PocketHost = []; // by part: 1 when it is a surface a flush pod's pocket opens (ConstructShellPod.FindHosts; empty with no flush pod)
 }

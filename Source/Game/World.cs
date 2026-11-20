@@ -473,12 +473,12 @@ public static partial class World
         return new Box((lo + hi) * 0.5f, (hi - lo) * 0.5f);
     }
 
-    /// <summary>Did a hit at <paramref name="point"/> land on the head?</summary>
-    public static bool IsHeadshot(Vector3 feet, Stance stance, float yaw, Vector3 point, Vector3 up = default)
+    /// <summary>Did a hit at <paramref name="point"/> land on the head? <paramref name="scale"/>: the body's size (a robot shell's frame; the heights scale with it).</summary>
+    public static bool IsHeadshot(Vector3 feet, Stance stance, float yaw, Vector3 point, Vector3 up = default, float scale = 1f)
     {
         point = up != Vector3.Zero ? feet + Vector3.Transform(point - feet, ConstructRide.TurnBetween(up, Vector3.UnitY)) // (contraption space: along the construct's up)
             : GravityFrames.PointToLocal(feet, point); // (a planet: in the body's upright frame)
-        var rel = point - feet;
+        var rel = (point - feet) / scale;
         return stance switch
         {
             Stance.Crouch => rel.Y >= 0.85f,
@@ -619,9 +619,10 @@ public static partial class World
     /// Sandbox on a planet: how far from its centre players may go. Past the space bubble's edge (the map's half size,
     /// GameSpaceLaunch.SpaceEdge), where ships go into orbit (a ship start wakes everyone 400 m past it, GameSpaceStart.cs),
     /// so someone who steps off a ship up there floats free instead of being dragged back to an invisible ceiling; held
-    /// inside what a snapshot can carry (Snapshot.PosScale: +-32 km on each axis).
+    /// inside what a snapshot can carry (Snapshot.WorldPosScale: +-65 km on each axis; 30 km before Karl's 4x worlds of
+    /// 2026-11-19, whose starts wake 37.8 km out over Glacier).
     /// </summary>
-    public const float OpenSkyRadius = 30_000f;
+    public const float OpenSkyRadius = 60_000f;
 
     /// <summary>On a planet: how far from its centre players may go (m): the map's half size, or in Sandbox <see cref="OpenSkyRadius"/>.</summary>
     public static float SkyRadius => OpenSky ? MathF.Max(OpenSkyRadius, MathF.Max(Map.HalfX, Map.HalfZ)) : MathF.Max(Map.HalfX, Map.HalfZ);

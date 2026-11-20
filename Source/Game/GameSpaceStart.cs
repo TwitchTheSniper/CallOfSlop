@@ -46,14 +46,18 @@ public sealed partial class Game
         }
         ship.Rebuild();
         // A circular orbit's speed in the game's frame (the ground's slow turn left out: a metre or two a second off round).
-        var speed = (float)Math.Sqrt(e.System.Bodies[body].Mu / r);
+        // Held (the opening's "hold": Karl, 2026-11-20, a start out in open space with two Mainframes): at rest, and its own flight
+        // computer holds it there once space is up (OpeningHoldsTick), as company held "away" is; a driver at the controls takes it.
+        var speed = script.Hold ? 0f : (float)Math.Sqrt(e.System.Bodies[body].Mu / r);
         ship.Vel = fwd * speed;
+        if (script.Hold)
+            _opHolds.Add(ship.Id);
         ship.PrevPos = ship.Pos;
         ship.Wake();
         _opShip = ship.Id;
         _opMiddle = _opGate = _opWake = _opCrash = from;
         Constructs.Events.Add($"opening: the ship ({script.Ship}) as construct {ship.Id}");
-        Log($"[opening] the {script.Ship} is construct {ship.Id}, {(r - pl.Radius) / 1000:0.0} km up over {from.X:0},{from.Z:0}, going round at {speed:0} m/s");
+        Log($"[opening] the {script.Ship} is construct {ship.Id}, {(r - pl.Radius) / 1000:0.0} km up over {from.X:0},{from.Z:0}, {(script.Hold ? "held still" : $"going round at {speed:0} m/s")}");
         foreach (var co in script.Company)
             OpeningCompanion(co, centre, up, fwd, r, speed);
         foreach (var st in script.Stations)

@@ -105,7 +105,7 @@ public sealed partial class ConstructEdits
             return "that part is gone";
         c.WorldFrame(c.Parts[part].Seg, out var q, out var t);
         c.PartBounds(part, out var mn, out var mx);
-        if (Reachable(eye, ReachPoint(c, part, eye), ConstructBuild.Reach + 3f) is { } far)
+        if (Reachable(eye, ReachPoint(c, part, eye), BuildReachOf(player) + 3f) is { } far)
             return far;
         return TakeKind(player, c.DefOf(part), world, eye);
     }

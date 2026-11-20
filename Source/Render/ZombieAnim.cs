@@ -1235,8 +1235,7 @@ public static class ZombieAnim
         Planes[1] = c4 - c1;
         Planes[2] = c4 + c2;
         Planes[3] = c4 - c2;
-        Planes[4] = c4 + c3;
-        Planes[5] = c4 - c3;
+        Renderer.DepthPlanes(c3, c4, out Planes[4], out Planes[5]); // near, far (either depth convention)
         for (var i = 0; i < 6; i++)
         {
             var l = new Vector3(Planes[i].X, Planes[i].Y, Planes[i].Z).Length();

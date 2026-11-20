@@ -2,7 +2,7 @@
   "format": "call-of-slop-construct-tool/1",
   "name": "No-collide Tool",
   "tool": "nocollide",
-  "display": { "mount": [0.0, 0.05, 0.0] },
+  "display": {},
   "description": "Picks two pieces and lets them pass through each other.",
   "boxes": [
     { "size": [0.06, 0.06, 0.15], "at": [0, 0, 0], "color": "#34383f" },

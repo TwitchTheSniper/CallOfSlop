@@ -78,6 +78,7 @@ public static unsafe partial class Program
         _wsAt = Val("--at") is { } at ? WsVec(at) : null;
         _wsCalm = args.Any(a => a.Equals("--calm", StringComparison.OrdinalIgnoreCase)); // (no cold storm: a site is seen whole)
         _wsNoHands = args.Any(a => a.Equals("--no-hands", StringComparison.OrdinalIgnoreCase));
+        ConstructRender.NoAimGlow = _wsNoHands; // (and no HUD: Program.cs)
         _wsDusk = float.TryParse(Val("--dusk"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var dk) ? Math.Clamp(dk, 0f, 1f) : 0f; // (a dusk on any map: its light dimmed, lamps throwing their dark light; Program.Storm.cs)
         _wsLookAt = Val("--look-at") is { } la ? WsVec(la) : null;
         _wsSpawnAt = Val("--spawn-at") is { } sa ? WsVec(sa) : null;
@@ -115,6 +116,8 @@ public static unsafe partial class Program
         _settings.StoryStart = start.Length > 0 ? start : Array.Find(StoryStarts.All, a => a.AnyMap)?.Id ?? "";
         _settings.Bots = 0;
         _settings.ShowFps = false;
+        if (args.SkipWhile(a => !a.Equals("--materials", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } mat && Enum.TryParse<VideoLevel>(mat, true, out var mq) && Enum.IsDefined(mq))
+            _settings.Materials = mq; // (--materials Low|Medium|High: the Video setting the picture is drawn with)
         WsTourSettings(args);
         LoadoutStore.ReadOnly = AppearanceStore.ReadOnly = BuildStore.ReadOnly = BlueprintStore.ReadOnly = true;
     }
@@ -123,7 +126,7 @@ public static unsafe partial class Program
         s.Split(',') is [var x, var y, var z] && float.TryParse(x, System.Globalization.CultureInfo.InvariantCulture, out var a)
         && float.TryParse(y, System.Globalization.CultureInfo.InvariantCulture, out var b) && float.TryParse(z, System.Globalization.CultureInfo.InvariantCulture, out var c) ? new Vector3(a, b, c) : null;
 
-    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "design" or "extr" or "plate" or "fitpart" or "inv" or "fuel" or "cutter" or "put" or "side" or "walk" or "ray" or "guns" or "engines" or "bundle" or "drag" or "mousemove" or "station" or "subbp" or "linked" or "bpui" or "lifter" or "aimlink" or "aim" or "near" or "from" or "inside" or "me" or "mmu" or "coast" or "person" or "use" or "waitnear" or "key" or "touch" or "ladder" or "ladderclimb" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "picker" or "bring" or "craft" or "disown" or "saveload" or "stock" or "feed" or "kit" or "poke" or "joints" or "timed" or "saveworld" or "loadworld" or "logi" or "period" or "gang" or "incident" || WsGhostKnown(action) || WsNavKnown(action) || WsTourKnown(action) || WsTalkKnown(action) || WsPlayKnown(action) || WsHeldKnown(action);
+    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "design" or "extr" or "plate" or "fitpart" or "inv" or "fuel" or "cutter" or "put" or "side" or "walk" or "ray" or "guns" or "engines" or "bundle" or "drag" or "mousemove" or "station" or "subbp" or "linked" or "bpui" or "lifter" or "aimlink" or "aim" or "near" or "from" or "inside" or "me" or "mmu" or "coast" or "person" or "use" or "waitnear" or "key" or "touch" or "ladder" or "ladderclimb" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "picker" or "bring" or "craft" or "disown" or "saveload" or "stock" or "feed" or "kit" or "poke" or "joints" or "timed" or "saveworld" or "loadworld" or "logi" or "period" or "gang" or "incident" || WsGhostKnown(action) || WsNavKnown(action) || WsTourKnown(action) || WsTalkKnown(action) || WsPlayKnown(action) || WsHeldKnown(action) || WsBoreKnown(action);
 
     private static void WsSay(string s)
     {
@@ -564,6 +567,8 @@ public static unsafe partial class Program
             return; // (the blueprint ghost's actions: Program.WindowShotGhost.cs)
         if (WsHeldVerb(g, verb, arg))
             return; // (the physics gun's swing: Program.WindowShotPhysGun.cs)
+        if (WsBoreVerb(g, verb, arg))
+            return; // (railgun bores at a part: Program.WindowShotBores.cs)
         if (WsPlayVerb(g, me, verb, arg))
             return; // (seats, the recycler, copy and paste, a part's numbers: Program.WindowShotPlay.cs)
         switch (verb)
@@ -2198,6 +2203,7 @@ public static unsafe partial class Program
         var fb = _window.FramebufferSize;
         int w = fb.X, h = fb.Y;
         var rgba = new byte[w * h * 4];
+        Gfx.Present(); // (the scene target's picture, if one is still bound: reversed depth)
         OpenGl.Native.glPixelStorei(OpenGl.GL_PACK_ALIGNMENT, 1);
         fixed (byte* px = rgba)
             OpenGl.Native.glReadPixels(0, 0, w, h, OpenGl.GL_RGBA, OpenGl.GL_UNSIGNED_BYTE, px);

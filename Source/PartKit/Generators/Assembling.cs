@@ -480,13 +480,144 @@ public sealed class Assembling : IPartGenerator
 
     /// <summary>
     /// Folders added after saves held Assembler recipes by number (an Assembler's recipe setting is 1 + its place in its family's list): their
-    /// rows go at the end of the file, in this order, so no older row moves. A new folder of parts goes at the end of this list.
+    /// rows go at the end of the file, in this order, so no older row moves. Closed: a new folder of parts goes at the end of <see cref="Tail"/>.
     /// </summary>
     private static readonly string[] LateFolders = ["LinkSupports", "LegPods"];
 
     /// <summary>
+    /// Every recipe added from the module sockets on (2026-11-20), in the order added: one part of a folder (its recipe worked out from the
+    /// part file) or a hand-written row. Closed, row by row: a new row goes at the END of this list, never into it, so no row already in a
+    /// saved world moves (an Assembler's recipe setting is 1 + its row's place in its family's list). That is why it names parts one by one
+    /// and never takes a whole folder: a new part file in a folder would land among the folder's rows and shift every row after it. A part
+    /// in a folder named here that has no row of its own is refused ("give it a row at the end of Tail"). LateFolders and LateHand are
+    /// closed too.
+    /// </summary>
+    private static List<(string? Folder, string? Part, PyDict? Row)> Tail() =>
+    [
+        // (module sockets: plates, plugs and stands, docs/sandbox/design/module-sockets.md; in the folder's file order of 2026-11-20)
+        ("Modules", "Module Plug 1x1", null),
+        ("Modules", "Module Plug 1x2", null),
+        ("Modules", "Module Plug 1x3", null),
+        ("Modules", "Module Plug 2x2", null),
+        ("Modules", "Module Plug 2x3", null),
+        ("Modules", "Module Plug 3x3", null),
+        ("Modules", "Module Socket 1x1", null),
+        ("Modules", "Module Socket 1x2", null),
+        ("Modules", "Module Socket 1x3", null),
+        ("Modules", "Module Socket 2x2", null),
+        ("Modules", "Module Socket 2x3", null),
+        ("Modules", "Module Socket 3x3", null),
+        ("Modules", "Module Stand 1x1", null),
+        ("Modules", "Module Stand 1x2", null),
+        ("Modules", "Module Stand 1x3", null),
+        ("Modules", "Module Stand 2x2", null),
+        ("Modules", "Module Stand 2x3", null),
+        ("Modules", "Module Stand 3x3", null),
+        (null, null, Rec("Half Shell", 20, 2, m: [("steel", 12), ("copper", 4), ("rubber", 2)], p: [("Circuit Board", 1)])), // (docs/sandbox/design/half-shell.md)
+        ("Modules/Fitters", "Module Fitter S", null), // (module sockets phase 4: the Module Fitter S)
+        (null, null, Rec("Construction Shell", 120, 2, m: [("steel", 220), ("copper", 30), ("rubber", 16)], p: [("Circuit Board", 6)])), // (docs/sandbox/design/construction-shell.md)
+        // (the capital ship's cutters, Karl 2026-11-20: hand rows, since the LaserCutter folder's two older cutters keep their rows in the long tail)
+        (null, null, Rec("Large Laser Cutter", 400.0, 3, m: [("steel", 1600), ("rubber", 320)])),
+        (null, null, Rec("Capital Laser Cutter", 600.0, 4, m: [("steel", 2000), ("rubber", 500)])),
+        // (the Mainframe capital ship's own parts, Karl 2026-11-20: docs/sandbox/constructs/mainframe.md; its plates are cut, not assembled)
+        ("Mainframe", "Mainframe Frame Node", null),
+        ("Mainframe", "Mainframe Beam Light", null),
+        ("Mainframe", "Mainframe Cell Hatch", null),
+        ("Mainframe", "Mainframe Fusion Reactor", null),
+        ("Mainframe", "Mainframe Drive Mount", null),
+        ("Mainframe", "Mainframe Drive Bell", null),
+        ("Mainframe", "Mainframe Drive Core", null),
+        ("Mainframe", "Mainframe Fuel Pump", null),
+        ("Mainframe", "Mainframe Coolant Exchanger", null),
+        ("Mainframe", "Mainframe Flight Computer", null),
+        ("Mainframe", "Mainframe Attitude Jet", null),
+        ("Mainframe", "Mainframe RCS Block", null),
+        // (the in-wall bays, Karl 2026-11-20: frames, inserts, pull-outs, ship systems' wear parts and consumables, the hull airlock;
+        // WallBayParts.cs, in the folder's file order of 2026-11-20)
+        ("WallBays", "Actuator Spares Rack", null),
+        ("WallBays", "Airlock Chamber", null),
+        ("WallBays", "Airlock Inner Door", null),
+        ("WallBays", "Airlock Outer Hatch", null),
+        ("WallBays", "Ammo Can Drawer 1m", null),
+        ("WallBays", "Belt Feeder Cassette 1m", null),
+        ("WallBays", "Breaker Cassette", null),
+        ("WallBays", "Breaker Panel Insert", null),
+        ("WallBays", "CO2 Scrubber Insert 1m", null),
+        ("WallBays", "Candle Breech 1.5m", null),
+        ("WallBays", "Candle Drawer 1.5m", null),
+        ("WallBays", "Component Bay Cover", null),
+        ("WallBays", "Component Bay Cover 1m", null),
+        ("WallBays", "Component Bay Cover 1.5m", null),
+        ("WallBays", "Component Bay Insert", null),
+        ("WallBays", "Component Bay Insert 1m", null),
+        ("WallBays", "Component Bay Insert 1.5m", null),
+        ("WallBays", "Component Sled", null),
+        ("WallBays", "Component Sled 1m", null),
+        ("WallBays", "Component Sled 1.5m", null),
+        ("WallBays", "Computer Card Cage", null),
+        ("WallBays", "Consumables Rack 1m", null),
+        ("WallBays", "Consumables Rack Insert 1m", null),
+        ("WallBays", "Control Rod Cassette 1.5m", null),
+        ("WallBays", "Coolant Jug Drawer 1m", null),
+        ("WallBays", "Coolant Pump Cassette 1m", null),
+        ("WallBays", "Coolant Pump Insert 1m", null),
+        ("WallBays", "Damage Control Insert", null),
+        ("WallBays", "Desk Insert", null),
+        ("WallBays", "Drawer Stack Insert", null),
+        ("WallBays", "Emitter Tube Cassette 1m", null),
+        ("WallBays", "Filter Drawer 1m", null),
+        ("WallBays", "Flight Computer Insert", null),
+        ("WallBays", "Fold-down Desk", null),
+        ("WallBays", "Fuel Rod Drawer 1.5m", null),
+        ("WallBays", "Fuse Drawer", null),
+        ("WallBays", "Helmet Locker Door", null),
+        ("WallBays", "Jump Seat", null),
+        ("WallBays", "Jump Seat Insert", null),
+        ("WallBays", "MMU Bay Door 1.5m", null),
+        ("WallBays", "MMU Bay Insert 1.5m", null),
+        ("WallBays", "MMU Sled 1.5m", null),
+        ("WallBays", "Memory Module Drawer", null),
+        ("WallBays", "Murphy Bed", null),
+        ("WallBays", "Murphy Bed Insert", null),
+        ("WallBays", "Nav Core Drawer 1m", null),
+        ("WallBays", "O2 Generator Insert 1.5m", null),
+        ("WallBays", "PDC Feed Insert 1m", null),
+        ("WallBays", "Patch and Foam Drawer", null),
+        ("WallBays", "Propellant Bottle Drawer 1m", null),
+        ("WallBays", "Pull-out Rack", null),
+        ("WallBays", "Pull-out Rack 1m", null),
+        ("WallBays", "Pull-out Rack 1.5m", null),
+        ("WallBays", "Pull-out Rack Insert", null),
+        ("WallBays", "Pull-out Rack Insert 1m", null),
+        ("WallBays", "Pull-out Rack Insert 1.5m", null),
+        ("WallBays", "RCS Feed Insert 1m", null),
+        ("WallBays", "RCS Valve Block 1m", null),
+        ("WallBays", "Reactor Fuel Insert 1.5m", null),
+        ("WallBays", "Reclaimer Pump 1m", null),
+        ("WallBays", "Scrubber Fan 1m", null),
+        ("WallBays", "Scrubber Tray 1m", null),
+        ("WallBays", "Sensor Rack Insert 1m", null),
+        ("WallBays", "Stow Drawer 1", null),
+        ("WallBays", "Stow Drawer 2", null),
+        ("WallBays", "Stow Drawer 3", null),
+        ("WallBays", "Stow Drawer 4", null),
+        ("WallBays", "Stretcher Drawer 1.5m", null),
+        ("WallBays", "Stretcher Insert 1.5m", null),
+        ("WallBays", "Suit Rack 1m", null),
+        ("WallBays", "Suit Rack Insert 1m", null),
+        ("WallBays", "Toilet Insert 1m", null),
+        ("WallBays", "Toilet Pan 1m", null),
+        ("WallBays", "Twist Latch", null),
+        ("WallBays", "Wall Bay", null),
+        ("WallBays", "Wall Bay 1m", null),
+        ("WallBays", "Wall Bay 1.5m", null),
+        ("WallBays", "Water Reclaimer Insert 1m", null),
+    ];
+
+    /// <summary>
     /// Hand-written recipes added after the table's rows were saved in worlds: they go after every older row, in the order
-    /// added, since an Assembler's recipe choice is saved by its index in its machine's family (WorldSaveBodies.cs).
+    /// added, since an Assembler's recipe choice is saved by its index in its machine's family (WorldSaveBodies.cs). Closed: a
+    /// hand row added now goes at the end of <see cref="Tail"/>.
     /// </summary>
     private static List<PyDict> LateHand() =>
     [
@@ -512,11 +643,16 @@ public sealed class Assembling : IPartGenerator
         Rec("Service Locker", 8, 2, m: [("steel", 10), ("glass", 1)]), // (the style sheet's liked looks: FittingLookParts; at the end so saved choices keep their index)
         Rec("Pressure Locker", 10, 2, m: [("steel", 12), ("rubber", 2), ("glass", 1)]),
         Rec("Ship Battery Module", 40, 3, m: [("steel", 24), ("copper", 30)], p: [("Wiring Loom", 2)]),
+        // Tool arms for robot shells (the user, 2026-11-19): each is its tool while worn; a Shell Gantry fits them
+        Rec("Shell Welder Arm", 16, 2, m: [("steel", 6), ("copper", 4), ("rubber", 1)], p: [("Circuit Board", 1)]),
+        Rec("Shell Cutter Arm", 16, 2, m: [("steel", 8), ("copper", 2)], p: [("Circuit Board", 1)]),
+        Rec("Shell Grip Arm", 18, 2, m: [("steel", 6), ("copper", 6)], p: [("Circuit Board", 2)]),
+        Rec("Shell Sprayer Arm", 12, 2, m: [("steel", 5), ("copper", 1), ("rubber", 2)], p: [("Circuit Board", 1)]),
         Rec("Worn Ladder", 5, 1, m: [("steel", 8), ("rubber", 1)]), // (the commoner fittings Karl kept: CommonerFittingParts)
         Rec("Water Tote", 6, 1, m: [("steel", 6), ("planks", 2), ("rubber", 4)]),
         Rec("Oxygen Generator", 30, 3, m: [("steel", 16), ("copper", 6), ("rubber", 4), ("glass", 4)], p: [("Control Unit", 1), ("Wiring Loom", 1)]), // (a Life Support Unit's)
         Rec("Radio Set", 8, 1, m: [("steel", 4), ("copper", 4), ("planks", 2), ("glass", 1)]),
-        Rec("Jump Seat", 5, 1, m: [("cloth", 3), ("steel", 4)]),
+        Rec("Sling Jump Seat", 5, 1, m: [("cloth", 3), ("steel", 4)]),
         Rec("Jacked Strut", 6, 1, m: [("steel", 16), ("planks", 1)]),
         Rec("Old Fridge", 10, 1, m: [("steel", 14), ("rubber", 2)]),
         Rec("Bucket Toilet", 6, 1, m: [("steel", 8), ("rubber", 3), ("planks", 1)]),
@@ -546,9 +682,13 @@ public sealed class Assembling : IPartGenerator
         recipes.AddRange(UpgradeParts.Recipes.Select(r => Rec(r.Output, r.Seconds, r.Tier, m: r.Materials, p: r.Parts)));
         recipes.AddRange(AirWeaponsParts.OrdnanceRacks.Select(r => RackRecipe(r.Name, r.Layout, r.A, r.B, r.Length, r.Diameter)));
         var lateHand = LateHand();
-        var hand = recipes.Concat(lateHand).Select(r => (string)r["output"]!).ToHashSet();
+        var tailSpec = Tail();
+        var tailFolders = tailSpec.Where(t => t.Folder != null).Select(t => t.Folder!).ToHashSet(StringComparer.Ordinal);
+        var tailParts = tailSpec.Where(t => t.Part != null).Select(t => t.Part!).ToHashSet(StringComparer.Ordinal);
+        var hand = recipes.Concat(lateHand).Concat(tailSpec.Where(t => t.Row != null).Select(t => t.Row!)).Select(r => (string)r["output"]!).ToHashSet();
         var tail = new List<PyDict>();
         var late = new List<PyDict>();
+        var byPart = new Dictionary<string, PyDict>(StringComparer.Ordinal);
         foreach (var (p, folder) in known)
         {
             var name = (string)p["name"]!;
@@ -557,12 +697,27 @@ public sealed class Assembling : IPartGenerator
                 continue;
             if (Py.Truthy(p.Get("retired"))) // (a retired part loads and runs but has no recipe: the tier cylinders, sized-parts answer 8)
                 continue;
-            (LateFolders.Contains(folder) ? late : tail).Add(MachineOf(p, folder) != "" ? FlightRecipe(p, folder) : LongTail(p));
+            var row = MachineOf(p, folder) != "" ? FlightRecipe(p, folder) : LongTail(p);
+            if (tailFolders.Contains(folder))
+            {
+                if (!tailParts.Contains(name))
+                    throw new InvalidOperationException($"assembling: {name} is a new part in {folder}, a folder Tail lists part by part: give it a row at the end of Tail (saved recipe numbers keep)");
+                byPart[name] = row;
+            }
+            else
+                (LateFolders.Contains(folder) ? late : tail).Add(row);
         }
         // (stable: a family's recipes are in file order, and the plain Assembler's keep their places)
         recipes.AddRange(tail.OrderBy(r => r.Get("machine") as string ?? "", StringComparer.Ordinal));
         recipes.AddRange(late); // (after every older row: a saved Assembler keeps the number of its recipe)
-        recipes.AddRange(lateHand); // (and the hand-written rows added since, last)
+        recipes.AddRange(lateHand); // (and the hand-written rows added since)
+        foreach (var (folder, part, row) in tailSpec) // (then everything added from the module sockets on, in the order added)
+            if (row != null)
+                recipes.Add(row);
+            else if (byPart.TryGetValue(part!, out var pr))
+                recipes.Add(pr);
+            else
+                throw new InvalidOperationException($"assembling: Tail names {part} in {folder}, but no such part is there (or it has a hand row)");
         var byName = new Dictionary<string, PyDict>();
         foreach (var (p, _) in known)
             byName[(string)p["name"]!] = p;

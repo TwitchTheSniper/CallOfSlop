@@ -5,6 +5,28 @@
   "styles": [
     "Scam"
   ],
+  "modules": {
+    "tags": {
+      "harvest": 1.0,
+      "cargo": 0.9,
+      "utility": 0.5,
+      "engine": 0.5,
+      "reactor": 0.4
+    },
+    "stats": {
+      "speed": 0.3,
+      "power": 0.7,
+      "fuel": 0.5,
+      "mass": 0.4,
+      "cost": 0.8
+    },
+    "needs": {
+      "accel": 0.8,
+      "powerMargin": 1.15,
+      "minGuns": 0
+    },
+    "pick": 3
+  },
   "stance": {
     "players": "wary",
     "factions": {

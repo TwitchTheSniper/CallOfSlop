@@ -1,11 +1,11 @@
 {
   "format": "call-of-slop-map/1",
   "name": "Slopolis",
-  "description": "Slopolis, the free port: a 3.5 km world whose north is one city, built by everybody and owned by nobody. Towers in the middle, old brick blocks at the edge, a square at the pole with a column in it, and lamps coming on at the blue hour. Hills and old quarries beyond the last street (docs/planets/CITY.md).",
+  "description": "Slopolis, the free port: a 14 km world whose north is one city, built by everybody and owned by nobody. Towers in the middle, old brick blocks at the edge, a square at the pole with a column in it, and lamps coming on at the blue hour. Hills and old quarries beyond the last street (docs/planets/CITY.md).",
   "author": "Call of Slop",
   "order": 6,
-  "halfX": 6100,
-  "halfZ": 6100,
+  "halfX": 19200,
+  "halfZ": 19200,
   "maxPlayers": 8,
   "skybox": {
     "preset": "dusk",
@@ -28,7 +28,7 @@
     }
   },
   "planetoid": {
-    "radius": 3500,
+    "radius": 14000,
     "cell": 2,
     "strength": 10,
     "surface": {
@@ -38,13 +38,13 @@
       "sand": "#8c7f68",
       "dirtSlope": 16,
       "rockSlope": 30,
-      "sandBelow": -30
+      "sandBelow": -60
     },
     "features": [
       {
         "type": "noise",
-        "amplitude": 28,
-        "scale": 900,
+        "amplitude": 56,
+        "scale": 3600,
         "octaves": 5,
         "seed": 61
       },
@@ -52,8 +52,8 @@
         "type": "mountain",
         "lat": 55,
         "lon": 120,
-        "radius": 700,
-        "height": 260,
+        "radius": 2800,
+        "height": 520,
         "seed": 63,
         "ridges": 0.5,
         "erosion": 0.6,
@@ -63,8 +63,8 @@
         "type": "mountain",
         "lat": 48,
         "lon": 300,
-        "radius": 600,
-        "height": 200,
+        "radius": 2400,
+        "height": 400,
         "seed": 64,
         "ridges": 0.4,
         "erosion": 0.6,
@@ -74,8 +74,8 @@
         "type": "crater",
         "lat": 20,
         "lon": 200,
-        "radius": 300,
-        "depth": 60
+        "radius": 1200,
+        "depth": 120
       },
       {
         "type": "noise",
@@ -96,7 +96,7 @@
         "lat": 90,
         "lon": 0,
         "radius": 720,
-        "height": 12.18,
+        "height": 24.18,
         "edge": 300
       }
     ]
@@ -104,7 +104,7 @@
   "city": {
     "lat": 90,
     "lon": 0,
-    "height": 12,
+    "height": 24,
     "radius": 640,
     "seed": 7,
     "blockX": 64,
@@ -135,44 +135,44 @@
     [
       [
         -6,
-        3512.007,
+        14024.182,
         -40
       ],
       [
         6,
-        3512.007,
+        14024.182,
         -40
       ],
       [
         -12,
-        3512.035,
+        14024.189,
         -36
       ],
       [
         12,
-        3512.035,
+        14024.189,
         -36
       ]
     ],
     [
       [
         -6,
-        3512.007,
+        14024.182,
         40
       ],
       [
         6,
-        3512.007,
+        14024.182,
         40
       ],
       [
         -12,
-        3512.035,
+        14024.189,
         36
       ],
       [
         12,
-        3512.035,
+        14024.189,
         36
       ]
     ]
@@ -180,13 +180,13 @@
   "hills": [
     {
       "x": 30,
-      "y": 3511.744,
+      "y": 14023.936,
       "z": 30,
       "radius": 6
     },
     {
       "x": -30,
-      "y": 3511.744,
+      "y": 14023.936,
       "z": -30,
       "radius": 6
     }
@@ -194,54 +194,54 @@
   "flags": [
     [
       0,
-      3512.212,
+      14024.428,
       -45
     ],
     [
       0,
-      3512.212,
+      14024.428,
       45
     ]
   ],
   "ops": [
     {
       "op": "SurfaceSpawn",
-      "lat": 89.7716,
+      "lat": 89.9428,
       "lon": 22.5
     },
     {
       "op": "SurfaceSpawn",
-      "lat": 89.7716,
+      "lat": 89.9428,
       "lon": 67.5
     },
     {
       "op": "SurfaceSpawn",
-      "lat": 89.7716,
+      "lat": 89.9428,
       "lon": 112.5
     },
     {
       "op": "SurfaceSpawn",
-      "lat": 89.7716,
+      "lat": 89.9428,
       "lon": 157.5
     },
     {
       "op": "SurfaceSpawn",
-      "lat": 89.7716,
+      "lat": 89.9428,
       "lon": 202.5
     },
     {
       "op": "SurfaceSpawn",
-      "lat": 89.7716,
+      "lat": 89.9428,
       "lon": 247.5
     },
     {
       "op": "SurfaceSpawn",
-      "lat": 89.7716,
+      "lat": 89.9428,
       "lon": 292.5
     },
     {
       "op": "SurfaceSpawn",
-      "lat": 89.7716,
+      "lat": 89.9428,
       "lon": 337.5
     }
   ]

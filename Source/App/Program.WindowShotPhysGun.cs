@@ -4,7 +4,7 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// The window tool's physics gun check (pg01): "swing RATE SECS [DIST] [pitch]" (DIST: the hold distance, as the wheel sets it; pitch: the look turns up, not round: a joint held across its axis) turns the look at RATE degrees a second for SECS seconds
+/// The window tool's physics gun check (pg01): "swing RATE SECS [DIST] [pitch|turn]" (DIST: the hold distance, as the wheel sets it; pitch: the look turns up, not round: a joint held across its axis; turn: the look stays and the held piece turns about up, as F and the mouse turn it) turns the look at RATE degrees a second for SECS seconds
 /// (as the mouse would), then holds it still for 1.5 s, and prints every few frames how far the held piece's grab point is
 /// drawn from the crosshair's point (m) and at what angle off the look (degrees), on this peer. A host and a joined client
 /// running the same swing should print the same lag (the client's piece is simulated by the server's spring:
@@ -13,14 +13,14 @@ namespace CallOfSlop;
 public static partial class Program
 {
     private static long _wsSwingStart, _wsSwingLast;
-    private static bool _wsSwingPitch;
+    private static bool _wsSwingPitch, _wsSwingTurn;
     private static float _wsSwingRate, _wsSwingSecs, _wsSwingMax, _wsSwingSum, _wsSwingRest;
     private static int _wsSwingFrames, _wsSwingN, _wsWaitPeerFrames;
     private static bool _wsSwingRelHave; // (the piece's turn against the view, taken at the script's first swing: start with a still one, "swing 0 1")
     private static Quaternion _wsSwingRel0;
     private static float _wsSwingDrift, _wsSwingDriftRest;
 
-    private static bool WsHeldKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "swing" or "waitpeer" or "beside" or "pitch" or "aimat" or "bodies" or "loose" or "framewatch";
+    private static bool WsHeldKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "swing" or "waitpeer" or "beside" or "pitch" or "aimat" or "bodies" or "loose" or "framewatch" or "cshell" or "aimsock";
 
     private static bool WsHeldVerb(Game g, string verb, string arg)
     {
@@ -54,11 +54,11 @@ public static partial class Program
         }
         if (verb == "bodies" && g.Local is { } nearOf)
         {
-            // "bodies [M]": the bodies within M m (default 30) of this player: id, parts, first part, distance, held or carried
+            // "bodies [M]": the bodies within M m (default 30) of this player: id, parts, first part, distance, held or carried, asleep, speed and centre
             var m = float.TryParse(arg, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var bm) ? bm : 30f;
             foreach (var b in g.Constructs.Bodies)
                 if (b.PartCount > 0 && Vector3.Distance(b.WorldCom, nearOf.Position) < m + b.Radius)
-                    WsSay(FormattableString.Invariant($"bodies: {b.Id} {b.DefOf(0).Name} x{b.PartCount}, {Vector3.Distance(b.WorldCom, nearOf.Position):0.0} m, {b.Mass:0} kg{(b.CarriedBy != 0 ? $", carried by {b.CarriedBy}" : "")}{(b.Anchored ? ", anchored" : "")}{(b.SpaceShip != 0 ? ", a ship" : "")}"));
+                    WsSay(FormattableString.Invariant($"bodies: {b.Id} {b.DefOf(0).Name} x{b.PartCount}, {Vector3.Distance(b.WorldCom, nearOf.Position):0.0} m, {b.Mass:0} kg{(b.CarriedBy != 0 ? $", carried by {b.CarriedBy}" : "")}{(b.Anchored ? ", anchored" : "")}{(b.SpaceShip != 0 ? ", a ship" : "")}, {(b.Asleep ? "asleep" : "awake")}, {b.Vel.Length():0.000} m/s, centre {b.WorldCom.X:0.000},{b.WorldCom.Y:0.000},{b.WorldCom.Z:0.000}"));
             return true;
         }
         if (verb == "loose" && g.IsServer && g.Local is { } placer)
@@ -78,6 +78,55 @@ public static partial class Program
             var made = ConstructBuild.PlaceNew(g.Constructs, def, new FreePlacement { Pos = at, Rot = deck });
             WsSay(FormattableString.Invariant($"loose: {(made == null ? "not placed" : $"body {made.Id}, {made.Mass:0} kg, at {at:0.0}")}"));
             _wsWait = 10;
+            return true;
+        }
+        if (verb == "cshell" && arg.Trim() == "look")
+        {
+            // "cshell look": this peer's look line and the socket weld's step (what the crosshair offers now)
+            WsSay($"cshell look: \"{g.SandboxLookText}\", weld step {_swFlow.Step}, tool {g.SandboxHands.Hand(g.LocalId).Tool}");
+            return true;
+        }
+        if (verb == "cshell" && g.IsServer && g.Local is { } cs)
+        {
+            // "cshell": host, the Construction Shell's test yard (construction-shell.md): a Construction Shell on channel 4 frozen 8 m ahead and 6 m to
+            // the left (a Robot Shell on channel 1 between, for size), its Shell Control Chair 3 m to the right, and a Large Column 8 m frozen 14 m ahead as the build to weld onto
+            var fwd = g.LookDir(cs.Yaw, 0);
+            var side = Vector3.Normalize(Vector3.Cross(fwd, GravityFrames.UpAt(cs.Position)));
+            Vector3 Ground(Vector3 at) => at with { Y = World.Map.GroundHeight(at.X, at.Z) };
+            var said = new List<string>();
+            foreach (var (name, at, ch) in new[] { ("Construction Shell", Ground(cs.Position - side * 6 + fwd * 8), 4), ("Robot Shell", Ground(cs.Position - side * 3 + fwd * 8), 1), ("Shell Control Chair", Ground(cs.Position + side * 3), 4), ("Large Column 8 m", Ground(cs.Position + fwd * 14), 0) })
+                if (ConstructParts.Find(name) is { } d && ConstructBuild.PlaceNew(g.Constructs, d, at, cs.Yaw + (name.EndsWith(" Shell", StringComparison.Ordinal) ? MathF.PI : 0)) is { } c)
+                {
+                    if (ch > 0)
+                        ConstructConfig.Put(ref c.Parts[0], d, CfgKey.Channel, ch);
+                    c.Frozen = true;
+                    c.Rebuild();
+                    g.Constructs.StructureDirty.Add(c.Id);
+                    said.Add($"{name} {c.Id}");
+                }
+                else
+                    said.Add($"{name}: not placed");
+            WsSay($"cshell: {string.Join(", ", said)}");
+            _wsWait = 10;
+            return true;
+        }
+        if (verb == "aimsock" && g.Local is { } sockOf)
+        {
+            // "aimsock PART[#n] SOCKET": the look turned to that socket of the part (by name), for the welder's socket markers
+            var cut = arg.LastIndexOf(' ');
+            var (body, part) = cut > 0 ? WsFind(g, arg[..cut].Trim()) : (null, -1);
+            var sock = cut > 0 && body != null && part >= 0 ? Array.FindIndex(body.DefOf(part).Sockets, q => q.Name == arg[(cut + 1)..].Trim()) : -1;
+            if (body == null || sock < 0)
+            {
+                WsFail($"aimsock PART SOCKET: no {arg}");
+                return true;
+            }
+            body.SocketAt(part, sock, out var local, out _);
+            var at = body.SegToWorld(body.Parts[part].Seg, local);
+            var eyeAt = g.RiderDrawnEye(sockOf);
+            WsLook(g, eyeAt, at);
+            WsSay(FormattableString.Invariant($"aimsock: {arg} at {at:0.00}, {Vector3.Distance(eyeAt, at):0.0} m from the eye"));
+            _wsWait = 3;
             return true;
         }
         if (verb == "framewatch")
@@ -139,12 +188,13 @@ public static partial class Program
         var bits = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
         if (bits.Length < 2 || !float.TryParse(bits[0], ci, out _wsSwingRate) || !float.TryParse(bits[1], ci, out _wsSwingSecs))
         {
-            WsFail("swing RATE SECS [DIST] [pitch]");
+            WsFail("swing RATE SECS [DIST] [pitch|turn]");
             return true;
         }
         if (bits.Length > 2 && float.TryParse(bits[2], ci, out var dist))
             _pgDist = dist; // (as the wheel sets it)
         _wsSwingPitch = bits.Length > 3 && bits[3].Equals("pitch", StringComparison.OrdinalIgnoreCase);
+        _wsSwingTurn = bits.Length > 3 && bits[3].Equals("turn", StringComparison.OrdinalIgnoreCase); // (the held piece turned as F and the mouse turn it, the look held still)
         _wsSwingStart = _wsSwingLast = Stopwatch.GetTimestamp();
         _wsSwingMax = _wsSwingSum = _wsSwingRest = 0;
         _wsSwingFrames = _wsSwingN = 0;
@@ -200,7 +250,9 @@ public static partial class Program
         var t = (float)Stopwatch.GetElapsedTime(_wsSwingStart, now).TotalSeconds;
         var dt = (float)Stopwatch.GetElapsedTime(_wsSwingLast, now).TotalSeconds;
         _wsSwingLast = now;
-        if (t < _wsSwingSecs && _wsSwingPitch)
+        if (t < _wsSwingSecs && _wsSwingTurn)
+            _pgRel = ConstructGrab.Turn(_pgRel, _wsSwingRate * MathF.PI / 180f * dt, 0);
+        else if (t < _wsSwingSecs && _wsSwingPitch)
             g.LookPitch = Math.Clamp(g.LookPitch + _wsSwingRate * MathF.PI / 180f * dt, -1.5f, 1.5f);
         else if (t < _wsSwingSecs)
             g.LookYaw += _wsSwingRate * MathF.PI / 180f * dt;
@@ -248,7 +300,7 @@ public static partial class Program
             else
                 _wsSwingRest = lag;
             if (_wsSwingFrames++ % 6 == 0)
-                WsSay(FormattableString.Invariant($"swing: t {t:0.00} s, lag {lag:0.000} m, {deg:0.0} deg off the look, sim {g.SandboxHeldSimulated || g.SandboxJointSimulated}, seg {h.GrabSeg}, lead {g.SandboxHeldLead:0.000} m, turn off the view {drift:0.0} deg, spin {c.AngVel.Length() * 180f / MathF.PI:0} deg/s, eye off {Vector3.Distance(g.SandboxHeldEye, eye):0.000} (tick eye {Vector3.Distance(g.SandboxHeldEyeEarly, eye):0.000}) m, dist {_pgDist:0.0}, mass {c.Mass:0} kg"));
+                WsSay(FormattableString.Invariant($"swing: t {t:0.00} s, lag {lag:0.000} m, {deg:0.0} deg off the look, sim {g.SandboxHeldSimulated || g.SandboxJointSimulated}, seg {h.GrabSeg}, lead {g.SandboxHeldLead:0.000} m, turn off the view {drift:0.0} deg, spin {c.AngVel.Length() * 180f / MathF.PI:0} deg/s, eye off {Vector3.Distance(g.SandboxHeldEye, eye):0.000} (tick eye {Vector3.Distance(g.SandboxHeldEyeEarly, eye):0.000}) m, dist {_pgDist:0.0}, mass {c.Mass:0} kg, boost {(g.IsServer ? c.GrabBoost : h.GrabBoost):0.00}"));
         }
         if (t >= _wsSwingSecs + 1.5f)
         {

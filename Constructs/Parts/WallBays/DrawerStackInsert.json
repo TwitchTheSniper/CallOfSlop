@@ -1,0 +1,307 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Drawer Stack Insert",
+  "description": "An in-wall bay's drawer insert (0.5 m deep): the dividers and runners for four drawers.",
+  "group": "Interior",
+  "section": "In-wall bays",
+  "role": "frame",
+  "tool": "wrench",
+  "finish": "painted steel",
+  "collider": "boxes",
+  "mass": 30.0,
+  "health": 500,
+  "armour": 6,
+  "material": "steel",
+  "color": "#262a2f",
+  "attachSeconds": 3.0,
+  "boxes": [
+    {
+      "min": [
+        -0.45,
+        0.1,
+        -0.5
+      ],
+      "max": [
+        0.45,
+        2.0,
+        -0.485
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.435,
+        0.1,
+        -0.02
+      ],
+      "max": [
+        0.455,
+        0.12,
+        0.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.435,
+        0.575,
+        -0.02
+      ],
+      "max": [
+        0.455,
+        0.595,
+        0.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.435,
+        1.05,
+        -0.02
+      ],
+      "max": [
+        0.455,
+        1.07,
+        0.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.435,
+        1.525,
+        -0.02
+      ],
+      "max": [
+        0.455,
+        1.545,
+        0.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.45,
+        0.569,
+        -0.5
+      ],
+      "max": [
+        0.45,
+        0.581,
+        -0.03
+      ],
+      "color": "#262a2f",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.45,
+        1.044,
+        -0.5
+      ],
+      "max": [
+        0.45,
+        1.056,
+        -0.03
+      ],
+      "color": "#262a2f",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.45,
+        1.519,
+        -0.5
+      ],
+      "max": [
+        0.45,
+        1.531,
+        -0.03
+      ],
+      "color": "#262a2f",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.45,
+        0.13,
+        -0.48
+      ],
+      "max": [
+        -0.43,
+        0.16,
+        -0.04
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.45,
+        0.605,
+        -0.48
+      ],
+      "max": [
+        -0.43,
+        0.635,
+        -0.04
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.45,
+        1.08,
+        -0.48
+      ],
+      "max": [
+        -0.43,
+        1.11,
+        -0.04
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.45,
+        1.555,
+        -0.48
+      ],
+      "max": [
+        -0.43,
+        1.585,
+        -0.04
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.43,
+        0.13,
+        -0.48
+      ],
+      "max": [
+        0.45,
+        0.16,
+        -0.04
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.43,
+        0.605,
+        -0.48
+      ],
+      "max": [
+        0.45,
+        0.635,
+        -0.04
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.43,
+        1.08,
+        -0.48
+      ],
+      "max": [
+        0.45,
+        1.11,
+        -0.04
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.43,
+        1.555,
+        -0.48
+      ],
+      "max": [
+        0.45,
+        1.585,
+        -0.04
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bay",
+      "at": [
+        0.0,
+        1.0,
+        -0.5
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "drawer0",
+      "at": [
+        0.445,
+        0.11,
+        0.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "drawer1",
+      "at": [
+        0.445,
+        0.585,
+        0.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "drawer2",
+      "at": [
+        0.445,
+        1.06,
+        0.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "drawer3",
+      "at": [
+        0.445,
+        1.535,
+        0.0
+      ],
+      "dir": "+z"
+    }
+  ]
+}

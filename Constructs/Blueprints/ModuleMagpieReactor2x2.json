@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Module Magpie Reactor 2x2",
+  "description": "A 2x2 module: a Magpie Power Plant on a 2x2 plug: 400 kW. Written by the part kit (miner).",
+  "module": { "w": 2, "l": 2, "primary": "reactor", "tags": ["reactor"] },
+  "steps": [
+    { "part": "Module Plug 2x2" },
+    { "part": "Magpie Power Plant", "on": 0, "socket": "tc", "by": "bottom" }
+  ]
+}

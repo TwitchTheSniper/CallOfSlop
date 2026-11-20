@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Module Zero Day Reactor 2x2",
+  "description": "A 2x2 module: a Zero Day Reactor on a 2x2 plug: 3 MW, heavy. Written by the part kit (torpedo frigate).",
+  "module": { "w": 2, "l": 2, "primary": "reactor", "tags": ["reactor"] },
+  "steps": [
+    { "part": "Module Plug 2x2" },
+    { "part": "Zero Day Reactor", "on": 0, "socket": "tc", "by": "bottom" }
+  ]
+}
