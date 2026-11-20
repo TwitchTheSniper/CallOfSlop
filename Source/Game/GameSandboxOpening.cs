@@ -444,6 +444,7 @@ public sealed class OpeningScript
     public float CrashFrom = 70, CrashTo = 140;
     public string Ship = ""; // a ship start: the blueprint everyone wakes aboard, in orbit (GameSpaceStart.cs)
     public float Orbit = 3000; // its height over the ground (m; at least past the sky's edge)
+    public bool Hold; // held still there by its own flight computer instead of going round (a deep-space start: GameSpaceStart.cs)
     public Vector3[] Wake = []; // where people wake in it, in the ship's own metres (from its first part's middle), one each in turn
     /// <summary>A crewed ship of an NPC faction kind going round with the start's ship, <c>Behind</c> m back along its orbit (GameSpaceStart.cs).</summary>
     public readonly record struct Companion(string Ship, string Faction, float Behind, float Away = 0);
@@ -485,8 +486,12 @@ public sealed class OpeningScript
             t.Ship = Text(root, "ship", "");
             if (t.Ship.Length > 0 && ConstructBuild.FindBlueprint(t.Ship) == null)
                 throw new FormatException($"no blueprint named \"{t.Ship}\" (the ship)");
+            // (at most 150 km: past the World's 200 km reach from the planet's centre a ship is parked, GameSpaceJump.SpaceFarDistance,
+            // and company held "away" past it has to fit in too)
             if (root.TryGetProperty("orbit", out var ob))
-                t.Orbit = Math.Clamp(ob.GetSingle(), 500, 50000);
+                t.Orbit = Math.Clamp(ob.GetSingle(), 500, 150_000);
+            if (root.TryGetProperty("hold", out var hd))
+                t.Hold = hd.GetBoolean();
             if (root.TryGetProperty("wake", out var wk))
                 t.Wake = [.. wk.EnumerateArray().Select(v => v.GetArrayLength() == 3 ? new Vector3(v[0].GetSingle(), v[1].GetSingle(), v[2].GetSingle()) : throw new FormatException("\"wake\": [x, y, z] spots"))];
             if (root.TryGetProperty("company", out var co))
