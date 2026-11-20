@@ -88,14 +88,14 @@ public static partial class Program
         }
         if (verb == "cshell" && g.IsServer && g.Local is { } cs)
         {
-            // "cshell": host, the Construction Shell's test yard (construction-shell.md): a Construction Shell on channel 4 frozen 6 m to
-            // the left, its Shell Control Chair 3 m to the right, and a Large Column 8 m frozen 9 m ahead as the build to weld onto
+            // "cshell": host, the Construction Shell's test yard (construction-shell.md): a Construction Shell on channel 4 frozen 8 m ahead and 6 m to
+            // the left (a Robot Shell on channel 1 between, for size), its Shell Control Chair 3 m to the right, and a Large Column 8 m frozen 14 m ahead as the build to weld onto
             var fwd = g.LookDir(cs.Yaw, 0);
             var side = Vector3.Normalize(Vector3.Cross(fwd, GravityFrames.UpAt(cs.Position)));
             Vector3 Ground(Vector3 at) => at with { Y = World.Map.GroundHeight(at.X, at.Z) };
             var said = new List<string>();
-            foreach (var (name, at, ch) in new[] { ("Construction Shell", Ground(cs.Position - side * 6 + fwd * 2), 4), ("Shell Control Chair", Ground(cs.Position + side * 3), 4), ("Large Column 8 m", Ground(cs.Position + fwd * 9), 0) })
-                if (ConstructParts.Find(name) is { } d && ConstructBuild.PlaceNew(g.Constructs, d, at, cs.Yaw + (ch == 4 && name != "Shell Control Chair" ? MathF.PI : 0)) is { } c)
+            foreach (var (name, at, ch) in new[] { ("Construction Shell", Ground(cs.Position - side * 6 + fwd * 8), 4), ("Robot Shell", Ground(cs.Position - side * 3 + fwd * 8), 1), ("Shell Control Chair", Ground(cs.Position + side * 3), 4), ("Large Column 8 m", Ground(cs.Position + fwd * 14), 0) })
+                if (ConstructParts.Find(name) is { } d && ConstructBuild.PlaceNew(g.Constructs, d, at, cs.Yaw + (name.EndsWith(" Shell", StringComparison.Ordinal) ? MathF.PI : 0)) is { } c)
                 {
                     if (ch > 0)
                         ConstructConfig.Put(ref c.Parts[0], d, CfgKey.Channel, ch);
