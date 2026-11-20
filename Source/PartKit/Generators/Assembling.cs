@@ -599,6 +599,14 @@ public sealed class Assembling : IPartGenerator
         ("WallBays", "Wall Bay 1m", null),
         ("WallBays", "Wall Bay 1.5m", null),
         ("WallBays", "Water Reclaimer Insert 1m", null),
+        // (the style sheet's bulkhead doors, Karl 2026-11-20: FittingLookDoors)
+        (null, null, Rec("Graphite Bulkhead Frame", 30.0, 2, m: [("steel", 120), ("copper", 2)])),
+        (null, null, Rec("Graphite Bulkhead Door", 8.0, 2, m: [("steel", 40)], p: [("Bearing", 3)])),
+        (null, null, Rec("Ceramic Bulkhead Frame", 30.0, 2, m: [("steel", 110), ("glass", 2), ("copper", 2)])),
+        (null, null, Rec("Ceramic Bulkhead Door Left", 6.0, 2, m: [("steel", 20)], p: [("Bearing", 2)])),
+        (null, null, Rec("Ceramic Bulkhead Door Right", 6.0, 2, m: [("steel", 20)], p: [("Bearing", 2)])),
+        (null, null, Rec("Armoured Bulkhead Frame", 40.0, 2, m: [("steel", 180), ("rubber", 6), ("copper", 2)])),
+        (null, null, Rec("Armoured Bulkhead Door", 10.0, 2, m: [("steel", 55)], p: [("Bearing", 3)])),
     ];
 
     /// <summary>
