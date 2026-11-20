@@ -108,47 +108,83 @@ public static class ConstructShellPod
             if (k >= c.PartCount || c.Parts[k].D.ShellPod is not { Flush: true } pd)
                 continue;
             ref var pp = ref c.Parts[k];
-            c.PodSurface[q] = SurfaceDepth(c, pp.Pos, pp.Rot, k);
+            c.PodSurface[q] = SurfaceDepth(c, pp.Seg, pp.Pos, pp.Rot, k);
             Pocket(pd, out var centre, out var half);
-            var at = pp.Pos + Rot24.Apply(pp.Rot, centre);
-            var h = Rot24.ApplyHalf(pp.Rot, half);
+            PodAxes(c, pp.Seg, pp.Pos, pp.Rot, out var at0, out var down, out var x, out var z);
+            var at = at0 + x * centre.X - down * centre.Y + z * centre.Z; // (in the body's frame: a freeform weld's parts sit on segments of their own)
+            var h = Vector3.Abs(x) * half.X + Vector3.Abs(down) * half.Y + Vector3.Abs(z) * half.Z;
             Vector3 lo = at - h, hi = at + h;
             for (var i = 0; i < c.PartCount; i++)
             {
-                if (i == k || c.Parts[i].D.ShellPod != null) // (in the rest frame: a surface on another segment, a freeform weld's, counts too)
+                if (i == k || c.Parts[i].D.ShellPod != null)
                     continue;
-                c.PartBounds(i, out var mn, out var mx);
+                BodyBounds(c, i, out var mn, out var mx);
                 if (mn.X < hi.X && mx.X > lo.X && mn.Y < hi.Y && mx.Y > lo.Y && mn.Z < hi.Z && mx.Z > lo.Z)
                     c.PocketHost[i] = 1;
             }
         }
     }
 
-    /// <summary>
-    /// How deep the surface under a flush pod at <paramref name="pos"/>, <paramref name="rot"/> (rest frame) is down its middle:
-    /// through the parts of the body that touch end to end, from the socket. A pod whose body is deeper than that is shallow
-    /// flush (the user, 2026-11-19): its lid is flush and its pocket cut as ever, and the rest of its body stands proud on the far
-    /// side as a housing, with a flange where it comes through (ShellPodRender.cs). Allocates nothing.
-    /// </summary>
-    public static float SurfaceDepth(Construct c, Vector3 pos, byte rot, int skip = -1)
+    /// <summary>Part <paramref name="i"/>'s bounds in the body's frame: its segment's pose applied (a freeform weld's part sits in its own segment's frame).</summary>
+    private static void BodyBounds(Construct c, int i, out Vector3 mn, out Vector3 mx)
     {
-        var down = Rot24.Apply(rot, -Vector3.UnitY);
-        var axis = MathF.Abs(down.X) > 0.5f ? 0 : MathF.Abs(down.Y) > 0.5f ? 1 : 2;
-        var sign = down[axis];
+        c.PartBounds(i, out mn, out mx);
+        var seg = c.Parts[i].Seg;
+        if (seg <= 0)
+            return;
+        c.SegPose(seg, out var q, out var t);
+        var mid = t + Vector3.Transform((mn + mx) * 0.5f, q);
+        var h = (mx - mn) * 0.5f;
+        var r = Matrix4x4.CreateFromQuaternion(q);
+        var wh = new Vector3(
+            MathF.Abs(r.M11) * h.X + MathF.Abs(r.M21) * h.Y + MathF.Abs(r.M31) * h.Z,
+            MathF.Abs(r.M12) * h.X + MathF.Abs(r.M22) * h.Y + MathF.Abs(r.M32) * h.Z,
+            MathF.Abs(r.M13) * h.X + MathF.Abs(r.M23) * h.Y + MathF.Abs(r.M33) * h.Z);
+        mn = mid - wh;
+        mx = mid + wh;
+    }
+
+    /// <summary>A pod at <paramref name="pos"/>, <paramref name="rot"/> on segment <paramref name="seg"/>, in the body's frame: its socket point and its axes.</summary>
+    private static void PodAxes(Construct c, int seg, Vector3 pos, byte rot, out Vector3 at, out Vector3 down, out Vector3 x, out Vector3 z)
+    {
+        c.SegPose(seg, out var q, out var t);
+        at = t + Vector3.Transform(pos, q);
+        down = Vector3.Transform(Rot24.Apply(rot, -Vector3.UnitY), q);
+        x = Vector3.Transform(Rot24.Apply(rot, Vector3.UnitX), q);
+        z = Vector3.Transform(Rot24.Apply(rot, Vector3.UnitZ), q);
+    }
+
+    private static bool In(Vector3 p, Vector3 mn, Vector3 mx) => p.X > mn.X && p.X < mx.X && p.Y > mn.Y && p.Y < mx.Y && p.Z > mn.Z && p.Z < mx.Z;
+
+    /// <summary>
+    /// How deep the surface under a flush pod at <paramref name="pos"/>, <paramref name="rot"/> on segment <paramref name="seg"/> is
+    /// down its middle: through the parts of the body that touch end to end, from the socket. A pod whose body is deeper than that
+    /// is shallow flush (the user, 2026-11-19): its lid is flush and its pocket cut as ever, and the rest of its body stands proud
+    /// on the far side as a housing, with a flange where it comes through (ShellPodRender.cs). Allocates nothing.
+    /// </summary>
+    public static float SurfaceDepth(Construct c, int seg, Vector3 pos, byte rot, int skip = -1)
+    {
+        PodAxes(c, seg, pos, rot, out var at0, out var down, out _, out _);
         var depth = 0f;
         for (var guard = 0; guard < 64; guard++)
         {
-            var at = pos + down * (depth + 0.002f);
+            var at = at0 + down * (depth + 0.002f);
             var deepest = -1f;
             for (var i = 0; i < c.PartCount; i++)
             {
                 if (i == skip || c.Parts[i].D.ShellPod != null)
                     continue;
-                c.PartBounds(i, out var mn, out var mx);
-                if (at.X > mn.X && at.X < mx.X && at.Y > mn.Y && at.Y < mx.Y && at.Z > mn.Z && at.Z < mx.Z)
-                    deepest = MathF.Max(deepest, sign < 0 ? pos[axis] - mn[axis] : mx[axis] - pos[axis]);
+                BodyBounds(c, i, out var mn, out var mx);
+                if (!In(at, mn, mx))
+                    continue;
+                // Where the line down leaves this box (slabs).
+                var exit = float.MaxValue;
+                for (var a = 0; a < 3; a++)
+                    if (MathF.Abs(down[a]) > 1e-5f)
+                        exit = MathF.Min(exit, ((down[a] > 0 ? mx[a] : mn[a]) - at[a]) / down[a]);
+                deepest = MathF.Max(deepest, depth + 0.002f + exit);
             }
-            if (deepest <= depth)
+            if (deepest <= depth + 0.002f)
                 break;
             depth = deepest;
         }
@@ -160,24 +196,24 @@ public static class ConstructShellPod
     /// stands proud on the far side); it is refused only when that body would run into another part of the body beyond the
     /// surface: points down its middle and corners past the surface's depth must be clear. Allocates nothing.
     /// </summary>
-    public static string? BodyRefusal(Construct c, ConstructPartDef def, Vector3 pos, byte rot)
+    public static string? BodyRefusal(Construct c, ConstructPartDef def, Vector3 pos, byte rot, int seg)
     {
         if (def.ShellPod is not { Flush: true } pd)
             return null;
         var below = pd.Depth - pd.Top; // (the body's depth under the surface)
-        var deep = SurfaceDepth(c, pos, rot);
+        var deep = SurfaceDepth(c, seg, pos, rot);
         if (deep >= below - 0.01f)
             return null;
-        var down = Rot24.Apply(rot, -Vector3.UnitY);
-        var ax = Rot24.Apply(rot, Vector3.UnitX) * (pd.Half - 0.01f);
-        var az = Rot24.Apply(rot, Vector3.UnitZ) * (pd.Half - 0.01f);
+        PodAxes(c, seg, pos, rot, out var at0, out var down, out var x, out var z);
+        var ax = x * (pd.Half - 0.01f);
+        var az = z * (pd.Half - 0.01f);
         const int Steps = 6;
         for (var k = 0; k <= Steps; k++)
         {
             var d = deep + 0.03f + (below - deep - 0.04f) * k / Steps; // (past the surface's far face and its flange, to the body's foot)
             if (d >= below)
                 break;
-            var at = pos + down * d;
+            var at = at0 + down * d;
             var hit = Inside(c, at);
             if (hit < 0)
                 hit = Inside(c, at + ax + az);
@@ -193,15 +229,15 @@ public static class ConstructShellPod
         return null;
     }
 
-    /// <summary>The first part of the body (not a pod) whose bounds hold <paramref name="at"/>, or -1.</summary>
+    /// <summary>The first part of the body (not a pod) whose bounds hold <paramref name="at"/> (body frame), or -1.</summary>
     private static int Inside(Construct c, Vector3 at)
     {
         for (var i = 0; i < c.PartCount; i++)
         {
             if (c.Parts[i].D.ShellPod != null)
                 continue;
-            c.PartBounds(i, out var mn, out var mx);
-            if (at.X > mn.X && at.X < mx.X && at.Y > mn.Y && at.Y < mx.Y && at.Z > mn.Z && at.Z < mx.Z)
+            BodyBounds(c, i, out var mn, out var mx);
+            if (In(at, mn, mx))
                 return i;
         }
         return -1;

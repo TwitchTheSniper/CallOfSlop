@@ -110,7 +110,7 @@ public static class ConstructBuild
         if (newJoint && LeafRefusal(c, part) is { } full)
             return full;
         g = new ConstructGhost { Part = part, Socket = socket, DefSocket = defSocket, Variant = spin, Pos = pos, Rot = rot, Seg = seg, NewJoint = newJoint, Scale = scale };
-        if (ConstructShellPod.BodyRefusal(c, def, pos, rot) is { } blocked)
+        if (ConstructShellPod.BodyRefusal(c, def, pos, rot, seg) is { } blocked)
             return blocked; // (a flush pod whose body, proud of a thin surface's far side, would run into another part)
         if (Blocked(c, def, pos, rot, scale, seg))
             return InTheWay;
