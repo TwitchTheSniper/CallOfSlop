@@ -518,6 +518,19 @@ public sealed class Assembling : IPartGenerator
         // (the capital ship's cutters, Karl 2026-11-20: hand rows, since the LaserCutter folder's two older cutters keep their rows in the long tail)
         (null, null, Rec("Large Laser Cutter", 400.0, 3, m: [("steel", 1600), ("rubber", 320)])),
         (null, null, Rec("Capital Laser Cutter", 600.0, 4, m: [("steel", 2000), ("rubber", 500)])),
+        // (the Mainframe capital ship's own parts, Karl 2026-11-20: docs/sandbox/constructs/mainframe.md; its plates are cut, not assembled)
+        ("Mainframe", "Mainframe Frame Node", null),
+        ("Mainframe", "Mainframe Beam Light", null),
+        ("Mainframe", "Mainframe Cell Hatch", null),
+        ("Mainframe", "Mainframe Fusion Reactor", null),
+        ("Mainframe", "Mainframe Drive Mount", null),
+        ("Mainframe", "Mainframe Drive Bell", null),
+        ("Mainframe", "Mainframe Drive Core", null),
+        ("Mainframe", "Mainframe Fuel Pump", null),
+        ("Mainframe", "Mainframe Coolant Exchanger", null),
+        ("Mainframe", "Mainframe Flight Computer", null),
+        ("Mainframe", "Mainframe Attitude Jet", null),
+        ("Mainframe", "Mainframe RCS Block", null),
     ];
 
     /// <summary>
