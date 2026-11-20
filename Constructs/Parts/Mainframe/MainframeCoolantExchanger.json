@@ -1,0 +1,320 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Mainframe Coolant Exchanger",
+  "description": "One of the Mainframe's six coolant exchangers, the last of each drive's engine, ringed with radiator fins.",
+  "group": "Ship",
+  "section": "Mainframe",
+  "role": "frame",
+  "tool": "welder",
+  "onBreak": "disable",
+  "worksPiece": {
+    "kind": "exchanger",
+    "serves": 40000000.0
+  },
+  "collider": "boxes",
+  "mass": 400000.0,
+  "health": 200000,
+  "armour": 40,
+  "material": "steel",
+  "color": "#a9a59a",
+  "attachSeconds": 40.0,
+  "boxes": [
+    {
+      "min": [
+        -7.5,
+        -7.5,
+        -10.0
+      ],
+      "max": [
+        7.5,
+        7.5,
+        0.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -7.5,
+        -7.5,
+        -9.997
+      ],
+      "max": [
+        7.5,
+        7.5,
+        -0.003
+      ],
+      "color": "#a9a59a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 32,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -8.4,
+        -8.4,
+        -0.72
+      ],
+      "max": [
+        8.4,
+        8.4,
+        -0.48
+      ],
+      "color": "#6a6f72",
+      "detail": true,
+      "shape": "tube",
+      "segments": 32,
+      "inner": 0.9,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -8.1,
+        -8.1,
+        -1.52
+      ],
+      "max": [
+        8.1,
+        8.1,
+        -1.28
+      ],
+      "color": "#6a6f72",
+      "detail": true,
+      "shape": "tube",
+      "segments": 32,
+      "inner": 0.9,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -8.4,
+        -8.4,
+        -2.32
+      ],
+      "max": [
+        8.4,
+        8.4,
+        -2.08
+      ],
+      "color": "#6a6f72",
+      "detail": true,
+      "shape": "tube",
+      "segments": 32,
+      "inner": 0.9,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -8.1,
+        -8.1,
+        -3.12
+      ],
+      "max": [
+        8.1,
+        8.1,
+        -2.88
+      ],
+      "color": "#6a6f72",
+      "detail": true,
+      "shape": "tube",
+      "segments": 32,
+      "inner": 0.9,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -8.4,
+        -8.4,
+        -3.92
+      ],
+      "max": [
+        8.4,
+        8.4,
+        -3.68
+      ],
+      "color": "#6a6f72",
+      "detail": true,
+      "shape": "tube",
+      "segments": 32,
+      "inner": 0.9,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -8.1,
+        -8.1,
+        -4.72
+      ],
+      "max": [
+        8.1,
+        8.1,
+        -4.48
+      ],
+      "color": "#6a6f72",
+      "detail": true,
+      "shape": "tube",
+      "segments": 32,
+      "inner": 0.9,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -8.4,
+        -8.4,
+        -5.52
+      ],
+      "max": [
+        8.4,
+        8.4,
+        -5.28
+      ],
+      "color": "#6a6f72",
+      "detail": true,
+      "shape": "tube",
+      "segments": 32,
+      "inner": 0.9,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -8.1,
+        -8.1,
+        -6.32
+      ],
+      "max": [
+        8.1,
+        8.1,
+        -6.08
+      ],
+      "color": "#6a6f72",
+      "detail": true,
+      "shape": "tube",
+      "segments": 32,
+      "inner": 0.9,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -8.4,
+        -8.4,
+        -7.12
+      ],
+      "max": [
+        8.4,
+        8.4,
+        -6.88
+      ],
+      "color": "#6a6f72",
+      "detail": true,
+      "shape": "tube",
+      "segments": 32,
+      "inner": 0.9,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -8.1,
+        -8.1,
+        -7.92
+      ],
+      "max": [
+        8.1,
+        8.1,
+        -7.68
+      ],
+      "color": "#6a6f72",
+      "detail": true,
+      "shape": "tube",
+      "segments": 32,
+      "inner": 0.9,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -8.4,
+        -8.4,
+        -8.72
+      ],
+      "max": [
+        8.4,
+        8.4,
+        -8.48
+      ],
+      "color": "#6a6f72",
+      "detail": true,
+      "shape": "tube",
+      "segments": 32,
+      "inner": 0.9,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -8.1,
+        -8.1,
+        -9.52
+      ],
+      "max": [
+        8.1,
+        8.1,
+        -9.28
+      ],
+      "color": "#6a6f72",
+      "detail": true,
+      "shape": "tube",
+      "segments": 32,
+      "inner": 0.9,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -1.0,
+        7.3875,
+        -5.8
+      ],
+      "max": [
+        1.0,
+        7.58,
+        -4.2
+      ],
+      "color": "#22262b",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -0.8,
+        7.58,
+        -5.6
+      ],
+      "max": [
+        0.8,
+        7.6,
+        -4.4
+      ],
+      "color": "#58c8e8",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "front",
+      "at": [
+        0.0,
+        0.0,
+        -10.0
+      ],
+      "dir": "-z"
+    }
+  ]
+}

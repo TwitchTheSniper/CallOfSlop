@@ -269,6 +269,14 @@ public static unsafe partial class Program
             return VehicleKit.VehicleKitCli.CheckVehicle(vehicleFile); // the vehicle check on any blueprint file
         if (args.Any(a => a.Equals("--no-drive-gate", StringComparison.OrdinalIgnoreCase)))
             VehicleKit.VehicleDriveCheck.GateOn = false; // the spawn's drive check off, to measure what it catches and costs (VehicleDriveCheck.cs)
+        if (args.Any(a => a.Equals("--battle-check", StringComparison.OrdinalIgnoreCase)))
+        {
+            if (args.Any(a => a.Equals("--old-pierce", StringComparison.OrdinalIgnoreCase)))
+                ConstructBores.On = false;
+            if (args.Any(a => a.Equals("--no-break-up", StringComparison.OrdinalIgnoreCase)))
+                ConstructBreakUp.On = false;
+            return BattleCheck.Cli(args); // a capital ship under railgun fire headless: what each volley did and cost (Source/DevTools/BattleCheck.cs)
+        }
         if (args.Any(a => a.Equals("--skin-check", StringComparison.OrdinalIgnoreCase)))
             return SkinCheck.Cli(args); // does each ship's drawn skin collide where it is drawn: rays, a standing player, a dropped plate (Source/DevTools/SkinCheck.cs)
         if (args.Any(a => a.Equals("--ship-keys-check", StringComparison.OrdinalIgnoreCase)))
@@ -2206,6 +2214,7 @@ public static unsafe partial class Program
         pass.Dispose();
         pass = Perf.Pass(PerfArea.ConstructDraw, PerfGpuPass.Constructs); // (the next two draw nothing in Sandbox)
         DrawSandbox(now); // Sandbox: the constructs (Program.Sandbox.cs); nothing in other modes
+        DrawBoreScars(now); // the holes bores left in constructs (Program.SandboxBores.cs); nothing until a bore
         DrawAmmoFx(now); // special ammo flashes, in any mode (Program.Zombies.cs)
         DrawPveEnemies(now, eye, fwd); // co-op enemy soldiers, with level of detail (Program.Pve.cs); nothing outside Co-op
         _worldView = view;
@@ -2268,6 +2277,7 @@ public static unsafe partial class Program
             Gfx.Draw(model, t.Color, alpha, mode: 2);
             Gfx.Draw(Matrix4x4.CreateScale(0.1f * (1 + age * 4)) * Matrix4x4.CreateTranslation(t.To), new Vector3(1f, 0.9f, 0.6f), alpha, mode: 2);
         }
+        DrawBoreGlow(now); // (the bores' hot rims, cooling: Program.SandboxBores.cs)
         Gfx.EndBatch();
         Renderer.BlendDefault();
 

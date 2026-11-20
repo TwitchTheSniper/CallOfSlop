@@ -365,7 +365,7 @@ public static class ConstructLaserCutter
         var l = ConstructParts.Num(ConstructParts.Need(b, "maxLength", $"{bw}.cut"), file, "storage.cut.maxLength");
         d.CutMaxHeight = ConstructParts.Num(ConstructParts.Need(b, "maxHeight", $"{bw}.cut"), file, "storage.cut.maxHeight");
         ConstructParts.Range(w, 0.2f, 32, file, "storage.cut.maxWidth");
-        ConstructParts.Range(l, w, 32, file, "storage.cut.maxLength");
+        ConstructParts.Range(l, w, HullLoft.CutPlateMaxCm / 100f, file, "storage.cut.maxLength"); // (the Capital Laser Cutter's 64 m bed)
         ConstructParts.Range(d.CutMaxHeight, 0.05f, 16, file, "storage.cut.maxHeight");
         d.ExtWheelMax = new Vector2(w, l);
         d.ExtWheelStart = new Vector2(0.2f, 0.2f);
