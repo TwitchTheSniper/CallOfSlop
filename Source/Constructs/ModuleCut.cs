@@ -295,18 +295,24 @@ public static class ModuleCut
         c.Parts[part].Def = lined.Id;
     }
 
-    /// <summary>The metal cut out, as one loose flat bar of steel of the footprint at the thickness its mass makes, just over the well.</summary>
+    /// <summary>The metal cut out, as one loose steel plate of the footprint at the thickness its mass makes, just over the well.</summary>
     private static void Slug(ConstructWorld world, Construct c, in CModSocket s, Vector3 face, Vector3 n, float kg)
     {
         const float Steel = 7850f;
-        var cm = Math.Clamp((int)MathF.Round(kg / (Steel * s.W * s.L) * 100f), 1, 50);
-        var name = FormattableString.Invariant($"{Extrusion.Prefix}solid {s.W * 100}x{cm}x{s.L * 100} steel");
+        var cm = kg / (Steel * s.W * s.L) * 100f; // (a plate section is a quarter of its height thick: HullLoft.StockMm)
+        var h = Math.Clamp((int)MathF.Round(cm * 4 / Extrusion.StepCm) * Extrusion.StepCm, Extrusion.MinSectionCm, 200);
+        var name = FormattableString.Invariant($"{Extrusion.Prefix}plate {s.W * 100}x{h}x{s.L * 100} steel");
         if (Extrusion.ParseKey(name) is not { } k || Extrusion.Def(k) is not { } def)
         {
             Console.WriteLine($"[modules] construct {c.Id}: the slug of socket part {s.Plate}'s well ({kg:0} kg) is dropped: no piece \"{name}\"");
             return;
         }
-        var at = face + n * (s.Depth + 0.3f + cm * 0.01f);
+        if (def.Mass > kg * 1.05f)
+        {
+            Console.WriteLine(FormattableString.Invariant($"[modules] construct {c.Id}: the slug of socket part {s.Plate}'s well ({kg:0} kg) is too thin to keep as a plate (the thinnest is {def.Mass:0} kg): burned away"));
+            return;
+        }
+        var at = face + n * (s.Depth + 0.3f + h * 0.0025f);
         if (world.Create(at, c.Rot * Rot24.Quat(c.Parts[s.Plate].Rot)) is not { } slug)
         {
             Console.WriteLine($"[modules] construct {c.Id}: the slug of socket part {s.Plate}'s well is dropped: the world is full");
