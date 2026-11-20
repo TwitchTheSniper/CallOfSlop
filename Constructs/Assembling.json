@@ -2269,6 +2269,8 @@
     {"output": "Module Stand 2x3", "materials": {"steel": 132, "concrete": 26}, "seconds": 21.8, "minTier": 2},
     {"output": "Module Stand 3x3", "materials": {"steel": 198, "concrete": 40}, "seconds": 31.7, "minTier": 2},
     {"output": "Half Shell", "materials": {"steel": 12, "copper": 4, "rubber": 2}, "parts": {"Circuit Board": 1}, "seconds": 20, "minTier": 2},
-    {"output": "Module Fitter S", "materials": {"steel": 304}, "parts": {"Servo Motor": 8, "Control Unit": 2}, "seconds": 47.6, "minTier": 4}
+    {"output": "Module Fitter S", "materials": {"steel": 304}, "parts": {"Servo Motor": 8, "Control Unit": 2}, "seconds": 47.6, "minTier": 4},
+    {"output": "Large Laser Cutter", "materials": {"steel": 1600, "rubber": 320}, "seconds": 400.0, "minTier": 3},
+    {"output": "Capital Laser Cutter", "materials": {"steel": 2000, "rubber": 500}, "seconds": 600.0, "minTier": 4}
   ]
 }

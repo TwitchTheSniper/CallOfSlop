@@ -561,10 +561,10 @@ public sealed partial class Ui
         static int Step(int v) => (int)MathF.Round(v / (float)HullLoft.PanelStepCm) * HullLoft.PanelStepCm;
         if (_pdPlate)
         {
-            // A plate: the Extruder's lengths go in 5 cm steps, and a Laser Cutter's bed takes 20 cm to 6 m a side (HullLoft.StockRefusal);
-            // its section's height, whole cm, is four times its thickness, up to the largest bed's 2 m.
-            _pdL = Math.Clamp(Step(_pdL), HullLoft.PanelMinCm, HullLoft.CutMaxCm);
-            _pdW = Math.Clamp(Step(_pdW), HullLoft.PanelMinCm, HullLoft.CutMaxCm);
+            // A plate: the Extruder's lengths go in 5 cm steps, and the largest Laser Cutter's bed takes 20 cm to 64 m along and 32 m across
+            // (HullLoft.StockRefusal); its section's height, whole cm, is four times its thickness, up to the largest bed's 2 m.
+            _pdL = Math.Clamp(Step(_pdL), HullLoft.PanelMinCm, HullLoft.CutPlateMaxCm);
+            _pdW = Math.Clamp(Step(_pdW), HullLoft.PanelMinCm, HullLoft.CutPlateAcrossCm);
             _pdPlateH = Math.Clamp(_pdPlateH, PlateMinH, PlateMaxH);
             return;
         }
@@ -1051,10 +1051,10 @@ public sealed partial class Ui
                 var longMax = Math.Min(HullLoft.PanelMaxCm, _pdMaxL);
                 if (_pdPlate)
                 {
-                    ImGui.SliderInt("Length"u8, ref l, HullLoft.PanelMinCm, HullLoft.CutMaxCm, "%d cm"u8);
+                    ImGui.SliderInt("Length"u8, ref l, HullLoft.PanelMinCm, HullLoft.CutPlateMaxCm, "%d cm"u8);
                     if (ImGui.IsItemHovered())
-                        ImGui.SetTooltip("Along the plate, as the Extruder makes it: 20 cm to the largest Laser Cutter's 6 m bed."u8);
-                    ImGui.SliderInt("Width"u8, ref w, HullLoft.PanelMinCm, HullLoft.CutMaxCm, "%d cm"u8);
+                        ImGui.SetTooltip("Along the plate, as the Extruder makes it: 20 cm to the Capital Laser Cutter's 64 m bed."u8);
+                    ImGui.SliderInt("Width"u8, ref w, HullLoft.PanelMinCm, HullLoft.CutPlateAcrossCm, "%d cm"u8);
                     ImGui.SliderInt("Section height"u8, ref plateH, PlateMinH, Math.Min(PlateMaxH, 160), "%d cm"u8);
                     if (ImGui.IsItemHovered())
                         ImGui.SetTooltip("The Extruder's Plate section is a quarter of its height thick: 10 cm makes a 2.5 cm plate, 40 cm a 10 cm plate. A thicker plate cuts slower."u8);

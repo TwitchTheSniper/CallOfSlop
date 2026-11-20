@@ -169,10 +169,10 @@ public sealed partial class Ui
                     now = c with { U = Math.Clamp(Snap(mu + _pdGrabU), 0, l), V = Math.Clamp(Snap(mv + _pdGrabV), 0, w) };
                     break;
                 case 1:
-                    now = c with { A = Math.Clamp(Snap(2 * MathF.Abs(mu - c.U)), HullLoft.CutMinCm, Math.Max(HullLoft.CutMinCm, Math.Min(HullLoft.CutMaxCm, l))) };
+                    now = c with { A = Math.Clamp(Snap(2 * MathF.Abs(mu - c.U)), HullLoft.CutMinCm, Math.Max(HullLoft.CutMinCm, Math.Min(_pdPlate ? HullLoft.CutPlateOpeningCm : HullLoft.CutMaxCm, l))) };
                     break;
                 case 2:
-                    now = c with { B = Math.Clamp(Snap(2 * MathF.Abs(mv - c.V)), HullLoft.CutMinCm, Math.Max(HullLoft.CutMinCm, Math.Min(HullLoft.CutMaxCm, w))) };
+                    now = c with { B = Math.Clamp(Snap(2 * MathF.Abs(mv - c.V)), HullLoft.CutMinCm, Math.Max(HullLoft.CutMinCm, Math.Min(_pdPlate ? HullLoft.CutPlateOpeningCm : HullLoft.CutMaxCm, w))) };
                     break;
                 case 3:
                     now = c with { A = Math.Clamp(Snap(MathF.Abs(mu - (c.U is 0 or 1 ? 0 : l))), HullLoft.CutMinCm, Math.Max(HullLoft.CutMinCm, l - HullLoft.CutMinCm)) };

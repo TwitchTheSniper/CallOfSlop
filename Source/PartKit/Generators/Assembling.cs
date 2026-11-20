@@ -515,6 +515,9 @@ public sealed class Assembling : IPartGenerator
         ("Modules", "Module Stand 3x3", null),
         (null, null, Rec("Half Shell", 20, 2, m: [("steel", 12), ("copper", 4), ("rubber", 2)], p: [("Circuit Board", 1)])), // (docs/sandbox/design/half-shell.md)
         ("Modules/Fitters", "Module Fitter S", null), // (module sockets phase 4: the Module Fitter S)
+        // (the capital ship's cutters, Karl 2026-11-20: hand rows, since the LaserCutter folder's two older cutters keep their rows in the long tail)
+        (null, null, Rec("Large Laser Cutter", 400.0, 3, m: [("steel", 1600), ("rubber", 320)])),
+        (null, null, Rec("Capital Laser Cutter", 600.0, 4, m: [("steel", 2000), ("rubber", 500)])),
     ];
 
     /// <summary>
