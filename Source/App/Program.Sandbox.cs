@@ -1346,7 +1346,7 @@ public static unsafe partial class Program
             Tool = h.Tool, Held = ConstructParts.Get(h.Held), Now = now, Velocity = me.Sim.Velocity, Grounded = me.Sim.Grounded,
             Using = h.Edit != EditKind.None || (h.Tool == ConstructTool.Linker && _lkBody != 0) || (h.Tool == ConstructTool.PhysicsGun && h.GrabBody != 0) || (h.Tool == ConstructTool.Configure && Ui.SandboxConfigOpen) || (h.Tool == ConstructTool.GroundDrill && _sculpt.Busy), // (the linking tool: while a link is being routed; the physics gun: while it holds)
         };
-        input.Module = WornArmView(me);
+        input.Module = WornArmView(me, h.Tool);
         var drawn = ToolRender.FirstPerson(input, ref _sbTool, out var shown);
         if (shown == ConstructTool.None && _sbToolShown != ConstructTool.None && h.Tool == ConstructTool.None)
             _game.EquipUntil = Math.Max(_game.EquipUntil, now + _game.Active.Def.EquipTime); // the tool is down: the gun comes up
@@ -1373,18 +1373,15 @@ public static unsafe partial class Program
         return true;
     }
 
-    /// <summary>A worn shell's module that is seen in first person in place of the tool it forces (Shells.json "view"), as a model at the frame's size, or null.</summary>
-    private static ToolModel? WornArmView(Player me)
+    /// <summary>A worn shell's module that is seen in first person in place of the tool in hand (Shells.json "view": the drill arm, a tool arm), as a model at the frame's size, or null.</summary>
+    private static ToolModel? WornArmView(Player me, ConstructTool tool)
     {
-        if (!me.InShell)
+        if (!me.InShell || ShellFrames.Worn(me).ModuleFor(tool) is not { View: true } m)
             return null;
-        foreach (var m in ShellFrames.Worn(me).Modules)
-            if (m is { View: true, Tool: not null })
-            {
-                var (arm, accent) = ShellKitNodes.ColoursOf(me);
-                return ShellKitNodes.ViewModel(m, ShellFrames.ScaleOf(me), arm, accent);
-            }
-        return null;
+        if (m.Kind == ShellModuleKind.Tool)
+            return ShellModuleNodes.ViewModel(m, ShellFrames.ScaleOf(me));
+        var (arm, accent) = ShellKitNodes.ColoursOf(me);
+        return ShellKitNodes.ViewModel(m, ShellFrames.ScaleOf(me), arm, accent);
     }
 
     private static readonly PanelCard _toolCard = new();
@@ -1407,7 +1404,7 @@ public static unsafe partial class Program
     /// </summary>
     private static void DrawToolCard(Game g, Player me, in SandboxHand h, ConstructTool shown, double now)
     {
-        if (ToolRender.ViewModelFor(h.Tool, WornArmView(me)) is not { Display: { } ds } || h.Tool is ConstructTool.None or ConstructTool.Hands)
+        if (ToolRender.ViewModelFor(h.Tool, WornArmView(me, h.Tool)) is not { Display: { } ds } || h.Tool is ConstructTool.None or ConstructTool.Hands)
             return;
         g.SandboxToolCardFrame = CrashLog.Frame;
         if (shown != h.Tool || _sbTool.Model?.Display is not { } on)

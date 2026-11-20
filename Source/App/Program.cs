@@ -935,7 +935,7 @@ public static unsafe partial class Program
                     DrawStormFrost(); // frost at the edges while you are out in a cold storm (Program.Storm.cs)
                 if (!benchCovers && g.OpeningActive)
                     DrawOpeningUi(g, now); // the survival opening has the screen: no HUD (Program.Opening.cs)
-                else if (!benchCovers)
+                else if (!benchCovers && !_wsNoHands) // (the window tool's --no-hands: a scene picture shows no HUD)
                 {
                     DrawNameTags(g); // under the HUD windows (Program.NameTags.cs)
                     DrawIntelMarks(g); // what questioning gave up (GameCrewFleet.cs)
@@ -2320,7 +2320,7 @@ public static unsafe partial class Program
 
         // ---- HUD ------------------------------------------------------------
         Gfx.MarkGlow = false;
-        if (!Ui.WorkbenchOpen && !Ui.CommandOpen) // (nor under the command view: Program.Command.cs)
+        if (!Ui.WorkbenchOpen && !Ui.CommandOpen && !_wsNoHands) // (nor under the command view: Program.Command.cs; nor in a --no-hands picture)
             using (Perf.Pass(PerfArea.Hud, PerfGpuPass.Hud))
                 DrawHud(now, w, h, local, fov); // hidden while the weapon workbench is open (the crosshair, ammo, prompts, weapon list)
     }
