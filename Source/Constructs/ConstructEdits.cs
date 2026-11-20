@@ -1164,6 +1164,8 @@ public sealed partial class ConstructEdits
             return far;
         if (d.ToolDock)
             return DockUse(world, player, c, part);
+        if (d.ModPart == ModPart.Socket || d.ModPart == ModPart.Plug && ModuleSockets.ModuleOfPart(c, part) is var mp and >= 0 && (c.Modules[mp].Socket >= 0 || c.Modules[mp].OnStand))
+            return ModuleUse(world, player, c, part); // (module sockets: F fits or takes off, ConstructEditsModules.cs)
         if (d.Role == PartRole.Seat)
         {
             ref var seat = ref c.Parts[part];

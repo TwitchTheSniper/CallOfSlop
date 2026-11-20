@@ -97,9 +97,13 @@ public static class ConstructBuild
             return "doors hang on hinges";
         if (ds.Kind == SocketKind.Leaf && !onLeaf)
             return "doors hang on hinges";
+        if (ts.Kind == SocketKind.Module && ModuleSockets.SizeRefusal(target.ModPart == ModPart.Socket ? target : def, target.ModPart == ModPart.Socket ? def : target) is { } size)
+            return size;
         c.SocketAt(part, socket, out var at, out var dir);
         Span<byte> turns = stackalloc byte[4];
         var n = SpinTurns(ds.Dir, dir, turns);
+        if (ts.Kind == SocketKind.Module)
+            n = ModuleTurns(c, part, def, turns, n);
         if (n == 0)
             return "no turn fits";
         var rot = turns[((spin % n) + n) % n];
@@ -112,7 +116,28 @@ public static class ConstructBuild
         g = new ConstructGhost { Part = part, Socket = socket, DefSocket = defSocket, Variant = spin, Pos = pos, Rot = rot, Seg = seg, NewJoint = newJoint, Scale = scale };
         if (Blocked(c, def, pos, rot, scale, seg))
             return InTheWay;
+        if (ModuleSockets.PlaceRefusal(c, def, part, pos, rot, scale) is { } module)
+            return module;
         return null;
+    }
+
+    /// <summary>Of the turns a part may take onto a Module socket, those its footprint allows (4.5: an oblong one 2, a keyed socket 1): how many are left, first in <paramref name="turns"/>.</summary>
+    private static int ModuleTurns(Construct c, int part, ConstructPartDef def, Span<byte> turns, int n)
+    {
+        var target = c.DefOf(part);
+        var plateIsTarget = target.ModPart == ModPart.Socket;
+        var plateRot = plateIsTarget ? c.Parts[part].Rot : (byte)0;
+        var keyed = plateIsTarget && ModuleSockets.SocketOfPlate(c, part) is var si and >= 0 && c.ModSockets[si].Keyed;
+        var k = 0;
+        for (var i = 0; i < n; i++)
+        {
+            var ok = plateIsTarget
+                ? ModuleSockets.TurnFits(target, plateRot, def, turns[i], keyed)
+                : ModuleSockets.TurnFits(def, turns[i], target, c.Parts[part].Rot, false);
+            if (ok)
+                turns[k++] = turns[i];
+        }
+        return k;
     }
 
     /// <summary>

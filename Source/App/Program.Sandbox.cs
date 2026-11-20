@@ -334,6 +334,8 @@ public static unsafe partial class Program
                 };
                 if (d.Labelled && part.Text is { } label && _sbLookText != null)
                     _sbLookText = _sbLookText.Replace(d.Name, label); // (a labelled switch, button, lever...: "Hangar lights: off"; LogicText.Name)
+                if (ModuleSockets.LookText(hit.Body, hit.Part) is { } modLook)
+                    _sbLookText = d.ModPart == ModPart.Socket ? SandboxKeys.Line(d.Name, modLook) : $"{_sbLookText}  ({modLook})"; // (module sockets: the socket's state, or the module a part is in, ModuleSockets.cs)
                 if (HullHoles.IsHoled(d) && _sbLookText != null)
                     _sbLookText = _sbLookText.Replace(d.Name, HullHoles.Shown(d)); // (a cut or sealed part: its file part's name, not its key)
                 if (g.CrewLook(hit.Body.Id) is { } crewNote)

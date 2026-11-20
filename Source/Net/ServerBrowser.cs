@@ -636,7 +636,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   (CPose: pose flag 16, then a u16 frame after the plants' block, and the pose's position, turn, velocity and spin are the frame's); a Full
     //   ends its carried block with a u16 frame and, when set, the frame pose (vec, 4 f32); a digest's sleeping entry flag 2: the pose is the frame's, a u16 frame follows.
     // 373: weld seams (user, 2026-11-19; ConstructSeams.cs): CActKind.SeamBreak (u16 body, u16 part, u16 other part) at the end of CActKind: the attach tool's RMB breaks one seam.
-    public const ushort ProtocolVersion = 373;
+    // 376: module sockets (docs/sandbox/design/module-sockets.md): new parts (Constructs/Parts/Modules: plates, plugs and stands) move the part ids;
+    //   SocketKind.Module at the end; CfgKey ModKind, ModStyle, ModDepth, ModAbove, ModKeyed, ModPrimary at the end of the settings. (374 and 375 are claimed by other branches.)
+    public const ushort ProtocolVersion = 376;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

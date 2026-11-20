@@ -288,6 +288,8 @@ public static class SandboxAim
         }
         if (d.ToolDock)
             return p.Broken ? AimCall.Refuse($"the {d.Name} is wrecked") : AimCall.Ok;
+        if (d.ModPart == ModPart.Socket || d.ModPart == ModPart.Plug && ModuleSockets.ModuleOfPart(c, t.Part) is var mp and >= 0 && (c.Modules[mp].Socket >= 0 || c.Modules[mp].OnStand))
+            return p.Broken ? AimCall.Refuse($"the {d.Name} is wrecked") : AimCall.Ok; // (F fits or takes off a module: ConstructEditsModules.cs)
         if (d.Air != AirPart.None)
             return p.Broken ? AimCall.Refuse($"the {d.Name} is wrecked") : AimCall.Ok; // (its reading: GameShipAir.cs)
         if (d.Eva == EvaPart.Locker)
