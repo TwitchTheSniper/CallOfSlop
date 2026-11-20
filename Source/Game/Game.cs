@@ -194,6 +194,7 @@ public sealed partial class Game : IDisposable
     {
         Place = WorldContext.Fork(net.IsServer ? "server" : "client");
         World.Enter(Place);
+        SandboxHands.LiftShare = ShellLiftShare; // (a worn shell frame's "lift", on both sides: a client's own pre-check agrees with the server, GameRobotShell.cs)
         World.GravitySetting = 100; // a new session starts at the map's own gravity (the host sets GravityPercent; clients learn it)
         World.GravityScale = 1f;
         ChosenPerks = (perks ?? PerkSet.Empty).Sanitized();
@@ -1916,7 +1917,7 @@ public sealed partial class Game : IDisposable
                 AddShotDamage(damage, h.P, dmg);
                 if (pfx)
                     NotePlayerFxRay(h.P, o, d, dist);
-                _bloodShotPart.TryAdd(h.P, BloodMarks.Classify(h.At.Position, h.At.Stance, h.At.Yaw, GravityFrames.PointToLocal(h.At.Position, end))); // the first pellet's body part (BodyBlood.cs)
+                _bloodShotPart.TryAdd(h.P, BloodMarks.Classify(h.At.Position, h.At.Stance, h.At.Yaw, GravityFrames.PointToLocal(h.At.Position, end), ShellFrames.ScaleOf(h.P))); // the first pellet's body part (BodyBlood.cs)
                 if (head)
                     headshotOn.Add(h.P);
             }

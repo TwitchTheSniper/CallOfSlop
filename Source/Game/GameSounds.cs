@@ -84,14 +84,17 @@ public sealed partial class Game
         {
             if (!p.Alive)
                 continue;
-            var box = World.Hitbox(p.RenderPosition, p.RenderStance, p.RenderYaw);
+            var size = ShellFrames.ScaleOf(p); // (a robot shell's frame: its box and head as the server's shot check has them)
+            Box box;
+            using (World.Body(size))
+                box = World.Hitbox(p.RenderPosition, p.RenderStance, p.RenderYaw);
             var grown = new Box(box.Center, box.Half + new Vector3(0.25f));
             if (to.X < grown.Min.X || to.Y < grown.Min.Y || to.Z < grown.Min.Z || to.X > grown.Max.X || to.Y > grown.Max.Y || to.Z > grown.Max.Z)
                 continue;
             if (own || hitFlags == 0 || (hitFlags > 0 && (hitFlags & 1) == 0) || _soundNow - _fleshSoundAt[p.Id] < 0.06)
                 return; // the shooter hears their own 2D confirmation; one flesh sound per victim per burst of pellets
             _fleshSoundAt[p.Id] = _soundNow;
-            var head = World.IsHeadshot(p.RenderPosition, p.RenderStance, p.RenderYaw, to) || (hitFlags > 0 && (hitFlags & 2) != 0 && to.Y > box.Max.Y - 0.45f);
+            var head = World.IsHeadshot(p.RenderPosition, p.RenderStance, p.RenderYaw, to, default, size) || (hitFlags > 0 && (hitFlags & 2) != 0 && to.Y > box.Max.Y - 0.45f);
             Audio.Effect3D(head ? Sfx.Headshot3D : Sfx.FleshHit3D, to, head ? 0.75f : 0.55f);
             return;
         }

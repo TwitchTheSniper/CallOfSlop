@@ -438,7 +438,6 @@ public sealed partial class Game
         Constructs.CrewWorks ??= Crew.Works; // (an NPC crew's machines work only manned: CrewGate)
         SandboxHands.CrewYield ??= CrewYield; // (a crew body stands up for a player who sits)
         SandboxHands.SeatRefusal ??= ShipSeatRefusal; // (an NPC power's helm and gun seats are its crew's: GameShipControl.cs; a Half Shell sits in none)
-        SandboxHands.LiftShare ??= ShellLiftShare; // (a worn shell frame's "lift": GameRobotShell.cs)
         Constructs.Hands ??= SandboxHandOf; // (a held hose follows its holder's hands)
         Constructs.Taught ??= AssemblerTaught; // (parts a story faction must teach first: GameStoryTech.cs)
         if (Constructs.PlayerEndCount > 0)

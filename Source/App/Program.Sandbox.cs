@@ -257,7 +257,7 @@ public static unsafe partial class Program
                       ^ (d.PlantShaft > 0 ? ConstructGenset.LookKey(hit.Body) * 31L : 0) // (a generator head's readout)
                       ^ (ConstructWorks.Has(d) ? ConstructWorks.LookKey(hit.Body, hit.Part) << 8 : d.Name == Game.BreakdownPanel ? ConstructWorks.PanelKey(hit.Body) << 8 : 0) // (ship works: a head's cap, a piece's load, the panel's report)
                       ^ (ConstructCargo.IsVolume(d) ? (long)CarriedBy(g.Constructs, hit.Body) << 44 : 0) ^ (hit.Body.CarriedBy != 0 ? 1L << 63 : 0) // (a cargo volume's load; carried)
-                      ^ (d.Role == PartRole.Seat || d.IsSeatModule ? (long)hit.Body.RebuildStamp * 1000003L : 0) // (a seat's or a module's links)
+                      ^ (d.Role == PartRole.Seat || d.IsSeatModule ? (long)hit.Body.RebuildStamp * 1000003L ^ (me.InShell ? me.ShellFrame + 1L : 0) * 15485863L : 0) // (a seat's or a module's links; the shell frame worn: a Half Shell can't sit)
                       ^ (d.HasJoint ? (long)hit.Body.PartCount << 41 ^ (long)hit.Body.JointCount << 21 : 0) // (a joint's two part counts)
                       ^ (ConstructDoor.Swings(hit.Body, hit.Part) ? ConstructDoor.IsOpen(hit.Body, hit.Part) ? 3L << 45 : 1L << 45 : 0) // (a door: open or shut)
                       ^ (d.IsRail ? ConstructLinear.LookKey(hit.Body, hit.Part) << 8 : 0) // (where a rail's carriage is, and how it stands)
@@ -1254,8 +1254,9 @@ public static unsafe partial class Program
         var taken = c.Parts[part].SitterPlus1 != 0 || c.Driver != 255 && part == c.DriveSeat;
         var broken = c.Parts[part].Broken;
         var kind = c.SeatKindOf(part);
+        var small = _game.Local is { InShell: true } me && !ShellFrames.Worn(me).Sit ? $"a {ShellFrames.Worn(me).Part} is too small for a seat" : null; // (the server's refusal: GameShipControl.ShipSeatRefusal)
         return SandboxKeys.Line(d.Name, broken ? "wrecked" : taken ? "taken" : kind == SeatKind.Driver ? "driver's seat" : ConstructModules.HasTurret(c, part) ? "gunner's seat" : "free",
-            broken ? null : ConstructModules.Problem(c, part) ?? ConstructRemote.SeatProblem(_game.Constructs, c, part), near && !taken && !broken ? SandboxKeys.Do(SandboxKeys.Use, kind == SeatKind.Driver ? "drive" : kind == SeatKind.Gunner ? "man the gun" : "sit") : null);
+            broken ? null : small ?? ConstructModules.Problem(c, part) ?? ConstructRemote.SeatProblem(_game.Constructs, c, part), near && !taken && !broken && small == null ? SandboxKeys.Do(SandboxKeys.Use, kind == SeatKind.Driver ? "drive" : kind == SeatKind.Gunner ? "man the gun" : "sit") : null);
     }
 
     /// <summary>A Capacitor Bank on the look line: what the ship's banks hold and how fast the circuit refills them (ship-works.md 8).</summary>
