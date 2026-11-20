@@ -48,7 +48,7 @@ public sealed class RoamerParts : IPartGenerator
         [(3.8, -0.6, 8.5), (4.6, 0.0, 8.5), (4.72, 3.0, 8.5), (4.65, 6.4, 8.5), (4.05, 7.25, 8.5)], // 3 midship (frame)
         [(3.8, -0.6, 13.8), (4.6, 0.0, 14.0), (4.72, 3.0, 14.0), (4.65, 6.4, 14.0), (4.05, 7.25, 13.8)], // 4 the haunch (frame)
         [(3.4, -0.4, 16.06), (4.35, 0.1, 16.06), (4.5, 3.0, 16.06), (4.42, 6.4, 16.06), (3.85, 7.15, 16.06)], // 5 behind the rooms
-        [(2.3, 0.0, 18.1), (3.5, 0.5, 18.4), (3.8, 3.0, 18.65), (3.7, 5.9, 18.55), (2.9, 6.7, 18.25)], // 6 the rear cap
+        [(2.7, 0.0, 17.1), (3.85, 0.5, 17.4), (4.15, 3.0, 17.6), (4.05, 5.9, 17.5), (3.3, 6.7, 17.25)], // 6 the rear cap (Karl, 2026-11-20: pulled in and filled, no empty space behind the rooms)
     ];
 
     private const int B = 0, L = 1, D = 2, U = 3, R = 4; // a ring's points
@@ -444,7 +444,7 @@ public sealed class RoamerParts : IPartGenerator
 
     private const double LowFront = -0.3, UpFront = 1.4, Back = 16.06; // the rooms' ends
 
-    private static readonly double[] StairCuts = [8.15, 11.05]; // (StairHole's ends: declared here, before it, for the initialisation order)
+    private static readonly double[] StairCuts = [8.15, 11.4]; // (StairHole's ends: declared here, before it, for the initialisation order)
 
     /// <summary>A storey's floor (the lower one to its walls' inner faces, the upper one out to the deck line), less the holes.</summary>
     private static void FloorOf(Part p, int level, double y0, double y1, string color, (double X0, double Z0, double X1, double Z1)[] holes)
@@ -524,7 +524,7 @@ public sealed class RoamerParts : IPartGenerator
                 Detail(p, face - s * 0.004, (level == 0 ? F0 : y0) + 0.006, z0 + 0.004, face - s * 0.016, (level == 0 ? F0 : y0) + 0.896, z1 - 0.004, WallLow, "matte paint");
             }
             var bw = Cm(SkinMin(Back, Back + 0.1, y0, y1) - 0.06);
-            Hidden(p, Cx - bw, y0, Back, Cx + bw, y1, Back + 0.1);
+            Solid(p, Cx - bw, y0, Back, Cx + bw, y1, Back + 0.1, Wall, "painted plating"); // (the rooms' back wall, drawn: the end of the galley and the engine room)
             if (level == 1)
             {
                 var fw = Cm(SkinMin(UpFront - 0.04, UpFront, y0, y1) - 0.06);
@@ -556,6 +556,18 @@ public sealed class RoamerParts : IPartGenerator
                 return 10 + i;
         var zc = (z0 + z1) / 2;
         return zc < 2.95 ? 0 : zc > 14.05 ? 3 : zc < 8.5 ? 1 : 2;
+    }
+
+    /// <summary>Like <see cref="Void"/>, but drawn: the tail's space behind the rooms packed solid (tanks and ducting), so a cutaway
+    /// shows no empty cavity behind the galley (Karl, 2026-11-20).</summary>
+    private static void Fill(Part p, double z0, double z1, double y0, double y1, double minHalf = 0.25)
+    {
+        foreach (var (a, b) in Strips(z0, z1))
+        {
+            var w = Cm(SkinMin(a, b, y0, y1) - 0.06);
+            if (w >= minHalf)
+                Solid(p, Cx - w, y0, a, Cx + w, y1, b, Frame, "dirty steel");
+        }
     }
 
     /// <summary>Hidden boxes filling the skin between z0 and z1 over a band of heights, in strips (no room in it: the nose, the roof,
@@ -892,8 +904,8 @@ public sealed class RoamerParts : IPartGenerator
                 var w = Rings[6][L].W + (Rings[6][D].W - Rings[6][L].W) * t - 0.55;
                 Detail(p, Cx - w, y, zf + 0.03, Cx + w, y + 0.07, zf + 0.1, "#1e1d1c", "dirty steel");
             }
-            Void(p, Back + 0.1, 18.3, 0.5, F1);
-            Void(p, Back + 0.1, 18.0, 0.05, 0.5, 0.5);
+            Fill(p, Back + 0.1, RearZ(0.5) - 0.05, 0.5, F1);
+            Fill(p, Back + 0.1, RearZ(0.05) - 0.05, 0.05, 0.5, 0.5);
             // Tail lights: a camper's tall red lamps at the corners, an amber one over each, in chrome bezels.
             foreach (var s in new[] { -1, 1 })
             {
@@ -972,6 +984,8 @@ public sealed class RoamerParts : IPartGenerator
         Sock(p, "shellDock", Cx + Lw, F0 + 0.125, 7.0, "-x"); // (the one Robot Shell Dock, aft of the locker: Karl, 2026-11-17)
         Sock(p, "crate0", 2.4, F0, 10.6, "+y");
         Sock(p, "crate1", 3.2, F0, 10.6, "+y");
+        Sock(p, "crate2", StairHole.X0 + 0.6, F0, 10.25, "+y"); // (under the open stair's high end: the junk that lives there)
+        Sock(p, "crate3", StairHole.X0 + 1.2, F0, 10.5, "+y");
         Sock(p, "panelEng", 1.9, F0 + 0.6, 12.125, "+z");
         Sock(p, "boardEng", 8.0, F0 + 0.9, 12.125, "+z");
         Sock(p, "pipesEngL", 3.1, F0 + 2.6, 12.125, "+z");
@@ -1056,8 +1070,9 @@ public sealed class RoamerParts : IPartGenerator
     // and the floor is whole from there to the galley's wall, a landing level with the deck to step off onto (Karl, 2026-11-17: the
     // flight ran on to the far wall past where the floor was open beside it). The stair's foot is StairLead fore of the opening, under
     // the deck, low enough there that a standing head clears the opening's edge.
-    private static readonly (double X0, double Z0, double X1, double Z1) StairHole = (6.55, 8.15, Cx + Uw, 11.05);
-    private const double StairLead = 0.6; // (the Wide Stair's 12 steps rise 3 m over 3.5 m: 8.15 - 0.6 + 3.5 = 11.05)
+    private static readonly (double X0, double Z0, double X1, double Z1) StairHole = (6.55, 8.15, Cx + Uw, 11.4);
+    private const double StairLead = 0.25; // (12 steps rise 3 m over 3.5 m: 8.15 - 0.25 + 3.5 = 11.4; past about 0.29 m a standing head meets the opening's fore edge, PR 381)
+    private const double StairRailEnd = 11.4 - 0.6; // (the opening's rail stops short of the head: the top steps step off to port)
 
     /// <summary>A frame bar from a to b: a thin plate 8 cm wide, moved by <paramref name="shift"/> to stand proud of the glass.</summary>
     private static void Bar(Part p, double[] a, double[] b, double[] shift)
@@ -1230,13 +1245,13 @@ public sealed class RoamerParts : IPartGenerator
                 Plate(p, [RO(0.02, v0), RO(0.98, v0), RO(0.98, v1), RO(0.02, v1)], c, "worn paint");
             }
             foreach (var x in new[] { 2.35, 2.8 })
-                Detail(p, Cx + x, 2.9, 18.74, Cx + x + 0.05, 6.95, 18.78, Chrome, "chrome");
+                Detail(p, Cx + x, 2.9, Rings[6][D].Z + 0.09, Cx + x + 0.05, 6.95, Rings[6][D].Z + 0.13, Chrome, "chrome");
             for (var y = 3.2; y < 6.9; y += 0.32)
-                Detail(p, Cx + 2.4, y, 18.745, Cx + 2.8, y + 0.035, 18.775, Chrome, "chrome");
+                Detail(p, Cx + 2.4, y, Rings[6][D].Z + 0.095, Cx + 2.8, y + 0.035, Rings[6][D].Z + 0.125, Chrome, "chrome");
             foreach (var y in new[] { 3.1, 6.6 })
-                Detail(p, Cx + 2.5, y, RearZ(y) + 0.004, Cx + 2.65, y + 0.06, 18.74, Frame, "dirty steel");
+                Detail(p, Cx + 2.5, y, RearZ(y) + 0.004, Cx + 2.65, y + 0.06, Rings[6][D].Z + 0.09, Frame, "dirty steel");
             foreach (var (y0, y1) in new[] { (F1, 4.4), (4.4, 5.5) })
-                Void(p, Back + 0.1, 18.5, y0, y1, 0.4);
+                Fill(p, Back + 0.1, Math.Min(RearZ(y0), RearZ(y1)) - 0.05, y0, y1, 0.4);
         });
         // The floor (the stair's opening left out); the hidden walls round the rooms (the front's is the canopy's).
         FloorOf(p, 1, F1, F1T, Deck, [StairHole]);
@@ -1274,8 +1289,8 @@ public sealed class RoamerParts : IPartGenerator
                 Detail(p, 4.13, 5.58, z - 0.03, 4.27, 5.9, z + 0.03, Frame, "dirty steel");
         });
         // The stair's rail along the opening's inboard side; at its head (aft) the landing, then the hall.
-        Solid(p, StairHole.X0 - 0.06, F1T, StairHole.Z0, StairHole.X0, F1T + 1.0, StairHole.Z1, Frame, "steel");
-        Detail(p, StairHole.X0 - 0.1, F1T + 0.95, StairHole.Z0, StairHole.X0 + 0.04, F1T + 1.05, StairHole.Z1, Stripe, "hazard paint");
+        Solid(p, StairHole.X0 - 0.06, F1T, StairHole.Z0, StairHole.X0, F1T + 1.0, StairRailEnd, Frame, "steel");
+        Detail(p, StairHole.X0 - 0.1, F1T + 0.95, StairHole.Z0, StairHole.X0 + 0.04, F1T + 1.05, StairRailEnd, Stripe, "hazard paint");
         // Sockets: the seats, the cabins' furniture, the doors' jambs, the lamps.
         Sock(p, "seatL", 4.0, F1T, 2.45, "+y");
         Sock(p, "seatR", 6.0, F1T, 2.45, "+y");
@@ -1446,6 +1461,67 @@ public sealed class RoamerParts : IPartGenerator
         LBox(p, -1.0, 0.25, -1.25, 1.0, 0.75, 1.25, null, hidden: true);
         p.Sock("bottom", [0, 0, 0], "-y");
         return p.Stats(300, 1200, 12, 4.0);
+    }
+
+    /// <summary>The Roamer's stair (Karl, 2026-11-20): the Wide Stair's footprint, steps and sockets, but open, a ship's companionway
+    /// of steel treads with hazard-striped nosings on two sloped stringers, hand rails on posts, and nothing under the flight, so the
+    /// space beneath is somewhere to shove things. The treads are the solid boxes a person walks up (0.25 m a step, World.StepHeight).</summary>
+    private static Part OpenStair()
+    {
+        var p = new Part("Roamer Stair", Small, "Roamer", "The Roamer's open stair: 12 striped steel treads up a storey, and the space under it for whatever doesn't fit anywhere else.", role: "frame", tool: "welder", material: "steel", color: "#6f767f", group: Group);
+        const int n = 12;
+        const double run = 3.5 / n, rise = 0.25, z0 = -0.125, foot = -0.125;
+        const double slope = rise / run; // (along the nosings)
+        const string treadC = "#7d848c", stringerC = "#7a8088", railC = "#a4aab0", yellow = "#d8b62a", black = "#1e1e1c";
+        double Nose(double z) => foot + 0.25 + slope * (z - z0); // (the nosings' line: tread k's front edge is on it)
+        // The treads (solid: what is walked on), a dark angle under each one's nose.
+        for (var k = 0; k < n; k++)
+        {
+            double a = z0 + run * k, b = a + run - 0.03, top = foot + rise * (k + 1);
+            LBox(p, -0.05, top - 0.05, a, 1.55, top, b, treadC, "steel");
+            LBox(p, -0.05, top - rise + 0.003, a + 0.002, 1.55, top - 0.05, b - 0.002, null, hidden: true); // (a step's depth for the feet: the open riser isn't stepped into)
+            LBox(p, -0.015, top - 0.085, a + 0.004, 1.515, top - 0.045, a + 0.045, stringerC, "dirty steel", detail: true);
+            // The nosing: a yellow strip, black slashes across it.
+            double s0 = a + 0.012, s1 = a + 0.092;
+            LBox(p, 0.0, top - 0.002, s0, 1.5, top + 0.004, s1, yellow, "hazard paint", detail: true);
+            for (var x = 0.02; x + 0.1 <= 1.49; x += 0.1)
+            {
+                double[][] Slash(double y) => [[x, y, s0 + 0.004], [x + 0.04, y, s0 + 0.004], [x + 0.09, y, s1 - 0.004], [x + 0.05, y, s1 - 0.004]];
+                Prism(p, Slash(top + 0.002), Slash(top + 0.007), black, "hazard paint");
+            }
+        }
+        // The stringers: slim sloped steel channels either side, level with the nosings, the treads' ends let into them; cut level at the head.
+        var zh = 3.37;
+        double Top(double z) => Nose(z) + 0.015;
+        var cap = foot + rise * n + 0.01;
+        var zc = z0 + (cap - Top(z0)) / slope;
+        foreach (var (x0, x1) in new[] { (-0.09, -0.03), (1.53, 1.59) })
+        {
+            double zs = z0 + 0.015, ys = foot + 0.02; // (standing on the kick plate, just aft of its front)
+            double[][] Side(double x) => [[x, ys, zs], [x, Top(zs), zs], [x, cap, zc], [x, cap, zh], [x, Top(zh) - (Top(zs) - ys), zh]];
+            Prism(p, Side(x0), Side(x1), stringerC, "dirty steel");
+        }
+        // The hand rails: square tube 0.9 m over the nosings on three posts a side, stopping short of the deck's edge.
+        double Rail(double z) => Nose(z) + 0.9;
+        // (The port one stops two steps short of the head: the top steps step off to port into the hall, StairRailEnd.)
+        const double ra = 0.05;
+        foreach (var (x, rb) in new[] { (-0.06, 2.3), (1.56, 2.95) })
+        {
+            double[][] End(double z) => [[x - 0.022, Rail(z) - 0.022, z], [x + 0.022, Rail(z) - 0.022, z], [x + 0.022, Rail(z) + 0.022, z], [x - 0.022, Rail(z) + 0.022, z]];
+            Prism(p, End(ra), End(rb), railC, "steel");
+            foreach (var z in new[] { 0.1, (0.1 + rb) / 2, rb - 0.05 })
+                LBox(p, x - 0.016, Top(z) - 0.03, z - 0.016, x + 0.016, Rail(z) - 0.01, z + 0.016, railC, "steel", detail: true);
+        }
+        // Steel foot plates under the stringers, bolted to the floor: what the stair stands on. The sockets: its foot either side, its head.
+        foreach (var (x0, x1) in new[] { (-0.11, -0.01), (1.51, 1.61) })
+            LBox(p, x0, foot, z0 + 0.008, x1, foot + 0.02, 0.15, stringerC, "dirty steel");
+        foreach (var x in new[] { 0.0, 1.5 })
+        {
+            p.Sock($"b{x * 4:0}_0", [x, foot, 0], "-y");
+            p.Sock($"t{x * 4:0}", [x, foot + rise * n, 3.25], "+y");
+        }
+        p.Set(("walk", "stairs"), ("collider", "boxes")); // (the stringers and rails are looks: a hull round them would fill the space under the flight)
+        return p.Stats(420, 671, 20, 3.0);
     }
 
     private static double[] Lo(double x0, double y0, double z0, double x1, double y1, double z1) => [Math.Min(x0, x1), Math.Min(y0, y1), Math.Min(z0, z1)];
@@ -1878,7 +1954,7 @@ public sealed class RoamerParts : IPartGenerator
         foreach (var n in new[] { "legFL", "legFR", "legBL", "legBR" })
             Hang(bp, "Rust Bucket Leg", keel, n, "top");
         Hang(bp, "Roamer Ramp", keel, "ramp", "hang");
-        Hang(bp, "Steel Wide Stair 3 m", keel, "stair", "b0_0");
+        Hang(bp, "Roamer Stair", keel, "stair", "b0_0");
         // The gear on the roof.
         Hang(bp, "Roamer Air Unit", roof, "airUnit", "bottom");
         Hang(bp, "Roamer Roof Rack", roof, "rack", "bottom");
@@ -1899,6 +1975,8 @@ public sealed class RoamerParts : IPartGenerator
         EvaParts.FitDock(bp, Holder(bp, keel, "mmuDock"), "mmuDock", saddles[1]); // (its pack fed from the starboard saddle tank, outside the wall)
         Hang(bp, "Requisition Crate", keel, "crate0", "-y");
         Hang(bp, "Requisition Crate", keel, "crate1", "-y");
+        Hang(bp, "Requisition Crate", keel, "crate2", "-y");
+        Hang(bp, "Requisition Crate", keel, "crate3", "-y");
         // The engine room. (The Engineer's Panel is where the breakdowns are seen to: GameSandboxBreakdowns reads its name.)
         FittedModule(bp, ModuleSocket(bp, Holder(bp, keel, "engine"), "engine", 3, 3, above: 2.5), 3, 3, "Ship Engine Block", "bottom"); // (a generic 3x3 socket, its room 2.5 m up under the deck: the block is 2 m wide, past a 2x2 plug's lugs; it makes no power, so a reactor module may take its place)
         Hang(bp, "Engineer's Panel", keel, "panelEng", "back");
@@ -1953,7 +2031,7 @@ public sealed class RoamerParts : IPartGenerator
         Structure = PlaceOrder(structure, "Roamer Keel");
         List<Part> parts =
         [
-            .. structure, Ramp(), Pod(-1), Pod(1), Saddle(-1), Saddle(1), AirUnit(), RoofRack(),
+            .. structure, Ramp(), Pod(-1), Pod(1), Saddle(-1), Saddle(1), AirUnit(), RoofRack(), OpenStair(),
         ];
         var defs = new Dictionary<string, PyDict>();
         o.Own(Out);

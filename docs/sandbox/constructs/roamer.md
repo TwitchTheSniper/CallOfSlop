@@ -17,9 +17,17 @@ and `Constructs/Blueprints/Roamer.json`. Change the generator, never its output.
   is frosted. Skylights on the roof.
 - **Colours**: faded cream paint; the camper's brown, orange and mustard stripes along the sides, across the nose and sweeping up
   round the rear corners; chrome trim (bumper, drip rails, sill bars, mirrors); the rust bucket's patch panels below the deck line.
+- **The rear** (Karl, 2026-11-20: "the rear contour space needs to be taken up a little more and sealed"): the rear cap sits about
+  1 m closer to the rooms, the rooms' back wall is drawn, and the tail behind it is filled (`Fill`), so no cavity shows behind the galley.
+- **The stair** (Karl, 2026-11-20, from a picture: an open steel stair, "we want to be able to shove stuff under the stairs"): the
+  Roamer Stair (`OpenStair`) has the Wide Stair's footprint and steps but is open: steel treads with yellow and black nosings on
+  slim stringers, hand rails on posts (the port one stops two steps short, where the top steps step off into the hall), and only a
+  hidden block 0.2 m deep under each tread for the feet, so the space under the flight is free. Two crates stand under its high end.
+  It says `"collider": "boxes"`: as a hull round its stringers it filled the flight and nobody got past the first step. Its foot is
+  0.25 m under the deck before the opening (`StairLead`, as the Rust Bucket's after PR 381).
 - **Checks** (2026-11-20): `--check-vehicle` 0 coplanar faces between parts, both drives' works at 100%; `--selftest-only "No
-  z-fighting"` clean; `--flight-check` flies (lift 1.64x weight). `--check-building` fails the same 26 lines as the Rust Bucket on
-  main (the Wide Stair's head), which it shares.
+  z-fighting"` clean; `--flight-check` flies (lift 1.66x weight). `--check-building`: the stair is climbed standing; the deck and
+  doorway lines that fail are the ones PR 381 fixes in the check itself (re-run once it is on main).
 
 ## Not yet
 
