@@ -2385,6 +2385,7 @@ public sealed partial class ConstructWorld
         ConstructLift.Step(this, query, ref _liftTicks); // (the gas in lift cells, burners, what wakes a craft asleep)
         LoadStep(server: true); // (what the bins hold counts in their bodies' mass: before the cargo step, which reads a carried body's)
         ModuleCut.Step(this); // (module sockets' cutting rings burn their wells: ModuleCut.cs)
+        ModuleFitters.Step(this); // (Module Fitters weld modules on and cut them off: ConstructModuleFitters.cs)
         ConstructBreach.Step(this); // (boarding craft's hull grapples take hold or let go, their cutters burn: before the cargo step, which carries what they hold)
         ConstructCargo.Step(this); // (what frozen cargo volumes carry follows them; what entered is caught, what left is let go)
         ConstructFrames.After(this, posed: false); // (loose bodies aboard moving constructs: their move through the frame taken, placed by its new pose: ConstructFrames.cs)

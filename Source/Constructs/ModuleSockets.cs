@@ -149,6 +149,9 @@ public static class ModuleSockets
             Add(new CConfigDef { Key = ConstructConfig.KeyName(CfgKey.ModKeyed), Id = CfgKey.ModKeyed, Type = CfgType.Toggle, Label = "Keyed", Group = "Module socket",
                 Tooltip = "On: a module fits at one turn only (the notched corner), so a nozzle can only face one way." });
         }
+        if (d.ModPart == ModPart.Socket) // (a stand too: a fitter sets a module down on one by a weld)
+            Add(new CConfigDef { Key = ConstructConfig.KeyName(CfgKey.ModWeld), Id = CfgKey.ModWeld, Type = CfgType.Number, Hidden = true, Min = -100000, Max = 100000, Default = 0, Unit = "s",
+                Label = "Weld", Group = "Module socket", Tooltip = "Not on the panel." });
         if (d.ModPart == ModPart.Plug)
         {
             var opts = new string[1 + (int)ModTag.COUNT];
@@ -385,7 +388,8 @@ public static class ModuleSockets
             var s = sockets[si];
             s.InTheWay = InRoom(c, s, s.Module);
             sockets[si] = s;
-            pending |= ModuleCut.Wants(s) || !s.Stand && ConstructConfig.Get(c.Parts[s.Plate], c.DefOf(s.Plate), CfgKey.ModCut, 0) > 0; // (a cut to start, or a stale one to clear)
+            pending |= ModuleCut.Wants(s) || !s.Stand && ConstructConfig.Get(c.Parts[s.Plate], c.DefOf(s.Plate), CfgKey.ModCut, 0) > 0
+                || ConstructConfig.Get(c.Parts[s.Plate], c.DefOf(s.Plate), CfgKey.ModWeld, 0) != 0; // (a cut to start, or a stale cut or fitter's weld to clear)
         }
         c.ModCutPending = pending; // (the server's ModuleCut looks at this body: a well wants cutting)
         c.ModSockets = [.. sockets];
@@ -834,6 +838,8 @@ public static class ModuleSockets
         {
             var s = c.ModSockets[si];
             var size = ModuleSocketTable.SizeText(s.W, s.L);
+            if (ModuleFitters.LookText(c, part) is { } fitting)
+                return $"{size} {(s.Stand ? "stand" : "socket")}: {fitting}";
             if (s.Stand)
                 return s.Module >= 0 ? $"{size} stand: {ModuleName(c, s.Module)} stored (F: take it off)" : $"{size} stand: empty (F with a module near: set it on)";
             var kind = s.Kind == ModKind.Generic ? "any module" : $"{TagName(KindTag(s.Kind)!.Value)} modules only";
@@ -844,7 +850,7 @@ public static class ModuleSockets
                 return s.Style == ModStyle.Proud
                     ? $"{head}: blocked, the {c.DefOf(s.InTheWay).Name} is in its room"
                     : $"{head} {s.Depth:0.##} m: {ModuleCut.LookText(c, s, ModuleCut.Seen(c, s.Plate)) ?? $"the {c.DefOf(s.InTheWay).Name} is in its well"}";
-            return $"{head}{(s.Style == ModStyle.Proud ? "" : $" {s.Depth:0.##} m")}: free (F with a module within {ModuleSocketTable.Current.HandPull:0.#} m: fit it)";
+            return $"{head}{(s.Style == ModStyle.Proud ? "" : $" {s.Depth:0.##} m")}: free (F with a module within {ModuleSocketTable.Current.HandPull:0.#} m, or in a Module Fitter's reach: fit it)";
         }
         var mi = ModuleOfPart(c, part);
         if (mi < 0)

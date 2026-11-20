@@ -63,6 +63,10 @@ public sealed class ModuleSocketTable
     public float BuyLow = 0.7f, BuyHigh = 1f, SellLow = 1.2f, SellHigh = 1.5f;
     public string Problem = "";
 
+    /// <summary>The S fitter's row (the only one built: the first).</summary>
+    public Fitter FitterS => Fitters.Count > 0 ? Fitters[0] : DefaultS;
+    private static readonly Fitter DefaultS = new("S", 1.5f, 8, 20000, 3, 3, 6, 0.1f, 0.25f, 8000);
+
     public sealed record Fitter(string Name, float ReachMin, float ReachMax, float Payload, int W, int L, float Height, float Cut, float Weld, float Power);
 
     public static readonly string[] KindNames = ["generic", "engine", "reactor", "turret"];

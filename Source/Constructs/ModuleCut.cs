@@ -90,6 +90,7 @@ public static class ModuleCut
                 ConstructConfig.Put(ref sp, sp.D, CfgKey.ModCut, 0); // (a stale cut: a save made mid-cut, or a plate that came off a body; started again below if it still wants one)
                 world.StructureDirty.Add(c.Id);
             }
+            ModuleFitters.ClearStale(world, c, s.Plate); // (a fitter's weld or cut left by a save mid-job)
             if (!Wants(s) || running)
                 continue;
             var plan = PlanOf(c, si);
@@ -380,6 +381,7 @@ public static class ModuleCut
 
 public sealed partial class Construct
 {
+    public float ModFitWatts; // server: the draw of Module Fitters' welds and cuts on this body (ConstructModuleFitters.cs), counted by ConstructPower
     public bool ModCutPending; // a flush or opening socket's well has something in it (ModuleSockets.Build): the server's ModuleCut looks
     public float ModCutWatts; // server: what the sockets' cutting rings draw now (W; ConstructPower adds it)
 }
