@@ -1,0 +1,259 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Zero Day Autocannon",
+  "description": "A heavy autocannon for a turret: armour-piercing rounds at 1,400 m/s, 100 a minute, that go in one side of a frigate and out the other. Fed up its turret ring from a magazine inside.",
+  "group": "Ship",
+  "section": "Zero Day frigate",
+  "role": "gun",
+  "tool": "wrench",
+  "gun": {
+    "damage": 120,
+    "rpm": 100,
+    "spread": 0.25,
+    "range": 1000,
+    "mag": 50,
+    "reload": 4.0,
+    "kick": 90,
+    "flags": [
+      "penetrating"
+    ],
+    "pierce": 2400.0,
+    "fx": "cannon",
+    "speed": 1400,
+    "soundOf": "Leviathan .50",
+    "muzzle": [
+      0,
+      0.01,
+      -3.35
+    ]
+  },
+  "centreSockets": false,
+  "mass": 650.0,
+  "health": 900,
+  "armour": 18,
+  "material": "steel",
+  "color": "#3b4148",
+  "attachSeconds": 4.0,
+  "boxes": [
+    {
+      "min": [
+        -0.3,
+        -0.2,
+        -0.55
+      ],
+      "max": [
+        0.3,
+        0.22,
+        0.6
+      ]
+    },
+    {
+      "min": [
+        -0.3,
+        0.22,
+        -0.55
+      ],
+      "max": [
+        0.3,
+        0.34,
+        0.6
+      ],
+      "color": "#30353b",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          -0.3,
+          0.22,
+          -0.55
+        ],
+        [
+          0.3,
+          0.22,
+          -0.55
+        ],
+        [
+          0.3,
+          0.22,
+          0.6
+        ],
+        [
+          -0.3,
+          0.22,
+          0.6
+        ],
+        [
+          -0.22,
+          0.34,
+          -0.42
+        ],
+        [
+          0.22,
+          0.34,
+          -0.42
+        ],
+        [
+          0.22,
+          0.34,
+          0.5
+        ],
+        [
+          -0.22,
+          0.34,
+          0.5
+        ]
+      ],
+      "paintable": false,
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -0.11,
+        -0.09,
+        -1.25
+      ],
+      "max": [
+        0.11,
+        0.11,
+        -0.5
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.065,
+        -0.055,
+        -3.12
+      ],
+      "max": [
+        0.065,
+        0.075,
+        -1.2
+      ],
+      "color": "#2a2c2e",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.12,
+        -0.07,
+        -3.35
+      ],
+      "max": [
+        0.12,
+        0.09,
+        -3.05
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "soot"
+    },
+    {
+      "min": [
+        -0.125,
+        -0.02,
+        -3.3
+      ],
+      "max": [
+        0.125,
+        0.04,
+        -3.25
+      ],
+      "color": "#141516",
+      "detail": true,
+      "finish": "soot"
+    },
+    {
+      "min": [
+        -0.125,
+        -0.02,
+        -3.2
+      ],
+      "max": [
+        0.125,
+        0.04,
+        -3.15
+      ],
+      "color": "#141516",
+      "detail": true,
+      "finish": "soot"
+    },
+    {
+      "min": [
+        0.3,
+        -0.14,
+        -0.15
+      ],
+      "max": [
+        0.42,
+        0.12,
+        0.35
+      ],
+      "color": "#e0b020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.305,
+        0.0,
+        -0.3
+      ],
+      "max": [
+        0.305,
+        0.05,
+        0.3
+      ],
+      "color": "#2c5aa0",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -0.18,
+        0.28,
+        0.1
+      ],
+      "max": [
+        -0.08,
+        0.37,
+        0.22
+      ],
+      "color": "#5ac8ff",
+      "detail": true,
+      "glow": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        -0.2,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        0.22,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.0,
+        0.6
+      ],
+      "dir": "+z"
+    }
+  ]
+}

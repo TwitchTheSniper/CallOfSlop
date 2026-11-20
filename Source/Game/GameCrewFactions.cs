@@ -4,8 +4,7 @@ namespace CallOfSlop;
 
 /// <summary>
 /// The NPC powers' standing with the players (docs/sandbox/design/bot-brain.md section 7, phase 3) and with each other
-/// (docs/sandbox/design/faction-controllers.md section 5, phase 1: Crew/CrewRelations.cs), server side, and the credits each player holds
-/// (phase 6). Standing with players sits in the factions table's NPC rows (<see cref="FactionTable.StoryNames"/>, <see cref="FactionTable.StoryStanding"/>
+/// (docs/sandbox/design/faction-controllers.md section 5, phase 1: Crew/CrewRelations.cs), server side (the tabs each power owes a person: GameTabs.cs). Standing with players sits in the factions table's NPC rows (<see cref="FactionTable.StoryNames"/>, <see cref="FactionTable.StoryStanding"/>
 /// for a player faction, <see cref="FactionTable.PlayerStanding"/> for someone in none), the powers' grid and pacts beside them, which
 /// <see cref="Msg.Factions"/> sends, so the Factions window shows it; it is filled from Crew/Powers (else one power a kind) while the story is
 /// off (the story owns those rows when it runs). A power's standing with someone it hasn't met starts at its stance (hostile -50, wary 0,
@@ -14,7 +13,6 @@ namespace CallOfSlop;
 /// </summary>
 public sealed partial class Game : IPowerSight
 {
-    private readonly long[] _credits = new long[256];
     private readonly PowerRelations _rel = new();
     private int _relShown = -1, _newsSent;
 
@@ -306,18 +304,12 @@ public sealed partial class Game : IPowerSight
             PowerNewsPush(r.Text(200));
     }
 
-    // ---- Credits (phase 6) --------------------------------------------------------------------------------------------------------
-
-    /// <summary>A player's credits (Creative: unlimited).</summary>
-    public long CreditsOf(byte player) => SandboxInfiniteParts ? long.MaxValue : _credits[player];
-
     // ---- Saves (the Crew section: WorldSaveWriter.CrewTag) -----------------------------------------------------------------------------
 
-    /// <summary>A person's record from them: their credits, and their own standings (by kind name) when they are in no player faction.</summary>
+    /// <summary>A person's record from them: their tabs, and their own standings (by kind name) when they are in no player faction.</summary>
     private void CrewCatch(Player p, WorldPlayer rec)
     {
-        rec.Credits = _credits[p.Id];
-        rec.CreditsStarted = _creditsStarted[p.Id];
+        rec.Tabs = TabsOf(p.Id);
         var list = new List<(string, sbyte)>();
         if (CrewStandingOn)
             for (var f = 0; f < CrewPowers.Count; f++)
@@ -326,12 +318,10 @@ public sealed partial class Game : IPowerSight
         rec.NpcStanding = list.ToArray();
     }
 
-    /// <summary>A person arrived: their credits and standings from their record (an id used before starts clean).</summary>
+    /// <summary>A person arrived: their tabs and standings from their record (an id used before starts clean).</summary>
     private void CrewArrive(Player p, WorldPlayer rec)
     {
-        _credits[p.Id] = rec.Credits;
-        _creditsDirty[p.Id] = true;
-        CreditsFirst(p, rec);
+        TabsArrive(p, rec);
         for (var f = 0; f < FactionTable.MaxStory; f++)
             _rel.MetPlayer[p.Id * FactionTable.MaxStory + f] = false;
         if (!CrewStandingOn)
@@ -370,7 +360,7 @@ public sealed partial class Game : IPowerSight
         return w.Span.ToArray();
     }
 
-    /// <summary>A saved world's Crew section: each person's credits and standings onto their record, the factions' standings into the table.</summary>
+    /// <summary>A saved world's Crew section: each person's tabs and standings onto their record, the factions' standings into the table.</summary>
     private void WorldReadCrew(SaveReader r, WorldSession ws)
     {
         if (!WorldReadCrewRecords(r, ws.Players))
@@ -394,22 +384,32 @@ public sealed partial class Game : IPowerSight
         FactionTable.Version++;
     }
 
-    /// <summary>The Crew section's version and its people: each one's credits and standings onto the matching record of <paramref name="recs"/>. False: a version this build doesn't read (left off).</summary>
+    /// <summary>The Crew section's version and its people: each one's tabs and standings onto the matching record of <paramref name="recs"/>. False: a version this build doesn't read (left off).</summary>
     private static bool WorldReadCrewRecords(SaveReader r, IReadOnlyList<WorldPlayer> recs)
     {
         var v = r.U8();
-        if (v != 1)
+        if (v is not (1 or 2))
         {
-            Console.WriteLine($"[crew] the world's crew section is of version {v} (this build reads 1): left off");
+            Console.WriteLine($"[crew] the world's crew section is of version {v} (this build reads 1 and 2): left off");
             return false;
         }
-        var n = r.Count(26);
+        var n = r.Count(v == 1 ? 26 : 18);
         for (var k = 0; k < n; k++)
         {
             var key = r.U64();
             var steam = r.U64();
-            var credits = r.I64();
-            var started = r.U8() != 0;
+            (string, long)[] tabs = [];
+            if (v == 1)
+            {
+                r.I64(); // (version 1: credits and the start balance flag, from before the tabs: Karl, 2026-11-20, no credits; dropped)
+                r.U8();
+            }
+            else
+            {
+                tabs = new (string, long)[r.U8()];
+                for (var j = 0; j < tabs.Length; j++)
+                    tabs[j] = (r.Str(), r.I64());
+            }
             int sn = r.U8();
             var list = new (string, sbyte)[sn];
             for (var j = 0; j < sn; j++)
@@ -417,8 +417,7 @@ public sealed partial class Game : IPowerSight
             foreach (var rec in recs)
                 if (rec.Key == key && rec.SteamId == steam)
                 {
-                    rec.Credits = credits;
-                    rec.CreditsStarted = started;
+                    rec.Tabs = tabs;
                     rec.NpcStanding = list;
                     break;
                 }
@@ -461,8 +460,7 @@ public sealed partial class Game : IPowerSight
         _newsSent = _rel.NewsTotal;
         PoliticsClear();
         PowerNews.Clear();
-        Array.Clear(_credits);
-        Array.Clear(_creditsStarted);
-        Array.Clear(_creditsSeen);
+        Array.Clear(_tab);
+        Array.Clear(_tabSeen);
     }
 }

@@ -25,7 +25,7 @@
     "payTribute": { "amount": 1, "scale": ["greed"] },
     "takeSite": { "amount": -10, "scale": ["values.planets"] },
     "takePlanet": { "amount": -40, "scale": ["values.planets", "pride"] },
-    // Phase 5: a contract for credits done for the power, or failed (out of time, the ship lost, given up).
+    // Phase 5: a contract (paid on the taker's tab with the power: Game/GameTabs.cs) done for the power, or failed (out of time, the ship lost, given up).
     "contractDone": { "amount": 5, "scale": ["greed"] },
     "contractFailed": { "amount": -5, "scale": ["pride"] }
   },
@@ -56,10 +56,11 @@
     "vassalLoyalty": 0.3
   },
   // Phase 5: pacts with player factions (the Faction window, a leader's). A power's own offer stands offerMinutes, then it waits offerCooldownMinutes;
-  // a faction calls its allies at most every callCooldownMinutes; a trade pact pays the leader tradeCredits a minute; a tribute costs the leader
-  // tributeCredits every tributeEveryMinutes (unpaid: it lapses).
+  // a faction calls its allies at most every callCooldownMinutes; a trade pact puts tradeCredits a minute on the leader's tab with the power; a tribute
+  // takes tributeCredits off the leader's tab with it every tributeEveryMinutes (unpaid: it lapses). No credits since 2026-11-20 (Karl: barter and a tab
+  // per power, Game/GameTabs.cs): the keys keep their old names, and their numbers are value on a tab.
   "players": { "offerMinutes": 10, "offerCooldownMinutes": 15, "callCooldownMinutes": 3, "tributeEveryMinutes": 10, "tradeCredits": 10, "tributeCredits": 150 },
-  // Phase 5: contracts for credits. A power makes an offer every offerSeconds in turn (two open at most each), standing offerMinutes; an escort is
+  // Phase 5: contracts, paid on the taker's tab with the power. A power makes an offer every offerSeconds in turn (two open at most each), standing offerMinutes; an escort is
   // escortSeconds within escortRange m of the ship in escortMinutes; a delivery deliverMin to deliverMax units (tens) of one of the materials to the
   // power's place, in a ship within deliverRange m, paid deliverBase + deliverPerUnit a unit; a raid destroys or takes a ship of a power it fights.
   "contracts": {

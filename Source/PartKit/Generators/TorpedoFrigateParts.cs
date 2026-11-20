@@ -50,6 +50,10 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
     // A PDC's magazine (ship-works.md 5.2): a bunker in the hull's void behind the room's side wall at its barbette, aft of the
     // feed's line: its size out from the wall, up and along (m), and how far aft of the feed's line it starts. 0.7 m3: 2,800 rounds.
     private const double MagX = 1.0, MagY = 0.7, MagZ = 1.0, MagGap = 0.15;
+    // The side autocannons (Karl, 2026-11-20): a barbette each side amidships on the beam, between the forward and aft PDCs; their
+    // magazines behind the head's wall (port) and the med bay's (starboard), clear of the basin and the medical stations; their
+    // gunners' stations at the torpedo room's aft end below.
+    private const double CannonZ = 32.0, CannonMagZL = 32.6, CannonMagZR = 31.3, CannonStationX = 2.6, CannonStationZ = 28.2;
     private const double MagCube = 3.296; // the magazine's Ammo Container (a 0.4 m cube) stands against the side wall inside: its middle this far out
     private const double Lw = 4.5, LwF = 3.5, Uw = 3.5, UwF = 2.5; // the rooms' inner half widths: lower aft, lower fore, upper aft, the bridge
     private const double DoorH = 2.25;
@@ -457,11 +461,11 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
     /// the wall's outer face, on the deck, aft of the feed's line) and the socket its Ammo Container stands on, inside against the wall.
     /// The container's box fills the hole; the wall, the deck and the void round it seal it (ConstructSeal's reach).
     /// </summary>
-    private static void MagazineAt(Part p, int s, double zc)
+    private static void MagazineAt(Part p, int s, double zc, string name = "mag")
     {
         double d0 = Uw + 0.25 + 0.006, d1 = Uw + 0.25 + 0.046 + MagX + 0.04;
         VoidHoles.Add([Math.Min(Cx + s * d0, Cx + s * d1), Ft1, zc + MagGap - 0.04, Math.Max(Cx + s * d0, Cx + s * d1), Ft1 + 0.05 + MagY + 0.05, zc + MagGap + MagZ + 0.04]);
-        Sock(p, s < 0 ? "magL" : "magR", Cx + s * MagCube, Ft1, zc, "+y");
+        Sock(p, name + (s < 0 ? "L" : "R"), Cx + s * MagCube, Ft1, zc, "+y");
     }
 
     /// <summary>The config of a PDC magazine's Ammo Container on side <paramref name="s"/>: its box in the hole behind the wall, full in creative.</summary>
@@ -913,6 +917,13 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         Sock(p, "ladder", AftHatch.X0 + 0.625, Ft0, AftHatch.Z1 - 0.095, "+y");
         Sock(p, "crate0", Cx + 3.6, Ft0, 29.5, "+y");
         Sock(p, "crate1", Cx - 3.6, Ft0, 29.5, "+y");
+        // The side gunners' stations (Karl, 2026-11-20): a Gunnery Console and its couch each side of the torpedo room's aft end, facing
+        // forward, each working the autocannon on its own side's barbette overhead (a wire reaches 8 m).
+        foreach (var s in new[] { -1, 1 })
+        {
+            Sock(p, s < 0 ? "cannonGunL" : "cannonGunR", Cx + s * CannonStationX, Ft0, CannonStationZ, "+y");
+            Sock(p, s < 0 ? "cannonSeatL" : "cannonSeatR", Cx + s * CannonStationX, Ft0, CannonStationZ + 1.0, "+y");
+        }
         Sock(p, "lampTorpL", Cx - Lw, Ft0 + 2.45, 28.5, "+x");
         Sock(p, "lampTorpR", Cx + Lw, Ft0 + 2.45, 28.5, "-x");
         Sock(p, "lampSuit", Cx - Lw, Ft0 + 2.45, 33.6, "+x");
@@ -1097,6 +1108,8 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
             }
         foreach (var s in new[] { -1, 1 })
             MagazineAt(p, s, 37.5); // (the aft PDCs' magazines, behind the mess's walls)
+        foreach (var s in new[] { -1, 1 })
+            MagazineAt(p, s, s < 0 ? CannonMagZL : CannonMagZR, "cannonMag"); // (the side autocannons': behind the head's wall to port, the med bay's to starboard)
         foreach (var (za, zb) in new[] { (25.0, 30.0), (30.0, 38.0), (38.0, ZAft) })
         {
             Void(p, za, zb, 3.25, 3.5, Lw + 0.25);
@@ -1107,6 +1120,8 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         Sock(p, "fore", Cx - 2.0, Ft1, 25.0, "-z");
         foreach (var s in new[] { -1, 1 })
             Sock(p, s < 0 ? "podL" : "podR", Cx + s * PodX, 3.375, 37.5, s < 0 ? "-x" : "+x");
+        foreach (var s in new[] { -1, 1 })
+            Sock(p, s < 0 ? "cannonPodL" : "cannonPodR", Cx + s * PodX, 3.375, CannonZ, s < 0 ? "-x" : "+x"); // (the side autocannons, amidships)
         // The crew cabin, the head, the med bay.
         Sock(p, "couchB0", Cx - Uw, Ft1 + 0.125, 27.2, "+x");
         Sock(p, "lockerB", Cx - 1.125, Ft1 + 0.125, 28.0, "-x");
@@ -1800,6 +1815,32 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         return p.Stats(200, 520, 14, 3.0);
     }
 
+    /// <summary>The side autocannon's round's energy budget (ConstructBores.cs): enough to go in one side of a Zero Day and out the other
+    /// (its hull, two walls and the far hull cost about 1,500 to 2,200), not the length of a capital ship as the railgun's slug does.</summary>
+    private const double CannonPierce = 2400;
+
+    /// <summary>A heavy autocannon for a turret: a long armoured receiver, one long barrel in a recoil sleeve, a muzzle brake, the belt chute
+    /// on its side. Its rounds bore through a Zero Day as the railgun's slug does (Karl, 2026-11-20). Fires along -z.</summary>
+    private static Part Autocannon()
+    {
+        var p = new Part("Zero Day Autocannon", Small, Section, "A heavy autocannon for a turret: armour-piercing rounds at 1,400 m/s, 100 a minute, that go in one side of a frigate and out the other. Fed up its turret ring from a magazine inside.", role: "gun", tool: "wrench", material: "steel", color: Armour, group: Group);
+        p.Add(Box([-0.3, -0.2, -0.55], [0.3, 0.22, 0.6]));
+        Prism(p, [[-0.3, 0.22, -0.55], [0.3, 0.22, -0.55], [0.3, 0.22, 0.6], [-0.3, 0.22, 0.6]], [[-0.22, 0.34, -0.42], [0.22, 0.34, -0.42], [0.22, 0.34, 0.5], [-0.22, 0.34, 0.5]], Armour2, "plated steel");
+        p.Add(Box([-0.11, -0.09, -1.25], [0.11, 0.11, -0.5], Frame, detail: true, shape: Kw(("finish", "dirty steel")))); // (the recoil sleeve)
+        p.Add(Box([-0.065, -0.055, -3.12], [0.065, 0.075, -1.2], "#2a2c2e", detail: true, shape: Kw(("finish", "steel")))); // (the barrel)
+        p.Add(Box([-0.12, -0.07, -3.35], [0.12, 0.09, -3.05], Frame, detail: true, shape: Kw(("finish", "soot")))); // (the muzzle brake)
+        foreach (var z in new[] { -3.3, -3.2 })
+            p.Add(Box([-0.125, -0.02, z], [0.125, 0.04, z + 0.05], "#141516", detail: true, shape: Kw(("finish", "soot"))));
+        p.Add(Box([0.3, -0.14, -0.15], [0.42, 0.12, 0.35], Hazard, detail: true, shape: Kw(("finish", "hazard paint")))); // (the belt chute)
+        p.Add(Box([-0.305, 0.0, -0.3], [0.305, 0.05, 0.3], Blue, detail: true, shape: Kw(("finish", "painted plating"))));
+        p.Add(Box([-0.18, 0.28, 0.1], [-0.08, 0.37, 0.22], Glow, detail: true, shape: Kw(("glow", true)))); // (its fire-control eye)
+        p.Sock("bottom", [0, -0.2, 0], "-y");
+        p.Sock("top", [0, 0.22, 0], "+y");
+        p.Sock("back", [0, 0, 0.6], "+z");
+        p.Set(("gun", Kw(("damage", 120), ("rpm", 100), ("spread", 0.25), ("range", 1000), ("mag", 50), ("reload", 4.0), ("kick", 90), ("flags", Py.L("penetrating")), ("pierce", CannonPierce), ("fx", "cannon"), ("speed", 1400), ("soundOf", "Leviathan .50"), ("muzzle", Py.L(0, 0.01, -3.35)))), ("centreSockets", false));
+        return p.Stats(650, 900, 18, 4.0);
+    }
+
     /// <summary>A countermeasure launcher: a box of six tubes that throws flares out from the hull (missiles may go for them instead).</summary>
     private static Part Countermeasures()
     {
@@ -2236,11 +2277,11 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
 
     /// <summary>A point-defence turret on a barbette: a Turret Ring S (its trunk down the barbette's well), a Motor Hinge, the PDC. Its
     /// rounds come up the ring's feed from the magazine (ship-works.md 5.2), so nothing is bolted to the gun outside.</summary>
-    private static int Turret(BuildingParts.Blueprint bp, int pod, out int ring)
+    private static int Turret(BuildingParts.Blueprint bp, int pod, out int ring, string gun = "Zero Day PDC")
     {
         ring = Hang(bp, "Turret Ring S", pod, "top", "base");
         var hinge = Hang(bp, "Motor Hinge", ring, "top", "base");
-        return Hang(bp, "Zero Day PDC", hinge, "leaf", "bottom");
+        return Hang(bp, gun, hinge, "leaf", "bottom");
     }
 
     /// <summary>
@@ -2259,6 +2300,8 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         var foot = At(ring, [0, -ShipWorksParts.TrunkD[0], 0]);
         var s = Math.Sign(foot[0] - top[0]);
         double[] R(double x, double y, double z) => [Py.Round(x, 3), Py.Round(y, 3), Py.Round(z, 3)];
+        if (Math.Abs(foot[2] - top[2]) > 0.01) // (a magazine off the barbette's line: along the void to it)
+            return [R(top[0], top[1] + 0.15, top[2]), R(foot[0] - s * 0.3, top[1] + 0.15, top[2]), R(foot[0] - s * 0.3, top[1] + 0.15, foot[2]), R(foot[0], foot[1] - 0.175, foot[2])];
         return [R(top[0], top[1] + 0.15, top[2]), R(foot[0] - s * 0.3, top[1] + 0.15, top[2]), R(foot[0], foot[1] - 0.175, foot[2])];
     }
 
@@ -2269,7 +2312,7 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
     {
         var bp = crewed
             ? new BuildingParts.Blueprint("Zero Day Frigate (crewed)", "The Zero Day with a crew aboard: it lifts off, closes on the nearest player, you included, and fights with its railgun, turrets and torpedoes. Sit at its helm to take it.", defs, maxSteps: 420)
-            : new BuildingParts.Blueprint("Zero Day Frigate", "A torpedo frigate: two decks the length of a sleek armoured hull, a rotary torpedo bay in each flank, a spinal railgun, four point-defence turrets, flare launchers and four drive bells across the stern, each with its own engine.", defs, maxSteps: 420);
+            : new BuildingParts.Blueprint("Zero Day Frigate", "A torpedo frigate: two decks the length of a sleek armoured hull, a rotary torpedo bay in each flank, a spinal railgun, an autocannon turret on each beam, four point-defence turrets, flare launchers and four drive bells across the stern, each with its own engine.", defs, maxSteps: 420);
         bp.Conduit = true;
         double[] zero = [0, 0, 0];
         var placed = new Dictionary<string, int>();
@@ -2436,6 +2479,22 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         var aftRelays = new[] { Hang(bp, "OR Gate", la, "relayAftL", "+y"), Hang(bp, "OR Gate", la, "relayAftR", "+y") };
         foreach (var r in aftRelays)
             bp.Wires.Add((aftRelay, r));
+        // The side autocannons (Karl, 2026-11-20): a barbette each side amidships, a Turret Ring S and a Motor Hinge as the PDCs have, fed
+        // from a magazine behind the upper deck's side wall, each worked from its own gunner's station in the torpedo room below.
+        foreach (var side in new[] { -1, 1 })
+        {
+            var sx = side < 0 ? "L" : "R";
+            var pod = Hang(bp, "Zero Day Turret Barbette", ua, "cannonPod" + sx, "hull");
+            var cannon = Turret(bp, pod, out var cannonRing, "Zero Day Autocannon");
+            var mag = Hang(bp, "Ammo Container", ua, "cannonMag" + sx, "-y");
+            bp.Steps[mag]["config"] = MagazineConfig(side);
+            bp.Feeds.Add((mag, cannonRing, "Ammo out", "Ammo in", MagazineFeed(bp, mag, cannonRing)));
+            var console = Hang(bp, "Gunnery Console", la, "cannonGun" + sx, "bottom");
+            var seat = Hang(bp, "Flight Couch", la, "cannonSeat" + sx, "bottom");
+            var module = Hang(bp, "Turret Module", console, "module", "-x");
+            bp.Wires.Add((seat, module));
+            bp.Wires.Add((module, cannon));
+        }
         // The shuttle's Docking Clamp on the cradle (holding from the start, its box round the pod) and the ladder up into it from the mess.
         var clamp = Hang(bp, "Docking Clamp Medium", spine, "shuttleClamp", "-y");
         bp.Steps[clamp]["config"] = ShuttleClampConfig();
@@ -2504,7 +2563,7 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
             Jet("Zero Day Lift Jet", $"A lift jet under the Zero Day's keel: {LiftForce / 1e6:0.0} MN straight down.", LiftForce, 1.4),
             Jet("Zero Day Retro Jet", $"A retro jet in the Zero Day's cheek: {RetroForce / 1e6:0.0} MN forward, to slow it down.", RetroForce, 1.0),
             Ladder("Zero Day Ladder", Ft1 - Ft0, "A ladder between the Zero Day's decks: F climbs it.", "bottom", [0, 0, -0.095], "-y"),
-            Railgun(), Pdc(), Countermeasures(), Reactor(), FlightComputer(), Locker(), TorpedoHatch(),
+            Railgun(), Pdc(), Autocannon(), Countermeasures(), Reactor(), FlightComputer(), Locker(), TorpedoHatch(),
         ];
         var defs = new Dictionary<string, PyDict>();
         o.Own(Out);

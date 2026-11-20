@@ -160,8 +160,7 @@ public sealed class WorldPlayer
     public Vector3 BunkPos;
     public ushort Firsts; // their milestones for firsts, a bit each (GameMilestones.cs; saved in the Firsts section)
     public byte[] Upgrades = []; // their tool upgrade levels, a byte a ToolStat (ConstructEditsUpgrades.cs; saved in the Tools section)
-    public bool CreditsStarted; // given the start balance (Survival)
-    public long Credits; // their credits (Game/GameCrewFactions.cs; saved in the Crew section)
+    public (string Power, long Owed)[] Tabs = []; // what each NPC power owes them, by power name (Game/GameTabs.cs; saved in the Crew section)
     public (string Faction, sbyte Standing)[] NpcStanding = []; // how each NPC faction kind they've met sees them, when not in a player faction (saved in the Crew section)
 
     public WorldPlayer Copy()
@@ -169,6 +168,7 @@ public sealed class WorldPlayer
         var c = (WorldPlayer)MemberwiseClone();
         c.Upgrades = (byte[])Upgrades.Clone();
         c.NpcStanding = ((string, sbyte)[])NpcStanding.Clone();
+        c.Tabs = ((string, long)[])Tabs.Clone();
         c.Pack = new CStore();
         WorldStores.Copy(Pack, c.Pack);
         return c;

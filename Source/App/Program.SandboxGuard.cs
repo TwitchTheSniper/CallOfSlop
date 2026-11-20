@@ -70,6 +70,7 @@ public static unsafe partial class Program
             Ui.CloseLifter();
             Ui.CloseShellGantry();
             Ui.CloseLinked();
+            SpectateEnd();
             _linkWheel.ResetMode();
             _lkMarkN = 0;
             PhysGunIdle();
@@ -137,6 +138,7 @@ public static unsafe partial class Program
             DrawNudgeInMatch();
             DrawPhysGunHud();
             DrawNoclipHud();
+            DrawSpectateHud();
             DrawTyping();
             DrawTalkInMatch(now); // (the talk panel: Program.StoryTalk.cs)
             DrawLoreInMatch(); // (a lore item's words: Program.StoryLore.cs)

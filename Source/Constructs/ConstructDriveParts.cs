@@ -293,6 +293,8 @@ public static partial class ConstructParts
             case "slide":
             case "press":
                 return box with { Rig = kind == "slide" ? BoxRig.Slide : BoxRig.Press, RigTravel = Opt(b, "travel") is { } tv ? Num(tv, file, where + ".travel") : throw new ConstructPartException($"{file}: {where}: a \"{kind}\" rig needs its \"travel\"") };
+            case "helmet":
+                return box with { Rig = BoxRig.Helmet, RigTravel = Opt(b, "travel") is { } ht && Num(ht, file, where + ".travel") is var hv and > 0 and <= 1 ? hv : throw new ConstructPartException($"{file}: {where}: a \"helmet\" rig needs its \"travel\", over 0 and up to 1 m") }; // (a Shell Control Chair's helmet: up at rest, down by its travel while the chair is in use)
             case "leg":
                 var span = new Vector2(0, 1);
                 if (Opt(b, "span") is { } sp)
@@ -312,7 +314,7 @@ public static partial class ConstructParts
                     SpanTo = span.Y,
                 };
             default:
-                throw new ConstructPartException($"{file}: {where}.rig is \"hub\", \"arm\", \"leg\", \"oleo\", \"lever\", \"knob\", \"slide\", \"flip\" or \"press\"");
+                throw new ConstructPartException($"{file}: {where}.rig is \"hub\", \"arm\", \"leg\", \"oleo\", \"lever\", \"knob\", \"slide\", \"flip\", \"press\", \"stick\" or \"helmet\"");
         }
     }
 

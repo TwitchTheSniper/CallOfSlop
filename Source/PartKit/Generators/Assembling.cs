@@ -607,6 +607,15 @@ public sealed class Assembling : IPartGenerator
         (null, null, Rec("Ceramic Bulkhead Door Right", 6.0, 2, m: [("steel", 20)], p: [("Bearing", 2)])),
         (null, null, Rec("Armoured Bulkhead Frame", 40.0, 2, m: [("steel", 180), ("rubber", 6), ("copper", 2)])),
         (null, null, Rec("Armoured Bulkhead Door", 10.0, 2, m: [("steel", 55)], p: [("Bearing", 3)])),
+        (null, null, Rec("Worn Ladder", 5, 1, m: [("steel", 8), ("rubber", 1)])), // (the commoner fittings Karl kept, 2026-11-20: CommonerFittingParts; at the end so saved choices keep their index)
+        (null, null, Rec("Water Tote", 6, 1, m: [("steel", 6), ("planks", 2), ("rubber", 4)])),
+        (null, null, Rec("Oxygen Generator", 30, 3, m: [("steel", 16), ("copper", 6), ("rubber", 4), ("glass", 4)], p: [("Control Unit", 1), ("Wiring Loom", 1)])), // (a Life Support Unit's)
+        (null, null, Rec("Radio Set", 8, 1, m: [("steel", 4), ("copper", 4), ("planks", 2), ("glass", 1)])),
+        (null, null, Rec("Sling Jump Seat", 5, 1, m: [("cloth", 3), ("steel", 4)])),
+        (null, null, Rec("Jacked Strut", 6, 1, m: [("steel", 16), ("planks", 1)])),
+        (null, null, Rec("Old Fridge", 10, 1, m: [("steel", 14), ("rubber", 2)])),
+        (null, null, Rec("Bucket Toilet", 6, 1, m: [("steel", 8), ("rubber", 3), ("planks", 1)])),
+        (null, null, Rec("Parts Bins", 6, 1, m: [("steel", 6), ("rubber", 4)])),
     ];
 
     /// <summary>
