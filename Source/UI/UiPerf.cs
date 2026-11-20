@@ -18,7 +18,8 @@ public enum PerfView : byte
 /// average, self and peak per area over the last second, sortable); the GPU passes (<see cref="PerfGpu"/>); and
 /// counters (draw calls, triangles, instances, entities, GC, memory, network, ping, snapshots). Pause freezes the
 /// graphs; Copy puts a text snapshot on the clipboard, Log writes it to the log; "Corner overlay" swaps to a small
-/// overlay that leaves the mouse to the game. F9 cycles window, overlay, off; Esc closes the window. Drawn with ImGui's
+/// overlay that leaves the mouse to the game; Start recording keeps every frame until it is stopped and reports on just
+/// those (UiPerfCapture.cs). F9 cycles window, overlay, off (while recording it stops the recording); Esc closes the window. Drawn with ImGui's
 /// own draw list (no ImPlot), allocation-free per frame; closed, it costs one check and the scopes are off.
 /// </summary>
 public sealed partial class Ui
@@ -61,7 +62,8 @@ public sealed partial class Ui
     /// </summary>
     public void DrawPerf(Game? game, double now, int bind)
     {
-        var on = PerfMode != PerfView.Off;
+        PerfCaptureFrame(game, now, bind); // (the recording keeps the profiler on with the view off too: UiPerfCapture.cs)
+        var on = PerfMode != PerfView.Off || _capOn;
         if (on != _perfWasOn)
         {
             Perf.SetOn(on);
@@ -191,7 +193,8 @@ public sealed partial class Ui
             if (bind != _perfBind)
                 (_perfBind, _perfKeyHint) = (bind, $"{Keybinds.Name(bind)}: window, overlay, off"); // (made once: the key's name allocates)
             ImGuiSafe.TextColored(Dim, _perfKeyHint);
-            if (now - _perfMsgAt < 4)
+            DrawCaptureControls(game, now); // Start / Stop recording (UiPerfCapture.cs)
+            if (now - _perfMsgAt < 6)
                 ImGuiSafe.TextColored(Green, _perfMsg);
 
             // ---- Frame time ----
@@ -601,6 +604,7 @@ public sealed partial class Ui
         if (ImGui.Begin("##perfoverlay"u8, flags))
         {
             ImGui.Text($"{s.Fps:0} fps  avg {s.AvgMs:0.0}  max {s.MaxMs:0.0}  1% low {s.Low1Ms:0.0} ms");
+            DrawCaptureOverlayLine();
             DrawFrameGraph(new float2(240 * _scale, 44 * _scale), s.MaxMs > 36 ? 70f : 40f, false);
             // The three busiest roots (by average).
             int a1 = -1, a2 = -1, a3 = -1;

@@ -116,7 +116,7 @@ public static unsafe partial class Program
         SandboxTrackTick(g.Local is { Alive: true } tp && g.SandboxHands.Hand(tp.Id).Tool == ConstructTool.Tracks); // (Program.SandboxTracks.cs)
         SandboxSnapFrame(g, now); // (snappy building: markers off, the ease running out, the thunk; Program.SandboxSnap.cs)
         BlueprintGhostWatch(g); // (a menu, death, a seat or another tool drops the blueprint ghost: Program.SandboxBlueprintGhost.cs)
-        if (g.Local is not { Alive: true } me || !_mouseCaptured || MenusOpen)
+        if (g.Local is not { Alive: true } me || !_mouseCaptured || MenusOpen || SpectateOn) // (the spectate camera out: no tools, Program.Spectate.cs)
         {
             _sbFiring = _sbRemoving = false;
             _ln.Active = false; // (a Line Layer's stroke ends with the mouse)
