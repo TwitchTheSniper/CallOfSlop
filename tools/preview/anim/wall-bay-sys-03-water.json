@@ -1,0 +1,12 @@
+{
+  // In-wall bay draft (WallBayParts.cs): a water reclaimer; twist the handle, its filter drawer runs out; then its pump, the part that wears.
+  "blueprint": "Wall Bay 1m Water Reclaimer",
+  "title": "Water reclaimer (1 m bay)",
+  "shelf": "In-wall ship systems",
+  "description": "Draft. Water. The consumable: twist the handle and the filter drawer runs out 0.92 m with its cartridges in a row (pre-filter, carbon, membrane) and a spare set behind. The part that wears: the pump, on the panel under the drawer; it runs out on its own tray to be swapped. The tank over it in the void with its level lit on the panel.",
+  "steps": [
+    { "part": "Twist Latch", "at": 0, "label": "Twist the handle" },
+    { "part": "Filter Drawer 1m", "at": 0.6, "label": "Consumable: filters" },
+    { "part": "Reclaimer Pump 1m", "at": 2.8, "label": "Wear part: the pump" }
+  ]
+}

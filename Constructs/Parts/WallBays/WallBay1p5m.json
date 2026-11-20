@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Wall Bay 1.5m",
-  "description": "An in-wall bay (draft): a 0.9 x 1.9 m opening in a ship's interior lining, 1.5 m deep into the void before the hull. It takes one insert: a spacewalk pack sled, a stretcher, deeper shelves, a module sled or an oxygen generator. Shown with the lining, deck and hull round it.",
+  "description": "An in-wall bay (draft): a 0.9 x 1.9 m opening in a ship's interior lining, 1.5 m deep into the void before the hull. It takes one insert: a spacewalk pack sled, a stretcher, deeper shelves, a module sled, an oxygen generator or a reactor fuel loader. Shown with the lining, deck and hull round it.",
   "group": "Style",
   "section": "In-wall bays",
   "role": "frame",

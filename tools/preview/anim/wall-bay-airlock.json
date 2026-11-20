@@ -1,0 +1,14 @@
+{
+  // Hull airlock draft (WallBayParts.Airlock.cs): one cycle out. Each door is its own press in the game; the order is the gallery's.
+  "blueprint": "Hull Airlock",
+  "title": "Hull airlock",
+  "shelf": "Hull airlock",
+  "description": "Draft. A one-person airlock through the 1.5 m void. Twist the handle and the pressure door swings into the room; step in, it shuts behind you and the latch goes back while the air pumps down into the tank in the void, then the outer hatch slides aside along its rails outside the hull. In the game each door is its own press for now.",
+  "steps": [
+    { "part": "Twist Latch", "at": 0, "label": "Twist the handle" },
+    { "part": "Airlock Inner Door", "at": 0.6, "label": "Inner door opens" },
+    { "part": "Airlock Inner Door", "at": 2.6, "shut": true, "label": "Step in, door shuts" },
+    { "part": "Twist Latch", "at": 3.8, "shut": true, "label": "Latched, air pumps down" },
+    { "part": "Airlock Outer Hatch", "at": 5.0, "label": "Outer hatch slides aside" }
+  ]
+}

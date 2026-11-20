@@ -1,0 +1,511 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Flight Computer Insert",
+  "description": "An in-wall flight computer (0.5 m deep, draft): its card cage (the part that wears) over a drawer of memory modules, the data trunk behind.",
+  "group": "Style",
+  "section": "In-wall bays",
+  "role": "frame",
+  "tool": "wrench",
+  "finish": "painted steel",
+  "collider": "boxes",
+  "mass": 30.0,
+  "health": 400,
+  "armour": 5,
+  "material": "steel",
+  "color": "#262a2f",
+  "attachSeconds": 2.0,
+  "boxes": [
+    {
+      "min": [
+        -0.45,
+        0.1,
+        -0.5
+      ],
+      "max": [
+        0.45,
+        2.0,
+        -0.485
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.435,
+        0.1,
+        -0.02
+      ],
+      "max": [
+        0.455,
+        0.12,
+        0.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.435,
+        0.92,
+        -0.02
+      ],
+      "max": [
+        0.455,
+        0.94,
+        0.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.435,
+        1.0,
+        -0.02
+      ],
+      "max": [
+        0.455,
+        1.02,
+        0.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.45,
+        1.69,
+        -0.04
+      ],
+      "max": [
+        0.45,
+        2.0,
+        -0.012
+      ],
+      "color": "#c4c8ca",
+      "detail": true,
+      "finish": "wall panelling"
+    },
+    {
+      "min": [
+        -0.45,
+        1.69,
+        -0.04
+      ],
+      "max": [
+        0.45,
+        2.0,
+        -0.012
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.4,
+        1.74,
+        -0.014
+      ],
+      "max": [
+        0.4,
+        1.94,
+        0.0
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "plastic",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.36,
+        1.85,
+        -0.007
+      ],
+      "max": [
+        -0.31,
+        1.9,
+        0.004
+      ],
+      "color": "#5ad070",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.36,
+        1.78,
+        -0.007
+      ],
+      "max": [
+        -0.31,
+        1.83,
+        0.004
+      ],
+      "color": "#5ac8ff",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.3,
+        1.85,
+        -0.007
+      ],
+      "max": [
+        -0.25,
+        1.9,
+        0.004
+      ],
+      "color": "#5ad070",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.3,
+        1.78,
+        -0.007
+      ],
+      "max": [
+        -0.25,
+        1.83,
+        0.004
+      ],
+      "color": "#5ac8ff",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.24,
+        1.85,
+        -0.007
+      ],
+      "max": [
+        -0.19,
+        1.9,
+        0.004
+      ],
+      "color": "#5ad070",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.24,
+        1.78,
+        -0.007
+      ],
+      "max": [
+        -0.19,
+        1.83,
+        0.004
+      ],
+      "color": "#5ac8ff",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.18,
+        1.85,
+        -0.007
+      ],
+      "max": [
+        -0.13,
+        1.9,
+        0.004
+      ],
+      "color": "#f0a830",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.18,
+        1.78,
+        -0.007
+      ],
+      "max": [
+        -0.13,
+        1.83,
+        0.004
+      ],
+      "color": "#5ac8ff",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.12,
+        1.85,
+        -0.007
+      ],
+      "max": [
+        -0.07,
+        1.9,
+        0.004
+      ],
+      "color": "#f0a830",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.12,
+        1.78,
+        -0.007
+      ],
+      "max": [
+        -0.07,
+        1.83,
+        0.004
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.06,
+        1.85,
+        -0.007
+      ],
+      "max": [
+        -0.01,
+        1.9,
+        0.004
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.06,
+        1.78,
+        -0.007
+      ],
+      "max": [
+        -0.01,
+        1.83,
+        0.004
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.06,
+        1.78,
+        -0.007
+      ],
+      "max": [
+        0.36,
+        1.9,
+        0.004
+      ],
+      "color": "#5ad070",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.45,
+        0.909,
+        -0.5
+      ],
+      "max": [
+        0.45,
+        0.92,
+        -0.04
+      ],
+      "color": "#262a2f",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.45,
+        1.679,
+        -0.5
+      ],
+      "max": [
+        0.45,
+        1.69,
+        -0.04
+      ],
+      "color": "#262a2f",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.45,
+        0.1,
+        -0.5
+      ],
+      "max": [
+        -0.42,
+        0.14,
+        -0.04
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.45,
+        0.92,
+        -0.5
+      ],
+      "max": [
+        -0.42,
+        0.96,
+        -0.04
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.42,
+        0.1,
+        -0.5
+      ],
+      "max": [
+        0.45,
+        0.14,
+        -0.04
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.42,
+        0.92,
+        -0.5
+      ],
+      "max": [
+        0.45,
+        0.96,
+        -0.04
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.42,
+        0.15,
+        -0.485
+      ],
+      "max": [
+        0.42,
+        1.66,
+        -0.44
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.32,
+        1.5,
+        -0.48
+      ],
+      "max": [
+        -0.26,
+        2.25,
+        -0.42
+      ],
+      "color": "#2f6a9a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+y",
+      "finish": "rubber",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.24,
+        1.5,
+        -0.48
+      ],
+      "max": [
+        -0.18,
+        2.25,
+        -0.42
+      ],
+      "color": "#2f6a9a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+y",
+      "finish": "rubber",
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bay",
+      "at": [
+        0.0,
+        1.0,
+        -0.5
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "supply",
+      "at": [
+        0.445,
+        0.11,
+        0.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "wear",
+      "at": [
+        0.445,
+        0.93,
+        0.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "latch",
+      "at": [
+        0.445,
+        1.01,
+        0.0
+      ],
+      "dir": "+z"
+    }
+  ]
+}

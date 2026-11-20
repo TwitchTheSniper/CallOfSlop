@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Water Reclaimer Insert 1m",
-  "description": "An in-wall water reclaimer (1 m deep, draft): the pump under the filter drawer, the tank over it with its level on the panel, the manifold behind.",
+  "description": "An in-wall water reclaimer (1 m deep, draft): the pump's cassette (the part that wears) under the filter drawer (the consumable), the tank over them with its level on the panel, the manifold behind.",
   "group": "Style",
   "section": "In-wall bays",
   "role": "frame",
@@ -56,113 +56,48 @@
     },
     {
       "min": [
-        -0.45,
-        0.098,
-        -0.04
-      ],
-      "max": [
-        0.45,
-        0.45,
-        -0.012
-      ],
-      "color": "#c4c8ca",
-      "detail": true,
-      "finish": "wall panelling"
-    },
-    {
-      "min": [
-        -0.448,
+        0.435,
         0.1,
-        -0.042
+        -0.02
       ],
       "max": [
-        0.448,
-        0.3,
-        -0.008
-      ],
-      "color": "#2c5aa0",
-      "detail": true,
-      "finish": "painted steel"
-    },
-    {
-      "min": [
-        -0.3,
-        0.32,
-        -0.017
-      ],
-      "max": [
-        0.3,
-        0.335,
-        -0.006
-      ],
-      "color": "#1f2226",
-      "detail": true,
-      "finish": "dirty steel",
-      "paintable": false
-    },
-    {
-      "min": [
-        -0.3,
-        0.35,
-        -0.017
-      ],
-      "max": [
-        0.3,
-        0.365,
-        -0.006
-      ],
-      "color": "#1f2226",
-      "detail": true,
-      "finish": "dirty steel",
-      "paintable": false
-    },
-    {
-      "min": [
-        -0.3,
-        0.38,
-        -0.017
-      ],
-      "max": [
-        0.3,
-        0.395,
-        -0.006
-      ],
-      "color": "#1f2226",
-      "detail": true,
-      "finish": "dirty steel",
-      "paintable": false
-    },
-    {
-      "min": [
-        -0.3,
-        0.16,
-        -0.4
-      ],
-      "max": [
-        0.2,
-        0.34,
-        -0.2
-      ],
-      "color": "#2f6a9a",
-      "detail": true,
-      "shape": "cylinder",
-      "segments": 16,
-      "front": "+x",
-      "finish": "painted steel",
-      "paintable": false
-    },
-    {
-      "min": [
-        -0.45,
-        0.1,
-        -0.04
-      ],
-      "max": [
-        0.45,
-        0.45,
-        -0.012
+        0.455,
+        0.12,
+        0.0
       ],
       "hidden": true
+    },
+    {
+      "min": [
+        -0.45,
+        0.1,
+        -1.0
+      ],
+      "max": [
+        -0.42,
+        0.14,
+        -0.04
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.42,
+        0.1,
+        -1.0
+      ],
+      "max": [
+        0.45,
+        0.14,
+        -0.04
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
     },
     {
       "min": [
@@ -494,6 +429,15 @@
       "at": [
         0.445,
         0.84,
+        0.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "pump",
+      "at": [
+        0.445,
+        0.11,
         0.0
       ],
       "dir": "+z"

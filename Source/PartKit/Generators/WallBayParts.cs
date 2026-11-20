@@ -17,6 +17,8 @@ namespace CallOfSlop.PartKit.Generators;
 /// systems that take consumables, a CO2 scrubber (canisters) and a water reclaimer (filters). 1.5 m: a spacewalk pack sled, a
 /// stretcher drawer, deeper shelves, a heavy module sled and an oxygen generator (candles). The second way to open a bay is the
 /// <b>twist latch</b>, a big handle on the jamb that turns a quarter, then the fill runs out (the toilet, the stores, the systems).
+/// Ship systems (WallBayParts.Systems.cs) each have a part that wears and a consumable: breakers, a flight computer, damage control,
+/// a coolant pump, an RCS feed, a sensor rack, a PDC feed and reactor fuel; the hull airlock is WallBayParts.Airlock.cs.
 ///
 /// Shown with a slice of the ship round it: lining either side, the deck, the hull's ribs and skin behind with lagging and the pipes
 /// and cable tray that run through the void, so the cutaways show where the bay sits. The look is the Zero Day's interior
@@ -25,7 +27,7 @@ namespace CallOfSlop.PartKit.Generators;
 /// Frame, shared by every part: the deck at y 0, x across the bay (centre 0), the lining's face at z 0, the room +z, the hull behind
 /// (-z). Group Style (unlisted): nothing here shows in the Parts tab. Writes Constructs/Parts/WallBays and one blueprint a fill.
 /// </summary>
-public sealed class WallBayParts : IPartGenerator
+public sealed partial class WallBayParts : IPartGenerator
 {
     public string Name => "wall_bays";
 
@@ -72,35 +74,15 @@ public sealed class WallBayParts : IPartGenerator
 
     private static Part Bay()
     {
-        var takes = D < 0.75 ? "a jump seat, drawers, a rack, a component sled, a Murphy bed or a desk"
-            : D < 1.25 ? "a suit rack, deep shelves, a long component sled, a toilet, a consumables rack, a CO2 scrubber or a water reclaimer"
-            : "a spacewalk pack sled, a stretcher, deeper shelves, a module sled or an oxygen generator";
+        var takes = D < 0.75 ? "a jump seat, drawers, a rack, a component sled, a Murphy bed, a desk, a breaker panel, a flight computer or a damage control locker"
+            : D < 1.25 ? "a suit rack, deep shelves, a long component sled, a toilet, a consumables rack, a CO2 scrubber, a water reclaimer, a coolant pump, an RCS feed, a sensor rack or a PDC feed"
+            : "a spacewalk pack sled, a stretcher, deeper shelves, a module sled, an oxygen generator or a reactor fuel loader";
         var k = K("Wall Bay" + Sfx, "frame", $"An in-wall bay (draft): a 0.9 x 1.9 m opening in a ship's interior lining, {Py.G(D)} m deep into the void before the hull. It takes one insert: {takes}. Shown with the lining, deck and hull round it.");
         // The deck: plate on the room side, grating over the void's floor.
         k.Paint(-Sw, -0.06, -0.005, Sw, 0, 0.62, Deck, "painted deck plate");
         Solid(k, -Sw, -0.06, -0.005, Sw, 0, 0.62);
         k.Box(-Sw, -0.06, HullZ + 0.01, Sw, -0.012, -0.012, Frame, "painted grating");
-        // The lining either side: pale panels over the blue lower band, a dark seam between panels; the header over the opening.
-        foreach (var s in new[] { -1.0, 1.0 })
-        {
-            double a = s * (W + 0.08), b = s * Sw;
-            k.Paint(a, 0.38, -Lt, b, Top, 0, Wall, "wall panelling");
-            k.Paint(a, 0, -Lt, b, 0.38, 0.006, WallLow, "painted steel");
-            k.Box(a + s * 0.20, 0.4, -0.004, a + s * 0.215, Top - 0.02, 0.003, Trim, "plastic"); // (a panel seam)
-            Solid(k, a, 0, -Lt, b, Top, 0);
-        }
-        k.Paint(-(W + 0.08), Y1 + 0.08, -Lt, W + 0.08, Top, 0, Wall, "wall panelling");
-        Solid(k, -(W + 0.08), Y1 + 0.08, -Lt, W + 0.08, Top, 0);
-        // The bezel: dark trim round the opening, 20 mm proud; a hazard edge on the sill; a lit label and the latch lamp on the head.
-        k.Box(-(W + 0.08), 0.02, -Lt, -W, Y1 + 0.08, 0.02, Trim, "plastic");
-        k.Box(W, 0.02, -Lt, W + 0.08, Y1 + 0.08, 0.02, Trim, "plastic");
-        k.Box(-W, 0.02, -Lt, W, Y0, 0.02, Trim, "plastic");
-        k.Box(-W, Y1, -Lt, W, Y1 + 0.08, 0.02, Trim, "plastic");
-        for (var i = 0; i < 9; i++)
-            k.Box(-W + 0.02 + i * 0.1, 0.035, 0.019, -W + 0.07 + i * 0.1, 0.085, 0.026, Hazard, "hazard paint");
-        k.Box(-0.16, Y1 + 0.02, 0.019, 0.16, Y1 + 0.06, 0.027, Frame, "plastic");
-        k.Glow(-0.14, Y1 + 0.03, 0.026, 0.1, Y1 + 0.05, 0.031, Glow);
-        k.Glow(0.12, Y1 + 0.03, 0.026, 0.14, Y1 + 0.05, 0.032, Green);
+        Lining(k);
         // The recess: dark lining, sides, floor and roof, the back plate.
         k.Box(-W, Y0, -D - 0.03, W, Y1, -D, Recess, "dirty steel");
         foreach (var s in new[] { -1.0, 1.0 })
@@ -128,6 +110,34 @@ public sealed class WallBayParts : IPartGenerator
         k.Box(-Sw, 2.1, -0.38, Sw, 2.18, -0.18, Frame, "rubber");
         p_Sockets(k.P);
         return k.P.Stats(160, 1500, 20, 6.0);
+    }
+
+    /// <summary>The lining either side of an opening and over it, and the bezel round it (a bay's, an airlock's); <paramref name="right"/> is where it ends on the right.</summary>
+    private static void Lining(FittingLookParts.Kit k, double right = Sw)
+    {
+        // The lining either side: pale panels over the blue lower band, a dark seam between panels; the header over the opening.
+        foreach (var s in new[] { -1.0, 1.0 })
+        {
+            double a = s * (W + 0.08), b = s < 0 ? -Sw : right;
+            k.Paint(a, 0.38, -Lt, b, Top, 0, Wall, "wall panelling");
+            k.Paint(a, 0, -Lt, b, 0.38, 0.006, WallLow, "painted steel");
+            k.Box(a + s * 0.20, 0.4, -0.004, a + s * 0.215, Top - 0.02, 0.003, Trim, "plastic"); // (a panel seam)
+            Solid(k, a, 0, -Lt, b, Top, 0);
+        }
+        if (right > Sw + 0.3)
+            k.Box(Sw + 0.2, 0.4, -0.004, Sw + 0.215, Top - 0.02, 0.003, Trim, "plastic"); // (a seam on a wider slice)
+        k.Paint(-(W + 0.08), Y1 + 0.08, -Lt, W + 0.08, Top, 0, Wall, "wall panelling");
+        Solid(k, -(W + 0.08), Y1 + 0.08, -Lt, W + 0.08, Top, 0);
+        // The bezel: dark trim round the opening, 20 mm proud; a hazard edge on the sill; a lit label and the latch lamp on the head.
+        k.Box(-(W + 0.08), 0.02, -Lt, -W, Y1 + 0.08, 0.02, Trim, "plastic");
+        k.Box(W, 0.02, -Lt, W + 0.08, Y1 + 0.08, 0.02, Trim, "plastic");
+        k.Box(-W, 0.02, -Lt, W, Y0, 0.02, Trim, "plastic");
+        k.Box(-W, Y1, -Lt, W, Y1 + 0.08, 0.02, Trim, "plastic");
+        for (var i = 0; i < 9; i++)
+            k.Box(-W + 0.02 + i * 0.1, 0.035, 0.019, -W + 0.07 + i * 0.1, 0.085, 0.026, Hazard, "hazard paint");
+        k.Box(-0.16, Y1 + 0.02, 0.019, 0.16, Y1 + 0.06, 0.027, Frame, "plastic");
+        k.Glow(-0.14, Y1 + 0.03, 0.026, 0.1, Y1 + 0.05, 0.031, Glow);
+        k.Glow(0.12, Y1 + 0.03, 0.026, 0.14, Y1 + 0.05, 0.032, Green);
     }
 
     private static void p_Sockets(Part p)
@@ -163,8 +173,8 @@ public sealed class WallBayParts : IPartGenerator
         k.P.Sock(name, [0.445, y + 0.01, 0], "+z");
     }
 
-    private static void Slide(Part p, double travel, double seconds) =>
-        p.Set(("door", Kw(("kind", "slide"), ("axis", "+z"), ("travel", travel), ("seconds", seconds), ("hang", "hang"))));
+    private static void Slide(Part p, double travel, double seconds, string axis = "+z") =>
+        p.Set(("door", Kw(("kind", "slide"), ("axis", axis), ("travel", travel), ("seconds", seconds), ("hang", "hang"))));
 
     private static void Swing(Part p, string axis, double angle, List<object?> pivot, double seconds) =>
         p.Set(("door", Kw(("kind", "swing"), ("axis", axis), ("pivot", pivot), ("angle", angle), ("seconds", seconds), ("hang", "hang"))));
@@ -895,17 +905,12 @@ public sealed class WallBayParts : IPartGenerator
 
     private static Part ScrubberInsert()
     {
-        var k = Insert("CO2 Scrubber Insert" + Sfx, $"An in-wall CO2 scrubber ({Py.G(D)} m deep, draft): the fan under the canister tray, the manifold and duct behind it, a CO2 readout over it.");
+        var k = Insert("CO2 Scrubber Insert" + Sfx, $"An in-wall CO2 scrubber ({Py.G(D)} m deep, draft): the fan's cassette (the part that wears) under the canister tray (the consumable), the manifold and duct behind them, a CO2 readout over them.");
         Tab(k, "tray", ScrY0);
         Tab(k, "latch", LatchY);
-        // Under: the fan's grille and the fan behind it.
-        k.Paint(-W, Y0, -0.04, W, ScrY0 - 0.01, -0.012, Wall, "wall panelling");
-        k.Paint(-W, Y0, -0.04, W, 0.3, -0.008, WallLow, "painted steel");
-        Rod(k, -0.2, 0.18, -0.014, 0.2, 0.58, 0.0, "+z", Frame, "dirty steel", 24);
-        foreach (var y in new[] { 0.28, 0.38, 0.48 })
-            k.Box(-0.18, y - 0.008, -0.002, 0.18, y + 0.008, 0.006, Steel, "steel");
-        Rod(k, -0.17, 0.21, -0.3, 0.17, 0.55, -0.2, "+z", Steel, "steel", 20);
-        Solid(k, -W, Y0, -0.04, W, ScrY0 - 0.01, -0.012);
+        Tab(k, "fan", Y0);
+        foreach (var sx in new[] { -1.0, 1.0 })
+            k.Box(sx * 0.42, Y0, -D, sx * W, Y0 + 0.04, -0.04, Steel, "steel"); // (the fan cassette's rails)
         // Over: a CO2 bar gauge, a screen, an amber warning lamp.
         k.Paint(-W, ScrY1 + 0.01, -0.04, W, Y1, -0.012, Wall, "wall panelling");
         k.Box(-0.38, 1.5, -0.014, -0.28, 1.9, 0.0, Frame, "plastic");
@@ -955,22 +960,43 @@ public sealed class WallBayParts : IPartGenerator
         return k.P.Stats(70, 400, 4, 2.0);
     }
 
+    private static Part ScrubberFan()
+    {
+        var k = Mover("Scrubber Fan" + Sfx, $"A CO2 scrubber's fan cassette ({Py.G(D)} m deep, draft): the part that wears. Its grille is the panel under the canister tray; pull it and the fan runs out on its tray to be swapped.", "fan", [0, Y0, 0]);
+        k.Paint(-0.44, Y0 + 0.008, -0.012, 0.44, ScrY0 - 0.018, 0.018, Wall, "wall panelling");
+        Rod(k, -0.2, 0.155, 0.015, 0.2, 0.555, 0.03, "+z", Frame, "dirty steel", 24); // (the grille's ring)
+        foreach (var y in new[] { 0.27, 0.355, 0.44 })
+            k.Box(-0.18, y - 0.008, 0.026, 0.18, y + 0.008, 0.037, Steel, "steel");
+        k.Box(0.28, 0.25, 0.015, 0.36, 0.45, 0.04, Frame, "rubber"); // (a pull grip)
+        for (var i = 0; i < 3; i++)
+            k.Glow(0.27 + i * 0.04, 0.5, 0.015, 0.3 + i * 0.04, 0.54, 0.026, i < 2 ? Green : Amber); // (its wear lamps)
+        double t = Y0 + 0.03, zb = -D + 0.12;
+        k.Box(-0.42, t, zb, 0.42, t + 0.02, -0.012, Steel, "tread plate");
+        foreach (var sx in new[] { -1.0, 1.0 })
+            k.Box(sx * 0.42, t, zb, sx * 0.435, t + 0.03, -0.02, Steel, "steel");
+        // The fan in its shroud on a stand, the motor behind it, the power lead.
+        k.Box(-0.06, t + 0.02, -0.4, 0.06, t + 0.07, -0.2, Frame, "dirty steel");
+        Rod(k, -0.18, t + 0.04, -0.3, 0.18, t + 0.4, -0.18, "+z", Steel, "steel", 24);
+        Rod(k, -0.06, t + 0.16, -0.42, 0.06, t + 0.28, -0.297, "+z", Motor, "painted steel", 16);
+        k.Box(-0.04, t + 0.19, -0.6, 0.04, t + 0.25, -0.417, Frame, "rubber");
+        Solid(k, -0.44, Y0, -0.012, 0.44, ScrY0 - 0.01, 0.018);
+        Solid(k, -0.42, t, zb, 0.42, t + 0.02, -0.012);
+        Slide(k.P, D - 0.12, 1.6);
+        return k.P.Stats(30, 300, 4, 1.5);
+    }
+
     // 1 m: a water reclaimer. A drawer of filter cartridges (pre-filter, carbon, membrane, with spares behind), the pump under it,
     // the tank over it in the void with its level in a lit column on the panel.
     private const double FilY0 = 0.46, FilY1 = 1.22;
 
     private static Part WaterInsert()
     {
-        var k = Insert("Water Reclaimer Insert" + Sfx, $"An in-wall water reclaimer ({Py.G(D)} m deep, draft): the pump under the filter drawer, the tank over it with its level on the panel, the manifold behind.");
+        var k = Insert("Water Reclaimer Insert" + Sfx, $"An in-wall water reclaimer ({Py.G(D)} m deep, draft): the pump's cassette (the part that wears) under the filter drawer (the consumable), the tank over them with its level on the panel, the manifold behind.");
         Tab(k, "filters", FilY0);
         Tab(k, "latch", 0.84 - 0.01);
-        // Under: the pump panel; the pump behind it.
-        k.Paint(-W, Y0, -0.04, W, FilY0 - 0.01, -0.012, Wall, "wall panelling");
-        k.Paint(-W, Y0, -0.04, W, 0.3, -0.008, WallLow, "painted steel");
-        for (var i = 0; i < 3; i++)
-            k.Box(-0.3, 0.32 + i * 0.03, -0.014, 0.3, 0.335 + i * 0.03, -0.006, Frame, "dirty steel");
-        Rod(k, -0.3, 0.16, -0.4, 0.2, 0.34, -0.2, "+x", PipeBlue, "painted steel", 16);
-        Solid(k, -W, Y0, -0.04, W, FilY0 - 0.01, -0.012);
+        Tab(k, "pump", Y0);
+        foreach (var sx in new[] { -1.0, 1.0 })
+            k.Box(sx * 0.42, Y0, -D, sx * W, Y0 + 0.04, -0.04, Steel, "steel"); // (the pump cassette's rails)
         // Over: the level column, two dials, a screen.
         k.Paint(-W, FilY1 + 0.01, -0.04, W, Y1, -0.012, Wall, "wall panelling");
         k.Box(-0.38, 1.3, -0.014, -0.26, 1.92, 0.0, Frame, "plastic");
@@ -1019,6 +1045,32 @@ public sealed class WallBayParts : IPartGenerator
         Solid(k, -0.42, t, zb, 0.42, t + 0.02, -0.012);
         Slide(k.P, D - 0.08, 2.0);
         return k.P.Stats(50, 400, 4, 2.0);
+    }
+
+    private static Part ReclaimerPump()
+    {
+        var k = Mover("Reclaimer Pump" + Sfx, $"A water reclaimer's pump cassette ({Py.G(D)} m deep, draft): the part that wears. Pull the panel under the filter drawer and the pump runs out on its tray to be swapped.", "pump", [0, Y0, 0]);
+        k.Paint(-0.44, Y0 + 0.008, -0.012, 0.44, FilY0 - 0.018, 0.018, Wall, "wall panelling");
+        for (var i = 0; i < 3; i++)
+            k.Box(-0.3, 0.24 + i * 0.04, 0.015, 0.2, 0.26 + i * 0.04, 0.026, Frame, "dirty steel"); // (vent slots)
+        k.Box(0.28, 0.17, 0.015, 0.36, 0.37, 0.04, Frame, "rubber");
+        for (var i = 0; i < 3; i++)
+            k.Glow(-0.3 + i * 0.04, 0.38, 0.015, -0.27 + i * 0.04, 0.42, 0.026, i < 2 ? Green : Amber);
+        double t = Y0 + 0.03, zb = -D + 0.12;
+        k.Box(-0.42, t, zb, 0.42, t + 0.02, -0.012, Steel, "tread plate");
+        foreach (var sx in new[] { -1.0, 1.0 })
+            k.Box(sx * 0.42, t, zb, sx * 0.435, t + 0.03, -0.02, Steel, "steel");
+        // The pump on its feet: the body, its motor, the two water connections at the back.
+        foreach (var x in new[] { -0.2, 0.1 })
+            k.Box(x - 0.03, t + 0.02, -0.42, x + 0.03, t + 0.06, -0.18, Frame, "dirty steel");
+        Rod(k, -0.3, t + 0.05, -0.4, 0.2, t + 0.25, -0.2, "+x", PipeBlue, "painted steel", 16);
+        Rod(k, 0.197, t + 0.08, -0.37, 0.3, t + 0.22, -0.23, "+x", Motor, "painted steel", 16);
+        foreach (var x in new[] { -0.2, 0.0 })
+            Rod(k, x - 0.025, t + 0.12, -0.7, x + 0.025, t + 0.17, -0.397, "+z", PipeBlue, "rubber");
+        Solid(k, -0.44, Y0, -0.012, 0.44, FilY0 - 0.01, 0.018);
+        Solid(k, -0.42, t, zb, 0.42, t + 0.02, -0.012);
+        Slide(k.P, D - 0.12, 1.6);
+        return k.P.Stats(35, 300, 4, 1.5);
     }
 
     // 1.5 m: an oxygen generator. A furnace that burns oxygen candles: its breech runs out of the chamber with the candle in it, a
@@ -1123,12 +1175,13 @@ public sealed class WallBayParts : IPartGenerator
     {
         o.Own(Out);
         var parts = new List<Part>();
-        var fills = new List<(string File, string Name, string Desc, string Bay, string Insert, (string Part, string Sock)[] Movers)>();
+        var fills = new List<(string File, string Name, string Desc, string Bay, string? Insert, (string Part, string Sock)[] Movers)>();
         void Fill(string file, string name, string desc, string insert, params (string, string)[] movers) => fills.Add((file, name, desc, "Wall Bay" + Sfx, insert, movers));
 
         // 0.5 m: the standard bay. A seat, drawers, a rack, a component sled, a Murphy bed and a desk; the twist latch, any depth.
         Depth(0.5);
-        parts.AddRange([Bay(), SeatInsert(), SeatFlap(), HelmetDoor(), DrawerInsert(), RackInsert(), Rack(), SledInsert(), SledCover(), Sled(), BunkInsert(), Bunk(), DeskInsert(), Desk(), TwistLatch()]);
+        parts.AddRange([Bay(), SeatInsert(), SeatFlap(), HelmetDoor(), DrawerInsert(), RackInsert(), Rack(), SledInsert(), SledCover(), Sled(), BunkInsert(), Bunk(), DeskInsert(), Desk(), TwistLatch(),
+            .. Breakers(), .. Computer(), .. DamageControl()]);
         parts.AddRange(Enumerable.Range(0, Drawers).Select(Drawer));
         Fill("WallBayJumpSeat", "Wall Bay Jump Seat", "An in-wall bay (draft) with a jump seat that flips down and a helmet locker over it.", "Jump Seat Insert", ("Jump Seat", "seat"), ("Helmet Locker Door", "helmet"));
         Fill("WallBayDrawers", "Wall Bay Drawers", "An in-wall bay (draft) with four deep drawers.", "Drawer Stack Insert", [.. Enumerable.Range(0, Drawers).Select(i => ($"Stow Drawer {i + 1}", $"drawer{i}"))]);
@@ -1136,27 +1189,40 @@ public sealed class WallBayParts : IPartGenerator
         Fill("WallBayComponent", "Wall Bay Component Sled", "An in-wall bay (draft) whose cover flips up and whose sled runs out with a power cell on it.", "Component Bay Insert", ("Component Bay Cover", "cover"), ("Component Sled", "sled"));
         Fill("WallBayMurphyBed", "Wall Bay Murphy Bed", "An in-wall bay (draft) whose whole face flips down to a Murphy bed.", "Murphy Bed Insert", ("Murphy Bed", "bunk"));
         Fill("WallBayDesk", "Wall Bay Desk", "An in-wall bay (draft) with a desk that flips down from the wall.", "Desk Insert", ("Fold-down Desk", "desk"));
+        // Ship systems, each with a part that wears (the cassette) and a consumable (the drawer): WallBayParts.Systems.cs.
+        Fill("WallBayBreakers", "Wall Bay Breakers", "A breaker panel in an in-wall bay (draft): the breaker cassette wears, the fuse drawer under it holds the fuses.", "Breaker Panel Insert", ("Twist Latch", "latch"), ("Fuse Drawer", "supply"), ("Breaker Cassette", "wear"));
+        Fill("WallBayComputer", "Wall Bay Flight Computer", "A flight computer in an in-wall bay (draft): the card cage wears, the drawer under it holds memory modules.", "Flight Computer Insert", ("Twist Latch", "latch"), ("Memory Module Drawer", "supply"), ("Computer Card Cage", "wear"));
+        Fill("WallBayDamageControl", "Wall Bay Damage Control", "A damage control locker in an in-wall bay (draft): spare door actuators over hull patch plates and sealant foam.", "Damage Control Insert", ("Twist Latch", "latch"), ("Patch and Foam Drawer", "supply"), ("Actuator Spares Rack", "wear"));
 
         // 1 m: a suit rack, deep shelves, a long component sled, a toilet, a consumables rack; two ship systems, a CO2 scrubber and a water reclaimer.
         Depth(1.0);
         parts.AddRange([Bay(), SuitInsert(), SuitRack(), RackInsert(), Rack(), SledInsert(), SledCover(), Sled(), ToiletInsert(), ToiletPan(), RackInsert(true), Rack(true),
-            ScrubberInsert(), ScrubberTray(), WaterInsert(), FilterDrawer()]);
+            ScrubberInsert(), ScrubberTray(), ScrubberFan(), WaterInsert(), FilterDrawer(), ReclaimerPump(), .. Coolant(), .. Rcs(), .. Sensors(), .. Pdc()]);
         Fill("WallBay1mSuit", "Wall Bay 1m Suit Rack", "A 1 m in-wall bay (draft) whose suit rack runs out with a pressure suit on it.", "Suit Rack Insert" + Sfx, ("Suit Rack" + Sfx, "suit"));
         Fill("WallBay1mRack", "Wall Bay 1m Rack", "A 1 m in-wall bay (draft) with deep shelves, two loads deep, that pull out of the wall.", "Pull-out Rack Insert" + Sfx, ("Pull-out Rack" + Sfx, "rack"));
         Fill("WallBay1mComponent", "Wall Bay 1m Component Sled", "A 1 m in-wall bay (draft) whose sled runs out with a long power cell on it.", "Component Bay Insert" + Sfx, ("Component Bay Cover" + Sfx, "cover"), ("Component Sled" + Sfx, "sled"));
         Fill("WallBay1mToilet", "Wall Bay 1m Toilet", "A 1 m in-wall bay (draft): twist the side handle and a toilet pan runs out of the wall.", "Toilet Insert" + Sfx, ("Twist Latch", "latch"), ("Toilet Pan" + Sfx, "pan"));
         Fill("WallBay1mStores", "Wall Bay 1m Consumables", "A 1 m in-wall bay (draft): twist the side handle and a rack of the ship's consumables runs out.", "Consumables Rack Insert" + Sfx, ("Twist Latch", "latch"), ("Consumables Rack" + Sfx, "rack"));
-        Fill("WallBay1mScrubber", "Wall Bay 1m CO2 Scrubber", "A CO2 scrubber in a 1 m in-wall bay (draft): twist the side handle and its tray of canisters runs out to be changed.", "CO2 Scrubber Insert" + Sfx, ("Twist Latch", "latch"), ("Scrubber Tray" + Sfx, "tray"));
-        Fill("WallBay1mWater", "Wall Bay 1m Water Reclaimer", "A water reclaimer in a 1 m in-wall bay (draft): twist the side handle and its filter drawer runs out to be changed.", "Water Reclaimer Insert" + Sfx, ("Twist Latch", "latch"), ("Filter Drawer" + Sfx, "filters"));
+        Fill("WallBay1mScrubber", "Wall Bay 1m CO2 Scrubber", "A CO2 scrubber in a 1 m in-wall bay (draft): twist the side handle and its tray of canisters runs out to be changed.", "CO2 Scrubber Insert" + Sfx, ("Twist Latch", "latch"), ("Scrubber Tray" + Sfx, "tray"), ("Scrubber Fan" + Sfx, "fan"));
+        Fill("WallBay1mWater", "Wall Bay 1m Water Reclaimer", "A water reclaimer in a 1 m in-wall bay (draft): twist the side handle and its filter drawer runs out to be changed.", "Water Reclaimer Insert" + Sfx, ("Twist Latch", "latch"), ("Filter Drawer" + Sfx, "filters"), ("Reclaimer Pump" + Sfx, "pump"));
+        Fill("WallBay1mCoolant", "Wall Bay 1m Coolant Pump", "A coolant pump in a 1 m in-wall bay (draft): the pump's cassette wears, the drawer under it holds coolant jugs.", "Coolant Pump Insert" + Sfx, ("Twist Latch", "latch"), ("Coolant Jug Drawer" + Sfx, "supply"), ("Coolant Pump Cassette" + Sfx, "wear"));
+        Fill("WallBay1mRcs", "Wall Bay 1m RCS Feed", "An RCS feed in a 1 m in-wall bay (draft): the valve block wears, the drawer under it holds propellant bottles.", "RCS Feed Insert" + Sfx, ("Twist Latch", "latch"), ("Propellant Bottle Drawer" + Sfx, "supply"), ("RCS Valve Block" + Sfx, "wear"));
+        Fill("WallBay1mSensors", "Wall Bay 1m Sensor Rack", "A sensor rack in a 1 m in-wall bay (draft): the radar's emitter tube wears, the drawer under it holds nav chart data cores.", "Sensor Rack Insert" + Sfx, ("Twist Latch", "latch"), ("Nav Core Drawer" + Sfx, "supply"), ("Emitter Tube Cassette" + Sfx, "wear"));
+        Fill("WallBay1mPdc", "Wall Bay 1m PDC Feed", "A PDC feed in a 1 m in-wall bay (draft): the belt feeder wears, the drawer under it holds ammo cans.", "PDC Feed Insert" + Sfx, ("Twist Latch", "latch"), ("Ammo Can Drawer" + Sfx, "supply"), ("Belt Feeder Cassette" + Sfx, "wear"));
 
         // 1.5 m: a spacewalk pack bay, a stretcher drawer, deeper shelves, a heavy module sled; an oxygen generator that burns candles.
         Depth(1.5);
-        parts.AddRange([Bay(), MmuInsert(), MmuDoor(), MmuSled(), StretcherInsert(), Stretcher(), RackInsert(), Rack(), SledInsert(), SledCover(), Sled(), OxygenInsert(), CandleBreech(), CandleDrawer()]);
+        parts.AddRange([Bay(), MmuInsert(), MmuDoor(), MmuSled(), StretcherInsert(), Stretcher(), RackInsert(), Rack(), SledInsert(), SledCover(), Sled(), OxygenInsert(), CandleBreech(), CandleDrawer(),
+            AirlockChamber(), AirlockInnerDoor(), AirlockOuterHatch(), .. ReactorFuel()]);
         Fill("WallBay15mMmu", "Wall Bay 1.5m MMU", "A 1.5 m in-wall bay (draft): its door swings aside and a sled brings a spacewalk pack out into the room.", "MMU Bay Insert" + Sfx, ("MMU Bay Door" + Sfx, "door"), ("MMU Sled" + Sfx, "mmu"));
         Fill("WallBay15mStretcher", "Wall Bay 1.5m Stretcher", "A 1.5 m in-wall bay (draft) with a stretcher drawer under a med cabinet.", "Stretcher Insert" + Sfx, ("Stretcher Drawer" + Sfx, "stretcher"));
         Fill("WallBay15mRack", "Wall Bay 1.5m Rack", "A 1.5 m in-wall bay (draft) with deeper shelves, three loads deep, that pull out of the wall.", "Pull-out Rack Insert" + Sfx, ("Pull-out Rack" + Sfx, "rack"));
         Fill("WallBay15mModule", "Wall Bay 1.5m Module Sled", "A 1.5 m in-wall bay (draft) whose sled runs out with a coolant exchanger module on it.", "Component Bay Insert" + Sfx, ("Component Bay Cover" + Sfx, "cover"), ("Component Sled" + Sfx, "sled"));
         Fill("WallBay15mOxygen", "Wall Bay 1.5m O2 Generator", "An oxygen generator in a 1.5 m in-wall bay (draft): twist the side handle and the breech runs out with its candle; spare candles in the drawer under it.", "O2 Generator Insert" + Sfx, ("Twist Latch", "latch"), ("Candle Breech" + Sfx, "breech"), ("Candle Drawer" + Sfx, "spares"));
+        Fill("WallBay15mReactor", "Wall Bay 1.5m Reactor Fuel", "A reactor fuel loader in a 1.5 m in-wall bay (draft): the control rod cassette wears, the shielded drawer under it holds fuel rods.", "Reactor Fuel Insert" + Sfx, ("Twist Latch", "latch"), ("Fuel Rod Drawer" + Sfx, "supply"), ("Control Rod Cassette" + Sfx, "wear"));
+        // The hull airlock through the same void: its doors hang on the chamber itself.
+        fills.Add(("HullAirlock", "Hull Airlock", "A hull airlock (draft): a pressure door with a twist latch in the interior lining, a one-person chamber through the 1.5 m void, and a hatch that slides aside along rails outside the hull.",
+            "Airlock Chamber", null, [("Airlock Inner Door", "inner"), ("Twist Latch", "latch"), ("Airlock Outer Hatch", "outer")]));
 
         var defs = new Dictionary<string, PyDict>();
         foreach (var p in parts)
@@ -1170,7 +1236,7 @@ public sealed class WallBayParts : IPartGenerator
         {
             var bp = new BuildingParts.Blueprint(f.Name, f.Desc, defs);
             var bay = bp.First(f.Bay, 2); // (turned half round: the galleries look from -z, and the room is the bay's +z)
-            var ins = bp.Hang(f.Insert, bay, "insert", "bay");
+            var ins = f.Insert == null ? bay : bp.Hang(f.Insert, bay, "insert", "bay");
             foreach (var (m, sock) in f.Movers)
                 bp.Hang(m, ins, sock, "hang");
             o.File($"{BpOut}/{f.File}.json", PyJson.Dumps(bp.Json(), 2) + "\n");

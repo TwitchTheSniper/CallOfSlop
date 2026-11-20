@@ -1,0 +1,359 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Reclaimer Pump 1m",
+  "description": "A water reclaimer's pump cassette (1 m deep, draft): the part that wears. Pull the panel under the filter drawer and the pump runs out on its tray to be swapped.",
+  "group": "Style",
+  "section": "In-wall bays",
+  "role": "door",
+  "tool": "wrench",
+  "finish": "painted steel",
+  "collider": "boxes",
+  "door": {
+    "kind": "slide",
+    "axis": "+z",
+    "travel": 0.88,
+    "seconds": 1.6,
+    "hang": "hang"
+  },
+  "mass": 35.0,
+  "health": 300,
+  "armour": 4,
+  "material": "steel",
+  "color": "#c4c8ca",
+  "attachSeconds": 1.5,
+  "boxes": [
+    {
+      "min": [
+        0.435,
+        0.1,
+        0.0
+      ],
+      "max": [
+        0.455,
+        0.12,
+        0.02
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.44,
+        0.108,
+        -0.012
+      ],
+      "max": [
+        0.44,
+        0.442,
+        0.018
+      ],
+      "color": "#c4c8ca",
+      "detail": true,
+      "finish": "wall panelling"
+    },
+    {
+      "min": [
+        -0.3,
+        0.24,
+        0.015
+      ],
+      "max": [
+        0.2,
+        0.26,
+        0.026
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.3,
+        0.28,
+        0.015
+      ],
+      "max": [
+        0.2,
+        0.3,
+        0.026
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.3,
+        0.32,
+        0.015
+      ],
+      "max": [
+        0.2,
+        0.34,
+        0.026
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.28,
+        0.17,
+        0.015
+      ],
+      "max": [
+        0.36,
+        0.37,
+        0.04
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "rubber",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.3,
+        0.38,
+        0.015
+      ],
+      "max": [
+        -0.27,
+        0.42,
+        0.026
+      ],
+      "color": "#5ad070",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.26,
+        0.38,
+        0.015
+      ],
+      "max": [
+        -0.23,
+        0.42,
+        0.026
+      ],
+      "color": "#5ad070",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.22,
+        0.38,
+        0.015
+      ],
+      "max": [
+        -0.19,
+        0.42,
+        0.026
+      ],
+      "color": "#f0a830",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.42,
+        0.13,
+        -0.88
+      ],
+      "max": [
+        0.42,
+        0.15,
+        -0.012
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "finish": "tread plate",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.435,
+        0.13,
+        -0.88
+      ],
+      "max": [
+        -0.42,
+        0.16,
+        -0.02
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.42,
+        0.13,
+        -0.88
+      ],
+      "max": [
+        0.435,
+        0.16,
+        -0.02
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.23,
+        0.15,
+        -0.42
+      ],
+      "max": [
+        -0.17,
+        0.19,
+        -0.18
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.07,
+        0.15,
+        -0.42
+      ],
+      "max": [
+        0.13,
+        0.19,
+        -0.18
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.3,
+        0.18,
+        -0.4
+      ],
+      "max": [
+        0.2,
+        0.38,
+        -0.2
+      ],
+      "color": "#2f6a9a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+x",
+      "finish": "painted steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.197,
+        0.21,
+        -0.37
+      ],
+      "max": [
+        0.3,
+        0.35,
+        -0.23
+      ],
+      "color": "#3d5a40",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+x",
+      "finish": "painted steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.225,
+        0.25,
+        -0.7
+      ],
+      "max": [
+        -0.175,
+        0.3,
+        -0.397
+      ],
+      "color": "#2f6a9a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+z",
+      "finish": "rubber",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.025,
+        0.25,
+        -0.7
+      ],
+      "max": [
+        0.025,
+        0.3,
+        -0.397
+      ],
+      "color": "#2f6a9a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+z",
+      "finish": "rubber",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.44,
+        0.1,
+        -0.012
+      ],
+      "max": [
+        0.44,
+        0.45,
+        0.018
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.42,
+        0.13,
+        -0.88
+      ],
+      "max": [
+        0.42,
+        0.15,
+        -0.012
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "hang",
+      "at": [
+        0.445,
+        0.11,
+        0.0
+      ],
+      "dir": "-z"
+    }
+  ]
+}

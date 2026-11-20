@@ -1,0 +1,508 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Coolant Pump Cassette 1m",
+  "description": "A coolant pump's cassette (draft): the part that wears. It runs out with the pump and its motor on a base plate, the hoses back to the loop's couplers.",
+  "group": "Style",
+  "section": "In-wall bays",
+  "role": "door",
+  "tool": "wrench",
+  "finish": "painted steel",
+  "collider": "boxes",
+  "door": {
+    "kind": "slide",
+    "axis": "+z",
+    "travel": 0.9,
+    "seconds": 2.4,
+    "hang": "hang"
+  },
+  "mass": 45.0,
+  "health": 300,
+  "armour": 4,
+  "material": "steel",
+  "color": "#c4c8ca",
+  "attachSeconds": 2.0,
+  "boxes": [
+    {
+      "min": [
+        0.435,
+        0.92,
+        0.0
+      ],
+      "max": [
+        0.455,
+        0.94,
+        0.02
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.44,
+        0.928,
+        -0.012
+      ],
+      "max": [
+        0.44,
+        1.672,
+        0.018
+      ],
+      "color": "#c4c8ca",
+      "detail": true,
+      "finish": "wall panelling"
+    },
+    {
+      "min": [
+        -0.34,
+        1.12,
+        0.045
+      ],
+      "max": [
+        -0.3,
+        1.42,
+        0.075
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+y",
+      "finish": "rubber",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.332,
+        1.14,
+        0.009
+      ],
+      "max": [
+        -0.308,
+        1.165,
+        0.05
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.332,
+        1.375,
+        0.009
+      ],
+      "max": [
+        -0.308,
+        1.4,
+        0.05
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.3,
+        1.12,
+        0.045
+      ],
+      "max": [
+        0.34,
+        1.42,
+        0.075
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+y",
+      "finish": "rubber",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.308,
+        1.14,
+        0.009
+      ],
+      "max": [
+        0.332,
+        1.165,
+        0.05
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.308,
+        1.375,
+        0.009
+      ],
+      "max": [
+        0.332,
+        1.4,
+        0.05
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.2,
+        1.54,
+        0.015
+      ],
+      "max": [
+        0.2,
+        1.62,
+        0.026
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "plastic",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.18,
+        1.55,
+        0.019
+      ],
+      "max": [
+        -0.01,
+        1.61,
+        0.03
+      ],
+      "color": "#4ad0c8",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.02,
+        1.555,
+        0.019
+      ],
+      "max": [
+        0.06,
+        1.605,
+        0.03
+      ],
+      "color": "#5ad070",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.08,
+        1.555,
+        0.019
+      ],
+      "max": [
+        0.12,
+        1.605,
+        0.03
+      ],
+      "color": "#5ad070",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.14,
+        1.555,
+        0.019
+      ],
+      "max": [
+        0.18,
+        1.605,
+        0.03
+      ],
+      "color": "#f0a830",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.42,
+        0.95,
+        -0.89
+      ],
+      "max": [
+        0.42,
+        0.97,
+        -0.012
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "finish": "tread plate",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.435,
+        0.95,
+        -0.89
+      ],
+      "max": [
+        -0.42,
+        0.98,
+        -0.02
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.42,
+        0.95,
+        -0.89
+      ],
+      "max": [
+        0.435,
+        0.98,
+        -0.02
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.44,
+        0.92,
+        -0.012
+      ],
+      "max": [
+        0.44,
+        1.68,
+        0.018
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.42,
+        0.95,
+        -0.89
+      ],
+      "max": [
+        0.42,
+        0.97,
+        -0.012
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.2,
+        0.97,
+        -0.7
+      ],
+      "max": [
+        0.2,
+        1.0,
+        -0.12
+      ],
+      "color": "#2f3338",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.12,
+        1.0,
+        -0.62
+      ],
+      "max": [
+        0.12,
+        1.24,
+        -0.32
+      ],
+      "color": "#3d5a40",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 20,
+      "front": "+z",
+      "finish": "painted steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.1,
+        1.02,
+        -0.66
+      ],
+      "max": [
+        0.1,
+        1.22,
+        -0.617
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 20,
+      "front": "+z",
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.15,
+        0.972,
+        -0.323
+      ],
+      "max": [
+        0.15,
+        1.268,
+        -0.2
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 20,
+      "front": "+z",
+      "finish": "painted steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.05,
+        1.07,
+        -0.203
+      ],
+      "max": [
+        0.05,
+        1.17,
+        -0.08
+      ],
+      "color": "#4ad0c8",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+z",
+      "finish": "painted steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.06,
+        1.265,
+        -0.3
+      ],
+      "max": [
+        0.14,
+        1.39,
+        -0.22
+      ],
+      "color": "#4ad0c8",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+y",
+      "finish": "painted steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.25,
+        1.07,
+        -0.862
+      ],
+      "max": [
+        -0.19,
+        1.13,
+        -0.4
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+z",
+      "finish": "rubber",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.255,
+        1.065,
+        -0.889
+      ],
+      "max": [
+        -0.185,
+        1.135,
+        -0.858
+      ],
+      "color": "#b59a4a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+z",
+      "finish": "brass",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.19,
+        1.07,
+        -0.862
+      ],
+      "max": [
+        0.25,
+        1.13,
+        -0.4
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+z",
+      "finish": "rubber",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.185,
+        1.065,
+        -0.889
+      ],
+      "max": [
+        0.255,
+        1.135,
+        -0.858
+      ],
+      "color": "#b59a4a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+z",
+      "finish": "brass",
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "hang",
+      "at": [
+        0.445,
+        0.93,
+        0.0
+      ],
+      "dir": "-z"
+    }
+  ]
+}

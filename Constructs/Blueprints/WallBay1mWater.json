@@ -24,6 +24,12 @@
       "on": 1,
       "socket": "filters",
       "by": "hang"
+    },
+    {
+      "part": "Reclaimer Pump 1m",
+      "on": 1,
+      "socket": "pump",
+      "by": "hang"
     }
   ]
 }

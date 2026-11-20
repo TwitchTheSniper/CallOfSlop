@@ -1,0 +1,12 @@
+{
+  // In-wall ship system draft (WallBayParts.Systems.cs): twist the handle, the consumable's drawer runs out; then the cassette with the part that wears.
+  "blueprint": "Wall Bay 1m Coolant Pump",
+  "title": "Coolant pump (1 m bay)",
+  "shelf": "In-wall ship systems",
+  "description": "Draft. Heat. The consumable: twist the handle and the drawer runs out with twelve jugs of coolant to top the loop up. The part that wears: the pump cassette, which runs out with the pump and motor on a base plate and its hoses back to the loop's couplers. The bars over them show its wear and its supply.",
+  "steps": [
+    { "part": "Twist Latch", "at": 0, "label": "Twist the handle" },
+    { "part": "Coolant Jug Drawer 1m", "at": 0.6, "label": "Consumable: coolant" },
+    { "part": "Coolant Pump Cassette 1m", "at": 2.8, "label": "Wear part: the pump" }
+  ]
+}

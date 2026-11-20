@@ -24,6 +24,12 @@
       "on": 1,
       "socket": "tray",
       "by": "hang"
+    },
+    {
+      "part": "Scrubber Fan 1m",
+      "on": 1,
+      "socket": "fan",
+      "by": "hang"
     }
   ]
 }

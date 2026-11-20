@@ -1,0 +1,340 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Scrubber Fan 1m",
+  "description": "A CO2 scrubber's fan cassette (1 m deep, draft): the part that wears. Its grille is the panel under the canister tray; pull it and the fan runs out on its tray to be swapped.",
+  "group": "Style",
+  "section": "In-wall bays",
+  "role": "door",
+  "tool": "wrench",
+  "finish": "painted steel",
+  "collider": "boxes",
+  "door": {
+    "kind": "slide",
+    "axis": "+z",
+    "travel": 0.88,
+    "seconds": 1.6,
+    "hang": "hang"
+  },
+  "mass": 30.0,
+  "health": 300,
+  "armour": 4,
+  "material": "steel",
+  "color": "#c4c8ca",
+  "attachSeconds": 1.5,
+  "boxes": [
+    {
+      "min": [
+        0.435,
+        0.1,
+        0.0
+      ],
+      "max": [
+        0.455,
+        0.12,
+        0.02
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.44,
+        0.108,
+        -0.012
+      ],
+      "max": [
+        0.44,
+        0.602,
+        0.018
+      ],
+      "color": "#c4c8ca",
+      "detail": true,
+      "finish": "wall panelling"
+    },
+    {
+      "min": [
+        -0.2,
+        0.155,
+        0.015
+      ],
+      "max": [
+        0.2,
+        0.555,
+        0.03
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 24,
+      "front": "+z",
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.18,
+        0.262,
+        0.026
+      ],
+      "max": [
+        0.18,
+        0.278,
+        0.037
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.18,
+        0.347,
+        0.026
+      ],
+      "max": [
+        0.18,
+        0.363,
+        0.037
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.18,
+        0.432,
+        0.026
+      ],
+      "max": [
+        0.18,
+        0.448,
+        0.037
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.28,
+        0.25,
+        0.015
+      ],
+      "max": [
+        0.36,
+        0.45,
+        0.04
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "rubber",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.27,
+        0.5,
+        0.015
+      ],
+      "max": [
+        0.3,
+        0.54,
+        0.026
+      ],
+      "color": "#5ad070",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.31,
+        0.5,
+        0.015
+      ],
+      "max": [
+        0.34,
+        0.54,
+        0.026
+      ],
+      "color": "#5ad070",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.35,
+        0.5,
+        0.015
+      ],
+      "max": [
+        0.38,
+        0.54,
+        0.026
+      ],
+      "color": "#f0a830",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.42,
+        0.13,
+        -0.88
+      ],
+      "max": [
+        0.42,
+        0.15,
+        -0.012
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "finish": "tread plate",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.435,
+        0.13,
+        -0.88
+      ],
+      "max": [
+        -0.42,
+        0.16,
+        -0.02
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.42,
+        0.13,
+        -0.88
+      ],
+      "max": [
+        0.435,
+        0.16,
+        -0.02
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.06,
+        0.15,
+        -0.4
+      ],
+      "max": [
+        0.06,
+        0.2,
+        -0.2
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.18,
+        0.17,
+        -0.3
+      ],
+      "max": [
+        0.18,
+        0.53,
+        -0.18
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 24,
+      "front": "+z",
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.06,
+        0.29,
+        -0.42
+      ],
+      "max": [
+        0.06,
+        0.41,
+        -0.297
+      ],
+      "color": "#3d5a40",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+z",
+      "finish": "painted steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.04,
+        0.32,
+        -0.6
+      ],
+      "max": [
+        0.04,
+        0.38,
+        -0.417
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "rubber",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.44,
+        0.1,
+        -0.012
+      ],
+      "max": [
+        0.44,
+        0.61,
+        0.018
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.42,
+        0.13,
+        -0.88
+      ],
+      "max": [
+        0.42,
+        0.15,
+        -0.012
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "hang",
+      "at": [
+        0.445,
+        0.11,
+        0.0
+      ],
+      "dir": "-z"
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "CO2 Scrubber Insert 1m",
-  "description": "An in-wall CO2 scrubber (1 m deep, draft): the fan under the canister tray, the manifold and duct behind it, a CO2 readout over it.",
+  "description": "An in-wall CO2 scrubber (1 m deep, draft): the fan's cassette (the part that wears) under the canister tray (the consumable), the manifold and duct behind them, a CO2 readout over them.",
   "group": "Style",
   "section": "In-wall bays",
   "role": "frame",
@@ -56,132 +56,48 @@
     },
     {
       "min": [
-        -0.45,
-        0.098,
-        -0.04
-      ],
-      "max": [
-        0.45,
-        0.61,
-        -0.012
-      ],
-      "color": "#c4c8ca",
-      "detail": true,
-      "finish": "wall panelling"
-    },
-    {
-      "min": [
-        -0.448,
+        0.435,
         0.1,
-        -0.042
+        -0.02
       ],
       "max": [
-        0.448,
-        0.3,
-        -0.008
-      ],
-      "color": "#2c5aa0",
-      "detail": true,
-      "finish": "painted steel"
-    },
-    {
-      "min": [
-        -0.2,
-        0.18,
-        -0.014
-      ],
-      "max": [
-        0.2,
-        0.58,
+        0.455,
+        0.12,
         0.0
       ],
-      "color": "#1f2226",
-      "detail": true,
-      "shape": "cylinder",
-      "segments": 24,
-      "front": "+z",
-      "finish": "dirty steel",
-      "paintable": false
-    },
-    {
-      "min": [
-        -0.18,
-        0.272,
-        -0.005
-      ],
-      "max": [
-        0.18,
-        0.288,
-        0.006
-      ],
-      "color": "#7c838c",
-      "detail": true,
-      "finish": "steel",
-      "paintable": false
-    },
-    {
-      "min": [
-        -0.18,
-        0.372,
-        -0.005
-      ],
-      "max": [
-        0.18,
-        0.388,
-        0.006
-      ],
-      "color": "#7c838c",
-      "detail": true,
-      "finish": "steel",
-      "paintable": false
-    },
-    {
-      "min": [
-        -0.18,
-        0.472,
-        -0.005
-      ],
-      "max": [
-        0.18,
-        0.488,
-        0.006
-      ],
-      "color": "#7c838c",
-      "detail": true,
-      "finish": "steel",
-      "paintable": false
-    },
-    {
-      "min": [
-        -0.17,
-        0.21,
-        -0.3
-      ],
-      "max": [
-        0.17,
-        0.55,
-        -0.2
-      ],
-      "color": "#7c838c",
-      "detail": true,
-      "shape": "cylinder",
-      "segments": 20,
-      "front": "+z",
-      "finish": "steel",
-      "paintable": false
+      "hidden": true
     },
     {
       "min": [
         -0.45,
         0.1,
+        -1.0
+      ],
+      "max": [
+        -0.42,
+        0.14,
         -0.04
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.42,
+        0.1,
+        -1.0
       ],
       "max": [
         0.45,
-        0.61,
-        -0.012
+        0.14,
+        -0.04
       ],
-      "hidden": true
+      "color": "#7c838c",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
     },
     {
       "min": [
@@ -571,6 +487,15 @@
       "at": [
         0.445,
         1.01,
+        0.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "fan",
+      "at": [
+        0.445,
+        0.11,
         0.0
       ],
       "dir": "+z"

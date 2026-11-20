@@ -259,9 +259,10 @@ public static partial class ConstructPreview
     // ---- An assembly ----------------------------------------------------------------------------------------------
 
     /// <summary>
-    /// A timing file: <c>{"blueprint": NAME|FILE, "title"?, "description"?, "seconds"?, "steps": [{"part": NAME, "at": S, "seconds"?: S, "label"?: TEXT}]}</c>.
+    /// A timing file: <c>{"blueprint": NAME|FILE, "title"?, "description"?, "seconds"?, "steps": [{"part": NAME, "at": S, "seconds"?: S, "label"?: TEXT, "shut"?: true}]}</c>.
     /// Every event door of the blueprint opens with the leaves riding it; a step's doors (every door part of that name) start at its "at"
-    /// and take its "seconds" (or their own); unlisted doors start at 0. Null (and the reason printed, <paramref name="name"/> set) when it can't be made;
+    /// and take its "seconds" (or their own); unlisted doors start at 0. A later step for the same part with "shut" moves it back shut (an
+    /// airlock's inner door shuts before its outer hatch opens). Null (and the reason printed, <paramref name="name"/> set) when it can't be made;
     /// null with an empty name when <paramref name="picked"/> leaves it out.
     /// </summary>
     private static string? AssemblyModel(string file, HashSet<string>? picked, out string name, out string shelf)
@@ -286,10 +287,11 @@ public static partial class ConstructPreview
         if (picked != null && !picked.Contains(title) && !picked.Contains(what) && !picked.Contains(Path.GetFileNameWithoutExtension(file)))
             return null;
         name = title;
-        var steps = new List<(string Part, float At, float Seconds, string Label)>();
+        var steps = new List<(string Part, float At, float Seconds, string Label, bool Shut)>();
         if (root.TryGetProperty("steps", out var se) && se.ValueKind == JsonValueKind.Array)
             foreach (var s in se.EnumerateArray())
-                steps.Add((s.GetProperty("part").GetString() ?? "", s.TryGetProperty("at", out var a) ? a.GetSingle() : 0, s.TryGetProperty("seconds", out var sec) ? sec.GetSingle() : 0, s.TryGetProperty("label", out var l) ? l.GetString() ?? "" : ""));
+                steps.Add((s.GetProperty("part").GetString() ?? "", s.TryGetProperty("at", out var a) ? a.GetSingle() : 0, s.TryGetProperty("seconds", out var sec) ? sec.GetSingle() : 0,
+                    s.TryGetProperty("label", out var l) ? l.GetString() ?? "" : "", s.TryGetProperty("shut", out var sh2) && sh2.ValueKind == JsonValueKind.True));
         var length = root.TryGetProperty("seconds", out var le) ? le.GetSingle() : 0;
         var description = root.TryGetProperty("description", out var de) ? de.GetString() : null;
         // Its shelf: "shelf" in the file, else by what the blueprint is (a whole ship or station: its first part's group and at least 30 parts), else Assemblies.
@@ -300,6 +302,19 @@ public static partial class ConstructPreview
         return Export(what, out _, out _, out _, null, null, length, false, null, steps, title, description, Path.GetFileName(file));
     }
 
+    /// <summary>How far open a door is at <paramref name="tm"/> seconds along its steps: each moves it from where the last left it to its own end (0 shut, 1 open).</summary>
+    private static float OpenAt((float At, float Dur, float To)[] steps, float tm)
+    {
+        var f = 0f;
+        foreach (var (at, dur, to) in steps)
+        {
+            if (tm <= at)
+                break;
+            f += (to - f) * Math.Clamp((tm - at) / dur, 0, 1);
+        }
+        return f;
+    }
+
     // ---- The model ------------------------------------------------------------------------------------------------
 
     /// <summary>
@@ -308,7 +323,7 @@ public static partial class ConstructPreview
     /// </summary>
     private static string? Export(string what, out ConstructBuild.Blueprint bp, out int parts, out List<(string Name, int Count)> uses,
         byte[]? boxTrack, List<AnimTrack>? tracks, float seconds, bool loop, List<(float, string)>? marks,
-        List<(string Part, float At, float Seconds, string Label)>? steps = null, string? title = null, string? description = null, string? timingFile = null)
+        List<(string Part, float At, float Seconds, string Label, bool Shut)>? steps = null, string? title = null, string? description = null, string? timingFile = null)
     {
         bp = null!;
         parts = 0;
@@ -344,13 +359,15 @@ public static partial class ConstructPreview
                 var part = built.Doors[k].Part;
                 var dd = built.DefOf(part).Door!;
                 var pname = built.DefOf(part).Name;
-                var step = steps!.FirstOrDefault(s => s.Part == pname);
-                var start = step.Part != null ? step.At : 0;
-                var dur = step.Part != null && step.Seconds > 0 ? step.Seconds : dd.Seconds;
-                end = MathF.Max(end, start + dur);
+                // (its steps in time: the first opens it, a later one opens it again or, with "shut", shuts it; a door no step names opens at 0)
+                var own = steps!.Where(s => s.Part == pname).OrderBy(s => s.At).Select(s => (s.At, Dur: s.Seconds > 0 ? s.Seconds : dd.Seconds, To: s.Shut ? 0f : 1f)).ToArray();
+                if (own.Length == 0)
+                    own = [(0f, dd.Seconds, 1f)];
+                foreach (var o in own)
+                    end = MathF.Max(end, o.At + o.Dur);
                 var p = built.Parts[part];
                 var settled = ConstructDoors.SettledOpen(built, part) ? 1f : 0f;
-                tracks.Add(new AnimTrack(pname, -1, tm => DoorMove(dd, p.Rot, p.Pos, Math.Clamp((tm - start) / dur, 0, 1) - settled)));
+                tracks.Add(new AnimTrack(pname, -1, tm => DoorMove(dd, p.Rot, p.Pos, OpenAt(own, tm) - settled)));
                 var id = (byte)tracks.Count;
                 partTrack[part] = id;
                 for (var l = 0; l < built.Doors[k].LeafCount; l++)
