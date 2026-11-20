@@ -1,0 +1,155 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Container Corner Clamp",
+  "description": "A standard container's corner clamp: a steel jaw on each foot casting. Set on another container, it flips down over the casting under it and locks the two together; flip it up again to lift the top one off.",
+  "group": "Style",
+  "section": "Cargo containers",
+  "role": "door",
+  "tool": "welder",
+  "sizeClass": "medium",
+  "finish": "painted plating",
+  "collider": "boxes",
+  "door": {
+    "kind": "swing",
+    "axis": "+x",
+    "pivot": [
+      0.0,
+      0.0,
+      0.014
+    ],
+    "angle": 180,
+    "seconds": 1.2,
+    "hang": "hang"
+  },
+  "mass": 14.0,
+  "health": 300,
+  "armour": 20,
+  "material": "steel",
+  "color": "#2b2f35",
+  "attachSeconds": 2.0,
+  "boxes": [
+    {
+      "min": [
+        -0.06,
+        0.004,
+        0.0
+      ],
+      "max": [
+        0.06,
+        0.165,
+        0.028
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.06,
+        0.004,
+        0.0
+      ],
+      "max": [
+        0.06,
+        0.165,
+        0.024
+      ],
+      "color": "#2b2f35",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.048,
+        0.016,
+        0.024
+      ],
+      "max": [
+        0.048,
+        0.153,
+        0.036
+      ],
+      "color": "#f2c400",
+      "detail": true,
+      "finish": "hazard paint",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.025,
+        0.105,
+        0.036
+      ],
+      "max": [
+        0.025,
+        0.145,
+        0.078
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.047,
+        0.024,
+        0.036
+      ],
+      "max": [
+        -0.023,
+        0.048,
+        0.048
+      ],
+      "color": "#1b1714",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.023,
+        0.024,
+        0.036
+      ],
+      "max": [
+        0.047,
+        0.048,
+        0.048
+      ],
+      "color": "#1b1714",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.072,
+        -0.012,
+        0.0
+      ],
+      "max": [
+        0.072,
+        0.012,
+        0.024
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+x",
+      "finish": "steel",
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "hang",
+      "at": [
+        0.0,
+        0.085,
+        0.0
+      ],
+      "dir": "-z"
+    }
+  ]
+}

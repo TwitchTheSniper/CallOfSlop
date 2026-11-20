@@ -354,10 +354,14 @@ shelf; its parts are unlisted (group Style) and have no recipe (`Assembling.Skip
 
 - **The rule.** Size N (1, 2 or 3 m) holds three N x N x N slots in a row; outside N + 0.5 m across and high, 3N + 0.5 m long
   (2 m: 2.5 x 2.5 x 6.5 m). Origin the roof's middle (as the Dray's Cargo Container 20 ft), +x the hatch side, z along.
-- **Parts.** `Standard Container Nm` (Medium class: sockets `top` +y for the hook, `-y` and `foot.0`..`foot.3` under the
-  castings, `slot0`..`slot2` on the floor, `hatch`), `Standard Container Nm Hatch` (an event door: one leaf the whole +x side,
-  hinged on its top edge, swinging 90 degrees out to an awning, so it never rises above the roof) and `Container Cradle NxN` (a flat
-  Module Stand on each slot: a module set on it is stored, nothing couples).
-- **Gallery drafts.** `tools/preview/anim/container-Nm.json` with `container-Nm-loaded.blueprint.json` (stock modules on the cradles).
-- **Not built yet:** contents not drawn while the hatch is shut (planned: the hatch's door state sets a flag the renderer reads, and
+- **Parts.** `Standard Container Nm` (Medium class: sockets `top` +y for the hook, `-y`, `foot.0`..`foot.3` under the corner
+  castings and `head.0`..`head.3` on top of them (stacking: foot k on head k), `slot0`..`slot2` on the floor, `hatch` (+x) and
+  `hatch.1` (-x), `clamp.0`..`clamp.3` on the foot castings' end faces), `Standard Container Nm Hatch` (an event door: one leaf the
+  whole long side, hinged on its top edge, swinging 90 degrees out to an awning so it never rises above the roof; one each side),
+  `Container Corner Clamp` (an event door: a jaw on each foot casting that flips down 180 degrees over the top casting of the
+  container under it) and `Container Cradle NxN` (a flat Module Stand on each slot: a module set on it is stored, nothing couples).
+  Nothing stands above the roof (the lifting eyes are sunk), so containers stack.
+- **Gallery drafts.** `tools/preview/anim/container-Nm.json` with `container-Nm-loaded.blueprint.json` (stock modules on the
+  cradles), and `container-2m-stacked.json`: two clamped together.
+- **Not built yet:** contents not drawn while the hatch is shut (planned: the hatches' door state sets a flag the renderer reads, and
   parts on a shut container's cradles are skipped); recipes; racks and locks on ships; crane and shell handling; NPC unloading.

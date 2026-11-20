@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Standard Container 3m Hatch",
-  "description": "The hatch of a standard 3 m container: one leaf the whole length of its side, hinged at the top. It swings out and up to an awning over the slots, so a shell, a crane or a fitter reaches every module inside.",
+  "description": "A hatch of a standard 3 m container (one each side): one leaf the whole length of the side, hinged at the top. It swings out and up to an awning over the slots, so a shell, a crane or a fitter reaches every module inside.",
   "group": "Style",
   "section": "Cargo containers",
   "role": "door",

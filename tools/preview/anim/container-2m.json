@@ -1,10 +1,12 @@
 {
-  // A standard cargo container (ContainerParts.cs, --gen-parts containers): its side hatch swings up to an awning over three 2x2x2 m slots.
+  // Standard cargo containers (ContainerParts.cs, --gen-parts containers): the corner clamps flip down, then both side hatches swing up to awnings.
   "blueprint": "container-2m-loaded.blueprint.json",
-  "title": "Standard container 2 m: side hatch",
+  "title": "Standard container 2 m: side hatches",
   "shelf": "Cargo containers",
-  "description": "2.5 x 2.5 x 6.5 m outside, three 2x2x2 m slots, each a cradle a module stands on. The whole side is one hatch hinged at the top: it swings out and up to an awning, never above the roof, so stacked or racked containers still open. In the game the contents won't be drawn while it is shut.",
+  "description": "2.5 x 2.5 x 6.5 m outside, three 2x2x2 m slots, each a cradle a module stands on. Each long side is one hatch hinged at the top: it swings out and up to an awning, never above the roof, so stacked or racked containers still open. A clamp on each foot casting locks it onto a container below. In the game the contents won't be drawn while the hatches are shut.",
+  "seconds": 5,
   "steps": [
-    { "part": "Standard Container 2m Hatch", "at": 0.5, "label": "Hatch swings up" }
+    { "part": "Container Corner Clamp", "at": 0.2, "label": "Clamps flip down (onto a container below)" },
+    { "part": "Standard Container 2m Hatch", "at": 1.6, "label": "Hatches swing up" }
   ]
 }

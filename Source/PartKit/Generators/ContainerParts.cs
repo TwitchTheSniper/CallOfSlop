@@ -35,7 +35,7 @@ public sealed class ContainerParts : IPartGenerator
 
     // Paint: the Traders' corporate blue shell (paintable), a dark frame, lanyard yellow at what moves, a pale lit inside.
     private const string Shell = "#2a64a8", ShellRib = "#245893", FrameC = "#2b2f35", Casting = "#1e2125", Hazard = "#f2c400", HazardDark = "#1b1714",
-        Inside = "#c9ccc8", Floor = "#5c6168", Rail = "#8c939b", Paper = "#e6e2d6", Lamp = "#ffe2a0", Green = "#5ad070", Steel = "#7c838c",
+        Inside = "#c9ccc8", Floor = "#5c6168", Paper = "#e6e2d6", Lamp = "#ffe2a0", Green = "#5ad070", Steel = "#7c838c",
         CradleC = "#3d444c", CradleRim = "#d8a320";
 
     private const double F = 0.15; // the frame: corner posts, rails, the floor's depth
@@ -81,13 +81,12 @@ public sealed class ContainerParts : IPartGenerator
     private static Part Container()
     {
         var k = K(ContainerName(N), "frame",
-            $"A standard {N} m cargo container: three {N}x{N}x{N} m slots in a row, each a cradle a module stands on, and a hatch the whole length of one side that swings up to an awning. A crane's hook takes it by its roof; it stands on its four corner castings.",
+            $"A standard {N} m cargo container: three {N}x{N}x{N} m slots in a row, each a cradle a module stands on, and a hatch the whole length of each side that swings up to an awning. A crane's hook takes it by its roof; it stands on its four corner castings, and clamps at its feet lock it onto a container under it.",
             Medium);
         double w = W2, l = L2, y0 = -H;
-        // Solids: the floor, the roof, the back side and the ends (the hatch side is open: the hatch's own leaf closes it).
+        // Solids: the floor, the roof and the ends (both long sides are open: each hatch's own leaf closes its side).
         Solid(k, -w, y0, -l, w, FloorY, l);
         Solid(k, -w, -F + 0.03, -l, w, 0, l);
-        Solid(k, -w, FloorY, -l, -w + 0.1, -F + 0.03, l);
         Solid(k, -w, FloorY, -l, w, -F + 0.03, -l + 0.1);
         Solid(k, -w, FloorY, l - 0.1, w, -F + 0.03, l);
         // The frame: corner posts, then the top and bottom rails along each side and across each end, dark steel; the castings at the
@@ -114,14 +113,6 @@ public sealed class ContainerParts : IPartGenerator
                     var ym = (ya + yb) / 2;
                     k.Box(sx * (w + 0.003), ym - 0.035, sz * (l - 0.12), sx * (w + 0.009), ym + 0.035, sz * (l - 0.05), HazardDark, "steel");
                 }
-        // The back side (-x): a panel 7 cm in from the posts, ribbed: pressed ribs every ~0.3 m standing out to 3 cm inside the frame line.
-        k.Paint(-w + 0.07, y0 + F + 0.02, -l + F, -w + 0.1, -F, l - F, Shell);
-        var ribs = (int)Math.Round((2 * l - 2 * F) / 0.32);
-        for (var i = 0; i < ribs; i++)
-        {
-            var z = -l + F + (i + 0.5) * (2 * l - 2 * F) / ribs;
-            k.Paint(-w + 0.03, y0 + F + 0.06, z - 0.05, -w + 0.07, -F - 0.04, z + 0.05, ShellRib);
-        }
         // Each end: a recessed panel with an X brace across it, and on the +z end the data plate and the slot lamps' repeater.
         foreach (var sz in new[] { -1, 1 })
         {
@@ -146,22 +137,20 @@ public sealed class ContainerParts : IPartGenerator
         k.Box(-0.22, -0.008, -0.22, 0.22, -0.002, 0.22, HazardDark, "steel");
         foreach (var sz in new[] { -1, 1 })
         {
-            k.Box(-0.08, -0.03, sz * 0.5 - 0.06, 0.08, 0.056, sz * 0.5 + 0.06, FrameC, "steel"); // (a lifting eye, standing proud of the roof either side of the hook's pad)
+            k.Box(-0.08, -0.03, sz * 0.5 - 0.06, 0.08, -0.004, sz * 0.5 + 0.06, FrameC, "steel"); // (a lifting eye, sunk in the roof either side of the hook's pad: nothing stands above the roof, so a container stacks on it)
         }
-        // The hatch side's sill and head: a hazard-striped sill the hatch shuts onto, a drip rail over it.
-        var stripes = (int)Math.Round((2 * l - 2 * F) / 0.25);
-        for (var i = 0; i < stripes; i++)
-        {
-            double z = -l + F + i * (2 * l - 2 * F) / stripes, z1 = z + (2 * l - 2 * F) / stripes - 0.004;
-            k.Box(w - F + 0.004, y0 + F + 0.02 - 0.06, z, w - 0.004, y0 + F + 0.02 - 0.012, z1, i % 2 == 0 ? Hazard : HazardDark, "hazard paint");
-        }
-        // Inside: the floor (tread plate), the back wall's lining, a tie-down rail along the back, a lamp strip under the roof per slot.
-        k.Box(-w + 0.1, FloorY - 0.02, -l + 0.1, w - F, FloorY, l - 0.1, Floor, "tread plate");
-        k.Paint(-w + 0.1, FloorY, -l + 0.1, -w + 0.12, -F + 0.03, l - 0.1, Inside, "wall panelling");
+        // Each hatch side's sill: hazard stripes the hatch shuts onto.
+        var stripes = (int)Math.Round((2 * l - 2 * F) / 0.4);
+        foreach (var sx in new[] { -1, 1 })
+            for (var i = 0; i < stripes; i++)
+            {
+                double z = -l + F + i * (2 * l - 2 * F) / stripes, z1 = z + (2 * l - 2 * F) / stripes - 0.004;
+                k.Box(sx * (w - F + 0.004), y0 + F + 0.02 - 0.06, z, sx * (w - 0.004), y0 + F + 0.02 - 0.012, z1, i % 2 == 0 ? Hazard : HazardDark, "hazard paint");
+            }
+        // Inside: the floor (tread plate), the ends' lining, a lamp strip under the roof per slot.
+        k.Box(-w + F, FloorY - 0.02, -l + 0.1, w - F, FloorY, l - 0.1, Floor, "tread plate");
         foreach (var sz in new[] { -1, 1 })
-            k.Paint(-w + 0.12, FloorY, sz * (l - 0.12), w - F, -F + 0.03, sz * (l - 0.1), Inside, "wall panelling");
-        foreach (var ty in new[] { FloorY + 0.35, FloorY + N * 0.75 })
-            k.Box(-w + 0.12, ty, -l + 0.2, -w + 0.15, ty + 0.05, l - 0.2, Rail, "steel");
+            k.Paint(-w + F, FloorY, sz * (l - 0.12), w - F, -F + 0.03, sz * (l - 0.1), Inside, "wall panelling");
         for (var s = 0; s < 3; s++)
         {
             var z = SlotZ(s);
@@ -175,23 +164,35 @@ public sealed class ContainerParts : IPartGenerator
                     k.Box(cx * h - (cx > 0 ? 0.2 : 0), FloorY - 0.004, z + cz * h - (cz > 0 ? 0.03 : 0), cx * h + (cx > 0 ? 0 : 0.2), FloorY + 0.012, z + cz * h + (cz > 0 ? 0 : 0.03), Hazard, "hazard paint");
                     k.Box(cx * h - (cx > 0 ? 0.03 : 0), FloorY - 0.007, z + cz * h - (cz > 0 ? 0.2 : 0), cx * h + (cx > 0 ? 0 : 0.03), FloorY + 0.009, z + cz * h + (cz > 0 ? 0 : 0.2), Hazard, "hazard paint");
                 }
-            foreach (var cz in new[] { -1, 1 })
-                Rod(k, -w + 0.15, FloorY + 0.36, z + cz * 0.35 - 0.04, -w + 0.2, FloorY + 0.39, z + cz * 0.35 + 0.04, "+x", Steel, "steel", 8);
-            // The slot's status lamp on the post line over the hatch: green when its cradle holds a module (lit here: the draft is loaded).
-            k.Glow(w - F + 0.02, -F - 0.06, z - 0.05, w - F + 0.04, -F - 0.02, z + 0.05, Green);
+            // The slot's status lamps on the post line over each hatch: green when its cradle holds a module (lit here: the draft is loaded).
+            foreach (var sx in new[] { -1, 1 })
+                k.Glow(sx * (w - F + 0.02), -F - 0.06, z - 0.05, sx * (w - F + 0.04), -F - 0.02, z + 0.05, Green);
         }
-        // The hatch's latch keepers on the sill, and its hinge's fixed knuckles under the top rail.
-        foreach (var zf in new[] { -0.33, 0.33 })
-            k.Box(w - F + 0.01, y0 + F + 0.02, zf * 2 * l - 0.08, w - 0.06, y0 + F + 0.06, zf * 2 * l + 0.08, Steel, "steel");
+        // Each hatch's latch keepers on its sill, and its hinge's fixed knuckles under the top rail.
         var knuckles = 2 * N + 2;
-        for (var i = 0; i < knuckles; i++)
+        foreach (var sx in new[] { -1, 1 })
         {
-            var z = -l + F + 0.2 + i * (2 * l - 2 * F - 0.4) / (knuckles - 1);
-            Rod(k, w - 0.06, -F - 0.05, z - 0.06, w - 0.01, -F, z + 0.06, "+z", FrameC, "steel", 8);
+            foreach (var zf in new[] { -0.33, 0.33 })
+                k.Box(sx * (w - F + 0.01), y0 + F + 0.02, zf * 2 * l - 0.08, sx * (w - 0.06), y0 + F + 0.06, zf * 2 * l + 0.08, Steel, "steel");
+            for (var i = 0; i < knuckles; i++)
+            {
+                var z = -l + F + 0.2 + i * (2 * l - 2 * F - 0.4) / (knuckles - 1);
+                Rod(k, sx * (w - 0.06), -F - 0.05, z - 0.06, sx * (w - 0.01), -F, z + 0.06, "+z", FrameC, "steel", 8);
+            }
+            // The hatch's hang: a small solid tab under the top rail, its socket on the outer face.
+            Solid(k, sx * (w - 0.11), -F - 0.06, -0.05, sx * (w - 0.09), -F - 0.02, 0.05);
         }
-        // The hatch's hang: a small solid tab under the top rail, its socket on the +x face.
-        Solid(k, w - 0.11, -F - 0.06, -0.05, w - 0.09, -F - 0.02, 0.05);
         k.P.Sock("hatch", [w - 0.09, -F - 0.04, 0], "+x");
+        k.P.Sock("hatch.1", [-(w - 0.09), -F - 0.04, 0], "-x");
+        // The corner clamps' hangs: a tab on the end face of each foot casting (the clamp flips down over the casting under it).
+        var c = 0;
+        foreach (var sx in new[] { -1, 1 })
+            foreach (var sz in new[] { -1, 1 })
+            {
+                double cx = sx * (w - 0.085);
+                Solid(k, cx - 0.06, y0 + 0.075, sz * (l - 0.01), cx + 0.06, y0 + 0.095, sz * (l + ClampOff));
+                k.P.Sock($"clamp.{c++}", [Py.Round(cx, 3), y0 + 0.085, Py.Round(sz * (l + ClampOff), 4)], sz > 0 ? "+z" : "-z");
+            }
         // The cradles' sockets on the floor, the hook's on the roof, its feet under it and under each casting.
         for (var s = 0; s < 3; s++)
             k.P.Sock($"slot{s}", [0, FloorY, SlotZ(s)], "+y");
@@ -201,6 +202,10 @@ public sealed class ContainerParts : IPartGenerator
         foreach (var sx in new[] { -1, 1 })
             foreach (var sz in new[] { -1, 1 })
                 k.P.Sock($"foot.{f++}", [Py.Round(sx * (w - 0.085), 3), y0, Py.Round(sz * (l - 0.085), 3)], "-y");
+        f = 0; // (a container stacks on another foot to head, the same corner numbers)
+        foreach (var sx in new[] { -1, 1 })
+            foreach (var sz in new[] { -1, 1 })
+                k.P.Sock($"head.{f++}", [Py.Round(sx * (w - 0.085), 3), 0, Py.Round(sz * (l - 0.085), 3)], "+y");
         // Mass: about a third of a tonne a metre of length at 2 m (a 20 ft steel box is 2.2 t): the shell's area at 25 kg a square metre.
         var area = 2 * (2 * w * 2 * l) + 2 * (2 * w * H) + 2 * (H * 2 * l);
         return k.P.Stats(Math.Round(area * 25), 400 + area * 60, 14, 6.0 + N * 2);
@@ -211,7 +216,7 @@ public sealed class ContainerParts : IPartGenerator
     private static Part Hatch()
     {
         var k = K(HatchName(N), "door",
-            $"The hatch of a standard {N} m container: one leaf the whole length of its side, hinged at the top. It swings out and up to an awning over the slots, so a shell, a crane or a fitter reaches every module inside.",
+            $"A hatch of a standard {N} m container (one each side): one leaf the whole length of the side, hinged at the top. It swings out and up to an awning over the slots, so a shell, a crane or a fitter reaches every module inside.",
             Medium);
         double w = W2, l = L2, x0 = w - 0.07, x1 = w - 0.03, yb = -H + F + 0.025, yt = -F - 0.005, za = -l + F + 0.005, zb = l - F - 0.005;
         Solid(k, x0, yb, za, x1, yt, zb);
@@ -279,6 +284,32 @@ public sealed class ContainerParts : IPartGenerator
         return k.P.Stats(Math.Round(area * 22), 200 + area * 50, 10, 4.0);
     }
 
+    // ---- a corner clamp: a jaw on the end face of a foot casting that flips down over the top casting of the container under it
+
+    private const double ClampOff = 0.006; // the clamp's back stands this far off the casting's end face
+
+    public const string ClampName = "Container Corner Clamp";
+
+    private static Part Clamp()
+    {
+        // (its own frame: the hang socket at the origin's height on the casting's end face, facing back into it (-z); y 0 is the container's
+        // feet, so the jaw stands on the foot casting while open and hangs over the casting under it once it has flipped down)
+        var k = K(ClampName, "door",
+            "A standard container's corner clamp: a steel jaw on each foot casting. Set on another container, it flips down over the casting under it and locks the two together; flip it up again to lift the top one off.",
+            Medium, FrameC);
+        const double hx = 0.06, y0 = 0.004, y1 = 0.165, t = 0.028, sy = 0.085;
+        Solid(k, -hx, y0, 0, hx, y1, t);
+        k.Box(-hx, y0, 0, hx, y1, t - 0.004, FrameC, "dirty steel");
+        k.Box(-hx + 0.012, y0 + 0.012, t - 0.004, hx - 0.012, y1 - 0.012, t + 0.008, Hazard, "hazard paint"); // (the face: yellow, so a locked stack shows it)
+        k.Box(-0.025, y1 - 0.06, t + 0.008, 0.025, y1 - 0.02, t + 0.05, Steel, "steel"); // (the lever)
+        foreach (var bx in new[] { -0.035, 0.035 })
+            k.Box(bx - 0.012, y0 + 0.02, t + 0.008, bx + 0.012, y0 + 0.044, t + 0.02, HazardDark, "steel"); // (the bolt heads by the hinge)
+        Rod(k, -hx - 0.012, -0.012, 0.0, hx + 0.012, 0.012, 0.024, "+x", Steel, "steel", 8); // (the hinge pin along its foot)
+        k.P.Sock("hang", [0, sy, 0], "-z");
+        k.P.Set(("door", Kw(("kind", "swing"), ("axis", "+x"), ("pivot", Py.L(0.0, 0.0, Py.Round(t / 2, 4))), ("angle", 180), ("seconds", 1.2), ("hang", "hang"))));
+        return k.P.Stats(14, 300, 20, 2.0);
+    }
+
     // ---- a cradle: a flat Module Stand on the container's floor
 
     private static Part Cradle()
@@ -322,42 +353,57 @@ public sealed class ContainerParts : IPartGenerator
         [3] = [[("Magpie Power Plant", "s1.1", "bottom")], [], [("Magpie Power Plant", "s1.1", "bottom")]],
     };
 
-    private static string Blueprint()
+    /// <summary>One container's steps (its first step's index is the list's count): the container (on <paramref name="under"/>'s head
+    /// sockets when stacked), its two hatches, its clamps (when it has any), its cradles and the stock modules on them.</summary>
+    private static void Steps(List<string> steps, int? under, bool clamps)
     {
-        var steps = new List<string>
-        {
-            $"    {{ \"part\": \"{ContainerName(N)}\" }}",
-            $"    {{ \"part\": \"{HatchName(N)}\", \"on\": 0, \"socket\": \"hatch\", \"by\": \"hang\" }}",
-        };
+        var c = steps.Count;
+        steps.Add(under is { } u ? $"    {{ \"part\": \"{ContainerName(N)}\", \"on\": {u}, \"socket\": \"head.0\", \"by\": \"foot.0\" }}" : $"    {{ \"part\": \"{ContainerName(N)}\" }}");
+        foreach (var h in new[] { "hatch", "hatch.1" })
+            steps.Add($"    {{ \"part\": \"{HatchName(N)}\", \"on\": {c}, \"socket\": \"{h}\", \"by\": \"hang\" }}");
+        if (clamps)
+            for (var k = 0; k < 4; k++)
+                steps.Add($"    {{ \"part\": \"{ClampName}\", \"on\": {c}, \"socket\": \"clamp.{k}\", \"by\": \"hang\" }}");
+        var cradle = steps.Count;
         for (var s = 0; s < 3; s++)
-            steps.Add($"    {{ \"part\": \"{CradleName(N)}\", \"on\": 0, \"socket\": \"slot{s}\", \"by\": \"base\" }}");
+            steps.Add($"    {{ \"part\": \"{CradleName(N)}\", \"on\": {c}, \"socket\": \"slot{s}\", \"by\": \"base\" }}");
         for (var s = 0; s < 3; s++)
         {
             var parts = Loads[N][s];
             if (parts.Length == 0)
                 continue;
             var plug = steps.Count;
-            steps.Add($"    {{ \"part\": \"Module Plug {N}x{N}\", \"on\": {2 + s}, \"socket\": \"module\", \"by\": \"module\" }}");
+            steps.Add($"    {{ \"part\": \"Module Plug {N}x{N}\", \"on\": {cradle + s}, \"socket\": \"module\", \"by\": \"module\" }}");
             foreach (var (part, on, by) in parts)
                 steps.Add($"    {{ \"part\": \"{part}\", \"on\": {plug}, \"socket\": \"{on}\", \"by\": \"{by}\" }}");
         }
+    }
+
+    private static string Blueprint(bool stacked)
+    {
+        var steps = new List<string>();
+        Steps(steps, null, !stacked); // (stacked: the bottom one stands on the ground, so its clamps would only flip into the floor)
+        if (stacked)
+            Steps(steps, 0, true);
         return "{\n" +
             "  \"format\": \"call-of-slop-construct-blueprint/1\",\n" +
-            $"  \"name\": \"{ContainerName(N)} Loaded\",\n" +
-            $"  \"description\": \"A standard {N} m cargo container with stock modules in its three cradles. A draft for the Animation gallery, written by the part kit (containers).\",\n" +
+            $"  \"name\": \"{ContainerName(N)} {(stacked ? "Stacked" : "Loaded")}\",\n" +
+            $"  \"description\": \"{(stacked ? $"Two standard {N} m cargo containers, one clamped on the other" : $"A standard {N} m cargo container")}, with stock modules in the cradles. A draft for the Animation gallery, written by the part kit (containers).\",\n" +
             "  \"steps\": [\n" + string.Join(",\n", steps) + "\n  ]\n" +
             "}\n";
     }
 
-    private static string Timing() =>
+    private static string Timing(bool stacked) =>
         "{\n" +
-        $"  // A standard cargo container (ContainerParts.cs, --gen-parts containers): its side hatch swings up to an awning over three {N}x{N}x{N} m slots.\n" +
-        $"  \"blueprint\": \"container-{N}m-loaded.blueprint.json\",\n" +
-        $"  \"title\": \"Standard container {N} m: side hatch\",\n" +
+        $"  // Standard cargo containers (ContainerParts.cs, --gen-parts containers): the corner clamps flip down, then both side hatches swing up to awnings.\n" +
+        $"  \"blueprint\": \"container-{N}m-{(stacked ? "stacked" : "loaded")}.blueprint.json\",\n" +
+        $"  \"title\": \"Standard container {N} m: {(stacked ? "stacked and clamped" : "side hatches")}\",\n" +
         "  \"shelf\": \"Cargo containers\",\n" +
-        $"  \"description\": \"{Py.G(N + 0.5)} x {Py.G(N + 0.5)} x {Py.G(3 * N + 0.5)} m outside, three {N}x{N}x{N} m slots, each a cradle a module stands on. The whole side is one hatch hinged at the top: it swings out and up to an awning, never above the roof, so stacked or racked containers still open. In the game the contents won't be drawn while it is shut.\",\n" +
+        $"  \"description\": \"{(stacked ? $"Two {N} m containers, one on the other: the top one's corner clamps flip down over the castings under it and lock the stack, then all four hatches swing up. " : "")}{Py.G(N + 0.5)} x {Py.G(N + 0.5)} x {Py.G(3 * N + 0.5)} m outside, three {N}x{N}x{N} m slots, each a cradle a module stands on. Each long side is one hatch hinged at the top: it swings out and up to an awning, never above the roof, so stacked or racked containers still open. A clamp on each foot casting locks it onto a container below. In the game the contents won't be drawn while the hatches are shut.\",\n" +
+        "  \"seconds\": " + Py.G(Math.Round(1.6 + 1.5 + N * 0.75 + 0.4, 1)) + ",\n" +
         "  \"steps\": [\n" +
-        $"    {{ \"part\": \"{HatchName(N)}\", \"at\": 0.5, \"label\": \"Hatch swings up\" }}\n" +
+        $"    {{ \"part\": \"{ClampName}\", \"at\": 0.2, \"label\": \"{(stacked ? "Clamps lock the stack" : "Clamps flip down (onto a container below)")}\" }},\n" +
+        $"    {{ \"part\": \"{HatchName(N)}\", \"at\": 1.6, \"label\": \"Hatches swing up\" }}\n" +
         "  ]\n" +
         "}\n";
 
@@ -371,12 +417,18 @@ public sealed class ContainerParts : IPartGenerator
             parts.Add(("", Hatch()));
             parts.Add(("", Cradle()));
         }
+        parts.Add(("", Clamp()));
         WriteParts(o, Out, parts);
         foreach (var n in new[] { 1, 2, 3 })
         {
             Size(n);
-            o.File($"{AnimOut}/container-{n}m-loaded.blueprint.json", Blueprint());
-            o.File($"{AnimOut}/container-{n}m.json", Timing());
+            o.File($"{AnimOut}/container-{n}m-loaded.blueprint.json", Blueprint(false));
+            o.File($"{AnimOut}/container-{n}m.json", Timing(false));
+            if (n == 2) // (the stack: the 2 m size, the one the freighters carry)
+            {
+                o.File($"{AnimOut}/container-{n}m-stacked.blueprint.json", Blueprint(true));
+                o.File($"{AnimOut}/container-{n}m-stacked.json", Timing(true));
+            }
         }
     }
 }
