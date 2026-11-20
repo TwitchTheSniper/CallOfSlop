@@ -39,6 +39,7 @@ public static class ProcShipCli
             Console.WriteLine($"  {k}: {v}");
         var bad = Overlaps(ship, 25);
         bad += FitAll(ship, 40);
+        bad += Climbs(ship, 20);
         if (Flag(args, "--out") is { } dir)
         {
             Directory.CreateDirectory(dir);
@@ -69,7 +70,8 @@ public static class ProcShipCli
                     if (fit)
                     {
                         Overlaps(ship, 0, problems);
-                        FitAll(ship, 0, problems);
+                        if (FitAll(ship, 0, problems) == 0)
+                            Climbs(ship, 0, problems);
                     }
                 }
                 catch (ProcShipException e)
@@ -135,6 +137,41 @@ public static class ProcShipCli
 
         static string Box(double[] mn, double[] mx) =>
             $"[{string.Join(" ", mn.Select(v => (v + ProcShipDraw.H).ToString("0.###", CultureInfo.InvariantCulture)))} .. {string.Join(" ", mx.Select(v => (v + ProcShipDraw.H).ToString("0.###", CultureInfo.InvariantCulture)))}]";
+    }
+
+    private static bool _yard;
+
+    /// <summary>
+    /// Every ladder climbed up and down by the game's own climb, as <c>--ladder-check</c> climbs the shipped ones (LadderCheck.Climb):
+    /// each one that refuses listed (up to <paramref name="most"/>, or into <paramref name="into"/> quietly). Returns how many refused.
+    /// </summary>
+    public static int Climbs(ProcShip ship, int most, List<string>? into = null)
+    {
+        if (!_yard && !(_yard = LadderCheck.Yard()))
+            return 0;
+        ConstructBuild.Blueprint bp;
+        try
+        {
+            bp = ConstructBuild.ParseBlueprint(PyJson.Dumps(ship.Blueprint), ship.Name);
+        }
+        catch (Exception e) when (e is ConstructPartException or System.Text.Json.JsonException or InvalidOperationException or KeyNotFoundException or FormatException)
+        {
+            return 0; // (FitAll says why)
+        }
+        var lines = new List<string>();
+        var (ladders, bad) = LadderCheck.Climb(bp, lines.Add);
+        var shown = 0;
+        foreach (var l in lines.Where(l => l.StartsWith(ship.Name + ": ", StringComparison.Ordinal) && !l.EndsWith(": up ok, down ok", StringComparison.Ordinal)))
+        {
+            var what = l[(ship.Name.Length + 2)..];
+            if (into != null)
+                into.Add("ladder: " + System.Text.RegularExpressions.Regex.Replace(what, @" at <[^>]*>", ""));
+            else if (shown++ < most)
+                Console.WriteLine("CLIMB " + what);
+        }
+        if (into == null)
+            Console.WriteLine(bad == 0 ? $"every ladder climbs up and down: {ladders}" : $"{bad} of {ladders} ladders refused");
+        return bad;
     }
 
     /// <summary>Every step fitted by the game's rules in a scratch world, going on past a refusal (what hangs on a refused step is skipped): each refusal listed. Returns how many.</summary>

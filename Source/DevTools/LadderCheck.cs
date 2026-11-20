@@ -13,54 +13,74 @@ public static class LadderCheck
     {
         var named = args.SkipWhile(a => !a.Equals("--ladder-check", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault();
         var names = named == null || named.StartsWith("--") ? null : named.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
-        if (Maps.Find("Proving Ground") is not { } yard)
-        {
-            Console.WriteLine("no Proving Ground map");
+        if (!Yard())
             return 1;
-        }
-        yard.RestoreProps();
-        World.SetMap(yard);
         int bad = 0, ladders = 0;
         foreach (var bp in ConstructBuild.Blueprints)
         {
             if (names != null ? !names.Any(n => n.Equals(bp.Name, StringComparison.OrdinalIgnoreCase))
                 : !bp.Steps.Any(st => ConstructParts.Find(st.Part) is { LadderTop: > 0 }))
                 continue;
-            var w = new ConstructWorld();
-            var c = ConstructBuild.BuildOnGround(w, bp, ConstructWorld.Ground(World.Query, 0, 0), 0, out _);
-            if (c == null)
-            {
-                Console.WriteLine($"{bp.Name}: doesn't build");
-                bad++;
-                continue;
-            }
-            c.Rebuild();
-            c.Pos += new Vector3(0, 30f, 0); // (clear of the yard's ground)
-            c.PrevPos = c.Pos;
-            c.Rebuild();
-            for (var i = 0; i < c.PartCount; i++)
-            {
-                var d = c.Parts[i].D;
-                if (d.LadderTop <= 0)
-                    continue;
-                ladders++;
-                if (Game.LadderOnShutDoor(c, i)) // (one stowed on a shut door's leaf, the Dray's belly hatch: climbed with that door open, as F leaves it)
-                    ConstructDoors.Settle(c, c.DoorOf(i), true);
-                var (up, down) = (Try(w, c, i, false), Try(w, c, i, true));
-                var ok = up == null && down == null;
-                bad += ok ? 0 : 1;
-                Console.WriteLine($"{bp.Name}: {d.Name} #{i}: up {up ?? "ok"}, down {down ?? "ok"}");
-            }
+            var (n, b) = Climb(bp, Console.WriteLine);
+            ladders += n;
+            bad += b;
         }
         Console.WriteLine($"ladder check: {ladders} ladder(s), {bad} refused");
         return bad;
+    }
+
+    /// <summary>The Proving Ground as the world's map, which the climbs stand in (false, said, when there is none).</summary>
+    public static bool Yard()
+    {
+        if (Maps.Find("Proving Ground") is not { } yard)
+        {
+            Console.WriteLine("no Proving Ground map");
+            return false;
+        }
+        yard.RestoreProps();
+        World.SetMap(yard);
+        return true;
+    }
+
+    /// <summary>
+    /// Every ladder of one blueprint climbed up and down (after <see cref="Yard"/>), each said through <paramref name="say"/>:
+    /// how many ladders, and how many refused (a blueprint that doesn't build counts one). The procedural ships use it too.
+    /// </summary>
+    public static (int Ladders, int Bad) Climb(ConstructBuild.Blueprint bp, Action<string> say)
+    {
+        var w = new ConstructWorld();
+        var c = ConstructBuild.BuildOnGround(w, bp, ConstructWorld.Ground(World.Query, 0, 0), 0, out _);
+        if (c == null)
+        {
+            say($"{bp.Name}: doesn't build");
+            return (0, 1);
+        }
+        c.Rebuild();
+        c.Pos += new Vector3(0, 30f, 0); // (clear of the yard's ground)
+        c.PrevPos = c.Pos;
+        c.Rebuild();
+        int ladders = 0, bad = 0;
+        for (var i = 0; i < c.PartCount; i++)
+        {
+            var d = c.Parts[i].D;
+            if (d.LadderTop <= 0)
+                continue;
+            ladders++;
+            if (Game.LadderOnShutDoor(c, i)) // (one stowed on a shut door's leaf, the Dray's belly hatch: climbed with that door open, as F leaves it)
+                ConstructDoors.Settle(c, c.DoorOf(i), true);
+            var (up, down) = (Try(w, c, i, false, say), Try(w, c, i, true, say));
+            var ok = up == null && down == null;
+            bad += ok ? 0 : 1;
+            say($"{bp.Name}: {d.Name} #{i}: up {up ?? "ok"}, down {down ?? "ok"}");
+        }
+        return (ladders, bad);
     }
 
     /// <summary>
     /// One climb from the ladder's foot (or its top), played through to its end in the movement step's climb as a player's F
     /// starts it: null when it ends standing clear (a line names an end moved off its usual spot), else why not.
     /// </summary>
-    private static string? Try(ConstructWorld w, Construct c, int part, bool fromTop)
+    private static string? Try(ConstructWorld w, Construct c, int part, bool fromTop, Action<string> say)
     {
         var p = c.Parts[part];
         var d = p.D;
@@ -83,7 +103,7 @@ public static class LadderCheck
         if (by >= 0)
             return $"ends in {c.Parts[by].D.Name} #{by} at {c.ToLocal(end)}";
         var moved = Vector3.Distance(end, nominal);
-        Console.WriteLine($"    {(fromTop ? "down" : "up")}: {ticks / (float)World.TickRate:0.0} s{(moved > 0.05f ? $", ends {moved:0.00} m from its usual spot (something stands there)" : "")}");
+        say($"    {(fromTop ? "down" : "up")}: {ticks / (float)World.TickRate:0.0} s{(moved > 0.05f ? $", ends {moved:0.00} m from its usual spot (something stands there)" : "")}");
         return null;
     }
 }

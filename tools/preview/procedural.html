@@ -1,0 +1,765 @@
+<title>Procedural Gallery</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<!-- Written by --procship-gallery DIR (Source/DevTools/ConstructPreview.ProcShips.cs; docs/procships/PROCSHIPS.md): the page loads
+     models/index.json and each ship's models/CODE.json, made and built by the game's procedural ship generator (Source/ProcShips).
+     Notes and requests are kept in the artifact's database, collections "feedback" and "requests": a session reads them to change the
+     generator and to make the ships asked for, and writes back each one's state and reply. -->
+<style>
+/* Layout: the ship fills the screen between two quiet panels, the ships on the left and the one on show (its plan, views and feedback)
+   on the right. Under 1100 px the panels share one place with two tabs; on phones they are a sheet under the view. */
+:root {
+  --bg: #e6e8ea; --sky: #d5dade; --panel: rgba(250,251,252,.94); --fg: #1d2226; --muted: #5d6870; --line: #c3cad0; --chip: rgba(29,34,38,.05);
+  --accent: #c8661f; --accent-fg: #ffffff; --pick: #ffb347; --ok: #2b7d45; --warn: #a3650f; --bad: #b8352a;
+  --display: "Chakra Petch", "Segoe UI", system-ui, sans-serif; --body: "IBM Plex Sans", system-ui, sans-serif; --mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #14181b; --sky: #1d2328; --panel: rgba(24,29,33,.93); --fg: #e3e7ea; --muted: #8e99a2; --line: #333d44; --chip: rgba(227,231,234,.06); --accent: #e8893f; --accent-fg: #14181b; --pick: #ffc46b; --ok: #5cc27e; --warn: #e0a84a; --bad: #ef6b5e; color-scheme: dark } }
+:root[data-theme="dark"] { --bg: #14181b; --sky: #1d2328; --panel: rgba(24,29,33,.93); --fg: #e3e7ea; --muted: #8e99a2; --line: #333d44; --chip: rgba(227,231,234,.06); --accent: #e8893f; --accent-fg: #14181b; --pick: #ffc46b; --ok: #5cc27e; --warn: #e0a84a; --bad: #ef6b5e; color-scheme: dark }
+*, *::before, *::after { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body { background: var(--bg); color: var(--fg); font: 13px/1.45 var(--body); overflow: hidden; }
+#view { position: fixed; inset: 0; }
+#view canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+#labels { position: fixed; inset: 0; pointer-events: none; overflow: hidden; }
+#labels span { position: absolute; left: 0; top: 0; padding: 1px 6px; font: 600 10.5px/1.4 var(--body); white-space: nowrap; color: #fff; border-radius: 3px; opacity: .92; will-change: transform; }
+.panel { position: fixed; top: calc(12px + env(safe-area-inset-top, 0px)); max-height: calc(100% - 24px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  display: flex; flex-direction: column; gap: 12px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; backdrop-filter: blur(6px); overflow: auto; overscroll-behavior: contain; }
+#ships { left: max(16px, env(safe-area-inset-left, 0px)); width: 300px; }
+#ship { right: max(16px, env(safe-area-inset-right, 0px)); width: 344px; }
+#tabs { display: none; }
+h1 { margin: 0; font: 600 20px/1.15 var(--display); letter-spacing: .02em; }
+h2 { margin: 0; font: 600 15px/1.2 var(--display); letter-spacing: .02em; text-wrap: balance; }
+h3 { margin: 0 0 6px; font: 600 10.5px var(--body); color: var(--muted); text-transform: uppercase; letter-spacing: .09em; }
+p { margin: 0; }
+.sub, .desc, .hint { color: var(--muted); }
+.hint { font-size: 11.5px; }
+.desc { margin-top: 4px; }
+.code { font: 12px var(--mono); color: var(--muted); }
+.head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; font: 12px var(--mono); font-variant-numeric: tabular-nums; }
+.stats div { display: flex; flex-direction: column; min-width: 0; } .stats span { color: var(--muted); font: 10px var(--body); text-transform: uppercase; letter-spacing: .08em; }
+.seg, .chips { display: flex; flex-wrap: wrap; gap: 5px; }
+button { font: 12px var(--body); color: var(--fg); background: transparent; border: 1px solid var(--line); border-radius: 4px; padding: 4px 9px; cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--muted); }
+button[aria-pressed=true] { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 9%, transparent); }
+button:disabled { opacity: .45; cursor: default; }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); font-weight: 600; }
+button.link { border: 0; padding: 0; color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.row > .grow { flex: 1; }
+.field { display: grid; grid-template-columns: 52px 1fr; align-items: center; gap: 6px 8px; }
+.field > span { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; }
+select, input[type=number], input[type=text], textarea { width: 100%; font: 12.5px var(--body); color: var(--fg); background: transparent; border: 1px solid var(--line); border-radius: 4px; padding: 5px 7px; }
+select option { background: var(--bg); color: var(--fg); }
+textarea { resize: vertical; min-height: 64px; line-height: 1.4; }
+input[type=range] { flex: 1; min-width: 0; accent-color: var(--accent); }
+label.cut { display: flex; align-items: center; gap: 8px; } label.cut span { min-width: 58px; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; }
+label.cut output { font: 12px var(--mono); min-width: 46px; text-align: right; }
+details > summary { cursor: pointer; color: var(--muted); font: 600 10.5px var(--body); text-transform: uppercase; letter-spacing: .09em; list-style: none; }
+details > summary::before { content: "+ "; } details[open] > summary::before { content: "- "; }
+details[open] > summary { margin-bottom: 8px; }
+.sect { display: flex; flex-direction: column; gap: 8px; padding-top: 12px; border-top: 1px solid var(--line); }
+#list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+#list li button { width: 100%; display: grid; grid-template-columns: 52px 1fr auto; align-items: center; gap: 8px; text-align: left; border: 0; border-bottom: 1px solid color-mix(in srgb, var(--line) 55%, transparent); border-radius: 0; padding: 5px 2px; }
+#list li button[aria-current=true] { color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, transparent); }
+#list li button b { font: 600 12px var(--mono); }
+#list li button small { display: block; color: var(--muted); font-size: 11px; }
+.pips { display: inline-flex; gap: 2px; } .pips i { width: 5px; height: 11px; border-radius: 1px; background: var(--line); } .pips i.on { background: var(--accent); }
+.dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--muted); margin-left: 4px; vertical-align: middle; }
+.notes { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.notes li { padding: 8px 9px; border: 1px solid var(--line); border-radius: 5px; background: var(--chip); display: flex; flex-direction: column; gap: 4px; }
+.notes .meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; color: var(--muted); font-size: 11px; }
+.notes .text { white-space: pre-wrap; overflow-wrap: anywhere; }
+.notes .reply { border-left: 2px solid var(--accent); padding-left: 7px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.notes .reply b { color: var(--accent); font-weight: 600; }
+.tag { font-size: 10.5px; padding: 0 6px; border-radius: 9px; border: 1px solid var(--line); color: var(--muted); }
+.state { font: 600 10px var(--body); text-transform: uppercase; letter-spacing: .07em; padding: 1px 6px; border-radius: 3px; border: 1px solid currentColor; }
+.state.new, .state.queued { color: var(--muted); } .state.taken { color: var(--warn); } .state.done, .state.made { color: var(--ok); } .state.declined, .state.refused { color: var(--bad); }
+.grade { display: flex; gap: 5px; } .grade button { min-width: 34px; font: 600 12px var(--mono); }
+.target { display: flex; align-items: center; gap: 6px; font-size: 12px; padding: 4px 8px; border: 1px dashed var(--accent); border-radius: 4px; }
+.target span { flex: 1; overflow-wrap: anywhere; }
+.status { font-size: 12px; color: var(--muted); min-height: 1.45em; }
+.status.bad { color: var(--bad); } .status.ok { color: var(--ok); }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 11px; color: var(--muted); }
+.legend i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
+table.traits { width: 100%; border-collapse: collapse; font-size: 12px; }
+table.traits td { padding: 2px 0; border-bottom: 1px solid color-mix(in srgb, var(--line) 50%, transparent); vertical-align: top; }
+table.traits td:first-child { color: var(--muted); width: 42%; padding-right: 8px; }
+#tip { position: fixed; pointer-events: none; padding: 5px 8px; font: 12px var(--body); background: var(--panel); border: 1px solid var(--line); border-radius: 4px; max-width: 280px; z-index: 5; }
+#tip b { font-weight: 600; } #tip small { color: var(--muted); display: block; }
+.picked { font-size: 12px; color: var(--accent); }
+.empty { color: var(--muted); font-size: 12px; font-style: italic; }
+[hidden] { display: none !important; }
+@media (min-width: 1100px) { #view, #labels { left: calc(332px + env(safe-area-inset-left, 0px)); right: calc(376px + env(safe-area-inset-right, 0px)); } }
+@media (max-width: 1099px) and (min-width: 700px) {
+  #view, #labels { left: calc(376px + env(safe-area-inset-left, 0px)); }
+  #tabs { display: flex; position: fixed; top: calc(12px + env(safe-area-inset-top, 0px)); left: max(16px, env(safe-area-inset-left, 0px)); width: 344px; }
+  #ships, #ship { left: max(16px, env(safe-area-inset-left, 0px)); right: auto; width: 344px; top: calc(52px + env(safe-area-inset-top, 0px)); max-height: calc(100% - 64px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); }
+}
+@media (max-width: 699px) {
+  #view, #labels { bottom: 50%; }
+  #tabs { display: flex; position: fixed; top: calc(50% + 6px); left: max(16px, env(safe-area-inset-left, 0px)); right: max(16px, env(safe-area-inset-right, 0px)); }
+  #ships, #ship { top: calc(50% + 46px); bottom: calc(10px + env(safe-area-inset-bottom, 0px)); left: max(16px, env(safe-area-inset-left, 0px)); right: max(16px, env(safe-area-inset-right, 0px)); width: auto; max-height: none; padding: 12px; }
+  .stats { grid-template-columns: repeat(4, 1fr); } h1 { font-size: 17px; }
+}
+@media (max-width: 1099px) { body[data-tab=ships] #ship, body[data-tab=ship] #ships { display: none; } }
+#tabs { gap: 0; } #tabs button { flex: 1; padding: 7px 8px; border-radius: 0; font-weight: 600; background: var(--panel); }
+#tabs button:first-child { border-radius: 5px 0 0 5px; } #tabs button:last-child { border-radius: 0 5px 5px 0; border-left: 0; }
+</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600&family=IBM+Plex+Mono&family=IBM+Plex+Sans:wght@400;600&display=swap">
+
+<div id="view"></div>
+<div id="labels" aria-hidden="true"></div>
+<nav id="tabs" aria-label="Panels"><button id="tabShips" aria-pressed="true">Ships</button><button id="tabShip" aria-pressed="false">This ship</button></nav>
+
+<aside id="ships" class="panel" aria-label="Ships">
+  <div>
+    <h1>Procedural Gallery</h1>
+    <p class="sub" id="gen">Loading the ships...</p>
+  </div>
+  <div class="field" role="group" aria-label="Filter the ships">
+    <span>Class</span><div class="seg" id="fClass"></div>
+    <span>Hull</span><div class="seg" id="fHull"></div>
+    <span>Decks</span><div class="seg" id="fDecks"></div>
+  </div>
+  <div class="row">
+    <button class="primary" id="roll" title="Show a ship that matches, one nobody has graded first">Roll a ship</button>
+    <button id="askOpen" aria-expanded="false">Ask for one</button>
+  </div>
+  <form id="ask" class="sect" hidden>
+    <h3>Ask the generator for a ship</h3>
+    <div class="field">
+      <span>Class</span><select id="aClass"><option value="C">Corvette</option><option value="F" selected>Frigate</option><option value="D">Destroyer</option></select>
+      <span>Hull</span><select id="aHull"><option value="">Any</option><option value="c">Chisel</option><option value="d">Dart</option><option value="b">Block</option></select>
+      <span>Decks</span><select id="aDecks"><option value="">Any</option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select>
+      <span>Seed</span><input id="aSeed" type="number" min="1" max="99999" step="1" inputmode="numeric" placeholder="any">
+    </div>
+    <textarea id="aNote" rows="2" placeholder="Anything to look for in it (optional)"></textarea>
+    <div class="row"><button class="primary" id="aSend" type="submit">Queue it</button><button id="aCancel" type="button">Cancel</button></div>
+    <p class="status" id="aState"></p>
+    <p class="hint">The game makes ships, not this page: queued ships are made, built by the game's rules and added here the next time a session works on the gallery (ask in the project).</p>
+  </form>
+  <ul id="list" aria-label="Ships that match"></ul>
+  <details id="reqBox" class="sect" hidden><summary id="reqSum">Asked for</summary><ol class="notes" id="reqList"></ol></details>
+  <details id="genBox" class="sect"><summary id="genSum">Notes on the generator</summary><ol class="notes" id="genList"></ol></details>
+  <details id="refBox" class="sect" hidden><summary id="refSum">Refused</summary><ol class="notes" id="refList"></ol></details>
+  <p class="hint">Drag to turn, right-drag to pan, wheel to zoom (on a phone: one finger turns, two pan and pinch). Click a part or a mark to pick it, so a note can say what it is about.</p>
+</aside>
+
+<aside id="ship" class="panel" aria-label="This ship">
+  <div>
+    <div class="head"><h2 id="name">No ship</h2><span class="code" id="code"></span></div>
+    <p class="desc" id="desc"></p>
+  </div>
+  <div class="stats" id="stats"></div>
+  <div class="sect" style="padding-top:0;border:0">
+    <div class="field">
+      <span>Look</span><div class="seg" id="looks" role="group" aria-label="Look at the ship"></div>
+      <span>Draw</span><div class="seg" role="group" aria-label="What to draw">
+        <button id="lSkin" aria-pressed="true" title="The outer hull: keel, sides, spine and transom with the void inside them">Hull skin</button>
+        <button id="lInterior" aria-pressed="true" title="The room system: floors, walls, ceilings and roof, standing apart from the skin">Interior</button>
+        <button id="lWays" aria-pressed="true" title="Airlock housings, doors, hatches and ladders">Ways through</button>
+        <button id="lSockets" aria-pressed="true" title="The module socket plates">Sockets</button>
+      </div>
+      <span>Mark</span><div class="seg" role="group" aria-label="What to mark">
+        <button id="mRooms" aria-pressed="false" title="Each room as a tinted box, coloured by what it is for">Rooms</button>
+        <button id="mWays" aria-pressed="true" title="Doors, airlocks, hatches and ladders">Ways in</button>
+        <button id="mSockets" aria-pressed="true" title="The module sockets, coloured by the kind of module they take">Sockets</button>
+        <button id="mLabels" aria-pressed="true">Labels</button>
+      </div>
+      <span>View</span><div class="seg" id="views"><button data-v="iso">3/4</button><button data-v="side">Side</button><button data-v="top">Top</button><button data-v="bow">Bow</button><button data-v="stern">Stern</button><button id="tSpin" aria-pressed="false">Turn</button></div>
+    </div>
+    <div class="legend" id="legend"></div>
+    <details><summary>Cuts</summary>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <label class="cut" for="cutY"><span>Height</span><input id="cutY" type="range" min="0" max="1000" value="1000"><output id="cutYv">top</output></label>
+        <label class="cut" for="cutX"><span>Side</span><input id="cutX" type="range" min="0" max="1000" value="1000"><output id="cutXv">off</output></label>
+        <label class="cut" for="cutZ"><span>Length</span><input id="cutZ" type="range" min="0" max="1000" value="1000"><output id="cutZv">off</output></label>
+      </div>
+    </details>
+    <p class="picked" id="picked" hidden></p>
+  </div>
+  <details class="sect" id="traitsBox"><summary>What the dice chose</summary><table class="traits" id="traits"></table></details>
+  <form class="sect" id="fb">
+    <h3>Feedback for the generator</h3>
+    <div class="grade" id="grade" role="group" aria-label="Grade this ship, 1 to 5"></div>
+    <div class="chips" id="tags" role="group" aria-label="What the note is about"></div>
+    <div class="target" id="target" hidden><span id="targetText"></span><button type="button" class="link" id="targetClear">clear</button></div>
+    <textarea id="note" rows="3" placeholder="What works, what doesn't, what you would change"></textarea>
+    <label class="row hint" for="general"><input type="checkbox" id="general"> About the generator in general, not only this ship</label>
+    <div class="row"><button class="primary" id="send" type="submit" disabled>Send</button><button id="sendRoll" type="button" disabled>Send and roll</button><span class="grow"></span></div>
+    <p class="status" id="fbState"></p>
+    <ol class="notes" id="notes"></ol>
+  </form>
+</aside>
+<div id="tip" hidden></div>
+
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+
+const $ = id => document.getElementById(id);
+const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const store = { get(k) { try { return localStorage.getItem("procgal." + k); } catch { return null; } }, set(k, v) { try { localStorage.setItem("procgal." + k, v); } catch {} } };
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+
+// ---- the scene: made once; show() swaps the ship in it
+const view = $("view");
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); renderer.localClippingEnabled = true; renderer.outputColorSpace = THREE.SRGBColorSpace;
+view.appendChild(renderer.domElement);
+const scene = new THREE.Scene();
+scene.add(new THREE.HemisphereLight(0xdfe8f0, 0x3a3228, 1.6));
+const sun = new THREE.DirectionalLight(0xffffff, 2.2), fill = new THREE.DirectionalLight(0xffffff, 0.6);
+scene.add(sun, fill);
+const camera = new THREE.PerspectiveCamera(40, 1, 0.01, 1000);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = !reduced;
+// Cuts: everything above clipTop, below clipLo, starboard of clipX or aft of clipZ is clipped (a three.js plane keeps what it faces).
+const clipTop = new THREE.Plane(new THREE.Vector3(0, -1, 0), 1e6), clipLo = new THREE.Plane(new THREE.Vector3(0, 1, 0), 1e6);
+const clipX = new THREE.Plane(new THREE.Vector3(-1, 0, 0), 1e6), clipZ = new THREE.Plane(new THREE.Vector3(0, 0, -1), 1e6);
+const clips = [clipTop, clipLo, clipX, clipZ];
+const cutActive = () => clips.some(c => c.constant < 1e5);
+const labelsEl = $("labels");
+function resize() { const w = view.clientWidth, h = view.clientHeight; renderer.setSize(w, h, false); camera.aspect = w / Math.max(1, h); camera.updateProjectionMatrix(); }
+new ResizeObserver(resize).observe(view); resize();
+function sky() { scene.background = new THREE.Color(css("--sky") || "#d5dade"); }
+sky();
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { sky(); paint(); });
+new MutationObserver(() => { sky(); paint(); }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+// ---- what the plan's marks look like
+const ROOM_USE = { "Bridge": "command", "Ops room": "command", "Comms room": "command", "Office": "command",
+  "Cabin": "living", "Crew quarters": "living", "Captain's cabin": "living", "Mess": "living", "Galley": "living", "Gym": "living", "Locker room": "living", "Med bay": "living",
+  "Workshop": "work", "Machine room": "work", "Pump room": "work", "Engineering": "work",
+  "Store": "stores", "Fore store": "stores", "Hold": "stores", "Fore compartment": "stores", "Armoury": "weapons", "Magazine": "weapons",
+  "Corridor": "passage", "Lobby": "passage", "Airlock lobby": "passage" };
+const KIND_USE = { corridor: "passage", lobby: "passage", engineering: "work", hold: "stores", fore: "stores", bridge: "command" };
+const USES = { command: ["Command", "#3b78dc"], living: ["Living", "#37a055"], work: ["Work", "#d9702b"], stores: ["Stores", "#9563d1"], weapons: ["Weapons", "#d3344a"], passage: ["Passage", "#7f8a93"], other: ["Other", "#a89668"] };
+const useOf = r => ROOM_USE[r.name] || KIND_USE[r.kind] || "other";
+const WAYS = { door: ["Door", "#14a9bd"], lock: ["Airlock", "#ef8a17"], hatch: ["Hatch", "#d0347f"], ladder: ["Ladder", "#d9b310"] };
+const SOCKETS = { engine: ["Engine", "#f26419"], turret: ["Turret", "#d92f2f"], reactor: ["Reactor", "#2f9e48"], cargo: ["Cargo", "#3478e8"] };
+const ROLE_TEXT = { keel: "outer hull: the keel, its plating and the void over it", spine: "outer hull: the spine, its plating and the void under it",
+  hull: "outer hull: a side, its skin, chine rail and the void inside it", stern: "outer hull: the transom and its engine pads",
+  floor: "interior: a floor", ceiling: "interior: a ceiling", roof: "interior: the roof over the top deck", walls: "interior: walls and door frames",
+  lock: "an airlock housing, through the void and the skin" };
+const LAYERS = ["skin", "interior", "ways", "sockets"];
+const ROLE_LAYER = { keel: "skin", spine: "skin", hull: "skin", stern: "skin", floor: "interior", ceiling: "interior", roof: "interior", walls: "interior", lock: "ways" };
+function layerOf(name, roles) {
+  const r = roles[name]; if (r) return ROLE_LAYER[r] || "interior";
+  return /^Module Socket/.test(name) ? "sockets" : "ways"; // (the hung parts: doors, hatches, ladders)
+}
+function partText(name, roles) {
+  const r = roles[name]; if (r) return ROLE_TEXT[r] || r;
+  if (/^Module Socket/.test(name)) return "a module socket plate";
+  if (/^Bulkhead Door/.test(name)) return "a door, hung on its frame";
+  if (/^Docking Hatch/.test(name)) return "a hatch";
+  if (/^Proc Ladder/.test(name)) return "a ladder";
+  return "";
+}
+const short = name => name.replace(/^Proc [CFD]\d+\w* /, "");
+
+// ---- the ship on show
+const b64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+const tmp = new THREE.Color();
+let M = null, P = null, ship = null, look16 = null, triPart = null, layerMesh = {}, grid = null;
+let size = [1, 1, 1], centre = new THREE.Vector3(), radius = 1, picked = -1, target = null, look = "outside";
+const layerOn = { skin: true, interior: true, ways: true, sockets: true };
+const markOn = { rooms: false, ways: true, sockets: true, labels: true };
+const marks = { rooms: new THREE.Group(), ways: new THREE.Group(), sockets: new THREE.Group() };
+for (const g of Object.values(marks)) scene.add(g);
+let labels = [], rooms = [];
+
+function geometry(idx, pos16, nrm8) {
+  const p = new Float32Array(idx.length * 9), n = new Float32Array(idx.length * 9), c = new Float32Array(idx.length * 9);
+  idx.forEach((t, k) => { for (let j = 0; j < 9; j++) { p[k * 9 + j] = pos16[t * 9 + j] / M.scale; n[k * 9 + j] = nrm8[t * 9 + j] / 127; } });
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.BufferAttribute(p, 3)); g.setAttribute("normal", new THREE.BufferAttribute(n, 3)); g.setAttribute("color", new THREE.BufferAttribute(c, 3));
+  g.userData.tris = idx; return g;
+}
+function paint() {
+  if (!M) return;
+  const pick = css("--pick") || "#ffb347";
+  for (const mesh of Object.values(layerMesh)) {
+    const g = mesh.geometry, col = g.attributes.color.array;
+    g.userData.tris.forEach((t, k) => {
+      const L = M.looks[look16[t]];
+      if (picked >= 0 && triPart[t] === picked) tmp.set(pick);
+      else { tmp.set(L[0]); if (L[2]) tmp.multiplyScalar(1.6); if (picked >= 0) tmp.multiplyScalar(0.62); }
+      for (let v = 0; v < 3; v++) { col[k * 9 + v * 3] = tmp.r; col[k * 9 + v * 3 + 1] = tmp.g; col[k * 9 + v * 3 + 2] = tmp.b; }
+    });
+    g.attributes.color.needsUpdate = true;
+  }
+}
+function disposeObj(o) { o.traverse(x => { if (x.geometry) x.geometry.dispose(); if (x.material) x.material.dispose(); }); }
+function clearShip() {
+  for (const m of Object.values(layerMesh)) { scene.remove(m); disposeObj(m); }
+  layerMesh = {};
+  if (grid) { scene.remove(grid); disposeObj(grid); grid = null; }
+  for (const g of Object.values(marks)) { for (const c of [...g.children]) { g.remove(c); disposeObj(c); } }
+  labels = []; rooms = []; labelsEl.textContent = "";
+}
+
+function show(model, entry) {
+  clearShip(); M = model; P = model.proc || null; ship = entry; picked = -1; setTarget(null); $("tip").hidden = true;
+  const pos16 = new Int16Array(b64(M.pos).buffer), nrm8 = new Int8Array(b64(M.nrm).buffer);
+  look16 = new Uint16Array(b64(M.look).buffer);
+  triPart = new Int32Array(look16.length);
+  M.parts.forEach(([, first, count], i) => triPart.fill(i, first, first + count));
+  const roles = P ? P.roles : {}, partLayer = M.parts.map(([n]) => layerOf(n, roles));
+  const byLayer = Object.fromEntries(LAYERS.map(l => [l, []]));
+  for (let t = 0; t < look16.length; t++) byLayer[partLayer[triPart[t]]].push(t);
+  const mat = () => new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8, metalness: 0.15, side: THREE.DoubleSide, clippingPlanes: clips });
+  for (const l of LAYERS) { const m = new THREE.Mesh(geometry(byLayer[l], pos16, nrm8), mat()); m.visible = layerOn[l]; layerMesh[l] = m; scene.add(m); }
+  size = [0, 1, 2].map(a => Math.max(0.01, M.max[a] - M.min[a]));
+  centre = new THREE.Vector3(...[0, 1, 2].map(a => (M.min[a] + M.max[a]) / 2));
+  radius = Math.max(0.5, Math.hypot(...size) / 2);
+  const cells = Math.max(2, Math.ceil(radius * 3));
+  grid = new THREE.GridHelper(cells, cells, 0x888888, 0x888888);
+  grid.position.set(centre.x, M.min[1] - 0.002, centre.z); grid.material.transparent = true; grid.material.opacity = 0.22;
+  scene.add(grid);
+  sun.position.set(-0.6, 1, -0.4).multiplyScalar(radius * 4); fill.position.set(0.8, 0.3, 0.9).multiplyScalar(radius * 4);
+  camera.near = radius / 200; camera.far = radius * 40; camera.updateProjectionMatrix();
+  if (P) buildMarks();
+  paint(); fillShipPanel(); fillLooks(); fillLegend(); if (Date.now() - lastSent > 5000) dataSays(); renderNotes(); syncForm();
+}
+
+// The plan's marks, from the model's "proc": rooms as tinted boxes, the ways in, the module sockets.
+function addLabel(text, p, group, colour, inside) {
+  const s = el("span", null, text); s.style.background = colour; s.style.display = "none";
+  const c = new THREE.Color(colour); if (0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b > 0.35) s.style.color = "#14181b"; // (dark text on a light mark; c is linear)
+  labelsEl.appendChild(s);
+  labels.push({ el: s, p, group, inside, w: 12 + text.length * 6.2, on: false, tx: "" });
+}
+function labelShow(L, on, tx) {
+  if (L.on !== on) { L.on = on; L.el.style.display = on ? "" : "none"; }
+  if (on && L.tx !== tx) { L.tx = tx; L.el.style.transform = tx; }
+}
+function boxMark(group, b, colour, opacity, info, shrink = 0) {
+  const g = new THREE.BoxGeometry(Math.max(0.02, b[3] - b[0] - 2 * shrink), Math.max(0.02, b[4] - b[1] - 2 * shrink), Math.max(0.02, b[5] - b[2] - 2 * shrink));
+  const c = new THREE.Vector3((b[0] + b[3]) / 2, (b[1] + b[4]) / 2, (b[2] + b[5]) / 2);
+  const fillM = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color: colour, transparent: true, opacity, depthWrite: false, side: THREE.DoubleSide, clippingPlanes: clips }));
+  fillM.position.copy(c); fillM.userData.info = info; fillM.renderOrder = 1;
+  const edge = new THREE.LineSegments(new THREE.EdgesGeometry(g), new THREE.LineBasicMaterial({ color: colour, transparent: true, opacity: 0.9, clippingPlanes: clips }));
+  edge.position.copy(c);
+  group.add(fillM, edge); return c;
+}
+function buildMarks() {
+  const deckName = d => P.decks[d] ? P.decks[d].name.toLowerCase() : "deck " + (d + 1);
+  for (const r of P.rooms) {
+    const use = useOf(r), [label, colour] = USES[use], b = r.box;
+    boxMark(marks.rooms, b, colour, 0.14, null, 0.04);
+    rooms.push({ r, use, box: new THREE.Box3(new THREE.Vector3(b[0], b[1], b[2]), new THREE.Vector3(b[3], b[4], b[5])) });
+    addLabel(r.name, new THREE.Vector3((b[0] + b[3]) / 2, b[1] + 1.1, (b[2] + b[5]) / 2), "rooms", colour, true);
+  }
+  for (const d of P.doors) {
+    const lock = d.kind !== "door", [, colour] = WAYS[lock ? "lock" : "door"], a = d.at;
+    const hw = 0.75, hh = 1.125, t = 0.09;
+    const b = d.acrossX ? [a[0] - t, a[1] - hh, a[2] - hw, a[0] + t, a[1] + hh, a[2] + hw] : [a[0] - hw, a[1] - hh, a[2] - t, a[0] + hw, a[1] + hh, a[2] + t];
+    boxMark(marks.ways, b, colour, 0.55, { kind: lock ? "lock" : "door", title: lock ? (d.kind === "lock outer" ? "Airlock outer door" : "Airlock inner door") : "Door", sub: deckName(d.deck) });
+  }
+  for (const l of P.locks) {
+    const c = boxMark(marks.ways, l.box, WAYS.lock[1], 0.2, { kind: "lock", title: `Airlock, ${l.side}`, sub: `${deckName(l.deck)}: through the void and the skin to its outer door` });
+    addLabel("Airlock", new THREE.Vector3(c.x, l.box[4] + 0.3, c.z), "ways", WAYS.lock[1], false);
+  }
+  for (const h of P.hatches) {
+    const c = boxMark(marks.ways, h.box, WAYS.hatch[1], 0.25, { kind: "hatch", title: h.kind === "belly" ? "Belly hatch" : "Dorsal hatch", sub: h.kind === "belly" ? `down through the keel from ${deckName(h.deck)}` : `up through the spine from ${deckName(h.deck)}` });
+    addLabel(h.kind === "belly" ? "Belly hatch" : "Dorsal hatch", new THREE.Vector3(c.x, h.kind === "belly" ? h.box[1] - 0.3 : h.box[4] + 0.3, c.z), "ways", WAYS.hatch[1], false);
+  }
+  for (const l of P.ladders) {
+    const r = 0.06, b = [l.foot[0] - r, l.foot[1], l.foot[2] - r, l.top[0] + r, l.top[1], l.top[2] + r];
+    boxMark(marks.ways, b, WAYS.ladder[1], 0.85, { kind: "ladder", title: "Ladder", sub: `${l.why} (${(l.top[1] - l.foot[1]).toFixed(2)} m)` });
+  }
+  for (const s of P.sockets) {
+    const [label, colour] = SOCKETS[s.kind] || ["Socket", "#888"], b = s.box, e = 0.03;
+    const c = boxMark(marks.sockets, [b[0] - e, b[1] - e, b[2] - e, b[3] + e, b[4] + e, b[5] + e], colour, 0.6, { kind: "socket", title: `${label} socket ${s.size}`, sub: `on the ${s.where}${s.keyed ? ", keyed to its kind" : ""} (${s.name})` });
+    addLabel(`${label} ${s.size}`, new THREE.Vector3(c.x, Math.max(b[4], c.y) + 0.35, c.z), "sockets", colour, s.where === "floor");
+  }
+  applyVisibility();
+}
+function fillLegend() {
+  const lg = $("legend"); lg.textContent = "";
+  const add = ([label, colour]) => { const s = el("span"); const i = el("i"); i.style.background = colour; s.append(i, label); lg.appendChild(s); };
+  if (!P) return;
+  if (markOn.rooms) [...new Set(rooms.map(r => r.use))].forEach(u => add(USES[u]));
+  if (markOn.ways) Object.values(WAYS).forEach(add);
+  if (markOn.sockets) [...new Set(P.sockets.map(s => s.kind))].forEach(k => add(SOCKETS[k] || ["Socket", "#888"]));
+}
+function applyVisibility() {
+  for (const l of LAYERS) if (layerMesh[l]) layerMesh[l].visible = layerOn[l];
+  for (const k of Object.keys(marks)) marks[k].visible = markOn[k];
+  for (const [id, l] of [["lSkin", "skin"], ["lInterior", "interior"], ["lWays", "ways"], ["lSockets", "sockets"]]) $(id).setAttribute("aria-pressed", layerOn[l]);
+  for (const [id, k] of [["mRooms", "rooms"], ["mWays", "ways"], ["mSockets", "sockets"], ["mLabels", "labels"]]) $(id).setAttribute("aria-pressed", markOn[k]);
+  fillLegend();
+}
+
+// Labels: drawn over the view each frame; a room's or a floor socket's only once the skin is off or a cut opens the ship (they would
+// float over the hull otherwise), and none where a cut took the spot away. Overlapping ones give way to the nearer.
+const pv = new THREE.Vector3(), placed = [];
+function drawLabels() {
+  if (!labels.length) return;
+  const w = view.clientWidth, h = view.clientHeight, open = !layerOn.skin || cutActive();
+  const shown = [];
+  for (const L of labels) {
+    let ok = markOn.labels && markOn[L.group] && (!L.inside || open) && clips.every(c => c.distanceToPoint(L.p) >= 0);
+    if (ok) { pv.copy(L.p).project(camera); ok = pv.z < 1 && Math.abs(pv.x) < 1.05 && Math.abs(pv.y) < 1.05; }
+    if (ok) shown.push({ L, x: (pv.x + 1) / 2 * w, y: (1 - pv.y) / 2 * h, d: camera.position.distanceToSquared(L.p) }); else labelShow(L, false);
+  }
+  shown.sort((a, b) => a.d - b.d); placed.length = 0;
+  for (const s of shown) {
+    const x0 = s.x - s.L.w / 2, y0 = s.y - 9;
+    if (placed.some(p => x0 < p[2] && x0 + s.L.w > p[0] && y0 < p[3] && y0 + 18 > p[1])) { labelShow(s.L, false); continue; }
+    placed.push([x0, y0, x0 + s.L.w, y0 + 18]);
+    labelShow(s.L, true, `translate(${Math.round(x0)}px, ${Math.round(y0)}px)`);
+  }
+}
+
+// ---- looks: whole ship, a section down the middle, no skin, or one deck cut at chest height
+const VIEWS = { iso: [-1, 0.7, -1.1], side: [-1, 0.05, 0], top: [0.001, 1, 0.0001], bow: [0, 0.15, -1], stern: [0, 0.2, 1] }; // (the bow is -z, port is -x)
+// How far back to stand for the ship's sphere to fill the narrower of the view's two angles (k under 1 stands closer: a long ship seen
+// at an angle is shorter on the screen than its sphere).
+function fit(k) { const v = camera.fov * Math.PI / 180, h = 2 * Math.atan(Math.tan(v / 2) * camera.aspect); return radius / Math.tan(Math.min(v, h) / 2) * k; }
+function aim(dir, at = centre, dist = fit(0.92)) { controls.target.copy(at); camera.position.copy(at).add(new THREE.Vector3(...dir).normalize().multiplyScalar(dist)); controls.update(); }
+document.querySelectorAll("#views button[data-v]").forEach(b => b.onclick = () => aim(VIEWS[b.dataset.v], controls.target.clone(), fit(b.dataset.v === "side" || b.dataset.v === "top" ? 1.02 : 0.92)));
+function resetCuts() { for (const c of clips) c.constant = 1e6; cutY.value = cutX.value = cutZ.value = 1000; cutY.oninput(true); cutX.oninput(true); cutZ.oninput(true); }
+function setLook(k, quiet) {
+  if (!M) return;
+  look = k; resetCuts();
+  Object.assign(layerOn, { skin: true, interior: true, ways: true, sockets: true });
+  const decks = P ? P.decks : [];
+  const dk = /^deck-(\d+)$/.exec(k);
+  if (k === "section") {
+    clipX.constant = centre.x + 0.35; syncSlider(cutX, 0, clipX.constant);
+    Object.assign(markOn, { rooms: true, ways: true, sockets: true });
+    aim([1, 0.32, -0.18], centre, fit(0.98));
+  } else if (k === "noskin") {
+    layerOn.skin = false; Object.assign(markOn, { rooms: false, ways: true, sockets: true });
+    aim(VIEWS.iso);
+  } else if (dk && decks[+dk[1] - 1]) {
+    const i = +dk[1] - 1, d = decks[i], lo = d.floor - 0.35, hi = Math.min(d.floor + 1.8, decks[i + 1] ? decks[i + 1].floor - 0.6 : 1e6);
+    clipLo.constant = -lo; clipTop.constant = hi; syncSlider(cutY, 1, hi);
+    Object.assign(markOn, { rooms: true, ways: true, sockets: true });
+    aim([-0.55, 1.6, -0.75], new THREE.Vector3(centre.x, (lo + hi) / 2, centre.z), fit(0.8));
+  } else {
+    look = "outside"; Object.assign(markOn, { rooms: false, ways: true, sockets: true });
+    aim(VIEWS.iso);
+  }
+  applyVisibility(); fillLooks();
+  if (!quiet && ship) setHash(ship.code, look === "outside" ? "" : look);
+}
+function fillLooks() {
+  const box = $("looks"); box.textContent = "";
+  const opts = [["outside", "Outside"], ["section", "Section"], ["noskin", "No skin"]];
+  if (P) P.decks.forEach((d, i) => opts.push(["deck-" + (i + 1), d.name]));
+  for (const [k, text] of opts) { const b = el("button", null, text); b.setAttribute("aria-pressed", look === k); b.onclick = () => setLook(k); box.appendChild(b); }
+}
+const toggle = (id, fn) => { const b = $(id); b.onclick = () => { const on = b.getAttribute("aria-pressed") !== "true"; b.setAttribute("aria-pressed", on); fn(on); }; };
+toggle("lSkin", on => { layerOn.skin = on; applyVisibility(); });
+toggle("lInterior", on => { layerOn.interior = on; applyVisibility(); });
+toggle("lWays", on => { layerOn.ways = on; applyVisibility(); });
+toggle("lSockets", on => { layerOn.sockets = on; applyVisibility(); });
+toggle("mRooms", on => { markOn.rooms = on; applyVisibility(); });
+toggle("mWays", on => { markOn.ways = on; applyVisibility(); });
+toggle("mSockets", on => { markOn.sockets = on; applyVisibility(); });
+toggle("mLabels", on => { markOn.labels = on; });
+toggle("tSpin", on => { controls.autoRotate = on; });
+const cutY = $("cutY"), cutX = $("cutX"), cutZ = $("cutZ");
+function syncSlider(input, a, v) { input.value = Math.round(Math.max(0, Math.min(1, (v - M.min[a]) / size[a])) * 1000); input.oninput(true); }
+const slider = (input, out, plane, a, sign, offText) => quiet => {
+  if (!M) return;
+  const f = input.value / 1000, v = M.min[a] + f * size[a];
+  if (quiet !== true) plane.constant = f >= 1 ? 1e6 : v;
+  out.textContent = plane.constant >= 1e5 ? offText : (Math.min(v, plane.constant) - M.min[a]).toFixed(2) + " m";
+};
+cutY.oninput = slider(cutY, $("cutYv"), clipTop, 1, 1, "top");
+cutX.oninput = slider(cutX, $("cutXv"), clipX, 0, 1, "off");
+cutZ.oninput = slider(cutZ, $("cutZv"), clipZ, 2, 1, "off");
+
+// ---- the panel for the ship on show
+const trait = k => ship && ship.traits ? (ship.traits.find(t => t[0] === k) || [])[1] : undefined;
+function fillShipPanel() {
+  $("name").textContent = ship ? ship.title : M.name; $("code").textContent = ship ? ship.code + "  gen " + (index ? index.generator : "?") : "";
+  $("desc").textContent = M.description || "";
+  const st = $("stats"); st.textContent = "";
+  const stat = (k, v) => { const d = el("div"); d.append(el("span", null, k), String(v)); st.appendChild(d); };
+  stat("Length", trait("Length") || size[2].toFixed(1) + " m"); stat("Beam", trait("Beam") || size[0].toFixed(1) + " m"); stat("Decks", P ? P.decks.length : "-"); stat("Mass", (M.mass / 1000).toFixed(0) + " t");
+  stat("Rooms", trait("Rooms") || "-"); stat("Pieces", trait("Pieces") || "-"); stat("Parts", M.parts.length); stat("Steps", M.steps);
+  const tb = $("traits"); tb.textContent = "";
+  for (const [k, v] of (P ? P.traits : [])) { const tr = el("tr"); tr.append(el("td", null, k), el("td", null, v)); tb.appendChild(tr); }
+  $("picked").hidden = true;
+}
+
+// ---- hover and pick: the part under the pointer, the room it is in, or a mark
+const ray = new THREE.Raycaster(), mouse = new THREE.Vector2(), tip = $("tip");
+function roomAt(p) {
+  let best = null, bestV = Infinity;
+  for (const r of rooms) { const b = r.box; if (p.x > b.min.x - 0.15 && p.x < b.max.x + 0.15 && p.y > b.min.y - 0.15 && p.y < b.max.y + 0.15 && p.z > b.min.z - 0.15 && p.z < b.max.z + 0.15) { const v = (b.max.x - b.min.x) * (b.max.z - b.min.z); if (v < bestV) { bestV = v; best = r; } } }
+  return best;
+}
+function hit(ev) {
+  if (!M) return null;
+  const r = renderer.domElement.getBoundingClientRect(); mouse.set((ev.clientX - r.left) / r.width * 2 - 1, -(ev.clientY - r.top) / r.height * 2 + 1);
+  ray.setFromCamera(mouse, camera);
+  const objs = LAYERS.filter(l => layerOn[l]).map(l => layerMesh[l]);
+  for (const k of ["ways", "sockets"]) if (markOn[k]) objs.push(...marks[k].children.filter(o => o.isMesh));
+  const h = ray.intersectObjects(objs, false).find(h => clips.every(c => c.distanceToPoint(h.point) >= -1e-3));
+  if (!h) return null;
+  const at = h.point.toArray().map(v => Math.round(v * 100) / 100);
+  if (h.object.userData.info) return { mark: h.object.userData.info, at };
+  const t = h.object.geometry.userData.tris[h.faceIndex], part = triPart[t], room = roomAt(h.point);
+  return { part, name: M.parts[part][0], room: room ? room.r : null, at };
+}
+function describe(hh) {
+  if (hh.mark) return [hh.mark.title, hh.mark.sub];
+  const what = partText(hh.name, P ? P.roles : {});
+  return [short(hh.name), [what, hh.room ? `in the ${hh.room.name.toLowerCase()}, ${P.decks[hh.room.deck] ? P.decks[hh.room.deck].name.toLowerCase() : ""}` : ""].filter(Boolean).join("; ")];
+}
+function showTip(hh, x, y) {
+  const [a, b] = describe(hh); tip.textContent = ""; tip.append(el("b", null, a)); if (b) tip.append(el("small", null, b));
+  tip.style.left = Math.max(8, Math.min(x + 14, innerWidth - 290)) + "px"; tip.style.top = Math.min(y + 14, innerHeight - 70) + "px"; tip.hidden = false;
+}
+let down = null;
+renderer.domElement.addEventListener("pointerdown", e => down = [e.clientX, e.clientY]);
+renderer.domElement.addEventListener("pointerup", e => {
+  const touch = e.pointerType !== "mouse";
+  if (down && Math.hypot(e.clientX - down[0], e.clientY - down[1]) < (touch ? 12 : 4)) {
+    const hh = hit(e);
+    picked = hh && !hh.mark ? hh.part : -1; paint();
+    const pe = $("picked"); pe.hidden = !hh;
+    if (hh) { const [a, b] = describe(hh); pe.textContent = "Picked: " + a + (b ? " (" + b + ")" : ""); setTarget(hh); } else setTarget(null);
+    if (touch) { if (hh) showTip(hh, e.clientX, e.clientY); else tip.hidden = true; }
+  }
+  down = null;
+});
+renderer.domElement.addEventListener("pointermove", e => {
+  if (e.pointerType !== "mouse") return;
+  if (e.buttons) { tip.hidden = true; return; }
+  const hh = hit(e); if (!hh) { tip.hidden = true; return; } showTip(hh, e.clientX, e.clientY);
+});
+renderer.domElement.addEventListener("pointerleave", e => { if (e.pointerType === "mouse") tip.hidden = true; });
+
+renderer.setAnimationLoop(() => { controls.update(); renderer.render(scene, camera); drawLabels(); });
+
+// ---- the gallery: models/index.json lists the ships made (and the ones that couldn't be); #CODE or #CODE--section names a view
+let index = null;
+const cache = new Map();
+const filters = { cls: store.get("cls") || "", hull: store.get("hull") || "", decks: store.get("decks") || "" };
+const CLASSES = [["", "Any"], ["corvette", "Corvette"], ["frigate", "Frigate"], ["destroyer", "Destroyer"]];
+const HULLS = [["", "Any"], ["chisel", "Chisel"], ["dart", "Dart"], ["block", "Block"]];
+const DECKS = [["", "Any"], ["1", "1"], ["2", "2"], ["3", "3"]];
+function seg(boxId, opts, key) {
+  const box = $(boxId); box.textContent = "";
+  for (const [v, text] of opts) { const b = el("button", null, text); b.type = "button"; b.setAttribute("aria-pressed", filters[key] === v); b.onclick = () => { filters[key] = v; store.set(key, v); seg(boxId, opts, key); fillList(); }; box.appendChild(b); }
+}
+const matches = s => (!filters.cls || s.class === filters.cls) && (!filters.hull || s.hull === filters.hull) && (!filters.decks || String(s.decks) === filters.decks);
+function pips(n) { const s = el("span", "pips"); s.setAttribute("aria-label", n ? `graded ${n} of 5` : "not graded"); for (let i = 1; i <= 5; i++) s.appendChild(el("i", i <= n ? "on" : null)); return s; }
+function fillList() {
+  const ul = $("list"); ul.textContent = "";
+  const list = index ? index.ships.filter(matches) : [];
+  if (index && !list.length) { const li = el("li", "empty", "No ship made yet matches. Ask for one, or widen the filter."); ul.appendChild(li); }
+  for (const s of list) {
+    const li = el("li"), b = el("button"); b.type = "button";
+    const mid = el("span"); mid.append(el("span", null, s.title)); mid.appendChild(el("small", null, `${s.hull}, ${s.decks} deck${s.decks === 1 ? "" : "s"}, ${s.length} m`));
+    const g = latestGrade(s.code), right = el("span"); right.appendChild(pips(g)); if (notesFor(s.code).length) right.appendChild(el("span", "dot"));
+    b.append(el("b", null, s.code), mid, right);
+    b.setAttribute("aria-current", ship && ship.code === s.code);
+    b.onclick = () => { setHash(s.code, ""); if (matchMedia("(max-width: 1099px)").matches) tab("ship"); };
+    li.appendChild(b); ul.appendChild(li);
+  }
+  $("roll").disabled = !list.length;
+  const ref = index ? index.refused : [];
+  $("refBox").hidden = !ref.length; $("refSum").textContent = `Refused (${ref.length})`;
+  const rl = $("refList"); rl.textContent = "";
+  for (const r of ref) { const li = el("li"); const m = el("div", "meta"); m.append(el("b", null, r.code), r.title); li.append(m, el("div", "text", r.why)); rl.appendChild(li); }
+}
+function roll() {
+  if (!index) return;
+  const list = index.ships.filter(matches); if (!list.length) return;
+  const fresh = list.filter(s => !notesFor(s.code).length && (!ship || s.code !== ship.code));
+  const pool = fresh.length ? fresh : list.filter(s => !ship || s.code !== ship.code);
+  const s = (pool.length ? pool : list)[Math.floor(Math.random() * (pool.length ? pool.length : list.length))];
+  setHash(s.code, "");
+}
+$("roll").onclick = roll;
+async function load(entry) {
+  if (!cache.has(entry.file)) {
+    cache.set(entry.file, fetch(entry.file).then(r => { if (!r.ok) throw new Error(r.status + " " + r.statusText); return r.json(); }));
+    if (cache.size > 6) cache.delete(cache.keys().next().value);
+  }
+  try { return await cache.get(entry.file); } catch (e) { cache.delete(entry.file); throw e; }
+}
+function setHash(code, lk) { const v = code + (lk ? "--" + lk : ""); if (location.hash.slice(1) === v) open(v); else location.hash = v; }
+let opening = 0;
+async function open(hash) {
+  if (!index || !index.ships.length) return;
+  let [code, lk] = hash.split(/--(.*)/s);
+  let entry = index.ships.find(s => s.code === code) || index.ships.find(s => s.code === store.get("last")) || index.ships[0];
+  const my = ++opening;
+  if (!ship || ship.code !== entry.code) {
+    $("name").textContent = "Loading " + entry.title + "...";
+    let m;
+    try { m = await load(entry); } catch (e) { $("name").textContent = "Could not load " + entry.title + ": " + e.message; return; }
+    if (my !== opening) return;
+    show(m, entry); store.set("last", entry.code);
+  }
+  setLook(lk || "outside", true); fillList();
+}
+addEventListener("hashchange", () => open(location.hash.slice(1)));
+seg("fClass", CLASSES, "cls"); seg("fHull", HULLS, "hull"); seg("fDecks", DECKS, "decks");
+fetch("models/index.json").then(r => { if (!r.ok) throw new Error(r.status + " " + r.statusText); return r.json(); }).then(idx => {
+  index = idx;
+  const n = idx.ships.length, byClass = c => idx.ships.filter(s => s.class === c).length;
+  $("gen").textContent = `Generator v${idx.generator}: ${n} ship${n === 1 ? "" : "s"} (${byClass("corvette")} corvettes, ${byClass("frigate")} frigates, ${byClass("destroyer")} destroyers)` + (idx.refused.length ? `, ${idx.refused.length} refused` : "");
+  fillList(); open(location.hash.slice(1));
+}).catch(e => { $("gen").textContent = "Could not load the gallery: " + e.message; });
+
+// ---- tabs (one panel at a time under 1100 px)
+function tab(t) { document.body.dataset.tab = t; $("tabShips").setAttribute("aria-pressed", t === "ships"); $("tabShip").setAttribute("aria-pressed", t === "ship"); }
+$("tabShips").onclick = () => tab("ships"); $("tabShip").onclick = () => tab("ship"); tab("ships");
+
+// ---- feedback and requests, kept in the artifact's database (absent when the page runs outside claude.ai)
+const TAGS = ["Hull", "Rooms", "Corridors", "Airlocks", "Hatches", "Ladders", "Sockets", "Size", "Looks"];
+const STATES = { new: "New", taken: "Taken up", done: "Done", declined: "Not changed", queued: "Queued", made: "Made", refused: "Refused" };
+let db = null, users = null, me = null, writable = null, notes = [], requests = [], dataState = "off", busy = false, grade = 0, lastSent = 0;
+const tagOn = new Set();
+const notesFor = code => notes.filter(n => n.code === code && (!index || n.generator === index.generator));
+function latestGrade(code) { const g = notesFor(code).filter(n => n.grade).sort((a, b) => (b.at || "").localeCompare(a.at || "")); return g.length ? g[0].grade : 0; }
+for (let i = 1; i <= 5; i++) { const b = el("button", null, String(i)); b.type = "button"; b.setAttribute("aria-pressed", "false"); b.title = ["", "Bad", "Weak", "OK", "Good", "Great"][i]; b.onclick = () => { grade = grade === i ? 0 : i; syncForm(); }; $("grade").appendChild(b); }
+for (const t of TAGS) { const b = el("button", null, t); b.type = "button"; b.setAttribute("aria-pressed", "false"); b.onclick = () => { tagOn.has(t) ? tagOn.delete(t) : tagOn.add(t); syncForm(); }; $("tags").appendChild(b); }
+$("note").oninput = syncForm; $("general").onchange = syncForm;
+function setTarget(hh) {
+  target = hh ? (hh.mark ? { what: hh.mark.title, detail: hh.mark.sub, at: hh.at } : { what: short(hh.name), part: hh.name, room: hh.room ? hh.room.name : null, deck: hh.room ? hh.room.deck + 1 : null, at: hh.at }) : null;
+  $("target").hidden = !target;
+  if (target) $("targetText").textContent = "On: " + target.what + (target.room ? `, in the ${target.room.toLowerCase()} (deck ${target.deck})` : target.detail ? ` (${target.detail})` : "");
+}
+$("targetClear").onclick = () => { picked = -1; paint(); $("picked").hidden = true; setTarget(null); };
+function syncForm() {
+  [...$("grade").children].forEach((b, i) => b.setAttribute("aria-pressed", grade === i + 1));
+  [...$("tags").children].forEach(b => b.setAttribute("aria-pressed", tagOn.has(b.textContent)));
+  const has = grade || tagOn.size || $("note").value.trim();
+  const can = db && writable !== false && !busy && (ship || $("general").checked);
+  $("send").disabled = $("sendRoll").disabled = !(has && can);
+}
+function say(id, text, cls) { const s = $(id); s.textContent = text; s.className = "status" + (cls ? " " + cls : ""); }
+async function sendNote(andRoll) {
+  if (!db || busy) return;
+  const general = $("general").checked, text = $("note").value.trim();
+  if (!grade && !tagOn.size && !text) return;
+  const doc = { code: general ? "" : ship.code, generator: index ? index.generator : 0, grade: general ? null : (grade || null), tags: [...tagOn], note: text.slice(0, 4000),
+    target: general ? null : target, look: general ? null : look, by: me, at: new Date().toISOString(), state: "new" };
+  busy = true; syncForm(); say("fbState", "Sending...");
+  try {
+    await db.collection("feedback").add(doc);
+    grade = 0; tagOn.clear(); $("note").value = ""; $("general").checked = false;
+    say("fbState", general ? "Sent: a note on the generator." : andRoll ? `Sent your note on ${doc.code}; here is another ship.` : "Sent. A session reads it the next time the generator is worked on.", "ok");
+    lastSent = Date.now();
+    if (andRoll) roll();
+  } catch (e) { writeFailed(e, "fbState"); }
+  finally { busy = false; syncForm(); }
+}
+function writeFailed(e, where) {
+  const code = e && e.code;
+  if (code === "invalid_argument" || code === "not_granted") { writable = false; say(where, "This view can't save notes: you can read them but not write here.", "bad"); }
+  else if (code === "quota_exceeded") say(where, "The gallery's notes are full: ask in the project to tidy them.", "bad");
+  else say(where, "Not sent (" + (code || "error") + "): try again in a moment.", "bad");
+  syncForm();
+}
+$("fb").onsubmit = e => { e.preventDefault(); sendNote(false); };
+$("sendRoll").onclick = () => sendNote(true);
+
+// Asking for a ship: a code the game understands (class letter, seed, then the hull letter and the deck count when fixed).
+$("askOpen").onclick = () => {
+  const f = $("ask"), opening = f.hidden; f.hidden = !opening; $("askOpen").setAttribute("aria-expanded", opening);
+  if (opening) { $("aClass").value = { corvette: "C", frigate: "F", destroyer: "D" }[filters.cls] || $("aClass").value; $("aHull").value = (filters.hull || "")[0] || ""; $("aDecks").value = filters.decks; say("aState", db ? "" : "Asking needs the gallery on claude.ai, signed in."); }
+};
+$("aCancel").onclick = () => { $("ask").hidden = true; $("askOpen").setAttribute("aria-expanded", "false"); };
+$("ask").onsubmit = async e => {
+  e.preventDefault(); if (!db || busy) return;
+  const seedIn = parseInt($("aSeed").value, 10), seed = seedIn >= 1 && seedIn <= 99999 ? seedIn : 1 + Math.floor(Math.random() * 99999);
+  const cls = $("aClass").value, hull = $("aHull").value, decks = $("aDecks").value, code = cls + seed + hull + decks;
+  if (index && index.ships.some(s => s.code === code)) { say("aState", code + " is made already: showing it.", "ok"); setHash(code, ""); return; }
+  if (requests.some(r => r.code === code && r.state === "queued")) { say("aState", code + " is queued already."); return; }
+  busy = true; say("aState", "Queueing...");
+  try {
+    await db.collection("requests").add({ code, class: { C: "corvette", F: "frigate", D: "destroyer" }[cls], hull: { c: "chisel", d: "dart", b: "block" }[hull] || null, decks: decks ? +decks : null, seed,
+      note: $("aNote").value.trim().slice(0, 2000), by: me, at: new Date().toISOString(), state: "queued" });
+    say("aState", `Queued ${code}. It is made the next time a session works on the gallery.`, "ok"); $("aNote").value = ""; $("aSeed").value = "";
+  } catch (err) { writeFailed(err, "aState"); }
+  finally { busy = false; }
+};
+
+const when = at => { const d = new Date(at); return isNaN(d) ? "" : d.toLocaleString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }); };
+async function names(ids) { const out = {}; ids = [...new Set(ids.filter(Boolean))]; if (users && ids.length) { const ps = await users.profiles(ids); for (const id of ids) out[id] = ps[id] ? (ps[id].isMe ? "you" : ps[id].name) : ""; } return out; }
+function noteItem(n, who, showCode) {
+  const li = el("li"), m = el("div", "meta");
+  if (showCode && n.code) { const b = el("button", "link", n.code); b.type = "button"; b.onclick = () => setHash(n.code, n.look && n.look !== "outside" ? n.look : ""); m.appendChild(b); }
+  if (n.grade) m.appendChild(pips(n.grade));
+  for (const t of n.tags || []) m.appendChild(el("span", "tag", t));
+  m.appendChild(el("span", "state " + (n.state || "new"), STATES[n.state] || n.state || "New"));
+  m.appendChild(el("span", null, [who[n.by] || (n.by ? "someone" : ""), when(n.at)].filter(Boolean).join(", ")));
+  if (index && n.generator && n.generator !== index.generator) m.appendChild(el("span", null, "about v" + n.generator));
+  li.appendChild(m);
+  if (n.target && n.target.what) li.appendChild(el("div", "hint", "On: " + n.target.what + (n.target.room ? ", in the " + n.target.room.toLowerCase() : "")));
+  if (n.note) li.appendChild(el("div", "text", n.note));
+  if (n.reply) { const r = el("div", "reply"); r.append(el("b", null, "Claude: "), n.reply + (n.fixedIn ? ` (generator v${n.fixedIn})` : "")); li.appendChild(r); }
+  if (db && me && n.by === me && (n.state || "new") === "new" && n.id) {
+    const del = el("button", "link", "delete"); del.type = "button"; del.style.alignSelf = "flex-start";
+    del.onclick = async () => { del.disabled = true; try { await db.doc(n.path).delete(); } catch (e) { del.disabled = false; } };
+    li.appendChild(del);
+  }
+  return li;
+}
+let renderSeq = 0;
+async function renderNotes() {
+  const my = ++renderSeq;
+  const mine = ship ? notes.filter(n => n.code === ship.code).sort((a, b) => (b.at || "").localeCompare(a.at || "")) : [];
+  const gen = notes.filter(n => !n.code).sort((a, b) => (b.at || "").localeCompare(a.at || ""));
+  const reqs = [...requests].sort((a, b) => (b.at || "").localeCompare(a.at || ""));
+  const who = await names([...mine, ...gen, ...reqs].map(n => n.by));
+  if (my !== renderSeq) return;
+  const ol = $("notes"); ol.textContent = "";
+  for (const n of mine) ol.appendChild(noteItem(n, who, false));
+  if (dataState === "on" && !mine.length) ol.appendChild(el("li", "empty", "No notes on this ship yet."));
+  const gl = $("genList"); gl.textContent = "";
+  for (const n of gen) gl.appendChild(noteItem(n, who, false));
+  if (!gen.length) gl.appendChild(el("li", "empty", dataState === "on" ? "None yet. Tick \"About the generator in general\" on a note to add one." : "Notes show here on claude.ai."));
+  $("genSum").textContent = `Notes on the generator (${gen.length})`;
+  $("reqBox").hidden = !reqs.length; $("reqSum").textContent = `Asked for (${reqs.filter(r => r.state === "queued").length} queued, ${reqs.length} in all)`;
+  const rl = $("reqList"); rl.textContent = "";
+  for (const r of reqs) {
+    const li = el("li"), m = el("div", "meta"), made = index && index.ships.some(s => s.code === r.code);
+    if (made) { const b = el("button", "link", r.code); b.type = "button"; b.onclick = () => setHash(r.code, ""); m.appendChild(b); } else m.appendChild(el("b", null, r.code));
+    m.appendChild(el("span", "state " + (r.state || "queued"), STATES[r.state] || r.state || "Queued"));
+    m.appendChild(el("span", null, [who[r.by] || "", when(r.at)].filter(Boolean).join(", ")));
+    li.appendChild(m);
+    if (r.note) li.appendChild(el("div", "text", r.note));
+    if (r.reply) { const x = el("div", "reply"); x.append(el("b", null, "Claude: "), r.reply); li.appendChild(x); }
+    rl.appendChild(li);
+  }
+  fillList();
+}
+function dataSays() {
+  const t = { off: "Notes are kept on claude.ai: open the gallery there, signed in, to read and send them.", loading: "Loading the notes...", slow: "The notes can't be reached yet; they will show when they can.",
+    error: "The notes stopped loading. Reload the page to try again.", on: writable === false ? "You can read the notes here but not write them." : "" }[dataState];
+  say("fbState", t || "", dataState === "error" ? "bad" : "");
+}
+async function startData() {
+  const api = window.claude && typeof window.claude.use === "function" ? window.claude : null;
+  if (!api) { dataSays(); renderNotes(); syncForm(); return; }
+  [db, users] = await Promise.all([api.use("db"), api.use("user")]);
+  if (!db) { dataState = "off"; dataSays(); renderNotes(); return; }
+  me = users ? await users.id() : null;
+  writable = users ? await users.can("data.write") : null;
+  dataState = "loading"; dataSays();
+  const timer = setTimeout(() => { if (dataState === "loading") { dataState = "slow"; dataSays(); } }, 10000);
+  const rows = s => s.docs.map(d => ({ ...d.data(), id: d.id }));
+  const fail = e => { clearTimeout(timer); dataState = "error"; dataSays(); };
+  db.collection("feedback").onSnapshot(s => { notes = rows(s).map(n => ({ ...n, path: "feedback/" + n.id })); if (!s.metadata.fromCache) { clearTimeout(timer); if (dataState !== "on") { dataState = "on"; dataSays(); } } renderNotes(); syncForm(); }, fail);
+  db.collection("requests").onSnapshot(s => { requests = rows(s); renderNotes(); }, fail);
+  syncForm();
+}
+startData();
+syncForm();
+</script>
