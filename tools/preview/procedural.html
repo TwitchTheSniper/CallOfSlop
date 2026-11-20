@@ -291,7 +291,7 @@ function partText(name, roles) {
   if (/^Proc Ladder/.test(name)) return "a ladder";
   return "";
 }
-const short = name => name.replace(/^Proc [CFD]\d+\w* /, "");
+const short = name => name.replace(/^Proc [CFD]\d+[\w-]* /, "");
 
 // ---- the ship on show
 const b64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
@@ -640,7 +640,7 @@ function fillList() {
   for (const s of list) {
     const li = el("li"), b = el("button"); b.type = "button";
     const mid = el("span"); mid.append(el("span", null, s.title));
-    mid.appendChild(el("small", null, [s.role, s.hull + " hull" + (s.nacelles ? " on nacelles" : ""), `${s.decks} deck${s.decks === 1 ? "" : "s"}`, `${s.length} m`].filter(Boolean).join(", ")));
+    mid.appendChild(el("small", null, [s.role, s.hull + " hull", s.nacelles ? "nacelles" : "", `${s.decks} deck${s.decks === 1 ? "" : "s"}`, `${s.length} m`].filter(Boolean).join(", ")));
     const g = latestGrade(s.code), right = el("span"); right.appendChild(pips(g)); if (notesFor(s.code).length) right.appendChild(el("span", "dot"));
     b.append(el("b", null, s.code), mid, right);
     b.setAttribute("aria-current", ship && ship.code === s.code);
@@ -749,7 +749,7 @@ $("fb").onsubmit = e => { e.preventDefault(); sendNote(false); };
 $("sendRoll").onclick = () => sendNote(true);
 
 // Asking for a ship: a code the game understands (class letter, seed, then what is fixed: the hull's letter, n for nacelles, the
-// deck count and the role's letter, as ProcShipSpec.Code writes it).
+// deck count, after a hyphen when it follows the seed, and the role's letter, as ProcShipSpec.Code writes it).
 const HULL_LETTER = { chisel: "c", dart: "d", block: "b", barge: "a", stepped: "s" }, HULL_OF = { c: "chisel", d: "dart", b: "block", a: "barge", s: "stepped" };
 const ROLE_LETTER = { gunship: "g", freighter: "f", miner: "m", tender: "t", liner: "l" }, ROLE_OF = { g: "gunship", f: "freighter", m: "miner", t: "tender", l: "liner" };
 $("askOpen").onclick = () => {
@@ -765,7 +765,7 @@ $("ask").onsubmit = async e => {
   e.preventDefault(); if (!db || busy) return;
   const seedIn = parseInt($("aSeed").value, 10), seed = seedIn >= 1 && seedIn <= 99999 ? seedIn : 1 + Math.floor(Math.random() * 99999);
   const cls = $("aClass").value, hull = $("aHull").value, decks = $("aDecks").value, role = $("aRole").value, nacelles = $("aNacelles").checked;
-  const code = cls + seed + hull + (nacelles ? "n" : "") + decks + role;
+  const code = cls + seed + hull + (nacelles ? "n" : "") + (decks && !hull && !nacelles ? "-" : "") + decks + role;
   if (index && index.ships.some(s => s.code === code)) { say("aState", code + " is made already: showing it.", "ok"); setHash(code, ""); return; }
   if (requests.some(r => r.code === code && r.state === "queued")) { say("aState", code + " is queued already."); return; }
   busy = true; say("aState", "Queueing...");
