@@ -34,6 +34,10 @@ A place to park a robot shell when nobody wears it. Drafted with the user by cli
   red broken). The lid is two flaps at the solid's top inside a coaming 3 mm higher; they swing down against the walls over the
   first 30 % of the frame's rise, then the frame's head comes up between its posts (`ShellPodRender.Flaps`). Render only: no wire
   or save change. Not cut: the headless recorder's draws.
+- **A flush pod needs a deep enough surface** (2026-11-19): placing one on a socket is refused when what it goes in is thinner
+  than its body (`ConstructShellPod.DepthRefusal`: points down its middle and corners must each be inside a part), so it never
+  sticks out the far side. A 0.25 m floor takes none: stack floors, use a foundation or a hull, or the bolted-on pod. A freeform
+  weld isn't checked. The surfaces a pocket opens are found with the caches (`FindHosts`), keyed to the part count.
 - **Fits**: a shell's class by its standing height (1.8 m x the frame's scale); it docks in a pod of its class or larger (an assumption
   of the rule "docks only in its size class or larger").
 - **The frame** (`ShellPodRender.cs`): the lid rises on two posts along the face's normal (the button panel on the right post, a lamp on
