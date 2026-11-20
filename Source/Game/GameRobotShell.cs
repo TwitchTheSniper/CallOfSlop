@@ -175,7 +175,8 @@ public sealed partial class Game
         SandboxHands.PackDirty.Add(p.Id);
         var tool = h.Tool;
         h = SandboxHand.Empty;
-        h.Tool = ShellFrames.Worn(p).ForcedTool ?? (tool == ConstructTool.None ? ConstructTool.Hands : tool); // (a frame's only tool: the Mining Shell's drill arm)
+        tool = tool == ConstructTool.None ? ConstructTool.Hands : tool;
+        h.Tool = ShellFrames.Worn(p).Allows(tool) ? tool : ShellFrames.Worn(p).ForcedTool ?? tool; // (a frame's only tools: the Mining Shell's drill arm, a tool arm the gantry fitted)
         var feet = shell.ToWorld(sp.Pos) + GravityFrames.UpAt(shell.WorldCom) * 0.03f; // (its part's feet: a shell cut off a dock keeps its place in the ship's frame)
         var fwd = Vector3.Transform(-Vector3.UnitZ, shell.Rot * Rot24.Quat(sp.Rot));
         ShellWoke(p, shell);

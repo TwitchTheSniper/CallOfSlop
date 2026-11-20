@@ -29,7 +29,7 @@
     { "section": "Shells", "name": "Shell Pod", "to": ["Shells", "Pods"] },
     { "section": "Shells", "name": ["Shell Gantry", "Shell Parts Table"], "to": ["Shells", "Gantry"] },
     { "section": "Shells", "name": ["Power Cell", "Leg Actuator", "Arm Actuator", "Processor", "Plating"], "to": ["Shells", "Spares"] },
-    { "section": "Shells", "name": ["Head", "Leg", "Hand", "Power Pack"], "to": ["Shells", "Modules"] },
+    { "section": "Shells", "name": ["Head", "Leg", "Hand", "Power Pack", "Arm"], "to": ["Shells", "Modules"] },
     { "section": "Shells", "name": ["Robot Shell", "Mining Shell", "Control Chair"], "to": ["Shells", "Shells and chairs"] },
     { "section": "Shells", "name": "Shell Optics", "to": ["Shells", "Spares"] },
     { "group": "Ship", "section": "Ship fittings", "name": ["Hull Mount", "Drive Core", "Fuel Pump", "Coolant Exchanger", "Turbopump", "Mixing Manifold", "Power Conditioner"], "to": ["Drivetrain and Engines", "Drive works"] },

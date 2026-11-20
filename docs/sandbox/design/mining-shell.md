@@ -83,6 +83,26 @@ on the same channels. Decided (defaults; the user may change them):
   in the back slot", the renderer draws each slot's module. So customisation only adds modules (data, a look and, for a new
   kind, its rule) and a way to choose them (UI, and a per-shell record of the choice in the part's config).
 
+### How a worn shell shows its modules (the user, 2026-11-19)
+
+"The shell parts that are currently equipped should be visually apparent on a possessed shell", with "more visual variance"
+between the limbs and "a runner leg should look more digitigrade than human". `Scene/Rigs/ShellModuleNodes.cs` draws every fitted
+module on the wearer's rig from its own part's model (ShellParts.cs), read from the worn kit, so a gantry swap shows at once on
+every peer: the head on the person's head node (their head hidden), the back module on the back (the ore hopper and the drill
+arm, which have no part, stay ShellKitNodes'), a Hand's forearm over the arm's, a tool arm out of the shoulder with its forearm
+turned with the look, and a leg's boxes on the leg's bones by its `"joints"` (heights on its part: hip, knee, optional hock,
+ankle). A leg with a `"hock": [up, back]` walks digitigrade: `LegAnimator` reaches the thigh and shin for the hock, up and behind
+the foot's ball, and a metatarsal runs down to the ball (the knee forward, the hock back). The looks: Standard Leg a person's
+leg, Heavy Leg thick with plates and a wide foot, Runner Leg slim on clawed toes with amber springs; Optics Head two lens
+barrels and a dome, Plated Head a helm with a slit visor; Power Pack a case with cell caps and vents.
+
+**Tool arms** (`"kind": "tool"`, a `"tool"` and a `"part"`): the Welder Arm (attach tool), Cutter Arm (remover), Grip Arm
+(physics gun) and Sprayer Arm (paint). A gantry fits them in either arm slot. Defaults taken: a shell with any tool module
+(these, or the drill arm) holds only those modules' tools (the tool wheel and number keys refuse the rest, as for the Mining
+Shell's drill; with two tool arms either is picked); the arm is its tool's look in third person (no held tool beside it) and
+in first person (its forearm, aimed at the crosshair, on the right whichever side it is fitted); the immediate-mode body
+(`PlayerRender.DrawImmediate`, off by default) draws the person as before.
+
 ## The user's answers (2026-11-17)
 
 1. **Collision**: 1.5x, as built (it crouches through doors; ship decks are crouch-only).
@@ -168,5 +188,5 @@ Drafted with the user over three pictures; build to this once the user approves 
   x0.90 (Runner Legs and the Plated Head); the Mining Shell's back and right arm refused as fixed, its leg swapped; a joined client
   sees the job, the kit and the table, and its own ask is made (and refused "too far away" when it was); a world save and load keep
   the kit and the table's contents; the panel opens on F and closes on Esc.
-- **Not yet**: the standing or worn shell drawn with its modules (a Plated Head looks like an Optics Head); a crew Miner using the
-  gantry; arm sounds.
+- **Not yet**: the standing shell drawn with its modules (the worn one is, 2026-11-19: "How a worn shell shows its modules" above);
+  a crew Miner using the gantry; arm sounds.
