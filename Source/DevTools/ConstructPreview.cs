@@ -396,9 +396,43 @@ public static partial class ConstructPreview
             }
             linksSb.Append(']');
         }
-        return Encode(bp.Name, bp.Description, bp.Steps.Count, c.Mass, pos, nrm, triLook, looks, parts.ToString(), decksSb.ToString(), linksSb.ToString(), _animWrite?.Invoke());
+        return Encode(bp.Name, bp.Description, bp.Steps.Count, c.Mass, pos, nrm, triLook, looks, parts.ToString(), decksSb.ToString(), linksSb.ToString(), Cost(c, triLook.Count) + _animWrite?.Invoke());
 
         static string F3(float f) => f.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture);
+    }
+
+    /// <summary>
+    /// What the model costs the game, as the style sheet shows it (",\"cost\":{...}"): triangles, drawn boxes (and how many are
+    /// shaped, lit or glass), whether every part is drawn from the merged mesh (a glass pane, a lamp or anything that moves makes a
+    /// part walked box by box every frame: ConstructRenderBatch.StaticBoxes), and the collision: solid boxes and convex hulls.
+    /// </summary>
+    private static string Cost(Construct c, int tris)
+    {
+        int drawn = 0, shaped = 0, glow = 0, glass = 0, walked = 0, solid = 0, hulls = 0;
+        for (var i = 0; i < c.PartCount; i++)
+        {
+            var d = c.DefOf(i);
+            foreach (var b in d.Boxes)
+            {
+                if (b.Hidden)
+                    continue;
+                drawn++;
+                if (b.Shape != 0)
+                    shaped++;
+                if (b.Glow)
+                    glow++;
+                if (b.IsGlass)
+                    glass++;
+            }
+            if (ConstructRender.StaticBoxes(d) < 0)
+                walked++;
+            var hs = ConstructHulls.Of(d);
+            hulls += hs.Length;
+            for (var s = 0; s < d.SolidBoxes; s++)
+                if (!ConstructHulls.Covered(d, s))
+                    solid++;
+        }
+        return $",\"cost\":{{\"tris\":{tris},\"drawn\":{drawn},\"shaped\":{shaped},\"glow\":{glow},\"glass\":{glass},\"parts\":{c.PartCount},\"walked\":{walked},\"solid\":{solid},\"hulls\":{hulls}}}";
     }
 
     /// <summary>The model's JSON from its triangles (see <see cref="Model"/>); <paramref name="extra"/> is put in before the closing brace (",\"anim\":...").</summary>
