@@ -45,16 +45,17 @@ public static class ConstructGrab
     /// The speed build-up in flight (user, 2026-11-19: "the physics gun movement speed should build as the player keeps moving
     /// an object around ... only if the object is in flight"): while a held piece touches nothing and moves faster than
     /// <see cref="FlightMoveSpeed"/> (m/s, against its holder's frame), its boost climbs from 1 to <see cref="FlightBoostMax"/>
-    /// over <see cref="FlightBoostSeconds"/> (s, linear); the beam's top speed (<see cref="MaxPull"/>) and its acceleration
-    /// (<see cref="MaxAccel"/> included) are times the boost. A contact (pushing on it, or within <see cref="FlightTouchGap"/>
+    /// over <see cref="FlightBoostSeconds"/> (s, linear); the beam's top speed (<see cref="MaxPull"/>) is times the boost,
+    /// its pull is not (main's CI 2026-11-20: a 3x pull made the spring three times as stiff, and a joined holder's dragged
+    /// buggy jerked past "physics gun smooth"'s bound; a faster top speed changes nothing the spring does below it). A contact (pushing on it, or within <see cref="FlightTouchGap"/>
     /// m), a stop (slower than <see cref="FlightStopSpeed"/>) or a let-go puts it back to 1 at once; between the two speeds it holds.
     /// </summary>
-    public const float FlightBoostMax = 3f, FlightBoostSeconds = 2f, FlightMoveSpeed = 1.5f, FlightStopSpeed = 0.5f, FlightTouchGap = 0.02f;
+    public const float FlightBoostMax = 2f, FlightBoostSeconds = 2f, FlightMoveSpeed = 1.5f, FlightStopSpeed = 0.5f, FlightTouchGap = 0.02f;
 
     /// <summary>
     /// The fastest the beam moves a held piece against its holder's frame, boosted or not (m/s): the free-body limit on
     /// the ground (<see cref="ConstructPhysics.MaxSpeed"/>), a metre a tick, so the contacts' reach and <see cref="NearStep"/>
-    /// still bound what a fast piece can pass through. The boost's acceleration goes on to 3x; its top speed stops here (2x).
+    /// still bound what a fast piece can pass through: the boost's 2x of <see cref="MaxPull"/> reaches it.
     /// </summary>
     public const float HeldTopSpeed = ConstructPhysics.MaxSpeed;
 
@@ -182,7 +183,6 @@ public static class ConstructGrab
         float accel, Vector3 frameVel, Vector3 frameSpin, float dt, bool nearOther = false, float boost = 1f)
     {
         boost = Math.Clamp(boost, 1f, FlightBoostMax); // (the speed build-up in flight: FlightBoost)
-        accel *= boost; // (accel is MaxAccel at most: AccelFor)
         var top = MathF.Min(MaxPull * boost, HeldTopSpeed); // (boosted, never past HeldTopSpeed: a metre a tick at most)
         var maxPull = nearOther ? MathF.Min(top, NearStep / dt) : top; // (another construct close by: a step short enough that the overlap tests can't be jumped)
         var maxTurn = nearOther ? MathF.Min(MaxTurn, NearTurn) : MaxTurn;
