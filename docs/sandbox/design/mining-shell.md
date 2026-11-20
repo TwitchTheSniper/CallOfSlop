@@ -197,7 +197,7 @@ Drafted with the user over three pictures; build to this once the user approves 
 Built 2026-11-19 (`ConstructGantry.cs`, `GameShellGantry.cs`, `GantryRender.cs`; protocol 377). Defaults chosen with the user away:
 
 - **Waist clamp.** A ram from a housing on the rear frame's lower rail (between the lower arms' shoulders) runs out to a yoke behind the
-  shell's hips, then two jaws on the yoke's ends swing in round the pelvis (10 cm deep, hazard striped outside), a tooth round each front corner with a lamp on its face, red while it grips (0.8 s: the ram the first 60%, the
+  shell's hips, then two jaws on the yoke's ends swing in round the pelvis on hinge knuckles at the hip's sides (10 cm deep, hazard yellow with black bands outside and on the tooth), a tooth round each front corner with a lamp on its face, red while it grips (0.8 s: the ram the first 60%, the
   jaws the rest). The hips were chosen because the arms hang beside the torso and the Mining Shell's hopper sits on its back: the yoke
   passes under the hopper's floor. A lamp on the housing is red while shut, green open. It closes when a change's first swap begins and
   opens (0.8 s) when its last ends or is stopped. While shut the server holds the shell: `HeldBy` the gantry (no grab, nudge, edit
@@ -225,11 +225,13 @@ Built 2026-11-19 (`ConstructGantry.cs`, `GameShellGantry.cs`, `GantryRender.cs`;
   the kit after. Later: the gantry driven at 3 m/s turning (`shellgantry drive`) kept the clamped shell in its frame to the
   millimetre; a save mid-change loaded the shell loose with its old kit; the physics gun on a clamped shell was refused. Not tried: a
   part removal renumbering a gantry mid-swap, a client's view in a picture.
-- **The module carried** is the shell's own slot (its boxes, in its paint: `GantryRender.DrawSlot`), so what leaves the shell is what
+- **The module carried** is the shell's own slot (its boxes, in its paint, tone and finish: `GantryRender.DrawSlot`; a leg comes off up and back, clear of the deck), so what leaves the shell is what
   the arm holds; set down, it stands on the table's floor; the new one's copy on the table is hidden while the arm holds it
   (`ConstructGantry.CarriedOff`, `RouteRender.DrawRacks`). The deck is light deck plate (look review).
-- **Robustness:** a swap and its clamp know the gantry part by its place on the body, so a removal that renumbers the parts finds it
-  again (the peers hear the swaps again under the new index) or stops the swap; a clamp never poses the shell in another part's
+- **Robustness:** a swap and its clamp know the gantry part and the parts table by their places on their bodies, so a removal that
+  renumbers the parts finds them again (the peers hear the swaps again under the new indices; a big body's late gantry list falls back
+  to every part) or stops the swap; the swaps of a gantry that went end first, under their old indices, so two gantries on one body
+  never share a clamp's key; a clamp never poses the shell in another part's
   frame. A joiner hears the swaps before the bodies come: the shell is marked held when it arrives (`ConstructGantry.Refresh`).
 - **Not yet:** the old module set down on the table turns into the module part's own look at the fit; with a gantry moving and
   the shell not yet in its frame (a few ticks before the frame pass takes it), only the pin holds it against gravity (its contacts

@@ -98,7 +98,7 @@ public sealed partial class Game
         {
             Body = c.Id, Part = (ushort)part, Shell = shell.Id, TableBody = tb?.Id ?? 0, Table = table >= 0 ? (ushort)table : ushort.MaxValue,
             Slot = (byte)slot, Old = (byte)(old != null ? old.Index + 1 : 0), New = (byte)(m.Index + 1), Arm = ConstructGantry.ArmOf(slot),
-            PartAt = c.Parts[part].Pos,
+            PartAt = c.Parts[part].Pos, TableAt = tb != null && table >= 0 ? tb.Parts[table].Pos : default,
         };
         j.Start = ConstructGantry.NextStart(world, c.Id, part, j.Arm, now); // (behind this gantry's swaps already asked: one sequence)
         GantrySend(j, true, now - j.Start, null);
@@ -118,29 +118,47 @@ public sealed partial class Game
         if (world.GantryJobCount == 0)
             return;
         var now = ConstructConveyor.Clock;
+        // A removal on a gantry's or a table's body renumbers its parts (ConstructWorld.Compact): first the swaps whose gantry is gone
+        // end, under the indices they had (so a clamp opens by its own key), then the rest find their gantry and table again by place.
+        for (var k = world.GantryJobCount - 1; k >= 0; k--)
+        {
+            ref var j = ref world.GantryJobs[k];
+            var gc = world.Get(j.Body);
+            if (gc != null && ConstructGantry.FindPart(gc, j.Part, j.PartAt) >= 0)
+                continue;
+            if (j.Old != 255)
+                GantryStop(k, gc, "the gantry went before its module was fitted");
+            else
+                GantryEnd(k); // (fitted, its arm going home: nothing left to draw)
+        }
+        for (var k = 0; k < world.GantryJobCount; k++)
+        {
+            ref var j = ref world.GantryJobs[k];
+            if (ConstructGantry.FindPart(world.Get(j.Body)!, j.Part, j.PartAt) is var at && at != j.Part)
+                GantryRenumber(j.Body, j.PartAt, (ushort)at, now);
+            if (j.Table != ushort.MaxValue && world.Get(j.TableBody) is { } tb && ConstructGantry.FindTable(tb, j.Table, j.TableAt) is var ti && ti != j.Table)
+            {
+                GantrySend(j, false, 0, null);
+                Log($"[gantry] body {j.Body}: its parts table {j.TableBody}/{j.Table} is {(ti >= 0 ? $"part {ti} now (renumbered)" : "gone")}");
+                j.Table = ti >= 0 ? (ushort)ti : ushort.MaxValue; // (gone: the fit says so in survival)
+                GantrySend(j, true, now - j.Start, null);
+            }
+        }
         for (var k = world.GantryJobCount - 1; k >= 0; k--)
         {
             ref var j = ref world.GantryJobs[k];
             var t = now - j.Start;
-            var c = world.Get(j.Body);
+            var c = world.Get(j.Body)!;
             var shell = world.Get(j.Shell);
-            var at = c != null ? ConstructGantry.FindPart(c, j.Part, j.PartAt) : -1; // (the body's parts renumbered by a removal: the gantry found again by its place)
-            if (at >= 0 && at != j.Part)
-                GantryRenumber(ref j, (ushort)at, now);
-            var gone = at < 0 || c!.DefOf(j.Part).Gantry is not { } gd || shell == null || !ConstructGantry.InBay(c, j.Part, gd, shell);
+            var gone = c.DefOf(j.Part).Gantry is not { } gd || shell == null || !ConstructGantry.InBay(c, j.Part, gd, shell);
             if (j.Old != 255 && gone)
             {
                 GantryStop(k, c, "the shell or the gantry went before its module was fitted");
                 continue;
             }
-            if (at < 0)
-            {
-                GantryEnd(k); // (fitted, its arm going home, and the gantry went: nothing left to draw)
-                continue;
-            }
             if (j.Old != 255 && t >= ConstructGantry.TFitted)
             {
-                if (GantryFit(ref j, c!, shell!) is { } why)
+                if (GantryFit(ref j, c, shell!) is { } why)
                 {
                     GantryStop(k, c, why);
                     continue;
@@ -155,20 +173,31 @@ public sealed partial class Game
                 GantryPin(in world.GantryLocks[k]); // (after the swaps' checks: a clamp whose gantry went has opened)
     }
 
-    /// <summary>Server: a swap's gantry part has a new index (its body's parts were renumbered): the swap and its clamp follow, and the peers hear it again under the new one.</summary>
-    private void GantryRenumber(ref GantryJob j, ushort part, double now)
+    /// <summary>
+    /// Server: a gantry (known by its body and place, <paramref name="partAt"/>) has a new part index: its swaps and its clamp follow, and
+    /// the peers hear the swaps again under the new one. Matched by place, never by the old index, which another gantry may have now.
+    /// </summary>
+    private void GantryRenumber(ushort body, Vector3 partAt, ushort part, double now)
     {
         var world = Constructs;
-        var old = j.Part;
-        var body = j.Body;
+        var old = -1;
         for (var k = 0; k < world.GantryJobCount; k++)
-            if (world.GantryJobs[k].Body == body && world.GantryJobs[k].Part == old)
+            if (world.GantryJobs[k].Body == body && world.GantryJobs[k].PartAt == partAt && world.GantryJobs[k].Part != part)
             {
+                old = world.GantryJobs[k].Part;
                 GantrySend(world.GantryJobs[k], false, 0, null); // (every swap of that gantry: they share its clamp)
                 world.GantryJobs[k].Part = part;
             }
-        if (ConstructGantry.LockAt(world, body, old) is var l and >= 0)
-            world.GantryLocks[l].Part = part;
+        for (var k = 0; k < world.GantryLockCount; k++)
+        {
+            ref var l = ref world.GantryLocks[k];
+            if (l.Body != body)
+                continue;
+            if (l.Until < 0 && l.PartAt == partAt)
+                l.Part = part;
+            else if (l.Part == part && l.Until >= 0)
+                l.Until = 0; // (another gantry's clamp opening under that index: done, so the keys never meet)
+        }
         for (var k = 0; k < world.GantryJobCount; k++)
             if (world.GantryJobs[k].Body == body && world.GantryJobs[k].Part == part)
                 GantrySend(world.GantryJobs[k], true, now - world.GantryJobs[k].Start, null);

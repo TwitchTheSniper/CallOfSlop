@@ -21,6 +21,7 @@ public struct GantryJob
     public byte Old, New; // 1 + the module's index going off and going on
     public byte Arm; // which arm (ConstructGantry.ArmOf)
     public Vector3 PartAt; // server: the gantry part's place on its body, which tells it again after the body's parts are renumbered (ConstructGantry.FindPart)
+    public Vector3 TableAt; // server: the parts table's place on its body, likewise (ConstructGantry.FindTable)
     public double Start; // ConstructConveyor.Clock when it began (a client: when it heard it, less the time already run); later than now: queued behind another slot's
 }
 
@@ -229,16 +230,30 @@ public static class ConstructGantry
     /// </summary>
     public static int FindPart(Construct c, int part, Vector3 at)
     {
-        if (Same(c, part, at))
+        if (Same(c, part, at, false))
             return part;
         for (var g = 0; g < c.GantryCount; g++)
-            if (Same(c, c.Gantries[g], at))
+            if (Same(c, c.Gantries[g], at, false))
                 return c.Gantries[g];
+        for (var i = 0; i < c.PartCount; i++) // (the gantry list is made with the body's caches, a few ticks late on a big body: then every part; only on a renumber)
+            if (Same(c, i, at, false))
+                return i;
         return -1;
     }
 
-    private static bool Same(Construct c, int part, Vector3 at) =>
-        (uint)part < (uint)c.PartCount && !c.Parts[part].Broken && c.Parts[part].D.Gantry != null && c.Parts[part].Pos == at;
+    /// <summary>A parts table as a job knows it (its place on its body), as <see cref="FindPart"/> finds a gantry: its index now, or -1.</summary>
+    public static int FindTable(Construct tb, int table, Vector3 at)
+    {
+        if (Same(tb, table, at, true))
+            return table;
+        for (var i = 0; i < tb.PartCount; i++)
+            if (Same(tb, i, at, true))
+                return i;
+        return -1;
+    }
+
+    private static bool Same(Construct c, int part, Vector3 at, bool table) =>
+        (uint)part < (uint)c.PartCount && !c.Parts[part].Broken && (table ? c.Parts[part].D.GantryTable : c.Parts[part].D.Gantry != null) && c.Parts[part].Pos == at;
 
     /// <summary>
     /// Both peers, each frame (GantryRender.Draw): a shell in a shut clamp is marked held (<see cref="Construct.GantryHold"/>) though it
@@ -264,7 +279,7 @@ public static class ConstructGantry
         1 => new Vector3(0, 0, 0.32f),
         2 => new Vector3(-0.3f, 0, 0.1f),
         3 => new Vector3(0.3f, 0, 0.1f),
-        _ => new Vector3(0, 0, 0.32f),
+        _ => new Vector3(0, 0.15f, 0.32f), // (a leg comes up clear of the deck as it comes back)
     };
 
     /// <summary>Where the arms set an old module down and take the new one from, beside the table's middle (the gantry part's frame).</summary>
@@ -457,10 +472,15 @@ public static class ConstructGantry
     /// <summary>The clamp entry of a gantry (held or still opening), or -1.</summary>
     public static int LockAt(ConstructWorld world, ushort body, int part)
     {
+        var opening = -1;
         for (var k = 0; k < world.GantryLockCount; k++)
             if (world.GantryLocks[k].Body == body && world.GantryLocks[k].Part == part)
-                return k;
-        return -1;
+            {
+                if (world.GantryLocks[k].Until < 0)
+                    return k; // (a held one first: a renumbered gantry may share an index with another's clamp still opening)
+                opening = k;
+            }
+        return opening;
     }
 
     /// <summary>Has a gantry's clamp finished opening (its entry free for another)?</summary>

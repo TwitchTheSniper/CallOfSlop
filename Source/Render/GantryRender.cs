@@ -96,11 +96,15 @@ public static class GantryRender
         var d = p.D;
         var map = ConstructGantry.BoxSlots(d);
         var place = Matrix4x4.CreateTranslation(-ConstructGantry.SlotLocal(d, slot)) * Matrix4x4.CreateFromQuaternion(turn) * Matrix4x4.CreateTranslation(at) * frame;
+        var health = Math.Clamp(p.Health / MathF.Max(1, d.Health), 0, 1);
+        var shade = p.Broken ? 0.25f : 0.55f + 0.45f * health; // (as the shell itself is drawn: ConstructRender.DrawPart, its tone, finish and wear)
+        var wear = p.Broken ? 1f : 1f - health;
         for (var b = 0; b < map.Length; b++)
         {
             ref readonly var box = ref d.Boxes[b];
             if (map[b] == slot && !box.Hidden)
-                gfx.Draw(box.Model(0, box.Center) * place, ConstructPaint.BoxColour(p.Paint, in box), shape: box.Shape);
+                gfx.Draw(box.Model(0, box.Center) * place, ConstructPaint.BoxColour(p.Paint, in box) * shade, 1f, mode: 0, shape: box.Shape,
+                    surface: Surfaces.Code(ConstructFinish.BoxRow(in box, p.Paint, p.Finish), wear));
         }
     }
 
@@ -109,7 +113,7 @@ public static class GantryRender
     // pelvis, a tooth at each jaw's front over the pelvis's front corners. Faces stand 3 mm or more off the shell's (z-fighting.md).
     private const float YokeY = 0.88f, YokeZ = 0.124f, JawX = 0.22f, JawOpen = 1.31f; // (75 degrees out)
     private static readonly Vector3 Housing = new(0.3f, 0.26f, 0.23f), Lamp = new(0.06f, 0.06f, 0.03f);
-    private static readonly Vector3 Stripe = new(0.08f, 0.08f, 0.085f), LampOn = new(1f, 0.16f, 0.1f), LampOff = new(0.3f, 0.08f, 0.07f);
+    private static readonly Vector3 Hazard = new(0.95f, 0.69f, 0.12f), Stripe = new(0.06f, 0.06f, 0.065f), LampOn = new(1f, 0.16f, 0.1f), LampOff = new(0.3f, 0.08f, 0.07f);
 
     /// <summary>The clamp of a gantry: at rest folded at its housing; while a change runs, out on the shell (closing, shut, opening).</summary>
     private static void DrawClamp(Renderer gfx, ConstructWorld world, Construct c, int part, ShellGantryDef gd, Vector3 pos, Quaternion rot, Matrix4x4 frame, double now)
@@ -154,10 +158,13 @@ public static class GantryRender
             // round the pelvis's front corner with a lamp on its face (red while it grips); turned out about its end on the yoke.
             var pivot = new Vector3(side * JawX, 0, 0);
             var turn = Matrix4x4.CreateTranslation(-pivot) * Matrix4x4.CreateRotationY(-side * JawOpen * (1 - jaw)) * Matrix4x4.CreateTranslation(pivot) * yf;
-            Box(gfx, turn, new Vector3(side * JawX, 0, -0.1245f), new Vector3(0.035f, 0.1f, 0.249f), Grip);
+            Box(gfx, turn, new Vector3(side * JawX, 0, -0.1245f), new Vector3(0.035f, 0.1f, 0.249f), Hazard);
             for (var st = 0; st < 4; st++)
-                Box(gfx, turn, new Vector3(side * 0.2385f, 0, -0.03f - st * 0.06f), new Vector3(0.006f, 0.09f, 0.026f), Stripe);
-            Box(gfx, turn, new Vector3(side * 0.1795f, 0, -0.249f), new Vector3(0.109f, 0.09f, 0.026f), Grip);
+                Box(gfx, turn, new Vector3(side * 0.2385f, 0, -0.033f - st * 0.06f), new Vector3(0.006f, 0.09f, 0.032f), Stripe); // (black bands on its yellow outer face)
+            Box(gfx, turn, new Vector3(side * 0.1795f, 0, -0.249f), new Vector3(0.109f, 0.09f, 0.026f), Hazard);
+            Box(gfx, turn, new Vector3(side * 0.135f, 0, -0.262f), new Vector3(0.025f, 0.08f, 0.006f), Stripe); // (and two on the tooth's front)
+            Box(gfx, turn, new Vector3(side * 0.215f, 0, -0.262f), new Vector3(0.025f, 0.08f, 0.006f), Stripe);
+            Box(gfx, turn, new Vector3(side * 0.225f, -0.0225f, 0), new Vector3(0.04f, 0.075f, 0.05f), Pin); // (the hinge knuckle that ties the jaw to the yoke, at the hip's side)
             var lamp = new Vector3(side * 0.17f, 0.018f, -0.2635f);
             if (held)
                 gfx.Draw(Matrix4x4.CreateScale(0.035f, 0.025f, 0.01f) * Matrix4x4.CreateTranslation(lamp) * turn, LampOn, 1f, mode: 2);

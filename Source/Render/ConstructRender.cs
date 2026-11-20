@@ -287,7 +287,7 @@ public static partial class ConstructRender
                 PanelRender.Gather(gfx, world, c, body, blendTicks ? alpha : 1f, cull ? _planes : default, Now); // (display panels near the eye and facing it)
             if (c.HasLogic || c.HasVolumeStore)
                 n += DrawVolumes(gfx, c, body, blendTicks ? alpha : 1f); // (cargo volumes: a logic part each)
-            if (c.Frozen || c.FrozenPieces > 0)
+            if ((c.Frozen || c.FrozenPieces > 0) && !NoAimGlow) // (nor in a --no-hands scene picture: the map's own frozen props)
             {
                 // Frozen by the physics gun: an icy outline round each part of each frozen piece (ConstructGrab.cs): one box round the whole would read
                 // as its collider, and it is not. A big construct shows the frost tint alone.
@@ -1395,7 +1395,7 @@ public static partial class ConstructRender
     /// region; a panel hung on a hinge, its door handle or a hand's width at its free edge (<see cref="ConstructDoor"/>); a part
     /// with none of those, or something loose (all of it comes up in the hands), glows whole.
     /// </summary>
-    /// <summary>The window tool's --no-hands: no aim glow in a scene picture.</summary>
+    /// <summary>The window tool's --no-hands: no aim glow and no frozen outlines in a scene picture.</summary>
     public static bool NoAimGlow;
 
     private static void DrawAimGlow(Renderer gfx, Construct c, int part)
