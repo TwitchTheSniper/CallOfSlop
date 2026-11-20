@@ -1,0 +1,284 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Commoner Cargo Crate",
+  "description": "Commoner cargo crate (draft): a plywood crate with bent steel corners, a stencilled number, a ratchet strap round it and old freight stickers. The lid nailed shut, one board replaced in a paler wood.",
+  "group": "StyleCommoner",
+  "section": "Commoner style",
+  "role": "frame",
+  "tool": "wrench",
+  "finish": "worn paint",
+  "collider": "boxes",
+  "mass": 40.0,
+  "health": 200,
+  "armour": 2,
+  "material": "wood",
+  "color": "#d6c9a8",
+  "attachSeconds": 2.0,
+  "boxes": [
+    {
+      "min": [
+        -0.4,
+        0.0,
+        -0.4
+      ],
+      "max": [
+        0.4,
+        0.8,
+        0.4
+      ],
+      "color": "#d6c9a8",
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.4,
+        0.0,
+        -0.4
+      ],
+      "max": [
+        0.4,
+        0.8,
+        0.4
+      ],
+      "color": "#9c7a4e",
+      "detail": true,
+      "finish": "wood",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.37,
+        0.04,
+        0.4
+      ],
+      "max": [
+        0.37,
+        0.2,
+        0.411
+      ],
+      "color": "#8f6e44",
+      "detail": true,
+      "finish": "wood",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.37,
+        0.23,
+        0.4
+      ],
+      "max": [
+        0.37,
+        0.39,
+        0.411
+      ],
+      "color": "#8f6e44",
+      "detail": true,
+      "finish": "wood",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.37,
+        0.42,
+        0.4
+      ],
+      "max": [
+        0.37,
+        0.58,
+        0.411
+      ],
+      "color": "#c4a273",
+      "detail": true,
+      "finish": "wood",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.37,
+        0.61,
+        0.4
+      ],
+      "max": [
+        0.37,
+        0.77,
+        0.411
+      ],
+      "color": "#8f6e44",
+      "detail": true,
+      "finish": "wood",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.42,
+        0.002,
+        -0.42
+      ],
+      "max": [
+        -0.36,
+        0.8,
+        -0.36
+      ],
+      "color": "#3b3631",
+      "detail": true,
+      "finish": "rusty paint",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.42,
+        0.002,
+        0.36
+      ],
+      "max": [
+        -0.36,
+        0.8,
+        0.42
+      ],
+      "color": "#3b3631",
+      "detail": true,
+      "finish": "rusty paint",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.36,
+        0.002,
+        -0.42
+      ],
+      "max": [
+        0.42,
+        0.8,
+        -0.36
+      ],
+      "color": "#3b3631",
+      "detail": true,
+      "finish": "rusty paint",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.36,
+        0.002,
+        0.36
+      ],
+      "max": [
+        0.42,
+        0.8,
+        0.42
+      ],
+      "color": "#3b3631",
+      "detail": true,
+      "finish": "rusty paint",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.42,
+        0.8,
+        -0.42
+      ],
+      "max": [
+        0.42,
+        0.83,
+        0.42
+      ],
+      "color": "#8f6e44",
+      "detail": true,
+      "finish": "wood",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.06,
+        0.002,
+        -0.425
+      ],
+      "max": [
+        0.06,
+        0.84,
+        0.425
+      ],
+      "color": "#b25a2c",
+      "detail": true,
+      "finish": "fabric",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.05,
+        0.4,
+        0.425
+      ],
+      "max": [
+        0.05,
+        0.5,
+        0.445
+      ],
+      "color": "#a3a199",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.12,
+        0.45,
+        0.409
+      ],
+      "max": [
+        0.34,
+        0.6,
+        0.42
+      ],
+      "color": "#3b3631",
+      "detail": true,
+      "finish": "worn paint",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.34,
+        0.25,
+        0.408
+      ],
+      "max": [
+        -0.14,
+        0.35,
+        0.419
+      ],
+      "color": "#e4ddcc",
+      "detail": true,
+      "finish": "plastic",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.338,
+        0.252,
+        0.416
+      ],
+      "max": [
+        -0.24,
+        0.348,
+        0.427
+      ],
+      "color": "#d9533b",
+      "detail": true,
+      "finish": "plastic",
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

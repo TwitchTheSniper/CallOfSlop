@@ -24,6 +24,7 @@
     { "group": "Ship", "notSection": "Ship fittings", "unlisted": true },
     { "group": "Station", "unlisted": true },
     { "group": "Style", "unlisted": true },
+    { "group": "StyleCommoner", "unlisted": true },
     { "group": "Ship", "name": ["Magpie", "Zero Day", "Rust Bucket", "Dray", "Shuttle", "Limpet"], "unlisted": true },
     { "name": "Robot Shell Dock", "to": ["Shells", "Pods"] },
     { "section": "Shells", "name": "Shell Pod", "to": ["Shells", "Pods"] },
