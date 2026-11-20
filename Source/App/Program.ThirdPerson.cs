@@ -26,7 +26,7 @@ public static unsafe partial class Program
         if (!seated)
             _tpSeatKey = 0; // (a seat sat in again starts from its own distance and heading)
         var piloting = seated && g.LocalDrone() != null; // (its own mode: a seat's remembered third person would be the chair, not the drone)
-        if (_mouseCaptured && Pressed(GameAction.ThirdPerson))
+        if (_mouseCaptured && !SpectateOn && Pressed(GameAction.ThirdPerson))
             ThirdPerson.Toggle(seated, piloting);
         if (_mouseCaptured && Pressed(GameAction.ThirdPersonSide))
             ThirdPerson.Side = -ThirdPerson.Side;

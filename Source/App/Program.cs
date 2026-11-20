@@ -1509,6 +1509,8 @@ public static unsafe partial class Program
     private static void ScrollInput(double y)
     {
         var offset = new double2(0, y);
+        if (_session != null && _mouseCaptured && Math.Abs(offset.Y) > 0.1 && SpectateScroll(offset.Y))
+            return; // (creative Sandbox's spectate camera: the wheel sets its speed; Program.Spectate.cs)
         if (_session != null && _mouseCaptured && Math.Abs(offset.Y) > 0.1 && BlueprintGhostScroll(offset.Y))
             return; // (a blueprint ghost out: the wheel turns it; Program.SandboxBlueprintGhost.cs)
         if (_session != null && _mouseCaptured && Math.Abs(offset.Y) > 0.1 && TerminalScroll(offset.Y))
@@ -1766,17 +1768,22 @@ public static unsafe partial class Program
         if (Pressed(GameAction.Ready) && !Ui.PauseOpen)
             _game.ToggleReady();
 
+        SpectateInput(_game); // creative Sandbox: the spectate camera's key and flight (Program.Spectate.cs)
         // Sandbox: the tool wheel takes the mouse while it is held open (Program.SandboxWheel.cs).
-        var wheelOpen = ToolWheelInput(delta);
-        wheelOpen |= PhysGunMouse(delta); // Sandbox: F held with the physics gun holding something: the mouse turns it (Program.PhysicsGun.cs)
-        wheelOpen |= NudgeMouse(delta); // Sandbox: a Nudge tool drag: the view holds still (Program.SandboxNudge.cs)
-        wheelOpen |= SocketWeldMouse(delta); // Sandbox: the welder's socket weld, step 3: mouse X spins the piece (Program.SandboxSocketWeld.cs)
-        wheelOpen |= PointWeldMouse(delta); // ...and the point weld's (Program.SandboxPointWeld.cs)
-        wheelOpen |= SelectMouse(delta); // ...and the selector's marquee (Program.SandboxSelect.cs)
-        wheelOpen |= GantryMouse(delta); // Sandbox: the Build Gantry's camera has the mouse (Program.SandboxGantry.cs)
-        wheelOpen |= LeverMouse(delta); // Sandbox: a hand on an Analog Lever: the mouse moves it (Program.SandboxLever.cs)
+        var wheelOpen = SpectateMouse(delta); // (the spectate camera has the mouse: nothing else looks round)
+        wheelOpen |= ToolWheelInput(delta);
+        if (!SpectateOn) // (the spectate camera has the mouse: no held piece turns, no weld spins, no lever moves)
+        {
+            wheelOpen |= PhysGunMouse(delta); // Sandbox: F held with the physics gun holding something: the mouse turns it (Program.PhysicsGun.cs)
+            wheelOpen |= NudgeMouse(delta); // Sandbox: a Nudge tool drag: the view holds still (Program.SandboxNudge.cs)
+            wheelOpen |= SocketWeldMouse(delta); // Sandbox: the welder's socket weld, step 3: mouse X spins the piece (Program.SandboxSocketWeld.cs)
+            wheelOpen |= PointWeldMouse(delta); // ...and the point weld's (Program.SandboxPointWeld.cs)
+            wheelOpen |= SelectMouse(delta); // ...and the selector's marquee (Program.SandboxSelect.cs)
+            wheelOpen |= GantryMouse(delta); // Sandbox: the Build Gantry's camera has the mouse (Program.SandboxGantry.cs)
+            wheelOpen |= LeverMouse(delta); // Sandbox: a hand on an Analog Lever: the mouse moves it (Program.SandboxLever.cs)
+        }
 
-        if (_game.MmuSteering && Pressed(GameAction.SeatDampeners))
+        if (_game.MmuSteering && !SpectateOn && Pressed(GameAction.SeatDampeners))
             _game.MmuToggleDampers(); // (a worn MMU's inertia dampeners, on the seat's key: GameSandboxMmu.cs)
         var tpOrbit = ThirdPersonInput(); // Sandbox third person: the toggle, and whether the mouse orbits the seat camera (Program.ThirdPerson.cs)
 
@@ -1814,7 +1821,7 @@ public static unsafe partial class Program
         var sandbox = SandboxInputGuarded(now); // Sandbox: tools, parts, seats and doors take these keys (Program.Sandbox.cs)
         _game.RideTickPose();
         var buttons = Buttons.None;
-        if (_mouseCaptured)
+        if (_mouseCaptured && !SpectateOn) // (the spectate camera out: the body does nothing, Program.Spectate.cs)
         {
             // One-shot actions
             if (Pressed(GameAction.CrouchToggle))
@@ -1932,11 +1939,12 @@ public static unsafe partial class Program
                 buttons |= Buttons.Crouch;
         }
         buttons = GantryButtons(buttons); // (the Build Gantry's camera: the body stays parked, Program.SandboxGantry.cs)
+        buttons = SpectateButtons(buttons); // (...and the spectate camera's, Program.Spectate.cs)
         _game.HeldButtons = buttons;
-        _game.AimHeld = (_mouseCaptured && Down(GameAction.Aim) && !SandboxHoldsTrigger) ; // (Sandbox: aim takes parts off with a tool out)
+        _game.AimHeld = (_mouseCaptured && Down(GameAction.Aim) && !SandboxHoldsTrigger && !SpectateOn) ; // (Sandbox: aim takes parts off with a tool out)
 
         // Trigger: semi-auto weapons need the press edge, autos use the held state.
-        var down = _mouseCaptured && Down(GameAction.Fire) && !SandboxHoldsTrigger; // (Sandbox: fire fits parts with a tool out; drivers don't shoot)
+        var down = _mouseCaptured && Down(GameAction.Fire) && !SandboxHoldsTrigger && !SpectateOn; // (Sandbox: fire fits parts with a tool out; drivers don't shoot)
         if (_swallowClick)
         {
             if (!down)
@@ -2090,7 +2098,7 @@ public static unsafe partial class Program
             eye = new Vector3(MathF.Sin(a) * 26f, 14f, MathF.Cos(a) * 26f);
             fwd = Vector3.Normalize(-eye + new Vector3(0, 1, 0));
         }
-        var tp = local != null && (GantryCamera(ref eye, ref fwd) || ThirdPersonCamera(local, ref eye, ref fwd)); // Sandbox: the Build Gantry's camera (Program.SandboxGantry.cs), third person (Program.ThirdPerson.cs)
+        var tp = local != null && (SpectateCamera(local, ref eye, ref fwd) || GantryCamera(ref eye, ref fwd) || ThirdPersonCamera(local, ref eye, ref fwd)); // Sandbox: the Build Gantry's camera (Program.SandboxGantry.cs), third person (Program.ThirdPerson.cs)
         _game.Audio.SetListener(eye, fwd);
         var shake = Vector3.Zero;
         if (_game.Shake > 0.01f)
@@ -2605,7 +2613,7 @@ public static unsafe partial class Program
         if (local is { Alive: true })
         {
             // Aimed through an optic, its lens has the reticle (Source/Render/SightLens.cs); otherwise the crosshair.
-            if (!SightLens.HidesCrosshair(_game.Active.Def, _game.AimT) && !GantryOn && _talkCamT <= 0) // (the gantry's camera draws its cursor: the build bar; the talk camera's shot has none)
+            if (!SightLens.HidesCrosshair(_game.Active.Def, _game.AimT) && !GantryOn && !SpectateOn && _talkCamT <= 0) // (the spectate camera has no crosshair; the gantry's camera draws its cursor: the build bar; the talk camera's shot has none)
             {
                 // Dynamic crosshair: gap matches the real spread cone at this FOV.
                 var spread = _game.CurrentSpread();
