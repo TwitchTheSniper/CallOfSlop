@@ -287,6 +287,7 @@ public sealed class FittingLookParts : IPartGenerator
     {
         o.Own(Out);
         var all = new List<Part> { ServiceLocker(), PressureLocker(), BatteryModule() };
+        all.AddRange(FittingLookDoors.All()); // (the style sheet's bulkhead doors, 2026-11-20: their own folder entries, Doors and gates)
         foreach (var p in all)
         {
             var d = p.Json();

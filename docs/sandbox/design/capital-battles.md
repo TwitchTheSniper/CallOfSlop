@@ -2,7 +2,7 @@
 
 Karl (2026-11-20): capital ships should fight with the damage visible (a railgun shot through the ship, many penetrations with
 several capital ships fighting, a ship breaking up) and no loss of frame rate. Background: the holes study (Claude Doc
-PN79Syp1w9HwMJzfpEipQU) and its spike, draft PR 201 (not for merging). Test ship: the Mainframe (docs/sandbox/constructs/mainframe.md).
+PN79Syp1w9HwMJzfpEipQU) and its spike, draft PR 201 (not for merging). Test ship: the Mainframe, archived 2026-11-20 (docs/archive/capital/mainframe.md); `--battle-check` now defaults to the Zero Day.
 
 ## What is in (phase 1)
 
