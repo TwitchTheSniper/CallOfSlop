@@ -21,7 +21,7 @@ dealt into welded pieces by `SplitDeck` and `SplitBands`.
 - **Nacelles**: a fuel tank forward of an engine housing (`EngineHousing.Draw`) on a swept pylon off engineering's flank. Each has a
   Drive Nozzle M outside its tail plate, a Drive Core M and Fuel Pump M inside, a service hatch outboard, and RCS on its nose, top
   and bottom.
-- A blunt glass nose sealed by a slightly rounded glass Nose Cap in a dark rim, with the nav beacon at its tip (Karl, 2026-11-20).
+- A blunt glass nose sealed by a slightly rounded Nose Cap of flat glass panes, split down the middle, every pane edged in dark beading like the canopy's and a wider bead where it meets the canopy, with the nav beacon at its tip (Karl, 2026-11-20).
 - Lift jets and small (S) leg pods under the cab and engineering (Karl asked for smaller legs), attitude jets at both ends. The racks clear the ground by about 0.9 m.
 
 ## Cargo

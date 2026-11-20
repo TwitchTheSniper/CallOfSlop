@@ -1122,22 +1122,70 @@ public sealed class FreighterParts : IPartGenerator
     /// shrinking rings, with a dark rim where it meets the glass and a hidden block back to the cockpit's nose void.</summary>
     private static Part NoseCap()
     {
-        var p = Big("Packet Nose Cap", "The Packet's nose cap: a rounded glass dome sealing the front of the glass cockpit in a dark rim, with the nav beacon at its tip.", color: Skin);
-        const double cy = 1.35;
+        var p = Big("Packet Nose Cap", "The Packet's nose cap: a rounded dome of glass panes sealing the front of the glass cockpit, split down the middle, each pane in dark beading like the canopy's, with the nav beacon at its tip.", color: Skin);
+        const double cy = 1.35, bw = 0.05, bh = 0.03; // (the dome's axis height; the beading's width and how far it stands proud)
         var sec = At(Zt);
+        // Each ring goes round the section scaled about the axis: up the port side, across the top through its middle, down the
+        // starboard side and back across the bottom through its middle, so the cap splits into two halves on the centreline.
         double[][] Ring(double dz, double k)
         {
             var pts = new List<double[]>();
-            foreach (var sd in new[] { -1, 1 })
-                foreach (var q in sec)
-                    pts.Add(Sh([Cx + sd * q.H * k, cy + (q.Y - cy) * k, Zt - dz]));
+            double[] At3(double x, double y) => Sh([Cx + x * k, cy + (y - cy) * k, Zt - dz]);
+            pts.Add(At3(0, sec[0].Y));
+            foreach (var q in sec)
+                pts.Add(At3(-q.H, q.Y));
+            pts.Add(At3(0, sec[^1].Y));
+            for (var i = sec.Length - 1; i >= 0; i--)
+                pts.Add(At3(sec[i].H, sec[i].Y));
             return [.. pts];
         }
-        (double Dz, double K)[] rings = [(0.004, 1.012), (0.16, 0.985), (0.32, 0.9), (0.46, 0.74), (0.56, 0.5), (0.6, 0.22)];
-        for (var i = 0; i + 1 < rings.Length; i++)
-            Prism(p, Ring(rings[i].Dz, rings[i].K), Ring(rings[i + 1].Dz, rings[i + 1].K), i == 0 ? Frame : Glass, i == 0 ? "painted plating" : "glass", glass: i > 0); // (Karl, 2026-11-20: glass, in the dark rim)
-        // A beacon lamp at the tip.
-        Detail(p, Cx - 0.08, cy + 0.32, Zt - 0.62, Cx + 0.08, cy + 0.46, Zt - 0.55, Red, glow: true);
+        (double Dz, double K)[] rings = [(0.004, 1.0), (0.24, 0.93), (0.44, 0.72), (0.57, 0.42)];
+        var R = rings.Select(r => Ring(r.Dz, r.K)).ToArray();
+        int n = R[0].Length, bands = R.Length - 1;
+        var back = Sh([Cx, cy, Zt + 0.6]); // (a point behind the cap: every pane faces away from it)
+        double[] Outward(double[] nrm, double[] at) => Dot(nrm, Sub(at, back)) < 0 ? [-nrm[0], -nrm[1], -nrm[2]] : nrm;
+        double[] Mid(params double[][] q) => [q.Average(v => v[0]), q.Average(v => v[1]), q.Average(v => v[2])];
+        // The panes, glass like the canopy's: one flat plate each (a ring is the last scaled about the axis, so each quad is flat).
+        var N = new double[bands + 1][][];
+        for (var i = 0; i < bands; i++)
+        {
+            N[i] = new double[n][];
+            for (var j = 0; j < n; j++)
+            {
+                double[] a0 = R[i][j], a1 = R[i][(j + 1) % n], b1 = R[i + 1][(j + 1) % n], b0 = R[i + 1][j];
+                N[i][j] = Outward(Unit(Cross(Sub(a1, a0), Sub(b0, a0))), Mid(a0, a1, b1, b0));
+                Quad(p, a0, a1, b1, b0, Glass, "glass", true);
+            }
+        }
+        double[] tipN = [0, 0, -1];
+        N[bands] = [.. Enumerable.Range(0, n).Select(_ => tipN)];
+        // The tip: two flat halves, port and starboard of the centreline.
+        var half = n / 2;
+        Plate(p, [.. Enumerable.Range(0, half + 1).Select(j => R[bands][j])], Glass, "glass", true);
+        Plate(p, [.. Enumerable.Range(half, half + 1).Select(j => R[bands][j % n])], Glass, "glass", true);
+        // The beading over every pane's edges: a bar from a to b standing out along nrm.
+        void Bead(double[] a, double[] b, double[] nrm, double w, double lift)
+        {
+            var d = Unit(Sub(b, a));
+            var side = Unit(Cross(d, nrm));
+            double[][] End(double[] q) => [.. new[] { (-1, -0.006 - lift), (1, -0.006 - lift), (1, T / 2 + bh + lift), (-1, T / 2 + bh + lift) }.Select(t => new[] { q[0] + side[0] * t.Item1 * w / 2 + nrm[0] * t.Item2, q[1] + side[1] * t.Item1 * w / 2 + nrm[1] * t.Item2, q[2] + side[2] * t.Item1 * w / 2 + nrm[2] * t.Item2 })];
+            double[] Ext(double[] q, double s) => [q[0] + d[0] * s, q[1] + d[1] * s, q[2] + d[2] * s];
+            Prism(p, End(Ext(a, -w / 2)), End(Ext(b, w / 2)), Frame, "painted plating");
+        }
+        double[] Avg(double[] u, double[] v) => Unit([u[0] + v[0], u[1] + v[1], u[2] + v[2]]);
+        for (var i = 0; i <= bands; i++)
+            for (var j = 0; j < n; j++)
+            {
+                // Round each ring (the first, where the cap meets the canopy, a little wider), and along each pane's sides.
+                var below = i == 0 ? N[0][j] : N[i - 1][j];
+                Bead(R[i][j], R[i][(j + 1) % n], i == 0 ? below : Avg(below, N[i][j]), (i == 0 ? bw * 1.6 : bw) + (j % 2) * 0.004, (j % 2) * 0.003); // (neighbours differ by a few mm: where two beads run on in line or cross, no faces share a plane)
+                if (i < bands)
+                    Bead(R[i][j], R[i + 1][j], Avg(N[i][(j + n - 1) % n], N[i][j]), bw + 0.009 + (i % 2) * 0.004, 0.0065 + (i % 2) * 0.003);
+            }
+        Bead(R[bands][0], R[bands][half], tipN, bw + 0.018, 0.013); // (down the middle of the tip)
+        // A beacon lamp at the tip, over the centre bead.
+        var tz = Zt - rings[^1].Dz - T / 2;
+        Detail(p, Cx - 0.07, cy + 0.3, tz - bh - 0.03, Cx + 0.07, cy + 0.42, tz - bh + 0.004, Red, glow: true);
         Hidden(p, Cx - 0.6, Ft, Zt - 0.3, Cx + 0.6, 1.9, ZCkFloor - 0.45);
         return p.Stats(900, 6000, 30, 10.0);
     }
