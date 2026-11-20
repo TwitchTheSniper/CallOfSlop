@@ -38,8 +38,8 @@ public sealed partial class ConstructEdits
             if (o.Dirty)
                 o.Rebuild();
             foreach (var m in o.Modules)
-                if (m.Socket < 0 && o.DefOf(m.Plug).ModW == s.W && o.DefOf(m.Plug).ModL == s.L && Vector3.Distance(o.Pos, wface) < bestDist)
-                    (best, bestDist) = (o, Vector3.Distance(o.Pos, wface));
+                if (m.Socket < 0 && o.DefOf(m.Plug).ModW == s.W && o.DefOf(m.Plug).ModL == s.L && Vector3.Distance(o.ToWorld(o.Com), wface) < bestDist)
+                    (best, bestDist) = (o, Vector3.Distance(o.ToWorld(o.Com), wface));
         }
         if (best == null)
             return $"no loose {ModuleSocketTable.SizeText(s.W, s.L)} module within 30 m";
@@ -49,7 +49,7 @@ public sealed partial class ConstructEdits
         best.Vel = Vector3.Zero;
         best.SocketAt(best.Modules[0].Plug, best.DefOf(best.Modules[0].Plug).ModSocket, out pat, out _);
         var why = ModuleUseLogged(world, player, c, plate);
-        return why == null ? null : $"{why} (body {best.Id}: driver {best.Driver}, carried {best.CarriedBy}, held {best.HeldBy}, plug {Vector3.Distance(best.ToWorld(pat), wface):0.00} m from the face, body {Vector3.Distance(best.Pos, wface):0.00} m, radius {best.Radius:0.00})";
+        return why == null ? null : $"{why} (body {best.Id}: its plug {Vector3.Distance(best.ToWorld(pat), wface):0.00} m from the face)";
     }
 
     private string? ModuleUseLogged(ConstructWorld world, byte player, Construct c, int part)
@@ -178,7 +178,7 @@ public sealed partial class ConstructEdits
         }
         foreach (var o in world.Bodies)
         {
-            if (o == c || o.Driver != 255 || o.CarriedBy != 0 || o.HeldBy != 0 || Vector3.Distance(o.Pos, wface) > o.Radius + pull)
+            if (o == c || o.Driver != 255 || o.CarriedBy != 0 || o.HeldBy != 0 || Vector3.Distance(o.ToWorld(o.Com), wface) > o.Radius + pull) // (Radius is from the centre of mass: a module cut off a ship keeps the ship's origin, metres away)
                 continue;
             if (o.Dirty)
                 o.Rebuild();

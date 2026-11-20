@@ -2034,7 +2034,7 @@ public sealed class ShipParts : IPartGenerator
     }
 
     /// <summary>A Module Socket W x L centred on step <paramref name="on"/>'s socket, with its kind (the table's order) and keying. Its step.</summary>
-    private static int ModuleSocket(BuildingParts.Blueprint bp, int on, string sock, int w, int l, int kind = 0, bool keyed = false, double above = 0)
+    internal static int ModuleSocket(BuildingParts.Blueprint bp, int on, string sock, int w, int l, int kind = 0, bool keyed = false, double above = 0)
     {
         var s = bp.Hang($"Module Socket {w}x{l}", on, sock, "bc");
         var cfg = new PyDict();

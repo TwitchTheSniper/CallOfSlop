@@ -1947,7 +1947,7 @@ public sealed class MinerParts : IPartGenerator
         var lifts = new List<int>();
         foreach (var n in nacelles)
         {
-            bp.Hang("Magpie Drive", n, "drive", "front");
+            ShipParts.FittedModule(bp, ShipParts.ModuleSocket(bp, n, "drive", 3, 3, kind: 1, keyed: true), 3, 3, "Magpie Drive", "front"); // (a module on a keyed 3x3 engine socket on the tail plate, its Drive Core inside: module-sockets.md 11)
             bp.Hang("Drive Core S", n, "core", "front"); // (its engine, inside the housing on the drive's axis, bolted to the tail plate)
             Works.HangHatch(bp, n, n == nacelles[0] ? -1 : 1);
             lifts.Add(bp.Hang("Magpie Lift Jet", n, "lift", "top"));
@@ -2000,7 +2000,7 @@ public sealed class MinerParts : IPartGenerator
         Door(bp, bay, "doorFore");
         Door(bp, bay, "doorAft");
         // The cargo bay aft: engineering along its port side, the suit lockers, the ramp.
-        bp.Hang("Magpie Power Plant", eng, "reactor", "bottom");
+        ShipParts.FittedModule(bp, ShipParts.ModuleSocket(bp, eng, "reactor", 2, 2, kind: 2), 2, 2, "Magpie Power Plant", "bottom"); // (a 2x2 reactor socket: the plant stands inside the plug's lugs)
         bp.HangTurned("Ship Battery M", eng, "battery", "bottom", BuildingParts.RY270);
         bp.Hang("Power Board", eng, "board", "back");
         bp.Hang("Pipe Bank", eng, "pipes", "back");
@@ -2083,5 +2083,8 @@ public sealed class MinerParts : IPartGenerator
         }
         BuildingParts.AddPartDefs(o, defs, Out);
         o.File($"{BpOut}/MagpieMiningShip.json", PyJson.Dumps(Blueprint(defs, order), 2) + "\n");
+        // Its module designs (module-sockets.md 11): what its sockets hold, to fit again or swap in.
+        o.File($"{BpOut}/ModuleMagpieDrive3x3.json", ModuleSocketParts.DesignText("Module Magpie Drive 3x3", 3, 3, "engine", ["engine"], "the Magpie's main drive, for a keyed engine socket on a nacelle's tail plate (its Drive Core stays in the nacelle)", "miner", [("Magpie Drive", 0, ModuleSocketParts.CentreTop(3, 3), "front", 0)]));
+        o.File($"{BpOut}/ModuleMagpieReactor2x2.json", ModuleSocketParts.DesignText("Module Magpie Reactor 2x2", 2, 2, "reactor", ["reactor"], "a Magpie Power Plant on a 2x2 plug: 400 kW", "miner", [("Magpie Power Plant", 0, ModuleSocketParts.CentreTop(2, 2), "bottom", 0)]));
     }
 }
