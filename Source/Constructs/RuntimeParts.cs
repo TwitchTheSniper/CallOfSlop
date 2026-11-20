@@ -129,6 +129,7 @@ public static class RuntimeParts
         Ordnance.Forget(Doomed);
         ModularRack.Forget(Doomed);
         PartMaterials.Forget(Doomed);
+        ProcShips.ProcShipParts.Forget(Doomed);
         lock (Extrusion.Gate)
         {
             Extrusion.Forget(Doomed);

@@ -249,6 +249,10 @@ public static unsafe partial class Program
             return VehicleKit.VehicleGenJob.SliceReport(sliceVehicle, args); // seeds made in slices as a dynamic spawn makes them: time, slices, the longest spans by their yields
         if (args.SkipWhile(a => !a.Equals("--sweep-vehicle", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } sweepVehicle)
             return VehicleKit.VehicleDriveCheck.Report(VehicleKit.VehicleKitCli.SweepVehicle(sweepVehicle, args)); // many seeds of a shape, built and checked, nothing written
+        if (args.SkipWhile(a => !a.Equals("--gen-procship", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } genProcShip)
+            return ProcShips.ProcShipCli.Gen(genProcShip, args); // the procedural ship generator (Source/ProcShips, docs/procships/PROCSHIPS.md): one ship made, checked and fitted
+        if (args.SkipWhile(a => !a.Equals("--procship-gallery", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } procGallery)
+            return ConstructPreview.ProcGallery(procGallery, args); // the Procedural gallery: generated ships with their rooms, ways in and sockets, for the user's feedback
         if (args.Any(a => a.Equals("--preview-construct", StringComparison.OrdinalIgnoreCase) || a.Equals("--preview-gallery", StringComparison.OrdinalIgnoreCase) || a.Equals("--preview-shot", StringComparison.OrdinalIgnoreCase) || a.Equals("--anim-gallery", StringComparison.OrdinalIgnoreCase)))
             return ConstructPreview.Cli(args); // a blueprint or part as a turnable web page for an agent to publish (Source/DevTools/ConstructPreview.cs, tools/preview/)
         if (args.Any(a => a.Equals("--crew-check", StringComparison.OrdinalIgnoreCase)))
