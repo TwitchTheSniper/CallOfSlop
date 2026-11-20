@@ -36,6 +36,7 @@ public sealed unsafe class PropRenderer
         uniform mat4 uViewProj;
         uniform vec3 uCam;
         out vec3 vWorld;
+        out vec3 vEye; // the point from the eye, small numbers whose screen derivatives are the pixel's (a material's bumps: Surfaces.cs)
         out vec3 vNormal;
         out vec3 vColor;
         out vec2 vUv;
@@ -71,6 +72,7 @@ public sealed unsafe class PropRenderer
             vLayer = aUvLayer.z;
             vFade = fade;
             vHash = iYawFade.z;
+            vEye = vWorld - uCam;
             gl_Position = uViewProj * vec4(vWorld, 1.0);
         }
         """;
@@ -95,6 +97,7 @@ public sealed unsafe class PropRenderer
         uniform float uFreeze;                    // this prop type's freeze distance (metres)
         uniform sampler2D uAnim;                  // animation records, 6 RGBA32F texels each (PropAnimData)
         out vec3 vWorld;
+        out vec3 vEye; // the point from the eye, small numbers whose screen derivatives are the pixel's (a material's bumps: Surfaces.cs)
         out vec3 vNormal;
         out vec3 vColor;
         out vec2 vUv;
@@ -217,6 +220,7 @@ public sealed unsafe class PropRenderer
             vLayer = aUvLayer.z;
             vFade = fade;
             vHash = iYawFade.z;
+            vEye = vWorld - uCam;
             gl_Position = uViewProj * vec4(vWorld, 1.0);
         }
         """;
@@ -230,7 +234,9 @@ public sealed unsafe class PropRenderer
         layout(location = 4) in vec4 iSize;
         layout(location = 5) in vec4 iColor;
         uniform mat4 uViewProj;
+        uniform vec3 uCam;
         out vec3 vWorld;
+        out vec3 vEye; // the point from the eye, small numbers whose screen derivatives are the pixel's (a material's bumps: Surfaces.cs)
         out vec3 vNormal;
         out vec3 vColor;
         out vec2 vUv;
@@ -257,6 +263,7 @@ public sealed unsafe class PropRenderer
             vLocal = aPos * iSize.xyz;    // box-local metres: ragdoll blood rides with the box
             vBlood = iColor.w;            // ragdoll blood amount 0-1 (negative: zombie ichor; Ragdolls.cs), 0 for debris
             vBloodSeed = iSize.w;
+            vEye = vWorld - uCam;
             gl_Position = uViewProj * vec4(vWorld, 1.0);
         }
         """;
@@ -295,6 +302,7 @@ public sealed unsafe class PropRenderer
     private static readonly string FragmentSrc = "#version 410 core\n" + Lighting.Glsl + Surfaces.Glsl + """
 
         in vec3 vWorld;
+        in vec3 vEye;
         in vec3 vNormal;
         in vec3 vColor;
         in vec2 vUv;
@@ -327,7 +335,7 @@ public sealed unsafe class PropRenderer
                 col *= texture(uTex, vec3(vUv, vLayer)).r * 1.25;
             float rim = 0.12 * (1.0 - abs(n.y));
             if (uSurfQ.x > 0.5 && vSurf >= 7.0) // a shared material (Surfaces.cs): a prop has no box edges to wear (size 0), and it never moves, so world space serves
-                col = SurfaceLit(col, n, vWorld, vWorld, n, vec3(0.0), vSurf, vWorld, n, vec3(0.0, 1.0, 0.0)) + col * rim * 0.5 * gLitAmb;
+                col = SurfaceLit(col, n, vWorld, vEye, vWorld, n, vec3(0.0), vSurf, vWorld, n, vec3(0.0, 1.0, 0.0)) + col * rim * 0.5 * gLitAmb;
             else
                 col = ApplyLightAt(col, n, 0.0, vWorld) + col * rim * gLitAmb;
             col += vColor * (ownGlow * 0.1);

@@ -155,7 +155,7 @@ public sealed unsafe partial class Renderer
             // Hemisphere ambient + sun, plus a little rim light on the sides so box edges read.
             float rim = 0.12 * (1.0 - abs(n.y));
             if (uSurfQ.x > 0.5 && uLayer >= 7.0 && mode < 0.5) // a shared material (Surfaces.cs); Low, the rows of the old textures and everything else: the classic light
-                col = SurfaceLit(col, n, vWorld, vLocal, vLocalN, vSize, uLayer, vBody, vBodyN, normalize(vUpL)) + col * rim * 0.5 * gLitAmb;
+                col = SurfaceLit(col, n, vWorld, vRel, vLocal, vLocalN, vSize, uLayer, vBody, vBodyN, normalize(vUpL)) + col * rim * 0.5 * gLitAmb;
             else
                 col = ApplyLightAt(col, n, 0.0, vWorld) + col * rim * gLitAmb;
             // Distance haze towards the sky colour, so big maps fade out instead of ending abruptly.
