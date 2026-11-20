@@ -219,8 +219,8 @@ public sealed class ModuleSocketParts : IPartGenerator
         ("TwinGun2x2", "Module Twin Gun 2x2", 2, 2, "turret", ["turret"], "two AA Guns", [("AA Gun", "s0.0", "bottom"), ("AA Gun", "s1.1", "bottom")]),
         ("Tank1x1", "Module Tank 1x1", 1, 1, "cargo", ["cargo"], "a Fuel Tank", [("Fuel Tank", "s0.0", "-y")]),
         ("Battery1x1", "Module Battery 1x1", 1, 1, "power-store", ["power-store"], "a Battery", [("Battery", "s0.0", "-y")]),
-        ("Reactor3x3", "Module Reactor 3x3", 3, 3, "reactor", ["reactor"], "a Magpie Power Plant: 400 kW", [("Magpie Power Plant", "top.1.1", "bottom")]),
-        ("BigReactor3x3", "Module Big Reactor 3x3", 3, 3, "reactor", ["reactor"], "a Zero Day Reactor: 3 MW, heavy", [("Zero Day Reactor", "top.1.1", "bottom")]),
+        ("Reactor3x3", "Module Reactor 3x3", 3, 3, "reactor", ["reactor"], "a Magpie Power Plant: 400 kW", [("Magpie Power Plant", "s1.1", "bottom")]),
+        ("BigReactor3x3", "Module Big Reactor 3x3", 3, 3, "reactor", ["reactor"], "a Zero Day Reactor: 3 MW, heavy", [("Zero Day Reactor", "s1.1", "bottom")]),
     ];
 
     private static string ShippedText((string File, string Name, int W, int L, string Primary, string[] Tags, string About, (string Part, string On, string By)[] Parts) m)

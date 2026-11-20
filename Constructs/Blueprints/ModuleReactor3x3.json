@@ -5,6 +5,6 @@
   "module": { "w": 3, "l": 3, "primary": "reactor", "tags": ["reactor"] },
   "steps": [
     { "part": "Module Plug 3x3" },
-    { "part": "Magpie Power Plant", "on": 0, "socket": "top.1.1", "by": "bottom" }
+    { "part": "Magpie Power Plant", "on": 0, "socket": "s1.1", "by": "bottom" }
   ]
 }

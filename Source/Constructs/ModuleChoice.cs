@@ -130,7 +130,7 @@ public static class ModuleChoice
     /// <summary>
     /// 9.2's score: the wanted tags' benefits, less the power the module would draw past the ship's spare (over the power made), its
     /// mass and its bill (the bill is its mass: a kilogram's worth, against the ship's), plus an engine's acceleration gain over the
-    /// need. Fuel isn't weighed yet (a module's burn isn't summed).
+    /// need (capped at 1: an engine that alone meets the need scores its full weight). Fuel isn't weighed yet (a module's burn isn't summed).
     /// </summary>
     public static float Score(ModuleWants w, in ModuleCandidate m, ReadOnlySpan<ModuleCandidate> all, in ShipSummary ship)
     {
@@ -145,7 +145,7 @@ public static class ModuleChoice
         s -= w.Mass * m.Mass / mass;
         s -= w.Cost * m.Mass / mass;
         if (m.Primary == ModTag.Engine && w.Accel > 0)
-            s += w.Speed * m.Thrust / (mass + m.Mass) / w.Accel;
+            s += w.Speed * MathF.Min(1, m.Thrust / (mass + m.Mass) / w.Accel); // (capped at the need: past it, more push is worth no more)
         return s;
     }
 
