@@ -5,7 +5,7 @@ namespace CallOfSlop;
 
 /// <summary>
 /// <c>--battle-check [SHIP] [--idle --ground [--map NAME]] [--shots N] [--per-tick K] [--gun NAME] [--range M] [--seed S] [--focus F] [--blasts N [--blast-damage D] [--blast-radius R]]</c>: a capital ship under railgun
-/// fire, headless (docs/sandbox/design/capital-battles.md). The ship (default the Mainframe) is built on the Proving Ground and
+/// fire, headless (docs/sandbox/design/capital-battles.md). The ship (default the Zero Day) is built on the Proving Ground and
 /// held still in the air; a Zero Day (for its railgun) is held far off; then N shots are fired at it from its broadside, K in a
 /// tick, each at a random point on its middle, through the real round (<see cref="ConstructWeapons.ShotFrom"/>), and a world
 /// tick is stepped after each volley. It reports what each volley did (parts hit, parts broken, pieces split off, the bores
@@ -17,9 +17,9 @@ public static class BattleCheck
     {
         string Arg(string name, string def) => args.SkipWhile(a => !a.Equals(name, StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() ?? def;
         var inv = System.Globalization.CultureInfo.InvariantCulture;
-        var name = Arg("--battle-check", "Mainframe");
+        var name = Arg("--battle-check", "Zero Day");
         if (name.StartsWith("--"))
-            name = "Mainframe";
+            name = "Zero Day";
         var shots = int.Parse(Arg("--shots", "40"), inv);
         var perTick = Math.Max(1, int.Parse(Arg("--per-tick", "1"), inv));
         var gunName = Arg("--gun", "Zero Day Railgun");
@@ -236,14 +236,36 @@ public static class BattleCheck
         var blasts = int.Parse(Arg("--blasts", "0"), inv);
         var blastDamage = float.Parse(Arg("--blast-damage", "30000"), inv);
         var blastRadius = float.Parse(Arg("--blast-radius", "12"), inv);
+        var torpedo = 0;
+        if (args.Contains("--torpedo") && Ordnance.Parse(CallOfSlop.PartKit.Generators.TorpedoFrigateParts.Torpedo)?.OrdStats?.Flight.Charges is { Count: > 0 } charges)
+        {
+            // The Zero Day's torpedo's warheads (its double HE), each blast as one charge after the other.
+            blastDamage = charges.Max(ch => ch.Damage);
+            blastRadius = charges.Max(ch => ch.Blast);
+            torpedo = charges.Count;
+            Console.WriteLine($"torpedo: {charges.Count} charge(s), each {blastRadius:0.0} m and {blastDamage:0} damage, on the hull");
+        }
         for (var b = 0; b < blasts && w.Get(ship.Id) != null; b++)
         {
             var along = focus is { } f ? f + (float)(rng.NextDouble() - 0.5) * 12f / MathF.Max(size.X, size.Z) : (float)(rng.NextDouble() * 0.8 - 0.4);
             var across = (float)(rng.NextDouble() - 0.5) * 0.8f;
             var up = (float)(rng.NextDouble() - 0.5) * 0.8f;
             var at = centre + (longX ? new Vector3(size.X * along, size.Y * up, size.Z * across) : new Vector3(size.X * across, size.Y * up, size.Z * along));
+            var series = 1;
+            if (torpedo > 0)
+            {
+                // A torpedo bursts on the hull: where a line in from the broadside at that height meets the ship.
+                var side = rng.Next(2) == 0 ? -1f : 1f;
+                var into = longX ? new Vector3(0, 0, -side) : new Vector3(-side, 0, 0);
+                var from = at - into * 200f;
+                if (!w.Raycast(from, into, 400f, out var hh, shooter))
+                    continue;
+                at = hh.Point - into * 0.3f;
+                series = torpedo;
+            }
             sw.Restart();
-            ConstructWeapons.Explode(w, at, blastRadius, blastDamage, shooter, CFireKind.Blast);
+            for (var q = 0; q < series; q++)
+                ConstructWeapons.Explode(w, at, blastRadius, blastDamage, shooter, CFireKind.Blast);
             var e = sw.Elapsed.TotalMilliseconds;
             sw.Restart();
             w.Step(World.Query, dt);

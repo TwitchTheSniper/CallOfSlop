@@ -31,6 +31,12 @@ public static unsafe partial class Program
         }
         if (key == GlfwKey.Unknown || !_settings.HasBind(GameAction.PerfWindow, Keybinds.Key(key)) || Ui.ChatOpen || Ui.WantsTextInput)
             return false;
+        if (Ui.CaptureRecording)
+        {
+            Ui.CaptureStopAsked = true; // (the window's recording: the key stops it and shows the window with its report, UiPerfCapture.cs)
+            SetPerfMode(PerfView.Window);
+            return true;
+        }
         SetPerfMode(Ui.PerfMode switch { PerfView.Off => PerfView.Window, PerfView.Window => PerfView.Overlay, _ => PerfView.Off });
         return true;
     }

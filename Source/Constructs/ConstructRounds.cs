@@ -17,6 +17,7 @@ public struct CRound
     public byte By, Weapon; // the shooter (255: nobody) and what the kill feed says
     public ushort Gun; // the construct that fired it (0: a hand gun)
     public float Pierce, Calibre; // a bore's energy left (0: it stops at what it hits) and its hole's radius (ConstructBores.cs)
+    public ushort Left; // the server's: the body a bore came out of, which its first look passes (0: none)
 }
 
 public sealed partial class ConstructWorld
@@ -47,9 +48,9 @@ public sealed partial class ConstructWorld
     }
 
     /// <summary>Server: a round that met nothing goes on from here, and every PC hears it.</summary>
-    public void RoundFlies(Vector3 at, Vector3 vel, float damage, float muzzle, byte by, byte weapon, ushort gun, float pierce = 0, float calibre = 0)
+    public void RoundFlies(Vector3 at, Vector3 vel, float damage, float muzzle, byte by, byte weapon, ushort gun, float pierce = 0, float calibre = 0, ushort left = 0)
     {
-        if (AddRound(new CRound { Pos = at, Tested = at, Vel = vel, Damage = damage, Muzzle = muzzle, By = by, Weapon = weapon, Gun = gun, Pierce = pierce, Calibre = calibre }))
+        if (AddRound(new CRound { Pos = at, Tested = at, Vel = vel, Damage = damage, Muzzle = muzzle, By = by, Weapon = weapon, Gun = gun, Pierce = pierce, Calibre = calibre, Left = left }))
             AddFire(new CFireEvent { Kind = CFireKind.RoundOut, At = at, To = vel });
     }
 
@@ -95,7 +96,9 @@ public sealed partial class ConstructWorld
         var met = best < len - 1e-3f;
         var what = 0; // 0: the map or nothing
         ConstructHit ch = default;
-        if (Raycast(r.Tested, d, best, out var hit, noTracks: true) && hit.Distance < best && !hit.Glass)
+        var left = r.Left != 0 ? Get(r.Left) : null;
+        r.Left = 0;
+        if (Raycast(r.Tested, d, best, out var hit, left, noTracks: true) && hit.Distance < best && !hit.Glass)
         {
             best = hit.Distance;
             ch = hit;
@@ -135,6 +138,8 @@ public sealed partial class ConstructWorld
             else if (what == 1 && r.Pierce > 0 && ch.Part >= 0 && ch.Part < ch.Body.PartCount && ConstructBores.On)
             {
                 var flown = r; // (a copy: the pool may take a new round from the bore going on)
+                if (ConstructBores.Trace)
+                    Console.WriteLine($"  flier from {r.Tested} to {r.Pos} met {ch.Body.DefOf(ch.Part).Name} at {best:0.000} m, at {at}");
                 DamageBy = r.By;
                 DamageBody = r.Gun;
                 ConstructBores.Through(this, r.Gun, ch, d, dealt, flown.Pierce, flown.Muzzle, flown.Vel.Length(), flown.Calibre, flown.By, flown.Weapon, out _, query);

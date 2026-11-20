@@ -178,6 +178,8 @@ public sealed partial class ConstructWorld
             b.Rot = c.Rot;
             if (c.HeldBy != 0 && BodyCarries.Count > 0 && ConstructLifters.CarryEnd(this, c, out var endPos, out var endRot))
                 (b.Pos, b.Rot) = (endPos, endRot); // (a submodule mid-carry is saved at its spot: the hand's carry isn't saved, ConstructLifterBodies.cs)
+            if (c.GantryHold && c.HeldBy != 0 && ConstructGantry.SavedPose(this, c, out var downPos, out var downRot))
+                (b.Pos, b.Rot, b.Asleep) = (downPos, downRot, false); // (a shell a Shell Gantry's clamp holds up loads standing on the bay's floor: the clamp isn't saved)
             if (c.HeldBy != 0 && ModuleFitters.Holds(this, c.Id))
                 b.Frozen = false; // (a module a Module Fitter carries or welds loads loose at its seat: the job isn't saved, F starts it again)
             if (c.HeldBy != 0 && ConstructLifters.OnCabHook(this, c))
@@ -193,6 +195,8 @@ public sealed partial class ConstructWorld
             b.SpaceShip = c.SpaceShip;
             b.Frame = c.Framed ? c.Frame : (ushort)0;
             (b.FramePos, b.FrameRot) = (c.FramePos, c.FrameRot);
+            if (b.Frame != 0 && c.GantryHold && b.Pos != c.Pos && Get(b.Frame) is { } held)
+                (b.FramePos, b.FrameRot) = (Vector3.Transform(b.Pos - held.Pos, Quaternion.Conjugate(held.Rot)), Quaternion.Normalize(Quaternion.Conjugate(held.Rot) * b.Rot)); // (and in its frame: set down)
             b.Brief = c.Brief;
             b.Conveyed = c.ConveyedCount > 0 ? c.Conveyed.AsSpan(0, c.ConveyedCount).ToArray() : null; // (a save is rare: a copy is fine)
             if (b.Conveyed != null)
