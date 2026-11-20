@@ -889,6 +889,7 @@ public static unsafe partial class Program
             AudioSystem.Music.JukeboxOpen = Ui.MusicPlayerOpen && _session == null; // the main menu's music player takes over (UiMusicPlayer.cs)
             UpdateFrenzy(now); // the kill-frenzy music during a live match (Program.Frenzy.cs)
             UpdateFrenzyFx(now); // per-class frenzy visuals (Program.FrenzyFx.cs)
+            UpdateModuleCutFx(); // module sockets' cutting rings at work (Program.SandboxModules.cs)
             UpdateFrenzyGunSound(); // per-class frenzy gun sound (Program.FrenzyGunSound.cs)
             perf.Dispose();
 

@@ -23,6 +23,7 @@ public static class PlayerBlueprints
         public List<(int Index, string Id, string Name, int Version, bool Lock)> Uses = new(); // its sub-blueprint uses (SubBlueprints.cs)
         public string UsesLine = "";
         public long Stamp; // the file's write time (a broken check is done again when it changes)
+        public string Module = ""; // a module design's size and primary tag ("module 2x2 engine"), or empty
     }
 
     private static readonly string[] Reserved = ["con", "prn", "aux", "nul", "com1", "com2", "com3", "com4", "com5", "com6", "com7", "com8", "com9", "lpt1", "lpt2", "lpt3", "lpt4", "lpt5", "lpt6", "lpt7", "lpt8", "lpt9"];
@@ -95,7 +96,11 @@ public static class PlayerBlueprints
                 var steps = root.TryGetProperty("steps", out var s) && s.ValueKind == JsonValueKind.Array ? s.GetArrayLength() : 0;
                 var name = Path.GetFileNameWithoutExtension(file);
                 var label = root.TryGetProperty("name", out var n) && n.ValueKind == JsonValueKind.String ? n.GetString() ?? name : name;
-                var e = new Entry(name, file, steps, label.ToLowerInvariant()) { Stamp = File.GetLastWriteTimeUtc(file).Ticks };
+                var module = ""; // (a module design: "module 2x2 engine", module-sockets.md 13.3)
+                if (root.TryGetProperty("module", out var mb) && mb.ValueKind == JsonValueKind.Object && mb.TryGetProperty("w", out var mw) && mb.TryGetProperty("l", out var ml)
+                    && mw.ValueKind == JsonValueKind.Number && ml.ValueKind == JsonValueKind.Number)
+                    module = $"module {mw.GetInt32()}x{ml.GetInt32()} {(mb.TryGetProperty("primary", out var mp) && mp.ValueKind == JsonValueKind.String ? mp.GetString() : "utility")}";
+                var e = new Entry(name, file, steps, (label + (module.Length > 0 ? " " + module : "")).ToLowerInvariant()) { Stamp = File.GetLastWriteTimeUtc(file).Ticks, Module = module };
                 e.Id = root.TryGetProperty("id", out var idv) && idv.ValueKind == JsonValueKind.String ? idv.GetString() ?? "" : "";
                 e.Version = root.TryGetProperty("version", out var vv) && vv.ValueKind == JsonValueKind.Number ? vv.GetInt32() : 0;
                 if (root.TryGetProperty("uses", out var uses) && uses.ValueKind == JsonValueKind.Array)

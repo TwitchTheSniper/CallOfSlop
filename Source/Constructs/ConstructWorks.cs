@@ -378,8 +378,8 @@ public static class ConstructWorks
         {
             ref var p = ref c.Parts[c.WorksPieces[k]];
             var d = p.D;
-            if (d.WorksKind == WorksKind.Mount)
-                continue;
+            if (d.WorksKind == WorksKind.Mount || d.ModPart == ModPart.Socket)
+                continue; // (a mount, or an engine socket's plate standing as one, serves nothing)
             var cell = c.WorksPieceAsm[k] * KindCount + (int)d.WorksKind;
             c.WorksAll[cell] = (byte)Math.Min(255, c.WorksAll[cell] + 1);
             if (!p.Working)
@@ -487,6 +487,8 @@ public static class ConstructWorks
                     var d = c.Parts[o].D;
                     if (d.WorksKind == WorksKind.Mount)
                         return o;
+                    if (d.ModPart == ModPart.Plug && ModuleSockets.EngineMountOf(c, o) is var plate and >= 0)
+                        return plate; // (a module's thruster on its plug: an engine socket's plate is its mount, module-sockets.md 2.2)
                     if (d.HasJoint && n < queue.Length && queue[..n].IndexOf((ushort)o) < 0)
                         queue[n++] = (ushort)o;
                 }

@@ -18,6 +18,45 @@
     "w": 2,
     "l": 2
   },
+  "ports": [
+    {
+      "name": "Fuel A",
+      "type": "pipe",
+      "dir": "out",
+      "fluid": "fuel",
+      "at": [
+        1.2,
+        -0.4,
+        -0.2
+      ],
+      "face": "+y"
+    },
+    {
+      "name": "Fuel B",
+      "type": "pipe",
+      "dir": "out",
+      "fluid": "fuel",
+      "at": [
+        -0.2,
+        -0.4,
+        1.2
+      ],
+      "face": "+y"
+    },
+    {
+      "name": "Coolant A",
+      "type": "pipe",
+      "dir": "out",
+      "fluid": "coolant",
+      "at": [
+        1.2,
+        -0.4,
+        0.5
+      ],
+      "face": "+y",
+      "noEffect": true
+    }
+  ],
   "boxes": [
     {
       "min": [
@@ -384,6 +423,46 @@
         1.25,
         -0.4,
         1.25
+      ],
+      "dir": "+y",
+      "class": "small"
+    },
+    {
+      "name": "s0.0",
+      "at": [
+        0.0,
+        -0.4,
+        0.0
+      ],
+      "dir": "+y",
+      "class": "small"
+    },
+    {
+      "name": "s0.1",
+      "at": [
+        0.0,
+        -0.4,
+        1.0
+      ],
+      "dir": "+y",
+      "class": "small"
+    },
+    {
+      "name": "s1.0",
+      "at": [
+        1.0,
+        -0.4,
+        0.0
+      ],
+      "dir": "+y",
+      "class": "small"
+    },
+    {
+      "name": "s1.1",
+      "at": [
+        1.0,
+        -0.4,
+        1.0
       ],
       "dir": "+y",
       "class": "small"
