@@ -258,10 +258,12 @@ public sealed partial class Game
         if (beam)
             ConstructGrab.Follow(_simPos, _simRot, com, _simGrabLocal, ref _simVel, ref _simSpin, aim, wantRot, accel, Vector3.Zero, Vector3.Zero, dt, false, SandboxHands.Hand(LocalId).GrabBoost); // (the server's flight boost, from the hands)
         // ConstructPhysics.Integrate: the gentle damping, the limits, then the move about the centre of mass.
-        _simVel *= 0.999f;
+        var air = GravityFrames.Point != null ? ConstructPhysics.AirAt(_simFt + Vector3.Transform(worldCom, _simFq)) : 1f; // (a planetoid's air thins with height: the server's damping and limit there)
+        _simVel *= air >= 1 ? 0.999f : 1 - 0.001f * air;
         _simSpin *= 0.985f;
-        if (_simVel.LengthSquared() > ConstructPhysics.MaxSpeed * ConstructPhysics.MaxSpeed)
-            _simVel *= ConstructPhysics.MaxSpeed / _simVel.Length();
+        var top = ConstructPhysics.TopAt(air);
+        if (_simVel.LengthSquared() > top * top)
+            _simVel *= top / _simVel.Length();
         if (_simSpin.LengthSquared() > ConstructPhysics.MaxSpin * ConstructPhysics.MaxSpin)
             _simSpin *= ConstructPhysics.MaxSpin / _simSpin.Length();
         var next = worldCom + _simVel * dt;

@@ -51,10 +51,20 @@ public static class ConstructGrab
     /// </summary>
     public const float FlightBoostMax = 3f, FlightBoostSeconds = 2f, FlightMoveSpeed = 1.5f, FlightStopSpeed = 0.5f, FlightTouchGap = 0.02f;
 
+    /// <summary>
+    /// The fastest the beam moves a held piece against its holder's frame, boosted or not (m/s): the free-body limit on
+    /// the ground (<see cref="ConstructPhysics.MaxSpeed"/>), a metre a tick, so the contacts' reach and <see cref="NearStep"/>
+    /// still bound what a fast piece can pass through. The boost's acceleration goes on to 3x; its top speed stops here (2x).
+    /// </summary>
+    public const float HeldTopSpeed = ConstructPhysics.MaxSpeed;
+
     /// <summary>Server, each physics step after the solve, for a held body: its flight boost steps (<see cref="FlightBoostMax"/>).</summary>
     public static void FlightBoost(Construct c, float dt)
     {
-        var own = (c.Vel - c.GrabFrameVel).LengthSquared();
+        // The grab point's own speed, the one the beam moves (a long piece spun in place about it builds nothing), against
+        // its holder's frame at that point (a turning ship's deck moves each point at its own speed).
+        var at = c.ToWorld(c.GrabLocal);
+        var own = (c.Vel + Vector3.Cross(c.AngVel, at - c.WorldCom) - c.GrabFrameVel - Vector3.Cross(c.GrabFrameSpin, at - c.GrabTarget)).LengthSquared();
         if (c.GrabTouch || own < FlightStopSpeed * FlightStopSpeed || !float.IsFinite(own))
             c.GrabBoost = 1f;
         else if (own > FlightMoveSpeed * FlightMoveSpeed)
@@ -157,7 +167,8 @@ public static class ConstructGrab
     {
         boost = Math.Clamp(boost, 1f, FlightBoostMax); // (the speed build-up in flight: FlightBoost)
         accel *= boost; // (accel is MaxAccel at most: AccelFor)
-        var maxPull = nearOther ? MathF.Min(MaxPull * boost, NearStep / dt) : MaxPull * boost; // (another construct close by: a step short enough that the overlap tests can't be jumped)
+        var top = MathF.Min(MaxPull * boost, HeldTopSpeed); // (boosted, never past HeldTopSpeed: a metre a tick at most)
+        var maxPull = nearOther ? MathF.Min(top, NearStep / dt) : top; // (another construct close by: a step short enough that the overlap tests can't be jumped)
         var maxTurn = nearOther ? MathF.Min(MaxTurn, NearTurn) : MaxTurn;
         // The turn first: the rotation still to go, as an axis and angle, closed over TurnTime.
         var q = wantRot * Quaternion.Conjugate(rot);

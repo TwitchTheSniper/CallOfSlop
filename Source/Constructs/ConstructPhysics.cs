@@ -550,6 +550,7 @@ public static partial class ConstructPhysics
         var move = (c.Vel - c.GrabFrameVel) * dt; // (in a rider's hands: its move in their deck's frame, which everything near it shares)
         if (!HeldOverlaps(c, self, n, move))
             return;
+        c.GrabTouch = true; // (the sweep stopped it short of another construct: a touch for the flight boost, which a contact a step later might never make)
         var kept = Vector3.Zero;
         var x = new Vector3(move.X, 0, 0);
         if (!HeldOverlaps(c, self, n, kept + x))
@@ -1840,6 +1841,11 @@ public static partial class ConstructPhysics
 
     // ---- Integration, joints, sleep -------------------------------------------------------------------------------
 
+    /// <summary>A free body's speed limit for the air's share <paramref name="air"/> (<see cref="AirAt"/>): the server's step, and a joined holder's prediction of a held piece (GameSandboxPhysGunSim.cs).</summary>
+    public static float TopAt(float air, bool aeroFlying = false) =>
+        air >= 1 ? aeroFlying ? AirTable.Current.FlightTop : MaxSpeed : MathF.Min(MaxFlightSpeed, MaxSpeed / MathF.Max(air, 1e-3f));
+
+    /// <summary>The same at a world point (1: no planetoid's air there).</summary>
     private static void Integrate(Construct c, int index, float dt)
     {
         // Gentle damping (air, the axles' losses) keeps a still body from creeping.
@@ -1849,7 +1855,7 @@ public static partial class ConstructPhysics
         if (!c.AeroFlying)
             c.Vel *= air >= 1 ? 0.999f : 1 - 0.001f * air;
         c.AngVel *= 0.985f;
-        var top = air >= 1 ? c.AeroFlying ? AirTable.Current.FlightTop : MaxSpeed : MathF.Min(MaxFlightSpeed, MaxSpeed / MathF.Max(air, 1e-3f));
+        var top = TopAt(air, c.AeroFlying);
         var v2 = c.Vel.LengthSquared();
         if (c.SpeedKept > top)
         {
@@ -1897,7 +1903,7 @@ public static partial class ConstructPhysics
         if (!c.AeroFlying)
             rel *= air >= 1 ? 0.999f : 1 - 0.001f * air;
         spinRel *= 0.985f;
-        var top = air >= 1 ? c.AeroFlying ? AirTable.Current.FlightTop : MaxSpeed : MathF.Min(MaxFlightSpeed, MaxSpeed / MathF.Max(air, 1e-3f));
+        var top = TopAt(air, c.AeroFlying);
         var v2 = rel.LengthSquared();
         if (v2 > top * top)
             rel *= top / MathF.Sqrt(v2);
