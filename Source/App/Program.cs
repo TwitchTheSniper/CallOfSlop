@@ -1064,6 +1064,7 @@ public static unsafe partial class Program
             CrashLog.Phase = "ui draw";
             using (Perf.Measure(PerfArea.UiDraw))
             {
+                Gfx.Present(); // the scene target (reversed float depth) to the window, under the UI
                 Ui.EndFrame();
                 Gfx.Rebind(); // (ImGui's renderer leaves its program unbound: ImGuiRenderer.cs)
                 if (Ui.Thumbs.Count > 0)
@@ -2055,6 +2056,7 @@ public static unsafe partial class Program
 
         MediaDirector.Frame(_session, AudioSystem, now); // screens and music players near this player (Source/Media)
         DrawCameraFeed(now); // a watched camera's picture, only if a screen near this player asked for one (Program.CameraFeeds.cs)
+        Gfx.BeginScene(fb.X, fb.Y); // (reversed depth: the world into a float depth buffer; Present copies it out before the UI)
         Gfx.BeginFrame(fb.X, fb.Y, World.Map.Sky);
 
         // ---- Camera ---------------------------------------------------------
@@ -2230,7 +2232,7 @@ public static unsafe partial class Program
 
         pass.Dispose();
         pass = Perf.Pass(PerfArea.PostFx, PerfGpuPass.Occlusion);
-        PostFx.ApplyAo(Gfx, fb.X, fb.Y, proj); // (High: over the opaque world, under the effects)
+        PostFx.ApplyAo(Gfx, fb.X, fb.Y, Gfx.Proj); // (the projection as the GPU took it: reversed depth reads back by it; High: over the opaque world, under the effects)
         pass.Dispose();
 
         // ---- Tracers --------------------------------------------------------

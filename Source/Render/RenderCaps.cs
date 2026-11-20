@@ -83,6 +83,18 @@ public static unsafe class RenderCaps
     /// <summary>Storage buffers can be read in a vertex shader (two at least).</summary>
     public static bool VertexStorage { get; private set; }
 
+    /// <summary>
+    /// Reversed depth (docs/render/DEPTH.md): glClipControl's 0-to-1 depth (4.5 core), a projection that puts the near
+    /// plane at 1 and the far plane at 0, GEQUAL depth tests, depth cleared to 0, and the world drawn into a 32-bit float
+    /// depth buffer (<see cref="CallOfSlop.Renderer.BeginScene"/>). A float's precision then follows the perspective's,
+    /// so faces 2 mm apart stay apart at a kilometre where the 24-bit buffer lost them past 100 m (a capital ship's hull
+    /// plates z-fought seen from above). Fixed when the context is made (shaders take <c>REVZ</c>); <c>--gl-no=revz</c> turns it off.
+    /// </summary>
+    public static bool ReversedDepth { get; private set; }
+
+    /// <summary>The near and far depth a shader writes straight into gl_Position.z (the sky, the snow's far quad): 1 / 0 reversed.</summary>
+    public static float FarDepth => ReversedDepth ? 0f : 1f;
+
     /// <summary>The experiments <c>--gl-on=</c> / <c>--gl-no=</c> can name (and the bench toggles), with their defaults.</summary>
     public static readonly (string Name, bool Default)[] Experiments = { ("persistent", false), ("mdi", true), ("gpufx", true) };
 
@@ -156,6 +168,7 @@ public static unsafe class RenderCaps
         MultiDrawIndirect = Gl46 && Native.glMultiDrawElementsIndirect != null;
         Compute = Gl46 && Native.glDispatchCompute != null && Native.glBindBufferBase != null;
         Dsa = Gl46 && Native.glCreateBuffers != null && Native.glNamedBufferSubData != null;
+        ReversedDepth = Gl46 && Native.glClipControl != null && !(Forced.TryGetValue("revz", out var revz) && !revz); // (not an experiment the bench flips: shaders are built for it)
         if (Gl46 && Native.glGetIntegerv != null)
         {
             int blocks = 0;
@@ -214,7 +227,7 @@ public static unsafe class RenderCaps
     public static void SetTierForTest(bool gl46)
     {
         Gl46 = gl46;
-        DebugOutput = Labels = BufferStorage = MultiDrawIndirect = Compute = Dsa = VertexStorage = false;
+        DebugOutput = Labels = BufferStorage = MultiDrawIndirect = Compute = Dsa = VertexStorage = ReversedDepth = false;
     }
 
     /// <summary>One log line: tier, the driver's version and renderer, the features on.</summary>
@@ -227,13 +240,16 @@ public static unsafe class RenderCaps
         if (MultiDrawIndirect) on.Add("multi-draw indirect");
         if (Compute) on.Add("compute");
         if (Dsa) on.Add("DSA");
+        if (ReversedDepth) on.Add("reversed float depth");
         var exps = string.Join(", ", Experiments.Select(e => e.Name + (Active(e.Name) ? " on" : " off")));
         return $"OpenGL {(Gl46 ? "4.6 path" : "4.1 path")} (context {Major}.{Minor}: {Version}; {Renderer})"
                + $", anisotropy {MaxAnisotropy:0}x" + (Gl46 ? $", features: {(on.Count > 0 ? string.Join(", ", on) : "none")}; experiments: {exps}" : $", fallback: {FallbackReason}");
     }
 
     /// <summary>The prelude that replaces <see cref="SourceVersion"/> on this tier.</summary>
-    public static string Prelude => Gl46 ? "#version 460 core\n#define GL46 1\n" : "#version 410 core\n#define GL46 0\n";
+    public static string Prelude => Gl46
+        ? (ReversedDepth ? "#version 460 core\n#define GL46 1\n#define REVZ 1\n" : "#version 460 core\n#define GL46 1\n#define REVZ 0\n")
+        : "#version 410 core\n#define GL46 0\n#define REVZ 0\n";
 
     /// <summary>
     /// A shader source ready for this context: its first line (<see cref="SourceVersion"/>) becomes <see cref="Prelude"/>.

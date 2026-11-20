@@ -31,8 +31,7 @@ public static partial class ConstructRender
         _planes[1] = c4 - c1;
         _planes[2] = c4 + c2;
         _planes[3] = c4 - c2;
-        _planes[4] = c4 + c3;
-        _planes[5] = c4 - c3;
+        Renderer.DepthPlanes(c3, c4, out _planes[4], out _planes[5]); // near, far (either depth convention)
         for (var k = 0; k < 6; k++)
         {
             var len = new Vector3(_planes[k].X, _planes[k].Y, _planes[k].Z).Length();

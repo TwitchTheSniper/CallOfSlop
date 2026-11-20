@@ -43,7 +43,11 @@ public static unsafe class SkyRenderer
             // One triangle covering the screen: (-1,-1), (3,-1), (-1,3), on the far plane.
             vec2 p = vec2(float((gl_VertexID << 1) & 2), float(gl_VertexID & 2)) * 2.0 - 1.0;
             vRay = uInvVP * vec4(p, 1.0, 1.0);
+        #if REVZ
+            gl_Position = vec4(p, 0.0, 1.0); // (reversed depth: the far plane is 0)
+        #else
             gl_Position = vec4(p, 1.0, 1.0);
+        #endif
         }
         """;
 

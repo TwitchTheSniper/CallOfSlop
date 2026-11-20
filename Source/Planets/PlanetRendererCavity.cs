@@ -148,7 +148,11 @@ public sealed unsafe partial class PlanetRenderer
             col = mix(col, uGlow * 0.32, haze * (core ? 0.35 : 0.6));
             FragColor = vec4(col, 1.0);
             vec4 clip = uViewProj * vec4(uCenter + p, 1.0);
+        #if REVZ
+            gl_FragDepth = clamp(clip.z / clip.w, 0.0, 1.0); // (reversed depth: clip depth is already 0..1)
+        #else
             gl_FragDepth = clamp(clip.z / clip.w * 0.5 + 0.5, 0.0, 1.0);
+        #endif
         }
         """;
 

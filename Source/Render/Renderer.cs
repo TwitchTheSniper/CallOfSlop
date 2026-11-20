@@ -234,7 +234,133 @@ public sealed unsafe partial class Renderer
 
         Enable(GlCapability.DepthTest);
         DepthFunc(GlFunc.LessEqual);
+        if (RenderCaps.ReversedDepth)
+        {
+            // Reversed depth (RenderCaps.ReversedDepth, docs/render/DEPTH.md): clip depth 0..1, near at 1, nearer wins.
+            Native.glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
+            DepthFunc(GlFunc.GreaterEqual);
+            Native.glClearDepth(0.0);
+        }
         BlendDefault();
+    }
+
+    /// <summary>
+    /// A projection as the GPU takes it: unchanged on the conventional path; reversed (near 1, far 0, clip depth 0..1)
+    /// with <see cref="RenderCaps.ReversedDepth"/>. Worked in doubles: the far plane's coefficient is a small difference of
+    /// numbers near 1, and the near plane's is exact.
+    /// </summary>
+    public static Matrix4x4 GpuProjection(in Matrix4x4 p)
+    {
+        if (!RenderCaps.ReversedDepth)
+            return p;
+        var r = p; // z' = (w - z) / 2: GL's -1..1 (near -1) becomes 1..0
+        r.M13 = (float)(0.5 * ((double)p.M14 - p.M13));
+        r.M23 = (float)(0.5 * ((double)p.M24 - p.M23));
+        r.M33 = (float)(0.5 * ((double)p.M34 - p.M33));
+        r.M43 = (float)(0.5 * ((double)p.M44 - p.M43));
+        return r;
+    }
+
+    /// <summary>
+    /// The near and far frustum planes from a view-projection's third and fourth columns (Gribb and Hartmann), for the
+    /// depth convention <see cref="GpuProjection"/> gave it: GL's w + z and w - z, or reversed depth's w - z and z.
+    /// </summary>
+    public static void DepthPlanes(Vector4 c3, Vector4 c4, out Vector4 near, out Vector4 far)
+    {
+        if (RenderCaps.ReversedDepth)
+        {
+            near = c4 - c3;
+            far = c3;
+        }
+        else
+        {
+            near = c4 + c3;
+            far = c4 - c3;
+        }
+    }
+
+    /// <summary>A polygon offset toward the camera when negative, as on the conventional path, whichever way depth runs.</summary>
+    public static void PolygonOffset(float factor, float units)
+    {
+        if (RenderCaps.ReversedDepth)
+            Native.glPolygonOffset(-factor, -units);
+        else
+            Native.glPolygonOffset(factor, units);
+    }
+
+    // ---- The scene target (reversed depth): the world is drawn here, with a 32-bit float depth buffer ----------------
+    private GlFramebuffer _sceneFbo;
+    private uint _sceneColor, _sceneDepth;
+    private int _sceneW, _sceneH;
+
+    /// <summary>
+    /// The framebuffer the frame's world goes to: the scene target between <see cref="BeginScene"/> and <see cref="Present"/>,
+    /// else the window's. Passes that bind "the screen" again (PostFx) bind this.
+    /// </summary>
+    public static GlFramebuffer MainFbo { get; private set; }
+
+    /// <summary>Is the scene target bound for this frame (a float depth buffer under the world)?</summary>
+    public static bool SceneTargetOn => MainFbo.Id != 0;
+
+    /// <summary>
+    /// The main frame's world into the scene target (reversed depth only; the window's own depth buffer is 24-bit fixed,
+    /// which reversed depth can't help). Call before <see cref="BeginFrame"/>; <see cref="Present"/> copies it to the window.
+    /// </summary>
+    public void BeginScene(int width, int height)
+    {
+        if (!RenderCaps.ReversedDepth || width <= 0 || height <= 0)
+            return;
+        if (_sceneFbo.Id == 0 || width != _sceneW || height != _sceneH)
+        {
+            if (_sceneFbo.Id == 0)
+            {
+                GlFramebuffer fb;
+                Native.glGenFramebuffers(1, &fb);
+                _sceneFbo = fb;
+                GlRenderbuffer rb;
+                Native.glGenRenderbuffers(1, &rb);
+                _sceneColor = rb.Id;
+                Native.glGenRenderbuffers(1, &rb);
+                _sceneDepth = rb.Id;
+            }
+            _sceneW = width;
+            _sceneH = height;
+            Native.glBindRenderbuffer(GL_RENDERBUFFER, new GlRenderbuffer(_sceneColor));
+            Native.glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA8, width, height);
+            Native.glBindRenderbuffer(GL_RENDERBUFFER, new GlRenderbuffer(_sceneDepth));
+            Native.glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT32F, width, height);
+            Native.glBindRenderbuffer(GL_RENDERBUFFER, default);
+            Native.glBindFramebuffer(GL_FRAMEBUFFER, _sceneFbo);
+            Native.glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, new GlRenderbuffer(_sceneColor));
+            Native.glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, new GlRenderbuffer(_sceneDepth));
+            var status = Native.glCheckFramebufferStatus(GL_FRAMEBUFFER);
+            Native.glBindFramebuffer(GL_FRAMEBUFFER, default);
+            if (status != GL_FRAMEBUFFER_COMPLETE)
+            {
+                Console.WriteLine($"[gl] the scene target is incomplete (0x{status:X}): the world draws to the window's 24-bit depth");
+                _sceneW = -1;
+                return;
+            }
+            Console.WriteLine($"[gl] scene target {width}x{height}: RGBA8 + 32-bit float depth (reversed)");
+        }
+        if (_sceneW < 0)
+            return;
+        Native.glBindFramebuffer(GL_FRAMEBUFFER, _sceneFbo);
+        MainFbo = _sceneFbo;
+    }
+
+    /// <summary>The scene target's picture to the window, and the window bound again (nothing when no target is bound).</summary>
+    public void Present()
+    {
+        if (!SceneTargetOn)
+            return;
+        if (_batching)
+            FlushBatch();
+        Native.glBindFramebuffer(GL_READ_FRAMEBUFFER, _sceneFbo);
+        Native.glBindFramebuffer(GL_DRAW_FRAMEBUFFER, default);
+        Native.glBlitFramebuffer(0, 0, _sceneW, _sceneH, 0, 0, _sceneW, _sceneH, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+        Native.glBindFramebuffer(GL_FRAMEBUFFER, default);
+        MainFbo = default;
     }
 
     /// <summary>Plain alpha blending that leaves the back buffer's alpha alone: that is the bloom's glow mark (PostFx.cs).</summary>
@@ -310,6 +436,7 @@ public sealed unsafe partial class Renderer
             FlushBatch();
         Origin = origin;
         Relative = false;
+        proj = GpuProjection(proj); // (reversed depth: what the shaders take; CPU culling planes still hold, docs/render/DEPTH.md)
         _viewProjRel = viewFromOrigin * proj;
         var view = origin == Vector3.Zero ? viewFromOrigin : Matrix4x4.CreateTranslation(-origin) * viewFromOrigin;
         _viewProj = view * proj;
