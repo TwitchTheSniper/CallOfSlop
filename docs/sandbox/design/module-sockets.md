@@ -770,6 +770,24 @@ own clearance check (the lifter's path is used as is), a Cut job for sockets wit
 fitters for Building Station uses, and MFIT saves (a save mid-job keeps the module where it was; a stale ModWeld is cleared at the
 plate's next rebuild; F starts the job again).
 
+**Fitters across constructs: built** (2026-11-20, Sean: a ship won't always carry a fitting arm; it pulls into a dock that has one).
+F on a socket now looks for a Module Fitter on the socket's own construct first, then on any other construct whose fitter's reach
+could take in the socket (`ModuleFitters.Rigs`: a working fitter, the construct the player's faction shares or nobody's, not held or
+carried). A job keeps the socket's construct (`Job.Ship`) apart from the fitter's (`Job.Rig`) and a take-off's stand's
+(`Job.StandBody`): the rig powers the weld and cut (`ModFitWatts` on the rig) and holds the module (`HeldBy` the rig). Modules within
+twice the reach are candidates, on a stand of the dock as well as loose. A take-off sets the module on a free stand of its size on
+the fitter's construct first (the dock's rack), else on the ship's. The two must keep still against each other: a job starts only
+while they drift apart slower than `MaxDrift` (0.3 m/s, 0.03 rad/s), and stops ("the ship moved away from the Module Fitter") when
+the socket has moved more than `MaxSlip` (0.5 m) in the rig's frame since it started, leaving the module loose. Also fixed on the
+way: the reach check aimed at the module body's origin at its seat, metres off for a module cut off a stand (it keeps the dock's
+origin), and is now its middle; and a fit by fitter is checked for a fitter that can do it (`ModuleFitters.CanFit`) before the
+module is cut off its stand, so a refusal no longer leaves it loose. No wire change (the torch reads the plate's `ModWeld` as
+before). Tried in a throwaway window run (Proving Ground, `timed`): a dock (two foundations, a Module Fitter S, a 3x3 stand with a
+3x3 plug, a Ship Battery M) and a ship (a foundation and a 3x3 socket, no power of its own) set 5 m off it with `modsock beside`:
+F fitted the dock's module onto the ship (carry 5 s, weld 48 s, merged), F again cut it off (120 s) and set it back on the dock's
+stand (weld 48 s), and a ship moved 1 m mid-weld stopped the job. Not tried: a joined client's view, a ship in flight at a moving
+station, and a fitter whose reach takes in a socket but not a module on another dock.
+
 **Phase 5 (faction choice and generators): partly built** (builder, 2026-11-20). Each faction file may carry a `"modules"` block
 (9.1: `tags` by the table's tag names, `stats` speed, power, fuel, mass, cost, `needs` accel, powerMargin, minGuns, `pick`), read by
 `ModuleWants.Parse` into `NpcFactionDef.Modules`; Militia, Raiders, Traders, Salvagers and Mercenaries have one (Player Crew and
@@ -846,8 +864,9 @@ beside it), `ZzModPipeRig.json` (a tank piped through a fitted 1x1 engine module
 through a 1x1 module to an AA Gun, a Lever wired through Data 1 to a Lamp on the module), `ZzModFitterRig.json` and
 `ZzModFitterOffRig.json` (above; run with `inv survival on`), `ZzModChoiceRig.json` (above). Window verbs: `modsock state`
 (sockets, modules, pipes, feeds and chutes and their sources, wires, guns and what feeds them, the draw), `modsock style N [DEPTH]`,
-`modsock use PART` (F on a plate or a module's part) and `modsock fit PLATE` (the nearest loose module of its size held 0.6 m off its
-face, then F) (host).
+`modsock use PART` (F on a plate or a module's part), `modsock fit PLATE` (the nearest loose module of its size held 0.6 m off its
+face, then F) and `modsock beside A | B | DX DY DZ` (B's construct set still, turned as A's, part B that far from part A in A's frame:
+a ship pulled in beside a dock's fitter) (host).
 
 Defaults taken (no questions asked):
 - The plate is placed at the well's foot; Well depth is measured from its face up to the surface (the design's "plate at the

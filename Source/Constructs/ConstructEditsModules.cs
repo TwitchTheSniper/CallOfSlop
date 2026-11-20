@@ -100,9 +100,10 @@ public sealed partial class ConstructEdits
         var m = c.Modules[s.Module];
         if (m.Bridged)
             return "that module is welded to more than its socket: take the extra welds off with the attach tool first";
-        if ((!world.Creative || world.TimedMachines) && !s.Stand && (!ModuleSocketTable.Current.HandSize(s.W, s.L) || m.Mass > LiftOf(player, false)) && ModuleFitters.Reach(world, c) > 0)
+        if ((!world.Creative || world.TimedMachines) && !s.Stand && (!ModuleSocketTable.Current.HandSize(s.W, s.L) || m.Mass > LiftOf(player, false))
+            && ModuleFitters.ReachAt(world, c, c.ToWorld(c.Parts[s.Plate].Pos), player) > 0) // (a fitter aboard, or a dock's beside the ship)
         {
-            if (ModuleFitters.TakeOff(world, c, si) is { } fitterWhy)
+            if (ModuleFitters.TakeOff(world, player, c, si) is { } fitterWhy)
                 return fitterWhy;
             Done.Add($"player {player}: a Module Fitter takes the module off socket part {s.Plate} of construct {c.Id}");
             return null;
@@ -159,10 +160,11 @@ public sealed partial class ConstructEdits
         if (s.InTheWay >= 0)
             return $"in the way: the {c.DefOf(s.InTheWay).Name} (part {s.InTheWay}) is in the socket's room";
         var hand = ModuleSocketTable.Current.HandPull;
-        var fitterReach = world.Creative && !world.TimedMachines ? 0 : ModuleFitters.Reach(world, c); // (a Module Fitter aboard: modules within its reach of the socket; it checks both ends)
-        var pull = MathF.Max(hand, fitterReach * 2);
         c.SocketAt(s.Plate, plateDef.ModSocket, out var faceAt, out var faceDir);
         var wface = c.ToWorld(faceAt);
+        // A Module Fitter aboard, or on a construct beside this one (a dock the ship pulled into): modules within its reach of the socket; it checks both ends.
+        var fitterReach = world.Creative && !world.TimedMachines ? 0 : ModuleFitters.ReachAt(world, c, wface, player);
+        var pull = MathF.Max(hand, fitterReach * 2);
         Construct? best = null;
         var bestPlug = -1;
         var bestDist = pull;
@@ -212,6 +214,13 @@ public sealed partial class ConstructEdits
         // The fit's rules before anything moves (a module on a stand is judged by its own parts).
         if ((PoseOf(best, bestPlug, out _, out _, out var rot0, out var pos0) ?? ModuleSockets.FitRefusal(c, si, best, mi, rot0, pos0, byHand: !byFitter, world.Creative, moduleOnly: true, lift: LiftOf(player, world.Creative))) is { } early)
             return early;
+        // A fitter's job: one that can do it found before anything is cut off a stand (a refusal after the cut left the module loose).
+        if (byFitter)
+        {
+            best.SocketAt(bestPlug, best.DefOf(bestPlug).ModSocket, out var plugAt, out _);
+            if (ModuleFitters.CanFit(world, player, c, best.ToWorld(plugAt), wface, bestMass) is { } noFitter)
+                return noFitter;
+        }
         // Off a stand (or anything else it stands on) first: its parts as a body of their own.
         var of = best.ModuleOf!;
         var all = true;
@@ -258,7 +267,7 @@ public sealed partial class ConstructEdits
             return merge;
         if (byFitter)
         {
-            if (ModuleFitters.Fit(world, c, si, best, bestPlug, bodyTurn, rel, rot, pos) is { } fitterWhy)
+            if (ModuleFitters.Fit(world, player, c, si, best, bestPlug, bodyTurn, rel, rot, pos) is { } fitterWhy)
                 return fitterWhy;
             Done.Add($"player {player}: a Module Fitter fits module construct {best.Id} onto socket part {s.Plate} of construct {c.Id}");
             return null;
