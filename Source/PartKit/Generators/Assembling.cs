@@ -492,7 +492,7 @@ public sealed class Assembling : IPartGenerator
     private static List<(string? Folder, PyDict? Row)> Tail() =>
     [
         ("Modules", null), // (module sockets: plates, plugs and stands, docs/sandbox/design/module-sockets.md)
-        ("Modules/Fitters", null), // (module sockets phase 4: the Module Fitter S)
+        (null, Rec("Module Fitter S", 47.6, 4, m: [("steel", 304)], p: [("Servo Motor", 8), ("Control Unit", 2)])), // (module sockets phase 4: an explicit row, so no open folder moves a saved recipe's index)
     ];
 
     /// <summary>
