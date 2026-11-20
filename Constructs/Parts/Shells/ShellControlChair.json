@@ -229,45 +229,67 @@
     },
     {
       "min": [
-        -0.31,
+        -0.307,
         1.04,
+        0.263
+      ],
+      "max": [
+        -0.273,
+        1.377,
+        0.297
+      ],
+      "color": "#14171a",
+      "detail": true,
+      "rig": "helmet",
+      "travel": 0.3
+    },
+    {
+      "min": [
+        -0.31,
+        1.34,
         0.2
       ],
       "max": [
         -0.23,
-        1.08,
+        1.38,
         0.26
       ],
       "color": "#14171a",
-      "detail": true
+      "detail": true,
+      "rig": "helmet",
+      "travel": 0.3
     },
     {
       "min": [
         -0.235,
-        1.03,
+        1.33,
         -0.2
       ],
       "max": [
         -0.175,
-        1.347,
+        1.647,
         0.22
       ],
       "color": "#30363d",
-      "detail": true
+      "detail": true,
+      "rig": "helmet",
+      "travel": 0.3
     },
     {
       "min": [
         -0.245,
-        1.24,
+        1.54,
         -0.198
       ],
       "max": [
         -0.229,
-        1.27,
+        1.57,
         0.218
       ],
       "color": "#38d0e8",
-      "detail": true
+      "detail": true,
+      "rig": "helmet",
+      "travel": 0.3
     },
     {
       "min": [
@@ -327,45 +349,67 @@
     },
     {
       "min": [
-        0.23,
+        0.273,
         1.04,
+        0.263
+      ],
+      "max": [
+        0.307,
+        1.377,
+        0.297
+      ],
+      "color": "#14171a",
+      "detail": true,
+      "rig": "helmet",
+      "travel": 0.3
+    },
+    {
+      "min": [
+        0.23,
+        1.34,
         0.2
       ],
       "max": [
         0.31,
-        1.08,
+        1.38,
         0.26
       ],
       "color": "#14171a",
-      "detail": true
+      "detail": true,
+      "rig": "helmet",
+      "travel": 0.3
     },
     {
       "min": [
         0.175,
-        1.03,
+        1.33,
         -0.2
       ],
       "max": [
         0.235,
-        1.347,
+        1.647,
         0.22
       ],
       "color": "#30363d",
-      "detail": true
+      "detail": true,
+      "rig": "helmet",
+      "travel": 0.3
     },
     {
       "min": [
         0.229,
-        1.24,
+        1.54,
         -0.198
       ],
       "max": [
         0.245,
-        1.27,
+        1.57,
         0.218
       ],
       "color": "#38d0e8",
-      "detail": true
+      "detail": true,
+      "rig": "helmet",
+      "travel": 0.3
     },
     {
       "min": [
@@ -537,101 +581,131 @@
     },
     {
       "min": [
-        -0.08,
-        1.444,
+        -0.035,
+        1.414,
+        0.37
+      ],
+      "max": [
+        0.035,
+        1.814,
+        0.42
+      ],
+      "color": "#56606a",
+      "detail": true,
+      "rig": "helmet",
+      "travel": 0.3
+    },
+    {
+      "min": [
+        -0.09,
+        1.744,
         -0.04
       ],
       "max": [
-        0.08,
-        1.52,
-        0.343
+        0.09,
+        1.824,
+        0.46
       ],
       "color": "#4a535c",
-      "detail": true
+      "detail": true,
+      "rig": "helmet",
+      "travel": 0.3
     },
     {
       "min": [
         -0.23,
-        1.35,
+        1.65,
         -0.2
       ],
       "max": [
         0.23,
-        1.44,
+        1.74,
         0.22
       ],
       "color": "#30363d",
-      "detail": true
+      "detail": true,
+      "rig": "helmet",
+      "travel": 0.3
     },
     {
       "min": [
         -0.175,
-        1.06,
+        1.36,
         0.16
       ],
       "max": [
         0.175,
-        1.347,
+        1.647,
         0.22
       ],
       "color": "#30363d",
-      "detail": true
+      "detail": true,
+      "rig": "helmet",
+      "travel": 0.3
     },
     {
       "min": [
         -0.175,
-        1.24,
+        1.54,
         0.214
       ],
       "max": [
         0.175,
-        1.27,
+        1.57,
         0.23
       ],
       "color": "#38d0e8",
-      "detail": true
+      "detail": true,
+      "rig": "helmet",
+      "travel": 0.3
     },
     {
       "min": [
         -0.175,
-        1.28,
+        1.58,
         -0.2
       ],
       "max": [
         0.175,
-        1.347,
+        1.647,
         -0.14
       ],
       "color": "#30363d",
-      "detail": true
+      "detail": true,
+      "rig": "helmet",
+      "travel": 0.3
     },
     {
       "min": [
         -0.172,
-        1.06,
+        1.36,
         -0.17
       ],
       "max": [
         0.172,
-        1.14,
+        1.44,
         -0.135
       ],
       "color": "#38d0e8",
-      "detail": true
+      "detail": true,
+      "rig": "helmet",
+      "travel": 0.3
     },
     {
       "min": [
         -0.12,
-        1.523,
+        1.827,
         -0.06
       ],
       "max": [
         0.12,
-        1.54,
+        1.844,
         0.12
       ],
       "color": "#56606a",
-      "detail": true
+      "detail": true,
+      "rig": "helmet",
+      "travel": 0.3
     }
   ],
   "sockets": [

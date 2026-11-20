@@ -659,9 +659,11 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   a gun's "pierce" budget (the Zero Day Railgun's file changes).
     // 386: the store pool's handles run to 4096, not 1024 (ConstructWorld.MaxStores: two Mainframes in one world, the capital duel start).
     // 387: the Mainframe capital ship and its parts removed (Karl, 2026-11-20: capital ships on the back burner): the part ids move.
-    // 388: barter and tabs, no credits (Karl, 2026-11-20; Game/GameTabs.cs): Msg.Credits became Msg.Tabs (u8 unlimited, u8 n, each u8 power, u64);
+    // 388: the Zero Day Autocannon (a new part file moves the part ids); heavy rounds bore by their calibre (ConstructBores.Implied; no message
+    //   changes: the host decides, and more guns send the Bore events every PC already marks).
+    // 389: barter and tabs, no credits (Karl, 2026-11-20; Game/GameTabs.cs): Msg.Credits became Msg.Tabs (u8 unlimited, u8 n, each u8 power, u64);
     //   station markets list parts after their goods (Msg.Stations' stock runs over both); FactionOp.StationSellPart (u16 ship, u8 good) at its end.
-    public const ushort ProtocolVersion = 388;
+    public const ushort ProtocolVersion = 389;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

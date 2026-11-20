@@ -120,7 +120,7 @@ public sealed partial class Game
         var world = Constructs;
         if (GantryTestSpeed != 0 || GantryTestTurn != 0)
             GantryTestDrive(world);
-        if (world.GantryJobCount == 0)
+        if (world.GantryJobCount == 0 && world.GantryLockCount == 0)
             return;
         var now = ConstructConveyor.Clock;
         // A removal on a gantry's or a table's body renumbers its parts (ConstructWorld.Compact): first the swaps whose gantry is gone
@@ -174,8 +174,13 @@ public sealed partial class Game
                 GantryEnd(k);
         }
         for (var k = 0; k < world.GantryLockCount; k++)
-            if (world.GantryLocks[k].Until < 0)
-                GantryPin(in world.GantryLocks[k]); // (after the swaps' checks: a clamp whose gantry went has opened)
+        {
+            ref var l = ref world.GantryLocks[k];
+            if (l.Until < 0)
+                GantryPin(in l, now); // (after the swaps' checks: a clamp whose gantry went has opened)
+            else if (l.Lowering && (!GantryPin(in l, now) || now - l.Until >= ConstructGantry.LockLift))
+                GantryLet(ref l); // (set down, or its gantry gone on the way: let go)
+        }
     }
 
     /// <summary>
@@ -198,7 +203,7 @@ public sealed partial class Game
             ref var l = ref world.GantryLocks[k];
             if (l.Body != body)
                 continue;
-            if (l.Until < 0 && l.PartAt == partAt)
+            if ((l.Until < 0 || l.Lowering) && l.PartAt == partAt)
                 l.Part = part;
             else if (l.Part == part && l.Until >= 0)
                 l.Until = 0; // (another gantry's clamp opening under that index: done, so the keys never meet)
@@ -298,22 +303,31 @@ public sealed partial class Game
     /// <summary>
     /// Server: the gantry's waist clamp shuts on the shell (the first swap of a change): the shell is held by the gantry
     /// (<see cref="Construct.HeldBy"/>: no grab, no edit, no waking; ConstructEdits.Contested says why) and from now on posed every tick
-    /// where it stands in the gantry part's frame (<see cref="GantryPin"/>). False: no clamp entry free (nothing held, no swap begun).
+    /// in the gantry part's frame (<see cref="GantryPin"/>): where it stood (or lay) until the jaws shut, then lifted upright to
+    /// <see cref="ConstructGantry.HoldPoint"/> and held there. False: no clamp entry free (nothing held, no swap begun).
     /// </summary>
     private bool GantryClamp(Construct c, int part, Construct shell, double now)
     {
         var world = Constructs;
+        if (ConstructGantry.LockAt(world, c.Id, part) is var was and >= 0 && world.GantryLocks[was].Lowering && world.GantryLocks[was].Shell != shell.Id)
+            GantryLet(ref world.GantryLocks[was]); // (another shell on its way down: let go before the clamp takes this one, never left held)
         var k = ConstructGantry.Hold(world, c.Id, part, shell.Id, now, out var fresh);
         if (k < 0)
             return false;
-        if (fresh || shell.HeldBy != c.Id)
+        ref var l = ref world.GantryLocks[k];
+        if (fresh || shell.HeldBy != c.Id || l.Lowering)
         {
+            // (from where the shell is now: a fresh hold, one let go while the jaws opened, or one caught again on its way down)
             Freeform.PartWorld(c, part, out var gp, out var gr);
             var iq = Quaternion.Conjugate(gr);
-            world.GantryLocks[k].PartAt = c.Parts[part].Pos;
-            world.GantryLocks[k].At = Vector3.Transform(shell.Pos - gp, iq);
-            world.GantryLocks[k].Turn = Quaternion.Normalize(iq * shell.Rot);
-            Log($"[gantry] body {c.Id}: its clamp holds shell {shell.Id}{(shell.Frame != 0 ? $" (riding body {shell.Frame}'s frame)" : "")}");
+            l.PartAt = c.Parts[part].Pos;
+            l.From = Vector3.Transform(shell.Pos - gp, iq);
+            l.FromTurn = Quaternion.Normalize(iq * shell.Rot);
+            ConstructGantry.HoldPose(c.DefOf(part).Gantry!, shell, true, out l.At, out l.Turn);
+            if (l.Lowering)
+                l.Since = now - ConstructGantry.LockClose; // (the jaws are shut still: it lifts again at once)
+            l.Lowering = false;
+            Log($"[gantry] body {c.Id}: its clamp holds shell {shell.Id}{(shell.Frame != 0 ? $" (riding body {shell.Frame}'s frame)" : "")} and lifts it");
         }
         shell.HeldBy = c.Id;
         shell.GantryHold = true;
@@ -321,21 +335,27 @@ public sealed partial class Game
     }
 
     /// <summary>
-    /// Server, each tick while a clamp is shut: the shell where the clamp holds it in the gantry part's frame, moving as the gantry does
-    /// there. A shell riding a moving ship's frame is posed in that frame (its frame pose is its truth), so it goes on with the ship; a
-    /// still shell beside a still gantry is left asleep. Nothing allocates.
+    /// Server, each tick while a clamp holds its shell: the shell on its way from where the clamp caught it to where it holds it (or
+    /// down again), in the gantry part's frame, moving as the gantry does there. A shell riding a moving ship's frame is posed in that
+    /// frame (its frame pose is its truth), so it goes on with the ship; a still shell beside a still gantry is left asleep once the
+    /// clamp's move is done (awake while it moves, so the peers hear its pose). False: the gantry part is gone (nothing posed). Nothing
+    /// allocates.
     /// </summary>
-    private void GantryPin(in GantryLock l)
+    private bool GantryPin(in GantryLock l, double now)
     {
         var world = Constructs;
         if (world.Get(l.Body) is not { } c || ConstructGantry.FindPart(c, l.Part, l.PartAt) != l.Part || world.Get(l.Shell) is not { } shell || shell.HeldBy != l.Body)
-            return; // (the gantry part gone, broken or renumbered: never posed in another part's frame)
+            return false; // (the gantry part gone, broken or renumbered: never posed in another part's frame)
         Freeform.PartWorld(c, l.Part, out var gp, out var gr);
-        var pos = gp + Vector3.Transform(l.At, gr);
-        var rot = Quaternion.Normalize(gr * l.Turn);
+        var s = ConstructGantry.Carry(l, now);
+        var moving = s != ConstructGantry.Carry(l, now - World.TickDt); // (the clamp lifting or lowering it this tick)
+        var pos = gp + Vector3.Transform(Vector3.Lerp(l.From, l.At, s), gr);
+        var rot = Quaternion.Normalize(gr * Quaternion.Slerp(l.FromTurn, l.Turn, s));
         var still = !c.MovesNow && shell.Frame == 0;
-        if (still && shell.Asleep && Vector3.DistanceSquared(shell.Pos, pos) < 1e-6f)
-            return;
+        if (still && !moving && shell.Asleep && Vector3.DistanceSquared(shell.Pos, pos) < 1e-6f && shell.PrevPos == shell.Pos)
+            return true;
+        if (still && moving && shell.Asleep)
+            (shell.PrevPos, shell.PrevRot) = (shell.Pos, shell.Rot); // (drawn between its last pose and this one; the step sets them while it is awake)
         shell.Pos = pos;
         shell.Rot = rot;
         shell.Vel = still ? Vector3.Zero : c.PointVel(shell.WorldCom);
@@ -347,15 +367,21 @@ public sealed partial class Game
             shell.FrameRot = Quaternion.Normalize(iq * rot);
             shell.FrameVel = shell.FrameSpin = Vector3.Zero;
         }
+        else if (still && moving)
+            shell.Wake(); // (awake while the clamp moves it: a sleeping body's pose isn't sent)
         else if (still)
         {
             (shell.PrevPos, shell.PrevRot) = (pos, rot);
             shell.Asleep = true; // (held still: no physics until the clamp opens)
             shell.SleepTicks = 0;
         }
+        return true;
     }
 
-    /// <summary>Server: a gantry's last swap is over: its clamp opens and lets the shell go (woken, so it stands or falls as it will).</summary>
+    /// <summary>
+    /// Server: a gantry's last swap is over: its clamp sets the shell down on its feet on the bay's floor (<see cref="ConstructGantry.LockLift"/>),
+    /// then lets it go (<see cref="GantryLet"/>) as its jaws open.
+    /// </summary>
     private void GantryUnclamp(ushort body, ushort part)
     {
         var world = Constructs;
@@ -363,14 +389,34 @@ public sealed partial class Game
         if (k < 0 || world.GantryLocks[k].Until >= 0)
             return;
         ref var l = ref world.GantryLocks[k];
-        l.Until = ConstructConveyor.Clock;
-        if (world.Get(l.Shell) is not { } shell)
+        var now = ConstructConveyor.Clock;
+        l.Until = now;
+        if (world.Get(l.Shell) is not { } shell || shell.HeldBy != body)
             return;
-        if (shell.HeldBy == body)
-            shell.HeldBy = 0;
+        if (world.Get(body) is { } c && ConstructGantry.FindPart(c, part, l.PartAt) == part && c.DefOf(part).Gantry is { } gd)
+        {
+            // (from where it is held now, the lift done or not, down to its feet on the floor)
+            var s = ConstructGantry.Carry(l, now);
+            l.From = Vector3.Lerp(l.From, l.At, s);
+            l.FromTurn = Quaternion.Normalize(Quaternion.Slerp(l.FromTurn, l.Turn, s));
+            ConstructGantry.HoldPose(gd, shell, false, out l.At, out l.Turn);
+            l.Lowering = true;
+            Log($"[gantry] body {body}: its clamp sets shell {shell.Id} down");
+            return;
+        }
+        GantryLet(ref l);
+    }
+
+    /// <summary>Server: a clamp lets its shell go (woken, so it stands or falls as it will).</summary>
+    private void GantryLet(ref GantryLock l)
+    {
+        l.Lowering = false;
+        if (Constructs.Get(l.Shell) is not { } shell || shell.HeldBy != l.Body)
+            return;
+        shell.HeldBy = 0;
         shell.GantryHold = false;
         shell.Wake();
-        Log($"[gantry] body {body}: its clamp lets shell {shell.Id} go");
+        Log($"[gantry] body {l.Body}: its clamp lets shell {shell.Id} go");
     }
 
     /// <summary>Server: a job's start or end to everyone (<paramref name="to"/> null) or to one joiner.</summary>

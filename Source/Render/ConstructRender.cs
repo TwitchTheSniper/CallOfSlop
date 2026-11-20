@@ -60,6 +60,18 @@ public static partial class ConstructRender
     private static double _leverDrawnAt;
     private static float _leverEase;
 
+    /// <summary>
+    /// The Shell Control Chairs in use this frame, as this peer sees them (a player sitting in one, or wearing a shell woken
+    /// from it): their helmets are drawn down, every other chair's up (<see cref="HelmetDrop"/>). Filled each frame by
+    /// Game.UpdateSandboxSeats before the draw; two entries a player at most (a seat and a shell), so it never grows.
+    /// </summary>
+    public static readonly (ushort Body, ushort Part)[] HelmetsDown = new (ushort, ushort)[512];
+    public static int HelmetsDownCount;
+
+    /// <summary>How long a chair's helmet takes to come down or go up: the link-up's own helmet, seen from inside it (Game.LinkHelmetSeconds).</summary>
+    public const float HelmetSeconds = (float)Game.LinkHelmetSeconds;
+    private static float _helmetStep; // (this frame's share of the helmet's travel)
+
     /// <summary>A gun's muzzle flash (milestone 3): drawn for a moment where it fired.</summary>
     public struct Flash
     {
@@ -224,6 +236,7 @@ public static partial class ConstructRender
             _fxLast = Now;
         }
         _leverEase = 1 - MathF.Exp(-Math.Clamp((float)(Now - _leverDrawnAt), 0, 0.25f) * AnalogLever.ShownRate);
+        _helmetStep = Math.Clamp((float)(Now - _leverDrawnAt), 0, 0.25f) / HelmetSeconds; // (a second pass in the same frame moves nothing)
         _leverDrawnAt = Now;
         LogicDisplays.Sample(world, Now);
         GlassCount = 0;
@@ -430,6 +443,27 @@ public static partial class ConstructRender
         gfx.Draw(Matrix4x4.CreateScale(size) * basis * Matrix4x4.CreateTranslation((a + b) * 0.5f), colour, 1f, mode: 0);
     }
 
+    /// <summary>
+    /// A Shell Control Chair's helmet, 0 up (its rest pose in the part file) to 1 down over the sitter's head: eased towards
+    /// down while the chair is in <see cref="HelmetsDown"/> and up otherwise, over <see cref="HelmetSeconds"/>, slow at
+    /// both ends. Kept in the chair's <see cref="CPart.LeverShown"/> (a chair is never an Analog Lever); worked out on each
+    /// peer from the seats it already has, so nothing goes on the wire.
+    /// </summary>
+    private static float HelmetDrop(Construct c, int part, ref CPart p)
+    {
+        var down = false;
+        for (var k = 0; k < HelmetsDownCount; k++)
+            if (HelmetsDown[k].Body == c.Id && HelmetsDown[k].Part == part)
+            {
+                down = true;
+                break;
+            }
+        var shown = Math.Clamp(p.LeverShown, 0, 1); // (a chair's starts at 0 or -1: up)
+        shown = down ? MathF.Min(1, shown + _helmetStep) : MathF.Max(0, shown - _helmetStep);
+        p.LeverShown = shown;
+        return shown * shown * (3 - 2 * shown);
+    }
+
     /// <summary>A sprung landing foot's pad, up its part's +y by the squash this peer sees (<see cref="CDoor.Shown"/>).</summary>
     private static Matrix4x4 OleoMove(Construct c, int part, in CPart p) =>
         c.DoorOfListed(part) is var k and >= 0 && c.Doors[k].Shown > 0 ? Matrix4x4.CreateTranslation(Rot24.Apply(p.Rot, Vector3.UnitY) * c.Doors[k].Shown) : Matrix4x4.Identity;
@@ -543,6 +577,7 @@ public static partial class ConstructRender
         var wear = p.Broken ? 1f : 1f - health; // (a material rusts and scorches by it: Surfaces.cs)
         var drawn = 0;
         var rig = d.HasRig && d.Role == PartRole.Suspension ? RigOf(c, i) : default;
+        var helmetDrop = d.ShellRange > 0 && d.HasRig ? HelmetDrop(c, i, ref p) : 0f; // (a Shell Control Chair's helmet: down over a sitter's head, up when the chair is empty)
         var leverAxis = Rot24.Apply(p.Rot, Vector3.UnitX);
         var leverAngle = 0f;
         if (d.Logic == CLogic.AnalogLever)
@@ -681,7 +716,9 @@ public static partial class ConstructRender
             }
             if (box.IsLeaf && d.Surface is { Control: > 0 } flap)
                 model *= FlapTurn(c, i, flap, in p); // (a control surface's leaf, on the hinge in the part)
-            if (box.Rig == BoxRig.Oleo)
+            if (box.Rig == BoxRig.Helmet)
+                model *= Matrix4x4.CreateTranslation(Rot24.Apply(p.Rot, Vector3.UnitY) * (-box.RigTravel * helmetDrop));
+            else if (box.Rig == BoxRig.Oleo)
                 model *= OleoMove(c, i, in p);
             else if (box.Rig >= BoxRig.Lever)
                 model *= ControlMove(in box, in p, leverAxis, leverAngle);

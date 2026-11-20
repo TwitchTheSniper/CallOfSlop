@@ -31,7 +31,7 @@ public enum FactionOp : byte
     StationSell, // u16 ship: sell the ore and goods in the bins of the moored ship you are aboard to its station
     // Protocol 366.
     StationBuy, // u16 ship, u8 good: buy as much of one of its station's goods as the moored ship's bins and your tab with its power take (a good past its goods: one of its parts, into your inventory)
-    // Protocol 388 (barter and tabs: GameTabs.cs).
+    // Protocol 389 (barter and tabs: GameTabs.cs).
     StationSellPart, // u16 ship, u8 good: trade every one of a station's part (by its index past the goods) you carry to it, for your tab
 }
 

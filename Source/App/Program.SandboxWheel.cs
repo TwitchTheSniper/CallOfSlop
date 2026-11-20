@@ -71,7 +71,7 @@ public static partial class Program
         g.SandboxWheelKey = Keybinds.NameOf(_settings, GameAction.ToolWheel); // (for the HUD's key line; each name is made once)
         if (!_toolWheel.Menu.IsOpen && Pressed(GameAction.ToolWheel))
             _toolWheel.SetKeys(_settings); // (the hints follow rebinding; remade only when the binds changed)
-        var blocked = !_mouseCaptured || MenusOpen || Ui.ChatOpen;
+        var blocked = !_mouseCaptured || MenusOpen || Ui.ChatOpen || SpectateOn; // (the spectate camera out: the body changes nothing, Program.Spectate.cs)
         ToolRingsGiven();
         var now = Environment.TickCount64;
         var dt = Math.Clamp((now - _lkWheelLast) / 1000f, 0f, 0.1f);

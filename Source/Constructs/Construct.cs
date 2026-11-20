@@ -288,6 +288,7 @@ public sealed partial class Construct
     public bool Anchored; // a working foundation holds it to the ground (or it is pinned)
     public bool Pinned; // set down "anchored to the ground" (creative's free placement toggle): held still without a foundation
     public bool Frozen; // the physics gun froze it where it is (ConstructGrab.cs): held still like an anchored one until grabbed or unfrozen
+    public ushort HeldNear; // server: a Module Fitter's job holds it for another construct than its HeldBy (a dock's fitter: the ship whose socket it goes into or came out of): no contact with that one either (ModuleFitters; 0: none)
     public ushort HeldBy; // server: the construct whose Building Station builds it, frozen in its bay (ConstructStation.cs; 0: nobody): no edits, no grab, no seat until released
     public bool GantryHold; // both peers: a Shell Gantry's clamp holds this shell (ConstructGantry.Hold; the server also sets HeldBy): it still rides a frame, and it is drawn part by part
     public byte FrozenBy = 255; // ...by this player (unfreeze-all frees only your own; 255: nobody's now)
