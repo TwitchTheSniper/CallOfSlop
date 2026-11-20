@@ -1,0 +1,23 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Wall Bay 1m Suit Rack",
+  "description": "A 1 m in-wall bay (draft) whose suit rack runs out with a pressure suit on it.",
+  "steps": [
+    {
+      "part": "Wall Bay 1m",
+      "spin": 2
+    },
+    {
+      "part": "Suit Rack Insert 1m",
+      "on": 0,
+      "socket": "insert",
+      "by": "bay"
+    },
+    {
+      "part": "Suit Rack 1m",
+      "on": 1,
+      "socket": "suit",
+      "by": "hang"
+    }
+  ]
+}

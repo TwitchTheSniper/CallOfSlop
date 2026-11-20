@@ -1,0 +1,195 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Murphy Bed Insert",
+  "description": "An in-wall bay's Murphy bed insert (draft): a dark berth behind a fold-down bed, with a reading lamp, a shelf and a net pocket.",
+  "group": "Style",
+  "section": "In-wall bays",
+  "role": "frame",
+  "tool": "wrench",
+  "finish": "painted steel",
+  "collider": "boxes",
+  "mass": 30.0,
+  "health": 400,
+  "armour": 4,
+  "material": "steel",
+  "color": "#262a2f",
+  "attachSeconds": 3.0,
+  "boxes": [
+    {
+      "min": [
+        -0.45,
+        0.1,
+        -0.5
+      ],
+      "max": [
+        0.45,
+        2.0,
+        -0.485
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.435,
+        0.1,
+        -0.02
+      ],
+      "max": [
+        0.455,
+        0.12,
+        0.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.45,
+        0.1,
+        -0.485
+      ],
+      "max": [
+        0.45,
+        2.0,
+        -0.46
+      ],
+      "color": "#4e5a66",
+      "detail": true,
+      "finish": "fabric"
+    },
+    {
+      "min": [
+        -0.4,
+        1.32,
+        -0.46
+      ],
+      "max": [
+        0.4,
+        1.345,
+        -0.26
+      ],
+      "color": "#262a2f",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.34,
+        1.345,
+        -0.42
+      ],
+      "max": [
+        -0.22,
+        1.5,
+        -0.34
+      ],
+      "color": "#2f6a9a",
+      "detail": true,
+      "finish": "plastic",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.2,
+        1.345,
+        -0.42
+      ],
+      "max": [
+        -0.12,
+        1.48,
+        -0.34
+      ],
+      "color": "#5d6450",
+      "detail": true,
+      "finish": "plastic",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.12,
+        1.345,
+        -0.42
+      ],
+      "max": [
+        0.2,
+        1.45,
+        -0.34
+      ],
+      "color": "#dfe4e2",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+y",
+      "finish": "plastic",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.3,
+        1.7,
+        -0.46
+      ],
+      "max": [
+        0.3,
+        1.76,
+        -0.4
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "plastic",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.28,
+        1.705,
+        -0.405
+      ],
+      "max": [
+        0.28,
+        1.755,
+        -0.394
+      ],
+      "color": "#ffd9a0",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.36,
+        0.5,
+        -0.46
+      ],
+      "max": [
+        0.36,
+        0.95,
+        -0.43
+      ],
+      "color": "#c87a20",
+      "detail": true,
+      "finish": "fabric",
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bay",
+      "at": [
+        0.0,
+        1.0,
+        -0.5
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "bunk",
+      "at": [
+        0.445,
+        0.11,
+        0.0
+      ],
+      "dir": "+z"
+    }
+  ]
+}

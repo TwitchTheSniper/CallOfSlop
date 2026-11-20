@@ -1,0 +1,242 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Toilet Pan 1m",
+  "description": "An in-wall toilet's pan (1 m deep, draft): twist the latch and it runs out of the wall on its runners. Its face is a lining panel with a foot bar; the seat is on top.",
+  "group": "Style",
+  "section": "In-wall bays",
+  "role": "door",
+  "tool": "wrench",
+  "finish": "painted steel",
+  "collider": "boxes",
+  "door": {
+    "kind": "slide",
+    "axis": "+z",
+    "travel": 0.6,
+    "seconds": 1.4,
+    "hang": "hang"
+  },
+  "mass": 35.0,
+  "health": 300,
+  "armour": 4,
+  "material": "steel",
+  "color": "#c4c8ca",
+  "attachSeconds": 2.0,
+  "boxes": [
+    {
+      "min": [
+        0.435,
+        0.1,
+        0.0
+      ],
+      "max": [
+        0.455,
+        0.12,
+        0.02
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.44,
+        0.11,
+        -0.012
+      ],
+      "max": [
+        0.44,
+        0.46,
+        0.018
+      ],
+      "color": "#c4c8ca",
+      "detail": true,
+      "finish": "wall panelling"
+    },
+    {
+      "min": [
+        -0.438,
+        0.112,
+        -0.014
+      ],
+      "max": [
+        0.438,
+        0.3,
+        0.022
+      ],
+      "color": "#2c5aa0",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -0.3,
+        0.15,
+        0.022
+      ],
+      "max": [
+        0.3,
+        0.19,
+        0.062
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+x",
+      "finish": "chrome",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.42,
+        0.43,
+        -0.014
+      ],
+      "max": [
+        -0.3,
+        0.455,
+        0.024
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "rubber",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.22,
+        0.122,
+        -0.58
+      ],
+      "max": [
+        0.22,
+        0.43,
+        -0.012
+      ],
+      "color": "#dfe4e2",
+      "detail": true,
+      "finish": "gloss paint"
+    },
+    {
+      "min": [
+        -0.21,
+        0.43,
+        -0.53
+      ],
+      "max": [
+        0.21,
+        0.46,
+        -0.11
+      ],
+      "color": "#4e5a66",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 24,
+      "front": "+y",
+      "finish": "rubber",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.12,
+        0.435,
+        -0.45
+      ],
+      "max": [
+        0.12,
+        0.466,
+        -0.19
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 24,
+      "front": "+y",
+      "finish": "rubber",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.24,
+        0.12,
+        -0.6
+      ],
+      "max": [
+        0.238,
+        0.18,
+        -0.56
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.238,
+        0.13,
+        -0.58
+      ],
+      "max": [
+        -0.22,
+        0.16,
+        -0.02
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.22,
+        0.13,
+        -0.58
+      ],
+      "max": [
+        0.24,
+        0.16,
+        -0.02
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.44,
+        0.1,
+        -0.012
+      ],
+      "max": [
+        0.44,
+        0.46,
+        0.018
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.22,
+        0.12,
+        -0.58
+      ],
+      "max": [
+        0.22,
+        0.43,
+        -0.012
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "hang",
+      "at": [
+        0.445,
+        0.11,
+        0.0
+      ],
+      "dir": "-z"
+    }
+  ]
+}

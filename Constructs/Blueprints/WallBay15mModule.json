@@ -1,0 +1,29 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Wall Bay 1.5m Module Sled",
+  "description": "A 1.5 m in-wall bay (draft) whose sled runs out with a coolant exchanger module on it.",
+  "steps": [
+    {
+      "part": "Wall Bay 1.5m",
+      "spin": 2
+    },
+    {
+      "part": "Component Bay Insert 1.5m",
+      "on": 0,
+      "socket": "insert",
+      "by": "bay"
+    },
+    {
+      "part": "Component Bay Cover 1.5m",
+      "on": 1,
+      "socket": "cover",
+      "by": "hang"
+    },
+    {
+      "part": "Component Sled 1.5m",
+      "on": 1,
+      "socket": "sled",
+      "by": "hang"
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Wall Bay 1.5m O2 Generator",
+  "description": "An oxygen generator in a 1.5 m in-wall bay (draft): twist the side handle and the breech runs out with its candle; spare candles in the drawer under it.",
+  "steps": [
+    {
+      "part": "Wall Bay 1.5m",
+      "spin": 2
+    },
+    {
+      "part": "O2 Generator Insert 1.5m",
+      "on": 0,
+      "socket": "insert",
+      "by": "bay"
+    },
+    {
+      "part": "Twist Latch",
+      "on": 1,
+      "socket": "latch",
+      "by": "hang"
+    },
+    {
+      "part": "Candle Breech 1.5m",
+      "on": 1,
+      "socket": "breech",
+      "by": "hang"
+    },
+    {
+      "part": "Candle Drawer 1.5m",
+      "on": 1,
+      "socket": "spares",
+      "by": "hang"
+    }
+  ]
+}

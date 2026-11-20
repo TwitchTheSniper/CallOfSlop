@@ -1,0 +1,10 @@
+{
+  // In-wall bay draft (WallBayParts.cs): deeper shelves, three loads deep, run out of the wall.
+  "blueprint": "Wall Bay 1.5m Rack",
+  "title": "1.5 m bay: deeper shelves",
+  "shelf": "In-wall bays 1.5 m",
+  "description": "Draft. The rack runs out 1.46 m, three loads deep, reached from both sides.",
+  "steps": [
+    { "part": "Pull-out Rack 1.5m", "at": 0, "label": "Rack slides out" }
+  ]
+}

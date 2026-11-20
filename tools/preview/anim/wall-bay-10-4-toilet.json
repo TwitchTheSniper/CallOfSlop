@@ -1,0 +1,11 @@
+{
+  // In-wall bay draft (WallBayParts.cs): twist the side handle, then the pan runs out of the wall.
+  "blueprint": "Wall Bay 1m Toilet",
+  "title": "1 m bay: toilet",
+  "shelf": "In-wall bays 1 m",
+  "description": "Draft. Twist the big handle on the side a quarter turn, then the pan runs 0.6 m out of the wall; you sit with your back to the wall, a back rest, grab bar, urine funnel and wipes on the panel over it. The waste tank and its vacuum fan sit at the back of the bay.",
+  "steps": [
+    { "part": "Twist Latch", "at": 0, "label": "Twist the handle" },
+    { "part": "Toilet Pan 1m", "at": 0.6, "label": "Pan runs out" }
+  ]
+}

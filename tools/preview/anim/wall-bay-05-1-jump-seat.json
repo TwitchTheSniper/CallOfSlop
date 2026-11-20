@@ -1,0 +1,12 @@
+{
+  // In-wall bay draft (WallBayParts.cs): press the seat and it flips down from the lining; the helmet locker over it swings aside.
+  "blueprint": "Wall Bay Jump Seat",
+  "title": "0.5 m bay: jump seat",
+  "shelf": "In-wall bays 0.5 m",
+  "description": "Draft. The standard bay: a 0.9 x 1.9 m opening in the interior lining, 0.5 m deep into the void before the hull (the 1 m and 1.5 m shelves have the deeper bays). The seat flips down, the helmet locker swings aside. Every bay uses one of four motions: flip down, flip up, swing aside, slide out.",
+  "seconds": 2.4,
+  "steps": [
+    { "part": "Jump Seat", "at": 0, "label": "Seat flips down" },
+    { "part": "Helmet Locker Door", "at": 1.2, "label": "Helmet locker swings aside" }
+  ]
+}

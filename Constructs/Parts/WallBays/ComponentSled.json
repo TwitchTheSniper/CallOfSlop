@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Component Sled",
-  "description": "A sled in an in-wall component bay (draft): it runs out on the bay's rails with what it carries (here a power cell) and unplugs as it goes.",
+  "description": "A sled in an in-wall component bay (0.5 m deep, draft): it runs out on the bay's rails with what it carries (here a power cell, a long one in the deep bay) and unplugs as it goes.",
   "group": "Style",
   "section": "In-wall bays",
   "role": "door",

@@ -1,0 +1,11 @@
+{
+  // In-wall bay draft (WallBayParts.cs): a CO2 scrubber; twist the handle, its tray of canisters runs out.
+  "blueprint": "Wall Bay 1m CO2 Scrubber",
+  "title": "CO2 scrubber (1 m bay)",
+  "shelf": "In-wall ship systems",
+  "description": "Draft. A ship system that takes consumables. Twist the handle and the tray runs out 0.92 m with eight absorbent canisters: a spent one shows a red band, fresh ones green, swapped from the consumables rack. The fan under the tray, the manifold and duct behind, a CO2 gauge over it.",
+  "steps": [
+    { "part": "Twist Latch", "at": 0, "label": "Twist the handle" },
+    { "part": "Scrubber Tray 1m", "at": 0.6, "label": "Tray runs out" }
+  ]
+}

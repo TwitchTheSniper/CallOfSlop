@@ -1,0 +1,11 @@
+{
+  // In-wall bay draft (WallBayParts.cs): the door swings aside, then a spacewalk pack on its stand rides a floor sled out into the room.
+  "blueprint": "Wall Bay 1.5m MMU",
+  "title": "1.5 m bay: spacewalk pack",
+  "shelf": "In-wall bays 1.5 m",
+  "description": "Draft. Three times the depth. The door swings aside on its left edge, then the MMU rides 1.2 m out into the room on its floor sled, its back to the wall, so you back into it from the room and buckle on.",
+  "steps": [
+    { "part": "MMU Bay Door 1.5m", "at": 0, "label": "Door swings aside" },
+    { "part": "MMU Sled 1.5m", "at": 1, "label": "Sled runs out" }
+  ]
+}

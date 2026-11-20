@@ -1,0 +1,23 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Wall Bay Murphy Bed",
+  "description": "An in-wall bay (draft) whose whole face flips down to a Murphy bed.",
+  "steps": [
+    {
+      "part": "Wall Bay",
+      "spin": 2
+    },
+    {
+      "part": "Murphy Bed Insert",
+      "on": 0,
+      "socket": "insert",
+      "by": "bay"
+    },
+    {
+      "part": "Murphy Bed",
+      "on": 1,
+      "socket": "bunk",
+      "by": "hang"
+    }
+  ]
+}

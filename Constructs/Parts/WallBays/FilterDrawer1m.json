@@ -1,0 +1,529 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Filter Drawer 1m",
+  "description": "A water reclaimer's filter drawer (1 m deep, draft): twist the latch and it runs out with its cartridges standing in a row (pre-filter, carbon, membrane) and a spare set behind.",
+  "group": "Style",
+  "section": "In-wall bays",
+  "role": "door",
+  "tool": "wrench",
+  "finish": "painted steel",
+  "collider": "boxes",
+  "door": {
+    "kind": "slide",
+    "axis": "+z",
+    "travel": 0.92,
+    "seconds": 2.0,
+    "hang": "hang"
+  },
+  "mass": 50.0,
+  "health": 400,
+  "armour": 4,
+  "material": "steel",
+  "color": "#c4c8ca",
+  "attachSeconds": 2.0,
+  "boxes": [
+    {
+      "min": [
+        0.435,
+        0.46,
+        0.0
+      ],
+      "max": [
+        0.455,
+        0.48,
+        0.02
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.44,
+        0.468,
+        -0.012
+      ],
+      "max": [
+        0.44,
+        1.212,
+        0.018
+      ],
+      "color": "#c4c8ca",
+      "detail": true,
+      "finish": "wall panelling"
+    },
+    {
+      "min": [
+        0.3,
+        0.66,
+        0.015
+      ],
+      "max": [
+        0.38,
+        1.0,
+        0.04
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "rubber",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.36,
+        1.08,
+        0.015
+      ],
+      "max": [
+        -0.04,
+        1.14,
+        0.026
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "plastic",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.34,
+        1.09,
+        0.019
+      ],
+      "max": [
+        -0.06,
+        1.13,
+        0.03
+      ],
+      "color": "#4aa8e8",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.42,
+        0.49,
+        -0.89
+      ],
+      "max": [
+        0.42,
+        0.51,
+        -0.012
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "finish": "tread plate",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.435,
+        0.49,
+        -0.89
+      ],
+      "max": [
+        -0.42,
+        0.52,
+        -0.02
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.42,
+        0.49,
+        -0.89
+      ],
+      "max": [
+        0.435,
+        0.52,
+        -0.02
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.32,
+        0.51,
+        -0.37
+      ],
+      "max": [
+        -0.18,
+        1.07,
+        -0.23
+      ],
+      "color": "#f0a830",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+y",
+      "finish": "plastic",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.324,
+        1.07,
+        -0.374
+      ],
+      "max": [
+        -0.176,
+        1.13,
+        -0.226
+      ],
+      "color": "#2f6a9a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+y",
+      "finish": "plastic",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.324,
+        0.51,
+        -0.374
+      ],
+      "max": [
+        -0.176,
+        0.55,
+        -0.226
+      ],
+      "color": "#2f6a9a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+y",
+      "finish": "plastic",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.07,
+        0.51,
+        -0.37
+      ],
+      "max": [
+        0.07,
+        1.07,
+        -0.23
+      ],
+      "color": "#3a3d40",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+y",
+      "finish": "plastic",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.074,
+        1.07,
+        -0.374
+      ],
+      "max": [
+        0.074,
+        1.13,
+        -0.226
+      ],
+      "color": "#2f6a9a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+y",
+      "finish": "plastic",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.074,
+        0.51,
+        -0.374
+      ],
+      "max": [
+        0.074,
+        0.55,
+        -0.226
+      ],
+      "color": "#2f6a9a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+y",
+      "finish": "plastic",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.18,
+        0.51,
+        -0.37
+      ],
+      "max": [
+        0.32,
+        1.07,
+        -0.23
+      ],
+      "color": "#dfe4e2",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+y",
+      "finish": "plastic",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.176,
+        1.07,
+        -0.374
+      ],
+      "max": [
+        0.324,
+        1.13,
+        -0.226
+      ],
+      "color": "#2f6a9a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+y",
+      "finish": "plastic",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.176,
+        0.51,
+        -0.374
+      ],
+      "max": [
+        0.324,
+        0.55,
+        -0.226
+      ],
+      "color": "#2f6a9a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+y",
+      "finish": "plastic",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.32,
+        0.51,
+        -0.77
+      ],
+      "max": [
+        -0.18,
+        1.07,
+        -0.63
+      ],
+      "color": "#f0a830",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+y",
+      "finish": "plastic",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.324,
+        1.07,
+        -0.774
+      ],
+      "max": [
+        -0.176,
+        1.13,
+        -0.626
+      ],
+      "color": "#2f6a9a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+y",
+      "finish": "plastic",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.324,
+        0.51,
+        -0.774
+      ],
+      "max": [
+        -0.176,
+        0.55,
+        -0.626
+      ],
+      "color": "#2f6a9a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+y",
+      "finish": "plastic",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.07,
+        0.51,
+        -0.77
+      ],
+      "max": [
+        0.07,
+        1.07,
+        -0.63
+      ],
+      "color": "#3a3d40",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+y",
+      "finish": "plastic",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.074,
+        1.07,
+        -0.774
+      ],
+      "max": [
+        0.074,
+        1.13,
+        -0.626
+      ],
+      "color": "#2f6a9a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+y",
+      "finish": "plastic",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.074,
+        0.51,
+        -0.774
+      ],
+      "max": [
+        0.074,
+        0.55,
+        -0.626
+      ],
+      "color": "#2f6a9a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+y",
+      "finish": "plastic",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.18,
+        0.51,
+        -0.77
+      ],
+      "max": [
+        0.32,
+        1.07,
+        -0.63
+      ],
+      "color": "#dfe4e2",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+y",
+      "finish": "plastic",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.176,
+        1.07,
+        -0.774
+      ],
+      "max": [
+        0.324,
+        1.13,
+        -0.626
+      ],
+      "color": "#2f6a9a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+y",
+      "finish": "plastic",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.176,
+        0.51,
+        -0.774
+      ],
+      "max": [
+        0.324,
+        0.55,
+        -0.626
+      ],
+      "color": "#2f6a9a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+y",
+      "finish": "plastic",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.44,
+        0.46,
+        -0.012
+      ],
+      "max": [
+        0.44,
+        1.22,
+        0.018
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.42,
+        0.49,
+        -0.89
+      ],
+      "max": [
+        0.42,
+        0.51,
+        -0.012
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "hang",
+      "at": [
+        0.445,
+        0.47,
+        0.0
+      ],
+      "dir": "-z"
+    }
+  ]
+}

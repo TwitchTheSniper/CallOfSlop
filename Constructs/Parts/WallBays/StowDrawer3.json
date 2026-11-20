@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Stow Drawer 3",
-  "description": "A deep drawer in an in-wall bay (draft): press its face and it runs out on its runners.",
+  "description": "A drawer in an in-wall bay (0.5 m deep, draft): press its face and it runs out on its runners.",
   "group": "Style",
   "section": "In-wall bays",
   "role": "door",

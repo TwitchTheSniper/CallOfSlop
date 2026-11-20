@@ -298,7 +298,10 @@ public static partial class ConstructPreview
                 {
                     foreach (var (n, a, bb) in CubeFaces)
                     {
-                        var wn = Vector3.Normalize(Vector3.Transform(Rot24.Apply(p.Rot, n), q));
+                        // (the box's corners aren't turned by the part's Rot24, only its extents are (Model's ApplyHalf), so the face made
+                        // from n is on n's side in the construct's frame and faces n: turning n by the part's rotation too pointed every x and
+                        // z face of a turned part inward or sideways, which drew dark wherever a piece swung one of them up)
+                        var wn = Vector3.Normalize(Vector3.Transform(n, q));
                         Vector3 Corner(float u, float v) => Vector3.Transform(n * 0.5f + a * u + bb * v, m);
                         var c00 = Corner(-0.5f, -0.5f);
                         var c10 = Corner(0.5f, -0.5f);
@@ -326,6 +329,13 @@ public static partial class ConstructPreview
 
                 void Tri(Vector3 a0, Vector3 a1, Vector3 a2, Vector3 n0, Vector3 n1, Vector3 n2)
                 {
+                    // (wound to face its normals: the page draws both sides and turns a back face's normal round, and three quarters of a
+                    // shape mesh's triangles came wound the other way, so a cylinder drew dark on its lit side)
+                    if (Vector3.Dot(Vector3.Cross(a1 - a0, a2 - a0), n0 + n1 + n2) < 0)
+                    {
+                        (a1, a2) = (a2, a1);
+                        (n1, n2) = (n2, n1);
+                    }
                     pos.Add(a0);
                     pos.Add(a1);
                     pos.Add(a2);

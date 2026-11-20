@@ -1,0 +1,29 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Wall Bay 1m Component Sled",
+  "description": "A 1 m in-wall bay (draft) whose sled runs out with a long power cell on it.",
+  "steps": [
+    {
+      "part": "Wall Bay 1m",
+      "spin": 2
+    },
+    {
+      "part": "Component Bay Insert 1m",
+      "on": 0,
+      "socket": "insert",
+      "by": "bay"
+    },
+    {
+      "part": "Component Bay Cover 1m",
+      "on": 1,
+      "socket": "cover",
+      "by": "hang"
+    },
+    {
+      "part": "Component Sled 1m",
+      "on": 1,
+      "socket": "sled",
+      "by": "hang"
+    }
+  ]
+}

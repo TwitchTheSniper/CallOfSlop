@@ -1,0 +1,29 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Wall Bay 1m Consumables",
+  "description": "A 1 m in-wall bay (draft): twist the side handle and a rack of the ship's consumables runs out.",
+  "steps": [
+    {
+      "part": "Wall Bay 1m",
+      "spin": 2
+    },
+    {
+      "part": "Consumables Rack Insert 1m",
+      "on": 0,
+      "socket": "insert",
+      "by": "bay"
+    },
+    {
+      "part": "Twist Latch",
+      "on": 1,
+      "socket": "latch",
+      "by": "hang"
+    },
+    {
+      "part": "Consumables Rack 1m",
+      "on": 1,
+      "socket": "rack",
+      "by": "hang"
+    }
+  ]
+}

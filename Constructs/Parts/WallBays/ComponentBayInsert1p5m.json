@@ -1,0 +1,445 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Component Bay Insert 1.5m",
+  "description": "An in-wall bay's component insert (1.5 m deep, draft): a service panel under the sled, a gauge panel over it, the sled's rails and the bay's power plug at the back.",
+  "group": "Style",
+  "section": "In-wall bays",
+  "role": "frame",
+  "tool": "wrench",
+  "finish": "painted steel",
+  "collider": "boxes",
+  "mass": 40.0,
+  "health": 600,
+  "armour": 6,
+  "material": "steel",
+  "color": "#262a2f",
+  "attachSeconds": 3.0,
+  "boxes": [
+    {
+      "min": [
+        -0.45,
+        0.1,
+        -1.5
+      ],
+      "max": [
+        0.45,
+        2.0,
+        -1.485
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.435,
+        1.5,
+        -0.02
+      ],
+      "max": [
+        0.455,
+        1.52,
+        0.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.435,
+        0.7,
+        -0.02
+      ],
+      "max": [
+        0.455,
+        0.72,
+        0.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.45,
+        0.098,
+        -0.04
+      ],
+      "max": [
+        0.45,
+        0.69,
+        -0.012
+      ],
+      "color": "#c4c8ca",
+      "detail": true,
+      "finish": "wall panelling"
+    },
+    {
+      "min": [
+        -0.448,
+        0.1,
+        -0.042
+      ],
+      "max": [
+        0.448,
+        0.38,
+        -0.008
+      ],
+      "color": "#2c5aa0",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -0.3,
+        0.44,
+        -0.017
+      ],
+      "max": [
+        0.3,
+        0.46,
+        -0.006
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.3,
+        0.49,
+        -0.017
+      ],
+      "max": [
+        0.3,
+        0.51,
+        -0.006
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.3,
+        0.54,
+        -0.017
+      ],
+      "max": [
+        0.3,
+        0.56,
+        -0.006
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.24,
+        0.12,
+        -0.014
+      ],
+      "max": [
+        0.4,
+        0.3,
+        0.0
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "plastic",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.29,
+        0.18,
+        -0.002
+      ],
+      "max": [
+        0.35,
+        0.26,
+        0.02
+      ],
+      "color": "#e0402c",
+      "detail": true,
+      "finish": "plastic",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.45,
+        1.51,
+        -0.04
+      ],
+      "max": [
+        0.45,
+        2.0,
+        -0.012
+      ],
+      "color": "#c4c8ca",
+      "detail": true,
+      "finish": "wall panelling"
+    },
+    {
+      "min": [
+        -0.38,
+        1.62,
+        -0.014
+      ],
+      "max": [
+        -0.02,
+        1.9,
+        0.0
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "plastic",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.36,
+        1.64,
+        -0.007
+      ],
+      "max": [
+        -0.04,
+        1.88,
+        0.004
+      ],
+      "color": "#5ac8ff",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.05,
+        1.68,
+        -0.014
+      ],
+      "max": [
+        0.19,
+        1.82,
+        0.01
+      ],
+      "color": "#2a2e33",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+z",
+      "finish": "plastic",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.065,
+        1.695,
+        0.0
+      ],
+      "max": [
+        0.175,
+        1.805,
+        0.014
+      ],
+      "color": "#dfe4e2",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+z",
+      "finish": "plastic",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.23,
+        1.68,
+        -0.014
+      ],
+      "max": [
+        0.37,
+        1.82,
+        0.01
+      ],
+      "color": "#2a2e33",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+z",
+      "finish": "plastic",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.245,
+        1.695,
+        0.0
+      ],
+      "max": [
+        0.355,
+        1.805,
+        0.014
+      ],
+      "color": "#dfe4e2",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+z",
+      "finish": "plastic",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.45,
+        0.1,
+        -0.04
+      ],
+      "max": [
+        0.45,
+        0.69,
+        -0.012
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.45,
+        1.51,
+        -0.04
+      ],
+      "max": [
+        0.45,
+        2.0,
+        -0.012
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.45,
+        0.689,
+        -1.5
+      ],
+      "max": [
+        0.45,
+        0.7,
+        -0.04
+      ],
+      "color": "#262a2f",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.44,
+        0.7,
+        -1.5
+      ],
+      "max": [
+        -0.4,
+        0.75,
+        -0.04
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.4,
+        0.7,
+        -1.5
+      ],
+      "max": [
+        0.44,
+        0.75,
+        -0.04
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.12,
+        0.84,
+        -1.5
+      ],
+      "max": [
+        0.12,
+        1.06,
+        -1.45
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "plastic",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.14,
+        1.0,
+        -1.498
+      ],
+      "max": [
+        0.18,
+        1.04,
+        -1.48
+      ],
+      "color": "#5ad070",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.03,
+        0.1,
+        -1.49
+      ],
+      "max": [
+        0.03,
+        0.84,
+        -1.45
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+y",
+      "finish": "rubber",
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bay",
+      "at": [
+        0.0,
+        1.0,
+        -1.5
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "cover",
+      "at": [
+        0.445,
+        1.51,
+        0.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "sled",
+      "at": [
+        0.445,
+        0.71,
+        0.0
+      ],
+      "dir": "+z"
+    }
+  ]
+}
