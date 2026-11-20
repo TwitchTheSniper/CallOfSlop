@@ -382,6 +382,20 @@ public sealed class RoamerParts : IPartGenerator
         return level == 0 && raw < Lw - 1e-6 ? BayHalf : raw;
     }
 
+    /// <summary>Where the rear cap starts (ring 5): aft of it the rooms' side walls taper in to the back wall.</summary>
+    private static double TailZ => Rings[5][D].Z;
+
+    /// <summary>The rooms' back wall's half width on a storey (inside the skin).</summary>
+    private static double BackHalf(int level) => Cm(SkinMin(Back, Back + 0.1, Levels[level].Y0, Levels[level].Y1) - 0.06);
+
+    /// <summary>The tapered side wall's inner face (its half width) at z in the rear cap: the rooms' wall at <see cref="TailZ"/>,
+    /// straight in to a hair inside the back wall's ends at <see cref="Back"/>.</summary>
+    private static double TaperIn(int level, double z)
+    {
+        double a = RoomHalf(level, TailZ - 0.3, TailZ), b = Math.Min(a, BackHalf(level) - WallT - 0.01);
+        return a + (b - a) * (z - TailZ) / (Back - TailZ);
+    }
+
     private static double SkinHalfIn(int level, double z0, double z1)
     {
         var (y0, y1, _) = Levels[level];
@@ -454,7 +468,8 @@ public sealed class RoamerParts : IPartGenerator
         {
             // (where the rooms are a box, the floor stops under their walls, upstairs over the hold's, and the gap to the skin is open;
             // the cockpit's runs out to the skin, and the ramp bay to its walls)
-            var w = BoxWalled(level, z0, z1) ? (level == 0 ? RoomHalf(0, z0, z1) : Lw) + WallT : level == 0 ? RoomHalf(0, z0, z1) : Cm(SkinMin(z0, z1, y0, y1) - 0.03);
+            var w = z0 >= TailZ - 1e-6 ? Math.Min(TaperIn(level, z0) + WallT, Cm(SkinMin(z0, z1, y0, y1) - 0.03)) // (under the rear cap's tapered walls)
+                : BoxWalled(level, z0, z1) ? (level == 0 ? RoomHalf(0, z0, z1) : Lw) + WallT : level == 0 ? RoomHalf(0, z0, z1) : Cm(SkinMin(z0, z1, y0, y1) - 0.03);
             double xa = Cx - w, xb = Cx + w;
             var xs = new List<(double, double)> { (xa, xb) };
             foreach (var h in holes)
@@ -479,6 +494,15 @@ public sealed class RoamerParts : IPartGenerator
         {
             foreach (var (z0, z1) in Strips(front, Back, RoomCuts(level)))
             {
+                if (z0 >= TailZ - 1e-6)
+                {
+                    // (in the rear cap the side walls run in a straight taper to the back wall, drawn below: only the voids out to the skin here)
+                    var tb = TaperIn(level, z0) + WallT;
+                    var to = Math.Max(tb + 0.04, Cm(SkinMin(z0, z1, y0, y1) - 0.06));
+                    foreach (var s in new[] { -1, 1 })
+                        Hidden(p, Cx + s * tb, y0, z0, Cx + s * to, y1, z1);
+                    continue;
+                }
                 var inner = RoomHalf(level, z0, z1);
                 var boxed = BoxWalled(level, z0, z1);
                 var back = boxed ? inner + WallT : inner;
@@ -523,8 +547,19 @@ public sealed class RoamerParts : IPartGenerator
                 // (the kick strip 4 to 16 mm proud of the wall, its ends 4 mm short of the strip's: no face in a neighbour's plane)
                 Detail(p, face - s * 0.004, (level == 0 ? F0 : y0) + 0.006, z0 + 0.004, face - s * 0.016, (level == 0 ? F0 : y0) + 0.896, z1 - 0.004, WallLow, "matte paint");
             }
-            var bw = Cm(SkinMin(Back, Back + 0.1, y0, y1) - 0.06);
+            var bw = BackHalf(level);
             Solid(p, Cx - bw, y0, Back, Cx + bw, y1, Back + 0.1, Wall, "painted plating"); // (the rooms' back wall, drawn: the end of the galley and the engine room)
+            // The tapered side walls in the rear cap (Karl, 2026-11-20: the walls joined, no steps): from the rooms' walls at the cap's
+            // start straight to the back wall, their ends 2 cm into it.
+            {
+                var foot = level == 0 ? F0 : y0;
+                double za = TailZ, zb = Back + 0.02;
+                foreach (var s in new[] { -1, 1 })
+                {
+                    double[][] Out(double y) => [P(Cx + s * TaperIn(level, za), y, za), P(Cx + s * (TaperIn(level, za) + WallT), y, za), P(Cx + s * (TaperIn(level, zb) + WallT), y, zb), P(Cx + s * TaperIn(level, zb), y, zb)];
+                    Prism(p, Out(foot + 0.003), Out(wallTop - 0.003), Wall, "painted plating"); // (3 mm inside the back wall's top and foot)
+                }
+            }
             if (level == 1)
             {
                 var fw = Cm(SkinMin(UpFront - 0.04, UpFront, y0, y1) - 0.06);
@@ -556,18 +591,6 @@ public sealed class RoamerParts : IPartGenerator
                 return 10 + i;
         var zc = (z0 + z1) / 2;
         return zc < 2.95 ? 0 : zc > 14.05 ? 3 : zc < 8.5 ? 1 : 2;
-    }
-
-    /// <summary>Like <see cref="Void"/>, but drawn: the tail's space behind the rooms packed solid (tanks and ducting), so a cutaway
-    /// shows no empty cavity behind the galley (Karl, 2026-11-20).</summary>
-    private static void Fill(Part p, double z0, double z1, double y0, double y1, double minHalf = 0.25)
-    {
-        foreach (var (a, b) in Strips(z0, z1))
-        {
-            var w = Cm(SkinMin(a, b, y0, y1) - 0.06);
-            if (w >= minHalf)
-                Solid(p, Cx - w, y0, a, Cx + w, y1, b, Frame, "dirty steel");
-        }
     }
 
     /// <summary>Hidden boxes filling the skin between z0 and z1 over a band of heights, in strips (no room in it: the nose, the roof,
@@ -904,8 +927,6 @@ public sealed class RoamerParts : IPartGenerator
                 var w = Rings[6][L].W + (Rings[6][D].W - Rings[6][L].W) * t - 0.55;
                 Detail(p, Cx - w, y, zf + 0.03, Cx + w, y + 0.07, zf + 0.1, "#1e1d1c", "dirty steel");
             }
-            Fill(p, Back + 0.1, RearZ(0.5) - 0.05, 0.5, F1);
-            Fill(p, Back + 0.1, RearZ(0.05) - 0.05, 0.05, 0.5, 0.5);
             // Tail lights: a camper's tall red lamps at the corners, an amber one over each, in chrome bezels.
             foreach (var s in new[] { -1, 1 })
             {
@@ -1253,8 +1274,6 @@ public sealed class RoamerParts : IPartGenerator
                 Detail(p, Cx + 2.4, y, Rings[6][D].Z + 0.095, Cx + 2.8, y + 0.035, Rings[6][D].Z + 0.125, Chrome, "chrome");
             foreach (var y in new[] { 3.1, 6.6 })
                 Detail(p, Cx + 2.5, y, RearZ(y) + 0.004, Cx + 2.65, y + 0.06, Rings[6][D].Z + 0.09, Frame, "dirty steel");
-            foreach (var (y0, y1) in new[] { (F1, 4.4), (4.4, 5.5) })
-                Fill(p, Back + 0.1, Math.Min(RearZ(y0), RearZ(y1)) - 0.05, y0, y1, 0.4);
         });
         // The floor (the stair's opening left out); the hidden walls round the rooms (the front's is the canopy's).
         FloorOf(p, 1, F1, F1T, Deck, [StairHole]);

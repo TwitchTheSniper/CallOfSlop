@@ -19,7 +19,7 @@ and `Constructs/Blueprints/Roamer.json`. Change the generator, never its output.
   round the rear corners; chrome trim (bumper, drip rails, sill bars, mirrors); the rust bucket's patch panels below the deck line.
 - **The rear** (Karl, 2026-11-20: "the rear contour space needs to be taken up a little more and sealed", then "utilise the space
   ... expanding the rooms, hall etc."): the rear cap sits about 1 m closer in, and the rooms run aft into it (`Back` 16.8, past
-  ring 5 at 16.06), their walls stepping in with the skin; only a thin fill (`Fill`) is left between the back wall and the cap.
+  ring 5 at 16.06), their side walls running in a straight taper from ring 5 to the back wall (`TaperIn`), no steps and no filler behind it (Karl: "remove that weird cavity filler at the back, connect the walls").
 - **The stair** (Karl, 2026-11-20, from a picture: an open steel stair, "we want to be able to shove stuff under the stairs"): the
   Roamer Stair (`OpenStair`) is 1.75 m wide like the Wide Stair, but steeper (10 steps of 0.3 m over `StairRun` 2.9 m) and open:
   steel treads with yellow and black nosings on slim stringers, hand rails on posts, and only a hidden block under each tread for
