@@ -649,9 +649,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 380: the Half Shell (docs/sandbox/design/half-shell.md): a new shell part file moves part ids; Shells.json gains frame 2 (Half, scale 0.5).
     // 381: module sockets phase 4 on: the Module Fitter S part (Constructs/Parts/Modules/Fitters) moves the part ids; CfgKey ModWeld at the end
     //   of the settings (a fitter's weld or seam cut on a plate); data, ammo and chute ports on plates and plugs.
-    // 382: the capital ship (Karl, 2026-11-20): cut plates go to 64 x 32 m with openings to 32 m (HullLoft.CutPlateMaxCm), so keys every peer
+    // 382: the Construction Shell (docs/sandbox/design/construction-shell.md): a new shell part file moves part ids; Shells.json gains frame 3 (Construction, scale 2.8).
+    // 383: the capital ship (Karl, 2026-11-20): cut plates go to 64 x 32 m with openings to 32 m (HullLoft.CutPlateMaxCm), so keys every peer
     //   refused before are made; the Large and Capital Laser Cutters and the ship's own parts (Constructs/Parts/Mainframe) move the part ids.
-    public const ushort ProtocolVersion = 382;
+    public const ushort ProtocolVersion = 383;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

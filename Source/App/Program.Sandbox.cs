@@ -218,7 +218,8 @@ public static unsafe partial class Program
 
         // What the crosshair is on.
         SandboxAimRay(g, me, out var eye, out var dir); // (third person: the camera's ray, from the point nearest you; Program.ThirdPerson.cs)
-        var reachLook = GantryOn ? GantryMaxDist() + _gDist : ConstructBuild.Reach + 1; // (the Build Gantry's camera sees as far as its range)
+        var buildReach = BuildReach(g); // (a big shell frame reaches further: ConstructEdits.BuildReachOf)
+        var reachLook = GantryOn ? GantryMaxDist() + _gDist : buildReach + 1; // (the Build Gantry's camera sees as far as its range)
         var wall = World.RaycastWorld(eye, dir, reachLook);
         var aimed = g.Constructs.Raycast(eye, dir, MathF.Min(wall, reachLook), out var hit, look: true, noTracks: h.Tool is not (ConstructTool.Tracks or ConstructTool.Configure)); // (only these act on the band: bullets hit it, other tools reach what it runs on)
         BalanceFrame(g, in h, aimed, hit, now); // (centre of mass, lift and thrust on a flyer: Program.SandboxFlight.cs)
@@ -401,7 +402,7 @@ public static unsafe partial class Program
         // The welder on a part that touches another construct: F joins the two into one (decision 27: only the welder
         // attaches a piece; its three-step socket weld moves one into place: Program.SandboxSocketWeld.cs).
         JoinPlan jplan = default;
-        var join = h.Tool == ConstructTool.Welder && aimed && hit.Distance <= ConstructBuild.Reach && hit.Part >= 0 && hit.Body.DefOf(hit.Part).Role != PartRole.Hitch && ConstructPlace.FindJoin(g.Constructs, hit.Body, hit.Part, out jplan);
+        var join = h.Tool == ConstructTool.Welder && aimed && hit.Distance <= buildReach && hit.Part >= 0 && hit.Body.DefOf(hit.Part).Role != PartRole.Hitch && ConstructPlace.FindJoin(g.Constructs, hit.Body, hit.Part, out jplan);
         if (join)
         {
             var jk = hit.Body.Id | ((long)jplan.Other!.Id << 16) | ((long)hit.Part << 32) | ((long)h.Tool << 48);
@@ -656,7 +657,7 @@ public static unsafe partial class Program
         if (h.Tool != ConstructTool.None && held != null && !slotted && !SandboxFreeformOn(h) && !ConstructBuild.ToolFits(h.Tool, held))
         {
             // (hr01: the other tool's part: no ghost, no socket markers, only the reason)
-            if (aimed || wall <= ConstructBuild.Reach + 0.5f)
+            if (aimed || wall <= BuildReach(g) + 0.5f)
                 g.SandboxLookText = $"Needs the {held.Tool.Label()}";
         }
         else if (h.Tool != ConstructTool.None && held != null && !slotted && !SandboxFreeformOn(h)) // (freeform welding: the held part isn't fitted)
@@ -664,7 +665,7 @@ public static unsafe partial class Program
             ConstructRender.GhostDef = held;
             if (aimed)
                 SandboxHeldOnConstruct(g, in h, hit, held, eye, dir, now, ScreenSize, Gfx.ViewProj);
-            else if (!aimed && wall <= ConstructBuild.Reach + 0.5f && World.Query.Raycast(eye, dir, ConstructBuild.Reach + 0.5f, QueryFilter.All, out var surf))
+            else if (!aimed && wall <= BuildReach(g) + 0.5f && World.Query.Raycast(eye, dir, BuildReach(g) + 0.5f, QueryFilter.All, out var surf)) // (a big shell frame reaches the ground further: ConstructEdits.BuildReachOf)
             {
                 if (_settings.SnapBuild)
                 {
@@ -850,7 +851,7 @@ public static unsafe partial class Program
             if (ConstructRender.GhostValid)
                 gh = shown with { Variant = v };
             // (what the server's click will ask of the reach: ConstructEdits.AttachReach; the gantry's own reach is the server's to judge)
-            var outOfReach = !GantryOn && ConstructEdits.AttachReach(eye, c, gh.Part, gh.Socket, in gh) != null;
+            var outOfReach = !GantryOn && ConstructEdits.AttachReach(eye, c, gh.Part, gh.Socket, in gh, reach: BuildReach(g)) != null;
             ConstructRender.GhostValid &= !outOfReach;
             SandboxSnapShown(g, c, held, in gh, now);
             SandboxJointGhostText(g, c.DefOf(gh.Part), gh.Socket, held, v / 4);
@@ -932,8 +933,8 @@ public static unsafe partial class Program
             return "no local player";
         ref var h = ref g.SandboxHands.Hand(me.Id);
         var held = ConstructParts.Get(h.Held);
-        var wall = World.RaycastWorld(eye, dir, ConstructBuild.Reach + 1);
-        var aimed = g.Constructs.Raycast(eye, dir, MathF.Min(wall, ConstructBuild.Reach + 1), out var hit, noTracks: true);
+        var wall = World.RaycastWorld(eye, dir, BuildReach(g) + 1);
+        var aimed = g.Constructs.Raycast(eye, dir, MathF.Min(wall, BuildReach(g) + 1), out var hit, noTracks: true);
         if (held == null || h.Tool == ConstructTool.None || !aimed)
             return $"nothing held or aimed (held {held?.Name ?? "none"}, tool {h.Tool}, aimed {aimed})";
         if (!ConstructBuild.ToolFits(h.Tool, held))

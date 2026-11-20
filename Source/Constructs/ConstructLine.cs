@@ -117,7 +117,7 @@ public sealed partial class ConstructEdits
         var v = s.Variant % Math.Max(1, def.Sockets.Length * 4);
         if (ConstructBuild.Place(c, s.Part, s.Socket, def, v / 4, v % 4, out var g) is { } why)
             return why;
-        if (AttachReach(eye, c, s.Part, s.Socket, in g, _gantryReach, _gantrySpot, _gantryRange) is { } far)
+        if (AttachReach(eye, c, s.Part, s.Socket, in g, _gantryReach, _gantrySpot, _gantryRange, BuildReachOf(player)) is { } far)
             return far;
         var reach = BeaconTable.Current.Range("line");
         var frame = c.FreeformCount > 0 ? c.FrameOf(g.Seg) : 0;

@@ -393,6 +393,12 @@ public sealed partial class Game
     /// <summary>The share of the survival physics gun's lift a player's body has (<see cref="ConstructEdits.LiftShare"/>): a worn shell frame's "lift", else 1.</summary>
     private float ShellLiftShare(byte player) => Players.TryGetValue(player, out var p) && p.InShell ? ShellFrames.Worn(p).Lift : 1f;
 
+    /// <summary>How much further a player's body reaches with the attach tool and the beam (<see cref="ConstructEdits.ReachShare"/>): a big worn frame's size, else 1.</summary>
+    private float ShellReachShare(byte player) => Players.TryGetValue(player, out var p) && p.InShell ? ShellFrames.Worn(p).Reach : 1f;
+
+    /// <summary>Does a player's worn shell hold a piece in its grip while it welds (<see cref="ConstructEdits.GripHolds"/>)?</summary>
+    private bool ShellGripHolds(byte player) => Players.TryGetValue(player, out var p) && p.InShell && ShellFrames.Worn(p).GripWelds;
+
     private readonly List<Construct> _shSaved = [];
 
     /// <summary>Is this body a world save's stand-in for a worn shell (only while a save captures)?</summary>

@@ -186,6 +186,7 @@ public static unsafe partial class Program
     /// <summary>The on-foot camera for this frame's look without a cast: last frame's pull applied to the wanted spot.</summary>
     private static Vector3 FootCameraNow(Vector3 eye, Vector3 fwd)
     {
+        ThirdPerson.Size = _game.Local is { } me ? MathF.Max(1f, ShellFrames.ScaleOf(me)) : 1f; // (a big shell frame: framed as a person is)
         var ideal = ThirdPerson.FootIdeal(eye, fwd, GravityFrames.UpAt(eye), ThirdPerson.Clamp(ThirdPerson.FootDist, ThirdPerson.FootMin, ThirdPerson.FootMax), ThirdPerson.Side);
         return eye + (ideal - eye) * ThirdPerson.PullRatio;
     }
@@ -219,6 +220,7 @@ public static unsafe partial class Program
         {
             from = local.RenderEye;
             f = _game.LookDir(_game.LookYaw, _game.LookPitch);
+            ThirdPerson.Size = MathF.Max(1f, ShellFrames.ScaleOf(local)); // (a big shell frame: framed as a person is)
             ThirdPerson.FootDist = ThirdPerson.Clamp(ThirdPerson.FootDist, ThirdPerson.FootMin, ThirdPerson.FootMax);
             ideal = ThirdPerson.FootIdeal(from, f, GravityFrames.UpAt(from), ThirdPerson.FootDist, ThirdPerson.Side);
         }

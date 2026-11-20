@@ -54,6 +54,7 @@ public static partial class Program
             Body = c,
             Part = hit.Part,
             Distance = GantryOn ? MathF.Min(hit.Distance, ConstructBuild.Reach) : hit.Distance, // (the gantry's camera: the server measures from the gantry)
+            BuildReach = g.SandboxHands.BuildReachOf(me.Id),
             ComDistance = GantryOn ? 0 : Vector3.Distance(me.Eye, c.WorldCom),
             SlotPlus1 = hit.SlotPlus1,
             Player = me.Id,
@@ -68,7 +69,7 @@ public static partial class Program
             Creative = g.SandboxInfiniteParts,
             Freeform = _weldModes.Freeform,
             Tying = ConnectorModeOn(in h),
-            OnSeam = h.Tool == ConstructTool.Welder && hit.Distance <= ConstructBuild.Reach && hit.SlotPlus1 == 0 && hit.RoutePlus1 == 0
+            OnSeam = h.Tool == ConstructTool.Welder && hit.Distance <= g.SandboxHands.BuildReachOf(me.Id) && hit.SlotPlus1 == 0 && hit.RoutePlus1 == 0
                      && c.FreeformCount > 0 && Freeform.SeamAt(c, hit.Part, hit.Point) >= 0,
         };
     }
