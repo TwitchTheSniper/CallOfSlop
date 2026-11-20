@@ -674,7 +674,7 @@ public static partial class Program
                     for (var mi = 0; mi < mb.Modules.Length; mi++)
                     {
                         var mm = mb.Modules[mi];
-                        WsSay($"modsock: body {mb.Id} module {mi}: plug part {mm.Plug}, socket {mm.Socket}{(mm.OnStand ? " (on a stand)" : "")}{(mm.Bridged ? " BRIDGED" : "")}, {mm.Parts} parts, {mm.Mass:0} kg, tags {ModuleSockets.TagsText(mm.Tags)}, primary {ModuleSockets.TagName(mm.Primary)}{ModuleSockets.StatsText(mm)}");
+                        WsSay($"modsock: body {mb.Id} module {mi}: plug part {mm.Plug}, socket {mm.Socket}{(mm.OnStand ? " (on a stand)" : "")}{(mm.Bridged ? " BRIDGED" : "")}, {mm.Parts} parts, {mm.Mass:0} kg, tags {ModuleSockets.TagsText(mm.Tags)}, primary {ModuleSockets.TagName(mm.Primary)}{ModuleSockets.StatsText(mm)}; bounds {mm.Min:0.00} to {mm.Max:0.00}");
                     }
                 }
                 WsSay($"modsock: notice \"{g.SandboxNotice}\"");

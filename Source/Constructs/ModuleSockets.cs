@@ -280,7 +280,12 @@ public static class ModuleSockets
             {
                 var si = sockets.FindIndex(x => x.Plate == plate);
                 if (si >= 0 && sockets[si].Stand)
+                {
                     m.OnStand = true;
+                    var sst = sockets[si];
+                    sst.Module = mi; // (stored on the stand: its room is the module's)
+                    sockets[si] = sst;
+                }
                 else
                     m.Socket = si;
             }
@@ -486,7 +491,7 @@ public static class ModuleSockets
     /// the size and turn, the room clear, the module inside the room, its rating, the restricted kind, and in Survival the
     /// hand's limits (<paramref name="byHand"/>). Null, or why not.
     /// </summary>
-    public static string? FitRefusal(Construct ship, int si, Construct mover, int mi, Quaternion moverRot, Vector3 moverPos, bool byHand, bool creative)
+    public static string? FitRefusal(Construct ship, int si, Construct mover, int mi, Quaternion moverRot, Vector3 moverPos, bool byHand, bool creative, bool moduleOnly = false)
     {
         if ((uint)si >= (uint)ship.ModSockets.Length || (uint)mi >= (uint)mover.Modules.Length)
             return "no module there";
@@ -502,7 +507,8 @@ public static class ModuleSockets
             return $"a {ModuleSocketTable.StyleNames[(int)s.Style]} socket's well isn't cut yet (only proud sockets take modules so far)";
         if (s.InTheWay >= 0)
             return $"in the way: the {ship.DefOf(s.InTheWay).Name} (part {s.InTheWay}) is in the socket's room";
-        if (mover.ModuleOf is { } of)
+        var of = mover.ModuleOf;
+        if (of != null && !moduleOnly)
             for (var j = 0; j < mover.PartCount; j++)
                 if (of[j] != mi)
                     return $"take the module off what it stands on first (the {mover.DefOf(j).Name} isn't part of it)";
@@ -535,6 +541,8 @@ public static class ModuleSockets
         Vector3 lo = s.RoomMin - new Vector3(0.006f), hi = s.RoomMax + new Vector3(0.006f);
         for (var j = 0; j < mover.PartCount; j++)
         {
+            if (moduleOnly && of != null && of[j] != mi)
+                continue; // (what it stands on: it comes off that first)
             if (mover.Parts[j].Seg != 0)
                 continue; // (a joint's moving parts: their sweep is phase 2's; their rest pose is checked with the body by the overlap test)
             mover.PartBounds(j, out var mn, out var mx);
