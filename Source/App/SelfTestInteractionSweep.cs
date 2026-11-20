@@ -433,6 +433,8 @@ public static partial class SelfTest
         var defs = ConstructParts.All.Where(d => d.Id != ConstructParts.None).ToList();
         defs.Add(ExPiece(4, 25, 25, 200)); // (a piece from an Extruder: no part file, the same paths: a preset and a custom section)
         defs.Add(Extrusion.Def(new ExtrusionKey(0x0000_00FF_FF00_0000ul | 0x1818_1818ul, 40, 40, 150, RecyclingTable.Current.IdOf("wood"), false))!);
+        var all = defs.Count;
+        defs = SweepSample(defs, out var seed);
         foreach (var d in defs)
         {
             var first = kinds.Add(SweepKind(d));
@@ -481,11 +483,56 @@ public static partial class SelfTest
         }
         while (w.Bodies.Count > 0)
             w.Remove(w.Bodies[^1]);
-        Line($"interaction sweep offline: {defs.Count} part types ({kinds.Count} kinds), {cases} cases, {run.Frames} frames ({run.Looked} with a look line), {run.Climbs} grab-ons, in {clock.Elapsed.TotalSeconds:0.0} s");
+        Line($"interaction sweep offline: {defs.Count} of {all} part types ({kinds.Count} kinds; sample seed {seed}), {cases} cases, {run.Frames} frames ({run.Looked} with a look line), {run.Climbs} grab-ons, in {clock.Elapsed.TotalSeconds:0.0} s");
         if (run.Looked < run.Frames / 3)
             problems.Add($"offline: only {run.Looked} of {run.Frames} frames had the crosshair on something (the sweep isn't reaching the parts)");
         if (run.Climbs == 0)
             problems.Add("offline: F at a mounted part never grabbed on (the developer's crash path wasn't reached)");
+    }
+
+    /// <summary>How many part types beyond the first of each kind the offline sweep takes per run. Every part took every
+    /// tool until 2026-11-20, when the module sockets, shells, pods and tool arms took the section to 182 s on CI's
+    /// Windows runner (over <see cref="MaxSectionSeconds"/>): a fixed budget keeps it near 60% of the limit as parts grow.</summary>
+    private const int SweepSampleBudget = 150;
+
+    /// <summary>The offline sweep's part types: the first of each <see cref="SweepKind"/> (so every kind keeps its full
+    /// treatment), the run-time pieces, and <see cref="SweepSampleBudget"/> of the rest picked by a stable hash of their name
+    /// and <paramref name="seed"/>: the UTC day, so the coverage rotates day by day and a failure repeats the same day
+    /// (CALLOFSLOP_SWEEP_SEED sets it; "all" takes every part, as before). Kept in the data's order.</summary>
+    private static List<ConstructPartDef> SweepSample(List<ConstructPartDef> defs, out string seed)
+    {
+        var env = Environment.GetEnvironmentVariable("CALLOFSLOP_SWEEP_SEED");
+        if (string.Equals(env, "all", StringComparison.OrdinalIgnoreCase))
+        {
+            seed = "all";
+            return defs;
+        }
+        var day = env != null && int.TryParse(env, out var e) ? e : (int)(DateTime.UtcNow - DateTime.UnixEpoch).TotalDays;
+        seed = day.ToString();
+        var kinds = new HashSet<string>();
+        var keep = new HashSet<ConstructPartDef>();
+        var rest = new List<ConstructPartDef>();
+        foreach (var d in defs)
+            if (kinds.Add(SweepKind(d)) || d.Id >= ConstructParts.All.Count || ConstructParts.All[d.Id] != d)
+                keep.Add(d); // (the first of a kind, and the Extruder's run-time pieces, which aren't in All)
+            else
+                rest.Add(d);
+        foreach (var d in rest.OrderBy(d => SweepHash(d.Name, day)).ThenBy(d => d.Name, StringComparer.Ordinal).Take(SweepSampleBudget))
+            keep.Add(d);
+        return defs.Where(keep.Contains).ToList();
+    }
+
+    /// <summary>FNV-1a of a name and a seed: stable across processes (string.GetHashCode isn't).</summary>
+    private static uint SweepHash(string name, int seed)
+    {
+        var h = 2166136261u ^ (uint)seed;
+        h *= 16777619u;
+        foreach (var ch in name)
+        {
+            h ^= ch;
+            h *= 16777619u;
+        }
+        return h;
     }
 
     /// <summary>An open, level spot on the yard at least 20 m from <paramref name="away"/> (the sweep's Ground Drill and spawner cases dig there).</summary>
