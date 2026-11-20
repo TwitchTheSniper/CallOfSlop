@@ -1,0 +1,17 @@
+{
+  // The Interactions start (Karl, 2026-11-20: "Interactions start. We start incorporating needs to the world, and you can set up initial supply
+  // lines for different goods fuels and materials"; the Traders first): you wake aboard the Magpie Mining Ship over Caledon with Caledon Highport,
+  // the Traders' hub, 40 km up. The Traders run their supply lines between their stations (Caledon Highport, Cinder Fuel Depot, Slopolis
+  // Exchange: Crew/Stations.json), each station uses and makes goods, and there is no money: what you trade them stays on a tab with them
+  // (Game/GameTabs.cs). The ship is the Magpie until a hauler of the player's own is chosen (Story/Opening/Interactions.json "ship").
+  "format": "call-of-slop-start/1",
+  "name": "Interactions: the Traders",
+  "order": 7, // after the Zero Day
+  "character": "Hauler",
+  "background": "a hauler with a second-hand mining ship, looking for a living between the Traders' stations",
+  "about": "You wake aboard the Magpie over Caledon. Above you, Caledon Highport, the Traders' hub, runs short of fuel and steel; their haulers ply the lanes to Cinder Fuel Depot and Slopolis Exchange. There is no money in Frostreach: trade the Traders what they need, and they keep a tab of what they owe you, good only with them. Mine, haul, and find what each station is short of.",
+  "map": "Caledon",
+  "opening": "Interactions.json", // a card, then waking aboard over Caledon
+  "tutorial": "none",
+  "kit": [] // what you have is aboard
+}
