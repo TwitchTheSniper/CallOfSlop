@@ -1318,7 +1318,7 @@ public sealed class MinerParts : IPartGenerator
         p.Set(("thruster", Kw(("force", DriveForce), ("spool", 1.5), ("exhaust", "+z"), ("at", Py.L(0, 0, 1.7)), ("burnRate", Py.Round(DriveForce / 1e6 * Burn, 4)), ("gimbal", 12), ("gimbalRate", 20))), ("ports", Py.L(BigDriveParts.PipePort("Fuel in", "in", [0, 0.7, 0.2], "+y", "fuel"))));
         Works.Head(p, Works.Table(), "torch", DriveForce, nacelle: true); // (its engine is in the nacelle behind it: mended through the hatch, outside; ship-works.md 15)
         p.Set(("flame", Py.L(Kw(("at", Py.L(0, 0, 1.7)), ("dir", "+z"), ("radius", 0.95), ("length", 5.0), ("kind", "Rocket")))));
-        return p.Stats(1800, 6000, 15, 8.0);
+        return p.Stats(500, 6000, 15, 8.0); // (500 kg: it was 1800, less its 3x3 socket's plate and plug, 1.3 t, so the stern weighs what it did and the nose comes round as before)
     }
 
     /// <summary>A jet in a squat housing: lift (down) or retro (forward). Origin at its root; the bell along -y.</summary>
@@ -1947,7 +1947,7 @@ public sealed class MinerParts : IPartGenerator
         var lifts = new List<int>();
         foreach (var n in nacelles)
         {
-            bp.Hang("Magpie Drive", n, "drive", "front");
+            ShipParts.FittedModule(bp, ShipParts.ModuleSocket(bp, n, "drive", 3, 3, kind: 1, keyed: true), 3, 3, "Magpie Drive", "front"); // (a module on a keyed 3x3 engine socket on the tail plate, its Drive Core inside: module-sockets.md 11)
             bp.Hang("Drive Core S", n, "core", "front"); // (its engine, inside the housing on the drive's axis, bolted to the tail plate)
             Works.HangHatch(bp, n, n == nacelles[0] ? -1 : 1);
             lifts.Add(bp.Hang("Magpie Lift Jet", n, "lift", "top"));
@@ -2000,7 +2000,7 @@ public sealed class MinerParts : IPartGenerator
         Door(bp, bay, "doorFore");
         Door(bp, bay, "doorAft");
         // The cargo bay aft: engineering along its port side, the suit lockers, the ramp.
-        bp.Hang("Magpie Power Plant", eng, "reactor", "bottom");
+        ShipParts.FittedModule(bp, ShipParts.ModuleSocket(bp, eng, "reactor", 2, 2, kind: 2, above: 2.75), 2, 2, "Magpie Power Plant", "bottom"); // (a 2x2 reactor socket, its room 2.75 m up, under the mess deck: the plant stands inside the plug's lugs)
         bp.HangTurned("Ship Battery M", eng, "battery", "bottom", BuildingParts.RY270);
         bp.Hang("Power Board", eng, "board", "back");
         bp.Hang("Pipe Bank", eng, "pipes", "back");
@@ -2083,5 +2083,8 @@ public sealed class MinerParts : IPartGenerator
         }
         BuildingParts.AddPartDefs(o, defs, Out);
         o.File($"{BpOut}/MagpieMiningShip.json", PyJson.Dumps(Blueprint(defs, order), 2) + "\n");
+        // Its module designs (module-sockets.md 11): what its sockets hold, to fit again or swap in.
+        o.File($"{BpOut}/ModuleMagpieDrive3x3.json", ModuleSocketParts.DesignText("Module Magpie Drive 3x3", 3, 3, "engine", ["engine"], "the Magpie's main drive, for a keyed engine socket on a nacelle's tail plate (its Drive Core stays in the nacelle)", "miner", [("Magpie Drive", 0, ModuleSocketParts.CentreTop(3, 3), "front", 0)]));
+        o.File($"{BpOut}/ModuleMagpieReactor2x2.json", ModuleSocketParts.DesignText("Module Magpie Reactor 2x2", 2, 2, "reactor", ["reactor"], "a Magpie Power Plant on a 2x2 plug: 400 kW", "miner", [("Magpie Power Plant", 0, ModuleSocketParts.CentreTop(2, 2), "bottom", 0)]));
     }
 }

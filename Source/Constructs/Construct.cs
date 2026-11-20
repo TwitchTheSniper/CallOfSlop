@@ -2137,8 +2137,12 @@ public sealed partial class Construct
                 var role = Parts[other].D.Role;
                 if (role is PartRole.FuelTank or PartRole.FluidTank)
                     return true;
-                if (role == PartRole.FuelLine)
+                if (role == PartRole.FuelLine
+                    || Parts[other].D.ModPart == ModPart.Plug && ModuleSockets.PlateOf(this, other) is var pl and >= 0 && pl != at
+                    || Parts[other].D.ModPart == ModPart.Socket && Parts[at].D.ModPart == ModPart.Plug && ModuleSockets.PlateOf(this, at) == other)
                 {
+                    // (a fitted module's standard coupling carries a tank's touch ship to module, as its Fuel A pipe would: an engine on the
+                    // plug of a plate that stands on a tank is fed, the rust bucket's drives on their pods' tail plates; module-sockets.md 11)
                     seen[other] = true;
                     queue[tail++] = (ushort)other;
                 }

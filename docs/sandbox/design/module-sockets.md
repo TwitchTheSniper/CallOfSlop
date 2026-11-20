@@ -794,15 +794,60 @@ its parts as a save does. Tried: engine 2x2, turret 1x1, reactor 3x3, cargo 1x3 
 Not built in phase 5: the passes that act on the needs (a swap for power, acceleration or guns: the needs are only reported), the
 fuel term (a module's burn isn't summed), a bill from recipes (the bill is the mass), a ship generator filling its sockets by faction choice, faction-styled designs, and choice at a controller's refit.
 
-**Phases 6 and 7: not started** (the retrofits, markets). Where to resume: the needs passes of phase 5 (swap for power, acceleration, guns), then phase 6 starting with the rust bucket (`ShipParts.cs`; read `git log` on the Zero Day's generator
-first: it just got room cladding).
+**Phase 5's remainder (builder, 2026-11-20).** `ModuleChoice.Fill` fills a ship's free sockets: one pass in 9.2's order, each pick
+added to the ship before the next, then up to three passes on the needs. In each pass, for every need still short (power, then
+acceleration, then guns: `ModuleChoice.Deficit`), the one swap of one socket's module for another that fits which cuts that
+shortfall most without making another need worse is made (ties: the better score). `--module-choice` prints each swap ("pass 1:
+short of guns: socket 1 takes Module Gun 1x1 for Module Battery 1x1") and what is still short; `--needs accel=N,powerMargin=N,minGuns=N`
+replaces the faction's needs for a try. Tried on the choice rig: Militia with accel 12 swapped a battery for an RCS module, with
+minGuns 8 for a gun module, and reported the guns still short when no socket could give more. Not built: the fuel term, the bill from
+recipes, faction-styled designs (the ships' own module designs below stand for them), choice at a controller's refit.
+
+**Phase 6 (retrofits): built for three ships** (builder, 2026-11-20, protocol 383). The ships stay part kit outputs
+(`BuildingParts.Blueprint`, not the Vehicle Kit), so the retrofit is `ShipParts.ModuleSocket` (a plate centred on a host socket by its
+new back-middle socket `bc`, with kind, keying and room) and `ShipParts.FittedModule` (the plug, then the part on the plug's middle,
+`ModuleSocketParts.CentreTop`: a cell's `s` socket, or the new `tc` on an even side), and each ship's generator writes its module
+designs with `ModuleSocketParts.DesignText`. `BlueprintScript.Socket` / `Module` (the Vehicle Kit's) are still untried.
+- **Rust bucket**: each main drive on a keyed 2x2 engine socket on its pod's tail plate (Module Rust Drive 2x2); the engine block on a
+  generic 3x3 socket in the engine room floor, room 2.5 m (Module Rust Engine Block 3x3; generic, as it makes no power: a reactor
+  module may take its place; its top rod 12 cm shorter to clear the deck); the Long Range Sensor on a generic 1x1 on the roof (Module
+  Long Range Sensor 1x1; the roof's sensor socket 0.3 m outboard so the plate clears the mast). The strapped container (2.6 x 4 m)
+  stays hull until sockets pass 3x3.
+- **Magpie**: each drive on a keyed 3x3 engine socket on its nacelle's tail plate (Module Magpie Drive 3x3); the power plant on a 2x2
+  reactor socket, room 2.75 m (Module Magpie Reactor 2x2). No radar exists to socket; the drills are carried from their docks, so no
+  drill sockets.
+- **Zero Day**: the reactor on a 2x2 reactor socket, room 2.75 m (Module Zero Day Reactor 2x2; the socket 10 cm forward, clear of the
+  Capacitor Bank; its coolant pipes 23 cm shorter to stop under the deck). The four bells (2.7 m wide, 2.9 m apart) and the PDC
+  barbettes (a ring, a hinge, a gun, a feed and gunnery wires: the design format carries none of those yet) wait.
+- **Dray: not retrofitted.** Its plant stands on a deck 2.0 m deep between the hold's end wall and the engine floor (a 2x2 room is 2.1 m),
+  and the engine floor's walkway is under the fuel pumps; it needs a drive room re-layout first.
+Engine code: an engine socket's plate bolted to a ship works mount passes the mount through (`ConstructWorks.MountUnder`), so a drive on
+a module still takes the Drive Core behind the tail plate; a fitted module's coupling carries a tank's touch ship to module
+(`Construct.FuelReaches` walks drive, plug, plate, tank), so a pod's drive is fed as before. A loose module's distance from a socket is
+measured from its centre of mass (it was from the body's origin, which a module cut off a ship keeps: metres away, so no module taken
+off a big ship could be fitted again by hand). Plug lugs are 7.5 cm square, 1 cm in from the edge, so a 1.8 m part stands between a
+2x2 plug's lugs; the room's step is 5 cm (the table's `above.step`).
+Tried: each ship built (`--check-vehicle`, the same problems as before apart from part counts; the drives' works take their cores),
+flown (`--flight-check`: the rust bucket and the Zero Day as before; the Magpie's nose now falls just short of 55 degrees in 6 s (it prints 55), the
+plates and plugs adding 2.6 t at its stern, so it is reported FAILS by a hair; the Zero Day and Dray failed that line before too),
+climbed (`--ladder-check`: 0 refused on the Magpie, Zero Day and Dray), and in a window run each module taken off and fitted again by
+the host (`modsock use PART`, then `modsock fit PLATE`: the nearest loose module of the size held 0.6 m off the face, then F): the rust
+bucket's sensor and a drive, the Magpie's drive and reactor, the Zero Day's reactor. Not tried: a joined client's view of a retrofit
+ship, a fitter swapping them in Survival, `--crew-check` (multi-minute), the look in a picture.
+
+**Phase 7 (markets): not started.** Where to resume: 10 "The economy" with 18.3's default (racks as bodies while players are near): a
+station's stock list (`Crew/Stations.json`), demand prices from `ModuleChoice.Score` against the power's typical ship, buying and
+selling at a moored ship, a contract kind, and refits by faction controllers (`ModuleChoice.Fill` on a power's ship at its station).
+Phase 8 is later.
 
 Test rigs (not committed; in `bin/Release/net10.0/Constructs/Blueprints/`): `ZzModWellRig.json` (a 1x1 socket under a deck plate on
 frame blocks; `timed; modsock style 2 [DEPTH]` starts a timed cut), `ZzModSweepRig.json` (the same with a turntable module on a stand
 beside it), `ZzModPipeRig.json` (a tank piped through a fitted 1x1 engine module to an RCS thruster), `ZzModFeedRig.json` (an Ammo Container fed
 through a 1x1 module to an AA Gun, a Lever wired through Data 1 to a Lamp on the module), `ZzModFitterRig.json` and
 `ZzModFitterOffRig.json` (above; run with `inv survival on`), `ZzModChoiceRig.json` (above). Window verbs: `modsock state`
-(sockets, modules, pipes, feeds and chutes and their sources, wires, guns and what feeds them, the draw) and `modsock style N [DEPTH]` (host).
+(sockets, modules, pipes, feeds and chutes and their sources, wires, guns and what feeds them, the draw), `modsock style N [DEPTH]`,
+`modsock use PART` (F on a plate or a module's part) and `modsock fit PLATE` (the nearest loose module of its size held 0.6 m off its
+face, then F) (host).
 
 Defaults taken (no questions asked):
 - The plate is placed at the well's foot; Well depth is measured from its face up to the surface (the design's "plate at the
@@ -839,5 +884,10 @@ Defaults taken (no questions asked):
   size on the same construct (no floor set-down). A weld or cut needs the circuit's power and waits without it.
 - (Phase 5) A plug's `top.i.j` sockets are Medium: a Small part (a power plant, a thruster) goes on the cell-middle `s{i}.{j}` or
   the quarter-point `t..` sockets. Shipped module designs are the part kit's output (module_sockets), not `--gen-module`'s yet.
+- (Phase 5) The needs passes make one swap per short need per pass, power first; a swap may not make another need worse.
+- (Phase 6) The retrofits keep each piece where it stood except for the plate and plug under it (0.22 m): a drive moves 0.22 m aft, a
+  floor fitting 0.22 m up; where that met a deck, the fitting's top detail was shortened. Restricted sockets only where the part is that
+  kind (the rust bucket's engine block is decorative, so its socket is generic). Retrofit sizes follow the parts, not section 11's
+  table: the rust bucket's drives are 2x2 (the whole pod is 7 m long), the Magpie's 3x3.
 - (Phase 5) A module's bill is its mass until recipes are summed; a candidate's stats come from a flat build of its blueprint, its
   submodules included.
