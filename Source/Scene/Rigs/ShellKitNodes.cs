@@ -82,11 +82,11 @@ public sealed class ShellKitNodes
         _hopper = _root.Add("hopper");
         BoxIn(_hopper, new(-0.36f, 1.35f, 0.2f), new(0.36f, 1.39f, 0.8f), Dark); // floor
         BoxIn(_hopper, new(-0.36f, 1.393f, 0.2f), new(0.36f, 2.25f, 0.24f), Joint); // front wall (steel walls: the ore inside is what is brown)
-        BoxIn(_hopper, new(-0.36f, 1.393f, 0.76f), new(0.36f, 2.25f, 0.8f), Joint); // back wall
-        BoxIn(_hopper, new(-0.358f, 1.393f, 0.243f), new(-0.322f, 2.2f, 0.757f), Joint); // side walls
-        BoxIn(_hopper, new(0.322f, 1.393f, 0.243f), new(0.358f, 2.2f, 0.757f), Joint);
-        BoxIn(_hopper, new(-0.3f, 1.42f, 0.797f), new(-0.26f, 2.2f, 0.826f), Light); // ribs up its back
-        BoxIn(_hopper, new(0.26f, 1.42f, 0.797f), new(0.3f, 2.2f, 0.826f), Light);
+        BoxIn(_hopper, new(-0.36f, 1.393f, 0.76f), new(0.36f, 2.25f, 0.8f), Light); // back wall (light plate, as the Mining Shell part: look review 2026-11-19)
+        BoxIn(_hopper, new(-0.358f, 1.393f, 0.243f), new(-0.322f, 2.2f, 0.757f), Light); // side walls
+        BoxIn(_hopper, new(0.322f, 1.393f, 0.243f), new(0.358f, 2.2f, 0.757f), Light);
+        BoxIn(_hopper, new(-0.3f, 1.42f, 0.797f), new(-0.26f, 2.2f, 0.826f), Steel); // ribs up its back
+        BoxIn(_hopper, new(0.26f, 1.42f, 0.797f), new(0.3f, 2.2f, 0.826f), Steel);
         BoxIn(_hopper, new(-0.364f, 2.253f, 0.196f), new(0.364f, 2.28f, 0.245f), Hazard); // lips
         BoxIn(_hopper, new(-0.364f, 2.253f, 0.755f), new(0.364f, 2.28f, 0.804f), Hazard);
         _ore = _hopper.Add("ore", Matrix4x4.Identity, Renderable.Box(Ore));

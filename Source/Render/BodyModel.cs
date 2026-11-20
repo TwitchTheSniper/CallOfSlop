@@ -211,7 +211,7 @@ public static class BodyModel
                 new Vector3(0, World.HeadStart + headH / 2, 0), false),
             new(new Vector3(0.8f, body - chip, 0.6f), new Vector3(0, (body + chip) / 2, 0), new Vector3(0.45f, top - body, 0.45f),
                 new Vector3(0, (body + top) / 2, -0.05f), false),
-            new(new Vector3(0.6f, 0.4f, 0.6f), new Vector3(0, 0.2f, -0.27f), new Vector3(0.4f, 0.38f, 0.4f), new Vector3(0, 0.3f, -0.75f), true),
+            new(new Vector3(0.6f, 0.4f, 0.6f), new Vector3(0, 0.26f, -0.27f), new Vector3(0.4f, 0.38f, 0.4f), new Vector3(0, 0.36f, -0.75f), true), // (prone: 6 cm up from the old box, so the chest's plates and pouches lie on the ground, not in it: look review 2026-11-19)
         ];
     }
 

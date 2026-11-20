@@ -726,28 +726,46 @@ public static class LegAnimator
         st.StepYawFrom = worst == 0 ? st.PlantYaw0 : st.PlantYaw1;
     }
 
-    /// <summary>Prone: legs straight back, knees on the floor; the crawl draws one knee up and out at a time.</summary>
+    /// <summary>
+    /// Prone: legs straight back along the ground, hip-wide, knees down, the feet lying on in line with the shins, soles up and toes
+    /// just down; the crawl draws one knee up and out at a time. (Look review 2026-11-19: the knees bent out to the sides and the boots
+    /// stood up on end, "like a beetle", on every prone player.) A digitigrade leg lies with its metatarsal along the ground behind the
+    /// hock, its toes up.
+    /// </summary>
     private static void ProneLegs(ref State st, LegPose pose, float speed, float moving)
     {
         var crawl = MathF.Min(speed / 1.2f, 1f) * moving;
         var sway = 0.06f * crawl * MathF.Sin(MathF.Tau * st.Phase);
-        pose.Pelvis = Matrix4x4.CreateRotationY(sway) * Matrix4x4.CreateTranslation(0, 0.18f, -0.24f);
+        pose.Pelvis = Matrix4x4.CreateRotationY(sway) * Matrix4x4.CreateTranslation(0, ProneHips, -0.24f);
         pose.Upper = Matrix4x4.CreateRotationY(-sway * 0.5f);
         pose.Drop = 0;
-        // toes back, soles up
-        var foot = Matrix4x4.CreateRotationY(MathF.PI) * Matrix4x4.CreateRotationZ(MathF.PI) * Matrix4x4.CreateRotationX(0.6f); // toes back and down
         for (var i = 0; i < 2; i++)
         {
             var side = i == 0 ? 1f : -1f;
             var u = st.Phase + i * 0.5f;
             var c = MathF.Max(0f, MathF.Sin(MathF.Tau * u)) * crawl;
-            var target = new Vector3(side * (0.14f + 0.14f * c), 0.13f + 0.04f * c, 0.6f - 0.2f * c);
+            var target = new Vector3(side * (0.13f + 0.14f * c), 0.1f + 0.04f * c, 0.61f - 0.2f * c);
             var hip = Vector3.Transform(new Vector3(side * 0.13f, 0, 0), pose.Pelvis);
-            var pole = Vector3.Normalize(new Vector3(side * (0.3f + 0.9f * c), -1f, 0));
+            var pole = Vector3.Normalize(new Vector3(side * (0.12f + 0.9f * c), -1f, 0));
             pose.Planted[i] = false;
-            Solve(pose, i, hip, target, pole, foot);
+            var hock = Hock[i];
+            if (hock == Vector3.Zero)
+            {
+                Solve(pose, i, hip, target, pole, ProneFoot);
+                continue;
+            }
+            // The hock where a person's ankle lies (at the reach of its shorter bones), the ball behind it along the ground.
+            var foot = Matrix4x4.CreateRotationX(-MathF.PI / 2) * Matrix4x4.CreateRotationZ(MathF.PI) * Matrix4x4.CreateRotationX(MathF.Atan2(hock.Z, hock.Y));
+            var up = Vector3.TransformNormal(hock, foot); // (forward along the ground, toward the hip)
+            var to = target - hip;
+            var at = hip + Vector3.Normalize(to) * MathF.Min(to.Length(), (Thigh + Shin) * HockBones * 0.97f);
+            Solve(pose, i, hip, at - up, pole, foot);
         }
     }
+
+    /// <summary>Prone: the hips' height, and a foot's turn (toes back, soles up, the toes a little down: in line with the shin).</summary>
+    private const float ProneHips = 0.21f;
+    private static readonly Matrix4x4 ProneFoot = Matrix4x4.CreateRotationY(MathF.PI) * Matrix4x4.CreateRotationZ(MathF.PI) * Matrix4x4.CreateRotationX(0.15f);
 
     /// <summary>The seated pelvis (body space: the feet at the seat's "at" point): on the cushion, a little back.</summary>
     public static readonly Vector3 SeatedHips = new(0, 0.86f, 0.04f);

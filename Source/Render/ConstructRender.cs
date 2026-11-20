@@ -637,13 +637,15 @@ public static partial class ConstructRender
         var routerFence = 0f;
         var routerOn = d.HasRouterBoxes && !p.Broken && ConstructRecycler.Powered(world, c, i) && ConstructLogistics.ShowOf(c, i, out routerWay, out routerState, out routerStuck, out routerFence); // (a Conveyor Router: its lamps and fence show its last choice)
         var offSlots = d.ShellBody && world.GantryJobCount > 0 ? ConstructGantry.OffSlots(world, c.Id, ConstructConveyor.Clock) : 0; // (a module a Shell Gantry's arm has off: its boxes aren't drawn)
-        var boxSlots = offSlots != 0 ? ConstructGantry.BoxSlots(d) : null;
+        var fitted = d.ShellBody ? ShellFittedLooks.FittedMask(in p, d) : 0; // (a slot with a module that isn't its frame's own: drawn from the module's part, ShellFittedLooks)
+        var hideSlots = offSlots | fitted;
+        var boxSlots = hideSlots != 0 ? ConstructGantry.BoxSlots(d) : null;
         for (var b = 0; b < d.Boxes.Length; b++)
         {
             ref readonly var box = ref d.Boxes[b];
             if (box.Hidden || box.IsLeaf && !railShown)
                 continue; // (a shaped part's stepped collision: its shape is drawn instead)
-            if (boxSlots != null && boxSlots[b] < 8 && (offSlots >> boxSlots[b] & 1) != 0)
+            if (boxSlots != null && boxSlots[b] < 8 && (hideSlots >> boxSlots[b] & 1) != 0)
                 continue;
             c.BoxOf(i, b, out var centre, out var half);
             if (box.Spin && d.Rotor != null)
@@ -722,6 +724,31 @@ public static partial class ConstructRender
             else
                 gfx.Draw(model, (c.Frozen || c.FrozenPieces > 0) && c.PieceFrozen(i) ? Vector3.Lerp(tint, Frost, 0.45f) : strain > 0 ? Vector3.Lerp(tint, OverloadTint, 0.2f + 0.5f * strain) : tint, opacity, mode: 0, shape: box.Shape, surface: Surfaces.Code(ConstructFinish.BoxRow(in box, p.Paint, p.Finish), wear)); // (frozen by the physics gun: an icy tint; overloaded: red)
             drawn++;
+        }
+        if ((fitted & ~offSlots) != 0)
+            drawn += DrawFitted(gfx, c, i, d, fitted & ~offSlots, seg * body, shade, wear, opacity);
+        return drawn;
+    }
+
+    /// <summary>A standing shell's fitted modules (<see cref="ShellFittedLooks"/>), in its paint, tone and wear, where its own slot boxes aren't drawn.</summary>
+    private static int DrawFitted(Renderer gfx, Construct c, int i, ConstructPartDef d, int slots, in Matrix4x4 onBody, float shade, float wear, float opacity)
+    {
+        ref var p = ref c.Parts[i];
+        Span<byte> kit = stackalloc byte[ShellFrames.SlotCount];
+        ShellFrames.ReadKit(p, d, kit);
+        var frost = (c.Frozen || c.FrozenPieces > 0) && c.PieceFrozen(i);
+        var drawn = 0;
+        for (var s = 0; s < kit.Length; s++)
+        {
+            if ((slots >> s & 1) == 0 || ShellFittedLooks.Fitted(d, s, kit[s] - 1) is not { } look)
+                continue;
+            foreach (ref readonly var box in look.AsSpan())
+            {
+                var tint = ConstructPaint.BoxColour(p.Paint, in box) * shade;
+                gfx.Draw(box.Model(p.Rot, p.Pos + Rot24.Apply(p.Rot, box.Center)) * onBody, frost ? Vector3.Lerp(tint, Frost, 0.45f) : tint, opacity, mode: 0, shape: box.Shape,
+                    surface: Surfaces.Code(ConstructFinish.BoxRow(in box, p.Paint, p.Finish), wear));
+                drawn++;
+            }
         }
         return drawn;
     }

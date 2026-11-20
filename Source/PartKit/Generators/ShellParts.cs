@@ -47,10 +47,10 @@ public sealed class ShellParts : IPartGenerator
             p.Add(B([x0 - 0.01, 0.0, -0.15], [x1 + 0.01, 0.07, 0.09], Dark)); // feet
             p.Add(B([x0, 0.06, -0.07], [x1, 0.47, 0.07], Joint)); // shins
             p.Add(B([x0 - 0.005, 0.45, -0.085], [x1 + 0.005, 0.53, 0.085], Dark, detail: true)); // knees
-            p.Add(B([x0 + 0.005, 0.52, -0.075], [x1 - 0.005, 0.88, 0.075])); // thighs
+            p.Add(B([x0 + 0.005, 0.52, -0.075], [x1 - 0.005, 0.88, 0.075], drill ? Light : null)); // thighs (the Mining Shell's in the lighter plate tone: look review 2026-11-19, "still mostly dark grey")
             double a0 = Math.Min(s * 0.26, s * 0.37), a1 = Math.Max(s * 0.26, s * 0.37);
             p.Add(B([a0 - 0.02, 1.36, -0.1], [a1 + 0.02, 1.53, 0.1], Joint)); // shoulders
-            p.Add(B([a0, 1.0, -0.06], [a1, 1.37, 0.06])); // upper arms
+            p.Add(B([a0, 1.0, -0.06], [a1, 1.37, 0.06], drill ? Light : null)); // upper arms
             if (drill && s > 0)
                 continue; // (the right forearm is the drill: MiningShell)
             p.Add(B([a0 + 0.005, 0.74, -0.055], [a1 - 0.005, 1.01, 0.055], Joint)); // forearms
@@ -63,7 +63,7 @@ public sealed class ShellParts : IPartGenerator
         if (!drill)
             p.Add(B([-0.16, 1.07, 0.11], [0.16, 1.44, 0.2], Dark)); // power pack on the back (the Mining Shell's hopper is its own)
         p.Add(B([-0.06, 1.48, -0.06], [0.06, 1.58, 0.06], Dark)); // neck
-        p.Add(B([-0.135, 1.56, -0.14], [0.135, 1.83, 0.125])); // head
+        p.Add(B([-0.135, 1.56, -0.14], [0.135, 1.83, 0.125], drill ? Light : null)); // head
         p.Add(B([-0.11, 1.65, -0.158], [0.11, 1.73, -0.12], Visor)); // visor
         p.Add(B([0.07, 1.82, -0.015], [0.09, 1.96, 0.015], Dark, detail: true)); // aerial
     }
@@ -86,6 +86,7 @@ public sealed class ShellParts : IPartGenerator
         return
         [
             Sq(0.088, -0.45, -0.39, 'a'), // the collar
+            Sq(0.079, -0.474, -0.454, 'h', true), // a hazard collar where the cone leaves it (look review 2026-11-19: mark what bites)
             Sq(0.07, -0.57, -0.445, 'b'), Sq(0.054, -0.69, -0.565, 'b'), Sq(0.038, -0.8, -0.685, 'b'), Sq(0.024, -0.885, -0.795, 'b'), // the cone
             Sq(0.011, -0.935, -0.88, 'h', true), // the point
             Fl(-0.02, 0.02, -0.082, -0.066, -0.51, -0.455), Fl(0.066, 0.082, -0.02, 0.02, -0.555, -0.5), // the flutes, turning round it
@@ -107,11 +108,11 @@ public sealed class ShellParts : IPartGenerator
         // The hopper: a floor, four walls (the sides lower than the ends), a lip, and two straps over the shoulders.
         p.Add(Box([-0.36, 1.35, 0.2], [0.36, 1.39, 0.8], Dark)); // floor
         p.Add(Box([-0.36, 1.393, 0.2], [0.36, 2.25, 0.24], Joint)); // front wall, against the back
-        p.Add(Box([-0.36, 1.393, 0.76], [0.36, 2.25, 0.8], Joint)); // back wall (steel walls: the ore inside is what is brown)
+        p.Add(Box([-0.36, 1.393, 0.76], [0.36, 2.25, 0.8], Light)); // back wall (light plate, the ribs on it steel: the ore inside is what is brown)
         foreach (var x in new[] { -0.3, 0.26 })
-            p.Add(Box([x, 1.42, 0.797], [x + 0.04, 2.2, 0.826], Light, detail: true)); // ribs up its back
-        p.Add(Box([-0.358, 1.393, 0.243], [-0.322, 2.2, 0.757], Joint)); // side walls
-        p.Add(Box([0.322, 1.393, 0.243], [0.358, 2.2, 0.757], Joint));
+            p.Add(Box([x, 1.42, 0.797], [x + 0.04, 2.2, 0.826], Steel, detail: true)); // ribs up its back
+        p.Add(Box([-0.358, 1.393, 0.243], [-0.322, 2.2, 0.757], Light)); // side walls (ShellKitNodes' hopper takes these colours)
+        p.Add(Box([0.322, 1.393, 0.243], [0.358, 2.2, 0.757], Light));
         p.Add(Box([-0.364, 2.253, 0.196], [0.364, 2.28, 0.245], Hazard, detail: true)); // the front wall's lip
         p.Add(Box([-0.364, 2.253, 0.755], [0.364, 2.28, 0.804], Hazard, detail: true)); // the back wall's lip
         foreach (var x in new[] { -0.25, 0.17 })
@@ -121,7 +122,7 @@ public sealed class ShellParts : IPartGenerator
         p.Add(Box([0.4, 1.26, -0.42], [0.545, 1.497, 0.08], Joint)); // the housing
         p.Add(Box([0.385, 1.24, -0.12], [0.56, 1.52, 0.03], Dark)); // the motor collar
         foreach (var (lo, hi, c, detail) in DrillBit)
-            p.Add(Box(lo, hi, c switch { 'a' => Lamp, 'h' => Hazard, 'd' => Dark, _ => Bit }, detail: detail)); // the bit: a collar, a stepped cone with spiral flutes, a hazard point
+            p.Add(c == 'h' ? MachineLook.D(lo, hi, Hazard, "hazard paint") : Box(lo, hi, c switch { 'a' => Lamp, 'd' => Dark, _ => Bit }, detail: detail)); // the bit: a collar, a hazard collar, a stepped cone with spiral flutes, a hazard point
         p.Add(Box([0.39, 1.505, -0.41], [0.555, 1.53, -0.2], Hazard, detail: true)); // a hazard band on the housing
         p.Sock("bottom", [0, 0, 0], "-y");
         p.Sock("back", [0, 1.9, 0.8], "+z");
@@ -470,20 +471,31 @@ public sealed class ShellParts : IPartGenerator
         p.Add(Box([0.04, 0.1, -0.18], [0.1, 0.12, -0.172], Dark, detail: true));
     }
 
-    /// <summary>An arm module's elbow coupling at its top (the rig turns it about there): 0.4 m up.</summary>
-    private static void Elbow(Part p, double w)
+    /// <summary>
+    /// An arm module's elbow coupling at its top (the rig turns it about there): 0.4 m up, in the arm's own colour <paramref name="own"/>,
+    /// a steel pivot boss on each side with its bolt. Its first box: the rig reads the arm's colour from it for the shoulder
+    /// (ShellModuleNodes.OwnColour; look review 2026-11-19: a dark cap with a slot on every arm copied the head's visor).
+    /// </summary>
+    private static void Elbow(Part p, double w, string own)
     {
-        p.Add(Box([-w, 0.36, -w], [w, 0.42, w], Dark)); // the elbow's coupling
-        p.Add(Box([-w - 0.006, 0.375, -w * 0.6], [w + 0.006, 0.405, w * 0.6], Joint, detail: true)); // its pin
+        p.Add(Box([-w, 0.36, -w], [w, 0.42, w], own)); // the elbow's coupling
+        foreach (var sx in new[] { -1.0, 1.0 })
+        {
+            double X(double v) => sx * v;
+            p.Add(Box([Math.Min(X(w - 0.004), X(w + 0.012)), 0.369, -0.03], [Math.Max(X(w - 0.004), X(w + 0.012)), 0.411, 0.03], Steel, detail: true)); // the pivot boss: two crossed plates, near round
+            p.Add(Box([Math.Min(X(w - 0.004), X(w + 0.013)), 0.375, -0.036], [Math.Max(X(w - 0.004), X(w + 0.013)), 0.405, 0.036], Steel, detail: true));
+            p.Add(Box([Math.Min(X(w + 0.008), X(w + 0.024)), 0.382, -0.008], [Math.Max(X(w + 0.008), X(w + 0.024)), 0.398, 0.008], Dark, detail: true)); // its bolt
+        }
     }
 
     /// <summary>The tool arms (the user, 2026-11-19: "add a few more arms for the different tools in the game"): each is its tool while worn.</summary>
     private static IEnumerable<(string, Part)> ToolArms()
     {
         const string Hazard = "#e0a020", Orange = "#e07020", Copper = "#b87333", Glow = "#7fe0ff", Blade = "#c9ced4", Red = "#c03030";
+        const string Field = "#2f8fa0", Paint = "#3a7fd0", NozzleCup = "#98a1a9"; // (the Grip Arm's teal, the Sprayer's paint blue; its nozzle's steel cup)
         yield return ("Modules", Module("Shell Welder Arm", "A robot shell arm that is an attach tool: a torch on a long neck, its cup and nozzle, and a gas bottle. Worn, it fits and welds parts.", 6, p =>
         {
-            Elbow(p, 0.06);
+            Elbow(p, 0.06, Orange);
             p.Add(Box([-0.055, 0.2, -0.055], [0.055, 0.365, 0.055], Orange)); // the housing, the welder's orange
             p.Add(Box([-0.058, 0.26, -0.058], [0.058, 0.285, 0.058], Hazard, detail: true)); // a hazard band
             p.Add(Box([0.052, 0.21, -0.03], [0.095, 0.35, 0.03], Joint, detail: true)); // the gas bottle along its side
@@ -495,21 +507,25 @@ public sealed class ShellParts : IPartGenerator
         }));
         yield return ("Modules", Module("Shell Cutter Arm", "A robot shell arm that is a remover: a saw disc under a red guard. Worn, it cuts parts away.", 7, p =>
         {
-            Elbow(p, 0.06);
-            p.Add(Box([-0.055, 0.24, -0.055], [0.055, 0.365, 0.055], Joint)); // the forearm
+            // (Look review 2026-11-19: the old disc and guard were a big flat grey slab hiding the red arm. The disc is half that area
+            // now, its edge and a band across it in hazard paint, and the guard a narrow red hood over its back quarter.)
+            Elbow(p, 0.06, Red);
+            p.Add(Box([-0.055, 0.24, -0.055], [0.055, 0.365, 0.055], Red)); // the forearm, red
             p.Add(Box([-0.05, 0.17, -0.06], [0.05, 0.245, 0.06], Dark)); // the motor
-            p.Add(Box([-0.01, 0.0, -0.1], [0.01, 0.3, 0.1], Blade)); // the disc, edge on (two crossed boxes: near round)
-            p.Add(Box([-0.009, 0.05, -0.15], [0.009, 0.25, 0.15], Blade));
-            p.Add(Box([-0.018, 0.13, -0.02], [0.018, 0.17, 0.02], Dark, detail: true)); // its hub
+            p.Add(Box([-0.01, 0.0, -0.07], [0.01, 0.21, 0.07], Blade)); // the disc, edge on (two crossed boxes: near round)
+            p.Add(Box([-0.009, 0.035, -0.105], [0.009, 0.175, 0.105], Blade));
+            p.Add(Box([-0.018, 0.085, -0.02], [0.018, 0.125, 0.02], Dark, detail: true)); // its hub
+            p.Add(MachineLook.D([-0.013, 0.04, -0.109], [0.013, 0.17, -0.093], Hazard, "hazard paint")); // the teeth's edge in front, in hazard paint
+            p.Add(MachineLook.D([-0.0135, 0.003, -0.065], [0.0135, 0.019, 0.065], Hazard, "hazard paint")); // and along its bottom edge
+            p.Add(MachineLook.D([-0.0125, 0.059, -0.088], [0.0125, 0.077, -0.024], Hazard, "hazard paint")); // a band across the blade's faces
             foreach (var sx in new[] { -1.0, 1.0 })
-                p.Add(Box([Math.Min(sx * 0.014, sx * 0.026), 0.14, 0.0], [Math.Max(sx * 0.014, sx * 0.026), 0.31, 0.16], Red, detail: true)); // the guard's sides over its back half
-            p.Add(Box([-0.03, 0.295, -0.06], [0.03, 0.33, 0.165], Red)); // the guard's hood over the top
-            p.Add(Box([-0.03, 0.13, 0.145], [0.03, 0.305, 0.175], Red, detail: true)); // and down its back
-            p.Add(Box([-0.012, 0.08, -0.156], [0.012, 0.22, -0.144], Hazard, detail: true)); // the teeth's mark on its leading edge
+                p.Add(Box([Math.Min(sx * 0.016, sx * 0.028), 0.105, 0.03], [Math.Max(sx * 0.016, sx * 0.028), 0.235, 0.125], Red, detail: true)); // the guard's sides over its back quarter
+            p.Add(Box([-0.03, 0.213, 0.0], [0.03, 0.247, 0.13], Red)); // the guard's hood over the top
+            p.Add(Box([-0.03, 0.085, 0.108], [0.03, 0.23, 0.135], Red, detail: true)); // and down its back
         }));
         yield return ("Modules", Module("Shell Grip Arm", "A robot shell arm that is a physics gun: three claws round a field emitter. Worn, it grabs and moves whole constructs.", 6, p =>
         {
-            Elbow(p, 0.06);
+            Elbow(p, 0.06, Field);
             p.Add(Box([-0.055, 0.15, -0.055], [0.055, 0.365, 0.055], Joint)); // the forearm
             p.Add(Box([-0.08, 0.1, -0.08], [0.08, 0.155, 0.08], Dark)); // the claw ring
             p.Add(Box([-0.035, 0.07, -0.035], [0.035, 0.105, 0.035], Glow)); // the emitter
@@ -520,12 +536,12 @@ public sealed class ShellParts : IPartGenerator
         }));
         yield return ("Modules", Module("Shell Sprayer Arm", "A robot shell arm that is a paint tool: a paint can and its nozzle. Worn, it colours parts.", 5, p =>
         {
-            Elbow(p, 0.06);
+            Elbow(p, 0.06, Paint);
             p.Add(Box([-0.055, 0.22, -0.055], [0.055, 0.365, 0.055], Joint)); // the forearm
-            p.Add(Box([-0.07, 0.07, -0.07], [0.07, 0.225, 0.07], "#3a7fd0")); // the paint can
+            p.Add(Box([-0.07, 0.07, -0.07], [0.07, 0.225, 0.07], Paint)); // the paint can
             p.Add(Box([-0.073, 0.12, -0.073], [0.073, 0.16, 0.073], "#e0e4e8", detail: true)); // its label band
-            p.Add(Box([-0.025, 0.0, -0.025], [0.025, 0.075, 0.025], Dark)); // the nozzle's body
-            p.Add(Box([-0.028, 0.006, -0.028], [0.028, 0.022, 0.028], "#d04090", detail: true)); // its tip's band
+            p.Add(Box([-0.025, 0.02, -0.025], [0.025, 0.075, 0.025], Dark)); // the nozzle's body
+            p.Add(Box([-0.032, 0.0, -0.032], [0.032, 0.024, 0.032], NozzleCup)); // its steel cup (look review 2026-11-19: a magenta tip read as a missing texture)
         }));
     }
 
