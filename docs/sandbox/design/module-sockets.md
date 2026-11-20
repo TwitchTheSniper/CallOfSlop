@@ -735,7 +735,12 @@ designs ("module 2x2 engine", and the filter finds them) and lists the modules i
 "where are mine", in that tab). Tried: a tank's pipe through a fitted 1x1 engine module to an RCS thruster (sourced from the tank, fed),
 the four adapters spawned and read as modules. Not built: data, ammo and chute pass-throughs; a Modules tab of its own.
 
-**Phases 4 to 7: not started** (the S fitter, faction choice and generators, the retrofits, markets).
+**Phases 4 to 7: not started** (the S fitter, faction choice and generators, the retrofits, markets). Where to resume: phase 3's
+data, ammo and chute pass-throughs (a plate needs data ports as a logic part has; ammo goes to a Turret Ring's `Ammo in`), then phase 4.
+Test rigs (not committed; in `bin/Release/net10.0/Constructs/Blueprints/`): `ZzModWellRig.json` (a 1x1 socket under a deck plate on
+frame blocks; `timed; modsock style 2 [DEPTH]` starts a timed cut), `ZzModSweepRig.json` (the same with a turntable module on a stand
+beside it), `ZzModPipeRig.json` (a tank piped through a fitted 1x1 engine module to an RCS thruster). Window verbs: `modsock state`
+(sockets, modules, pipes and their sources, the draw) and `modsock style N [DEPTH]` (host).
 
 Defaults taken (no questions asked):
 - The plate is placed at the well's foot; Well depth is measured from its face up to the surface (the design's "plate at the
