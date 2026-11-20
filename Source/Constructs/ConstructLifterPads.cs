@@ -291,7 +291,7 @@ public static partial class ConstructLifters
 
     /// <summary>Can this arm fit from its pick pads now: powered, whole, its Run not held off, not stuck with a piece?</summary>
     private static bool CanWorkNow(ConstructWorld world, Construct c, CLift l) =>
-        !c.Parts[l.Part].Broken && ConstructRecycler.Powered(world, c, l.Part) && !ConstructExtruder.RunHeld(c, l.Part) && (l.State != LiftState.Stuck || l.Why == LiftWhy.Holding); // (a hand loaded from a save holds its piece only until its first look: phase 5b)
+        DefOf(c, l.Part) is not { Fitter: true } && !c.Parts[l.Part].Broken && ConstructRecycler.Powered(world, c, l.Part) && !ConstructExtruder.RunHeld(c, l.Part) && (l.State != LiftState.Stuck || l.Why == LiftWhy.Holding); // (a hand loaded from a save holds its piece only until its first look: phase 5b)
 
     /// <summary>
     /// Is the part as a new one is: whole, no rounds (a new ammo box or gun is empty), no paint, no text, its settings at their

@@ -235,6 +235,7 @@ public enum CfgKey : byte
     ModKeyed, // Module Socket: one turn only (a notched corner)
     ModPrimary, // Module Plug: the module's primary tag (0: the tag with the most mass behind it, else 1 + a ModTag)
     ModCut, // Module Socket: its cutting ring's job, seconds while it burns its well, 0 idle (not on the panel; ModuleCut.cs)
+    ModWeld, // Module Socket: a Module Fitter's job on it, seconds: welding a module on (positive) or cutting its seam (negative), 0 idle (not on the panel; ConstructModuleFitters.cs)
     COUNT,
 }
 
@@ -882,6 +883,7 @@ public static class ConstructConfig
                 >= CfgKey.ModKind and <= CfgKey.ModKeyed => d.ModPart == ModPart.Socket,
                 CfgKey.ModPrimary => d.ModPart == ModPart.Plug,
                 CfgKey.ModCut => d.ModPart == ModPart.Socket && !d.ModStand,
+                CfgKey.ModWeld => d.ModPart == ModPart.Socket,
                 CfgKey.ToolsOut => d.IsToolRack, // (ToolRacks.cs)
                 CfgKey.RunMode => d.IsWheelFormer && !d.IsPanelFormer,
                 CfgKey.AmmoType => d.Role is PartRole.AmmoBox or PartRole.Storage,

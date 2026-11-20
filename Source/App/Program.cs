@@ -261,6 +261,10 @@ public static unsafe partial class Program
             SavePaths.Init(args); // (the player's blueprints are read from the save folder: --save-dir counts)
             return SubBlueprints.Cli(subBlueprint, args);
         }
+        if (args.Any(a => a.Equals("--gen-module", StringComparison.OrdinalIgnoreCase)))
+            return VehicleKit.ModuleGen.Cli(args); // a module design of a tag and size, written as a module blueprint (VehicleKit/BlueprintScript.Modules.cs)
+        if (args.Any(a => a.Equals("--module-choice", StringComparison.OrdinalIgnoreCase)))
+            return ModuleChoice.Cli(args); // a faction's module choice for each free socket of a ship (module-sockets.md 9; ModuleChoice.cs)
         if (args.SkipWhile(a => !a.Equals("--check-vehicle", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } vehicleFile)
             return VehicleKit.VehicleKitCli.CheckVehicle(vehicleFile); // the vehicle check on any blueprint file
         if (args.Any(a => a.Equals("--no-drive-gate", StringComparison.OrdinalIgnoreCase)))

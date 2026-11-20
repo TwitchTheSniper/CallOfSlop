@@ -647,7 +647,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   SocketKind.Module at the end; CfgKey ModKind, ModStyle, ModDepth, ModAbove, ModKeyed, ModPrimary at the end of the settings.
     // 379: module sockets phases 2 on: a socket's cutting ring (a hidden ModCut setting on the plate), and what later phases of the branch add.
     // 380: the Half Shell (docs/sandbox/design/half-shell.md): a new shell part file moves part ids; Shells.json gains frame 2 (Half, scale 0.5).
-    public const ushort ProtocolVersion = 380;
+    // 381: module sockets phase 4 on: the Module Fitter S part (Constructs/Parts/Modules/Fitters) moves the part ids; CfgKey ModWeld at the end
+    //   of the settings (a fitter's weld or seam cut on a plate); data, ammo and chute ports on plates and plugs.
+    public const ushort ProtocolVersion = 381;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

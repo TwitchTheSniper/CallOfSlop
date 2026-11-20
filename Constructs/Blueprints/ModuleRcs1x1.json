@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Module RCS 1x1",
+  "description": "A 1x1 module: one RCS Thruster: a small push, a small draw. Written by the part kit (module_sockets).",
+  "module": { "w": 1, "l": 1, "primary": "engine", "tags": ["engine"] },
+  "steps": [
+    { "part": "Module Plug 1x1" },
+    { "part": "RCS Thruster", "on": 0, "socket": "s0.0", "by": "base" }
+  ]
+}
