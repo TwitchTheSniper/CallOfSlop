@@ -366,6 +366,7 @@ public static partial class SelfTest
         }
         Action rays = Rays; // (1000 rays a round: a round's ms are one ray's us)
         var coldUs = ThreadCpu.TimeMs(rays);
+        var check = sum; // (the log's checksum, over a fixed amount of work: how many warm-up rounds run depends on timing)
         GC.Collect(); // (a collection of the start-up's garbage running beside the rounds would share their cache)
         GC.WaitForPendingFinalizers();
         var quickest = double.MaxValue;
@@ -379,11 +380,12 @@ public static partial class SelfTest
                 quiet.Restart();
             }
         }
+        warmFor.Stop();
         var rayUs = double.MaxValue;
         for (var round = 0; round < 9; round++)
             rayUs = Math.Min(rayUs, ThreadCpu.TimeMs(rays));
         DigLine($"queries allocate {alloc} B; a crater takes {craterMs:0.000} ms; {t.Edits.TouchedCells} dug cells give {faces.N} faces in {faceMs:0.0} ms; " +
-                $"a ray across them {rayUs:0.00} us once warm ({ThreadCpu.Kind}, warmed {warmFor.Elapsed.TotalSeconds:0.0} s; cold {coldUs:0.00} us) ({sum:0})");
+                $"a ray across them {rayUs:0.00} us once warm ({ThreadCpu.Kind}, warmed {warmFor.Elapsed.TotalSeconds:0.0} s; cold {coldUs:0.00} us) ({check:0})");
         if (alloc > 0)
             Fail($"terrain queries on dug ground allocated {alloc} B");
         if (craterMs > 0.5)
