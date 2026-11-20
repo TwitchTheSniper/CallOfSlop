@@ -58,6 +58,11 @@ public static partial class Program
         {
             case "perf":
             {
+                if (Ui.CaptureRecording)
+                {
+                    WsFail("perf: the F9 recording is running (rec stop first: both use PerfBench)");
+                    return true;
+                }
                 var sp = arg.Split(' ', 2, StringSplitOptions.TrimEntries);
                 _wsPerfAll = _wsPerfLeft = int.TryParse(sp[0], out var n) ? Math.Clamp(n, 10, 5000) : 300;
                 _wsPerfLabel = sp.Length > 1 ? sp[1] : $"spot {_wsShots}";

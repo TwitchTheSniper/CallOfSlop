@@ -57,6 +57,7 @@ public sealed partial class Ui
     /// <summary>Starts the recording (the window's button, and the window tool's `rec start`).</summary>
     public void StartCapture(Game? game, double now)
     {
+        Perf.Paused = false; // (a paused history keeps no frames: Perf.EndFrame returns before PerfBench.Sample)
         PerfBench.TraceFrame = false;
         PerfBench.TraceTicksMs = _capTrace ? Math.Clamp(_capTraceMs, 0.5f, 50f) : 0;
         PerfBench.Begin(CaptureLabel, CaptureFrames);
