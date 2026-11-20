@@ -98,6 +98,7 @@ public sealed partial class Game
         {
             Body = c.Id, Part = (ushort)part, Shell = shell.Id, TableBody = tb?.Id ?? 0, Table = table >= 0 ? (ushort)table : ushort.MaxValue,
             Slot = (byte)slot, Old = (byte)(old != null ? old.Index + 1 : 0), New = (byte)(m.Index + 1), Arm = ConstructGantry.ArmOf(slot),
+            PartAt = c.Parts[part].Pos,
         };
         j.Start = ConstructGantry.NextStart(world, c.Id, part, j.Arm, now); // (behind this gantry's swaps already asked: one sequence)
         GantrySend(j, true, now - j.Start, null);
@@ -117,20 +118,24 @@ public sealed partial class Game
         if (world.GantryJobCount == 0)
             return;
         var now = ConstructConveyor.Clock;
-        for (var k = 0; k < world.GantryLockCount; k++)
-            if (world.GantryLocks[k].Until < 0)
-                GantryPin(in world.GantryLocks[k]);
         for (var k = world.GantryJobCount - 1; k >= 0; k--)
         {
             ref var j = ref world.GantryJobs[k];
             var t = now - j.Start;
             var c = world.Get(j.Body);
             var shell = world.Get(j.Shell);
-            var gone = c == null || j.Part >= c.PartCount || c.Parts[j.Part].Broken || c.DefOf(j.Part).Gantry is not { } gd
-                || shell == null || !ConstructGantry.InBay(c, j.Part, gd, shell);
+            var at = c != null ? ConstructGantry.FindPart(c, j.Part, j.PartAt) : -1; // (the body's parts renumbered by a removal: the gantry found again by its place)
+            if (at >= 0 && at != j.Part)
+                GantryRenumber(ref j, (ushort)at, now);
+            var gone = at < 0 || c!.DefOf(j.Part).Gantry is not { } gd || shell == null || !ConstructGantry.InBay(c, j.Part, gd, shell);
             if (j.Old != 255 && gone)
             {
                 GantryStop(k, c, "the shell or the gantry went before its module was fitted");
+                continue;
+            }
+            if (at < 0)
+            {
+                GantryEnd(k); // (fitted, its arm going home, and the gantry went: nothing left to draw)
                 continue;
             }
             if (j.Old != 255 && t >= ConstructGantry.TFitted)
@@ -145,6 +150,29 @@ public sealed partial class Game
             if (t >= ConstructGantry.Duration)
                 GantryEnd(k);
         }
+        for (var k = 0; k < world.GantryLockCount; k++)
+            if (world.GantryLocks[k].Until < 0)
+                GantryPin(in world.GantryLocks[k]); // (after the swaps' checks: a clamp whose gantry went has opened)
+    }
+
+    /// <summary>Server: a swap's gantry part has a new index (its body's parts were renumbered): the swap and its clamp follow, and the peers hear it again under the new one.</summary>
+    private void GantryRenumber(ref GantryJob j, ushort part, double now)
+    {
+        var world = Constructs;
+        var old = j.Part;
+        var body = j.Body;
+        for (var k = 0; k < world.GantryJobCount; k++)
+            if (world.GantryJobs[k].Body == body && world.GantryJobs[k].Part == old)
+            {
+                GantrySend(world.GantryJobs[k], false, 0, null); // (every swap of that gantry: they share its clamp)
+                world.GantryJobs[k].Part = part;
+            }
+        if (ConstructGantry.LockAt(world, body, old) is var l and >= 0)
+            world.GantryLocks[l].Part = part;
+        for (var k = 0; k < world.GantryJobCount; k++)
+            if (world.GantryJobs[k].Body == body && world.GantryJobs[k].Part == part)
+                GantrySend(world.GantryJobs[k], true, now - world.GantryJobs[k].Start, null);
+        Log($"[gantry] body {body}: its gantry part {old} is part {part} now (the body's parts were renumbered)");
     }
 
     /// <summary>Server, in one tick: the new module off the table and onto the shell, the old one onto the table (or loose by it, or away in creative with no table). Null, or why it couldn't.</summary>
@@ -248,6 +276,7 @@ public sealed partial class Game
         {
             Freeform.PartWorld(c, part, out var gp, out var gr);
             var iq = Quaternion.Conjugate(gr);
+            world.GantryLocks[k].PartAt = c.Parts[part].Pos;
             world.GantryLocks[k].At = Vector3.Transform(shell.Pos - gp, iq);
             world.GantryLocks[k].Turn = Quaternion.Normalize(iq * shell.Rot);
             Log($"[gantry] body {c.Id}: its clamp holds shell {shell.Id}{(shell.Frame != 0 ? $" (riding body {shell.Frame}'s frame)" : "")}");
@@ -265,8 +294,8 @@ public sealed partial class Game
     private void GantryPin(in GantryLock l)
     {
         var world = Constructs;
-        if (world.Get(l.Body) is not { } c || l.Part >= c.PartCount || world.Get(l.Shell) is not { } shell || shell.HeldBy != l.Body)
-            return;
+        if (world.Get(l.Body) is not { } c || ConstructGantry.FindPart(c, l.Part, l.PartAt) != l.Part || world.Get(l.Shell) is not { } shell || shell.HeldBy != l.Body)
+            return; // (the gantry part gone, broken or renumbered: never posed in another part's frame)
         Freeform.PartWorld(c, l.Part, out var gp, out var gr);
         var pos = gp + Vector3.Transform(l.At, gr);
         var rot = Quaternion.Normalize(gr * l.Turn);

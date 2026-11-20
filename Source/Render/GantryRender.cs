@@ -5,8 +5,9 @@ namespace CallOfSlop;
 /// <summary>
 /// The Shell Gantry's five arms (ConstructGantry.cs; mining-shell.md "Shell Gantry layout"): each from its shoulder on the rear frame, an
 /// upper link, an elbow, a forearm and a gripper, at rest hung forward of the frame; the arm of a swap under way on its path from the
-/// job as this peer heard it, carrying the module's part at true size (the old one off the shell, then the new one off the table; the
-/// old one lies on the table from when it is set down until the fit, when the table holds it). The same pose on host and client, from
+/// job as this peer heard it, carrying the module as the shell's own slot boxes in its paint (the old one off the shell, then the new one off
+/// the table, whose copy there is hidden meanwhile; the old one stands on the table from when it is set down until the fit, when the
+/// table holds it). The same pose on host and client, from
 /// the job's clock; the arm's gripper shuts on a module, its nut runner turns while it unbolts or bolts. The waist clamp (a ram from the
 /// rear frame, a yoke and two jaws) closes round the shell's hips while a change runs (ConstructGantry.Hold). Drawn within
 /// <see cref="DrawNear"/>. Allocates nothing.
@@ -20,6 +21,8 @@ public static class GantryRender
     {
         var eye = gfx.CameraPosition;
         var now = ConstructConveyor.Clock;
+        if (world.GantryLockCount > 0)
+            ConstructGantry.Refresh(world); // (a joiner's shell came after the swap it is in)
         foreach (var c in world.Bodies)
         {
             if (c.GantryCount == 0 || Vector3.DistanceSquared(eye, c.WorldCom) > (DrawNear + c.Radius) * (DrawNear + c.Radius))
@@ -48,24 +51,36 @@ public static class GantryRender
     {
         var t = now - j.Start;
         Vector3 slot, away;
-        if (world.Get(j.Shell) is { PartCount: 1 } shell)
+        var shell = world.Get(j.Shell) is { PartCount: 1 } s && s.Parts[0].D.ShellBody ? s : null;
+        var rest = 0f;
+        var turn = Quaternion.Identity;
+        if (shell != null)
         {
+            var sd = shell.Parts[0].D;
             slot = ConstructGantry.ToPart(c, part, ConstructGantry.SlotPoint(shell, j.Slot));
             Freeform.PartWorld(shell, 0, out var sp, out var sr);
-            var scale = ShellFrames.Of(ShellFrames.FrameOf(shell.Parts[0].D)).Scale;
+            Freeform.PartWorld(c, part, out _, out var gr);
+            turn = Quaternion.Normalize(Quaternion.Conjugate(gr) * sr); // (the shell's turn in the gantry part's frame: a module goes as it sat)
+            var scale = ShellFrames.Of(ShellFrames.FrameOf(sd)).Scale;
             away = ConstructGantry.ToPart(c, part, sp + Vector3.Transform(ConstructGantry.AwayOf(j.Slot) * scale, sr)) - ConstructGantry.ToPart(c, part, sp);
+            rest = -ConstructGantry.SlotFoot(sd, j.Slot) - 0.15f + 0.004f; // (set down, it stands on the table's floor)
         }
         else
             (slot, away) = ((gd.BayMin + gd.BayMax) * 0.5f, new Vector3(0, 0, 0.3f));
         var table = world.Get(j.TableBody) is { } tb && j.Table < tb.PartCount && tb.Parts[j.Table].D.GantryTable ? ConstructGantry.TablePoint(c, part, tb, j.Table) : gd.Arms[j.Arm] + new Vector3(0, -1.2f, 1.4f);
+        table += Vector3.UnitY * rest;
         var hand = ConstructGantry.Hand(gd, j.Arm, slot, away, table, t, out var carry, out var grip);
         var bolting = ConstructGantry.Bolting(t);
         DrawArm(gfx, gd, frame, j.Arm, hand, grip, bolting ? (float)(now * 14 % (Math.PI * 2)) : 0);
-        var all = ShellFrames.Modules;
-        if (carry is 1 or 2 or 3 && j.Old > 0 && j.Old - 1 < all.Length)
-            DrawModule(gfx, all[j.Old - 1], frame, carry == 1 ? hand : ConstructGantry.SetDownOf(table));
-        if (carry == 3 && j.New > 0 && j.New - 1 < all.Length)
-            DrawModule(gfx, all[j.New - 1], frame, hand);
+        if (shell != null)
+        {
+            // The module is the shell's own slot (its boxes, in the shell's paint) where the shell is drawn without it: in the grip, set
+            // down on the table, and the new one in the grip (its copy on the table hidden meanwhile: RouteRender.DrawRacks).
+            if (carry is 1 or 2 or 3)
+                DrawSlot(gfx, shell, j.Slot, frame, carry == 1 ? hand : ConstructGantry.SetDownOf(table), turn);
+            if (carry == 3)
+                DrawSlot(gfx, shell, j.Slot, frame, hand, turn);
+        }
         if (bolting)
         {
             // (a work lamp at the hand while it unbolts or bolts: what tells a player the arm is busy at the shell)
@@ -74,11 +89,27 @@ public static class GantryRender
         }
     }
 
+    /// <summary>A shell's slot boxes (ConstructGantry.BoxSlots) with the slot's point at <paramref name="at"/> (the gantry part's frame), turned as the shell stands.</summary>
+    private static void DrawSlot(Renderer gfx, Construct shell, int slot, Matrix4x4 frame, Vector3 at, Quaternion turn)
+    {
+        ref var p = ref shell.Parts[0];
+        var d = p.D;
+        var map = ConstructGantry.BoxSlots(d);
+        var place = Matrix4x4.CreateTranslation(-ConstructGantry.SlotLocal(d, slot)) * Matrix4x4.CreateFromQuaternion(turn) * Matrix4x4.CreateTranslation(at) * frame;
+        for (var b = 0; b < map.Length; b++)
+        {
+            ref readonly var box = ref d.Boxes[b];
+            if (map[b] == slot && !box.Hidden)
+                gfx.Draw(box.Model(0, box.Center) * place, ConstructPaint.BoxColour(p.Paint, in box), shape: box.Shape);
+        }
+    }
+
     // The waist clamp (sizes in a person-sized shell's metres, times its frame's scale; mining-shell.md "Swap animation"): a ram from a
     // housing on the rear frame's lower rail out to a yoke behind the shell's hips, and two jaws on the yoke's ends that swing in round the
     // pelvis, a tooth at each jaw's front over the pelvis's front corners. Faces stand 3 mm or more off the shell's (z-fighting.md).
     private const float YokeY = 0.88f, YokeZ = 0.124f, JawX = 0.22f, JawOpen = 1.31f; // (75 degrees out)
     private static readonly Vector3 Housing = new(0.3f, 0.26f, 0.23f), Lamp = new(0.06f, 0.06f, 0.03f);
+    private static readonly Vector3 Stripe = new(0.08f, 0.08f, 0.085f), LampOn = new(1f, 0.16f, 0.1f), LampOff = new(0.3f, 0.08f, 0.07f);
 
     /// <summary>The clamp of a gantry: at rest folded at its housing; while a change runs, out on the shell (closing, shut, opening).</summary>
     private static void DrawClamp(Renderer gfx, ConstructWorld world, Construct c, int part, ShellGantryDef gd, Vector3 pos, Quaternion rot, Matrix4x4 frame, double now)
@@ -116,13 +147,22 @@ public static class GantryRender
         Beam(gfx, Matrix4x4.Identity, Vector3.Lerp(from, to, 0.4f), to, 0.065f, Pin);
         var yf = Matrix4x4.CreateScale(size) * Matrix4x4.CreateFromQuaternion(yr) * Matrix4x4.CreateTranslation(yoke);
         Box(gfx, yf, Vector3.Zero, new Vector3(0.5f, 0.032f, 0.04f), Joint); // the yoke
+        var held = jaw > 0.99f;
         for (var side = -1; side <= 1; side += 2)
         {
-            // A jaw: a bar along the pelvis's side from the yoke to past its front, and its tooth; turned out about its end on the yoke.
+            // A jaw: a deep bar along the pelvis's side from the yoke to past its front, hazard striped on its outer face, and its tooth
+            // round the pelvis's front corner with a lamp on its face (red while it grips); turned out about its end on the yoke.
             var pivot = new Vector3(side * JawX, 0, 0);
             var turn = Matrix4x4.CreateTranslation(-pivot) * Matrix4x4.CreateRotationY(-side * JawOpen * (1 - jaw)) * Matrix4x4.CreateTranslation(pivot) * yf;
-            Box(gfx, turn, new Vector3(side * JawX, 0, -0.1185f), new Vector3(0.035f, 0.026f, 0.261f), Grip);
-            Box(gfx, turn, new Vector3(side * 0.1795f, 0, -0.247f), new Vector3(0.109f, 0.022f, 0.018f), Grip);
+            Box(gfx, turn, new Vector3(side * JawX, 0, -0.1245f), new Vector3(0.035f, 0.1f, 0.249f), Grip);
+            for (var st = 0; st < 4; st++)
+                Box(gfx, turn, new Vector3(side * 0.2385f, 0, -0.03f - st * 0.06f), new Vector3(0.006f, 0.09f, 0.026f), Stripe);
+            Box(gfx, turn, new Vector3(side * 0.1795f, 0, -0.249f), new Vector3(0.109f, 0.09f, 0.026f), Grip);
+            var lamp = new Vector3(side * 0.17f, 0.018f, -0.2635f);
+            if (held)
+                gfx.Draw(Matrix4x4.CreateScale(0.035f, 0.025f, 0.01f) * Matrix4x4.CreateTranslation(lamp) * turn, LampOn, 1f, mode: 2);
+            else
+                Box(gfx, turn, lamp, new Vector3(0.035f, 0.025f, 0.01f), LampOff);
         }
     }
 
@@ -130,21 +170,6 @@ public static class GantryRender
     {
         s = Math.Clamp(s, 0, 1);
         return s * s * (3 - 2 * s);
-    }
-
-    /// <summary>A module's part at true size with its middle at <paramref name="at"/> (the part's frame).</summary>
-    private static void DrawModule(Renderer gfx, ShellModule m, Matrix4x4 frame, Vector3 at)
-    {
-        if (m.Part.Length == 0 || ConstructParts.Find(m.Part) is not { } d)
-            return;
-        var mid = (d.BoundsMin + d.BoundsMax) * 0.5f;
-        var place = Matrix4x4.CreateTranslation(at - mid - Vector3.UnitY * 0.05f) * frame;
-        for (var bx = 0; bx < d.Boxes.Length; bx++)
-        {
-            ref readonly var box = ref d.Boxes[bx];
-            if (!box.Hidden)
-                gfx.Draw(box.Model(0, box.Center) * place, box.Color, shape: box.Shape);
-        }
     }
 
     /// <summary>

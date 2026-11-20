@@ -20,6 +20,7 @@ public struct GantryJob
     public byte Slot; // ShellFrames.Slots
     public byte Old, New; // 1 + the module's index going off and going on
     public byte Arm; // which arm (ConstructGantry.ArmOf)
+    public Vector3 PartAt; // server: the gantry part's place on its body, which tells it again after the body's parts are renumbered (ConstructGantry.FindPart)
     public double Start; // ConstructConveyor.Clock when it began (a client: when it heard it, less the time already run); later than now: queued behind another slot's
 }
 
@@ -32,6 +33,7 @@ public struct GantryJob
 public struct GantryLock
 {
     public ushort Body, Part, Shell;
+    public Vector3 PartAt; // server: the gantry part's place on its body (as GantryJob.PartAt)
     public Vector3 At; // server: the shell's origin in the gantry part's frame when the clamp shut
     public Quaternion Turn; // ...and its turn there
     public double Since, Until; // when it began to close; when it began to open (-1: still held)
@@ -192,18 +194,61 @@ public static class ConstructGantry
     /// <summary>A slot's point on a shell standing as part 0 of <paramref name="shell"/>, in the world (the arm's hand takes the module there).</summary>
     public static Vector3 SlotPoint(Construct shell, int slot)
     {
-        var scale = ShellFrames.Of(ShellFrames.FrameOf(shell.Parts[0].D)).Scale;
-        var local = slot switch
-        {
-            0 => new Vector3(0, 1.7f, 0),
-            1 => new Vector3(0, 1.25f, 0.18f),
-            2 => new Vector3(-0.31f, 1.05f, 0),
-            3 => new Vector3(0.31f, 1.05f, 0),
-            4 => new Vector3(-0.11f, 0.45f, 0),
-            _ => new Vector3(0.11f, 0.45f, 0),
-        } * scale;
+        var local = SlotLocal(shell.Parts[0].D, slot);
         Freeform.PartWorld(shell, 0, out var pos, out var rot);
         return pos + Vector3.Transform(local, rot);
+    }
+
+    /// <summary>A slot's point in a shell part's own frame (the frame's scale in).</summary>
+    public static Vector3 SlotLocal(ConstructPartDef d, int slot) => slot switch
+    {
+        0 => new Vector3(0, 1.7f, 0),
+        1 => new Vector3(0, 1.25f, 0.18f),
+        2 => new Vector3(-0.31f, 1.05f, 0),
+        3 => new Vector3(0.31f, 1.05f, 0),
+        4 => new Vector3(-0.11f, 0.45f, 0),
+        _ => new Vector3(0.11f, 0.45f, 0),
+    } * ShellFrames.Of(ShellFrames.FrameOf(d)).Scale;
+
+    /// <summary>How far a slot's boxes reach below its point (negative; 0: none): what a module set down on the table stands on.</summary>
+    public static float SlotFoot(ConstructPartDef d, int slot)
+    {
+        var map = BoxSlots(d);
+        var y = SlotLocal(d, slot).Y;
+        var foot = 0f;
+        for (var b = 0; b < map.Length; b++)
+            if (map[b] == slot && !d.Boxes[b].Hidden)
+                foot = MathF.Min(foot, d.Boxes[b].Center.Y - d.Boxes[b].Half.Y - y);
+        return foot;
+    }
+
+    /// <summary>
+    /// Gantry part <paramref name="part"/> of <paramref name="c"/> as a job or clamp knows it (its place on the body,
+    /// <paramref name="at"/>): its index now (a removal renumbers the parts: ConstructWorld.Compact), or -1 when it is gone, broken
+    /// or no longer a gantry. Walks only the body's gantries.
+    /// </summary>
+    public static int FindPart(Construct c, int part, Vector3 at)
+    {
+        if (Same(c, part, at))
+            return part;
+        for (var g = 0; g < c.GantryCount; g++)
+            if (Same(c, c.Gantries[g], at))
+                return c.Gantries[g];
+        return -1;
+    }
+
+    private static bool Same(Construct c, int part, Vector3 at) =>
+        (uint)part < (uint)c.PartCount && !c.Parts[part].Broken && c.Parts[part].D.Gantry != null && c.Parts[part].Pos == at;
+
+    /// <summary>
+    /// Both peers, each frame (GantryRender.Draw): a shell in a shut clamp is marked held (<see cref="Construct.GantryHold"/>) though it
+    /// came after the swap was heard (a joiner hears the swaps before the bodies) or was streamed out and back. Walks only the clamps.
+    /// </summary>
+    public static void Refresh(ConstructWorld world)
+    {
+        for (var k = 0; k < world.GantryLockCount; k++)
+            if (world.GantryLocks[k].Until < 0 && world.Get(world.GantryLocks[k].Shell) is { GantryHold: false } s)
+                s.GantryHold = true;
     }
 
     /// <summary>An arm's hand at rest, in the part's frame: hung down and forward of its shoulder.</summary>
@@ -353,6 +398,20 @@ public static class ConstructGantry
                 at = Math.Max(at, j.Start + (j.Arm == arm ? Duration : TFitted));
         }
         return at;
+    }
+
+    /// <summary>The part id of the module a gantry's arm carries off table part <paramref name="table"/> of body <paramref name="body"/> at <paramref name="now"/> (from its grip to the fit; -1: none). Render.</summary>
+    public static int CarriedOff(ConstructWorld world, ushort body, int table, double now)
+    {
+        var all = ShellFrames.Modules;
+        for (var k = 0; k < world.GantryJobCount; k++)
+        {
+            ref var j = ref world.GantryJobs[k];
+            if (j.TableBody == body && j.Table == table && now - j.Start is var t && t >= TSwapped && t < TFitted && j.New - 1 is var n and >= 0 && n < all.Length
+                && all[n].Part.Length > 0 && ConstructParts.Find(all[n].Part) is { } d)
+                return d.Id;
+        }
+        return -1;
     }
 
     /// <summary>The slots of shell <paramref name="shell"/> whose module is off at <paramref name="now"/> (a bit a slot): from the pull to the fit. No job: 0.</summary>

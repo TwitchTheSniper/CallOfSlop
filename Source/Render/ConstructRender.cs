@@ -1378,7 +1378,7 @@ public static partial class ConstructRender
         }
         DrawSelection(gfx, pulse);
         DrawBlueprintGhost(gfx, pulse); // (ConstructRenderBlueprintGhost.cs)
-        if (AimBody is { } ab && AimPart >= 0 && AimPart < ab.PartCount)
+        if (AimBody is { } ab && AimPart >= 0 && AimPart < ab.PartCount && !NoAimGlow)
         {
             if ((AimRefused || AimHands) && !AimOnPage)
                 DrawAimGlow(gfx, ab, AimPart);
@@ -1395,6 +1395,9 @@ public static partial class ConstructRender
     /// region; a panel hung on a hinge, its door handle or a hand's width at its free edge (<see cref="ConstructDoor"/>); a part
     /// with none of those, or something loose (all of it comes up in the hands), glows whole.
     /// </summary>
+    /// <summary>The window tool's --no-hands: no aim glow in a scene picture.</summary>
+    public static bool NoAimGlow;
+
     private static void DrawAimGlow(Renderer gfx, Construct c, int part)
     {
         ref var p = ref c.Parts[part];

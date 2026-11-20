@@ -636,9 +636,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   (CPose: pose flag 16, then a u16 frame after the plants' block, and the pose's position, turn, velocity and spin are the frame's); a Full
     //   ends its carried block with a u16 frame and, when set, the frame pose (vec, 4 f32); a digest's sleeping entry flag 2: the pose is the frame's, a u16 frame follows.
     // 373: weld seams (user, 2026-11-19; ConstructSeams.cs): CActKind.SeamBreak (u16 body, u16 part, u16 other part) at the end of CActKind: the attach tool's RMB breaks one seam.
-    // 374: the Shell Gantry's swap animation (mining-shell.md "Swap animation"): Msg.Gantry carries the slot right after its on/off byte (an
+    // 375: the Shell Gantry's swap animation (mining-shell.md "Swap animation"): Msg.Gantry carries the slot right after its on/off byte (an
     //   off names its swap: a gantry runs several, queued), and an on's seconds run is negative while it waits its turn.
-    public const ushort ProtocolVersion = 374;
+    public const ushort ProtocolVersion = 375;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

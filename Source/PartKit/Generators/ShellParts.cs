@@ -235,13 +235,19 @@ public sealed class ShellParts : IPartGenerator
     /// <summary>The arms' shoulders on the rear frame, in ConstructGantry.ArmNames order: left upper, left lower, right upper, right lower, head.</summary>
     public static readonly double[][] GantryArms = [[-1.4, 3.4, 2.4], [-1.1, 1.0, 2.4], [1.4, 3.4, 2.4], [1.1, 1.0, 2.4], [0, 4.6, 2.4]];
 
+    private const string DeckPlate = "#7a8188";
+
     private static Part Gantry()
     {
         const double h = 0.08, w = 2.5, post = 0.22, top = 5.36, beam = 0.2; // the deck's top; the bay's half width and depth; the frame
         var p = new Part("Shell Gantry", Small, Section, "A vertical gantry a robot shell stands in, facing out of its open front: its five arms take a module off the shell and fit another from a Shell Parts Table placed behind it. Walk a shell in and leave it, then use the gantry's panel. Needs power.",
             role: "panel", tool: "welder", group: "Logic", color: MachineLook.Base);
         // The deck, a stand mat in the middle and hazard along the open front.
-        p.Add(Box([-w - post, 0, -w - post], [w + post, h, w + post], MachineLook.Base));
+        if (Box([-w - post, 0, -w - post], [w + post, h, w + post], DeckPlate) is { } deck)
+        {
+            deck["finish"] = "deck plate"; // (light deck plate, so the dark frame and the shell stand off the floor: look review 2026-11-19)
+            p.Add(deck);
+        }
         p.Add(MachineLook.D([-0.45, h - 0.002, -0.45], [0.45, h + 0.006, 0.45], MachineLook.In));
         MachineLook.Hazard(p, [-w, h - 0.002, -w - post + 0.01], [w, h + 0.01, -w + 0.15]);
         // Four corner posts and the top ring of beams between them (3 mm inside the posts' faces).

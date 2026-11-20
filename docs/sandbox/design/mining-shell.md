@@ -174,10 +174,10 @@ Drafted with the user over three pictures; build to this once the user approves 
 ## Swap animation (user, 2026-11-19)
 
 "Add animations for the shell being disassembled and reassembled on the gantry. Add some locking mechanism that holds the torso in place."
-Built 2026-11-19 (`ConstructGantry.cs`, `GameShellGantry.cs`, `GantryRender.cs`; protocol 374). Defaults chosen with the user away:
+Built 2026-11-19 (`ConstructGantry.cs`, `GameShellGantry.cs`, `GantryRender.cs`; protocol 375). Defaults chosen with the user away:
 
 - **Waist clamp.** A ram from a housing on the rear frame's lower rail (between the lower arms' shoulders) runs out to a yoke behind the
-  shell's hips, then two jaws on the yoke's ends swing in round the pelvis, a tooth at each front corner (0.8 s: the ram the first 60%, the
+  shell's hips, then two jaws on the yoke's ends swing in round the pelvis (10 cm deep, hazard striped outside), a tooth round each front corner with a lamp on its face, red while it grips (0.8 s: the ram the first 60%, the
   jaws the rest). The hips were chosen because the arms hang beside the torso and the Mining Shell's hopper sits on its back: the yoke
   passes under the hopper's floor. A lamp on the housing is red while shut, green open. It closes when a change's first swap begins and
   opens (0.8 s) when its last ends or is stopped. While shut the server holds the shell: `HeldBy` the gantry (no grab, nudge, edit
@@ -203,5 +203,12 @@ Built 2026-11-19 (`ConstructGantry.cs`, `GameShellGantry.cs`, `GantryRender.cs`;
   down and the new one brought and fitted; the clamp's ram and jaws on a Robot and a Mining Shell, the lamp red then green; a head
   queued behind a leg ran after its fit; asking the same slot again refused; a joined client heard both swaps (the queued one too) and
   the kit after. Not tried: a save mid-change of a shell the clamp froze, a grab refused while clamped, a client's view in a picture.
-- **Not yet:** the new module is drawn in the arm while the table still shows it until the fit (the table holds it till then, so a stop
-  loses nothing); the module parts' look differs from the shell's own boxes, so the fit swaps one look for the other at the slot.
+- **The module carried** is the shell's own slot (its boxes, in its paint: `GantryRender.DrawSlot`), so what leaves the shell is what
+  the arm holds; set down, it stands on the table's floor; the new one's copy on the table is hidden while the arm holds it
+  (`ConstructGantry.CarriedOff`, `RouteRender.DrawRacks`). The deck is light deck plate (look review).
+- **Robustness:** a swap and its clamp know the gantry part by its place on the body, so a removal that renumbers the parts finds it
+  again (the peers hear the swaps again under the new index) or stops the swap; a clamp never poses the shell in another part's
+  frame. A joiner hears the swaps before the bodies come: the shell is marked held when it arrives (`ConstructGantry.Refresh`).
+- **Not yet:** the old module set down on the table turns into the module part's own look at the fit; with a gantry moving and
+  the shell not yet in its frame (a few ticks before the frame pass takes it), only the pin holds it against gravity (its contacts
+  with the gantry are skipped as `HeldBy`).
