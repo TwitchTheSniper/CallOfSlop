@@ -1,0 +1,24 @@
+{
+  // The Interactions start's opening (Story/Starts/Interactions.json): as the Magpie start's (Story/Opening/Magpie.json), with its own card.
+  // The ship is a placeholder: any blueprint with a hold goes in "ship" (with "wake" points inside it).
+  "format": "call-of-slop-opening/1",
+  "cast": "",
+  "warden": "",
+  "wreck": "",
+  "ship": "Magpie Mining Ship", // the blueprint everyone wakes aboard (Source/PartKit/Generators/MinerParts.cs)
+  "orbit": 5800, // m over the ground (Karl, 2026-11-17: over Caledon, a bigger world with more pull, not Crumb): past
+  // Caledon's sky edge (the map's 29.2 km half width, 5.2 km up since the 4x worlds of 2026-11-19) and GameSpaceStart's margin,
+  // clear of Ben Slop (about 2.3 km); about 465 m/s round
+  // Where people wake, one each in turn, in the ship's own metres from its first part's middle (MinerParts' metres less
+  // 0.125): the two cabins, the hall, the mess, the workshop and engineering.
+  "wake": [[4.075, 3.385, 13.075], [7.475, 3.385, 12.875], [4.875, 3.385, 9.875], [5.875, 3.385, 16.375], [5.875, 0.135, 7.875], [5.875, 0.135, 19.375]],
+  // Caledon Highport, the station (Karl, 2026-11-18: "around 40km"): on its own circular orbit 40 km up over the start, about
+  // 315 m/s (4x worlds, 2026-11-19), so it drifts against the ship's lower, faster orbit (GameSpaceStart.OpeningStation). Caledon's pull there is 14% of
+  // the ground's; its reach (Hill sphere) runs out near 40,000 km, so no height near the world is wholly out of its gravity.
+  "stations": [{ "blueprint": "Caledon Highport", "orbit": 40000 }],
+  "beats": {
+    "placeholder": { "time": 4.0, "caption": "Caledon Highport hangs 40 km up, its berths waiting. The Traders are short of fuel and steel, and they pay in what they owe." },
+    "wake": { "time": 3.5, "lines": [] }
+  },
+  "skip": "skip the opening"
+}
