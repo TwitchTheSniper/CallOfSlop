@@ -1,0 +1,654 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Water Tote",
+  "description": "A square water tote in a dented steel cage on a pallet, wired up where the cage split. A tap at the bottom, a jug under it, and a green streak of something growing inside.",
+  "group": "Ship",
+  "section": "Ship fittings",
+  "role": "frame",
+  "tool": "wrench",
+  "finish": "worn paint",
+  "collider": "boxes",
+  "mass": 40.0,
+  "health": 200,
+  "armour": 2,
+  "material": "steel",
+  "color": "#d6c9a8",
+  "attachSeconds": 2.0,
+  "boxes": [
+    {
+      "min": [
+        -0.5,
+        0.0,
+        -0.5
+      ],
+      "max": [
+        0.5,
+        1.2,
+        0.5
+      ],
+      "color": "#d6c9a8",
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.5,
+        0.0,
+        -0.45
+      ],
+      "max": [
+        0.5,
+        0.12,
+        -0.35
+      ],
+      "color": "#7b5634",
+      "detail": true,
+      "finish": "wood",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.5,
+        0.0,
+        -0.05
+      ],
+      "max": [
+        0.5,
+        0.12,
+        0.05
+      ],
+      "color": "#7b5634",
+      "detail": true,
+      "finish": "wood",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.5,
+        0.0,
+        0.35
+      ],
+      "max": [
+        0.5,
+        0.12,
+        0.45
+      ],
+      "color": "#7b5634",
+      "detail": true,
+      "finish": "wood",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.48,
+        0.12,
+        -0.48
+      ],
+      "max": [
+        0.48,
+        0.15,
+        0.48
+      ],
+      "color": "#7b5634",
+      "detail": true,
+      "finish": "wood",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.44,
+        0.15,
+        -0.44
+      ],
+      "max": [
+        0.44,
+        1.08,
+        0.44
+      ],
+      "color": "#ddd6bf",
+      "detail": true,
+      "finish": "plastic",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.3,
+        0.6,
+        0.435
+      ],
+      "max": [
+        -0.1,
+        0.9,
+        0.446
+      ],
+      "color": "#7b8a52",
+      "detail": true,
+      "finish": "plastic",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.46,
+        0.15,
+        0.452
+      ],
+      "max": [
+        0.46,
+        0.17,
+        0.472
+      ],
+      "color": "#7d8085",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.46,
+        0.45,
+        0.452
+      ],
+      "max": [
+        0.46,
+        0.47,
+        0.468
+      ],
+      "color": "#7d8085",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.46,
+        0.75,
+        0.452
+      ],
+      "max": [
+        0.46,
+        0.77,
+        0.468
+      ],
+      "color": "#7d8085",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.46,
+        1.05,
+        0.452
+      ],
+      "max": [
+        0.46,
+        1.07,
+        0.468
+      ],
+      "color": "#7d8085",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.4,
+        0.15,
+        0.454
+      ],
+      "max": [
+        -0.38,
+        1.12,
+        0.47
+      ],
+      "color": "#7d8085",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.13,
+        0.15,
+        0.454
+      ],
+      "max": [
+        -0.11,
+        1.12,
+        0.47
+      ],
+      "color": "#7d8085",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.14,
+        0.15,
+        0.454
+      ],
+      "max": [
+        0.16,
+        1.12,
+        0.47
+      ],
+      "color": "#7d8085",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.41,
+        0.15,
+        0.454
+      ],
+      "max": [
+        0.43,
+        1.12,
+        0.47
+      ],
+      "color": "#7d8085",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.47,
+        0.15,
+        -0.47
+      ],
+      "max": [
+        -0.45,
+        1.15,
+        -0.45
+      ],
+      "color": "#7d8085",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.47,
+        0.15,
+        0.45
+      ],
+      "max": [
+        -0.45,
+        1.15,
+        0.47
+      ],
+      "color": "#7d8085",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.45,
+        0.15,
+        -0.47
+      ],
+      "max": [
+        0.47,
+        1.15,
+        -0.45
+      ],
+      "color": "#7d8085",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.45,
+        0.15,
+        0.45
+      ],
+      "max": [
+        0.47,
+        1.15,
+        0.47
+      ],
+      "color": "#7d8085",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.45,
+        0.152,
+        -0.468
+      ],
+      "max": [
+        0.45,
+        0.172,
+        -0.452
+      ],
+      "color": "#7d8085",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.45,
+        0.152,
+        0.45
+      ],
+      "max": [
+        0.45,
+        0.172,
+        0.468
+      ],
+      "color": "#7d8085",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.468,
+        0.155,
+        -0.45
+      ],
+      "max": [
+        -0.452,
+        0.169,
+        0.45
+      ],
+      "color": "#7d8085",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.452,
+        0.155,
+        -0.45
+      ],
+      "max": [
+        0.468,
+        0.169,
+        0.45
+      ],
+      "color": "#7d8085",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.45,
+        1.128,
+        -0.468
+      ],
+      "max": [
+        0.45,
+        1.148,
+        -0.452
+      ],
+      "color": "#7d8085",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.45,
+        1.128,
+        0.452
+      ],
+      "max": [
+        0.45,
+        1.148,
+        0.468
+      ],
+      "color": "#7d8085",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.468,
+        1.131,
+        -0.45
+      ],
+      "max": [
+        -0.452,
+        1.145,
+        0.45
+      ],
+      "color": "#7d8085",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.452,
+        1.131,
+        -0.45
+      ],
+      "max": [
+        0.468,
+        1.145,
+        0.45
+      ],
+      "color": "#7d8085",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.1109,
+        1.08,
+        -0.1109
+      ],
+      "max": [
+        0.1109,
+        1.16,
+        0.1109
+      ],
+      "color": "#3b3631",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          0.1109,
+          1.08,
+          0.0459
+        ],
+        [
+          0.0459,
+          1.08,
+          0.1109
+        ],
+        [
+          -0.0459,
+          1.08,
+          0.1109
+        ],
+        [
+          -0.1109,
+          1.08,
+          0.0459
+        ],
+        [
+          -0.1109,
+          1.08,
+          -0.0459
+        ],
+        [
+          -0.0459,
+          1.08,
+          -0.1109
+        ],
+        [
+          0.0459,
+          1.08,
+          -0.1109
+        ],
+        [
+          0.1109,
+          1.08,
+          -0.0459
+        ],
+        [
+          0.1109,
+          1.16,
+          0.0459
+        ],
+        [
+          0.0459,
+          1.16,
+          0.1109
+        ],
+        [
+          -0.0459,
+          1.16,
+          0.1109
+        ],
+        [
+          -0.1109,
+          1.16,
+          0.0459
+        ],
+        [
+          -0.1109,
+          1.16,
+          -0.0459
+        ],
+        [
+          -0.0459,
+          1.16,
+          -0.1109
+        ],
+        [
+          0.0459,
+          1.16,
+          -0.1109
+        ],
+        [
+          0.1109,
+          1.16,
+          -0.0459
+        ]
+      ],
+      "paintable": false,
+      "finish": "plastic"
+    },
+    {
+      "min": [
+        -0.026,
+        0.22,
+        0.44
+      ],
+      "max": [
+        0.026,
+        0.28,
+        0.56
+      ],
+      "color": "#3b3631",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          0.026,
+          0.265,
+          0.44
+        ],
+        [
+          0.0,
+          0.28,
+          0.44
+        ],
+        [
+          -0.026,
+          0.265,
+          0.44
+        ],
+        [
+          -0.026,
+          0.235,
+          0.44
+        ],
+        [
+          -0.0,
+          0.22,
+          0.44
+        ],
+        [
+          0.026,
+          0.235,
+          0.44
+        ],
+        [
+          0.026,
+          0.265,
+          0.56
+        ],
+        [
+          0.0,
+          0.28,
+          0.56
+        ],
+        [
+          -0.026,
+          0.265,
+          0.56
+        ],
+        [
+          -0.026,
+          0.235,
+          0.56
+        ],
+        [
+          -0.0,
+          0.22,
+          0.56
+        ],
+        [
+          0.026,
+          0.235,
+          0.56
+        ]
+      ],
+      "paintable": false,
+      "finish": "plastic"
+    },
+    {
+      "min": [
+        -0.015,
+        0.27,
+        0.5
+      ],
+      "max": [
+        0.015,
+        0.32,
+        0.53
+      ],
+      "color": "#c2962f",
+      "detail": true,
+      "finish": "plastic",
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

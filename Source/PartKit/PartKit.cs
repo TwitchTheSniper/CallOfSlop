@@ -106,7 +106,7 @@ public static class PartKit
         new Generators.ShipWorksParts(), // (ship works: the drives' nozzles, mounts, works and pods any ship builds from)
         new Generators.CrewFittingsParts(), // (the couches, the gunnery console, the coffee station and the robot cradle the ships hang: before them)
         new Generators.StyleSheetParts(), // (the style grading sheet's drafts: several looks of one item, group Style, unlisted)
-        new Generators.CommonerStyleParts(), // (style sheet drafts in the commoners' worn camper look, group StyleCommoner, unlisted)
+        new Generators.CommonerFittingParts(), // (ship fittings in the commoners' worn camper look, kept from the Commoner Style Sheet)
         new Generators.FittingLookParts(), // (the style sheet's liked looks made real: Service and Pressure Lockers, Ship Battery Module)
         new Generators.EvaParts(), // (spacewalk gear: the suit locker, the MMU and its dock)
         new Generators.ShipBatteryParts(), // (ship batteries XS to Bank: a ship's circuit store)

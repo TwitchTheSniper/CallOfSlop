@@ -4,23 +4,23 @@ using K = CallOfSlop.PartKit.Generators.FittingLookParts;
 namespace CallOfSlop.PartKit.Generators;
 
 /// <summary>
-/// The commoners' style, drafts for a copy of the Part Style Sheet (Karl, 2026-11-20: "winnebago vibe. Think space commoner,
-/// they're just trying to get by, it looks as though it's way past its expiry date and from an older generation"). One draft
-/// of each of 25 kinds of ship equipment (the sheet's step 4, "the set"), for feedback one by one. Not merged; nothing here is in
-/// the Parts tab (group StyleCommoner is unlisted, Constructs/Categories.json). Shown by --preview-gallery DIR --group StyleCommoner.
+/// Ship fittings in the commoners' look (Karl, 2026-11-20: "winnebago vibe. Think space commoner, they're just trying to get by,
+/// it looks as though it's way past its expiry date and from an older generation"). These are the parts Karl kept from the
+/// Commoner Style Sheet's rounds (since archived): a jump seat, an old fridge, a bucket toilet, parts bins, a water tote, an
+/// oxygen generator (a Life Support Unit in this look), a radio set, a jacked strut, and the worn ladder (liked, though "too nice"
+/// for the look). The drafts that weren't kept are in this file's git history (claude/project-thread-0ubdx9, PR 354).
 ///
 /// The look: an old camper's cream and tan with faded brown, orange and mustard stripes, wood-grain laminate, dull chrome,
 /// tired vinyl, grey tape over the cracks, patches riveted on in another colour, rust where water sat. Lamps are warm
-/// incandescent and few. Modules keep the standard Module Plug (FittingLookParts.Reactor, module-sockets.md): 1x1, the
-/// magazine 2x2. Free-standing pieces: front +z, the wall behind -z, the floor at y 0.
+/// incandescent and few. Modules keep the standard Module Plug (FittingLookParts.Reactor, module-sockets.md). Free-standing
+/// pieces: front +z, the wall behind -z, the floor at y 0.
 /// </summary>
-public sealed partial class CommonerStyleParts : IPartGenerator
+public sealed partial class CommonerFittingParts : IPartGenerator
 {
-    public string Name => "style_commoner";
+    public string Name => "commoner_fittings";
 
-    private const string Out = "Constructs/Parts/StylesCommoner";
-    internal const string Group = "StyleCommoner";
-    private const string Section = "Commoner style";
+    private const string Out = "Constructs/Parts/CommonerFittings";
+    private const string Group = "Ship", Section = "Ship fittings";
 
     // The camper palette, all faded.
     private const string Cream = "#d6c9a8", Beige = "#b5a37f", Tan = "#8c7654", Brown = "#5b3f28", Orange = "#b25a2c", Mustard = "#c2962f";
@@ -132,10 +132,11 @@ public sealed partial class CommonerStyleParts : IPartGenerator
         k.Hull([[x - w / 2, y1, z], [x + w / 2, y1, z], [x - w * 0.15, y0, z], [x + w * 0.15, y0, z],
                 [x - w / 2, y1, z + 0.011], [x + w / 2, y1, z + 0.011], [x - w * 0.15, y0, z + 0.011], [x + w * 0.15, y0, z + 0.011]], Rust, "rust");
 
-    /// <summary>20. The ladder: a steel ladder, its rungs worn bright, one replaced in another colour, grip tape, hooks at the top.</summary>
-    private static Part Ladder()
+    /// <summary>The worn ladder: a steel ladder, its rungs worn bright, one replaced with a pipe, grip tape, hooks at the top. Use climbs it.</summary>
+    private static Part WornLadder()
     {
-        var k = Free("Commoner Ladder", "Commoner ladder (draft): a steel ladder off something else, olive paint worn to bare metal where hands and boots go, one rung replaced with a length of pipe, grip tape wound round the stiles and two hooks over the hatch rim at the top.", [-0.25, 0, -0.25], [0.25, 2.5, -0.05]);
+        var k = Free("Worn Ladder", "A steel ladder off something else, olive paint worn to bare metal where hands and boots go, one rung replaced with a length of pipe and grip tape round the stiles. Stand it against a wall under a hatch; F climbs it to the landing 2.5 m up.", [-0.25, 0, -0.25], [0.25, 2.5, -0.05]);
+        k.P.Set(("ladder", 2.5));
         foreach (var sx in new[] { -0.22, 0.22 })
         {
             k.Box(sx - 0.025, 0.0, -0.17, sx + 0.025, 2.45, -0.1, Olive, "worn paint");
@@ -158,14 +159,12 @@ public sealed partial class CommonerStyleParts : IPartGenerator
         return k.P;
     }
 
-    /// <summary>21. The door: a camper-style interior door, aluminium frame, wood-grain panel, a louvred lower half, a lever, a scuffed kick plate.</summary>
-
+    
     public void Make(PartOutput o)
     {
         o.Own(Out);
-        var all = new List<Part> { Ladder() }; // (Uncategorised: liked, but too nice for the commoner look)
-        all.AddRange(Set2()); // (round 2: the parts Karl kept)
-        all.AddRange(Set3()); // (round 3: usable gameplay items)
+        var all = new List<Part> { WornLadder() };
+        all.AddRange(Kept());
         foreach (var p in all)
         {
             var d = p.Json();

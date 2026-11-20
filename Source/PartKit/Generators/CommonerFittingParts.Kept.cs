@@ -4,34 +4,59 @@ using K = CallOfSlop.PartKit.Generators.FittingLookParts;
 namespace CallOfSlop.PartKit.Generators;
 
 /// <summary>
-/// The commoners' style, round 2 (Karl, 2026-11-20: "Feedback is in! Now make another 100 parts based around the feedback").
-/// What round 1's grades said: the reactor, the battery and the radiator scored 5 (exposed, mismatched, patched machinery that
-/// still runs); the ladder was too nice for these people; the head "looks too nice", the RCS block "not scrappy enough", the
-/// workbench "doesn't read as rusty space ship stuff", the crate "doesn't look interesting", the door and the fuel tank and the
-/// capacitor low; avoid weapons for now. So round 2 leans on working machinery: pipes run on the outside, dials, valve wheels,
-/// tube frames, bands and patches in other colours, rust runs, tape, cables loose, and fewer clean flat panels or domestic
-/// wood. Redos of the low ones are here too (scrappier crate, head, RCS, workbench, door, fuel tank, capacitor, ladder).
+/// The commoner fittings Karl kept from the style sheet (picked in round 2, polished in round 3), and the kit they are drawn with.
 /// </summary>
-public sealed partial class CommonerStyleParts
+public sealed partial class CommonerFittingParts
 {
     private const string Copper = "#b06f3d", Brass = "#9a6a34", Steel = "#7d8085", Lagging = "#b9b39c", Blue = "#3f5a72", Signal = "#c23b2a";
 
     // ---- Round 2's kit
 
-    /// <summary>A free-standing piece for round 2: "Commoner NAME", its description after "): " is the sheet's idea line.</summary>
+    /// <summary>A free-standing fitting.</summary>
     private static Part F(string name, string desc, double[] mn, double[] mx, Action<K.Kit> draw, bool wall = true, string role = "frame")
     {
-        var k = Free("Commoner " + name, $"Commoner {name.ToLowerInvariant()} (draft, set 2): {desc}", mn, mx, role: role, wall: wall);
+        var k = Free(name, desc, mn, mx, role: role, wall: wall);
         draw(k);
         return k.P;
     }
 
-    /// <summary>A module for round 2 on the standard Module Plug; draw gets the half width inside the corner lugs.</summary>
+    /// <summary>A module on the standard Module Plug; draw gets the half width inside the corner lugs.</summary>
     private static Part M(string name, string desc, int n, double height, string[] ports, Action<K.Kit, double> draw)
     {
-        var k = K.Reactor("", n, $"Commoner {name.ToLowerInvariant()} (draft, set 2): {desc}", height, "Commoner " + name, Section, ports, group: Group);
+        var k = K.Reactor("", n, desc, height, name, Section, ports, group: Group);
         draw(k, n / 2.0 - 0.124);
         return k.P;
+    }
+
+    /// <summary>A storage fitting: a hollow hidden shell t thick round the bounds (what a hand or a round meets) with one slot inside.</summary>
+    private static Part Store(string name, string desc, double[] mn, double[] mx, Action<K.Kit> draw, bool wall = true, double t = 0.03)
+    {
+        var p = new Part(name, Small, Section, desc, role: "storage", tool: "wrench", material: "steel", color: Cream, group: Group);
+        p.Set(("finish", "worn paint"), ("collider", "boxes"));
+        double x0 = mn[0], y0 = mn[1], z0 = mn[2], x1 = mx[0], y1 = mx[1], z1 = mx[2];
+        foreach (var (a, b) in new (double[], double[])[]
+        {
+            ([x0, y0, z0], [x1, y0 + t, z1]), ([x0, y1 - t, z0], [x1, y1, z1]),
+            ([x0, y0 + t, z0], [x1, y1 - t, z0 + t]), ([x0, y0 + t, z1 - t], [x1, y1 - t, z1]),
+            ([x0, y0 + t, z0 + t], [x0 + t, y1 - t, z1 - t]), ([x1 - t, y0 + t, z0 + t], [x1, y1 - t, z1 - t]),
+        })
+            p.Add(Box([.. a.Select(R)], [.. b.Select(R)], Cream, hidden: true));
+        p.Sock("bottom", [R(0.5 * (x0 + x1)), y0, R(0.5 * (z0 + z1))], "-y");
+        if (wall)
+            p.Sock("wall", [R(0.5 * (x0 + x1)), R(y0 + Math.Min(y1 - y0, 0.25) / 2), z0], "-z");
+        var g = t + 0.01;
+        p.Set(("storage", new PyDict { ["slots"] = Py.L(K.Slot([R(x0 + g), R(y0 + g), R(z0 + g)], [R(x1 - g), R(y1 - g), R(z1 - g)])) }));
+        p.Stats(40, 220, 2, 2.0);
+        var k = new K.Kit(p);
+        draw(k);
+        return p;
+    }
+
+    /// <summary>Makes a seat of a piece whose cushion top is at y (a rider sits 0.55 m up by default).</summary>
+    private static Part Seat(Part p, double cushion, bool bunk = false)
+    {
+        p.Set(("seat", bunk ? Kw(("at", Py.L(0, R(cushion - 0.55), 0)), ("bunk", true)) : Kw(("at", Py.L(0, R(cushion - 0.55), 0)))));
+        return p;
     }
 
     /// <summary>A pipe through points that differ along one axis at a time, with a joint lump at each bend.</summary>
@@ -183,11 +208,11 @@ public sealed partial class CommonerStyleParts
         Tube(k, 1, x + 0.032, z + 0.05, y - 0.03, y + 0.03, 0.004, Chrome, "steel", 4);
     }
 
-    // ---- The parts Karl kept from round 2 (polished in round 3)
+    // ---- The fittings
 
-    private static IEnumerable<Part> Set2()
+    private static IEnumerable<Part> Kept()
     {
-        yield return F("Water Tote", "a square cream water tote in a steel cage frame on a pallet, a tap at the bottom with a jug under it, green algae streak inside the plastic and the cage dented and wired up.", [-0.5, 0, -0.5], [0.5, 1.2, 0.5], wall: false, draw: k =>
+        yield return F("Water Tote", "A square water tote in a dented steel cage on a pallet, wired up where the cage split. A tap at the bottom, a jug under it, and a green streak of something growing inside.", [-0.5, 0, -0.5], [0.5, 1.2, 0.5], wall: false, draw: k =>
         {
             for (var i = 0; i < 3; i++)
                 k.Box(-0.5, 0.0, -0.45 + i * 0.4, 0.5, 0.12, -0.35 + i * 0.4, Wood, "wood");
@@ -203,7 +228,7 @@ public sealed partial class CommonerStyleParts
             Pipe(k, Grime, 0.03, "plastic", (0.0, 0.25, 0.44), (0.0, 0.25, 0.56));
             k.Box(-0.015, 0.27, 0.5, 0.015, 0.32, 0.53, Mustard, "plastic");
         });
-        yield return M("Oxygen Generator", "electrolysis cells in four big glass jars on a shelf, bubbling tubes into a gas bottle, a car battery charger feeding them and a crocodile-clip lead for each jar.", 1, 1.25, ["Data 1"], (k, h) =>
+        yield return M("Oxygen Generator", "Keeps a ship's air the hard way: electrolysis cells in four big glass jars, bubbling tubes into a gas bottle and a battery charger feeding them through crocodile clips. Works as a Life Support Unit: aboard while it works and oxygen is left, anyone breathes without a suit, and suits refill. Everyone aboard uses it up. Holds 4 person-hours; Oxygen Tanks add more. F reads it.", 1, 1.25, ["Data 1"], (k, h) =>
         {
             k.Box(-0.36, 0.08, -0.36, 0.36, 0.12, 0.36, Steel, "rusty paint");
             foreach (var (x, z) in new[] { (-0.18, -0.18), (0.18, -0.18), (-0.18, 0.18), (0.18, 0.18) })
@@ -218,8 +243,8 @@ public sealed partial class CommonerStyleParts
             CableZ(k, 0.32, -0.3, 0.6, 0.2, 0.58, 0.08, Signal);
             DialZ(k, 0.0, 1.0, 0.1, 0.03, 0.8);
             k.Box(-0.06, 0.85, 0.098, 0.06, 0.9, 0.106, Tape, "fabric");
-        });
-        yield return F("Radio Set", "an old shortwave set on a wall shelf, big tuning dial lit warm, chunky knobs, a handset hanging on a hook by its curly cord and a frequency list taped to the side.", [-0.35, 0, -0.25], [0.35, 1.0, 0.1], k =>
+        }).Set(("air", Kw(("kind", "unit"), ("holds", 240)))); // (a Life Support Unit in this look: ShipAir.cs)
+        yield return F("Radio Set", "An old shortwave set on a wall shelf: a big tuning dial lit warm, chunky knobs, a handset on a hook by its curly cord, a frequency list taped to the side and the log book beside it.", [-0.35, 0, -0.25], [0.35, 1.0, 0.1], k =>
         {
             k.Box(-0.35, 0.5, -0.25, 0.35, 0.53, 0.05, WoodDark, "wood");
             foreach (var sx in new[] { -0.3, 0.3 })
@@ -237,7 +262,7 @@ public sealed partial class CommonerStyleParts
             Tube(k, 1, -0.28, -0.2, 0.82, 1.0, 0.006, Copper, "copper", 4); // (the aerial lead up the wall)
             k.Box(-0.06, 0.53, -0.2, 0.18, 0.55, -0.12, "#7a3a2a", "fabric"); // (the log book)
         });
-        yield return Seat(F("Jump Seat", "a fold-down jump seat on the wall, its canvas sling patched, the frame hinged on rusty pins, a strap to hold it up and a hook for a helmet. A seat you can sit in.", [-0.25, 0, -0.25], [0.25, 1.2, 0.25], role: "seat", draw: k =>
+        yield return Seat(F("Jump Seat", "A fold-down jump seat on the wall, its canvas sling patched and the frame hinged on rusty pins, with a hook for a helmet. Sit in it with F.", [-0.25, 0, -0.25], [0.25, 1.2, 0.25], role: "seat", draw: k =>
         {
             k.Box(-0.22, 0.35, -0.25, 0.22, 1.15, -0.22, Steel, "rusty paint");
             foreach (var sx in new[] { -0.2, 0.2 })
@@ -253,7 +278,7 @@ public sealed partial class CommonerStyleParts
             k.Box(-0.18, 0.12, -0.25, -0.1, 0.35, -0.235, Steel, "rusty paint"); // (the stowed-strap bracket)
             k.Box(-0.19, 0.468, 0.1, 0.19, 0.481, 0.17, Tape, "fabric");
         }), 0.49);
-        yield return F("Jacked Strut", "a steel I-beam post propping a sagging deck, gusset plates welded on crooked, a screw jack wound up under its foot and a block of wood shimming the gap.", [-0.25, 0, -0.25], [0.25, 2.4, 0.25], wall: false, draw: k =>
+        yield return F("Jacked Strut", "A steel I-beam post propping a sagging deck: gusset plates welded on crooked, a screw jack wound up under its foot, a block of wood shimming the gap and a tag that says DO NOT REMOVE.", [-0.25, 0, -0.25], [0.25, 2.4, 0.25], wall: false, draw: k =>
         {
             k.Box(-0.2, 0.0, -0.2, 0.2, 0.05, 0.2, Steel, "rusty paint");
             k.Hull(Frustum(1, 0, 0, 0.05, 0.12, 0.25, 0.06, 8), Signal, "worn paint");
@@ -269,7 +294,7 @@ public sealed partial class CommonerStyleParts
             k.Box(-0.104, 1.0, -0.104, 0.104, 1.08, 0.104, HazardYStr, "hazard paint"); // (hazard tape round the post)
             k.Box(0.012, 1.3, 0.1, 0.09, 1.42, 0.106, Ceramic, "plastic"); // (a tag: DO NOT REMOVE)
         });
-        yield return Store("Old Fridge", "a rounded old fridge, cream gone yellow, a big chrome lever handle, rust blooming along the bottom edge, magnets and notes on the door and a chain with a padlock round it. Holds things now.", [-0.32, 0, -0.32], [0.32, 1.5, 0.35], set: "set 2", wall: false, draw: k =>
+        yield return Store("Old Fridge", "A rounded old fridge, cream gone yellow, with a chrome lever handle, rust along the bottom, magnets and notes on the door and a chain round it. It hasn't been cold in years, but it holds things.", [-0.32, 0, -0.32], [0.32, 1.5, 0.35], wall: false, draw: k =>
         {
             k.Box(-0.3, 0.0, -0.3, 0.3, 0.06, 0.28, Grime, "dirty steel");
             k.Profile(-0.3, 0.3, [(0.06, -0.3), (0.06, 0.27), (1.38, 0.27), (1.45, 0.2), (1.47, 0.0), (1.47, -0.3)], "#d6ccaa", "gloss paint");
@@ -284,7 +309,7 @@ public sealed partial class CommonerStyleParts
             k.Box(-0.26, 1.2, 0.282, -0.18, 1.3, 0.29, Ceramic, "plastic"); // (a shopping list)
             StreakX(k, 0.3, 1, 0.15, 0.06, 0.35, 0.04);
         });
-        yield return Seat(F("Bucket Head", "a steel toilet bowl on a welded pedestal with a vacuum hose to the wall, a seat cut from plywood, a hand-written sign about the lever, a mop bucket and a roll of paper on a bent coat-hanger. You can sit on it.", [-0.4, 0, -0.35], [0.4, 1.4, 0.35], role: "seat", draw: k =>
+        yield return Seat(F("Bucket Toilet", "A steel toilet bowl on a welded pedestal with a vacuum hose to the wall, a plywood seat, a hand-written sign about the lever, a mop bucket and a roll of paper on a bent coat-hanger. F sits on it.", [-0.4, 0, -0.35], [0.4, 1.4, 0.35], role: "seat", draw: k =>
         {
             k.Box(-0.35, 0.0, -0.3, 0.35, 0.02, 0.35, "#7f8a7a", "rubber matting");
             k.Hull(Frustum(1, 0.0, 0.05, 0.02, 0.1, 0.3, 0.13, 8), Steel, "rusty paint");
@@ -301,7 +326,7 @@ public sealed partial class CommonerStyleParts
             k.Box(-0.3, 1.18, -0.35, -0.08, 1.2, -0.336, Tape, "fabric"); // (the sign's tape)
             StreakZ(k, 0.06, 0.04, 0.28, 0.12, 0.03);
         }), 0.44);
-        yield return Store("Parts Bins", "a louvred panel on the wall full of little plastic bins in four colours, labels written on tape, one bin cracked and taped, nuts and washers spilled on the shelf under them. Holds small parts.", [-0.5, 0.5, -0.25], [0.5, 1.4, -0.05], set: "set 2", t: 0.02, draw: k =>
+        yield return Store("Parts Bins", "A louvred panel on the wall full of little plastic bins in four colours, labels on tape, one bin cracked and taped, nuts and washers spilled on the shelf under them. Holds small parts.", [-0.5, 0.5, -0.25], [0.5, 1.4, -0.05], t: 0.02, draw: k =>
         {
             k.Box(-0.48, 0.6, -0.25, 0.48, 1.35, -0.22, Steel, "dirty steel");
             string[] cols = [Blue, Mustard, Signal, "#4f7a4a"];

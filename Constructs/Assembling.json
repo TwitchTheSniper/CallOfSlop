@@ -2245,6 +2245,15 @@
     {"output": "Medium Flush Shell Pod", "materials": {"steel": 128, "copper": 16, "rubber": 8}, "parts": {"Circuit Board": 3}, "seconds": 50, "minTier": 2},
     {"output": "Service Locker", "materials": {"steel": 10, "glass": 1}, "seconds": 8, "minTier": 2},
     {"output": "Pressure Locker", "materials": {"steel": 12, "rubber": 2, "glass": 1}, "seconds": 10, "minTier": 2},
-    {"output": "Ship Battery Module", "materials": {"steel": 24, "copper": 30}, "parts": {"Wiring Loom": 2}, "seconds": 40, "minTier": 3}
+    {"output": "Ship Battery Module", "materials": {"steel": 24, "copper": 30}, "parts": {"Wiring Loom": 2}, "seconds": 40, "minTier": 3},
+    {"output": "Worn Ladder", "materials": {"steel": 8, "rubber": 1}, "seconds": 5},
+    {"output": "Water Tote", "materials": {"steel": 6, "planks": 2, "rubber": 4}, "seconds": 6},
+    {"output": "Oxygen Generator", "materials": {"steel": 16, "copper": 6, "rubber": 4, "glass": 4}, "parts": {"Control Unit": 1, "Wiring Loom": 1}, "seconds": 30, "minTier": 3},
+    {"output": "Radio Set", "materials": {"steel": 4, "copper": 4, "planks": 2, "glass": 1}, "seconds": 8},
+    {"output": "Jump Seat", "materials": {"cloth": 3, "steel": 4}, "seconds": 5},
+    {"output": "Jacked Strut", "materials": {"steel": 16, "planks": 1}, "seconds": 6},
+    {"output": "Old Fridge", "materials": {"steel": 14, "rubber": 2}, "seconds": 10},
+    {"output": "Bucket Toilet", "materials": {"steel": 8, "rubber": 3, "planks": 1}, "seconds": 6},
+    {"output": "Parts Bins", "materials": {"steel": 6, "rubber": 4}, "seconds": 6}
   ]
 }

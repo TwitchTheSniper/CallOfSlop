@@ -512,6 +512,15 @@ public sealed class Assembling : IPartGenerator
         Rec("Service Locker", 8, 2, m: [("steel", 10), ("glass", 1)]), // (the style sheet's liked looks: FittingLookParts; at the end so saved choices keep their index)
         Rec("Pressure Locker", 10, 2, m: [("steel", 12), ("rubber", 2), ("glass", 1)]),
         Rec("Ship Battery Module", 40, 3, m: [("steel", 24), ("copper", 30)], p: [("Wiring Loom", 2)]),
+        Rec("Worn Ladder", 5, 1, m: [("steel", 8), ("rubber", 1)]), // (the commoner fittings Karl kept: CommonerFittingParts)
+        Rec("Water Tote", 6, 1, m: [("steel", 6), ("planks", 2), ("rubber", 4)]),
+        Rec("Oxygen Generator", 30, 3, m: [("steel", 16), ("copper", 6), ("rubber", 4), ("glass", 4)], p: [("Control Unit", 1), ("Wiring Loom", 1)]), // (a Life Support Unit's)
+        Rec("Radio Set", 8, 1, m: [("steel", 4), ("copper", 4), ("planks", 2), ("glass", 1)]),
+        Rec("Jump Seat", 5, 1, m: [("cloth", 3), ("steel", 4)]),
+        Rec("Jacked Strut", 6, 1, m: [("steel", 16), ("planks", 1)]),
+        Rec("Old Fridge", 10, 1, m: [("steel", 14), ("rubber", 2)]),
+        Rec("Bucket Toilet", 6, 1, m: [("steel", 8), ("rubber", 3), ("planks", 1)]),
+        Rec("Parts Bins", 6, 1, m: [("steel", 6), ("rubber", 4)]),
     ];
 
     /// <summary>The recipes file: the header, then one recipe a line (json.dumps with its default separators).</summary>
