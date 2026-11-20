@@ -1,9 +1,9 @@
 {
-  // In-wall bay draft (WallBayParts.cs): twist the side handle, then a rack of the ship's consumables runs out.
+  // In-wall bay (WallBayParts.cs): twist the side handle, then a rack of the ship's consumables runs out.
   "blueprint": "Wall Bay 1m Consumables",
   "title": "1 m bay: consumables rack",
   "shelf": "In-wall bays 1 m",
-  "description": "Draft. Twist the handle and a rack of the ship's stock runs 0.96 m out, two deep: water pouches, rations, scrubber canisters, oxygen candles and filter cartridges, the consumables the ship systems take.",
+  "description": "Twist the handle and a rack of the ship's stock runs 0.96 m out, two deep: water pouches, rations, scrubber canisters, oxygen candles and filter cartridges, the consumables the ship systems take.",
   "steps": [
     { "part": "Twist Latch", "at": 0, "label": "Twist the handle" },
     { "part": "Consumables Rack 1m", "at": 0.6, "label": "Rack runs out" }

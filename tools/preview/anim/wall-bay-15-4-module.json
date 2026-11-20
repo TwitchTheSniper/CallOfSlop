@@ -1,9 +1,9 @@
 {
-  // In-wall bay draft (WallBayParts.cs): the cover flips up, then a heavy sled runs out with a coolant module.
+  // In-wall bay (WallBayParts.cs): the cover flips up, then a heavy sled runs out with a coolant module.
   "blueprint": "Wall Bay 1.5m Module Sled",
   "title": "1.5 m bay: module sled",
   "shelf": "In-wall bays 1.5 m",
-  "description": "Draft. The cover flips up, then a heavy sled runs out 1.45 m with a coolant exchanger module as long as the bay on it: fins, headers, a fan on top, its pipes to the bay's plug.",
+  "description": "The cover flips up, then a heavy sled runs out 1.45 m with a coolant exchanger module as long as the bay on it: fins, headers, a fan on top, its pipes to the bay's plug.",
   "steps": [
     { "part": "Component Bay Cover 1.5m", "at": 0, "label": "Cover flips up" },
     { "part": "Component Sled 1.5m", "at": 1.1, "label": "Sled runs out" }

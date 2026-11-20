@@ -1,9 +1,9 @@
 {
-  // In-wall bay draft (WallBayParts.cs): a pressure suit on its hanger runs right out of the wall.
+  // In-wall bay (WallBayParts.cs): a pressure suit on its hanger runs right out of the wall.
   "blueprint": "Wall Bay 1m Suit Rack",
   "title": "1 m bay: suit rack",
   "shelf": "In-wall bays 1 m",
-  "description": "Draft. Twice the depth. Press the face and a pressure suit on its hanger runs 0.96 m out of the wall, side-on, with two spare bottles at its feet.",
+  "description": "Twice the depth. Press the face and a pressure suit on its hanger runs 0.96 m out of the wall, side-on, with two spare bottles at its feet.",
   "steps": [
     { "part": "Suit Rack 1m", "at": 0, "label": "Suit runs out" }
   ]

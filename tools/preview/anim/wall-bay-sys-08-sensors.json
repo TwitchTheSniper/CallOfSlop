@@ -1,9 +1,9 @@
 {
-  // In-wall ship system draft (WallBayParts.Systems.cs): twist the handle, the consumable's drawer runs out; then the cassette with the part that wears.
+  // In-wall ship system (WallBayParts.Systems.cs): twist the handle, the consumable's drawer runs out; then the cassette with the part that wears.
   "blueprint": "Wall Bay 1m Sensor Rack",
   "title": "Radar emitter and nav cores (1 m bay)",
   "shelf": "In-wall ship systems",
-  "description": "Draft. Sensors and comms. The drawer: twist the handle and it runs out with fifteen nav chart data cores in a rack, their tops lit (one amber: a chart past its date). The part that wears: the radar's emitter tube, which runs out in its cradles, its finned copper body and glowing glass end. The bars over them show its wear and its supply.",
+  "description": "Sensors and comms. The drawer: twist the handle and it runs out with fifteen nav chart data cores in a rack, their tops lit (one amber: a chart past its date). The part that wears: the radar's emitter tube, which runs out in its cradles, its finned copper body and glowing glass end. The bars over them show its wear and its supply.",
   "steps": [
     { "part": "Twist Latch", "at": 0, "label": "Twist the handle" },
     { "part": "Nav Core Drawer 1m", "at": 0.6, "label": "Drawer: nav data cores" },

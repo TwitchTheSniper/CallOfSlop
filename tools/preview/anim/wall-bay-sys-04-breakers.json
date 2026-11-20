@@ -1,9 +1,9 @@
 {
-  // In-wall ship system draft (WallBayParts.Systems.cs): twist the handle, the consumable's drawer runs out; then the cassette with the part that wears.
+  // In-wall ship system (WallBayParts.Systems.cs): twist the handle, the consumable's drawer runs out; then the cassette with the part that wears.
   "blueprint": "Wall Bay Breakers",
   "title": "Breakers and fuses (0.5 m bay)",
   "shelf": "In-wall ship systems",
-  "description": "Draft. Power. The consumable: twist the handle and the fuse drawer runs out with cartridge fuses in a rack and cartons of spares on a shelf. The part that wears: the breaker cassette, whose face is the panel of breakers (one tripped, red); it runs out to be swapped. The bars over them show its wear and its supply.",
+  "description": "Power. The consumable: twist the handle and the fuse drawer runs out with cartridge fuses in a rack and cartons of spares on a shelf. The part that wears: the breaker cassette, whose face is the panel of breakers (one tripped, red); it runs out to be swapped. The bars over them show its wear and its supply.",
   "steps": [
     { "part": "Twist Latch", "at": 0, "label": "Twist the handle" },
     { "part": "Fuse Drawer", "at": 0.6, "label": "Consumable: fuses" },

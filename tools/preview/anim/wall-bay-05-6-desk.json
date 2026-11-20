@@ -1,9 +1,9 @@
 {
-  // In-wall bay draft (WallBayParts.cs): a waist-high panel flips down to a worktop.
+  // In-wall bay (WallBayParts.cs): a waist-high panel flips down to a worktop.
   "blueprint": "Wall Bay Desk",
   "title": "0.5 m bay: fold-down desk",
   "shelf": "In-wall bays 0.5 m",
-  "description": "Draft. A waist-high panel flips down to a worktop with a keyboard; a tool pegboard behind it, a screen and two switches over it.",
+  "description": "A waist-high panel flips down to a worktop with a keyboard; a tool pegboard behind it, a screen and two switches over it.",
   "steps": [
     { "part": "Fold-down Desk", "at": 0, "label": "Desk folds down" }
   ]

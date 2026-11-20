@@ -1,9 +1,9 @@
 {
-  // In-wall bay draft (WallBayParts.cs): the face runs out of the wall with a two-sided rack of shelves behind it.
+  // In-wall bay (WallBayParts.cs): the face runs out of the wall with a two-sided rack of shelves behind it.
   "blueprint": "Wall Bay Rack",
   "title": "0.5 m bay: pull-out rack",
   "shelf": "In-wall bays 0.5 m",
-  "description": "Draft. The whole face slides out 0.46 m with shelves reached from both sides: oxygen bottles, a med kit, filters, spare cells, rations, blankets.",
+  "description": "The whole face slides out 0.46 m with shelves reached from both sides: oxygen bottles, a med kit, filters, spare cells, rations, blankets.",
   "steps": [
     { "part": "Pull-out Rack", "at": 0, "label": "Rack slides out" }
   ]

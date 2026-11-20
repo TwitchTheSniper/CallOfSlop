@@ -1,9 +1,9 @@
 {
-  // In-wall ship system draft (WallBayParts.Systems.cs): twist the handle, the consumable's drawer runs out; then the cassette with the part that wears.
+  // In-wall ship system (WallBayParts.Systems.cs): twist the handle, the consumable's drawer runs out; then the cassette with the part that wears.
   "blueprint": "Wall Bay Damage Control",
   "title": "Damage control locker (0.5 m bay)",
   "shelf": "In-wall ship systems",
-  "description": "Draft. Hull and doors. The consumables: twist the handle and the drawer runs out with hull patch plates in a rack and cans of sealant foam. Over it, the spares rack runs out with two door actuators, for the doors that wear. The bars over them show the spares and the stock.",
+  "description": "Hull and doors. The consumables: twist the handle and the drawer runs out with hull patch plates in a rack and cans of sealant foam. Over it, the spares rack runs out with two door actuators, for the doors that wear. The bars over them show the spares and the stock.",
   "steps": [
     { "part": "Twist Latch", "at": 0, "label": "Twist the handle" },
     { "part": "Patch and Foam Drawer", "at": 0.6, "label": "Consumables: patches, foam" },
