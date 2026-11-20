@@ -84,7 +84,7 @@ public sealed class FreighterParts : IPartGenerator
     private const double LiftForce = 1500000, JetScale = 1.15, Burn = 2.5;
     private static readonly (double X, double Z)[] LiftAt = [(-1.5, -14.0), (1.5, -14.0), (-1.5, 21.0), (1.5, 21.0)];
     private static readonly (double X, double Z)[] LegAt = [(-2.0, -20.0), (2.0, -20.0), (-2.0, 25.0), (2.0, 25.0)];
-    private const string LegPod = "L";
+    private const string LegPod = "S"; // (small pods: Karl, 2026-11-20)
     private const double PadProud = 0.1; // a jet's mount under the flat
     private const double LegProud = 0.16; // a leg pod's mount
     private static double Ground => -0.8 - LegProud - LegPodParts.ReachOf(LegPod);
@@ -101,7 +101,7 @@ public sealed class FreighterParts : IPartGenerator
     // second neck up to the engineering block, which tucks in to the transom.
     private static readonly Sec[] Hull =
     [
-        new(Zt, [(0.35, 0.55), (0.75, 0.85), (0.95, 1.5), (0.8, 2.1), (0.35, 2.35)]),
+        new(Zt, [(0.9, 0.0), (1.3, 0.35), (1.45, 1.5), (1.25, 2.3), (0.65, 2.65)]), // (blunt: the glass stops at a wide face, the Nose Cap seals it)
         new(ZS1, [(1.3, -0.35), (1.85, 0.1), (2.05, 1.4), (1.85, 2.75), (1.05, 3.15)]),
         new(ZCk, [(2.6, -0.8), (3.45, 0.1), (3.55, 1.5), (3.3, 3.2), (2.1, 3.8)]),
         new(ZCab, CabSec), new(ZCabEnd, CabSec),
@@ -1118,6 +1118,30 @@ public sealed class FreighterParts : IPartGenerator
 
     // ---- the stern: the hull closing in behind engineering, the transom, the stern's attitude jets
 
+    /// <summary>The nose cap: a slightly rounded solid dome sealing the blunt glass nose, lofted from the first station's section in
+    /// shrinking rings, with a dark rim where it meets the glass and a hidden block back to the cockpit's nose void.</summary>
+    private static Part NoseCap()
+    {
+        var p = Big("Packet Nose Cap", "The Packet's nose cap: a rounded plate dome sealing the front of the glass cockpit, with the nav beacon on its face.", color: Skin);
+        const double cy = 1.35;
+        var sec = At(Zt);
+        double[][] Ring(double dz, double k)
+        {
+            var pts = new List<double[]>();
+            foreach (var sd in new[] { -1, 1 })
+                foreach (var q in sec)
+                    pts.Add(Sh([Cx + sd * q.H * k, cy + (q.Y - cy) * k, Zt - dz]));
+            return [.. pts];
+        }
+        (double Dz, double K)[] rings = [(0.004, 1.012), (0.16, 0.985), (0.32, 0.9), (0.46, 0.74), (0.56, 0.5), (0.6, 0.22)];
+        for (var i = 0; i + 1 < rings.Length; i++)
+            Prism(p, Ring(rings[i].Dz, rings[i].K), Ring(rings[i + 1].Dz, rings[i + 1].K), i == 0 ? Frame : i == 1 ? Armour : Skin, "painted plating");
+        // A beacon lamp on the face, and the stripe across it.
+        Detail(p, Cx - 0.08, cy + 0.32, Zt - 0.62, Cx + 0.08, cy + 0.46, Zt - 0.55, Red, glow: true);
+        Hidden(p, Cx - 0.6, Ft, Zt - 0.3, Cx + 0.6, 1.9, ZCkFloor - 0.45);
+        return p.Stats(900, 6000, 30, 10.0);
+    }
+
     private static Part SternPart()
     {
         var p = Big("Packet Stern", "The Packet's stern: the hull tucking in behind engineering to a transom with its tail lights, and the stern's attitude jets.", color: Skin);
@@ -1923,6 +1947,7 @@ public sealed class FreighterParts : IPartGenerator
         structure.AddRange(SplitDeck(Engineering(), "Eng"));
         structure.AddRange(SplitBands(Roof(), "Roof", -14.0));
         structure.Add(SternPart());
+        structure.Add(NoseCap());
         Connect(structure);
         Structure = PlaceOrder(structure, "Packet Keel");
         List<Part> parts =

@@ -9,7 +9,7 @@
   "door": {
     "kind": "slide",
     "axis": "-y",
-    "travel": 2.47,
+    "travel": 1.443,
     "seconds": 4.0,
     "hang": "hang"
   },
