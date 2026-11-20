@@ -1,0 +1,255 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Murphy Bed",
+  "description": "A Murphy bed in an in-wall bay: the bay's whole face flips down on its foot to a made bed. Press the bar at the top.",
+  "group": "Interior",
+  "section": "In-wall bays",
+  "role": "door",
+  "tool": "wrench",
+  "finish": "painted steel",
+  "collider": "boxes",
+  "door": {
+    "kind": "swing",
+    "axis": "+x",
+    "pivot": [
+      0.0,
+      0.12,
+      0.025
+    ],
+    "angle": 90.0,
+    "seconds": 1.6,
+    "hang": "hang"
+  },
+  "mass": 45.0,
+  "health": 400,
+  "armour": 4,
+  "material": "steel",
+  "color": "#c4c8ca",
+  "attachSeconds": 2.0,
+  "boxes": [
+    {
+      "min": [
+        0.435,
+        0.1,
+        0.0
+      ],
+      "max": [
+        0.455,
+        0.12,
+        0.02
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.44,
+        0.12,
+        0.0
+      ],
+      "max": [
+        0.44,
+        1.98,
+        0.025
+      ],
+      "color": "#c4c8ca",
+      "detail": true,
+      "finish": "wall panelling"
+    },
+    {
+      "min": [
+        -0.438,
+        0.122,
+        0.019
+      ],
+      "max": [
+        0.438,
+        0.38,
+        0.03
+      ],
+      "color": "#2c5aa0",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -0.2,
+        1.88,
+        0.022
+      ],
+      "max": [
+        0.2,
+        1.92,
+        0.036
+      ],
+      "color": "#e0b020",
+      "detail": true,
+      "finish": "gloss paint",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.26,
+        1.88,
+        0.023
+      ],
+      "max": [
+        0.34,
+        1.92,
+        0.034
+      ],
+      "color": "#5ad070",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.385,
+        1.2,
+        0.024
+      ],
+      "max": [
+        -0.335,
+        1.8,
+        0.05
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.335,
+        1.2,
+        0.024
+      ],
+      "max": [
+        0.385,
+        1.8,
+        0.05
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.42,
+        0.14,
+        -0.02
+      ],
+      "max": [
+        0.42,
+        1.96,
+        0.0
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.4,
+        0.16,
+        -0.16
+      ],
+      "max": [
+        0.4,
+        1.94,
+        -0.02
+      ],
+      "color": "#4e5a66",
+      "detail": true,
+      "finish": "fabric"
+    },
+    {
+      "min": [
+        -0.32,
+        0.2,
+        -0.22
+      ],
+      "max": [
+        0.32,
+        0.52,
+        -0.16
+      ],
+      "color": "#dfe4e2",
+      "detail": true,
+      "finish": "fabric"
+    },
+    {
+      "min": [
+        -0.41,
+        1.05,
+        -0.185
+      ],
+      "max": [
+        0.41,
+        1.93,
+        -0.16
+      ],
+      "color": "#5d6450",
+      "detail": true,
+      "finish": "fabric"
+    },
+    {
+      "min": [
+        -0.42,
+        0.75,
+        -0.2
+      ],
+      "max": [
+        0.42,
+        0.8,
+        -0.185
+      ],
+      "color": "#c87a20",
+      "detail": true,
+      "finish": "fabric",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.42,
+        1.45,
+        -0.2
+      ],
+      "max": [
+        0.42,
+        1.5,
+        -0.185
+      ],
+      "color": "#c87a20",
+      "detail": true,
+      "finish": "fabric",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.44,
+        0.12,
+        -0.16
+      ],
+      "max": [
+        0.44,
+        1.98,
+        0.025
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "hang",
+      "at": [
+        0.445,
+        0.11,
+        0.0
+      ],
+      "dir": "-z"
+    }
+  ]
+}

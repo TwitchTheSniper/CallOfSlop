@@ -1,0 +1,12 @@
+{
+  // In-wall ship system (WallBayParts.Systems.cs): twist the handle, the consumable's drawer runs out; then the cassette with the part that wears.
+  "blueprint": "Wall Bay 1m PDC Feed",
+  "title": "PDC feeder and ammo (1 m bay)",
+  "shelf": "In-wall ship systems",
+  "description": "Weapons. The consumable: twist the handle and the drawer runs out with six ammo cans. The part that wears: the belt feeder, which runs out with its sprocket and a length of belt. The chute behind runs up to the PDC's mount. The bars over them show its wear and its supply.",
+  "steps": [
+    { "part": "Twist Latch", "at": 0, "label": "Twist the handle" },
+    { "part": "Ammo Can Drawer 1m", "at": 0.6, "label": "Consumable: ammo cans" },
+    { "part": "Belt Feeder Cassette 1m", "at": 2.8, "label": "Wear part: belt feeder" }
+  ]
+}

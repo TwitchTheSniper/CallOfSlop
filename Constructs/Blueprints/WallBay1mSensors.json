@@ -1,0 +1,36 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Wall Bay 1m Sensor Rack",
+  "group": "In-wall bays",
+  "description": "A sensor rack in a 1 m in-wall bay: the radar's emitter tube wears, the drawer under it holds nav chart data cores.",
+  "steps": [
+    {
+      "part": "Wall Bay 1m",
+      "spin": 2
+    },
+    {
+      "part": "Sensor Rack Insert 1m",
+      "on": 0,
+      "socket": "insert",
+      "by": "bay"
+    },
+    {
+      "part": "Twist Latch",
+      "on": 1,
+      "socket": "latch",
+      "by": "hang"
+    },
+    {
+      "part": "Nav Core Drawer 1m",
+      "on": 1,
+      "socket": "supply",
+      "by": "hang"
+    },
+    {
+      "part": "Emitter Tube Cassette 1m",
+      "on": 1,
+      "socket": "wear",
+      "by": "hang"
+    }
+  ]
+}

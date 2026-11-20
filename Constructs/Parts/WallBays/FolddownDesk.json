@@ -1,0 +1,162 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Fold-down Desk",
+  "description": "A fold-down desk in an in-wall bay: a waist-high panel that flips down on its foot to a worktop with a keyboard.",
+  "group": "Interior",
+  "section": "In-wall bays",
+  "role": "door",
+  "tool": "wrench",
+  "finish": "painted steel",
+  "collider": "boxes",
+  "door": {
+    "kind": "swing",
+    "axis": "+x",
+    "pivot": [
+      0.0,
+      0.76,
+      0.025
+    ],
+    "angle": 90.0,
+    "seconds": 1.0,
+    "hang": "hang"
+  },
+  "mass": 14.0,
+  "health": 300,
+  "armour": 4,
+  "material": "steel",
+  "color": "#c4c8ca",
+  "attachSeconds": 1.5,
+  "boxes": [
+    {
+      "min": [
+        0.435,
+        0.76,
+        0.0
+      ],
+      "max": [
+        0.455,
+        0.78,
+        0.02
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.44,
+        0.765,
+        0.0
+      ],
+      "max": [
+        0.44,
+        1.355,
+        0.025
+      ],
+      "color": "#c4c8ca",
+      "detail": true,
+      "finish": "wall panelling"
+    },
+    {
+      "min": [
+        -0.16,
+        1.28,
+        0.022
+      ],
+      "max": [
+        0.16,
+        1.315,
+        0.036
+      ],
+      "color": "#e0b020",
+      "detail": true,
+      "finish": "gloss paint",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.43,
+        0.77,
+        -0.045
+      ],
+      "max": [
+        0.43,
+        1.35,
+        0.0
+      ],
+      "color": "#59605a",
+      "detail": true,
+      "finish": "plastic"
+    },
+    {
+      "min": [
+        -0.22,
+        0.94,
+        -0.062
+      ],
+      "max": [
+        0.18,
+        1.1,
+        -0.045
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "plastic",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.24,
+        0.96,
+        -0.058
+      ],
+      "max": [
+        0.32,
+        1.06,
+        -0.045
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "plastic",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.428,
+        1.33,
+        -0.051
+      ],
+      "max": [
+        0.428,
+        1.345,
+        -0.04
+      ],
+      "color": "#5ac8ff",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.44,
+        0.76,
+        -0.045
+      ],
+      "max": [
+        0.44,
+        1.36,
+        0.025
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "hang",
+      "at": [
+        0.445,
+        0.77,
+        0.0
+      ],
+      "dir": "-z"
+    }
+  ]
+}
