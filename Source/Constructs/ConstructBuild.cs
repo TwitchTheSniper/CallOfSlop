@@ -97,12 +97,21 @@ public static class ConstructBuild
             return "doors hang on hinges";
         if (ds.Kind == SocketKind.Leaf && !onLeaf)
             return "doors hang on hinges";
+        if (ts.Kind == SocketKind.Module && ModuleSockets.SizeRefusal(target.ModPart == ModPart.Socket ? target : def, target.ModPart == ModPart.Socket ? def : target) is { } size)
+            return size;
         c.SocketAt(part, socket, out var at, out var dir);
         Span<byte> turns = stackalloc byte[4];
         var n = SpinTurns(ds.Dir, dir, turns);
         if (n == 0)
             return "no turn fits";
         var rot = turns[((spin % n) + n) % n];
+        if (ts.Kind == SocketKind.Module && ModuleTurn(c, part, def, turns, n, spin) is var mt)
+        {
+            // (a spin always counts over the full list, as blueprints write it: a turn the footprint doesn't allow moves on to the next one that it does)
+            if (mt < 0)
+                return "no turn fits";
+            rot = (byte)mt;
+        }
         var scale = ConstructMerge.ScaleFor(c, part, socket, def);
         var pos = ConstructWorld.Quantise(at - Rot24.Apply(rot, ds.At * scale));
         var seg = c.Parts[part].Seg;
@@ -112,9 +121,33 @@ public static class ConstructBuild
         g = new ConstructGhost { Part = part, Socket = socket, DefSocket = defSocket, Variant = spin, Pos = pos, Rot = rot, Seg = seg, NewJoint = newJoint, Scale = scale };
         if (Blocked(c, def, pos, rot, scale, seg))
             return InTheWay;
+        if (ModuleSockets.PlaceRefusal(c, def, part, pos, rot, scale) is { } module)
+            return module;
         if (def.ShellPod is { Flush: true } && ConstructShellPod.BodyRefusal(c, def, pos, rot, seg) is { } blocked)
             return blocked; // (a flush pod whose body, proud of a thin surface's far side, would run into another part: after the overlap test, the dearer one)
         return null;
+    }
+
+    /// <summary>
+    /// The turn a part takes onto a Module socket for this spin (module-sockets.md 2.1: 4 square, 2 oblong, 1 keyed): the spin's
+    /// own turn in the full list when the footprint allows it, else the next allowed one after it; -1 when none is.
+    /// </summary>
+    private static int ModuleTurn(Construct c, int part, ConstructPartDef def, ReadOnlySpan<byte> turns, int n, int spin)
+    {
+        var target = c.DefOf(part);
+        var plateIsTarget = target.ModPart == ModPart.Socket;
+        var keyed = plateIsTarget && ModuleSockets.SocketOfPlate(c, part) is var si and >= 0 && c.ModSockets[si].Keyed;
+        var at = ((spin % n) + n) % n;
+        for (var k = 0; k < n; k++)
+        {
+            var r = turns[(at + k) % n];
+            var ok = plateIsTarget
+                ? ModuleSockets.TurnFits(target, c.Parts[part].Rot, def, r, keyed)
+                : ModuleSockets.TurnFits(def, r, target, c.Parts[part].Rot, false);
+            if (ok)
+                return r;
+        }
+        return -1;
     }
 
     /// <summary>
@@ -496,6 +529,7 @@ public static class ConstructBuild
         public string Id = ""; // "id": made once, kept through renames (16 hex digits; a shipped one "ship:<name>"); "": none yet
         public int Version; // "version": 1 up, +1 on every overwrite and lock change (0: none)
         public List<UseSpec> Uses = new(); // "uses": other saved blueprints built into this one; a step may name a use's step as ["uN", k] (SubBlueprints.UseRef)
+        public ModuleBlock? Module; // "module": a module design's size, tags and stats, written from its parts at save (ModuleBlueprints.cs)
         public Dictionary<string, Dictionary<int, string>>? Packed; // "packed": the sub-blueprints a pack or a stamp's upload carries, by id and version (their text)
         // ...and a flattened one's (SubBlueprints.Flatten): every use's steps are its own, so every reader builds it as any blueprint.
         public UseMap? Map; // each step's use and each use's steps (null: no uses)
@@ -791,6 +825,9 @@ public static class ConstructBuild
                 case "uses":
                     SubBlueprints.ParseUses(p.Value, file, bp);
                     break;
+                case "module":
+                    bp.Module = ModuleBlueprints.Parse(p.Value, file);
+                    break;
                 case "packed":
                     bp.Packed = SubBlueprints.ParsePacked(p.Value, file);
                     break;
@@ -801,7 +838,7 @@ public static class ConstructBuild
                         bp.Bill.Add(ConstructBill.ParseLine(bl, file, bp.Bill.Count));
                     break;
                 default:
-                    throw new ConstructPartException($"{file}: unknown key \"{p.Name}\" (format, name, description, group, id, version, exactLinks, steps, uses, packed, wires, links, connectors, cargo, loot, stored, bill)");
+                    throw new ConstructPartException($"{file}: unknown key \"{p.Name}\" (format, name, description, group, id, version, exactLinks, steps, uses, module, packed, wires, links, connectors, cargo, loot, stored, bill)");
             }
         if (bp.Name.Length == 0 || bp.Name.Any(c => c < 32 || c > 126))
             throw new ConstructPartException($"{file}: \"name\" must be plain ASCII text");

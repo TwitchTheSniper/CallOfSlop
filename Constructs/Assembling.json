@@ -2249,6 +2249,24 @@
     {"output": "Shell Welder Arm", "materials": {"steel": 6, "copper": 4, "rubber": 1}, "parts": {"Circuit Board": 1}, "seconds": 16, "minTier": 2},
     {"output": "Shell Cutter Arm", "materials": {"steel": 8, "copper": 2}, "parts": {"Circuit Board": 1}, "seconds": 16, "minTier": 2},
     {"output": "Shell Grip Arm", "materials": {"steel": 6, "copper": 6}, "parts": {"Circuit Board": 2}, "seconds": 18, "minTier": 2},
-    {"output": "Shell Sprayer Arm", "materials": {"steel": 5, "copper": 1, "rubber": 2}, "parts": {"Circuit Board": 1}, "seconds": 12, "minTier": 2}
+    {"output": "Shell Sprayer Arm", "materials": {"steel": 5, "copper": 1, "rubber": 2}, "parts": {"Circuit Board": 1}, "seconds": 12, "minTier": 2},
+    {"output": "Module Plug 1x1", "materials": {"steel": 12, "concrete": 2}, "seconds": 3.8, "minTier": 2},
+    {"output": "Module Plug 1x2", "materials": {"steel": 24, "concrete": 5}, "seconds": 5.6, "minTier": 2},
+    {"output": "Module Plug 1x3", "materials": {"steel": 36, "concrete": 7}, "seconds": 7.4, "minTier": 2},
+    {"output": "Module Plug 2x2", "materials": {"steel": 48, "concrete": 10}, "seconds": 9.2, "minTier": 2},
+    {"output": "Module Plug 2x3", "materials": {"steel": 72, "concrete": 14}, "seconds": 12.8, "minTier": 2},
+    {"output": "Module Plug 3x3", "materials": {"steel": 108, "concrete": 22}, "seconds": 18.2, "minTier": 2},
+    {"output": "Module Socket 1x1", "materials": {"steel": 17, "concrete": 3}, "seconds": 4.5, "minTier": 2},
+    {"output": "Module Socket 1x2", "materials": {"steel": 34, "concrete": 7}, "seconds": 7.1, "minTier": 2},
+    {"output": "Module Socket 1x3", "materials": {"steel": 51, "concrete": 10}, "seconds": 9.6, "minTier": 2},
+    {"output": "Module Socket 2x2", "materials": {"steel": 68, "concrete": 14}, "seconds": 12.2, "minTier": 2},
+    {"output": "Module Socket 2x3", "materials": {"steel": 102, "concrete": 20}, "seconds": 17.3, "minTier": 2},
+    {"output": "Module Socket 3x3", "materials": {"steel": 153, "concrete": 31}, "seconds": 24.9, "minTier": 2},
+    {"output": "Module Stand 1x1", "materials": {"steel": 22, "concrete": 4}, "seconds": 5.3, "minTier": 2},
+    {"output": "Module Stand 1x2", "materials": {"steel": 44, "concrete": 9}, "seconds": 8.6, "minTier": 2},
+    {"output": "Module Stand 1x3", "materials": {"steel": 66, "concrete": 13}, "seconds": 11.9, "minTier": 2},
+    {"output": "Module Stand 2x2", "materials": {"steel": 88, "concrete": 18}, "seconds": 15.2, "minTier": 2},
+    {"output": "Module Stand 2x3", "materials": {"steel": 132, "concrete": 26}, "seconds": 21.8, "minTier": 2},
+    {"output": "Module Stand 3x3", "materials": {"steel": 198, "concrete": 40}, "seconds": 31.7, "minTier": 2}
   ]
 }

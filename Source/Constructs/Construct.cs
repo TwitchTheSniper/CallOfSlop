@@ -1261,6 +1261,7 @@ public sealed partial class Construct
         BuildDrivetrain();
         BuildPlants();
         ConstructWorks.Build(this); // (ship works: each head's cap, which the thrusters take: ConstructWorks.cs)
+        ModuleSockets.Build(this); // (module sockets: which plug is on which plate, the plug flood, each socket's room)
         BuildThrusters();
         ConstructFluid.Build(this);
         ConstructLift.Build(this);

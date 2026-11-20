@@ -259,6 +259,7 @@ public enum SocketKind : byte
     Port, // only what a shaft port stands on (a suspension's Drive in, on its moving hub): nothing bolts here
     PressDie, // a press's die slot and a die's mount: only a die of its size class goes there (ConstructPress.cs)
     RunOut, // an Extruder's out bed and a Run-out Table's ends: only a Run-out Table of its size class goes there (ConstructExtruderGrowth.cs)
+    Module, // a Module Socket's face and a Module Plug's: only a plug of the plate's footprint goes there, at the turns it allows (ModuleSockets.cs)
 }
 
 /// <summary>
@@ -1358,7 +1359,7 @@ public static partial class ConstructParts
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "finish", "friction", "collider",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "fluidTank", "seat", "hinge", "joint", "logic",
         "transmission", "battery", "capacitor", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "yield", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "retired", "hydraulics", "toolOnly", "tray", "walk", "boarding", "ladder", "toolDock", "damaged", "stage", "faces", "faceAxis", "router",
-        "sight", "ordnance", "mooring", "wear", "eva", "air", "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "dieExtension", "runOut", "enginePiece", "sizeClass", "generator", "thruster", "burner", "flame", "rotor", "surface", "smoke", "dock", "breach", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "shell", "office", "requisition", "container", "media", "speaker", "leg", "stabiliser", "door", "lifter", "craneRail", "lifterCab", "radar", "works", "worksPiece", "logiLink", "toolRack", "clampArm", "shellGantry", "shellPod",
+        "sight", "ordnance", "mooring", "wear", "eva", "air", "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "dieExtension", "runOut", "enginePiece", "sizeClass", "generator", "thruster", "burner", "flame", "rotor", "surface", "smoke", "dock", "breach", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "shell", "office", "requisition", "container", "media", "speaker", "leg", "stabiliser", "door", "lifter", "craneRail", "lifterCab", "radar", "works", "worksPiece", "logiLink", "toolRack", "clampArm", "shellGantry", "shellPod", "moduleSocket", "modulePlug",
     ];
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, a contoured shape with its settings (index 8 up to the last), and the glass flag (last).</summary>
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, and a contoured shape with its settings.</summary>
@@ -1971,6 +1972,7 @@ public static partial class ConstructParts
         ConstructShell.Parse(d, root, file); // (robot shells and their chairs: ConstructShell.cs)
         ConstructGantry.Parse(d, root, file); // (the Shell Gantry and its parts table: ConstructGantry.cs)
         ConstructShellPod.Parse(d, root, file); // (shell storage pods: ConstructShellPod.cs)
+        ModuleSockets.Parse(d, root, file); // (module sockets and plugs: ModuleSockets.cs)
         ToolRacks.Parse(d, root, file); // (a Tool Rack: hand tools a crew takes and returns, ToolRacks.cs)
         ConstructPanels.Parse(d, root, file); // (display panels: DisplayPanel.cs)
         ConstructMedia.Parse(d, root, file);
