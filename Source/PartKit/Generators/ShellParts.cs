@@ -183,7 +183,8 @@ public sealed class ShellParts : IPartGenerator
             p.Add(Box(Lo(0.3, 0.6, -0.25, 0.35), Hi(0.3, 0.63, 0.18, 0.35), Joint, detail: true)); // the arm rail
             p.Add(Box(Lo(0.315, 0.42, 0.06, 0.335), Hi(0.315, 0.6, 0.09, 0.335), Joint, detail: true)); // its strut
             p.Add(Box(Lo(0.29, 0.633, -0.25, 0.36), Hi(0.29, 0.67, 0.0, 0.36), Joint, detail: true)); // the console
-            p.Add(Box(Lo(0.31, 0.06, 0.26, 0.27), Hi(0.31, U(1.08), 0.3, 0.27), Cable, detail: true)); // a cable down outside the back (up to where the helmet's lead meets it raised)
+            p.Add(Box(Lo(0.31, 0.06, 0.26, 0.27), Hi(0.31, 1.08, 0.3, 0.27), Cable, detail: true)); // a cable down outside the back
+            p.Add(Box(Lo(0.307, U(0.74), 0.263, 0.273), Hi(0.307, U(1.077), 0.297, 0.273), Cable, detail: true, shape: helmet)); // its slack, up out of it with the helmet (inside it when down)
             p.Add(Box(Lo(0.31, U(1.04), 0.2, 0.23), Hi(0.31, U(1.08), 0.26, 0.23), Cable, detail: true, shape: helmet)); // into the helmet's side
             p.Add(Box(Lo(0.235, U(1.03), -0.2, 0.175), Hi(0.235, U(1.347), 0.22, 0.175), Dark, detail: true, shape: helmet)); // the helmet's side
             p.Add(Box(Lo(0.235, U(1.24), -0.2, 0.239), Hi(0.235, U(1.27), 0.22, 0.239), Visor, detail: true, shape: helmet)); // its lamp band
