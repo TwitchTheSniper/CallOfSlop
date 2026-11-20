@@ -262,7 +262,7 @@ public sealed partial class CommonerFittingParts
             Tube(k, 1, -0.28, -0.2, 0.82, 1.0, 0.006, Copper, "copper", 4); // (the aerial lead up the wall)
             k.Box(-0.06, 0.53, -0.2, 0.18, 0.55, -0.12, "#7a3a2a", "fabric"); // (the log book)
         });
-        yield return Seat(F("Sling Jump Seat", "A fold-down jump seat on the wall, its canvas sling patched and the frame hinged on rusty pins, with a hook for a helmet. Sit in it with F.", [-0.25, 0, -0.25], [0.25, 1.2, 0.25], role: "seat", draw: k =>
+        yield return MirrorZ(Seat(F("Sling Jump Seat", "A fold-down jump seat on the wall, its canvas sling patched and the frame hinged on rusty pins, with a hook for a helmet. Sit in it with F.", [-0.25, 0, -0.25], [0.25, 1.2, 0.25], role: "seat", draw: k =>
         {
             k.Box(-0.22, 0.35, -0.25, 0.22, 1.15, -0.22, Steel, "rusty paint");
             foreach (var sx in new[] { -0.2, 0.2 })
@@ -277,7 +277,7 @@ public sealed partial class CommonerFittingParts
             k.Hull(Frustum(1, 0.135, -0.12, 0.92, 0.09, 1.04, 0.1, 8), Olive, "worn paint"); // (an old helmet on the hook)
             k.Box(-0.18, 0.12, -0.25, -0.1, 0.35, -0.235, Steel, "rusty paint"); // (the stowed-strap bracket)
             k.Box(-0.19, 0.468, 0.1, 0.19, 0.481, 0.17, Tape, "fabric");
-        }), 0.49);
+        }), 0.49)); // (faces -z when sat in: the wall goes behind at +z)
         yield return F("Jacked Strut", "A steel I-beam post propping a sagging deck: gusset plates welded on crooked, a screw jack wound up under its foot, a block of wood shimming the gap and a tag that says DO NOT REMOVE.", [-0.25, 0, -0.25], [0.25, 2.4, 0.25], wall: false, draw: k =>
         {
             k.Box(-0.2, 0.0, -0.2, 0.2, 0.05, 0.2, Steel, "rusty paint");
@@ -309,7 +309,7 @@ public sealed partial class CommonerFittingParts
             k.Box(-0.26, 1.2, 0.282, -0.18, 1.3, 0.29, Ceramic, "plastic"); // (a shopping list)
             StreakX(k, 0.3, 1, 0.15, 0.06, 0.35, 0.04);
         });
-        yield return Seat(F("Bucket Toilet", "A steel toilet bowl on a welded pedestal with a vacuum hose to the wall, a plywood seat, a hand-written sign about the lever, a mop bucket and a roll of paper on a bent coat-hanger. F sits on it.", [-0.4, 0, -0.35], [0.4, 1.4, 0.35], role: "seat", draw: k =>
+        yield return MirrorZ(Seat(F("Bucket Toilet", "A steel toilet bowl on a welded pedestal with a vacuum hose to the wall, a plywood seat, a hand-written sign about the lever, a mop bucket and a roll of paper on a bent coat-hanger. F sits on it.", [-0.4, 0, -0.35], [0.4, 1.4, 0.35], role: "seat", draw: k =>
         {
             k.Box(-0.35, 0.0, -0.3, 0.35, 0.02, 0.35, "#7f8a7a", "rubber matting");
             k.Hull(Frustum(1, 0.0, 0.05, 0.02, 0.1, 0.3, 0.13, 8), Steel, "rusty paint");
@@ -325,7 +325,7 @@ public sealed partial class CommonerFittingParts
             k.Hull(Frustum(0, 0.6, -0.27, -0.37, 0.05, -0.27, 0.05, 8), Ceramic, "fabric");
             k.Box(-0.3, 1.18, -0.35, -0.08, 1.2, -0.336, Tape, "fabric"); // (the sign's tape)
             StreakZ(k, 0.06, 0.04, 0.28, 0.12, 0.03);
-        }), 0.44);
+        }), 0.44));
         yield return Store("Parts Bins", "A louvred panel on the wall full of little plastic bins in four colours, labels on tape, one bin cracked and taped, nuts and washers spilled on the shelf under them. Holds small parts.", [-0.5, 0.5, -0.25], [0.5, 1.4, -0.05], t: 0.02, draw: k =>
         {
             k.Box(-0.48, 0.6, -0.25, 0.48, 1.35, -0.22, Steel, "dirty steel");

@@ -612,6 +612,15 @@ public sealed class Assembling : IPartGenerator
         ("WallBays", "Wall Bay 1m", null),
         ("WallBays", "Wall Bay 1.5m", null),
         ("WallBays", "Water Reclaimer Insert 1m", null),
+        (null, null, Rec("Worn Ladder", 5, 1, m: [("steel", 8), ("rubber", 1)])), // (the commoner fittings Karl kept, 2026-11-20: CommonerFittingParts; at the end so saved choices keep their index)
+        (null, null, Rec("Water Tote", 6, 1, m: [("steel", 6), ("planks", 2), ("rubber", 4)])),
+        (null, null, Rec("Oxygen Generator", 30, 3, m: [("steel", 16), ("copper", 6), ("rubber", 4), ("glass", 4)], p: [("Control Unit", 1), ("Wiring Loom", 1)])), // (a Life Support Unit's)
+        (null, null, Rec("Radio Set", 8, 1, m: [("steel", 4), ("copper", 4), ("planks", 2), ("glass", 1)])),
+        (null, null, Rec("Sling Jump Seat", 5, 1, m: [("cloth", 3), ("steel", 4)])),
+        (null, null, Rec("Jacked Strut", 6, 1, m: [("steel", 16), ("planks", 1)])),
+        (null, null, Rec("Old Fridge", 10, 1, m: [("steel", 14), ("rubber", 2)])),
+        (null, null, Rec("Bucket Toilet", 6, 1, m: [("steel", 8), ("rubber", 3), ("planks", 1)])),
+        (null, null, Rec("Parts Bins", 6, 1, m: [("steel", 6), ("rubber", 4)])),
     ];
 
     /// <summary>
@@ -648,15 +657,6 @@ public sealed class Assembling : IPartGenerator
         Rec("Shell Cutter Arm", 16, 2, m: [("steel", 8), ("copper", 2)], p: [("Circuit Board", 1)]),
         Rec("Shell Grip Arm", 18, 2, m: [("steel", 6), ("copper", 6)], p: [("Circuit Board", 2)]),
         Rec("Shell Sprayer Arm", 12, 2, m: [("steel", 5), ("copper", 1), ("rubber", 2)], p: [("Circuit Board", 1)]),
-        Rec("Worn Ladder", 5, 1, m: [("steel", 8), ("rubber", 1)]), // (the commoner fittings Karl kept: CommonerFittingParts)
-        Rec("Water Tote", 6, 1, m: [("steel", 6), ("planks", 2), ("rubber", 4)]),
-        Rec("Oxygen Generator", 30, 3, m: [("steel", 16), ("copper", 6), ("rubber", 4), ("glass", 4)], p: [("Control Unit", 1), ("Wiring Loom", 1)]), // (a Life Support Unit's)
-        Rec("Radio Set", 8, 1, m: [("steel", 4), ("copper", 4), ("planks", 2), ("glass", 1)]),
-        Rec("Sling Jump Seat", 5, 1, m: [("cloth", 3), ("steel", 4)]),
-        Rec("Jacked Strut", 6, 1, m: [("steel", 16), ("planks", 1)]),
-        Rec("Old Fridge", 10, 1, m: [("steel", 14), ("rubber", 2)]),
-        Rec("Bucket Toilet", 6, 1, m: [("steel", 8), ("rubber", 3), ("planks", 1)]),
-        Rec("Parts Bins", 6, 1, m: [("steel", 6), ("rubber", 4)]),
     ];
 
     /// <summary>The recipes file: the header, then one recipe a line (json.dumps with its default separators).</summary>

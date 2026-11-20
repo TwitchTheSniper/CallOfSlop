@@ -2250,15 +2250,6 @@
     {"output": "Shell Cutter Arm", "materials": {"steel": 8, "copper": 2}, "parts": {"Circuit Board": 1}, "seconds": 16, "minTier": 2},
     {"output": "Shell Grip Arm", "materials": {"steel": 6, "copper": 6}, "parts": {"Circuit Board": 2}, "seconds": 18, "minTier": 2},
     {"output": "Shell Sprayer Arm", "materials": {"steel": 5, "copper": 1, "rubber": 2}, "parts": {"Circuit Board": 1}, "seconds": 12, "minTier": 2},
-    {"output": "Worn Ladder", "materials": {"steel": 8, "rubber": 1}, "seconds": 5},
-    {"output": "Water Tote", "materials": {"steel": 6, "planks": 2, "rubber": 4}, "seconds": 6},
-    {"output": "Oxygen Generator", "materials": {"steel": 16, "copper": 6, "rubber": 4, "glass": 4}, "parts": {"Control Unit": 1, "Wiring Loom": 1}, "seconds": 30, "minTier": 3},
-    {"output": "Radio Set", "materials": {"steel": 4, "copper": 4, "planks": 2, "glass": 1}, "seconds": 8},
-    {"output": "Sling Jump Seat", "materials": {"cloth": 3, "steel": 4}, "seconds": 5},
-    {"output": "Jacked Strut", "materials": {"steel": 16, "planks": 1}, "seconds": 6},
-    {"output": "Old Fridge", "materials": {"steel": 14, "rubber": 2}, "seconds": 10},
-    {"output": "Bucket Toilet", "materials": {"steel": 8, "rubber": 3, "planks": 1}, "seconds": 6},
-    {"output": "Parts Bins", "materials": {"steel": 6, "rubber": 4}, "seconds": 6},
     {"output": "Module Plug 1x1", "materials": {"steel": 12, "concrete": 2}, "seconds": 3.8, "minTier": 2},
     {"output": "Module Plug 1x2", "materials": {"steel": 24, "concrete": 5}, "seconds": 5.6, "minTier": 2},
     {"output": "Module Plug 1x3", "materials": {"steel": 36, "concrete": 7}, "seconds": 7.4, "minTier": 2},
@@ -2371,6 +2362,15 @@
     {"output": "Wall Bay", "materials": {"steel": 32, "concrete": 6}, "seconds": 6.8},
     {"output": "Wall Bay 1m", "materials": {"steel": 44, "concrete": 9}, "seconds": 8.6},
     {"output": "Wall Bay 1.5m", "materials": {"steel": 56, "concrete": 11}, "seconds": 10.4},
-    {"output": "Water Reclaimer Insert 1m", "materials": {"steel": 24, "concrete": 5}, "seconds": 5.6}
+    {"output": "Water Reclaimer Insert 1m", "materials": {"steel": 24, "concrete": 5}, "seconds": 5.6},
+    {"output": "Worn Ladder", "materials": {"steel": 8, "rubber": 1}, "seconds": 5},
+    {"output": "Water Tote", "materials": {"steel": 6, "planks": 2, "rubber": 4}, "seconds": 6},
+    {"output": "Oxygen Generator", "materials": {"steel": 16, "copper": 6, "rubber": 4, "glass": 4}, "parts": {"Control Unit": 1, "Wiring Loom": 1}, "seconds": 30, "minTier": 3},
+    {"output": "Radio Set", "materials": {"steel": 4, "copper": 4, "planks": 2, "glass": 1}, "seconds": 8},
+    {"output": "Sling Jump Seat", "materials": {"cloth": 3, "steel": 4}, "seconds": 5},
+    {"output": "Jacked Strut", "materials": {"steel": 16, "planks": 1}, "seconds": 6},
+    {"output": "Old Fridge", "materials": {"steel": 14, "rubber": 2}, "seconds": 10},
+    {"output": "Bucket Toilet", "materials": {"steel": 8, "rubber": 3, "planks": 1}, "seconds": 6},
+    {"output": "Parts Bins", "materials": {"steel": 6, "rubber": 4}, "seconds": 6}
   ]
 }

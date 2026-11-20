@@ -156,10 +156,42 @@ public sealed partial class CommonerFittingParts : IPartGenerator
                 k.Box(-0.12, y + 0.016, -0.155, 0.12, y + 0.027, -0.115, "#8f9086", "steel"); // (worn bright on top)
             }
         }
-        return k.P;
+        return MirrorZ(k.P); // (climbed from -z: the wall behind it at +z)
     }
 
-    
+    /// <summary>
+    /// Turns a finished piece front to back (z to -z): its boxes, hulls, sockets and seat. The kit draws every piece front +z,
+    /// wall -z, but a ladder is climbed from its -z face with the landing at +z (ConstructRideLadder, as the Dray Ladder stands)
+    /// and a sitter faces a seat's -z (Construct.SeatForward), so those go on the wall by their +z side.
+    /// </summary>
+    private static Part MirrorZ(Part p)
+    {
+        static double Z(object? v) => Py.D(v);
+        foreach (var b in p.Boxes)
+        {
+            if (b.Has("shape") && (string)b["shape"]! != "hull")
+                throw new InvalidOperationException($"{p.D["name"]}: MirrorZ knows boxes and hulls, not {b["shape"]}");
+            var mn = (List<object?>)b["min"]!;
+            var mx = (List<object?>)b["max"]!;
+            (mn[2], mx[2]) = (PartKitMath.R(-Z(mx[2])), PartKitMath.R(-Z(mn[2])));
+            if (b.Get("points") is List<object?> pts)
+                foreach (var pt in pts)
+                {
+                    var l = (List<object?>)pt!;
+                    l[2] = PartKitMath.R(-Z(l[2]));
+                }
+        }
+        foreach (var s in p.Sockets)
+        {
+            var at = (List<object?>)s["at"]!;
+            at[2] = PartKitMath.R(-Z(at[2]));
+            s["dir"] = (string)s["dir"]! switch { "-z" => "+z", "+z" => "-z", var d => d };
+        }
+        if (p.D.Get("seat") is PyDict sd && sd.Get("at") is List<object?> sa && Z(sa[2]) != 0)
+            sa[2] = PartKitMath.R(-Z(sa[2]));
+        return p;
+    }
+
     public void Make(PartOutput o)
     {
         o.Own(Out);
