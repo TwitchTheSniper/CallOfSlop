@@ -17,6 +17,7 @@ public sealed partial class ConstructPartDef
     public byte ModW, ModL; // the footprint, whole metres, W <= L: W along the part's x, L along its z, the face's normal its y
     public bool ModStand; // "moduleSocket": {"stand": true}: a Module Stand (a module on it is stored: nothing couples)
     public int ModSocket = -1; // its Module socket's index (the plate's face, +y; the plug's, -y)
+    public byte ModData; // its data pass-through ports, "Data 1".."Data n" both ways (2 at 1x1 and 1xN, 4 from 2x2; a stand none): ModuleSockets.PassWires
 }
 
 /// <summary>One Module Socket plate of a construct, as the rebuild found it (<see cref="Construct.ModSockets"/>).</summary>
@@ -108,7 +109,18 @@ public static class ModuleSockets
             }
         if (d.ModSocket < 0)
             throw new ConstructPartException($"{file}: a {(plate != null ? "plate" : "plug")} has a \"module\" socket (kind \"module\")");
+        if (!d.ModStand)
+        {
+            d.ModData = (byte)DataPorts(w, l);
+            d.DataIn = d.DataOut = DataNames[..d.ModData];
+        }
     }
+
+    /// <summary>A size's data pass-through ports (2.5): Data 1-2, and 3-4 from 2x2.</summary>
+    public static int DataPorts(int w, int l) => w * l >= 4 ? 4 : 2;
+
+    private static readonly string[] DataNames = ["Data 1", "Data 2", "Data 3", "Data 4"];
+    public const int DataWires = 4; // wires each data port takes in (ConstructPartDef.MaxInputs)
 
     /// <summary>The footprint's middle along a side of n metres: the part's origin is the middle of its first metre cell.</summary>
     public static float Centre(int n) => (n - 1) * 0.5f;
@@ -404,60 +416,120 @@ public static class ModuleSockets
     }
 
     /// <summary>
-    /// The pipe pass-through (2.5), after the routes' rebuild: a pipe leaving a fitted plug's port carries what the pipe ending at the
-    /// plate's port of the same name carries: its source (a tank of the ship), fed only when that pipe is fed to its end. A plug on a
-    /// stand passes nothing. Repeated for modules in modules (up to <see cref="PassDepth"/>), then the branches of each pipe changed
-    /// take their root's source again. Pipes only; nothing allocated; a body with no plug pipes costs one pass over its routes.
+    /// The pass-throughs (2.5), after the routes' rebuild: a pipe, an ammo feed or a chute leaving a fitted plug's port carries what the
+    /// link of that type ending at the plate's port of the same name carries: its source (a tank, a magazine or an Ammo Switch, a store
+    /// of the ship), fed only when that link is fed to its end. Then the data wires: <see cref="PassWires"/>. A plug on a stand passes
+    /// nothing. Repeated for modules in modules (up to <see cref="PassDepth"/>), then the branches of each link changed take their
+    /// root's source again. Nothing allocated; a body with no plug links or wires costs one pass over its routes.
     /// </summary>
     public static void PassThrough(Construct c)
     {
         var any = false;
         for (var k = 0; k < c.RouteCount && !any; k++)
-            any = c.Routes[k].Type == RouteType.Pipe && c.Routes[k].Parent == 255 && c.Routes[k].From < c.PartCount && c.DefOf(c.Routes[k].From).ModPart == ModPart.Plug;
+            any = Passes(c.Routes[k].Type) && c.Routes[k].Parent == 255 && c.Routes[k].From < c.PartCount && c.DefOf(c.Routes[k].From).ModPart == ModPart.Plug;
+        if (any)
+            for (var pass = 0; pass < PassDepth; pass++)
+            {
+                var changed = false;
+                for (var k = 0; k < c.RouteCount; k++)
+                {
+                    ref var r = ref c.Routes[k];
+                    if (!Passes(r.Type) || r.Parent != 255 || r.From >= c.PartCount || c.DefOf(r.From).ModPart != ModPart.Plug)
+                        continue;
+                    var j = PlateLink(c, r.Type, r.From, r.FromPort);
+                    ushort src = r.From;
+                    byte port = r.FromPort;
+                    var fed = true;
+                    if (j >= 0 && j != k)
+                        (src, port, fed) = (c.Routes[j].Source, c.Routes[j].SourcePort, c.Routes[j].FedEnd);
+                    if (src != r.Source || port != r.SourcePort || fed != r.Fed)
+                    {
+                        (r.Source, r.SourcePort, r.Fed) = (src, port, fed);
+                        changed = true;
+                    }
+                }
+                for (var k = 0; k < c.RouteCount; k++)
+                {
+                    ref var r = ref c.Routes[k];
+                    if (!Passes(r.Type) || r.Parent == 255 || r.Parent >= k)
+                        continue;
+                    ref var p = ref c.Routes[r.Parent];
+                    (r.Source, r.SourcePort, r.Fed) = (p.Source, p.SourcePort, p.Fed && p.FirstCut > r.ParentNode);
+                }
+                if (!changed)
+                    break;
+            }
+        PassWires(c);
+    }
+
+    private static bool Passes(RouteType t) => t is RouteType.Pipe or RouteType.Feed or RouteType.Chute;
+
+    /// <summary>
+    /// The data pass-through (2.5): Data k on a fitted plug and on its plate act as one wire end, both ways. A wire leaving the plug's
+    /// Data k takes as its source the first wire into the plate's Data k, and a wire leaving the plate's Data k the first wire into the
+    /// plug's: so a ship's lever lights a module's lamp, and a module's sensor reaches a ship's display, with no value held on the plate.
+    /// Nested modules repeat it (up to <see cref="PassDepth"/> passes). A stand passes nothing; a wire whose source would be itself is
+    /// left. At the routes' rebuild, on every peer alike; nothing per tick.
+    /// </summary>
+    public static void PassWires(Construct c)
+    {
+        var any = false;
+        for (var w = 0; w < c.WireCount && !any; w++)
+            any = c.Wires[w].From < c.PartCount && c.DefOf(c.Wires[w].From).ModData > 0;
         if (!any)
             return;
         for (var pass = 0; pass < PassDepth; pass++)
         {
             var changed = false;
-            for (var k = 0; k < c.RouteCount; k++)
+            for (var w = 0; w < c.WireCount; w++)
             {
-                ref var r = ref c.Routes[k];
-                if (r.Type != RouteType.Pipe || r.Parent != 255 || r.From >= c.PartCount || c.DefOf(r.From).ModPart != ModPart.Plug)
+                ref var x = ref c.Wires[w];
+                if (x.From >= c.PartCount || c.DefOf(x.From).ModData == 0)
                     continue;
-                var j = PlatePipe(c, r.From, r.FromPort);
-                ushort src = r.From;
-                byte port = r.FromPort;
-                var fed = true;
-                if (j >= 0 && j != k)
-                    (src, port, fed) = (c.Routes[j].Source, c.Routes[j].SourcePort, c.Routes[j].FedEnd);
-                if (src != r.Source || port != r.SourcePort || fed != r.Fed)
-                {
-                    (r.Source, r.SourcePort, r.Fed) = (src, port, fed);
-                    changed = true;
-                }
-            }
-            for (var k = 0; k < c.RouteCount; k++)
-            {
-                ref var r = ref c.Routes[k];
-                if (r.Type != RouteType.Pipe || r.Parent == 255 || r.Parent >= k)
+                var d = c.DefOf(x.From);
+                var other = d.ModPart == ModPart.Plug ? PlateOf(c, x.From) : PlugOn(c, x.From);
+                if (other < 0 || c.DefOf(other).ModStand || d.ModPart == ModPart.Plug && c.DefOf(other).ModStand)
                     continue;
-                ref var p = ref c.Routes[r.Parent];
-                (r.Source, r.SourcePort, r.Fed) = (p.Source, p.SourcePort, p.Fed && p.FirstCut > r.ParentNode);
+                for (var v = 0; v < c.WireCount; v++)
+                    if (v != w && c.Wires[v].To == other && c.Wires[v].ToPort == x.FromPort && c.Wires[v].From < c.PartCount && c.Wires[v].From != x.To)
+                    {
+                        (x.From, x.FromPort) = (c.Wires[v].From, c.Wires[v].FromPort);
+                        changed = true;
+                        break;
+                    }
             }
             if (!changed)
                 break;
         }
     }
 
-    /// <summary>The pipe that ends at the plate plug <paramref name="plug"/> is fitted to, at the plate's port named as the plug's port <paramref name="port"/>, or -1.</summary>
-    private static int PlatePipe(Construct c, int plug, byte port)
+    /// <summary>The plug fitted to plate <paramref name="plate"/> (linked at its Module socket), or -1.</summary>
+    public static int PlugOn(Construct c, int plate)
     {
-        if (ConstructRoutes.PortOf(c.DefOf(plug), RouteType.Pipe, port) is not { } np || PlateOf(c, plug) is var plate && plate < 0 || c.DefOf(plate).ModStand)
+        var d = c.DefOf(plate);
+        if (d.ModPart != ModPart.Socket || d.ModStand)
+            return -1;
+        for (var e = c.FirstLink(plate); e >= 0; e = c.NextLink(e))
+        {
+            ref var l = ref c.Links[e >> 1];
+            if (((e & 1) == 0 ? l.SA : l.SB) != d.ModSocket)
+                continue;
+            var other = c.OtherEnd(e);
+            if (c.DefOf(other).ModPart == ModPart.Plug)
+                return other;
+        }
+        return -1;
+    }
+
+    /// <summary>The link of type <paramref name="t"/> that ends at the plate plug <paramref name="plug"/> is fitted to, at the plate's port named as the plug's port <paramref name="port"/>, or -1.</summary>
+    private static int PlateLink(Construct c, RouteType t, int plug, byte port)
+    {
+        if (ConstructRoutes.PortOf(c.DefOf(plug), t, port) is not { } np || PlateOf(c, plug) is var plate && plate < 0 || c.DefOf(plate).ModStand)
             return -1;
         foreach (var pp in c.DefOf(plate).NamedPorts)
-            if (pp.Type == RouteType.Pipe && string.Equals(pp.Name, np.Name, StringComparison.OrdinalIgnoreCase))
+            if (pp.Type == t && string.Equals(pp.Name, np.Name, StringComparison.OrdinalIgnoreCase))
                 for (var j = 0; j < c.RouteCount; j++)
-                    if (c.Routes[j].Type == RouteType.Pipe && c.Routes[j].To == plate && c.Routes[j].ToPort == pp.Byte)
+                    if (c.Routes[j].Type == t && c.Routes[j].To == plate && c.Routes[j].ToPort == pp.Byte)
                         return j;
         return -1;
     }

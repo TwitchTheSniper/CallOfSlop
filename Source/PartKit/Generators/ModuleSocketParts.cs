@@ -35,7 +35,7 @@ public sealed class ModuleSocketParts : IPartGenerator
     /// <summary>
     /// The pipe couplings (module-sockets.md 2.5; the table's "couplings"): where each stands in the footprint's 0..1 square, the fluid, and
     /// the smallest area that has it. The plate takes a pipe in at its back; the plug's port of the same name gives it out of its top
-    /// (ModuleSockets.PassSource): the pass-through. Coolant is carried and does nothing yet.
+    /// (ModuleSockets.PassThrough): the pass-through. Coolant is carried and does nothing yet.
     /// </summary>
     private static readonly (string Name, string Fluid, double U, double V, int Area)[] Pipes =
         [("Fuel A", "fuel", 0.85, 0.15, 1), ("Fuel B", "fuel", 0.15, 0.85, 4), ("Coolant A", "coolant", 0.85, 0.5, 4), ("Coolant B", "coolant", 0.15, 0.5, 9)];
@@ -53,8 +53,19 @@ public sealed class ModuleSocketParts : IPartGenerator
                 : Kw(("name", c.Name), ("type", "pipe"), ("dir", dir), ("fluid", c.Fluid), ("at", at), ("face", face));
             list.Add(port);
         }
+        // Ammo and chutes (phase 3): after the pipes; each type counts its own port bytes, so the pipes' stay as they were.
+        foreach (var c in Others)
+        {
+            if (w * l < c.Area)
+                continue;
+            list.Add(Kw(("name", c.Name), ("type", c.Type), ("dir", dir), ("at", Py.L(Py.Round(-0.5 + c.U * w, 3), y, Py.Round(-0.5 + c.V * l, 3))), ("face", face)));
+        }
         return list;
     }
+
+    /// <summary>The ammo feed and the chutes (module-sockets.md 2.5): Ammo A at every size (a 1x1 turret module is fed too), Chute A from 2x2, Chute B at 3x3.</summary>
+    private static readonly (string Name, string Type, double U, double V, int Area)[] Others =
+        [("Ammo A", "feed", 0.5, 0.15, 1), ("Chute A", "chute", 0.5, 0.85, 4), ("Chute B", "chute", 0.85, 0.85, 9)];
 
     /// <summary>The back's sockets: Medium at each metre cell, Small on the 0.5 m grid inside each.</summary>
     private static void BackSockets(Part p, int w, int l, double y, string dir)

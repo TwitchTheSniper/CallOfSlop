@@ -68,6 +68,39 @@
       ],
       "face": "+y",
       "noEffect": true
+    },
+    {
+      "name": "Ammo A",
+      "type": "feed",
+      "dir": "out",
+      "at": [
+        1.0,
+        -0.4,
+        -0.05
+      ],
+      "face": "+y"
+    },
+    {
+      "name": "Chute A",
+      "type": "chute",
+      "dir": "out",
+      "at": [
+        1.0,
+        -0.4,
+        2.05
+      ],
+      "face": "+y"
+    },
+    {
+      "name": "Chute B",
+      "type": "chute",
+      "dir": "out",
+      "at": [
+        2.05,
+        -0.4,
+        2.05
+      ],
+      "face": "+y"
     }
   ],
   "boxes": [
