@@ -186,7 +186,7 @@ public sealed partial class Game
                 }
             }
         }
-        SandboxHeldLead = Vector3.Distance(pos, serverPos);
+        SandboxHeldLead = _simFree ? Vector3.Distance(pos, serverPos) : Vector3.Distance(pos + Vector3.Transform(gl, rot), serverPos + Vector3.Transform(gl, serverRot)); // (held: between the grab points, pc01)
         c.Pos = _simFt + Vector3.Transform(pos, _simFq); // (the drawn deck carries it)
         c.Rot = Quaternion.Normalize(_simFq * rot);
         _simDrawnPos = c.Pos;

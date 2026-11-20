@@ -251,7 +251,7 @@ public static partial class Program
             else
                 _wsSwingRest = lag;
             if (_wsSwingFrames++ % 6 == 0)
-                WsSay(FormattableString.Invariant($"swing: t {t:0.00} s, lag {lag:0.000} m, {deg:0.0} deg off the look, sim {g.SandboxHeldSimulated || g.SandboxJointSimulated}, seg {h.GrabSeg}, lead {g.SandboxHeldLead:0.000} m, turn off the view {drift:0.0} deg, spin {c.AngVel.Length() * 180f / MathF.PI:0} deg/s, eye off {Vector3.Distance(g.SandboxHeldEye, eye):0.000} (tick eye {Vector3.Distance(g.SandboxHeldEyeEarly, eye):0.000}) m, dist {_pgDist:0.0}, mass {c.Mass:0} kg"));
+                WsSay(FormattableString.Invariant($"swing: t {t:0.00} s, lag {lag:0.000} m, {deg:0.0} deg off the look, sim {g.SandboxHeldSimulated || g.SandboxJointSimulated}, seg {h.GrabSeg}, lead {g.SandboxHeldLead:0.000} m, turn off the view {drift:0.0} deg, spin {c.AngVel.Length() * 180f / MathF.PI:0} deg/s, eye off {Vector3.Distance(g.SandboxHeldEye, eye):0.000} (tick eye {Vector3.Distance(g.SandboxHeldEyeEarly, eye):0.000}) m, dist {_pgDist:0.0}, mass {c.Mass:0} kg, boost {(g.IsServer ? c.GrabBoost : h.GrabBoost):0.00}"));
         }
         if (t >= _wsSwingSecs + 1.5f)
         {
