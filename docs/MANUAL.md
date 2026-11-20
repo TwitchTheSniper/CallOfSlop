@@ -239,6 +239,7 @@ These are the defaults; everything except Esc and the mouse wheel can be rebound
 | Tab | Sandbox: the inventory (parts, blueprints, tools; Tab again or Esc closes it). Sandbox has no scoreboard |
 | Home | Sandbox: the command view, on a world in a star system: the system as a map, your ships and their orders (Home or Esc closes it; see Sandbox and constructs) |
 | V (creative Sandbox) | Noclip: fly through everything (W, A, S, D by the look, Jump up, Crouch down, Sprint for faster); V again drops you. Everywhere else V is Melee. Rebindable as Noclip |
+| Insert (creative Sandbox) | Spectate camera: the view leaves your body, which stays where it stands; fly it as noclip flies (the wheel sets the speed) within 48 m of your body. Insert again drops you back. Rebindable as Spectate camera |
 | Arrow keys | Sandbox: turn the ghost part (Left / Right, Up / Down tip it, Shift + Left / Right roll it; R resets it) |
 | Left Shift (with the linking tool) | Sandbox: free routing while held: a node goes on a device instead of ending the link there (rebindable as Free routing; it also sprints) |
 | Middle mouse or `` ` `` (hold) | Sandbox: the tool wheel (flick to a tool, let go to take it out; see Sandbox and constructs). `` ` `` is the key left of 1, for laptops |
