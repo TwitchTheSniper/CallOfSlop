@@ -2362,6 +2362,13 @@
     {"output": "Wall Bay", "materials": {"steel": 32, "concrete": 6}, "seconds": 6.8},
     {"output": "Wall Bay 1m", "materials": {"steel": 44, "concrete": 9}, "seconds": 8.6},
     {"output": "Wall Bay 1.5m", "materials": {"steel": 56, "concrete": 11}, "seconds": 10.4},
-    {"output": "Water Reclaimer Insert 1m", "materials": {"steel": 24, "concrete": 5}, "seconds": 5.6}
+    {"output": "Water Reclaimer Insert 1m", "materials": {"steel": 24, "concrete": 5}, "seconds": 5.6},
+    {"output": "Graphite Bulkhead Frame", "materials": {"steel": 120, "copper": 2}, "seconds": 30.0, "minTier": 2},
+    {"output": "Graphite Bulkhead Door", "materials": {"steel": 40}, "parts": {"Bearing": 3}, "seconds": 8.0, "minTier": 2},
+    {"output": "Ceramic Bulkhead Frame", "materials": {"steel": 110, "glass": 2, "copper": 2}, "seconds": 30.0, "minTier": 2},
+    {"output": "Ceramic Bulkhead Door Left", "materials": {"steel": 20}, "parts": {"Bearing": 2}, "seconds": 6.0, "minTier": 2},
+    {"output": "Ceramic Bulkhead Door Right", "materials": {"steel": 20}, "parts": {"Bearing": 2}, "seconds": 6.0, "minTier": 2},
+    {"output": "Armoured Bulkhead Frame", "materials": {"steel": 180, "rubber": 6, "copper": 2}, "seconds": 40.0, "minTier": 2},
+    {"output": "Armoured Bulkhead Door", "materials": {"steel": 55}, "parts": {"Bearing": 3}, "seconds": 10.0, "minTier": 2}
   ]
 }
