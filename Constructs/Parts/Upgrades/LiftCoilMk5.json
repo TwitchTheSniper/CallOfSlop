@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Lift Coil Mk 5",
-  "description": "A tool upgrade: the heaviest thing the physics gun takes, in kg; its pull rises with it (30 N a kg). F on it, lying loose, fits it to your tools.",
+  "description": "A tool upgrade: the physics gun's pull, 30 N a kg of it; in survival the gun lifts 3,000 kg at most whatever the level (heavier pieces are for arms and shells). F on it, lying loose, fits it to your tools.",
   "group": "Production",
   "section": "Tool upgrades",
   "role": "panel",

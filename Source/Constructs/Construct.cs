@@ -299,6 +299,8 @@ public sealed partial class Construct
     public Quaternion GrabRot = Quaternion.Identity;
     public float GrabAccel;
     public Vector3 GrabFrameVel, GrabFrameSpin; // held by a rider: their deck's motion, on top of which the piece is moved (ConstructGrab.Drive)
+    public float GrabBoost = 1f; // held: how much faster the beam moves it after a while carried in the air (ConstructGrab.FlightBoost; 1: none)
+    public bool GrabTouch; // held: a contact pushed on it this tick (the physics step sets it; the boost reads and clears it)
     public bool Asleep;
     public int SleepTicks;
     /// <summary>Server: far from every person (ConstructFar.cs): its physics steps once every this many ticks, by that many ticks' time (0 or 1: every tick).</summary>
