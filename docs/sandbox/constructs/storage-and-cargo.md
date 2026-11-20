@@ -361,9 +361,12 @@ into the castings' top pockets, Karl: "a box where they grab the container as a 
   `hatch.1` (-x), `clamp.0`..`clamp.3` on the foot castings' end faces), `Standard Container Nm Hatch` (an event door: one leaf the
   whole long side, hinged on its top edge, swinging 90 degrees out to an awning so it never rises above the roof; one each side),
   `Container Corner Clamp` (an event door: a jaw on each foot casting that flips down 180 degrees over the top casting of the
-  container under it) and `Container Cradle NxN` (a flat Module Stand on each slot: a module set on it is stored, nothing couples).
+  container under it; only its hinge block is solid, so an open clamp on a container on the ground lifts nothing) and
+  `Container Cradle NxN` (a flat Module Stand on each slot: a module set on it is stored, nothing couples). A stand's room is
+  normally twice its width tall; a cradle's file gives `"moduleSocket": {"stand": true, "above": N + 0.15}` so the room stops
+  under the container's roof and a hand or a Module Fitter can set a module on it.
   Nothing stands above the roof (the lifting eyes are sunk), so containers stack.
-- **Gallery drafts.** `tools/preview/anim/container-Nm.json` with `container-Nm-loaded.blueprint.json` (stock modules on the
+- **Gallery drafts.** `tools/preview/anim/container-Nm.json` with `blueprints/container-Nm-loaded.json` (stock modules on the
   cradles), and `container-2m-stacked.json`: two clamped together.
 - **Not built yet:** the spreader itself (the Dray's Lifter Cab still takes its own container by the roof); contents not drawn while the hatch is shut (planned: the hatches' door state sets a flag the renderer reads, and
   parts on a shut container's cradles are skipped); racks and locks on ships; crane and shell handling; NPC unloading.

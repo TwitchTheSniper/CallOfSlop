@@ -12,7 +12,8 @@
   "moduleSocket": {
     "w": 3,
     "l": 3,
-    "stand": true
+    "stand": true,
+    "above": 3.15
   },
   "mass": 405.0,
   "health": 1740,
