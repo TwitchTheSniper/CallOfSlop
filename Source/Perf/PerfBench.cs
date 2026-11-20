@@ -28,9 +28,36 @@ public static class PerfBench
     /// <summary>A spot is being measured (<see cref="Perf.EndFrame"/> calls <see cref="Sample"/>).</summary>
     public static bool Recording;
 
-    private static float[]? _frame, _areas;
+    /// <summary>The spot's buffers are full: later frames are timed but not kept.</summary>
+    public static bool Full { get; private set; }
+
+    // ---- The last spot's frames, as kept (read after End, until the next Begin: the F9 recording's report) ----------
+
+    /// <summary>Frames the last spot kept.</summary>
+    public static int Kept => _n;
+
+    public static float FrameAt(int i) => _frame![i];
+
+    public static float AreaAt(int i, int area) => _areas![i * Perf.Count + area];
+
+    /// <summary>Server ticks run in frame <paramref name="i"/>, and the longest of them (ms).</summary>
+    public static int TicksAt(int i) => _tickN![i];
+
+    public static float TickWorstAt(int i) => _tickW![i];
+
+    /// <summary>Seconds from the spot's first kept frame to the start of frame <paramref name="i"/>.</summary>
+    public static double SecondsAt(int i)
+    {
+        double ms = 0;
+        for (var k = 0; k < i && k < _n; k++)
+            ms += _frame![k];
+        return ms / 1000;
+    }
+
+    private static float[]? _frame, _areas, _tickW;
     private static int[]? _draws, _tris, _inst, _alloc, _allocAll;
-    private static int _n, _gcFrames, _ticks;
+    private static byte[]? _tickN;
+    private static int _n, _gcFrames, _ticks, _cap = MaxFrames;
     private static float _tickWorst;
     private static double _tickSum;
     private static int _gc0, _gc1, _gc2;
@@ -101,17 +128,28 @@ public static class PerfBench
         return (s, string.Join(", ", who.Select(kv => $"{kv.Value} {kv.Key}")));
     }
 
-    /// <summary>Starts measuring a spot: turns the profiler on (and the GPU timer with it) and forgets the last spot's frames.</summary>
-    public static void Begin(string label)
+    /// <summary>
+    /// Starts measuring a spot: turns the profiler on (and the GPU timer with it) and forgets the last spot's frames.
+    /// <paramref name="maxFrames"/>: most frames kept (the F9 window's recording keeps more than a benchmark spot; the
+    /// buffers grow to it once and are kept).
+    /// </summary>
+    public static void Begin(string label, int maxFrames = MaxFrames)
     {
-        _frame ??= new float[MaxFrames];
-        _areas ??= new float[MaxFrames * Perf.Count];
-        _draws ??= new int[MaxFrames];
-        _tris ??= new int[MaxFrames];
-        _inst ??= new int[MaxFrames];
-        _alloc ??= new int[MaxFrames];
-        _allocAll ??= new int[MaxFrames];
+        _cap = Math.Max(1, maxFrames);
+        if (_frame == null || _frame.Length < _cap)
+        {
+            _frame = new float[_cap];
+            _areas = new float[_cap * Perf.Count];
+            _tickW = new float[_cap];
+            _tickN = new byte[_cap];
+            _draws = new int[_cap];
+            _tris = new int[_cap];
+            _inst = new int[_cap];
+            _alloc = new int[_cap];
+            _allocAll = new int[_cap];
+        }
         _label = label;
+        Full = false;
         _n = _gcFrames = _ticks = 0;
         _tickWorst = 0;
         _tickSum = 0;
@@ -152,8 +190,13 @@ public static class PerfBench
             _skip--;
             return;
         }
-        if (_n >= MaxFrames || !Perf.On)
+        if (!Perf.On)
             return;
+        if (_n >= _cap)
+        {
+            Full = true; // (timed, not kept: the F9 recording stops itself on this)
+            return;
+        }
         var i = _n++;
         _frame![i] = Perf.FrameMs(0);
         var b = i * Perf.Count;
@@ -167,6 +210,8 @@ public static class PerfBench
         if (PerfCounters.GcAt(0) != 0)
             _gcFrames++;
         var t = Perf.Ticks(0);
+        _tickN![i] = (byte)Math.Min(t, 255);
+        _tickW![i] = t > 0 ? Perf.TickWorstMs(0) : 0;
         _ticks += t;
         if (t > 0)
         {
