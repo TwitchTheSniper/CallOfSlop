@@ -136,7 +136,7 @@ FINE = noise(0.5, 12, 2, 9)  # the grain under your feet, on every world
 
 WORLDS = [
     {
-        "name": "Redrock", "order": 1, "radius": 4000, "strength": 9,
+        "name": "Redrock", "order": 1, "radius": 4000, "strength": 9, "grow": 1,  # (the Dev system's test world keeps its size)
         "ore": {"iron vein": 2, "sand bed": 2, "gold vein": 0.5, "helium pocket": 0.5},
         "description": "Redrock, a 4 km red desert in the home system (Systems/Dev.json): stepped mesas in the north, the Gash (a canyon 5 km long) across the middle and a dune sea in the south. A Ministry mining concession, and a practice landing before the first jump.",
         "surface": {"grass": "#b5653a", "dirt": "#9c4f2e", "rock": "#7a3b26", "sand": "#d9a066", "dirtSlope": 20, "rockSlope": 32, "sandBelow": -30},
@@ -165,7 +165,7 @@ WORLDS = [
         "name": "Cinder", "order": 2, "radius": 5000, "strength": 12,
         "ore": {"copper vein": 2, "gold vein": 1.5, "stone seam": 1.5, "helium pocket": 0, "sand bed": 0.5},
         "limit": (60, "the ash flats swallow anything heavier"),
-        "description": "Cinder, a 5 km scorched rock close to the white star Frostreach (Systems/Frostreach.json), one face always to its sun: black basalt, craters, lava plains in the low ground and long fissures. The Call Centre works from the Call Floor, a flat-bottomed crater on the twilight line.",
+        "description": "Cinder, a 20 km scorched rock close to the white star Frostreach (Systems/Frostreach.json), one face always to its sun: black basalt, craters, lava plains in the low ground and long fissures. The Call Centre works from the Call Floor, a flat-bottomed crater on the twilight line.",
         "surface": {"grass": "#3b3331", "dirt": "#4d3a33", "rock": "#221d1d", "sand": "#a3472a", "dirtSlope": 22, "rockSlope": 34, "sandBelow": -28},
         "skybox": {"preset": "dusk", "zenith": "#1a0d10", "horizon": "#6e2a1c", "ground": "#1c1414", "stars": 1.4,
                    "sun": {"color": "#ff8a5a", "intensity": 1.1, "size": 5, "glow": 0.9}, "clouds": False,
@@ -203,7 +203,7 @@ WORLDS = [
     {
         "name": "Glacier", "order": 3, "radius": 8000, "strength": 14,
         "ore": {"helium pocket": 2.5, "copper vein": 1.5, "sand bed": 0, "iron vein": 0.7},
-        "description": "Glacier, the 8 km ice world of Frostreach (Systems/Frostreach.json): snowfields, pressure ridges of blue ice, two black nunataks and the Rent, a crevasse 9 km long. The IT Department keeps its Server Farm here, for the cooling.",
+        "description": "Glacier, the 32 km ice world of Frostreach (Systems/Frostreach.json): snowfields, pressure ridges of blue ice, two black nunataks and the Rent, a crevasse 36 km long. The IT Department keeps its Server Farm here, for the cooling.",
         "surface": {"grass": "#e4ecf3", "dirt": "#c4d6e6", "rock": "#5a86ad", "sand": "#a6c5de", "dirtSlope": 18, "rockSlope": 30, "sandBelow": -18,
                     # (made ground is dark cinder with snow blown over it, not the blue of the ice: the colony's bench)
                     "stone": "#3d3f44", "dusting": 0.8,
@@ -238,7 +238,7 @@ WORLDS = [
     {
         "name": "Caledon", "order": 4, "radius": 6000, "strength": 11,
         "ore": {"stone seam": 2, "iron vein": 1.5, "sand bed": 0.5},
-        "description": "Caledon, the 6 km highland world of Frostreach (Systems/Frostreach.json): steep bens with snow on their tops, long glens between them, heather on the slopes and bog in the low ground. Clan MacSlop's Glen runs through its middle.",
+        "description": "Caledon, the 24 km highland world of Frostreach (Systems/Frostreach.json): steep bens with snow on their tops, long glens between them, heather on the slopes and bog in the low ground. Clan MacSlop's Glen runs through its middle.",
         "surface": {"grass": "#56733f", "dirt": "#75597a", "rock": "#5d5f66", "sand": "#4a4a33", "snow": "#e8eef0", "dirtSlope": 17, "rockSlope": 36, "sandBelow": -70, "snowAbove": 520},
         "skybox": {"preset": "overcast", "zenith": "#7d8a96", "horizon": "#b9c2c8", "ground": "#5b6a55",
                    "sun": {"color": "#fff4dc", "intensity": 0.85}, "clouds": {"coverage": 0.72, "density": 0.6, "altitude": 1600, "speed": 14},
@@ -268,10 +268,10 @@ WORLDS = [
         "sites": [("home", 30, 150, 160, -100, 220), ("data", 60, 152, 70, 640, 140)],
     },
     {
-        "name": "Mille", "order": 5, "radius": 3000, "strength": 8,
+        "name": "Mille", "order": 5, "radius": 3000, "strength": 8, "grow": 4 / 3,  # (4 km: a hollow world's most)
         "ore": {"levite seam": 3, "gold vein": 2, "sand bed": 1.5, "iron vein": 0.5},
         "limit": (40, "the crust is thin over the cavity"),
-        "description": "Mille, the 3 km hollow world of Frostreach (Systems/Frostreach.json): a golden crust stepped in layers all the way round, 220 m thick, over a cavity that glows like an oven. Its terrace stands empty for now: no faction lives here yet. The crust is thinnest under the Proving Bowl: dig there to get in.",
+        "description": "Mille, the 4 km hollow world of Frostreach (Systems/Frostreach.json): a golden crust stepped in layers all the way round, 250 m thick, over a cavity that glows like an oven. Its terrace stands empty for now: no faction lives here yet. The crust is thinnest under the Proving Bowl: dig there to get in.",
         "surface": {"grass": "#c99a4e", "dirt": "#a8733a", "rock": "#7d4f28", "sand": "#e8cf8f", "dirtSlope": 16, "rockSlope": 30, "sandBelow": -22},
         "skybox": {"preset": "dusk", "zenith": "#5e6f9a", "horizon": "#f0c48a", "ground": "#8a6a3c",
                    "sun": {"color": "#ffd9a0", "intensity": 1.0, "size": 1.8, "glow": 0.5}, "haze": {"color": "#e8b878", "strength": 0.6}},
@@ -291,7 +291,7 @@ WORLDS = [
         "name": "Slopolis", "order": 6, "radius": 3500, "strength": 10,
         # No ore: a free port's stock comes in by ship (and a deposit's rocks would stand in the streets).
         "ore": {"iron vein": 0, "stone seam": 0, "sand bed": 0, "copper vein": 0, "gold vein": 0, "helium pocket": 0, "levite seam": 0},
-        "description": "Slopolis, the free port: a 3.5 km world whose north is one city, built by everybody and owned by nobody. Towers in the middle, old brick blocks at the edge, a square at the pole with a column in it, and lamps coming on at the blue hour. Hills and old quarries beyond the last street (docs/planets/CITY.md).",
+        "description": "Slopolis, the free port: a 14 km world whose north is one city, built by everybody and owned by nobody. Towers in the middle, old brick blocks at the edge, a square at the pole with a column in it, and lamps coming on at the blue hour. Hills and old quarries beyond the last street (docs/planets/CITY.md).",
         "surface": {"grass": "#5d6b4a", "dirt": "#6b5d4c", "rock": "#5a5752", "sand": "#8c7f68", "dirtSlope": 16, "rockSlope": 30, "sandBelow": -30},
         "skybox": {"preset": "dusk", "zenith": "#16224a", "horizon": "#d98a64", "ground": "#1a1a20", "stars": 0.5, "ambient": 0.8,
                    "sun": {"elevation": 4, "azimuth": 250, "color": "#ff9a62", "intensity": 0.55, "size": 2.4, "glow": 0.9},
@@ -315,7 +315,7 @@ WORLDS = [
         "name": "Crumb", "order": 7, "radius": 600, "strength": 1.5,
         "ore": {"iron vein": 3, "stone seam": 2, "sand bed": 1.5, "copper vein": 0, "gold vein": 0, "helium pocket": 0, "levite seam": 0},
         "sky": 1400,  # (the sky's edge 1.4 km up, not 2.6: a small rock's sky is short, so a ship start waits close over it)
-        "description": "Crumb, Mille's moonlet in Frostreach (Systems/Frostreach.json): a 600 m lump of rubble with a sixth of a world's pull, pocked with craters and streaked with iron, stone and sand. Close to home and easy to lift off from: where a new mining crew starts.",
+        "description": "Crumb, Mille's moonlet in Frostreach (Systems/Frostreach.json): a 2.4 km lump of rubble with a sixth of a world's pull, pocked with craters and streaked with iron, stone and sand. Close to home and easy to lift off from: where a new mining crew starts.",
         "surface": {"grass": "#6e6559", "dirt": "#5c5348", "rock": "#433d36", "sand": "#8a7c66", "dirtSlope": 14, "rockSlope": 28, "sandBelow": -18},
         "skybox": {"preset": "dusk", "zenith": "#05060c", "horizon": "#2a2622", "ground": "#1a1714", "stars": 1.6, "clouds": False,
                    "sun": {"color": "#fff1dc", "intensity": 1.15, "size": 1.4, "glow": 0.4}, "haze": {"color": "#3a332c", "strength": 0.2}, "ambient": 0.7},
@@ -343,7 +343,63 @@ def lat_of(radius, metres):
     return round(90 - math.degrees(metres / radius), 5)
 
 
+# Karl (2026-11-19): every world four times its radius. The worlds above are written at their old size and grown here, so
+# each is the same planet magnified: the big shapes (mountains, craters, rifts, ridges, broad noise, terraces' regions and
+# the regions of crevasse and drift fields) get GROW times wider and sqrt(GROW) times taller (slopes half as steep, still
+# walkable), while what is under your feet (fine noise, crevasses, drifts, caves) and the sites' own flat ground keep
+# their metres. A world may say its own "grow" (Mille: a hollow world is at most 4 km, PLANETS.md "Hollow planetoids").
+GROW = 4
+BROAD = 500  # (a noise this many metres across or more is a big shape; finer noise is ground texture and keeps its size)
+
+
+def tidy(x):
+    """x to 2 places, a whole number written as one (so a world that keeps its size writes the same file)."""
+    x = round(x, 2)
+    return int(x) if x == int(x) else x
+
+
+def grown(f, wide, tall):
+    """A feature grown wide times along the ground and tall times in height (its centre keeps its latitude and longitude)."""
+    f = dict(f)
+    t = f["type"]
+
+    def mul(keys, k):
+        for key in keys:
+            if key in f:
+                f[key] = tidy(f[key] * k)
+    if t == "mountain":
+        mul(["radius"], wide); mul(["height"], tall)
+    elif t == "crater":
+        mul(["radius"], wide); mul(["depth", "rim"], tall)
+    elif t in ("rift", "ridge"):
+        mul(["length", "width", "wander"], wide); mul(["depth", "height"], tall)
+    elif t == "terrace":
+        mul(["radius", "edge"], wide); mul(["step"], tall)
+    elif t == "noise":
+        mul(["radius", "edge"], wide)
+        if f["scale"] >= BROAD:
+            mul(["scale"], wide); mul(["amplitude"], tall)
+    elif t in ("crevasses", "drifts"):
+        mul(["radius", "edge"], wide)
+    elif t == "flatten":
+        mul(["height"], tall)
+    return f
+
+
 def build(w):
+    wide = w.get("grow", GROW)
+    tall = round(math.sqrt(wide), 4)
+    w = dict(w)
+    w["radius"] = round(w["radius"] * wide)
+    w["landing"] = tidy(w["landing"] * tall)
+    w["features"] = [grown(f, wide, tall) for f in w["features"]]
+    w["sites"] = [(kind, lat, lon, rad, tidy(height * tall), edge) for kind, lat, lon, rad, height, edge in w["sites"]]
+    if "cavity" in w:
+        w["cavity"] = {**w["cavity"], "crust": round(w["cavity"]["crust"] * tall)}
+    # (heights the ground's colours and the clouds go by follow the ground: the snow line, the sand in the low ground)
+    w["surface"] = {k: tidy(v * tall) if k in ("snowAbove", "sandBelow") else v for k, v in w["surface"].items()}
+    if isinstance(w["skybox"].get("clouds"), dict) and "altitude" in w["skybox"]["clouds"]:
+        w["skybox"] = {**w["skybox"], "clouds": {**w["skybox"]["clouds"], "altitude": tidy(w["skybox"]["clouds"]["altitude"] * tall)}}
     r, h = w["radius"], w["landing"]
     top = r + h
     features = list(w["features"]) + [FINE]
@@ -363,7 +419,7 @@ def build(w):
     def y(x, z, lift=0.0):
         return round(math.sqrt(top * top - x * x - z * z) + lift, 3)
 
-    half = min(r + w.get("sky", 2600), 12600)
+    half = min(r + round(w.get("sky", 2600) * tall), 40000)  # (the sky grows as tall as the ground: peaks stay as far under its edge)
     ops = [{"op": "SurfaceSpawn", "lat": lat_of(top, 14), "lon": 22.5 + 45 * k} for k in range(8)]
     if w.get("pole", True):
         ops.append({"op": "SurfaceBlock", "lat": 90, "lon": 0, "w": 1.2, "h": 6, "d": 1.2, "color": "#8a8f99", "material": "Concrete"})  # the pole's post

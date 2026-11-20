@@ -173,6 +173,8 @@ public static partial class SelfTest
             var hands4 = new ConstructEdits { InfiniteParts = creative };
             hands4.Hand(0).Tool = ConstructTool.PhysicsGun;
             var c4 = creative ? pair4.Car : pair4.Trailer; // (the buggy is over survival's 500 kg)
+            if (!creative && c4.Mass > ConstructGrab.SurvivalLiftCap)
+                Fail($"physics gun feel: the survival drag's trailer weighs {c4.Mass:0} kg, over survival's {ConstructGrab.SurvivalLiftCap:0} kg lift");
             var (dg, dtn, dm) = FeelSweep(w4, hands4, c4, new Vector3(c4.LocalMax.X * 0.9f, c4.LocalMin.Y + 0.1f, c4.LocalMax.Z * 0.9f), 0f);
             var w5 = new ConstructWorld();
             var s5 = OpenSpot(w5)!.Value;
@@ -183,7 +185,7 @@ public static partial class SelfTest
             var hands5 = new ConstructEdits { InfiniteParts = creative };
             hands5.Hand(0).Tool = ConstructTool.PhysicsGun;
             var (sg, stn, sm) = FeelSweep(w5, hands5, sunk, new Vector3(sunk.LocalMax.X * 0.9f, sunk.LocalMin.Y + 0.05f, sunk.LocalMax.Z * 0.9f), 0f);
-            dragLine += $"{(creative ? "creative: buggy with trailer" : "; survival: trailer on the buggy")} moved {dm:0.00} m, {dg * 100:0.0} cm, {dtn:0.0} deg; part sunk 4 cm {sm:0.00} m, {sg * 100:0.0} cm, {stn:0.0} deg";
+            dragLine += $"{(creative ? "creative: buggy with trailer" : $"; survival: trailer on the buggy ({c4.Mass:0} kg)")} moved {dm:0.00} m, {dg * 100:0.0} cm, {dtn:0.0} deg; part sunk 4 cm {sm:0.00} m, {sg * 100:0.0} cm, {stn:0.0} deg";
             // (survival follows at a share of the gap: the bound on the grab point is looser there, the turn's is the same)
             var gapCap = creative ? 0.75f : 0.9f;
             if (dm < 0.5f || dg > gapCap || dtn > 10f || sm < 0.5f || sg > gapCap || stn > 10f)

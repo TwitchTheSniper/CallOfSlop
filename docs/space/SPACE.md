@@ -194,7 +194,7 @@ Not in phase 3 yet:
 - **Moving the origin (floating origin): not done, by choice** (Karl, 2026-11-04). Shifting the World would move every
   player, construct, projectile, ragdoll, effect and cached tile on one tick on every peer, and with friends spread
   over a planetoid one origin can't suit everyone. Instead the origin is the planetoid's centre (PLANETS.md "Origin"),
-  so the whole ground is about a radius out; a planetoid much past 16 km radius would need double precision positions.
+  so the whole ground is about a radius out; past 16 km radius (the 4x worlds, 2026-11-19) the physics keeps what floats can't hold of a body's place (PLANETS.md "Origin").
 - **Leaving a bubble**: done since, below ("Leaving the bubble").
 
 ## Leaving the bubble: `Game/GameSpaceLaunch.cs`

@@ -1,11 +1,11 @@
 {
   "format": "call-of-slop-map/1",
   "name": "Glacier",
-  "description": "Glacier, the 8 km ice world of Frostreach (Systems/Frostreach.json): snowfields, pressure ridges of blue ice, two black nunataks and the Rent, a crevasse 9 km long. The IT Department keeps its Server Farm here, for the cooling.",
+  "description": "Glacier, the 32 km ice world of Frostreach (Systems/Frostreach.json): snowfields, pressure ridges of blue ice, two black nunataks and the Rent, a crevasse 36 km long. The IT Department keeps its Server Farm here, for the cooling.",
   "author": "Call of Slop",
   "order": 3,
-  "halfX": 10600,
-  "halfZ": 10600,
+  "halfX": 37200,
+  "halfZ": 37200,
   "maxPlayers": 8,
   "skybox": {
     "preset": "alpine",
@@ -27,7 +27,7 @@
     "dusk": 0.85
   },
   "planetoid": {
-    "radius": 8000,
+    "radius": 32000,
     "cell": 2,
     "strength": 14,
     "surface": {
@@ -37,7 +37,7 @@
       "sand": "#a6c5de",
       "dirtSlope": 18,
       "rockSlope": 30,
-      "sandBelow": -18,
+      "sandBelow": -36,
       "stone": "#3d3f44",
       "dusting": 0.8,
       "ice": "#9ec3df",
@@ -47,15 +47,15 @@
     "features": [
       {
         "type": "noise",
-        "amplitude": 80,
-        "scale": 4200,
+        "amplitude": 160,
+        "scale": 16800,
         "octaves": 5,
         "seed": 71
       },
       {
         "type": "noise",
-        "amplitude": 28,
-        "scale": 650,
+        "amplitude": 56,
+        "scale": 2600,
         "octaves": 4,
         "seed": 19,
         "ridged": true
@@ -64,8 +64,8 @@
         "type": "mountain",
         "lat": 35,
         "lon": 80,
-        "radius": 2000,
-        "height": 950,
+        "radius": 8000,
+        "height": 1900,
         "seed": 31,
         "ridges": 0.8,
         "erosion": 0.5,
@@ -75,8 +75,8 @@
         "type": "mountain",
         "lat": -50,
         "lon": 230,
-        "radius": 1600,
-        "height": 760,
+        "radius": 6400,
+        "height": 1520,
         "seed": 37,
         "ridges": 0.8,
         "erosion": 0.5,
@@ -86,8 +86,8 @@
         "type": "mountain",
         "lat": 55,
         "lon": 250,
-        "radius": 1200,
-        "height": 520,
+        "radius": 4800,
+        "height": 1040,
         "seed": 38,
         "ridges": 0.8,
         "erosion": 0.5,
@@ -97,8 +97,8 @@
         "type": "mountain",
         "lat": -25,
         "lon": 40,
-        "radius": 1400,
-        "height": 600,
+        "radius": 5600,
+        "height": 1200,
         "seed": 39,
         "ridges": 0.8,
         "erosion": 0.5,
@@ -113,36 +113,36 @@
         "ridged": true,
         "lat": 0,
         "lon": 100,
-        "radius": 3500,
-        "edge": 2500
+        "radius": 14000,
+        "edge": 10000
       },
       {
         "type": "terrace",
-        "step": 14,
+        "step": 28,
         "sharp": 0.9,
         "lat": -45,
         "lon": 320,
-        "radius": 2600,
-        "edge": 1500
+        "radius": 10400,
+        "edge": 6000
       },
       {
         "type": "crater",
         "lat": -10,
         "lon": 320,
-        "radius": 1100,
-        "depth": 60,
-        "rim": 20
+        "radius": 4400,
+        "depth": 120,
+        "rim": 40
       },
       {
         "type": "rift",
         "lat": 15,
         "lon": 170,
         "bearing": 60,
-        "length": 9000,
-        "width": 320,
-        "depth": 330,
+        "length": 36000,
+        "width": 1280,
+        "depth": 660,
         "floor": 0.25,
-        "wander": 520,
+        "wander": 2080,
         "seed": 13
       },
       {
@@ -150,11 +150,11 @@
         "lat": 40,
         "lon": 200,
         "bearing": 150,
-        "length": 2400,
-        "width": 70,
-        "depth": 85,
+        "length": 9600,
+        "width": 280,
+        "depth": 170,
         "floor": 0.15,
-        "wander": 120,
+        "wander": 480,
         "seed": 2
       },
       {
@@ -162,11 +162,11 @@
         "lat": -20,
         "lon": 140,
         "bearing": 20,
-        "length": 2000,
-        "width": 60,
-        "depth": 75,
+        "length": 8000,
+        "width": 240,
+        "depth": 150,
         "floor": 0.15,
-        "wander": 110,
+        "wander": 440,
         "seed": 4
       },
       {
@@ -174,11 +174,11 @@
         "lat": 60,
         "lon": 300,
         "bearing": 100,
-        "length": 2600,
-        "width": 80,
-        "depth": 90,
+        "length": 10400,
+        "width": 320,
+        "depth": 180,
         "floor": 0.15,
-        "wander": 140,
+        "wander": 560,
         "seed": 6
       },
       {
@@ -186,11 +186,11 @@
         "lat": -60,
         "lon": 60,
         "bearing": 40,
-        "length": 2200,
-        "width": 66,
-        "depth": 80,
+        "length": 8800,
+        "width": 264,
+        "depth": 160,
         "floor": 0.15,
-        "wander": 120,
+        "wander": 480,
         "seed": 8
       },
       {
@@ -198,11 +198,11 @@
         "lat": 5,
         "lon": 20,
         "bearing": 130,
-        "length": 1800,
-        "width": 56,
-        "depth": 70,
+        "length": 7200,
+        "width": 224,
+        "depth": 140,
         "floor": 0.15,
-        "wander": 100,
+        "wander": 400,
         "seed": 10
       },
       {
@@ -210,11 +210,11 @@
         "lat": 75,
         "lon": 120,
         "bearing": 10,
-        "length": 1600,
-        "width": 60,
-        "depth": 70,
+        "length": 6400,
+        "width": 240,
+        "depth": 140,
         "floor": 0.15,
-        "wander": 90,
+        "wander": 360,
         "seed": 12
       },
       {
@@ -222,32 +222,32 @@
         "lat": 81.5,
         "lon": 285,
         "bearing": 95,
-        "length": 2600,
-        "width": 340,
-        "height": 110,
+        "length": 10400,
+        "width": 1360,
+        "height": 220,
         "peaks": 0.65,
         "rough": 0.2,
-        "wander": 120,
+        "wander": 480,
         "seed": 61
       },
       {
         "type": "drifts",
         "lat": 79.5,
         "lon": 210,
-        "radius": 500,
+        "radius": 2000,
         "bearing": 30,
         "amplitude": 9,
         "scale": 45,
         "stretch": 7,
         "octaves": 2,
         "seed": 62,
-        "edge": 250
+        "edge": 1000
       },
       {
         "type": "crevasses",
         "lat": 80,
         "lon": 150,
-        "radius": 450,
+        "radius": 1800,
         "bearing": 60,
         "spacing": 55,
         "length": 100,
@@ -256,7 +256,7 @@
         "share": 0.5,
         "spread": 18,
         "seed": 63,
-        "edge": 150
+        "edge": 600
       },
       {
         "type": "cave",
@@ -274,12 +274,12 @@
         "lat": 9.34,
         "lon": 70.11,
         "bearing": 174,
-        "length": 4418,
-        "width": 313,
-        "height": 116,
+        "length": 17672,
+        "width": 1252,
+        "height": 232,
         "peaks": 0.56,
         "rough": 0.2,
-        "wander": 120,
+        "wander": 480,
         "seed": 200
       },
       {
@@ -287,12 +287,12 @@
         "lat": -25.02,
         "lon": 249.27,
         "bearing": 38,
-        "length": 4531,
-        "width": 234,
-        "height": 69,
+        "length": 18124,
+        "width": 936,
+        "height": 138,
         "peaks": 0.53,
         "rough": 0.2,
-        "wander": 219,
+        "wander": 876,
         "seed": 201
       },
       {
@@ -300,12 +300,12 @@
         "lat": -15.48,
         "lon": 169.81,
         "bearing": 59,
-        "length": 3730,
-        "width": 301,
-        "height": 71,
+        "length": 14920,
+        "width": 1204,
+        "height": 142,
         "peaks": 0.63,
         "rough": 0.2,
-        "wander": 135,
+        "wander": 540,
         "seed": 202
       },
       {
@@ -313,12 +313,12 @@
         "lat": -51.11,
         "lon": 296.42,
         "bearing": 122,
-        "length": 3795,
-        "width": 396,
-        "height": 89,
+        "length": 15180,
+        "width": 1584,
+        "height": 178,
         "peaks": 0.61,
         "rough": 0.2,
-        "wander": 156,
+        "wander": 624,
         "seed": 203
       },
       {
@@ -326,12 +326,12 @@
         "lat": -11.0,
         "lon": 240.82,
         "bearing": 1,
-        "length": 3314,
-        "width": 327,
-        "height": 85,
+        "length": 13256,
+        "width": 1308,
+        "height": 170,
         "peaks": 0.51,
         "rough": 0.2,
-        "wander": 207,
+        "wander": 828,
         "seed": 204
       },
       {
@@ -339,12 +339,12 @@
         "lat": -78.85,
         "lon": 203.19,
         "bearing": 28,
-        "length": 2283,
-        "width": 256,
-        "height": 57,
+        "length": 9132,
+        "width": 1024,
+        "height": 114,
         "peaks": 0.55,
         "rough": 0.2,
-        "wander": 203,
+        "wander": 812,
         "seed": 205
       },
       {
@@ -352,12 +352,12 @@
         "lat": 27.16,
         "lon": 130.6,
         "bearing": 117,
-        "length": 3340,
-        "width": 320,
-        "height": 138,
+        "length": 13360,
+        "width": 1280,
+        "height": 276,
         "peaks": 0.59,
         "rough": 0.2,
-        "wander": 237,
+        "wander": 948,
         "seed": 206
       },
       {
@@ -365,12 +365,12 @@
         "lat": 22.47,
         "lon": 246.04,
         "bearing": 1,
-        "length": 2402,
-        "width": 226,
-        "height": 85,
+        "length": 9608,
+        "width": 904,
+        "height": 170,
         "peaks": 0.78,
         "rough": 0.2,
-        "wander": 238,
+        "wander": 952,
         "seed": 207
       },
       {
@@ -378,12 +378,12 @@
         "lat": 42.62,
         "lon": 42.79,
         "bearing": 127,
-        "length": 4059,
-        "width": 382,
-        "height": 129,
+        "length": 16236,
+        "width": 1528,
+        "height": 258,
         "peaks": 0.54,
         "rough": 0.2,
-        "wander": 112,
+        "wander": 448,
         "seed": 208
       },
       {
@@ -467,7 +467,7 @@
         "type": "crevasses",
         "lat": -44.72,
         "lon": 221.75,
-        "radius": 485,
+        "radius": 1940,
         "bearing": 128,
         "spacing": 63,
         "length": 97,
@@ -481,7 +481,7 @@
         "type": "crevasses",
         "lat": 3.45,
         "lon": 223.08,
-        "radius": 660,
+        "radius": 2640,
         "bearing": 158,
         "spacing": 67,
         "length": 96,
@@ -495,7 +495,7 @@
         "type": "crevasses",
         "lat": 22.31,
         "lon": 219.35,
-        "radius": 621,
+        "radius": 2484,
         "bearing": 90,
         "spacing": 52,
         "length": 107,
@@ -509,7 +509,7 @@
         "type": "crevasses",
         "lat": 19.91,
         "lon": 88.72,
-        "radius": 446,
+        "radius": 1784,
         "bearing": 60,
         "spacing": 66,
         "length": 106,
@@ -523,7 +523,7 @@
         "type": "crevasses",
         "lat": 54.6,
         "lon": 60.12,
-        "radius": 504,
+        "radius": 2016,
         "bearing": 106,
         "spacing": 64,
         "length": 100,
@@ -537,7 +537,7 @@
         "type": "crevasses",
         "lat": 51.04,
         "lon": 297.02,
-        "radius": 720,
+        "radius": 2880,
         "bearing": 85,
         "spacing": 73,
         "length": 101,
@@ -551,7 +551,7 @@
         "type": "crevasses",
         "lat": -12.62,
         "lon": 267.49,
-        "radius": 700,
+        "radius": 2800,
         "bearing": 165,
         "spacing": 64,
         "length": 107,
@@ -565,7 +565,7 @@
         "type": "crevasses",
         "lat": 61.09,
         "lon": 339.87,
-        "radius": 486,
+        "radius": 1944,
         "bearing": 13,
         "spacing": 71,
         "length": 132,
@@ -579,7 +579,7 @@
         "type": "crevasses",
         "lat": 61.67,
         "lon": 76.71,
-        "radius": 624,
+        "radius": 2496,
         "bearing": 119,
         "spacing": 52,
         "length": 99,
@@ -593,7 +593,7 @@
         "type": "crevasses",
         "lat": -57.0,
         "lon": 140.1,
-        "radius": 475,
+        "radius": 1900,
         "bearing": 21,
         "spacing": 50,
         "length": 99,
@@ -607,7 +607,7 @@
         "type": "crevasses",
         "lat": -30.9,
         "lon": 67.69,
-        "radius": 549,
+        "radius": 2196,
         "bearing": 134,
         "spacing": 51,
         "length": 103,
@@ -621,7 +621,7 @@
         "type": "crevasses",
         "lat": 43.27,
         "lon": 231.25,
-        "radius": 513,
+        "radius": 2052,
         "bearing": 17,
         "spacing": 50,
         "length": 125,
@@ -635,7 +635,7 @@
         "type": "drifts",
         "lat": 11.86,
         "lon": 43.89,
-        "radius": 906,
+        "radius": 3624,
         "bearing": 160,
         "amplitude": 10.2,
         "scale": 38,
@@ -647,7 +647,7 @@
         "type": "drifts",
         "lat": -56.67,
         "lon": 80.09,
-        "radius": 1262,
+        "radius": 5048,
         "bearing": 4,
         "amplitude": 6.4,
         "scale": 38,
@@ -659,7 +659,7 @@
         "type": "drifts",
         "lat": -48.14,
         "lon": 188.43,
-        "radius": 747,
+        "radius": 2988,
         "bearing": 74,
         "amplitude": 9.4,
         "scale": 53,
@@ -671,7 +671,7 @@
         "type": "drifts",
         "lat": -9.78,
         "lon": 283.01,
-        "radius": 1058,
+        "radius": 4232,
         "bearing": 149,
         "amplitude": 6.5,
         "scale": 44,
@@ -683,7 +683,7 @@
         "type": "drifts",
         "lat": 9.25,
         "lon": 340.52,
-        "radius": 1095,
+        "radius": 4380,
         "bearing": 85,
         "amplitude": 6.5,
         "scale": 42,
@@ -695,7 +695,7 @@
         "type": "drifts",
         "lat": -34.64,
         "lon": 355.09,
-        "radius": 1309,
+        "radius": 5236,
         "bearing": 161,
         "amplitude": 8.2,
         "scale": 53,
@@ -707,7 +707,7 @@
         "type": "drifts",
         "lat": -24.02,
         "lon": 173.37,
-        "radius": 716,
+        "radius": 2864,
         "bearing": 76,
         "amplitude": 6.5,
         "scale": 37,
@@ -719,14 +719,14 @@
         "type": "drifts",
         "lat": -90,
         "lon": 0,
-        "radius": 23500,
+        "radius": 94000,
         "bearing": 60,
         "amplitude": 0.5,
         "scale": 6,
         "stretch": 6,
         "octaves": 1,
         "seed": 64,
-        "edge": 800
+        "edge": 3200
       },
       {
         "type": "noise",
@@ -747,7 +747,7 @@
         "lat": -10,
         "lon": 320,
         "radius": 700,
-        "height": -62,
+        "height": -124,
         "edge": 300
       },
       {
@@ -755,7 +755,7 @@
         "lat": 15,
         "lon": 170,
         "radius": 80,
-        "height": -318,
+        "height": -636,
         "edge": 70
       },
       {
@@ -763,7 +763,7 @@
         "lat": 90,
         "lon": 0,
         "radius": 70,
-        "height": 20,
+        "height": 40,
         "edge": 150
       }
     ]
@@ -782,44 +782,44 @@
     [
       [
         -6,
-        8020.138,
+        32040.214,
         -40
       ],
       [
         6,
-        8020.138,
+        32040.214,
         -40
       ],
       [
         -12,
-        8020.15,
+        32040.218,
         -36
       ],
       [
         12,
-        8020.15,
+        32040.218,
         -36
       ]
     ],
     [
       [
         -6,
-        8020.138,
+        32040.214,
         40
       ],
       [
         6,
-        8020.138,
+        32040.214,
         40
       ],
       [
         -12,
-        8020.15,
+        32040.218,
         36
       ],
       [
         12,
-        8020.15,
+        32040.218,
         36
       ]
     ]
@@ -827,13 +827,13 @@
   "hills": [
     {
       "x": 30,
-      "y": 8019.888,
+      "y": 32039.972,
       "z": 30,
       "radius": 6
     },
     {
       "x": -30,
-      "y": 8019.888,
+      "y": 32039.972,
       "z": -30,
       "radius": 6
     }
@@ -841,54 +841,54 @@
   "flags": [
     [
       0,
-      8020.374,
+      32040.468,
       -45
     ],
     [
       0,
-      8020.374,
+      32040.468,
       45
     ]
   ],
   "ops": [
     {
       "op": "SurfaceSpawn",
-      "lat": 89.89998,
+      "lat": 89.97496,
       "lon": 22.5
     },
     {
       "op": "SurfaceSpawn",
-      "lat": 89.89998,
+      "lat": 89.97496,
       "lon": 67.5
     },
     {
       "op": "SurfaceSpawn",
-      "lat": 89.89998,
+      "lat": 89.97496,
       "lon": 112.5
     },
     {
       "op": "SurfaceSpawn",
-      "lat": 89.89998,
+      "lat": 89.97496,
       "lon": 157.5
     },
     {
       "op": "SurfaceSpawn",
-      "lat": 89.89998,
+      "lat": 89.97496,
       "lon": 202.5
     },
     {
       "op": "SurfaceSpawn",
-      "lat": 89.89998,
+      "lat": 89.97496,
       "lon": 247.5
     },
     {
       "op": "SurfaceSpawn",
-      "lat": 89.89998,
+      "lat": 89.97496,
       "lon": 292.5
     },
     {
       "op": "SurfaceSpawn",
-      "lat": 89.89998,
+      "lat": 89.97496,
       "lon": 337.5
     },
     {

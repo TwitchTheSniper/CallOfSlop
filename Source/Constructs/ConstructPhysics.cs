@@ -87,6 +87,7 @@ public static partial class ConstructPhysics
     }
 
     private static readonly Contact[] _contacts = new Contact[MaxContacts];
+    private static bool _anyHeld; // this step: a body is held in a physics gun (HeldBoost runs)
     private static int _contactCount;
     // Per body this tick, by its index in the physics' list (the awake bodies and what they touch: board item cl01). The
     // arrays grow with the most bodies ever simulated at once (an allocation only when that grows), never per tick.
@@ -164,6 +165,7 @@ public static partial class ConstructPhysics
                 bodies[i].Rebuild(); // (before the joints are laid out: a rebuild can change them)
         LayOutJoints(bodies, n);
         _contactCount = 0;
+        _anyHeld = false;
         _chainCount = 0;
         _activeCount = 0;
         LastRays = 0;
@@ -217,6 +219,7 @@ public static partial class ConstructPhysics
                 }
                 if (c.GrabbedBy != 255)
                 {
+                    _anyHeld = true;
                     if (c.Driven)
                     {
                         // (the gun wins: a driver's keys do nothing while it is held, so the wheels and thrusters don't fight the beam)
@@ -290,6 +293,8 @@ public static partial class ConstructPhysics
         Lap(2, ref t0);
         Solve(dt);
         Lap(3, ref t0);
+        if (_anyHeld)
+            HeldBoost(bodies, n, dt); // (the physics gun's speed build-up in flight: ConstructGrab.FlightBoost)
         ConnectorLoads(world, dt);
         WarmStore();
         SleepTogether();
@@ -348,6 +353,33 @@ public static partial class ConstructPhysics
     /// cl01): the awake ones (free and moving, or with moving joints), the sleeping ones a joint motor may wake, the held
     /// and the changed ones, and everything those touch (the broadphase) or are coupled to, so a sleeping body costs nothing.
     /// </summary>
+    /// <summary>
+    /// After the solve, when a body is held: a contact that pushed on a held body (or nearly touches it) marks it touched,
+    /// then each held body's flight boost steps (<see cref="ConstructGrab.FlightBoost"/>). No allocation; one pass over this
+    /// tick's contacts.
+    /// </summary>
+    private static void HeldBoost(List<Construct> bodies, int n, float dt)
+    {
+        for (var k = 0; k < _contactCount; k++)
+        {
+            ref var ct = ref _contacts[k];
+            if (ct.Bilateral || ct.Soft || ct.Beam > 0 || ct.Jn <= 0 && ct.Gap > ConstructGrab.FlightTouchGap)
+                continue; // (a coupling, a spring or the beam's own row isn't the piece meeting something)
+            if (ct.A >= 0 && ct.A < n && bodies[ct.A].GrabbedBy != 255)
+                bodies[ct.A].GrabTouch = true;
+            if (ct.B >= 0 && ct.B < n && bodies[ct.B].GrabbedBy != 255)
+                bodies[ct.B].GrabTouch = true;
+        }
+        for (var i = 0; i < n; i++)
+        {
+            var c = bodies[i];
+            if (c.GrabbedBy == 255)
+                continue;
+            ConstructGrab.FlightBoost(c, dt);
+            c.GrabTouch = false;
+        }
+    }
+
     private static List<Construct> SimList(ConstructWorld world)
     {
         var bodies = world.Bodies;
@@ -518,6 +550,7 @@ public static partial class ConstructPhysics
         var move = (c.Vel - c.GrabFrameVel) * dt; // (in a rider's hands: its move in their deck's frame, which everything near it shares)
         if (!HeldOverlaps(c, self, n, move))
             return;
+        c.GrabTouch = true; // (the sweep stopped it short of another construct: a touch for the flight boost, which a contact a step later might never make)
         var kept = Vector3.Zero;
         var x = new Vector3(move.X, 0, 0);
         if (!HeldOverlaps(c, self, n, kept + x))
@@ -1808,6 +1841,24 @@ public static partial class ConstructPhysics
 
     // ---- Integration, joints, sleep -------------------------------------------------------------------------------
 
+    /// <summary>
+    /// Moves a body's origin by <paramref name="move"/> (a step's small numbers: its centre's travel and the turn's change of
+    /// arm), summed with what floats couldn't hold of its earlier steps (<see cref="Construct.PosRest"/>) in doubles. Far from the
+    /// World's origin a float steps by millimetres (2 mm past 16 km, 4 mm past 32 km), and rounding each tick's pose to that
+    /// grid kicked resting bodies awake and let slow ones creep or stall (Karl's 4x worlds, 2026-11-19); this keeps the truth.
+    /// </summary>
+    private static void Place(Construct c, Vector3 move)
+    {
+        double x = (double)c.Pos.X + c.PosRest.X + move.X, y = (double)c.Pos.Y + c.PosRest.Y + move.Y, z = (double)c.Pos.Z + c.PosRest.Z + move.Z;
+        c.Pos = new Vector3((float)x, (float)y, (float)z);
+        c.PosRest = new Vector3((float)(x - c.Pos.X), (float)(y - c.Pos.Y), (float)(z - c.Pos.Z));
+    }
+
+    /// <summary>A free body's speed limit for the air's share <paramref name="air"/> (<see cref="AirAt"/>): the server's step, and a joined holder's prediction of a held piece (GameSandboxPhysGunSim.cs).</summary>
+    public static float TopAt(float air, bool aeroFlying = false) =>
+        air >= 1 ? aeroFlying ? AirTable.Current.FlightTop : MaxSpeed : MathF.Min(MaxFlightSpeed, MaxSpeed / MathF.Max(air, 1e-3f));
+
+    /// <summary>The same at a world point (1: no planetoid's air there).</summary>
     private static void Integrate(Construct c, int index, float dt)
     {
         // Gentle damping (air, the axles' losses) keeps a still body from creeping.
@@ -1817,7 +1868,7 @@ public static partial class ConstructPhysics
         if (!c.AeroFlying)
             c.Vel *= air >= 1 ? 0.999f : 1 - 0.001f * air;
         c.AngVel *= 0.985f;
-        var top = air >= 1 ? c.AeroFlying ? AirTable.Current.FlightTop : MaxSpeed : MathF.Min(MaxFlightSpeed, MaxSpeed / MathF.Max(air, 1e-3f));
+        var top = TopAt(air, c.AeroFlying);
         var v2 = c.Vel.LengthSquared();
         if (c.SpeedKept > top)
         {
@@ -1833,16 +1884,17 @@ public static partial class ConstructPhysics
         var w2 = c.AngVel.LengthSquared();
         if (w2 > MaxSpin * MaxSpin)
             c.AngVel *= MaxSpin / MathF.Sqrt(w2);
-        var com = c.WorldCom + (c.Vel + _pushV[index]) * dt;
+        var arm = Vector3.Transform(c.Com, c.Rot);
         var w = c.AngVel + _pushW[index];
         var spin = new Quaternion(w.X, w.Y, w.Z, 0) * c.Rot;
         var rot = new Quaternion(c.Rot.X + 0.5f * dt * spin.X, c.Rot.Y + 0.5f * dt * spin.Y, c.Rot.Z + 0.5f * dt * spin.Z, c.Rot.W + 0.5f * dt * spin.W);
         c.Rot = Quaternion.Normalize(rot);
-        c.Pos = com - Vector3.Transform(c.Com, c.Rot);
+        Place(c, (c.Vel + _pushV[index]) * dt + arm - Vector3.Transform(c.Com, c.Rot));
         if (!float.IsFinite(c.Pos.X + c.Pos.Y + c.Pos.Z))
         {
             // Never let a bad step poison the world: put it back still.
             c.Pos = c.PrevPos;
+            c.PosRest = Vector3.Zero;
             c.Rot = c.PrevRot;
             c.Vel = c.AngVel = Vector3.Zero;
         }
@@ -1865,7 +1917,7 @@ public static partial class ConstructPhysics
         if (!c.AeroFlying)
             rel *= air >= 1 ? 0.999f : 1 - 0.001f * air;
         spinRel *= 0.985f;
-        var top = air >= 1 ? c.AeroFlying ? AirTable.Current.FlightTop : MaxSpeed : MathF.Min(MaxFlightSpeed, MaxSpeed / MathF.Max(air, 1e-3f));
+        var top = TopAt(air, c.AeroFlying);
         var v2 = rel.LengthSquared();
         if (v2 > top * top)
             rel *= top / MathF.Sqrt(v2);
@@ -1882,15 +1934,16 @@ public static partial class ConstructPhysics
         var frameStep = f.SpaceShip != 0 || f.SpaceAway != 0 ? solveV * dt
             : (uint)fi < (uint)_bodies.Count && ReferenceEquals(_bodies[fi], f) && _dyn[fi] ? (f.Vel + _pushV[fi]) * dt : Vector3.Zero;
         c.FrameMove += step - frameStep;
-        var com = c.WorldCom + step;
+        var arm = Vector3.Transform(c.Com, c.Rot);
         var w = c.AngVel + _pushW[index];
         var spin = new Quaternion(w.X, w.Y, w.Z, 0) * c.Rot;
         var rot = new Quaternion(c.Rot.X + 0.5f * dt * spin.X, c.Rot.Y + 0.5f * dt * spin.Y, c.Rot.Z + 0.5f * dt * spin.Z, c.Rot.W + 0.5f * dt * spin.W);
         c.Rot = Quaternion.Normalize(rot);
-        c.Pos = com - Vector3.Transform(c.Com, c.Rot);
+        Place(c, step + arm - Vector3.Transform(c.Com, c.Rot));
         if (!float.IsFinite(c.Pos.X + c.Pos.Y + c.Pos.Z))
         {
             c.Pos = c.PrevPos;
+            c.PosRest = Vector3.Zero;
             c.Rot = c.PrevRot;
             c.Vel = c.FrameV;
             c.AngVel = c.FrameW;

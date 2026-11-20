@@ -142,6 +142,8 @@ public sealed class ToolUpgrades
     public string Gives(ToolStat s, int level)
     {
         var st = Stats[(int)s];
+        if (s == ToolStat.Lift && level > 0) // (survival's lift stops at 3 t: a Lift module makes the beam pull harder: ConstructEdits.LiftOf)
+            return $"{ToolName(st.Tool)} pull {Value(s, level) * PullPerKg / 1000f:0} kN (it lifts {Show(s, MathF.Min(Value(s, level), ConstructGrab.SurvivalLiftCap))} at most)";
         return st.Function ? $"{ToolName(st.Tool)}: {st.Name.ToLowerInvariant()}" : $"{ToolName(st.Tool)} {st.Name.ToLowerInvariant()} {Show(s, Value(s, level))}";
     }
 
