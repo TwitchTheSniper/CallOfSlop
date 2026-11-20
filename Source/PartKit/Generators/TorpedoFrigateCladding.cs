@@ -22,9 +22,9 @@ public sealed partial class TorpedoFrigateParts
     /// <summary>
     /// The lining's variation by what a room is for (Karl, 2026-11-20: "more variations between the rooms based around their usage, only
     /// minor"): the same bays, ribs and service run everywhere, with the panels' tones, the rail's stripe, the kick plate, the vents and
-    /// the plates changed a little (Karl picked this over one lining for the whole ship, 2026-11-20; false brings that back).
+    /// the plates changed a little (Karl tried it, 2026-11-20, then kept the simpler one lining for the whole ship: true brings the variations back).
     /// </summary>
-    private const bool CladByRoom = true;
+    private const bool CladByRoom = false;
 
     private enum RoomUse { Corridor, Command, Working, Living, Medical, Servers }
 
