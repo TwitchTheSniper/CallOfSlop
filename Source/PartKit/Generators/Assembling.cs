@@ -519,19 +519,6 @@ public sealed class Assembling : IPartGenerator
         // (the capital ship's cutters, Karl 2026-11-20: hand rows, since the LaserCutter folder's two older cutters keep their rows in the long tail)
         (null, null, Rec("Large Laser Cutter", 400.0, 3, m: [("steel", 1600), ("rubber", 320)])),
         (null, null, Rec("Capital Laser Cutter", 600.0, 4, m: [("steel", 2000), ("rubber", 500)])),
-        // (the Mainframe capital ship's own parts, Karl 2026-11-20: docs/sandbox/constructs/mainframe.md; its plates are cut, not assembled)
-        ("Mainframe", "Mainframe Frame Node", null),
-        ("Mainframe", "Mainframe Beam Light", null),
-        ("Mainframe", "Mainframe Cell Hatch", null),
-        ("Mainframe", "Mainframe Fusion Reactor", null),
-        ("Mainframe", "Mainframe Drive Mount", null),
-        ("Mainframe", "Mainframe Drive Bell", null),
-        ("Mainframe", "Mainframe Drive Core", null),
-        ("Mainframe", "Mainframe Fuel Pump", null),
-        ("Mainframe", "Mainframe Coolant Exchanger", null),
-        ("Mainframe", "Mainframe Flight Computer", null),
-        ("Mainframe", "Mainframe Attitude Jet", null),
-        ("Mainframe", "Mainframe RCS Block", null),
         // (the in-wall bays, Karl 2026-11-20: frames, inserts, pull-outs, ship systems' wear parts and consumables, the hull airlock;
         // WallBayParts.cs, in the folder's file order of 2026-11-20)
         ("WallBays", "Actuator Spares Rack", null),
@@ -612,6 +599,14 @@ public sealed class Assembling : IPartGenerator
         ("WallBays", "Wall Bay 1m", null),
         ("WallBays", "Wall Bay 1.5m", null),
         ("WallBays", "Water Reclaimer Insert 1m", null),
+        // (the style sheet's bulkhead doors, Karl 2026-11-20: FittingLookDoors)
+        (null, null, Rec("Graphite Bulkhead Frame", 30.0, 2, m: [("steel", 120), ("copper", 2)])),
+        (null, null, Rec("Graphite Bulkhead Door", 8.0, 2, m: [("steel", 40)], p: [("Bearing", 3)])),
+        (null, null, Rec("Ceramic Bulkhead Frame", 30.0, 2, m: [("steel", 110), ("glass", 2), ("copper", 2)])),
+        (null, null, Rec("Ceramic Bulkhead Door Left", 6.0, 2, m: [("steel", 20)], p: [("Bearing", 2)])),
+        (null, null, Rec("Ceramic Bulkhead Door Right", 6.0, 2, m: [("steel", 20)], p: [("Bearing", 2)])),
+        (null, null, Rec("Armoured Bulkhead Frame", 40.0, 2, m: [("steel", 180), ("rubber", 6), ("copper", 2)])),
+        (null, null, Rec("Armoured Bulkhead Door", 10.0, 2, m: [("steel", 55)], p: [("Bearing", 3)])),
     ];
 
     /// <summary>

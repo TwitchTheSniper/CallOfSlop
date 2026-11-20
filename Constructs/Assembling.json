@@ -2273,18 +2273,6 @@
     {"output": "Construction Shell", "materials": {"steel": 220, "copper": 30, "rubber": 16}, "parts": {"Circuit Board": 6}, "seconds": 120, "minTier": 2},
     {"output": "Large Laser Cutter", "materials": {"steel": 1600, "rubber": 320}, "seconds": 400.0, "minTier": 3},
     {"output": "Capital Laser Cutter", "materials": {"steel": 2000, "rubber": 500}, "seconds": 600.0, "minTier": 4},
-    {"output": "Mainframe Frame Node", "materials": {"steel": 24, "concrete": 5}, "seconds": 5.6},
-    {"output": "Mainframe Beam Light", "materials": {"steel": 16, "concrete": 3}, "seconds": 4.4},
-    {"output": "Mainframe Cell Hatch", "materials": {"steel": 180}, "parts": {"Bearing": 18}, "seconds": 29.0, "minTier": 2},
-    {"output": "Mainframe Fusion Reactor", "materials": {"steel": 2000}, "parts": {"Copper Coil": 20}, "seconds": 180.0, "minTier": 2},
-    {"output": "Mainframe Drive Mount", "materials": {"steel": 2000, "rubber": 500}, "seconds": 180.0},
-    {"output": "Mainframe Drive Bell", "materials": {"steel": 2000}, "parts": {"Gear Set": 20}, "seconds": 180.0},
-    {"output": "Mainframe Drive Core", "materials": {"steel": 2000, "concrete": 500}, "seconds": 180.0},
-    {"output": "Mainframe Fuel Pump", "materials": {"steel": 2000, "concrete": 500}, "seconds": 180.0},
-    {"output": "Mainframe Coolant Exchanger", "materials": {"steel": 2000, "concrete": 500}, "seconds": 180.0},
-    {"output": "Mainframe Flight Computer", "materials": {"steel": 400, "copper": 667}, "parts": {"Circuit Board": 20}, "seconds": 62.0, "minTier": 3},
-    {"output": "Mainframe Attitude Jet", "materials": {"steel": 1600}, "parts": {"Gear Set": 20}, "seconds": 180.0},
-    {"output": "Mainframe RCS Block", "materials": {"steel": 2000, "rubber": 500}, "seconds": 180.0},
     {"output": "Actuator Spares Rack", "materials": {"steel": 6}, "parts": {"Bearing": 1}, "seconds": 2.9, "minTier": 2},
     {"output": "Airlock Chamber", "materials": {"steel": 76, "concrete": 15}, "seconds": 13.4},
     {"output": "Airlock Inner Door", "materials": {"steel": 12}, "parts": {"Bearing": 1}, "seconds": 3.8, "minTier": 2},
@@ -2362,6 +2350,13 @@
     {"output": "Wall Bay", "materials": {"steel": 32, "concrete": 6}, "seconds": 6.8},
     {"output": "Wall Bay 1m", "materials": {"steel": 44, "concrete": 9}, "seconds": 8.6},
     {"output": "Wall Bay 1.5m", "materials": {"steel": 56, "concrete": 11}, "seconds": 10.4},
-    {"output": "Water Reclaimer Insert 1m", "materials": {"steel": 24, "concrete": 5}, "seconds": 5.6}
+    {"output": "Water Reclaimer Insert 1m", "materials": {"steel": 24, "concrete": 5}, "seconds": 5.6},
+    {"output": "Graphite Bulkhead Frame", "materials": {"steel": 120, "copper": 2}, "seconds": 30.0, "minTier": 2},
+    {"output": "Graphite Bulkhead Door", "materials": {"steel": 40}, "parts": {"Bearing": 3}, "seconds": 8.0, "minTier": 2},
+    {"output": "Ceramic Bulkhead Frame", "materials": {"steel": 110, "glass": 2, "copper": 2}, "seconds": 30.0, "minTier": 2},
+    {"output": "Ceramic Bulkhead Door Left", "materials": {"steel": 20}, "parts": {"Bearing": 2}, "seconds": 6.0, "minTier": 2},
+    {"output": "Ceramic Bulkhead Door Right", "materials": {"steel": 20}, "parts": {"Bearing": 2}, "seconds": 6.0, "minTier": 2},
+    {"output": "Armoured Bulkhead Frame", "materials": {"steel": 180, "rubber": 6, "copper": 2}, "seconds": 40.0, "minTier": 2},
+    {"output": "Armoured Bulkhead Door", "materials": {"steel": 55}, "parts": {"Bearing": 3}, "seconds": 10.0, "minTier": 2}
   ]
 }

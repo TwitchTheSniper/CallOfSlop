@@ -5,7 +5,7 @@ namespace CallOfSlop;
 
 /// <summary>
 /// <c>--battle-check [SHIP] [--idle --ground [--map NAME]] [--shots N] [--per-tick K] [--gun NAME] [--range M] [--seed S] [--focus F] [--blasts N [--blast-damage D] [--blast-radius R]]</c>: a capital ship under railgun
-/// fire, headless (docs/sandbox/design/capital-battles.md). The ship (default the Mainframe) is built on the Proving Ground and
+/// fire, headless (docs/sandbox/design/capital-battles.md). The ship (default the Zero Day) is built on the Proving Ground and
 /// held still in the air; a Zero Day (for its railgun) is held far off; then N shots are fired at it from its broadside, K in a
 /// tick, each at a random point on its middle, through the real round (<see cref="ConstructWeapons.ShotFrom"/>), and a world
 /// tick is stepped after each volley. It reports what each volley did (parts hit, parts broken, pieces split off, the bores
@@ -17,9 +17,9 @@ public static class BattleCheck
     {
         string Arg(string name, string def) => args.SkipWhile(a => !a.Equals(name, StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() ?? def;
         var inv = System.Globalization.CultureInfo.InvariantCulture;
-        var name = Arg("--battle-check", "Mainframe");
+        var name = Arg("--battle-check", "Zero Day");
         if (name.StartsWith("--"))
-            name = "Mainframe";
+            name = "Zero Day";
         var shots = int.Parse(Arg("--shots", "40"), inv);
         var perTick = Math.Max(1, int.Parse(Arg("--per-tick", "1"), inv));
         var gunName = Arg("--gun", "Zero Day Railgun");

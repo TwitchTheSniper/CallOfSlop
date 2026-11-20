@@ -59,10 +59,8 @@ everything; stock guns kept): `SandboxStartKit` builds only the ship there. Code
   over Caledon, where the Magpie start wakes, its magazines full and its banks charged (as every ship the game spawns). A
   Traders' Zero Day, crewed, goes round 400 m behind on the same orbit (Karl, 2026-11-17: an NPC Zero Day of another faction,
   neutral and nearby; the Traders are neutral to players and fly the IT style). Survival and Creative.
-- `CapitalDuel` (Karl, 2026-11-20: to stress-test capital ships): an admiral waking on the bridge of their own Mainframe
-  (docs/sandbox/constructs/mainframe.md) held still in open space 100 km out from Redrock (the Dev system's lone 4 km desert, a
-  small red rock from there), with a Mercenaries' Mainframe, crewed and loaded, held 10 km further out (`"hold"` and the
-  company's `"away"`). Survival and Creative.
+- `CapitalDuel` (two Mainframes held 10 km apart off Redrock) was removed with the Mainframe (Karl, 2026-11-20: capital ships
+  on the back burner): docs/archive/capital/mainframe.md says how to bring both back. The openings' `"hold"` stays.
 - `Ground`: the map picked on the menu, the shipped start kit round its parts rack in Survival, no opening: what every
   Sandbox world was before the openings.
 - `PenalColony` was removed with the colony and its induction (2026-11-17): a world made with it plays the any-map start.
