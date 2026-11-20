@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Twist Latch",
-  "description": "A big twist handle on an in-wall bay's jamb: twist it a quarter turn outward to let the fill go, then pull the fill out.",
+  "description": "A big twist handle on an in-wall bay's jamb: press it and it turns a quarter turn outward. The fill opens on its own press.",
   "group": "Interior",
   "section": "In-wall bays",
   "role": "door",
@@ -91,7 +91,7 @@
       ],
       "color": "#e0b020",
       "detail": true,
-      "finish": "hazard paint",
+      "finish": "gloss paint",
       "paintable": false
     },
     {

@@ -260,6 +260,102 @@
     },
     {
       "min": [
+        -0.15,
+        1.58,
+        0.006
+      ],
+      "max": [
+        -0.11,
+        1.66,
+        0.018
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "plastic",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.085,
+        1.58,
+        0.006
+      ],
+      "max": [
+        -0.045,
+        1.69,
+        0.018
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "plastic",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.02,
+        1.58,
+        0.006
+      ],
+      "max": [
+        0.02,
+        1.68,
+        0.018
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "plastic",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.045,
+        1.58,
+        0.006
+      ],
+      "max": [
+        0.085,
+        1.73,
+        0.018
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "plastic",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.11,
+        1.58,
+        0.006
+      ],
+      "max": [
+        0.15,
+        1.77,
+        0.018
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "plastic",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.16,
+        1.565,
+        0.006
+      ],
+      "max": [
+        0.17,
+        1.578,
+        0.018
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "plastic",
+      "paintable": false
+    },
+    {
+      "min": [
         0.3,
         1.78,
         -0.015

@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Coolant Jug Drawer 1m",
-  "description": "A coolant pump's drawer: the consumable. Twist the latch and it runs out with jugs of coolant to top the loop up.",
+  "description": "A coolant pump's drawer: the consumable. Press it and it runs out with jugs of coolant to top the loop up.",
   "group": "Interior",
   "section": "In-wall bays",
   "role": "door",

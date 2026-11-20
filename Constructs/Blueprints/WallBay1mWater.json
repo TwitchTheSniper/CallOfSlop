@@ -2,7 +2,7 @@
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Wall Bay 1m Water Reclaimer",
   "group": "In-wall bays",
-  "description": "A water reclaimer in a 1 m in-wall bay: twist the side handle and its filter drawer runs out to be changed.",
+  "description": "A water reclaimer in a 1 m in-wall bay with a twist handle on its side: its filter drawer runs out to be changed.",
   "steps": [
     {
       "part": "Wall Bay 1m",

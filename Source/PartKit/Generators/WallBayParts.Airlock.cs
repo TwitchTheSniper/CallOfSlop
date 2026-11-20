@@ -43,11 +43,11 @@ public sealed partial class WallBayParts
         k.Box(-0.07, 2.12, -0.003, 0.07, 2.22, 0.04, Frame, "plastic");
         k.Glow(-0.05, 2.135, 0.037, 0.05, 2.205, 0.062, Amber);
         k.Box(0.6, 1.42, -0.003, 0.72, 1.7, 0.03, Frame, "plastic");
-        k.Glow(0.615, 1.62, 0.027, 0.64, 1.66, 0.038, Red);
-        k.Glow(0.648, 1.62, 0.027, 0.673, 1.66, 0.038, Amber);
+        k.Box(0.615, 1.62, 0.027, 0.64, 1.66, 0.038, LampOffRed, "plastic"); // (only the green lamp lit: the lock is ready)
+        k.Box(0.648, 1.62, 0.027, 0.673, 1.66, 0.038, LampOffAmber, "plastic");
         k.Glow(0.681, 1.62, 0.027, 0.706, 1.66, 0.038, Green);
         k.Glow(0.615, 1.545, 0.027, 0.705, 1.6, 0.036, Glow);
-        k.Box(0.63, 1.45, 0.027, 0.69, 1.52, 0.042, Hazard, "hazard paint");
+        k.Box(0.63, 1.45, 0.027, 0.69, 1.52, 0.042, Hazard, "gloss paint");
 
         // The chamber: tread-plate floor level with the sill, walls and roof through the void to the hull, pale over a blue band.
         k.Box(-(AirCi + 0.006), 0.04, hz + 0.003, AirCi + 0.006, Y0, -0.055, Steel, "tread plate");
@@ -61,7 +61,7 @@ public sealed partial class WallBayParts
             Rod(k, s * (AirCi - 0.08), 1.03, -1.5, s * (AirCi - 0.05), 1.06, -0.25, "+z", Steel, "steel");
             foreach (var z in new[] { -0.4, -0.9, -1.4 })
                 k.Box(s * (AirCi - 0.065), 1.035, z - 0.012, s * (AirCi + 0.003), 1.055, z + 0.012, Steel, "steel");
-            Rod(k, s * (AirCi - 0.055), 0.55, hz + 0.075, s * (AirCi - 0.025), 1.65, hz + 0.105, "+y", Hazard, "hazard paint");
+            Rod(k, s * (AirCi - 0.055), 0.55, hz + 0.075, s * (AirCi - 0.025), 1.65, hz + 0.105, "+y", Hazard, "gloss paint");
             foreach (var y in new[] { 0.6, 1.6 })
                 k.Box(s * (AirCi - 0.045), y - 0.012, hz + 0.078, s * (AirCi + 0.003), y + 0.012, hz + 0.102, Steel, "steel");
         }
@@ -83,11 +83,11 @@ public sealed partial class WallBayParts
         k.Glow(-0.045, 2.038, hz + 0.075, 0.045, 2.055, hz + 0.125, Amber);
         // The cycle panel inside, on the right wall by the inner door; a tether reel on the left by the hull; a floor vent, a foot bar.
         k.Box(AirCi - 0.025, 1.22, -0.36, AirCi + 0.003, 1.62, -0.14, Frame, "plastic");
-        k.Glow(AirCi - 0.033, 1.5, -0.33, AirCi - 0.022, 1.55, -0.29, Red);
-        k.Glow(AirCi - 0.033, 1.5, -0.27, AirCi - 0.022, 1.55, -0.23, Amber);
+        k.Box(AirCi - 0.033, 1.5, -0.33, AirCi - 0.022, 1.55, -0.29, LampOffRed, "plastic");
+        k.Box(AirCi - 0.033, 1.5, -0.27, AirCi - 0.022, 1.55, -0.23, LampOffAmber, "plastic");
         k.Glow(AirCi - 0.033, 1.5, -0.21, AirCi - 0.022, 1.55, -0.17, Green);
-        k.Box(AirCi - 0.036, 1.3, -0.29, AirCi - 0.022, 1.4, -0.21, Hazard, "hazard paint");
-        Rod(k, -(AirCi + 0.003), 1.55, -1.52, -(AirCi - 0.06), 1.71, -1.36, "+x", Hazard, "hazard paint", 16);
+        k.Box(AirCi - 0.036, 1.3, -0.29, AirCi - 0.022, 1.4, -0.21, Hazard, "gloss paint");
+        Rod(k, -(AirCi + 0.003), 1.55, -1.52, -(AirCi - 0.06), 1.71, -1.36, "+x", Hazard, "gloss paint", 16);
         Rod(k, -(AirCi - 0.057), 1.6, -1.47, -(AirCi - 0.075), 1.66, -1.41, "+x", Frame, "dirty steel");
         k.Box(-0.25, 0.093, -1.35, 0.25, 0.104, -1.05, Frame, "painted grating");
         Rod(k, -0.4, 0.14, hz + 0.16, 0.4, 0.17, hz + 0.19, "+x", Steel, "steel");
@@ -128,7 +128,7 @@ public sealed partial class WallBayParts
         // Outside, left of the hatch: two EVA handholds and the outer lamps (red over green) on a dark plate.
         foreach (var y in new[] { 0.75, 1.45 })
             k.Box(-0.795, y - 0.012, ao - 0.04, -0.775, y + 0.012, ao + 0.003, Steel, "steel");
-        Rod(k, -0.8, 0.7, ao - 0.06, -0.77, 1.5, ao - 0.03, "+y", Hazard, "hazard paint");
+        Rod(k, -0.8, 0.7, ao - 0.06, -0.77, 1.5, ao - 0.03, "+y", Hazard, "gloss paint");
         k.Box(-0.66, 1.58, ao - 0.008, -0.56, 1.82, ao + 0.003, Frame, "plastic");
         k.Glow(-0.64, 1.72, ao - 0.012, -0.58, 1.78, ao - 0.001, Red);
         k.Glow(-0.64, 1.62, ao - 0.012, -0.58, 1.68, ao - 0.001, Green);
@@ -163,7 +163,7 @@ public sealed partial class WallBayParts
 
     private static Part AirlockInnerDoor()
     {
-        var k = Mover("Airlock Inner Door", "An airlock's inner pressure door: twist the latch on its jamb and it swings into the room on its left hinge; a porthole shows the chamber.", "inner", [0, InnerY, 0]);
+        var k = Mover("Airlock Inner Door", "An airlock's inner pressure door: press it and it swings into the room on its left hinge; a porthole shows the chamber.", "inner", [0, InnerY, 0]);
         const double Z0 = -0.04, Z1 = 0.012;
         // The slab round the porthole (four pieces), its glass, the ring round it; the blue band and a hazard kick strip; a pull on the
         // latch side, hinge knuckles on the left, a lit label at the top.
@@ -201,11 +201,16 @@ public sealed partial class WallBayParts
         // The plate, a raised face on it, hazard stripes down both edges, an EVA grab handle; hangers up to the top rail, shoes down to
         // the bottom one.
         k.Box(-0.49, Y0 - 0.04, z0, 0.49, Y1 + 0.04, z1, Armour2, "plated steel");
+        // (its chamber side, seen through the ring from the room: a steel face and hazard edges, so it reads shut)
+        k.Box(-0.32, Y0 + 0.12, z1 - 0.004, 0.32, Y1 - 0.12, z1 + 0.008, Steel, "steel");
+        foreach (var s in new[] { -1.0, 1.0 })
+            for (var i = 0; i < 9; i++)
+                k.Box(s * 0.35, 0.16 + i * 0.2, z1 - 0.004, s * 0.42, 0.26 + i * 0.2, z1 + 0.006, i % 2 == 0 ? Hazard : Frame, "hazard paint");
         k.Box(-0.38, 0.18, z0 - 0.012, 0.38, 1.92, z0 + 0.003, HatchFace, "plated steel");
         foreach (var s in new[] { -1.0, 1.0 })
             for (var i = 0; i < 10; i++)
                 k.Box(s * 0.42, 0.1 + i * 0.2, z0 - 0.011, s * 0.47, 0.2 + i * 0.2, z0 + 0.003, Hazard, "hazard paint");
-        Rod(k, 0.2, 0.85, z0 - 0.055, 0.24, 1.35, z0 - 0.025, "+y", Hazard, "hazard paint");
+        Rod(k, 0.2, 0.85, z0 - 0.055, 0.24, 1.35, z0 - 0.025, "+y", Hazard, "gloss paint");
         foreach (var y in new[] { 0.87, 1.305 })
             k.Box(0.208, y, z0 - 0.04, 0.232, y + 0.025, z0 - 0.009, Steel, "steel");
         foreach (var sx in new[] { -0.32, 0.32 })

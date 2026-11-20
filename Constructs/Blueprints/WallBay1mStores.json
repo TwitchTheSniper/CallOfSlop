@@ -2,7 +2,7 @@
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Wall Bay 1m Consumables",
   "group": "In-wall bays",
-  "description": "A 1 m in-wall bay: twist the side handle and a rack of the ship's consumables runs out.",
+  "description": "A 1 m in-wall bay with a twist handle on its side: a rack of the ship's consumables runs out.",
   "steps": [
     {
       "part": "Wall Bay 1m",

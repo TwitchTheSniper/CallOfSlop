@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Memory Module Drawer",
-  "description": "A flight computer's spares drawer: twist the latch and it runs out with memory modules standing in foam and spare cards bagged on the shelf.",
+  "description": "A flight computer's spares drawer: press it and it runs out with memory modules standing in foam and spare cards bagged on the shelf.",
   "group": "Interior",
   "section": "In-wall bays",
   "role": "door",

@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Ammo Can Drawer 1m",
-  "description": "A PDC feed's drawer: the consumable. Twist the latch and it runs out with six cans of linked rounds.",
+  "description": "A PDC feed's drawer: the consumable. Press it and it runs out with six cans of linked rounds.",
   "group": "Interior",
   "section": "In-wall bays",
   "role": "door",

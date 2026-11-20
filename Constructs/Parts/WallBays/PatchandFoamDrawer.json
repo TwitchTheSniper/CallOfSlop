@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Patch and Foam Drawer",
-  "description": "A damage control locker's drawer: the consumables. Twist the latch and it runs out with hull patch plates standing in a rack and cans of sealant foam.",
+  "description": "A damage control locker's drawer: the consumables. Press it and it runs out with hull patch plates standing in a rack and cans of sealant foam.",
   "group": "Interior",
   "section": "In-wall bays",
   "role": "door",

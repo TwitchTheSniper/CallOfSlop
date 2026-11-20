@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Toilet Pan 1m",
-  "description": "An in-wall toilet's pan (1 m deep): twist the latch and it runs out of the wall on its runners. Its face is a lining panel with a foot bar; the seat is on top.",
+  "description": "An in-wall toilet's pan (1 m deep): press it and it runs out of the wall on its runners. Its face is a lining panel with a foot bar; the seat is on top.",
   "group": "Interior",
   "section": "In-wall bays",
   "role": "door",

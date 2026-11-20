@@ -2,7 +2,7 @@
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Wall Bay 1m CO2 Scrubber",
   "group": "In-wall bays",
-  "description": "A CO2 scrubber in a 1 m in-wall bay: twist the side handle and its tray of canisters runs out to be changed.",
+  "description": "A CO2 scrubber in a 1 m in-wall bay with a twist handle on its side: its tray of canisters runs out to be changed.",
   "steps": [
     {
       "part": "Wall Bay 1m",

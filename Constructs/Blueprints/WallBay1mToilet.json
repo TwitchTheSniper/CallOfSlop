@@ -2,7 +2,7 @@
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Wall Bay 1m Toilet",
   "group": "In-wall bays",
-  "description": "A 1 m in-wall bay: twist the side handle and a toilet pan runs out of the wall.",
+  "description": "A 1 m in-wall bay with a twist handle on its side: a toilet pan runs out of the wall.",
   "steps": [
     {
       "part": "Wall Bay 1m",

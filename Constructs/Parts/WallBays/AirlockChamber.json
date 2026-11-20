@@ -549,9 +549,9 @@
         1.66,
         0.038
       ],
-      "color": "#e0402c",
+      "color": "#5a2622",
       "detail": true,
-      "glow": true,
+      "finish": "plastic",
       "paintable": false
     },
     {
@@ -565,9 +565,9 @@
         1.66,
         0.038
       ],
-      "color": "#f0a830",
+      "color": "#5a4622",
       "detail": true,
-      "glow": true,
+      "finish": "plastic",
       "paintable": false
     },
     {
@@ -615,7 +615,7 @@
       ],
       "color": "#e0b020",
       "detail": true,
-      "finish": "hazard paint",
+      "finish": "gloss paint",
       "paintable": false
     },
     {
@@ -775,7 +775,7 @@
       "shape": "cylinder",
       "segments": 12,
       "front": "+y",
-      "finish": "hazard paint",
+      "finish": "gloss paint",
       "paintable": false
     },
     {
@@ -936,7 +936,7 @@
       "shape": "cylinder",
       "segments": 12,
       "front": "+y",
-      "finish": "hazard paint",
+      "finish": "gloss paint",
       "paintable": false
     },
     {
@@ -1248,9 +1248,9 @@
         1.55,
         -0.29
       ],
-      "color": "#e0402c",
+      "color": "#5a2622",
       "detail": true,
-      "glow": true,
+      "finish": "plastic",
       "paintable": false
     },
     {
@@ -1264,9 +1264,9 @@
         1.55,
         -0.23
       ],
-      "color": "#f0a830",
+      "color": "#5a4622",
       "detail": true,
-      "glow": true,
+      "finish": "plastic",
       "paintable": false
     },
     {
@@ -1298,7 +1298,7 @@
       ],
       "color": "#e0b020",
       "detail": true,
-      "finish": "hazard paint",
+      "finish": "gloss paint",
       "paintable": false
     },
     {
@@ -1317,7 +1317,7 @@
       "shape": "cylinder",
       "segments": 16,
       "front": "+x",
-      "finish": "hazard paint",
+      "finish": "gloss paint",
       "paintable": false
     },
     {
@@ -2259,7 +2259,7 @@
       "shape": "cylinder",
       "segments": 12,
       "front": "+y",
-      "finish": "hazard paint",
+      "finish": "gloss paint",
       "paintable": false
     },
     {

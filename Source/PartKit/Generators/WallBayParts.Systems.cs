@@ -51,7 +51,7 @@ public sealed partial class WallBayParts
         return k;
     }
 
-    /// <summary>A ship system's supply drawer on its tray (twist the latch and it runs out); returns the tray's top and back for its load.</summary>
+    /// <summary>A ship system's supply drawer on its tray (press it and it runs out); returns the tray's top and back for its load.</summary>
     private static (FittingLookParts.Kit K, double T, double Zb) SysDrawer(string name, string desc, string tag)
     {
         var k = Mover(name + Sfx, desc, "supply", [0, Y0, 0]);
@@ -126,7 +126,7 @@ public sealed partial class WallBayParts
         foreach (var x in new[] { -0.2, 0.0, 0.2 })
             c.Box(x - 0.015, t + 0.11, -0.37, x + 0.015, t + 0.15, -0.33, CopperC, "copper");
 
-        var (d, s, zb) = SysDrawer("Fuse Drawer", "A breaker panel's fuse drawer: the consumable. Twist the latch and it runs out with cartridge fuses in a rack and cartons of spares on the shelf over them.", Amber);
+        var (d, s, zb) = SysDrawer("Fuse Drawer", "A breaker panel's fuse drawer: the consumable. Press it and it runs out with cartridge fuses in a rack and cartons of spares on the shelf over them.", Amber);
         d.Box(-0.38, s, -0.36, 0.38, s + 0.05, -0.04, Dark, "plastic");
         foreach (var x in new[] { -0.27, -0.09, 0.09, 0.27 })
             foreach (var z in new[] { -0.08, -0.16, -0.24, -0.32 })
@@ -169,7 +169,7 @@ public sealed partial class WallBayParts
         Rod(c, -0.12, t + 0.08, -0.355, 0.12, t + 0.32, -0.338, "+z", Frame, "plastic", 20);
         Rod(c, -0.03, t + 0.17, -0.343, 0.03, t + 0.23, -0.332, "+z", Steel, "steel");
 
-        var (d, s, zb) = SysDrawer("Memory Module Drawer", "A flight computer's spares drawer: twist the latch and it runs out with memory modules standing in foam and spare cards bagged on the shelf.", Green);
+        var (d, s, zb) = SysDrawer("Memory Module Drawer", "A flight computer's spares drawer: press it and it runs out with memory modules standing in foam and spare cards bagged on the shelf.", Green);
         d.Box(-0.38, s, -0.36, 0.38, s + 0.08, -0.04, Foam, "rubber");
         foreach (var x in new[] { -0.24, -0.08, 0.08, 0.24 })
             foreach (var z in new[] { -0.08, -0.13, -0.18, -0.23, -0.28, -0.33 })
@@ -197,7 +197,7 @@ public sealed partial class WallBayParts
             c.Box(0.297, t + 0.045, z0 - 0.02, 0.33, t + 0.085, z0 + 0.02, Dark, "dirty steel");
         }
 
-        var (d, s, _) = SysDrawer("Patch and Foam Drawer", "A damage control locker's drawer: the consumables. Twist the latch and it runs out with hull patch plates standing in a rack and cans of sealant foam.", Hazard);
+        var (d, s, _) = SysDrawer("Patch and Foam Drawer", "A damage control locker's drawer: the consumables. Press it and it runs out with hull patch plates standing in a rack and cans of sealant foam.", Hazard);
         d.Box(-0.4, s, -0.3, -0.02, s + 0.04, -0.04, Dark, "rubber");
         foreach (var z in new[] { -0.07, -0.11, -0.15, -0.19, -0.23 })
         {
@@ -237,7 +237,7 @@ public sealed partial class WallBayParts
             Rod(c, x - 0.035, t + 0.095, -0.889, x + 0.035, t + 0.165, -0.858, "+z", BrassC, "brass");
         }
 
-        var (d, s, _) = SysDrawer("Coolant Jug Drawer", "A coolant pump's drawer: the consumable. Twist the latch and it runs out with jugs of coolant to top the loop up.", Teal);
+        var (d, s, _) = SysDrawer("Coolant Jug Drawer", "A coolant pump's drawer: the consumable. Press it and it runs out with jugs of coolant to top the loop up.", Teal);
         foreach (var x in new[] { -0.27, -0.09, 0.09, 0.27 })
             foreach (var z in new[] { -0.16, -0.42, -0.68 })
             {
@@ -273,7 +273,7 @@ public sealed partial class WallBayParts
             Rod(c, x - 0.03, t + 0.045, -0.889, x + 0.03, t + 0.105, -0.857, "+z", BrassC, "brass");
         }
 
-        var (d, s, zb) = SysDrawer("Propellant Bottle Drawer", "An RCS feed's drawer: the consumable. Twist the latch and it runs out with propellant bottles in cradles, two rows deep.", Orange);
+        var (d, s, zb) = SysDrawer("Propellant Bottle Drawer", "An RCS feed's drawer: the consumable. Press it and it runs out with propellant bottles in cradles, two rows deep.", Orange);
         void Bottles(double y)
         {
             foreach (var z in new[] { -0.66, -0.24 })
@@ -310,7 +310,7 @@ public sealed partial class WallBayParts
         c.Glow(-0.025, t + 0.115, -0.103, 0.025, t + 0.165, -0.09, Glow);
         c.Box(-0.1, t + 0.05, -0.83, 0.1, t + 0.23, -0.777, BrassC, "brass");
 
-        var (d, s, _) = SysDrawer("Nav Core Drawer", "A sensor rack's drawer: twist the latch and it runs out with the nav chart data cores standing in their rack, their tops lit (one amber: a chart past its date).", Glow);
+        var (d, s, _) = SysDrawer("Nav Core Drawer", "A sensor rack's drawer: press it and it runs out with the nav chart data cores standing in their rack, their tops lit (one amber: a chart past its date).", Glow);
         d.Box(-0.36, s, -0.52, 0.36, s + 0.08, -0.06, Dark, "plastic");
         var n = 0;
         foreach (var z in new[] { -0.14, -0.29, -0.44 })
@@ -340,7 +340,7 @@ public sealed partial class WallBayParts
             Rod(c, 0.057, t + 0.254, z - 0.008, 0.085, t + 0.27, z + 0.008, "+x", CopperC, "copper", 10);
         }
 
-        var (d, s, _) = SysDrawer("Ammo Can Drawer", "A PDC feed's drawer: the consumable. Twist the latch and it runs out with six cans of linked rounds.", Red);
+        var (d, s, _) = SysDrawer("Ammo Can Drawer", "A PDC feed's drawer: the consumable. Press it and it runs out with six cans of linked rounds.", Red);
         foreach (var x in new[] { -0.27, 0.0, 0.27 })
             foreach (var z in new[] { -0.24, -0.64 })
             {
@@ -370,7 +370,7 @@ public sealed partial class WallBayParts
                 Rod(c, x - 0.025, y, -1.293, x + 0.025, y + 0.05, -0.137, "+z", Dark, "dirty steel");
         c.Box(-0.06, t + 0.237, -0.135, 0.06, t + 0.32, -0.115, Hazard, "hazard paint");
 
-        var (d, s, _) = SysDrawer("Fuel Rod Drawer", "A reactor's fuel drawer: the consumable. Behind a shield plate; twist the latch and it runs out with fuel rods in two rows, their tips green (one red: spent).", Lime);
+        var (d, s, _) = SysDrawer("Fuel Rod Drawer", "A reactor's fuel drawer: the consumable. Behind a shield plate; press it and it runs out with fuel rods in two rows, their tips green (one red: spent).", Lime);
         d.Box(-0.42, Y0 + 0.04, 0.015, 0.26, SupY1 - 0.16, 0.035, Armour2, "plated steel");
         foreach (var z in new[] { -1.0, -0.6, -0.3 })
             d.Box(-0.36, s, z - 0.02, 0.36, s + 0.17, z + 0.02, Dark, "plated steel");
