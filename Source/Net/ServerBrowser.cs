@@ -658,7 +658,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   capital-sized body is drawn only, no wreck body);
     //   a gun's "pierce" budget (the Zero Day Railgun's file changes).
     // 386: the store pool's handles run to 4096, not 1024 (ConstructWorld.MaxStores: two Mainframes in one world, the capital duel start).
-    public const ushort ProtocolVersion = 386;
+    // 387: the Zero Day Autocannon (a new part file moves the part ids); heavy rounds bore by their calibre (ConstructBores.Implied; no message
+    //   changes: the host decides, and more guns send the Bore events every PC already marks).
+    public const ushort ProtocolVersion = 387;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

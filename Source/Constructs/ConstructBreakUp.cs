@@ -16,10 +16,17 @@ namespace CallOfSlop;
 /// </summary>
 public static class ConstructBreakUp
 {
-    public const int MinParts = 1024; // bodies this big can break up (a capital ship); smaller ones break by their links alone
+    public const int MinParts = 1024; // bodies this big shed small parts as scrap (a capital ship)
+    public const int MinBreakParts = 200; // ...and bodies this big break up by planes (Karl, 2026-11-20: a medium ship such as the Zero Day too); smaller ones break by their links alone
 
-    /// <summary>A body that breaks up by planes and sheds small parts as scrap: capital-sized and free (an anchored base keeps its parts to salvage).</summary>
+    /// <summary>A body that sheds small parts as scrap: capital-sized and free (an anchored base keeps its parts to salvage).</summary>
     public static bool Big(Construct c) => c.PartCount >= MinParts && !c.Anchored;
+
+    /// <summary>A body that breaks up by planes: a medium ship or bigger, free.</summary>
+    public static bool BreaksUp(Construct c) => c.PartCount >= MinBreakParts && !c.Anchored;
+
+    /// <summary>Parts either side of a plane it may snap at: <see cref="MinSide"/> on a capital ship, a sixth of a smaller one's (no slivers off the break).</summary>
+    public static int SideOf(Construct c) => Math.Clamp(c.PartCount / 6, MinSideSmall, MinSide);
 
     /// <summary>A part that may go as scrap drawn only: light, plain (no logic, no seat in use, nothing that goes off), so nothing that works is lost unseen.</summary>
     public static bool Scrappable(Construct c, int part)
@@ -30,7 +37,7 @@ public static class ConstructBreakUp
     public const float Slice = 8f; // metres between the planes looked at
     public const float SnapShare = 0.35f; // a plane snaps at this share of its base strength
     public const float MinBase = 5000f; // ...if it had at least this much health across it (a plane through a thin neck isn't one)
-    public const int MinSide = 160; // parts either side of it at least (no slivers off the break)
+    public const int MinSide = 160, MinSideSmall = 30; // parts either side of it at least (no slivers off the break): SideOf
     public const int Every = 6; // ticks between looks at a body that was hurt
     public const int Blasts = 6; // secondary blasts along a break
     public const float BlastRadius = 7f, BlastDamage = 350f;
@@ -60,7 +67,7 @@ public static class ConstructBreakUp
     /// </summary>
     public static void Hit(ConstructWorld world, Construct c, int part, float taken, Vector3? at)
     {
-        if (!On || !Big(c))
+        if (!On || !BreaksUp(c))
             return;
         if (c.BreakBase == null || c.PartCount > c.BreakParts)
             Base(c); // (parts added since the base was taken: built or mended, so the hurt so far is forgotten)
@@ -157,7 +164,7 @@ public static class ConstructBreakUp
         for (var k = q.Count - 1; k >= 0; k--)
         {
             var c = world.Get(q[k]);
-            if (c == null || c.BreakBase == null || !Big(c))
+            if (c == null || c.BreakBase == null || !BreaksUp(c))
             {
                 if (c != null)
                     c.BreakDue = false;
@@ -188,6 +195,7 @@ public static class ConstructBreakUp
             var k = Math.Clamp((int)MathF.Floor(centre[i] / Slice) + 1, 0, planes - 1);
             below[k]++;
         }
+        var side = SideOf(c);
         var run = 0;
         var best = -1;
         var bestShare = SnapShare;
@@ -195,7 +203,7 @@ public static class ConstructBreakUp
         {
             run += below[k];
             var b = c.BreakBase[k];
-            if (b < MinBase || run < MinSide || c.PartCount - run < MinSide)
+            if (b < MinBase || run < side || c.PartCount - run < side)
                 continue;
             var share = s[k] / b;
             if (share < bestShare)
@@ -212,7 +220,7 @@ public static class ConstructBreakUp
             for (var k = 0; k < planes; k++)
             {
                 run += below[k];
-                if (c.BreakBase[k] >= MinBase && run >= MinSide && c.PartCount - run >= MinSide && s[k] / c.BreakBase[k] < lowShare)
+                if (c.BreakBase[k] >= MinBase && run >= side && c.PartCount - run >= side && s[k] / c.BreakBase[k] < lowShare)
                 {
                     lowShare = s[k] / c.BreakBase[k];
                     low = k;

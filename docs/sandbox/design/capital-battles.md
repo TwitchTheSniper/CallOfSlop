@@ -35,9 +35,29 @@ PN79Syp1w9HwMJzfpEipQU) and its spike, draft PR 201 (not for merging). Test ship
   72 ms in the cloud); it now sweeps along the longest axis and makes each part's free sockets once (55 ms). The seam links
   are the same on all 378 shipped blueprints (`--battle-check --seam-hashes`, compared before and after).
 
+## Penetration for every heavy round, break-up for medium ships (Karl, 2026-11-20)
+
+- **The Zero Day Autocannon** (torpedo-frigate.md) has a budget of its own, 2,400: through a Zero Day's broadside, not a capital
+  ship's length.
+- **By calibre.** A heavy gun (a part file's `"gun"`) with no `"pierce"` gets one from its round's punch, damage x muzzle speed / 1000
+  (`ConstructBores.Implied`): nothing up to `ImpliedFloor` (120), 1.2 a unit above it, at most `ImpliedMax` (2,500). PDCs, machine
+  guns, the slow cannons, flak and rockets stay as they were (they stop at what they hit); the 20 cm naval gun's rounds bore
+  (about 860), as do the 40 cm's. An explosive round's budget is capped at `ImpliedBurst` (1,100), it never flies on, and it bursts
+  where it stopped: in through the hull, then inside. Flames, harpoons, shells, rockets and beams never bore. The weapon builder's
+  receivers keep the old `MaxPierce` rule.
+- A round a bore sends on (`CRound.Left`) passes the body it came out of in its first look: one that left along a hull's face met it
+  again every tick at 64 budget a time (seen in the Zero Day check). A glancing hit that meets the same part again at once steps on
+  along it, charged once (`SameSteps`).
+- **Missiles and torpedoes** burst on the hull as before (no bore); a shell's blast now sets `DamageAt` as a part blast does, so
+  break-up is hurt where it went off.
+- **Break-up** now applies to any free body of `MinBreakParts` (200) parts or more, a medium ship such as the Zero Day (337) too;
+  each side of a snap needs a sixth of the body's parts (`SideOf`: 30 to 160). Scrap (small parts drawn only) stays for bodies of
+  1,024 or more. `--battle-check "Zero Day Frigate" --shots 0 --blasts 12 --torpedo --focus 0` puts the Zero Day's own torpedo's
+  warhead (19 m, 340) on the hull, one spot: it snapped in two at the fourth (2026-11-20, cloud box).
+
 ## Trying it
 
-- `--battle-check [SHIP] [--shots N] [--per-tick K] [--range M] [--focus F] [--blasts N [--blast-damage D] [--blast-radius R]] [--old-pierce] [--no-break-up]`
+- `--battle-check [SHIP] [--gun NAME] [--shots N] [--per-tick K] [--range M] [--focus F] [--blasts N [--blast-damage D] [--blast-radius R] | --torpedo] [--old-pierce] [--no-break-up]` (`--gun` any gun on the shooting Zero Day, such as "Zero Day Autocannon"; `--torpedo` the Zero Day torpedo's warheads on the hull)
 - `--battle-check SHIP --idle --ground [--map NAME]`: the ship left resting on the ground, 12 rounds of 60 ticks: the world step, the physics' parts and whether it sleeps (an idle ship should sleep within a few seconds and cost next to nothing).
   (headless, `Source/DevTools/BattleCheck.cs`, output in callofslop.log): the ship (default the Mainframe) held in the air on
   the Proving Ground, N Zero Day Railgun shots at its broadside, K a tick, each volley's cost and what it did, and at the end

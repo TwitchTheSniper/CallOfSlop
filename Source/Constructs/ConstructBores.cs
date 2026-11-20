@@ -36,8 +36,30 @@ public static class ConstructBores
     public const int SpallRays = 3;
     public const float SpallReach = 5f, SpallCone = 0.45f, SpallShare = 0.12f; // metres, radians, of the round's damage at that exit
 
+    public const int SameSteps = 6; // steps of SameReach at most through a part it just left and met again at once
+    public const float SameReach = 0.25f;
     public static long Bored, Spalled; // (counts, for the check)
     public static bool Trace = Environment.GetEnvironmentVariable("BORE_TRACE") == "1";
+
+    // Penetration by calibre (Karl, 2026-11-20: "add penetration for other shells, weapons etc as well where relevant"). A heavy gun
+    // with no "pierce" of its own gets a budget from its round's punch (damage x muzzle speed, in thousands): nothing below
+    // ImpliedFloor (a PDC's, a machine gun's, a slow cannon's: they stop at what they hit, as before), ImpliedPerPunch a unit above
+    // it, capped at ImpliedMax. An explosive round's is capped lower (ImpliedBurst): it goes in through the hull and bursts inside.
+    public const float ImpliedFloor = 120f, ImpliedPerPunch = 1.2f, ImpliedMax = 2500f, ImpliedBurst = 1100f;
+
+    /// <summary>
+    /// A heavy gun's bore budget when its part file gives none: from <paramref name="damage"/> and <paramref name="speed"/> (m/s).
+    /// 0 for anything that isn't a fast solid round: flames, harpoons, shells, rockets, beams, and rounds too light to matter.
+    /// </summary>
+    public static float Implied(GunEffect effects, float damage, float speed, GunFx fx)
+    {
+        if ((effects & (GunEffect.Flame | GunEffect.Harpoon | GunEffect.Shell)) != 0 || fx is GunFx.Rocket or GunFx.Flame or GunFx.Beam or GunFx.Harpoon || speed <= 0)
+            return 0f;
+        var punch = damage * speed / 1000f;
+        if (punch <= ImpliedFloor)
+            return 0f;
+        return MathF.Min((punch - ImpliedFloor) * ImpliedPerPunch, (effects & GunEffect.Explosive) != 0 ? ImpliedBurst : ImpliedMax);
+    }
 
     /// <summary>The budget one part takes: its cost and its armour times the metal crossed.</summary>
     public static float Cost(float armour, float metres) => CostBase + armour * MathF.Max(0.05f, metres) * CostArmour;
@@ -111,6 +133,15 @@ public static class ConstructBores
                 spalls++;
             }
             var from = outAt + dir * 0.01f;
+            // A glancing hit (its box said it was out at once, but its shape goes on: a lofted hull piece's slanted facets) that meets
+            // the same part again at once: step on along it, charged once.
+            for (var k = 0; k < SameSteps && exit < 0.02f && h.RoutePlus1 == 0 && h.TrackPlus1 == 0 && world.Raycast(from, dir, SameReach, out var same, ownBody) && same.Body == body && same.Part == h.Part && same.Distance < SameReach; k++)
+            {
+                from += dir * (same.Distance + SameReach);
+                end = from;
+                if (Trace)
+                    Console.WriteLine($"    same part again {same.Distance:0.000} m on: stepped to {from}");
+            }
             // The gap to the next part: the ground stops it, and anyone standing in the gap is hit on its way.
             var reach = MaxGap;
             var ground = false;
@@ -136,7 +167,7 @@ public static class ConstructBores
             {
                 // Out of the last thing in its way: what is left flies on (into the next ship).
                 if (speed > 1f)
-                    world.RoundFlies(from, dir * speed, damage * share, muzzle, by, weapon, own, budget, calibre);
+                    world.RoundFlies(from, dir * speed, damage * share, muzzle, by, weapon, own, budget, calibre, body.Id); // (its first look passes the body it came out of: a round leaving along a hull's face would meet it again every tick)
                 break;
             }
             h = next;
