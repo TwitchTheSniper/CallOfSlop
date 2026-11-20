@@ -935,6 +935,29 @@ public static partial class ConstructRender
 
     private static int LastStoredCount;
 
+    /// <summary>This frame's tick blend (<see cref="Draw"/>'s alpha and blendTicks), for drawing passes that take no alpha: <see cref="PartDrawn"/>.</summary>
+    public static float FrameAlpha = 1f;
+    public static bool FrameBlend;
+
+    /// <summary>
+    /// Part <paramref name="part"/>'s world frame where <see cref="Draw"/> puts its boxes this frame: the body between its last two
+    /// ticks' poses and its joints blended as <see cref="FrameAlpha"/> says. What is drawn on a part (a Loader Arm's boom, a gantry's
+    /// arms, a clamp arm, a pod's lid) is posed from this, not from <see cref="Freeform.PartWorld"/> (the tick's pose), or it jitters
+    /// against its body while the body moves (Sean, 2026-11-20: a Loader Arm on a driven contraption).
+    /// </summary>
+    public static void PartDrawn(Construct c, int part, out Vector3 pos, out Quaternion rot)
+    {
+        ref var p = ref c.Parts[part];
+        var at = FrameBlend ? Vector3.Lerp(c.PrevPos, c.Pos, FrameAlpha) : c.Pos;
+        var body = FrameBlend ? Quaternion.Slerp(c.PrevRot, c.Rot, FrameAlpha) : c.Rot;
+        var sq = Quaternion.Identity;
+        var st = Vector3.Zero;
+        if (p.Seg > 0 && p.Seg <= c.JointCount)
+            SegPoseBlended(c, p.Seg, FrameBlend ? FrameAlpha : 1f, out sq, out st);
+        rot = Quaternion.Normalize(body * sq * Rot24.Quat(p.Rot));
+        pos = at + Vector3.Transform(st + Vector3.Transform(p.Pos, sq), body);
+    }
+
     /// <summary>A segment's pose (rest frame -> body frame) blended between the last two ticks' joint values.</summary>
     public static Matrix4x4 SegMatrix(Construct c, int seg, float alpha)
     {

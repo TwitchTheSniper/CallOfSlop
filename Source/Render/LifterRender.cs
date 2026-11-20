@@ -34,7 +34,8 @@ public static class LifterRender
                 var l = lb.Lifts[i];
                 if (l.Part >= c.PartCount || ConstructLifters.DefOf(c, l.Part) is not { } ld || c.Parts[l.Part].Broken)
                     continue;
-                ConstructLifters.Frame(c, l.Part, ld, out var lp, out var lr, out var shoulder);
+                ConstructRender.PartDrawn(c, l.Part, out var lp, out var lr); // (as its body is drawn this frame, not the tick's pose: no jitter on a moving body)
+                var shoulder = lp + Vector3.Transform(ld.Base, lr);
                 // The hand, in the part's frame: the piece's origin and turn on the path, the gripper bar on its top.
                 var turn = Quaternion.Identity;
                 var origin = l.Moved ? ConstructLifters.Pose(ld, l, ConstructLifters.AgeNow(l), out turn) : ConstructLifters.RestOf(ld); // (at rest before its first move)
