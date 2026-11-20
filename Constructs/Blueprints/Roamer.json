@@ -1,0 +1,993 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Roamer",
+  "description": "An old motorhome of a ship, the rust bucket's sister: cream paint and stripes, a wraparound windscreen, windows down both sides, a cockpit, two cabins, hydroponics, a galley, a hold and an engine room.",
+  "steps": [
+    {
+      "part": "Roamer Keel"
+    },
+    {
+      "part": "Roamer Tail",
+      "on": 0,
+      "socket": "j0",
+      "by": "j0"
+    },
+    {
+      "part": "Roamer Chin",
+      "on": 0,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Roamer Lower Port Fore",
+      "on": 0,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Roamer Lower Stbd Fore",
+      "on": 0,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Roamer Lower Port Aft",
+      "on": 0,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Roamer Lower Stbd Aft",
+      "on": 0,
+      "socket": "j5",
+      "by": "j0"
+    },
+    {
+      "part": "Roamer Lower Stern",
+      "on": 0,
+      "socket": "j6",
+      "by": "j0"
+    },
+    {
+      "part": "Roamer Frame Fore",
+      "on": 0,
+      "socket": "j7",
+      "by": "j0"
+    },
+    {
+      "part": "Roamer Frame Mid",
+      "on": 0,
+      "socket": "j8",
+      "by": "j0"
+    },
+    {
+      "part": "Roamer Frame Aft",
+      "on": 0,
+      "socket": "j9",
+      "by": "j0"
+    },
+    {
+      "part": "Roamer Partition 1",
+      "on": 0,
+      "socket": "j10",
+      "by": "j0"
+    },
+    {
+      "part": "Roamer Upper Stern",
+      "on": 1,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Roamer Roof",
+      "on": 1,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Roamer Deck",
+      "on": 2,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Roamer Upper Port Fore",
+      "on": 3,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Roamer Upper Stbd Fore",
+      "on": 4,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Roamer Upper Port Aft",
+      "on": 5,
+      "socket": "j5",
+      "by": "j0"
+    },
+    {
+      "part": "Roamer Upper Stbd Aft",
+      "on": 6,
+      "socket": "j5",
+      "by": "j0"
+    },
+    {
+      "part": "Roamer Canopy",
+      "on": 13,
+      "socket": "j4",
+      "by": "j1"
+    },
+    {
+      "part": "Roamer Partition 2",
+      "on": 13,
+      "socket": "j10",
+      "by": "j5"
+    },
+    {
+      "part": "Roamer Partition 3",
+      "on": 13,
+      "socket": "j11",
+      "by": "j3"
+    },
+    {
+      "part": "Roamer Partition 4",
+      "on": 13,
+      "socket": "j12",
+      "by": "j2"
+    },
+    {
+      "part": "Roamer Partition 5",
+      "on": 13,
+      "socket": "j13",
+      "by": "j1"
+    },
+    {
+      "part": "Roamer Partition 6",
+      "on": 13,
+      "socket": "j14",
+      "by": "j3"
+    },
+    {
+      "part": "Roamer Partition 7",
+      "on": 13,
+      "socket": "j15",
+      "by": "j2"
+    },
+    {
+      "part": "Roamer Partition 8",
+      "on": 13,
+      "socket": "j16",
+      "by": "j2"
+    },
+    {
+      "part": "Roamer Pod L",
+      "on": 0,
+      "socket": "podL",
+      "by": "hull"
+    },
+    {
+      "part": "Roamer Pod R",
+      "on": 0,
+      "socket": "podR",
+      "by": "hull"
+    },
+    {
+      "part": "Roamer Saddle Tank L",
+      "on": 0,
+      "socket": "saddleL",
+      "by": "hull"
+    },
+    {
+      "part": "Roamer Saddle Tank R",
+      "on": 0,
+      "socket": "saddleR",
+      "by": "hull"
+    },
+    {
+      "part": "Module Socket 2x2",
+      "on": 27,
+      "socket": "drive",
+      "by": "bc",
+      "config": {
+        "modKind": 1,
+        "modKeyed": 1
+      }
+    },
+    {
+      "part": "Module Plug 2x2",
+      "on": 31,
+      "socket": "module",
+      "by": "module"
+    },
+    {
+      "part": "Rust Bucket Drive",
+      "on": 32,
+      "socket": "tc",
+      "by": "front"
+    },
+    {
+      "part": "Drive Core S",
+      "on": 27,
+      "socket": "core",
+      "by": "front"
+    },
+    {
+      "part": "Service Hatch 1x0.8 m",
+      "on": 27,
+      "socket": "hatch",
+      "by": "hang",
+      "spin": 3
+    },
+    {
+      "part": "Rust Bucket Lift Jet",
+      "on": 27,
+      "socket": "lift",
+      "by": "top"
+    },
+    {
+      "part": "Module Socket 2x2",
+      "on": 28,
+      "socket": "drive",
+      "by": "bc",
+      "config": {
+        "modKind": 1,
+        "modKeyed": 1
+      }
+    },
+    {
+      "part": "Module Plug 2x2",
+      "on": 37,
+      "socket": "module",
+      "by": "module"
+    },
+    {
+      "part": "Rust Bucket Drive",
+      "on": 38,
+      "socket": "tc",
+      "by": "front"
+    },
+    {
+      "part": "Drive Core S",
+      "on": 28,
+      "socket": "core",
+      "by": "front"
+    },
+    {
+      "part": "Service Hatch 1x0.8 m",
+      "on": 28,
+      "socket": "hatch",
+      "by": "hang"
+    },
+    {
+      "part": "Rust Bucket Lift Jet",
+      "on": 28,
+      "socket": "lift",
+      "by": "top"
+    },
+    {
+      "part": "Rust Bucket Lift Jet",
+      "on": 29,
+      "socket": "lift",
+      "by": "top"
+    },
+    {
+      "part": "Rust Bucket Lift Jet",
+      "on": 30,
+      "socket": "lift",
+      "by": "top"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 27,
+      "socket": "rcsUp",
+      "by": "base"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 27,
+      "socket": "rcsDown",
+      "by": "base"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 27,
+      "socket": "rcsOut",
+      "by": "base"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 28,
+      "socket": "rcsUp",
+      "by": "base"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 28,
+      "socket": "rcsDown",
+      "by": "base"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 28,
+      "socket": "rcsOut",
+      "by": "base"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 29,
+      "socket": "rcsUp",
+      "by": "base"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 29,
+      "socket": "rcsDown",
+      "by": "base"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 29,
+      "socket": "rcsOut",
+      "by": "base"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 30,
+      "socket": "rcsUp",
+      "by": "base"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 30,
+      "socket": "rcsDown",
+      "by": "base"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 30,
+      "socket": "rcsOut",
+      "by": "base"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 29,
+      "socket": "rcsFore",
+      "by": "base"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 30,
+      "socket": "rcsFore",
+      "by": "base"
+    },
+    {
+      "part": "Rust Bucket Leg",
+      "on": 0,
+      "socket": "legFL",
+      "by": "top"
+    },
+    {
+      "part": "Rust Bucket Leg",
+      "on": 0,
+      "socket": "legFR",
+      "by": "top"
+    },
+    {
+      "part": "Rust Bucket Leg",
+      "on": 0,
+      "socket": "legBL",
+      "by": "top"
+    },
+    {
+      "part": "Rust Bucket Leg",
+      "on": 0,
+      "socket": "legBR",
+      "by": "top"
+    },
+    {
+      "part": "Roamer Ramp",
+      "on": 0,
+      "socket": "ramp",
+      "by": "hang"
+    },
+    {
+      "part": "Steel Wide Stair 3 m",
+      "on": 0,
+      "socket": "stair",
+      "by": "b0_0"
+    },
+    {
+      "part": "Roamer Air Unit",
+      "on": 13,
+      "socket": "airUnit",
+      "by": "bottom"
+    },
+    {
+      "part": "Roamer Roof Rack",
+      "on": 13,
+      "socket": "rack",
+      "by": "bottom"
+    },
+    {
+      "part": "Rust Bucket Mast",
+      "on": 13,
+      "socket": "mast",
+      "by": "bottom"
+    },
+    {
+      "part": "Module Socket 1x1",
+      "on": 13,
+      "socket": "sensor",
+      "by": "bc"
+    },
+    {
+      "part": "Module Plug 1x1",
+      "on": 68,
+      "socket": "module",
+      "by": "module"
+    },
+    {
+      "part": "Long Range Sensor",
+      "on": 69,
+      "socket": "s0.0",
+      "by": "-y"
+    },
+    {
+      "part": "Rust Bucket Radiator L",
+      "on": 13,
+      "socket": "radL",
+      "by": "root"
+    },
+    {
+      "part": "Rust Bucket Radiator R",
+      "on": 13,
+      "socket": "radR",
+      "by": "root"
+    },
+    {
+      "part": "Store Shelving 2 m",
+      "on": 3,
+      "socket": "shelfL0",
+      "by": "wall",
+      "paint": "#6b6f5a",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Store Shelving 2 m",
+      "on": 3,
+      "socket": "shelfL1",
+      "by": "wall",
+      "paint": "#6b6f5a",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Store Shelving 2 m",
+      "on": 5,
+      "socket": "shelfL2",
+      "by": "wall",
+      "paint": "#6b6f5a",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Tool Rack",
+      "on": 4,
+      "socket": "rackR",
+      "by": "back"
+    },
+    {
+      "part": "Locker",
+      "on": 4,
+      "socket": "lockerR",
+      "by": "wall",
+      "paint": "#5d7468",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Robot Shell Dock",
+      "on": 4,
+      "socket": "shellDock",
+      "by": "wall"
+    },
+    {
+      "part": "Robot Shell",
+      "on": 78,
+      "socket": "dock",
+      "by": "back"
+    },
+    {
+      "part": "Space Suit Locker",
+      "on": 4,
+      "socket": "suitR",
+      "by": "wall"
+    },
+    {
+      "part": "Space Suit Locker",
+      "on": 2,
+      "socket": "suitL",
+      "by": "wall"
+    },
+    {
+      "part": "Life Support Unit",
+      "on": 3,
+      "socket": "lifeSupport",
+      "by": "wall"
+    },
+    {
+      "part": "Oxygen Tank",
+      "on": 5,
+      "socket": "o2Tank0",
+      "by": "wall"
+    },
+    {
+      "part": "MMU Dock",
+      "on": 2,
+      "socket": "mmuDock",
+      "by": "wall"
+    },
+    {
+      "part": "Manned Manoeuvring Unit",
+      "on": 84,
+      "socket": "mmu",
+      "by": "mount"
+    },
+    {
+      "part": "Requisition Crate",
+      "on": 0,
+      "socket": "crate0",
+      "by": "-y"
+    },
+    {
+      "part": "Requisition Crate",
+      "on": 0,
+      "socket": "crate1",
+      "by": "-y"
+    },
+    {
+      "part": "Module Socket 3x3",
+      "on": 0,
+      "socket": "engine",
+      "by": "bc",
+      "config": {
+        "modAbove": 2.5
+      }
+    },
+    {
+      "part": "Module Plug 3x3",
+      "on": 88,
+      "socket": "module",
+      "by": "module"
+    },
+    {
+      "part": "Ship Engine Block",
+      "on": 89,
+      "socket": "s1.1",
+      "by": "bottom"
+    },
+    {
+      "part": "Engineer's Panel",
+      "on": 11,
+      "socket": "panelEng",
+      "by": "back"
+    },
+    {
+      "part": "Power Board",
+      "on": 11,
+      "socket": "boardEng",
+      "by": "back"
+    },
+    {
+      "part": "Pipe Bank",
+      "on": 11,
+      "socket": "pipesEngL",
+      "by": "back"
+    },
+    {
+      "part": "Ship Battery S",
+      "on": 11,
+      "socket": "battery",
+      "by": "wall"
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 3,
+      "socket": "lampHoldL0",
+      "by": "back",
+      "config": {
+        "colour": "#f2e0b0"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 5,
+      "socket": "lampHoldL1",
+      "by": "back",
+      "config": {
+        "colour": "#f2e0b0"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 3,
+      "socket": "switchHoldL",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 4,
+      "socket": "lampHoldR0",
+      "by": "back",
+      "config": {
+        "colour": "#f2e0b0"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 4,
+      "socket": "lampHoldR1",
+      "by": "back",
+      "config": {
+        "colour": "#f2e0b0"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 4,
+      "socket": "switchHoldR",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 5,
+      "socket": "lampEngL",
+      "by": "back",
+      "config": {
+        "colour": "#f2e0b0"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 6,
+      "socket": "lampEngR",
+      "by": "back",
+      "config": {
+        "colour": "#f2e0b0"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 11,
+      "socket": "switchEng",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Worn Flight Couch",
+      "on": 14,
+      "socket": "seatL",
+      "by": "bottom"
+    },
+    {
+      "part": "Worn Flight Couch",
+      "on": 14,
+      "socket": "seatR",
+      "by": "bottom"
+    },
+    {
+      "part": "Flight Stabilizer",
+      "on": 14,
+      "socket": "module",
+      "by": "-y",
+      "config": {
+        "keys": "Ship",
+        "mouseAim": true
+      }
+    },
+    {
+      "part": "Shell Control Chair",
+      "on": 14,
+      "socket": "linkChair",
+      "by": "bottom"
+    },
+    {
+      "part": "Iron Bed",
+      "on": 15,
+      "socket": "bed",
+      "by": "wall",
+      "paint": "#6b4a2e",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Locker",
+      "on": 20,
+      "socket": "locker",
+      "by": "wall",
+      "paint": "#8c7b52",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Steel Desk",
+      "on": 24,
+      "socket": "desk",
+      "by": "wall"
+    },
+    {
+      "part": "Shower Stall",
+      "on": 20,
+      "socket": "shower",
+      "by": "wall"
+    },
+    {
+      "part": "Ship Basin",
+      "on": 16,
+      "socket": "basin",
+      "by": "wall"
+    },
+    {
+      "part": "Ship Toilet",
+      "on": 16,
+      "socket": "toilet",
+      "by": "wall"
+    },
+    {
+      "part": "Grow Rack 2 m",
+      "on": 17,
+      "socket": "growL0",
+      "by": "wall"
+    },
+    {
+      "part": "Grow Rack 2 m",
+      "on": 17,
+      "socket": "growL1",
+      "by": "wall"
+    },
+    {
+      "part": "Grow Rack 2 m",
+      "on": 21,
+      "socket": "growM0",
+      "by": "wall"
+    },
+    {
+      "part": "Grow Rack 2 m",
+      "on": 21,
+      "socket": "growM1",
+      "by": "wall"
+    },
+    {
+      "part": "Ship Galley Range",
+      "on": 12,
+      "socket": "stove",
+      "by": "back"
+    },
+    {
+      "part": "Ship Mess Table",
+      "on": 26,
+      "socket": "table",
+      "by": "back"
+    },
+    {
+      "part": "Medicine Cabinet",
+      "on": 18,
+      "socket": "cabinet",
+      "by": "back"
+    },
+    {
+      "part": "Galley Coffee Station",
+      "on": 23,
+      "socket": "coffee",
+      "by": "wall"
+    },
+    {
+      "part": "Steel Swing Door 1.5x2.25 m",
+      "on": 20,
+      "socket": "doorCockpit",
+      "by": "hang",
+      "paint": "#8a6a48",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Steel Swing Door 1.5x2.25 m",
+      "on": 21,
+      "socket": "doorBed",
+      "by": "hang",
+      "paint": "#8a6a48",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Steel Swing Door 1.5x2.25 m",
+      "on": 22,
+      "socket": "doorBath",
+      "by": "hang",
+      "paint": "#d8dcd2",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Steel Swing Door 1.5x2.25 m",
+      "on": 21,
+      "socket": "doorHydro",
+      "by": "hang",
+      "paint": "#8a6a48",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Steel Swing Door 1.5x2.25 m",
+      "on": 23,
+      "socket": "doorGalley",
+      "by": "hang",
+      "paint": "#8a6a48",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 20,
+      "socket": "lampCockpit",
+      "by": "back",
+      "config": {
+        "colour": "#f2e0b0"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 20,
+      "socket": "lampBed",
+      "by": "back",
+      "config": {
+        "colour": "#f2e0b0"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 25,
+      "socket": "lampBath",
+      "by": "back",
+      "config": {
+        "colour": "#f2e0b0"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 21,
+      "socket": "lampCorrA",
+      "by": "back",
+      "config": {
+        "colour": "#f2e0b0"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 21,
+      "socket": "switchFwd",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 21,
+      "socket": "lampHydroA",
+      "by": "back",
+      "config": {
+        "colour": "#f0c8f0"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 21,
+      "socket": "lampHydroB",
+      "by": "back",
+      "config": {
+        "colour": "#f0c8f0"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 21,
+      "socket": "lampCorrB",
+      "by": "back",
+      "config": {
+        "colour": "#f2e0b0"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 26,
+      "socket": "lampGalley",
+      "by": "back",
+      "config": {
+        "colour": "#f2e0b0"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 23,
+      "socket": "switchAft",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    }
+  ],
+  "wires": [
+    [
+      97,
+      95
+    ],
+    [
+      97,
+      96
+    ],
+    [
+      100,
+      98
+    ],
+    [
+      100,
+      99
+    ],
+    [
+      103,
+      101
+    ],
+    [
+      103,
+      102
+    ],
+    [
+      104,
+      106
+    ],
+    [
+      131,
+      127
+    ],
+    [
+      131,
+      128
+    ],
+    [
+      131,
+      129
+    ],
+    [
+      131,
+      130
+    ],
+    [
+      136,
+      132
+    ],
+    [
+      136,
+      133
+    ],
+    [
+      136,
+      134
+    ],
+    [
+      136,
+      135
+    ]
+  ],
+  "links": [
+    {
+      "type": "pipe",
+      "from": 30,
+      "to": 84,
+      "fromPort": "Fuel out",
+      "toPort": "Fuel in"
+    }
+  ],
+  "conduit": true
+}
