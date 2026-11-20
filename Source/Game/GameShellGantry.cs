@@ -309,6 +309,8 @@ public sealed partial class Game
     private bool GantryClamp(Construct c, int part, Construct shell, double now)
     {
         var world = Constructs;
+        if (ConstructGantry.LockAt(world, c.Id, part) is var was and >= 0 && world.GantryLocks[was].Lowering && world.GantryLocks[was].Shell != shell.Id)
+            GantryLet(ref world.GantryLocks[was]); // (another shell on its way down: let go before the clamp takes this one, never left held)
         var k = ConstructGantry.Hold(world, c.Id, part, shell.Id, now, out var fresh);
         if (k < 0)
             return false;
@@ -321,7 +323,7 @@ public sealed partial class Game
             l.PartAt = c.Parts[part].Pos;
             l.From = Vector3.Transform(shell.Pos - gp, iq);
             l.FromTurn = Quaternion.Normalize(iq * shell.Rot);
-            HoldPose(c.DefOf(part).Gantry!, shell, true, out l.At, out l.Turn);
+            ConstructGantry.HoldPose(c.DefOf(part).Gantry!, shell, true, out l.At, out l.Turn);
             if (l.Lowering)
                 l.Since = now - ConstructGantry.LockClose; // (the jaws are shut still: it lifts again at once)
             l.Lowering = false;
@@ -330,19 +332,6 @@ public sealed partial class Game
         shell.HeldBy = c.Id;
         shell.GantryHold = true;
         return true;
-    }
-
-    /// <summary>
-    /// The shell's body pose in the gantry part's frame with its feet at <see cref="ConstructGantry.HoldPoint"/> (lifted, or down on the
-    /// bay's floor), upright and facing out of the bay, as the arms work on it.
-    /// </summary>
-    private static void HoldPose(ShellGantryDef gd, Construct shell, bool up, out Vector3 at, out Quaternion turn)
-    {
-        ref var sp = ref shell.Parts[0];
-        Freeform.PartWorld(shell, 0, out _, out var sr);
-        var partTurn = Quaternion.Normalize(Quaternion.Conjugate(shell.Rot) * sr); // (the shell part's turn on its body)
-        turn = Quaternion.Normalize(Quaternion.Conjugate(partTurn));
-        at = ConstructGantry.HoldPoint(gd, up) - Vector3.Transform(sp.Pos, turn);
     }
 
     /// <summary>
@@ -410,7 +399,7 @@ public sealed partial class Game
             var s = ConstructGantry.Carry(l, now);
             l.From = Vector3.Lerp(l.From, l.At, s);
             l.FromTurn = Quaternion.Normalize(Quaternion.Slerp(l.FromTurn, l.Turn, s));
-            HoldPose(gd, shell, false, out l.At, out l.Turn);
+            ConstructGantry.HoldPose(gd, shell, false, out l.At, out l.Turn);
             l.Lowering = true;
             Log($"[gantry] body {body}: its clamp sets shell {shell.Id} down");
             return;

@@ -552,6 +552,42 @@ public static class ConstructGantry
         return k;
     }
 
+    /// <summary>
+    /// The shell's body pose in the gantry part's frame with its feet at <see cref="ConstructGantry.HoldPoint"/> (lifted, or down on the
+    /// bay's floor), upright and facing out of the bay, as the arms work on it.
+    /// </summary>
+    public static void HoldPose(ShellGantryDef gd, Construct shell, bool up, out Vector3 at, out Quaternion turn)
+    {
+        ref var sp = ref shell.Parts[0];
+        Freeform.PartWorld(shell, 0, out _, out var sr);
+        var partTurn = Quaternion.Normalize(Quaternion.Conjugate(shell.Rot) * sr); // (the shell part's turn on its body)
+        turn = Quaternion.Normalize(Quaternion.Conjugate(partTurn));
+        at = ConstructGantry.HoldPoint(gd, up) - Vector3.Transform(sp.Pos, turn);
+    }
+
+    /// <summary>
+    /// Where a save writes a shell a gantry's clamp holds (the clamp isn't saved): standing on its feet on the bay's floor, as the clamp
+    /// would set it down, never hanging in the air. False: no clamp holds it (or its gantry is gone): saved where it is.
+    /// </summary>
+    public static bool SavedPose(ConstructWorld world, Construct shell, out Vector3 pos, out Quaternion rot)
+    {
+        (pos, rot) = (shell.Pos, shell.Rot);
+        for (var k = 0; k < world.GantryLockCount; k++)
+        {
+            ref readonly var l = ref world.GantryLocks[k];
+            if (l.Shell != shell.Id || l.Body != shell.HeldBy || l.Until >= 0 && !l.Lowering)
+                continue;
+            if (world.Get(l.Body) is not { } c || FindPart(c, l.Part, l.PartAt) != l.Part || c.DefOf(l.Part).Gantry is not { } gd)
+                return false;
+            HoldPose(gd, shell, false, out var at, out var turn);
+            Freeform.PartWorld(c, l.Part, out var gp, out var gr);
+            pos = gp + Vector3.Transform(at, gr);
+            rot = Quaternion.Normalize(gr * turn);
+            return true;
+        }
+        return false;
+    }
+
     /// <summary>Does any swap of this gantry remain (so its clamp stays shut)?</summary>
     public static bool AnyJob(ConstructWorld world, ushort body, int part)
     {
