@@ -509,6 +509,9 @@ public sealed class Assembling : IPartGenerator
         Rec("Small Flush Shell Pod", 30, 2, m: [("steel", 54), ("copper", 8), ("rubber", 4)], p: [("Circuit Board", 2)]),
         Rec("Medium Shell Pod", 50, 2, m: [("steel", 140), ("copper", 16), ("rubber", 8)], p: [("Circuit Board", 3)]),
         Rec("Medium Flush Shell Pod", 50, 2, m: [("steel", 128), ("copper", 16), ("rubber", 8)], p: [("Circuit Board", 3)]),
+        Rec("Service Locker", 8, 2, m: [("steel", 10), ("glass", 1)]), // (the style sheet's liked looks: FittingLookParts; at the end so saved choices keep their index)
+        Rec("Pressure Locker", 10, 2, m: [("steel", 12), ("rubber", 2), ("glass", 1)]),
+        Rec("Ship Battery Module", 40, 3, m: [("steel", 24), ("copper", 30)], p: [("Wiring Loom", 2)]),
         // Tool arms for robot shells (the user, 2026-11-19): each is its tool while worn; a Shell Gantry fits them
         Rec("Shell Welder Arm", 16, 2, m: [("steel", 6), ("copper", 4), ("rubber", 1)], p: [("Circuit Board", 1)]),
         Rec("Shell Cutter Arm", 16, 2, m: [("steel", 8), ("copper", 2)], p: [("Circuit Board", 1)]),

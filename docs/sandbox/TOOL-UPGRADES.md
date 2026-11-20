@@ -11,7 +11,7 @@ Creative ignores upgrades, since every tool is already at its best there.
 
 | Stat | Tool | Start | Modules (value) | What it does |
 | --- | --- | --- | --- | --- |
-| Lift | physics gun | 5,000 kg | Lift Coil Mk 2 (10,000), Mk 3 (20,000), Mk 4 (40,000), Mk 5 (80,000) | the heaviest thing the beam takes; its pull is 30 N a kg of lift, so anything at the limit still gets 30 m/s2 |
+| Lift | physics gun | 5,000 kg | Lift Coil Mk 2 (10,000), Mk 3 (20,000), Mk 4 (40,000), Mk 5 (80,000) | the beam's pull, 30 N a kg of the value; in survival the gun lifts 3,000 kg at most whatever the level (user, 2026-11-19: docs/sandbox/design/manipulators.md), so a coil only makes it pull harder |
 | Reach | physics gun | 12 m | Beam Lens Mk 2 (15), Mk 3 (18), Mk 4 (22), Mk 5 (26) | how far the beam reaches and holds |
 | Drill bit | ground drill | x1 | Drill Bit Mk 2 (x1.25), Mk 3 (x1.5), Mk 4 (x1.8) | the scoop's radius, times `Digging.json`'s |
 | Drill motor | ground drill | x1 | Drill Motor Mk 2 (x1.35), Mk 3 (x1.75), Mk 4 (x2.25) | scoops a second |
