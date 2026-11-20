@@ -342,6 +342,7 @@ public static class ConstructConveyor
                 Array.Resize(ref c.PieceRacks, Math.Max(4, c.PieceRackCount * 2));
             c.PieceRacks[c.PieceRackCount++] = (ushort)i;
         }
+        ConstructShellPod.FindHosts(c); // (the surfaces its flush pods' pockets open: drawn cut, Renderer.Cuts.cs)
     }
 
     /// <summary>A world ray into a rack part's own frame (unturned), where its columns are boxes.</summary>

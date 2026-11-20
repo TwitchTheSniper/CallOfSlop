@@ -749,8 +749,10 @@ public static unsafe partial class Program
                 }
             }
         }
+        // The attach tool: RMB breaks the one seam under the crosshair, Shift+RMB takes the part off (Program.SandboxWeldSeam.cs).
+        var seamClick = SandboxWeldSeamInput(g, me, in h, aimed, hit);
         // Taking a part off: hold aim on it with the tool it needs.
-        if (h.Tool != ConstructTool.None && aimed && Pressed(GameAction.Aim) && !hit.Body.Loose && hit.SlotPlus1 == 0) // (a stored part is taken with F, not a tool)
+        if (h.Tool != ConstructTool.None && aimed && !seamClick && Pressed(GameAction.Aim) && !hit.Body.Loose && hit.SlotPlus1 == 0) // (a stored part is taken with F, not a tool)
         {
             g.SandboxSend(CActKind.Remove, body: hit.Body.Id, part: (ushort)hit.Part);
             _sbRemoving = true;
@@ -1344,6 +1346,7 @@ public static unsafe partial class Program
             Tool = h.Tool, Held = ConstructParts.Get(h.Held), Now = now, Velocity = me.Sim.Velocity, Grounded = me.Sim.Grounded,
             Using = h.Edit != EditKind.None || (h.Tool == ConstructTool.Linker && _lkBody != 0) || (h.Tool == ConstructTool.PhysicsGun && h.GrabBody != 0) || (h.Tool == ConstructTool.Configure && Ui.SandboxConfigOpen) || (h.Tool == ConstructTool.GroundDrill && _sculpt.Busy), // (the linking tool: while a link is being routed; the physics gun: while it holds)
         };
+        input.Module = WornArmView(me);
         var drawn = ToolRender.FirstPerson(input, ref _sbTool, out var shown);
         if (shown == ConstructTool.None && _sbToolShown != ConstructTool.None && h.Tool == ConstructTool.None)
             _game.EquipUntil = Math.Max(_game.EquipUntil, now + _game.Active.Def.EquipTime); // the tool is down: the gun comes up
@@ -1360,13 +1363,28 @@ public static unsafe partial class Program
         _vmAnim.Right.Solve(_sbTool.Right, Matrix4x4.Identity, Vector3.Zero);
         _vmAnim.Left.Solve(_sbTool.Left, Matrix4x4.Identity, Vector3.Zero);
         var armColors = ArmColors.For(me.Color * 0.5f + new Vector3(0.06f));
-        _vmAnim.Right.Draw(Gfx, armColors);
+        if (_sbTool.Model is not { Arm: true })
+            _vmAnim.Right.Draw(Gfx, armColors); // (a shell's arm module is the arm: ShellKitNodes.ViewModel)
         _vmAnim.Left.Draw(Gfx, armColors);
         Gfx.EndBatch();
         if (Matrix4x4.Invert(_worldView, out var camToWorld))
             ToolRender.NoteViewTip(_sbTool, camToWorld); // (the welder's light, next frame)
         DrawToolCard(g, me, in h, shown, now);
         return true;
+    }
+
+    /// <summary>A worn shell's module that is seen in first person in place of the tool it forces (Shells.json "view"), as a model at the frame's size, or null.</summary>
+    private static ToolModel? WornArmView(Player me)
+    {
+        if (!me.InShell)
+            return null;
+        foreach (var m in ShellFrames.Worn(me).Modules)
+            if (m is { View: true, Tool: not null })
+            {
+                var (arm, accent) = ShellKitNodes.ColoursOf(me);
+                return ShellKitNodes.ViewModel(m, ShellFrames.ScaleOf(me), arm, accent);
+            }
+        return null;
     }
 
     private static readonly PanelCard _toolCard = new();
@@ -1389,7 +1407,7 @@ public static unsafe partial class Program
     /// </summary>
     private static void DrawToolCard(Game g, Player me, in SandboxHand h, ConstructTool shown, double now)
     {
-        if (ToolRender.ModelFor(h.Tool) is not { Display: { } ds } || h.Tool is ConstructTool.None or ConstructTool.Hands)
+        if (ToolRender.ViewModelFor(h.Tool, WornArmView(me)) is not { Display: { } ds } || h.Tool is ConstructTool.None or ConstructTool.Hands)
             return;
         g.SandboxToolCardFrame = CrashLog.Frame;
         if (shown != h.Tool || _sbTool.Model?.Display is not { } on)

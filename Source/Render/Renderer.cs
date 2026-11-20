@@ -20,6 +20,7 @@ public sealed unsafe partial class Renderer
         uniform mat4 uModel;
         uniform vec3 uOrigin; // the render origin (SetCameraAt): uModel and uMVP are relative to it, so far from the map's middle nothing shakes
         out vec3 vWorld;
+        out vec3 vRel;         // the point from the render origin (a flush pod's opening: CutGlsl)
         out vec3 vNormal;
         out vec3 vLocal;       // the point in the box, metres from its middle (a material's detail stays on a moving part)
         out vec3 vLocalN;      // the box's own face normal
@@ -29,7 +30,8 @@ public sealed unsafe partial class Renderer
         flat out vec3 vUpL;    // the world's up in the box (a material's weather)
         void main()
         {
-            vWorld = (uModel * vec4(aPos, 1.0)).xyz + uOrigin;
+            vRel = (uModel * vec4(aPos, 1.0)).xyz;
+            vWorld = vRel + uOrigin;
             vNormal = mat3(uModel) * aNormal;
             vSize = vec3(length(uModel[0].xyz), length(uModel[1].xyz), length(uModel[2].xyz));
             vLocal = aPos * vSize;
@@ -47,6 +49,7 @@ public sealed unsafe partial class Renderer
     private static readonly string FragmentSrc = "#version 410 core\n" + Lighting.Glsl + Surfaces.Glsl + """
 
         in vec3 vWorld;
+        in vec3 vRel;
         in vec3 vNormal;
         in vec3 vLocal;
         in vec3 vLocalN;
@@ -66,6 +69,27 @@ public sealed unsafe partial class Renderer
         uniform vec3 uBloodCol;
         uniform vec2 uBloodRot;
         out vec4 FragColor;
+        // Openings (Renderer.Cuts.cs): only the CUTS variant of each box program has them (a discard costs early depth
+        // testing, so the plain programs keep none). Up to CutMax boxes, three rows each taking a point from the render
+        // origin into the box's unit cube; a box drawn with the cut mark (mode + 4 x code, code = first x 32 + count: its
+        // body's own openings) is not drawn inside one of them: a flush pod's pocket.
+        #ifdef CUTS
+        uniform vec4 uCut[48];
+
+        bool InCut(int code)
+        {
+            vec4 p = vec4(vRel, 1.0);
+            int first = code / 32;
+            int last = min(first + code - first * 32, 16);
+            for (int i = first; i < last; i++)
+            {
+                vec3 q = vec3(dot(uCut[i * 3], p), dot(uCut[i * 3 + 1], p), dot(uCut[i * 3 + 2], p));
+                if (max(abs(q.x), max(abs(q.y), abs(q.z))) < 1.0)
+                    return true;
+            }
+            return false;
+        }
+        #endif
 
         float BloodHash(vec3 p)
         {
@@ -100,8 +124,18 @@ public sealed unsafe partial class Renderer
 
         void main()
         {
+            float mode = uMode;
+            if (mode > 3.5)
+            {
+                float code = floor(mode * 0.25);
+                mode -= 4.0 * code;
+        #ifdef CUTS
+                if (InCut(int(code + 0.5)))
+                    discard;
+        #endif
+            }
             vec3 col = uColor.rgb;
-            if (uMode > 1.5)
+            if (mode > 1.5)
             {
                 FragColor = uColor;
                 return;
@@ -110,7 +144,7 @@ public sealed unsafe partial class Renderer
                 col = Bleed(col);
 
             vec3 n = normalize(vNormal);
-            if (uMode > 0.5)
+            if (mode > 0.5)
             {
                 // Planar mapping in world space, one repeat per 2 m. Side faces keep "up" as v.
                 vec2 uv = abs(n.y) > 0.5 ? vWorld.xz : (abs(n.x) > 0.5 ? vec2(vWorld.z, vWorld.y) : vec2(vWorld.x, vWorld.y));
@@ -120,7 +154,7 @@ public sealed unsafe partial class Renderer
 
             // Hemisphere ambient + sun, plus a little rim light on the sides so box edges read.
             float rim = 0.12 * (1.0 - abs(n.y));
-            if (uSurfQ.x > 0.5 && uLayer >= 7.0 && uMode < 0.5) // a shared material (Surfaces.cs); Low, the rows of the old textures and everything else: the classic light
+            if (uSurfQ.x > 0.5 && uLayer >= 7.0 && mode < 0.5) // a shared material (Surfaces.cs); Low, the rows of the old textures and everything else: the classic light
                 col = SurfaceLit(col, n, vWorld, vLocal, vLocalN, vSize, uLayer, vBody, vBodyN, normalize(vUpL)) + col * rim * 0.5 * gLitAmb;
             else
                 col = ApplyLightAt(col, n, 0.0, vWorld) + col * rim * gLitAmb;
@@ -132,7 +166,7 @@ public sealed unsafe partial class Renderer
     private GlProgram _program;
     private GlVertexArray _vao;
     private GlBuffer _vbo;
-    private int _locOrigin = -1, _iLocOrigin = -1;
+    private int _locOrigin = -1;
     private int _locMvp, _locModel, _locColor, _locMode, _locLayer, _locTex, _locCam, _locFog, _locFogRange;
     private int _locBlood = -1, _locBloodN = -1, _locBloodCol = -1, _locBloodRot = -1;
     private bool _bloodOn;
@@ -355,10 +389,62 @@ public sealed unsafe partial class Renderer
     private int _batchCount;
     private bool _batching, _batchBlended, _blendOn, _instReady, _instBroken;
     private int _batchDepth;
-    private GlProgram _instProgram;
+    private GlProgram _instProgram, _instCutProgram;
     private GlVertexArray _instVao;
     private GlBuffer _instVbo;
-    private int _iLocViewProj, _iLocBody, _iLocCam, _iLocFog, _iLocFogRange, _iLocTex;
+    private InstLoc _iLoc, _icLoc;
+
+    /// <summary>An instanced box program's uniform locations (Cut: -1 in the plain one).</summary>
+    private struct InstLoc
+    {
+        public int ViewProj, Body, Origin, Cam, Fog, FogRange, Cut;
+    }
+
+    /// <summary>The instanced box program, plain or with the openings (<c>CUTS</c>: Renderer.Cuts.cs); throws if it doesn't link.</summary>
+    private GlProgram MakeInstanced(string vsSrc, bool cuts, out InstLoc loc)
+    {
+        var fsSrc = InstancedFragment(cuts);
+        var vs = CreateShader(GlShaderType.Vertex).SetSource(RenderCaps.Glsl(vsSrc)).Compile();
+        var fs = CreateShader(GlShaderType.Fragment).SetSource(RenderCaps.Glsl(fsSrc)).Compile();
+        var program = CreateProgram();
+        Native.glAttachShader(program, vs);
+        Native.glAttachShader(program, fs);
+        Native.glLinkProgram(program);
+        GlDebug.Label(GL_PROGRAM, program.Id, cuts ? "Renderer.instCutProgram" : "Renderer.instProgram");
+        int linked;
+        Native.glGetProgramiv(program, GL_LINK_STATUS, &linked);
+        if (linked == 0)
+        {
+            var log = stackalloc byte[2048];
+            int len;
+            Native.glGetProgramInfoLog(program, 2048, &len, log);
+            throw new InvalidOperationException("instanced box shader link failed: " + System.Text.Encoding.UTF8.GetString(log, Math.Max(len, 0)));
+        }
+        vs.Dispose();
+        fs.Dispose();
+        Lighting.Upload(program); // the sun and sky like every scene shader (and their changes); (binds it)
+        int Loc(ReadOnlySpan<byte> name)
+        {
+            fixed (byte* p = name)
+                return Native.glGetUniformLocation(program, p);
+        }
+        loc = new InstLoc
+        {
+            ViewProj = Loc("uViewProj\0"u8), Body = Loc("uBody\0"u8), Origin = Loc("uOrigin\0"u8), Cam = Loc("uCam\0"u8),
+            Fog = Loc("uFog\0"u8), FogRange = Loc("uFogRange\0"u8), Cut = cuts ? Loc("uCut\0"u8) : -1,
+        };
+        Native.glUniform1i(Loc("uTex\0"u8), 0);
+        return program;
+    }
+
+    /// <summary>The box fragment shader with its per-draw look from per-instance inputs (the instanced, merged and crowd programs), with or without the openings.</summary>
+    private static string InstancedFragment(bool cuts)
+    {
+        var src = FragmentSrc.Replace("uniform vec4 uColor;", "in vec4 vColorI;\n#define uColor vColorI")
+            .Replace("uniform float uMode;", "flat in float vModeI;\n#define uMode vModeI")
+            .Replace("uniform float uLayer;", "flat in float vLayerI;\n#define uLayer vLayerI");
+        return cuts ? src.Replace("#version 410 core\n", "#version 410 core\n#define CUTS\n") : src;
+    }
 
     /// <summary>Instanced draws and the boxes in them since the last read (the smoke test's zombie line).</summary>
     public int BatchDraws, BatchBoxes;
@@ -400,41 +486,55 @@ public sealed unsafe partial class Renderer
 
     private void FlushBatch()
     {
-        if (_batchCount == 0)
-            return;
-        _instProgram.Use();
+        if (_batchCount > 0)
+            FlushInstances(_batch, ref _batchCount, _instProgram, in _iLoc);
+        if (_cutBatchCount > 0)
+            FlushInstances(_cutBatch, ref _cutBatchCount, _instCutProgram, in _icLoc); // (boxes round flush pods' pockets: Renderer.Cuts.cs)
+    }
+
+    /// <summary>The per-draw uniforms of an instanced box program: this frame's camera, fog and (the cut variant) openings.</summary>
+    private void InstanceUniforms(GlProgram program, in InstLoc loc)
+    {
+        program.Use();
         var vp = _viewProjRel;
-        Native.glUniformMatrix4fv(_iLocViewProj, 1, false, &vp.M11);
-        Native.glUniform3f(_iLocOrigin, Origin.X, Origin.Y, Origin.Z);
+        Native.glUniformMatrix4fv(loc.ViewProj, 1, false, &vp.M11);
+        Native.glUniform3f(loc.Origin, Origin.X, Origin.Y, Origin.Z);
         var identity = Matrix4x4.Identity;
-        Native.glUniformMatrix4fv(_iLocBody, 1, false, &identity.M11);
+        Native.glUniformMatrix4fv(loc.Body, 1, false, &identity.M11);
         var cam = CameraPosition;
-        Native.glUniform3f(_iLocCam, cam.X, cam.Y, cam.Z);
-        Native.glUniform3f(_iLocFog, FogColor.X, FogColor.Y, FogColor.Z);
-        Native.glUniform2f(_iLocFogRange, FogRange.X, FogRange.Y);
-        PerfCounters.Draw(36, _batchCount); // the perf window's counters (Source/Perf/PerfCounters.cs)
+        Native.glUniform3f(loc.Cam, cam.X, cam.Y, cam.Z);
+        Native.glUniform3f(loc.Fog, FogColor.X, FogColor.Y, FogColor.Z);
+        Native.glUniform2f(loc.FogRange, FogRange.X, FogRange.Y);
+        if (loc.Cut >= 0)
+            PushCuts(loc.Cut, ref _cutInst);
+    }
+
+    private void FlushInstances(float[] data, ref int count, GlProgram program, in InstLoc loc)
+    {
+        InstanceUniforms(program, in loc);
+        PerfCounters.Draw(36, count); // the perf window's counters (Source/Perf/PerfCounters.cs)
         if (RenderCaps.PersistentBuffers && Ring() is { } ring)
         {
             // 4.6 path: straight into this frame's segment of the persistent ring, drawn from its base instance
             // (written first: a write can grow the ring, and the VAO must point at the buffer it ended up in).
             int first;
-            fixed (float* p = _batch)
-                first = ring.Write(p, _batchCount, BatchFloats);
+            fixed (float* p = data)
+                first = ring.Write(p, count, BatchFloats);
             RingVao(ring);
-            Native.glDrawArraysInstancedBaseInstance(GL_TRIANGLES, 0, 36, _batchCount, (uint)first);
+            Native.glDrawArraysInstancedBaseInstance(GL_TRIANGLES, 0, 36, count, (uint)first);
         }
         else
         {
             _instVao.Bind();
             Native.glBindBuffer(GL_ARRAY_BUFFER, _instVbo);
-            Native.glBufferData(GL_ARRAY_BUFFER, _batch.Length * sizeof(float), null, GL_STREAM_DRAW); // orphan: no stall on the last copy
-            fixed (float* p = _batch)
-                Native.glBufferSubData(GL_ARRAY_BUFFER, 0, _batchCount * BatchFloats * sizeof(float), p);
-            Native.glDrawArraysInstanced(GL_TRIANGLES, 0, 36, _batchCount);
+            Native.glBufferData(GL_ARRAY_BUFFER, data.Length * sizeof(float), null, GL_STREAM_DRAW); // orphan: no stall on the last copy
+            fixed (float* p = data)
+                Native.glBufferSubData(GL_ARRAY_BUFFER, 0, count * BatchFloats * sizeof(float), p);
+            Native.glDrawArraysInstanced(GL_TRIANGLES, 0, 36, count);
         }
         BatchDraws++;
-        BatchBoxes += _batchCount;
-        _batchCount = 0;
+        BatchBoxes += count;
+        count = 0;
         _program.Use();
         _vao.Bind();
     }
@@ -520,6 +620,7 @@ public sealed unsafe partial class Renderer
                 uniform mat4 uBody;
                 uniform vec3 uOrigin;
                 out vec3 vWorld;
+                out vec3 vRel;
                 out vec3 vNormal;
                 out vec3 vLocal;
                 out vec3 vLocalN;
@@ -535,6 +636,7 @@ public sealed unsafe partial class Renderer
                     mat4 inst = mat4(iM0, iM1, iM2, iM3);
                     mat4 model = uBody * inst;
                     vec4 w = model * vec4(aPos, 1.0);
+                    vRel = w.xyz;
                     vWorld = w.xyz + uOrigin;
                     vNormal = mat3(model) * aNormal;
                     vSize = vec3(length(iM0.xyz), length(iM1.xyz), length(iM2.xyz));
@@ -551,39 +653,10 @@ public sealed unsafe partial class Renderer
                     gl_Position = uViewProj * w;
                 }
                 """;
-            // The box shader's own fragment code, with the per-draw uniforms coming from the instance instead.
-            var fsSrc = FragmentSrc.Replace("uniform vec4 uColor;", "in vec4 vColorI;\n#define uColor vColorI")
-                .Replace("uniform float uMode;", "flat in float vModeI;\n#define uMode vModeI")
-                .Replace("uniform float uLayer;", "flat in float vLayerI;\n#define uLayer vLayerI");
-            var vs = CreateShader(GlShaderType.Vertex).SetSource(RenderCaps.Glsl(vsSrc)).Compile();
-            var fs = CreateShader(GlShaderType.Fragment).SetSource(RenderCaps.Glsl(fsSrc)).Compile();
-            _instProgram = CreateProgram();
-            Native.glAttachShader(_instProgram, vs);
-            Native.glAttachShader(_instProgram, fs);
-            Native.glLinkProgram(_instProgram);
-            GlDebug.Label(GL_PROGRAM, _instProgram.Id, "Renderer.instProgram");
-            int linked;
-            Native.glGetProgramiv(_instProgram, GL_LINK_STATUS, &linked);
-            if (linked == 0)
-                throw new InvalidOperationException("instanced box shader link failed");
-            vs.Dispose();
-            fs.Dispose();
-            Lighting.Upload(_instProgram); // the sun and sky like every scene shader (and their changes)
-            fixed (byte* p = "uViewProj\0"u8)
-                _iLocViewProj = Native.glGetUniformLocation(_instProgram, p);
-            fixed (byte* p = "uBody\0"u8)
-                _iLocBody = Native.glGetUniformLocation(_instProgram, p);
-            fixed (byte* p = "uOrigin\0"u8)
-                _iLocOrigin = Native.glGetUniformLocation(_instProgram, p);
-            fixed (byte* p = "uCam\0"u8)
-                _iLocCam = Native.glGetUniformLocation(_instProgram, p);
-            fixed (byte* p = "uFog\0"u8)
-                _iLocFog = Native.glGetUniformLocation(_instProgram, p);
-            fixed (byte* p = "uFogRange\0"u8)
-                _iLocFogRange = Native.glGetUniformLocation(_instProgram, p);
-            fixed (byte* p = "uTex\0"u8)
-                _iLocTex = Native.glGetUniformLocation(_instProgram, p);
-            Native.glUniform1i(_iLocTex, 0);
+            // The box shader's own fragment code, with the per-draw uniforms coming from the instance instead; and its
+            // variant with the openings (Renderer.Cuts.cs), for the boxes round flush pods alone.
+            _instProgram = MakeInstanced(vsSrc, false, out _iLoc);
+            _instCutProgram = MakeInstanced(vsSrc, true, out _icLoc);
 
             _instVao = GenVertexArray();
             _instVao.Bind();
@@ -799,20 +872,27 @@ public sealed unsafe partial class Renderer
         var layer = surface > 0 ? surface : (float)material; // (a shared material's code, Surfaces.Code; else the old texture layer)
         if (MarkGlow && mode == 2 && !_blendOn)
             alpha = 0f; // (this pixel glows: PostFx reads the mark, and with blending off it changes nothing else)
+        mode = CutMode(mode); // (a body round flush pods: their pockets aren't drawn on it, Renderer.Cuts.cs)
+        if (mode >= 4)
+        {
+            // Cut-marked: drawn by the cut variant, never the plain programs (they keep no discard).
+            if (_batching && !_bloodOn && shape == 0 && !_blendOn)
+            {
+                BatchCut(m, color, alpha, mode, layer);
+                return;
+            }
+            if (_batching)
+                FlushBatch(); // (keep the order)
+            DrawCutOne(m, color, alpha, mode, layer, shape);
+            return;
+        }
         if (_batching)
         {
             if (!_bloodOn && shape == 0 && (_batchBlended || !_blendOn))
             {
                 // Batched: one instanced draw per few thousand boxes instead of one draw each.
-                var o = _batchCount * BatchFloats;
-                var b = _batch;
                 // (m: relative to the render origin, as the batch's shader takes it)
-                b[o] = m.M11; b[o + 1] = m.M12; b[o + 2] = m.M13; b[o + 3] = m.M14;
-                b[o + 4] = m.M21; b[o + 5] = m.M22; b[o + 6] = m.M23; b[o + 7] = m.M24;
-                b[o + 8] = m.M31; b[o + 9] = m.M32; b[o + 10] = m.M33; b[o + 11] = m.M34;
-                b[o + 12] = m.M41; b[o + 13] = m.M42; b[o + 14] = m.M43; b[o + 15] = m.M44;
-                b[o + 16] = color.X; b[o + 17] = color.Y; b[o + 18] = color.Z; b[o + 19] = alpha;
-                b[o + 20] = mode; b[o + 21] = layer;
+                WriteInstance(_batch, _batchCount * BatchFloats, m, color, alpha, mode, layer);
                 if (++_batchCount == BatchMax)
                     FlushBatch();
                 return;

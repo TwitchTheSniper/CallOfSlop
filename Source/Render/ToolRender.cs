@@ -223,7 +223,11 @@ public static class ToolRender
         public double Now;
         public Vector3 Velocity;
         public bool Grounded;
+        public ToolModel? Module; // a worn shell's arm module with a view of its own (ShellKitNodes.ViewModel): drawn for its tool instead of the tool's model
     }
+
+    /// <summary>The model the first-person view draws for <paramref name="tool"/>: a worn module's own for the tool it forces, else the tool's.</summary>
+    public static ToolModel ViewModelFor(ConstructTool tool, ToolModel? module) => module != null && module.Tool == tool && ShowModel == null ? module : ModelFor(tool);
 
     /// <summary>
     /// The first-person view (camera space, -Z forward): the tool low on the right, a carried part in the off hand.
@@ -249,11 +253,11 @@ public static class ToolRender
         var bob = new Vector3(MathF.Cos(st.BobPhase * 0.5f) * 0.008f, MathF.Sin(st.BobPhase) * 0.012f, 0) * move;
         if (shown is not (ConstructTool.None or ConstructTool.Hands))
         {
-            var m = ModelFor(shown);
+            var m = ViewModelFor(shown, i.Module);
             var local = Animate(m, ref st, i.Now, i.Using && shown == i.Tool, down, out f.Spin, out f.Glow);
             f.Model = m;
             f.Using = i.Using && shown == i.Tool && down <= 0.01f;
-            f.Pose = local * Matrix4x4.CreateTranslation(new Vector3(0.21f, -0.22f, -0.44f) + bob);
+            f.Pose = local * Matrix4x4.CreateTranslation((m.ViewAt ?? ToolDisplay.ViewGrip) + bob);
             var rot = ThirdPersonArms.RotationOf(f.Pose);
             f.Right = OnTool(m.Grip, f.Pose, rot);
             f.Left = m.Support is { } sup ? OnTool(sup, f.Pose, rot) : new HandTarget(new Vector3(-0.24f, -0.52f, -0.2f), Quaternion.Identity, HandShape.Flat);
@@ -350,6 +354,7 @@ public static class ToolRender
             Stance.Crouch => (0.82f, 0.36f),
             _ => (1.3f, 0.38f),
         };
+        side += ThirdPersonArms.ShellSpread(p);
         if (shown is not (ConstructTool.None or ConstructTool.Hands))
         {
             var m = ModelFor(shown);

@@ -1715,7 +1715,7 @@ public sealed partial class ConstructWorld
                     // edge as the frame's capsule stands on one, the centre a little past it (a beam, a deck's rim), not pushed off.
                     if (!s.Grounded && s.Velocity.Y <= 0.5f)
                     {
-                        var drop = MathF.Max(0, (c.Anchored || c.Asleep ? 0 : c.Vel.Y) - s.Velocity.Y) * World.TickDt + 0.06f;
+                        var drop = MathF.Max(0, c.MoveVel.Y - s.Velocity.Y) * World.TickDt + 0.06f;
                         rise = MathF.Max(rise, drop);
                         if (top == null && TopAt(lf, centre, half, upLocal, t, q, feet, ConstructRide.EdgeHold) is { } edge)
                         {
@@ -1837,7 +1837,7 @@ public sealed partial class ConstructWorld
                         // move for them). The player's own speed into it never counts (running into a parked car is no
                         // impact); moving away with it takes the speed off (ba01's gentle sides: jogging alongside is safe).
                         var pv = c == ride ? c.SegPointVel(p.Seg, wclosest) - c.SegPointVel(s.RideSeg, wclosest)
-                            : (c.Anchored || c.Asleep ? Vector3.Zero : c.PointVel(wclosest)) + c.SegPointVel(p.Seg, wclosest) - rideVel;
+                            : c.MovePointVel(wclosest) + c.SegPointVel(p.Seg, wclosest) - rideVel;
                         var pn = pv.X * nx + pv.Z * nz;
                         // Assist 2: jumping into a construct's ledge (up to a vault's reach) climbs onto it, in its frame.
                         if (s.Velocity.Y > 1f && pn - vn > 0.5f && Vault(c, i, upLocal, centre, half, t, q, wclosest, nx, nz, ref s, height, frame))
@@ -2385,6 +2385,7 @@ public sealed partial class ConstructWorld
         LoadStep(server: true); // (what the bins hold counts in their bodies' mass: before the cargo step, which reads a carried body's)
         ConstructBreach.Step(this); // (boarding craft's hull grapples take hold or let go, their cutters burn: before the cargo step, which carries what they hold)
         ConstructCargo.Step(this); // (what frozen cargo volumes carry follows them; what entered is caught, what left is let go)
+        ConstructFrames.After(this, posed: false); // (loose bodies aboard moving constructs: their move through the frame taken, placed by its new pose: ConstructFrames.cs)
         StepPart(6);
         perf.Dispose();
         ConstructGravity.Refresh(this); // (gravity wells and generators as they are now: ConstructGravity.cs)
