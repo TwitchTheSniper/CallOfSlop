@@ -43,21 +43,6 @@
     },
     {
       "min": [
-        1.675,
-        0.128,
-        41.863
-      ],
-      "max": [
-        2.175,
-        0.875,
-        42.137
-      ],
-      "color": "#2c5aa0",
-      "detail": true,
-      "finish": "painted plating"
-    },
-    {
-      "min": [
         2.155,
         0.127,
         41.855
@@ -113,21 +98,6 @@
         42.125
       ],
       "color": "#c4c8ca",
-      "finish": "painted plating"
-    },
-    {
-      "min": [
-        10.575,
-        0.128,
-        41.863
-      ],
-      "max": [
-        11.075,
-        0.875,
-        42.137
-      ],
-      "color": "#2c5aa0",
-      "detail": true,
       "finish": "painted plating"
     }
   ],

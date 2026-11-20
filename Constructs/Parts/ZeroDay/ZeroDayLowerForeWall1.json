@@ -29,16 +29,832 @@
     },
     {
       "min": [
-        2.675,
-        0.128,
-        8.113
+        2.929,
+        2.705,
+        8.365
       ],
       "max": [
-        10.075,
-        0.875,
-        8.387
+        9.821,
+        3.119,
+        8.389
       ],
-      "color": "#2c5aa0",
+      "color": "#3a4046",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        2.975,
+        2.805,
+        8.397
+      ],
+      "max": [
+        9.775,
+        2.905,
+        8.497
+      ],
+      "color": "#646c72",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 6,
+      "front": "+x",
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        2.975,
+        2.967,
+        8.411
+      ],
+      "max": [
+        9.775,
+        3.023,
+        8.467
+      ],
+      "color": "#2f6a9a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 6,
+      "front": "+x",
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        2.975,
+        2.793,
+        8.391
+      ],
+      "max": [
+        3.015,
+        2.917,
+        8.503
+      ],
+      "color": "#2a2e33",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 6,
+      "front": "+x",
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        2.975,
+        2.959,
+        8.405
+      ],
+      "max": [
+        3.015,
+        3.031,
+        8.473
+      ],
+      "color": "#2a2e33",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 6,
+      "front": "+x",
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        9.735,
+        2.793,
+        8.391
+      ],
+      "max": [
+        9.775,
+        2.917,
+        8.503
+      ],
+      "color": "#2a2e33",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 6,
+      "front": "+x",
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        9.735,
+        2.959,
+        8.405
+      ],
+      "max": [
+        9.775,
+        3.031,
+        8.473
+      ],
+      "color": "#2a2e33",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 6,
+      "front": "+x",
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        2.929,
+        0.128,
+        8.365
+      ],
+      "max": [
+        8.971,
+        0.422,
+        8.393
+      ],
+      "color": "#30353b",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        2.929,
+        1.202,
+        8.365
+      ],
+      "max": [
+        8.971,
+        1.292,
+        8.415
+      ],
+      "color": "#2a2e33",
+      "detail": true,
+      "shape": "bevel",
+      "radius": 0.35,
+      "edges": "long",
+      "front": "+x",
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        2.929,
+        1.296,
+        8.365
+      ],
+      "max": [
+        8.971,
+        1.318,
+        8.397
+      ],
+      "color": "#5ac8ff",
+      "detail": true,
+      "glow": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        2.925,
+        0.128,
+        8.365
+      ],
+      "max": [
+        3.015,
+        2.71,
+        8.425
+      ],
+      "color": "#2a2e33",
+      "detail": true,
+      "shape": "bevel",
+      "radius": 0.3,
+      "edges": "long",
+      "front": "+y",
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        4.26,
+        0.128,
+        8.365
+      ],
+      "max": [
+        4.35,
+        2.71,
+        8.425
+      ],
+      "color": "#2a2e33",
+      "detail": true,
+      "shape": "bevel",
+      "radius": 0.3,
+      "edges": "long",
+      "front": "+y",
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        4.28,
+        2.765,
+        8.365
+      ],
+      "max": [
+        4.33,
+        3.055,
+        8.405
+      ],
+      "color": "#2a2e33",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        5.64,
+        0.128,
+        8.365
+      ],
+      "max": [
+        5.73,
+        2.71,
+        8.425
+      ],
+      "color": "#2a2e33",
+      "detail": true,
+      "shape": "bevel",
+      "radius": 0.3,
+      "edges": "long",
+      "front": "+y",
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        5.66,
+        2.765,
+        8.365
+      ],
+      "max": [
+        5.71,
+        3.055,
+        8.405
+      ],
+      "color": "#2a2e33",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        7.02,
+        0.128,
+        8.365
+      ],
+      "max": [
+        7.11,
+        2.71,
+        8.425
+      ],
+      "color": "#2a2e33",
+      "detail": true,
+      "shape": "bevel",
+      "radius": 0.3,
+      "edges": "long",
+      "front": "+y",
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        7.04,
+        2.765,
+        8.365
+      ],
+      "max": [
+        7.09,
+        3.055,
+        8.405
+      ],
+      "color": "#2a2e33",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        8.4,
+        0.128,
+        8.365
+      ],
+      "max": [
+        8.49,
+        2.71,
+        8.425
+      ],
+      "color": "#2a2e33",
+      "detail": true,
+      "shape": "bevel",
+      "radius": 0.3,
+      "edges": "long",
+      "front": "+y",
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        8.42,
+        2.765,
+        8.365
+      ],
+      "max": [
+        8.47,
+        3.055,
+        8.405
+      ],
+      "color": "#2a2e33",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        3.055,
+        0.462,
+        8.365
+      ],
+      "max": [
+        4.22,
+        1.158,
+        8.391
+      ],
+      "color": "#30363b",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        3.175,
+        0.602,
+        8.365
+      ],
+      "max": [
+        4.1,
+        1.018,
+        8.395
+      ],
+      "color": "#1c1f23",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        3.195,
+        0.652,
+        8.365
+      ],
+      "max": [
+        4.08,
+        0.687,
+        8.405
+      ],
+      "color": "#30363b",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        3.195,
+        0.747,
+        8.365
+      ],
+      "max": [
+        4.08,
+        0.782,
+        8.405
+      ],
+      "color": "#30363b",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        3.195,
+        0.842,
+        8.365
+      ],
+      "max": [
+        4.08,
+        0.877,
+        8.405
+      ],
+      "color": "#30363b",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        3.195,
+        0.937,
+        8.365
+      ],
+      "max": [
+        4.08,
+        0.972,
+        8.405
+      ],
+      "color": "#30363b",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        3.055,
+        1.352,
+        8.365
+      ],
+      "max": [
+        4.22,
+        2.645,
+        8.4
+      ],
+      "color": "#454c52",
+      "detail": true,
+      "shape": "bevel",
+      "radius": 0.4,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        3.135,
+        2.485,
+        8.394
+      ],
+      "max": [
+        3.315,
+        2.565,
+        8.406
+      ],
+      "color": "#58c8e8",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        4.39,
+        0.462,
+        8.365
+      ],
+      "max": [
+        5.6,
+        1.158,
+        8.391
+      ],
+      "color": "#30363b",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        4.51,
+        0.602,
+        8.365
+      ],
+      "max": [
+        5.48,
+        1.018,
+        8.395
+      ],
+      "color": "#1c1f23",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        4.53,
+        0.652,
+        8.365
+      ],
+      "max": [
+        5.46,
+        0.687,
+        8.405
+      ],
+      "color": "#30363b",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        4.53,
+        0.747,
+        8.365
+      ],
+      "max": [
+        5.46,
+        0.782,
+        8.405
+      ],
+      "color": "#30363b",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        4.53,
+        0.842,
+        8.365
+      ],
+      "max": [
+        5.46,
+        0.877,
+        8.405
+      ],
+      "color": "#30363b",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        4.53,
+        0.937,
+        8.365
+      ],
+      "max": [
+        5.46,
+        0.972,
+        8.405
+      ],
+      "color": "#30363b",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        4.39,
+        1.352,
+        8.365
+      ],
+      "max": [
+        5.6,
+        2.645,
+        8.4
+      ],
+      "color": "#454c52",
+      "detail": true,
+      "shape": "bevel",
+      "radius": 0.4,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        5.77,
+        0.462,
+        8.365
+      ],
+      "max": [
+        6.98,
+        1.158,
+        8.391
+      ],
+      "color": "#30363b",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        5.89,
+        0.602,
+        8.365
+      ],
+      "max": [
+        6.86,
+        1.018,
+        8.395
+      ],
+      "color": "#1c1f23",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        5.91,
+        0.652,
+        8.365
+      ],
+      "max": [
+        6.84,
+        0.687,
+        8.405
+      ],
+      "color": "#30363b",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        5.91,
+        0.747,
+        8.365
+      ],
+      "max": [
+        6.84,
+        0.782,
+        8.405
+      ],
+      "color": "#30363b",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        5.91,
+        0.842,
+        8.365
+      ],
+      "max": [
+        6.84,
+        0.877,
+        8.405
+      ],
+      "color": "#30363b",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        5.91,
+        0.937,
+        8.365
+      ],
+      "max": [
+        6.84,
+        0.972,
+        8.405
+      ],
+      "color": "#30363b",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        5.77,
+        1.352,
+        8.365
+      ],
+      "max": [
+        6.98,
+        2.645,
+        8.4
+      ],
+      "color": "#454c52",
+      "detail": true,
+      "shape": "bevel",
+      "radius": 0.4,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        5.85,
+        2.485,
+        8.394
+      ],
+      "max": [
+        6.03,
+        2.565,
+        8.406
+      ],
+      "color": "#58c8e8",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        7.15,
+        0.462,
+        8.365
+      ],
+      "max": [
+        8.36,
+        1.158,
+        8.391
+      ],
+      "color": "#30363b",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        7.27,
+        0.602,
+        8.365
+      ],
+      "max": [
+        8.24,
+        1.018,
+        8.395
+      ],
+      "color": "#1c1f23",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        7.29,
+        0.652,
+        8.365
+      ],
+      "max": [
+        8.22,
+        0.687,
+        8.405
+      ],
+      "color": "#30363b",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        7.29,
+        0.747,
+        8.365
+      ],
+      "max": [
+        8.22,
+        0.782,
+        8.405
+      ],
+      "color": "#30363b",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        7.29,
+        0.842,
+        8.365
+      ],
+      "max": [
+        8.22,
+        0.877,
+        8.405
+      ],
+      "color": "#30363b",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        7.29,
+        0.937,
+        8.365
+      ],
+      "max": [
+        8.22,
+        0.972,
+        8.405
+      ],
+      "color": "#30363b",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        7.15,
+        1.352,
+        8.365
+      ],
+      "max": [
+        8.36,
+        2.645,
+        8.4
+      ],
+      "color": "#454c52",
+      "detail": true,
+      "shape": "bevel",
+      "radius": 0.4,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        8.53,
+        0.462,
+        8.365
+      ],
+      "max": [
+        9.695,
+        1.158,
+        8.382
+      ],
+      "color": "#30363b",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        8.53,
+        1.352,
+        8.365
+      ],
+      "max": [
+        9.695,
+        2.645,
+        8.382
+      ],
+      "color": "#454c52",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        8.61,
+        2.485,
+        8.394
+      ],
+      "max": [
+        8.79,
+        2.565,
+        8.406
+      ],
+      "color": "#58c8e8",
       "detail": true,
       "finish": "painted plating"
     }
