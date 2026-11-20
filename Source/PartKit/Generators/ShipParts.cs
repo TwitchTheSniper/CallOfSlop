@@ -1084,7 +1084,7 @@ public sealed class ShipParts : IPartGenerator
         Sock(p, "seatR", 6.0, F1T, 2.45, "+y");
         Sock(p, "module", 4.0, F1T, 1.6, "+y"); // (on the floor in the pilot's footwell, so the seat's link runs along the floor, not up past the windscreen)
         Sock(p, "chart", 7.4, F1T + 0.475, 3.875, "-z");
-        Sock(p, "linkChair", 2.6, F1T, 3.5, "+y"); // (the one Shell Control Chair, port of the cockpit's door, its back to the partition)
+        Sock(p, "linkChair", 2.6, F1T, 3.44, "+y"); // (the one Shell Control Chair, port of the cockpit's door, its back to the partition: 6 cm off it, so the cable down its back stands clear of the wall's face)
         Sock(p, "bed", Cx - Uw, F1T + 0.125, 6.0, "+x");
         Sock(p, "locker", 3.2, F1T + 0.125, 4.125, "+z");
         Sock(p, "desk", 2.9, F1T + 0.125, 7.875, "-z");
