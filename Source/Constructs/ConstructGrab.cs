@@ -65,10 +65,26 @@ public static class ConstructGrab
         // its holder's frame at that point (a turning ship's deck moves each point at its own speed).
         var at = c.ToWorld(c.GrabLocal);
         var own = (c.Vel + Vector3.Cross(c.AngVel, at - c.WorldCom) - c.GrabFrameVel - Vector3.Cross(c.GrabFrameSpin, at - c.GrabTarget)).LengthSquared();
-        if (c.GrabTouch || own < FlightStopSpeed * FlightStopSpeed || !float.IsFinite(own))
+        if (c.GrabTouch || OnGear(c) || own < FlightStopSpeed * FlightStopSpeed || !float.IsFinite(own))
             c.GrabBoost = 1f;
         else if (own > FlightMoveSpeed * FlightMoveSpeed)
             c.GrabBoost = MathF.Min(FlightBoostMax, c.GrabBoost + (FlightBoostMax - 1f) * dt / FlightBoostSeconds);
+    }
+
+    /// <summary>
+    /// Is the body standing on its wheels, tracks or walker feet? Those meet the ground by their own rays, not as contacts, so
+    /// a buggy dragged along the ground on its wheels counted as in flight and built a 3x boost (main's CI 2026-11-20:
+    /// "physics gun smooth" saw its drawn buggy jerk past the limit). Bounded by the body's wheels and legs.
+    /// </summary>
+    private static bool OnGear(Construct c)
+    {
+        for (var k = 0; k < c.WheelCount; k++)
+            if (c.Wheels[k].Touching)
+                return true;
+        for (var k = 0; k < c.LegCount; k++)
+            if (c.Legs[k].Grounded)
+                return true;
+        return false;
     }
 
     /// <summary>The boost as a byte on the wire (0: none, 255: <see cref="FlightBoostMax"/>), and back.</summary>
