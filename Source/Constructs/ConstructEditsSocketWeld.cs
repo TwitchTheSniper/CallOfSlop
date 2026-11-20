@@ -21,7 +21,7 @@ public sealed partial class ConstructEdits
         int part = src.Part;
         if (part < 0 || part >= mover.PartCount || w.Part >= target.PartCount)
             return "that part is gone";
-        if (WeldReach(eye, mover, src, target, w, _gantryReach, _gantrySpot, _gantryRange) is { } far)
+        if (WeldReach(eye, mover, src, target, w, _gantryReach, _gantrySpot, _gantryRange, BuildReachOf(player)) is { } far)
             return far;
         if (target.Driver != 255 || mover.Driver != 255)
             return "someone is driving it";
@@ -43,13 +43,13 @@ public sealed partial class ConstructEdits
     /// the picked part's <see cref="ReachPoint"/> or the picked socket; a body over 8 m round at the nearest of its bounding
     /// sphere (a long hull is picked by the end you can see). Null, or why not. Allocates nothing.
     /// </summary>
-    public static string? WeldReach(Vector3 eye, Construct mover, in WeldTarget src, Construct target, in WeldTarget w, bool gantry = false, Vector3 spot = default, float range = 0)
+    public static string? WeldReach(Vector3 eye, Construct mover, in WeldTarget src, Construct target, in WeldTarget w, bool gantry = false, Vector3 spot = default, float range = 0, float reach = ConstructBuild.Reach)
     {
         if (SocketWeld.TargetFrame(target, w, out var tAt, out _))
         {
             target.WorldFrame(target.Parts[w.Part].Seg, out var q, out var t);
             var at = t + Vector3.Transform(tAt, q);
-            if (Vector3.Distance(eye, at) > ConstructBuild.Reach + 0.75f && !(gantry && Vector3.Distance(spot, at) <= range))
+            if (Vector3.Distance(eye, at) > reach + 0.75f && !(gantry && Vector3.Distance(spot, at) <= range))
                 return TargetFar;
         }
         if (SocketWeld.SourceFrame(mover, src, out var sAt, out _)

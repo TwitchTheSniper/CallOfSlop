@@ -214,7 +214,7 @@ public sealed partial class ConstructEdits
     /// client's ghost, so a ghost never offers what the click is refused. A big part's origin can be tens of metres from
     /// where it goes on, so the socket counts as well as the part's place; both in the frame of the segment they are on. Null, or why not.
     /// </summary>
-    public static string? AttachReach(Vector3 eye, Construct c, int part, int socket, in ConstructGhost g, bool gantry = false, Vector3 spot = default, float range = 0)
+    public static string? AttachReach(Vector3 eye, Construct c, int part, int socket, in ConstructGhost g, bool gantry = false, Vector3 spot = default, float range = 0, float reach = ConstructBuild.Reach)
     {
         c.SocketAt(part, socket, out var at, out _);
         var seg = c.Parts[part].Seg;
@@ -224,7 +224,7 @@ public sealed partial class ConstructEdits
             a = lt + Vector3.Transform(at, lq); // (a weld socket on a walker leg's segment: as the leg is posed, ConstructWalkRiders.cs)
             b = lt + Vector3.Transform(g.Pos, lq);
         }
-        var limit = ConstructBuild.Reach + 0.75f;
+        var limit = reach + 0.75f; // (reach: the player's BuildReachOf, a big shell frame's further)
         if (Vector3.Distance(eye, a) <= limit || Vector3.Distance(eye, b) <= limit)
             return null;
         return gantry && (Vector3.Distance(spot, a) <= range || Vector3.Distance(spot, b) <= range) ? null : "too far away";
@@ -269,7 +269,7 @@ public sealed partial class ConstructEdits
         var v = variant % Math.Max(1, def.Sockets.Length * 4);
         if (ConstructBuild.Place(c, part, socket, def, v / 4, v % 4, out var g) is { } why)
             return why;
-        if (AttachReach(eye, c, part, socket, in g, _gantryReach, _gantrySpot, _gantryRange) is { } far)
+        if (AttachReach(eye, c, part, socket, in g, _gantryReach, _gantrySpot, _gantryRange, BuildReachOf(player)) is { } far)
             return far;
         h.Edit = EditKind.Attach;
         h.Body = body;
@@ -304,7 +304,7 @@ public sealed partial class ConstructEdits
             return "take out the attach tool (4) to build";
         if (!ConstructBuild.ToolFits(h.Tool, def))
             return $"the {def.Name} needs the {def.Tool.Label()}";
-        if (Reachable(eye, point, ConstructBuild.Reach) is { } far)
+        if (Reachable(eye, point, BuildReachOf(player)) is { } far) // (a big shell frame reaches further: construction-shell.md)
             return far;
         var anchor = (flags & ConstructPlace.FlagAnchor) != 0;
         if (anchor && !InfiniteParts)
@@ -345,7 +345,7 @@ public sealed partial class ConstructEdits
             return "that part is gone";
         c.WorldFrame(c.Parts[part].Seg, out var q, out var t);
         c.PartBounds(part, out var mn, out var mx);
-        if (Reachable(eye, ReachPoint(c, part, eye), ConstructBuild.Reach) is { } far)
+        if (Reachable(eye, ReachPoint(c, part, eye), BuildReachOf(player)) is { } far)
             return far;
         if (!ConstructPlace.FindJoin(world, c, part, out var plan))
             return "it doesn't touch another construct (free sockets face to face, square to each other)";
@@ -394,7 +394,7 @@ public sealed partial class ConstructEdits
             return refused; // (the shared predicate: driven, someone else's, contested; SandboxAim.cs)
         c.WorldFrame(c.Parts[part].Seg, out var q, out var t);
         c.PartBounds(part, out var mn, out var mx);
-        if (Reachable(eye, ReachPoint(c, part, eye), ConstructBuild.Reach) is { } far)
+        if (Reachable(eye, ReachPoint(c, part, eye), BuildReachOf(player)) is { } far)
             return far;
         h.Edit = EditKind.Remove;
         h.Body = body;

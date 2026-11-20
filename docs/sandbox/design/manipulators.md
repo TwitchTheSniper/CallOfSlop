@@ -9,7 +9,7 @@ Direction from the user; no design yet. Recorded so the queue's builders and the
 ## What it means
 
 - **Survival:** the player keeps a small physics gun for small pieces only. Its upgrades that raise the lift (today 5 t, upgrades to 80 t: docs/sandbox/TOOL-UPGRADES.md) go away or stop at the small limit. Anything larger is moved by a physical manipulator that is seen attached to the piece: robotic arm stations (cf. the Module Fitter arms in module-sockets.md, the Shell Gantry's arms, Loader Arms, cranes) or shells built for it.
-- **Construction Shell (queued):** a 5 m shell (it docks in a Medium pod) with a welder and a gripper: it picks up, carries and places large pieces and welds them on. It joins the modular shell layout (Constructs/Shells.json).
+- **Construction Shell (built 2026-11-20, branch claude/construction-shell; docs/sandbox/design/construction-shell.md):** a 5 m shell (frame 3, scale 2.8) with a fixed Grip Arm and a fixed Welder Arm: it lifts 15 t ("lift" 5 times the 3 t cap, its pull times 5 too), reaches 2.8 times as far with both, and switching from the grip to the welder while holding a piece freezes it in the grip so the welder can socket-weld it on. Too big for doors, seats and any pod built yet (5.04 m is the Large pod class; the Medium pod was the first guess, but its fold would stand a metre out of it).
 - **Creative:** not stated; default unchanged (the big physics gun stays in Creative).
 
 ## Open

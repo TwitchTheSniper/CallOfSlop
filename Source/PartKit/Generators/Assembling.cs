@@ -515,6 +515,7 @@ public sealed class Assembling : IPartGenerator
         ("Modules", "Module Stand 3x3", null),
         (null, null, Rec("Half Shell", 20, 2, m: [("steel", 12), ("copper", 4), ("rubber", 2)], p: [("Circuit Board", 1)])), // (docs/sandbox/design/half-shell.md)
         ("Modules/Fitters", "Module Fitter S", null), // (module sockets phase 4: the Module Fitter S)
+        (null, null, Rec("Construction Shell", 120, 2, m: [("steel", 220), ("copper", 30), ("rubber", 16)], p: [("Circuit Board", 6)])), // (docs/sandbox/design/construction-shell.md)
     ];
 
     /// <summary>

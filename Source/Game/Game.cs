@@ -195,6 +195,8 @@ public sealed partial class Game : IDisposable
         Place = WorldContext.Fork(net.IsServer ? "server" : "client");
         World.Enter(Place);
         SandboxHands.LiftShare = ShellLiftShare; // (a worn shell frame's "lift", on both sides: a client's own pre-check agrees with the server, GameRobotShell.cs)
+        SandboxHands.ReachShare = ShellReachShare; // (a big frame reaches further with the attach tool and the beam, on both sides: GameRobotShell.cs)
+        SandboxHands.GripHolds = ShellGripHolds; // (a grip arm holds a piece while the welder arm works: GameRobotShell.cs)
         World.GravitySetting = 100; // a new session starts at the map's own gravity (the host sets GravityPercent; clients learn it)
         World.GravityScale = 1f;
         ChosenPerks = (perks ?? PerkSet.Empty).Sanitized();

@@ -39,6 +39,9 @@ public sealed partial class Game
         SandboxCraftSend(w);
     }
 
+    /// <summary>The tallest shell a Shell Gantry's bay works on (m): the Mining Shell's 2.7 m fits; the Construction Shell's 5 m does not (construction-shell.md).</summary>
+    public const float GantryTallest = 3f;
+
     /// <summary>Server: the checks of a swap and its start. Null, or why not.</summary>
     internal string? GantryStart(Construct c, int part, ShellGantryDef gd, int slot, int module, byte player)
     {
@@ -63,6 +66,8 @@ public sealed partial class Game
             return "something else holds that shell: let it go first";
         ref var sp = ref shell.Parts[0];
         var frame = ShellFrames.FrameOf(sp.D);
+        if (World.PlayerHeight * ShellFrames.ScaleOf(frame) > GantryTallest)
+            return $"a {sp.D.Name} ({World.PlayerHeight * ShellFrames.ScaleOf(frame):0.#} m) is too tall for the Shell Gantry ({GantryTallest:0} m at most)"; // (construction-shell.md: no gantry its size yet)
         if (ShellFrames.FitRefusal(frame, slot, m) is { } why)
             return why;
         Span<byte> kit = stackalloc byte[ShellFrames.SlotCount];

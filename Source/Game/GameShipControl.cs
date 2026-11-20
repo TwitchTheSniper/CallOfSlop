@@ -50,7 +50,7 @@ public sealed partial class Game
     private string? ShipSeatRefusal(Construct c, int part, byte player)
     {
         if (Players.TryGetValue(player, out var who) && who.InShell && !ShellFrames.Worn(who).Sit)
-            return $"a {ShellFrames.Worn(who).Part} is too small for a seat: its controls are out of reach"; // (docs/sandbox/design/half-shell.md)
+            return ShellFrames.Worn(who).Scale > 1f ? $"a {ShellFrames.Worn(who).Part} is too big for a seat" : $"a {ShellFrames.Worn(who).Part} is too small for a seat: its controls are out of reach"; // (construction-shell.md: a 5 m body fits no seat) // (docs/sandbox/design/half-shell.md)
         var f = PowerHolding(c);
         if (f == 0)
             return null;

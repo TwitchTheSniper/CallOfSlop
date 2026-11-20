@@ -50,7 +50,19 @@ public sealed class ShellFrame
     public string Name = "", Part = "";
     public float Scale = 1, Speed = 1, Damage = 1;
     public float Lift = 1; // "lift": the share of the survival physics gun's limit its wearer lifts (the Half Shell's 0.5; docs/sandbox/design/half-shell.md)
-    public bool Sit = true; // "sit": false, seats refuse its wearer (the Half Shell: it would sit below a seat's controls)
+    public bool Sit = true; // "sit": false, seats refuse its wearer (the Half Shell: it would sit below a seat's controls; the Construction Shell: too big)
+
+    /// <summary>
+    /// How much further than a person its attach tool and physics gun reach: its size when larger than a person, else 1 (the
+    /// Construction Shell's 2.8; a smaller frame keeps a person's reach). docs/sandbox/design/construction-shell.md.
+    /// </summary>
+    public float Reach => MathF.Max(1f, Scale);
+
+    /// <summary>
+    /// Does a shell fitted so hold a piece in its grip while it welds (a physics gun arm and an attach tool arm both fitted)? Then
+    /// a change from the gun to the welder freezes the held piece where it is instead of dropping it (ConstructEdits.GripHolds).
+    /// </summary>
+    public bool GripWelds => ModuleFor(ConstructTool.PhysicsGun) != null && ModuleFor(ConstructTool.Welder) != null;
     public string[] Jobs = [];
     public ShellModule?[] Modules = new ShellModule?[ShellFrames.SlotCount];
     public bool[] Fixed = new bool[ShellFrames.SlotCount]; // a slot the Shell Gantry may not change (the Mining Shell's hopper and drill arm)
@@ -315,12 +327,12 @@ public static class ShellFrames
             {
                 Name = f.GetProperty("name").GetString() ?? "",
                 Part = f.GetProperty("part").GetString() ?? "",
-                Scale = Num(f, "scale", 0.5f, 2.5f),
+                Scale = Num(f, "scale", 0.5f, 3f), // (3: the Construction Shell is 2.8, docs/sandbox/design/construction-shell.md)
                 Speed = Num(f, "speed", 0.2f, 2f),
                 Damage = Num(f, "damage", 0.1f, 5f),
             };
             if (f.TryGetProperty("lift", out _))
-                fr.Lift = Num(f, "lift", 0.1f, 2f);
+                fr.Lift = Num(f, "lift", 0.1f, 10f); // (the Construction Shell's 5)
             if (f.TryGetProperty("sit", out var sit))
                 fr.Sit = sit.GetBoolean();
             if (f.TryGetProperty("jobs", out var jobs))
