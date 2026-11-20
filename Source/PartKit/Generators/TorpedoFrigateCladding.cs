@@ -19,6 +19,47 @@ public sealed partial class TorpedoFrigateParts
     private const string CladUp = "#7d8589", CladLow = "#4b5359", CladRib = "#2a2e33", CladKick = "#30353b", CladDuct = "#3a4046",
         CladConduit = "#646c72", CladPlate = "#d6d9d2", CladVent = "#1c1f23";
 
+    /// <summary>
+    /// The lining's variation by what a room is for (Karl, 2026-11-20: "more variations between the rooms based around their usage, only
+    /// minor"): the same bays, ribs and service run everywhere, with the panels' tones, the rail's stripe, the kick plate, the vents and
+    /// the plates changed a little. CladByRoom off gives one lining for the whole ship.
+    /// </summary>
+    private static bool CladByRoom = Environment.GetEnvironmentVariable("CLAD_PLAIN") == null;
+
+    private enum RoomUse { Corridor, Command, Working, Living, Medical, Servers }
+
+    /// <summary>A room use's lining: upper and lower panel tones, the rail's stripe (glowing or not), the kick plate (hazard stripes or
+    /// not), how often a lower panel is a vent (0: never), the ID plates' colour (null: none).</summary>
+    private readonly record struct Lining(string Up, string Low, string Stripe, bool StripeGlow, bool Hazard, int VentEvery, string? Plate);
+
+    private static Lining LiningOf(RoomUse use) => !CladByRoom ? new(CladUp, CladLow, Blue, false, false, 3, CladPlate) : use switch
+    {
+        RoomUse.Command => new("#5d656b", "#3a4147", Glow, true, false, 0, Amber), // (bridge and ops: darker, a lit stripe, amber tags)
+        RoomUse.Working => new("#737b7f", "#454c52", Blue, false, true, 2, Hazard), // (armoury, torpedo room, airlock, engineering: hazard kick, more vents)
+        RoomUse.Living => new("#8e8a81", "#57524b", Blue, false, false, 0, CladPlate), // (cabins, mess: warmer, no vents)
+        RoomUse.Medical => new("#d3d9d7", "#a7b1b0", "#3d9a5c", false, false, 0, null), // (med bay, head: wipe-clean pale, a green stripe)
+        RoomUse.Servers => new("#454c52", "#30363b", Glow, true, false, 1, "#58c8e8"), // (the server room: dark, lit, vented for cooling)
+        _ => new(CladUp, CladLow, Blue, false, false, 3, CladPlate),
+    };
+
+    /// <summary>What the room at (x, z) on the deck whose floor is at y0 is for (the plan in torpedo-frigate.md "The decks").</summary>
+    private static RoomUse RoomAt(double x, double z, double y0)
+    {
+        var lower = y0 < Ceil0;
+        var off = x - Cx;
+        if (lower)
+            return z < ZStep ? RoomUse.Servers : z < 34.0 && z > 30.3 && Math.Abs(off) < 1.6 ? RoomUse.Corridor : RoomUse.Working;
+        if (z < 20.0)
+            return RoomUse.Command;
+        if (z > 34.1)
+            return RoomUse.Living; // (the mess)
+        if (Math.Abs(off) < 1.0)
+            return RoomUse.Corridor;
+        if (z < 25.0)
+            return RoomUse.Living; // (cabin A, the captain's)
+        return off > 0 || z > 30.0 ? RoomUse.Medical : RoomUse.Living; // (the med bay starboard; port cabin B, then the head)
+    }
+
     /// <summary>A clad box: the wall run (its index in Walls) whose piece takes it.</summary>
     private static readonly Dictionary<PyDict, int> CladWall = new(ReferenceEqualityComparer.Instance);
 
@@ -177,15 +218,22 @@ public sealed partial class TorpedoFrigateParts
         {
             if (!InRoom((s0 + s1) / 2))
                 continue;
+            var mid = (s0 + s1) / 2;
+            var L = LiningOf(RoomAt(w.AlongX ? mid : face + side * 0.4, w.AlongX ? face + side * 0.4 : mid, y0));
             var len = s1 - s0;
             var n = Math.Max(1, (int)Math.Round(len / 1.3));
             var bay = len / n;
             foreach (var (k0, k1) in Spans(s0, s1, y0 + 0.003, kick, 0.2))
+            {
                 Put(k0 + 0.004, k1 - 0.004, y0 + 0.003, kick, -0.01, 0.018, CladKick, "painted steel");
+                if (L.Hazard) // (yellow blocks on the kick plate, 0.3 m on, 0.3 m off)
+                    for (var hx = k0 + 0.1; hx + 0.3 < k1 - 0.1; hx += 0.6)
+                        Put(hx, hx + 0.3, y0 + 0.05, kick - 0.05, 0.008, 0.024, Hazard, "hazard paint");
+            }
             foreach (var (r0, r1) in Spans(s0, s1, railA, railB + 0.03, 0.2))
             {
                 Put(r0 + 0.004, r1 - 0.004, railA, railB, -0.01, 0.04, CladRib, "painted steel", Bevel(0.35, along, true));
-                Put(r0 + 0.004, r1 - 0.004, railB + 0.004, railB + 0.026, -0.01, 0.022, Blue, "painted plating");
+                Put(r0 + 0.004, r1 - 0.004, railB + 0.004, railB + 0.026, -0.01, 0.022, L.Stripe, "painted plating", L.StripeGlow ? new PyDict { ["glow"] = true } : null);
             }
             for (var k = 0; k <= n; k++)
             {
@@ -209,22 +257,22 @@ public sealed partial class TorpedoFrigateParts
                 {
                     var parts = Parted(b0, b1, lowA, lowB);
                     var whole = parts.Count == 1 && parts[0] == (b0, b1);
-                    if (whole && k % 3 == 1 && Free(lower))
+                    if (whole && L.VentEvery > 0 && k % L.VentEvery == (L.VentEvery > 1 ? 1 : 0) && Free(lower))
                     {
-                        Put(b0, b1, lowA, lowB, -0.01, 0.016, CladLow, "painted steel");
+                        Put(b0, b1, lowA, lowB, -0.01, 0.016, L.Low, "painted steel");
                         double v0 = b0 + 0.12, v1 = b1 - 0.12;
                         Put(v0, v1, lowA + 0.14, lowB - 0.14, -0.01, 0.02, CladVent, "painted steel");
                         for (var l = 0; l < 4; l++)
                         {
                             var ly = lowA + 0.19 + l * 0.095;
-                            Put(v0 + 0.02, v1 - 0.02, ly, ly + 0.035, -0.01, 0.03, CladLow, "painted steel");
+                            Put(v0 + 0.02, v1 - 0.02, ly, ly + 0.035, -0.01, 0.03, L.Low, "painted steel");
                         }
                     }
                     else
                         foreach (var (q0, q1) in parts)
                         {
                             var thin = UnderFitting(new FaceRect(q0, q1, lowA, lowB));
-                            Put(q0, q1, lowA, lowB, -0.01, thin ? 0.007 : 0.025, CladLow, "painted plating", thin ? null : Bevel(0.4));
+                            Put(q0, q1, lowA, lowB, -0.01, thin ? 0.007 : 0.025, L.Low, "painted plating", thin ? null : Bevel(0.4));
                         }
                 }
                 var upperRect = new FaceRect(b0, b1, upA, upB);
@@ -234,9 +282,9 @@ public sealed partial class TorpedoFrigateParts
                     foreach (var (q0, q1) in parts)
                     {
                         var thin = UnderFitting(new FaceRect(q0, q1, upA, upB));
-                        Put(q0, q1, upA, upB, -0.01, thin ? 0.007 : 0.025, CladUp, "painted plating", thin ? null : Bevel(0.4));
-                        if (q0 == b0 && k % 2 == 0 && q1 - q0 > 0.5 && Free(new FaceRect(q0, q0 + 0.3, upB - 0.2, upB)))
-                            Put(q0 + 0.08, q0 + 0.26, upB - 0.16, upB - 0.08, 0.019, 0.031, CladPlate, "painted plating");
+                        Put(q0, q1, upA, upB, -0.01, thin ? 0.007 : 0.025, L.Up, "painted plating", thin ? null : Bevel(0.4));
+                        if (L.Plate != null && q0 == b0 && k % 2 == 0 && q1 - q0 > 0.5 && Free(new FaceRect(q0, q0 + 0.3, upB - 0.2, upB)))
+                            Put(q0 + 0.08, q0 + 0.26, upB - 0.16, upB - 0.08, 0.019, 0.031, L.Plate, "painted plating");
                     }
                 }
             }

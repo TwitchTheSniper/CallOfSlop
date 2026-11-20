@@ -498,7 +498,7 @@
         4.408,
         25.525
       ],
-      "color": "#4b5359",
+      "color": "#57524b",
       "detail": true,
       "finish": "painted plating"
     },
@@ -513,7 +513,7 @@
         5.895,
         25.525
       ],
-      "color": "#7d8589",
+      "color": "#8e8a81",
       "detail": true,
       "finish": "painted plating"
     },
@@ -611,7 +611,7 @@
         4.408,
         27.735
       ],
-      "color": "#4b5359",
+      "color": "#57524b",
       "detail": true,
       "shape": "bevel",
       "radius": 0.4,
@@ -628,7 +628,7 @@
         4.408,
         28.4625
       ],
-      "color": "#4b5359",
+      "color": "#57524b",
       "detail": true,
       "shape": "bevel",
       "radius": 0.4,
@@ -645,7 +645,7 @@
         5.895,
         28.4625
       ],
-      "color": "#7d8589",
+      "color": "#8e8a81",
       "detail": true,
       "shape": "bevel",
       "radius": 0.4,
@@ -677,7 +677,7 @@
         4.408,
         29.57
       ],
-      "color": "#4b5359",
+      "color": "#57524b",
       "detail": true,
       "finish": "painted plating"
     },
@@ -692,7 +692,7 @@
         5.895,
         29.57
       ],
-      "color": "#7d8589",
+      "color": "#8e8a81",
       "detail": true,
       "finish": "painted plating"
     },
@@ -741,7 +741,7 @@
         4.568,
         31.651
       ],
-      "color": "#2c5aa0",
+      "color": "#3d9a5c",
       "detail": true,
       "finish": "painted plating"
     },
@@ -775,7 +775,7 @@
         4.408,
         31.525
       ],
-      "color": "#4b5359",
+      "color": "#a7b1b0",
       "detail": true,
       "finish": "painted plating"
     },
@@ -790,22 +790,7 @@
         5.895,
         31.525
       ],
-      "color": "#7d8589",
-      "detail": true,
-      "finish": "painted plating"
-    },
-    {
-      "min": [
-        5.219,
-        5.735,
-        30.26
-      ],
-      "max": [
-        5.231,
-        5.815,
-        30.44
-      ],
-      "color": "#d6d9d2",
+      "color": "#d3d9d7",
       "detail": true,
       "finish": "painted plating"
     },
