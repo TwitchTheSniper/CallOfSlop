@@ -761,5 +761,11 @@ Defaults taken (no questions asked):
 - (Phase 2) A well opened before the cut (nothing in the column) gets no liner; the sweep is checked at the fit, not for parts welded
   onto a fitted module; each joint is swept alone with the others at rest.
 - (Phase 2) The rim band and seam cut of `Renderer.Cuts.cs` are not needed: `HullHoles` leaves out the detail the tunnel reaches.
+- (Review, 2026-11-20) Plugs' cell-middle Small sockets come after every older socket (saves keep links by socket index). Freeform
+  welded parts are rigid for the room, the cut and the sweep (compared in the body's rest frame, `ModuleSockets.RestAabb`). Each cut's
+  draw adds to its body's (`ModCutWatts` summed per look). A stale `ModCut` (a save mid-cut, a plate shot off) is cleared by the server
+  at the body's next rebuild, and a ring draws only while its well has hull in it. The sweep's answer is kept for its last four fits
+  (both bodies' rebuilds, the socket, the module, the turn and the place). A pass-through is fed only when the plate's pipe is fed to its
+  end (`ModuleSockets.PassThrough`, after the routes' rebuild).
 - (Phase 3) Pass-throughs run one way, ship to module (the plate's ports are inlets, the plug's outlets).
 - (Phase 3) A thruster finds an engine plate as its mount only when it stands on the plug itself (or on a joint on it).
