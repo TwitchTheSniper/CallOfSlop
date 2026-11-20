@@ -510,11 +510,11 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
 
     private static Gap Door(double a) => new(a, 1.5, 0, DoorH);
 
-    /// <summary>A wall 0.25 m thick centred on c, along x (alongX) or z from a0 to a1, from the floor's top y0 to y1, with its gaps; a blue
-    /// dado on both faces, dark jambs and a hazard head on each doorway, glass in a window.</summary>
+    /// <summary>A wall 0.25 m thick centred on c, along x (alongX) or z from a0 to a1, from the floor's top y0 to y1, with its gaps; dark
+    /// jambs and a hazard head on each doorway, glass in a window. Its faces are clad later (Clad), once the room's fittings are drawn.</summary>
     private static void WallRun(Part p, bool alongX, double a0, double a1, double c, double y0, double y1, params Gap[] gaps)
     {
-        (Walls.TryGetValue(p, out var ws) ? ws : Walls[p] = []).Add(new WallLine(alongX, a0, a1, c, y0, y1)); // (each run is a piece of its own: Split)
+        (Walls.TryGetValue(p, out var ws) ? ws : Walls[p] = []).Add(new WallLine(alongX, a0, a1, c, y0, y1, gaps)); // (each run is a piece of its own: Split)
         void Run(double a, double b, double ya, double yb, string col, string fin, double th, bool detail)
         {
             if (b - a < 0.02 || yb - ya < 0.02)
@@ -548,8 +548,6 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
                 }
                 Run(g.A - 0.05, g.A + g.W + 0.05, y0 + g.Sill - 0.06, y0 + g.Sill, WallTrim, "painted steel", 0.14, true);
             }
-            else
-                Run(at + 0.05, g.A - 0.05, y0 + 0.003, y0 + 0.75, WallLow, "painted plating", 0.137, true);
             // The frame: dark jambs, a hazard head.
             Run(g.A - 0.07, g.A, y0, y0 + g.Head + 0.07, WallTrim, "painted steel", 0.145, true);
             Run(g.A + g.W, g.A + g.W + 0.07, y0, y0 + g.Head + 0.07, WallTrim, "painted steel", 0.145, true);
@@ -557,7 +555,6 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
             at = g.A + g.W;
         }
         Run(at, a1, y0, y1, Wall, "painted plating", 0.125, false);
-        Run(at + 0.05, a1 - 0.05, y0 + 0.003, y0 + 0.75, WallLow, "painted plating", 0.137, true);
     }
 
     /// <summary>The socket a door hangs by in a wall's doorway (from Gap a): on the wall's centre line at the doorway's start.</summary>
@@ -1914,7 +1911,7 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
     // face it is on; wherever two pieces' solid boxes touch they get a facing socket pair (Connect): one pair places a piece (PlaceOrder,
     // out from the keel), the game welds the rest (ConstructBuild.AutoLink), so a piece shot off leaves the others welded.
 
-    private readonly record struct WallLine(bool AlongX, double A0, double A1, double C, double Y0, double Y1);
+    private readonly record struct WallLine(bool AlongX, double A0, double A1, double C, double Y0, double Y1, Gap[] Gaps);
 
     private static readonly Dictionary<Part, List<WallLine>> Walls = [];
     private static readonly Dictionary<Part, List<(Rect[] Plan, double Y0, double Y1)>> Floors = [];
@@ -1974,6 +1971,8 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         Part WallPiece(int i) => wallPieces[i] ??= Big($"Zero Day {shortName} Wall {i + 1}", $"A wall of the Zero Day's {low} deck ({shortName.ToLowerInvariant()}), with its door frames and what is on its faces.", color: Wall);
         Part Of(PyDict b)
         {
+            if (CladWall.TryGetValue(b, out var cw))
+                return WallPiece(cw);
             double[] mn = Vd(b, "min"), mx = Vd(b, "max"), c = Mid3(b);
             foreach (var alongX in new[] { true, false })
                 if (WallOf(c, alongX ? mx[2] - mn[2] : mx[0] - mn[0], alongX, false) is int i)
@@ -2481,13 +2480,17 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
     {
         Walls.Clear();
         Floors.Clear();
+        CladWall.Clear();
         SockOwner.Clear();
         var structure = new List<Part>();
         structure.AddRange(SplitBands(Keel(), "Keel", 40.0)); // (the aft band, where the fuel leaves for the drive, keeps the keel's name and its tankage)
-        structure.AddRange(SplitDeck(LowerFore(), "Lower Fore"));
-        structure.AddRange(SplitDeck(LowerAft(), "Lower Aft"));
-        structure.AddRange(SplitDeck(UpperFore(), "Upper Fore"));
-        structure.AddRange(SplitDeck(UpperAft(), "Upper Aft"));
+        Part[] decks = [LowerFore(), LowerAft(), UpperFore(), UpperAft()]; // (all drawn before any is clad: Clad reads every deck's walls)
+        foreach (var d in decks)
+            Clad(d);
+        structure.AddRange(SplitDeck(decks[0], "Lower Fore"));
+        structure.AddRange(SplitDeck(decks[1], "Lower Aft"));
+        structure.AddRange(SplitDeck(decks[2], "Upper Fore"));
+        structure.AddRange(SplitDeck(decks[3], "Upper Aft"));
         structure.AddRange(SplitBands(Spine(), "Spine", 12.0)); // (the band over the bridge, where it sits on the upper deck)
         structure.AddRange([Bow(), SternPart(), Sponson(-1), Sponson(1)]);
         Connect(structure);
