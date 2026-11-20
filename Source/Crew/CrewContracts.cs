@@ -19,7 +19,7 @@ public enum ContractState : byte
     Failed,
 }
 
-/// <summary>One contract (a job for credits a power offers to players: faction-controllers.md phase 5).</summary>
+/// <summary>One contract (a job a power offers to players, paid on the taker's tab with that power: faction-controllers.md phase 5).</summary>
 public struct Contract
 {
     public ContractKind Kind;
@@ -54,7 +54,8 @@ public interface IContractHost
     /// <summary>Where a delivery for <paramref name="power"/> goes for <paramref name="taker"/> (its home place, else a place picked near them).</summary>
     bool DeliverPlace(byte power, byte taker, out Vector3 at);
 
-    void Pay(byte player, int credits);
+    /// <summary>The power owes <paramref name="player"/> <paramref name="value"/> more on their tab with it (no credits: Game/GameTabs.cs).</summary>
+    void Pay(byte player, byte power, int value);
 
     void Tell(byte player, string line);
 
@@ -66,10 +67,10 @@ public interface IContractHost
 }
 
 /// <summary>
-/// Contracts for credits (docs/sandbox/design/faction-controllers.md phase 5): each power with a mind offers a few jobs in turn (escort one of its ships,
+/// Contracts paid on a tab (docs/sandbox/design/faction-controllers.md phase 5): each power with a mind offers a few jobs in turn (escort one of its ships,
 /// deliver a material to its place, raid a power it fights), seen by everyone in the Faction window; a person whose standing with the power is 0 or more
-/// (or whose faction holds a pact with it) takes one, and it is tracked once a second until it is done (paid in credits, the standing rises:
-/// <c>contractDone</c>) or fails (out of time, the ship lost, given up: <c>contractFailed</c>). Creative pays as survival does (its credits are unlimited
+/// (or whose faction holds a pact with it) takes one, and it is tracked once a second until it is done (paid on the taker's tab with the power, the standing rises:
+/// <c>contractDone</c>) or fails (out of time, the ship lost, given up: <c>contractFailed</c>). Creative pays as survival does (its tabs are unlimited
 /// anyway). Fixed arrays, worked once a second; a notice allocates.
 /// </summary>
 public sealed class PowerContracts
@@ -236,10 +237,10 @@ public sealed class PowerContracts
         if (done)
         {
             Done++;
-            host.Pay(c.Taker, c.Pay);
+            host.Pay(c.Taker, c.Power, c.Pay);
             if (def != null)
                 rel.MovePlayer(c.Power, c.Taker, rel.Amount(RelEvent.ContractDone, def));
-            host.Tell(c.Taker, $"Contract done: {Name(c.Power)} pays you {c.Pay} credits and thinks better of you.");
+            host.Tell(c.Taker, $"Contract done: {Name(c.Power)} owes you {c.Pay} more on your tab and thinks better of you.");
         }
         else
         {
@@ -313,7 +314,7 @@ public sealed class PowerContracts
         All[free] = c;
         Offered++;
         Version++;
-        Console.WriteLine($"[crew] contract {c.Serial} offered: {Describe(c)} for {c.Pay} credits");
+        Console.WriteLine($"[crew] contract {c.Serial} offered: {Describe(c)} for {c.Pay} on a tab");
         return true;
     }
 
@@ -350,7 +351,7 @@ public sealed class PowerContracts
         (c.State, c.Taker, c.Party, c.TakerName, c.StateAt, c.Progress) = (ContractState.Taken, player, party, playerName, rel.Tick, 0);
         c.Until = rel.Tick + (long)(c.Kind switch { ContractKind.Escort => r.EscortMinutes, ContractKind.Deliver => r.DeliverMinutes, _ => r.RaidMinutes }) * 60 * T;
         Version++;
-        host.Tell(player, $"Contract taken: {Describe(c)}. Pay {c.Pay} credits.");
+        host.Tell(player, $"Contract taken: {Describe(c)}. Pay: {c.Pay} on your tab with them.");
         return null;
     }
 

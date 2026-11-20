@@ -83,7 +83,7 @@ public sealed partial class Game
             var rank = admiral ? "Admiral" : "Captain";
             Console.WriteLine($"[fleet] construct {c.Id}: {rank} {CrewNames.Of(Crew.Name[m])} ({CrewPowers.Of(power)?.Name}) taken prisoner by player {by}");
             s.RosterDirty = true; // (the Crew window marks the officer)
-            CrewNotice(c, $"Among them {rank} {CrewNames.Of(Crew.Name[m])} of {CrewPowers.Of(power)?.Name}: worth a ransom of {(admiral ? Crew.Fleet.Rules.RansomAdmiral : Crew.Fleet.Rules.RansomCaptain)} credits, or questioning (Crew window).");
+            CrewNotice(c, $"Among them {rank} {CrewNames.Of(Crew.Name[m])} of {CrewPowers.Of(power)?.Name}: worth a ransom of {(admiral ? Crew.Fleet.Rules.RansomAdmiral : Crew.Fleet.Rules.RansomCaptain)} on your tab with them, or questioning (Crew window).");
         }
     }
 
@@ -182,7 +182,7 @@ public sealed partial class Game
                 SendIntel(q, Crew.Fleet.Rules.IntelSeconds);
     }
 
-    /// <summary>Server: an officer prisoner goes back to its power for credits (CrewOrder.Ransom): +15 with them, the ransom to the asker.</summary>
+    /// <summary>Server: an officer prisoner goes back to its power (CrewOrder.Ransom): +15 with them, the ransom on the asker's tab with that power.</summary>
     private string? CrewRansom(Player p, ushort body, uint uid)
     {
         if (CrewHeld(p, body, uid, out var c, out var s, out var m) is { } why)
@@ -195,8 +195,8 @@ public sealed partial class Game
         _officers.Remove(uid);
         _questioning.Remove(uid);
         PowerDeed(RelEvent.ReleaseOfficer, o.Power, p.Id, c.WorldCom);
-        CreditsGive(p.Id, amount);
-        SandboxHands.Notices.Add((p.Id, $"{CrewPowers.Of(o.Power)?.Name} paid {amount} credits for {(o.Admiral ? "Admiral" : "Captain")} {CrewNames.Of(Crew.Name[m])}."));
+        TabGive(p.Id, o.Power, amount); // (on your tab with them: spendable once they trade with you, wiped if they go to war with you: GameTabs.cs)
+        SandboxHands.Notices.Add((p.Id, $"The {CrewPowers.Of(o.Power)?.Name} owe you {amount} more for {(o.Admiral ? "Admiral" : "Captain")} {CrewNames.Of(Crew.Name[m])}."));
         Console.WriteLine($"[fleet] player {p.Id} ransomed {(o.Admiral ? "admiral" : "captain")} {uid} to {CrewPowers.Of(o.Power)?.Name} for {amount}");
         return null;
     }

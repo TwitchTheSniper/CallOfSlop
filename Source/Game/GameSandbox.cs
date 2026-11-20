@@ -2448,11 +2448,19 @@ public sealed partial class Game
     /// seat type's limits). A remote player's seat and seat-relative look come from their snapshots (protocol 80), so every
     /// machine composes the same seat-local pose with its own drawing of the construct: no lag, jitter or slide.
     /// </summary>
+    /// <summary>A Shell Control Chair in use this frame: its helmet is drawn down (ConstructRender.HelmetDrop). At most twice a player (a seat and a shell).</summary>
+    private static void HelmetDown(ushort body, ushort part)
+    {
+        if (ConstructRender.HelmetsDownCount < ConstructRender.HelmetsDown.Length)
+            ConstructRender.HelmetsDown[ConstructRender.HelmetsDownCount++] = (body, part);
+    }
+
     internal void UpdateSandboxSeats(double now, float dt)
     {
         _ladderDt = dt;
         if (!IsServer && Constructs.Bodies.Count == 0 && ConstructGravity.Wells + ConstructGravity.Generators > 0)
             ConstructGravity.Clear(); // (the last gravity part went)
+        ConstructRender.HelmetsDownCount = 0; // (the shell chairs in use: filled below, drawn down by ConstructRender.HelmetDrop)
         if (Constructs.Bodies.Count == 0)
         {
             _sbViewSeat = 0;
@@ -2490,6 +2498,8 @@ public sealed partial class Game
             p.RenderSeatWas = SeatKind.None;
             if (!SandboxOn)
                 continue;
+            if (p.InShell && p.ShellChair != 0)
+                HelmetDown(p.ShellChair, p.ShellSeat); // (wearing a shell: their body sits in the chair, under its helmet)
             ushort body;
             ushort part;
             var remote = !IsServer && p.Id != LocalId;
@@ -2512,6 +2522,8 @@ public sealed partial class Game
             }
             if (Constructs.Get(body) is not { } c || part >= c.PartCount || c.Parts[part].D.Role != PartRole.Seat)
                 continue;
+            if (c.Parts[part].D.ShellRange > 0)
+                HelmetDown(body, part); // (sitting in a Shell Control Chair: its helmet comes down over their head)
             ConstructRender.SeatPose(c, part, _alpha, IsServer, out var q, out var feet);
             var kind = c.SeatKindOf(part);
             var lookKind = kind == SeatKind.Driver && c.SeatAims(part) ? SeatKind.Gunner : kind; // (a driver with a Turret Module looks all the way round, as a gunner does)

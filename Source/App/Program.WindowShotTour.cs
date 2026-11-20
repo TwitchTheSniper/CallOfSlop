@@ -18,7 +18,7 @@ public static partial class Program
     private static long _wsPerfLast;
     private static readonly List<double> _wsPerfMs = [];
 
-    private static bool WsTourKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "places" or "view" or "lookat" or "perf" or "skip" or "open" or "what";
+    private static bool WsTourKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "places" or "view" or "lookat" or "perf" or "rec" or "skip" or "open" or "what";
 
     private static void WsTourSettings(string[] args)
     {
@@ -58,6 +58,11 @@ public static partial class Program
         {
             case "perf":
             {
+                if (Ui.CaptureRecording)
+                {
+                    WsFail("perf: the F9 recording is running (rec stop first: both use PerfBench)");
+                    return true;
+                }
                 var sp = arg.Split(' ', 2, StringSplitOptions.TrimEntries);
                 _wsPerfAll = _wsPerfLeft = int.TryParse(sp[0], out var n) ? Math.Clamp(n, 10, 5000) : 300;
                 _wsPerfLabel = sp.Length > 1 ? sp[1] : $"spot {_wsShots}";
@@ -67,6 +72,16 @@ public static partial class Program
                 PerfBench.Begin(_wsPerfLabel); // (the profiler on over the same frames: PerfBench.cs)
                 return true;
             }
+            case "rec": // "rec start" / "rec stop": the F9 window's recording, as its Start button and the perf key do (UiPerfCapture.cs)
+                if (arg.Trim().Equals("stop", StringComparison.OrdinalIgnoreCase))
+                {
+                    Ui.CaptureStopAsked = true;
+                    SetPerfMode(PerfView.Window);
+                }
+                else if (!Ui.CaptureRecording)
+                    Ui.StartCapture(g, Brutal.GlfwApi.Glfw.Time);
+                _wsWait = 3;
+                return true;
             case "skip": // the survival opening skipped, as its key does
                 g.OpeningSkip();
                 _wsWait = 90;

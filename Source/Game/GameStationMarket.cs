@@ -8,12 +8,63 @@ public sealed class StationDef
 {
     public string Name = "", Power = "", Planet = "";
     public StationGood[] Goods = [];
+    public StationPart[] Parts = []; // parts it trades (Karl, 2026-11-20: parts are physical and carry a value); their stock follows the goods' in a market
     public float Orbit; // its height over its planet (m): where a hauler meets it when its world isn't the one being played (0: unknown)
     public string Blueprint = ""; // built in its planet's world the first time that world is played without it (empty: a ship start builds it)
 }
 
-/// <summary>A good a station trades: what it pays and asks a unit (credits), what it starts with and holds at most.</summary>
+/// <summary>A good a station trades: what it pays and asks a unit (value on a tab: Game/GameTabs.cs), what it starts with and holds at most.</summary>
 public readonly record struct StationGood(byte Material, float Buy, float Sell, int Stock, int Most);
+
+/// <summary>A part a station trades (a construct part by id): what it pays and asks for one (by default its value, <see cref="TradeValues.Part"/>, times the file's "partBuy" and "partSell").</summary>
+public readonly record struct StationPart(ushort Part, float Buy, float Sell, int Stock, int Most);
+
+/// <summary>
+/// What goods and parts are worth (Karl, 2026-11-20: no currency; parts are physical and carry a value). A material's value is the file's
+/// "values" (Crew/Stations.json, in the old credit prices); a part's is what its Assembling recipe takes, materials at their value and parts
+/// in it at theirs, times "work" (the labour in it). A part with no recipe is worth "noRecipe". Made once a part, never in a tick.
+/// </summary>
+public static class TradeValues
+{
+    internal static readonly float[] Material = new float[SandboxInventory.MaxMaterials];
+    internal static float Work = 1.25f, NoRecipe = 2f, DefaultMaterial = 0.5f;
+    private static readonly Dictionary<int, float> _parts = new();
+
+    /// <summary>A unit of material <paramref name="id"/>.</summary>
+    public static float Of(byte id) => id < Material.Length && Material[id] > 0 ? Material[id] : DefaultMaterial;
+
+    /// <summary>One part of def <paramref name="d"/>.</summary>
+    public static float Part(ConstructPartDef d) => PartAt(d, 0, out _);
+
+    private static float PartAt(ConstructPartDef d, int depth, out bool cut)
+    {
+        cut = false;
+        if (_parts.TryGetValue(d.Id, out var had))
+            return had;
+        var v = NoRecipe;
+        if (AssemblingTable.Current.Of((ushort)d.Id) is { } r)
+        {
+            if (depth >= 6)
+            {
+                cut = true; // (a chain this deep, or a loop: priced as no recipe here, and not kept, so the part's own price is whole)
+                return v;
+            }
+            float sum = 0;
+            var per = Math.Max(1, r.Count);
+            foreach (var (mat, n) in r.Materials)
+                sum += Of(mat) * n / per;
+            foreach (var (part, n) in r.Parts)
+            {
+                sum += PartAt(part, depth + 1, out var c) * n / per;
+                cut |= c;
+            }
+            v = MathF.Max(0.01f, sum * Work);
+        }
+        if (!cut || depth == 0)
+            _parts[d.Id] = v;
+        return v;
+    }
+}
 
 /// <summary>A hauler route (Crew/Stations.json "haulers"): a power's ships buying goods at one station and selling them at another, and back.</summary>
 public sealed class StationHaulerDef
@@ -65,6 +116,26 @@ public static class StationMarkets
                 throw new FormatException($"\"format\" is not \"{Format}\"");
             if (root.TryGetProperty("margin", out var m))
                 _margin = Math.Clamp(m.GetSingle(), 0, 1);
+            float partBuy = 0.8f, partSell = 1.25f;
+            if (root.TryGetProperty("values", out var vals))
+            {
+                Array.Clear(TradeValues.Material);
+                foreach (var v in vals.EnumerateObject())
+                {
+                    if (v.Name == "work")
+                        TradeValues.Work = Math.Clamp(v.Value.GetSingle(), 0.1f, 10f);
+                    else if (v.Name == "noRecipe")
+                        TradeValues.NoRecipe = Math.Clamp(v.Value.GetSingle(), 0.01f, 10000f);
+                    else if (v.Name == "partBuy")
+                        partBuy = Math.Clamp(v.Value.GetSingle(), 0f, 10f);
+                    else if (v.Name == "partSell")
+                        partSell = Math.Clamp(v.Value.GetSingle(), 0f, 10f);
+                    else if (RecyclingTable.Current.IdOf(v.Name) is var id and > 0 && id < TradeValues.Material.Length)
+                        TradeValues.Material[id] = Math.Clamp(v.Value.GetSingle(), 0f, 10000f);
+                    else
+                        throw new FormatException($"values: no material named \"{v.Name}\" (Constructs/Recycling.json)");
+                }
+            }
             var list = new List<StationDef>();
             foreach (var s in root.GetProperty("stations").EnumerateArray())
             {
@@ -93,9 +164,25 @@ public static class StationMarkets
                     goods.Add(new StationGood(mat, Math.Clamp(g.GetProperty("buy").GetSingle(), 0, 10000), Math.Clamp(g.GetProperty("sell").GetSingle(), 0, 10000),
                         Math.Clamp(g.TryGetProperty("stock", out var st) ? st.GetInt32() : 0, 0, most), most));
                 }
-                if (goods.Count > MaxGoods)
-                    throw new FormatException($"{d.Name}: at most {MaxGoods} goods");
+                var parts = new List<StationPart>();
+                if (s.TryGetProperty("parts", out var ps))
+                    foreach (var g in ps.EnumerateArray())
+                    {
+                        var pn = g.GetProperty("part").GetString() ?? "";
+                        if (ConstructParts.Find(pn) is not { } pd)
+                            throw new FormatException($"{d.Name}: no construct part named \"{pn}\"");
+                        if (parts.Any(x => x.Part == pd.Id))
+                            throw new FormatException($"{d.Name}: \"{pn}\" is listed twice");
+                        var value = TradeValues.Part(pd);
+                        var most = Math.Clamp(g.TryGetProperty("most", out var mo) ? mo.GetInt32() : 20, 0, 9999);
+                        parts.Add(new StationPart((ushort)pd.Id, Math.Clamp(g.TryGetProperty("buy", out var pb) ? pb.GetSingle() : value * partBuy, 0, 1_000_000),
+                            Math.Clamp(g.TryGetProperty("sell", out var pse) ? pse.GetSingle() : value * partSell, 0, 1_000_000),
+                            Math.Clamp(g.TryGetProperty("stock", out var st) ? st.GetInt32() : 0, 0, most), most));
+                    }
+                if (goods.Count + parts.Count > MaxGoods)
+                    throw new FormatException($"{d.Name}: at most {MaxGoods} goods and parts");
                 d.Goods = [.. goods];
+                d.Parts = [.. parts];
                 list.Add(d);
             }
             if (list.Count > 255)
@@ -145,7 +232,7 @@ public static class StationMarkets
 
 /// <summary>
 /// Stations' markets in play (docs/sandbox/constructs/station.md "Markets"). The host keeps each station's stock of its goods
-/// (<see cref="StationMarket"/>), buys a docked ship's ore for credits (<see cref="FactionOp.StationSell"/>: someone aboard the moored ship asks),
+/// (<see cref="StationMarket"/>), takes a docked ship's ore for value on a tab (GameTabs.cs) (<see cref="FactionOp.StationSell"/>: someone aboard the moored ship asks),
 /// and tells everyone the markets and who is moored where (<see cref="Msg.Stations"/>) when they change, at most once a second, and each joiner.
 /// </summary>
 public sealed partial class Game
@@ -175,7 +262,8 @@ public sealed partial class Game
     {
         if (_marketByDef.Length != StationMarkets.All.Length)
             Array.Resize(ref _marketByDef, StationMarkets.All.Length);
-        return _marketByDef[def] ??= new StationMarket { Def = def, Stock = [.. StationMarkets.All[def].Goods.Select(g => g.Stock)] };
+        var d = StationMarkets.All[def];
+        return _marketByDef[def] ??= new StationMarket { Def = def, Stock = [.. d.Goods.Select(g => g.Stock), .. d.Parts.Select(g => g.Stock)] }; // (goods, then parts)
     }
 
     /// <summary>Host: the market of station <paramref name="st"/> (null: it has none, or another station of its name holds it here).</summary>
@@ -306,7 +394,7 @@ public sealed partial class Game
                 if (Constructs.Get(ship) is { } c)
                     (c.MooredTo, c.MoorPart) = (m.Body, part);
             }
-            if (m.Def < StationMarkets.All.Length && StationMarkets.All[m.Def].Goods.Length == m.Stock.Length)
+            if (m.Def < StationMarkets.All.Length && StationMarkets.All[m.Def].Goods.Length + StationMarkets.All[m.Def].Parts.Length == m.Stock.Length)
             {
                 StationMarketsHere[m.Body] = m; // (a market this peer's data doesn't match is left out)
                 if (Constructs.Get(m.Body) is { } sb)
@@ -328,7 +416,7 @@ public sealed partial class Game
     }
 
     /// <summary>
-    /// Any peer: what the station would pay for what <paramref name="ship"/>'s bins hold of the goods it buys (credits, and units), up to the
+    /// Any peer: what the station would pay for what <paramref name="ship"/>'s bins hold of the goods it buys (value, and units), up to the
     /// room it has for each. The host's sale and the card's preview both count it here.
     /// </summary>
     public double StationOffer(StationMarket m, Construct ship, out int units)
@@ -360,7 +448,7 @@ public sealed partial class Game
 
     /// <summary>
     /// Host: the station buys what <paramref name="ship"/>'s bins hold of the goods it buys, up to the room it has for each; <paramref name="sold"/>
-    /// gets the units by good. Returns what it pays (credits); the power holding it counts its margin on that as earned.
+    /// gets the units by good. Returns what it pays (value on a tab); the power holding it counts its margin on that as earned.
     /// </summary>
     private double StationTakeCargo(StationMarket m, Construct ship, Span<int> sold)
     {
@@ -411,7 +499,7 @@ public sealed partial class Game
         return put;
     }
 
-    /// <summary>Host: the station's power counts its margin on a trade of <paramref name="value"/> credits (its stock and its books).</summary>
+    /// <summary>Host: the station's power counts its margin on a trade of <paramref name="value"/> (its stock and its books).</summary>
     private void StationMargin(StationMarket m, double value)
     {
         if (value <= 0 || StationPower(m) is not (> 0 and var power) || Controllers.Powers[power] is not { Fallen: false } pw)
@@ -463,18 +551,19 @@ public sealed partial class Game
             total += s;
         if (total == 0)
             return $"nothing aboard is wanted at {name} (or it holds all it can of what you carry)";
-        var credits = (long)Math.Floor(value);
-        CreditsGive(p.Id, credits);
+        var owed = (long)Math.Floor(value);
+        var power = StationPower(m);
+        TabGive(p.Id, power, owed); // (barter: the goods for value on your tab with the station's power, spendable only with them)
         StationsVersion++;
         var what = StationGoodsText(m, sold);
-        SandboxHands.Notices.Add((p.Id, $"Sold {what} to {name} for {credits} credits."));
-        Log($"[station] {p.Name} sold {what} from construct {ship.Id} to {name} for {credits} credits");
+        SandboxHands.Notices.Add((p.Id, $"Traded {what} to {name}: the {TabPowerName(power)} owe you {owed} more."));
+        Log($"[station] {p.Name} traded {what} from construct {ship.Id} to {name} for {owed} on their tab");
         return null;
     }
 
     /// <summary>
     /// Server: <paramref name="p"/> buys good <paramref name="k"/> of moored ship <paramref name="shipId"/>'s station: as much as its stock, the ship's
-    /// bins and their credits allow (Karl, 2026-11-18: the market shows "whatever goods are there to trade"). Null: bought; else why not.
+    /// bins and their tab with its power allow (Karl, 2026-11-18: the market shows "whatever goods are there to trade"). Null: bought; else why not.
     /// </summary>
     private string? StationBuyAct(Player p, ushort shipId, int k)
     {
@@ -482,23 +571,120 @@ public sealed partial class Game
             return why;
         var goods = StationMarkets.All[m.Def].Goods;
         var name = StationName(st);
-        if (k >= goods.Length || goods[k].Sell <= 0)
+        if (k >= goods.Length)
+            return StationBuyPart(p, ship, st, m, k - goods.Length);
+        if (goods[k].Sell <= 0)
             return $"{name} doesn't sell that";
         if (m.Stock[k] <= 0)
             return $"{name} has none left";
         var price = (double)goods[k].Sell;
-        var afford = SandboxInfiniteParts ? int.MaxValue : (int)Math.Min(int.MaxValue, Math.Floor(CreditsOf(p.Id) / price));
+        var power = StationPower(m);
+        var afford = SandboxInfiniteParts ? int.MaxValue : (int)Math.Min(int.MaxValue, Math.Floor(TabOf(p.Id, power) / price));
         if (afford <= 0)
-            return $"you can't afford a unit ({price:0.00} credits)";
+            return $"a unit takes {price:0.00} off your tab with the {TabPowerName(power)}, who owe you {TabOf(p.Id, power)}: trade them goods first";
         var units = StationLoadCargo(m, ship, k, afford);
         var good = RecyclingTable.Current.NameOf(goods[k].Material);
         if (units == 0)
             return $"no bin aboard has room for {good}";
         var cost = (long)Math.Ceiling(units * price);
-        if (CreditsPay(p.Id, cost) is { } cant) // (it can't fail: afford was counted from the same balance)
+        if (TabPay(p.Id, power, Math.Min(cost, TabOf(p.Id, power))) is { } cant) // (it can't fail: afford was counted from the same tab; a rounding cent is let go)
             return cant;
-        SandboxHands.Notices.Add((p.Id, $"Bought {units:N0} {good} from {name} for {cost} credits."));
-        Log($"[station] {p.Name} bought {units} {good} into construct {ship.Id} from {name} for {cost} credits");
+        SandboxHands.Notices.Add((p.Id, $"Took {units:N0} {good} from {name} for {cost} off your tab."));
+        Log($"[station] {p.Name} took {units} {good} into construct {ship.Id} from {name} for {cost} off their tab");
+        return null;
+    }
+
+    /// <summary>Any peer: how many of part <paramref name="part"/> the Storage Volumes and part stores of <paramref name="ship"/> hold (as heard).</summary>
+    public int StationShipParts(Construct ship, ushort part)
+    {
+        Span<CHolding> held = stackalloc CHolding[CStore.MaxKinds + 1];
+        var n = 0;
+        for (var i = 0; i < ship.PartCount; i++)
+        {
+            if (Constructs.StoreOf(ship, i) is null)
+                continue;
+            var k = Constructs.Holdings(ship, i, held);
+            for (var j = 0; j < k; j++)
+                if (held[j].IsPart && held[j].Id == part)
+                    n += held[j].Count;
+        }
+        return n;
+    }
+
+    /// <summary>
+    /// Server: one of part <paramref name="j"/> of the station's parts into a Storage Volume of moored <paramref name="ship"/> (parts are
+    /// physical: Karl, 2026-11-20), off <paramref name="p"/>'s tab with its power.
+    /// </summary>
+    private string? StationBuyPart(Player p, Construct ship, Construct st, StationMarket m, int j)
+    {
+        var def = StationMarkets.All[m.Def];
+        var name = StationName(st);
+        if (j < 0 || j >= def.Parts.Length || def.Parts[j].Sell <= 0)
+            return $"{name} doesn't sell that";
+        var k = def.Goods.Length + j;
+        var part = def.Parts[j];
+        if (ConstructParts.Def(part.Part) is not { } pd)
+            return $"{name} doesn't sell that";
+        if (m.Stock[k] <= 0)
+            return $"{name} has no {pd.Name} left";
+        var power = StationPower(m);
+        var cost = (long)Math.Ceiling(part.Sell);
+        if (!SandboxInfiniteParts && TabOf(p.Id, power) < cost)
+            return TabPay(p.Id, power, cost);
+        var put = -1;
+        string? refusal = null;
+        for (var i = 0; i < ship.PartCount && put < 0; i++)
+            if (ship.DefOf(i).IsVolumeStore)
+            {
+                if (Constructs.PutPart(ship, i, pd) is { } why)
+                    refusal ??= why;
+                else
+                    put = i;
+            }
+        if (put < 0)
+            return refusal != null ? $"no Storage Volume aboard takes a {pd.Name} ({refusal})" : $"a {pd.Name} goes in a Storage Volume, and this ship has none";
+        TabPay(p.Id, power, cost);
+        m.Stock[k]--;
+        StationMargin(m, part.Sell);
+        StationsVersion++;
+        SandboxHands.Notices.Add((p.Id, $"Took a {pd.Name} into the hold from {name} for {cost} off your tab."));
+        Log($"[station] {p.Name} took a {pd.Name} into construct {ship.Id} from {name} for {cost} off their tab");
+        return null;
+    }
+
+    /// <summary>
+    /// Server: every one of a station's parts that moored <paramref name="shipId"/>'s stores hold (parts are physical: Karl, 2026-11-20), up to
+    /// the room the station has, for value on <paramref name="p"/>'s tab with its power. <paramref name="good"/> counts the station's goods first,
+    /// as its market's stock does. Null: traded; else why not.
+    /// </summary>
+    private string? StationSellPartAct(Player p, ushort shipId, int good)
+    {
+        if (StationTradeCheck(p, shipId, out var ship, out var st, out var m) is { } why)
+            return why;
+        var def = StationMarkets.All[m.Def];
+        var j = good - def.Goods.Length;
+        var name = StationName(st);
+        if (j < 0 || j >= def.Parts.Length || def.Parts[j].Buy <= 0 || ConstructParts.Def(def.Parts[j].Part) is not { } pd)
+            return $"{name} doesn't take that";
+        var part = def.Parts[j];
+        var k = def.Goods.Length + j;
+        var room = Math.Max(0, part.Most - m.Stock[k]);
+        if (room <= 0)
+            return $"{name} holds all the {pd.Name}s it wants";
+        var took = 0;
+        var what = new CHolding(true, part.Part, 0);
+        for (var i = 0; i < ship.PartCount && took < room; i++)
+            if (Constructs.StoreOf(ship, i) is not null)
+                took += Constructs.TakeHolding(ship, i, what, room - took);
+        if (took == 0)
+            return $"no store aboard holds a {pd.Name}";
+        m.Stock[k] += took;
+        var owed = (long)Math.Floor(took * (double)part.Buy);
+        var power = StationPower(m);
+        TabGive(p.Id, power, owed);
+        StationsVersion++;
+        SandboxHands.Notices.Add((p.Id, $"Traded {took} {pd.Name} to {name}: the {TabPowerName(power)} owe you {owed} more."));
+        Log($"[station] {p.Name} traded {took} {pd.Name} from construct {ship.Id} to {name} for {owed} on their tab");
         return null;
     }
 }

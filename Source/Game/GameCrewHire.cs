@@ -8,20 +8,19 @@ public enum CrewOrder : byte
 {
     Release, // a prisoner goes free
     Drop, // a prisoner is put off (the ship landed or still)
-    Hire, // a prisoner joins your crew, paid in credits (uid 0, body 0: the nearest friendly NPC crew member within reach)
+    Hire, // a prisoner joins your crew, paid off your tab with their power (uid 0, body 0: the nearest friendly NPC crew member within reach)
     Dismiss, // one of your crew leaves
     HoldFire, // the whole crew of that body: hold fire
     FireAtWill, // ... fire at will
     Interrogate, // faction-controllers.md phase 2: question a prisoner officer (an admiral or a captain) for intelligence (GameCrewFleet.cs)
-    Ransom, // ... send a prisoner officer back to its power for credits
+    Ransom, // ... send a prisoner officer back to its power, for a tab with it
     Interrogator, // ... one of your hands becomes your Interrogator (or back to a spare)
 }
 
 /// <summary>
-/// Your own crew and credits (docs/sandbox/design/bot-brain.md section 9, phase 6; the user's answers 4 and 6 and the credits note), server
-/// side with the client's roster and balance. Credits are a placeholder currency: each player's balance is saved with the world (the Crew
-/// section); in Creative it is unlimited. A new player in Survival starts with <see cref="CreditsStart"/>; taking a ship pays a bounty.
-/// Hired NPC crew are paid in credits: a prisoner on a ship you took (its faction's <c>hire.cost</c>), or a hand from a friendly crew
+/// Your own crew (docs/sandbox/design/bot-brain.md section 9, phase 6; the user's answers 4 and 6), server side with the client's roster.
+/// There are no credits (Karl, 2026-11-20): hires and wages are paid off your tab with the hand's own power (GameTabs.cs), and taking a ship
+/// puts a bounty on your tab with a power hostile to it. Hired NPC crew are paid off that tab: a prisoner on a ship you took (its faction's <c>hire.cost</c>), or a hand from a friendly crew
 /// (their kind's standing with you 20 or more) within <see cref="HireReach"/> m, who joins the ship you are aboard or your nearest own ship.
 /// A hired hand works under the Player Crew rules: they take the guns, the engine room and the magazine of your ship, never its helm, and
 /// never stand in your way (you, your logic, remote and autopilot drive it as ever); they fight who hits the ship or whose faction is at
@@ -29,71 +28,16 @@ public enum CrewOrder : byte
 /// </summary>
 public sealed partial class Game
 {
-    public const long CreditsStart = 500;
     public const int CaptureBounty = 100, PrisonerBounty = 25;
     public const float HireReach = 15, OwnShipReach = 60;
     public const int WageMinutes = 10;
 
-    private readonly bool[] _creditsDirty = new bool[256];
     private long _wageAt;
 
-    /// <summary>Client: this player's credits as the host last sent them (<see cref="Msg.Credits"/>; -1: unlimited, Creative).</summary>
-    public long CreditsHere;
-
-    /// <summary>The HUD's credits line, made when the balance changes.</summary>
-    public string CreditsLine { get; private set; } = "";
-
-    /// <summary>Server: <paramref name="player"/> pays <paramref name="cost"/> credits. Null: paid; else why not.</summary>
-    public string? CreditsPay(byte player, long cost)
-    {
-        if (SandboxInfiniteParts || cost <= 0)
-            return null;
-        if (_credits[player] < cost)
-            return $"that costs {cost} credits: you have {_credits[player]}";
-        _credits[player] -= cost;
-        _creditsDirty[player] = true;
-        return null;
-    }
-
-    public void CreditsGive(byte player, long amount)
-    {
-        if (amount == 0)
-            return;
-        _credits[player] = Math.Max(0, _credits[player] + amount);
-        _creditsDirty[player] = true;
-    }
-
-    private readonly bool[] _creditsStarted = new bool[256], _creditsSeen = new bool[256];
-
-    /// <summary>Server, a person's record came back: whether they had their start balance.</summary>
-    private void CreditsFirst(Player p, WorldPlayer rec)
-    {
-        _creditsStarted[p.Id] = rec.CreditsStarted;
-        _creditsSeen[p.Id] = true;
-    }
-
-    /// <summary>Server, each tick: balances to their owners when they changed; wages every <see cref="WageMinutes"/> minutes.</summary>
+    /// <summary>Server, each tick: tabs to their owners (GameTabs.cs); wages every <see cref="WageMinutes"/> minutes, from your tab with each hand's own power.</summary>
     private void CrewHireTick()
     {
-        foreach (var p in Players.Values)
-        {
-            if (p.Bot != null || p.CrewSlot >= 0)
-                continue;
-            if (!_creditsSeen[p.Id])
-            {
-                _creditsSeen[p.Id] = _creditsDirty[p.Id] = true; // (first seen this run: their balance to them)
-                if (!_creditsStarted[p.Id] && SandboxSurvivalOption && !SandboxInfiniteParts)
-                {
-                    _creditsStarted[p.Id] = true;
-                    _credits[p.Id] += CreditsStart; // (a new person in a Survival world: the start balance, once)
-                }
-            }
-            if (_creditsDirty[p.Id])
-            {
-                _creditsDirty[p.Id] = false;
-                CreditsSend(p);
-            }
-        }
+        TabTick();
         if (ServerTick < _wageAt)
             return;
         _wageAt = ServerTick + WageMinutes * 60L * World.TickRate;
@@ -108,7 +52,7 @@ public sealed partial class Game
                 var m = s.Members[k];
                 if (Crew.State[m] == CrewState.Dead || CrewPowers.KindOf(Crew.Fac[m]) is not { Wage: > 0 } def)
                     continue;
-                if (CreditsPay(c.Owner, def.Wage) is { } why)
+                if (TabOrGoods(c.Owner, Crew.Fac[m], def.Wage, c, out _) is { } why) // (a hand keeps its own power: Crew.Fac, set at the hire; short, the ship's hold pays)
                 {
                     SandboxHands.Notices.Add((c.Owner, $"{CrewNames.Of(Crew.Name[m])} left your crew unpaid ({why})"));
                     Console.WriteLine($"[crew] construct {c.Id}: hand {Crew.Uid[m]} left unpaid");
@@ -118,45 +62,33 @@ public sealed partial class Game
         }
     }
 
-    private void CreditsSend(Player p)
-    {
-        var amount = SandboxInfiniteParts ? -1 : _credits[p.Id];
-        if (p.Id == LocalId)
-            CreditsSet(amount);
-        if (!Net.IsOffline && p.Id != LocalId && GuidOf(p) is { } guid)
-        {
-            _w.Begin(Msg.Credits).U64((ulong)amount);
-            Net.SendTo(guid, _w.Span, PacketReliability.ReliableOrdered);
-        }
-    }
-
-    /// <summary>Client: Msg.Credits (i64 balance; -1: unlimited).</summary>
-    private void ReadCredits(ref PacketReader r)
-    {
-        if (!r.Has(8))
-        {
-            Console.WriteLine("[crew] a credits message didn't read: dropped");
-            return;
-        }
-        CreditsSet((long)r.U64());
-    }
-
-    private void CreditsSet(long amount)
-    {
-        if (amount == CreditsHere && CreditsLine.Length > 0)
-            return;
-        CreditsHere = amount;
-        CreditsLine = amount < 0 ? "Credits: unlimited" : $"Credits: {amount}";
-    }
-
-    /// <summary>The bounty for a ship taken (GameCrewBoard.cs's capture).</summary>
-    private void CrewBounty(byte by, int prisoners)
+    /// <summary>
+    /// The bounty for a ship of <paramref name="victim"/> taken (GameCrewBoard.cs's capture), on the taker's tab with the power most hostile to the
+    /// victim among those that trade with them (standing 0 or more). Nobody: no bounty.
+    /// </summary>
+    private void CrewBounty(byte by, int prisoners, byte victim)
     {
         if (by == 255)
             return;
+        byte payer = 0;
+        var worst = int.MaxValue;
+        for (var f = 1; f < TabPowers && victim != 0; f++)
+        {
+            var power = (byte)f;
+            if (power == victim || CrewPowers.Of(power) == null || CrewStanding(power, by) < 0)
+                continue;
+            var band = (int)Relations.BandOf(power, victim);
+            if (band <= (int)RelBand.Hostile && band < worst)
+                (worst, payer) = (band, power);
+        }
+        if (payer == 0)
+        {
+            SandboxHands.Notices.Add((by, "Nobody you trade with pays a bounty for that ship: it is yours to keep."));
+            return;
+        }
         var pay = CaptureBounty + PrisonerBounty * prisoners;
-        CreditsGive(by, pay);
-        SandboxHands.Notices.Add((by, $"Bounty: {pay} credits for the ship"));
+        TabGive(by, payer, pay);
+        SandboxHands.Notices.Add((by, $"Bounty: the {TabPowerName(payer)} owe you {pay} more for the ship"));
     }
 
     // ---- Hiring --------------------------------------------------------------------------------------------------------------------------
@@ -200,8 +132,8 @@ public sealed partial class Game
             return "that ship has a crew that isn't yours";
         if (to != null && to.MemberCount >= CrewWorld.MaxCrewPerBody)
             return "your ship's crew is full";
-        if (!SandboxInfiniteParts && cost > 0 && _credits[me.Id] < cost)
-            return $"that costs {cost} credits: you have {_credits[me.Id]}";
+        if (!SandboxInfiniteParts && cost > 0 && TabOf(me.Id, power) < cost && GoodsValue(ship) < cost)
+            return $"that costs {cost}: the {TabPowerName(power)} owe you {TabOf(me.Id, power)}, and your ship's bins don't hold that much in goods";
         to ??= Crew.Crew(ship, ShipAiMode.Strangers, faction: CrewPowers.ForKindName("Player Crew"), empty: true);
         if (to is { Prize: true, Own: false })
         {
@@ -213,7 +145,7 @@ public sealed partial class Game
         }
         if (to == null || !to.Own)
             return "that ship can't take a crew";
-        if (CreditsPay(me.Id, cost) is { } why)
+        if (TabOrGoods(me.Id, power, cost, ship, out var paid) is { } why)
             return why;
         var (uidKeep, name, skill, health, fac) = (Crew.Uid[m], Crew.Name[m], Crew.Skill[m], Crew.Health[m], Crew.Fac[m]);
         Crew.Release(m, this);
@@ -223,8 +155,8 @@ public sealed partial class Game
         if (def != null)
             PowerDeed(RelEvent.Hire, power, me.Id, ship.WorldCom);
         CrewLog();
-        Console.WriteLine($"[crew] player {me.Id} hired {CrewNames.Of(name)} ({def?.Name ?? "no kind"}) for {def?.HireCost ?? 0} credits onto construct {ship.Id}");
-        SandboxHands.Notices.Add((me.Id, $"{CrewNames.Of(name)} joined your crew ({def?.HireCost ?? 0} credits; wage {def?.Wage ?? 0} every {WageMinutes} minutes)"));
+        Console.WriteLine($"[crew] player {me.Id} hired {CrewNames.Of(name)} ({def?.Name ?? "no kind"}) for {def?.HireCost ?? 0} off their tab onto construct {ship.Id}");
+        SandboxHands.Notices.Add((me.Id, $"{CrewNames.Of(name)} joined your crew ({(paid.Length > 0 ? paid : "free")}; wage {def?.Wage ?? 0} every {WageMinutes} minutes)"));
         to.SeatsDirty = true;
         return null;
     }
