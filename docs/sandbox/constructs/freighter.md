@@ -27,18 +27,18 @@ dealt into welded pieces by `SplitDeck` and `SplitBands`.
 ## Cargo
 
 Each rack takes two standard containers stacked, lying along the ship: 2.5 x 2.5 x 6.5 m, three 2x2x2 m parts in a row. Karl set
-that size on 2026-11-20; the container itself belongs to the "Design the standard cargo container" work ("Standard Container 2m").
-Each container's origin is the middle of its roof, and its hatch is the whole +x side, hinged at the top, opening to an awning. The
+that size on 2026-11-20; the container itself is the "Standard Container 2m".
+Each container's origin is the middle of its roof, and its hatches are the long sides, hinged at the top, opening to an awning. The
 racks are open outboard so a container slides out to a shell or a crane, and the port containers are turned half round so their
 hatches face out. Allow about 2.5 m clear outboard for an open hatch. A frozen Cargo Volume on each rack holds its two containers.
-Until the standard container's part lands, the blueprint carries a stand-in of the same size, the `Packet Freight Box`. Swap
-`BoxName` and the cargo list in `Blueprint()` for the real part once it exists.
+The racks carry the real part, "Standard Container 2m" (`ContainerParts.cs`); its hatches open on both long sides, so
+the inboard one stays shut against the spine.
 
 ## Checks (2026-11-20)
 
 - `--check-vehicle`: 0 coplanar faces between parts. The wheel and drive failures are a ground vehicle's and don't apply.
 - `--selftest-only "No z-fighting, Assembling, Compound collision, Mods"`: all pass.
 - `--ladder-check`: the boarding ladder climbs up and down.
-- `--flight-check`: it lifts at 2.2x its weight and holds a hover. The one miss is the Ship keys pitch test: the nose goes 53
+- `--flight-check`: it lifts at 2.4x its weight and holds a hover. The one miss is the Ship keys pitch test: the nose goes 53
   degrees down in 6 s where the test wants 55. The shipped Dray gets 40, and a stronger gyro made it unstable.
 - `--check-building` finds 0 m2 to stand on for every ship tried (the Dray and the Zero Day too), so it can't judge ships yet.

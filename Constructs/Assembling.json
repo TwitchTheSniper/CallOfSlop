@@ -1678,7 +1678,6 @@
     {"output": "Packet Eng Wall 4", "materials": {"steel": 120, "concrete": 24}, "seconds": 20.0},
     {"output": "Packet Engineering", "materials": {"steel": 1280, "concrete": 256}, "seconds": 180.0},
     {"output": "Packet Flight Computer", "materials": {"steel": 60, "copper": 100}, "parts": {"Circuit Board": 6}, "seconds": 11.0, "minTier": 3},
-    {"output": "Packet Freight Box", "materials": {"steel": 440, "rubber": 88}, "seconds": 68.0},
     {"output": "Packet Keel", "materials": {"steel": 291, "rubber": 58}, "seconds": 45.6},
     {"output": "Packet Keel 10", "materials": {"steel": 291, "rubber": 58}, "seconds": 45.6},
     {"output": "Packet Keel 11", "materials": {"steel": 291, "rubber": 58}, "seconds": 45.6},
