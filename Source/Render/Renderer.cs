@@ -289,9 +289,10 @@ public sealed unsafe partial class Renderer
     }
 
     // ---- The scene target (reversed depth): the world is drawn here, with a 32-bit float depth buffer ----------------
-    private GlFramebuffer _sceneFbo;
-    private uint _sceneColor, _sceneDepth;
-    private int _sceneW, _sceneH;
+    private GlFramebuffer _sceneFbo, _resolveFbo;
+    private uint _sceneColor, _sceneDepth, _resolveTex;
+    private int _sceneW, _sceneH, _sceneSamples = -1;
+    private bool _sceneBroken;
 
     /// <summary>
     /// The framebuffer the frame's world goes to: the scene target between <see cref="BeginScene"/> and <see cref="Present"/>,
@@ -304,12 +305,21 @@ public sealed unsafe partial class Renderer
 
     /// <summary>
     /// The main frame's world into the scene target (reversed depth only; the window's own depth buffer is 24-bit fixed,
-    /// which reversed depth can't help). Call before <see cref="BeginFrame"/>; <see cref="Present"/> copies it to the window.
+    /// which reversed depth can't help). It has the window's samples (4x MSAA), so edges stay as smooth as drawn straight
+    /// to the window. Call before <see cref="BeginFrame"/>; <see cref="Present"/> puts it in the window.
     /// </summary>
     public void BeginScene(int width, int height)
     {
-        if (!RenderCaps.ReversedDepth || width <= 0 || height <= 0)
+        if (!RenderCaps.ReversedDepth || _sceneBroken || width <= 0 || height <= 0)
             return;
+        if (_sceneSamples < 0)
+        {
+            int samples = 0, max = 0;
+            Native.glBindFramebuffer(GL_FRAMEBUFFER, default);
+            Native.glGetIntegerv(GL_SAMPLES, &samples);
+            Native.glGetIntegerv(GL_MAX_SAMPLES, &max);
+            _sceneSamples = Math.Clamp(samples, 0, Math.Max(max, 0));
+        }
         if (_sceneFbo.Id == 0 || width != _sceneW || height != _sceneH)
         {
             if (_sceneFbo.Id == 0)
@@ -317,34 +327,55 @@ public sealed unsafe partial class Renderer
                 GlFramebuffer fb;
                 Native.glGenFramebuffers(1, &fb);
                 _sceneFbo = fb;
+                Native.glGenFramebuffers(1, &fb);
+                _resolveFbo = fb;
                 GlRenderbuffer rb;
                 Native.glGenRenderbuffers(1, &rb);
                 _sceneColor = rb.Id;
                 Native.glGenRenderbuffers(1, &rb);
                 _sceneDepth = rb.Id;
+                GlTexture tex;
+                Native.glGenTextures(1, &tex);
+                _resolveTex = tex.Id;
             }
             _sceneW = width;
             _sceneH = height;
+            var n = _sceneSamples;
             Native.glBindRenderbuffer(GL_RENDERBUFFER, new GlRenderbuffer(_sceneColor));
-            Native.glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA8, width, height);
+            if (n > 0)
+                Native.glRenderbufferStorageMultisample(GL_RENDERBUFFER, n, GL_RGBA8, width, height);
+            else
+                Native.glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA8, width, height);
             Native.glBindRenderbuffer(GL_RENDERBUFFER, new GlRenderbuffer(_sceneDepth));
-            Native.glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT32F, width, height);
+            if (n > 0)
+                Native.glRenderbufferStorageMultisample(GL_RENDERBUFFER, n, GL_DEPTH_COMPONENT32F, width, height);
+            else
+                Native.glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT32F, width, height);
             Native.glBindRenderbuffer(GL_RENDERBUFFER, default);
             Native.glBindFramebuffer(GL_FRAMEBUFFER, _sceneFbo);
             Native.glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, new GlRenderbuffer(_sceneColor));
             Native.glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, new GlRenderbuffer(_sceneDepth));
             var status = Native.glCheckFramebufferStatus(GL_FRAMEBUFFER);
+            // The resolve target: one sample, the same RGBA8, drawn into the window by a full-screen triangle (a blit may
+            // not write a multisampled window).
+            Native.glActiveTexture(GL_TEXTURE0);
+            Native.glBindTexture(GL_TEXTURE_2D, _resolveTex);
+            Native.glTexImage2D(GL_TEXTURE_2D, 0, (int)GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, null);
+            Native.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, (int)GL_NEAREST);
+            Native.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, (int)GL_NEAREST);
+            Native.glBindFramebuffer(GL_FRAMEBUFFER, _resolveFbo);
+            Native.glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _resolveTex, 0);
+            var resolved = Native.glCheckFramebufferStatus(GL_FRAMEBUFFER);
+            Native.glBindTexture(GL_TEXTURE_2D_ARRAY, _texture); // (the box shader's unit 0, as BeginFrame leaves it)
             Native.glBindFramebuffer(GL_FRAMEBUFFER, default);
-            if (status != GL_FRAMEBUFFER_COMPLETE)
+            if (status != GL_FRAMEBUFFER_COMPLETE || resolved != GL_FRAMEBUFFER_COMPLETE)
             {
-                Console.WriteLine($"[gl] the scene target is incomplete (0x{status:X}): the world draws to the window's 24-bit depth");
-                _sceneW = -1;
+                Console.WriteLine($"[gl] the scene target is incomplete (0x{status:X}, resolve 0x{resolved:X}): the world draws to the window's 24-bit depth from now on");
+                _sceneBroken = true; // (tried once: no retry, and no log line, every frame)
                 return;
             }
-            Console.WriteLine($"[gl] scene target {width}x{height}: RGBA8 + 32-bit float depth (reversed)");
+            Console.WriteLine($"[gl] scene target {width}x{height}, {n} samples: RGBA8 + 32-bit float depth (reversed)");
         }
-        if (_sceneW < 0)
-            return;
         Native.glBindFramebuffer(GL_FRAMEBUFFER, _sceneFbo);
         MainFbo = _sceneFbo;
     }
@@ -357,9 +388,23 @@ public sealed unsafe partial class Renderer
         if (_batching)
             FlushBatch();
         Native.glBindFramebuffer(GL_READ_FRAMEBUFFER, _sceneFbo);
-        Native.glBindFramebuffer(GL_DRAW_FRAMEBUFFER, default);
-        Native.glBlitFramebuffer(0, 0, _sceneW, _sceneH, 0, 0, _sceneW, _sceneH, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-        Native.glBindFramebuffer(GL_FRAMEBUFFER, default);
+        if (_sceneSamples <= 0)
+        {
+            Native.glBindFramebuffer(GL_DRAW_FRAMEBUFFER, default);
+            Native.glBlitFramebuffer(0, 0, _sceneW, _sceneH, 0, 0, _sceneW, _sceneH, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+            Native.glBindFramebuffer(GL_FRAMEBUFFER, default);
+        }
+        else
+        {
+            Native.glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _resolveFbo); // resolve the samples (same size, same RGBA8)
+            Native.glBlitFramebuffer(0, 0, _sceneW, _sceneH, 0, 0, _sceneW, _sceneH, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+            Native.glBindFramebuffer(GL_FRAMEBUFFER, default);
+            if (!PostFx.DrawFullScreen(_resolveTex, _sceneW, _sceneH))
+                _sceneBroken = true; // (no way into the window: draw straight to it from the next frame)
+            Viewport(0, 0, _sceneW, _sceneH);
+            AfterFx();
+            Native.glBindTexture(GL_TEXTURE_2D_ARRAY, _texture);
+        }
         MainFbo = default;
     }
 

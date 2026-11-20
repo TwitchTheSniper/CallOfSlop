@@ -230,6 +230,53 @@ public static unsafe class PostFx
     private static bool _depthFloat;
     private static GlFramebuffer _depthFbo;
 
+    private const string PresentFs = """
+        #version 410 core
+        in vec2 vUv;
+        uniform sampler2D uTex;
+        out vec4 FragColor;
+        void main() { FragColor = texture(uTex, vUv); }
+        """;
+
+    private static GlProgram _present;
+    private static GlVertexArray _presentVao;
+    private static bool _presentBroken;
+
+    /// <summary>
+    /// Draws <paramref name="tex"/> over the whole bound framebuffer, colour and alpha as they are (Renderer.Present: the
+    /// resolved scene target into a multisampled window, which a blit may not write). False when its shader won't link.
+    /// </summary>
+    public static bool DrawFullScreen(uint tex, int w, int h)
+    {
+        if (_presentBroken)
+            return false;
+        if (_present.Id == 0)
+        {
+            try
+            {
+                _present = Link(QuadVs, PresentFs, "PostFx.present");
+                _presentVao = GenVertexArray();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[postfx] the scene copy shader failed: {ex.Message}");
+                _presentBroken = true;
+                return false;
+            }
+        }
+        Native.glDisable(GlCapability.DepthTest);
+        Native.glDisable(GlCapability.Blend);
+        Native.glColorMask(true, true, true, true);
+        Viewport(0, 0, w, h);
+        _present.Use();
+        _presentVao.Bind();
+        Bind(Unit0, tex);
+        Native.glDrawArrays(GL_TRIANGLES, 0, 3);
+        Native.glEnable(GlCapability.DepthTest);
+        Native.glActiveTexture(GL_TEXTURE0);
+        return true;
+    }
+
     private static GlProgram Link(string vs, string fs, string label)
     {
         var v = CreateShader(GlShaderType.Vertex).SetSource(RenderCaps.Glsl(vs)).Compile();

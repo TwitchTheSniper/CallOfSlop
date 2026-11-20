@@ -13,7 +13,10 @@ Mainframe's hull seen from above (Karl, 2026-11-20).
   the reversed matrices, which is what every shader uploads.
 - Depth test `GL_GEQUAL`, depth cleared to 0.
 - The main frame's world is drawn into a scene target (`Renderer.BeginScene`: RGBA8 colour, `GL_DEPTH_COMPONENT32F`
-  depth). `Renderer.Present` copies its colour to the window before the UI (and before any pixel read). A float's
+  depth, the window's own sample count, so 4x MSAA stays). `Renderer.Present` puts it in the window before the UI (and
+  before any pixel read): a blit with no samples; with samples, a resolve blit into a one-sample texture and a
+  full-screen triangle (`PostFx.DrawFullScreen`), since a blit may not write a multisampled window. If the target can't
+  be made, it logs once and the world draws straight to the window from then on. A float's
   precision follows the reversed perspective's, so the step at 300 m is a few hundredths of a millimetre.
 - Off with `--gl-no=revz` (a start-up switch, not a bench experiment: shaders are built for it). The 4.1 path never
   has it and is unchanged. Thumbnails, camera feeds and the lobby draw into 24-bit buffers with the same reversed
@@ -29,6 +32,8 @@ Mainframe's hull seen from above (Karl, 2026-11-20).
   for reversed depth (the far plane is z >= 0). A CPU matrix built outside the renderer for those planes goes through
   `Renderer.GpuProjection` first.
 - Code that binds "the screen" again inside the frame binds `Renderer.MainFbo`, not 0.
+- A projection that skips `SetCamera` (the scope lens, the frenzy glow on the first-person gun) goes through
+  `Renderer.GpuProjection` itself, or it fails the depth test against what `SetCamera` drew.
 
 ## Measured (cloud, llvmpipe, Mainframe on Proving Ground, 1280x720)
 
