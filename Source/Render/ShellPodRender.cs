@@ -52,7 +52,7 @@ public static class ShellPodRender
     private static void DrawPod(Renderer gfx, ConstructWorld world, Construct c, int part, ShellPodDef pd, double now, float surface)
     {
         ref var pp = ref c.Parts[part];
-        Freeform.PartWorld(c, part, out var pos, out var rot);
+        ConstructRender.PartDrawn(c, part, out var pos, out var rot); // (as its body is drawn this frame: no jitter on a moving body)
         var m = Matrix4x4.CreateFromQuaternion(rot) * Matrix4x4.CreateTranslation(pos);
         var k = ConstructShellPod.JobAt(world, c.Id, part);
         float extend = 0, lift = 0, fold = 1, slide = 1;
