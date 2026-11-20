@@ -20,7 +20,6 @@ public sealed class FreighterParts : IPartGenerator
     public string Name => "freighter_parts";
 
     private const string Out = "Constructs/Parts/Packet";
-    private const string FreightOut = "Constructs/Parts/Freight";
     private const string BpOut = "Constructs/Blueprints";
     private const string Group = "Ship";
     private const string Section = "Packet freighter";
@@ -52,17 +51,19 @@ public sealed class FreighterParts : IPartGenerator
     private const double DoorH = 2.25;
 
     /// <summary>The cargo racks' middles along the spine, one a side at each (a rib between each two).</summary>
-    private static readonly double[] RackZ = [-6.5, -2.5, 1.5, 5.5, 9.5, 13.5];
+    private static readonly double[] RackZ = [-4.75, 2.75, 10.25];
     private const double RackX = 1.45, RackY = 1.4; // a rack's hardpoint face off the centreline, and its middle's height
     /// <summary>A rack's frame (in its own frame: x out from the hardpoint, y up from its middle, z along the ship): its depth, its half
     /// height and half length, a shelf's thickness and a post's.</summary>
-    private const double RkD = 2.95, RkHy = 2.68, RkHz = 1.45, RkSh = 0.12, RkPost = 0.15;
-    private const double FreightSide = 2.44; // an 8-foot cube container's side
+    private const double RkD = 2.95, RkHy = 2.78, RkHz = 3.45, RkSh = 0.12, RkPost = 0.15;
+    /// <summary>The standard container a rack takes (Karl, 2026-11-20: three 2x2x2 m parts in a row): across, up, along. Its shape is
+    /// the standard container work's; until that part lands the racks carry a stand-in of the same size.</summary>
+    private const double CtW = 2.5, CtH = 2.5, CtL = 6.5;
 
     /// <summary>The hull's stations (the hull pieces are cut at them).</summary>
-    private static readonly double[] Bands = [Zt, ZS1, ZCk, ZCab, -17.0, ZCabEnd, ZSp0, -4.5, -0.5, 3.5, 7.5, 11.5, ZSp1, ZEng, 22.0, ZEngEnd, Stern];
+    private static readonly double[] Bands = [Zt, ZS1, ZCk, ZCab, -17.0, ZCabEnd, ZSp0, -1.0, 6.5, ZSp1, ZEng, 22.0, ZEngEnd, Stern];
     /// <summary>The ring frames standing proud of the skin: the cab's, a rib between each two racks, engineering's.</summary>
-    private static readonly double[] RibZ = [ZCab, -17.0, ZCabEnd, ZSp0, -4.5, -0.5, 3.5, 7.5, 11.5, ZSp1, ZEng, 22.0, ZEngEnd];
+    private static readonly double[] RibZ = [ZCab, -17.0, ZCabEnd, ZSp0, -1.0, 6.5, ZSp1, ZEng, 22.0, ZEngEnd];
 
     // The boarding shaft in the airlock (starboard, mid cab), the belly hatch shutting it and the ladder on the hatch (the Dray's way).
     private static readonly Rect BellyHatch = new(Cx + 1.1, -16.8, Cx + 2.25, -15.55);
@@ -973,7 +974,7 @@ public sealed class FreighterParts : IPartGenerator
         Room(p, new Rect(Cx - Sw + 0.2, ZCabEnd, Cx + Sw - 0.2, plan.Z1), 0, SRoof);
         Ceils[p] = SCeil;
         Detail(p, Cx - 0.5, Ft, plan.Z0 + 0.2, Cx + 0.5, Ft + 0.012, plan.Z1 - 0.2, Grate, "painted grating");
-        double[] segs = [ZCabEnd, ZSp0, -4.5, -0.5, 3.5, 7.5, 11.5, ZSp1, plan.Z1];
+        double[] segs = [ZCabEnd, ZSp0, -1.0, 6.5, ZSp1, plan.Z1];
         for (var i = 0; i < segs.Length - 1; i++)
         {
             double a0 = segs[i], a1 = segs[i + 1];
@@ -1023,8 +1024,8 @@ public sealed class FreighterParts : IPartGenerator
             foreach (var s in new[] { -1, 1 })
             {
                 var z = RackZ[i];
-                Solid(p, Cx + s * (Sw + SLine + 0.004), RackY - 0.42, z - 0.36, Cx + s * RackX, RackY + 0.42, z + 0.36, Frame, "dirty steel");
-                foreach (var dz in new[] { -0.9, 0.9 })
+                Solid(p, Cx + s * (Sw + SLine + 0.004), RackY - 0.42, z - 0.6, Cx + s * RackX, RackY + 0.42, z + 0.6, Frame, "dirty steel");
+                foreach (var dz in new[] { -2.2, 2.2 })
                     Detail(p, Cx + s * 1.0, RackY - 0.18, z + dz - 0.12, Cx + s * (RackX - 0.004), RackY + 0.18, z + dz + 0.12, Dark, "dirty steel");
                 Sock(p, $"rack{(s < 0 ? "L" : "R")}{i}", Cx + s * RackX, RackY, z, s < 0 ? "-x" : "+x");
             }
@@ -1192,6 +1193,9 @@ public sealed class FreighterParts : IPartGenerator
         Sock(p, "hull", Cx + s * PylonX, cy, PylonZ, s < 0 ? "+x" : "-x");
         Works.Mount(p, outside: true); // (the housing's tail plate: the drive bolts to it outside, its engine inside)
         RcsPad(p, "rcsFore", cx, cy, NacNose + 0.06, "-z", 0.05);
+        // Pitch jets on the tank's top and bottom flats, far aft: the long spine wants the leverage to turn its nose.
+        RcsPad(p, "rcsUp", cx, cy + f, 23.6, "+y", 0.05);
+        RcsPad(p, "rcsDown", cx, cy - f, 23.6, "-y", 0.05);
         p.Set(("fuelTank", Kw(("capacity", NacFuel))), ("ports", Py.L(BigDriveParts.PipePort("Fuel out", "out", [.. P(cx - s * 0.82, cy, 23.0).Cast<object>()], s < 0 ? "+x" : "-x", "fuel"))));
         return p.Stats(3500, 7000, 20, 10.0);
     }
@@ -1242,9 +1246,7 @@ public sealed class FreighterParts : IPartGenerator
         }
         foreach (var (y0, y1) in new[] { (-hy + sh, -sh / 2), (sh / 2, hy - sh) })
         {
-            var xo = d + 0.016;
-            Diag([xo, y0 + 0.05, -hz + po], [xo, y1 - 0.05, hz - po], [1, 0, 0], 0.08);
-            Diag([xo + 0.022, y0 + 0.05, hz - po], [xo + 0.022, y1 - 0.05, -hz + po], [1, 0, 0], 0.08);
+            // (the outer face is open: a container slides out of it to a shell or a crane)
             foreach (var sz in new[] { -1, 1 })
             {
                 var zo = sz * (hz + 0.016);
@@ -1252,7 +1254,7 @@ public sealed class FreighterParts : IPartGenerator
                 Diag([po, y1 - 0.05, zo + sz * 0.022], [d - po, y0 + 0.05, zo + sz * 0.022], [0, 0, 1], 0.08);
             }
             // The straps over each load: two yellow bands down the outer face, a ratchet on each.
-            foreach (var z in new[] { -0.6, 0.6 })
+            foreach (var z in new[] { -2.2, 0.0, 2.2 })
             {
                 B(d - po - 0.08, y0 + 0.004, z - 0.04, d - po - 0.06, y1 - 0.004, z + 0.04, Hazard, "rubber", true);
                 B(d - po - 0.1, (y0 + y1) / 2 - 0.1, z - 0.06, d - po - 0.062, (y0 + y1) / 2 + 0.1, z + 0.06, Frame, "steel", true);
@@ -1339,7 +1341,7 @@ public sealed class FreighterParts : IPartGenerator
         B(-0.05, 0.751, -0.2, 0.05, 0.767, 0.1, Hazard, Kw(("finish", "hazard paint")), true); // (the arrow, forward)
         B(-0.12, 0.751, -0.2, 0.12, 0.767, -0.12, Hazard, Kw(("finish", "hazard paint")), true);
         p.Sock("bottom", [0, 0, 0], "-y");
-        p.Set(("logic", Kw(("kind", "flightstabilizer"), ("gyro", 20000000))), ("config", FlightParts.Config), ("faces", "forward"), ("faceAxis", "-z"));
+        p.Set(("logic", Kw(("kind", "flightstabilizer"), ("gyro", 40000000))), ("config", FlightParts.Config), ("faces", "forward"), ("faceAxis", "-z"));
         return p.Stats(300, 600, 8, 3.0);
     }
 
@@ -1388,108 +1390,66 @@ public sealed class FreighterParts : IPartGenerator
         return p.Stats(500, 4000, 30, 6.0);
     }
 
-    // ---- the freight: 8-foot cube containers and tank containers (generic parts: any rack, crane or player may use them)
+    // ---- the freight: a stand-in for the standard container (the racks' load until the standard container's part lands)
 
-    public const string BoxName = "Cargo Container 8 ft", TankName = "Cargo Tank 8 ft";
+    public const string BoxName = "Packet Freight Box";
 
-    /// <summary>The storage block a freight container has: its hold, its chute ports at its +z end, its box settings.</summary>
-    private static void FreightStore(Part p, double side)
+    /// <summary>A stand-in container of the standard size (CtW across, CtH tall, CtL long): ribbed steel sides, corner posts and
+    /// castings, doors with lock bars at its +z end, a hold for parts and bulk. Its origin is its roof's middle, where a crane's hook
+    /// takes it.</summary>
+    private static Part FreightBox()
     {
-        double half = side / 2, inner = Py.Round(side - 0.16, 2);
-        p.Set(("storage", Kw(("bulk", Kw(("material", "any"), ("volume", true), ("chuteLoad", 80))))), ("container", true),
-            ("ports", Py.L(Kw(("name", "Chute in"), ("type", "chute"), ("dir", "in"), ("at", Py.L(-0.5, -0.4, Py.Round(half + 0.003, 3))), ("face", "+z")),
-                Kw(("name", "Chute out"), ("type", "chute"), ("dir", "out"), ("at", Py.L(0.5, Py.Round(-side + 0.4, 3), Py.Round(half + 0.003, 3))), ("face", "+z")))),
-            ("config", Py.L(
-                Kw(("key", "sizeX"), ("label", "Width"), ("group", "Box"), ("unit", "m"), ("min", 0.2), ("max", inner), ("step", 0.1), ("default", inner), ("tooltip", "The hold's size across the container.")),
-                Kw(("key", "sizeY"), ("label", "Height"), ("group", "Box"), ("unit", "m"), ("min", 0.2), ("max", inner), ("step", 0.1), ("default", inner), ("tooltip", "The hold's height.")),
-                Kw(("key", "sizeZ"), ("label", "Length"), ("group", "Box"), ("unit", "m"), ("min", 0.2), ("max", inner), ("step", 0.1), ("default", inner), ("tooltip", "The hold's length.")),
-                Kw(("key", "atX"), ("label", "Centre x"), ("group", "Box"), ("unit", "m"), ("min", -1.0), ("max", 1.0), ("step", 0.05), ("default", 0.0), ("tooltip", "Where the hold's middle is (x).")),
-                Kw(("key", "atY"), ("label", "Centre y"), ("group", "Box"), ("unit", "m"), ("min", -2.3), ("max", 0.0), ("step", 0.05), ("default", Py.Round(-half, 2)), ("tooltip", "Where the hold's middle is (y: under the roof).")),
-                Kw(("key", "atZ"), ("label", "Centre z"), ("group", "Box"), ("unit", "m"), ("min", -1.0), ("max", 1.0), ("step", 0.05), ("default", 0.0), ("tooltip", "Where the hold's middle is (z).")),
-                Kw(("key", "material"), ("label", "Material"), ("group", "Contents"), ("creative", true), ("tooltip", "The bulk it holds. Creative worlds only.")),
-                Kw(("key", "fill"), ("label", "Fill"), ("group", "Contents"), ("unit", "%"), ("min", 0), ("max", 100), ("default", 0), ("creative", true), ("tooltip", "How full the hold is.")))));
-        p.Sock("-y", [0, Py.Round(-side, 3), 0], "-y");
-        p.Sock("top", [0, 0, 0], "+y");
-    }
-
-    /// <summary>The corner posts and castings of an 8-foot frame (solid: its feet and top are the part's faces).</summary>
-    private static void FreightCorners(Part p, double side, string post)
-    {
-        var h = side / 2;
+        const string col = "#2f6aa3", rib = "#285a8b", post = "#1e2a36";
+        double hx = CtW / 2, hz = CtL / 2, ht = CtH;
+        var p = new Part(BoxName, Small, Section, $"A stand-in freight container of the standard size, {CtW:0.0} by {CtH:0.0} by {CtL:0.0} m (three 2 m parts in a row): the Packet's racks carry twelve. Fill it by hand or by chute through its doors' ports; a crane carries it whole, with what it holds.", role: "storage", tool: "welder", material: "steel", color: col, group: Group);
+        void B(double x0, double y0, double z0, double x1, double y1, double z1, string c, string fin, bool detail = false) =>
+            p.Add(Box([x0, y0, z0], [x1, y1, z1], c, detail: detail, shape: Kw(("finish", fin))));
+        double wx = hx - 0.02, wz = hz - 0.02;
+        B(-wx, -ht + 0.02, -wz, wx, -0.02, wz, col, "painted plating");
+        // Corrugation down the long sides and across the closed end, ribs across the roof.
+        for (var a = -wz + 0.3; a < wz - 0.25; a += 0.28)
+            foreach (var sx in new[] { -1, 1 })
+                B(sx > 0 ? wx - 0.01 : -wx - 0.025, -ht + 0.17, a - 0.06, sx > 0 ? wx + 0.025 : -wx + 0.01, -0.17, a + 0.06, rib, "painted plating", true);
+        for (var a = -wx + 0.3; a < wx - 0.25; a += 0.28)
+            B(a - 0.06, -ht + 0.17, -wz - 0.025, a + 0.06, -0.17, -wz + 0.01, rib, "painted plating", true);
+        for (var a = -wz + 0.35; a < wz - 0.3; a += 0.55)
+            B(-wx + 0.18, -0.03, a - 0.04, wx - 0.18, -0.008, a + 0.04, rib, "painted plating", true);
+        // Corner posts and castings.
         foreach (var sx in new[] { -1, 1 })
             foreach (var sz in new[] { -1, 1 })
             {
-                p.Add(Box([sx > 0 ? h - 0.16 : -h + 0.002, -side + 0.15, sz > 0 ? h - 0.16 : -h + 0.002], [sx > 0 ? h - 0.002 : -h + 0.16, -0.15, sz > 0 ? h - 0.002 : -h + 0.16], post, detail: true, shape: Kw(("finish", "dirty steel"))));
-                foreach (var (ya, yb) in new[] { (-side, -side + 0.15), (-0.15, 0.0) })
-                    p.Add(Box([sx > 0 ? h - 0.17 : -h - 0.003, ya, sz > 0 ? h - 0.17 : -h - 0.003], [sx > 0 ? h + 0.003 : -h + 0.17, yb, sz > 0 ? h + 0.003 : -h + 0.17], "#22201e", shape: Kw(("finish", "steel"))));
+                B(sx > 0 ? hx - 0.16 : -hx + 0.002, -ht + 0.15, sz > 0 ? hz - 0.16 : -hz + 0.002, sx > 0 ? hx - 0.002 : -hx + 0.16, -0.15, sz > 0 ? hz - 0.002 : -hz + 0.16, post, "dirty steel", true);
+                foreach (var (ya, yb) in new[] { (-ht, -ht + 0.15), (-0.15, 0.0) })
+                    p.Add(Box([sx > 0 ? hx - 0.17 : -hx - 0.003, ya, sz > 0 ? hz - 0.17 : -hz - 0.003], [sx > 0 ? hx + 0.003 : -hx + 0.17, yb, sz > 0 ? hz + 0.003 : -hz + 0.17], "#22201e", shape: Kw(("finish", "steel"))));
             }
-    }
-
-    /// <summary>An 8-foot cube cargo container: ribbed steel sides, corner posts, doors with lock bars at its +z end. Its origin is its
-    /// roof's middle, where a crane's hook takes it.</summary>
-    private static Part FreightBox()
-    {
-        const string col = "#2f6aa3", rib = "#285a8b";
-        var side = FreightSide;
-        var p = new Part(BoxName, Small, "Cargo", "An 8-foot cube cargo container (a rack's load, a Packet freighter carries twenty-four): fill it by hand or by chute through its doors' ports, and a crane carries it whole, with what it holds. It holds parts and bulk.", role: "storage", tool: "welder", material: "steel", color: col, group: "Storage");
-        void B(double x0, double y0, double z0, double x1, double y1, double z1, string c, string fin, bool detail = false) =>
-            p.Add(Box([x0, y0, z0], [x1, y1, z1], c, detail: detail, shape: Kw(("finish", fin))));
-        var w = side / 2 - 0.02;
-        B(-w, -side + 0.02, -w, w, -0.02, w, col, "painted plating");
-        for (var a = -w + 0.3; a < w - 0.25; a += 0.28)
-        {
-            foreach (var sx in new[] { -1, 1 })
-                B(sx > 0 ? w - 0.01 : -w - 0.025, -side + 0.17, a - 0.06, sx > 0 ? w + 0.025 : -w + 0.01, -0.17, a + 0.06, rib, "painted plating", true);
-            B(a - 0.06, -side + 0.17, -w - 0.025, a + 0.06, -0.17, -w + 0.01, rib, "painted plating", true);
-        }
-        for (var a = -w + 0.35; a < w - 0.3; a += 0.55)
-            B(-w + 0.18, -0.03, a - 0.04, w - 0.18, -0.008, a + 0.04, rib, "painted plating", true);
-        FreightCorners(p, side, "#1e2a36");
+        // The doors at +z, their lock bars, a placard.
         foreach (var sx in new[] { -1, 1 })
         {
-            B(sx > 0 ? 0.008 : -(w - 0.18), -side + 0.17, w - 0.01, sx > 0 ? w - 0.18 : -0.008, -0.17, w + 0.016, col, "worn paint", true);
+            B(sx > 0 ? 0.008 : -(wx - 0.18), -ht + 0.17, wz - 0.01, sx > 0 ? wx - 0.18 : -0.008, -0.17, wz + 0.016, col, "worn paint", true);
             foreach (var bx in new[] { 0.25, 0.65 })
             {
-                B(sx * bx - 0.025, -side + 0.2, w + 0.016, sx * bx + 0.025, -0.2, w + 0.05, "#5c5f60", "steel", true);
-                B(Math.Min(sx * bx, sx * (bx + 0.14)) - 0.01, -1.3, w + 0.05, Math.Max(sx * bx, sx * (bx + 0.14)) + 0.01, -1.24, w + 0.075, "#5c5f60", "steel", true);
+                B(sx * bx - 0.025, -ht + 0.2, wz + 0.016, sx * bx + 0.025, -0.2, wz + 0.05, "#5c5f60", "steel", true);
+                B(Math.Min(sx * bx, sx * (bx + 0.14)) - 0.01, -1.3, wz + 0.05, Math.Max(sx * bx, sx * (bx + 0.14)) + 0.01, -1.24, wz + 0.075, "#5c5f60", "steel", true);
             }
         }
-        B(-0.5, -0.65, w + 0.016, -0.3, -0.5, w + 0.03, Paper, "painted plating", true);
-        B(0.3, -0.75, w + 0.016, 0.5, -0.55, w + 0.03, Hazard, "painted plating", true);
-        FreightStore(p, side);
-        return p.Stats(900, 4000, 10, 8.0);
-    }
-
-    /// <summary>An 8-foot cube tank container: a domed drum lying along a steel frame, a walkway and a manhole on top, valves at its +z
-    /// end. Its origin is its roof's middle.</summary>
-    private static Part FreightTank()
-    {
-        const string col = "#dcd6c6", frame = "#3a3f45";
-        var side = FreightSide;
-        var p = new Part(TankName, Small, "Cargo", "An 8-foot cube tank container (a rack's load, a Packet freighter carries twenty-four): a drum in a frame, filled and emptied by chute through its valves. A crane carries it whole, with what it holds. It holds bulk.", role: "storage", tool: "welder", material: "steel", color: col, group: "Storage");
-        void B(double x0, double y0, double z0, double x1, double y1, double z1, string c, string fin, bool detail = false) =>
-            p.Add(Box([x0, y0, z0], [x1, y1, z1], c, detail: detail, shape: Kw(("finish", fin))));
-        var h = side / 2;
-        double[] c0 = [0, -h, 0];
-        double[] Id(double[] q) => [Py.Round(q[0], 4), Py.Round(q[1], 4), Py.Round(q[2], 4)];
-        DrawTank(p, c0, 2, 1.05, -h + 0.08, h - 0.08, 0.35, 3, col, "#9a3a2c", Id);
-        // The frame: rails along the top and the bottom of each long side, end frames across, between the corner posts.
-        foreach (var sx in new[] { -1, 1 })
-            foreach (var (ya, yb) in new[] { (-side + 0.02, -side + 0.15), (-0.15, -0.02) })
-                B(sx > 0 ? h - 0.12 : -h + 0.004, ya, -h + 0.17, sx > 0 ? h - 0.004 : -h + 0.12, yb, h - 0.17, frame, "painted steel", true);
-        foreach (var sz in new[] { -1, 1 })
-            foreach (var (ya, yb) in new[] { (-side + 0.02, -side + 0.15), (-0.15, -0.02) })
-                B(-h + 0.17, ya, sz > 0 ? h - 0.12 : -h + 0.004, h - 0.17, yb, sz > 0 ? h - 0.004 : -h + 0.12, frame, "painted steel", true);
-        FreightCorners(p, side, frame);
-        // The walkway and manhole on top, the valve box at the +z end, a hazard placard.
-        B(-0.3, -0.12, -0.9, 0.3, -0.1, 0.9, "#4a4f55", "tread plate", true);
-        p.Add(Box([-0.14, -0.16, -0.14], [0.14, -0.1, 0.14], "#9a9c98", detail: true, shape: Kw(("finish", "steel"))));
-        B(-0.35, -side + 0.35, h - 0.3, 0.35, -side + 0.8, h - 0.06, "#5c5f60", "steel", true);
-        B(-0.1, -side + 0.8, h - 0.2, 0.1, -side + 0.95, h - 0.1, Red, "painted steel", true);
-        B(0.55, -1.0, h - 0.135, 0.85, -0.7, h - 0.12, Hazard, "painted plating", true);
-        p.Add(Box([-0.95, -side + 0.2, -h + 0.2], [0.95, -0.2, h - 0.2], hidden: true));
-        FreightStore(p, side);
-        return p.Stats(1100, 4500, 12, 8.0);
+        B(-0.5, -0.65, wz + 0.016, -0.3, -0.5, wz + 0.03, Paper, "painted plating", true);
+        B(0.3, -0.75, wz + 0.016, 0.5, -0.55, wz + 0.03, Hazard, "painted plating", true);
+        double ix = Py.Round(CtW - 0.16, 2), iy = Py.Round(CtH - 0.16, 2), iz = Py.Round(CtL - 0.16, 2);
+        p.Set(("storage", Kw(("bulk", Kw(("material", "any"), ("volume", true), ("chuteLoad", 120))))), ("container", true),
+            ("ports", Py.L(Kw(("name", "Chute in"), ("type", "chute"), ("dir", "in"), ("at", Py.L(-0.5, -0.4, Py.Round(hz + 0.003, 3))), ("face", "+z")),
+                Kw(("name", "Chute out"), ("type", "chute"), ("dir", "out"), ("at", Py.L(0.5, Py.Round(-ht + 0.4, 3), Py.Round(hz + 0.003, 3))), ("face", "+z")))),
+            ("config", Py.L(
+                Kw(("key", "sizeX"), ("label", "Width"), ("group", "Box"), ("unit", "m"), ("min", 0.2), ("max", ix), ("step", 0.1), ("default", ix), ("tooltip", "The hold's size across the container.")),
+                Kw(("key", "sizeY"), ("label", "Height"), ("group", "Box"), ("unit", "m"), ("min", 0.2), ("max", iy), ("step", 0.1), ("default", iy), ("tooltip", "The hold's height.")),
+                Kw(("key", "sizeZ"), ("label", "Length"), ("group", "Box"), ("unit", "m"), ("min", 0.2), ("max", iz), ("step", 0.1), ("default", iz), ("tooltip", "The hold's length.")),
+                Kw(("key", "atX"), ("label", "Centre x"), ("group", "Box"), ("unit", "m"), ("min", -1.0), ("max", 1.0), ("step", 0.05), ("default", 0.0), ("tooltip", "Where the hold's middle is (x).")),
+                Kw(("key", "atY"), ("label", "Centre y"), ("group", "Box"), ("unit", "m"), ("min", -2.3), ("max", 0.0), ("step", 0.05), ("default", Py.Round(-ht / 2, 2)), ("tooltip", "Where the hold's middle is (y: under the roof).")),
+                Kw(("key", "atZ"), ("label", "Centre z"), ("group", "Box"), ("unit", "m"), ("min", -3.0), ("max", 3.0), ("step", 0.05), ("default", 0.0), ("tooltip", "Where the hold's middle is (z).")),
+                Kw(("key", "material"), ("label", "Material"), ("group", "Contents"), ("creative", true), ("tooltip", "The bulk it holds. Creative worlds only.")),
+                Kw(("key", "fill"), ("label", "Fill"), ("group", "Contents"), ("unit", "%"), ("min", 0), ("max", 100), ("default", 0), ("creative", true), ("tooltip", "How full the hold is.")))));
+        p.Sock("-y", [0, Py.Round(-ht, 3), 0], "-y");
+        p.Sock("top", [0, 0, 0], "+y");
+        return p.Stats(2200, 6000, 10, 8.0);
     }
 
     private static Part Big(string name, string desc, string role = "frame", string color = Skin) =>
@@ -1893,7 +1853,8 @@ public sealed class FreighterParts : IPartGenerator
             Hang(bp, "Drive Nozzle M", nac, "drive", "mount");
             Hang(bp, "Fuel Pump M", Hang(bp, "Drive Core M", nac, "core", "front"), "back", "front");
             Paint(bp, Works.HangHatch(bp, nac, s), Armour, "worn paint");
-            Paint(bp, Hang(bp, Rcs, nac, "rcsFore", "base"), Frame, "dirty steel");
+            foreach (var j in new[] { "rcsFore", "rcsUp", "rcsDown" })
+                Paint(bp, Hang(bp, Rcs, nac, j, "base"), Frame, "dirty steel");
         }
         // The attitude jets: the bow's up, down and out, the stern's every way.
         foreach (var n in new[] { "L", "R" })
@@ -1911,6 +1872,8 @@ public sealed class FreighterParts : IPartGenerator
             LegPodParts.HangPod(bp, LegPod, Holder(bp, keel, $"leg{i}"), $"leg{i}");
         // The racks: twelve on the spine's hardpoints, a frozen Cargo Volume on each holding its two containers.
         var cargo = new List<object?>();
+        // A container's hatch is its whole +x side: to port it is turned half round so the hatch faces outboard.
+        var halfRound = Enumerable.Range(0, 24).First(r => BuildingParts.Apply(r, [1, 0, 0]) is [-1, 0, 0] && BuildingParts.Apply(r, [0, 1, 0]) is [0, 1, 0]);
         for (var i = 0; i < RackZ.Length; i++)
             foreach (var (s, n) in new[] { (-1, "L"), (1, "R") })
             {
@@ -1918,14 +1881,14 @@ public sealed class FreighterParts : IPartGenerator
                 var vol = bp.Hang("Cargo Volume", rack, "volume", "-y");
                 bp.Steps[vol]["config"] = new PyDict
                 {
-                    ["startOn"] = true, ["sizeX"] = 2.6, ["sizeY"] = 5.2, ["sizeZ"] = 2.6,
+                    ["startOn"] = true, ["sizeX"] = 2.7, ["sizeY"] = 5.5, ["sizeZ"] = 6.8,
                     ["atX"] = 0.0, ["atY"] = Py.Round(-(RkHy + 0.1), 2), ["atZ"] = 0.0,
                 };
                 // The containers stand on the bottom and middle shelves; their origin is their roof's middle.
                 var x = Cx + s * (RackX + RkD / 2);
-                foreach (var (y, t) in new[] { (-RkHy + RkSh + 0.003 + FreightSide, 0), (RkSh / 2 + 0.003 + FreightSide, 1) })
-                    cargo.Add(Kw(("part", (i + t) % 2 == 0 ? BoxName : TankName),
-                        ("at", Py.L(Py.Round(x - H, 3), Py.Round(RackY + y - H, 3), Py.Round(RackZ[i] - H, 3))), ("turn", 0)));
+                foreach (var y in new[] { -RkHy + RkSh + 0.003 + CtH, RkSh / 2 + 0.003 + CtH })
+                    cargo.Add(Kw(("part", BoxName),
+                        ("at", Py.L(Py.Round(x - H, 3), Py.Round(RackY + y - H, 3), Py.Round(RackZ[i] - H, 3))), ("turn", s < 0 ? halfRound : 0)));
             }
         // Lamps and their switches (the spine's and engineering's light while the power reaches them).
         Switch(bp, cab, "switchCk", Lamp(bp, cab, "lampCkL", "#ffd080"), Lamp(bp, cab, "lampCkR", "#ffd080"));
@@ -1937,7 +1900,7 @@ public sealed class FreighterParts : IPartGenerator
         Lamp(bp, cab, "lampStores");
         Lamp(bp, cab, "lampHallA");
         Lamp(bp, cab, "lampHallB");
-        for (var i = 0; i < 8; i++)
+        for (var i = 0; i < 5; i++) // (one a length of the spine's lining)
             Lamp(bp, spine, $"lamp{i}", "#d8ecff");
         Switch(bp, eng, "switchEng", Lamp(bp, eng, "lampEngL", "#a0d0ff"), Lamp(bp, eng, "lampEngR", "#a0d0ff"));
         var json = bp.Json();
@@ -1966,7 +1929,7 @@ public sealed class FreighterParts : IPartGenerator
         [
             .. structure, Nacelle(-1), Nacelle(1), Rack(),
             Ladder("Packet Boarding Ladder", Py.Round(BoardRise, 3), "The Packet's boarding ladder: it stands on the belly hatch, stowed up through the airlock's floor while the hatch is shut, and runs from the ground up the shaft when it is open. F climbs it.", "foot", [0, 0, -0.1], "-y", over: -0.03),
-            BellyHatchPart(), LiftJet(), PowerPlant(), FlightComputer(),
+            BellyHatchPart(), LiftJet(), PowerPlant(), FlightComputer(), FreightBox(),
         ];
         var defs = new Dictionary<string, PyDict>();
         o.Own(Out);
@@ -1978,14 +1941,6 @@ public sealed class FreighterParts : IPartGenerator
                 throw new InvalidOperationException($"freighter_parts: {name} is longer than 32 characters");
             defs.Add(name, d);
             o.File($"{Out}/{FileName(name)}", PyJson.Dumps(d, 2) + "\n");
-        }
-        o.Own(FreightOut);
-        foreach (var p in new[] { FreightBox(), FreightTank() })
-        {
-            var d = p.Json();
-            var name = (string)d["name"]!;
-            defs.Add(name, d);
-            o.File($"{FreightOut}/{FileName(name)}", PyJson.Dumps(d, 2) + "\n");
         }
         BuildingParts.AddPartDefs(o, defs, Out);
         o.File($"{BpOut}/PacketSpineFreighter.json", PyJson.Dumps(Blueprint(defs), 2) + "\n");

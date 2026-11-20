@@ -7,9 +7,9 @@
   "role": "fueltank",
   "tool": "welder",
   "fuelTank": {
-    "capacity": 643
+    "capacity": 818
   },
-  "mass": 1142.9,
+  "mass": 1454.5,
   "health": 22500,
   "armour": 40,
   "material": "steel",

@@ -6,14 +6,14 @@
   "section": "Packet freighter",
   "role": "fueltank",
   "tool": "welder",
-  "mass": 1142.9,
+  "mass": 1454.5,
   "health": 22500,
   "armour": 40,
   "material": "steel",
   "color": "#1f4e8c",
   "attachSeconds": 10.0,
   "fuelTank": {
-    "capacity": 643
+    "capacity": 818
   },
   "ports": [
     {

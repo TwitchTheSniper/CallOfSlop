@@ -6,7 +6,7 @@
   "section": "Packet freighter",
   "role": "frame",
   "tool": "welder",
-  "mass": 923.1,
+  "mass": 1200.0,
   "health": 16200,
   "armour": 35,
   "material": "steel",
