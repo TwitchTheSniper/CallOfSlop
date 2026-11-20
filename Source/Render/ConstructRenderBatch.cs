@@ -197,7 +197,7 @@ public static partial class ConstructRender
         for (var i = 0; i < n; i++)
         {
             var nb = MergeBoxes(c, i);
-            if (nb > 0 && i < c.PocketHost.Length && c.PocketHost[i] != 0)
+            if (nb > 0 && c.PocketHost.Length == n && c.PocketHost[i] != 0) // (a length off the part count: numbers moved, wait for the rebuild)
             {
                 // A surface a flush pod sinks into: walked, so its boxes alone take the cut mark (Renderer.Cuts.cs).
                 _partEntry[i] = -1;

@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Tiny Flush Shell Pod",
-  "description": "Parks a robot shell (up to 1 m tall) when nobody wears it: walk the shell into the frame that rises out of it and press F: you wake in your chair and the pod folds the shell away. Wake in it again from a Shell Control Chair. A docked shell charges from the grid and can't be damaged or taken. Flush: the pod sinks into the floor, wall or ceiling it is welded to, its lid in a hazard coaming 3 cm over the surface.",
+  "description": "Parks a robot shell (up to 1 m tall) when nobody wears it: walk the shell into the frame that rises out of it and press F: you wake in your chair and the pod folds the shell away. Wake in it again from a Shell Control Chair. A docked shell charges from the grid and can't be damaged or taken. Flush: the pod sinks into the floor, wall or ceiling it is welded to, its lid in a hazard coaming 3 cm over the surface; what it goes in must be as deep as the pod (stacked floors, a foundation, a hull).",
   "group": "Logic",
   "section": "Shells",
   "role": "panel",
@@ -43,10 +43,23 @@
       ],
       "max": [
         0.35,
+        -0.003,
+        0.35
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.35,
+        -0.52,
+        -0.35
+      ],
+      "max": [
+        0.35,
         -0.46,
         0.35
       ],
-      "color": "#22262b",
+      "color": "#3b4148",
       "detail": true,
       "paintable": false
     },
@@ -61,7 +74,7 @@
         -0.015,
         0.35
       ],
-      "color": "#22262b",
+      "color": "#3b4148",
       "detail": true,
       "paintable": false
     },
@@ -76,7 +89,7 @@
         -0.015,
         -0.29
       ],
-      "color": "#22262b",
+      "color": "#3b4148",
       "detail": true,
       "paintable": false
     },
@@ -91,7 +104,7 @@
         -0.015,
         0.35
       ],
-      "color": "#22262b",
+      "color": "#3b4148",
       "detail": true,
       "paintable": false
     },
@@ -106,7 +119,7 @@
         -0.015,
         0.35
       ],
-      "color": "#22262b",
+      "color": "#3b4148",
       "detail": true,
       "paintable": false
     },
@@ -121,7 +134,7 @@
         -0.44,
         0.284
       ],
-      "color": "#5f6870",
+      "color": "#22262b",
       "detail": true,
       "paintable": false,
       "finish": "tread plate"
@@ -229,7 +242,7 @@
         0.0405,
         0.29
       ],
-      "color": "#38d0e8",
+      "color": "#155a64",
       "detail": true,
       "paintable": false
     },
@@ -244,7 +257,7 @@
         0.0405,
         -0.272
       ],
-      "color": "#38d0e8",
+      "color": "#155a64",
       "detail": true,
       "paintable": false
     },
@@ -291,7 +304,7 @@
         0.0405,
         0.29
       ],
-      "color": "#38d0e8",
+      "color": "#155a64",
       "detail": true,
       "paintable": false
     },
@@ -306,7 +319,7 @@
         0.0405,
         0.29
       ],
-      "color": "#38d0e8",
+      "color": "#155a64",
       "detail": true,
       "paintable": false
     }

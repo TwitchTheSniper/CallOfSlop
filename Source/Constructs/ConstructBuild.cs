@@ -112,6 +112,8 @@ public static class ConstructBuild
         g = new ConstructGhost { Part = part, Socket = socket, DefSocket = defSocket, Variant = spin, Pos = pos, Rot = rot, Seg = seg, NewJoint = newJoint, Scale = scale };
         if (Blocked(c, def, pos, rot, scale, seg))
             return InTheWay;
+        if (def.ShellPod is { Flush: true } && ConstructShellPod.BodyRefusal(c, def, pos, rot, seg) is { } blocked)
+            return blocked; // (a flush pod whose body, proud of a thin surface's far side, would run into another part: after the overlap test, the dearer one)
         return null;
     }
 
@@ -179,10 +181,17 @@ public static class ConstructBuild
 
     private static float Upright(byte r) => Rot24.Apply(r, Vector3.UnitY).Y * 2 + Rot24.Apply(r, -Vector3.UnitZ).Z * -1 + Rot24.Apply(r, Vector3.UnitX).X * 0.1f;
 
+    /// <summary>
+    /// The solid boxes a part is tested with as it goes on: all of them, but a flush shell pod's lid alone, since its body sinks into
+    /// what it goes on (its body box, solid, then blocks what comes after it: ShellParts.Pod).
+    /// </summary>
+    public static int PlaceSolids(ConstructPartDef def) => def.ShellPod is { Flush: true } ? Math.Min(1, def.SolidBoxes) : def.SolidBoxes;
+
     /// <summary>The first part a part there would overlap (the same boxes and slack as <see cref="Blocked"/>, every part looked at: a reason's, never per frame), or -1.</summary>
     public static int BlockerOf(Construct c, ConstructPartDef def, Vector3 pos, byte rot, float scale = 1f)
     {
-        for (var b = 0; b < def.SolidBoxes; b++)
+        var solids = PlaceSolids(def);
+        for (var b = 0; b < solids; b++)
         {
             var bc = pos + Rot24.Apply(rot, def.Boxes[b].Center * scale);
             var bh = Rot24.ApplyHalf(rot, def.Boxes[b].Half * scale) - new Vector3(0.01f);
@@ -198,9 +207,10 @@ public static class ConstructBuild
     }
 
     /// <summary>Would a part there overlap one already on (all compared in the rest frame, a centimetre of slack)?</summary>
-    public static bool Blocked(Construct c, ConstructPartDef def, Vector3 pos, byte rot, float scale = 1f, int seg = -1, int except = -1)
+    public static bool Blocked(Construct c, ConstructPartDef def, Vector3 pos, byte rot, float scale = 1f, int seg = -1, int except = -1, bool podLids = false)
     {
-        for (var b = 0; b < def.SolidBoxes; b++)
+        var solids = PlaceSolids(def);
+        for (var b = 0; b < solids; b++)
         {
             var bc = pos + Rot24.Apply(rot, def.Boxes[b].Center * scale);
             var bh = Rot24.ApplyHalf(rot, def.Boxes[b].Half * scale) - new Vector3(0.01f);
@@ -217,7 +227,7 @@ public static class ConstructBuild
                 if (c.FreeformCount > 0 && c.FrameOf(c.Parts[i].Seg) != frame)
                     continue; // (a freeform segment's parts are in a frame of their own: board item fw01)
                 var d = c.DefOf(i);
-                for (var k = 0; k < d.SolidBoxes; k++)
+                for (var k = 0; k < (podLids ? PlaceSolids(d) : d.SolidBoxes); k++) // (podLids: a part swapped under a flush pod goes where the pod's body already is)
                 {
                     c.BoxOf(i, k, out var oc, out var oh);
                     if (MathF.Abs(bc.X - oc.X) < bh.X + oh.X && MathF.Abs(bc.Y - oc.Y) < bh.Y + oh.Y && MathF.Abs(bc.Z - oc.Z) < bh.Z + oh.Z)

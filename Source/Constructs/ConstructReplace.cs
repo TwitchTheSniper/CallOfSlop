@@ -102,7 +102,7 @@ public static class ConstructReplace
         {
             // Nothing bolted to it (a body's only part): the same place.
             swap = new Swap { Pos = p.Pos, Rot = p.Rot };
-            found = !ConstructBuild.Blocked(c, e, p.Pos, p.Rot, 1, seg, part);
+            found = !ConstructBuild.Blocked(c, e, p.Pos, p.Rot, 1, seg, part, podLids: true);
             return found ? null : "something is in the way";
         }
         ref var first = ref Old[0];
@@ -122,7 +122,7 @@ public static class ConstructReplace
                 if (!AllMeet(e, pos, rot))
                     continue;
                 var score = (rot == p.Rot ? 100f : 0f) - Vector3.Distance(was, pos + Rot24.Apply(rot, (e.BoundsMin + e.BoundsMax) * 0.5f));
-                if (score <= bestScore || ConstructBuild.Blocked(c, e, pos, rot, 1, seg, part))
+                if (score <= bestScore || ConstructBuild.Blocked(c, e, pos, rot, 1, seg, part, podLids: true))
                     continue;
                 bestScore = score;
                 swap = new Swap { Pos = pos, Rot = rot };

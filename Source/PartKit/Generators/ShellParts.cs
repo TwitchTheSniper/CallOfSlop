@@ -567,6 +567,9 @@ public sealed class ShellParts : IPartGenerator
     private static readonly (string Name, string Class, double W, double D, int Bin)[] PodSizes =
         [("Tiny", "tiny", 0.35, 0.55, 0), ("Small", "small", 0.62, 1.0, 0), ("Medium", "medium", 0.95, 1.5, HopperUnits)];
 
+    private const string Housing = "#3b4148"; // a flush pod's body
+    private const string Trim = "#155a64"; // a pod's rim trim (deep teal: a brighter one goes near-white on its sunlit side)
+
     private static Part Pod((string Name, string Class, double W, double D, int Bin) z, bool flush)
     {
         var (w, dp) = (z.W, z.D);
@@ -576,7 +579,7 @@ public sealed class ShellParts : IPartGenerator
         var size = z.Class switch { "tiny" => "1 m", "small" => "2 m", _ => "5 m" };
         var desc = $"Parks a robot shell (up to {size} tall) when nobody wears it: walk the shell into the frame that rises out of it and press F: you wake in your chair and the pod folds the shell away. Wake in it again from a Shell Control Chair. A docked shell charges from the grid and can't be damaged or taken"
             + (z.Bin > 0 && !flush ? "; a Mining Shell's hopper empties into the pod, and its Chute out takes the ore on." : z.Bin > 0 ? "; a Mining Shell keeps its hopper's load in it (the bolted-on pod empties it)." : ".")
-            + (flush ? " Flush: the pod sinks into the floor, wall or ceiling it is welded to, its lid in a hazard coaming 3 cm over the surface." : " Weld it onto a floor, a wall or a ceiling.");
+            + (flush ? " Flush: the pod sinks into the floor, wall or ceiling it is welded to, its lid in a hazard coaming 3 cm over the surface; what it goes in must be as deep as the pod (stacked floors, a foundation, a hull)." : " Weld it onto a floor, a wall or a ceiling.");
         var bin = flush ? 0 : z.Bin; // (a flush pod's body is in the surface, so no bin: a part's bin fills inside its solid; its Mining Shell keeps its load)
         var p = new Part(name, Small, Section, desc, role: bin > 0 ? "storage" : "panel", tool: "welder", group: "Logic", color: MachineLook.Base);
         // The walls' thickness and the rim's width are the game's (a flush pod's pocket stays inside them: ConstructShellPod.Pocket).
@@ -584,15 +587,18 @@ public sealed class ShellParts : IPartGenerator
         var rimTop = flush ? top + 0.003 : top - 0.003; // (ConstructShellPod.RimTop: flush, a coaming 3 mm over the closed flaps)
         // The solid: the closed pod (flush: a 3 cm slab over the surface, where its lid is: a thinner box would be only a detail).
         p.Add(Box([-w, 0, -w], [w, top, w], hidden: true));
+        if (flush)
+            p.Add(Box([-w, bot, -w], [w, -0.003, w], hidden: true)); // (its body, solid: proud of a thin surface it is a housing a player bumps into, and nothing goes into it; placing tests the lid alone, ConstructBuild.Blocked)
+        var shell = flush ? Housing : MachineLook.Base; // (a flush pod's body, seen from the far side of a thin surface: mid steel, not a hole)
         // The body: four walls, a floor inside, a dark lining (3 mm in from the walls), the rim round the opening in hazard.
-        p.Add(MachineLook.D([-w, bot, -w], [w, bot + t, w], MachineLook.Base)); // floor
+        p.Add(MachineLook.D([-w, bot, -w], [w, bot + t, w], shell)); // floor
         foreach (var s in new[] { -1.0, 1.0 })
         {
-            p.Add(MachineLook.D([Math.Min(s * w, s * (w - t)), bot + t + 0.003, -w], [Math.Max(s * w, s * (w - t)), top - rim * 0.5, w], MachineLook.Base)); // the x walls
-            p.Add(MachineLook.D([-w + t + 0.003, bot + t + 0.003, Math.Min(s * w, s * (w - t))], [w - t - 0.003, top - rim * 0.5, Math.Max(s * w, s * (w - t))], MachineLook.Base)); // the z walls
+            p.Add(MachineLook.D([Math.Min(s * w, s * (w - t)), bot + t + 0.003, -w], [Math.Max(s * w, s * (w - t)), top - rim * 0.5, w], shell)); // the x walls
+            p.Add(MachineLook.D([-w + t + 0.003, bot + t + 0.003, Math.Min(s * w, s * (w - t))], [w - t - 0.003, top - rim * 0.5, Math.Max(s * w, s * (w - t))], shell)); // the z walls
         }
         var lining = bot + ConstructShellPod.Lining; // (the lining floor's top)
-        p.Add(MachineLook.D([-w + t + 0.006, bot + t + 0.003, -w + t + 0.006], [w - t - 0.006, lining, w - t - 0.006], "#5f6870", "tread plate")); // the lining's floor, under the platform: deck plate
+        p.Add(MachineLook.D([-w + t + 0.006, bot + t + 0.003, -w + t + 0.006], [w - t - 0.006, lining, w - t - 0.006], "#22262b", "tread plate")); // the lining's floor, under the platform: deck plate
         // The pocket's lined walls: painted plating a step lighter than the lid, 4 mm in front of the walls, from the lining's floor up under the rim, so an open
         // pod reads as a lined cubby, not a box sunk through the floor (the user, 2026-11-19).
         foreach (var s in new[] { -1.0, 1.0 })
@@ -605,10 +611,11 @@ public sealed class ShellParts : IPartGenerator
         {
             p.Add(MachineLook.D([Math.Min(s * (w - rim), s * (w + 0.004)), top - rim * 0.5 + 0.003, -w - 0.004], [Math.Max(s * (w - rim), s * (w + 0.004)), rimTop, w + 0.004], MachineLook.Accent, "hazard paint")); // the rim, x sides
             p.Add(MachineLook.D([-w + rim + 0.003, top - rim * 0.5 + 0.003, Math.Min(s * (w - rim), s * (w + 0.004))], [w - rim - 0.003, rimTop, Math.Max(s * (w - rim), s * (w + 0.004))], MachineLook.Accent, "hazard paint")); // z sides
-            // A lit trim inlaid along the rim's inner edge, 3 mm proud of it: the opening reads at a glance.
+            // A trim inlaid along the rim's inner edge, 3 mm proud of it: the opening reads at a glance (a deep teal: the visor's cyan
+            // went near-white in low sun).
             double l0 = w - rim + 0.012, l1 = w - rim + 0.03;
-            p.Add(MachineLook.D([Math.Min(s * l0, s * l1), rimTop - 0.004, -l1], [Math.Max(s * l0, s * l1), rimTop + 0.003, l1], Visor)); // x sides
-            p.Add(MachineLook.D([-(l0 - 0.003), rimTop - 0.004, Math.Min(s * l0, s * l1)], [l0 - 0.003, rimTop + 0.003, Math.Max(s * l0, s * l1)], Visor)); // z sides
+            p.Add(MachineLook.D([Math.Min(s * l0, s * l1), rimTop - 0.004, -l1], [Math.Max(s * l0, s * l1), rimTop + 0.003, l1], Trim)); // x sides
+            p.Add(MachineLook.D([-(l0 - 0.003), rimTop - 0.004, Math.Min(s * l0, s * l1)], [l0 - 0.003, rimTop + 0.003, Math.Max(s * l0, s * l1)], Trim)); // z sides
         }
         if (!flush)
         {
