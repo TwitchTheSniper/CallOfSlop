@@ -333,3 +333,14 @@ Choices made (the developer may change them):
 - Blueprints, Spawn and Builds aren't on the survival window. Physics-only parts can't be on a network, so structure still has to be hauled.
 - A material take is a top-up to 100, not 100 more. Fill still pays from what is carried, not the network.
 - Bots have no view. A dead player's view empties.
+
+## In-wall bays (Karl, 2026-11-20)
+
+Storage and ship systems built into the gap between a ship's interior lining and its hull, made by the part kit (`Source/PartKit/Generators/WallBayParts.cs`, `.Systems.cs`, `.Airlock.cs`; `--gen-parts wall_bays`). They are in the Parts tab under Storage and Logistics, "In-wall bays", every piece has its own recipe at the end of the Assembling table (`Assembling.cs`, `Tail`, piece by piece), and each fill is a ready-made blueprint in the Blueprints tab's "In-wall bays" section. The moving pieces play in the Animation gallery (shelves "In-wall bays 0.5 m / 1 m / 1.5 m", "In-wall ship systems", "Hull airlock"; `tools/preview/anim/wall-bay-*.json`).
+
+- **A bay** is three layers: the Wall Bay frame (0.9 x 1.9 m opening, 0.5, 1 or 1.5 m deep; it comes as a wall section with its own deck, lining either side and the hull behind), one insert on its `insert` socket, and the pull-outs on the insert's tabs. Each pull-out is an event door (`role` door on a `hang` socket) that opens on its own press of F: flip down, flip up, swing aside or slide out.
+- **The Twist Latch** is a door of its own on the jamb, since a door can't ride another door's leaf (`Construct.Doors.cs`). It turns a quarter; it doesn't lock the fill yet.
+- **Ship systems** follow the subsystems brainstorm: the upper cassette is the part that wears, the lower drawer the consumable, with wear and supply bars over them (breakers, flight computer, damage control at 0.5 m; CO2 scrubber, water reclaimer, coolant pump, RCS feed, sensor rack, PDC feed at 1 m; oxygen generator and reactor fuel at 1.5 m). Nothing wears or is used up yet: the bars are paint.
+- **The hull airlock** is a 1.5 m chamber: an inner pressure door with a twist latch, and an armoured outer hatch that slides aside on rails outside the hull. The game has no pressurised rooms, so it cycles no air; each door is its own press.
+- The blueprints place the bay turned half round, because the galleries look from -z: a blueprint spawned in front of a player shows its hull side first, so turn the placing ghost round.
+- Not yet: linked doors or a latch that locks (an event door has inputs but no output, so the latch can't drive the fill), a fill picker on one bay, wear and consumption, bays fitted to the shipped ships. Before bays go on a crewed ship: crews treat every upright event door as a doorway and open shut doors near their path (`Source/Crew/CrewNav.cs`), so a walker would pull a rack out.

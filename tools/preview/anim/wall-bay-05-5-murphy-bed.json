@@ -1,0 +1,10 @@
+{
+  // In-wall bay (WallBayParts.cs): the bay's whole face flips down on its foot to a made bed.
+  "blueprint": "Wall Bay Murphy Bed",
+  "title": "0.5 m bay: Murphy bed",
+  "shelf": "In-wall bays 0.5 m",
+  "description": "Press the bar at the top and the whole face flips down on its foot to a made bed: mattress, pillow at the wall end, blanket, two straps. Behind it, a berth with a reading lamp, a shelf and a net pocket.",
+  "steps": [
+    { "part": "Murphy Bed", "at": 0, "label": "Bed folds down" }
+  ]
+}

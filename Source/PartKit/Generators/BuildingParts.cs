@@ -1657,6 +1657,8 @@ public sealed partial class BuildingParts : IPartGenerator
         public readonly Dictionary<string, PyDict> Defs = defs;
         public readonly List<Placed> Parts = [];
         public readonly List<PyDict> Steps = [];
+        /// <summary>The file's "group" when set: the Blueprints tab's section (SandboxCatalogue.ClassifyBlueprint) and the Building Station's heading.</summary>
+        public string Group = "";
 
         /// <summary>Signal wires by step, from and to (look.md "The authoring fields"): a switch to its lamps.</summary>
         public readonly List<(int From, int To)> Wires = [];
@@ -1820,7 +1822,11 @@ public sealed partial class BuildingParts : IPartGenerator
         {
             if (Steps.Count > maxSteps)
                 throw new InvalidOperationException($"{Name}: {Steps.Count} steps");
-            var d = new PyDict { ["format"] = "call-of-slop-construct-blueprint/1", ["name"] = Name, ["description"] = Desc, ["steps"] = Steps.Cast<object?>().ToList() };
+            var d = new PyDict { ["format"] = "call-of-slop-construct-blueprint/1", ["name"] = Name };
+            if (Group.Length > 0)
+                d["group"] = Group;
+            d["description"] = Desc;
+            d["steps"] = Steps.Cast<object?>().ToList();
             if (Wires.Count > 0)
                 d["wires"] = Wires.Select(w => (object?)new List<object?> { w.From, w.To }).ToList();
             if (DataLinks.Count > 0 || Feeds.Count > 0 || Pipes.Count > 0)

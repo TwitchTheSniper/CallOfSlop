@@ -1,0 +1,12 @@
+{
+  // In-wall ship system (WallBayParts.Systems.cs): twist the handle, the consumable's drawer runs out; then the cassette with the part that wears.
+  "blueprint": "Wall Bay 1m RCS Feed",
+  "title": "RCS valves and propellant (1 m bay)",
+  "shelf": "In-wall ship systems",
+  "description": "Propulsion. The consumable: twist the handle and the drawer runs out with six propellant bottles in cradles, two rows deep. The part that wears: the valve block, which runs out with its four valves, the seals on its face and its ports back to the feed lines. The bars over them show its wear and its supply.",
+  "steps": [
+    { "part": "Twist Latch", "at": 0, "label": "Twist the handle" },
+    { "part": "Propellant Bottle Drawer 1m", "at": 0.6, "label": "Consumable: propellant" },
+    { "part": "RCS Valve Block 1m", "at": 2.8, "label": "Wear part: valves and seals" }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Wall Bay Jump Seat",
+  "group": "In-wall bays",
+  "description": "An in-wall bay with a jump seat that flips down and a helmet locker over it.",
+  "steps": [
+    {
+      "part": "Wall Bay",
+      "spin": 2
+    },
+    {
+      "part": "Jump Seat Insert",
+      "on": 0,
+      "socket": "insert",
+      "by": "bay"
+    },
+    {
+      "part": "Jump Seat",
+      "on": 1,
+      "socket": "seat",
+      "by": "hang"
+    },
+    {
+      "part": "Helmet Locker Door",
+      "on": 1,
+      "socket": "helmet",
+      "by": "hang"
+    }
+  ]
+}
