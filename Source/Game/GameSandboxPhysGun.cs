@@ -87,7 +87,7 @@ public sealed partial class Game
             {
                 var dist = r.U16() / 100f;
                 var q = new Quaternion((short)r.U16() / 32767f, (short)r.U16() / 32767f, (short)r.U16() / 32767f, (short)r.U16() / 32767f);
-                hands.SteerGrab(p.Id, dist, q);
+                hands.SteerGrab(p.Id, dist, q, smooth: p.Id != LocalId); // (a joined holder's turn arrives in steps: followed smoothly, pc01)
                 return null;
             }
             case CActKind.GrabRelease:
@@ -430,7 +430,7 @@ public sealed partial class Game
             return "it is anchored to the ground";
         var cap = SandboxHands.LiftOf(player, creative);
         if (c.Mass > cap)
-            return $"too heavy for the physics gun ({c.Mass:0} kg; {cap:0} kg at most{(creative ? "" : " in survival")})";
+            return $"too heavy for the physics gun ({c.Mass:0} kg; {cap:0} kg at most{(creative ? "" : " in survival" + ConstructGrab.HeavyHint)})";
         return creative ? null : ConstructGrab.Defended(c, player, SandboxAliveAt, SandboxNameOf);
     }
 

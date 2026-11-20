@@ -29,11 +29,11 @@ public sealed partial class ConstructEdits
     /// <summary>Has this player a function (creative: every one)?</summary>
     public bool Has(byte player, ToolStat s, bool creative) => StatOf(player, s, creative) >= 0.5f;
 
-    /// <summary>The heaviest thing this player's physics gun takes (kg).</summary>
-    public float LiftOf(byte player, bool creative) => StatOf(player, ToolStat.Lift, creative);
+    /// <summary>The heaviest thing this player's physics gun takes (kg): survival's stops at <see cref="ConstructGrab.SurvivalLiftCap"/> whatever the Lift level.</summary>
+    public float LiftOf(byte player, bool creative) => creative ? StatOf(player, ToolStat.Lift, true) : MathF.Min(StatOf(player, ToolStat.Lift, false), ConstructGrab.SurvivalLiftCap);
 
-    /// <summary>How hard this player's beam pulls (N): creative's fixed strength, or the lift's share.</summary>
-    public float PullOf(byte player, bool creative) => creative ? ConstructGrab.Strength : LiftOf(player, false) * ToolUpgrades.PullPerKg;
+    /// <summary>How hard this player's beam pulls (N): creative's fixed strength, or the Lift level's share (uncapped: a Lift module still makes the beam stronger).</summary>
+    public float PullOf(byte player, bool creative) => creative ? ConstructGrab.Strength : StatOf(player, ToolStat.Lift, false) * ToolUpgrades.PullPerKg;
 
     /// <summary>How far this player's beam reaches (m).</summary>
     public float ReachOf(byte player, bool creative) => StatOf(player, ToolStat.Reach, creative);

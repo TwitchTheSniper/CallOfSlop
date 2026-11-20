@@ -134,7 +134,8 @@ public sealed class SandboxModule : GameModeModule
                 .U16((ushort)Math.Clamp(h.Duration * 100, 0, 65535)).U16((ushort)Math.Clamp((game.SandboxNow - h.Start) * 100, 0, 65535));
             w.U16(h.GrabBody);
             if (h.GrabBody != 0)
-                w.CmVec(h.GrabLocal).U8(h.GrabSeg); // (protocol 137: a free joint held on its own, GrabLocal in its frame)
+                w.CmVec(h.GrabLocal).U8(h.GrabSeg) // (protocol 137: a free joint held on its own, GrabLocal in its frame)
+                    .U8(ConstructGrab.BoostByte(h.GrabSeg == 0 && game.Constructs.Get(h.GrabBody) is { } held ? held.GrabBoost : 1f)); // (protocol 375: the flight boost)
             var levels = game.SandboxHands.LevelsOf(p.Id); // (tool upgrades, protocol 215: a byte a stat, ConstructEditsUpgrades.cs)
             w.U8((byte)ToolStat.COUNT);
             for (var s = 0; s < (int)ToolStat.COUNT; s++)
@@ -158,6 +159,7 @@ public sealed class SandboxModule : GameModeModule
             var grab = r.U16();
             var grabAt = grab == 0 ? Vector3.Zero : r.CmVec();
             var grabSeg = grab == 0 ? (byte)0 : r.U8();
+            var grabBoost = grab == 0 ? 1f : ConstructGrab.BoostOf(r.U8());
             int stats = r.U8();
             if (!game.IsServer)
             {
@@ -195,6 +197,7 @@ public sealed class SandboxModule : GameModeModule
                 h.GrabLocal = grabAt;
                 h.GrabSeg = grabSeg;
             }
+            h.GrabBoost = grabBoost;
         }
     }
 
