@@ -257,9 +257,12 @@ public static partial class Program
         c != null && part >= 0 && part < c.PartCount && c.Parts[part].Def == def && c.Parts[part].Pos == pos;
 
     /// <summary>How far the crosshair picks: the piece from SocketWeld.PullReach; a target within the usual reach; the Build Gantry's camera as far as it sees.</summary>
+    /// <summary>The local player's attach tool reach (m): a person's, or a big shell frame's further (ConstructEdits.BuildReachOf; docs/sandbox/design/construction-shell.md).</summary>
+    private static float BuildReach(Game g) => g.Local is { } me ? g.SandboxHands.BuildReachOf(me.Id) : ConstructBuild.Reach;
+
     private static float WeldAimReach(bool piece) =>
         piece ? MathF.Max(SocketWeld.PullReach, GantryOn ? GantryMaxDist() + _gDist : 0)
-            : GantryOn ? GantryMaxDist() + _gDist : ConstructBuild.Reach + 1f;
+            : GantryOn ? GantryMaxDist() + _gDist : BuildReach(_game) + 1f;
 
     /// <summary>Step 1: the look ray stops at the usual reach, so a crosshair on nothing looks on to the piece's reach (through the frame like any aim). This frame's aim, or the far one.</summary>
     private static bool WeldFarHit(Game g, Vector3 eye, Vector3 dir, bool aimed, ref ConstructHit hit)
@@ -276,7 +279,7 @@ public static partial class Program
 
     /// <summary>The server's reach as this PC sees it, every frame (walking away turns the ghost red). With the Build Gantry's camera the server decides: the station's place is its own.</summary>
     private static string? WeldReachNow(Game g, Construct mover, in WeldTarget src, Construct target, in WeldTarget w) =>
-        !GantryOn && g.Local is { } me ? ConstructEdits.WeldReach(me.RenderEye, mover, src, target, w) : null;
+        !GantryOn && g.Local is { } me ? ConstructEdits.WeldReach(me.RenderEye, mover, src, target, w, reach: g.SandboxHands.BuildReachOf(me.Id)) : null;
 
     /// <summary>The look line of a ghost: green, the action; red before step 3, the action still (the spin comes next); red in step 3, what to do about it.</summary>
     private static string WeldLine(string name, string state, string? why, bool spinning, bool noFit, string action) =>

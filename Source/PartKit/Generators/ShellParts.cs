@@ -53,7 +53,7 @@ public sealed class ShellParts : IPartGenerator
     /// The robot's body at <paramref name="k"/> times a person's size (the Robot Shell is 1; the Mining Shell, Constructs/Shells.json's
     /// "scale", 1.5). <paramref name="drill"/>: the right arm's forearm and hand are left off for the drill arm.
     /// </summary>
-    private static void Robot(Part p, double k, bool drill)
+    private static void Robot(Part p, double k, bool drill, bool forearms = true)
     {
         PyDict? B(double[] lo, double[] hi, string? c = null, bool detail = false) => Box([lo[0] * k, lo[1] * k, lo[2] * k], [hi[0] * k, hi[1] * k, hi[2] * k], c, detail: detail);
         foreach (var s in new[] { -1, 1 })
@@ -66,8 +66,8 @@ public sealed class ShellParts : IPartGenerator
             double a0 = Math.Min(s * 0.26, s * 0.37), a1 = Math.Max(s * 0.26, s * 0.37);
             p.Add(B([a0 - 0.02, 1.36, -0.1], [a1 + 0.02, 1.53, 0.1], Joint)); // shoulders
             p.Add(B([a0, 1.0, -0.06], [a1, 1.37, 0.06], drill ? Light : null)); // upper arms
-            if (drill && s > 0)
-                continue; // (the right forearm is the drill: MiningShell)
+            if (drill && s > 0 || !forearms)
+                continue; // (the right forearm is the drill: MiningShell; the Construction Shell's are its tool arms)
             p.Add(B([a0 + 0.005, 0.74, -0.055], [a1 - 0.005, 1.01, 0.055], Joint)); // forearms
             p.Add(B([a0 + 0.01, 0.64, -0.05], [a1 - 0.01, 0.75, 0.05], Dark, detail: true)); // hands
         }
@@ -503,23 +503,79 @@ public sealed class ShellParts : IPartGenerator
         }
     }
 
+    private const string ArmHazard = "#e0a020", ArmOrange = "#e07020", ArmCopper = "#b87333", ArmGlow = "#7fe0ff", ArmField = "#2f8fa0";
+
+    /// <summary>The Shell Welder Arm's look (module metres: its tool at y 0, its elbow coupling at the top, 0.42 m).</summary>
+    private static void WelderArm(Part p)
+    {
+        Elbow(p, 0.06, ArmOrange);
+        p.Add(Box([-0.055, 0.2, -0.055], [0.055, 0.365, 0.055], ArmOrange)); // the housing, the welder's orange
+        p.Add(Box([-0.058, 0.26, -0.058], [0.058, 0.285, 0.058], ArmHazard, detail: true)); // a hazard band
+        p.Add(Box([0.052, 0.21, -0.03], [0.095, 0.35, 0.03], Joint, detail: true)); // the gas bottle along its side
+        p.Add(Box([0.062, 0.347, -0.018], [0.088, 0.37, 0.018], ArmCopper, detail: true)); // its valve
+        p.Add(Box([-0.025, 0.08, -0.025], [0.025, 0.205, 0.025], Dark)); // the torch's neck
+        p.Add(Box([-0.045, 0.03, -0.045], [0.045, 0.085, 0.045], Steel)); // the torch cup
+        p.Add(Box([-0.05, 0.025, -0.05], [0.05, 0.04, 0.05], ArmCopper, detail: true)); // its rim
+        p.Add(Box([-0.012, 0.0, -0.012], [0.012, 0.033, 0.012], ArmCopper)); // the nozzle
+    }
+
+    /// <summary>The Shell Grip Arm's look (module metres, as <see cref="WelderArm"/>).</summary>
+    private static void GripArm(Part p)
+    {
+        Elbow(p, 0.06, ArmField);
+        p.Add(Box([-0.055, 0.15, -0.055], [0.055, 0.365, 0.055], Joint)); // the forearm
+        p.Add(Box([-0.08, 0.1, -0.08], [0.08, 0.155, 0.08], Dark)); // the claw ring
+        p.Add(Box([-0.035, 0.07, -0.035], [0.035, 0.105, 0.035], ArmGlow)); // the emitter
+        p.Add(Box([-0.015, 0.0, -0.085], [0.015, 0.105, -0.06], Steel)); // the claws: front, and one each side behind
+        p.Add(Box([-0.085, 0.0, 0.03], [-0.06, 0.105, 0.06], Steel));
+        p.Add(Box([0.06, 0.0, 0.03], [0.085, 0.105, 0.06], Steel));
+        p.Add(Box([-0.058, 0.25, -0.058], [0.058, 0.27, 0.058], ArmGlow, detail: true)); // a field band
+    }
+
+    /// <summary>
+    /// An arm module's look set onto a standing shell's body (the Construction Shell's fixed arms): its boxes times <paramref name="k"/>,
+    /// moved so its tool end hangs at the robot's hand height (0.64 m a person's) at <paramref name="x"/> (a person's metres).
+    /// </summary>
+    private static void ArmOnBody(Part p, Action<Part> look, double k, double x)
+    {
+        var t = new Part("arm", Small, Section, "");
+        look(t);
+        foreach (var b in t.Boxes)
+        {
+            var mn = ((List<object?>)b["min"]!).Select(Py.D).ToArray();
+            var mx = ((List<object?>)b["max"]!).Select(Py.D).ToArray();
+            double[] lo = [(mn[0] + x) * k, (mn[1] + 0.62) * k, mn[2] * k], hi = [(mx[0] + x) * k, (mx[1] + 0.62) * k, mx[2] * k];
+            p.Add(Box(lo, hi, b.Get("color") as string, detail: Py.Truthy(b.Get("detail"))));
+        }
+    }
+
+    /// <summary>
+    /// The Construction Shell (docs/sandbox/design/construction-shell.md): the robot at 2.8x, 5.04 m standing, for pieces too big for the
+    /// survival physics gun (manipulators.md). Frame "Construction" in Constructs/Shells.json: a fixed Grip Arm (right) and Welder Arm
+    /// (left), Heavy Legs. Its standing part shows both arms in place of forearms and hands.
+    /// </summary>
+    private static Part ConstructionShell()
+    {
+        const double K = 2.8;
+        var p = new Part("Construction Shell", Small, Section, $"A 5 m robot body for big pieces: a grip arm lifts up to 15 t and a welder arm welds what it holds onto a build. Wake in it from a Shell Control Chair on its channel, within {Py.G(Range / 1000.0)} km. Too big for doors, seats and pods: it works outside and in hangars.", tool: "wrench", group: "Logic", color: Steel);
+        Robot(p, K, drill: false, forearms: false);
+        ArmOnBody(p, GripArm, K, 0.315); // (the right arm: +x, as the Mining Shell's drill)
+        ArmOnBody(p, WelderArm, K, -0.315);
+        foreach (var x in new[] { -0.235, 0.18 })
+            p.Add(Box([x * K, 1.2 * K, -0.142 * K], [(x + 0.055) * K, 1.235 * K, -0.13 * K], ArmHazard, detail: true)); // hazard flashes on the torso's front, either side of its chest plate
+        p.Sock("bottom", [0, 0, 0], "-y");
+        p.Sock("back", [0, Py.Round(1.25 * K, 3), Py.Round(0.2 * K, 3)], "+z");
+        p.Stats(900, 600, 8, 10);
+        p.Set(("shell", new PyDict { ["body"] = true }), ("config", Py.L(Channel())), ("centreSockets", false));
+        return p;
+    }
+
     /// <summary>The tool arms (the user, 2026-11-19: "add a few more arms for the different tools in the game"): each is its tool while worn.</summary>
     private static IEnumerable<(string, Part)> ToolArms()
     {
-        const string Hazard = "#e0a020", Orange = "#e07020", Copper = "#b87333", Glow = "#7fe0ff", Blade = "#c9ced4", Red = "#c03030";
-        const string Field = "#2f8fa0", Paint = "#3a7fd0", NozzleCup = "#98a1a9"; // (the Grip Arm's teal, the Sprayer's paint blue; its nozzle's steel cup)
-        yield return ("Modules", Module("Shell Welder Arm", "A robot shell arm that is an attach tool: a torch on a long neck, its cup and nozzle, and a gas bottle. Worn, it fits and welds parts.", 6, p =>
-        {
-            Elbow(p, 0.06, Orange);
-            p.Add(Box([-0.055, 0.2, -0.055], [0.055, 0.365, 0.055], Orange)); // the housing, the welder's orange
-            p.Add(Box([-0.058, 0.26, -0.058], [0.058, 0.285, 0.058], Hazard, detail: true)); // a hazard band
-            p.Add(Box([0.052, 0.21, -0.03], [0.095, 0.35, 0.03], Joint, detail: true)); // the gas bottle along its side
-            p.Add(Box([0.062, 0.347, -0.018], [0.088, 0.37, 0.018], Copper, detail: true)); // its valve
-            p.Add(Box([-0.025, 0.08, -0.025], [0.025, 0.205, 0.025], Dark)); // the torch's neck
-            p.Add(Box([-0.045, 0.03, -0.045], [0.045, 0.085, 0.045], Steel)); // the torch cup
-            p.Add(Box([-0.05, 0.025, -0.05], [0.05, 0.04, 0.05], Copper, detail: true)); // its rim
-            p.Add(Box([-0.012, 0.0, -0.012], [0.012, 0.033, 0.012], Copper)); // the nozzle
-        }));
+        const string Hazard = ArmHazard, Blade = "#c9ced4", Red = "#c03030";
+        const string Paint = "#3a7fd0", NozzleCup = "#98a1a9"; // (the Grip Arm's teal is ArmField; the Sprayer's paint blue; its nozzle's steel cup)
+        yield return ("Modules", Module("Shell Welder Arm", "A robot shell arm that is an attach tool: a torch on a long neck, its cup and nozzle, and a gas bottle. Worn, it fits and welds parts.", 6, WelderArm));
         yield return ("Modules", Module("Shell Cutter Arm", "A robot shell arm that is a remover: a saw disc under a red guard. Worn, it cuts parts away.", 7, p =>
         {
             // (Look review 2026-11-19: the old disc and guard were a big flat grey slab hiding the red arm. The disc is half that area
@@ -538,17 +594,7 @@ public sealed class ShellParts : IPartGenerator
             p.Add(Box([-0.03, 0.213, 0.0], [0.03, 0.247, 0.13], Red)); // the guard's hood over the top
             p.Add(Box([-0.03, 0.085, 0.108], [0.03, 0.23, 0.135], Red, detail: true)); // and down its back
         }));
-        yield return ("Modules", Module("Shell Grip Arm", "A robot shell arm that is a physics gun: three claws round a field emitter. Worn, it grabs and moves whole constructs.", 6, p =>
-        {
-            Elbow(p, 0.06, Field);
-            p.Add(Box([-0.055, 0.15, -0.055], [0.055, 0.365, 0.055], Joint)); // the forearm
-            p.Add(Box([-0.08, 0.1, -0.08], [0.08, 0.155, 0.08], Dark)); // the claw ring
-            p.Add(Box([-0.035, 0.07, -0.035], [0.035, 0.105, 0.035], Glow)); // the emitter
-            p.Add(Box([-0.015, 0.0, -0.085], [0.015, 0.105, -0.06], Steel)); // the claws: front, and one each side behind
-            p.Add(Box([-0.085, 0.0, 0.03], [-0.06, 0.105, 0.06], Steel));
-            p.Add(Box([0.06, 0.0, 0.03], [0.085, 0.105, 0.06], Steel));
-            p.Add(Box([-0.058, 0.25, -0.058], [0.058, 0.27, 0.058], Glow, detail: true)); // a field band
-        }));
+        yield return ("Modules", Module("Shell Grip Arm", "A robot shell arm that is a physics gun: three claws round a field emitter. Worn, it grabs and moves whole constructs.", 6, GripArm));
         yield return ("Modules", Module("Shell Sprayer Arm", "A robot shell arm that is a paint tool: a paint can and its nozzle. Worn, it colours parts.", 5, p =>
         {
             Elbow(p, 0.06, Paint);
@@ -683,6 +729,6 @@ public sealed class ShellParts : IPartGenerator
 
     public void Make(PartOutput o)
     {
-        WriteParts(o, Out, [("", Shell()), ("", MiningShell()), ("", HalfShell()), ("", Chair()), .. Spares(), ("Gantry", Gantry()), ("Gantry", Table()), .. Modules(), .. Pods()]);
+        WriteParts(o, Out, [("", Shell()), ("", MiningShell()), ("", HalfShell()), ("", ConstructionShell()), ("", Chair()), .. Spares(), ("Gantry", Gantry()), ("Gantry", Table()), .. Modules(), .. Pods()]);
     }
 }

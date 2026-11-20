@@ -893,6 +893,14 @@ public sealed partial class ConstructEdits
         }
         var c = world.Get(h.GrabBody);
         var boarded = c != null && c.GrabbedBy == player ? AboardWhy(c, player) : null; // (someone unfriendly got in: it goes, and they say why)
+        if (c != null && c.GrabbedBy == player && h.Tool == ConstructTool.Welder && !h.Seated && boarded == null && !c.Anchored && GripHolds?.Invoke(player) == true)
+        {
+            // A shell with a grip arm and a welder arm (the Construction Shell): the grip keeps the piece where it is, frozen, while
+            // the welder works on it, rather than dropping it (docs/sandbox/design/construction-shell.md).
+            if (Freeze(world, player) is null)
+                Notices.Add((player, "the grip holds it where it is: weld it on"));
+            return;
+        }
         if (c == null || c.GrabbedBy != player || h.Tool != ConstructTool.PhysicsGun || h.Seated || boarded != null || c.Anchored)
         {
             if (c != null && c.GrabbedBy == player)

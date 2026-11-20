@@ -218,7 +218,8 @@ public static unsafe partial class Program
 
         // What the crosshair is on.
         SandboxAimRay(g, me, out var eye, out var dir); // (third person: the camera's ray, from the point nearest you; Program.ThirdPerson.cs)
-        var reachLook = GantryOn ? GantryMaxDist() + _gDist : ConstructBuild.Reach + 1; // (the Build Gantry's camera sees as far as its range)
+        var buildReach = BuildReach(g); // (a big shell frame reaches further: ConstructEdits.BuildReachOf)
+        var reachLook = GantryOn ? GantryMaxDist() + _gDist : buildReach + 1; // (the Build Gantry's camera sees as far as its range)
         var wall = World.RaycastWorld(eye, dir, reachLook);
         var aimed = g.Constructs.Raycast(eye, dir, MathF.Min(wall, reachLook), out var hit, look: true, noTracks: h.Tool is not (ConstructTool.Tracks or ConstructTool.Configure)); // (only these act on the band: bullets hit it, other tools reach what it runs on)
         BalanceFrame(g, in h, aimed, hit, now); // (centre of mass, lift and thrust on a flyer: Program.SandboxFlight.cs)
@@ -401,7 +402,7 @@ public static unsafe partial class Program
         // The welder on a part that touches another construct: F joins the two into one (decision 27: only the welder
         // attaches a piece; its three-step socket weld moves one into place: Program.SandboxSocketWeld.cs).
         JoinPlan jplan = default;
-        var join = h.Tool == ConstructTool.Welder && aimed && hit.Distance <= ConstructBuild.Reach && hit.Part >= 0 && hit.Body.DefOf(hit.Part).Role != PartRole.Hitch && ConstructPlace.FindJoin(g.Constructs, hit.Body, hit.Part, out jplan);
+        var join = h.Tool == ConstructTool.Welder && aimed && hit.Distance <= buildReach && hit.Part >= 0 && hit.Body.DefOf(hit.Part).Role != PartRole.Hitch && ConstructPlace.FindJoin(g.Constructs, hit.Body, hit.Part, out jplan);
         if (join)
         {
             var jk = hit.Body.Id | ((long)jplan.Other!.Id << 16) | ((long)hit.Part << 32) | ((long)h.Tool << 48);
@@ -850,7 +851,7 @@ public static unsafe partial class Program
             if (ConstructRender.GhostValid)
                 gh = shown with { Variant = v };
             // (what the server's click will ask of the reach: ConstructEdits.AttachReach; the gantry's own reach is the server's to judge)
-            var outOfReach = !GantryOn && ConstructEdits.AttachReach(eye, c, gh.Part, gh.Socket, in gh) != null;
+            var outOfReach = !GantryOn && ConstructEdits.AttachReach(eye, c, gh.Part, gh.Socket, in gh, reach: BuildReach(g)) != null;
             ConstructRender.GhostValid &= !outOfReach;
             SandboxSnapShown(g, c, held, in gh, now);
             SandboxJointGhostText(g, c.DefOf(gh.Part), gh.Socket, held, v / 4);
