@@ -1,0 +1,19 @@
+{
+  "format": "call-of-slop-module-sockets/1",
+  "_comment": "The module socket standard (docs/sandbox/design/module-sockets.md 13.1; ModuleSocketTable.cs). Order of kinds, styles and tags is the wire's: new ones at the end.",
+  "sizes": { "most": 30, "built": ["1x1", "1x2", "1x3", "2x2", "2x3", "3x3"] },
+  "rating": { "massPerM2": 3000, "thrustPerM2": 250000 },
+  "kinds": ["generic", "engine", "reactor", "turret"],
+  "styles": ["proud", "flush", "opening"],
+  "tags": ["engine", "reactor", "turret", "turret-bay", "missile", "armour", "harvest", "cargo", "power-store", "sensor", "life-support", "utility"],
+  "depth": { "step": 0.25, "most": 2 },
+  "above": { "step": 0.05, "most": 4 },
+  "side": 0.05,
+  "cut": { "secondsPerMetrePer10cm": 2, "wattsPerMetre": 4000, "ringUpTo": 3 },
+  "hand": { "upTo": "2x2", "seconds": 5, "perTonne": 1, "pull": 2.5 },
+  "fitters": [
+    { "name": "S", "reach": [1.5, 8], "payload": 20000, "largest": [3, 3, 6], "cut": 0.1, "weld": 0.25, "power": 8000 },
+    { "name": "M", "reach": [3, 20], "payload": 150000, "largest": [8, 8, 16], "cut": 0.15, "weld": 0.4, "power": 40000 }
+  ],
+  "price": { "buy": [0.7, 1.0], "sell": [1.2, 1.5] }
+}

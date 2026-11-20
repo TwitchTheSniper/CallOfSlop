@@ -19,7 +19,7 @@ public static partial class Program
     private static int _wsClipBodies, _wsClipLoose;
     private static bool _wsClipToolAsked;
 
-    private static bool WsPlayKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "sit" or "seated" or "getout" or "recycle" or "clip" or "partinfo" or "partlook" or "hands" or "cabto" or "damage" or "makeengine" or "standon" or "aimintake" or "feetup" or "cave" or "spawnbp" or "bringon" or "dropmotion" or "shellwear" or "shellleave" or "shellfix" or "shells" or "hopper" or "shellgantry" or "shellpod";
+    private static bool WsPlayKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "sit" or "seated" or "getout" or "recycle" or "clip" or "partinfo" or "partlook" or "hands" or "cabto" or "damage" or "makeengine" or "standon" or "aimintake" or "feetup" or "cave" or "spawnbp" or "bringon" or "dropmotion" or "shellwear" or "shellleave" or "shellfix" or "shells" or "hopper" or "shellgantry" or "shellpod" or "modsock";
 
     private static bool WsPlayVerb(Game g, Player me, string verb, string arg)
     {
@@ -663,6 +663,82 @@ public static partial class Program
             }
             case "partlook":
                 WsSay($"partinfo: look: {g.SandboxLookText}");
+                return true;
+            case "modsock" when arg.StartsWith("style ", StringComparison.OrdinalIgnoreCase): // host: "modsock style N [DEPTH]": every Module Socket set to style N (0 proud, 1 flush, 2 opening), as the configure tool sets it
+            {
+                var w = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                var style = w.Length > 1 ? int.Parse(w[1], System.Globalization.CultureInfo.InvariantCulture) : 0;
+                var depth = w.Length > 2 ? float.Parse(w[2], System.Globalization.CultureInfo.InvariantCulture) : -1f;
+                if (!g.IsServer)
+                {
+                    WsFail("modsock style: on the host");
+                    return true;
+                }
+                foreach (var mb in g.Constructs.Bodies)
+                    for (var i = 0; i < mb.PartCount; i++)
+                    {
+                        var md = mb.DefOf(i);
+                        if (md.ModPart != ModPart.Socket || md.ModStand)
+                            continue;
+                        ConstructConfig.Put(ref mb.Parts[i], md, CfgKey.ModStyle, style);
+                        if (depth > 0)
+                            ConstructConfig.Put(ref mb.Parts[i], md, CfgKey.ModDepth, depth);
+                        mb.Dirty = true;
+                        g.Constructs.StructureDirty.Add(mb.Id);
+                        WsSay($"modsock: body {mb.Id} socket part {i} set to style {style}");
+                    }
+                return true;
+            }
+            case "modsock" when arg.StartsWith("use ", StringComparison.OrdinalIgnoreCase): // host: "modsock use PART": F on that plate or module part (take off, or fit what is near), whatever the crosshair finds
+            {
+                var (uc, upart) = WsFind(g, arg[4..].Trim());
+                if (!g.IsServer || uc == null)
+                {
+                    WsFail($"modsock use: {(uc == null ? $"no part \"{arg[4..].Trim()}\"" : "on the host")}");
+                    return true;
+                }
+                WsSay($"modsock: use on {uc.DefOf(upart).Name} part {upart}: {g.SandboxHands.ModuleUseNow(g.Constructs, me.Id, uc, upart) ?? "done"}");
+                _wsWait = 20;
+                return true;
+            }
+            case "modsock" when arg.StartsWith("fit ", StringComparison.OrdinalIgnoreCase): // host: "modsock fit PART": the nearest loose module of that plate's size held 0.6 m off its face, then F on the plate
+            {
+                var (fc, fpart) = WsFind(g, arg[4..].Trim());
+                if (!g.IsServer || fc == null)
+                {
+                    WsFail($"modsock fit: {(fc == null ? $"no part \"{arg[4..].Trim()}\"" : "on the host")}");
+                    return true;
+                }
+                WsSay($"modsock: fit on {fc.DefOf(fpart).Name} part {fpart}: {g.SandboxHands.ModuleFitNear(g.Constructs, me.Id, fc, fpart) ?? "done"}");
+                _wsWait = 20;
+                return true;
+            }
+            case "modsock": // "modsock state": every body's module sockets and modules as this peer has them, and the notice on screen (module-sockets.md 15)
+                foreach (var mb in g.Constructs.Bodies)
+                {
+                    if (mb.Dirty)
+                        mb.Rebuild();
+                    foreach (var ms in mb.ModSockets)
+                        WsSay($"modsock: body {mb.Id} socket part {ms.Plate} {ModuleSocketTable.SizeText(ms.W, ms.L)} {ms.Kind} {ms.Style}{(ms.Keyed ? " keyed" : "")}{(ms.Stand ? " stand" : "")} above {ms.Above:0.##}: module {ms.Module}, in the way {ms.InTheWay}{(ms.WrongKind ? ", wrong kind" : "")}; depth {ms.Depth:0.##}, cut {ConstructConfig.Get(mb.Parts[ms.Plate], mb.DefOf(ms.Plate), CfgKey.ModCut, 0):0.#} s; look \"{ModuleSockets.LookText(mb, ms.Plate)}\"");
+                    if (mb.ModSockets.Length > 0)
+                        for (var rk = 0; rk < mb.RouteCount; rk++)
+                            if (mb.Routes[rk].Type is RouteType.Pipe or RouteType.Feed or RouteType.Chute)
+                                WsSay($"modsock: body {mb.Id} {ConstructRoutes.TypeKey(mb.Routes[rk].Type)} {rk}: {mb.DefOf(mb.Routes[rk].From).Name} -> {mb.DefOf(mb.Routes[rk].To).Name}, source {mb.DefOf(mb.Routes[rk].Source).Name}, fed {mb.Routes[rk].FedEnd}");
+                    if (mb.ModSockets.Length > 0)
+                        for (var wk = 0; wk < mb.WireCount; wk++)
+                            WsSay($"modsock: body {mb.Id} wire {wk}: {mb.DefOf(mb.Wires[wk].From).Name}#{mb.Wires[wk].From} port {mb.Wires[wk].FromPort} -> {mb.DefOf(mb.Wires[wk].To).Name}#{mb.Wires[wk].To} port {mb.Wires[wk].ToPort}, out {mb.Parts[mb.Wires[wk].From].Out:0.##}, to's out {mb.Parts[mb.Wires[wk].To].Out:0.##}");
+                    if (mb.ModSockets.Length > 0)
+                        for (var gk = 0; gk < mb.GunCount; gk++)
+                            WsSay($"modsock: body {mb.Id} gun {gk}: {mb.DefOf(mb.Guns[gk].Part).Name}, ring {mb.Guns[gk].Ring}, ring fed {mb.Guns[gk].RingFed}, fed {(ConstructAmmo.FedFrom(g.Constructs, mb, gk, out var fs, out var fp) && fs != null && fp >= 0 ? fs.DefOf(fp).Name : "no")}");
+                    if (mb.ModSockets.Length > 0)
+                        WsSay($"modsock: body {mb.Id}: {mb.PartCount} parts, power {(mb.PowerOn ? "on" : "off")}, draw {mb.PowerUse / 1000f:0.#} kW (cutting {mb.ModCutWatts / 1000f:0.#} kW)");
+                    for (var mi = 0; mi < mb.Modules.Length; mi++)
+                    {
+                        var mm = mb.Modules[mi];
+                        WsSay($"modsock: body {mb.Id} module {mi}: plug part {mm.Plug}, socket {mm.Socket}{(mm.OnStand ? " (on a stand)" : "")}{(mm.Bridged ? " BRIDGED" : "")}, {mm.Parts} parts, {mm.Mass:0} kg, tags {ModuleSockets.TagsText(mm.Tags)}, primary {ModuleSockets.TagName(mm.Primary)}{ModuleSockets.StatsText(mm)}; bounds {mm.Min:0.00} to {mm.Max:0.00}");
+                    }
+                }
+                WsSay($"modsock: notice \"{g.SandboxNotice}\"");
                 return true;
         }
         return false;

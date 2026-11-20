@@ -473,12 +473,12 @@ public static partial class World
         return new Box((lo + hi) * 0.5f, (hi - lo) * 0.5f);
     }
 
-    /// <summary>Did a hit at <paramref name="point"/> land on the head?</summary>
-    public static bool IsHeadshot(Vector3 feet, Stance stance, float yaw, Vector3 point, Vector3 up = default)
+    /// <summary>Did a hit at <paramref name="point"/> land on the head? <paramref name="scale"/>: the body's size (a robot shell's frame; the heights scale with it).</summary>
+    public static bool IsHeadshot(Vector3 feet, Stance stance, float yaw, Vector3 point, Vector3 up = default, float scale = 1f)
     {
         point = up != Vector3.Zero ? feet + Vector3.Transform(point - feet, ConstructRide.TurnBetween(up, Vector3.UnitY)) // (contraption space: along the construct's up)
             : GravityFrames.PointToLocal(feet, point); // (a planet: in the body's upright frame)
-        var rel = point - feet;
+        var rel = (point - feet) / scale;
         return stance switch
         {
             Stance.Crouch => rel.Y >= 0.85f,

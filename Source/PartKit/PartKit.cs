@@ -111,10 +111,12 @@ public static class PartKit
         new Generators.ShipBatteryParts(), // (ship batteries XS to Bank: a ship's circuit store)
         new Generators.LegPodParts(), // (landing leg pods S to L: a housing, two canopy leaves and a gantry with its leg)
         new Generators.WallBayParts(), // (in-wall bays, a draft: a bay in the lining, an insert, its pull-outs; group Style)
+        new Generators.ModuleSocketParts(), // (module sockets: plates, plugs and stands, docs/sandbox/design/module-sockets.md)
         new Generators.ShipParts(), // (the rust bucket: its blueprint uses the building and interior parts)
         new Generators.MinerParts(), // (the Magpie mining ship)
         new Generators.TorpedoFrigateParts(), // (the Zero Day torpedo frigate: likewise)
         new Generators.HaulerParts(), // (the Dray container hauler: likewise)
+        new Generators.MainframeParts(), // (the Mainframe capital ship: its frame nodes and machinery; its blueprint lays laser-cut plate, so it reads the game's tables)
         new Generators.SpaceStationParts(), // (space stations from the station kit: Caledon Highport; its blueprint hangs docking clamps and hatches)
         new Generators.MakeRv(),
         new Generators.MachineTiers(),

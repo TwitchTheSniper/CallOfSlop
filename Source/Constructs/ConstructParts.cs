@@ -137,6 +137,13 @@ public enum RailDriveKind : byte
 }
 
 /// <summary>What a logic part does (milestone 2; docs/sandbox/CONSTRUCTS.md, "Logic").</summary>
+/// <summary>What a logic kind is, beyond its value.</summary>
+public static class CLogicKinds
+{
+    /// <summary>A readout: its output follows the construct's state (a gauge, an instrument, a display), and a change of it drives nothing by itself.</summary>
+    public static bool IsReadout(this CLogic l) => l is CLogic.FuelGauge or CLogic.ChargeGauge or CLogic.Instrument or CLogic.Display;
+}
+
 public enum CLogic : byte
 {
     None,
@@ -259,6 +266,7 @@ public enum SocketKind : byte
     Port, // only what a shaft port stands on (a suspension's Drive in, on its moving hub): nothing bolts here
     PressDie, // a press's die slot and a die's mount: only a die of its size class goes there (ConstructPress.cs)
     RunOut, // an Extruder's out bed and a Run-out Table's ends: only a Run-out Table of its size class goes there (ConstructExtruderGrowth.cs)
+    Module, // a Module Socket's face and a Module Plug's: only a plug of the plate's footprint goes there, at the turns it allows (ModuleSockets.cs)
 }
 
 /// <summary>
@@ -644,7 +652,7 @@ public sealed partial class ConstructPartDef
     public WorksKind WorksKind; // "worksPiece": {"kind"}: a mount, or the kind of works it is
     public float WorksServes; // "worksPiece": {"serves"}: what it carries, in its kind's unit (N of thrust, kW of beam, kg of ordnance)
     public string GunReceiver = "", GunAction = ""; // a gun on a weapon builder receiver (its action: the receiver's stock one unless named)
-    public float GunDamage, GunRpm, GunSpread, GunRange, GunReload, GunSpeed, GunBlast, GunBlastDamage, GunKick; // a heavy gun's own numbers
+    public float GunDamage, GunRpm, GunSpread, GunRange, GunReload, GunSpeed, GunBlast, GunBlastDamage, GunKick, GunPierce; // a heavy gun's own numbers (GunPierce: a bore's energy budget, ConstructBores.cs)
     public float GunMaxRange = 300f; // how far its rounds reach at all
     public int GunMag, GunPellets = 1;
     public string[] GunFlags = [];
@@ -842,6 +850,7 @@ public sealed partial class ConstructPartDef
     public bool CameraScreen => Array.Exists(Panels, x => x.Source == "camera");
     public float RemoteRange, CameraFov;
     public bool ShellBody; // a Robot Shell: a body a player wakes in from a Shell Control Chair (ConstructShell.cs)
+    public byte[]? ShellBoxSlots; // render: the slot each box belongs to, made on first use (ConstructGantry.BoxSlots: a module off on a gantry hides its boxes)
     public float ShellRange; // a Shell Control Chair: how far its shells may be, metres (0: not a chair)
     public ShellGantryDef? Gantry; // a Shell Gantry: its bay and arms (ConstructGantry.cs)
     public ShellPodDef? ShellPod; // a shell storage pod: its size class and lid (ConstructShellPod.cs)
@@ -858,7 +867,8 @@ public sealed partial class ConstructPartDef
 
     public MonitorKind Monitor; // a production monitor's source: its "Data out" link makes a display show it (ProductionLines.Monitors.cs)
     public bool HasOutput => Role == PartRole.Seat || IsExtruder || IsRouter || IsMedia || Monitor != MonitorKind.None || PlantShaft > 0 || (Role == PartRole.Logic && Logic is not (CLogic.Lamp or CLogic.Horn or CLogic.Brake or CLogic.GravityWell or CLogic.GravityGen or CLogic.Display or CLogic.Instrument or CLogic.RadioTx))
-                             || Role == PartRole.Hose && HoseCarry == HoseCarry.Data && HoseEnd == HoseEnd.Inlet; // (a data lead's inlet puts out what the lead carries)
+                             || Role == PartRole.Hose && HoseCarry == HoseCarry.Data && HoseEnd == HoseEnd.Inlet // (a data lead's inlet puts out what the lead carries)
+                             || ModData > 0; // (a module plate's or plug's Data k: a pass-through, ModuleSockets.PassWires; no value of its own)
 
     /// <summary>
     /// Named data ports (the spawners; GameSandboxSpawns.cs): the inputs a data link can end at and the outputs it can start
@@ -883,7 +893,7 @@ public sealed partial class ConstructPartDef
     public bool Settable => Configurable || TextSlots > 0; // the configure tool opens a panel on it (settings, or only its text)
 
     /// <summary>How many wires may come into it (0: it takes no input).</summary>
-    public int MaxInputs => IsSpeaker || Surface is { Control: > 0 } ? 1 : Role switch // (a speaker's one cable comes from what it repeats; a control surface's angle)
+    public int MaxInputs => IsSpeaker || Surface is { Control: > 0 } ? 1 : ModData > 0 ? ModData * ModuleSockets.DataWires : Role switch // (a speaker's one cable comes from what it repeats; a control surface's angle)
     {
         PartRole.Joint or PartRole.Hinge or PartRole.Engine or PartRole.Gun => 4,
         PartRole.Door => Door != null ? 3 : 0, // an event door: Open (high open, low shut), Toggle, Lock (ConstructDoors.cs)
@@ -919,7 +929,7 @@ public sealed partial class ConstructPartDef
 
     /// <summary>Is a signal part (its value travels to clients): an output, or a lamp, horn or brake.</summary>
     public bool ThrustHolds => ThrustGimbal <= 0 && ThrustKind is not (ThrustKind.Solid or ThrustKind.Repulsor); // (its second input is a height to hold)
-    public bool IsSignal => HasOutput || Role == PartRole.Logic;
+    public bool IsSignal => HasOutput && ModData == 0 || Role == PartRole.Logic; // (a module plate's data ports pass signals on and hold none)
     public override string ToString() => Name;
 }
 
@@ -1357,7 +1367,7 @@ public static partial class ConstructParts
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "finish", "friction", "collider",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "fluidTank", "seat", "hinge", "joint", "logic",
         "transmission", "battery", "capacitor", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "yield", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "retired", "hydraulics", "toolOnly", "tray", "walk", "boarding", "ladder", "toolDock", "damaged", "stage", "faces", "faceAxis", "router",
-        "sight", "ordnance", "mooring", "wear", "eva", "air", "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "dieExtension", "runOut", "enginePiece", "sizeClass", "generator", "thruster", "burner", "flame", "rotor", "surface", "smoke", "dock", "breach", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "shell", "office", "requisition", "container", "media", "speaker", "leg", "stabiliser", "door", "lifter", "craneRail", "lifterCab", "radar", "works", "worksPiece", "logiLink", "toolRack", "clampArm", "shellGantry", "shellPod",
+        "sight", "ordnance", "mooring", "wear", "eva", "air", "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "dieExtension", "runOut", "enginePiece", "sizeClass", "generator", "thruster", "burner", "flame", "rotor", "surface", "smoke", "dock", "breach", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "shell", "office", "requisition", "container", "media", "speaker", "leg", "stabiliser", "door", "lifter", "craneRail", "lifterCab", "radar", "works", "worksPiece", "logiLink", "toolRack", "clampArm", "shellGantry", "shellPod", "moduleSocket", "modulePlug",
     ];
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, a contoured shape with its settings (index 8 up to the last), and the glass flag (last).</summary>
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, and a contoured shape with its settings.</summary>
@@ -1970,6 +1980,7 @@ public static partial class ConstructParts
         ConstructShell.Parse(d, root, file); // (robot shells and their chairs: ConstructShell.cs)
         ConstructGantry.Parse(d, root, file); // (the Shell Gantry and its parts table: ConstructGantry.cs)
         ConstructShellPod.Parse(d, root, file); // (shell storage pods: ConstructShellPod.cs)
+        ModuleSockets.Parse(d, root, file); // (module sockets and plugs: ModuleSockets.cs)
         ToolRacks.Parse(d, root, file); // (a Tool Rack: hand tools a crew takes and returns, ToolRacks.cs)
         ConstructPanels.Parse(d, root, file); // (display panels: DisplayPanel.cs)
         ConstructMedia.Parse(d, root, file);
@@ -2222,11 +2233,13 @@ public static partial class ConstructParts
     /// </summary>
     private static void ParseGun(ConstructPartDef d, JsonElement b, string file, string bw)
     {
-        Known(b, ["shell", "thrust", "burn", "turn", "prox", "crater", "receiver", "action", "damage", "rpm", "spread", "range", "maxRange", "mag", "reload", "pellets", "speed", "flags", "blast", "blastDamage", "muzzle", "fx", "kick", "soundOf", "energy", "flak"], bw);
+        Known(b, ["shell", "thrust", "burn", "turn", "prox", "crater", "receiver", "action", "damage", "rpm", "spread", "range", "maxRange", "mag", "reload", "pellets", "speed", "flags", "blast", "blastDamage", "muzzle", "fx", "kick", "soundOf", "energy", "flak", "pierce"], bw);
         d.GunMaxRange = Opt(b, "maxRange") is { } mr ? Num(mr, file, "gun.maxRange") : 300f;
         Range(d.GunMaxRange, 1, 1000, file, "gun.maxRange");
         d.GunKick = Opt(b, "kick") is { } kick ? Num(kick, file, "gun.kick") : 0f;
         Range(d.GunKick, 0, 100000, file, "gun.kick");
+        d.GunPierce = Opt(b, "pierce") is { } pierce ? Num(pierce, file, "gun.pierce") : 0f; // (a penetrating round's energy budget: ConstructBores.cs)
+        Range(d.GunPierce, 0, 1000000, file, "gun.pierce");
         d.GunFx = GunFx.Bullet;
         if (Opt(b, "fx") is { } fx)
         {

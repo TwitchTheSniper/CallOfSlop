@@ -847,6 +847,7 @@ public static partial class ConstructRoutes
                     break;
             }
         }
+        ModuleSockets.PassThrough(c); // (a fitted module's plug passes on what reaches its plate's pipe ports: module-sockets.md 2.5)
     }
 
     /// <summary>Does an intact pipe carry fuel from a working tank to engine <paramref name="engine"/>?</summary>

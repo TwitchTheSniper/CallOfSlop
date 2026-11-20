@@ -7,8 +7,9 @@ namespace CallOfSlop.PartKit.Generators;
 /// The Laser Cutters: Constructs/Parts/LaserCutter (docs/sandbox/constructs/production.md, "The Laser Cutter"; design
 /// docs/sandbox/design/laser-cutter.md section 5). A flat slatted bed under a gantry: the blank comes in over the white end at the back,
 /// the head runs along the gantry with its lens glowing while it cuts, and the cut part leaves at the orange end. The offcut falls into a
-/// hopper on the right of the out end, emptied by chute from its Offcut port; the control face stands on the left, the aisle side. Two sizes,
-/// matching the two Panel Formers' panels, and no tiers. Born in the Machine look (look.md).
+/// hopper on the right of the out end, emptied by chute from its Offcut port; the control face stands on the left, the aisle side. Four sizes:
+/// the Small and Medium match the two Panel Formers' panels; the Large and Capital (Karl, 2026-11-20: a capital ship's plates, decks and
+/// bulkheads) take extruded plate up to 24 x 12 m and 64 x 32 m (HullLoft.CutPlateMaxCm). No tiers. Born in the Machine look (look.md).
 /// </summary>
 public sealed class LaserCutterParts : IPartGenerator
 {
@@ -25,6 +26,8 @@ public sealed class LaserCutterParts : IPartGenerator
     [
         new(Small, 1.1, 3.2, 0.8, 1.8, 2.5, 0.6, 2.4, 200, 2400, 480, 700),
         new(Medium, 2.7, 7.0, 0.9, 4.5, 6.0, 2.0, 9.6, 1200, 9600, 5600, 3800),
+        new(Large, 6.6, 26.0, 1.0, 12.0, 24.0, 2.0, 40, 6000, 40000, 40000, 20000), // (Karl, 2026-11-20: the capital ship's walls and decks)
+        new(Capital, 17.0, 67.0, 1.2, 32.0, 64.0, 2.0, 160, 40000, 160000, 400000, 120000), // (its hull plates: the Capital Extruder's widest plate)
     ];
 
     private static List<object?> Buttons() => Py.L(

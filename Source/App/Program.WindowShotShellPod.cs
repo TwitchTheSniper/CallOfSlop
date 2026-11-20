@@ -5,8 +5,8 @@ namespace CallOfSlop;
 /// <summary>
 /// The window tool's shell pod verbs (ConstructShellPod.cs; docs/sandbox/design/shell-pod.md): "shellpod setup" (host) puts four pods in a
 /// row ahead (1 a Small pod bolted on the floor, 2 a Medium flush in the floor, 3 a Small bolted under a ceiling, 4 a Medium flush in a
-/// ceiling: those two hang frozen in the air, their faces down; 5 and 6 Medium pods bolted on the floor, with bins), a Robot Shell (channel 1) and a Mining Shell (channel 2) to the left
-/// and two Shell Control Chairs (channels 1 and 2) to the right; "shellpod go N [PLAYER]" (host, a test state) stands a player in pod
+/// ceiling: those two hang frozen in the air, their faces down; 5 and 6 Medium pods bolted on the floor, with bins; 7 a Tiny pod bolted on the floor), a Robot Shell (channel 1), a Mining Shell (channel 2)
+/// and a Half Shell (channel 3) to the left, two Shell Control Chairs (channels 1 and 2) to the right and channel 3's behind the Half Shell; "shellpod go N [PLAYER]" (host, a test state) stands a player in pod
 /// N's frame; "shellpod remove N" (host) removes pod N's body; "shellpod dock" presses the button of the pod this player stands in (the use key's own message); "shellpod state" says
 /// what this peer sees.
 /// </summary>
@@ -41,7 +41,7 @@ public static partial class Program
                 var down = Quaternion.Concatenate(Quaternion.CreateFromAxisAngle(Vector3.UnitX, MathF.PI), up);
                 (string Name, float Ahead, bool Ceiling, float Height)[] pods =
                     [("Small Shell Pod", 5, false, 0), ("Medium Flush Shell Pod", 10, false, 0), ("Small Shell Pod", 15, true, 2.95f), ("Medium Flush Shell Pod", 20, true, 2.8f),
-                     ("Medium Shell Pod", 25, false, 0), ("Medium Shell Pod", 30, false, 0)];
+                     ("Medium Shell Pod", 25, false, 0), ("Medium Shell Pod", 30, false, 0), ("Tiny Shell Pod", 35, false, 0)];
                 foreach (var (name, ahead, ceiling, height) in pods)
                 {
                     if (ConstructParts.Find(name) is not { } pd)
@@ -56,15 +56,15 @@ public static partial class Program
                         _wsPods.Add(c.Id);
                 }
                 var made = new List<string>();
-                foreach (var (name, ch, left) in new[] { ("Robot Shell", 1, 3f), ("Mining Shell", 2, 6f) })
+                foreach (var (name, ch, left) in new[] { ("Robot Shell", 1, 3f), ("Mining Shell", 2, 6f), ("Half Shell", 3, 4.4f) })
                     if (ConstructParts.Find(name) is { } sd && ConstructBuild.PlaceNew(w, sd, Ground(me.Position - side * left + fwd * 2), yaw) is { } sc)
                     {
                         ConstructConfig.Put(ref sc.Parts[0], sd, CfgKey.Channel, ch);
                         Fix(sc);
                         made.Add($"{name} {sc.Id} ch {ch}");
                     }
-                foreach (var (ch, right) in new[] { (1, 3f), (2, 5f) })
-                    if (ConstructParts.Find("Shell Control Chair") is { } cd && ConstructBuild.PlaceNew(w, cd, Ground(me.Position + side * right), me.Yaw) is { } cc)
+                foreach (var (ch, right, ahead) in new[] { (1, 3f, 0f), (2, 5f, 0f), (3, -4.4f, 4.2f) }) // (channel 3's behind the Half Shell: its sitter beside the shells it wears)
+                    if (ConstructParts.Find("Shell Control Chair") is { } cd && ConstructBuild.PlaceNew(w, cd, Ground(me.Position + side * right + fwd * ahead), me.Yaw) is { } cc)
                     {
                         ConstructConfig.Put(ref cc.Parts[0], cd, CfgKey.Channel, ch);
                         Fix(cc);

@@ -463,8 +463,26 @@ public static class ConstructFluid
             else
                 continue;
             var other = a == tank ? b : b == tank ? a : -1;
-            if (other >= 0 && other < c.PartCount && (Burns(c, other) || c.DefOf(other).Role == PartRole.FuelLine))
+            if (other >= 0 && other < c.PartCount && (Burns(c, other) || c.DefOf(other).Role == PartRole.FuelLine || c.DefOf(other).ModPart == ModPart.Socket && PlateFeeds(c, other)))
                 return true;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// A plate on the tank with a fitted plug on which an engine stands: the module's coupling carries the tank's touch, as
+    /// Construct.FuelReaches walks engine, plug, plate, tank (module-sockets.md 11), so the tank is in the fuel pool that engine burns.
+    /// </summary>
+    private static bool PlateFeeds(Construct c, int plate)
+    {
+        for (var e = c.FirstLink(plate); e >= 0; e = c.NextLink(e))
+        {
+            var plug = c.OtherEnd(e);
+            if (c.DefOf(plug).ModPart != ModPart.Plug || ModuleSockets.PlateOf(c, plug) != plate)
+                continue;
+            for (var f = c.FirstLink(plug); f >= 0; f = c.NextLink(f))
+                if (c.OtherEnd(f) is var o and >= 0 && o != plate && Burns(c, o))
+                    return true;
         }
         return false;
     }

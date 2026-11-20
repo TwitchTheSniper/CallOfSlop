@@ -73,12 +73,17 @@ public static partial class ConstructPreview
             Console.WriteLine($"REFUSED {what}: {ex.Message}");
             return null;
         }
-        var c = ConstructBuild.BuildOnGround(new ConstructWorld(), bp, Vector3.Zero, 0, out var why);
+        var world = new ConstructWorld();
+        var c = ConstructBuild.BuildOnGround(world, bp, Vector3.Zero, 0, out var why);
         if (c == null)
         {
             Console.WriteLine($"REFUSED {bp.Name}: it doesn't build: {why}");
             return null;
         }
+        foreach (var (name, at, turn) in GalleryAboard(bp.Name))
+            if (ConstructBuild.FindBlueprint(name) is not { } sub || ConstructBuild.Build(world, sub, c.ToWorld(at), Quaternion.Normalize(c.Rot * Rot24.Quat(turn)), out _) is null)
+                Console.WriteLine($"preview {bp.Name}: the {name} the gallery shows aboard doesn't build");
+        var aboard = world.Bodies.Where(b => b != c && b.PartCount > 0).Select(b => (b, CraftName(b))).ToList(); // (what it carries, its cargo, anything it tows)
         parts = c.PartCount;
         var counts = new Dictionary<string, int>(StringComparer.Ordinal);
         for (var i = 0; i < c.PartCount; i++)
@@ -90,7 +95,22 @@ public static partial class ConstructPreview
                 uses.Add((n, 0));
         }
         uses = uses.Select(u => (u.Name, counts[u.Name])).ToList();
-        return Model(c, bp);
+        return Model(c, bp, aboard);
+    }
+
+    /// <summary>
+    /// Craft the gallery shows aboard a ship beyond what the game builds it carrying (by the ship's blueprint name): each one's blueprint,
+    /// place (the ship's body metres) and turn. The Mainframe's berth: a craft it carries can't yet carry its own Shuttle and Limpet, so the
+    /// game builds the berth empty, and the gallery shows the Zero Day in it with its own craft aboard.
+    /// </summary>
+    private static IEnumerable<(string Blueprint, Vector3 At, byte Turn)> GalleryAboard(string ship) =>
+        ship == PartKit.Generators.MainframeParts.ShipName ? [PartKit.Generators.MainframeParts.GalleryBerthed] : [];
+
+    /// <summary>A body's name in the model's parts list: the shipped blueprint it was built from (by its first part), else that part.</summary>
+    private static string CraftName(Construct b)
+    {
+        var first = b.DefOf(0).Name;
+        return ConstructBuild.Blueprints.Where(x => x.Steps.Count > 0 && x.Steps[0].Part == first).Select(x => x.Name).OrderBy(n => n.Length).FirstOrDefault() ?? first;
     }
 
     /// <summary>
@@ -143,7 +163,7 @@ public static partial class ConstructPreview
 
         void Part(string name)
         {
-            if (parts.ContainsKey(name) || Write(name, out var bp, out _, out _) is not { } json)
+            if (Runtime(name) || parts.ContainsKey(name) || Write(name, out var bp, out _, out _) is not { } json)
                 return;
             parts[name] = new { id = Slug(bp.Name), name = bp.Name, file = "models/" + Slug(bp.Name) + ".json", section = ConstructParts.Find(bp.Name)?.Section ?? "", tris = _tris, kb = json.Length / 1024 };
         }
@@ -152,7 +172,7 @@ public static partial class ConstructPreview
         {
             if (Write(name, out var bp, out var count, out var uses) is not { } json)
                 continue;
-            ships.Add(new { id = Slug(bp.Name), name = bp.Name, file = "models/" + Slug(bp.Name) + ".json", parts = count, tris = _tris, kb = json.Length / 1024, uses = uses.Select(u => new object[] { Slug(u.Name), u.Count }).ToArray() });
+            ships.Add(new { id = Slug(bp.Name), name = bp.Name, file = "models/" + Slug(bp.Name) + ".json", parts = count, tris = _tris, kb = json.Length / 1024, uses = uses.Where(u => !Runtime(u.Name)).Select(u => new object[] { Slug(u.Name), u.Count }).ToArray() });
             foreach (var (part, _) in uses)
                 Part(part);
         }
@@ -185,6 +205,10 @@ public static partial class ConstructPreview
         return failed;
     }
 
+    /// <summary>A piece a machine makes at run time (an extruded plate, a cut plate, a pressed piece): its ship's model shows it, but it gets
+    /// no model of its own (the Mainframe's hull is thousands of them).</summary>
+    private static bool Runtime(string name) => name.StartsWith(Extrusion.Prefix, StringComparison.Ordinal) || HullLoft.IsCutName(name) || name.StartsWith(HullLoft.Prefix, StringComparison.Ordinal);
+
     /// <summary>A model's file and page name: lower-case ASCII letters, digits and hyphens (an Artifact's #name).</summary>
     private static string Slug(string s) => string.Join('-', new string(s.ToLowerInvariant().Select(ch => ch is >= 'a' and <= 'z' or >= '0' and <= '9' ? ch : ' ').ToArray()).Split(' ', StringSplitOptions.RemoveEmptyEntries));
 
@@ -213,8 +237,9 @@ public static partial class ConstructPreview
         if (levels.Count == 0)
             return [];
         var most = levels.Max(l => l.Area);
+        var roofed = most > CapitalFloor ? 0.1f : 0.3f; // (a capital ship's decks are mostly open bays and halls, roofed far over)
         var keep = new List<(float Y, float Area, string Part)>();
-        foreach (var l in levels.Where(l => l.Area >= MathF.Max(6f, most * 0.1f) && levels.Where(o => o.Y >= l.Y + 1.9f && o.Y <= l.Y + 4.5f).Sum(o => o.Area) >= l.Area * 0.3f).OrderBy(l => l.Y))
+        foreach (var l in levels.Where(l => l.Area >= MathF.Max(6f, most * 0.1f) && levels.Where(o => o.Y >= l.Y + 1.9f && o.Y <= l.Y + 4.5f).Sum(o => o.Area) >= l.Area * roofed).OrderBy(l => l.Y))
         {
             if (keep.Count > 0 && l.Y - keep[^1].Y < 2f)
             {
@@ -226,8 +251,11 @@ public static partial class ConstructPreview
         }
         if (keep.Count < 2)
             return [];
-        return keep.Select((l, i) => ($"{i + 1}: {l.Part}", l.Y)).ToList();
+        return keep.Select((l, i) => ($"{i + 1}: {(Runtime(l.Part) ? $"floor at {l.Y:0.#} m" : l.Part)}", l.Y)).ToList();
     }
+
+    /// <summary>Square metres of floor on one level past which a model is a capital ship's (two hectares: the Zero Day has a few hundred).</summary>
+    private const float CapitalFloor = 20_000;
 
     // The renderer's unit cube (shape 0): 12 triangles, corners at +-0.5, outward faces wound anticlockwise.
     private static readonly (Vector3 N, Vector3 A, Vector3 B)[] CubeFaces =
@@ -239,9 +267,11 @@ public static partial class ConstructPreview
 
     /// <summary>
     /// The model as JSON: looks (colour, glass, glow, finish), parts (name, first triangle, count) and three base64 arrays:
-    /// positions as int16 (metres times <c>scale</c>), normals as int8 and one look index per triangle as uint16.
+    /// positions as int16 (metres times <c>scale</c>), normals as int8 and one look index per triangle as uint16. The craft
+    /// <paramref name="aboard"/> (what the ship is built carrying, and any the gallery adds) are drawn in the ship's frame, their
+    /// parts named "Craft: Part". Over <see cref="InstanceAbove"/> triangles the model is written instanced (<see cref="Instanced"/>).
     /// </summary>
-    private static string Model(Construct c, ConstructBuild.Blueprint bp)
+    private static string Model(Construct c, ConstructBuild.Blueprint bp, IReadOnlyList<(Construct Body, string Craft)>? aboard = null)
     {
         var pos = new List<Vector3>();
         var nrm = new List<Vector3>();
@@ -250,6 +280,11 @@ public static partial class ConstructPreview
         var lookIndex = new Dictionary<(string, float, bool, string), ushort>();
         var parts = new StringBuilder();
         var floors = new List<(float Y, float Area, int Part)>();
+        // Each part's place into the model's frame and its triangles' kind, for the instanced form: a kind is a part with its paint and
+        // finish (its triangles in its own frame), or -1 for a part drawn from its own triangles (a walled volume, a moving track).
+        var kinds = new Dictionary<(string, uint, byte), int>();
+        var kindTris = new List<(List<Vector3> P, List<Vector3> N, List<ushort> L)>();
+        var placed = new List<(int Kind, Quaternion Q, Vector3 T, int First, int Count)>();
         _tris = _skipped = 0;
         for (var i = 0; i < c.PartCount; i++)
         {
@@ -273,90 +308,12 @@ public static partial class ConstructPreview
                     floors.Add((bhi.Y, (bhi.X - blo.X) * (bhi.Z - blo.Z), i));
             }
             _partFrames?.Add(Matrix4x4.CreateFromQuaternion(Rot24.Quat(p.Rot)) * Matrix4x4.CreateTranslation(p.Pos) * Matrix4x4.CreateFromQuaternion(q) * Matrix4x4.CreateTranslation(t));
-            for (var boxIndex = 0; boxIndex < d.Boxes.Length; boxIndex++)
-            {
-                var b = d.Boxes[boxIndex];
-                var track = _trackOf?.Invoke(i, boxIndex) ?? (byte)0;
-                if (b.Hidden)
-                {
-                    _skipped++;
-                    continue;
-                }
-                var centre = t + Vector3.Transform(p.Pos + Rot24.Apply(p.Rot, b.Center), q);
-                var m = b.Model(p.Rot, Vector3.Zero) * Matrix4x4.CreateFromQuaternion(q) * Matrix4x4.CreateTranslation(centre);
-                var row = Surfaces.Row(ConstructFinish.BoxRow(in b, p.Paint, p.Finish));
-                var colour = ConstructPaint.BoxColour(p.Paint, in b);
-                var hex = $"#{(int)(Math.Clamp(colour.X, 0, 1) * 255):x2}{(int)(Math.Clamp(colour.Y, 0, 1) * 255):x2}{(int)(Math.Clamp(colour.Z, 0, 1) * 255):x2}";
-                var key = (hex, b.Glass, b.Glow, row.Name);
-                if (!lookIndex.TryGetValue(key, out var look))
-                {
-                    look = (ushort)looks.Count;
-                    lookIndex[key] = look;
-                    looks.Add((hex, b.Glass, b.Glow, row.Name, row.Metal, row.Rough));
-                }
-                if (b.Shape == 0)
-                {
-                    foreach (var (n, a, bb) in CubeFaces)
-                    {
-                        // (the box's corners aren't turned by the part's Rot24, only its extents are (Model's ApplyHalf), so the face made
-                        // from n is on n's side in the construct's frame and faces n: turning n by the part's rotation too pointed every x and
-                        // z face of a turned part inward or sideways, which drew dark wherever a piece swung one of them up)
-                        var wn = Vector3.Normalize(Vector3.Transform(n, q));
-                        Vector3 Corner(float u, float v) => Vector3.Transform(n * 0.5f + a * u + bb * v, m);
-                        var c00 = Corner(-0.5f, -0.5f);
-                        var c10 = Corner(0.5f, -0.5f);
-                        var c11 = Corner(0.5f, 0.5f);
-                        var c01 = Corner(-0.5f, 0.5f);
-                        Tri(c00, c10, c11, wn, wn, wn);
-                        Tri(c00, c11, c01, wn, wn, wn);
-                    }
-                }
-                else
-                {
-                    var mesh = PartShapes.Mesh(b.Shape);
-                    for (var k = 0; k + 3 * PartShapes.FloatsPerVertex <= mesh.Length; k += 3 * PartShapes.FloatsPerVertex)
-                    {
-                        Vector3 V(int o) => Vector3.Transform(new Vector3(mesh[k + o], mesh[k + o + 1], mesh[k + o + 2]), m);
-                        Vector3 N(int o)
-                        {
-                            var n = Vector3.TransformNormal(new Vector3(mesh[k + o + 3], mesh[k + o + 4], mesh[k + o + 5]), m);
-                            return n.LengthSquared() > 1e-12f ? Vector3.Normalize(n) : Vector3.UnitY;
-                        }
-                        const int S = PartShapes.FloatsPerVertex;
-                        Tri(V(0), V(S), V(2 * S), N(0), N(S), N(2 * S));
-                    }
-                }
-
-                void Tri(Vector3 a0, Vector3 a1, Vector3 a2, Vector3 n0, Vector3 n1, Vector3 n2)
-                {
-                    // (wound to face its normals: the page draws both sides and turns a back face's normal round, and three quarters of a
-                    // shape mesh's triangles came wound the other way, so a cylinder drew dark on its lit side)
-                    if (Vector3.Dot(Vector3.Cross(a1 - a0, a2 - a0), n0 + n1 + n2) < 0)
-                    {
-                        (a1, a2) = (a2, a1);
-                        (n1, n2) = (n2, n1);
-                    }
-                    pos.Add(a0);
-                    pos.Add(a1);
-                    pos.Add(a2);
-                    nrm.Add(n0);
-                    nrm.Add(n1);
-                    nrm.Add(n2);
-                    triLook.Add(look);
-                    _triTrack?.Add(track);
-                }
-            }
-            if (ConstructStoreVolume.Walled(p, d))
+            var moving = Boxes(d, i, p.Rot, p.Paint, p.Finish, p.Pos, q, t, pos, nrm, triLook, count: true);
+            var walled = ConstructStoreVolume.Walled(p, d);
+            if (walled)
             {
                 // A walled Storage Volume's floor and walls (made from its box, not its file: the game draws them in ConstructRenderCargo).
-                const string wallHex = "#8c8a80";
-                var wkey = (wallHex, 0f, false, "");
-                if (!lookIndex.TryGetValue(wkey, out var wlook))
-                {
-                    wlook = (ushort)looks.Count;
-                    lookIndex[wkey] = wlook;
-                    looks.Add((wallHex, 0f, false, "", 0f, 0.9f));
-                }
+                var wlook = Look("#8c8a80", 0f, false, "", 0f, 0.9f);
                 for (var k = 0; k < ConstructStoreVolume.WallBoxes; k++)
                 {
                     ConstructStoreVolume.WallBox(c, i, k, out var wc, out var wh);
@@ -384,6 +341,35 @@ public static partial class ConstructPreview
             if (parts.Length > 0)
                 parts.Append(',');
             parts.Append(JsonSerializer.Serialize(new object[] { d.Name, first, triLook.Count - first }));
+            placed.Add((walled || moving ? -1 : KindOf(d, p.Paint, p.Finish), Quaternion.Normalize(Quaternion.Concatenate(Rot24.Quat(p.Rot), q)), Vector3.Transform(p.Pos, q) + t, first, triLook.Count - first));
+        }
+        // The craft aboard, each part as its kind placed in the ship's frame (body to world to the ship's body).
+        foreach (var (b, craft) in aboard ?? [])
+        {
+            var toShip = Quaternion.Conjugate(c.Rot);
+            var xr = Quaternion.Normalize(Quaternion.Concatenate(b.Rot, toShip));
+            var xt = Vector3.Transform(b.Pos - c.Pos, toShip);
+            for (var i = 0; i < b.PartCount; i++)
+            {
+                var p = b.Parts[i];
+                var d = b.DefOf(i);
+                b.RestPose(p.Seg, out var q, out var t);
+                var rq = Quaternion.Normalize(Quaternion.Concatenate(Quaternion.Concatenate(Rot24.Quat(p.Rot), q), xr));
+                var rt = Vector3.Transform(Vector3.Transform(p.Pos, q) + t, xr) + xt;
+                var kind = KindOf(d, p.Paint, p.Finish);
+                var (kp, kn, kl) = kindTris[kind];
+                var first = triLook.Count;
+                for (var v = 0; v < kp.Count; v++)
+                {
+                    pos.Add(Vector3.Transform(kp[v], rq) + rt);
+                    nrm.Add(Vector3.Transform(kn[v], rq));
+                }
+                triLook.AddRange(kl);
+                for (var k = 0; k < kl.Count; k++)
+                    _triTrack?.Add(0);
+                parts.Append(parts.Length > 0 ? "," : "").Append(JsonSerializer.Serialize(new object[] { craft + ": " + d.Name, first, kl.Count }));
+                placed.Add((kind, rq, rt, first, kl.Count));
+            }
         }
         _tris = triLook.Count;
         _last = (pos, nrm, triLook, looks.Select(l => (l.Hex, l.Glass, l.Glow)).ToList()); // (for --preview-shot)
@@ -406,9 +392,207 @@ public static partial class ConstructPreview
             }
             linksSb.Append(']');
         }
-        return Encode(bp.Name, bp.Description, bp.Steps.Count, c.Mass, pos, nrm, triLook, looks, parts.ToString(), decksSb.ToString(), linksSb.ToString(), Cost(c, triLook.Count) + _animWrite?.Invoke());
+        var extra = Cost(c, triLook.Count) + _animWrite?.Invoke();
+        if (triLook.Count > InstanceAbove && _triTrack == null)
+            return Instanced(bp.Name, bp.Description, bp.Steps.Count, c.Mass, pos, looks, parts.ToString(), decksSb.ToString(), linksSb.ToString(), extra, kindTris, placed, nrm, triLook);
+        return Encode(bp.Name, bp.Description, bp.Steps.Count, c.Mass, pos, nrm, triLook, looks, parts.ToString(), decksSb.ToString(), linksSb.ToString(), extra);
+
+        ushort Look(string hex, float glass, bool glow, string finish, float metal, float rough)
+        {
+            var key = (hex, glass, glow, finish);
+            if (!lookIndex.TryGetValue(key, out var look))
+            {
+                look = (ushort)looks.Count;
+                lookIndex[key] = look;
+                looks.Add((hex, glass, glow, finish, metal, rough));
+            }
+            return look;
+        }
+
+        // A kind of part's triangles in its own frame (unturned, at its origin), made once.
+        int KindOf(ConstructPartDef d, uint paint, byte finish)
+        {
+            if (kinds.TryGetValue((d.Name, paint, finish), out var k))
+                return k;
+            var kind = (P: new List<Vector3>(), N: new List<Vector3>(), L: new List<ushort>());
+            Boxes(d, -1, 0, paint, finish, Vector3.Zero, Quaternion.Identity, Vector3.Zero, kind.P, kind.N, kind.L, count: false);
+            kinds[(d.Name, paint, finish)] = kindTris.Count;
+            kindTris.Add(kind);
+            return kindTris.Count - 1;
+        }
+
+        // A part's drawn boxes into the lists (part i of the ship, or -1 for a kind's own triangles); whether any box is on a moving track.
+        bool Boxes(ConstructPartDef d, int i, byte rot, uint paint, byte finish, Vector3 ppos, Quaternion q, Vector3 t, List<Vector3> P, List<Vector3> N, List<ushort> L, bool count)
+        {
+            var anyTrack = false;
+            for (var boxIndex = 0; boxIndex < d.Boxes.Length; boxIndex++)
+            {
+                var b = d.Boxes[boxIndex];
+                var track = i >= 0 ? _trackOf?.Invoke(i, boxIndex) ?? (byte)0 : (byte)0;
+                anyTrack |= track != 0;
+                if (b.Hidden)
+                {
+                    if (count)
+                        _skipped++;
+                    continue;
+                }
+                var centre = t + Vector3.Transform(ppos + Rot24.Apply(rot, b.Center), q);
+                var m = b.Model(rot, Vector3.Zero) * Matrix4x4.CreateFromQuaternion(q) * Matrix4x4.CreateTranslation(centre);
+                var row = Surfaces.Row(ConstructFinish.BoxRow(in b, paint, finish));
+                var colour = ConstructPaint.BoxColour(paint, in b);
+                var hex = $"#{(int)(Math.Clamp(colour.X, 0, 1) * 255):x2}{(int)(Math.Clamp(colour.Y, 0, 1) * 255):x2}{(int)(Math.Clamp(colour.Z, 0, 1) * 255):x2}";
+                var look = Look(hex, b.Glass, b.Glow, row.Name, row.Metal, row.Rough);
+                if (b.Shape == 0)
+                {
+                    foreach (var (n, a, bb) in CubeFaces)
+                    {
+                        // (the box's corners aren't turned by the part's Rot24, only its extents are (Model's ApplyHalf), so the face made
+                        // from n is on n's side in the construct's frame and faces n: turning n by the part's rotation too pointed every x and
+                        // z face of a turned part inward or sideways, which drew dark wherever a piece swung one of them up)
+                        var wn = Vector3.Normalize(Vector3.Transform(n, q));
+                        Vector3 Corner(float u, float v) => Vector3.Transform(n * 0.5f + a * u + bb * v, m);
+                        var c00 = Corner(-0.5f, -0.5f);
+                        var c10 = Corner(0.5f, -0.5f);
+                        var c11 = Corner(0.5f, 0.5f);
+                        var c01 = Corner(-0.5f, 0.5f);
+                        Tri(c00, c10, c11, wn, wn, wn);
+                        Tri(c00, c11, c01, wn, wn, wn);
+                    }
+                }
+                else
+                {
+                    var mesh = PartShapes.Mesh(b.Shape);
+                    for (var k = 0; k + 3 * PartShapes.FloatsPerVertex <= mesh.Length; k += 3 * PartShapes.FloatsPerVertex)
+                    {
+                        Vector3 V(int o) => Vector3.Transform(new Vector3(mesh[k + o], mesh[k + o + 1], mesh[k + o + 2]), m);
+                        Vector3 Nm(int o)
+                        {
+                            var n = Vector3.TransformNormal(new Vector3(mesh[k + o + 3], mesh[k + o + 4], mesh[k + o + 5]), m);
+                            return n.LengthSquared() > 1e-12f ? Vector3.Normalize(n) : Vector3.UnitY;
+                        }
+                        const int S = PartShapes.FloatsPerVertex;
+                        Tri(V(0), V(S), V(2 * S), Nm(0), Nm(S), Nm(2 * S));
+                    }
+                }
+
+                void Tri(Vector3 a0, Vector3 a1, Vector3 a2, Vector3 n0, Vector3 n1, Vector3 n2)
+                {
+                    // (wound to face its normals: the page draws both sides and turns a back face's normal round, and three quarters of a
+                    // shape mesh's triangles came wound the other way, so a cylinder drew dark on its lit side)
+                    if (Vector3.Dot(Vector3.Cross(a1 - a0, a2 - a0), n0 + n1 + n2) < 0)
+                    {
+                        (a1, a2) = (a2, a1);
+                        (n1, n2) = (n2, n1);
+                    }
+                    P.Add(a0);
+                    P.Add(a1);
+                    P.Add(a2);
+                    N.Add(n0);
+                    N.Add(n1);
+                    N.Add(n2);
+                    L.Add(look);
+                    if (count)
+                        _triTrack?.Add(track);
+                }
+            }
+            return anyTrack;
+        }
 
         static string F3(float f) => f.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture);
+    }
+
+    /// <summary>A model over this many triangles is written instanced: every ship but a capital one is far under it (the Zero Day about 100,000).</summary>
+    private const int InstanceAbove = 300_000;
+
+    /// <summary>
+    /// The model's JSON instanced, for a capital ship whose whole triangles would pass a page's size: <c>"tpl"</c> holds each kind of
+    /// part's triangles once in its own frame (int16 positions over its own <c>scale</c>, int8 normals, uint16 looks), <c>"inst"</c>
+    /// each part as a kind placed (30 bytes: uint16 kind, float32 x, y, z, float32 quaternion x, y, z, w), in the parts' order; the viewer
+    /// expands them into the same arrays the packed form gives. A part drawn from its own triangles (a walled volume) is a kind of its
+    /// own, placed where it is.
+    /// </summary>
+    private static string Instanced(string name, string description, int steps, float mass, List<Vector3> pos, List<(string Hex, float Glass, bool Glow, string Finish, float Metal, float Rough)> looks,
+        string parts, string decksJson, string linksJson, string? extra, List<(List<Vector3> P, List<Vector3> N, List<ushort> L)> kinds, List<(int Kind, Quaternion Q, Vector3 T, int First, int Count)> placed,
+        List<Vector3> nrm, List<ushort> triLook)
+    {
+        var lo = new Vector3(float.MaxValue);
+        var hi = new Vector3(float.MinValue);
+        foreach (var v in pos)
+        {
+            lo = Vector3.Min(lo, v);
+            hi = Vector3.Max(hi, v);
+        }
+        if (pos.Count == 0)
+            lo = hi = Vector3.Zero;
+        var all = new List<(List<Vector3> P, List<Vector3> N, List<ushort> L)>(kinds);
+        var inst = new byte[placed.Count * 30];
+        for (var k = 0; k < placed.Count; k++)
+        {
+            var (kind, q, t, first, count) = placed[k];
+            if (kind < 0) // (its own triangles, as drawn: a kind of its own at the model's origin)
+            {
+                kind = all.Count;
+                all.Add((pos.GetRange(first * 3, count * 3), nrm.GetRange(first * 3, count * 3), triLook.GetRange(first, count)));
+                (q, t) = (Quaternion.Identity, Vector3.Zero);
+            }
+            var span = inst.AsSpan(k * 30);
+            BitConverter.TryWriteBytes(span, (ushort)kind);
+            BitConverter.TryWriteBytes(span[2..], t.X);
+            BitConverter.TryWriteBytes(span[6..], t.Y);
+            BitConverter.TryWriteBytes(span[10..], t.Z);
+            BitConverter.TryWriteBytes(span[14..], q.X);
+            BitConverter.TryWriteBytes(span[18..], q.Y);
+            BitConverter.TryWriteBytes(span[22..], q.Z);
+            BitConverter.TryWriteBytes(span[26..], q.W);
+        }
+        var sb = new StringBuilder();
+        sb.Append("{\"format\":\"call-of-slop-preview/1\",\"name\":").Append(JsonSerializer.Serialize(name));
+        sb.Append(",\"description\":").Append(JsonSerializer.Serialize(description));
+        sb.Append(",\"steps\":").Append(steps).Append(",\"mass\":").Append(MathF.Round(mass));
+        sb.Append(",\"min\":[").Append(F(lo.X)).Append(',').Append(F(lo.Y)).Append(',').Append(F(lo.Z)).Append(']');
+        sb.Append(",\"max\":[").Append(F(hi.X)).Append(',').Append(F(hi.Y)).Append(',').Append(F(hi.Z)).Append(']');
+        sb.Append(",\"scale\":1,\"decks\":[").Append(decksJson).Append(']');
+        sb.Append(",\"looks\":[");
+        for (var i = 0; i < looks.Count; i++)
+        {
+            var l = looks[i];
+            sb.Append(i > 0 ? "," : "").Append(JsonSerializer.Serialize(new object[] { l.Hex, l.Glass, l.Glow ? 1 : 0, l.Finish, l.Metal, l.Rough }));
+        }
+        sb.Append("],\"parts\":[").Append(parts).Append(']');
+        sb.Append(",\"links\":[").Append(linksJson).Append(']');
+        sb.Append(",\"tpl\":[");
+        for (var k = 0; k < all.Count; k++)
+        {
+            var (p, n, l) = all[k];
+            var reach = 0f;
+            foreach (var v in p)
+                reach = MathF.Max(reach, MathF.Max(MathF.Abs(v.X), MathF.Max(MathF.Abs(v.Y), MathF.Abs(v.Z))));
+            var scale = reach > 0 ? MathF.Min(1000f, 32000f / reach) : 1000f;
+            var pb = new byte[p.Count * 6];
+            var nb = new byte[n.Count * 3];
+            for (var i = 0; i < p.Count; i++)
+                for (var a = 0; a < 3; a++)
+                {
+                    var s = (short)Math.Clamp(MathF.Round(p[i][a] * scale), short.MinValue, short.MaxValue);
+                    pb[i * 6 + a * 2] = (byte)s;
+                    pb[i * 6 + a * 2 + 1] = (byte)(s >> 8);
+                    nb[i * 3 + a] = (byte)(sbyte)Math.Clamp(MathF.Round(n[i][a] * 127f), -127, 127);
+                }
+            var lb = new byte[l.Count * 2];
+            for (var i = 0; i < l.Count; i++)
+            {
+                lb[i * 2] = (byte)l[i];
+                lb[i * 2 + 1] = (byte)(l[i] >> 8);
+            }
+            sb.Append(k > 0 ? "," : "").Append("{\"scale\":").Append(F(scale)).Append(",\"pos\":\"").Append(Convert.ToBase64String(pb)).Append("\",\"nrm\":\"").Append(Convert.ToBase64String(nb)).Append("\",\"look\":\"").Append(Convert.ToBase64String(lb)).Append("\"}");
+        }
+        sb.Append("],\"inst\":\"").Append(Convert.ToBase64String(inst)).Append('"');
+        if (extra != null)
+            sb.Append(extra);
+        sb.Append('}');
+        return sb.ToString();
+
+        static string F(float f) => f.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture);
     }
 
     /// <summary>

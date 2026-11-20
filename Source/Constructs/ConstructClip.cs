@@ -256,6 +256,24 @@ public sealed partial class ConstructClip
         return null;
     }
 
+    /// <summary>
+    /// Why the clip's flush shell pods can't go where it lands on <paramref name="target"/>, or null: a pod's body past the surface
+    /// it sinks into must be clear, as placing one by hand asks (ConstructShellPod.BodyRefusal; with the pasted parts not yet there).
+    /// </summary>
+    public string? PodRefusal(Construct target, byte turn, Vector3 offset)
+    {
+        for (var i = 0; i < Body.PartCount; i++)
+        {
+            var d = Body.DefOf(i);
+            ref var p = ref Body.Parts[i];
+            if (d.ShellPod is not { Flush: true } || p.Seg != 0)
+                continue;
+            if (ConstructShellPod.BodyRefusal(target, d, offset + Rot24.Apply(turn, p.Pos), Rot24.Compose(turn, p.Rot), 0) is { } why)
+                return why;
+        }
+        return null;
+    }
+
     /// <summary>Does any part land in one of <paramref name="target"/>'s (its body frame's parts, a centimetre of slack, skipping marked parts)? <paramref name="from"/>: the clip part to look at next; stops after <paramref name="count"/>.</summary>
     public bool Overlaps(Construct target, byte turn, Vector3 offset, bool[]? skip = null, int from = 0, int count = int.MaxValue)
     {
@@ -266,7 +284,7 @@ public sealed partial class ConstructClip
             ref var p = ref Body.Parts[i];
             var pos = offset + Rot24.Apply(turn, p.Pos);
             var rot = Rot24.Compose(turn, p.Rot);
-            for (var b = 0; b < d.SolidBoxes; b++)
+            for (var b = 0; b < ConstructBuild.PlaceSolids(d); b++) // (a flush pod: its lid)
             {
                 var bc = pos + Rot24.Apply(rot, d.Boxes[b].Center);
                 var bh = Rot24.ApplyHalf(rot, d.Boxes[b].Half) - new Vector3(0.01f);
@@ -335,6 +353,8 @@ public sealed partial class ConstructClip
         sb.Append("{\n  \"format\": \"").Append(ConstructBuild.BlueprintFormat).Append("\",\n  \"name\": ").Append(Quote(name));
         if (description.Length > 0)
             sb.Append(",\n  \"description\": ").Append(Quote(description));
+        if (ModuleBlueprints.BlockText(c) is { } module)
+            sb.Append(",\n  \"module\": ").Append(module); // (one module, its plug and everything on its side: a module design, module-sockets.md 4.1)
         sb.Append(",\n  \"exactLinks\": true,\n  \"steps\": [\n");
         var taken = new HashSet<(int, int)>(c.LinkCount); // (part, socket): what earlier steps hold (a socket can carry two links: only one is a step's way on)
         var fuseOf = new Dictionary<uint, int>(); // (fused units numbered 1, 2, ... in this blueprint: ConstructFuse.cs)

@@ -194,6 +194,9 @@ public sealed partial class Game : IDisposable
     {
         Place = WorldContext.Fork(net.IsServer ? "server" : "client");
         World.Enter(Place);
+        SandboxHands.LiftShare = ShellLiftShare; // (a worn shell frame's "lift", on both sides: a client's own pre-check agrees with the server, GameRobotShell.cs)
+        SandboxHands.ReachShare = ShellReachShare; // (a big frame reaches further with the attach tool and the beam, on both sides: GameRobotShell.cs)
+        SandboxHands.GripHolds = ShellGripHolds; // (a grip arm holds a piece while the welder arm works: GameRobotShell.cs)
         World.GravitySetting = 100; // a new session starts at the map's own gravity (the host sets GravityPercent; clients learn it)
         World.GravityScale = 1f;
         ChosenPerks = (perks ?? PerkSet.Empty).Sanitized();
@@ -961,7 +964,7 @@ public sealed partial class Game : IDisposable
         if (me.Alive)
         {
             me.Sim.Frame = me.ShellFrame; // (a robot shell's size: Msg.Shell, never a snapshot)
-            World.Simulate(ref me.Sim, cmd);
+            World.Simulate(ref me.Sim, ShellCrawlFilter(me, me.Sim, cmd)); // (a legless shell crawls: GameShellWear.cs)
             ZBlockPlayer(me, ref me.Sim); // predicted like the server
             if (Constructs.PlayerEndCount > 0)
                 TetherPlayer(me.Id, ref me.Sim); // on a harpoon line (GameSandboxHarpoon.cs), predicted like the server
@@ -1041,7 +1044,7 @@ public sealed partial class Game : IDisposable
             foreach (var cmd in _pendingInputs)
             {
                 _sepAtTick = cmd.Tick; // (the other bodies carried on to it: PlayerSeparation.cs)
-                World.Simulate(ref state, cmd);
+                World.Simulate(ref state, ShellCrawlFilter(me, state, cmd));
                 ZBlockPlayer(me, ref state); // (the zombies as last heard)
                 if (Constructs.PlayerEndCount > 0)
                     TetherPlayer(me.Id, ref state);
@@ -1296,7 +1299,7 @@ public sealed partial class Game : IDisposable
                 {
                     using var _ = Perf.Measure(PerfArea.Players);
                     p.Sim.Frame = p.ShellFrame;
-                    World.Simulate(ref p.Sim, cmd);
+                    World.Simulate(ref p.Sim, ShellCrawlFilter(p, p.Sim, cmd)); // (a legless shell crawls: GameShellWear.cs)
                     ZBlockPlayer(p, ref p.Sim); // out of zombie bodies (ZombieBlock.cs)
                     if (Constructs.PlayerEndCount > 0)
                         TetherPlayer(p.Id, ref p.Sim); // on a harpoon line (GameSandboxHarpoon.cs)
@@ -1375,7 +1378,7 @@ public sealed partial class Game : IDisposable
         if (p.Alive)
         {
             p.Sim.Frame = p.ShellFrame; // (a robot shell's size, GameRobotShell.cs)
-            World.Simulate(ref p.Sim, cmd);
+            World.Simulate(ref p.Sim, ShellCrawlFilter(p, p.Sim, cmd)); // (a legless shell crawls on its arms: GameShellWear.cs)
             _sepAtTick = p.Bot == null ? cmd.Tick : 0; // a client's input meets the bodies at its stamped tick (PlayerSeparation.cs)
             ZBlockPlayer(p, ref p.Sim); // out of zombie bodies (ZombieBlock.cs)
             _sepAtTick = 0;
@@ -1910,13 +1913,13 @@ public sealed partial class Game : IDisposable
                 flags |= 1;
             if (hit is { } h)
             {
-                var head = World.IsHeadshot(h.At.Position, h.At.Stance, h.At.Yaw, end, h.At.Up);
+                var head = World.IsHeadshot(h.At.Position, h.At.Stance, h.At.Yaw, end, h.At.Up, ShellFrames.ScaleOf(h.P)); // (a robot shell's frame: its head is where its size puts it)
                 var dmg = ray.Damage * def.DamageMultAt(dist + flown) * (head ? def.HeadMult : 1f) * pen
                           * Perks.AttackMult(shooter.Perks, dist, d, h.At.Yaw, h.P.Health, melee: false);
                 AddShotDamage(damage, h.P, dmg);
                 if (pfx)
                     NotePlayerFxRay(h.P, o, d, dist);
-                _bloodShotPart.TryAdd(h.P, BloodMarks.Classify(h.At.Position, h.At.Stance, h.At.Yaw, GravityFrames.PointToLocal(h.At.Position, end))); // the first pellet's body part (BodyBlood.cs)
+                _bloodShotPart.TryAdd(h.P, BloodMarks.Classify(h.At.Position, h.At.Stance, h.At.Yaw, GravityFrames.PointToLocal(h.At.Position, end), ShellFrames.ScaleOf(h.P))); // the first pellet's body part (BodyBlood.cs)
                 if (head)
                     headshotOn.Add(h.P);
             }

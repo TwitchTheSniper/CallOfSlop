@@ -36,6 +36,12 @@ public static class ThirdPerson
 
     public static float FootDist = FootDefault;
 
+    /// <summary>
+    /// The on-foot camera's size: the local body's when larger than a person (a big shell frame: the Construction Shell's 2.8), else 1.
+    /// The distance behind the eye and the shoulder offset are times it, so a 5 m robot is framed as a person is. Set each frame.
+    /// </summary>
+    public static float Size = 1f;
+
     /// <summary>The seat orbit: heading, pitch (looking down is negative) and distance.</summary>
     public static float OrbitYaw, OrbitPitch = SteerTilt, SeatDist = 10f;
 
@@ -92,7 +98,7 @@ public static class ThirdPerson
     {
         var right = Vector3.Cross(fwd, up);
         right = right.LengthSquared() < 1e-6f ? Vector3.UnitX : Vector3.Normalize(right);
-        return eye - fwd * dist + right * (side * ShoulderOffset) + up * 0.1f;
+        return eye - fwd * (dist * Size) + right * (side * ShoulderOffset * Size) + up * (0.1f * Size);
     }
 
     /// <summary>The camera between <paramref name="from"/> and <paramref name="to"/>: a sphere swept from <paramref name="from"/>, stopped short of whatever it meets.</summary>

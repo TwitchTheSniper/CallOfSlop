@@ -45,16 +45,17 @@ public static class ConstructGrab
     /// The speed build-up in flight (user, 2026-11-19: "the physics gun movement speed should build as the player keeps moving
     /// an object around ... only if the object is in flight"): while a held piece touches nothing and moves faster than
     /// <see cref="FlightMoveSpeed"/> (m/s, against its holder's frame), its boost climbs from 1 to <see cref="FlightBoostMax"/>
-    /// over <see cref="FlightBoostSeconds"/> (s, linear); the beam's top speed (<see cref="MaxPull"/>) and its acceleration
-    /// (<see cref="MaxAccel"/> included) are times the boost. A contact (pushing on it, or within <see cref="FlightTouchGap"/>
+    /// over <see cref="FlightBoostSeconds"/> (s, linear); the beam's top speed (<see cref="MaxPull"/>) is times the boost,
+    /// its pull is not (main's CI 2026-11-20: a 3x pull made the spring three times as stiff, and a joined holder's dragged
+    /// buggy jerked past "physics gun smooth"'s bound; a faster top speed changes nothing the spring does below it). A contact (pushing on it, or within <see cref="FlightTouchGap"/>
     /// m), a stop (slower than <see cref="FlightStopSpeed"/>) or a let-go puts it back to 1 at once; between the two speeds it holds.
     /// </summary>
-    public const float FlightBoostMax = 3f, FlightBoostSeconds = 2f, FlightMoveSpeed = 1.5f, FlightStopSpeed = 0.5f, FlightTouchGap = 0.02f;
+    public const float FlightBoostMax = 2f, FlightBoostSeconds = 2f, FlightMoveSpeed = 1.5f, FlightStopSpeed = 0.5f, FlightTouchGap = 0.02f;
 
     /// <summary>
     /// The fastest the beam moves a held piece against its holder's frame, boosted or not (m/s): the free-body limit on
     /// the ground (<see cref="ConstructPhysics.MaxSpeed"/>), a metre a tick, so the contacts' reach and <see cref="NearStep"/>
-    /// still bound what a fast piece can pass through. The boost's acceleration goes on to 3x; its top speed stops here (2x).
+    /// still bound what a fast piece can pass through: the boost's 2x of <see cref="MaxPull"/> reaches it.
     /// </summary>
     public const float HeldTopSpeed = ConstructPhysics.MaxSpeed;
 
@@ -65,10 +66,26 @@ public static class ConstructGrab
         // its holder's frame at that point (a turning ship's deck moves each point at its own speed).
         var at = c.ToWorld(c.GrabLocal);
         var own = (c.Vel + Vector3.Cross(c.AngVel, at - c.WorldCom) - c.GrabFrameVel - Vector3.Cross(c.GrabFrameSpin, at - c.GrabTarget)).LengthSquared();
-        if (c.GrabTouch || own < FlightStopSpeed * FlightStopSpeed || !float.IsFinite(own))
+        if (c.GrabTouch || OnGear(c) || own < FlightStopSpeed * FlightStopSpeed || !float.IsFinite(own))
             c.GrabBoost = 1f;
         else if (own > FlightMoveSpeed * FlightMoveSpeed)
             c.GrabBoost = MathF.Min(FlightBoostMax, c.GrabBoost + (FlightBoostMax - 1f) * dt / FlightBoostSeconds);
+    }
+
+    /// <summary>
+    /// Is the body standing on its wheels, tracks or walker feet? Those meet the ground by their own rays, not as contacts, so
+    /// a buggy dragged along the ground on its wheels counted as in flight and built a 3x boost (main's CI 2026-11-20:
+    /// "physics gun smooth" saw its drawn buggy jerk past the limit). Bounded by the body's wheels and legs.
+    /// </summary>
+    private static bool OnGear(Construct c)
+    {
+        for (var k = 0; k < c.WheelCount; k++)
+            if (c.Wheels[k].Touching)
+                return true;
+        for (var k = 0; k < c.LegCount; k++)
+            if (c.Legs[k].Grounded)
+                return true;
+        return false;
     }
 
     /// <summary>The boost as a byte on the wire (0: none, 255: <see cref="FlightBoostMax"/>), and back.</summary>
@@ -166,7 +183,6 @@ public static class ConstructGrab
         float accel, Vector3 frameVel, Vector3 frameSpin, float dt, bool nearOther = false, float boost = 1f)
     {
         boost = Math.Clamp(boost, 1f, FlightBoostMax); // (the speed build-up in flight: FlightBoost)
-        accel *= boost; // (accel is MaxAccel at most: AccelFor)
         var top = MathF.Min(MaxPull * boost, HeldTopSpeed); // (boosted, never past HeldTopSpeed: a metre a tick at most)
         var maxPull = nearOther ? MathF.Min(top, NearStep / dt) : top; // (another construct close by: a step short enough that the overlap tests can't be jumped)
         var maxTurn = nearOther ? MathF.Min(MaxTurn, NearTurn) : MaxTurn;
@@ -631,7 +647,7 @@ public sealed partial class ConstructEdits
     }
 
     /// <summary>Decision 19 (survival only; creative is unrestricted): why this player may not edit or grab this construct now, or null.</summary>
-    public string? Contested(Construct c, byte player) => c.HeldBy != 0 ? ConstructStation.HeldText : InfiniteParts ? null : ConstructGrab.Defended(c, player, AliveAt, NameOf);
+    public string? Contested(Construct c, byte player) => c.HeldBy != 0 ? (c.PartCount == 1 && c.Parts[0].D.ShellBody ? ConstructGantry.HeldText : ConstructStation.HeldText) : InfiniteParts ? null : ConstructGrab.Defended(c, player, AliveAt, NameOf);
 
     /// <summary>How far this player's beam holds something (their reach: <see cref="ReachOf"/>).</summary>
     public float GrabRange(byte player) => ReachOf(player, InfiniteParts);
@@ -870,6 +886,8 @@ public sealed partial class ConstructEdits
         ref var h = ref Hands[player];
         if (h.GrabBody == 0)
             return;
+        if (h.Tool == ConstructTool.Welder && !h.Seated && GripHolds?.Invoke(player) == true && GripWeldHold(world, player, frameVel, frameSpin))
+            return; // (a shell's grip arm keeps what it holds for its welder arm: construction-shell.md)
         if (h.GrabSeg != 0)
         {
             GrabJointTick(world, player, eye, look);
@@ -909,6 +927,28 @@ public sealed partial class ConstructEdits
             h.GrabBody = 0;
             world.Remove(c); // (it is on the hook now: ConstructOrdnance.cs)
         }
+    }
+
+    /// <summary>
+    /// A shell with a grip arm and a welder arm (the Construction Shell) has changed from the gun to the welder while holding a piece
+    /// or a mechanism's piece: the grip keeps it where it is, frozen as the physics gun's Aim freezes it, for the welder to weld on
+    /// (docs/sandbox/design/construction-shell.md). Aboard a moving craft (the holder's frame moving or turning) a freeze would hold it
+    /// still in the world while the craft flies on, so the grip lets it go instead and says so. True when it acted (said why on a drop).
+    /// </summary>
+    private bool GripWeldHold(ConstructWorld world, byte player, Vector3 frameVel, Vector3 frameSpin)
+    {
+        ref var h = ref Hands[player];
+        if (world.Get(h.GrabBody) is not { } c || h.GrabSeg == 0 && (c.GrabbedBy != player || c.Anchored || AboardWhy(c, player) != null))
+            return false; // (the usual let-go below, with its own reason)
+        if (frameVel != Vector3.Zero || frameSpin != Vector3.Zero)
+        {
+            Release(world, player);
+            Notices.Add((player, "the grip let it go: a piece can't be held still aboard a moving craft (stop the craft to weld it on)"));
+            return true;
+        }
+        var why = Freeze(world, player);
+        Notices.Add((player, why == null ? "the grip holds it where it is: weld it on" : $"the grip let it go: {why}"));
+        return true;
     }
 
     /// <summary>Aim while holding: the held thing freezes where it is (held still like an anchored construct, tinted) and is let go.</summary>

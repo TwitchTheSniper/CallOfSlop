@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Module Magpie Drive 3x3",
+  "description": "A 3x3 module: the Magpie's main drive, for a keyed engine socket on a nacelle's tail plate (its Drive Core stays in the nacelle). Written by the part kit (miner).",
+  "module": { "w": 3, "l": 3, "primary": "engine", "tags": ["engine"] },
+  "steps": [
+    { "part": "Module Plug 3x3" },
+    { "part": "Magpie Drive", "on": 0, "socket": "s1.1", "by": "front" }
+  ]
+}

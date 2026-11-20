@@ -238,7 +238,7 @@ public static partial class ConstructRender
         GatherPocketCuts(gfx, world, alpha, blendTicks); // (the nearest flush pods' pockets: ConstructRenderPodCuts.cs, Renderer.Cuts.cs)
         gfx.BeginBatch(); // (the small bodies' boxes in one instanced draw, not a draw each)
         var merge = MergeOn && gfx.MergedMeshes; // (static parts as merged meshes: ConstructRenderBatch.cs)
-        BeginMergedFrame();
+        BeginMergedFrame(gfx);
         var loopT0 = System.Diagnostics.Stopwatch.GetTimestamp();
         foreach (var c in world.Bodies)
         {
@@ -287,7 +287,7 @@ public static partial class ConstructRender
                 PanelRender.Gather(gfx, world, c, body, blendTicks ? alpha : 1f, cull ? _planes : default, Now); // (display panels near the eye and facing it)
             if (c.HasLogic || c.HasVolumeStore)
                 n += DrawVolumes(gfx, c, body, blendTicks ? alpha : 1f); // (cargo volumes: a logic part each)
-            if (c.Frozen || c.FrozenPieces > 0)
+            if ((c.Frozen || c.FrozenPieces > 0) && !NoAimGlow) // (nor in a --no-hands scene picture: the map's own frozen props)
             {
                 // Frozen by the physics gun: an icy outline round each part of each frozen piece (ConstructGrab.cs): one box round the whole would read
                 // as its collider, and it is not. A big construct shows the frost tint alone.
@@ -310,6 +310,7 @@ public static partial class ConstructRender
         var loopT1 = System.Diagnostics.Stopwatch.GetTimestamp();
         FlushMerged(gfx);
         gfx.EndBatch();
+        QueryMerged(gfx); // (each queued chunk's box against what was just drawn: next frame draws it only if any of it showed, ConstructRenderOcclusion.cs)
         LoopMs += System.Diagnostics.Stopwatch.GetElapsedTime(loopT0, loopT1).TotalMilliseconds;
         FlushMs += System.Diagnostics.Stopwatch.GetElapsedTime(loopT1).TotalMilliseconds;
         AllocProfile.Mark("cr: sweep, links, tracks, routes, panels");
@@ -636,11 +637,17 @@ public static partial class ConstructRender
         var routerStuck = false;
         var routerFence = 0f;
         var routerOn = d.HasRouterBoxes && !p.Broken && ConstructRecycler.Powered(world, c, i) && ConstructLogistics.ShowOf(c, i, out routerWay, out routerState, out routerStuck, out routerFence); // (a Conveyor Router: its lamps and fence show its last choice)
+        var offSlots = d.ShellBody && world.GantryJobCount > 0 ? ConstructGantry.OffSlots(world, c.Id, ConstructConveyor.Clock) : 0; // (a module a Shell Gantry's arm has off: its boxes aren't drawn)
+        var fitted = d.ShellBody ? ShellFittedLooks.FittedMask(in p, d) : 0; // (a slot with a module that isn't its frame's own: drawn from the module's part, ShellFittedLooks)
+        var hideSlots = offSlots | fitted;
+        var boxSlots = hideSlots != 0 ? ConstructGantry.BoxSlots(d) : null;
         for (var b = 0; b < d.Boxes.Length; b++)
         {
             ref readonly var box = ref d.Boxes[b];
             if (box.Hidden || box.IsLeaf && !railShown)
                 continue; // (a shaped part's stepped collision: its shape is drawn instead)
+            if (boxSlots != null && boxSlots[b] < 8 && (hideSlots >> boxSlots[b] & 1) != 0)
+                continue;
             c.BoxOf(i, b, out var centre, out var half);
             if (box.Spin && d.Rotor != null)
             {
@@ -718,6 +725,31 @@ public static partial class ConstructRender
             else
                 gfx.Draw(model, (c.Frozen || c.FrozenPieces > 0) && c.PieceFrozen(i) ? Vector3.Lerp(tint, Frost, 0.45f) : strain > 0 ? Vector3.Lerp(tint, OverloadTint, 0.2f + 0.5f * strain) : tint, opacity, mode: 0, shape: box.Shape, surface: Surfaces.Code(ConstructFinish.BoxRow(in box, p.Paint, p.Finish), wear)); // (frozen by the physics gun: an icy tint; overloaded: red)
             drawn++;
+        }
+        if ((fitted & ~offSlots) != 0)
+            drawn += DrawFitted(gfx, c, i, d, fitted & ~offSlots, seg * body, shade, wear, opacity);
+        return drawn;
+    }
+
+    /// <summary>A standing shell's fitted modules (<see cref="ShellFittedLooks"/>), in its paint, tone and wear, where its own slot boxes aren't drawn.</summary>
+    private static int DrawFitted(Renderer gfx, Construct c, int i, ConstructPartDef d, int slots, in Matrix4x4 onBody, float shade, float wear, float opacity)
+    {
+        ref var p = ref c.Parts[i];
+        Span<byte> kit = stackalloc byte[ShellFrames.SlotCount];
+        ShellFrames.ReadKit(p, d, kit);
+        var frost = (c.Frozen || c.FrozenPieces > 0) && c.PieceFrozen(i);
+        var drawn = 0;
+        for (var s = 0; s < kit.Length; s++)
+        {
+            if ((slots >> s & 1) == 0 || ShellFittedLooks.Fitted(d, s, kit[s] - 1) is not { } look)
+                continue;
+            foreach (ref readonly var box in look.AsSpan())
+            {
+                var tint = ConstructPaint.BoxColour(p.Paint, in box) * shade;
+                gfx.Draw(box.Model(p.Rot, p.Pos + Rot24.Apply(p.Rot, box.Center)) * onBody, frost ? Vector3.Lerp(tint, Frost, 0.45f) : tint, opacity, mode: 0, shape: box.Shape,
+                    surface: Surfaces.Code(ConstructFinish.BoxRow(in box, p.Paint, p.Finish), wear));
+                drawn++;
+            }
         }
         return drawn;
     }
@@ -902,6 +934,29 @@ public static partial class ConstructRender
     }
 
     private static int LastStoredCount;
+
+    /// <summary>This frame's tick blend (<see cref="Draw"/>'s alpha and blendTicks), for drawing passes that take no alpha: <see cref="PartDrawn"/>.</summary>
+    public static float FrameAlpha = 1f;
+    public static bool FrameBlend;
+
+    /// <summary>
+    /// Part <paramref name="part"/>'s world frame where <see cref="Draw"/> puts its boxes this frame: the body between its last two
+    /// ticks' poses and its joints blended as <see cref="FrameAlpha"/> says. What is drawn on a part (a Loader Arm's boom, a gantry's
+    /// arms, a clamp arm, a pod's lid) is posed from this, not from <see cref="Freeform.PartWorld"/> (the tick's pose), or it jitters
+    /// against its body while the body moves (Sean, 2026-11-20: a Loader Arm on a driven contraption).
+    /// </summary>
+    public static void PartDrawn(Construct c, int part, out Vector3 pos, out Quaternion rot)
+    {
+        ref var p = ref c.Parts[part];
+        var at = FrameBlend ? Vector3.Lerp(c.PrevPos, c.Pos, FrameAlpha) : c.Pos;
+        var body = FrameBlend ? Quaternion.Slerp(c.PrevRot, c.Rot, FrameAlpha) : c.Rot;
+        var sq = Quaternion.Identity;
+        var st = Vector3.Zero;
+        if (p.Seg > 0 && p.Seg <= c.JointCount)
+            SegPoseBlended(c, p.Seg, FrameBlend ? FrameAlpha : 1f, out sq, out st);
+        rot = Quaternion.Normalize(body * sq * Rot24.Quat(p.Rot));
+        pos = at + Vector3.Transform(st + Vector3.Transform(p.Pos, sq), body);
+    }
 
     /// <summary>A segment's pose (rest frame -> body frame) blended between the last two ticks' joint values.</summary>
     public static Matrix4x4 SegMatrix(Construct c, int seg, float alpha)
@@ -1374,7 +1429,7 @@ public static partial class ConstructRender
         }
         DrawSelection(gfx, pulse);
         DrawBlueprintGhost(gfx, pulse); // (ConstructRenderBlueprintGhost.cs)
-        if (AimBody is { } ab && AimPart >= 0 && AimPart < ab.PartCount)
+        if (AimBody is { } ab && AimPart >= 0 && AimPart < ab.PartCount && !NoAimGlow)
         {
             if ((AimRefused || AimHands) && !AimOnPage)
                 DrawAimGlow(gfx, ab, AimPart);
@@ -1391,6 +1446,9 @@ public static partial class ConstructRender
     /// region; a panel hung on a hinge, its door handle or a hand's width at its free edge (<see cref="ConstructDoor"/>); a part
     /// with none of those, or something loose (all of it comes up in the hands), glows whole.
     /// </summary>
+    /// <summary>The window tool's --no-hands: no aim glow and no frozen outlines in a scene picture.</summary>
+    public static bool NoAimGlow;
+
     private static void DrawAimGlow(Renderer gfx, Construct c, int part)
     {
         ref var p = ref c.Parts[part];

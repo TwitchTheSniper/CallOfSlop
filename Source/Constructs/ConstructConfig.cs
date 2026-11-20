@@ -228,6 +228,14 @@ public enum CfgKey : byte
     PodOre, // shell pod: the docked Mining Shell's hopper material still to empty (a RecyclingTable id; not on the panel)
     PodOreUnits, // shell pod: ...and how much
     PodTag, // shell pod: a number for the docked shell (1 to 2^24), so a job, a copy of the pod and its release find it whatever its part index (not on the panel)
+    ModKind, // Module Socket: what it takes (ModKind: any module, or engines, reactors or turrets only; ModuleSockets.cs)
+    ModStyle, // Module Socket: proud, flush or opening (ModStyle)
+    ModDepth, // Module Socket: a flush or opening well's depth, m
+    ModAbove, // Module Socket: the room over the surface, m (0: twice the short side)
+    ModKeyed, // Module Socket: one turn only (a notched corner)
+    ModPrimary, // Module Plug: the module's primary tag (0: the tag with the most mass behind it, else 1 + a ModTag)
+    ModCut, // Module Socket: its cutting ring's job, seconds while it burns its well, 0 idle (not on the panel; ModuleCut.cs)
+    ModWeld, // Module Socket: a Module Fitter's job on it, seconds: welding a module on (positive) or cutting its seam (negative), 0 idle (not on the panel; ConstructModuleFitters.cs)
     COUNT,
 }
 
@@ -561,6 +569,7 @@ public static class ConstructConfig
             ConstructDoors.AddSettings(d, list);
         ShellWear.AddSettings(d, list); // (a Robot Shell's wear, hidden; a shell pod's docked shell's too)
         ConstructShellPod.AddSettings(d, list); // (what a shell pod holds, hidden)
+        ModuleSockets.AddSettings(d, list); // (a Module Socket's kind, style and room; a Module Plug's primary tag)
         ToolRacks.AddSettings(d, list); // (a Tool Rack's tools out, hidden)
         AddThrowSettings(d, list);
         // Every part that shows text: its size (last, so a part file's own settings keep their slots).
@@ -792,6 +801,8 @@ public static class ConstructConfig
         >= CfgKey.ShellKit0 and <= CfgKey.ShellKit2 => "mask",
         CfgKey.Colour or CfgKey.Ink => "colour",
         CfgKey.Ramp => "choice",
+        CfgKey.ModKind or CfgKey.ModStyle or CfgKey.ModPrimary => "choice",
+        CfgKey.ModKeyed => "toggle",
         CfgKey.Keys or CfgKey.ApMode or CfgKey.AiCrew or CfgKey.Setting or CfgKey.Mode or CfgKey.Operator or CfgKey.Units or CfgKey.Unit or CfgKey.Recipe or CfgKey.MirrorAxis or CfgKey.Fluid or CfgKey.Material => "choice",
         _ => "number",
     };
@@ -869,6 +880,10 @@ public static class ConstructConfig
                 CfgKey.MaskA or CfgKey.MaskB or CfgKey.MaskC or CfgKey.MaskD => d.IsExtruder && !d.IsPanelFormer,
                 (>= CfgKey.ShellWear0 and <= CfgKey.ShellWear3) or CfgKey.ShellDamage or (>= CfgKey.ShellKit0 and <= CfgKey.ShellKit2) => d.ShellBody || d.ShellPod != null, // (a pod keeps its docked shell's: ConstructShellPod.cs)
                 >= CfgKey.PodShell and <= CfgKey.PodTag => d.ShellPod != null,
+                >= CfgKey.ModKind and <= CfgKey.ModKeyed => d.ModPart == ModPart.Socket,
+                CfgKey.ModPrimary => d.ModPart == ModPart.Plug,
+                CfgKey.ModCut => d.ModPart == ModPart.Socket && !d.ModStand,
+                CfgKey.ModWeld => d.ModPart == ModPart.Socket,
                 CfgKey.ToolsOut => d.IsToolRack, // (ToolRacks.cs)
                 CfgKey.RunMode => d.IsWheelFormer && !d.IsPanelFormer,
                 CfgKey.AmmoType => d.Role is PartRole.AmmoBox or PartRole.Storage,

@@ -639,7 +639,25 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 374: the physics gun's speed build-up in flight (docs/sandbox/design/manipulators.md): a Sandbox hand holding a body sends a u8 boost after its GrabSeg (ConstructGrab.BoostByte).
     // 375: the 4x worlds (Karl, 2026-11-19): a snapshot's fast entry carries its world position and mantle target at 1/128 m (+-65 km), and
     //   its velocity at 1/50 m/s (+-655 m/s), so Glacier's 37 km sky and a 460 m/s orbit fit (Snapshot.WorldPosScale, VelScale).
-    public const ushort ProtocolVersion = 375;
+    // 376: robot shell tool arms (Welder, Cutter, Grip and Sprayer Arm): four module part files move part ids; Shells.json modules gain
+    //   "tool" kind (a module byte the wire already carries in Msg.Shell's kit).
+    // 377: the Shell Gantry's swap animation (mining-shell.md "Swap animation"): Msg.Gantry carries the slot right after its on/off byte (an
+    //   off names its swap: a gantry runs several, queued), and an on's seconds run is negative while it waits its turn.
+    // 378: module sockets (docs/sandbox/design/module-sockets.md): new parts (Constructs/Parts/Modules: plates, plugs and stands) move the part ids;
+    //   SocketKind.Module at the end; CfgKey ModKind, ModStyle, ModDepth, ModAbove, ModKeyed, ModPrimary at the end of the settings.
+    // 379: module sockets phases 2 on: a socket's cutting ring (a hidden ModCut setting on the plate), and what later phases of the branch add.
+    // 380: the Half Shell (docs/sandbox/design/half-shell.md): a new shell part file moves part ids; Shells.json gains frame 2 (Half, scale 0.5).
+    // 381: module sockets phase 4 on: the Module Fitter S part (Constructs/Parts/Modules/Fitters) moves the part ids; CfgKey ModWeld at the end
+    //   of the settings (a fitter's weld or seam cut on a plate); data, ammo and chute ports on plates and plugs.
+    // 382: the Construction Shell (docs/sandbox/design/construction-shell.md): a new shell part file moves part ids; Shells.json gains frame 3 (Construction, scale 2.8).
+    // 383: module sockets phase 6: plates gain a centre back socket "bc" and even-sided plugs a
+    //   centre top "tc" (appended); the rust bucket's drives, engine block and sensor stand on module sockets, its roof's sensor socket moved.
+    // 384: the capital ship (Karl, 2026-11-20): cut plates go to 64 x 32 m with openings to 32 m (HullLoft.CutPlateMaxCm), so keys every peer
+    //   refused before are made; the Large and Capital Laser Cutters and the ship's own parts (Constructs/Parts/Mainframe) move the part ids.
+    // 385: capital battles (docs/sandbox/design/capital-battles.md): CFireKind.Bore (a round's way through constructs, every PC marks the holes) and CFireKind.Scrap (a small part shot off a
+    //   capital-sized body is drawn only, no wreck body);
+    //   a gun's "pierce" budget (the Zero Day Railgun's file changes).
+    public const ushort ProtocolVersion = 385;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

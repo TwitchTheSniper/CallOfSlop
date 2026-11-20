@@ -261,10 +261,22 @@ public static unsafe partial class Program
             SavePaths.Init(args); // (the player's blueprints are read from the save folder: --save-dir counts)
             return SubBlueprints.Cli(subBlueprint, args);
         }
+        if (args.Any(a => a.Equals("--gen-module", StringComparison.OrdinalIgnoreCase)))
+            return VehicleKit.ModuleGen.Cli(args); // a module design of a tag and size, written as a module blueprint (VehicleKit/BlueprintScript.Modules.cs)
+        if (args.Any(a => a.Equals("--module-choice", StringComparison.OrdinalIgnoreCase)))
+            return ModuleChoice.Cli(args); // a faction's module choice for each free socket of a ship (module-sockets.md 9; ModuleChoice.cs)
         if (args.SkipWhile(a => !a.Equals("--check-vehicle", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } vehicleFile)
             return VehicleKit.VehicleKitCli.CheckVehicle(vehicleFile); // the vehicle check on any blueprint file
         if (args.Any(a => a.Equals("--no-drive-gate", StringComparison.OrdinalIgnoreCase)))
             VehicleKit.VehicleDriveCheck.GateOn = false; // the spawn's drive check off, to measure what it catches and costs (VehicleDriveCheck.cs)
+        if (args.Any(a => a.Equals("--battle-check", StringComparison.OrdinalIgnoreCase)))
+        {
+            if (args.Any(a => a.Equals("--old-pierce", StringComparison.OrdinalIgnoreCase)))
+                ConstructBores.On = false;
+            if (args.Any(a => a.Equals("--no-break-up", StringComparison.OrdinalIgnoreCase)))
+                ConstructBreakUp.On = false;
+            return BattleCheck.Cli(args); // a capital ship under railgun fire headless: what each volley did and cost (Source/DevTools/BattleCheck.cs)
+        }
         if (args.Any(a => a.Equals("--skin-check", StringComparison.OrdinalIgnoreCase)))
             return SkinCheck.Cli(args); // does each ship's drawn skin collide where it is drawn: rays, a standing player, a dropped plate (Source/DevTools/SkinCheck.cs)
         if (args.Any(a => a.Equals("--ship-keys-check", StringComparison.OrdinalIgnoreCase)))
@@ -439,6 +451,14 @@ public static unsafe partial class Program
         RenderCaps.ReadArgs(args); // --gl41, --gl-no=... (RenderCaps.cs)
         if (args.Any(a => a.Equals("--no-merge", StringComparison.OrdinalIgnoreCase)))
             ConstructRender.MergeOn = false; // constructs drawn box by box, as before merged meshes (docs/render/MERGED-MESHES.md)
+        if (args.Any(a => a.Equals("--no-occlusion", StringComparison.OrdinalIgnoreCase)))
+            ConstructRender.OcclusionOn = false; // merged chunks drawn whether or not something hides them (ConstructRenderOcclusion.cs)
+        if (args.Any(a => a.Equals("--no-eye-steady", StringComparison.OrdinalIgnoreCase)))
+            ConstructRender.OcclusionEyeMove = 0; // (throwaway: the branch's behaviour, for comparing)
+        if (args.Any(a => a.Equals("--no-chunk-lod", StringComparison.OrdinalIgnoreCase)))
+            ConstructRender.ChunkLodOn = false; // every merged box drawn however far (the far detail level, ConstructRenderBatch.cs)
+        if (FlagAfter(args, "--lod-px", 0) is var lodPx and > 0)
+            (ConstructRender.LodPixels, ConstructRender.LodPixelsForced) = (lodPx, true); // the far detail level drops boxes under this many pixels (default 1, the Video settings' Far detail)
         (_cliStartRound, var roundValue) = ZombiesRoundFlag(args); // --zombies-round N (or =N): the next Zombies runs start at round N
         _cliTestKit = args.Any(a => a.Equals("--test-kit", StringComparison.OrdinalIgnoreCase));
         var plain = SavePaths.WithoutSaveDir(args).Where(a => !a.StartsWith("--") && !ReferenceEquals(a, roundValue)).ToArray();
@@ -889,6 +909,7 @@ public static unsafe partial class Program
             AudioSystem.Music.JukeboxOpen = Ui.MusicPlayerOpen && _session == null; // the main menu's music player takes over (UiMusicPlayer.cs)
             UpdateFrenzy(now); // the kill-frenzy music during a live match (Program.Frenzy.cs)
             UpdateFrenzyFx(now); // per-class frenzy visuals (Program.FrenzyFx.cs)
+            UpdateModuleCutFx(); // module sockets' cutting rings at work (Program.SandboxModules.cs)
             UpdateFrenzyGunSound(); // per-class frenzy gun sound (Program.FrenzyGunSound.cs)
             perf.Dispose();
 
@@ -935,7 +956,7 @@ public static unsafe partial class Program
                     DrawStormFrost(); // frost at the edges while you are out in a cold storm (Program.Storm.cs)
                 if (!benchCovers && g.OpeningActive)
                     DrawOpeningUi(g, now); // the survival opening has the screen: no HUD (Program.Opening.cs)
-                else if (!benchCovers)
+                else if (!benchCovers && !_wsNoHands) // (the window tool's --no-hands: a scene picture shows no HUD)
                 {
                     DrawNameTags(g); // under the HUD windows (Program.NameTags.cs)
                     DrawIntelMarks(g); // what questioning gave up (GameCrewFleet.cs)
@@ -2201,6 +2222,7 @@ public static unsafe partial class Program
         pass.Dispose();
         pass = Perf.Pass(PerfArea.ConstructDraw, PerfGpuPass.Constructs); // (the next two draw nothing in Sandbox)
         DrawSandbox(now); // Sandbox: the constructs (Program.Sandbox.cs); nothing in other modes
+        DrawBoreScars(now); // the holes bores left in constructs (Program.SandboxBores.cs); nothing until a bore
         DrawAmmoFx(now); // special ammo flashes, in any mode (Program.Zombies.cs)
         DrawPveEnemies(now, eye, fwd); // co-op enemy soldiers, with level of detail (Program.Pve.cs); nothing outside Co-op
         _worldView = view;
@@ -2263,6 +2285,7 @@ public static unsafe partial class Program
             Gfx.Draw(model, t.Color, alpha, mode: 2);
             Gfx.Draw(Matrix4x4.CreateScale(0.1f * (1 + age * 4)) * Matrix4x4.CreateTranslation(t.To), new Vector3(1f, 0.9f, 0.6f), alpha, mode: 2);
         }
+        DrawBoreGlow(now); // (the bores' hot rims, cooling: Program.SandboxBores.cs)
         Gfx.EndBatch();
         Renderer.BlendDefault();
 
@@ -2320,7 +2343,7 @@ public static unsafe partial class Program
 
         // ---- HUD ------------------------------------------------------------
         Gfx.MarkGlow = false;
-        if (!Ui.WorkbenchOpen && !Ui.CommandOpen) // (nor under the command view: Program.Command.cs)
+        if (!Ui.WorkbenchOpen && !Ui.CommandOpen && !_wsNoHands) // (nor under the command view: Program.Command.cs; nor in a --no-hands picture)
             using (Perf.Pass(PerfArea.Hud, PerfGpuPass.Hud))
                 DrawHud(now, w, h, local, fov); // hidden while the weapon workbench is open (the crosshair, ammo, prompts, weapon list)
     }

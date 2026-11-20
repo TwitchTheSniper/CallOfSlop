@@ -46,6 +46,7 @@ internal sealed partial class ConstructCollider
         public bool Turned, Wheel; // a freeform weld's box; a raycast wheel (it stays out of the ground collision)
         public bool Stub; // a box of a wheel that has a cylinder: it stands for the part, it doesn't collide
         public bool Dead; // a hole a part that went left (ConstructRebuild.cs): in no node, skipped by the walks over a group
+        public bool NoGround; // a flush shell pod's body box: it meets players and parts, not the ground (its housing may stand in it: ShellParts.Pod)
         public bool Scoop; // a box of a scoop: while its edge is in the ground the ground gives way to it (ConstructScoops.cs)
         public int Hull; // index in Hulls, -1: a plain box
         public int WheelIx; // this leaf is wheel WheelIx's cylinder, drawn wherever the hub is now (ConstructWheelShape.cs), and its bounds its whole travel; -1: no
@@ -154,6 +155,7 @@ internal sealed partial class ConstructCollider
                     continue;
                 c.SolidBox(i, b, out var centre, out var half);
                 Add(centre, half, rq, rt, turned, i, seg, wheel, -1);
+                Leaves[LeafCount - 1].NoGround = c.PartCount > 1 && b >= ConstructBuild.PlaceSolids(p.D); // (a loose pod alone stands on its body)
                 any = true;
             }
             for (var h = 0; h < hs.Length; h++)
@@ -355,6 +357,7 @@ internal sealed partial class ConstructCollider
             {
                 c.SolidBox(i, b, out var centre, out var half);
                 Add(centre, half, Quaternion.Identity, Vector3.Zero, false, i, 0, false, -1);
+                Leaves[LeafCount - 1].NoGround = c.PartCount > 1 && b >= ConstructBuild.PlaceSolids(c.Parts[i].D);
             }
             if (boxes == 0)
             {

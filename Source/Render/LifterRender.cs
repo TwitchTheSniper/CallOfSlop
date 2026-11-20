@@ -34,7 +34,8 @@ public static class LifterRender
                 var l = lb.Lifts[i];
                 if (l.Part >= c.PartCount || ConstructLifters.DefOf(c, l.Part) is not { } ld || c.Parts[l.Part].Broken)
                     continue;
-                ConstructLifters.Frame(c, l.Part, ld, out var lp, out var lr, out var shoulder);
+                ConstructRender.PartDrawn(c, l.Part, out var lp, out var lr); // (as its body is drawn this frame, not the tick's pose: no jitter on a moving body)
+                var shoulder = lp + Vector3.Transform(ld.Base, lr);
                 // The hand, in the part's frame: the piece's origin and turn on the path, the gripper bar on its top.
                 var turn = Quaternion.Identity;
                 var origin = l.Moved ? ConstructLifters.Pose(ld, l, ConstructLifters.AgeNow(l), out turn) : ConstructLifters.RestOf(ld); // (at rest before its first move)
@@ -79,8 +80,32 @@ public static class LifterRender
                 }
                 ArmIk.Solve(ld, grip, out var yaw, out var elbow, out var wrist);
                 DrawArm(gfx, ld, part, yaw, elbow, wrist, span);
+                if (ld.Fitter)
+                    DrawToolHead(gfx, part, yaw, wrist, l.CarryBody != 0 && world.Get(l.CarryBody) is { } held ? MathF.Min(held.LocalMax.X - held.LocalMin.X, held.LocalMax.Z - held.LocalMin.Z) : 1.2f);
             }
         }
+    }
+
+    /// <summary>
+    /// A Module Fitter's tool head (module-sockets.md 7.1): under the wrist, a turning carrier with the gripper's spreader (two bars
+    /// sized to what it holds), a welding torch and a cutting head on its sides. Boxes only, in the part's frame.
+    /// </summary>
+    private static void DrawToolHead(Renderer gfx, Matrix4x4 part, float yaw, Vector3 wrist, float across)
+    {
+        var turn = Matrix4x4.CreateFromQuaternion(Quaternion.CreateFromAxisAngle(Vector3.UnitY, -yaw));
+        var spread = Math.Clamp(across, 0.6f, 3.2f);
+        var carrier = new Vector3(0.82f, 0.64f, 0.12f);
+        var dark = new Vector3(0.16f, 0.17f, 0.18f);
+        Box(gfx, part, turn, wrist + new Vector3(0, -0.18f, 0), new Vector3(0.42f, 0.22f, 0.42f), carrier); // (the carrier)
+        Box(gfx, part, turn, wrist + new Vector3(0, -0.33f, 0), new Vector3(spread, 0.08f, 0.12f), dark); // (the spreader's beam)
+        for (var k = -1; k <= 1; k += 2)
+        {
+            var end = Vector3.Transform(new Vector3(k * spread * 0.5f, 0, 0), turn);
+            Box(gfx, part, turn, wrist + end + new Vector3(0, -0.45f, 0), new Vector3(0.08f, 0.2f, 0.16f), dark); // (a grip at each end, on the lugs)
+        }
+        var side = Vector3.Transform(new Vector3(0, 0, 0.26f), turn);
+        Box(gfx, part, turn, wrist + side + new Vector3(0, -0.24f, 0), new Vector3(0.07f, 0.3f, 0.07f), new Vector3(0.55f, 0.58f, 0.62f)); // (the welding torch)
+        Box(gfx, part, turn, wrist - side + new Vector3(0, -0.24f, 0), new Vector3(0.12f, 0.24f, 0.12f), new Vector3(0.9f, 0.32f, 0.1f)); // (the cutting head)
     }
 
     public static ushort CabBody; // (phase 8) the Lifter Cab this peer's player sits in (Program.SandboxLifter.cs), else 0

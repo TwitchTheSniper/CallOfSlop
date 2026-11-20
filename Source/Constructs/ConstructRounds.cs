@@ -16,6 +16,7 @@ public struct CRound
     public int Age; // ticks
     public byte By, Weapon; // the shooter (255: nobody) and what the kill feed says
     public ushort Gun; // the construct that fired it (0: a hand gun)
+    public float Pierce, Calibre; // a bore's energy left (0: it stops at what it hits) and its hole's radius (ConstructBores.cs)
 }
 
 public sealed partial class ConstructWorld
@@ -46,9 +47,9 @@ public sealed partial class ConstructWorld
     }
 
     /// <summary>Server: a round that met nothing goes on from here, and every PC hears it.</summary>
-    public void RoundFlies(Vector3 at, Vector3 vel, float damage, float muzzle, byte by, byte weapon, ushort gun)
+    public void RoundFlies(Vector3 at, Vector3 vel, float damage, float muzzle, byte by, byte weapon, ushort gun, float pierce = 0, float calibre = 0)
     {
-        if (AddRound(new CRound { Pos = at, Tested = at, Vel = vel, Damage = damage, Muzzle = muzzle, By = by, Weapon = weapon, Gun = gun }))
+        if (AddRound(new CRound { Pos = at, Tested = at, Vel = vel, Damage = damage, Muzzle = muzzle, By = by, Weapon = weapon, Gun = gun, Pierce = pierce, Calibre = calibre }))
             AddFire(new CFireEvent { Kind = CFireKind.RoundOut, At = at, To = vel });
     }
 
@@ -131,6 +132,15 @@ public sealed partial class ConstructWorld
                 HurtShell(shell, dealt);
             else if (what == 2)
                 Targets!.RoundHit(tid, dealt, r.By, r.Weapon, at, d);
+            else if (what == 1 && r.Pierce > 0 && ch.Part >= 0 && ch.Part < ch.Body.PartCount && ConstructBores.On)
+            {
+                var flown = r; // (a copy: the pool may take a new round from the bore going on)
+                DamageBy = r.By;
+                DamageBody = r.Gun;
+                ConstructBores.Through(this, r.Gun, ch, d, dealt, flown.Pierce, flown.Muzzle, flown.Vel.Length(), flown.Calibre, flown.By, flown.Weapon, out _, query);
+                DamageBy = 255;
+                DamageBody = 0;
+            }
             else if (what == 1 && ch.Part >= 0 && ch.Part < ch.Body.PartCount && ch.RoutePlus1 == 0 && ch.SlotPlus1 == 0)
             {
                 DamageBy = r.By;

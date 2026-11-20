@@ -11,6 +11,7 @@ public enum ShellModuleKind : byte
     Hand, // an arm that holds the tools, as a person's
     Drill, // an arm that is a drill, always out: the ground drill's scoop taps ore into the hopper (GameShellHopper.cs)
     Leg, // a leg (its "speed" is the shell's pace; the Shell Gantry's lower arms fit them)
+    Tool, // an arm that is a tool (its "tool"): held forward along the look like the drill arm, drawn from its part's model (ShellModuleNodes.cs)
 }
 
 /// <summary>One module from Constructs/Shells.json: a name, the slot kind it fits ("head", "back", "arm", "leg") and its kind's numbers.</summary>
@@ -26,6 +27,8 @@ public sealed class ShellModule
     public byte Index; // its place in the file's "modules" (a wire and save byte: a new module goes at the end)
     public ConstructTool? Tool; // "tool": while the shell is worn this is its only tool (the Drill Arm's ground drill; the user, 2026-11-17)
     public bool View; // "view": in first person its wearer sees the module's own model (the one on the shell: ShellKitNodes) in place of its tool's (the user, 2026-11-19)
+    public float Hip, Knee, Hock, Ankle; // a leg's "joints": heights on its part's model (the part's metres; Hock 0: none), where the rig's bones take its boxes (ShellModuleNodes.cs)
+    public float HockUp, HockBack; // a leg's "hock": where its hock stands above and behind the ankle (a person's metres): the rig walks it digitigrade (LegAnimator)
 }
 
 /// <summary>
@@ -46,21 +49,49 @@ public sealed class ShellFrame
 {
     public string Name = "", Part = "";
     public float Scale = 1, Speed = 1, Damage = 1;
+    public float Lift = 1; // "lift": the share of the survival physics gun's limit its wearer lifts (the Half Shell's 0.5; docs/sandbox/design/half-shell.md)
+    public bool Sit = true; // "sit": false, seats refuse its wearer (the Half Shell: it would sit below a seat's controls; the Construction Shell: too big)
+
+    /// <summary>
+    /// How much further than a person its attach tool and physics gun reach: its size when larger than a person, else 1 (the
+    /// Construction Shell's 2.8; a smaller frame keeps a person's reach). docs/sandbox/design/construction-shell.md.
+    /// </summary>
+    public float Reach => MathF.Max(1f, Scale);
+
+    /// <summary>
+    /// Does a shell fitted so hold a piece in its grip while it welds (a physics gun arm and an attach tool arm both fitted)? Then
+    /// a change from the gun to the welder freezes the held piece where it is instead of dropping it (ConstructEdits.GripHolds).
+    /// </summary>
+    public bool GripWelds => ModuleFor(ConstructTool.PhysicsGun) != null && ModuleFor(ConstructTool.Welder) != null;
     public string[] Jobs = [];
     public ShellModule?[] Modules = new ShellModule?[ShellFrames.SlotCount];
     public bool[] Fixed = new bool[ShellFrames.SlotCount]; // a slot the Shell Gantry may not change (the Mining Shell's hopper and drill arm)
     public ShellFold Fold = new(); // "fold": how it folds into a shell pod (docs/sandbox/design/shell-pod.md; ShellPodRender.cs)
 
-    /// <summary>The tool a module forces while the shell is worn (the first slot's that names one), or null: any tool.</summary>
-    public ConstructTool? ForcedTool
+    /// <summary>The tool a module forces while the shell is worn (a drill arm's first: the Mining Shell keeps its drill whatever its other arm is; else the first slot's that names one), or null: any tool.</summary>
+    public ConstructTool? ForcedTool => ToolModule?.Tool;
+
+    /// <summary>Whether a shell fitted so may hold <paramref name="tool"/>: any tool when no module names one, else only the tools its modules are.</summary>
+    public bool Allows(ConstructTool tool)
     {
-        get
-        {
-            foreach (var m in Modules)
-                if (m?.Tool is { } t)
-                    return t;
-            return null;
-        }
+        var any = false;
+        foreach (var m in Modules)
+            if (m?.Tool is { } t)
+            {
+                if (t == tool)
+                    return true;
+                any = true;
+            }
+        return !any;
+    }
+
+    /// <summary>The module that is the tool <paramref name="tool"/> (a tool arm, the drill arm), or null.</summary>
+    public ShellModule? ModuleFor(ConstructTool tool)
+    {
+        foreach (var m in Modules)
+            if (m?.Tool == tool)
+                return m;
+        return null;
     }
 
     /// <summary>The module that forces <see cref="ForcedTool"/> (for its name in a refusal), or null.</summary>
@@ -68,6 +99,9 @@ public sealed class ShellFrame
     {
         get
         {
+            foreach (var m in Modules)
+                if (m?.Tool != null && m.Kind == ShellModuleKind.Drill)
+                    return m;
             foreach (var m in Modules)
                 if (m?.Tool != null)
                     return m;
@@ -253,8 +287,32 @@ public static class ShellFrames
             if (m.TryGetProperty("view", out var vw))
             {
                 mod.View = vw.GetBoolean();
-                if (mod.View && (mod.Tool == null || mod.Kind != ShellModuleKind.Drill))
-                    throw new FormatException($"module \"{mod.Name}\": \"view\" needs a \"tool\" and a kind with a model of its own (drill)");
+                if (mod.View && (mod.Tool == null || mod.Kind is not (ShellModuleKind.Drill or ShellModuleKind.Tool)))
+                    throw new FormatException($"module \"{mod.Name}\": \"view\" needs a \"tool\" and a kind with a model of its own (drill, tool)");
+            }
+            if (mod.Kind == ShellModuleKind.Tool && (mod.Tool == null || mod.Slot != "arm" || mod.Part.Length == 0))
+                throw new FormatException($"module \"{mod.Name}\": a tool module is an arm with a \"tool\" and a \"part\" (its model)");
+            if (mod.Kind == ShellModuleKind.Leg && mod.Part.Length > 0)
+            {
+                if (!m.TryGetProperty("joints", out var jt))
+                    throw new FormatException($"module \"{mod.Name}\": a leg with a part says its \"joints\" (hip, knee, ankle heights on the part)");
+                mod.Hip = Num(jt, "hip", 0.2f, 3f);
+                mod.Knee = Num(jt, "knee", 0.1f, 3f);
+                mod.Ankle = Num(jt, "ankle", 0f, 1f);
+                if (jt.TryGetProperty("hock", out _))
+                    mod.Hock = Num(jt, "hock", 0.05f, 2f);
+                if (!(mod.Hip > mod.Knee && mod.Knee > MathF.Max(mod.Hock, mod.Ankle) && (mod.Hock == 0 || mod.Hock > mod.Ankle)))
+                    throw new FormatException($"module \"{mod.Name}\": \"joints\" go down: hip, knee, hock, ankle");
+                if (m.TryGetProperty("hock", out var hk))
+                {
+                    if (mod.Hock == 0 || hk.GetArrayLength() != 2)
+                        throw new FormatException($"module \"{mod.Name}\": \"hock\" is [up, back] and needs a hock in its \"joints\"");
+                    (mod.HockUp, mod.HockBack) = (hk[0].GetSingle(), hk[1].GetSingle());
+                    if (mod.HockUp is < 0.05f or > 0.6f || mod.HockBack is < -0.2f or > 0.3f)
+                        throw new FormatException($"module \"{mod.Name}\": \"hock\" up 0.05 to 0.6, back -0.2 to 0.3");
+                }
+                else if (mod.Hock > 0)
+                    throw new FormatException($"module \"{mod.Name}\": a hock in its \"joints\" needs \"hock\": [up, back]");
             }
             if (!modules.TryAdd(mod.Name, mod))
                 throw new FormatException($"module \"{mod.Name}\" twice");
@@ -269,10 +327,14 @@ public static class ShellFrames
             {
                 Name = f.GetProperty("name").GetString() ?? "",
                 Part = f.GetProperty("part").GetString() ?? "",
-                Scale = Num(f, "scale", 0.5f, 2.5f),
+                Scale = Num(f, "scale", 0.5f, 3f), // (3: the Construction Shell is 2.8, docs/sandbox/design/construction-shell.md)
                 Speed = Num(f, "speed", 0.2f, 2f),
                 Damage = Num(f, "damage", 0.1f, 5f),
             };
+            if (f.TryGetProperty("lift", out _))
+                fr.Lift = Num(f, "lift", 0.1f, 10f); // (the Construction Shell's 5)
+            if (f.TryGetProperty("sit", out var sit))
+                fr.Sit = sit.GetBoolean();
             if (f.TryGetProperty("jobs", out var jobs))
                 fr.Jobs = [.. jobs.EnumerateArray().Select(e => e.GetString() ?? "")];
             var sl = f.GetProperty("slots");
@@ -332,7 +394,7 @@ public static class ShellFrames
         }
         if (list.Count == 0 || list.Count > 255)
             throw new FormatException("\"frames\": 1 to 255");
-        if (list[0].Scale != 1 || list[0].Speed != 1 || list[0].Damage != 1 || list[0].Part != "Robot Shell")
+        if (list[0].Scale != 1 || list[0].Speed != 1 || list[0].Damage != 1 || list[0].Lift != 1 || !list[0].Sit || list[0].Part != "Robot Shell")
             throw new FormatException("frame 0 is the Robot Shell, at scale, speed and damage 1 (every older shell is it)");
         _modules = [.. order];
         return [.. list];
@@ -389,7 +451,7 @@ public static class ShellFrames
     public static void Fit(ShellFrame into, byte frame, ReadOnlySpan<byte> kit)
     {
         var f = Of(frame);
-        (into.Name, into.Part, into.Scale, into.Jobs) = (f.Name, f.Part, f.Scale, f.Jobs);
+        (into.Name, into.Part, into.Scale, into.Jobs, into.Lift, into.Sit) = (f.Name, f.Part, f.Scale, f.Jobs, f.Lift, f.Sit);
         float speed = f.Speed, damage = f.Damage;
         for (var i = 0; i < SlotCount; i++)
         {

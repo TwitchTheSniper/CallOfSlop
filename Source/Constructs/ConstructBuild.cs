@@ -97,12 +97,21 @@ public static class ConstructBuild
             return "doors hang on hinges";
         if (ds.Kind == SocketKind.Leaf && !onLeaf)
             return "doors hang on hinges";
+        if (ts.Kind == SocketKind.Module && ModuleSockets.SizeRefusal(target.ModPart == ModPart.Socket ? target : def, target.ModPart == ModPart.Socket ? def : target) is { } size)
+            return size;
         c.SocketAt(part, socket, out var at, out var dir);
         Span<byte> turns = stackalloc byte[4];
         var n = SpinTurns(ds.Dir, dir, turns);
         if (n == 0)
             return "no turn fits";
         var rot = turns[((spin % n) + n) % n];
+        if (ts.Kind == SocketKind.Module && ModuleTurn(c, part, def, turns, n, spin) is var mt)
+        {
+            // (a spin always counts over the full list, as blueprints write it: a turn the footprint doesn't allow moves on to the next one that it does)
+            if (mt < 0)
+                return "no turn fits";
+            rot = (byte)mt;
+        }
         var scale = ConstructMerge.ScaleFor(c, part, socket, def);
         var pos = ConstructWorld.Quantise(at - Rot24.Apply(rot, ds.At * scale));
         var seg = c.Parts[part].Seg;
@@ -112,7 +121,33 @@ public static class ConstructBuild
         g = new ConstructGhost { Part = part, Socket = socket, DefSocket = defSocket, Variant = spin, Pos = pos, Rot = rot, Seg = seg, NewJoint = newJoint, Scale = scale };
         if (Blocked(c, def, pos, rot, scale, seg))
             return InTheWay;
+        if (ModuleSockets.PlaceRefusal(c, def, part, pos, rot, scale) is { } module)
+            return module;
+        if (def.ShellPod is { Flush: true } && ConstructShellPod.BodyRefusal(c, def, pos, rot, seg) is { } blocked)
+            return blocked; // (a flush pod whose body, proud of a thin surface's far side, would run into another part: after the overlap test, the dearer one)
         return null;
+    }
+
+    /// <summary>
+    /// The turn a part takes onto a Module socket for this spin (module-sockets.md 2.1: 4 square, 2 oblong, 1 keyed): the spin's
+    /// own turn in the full list when the footprint allows it, else the next allowed one after it; -1 when none is.
+    /// </summary>
+    private static int ModuleTurn(Construct c, int part, ConstructPartDef def, ReadOnlySpan<byte> turns, int n, int spin)
+    {
+        var target = c.DefOf(part);
+        var plateIsTarget = target.ModPart == ModPart.Socket;
+        var keyed = plateIsTarget && ModuleSockets.SocketOfPlate(c, part) is var si and >= 0 && c.ModSockets[si].Keyed;
+        var at = ((spin % n) + n) % n;
+        for (var k = 0; k < n; k++)
+        {
+            var r = turns[(at + k) % n];
+            var ok = plateIsTarget
+                ? ModuleSockets.TurnFits(target, c.Parts[part].Rot, def, r, keyed)
+                : ModuleSockets.TurnFits(def, r, target, c.Parts[part].Rot, false);
+            if (ok)
+                return r;
+        }
+        return -1;
     }
 
     /// <summary>
@@ -179,10 +214,17 @@ public static class ConstructBuild
 
     private static float Upright(byte r) => Rot24.Apply(r, Vector3.UnitY).Y * 2 + Rot24.Apply(r, -Vector3.UnitZ).Z * -1 + Rot24.Apply(r, Vector3.UnitX).X * 0.1f;
 
+    /// <summary>
+    /// The solid boxes a part is tested with as it goes on: all of them, but a flush shell pod's lid alone, since its body sinks into
+    /// what it goes on (its body box, solid, then blocks what comes after it: ShellParts.Pod).
+    /// </summary>
+    public static int PlaceSolids(ConstructPartDef def) => def.ShellPod is { Flush: true } ? Math.Min(1, def.SolidBoxes) : def.SolidBoxes;
+
     /// <summary>The first part a part there would overlap (the same boxes and slack as <see cref="Blocked"/>, every part looked at: a reason's, never per frame), or -1.</summary>
     public static int BlockerOf(Construct c, ConstructPartDef def, Vector3 pos, byte rot, float scale = 1f)
     {
-        for (var b = 0; b < def.SolidBoxes; b++)
+        var solids = PlaceSolids(def);
+        for (var b = 0; b < solids; b++)
         {
             var bc = pos + Rot24.Apply(rot, def.Boxes[b].Center * scale);
             var bh = Rot24.ApplyHalf(rot, def.Boxes[b].Half * scale) - new Vector3(0.01f);
@@ -198,9 +240,10 @@ public static class ConstructBuild
     }
 
     /// <summary>Would a part there overlap one already on (all compared in the rest frame, a centimetre of slack)?</summary>
-    public static bool Blocked(Construct c, ConstructPartDef def, Vector3 pos, byte rot, float scale = 1f, int seg = -1, int except = -1)
+    public static bool Blocked(Construct c, ConstructPartDef def, Vector3 pos, byte rot, float scale = 1f, int seg = -1, int except = -1, bool podLids = false)
     {
-        for (var b = 0; b < def.SolidBoxes; b++)
+        var solids = PlaceSolids(def);
+        for (var b = 0; b < solids; b++)
         {
             var bc = pos + Rot24.Apply(rot, def.Boxes[b].Center * scale);
             var bh = Rot24.ApplyHalf(rot, def.Boxes[b].Half * scale) - new Vector3(0.01f);
@@ -217,7 +260,7 @@ public static class ConstructBuild
                 if (c.FreeformCount > 0 && c.FrameOf(c.Parts[i].Seg) != frame)
                     continue; // (a freeform segment's parts are in a frame of their own: board item fw01)
                 var d = c.DefOf(i);
-                for (var k = 0; k < d.SolidBoxes; k++)
+                for (var k = 0; k < (podLids ? PlaceSolids(d) : d.SolidBoxes); k++) // (podLids: a part swapped under a flush pod goes where the pod's body already is)
                 {
                     c.BoxOf(i, k, out var oc, out var oh);
                     if (MathF.Abs(bc.X - oc.X) < bh.X + oh.X && MathF.Abs(bc.Y - oc.Y) < bh.Y + oh.Y && MathF.Abs(bc.Z - oc.Z) < bh.Z + oh.Z)
@@ -486,6 +529,7 @@ public static class ConstructBuild
         public string Id = ""; // "id": made once, kept through renames (16 hex digits; a shipped one "ship:<name>"); "": none yet
         public int Version; // "version": 1 up, +1 on every overwrite and lock change (0: none)
         public List<UseSpec> Uses = new(); // "uses": other saved blueprints built into this one; a step may name a use's step as ["uN", k] (SubBlueprints.UseRef)
+        public ModuleBlock? Module; // "module": a module design's size, tags and stats, written from its parts at save (ModuleBlueprints.cs)
         public Dictionary<string, Dictionary<int, string>>? Packed; // "packed": the sub-blueprints a pack or a stamp's upload carries, by id and version (their text)
         // ...and a flattened one's (SubBlueprints.Flatten): every use's steps are its own, so every reader builds it as any blueprint.
         public UseMap? Map; // each step's use and each use's steps (null: no uses)
@@ -525,8 +569,26 @@ public static class ConstructBuild
         var list = new List<Blueprint>();
         var outer = _loading;
         _loading = list;
-        var usesLater = new List<(Blueprint, string, int)>(); // (and where it stands in the list: it goes back there, in file order)
+        var usesLater = new List<(Blueprint Bp, string Mod, int At, string Text, bool Carries)>(); // (and where it stands in the list: it goes back there, in file order)
         var remember = BlueprintCheckCache.Enabled(mods); // (dev builds skip the build check of a file that passed it unchanged: BlueprintCheckCache.cs)
+        // Build it once on a scratch world: every step must fit (and a pre-built's wires are routed as conduit then, ConstructConduit.cs;
+        // a dev build keeps those routes with the check's cache, so one that passed unchanged isn't built again just for them).
+        void Check(Blueprint bp, string text)
+        {
+            var check = !remember || !BlueprintCheckCache.Passed(text);
+            if (!check && ConstructConduit.Any(bp) && !ConstructConduit.Restore(bp, text))
+                check = ConstructConduit.Wanted(bp) || !ConstructConduit.Remember(bp, text);
+            if (!check)
+                return;
+            var scratch = new ConstructWorld();
+            if (Build(scratch, bp, Vector3.Zero, Quaternion.Identity, out var why) == null)
+                throw new ConstructPartException($"{bp.File}: {why}");
+            if (remember)
+            {
+                BlueprintCheckCache.Add(text);
+                ConstructConduit.Remember(bp, text);
+            }
+        }
         ConstructConduit.BeginLoad(); // (a pre-built's wires are routed as it is built here, not later in a server tick)
         try
         {
@@ -544,25 +606,15 @@ public static class ConstructBuild
                     var bp = ParseBlueprint(df.Text, df.File);
                     if (bp.Uses.Count > 0)
                     {
-                        usesLater.Add((bp, df.Mod, list.Count)); // (a shipped blueprint may use shipped ones: flattened once they are all read)
+                        usesLater.Add((bp, df.Mod, list.Count, df.Text, false)); // (a shipped blueprint may use shipped ones: flattened once they are all read)
                         continue;
                     }
-                    // Build it once on a scratch world: every step must fit (and a pre-built's wires are routed as conduit then, ConstructConduit.cs;
-                    // a dev build keeps those routes with the check's cache, so one that passed unchanged isn't built again just for them).
-                    var check = !remember || !BlueprintCheckCache.Passed(df.Text);
-                    if (!check && ConstructConduit.Any(bp) && !ConstructConduit.Restore(bp, df.Text))
-                        check = ConstructConduit.Wanted(bp) || !ConstructConduit.Remember(bp, df.Text);
-                    if (check)
+                    if (bp.Carry.Exists(c => FindCarried(c.Blueprint) == null))
                     {
-                        var scratch = new ConstructWorld();
-                        if (Build(scratch, bp, Vector3.Zero, Quaternion.Identity, out var why) == null)
-                            throw new ConstructPartException($"{bp.File}: {why}");
-                        if (remember)
-                        {
-                            BlueprintCheckCache.Add(df.Text);
-                            ConstructConduit.Remember(bp, df.Text);
-                        }
+                        usesLater.Add((bp, df.Mod, list.Count, df.Text, true)); // (a carrier read before a craft it carries, the Mainframe before its Shuttles: built once every shipped one is read)
+                        continue;
                     }
+                    Check(bp, df.Text);
                     list.Add(bp);
                 }
                 catch (Exception ex) when (ex is ConstructPartException or JsonException or IOException)
@@ -572,10 +624,16 @@ public static class ConstructBuild
                 }
             }
             var inserted = 0;
-            foreach (var (bp, mod, at) in usesLater)
+            foreach (var (bp, mod, at, text, carries) in usesLater)
             {
                 try
                 {
+                    if (carries)
+                    {
+                        Check(bp, text);
+                        list.Insert(Math.Min(list.Count, at + inserted++), bp);
+                        continue;
+                    }
                     var flat = SubBlueprints.Flatten(bp, new SubBlueprints.Source { Library = false, Shipped = n => list.FirstOrDefault(b => b.Name.Equals(n, StringComparison.OrdinalIgnoreCase)) });
                     if (Build(new ConstructWorld(), flat, Vector3.Zero, Quaternion.Identity, out var why) == null)
                         throw new ConstructPartException($"{bp.File}: {why}");
@@ -781,6 +839,9 @@ public static class ConstructBuild
                 case "uses":
                     SubBlueprints.ParseUses(p.Value, file, bp);
                     break;
+                case "module":
+                    bp.Module = ModuleBlueprints.Parse(p.Value, file);
+                    break;
                 case "packed":
                     bp.Packed = SubBlueprints.ParsePacked(p.Value, file);
                     break;
@@ -791,7 +852,7 @@ public static class ConstructBuild
                         bp.Bill.Add(ConstructBill.ParseLine(bl, file, bp.Bill.Count));
                     break;
                 default:
-                    throw new ConstructPartException($"{file}: unknown key \"{p.Name}\" (format, name, description, group, id, version, exactLinks, steps, uses, packed, wires, links, connectors, cargo, loot, stored, bill)");
+                    throw new ConstructPartException($"{file}: unknown key \"{p.Name}\" (format, name, description, group, id, version, exactLinks, steps, uses, module, packed, wires, links, connectors, cargo, loot, stored, bill)");
             }
         if (bp.Name.Length == 0 || bp.Name.Any(c => c < 32 || c > 126))
             throw new ConstructPartException($"{file}: \"name\" must be plain ASCII text");

@@ -5,6 +5,27 @@
   "styles": [
     "Bandit"
   ],
+  "modules": {
+    "tags": {
+      "turret": 1.0,
+      "engine": 0.9,
+      "missile": 0.8,
+      "reactor": 0.5
+    },
+    "stats": {
+      "speed": 0.9,
+      "power": 0.4,
+      "fuel": 0.2,
+      "mass": 0.3,
+      "cost": 0.9
+    },
+    "needs": {
+      "accel": 2.0,
+      "powerMargin": 1.05,
+      "minGuns": 2
+    },
+    "pick": 3
+  },
   "stance": {
     "players": "hostile",
     "factions": {

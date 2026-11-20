@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Module RCS Quad 2x2",
+  "description": "A 2x2 module: four RCS Thrusters: four times the push and the mass. Written by the part kit (module_sockets).",
+  "module": { "w": 2, "l": 2, "primary": "engine", "tags": ["engine"] },
+  "steps": [
+    { "part": "Module Plug 2x2" },
+    { "part": "RCS Thruster", "on": 0, "socket": "s0.0", "by": "base" },
+    { "part": "RCS Thruster", "on": 0, "socket": "s1.0", "by": "base" },
+    { "part": "RCS Thruster", "on": 0, "socket": "s0.1", "by": "base" },
+    { "part": "RCS Thruster", "on": 0, "socket": "s1.1", "by": "base" }
+  ]
+}
