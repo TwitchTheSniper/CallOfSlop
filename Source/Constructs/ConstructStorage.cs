@@ -975,7 +975,9 @@ public static class ConstructStorage
 /// <summary>The world's side of physical storage (ConstructStorage.cs): the store pool and every change to what is stored.</summary>
 public sealed partial class ConstructWorld
 {
-    public const int MaxStores = 1024; // (a wall of shelf bays is a store each; on the wire every handle is a u16)
+    // (a wall of shelf bays is a store each; on the wire every handle is a u16. 4096 since 2026-11-20: a Mainframe holds about 700
+    // stores (server racks, lockers, shelving), so two of them filled 1024 and the second's racks held nothing)
+    public const int MaxStores = 4096;
 
     /// <summary>Every container's contents, by handle (<see cref="CPart.Store"/>; 0 is none). Server: given out as storage parts are added; client: as heard.</summary>
     public readonly CStore[] Stores = MakeStores();

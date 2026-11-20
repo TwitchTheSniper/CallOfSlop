@@ -221,7 +221,7 @@ public static partial class SelfTest
         {
             var eye = new Vector3(x, t.Sample(x, z) + 1.7f, z);
             var fwd = new Vector3(MathF.Sin(yaw), -0.05f, -MathF.Cos(yaw));
-            TerrainRenderer.FrustumPlanes(Matrix4x4.CreateLookAt(eye, eye + fwd, Vector3.UnitY) * proj, planes);
+            TerrainRenderer.FrustumPlanes(Matrix4x4.CreateLookAt(eye, eye + fwd, Vector3.UnitY) * Renderer.GpuProjection(proj), planes);
             var sw = Stopwatch.StartNew();
             var updates = 0;
             do
@@ -349,7 +349,7 @@ public static partial class SelfTest
         Span<Vector4> planes = stackalloc Vector4[6];
         var eye = new Vector3(x, h0 + 20, z + 25);
         TerrainRenderer.FrustumPlanes(Matrix4x4.CreateLookAt(eye, new Vector3(x, h0, z), Vector3.UnitY)
-                                      * Matrix4x4.CreatePerspectiveFieldOfView(1.1f, 16f / 9f, 0.05f, Map.StreamedFarPlane), planes);
+                                      * Renderer.GpuProjection(Matrix4x4.CreatePerspectiveFieldOfView(1.1f, 16f / 9f, 0.05f, Map.StreamedFarPlane)), planes);
         var sw = Stopwatch.StartNew();
         do
         {

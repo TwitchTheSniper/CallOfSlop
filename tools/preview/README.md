@@ -16,6 +16,14 @@ the page fetches `models/index.json` and a model when it is picked (a ship picke
 cuts away by height, colours by finish, picks parts and shows the links (Links: cables, pipes, chutes and shafts as the build laid them, one colour a type; Links through walls draws them over everything). Each model carries `"links"`: `[type, x, y, z, ...]` from the output through the nodes to the input. `--preview-shot ... --links` draws them in the PNG too. It is a design aid, not the renderer: no textures, no lamps'
 light, legs and tracks left out, joints at rest, hidden collision boxes skipped.
 
+A ship that carries craft (a blueprint's `"carry"` list) shows them aboard, each part named "Craft: Part"; the Mainframe's
+gallery model also puts a Zero Day in its berth (`ConstructPreview.GalleryAboard`). A model over 300,000 triangles is written
+instanced (`ConstructPreview.Instanced`): `"tpl"`, one template per kind of part (its own triangles and scale), and `"inst"`,
+30 bytes a placed copy (uint16 kind, float32 x y z, float32 quaternion x y z w); the page expands them as it loads, so the
+Mainframe's 1.2 million triangles are 5.4 MB. The page's near plane follows the camera's distance and its grid's cells grow
+with the model (1 m up to about 200 m across, then 10 m or 100 m); its part list shows run-time pieces (cut plates,
+extrusions) as one row per kind.
+
 The page loads three.js 0.160.0 from cdn.jsdelivr.net. A cloud container's browser can't reach that CDN, and the gallery
 fetches its models, so to look at it there serve DIR over http on localhost and route the CDN to the npm package's files
 (Playwright `page.route`; launch with the proxy's `bypass: "localhost"`), as the ship-design skill describes.

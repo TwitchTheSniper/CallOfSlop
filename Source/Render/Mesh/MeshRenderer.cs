@@ -344,8 +344,7 @@ public sealed unsafe partial class MeshRenderer : IMeshDrawer
         _planes[1] = c4 - c1;
         _planes[2] = c4 + c2;
         _planes[3] = c4 - c2;
-        _planes[4] = c4 + c3;
-        _planes[5] = c4 - c3;
+        Renderer.DepthPlanes(c3, c4, out _planes[4], out _planes[5]); // near, far (either depth convention)
         for (var i = 0; i < 6; i++) // normalised, so a sphere test can use the radius in metres
         {
             var len = new Vector3(_planes[i].X, _planes[i].Y, _planes[i].Z).Length();

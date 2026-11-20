@@ -569,8 +569,26 @@ public static class ConstructBuild
         var list = new List<Blueprint>();
         var outer = _loading;
         _loading = list;
-        var usesLater = new List<(Blueprint, string, int)>(); // (and where it stands in the list: it goes back there, in file order)
+        var usesLater = new List<(Blueprint Bp, string Mod, int At, string Text, bool Carries)>(); // (and where it stands in the list: it goes back there, in file order)
         var remember = BlueprintCheckCache.Enabled(mods); // (dev builds skip the build check of a file that passed it unchanged: BlueprintCheckCache.cs)
+        // Build it once on a scratch world: every step must fit (and a pre-built's wires are routed as conduit then, ConstructConduit.cs;
+        // a dev build keeps those routes with the check's cache, so one that passed unchanged isn't built again just for them).
+        void Check(Blueprint bp, string text)
+        {
+            var check = !remember || !BlueprintCheckCache.Passed(text);
+            if (!check && ConstructConduit.Any(bp) && !ConstructConduit.Restore(bp, text))
+                check = ConstructConduit.Wanted(bp) || !ConstructConduit.Remember(bp, text);
+            if (!check)
+                return;
+            var scratch = new ConstructWorld();
+            if (Build(scratch, bp, Vector3.Zero, Quaternion.Identity, out var why) == null)
+                throw new ConstructPartException($"{bp.File}: {why}");
+            if (remember)
+            {
+                BlueprintCheckCache.Add(text);
+                ConstructConduit.Remember(bp, text);
+            }
+        }
         ConstructConduit.BeginLoad(); // (a pre-built's wires are routed as it is built here, not later in a server tick)
         try
         {
@@ -588,25 +606,15 @@ public static class ConstructBuild
                     var bp = ParseBlueprint(df.Text, df.File);
                     if (bp.Uses.Count > 0)
                     {
-                        usesLater.Add((bp, df.Mod, list.Count)); // (a shipped blueprint may use shipped ones: flattened once they are all read)
+                        usesLater.Add((bp, df.Mod, list.Count, df.Text, false)); // (a shipped blueprint may use shipped ones: flattened once they are all read)
                         continue;
                     }
-                    // Build it once on a scratch world: every step must fit (and a pre-built's wires are routed as conduit then, ConstructConduit.cs;
-                    // a dev build keeps those routes with the check's cache, so one that passed unchanged isn't built again just for them).
-                    var check = !remember || !BlueprintCheckCache.Passed(df.Text);
-                    if (!check && ConstructConduit.Any(bp) && !ConstructConduit.Restore(bp, df.Text))
-                        check = ConstructConduit.Wanted(bp) || !ConstructConduit.Remember(bp, df.Text);
-                    if (check)
+                    if (bp.Carry.Exists(c => FindCarried(c.Blueprint) == null))
                     {
-                        var scratch = new ConstructWorld();
-                        if (Build(scratch, bp, Vector3.Zero, Quaternion.Identity, out var why) == null)
-                            throw new ConstructPartException($"{bp.File}: {why}");
-                        if (remember)
-                        {
-                            BlueprintCheckCache.Add(df.Text);
-                            ConstructConduit.Remember(bp, df.Text);
-                        }
+                        usesLater.Add((bp, df.Mod, list.Count, df.Text, true)); // (a carrier read before a craft it carries, the Mainframe before its Shuttles: built once every shipped one is read)
+                        continue;
                     }
+                    Check(bp, df.Text);
                     list.Add(bp);
                 }
                 catch (Exception ex) when (ex is ConstructPartException or JsonException or IOException)
@@ -616,10 +624,16 @@ public static class ConstructBuild
                 }
             }
             var inserted = 0;
-            foreach (var (bp, mod, at) in usesLater)
+            foreach (var (bp, mod, at, text, carries) in usesLater)
             {
                 try
                 {
+                    if (carries)
+                    {
+                        Check(bp, text);
+                        list.Insert(Math.Min(list.Count, at + inserted++), bp);
+                        continue;
+                    }
                     var flat = SubBlueprints.Flatten(bp, new SubBlueprints.Source { Library = false, Shipped = n => list.FirstOrDefault(b => b.Name.Equals(n, StringComparison.OrdinalIgnoreCase)) });
                     if (Build(new ConstructWorld(), flat, Vector3.Zero, Quaternion.Identity, out var why) == null)
                         throw new ConstructPartException($"{bp.File}: {why}");

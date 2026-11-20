@@ -684,8 +684,7 @@ public sealed unsafe partial class TerrainRenderer
         planes[1] = c4 - c1;
         planes[2] = c4 + c2;
         planes[3] = c4 - c2;
-        planes[4] = c4 + c3; // near (loose, works for both depth conventions)
-        planes[5] = c4 - c3;
+        Renderer.DepthPlanes(c3, c4, out planes[4], out planes[5]); // near, far (either depth convention)
     }
 
     internal static bool Visible(ReadOnlySpan<Vector4> planes, Vector3 min, Vector3 max)

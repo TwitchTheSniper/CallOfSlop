@@ -1,0 +1,30 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Wall Bay Component Sled",
+  "group": "In-wall bays",
+  "description": "An in-wall bay whose cover flips up and whose sled runs out with a power cell on it.",
+  "steps": [
+    {
+      "part": "Wall Bay",
+      "spin": 2
+    },
+    {
+      "part": "Component Bay Insert",
+      "on": 0,
+      "socket": "insert",
+      "by": "bay"
+    },
+    {
+      "part": "Component Bay Cover",
+      "on": 1,
+      "socket": "cover",
+      "by": "hang"
+    },
+    {
+      "part": "Component Sled",
+      "on": 1,
+      "socket": "sled",
+      "by": "hang"
+    }
+  ]
+}

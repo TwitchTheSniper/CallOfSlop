@@ -193,12 +193,15 @@ public static class Surfaces
         // A surface at world point p, normal n: lp is the point in the box (metres from its middle), ln its face's normal there, size
         // the box (0: no box edges to wear, a prop), and code the row with the box's wear in its fraction (Surfaces.Code). bp and bn
         // are the point and the face's normal in the body (a detail texture runs on across a body's boxes and stays on it as it
-        // moves), and up the world's up in the box (a wall's v runs up it, and its weather hangs from its top).
+        // moves), and up the world's up in the box (a wall's v runs up it, and its weather hangs from its top). pd is p in small
+        // numbers (from the render origin), for its screen derivatives: dFdx of a world point kilometres out is float rounding,
+        // not the pixel (24 km out on a planetoid a step is 2 mm, a pixel up close a fraction of one), and the bumps' frame from
+        // it sparkled from pixel quad to pixel quad as the camera moved (the Worn Flight Couch's fabric, 2026-11-20).
         // uSurfQ.x is the setting: 1 Medium, 2 High (Low never comes here: it takes the classic light). All of it is maths on what the
         // pixel already has: no textures. Every detail is filtered by the pixel's own size (its uv's screen derivatives), so it
         // fades to its mean where it would be finer than a pixel instead of crawling as the camera moves, and fades out between
         // 18 and 60 m besides, so a far hull pays for the light and nothing else.
-        vec3 SurfaceLit(vec3 base, vec3 n, vec3 p, vec3 lp, vec3 ln, vec3 size, float code, vec3 bp, vec3 bn, vec3 up)
+        vec3 SurfaceLit(vec3 base, vec3 n, vec3 p, vec3 pd, vec3 lp, vec3 ln, vec3 size, float code, vec3 bp, vec3 bn, vec3 up)
         {
             int row = int(code);
             float wear = fract(code) / 0.99;
@@ -232,7 +235,7 @@ public static class Surfaces
             vec3 abn = abs(bn);
             vec2 buv = abn.y > abn.x && abn.y > abn.z ? bp.xz : abn.x > abn.z ? vec2(bp.z, bp.y) : vec2(bp.x, bp.y);
             vec2 bdx = dFdx(buv), bdy = dFdy(buv);
-            vec3 dpx = dFdx(p), dpy = dFdy(p);
+            vec3 dpx = dFdx(pd), dpy = dFdy(pd);
             if (hs.y > hs.x) // (streaks and grain run the long way of the face)
             {
                 uv = uv.yx;

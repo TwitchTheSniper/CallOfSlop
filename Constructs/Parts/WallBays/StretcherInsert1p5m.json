@@ -1,0 +1,264 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Stretcher Insert 1.5m",
+  "description": "An in-wall bay's stretcher insert (1.5 m deep): a cabinet under a long stretcher drawer, its runners, and a med cabinet over it.",
+  "group": "Interior",
+  "section": "In-wall bays",
+  "role": "frame",
+  "tool": "wrench",
+  "finish": "painted steel",
+  "collider": "boxes",
+  "mass": 40.0,
+  "health": 500,
+  "armour": 6,
+  "material": "steel",
+  "color": "#262a2f",
+  "attachSeconds": 3.0,
+  "boxes": [
+    {
+      "min": [
+        -0.45,
+        0.1,
+        -1.5
+      ],
+      "max": [
+        0.45,
+        2.0,
+        -1.485
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.435,
+        0.78,
+        -0.02
+      ],
+      "max": [
+        0.455,
+        0.8,
+        0.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.45,
+        0.098,
+        -0.04
+      ],
+      "max": [
+        0.45,
+        0.77,
+        -0.012
+      ],
+      "color": "#c4c8ca",
+      "detail": true,
+      "finish": "wall panelling"
+    },
+    {
+      "min": [
+        -0.448,
+        0.1,
+        -0.042
+      ],
+      "max": [
+        0.448,
+        0.38,
+        -0.008
+      ],
+      "color": "#2c5aa0",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -0.45,
+        0.1,
+        -0.04
+      ],
+      "max": [
+        0.45,
+        0.77,
+        -0.012
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.45,
+        0.8,
+        -1.48
+      ],
+      "max": [
+        -0.42,
+        0.83,
+        -0.04
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.42,
+        0.8,
+        -1.48
+      ],
+      "max": [
+        0.45,
+        0.83,
+        -0.04
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.45,
+        0.769,
+        -1.5
+      ],
+      "max": [
+        0.45,
+        0.78,
+        -0.04
+      ],
+      "color": "#262a2f",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.45,
+        1.07,
+        -0.04
+      ],
+      "max": [
+        0.45,
+        2.0,
+        -0.012
+      ],
+      "color": "#dfe4e2",
+      "detail": true,
+      "finish": "gloss paint"
+    },
+    {
+      "min": [
+        -0.04,
+        1.42,
+        -0.03
+      ],
+      "max": [
+        0.04,
+        1.7,
+        -0.002
+      ],
+      "color": "#e0402c",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.14,
+        1.52,
+        -0.026
+      ],
+      "max": [
+        0.14,
+        1.6,
+        -0.004
+      ],
+      "color": "#e0402c",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.3,
+        1.82,
+        -0.026
+      ],
+      "max": [
+        0.36,
+        1.86,
+        -0.004
+      ],
+      "color": "#5ad070",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.4,
+        1.12,
+        -0.017
+      ],
+      "max": [
+        0.4,
+        1.15,
+        -0.006
+      ],
+      "color": "#2a2e33",
+      "detail": true,
+      "finish": "plastic",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.45,
+        1.07,
+        -0.04
+      ],
+      "max": [
+        0.45,
+        2.0,
+        -0.012
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.45,
+        1.059,
+        -1.5
+      ],
+      "max": [
+        0.45,
+        1.07,
+        -0.04
+      ],
+      "color": "#262a2f",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bay",
+      "at": [
+        0.0,
+        1.0,
+        -1.5
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "stretcher",
+      "at": [
+        0.445,
+        0.79,
+        0.0
+      ],
+      "dir": "+z"
+    }
+  ]
+}

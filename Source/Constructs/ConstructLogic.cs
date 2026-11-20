@@ -479,8 +479,8 @@ public static class ConstructLogic
         for (var i = 0; i < c.PartCount; i++)
         {
             ref var p = ref c.Parts[i];
-            if (p.Out != p.OutNext)
-                changed = true;
+            if (p.Out != p.OutNext && !p.D.Logic.IsReadout())
+                changed = true; // (a gauge's dial moving doesn't wake the body: a battery bank charging kept a 1 km ship's physics awake for minutes; what reads it wakes it by its own change)
             p.Out = p.OutNext;
             p.Keys = 0;
             p.Stood = false;

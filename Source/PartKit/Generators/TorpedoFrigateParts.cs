@@ -1750,6 +1750,9 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
     private const double RailLen = 32.5;
     private const double RailEnergy = 15000; // kJ a slug takes from the capacitors (ship-works.md 8): the Capacitor Bank M aboard holds two and a bit, and refills one in 10 s, its rate of fire
 
+    /// <summary>The railgun slug's energy budget (ConstructBores.cs): what it spends going through part after part, the whole way through a capital ship.</summary>
+    private const double RailPierce = 3000;
+
     private static Part Railgun()
     {
         var p = new Part("Zero Day Railgun", Small, Section, "The Zero Day's railgun: one slug at great speed through anything in a line, each shot 15 MJ from the ship's Capacitor Bank. Laid along the spine, so the ship is the aim.", role: "gun", tool: "welder", material: "steel", color: Armour, group: Group);
@@ -1773,7 +1776,7 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
             p.Add(Box([-0.505, 0.0, z], [0.505, 0.705, z + 0.14], Hazard, detail: true, shape: Kw(("finish", "hazard paint"))));
         p.Sock("back", [0, 0, 0], "-y");
         p.Sock("ammo", [0, 0.7, -2.0], "+y");
-        p.Set(("gun", Kw(("damage", 900), ("rpm", 6), ("spread", 0.04), ("range", 800), ("mag", 1), ("reload", 7.0), ("energy", RailEnergy), ("flags", Py.L("penetrating")), ("kick", 3500), ("fx", "cannon"), ("speed", 1100), ("soundOf", "Leviathan .50"), ("muzzle", Py.L(0, 0.3, Py.Round(-RailLen - 0.42, 4))))), ("centreSockets", false));
+        p.Set(("gun", Kw(("damage", 900), ("rpm", 6), ("spread", 0.04), ("range", 800), ("mag", 1), ("reload", 7.0), ("energy", RailEnergy), ("flags", Py.L("penetrating")), ("kick", 3500), ("pierce", RailPierce), ("fx", "cannon"), ("speed", 1100), ("soundOf", "Leviathan .50"), ("muzzle", Py.L(0, 0.3, Py.Round(-RailLen - 0.42, 4))))), ("centreSockets", false));
         return p.Stats(9000, 6000, 30, 12.0);
     }
 

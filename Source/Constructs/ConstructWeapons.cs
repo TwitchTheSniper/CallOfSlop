@@ -13,6 +13,7 @@ public struct CGun
     public int Shots; // rounds out of the muzzles a shot (barrels x pellets)
     public float Spread; // radians, half the cone
     public float MaxRange;
+    public float Pierce; // a penetrating round's energy budget (0: the old rule of MaxPierce parts; ConstructBores.cs)
     public ushort Interval, ReloadTicks, Mag; // ticks between shots, ticks to reload, rounds a load
     public GunEffect Effects;
     public GunFx Fx;
@@ -71,6 +72,8 @@ public enum CFireKind : byte
     RoundOut, // a round passed its reach and flies on: where, and how fast (ConstructRounds.cs)
     ShellStop, // a bomb hit and waits for its fuse: its id, where (protocol 178)
     ShellSteer, // a missile went for a flare: its id, the flare's in Target, where (At) and how fast (To)
+    Bore, // a round bored through constructs (protocol 384): from where it went in (At) to where it came out last (To), its calibre in Radius; every PC marks the holes from its own copy (ConstructBores.cs)
+    Scrap, // a small part shot off a capital-sized body, drawn only (protocol 384): where (At), its half size (Half, cm on the wire), its velocity (To)
 }
 
 /// <summary>One thing the guns did this tick (the server sends them as Msg.CFire; the host draws its own straight away).</summary>
@@ -655,6 +658,7 @@ public static class ConstructWeapons
         g.Spread = w.HipSpreadDeg * 0.5f * MathF.PI / 180f;
         g.MaxRange = d.GunMaxRange;
         g.Kick = d.GunKick;
+        g.Pierce = (flags & GunEffect.Penetrating) != 0 ? d.GunPierce : 0f;
         g.Fx = d.GunFx;
         g.Energy = d.GunEnergy;
         g.NoAmmo = d.GunEnergy > 0 && d.GunMag == 0;
@@ -1331,6 +1335,18 @@ public static class ConstructWeapons
         world.ShotsFired++;
     }
 
+    /// <summary>A dev tool's shot (--battle-check): gun <paramref name="k"/> of <paramref name="c"/>'s round from anywhere, as <see cref="Fire"/> resolves it.</summary>
+    internal static CFireHit ShotFrom(ConstructWorld world, Construct c, int k, IWorldQuery query, Vector3 from, Vector3 dir, out Vector3 end)
+    {
+        var g = c.Guns[k];
+        world.DamageBy = c.Owner;
+        world.DamageBody = c.Id;
+        var hit = Round(world, c, g, query, from, dir, (float)g.Def!.Damage, out end);
+        world.DamageBy = 255;
+        world.DamageBody = 0;
+        return hit;
+    }
+
     /// <summary>
     /// Board item gr01: a shot's recoil as a real impulse. Each barrel tip (a splitter's every muzzle, or the one muzzle)
     /// pushes back along the barrel with the gun's kick (N s; a merged receiver's is already scaled), at the tip, on the
@@ -1475,6 +1491,12 @@ public static class ConstructWeapons
             // A construct part.
             var body = ch.Body;
             var part = ch.Part;
+            if (g.Pierce > 0 && ConstructBores.On && !ch.Glass)
+            {
+                // A bore: through part after part on its budget, out into whatever is next (ConstructBores.cs).
+                hit |= ConstructBores.Through(world, own.Id, ch, dir, dealt, g.Pierce, g.RoundV, g.RoundV, 0f, own.Owner, g.Def.Id, out end, query);
+                break;
+            }
             if (ch.TrackPlus1 > 0)
             {
                 ConstructTracks.Damage(world, body, ch.TrackPlus1 - 1, dealt); // (a track: at zero it comes off)

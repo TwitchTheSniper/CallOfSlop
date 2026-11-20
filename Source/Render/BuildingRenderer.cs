@@ -422,8 +422,7 @@ public sealed unsafe class BuildingRenderer
         _planes[1] = c4 - c1;
         _planes[2] = c4 + c2;
         _planes[3] = c4 - c2;
-        _planes[4] = c4 + c3;
-        _planes[5] = c4 - c3;
+        Renderer.DepthPlanes(c3, c4, out _planes[4], out _planes[5]); // near, far (either depth convention)
     }
 
     private bool InFrustum(Vector3 min, Vector3 max)

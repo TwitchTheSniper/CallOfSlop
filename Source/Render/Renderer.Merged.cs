@@ -32,6 +32,28 @@ public sealed unsafe partial class Renderer
         public int[] GroupShape = [], GroupFirst = [], GroupCount = [];
         public int Groups;
 
+        /// <summary>
+        /// The far detail level: group k's slots are sorted biggest first, and its first <c>GroupClassEnd[k * classes + q]</c>
+        /// are those of size class q or bigger (ConstructRenderBatch.cs "SizeClass"); a far chunk draws only those.
+        /// </summary>
+        public int[] GroupClassEnd = [];
+        public int ClassCount = 1;
+
+        /// <summary>Its occlusion query (0: none yet) and the occlusion frame it was last issued in (ConstructRenderOcclusion.cs).</summary>
+        internal GlQuery Query;
+        internal int QueryFrame = -1;
+
+        /// <summary>Slots drawn at detail level <paramref name="detail"/> (the smallest size class drawn).</summary>
+        public int SlotsUpTo(int detail)
+        {
+            if (detail >= ClassCount - 1 || GroupClassEnd.Length < Groups * ClassCount)
+                return Slots;
+            var n = 0;
+            for (var g = 0; g < Groups; g++)
+                n += GroupClassEnd[g * ClassCount + detail];
+            return n;
+        }
+
         /// <summary>Bytes it holds on the GPU.</summary>
         public int Bytes => XformCap + LookCap;
     }
@@ -204,6 +226,7 @@ public sealed unsafe partial class Renderer
         Native.glBindBuffer(GL_ARRAY_BUFFER, _vbo);
         m.Slots = slots;
         m.PointedAt = -1; // (the buffer may have been made again: point the attributes afresh)
+        m.QueryFrame = -1; // (its bounds may have changed: last frame's query no longer speaks for it)
     }
 
     /// <summary>A group's looks: one vec4 a slot (tint, material code; a code below zero: a glowing box).</summary>
@@ -254,14 +277,26 @@ public sealed unsafe partial class Renderer
         Native.glUniform1f(loc.Glow, MarkGlow ? 0f : 1f);
     }
 
-    /// <summary>Draws a group at <paramref name="frame"/> (its frame's pose; relative to the origin while <see cref="Relative"/>). Between <see cref="BeginMerged"/> and <see cref="EndMerged"/>.</summary>
-    public void DrawMerged(MergedMesh m, in Matrix4x4 frame)
+    /// <summary>
+    /// Draws a group at <paramref name="frame"/> (its frame's pose; relative to the origin while <see cref="Relative"/>), its
+    /// slots down to size class <paramref name="detail"/>; with <paramref name="occluded"/>, only if last frame's occlusion query
+    /// of its box saw any of it (the GPU decides: conditional rendering, no wait on the CPU). Between <see cref="BeginMerged"/> and <see cref="EndMerged"/>.
+    /// </summary>
+    public void DrawMerged(MergedMesh m, in Matrix4x4 frame, int detail = int.MaxValue, bool occluded = false)
     {
         if (!_mergeOn || m.Slots == 0 || m.Vao.Id == 0)
             return;
         var f = FromOrigin(frame);
         Native.glUniformMatrix4fv(_mLoc.Body, 1, false, &f.M11);
         m.Vao.Bind();
+        var conditional = occluded && m.Query.Id != 0 && m.QueryFrame == OcclusionFrame - 1 && Native.glBeginConditionalRender != null;
+        if (conditional)
+        {
+            Native.glBeginConditionalRender(m.Query.Id, GL_QUERY_NO_WAIT);
+            OccludedTested++;
+        }
+        var all = detail >= m.ClassCount - 1 || m.GroupClassEnd.Length < m.Groups * m.ClassCount;
+        var slots = 0;
         for (var g = 0; g < m.Groups; g++)
         {
             var shape = m.GroupShape[g];
@@ -272,13 +307,149 @@ public sealed unsafe partial class Renderer
                 (first, count) = (_shapeFirst[shape], _shapeFirst[shape + 1] - _shapeFirst[shape]);
             else
                 continue;
+            var instances = all ? m.GroupCount[g] : m.GroupClassEnd[g * m.ClassCount + Math.Max(0, detail)];
+            if (instances <= 0)
+                continue; // (a far chunk's group of small boxes: none drawn)
             if (m.PointedAt != m.GroupFirst[g])
                 PointMerged(m, m.GroupFirst[g]);
-            PerfCounters.Draw(count, m.GroupCount[g]);
-            Native.glDrawArraysInstanced(GL_TRIANGLES, first, count, m.GroupCount[g]);
+            PerfCounters.Draw(count, instances);
+            Native.glDrawArraysInstanced(GL_TRIANGLES, first, count, instances);
             MergedDraws++;
+            slots += instances;
         }
-        MergedSlots += m.Slots;
+        if (conditional)
+            Native.glEndConditionalRender();
+        MergedSlots += slots;
+    }
+
+    // Occlusion queries (ConstructRenderOcclusion.cs): each merged chunk drawn in the main view has its box tested against the
+    // depth just drawn, colour and depth writes off; next frame draws it only where the test saw a sample.
+    private GlProgram _occProgram;
+    private GlVertexArray _occVao;
+    private int _occMvp = -1;
+    private bool _occReady, _occBroken, _occOn;
+
+    /// <summary>The occlusion frame: counted once a main view frame (ConstructRender), so a query from the frame before can be told from an older one.</summary>
+    public int OcclusionFrame;
+
+    /// <summary>Merged draws that were left to last frame's query, and queries issued, since the last read (the bench, the F9 window).</summary>
+    public int OccludedTested, OcclusionQueries;
+
+    /// <summary>Can merged chunks be tested here (queries and conditional rendering, and the shader made)?</summary>
+    public bool OcclusionQueriesOn => Recorder == null && !_occBroken && Native.glBeginConditionalRender != null && Native.glGenQueries != null && (_occReady || InitOcclusion());
+
+    private bool InitOcclusion()
+    {
+        try
+        {
+            const string vs = """
+                #version 410 core
+                layout(location = 0) in vec3 aPos;
+                uniform mat4 uMvp;
+                void main() { gl_Position = uMvp * vec4(aPos, 1.0); }
+                """;
+            const string fs = """
+                #version 410 core
+                out vec4 oColor;
+                void main() { oColor = vec4(1.0); }
+                """;
+            var v = CreateShader(GlShaderType.Vertex).SetSource(RenderCaps.Glsl(vs)).Compile();
+            var f = CreateShader(GlShaderType.Fragment).SetSource(RenderCaps.Glsl(fs)).Compile();
+            var program = CreateProgram();
+            Native.glAttachShader(program, v);
+            Native.glAttachShader(program, f);
+            Native.glLinkProgram(program);
+            int linked;
+            Native.glGetProgramiv(program, GL_LINK_STATUS, &linked);
+            if (linked == 0)
+            {
+                var log = stackalloc byte[2048];
+                int len;
+                Native.glGetProgramInfoLog(program, 2048, &len, log);
+                throw new InvalidOperationException("occlusion shader link failed: " + System.Text.Encoding.UTF8.GetString(log, Math.Max(len, 0)));
+            }
+            v.Dispose();
+            f.Dispose();
+            GlDebug.Label(GL_PROGRAM, program.Id, "Renderer.occlusionProgram");
+            _occProgram = program;
+            fixed (byte* name = "uMvp\0"u8)
+                _occMvp = Native.glGetUniformLocation(program, name);
+            _occVao = GenVertexArray();
+            _occVao.Bind();
+            Native.glBindBuffer(GL_ARRAY_BUFFER, _vbo); // (the box buffer's cube: its first 36 vertices, a unit cube round the middle)
+            Native.glVertexAttribPointer(0, 3, GL_FLOAT, false, 6 * sizeof(float), (void*)0);
+            EnableVertexAttribArray(0);
+            GlDebug.Label(GL_VERTEX_ARRAY, _occVao.Id, "Renderer.occlusion");
+            _program.Use();
+            _vao.Bind();
+            Console.WriteLine("[render] occlusion queries ready");
+            _occReady = true;
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[render] occlusion queries off: {ex.Message}");
+            _occBroken = true;
+            _program.Use();
+            _vao.Bind();
+            return false;
+        }
+    }
+
+    /// <summary>Starts a run of <see cref="QueryMerged"/> calls: the box program, colour and depth writes off (face culling as the box pass has it: the eye is never inside a tested box).</summary>
+    public void BeginOcclusion()
+    {
+        if (!OcclusionQueriesOn)
+            return;
+        _occOn = true;
+        _occProgram.Use();
+        _occVao.Bind();
+        Native.glColorMask(false, false, false, false);
+        Native.glDepthMask(false);
+    }
+
+    /// <summary>Tests a group's box (<paramref name="min"/> to <paramref name="max"/> in <paramref name="frame"/>) against the depth drawn so far: next occlusion frame, <see cref="DrawMerged"/> with <c>occluded</c> draws it only if a sample passed.</summary>
+    public void QueryMerged(MergedMesh m, in Matrix4x4 frame, Vector3 min, Vector3 max)
+    {
+        if (!_occOn || m.Vao.Id == 0)
+            return;
+        if (m.Query.Id == 0)
+        {
+            GlQuery q;
+            Native.glGenQueries(1, &q);
+            m.Query = q;
+        }
+        var mvp = Matrix4x4.CreateScale(Vector3.Max(max - min, new Vector3(0.01f))) * Matrix4x4.CreateTranslation((min + max) * 0.5f) * FromOrigin(frame) * _viewProjRel;
+        Native.glUniformMatrix4fv(_occMvp, 1, false, &mvp.M11);
+        var target = RenderCaps.Gl46 ? GL_ANY_SAMPLES_PASSED_CONSERVATIVE : GL_ANY_SAMPLES_PASSED;
+        Native.glBeginQuery(target, m.Query);
+        Native.glDrawArrays(GL_TRIANGLES, 0, 36);
+        Native.glEndQuery(target);
+        m.QueryFrame = OcclusionFrame;
+        OcclusionQueries++;
+    }
+
+    /// <summary>The bench, after a glFinish: did this frame's query of <paramref name="m"/> see any of it (false: hidden; null: not tested this frame)?</summary>
+    public bool? QuerySaw(MergedMesh m)
+    {
+        if (m.Query.Id == 0 || m.QueryFrame != OcclusionFrame || Native.glGetQueryObjectuiv == null)
+            return null;
+        uint r;
+        Native.glGetQueryObjectuiv(m.Query.Id, GL_QUERY_RESULT, &r);
+        return r != 0;
+    }
+
+    /// <summary>Ends a run of occlusion queries: writes and the box shader as they were.</summary>
+    public void EndOcclusion()
+    {
+        if (!_occOn)
+            return;
+        _occOn = false;
+        Native.glColorMask(true, true, true, true);
+        Native.glDepthMask(true);
+        Native.glBindBuffer(GL_ARRAY_BUFFER, _vbo);
+        _program.Use();
+        _vao.Bind();
     }
 
     /// <summary>Ends a run of merged draws: the box shader and its cube as they were.</summary>
@@ -304,6 +475,13 @@ public sealed unsafe partial class Renderer
             var a = m.Vao;
             Native.glDeleteVertexArrays(1, &a);
         }
+        if (m.Query.Id != 0)
+        {
+            var q = m.Query;
+            Native.glDeleteQueries(1, &q);
+            m.Query = default;
+        }
+        m.QueryFrame = -1;
         m.Vao = default;
         m.XformVbo = m.LookVbo = default;
         m.XformCap = m.LookCap = 0;

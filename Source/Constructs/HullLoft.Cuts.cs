@@ -20,6 +20,12 @@ public static partial class HullLoft
     public const string CutPanelPrefix = "Cut Panel (", CutPlatePrefix = "Cut Plate (";
     private const string CutSplit = " | ";
     public const int MaxCuts = 6, CutMaxFacets = 96, CutWebCm = 3, CutSnapCm = 2, CutMinCm = 5, CutMaxCm = 600;
+    /// <summary>
+    /// A cut plate's sheet: up to the Capital Laser Cutter's bed, 64 m along and 32 m across (the Extruder's widest plate), with openings up
+    /// to 32 m a side, so a capital hull's plates, decks and bulkheads come off the line whole (Karl, 2026-11-20: the capital ship). A cut
+    /// panel stays within <see cref="CutMaxCm"/>, the largest Panel Former's panel.
+    /// </summary>
+    public const int CutPlateMaxCm = 6400, CutPlateAcrossCm = 3200, CutPlateOpeningCm = 3200;
     /// <summary>The thickest stock any cutter's bed takes (the Medium Laser Cutter's 2 m, design section 5): no rule of its own, only the bed (the user, 2026-11-13).</summary>
     public const int CutMaxThickMm = 2000;
     /// <summary>An opening this wide both ways or more opens its collision (shots, bodies and players pass) and gets an <c>o</c> socket; a smaller one is drawn and weighed only.</summary>
@@ -181,7 +187,7 @@ public static partial class HullLoft
         return plan;
     }
 
-    /// <summary>Why an extruded piece can't be cut, or null: flat stock only, plate (a quarter of its height thick) or a flat bar either way up (on edge, cut through its width), no thicker than the largest bed and 6 m a side.</summary>
+    /// <summary>Why an extruded piece can't be cut, or null: flat stock only, plate (a quarter of its height thick) or a flat bar either way up (on edge, cut through its width), no thicker than the largest bed, 64 m long and 32 m across.</summary>
     public static string? StockRefusal(in ExtrusionKey k)
     {
         if (k.Growing)
@@ -201,8 +207,8 @@ public static partial class HullLoft
         if (mm > CutMaxThickMm)
             return $"too thick for any Laser Cutter's bed: {mm / 1000f:0.##} m, the largest takes {CutMaxThickMm / 1000} m";
         var across = OnEdge(k) ? k.H : k.W; // (a bar on edge is cut through its width: its sheet is its length by its height)
-        if (k.L < PanelMinCm || k.L > CutMaxCm || across < PanelMinCm || across > CutMaxCm)
-            return k.L > CutMaxCm ? $"cut it to length at the Extruder: a Laser Cutter's bed is {CutMaxCm / 100} m" : $"a cut piece is {PanelMinCm} to {CutMaxCm} cm long and {(OnEdge(k) ? "high" : "wide")}";
+        if (k.L < PanelMinCm || k.L > CutPlateMaxCm || across < PanelMinCm || across > CutPlateAcrossCm)
+            return k.L > CutPlateMaxCm ? $"cut it to length at the Extruder: the largest Laser Cutter's bed is {CutPlateMaxCm / 100} m" : $"a cut piece is {PanelMinCm} to {CutPlateMaxCm} cm long and {PanelMinCm} to {CutPlateAcrossCm} cm {(OnEdge(k) ? "high" : "wide")}";
         return null;
     }
 
@@ -265,8 +271,9 @@ public static partial class HullLoft
             {
                 if (c.U > l || c.V > w)
                     return "an opening's middle lies on the sheet";
-                if (c.A < CutMinCm || c.B < CutMinCm || c.A > CutMaxCm || c.B > CutMaxCm)
-                    return $"an opening is {CutMinCm} to {CutMaxCm} cm a side";
+                var most = plan.Plate ? CutPlateOpeningCm : CutMaxCm; // (a plate's openings go to 32 m: a hatch, a lift shaft, a bay's door)
+                if (c.A < CutMinCm || c.B < CutMinCm || c.A > most || c.B > most)
+                    return $"an opening is {CutMinCm} to {most} cm a side";
                 if (c.C * 2 > Math.Min(c.A, c.B))
                     return "an opening's corners are cut back by at most half its smaller side";
             }

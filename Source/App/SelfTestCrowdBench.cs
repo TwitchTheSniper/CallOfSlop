@@ -77,7 +77,7 @@ public static partial class SelfTest
             Line($"crowd {size} {moment}: where Game.Update allocates (B a frame): {AllocProfile.Top(6, 60)}");
             Line($"crowd {size} {moment}: Game.Update allocated {(GC.GetAllocatedBytesForCurrentThread() - u0) / 60} B a frame over 60 frames");
             Sync();
-            ZombieAnim.SetFrustum(view * proj);
+            ZombieAnim.SetFrustum(view * Renderer.GpuProjection(proj));
             var r = BenchPrep(g, c, eye, fog, now);
             ZombieAnim.ClearFrustum();
             Line($"crowd {size} {moment}: particles {g.Crowd.Count}, mass {g.Crowd.MassTotal}, picture {c.CrowdSeen.Total}; {r}");

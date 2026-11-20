@@ -18,6 +18,7 @@
       "penetrating"
     ],
     "kick": 3500,
+    "pierce": 3000.0,
     "fx": "cannon",
     "speed": 1100,
     "soundOf": "Leviathan .50",

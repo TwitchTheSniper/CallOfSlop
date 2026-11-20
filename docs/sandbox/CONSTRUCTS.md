@@ -142,6 +142,7 @@ Construct weapons (a craft's radar and lock among them), merged receivers, weapo
 - Merged receivers
 - Weapon builder parts in Sandbox
 - The Gun Workbench (wp01, part 2)
+- Capital battles: railgun bores through whole ships, spall, holes drawn on every PC, break-up, scrap (design/capital-battles.md)
 
 ## [Flight](constructs/flight.md), 37 KB
 
@@ -194,13 +195,14 @@ Refining, extrusion, the Wheel Former, the Press, the Panel Former, the Laser Cu
 
 ## [Storage and cargo](constructs/storage-and-cargo.md), 42 KB
 
-Storage volumes, physical storage, modular shelves, the Smart Terminal, the Inventory Beacon.
+Storage volumes, physical storage, modular shelves, the Smart Terminal, the Inventory Beacon, in-wall bays.
 
 - Storage volumes
 - Physical storage (decision 18)
 - Modular shelves
 - The Smart Terminal
 - The Inventory Beacon
+- In-wall bays (Karl, 2026-11-20)
 
 ## [Big systems](constructs/big-systems.md), 20 KB
 

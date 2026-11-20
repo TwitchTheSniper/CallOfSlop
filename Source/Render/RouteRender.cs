@@ -180,6 +180,7 @@ public static class RouteRender
             if (c.ConveyedCount > 0)
                 DrawRiders(gfx, c);
         }
+        (ConstructRender.FrameAlpha, ConstructRender.FrameBlend) = (alpha, blendTicks); // (the arms below are posed on their part as it is drawn: ConstructRender.PartDrawn)
         if (world.LiftBodies.Count > 0 || world.Bodies.Count > 0)
             LifterRender.Draw(gfx, world); // (Loader Arms: the boom, the hand and the piece on its move)
         ClampArmRender.Draw(gfx, world); // (station berths' clamp arms: the boom and head where each reaches)

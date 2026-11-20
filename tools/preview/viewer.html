@@ -77,7 +77,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     <button id="tLinks" aria-pressed="false" title="Cables, pipes, chutes and shafts as the build laid them">Links</button>
     <button id="tXray" aria-pressed="false" title="Draw the links through walls">Links through walls</button>
   </div>
-  <div class="toggles views"><button data-v="iso">3/4</button><button data-v="side">Side</button><button data-v="top">Top</button><button data-v="front">Bow</button></div>
+  <div class="toggles views"><button data-v="iso">3/4</button><button data-v="side">Side</button><button data-v="top">Top</button><button data-v="front">Bow</button><button data-v="back">Stern</button></div>
   <input id="search" type="search" placeholder="Find a part" aria-label="Find a part">
   <ul id="parts"></ul>
   <p class="picked" id="picked" hidden></p>
@@ -123,10 +123,36 @@ let pieces = [], partBox = [], partMove = new Uint8Array(0); // (an animation: o
 let M = null, look16, triPart, triTrack = null, solidGeo, glassGeo, solid, glass, grid = null, edges = null, size = [1, 1, 1], centre = new THREE.Vector3(), radius = 1;
 let picked = -1, byFinish = false, edgesOn = false, glassOn = true, linksOn = false, xray = false, links = null;
 
-function build(glassSide, pos16, nrm8, track = 0) {
+// A model's triangles as floats (metres, unit normals) and a look a triangle. Packed whole: int16 positions over "scale", int8 normals.
+// Instanced (a capital ship): "tpl" holds each kind of part's triangles once in its own frame (int16 over its own scale), "inst" each part
+// as a kind placed (30 bytes: uint16 kind, float32 x y z, float32 quaternion x y z w), expanded here in the parts' order.
+function unpack(M) {
+  if (!M.tpl) {
+    const p16 = new Int16Array(b64(M.pos).buffer), n8 = new Int8Array(b64(M.nrm).buffer), pos = new Float32Array(p16.length), nrm = new Float32Array(n8.length);
+    for (let i = 0; i < p16.length; i++) pos[i] = p16[i] / M.scale;
+    for (let i = 0; i < n8.length; i++) nrm[i] = n8[i] / 127;
+    return { pos, nrm, look: new Uint16Array(b64(M.look).buffer) };
+  }
+  const kinds = M.tpl.map(t => ({ p: new Int16Array(b64(t.pos).buffer), n: new Int8Array(b64(t.nrm).buffer), l: new Uint16Array(b64(t.look).buffer), s: t.scale }));
+  const raw = b64(M.inst), dv = new DataView(raw.buffer), count = raw.length / 30;
+  let tris = 0; for (let k = 0; k < count; k++) tris += kinds[dv.getUint16(k * 30, true)].l.length;
+  const pos = new Float32Array(tris * 9), nrm = new Float32Array(tris * 9), look = new Uint16Array(tris), q = new THREE.Quaternion(), v = new THREE.Vector3();
+  for (let k = 0, at = 0; k < count; k++) {
+    const o = k * 30, K = kinds[dv.getUint16(o, true)], tx = dv.getFloat32(o + 2, true), ty = dv.getFloat32(o + 6, true), tz = dv.getFloat32(o + 10, true);
+    q.set(dv.getFloat32(o + 14, true), dv.getFloat32(o + 18, true), dv.getFloat32(o + 22, true), dv.getFloat32(o + 26, true));
+    for (let i = 0, b = at * 9; i < K.p.length; i += 3) {
+      v.set(K.p[i] / K.s, K.p[i + 1] / K.s, K.p[i + 2] / K.s).applyQuaternion(q); pos[b + i] = v.x + tx; pos[b + i + 1] = v.y + ty; pos[b + i + 2] = v.z + tz;
+      v.set(K.n[i] / 127, K.n[i + 1] / 127, K.n[i + 2] / 127).applyQuaternion(q); nrm[b + i] = v.x; nrm[b + i + 1] = v.y; nrm[b + i + 2] = v.z;
+    }
+    look.set(K.l, at); at += K.l.length;
+  }
+  return { pos, nrm, look };
+}
+
+function build(glassSide, posF, nrmF, track = 0) {
   const idx = []; for (let t = 0; t < look16.length; t++) if ((M.looks[look16[t]][1] > 0) === glassSide && (!triTrack || triTrack[t] === track)) idx.push(t);
   const p = new Float32Array(idx.length * 9), n = new Float32Array(idx.length * 9), c = new Float32Array(idx.length * 9);
-  idx.forEach((t, k) => { for (let j = 0; j < 9; j++) { p[k*9+j] = pos16[t*9+j] / M.scale; n[k*9+j] = nrm8[t*9+j] / 127; } });
+  idx.forEach((t, k) => { for (let j = 0; j < 9; j++) { p[k*9+j] = posF[t*9+j]; n[k*9+j] = nrmF[t*9+j]; } });
   const g = new THREE.BufferGeometry();
   g.setAttribute("position", new THREE.BufferAttribute(p, 3)); g.setAttribute("normal", new THREE.BufferAttribute(n, 3)); g.setAttribute("color", new THREE.BufferAttribute(c, 3));
   g.userData.tris = idx; return g;
@@ -150,7 +176,7 @@ function paint() {
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { sky(); paint(); });
 new MutationObserver(() => { sky(); paint(); }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
 
-const views = { iso: [-1, 0.7, -1.1], side: [-1, 0.05, 0], top: [0.001, 1, 0.0001], front: [0, 0.15, -1] }; // (the game's bow is -z, port is -x)
+const views = { iso: [-1, 0.7, -1.1], side: [-1, 0.05, 0], top: [0.001, 1, 0.0001], front: [0, 0.15, -1], back: [0, 0.15, 1] }; // (the game's bow is -z, port is -x)
 function setView(v) { const d = new THREE.Vector3(...views[v]).normalize().multiplyScalar(radius * 2.9); camera.position.copy(centre).add(d); controls.update(); }
 document.querySelectorAll(".views button").forEach(b => b.onclick = () => setView(b.dataset.v));
 
@@ -185,8 +211,8 @@ function makeLinks() {
 }
 function show(model) {
   dispose(); M = model; picked = -1; document.getElementById("picked").hidden = true; tip.hidden = true;
-  const pos16 = new Int16Array(b64(M.pos).buffer), nrm8 = new Int8Array(b64(M.nrm).buffer);
-  look16 = new Uint16Array(b64(M.look).buffer);
+  const { pos: posF, nrm: nrmF, look } = unpack(M);
+  look16 = look;
   triTrack = M.track && M.anim ? b64(M.track) : null;
   triPart = new Int32Array(look16.length);
   M.parts.forEach(([, first, count], i) => triPart.fill(i, first, first + count));
@@ -196,12 +222,12 @@ function show(model) {
   document.getElementById("stats").innerHTML =
     `<div><span>Size m</span>${size[0].toFixed(1)} x ${size[2].toFixed(1)}</div><div><span>Height m</span>${size[1].toFixed(1)}</div><div><span>Mass t</span>${(M.mass/1000).toFixed(1)}</div>` +
     `<div><span>Parts</span>${M.parts.length}</div><div><span>Steps</span>${M.steps}</div><div><span>Triangles</span>${look16.length.toLocaleString()}</div>`;
-  solidGeo = build(false, pos16, nrm8); glassGeo = build(true, pos16, nrm8);
+  solidGeo = build(false, posF, nrmF); glassGeo = build(true, posF, nrmF);
   solid = new THREE.Mesh(solidGeo, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8, metalness: 0.15, side: THREE.DoubleSide, clippingPlanes: clips }));
   glass = new THREE.Mesh(glassGeo, new THREE.MeshStandardMaterial({ vertexColors: true, transparent: true, opacity: 0.35, roughness: 0.1, depthWrite: false, side: THREE.DoubleSide, clippingPlanes: clips }));
   glass.visible = glassOn;
   if (triTrack) M.anim.tracks.forEach((tr, k) => {
-    const group = new THREE.Group(), sg = build(false, pos16, nrm8, k + 1), gg = build(true, pos16, nrm8, k + 1);
+    const group = new THREE.Group(), sg = build(false, posF, nrmF, k + 1), gg = build(true, posF, nrmF, k + 1);
     const ps = new THREE.Mesh(sg, solid.material.clone()), pg = new THREE.Mesh(gg, glass.material.clone());
     pg.visible = glassOn; group.add(ps, pg); scene.add(group); pieces.push({ group, solid: ps, glass: pg, frames: tr.frames, name: tr.name });
   });
@@ -218,9 +244,10 @@ function show(model) {
     }
     all.getCenter(centre); radius = Math.max(0.5, all.getSize(v).length() / 2);
   }
-  const cells = Math.max(2, Math.ceil(radius * 3));
-  grid = new THREE.GridHelper(cells, cells, 0x888888, 0x888888);
-  grid.position.set(centre.x, M.min[1] - 0.002, centre.z); grid.material.transparent = true; grid.material.opacity = 0.25;
+  // Metre cells up to about 200 a side; a bigger model (a kilometre ship) gets 10 m or 100 m cells, or its grid draws as a solid sheet.
+  const reach = Math.max(2, Math.ceil(radius * 3)), step = Math.max(1, Math.pow(10, Math.ceil(Math.log10(reach / 200)))), cells = Math.ceil(reach / step) * step;
+  grid = new THREE.GridHelper(cells, cells / step, 0x888888, 0x888888);
+  grid.position.set(centre.x, M.min[1] - Math.max(0.002, radius / 20000), centre.z); grid.material.transparent = true; grid.material.opacity = 0.25;
   scene.add(solid, glass, grid);
   sun.position.set(-0.6, 1, -0.4).multiplyScalar(radius * 4); fill.position.set(0.8, 0.3, 0.9).multiplyScalar(radius * 4);
   camera.near = radius / 200; camera.far = radius * 40; camera.updateProjectionMatrix();
@@ -235,9 +262,9 @@ function show(model) {
   const pv = new THREE.Vector3();
   for (let t = 0; t < look16.length; t++) {
     const pi = triPart[t]; if (triTrack && triTrack[t]) partMove[pi] = triTrack[t];
-    for (let v = 0; v < 3; v++) partBox[pi].expandByPoint(pv.set(pos16[t*9+v*3] / M.scale, pos16[t*9+v*3+1] / M.scale, pos16[t*9+v*3+2] / M.scale));
+    for (let v = 0; v < 3; v++) partBox[pi].expandByPoint(pv.set(posF[t*9+v*3], posF[t*9+v*3+1], posF[t*9+v*3+2]));
   }
-  names = new Map(); M.parts.forEach(([n], i) => { if (triTrack && !partMove[i]) return; if (!names.has(n)) names.set(n, []); names.get(n).push(i); });
+  names = new Map(); M.parts.forEach(([n], i) => { if (triTrack && !partMove[i]) return; n = family(n); if (!names.has(n)) names.set(n, []); names.get(n).push(i); });
   search.value = ""; paint(); fillList();
 }
 
@@ -267,7 +294,9 @@ toggle("tSpin", on => { controls.autoRotate = on; });
 toggle("tLinks", on => { linksOn = on; if (on) makeLinks(); else dropLinks(); });
 toggle("tXray", on => { xray = on; if (on && !linksOn) document.getElementById("tLinks").click(); else if (linksOn) makeLinks(); });
 
-// Parts list: one row per distinct part name, with its count; a click picks the first of them.
+// Parts list: one row per distinct part name, with its count; a click picks the first of them. A piece a machine cut or extruded at run
+// time has a name of its own (its size and cut), so those are one row per kind: a capital ship's hull is a few thousand of them.
+const family = n => { const m = /^(Cut Plate|Cut Panel|Cut Pane|Formed Panel|Hull Loft) \(|^(Extrusion \w+) \d/.exec(n); return !m ? n : m[1] ? m[1] + " (every cut)" : m[2] + " (every size)"; };
 const list = document.getElementById("parts"), search = document.getElementById("search");
 let names = new Map();
 function fillList() {
@@ -366,7 +395,12 @@ function tick(now) {
   else if (t <= 0) { t = 0; dir = 1; holdUntil = now + 900; }
   pose(t);
 }
-renderer.setAnimationLoop(now => { tick(now); controls.update(); renderer.render(scene, camera); });
+// The near plane follows the eye's distance to what it looks at, so a kilometre-long ship keeps its depth sharp from afar and a room up close isn't cut.
+function fitNear() {
+  const d = camera.position.distanceTo(controls.target), near = Math.max(radius / 20000, d / 400), far = Math.max(radius * 40, d * 4);
+  if (Math.abs(near - camera.near) > camera.near * 0.05 || far !== camera.far) { camera.near = near; camera.far = far; camera.updateProjectionMatrix(); }
+}
+renderer.setAnimationLoop(now => { tick(now); controls.update(); fitNear(); renderer.render(scene, camera); });
 
 // One model in the page, or a gallery: models/index.json lists the ships, the parts they use and parts in no ship. The first picker
 // takes a ship (or the loose parts), the second the whole ship, one of its decks or one of its parts on its own.

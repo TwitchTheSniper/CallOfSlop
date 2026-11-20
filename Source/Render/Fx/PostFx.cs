@@ -153,7 +153,11 @@ public static unsafe class PostFx
         out vec4 FragColor;
         float Linear(vec2 uv)
         {
+        #if REVZ
+            float nd = texture(uDepth, uv).r; // (reversed depth: 0..1 is already clip depth, uProj the reversed matrix's)
+        #else
             float nd = texture(uDepth, uv).r * 2.0 - 1.0;
+        #endif
             return uProj.y / (nd + uProj.x);
         }
         vec3 View(vec2 uv)
@@ -164,7 +168,11 @@ public static unsafe class PostFx
         void main()
         {
             float d0 = texture(uDepth, vUv).r;
+        #if REVZ
+            if (d0 <= 1e-9)
+        #else
             if (d0 >= 0.99999)
+        #endif
             {
                 FragColor = vec4(1.0);
                 return;
@@ -219,7 +227,55 @@ public static unsafe class PostFx
     private static int _lExtractTexel, _lExtractMarked, _lBlurStep, _lCopyMix, _lCopyGain, _lHazeVp, _lHazeRight, _lHazeUp, _lHazeData, _lHazeTexel, _lHazeTime, _lAoProj, _lAoTexel, _lAoBlurTexel;
     private static readonly Target Scene = new(), Half = new(), Quarter = new(), Quarter2 = new(), Eighth = new(), Eighth2 = new(), AoA = new(), AoB = new();
     private static uint _depthTex;
+    private static bool _depthFloat;
     private static GlFramebuffer _depthFbo;
+
+    private const string PresentFs = """
+        #version 410 core
+        in vec2 vUv;
+        uniform sampler2D uTex;
+        out vec4 FragColor;
+        void main() { FragColor = texture(uTex, vUv); }
+        """;
+
+    private static GlProgram _present;
+    private static GlVertexArray _presentVao;
+    private static bool _presentBroken;
+
+    /// <summary>
+    /// Draws <paramref name="tex"/> over the whole bound framebuffer, colour and alpha as they are (Renderer.Present: the
+    /// resolved scene target into a multisampled window, which a blit may not write). False when its shader won't link.
+    /// </summary>
+    public static bool DrawFullScreen(uint tex, int w, int h)
+    {
+        if (_presentBroken)
+            return false;
+        if (_present.Id == 0)
+        {
+            try
+            {
+                _present = Link(QuadVs, PresentFs, "PostFx.present");
+                _presentVao = GenVertexArray();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[postfx] the scene copy shader failed: {ex.Message}");
+                _presentBroken = true;
+                return false;
+            }
+        }
+        Native.glDisable(GlCapability.DepthTest);
+        Native.glDisable(GlCapability.Blend);
+        Native.glColorMask(true, true, true, true);
+        Viewport(0, 0, w, h);
+        _present.Use();
+        _presentVao.Bind();
+        Bind(Unit0, tex);
+        Native.glDrawArrays(GL_TRIANGLES, 0, 3);
+        Native.glEnable(GlCapability.DepthTest);
+        Native.glActiveTexture(GL_TEXTURE0);
+        return true;
+    }
 
     private static GlProgram Link(string vs, string fs, string label)
     {
@@ -323,7 +379,7 @@ public static unsafe class PostFx
         Native.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, (int)GL_CLAMP_TO_EDGE);
         Native.glBindFramebuffer(GL_FRAMEBUFFER, t.Fbo);
         Native.glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, t.Tex, 0);
-        Native.glBindFramebuffer(GL_FRAMEBUFFER, default);
+        Native.glBindFramebuffer(GL_FRAMEBUFFER, Renderer.MainFbo);
     }
 
     /// <summary>The targets for this frame's size (made again only when the window's size changes).</summary>
@@ -372,7 +428,7 @@ public static unsafe class PostFx
 
     private static void End(Renderer gfx, int w, int h)
     {
-        Native.glBindFramebuffer(GL_FRAMEBUFFER, default);
+        Native.glBindFramebuffer(GL_FRAMEBUFFER, Renderer.MainFbo);
         Viewport(0, 0, w, h);
         Native.glColorMask(true, true, true, true);
         Native.glDisable(GlCapability.Blend);
@@ -388,14 +444,25 @@ public static unsafe class PostFx
         if (!Ao || _aoBroken || !Init())
             return;
         Resize(w, h);
+        var floatDepth = Renderer.SceneTargetOn; // (the scene target's depth is 32-bit float: a depth blit wants the same format)
+        if (_depthTex != 0 && _depthFloat != floatDepth)
+        {
+            var old = new GlTexture(_depthTex);
+            Native.glDeleteTextures(1, &old);
+            _depthTex = 0;
+        }
         if (_depthTex == 0)
         {
+            _depthFloat = floatDepth;
             GlTexture tex = default;
             Native.glGenTextures(1, &tex);
             _depthTex = tex.Id;
             Native.glActiveTexture(GL_TEXTURE0 + Unit0);
             Native.glBindTexture(GL_TEXTURE_2D, _depthTex);
-            Native.glTexImage2D(GL_TEXTURE_2D, 0, (int)GL_DEPTH24_STENCIL8, w, h, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, null);
+            if (floatDepth)
+                Native.glTexImage2D(GL_TEXTURE_2D, 0, (int)GL_DEPTH_COMPONENT32F, w, h, 0, GL_DEPTH_COMPONENT, GL_FLOAT, null);
+            else
+                Native.glTexImage2D(GL_TEXTURE_2D, 0, (int)GL_DEPTH24_STENCIL8, w, h, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, null);
             Native.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, (int)GL_NEAREST);
             Native.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, (int)GL_NEAREST);
             if (_depthFbo.Id == 0)
@@ -405,11 +472,13 @@ public static unsafe class PostFx
                 _depthFbo = fb;
             }
             Native.glBindFramebuffer(GL_FRAMEBUFFER, _depthFbo);
-            Native.glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, _depthTex, 0);
-            Native.glBindFramebuffer(GL_FRAMEBUFFER, default);
+            Native.glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, floatDepth ? 0u : _depthTex, 0);
+            if (floatDepth)
+                Native.glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depthTex, 0);
+            Native.glBindFramebuffer(GL_FRAMEBUFFER, Renderer.MainFbo);
         }
         while (GlDebug.Error() != 0) { }
-        Native.glBindFramebuffer(GL_READ_FRAMEBUFFER, default);
+        Native.glBindFramebuffer(GL_READ_FRAMEBUFFER, Renderer.MainFbo);
         Native.glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _depthFbo);
         Native.glBlitFramebuffer(0, 0, w, h, 0, 0, w, h, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
         var err = GlDebug.Error();
@@ -430,7 +499,7 @@ public static unsafe class PostFx
         Native.glUniform2f(_lAoBlurTexel, 1f / AoA.W, 1f / AoA.H);
         Bind(Unit0, AoA.Tex);
         Pass(AoB);
-        Native.glBindFramebuffer(GL_DRAW_FRAMEBUFFER, default);
+        Native.glBindFramebuffer(GL_DRAW_FRAMEBUFFER, Renderer.MainFbo);
         Viewport(0, 0, w, h);
         Native.glEnable(GlCapability.Blend);
         Native.glBlendFunc(GL_ZERO, GL_SRC_COLOR);
@@ -454,7 +523,7 @@ public static unsafe class PostFx
             return;
         }
         Resize(w, h);
-        Native.glBindFramebuffer(GL_READ_FRAMEBUFFER, default);
+        Native.glBindFramebuffer(GL_READ_FRAMEBUFFER, Renderer.MainFbo);
         Native.glBindFramebuffer(GL_DRAW_FRAMEBUFFER, Scene.Fbo);
         Native.glBlitFramebuffer(0, 0, w, h, 0, 0, w, h, GL_COLOR_BUFFER_BIT, GL_NEAREST);
         if (!_copied)
@@ -477,7 +546,7 @@ public static unsafe class PostFx
             DrawBloom(w, h);
         _hazeCount = 0;
         // The marks have done their job: the back buffer's alpha goes back to 1, so nothing past here (or a compositor) ever sees them.
-        Native.glBindFramebuffer(GL_DRAW_FRAMEBUFFER, default);
+        Native.glBindFramebuffer(GL_DRAW_FRAMEBUFFER, Renderer.MainFbo);
         Native.glColorMask(false, false, false, true);
         Native.glClearColor(0f, 0f, 0f, 1f);
         Native.glClear(GL_COLOR_BUFFER_BIT);
@@ -486,7 +555,7 @@ public static unsafe class PostFx
 
     private static void DrawHaze(Renderer gfx, int w, int h, double time)
     {
-        Native.glBindFramebuffer(GL_DRAW_FRAMEBUFFER, default);
+        Native.glBindFramebuffer(GL_DRAW_FRAMEBUFFER, Renderer.MainFbo);
         Viewport(0, 0, w, h);
         Native.glEnable(GlCapability.DepthTest);
         Native.glColorMask(true, true, true, false);
@@ -522,7 +591,7 @@ public static unsafe class PostFx
             Blur(Quarter2, Eighth, Eighth.W, Eighth.H, true);
             Blur(Eighth, Eighth2, Eighth.W, Eighth.H, false);
         }
-        Native.glBindFramebuffer(GL_DRAW_FRAMEBUFFER, default);
+        Native.glBindFramebuffer(GL_DRAW_FRAMEBUFFER, Renderer.MainFbo);
         Viewport(0, 0, w, h);
         Native.glEnable(GlCapability.Blend);
         Native.glBlendFunc(GL_ONE, GL_ONE);
