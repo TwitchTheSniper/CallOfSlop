@@ -92,7 +92,7 @@ public static class ShellFittedLooks
                 at = new Vector3(0, 1.485f, 0); // (its neck 5 mm over the shell's: no shared face)
                 break;
             case 1:
-                at = new Vector3(0, 1.07f, 0.19f); // (its back 5 mm off the torso's)
+                at = new Vector3(0, 1.07f, 0.14f); // (sunk into the torso's back, its case's back on the shell's back socket at 0.2: a dock clamps on it)
                 turn = true; // (its front, its lamps, faces out behind)
                 break;
             case 2 or 3:

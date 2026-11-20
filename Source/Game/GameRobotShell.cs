@@ -210,6 +210,7 @@ public sealed partial class Game
         ref var h = ref SandboxHands.Hand(p.Id);
         var feet = p.Position;
         var yaw = p.Yaw;
+        var seatVel = h.Seated && Constructs.Get(h.SeatBody) is { } seatBody ? seatBody.PointVel(p.Position) : (Vector3?)null; // (a seat's own motion: a lander in flight)
         if (h.RemoteBody != 0)
             SandboxRemoteRelease(ref h, p.Id);
         SandboxHands.Release(Constructs, p.Id);
@@ -235,7 +236,7 @@ public sealed partial class Game
             stood.Owner = run.Owner;
             stood.Frozen = false; // (a body like any other: it stands, falls or drifts as physics has it, user 2026-11-20; it was frozen where it was left)
             stood.Rebuild();
-            stood.Vel = ShellLeftVel(p, feet); // (moving with whatever they stood on, or as they moved: no jolt off a ship's deck)
+            stood.Vel = seatVel ?? ShellLeftVel(p, feet); // (moving with whatever they stood on, or as they moved: no jolt off a ship's deck)
             HopperOff(p, stood, feet); // (the hopper's load back into the part's bin: GameShellHopper.cs)
             Constructs.StructureDirty.Add(stood.Id);
             if (dock != null && SandboxHands.ClipOnDock(Constructs, p.Id, dock, dockPart, stood) is { } stuck)
@@ -293,7 +294,7 @@ public sealed partial class Game
     {
         var v = p.Sim.Velocity;
         if (p.Sim.RideBody != 0 && Constructs.Get(p.Sim.RideBody) is { } ride)
-            v += ride.PointVel(feet);
+            v += ConstructRide.RiderSurfaceVel(ride, p.Sim, feet); // (the segment under them: a lift's deck, a turntable)
         return v.LengthSquared() > 0 && float.IsFinite(v.X + v.Y + v.Z) ? v : Vector3.Zero;
     }
 
@@ -438,6 +439,7 @@ public sealed partial class Game
             c.Owner = run.Owner;
             c.Frozen = false; // (loaded, it stands under physics like one left standing)
             c.Rebuild();
+            c.Vel = ShellLeftVel(p, p.Position); // (moving with the ship it stands on, so a coasting ship doesn't sweep into it on load)
             ref var hp = ref SandboxHands.Hoppers[p.Id];
             if (hp.Amount > 0 && Constructs.Deposit(c, 0, hp.Amount, hp.Material) < hp.Amount)
                 Log($"[shell] {p.Name}'s hopper didn't all fit the saved {run.ShellDef.Name}'s bin");

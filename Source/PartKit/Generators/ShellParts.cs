@@ -28,7 +28,7 @@ public sealed class ShellParts : IPartGenerator
         var p = new Part("Robot Shell", Small, Section, $"A robot body. Sit in a Shell Control Chair on its channel, within {Py.G(Range / 1000.0)} km, to wake in it: if it is destroyed you only wake in the chair again.", tool: "wrench", group: "Logic", color: Steel);
         Robot(p, 1, drill: false);
         p.Sock("bottom", [0, 0, 0], "-y");
-        p.Sock("back", [0, 1.25, 0.25], "+z"); // (on the Power Pack's back)
+        p.Sock("back", [0, 1.25, 0.2], "+z"); // (on the Power Pack's case)
         p.Stats(38, 160, 3, 3);
         p.Set(("shell", new PyDict { ["body"] = true }), ("config", Py.L(Channel())), ("centreSockets", false));
         return p;
@@ -43,7 +43,7 @@ public sealed class ShellParts : IPartGenerator
         var p = new Part("Half Shell", Small, Section, $"A small robot body half a person's size: it walks under low decks and through ducts and small hatches, lifts half what a person lifts and is too small for seats. Wake in it from a Shell Control Chair on its channel, within {Py.G(Range / 1000.0)} km. It docks in a Tiny Shell Pod.", tool: "wrench", group: "Logic", color: Steel);
         Robot(p, 0.5, drill: false);
         p.Sock("bottom", [0, 0, 0], "-y");
-        p.Sock("back", [0, 0.625, 0.125], "+z");
+        p.Sock("back", [0, 0.625, 0.1], "+z");
         p.Stats(12, 80, 2, 2);
         p.Set(("shell", new PyDict { ["body"] = true }), ("config", Py.L(Channel())), ("centreSockets", false));
         return p;
@@ -105,7 +105,7 @@ public sealed class ShellParts : IPartGenerator
         double[] at = slot switch
         {
             0 => [0, 1.485, 0],
-            1 => [0, 1.07, 0.19],
+            1 => [0, 1.07, 0.14],
             2 or 3 => [0.315 * mirror, 0.62, 0],
             _ => [0.11 * mirror, 0, 0],
         };
@@ -594,7 +594,7 @@ public sealed class ShellParts : IPartGenerator
         foreach (var x in new[] { -0.235, 0.18 })
             p.Add(Box([x * K, 1.2 * K, -0.142 * K], [(x + 0.055) * K, 1.235 * K, -0.13 * K], ArmHazard, detail: true)); // hazard flashes on the torso's front, either side of its chest plate
         p.Sock("bottom", [0, 0, 0], "-y");
-        p.Sock("back", [0, Py.Round(1.25 * K, 3), Py.Round(0.25 * K, 3)], "+z");
+        p.Sock("back", [0, Py.Round(1.25 * K, 3), Py.Round(0.2 * K, 3)], "+z");
         p.Stats(900, 600, 8, 10);
         p.Set(("shell", new PyDict { ["body"] = true }), ("config", Py.L(Channel())), ("centreSockets", false));
         return p;
