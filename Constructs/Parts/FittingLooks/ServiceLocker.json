@@ -1,9 +1,9 @@
 {
   "format": "call-of-slop-construct-part/1",
-  "name": "Style Locker A Service",
-  "description": "A: one tall door under a lit hood. The pull is a recessed channel with a cyan strip in it; a status lamp and vents.",
-  "group": "Style",
-  "section": "Lockers",
+  "name": "Service Locker",
+  "description": "A crew locker: one tall door under a lit hood. The pull is a recessed channel with a cyan strip in it; a status lamp and vents.",
+  "group": "Ship",
+  "section": "Ship fittings",
   "role": "storage",
   "tool": "wrench",
   "finish": "painted steel",

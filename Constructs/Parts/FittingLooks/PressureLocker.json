@@ -1,9 +1,9 @@
 {
   "format": "call-of-slop-construct-part/1",
-  "name": "Style Locker E Pressure",
-  "description": "E: a sealed locker with a cut-corner door, a green seal light round its edge and a hinge ram on the side. Chevrons on the base.",
-  "group": "Style",
-  "section": "Lockers",
+  "name": "Pressure Locker",
+  "description": "A sealed crew locker with a cut-corner door, a green seal light round its edge and a hinge ram on the side. Chevrons on the base.",
+  "group": "Ship",
+  "section": "Ship fittings",
   "role": "storage",
   "tool": "wrench",
   "finish": "painted steel",
