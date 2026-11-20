@@ -44,6 +44,9 @@ public sealed class PlayerRig
     /// <summary>First-person legs: drawn this far behind the feet so looking down shows them a step ahead of the camera, not under it.</summary>
     public const float FirstPersonBack = 0.1f;
 
+    /// <summary>A window tool's picture for a look review leaves the health bar over each head out ("shellgantry clean"); never set in play.</summary>
+    public static bool HideBars;
+
     public PlayerRig(byte id)
     {
         Root = new SceneNode("player_" + id); // (its own matrix: a robot shell's frame's size about the feet; the body below is a person's)
@@ -183,7 +186,7 @@ public sealed class PlayerRig
         Pelvis.Visible = p.Alive;
         _pelvisBox.Visible = !legsOnly;
         _gear.Visible = p.Alive && !legsOnly;
-        _health.Visible = _gear.Visible && !Program.TalkHidesBar(p.Id); // (your own, over your head in the talk camera's shot: not wanted)
+        _health.Visible = _gear.Visible && !Program.TalkHidesBar(p.Id) && !HideBars; // (your own, over your head in the talk camera's shot: not wanted)
         var stance = p.Alive && !legsOnly ? p.RenderStance switch { Stance.Prone => 2, Stance.Crouch => 1, _ => 0 } : -1;
         for (var i = 0; i < 3; i++)
             _stances[i].Visible = i == stance;

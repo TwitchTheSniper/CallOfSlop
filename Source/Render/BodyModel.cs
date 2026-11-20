@@ -64,7 +64,7 @@ public struct BodyColors
         var joint = new Vector3(0.2f, 0.22f, 0.25f);
         return new BodyColors
         {
-            Shirt = steel, ShirtDark = steel * 0.72f, Sleeve = steel * 0.9f, Vest = joint * 1.5f, Pouch = joint, Accent = color * 1.1f,
+            Shirt = steel, ShirtDark = steel * 0.72f, Sleeve = steel * 0.9f, Vest = new Vector3(0.77f, 0.79f, 0.81f), Pouch = joint, // (the plates: a lighter second tone, look.md) Accent = color * 1.1f,
             Skin = steel * 1.08f, SkinShade = steel * 0.9f, Hair = joint, Gear = steel * 0.95f, GearDark = joint, Eyes = new Vector3(0.22f, 0.82f, 0.95f),
         };
     }

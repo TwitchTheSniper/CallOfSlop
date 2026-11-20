@@ -81,6 +81,11 @@ public static partial class Program
                 WsSay($"shellgantry fit: asked gantry {gc.Id} for a {ShellFrames.Modules[mod].Name} in the {ShellFrames.Slots[slot]}");
                 return;
             }
+            case "clean": // "shellgantry clean": this window's pictures without name tags and the bars over heads (a test state for look reviews; play keeps both)
+                _settings.NameTags = NameTagMode.Off;
+                PlayerRig.HideBars = true;
+                WsSay("shellgantry clean: name tags and health bars off in this window");
+                return;
             case "kit" when g.IsServer: // "shellgantry kit [other] SLOT MODULE": host, a test state: the worn shell's slot (another player's: other) holds that module at once (no gantry), every peer told
             {
                 if (rest.StartsWith("other ", StringComparison.OrdinalIgnoreCase))

@@ -31,7 +31,7 @@
     { "name": "Standard Leg", "slot": "leg", "kind": "leg", "part": "Shell Standard Leg", "joints": { "hip": 0.9, "knee": 0.49, "ankle": 0.09 } },
     { "name": "Heavy Leg", "slot": "leg", "kind": "leg", "part": "Shell Heavy Leg", "joints": { "hip": 1.35, "knee": 0.735, "ankle": 0.15 } },
     { "name": "Runner Leg", "slot": "leg", "kind": "leg", "part": "Shell Runner Leg", "speed": 1.05,
-      "joints": { "hip": 0.94, "knee": 0.74, "hock": 0.5, "ankle": 0.06 }, "hock": [0.4, 0.2] },
+      "joints": { "hip": 0.94, "knee": 0.74, "hock": 0.5, "ankle": 0.09 }, "hock": [0.4, 0.2] },
     { "name": "Plated Head", "slot": "head", "kind": "head", "part": "Shell Plated Head", "damage": 0.9 },
     { "name": "Welder Arm", "slot": "arm", "kind": "tool", "part": "Shell Welder Arm", "tool": "Welder", "view": true },
     { "name": "Cutter Arm", "slot": "arm", "kind": "tool", "part": "Shell Cutter Arm", "tool": "Remover", "view": true },
