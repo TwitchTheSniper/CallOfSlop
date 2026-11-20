@@ -328,7 +328,7 @@ public sealed class ShipParts : IPartGenerator
 
     private const double LowFront = -0.3, UpFront = 1.4, Back = 16.06; // the rooms' ends
 
-    private static readonly double[] StairCuts = [8.15, 11.05]; // (StairHole's ends: declared here, before it, for the initialisation order)
+    private static readonly double[] StairCuts = [8.15, 11.4]; // (StairHole's ends: declared here, before it, for the initialisation order)
 
     /// <summary>A storey's floor (the lower one to its walls' inner faces, the upper one out to the deck line), less the holes.</summary>
     private static void FloorOf(Part p, int level, double y0, double y1, string color, (double X0, double Z0, double X1, double Z1)[] holes)
@@ -897,8 +897,13 @@ public sealed class ShipParts : IPartGenerator
     // and the floor is whole from there to the galley's wall, a landing level with the deck to step off onto (Karl, 2026-11-17: the
     // flight ran on to the far wall past where the floor was open beside it). The stair's foot is StairLead fore of the opening, under
     // the deck, low enough there that a standing head clears the opening's edge.
-    private static readonly (double X0, double Z0, double X1, double Z1) StairHole = (6.55, 8.15, Cx + Uw, 11.05);
-    private const double StairLead = 0.6; // (the Wide Stair's 12 steps rise 3 m over 3.5 m: 8.15 - 0.6 + 3.5 = 11.05)
+    private static readonly (double X0, double Z0, double X1, double Z1) StairHole = (6.55, 8.15, Cx + Uw, 11.4);
+    private const double StairLead = 0.25; // (the Wide Stair's 12 steps rise 3 m over 3.5 m: 8.15 - 0.25 + 3.5 = 11.4)
+    // (Not more: a standing body (a 0.4 m capsule, 1.8 m) on the fourth step, 1 m up, meets the opening's fore edge 2.75 m over the
+    // floor unless its middle is 0.19 m past it, and it takes that step with its middle 0.475 m into the flight: at a lead of 0.6 it
+    // stuck on the third step, so nobody got upstairs standing. The landing at the head is 0.57 m to the galley's wall, so the rail
+    // stops short of the head (StairRailEnd) and the top two steps step off to port into the hall.)
+    private const double StairRailEnd = 11.4 - 0.6;
 
     /// <summary>A frame bar from a to b: a thin plate 8 cm wide, moved by <paramref name="shift"/> to stand proud of the glass.</summary>
     private static void Bar(Part p, double[] a, double[] b, double[] shift)
@@ -1072,8 +1077,8 @@ public sealed class ShipParts : IPartGenerator
                 Detail(p, 4.13, 5.58, z - 0.03, 4.27, 5.9, z + 0.03, Frame, "dirty steel");
         });
         // The stair's rail along the opening's inboard side; at its head (aft) the landing, then the hall.
-        Solid(p, StairHole.X0 - 0.06, F1T, StairHole.Z0, StairHole.X0, F1T + 1.0, StairHole.Z1, Frame, "steel");
-        Detail(p, StairHole.X0 - 0.1, F1T + 0.95, StairHole.Z0, StairHole.X0 + 0.04, F1T + 1.05, StairHole.Z1, Stripe, "hazard paint");
+        Solid(p, StairHole.X0 - 0.06, F1T, StairHole.Z0, StairHole.X0, F1T + 1.0, StairRailEnd, Frame, "steel");
+        Detail(p, StairHole.X0 - 0.1, F1T + 0.95, StairHole.Z0, StairHole.X0 + 0.04, F1T + 1.05, StairRailEnd, Stripe, "hazard paint");
         // Sockets: the seats, the cabins' furniture, the doors' jambs, the lamps.
         Sock(p, "seatL", 4.0, F1T, 2.45, "+y");
         Sock(p, "seatR", 6.0, F1T, 2.45, "+y");

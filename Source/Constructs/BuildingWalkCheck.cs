@@ -205,7 +205,11 @@ public static class BuildingWalkCheck
                     continue;
                 var dx = MathF.Max(0, MathF.Max(bb.Min.X - x, x - bb.Max.X));
                 var dz = MathF.Max(0, MathF.Max(bb.Min.Z - z, z - bb.Max.Z));
-                if (dx * dx + dz * dz < r * r - 1e-4f)
+                // (the body is the game's capsule (ConstructRideMove): a ceiling's edge within its rounded crown meets a narrower disc,
+                // as a head going up a stair under a floor opening's edge does)
+                var crown = bb.Min.Y - (feet + World.PlayerHeight - World.PlayerRadius);
+                var rr = crown > 0 ? r - World.PlayerRadius + MathF.Sqrt(MathF.Max(0, World.PlayerRadius * World.PlayerRadius - crown * crown)) : r;
+                if (dx * dx + dz * dz < rr * rr - 1e-4f)
                     return true;
             }
             return false;
@@ -441,6 +445,8 @@ public static class BuildingWalkCheck
                 continue; // (a leaf lying level is a hatch in a floor or a keel, the Magpie's well doors: nobody walks through it)
             if (MathF.Max(mx.X - mn.X, mx.Z - mn.Z) < 0.6f)
                 continue; // (a leaf narrower than a person is no doorway: the foot of the Magpie's boarding ladder)
+            if (mx.Y - mn.Y < 1.2f)
+                continue; // (a leaf lower than a stooping person is a hatch reached into, not walked through: a pod's Service Hatch over its engine)
             var mid = (mn + mx) * 0.5f;
             var thinX = mx.X - mn.X < mx.Z - mn.Z;
             foreach (var side in new[] { -1f, 1f })
