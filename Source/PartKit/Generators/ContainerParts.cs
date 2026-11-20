@@ -35,7 +35,7 @@ public sealed class ContainerParts : IPartGenerator
 
     // Paint: the Traders' corporate blue shell (paintable), a dark frame, lanyard yellow at what moves, a pale lit inside.
     private const string Shell = "#2a64a8", ShellRib = "#245893", FrameC = "#2b2f35", Casting = "#1e2125", Hazard = "#f2c400", HazardDark = "#1b1714",
-        Inside = "#c9ccc8", Floor = "#5c6168", Rail = "#8c939b", Paper = "#e6e2d6", Lamp = "#ffe2a0", Green = "#5ad070", Amber = "#f0a830", Steel = "#7c838c",
+        Inside = "#c9ccc8", Floor = "#5c6168", Rail = "#8c939b", Paper = "#e6e2d6", Lamp = "#ffe2a0", Green = "#5ad070", Steel = "#7c838c",
         CradleC = "#3d444c", CradleRim = "#d8a320";
 
     private const double F = 0.15; // the frame: corner posts, rails, the floor's depth
