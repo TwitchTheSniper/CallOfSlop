@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
-  "name": "Style Capacitor B Slabs",
-  "description": "B: three slabs of different depths stacked off-line in two side frames, ice light in the gaps, a lit pull on each.",
+  "name": "Style Capacitor E Pulse unit",
+  "description": "E: a low pulse-power unit: a cooling fan behind a filter grille on the front, side louvres, a heavy terminal block with copper straps, lifting handles on top.",
   "group": "Style",
   "section": "Capacitor banks",
   "role": "frame",
@@ -24,7 +24,7 @@
       ],
       "max": [
         0.5,
-        1.0304,
+        0.7728,
         0.5
       ],
       "color": "#3a4047",
@@ -502,77 +502,13 @@
     },
     {
       "min": [
-        -0.36,
+        -0.34,
         0.078,
-        -0.33
+        -0.3
       ],
       "max": [
-        -0.3,
-        0.13,
-        0.33
-      ],
-      "color": "#3a4047",
-      "detail": true,
-      "finish": "painted steel",
-      "paintable": false
-    },
-    {
-      "min": [
-        -0.358,
-        0.082,
-        0.326
-      ],
-      "max": [
-        -0.302,
-        0.126,
-        0.338
-      ],
-      "color": "#d9a72a",
-      "detail": true,
-      "finish": "hazard paint",
-      "paintable": false
-    },
-    {
-      "min": [
-        0.3,
-        0.078,
-        -0.33
-      ],
-      "max": [
-        0.36,
-        0.13,
-        0.33
-      ],
-      "color": "#3a4047",
-      "detail": true,
-      "finish": "painted steel",
-      "paintable": false
-    },
-    {
-      "min": [
-        0.302,
-        0.082,
-        0.326
-      ],
-      "max": [
-        0.358,
-        0.126,
-        0.338
-      ],
-      "color": "#d9a72a",
-      "detail": true,
-      "finish": "hazard paint",
-      "paintable": false
-    },
-    {
-      "min": [
-        -0.3,
-        0.15,
-        -0.24
-      ],
-      "max": [
-        0.3,
-        0.41,
+        0.34,
+        0.62,
         0.3
       ],
       "color": "#58616b",
@@ -581,286 +517,790 @@
     },
     {
       "min": [
-        -0.24,
-        0.404,
-        -0.22
+        -0.26,
+        0.15,
+        0.296
       ],
       "max": [
-        0.24,
-        0.476,
-        0.22
+        0.06,
+        0.55,
+        0.312
       ],
-      "color": "#cfeeff",
+      "color": "#3a4047",
       "detail": true,
-      "glow": true,
+      "finish": "painted steel",
       "paintable": false
     },
     {
       "min": [
-        -0.252,
-        0.19,
-        0.296
+        -0.2386,
+        0.2114,
+        0.306
       ],
       "max": [
-        -0.188,
-        0.37,
+        0.0386,
+        0.4886,
         0.316
       ],
       "color": "#1b1e22",
       "detail": true,
-      "finish": "plastic",
-      "paintable": false
+      "shape": "hull",
+      "points": [
+        [
+          0.0386,
+          0.4074,
+          0.306
+        ],
+        [
+          -0.0426,
+          0.4886,
+          0.306
+        ],
+        [
+          -0.1574,
+          0.4886,
+          0.306
+        ],
+        [
+          -0.2386,
+          0.4074,
+          0.306
+        ],
+        [
+          -0.2386,
+          0.2926,
+          0.306
+        ],
+        [
+          -0.1574,
+          0.2114,
+          0.306
+        ],
+        [
+          -0.0426,
+          0.2114,
+          0.306
+        ],
+        [
+          0.0386,
+          0.2926,
+          0.306
+        ],
+        [
+          0.0386,
+          0.4074,
+          0.316
+        ],
+        [
+          -0.0426,
+          0.4886,
+          0.316
+        ],
+        [
+          -0.1574,
+          0.4886,
+          0.316
+        ],
+        [
+          -0.2386,
+          0.4074,
+          0.316
+        ],
+        [
+          -0.2386,
+          0.2926,
+          0.316
+        ],
+        [
+          -0.1574,
+          0.2114,
+          0.316
+        ],
+        [
+          -0.0426,
+          0.2114,
+          0.316
+        ],
+        [
+          0.0386,
+          0.2926,
+          0.316
+        ]
+      ],
+      "paintable": false,
+      "finish": "dirty steel"
     },
     {
       "min": [
-        -0.23,
-        0.225,
-        0.308
+        -0.25,
+        0.345,
+        0.31
       ],
       "max": [
-        -0.21,
-        0.335,
-        0.32
+        0.05,
+        0.357,
+        0.324
       ],
-      "color": "#cfeeff",
-      "detail": true,
-      "glow": true,
-      "paintable": false
-    },
-    {
-      "min": [
-        -0.32,
-        0.47,
-        -0.31
-      ],
-      "max": [
-        0.32,
-        0.67,
-        0.23
-      ],
-      "color": "#3a4047",
-      "detail": true,
-      "finish": "painted steel"
-    },
-    {
-      "min": [
-        -0.24,
-        0.664,
-        -0.22
-      ],
-      "max": [
-        0.24,
-        0.736,
-        0.22
-      ],
-      "color": "#cfeeff",
-      "detail": true,
-      "glow": true,
-      "paintable": false
-    },
-    {
-      "min": [
-        -0.112,
-        0.51,
-        0.226
-      ],
-      "max": [
-        -0.048,
-        0.63,
-        0.246
-      ],
-      "color": "#1b1e22",
-      "detail": true,
-      "finish": "plastic",
-      "paintable": false
-    },
-    {
-      "min": [
-        -0.09,
-        0.545,
-        0.238
-      ],
-      "max": [
-        -0.07,
-        0.595,
-        0.25
-      ],
-      "color": "#cfeeff",
-      "detail": true,
-      "glow": true,
-      "paintable": false
-    },
-    {
-      "min": [
-        -0.28,
-        0.73,
-        -0.27
-      ],
-      "max": [
-        0.28,
-        1.03,
-        0.27
-      ],
-      "color": "#58616b",
-      "detail": true,
-      "finish": "painted steel"
-    },
-    {
-      "min": [
-        0.088,
-        0.77,
-        0.266
-      ],
-      "max": [
-        0.152,
-        0.99,
-        0.286
-      ],
-      "color": "#1b1e22",
-      "detail": true,
-      "finish": "plastic",
-      "paintable": false
-    },
-    {
-      "min": [
-        0.11,
-        0.805,
-        0.278
-      ],
-      "max": [
-        0.13,
-        0.955,
-        0.29
-      ],
-      "color": "#cfeeff",
-      "detail": true,
-      "glow": true,
-      "paintable": false
-    },
-    {
-      "min": [
-        -0.363,
-        0.126,
-        -0.278
-      ],
-      "max": [
-        -0.337,
-        1.102,
-        -0.24
-      ],
-      "color": "#3a4047",
-      "detail": true,
-      "finish": "painted steel",
-      "paintable": false
-    },
-    {
-      "min": [
-        -0.363,
-        0.126,
-        0.24
-      ],
-      "max": [
-        -0.337,
-        1.102,
-        0.28
-      ],
-      "color": "#3a4047",
-      "detail": true,
-      "finish": "painted steel",
-      "paintable": false
-    },
-    {
-      "min": [
-        -0.365,
-        1.07,
-        -0.28
-      ],
-      "max": [
-        -0.335,
-        1.1,
-        0.278
-      ],
-      "color": "#3a4047",
-      "detail": true,
-      "finish": "painted steel",
-      "paintable": false
-    },
-    {
-      "min": [
-        -0.338,
-        0.5,
-        -0.24
-      ],
-      "max": [
-        -0.326,
-        0.54,
-        0.24
-      ],
-      "color": "#1b1e22",
+      "color": "#7d848b",
       "detail": true,
       "finish": "steel",
       "paintable": false
     },
     {
       "min": [
-        0.337,
-        0.126,
-        -0.278
+        -0.106,
+        0.2,
+        0.31
       ],
       "max": [
-        0.363,
-        1.102,
-        -0.24
-      ],
-      "color": "#3a4047",
-      "detail": true,
-      "finish": "painted steel",
-      "paintable": false
-    },
-    {
-      "min": [
-        0.337,
-        0.126,
-        0.24
-      ],
-      "max": [
-        0.363,
-        1.102,
-        0.28
-      ],
-      "color": "#3a4047",
-      "detail": true,
-      "finish": "painted steel",
-      "paintable": false
-    },
-    {
-      "min": [
-        0.335,
-        1.07,
-        -0.28
-      ],
-      "max": [
-        0.365,
-        1.1,
-        0.278
-      ],
-      "color": "#3a4047",
-      "detail": true,
-      "finish": "painted steel",
-      "paintable": false
-    },
-    {
-      "min": [
-        0.326,
+        -0.094,
         0.5,
-        -0.24
+        0.322
+      ],
+      "color": "#7d848b",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.137,
+        0.313,
+        0.31
       ],
       "max": [
-        0.338,
-        0.54,
-        0.24
+        -0.063,
+        0.387,
+        0.33
+      ],
+      "color": "#3a4047",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          -0.063,
+          0.3653,
+          0.31
+        ],
+        [
+          -0.0847,
+          0.387,
+          0.31
+        ],
+        [
+          -0.1153,
+          0.387,
+          0.31
+        ],
+        [
+          -0.137,
+          0.3653,
+          0.31
+        ],
+        [
+          -0.137,
+          0.3347,
+          0.31
+        ],
+        [
+          -0.1153,
+          0.313,
+          0.31
+        ],
+        [
+          -0.0847,
+          0.313,
+          0.31
+        ],
+        [
+          -0.063,
+          0.3347,
+          0.31
+        ],
+        [
+          -0.063,
+          0.3653,
+          0.33
+        ],
+        [
+          -0.0847,
+          0.387,
+          0.33
+        ],
+        [
+          -0.1153,
+          0.387,
+          0.33
+        ],
+        [
+          -0.137,
+          0.3653,
+          0.33
+        ],
+        [
+          -0.137,
+          0.3347,
+          0.33
+        ],
+        [
+          -0.1153,
+          0.313,
+          0.33
+        ],
+        [
+          -0.0847,
+          0.313,
+          0.33
+        ],
+        [
+          -0.063,
+          0.3347,
+          0.33
+        ]
+      ],
+      "paintable": false,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -0.248,
+        0.162,
+        0.31
+      ],
+      "max": [
+        -0.232,
+        0.178,
+        0.322
+      ],
+      "color": "#7d848b",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.032,
+        0.162,
+        0.31
+      ],
+      "max": [
+        0.048,
+        0.178,
+        0.322
+      ],
+      "color": "#7d848b",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.248,
+        0.522,
+        0.31
+      ],
+      "max": [
+        -0.232,
+        0.538,
+        0.322
+      ],
+      "color": "#7d848b",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.032,
+        0.522,
+        0.31
+      ],
+      "max": [
+        0.048,
+        0.538,
+        0.322
+      ],
+      "color": "#7d848b",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.15,
+        0.445,
+        0.296
+      ],
+      "max": [
+        0.29,
+        0.515,
+        0.308
+      ],
+      "color": "#d9a72a",
+      "detail": true,
+      "finish": "hazard paint",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.162,
+        0.472,
+        0.301
+      ],
+      "max": [
+        0.278,
+        0.488,
+        0.312
       ],
       "color": "#1b1e22",
+      "detail": true,
+      "finish": "plastic",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.156,
+        0.286,
+        0.296
+      ],
+      "max": [
+        0.184,
+        0.314,
+        0.312
+      ],
+      "color": "#1b1e22",
+      "detail": true,
+      "finish": "plastic",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.1616,
+        0.2916,
+        0.306
+      ],
+      "max": [
+        0.1784,
+        0.3084,
+        0.318
+      ],
+      "color": "#64ff9c",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.206,
+        0.286,
+        0.296
+      ],
+      "max": [
+        0.234,
+        0.314,
+        0.312
+      ],
+      "color": "#1b1e22",
+      "detail": true,
+      "finish": "plastic",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.2116,
+        0.2916,
+        0.306
+      ],
+      "max": [
+        0.2284,
+        0.3084,
+        0.318
+      ],
+      "color": "#ffae3c",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.343,
+        0.18,
+        -0.22
+      ],
+      "max": [
+        -0.33,
+        0.52,
+        0.18
+      ],
+      "color": "#1b1e22",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.352,
+        0.188,
+        -0.212
+      ],
+      "max": [
+        -0.336,
+        0.202,
+        0.172
+      ],
+      "color": "#7d848b",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.352,
+        0.25,
+        -0.212
+      ],
+      "max": [
+        -0.336,
+        0.264,
+        0.172
+      ],
+      "color": "#7d848b",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.352,
+        0.312,
+        -0.212
+      ],
+      "max": [
+        -0.336,
+        0.326,
+        0.172
+      ],
+      "color": "#7d848b",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.352,
+        0.374,
+        -0.212
+      ],
+      "max": [
+        -0.336,
+        0.388,
+        0.172
+      ],
+      "color": "#7d848b",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.352,
+        0.436,
+        -0.212
+      ],
+      "max": [
+        -0.336,
+        0.45,
+        0.172
+      ],
+      "color": "#7d848b",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.352,
+        0.498,
+        -0.212
+      ],
+      "max": [
+        -0.336,
+        0.512,
+        0.172
+      ],
+      "color": "#7d848b",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.33,
+        0.18,
+        -0.22
+      ],
+      "max": [
+        0.343,
+        0.52,
+        0.18
+      ],
+      "color": "#1b1e22",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.336,
+        0.188,
+        -0.212
+      ],
+      "max": [
+        0.352,
+        0.202,
+        0.172
+      ],
+      "color": "#7d848b",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.336,
+        0.25,
+        -0.212
+      ],
+      "max": [
+        0.352,
+        0.264,
+        0.172
+      ],
+      "color": "#7d848b",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.336,
+        0.312,
+        -0.212
+      ],
+      "max": [
+        0.352,
+        0.326,
+        0.172
+      ],
+      "color": "#7d848b",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.336,
+        0.374,
+        -0.212
+      ],
+      "max": [
+        0.352,
+        0.388,
+        0.172
+      ],
+      "color": "#7d848b",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.336,
+        0.436,
+        -0.212
+      ],
+      "max": [
+        0.352,
+        0.45,
+        0.172
+      ],
+      "color": "#7d848b",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.336,
+        0.498,
+        -0.212
+      ],
+      "max": [
+        0.352,
+        0.512,
+        0.172
+      ],
+      "color": "#7d848b",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.04,
+        0.616,
+        -0.26
+      ],
+      "max": [
+        0.3,
+        0.7,
+        -0.02
+      ],
+      "color": "#1b1e22",
+      "detail": true,
+      "finish": "plastic",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.08,
+        0.696,
+        -0.2
+      ],
+      "max": [
+        0.12,
+        0.8,
+        -0.08
+      ],
+      "color": "#b8733a",
+      "detail": true,
+      "finish": "brass",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.15,
+        0.696,
+        -0.2
+      ],
+      "max": [
+        0.19,
+        0.8,
+        -0.08
+      ],
+      "color": "#b8733a",
+      "detail": true,
+      "finish": "brass",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.22,
+        0.696,
+        -0.2
+      ],
+      "max": [
+        0.26,
+        0.8,
+        -0.08
+      ],
+      "color": "#b8733a",
+      "detail": true,
+      "finish": "brass",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.298,
+        0.616,
+        -0.146
+      ],
+      "max": [
+        -0.27,
+        0.702,
+        -0.122
+      ],
+      "color": "#7d848b",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.06,
+        0.616,
+        -0.146
+      ],
+      "max": [
+        -0.03,
+        0.702,
+        -0.122
+      ],
+      "color": "#7d848b",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.3,
+        0.68,
+        -0.152
+      ],
+      "max": [
+        -0.032,
+        0.7,
+        -0.128
+      ],
+      "color": "#7d848b",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.298,
+        0.616,
+        0.134
+      ],
+      "max": [
+        -0.27,
+        0.702,
+        0.158
+      ],
+      "color": "#7d848b",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.06,
+        0.616,
+        0.134
+      ],
+      "max": [
+        -0.03,
+        0.702,
+        0.158
+      ],
+      "color": "#7d848b",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.3,
+        0.68,
+        0.128
+      ],
+      "max": [
+        -0.032,
+        0.7,
+        0.152
+      ],
+      "color": "#7d848b",
       "detail": true,
       "finish": "steel",
       "paintable": false
