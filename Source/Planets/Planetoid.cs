@@ -1211,7 +1211,7 @@ public sealed class Planetoid
     // ---- Map file ----------------------------------------------------------------------------------------------------
 
     /// <summary>
-    /// The map's top-level <c>"planetoid"</c> object: <c>radius</c> (metres, 500 to 16000), <c>cell</c> (about this many
+    /// The map's top-level <c>"planetoid"</c> object: <c>radius</c> (metres, 500 to 40000), <c>cell</c> (about this many
     /// metres per cell; rounded so a face has a power-of-two number of them), <c>strength</c> (gravity at the surface,
     /// default 11), <c>base</c>, <c>surface</c> (as a terrain's) and <c>features</c>. The centre is straight under the
     /// world's origin, so the +Y pole (latitude 90) is at (0, 0, 0) plus its height: spawns go there.
@@ -1227,7 +1227,7 @@ public sealed class Planetoid
         {
             switch (kv.Name.ToLowerInvariant())
             {
-                case "radius": p.Radius = Range(Num(kv.Value, where, "radius"), 500, 16000, where, "radius"); break;
+                case "radius": p.Radius = Range(Num(kv.Value, where, "radius"), 500, 40000, where, "radius"); break; // (Karl, 2026-11-19: the worlds at 4x, Glacier 32 km; past 16 km the ground is in float steps of 2-4 mm, PLANETS.md "Origin")
                 case "cell": cell = Range(Num(kv.Value, where, "cell"), 0.5, 16, where, "cell"); break;
                 case "strength": p.Strength = (float)Range(Num(kv.Value, where, "strength"), 1, 60, where, "strength"); break;
                 case "base": p.Base = Num(kv.Value, where, "base"); break;

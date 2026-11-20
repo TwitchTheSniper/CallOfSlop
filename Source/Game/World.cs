@@ -619,9 +619,10 @@ public static partial class World
     /// Sandbox on a planet: how far from its centre players may go. Past the space bubble's edge (the map's half size,
     /// GameSpaceLaunch.SpaceEdge), where ships go into orbit (a ship start wakes everyone 400 m past it, GameSpaceStart.cs),
     /// so someone who steps off a ship up there floats free instead of being dragged back to an invisible ceiling; held
-    /// inside what a snapshot can carry (Snapshot.PosScale: +-32 km on each axis).
+    /// inside what a snapshot can carry (Snapshot.WorldPosScale: +-65 km on each axis; 30 km before Karl's 4x worlds of
+    /// 2026-11-19, whose starts wake 37.8 km out over Glacier).
     /// </summary>
-    public const float OpenSkyRadius = 30_000f;
+    public const float OpenSkyRadius = 60_000f;
 
     /// <summary>On a planet: how far from its centre players may go (m): the map's half size, or in Sandbox <see cref="OpenSkyRadius"/>.</summary>
     public static float SkyRadius => OpenSky ? MathF.Max(OpenSkyRadius, MathF.Max(Map.HalfX, Map.HalfZ)) : MathF.Max(Map.HalfX, Map.HalfZ);

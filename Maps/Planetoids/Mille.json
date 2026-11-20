@@ -1,11 +1,11 @@
 {
   "format": "call-of-slop-map/1",
   "name": "Mille",
-  "description": "Mille, the 3 km hollow world of Frostreach (Systems/Frostreach.json): a golden crust stepped in layers all the way round, 220 m thick, over a cavity that glows like an oven. Its terrace stands empty for now: no faction lives here yet. The crust is thinnest under the Proving Bowl: dig there to get in.",
+  "description": "Mille, the 4 km hollow world of Frostreach (Systems/Frostreach.json): a golden crust stepped in layers all the way round, 250 m thick, over a cavity that glows like an oven. Its terrace stands empty for now: no faction lives here yet. The crust is thinnest under the Proving Bowl: dig there to get in.",
   "author": "Call of Slop",
   "order": 5,
-  "halfX": 5600,
-  "halfZ": 5600,
+  "halfX": 7002,
+  "halfZ": 7002,
   "maxPlayers": 8,
   "skybox": {
     "preset": "dusk",
@@ -24,7 +24,7 @@
     }
   },
   "planetoid": {
-    "radius": 3000,
+    "radius": 4000,
     "cell": 2,
     "strength": 8,
     "surface": {
@@ -34,10 +34,10 @@
       "sand": "#e8cf8f",
       "dirtSlope": 16,
       "rockSlope": 30,
-      "sandBelow": -22
+      "sandBelow": -25.4
     },
     "cavity": {
-      "crust": 220,
+      "crust": 254,
       "glow": "#ffb347",
       "core": 60
     },
@@ -48,8 +48,8 @@
     "features": [
       {
         "type": "noise",
-        "amplitude": 42,
-        "scale": 900,
+        "amplitude": 48.5,
+        "scale": 1200,
         "octaves": 5,
         "seed": 91
       },
@@ -57,8 +57,8 @@
         "type": "mountain",
         "lat": 35,
         "lon": 250,
-        "radius": 520,
-        "height": 110,
+        "radius": 693.33,
+        "height": 127.02,
         "seed": 51,
         "ridges": 0.3,
         "erosion": 0.5,
@@ -68,20 +68,20 @@
         "type": "crater",
         "lat": 70,
         "lon": 40,
-        "radius": 80,
-        "depth": 70,
-        "rim": 14
+        "radius": 106.67,
+        "depth": 80.83,
+        "rim": 16.17
       },
       {
         "type": "crater",
         "lat": -30,
         "lon": 120,
-        "radius": 260,
-        "depth": 30
+        "radius": 346.67,
+        "depth": 34.64
       },
       {
         "type": "terrace",
-        "step": 9,
+        "step": 10.39,
         "sharp": 0.72
       },
       {
@@ -103,7 +103,7 @@
         "lat": 55,
         "lon": 300,
         "radius": 90,
-        "height": 9,
+        "height": 10.39,
         "edge": 120
       },
       {
@@ -111,7 +111,7 @@
         "lat": 70,
         "lon": 40,
         "radius": 30,
-        "height": -66,
+        "height": -76.21,
         "edge": 30
       },
       {
@@ -119,7 +119,7 @@
         "lat": 90,
         "lon": 0,
         "radius": 70,
-        "height": 9,
+        "height": 10.39,
         "edge": 150
       }
     ]
@@ -138,44 +138,44 @@
     [
       [
         -6,
-        3008.968,
+        4010.426,
         -40
       ],
       [
         6,
-        3008.968,
+        4010.426,
         -40
       ],
       [
         -12,
-        3009.001,
+        4010.45,
         -36
       ],
       [
         12,
-        3009.001,
+        4010.45,
         -36
       ]
     ],
     [
       [
         -6,
-        3008.968,
+        4010.426,
         40
       ],
       [
         6,
-        3008.968,
+        4010.426,
         40
       ],
       [
         -12,
-        3009.001,
+        4010.45,
         36
       ],
       [
         12,
-        3009.001,
+        4010.45,
         36
       ]
     ]
@@ -183,13 +183,13 @@
   "hills": [
     {
       "x": 30,
-      "y": 3008.701,
+      "y": 4010.166,
       "z": 30,
       "radius": 6
     },
     {
       "x": -30,
-      "y": 3008.701,
+      "y": 4010.166,
       "z": -30,
       "radius": 6
     }
@@ -197,54 +197,54 @@
   "flags": [
     [
       0,
-      3009.163,
+      4010.638,
       -45
     ],
     [
       0,
-      3009.163,
+      4010.638,
       45
     ]
   ],
   "ops": [
     {
       "op": "SurfaceSpawn",
-      "lat": 89.73342,
+      "lat": 89.79998,
       "lon": 22.5
     },
     {
       "op": "SurfaceSpawn",
-      "lat": 89.73342,
+      "lat": 89.79998,
       "lon": 67.5
     },
     {
       "op": "SurfaceSpawn",
-      "lat": 89.73342,
+      "lat": 89.79998,
       "lon": 112.5
     },
     {
       "op": "SurfaceSpawn",
-      "lat": 89.73342,
+      "lat": 89.79998,
       "lon": 157.5
     },
     {
       "op": "SurfaceSpawn",
-      "lat": 89.73342,
+      "lat": 89.79998,
       "lon": 202.5
     },
     {
       "op": "SurfaceSpawn",
-      "lat": 89.73342,
+      "lat": 89.79998,
       "lon": 247.5
     },
     {
       "op": "SurfaceSpawn",
-      "lat": 89.73342,
+      "lat": 89.79998,
       "lon": 292.5
     },
     {
       "op": "SurfaceSpawn",
-      "lat": 89.73342,
+      "lat": 89.79998,
       "lon": 337.5
     },
     {

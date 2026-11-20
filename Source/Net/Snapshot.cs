@@ -121,8 +121,8 @@ public struct PlayerMask : IEquatable<PlayerMask>
 ///   header (25 bytes and up): tick, input ack, phase, time left, winner, part (low nibble) / parts (high nibble), presence mask
 ///   (a word count, then that many 64-bit words: a bit per player id; protocol 210, ids past 32 for Sandbox spawned bots);
 ///   own block: flags, then for part 0 the recipient's exact position, velocity (+ mantle target, + the exact ride state) and slow fields;
-///   fast entries (24 bytes, +10 while mantling): id, position (3 x 24-bit at 1/256 m), velocity (3 x 16-bit at
-///   1/100 m/s), yaw (16-bit), pitch (16-bit), health, flags (alive, grounded, stance, mantling, 2 bits of Last Stand
+///   fast entries (24 bytes, +10 while mantling): id, position (3 x 24-bit at 1/128 m; 1/256 m before protocol 374), velocity (3 x 16-bit at
+///   1/50 m/s; 1/100 before 374), yaw (16-bit), pitch (16-bit), health, flags (alive, grounded, stance, mantling, 2 bits of Last Stand
 ///   shield charges, regenerating), weapon, boost, blood marks (32-bit <see cref="BloodMarks"/> word; protocol 33);
 ///   the mantling flag says an extension follows: mantle ticks, then the mantle target (9 bytes), or ticks 0 and a seat
 ///   (+4 bytes: construct id, seat part; protocol 80: a seated player, whose yaw is then relative to the seat's facing), or
@@ -153,17 +153,27 @@ public static class Snapshot
     public const int OwnBytes = 1 + 24 + SlowBytes; // +12 while mantling
     public const int MaxParts = 15; // (the part nibble: 0 to 15; about 200 players with their slow entries fit in 15)
 
-    /// <summary>Position resolution: 1/256 m in 24 bits (+-32 km).</summary>
+    /// <summary>Position resolution in a construct's frame (a rider's feet): 1/256 m in 24 bits (+-32 km).</summary>
     public const float PosScale = 256f;
 
-    /// <summary>Velocity resolution: 1/100 m/s in 16 bits (+-327 m/s).</summary>
-    public const float VelScale = 100f;
+    /// <summary>
+    /// World position resolution (a fast entry's position and mantle target): 1/128 m in 24 bits (+-65 km), so the 4x worlds'
+    /// skies fit (Karl, 2026-11-19: Glacier's sky reaches 37 km from its centre, Caledon's Highport sits 64 km out; protocol 374).
+    /// </summary>
+    public const float WorldPosScale = 128f;
+
+    /// <summary>Velocity resolution: 1/50 m/s in 16 bits (+-655 m/s: an orbit over the 4x worlds is 460 m/s; protocol 374).</summary>
+    public const float VelScale = 50f;
 
     // ---- Quantisation ----------------------------------------------------------------------------
 
-    private static uint Q24(float v) => (uint)Math.Clamp((int)MathF.Round(v * PosScale), -8388608, 8388607) & 0xFFFFFF;
+    private static uint Q24(float v, float scale = PosScale) => (uint)Math.Clamp((int)MathF.Round(v * scale), -8388608, 8388607) & 0xFFFFFF;
 
-    private static float D24(uint v) => ((int)(v << 8) >> 8) / PosScale;
+    private static float D24(uint v, float scale = PosScale) => ((int)(v << 8) >> 8) / scale;
+
+    private static uint QW(float v) => Q24(v, WorldPosScale);
+
+    private static float DW(uint v) => D24(v, WorldPosScale);
 
     private static ushort Q16(float v, float scale) => (ushort)(short)Math.Clamp((int)MathF.Round(v * scale), short.MinValue, short.MaxValue);
 
@@ -176,7 +186,7 @@ public static class Snapshot
     private const float PitchScale = 32767f / (MathF.PI / 2);
 
     /// <summary>What a position looks like after a trip through the snapshot (for tests and error bounds).</summary>
-    public static Vector3 RoundPosition(Vector3 p) => new(D24(Q24(p.X)), D24(Q24(p.Y)), D24(Q24(p.Z)));
+    public static Vector3 RoundPosition(Vector3 p) => new(DW(QW(p.X)), DW(QW(p.Y)), DW(QW(p.Z)));
 
     // ---- Entries ---------------------------------------------------------------------------------
 
@@ -194,7 +204,7 @@ public static class Snapshot
         var worn = !seated && !riding && !flying && p.Canopy != 0;
         var mantling = p.MantleTicks > 0 || seated || riding || flying || worn;
         w.U8(p.Id)
-            .U24(Q24(p.Position.X)).U24(Q24(p.Position.Y)).U24(Q24(p.Position.Z))
+            .U24(QW(p.Position.X)).U24(QW(p.Position.Y)).U24(QW(p.Position.Z))
             .U16(Q16(p.Velocity.X, VelScale)).U16(Q16(p.Velocity.Y, VelScale)).U16(Q16(p.Velocity.Z, VelScale))
             .U16(QYaw(p.Yaw)).U16(Q16(p.Pitch, PitchScale))
             .U8(p.Health)
@@ -216,13 +226,13 @@ public static class Snapshot
         else if (worn)
             w.U8((byte)(CanopyKind + p.Canopy));
         else if (mantling)
-            w.U8(p.MantleTicks).U24(Q24(p.MantleTo.X)).U24(Q24(p.MantleTo.Y)).U24(Q24(p.MantleTo.Z));
+            w.U8(p.MantleTicks).U24(QW(p.MantleTo.X)).U24(QW(p.MantleTo.Y)).U24(QW(p.MantleTo.Z));
     }
 
     public static SnapPlayer ReadFast(ref PacketReader r)
     {
         var p = new SnapPlayer { Id = r.U8() };
-        p.Position = new Vector3(D24(r.U24()), D24(r.U24()), D24(r.U24()));
+        p.Position = new Vector3(DW(r.U24()), DW(r.U24()), DW(r.U24()));
         p.Velocity = new Vector3(D16(r.U16(), VelScale), D16(r.U16(), VelScale), D16(r.U16(), VelScale));
         p.Yaw = DYaw(r.U16());
         p.Pitch = D16(r.U16(), PitchScale);
@@ -271,7 +281,7 @@ public static class Snapshot
                     p.RideLadder = r.U16();
             }
             else if (r.Has(MantleBytes - 1))
-                p.MantleTo = new Vector3(D24(r.U24()), D24(r.U24()), D24(r.U24()));
+                p.MantleTo = new Vector3(DW(r.U24()), DW(r.U24()), DW(r.U24()));
         }
         return p;
     }
