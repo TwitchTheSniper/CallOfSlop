@@ -224,7 +224,9 @@ Built 2026-11-19 (`ConstructGantry.cs`, `GameShellGantry.cs`, `GantryRender.cs`;
   queued behind a leg ran after its fit; asking the same slot again refused; a joined client heard both swaps (the queued one too) and
   the kit after. Later: the gantry driven at 3 m/s turning (`shellgantry drive`) kept the clamped shell in its frame to the
   millimetre; a save mid-change loaded the shell loose with its old kit; the physics gun on a clamped shell was refused. Not tried: a
-  part removal renumbering a gantry mid-swap, a client's view in a picture.
+  part removal renumbering a gantry or a table mid-swap (two gantries on one body), a client's view in a picture. The carried module
+  is the standing shell's own slot, so a new Runner Leg is carried looking like the leg it replaces (the standing shell isn't drawn
+  with its modules yet).
 - **The module carried** is the shell's own slot (its boxes, in its paint, tone and finish: `GantryRender.DrawSlot`; a leg comes off up and back, clear of the deck), so what leaves the shell is what
   the arm holds; set down, it stands on the table's floor; the new one's copy on the table is hidden while the arm holds it
   (`ConstructGantry.CarriedOff`, `RouteRender.DrawRacks`). The deck is light deck plate (look review).
