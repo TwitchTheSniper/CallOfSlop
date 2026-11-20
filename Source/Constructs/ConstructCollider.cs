@@ -155,7 +155,7 @@ internal sealed partial class ConstructCollider
                     continue;
                 c.SolidBox(i, b, out var centre, out var half);
                 Add(centre, half, rq, rt, turned, i, seg, wheel, -1);
-                Leaves[LeafCount - 1].NoGround = b >= ConstructBuild.PlaceSolids(p.D);
+                Leaves[LeafCount - 1].NoGround = c.PartCount > 1 && b >= ConstructBuild.PlaceSolids(p.D); // (a loose pod alone stands on its body)
                 any = true;
             }
             for (var h = 0; h < hs.Length; h++)
@@ -357,7 +357,7 @@ internal sealed partial class ConstructCollider
             {
                 c.SolidBox(i, b, out var centre, out var half);
                 Add(centre, half, Quaternion.Identity, Vector3.Zero, false, i, 0, false, -1);
-                Leaves[LeafCount - 1].NoGround = b >= ConstructBuild.PlaceSolids(c.Parts[i].D);
+                Leaves[LeafCount - 1].NoGround = c.PartCount > 1 && b >= ConstructBuild.PlaceSolids(c.Parts[i].D);
             }
             if (boxes == 0)
             {

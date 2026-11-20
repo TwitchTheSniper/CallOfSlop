@@ -43,7 +43,7 @@ public static partial class ConstructRoutes
         or PartRole.Gun or PartRole.GunPart or PartRole.AmmoBox or PartRole.Hose or PartRole.Wheel or PartRole.Rotor or PartRole.Leg or PartRole.Hinge or PartRole.Joint);
 
     /// <summary>A box a cable or pipe may lie inside: a solid, opaque box of a frame or a panel (a glass pane shows what is in it).</summary>
-    public static bool WallBox(ConstructPartDef d, int b) => d.Role is PartRole.Frame or PartRole.Panel && b < d.SolidBoxes && !d.Boxes[b].IsGlass;
+    public static bool WallBox(ConstructPartDef d, int b) => d.Role is PartRole.Frame or PartRole.Panel && b < ConstructBuild.PlaceSolids(d) && !d.Boxes[b].IsGlass; // (a flush pod's body isn't a wall)
 
     /// <summary>A wall no thicker than this along its normal has a far side a link can lie on (as a conduit's gland: <see cref="RouteSearch.PierceMax"/>).</summary>
     public static float FarMax => RouteSearch.PierceMax;

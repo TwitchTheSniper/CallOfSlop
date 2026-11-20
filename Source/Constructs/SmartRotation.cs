@@ -560,7 +560,7 @@ public static class SmartRotation
 
     private static bool InsideSolid(ConstructPartDef def, Vector3 pos, byte rot, float k, Vector3 p, float pad)
     {
-        for (var b = 0; b < def.SolidBoxes; b++)
+        for (var b = 0; b < ConstructBuild.PlaceSolids(def); b++) // (a flush pod: its lid, its body sinks into what it goes on)
         {
             var bc = pos + Rot24.Apply(rot, def.Boxes[b].Center * k);
             var bh = Rot24.ApplyHalf(rot, def.Boxes[b].Half * k) + new Vector3(pad);

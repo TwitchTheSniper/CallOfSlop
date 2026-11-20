@@ -1085,7 +1085,7 @@ public static partial class ConstructPhysics
     {
         var total = 0;
         for (var i = 0; i < c.PartCount; i++)
-            total += ConstructBuild.PlaceSolids(c.DefOf(i)); // (a flush pod's housing doesn't meet the ground: Leaf.NoGround)
+            total += c.PartCount > 1 ? ConstructBuild.PlaceSolids(c.DefOf(i)) : c.DefOf(i).SolidBoxes; // (a flush pod's housing doesn't meet the ground: Leaf.NoGround)
         if (total == 0)
             return false;
         var start = cursor % total;
@@ -1095,7 +1095,7 @@ public static partial class ConstructPhysics
         for (var i = 0; i < c.PartCount && left > 0; i++)
         {
             var d = c.DefOf(i);
-            var boxes = ConstructBuild.PlaceSolids(d);
+            var boxes = c.PartCount > 1 ? ConstructBuild.PlaceSolids(d) : d.SolidBoxes;
             var first = start > at ? Math.Min(boxes, start - at) : 0; // (those before the cursor wait their turn)
             at += boxes;
             if (first >= boxes && start > at - boxes)
