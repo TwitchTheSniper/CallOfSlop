@@ -219,7 +219,7 @@ public static class ModuleFitters
     /// Server, before anything is cut or moved: could a Module Fitter on <paramref name="c"/> or beside it carry a module of
     /// <paramref name="kg"/> from <paramref name="from"/> to <paramref name="to"/> (world) now? Null, or why not.
     /// </summary>
-    public static string? CanFit(ConstructWorld world, byte player, Construct c, Vector3 from, Vector3 to, float kg)
+    public static string? CanFit(ConstructWorld world, byte player, Construct c, Vector3 from, Vector3 to, float kg) // (from, to: MiddleOf, now and at the seat)
     {
         var wj = ByWorld.GetOrCreateValue(world);
         if (wj.Jobs.Count >= MaxJobs)
@@ -252,8 +252,11 @@ public static class ModuleFitters
             return "a Module Fitter is already at work on it";
         if (body.Dirty)
             body.Rebuild();
-        // (the module's middle at its seat: the body's origin may be metres off, a module cut off a construct keeps that construct's)
-        var seat = pos + Vector3.Transform(Vector3.Transform(body.WorldCom - body.Pos, Quaternion.Conjugate(body.Rot)), rot);
+        // (the module's middle, now and at its seat: the body's origin may be metres off, a module cut off a construct keeps that construct's;
+        // the same points as the early check before a cut off a stand, MiddleOf)
+        var mid = MiddleOf(body, plug);
+        var from = body.ToWorld(mid);
+        var seat = pos + Vector3.Transform(mid, rot);
         string? why = null;
         foreach (var rig in Rigs(world, c, seat, player))
         {
@@ -262,12 +265,13 @@ public static class ModuleFitters
                 why ??= drift;
                 continue;
             }
-            var fitter = IdleFitter(world, wj, rig, body.WorldCom, seat, body.Mass, out var no);
+            var fitter = IdleFitter(world, wj, rig, from, seat, body.Mass, out var no);
             if (fitter < 0 || !ConstructLifters.CarryBody(world, rig, -1, body, pos, rot, out var who, out no, fitter: true, onlyPart: fitter))
             {
                 why ??= no;
                 continue;
             }
+            body.HeldNear = rig == c ? (ushort)0 : c.Id; // (held by the dock's fitter for the ship: no contact with the ship it goes into)
             wj.Jobs.Add(new Job { Ship = c.Id, Rig = rig.Id, Module = body.Id, Plate = PartRef.Of(c, s.Plate), From = PartRef.Of(c, -1), Stand = PartRef.Of(c, -1), Fitter = PartRef.Of(rig, fitter),
                 Turn = turn, Rel = rel, Phase = Phase.Carry, FitterName = who, RigAt = rig.ToLocal(FaceOf(c, s.Plate)) });
             world.Events.Add(rig == c ? $"construct {c.Id}: the {who} carries module body {body.Id} to socket part {s.Plate}"
@@ -334,6 +338,14 @@ public static class ModuleFitters
     }
 
     private static float Perimeter(int w, int l) => 2f * (w + l);
+
+    /// <summary>The middle of the module whose plug is <paramref name="plug"/>, in <paramref name="body"/>'s frame (its bounds' centre; the body's centre of mass when the plug is no module's).</summary>
+    public static Vector3 MiddleOf(Construct body, int plug)
+    {
+        if (body.Dirty)
+            body.Rebuild();
+        return ModuleSockets.ModuleOfPart(body, plug) is var mi and >= 0 ? (body.Modules[mi].Min + body.Modules[mi].Max) * 0.5f : body.ToLocal(body.WorldCom);
+    }
 
     private static void SetWeld(ConstructWorld world, Construct c, int plate, float seconds)
     {
@@ -448,6 +460,7 @@ public static class ModuleFitters
                 var plateDef = c.DefOf(j.Plate.Part);
                 var plugDef = m.DefOf(plug);
                 m.HeldBy = 0;
+                m.HeldNear = 0;
                 m.Frozen = false;
                 var plan = new JoinPlan { Other = m, PartA = j.Plate.Part, SockA = plateDef.ModSocket, PartB = plug, SockB = plugDef.ModSocket, Turn = j.Turn, Offset = j.Rel };
                 var from = m.Id;
@@ -533,6 +546,7 @@ public static class ModuleFitters
                     return End(world, j, c, why);
                 }
                 // (from here the job's ship is the stand's construct: the module is carried to it and welded there)
+                piece.HeldNear = rig == c ? (ushort)0 : c.Id; // (lifted out of the ship's socket by the dock's fitter: no contact with the ship on the way)
                 (j.Module, j.Ship, j.Plate, j.Turn, j.Rel, j.Phase, j.FitterName, j.Done) = (piece.Id, sb.Id, j.Stand, turn, rel, Phase.CarryOff, who, 0);
                 j.From = PartRef.Of(c, -1);
                 j.RigAt = rig.ToLocal(FaceOf(sb, j.Stand.Part));
@@ -589,6 +603,8 @@ public static class ModuleFitters
             SetWeld(world, c, j.Plate.Part, 0);
         if (c != null && j.From.Part >= 0 && j.From.Find(c))
             SetWeld(world, c, j.From.Part, 0);
+        if (j.Module != 0 && world.Get(j.Module) is { } held)
+            held.HeldNear = 0;
         if (j.Module != 0 && world.Get(j.Module) is { } m && m.HeldBy == j.Rig && ConstructLifters.CarryingBody(world, m.Id) == null)
         {
             m.HeldBy = 0;

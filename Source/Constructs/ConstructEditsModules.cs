@@ -217,8 +217,8 @@ public sealed partial class ConstructEdits
         // A fitter's job: one that can do it found before anything is cut off a stand (a refusal after the cut left the module loose).
         if (byFitter)
         {
-            best.SocketAt(bestPlug, best.DefOf(bestPlug).ModSocket, out var plugAt, out _);
-            if (ModuleFitters.CanFit(world, player, c, best.ToWorld(plugAt), wface, bestMass) is { } noFitter)
+            var mid = ModuleFitters.MiddleOf(best, bestPlug); // (the points Fit checks: the module's middle where it is and at its seat)
+            if (ModuleFitters.CanFit(world, player, c, best.ToWorld(mid), pos0 + Vector3.Transform(mid, rot0), bestMass) is { } noFitter)
                 return noFitter;
         }
         // Off a stand (or anything else it stands on) first: its parts as a body of their own.
