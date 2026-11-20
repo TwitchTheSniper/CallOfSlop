@@ -47,6 +47,10 @@ and goes with its wall's piece (`CladWall`), so a wall shot off takes its lining
 - **Fittings first.** Cladding stops round anything already on a face (door frames, consoles, screens, walls that meet it) and
   round the room's sockets: ribs, the rail, pipes, vents and plates keep clear of a socket; a panel row parts round a fitting hung
   on the face (a switch is barely proud of the wall) and goes thin behind one stood against it, so an empty socket leaves no hole.
+- **By room use** (Karl picked it, 2026-11-20): bridge and ops darker with a lit cyan stripe and amber tags; armoury, torpedo room,
+  airlock and engineering a hazard-blocked kick plate and more vents; cabins and mess warmer grey, no vents; med bay and head pale
+  with a green stripe; the server room dark, lit and vented every bay; corridors plain (`RoomAt`, `LiningOf`; `CladByRoom` false
+  gives one lining everywhere).
 - About 43,000 triangles (the ship went from about 80,700 to 123,300), all in the walls' merged static meshes.
 
 ## The hull
