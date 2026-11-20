@@ -8,7 +8,7 @@ namespace CallOfSlop;
 /// stays on a tab: what that power owes the person (in value units, the old credit prices), spendable only with that power. A sale to a
 /// station of the Traders puts value on your tab with the Traders; a hire, a wage, a tribute or a purchase from them spends it. A power
 /// that goes to war with you (its standing at or below the war line) or falls wipes its tab with you. Every place that paid credits pays
-/// a tab now: stations (GameStationMarket.cs), hiring and wages (GameCrewHire.cs, with the hand's own power), a capture's bounty (the power
+/// a tab now (a hire, a wage or a tribute short on the tab is paid in goods from a ship's bins instead: <see cref="TabOrGoods"/>): stations (GameStationMarket.cs), hiring and wages (GameCrewHire.cs, with the hand's own power), a capture's bounty (the power
 /// most hostile to the ship taken that trades with you), ransom (the officer's power), tribute and trade pacts (GameCrewPolitics.cs) and
 /// contracts (the power that offered it). Creative: every tab is unlimited. Server side; each person's tabs reach their client in
 /// <see cref="Msg.Tabs"/> when they change, and are saved with the world (the Crew section, version 2).
@@ -54,6 +54,65 @@ public sealed partial class Game
             return $"that costs {cost} on your tab with the {TabPowerName(power)}: they owe you {t} (trade them goods first)";
         t -= cost;
         _tabDirty[player] = true;
+        return null;
+    }
+
+    /// <summary>
+    /// Server: <paramref name="cost"/> paid off <paramref name="player"/>'s tab with <paramref name="power"/>, else in goods from the bins of
+    /// <paramref name="ship"/> (materials at their value: a hand from a ship you took, a power you have no tab with, is paid out of the hold).
+    /// Null: paid; else why not. <paramref name="how"/> says what was paid, for a notice.
+    /// </summary>
+    public string? TabOrGoods(byte player, byte power, long cost, Construct? ship, out string how)
+    {
+        how = "";
+        if (SandboxInfiniteParts || cost <= 0)
+            return null;
+        if (power > 0 && power < TabPowers && _tab[player * TabPowers + power] >= cost)
+        {
+            TabPay(player, power, cost);
+            how = $"{cost} off your tab with the {TabPowerName(power)}";
+            return null;
+        }
+        if (ship == null || GoodsValue(ship) < cost)
+            return $"that costs {cost}: the {TabPowerName(power)} owe you {TabOf(player, power)}, and {(ship == null ? "no ship of yours is here" : "your ship's bins don't hold that much in goods")}";
+        how = $"{cost} in goods from your ship's hold ({GoodsTake(ship, cost)})";
+        return null;
+    }
+
+    /// <summary>What the bins of <paramref name="ship"/> hold in goods (value).</summary>
+    private double GoodsValue(Construct ship)
+    {
+        double v = 0;
+        for (var i = 0; i < ship.PartCount; i++)
+            if (ship.DefOf(i).IsBin && Constructs.StoreOf(ship, i) is { Amount: > 0 } st)
+                v += st.Amount * (double)TradeValues.Of(st.Material);
+        return v;
+    }
+
+    /// <summary>Server: at least <paramref name="value"/> in goods out of <paramref name="ship"/>'s bins (counted first: GoodsValue). Returns what went.</summary>
+    private string GoodsTake(Construct ship, double value)
+    {
+        var what = new System.Text.StringBuilder();
+        for (var i = 0; i < ship.PartCount && value > 0; i++)
+        {
+            if (!ship.DefOf(i).IsBin || Constructs.StoreOf(ship, i) is not { Amount: > 0 } st)
+                continue;
+            var unit = (double)TradeValues.Of(st.Material);
+            var mat = st.Material;
+            var took = Constructs.Withdraw(ship, i, (int)Math.Min(st.Amount, Math.Ceiling(value / unit)));
+            value -= took * unit;
+            if (took > 0)
+                what.Append(what.Length > 0 ? ", " : "").Append(took).Append(' ').Append(RecyclingTable.Current.NameOf(mat));
+        }
+        return what.ToString();
+    }
+
+    /// <summary>Server: the first ship <paramref name="player"/> owns here whose bins hold <paramref name="value"/> in goods (null: none).</summary>
+    private Construct? GoodsShipOf(byte player, double value)
+    {
+        foreach (var c in Constructs.Bodies)
+            if (c.Owner == player && !c.Wreck && GoodsValue(c) >= value)
+                return c;
         return null;
     }
 

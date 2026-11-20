@@ -34,24 +34,34 @@ public static class TradeValues
     public static float Of(byte id) => id < Material.Length && Material[id] > 0 ? Material[id] : DefaultMaterial;
 
     /// <summary>One part of def <paramref name="d"/>.</summary>
-    public static float Part(ConstructPartDef d) => PartAt(d, 0);
+    public static float Part(ConstructPartDef d) => PartAt(d, 0, out _);
 
-    private static float PartAt(ConstructPartDef d, int depth)
+    private static float PartAt(ConstructPartDef d, int depth, out bool cut)
     {
+        cut = false;
         if (_parts.TryGetValue(d.Id, out var had))
             return had;
         var v = NoRecipe;
-        if (AssemblingTable.Current.Of((ushort)d.Id) is { } r && depth < 4)
+        if (AssemblingTable.Current.Of((ushort)d.Id) is { } r)
         {
+            if (depth >= 6)
+            {
+                cut = true; // (a chain this deep, or a loop: priced as no recipe here, and not kept, so the part's own price is whole)
+                return v;
+            }
             float sum = 0;
             var per = Math.Max(1, r.Count);
             foreach (var (mat, n) in r.Materials)
                 sum += Of(mat) * n / per;
             foreach (var (part, n) in r.Parts)
-                sum += PartAt(part, depth + 1) * n / per;
+            {
+                sum += PartAt(part, depth + 1, out var c) * n / per;
+                cut |= c;
+            }
             v = MathF.Max(0.01f, sum * Work);
         }
-        _parts[d.Id] = v;
+        if (!cut || depth == 0)
+            _parts[d.Id] = v;
         return v;
     }
 }

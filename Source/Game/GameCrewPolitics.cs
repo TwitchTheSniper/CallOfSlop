@@ -74,11 +74,11 @@ public sealed partial class Game : IContractHost
             if (k == PactKind.Tribute && rel.PartyDue[i] != 0 && rel.Tick >= rel.PartyDue[i])
             {
                 var cost = rel.Rules.TributeCredits;
-                var why = TabPay(payer, power, cost); // (tribute comes off the payer's tab with that power: GameTabs.cs)
+                var why = TabOrGoods(payer, power, cost, GoodsShipOf(payer, cost), out var how); // (off the payer's tab with that power, else goods from a hold: GameTabs.cs)
                 rel.TributePaid(i, why == null);
                 if (why == null)
                 {
-                    FactionTell(payer, $"You paid {CrewPowers.Of(power)?.Name} {cost} of tribute off your tab with them, for your faction.");
+                    FactionTell(payer, $"You paid {CrewPowers.Of(power)?.Name} tribute for your faction: {how}.");
                     if (PowersActive && power <= PowerControllers.N)
                         Controllers.Powers[power].Stock += cost; // (a tab's value and a power's units are taken one for one)
                 }

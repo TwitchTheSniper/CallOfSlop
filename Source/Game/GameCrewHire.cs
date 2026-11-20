@@ -52,7 +52,7 @@ public sealed partial class Game
                 var m = s.Members[k];
                 if (Crew.State[m] == CrewState.Dead || CrewPowers.KindOf(Crew.Fac[m]) is not { Wage: > 0 } def)
                     continue;
-                if (TabPay(c.Owner, Crew.Fac[m], def.Wage) is { } why) // (a hand keeps its own power: Crew.Fac, set at the hire)
+                if (TabOrGoods(c.Owner, Crew.Fac[m], def.Wage, c, out _) is { } why) // (a hand keeps its own power: Crew.Fac, set at the hire; short, the ship's hold pays)
                 {
                     SandboxHands.Notices.Add((c.Owner, $"{CrewNames.Of(Crew.Name[m])} left your crew unpaid ({why})"));
                     Console.WriteLine($"[crew] construct {c.Id}: hand {Crew.Uid[m]} left unpaid");
@@ -132,8 +132,8 @@ public sealed partial class Game
             return "that ship has a crew that isn't yours";
         if (to != null && to.MemberCount >= CrewWorld.MaxCrewPerBody)
             return "your ship's crew is full";
-        if (!SandboxInfiniteParts && cost > 0 && TabOf(me.Id, power) < cost)
-            return $"that costs {cost} on your tab with the {TabPowerName(power)}: they owe you {TabOf(me.Id, power)} (trade them goods first)";
+        if (!SandboxInfiniteParts && cost > 0 && TabOf(me.Id, power) < cost && GoodsValue(ship) < cost)
+            return $"that costs {cost}: the {TabPowerName(power)} owe you {TabOf(me.Id, power)}, and your ship's bins don't hold that much in goods";
         to ??= Crew.Crew(ship, ShipAiMode.Strangers, faction: CrewPowers.ForKindName("Player Crew"), empty: true);
         if (to is { Prize: true, Own: false })
         {
@@ -145,7 +145,7 @@ public sealed partial class Game
         }
         if (to == null || !to.Own)
             return "that ship can't take a crew";
-        if (TabPay(me.Id, power, cost) is { } why)
+        if (TabOrGoods(me.Id, power, cost, ship, out var paid) is { } why)
             return why;
         var (uidKeep, name, skill, health, fac) = (Crew.Uid[m], Crew.Name[m], Crew.Skill[m], Crew.Health[m], Crew.Fac[m]);
         Crew.Release(m, this);
@@ -156,7 +156,7 @@ public sealed partial class Game
             PowerDeed(RelEvent.Hire, power, me.Id, ship.WorldCom);
         CrewLog();
         Console.WriteLine($"[crew] player {me.Id} hired {CrewNames.Of(name)} ({def?.Name ?? "no kind"}) for {def?.HireCost ?? 0} off their tab onto construct {ship.Id}");
-        SandboxHands.Notices.Add((me.Id, $"{CrewNames.Of(name)} joined your crew ({def?.HireCost ?? 0} off your tab with the {TabPowerName(power)}; wage {def?.Wage ?? 0} every {WageMinutes} minutes)"));
+        SandboxHands.Notices.Add((me.Id, $"{CrewNames.Of(name)} joined your crew ({(paid.Length > 0 ? paid : "free")}; wage {def?.Wage ?? 0} every {WageMinutes} minutes)"));
         to.SeatsDirty = true;
         return null;
     }
