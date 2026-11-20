@@ -256,6 +256,24 @@ public sealed partial class ConstructClip
         return null;
     }
 
+    /// <summary>
+    /// Why the clip's flush shell pods can't go where it lands on <paramref name="target"/>, or null: a pod's body past the surface
+    /// it sinks into must be clear, as placing one by hand asks (ConstructShellPod.BodyRefusal; with the pasted parts not yet there).
+    /// </summary>
+    public string? PodRefusal(Construct target, byte turn, Vector3 offset)
+    {
+        for (var i = 0; i < Body.PartCount; i++)
+        {
+            var d = Body.DefOf(i);
+            ref var p = ref Body.Parts[i];
+            if (d.ShellPod is not { Flush: true } || p.Seg != 0)
+                continue;
+            if (ConstructShellPod.BodyRefusal(target, d, offset + Rot24.Apply(turn, p.Pos), Rot24.Compose(turn, p.Rot), 0) is { } why)
+                return why;
+        }
+        return null;
+    }
+
     /// <summary>Does any part land in one of <paramref name="target"/>'s (its body frame's parts, a centimetre of slack, skipping marked parts)? <paramref name="from"/>: the clip part to look at next; stops after <paramref name="count"/>.</summary>
     public bool Overlaps(Construct target, byte turn, Vector3 offset, bool[]? skip = null, int from = 0, int count = int.MaxValue)
     {

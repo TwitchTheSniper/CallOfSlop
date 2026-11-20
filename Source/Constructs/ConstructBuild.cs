@@ -207,7 +207,7 @@ public static class ConstructBuild
     }
 
     /// <summary>Would a part there overlap one already on (all compared in the rest frame, a centimetre of slack)?</summary>
-    public static bool Blocked(Construct c, ConstructPartDef def, Vector3 pos, byte rot, float scale = 1f, int seg = -1, int except = -1)
+    public static bool Blocked(Construct c, ConstructPartDef def, Vector3 pos, byte rot, float scale = 1f, int seg = -1, int except = -1, bool podLids = false)
     {
         var solids = PlaceSolids(def);
         for (var b = 0; b < solids; b++)
@@ -227,7 +227,7 @@ public static class ConstructBuild
                 if (c.FreeformCount > 0 && c.FrameOf(c.Parts[i].Seg) != frame)
                     continue; // (a freeform segment's parts are in a frame of their own: board item fw01)
                 var d = c.DefOf(i);
-                for (var k = 0; k < d.SolidBoxes; k++)
+                for (var k = 0; k < (podLids ? PlaceSolids(d) : d.SolidBoxes); k++) // (podLids: a part swapped under a flush pod goes where the pod's body already is)
                 {
                     c.BoxOf(i, k, out var oc, out var oh);
                     if (MathF.Abs(bc.X - oc.X) < bh.X + oh.X && MathF.Abs(bc.Y - oc.Y) < bh.Y + oh.Y && MathF.Abs(bc.Z - oc.Z) < bh.Z + oh.Z)

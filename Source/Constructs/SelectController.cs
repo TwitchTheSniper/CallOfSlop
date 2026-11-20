@@ -659,6 +659,8 @@ public sealed class SelectController
             _fitKey = key;
             _fitOk = !clip.Overlaps(t, turn, offset, ReferenceEquals(t, _moveBody) ? _skip : null);
             _fitWhy = _fitOk ? "" : "something is in the way";
+            if (_fitOk && clip.PodRefusal(t, turn, offset) is { } pod)
+                (_fitOk, _fitWhy) = (false, pod); // (a flush pod's housing into a part: ConstructShellPod.BodyRefusal)
         }
         _place = new ClipPlace { Attach = true, Body = t.Id, Part = (ushort)hit.Part, Socket = (byte)best, ClipPart = part, ClipSocket = socket, Spin = _spin };
         _placeOk = _fitOk;

@@ -654,6 +654,11 @@ public sealed partial class ConstructEdits
         {
             if (job.Cursor >= clip.Parts)
             {
+                if (job.Place.Attach && clip.PodRefusal(target!, job.Turn, job.Offset) is { } pod)
+                {
+                    Finish(s, player, pod); // (a flush pod's housing into a part: ConstructShellPod.BodyRefusal)
+                    return;
+                }
                 job.Phase = 1;
                 job.Cursor = 0;
                 break;

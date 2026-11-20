@@ -225,6 +225,33 @@ public static class ConstructShellPod
     {
         if (def.ShellPod is not { Flush: true } pd)
             return null;
+        // A held pod's ghost asks for every socket and turn near it each frame: the same pose on the same build gives the same answer.
+        for (var k = 0; k < _seen.Length; k++)
+        {
+            ref var e = ref _seen[k];
+            if (e.Body == c.Id && e.Stamp == c.RebuildStamp && e.Parts == c.PartCount && ReferenceEquals(e.Def, def) && e.Pos == pos && e.Rot == rot && e.Seg == seg)
+                return e.Why;
+        }
+        var why = BodyRefusalNow(c, def, pd, pos, rot, seg);
+        _seen[_seenNext] = new SeenPose { Body = c.Id, Stamp = c.RebuildStamp, Parts = c.PartCount, Def = def, Pos = pos, Rot = rot, Seg = seg, Why = why };
+        _seenNext = (_seenNext + 1) % _seen.Length;
+        return why;
+    }
+
+    private struct SeenPose
+    {
+        public int Body, Stamp, Parts, Seg;
+        public ConstructPartDef? Def;
+        public Vector3 Pos;
+        public byte Rot;
+        public string? Why;
+    }
+
+    private static readonly SeenPose[] _seen = new SeenPose[64];
+    private static int _seenNext;
+
+    private static string? BodyRefusalNow(Construct c, ConstructPartDef def, ShellPodDef pd, Vector3 pos, byte rot, int seg)
+    {
         var below = pd.Depth - pd.Top; // (the body's depth under the surface)
         var deep = SurfaceDepth(c, pd, seg, pos, rot);
         if (deep >= below - 0.01f)

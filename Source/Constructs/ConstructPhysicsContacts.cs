@@ -426,7 +426,7 @@ public static partial class ConstructPhysics
     private static void ScoreGroundLeaf(ConstructCollider col, int k, in CFrame f, float margin, TerrainData? terrain, Planetoid? planet)
     {
         ref var lf = ref col.Leaves[k];
-        if (lf.Wheel || lf.Dead)
+        if (lf.Wheel || lf.Dead || lf.NoGround)
             return;
         col.World(k, f, out var box);
         Vector3 up;
@@ -592,6 +592,8 @@ public static partial class ConstructPhysics
                     continue;
                 if (lf.Scoop && s.Id.Kind == ShapeKind.Terrain && c.ScoopEngaged(lf.Part))
                     continue; // (its edge is in the ground: ScoopRows stands for it)
+                if (lf.NoGround && s.Id.Kind == ShapeKind.Terrain)
+                    continue; // (a flush pod's housing under a deck on the ground: Leaf.NoGround)
                 WBox box;
                 CFrame hub = default;
                 if (lf.WheelIx >= 0)
@@ -1083,7 +1085,7 @@ public static partial class ConstructPhysics
     {
         var total = 0;
         for (var i = 0; i < c.PartCount; i++)
-            total += c.DefOf(i).SolidBoxes;
+            total += ConstructBuild.PlaceSolids(c.DefOf(i)); // (a flush pod's housing doesn't meet the ground: Leaf.NoGround)
         if (total == 0)
             return false;
         var start = cursor % total;
@@ -1093,7 +1095,7 @@ public static partial class ConstructPhysics
         for (var i = 0; i < c.PartCount && left > 0; i++)
         {
             var d = c.DefOf(i);
-            var boxes = d.SolidBoxes;
+            var boxes = ConstructBuild.PlaceSolids(d);
             var first = start > at ? Math.Min(boxes, start - at) : 0; // (those before the cursor wait their turn)
             at += boxes;
             if (first >= boxes && start > at - boxes)
