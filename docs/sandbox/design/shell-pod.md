@@ -43,6 +43,11 @@ A place to park a robot shell when nobody wears it. Drafted with the user by cli
   housing and no part goes into it; placing tests a flush pod's lid alone (`ConstructBuild.PlaceSolids`, also the clipboard's
   paste). The far-side check (`BodyRefusal`) runs after the overlap test, among the parts near the pod's column (the part tree),
   in the rest frame (`Construct.RestPose`: a hinge's angle now doesn't count).
+  Round 6: socket and point welds, smart rotation and route walls also take a flush pod's lid alone; swapping the part a pod
+  sits in tests pods by their lids (`Blocked(..., podLids)`); a paste runs the far-side check (`ConstructClip.PodRefusal`);
+  the body box meets players and parts but not the ground (`ConstructCollider.Leaf.NoGround`, when the pod isn't alone: a
+  loose pod stands on its body), so a thin deck lying on the ground isn't shoved up; and the far-side answer is kept per pose
+  and build (64 poses), so a held pod's ghost doesn't redo it every frame.
 - **Shallow flush** (the user, 2026-11-19, over a refusal): a flush pod goes on a surface thinner than its body too (a Tiny one in
   a 0.25 m wooden floor). Its lid is flush and its pocket cut through the surface as ever; the rest of its body stands proud on
   the far side (below a floor, above a ceiling, behind a wall) as a housing, ringed by a flange with corner bolts 3 mm off the far
