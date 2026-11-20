@@ -64,8 +64,16 @@ reaches), `Source/Game/GameRobotShell.cs` (the swap, the link, the wire, the sav
   full health, empty hands and an empty backpack of the same size. The chair stays taken (its sitter is still them).
 - **Leaving.** The Esc menu's "Leave the robot shell" (`CActKind.ShellLeave`), the link dropping (the chair gone or wrecked, or
   the shell more than the chair's range from it, checked every `ShellCheckEvery` ticks), or leaving the game: a Robot Shell
-  stands again where they were (frozen, its channel and owner kept) and they are back in the chair, seated. They stand up and
-  sit again to link again.
+  stands again where they were (its channel and owner kept) and they are back in the chair, seated. They stand up and
+  sit again to link again. It is not frozen (user, 2026-11-20): it stands, falls, tips or drifts under physics like any loose
+  body, starting with the velocity they had plus the deck's they stood on (`ShellLeftVel`).
+- **Drawn as worn** (user, 2026-11-20). A Robot Shell part nobody wears is drawn as the robot a wearer is: the player rig at its
+  frame's size, with the modules fitted in its settings, its wear (a failed leg), its hopper's load, its hands out and empty, in
+  its owner's colour (`ConstructRenderShellRigs.cs` lists them while the bodies draw, `Game.DrawStandingShells` poses a stand-in
+  `Player` with an id past `MaxPlayers`, `ScenePresentation.DrawShellStand`). Up to `ConstructRender.ShellRigMax` a frame; past
+  that, a ghost, a broken shell, one in a gantry with a module off, a camera feed and the tools' pictures keep the part's boxes
+  (with `ShellFittedLooks`). A shell's tool and backpack grow about its feet with the rig (`ToolRender.Grow`), so a Mining or
+  Half Shell holds its tool where its hand is.
 - **Destroyed.** A hit that would kill someone in a shell (`DamagePlayer` asks `ShellTakesDeath` first) destroys the shell: no
   death, no kill line, no respawn, whatever the world's death rules; they wake in the chair with their body's health and things.
   Whatever the shell held or carried in its pack is set down where it was, as a death drops a pack.

@@ -1315,7 +1315,15 @@ public static unsafe partial class Program
         g.SandboxNow = g.IsServer ? g.SandboxNow : now;
         // (a client's constructs were blended to this frame's pose in Game.UpdateSandboxSeats, before the camera was set)
         ConstructRender.Now = now;
+        ConstructRender.ShellRigs = ScenePresentation.Enabled; // (robot shells nobody wears: drawn as worn ones, below)
         ConstructRender.Draw(Gfx, g.Constructs, g.TickAlpha, blendTicks: g.IsServer);
+        ConstructRender.ShellRigs = false;
+        if (ConstructRender.ShellRigCount > 0)
+        {
+            Gfx.BeginBatch();
+            g.DrawStandingShells(Gfx, now); // (GameShellStandIns.cs)
+            Gfx.EndBatch();
+        }
         if (g.CrewStandIns.Count > 0)
             g.DrawCrewStandIns(Gfx); // crew with no body, at their seats (GameCrewDraw.cs)
         AllocProfile.Mark("sb: beams, sounds, ambience");

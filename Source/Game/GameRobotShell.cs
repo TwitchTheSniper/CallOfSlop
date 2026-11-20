@@ -233,15 +233,14 @@ public sealed partial class Game
             ShellFrames.WriteKit(ref stood.Parts[0], run.ShellDef, p.ShellMods); // (with the modules it was woken with)
             ShellWear.PutHealth(ref stood.Parts[0], run.ShellDef, p.Health); // (and as damaged)
             stood.Owner = run.Owner;
-            stood.Frozen = dock == null; // (it stands as it was left until someone moves it; one for a dock is clamped on first)
+            stood.Frozen = false; // (a body like any other: it stands, falls or drifts as physics has it, user 2026-11-20; it was frozen where it was left)
             stood.Rebuild();
+            stood.Vel = ShellLeftVel(p, feet); // (moving with whatever they stood on, or as they moved: no jolt off a ship's deck)
             HopperOff(p, stood, feet); // (the hopper's load back into the part's bin: GameShellHopper.cs)
             Constructs.StructureDirty.Add(stood.Id);
             if (dock != null && SandboxHands.ClipOnDock(Constructs, p.Id, dock, dockPart, stood) is { } stuck)
             {
                 why = $"The dock couldn't clamp the shell ({stuck}): it stands where you left it. You wake in the chair.";
-                stood.Frozen = true;
-                stood.Rebuild();
             }
         }
         if (!standing)
@@ -287,6 +286,15 @@ public sealed partial class Game
         SandboxHands.Notices.Add((p.Id, why));
         Log($"[shell] {p.Name} back in their body ({(lost ? "shell destroyed" : dock != null ? "shell to its dock" : pod != null ? "shell into a pod" : "shell left standing")}): {why}");
         ShellBack(p, lost);
+    }
+
+    /// <summary>The velocity a shell left standing starts with: the wearer's own, on top of the deck's they rode (its point's).</summary>
+    private Vector3 ShellLeftVel(Player p, Vector3 feet)
+    {
+        var v = p.Sim.Velocity;
+        if (p.Sim.RideBody != 0 && Constructs.Get(p.Sim.RideBody) is { } ride)
+            v += ride.PointVel(feet);
+        return v.LengthSquared() > 0 && float.IsFinite(v.X + v.Y + v.Z) ? v : Vector3.Zero;
     }
 
     /// <summary>Server, each tick: a worn shell keeps its link (the chair still there, whole and in range), checked every few ticks.</summary>
@@ -428,7 +436,7 @@ public sealed partial class Game
             ShellWear.PutHealth(ref c.Parts[0], run.ShellDef, p.Health);
             ShellFrames.WriteKit(ref c.Parts[0], run.ShellDef, p.ShellMods);
             c.Owner = run.Owner;
-            c.Frozen = true;
+            c.Frozen = false; // (loaded, it stands under physics like one left standing)
             c.Rebuild();
             ref var hp = ref SandboxHands.Hoppers[p.Id];
             if (hp.Amount > 0 && Constructs.Deposit(c, 0, hp.Amount, hp.Material) < hp.Amount)
