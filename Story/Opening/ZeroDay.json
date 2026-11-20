@@ -16,8 +16,9 @@
   // (Crew/Factions/Traders.json) and fly the IT style, so a Zero Day suits them. "behind": m back along the orbit (- ahead).
   // "away": held still that far out (m, straight out from Caledon past the player's ship, not orbiting) by its own flight
   // computer: the Mercenaries' Zero Day (Karl, 2026-11-18, to test against), hostile to players, neutral to the Traders,
-  // 80 km out, so 81 to 99 km from the ship as it goes round: always inside the 100 km radar and the torpedoes' reach.
-  "company": [{ "ship": "Zero Day Frigate", "faction": "Traders", "behind": 400 }, { "ship": "Zero Day Frigate", "faction": "Mercenaries", "away": 80000 }],
+  // 40 km out, so 40 to 99 km from the ship as it goes round its 29.8 km orbit (80 km before the 4x worlds of 2026-11-19): always
+  // inside the 100 km radar and the torpedoes' reach.
+  "company": [{ "ship": "Zero Day Frigate", "faction": "Traders", "behind": 400 }, { "ship": "Zero Day Frigate", "faction": "Mercenaries", "away": 40000 }],
   // Caledon Highport, the station (Karl, 2026-11-18: "around 40km"): on its own circular orbit 40 km up over the start, about
   // 315 m/s (4x worlds, 2026-11-19), so it drifts against the ship's lower, faster orbit (GameSpaceStart.OpeningStation). Caledon's pull there is 14% of
   // the ground's; its reach (Hill sphere) runs out near 40,000 km, so no height near the world is wholly out of its gravity.

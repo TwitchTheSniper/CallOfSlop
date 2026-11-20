@@ -636,6 +636,7 @@ public sealed class Ragdoll
     {
         Asleep = true;
         Array.Copy(Pos, Prev, RagdollRig.Count);
+        Array.Copy(_posRest, _prevRest, RagdollRig.Count); // (at rest to the last of its floats too: woken, it starts still)
         Array.Copy(Pos, Last, RagdollRig.Count);
     }
 
