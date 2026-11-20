@@ -411,7 +411,7 @@ public readonly record struct CPartBox(Vector3 Center, Vector3 Half, Vector3 Col
 /// How a suspension's box moves with its wheel: <see cref="Hub"/> goes with the wheel (a knuckle, a strut's rod), <see cref="Arm"/>
 /// turns about its pivot by the arm's angle, <see cref="Leg"/> is drawn stretched between a fixed point and one that moves (a damper).
 /// </summary>
-public enum BoxRig : byte { None, Hub, Arm, Leg, Oleo, Lever, Knob, Slide, Flip, Press, Stick } // (Oleo: a sprung landing foot's moving pad, raised by its spring's squash: ConstructPhysicsGear.cs; Lever: an Analog Lever's handle, tilted about the part's x through its "pivot" by the part's value; Stick: a Joystick's, tilted both ways by its X and Y: AnalogLever.cs)
+public enum BoxRig : byte { None, Hub, Arm, Leg, Oleo, Lever, Knob, Slide, Flip, Press, Stick, Helmet } // (Helmet: a Shell Control Chair's helmet, drawn its "travel" down the part's -y while someone sits in the chair or wears a shell from it, eased: ConstructRender.HelmetDrop; not a hand control, so it is checked before the ">= Lever" ones) (Oleo: a sprung landing foot's moving pad, raised by its spring's squash: ConstructPhysicsGear.cs; Lever: an Analog Lever's handle, tilted about the part's x through its "pivot" by the part's value; Stick: a Joystick's, tilted both ways by its X and Y: AnalogLever.cs)
 
 /// <summary>
 /// How a detail box shows its machine working ("work" in the file), while the machine runs and never otherwise: <see cref="Spin"/> turns about its
