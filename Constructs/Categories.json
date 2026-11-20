@@ -19,7 +19,7 @@
     { "name": "Shells", "sections": ["Shells and chairs", "Modules", "Spares", "Gantry", "Pods"] },
     { "name": "Stations and Spawners", "sections": ["Build stations", "Spawners"] },
     { "name": "Lights and Details", "sections": ["Lights", "Body panels", "Chimneys and stacks"] },
-    { "name": "Ship Modules", "sections": ["Sockets and plugs", "Stands"] }
+    { "name": "Ship Modules", "sections": ["Sockets and plugs", "Stands", "Fitters"] }
   ],
   "rules": [
     { "group": "Ship", "notSection": "Ship fittings", "unlisted": true },
@@ -28,6 +28,7 @@
     { "group": "Ship", "name": ["Magpie", "Zero Day", "Rust Bucket", "Dray", "Shuttle", "Limpet"], "unlisted": true },
     { "section": "Module sockets", "to": ["Ship Modules", "Sockets and plugs"] },
     { "section": "Module stands", "to": ["Ship Modules", "Stands"] },
+    { "section": "Module fitters", "to": ["Ship Modules", "Fitters"] },
     { "name": "Robot Shell Dock", "to": ["Shells", "Pods"] },
     { "section": "Shells", "name": "Shell Pod", "to": ["Shells", "Pods"] },
     { "section": "Shells", "name": ["Shell Gantry", "Shell Parts Table"], "to": ["Shells", "Gantry"] },

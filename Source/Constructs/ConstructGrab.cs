@@ -886,6 +886,8 @@ public sealed partial class ConstructEdits
         ref var h = ref Hands[player];
         if (h.GrabBody == 0)
             return;
+        if (h.Tool == ConstructTool.Welder && !h.Seated && GripHolds?.Invoke(player) == true && GripWeldHold(world, player, frameVel, frameSpin))
+            return; // (a shell's grip arm keeps what it holds for its welder arm: construction-shell.md)
         if (h.GrabSeg != 0)
         {
             GrabJointTick(world, player, eye, look);
@@ -893,14 +895,6 @@ public sealed partial class ConstructEdits
         }
         var c = world.Get(h.GrabBody);
         var boarded = c != null && c.GrabbedBy == player ? AboardWhy(c, player) : null; // (someone unfriendly got in: it goes, and they say why)
-        if (c != null && c.GrabbedBy == player && h.Tool == ConstructTool.Welder && !h.Seated && boarded == null && !c.Anchored && GripHolds?.Invoke(player) == true)
-        {
-            // A shell with a grip arm and a welder arm (the Construction Shell): the grip keeps the piece where it is, frozen, while
-            // the welder works on it, rather than dropping it (docs/sandbox/design/construction-shell.md).
-            if (Freeze(world, player) is null)
-                Notices.Add((player, "the grip holds it where it is: weld it on"));
-            return;
-        }
         if (c == null || c.GrabbedBy != player || h.Tool != ConstructTool.PhysicsGun || h.Seated || boarded != null || c.Anchored)
         {
             if (c != null && c.GrabbedBy == player)
@@ -933,6 +927,28 @@ public sealed partial class ConstructEdits
             h.GrabBody = 0;
             world.Remove(c); // (it is on the hook now: ConstructOrdnance.cs)
         }
+    }
+
+    /// <summary>
+    /// A shell with a grip arm and a welder arm (the Construction Shell) has changed from the gun to the welder while holding a piece
+    /// or a mechanism's piece: the grip keeps it where it is, frozen as the physics gun's Aim freezes it, for the welder to weld on
+    /// (docs/sandbox/design/construction-shell.md). Aboard a moving craft (the holder's frame moving or turning) a freeze would hold it
+    /// still in the world while the craft flies on, so the grip lets it go instead and says so. True when it acted (said why on a drop).
+    /// </summary>
+    private bool GripWeldHold(ConstructWorld world, byte player, Vector3 frameVel, Vector3 frameSpin)
+    {
+        ref var h = ref Hands[player];
+        if (world.Get(h.GrabBody) is not { } c || h.GrabSeg == 0 && (c.GrabbedBy != player || c.Anchored || AboardWhy(c, player) != null))
+            return false; // (the usual let-go below, with its own reason)
+        if (frameVel != Vector3.Zero || frameSpin != Vector3.Zero)
+        {
+            Release(world, player);
+            Notices.Add((player, "the grip let it go: a piece can't be held still aboard a moving craft (stop the craft to weld it on)"));
+            return true;
+        }
+        var why = Freeze(world, player);
+        Notices.Add((player, why == null ? "the grip holds it where it is: weld it on" : $"the grip let it go: {why}"));
+        return true;
     }
 
     /// <summary>Aim while holding: the held thing freezes where it is (held still like an anchored construct, tinted) and is let go.</summary>

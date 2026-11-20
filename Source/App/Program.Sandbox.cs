@@ -657,7 +657,7 @@ public static unsafe partial class Program
         if (h.Tool != ConstructTool.None && held != null && !slotted && !SandboxFreeformOn(h) && !ConstructBuild.ToolFits(h.Tool, held))
         {
             // (hr01: the other tool's part: no ghost, no socket markers, only the reason)
-            if (aimed || wall <= ConstructBuild.Reach + 0.5f)
+            if (aimed || wall <= BuildReach(g) + 0.5f)
                 g.SandboxLookText = $"Needs the {held.Tool.Label()}";
         }
         else if (h.Tool != ConstructTool.None && held != null && !slotted && !SandboxFreeformOn(h)) // (freeform welding: the held part isn't fitted)
@@ -665,7 +665,7 @@ public static unsafe partial class Program
             ConstructRender.GhostDef = held;
             if (aimed)
                 SandboxHeldOnConstruct(g, in h, hit, held, eye, dir, now, ScreenSize, Gfx.ViewProj);
-            else if (!aimed && wall <= ConstructBuild.Reach + 0.5f && World.Query.Raycast(eye, dir, ConstructBuild.Reach + 0.5f, QueryFilter.All, out var surf))
+            else if (!aimed && wall <= BuildReach(g) + 0.5f && World.Query.Raycast(eye, dir, BuildReach(g) + 0.5f, QueryFilter.All, out var surf)) // (a big shell frame reaches the ground further: ConstructEdits.BuildReachOf)
             {
                 if (_settings.SnapBuild)
                 {
@@ -933,8 +933,8 @@ public static unsafe partial class Program
             return "no local player";
         ref var h = ref g.SandboxHands.Hand(me.Id);
         var held = ConstructParts.Get(h.Held);
-        var wall = World.RaycastWorld(eye, dir, ConstructBuild.Reach + 1);
-        var aimed = g.Constructs.Raycast(eye, dir, MathF.Min(wall, ConstructBuild.Reach + 1), out var hit, noTracks: true);
+        var wall = World.RaycastWorld(eye, dir, BuildReach(g) + 1);
+        var aimed = g.Constructs.Raycast(eye, dir, MathF.Min(wall, BuildReach(g) + 1), out var hit, noTracks: true);
         if (held == null || h.Tool == ConstructTool.None || !aimed)
             return $"nothing held or aimed (held {held?.Name ?? "none"}, tool {h.Tool}, aimed {aimed})";
         if (!ConstructBuild.ToolFits(h.Tool, held))

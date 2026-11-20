@@ -19,7 +19,7 @@ public sealed partial class ConstructEdits
         {
             var c = k == 0 ? a : b;
             Freeform.PartBox(c, k == 0 ? pa : pb, out _, out var centre, out var half);
-            if (Vector3.Distance(eye, centre) > ConstructBuild.Reach + 0.75f + half.Length())
+            if (Vector3.Distance(eye, centre) > BuildReachOf(player) + 0.75f + half.Length())
                 return "too far away";
         }
         if (Freeform.Rules(world, Query, a, pa, b, pb, Feet(world), out _) is { } why)
@@ -109,7 +109,7 @@ public sealed partial class ConstructEdits
         if (Contested(c, player) is { } defended)
             return defended;
         Freeform.PartBox(c, part, out _, out var centre, out var half);
-        if (Vector3.Distance(eye, centre) > ConstructBuild.Reach + 0.75f + half.Length())
+        if (Vector3.Distance(eye, centre) > BuildReachOf(player) + 0.75f + half.Length())
             return "too far away";
         for (var i = 0; i < Hands.Length; i++)
             if (Hands[i].Edit != EditKind.None && (Hands[i].Body == c.Id || Hands[i].Body2 == c.Id))

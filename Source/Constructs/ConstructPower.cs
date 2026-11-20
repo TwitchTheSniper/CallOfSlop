@@ -281,6 +281,7 @@ public static class ConstructPower
             }
             watts += c.MotorWork / MotorEfficiency;
             watts += c.ModCutWatts; // (module sockets' cutting rings while they burn a well: ModuleCut.cs)
+            watts += c.ModFitWatts; // (Module Fitters while they weld or cut: ConstructModuleFitters.cs)
             var refill = Refill(c, dt);
             if (refill > 0)
             {

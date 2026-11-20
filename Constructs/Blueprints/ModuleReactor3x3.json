@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Module Reactor 3x3",
+  "description": "A 3x3 module: a Magpie Power Plant: 400 kW. Written by the part kit (module_sockets).",
+  "module": { "w": 3, "l": 3, "primary": "reactor", "tags": ["reactor"] },
+  "steps": [
+    { "part": "Module Plug 3x3" },
+    { "part": "Magpie Power Plant", "on": 0, "socket": "s1.1", "by": "bottom" }
+  ]
+}

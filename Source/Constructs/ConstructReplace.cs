@@ -277,7 +277,7 @@ public sealed partial class ConstructEdits
         if (h.Tool is ConstructTool.None or ConstructTool.Hands)
             return "take out the attach tool (4)";
         var d = c.DefOf(part);
-        if (Reachable(eye, ReachPoint(c, part, eye), ConstructBuild.Reach) is { } far)
+        if (Reachable(eye, ReachPoint(c, part, eye), BuildReachOf(player)) is { } far)
             return far;
         if (ConstructReplace.Plan(world, c, part, e, out var swap) is { } why)
             return why;

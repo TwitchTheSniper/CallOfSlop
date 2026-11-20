@@ -304,7 +304,7 @@ public sealed partial class ConstructEdits
             return "take out the attach tool (4) to build";
         if (!ConstructBuild.ToolFits(h.Tool, def))
             return $"the {def.Name} needs the {def.Tool.Label()}";
-        if (Reachable(eye, point, ConstructBuild.Reach) is { } far)
+        if (Reachable(eye, point, BuildReachOf(player)) is { } far) // (a big shell frame reaches further: construction-shell.md)
             return far;
         var anchor = (flags & ConstructPlace.FlagAnchor) != 0;
         if (anchor && !InfiniteParts)
@@ -345,7 +345,7 @@ public sealed partial class ConstructEdits
             return "that part is gone";
         c.WorldFrame(c.Parts[part].Seg, out var q, out var t);
         c.PartBounds(part, out var mn, out var mx);
-        if (Reachable(eye, ReachPoint(c, part, eye), ConstructBuild.Reach) is { } far)
+        if (Reachable(eye, ReachPoint(c, part, eye), BuildReachOf(player)) is { } far)
             return far;
         if (!ConstructPlace.FindJoin(world, c, part, out var plan))
             return "it doesn't touch another construct (free sockets face to face, square to each other)";
@@ -394,7 +394,7 @@ public sealed partial class ConstructEdits
             return refused; // (the shared predicate: driven, someone else's, contested; SandboxAim.cs)
         c.WorldFrame(c.Parts[part].Seg, out var q, out var t);
         c.PartBounds(part, out var mn, out var mx);
-        if (Reachable(eye, ReachPoint(c, part, eye), ConstructBuild.Reach) is { } far)
+        if (Reachable(eye, ReachPoint(c, part, eye), BuildReachOf(player)) is { } far)
             return far;
         h.Edit = EditKind.Remove;
         h.Body = body;

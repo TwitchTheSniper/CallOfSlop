@@ -47,6 +47,8 @@ public sealed partial class ConstructEdits
         if (si < 0)
             return "that socket isn't tracked (too many sockets on one construct)";
         var s = c.ModSockets[si];
+        if (ModuleFitters.Busy(world, c, s.Plate))
+            return "a Module Fitter is at work on that socket";
         return s.Module >= 0 ? ModuleOff(world, player, c, si) : ModuleOn(world, player, c, si);
     }
 
@@ -57,6 +59,13 @@ public sealed partial class ConstructEdits
         var m = c.Modules[s.Module];
         if (m.Bridged)
             return "that module is welded to more than its socket: take the extra welds off with the attach tool first";
+        if ((!world.Creative || world.TimedMachines) && !s.Stand && (!ModuleSocketTable.Current.HandSize(s.W, s.L) || m.Mass > LiftOf(player, false)) && ModuleFitters.Reach(world, c) > 0)
+        {
+            if (ModuleFitters.TakeOff(world, c, si) is { } fitterWhy)
+                return fitterWhy;
+            Done.Add($"player {player}: a Module Fitter takes the module off socket part {s.Plate} of construct {c.Id}");
+            return null;
+        }
         if (!world.Creative && !s.Stand)
         {
             var t = ModuleSocketTable.Current;
@@ -108,7 +117,9 @@ public sealed partial class ConstructEdits
             return "a socket on a joint takes its module by the attach tool's socket weld";
         if (s.InTheWay >= 0)
             return $"in the way: the {c.DefOf(s.InTheWay).Name} (part {s.InTheWay}) is in the socket's room";
-        var pull = ModuleSocketTable.Current.HandPull;
+        var hand = ModuleSocketTable.Current.HandPull;
+        var fitterReach = world.Creative && !world.TimedMachines ? 0 : ModuleFitters.Reach(world, c); // (a Module Fitter aboard: modules within its reach of the socket; it checks both ends)
+        var pull = MathF.Max(hand, fitterReach * 2);
         c.SocketAt(s.Plate, plateDef.ModSocket, out var faceAt, out var faceDir);
         var wface = c.ToWorld(faceAt);
         Construct? best = null;
@@ -148,48 +159,17 @@ public sealed partial class ConstructEdits
         }
         if (best == null)
             return $"bring a {ModuleSocketTable.SizeText(s.W, s.L)} module within {pull:0.#} m of the socket first (the physics gun carries it)";
+        // By hand when it may (Creative, or in the hand's size, lift and pull), else by a Module Fitter aboard.
+        var bestMass = ModuleSockets.ModuleOfPart(best, bestPlug) is var bmi and >= 0 ? best.Modules[bmi].Mass : 0f;
+        var byFitter = fitterReach > 0 && (bestDist > hand || !ModuleSocketTable.Current.HandSize(s.W, s.L) || bestMass > LiftOf(player, false));
         if (Contested(best, player) is { } theirs)
             return theirs;
         if (SalvageRefusal(best, player) != null)
             return "that module is someone else's";
-        // The turn: the plug's face onto the plate's, at the allowed turn nearest the way it lies.
-        string? PoseOf(Construct body, int plug, out byte bodyTurn, out Vector3 rel, out Quaternion rot, out Vector3 pos)
-        {
-            bodyTurn = 0;
-            rel = pos = default;
-            rot = Quaternion.Identity;
-            var plugDef = body.DefOf(plug);
-            var plugPartRot = body.Parts[plug].Rot;
-            var inv = Quaternion.Conjugate(c.Rot);
-            var lies = inv * body.Rot * Rot24.Quat(plugPartRot); // (the plug's turn in the ship's frame now)
-            var want = (byte)(faceDir ^ 1);
-            byte plugRot = 255;
-            var bestMatch = -1f;
-            for (byte r = 0; r < Rot24.Count; r++)
-            {
-                if (Rot24.ApplyDir(r, plugDef.Sockets[plugDef.ModSocket].Dir) != want || !ModuleSockets.TurnFits(plateDef, c.Parts[s.Plate].Rot, plugDef, r, s.Keyed))
-                    continue;
-                var match = MathF.Abs(Quaternion.Dot(Rot24.Quat(r), lies));
-                if (match > bestMatch)
-                    (plugRot, bestMatch) = (r, match);
-            }
-            if (plugRot == 255)
-                return "no turn fits";
-            for (byte b = 0; b < Rot24.Count; b++)
-                if (Rot24.Compose(b, plugPartRot) == plugRot)
-                {
-                    bodyTurn = b;
-                    break;
-                }
-            body.SocketAt(plug, plugDef.ModSocket, out var plugAt, out _);
-            rel = ConstructWorld.Quantise(faceAt - Rot24.Apply(bodyTurn, plugAt));
-            rot = Quaternion.Normalize(c.Rot * Rot24.Quat(bodyTurn));
-            pos = c.ToWorld(rel);
-            return null;
-        }
+        string? PoseOf(Construct body, int plug, out byte bodyTurn, out Vector3 rel, out Quaternion rot, out Vector3 pos) => SeatPose(c, s, body, plug, out bodyTurn, out rel, out rot, out pos);
         var mi = ModuleSockets.ModuleOfPart(best, bestPlug);
         // The fit's rules before anything moves (a module on a stand is judged by its own parts).
-        if ((PoseOf(best, bestPlug, out _, out _, out var rot0, out var pos0) ?? ModuleSockets.FitRefusal(c, si, best, mi, rot0, pos0, byHand: true, world.Creative, moduleOnly: true, lift: LiftOf(player, world.Creative))) is { } early)
+        if ((PoseOf(best, bestPlug, out _, out _, out var rot0, out var pos0) ?? ModuleSockets.FitRefusal(c, si, best, mi, rot0, pos0, byHand: !byFitter, world.Creative, moduleOnly: true, lift: LiftOf(player, world.Creative))) is { } early)
             return early;
         // Off a stand (or anything else it stands on) first: its parts as a body of their own.
         var of = best.ModuleOf!;
@@ -231,10 +211,17 @@ public sealed partial class ConstructEdits
         if (PoseOf(best, bestPlug, out var bodyTurn, out var rel, out var rot, out var pos) is { } noTurn)
             return noTurn;
         var plugDef = best.DefOf(bestPlug);
-        if (ModuleSockets.FitRefusal(c, si, best, mi, rot, pos, byHand: true, world.Creative, lift: LiftOf(player, world.Creative)) is { } why)
+        if (ModuleSockets.FitRefusal(c, si, best, mi, rot, pos, byHand: !byFitter, world.Creative, lift: LiftOf(player, world.Creative)) is { } why)
             return why;
         if (world.CanMerge(c, best) is { } merge)
             return merge;
+        if (byFitter)
+        {
+            if (ModuleFitters.Fit(world, c, si, best, bestPlug, bodyTurn, rel, rot, pos) is { } fitterWhy)
+                return fitterWhy;
+            Done.Add($"player {player}: a Module Fitter fits module construct {best.Id} onto socket part {s.Plate} of construct {c.Id}");
+            return null;
+        }
         if (SocketWeld.Overlap(world, Query, best, c, pos, rot, Feet(world)) is { } blocked)
             return blocked;
         var from = best.Id;
@@ -246,6 +233,48 @@ public sealed partial class ConstructEdits
         if (!world.Merge(c, plan))
             return "it can't be fitted";
         Done.Add($"player {player}: fitted module construct {from} ({parts} parts) onto socket part {s.Plate} of construct {c.Id}");
+        return null;
+    }
+
+    /// <summary>
+    /// Where module body <paramref name="body"/> goes when its plug <paramref name="plug"/> is fitted to socket <paramref name="s"/> of
+    /// <paramref name="c"/>: the plug's face onto the plate's, at the allowed turn nearest the way it lies. The body's turn (Rot24) and
+    /// offset in the ship's frame, and its world pose now; null, or why no turn fits.
+    /// </summary>
+    public static string? SeatPose(Construct c, in CModSocket s, Construct body, int plug, out byte bodyTurn, out Vector3 rel, out Quaternion rot, out Vector3 pos)
+    {
+        bodyTurn = 0;
+        rel = pos = default;
+        rot = Quaternion.Identity;
+        var plateDef = c.DefOf(s.Plate);
+        c.SocketAt(s.Plate, plateDef.ModSocket, out var faceAt, out var faceDir);
+        var plugDef = body.DefOf(plug);
+        var plugPartRot = body.Parts[plug].Rot;
+        var inv = Quaternion.Conjugate(c.Rot);
+        var lies = inv * body.Rot * Rot24.Quat(plugPartRot); // (the plug's turn in the ship's frame now)
+        var want = (byte)(faceDir ^ 1);
+        byte plugRot = 255;
+        var bestMatch = -1f;
+        for (byte r = 0; r < Rot24.Count; r++)
+        {
+            if (Rot24.ApplyDir(r, plugDef.Sockets[plugDef.ModSocket].Dir) != want || !ModuleSockets.TurnFits(plateDef, c.Parts[s.Plate].Rot, plugDef, r, s.Keyed))
+                continue;
+            var match = MathF.Abs(Quaternion.Dot(Rot24.Quat(r), lies));
+            if (match > bestMatch)
+                (plugRot, bestMatch) = (r, match);
+        }
+        if (plugRot == 255)
+            return "no turn fits";
+        for (byte b = 0; b < Rot24.Count; b++)
+            if (Rot24.Compose(b, plugPartRot) == plugRot)
+            {
+                bodyTurn = b;
+                break;
+            }
+        body.SocketAt(plug, plugDef.ModSocket, out var plugAt, out _);
+        rel = ConstructWorld.Quantise(faceAt - Rot24.Apply(bodyTurn, plugAt));
+        rot = Quaternion.Normalize(c.Rot * Rot24.Quat(bodyTurn));
+        pos = c.ToWorld(rel);
         return null;
     }
 }

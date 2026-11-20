@@ -31,7 +31,7 @@ public static partial class Program
                 return true; // (still the press that broke a seam; a new press, let go out of this path, is new)
             _seamHeld = false;
         }
-        if (h.Tool != ConstructTool.Welder || h.Seated || !aimed || hit.SlotPlus1 != 0 || hit.RoutePlus1 != 0 || hit.Distance > ConstructBuild.Reach
+        if (h.Tool != ConstructTool.Welder || h.Seated || !aimed || hit.SlotPlus1 != 0 || hit.RoutePlus1 != 0 || hit.Distance > BuildReach(g)
             || hit.Body.Loose || hit.Part < 0 || hit.Part >= hit.Body.PartCount || SocketWeldBusy || PointWeldBusy)
             return false;
         var shift = Down(GameAction.Sprint) || SweepPointHeld;

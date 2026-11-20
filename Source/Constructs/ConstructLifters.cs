@@ -14,6 +14,7 @@ public sealed class LifterDef
     public float Speed, Handle; // m/s at the hand; seconds for a pick and a place together
     public float Upper, Fore; // an arm's two links (m): shoulder to elbow, elbow to wrist ("arm")
     public int Tier = 1; // the part's tier (its "tier" key): the drawn half's dressing
+    public bool Fitter; // "fitter": true: a Module Fitter (module-sockets.md 7): it carries modules to sockets and welds them on (ConstructModuleFitters.cs); its hand is a tool head
     public float Ring; // the slewing ring's top in the part's frame, where the drawn turret stands ("ring"; default 0.66 m under the shoulder)
     public Vector3 Turret = new(0.478f, 0.267f, 0.196f), Weight = new(0.184f, 0.165f, 0.149f), UpperCol = new(0.478f, 0.267f, 0.196f),
         ForeCol = new(0.42f, 0.29f, 0.21f), Joint = new(0.545f, 0.522f, 0.478f), Pin = new(0.94f, 0.47f, 0.09f); // the drawn half's colours ("look")
@@ -38,12 +39,12 @@ public sealed class LifterDef
         if (e.ValueKind != JsonValueKind.Object)
             throw new ConstructPartException($"{file}: \"lifter\" is an object");
         foreach (var p in e.EnumerateObject())
-            if (p.Name is not ("kind" or "base" or "reach" or "up" or "down" or "payload" or "piece" or "speed" or "handle" or "arm" or "ring" or "look" or "span" or "hoist" or "depth"))
+            if (p.Name is not ("kind" or "base" or "reach" or "up" or "down" or "payload" or "piece" or "speed" or "handle" or "arm" or "ring" or "look" or "span" or "hoist" or "depth" or "fitter"))
                 throw new ConstructPartException($"{file}: lifter.{p.Name}: no such key");
         var kind = e.TryGetProperty("kind", out var k) && k.ValueKind == JsonValueKind.String ? k.GetString() : null;
         if (kind is not ("arm" or "bridge"))
             throw new ConstructPartException($"{file}: lifter.kind is \"arm\" or \"bridge\"");
-        var d = new LifterDef { Bridge = kind == "bridge" };
+        var d = new LifterDef { Bridge = kind == "bridge", Fitter = e.TryGetProperty("fitter", out var ft) && ft.ValueKind == JsonValueKind.True };
         var b = Nums(e, "base", 3, file);
         d.Base = new Vector3(b[0], b[1], b[2]);
         var reach = Nums(e, "reach", 2, file);
@@ -424,6 +425,8 @@ public static partial class ConstructLifters
                 switch (l.State)
                 {
                     case LiftState.Idle:
+                        if (ld.Fitter)
+                            break; // (a Module Fitter does module jobs only: ConstructModuleFitters.cs gives it work)
                         // Works (liftMode): 0 Auto (a station's step first, then carries: phase 4), 1 Station only, 2 Carry only, 3 Off.
                         var mode = (int)ConstructConfig.Get(c.Parts[l.Part], c.DefOf(l.Part), CfgKey.LiftMode, 0);
                         if (l.OrderN > 0 && !ConstructExtruder.RunHeld(c, l.Part) && decisions < DecisionsAStep && ++l.OrderLook >= CarryLook)

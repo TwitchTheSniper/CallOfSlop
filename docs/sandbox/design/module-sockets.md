@@ -724,23 +724,85 @@ Survival with both parts and the angle named, logged in Creative. A well's room 
 Tried by hand: a Creative cut through a deck and frame blocks, a timed cut's progress and draw, the slug, a turntable module's sweep
 clash against the liner and a stand beside the well.
 
-**Phase 3 (couplings and submodules): partly.** Built: pipe pass-throughs. Plates take "Fuel A" (every size), "Fuel B" and
-"Coolant A" (2x2 and up) and "Coolant B" (3x3) in at their back; plugs give the same names out of their top; at the routes' rebuild a
-pipe leaving a fitted plug's port takes its source from the pipe ending at the plate's port of that name (`ModuleSockets.PassSource`;
-nested modules up to 8 deep; a stand passes nothing), so a ship's tank feeds a module's thruster. An engine socket's plate is the
-ship-works mount of a thruster standing on the module's plug (`ConstructWorks.FindMount`, `ModuleSockets.EngineMountOf`). Shipped
-adapters written by the part kit (`Constructs/Blueprints/ModuleAdapter*.json`: 2x2 to 1x1 and 1x2, 3x3 to 1x1 and 2x2). Plugs gained
-a Small socket in each metre cell's middle (`s0.0`), since 0.5 m parts on the corner grid met the lugs. The Blueprints tab marks module
-designs ("module 2x2 engine", and the filter finds them) and lists the modules in the world and where each is (the Modules tab's
-"where are mine", in that tab). Tried: a tank's pipe through a fitted 1x1 engine module to an RCS thruster (sourced from the tank, fed),
-the four adapters spawned and read as modules. Not built: data, ammo and chute pass-throughs; a Modules tab of its own.
+**Phase 3 (couplings and submodules): built.** Pipe pass-throughs: plates take "Fuel A" (every size), "Fuel B" and "Coolant A" (2x2
+and up) and "Coolant B" (3x3) in at their back; plugs give the same names out of their top. Ammo and chutes (builder, 2026-11-20,
+protocol 381): "Ammo A" (a feed port, every size), "Chute A" (2x2 and up) and "Chute B" (3x3), after the pipes (each type counts
+its own port bytes, so the pipes' stay). At the routes' rebuild a pipe, feed or chute leaving a fitted plug's port takes its source
+from the link of that type ending at the plate's port of that name (`ModuleSockets.PassThrough`; nested modules up to 8 deep; a
+stand passes nothing), so a ship's tank feeds a module's thruster, a ship's Ammo Container feeds a gun or a Turret Ring's Ammo in
+on a module (`ConstructAmmo.FedFrom` reads the route's source), and a ship's store's chute reaches a module's store. Data: plates
+and plugs have "Data 1".."Data 2" (1x1, 1xN) or "Data 1".."Data 4" (2x2 and up) both ways (`ConstructPartDef.ModData`; 4 wires
+into each); after the wires are built, a wire leaving a plug's Data k takes as its source the first wire into the plate's Data k,
+and a wire leaving a plate's Data k the first wire into the plug's (`ModuleSockets.PassWires`), so no value is held on the plate
+(plates and plugs are not signal parts: `IsSignal` leaves them out). An engine socket's plate is the ship-works mount of a
+thruster standing on the module's plug (`ConstructWorks.FindMount`, `ModuleSockets.EngineMountOf`). Shipped adapters written by
+the part kit (`Constructs/Blueprints/ModuleAdapter*.json`: 2x2 to 1x1 and 1x2, 3x3 to 1x1 and 2x2). Plugs gained a Small socket
+in each metre cell's middle (`s0.0`). **The Modules tab: decided not to build a tab of its own**: the Blueprints tab marks module
+designs ("module 2x2 engine", the filter finds them) and lists the modules in the world and where each is, which is what the
+design asked of the Modules tab; Creative fitting from nothing is the Blueprints tab's place-and-F. Tried: a tank's pipe through a
+fitted 1x1 engine module to an RCS thruster; an Ammo Container's feed through a fitted 1x1 module to an AA Gun ("fed Ammo
+Container"); a Lever's wire into the plate's Data 1 and the plug's Data 1 wired to a Lamp on the module: the lever on, the lamp on.
 
-**Phases 4 to 7: not started** (the S fitter, faction choice and generators, the retrofits, markets). Where to resume: phase 3's
-data, ammo and chute pass-throughs (a plate needs data ports as a logic part has; ammo goes to a Turret Ring's `Ammo in`), then phase 4.
+**Phase 4 (the S fitter): partly built** (builder, 2026-11-20, protocol 381; review fixes the same day: a take-off reserves an idle
+fitter and a free stand before its cut, jobs hold their plate, stand and fitter by place across renumbers (`ModuleFitters.PartRef`),
+a weld waits while a player or a body is in the seat (`SocketWeld.Overlap`), a job stops when its fitter is wrecked or gone, a body a
+job holds is saved loose (WorldSaveBodies), and a fitter does module jobs only: no station or carry work, and ordinary carries skip it). The **Module Fitter S** (`LifterParts.ModuleFitter`,
+written by module_sockets to `Constructs/Parts/Modules/Fitters`; Tab inventory Ship Modules > Fitters; its Assembler recipe an
+explicit row at the end of `Assembling.Tail`): a Military Loader Arm's frame with the table's S numbers (reach 1.5 to 8 m, 20 t,
+modules up to 3.3 x 6.5 m, 8 kW) and `lifter.fitter`. **Jobs** (`ConstructModuleFitters.cs`): F on a free socket fits the nearest
+module of its size within twice the fitter's reach (on a stand of the same construct, or loose) when the hand can't (past
+`hand.upTo`, past the physics gun's lift, or past the hand's 2.5 m pull): the fitter carries it on its scripted path to its seat
+(`ConstructLifters.CarryBody(..., fitter: true)`, which only fitters take), then holds it there in the ship's frame each tick while
+the torch runs the plug's outline at the S row's weld speed (perimeter / 0.25 m/s: 16 s at 1x1, 48 s at 3x3) drawing 8 kW
+(`Construct.ModFitWatts`), then merges it. F on a fitted module the hand can't take off cuts its seam (perimeter / 0.1 m/s), cuts
+it out, carries it to a free Module Stand of its size on the same construct and welds it there; with no free stand it is refused.
+The plate's hidden `ModWeld` setting (`CfgKey.ModWeld`, at the end) is the job's seconds (positive weld, negative cut): every peer
+draws the torch (`Program.SandboxModules.WeldFx`: one head round the outline, the bead cooling white to orange to dark, a heavier
+spray when cutting), and the look line reads "a Module Fitter welds a module on, N%". The fitter's arm draws a tool head
+(`LifterRender.DrawToolHead`: carrier, spreader sized to what it holds, torch, cutting head). A job carries on in flight (the carry
+is in the lifter's frame, the weld holds the module in the ship's frame). Tried by hand on a Survival rig (`ZzModFitterRig.json`:
+a 3x3 socket, a Module Fitter S and a 3x3 stand on five Foundations, a 3x3 module on the stand, a Ship Battery M): F fitted it
+(carry 5 s, weld 48 s, merged), and on `ZzModFitterOffRig.json` (the module fitted) F cut its seam (120 s), carried it to the stand
+and welded it there. A small battery ran flat mid-weld: the weld waited and said so.
+Not built in phase 4: the fitter panel (F on the socket is the whole interface), the queue (one job a socket, up to 32 a world,
+F refused while a job is on it), a data in to start jobs, swap as one job (take off, then fit), paired carries, the carry path's
+own clearance check (the lifter's path is used as is), a Cut job for sockets without a ring (every socket has its ring), station
+fitters for Building Station uses, and MFIT saves (a save mid-job keeps the module where it was; a stale ModWeld is cleared at the
+plate's next rebuild; F starts the job again).
+
+**Phase 5 (faction choice and generators): partly built** (builder, 2026-11-20). Each faction file may carry a `"modules"` block
+(9.1: `tags` by the table's tag names, `stats` speed, power, fuel, mass, cost, `needs` accel, powerMargin, minGuns, `pick`), read by
+`ModuleWants.Parse` into `NpcFactionDef.Modules`; Militia, Raiders, Traders, Salvagers and Mercenaries have one (Player Crew and
+Test Hostile none). `ModuleChoice.cs` holds 9.2 as pure functions: `Fits` (exact size; engine, reactor and turret sockets by primary
+tag, a turret socket also takes a turret bay; anything in a generic one), `Score` (wanted tags' benefits against the best candidate's
+stat, less power drawn past the ship's spare over the power made, less mass and bill over the ship's mass, plus an engine's
+acceleration over the need, capped at 1), `Choose` (one of the best `pick` by the dice) and `Order` (engines, reactors, turrets, then
+generic). `--module-choice SHIP --faction F [--seed N]` builds the ship flat, scores every shipped module design for each free socket
+in that order, prints the table and the pick (to callofslop.log), adds each pick to the ship's summary and reports the needs. Shipped
+module designs, written by the part kit beside the adapters (`Constructs/Blueprints/Module*.json`): RCS 1x1, RCS Quad 2x2, Gun 1x1,
+Twin Gun 2x2, Tank 1x1, Battery 1x1, Reactor 3x3 (a Magpie Power Plant, 400 kW) and Big Reactor 3x3 (a Zero Day Reactor, 3 MW).
+Tried: `--module-choice "Zz Module Choice Rig"` (a test rig, not committed: a 1x1 engine, a 1x1 generic, a 2x2 turret, a 3x3 reactor
+and a 2x2 generic socket on five Foundations) for Militia (the 400 kW reactor, guns in the generic 2x2), Traders and Salvagers (the
+tank, the 3 MW reactor, an adapter): the trade-offs show in the scores.
+Generators (builder, 2026-11-20): `BlueprintScript.Socket(on, socket, w, l, kind, style, depth, above, keyed, by, spin)` lays a plate by
+the kit's build rules with its settings, and `BlueprintScript.Module(plate, name, spin)` builds a module design onto it step by step
+(its wires and plain links too; designs with welds, placed steps or uses are refused), in `VehicleKit/BlueprintScript.Modules.cs`.
+`--gen-module TAG W L [--name NAME] [--out DIR]` writes a module design (engine: an RCS Thruster a cell; turret: an AA Gun a cell;
+cargo: a Fuel Tank a cell; power-store: a Battery a cell; reactor, 3x3: a Magpie Power Plant), its `"module"` block worked out from
+its parts as a save does. Tried: engine 2x2, turret 1x1, reactor 3x3, cargo 1x3 written. `Socket` and `Module` have no caller yet
+(the retrofits are theirs) and are untried.
+Not built in phase 5: the passes that act on the needs (a swap for power, acceleration or guns: the needs are only reported), the
+fuel term (a module's burn isn't summed), a bill from recipes (the bill is the mass), a ship generator filling its sockets by faction choice, faction-styled designs, and choice at a controller's refit.
+
+**Phases 6 and 7: not started** (the retrofits, markets). Where to resume: the needs passes of phase 5 (swap for power, acceleration, guns), then phase 6 starting with the rust bucket (`ShipParts.cs`; read `git log` on the Zero Day's generator
+first: it just got room cladding).
+
 Test rigs (not committed; in `bin/Release/net10.0/Constructs/Blueprints/`): `ZzModWellRig.json` (a 1x1 socket under a deck plate on
 frame blocks; `timed; modsock style 2 [DEPTH]` starts a timed cut), `ZzModSweepRig.json` (the same with a turntable module on a stand
-beside it), `ZzModPipeRig.json` (a tank piped through a fitted 1x1 engine module to an RCS thruster). Window verbs: `modsock state`
-(sockets, modules, pipes and their sources, the draw) and `modsock style N [DEPTH]` (host).
+beside it), `ZzModPipeRig.json` (a tank piped through a fitted 1x1 engine module to an RCS thruster), `ZzModFeedRig.json` (an Ammo Container fed
+through a 1x1 module to an AA Gun, a Lever wired through Data 1 to a Lamp on the module), `ZzModFitterRig.json` and
+`ZzModFitterOffRig.json` (above; run with `inv survival on`), `ZzModChoiceRig.json` (above). Window verbs: `modsock state`
+(sockets, modules, pipes, feeds and chutes and their sources, wires, guns and what feeds them, the draw) and `modsock style N [DEPTH]` (host).
 
 Defaults taken (no questions asked):
 - The plate is placed at the well's foot; Well depth is measured from its face up to the surface (the design's "plate at the
@@ -769,3 +831,13 @@ Defaults taken (no questions asked):
   end (`ModuleSockets.PassThrough`, after the routes' rebuild).
 - (Phase 3) Pass-throughs run one way, ship to module (the plate's ports are inlets, the plug's outlets).
 - (Phase 3) A thruster finds an engine plate as its mount only when it stands on the plug itself (or on a joint on it).
+- (Phase 3) Ammo A is at every size, not from 2x2 (a 1x1 turret module is fed too). Data, ammo and chutes pass ship to module only
+  for links (the plate's ports are inlets, the plug's outlets); data passes both ways. A port with several wires into it passes
+  the first.
+- (Phase 4) The fitter is F-driven: F on a socket uses the hand when the hand may (Creative always, unless `timed`), else a fitter
+  aboard. A fitter works only on its own construct's sockets and stands. A take-off by a fitter goes to a free stand of the module's
+  size on the same construct (no floor set-down). A weld or cut needs the circuit's power and waits without it.
+- (Phase 5) A plug's `top.i.j` sockets are Medium: a Small part (a power plant, a thruster) goes on the cell-middle `s{i}.{j}` or
+  the quarter-point `t..` sockets. Shipped module designs are the part kit's output (module_sockets), not `--gen-module`'s yet.
+- (Phase 5) A module's bill is its mass until recipes are summed; a candidate's stats come from a flat build of its blueprint, its
+  submodules included.

@@ -49,16 +49,28 @@ public sealed class LifterParts : IPartGenerator
         ["#1a1f2e", "#10131c", "#2c3448", "#242b3e", "#39445c", "#35e0ff"], // dark shells, a glowing ring joint
     ];
 
-    private static Part Arm(int t)
+    /// <summary>
+    /// The Module Fitter S (docs/sandbox/design/module-sockets.md 7.1): a Military Loader Arm's frame and size with the fitter's numbers
+    /// (reach 1.5 to 8 m, 20 t, a module up to 3x3 and 6 m tall, 8 kW) and <c>lifter.fitter</c>: it carries modules to sockets of its
+    /// construct and welds them on, or cuts their seam and sets them on a stand (ConstructModuleFitters.cs). Written by module_sockets.
+    /// </summary>
+    public static Part ModuleFitter() => Arm(4, fitter: true);
+
+    private static readonly (double R0, double R1, double Up, int Payload, double Across, double Long, double Speed, double Handle, int Power) FitterRow =
+        (1.5, 8.0, 6.0, 20000, 3.3, 6.5, 3.0, 1.5, 8000);
+
+    private static Part Arm(int t, bool fitter = false)
     {
         var c = Small;
         var s = Size[t];
         var n = Cells[t];
-        var tb = Table[t];
+        var tb = fitter ? FitterRow : Table[t];
         var pal = TierStyle.Palette[t];
-        var name = Prefix[t] + "Loader Arm";
-        var desc = $"Stands beside a Building Station and fits parts from its hold onto the build in the bay: one more pair of hands. Reaches {tb.R0:0.#} to {tb.R1:0.#} m round its base, carries {(tb.Payload >= 1000 ? $"{tb.Payload / 1000.0:0.#} t" : $"{tb.Payload} kg")}. Needs power while it moves.";
-        var p = new Part(name, c, "Lifters", desc, role: "frame", tool: "welder", color: t == 1 ? Rust : pal["body"], group: "Production");
+        var name = fitter ? "Module Fitter S" : Prefix[t] + "Loader Arm";
+        var desc = fitter
+            ? $"A heavy arm with a gripper, a welding torch and a cutting head: F on a Module Socket in its reach fits a module lying in its reach (it carries it, seats it and welds it on), or cuts a fitted module's seam and sets it on a free Module Stand. Reaches {tb.R0:0.#} to {tb.R1:0.#} m, carries {tb.Payload / 1000.0:0.#} t, modules up to 3x3. Needs {tb.Power / 1000.0:0.#} kW while it works."
+            : $"Stands beside a Building Station and fits parts from its hold onto the build in the bay: one more pair of hands. Reaches {tb.R0:0.#} to {tb.R1:0.#} m round its base, carries {(tb.Payload >= 1000 ? $"{tb.Payload / 1000.0:0.#} t" : $"{tb.Payload} kg")}. Needs power while it moves.";
+        var p = new Part(name, c, fitter ? "Module fitters" : "Lifters", desc, role: "frame", tool: "welder", color: t == 1 ? Rust : pal["body"], group: fitter ? "Ship Modules" : "Production");
         double x0 = c.Lo(), x1 = c.Hi(n), y0 = c.Lo(), z0 = c.Lo(), z1 = c.Hi(n);
         double cx = (x0 + x1) / 2, cz = (z0 + z1) / 2;
         var plinth = 0.34 * s;
@@ -170,6 +182,8 @@ public sealed class LifterParts : IPartGenerator
             ("reach", Py.L(tb.R0, tb.R1)), ("up", tb.Up), ("down", Py.Round(1.32 * s + 0.3, 2)) /* (lifters phase 4: to 0.3 m under its own floor, so a rack or pad on the same ground is in reach; was 1.0 * s) */, ("payload", tb.Payload), ("piece", Py.L(tb.Across, tb.Long)),
             ("speed", tb.Speed), ("handle", tb.Handle), ("arm", Py.L(Py.Round(2.3 * s, 3), Py.Round(2.2 * s, 3))),
             ("look", Kw(("turret", lk[0]), ("weight", lk[1]), ("upper", lk[2]), ("fore", lk[3]), ("joint", lk[4]), ("pin", lk[5]))))));
+        if (fitter)
+            ((PyDict)p.D.Get("lifter")!)["fitter"] = true;
         p.Set(("config", Py.L(
             Kw(("key", "liftMode"), ("type", "choice"), ("label", "Works"), ("group", "Lifter"), ("options", Py.L("Auto", "Station only", "Carry only", "Off")), ("default", 0),
                 ("tooltip", "Auto: every job in its reach. Station only: fits parts at Building Stations. Carry only: carries between machines (to come). Off: stands still.")),

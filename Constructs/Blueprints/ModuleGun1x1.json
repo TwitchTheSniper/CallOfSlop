@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Module Gun 1x1",
+  "description": "A 1x1 module: an AA Gun: feed it through the socket's Ammo A. Written by the part kit (module_sockets).",
+  "module": { "w": 1, "l": 1, "primary": "turret", "tags": ["turret"] },
+  "steps": [
+    { "part": "Module Plug 1x1" },
+    { "part": "AA Gun", "on": 0, "socket": "s0.0", "by": "bottom" }
+  ]
+}

@@ -698,8 +698,14 @@ public static partial class Program
                         WsSay($"modsock: body {mb.Id} socket part {ms.Plate} {ModuleSocketTable.SizeText(ms.W, ms.L)} {ms.Kind} {ms.Style}{(ms.Keyed ? " keyed" : "")}{(ms.Stand ? " stand" : "")} above {ms.Above:0.##}: module {ms.Module}, in the way {ms.InTheWay}{(ms.WrongKind ? ", wrong kind" : "")}; depth {ms.Depth:0.##}, cut {ConstructConfig.Get(mb.Parts[ms.Plate], mb.DefOf(ms.Plate), CfgKey.ModCut, 0):0.#} s; look \"{ModuleSockets.LookText(mb, ms.Plate)}\"");
                     if (mb.ModSockets.Length > 0)
                         for (var rk = 0; rk < mb.RouteCount; rk++)
-                            if (mb.Routes[rk].Type == RouteType.Pipe)
-                                WsSay($"modsock: body {mb.Id} pipe {rk}: {mb.DefOf(mb.Routes[rk].From).Name} -> {mb.DefOf(mb.Routes[rk].To).Name}, source {mb.DefOf(mb.Routes[rk].Source).Name}, fed {mb.Routes[rk].FedEnd}");
+                            if (mb.Routes[rk].Type is RouteType.Pipe or RouteType.Feed or RouteType.Chute)
+                                WsSay($"modsock: body {mb.Id} {ConstructRoutes.TypeKey(mb.Routes[rk].Type)} {rk}: {mb.DefOf(mb.Routes[rk].From).Name} -> {mb.DefOf(mb.Routes[rk].To).Name}, source {mb.DefOf(mb.Routes[rk].Source).Name}, fed {mb.Routes[rk].FedEnd}");
+                    if (mb.ModSockets.Length > 0)
+                        for (var wk = 0; wk < mb.WireCount; wk++)
+                            WsSay($"modsock: body {mb.Id} wire {wk}: {mb.DefOf(mb.Wires[wk].From).Name}#{mb.Wires[wk].From} port {mb.Wires[wk].FromPort} -> {mb.DefOf(mb.Wires[wk].To).Name}#{mb.Wires[wk].To} port {mb.Wires[wk].ToPort}, out {mb.Parts[mb.Wires[wk].From].Out:0.##}, to's out {mb.Parts[mb.Wires[wk].To].Out:0.##}");
+                    if (mb.ModSockets.Length > 0)
+                        for (var gk = 0; gk < mb.GunCount; gk++)
+                            WsSay($"modsock: body {mb.Id} gun {gk}: {mb.DefOf(mb.Guns[gk].Part).Name}, ring {mb.Guns[gk].Ring}, ring fed {mb.Guns[gk].RingFed}, fed {(ConstructAmmo.FedFrom(g.Constructs, mb, gk, out var fs, out var fp) && fs != null && fp >= 0 ? fs.DefOf(fp).Name : "no")}");
                     if (mb.ModSockets.Length > 0)
                         WsSay($"modsock: body {mb.Id}: {mb.PartCount} parts, power {(mb.PowerOn ? "on" : "off")}, draw {mb.PowerUse / 1000f:0.#} kW (cutting {mb.ModCutWatts / 1000f:0.#} kW)");
                     for (var mi = 0; mi < mb.Modules.Length; mi++)

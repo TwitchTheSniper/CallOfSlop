@@ -58,6 +58,7 @@ public sealed class NpcFactionDef
     public bool Controller = true;
     /// <summary>Its admirals' doctrine in Crew/Fleet.json (empty: the one named as the kind, else Standard: CrewFleetRules.cs).</summary>
     public string Doctrine = "";
+    public ModuleWants? Modules; // "modules": what it wants of a ship's modules (module-sockets.md 9.1; ModuleChoice.cs), or null: it chooses none
     /// <summary>Its standing to start from with a player who hasn't met it (-100 to 100).</summary>
     public int StartStanding => ToPlayers switch { CrewStance.Hostile => -50, CrewStance.Wary => 0, _ => 20 };
 }
@@ -159,6 +160,8 @@ public static class CrewFactions
             Controller = !root.TryGetProperty("controller", out var ctl) || ctl.GetBoolean(),
             Doctrine = Text(root, "doctrine", 32),
         };
+        if (root.TryGetProperty("modules", out var mods))
+            d.Modules = ModuleWants.Parse(mods);
         if (root.TryGetProperty("styles", out var st))
             d.Styles = st.EnumerateArray().Select(e => e.GetString() ?? "").Where(s => s.Length > 0).ToArray();
         var rel = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);

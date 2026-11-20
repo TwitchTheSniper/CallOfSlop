@@ -16,10 +16,10 @@ public static partial class ConstructLifters
     /// body and whose reach holds the body where it is and at <paramref name="toPos"/>, <paramref name="toRot"/>, starts carrying it
     /// there. True and the lifter's name, or false and why none does.
     /// </summary>
-    public static bool CarryBody(ConstructWorld world, Construct c, int station, Construct body, Vector3 toPos, Quaternion toRot, out string who, out string why)
+    public static bool CarryBody(ConstructWorld world, Construct c, int station, Construct body, Vector3 toPos, Quaternion toRot, out string who, out string why, bool fitter = false, int onlyPart = -1)
     {
         who = "";
-        why = "no Loader Arm or Bridge Crane on this construct";
+        why = fitter ? "no Module Fitter on this construct" : "no Loader Arm or Bridge Crane on this construct";
         if (!world.LiftSeen.TryGetValue(c.Id, out var lb) || lb.N == 0)
             return false;
         if (body.Dirty)
@@ -35,8 +35,8 @@ public static partial class ConstructLifters
         for (var i = 0; i < lb.N; i++)
         {
             var l = lb.Lifts[i];
-            if (l.Part >= c.PartCount || DefOf(c, l.Part) is not { } ld)
-                continue;
+            if (l.Part >= c.PartCount || DefOf(c, l.Part) is not { } ld || fitter != ld.Fitter || onlyPart >= 0 && l.Part != onlyPart)
+                continue; // (a Module Fitter carries modules only, and a module job its reserved fitter)
             var mode = (int)ConstructConfig.Get(c.Parts[l.Part], c.DefOf(l.Part), CfgKey.LiftMode, 0);
             if (l.State != LiftState.Idle || l.CabPart >= 0 || l.Steered || l.CarryBody != 0 || !ConstructRecycler.Powered(world, c, l.Part) || mode == 3)
                 continue;
@@ -83,12 +83,12 @@ public static partial class ConstructLifters
             LifterProbe.CarriesHeard++;
             world.LiftChanged(c.Id);
             who = c.DefOf(l.Part).Name;
-            Console.WriteLine($"[lifter] {who} {l.Part} carries submodule body {body.Id} ({body.PartCount} parts, {body.Mass:0} kg) to its main station: {l.Dur / (float)World.TickRate:0.0} s");
+            Console.WriteLine($"[lifter] {who} {l.Part} carries {(fitter ? "module" : "submodule")} body {body.Id} ({body.PartCount} parts, {body.Mass:0} kg) to {(fitter ? "its socket" : "its main station")}: {l.Dur / (float)World.TickRate:0.0} s");
             return true;
         }
         why = heavy > 0 ? $"too heavy for {(heavy == 1 ? "the lifter" : "every lifter")} that could take it: {body.Mass:0} kg"
             : big > 0 ? $"too big for the lifters' hands: {longest:0.0} m long"
-            : far > 0 ? "no Loader Arm or Bridge Crane reaches both its station's bay and its spot" : "every lifter is busy";
+            : far > 0 ? fitter ? "no Module Fitter reaches both the module and the socket" : "no Loader Arm or Bridge Crane reaches both its station's bay and its spot" : "every lifter is busy";
         return false;
     }
 
