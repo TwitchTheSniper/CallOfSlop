@@ -1,0 +1,362 @@
+using System.Numerics;
+
+namespace CallOfSlop;
+
+/// <summary>
+/// A Module Socket's own cutting ring (docs/sandbox/design/module-sockets.md 2.4, phase 2): a flush or opening socket whose well
+/// has hull in it burns the well through. The cut is a tunnel the footprint plus <see cref="Margin"/> a side, from just over the
+/// surface down to just over the plate's face; every hull part it reaches is swapped for its holed part (HullHoles.cs, the
+/// breaching cutter's cut: plain boxes and lofted hull facets alike), and the part nearest the surface takes the well's liner, a
+/// seal sleeve of four walls from the surface to the plate (<see cref="Liner"/>), so the well is a lined, shootable box in the
+/// ship. A part that can't be holed (a machine, a joint's part, a part made at run time) leaves the socket blocked, named in its
+/// look line. Time: <see cref="ModuleSocketTable.CutSecondsPerMetrePer10cm"/> a metre of outline for every 10 cm of hull, drawing
+/// <see cref="ModuleSocketTable.CutWattsPerMetre"/> a metre of the footprint's mean side from the ship's circuit; with no power it
+/// waits. Creative: at once. Survival: the metal cut out falls away as a loose slug.
+/// <para>
+/// Server. Sockets that want a cut are flagged at the rebuild (<see cref="Construct.ModCutPending"/>), so the world looks at a
+/// body only after a rebuild; jobs run at 10 Hz and are few (one a socket). The cut's state on the plate is its hidden
+/// <c>ModCut</c> setting (the job's seconds while it runs, 0 when idle), which rides saves and the wire, so every peer draws the
+/// ring's kerf (Program.SandboxModules.cs). A save mid-cut starts the cut again on load.
+/// </para>
+/// </summary>
+public static class ModuleCut
+{
+    public const int StepEvery = 6; // ticks a look (10 Hz)
+    public const float Margin = 0.07f; // m: the hole past the footprint, a side (the liner's walls stand in it)
+    public const float LinerGap = 0.01f; // m: the liner's inner face past the footprint, a side
+    public const float WellSide = 0.005f; // m: a well's room past the footprint, a side (inside the liner)
+    public const float OverSurface = 0.05f; // m: the tunnel starts this far over the surface
+    public const float OverPlate = 0.01f; // m: ...and stops this far over the plate's face
+    public const float LinerOverPlate = 0.003f; // m: the liner's foot over the plate's face (z-fighting rule)
+    public const float LinerOverSurface = 0.003f; // m: the liner's rim over the surface
+
+    private sealed class Job
+    {
+        public ushort Body;
+        public int Plate;
+        public ushort PlateDef;
+        public float Seconds, Done, Watts;
+        public bool Waiting; // no power last look (logged once)
+    }
+
+    private sealed class WorldJobs
+    {
+        public readonly List<Job> Jobs = new(8);
+        public int Ticks;
+    }
+
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<ConstructWorld, WorldJobs> ByWorld = new();
+
+    /// <summary>The cut's plan for one socket: the parts to swap and what they become, the first that can't be cut, the hull's thickness.</summary>
+    /// <summary>(A null Holed: the part lies wholly in the well and burns away.)</summary>
+    public readonly record struct Plan(List<(int Part, ConstructPartDef? Holed)> Cuts, int Blocker, string Why, float Thick, float Seconds, float Watts);
+
+    /// <summary>Server, each tick: bodies flagged at their rebuild start jobs; jobs burn on.</summary>
+    public static void Step(ConstructWorld world)
+    {
+        var wj = ByWorld.GetOrCreateValue(world);
+        if (++wj.Ticks < StepEvery)
+            return;
+        wj.Ticks = 0;
+        var bodies = world.Bodies;
+        for (var b = 0; b < bodies.Count; b++)
+        {
+            var c = bodies[b];
+            if (!c.ModCutPending || c.Dirty)
+                continue;
+            c.ModCutPending = false;
+            Start(world, wj, c);
+        }
+        for (var k = wj.Jobs.Count - 1; k >= 0; k--)
+            if (Burn(world, wj.Jobs[k]))
+                wj.Jobs.RemoveAt(k);
+    }
+
+    /// <summary>Is socket <paramref name="s"/> one whose well wants cutting now (a flush or opening plate with no module, something in its well)?</summary>
+    public static bool Wants(in CModSocket s) => !s.Stand && s.Style != ModStyle.Proud && s.Module < 0 && s.InTheWay >= 0;
+
+    private static void Start(ConstructWorld world, WorldJobs wj, Construct c)
+    {
+        for (var si = 0; si < c.ModSockets.Length; si++)
+        {
+            var s = c.ModSockets[si];
+            if (!Wants(s) || wj.Jobs.Exists(j => j.Body == c.Id && j.Plate == s.Plate))
+                continue;
+            var plan = PlanOf(c, si);
+            if (plan.Blocker >= 0)
+            {
+                Console.WriteLine($"[modules] construct {c.Id}: socket part {s.Plate} can't cut its well: {plan.Why}");
+                continue;
+            }
+            if (plan.Cuts.Count == 0)
+                continue; // (only things the tunnel misses: its room's own test names them)
+            var job = new Job { Body = c.Id, Plate = s.Plate, PlateDef = c.Parts[s.Plate].Def, Seconds = world.Creative && !world.TimedMachines ? 0 : plan.Seconds, Watts = plan.Watts };
+            wj.Jobs.Add(job);
+            ref var p = ref c.Parts[s.Plate];
+            ConstructConfig.Put(ref p, p.D, CfgKey.ModCut, MathF.Max(0.1f, job.Seconds));
+            world.StructureDirty.Add(c.Id);
+            world.Events.Add(FormattableString.Invariant($"construct {c.Id}: socket part {s.Plate} starts cutting its well: {plan.Cuts.Count} parts, {plan.Thick * 100:0} cm of hull, {plan.Seconds:0} s at {plan.Watts / 1000:0.#} kW"));
+        }
+    }
+
+    /// <summary>One look at a job: true when it is over (done, or its socket gone).</summary>
+    private static bool Burn(ConstructWorld world, Job j)
+    {
+        var c = world.Get(j.Body);
+        if (c == null || j.Plate >= c.PartCount || c.Parts[j.Plate].Def != j.PlateDef || c.Parts[j.Plate].Broken)
+        {
+            if (c != null)
+                c.ModCutWatts = 0;
+            return true;
+        }
+        if (c.Dirty)
+            c.Rebuild();
+        var si = ModuleSockets.SocketOfPlate(c, j.Plate);
+        if (si < 0 || !Wants(c.ModSockets[si]))
+            return Stop(world, c, j, "nothing left to cut");
+        var dt = StepEvery / (float)World.TickRate;
+        if (j.Done < j.Seconds)
+        {
+            if (!c.Electrical || !c.PowerOn)
+            {
+                c.ModCutWatts = 0;
+                if (!j.Waiting)
+                    world.Events.Add(FormattableString.Invariant($"construct {c.Id}: socket part {j.Plate}'s cut waits: it needs {j.Watts / 1000:0.#} kW"));
+                j.Waiting = true;
+                return false;
+            }
+            j.Waiting = false;
+            c.ModCutWatts = j.Watts; // (ConstructPower counts it with the circuit's draw)
+            j.Done += dt;
+            if (j.Done < j.Seconds)
+                return false;
+        }
+        var plan = PlanOf(c, si); // (again: the hull may have changed while it burned)
+        if (plan.Blocker >= 0)
+            return Stop(world, c, j, plan.Why);
+        Apply(world, c, si, plan);
+        return Stop(world, c, j, null);
+    }
+
+    private static bool Stop(ConstructWorld world, Construct c, Job j, string? why)
+    {
+        c.ModCutWatts = 0;
+        ref var p = ref c.Parts[j.Plate];
+        ConstructConfig.Put(ref p, p.D, CfgKey.ModCut, 0);
+        c.Dirty = true;
+        world.StructureDirty.Add(c.Id);
+        if (why != null)
+            Console.WriteLine($"[modules] construct {c.Id}: socket part {j.Plate}'s cut stopped: {why}");
+        return true;
+    }
+
+    /// <summary>The plate's frame in the world: its face's middle, its normal (out of the face), its across (x) and its up (z, the long side).</summary>
+    private static void Frame(Construct c, int plate, out Vector3 face, out Vector3 n, out Vector3 across, out Vector3 up)
+    {
+        var d = c.DefOf(plate);
+        ref var p = ref c.Parts[plate];
+        c.SocketAt(plate, d.ModSocket, out var at, out _);
+        face = c.ToWorld(at);
+        n = Vector3.Normalize(Vector3.Transform(Rot24.Apply(p.Rot, Vector3.UnitY), c.Rot));
+        across = Vector3.Normalize(Vector3.Transform(Rot24.Apply(p.Rot, Vector3.UnitX), c.Rot));
+        up = Vector3.Normalize(Vector3.Transform(Rot24.Apply(p.Rot, Vector3.UnitZ), c.Rot));
+    }
+
+    /// <summary>
+    /// What cutting socket <paramref name="si"/>'s well would do: for every part the tunnel reaches, its holed part; or the first that
+    /// can't be holed. Makes the holed defs (each key once). Server, at a job's start and end only.
+    /// </summary>
+    public static Plan PlanOf(Construct c, int si)
+    {
+        var s = c.ModSockets[si];
+        var cuts = new List<(int, ConstructPartDef?)>();
+        var t = ModuleSocketTable.Current;
+        if (c.FrameOf(c.Parts[s.Plate].Seg) != 0)
+            return new Plan(cuts, s.Plate, "a socket on a joint can't cut a well", 0, 0, 0);
+        Frame(c, s.Plate, out var face, out var n, out var across, out var up);
+        var depth = s.Depth;
+        var mouth = face + n * (depth + OverSurface);
+        var len = depth + OverSurface - OverPlate;
+        var halfW = s.W * 0.5f + Margin;
+        var halfL = s.L * 0.5f + Margin;
+        // The candidates: parts near the tunnel's box in the rest frame (the plate is on the body's own frame).
+        var inv = Quaternion.Conjugate(c.Rot);
+        Vector3 R(Vector3 w) => Vector3.Transform(w - c.Pos, inv);
+        var ra = R(face + n * OverPlate - across * halfW - up * halfL);
+        var rb = R(mouth + across * halfW + up * halfL);
+        var lo = Vector3.Min(ra, rb);
+        var hi = Vector3.Max(ra, rb);
+        var hits = Construct.PartScratch;
+        var near = c.PartsInBox(lo, hi, hits);
+        var list = new int[near];
+        Array.Copy(hits, list, near); // (PartScratch is shared: the holed parts' making may use it)
+        var of = c.ModuleOf;
+        var thick = 0f;
+        foreach (var j in list)
+        {
+            if (j == s.Plate || c.Parts[j].Broken || c.Rides(j) || of != null && j < of.Length && of[j] >= 0)
+                continue;
+            var d = c.DefOf(j);
+            if (d.ModPart != ModPart.None)
+                continue; // (another plate or plug: the room's test names it)
+            Freeform.PartWorld(c, j, out var pos, out var rot);
+            var iq = Quaternion.Conjugate(rot);
+            var local = HullHoles.Hole.Of(Vector3.Transform(mouth - pos, iq), Vector3.Transform(-n, iq), Vector3.Transform(up, iq), halfW, halfL, len);
+            var mn = d.HasSkin ? Vector3.Min(d.BoundsMin, d.SkinMin) : d.BoundsMin;
+            var mx = d.HasSkin ? Vector3.Max(d.BoundsMax, d.SkinMax) : d.BoundsMax;
+            if (!HullHoles.ReachesBounds(mn, mx, local))
+                continue;
+            if (c.Parts[j].Seg != 0)
+                return new Plan(cuts, j, $"the {d.Name} (part {j}) is on a joint", 0, 0, 0);
+            if (Array.Exists(HullHoles.HolesOf(d), h => h.Text == local.Text))
+                continue; // (cut already: this well's hole)
+            if (HullHoles.WithHole(d, local) is { } holed)
+            {
+                cuts.Add((j, holed));
+                // The hull's thickness here: the part's extent along the normal inside the well.
+                c.PartBounds(j, out var bmn, out var bmx);
+                var rn = Vector3.Abs(Vector3.Transform(n, inv));
+                var ext = Vector3.Dot(bmx - bmn, rn);
+                thick += MathF.Min(ext, depth);
+                continue;
+            }
+            var why = HullHoles.LastRefusal ?? "";
+            if (why == HullHoles.Misses)
+                continue;
+            if (why == HullHoles.NothingLeft && HullHoles.Refusal(HullHoles.BaseOf(d)) == null)
+            {
+                cuts.Add((j, null)); // (wholly inside the well: burned away)
+                c.PartBounds(j, out var bmn, out var bmx);
+                thick += MathF.Min(Vector3.Dot(bmx - bmn, Vector3.Abs(Vector3.Transform(n, inv))), depth);
+                continue;
+            }
+            return new Plan(cuts, j, $"in the way: the {HullHoles.Shown(d)} (part {j}) can't be cut ({why})", 0, 0, 0);
+        }
+        thick = MathF.Max(thick, 0.01f);
+        var outline = 2f * (s.W + s.L);
+        var seconds = t.CutSecondsPerMetrePer10cm * outline * MathF.Ceiling(thick / 0.1f - 0.001f);
+        var watts = t.CutWattsPerMetre * (s.W + s.L) * 0.5f;
+        return new Plan(cuts, -1, "", thick, seconds, watts);
+    }
+
+    /// <summary>The cut made: the parts swapped for their holed parts, the liner on the one nearest the surface, the slug dropped (Survival).</summary>
+    private static void Apply(ConstructWorld world, Construct c, int si, in Plan plan)
+    {
+        var s = c.ModSockets[si];
+        Frame(c, s.Plate, out var face, out var n, out var across, out var up);
+        var lost = 0f;
+        var top = -1;
+        var topAt = float.MinValue;
+        foreach (var (j, holed) in plan.Cuts)
+        {
+            ref var p = ref c.Parts[j];
+            if (holed == null)
+                continue; // (burned below, once every swap is made: a break may split the body)
+            lost += MathF.Max(0, p.D.Mass - holed.Mass);
+            p.Def = holed.Id;
+            c.PartBounds(j, out var mn, out var mx);
+            var h = Vector3.Dot(c.ToWorld((mn + mx) * 0.5f) - face, n);
+            if (h > topAt)
+                (top, topAt) = (j, h);
+        }
+        if (top >= 0)
+            Liner(c, top, s, face, n, across, up);
+        foreach (var (j, holed) in plan.Cuts)
+            if (holed == null && j < c.PartCount && !c.Parts[j].Broken)
+            {
+                lost += c.Parts[j].D.Mass;
+                world.DamagePart(c, j, c.Parts[j].Health + 1f, out _, raw: true); // (wholly inside the well: burned away, as a breaching cutter's fitting)
+            }
+        c.Dirty = true;
+        world.StructureDirty.Add(c.Id);
+        c.Wake();
+        world.Events.Add(FormattableString.Invariant($"construct {c.Id}: socket part {s.Plate} cut its {ModuleSocketTable.SizeText(s.W, s.L)} well, {s.Depth:0.##} m deep, through {plan.Cuts.Count} parts"));
+        if ((!world.Creative || world.TimedMachines) && lost > 1f)
+            Slug(world, c, s, face, n, lost);
+    }
+
+    /// <summary>The well's liner: a seal sleeve on part <paramref name="part"/>, from the surface down to the plate's face.</summary>
+    private static void Liner(Construct c, int part, in CModSocket s, Vector3 face, Vector3 n, Vector3 across, Vector3 up)
+    {
+        Freeform.PartWorld(c, part, out var pos, out var rot);
+        var iq = Quaternion.Conjugate(rot);
+        Vector3 L(Vector3 w) => Vector3.Transform(w - pos, iq);
+        Vector3 D(Vector3 w) => Vector3.Transform(w, iq);
+        var hw = s.W * 0.5f + LinerGap;
+        var hl = s.L * 0.5f + LinerGap;
+        var v = HullHoles.Sleeve.Of(L(face + n * (s.Depth + LinerOverSurface)), D(across), D(up), hw, hl,
+            L(face + n * LinerOverPlate), D(across), D(up), hw, hl);
+        var d = c.DefOf(part);
+        if (HullHoles.WithSleeve(d, v) is not { } lined)
+        {
+            Console.WriteLine($"[modules] construct {c.Id}: the well of socket part {s.Plate} has no liner: the {HullHoles.Shown(d)} can't take one ({HullHoles.LastRefusal})");
+            return;
+        }
+        c.Parts[part].Def = lined.Id;
+    }
+
+    /// <summary>The metal cut out, as one loose flat bar of steel of the footprint at the thickness its mass makes, just over the well.</summary>
+    private static void Slug(ConstructWorld world, Construct c, in CModSocket s, Vector3 face, Vector3 n, float kg)
+    {
+        const float Steel = 7850f;
+        var cm = Math.Clamp((int)MathF.Round(kg / (Steel * s.W * s.L) * 100f), 1, 50);
+        var name = FormattableString.Invariant($"{Extrusion.Prefix}solid {s.W * 100}x{cm}x{s.L * 100} steel");
+        if (Extrusion.ParseKey(name) is not { } k || Extrusion.Def(k) is not { } def)
+        {
+            Console.WriteLine($"[modules] construct {c.Id}: the slug of socket part {s.Plate}'s well ({kg:0} kg) is dropped: no piece \"{name}\"");
+            return;
+        }
+        var at = face + n * (s.Depth + 0.3f + cm * 0.01f);
+        if (world.Create(at, c.Rot * Rot24.Quat(c.Parts[s.Plate].Rot)) is not { } slug)
+        {
+            Console.WriteLine($"[modules] construct {c.Id}: the slug of socket part {s.Plate}'s well is dropped: the world is full");
+            return;
+        }
+        world.AddPart(slug, def, Vector3.Zero, 0);
+        slug.Vel = c.Vel + n * 0.5f;
+        slug.Wake();
+        world.Events.Add($"construct {c.Id}: the well's slug fell away ({kg:0} kg) -> construct {slug.Id}");
+    }
+
+    private static readonly Dictionary<(ushort, int), double> FirstSeen = new();
+
+    /// <summary>Any peer: seconds since this plate's cut was first seen running here (its <c>ModCut</c> setting over 0), else 0.</summary>
+    public static double Seen(Construct c, int plate)
+    {
+        var now = System.Diagnostics.Stopwatch.GetTimestamp() / (double)System.Diagnostics.Stopwatch.Frequency;
+        var on = ConstructConfig.Get(c.Parts[plate], c.DefOf(plate), CfgKey.ModCut, 0) > 0;
+        var key = (c.Id, plate);
+        if (!on)
+        {
+            FirstSeen.Remove(key);
+            return 0;
+        }
+        if (!FirstSeen.TryGetValue(key, out var t0))
+            FirstSeen[key] = t0 = now;
+        return now - t0;
+    }
+
+    /// <summary>The look line's words for a socket's cut (any peer): its progress while it burns, or why it can't.</summary>
+    public static string? LookText(Construct c, in CModSocket s, double sinceSeen)
+    {
+        if (s.Style == ModStyle.Proud || s.Stand)
+            return null;
+        var total = ConstructConfig.Get(c.Parts[s.Plate], c.DefOf(s.Plate), CfgKey.ModCut, 0);
+        if (total > 0)
+            return FormattableString.Invariant($"cutting its well, {Math.Clamp(sinceSeen / total, 0, 0.99) * 100:0}% ({ModuleSocketTable.Current.CutWattsPerMetre * (s.W + s.L) * 0.5f / 1000:0.#} kW)");
+        if (s.InTheWay < 0 || s.Module >= 0)
+            return null;
+        var d = c.DefOf(s.InTheWay);
+        if (c.Parts[s.InTheWay].Seg != 0)
+            return $"the {d.Name} is in its well, on a joint: it can't be cut";
+        return HullHoles.Refusal(HullHoles.BaseOf(d)) is { } why
+            ? $"the {HullHoles.Shown(d)} is in its well and can't be cut ({why}): move it"
+            : $"the {HullHoles.Shown(d)} is in its well: the ring cuts it when the circuit has power";
+    }
+}
+
+public sealed partial class Construct
+{
+    public bool ModCutPending; // a flush or opening socket's well has something in it (ModuleSockets.Build): the server's ModuleCut looks
+    public float ModCutWatts; // server: what the sockets' cutting rings draw now (W; ConstructPower adds it)
+}

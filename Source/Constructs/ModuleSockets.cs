@@ -132,6 +132,8 @@ public static class ModuleSockets
                 Label = "Well depth", Group = "Module socket", Tooltip = "How deep a flush or opening well goes below the surface." });
             Add(new CConfigDef { Key = ConstructConfig.KeyName(CfgKey.ModAbove), Id = CfgKey.ModAbove, Type = CfgType.Number, Min = 0, Max = t.MostAbove(d.ModL), Step = t.AboveStep, Default = 0, Unit = "m",
                 Label = "Room above", Group = "Module socket", Tooltip = "How tall a module may stand over the plate (0: twice its short side). Nothing of the ship may be in this room." });
+            Add(new CConfigDef { Key = ConstructConfig.KeyName(CfgKey.ModCut), Id = CfgKey.ModCut, Type = CfgType.Number, Hidden = true, Min = 0, Max = 100000, Default = 0, Unit = "s",
+                Label = "Cut", Group = "Module socket", Tooltip = "Not on the panel." });
             Add(new CConfigDef { Key = ConstructConfig.KeyName(CfgKey.ModKeyed), Id = CfgKey.ModKeyed, Type = CfgType.Toggle, Label = "Keyed", Group = "Module socket",
                 Tooltip = "On: a module fits at one turn only (the notched corner), so a nozzle can only face one way." });
         }
@@ -267,7 +269,7 @@ public static class ModuleSockets
             s.Above = above > 0 ? above : s.Style == ModStyle.Opening ? 0 : ModuleSocketTable.DefaultAbove(d.ModW);
             s.Depth = s.Style == ModStyle.Proud ? 0 : MathF.Max(ModuleSocketTable.Current.DepthStep, ConstructConfig.Get(p, d, CfgKey.ModDepth, ModuleSocketTable.Current.DepthStep));
             s.Height = s.Style switch { ModStyle.Flush => s.Depth + FlushStand, ModStyle.Opening => s.Depth + s.Above, _ => s.Above };
-            Room(c, i, s.Height, out s.RoomMin, out s.RoomMax);
+            Room(c, i, s.Height, out s.RoomMin, out s.RoomMax, s.Style == ModStyle.Proud ? ModuleSocketTable.Current.Side : ModuleCut.WellSide);
             sockets.Add(s);
         }
         // Each plug and its flood.
@@ -365,12 +367,15 @@ public static class ModuleSockets
             modules.Add(m);
         }
         // Each socket's room: the first of the ship's solids in it (not the plate, not its own module's parts).
+        var pending = false;
         for (var si = 0; si < sockets.Count; si++)
         {
             var s = sockets[si];
             s.InTheWay = InRoom(c, s, s.Module);
             sockets[si] = s;
+            pending |= ModuleCut.Wants(s);
         }
+        c.ModCutPending = pending; // (the server's ModuleCut looks at this body: a well wants cutting)
         c.ModSockets = [.. sockets];
         c.Modules = [.. modules];
     }
@@ -414,12 +419,11 @@ public static class ModuleSockets
     }
 
     /// <summary>A plate's room (proud): the footprint plus the side clearance, from the plate's face up <paramref name="above"/> m, in the rest frame.</summary>
-    public static void Room(Construct c, int plate, float above, out Vector3 min, out Vector3 max)
+    public static void Room(Construct c, int plate, float above, out Vector3 min, out Vector3 max, float side)
     {
         var d = c.DefOf(plate);
         ref var p = ref c.Parts[plate];
         var face = d.Sockets[d.ModSocket].At;
-        var side = ModuleSocketTable.Current.Side;
         var lo = new Vector3(face.X - d.ModW * 0.5f - side, face.Y, face.Z - d.ModL * 0.5f - side);
         var hi = new Vector3(face.X + d.ModW * 0.5f + side, face.Y + above, face.Z + d.ModL * 0.5f + side);
         var mid = p.Pos + Rot24.Apply(p.Rot, (lo + hi) * 0.5f);
@@ -556,7 +560,7 @@ public static class ModuleSockets
             if (moduleOnly && of != null && of[j] != mi)
                 continue; // (what it stands on: it comes off that first)
             if (mover.Parts[j].Seg != 0)
-                continue; // (a joint's moving parts: their sweep is phase 2's; their rest pose is checked with the body by the overlap test)
+                continue; // (a joint's moving parts: their sweep is ModuleSweep's; their rest pose is checked with the body by the overlap test)
             mover.PartBounds(j, out var mn, out var mx);
             var c0 = rel + Rot24.Apply(bodyTurn, (mn + mx) * 0.5f);
             var h0 = Rot24.ApplyHalf(bodyTurn, (mx - mn) * 0.5f);
@@ -570,6 +574,13 @@ public static class ModuleSockets
         }
         if (s.Style == ModStyle.Flush && top < s.Depth - FlushTolerance)
             return $"a flush module's face is level with the hull: this one stands {top:0.00} m and the well is {s.Depth:0.00} m deep (set Well depth to {MathF.Round(top / ModuleSocketTable.Current.DepthStep) * ModuleSocketTable.Current.DepthStep:0.00} m, or use an opening socket)";
+        // Its joints swept through their ranges against the ship (3.3): refused in Survival, a warning in Creative.
+        if (ModuleSweep.Clash(ship, si, mover, mi, bodyTurn, rel, moduleOnly) is { } clash)
+        {
+            if (!creative)
+                return clash;
+            Console.WriteLine($"[modules] Creative: fitted although {clash}");
+        }
         return null;
     }
 
@@ -661,7 +672,7 @@ public static class ModuleSockets
             if (s.InTheWay >= 0)
                 return s.Style == ModStyle.Proud
                     ? $"{head}: blocked, the {c.DefOf(s.InTheWay).Name} is in its room"
-                    : $"{head} {s.Depth:0.##} m: the {c.DefOf(s.InTheWay).Name} is in its well (leave the opening, or cut it with a Laser Cutter)";
+                    : $"{head} {s.Depth:0.##} m: {ModuleCut.LookText(c, s, ModuleCut.Seen(c, s.Plate)) ?? $"the {c.DefOf(s.InTheWay).Name} is in its well"}";
             return $"{head}{(s.Style == ModStyle.Proud ? "" : $" {s.Depth:0.##} m")}: free (F with a module within {ModuleSocketTable.Current.HandPull:0.#} m: fit it)";
         }
         var mi = ModuleOfPart(c, part);
