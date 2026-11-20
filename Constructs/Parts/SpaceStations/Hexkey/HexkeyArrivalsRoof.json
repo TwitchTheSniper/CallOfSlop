@@ -1,0 +1,73 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Hexkey Arrivals Roof",
+  "description": "The white lid of the arrivals pavilion, a charcoal line round its edge.",
+  "group": "Station",
+  "section": "Hexkey Orbital",
+  "role": "frame",
+  "tool": "welder",
+  "collider": "boxes",
+  "mass": 31200.0,
+  "health": 41440,
+  "armour": 40,
+  "material": "steel",
+  "color": "#eceeea",
+  "attachSeconds": 20.0,
+  "boxes": [
+    {
+      "min": [
+        -8.125,
+        -1.375,
+        -26.125
+      ],
+      "max": [
+        7.875,
+        -1.125,
+        25.875
+      ],
+      "color": "#eceeea",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -8.145,
+        -1.355,
+        -26.145
+      ],
+      "max": [
+        7.895,
+        -1.255,
+        25.895
+      ],
+      "color": "#2b2e30",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        7.895,
+        -1.075,
+        -12.125
+      ],
+      "max": [
+        8.175,
+        1.075,
+        11.875
+      ],
+      "color": "#3e6b5a",
+      "detail": true,
+      "finish": "painted plating"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "j0",
+      "at": [
+        -8.025,
+        -1.375,
+        -0.125
+      ],
+      "dir": "-y"
+    }
+  ]
+}

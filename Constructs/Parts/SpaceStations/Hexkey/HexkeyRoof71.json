@@ -1,0 +1,94 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Hexkey Roof 7-1",
+  "description": "The roof of Hexkey Orbital: landing pads for Shuttles and Limpets on a grey deck, walkways between them.",
+  "group": "Station",
+  "section": "Hexkey Orbital",
+  "role": "frame",
+  "tool": "welder",
+  "collider": "boxes",
+  "mass": 19125.0,
+  "health": 26950,
+  "armour": 40,
+  "material": "steel",
+  "color": "#eceeea",
+  "attachSeconds": 20.0,
+  "boxes": [
+    {
+      "min": [
+        -9.125,
+        -0.425,
+        -12.125
+      ],
+      "max": [
+        7.875,
+        -0.125,
+        12.875
+      ],
+      "color": "#eceeea",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -9.121,
+        -0.129,
+        -12.121
+      ],
+      "max": [
+        7.871,
+        -0.113,
+        12.871
+      ],
+      "color": "#b5b9b7",
+      "detail": true,
+      "finish": "painted plating"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "j0",
+      "at": [
+        -9.125,
+        -0.275,
+        0.375
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j1",
+      "at": [
+        -0.625,
+        -0.275,
+        12.875
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "j2",
+      "at": [
+        -0.625,
+        -0.425,
+        -11.975
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j3",
+      "at": [
+        7.725,
+        -0.425,
+        0.025
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j4",
+      "at": [
+        7.725,
+        -0.425,
+        12.375
+      ],
+      "dir": "-y"
+    }
+  ]
+}

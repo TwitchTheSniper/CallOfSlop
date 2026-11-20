@@ -1,0 +1,388 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Hexkey Roof 7-3",
+  "description": "The roof of Hexkey Orbital: landing pads for Shuttles and Limpets on a grey deck, walkways between them.",
+  "group": "Station",
+  "section": "Hexkey Orbital",
+  "role": "frame",
+  "tool": "welder",
+  "collider": "boxes",
+  "mass": 17343.0,
+  "health": 24812,
+  "armour": 40,
+  "material": "steel",
+  "color": "#eceeea",
+  "attachSeconds": 20.0,
+  "boxes": [
+    {
+      "min": [
+        -9.125,
+        -2.425,
+        -12.125
+      ],
+      "max": [
+        7.875,
+        -2.125,
+        3.375
+      ],
+      "color": "#eceeea",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -9.121,
+        -2.129,
+        -12.121
+      ],
+      "max": [
+        7.871,
+        -2.113,
+        3.371
+      ],
+      "color": "#b5b9b7",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -9.125,
+        -2.425,
+        3.375
+      ],
+      "max": [
+        -1.325,
+        -2.125,
+        12.375
+      ],
+      "color": "#eceeea",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -9.121,
+        -2.129,
+        3.379
+      ],
+      "max": [
+        -1.329,
+        -2.113,
+        12.371
+      ],
+      "color": "#b5b9b7",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        3.075,
+        -2.425,
+        3.375
+      ],
+      "max": [
+        7.875,
+        -2.125,
+        12.375
+      ],
+      "color": "#eceeea",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        3.079,
+        -2.129,
+        3.379
+      ],
+      "max": [
+        7.871,
+        -2.113,
+        12.371
+      ],
+      "color": "#b5b9b7",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -9.125,
+        -2.425,
+        12.375
+      ],
+      "max": [
+        7.875,
+        -2.125,
+        12.875
+      ],
+      "color": "#eceeea",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -9.121,
+        -2.129,
+        12.379
+      ],
+      "max": [
+        7.871,
+        -2.113,
+        12.871
+      ],
+      "color": "#b5b9b7",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -1.125,
+        -2.105,
+        -12.125
+      ],
+      "max": [
+        4.875,
+        1.075,
+        -6.125
+      ],
+      "color": "#c4d8d5",
+      "detail": true,
+      "finish": "glass"
+    },
+    {
+      "min": [
+        -1.205,
+        -2.103,
+        -12.205
+      ],
+      "max": [
+        -1.045,
+        1.125,
+        -12.045
+      ],
+      "color": "#2b2e30",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        4.795,
+        -2.103,
+        -12.205
+      ],
+      "max": [
+        4.955,
+        1.125,
+        -12.045
+      ],
+      "color": "#2b2e30",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -1.205,
+        -2.103,
+        -6.205
+      ],
+      "max": [
+        -1.045,
+        1.125,
+        -6.045
+      ],
+      "color": "#2b2e30",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        4.795,
+        -2.103,
+        -6.205
+      ],
+      "max": [
+        4.955,
+        1.125,
+        -6.045
+      ],
+      "color": "#2b2e30",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -1.205,
+        1.125,
+        -12.205
+      ],
+      "max": [
+        4.955,
+        1.275,
+        -6.045
+      ],
+      "color": "#2b2e30",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -1.125,
+        -2.105,
+        -4.125
+      ],
+      "max": [
+        4.875,
+        1.075,
+        1.875
+      ],
+      "color": "#c4d8d5",
+      "detail": true,
+      "finish": "glass"
+    },
+    {
+      "min": [
+        -1.205,
+        -2.103,
+        -4.205
+      ],
+      "max": [
+        -1.045,
+        1.125,
+        -4.045
+      ],
+      "color": "#2b2e30",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        4.795,
+        -2.103,
+        -4.205
+      ],
+      "max": [
+        4.955,
+        1.125,
+        -4.045
+      ],
+      "color": "#2b2e30",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -1.205,
+        -2.103,
+        1.795
+      ],
+      "max": [
+        -1.045,
+        1.125,
+        1.955
+      ],
+      "color": "#2b2e30",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        4.795,
+        -2.103,
+        1.795
+      ],
+      "max": [
+        4.955,
+        1.125,
+        1.955
+      ],
+      "color": "#2b2e30",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -1.205,
+        1.125,
+        -4.205
+      ],
+      "max": [
+        4.955,
+        1.275,
+        1.955
+      ],
+      "color": "#2b2e30",
+      "detail": true,
+      "finish": "painted plating"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "j0",
+      "at": [
+        -9.125,
+        -2.275,
+        -4.375
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j1",
+      "at": [
+        -0.625,
+        -2.275,
+        -12.125
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j2",
+      "at": [
+        -0.625,
+        -2.425,
+        12.725
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j3",
+      "at": [
+        7.725,
+        -2.425,
+        -11.625
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j4",
+      "at": [
+        7.725,
+        -2.425,
+        -3.875
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j5",
+      "at": [
+        -4.125,
+        -2.425,
+        -4.375
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j6",
+      "at": [
+        -0.125,
+        -2.125,
+        12.775
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j7",
+      "at": [
+        -1.325,
+        -2.275,
+        10.875
+      ],
+      "dir": "+x"
+    }
+  ]
+}

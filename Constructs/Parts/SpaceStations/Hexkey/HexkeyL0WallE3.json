@@ -1,0 +1,263 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Hexkey L0 Wall E3",
+  "description": "An outer wall of Hexkey Orbital: white panels, a long window band, thin charcoal mullions.",
+  "group": "Station",
+  "section": "Hexkey Orbital",
+  "role": "frame",
+  "tool": "welder",
+  "collider": "boxes",
+  "mass": 4972.0,
+  "health": 9966,
+  "armour": 40,
+  "material": "steel",
+  "color": "#eceeea",
+  "attachSeconds": 20.0,
+  "boxes": [
+    {
+      "min": [
+        -0.425,
+        -4.125,
+        -12.125
+      ],
+      "max": [
+        -0.125,
+        3.575,
+        -6.125
+      ],
+      "color": "#eceeea",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -0.425,
+        1.875,
+        -6.125
+      ],
+      "max": [
+        -0.125,
+        3.575,
+        5.875
+      ],
+      "color": "#eceeea",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -0.441,
+        -4.125,
+        -6.245
+      ],
+      "max": [
+        -0.425,
+        1.995,
+        -6.125
+      ],
+      "color": "#2b2e30",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -0.125,
+        -4.125,
+        -6.245
+      ],
+      "max": [
+        -0.109,
+        1.995,
+        -6.125
+      ],
+      "color": "#2b2e30",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -0.441,
+        -4.125,
+        5.875
+      ],
+      "max": [
+        -0.425,
+        1.995,
+        5.995
+      ],
+      "color": "#2b2e30",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -0.125,
+        -4.125,
+        5.875
+      ],
+      "max": [
+        -0.109,
+        1.995,
+        5.995
+      ],
+      "color": "#2b2e30",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -0.441,
+        1.875,
+        -6.125
+      ],
+      "max": [
+        -0.425,
+        1.995,
+        5.875
+      ],
+      "color": "#2b2e30",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -0.125,
+        1.875,
+        -6.125
+      ],
+      "max": [
+        -0.109,
+        1.995,
+        5.875
+      ],
+      "color": "#2b2e30",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -0.425,
+        -4.125,
+        5.875
+      ],
+      "max": [
+        -0.125,
+        3.575,
+        11.575
+      ],
+      "color": "#eceeea",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -0.111,
+        0.875,
+        -12.075
+      ],
+      "max": [
+        -0.09,
+        2.875,
+        11.525
+      ],
+      "color": "#c4d8d5",
+      "detail": true,
+      "finish": "glass"
+    },
+    {
+      "min": [
+        -0.447,
+        0.875,
+        -12.075
+      ],
+      "max": [
+        -0.431,
+        2.875,
+        11.525
+      ],
+      "color": "#c4d8d5",
+      "detail": true,
+      "finish": "glass"
+    },
+    {
+      "min": [
+        -0.102,
+        0.825,
+        -6.205
+      ],
+      "max": [
+        -0.078,
+        2.925,
+        -6.045
+      ],
+      "color": "#2b2e30",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -0.102,
+        0.825,
+        -0.205
+      ],
+      "max": [
+        -0.078,
+        2.925,
+        -0.045
+      ],
+      "color": "#2b2e30",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -0.102,
+        0.825,
+        5.795
+      ],
+      "max": [
+        -0.078,
+        2.925,
+        5.955
+      ],
+      "color": "#2b2e30",
+      "detail": true,
+      "finish": "painted plating"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "j0",
+      "at": [
+        -0.275,
+        -4.125,
+        -9.125
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j1",
+      "at": [
+        -0.275,
+        3.575,
+        -1.875
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j2",
+      "at": [
+        -0.275,
+        -0.275,
+        11.575
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "j3",
+      "at": [
+        -0.275,
+        -0.275,
+        -12.125
+      ],
+      "dir": "-z"
+    }
+  ]
+}

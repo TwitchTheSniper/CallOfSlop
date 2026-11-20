@@ -1,0 +1,121 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Hexkey L2 Floor 4-2",
+  "description": "A floor of Hexkey Orbital, the Traders' flat-pack store: a white slab, its floor laid on top.",
+  "group": "Station",
+  "section": "Hexkey Orbital",
+  "role": "frame",
+  "tool": "welder",
+  "collider": "boxes",
+  "mass": 25920.0,
+  "health": 35104,
+  "armour": 40,
+  "material": "steel",
+  "color": "#eceeea",
+  "attachSeconds": 20.0,
+  "boxes": [
+    {
+      "min": [
+        -12.125,
+        -0.425,
+        -12.125
+      ],
+      "max": [
+        11.875,
+        -0.125,
+        11.875
+      ],
+      "color": "#eceeea",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -12.121,
+        -0.129,
+        -12.121
+      ],
+      "max": [
+        11.871,
+        -0.113,
+        11.871
+      ],
+      "color": "#d6bf96",
+      "detail": true,
+      "finish": "painted plating"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "j0",
+      "at": [
+        -12.125,
+        -0.275,
+        -0.125
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j1",
+      "at": [
+        -0.125,
+        -0.275,
+        -12.125
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j2",
+      "at": [
+        -0.125,
+        -0.275,
+        11.875
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "j3",
+      "at": [
+        11.875,
+        -0.275,
+        -0.125
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "j4",
+      "at": [
+        0.625,
+        -0.125,
+        -9.125
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j5",
+      "at": [
+        -2.745,
+        -0.125,
+        8.875
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j6",
+      "at": [
+        2.875,
+        -0.125,
+        -10.675
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j7",
+      "at": [
+        -6.125,
+        -0.125,
+        10.425
+      ],
+      "dir": "+y"
+    }
+  ]
+}

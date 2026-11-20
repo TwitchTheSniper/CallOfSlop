@@ -1,0 +1,88 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Hexkey L1 Exit Wall",
+  "description": "A partition of Hexkey Orbital: white, with charcoal-framed doorways.",
+  "group": "Station",
+  "section": "Hexkey Orbital",
+  "role": "frame",
+  "tool": "welder",
+  "collider": "boxes",
+  "mass": 2952.6,
+  "health": 7543,
+  "armour": 40,
+  "material": "steel",
+  "color": "#eceeea",
+  "attachSeconds": 20.0,
+  "boxes": [
+    {
+      "min": [
+        -0.225,
+        -2.125,
+        -13.025
+      ],
+      "max": [
+        -0.025,
+        1.575,
+        13.575
+      ],
+      "color": "#eceeea",
+      "finish": "painted plating"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "j0",
+      "at": [
+        -0.125,
+        -2.125,
+        -11.575
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j1",
+      "at": [
+        -0.125,
+        -2.125,
+        -2.875
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j2",
+      "at": [
+        -0.125,
+        1.575,
+        -11.575
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j3",
+      "at": [
+        -0.125,
+        1.575,
+        -2.875
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j4",
+      "at": [
+        -0.125,
+        -0.275,
+        13.575
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "j5",
+      "at": [
+        -0.125,
+        -0.275,
+        -13.025
+      ],
+      "dir": "-z"
+    }
+  ]
+}

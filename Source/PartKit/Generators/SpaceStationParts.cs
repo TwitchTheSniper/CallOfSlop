@@ -234,7 +234,22 @@ public sealed partial class SpaceStationParts : IPartGenerator
             var d = p.Json();
             o.File($"{Out}/ClampArm/{FileName((string)d["name"]!)}", PyJson.Dumps(d, 2) + "\n");
         }
+        // Hexkey Orbital, the Traders' flat-pack store (SpaceStationHexkey.cs)
+        var hk = HexkeyStation();
+        Connect(hk.Pieces);
+        var hOrder = PlaceOrder(hk.Pieces, "Hexkey L0 Floor 1-1");
+        var hOrigins = hk.Pieces.ToDictionary(p => (string)p.D["name"]!, Recentre);
+        foreach (var p in hk.Pieces)
+        {
+            var d = p.Json();
+            var name = (string)d["name"]!;
+            defs.Add(name, d);
+            o.File($"{Out}/Hexkey/{FileName(name)}", PyJson.Dumps(d, 2) + "\n");
+        }
         BuildingParts.AddPartDefs(o, defs, Out);
+        o.File($"{BpOut}/HexkeyOrbital.json", PyJson.Dumps(Blueprint(HexkeyName,
+            "Hexkey Orbital, the Traders' flat-pack store (shell, phase 1): a white box 144 x 72 m of four levels. Fifteen landing pads on the roof between the arrivals and departures pavilions; under them the showroom loop (eight rooms and a quick aisle), the market and canteen, and the double-height warehouse with the checkout and the loading lane; stairs between the floors, an exit stair tower back up to the pads, and a freight pier with two ship berths.",
+            hk, hOrder, hOrigins, defs), 2) + "\n");
         o.File($"{BpOut}/CaledonHighport.json", PyJson.Dumps(Blueprint(HighportName,
             "Caledon Highport, the first space station: a ring of sixteen habitat segments 264 m across round one hexagonal hub under a command dome, joined by three spokes. Landing pads for Shuttles and Limpets on the ring's roof, hangars in its walls; under the hub a docking spindle with the customs drum, a dock collar with Magpie berths east and west, a freight collar with Dray berths, a frigate collar with Zero Day berths north and south (one line of berths to a level), and engineering with its radiators, the reactor and the station-keeping drives at its foot.",
             kit, order, origins, defs), 2) + "\n");

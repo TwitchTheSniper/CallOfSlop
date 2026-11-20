@@ -1,0 +1,1601 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Hexkey Orbital",
+  "description": "Hexkey Orbital, the Traders' flat-pack store (shell, phase 1): a white box 144 x 72 m of four levels. Fifteen landing pads on the roof between the arrivals and departures pavilions; under them the showroom loop (eight rooms and a quick aisle), the market and canteen, and the double-height warehouse with the checkout and the loading lane; stairs between the floors, an exit stair tower back up to the pads, and a freight pier with two ship berths.",
+  "steps": [
+    {
+      "part": "Hexkey L0 Floor 1-1"
+    },
+    {
+      "part": "Hexkey L0 Floor 1-2",
+      "on": 0,
+      "socket": "j0",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L0 Floor 2-1",
+      "on": 0,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L0 Wall N1",
+      "on": 0,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L0 Wall W1",
+      "on": 0,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L0 Floor 1-3",
+      "on": 1,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L0 Floor 2-2",
+      "on": 1,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L0 Wall W2",
+      "on": 1,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L0 Floor 3-1",
+      "on": 2,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L0 Wall N2",
+      "on": 2,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L1 Floor 1-1",
+      "on": 3,
+      "socket": "j1",
+      "by": "j2"
+    },
+    {
+      "part": "Hexkey L0 Floor 2-3",
+      "on": 5,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L0 Wall S1",
+      "on": 5,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L0 Wall W3",
+      "on": 5,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L0 Floor 3-2",
+      "on": 6,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L1 Floor 1-2",
+      "on": 7,
+      "socket": "j1",
+      "by": "j3"
+    },
+    {
+      "part": "Hexkey L0 Floor 4-1",
+      "on": 8,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L0 Wall N3",
+      "on": 8,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L1 Floor 2-1",
+      "on": 9,
+      "socket": "j1",
+      "by": "j3"
+    },
+    {
+      "part": "Hexkey L1 Wall N1",
+      "on": 10,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L1 Wall W1",
+      "on": 10,
+      "socket": "j5",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L1 Staff Wall E",
+      "on": 10,
+      "socket": "j6",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L0 Floor 3-3",
+      "on": 11,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L0 Wall S2",
+      "on": 11,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L0 Lane Wall",
+      "on": 11,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L1 Floor 1-3",
+      "on": 12,
+      "socket": "j1",
+      "by": "j2"
+    },
+    {
+      "part": "Hexkey L0 Floor 4-2",
+      "on": 14,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L1 Floor 2-2",
+      "on": 15,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L1 Wall W2",
+      "on": 15,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L1 Staff Wall S",
+      "on": 15,
+      "socket": "j5",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L0 Floor 5-1",
+      "on": 16,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L0 Wall N4",
+      "on": 16,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L1 Floor 3-1",
+      "on": 17,
+      "socket": "j1",
+      "by": "j3"
+    },
+    {
+      "part": "Hexkey L1 Wall N2",
+      "on": 18,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L2 Floor 1-1",
+      "on": 19,
+      "socket": "j1",
+      "by": "j2"
+    },
+    {
+      "part": "Hexkey L2 Floor 1-2",
+      "on": 21,
+      "socket": "j5",
+      "by": "j8"
+    },
+    {
+      "part": "Hexkey L2 Floor 2-1",
+      "on": 21,
+      "socket": "j6",
+      "by": "j6"
+    },
+    {
+      "part": "Hexkey L2 Floor 2-2",
+      "on": 21,
+      "socket": "j7",
+      "by": "j9"
+    },
+    {
+      "part": "Hexkey L0 Floor 4-3",
+      "on": 22,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L0 Wall S3",
+      "on": 22,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L1 Floor 2-3",
+      "on": 23,
+      "socket": "j1",
+      "by": "j3"
+    },
+    {
+      "part": "Hexkey L0 Floor 5-3",
+      "on": 24,
+      "socket": "j3",
+      "by": "j4"
+    },
+    {
+      "part": "Hexkey L1 Floor 3-3",
+      "on": 24,
+      "socket": "j5",
+      "by": "j5"
+    },
+    {
+      "part": "Hexkey L1 Floor 4-3",
+      "on": 24,
+      "socket": "j6",
+      "by": "j5"
+    },
+    {
+      "part": "Hexkey L1 Floor 5-3",
+      "on": 24,
+      "socket": "j7",
+      "by": "j6"
+    },
+    {
+      "part": "Hexkey L0 Exit Wall W",
+      "on": 24,
+      "socket": "j8",
+      "by": "j8"
+    },
+    {
+      "part": "Hexkey L1 Wall S1",
+      "on": 25,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L1 Wall W3",
+      "on": 25,
+      "socket": "j5",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey Market Stair",
+      "on": 25,
+      "socket": "j6",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L0 Floor 5-2",
+      "on": 26,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L1 Floor 3-2",
+      "on": 27,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L0 Floor 6-1",
+      "on": 30,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L0 Wall N5",
+      "on": 30,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L1 Floor 4-1",
+      "on": 31,
+      "socket": "j1",
+      "by": "j3"
+    },
+    {
+      "part": "Hexkey L1 Wall N3",
+      "on": 32,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L2 Wall N1",
+      "on": 34,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L2 Wall W1",
+      "on": 34,
+      "socket": "j5",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey Arrival Stair",
+      "on": 34,
+      "socket": "j7",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L2 Floor 1-3",
+      "on": 35,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L2 Wall W2",
+      "on": 35,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L2 Aisle Wall S",
+      "on": 35,
+      "socket": "j5",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L2 Room Wall 8",
+      "on": 35,
+      "socket": "j6",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L2 Floor 3-1",
+      "on": 36,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L2 Wall N2",
+      "on": 36,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L2 Entry Wall",
+      "on": 36,
+      "socket": "j5",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L2 Floor 2-3",
+      "on": 37,
+      "socket": "j2",
+      "by": "j1"
+    },
+    {
+      "part": "Hexkey L2 Floor 3-2",
+      "on": 37,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L2 Aisle Wall N",
+      "on": 37,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L0 Wall S4",
+      "on": 38,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L1 Wall S2",
+      "on": 40,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L0 Floor 6-3",
+      "on": 41,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L0 Wall S5",
+      "on": 41,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L1 Wall S3",
+      "on": 42,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L1 Floor 4-2",
+      "on": 43,
+      "socket": "j1",
+      "by": "j2"
+    },
+    {
+      "part": "Hexkey L1 Wall S4",
+      "on": 43,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L1 Floor 5-2",
+      "on": 44,
+      "socket": "j1",
+      "by": "j2"
+    },
+    {
+      "part": "Hexkey L1 Floor 6-3",
+      "on": 44,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L1 Wall S5",
+      "on": 44,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L1 Canteen Wall W",
+      "on": 44,
+      "socket": "j5",
+      "by": "j1"
+    },
+    {
+      "part": "Hexkey L0 Floor 6-2",
+      "on": 45,
+      "socket": "j2",
+      "by": "j5"
+    },
+    {
+      "part": "Hexkey L1 Floor 6-2",
+      "on": 45,
+      "socket": "j6",
+      "by": "j8"
+    },
+    {
+      "part": "Hexkey L0 Exit Wall N",
+      "on": 45,
+      "socket": "j9",
+      "by": "j3"
+    },
+    {
+      "part": "Hexkey L0 Wall N6",
+      "on": 51,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L0 Wall E1",
+      "on": 51,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey Warehouse Stair",
+      "on": 51,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L1 Floor 5-1",
+      "on": 52,
+      "socket": "j1",
+      "by": "j3"
+    },
+    {
+      "part": "Hexkey L1 Wall N4",
+      "on": 53,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey Roof 1-1",
+      "on": 55,
+      "socket": "j1",
+      "by": "j2"
+    },
+    {
+      "part": "Hexkey Roof 2-1",
+      "on": 55,
+      "socket": "j2",
+      "by": "j3"
+    },
+    {
+      "part": "Hexkey L2 Wall S1",
+      "on": 58,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L2 Wall W3",
+      "on": 58,
+      "socket": "j5",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey Roof 1-2",
+      "on": 59,
+      "socket": "j2",
+      "by": "j3"
+    },
+    {
+      "part": "Hexkey Roof 1-3",
+      "on": 59,
+      "socket": "j3",
+      "by": "j3"
+    },
+    {
+      "part": "Hexkey L2 Floor 4-2",
+      "on": 60,
+      "socket": "j3",
+      "by": "j5"
+    },
+    {
+      "part": "Hexkey L2 Floor 5-2",
+      "on": 60,
+      "socket": "j4",
+      "by": "j5"
+    },
+    {
+      "part": "Hexkey L2 Floor 6-2",
+      "on": 60,
+      "socket": "j5",
+      "by": "j6"
+    },
+    {
+      "part": "Hexkey Roof 2-2",
+      "on": 60,
+      "socket": "j7",
+      "by": "j5"
+    },
+    {
+      "part": "Hexkey Roof 3-2",
+      "on": 60,
+      "socket": "j8",
+      "by": "j5"
+    },
+    {
+      "part": "Hexkey Roof 4-2",
+      "on": 60,
+      "socket": "j9",
+      "by": "j5"
+    },
+    {
+      "part": "Hexkey Roof 5-2",
+      "on": 60,
+      "socket": "j10",
+      "by": "j5"
+    },
+    {
+      "part": "Hexkey Roof 6-2",
+      "on": 60,
+      "socket": "j11",
+      "by": "j5"
+    },
+    {
+      "part": "Hexkey Roof 7-2",
+      "on": 60,
+      "socket": "j12",
+      "by": "j5"
+    },
+    {
+      "part": "Hexkey L2 Wall E2",
+      "on": 60,
+      "socket": "j14",
+      "by": "j7"
+    },
+    {
+      "part": "Hexkey L2 Room Wall 5",
+      "on": 60,
+      "socket": "j16",
+      "by": "j7"
+    },
+    {
+      "part": "Hexkey L2 Room Wall 6",
+      "on": 60,
+      "socket": "j17",
+      "by": "j5"
+    },
+    {
+      "part": "Hexkey L2 Room Wall 7",
+      "on": 60,
+      "socket": "j18",
+      "by": "j5"
+    },
+    {
+      "part": "Hexkey L2 Exit Wall",
+      "on": 60,
+      "socket": "j20",
+      "by": "j5"
+    },
+    {
+      "part": "Hexkey Roof 2-3",
+      "on": 61,
+      "socket": "j5",
+      "by": "j5"
+    },
+    {
+      "part": "Hexkey L2 Wall S2",
+      "on": 61,
+      "socket": "j7",
+      "by": "j5"
+    },
+    {
+      "part": "Hexkey L2 Floor 4-1",
+      "on": 62,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L2 Wall N3",
+      "on": 62,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L2 Room Wall 1",
+      "on": 62,
+      "socket": "j5",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey Roof 3-1",
+      "on": 63,
+      "socket": "j2",
+      "by": "j3"
+    },
+    {
+      "part": "Hexkey L2 Floor 3-3",
+      "on": 65,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L2 Room Wall 2",
+      "on": 67,
+      "socket": "j14",
+      "by": "j5"
+    },
+    {
+      "part": "Hexkey L2 Room Wall 3",
+      "on": 67,
+      "socket": "j15",
+      "by": "j5"
+    },
+    {
+      "part": "Hexkey L0 Wall S6",
+      "on": 70,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L0 Wall E3",
+      "on": 70,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey Exit Stair 1",
+      "on": 70,
+      "socket": "j5",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey Pier 1",
+      "on": 70,
+      "socket": "j6",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L2 Floor 4-3",
+      "on": 74,
+      "socket": "j1",
+      "by": "j3"
+    },
+    {
+      "part": "Hexkey L1 Canteen Wall N",
+      "on": 75,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L1 Wall S6",
+      "on": 76,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L1 Wall E3",
+      "on": 76,
+      "socket": "j5",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L1 Exit Wall",
+      "on": 76,
+      "socket": "j6",
+      "by": "j1"
+    },
+    {
+      "part": "Hexkey Exit Stair 2",
+      "on": 76,
+      "socket": "j8",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L2 Floor 5-3",
+      "on": 77,
+      "socket": "j1",
+      "by": "j3"
+    },
+    {
+      "part": "Hexkey L0 Wall E2",
+      "on": 79,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L1 Floor 6-1",
+      "on": 80,
+      "socket": "j1",
+      "by": "j1"
+    },
+    {
+      "part": "Hexkey L1 Wall E2",
+      "on": 80,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L1 Wall N5",
+      "on": 85,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey Arrivals Glass",
+      "on": 87,
+      "socket": "j5",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L2 Floor 5-1",
+      "on": 94,
+      "socket": "j1",
+      "by": "j1"
+    },
+    {
+      "part": "Hexkey L2 Floor 6-1",
+      "on": 95,
+      "socket": "j1",
+      "by": "j1"
+    },
+    {
+      "part": "Hexkey L2 Floor 6-3",
+      "on": 95,
+      "socket": "j2",
+      "by": "j1"
+    },
+    {
+      "part": "Hexkey Roof 3-3",
+      "on": 97,
+      "socket": "j2",
+      "by": "j1"
+    },
+    {
+      "part": "Hexkey Roof 4-1",
+      "on": 98,
+      "socket": "j1",
+      "by": "j1"
+    },
+    {
+      "part": "Hexkey Roof 4-3",
+      "on": 98,
+      "socket": "j2",
+      "by": "j1"
+    },
+    {
+      "part": "Hexkey Roof 5-1",
+      "on": 99,
+      "socket": "j1",
+      "by": "j1"
+    },
+    {
+      "part": "Hexkey Roof 5-3",
+      "on": 99,
+      "socket": "j2",
+      "by": "j1"
+    },
+    {
+      "part": "Hexkey Roof 6-1",
+      "on": 100,
+      "socket": "j1",
+      "by": "j1"
+    },
+    {
+      "part": "Hexkey Roof 6-3",
+      "on": 100,
+      "socket": "j2",
+      "by": "j1"
+    },
+    {
+      "part": "Hexkey Roof 7-1",
+      "on": 101,
+      "socket": "j1",
+      "by": "j1"
+    },
+    {
+      "part": "Hexkey Roof 7-3",
+      "on": 101,
+      "socket": "j2",
+      "by": "j1"
+    },
+    {
+      "part": "Hexkey Departures Glass",
+      "on": 101,
+      "socket": "j7",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L2 Wall E1",
+      "on": 102,
+      "socket": "j4",
+      "by": "j3"
+    },
+    {
+      "part": "Hexkey L2 Wall E3",
+      "on": 102,
+      "socket": "j5",
+      "by": "j3"
+    },
+    {
+      "part": "Hexkey L2 Wall S5",
+      "on": 103,
+      "socket": "j6",
+      "by": "j5"
+    },
+    {
+      "part": "Hexkey L2 Wall S4",
+      "on": 104,
+      "socket": "j4",
+      "by": "j5"
+    },
+    {
+      "part": "Hexkey L2 Wall S3",
+      "on": 105,
+      "socket": "j4",
+      "by": "j5"
+    },
+    {
+      "part": "Hexkey L2 Wall S6",
+      "on": 106,
+      "socket": "j4",
+      "by": "j5"
+    },
+    {
+      "part": "Hexkey L2 Wall N4",
+      "on": 109,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L2 Wall N5",
+      "on": 115,
+      "socket": "j4",
+      "by": "j5"
+    },
+    {
+      "part": "Hexkey Pier 2",
+      "on": 119,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L1 Wall N6",
+      "on": 128,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L1 Wall E1",
+      "on": 128,
+      "socket": "j5",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey Arrivals Roof",
+      "on": 131,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L2 Wall N6",
+      "on": 133,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey Exit Stair 3",
+      "on": 134,
+      "socket": "j8",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey Exit Stair 4",
+      "on": 143,
+      "socket": "j7",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey Departures Roof",
+      "on": 144,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Docking Hatch",
+      "on": 88,
+      "socket": "pad1hatch",
+      "by": "base"
+    },
+    {
+      "part": "Docking Clamp Medium",
+      "on": 88,
+      "socket": "pad1clamp",
+      "by": "-y",
+      "config": {
+        "startOn": true,
+        "sizeX": 18,
+        "sizeY": 8,
+        "sizeZ": 18,
+        "atY": 4.5,
+        "atX": -3.5,
+        "atZ": 3.5
+      },
+      "paint": "#3e6b5a",
+      "finish": "painted plating"
+    },
+    {
+      "part": "Docking Hatch",
+      "on": 96,
+      "socket": "pad2hatch",
+      "by": "base"
+    },
+    {
+      "part": "Docking Clamp Medium",
+      "on": 96,
+      "socket": "pad2clamp",
+      "by": "-y",
+      "config": {
+        "startOn": true,
+        "sizeX": 18,
+        "sizeY": 8,
+        "sizeZ": 18,
+        "atY": 4.5,
+        "atX": -3.5,
+        "atZ": 3.5
+      },
+      "paint": "#3e6b5a",
+      "finish": "painted plating"
+    },
+    {
+      "part": "Docking Hatch",
+      "on": 107,
+      "socket": "pad3hatch",
+      "by": "base"
+    },
+    {
+      "part": "Docking Clamp Medium",
+      "on": 107,
+      "socket": "pad3clamp",
+      "by": "-y",
+      "config": {
+        "startOn": true,
+        "sizeX": 18,
+        "sizeY": 8,
+        "sizeZ": 18,
+        "atY": 4.5,
+        "atX": -3.5,
+        "atZ": 3.5
+      },
+      "paint": "#3e6b5a",
+      "finish": "painted plating"
+    },
+    {
+      "part": "Docking Hatch",
+      "on": 112,
+      "socket": "pad4hatch",
+      "by": "base"
+    },
+    {
+      "part": "Docking Clamp Medium",
+      "on": 112,
+      "socket": "pad4clamp",
+      "by": "-y",
+      "config": {
+        "startOn": true,
+        "sizeX": 18,
+        "sizeY": 8,
+        "sizeZ": 18,
+        "atY": 4.5,
+        "atX": -3.5,
+        "atZ": 3.5
+      },
+      "paint": "#3e6b5a",
+      "finish": "painted plating"
+    },
+    {
+      "part": "Docking Hatch",
+      "on": 97,
+      "socket": "pad5hatch",
+      "by": "base"
+    },
+    {
+      "part": "Docking Clamp Medium",
+      "on": 97,
+      "socket": "pad5clamp",
+      "by": "-y",
+      "config": {
+        "startOn": true,
+        "sizeX": 18,
+        "sizeY": 8,
+        "sizeZ": 18,
+        "atY": 4.5,
+        "atX": -3.5,
+        "atZ": 3.5
+      },
+      "paint": "#3e6b5a",
+      "finish": "painted plating"
+    },
+    {
+      "part": "Docking Hatch",
+      "on": 135,
+      "socket": "pad6hatch",
+      "by": "base"
+    },
+    {
+      "part": "Docking Clamp Medium",
+      "on": 135,
+      "socket": "pad6clamp",
+      "by": "-y",
+      "config": {
+        "startOn": true,
+        "sizeX": 18,
+        "sizeY": 8,
+        "sizeZ": 18,
+        "atY": 4.5,
+        "atX": -3.5,
+        "atZ": 3.5
+      },
+      "paint": "#3e6b5a",
+      "finish": "painted plating"
+    },
+    {
+      "part": "Docking Hatch",
+      "on": 136,
+      "socket": "pad7hatch",
+      "by": "base"
+    },
+    {
+      "part": "Docking Clamp Medium",
+      "on": 136,
+      "socket": "pad7clamp",
+      "by": "-y",
+      "config": {
+        "startOn": true,
+        "sizeX": 18,
+        "sizeY": 8,
+        "sizeZ": 18,
+        "atY": 4.5,
+        "atX": -3.5,
+        "atZ": 3.5
+      },
+      "paint": "#3e6b5a",
+      "finish": "painted plating"
+    },
+    {
+      "part": "Docking Hatch",
+      "on": 98,
+      "socket": "pad8hatch",
+      "by": "base"
+    },
+    {
+      "part": "Docking Clamp Medium",
+      "on": 98,
+      "socket": "pad8clamp",
+      "by": "-y",
+      "config": {
+        "startOn": true,
+        "sizeX": 18,
+        "sizeY": 8,
+        "sizeZ": 18,
+        "atY": 4.5,
+        "atX": -3.5,
+        "atZ": 3.5
+      },
+      "paint": "#3e6b5a",
+      "finish": "painted plating"
+    },
+    {
+      "part": "Docking Hatch",
+      "on": 137,
+      "socket": "pad9hatch",
+      "by": "base"
+    },
+    {
+      "part": "Docking Clamp Medium",
+      "on": 137,
+      "socket": "pad9clamp",
+      "by": "-y",
+      "config": {
+        "startOn": true,
+        "sizeX": 18,
+        "sizeY": 8,
+        "sizeZ": 18,
+        "atY": 4.5,
+        "atX": -3.5,
+        "atZ": 3.5
+      },
+      "paint": "#3e6b5a",
+      "finish": "painted plating"
+    },
+    {
+      "part": "Docking Hatch",
+      "on": 138,
+      "socket": "pad10hatch",
+      "by": "base"
+    },
+    {
+      "part": "Docking Clamp Medium",
+      "on": 138,
+      "socket": "pad10clamp",
+      "by": "-y",
+      "config": {
+        "startOn": true,
+        "sizeX": 18,
+        "sizeY": 8,
+        "sizeZ": 18,
+        "atY": 4.5,
+        "atX": -3.5,
+        "atZ": 3.5
+      },
+      "paint": "#3e6b5a",
+      "finish": "painted plating"
+    },
+    {
+      "part": "Docking Hatch",
+      "on": 99,
+      "socket": "pad11hatch",
+      "by": "base"
+    },
+    {
+      "part": "Docking Clamp Medium",
+      "on": 99,
+      "socket": "pad11clamp",
+      "by": "-y",
+      "config": {
+        "startOn": true,
+        "sizeX": 18,
+        "sizeY": 8,
+        "sizeZ": 18,
+        "atY": 4.5,
+        "atX": -3.5,
+        "atZ": 3.5
+      },
+      "paint": "#3e6b5a",
+      "finish": "painted plating"
+    },
+    {
+      "part": "Docking Hatch",
+      "on": 139,
+      "socket": "pad12hatch",
+      "by": "base"
+    },
+    {
+      "part": "Docking Clamp Medium",
+      "on": 139,
+      "socket": "pad12clamp",
+      "by": "-y",
+      "config": {
+        "startOn": true,
+        "sizeX": 18,
+        "sizeY": 8,
+        "sizeZ": 18,
+        "atY": 4.5,
+        "atX": -3.5,
+        "atZ": 3.5
+      },
+      "paint": "#3e6b5a",
+      "finish": "painted plating"
+    },
+    {
+      "part": "Docking Hatch",
+      "on": 140,
+      "socket": "pad13hatch",
+      "by": "base"
+    },
+    {
+      "part": "Docking Clamp Medium",
+      "on": 140,
+      "socket": "pad13clamp",
+      "by": "-y",
+      "config": {
+        "startOn": true,
+        "sizeX": 18,
+        "sizeY": 8,
+        "sizeZ": 18,
+        "atY": 4.5,
+        "atX": -3.5,
+        "atZ": 3.5
+      },
+      "paint": "#3e6b5a",
+      "finish": "painted plating"
+    },
+    {
+      "part": "Docking Hatch",
+      "on": 100,
+      "socket": "pad14hatch",
+      "by": "base"
+    },
+    {
+      "part": "Docking Clamp Medium",
+      "on": 100,
+      "socket": "pad14clamp",
+      "by": "-y",
+      "config": {
+        "startOn": true,
+        "sizeX": 18,
+        "sizeY": 8,
+        "sizeZ": 18,
+        "atY": 4.5,
+        "atX": -3.5,
+        "atZ": 3.5
+      },
+      "paint": "#3e6b5a",
+      "finish": "painted plating"
+    },
+    {
+      "part": "Docking Hatch",
+      "on": 141,
+      "socket": "pad15hatch",
+      "by": "base"
+    },
+    {
+      "part": "Docking Clamp Medium",
+      "on": 141,
+      "socket": "pad15clamp",
+      "by": "-y",
+      "config": {
+        "startOn": true,
+        "sizeX": 18,
+        "sizeY": 8,
+        "sizeZ": 18,
+        "atY": 4.5,
+        "atX": -3.5,
+        "atZ": 3.5
+      },
+      "paint": "#3e6b5a",
+      "finish": "painted plating"
+    },
+    {
+      "part": "Docking Clamp Large",
+      "on": 153,
+      "socket": "berthN",
+      "by": "-y",
+      "config": {
+        "sizeX": 40.9,
+        "sizeY": 15.1,
+        "sizeZ": 22.3,
+        "atX": 0,
+        "atY": 2,
+        "atZ": -12.15,
+        "startOn": true
+      },
+      "paint": "#3e6b5a",
+      "finish": "painted plating"
+    },
+    {
+      "part": "Docking Clamp Large",
+      "on": 153,
+      "socket": "berthS",
+      "by": "-y",
+      "config": {
+        "sizeX": 40.9,
+        "sizeY": 15.1,
+        "sizeZ": 22.3,
+        "atX": 0,
+        "atY": 2,
+        "atZ": 12.15,
+        "startOn": true
+      },
+      "paint": "#3e6b5a",
+      "finish": "painted plating"
+    },
+    {
+      "part": "Gravity Generator",
+      "on": 0,
+      "socket": "grav11",
+      "by": "-y",
+      "config": {
+        "sizeX": 24,
+        "sizeY": 24,
+        "sizeZ": 24,
+        "atX": 0.0
+      },
+      "paint": "#2b2e30",
+      "finish": "painted plating"
+    },
+    {
+      "part": "Gravity Generator",
+      "on": 1,
+      "socket": "grav12",
+      "by": "-y",
+      "config": {
+        "sizeX": 24,
+        "sizeY": 24,
+        "sizeZ": 24,
+        "atX": 0.0
+      },
+      "paint": "#2b2e30",
+      "finish": "painted plating"
+    },
+    {
+      "part": "Gravity Generator",
+      "on": 5,
+      "socket": "grav13",
+      "by": "-y",
+      "config": {
+        "sizeX": 24,
+        "sizeY": 24,
+        "sizeZ": 24,
+        "atX": 0.0
+      },
+      "paint": "#2b2e30",
+      "finish": "painted plating"
+    },
+    {
+      "part": "Gravity Generator",
+      "on": 2,
+      "socket": "grav21",
+      "by": "-y",
+      "config": {
+        "sizeX": 24,
+        "sizeY": 24,
+        "sizeZ": 24,
+        "atX": 0.0
+      },
+      "paint": "#2b2e30",
+      "finish": "painted plating"
+    },
+    {
+      "part": "Gravity Generator",
+      "on": 6,
+      "socket": "grav22",
+      "by": "-y",
+      "config": {
+        "sizeX": 24,
+        "sizeY": 24,
+        "sizeZ": 24,
+        "atX": 0.0
+      },
+      "paint": "#2b2e30",
+      "finish": "painted plating"
+    },
+    {
+      "part": "Gravity Generator",
+      "on": 11,
+      "socket": "grav23",
+      "by": "-y",
+      "config": {
+        "sizeX": 24,
+        "sizeY": 24,
+        "sizeZ": 24,
+        "atX": 0.0
+      },
+      "paint": "#2b2e30",
+      "finish": "painted plating"
+    },
+    {
+      "part": "Gravity Generator",
+      "on": 8,
+      "socket": "grav31",
+      "by": "-y",
+      "config": {
+        "sizeX": 24,
+        "sizeY": 24,
+        "sizeZ": 24,
+        "atX": 0.0
+      },
+      "paint": "#2b2e30",
+      "finish": "painted plating"
+    },
+    {
+      "part": "Gravity Generator",
+      "on": 14,
+      "socket": "grav32",
+      "by": "-y",
+      "config": {
+        "sizeX": 24,
+        "sizeY": 24,
+        "sizeZ": 24,
+        "atX": 0.0
+      },
+      "paint": "#2b2e30",
+      "finish": "painted plating"
+    },
+    {
+      "part": "Gravity Generator",
+      "on": 22,
+      "socket": "grav33",
+      "by": "-y",
+      "config": {
+        "sizeX": 24,
+        "sizeY": 24,
+        "sizeZ": 24,
+        "atX": 0.0
+      },
+      "paint": "#2b2e30",
+      "finish": "painted plating"
+    },
+    {
+      "part": "Gravity Generator",
+      "on": 16,
+      "socket": "grav41",
+      "by": "-y",
+      "config": {
+        "sizeX": 24,
+        "sizeY": 24,
+        "sizeZ": 24,
+        "atX": 0.0
+      },
+      "paint": "#2b2e30",
+      "finish": "painted plating"
+    },
+    {
+      "part": "Gravity Generator",
+      "on": 26,
+      "socket": "grav42",
+      "by": "-y",
+      "config": {
+        "sizeX": 24,
+        "sizeY": 24,
+        "sizeZ": 24,
+        "atX": 0.0
+      },
+      "paint": "#2b2e30",
+      "finish": "painted plating"
+    },
+    {
+      "part": "Gravity Generator",
+      "on": 38,
+      "socket": "grav43",
+      "by": "-y",
+      "config": {
+        "sizeX": 24,
+        "sizeY": 24,
+        "sizeZ": 24,
+        "atX": 0.0
+      },
+      "paint": "#2b2e30",
+      "finish": "painted plating"
+    },
+    {
+      "part": "Gravity Generator",
+      "on": 30,
+      "socket": "grav51",
+      "by": "-y",
+      "config": {
+        "sizeX": 24,
+        "sizeY": 24,
+        "sizeZ": 24,
+        "atX": 0.0
+      },
+      "paint": "#2b2e30",
+      "finish": "painted plating"
+    },
+    {
+      "part": "Gravity Generator",
+      "on": 49,
+      "socket": "grav52",
+      "by": "-y",
+      "config": {
+        "sizeX": 24,
+        "sizeY": 24,
+        "sizeZ": 24,
+        "atX": 0.0
+      },
+      "paint": "#2b2e30",
+      "finish": "painted plating"
+    },
+    {
+      "part": "Gravity Generator",
+      "on": 41,
+      "socket": "grav53",
+      "by": "-y",
+      "config": {
+        "sizeX": 24,
+        "sizeY": 24,
+        "sizeZ": 24,
+        "atX": 0.0
+      },
+      "paint": "#2b2e30",
+      "finish": "painted plating"
+    },
+    {
+      "part": "Gravity Generator",
+      "on": 51,
+      "socket": "grav61",
+      "by": "-y",
+      "config": {
+        "sizeX": 24,
+        "sizeY": 24,
+        "sizeZ": 24,
+        "atX": 0.0
+      },
+      "paint": "#2b2e30",
+      "finish": "painted plating"
+    },
+    {
+      "part": "Gravity Generator",
+      "on": 79,
+      "socket": "grav62",
+      "by": "-y",
+      "config": {
+        "sizeX": 24,
+        "sizeY": 24,
+        "sizeZ": 24,
+        "atX": 0.0
+      },
+      "paint": "#2b2e30",
+      "finish": "painted plating"
+    },
+    {
+      "part": "Gravity Generator",
+      "on": 70,
+      "socket": "grav63",
+      "by": "-y",
+      "config": {
+        "sizeX": 24,
+        "sizeY": 24,
+        "sizeZ": 24,
+        "atX": 4.0
+      },
+      "paint": "#2b2e30",
+      "finish": "painted plating"
+    }
+  ]
+}
