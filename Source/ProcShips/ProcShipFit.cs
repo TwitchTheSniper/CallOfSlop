@@ -45,7 +45,7 @@ public sealed record ProcFit(int ReactorSize, int Reactors, ProcDrive Drive, int
         // The reactor's size: the class sets the range, the role the lean.
         (int, double)[] sizes = cls switch
         {
-            ProcClass.Corvette => [(2, 0.55), (3, 0.4), (4, 0.05)],
+            ProcClass.Corvette => [(2, 0.6), (3, 0.4)],
             ProcClass.Frigate => [(2, 0.2), (3, 0.5), (4, 0.3)],
             _ => [(3, 0.35), (4, 0.45), (6, 0.2)],
         };
@@ -59,7 +59,7 @@ public sealed record ProcFit(int ReactorSize, int Reactors, ProcDrive Drive, int
         };
         var size = f.Weighted(sizes);
         var at = Array.FindIndex(ReactorSizes, r => r.Side == size);
-        var top = cls switch { ProcClass.Corvette => 2, ProcClass.Frigate => 2, _ => 3 }; // (a 6 m plate only in a destroyer's engineering)
+        var top = cls switch { ProcClass.Corvette => 1, ProcClass.Frigate => 2, _ => 3 }; // (a corvette's narrow engineering holds a 3 m plate at most, a 6 m plate only a destroyer's)
         size = ReactorSizes[Math.Clamp(at + lean, 0, top)].Side;
         var twin = f.Chance(role switch
         {

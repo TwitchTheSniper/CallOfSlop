@@ -108,6 +108,10 @@ public static class ProcShipCli
                 {
                     problems.Add(e.Message);
                 }
+                catch (Exception e) when (e is ArgumentException or InvalidOperationException or IndexOutOfRangeException or NullReferenceException or KeyNotFoundException)
+                {
+                    problems.Add($"CRASH {e.GetType().Name}: {e.Message} at {e.StackTrace?.Split('\n').FirstOrDefault(l => l.Contains("ProcShips", StringComparison.Ordinal))?.Trim()}"); // (a bug, not a ship that can't be: listed, the sweep goes on)
+                }
                 foreach (var m in problems.Distinct())
                 {
                     var key = System.Text.RegularExpressions.Regex.Replace(System.Text.RegularExpressions.Regex.Replace(m, @"Proc [CFD]\d+\S*", "Proc"), @"[\d.]+", "#");

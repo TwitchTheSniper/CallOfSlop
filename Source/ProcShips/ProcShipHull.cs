@@ -690,7 +690,8 @@ public sealed class ProcHullShape
             else
             {
                 var tall = Math.Min(yb - ya, span * pf.Range(0.55, 0.7));
-                var yc = Math.Clamp(beamY, ya + tall / 2, yb - tall / 2);
+                var lo = ya + tall / 2;
+                var yc = Math.Clamp(beamY, lo, Math.Max(lo, yb - tall / 2)); // (as tall as the band: its bounds meet, give or take a rounding)
                 (p0, p1) = (yc - tall / 2, yc + tall / 2);
             }
             p0 = Q(p0, 0.05);

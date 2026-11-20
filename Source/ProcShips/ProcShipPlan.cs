@@ -220,7 +220,8 @@ public sealed class ProcShipPlan
         if (h.Nacelles.Count > 0 && h.Nacelles.Min(q => q.Z0) - lockAft >= lo)
             hi = Math.Min(hi, h.Nacelles.Min(q => q.Z0) - lockAft);
         var zlU = lob.Range(0.25, 0.75);
-        p.Zl = Math.Clamp(Q(lo + (hi - lo) * zlU), Math.Ceiling(lo / Grid) * Grid, Math.Floor(hi / Grid) * Grid);
+        double gLo = Math.Ceiling(lo / Grid) * Grid, gHi = Math.Floor(hi / Grid) * Grid;
+        p.Zl = gLo <= gHi ? Math.Clamp(Q(lo + (hi - lo) * zlU), gLo, gHi) : gLo; // (a range with no grid step in it: the step after it)
         if (p.Zl < lo - 1e-6 || p.Zl > hi + 1e-6)
             p.Zl = Math.Ceiling(lo / Grid) * Grid;
         p.Nacelles(dice, lockAft, traits);

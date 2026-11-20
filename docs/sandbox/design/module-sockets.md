@@ -21,8 +21,8 @@ few questions still open; the text assumes each recommended default.
 
 ## 1. The idea in eight rules
 
-1. **A socket is a part.** A *Module Socket* is a plate of a whole-metre footprint (1x1 to 3x3 m built now, the formats
-   and machinery planned to about 30x30 m) placed on a ship by a player or a generator. It says which module kinds it
+1. **A socket is a part.** A *Module Socket* is a plate of a whole-metre footprint (1x1 to 3x3 m built now, with 4x4,
+   4x6 and 6x6 for big reactors and drives, the formats and machinery planned to about 30x30 m) placed on a ship by a player or a generator. It says which module kinds it
    takes (any, or one restricted kind), how the module is mounted (proud, flush or in an opening) and how much room it has.
 2. **A module is a physical thing with a plug.** It is whatever parts are welded onto a *Module Plug*: a player can build
    one freely in the world, welding on any pieces they like, even while it sits fitted in a socket (answer 11), and its
@@ -54,7 +54,9 @@ few questions still open; the text assumes each recommended default.
 ### 2.1 Sizes
 
 Sockets and modules grow in **whole metres**: a footprint is W x L with 1 <= W <= L <= 30. **Built now**: 1x1, 1x2, 1x3,
-2x2, 2x3, 3x3. Every number that depends on size comes from a rule in the table, not a list, so a 6x10 socket later is a
+2x2, 2x3, 3x3, and 4x4, 4x6 and 6x6 (2026-11-20, for the procedural ships' large and huge reactors and heavy drives,
+docs/procships/PROCSHIPS.md "The fit"; a plate over 3x3 m has its Small back sockets on its corner cells only, and a big
+plug its grid on corner cells only, so each stays inside the part kit's 64 sockets a part). Every number that depends on size comes from a rule in the table, not a list, so a 6x10 socket later is a
 key, not new code.
 
 | Rule | Value (proposed) | 1x1 | 2x2 | 3x3 | 10x10 | 30x30 |

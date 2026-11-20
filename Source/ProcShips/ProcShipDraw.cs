@@ -354,7 +354,14 @@ internal sealed class ProcShipDraw
         }
         foreach (var s in p.Sockets)
             if (s.PadMin is { } a && s.PadMax is { } b)
+            {
                 _voidHoles.Add([a[0], a[1], a[2], b[0], b[1], b[2]]); // (exactly: the void touches the pad, which is welded to it)
+                if (s.Where == "mast")
+                {
+                    var zc = (a[2] + b[2]) / 2; // (a mast's post goes down into the spine: the void round it, whichever band's it is)
+                    _voidHoles.Add([-0.12, h.TopY - 0.3, zc - 0.12, 0.12, a[1], zc + 0.12]);
+                }
+            }
         if (p.Barrel is { } bar)
             _voidHoles.Add([-bar.HX, bar.Y - bar.HY, bar.Z0 - 1, bar.HX, bar.Y + bar.HY, p.Front[0]]); // (exactly: the void holds the barrel fore of the rooms)
         if (p.Mouth is { } mo)
