@@ -137,7 +137,7 @@ public sealed partial class ConstructWorld
                 var flown = r; // (a copy: the pool may take a new round from the bore going on)
                 DamageBy = r.By;
                 DamageBody = r.Gun;
-                ConstructBores.Through(this, r.Gun, ch, d, dealt, flown.Pierce, flown.Muzzle, flown.Vel.Length(), flown.Calibre, flown.By, flown.Weapon, out _);
+                ConstructBores.Through(this, r.Gun, ch, d, dealt, flown.Pierce, flown.Muzzle, flown.Vel.Length(), flown.Calibre, flown.By, flown.Weapon, out _, query);
                 DamageBy = 255;
                 DamageBody = 0;
             }

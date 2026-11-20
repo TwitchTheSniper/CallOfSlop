@@ -1034,7 +1034,7 @@ public sealed partial class ConstructWorld
             taken = dealt * ConstructRotor.Hit(this, c, part, dealt, _rayRotor == (c.Id, part) ? _rayBlade : -2);
             _rayRotor = (0, -1);
         }
-        if (c.PartCount >= ConstructBreakUp.MinParts)
+        if (ConstructBreakUp.Big(c))
             ConstructBreakUp.Hit(this, c, part, taken, DamageAt); // (a big body: where it was hurt weakens its structure there, ConstructBreakUp.cs)
         ConstructEngine.HealthChanging(c, part, p.Health - taken); // (a modular engine's cylinder starting to misfire)
         p.Health -= taken;
@@ -1104,7 +1104,7 @@ public sealed partial class ConstructWorld
             RemovePart(c, part);
             return true;
         }
-        if (c.PartCount >= ConstructBreakUp.MinParts && c.DefOf(part).Mass < ConstructBreakUp.ScrapMass)
+        if (ConstructBreakUp.Big(c) && ConstructBreakUp.Scrappable(c, part))
         {
             // Off a capital-sized body, a small part goes as scrap drawn only (a body each would be hundreds in a battle): ConstructBreakUp.cs.
             Events.Add($"construct {c.Id}: {d.Name} shot to scrap");
@@ -1125,7 +1125,7 @@ public sealed partial class ConstructWorld
         outward.Y = 0;
         outward = outward.LengthSquared() > 1e-4f ? Vector3.Normalize(outward) * 2.5f : Vector3.Zero;
         var spin = c.AngVel;
-        _scrapCutOff = c.PartCount >= ConstructBreakUp.MinParts;
+        _scrapCutOff = ConstructBreakUp.Big(c);
         RemovePart(c, part);
         _scrapCutOff = false;
         if (MegaDebrisLeft != 0 && HasRoom() && Create(t, q) is { } piece) // (a blast past its wrecks: the part is gone)

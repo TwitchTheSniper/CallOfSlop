@@ -17,6 +17,16 @@ namespace CallOfSlop;
 public static class ConstructBreakUp
 {
     public const int MinParts = 1024; // bodies this big can break up (a capital ship); smaller ones break by their links alone
+
+    /// <summary>A body that breaks up by planes and sheds small parts as scrap: capital-sized and free (an anchored base keeps its parts to salvage).</summary>
+    public static bool Big(Construct c) => c.PartCount >= MinParts && !c.Anchored;
+
+    /// <summary>A part that may go as scrap drawn only: light, plain (no logic, no seat in use, nothing that goes off), so nothing that works is lost unseen.</summary>
+    public static bool Scrappable(Construct c, int part)
+    {
+        var d = c.DefOf(part);
+        return d.Mass < ScrapMass && d.Logic == CLogic.None && d.Explosive == null && c.Parts[part].SitterPlus1 == 0;
+    }
     public const float Slice = 8f; // metres between the planes looked at
     public const float SnapShare = 0.35f; // a plane snaps at this share of its base strength
     public const float MinBase = 5000f; // ...if it had at least this much health across it (a plane through a thin neck isn't one)
@@ -50,10 +60,10 @@ public static class ConstructBreakUp
     /// </summary>
     public static void Hit(ConstructWorld world, Construct c, int part, float taken, Vector3? at)
     {
-        if (!On || c.PartCount < MinParts)
+        if (!On || !Big(c))
             return;
-        if (c.BreakBase == null)
-            Base(c);
+        if (c.BreakBase == null || c.PartCount > c.BreakParts)
+            Base(c); // (parts added since the base was taken: built or mended, so the hurt so far is forgotten)
         var p = at ?? ConstructRender.PartCentre(c, part);
         var along = Vector3.Transform(p - c.Pos, Quaternion.Conjugate(c.Rot))[c.BreakAxis] - c.BreakMin;
         var slab = (int)MathF.Floor(along / Slice);
@@ -83,6 +93,7 @@ public static class ConstructBreakUp
         var planes = Math.Clamp((int)MathF.Ceiling(size[axis] / Slice) + 1, 2, 4096);
         c.BreakBase = new float[planes];
         c.BreakHurt = new float[planes];
+        c.BreakParts = c.PartCount;
         using var scratch = Scratch.Begin();
         Strength(c, c.BreakBase, scratch.Take<float>(c.PartCount));
     }
@@ -146,7 +157,7 @@ public static class ConstructBreakUp
         for (var k = q.Count - 1; k >= 0; k--)
         {
             var c = world.Get(q[k]);
-            if (c == null || c.BreakBase == null || c.PartCount < MinParts)
+            if (c == null || c.BreakBase == null || !Big(c))
             {
                 if (c != null)
                     c.BreakDue = false;
@@ -223,6 +234,7 @@ public sealed partial class Construct
     internal byte BreakAxis;
     internal float BreakMin;
     internal bool BreakDue;
+    internal int BreakParts; // (how many parts it had when its base was taken)
 }
 
 public sealed partial class ConstructWorld
@@ -241,7 +253,7 @@ public sealed partial class ConstructWorld
             {
                 n++;
                 mass += c.DefOf(i).Mass;
-                if (n > ConstructBreakUp.ScrapParts || mass > ConstructBreakUp.ScrapMass * 2)
+                if (!ConstructBreakUp.Scrappable(c, i) || n > ConstructBreakUp.ScrapParts || mass > ConstructBreakUp.ScrapMass * 2)
                     return false;
             }
         for (var i = 0; i < c.PartCount; i++)

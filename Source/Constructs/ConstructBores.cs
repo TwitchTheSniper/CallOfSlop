@@ -51,7 +51,7 @@ public static class ConstructBores
     /// what is left flies on as a round (<see cref="ConstructWorld.RoundFlies"/>) at <paramref name="speed"/>. Adds one
     /// <see cref="CFireKind.Bore"/> event. <paramref name="end"/> is where it stopped or came out last.
     /// </summary>
-    public static CFireHit Through(ConstructWorld world, ushort own, ConstructHit first, Vector3 dir, float damage, float budget, float muzzle, float speed, float calibre, byte by, byte weapon, out Vector3 end)
+    public static CFireHit Through(ConstructWorld world, ushort own, ConstructHit first, Vector3 dir, float damage, float budget, float muzzle, float speed, float calibre, byte by, byte weapon, out Vector3 end, IWorldQuery? query = null)
     {
         var result = CFireHit.Part;
         var ownBody = own == 0 ? null : world.Get(own);
@@ -111,7 +111,28 @@ public static class ConstructBores
                 spalls++;
             }
             var from = outAt + dir * 0.01f;
-            if (!world.Raycast(from, dir, MaxGap, out var next, ownBody) || next.Distance >= MaxGap)
+            // The gap to the next part: the ground stops it, and anyone standing in the gap is hit on its way.
+            var reach = MaxGap;
+            var ground = false;
+            if (query != null)
+            {
+                var g = query.Raycast(from, dir, MaxGap, QueryFilter.Shots);
+                if (g < MaxGap - 1e-3f)
+                {
+                    reach = g;
+                    ground = true;
+                }
+            }
+            var found = world.Raycast(from, dir, reach, out var next, ownBody) && next.Distance < reach;
+            var gap = found ? next.Distance : reach;
+            if (world.Targets != null && world.Targets.RayTarget(from, dir, gap, own, out var td, out var tid) && td < gap)
+                world.Targets.RoundHit(tid, dealt, by, weapon, from + dir * td, dir);
+            if (!found && ground)
+            {
+                end = from + dir * reach; // (into the ground)
+                break;
+            }
+            if (!found)
             {
                 // Out of the last thing in its way: what is left flies on (into the next ship).
                 if (speed > 1f)

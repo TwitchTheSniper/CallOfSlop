@@ -1494,7 +1494,7 @@ public static class ConstructWeapons
             if (g.Pierce > 0 && ConstructBores.On && !ch.Glass)
             {
                 // A bore: through part after part on its budget, out into whatever is next (ConstructBores.cs).
-                hit |= ConstructBores.Through(world, own.Id, ch, dir, dealt, g.Pierce, g.RoundV, g.RoundV, 0f, own.Owner, g.Def.Id, out end);
+                hit |= ConstructBores.Through(world, own.Id, ch, dir, dealt, g.Pierce, g.RoundV, g.RoundV, 0f, own.Owner, g.Def.Id, out end, query);
                 break;
             }
             if (ch.TrackPlus1 > 0)
