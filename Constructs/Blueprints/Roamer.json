@@ -75,13 +75,13 @@
     {
       "part": "Roamer Upper Stern",
       "on": 1,
-      "socket": "j2",
+      "socket": "j1",
       "by": "j0"
     },
     {
       "part": "Roamer Roof",
       "on": 1,
-      "socket": "j3",
+      "socket": "j2",
       "by": "j0"
     },
     {

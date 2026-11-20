@@ -47,7 +47,7 @@ public sealed class RoamerParts : IPartGenerator
         [(3.8, -0.6, 3.6), (4.6, 0.0, 3.0), (4.72, 3.0, 3.0), (4.65, 6.4, 3.0), (4.05, 7.2, 3.3)], // 2 the shoulder (frame)
         [(3.8, -0.6, 8.5), (4.6, 0.0, 8.5), (4.72, 3.0, 8.5), (4.65, 6.4, 8.5), (4.05, 7.25, 8.5)], // 3 midship (frame)
         [(3.8, -0.6, 13.8), (4.6, 0.0, 14.0), (4.72, 3.0, 14.0), (4.65, 6.4, 14.0), (4.05, 7.25, 13.8)], // 4 the haunch (frame)
-        [(3.4, -0.4, 16.06), (4.35, 0.1, 16.06), (4.5, 3.0, 16.06), (4.42, 6.4, 16.06), (3.85, 7.15, 16.06)], // 5 behind the rooms
+        [(3.4, -0.4, 16.06), (4.35, 0.1, 16.06), (4.5, 3.0, 16.06), (4.42, 6.4, 16.06), (3.85, 7.15, 16.06)], // 5 where the rear cap starts
         [(2.7, 0.0, 17.1), (3.85, 0.5, 17.4), (4.15, 3.0, 17.6), (4.05, 5.9, 17.5), (3.3, 6.7, 17.25)], // 6 the rear cap (Karl, 2026-11-20: pulled in and filled, no empty space behind the rooms)
     ];
 
@@ -442,9 +442,9 @@ public sealed class RoamerParts : IPartGenerator
         return [.. Enumerable.Range(0, o.Count - 1).Select(i => (o[i], o[i + 1]))];
     }
 
-    private const double LowFront = -0.3, UpFront = 1.4, Back = 16.06; // the rooms' ends
+    private const double LowFront = -0.3, UpFront = 1.4, Back = 16.8; // the rooms' ends (Karl, 2026-11-20: aft into the rear cap, which the tail had filled; the walls step in with its skin)
 
-    private static readonly double[] StairCuts = [8.15, 11.4]; // (StairHole's ends: declared here, before it, for the initialisation order)
+    private static readonly double[] StairCuts = [8.15, 11.0]; // (StairHole's ends: declared here, before it, for the initialisation order)
 
     /// <summary>A storey's floor (the lower one to its walls' inner faces, the upper one out to the deck line), less the holes.</summary>
     private static void FloorOf(Part p, int level, double y0, double y1, string color, (double X0, double Z0, double X1, double Z1)[] holes)
@@ -969,7 +969,7 @@ public sealed class RoamerParts : IPartGenerator
         // Sockets: the ramp's hinge line, the stair's foot, the engine, the pods and saddle tanks (on the skin), the legs, the fittings.
         Sock(p, "ramp", Cx, 0.1, RampHingeZ, "-z");
         Hidden(p, Cx - 0.1, -0.1, RampHingeZ, Cx + 0.1, F0, LowFront); // (what the ramp's socket is on)
-        Sock(p, "stair", StairHole.X0 + 0.175, F0, StairHole.Z0 - StairLead + 0.125, "+y"); // (its head, 3.5 m on, at the opening's aft end)
+        Sock(p, "stair", StairHole.X0 + 0.175, F0, StairHole.Z0 - StairLead + 0.125, "+y"); // (its head, StairRun on, at the opening's aft end)
         Sock(p, "engine", Cx, F0, 14.2, "+y");
         foreach (var (z, i) in new[] { (4.5, 0), (7.5, 1), (10.5, 2) })
             Sock(p, $"shelfL{i}", Cx - Lw, F0 + 0.125, z, "+x");
@@ -1070,9 +1070,12 @@ public sealed class RoamerParts : IPartGenerator
     // and the floor is whole from there to the galley's wall, a landing level with the deck to step off onto (Karl, 2026-11-17: the
     // flight ran on to the far wall past where the floor was open beside it). The stair's foot is StairLead fore of the opening, under
     // the deck, low enough there that a standing head clears the opening's edge.
-    private static readonly (double X0, double Z0, double X1, double Z1) StairHole = (6.55, 8.15, Cx + Uw, 11.4);
-    private const double StairLead = 0.25; // (12 steps rise 3 m over 3.5 m: 8.15 - 0.25 + 3.5 = 11.4; past about 0.29 m a standing head meets the opening's fore edge, PR 381)
-    private const double StairRailEnd = 11.4 - 0.6; // (the opening's rail stops short of the head: the top steps step off to port)
+    private static readonly (double X0, double Z0, double X1, double Z1) StairHole = (6.55, 8.15, Cx + Uw, 11.0);
+    private const double StairLead = 0.05; // (on this steep flight a standing head that steps up near the opening's fore edge meets it: the foot is almost under it)
+    // The Roamer Stair is steeper than the Wide Stair (Karl, 2026-11-20: its head where the hall's rail ends, the deck whole beyond):
+    // 10 steps rise 3 m over 2.9 m, 8.15 - 0.05 + 2.9 = 11.0, and the landing runs 1 m to the galley's wall.
+    private const double StairRun = 2.9;
+    private const double StairRailEnd = 11.0;
 
     /// <summary>A frame bar from a to b: a thin plate 8 cm wide, moved by <paramref name="shift"/> to stand proud of the glass.</summary>
     private static void Bar(Part p, double[] a, double[] b, double[] shift)
@@ -1273,19 +1276,19 @@ public sealed class RoamerParts : IPartGenerator
         var cw = RoomHalf(1, 3.875, 4.125); // (the cab is narrower than the rust bucket's: the wall stops at the room's side, the fillers close the rest)
         Partition(p, Cx - cw + 0.01, 4.0, Cx + cw - 0.01, 4.0, F1T, Ceil, Wall, "painted plating", (4.25, 5.75, Dh));
         Fillers(p, 1, 4.0, F1T, Ceil, Wall, "painted plating");
-        Partition(p, 4.0, 4.125, 4.0, 16.04, F1T, Ceil, Wall, "painted plating", (5.25, 6.75, Dh), (9.25, 10.75, Dh));
+        Partition(p, 4.0, 4.125, 4.0, Back - 0.02, F1T, Ceil, Wall, "painted plating", (5.25, 6.75, Dh), (9.25, 10.75, Dh));
         var corridor = LastPartition;
         Partition(p, 6.0, 4.125, 6.0, 7.875, F1T, Ceil, BathWall, "gloss paint", (5.25, 6.75, Dh));
-        Partition(p, 6.0, 12.125, 6.0, 16.04, F1T, Ceil, Wall, "painted plating", (13.25, 14.75, Dh));
+        Partition(p, 6.0, 12.125, 6.0, Back - 0.02, F1T, Ceil, Wall, "painted plating", (13.25, 14.75, Dh));
         Partition(p, Cx - Uw, 8.0, 3.875, 8.0, F1T, Ceil, Wall, "painted plating");
         Partition(p, 6.125, 8.0, Cx + Uw, 8.0, F1T, Ceil, BathWall, "gloss paint");
         Partition(p, 6.125, 12.0, Cx + Uw, 12.0, F1T, Ceil, Wall, "painted plating");
         // Pipes along the corridor's port wall under the ceiling, on brackets: the ship's plumbing, out in the open.
         With(corridor, () =>
         {
-            Detail(p, 4.13, 5.62, 4.3, 4.21, 5.7, 15.9, "#6b6a60", "dirty steel");
-            Detail(p, 4.13, 5.76, 4.3, 4.23, 5.86, 15.9, Primer, "dirty steel");
-            for (var z = 5.0; z < 15.9; z += 1.5)
+            Detail(p, 4.13, 5.62, 4.3, 4.21, 5.7, Back - 0.16, "#6b6a60", "dirty steel");
+            Detail(p, 4.13, 5.76, 4.3, 4.23, 5.86, Back - 0.16, Primer, "dirty steel");
+            for (var z = 5.0; z < Back - 0.16; z += 1.5)
                 Detail(p, 4.13, 5.58, z - 0.03, 4.27, 5.9, z + 0.03, Frame, "dirty steel");
         });
         // The stair's rail along the opening's inboard side; at its head (aft) the landing, then the hall.
@@ -1463,23 +1466,23 @@ public sealed class RoamerParts : IPartGenerator
         return p.Stats(300, 1200, 12, 4.0);
     }
 
-    /// <summary>The Roamer's stair (Karl, 2026-11-20): the Wide Stair's footprint, steps and sockets, but open, a ship's companionway
+    /// <summary>The Roamer's stair (Karl, 2026-11-20): the Wide Stair's width, 10 steps over a shorter run (StairRun), open, a ship's companionway
     /// of steel treads with hazard-striped nosings on two sloped stringers, hand rails on posts, and nothing under the flight, so the
     /// space beneath is somewhere to shove things. The treads are the solid boxes a person walks up (0.25 m a step, World.StepHeight).</summary>
     private static Part OpenStair()
     {
-        var p = new Part("Roamer Stair", Small, "Roamer", "The Roamer's open stair: 12 striped steel treads up a storey, and the space under it for whatever doesn't fit anywhere else.", role: "frame", tool: "welder", material: "steel", color: "#6f767f", group: Group);
-        const int n = 12;
-        const double run = 3.5 / n, rise = 0.25, z0 = -0.125, foot = -0.125;
+        var p = new Part("Roamer Stair", Small, "Roamer", "The Roamer's open stair: 10 striped steel treads up a storey, and the space under it for whatever doesn't fit anywhere else.", role: "frame", tool: "welder", material: "steel", color: "#6f767f", group: Group);
+        const int n = 10; // (0.3 m a step over 0.29 m treads: as deep as the Wide Stair's, which a standing body climbs; 12 shallower ones stuck it)
+        const double run = StairRun / n, rise = 3.0 / n, z0 = -0.125, foot = -0.125;
         const double slope = rise / run; // (along the nosings)
         const string treadC = "#7d848c", stringerC = "#7a8088", railC = "#a4aab0", yellow = "#d8b62a", black = "#1e1e1c";
-        double Nose(double z) => foot + 0.25 + slope * (z - z0); // (the nosings' line: tread k's front edge is on it)
+        double Nose(double z) => foot + rise + slope * (z - z0); // (the nosings' line: tread k's front edge is on it)
         // The treads (solid: what is walked on), a dark angle under each one's nose.
         for (var k = 0; k < n; k++)
         {
             double a = z0 + run * k, b = a + run - 0.03, top = foot + rise * (k + 1);
             LBox(p, -0.05, top - 0.05, a, 1.55, top, b, treadC, "steel");
-            LBox(p, -0.05, top - rise + 0.003, a + 0.002, 1.55, top - 0.05, b - 0.002, null, hidden: true); // (a step's depth for the feet: the open riser isn't stepped into)
+            LBox(p, -0.05, top - rise + 0.003, a + 0.002, 1.55, top - 0.05, a + run - 0.002, null, hidden: true); // (a step's depth for the feet: the open riser isn't stepped into)
             LBox(p, -0.015, top - 0.085, a + 0.004, 1.515, top - 0.045, a + 0.045, stringerC, "dirty steel", detail: true);
             // The nosing: a yellow strip, black slashes across it.
             double s0 = a + 0.012, s1 = a + 0.092;
@@ -1491,7 +1494,7 @@ public sealed class RoamerParts : IPartGenerator
             }
         }
         // The stringers: slim sloped steel channels either side, level with the nosings, the treads' ends let into them; cut level at the head.
-        var zh = 3.37;
+        var zh = z0 + StairRun - 0.005;
         double Top(double z) => Nose(z) + 0.015;
         var cap = foot + rise * n + 0.01;
         var zc = z0 + (cap - Top(z0)) / slope;
@@ -1503,9 +1506,8 @@ public sealed class RoamerParts : IPartGenerator
         }
         // The hand rails: square tube 0.9 m over the nosings on three posts a side, stopping short of the deck's edge.
         double Rail(double z) => Nose(z) + 0.9;
-        // (The port one stops two steps short of the head: the top steps step off to port into the hall, StairRailEnd.)
-        const double ra = 0.05;
-        foreach (var (x, rb) in new[] { (-0.06, 2.3), (1.56, 2.95) })
+        const double ra = 0.05, rb = z0 + StairRun - 0.42;
+        foreach (var x in new[] { -0.06, 1.56 })
         {
             double[][] End(double z) => [[x - 0.022, Rail(z) - 0.022, z], [x + 0.022, Rail(z) - 0.022, z], [x + 0.022, Rail(z) + 0.022, z], [x - 0.022, Rail(z) + 0.022, z]];
             Prism(p, End(ra), End(rb), railC, "steel");
@@ -1518,7 +1520,7 @@ public sealed class RoamerParts : IPartGenerator
         foreach (var x in new[] { 0.0, 1.5 })
         {
             p.Sock($"b{x * 4:0}_0", [x, foot, 0], "-y");
-            p.Sock($"t{x * 4:0}", [x, foot + rise * n, 3.25], "+y");
+            p.Sock($"t{x * 4:0}", [x, foot + rise * n, z0 + StairRun - 0.125], "+y");
         }
         p.Set(("walk", "stairs"), ("collider", "boxes")); // (the stringers and rails are looks: a hull round them would fill the space under the flight)
         return p.Stats(420, 671, 20, 3.0);
