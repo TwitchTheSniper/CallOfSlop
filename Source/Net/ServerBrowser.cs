@@ -641,7 +641,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   its velocity at 1/50 m/s (+-655 m/s), so Glacier's 37 km sky and a 460 m/s orbit fit (Snapshot.WorldPosScale, VelScale).
     // 376: robot shell tool arms (Welder, Cutter, Grip and Sprayer Arm): four module part files move part ids; Shells.json modules gain
     //   "tool" kind (a module byte the wire already carries in Msg.Shell's kit).
-    public const ushort ProtocolVersion = 376;
+    // 377: the Shell Gantry's swap animation (mining-shell.md "Swap animation"): Msg.Gantry carries the slot right after its on/off byte (an
+    //   off names its swap: a gantry runs several, queued), and an on's seconds run is negative while it waits its turn.
+    public const ushort ProtocolVersion = 377;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

@@ -20,6 +20,7 @@ public sealed partial class Ui
     private readonly string[] _gnFitted = new string[ShellFrames.SlotCount];
     private readonly bool[] _gnFixed = new bool[ShellFrames.SlotCount];
     private readonly int[] _gnCurrent = new int[ShellFrames.SlotCount];
+    private int _gnWorking; // the slots with a swap asked or under way (a bit a slot): their buttons wait
     private int[] _gnOnTable = [];
     private string[] _gnRow = new string[ShellFrames.SlotCount]; // each slot's line, made when the state changes (not each frame)
     private string[][] _gnBtn = []; // [slot][module]: its button's label; null: no button
@@ -68,8 +69,11 @@ public sealed partial class Ui
         }
         for (var i = 0; i < all.Length; i++)
             _gnOnTable[i] = ConstructGantry.OnTable(world, tb, table, all[i]);
-        var k = ConstructGantry.JobAt(world, c.Id, part);
-        var key = (long)(shell?.Id ?? 0) * 31 + (tb?.Id ?? 0) + (k >= 0 ? (world.GantryJobs[k].New + 1) << 20 : 0) + (_gnCreative ? 1L << 40 : 0) + frame * 7919L;
+        var working = 0;
+        for (var q = 0; q < world.GantryJobCount; q++)
+            if (world.GantryJobs[q].Body == c.Id && world.GantryJobs[q].Part == part)
+                working |= (world.GantryJobs[q].Start > ConstructConveyor.Clock ? 1 << 8 : 1) << world.GantryJobs[q].Slot; // (queued ones apart: "next" turns "now")
+        var key = (long)(shell?.Id ?? 0) * 31 + (tb?.Id ?? 0) + ((long)working << 20) + (_gnCreative ? 1L << 40 : 0) + frame * 7919L;
         for (var s = 0; s < ShellFrames.SlotCount; s++)
             key = key * 131 + _gnCurrent[s] + 2;
         for (var i = 0; i < all.Length; i++)
@@ -77,8 +81,16 @@ public sealed partial class Ui
         if (key == _gnKey && _gnBtn.Length == ShellFrames.SlotCount)
             return; // (nothing changed: the rows' text stays)
         _gnKey = key;
-        _gnBusy = k >= 0 && world.GantryJobs[k].New - 1 is var n and >= 0 && n < all.Length
-            ? $"Working: the {ConstructGantry.ArmNames[world.GantryJobs[k].Arm]} arm fits a {all[n].Name} to the {ShellFrames.SlotLabel(world.GantryJobs[k].Slot)}" : "";
+        _gnWorking = (working | working >> 8) & 0xFF;
+        _gnBusy = "";
+        var now = ConstructConveyor.Clock;
+        for (var q = 0; q < world.GantryJobCount; q++)
+        {
+            ref var j = ref world.GantryJobs[q];
+            if (j.Body != c.Id || j.Part != part || j.New - 1 is not (var n and >= 0) || n >= all.Length)
+                continue;
+            _gnBusy += $"{(_gnBusy.Length == 0 ? "Clamped. " : "; ")}{(j.Start > now ? "next" : "now")}: the {ConstructGantry.ArmNames[j.Arm]} arm fits a {all[n].Name} to the {ShellFrames.SlotLabel(j.Slot)}";
+        }
         if (_gnBtn.Length != ShellFrames.SlotCount)
             _gnBtn = new string[ShellFrames.SlotCount][];
         for (var s = 0; s < ShellFrames.SlotCount; s++)
@@ -121,7 +133,7 @@ public sealed partial class Ui
             ImGuiSafe.TextWrapped(_gnShell);
             ImGuiSafe.TextColored(Dim, _gnTable);
             if (_gnBusy.Length > 0)
-                ImGuiSafe.TextColored(StWarn, _gnBusy);
+                ImGuiSafe.TextWrapped(_gnBusy); // (asked while it works: another slot's swap queues behind)
             ImGui.Separator();
             for (var s = 0; s < ShellFrames.SlotCount; s++)
             {
@@ -139,7 +151,7 @@ public sealed partial class Ui
                         any = true;
                         var have = _gnOnTable[i] > 0 || _gnCreative;
                         ImGui.PushID(i);
-                        ImGui.BeginDisabled(!have || _gnBusy.Length > 0);
+                        ImGui.BeginDisabled(!have || (_gnWorking >> s & 1) != 0);
                         if (ImGui.SmallButton(_gnBtn[s][i]))
                             (pickSlot, pickModule) = (s, i);
                         ImGui.EndDisabled();

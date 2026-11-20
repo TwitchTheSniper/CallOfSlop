@@ -289,6 +289,7 @@ public sealed partial class Construct
     public bool Pinned; // set down "anchored to the ground" (creative's free placement toggle): held still without a foundation
     public bool Frozen; // the physics gun froze it where it is (ConstructGrab.cs): held still like an anchored one until grabbed or unfrozen
     public ushort HeldBy; // server: the construct whose Building Station builds it, frozen in its bay (ConstructStation.cs; 0: nobody): no edits, no grab, no seat until released
+    public bool GantryHold; // both peers: a Shell Gantry's clamp holds this shell (ConstructGantry.Hold; the server also sets HeldBy): it still rides a frame, and it is drawn part by part
     public byte FrozenBy = 255; // ...by this player (unfreeze-all frees only your own; 255: nobody's now)
     // The physics gun holding it (server; ConstructGrab.cs): the player, the grab point (body frame), where the beam wants
     // that point and the body's turn, and how hard it may pull. 255: nobody holds it (the physics then never looks further).
