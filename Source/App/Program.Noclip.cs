@@ -67,7 +67,7 @@ public static partial class Program
 
     private static void DrawNoclipHud()
     {
-        if (_game is not { SandboxOn: true, Local: { Alive: true, Sim.Noclip: true } } || _wsNoHands || Ui.CommandOpen) // (the window tool's --no-hands: a scene picture shows no flying note)
+        if (_game is not { SandboxOn: true, Local: { Alive: true, Sim.Noclip: true } } || _wsNoHands || Ui.CommandOpen || SpectateOn) // (the window tool's --no-hands: a scene picture shows no flying note)
             return;
         var size = ImGui.GetIO().DisplaySize;
         var fast = _down[(int)GameAction.Sprint];
