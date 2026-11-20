@@ -112,7 +112,7 @@ public sealed class ShellKitNodes
         return Quaternion.CreateFromYawPitchRoll(MathF.Atan2(-d.X, -d.Z), MathF.Atan2(d.Y, MathF.Sqrt(d.X * d.X + d.Z * d.Z)), 0f);
     }
 
-    private static readonly Vector3 ViewCard = new(-0.12f, -0.17f, -0.42f);
+    private static readonly Vector3 ViewCard = new(0.12f, -0.17f, -0.42f); // (the screen is wanted near here, built into the drill's housing: ToolDisplay.Fit)
 
     private static ToolModel? _drillView;
     private static float _drillViewScale;
@@ -142,14 +142,10 @@ public sealed class ShellKitNodes
             SpinAxis = Vector3.UnitZ, SpinPivot = Vector3.Zero, Motion = ToolMotion.Push, Amount = 0.02f * k, Rate = 14, Spin = 45,
             SpinBoxes = boxes.Count(b => b.Spin), Arm = true, ViewAt = ViewAt * k,
         };
-        // Its screen: inboard of the arm, low and clear of the crosshair (left of where a hand tool's is, the arm being wider).
-        var at = ViewCard;
-        var inv = Quaternion.Conjugate(hold);
-        var face = Vector3.Normalize(-at);
-        var up = Vector3.Normalize(Vector3.UnitY - face * face.Y);
-        var cardAt = Vector3.Transform(at - ViewAt * k, inv);
-        var cardNormal = Vector3.Transform(face, inv);
-        model.Display = new ToolDisplay(cardAt, cardNormal, Vector3.Transform(up, inv), ToolDisplay.DefaultSize, ToolDisplay.DefaultRows, cardAt - cardNormal * 0.012f); // (no stalk: it floats beside the arm, clear of it)
+        // Its screen, built into the drill's housing where it is read (ToolDisplay.Fit): in the arm's colour, with its trim.
+        model.Display = ToolDisplay.Fit(model.Boxes, hold, ViewAt * k, ViewCard, ToolDisplay.DefaultSize, ToolDisplay.DefaultRows);
+        if (model.Display == null)
+            Console.WriteLine($"[shells] the {m.Name} has no place on its housing for a screen: the drill's lines stay on the HUD");
         (_drillView, _drillViewScale, _drillViewArm, _drillViewAccent) = (model, scale, arm, accent);
         return model;
     }
