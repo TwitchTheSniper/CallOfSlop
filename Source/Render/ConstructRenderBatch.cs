@@ -48,6 +48,7 @@ public static partial class ConstructRender
         public bool Dirty = true, LookDue = true;
         public Vector3 Centre; // a sphere round its boxes, in the segment's frame
         public float Radius;
+        public Vector3 Min, Max; // its boxes' bounds in the segment's frame (the occlusion query's box)
     }
 
     private sealed class MergeSet
@@ -60,12 +61,18 @@ public static partial class ConstructRender
         public int ChunkCount;
         public int[] Walked = [];
         public int WalkedCount, Boxes;
+        public int[] Extra = []; // merged parts whose stored parts or glass panes are drawn alone each frame
+        public int ExtraCount;
+        public Vector4[] WalkedSphere = [], ExtraSphere = []; // each one's sphere in the body's frame, for the view test; radius below 0: always drawn (it moves, burns or smokes)
     }
 
     private struct MergeDraw
     {
         public Renderer.MergedMesh Mesh;
         public Matrix4x4 Frame;
+        public int Detail; // the smallest size class drawn (the far detail level)
+        public bool Test; // drawn only where last frame's occlusion query saw its box (ConstructRenderOcclusion.cs)
+        public Vector3 Min, Max; // the query's box, in the frame
     }
 
     private static readonly Dictionary<Construct, MergeSet> _merges = new();
@@ -105,35 +112,59 @@ public static partial class ConstructRender
         if (_defBoxes.TryGetValue(d, out var n))
             return n;
         n = 0;
-        if (d.Role == PartRole.Joint || d.IsRail || d.HasRig || d.HasGlass || d.HasDial || d.IsBeacon || d.IsTerminal || d.IsSpawner || d.IsOrdnance
-            || d.HasWork || d.HasRouterBoxes || d.HasEngineBoxes || d.Rotor != null || d.TrackRays > 0 || d.Logic is CLogic.AnalogLever or CLogic.Lamp || d.Surface is { Control: > 0 })
+        // (a lamp merges with its lit look in the chunk's looks; designed ordnance with its wings folded, as it sits until it drops;
+        // a part with glass merges its opaque boxes and only the panes are walked: GlassOnly)
+        if (d.Role == PartRole.Joint || d.IsRail || d.HasRig || d.HasDial || d.IsBeacon || d.IsTerminal || d.IsSpawner
+            || d.HasWork || d.HasRouterBoxes || d.HasEngineBoxes || d.Rotor != null || d.TrackRays > 0 || d.Logic is CLogic.AnalogLever || d.Surface is { Control: > 0 })
             n = -1;
         else
             foreach (var box in d.Boxes.AsSpan())
             {
-                if (box.Rig != BoxRig.None || box.Shows != 0 || box.Spin || box.Roll || box.IsLeaf || box.IsGlass || box.Pump != 0)
+                if (box.Rig != BoxRig.None || box.Shows != 0 || box.Spin || box.Roll || box.IsLeaf || box.Pump != 0)
                 {
                     n = -1;
                     break;
                 }
-                if (!box.Hidden)
+                if (!box.Hidden && !box.IsGlass)
                     n++;
             }
         _defBoxes[d] = n;
         return n;
     }
 
-    /// <summary>Boxes part <paramref name="i"/> puts in a merged mesh (0: none, it is walked or draws nothing).</summary>
+    /// <summary>
+    /// Boxes part <paramref name="i"/> puts in a merged mesh, or -1: it is walked whole. A part that holds stored parts or has
+    /// glass panes merges its own opaque boxes all the same; what it holds and its panes are drawn alone (<see cref="MergeSet.Extra"/>).
+    /// </summary>
     private static int MergeBoxes(Construct c, int i)
     {
         ref var p = ref c.Parts[i];
-        if (p.Burn > 0 || p.Store != 0 || c.GantryHold || c.MergeOf[i] != 0 || c.Rides(i) || c.PartScale[i] > 1 || c.EngineOf[i] != 0 || _wheelMark[i] == _wheelToken)
-            return 0;
+        if (p.Burn > 0 || c.GantryHold || c.MergeOf[i] != 0 || c.Rides(i) || c.PartScale[i] > 1 || c.EngineOf[i] != 0 || _wheelMark[i] == _wheelToken)
+            return -1;
         if (p.D.ShellBody && ShellFittedLooks.FittedMask(in p, p.D) != 0)
-            return 0; // (a standing shell with a fitted module: walked, its slot drawn from the module's part, ShellFittedLooks)
+            return -1; // (a standing shell with a fitted module: walked, its slot drawn from the module's part, ShellFittedLooks)
         if (c.DoorCount > 0 && c.DoorOfListed(i) >= 0)
-            return 0; // (an event door's parts are always walked, at their moving pose while it moves: settling needs no remerge)
-        return Math.Max(0, StaticBoxes(p.D));
+            return -1; // (an event door's parts are always walked, at their moving pose while it moves: settling needs no remerge)
+        if (p.D.Logic == CLogic.Lamp && ConstructConfig.Get(p, p.D, CfgKey.Blink, 0) > 0)
+            return -1; // (a blinking lamp: its look changes faster than a chunk's looks are checked)
+        return StaticBoxes(p.D);
+    }
+
+    /// <summary>A merged lamp's look (as <see cref="DrawPart"/> draws a lamp that doesn't blink): lit, and in what colour.</summary>
+    private static bool LampLook(Construct c, int i, out Vector3 glow)
+    {
+        ref var p = ref c.Parts[i];
+        var d = p.D;
+        glow = new Vector3(1f, 0.93f, 0.6f);
+        var lit = ConstructLamps.Lit(c, i);
+        var preview = PreviewBody == c && PreviewPart == i;
+        if (!p.Broken && preview)
+            lit = true;
+        if (ConstructConfig.Has(d, CfgKey.Colour))
+            glow = preview
+                ? ConstructConfig.Rgb(PreviewValue(d, CfgKey.Colour, 0xFFED99)) * (PreviewValue(d, CfgKey.Brightness, 100) / 100f)
+                : ConstructConfig.Rgb(ConstructConfig.Get(p, d, CfgKey.Colour, 0xFFED99)) * (ConstructConfig.Get(p, d, CfgKey.Brightness, 100) / 100f);
+        return lit;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -147,6 +178,8 @@ public static partial class ConstructRender
         {
             ref var p = ref c.Parts[i];
             h = Mix(h, RuntimeHelpers.GetHashCode(p.D) | (p.Burn > 0 ? 1L << 40 : 0) | (p.Store != 0 ? 1L << 41 : 0) | (p.D.ShellBody ? (long)ShellFittedLooks.FittedMask(in p, p.D) << 42 : 0)); // (a shell's fitted modules: walked once one is)
+            if (p.D.Logic == CLogic.Lamp && ConstructConfig.Get(p, p.D, CfgKey.Blink, 0) > 0)
+                h = Mix(h, i); // (a lamp set blinking is walked)
         }
         return h;
     }
@@ -163,6 +196,8 @@ public static partial class ConstructRender
         {
             ref var p = ref c.Parts[ch.Members[k]];
             h = Mix(Mix(h, BitConverter.SingleToInt32Bits(p.Health) ^ ((long)p.Paint << 32) ^ (p.Broken ? 1L << 62 : 0) ^ (Frosted(c, ch.Members[k]) ? 1L << 61 : 0)), p.Finish); // (the texture paint tool: a finish rewrites the looks alone, ConstructFinish.cs)
+            if (p.D.Logic == CLogic.Lamp && LampLook(c, ch.Members[k], out var glow))
+                h = Mix(Mix(Mix(h, BitConverter.SingleToInt32Bits(glow.X) + 1), BitConverter.SingleToInt32Bits(glow.Y)), BitConverter.SingleToInt32Bits(glow.Z)); // (lit, and its colour)
         }
         return h;
     }
@@ -171,6 +206,75 @@ public static partial class ConstructRender
     {
         if (a.Length < n)
             Array.Resize(ref a, Math.Max(n, a.Length * 3 / 2)); // (keeps what is in it: the plan and the shape scratch grow as they fill)
+    }
+
+    /// <summary>
+    /// A walked part's sphere in the body's frame, for the view test (walked parts off screen are skipped). Radius -1: always
+    /// drawn, because it moves on a joint, a door or a wheel, burns, or smokes (its particles leave from it seen or not).
+    /// </summary>
+    private static Vector4 WalkSphere(Construct c, int i)
+    {
+        ref var p = ref c.Parts[i];
+        var d = p.D;
+        if (p.Seg != 0 || p.Burn > 0 || d.HasWork || d.Rotor != null || d.Role is PartRole.Joint or PartRole.Suspension || d.IsRail || d.HasRig || d.TrackRays > 0
+            || _wheelMark[i] == _wheelToken || c.DoorCount > 0 && c.DoorOfListed(i) >= 0 || c.MergeOf[i] != 0 || c.EngineOf[i] != 0 || d.ShellBody)
+            return new Vector4(0, 0, 0, -1);
+        c.PartBounds(i, out var mn, out var mx);
+        var r = (mx - mn).Length() * 0.5f + (p.Store != 0 ? 2f : 0.25f); // (stored parts pile on its slots: room for them)
+        return new Vector4((mn + mx) * 0.5f, r);
+    }
+
+    /// <summary>Is a sphere in the body's frame wholly outside the view?</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static bool OffScreen(in Vector4 sphere, in Matrix4x4 body, Vector3 origin)
+    {
+        if (sphere.W < 0)
+            return false;
+        var at = Vector3.Transform(new Vector3(sphere.X, sphere.Y, sphere.Z), body) + origin;
+        for (var q = 0; q < 6; q++)
+        {
+            var pl = _planes[q];
+            if (pl.X * at.X + pl.Y * at.Y + pl.Z * at.Z + pl.W < -sphere.W)
+                return true;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// The far detail level (docs/render/MERGED-MESHES.md "Far detail"): a merged box's size class by the square root of its
+    /// two biggest sides (a long rod counts by its length as well as its width); a glowing box two classes bigger, so lit
+    /// lamps still read from afar. A chunk past a class's distance doesn't draw that class: a box that would be under
+    /// <see cref="LodPixels"/> pixels on screen isn't drawn.
+    /// </summary>
+    public const int LodClasses = 5;
+    private static readonly float[] LodClassTop = [float.PositiveInfinity, 4f, 1f, 0.25f, 0.0625f]; // metres: class k's biggest box
+    public static float LodPixels = 1f;
+    public static bool LodPixelsForced; // (--lod-px: the Video settings leave it alone)
+    public static bool ChunkLodOn = true; // (--no-chunk-lod, the bench)
+    public static bool ChunkLodSetting = true; // (the Video settings' Far detail: High draws every box)
+    private static float _lodPixelsAt; // pixels a metre at a metre away, this frame (the projection's scale times half the view's height)
+
+    private static int SizeClass(in CPartBox box, bool lamp)
+    {
+        var a = MathF.Abs(box.Half.X) * 2;
+        var b = MathF.Abs(box.Half.Y) * 2;
+        var c = MathF.Abs(box.Half.Z) * 2;
+        var big = MathF.Max(a, MathF.Max(b, c));
+        var mid = MathF.Max(MathF.Min(a, b), MathF.Min(MathF.Max(a, b), c));
+        var m = MathF.Sqrt(big * mid);
+        var k = m >= 4f ? 0 : m >= 1f ? 1 : m >= 0.25f ? 2 : m >= 0.0625f ? 3 : 4;
+        return box.Glow || lamp ? Math.Max(0, k - 2) : k;
+    }
+
+    /// <summary>The smallest size class a chunk this far off (metres to its nearest side) draws.</summary>
+    private static int DetailAt(float dist)
+    {
+        if (!ChunkLodOn || !ChunkLodSetting || dist <= 0 || _lodPixelsAt <= 0)
+            return LodClasses - 1;
+        var k = LodClasses - 1;
+        while (k > 0 && LodClassTop[k] * _lodPixelsAt / dist < LodPixels)
+            k--;
+        return k;
     }
 
     /// <summary>
@@ -184,6 +288,7 @@ public static partial class ConstructRender
         Grow(ref _wheelMark, n);
         Grow(ref _memberAt, n);
         Grow(ref set.Walked, n);
+        Grow(ref set.Extra, n);
         if (++_wheelToken == int.MaxValue)
         {
             Array.Clear(_wheelMark);
@@ -195,7 +300,7 @@ public static partial class ConstructRender
         _open.Clear();
         var entries = 0;
         var total = 0;
-        set.WalkedCount = 0;
+        set.WalkedCount = set.ExtraCount = 0;
         for (var i = 0; i < n; i++)
         {
             var nb = MergeBoxes(c, i);
@@ -206,11 +311,18 @@ public static partial class ConstructRender
                 set.Walked[set.WalkedCount++] = i;
                 continue;
             }
+            if (nb < 0)
+            {
+                _partEntry[i] = -1;
+                if (!c.Rides(i)) // (a rider is drawn on its leg segment: ConstructRenderLegs.cs)
+                    set.Walked[set.WalkedCount++] = i;
+                continue;
+            }
+            if (c.Parts[i].Store != 0 || c.Parts[i].D.HasGlass)
+                set.Extra[set.ExtraCount++] = i; // (its own opaque boxes merged; what it holds and its panes drawn alone)
             if (nb == 0)
             {
                 _partEntry[i] = -1;
-                if ((StaticBoxes(c.Parts[i].D) != 0 || c.Parts[i].Store != 0 || c.Parts[i].Burn > 0) && !c.Rides(i)) // (a rider is drawn on its leg segment: ConstructRenderLegs.cs)
-                    set.Walked[set.WalkedCount++] = i; // (a static part with no box drawn needs no walk unless it burns or holds parts)
                 continue;
             }
             ref var p = ref c.Parts[i];
@@ -244,6 +356,12 @@ public static partial class ConstructRender
             total += nb;
         }
         set.Boxes = total;
+        Grow(ref set.WalkedSphere, set.WalkedCount);
+        Grow(ref set.ExtraSphere, set.ExtraCount);
+        for (var k = 0; k < set.WalkedCount; k++)
+            set.WalkedSphere[k] = WalkSphere(c, set.Walked[k]);
+        for (var k = 0; k < set.ExtraCount; k++)
+            set.ExtraSphere[k] = WalkSphere(c, set.Extra[k]);
         var on = gfx != null && total >= MergeMinBoxes;
         if (!on)
         {
@@ -321,6 +439,8 @@ public static partial class ConstructRender
         var lastPart = -1;
         float shade = 1, wear = 0;
         var frost = false;
+        var lit = false;
+        var lampGlow = Vector3.Zero;
         for (var s = 0; s < n; s++)
         {
             var i = ch.Members[ch.SlotPart[s]];
@@ -333,11 +453,17 @@ public static partial class ConstructRender
                 shade = p.Broken ? 0.25f : 0.55f + 0.45f * health;
                 wear = p.Broken ? 1f : 1f - health;
                 frost = Frosted(c, i);
+                lit = d.Logic == CLogic.Lamp && LampLook(c, i, out lampGlow);
             }
             ref readonly var box = ref d.Boxes[ch.SlotBox[s]];
             Vector3 tint;
             float code;
-            if (box.Glow)
+            if (lit)
+            {
+                tint = lampGlow; // (a lamp that is on: every box glows in its colour, as DrawPart draws it)
+                code = -1f;
+            }
+            else if (box.Glow)
             {
                 tint = box.Color * shade;
                 code = -1f;
@@ -375,9 +501,10 @@ public static partial class ConstructRender
         {
             var i = ch.Members[k];
             var boxes = c.Parts[i].D.Boxes;
+            // (BuildChunk's slot key: shape from bit 40, size class 36-39, member 8-35, box 0-7)
             for (var b = 0; b < boxes.Length; b++)
-                if (!boxes[b].Hidden)
-                    keys[s++] = (long)boxes[b].Shape << 40 | (long)k << 8 | (long)b; // (shape, then the member's place, then box)
+                if (!boxes[b].Hidden && !boxes[b].IsGlass)
+                    keys[s++] = (long)boxes[b].Shape << 40 | (long)SizeClass(in boxes[b], c.Parts[i].D.Logic == CLogic.Lamp) << 36 | (long)k << 8 | (long)b; // (shape, its size class biggest first: the far detail level draws a group's first slots; then the member's place, then box)
         }
         Array.Sort(keys, 0, s);
         var xf = _mergeXform;
@@ -385,11 +512,12 @@ public static partial class ConstructRender
         var mx = new Vector3(float.MinValue);
         var gl = ch.Gl;
         gl.Groups = 0;
+        gl.ClassCount = LodClasses;
         var lastShape = -1;
         for (var k = 0; k < s; k++)
         {
             var shape = (int)(keys[k] >> 40);
-            var member = (int)(keys[k] >> 8 & 0xFFFFFFFF);
+            var member = (int)(keys[k] >> 8 & 0xFFFFFFF);
             var i = ch.Members[member];
             var b = (int)(keys[k] & 0xFF);
             ref var p = ref c.Parts[i];
@@ -399,6 +527,9 @@ public static partial class ConstructRender
                 Grow(ref gl.GroupShape, gl.Groups + 1);
                 Grow(ref gl.GroupFirst, gl.Groups + 1);
                 Grow(ref gl.GroupCount, gl.Groups + 1);
+                Grow(ref gl.GroupClassEnd, (gl.Groups + 1) * LodClasses);
+                for (var q = 0; q < LodClasses; q++)
+                    gl.GroupClassEnd[gl.Groups * LodClasses + q] = 0;
                 gl.GroupShape[gl.Groups] = shape;
                 gl.GroupFirst[gl.Groups] = k;
                 gl.GroupCount[gl.Groups] = 0;
@@ -406,12 +537,17 @@ public static partial class ConstructRender
                 lastShape = shape;
             }
             gl.GroupCount[gl.Groups - 1]++;
+            var cls = (int)(keys[k] >> 36 & 0xF);
+            for (var q = cls; q < LodClasses; q++)
+                gl.GroupClassEnd[(gl.Groups - 1) * LodClasses + q]++; // (slots of class q or bigger: the group's first that many)
             ch.SlotPart[k] = member;
             ch.SlotBox[k] = (byte)b;
             c.BoxOf(i, b, out var centre, out var half);
             mn = Vector3.Min(mn, centre - half);
             mx = Vector3.Max(mx, centre + half);
             var m = box.Model(p.Rot, centre);
+            if (p.D.IsOrdnance)
+                FoldWing(p.D, b, in box, p.Rot, centre, ref m); // (a designed weapon's wings, folded as it sits until it drops)
             var o = k * Renderer.MergeXformFloats;
             xf[o] = m.M11; xf[o + 1] = m.M12; xf[o + 2] = m.M13; xf[o + 3] = m.M41;
             xf[o + 4] = m.M21; xf[o + 5] = m.M22; xf[o + 6] = m.M23; xf[o + 7] = m.M42;
@@ -424,6 +560,8 @@ public static partial class ConstructRender
         ch.LookDue = false;
         ch.Centre = s > 0 ? (mn + mx) * 0.5f : Vector3.Zero;
         ch.Radius = s > 0 ? (mx - mn).Length() * 0.5f + 0.05f : 0f;
+        ch.Min = s > 0 ? mn : Vector3.Zero;
+        ch.Max = s > 0 ? mx : Vector3.Zero;
         ch.Dirty = false;
     }
 
@@ -436,10 +574,38 @@ public static partial class ConstructRender
         for (var i = 0; i < c.PartCount; i++)
             if (_partEntry[i] >= 0)
                 foreach (var box in c.Parts[i].D.Boxes.AsSpan())
-                    if (!box.Hidden && box.Shape != 0)
+                    if (!box.Hidden && !box.IsGlass && box.Shape != 0)
                         shaped++;
         return (boxes, set.WalkedCount, shaped);
     }
+
+    /// <summary>The bench (<c>--bench-walked</c>): the walked parts of <paramref name="c"/> by type, most boxes first, and why each type is walked.</summary>
+    public static List<(string Name, int Parts, int Boxes, string Why)> WalkedTypes(Construct c)
+    {
+        var set = new MergeSet();
+        Plan(null, set, c);
+        var by = new Dictionary<ConstructPartDef, (int Parts, int Boxes)>();
+        var why = new Dictionary<ConstructPartDef, string>();
+        for (var k = 0; k < set.WalkedCount; k++)
+        {
+            var i = set.Walked[k];
+            ref var p = ref c.Parts[i];
+            var d = p.D;
+            by.TryGetValue(d, out var v);
+            by[d] = (v.Parts + 1, v.Boxes + d.Boxes.Length);
+            if (!why.ContainsKey(d))
+                why[d] = StaticBoxes(d) < 0 ? WalkWhy(d) : p.Burn > 0 ? "burning" : p.Store != 0 ? "stores parts" : c.GantryHold ? "gantry" : c.MergeOf[i] != 0 ? "merged gun"
+                    : c.Rides(i) ? "rides" : c.PartScale[i] > 1 ? "scaled" : c.EngineOf[i] != 0 ? "engine" : c.DoorCount > 0 && c.DoorOfListed(i) >= 0 ? "door"
+                    : c.PocketHost.Length == c.PartCount && c.PocketHost[i] != 0 ? "pod cut" : d.ShellBody ? "shell" : "?";
+        }
+        return by.Select(kv => (kv.Key.Name, kv.Value.Parts, kv.Value.Boxes, why[kv.Key])).OrderByDescending(t => t.Item3).ToList();
+    }
+
+    private static string WalkWhy(ConstructPartDef d) =>
+        d.Role == PartRole.Joint ? "joint" : d.IsRail ? "rail" : d.HasRig ? "rig" : d.HasGlass ? "glass" : d.HasDial ? "dial" : d.IsBeacon ? "beacon"
+        : d.IsTerminal ? "terminal" : d.IsSpawner ? "spawner" : d.IsOrdnance ? "ordnance" : d.HasWork ? "work" : d.HasRouterBoxes ? "router"
+        : d.HasEngineBoxes ? "engine" : d.Rotor != null ? "rotor" : d.TrackRays > 0 ? "track" : d.Logic is CLogic.AnalogLever ? "lever" : d.Logic is CLogic.Lamp ? "lamp"
+        : d.Surface is { Control: > 0 } ? "surface" : "box flags";
 
     /// <summary>
     /// Draws <paramref name="c"/> through its merged meshes, the walked parts box by box. Returns false (nothing drawn) when
@@ -513,6 +679,8 @@ public static partial class ConstructRender
                 frame = ch.Seg == 0 ? body : SegMatrix(c, ch.Seg, alpha) * body;
                 _segToken[ch.Seg] = _segTok;
             }
+            var detail = LodClasses - 1;
+            var test = false;
             if (cull)
             {
                 var at = Vector3.Transform(ch.Centre, frame) + origin;
@@ -524,13 +692,18 @@ public static partial class ConstructRender
                 }
                 if (outside)
                     continue;
+                var away = Vector3.Distance(at, _lodEye) - ch.Radius;
+                detail = DetailAt(away);
+                test = OcclusionWanted(ch, away); // (ConstructRenderOcclusion.cs: big enough to be worth a query, and the eye not by it)
             }
             if (_mergeQueued == _mergeQueue.Length)
                 Array.Resize(ref _mergeQueue, _mergeQueue.Length * 2); // (grows to the busiest frame once)
-            _mergeQueue[_mergeQueued++] = new MergeDraw { Mesh = ch.Gl, Frame = frame };
+            _mergeQueue[_mergeQueued++] = new MergeDraw { Mesh = ch.Gl, Frame = frame, Detail = detail, Test = test, Min = ch.Min, Max = ch.Max };
             LastMergedChunks++;
-            LastBatchBoxes += ch.Gl.Slots;
-            n += ch.Gl.Slots;
+            var drawnSlots = ch.Gl.SlotsUpTo(detail);
+            LastBatchBoxes += drawnSlots;
+            LastLodDropped += ch.Gl.Slots - drawnSlots;
+            n += drawnSlots;
         }
         AllocProfile.Mark("cr: walked parts"); // (the benchmark's --trace-frame)
         for (var k = 0; k < set.WalkedCount; k++)
@@ -538,14 +711,56 @@ public static partial class ConstructRender
             var i = set.Walked[k];
             if (i >= c.PartCount)
                 continue;
+            if (cull && OffScreen(in set.WalkedSphere[k], in body, origin))
+            {
+                LastWalkedCulled++;
+                continue;
+            }
             HostCut(gfx, c, i);
             n += DrawPart(gfx, world, c, i, body, alpha, 1f);
             if (c.Parts[i].Store != 0)
                 n += DrawStored(gfx, world, c, i, body, alpha);
         }
         LastBatchWalked += set.WalkedCount;
+        for (var k = 0; k < set.ExtraCount; k++)
+        {
+            // Merged parts that hold stored parts or have panes: only those drawn here.
+            var i = set.Extra[k];
+            if (i >= c.PartCount || cull && OffScreen(in set.ExtraSphere[k], in body, origin))
+                continue;
+            HostCut(gfx, c, i);
+            if (c.Parts[i].D.HasGlass)
+                n += DrawPanes(gfx, c, i, body, alpha);
+            if (c.Parts[i].Store != 0)
+                n += DrawStored(gfx, world, c, i, body, alpha);
+        }
         drawn += n;
         return true;
+    }
+
+    /// <summary>A merged part's glass panes, as <see cref="DrawPart"/> draws them (its opaque boxes are in its chunk).</summary>
+    private static int DrawPanes(Renderer gfx, Construct c, int i, in Matrix4x4 body, float alpha)
+    {
+        ref var p = ref c.Parts[i];
+        var d = p.D;
+        var seg = p.Seg > 0 && p.Seg <= c.JointCount ? SegMatrix(c, p.Seg, alpha) * body : body;
+        var health = Math.Clamp(p.Health / MathF.Max(1, d.Health), 0, 1);
+        var shade = p.Broken ? 0.25f : 0.55f + 0.45f * health;
+        var drawn = 0;
+        for (var b = 0; b < d.Boxes.Length; b++)
+        {
+            ref readonly var box = ref d.Boxes[b];
+            if (box.Hidden || !box.IsGlass)
+                continue;
+            c.BoxOf(i, b, out var centre, out _);
+            var model = box.Model(p.Rot, centre) * seg;
+            if (box.Glow)
+                gfx.Draw(model, box.Color * shade, 1f, mode: 2, shape: box.Shape);
+            else if (!QueueGlass(model, box.Color * shade, box.Glass, box.Shape))
+                gfx.Draw(model, box.Color * shade, 1f, mode: 0, shape: box.Shape); // (more panes than the list holds: opaque)
+            drawn++;
+        }
+        return drawn;
     }
 
     /// <summary>The merged meshes as they stand: bodies, chunks, box slots and bytes on the GPU (the bench; walks them, so not every frame).</summary>
@@ -568,13 +783,23 @@ public static partial class ConstructRender
         return (bodies, chunks, slots, bytes);
     }
 
-    /// <summary>Starts a frame's merged drawing (the rebuild budget and the counters).</summary>
-    private static void BeginMergedFrame()
+    /// <summary>Starts a frame's merged drawing (the rebuild budget, the counters, the far detail level's scale).</summary>
+    private static void BeginMergedFrame(Renderer gfx)
     {
         _mergeBudget = MergeBudgetBoxes;
         _mergeQueued = 0;
         LastMergedChunks = LastMergedBuilt = LastMergedWaiting = 0;
+        LastLodDropped = LastWalkedCulled = 0;
+        _lodEye = gfx.CameraPosition;
+        _lodPixelsAt = MathF.Abs(gfx.Proj.M22) * gfx.ViewportHeight * 0.5f;
+        OcclusionBegin(gfx);
     }
+
+    private static Vector3 _lodEye;
+
+    /// <summary>Merged box slots the far detail level left out last frame, and walked parts skipped off screen (the F9 window, the bench).</summary>
+    public static int LastLodDropped { get; private set; }
+    public static int LastWalkedCulled { get; private set; }
 
     /// <summary>The chunks queued this frame, in one run of the merged shader (opaque, so their order with the box batch doesn't matter).</summary>
     private static void FlushMerged(Renderer gfx)
@@ -586,12 +811,11 @@ public static partial class ConstructRender
         gfx.Relative = true; // (the frames are relative to the render origin already)
         for (var k = 0; k < _mergeQueued; k++)
         {
-            gfx.DrawMerged(_mergeQueue[k].Mesh, in _mergeQueue[k].Frame);
-            _mergeQueue[k].Mesh = null!;
+            ref var q = ref _mergeQueue[k];
+            gfx.DrawMerged(q.Mesh, in q.Frame, q.Detail, q.Test && _occlusionUse);
         }
         gfx.Relative = rel;
         gfx.EndMerged();
-        _mergeQueued = 0;
     }
 
     /// <summary>After a frame: the merged meshes of bodies not drawn for a while go (their GL objects with them).</summary>
