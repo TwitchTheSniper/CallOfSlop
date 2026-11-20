@@ -1034,7 +1034,7 @@ public sealed partial class ConstructWorld
             taken = dealt * ConstructRotor.Hit(this, c, part, dealt, _rayRotor == (c.Id, part) ? _rayBlade : -2);
             _rayRotor = (0, -1);
         }
-        if (ConstructBreakUp.Big(c))
+        if (ConstructBreakUp.BreaksUp(c))
             ConstructBreakUp.Hit(this, c, part, taken, DamageAt); // (a big body: where it was hurt weakens its structure there, ConstructBreakUp.cs)
         ConstructEngine.HealthChanging(c, part, p.Health - taken); // (a modular engine's cylinder starting to misfire)
         p.Health -= taken;

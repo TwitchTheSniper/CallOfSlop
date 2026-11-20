@@ -2050,6 +2050,7 @@
     {"output": "Shell Receiver", "materials": {"steel": 3}, "parts": {"Gear Set": 1}, "seconds": 2.5},
     {"output": "Twin Splitter", "materials": {"steel": 1, "bronze": 1}, "seconds": 2.1, "minTier": 2},
     {"output": "Wrecking Ball", "materials": {"steel": 90, "rubber": 18}, "seconds": 15.5},
+    {"output": "Zero Day Autocannon", "materials": {"steel": 130}, "parts": {"Gear Set": 13}, "seconds": 21.5},
     {"output": "Zero Day Bow", "materials": {"steel": 1800, "rubber": 360}, "seconds": 180.0},
     {"output": "Zero Day Countermeasure Launcher", "materials": {"steel": 18}, "parts": {"Gear Set": 2}, "seconds": 4.7},
     {"output": "Zero Day Drive Bell", "materials": {"steel": 400}, "parts": {"Gear Set": 20}, "seconds": 62.0},

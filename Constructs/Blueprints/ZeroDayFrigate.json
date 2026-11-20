@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Zero Day Frigate",
-  "description": "A torpedo frigate: two decks the length of a sleek armoured hull, a rotary torpedo bay in each flank, a spinal railgun, four point-defence turrets, flare launchers and four drive bells across the stern, each with its own engine.",
+  "description": "A torpedo frigate: two decks the length of a sleek armoured hull, a rotary torpedo bay in each flank, a spinal railgun, an autocannon turret on each beam, four point-defence turrets, flare launchers and four drive bells across the stern, each with its own engine.",
   "steps": [
     {
       "part": "Zero Day Keel"
@@ -1985,6 +1985,122 @@
       "by": "+y"
     },
     {
+      "part": "Zero Day Turret Barbette",
+      "on": 32,
+      "socket": "cannonPodL",
+      "by": "hull"
+    },
+    {
+      "part": "Turret Ring S",
+      "on": 292,
+      "socket": "top",
+      "by": "base"
+    },
+    {
+      "part": "Motor Hinge",
+      "on": 293,
+      "socket": "top",
+      "by": "base"
+    },
+    {
+      "part": "Zero Day Autocannon",
+      "on": 294,
+      "socket": "leaf",
+      "by": "bottom"
+    },
+    {
+      "part": "Ammo Container",
+      "on": 31,
+      "socket": "cannonMagL",
+      "by": "-y",
+      "config": {
+        "sizeX": 1.0,
+        "sizeY": 0.7,
+        "sizeZ": 1.0,
+        "atX": -1.0,
+        "atY": 0.2,
+        "atZ": 0.65,
+        "material": "ammo",
+        "fill": 100
+      }
+    },
+    {
+      "part": "Gunnery Console",
+      "on": 1,
+      "socket": "cannonGunL",
+      "by": "bottom"
+    },
+    {
+      "part": "Flight Couch",
+      "on": 1,
+      "socket": "cannonSeatL",
+      "by": "bottom"
+    },
+    {
+      "part": "Turret Module",
+      "on": 297,
+      "socket": "module",
+      "by": "-x"
+    },
+    {
+      "part": "Zero Day Turret Barbette",
+      "on": 34,
+      "socket": "cannonPodR",
+      "by": "hull"
+    },
+    {
+      "part": "Turret Ring S",
+      "on": 300,
+      "socket": "top",
+      "by": "base"
+    },
+    {
+      "part": "Motor Hinge",
+      "on": 301,
+      "socket": "top",
+      "by": "base"
+    },
+    {
+      "part": "Zero Day Autocannon",
+      "on": 302,
+      "socket": "leaf",
+      "by": "bottom"
+    },
+    {
+      "part": "Ammo Container",
+      "on": 31,
+      "socket": "cannonMagR",
+      "by": "-y",
+      "config": {
+        "sizeX": 1.0,
+        "sizeY": 0.7,
+        "sizeZ": 1.0,
+        "atX": 1.0,
+        "atY": 0.2,
+        "atZ": 0.65,
+        "material": "ammo",
+        "fill": 100
+      }
+    },
+    {
+      "part": "Gunnery Console",
+      "on": 1,
+      "socket": "cannonGunR",
+      "by": "bottom"
+    },
+    {
+      "part": "Flight Couch",
+      "on": 1,
+      "socket": "cannonSeatR",
+      "by": "bottom"
+    },
+    {
+      "part": "Turret Module",
+      "on": 305,
+      "socket": "module",
+      "by": "-x"
+    },
+    {
       "part": "Docking Clamp Medium",
       "on": 66,
       "socket": "shuttleClamp",
@@ -2054,7 +2170,7 @@
     },
     {
       "part": "Ammo Box",
-      "on": 299,
+      "on": 315,
       "socket": "ammo",
       "by": "bottom"
     },
@@ -2102,37 +2218,37 @@
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 307,
+      "on": 323,
       "socket": "lug0",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 307,
+      "on": 323,
       "socket": "lug1",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 307,
+      "on": 323,
       "socket": "lug2",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 307,
+      "on": 323,
       "socket": "lug3",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 307,
+      "on": 323,
       "socket": "lug4",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 307,
+      "on": 323,
       "socket": "lug5",
       "by": "lug"
     },
@@ -2144,37 +2260,37 @@
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 314,
+      "on": 330,
       "socket": "lug0",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 314,
+      "on": 330,
       "socket": "lug1",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 314,
+      "on": 330,
       "socket": "lug2",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 314,
+      "on": 330,
       "socket": "lug3",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 314,
+      "on": 330,
       "socket": "lug4",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 314,
+      "on": 330,
       "socket": "lug5",
       "by": "lug"
     }
@@ -2333,56 +2449,72 @@
       291
     ],
     [
+      298,
+      299
+    ],
+    [
+      299,
+      295
+    ],
+    [
+      306,
+      307
+    ],
+    [
+      307,
+      303
+    ],
+    [
       205,
       208
     ],
     [
       208,
-      299
+      315
     ],
     [
       223,
-      301
+      317
     ],
     [
       223,
-      302
+      318
     ],
     [
       223,
-      303
+      319
     ],
     [
       223,
-      304
+      320
     ],
     [
-      305,
-      306
+      321,
+      322
     ],
     [
       150,
-      307
+      323
     ],
     [
       287,
-      307
+      323
     ],
     [
       290,
-      307
+      323
     ],
     [
       151,
-      314
+      330
     ],
     [
       288,
-      314
+      330
     ],
     [
       291,
-      314
+      330
     ]
   ],
   "links": [
@@ -2482,6 +2614,66 @@
           13.44,
           3.475,
           37.38
+        ]
+      ],
+      "laid": true
+    },
+    {
+      "type": "feed",
+      "from": 296,
+      "to": 293,
+      "fromPort": "Ammo out",
+      "toPort": "Ammo in",
+      "nodes": [
+        [
+          3.08,
+          3.93,
+          32.48
+        ],
+        [
+          -0.4,
+          3.93,
+          32.48
+        ],
+        [
+          -0.4,
+          3.93,
+          31.88
+        ],
+        [
+          -0.7,
+          3.475,
+          31.88
+        ]
+      ],
+      "laid": true
+    },
+    {
+      "type": "feed",
+      "from": 304,
+      "to": 301,
+      "fromPort": "Ammo out",
+      "toPort": "Ammo in",
+      "nodes": [
+        [
+          9.67,
+          3.93,
+          31.18
+        ],
+        [
+          13.14,
+          3.93,
+          31.18
+        ],
+        [
+          13.14,
+          3.93,
+          31.88
+        ],
+        [
+          13.44,
+          3.475,
+          31.88
         ]
       ],
       "laid": true
