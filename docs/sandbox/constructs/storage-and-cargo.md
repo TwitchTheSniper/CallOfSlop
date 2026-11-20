@@ -344,3 +344,29 @@ Storage and ship systems built into the gap between a ship's interior lining and
 - **The hull airlock** is a 1.5 m chamber: an inner pressure door with a twist latch, and an armoured outer hatch that slides aside on rails outside the hull. The game has no pressurised rooms, so it cycles no air; each door is its own press.
 - The blueprints place the bay turned half round, because the galleries look from -z: a blueprint spawned in front of a player shows its hull side first, so turn the placing ghost round.
 - Not yet: linked doors or a latch that locks (an event door has inputs but no output, so the latch can't drive the fill), a fill picker on one bay, wear and consumption, bays fitted to the shipped ships. Before bays go on a crewed ship: crews treat every upright event door as a doorway and open shut doors near their path (`Source/Crew/CrewNav.cs`), so a walker would pull a rack out.
+
+## Standard cargo containers (2026-11-20)
+
+Karl's logistics plan: goods move in **standard containers** sized on the module socket grid, loaded onto and off ships whole
+(a crane's hook, a robot shell), and emptied by NPCs ashore. The draft is the part kit's `containers`
+(`Source/PartKit/Generators/ContainerParts.cs`, `--gen-parts containers`), shown in the Animation gallery's "Cargo containers"
+shelf. Karl approved the look the same day: the parts are in the Parts tab (Storage and Logistics > Chests and cargo) with recipes
+at the end of Assembling's Tail. A crane takes a container whole by its four top corner castings (a spreader with twist locks
+into the castings' top pockets, Karl: "a box where they grab the container as a whole"); there is no hook port on the roof.
+
+- **The rule.** Size N (1, 2 or 3 m) holds three N x N x N slots in a row; outside N + 0.5 m across and high, 3N + 0.5 m long
+  (2 m: 2.5 x 2.5 x 6.5 m). Origin the roof's middle (as the Dray's Cargo Container 20 ft), +x the hatch side, z along.
+- **Parts.** `Standard Container Nm` (Medium class: sockets `top` +y, the roof's middle, a spreader's reference, `-y`, `foot.0`..`foot.3` under the corner
+  castings and `head.0`..`head.3` on top of them (stacking: foot k on head k), `slot0`..`slot2` on the floor, `hatch` (+x) and
+  `hatch.1` (-x), `clamp.0`..`clamp.3` on the foot castings' end faces), `Standard Container Nm Hatch` (an event door: one leaf the
+  whole long side, hinged on its top edge, swinging 90 degrees out to an awning so it never rises above the roof; one each side),
+  `Container Corner Clamp` (an event door: a jaw on each foot casting that flips down 180 degrees over the top casting of the
+  container under it; only its hinge block is solid, so an open clamp on a container on the ground lifts nothing) and
+  `Container Cradle NxN` (a flat Module Stand on each slot: a module set on it is stored, nothing couples). A stand's room is
+  normally twice its width tall; a cradle's file gives `"moduleSocket": {"stand": true, "above": N + 0.15}` so the room stops
+  under the container's roof and a hand or a Module Fitter can set a module on it.
+  Nothing stands above the roof (the lifting eyes are sunk), so containers stack.
+- **Gallery drafts.** `tools/preview/anim/container-Nm.json` with `blueprints/container-Nm-loaded.json` (stock modules on the
+  cradles), and `container-2m-stacked.json`: two clamped together.
+- **Not built yet:** the spreader itself (the Dray's Lifter Cab still takes its own container by the roof); contents not drawn while the hatch is shut (planned: the hatches' door state sets a flag the renderer reads, and
+  parts on a shut container's cradles are skipped); racks and locks on ships; crane and shell handling; NPC unloading.

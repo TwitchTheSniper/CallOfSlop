@@ -16,6 +16,7 @@ public sealed partial class ConstructPartDef
     public ModPart ModPart; // "moduleSocket" / "modulePlug": ModuleSockets.cs
     public byte ModW, ModL; // the footprint, whole metres, W <= L: W along the part's x, L along its z, the face's normal its y
     public bool ModStand; // "moduleSocket": {"stand": true}: a Module Stand (a module on it is stored: nothing couples)
+    public float ModStandAbove; // "moduleSocket": {"stand": true, "above": m}: a stand's room height when its own part roofs it (a container's cradle); 0: the table's default
     public int ModSocket = -1; // its Module socket's index (the plate's face, +y; the plug's, -y)
     public byte ModData; // its data pass-through ports, "Data 1".."Data n" both ways (2 at 1x1 and 1xN, 4 from 2x2; a stand none): ModuleSockets.PassWires
 }
@@ -86,7 +87,7 @@ public static class ModuleSockets
             throw new ConstructPartException($"{file}: a part is a Module Socket or a Module Plug, not both");
         var e = (plate ?? plug)!.Value;
         var key = plate != null ? "moduleSocket" : "modulePlug";
-        ConstructParts.Known(e, plate != null ? ["w", "l", "stand"] : ["w", "l"], $"{file}, {key}");
+        ConstructParts.Known(e, plate != null ? ["w", "l", "stand", "above"] : ["w", "l"], $"{file}, {key}");
         var w = (int)ConstructParts.Num(ConstructParts.Need(e, "w", $"{file}, {key}"), file, key + ".w");
         var l = (int)ConstructParts.Num(ConstructParts.Need(e, "l", $"{file}, {key}"), file, key + ".l");
         if (!ModuleSocketTable.ValidSize(w, l))
@@ -95,6 +96,14 @@ public static class ModuleSockets
         d.ModW = (byte)w;
         d.ModL = (byte)l;
         d.ModStand = plate != null && ConstructParts.Opt(e, "stand") is { ValueKind: JsonValueKind.True };
+        if (ConstructParts.Opt(e, "above") is { } ab)
+        {
+            if (!d.ModStand)
+                throw new ConstructPartException($"{file}: \"moduleSocket.above\" is a stand's (a plate's room comes from its settings)");
+            d.ModStandAbove = (float)ConstructParts.Num(ab, file, key + ".above");
+            if (d.ModStandAbove < 0.5f * w || d.ModStandAbove > ModuleSocketTable.DefaultAbove(w))
+                throw new ConstructPartException($"{file}: \"moduleSocket.above\" is {d.ModStandAbove} m: from half the stand's width to the default {ModuleSocketTable.DefaultAbove(w)} m");
+        }
         var faces = plate != null ? ConstructParts.DirOf("+y", file, key) : ConstructParts.DirOf("-y", file, key);
         for (var s = 0; s < d.Sockets.Length; s++)
             if (d.Sockets[s].Kind == SocketKind.Module)
@@ -280,7 +289,7 @@ public static class ModuleSockets
                 Style = d.ModStand ? ModStyle.Proud : (ModStyle)Math.Clamp((int)ConstructConfig.Get(p, d, CfgKey.ModStyle, 0), 0, ModuleSocketTable.StyleNames.Length - 1),
                 Keyed = !d.ModStand && ConstructConfig.Get(p, d, CfgKey.ModKeyed, 0) > 0.5f,
             };
-            var above = d.ModStand ? 0 : ConstructConfig.Get(p, d, CfgKey.ModAbove, 0);
+            var above = d.ModStand ? d.ModStandAbove : ConstructConfig.Get(p, d, CfgKey.ModAbove, 0); // (a stand: its file's room, if it gives one)
             s.Above = above > 0 ? above : s.Style == ModStyle.Opening ? 0 : ModuleSocketTable.DefaultAbove(d.ModW);
             s.Depth = s.Style == ModStyle.Proud ? 0 : MathF.Max(ModuleSocketTable.Current.DepthStep, ConstructConfig.Get(p, d, CfgKey.ModDepth, ModuleSocketTable.Current.DepthStep));
             s.Height = s.Style switch { ModStyle.Flush => s.Depth + FlushStand, ModStyle.Opening => s.Depth + s.Above, _ => s.Above };
