@@ -38,6 +38,7 @@ PN79Syp1w9HwMJzfpEipQU) and its spike, draft PR 201 (not for merging). Test ship
 ## Trying it
 
 - `--battle-check [SHIP] [--shots N] [--per-tick K] [--range M] [--focus F] [--blasts N [--blast-damage D] [--blast-radius R]] [--old-pierce] [--no-break-up]`
+- `--battle-check SHIP --idle --ground [--map NAME]`: the ship left resting on the ground, 12 rounds of 60 ticks: the world step, the physics' parts and whether it sleeps (an idle ship should sleep within a few seconds and cost next to nothing).
   (headless, `Source/DevTools/BattleCheck.cs`, output in callofslop.log): the ship (default the Mainframe) held in the air on
   the Proving Ground, N Zero Day Railgun shots at its broadside, K a tick, each volley's cost and what it did, and at the end
   the bodies left by size. `BORE_TRACE=1` prints every part each bore went through and each break-up look.
