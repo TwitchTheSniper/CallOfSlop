@@ -512,16 +512,16 @@ public sealed class ShellParts : IPartGenerator
             Elbow(p, 0.06, Red);
             p.Add(Box([-0.055, 0.24, -0.055], [0.055, 0.365, 0.055], Red)); // the forearm, red
             p.Add(Box([-0.05, 0.17, -0.06], [0.05, 0.245, 0.06], Dark)); // the motor
-            p.Add(Box([-0.01, 0.015, -0.07], [0.01, 0.225, 0.07], Blade)); // the disc, edge on (two crossed boxes: near round)
-            p.Add(Box([-0.009, 0.05, -0.105], [0.009, 0.19, 0.105], Blade));
-            p.Add(Box([-0.018, 0.1, -0.02], [0.018, 0.14, 0.02], Dark, detail: true)); // its hub
-            p.Add(MachineLook.D([-0.013, 0.055, -0.109], [0.013, 0.185, -0.093], Hazard, "hazard paint")); // the teeth's edge in front, in hazard paint
-            p.Add(MachineLook.D([-0.0135, 0.011, -0.065], [0.0135, 0.027, 0.065], Hazard, "hazard paint")); // and under it
-            p.Add(MachineLook.D([-0.0125, 0.074, -0.088], [0.0125, 0.092, -0.024], Hazard, "hazard paint")); // a band across the blade's faces
+            p.Add(Box([-0.01, 0.0, -0.07], [0.01, 0.21, 0.07], Blade)); // the disc, edge on (two crossed boxes: near round)
+            p.Add(Box([-0.009, 0.035, -0.105], [0.009, 0.175, 0.105], Blade));
+            p.Add(Box([-0.018, 0.085, -0.02], [0.018, 0.125, 0.02], Dark, detail: true)); // its hub
+            p.Add(MachineLook.D([-0.013, 0.04, -0.109], [0.013, 0.17, -0.093], Hazard, "hazard paint")); // the teeth's edge in front, in hazard paint
+            p.Add(MachineLook.D([-0.0135, 0.003, -0.065], [0.0135, 0.019, 0.065], Hazard, "hazard paint")); // and along its bottom edge
+            p.Add(MachineLook.D([-0.0125, 0.059, -0.088], [0.0125, 0.077, -0.024], Hazard, "hazard paint")); // a band across the blade's faces
             foreach (var sx in new[] { -1.0, 1.0 })
-                p.Add(Box([Math.Min(sx * 0.016, sx * 0.028), 0.12, 0.03], [Math.Max(sx * 0.016, sx * 0.028), 0.25, 0.125], Red, detail: true)); // the guard's sides over its back quarter
-            p.Add(Box([-0.03, 0.228, 0.0], [0.03, 0.262, 0.13], Red)); // the guard's hood over the top
-            p.Add(Box([-0.03, 0.1, 0.108], [0.03, 0.245, 0.135], Red, detail: true)); // and down its back
+                p.Add(Box([Math.Min(sx * 0.016, sx * 0.028), 0.105, 0.03], [Math.Max(sx * 0.016, sx * 0.028), 0.235, 0.125], Red, detail: true)); // the guard's sides over its back quarter
+            p.Add(Box([-0.03, 0.213, 0.0], [0.03, 0.247, 0.13], Red)); // the guard's hood over the top
+            p.Add(Box([-0.03, 0.085, 0.108], [0.03, 0.23, 0.135], Red, detail: true)); // and down its back
         }));
         yield return ("Modules", Module("Shell Grip Arm", "A robot shell arm that is a physics gun: three claws round a field emitter. Worn, it grabs and moves whole constructs.", 6, p =>
         {
