@@ -1,0 +1,10 @@
+{
+  // A standard cargo container (ContainerParts.cs, --gen-parts containers): its side hatch swings up to an awning over three 3x3x3 m slots.
+  "blueprint": "container-3m-loaded.blueprint.json",
+  "title": "Standard container 3 m: side hatch",
+  "shelf": "Cargo containers",
+  "description": "3.5 x 3.5 x 9.5 m outside, three 3x3x3 m slots, each a cradle a module stands on. The whole side is one hatch hinged at the top: it swings out and up to an awning, never above the roof, so stacked or racked containers still open. In the game the contents won't be drawn while it is shut.",
+  "steps": [
+    { "part": "Standard Container 3m Hatch", "at": 0.5, "label": "Hatch swings up" }
+  ]
+}

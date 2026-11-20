@@ -344,3 +344,20 @@ Storage and ship systems built into the gap between a ship's interior lining and
 - **The hull airlock** is a 1.5 m chamber: an inner pressure door with a twist latch, and an armoured outer hatch that slides aside on rails outside the hull. The game has no pressurised rooms, so it cycles no air; each door is its own press.
 - The blueprints place the bay turned half round, because the galleries look from -z: a blueprint spawned in front of a player shows its hull side first, so turn the placing ghost round.
 - Not yet: linked doors or a latch that locks (an event door has inputs but no output, so the latch can't drive the fill), a fill picker on one bay, wear and consumption, bays fitted to the shipped ships. Before bays go on a crewed ship: crews treat every upright event door as a doorway and open shut doors near their path (`Source/Crew/CrewNav.cs`), so a walker would pull a rack out.
+
+## Standard cargo containers (draft, 2026-11-20)
+
+Karl's logistics plan: goods move in **standard containers** sized on the module socket grid, loaded onto and off ships whole
+(a crane's hook, a robot shell), and emptied by NPCs ashore. The draft is the part kit's `containers`
+(`Source/PartKit/Generators/ContainerParts.cs`, `--gen-parts containers`), shown in the Animation gallery's "Cargo containers"
+shelf; its parts are unlisted (group Style) and have no recipe (`Assembling.SkipFolders`) until Karl approves the look.
+
+- **The rule.** Size N (1, 2 or 3 m) holds three N x N x N slots in a row; outside N + 0.5 m across and high, 3N + 0.5 m long
+  (2 m: 2.5 x 2.5 x 6.5 m). Origin the roof's middle (as the Dray's Cargo Container 20 ft), +x the hatch side, z along.
+- **Parts.** `Standard Container Nm` (Medium class: sockets `top` +y for the hook, `-y` and `foot.0`..`foot.3` under the
+  castings, `slot0`..`slot2` on the floor, `hatch`), `Standard Container Nm Hatch` (an event door: one leaf the whole +x side,
+  hinged on its top edge, swinging 90 degrees out to an awning, so it never rises above the roof) and `Container Cradle NxN` (a flat
+  Module Stand on each slot: a module set on it is stored, nothing couples).
+- **Gallery drafts.** `tools/preview/anim/container-Nm.json` with `container-Nm-loaded.blueprint.json` (stock modules on the cradles).
+- **Not built yet:** contents not drawn while the hatch is shut (planned: the hatch's door state sets a flag the renderer reads, and
+  parts on a shut container's cradles are skipped); recipes; racks and locks on ships; crane and shell handling; NPC unloading.

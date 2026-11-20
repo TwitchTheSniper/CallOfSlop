@@ -1,0 +1,18 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Standard Container 1m Loaded",
+  "description": "A standard 1 m cargo container with stock modules in its three cradles. A draft for the Animation gallery, written by the part kit (containers).",
+  "steps": [
+    { "part": "Standard Container 1m" },
+    { "part": "Standard Container 1m Hatch", "on": 0, "socket": "hatch", "by": "hang" },
+    { "part": "Container Cradle 1x1", "on": 0, "socket": "slot0", "by": "base" },
+    { "part": "Container Cradle 1x1", "on": 0, "socket": "slot1", "by": "base" },
+    { "part": "Container Cradle 1x1", "on": 0, "socket": "slot2", "by": "base" },
+    { "part": "Module Plug 1x1", "on": 2, "socket": "module", "by": "module" },
+    { "part": "Fuel Tank", "on": 5, "socket": "s0.0", "by": "-y" },
+    { "part": "Module Plug 1x1", "on": 3, "socket": "module", "by": "module" },
+    { "part": "Battery", "on": 7, "socket": "s0.0", "by": "-y" },
+    { "part": "Module Plug 1x1", "on": 4, "socket": "module", "by": "module" },
+    { "part": "RCS Thruster", "on": 9, "socket": "s0.0", "by": "base" }
+  ]
+}
