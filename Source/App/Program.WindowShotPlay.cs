@@ -19,7 +19,7 @@ public static partial class Program
     private static int _wsClipBodies, _wsClipLoose;
     private static bool _wsClipToolAsked;
 
-    private static bool WsPlayKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "sit" or "seated" or "getout" or "recycle" or "clip" or "partinfo" or "partlook" or "hands" or "cabto" or "damage" or "makeengine" or "standon" or "aimintake" or "feetup" or "cave" or "spawnbp" or "bringon" or "dropmotion" or "shellwear" or "shellleave" or "shellfix" or "shells" or "hopper" or "shellgantry" or "shellpod";
+    private static bool WsPlayKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "sit" or "seated" or "getout" or "recycle" or "clip" or "partinfo" or "partlook" or "hands" or "cabto" or "damage" or "makeengine" or "standon" or "aimintake" or "feetup" or "cave" or "spawnbp" or "bringon" or "dropmotion" or "shellwear" or "shellleave" or "shellfix" or "shells" or "hopper" or "shellgantry" or "shellpod" or "modsock";
 
     private static bool WsPlayVerb(Game g, Player me, string verb, string arg)
     {
@@ -663,6 +663,21 @@ public static partial class Program
             }
             case "partlook":
                 WsSay($"partinfo: look: {g.SandboxLookText}");
+                return true;
+            case "modsock": // "modsock state": every body's module sockets and modules as this peer has them, and the notice on screen (module-sockets.md 15)
+                foreach (var mb in g.Constructs.Bodies)
+                {
+                    if (mb.Dirty)
+                        mb.Rebuild();
+                    foreach (var ms in mb.ModSockets)
+                        WsSay($"modsock: body {mb.Id} socket part {ms.Plate} {ModuleSocketTable.SizeText(ms.W, ms.L)} {ms.Kind} {ms.Style}{(ms.Keyed ? " keyed" : "")}{(ms.Stand ? " stand" : "")} above {ms.Above:0.##}: module {ms.Module}, in the way {ms.InTheWay}{(ms.WrongKind ? ", wrong kind" : "")}");
+                    for (var mi = 0; mi < mb.Modules.Length; mi++)
+                    {
+                        var mm = mb.Modules[mi];
+                        WsSay($"modsock: body {mb.Id} module {mi}: plug part {mm.Plug}, socket {mm.Socket}{(mm.OnStand ? " (on a stand)" : "")}{(mm.Bridged ? " BRIDGED" : "")}, {mm.Parts} parts, {mm.Mass:0} kg, tags {ModuleSockets.TagsText(mm.Tags)}, primary {ModuleSockets.TagName(mm.Primary)}{ModuleSockets.StatsText(mm)}");
+                    }
+                }
+                WsSay($"modsock: notice \"{g.SandboxNotice}\"");
                 return true;
         }
         return false;

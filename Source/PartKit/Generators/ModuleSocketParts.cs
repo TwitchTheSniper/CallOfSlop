@@ -143,9 +143,7 @@ public sealed class ModuleSocketParts : IPartGenerator
             p.Add(Box([lx + 0.01, Back, lz + 0.01], [lx + 0.09, slab, lz + 0.09], FrameC));
         p.Add(Box([-0.5 + 0.1, Back, -0.5 + 0.02], [w - 0.5 - 0.1, Back + 0.08, -0.5 + 0.08], FrameC));
         p.Add(Box([-0.5 + 0.1, Back, l - 0.5 - 0.08], [w - 0.5 - 0.1, Back + 0.08, l - 0.5 - 0.02], FrameC));
-        for (var i = 0; i < w; i++)
-            for (var j = 0; j < l; j++)
-                p.Sock($"floor.{i}.{j}", [i, Back, j], "-y");
+        BackSockets(p, w, l, Back, "-y"); // (its feet: on a Medium or a Small floor)
         var area = w * l;
         p.Stats(area * 110, 120 + area * Medium.HealthM2, Medium.Armour, seconds: 3.0 + area);
         p.Set(("moduleSocket", Kw(("w", w), ("l", l), ("stand", true))));

@@ -511,6 +511,7 @@ public static class ConstructBuild
         public string Id = ""; // "id": made once, kept through renames (16 hex digits; a shipped one "ship:<name>"); "": none yet
         public int Version; // "version": 1 up, +1 on every overwrite and lock change (0: none)
         public List<UseSpec> Uses = new(); // "uses": other saved blueprints built into this one; a step may name a use's step as ["uN", k] (SubBlueprints.UseRef)
+        public ModuleBlock? Module; // "module": a module design's size, tags and stats, written from its parts at save (ModuleBlueprints.cs)
         public Dictionary<string, Dictionary<int, string>>? Packed; // "packed": the sub-blueprints a pack or a stamp's upload carries, by id and version (their text)
         // ...and a flattened one's (SubBlueprints.Flatten): every use's steps are its own, so every reader builds it as any blueprint.
         public UseMap? Map; // each step's use and each use's steps (null: no uses)
@@ -806,6 +807,9 @@ public static class ConstructBuild
                 case "uses":
                     SubBlueprints.ParseUses(p.Value, file, bp);
                     break;
+                case "module":
+                    bp.Module = ModuleBlueprints.Parse(p.Value, file);
+                    break;
                 case "packed":
                     bp.Packed = SubBlueprints.ParsePacked(p.Value, file);
                     break;
@@ -816,7 +820,7 @@ public static class ConstructBuild
                         bp.Bill.Add(ConstructBill.ParseLine(bl, file, bp.Bill.Count));
                     break;
                 default:
-                    throw new ConstructPartException($"{file}: unknown key \"{p.Name}\" (format, name, description, group, id, version, exactLinks, steps, uses, packed, wires, links, connectors, cargo, loot, stored, bill)");
+                    throw new ConstructPartException($"{file}: unknown key \"{p.Name}\" (format, name, description, group, id, version, exactLinks, steps, uses, module, packed, wires, links, connectors, cargo, loot, stored, bill)");
             }
         if (bp.Name.Length == 0 || bp.Name.Any(c => c < 32 || c > 126))
             throw new ConstructPartException($"{file}: \"name\" must be plain ASCII text");

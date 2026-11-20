@@ -335,6 +335,8 @@ public sealed partial class ConstructClip
         sb.Append("{\n  \"format\": \"").Append(ConstructBuild.BlueprintFormat).Append("\",\n  \"name\": ").Append(Quote(name));
         if (description.Length > 0)
             sb.Append(",\n  \"description\": ").Append(Quote(description));
+        if (ModuleBlueprints.BlockText(c) is { } module)
+            sb.Append(",\n  \"module\": ").Append(module); // (one module, its plug and everything on its side: a module design, module-sockets.md 4.1)
         sb.Append(",\n  \"exactLinks\": true,\n  \"steps\": [\n");
         var taken = new HashSet<(int, int)>(c.LinkCount); // (part, socket): what earlier steps hold (a socket can carry two links: only one is a step's way on)
         var fuseOf = new Dictionary<uint, int>(); // (fused units numbered 1, 2, ... in this blueprint: ConstructFuse.cs)
