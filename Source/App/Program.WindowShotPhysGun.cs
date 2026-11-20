@@ -20,7 +20,7 @@ public static partial class Program
     private static Quaternion _wsSwingRel0;
     private static float _wsSwingDrift, _wsSwingDriftRest;
 
-    private static bool WsHeldKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "swing" or "waitpeer" or "beside" or "pitch" or "aimat" or "bodies" or "loose" or "framewatch";
+    private static bool WsHeldKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "swing" or "waitpeer" or "beside" or "pitch" or "aimat" or "bodies" or "loose" or "framewatch" or "cshell" or "aimsock";
 
     private static bool WsHeldVerb(Game g, string verb, string arg)
     {
@@ -78,6 +78,55 @@ public static partial class Program
             var made = ConstructBuild.PlaceNew(g.Constructs, def, new FreePlacement { Pos = at, Rot = deck });
             WsSay(FormattableString.Invariant($"loose: {(made == null ? "not placed" : $"body {made.Id}, {made.Mass:0} kg, at {at:0.0}")}"));
             _wsWait = 10;
+            return true;
+        }
+        if (verb == "cshell" && arg.Trim() == "look")
+        {
+            // "cshell look": this peer's look line and the socket weld's step (what the crosshair offers now)
+            WsSay($"cshell look: \"{g.SandboxLookText}\", weld step {_swFlow.Step}, tool {g.SandboxHands.Hand(g.LocalId).Tool}");
+            return true;
+        }
+        if (verb == "cshell" && g.IsServer && g.Local is { } cs)
+        {
+            // "cshell": host, the Construction Shell's test yard (construction-shell.md): a Construction Shell on channel 4 frozen 6 m to
+            // the left, its Shell Control Chair 3 m to the right, and a Large Column 8 m frozen 9 m ahead as the build to weld onto
+            var fwd = g.LookDir(cs.Yaw, 0);
+            var side = Vector3.Normalize(Vector3.Cross(fwd, GravityFrames.UpAt(cs.Position)));
+            Vector3 Ground(Vector3 at) => at with { Y = World.Map.GroundHeight(at.X, at.Z) };
+            var said = new List<string>();
+            foreach (var (name, at, ch) in new[] { ("Construction Shell", Ground(cs.Position - side * 6 + fwd * 2), 4), ("Shell Control Chair", Ground(cs.Position + side * 3), 4), ("Large Column 8 m", Ground(cs.Position + fwd * 9), 0) })
+                if (ConstructParts.Find(name) is { } d && ConstructBuild.PlaceNew(g.Constructs, d, at, cs.Yaw + (ch == 4 && name != "Shell Control Chair" ? MathF.PI : 0)) is { } c)
+                {
+                    if (ch > 0)
+                        ConstructConfig.Put(ref c.Parts[0], d, CfgKey.Channel, ch);
+                    c.Frozen = true;
+                    c.Rebuild();
+                    g.Constructs.StructureDirty.Add(c.Id);
+                    said.Add($"{name} {c.Id}");
+                }
+                else
+                    said.Add($"{name}: not placed");
+            WsSay($"cshell: {string.Join(", ", said)}");
+            _wsWait = 10;
+            return true;
+        }
+        if (verb == "aimsock" && g.Local is { } sockOf)
+        {
+            // "aimsock PART[#n] SOCKET": the look turned to that socket of the part (by name), for the welder's socket markers
+            var cut = arg.LastIndexOf(' ');
+            var (body, part) = cut > 0 ? WsFind(g, arg[..cut].Trim()) : (null, -1);
+            var sock = cut > 0 && body != null && part >= 0 ? Array.FindIndex(body.DefOf(part).Sockets, q => q.Name == arg[(cut + 1)..].Trim()) : -1;
+            if (body == null || sock < 0)
+            {
+                WsFail($"aimsock PART SOCKET: no {arg}");
+                return true;
+            }
+            body.SocketAt(part, sock, out var local, out _);
+            var at = body.SegToWorld(body.Parts[part].Seg, local);
+            var eyeAt = g.RiderDrawnEye(sockOf);
+            WsLook(g, eyeAt, at);
+            WsSay(FormattableString.Invariant($"aimsock: {arg} at {at:0.00}, {Vector3.Distance(eyeAt, at):0.0} m from the eye"));
+            _wsWait = 3;
             return true;
         }
         if (verb == "framewatch")
