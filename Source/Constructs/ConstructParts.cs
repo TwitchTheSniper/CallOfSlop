@@ -137,6 +137,13 @@ public enum RailDriveKind : byte
 }
 
 /// <summary>What a logic part does (milestone 2; docs/sandbox/CONSTRUCTS.md, "Logic").</summary>
+/// <summary>What a logic kind is, beyond its value.</summary>
+public static class CLogicKinds
+{
+    /// <summary>A readout: its output follows the construct's state (a gauge, an instrument, a display), and a change of it drives nothing by itself.</summary>
+    public static bool IsReadout(this CLogic l) => l is CLogic.FuelGauge or CLogic.ChargeGauge or CLogic.Instrument or CLogic.Display;
+}
+
 public enum CLogic : byte
 {
     None,
