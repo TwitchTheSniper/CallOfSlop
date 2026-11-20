@@ -517,6 +517,7 @@ public sealed partial class ConstructWorld
         ref var b = ref _blast;
         DamageBy = b.By;
         DamageBody = b.Gun;
+        DamageAt = b.At; // (break-up: a shell's blast hurts the structure where it went off, ConstructBreakUp.cs)
         var ownDebris = MegaDebrisLeft < 0; // (inside a massive blast's walk its own count rules)
         if (ownDebris)
             MegaDebrisLeft = b.Debris;
@@ -574,6 +575,7 @@ public sealed partial class ConstructWorld
         }
         DamageBy = 255;
         DamageBody = 0;
+        DamageAt = null;
         if (ownDebris)
         {
             b.Debris = Math.Max(0, MegaDebrisLeft);

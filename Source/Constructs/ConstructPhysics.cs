@@ -1378,8 +1378,8 @@ public static partial class ConstructPhysics
                 if (i == j || j < i && (_dyn[j] || _jact[j]))
                     continue; // (a pair of moving bodies is taken from the lower index)
                 var b = bodies[j];
-                if (a.CarriedBy == b.Id || b.CarriedBy == a.Id || a.CarriedBy != 0 && a.CarriedBy == b.CarriedBy || a.HeldBy == b.Id || b.HeldBy == a.Id)
-                    continue; // (a carrier and what its frozen cargo volumes carry don't collide, nor a lifter's body and what its hook holds)
+                if (a.CarriedBy == b.Id || b.CarriedBy == a.Id || a.CarriedBy != 0 && a.CarriedBy == b.CarriedBy || a.HeldBy == b.Id || b.HeldBy == a.Id || a.HeldNear == b.Id || b.HeldNear == a.Id)
+                    continue; // (a carrier and what its frozen cargo volumes carry don't collide, nor a lifter's body and what its hook holds, nor a fitted module and the ship a dock's fitter fits it to)
                 if (a.FramePending || b.FramePending)
                     continue; // (loaded, waiting to be placed by its frame: ConstructFrames.Carry)
                 if (a.Frame == b.Id && a.Asleep || b.Frame == a.Id && b.Asleep)

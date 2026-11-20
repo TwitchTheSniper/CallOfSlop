@@ -37,6 +37,7 @@ a part fitted with the **attach tool** like any other (no workbench, decision 2)
 | `receiver`, `action` | A weapon builder receiver (its numbers come from the parts bolted to it) and its action (default: the receiver's stock action). Not with the numbers below. |
 | `damage`, `rpm`, `spread`, `range`, `mag`, `reload`, `pellets` | A heavy gun's numbers (`spread` in degrees, the whole cone; `range` the full-damage range in metres). |
 | `flags` | `penetrating`, `explosive`, `incendiary`. |
+| `pierce` | A penetrating round's bore budget (the Zero Day Railgun's 3,000, its Autocannon's 2,400): it goes on through part after part until it is spent (docs/sandbox/design/capital-battles.md). With none, a heavy gun's fast solid round gets one by its calibre, damage x speed (`ConstructBores.Implied`; an explosive one bursts inside). |
 | `blast`, `blastDamage` | An explosive round's splash: radius (m) and damage at the centre (default: its damage). |
 | `maxRange` | How far its rounds reach at all (default 300 m; the flamethrower's 9). |
 | `muzzle` | Where its rounds come out (part frame; -Z is forward). |

@@ -201,8 +201,11 @@ Built 2026-11-19 (`ConstructGantry.cs`, `GameShellGantry.cs`, `GantryRender.cs`;
   jaws the rest). The hips were chosen because the arms hang beside the torso and the Mining Shell's hopper sits on its back: the yoke
   passes under the hopper's floor. A lamp on the housing is red while shut, green open. It closes when a change's first swap begins and
   opens (0.8 s) when its last ends or is stopped. While shut the server holds the shell: `HeldBy` the gantry (no grab, nudge, edit
-  or waking: "a Shell Gantry's clamp holds it while its arms work") and posed every tick where it stood in the gantry part's frame
-  (`Game.GantryPin`), never frozen: a gantry aboard a moving ship keeps its shell riding the ship's frame (`Construct.GantryHold` lets a
+  or waking: "a Shell Gantry's clamp holds it while its arms work") and posed every tick in the gantry part's frame
+  (`Game.GantryPin`). The jaws shut on it where it stood or lay, then the clamp lifts it (0.5 s, `ConstructGantry.LockLift`) upright,
+  facing out, its feet 0.2 m over the bay's middle (`HoldPoint`), and holds it there for the arms; when the last swap ends it sets it down
+  on its feet (0.5 s) before the jaws open, so a shell that fell over in the bay comes out standing (Sean, 2026-11-20: the clamp
+  reached a shell lying in the bay and left it there). Awake while the clamp moves it (so the peers hear its pose), never frozen: a gantry aboard a moving ship keeps its shell riding the ship's frame (`Construct.GantryHold` lets a
   held shell ride), posed in that frame; beside a still gantry it is left asleep. Only a shell in a clamp is drawn part by part (the
   merged meshes leave it out while `GantryHold`).
 - **One swap (8.6 s):** the arm reaches behind the slot (1.2), goes in and shuts its gripper (1.6), unbolts with a turning nut runner and a

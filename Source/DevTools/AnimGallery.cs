@@ -120,6 +120,8 @@ public static partial class ConstructPreview
             return "Doors and hatches";
         if (d.Role is PartRole.Hinge or PartRole.Joint && d.JointType is not (JointType.Fixed or JointType.Flex) && d.Boxes.Any(b => b.IsLeaf && !b.Hidden))
             return "Hinges and joints";
+        if (d.Boxes.Any(b => !b.Hidden && b.Rig == BoxRig.Helmet))
+            return "Machines"; // (a Shell Control Chair's helmet)
         if (d.Boxes.Any(b => !b.Hidden && b.Rig >= BoxRig.Lever))
             return "Switches and levers";
         if (d.Boxes.Any(b => !b.Hidden && b.Work is BoxWork.Spin or BoxWork.Stroke))
@@ -180,11 +182,30 @@ public static partial class ConstructPreview
         }
         else
         {
-            byte control = 0;
+            byte control = 0, helmetTrack = 0;
             for (var b = 0; b < d.Boxes.Length; b++)
             {
                 var box = d.Boxes[b];
-                if (box.Rig >= BoxRig.Lever)
+                if (box.Rig == BoxRig.Helmet)
+                {
+                    // A Shell Control Chair's helmet: down onto the sitter, a moment, then up as they leave (ConstructRender.HelmetDrop's easing).
+                    var down = ConstructRender.HelmetSeconds;
+                    seconds = MathF.Max(seconds, down * 2 + 0.8f);
+                    if (marks.Count == 0)
+                    {
+                        marks.Add((0, "Someone sits down: the helmet comes down"));
+                        marks.Add((down + 0.8f, "They get up: the helmet lifts"));
+                    }
+                    var travel = box.RigTravel;
+                    if (helmetTrack == 0) // (every helmet box moves together: one track)
+                        helmetTrack = NewTrack("Helmet", tm =>
+                        {
+                            var f = Math.Clamp(tm < down + 0.8f ? tm / down : 1 - (tm - down - 0.8f) / down, 0, 1);
+                            return Matrix4x4.CreateTranslation(Vector3.UnitY * (-travel * f * f * (3 - 2 * f)));
+                        });
+                    boxTrack[b] = helmetTrack;
+                }
+                else if (box.Rig >= BoxRig.Lever)
                 {
                     seconds = MathF.Max(seconds, 1.6f);
                     if (control == 0)
