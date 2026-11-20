@@ -350,12 +350,14 @@ public static partial class SelfTest
         for (var i = 0; i < t.CountX - 1; i++)
             t.Edits.CellFaces(i, j, ref faces);
         var faceMs = sw.Elapsed.TotalMilliseconds;
-        // A ray over a well-dug map, judged once its code is warm: the quickest of nine rounds on this thread's CPU clock
-        // (ThreadCpu, SelfTestCpuRatio.cs) after 0.4 s of the same rounds (the tiered JIT optimises a hot method in the
-        // background once 100 ms pass with no new methods to compile). Timed straight after the craters, the least of
-        // three Stopwatch rounds caught the ray's unoptimised code and the runner's other work: 40-43 us on the cloud box
-        // against 22-36 warm, and right at the budget on main's Windows runners, where it missed whatever had merged
-        // (tests-and-ci.md, 2026-11-20). The cold first round is logged, not judged.
+        // A ray over a well-dug map, judged once its code is warm, on this thread's CPU clock (ThreadCpu, SelfTestCpuRatio.cs):
+        // after one full collection, rounds of the same 1000 rays run until half a second passes with none 3% quicker than
+        // the best (at most 3 s), and the quickest of nine more is judged. The least of three Stopwatch rounds straight after
+        // the craters timed code the tiered JIT hadn't optimised yet, on wall time that took in the runner's other work, and
+        // main's Windows shard missed the budget with it whatever had merged (60-63 us; tests-and-ci.md, 2026-11-20). Warm,
+        // in that shard, a Windows runner took 11 us and a Linux runner 27 (cold 48 and 51; the cloud box takes 33-39 warm,
+        // where the JIT hasn't finished optimising the ray this soon: 15 us fully optimised). The cold first round is logged,
+        // not judged.
         var dir = Vector3.Normalize(new Vector3(0.1f, -0.15f, 1));
         void Rays()
         {
@@ -388,7 +390,6 @@ public static partial class SelfTest
             Fail($"a crater took {craterMs:0.000} ms (budget 0.5 ms)");
         if (rayUs > 60)
             Fail($"a ray across dug ground took {rayUs:0.00} us once warm (budget 60; cold {coldUs:0.00} us)");
-        Fail($"DIAG (temporary) dug-ground ray on the {ThreadCpu.Kind}: warm {rayUs:0.00} us after {warmFor.Elapsed.TotalSeconds:0.0} s, cold {coldUs:0.00} us");
         m.RestoreProps();
     }
 
