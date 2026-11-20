@@ -1,0 +1,288 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Commoner Laundry Line",
+  "description": "Commoner laundry line (draft, set 2): a washing line strung between two eye bolts across a corner, socks, a shirt and overalls pegged on it with mismatched pegs, and a drip stain on the deck under them.",
+  "group": "StyleCommoner",
+  "section": "Commoner style",
+  "role": "frame",
+  "tool": "wrench",
+  "finish": "worn paint",
+  "collider": "boxes",
+  "mass": 40.0,
+  "health": 200,
+  "armour": 2,
+  "material": "steel",
+  "color": "#d6c9a8",
+  "attachSeconds": 2.0,
+  "boxes": [
+    {
+      "min": [
+        -0.9,
+        0.0,
+        -0.25
+      ],
+      "max": [
+        0.9,
+        2.0,
+        0.1
+      ],
+      "color": "#d6c9a8",
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.9,
+        1.78,
+        -0.25
+      ],
+      "max": [
+        -0.86,
+        1.82,
+        -0.18
+      ],
+      "color": "#a3a199",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.86,
+        1.78,
+        -0.25
+      ],
+      "max": [
+        0.9,
+        1.82,
+        -0.18
+      ],
+      "color": "#a3a199",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.88,
+        1.782,
+        -0.208
+      ],
+      "max": [
+        0.88,
+        1.798,
+        -0.192
+      ],
+      "color": "#e4ddcc",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          -0.88,
+          1.7928,
+          -0.1972
+        ],
+        [
+          -0.88,
+          1.7872,
+          -0.1972
+        ],
+        [
+          -0.88,
+          1.7872,
+          -0.2028
+        ],
+        [
+          -0.88,
+          1.7928,
+          -0.2028
+        ],
+        [
+          0.88,
+          1.7928,
+          -0.1972
+        ],
+        [
+          0.88,
+          1.7872,
+          -0.1972
+        ],
+        [
+          0.88,
+          1.7872,
+          -0.2028
+        ],
+        [
+          0.88,
+          1.7928,
+          -0.2028
+        ]
+      ],
+      "paintable": false,
+      "finish": "fabric"
+    },
+    {
+      "min": [
+        -0.7,
+        1.55,
+        -0.21
+      ],
+      "max": [
+        -0.6,
+        1.79,
+        -0.19
+      ],
+      "color": "#3f5a72",
+      "detail": true,
+      "finish": "fabric",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.69,
+        1.77,
+        -0.215
+      ],
+      "max": [
+        -0.67,
+        1.83,
+        -0.185
+      ],
+      "color": "#7b5634",
+      "detail": true,
+      "finish": "plastic",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.55,
+        1.6,
+        -0.21
+      ],
+      "max": [
+        -0.47,
+        1.79,
+        -0.19
+      ],
+      "color": "#c23b2a",
+      "detail": true,
+      "finish": "fabric",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.54,
+        1.77,
+        -0.215
+      ],
+      "max": [
+        -0.52,
+        1.83,
+        -0.185
+      ],
+      "color": "#7b5634",
+      "detail": true,
+      "finish": "plastic",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.35,
+        1.25,
+        -0.21
+      ],
+      "max": [
+        0.05,
+        1.79,
+        -0.19
+      ],
+      "color": "#6b7a8a",
+      "detail": true,
+      "finish": "fabric",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.34,
+        1.77,
+        -0.215
+      ],
+      "max": [
+        -0.32,
+        1.83,
+        -0.185
+      ],
+      "color": "#7b5634",
+      "detail": true,
+      "finish": "plastic",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.15,
+        1.1,
+        -0.21
+      ],
+      "max": [
+        0.55,
+        1.79,
+        -0.19
+      ],
+      "color": "#b25a2c",
+      "detail": true,
+      "finish": "fabric",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.16,
+        1.77,
+        -0.215
+      ],
+      "max": [
+        0.18,
+        1.83,
+        -0.185
+      ],
+      "color": "#c2962f",
+      "detail": true,
+      "finish": "plastic",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.15,
+        -0.009,
+        -0.25
+      ],
+      "max": [
+        0.55,
+        0.002,
+        0.05
+      ],
+      "color": "#3a3632",
+      "detail": true,
+      "finish": "soot",
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        -0.075
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "wall",
+      "at": [
+        0.0,
+        0.125,
+        -0.25
+      ],
+      "dir": "-z"
+    }
+  ]
+}

@@ -1,0 +1,481 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Commoner Salvage Crate",
+  "description": "Commoner salvage crate (draft, set 2): a crate pieced together from three different crates' panels, rope handles, one corner reinforced with a bent road sign, stencils from three owners overlapping, a padlock hasp screwed on and a ratchet strap with a frayed tail.",
+  "group": "StyleCommoner",
+  "section": "Commoner style",
+  "role": "frame",
+  "tool": "wrench",
+  "finish": "worn paint",
+  "collider": "boxes",
+  "mass": 40.0,
+  "health": 200,
+  "armour": 2,
+  "material": "steel",
+  "color": "#d6c9a8",
+  "attachSeconds": 2.0,
+  "boxes": [
+    {
+      "min": [
+        -0.45,
+        0.0,
+        -0.4
+      ],
+      "max": [
+        0.45,
+        0.8,
+        0.4
+      ],
+      "color": "#d6c9a8",
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.42,
+        0.002,
+        -0.38
+      ],
+      "max": [
+        0.42,
+        0.75,
+        0.38
+      ],
+      "color": "#9c7a4e",
+      "detail": true,
+      "finish": "wood",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.4,
+        0.02,
+        0.38
+      ],
+      "max": [
+        0.0,
+        0.73,
+        0.392
+      ],
+      "color": "#6f7a5a",
+      "detail": true,
+      "finish": "worn paint",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.0,
+        0.02,
+        0.38
+      ],
+      "max": [
+        0.4,
+        0.4,
+        0.392
+      ],
+      "color": "#a86a3a",
+      "detail": true,
+      "finish": "painted wood",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.0,
+        0.4,
+        0.38
+      ],
+      "max": [
+        0.4,
+        0.73,
+        0.392
+      ],
+      "color": "#8f6e44",
+      "detail": true,
+      "finish": "wood",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.3,
+        0.5,
+        0.2
+      ],
+      "max": [
+        0.45,
+        0.78,
+        0.395
+      ],
+      "color": "#3f6a8a",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          0.3,
+          0.5,
+          0.38
+        ],
+        [
+          0.45,
+          0.5,
+          0.38
+        ],
+        [
+          0.45,
+          0.78,
+          0.38
+        ],
+        [
+          0.45,
+          0.78,
+          0.2
+        ],
+        [
+          0.42,
+          0.5,
+          0.2
+        ],
+        [
+          0.3,
+          0.5,
+          0.395
+        ],
+        [
+          0.45,
+          0.5,
+          0.395
+        ],
+        [
+          0.45,
+          0.78,
+          0.395
+        ]
+      ],
+      "paintable": false,
+      "finish": "worn paint"
+    },
+    {
+      "min": [
+        -0.35,
+        0.45,
+        0.392
+      ],
+      "max": [
+        -0.1,
+        0.6,
+        0.403
+      ],
+      "color": "#e4ddcc",
+      "detail": true,
+      "finish": "worn paint",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.05,
+        0.15,
+        0.392
+      ],
+      "max": [
+        0.3,
+        0.25,
+        0.403
+      ],
+      "color": "#3b3631",
+      "detail": true,
+      "finish": "worn paint",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.25,
+        0.2,
+        0.392
+      ],
+      "max": [
+        -0.05,
+        0.3,
+        0.403
+      ],
+      "color": "#d9a72a",
+      "detail": true,
+      "finish": "worn paint",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.4473,
+        0.53,
+        -0.12
+      ],
+      "max": [
+        -0.4127,
+        0.57,
+        0.12
+      ],
+      "color": "#b39a6a",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          -0.4127,
+          0.56,
+          -0.12
+        ],
+        [
+          -0.43,
+          0.57,
+          -0.12
+        ],
+        [
+          -0.4473,
+          0.56,
+          -0.12
+        ],
+        [
+          -0.4473,
+          0.54,
+          -0.12
+        ],
+        [
+          -0.43,
+          0.53,
+          -0.12
+        ],
+        [
+          -0.4127,
+          0.54,
+          -0.12
+        ],
+        [
+          -0.4127,
+          0.56,
+          0.12
+        ],
+        [
+          -0.43,
+          0.57,
+          0.12
+        ],
+        [
+          -0.4473,
+          0.56,
+          0.12
+        ],
+        [
+          -0.4473,
+          0.54,
+          0.12
+        ],
+        [
+          -0.43,
+          0.53,
+          0.12
+        ],
+        [
+          -0.4127,
+          0.54,
+          0.12
+        ]
+      ],
+      "paintable": false,
+      "finish": "fabric"
+    },
+    {
+      "min": [
+        0.4127,
+        0.53,
+        -0.12
+      ],
+      "max": [
+        0.4473,
+        0.57,
+        0.12
+      ],
+      "color": "#b39a6a",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          0.4473,
+          0.56,
+          -0.12
+        ],
+        [
+          0.43,
+          0.57,
+          -0.12
+        ],
+        [
+          0.4127,
+          0.56,
+          -0.12
+        ],
+        [
+          0.4127,
+          0.54,
+          -0.12
+        ],
+        [
+          0.43,
+          0.53,
+          -0.12
+        ],
+        [
+          0.4473,
+          0.54,
+          -0.12
+        ],
+        [
+          0.4473,
+          0.56,
+          0.12
+        ],
+        [
+          0.43,
+          0.57,
+          0.12
+        ],
+        [
+          0.4127,
+          0.56,
+          0.12
+        ],
+        [
+          0.4127,
+          0.54,
+          0.12
+        ],
+        [
+          0.43,
+          0.53,
+          0.12
+        ],
+        [
+          0.4473,
+          0.54,
+          0.12
+        ]
+      ],
+      "paintable": false,
+      "finish": "fabric"
+    },
+    {
+      "min": [
+        -0.438,
+        0.75,
+        -0.4
+      ],
+      "max": [
+        0.438,
+        0.8,
+        0.4
+      ],
+      "color": "#8f6e44",
+      "detail": true,
+      "finish": "wood",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.05,
+        0.6,
+        0.392
+      ],
+      "max": [
+        0.05,
+        0.72,
+        0.404
+      ],
+      "color": "#a3a199",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.03,
+        0.57,
+        0.404
+      ],
+      "max": [
+        0.03,
+        0.62,
+        0.42
+      ],
+      "color": "#9a6a34",
+      "detail": true,
+      "finish": "brass",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.44,
+        0.0,
+        0.1
+      ],
+      "max": [
+        0.44,
+        0.82,
+        0.16
+      ],
+      "color": "#b25a2c",
+      "detail": true,
+      "finish": "fabric",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.44,
+        0.05,
+        0.12
+      ],
+      "max": [
+        0.5,
+        0.3,
+        0.14
+      ],
+      "color": "#b25a2c",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          0.44,
+          0.3,
+          0.12
+        ],
+        [
+          0.46,
+          0.3,
+          0.12
+        ],
+        [
+          0.44,
+          0.3,
+          0.14
+        ],
+        [
+          0.46,
+          0.3,
+          0.14
+        ],
+        [
+          0.5,
+          0.05,
+          0.13
+        ]
+      ],
+      "paintable": false,
+      "finish": "fabric"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

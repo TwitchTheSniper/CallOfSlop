@@ -1,0 +1,427 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Commoner CRT Monitor",
+  "description": "Commoner crt monitor (draft, set 2): a deep old tube monitor on a scissor arm off the wall, its screen glowing dim green with a crack across the corner, a knob missing and a sticky note stuck on the bezel.",
+  "group": "StyleCommoner",
+  "section": "Commoner style",
+  "role": "frame",
+  "tool": "wrench",
+  "finish": "worn paint",
+  "collider": "boxes",
+  "mass": 40.0,
+  "health": 200,
+  "armour": 2,
+  "material": "steel",
+  "color": "#d6c9a8",
+  "attachSeconds": 2.0,
+  "boxes": [
+    {
+      "min": [
+        -0.25,
+        0.0,
+        -0.25
+      ],
+      "max": [
+        0.25,
+        1.4,
+        0.35
+      ],
+      "color": "#d6c9a8",
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.06,
+        0.9,
+        -0.25
+      ],
+      "max": [
+        0.06,
+        1.1,
+        -0.22
+      ],
+      "color": "#3b3631",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.015,
+        0.95,
+        -0.22
+      ],
+      "max": [
+        0.015,
+        1.02,
+        0.0
+      ],
+      "color": "#7d8085",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          -0.015,
+          1.0,
+          -0.22
+        ],
+        [
+          0.015,
+          1.0,
+          -0.22
+        ],
+        [
+          -0.015,
+          1.02,
+          -0.22
+        ],
+        [
+          0.015,
+          1.02,
+          -0.22
+        ],
+        [
+          -0.015,
+          0.95,
+          0.0
+        ],
+        [
+          0.015,
+          0.95,
+          0.0
+        ],
+        [
+          -0.015,
+          0.97,
+          0.0
+        ],
+        [
+          0.015,
+          0.97,
+          0.0
+        ]
+      ],
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.22,
+        0.83,
+        -0.02
+      ],
+      "max": [
+        0.22,
+        1.22,
+        0.3
+      ],
+      "color": "#b5a37f",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          -0.2,
+          0.85,
+          -0.02
+        ],
+        [
+          0.2,
+          0.85,
+          -0.02
+        ],
+        [
+          -0.2,
+          1.2,
+          -0.02
+        ],
+        [
+          0.2,
+          1.2,
+          -0.02
+        ],
+        [
+          -0.22,
+          0.83,
+          0.3
+        ],
+        [
+          0.22,
+          0.83,
+          0.3
+        ],
+        [
+          -0.22,
+          1.22,
+          0.3
+        ],
+        [
+          0.22,
+          1.22,
+          0.3
+        ]
+      ],
+      "paintable": false,
+      "finish": "worn paint"
+    },
+    {
+      "min": [
+        -0.18,
+        0.87,
+        0.299
+      ],
+      "max": [
+        0.18,
+        1.18,
+        0.31
+      ],
+      "color": "#3b3631",
+      "detail": true,
+      "finish": "plastic",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.15,
+        0.9,
+        0.304
+      ],
+      "max": [
+        0.12,
+        1.15,
+        0.315
+      ],
+      "color": "#2f4a32",
+      "detail": true,
+      "finish": "plastic",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.13,
+        0.93,
+        0.309
+      ],
+      "max": [
+        -0.07,
+        0.945,
+        0.32
+      ],
+      "color": "#8fd88a",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.13,
+        0.98,
+        0.309
+      ],
+      "max": [
+        -0.02,
+        0.995,
+        0.32
+      ],
+      "color": "#8fd88a",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.13,
+        1.03,
+        0.309
+      ],
+      "max": [
+        0.03,
+        1.045,
+        0.32
+      ],
+      "color": "#8fd88a",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.13,
+        1.08,
+        0.309
+      ],
+      "max": [
+        0.08,
+        1.095,
+        0.32
+      ],
+      "color": "#8fd88a",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.05,
+        1.07,
+        0.309
+      ],
+      "max": [
+        0.12,
+        1.15,
+        0.325
+      ],
+      "color": "#e4ddcc",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          0.05,
+          1.15,
+          0.315
+        ],
+        [
+          0.06,
+          1.15,
+          0.315
+        ],
+        [
+          0.12,
+          1.08,
+          0.315
+        ],
+        [
+          0.12,
+          1.07,
+          0.315
+        ],
+        [
+          0.05,
+          1.15,
+          0.319
+        ],
+        [
+          0.12,
+          1.08,
+          0.319
+        ]
+      ],
+      "paintable": false,
+      "finish": "plastic"
+    },
+    {
+      "min": [
+        0.1496,
+        0.908,
+        0.31
+      ],
+      "max": [
+        0.1704,
+        0.932,
+        0.325
+      ],
+      "color": "#2a2826",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          0.1704,
+          0.926,
+          0.31
+        ],
+        [
+          0.16,
+          0.932,
+          0.31
+        ],
+        [
+          0.1496,
+          0.926,
+          0.31
+        ],
+        [
+          0.1496,
+          0.914,
+          0.31
+        ],
+        [
+          0.16,
+          0.908,
+          0.31
+        ],
+        [
+          0.1704,
+          0.914,
+          0.31
+        ],
+        [
+          0.1704,
+          0.926,
+          0.325
+        ],
+        [
+          0.16,
+          0.932,
+          0.325
+        ],
+        [
+          0.1496,
+          0.926,
+          0.325
+        ],
+        [
+          0.1496,
+          0.914,
+          0.325
+        ],
+        [
+          0.16,
+          0.908,
+          0.325
+        ],
+        [
+          0.1704,
+          0.914,
+          0.325
+        ]
+      ],
+      "paintable": false,
+      "finish": "plastic"
+    },
+    {
+      "min": [
+        -0.2,
+        1.12,
+        0.303
+      ],
+      "max": [
+        -0.12,
+        1.2,
+        0.314
+      ],
+      "color": "#c2962f",
+      "detail": true,
+      "finish": "plastic",
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.05
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "wall",
+      "at": [
+        0.0,
+        0.125,
+        -0.25
+      ],
+      "dir": "-z"
+    }
+  ]
+}

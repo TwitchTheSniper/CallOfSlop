@@ -14,7 +14,7 @@ namespace CallOfSlop.PartKit.Generators;
 /// incandescent and few. Modules keep the standard Module Plug (FittingLookParts.Reactor, module-sockets.md): 1x1, the
 /// magazine 2x2. Free-standing pieces: front +z, the wall behind -z, the floor at y 0.
 /// </summary>
-public sealed class CommonerStyleParts : IPartGenerator
+public sealed partial class CommonerStyleParts : IPartGenerator
 {
     public string Name => "style_commoner";
 
@@ -38,7 +38,7 @@ public sealed class CommonerStyleParts : IPartGenerator
         p.Add(Box(mn, mx, Cream, hidden: true));
         p.Sock("bottom", [R(0.5 * (mn[0] + mx[0])), mn[1], R(0.5 * (mn[2] + mx[2]))], "-y");
         if (wall)
-            p.Sock("wall", [R(0.5 * (mn[0] + mx[0])), R(Math.Min(mx[1], 0.25) / 2), mn[2]], "-z");
+            p.Sock("wall", [R(0.5 * (mn[0] + mx[0])), R(mn[1] + Math.Min(mx[1] - mn[1], 0.25) / 2), mn[2]], "-z");
         p.Stats(40, 200, 2, 2.0);
         return new K.Kit(p);
     }
@@ -108,7 +108,7 @@ public sealed class CommonerStyleParts : IPartGenerator
     {
         k.Box(x - 0.016, y - 0.024, z, x + 0.016, y + 0.024, z + 0.011, Chrome, "steel");
         var t = up ? 0.035 : -0.035;
-        k.Hull([[x - 0.005, y, z + 0.011], [x + 0.005, y, z + 0.011], [x - 0.005, y + 0.01 * Math.Sign(t), z + 0.011], [x + 0.005, y + 0.01 * Math.Sign(t), z + 0.011],
+        k.Hull([[x - 0.006, y, z + 0.011], [x + 0.006, y, z + 0.011], [x - 0.006, y + 0.012 * Math.Sign(t), z + 0.011], [x + 0.006, y + 0.012 * Math.Sign(t), z + 0.011],
                 [x - 0.004, y + t, z + 0.045], [x + 0.004, y + t, z + 0.045], [x - 0.004, y + t * 0.8, z + 0.05], [x + 0.004, y + t * 0.8, z + 0.05]], Chrome, "chrome");
     }
 
@@ -348,8 +348,8 @@ public sealed class CommonerStyleParts : IPartGenerator
                         continue;
                     }
                     k.Box(x0, y0, z0, x0 + 0.44, y0 + 0.36, z0 + 0.6, col, "worn paint");
-                    k.Box(x0 + 0.16, y0 + 0.36, z0 + 0.2, x0 + 0.28, y0 + 0.39, z0 + 0.4, Grime, "steel"); // (the handle)
-                    k.Box(x0 + 0.05, y0 + 0.12, z0 + 0.6, x0 + 0.3, y0 + 0.2, z0 + 0.612, Mustard, "worn paint"); // (stencil band)
+                    if ((row + i + lv) % 3 == 0) // (a stencil band on every third can only: Karl, reduce the game cost)
+                        k.Box(x0 + 0.05, y0 + 0.12, z0 + 0.6, x0 + 0.3, y0 + 0.2, z0 + 0.612, Mustard, "worn paint");
                 }
         // The feed head over the middle front and its crank.
         k.Box(-0.2, H, 0.2, 0.2, H + 0.18, 0.7, Grime, "dirty steel");
@@ -438,7 +438,7 @@ public sealed class CommonerStyleParts : IPartGenerator
     /// <summary>11. The drive nozzle: an old engine bell with heat-blued bands, a welded patch and soot inside.</summary>
     private static Part DriveNozzle()
     {
-        var k = Free("Commoner Drive Nozzle", "Commoner drive nozzle (draft): an old engine bell, faceted and heat-blued in bands, a welded patch on one side, soot inside, on a mount ring with mismatched bolts. Points aft (-z).", [-0.5, 0, -1.0], [0.5, 1.0, 0.3], wall: false);
+        var k = Free("Commoner Drive Nozzle", "Commoner drive nozzle (draft): an old engine bell, faceted and heat-blued in bands, a welded patch on one side, soot inside, on a mount ring with mismatched bolts. Points aft (-z).", [-0.5, 0.0, -1.0], [0.5, 1.0, 0.3], wall: false);
         const double cy = 0.5;
         k.Hull(Frustum(2, 0, cy, 0.3, 0.36, 0.2, 0.38, 12), Grime, "dirty steel"); // (the mount ring)
         k.Hull(Frustum(2, 0, cy, 0.2, 0.22, 0.0, 0.2, 12), Tan, "rusty paint"); // (the throat)
@@ -459,8 +459,6 @@ public sealed class CommonerStyleParts : IPartGenerator
             var col = i == 3 ? "#9a6a34" : Chrome;
             k.Box(0.33 * Math.Cos(a) - 0.015, cy + 0.33 * Math.Sin(a) - 0.015, 0.3, 0.33 * Math.Cos(a) + 0.015, cy + 0.33 * Math.Sin(a) + 0.015, 0.32, col, "steel");
         }
-        Tube(k, 1, 0.26, 0.1, 0.0, cy, 0.03, Grime, "steel"); // (a support leg to the deck)
-        Tube(k, 1, -0.26, 0.1, 0.0, cy, 0.03, Grime, "steel");
         return k.P;
     }
 
@@ -474,21 +472,32 @@ public sealed class CommonerStyleParts : IPartGenerator
         // Seat cushion and back, rounded at the front.
         k.Profile(-0.27, 0.27, [(0.42, -0.26), (0.42, 0.3), (0.5, 0.33), (0.56, 0.3), (0.58, -0.22)], Vinyl, "rubber");
         k.Profile(-0.28, 0.28, [(0.5, -0.34), (0.5, -0.2), (1.12, -0.24), (1.2, -0.28), (1.2, -0.36), (1.1, -0.38)], Vinyl, "rubber");
-        // Piping: lighter bands down the back.
-        foreach (var x in new[] { -0.1, 0.1 })
-            k.Box(x - 0.008, 0.6, -0.211, x + 0.008, 1.1, -0.2, Tan, "rubber");
-        TapeZ(k, -0.205, 0.12, 0.75, 0.2, 0.95); // (a split, taped)
+        // Piping: lighter welts laid along the back's sloped face (z = -0.2 - (y - 0.5) * 0.0645), and a split taped over.
+        double Bz(double y) => -0.2 - (y - 0.5) * 0.0645;
+        foreach (var x in new[] { -0.2, 0.0, 0.2 })
+            k.Hull([[x - 0.009, 0.58, Bz(0.58) - 0.006], [x + 0.009, 0.58, Bz(0.58) - 0.006], [x - 0.009, 1.1, Bz(1.1) - 0.006], [x + 0.009, 1.1, Bz(1.1) - 0.006],
+                    [x - 0.007, 0.58, Bz(0.58) + 0.008], [x + 0.007, 0.58, Bz(0.58) + 0.008], [x - 0.007, 1.1, Bz(1.1) + 0.008], [x + 0.007, 1.1, Bz(1.1) + 0.008]], Tan, "rubber");
+        k.Hull([[0.06, 0.78, Bz(0.78)], [0.15, 0.95, Bz(0.95)], [0.12, 0.97, Bz(0.97)], [0.03, 0.8, Bz(0.8)],
+                [0.06, 0.78, Bz(0.78) + 0.011], [0.15, 0.95, Bz(0.95) + 0.011], [0.12, 0.97, Bz(0.97) + 0.011], [0.03, 0.8, Bz(0.8) + 0.011]], Tape, "fabric");
         // Fold-up arms.
         foreach (var sx in new[] { -1.0, 1.0 })
         {
             k.Box(sx * 0.27, 0.68, -0.22, sx * 0.33, 0.74, 0.22, Vinyl, "rubber");
             k.Box(sx * 0.28, 0.5, -0.24, sx * 0.31, 0.68, -0.2, Chrome, "chrome");
         }
-        // The cushion from home: a mustard pillow on the seat.
-        k.Box(-0.18, 0.56, -0.18, 0.18, 0.62, 0.12, Mustard, "fabric");
-        // The lap belt and buckle.
-        k.Box(-0.27, 0.6, 0.0, 0.27, 0.63, 0.04, Grime, "fabric");
-        k.Box(-0.04, 0.595, 0.035, 0.04, 0.64, 0.05, Chrome, "chrome");
+        // The cushion from home: a puffy mustard pillow, its corners pulled in and its middle swelled.
+        k.Hull([[-0.17, 0.565, -0.17], [0.17, 0.565, -0.17], [-0.17, 0.565, 0.11], [0.17, 0.565, 0.11],
+                [-0.19, 0.585, -0.13], [0.19, 0.585, -0.13], [-0.19, 0.585, 0.07], [0.19, 0.585, 0.07],
+                [-0.13, 0.585, -0.19], [0.13, 0.585, -0.19], [-0.13, 0.585, 0.13], [0.13, 0.585, 0.13],
+                [-0.12, 0.63, -0.1], [0.12, 0.63, -0.1], [-0.12, 0.63, 0.04], [0.12, 0.63, 0.04]], Mustard, "fabric");
+        // The lap belt left undone: a strap from each hip anchor hangs down the side of the seat, the buckle on the right one.
+        foreach (var sx in new[] { -1.0, 1.0 })
+        {
+            k.Box(sx * 0.27 - 0.012, 0.52, -0.25, sx * 0.27 + 0.012, 0.56, -0.2, Chrome, "steel"); // (the anchor)
+            k.Hull([[sx * 0.276, 0.55, -0.22], [sx * 0.288, 0.55, -0.22], [sx * 0.276, 0.55, -0.18], [sx * 0.288, 0.55, -0.18],
+                    [sx * 0.276, 0.3, -0.12], [sx * 0.288, 0.3, -0.12], [sx * 0.276, 0.3, -0.08], [sx * 0.288, 0.3, -0.08]], Grime, "fabric");
+        }
+        k.Box(0.272, 0.27, -0.125, 0.294, 0.32, -0.075, Chrome, "chrome");
         return k.P;
     }
 
@@ -664,10 +673,12 @@ public sealed class CommonerStyleParts : IPartGenerator
         k.Box(-0.1, 0.13, -0.17, 0.1, 0.39, -0.16, Beige, "worn paint"); // (the cover plate)
         foreach (var (x, y) in new[] { (-0.08, 0.15), (0.08, 0.15), (-0.08, 0.37), (0.08, 0.37) })
             k.Box(x - 0.008, y - 0.008, -0.16, x + 0.008, y + 0.008, -0.15, Chrome, "steel");
-        // The lever: a pivot block and a long handle with a black grip.
-        k.Box(-0.04, 0.24, -0.16, 0.04, 0.3, -0.12, Grime, "steel");
-        k.Hull([[-0.012, 0.26, -0.13], [0.012, 0.26, -0.13], [-0.012, 0.28, -0.13], [0.012, 0.28, -0.13], [-0.01, 0.36, -0.07], [0.01, 0.36, -0.07], [-0.01, 0.375, -0.075], [0.01, 0.375, -0.075]], Chrome, "chrome");
-        k.Hull(Frustum(2, 0, 0.37, -0.085, 0.018, -0.045, 0.018, 8), Rubber, "plastic");
+        // The rocker: a raised bezel with a dark well, and a chunky paddle pivoted across the middle, pressed in at the top.
+        k.Box(-0.055, 0.215, -0.16, 0.055, 0.345, -0.135, Chrome, "steel");
+        k.Box(-0.042, 0.228, -0.135, 0.042, 0.332, -0.129, Rubber, "plastic");
+        k.Hull([[-0.036, 0.236, -0.129], [0.036, 0.236, -0.129], [-0.036, 0.324, -0.129], [0.036, 0.324, -0.129],
+                [-0.034, 0.24, -0.098], [0.034, 0.24, -0.098], [-0.034, 0.28, -0.108], [0.034, 0.28, -0.108], [-0.034, 0.32, -0.121], [0.034, 0.32, -0.121]], Grime, "plastic");
+        k.Box(-0.026, 0.25, -0.1, 0.026, 0.262, -0.094, Ceramic, "plastic"); // (the ON mark on its proud end)
         PilotZ(k, -0.055, 0.19, -0.16, PilotRed, 0.012);
         PilotZ(k, 0.055, 0.19, -0.16, PilotGreen, 0.012);
         Tube(k, 1, 0, -0.21, 0.4, 0.5, 0.018, Chrome, "steel", 6); // (conduit up)
@@ -684,10 +695,10 @@ public sealed class CommonerStyleParts : IPartGenerator
         Tube(k, 2, 0, 0.27, -0.22, 0.0, 0.012, Chrome, "steel", 6); // (the arm)
         k.Hull(Frustum(1, 0, 0.0, 0.26, 0.03, 0.29, 0.03, 8), Grime, "steel");
         k.Hull(Frustum(1, 0, 0.0, 0.18, 0.13, 0.27, 0.05, 10), "#4d6650", "gloss paint"); // (the shade)
-        k.Hull([[0.06, 0.2, 0.09], [0.1, 0.2, 0.06], [0.09, 0.24, 0.03], [0.05, 0.23, 0.06], [0.075, 0.21, 0.05]], Rust, "rust"); // (a chip)
         k.Hull(Frustum(1, 0, 0.0, 0.11, 0.035, 0.19, 0.045, 8), Bulb, "", glow: true);
-        foreach (var a in new[] { 0.0, Math.PI / 2 }) // (the cage's hoops)
-            k.Box(-Math.Cos(a) * 0.06 - 0.004 * Math.Sin(a) - 0.004, 0.08, -Math.Sin(a) * 0.06 - 0.004, Math.Cos(a) * 0.06 + 0.004, 0.185, Math.Sin(a) * 0.06 + 0.004, Chrome, "steel");
+        foreach (var (cx, cz) in new[] { (0.055, 0.0), (-0.055, 0.0), (0.0, 0.055), (0.0, -0.055) }) // (the cage: four thin rods)
+            Tube(k, 1, cx, cz, 0.085, 0.185, 0.0055, Chrome, "steel", 4);
+        k.Hull(Frustum(1, 0, 0.0, 0.078, 0.06, 0.09, 0.06, 8), Chrome, "steel"); // (the cage's foot ring)
         Tube(k, 1, 0.09, 0.03, 0.06, 0.2, 0.003, Ceramic, "fabric", 4); // (pull cord)
         k.Hull(Frustum(1, 0.09, 0.03, 0.04, 0.012, 0.065, 0.012, 6), Brown, "wood");
         k.Box(-0.01, 0.0, -0.25, 0.01, 0.2, -0.235, Rubber, "rubber"); // (the flex down the wall)
@@ -891,8 +902,9 @@ public sealed class CommonerStyleParts : IPartGenerator
         {
             Reactor(), Battery(), Capacitor(), FuelTank(), LifeSupport(), SensorMast(), Magazine(),
             OxygenBottles(), Radiator(), RcsBlock(), DriveNozzle(), PilotSeat(), Bunk(), Galley(), Head(), Locker(), Console(),
-            WallSwitch(), Lamp(), Ladder(), Door(), AirlockHatch(), CargoCrate(), Workbench(), PointDefence(),
+            WallSwitch(), Lamp(), Ladder(), Door(), AirlockHatch(), CargoCrate(), Workbench(),
         };
+        all.AddRange(Set2()); // (round 2: 100 more, from Karl's grades of round 1)
         foreach (var p in all)
         {
             var d = p.Json();

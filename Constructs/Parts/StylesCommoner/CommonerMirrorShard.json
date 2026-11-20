@@ -1,0 +1,202 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Commoner Mirror Shard",
+  "description": "Commoner mirror shard (draft, set 2): a broken mirror screwed to the wall with three of its corners left, a razor and a comb on a tin ledge below and a photo tucked in the frame.",
+  "group": "StyleCommoner",
+  "section": "Commoner style",
+  "role": "frame",
+  "tool": "wrench",
+  "finish": "worn paint",
+  "collider": "boxes",
+  "mass": 40.0,
+  "health": 200,
+  "armour": 2,
+  "material": "steel",
+  "color": "#d6c9a8",
+  "attachSeconds": 2.0,
+  "boxes": [
+    {
+      "min": [
+        -0.2,
+        0.0,
+        -0.25
+      ],
+      "max": [
+        0.2,
+        1.8,
+        -0.15
+      ],
+      "color": "#d6c9a8",
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.18,
+        1.2,
+        -0.25
+      ],
+      "max": [
+        0.18,
+        1.7,
+        -0.235
+      ],
+      "color": "#7d8085",
+      "detail": true,
+      "finish": "rusty paint",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.16,
+        1.22,
+        -0.2395
+      ],
+      "max": [
+        0.16,
+        1.68,
+        -0.2235
+      ],
+      "color": "#aab6b8",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          -0.16,
+          1.22,
+          -0.235
+        ],
+        [
+          0.15,
+          1.22,
+          -0.235
+        ],
+        [
+          0.16,
+          1.5,
+          -0.235
+        ],
+        [
+          -0.05,
+          1.68,
+          -0.235
+        ],
+        [
+          -0.16,
+          1.6,
+          -0.235
+        ],
+        [
+          -0.16,
+          1.22,
+          -0.228
+        ],
+        [
+          0.15,
+          1.22,
+          -0.228
+        ],
+        [
+          0.16,
+          1.5,
+          -0.228
+        ],
+        [
+          -0.05,
+          1.68,
+          -0.228
+        ],
+        [
+          -0.16,
+          1.6,
+          -0.228
+        ]
+      ],
+      "paintable": false,
+      "finish": "chrome"
+    },
+    {
+      "min": [
+        -0.17,
+        1.15,
+        -0.25
+      ],
+      "max": [
+        0.17,
+        1.17,
+        -0.17
+      ],
+      "color": "#a0a6a8",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.1,
+        1.169,
+        -0.22
+      ],
+      "max": [
+        0.0,
+        1.18,
+        -0.2
+      ],
+      "color": "#3b3631",
+      "detail": true,
+      "finish": "plastic",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.04,
+        1.169,
+        -0.21
+      ],
+      "max": [
+        0.12,
+        1.18,
+        -0.19
+      ],
+      "color": "#5b3f28",
+      "detail": true,
+      "finish": "plastic",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.08,
+        1.55,
+        -0.233
+      ],
+      "max": [
+        0.16,
+        1.66,
+        -0.222
+      ],
+      "color": "#e4ddcc",
+      "detail": true,
+      "finish": "plastic",
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        -0.2
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "wall",
+      "at": [
+        0.0,
+        0.125,
+        -0.25
+      ],
+      "dir": "-z"
+    }
+  ]
+}

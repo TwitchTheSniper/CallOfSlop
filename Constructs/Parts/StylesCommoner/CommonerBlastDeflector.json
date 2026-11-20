@@ -1,0 +1,322 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Commoner Blast Deflector",
+  "description": "Commoner blast deflector (draft, set 2): an angled deflector plate on the hull, heat-blued in rainbow bands, bolted with odd bolts, one corner curled from heat and a soot fan up its face.",
+  "group": "StyleCommoner",
+  "section": "Commoner style",
+  "role": "frame",
+  "tool": "wrench",
+  "finish": "worn paint",
+  "collider": "boxes",
+  "mass": 40.0,
+  "health": 200,
+  "armour": 2,
+  "material": "steel",
+  "color": "#d6c9a8",
+  "attachSeconds": 2.0,
+  "boxes": [
+    {
+      "min": [
+        -0.45,
+        0.0,
+        -0.3
+      ],
+      "max": [
+        0.45,
+        0.5,
+        0.3
+      ],
+      "color": "#d6c9a8",
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.42,
+        0.0,
+        -0.28
+      ],
+      "max": [
+        0.42,
+        0.45,
+        0.28
+      ],
+      "color": "#5a6070",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          -0.42,
+          0.0,
+          -0.28
+        ],
+        [
+          0.42,
+          0.0,
+          -0.28
+        ],
+        [
+          -0.42,
+          0.0,
+          0.28
+        ],
+        [
+          0.42,
+          0.0,
+          0.28
+        ],
+        [
+          -0.42,
+          0.45,
+          -0.28
+        ],
+        [
+          0.42,
+          0.45,
+          -0.28
+        ],
+        [
+          -0.42,
+          0.42,
+          -0.24
+        ],
+        [
+          0.42,
+          0.42,
+          -0.24
+        ]
+      ],
+      "paintable": false,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.4,
+        0.01,
+        -0.23
+      ],
+      "max": [
+        0.4,
+        0.435,
+        0.27
+      ],
+      "color": "#7d6a52",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          -0.4,
+          0.01,
+          0.26
+        ],
+        [
+          0.4,
+          0.01,
+          0.26
+        ],
+        [
+          -0.4,
+          0.42,
+          -0.23
+        ],
+        [
+          0.4,
+          0.42,
+          -0.23
+        ],
+        [
+          -0.4,
+          0.025,
+          0.27
+        ],
+        [
+          0.4,
+          0.025,
+          0.27
+        ],
+        [
+          -0.4,
+          0.435,
+          -0.22
+        ],
+        [
+          0.4,
+          0.435,
+          -0.22
+        ]
+      ],
+      "paintable": false,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.2,
+        0.15,
+        -0.18
+      ],
+      "max": [
+        0.2,
+        0.415,
+        0.11
+      ],
+      "color": "#2a2826",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          -0.2,
+          0.15,
+          0.1
+        ],
+        [
+          0.2,
+          0.15,
+          0.1
+        ],
+        [
+          -0.05,
+          0.4,
+          -0.18
+        ],
+        [
+          0.05,
+          0.4,
+          -0.18
+        ],
+        [
+          -0.2,
+          0.165,
+          0.11
+        ],
+        [
+          0.2,
+          0.165,
+          0.11
+        ],
+        [
+          -0.05,
+          0.415,
+          -0.17
+        ],
+        [
+          0.05,
+          0.415,
+          -0.17
+        ]
+      ],
+      "paintable": false,
+      "finish": "soot"
+    },
+    {
+      "min": [
+        -0.375,
+        0.003,
+        0.26
+      ],
+      "max": [
+        -0.345,
+        0.04,
+        0.29
+      ],
+      "color": "#a3a199",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.015,
+        0.003,
+        0.26
+      ],
+      "max": [
+        0.015,
+        0.04,
+        0.29
+      ],
+      "color": "#9a6a34",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.345,
+        0.003,
+        0.26
+      ],
+      "max": [
+        0.375,
+        0.04,
+        0.29
+      ],
+      "color": "#a3a199",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.36,
+        0.42,
+        -0.24
+      ],
+      "max": [
+        0.43,
+        0.5,
+        -0.2
+      ],
+      "color": "#5a6070",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          0.36,
+          0.42,
+          -0.24
+        ],
+        [
+          0.43,
+          0.42,
+          -0.24
+        ],
+        [
+          0.43,
+          0.5,
+          -0.2
+        ],
+        [
+          0.38,
+          0.47,
+          -0.21
+        ],
+        [
+          0.4,
+          0.44,
+          -0.22
+        ]
+      ],
+      "paintable": false,
+      "finish": "dirty steel"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "wall",
+      "at": [
+        0.0,
+        0.125,
+        -0.3
+      ],
+      "dir": "-z"
+    }
+  ]
+}

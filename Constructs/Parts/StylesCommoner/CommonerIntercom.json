@@ -1,0 +1,363 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Commoner Intercom",
+  "description": "Commoner intercom (draft, set 2): a cream intercom box with a round speaker grille, a talk bar worn shiny, a little channel dial and someone's name scratched into the casing.",
+  "group": "StyleCommoner",
+  "section": "Commoner style",
+  "role": "frame",
+  "tool": "wrench",
+  "finish": "worn paint",
+  "collider": "boxes",
+  "mass": 40.0,
+  "health": 200,
+  "armour": 2,
+  "material": "steel",
+  "color": "#d6c9a8",
+  "attachSeconds": 2.0,
+  "boxes": [
+    {
+      "min": [
+        -0.12,
+        0.0,
+        -0.25
+      ],
+      "max": [
+        0.12,
+        0.5,
+        -0.12
+      ],
+      "color": "#d6c9a8",
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.1,
+        0.15,
+        -0.25
+      ],
+      "max": [
+        0.1,
+        0.45,
+        -0.18
+      ],
+      "color": "#d6c9a8",
+      "detail": true,
+      "finish": "worn paint",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.0618,
+        0.285,
+        -0.18
+      ],
+      "max": [
+        0.0618,
+        0.415,
+        -0.17
+      ],
+      "color": "#3b3631",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          0.0618,
+          0.3701,
+          -0.18
+        ],
+        [
+          0.0382,
+          0.4026,
+          -0.18
+        ],
+        [
+          0.0,
+          0.415,
+          -0.18
+        ],
+        [
+          -0.0382,
+          0.4026,
+          -0.18
+        ],
+        [
+          -0.0618,
+          0.3701,
+          -0.18
+        ],
+        [
+          -0.0618,
+          0.3299,
+          -0.18
+        ],
+        [
+          -0.0382,
+          0.2974,
+          -0.18
+        ],
+        [
+          -0.0,
+          0.285,
+          -0.18
+        ],
+        [
+          0.0382,
+          0.2974,
+          -0.18
+        ],
+        [
+          0.0618,
+          0.3299,
+          -0.18
+        ],
+        [
+          0.0618,
+          0.3701,
+          -0.17
+        ],
+        [
+          0.0382,
+          0.4026,
+          -0.17
+        ],
+        [
+          0.0,
+          0.415,
+          -0.17
+        ],
+        [
+          -0.0382,
+          0.4026,
+          -0.17
+        ],
+        [
+          -0.0618,
+          0.3701,
+          -0.17
+        ],
+        [
+          -0.0618,
+          0.3299,
+          -0.17
+        ],
+        [
+          -0.0382,
+          0.2974,
+          -0.17
+        ],
+        [
+          -0.0,
+          0.285,
+          -0.17
+        ],
+        [
+          0.0382,
+          0.2974,
+          -0.17
+        ],
+        [
+          0.0618,
+          0.3299,
+          -0.17
+        ]
+      ],
+      "paintable": false,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.05,
+        0.307,
+        -0.175
+      ],
+      "max": [
+        0.05,
+        0.318,
+        -0.164
+      ],
+      "color": "#7d8085",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.05,
+        0.329,
+        -0.175
+      ],
+      "max": [
+        0.05,
+        0.34,
+        -0.164
+      ],
+      "color": "#7d8085",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.05,
+        0.351,
+        -0.175
+      ],
+      "max": [
+        0.05,
+        0.362,
+        -0.164
+      ],
+      "color": "#7d8085",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.05,
+        0.373,
+        -0.175
+      ],
+      "max": [
+        0.05,
+        0.384,
+        -0.164
+      ],
+      "color": "#7d8085",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.07,
+        0.19,
+        -0.18
+      ],
+      "max": [
+        0.07,
+        0.24,
+        -0.16
+      ],
+      "color": "#d8d2c0",
+      "detail": true,
+      "finish": "chrome",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.0546,
+        0.408,
+        -0.18
+      ],
+      "max": [
+        0.0754,
+        0.432,
+        -0.165
+      ],
+      "color": "#2a2826",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          0.0754,
+          0.426,
+          -0.18
+        ],
+        [
+          0.065,
+          0.432,
+          -0.18
+        ],
+        [
+          0.0546,
+          0.426,
+          -0.18
+        ],
+        [
+          0.0546,
+          0.414,
+          -0.18
+        ],
+        [
+          0.065,
+          0.408,
+          -0.18
+        ],
+        [
+          0.0754,
+          0.414,
+          -0.18
+        ],
+        [
+          0.0754,
+          0.426,
+          -0.165
+        ],
+        [
+          0.065,
+          0.432,
+          -0.165
+        ],
+        [
+          0.0546,
+          0.426,
+          -0.165
+        ],
+        [
+          0.0546,
+          0.414,
+          -0.165
+        ],
+        [
+          0.065,
+          0.408,
+          -0.165
+        ],
+        [
+          0.0754,
+          0.414,
+          -0.165
+        ]
+      ],
+      "paintable": false,
+      "finish": "plastic"
+    },
+    {
+      "min": [
+        -0.08,
+        0.257,
+        -0.186
+      ],
+      "max": [
+        -0.02,
+        0.268,
+        -0.175
+      ],
+      "color": "#8a8070",
+      "detail": true,
+      "finish": "worn paint",
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        -0.185
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "wall",
+      "at": [
+        0.0,
+        0.125,
+        -0.25
+      ],
+      "dir": "-z"
+    }
+  ]
+}

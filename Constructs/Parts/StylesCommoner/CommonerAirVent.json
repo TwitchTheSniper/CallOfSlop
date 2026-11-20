@@ -1,0 +1,283 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Commoner Air Vent",
+  "description": "Commoner air vent (draft, set 2): a wall vent grille in a duct collar, its paint gone, a strip of ribbon tied to the grille to show it is blowing, and dust streaked down the wall below it.",
+  "group": "StyleCommoner",
+  "section": "Commoner style",
+  "role": "frame",
+  "tool": "wrench",
+  "finish": "worn paint",
+  "collider": "boxes",
+  "mass": 40.0,
+  "health": 200,
+  "armour": 2,
+  "material": "steel",
+  "color": "#d6c9a8",
+  "attachSeconds": 2.0,
+  "boxes": [
+    {
+      "min": [
+        -0.25,
+        0.0,
+        -0.25
+      ],
+      "max": [
+        0.25,
+        0.6,
+        -0.1
+      ],
+      "color": "#d6c9a8",
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.22,
+        0.25,
+        -0.25
+      ],
+      "max": [
+        0.22,
+        0.55,
+        -0.16
+      ],
+      "color": "#7d8085",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.2,
+        0.27,
+        -0.16
+      ],
+      "max": [
+        0.2,
+        0.29,
+        -0.13
+      ],
+      "color": "#7d8085",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.2,
+        0.315,
+        -0.16
+      ],
+      "max": [
+        0.2,
+        0.335,
+        -0.13
+      ],
+      "color": "#7d8085",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.2,
+        0.36,
+        -0.16
+      ],
+      "max": [
+        0.2,
+        0.38,
+        -0.13
+      ],
+      "color": "#7d8085",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.2,
+        0.405,
+        -0.16
+      ],
+      "max": [
+        0.2,
+        0.425,
+        -0.13
+      ],
+      "color": "#7d8085",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.2,
+        0.45,
+        -0.16
+      ],
+      "max": [
+        0.2,
+        0.47,
+        -0.13
+      ],
+      "color": "#7d8085",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.2,
+        0.495,
+        -0.16
+      ],
+      "max": [
+        0.2,
+        0.515,
+        -0.13
+      ],
+      "color": "#7d8085",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.05,
+        0.38,
+        -0.13
+      ],
+      "max": [
+        0.18,
+        0.48,
+        -0.09
+      ],
+      "color": "#c23b2a",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          0.05,
+          0.48,
+          -0.13
+        ],
+        [
+          0.08,
+          0.48,
+          -0.13
+        ],
+        [
+          0.15,
+          0.38,
+          -0.1
+        ],
+        [
+          0.18,
+          0.38,
+          -0.1
+        ],
+        [
+          0.05,
+          0.48,
+          -0.12
+        ],
+        [
+          0.08,
+          0.48,
+          -0.12
+        ],
+        [
+          0.15,
+          0.38,
+          -0.09
+        ],
+        [
+          0.18,
+          0.38,
+          -0.09
+        ]
+      ],
+      "paintable": false,
+      "finish": "fabric"
+    },
+    {
+      "min": [
+        -0.18,
+        0.02,
+        -0.1655
+      ],
+      "max": [
+        0.18,
+        0.25,
+        -0.1495
+      ],
+      "color": "#4a4540",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          -0.18,
+          0.25,
+          -0.16
+        ],
+        [
+          0.18,
+          0.25,
+          -0.16
+        ],
+        [
+          -0.1,
+          0.02,
+          -0.16
+        ],
+        [
+          0.1,
+          0.02,
+          -0.16
+        ],
+        [
+          -0.18,
+          0.25,
+          -0.155
+        ],
+        [
+          0.18,
+          0.25,
+          -0.155
+        ],
+        [
+          -0.1,
+          0.02,
+          -0.155
+        ],
+        [
+          0.1,
+          0.02,
+          -0.155
+        ]
+      ],
+      "paintable": false,
+      "finish": "dirty steel"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        -0.175
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "wall",
+      "at": [
+        0.0,
+        0.125,
+        -0.25
+      ],
+      "dir": "-z"
+    }
+  ]
+}

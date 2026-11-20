@@ -1,0 +1,307 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Commoner Air Filter Box",
+  "description": "Commoner air filter box (draft, set 2): a wall box of stacked filter frames with its front left off, one filter clean and the rest grey, a pressure tell-tale on a stick and the screws kept in a tin on top.",
+  "group": "StyleCommoner",
+  "section": "Commoner style",
+  "role": "frame",
+  "tool": "wrench",
+  "finish": "worn paint",
+  "collider": "boxes",
+  "mass": 40.0,
+  "health": 200,
+  "armour": 2,
+  "material": "steel",
+  "color": "#d6c9a8",
+  "attachSeconds": 2.0,
+  "boxes": [
+    {
+      "min": [
+        -0.35,
+        0.0,
+        -0.25
+      ],
+      "max": [
+        0.35,
+        1.1,
+        0.05
+      ],
+      "color": "#d6c9a8",
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.33,
+        0.4,
+        -0.25
+      ],
+      "max": [
+        0.33,
+        1.05,
+        -0.02
+      ],
+      "color": "#8a8d82",
+      "detail": true,
+      "finish": "rusty paint",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.3,
+        0.44,
+        -0.22
+      ],
+      "max": [
+        0.3,
+        0.56,
+        0.0
+      ],
+      "color": "#77756e",
+      "detail": true,
+      "finish": "fabric",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.3,
+        0.59,
+        -0.22
+      ],
+      "max": [
+        0.3,
+        0.71,
+        0.0
+      ],
+      "color": "#e3dcc8",
+      "detail": true,
+      "finish": "fabric",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.3,
+        0.74,
+        -0.22
+      ],
+      "max": [
+        0.3,
+        0.86,
+        0.0
+      ],
+      "color": "#77756e",
+      "detail": true,
+      "finish": "fabric",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.3,
+        0.89,
+        -0.22
+      ],
+      "max": [
+        0.3,
+        1.01,
+        0.0
+      ],
+      "color": "#77756e",
+      "detail": true,
+      "finish": "fabric",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.242,
+        1.05,
+        0.012
+      ],
+      "max": [
+        0.258,
+        1.18,
+        0.028
+      ],
+      "color": "#7d8085",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          0.2542,
+          1.05,
+          0.0242
+        ],
+        [
+          0.2458,
+          1.05,
+          0.0242
+        ],
+        [
+          0.2458,
+          1.05,
+          0.0158
+        ],
+        [
+          0.2542,
+          1.05,
+          0.0158
+        ],
+        [
+          0.2542,
+          1.18,
+          0.0242
+        ],
+        [
+          0.2458,
+          1.18,
+          0.0242
+        ],
+        [
+          0.2458,
+          1.18,
+          0.0158
+        ],
+        [
+          0.2542,
+          1.18,
+          0.0158
+        ]
+      ],
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.2,
+        1.17,
+        0.0
+      ],
+      "max": [
+        0.3,
+        1.2,
+        0.04
+      ],
+      "color": "#c23b2a",
+      "detail": true,
+      "finish": "plastic",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.1962,
+        1.05,
+        -0.1662
+      ],
+      "max": [
+        -0.1038,
+        1.1,
+        -0.0738
+      ],
+      "color": "#7d8085",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          -0.1038,
+          1.05,
+          -0.1009
+        ],
+        [
+          -0.1309,
+          1.05,
+          -0.0738
+        ],
+        [
+          -0.1691,
+          1.05,
+          -0.0738
+        ],
+        [
+          -0.1962,
+          1.05,
+          -0.1009
+        ],
+        [
+          -0.1962,
+          1.05,
+          -0.1391
+        ],
+        [
+          -0.1691,
+          1.05,
+          -0.1662
+        ],
+        [
+          -0.1309,
+          1.05,
+          -0.1662
+        ],
+        [
+          -0.1038,
+          1.05,
+          -0.1391
+        ],
+        [
+          -0.1038,
+          1.1,
+          -0.1009
+        ],
+        [
+          -0.1309,
+          1.1,
+          -0.0738
+        ],
+        [
+          -0.1691,
+          1.1,
+          -0.0738
+        ],
+        [
+          -0.1962,
+          1.1,
+          -0.1009
+        ],
+        [
+          -0.1962,
+          1.1,
+          -0.1391
+        ],
+        [
+          -0.1691,
+          1.1,
+          -0.1662
+        ],
+        [
+          -0.1309,
+          1.1,
+          -0.1662
+        ],
+        [
+          -0.1038,
+          1.1,
+          -0.1391
+        ]
+      ],
+      "paintable": false,
+      "finish": "rusty paint"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        -0.1
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "wall",
+      "at": [
+        0.0,
+        0.125,
+        -0.25
+      ],
+      "dir": "-z"
+    }
+  ]
+}
