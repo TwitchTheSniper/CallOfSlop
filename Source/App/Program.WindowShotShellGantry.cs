@@ -111,7 +111,7 @@ public static partial class Program
                     if (ConstructGantry.ShellIn(w, gc, part) is { } sh)
                     {
                         var local = ConstructGantry.ToPart(gc, part, sh.Pos);
-                        WsSay(FormattableString.Invariant($"shellgantry state: shell at {local.X:0.000},{local.Y:0.000},{local.Z:0.000} in the gantry's frame, frame body {sh.Frame}, held {sh.HeldBy}, gantry {gc.Vel.Length():0.0} m/s"));
+                        WsSay(FormattableString.Invariant($"shellgantry state: shell at {local.X:0.000},{local.Y:0.000},{local.Z:0.000} in the gantry's frame, frame body {sh.Frame}, held {sh.HeldBy}, frozen {sh.Frozen}, grabbed {sh.GrabbedBy}, gantry {gc.Vel.Length():0.0} m/s"));
                         Span<byte> kit = stackalloc byte[ShellFrames.SlotCount];
                         ShellFrames.ReadKit(sh.Parts[0], sh.Parts[0].D, kit);
                         var f = ShellFrames.FrameOf(sh.Parts[0].D);
