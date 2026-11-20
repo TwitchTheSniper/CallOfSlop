@@ -664,13 +664,44 @@ public static partial class Program
             case "partlook":
                 WsSay($"partinfo: look: {g.SandboxLookText}");
                 return true;
+            case "modsock" when arg.StartsWith("style ", StringComparison.OrdinalIgnoreCase): // host: "modsock style N [DEPTH]": every Module Socket set to style N (0 proud, 1 flush, 2 opening), as the configure tool sets it
+            {
+                var w = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                var style = w.Length > 1 ? int.Parse(w[1], System.Globalization.CultureInfo.InvariantCulture) : 0;
+                var depth = w.Length > 2 ? float.Parse(w[2], System.Globalization.CultureInfo.InvariantCulture) : -1f;
+                if (!g.IsServer)
+                {
+                    WsFail("modsock style: on the host");
+                    return true;
+                }
+                foreach (var mb in g.Constructs.Bodies)
+                    for (var i = 0; i < mb.PartCount; i++)
+                    {
+                        var md = mb.DefOf(i);
+                        if (md.ModPart != ModPart.Socket || md.ModStand)
+                            continue;
+                        ConstructConfig.Put(ref mb.Parts[i], md, CfgKey.ModStyle, style);
+                        if (depth > 0)
+                            ConstructConfig.Put(ref mb.Parts[i], md, CfgKey.ModDepth, depth);
+                        mb.Dirty = true;
+                        g.Constructs.StructureDirty.Add(mb.Id);
+                        WsSay($"modsock: body {mb.Id} socket part {i} set to style {style}");
+                    }
+                return true;
+            }
             case "modsock": // "modsock state": every body's module sockets and modules as this peer has them, and the notice on screen (module-sockets.md 15)
                 foreach (var mb in g.Constructs.Bodies)
                 {
                     if (mb.Dirty)
                         mb.Rebuild();
                     foreach (var ms in mb.ModSockets)
-                        WsSay($"modsock: body {mb.Id} socket part {ms.Plate} {ModuleSocketTable.SizeText(ms.W, ms.L)} {ms.Kind} {ms.Style}{(ms.Keyed ? " keyed" : "")}{(ms.Stand ? " stand" : "")} above {ms.Above:0.##}: module {ms.Module}, in the way {ms.InTheWay}{(ms.WrongKind ? ", wrong kind" : "")}");
+                        WsSay($"modsock: body {mb.Id} socket part {ms.Plate} {ModuleSocketTable.SizeText(ms.W, ms.L)} {ms.Kind} {ms.Style}{(ms.Keyed ? " keyed" : "")}{(ms.Stand ? " stand" : "")} above {ms.Above:0.##}: module {ms.Module}, in the way {ms.InTheWay}{(ms.WrongKind ? ", wrong kind" : "")}; depth {ms.Depth:0.##}, cut {ConstructConfig.Get(mb.Parts[ms.Plate], mb.DefOf(ms.Plate), CfgKey.ModCut, 0):0.#} s; look \"{ModuleSockets.LookText(mb, ms.Plate)}\"");
+                    if (mb.ModSockets.Length > 0)
+                        for (var rk = 0; rk < mb.RouteCount; rk++)
+                            if (mb.Routes[rk].Type == RouteType.Pipe)
+                                WsSay($"modsock: body {mb.Id} pipe {rk}: {mb.DefOf(mb.Routes[rk].From).Name} -> {mb.DefOf(mb.Routes[rk].To).Name}, source {mb.DefOf(mb.Routes[rk].Source).Name}, fed {mb.Routes[rk].FedEnd}");
+                    if (mb.ModSockets.Length > 0)
+                        WsSay($"modsock: body {mb.Id}: {mb.PartCount} parts, power {(mb.PowerOn ? "on" : "off")}, draw {mb.PowerUse / 1000f:0.#} kW (cutting {mb.ModCutWatts / 1000f:0.#} kW)");
                     for (var mi = 0; mi < mb.Modules.Length; mi++)
                     {
                         var mm = mb.Modules[mi];
