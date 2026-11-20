@@ -67,6 +67,27 @@ public static partial class Program
                 WsSay($"shellgantry setup: gantry {gc.Id}, table {tc?.Id ?? 0} ({put} modules on it), {sd.Name} {sc?.Id ?? 0}; table found by the gantry: {ConstructGantry.TableOf(w, gc, 0, out _) >= 0}; shell in the bay: {ConstructGantry.ShellIn(w, gc, 0)?.Id ?? 0}");
                 return;
             }
+            case "drive" when g.IsServer:
+            {
+                // (a test: the gantry and its shell loose, lifted 0.6 m, then the gantry driven as a ship; "drive 0 0" stops it)
+                var p = rest.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                var speed = p.Length > 0 && float.TryParse(p[0], System.Globalization.CultureInfo.InvariantCulture, out var sv) ? sv : 3f;
+                var turn = p.Length > 1 && float.TryParse(p[1], System.Globalization.CultureInfo.InvariantCulture, out var tv) ? tv : 0f;
+                if (Nearest(g, me) is { } gc && (Game.GantryTestSpeed, Game.GantryTestTurn) == (0, 0))
+                {
+                    var sh = ConstructGantry.ShellIn(w, gc, gc.Gantries[0]);
+                    foreach (var c in new[] { gc, sh })
+                        if (c != null)
+                        {
+                            ConstructEdits.Unfreeze(w, c);
+                            c.Pos += Vector3.UnitY * 0.6f;
+                            c.Wake();
+                        }
+                }
+                (Game.GantryTestSpeed, Game.GantryTestTurn) = (speed, turn);
+                WsSay(FormattableString.Invariant($"shellgantry drive: {speed} m/s, {turn} rad/s"));
+                return;
+            }
             case "fit":
             {
                 var p = rest.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
@@ -89,6 +110,8 @@ public static partial class Program
                     var part = gc.Gantries[0];
                     if (ConstructGantry.ShellIn(w, gc, part) is { } sh)
                     {
+                        var local = ConstructGantry.ToPart(gc, part, sh.Pos);
+                        WsSay(FormattableString.Invariant($"shellgantry state: shell at {local.X:0.000},{local.Y:0.000},{local.Z:0.000} in the gantry's frame, frame body {sh.Frame}, held {sh.HeldBy}, gantry {gc.Vel.Length():0.0} m/s"));
                         Span<byte> kit = stackalloc byte[ShellFrames.SlotCount];
                         ShellFrames.ReadKit(sh.Parts[0], sh.Parts[0].D, kit);
                         var f = ShellFrames.FrameOf(sh.Parts[0].D);

@@ -180,8 +180,6 @@ public sealed partial class ConstructWorld
                 (b.Pos, b.Rot) = (endPos, endRot); // (a submodule mid-carry is saved at its spot: the hand's carry isn't saved, ConstructLifterBodies.cs)
             if (c.HeldBy != 0 && ConstructLifters.OnCabHook(this, c))
                 b.Frozen = false; // (a container on a cab's hook loads loose where it hung: the hold catches it again, or the hook takes it)
-            if (c.HeldBy != 0 && ConstructGantry.ClampFroze(this, c.Id))
-                b.Frozen = false; // (a shell in a Shell Gantry's clamp: swaps aren't saved, so it loads standing loose with the modules fitted so far)
             b.Vel = c.Vel;
             b.AngVel = c.AngVel;
             b.CarriedBy = c.CarriedBy;

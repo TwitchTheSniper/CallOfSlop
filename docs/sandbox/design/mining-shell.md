@@ -180,8 +180,11 @@ Built 2026-11-19 (`ConstructGantry.cs`, `GameShellGantry.cs`, `GantryRender.cs`;
   shell's hips, then two jaws on the yoke's ends swing in round the pelvis, a tooth at each front corner (0.8 s: the ram the first 60%, the
   jaws the rest). The hips were chosen because the arms hang beside the torso and the Mining Shell's hopper sits on its back: the yoke
   passes under the hopper's floor. A lamp on the housing is red while shut, green open. It closes when a change's first swap begins and
-  opens (0.8 s) when its last ends or is stopped. While shut the server holds the shell: frozen where it stands (unless it was frozen
-  already) and `HeldBy` the gantry, so no grab, nudge, edit or waking ("a Shell Gantry's clamp holds it while its arms work").
+  opens (0.8 s) when its last ends or is stopped. While shut the server holds the shell: `HeldBy` the gantry (no grab, nudge, edit
+  or waking: "a Shell Gantry's clamp holds it while its arms work") and posed every tick where it stood in the gantry part's frame
+  (`Game.GantryPin`), never frozen: a gantry aboard a moving ship keeps its shell riding the ship's frame (`Construct.GantryHold` lets a
+  held shell ride), posed in that frame; beside a still gantry it is left asleep. Only a shell in a clamp is drawn part by part (the
+  merged meshes leave it out while `GantryHold`).
 - **One swap (8.6 s):** the arm reaches behind the slot (1.2), goes in and shuts its gripper (1.6), unbolts with a turning nut runner and a
   work lamp (2.2), pulls the module out along the slot's way off (head up and back, back pack back, an arm outwards, a leg back) (2.7),
   carries it to the table (4.2), sets it down beside the table's middle (4.5), moves over and grips the new one (4.9), carries it back
@@ -194,8 +197,8 @@ Built 2026-11-19 (`ConstructGantry.cs`, `GameShellGantry.cs`, `GantryRender.cs`;
 - **Network:** each swap is a `Msg.Gantry` with its slot (an off names its swap) and its seconds run, negative while queued; every peer
   draws the clamp and the arms from those, nothing per frame on the wire. A joiner hears the swaps under way and sees the clamp shut.
 - **Stops and saves:** as before, a swap stops (its new module stays on the table) if the shell or the gantry goes; the clamp opens when
-  none is left. Swaps aren't saved: a save mid-change writes the shell loose (not frozen, if the clamp froze it) with the modules fitted so
-  far, and the table with the rest.
+  none is left. Swaps and clamps aren't saved (a world's clear drops both): a save mid-change writes the shell where it stands, loose,
+  with the modules fitted so far, and the table with the rest.
 - **Tried** (window runs, `shellgantry setup|fit|state`): a Robot Shell's left leg seen gone from the pull to the fit, carried, set
   down and the new one brought and fitted; the clamp's ram and jaws on a Robot and a Mining Shell, the lamp red then green; a head
   queued behind a leg ran after its fit; asking the same slot again refused; a joined client heard both swaps (the queued one too) and

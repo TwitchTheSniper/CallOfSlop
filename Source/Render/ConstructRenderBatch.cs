@@ -105,7 +105,7 @@ public static partial class ConstructRender
         if (_defBoxes.TryGetValue(d, out var n))
             return n;
         n = 0;
-        if (d.Role == PartRole.Joint || d.ShellBody || d.IsRail || d.HasRig || d.HasGlass || d.HasDial || d.IsBeacon || d.IsTerminal || d.IsSpawner || d.IsOrdnance
+        if (d.Role == PartRole.Joint || d.IsRail || d.HasRig || d.HasGlass || d.HasDial || d.IsBeacon || d.IsTerminal || d.IsSpawner || d.IsOrdnance
             || d.HasWork || d.HasRouterBoxes || d.HasEngineBoxes || d.Rotor != null || d.TrackRays > 0 || d.Logic is CLogic.AnalogLever or CLogic.Lamp || d.Surface is { Control: > 0 })
             n = -1;
         else
@@ -127,7 +127,7 @@ public static partial class ConstructRender
     private static int MergeBoxes(Construct c, int i)
     {
         ref var p = ref c.Parts[i];
-        if (p.Burn > 0 || p.Store != 0 || c.MergeOf[i] != 0 || c.Rides(i) || c.PartScale[i] > 1 || c.EngineOf[i] != 0 || _wheelMark[i] == _wheelToken)
+        if (p.Burn > 0 || p.Store != 0 || c.GantryHold || c.MergeOf[i] != 0 || c.Rides(i) || c.PartScale[i] > 1 || c.EngineOf[i] != 0 || _wheelMark[i] == _wheelToken)
             return 0;
         if (c.DoorCount > 0 && c.DoorOfListed(i) >= 0)
             return 0; // (an event door's parts are always walked, at their moving pose while it moves: settling needs no remerge)
@@ -140,7 +140,7 @@ public static partial class ConstructRender
     /// <summary>What decides which parts are merged, beyond a rebuild: the types, fires and stored parts.</summary>
     private static long DynKey(Construct c)
     {
-        var h = (long)c.PartCount;
+        var h = (long)c.PartCount + (c.GantryHold ? 1L << 50 : 0); // (a shell in a gantry's clamp is walked: its modules come off)
         for (var i = 0; i < c.PartCount; i++)
         {
             ref var p = ref c.Parts[i];

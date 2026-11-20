@@ -25,13 +25,15 @@ public struct GantryJob
 
 /// <summary>
 /// A Shell Gantry's waist clamp on the shell in its bay (both peers; ConstructGantry.Hold): closed from the first swap's start, open again
-/// from when its last swap ended. An entry stays until its opening is drawn, then is reused. Render and bookkeeping only: the hold
-/// itself is the server's (the shell frozen and <see cref="Construct.HeldBy"/> the gantry).
+/// from when its last swap ended. An entry stays until its opening is drawn, then is reused. The hold itself is the server's: the shell
+/// is <see cref="Construct.HeldBy"/> the gantry and posed every tick where it stood in the gantry part's frame (Game.GantryPin), so it
+/// goes with a gantry aboard a moving ship (riding its frame) and is never frozen in the world.
 /// </summary>
 public struct GantryLock
 {
     public ushort Body, Part, Shell;
-    public bool Froze; // server: the clamp froze the shell (it wasn't frozen before), so it unfreezes it when it opens
+    public Vector3 At; // server: the shell's origin in the gantry part's frame when the clamp shut
+    public Quaternion Turn; // ...and its turn there
     public double Since, Until; // when it began to close; when it began to open (-1: still held)
 }
 
@@ -458,15 +460,6 @@ public static class ConstructGantry
     {
         var closed = Ramp(now - l.Since, 0, LockClose);
         return l.Until < 0 ? closed : MathF.Min(Ramp(l.Until - l.Since, 0, LockClose), 1 - Ramp(now - l.Until, 0, LockOpen));
-    }
-
-    /// <summary>Server: did a gantry's clamp freeze this shell (so a save writes it loose, as it will stand when the swap is over)?</summary>
-    public static bool ClampFroze(ConstructWorld world, ushort shell)
-    {
-        for (var k = 0; k < world.GantryLockCount; k++)
-            if (world.GantryLocks[k].Shell == shell && world.GantryLocks[k].Until < 0 && world.GantryLocks[k].Froze)
-                return true;
-        return false;
     }
 
     /// <summary>Is this shell in a gantry's hands (it can't be woken or taken while it is)?</summary>

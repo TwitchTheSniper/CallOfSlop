@@ -83,11 +83,14 @@ public sealed partial class Game
             return notYourTable; // (and a table on another body: its modules are its owner's)
         var queued = 0; // (modules already promised to this gantry's queued swaps: each needs one of its own on the table)
         for (var q = 0; q < world.GantryJobCount; q++)
-            if (world.GantryJobs[q].Body == c.Id && world.GantryJobs[q].Part == part && world.GantryJobs[q].New == m.Index + 1)
-                queued++;
+            if (world.GantryJobs[q].Body == c.Id && world.GantryJobs[q].Part == part && world.GantryJobs[q].New == m.Index + 1 && world.GantryJobs[q].Old != 255)
+                queued++; // (a fitted one, its arm going home, took its module already)
         var onTable = ConstructGantry.OnTable(world, tb, table, m) > queued;
         if (!onTable && !creative)
             return $"no {nd.Name} on the parts table: make one (an Assembler) and put it there";
+        var now = ConstructConveyor.Clock;
+        if (!GantryClamp(c, part, shell, now))
+            return "too many gantries at work: wait a moment";
         // (the module stays on the table until the fit, when it is taken and the old one set down in the same tick: a save or a world
         // stopping mid-swap finds the shell with its old module and the table with the new one, nothing lost or doubled)
         ref var j = ref world.GantryJobs[world.GantryJobCount++];
@@ -96,21 +99,27 @@ public sealed partial class Game
             Body = c.Id, Part = (ushort)part, Shell = shell.Id, TableBody = tb?.Id ?? 0, Table = table >= 0 ? (ushort)table : ushort.MaxValue,
             Slot = (byte)slot, Old = (byte)(old != null ? old.Index + 1 : 0), New = (byte)(m.Index + 1), Arm = ConstructGantry.ArmOf(slot),
         };
-        var now = ConstructConveyor.Clock;
         j.Start = ConstructGantry.NextStart(world, c.Id, part, j.Arm, now); // (behind this gantry's swaps already asked: one sequence)
-        GantryClamp(c, part, shell, now);
         GantrySend(j, true, now - j.Start, null);
         Log($"[gantry] {c.DefOf(part).Name} on body {c.Id}{(j.Start > now ? $" (queued, in {j.Start - now:0.0} s)" : "")}: {old?.Name ?? "nothing"} off the {sp.D.Name}'s {ShellFrames.SlotLabel(slot)}, {m.Name} on ({(onTable ? "from its table" : "creative")})");
         return null;
     }
 
+    /// <summary>The window tool's "shellgantry drive SPEED TURN" (a test, never set in play): every gantry's body is driven as a ship is, hovering, at this speed along its front and this turn (rad/s).</summary>
+    internal static float GantryTestSpeed, GantryTestTurn;
+
     /// <summary>Server, each Sandbox tick: the swaps under way, ended, stopped or fitted. Walks only the jobs (none: nothing).</summary>
     private void GantryTick()
     {
         var world = Constructs;
+        if (GantryTestSpeed != 0 || GantryTestTurn != 0)
+            GantryTestDrive(world);
         if (world.GantryJobCount == 0)
             return;
         var now = ConstructConveyor.Clock;
+        for (var k = 0; k < world.GantryLockCount; k++)
+            if (world.GantryLocks[k].Until < 0)
+                GantryPin(in world.GantryLocks[k]);
         for (var k = world.GantryJobCount - 1; k >= 0; k--)
         {
             ref var j = ref world.GantryJobs[k];
@@ -211,27 +220,79 @@ public sealed partial class Game
             GantryUnclamp(j.Body, j.Part);
     }
 
+    private static void GantryTestDrive(ConstructWorld world)
+    {
+        foreach (var c in world.Bodies)
+            if (c.GantryCount > 0 && !c.Anchored)
+            {
+                var vel = Vector3.Transform(-Vector3.UnitZ, c.Rot) * GantryTestSpeed;
+                c.Vel = vel / 0.999f - ConstructGravity.GravityFor(c, c.WorldCom) * World.TickDt; // (as RideCheck.Drive: the step's damping and fall made up)
+                c.AngVel = new Vector3(0, GantryTestTurn / 0.985f, 0);
+                c.SpeedKept = c.Vel.Length() + 1f;
+                c.Wake();
+            }
+    }
+
     /// <summary>
-    /// Server: the gantry's waist clamp shuts on the shell (the first swap of a change): the shell is frozen where it stands (unless it
-    /// already was) and held by the gantry (<see cref="Construct.HeldBy"/>: no grab, no edit, no waking; ConstructEdits.Contested says why).
+    /// Server: the gantry's waist clamp shuts on the shell (the first swap of a change): the shell is held by the gantry
+    /// (<see cref="Construct.HeldBy"/>: no grab, no edit, no waking; ConstructEdits.Contested says why) and from now on posed every tick
+    /// where it stands in the gantry part's frame (<see cref="GantryPin"/>). False: no clamp entry free (nothing held, no swap begun).
     /// </summary>
-    private void GantryClamp(Construct c, int part, Construct shell, double now)
+    private bool GantryClamp(Construct c, int part, Construct shell, double now)
     {
         var world = Constructs;
         var k = ConstructGantry.Hold(world, c.Id, part, shell.Id, now, out var fresh);
+        if (k < 0)
+            return false;
+        if (fresh || shell.HeldBy != c.Id)
+        {
+            Freeform.PartWorld(c, part, out var gp, out var gr);
+            var iq = Quaternion.Conjugate(gr);
+            world.GantryLocks[k].At = Vector3.Transform(shell.Pos - gp, iq);
+            world.GantryLocks[k].Turn = Quaternion.Normalize(iq * shell.Rot);
+            Log($"[gantry] body {c.Id}: its clamp holds shell {shell.Id}{(shell.Frame != 0 ? $" (riding body {shell.Frame}'s frame)" : "")}");
+        }
         shell.HeldBy = c.Id;
-        if (k < 0 || !fresh && world.GantryLocks[k].Froze || shell.Frozen)
-            return;
-        shell.Frozen = true;
-        shell.FrozenBy = 255;
-        shell.Anchored = true;
-        shell.Vel = shell.AngVel = Vector3.Zero;
-        world.GantryLocks[k].Froze = true;
-        world.StructureDirty.Add(shell.Id); // (peers hear it anchored)
-        Log($"[gantry] body {c.Id}: its clamp holds shell {shell.Id}");
+        shell.GantryHold = true;
+        return true;
     }
 
-    /// <summary>Server: a gantry's last swap is over: its clamp opens and lets the shell go (unfrozen if the clamp froze it).</summary>
+    /// <summary>
+    /// Server, each tick while a clamp is shut: the shell where the clamp holds it in the gantry part's frame, moving as the gantry does
+    /// there. A shell riding a moving ship's frame is posed in that frame (its frame pose is its truth), so it goes on with the ship; a
+    /// still shell beside a still gantry is left asleep. Nothing allocates.
+    /// </summary>
+    private void GantryPin(in GantryLock l)
+    {
+        var world = Constructs;
+        if (world.Get(l.Body) is not { } c || l.Part >= c.PartCount || world.Get(l.Shell) is not { } shell || shell.HeldBy != l.Body)
+            return;
+        Freeform.PartWorld(c, l.Part, out var gp, out var gr);
+        var pos = gp + Vector3.Transform(l.At, gr);
+        var rot = Quaternion.Normalize(gr * l.Turn);
+        var still = !c.MovesNow && shell.Frame == 0;
+        if (still && shell.Asleep && Vector3.DistanceSquared(shell.Pos, pos) < 1e-6f)
+            return;
+        shell.Pos = pos;
+        shell.Rot = rot;
+        shell.Vel = still ? Vector3.Zero : c.PointVel(shell.WorldCom);
+        shell.AngVel = still ? Vector3.Zero : c.AngVel;
+        if (shell.Frame != 0 && world.Get(shell.Frame) is { } f)
+        {
+            var iq = Quaternion.Conjugate(f.Rot);
+            shell.FramePos = Vector3.Transform(pos - f.Pos, iq);
+            shell.FrameRot = Quaternion.Normalize(iq * rot);
+            shell.FrameVel = shell.FrameSpin = Vector3.Zero;
+        }
+        else if (still)
+        {
+            (shell.PrevPos, shell.PrevRot) = (pos, rot);
+            shell.Asleep = true; // (held still: no physics until the clamp opens)
+            shell.SleepTicks = 0;
+        }
+    }
+
+    /// <summary>Server: a gantry's last swap is over: its clamp opens and lets the shell go (woken, so it stands or falls as it will).</summary>
     private void GantryUnclamp(ushort body, ushort part)
     {
         var world = Constructs;
@@ -244,9 +305,8 @@ public sealed partial class Game
             return;
         if (shell.HeldBy == body)
             shell.HeldBy = 0;
-        if (l.Froze && shell.Frozen && shell.FrozenBy == 255)
-            ConstructEdits.Unfreeze(world, shell); // (woken, rebuilt, and peers hear it loose)
-        l.Froze = false;
+        shell.GantryHold = false;
+        shell.Wake();
         Log($"[gantry] body {body}: its clamp lets shell {shell.Id} go");
     }
 
@@ -291,7 +351,11 @@ public sealed partial class Game
                 world.GantryJobCount--;
             }
             if (!ConstructGantry.AnyJob(world, body, part) && ConstructGantry.LockAt(world, body, part) is var lk and >= 0 && world.GantryLocks[lk].Until < 0)
+            {
                 world.GantryLocks[lk].Until = now;
+                if (world.Get(world.GantryLocks[lk].Shell) is { } freed)
+                    freed.GantryHold = false;
+            }
             return;
         }
         var j = new GantryJob { Body = body, Part = part, Slot = slot, Shell = r.U16(), TableBody = r.U16(), Table = r.U16(), Old = r.U8(), New = r.U8(), Arm = r.U8() };
@@ -305,6 +369,7 @@ public sealed partial class Game
             k = world.GantryJobCount++;
         }
         world.GantryJobs[k] = j;
-        ConstructGantry.Hold(world, body, part, j.Shell, Math.Min(now, j.Start), out _);
+        if (ConstructGantry.Hold(world, body, part, j.Shell, Math.Min(now, j.Start), out _) >= 0 && world.Get(j.Shell) is { } held)
+            held.GantryHold = true; // (drawn part by part while held: its modules come off)
     }
 }
