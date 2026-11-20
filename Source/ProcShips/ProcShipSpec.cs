@@ -15,11 +15,10 @@ public enum ProcHull { Chisel, Dart, Block, Barge, Stepped, Kite, Cage }
 
 /// <summary>
 /// The bow, by what it is for: the family's own (a chisel's knife, a dart's needle, a block's face, a barge's rake, a kite's flat
-/// blade), a lance (a long cone ending in a spinal railgun's muzzle), a fork (two prongs either side of a slot: a salvage berth, a
-/// repair berth or a railgun's rails), a hammer (a wide sensor bar on a neck), a mouth (a blunt face open into a hangar or a cargo
+/// blade), a lance (a long cone ending in a spinal railgun's muzzle), a hammer (a wide sensor bar on a neck), a mouth (a blunt face open into a hangar or a cargo
 /// hold), a dome (a glazed observation dome) or a jaw (a raked dozer face with a lip for cutters).
 /// </summary>
-public enum ProcBow { Family, Lance, Fork, Hammer, Mouth, Dome, Jaw }
+public enum ProcBow { Family, Lance, Hammer, Mouth, Dome, Jaw }
 
 /// <summary>What the ship is for: it sets its bow, its rooms, the spaces that span decks (holds, hangars, torpedo bays, atria), its sides and its sockets. New roles go at the end.</summary>
 public enum ProcRole { Gunship, Freighter, Miner, Tender, Liner, Lancer, Carrier, Comms, Stealth, Salvager, IceHauler }
@@ -31,8 +30,9 @@ public enum ProcRole { Gunship, Freighter, Miner, Tender, Liner, Lancer, Carrier
 /// </summary>
 public sealed record ProcShipSpec(int Seed, ProcClass Class, ProcHull? Hull = null, int? Decks = null, ProcRole? Role = null, bool Nacelles = false, ProcBow? Bow = null)
 {
-    /// <summary>The generator's version: a new version may change what a seed makes (the gallery says which made each ship).</summary>
-    public const int Version = 3;
+    /// <summary>The generator's version: a new version may change what a seed makes (the gallery says which made each ship). 4: the
+    /// fork bow taken out, so a lancer, a tender or a salvager that rolled one rolls again.</summary>
+    public const int Version = 4;
 
     public const int MaxSeed = 99999, MaxDecks = 5;
 
@@ -61,7 +61,7 @@ public sealed record ProcShipSpec(int Seed, ProcClass Class, ProcHull? Hull = nu
         }
     }
 
-    /// <summary>The ship's name: "Frigate 17", with what was fixed ("Frigate 17, dart hull, fork bow, nacelles, 3 decks, salvager").</summary>
+    /// <summary>The ship's name: "Frigate 17", with what was fixed ("Frigate 17, dart hull, jaw bow, nacelles, 3 decks, salvager").</summary>
     public string Title
     {
         get
@@ -89,7 +89,7 @@ public sealed record ProcShipSpec(int Seed, ProcClass Class, ProcHull? Hull = nu
     public static string ClassLetter(ProcClass c) => c switch { ProcClass.Corvette => "C", ProcClass.Frigate => "F", _ => "D" };
 
     // The letter sets (hulls, bows, n, roles) share no letter: a code's parts are all optional and still read one way.
-    private const string HullLetters = "cdbasko", BowLetters = "qpyhuwj", RoleLetters = "gfmtlrxezvi";
+    private const string HullLetters = "cdbasko", BowLetters = "qphuwj", RoleLetters = "gfmtlrxezvi";
 
     public static string HullLetter(ProcHull h) => HullLetters[(int)h].ToString();
 
@@ -106,7 +106,7 @@ public sealed record ProcShipSpec(int Seed, ProcClass Class, ProcHull? Hull = nu
 
     private static readonly Dictionary<string, ProcBow> BowWords = new(StringComparer.Ordinal)
     {
-        ["lance"] = ProcBow.Lance, ["spear"] = ProcBow.Lance, ["fork"] = ProcBow.Fork, ["forked"] = ProcBow.Fork, ["prongs"] = ProcBow.Fork, ["hammer"] = ProcBow.Hammer,
+        ["lance"] = ProcBow.Lance, ["spear"] = ProcBow.Lance, ["hammer"] = ProcBow.Hammer,
         ["hammerhead"] = ProcBow.Hammer, ["mouth"] = ProcBow.Mouth, ["dome"] = ProcBow.Dome, ["jaw"] = ProcBow.Jaw, ["dozer"] = ProcBow.Jaw, ["shovel"] = ProcBow.Jaw,
     };
 
@@ -121,7 +121,7 @@ public sealed record ProcShipSpec(int Seed, ProcClass Class, ProcHull? Hull = nu
 
     /// <summary>
     /// A spec from text: a code ("F17", "f17d3", "D5b", "F17an2f", "F5-3f", "D4by3v") or words ("frigate 17", "17 dart 3 decks",
-    /// "corvette 4 block", "destroyer 9 stepped liner", "frigate 3 chisel nacelles gunship", "frigate 8 fork bow salvager", "destroyer
+    /// "corvette 4 block", "destroyer 9 stepped liner", "frigate 3 chisel nacelles gunship", "frigate 8 jaw bow salvager", "destroyer
     /// 2 cage ice hauler"). Null when it names no seed or a word it doesn't know.
     /// </summary>
     public static ProcShipSpec? Parse(string text)

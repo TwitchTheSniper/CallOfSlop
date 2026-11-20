@@ -54,7 +54,7 @@ public sealed record ProcLock(int Side, int Deck, double A, double XIn, double X
 
 /// <summary>
 /// A lancer's spinal railgun (generator version 3): its barrel along the lowest deck's centreline from the muzzle (Z0: the lance's
-/// tip, or the fork's root face between its rails) to the breech block (BreechZ0 to Z1) in engineering, its axis Y, HX half wide
+/// tip) to the breech block (BreechZ0 to Z1) in engineering, its axis Y, HX half wide
 /// and HY half high; the walls it passes have an arch for it, and it stands on saddles on the floor.
 /// </summary>
 public sealed record ProcBarrel(double Z0, double Z1, double BreechZ0, double Y, double HX, double HY);
@@ -1139,9 +1139,9 @@ public sealed class ProcShipPlan
                     keep.Add((mz - 0.8, mz + 1.8));
                 }
         }
-        if (Role == ProcRole.Salvager && h.Bow != ProcBow.Fork)
+        if (Role == ProcRole.Salvager)
         {
-            // No fork to hold a wreck: a berth on the spine for a small salvage barge (and a hold for the materials, aft).
+            // A berth on the spine for a small salvage barge (and a hold for the materials, aft).
             foreach (var (bw, bl) in cls == ProcClass.Corvette ? new[] { (3, 3), (2, 3) } : [(4, 6), (3, 3)])
                 if (flat >= bw / 2.0 + 0.12 && Spot(bl, 0.7) is { } bz)
                 {
@@ -1251,7 +1251,7 @@ public sealed class ProcShipPlan
                 }
             }
         }
-        // The bow's own: cutters across a jaw's lip, sensors on a hammer's tips, clamps on a fork's prongs (a salvage or repair berth).
+        // The bow's own: cutters across a jaw's lip, sensors on a hammer's tips.
         if (h.Bow == ProcBow.Jaw)
         {
             var st = h.Stations[0];
@@ -1282,22 +1282,6 @@ public sealed class ProcShipPlan
             if (zb <= h.HammerZ1 - 0.2 && y0 > st.P[0].Y + 0.2 && y1 < st.P[4].Y - 0.2)
                 foreach (var sd in new[] { -1, 1 })
                     SidePlate($"sensor{(sd < 0 ? "P" : "S")}", "tip", sd, 2, 2, y0, za, "sensor", 0, 0.0);
-        }
-        foreach (var pr in h.Prongs.Where(_ => Role is ProcRole.Salvager or ProcRole.Tender))
-        {
-            // Clamps on the inner face, facing the slot: one, or two on a long prong.
-            var n = pr.Z1 - pr.Body >= 6.0 ? 2 : 1;
-            double y0 = Q(pr.Y - 1.0, 0.05), face = pr.Inner - pr.Side * 0.3;
-            if (pr.SY - pr.C < 1.05)
-                continue;
-            for (var k = 0; k < n; k++)
-            {
-                var za = Q(pr.Body + 0.4 + k * ((pr.Z1 - pr.Body - 2.8) / Math.Max(1, n - 1)), 0.05);
-                double[] padMin = pr.Side > 0 ? [face, y0 - 0.05, za - 0.05] : [pr.Inner - 0.04, y0 - 0.05, za - 0.05];
-                double[] padMax = pr.Side > 0 ? [pr.Inner + 0.04, y0 + 2.05, za + 2.05] : [face, y0 + 2.05, za + 2.05];
-                var rr = pr.Side > 0 ? PartKit.Generators.BuildingParts.Turn("+y", "-x") : PartKit.Generators.BuildingParts.Turn("-y", "+x");
-                Add($"clamp{(pr.Side < 0 ? "P" : "S")}{k}", "prong", 0, 2, 2, 0, 0, false, rr, [face, y0, za], padMin, padMax, -1, "clamp");
-            }
         }
 
         // The flanks: plates each side on the beam line standing out of the skin on pads: a salvager's arms, a carrier's launch bays

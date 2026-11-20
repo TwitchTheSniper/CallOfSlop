@@ -123,6 +123,7 @@ table.traits td:first-child { color: var(--muted); width: 42%; padding-right: 8p
   <div>
     <h1>Procedural Gallery</h1>
     <p class="sub" id="gen">Loading the ships...</p>
+    <p class="sub">Archived (Karl, 2026-11-20): not the direction for now.</p>
   </div>
   <div class="field" role="group" aria-label="Filter the ships">
     <span>Class</span><div class="seg" id="fClass"></div>
@@ -141,7 +142,7 @@ table.traits td:first-child { color: var(--muted); width: 42%; padding-right: 8p
     <div class="field">
       <span>Class</span><select id="aClass"><option value="C">Corvette</option><option value="F" selected>Frigate</option><option value="D">Destroyer</option></select>
       <span>Hull</span><select id="aHull"><option value="">Any</option><option value="c">Chisel</option><option value="d">Dart</option><option value="b">Block</option><option value="a">Barge (open cargo well)</option><option value="s">Stepped (tall over long)</option><option value="k">Kite (faceted, low)</option><option value="o">Cage (open shell for ice)</option></select>
-      <span>Bow</span><select id="aBow"><option value="">Any</option><option value="q">The hull's own</option><option value="p">Lance (long cone)</option><option value="y">Fork (prongs, a berth or rails)</option><option value="h">Hammer (a bar across)</option><option value="u">Mouth (a bay opening)</option><option value="w">Dome (glazed)</option><option value="j">Jaw (a lip with cutters)</option></select>
+      <span>Bow</span><select id="aBow"><option value="">Any</option><option value="q">The hull's own</option><option value="p">Lance (long cone)</option><option value="h">Hammer (a bar across)</option><option value="u">Mouth (a bay opening)</option><option value="w">Dome (glazed)</option><option value="j">Jaw (a lip with cutters)</option></select>
       <span>Decks</span><select id="aDecks"><option value="">Any</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select>
       <span>Role</span><select id="aRole"><option value="">Any</option><option value="g">Gunship</option><option value="r">Lancer (spinal railgun)</option><option value="x">Carrier</option><option value="e">Comms</option><option value="z">Stealth</option><option value="f">Freighter</option><option value="m">Miner</option><option value="v">Salvager</option><option value="i">Ice hauler</option><option value="t">Tender</option><option value="l">Liner</option></select>
       <span>Seed</span><input id="aSeed" type="number" min="1" max="99999" step="1" inputmode="numeric" placeholder="any">
@@ -283,10 +284,10 @@ const WAYS = { door: ["Door", "#14a9bd"], lock: ["Airlock", "#ef8a17"], hatch: [
 const SOCKETS = { engine: ["Engine", "#f26419"], turret: ["Turret", "#d92f2f"], reactor: ["Reactor", "#2f9e48"], capacitor: ["Capacitor", "#7bc043"],
   cargo: ["Cargo", "#3478e8"], container: ["Container", "#5b5fd6"], "ice chunk": ["Ice chunk", "#7fd1e8"], craft: ["Craft pad", "#c4a21c"],
   "launch bay": ["Launch bay", "#e0b020"], "barge berth": ["Barge berth", "#b8862b"], drill: ["Drill", "#a8682a"], cutter: ["Cutter", "#8a5a2b"],
-  clamp: ["Salvage clamp", "#d27c2c"], arm: ["Salvage arm", "#b06a3a"], dish: ["Dish", "#2aa6a0"], antenna: ["Antenna", "#22c3b6"],
+  arm: ["Salvage arm", "#b06a3a"], dish: ["Dish", "#2aa6a0"], antenna: ["Antenna", "#22c3b6"],
   sensor: ["Sensor", "#1b8fb0"], flank: ["Flank", "#a24fc4"] };
 const WHERE = { transom: "transom", nacelle: "nacelle's tail", spine: "spine", floor: "floor", well: "open well's floor, open to space", keel: "keel, facing down",
-  flank: "flank", tip: "hammer's tip", prong: "prong's inner face", mast: "mast's top", bow: "bow's lip, facing forward" };
+  flank: "flank", tip: "hammer's tip", mast: "mast's top", bow: "bow's lip, facing forward" };
 // (a room over several decks: "decks 1 to 2"; else the deck's name)
 const roomDecks = r => r.top != null && r.top > r.deck ? `decks ${r.deck + 1} to ${r.top + 1}` : P && P.decks[r.deck] ? P.decks[r.deck].name.toLowerCase() : "deck " + (r.deck + 1);
 const ROLE_TEXT = { keel: "outer hull: the keel, its plating and the void over it", spine: "outer hull: the spine, its plating and the void under it",
@@ -651,7 +652,7 @@ const cache = new Map();
 const filters = { cls: store.get("cls") || "", hull: store.get("hull") || "", bow: store.get("bow") || "", decks: store.get("decks") || "", role: store.get("role") || "", drive: store.get("drive") || "" };
 const CLASSES = [["", "Any"], ["corvette", "Corvette"], ["frigate", "Frigate"], ["destroyer", "Destroyer"]];
 const HULLS = [["", "Any"], ["chisel", "Chisel"], ["dart", "Dart"], ["block", "Block"], ["barge", "Barge"], ["stepped", "Stepped"], ["kite", "Kite"], ["cage", "Cage"]];
-const BOWS = [["", "Any"], ["family", "Hull's own"], ["lance", "Lance"], ["fork", "Fork"], ["hammer", "Hammer"], ["mouth", "Mouth"], ["dome", "Dome"], ["jaw", "Jaw"]];
+const BOWS = [["", "Any"], ["family", "Hull's own"], ["lance", "Lance"], ["hammer", "Hammer"], ["mouth", "Mouth"], ["dome", "Dome"], ["jaw", "Jaw"]];
 const DECKS = [["", "Any"], ["1", "1"], ["2", "2"], ["3", "3"], ["4", "4"], ["5", "5"]];
 const ROLES = [["", "Any"], ["gunship", "Gunship"], ["lancer", "Lancer"], ["carrier", "Carrier"], ["comms", "Comms"], ["stealth", "Stealth"], ["freighter", "Freighter"],
   ["miner", "Miner"], ["salvager", "Salvager"], ["icehauler", "Ice hauler"], ["tender", "Tender"], ["liner", "Liner"]];
@@ -783,7 +784,7 @@ $("sendRoll").onclick = () => sendNote(true);
 // nacelles, the deck count, after a hyphen when it follows the seed, and the role's letter, as ProcShipSpec.Code writes it).
 const HULL_LETTER = { chisel: "c", dart: "d", block: "b", barge: "a", stepped: "s", kite: "k", cage: "o" };
 const HULL_OF = Object.fromEntries(Object.entries(HULL_LETTER).map(([k, v]) => [v, k]));
-const BOW_LETTER = { family: "q", lance: "p", fork: "y", hammer: "h", mouth: "u", dome: "w", jaw: "j" };
+const BOW_LETTER = { family: "q", lance: "p", hammer: "h", mouth: "u", dome: "w", jaw: "j" };
 const BOW_OF = Object.fromEntries(Object.entries(BOW_LETTER).map(([k, v]) => [v, k]));
 const ROLE_LETTER = { gunship: "g", freighter: "f", miner: "m", tender: "t", liner: "l", lancer: "r", carrier: "x", comms: "e", stealth: "z", salvager: "v", icehauler: "i" };
 const ROLE_OF = Object.fromEntries(Object.entries(ROLE_LETTER).map(([k, v]) => [v, k]));

@@ -31,32 +31,6 @@ public sealed class ProcNacelle
 }
 
 /// <summary>
-/// A fork bow's prong on side <see cref="Side"/>: a chamfered box pod from the bow's tip (Z0, 0) back to the root face (Z1) where the
-/// hull starts, centred X off the centreline at height Y, SX half across, SY half high, its corners chamfered C. Between the two is
-/// the slot: a salvage or repair berth (clamp sockets on the prongs' inner faces) or a spinal railgun's rails.
-/// </summary>
-public sealed class ProcProng
-{
-    public required int Side { get; init; }
-    public required double X { get; init; }
-    public required double Y { get; init; }
-    public required double Z1 { get; init; }
-    public required double SX { get; init; }
-    public required double SY { get; init; }
-    public required double C { get; init; }
-    public double Z0 => 0;
-
-    /// <summary>Where the full section starts behind the nose.</summary>
-    public double Body => Z0 + Math.Min(2.4, (Z1 - Z0) * 0.3);
-
-    /// <summary>The section's scale along it: a tapered nose, then full to the root face.</summary>
-    public (double Z, double K)[] Rings => [(Z0, 0.5), (Z0 + Math.Min(1.0, (Z1 - Z0) * 0.12), 0.82), (Body, 1.0), (Z1, 1.0)];
-
-    /// <summary>The inner face's x (toward the slot).</summary>
-    public double Inner => Side * (X - SX);
-}
-
-/// <summary>
 /// A procedural ship's outer hull: a lofted, faceted skin through stations from the bow's tip (z 0) to the stern's transom (z L), each
 /// station a half profile of five points mirrored about the centreline (the Zero Day's: P0 the keel's edge, P1 the lower chine, P2
 /// the beam, P3 the upper chine, P4 the spine's edge). Ship metres: x across (0 the centreline, port -x), y up (0 the underside of
@@ -90,11 +64,8 @@ public sealed class ProcHullShape
     /// <summary>The bow's kind (what it is for).</summary>
     public required ProcBow Bow { get; init; }
 
-    /// <summary>Where the hull's skin starts: 0, or a fork's root face (the prongs reach forward of it to z 0).</summary>
+    /// <summary>Where the hull's skin starts: its first station (z 0, the bow's tip).</summary>
     public double HullZ0 => Stations[0].Z;
-
-    /// <summary>A fork bow's prongs (none, or one each side).</summary>
-    public List<ProcProng> Prongs { get; } = [];
 
     /// <summary>A spinal railgun's barrel along the centreline of the lowest deck (a lancer's): its axis' height, half width and half height; NaN: none.</summary>
     public double BarrelY { get; private set; } = double.NaN;
@@ -103,13 +74,13 @@ public sealed class ProcHullShape
 
     public bool Spinal => !double.IsNaN(BarrelY);
 
-    /// <summary>Where the barrel's muzzle is: the lance's tip or the fork's root face.</summary>
+    /// <summary>Where the barrel's muzzle is: the lance's tip.</summary>
     public double MuzzleZ => HullZ0;
 
     /// <summary>A cage hull's well is a hollow shell of frames (its bulwarks open between posts), where an ice hauler's chunks ride.</summary>
     public bool Cage => Style == ProcHull.Cage;
 
-    /// <summary>Where the bow's own shape ends (the first full section behind a lance, fork, hammer, mouth, dome or jaw; 0 for the family's bow).</summary>
+    /// <summary>Where the bow's own shape ends (the first full section behind a lance, hammer, mouth, dome or jaw; 0 for the family's bow).</summary>
     public double BowZ1 { get; private set; }
 
     /// <summary>A hammer bow's bar: its tips' z range (0 to HammerZ1, the bar's aft face), and the bar's half span (0: no hammer).</summary>
@@ -167,7 +138,7 @@ public sealed class ProcHullShape
     public double SkinHalf(double z, double y)
     {
         if (z < Stations[0].Z - 1e-6)
-            return 0; // (forward of a fork's root face: the slot and the prongs, no hull)
+            return 0; // (forward of the bow's tip)
         var q = At(z);
         if (y < q[0].Y || y > q[4].Y)
             return 0;
@@ -237,23 +208,23 @@ public sealed class ProcHullShape
     };
 
     /// <summary>
-    /// The bows a role's ship has, weighted, each for a use: a lancer's lance or fork carries its spinal railgun's muzzle, a carrier's
-    /// mouth opens into its hangar, a freighter's into a fore hold, a comms ship's hammer holds sensors at its tips, a liner's dome is
-    /// its observation lounge, a miner's or an ice hauler's jaw carries cutters, a salvager's or a tender's fork holds a wreck or a
-    /// craft in its slot.
+    /// The bows a role's ship has, weighted, each for a use: a lancer's lance carries its spinal railgun's muzzle, a carrier's mouth
+    /// opens into its hangar, a freighter's into a fore hold and a tender's into its repair bay, a comms ship's hammer holds sensors at
+    /// its tips, a liner's dome is its observation lounge, a miner's, an ice hauler's or a salvager's jaw carries cutters. (The fork,
+    /// two prongs either side of a berth, was taken out in version 4: Karl, 2026-11-20.)
     /// </summary>
     private static (ProcBow, double)[] Bows(ProcRole role) => role switch
     {
         ProcRole.Gunship => [(ProcBow.Family, 0.85), (ProcBow.Hammer, 0.15)],
         ProcRole.Freighter => [(ProcBow.Family, 0.65), (ProcBow.Mouth, 0.35)],
         ProcRole.Miner => [(ProcBow.Family, 0.45), (ProcBow.Jaw, 0.55)],
-        ProcRole.Tender => [(ProcBow.Family, 0.45), (ProcBow.Fork, 0.3), (ProcBow.Mouth, 0.25)],
+        ProcRole.Tender => [(ProcBow.Family, 0.6), (ProcBow.Mouth, 0.4)],
         ProcRole.Liner => [(ProcBow.Family, 0.45), (ProcBow.Dome, 0.55)],
-        ProcRole.Lancer => [(ProcBow.Lance, 0.62), (ProcBow.Fork, 0.38)],
+        ProcRole.Lancer => [(ProcBow.Lance, 1.0)],
         ProcRole.Carrier => [(ProcBow.Mouth, 0.8), (ProcBow.Family, 0.2)],
         ProcRole.Comms => [(ProcBow.Hammer, 0.7), (ProcBow.Family, 0.2), (ProcBow.Dome, 0.1)],
         ProcRole.Stealth => [(ProcBow.Family, 1.0)],
-        ProcRole.Salvager => [(ProcBow.Fork, 0.55), (ProcBow.Jaw, 0.2), (ProcBow.Family, 0.25)],
+        ProcRole.Salvager => [(ProcBow.Family, 0.55), (ProcBow.Jaw, 0.45)],
         _ => [(ProcBow.Jaw, 0.5), (ProcBow.Family, 0.5)],
     };
 
@@ -263,7 +234,7 @@ public sealed class ProcHullShape
     /// <summary>
     /// The hull for a spec: its family and bow by role, its length, beam and heights by class and seed, the midbody section by
     /// family, then stations for the bow and stern from the family's shape keys (the bow's own keys in place of the family's when it
-    /// has one), each nudged by the dice; a barge's or a cage's well, a fork's prongs, the spinal barrel and the nacelles last.
+    /// has one), each nudged by the dice; a barge's or a cage's well, the spinal barrel and the nacelles last.
     /// Every choice is written into <paramref name="traits"/>.
     /// </summary>
     public static ProcHullShape Make(ProcShipSpec spec, ProcRole role, ProcFit fit, ProcDice dice, List<(string Key, string Value)> traits, int grow = 0)
@@ -304,8 +275,8 @@ public sealed class ProcHullShape
             bow = ProcBow.Family;
         if (spec.Class == ProcClass.Corvette && decks >= 2)
             len = Q(len + 2.5 * (decks - 1), 0.5); // (a small hull of decks over decks: room for the lobby amidships under its taper)
-        if (bow is ProcBow.Fork or ProcBow.Lance && spec.Class == ProcClass.Corvette)
-            len = Q(len + 5, 0.5); // (the prongs or the lance before the rooms start)
+        if (bow == ProcBow.Lance && spec.Class == ProcClass.Corvette)
+            len = Q(len + 5, 0.5); // (the lance before the rooms start)
         if (grow > 0)
         {
             len = Q(len * (1 + 0.08 * grow), 0.5);
@@ -496,16 +467,6 @@ public sealed class ProcHullShape
                         bowText = $"lance, a {M(2 * r0)} m muzzle";
                         break;
                     }
-                case ProcBow.Fork:
-                    {
-                        // The hull starts at the root face; the prongs reach forward of it (made below, once the root's section is known).
-                        var lf = role switch { ProcRole.Salvager => bs.Range(0.2, 0.28), ProcRole.Lancer => bs.Range(0.14, 0.2), _ => bs.Range(0.17, 0.24) };
-                        own.Add(new(lf, bs.Range(0.88, 0.93), 0.05 * foreTop, 0.95 * foreTop));
-                        own.Add(new(lf + 0.035, 0.97, 0.02 * foreTop, 0.985 * foreTop));
-                        own.Add(new(lf + 0.075, 1, 0, foreTop));
-                        bowText = "fork";
-                        break;
-                    }
                 case ProcBow.Hammer:
                     {
                         // A wide flat bar across the bow (sensors at its tips), a neck behind it, then the hull.
@@ -656,75 +617,7 @@ public sealed class ProcHullShape
             traits.Add((style == ProcHull.Cage ? "Cage" : "Well", shape.HasWell ? $"{M(w1 - w0)} m long, {M(shape.WellHalf * 2)} m wide, {M(spineGap)} m deep" : "none"));
         }
 
-        // A fork's prongs: either side of the slot, standing on the root face where it is wide enough for both and the slot (its
-        // section is convex, so that is one band of heights), as tall as a third of the hull (a lancer's: round its barrel's axis).
-        if (bow == ProcBow.Fork)
-        {
-            var pf = dice.For("hull.prongs");
-            var root = shape.HullZ0 + 0.02;
-            var slot = role == ProcRole.Lancer ? Q(pf.Range(0.8, 1.0), 0.05) : Q(beam * pf.Range(0.3, 0.4), 0.05);
-            const double least = 0.6; // (a prong's least half width)
-            var need = slot + 2 * least + 0.25;
-            var q0 = shape.At(root);
-            double ya = double.NaN, yb = double.NaN;
-            for (var y = Q(q0[0].Y, 0.05) + 0.05; y < q0[4].Y - 0.05; y += 0.05)
-                if (shape.SkinHalf(root, y) >= need)
-                {
-                    if (double.IsNaN(ya))
-                        ya = y;
-                    yb = y;
-                }
-            if (double.IsNaN(ya) || yb - ya < 1.8)
-                throw new ProcShipException($"no room for the fork's prongs either side of a {M(2 * slot)} m slot (the root face under {M(2 * need)} m wide)");
-            double p0, p1;
-            if (role == ProcRole.Lancer)
-            {
-                // The rails flank the barrel: from under its axis up past the beam, tall blades either side of the muzzle.
-                double r0 = BarrelAxis - BarrelHalfH - 0.25, r1 = BarrelAxis + BarrelHalfH + 0.25;
-                if (ya > r0 || yb < r1)
-                    throw new ProcShipException($"the fork's prongs can't flank the railgun's barrel (the root face wide enough from {M(ya)} to {M(yb)} m)");
-                var tall = Math.Max(r1 - r0, span * pf.Range(0.55, 0.68));
-                p0 = Math.Max(ya, r0 - (tall - (r1 - r0)) * 0.2);
-                p1 = Math.Min(yb, p0 + tall);
-            }
-            else
-            {
-                var tall = Math.Min(yb - ya, span * pf.Range(0.55, 0.7));
-                var lo = ya + tall / 2;
-                var yc = Math.Clamp(beamY, lo, Math.Max(lo, yb - tall / 2)); // (as tall as the band: its bounds meet, give or take a rounding)
-                (p0, p1) = (yc - tall / 2, yc + tall / 2);
-            }
-            p0 = Q(p0, 0.05);
-            p1 = Q(p1, 0.05);
-            var sy = (p1 - p0) / 2;
-            // As wide as the root face holds them: the outer face 25 cm inside its outline over the straight part, the chamfers
-            // (up to two fifths of the prong) taking the narrow ends; never much wider than tall.
-            double sx = 0, c = 0;
-            for (var tx = Q(Math.Max(least, sy * 1.15), 0.05); tx >= least - 1e-6; tx -= 0.05)
-            {
-                var tc = Q(Math.Min(tx, sy) * 0.4, 0.05);
-                var outer = slot + 2 * tx;
-                var fits = true;
-                for (var y = p0; y <= p1 + 1e-6 && fits; y += 0.1)
-                {
-                    var room = shape.SkinHalf(root, y) - 0.25;
-                    var into = Math.Min(y - p0, p1 - y); // (how far into the straight part: the chamfer cuts the corner by tc - into)
-                    fits = room >= outer - Math.Max(0, tc - into);
-                }
-                if (fits)
-                {
-                    (sx, c) = (tx, tc);
-                    break;
-                }
-            }
-            if (sx < least - 1e-6 || sy < 0.9)
-                throw new ProcShipException($"no room for the fork's prongs either side of a {M(2 * slot)} m slot (the root face {M(2 * Math.Min(shape.SkinHalf(root, p0), shape.SkinHalf(root, p1)))} m wide at their ends)");
-            foreach (var side in new[] { -1, 1 })
-                shape.Prongs.Add(new ProcProng { Side = side, X = slot + sx, Y = (p0 + p1) / 2, Z1 = shape.HullZ0, SX = sx, SY = sy, C = c });
-            var i = traits.FindIndex(t => t.Key == "Bow");
-            traits[i] = ("Bow", $"fork: {M(shape.HullZ0)} m prongs either side of a {M(2 * slot)} m slot");
-        }
-        // A lancer's spinal railgun: its barrel along the lowest deck's centreline from the muzzle (the lance's tip or the fork's root) to engineering.
+        // A lancer's spinal railgun: its barrel along the lowest deck's centreline from the muzzle (the lance's tip) to engineering.
         if (role == ProcRole.Lancer)
             shape.BarrelY = BarrelAxis;
 
