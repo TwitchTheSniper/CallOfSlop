@@ -54,11 +54,11 @@ public static partial class Program
         }
         if (verb == "bodies" && g.Local is { } nearOf)
         {
-            // "bodies [M]": the bodies within M m (default 30) of this player: id, parts, first part, distance, held or carried
+            // "bodies [M]": the bodies within M m (default 30) of this player: id, parts, first part, distance, held or carried, asleep, speed and centre
             var m = float.TryParse(arg, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var bm) ? bm : 30f;
             foreach (var b in g.Constructs.Bodies)
                 if (b.PartCount > 0 && Vector3.Distance(b.WorldCom, nearOf.Position) < m + b.Radius)
-                    WsSay(FormattableString.Invariant($"bodies: {b.Id} {b.DefOf(0).Name} x{b.PartCount}, {Vector3.Distance(b.WorldCom, nearOf.Position):0.0} m, {b.Mass:0} kg{(b.CarriedBy != 0 ? $", carried by {b.CarriedBy}" : "")}{(b.Anchored ? ", anchored" : "")}{(b.SpaceShip != 0 ? ", a ship" : "")}"));
+                    WsSay(FormattableString.Invariant($"bodies: {b.Id} {b.DefOf(0).Name} x{b.PartCount}, {Vector3.Distance(b.WorldCom, nearOf.Position):0.0} m, {b.Mass:0} kg{(b.CarriedBy != 0 ? $", carried by {b.CarriedBy}" : "")}{(b.Anchored ? ", anchored" : "")}{(b.SpaceShip != 0 ? ", a ship" : "")}, {(b.Asleep ? "asleep" : "awake")}, {b.Vel.Length():0.000} m/s, centre {b.WorldCom.X:0.000},{b.WorldCom.Y:0.000},{b.WorldCom.Z:0.000}"));
             return true;
         }
         if (verb == "loose" && g.IsServer && g.Local is { } placer)
