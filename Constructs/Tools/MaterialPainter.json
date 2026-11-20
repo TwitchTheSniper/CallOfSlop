@@ -2,7 +2,7 @@
   "format": "call-of-slop-construct-tool/1",
   "name": "Material Painter",
   "tool": "material",
-  "display": { "mount": [0.0, 0.018, 0.0] },
+  "display": {},
   "description": "Remakes parts in another material: the same shape, new mass, health and armour.",
   "boxes": [
     { "size": [0.035, 0.035, 0.14], "at": [0, 0, 0], "color": "#2b2b2e" },

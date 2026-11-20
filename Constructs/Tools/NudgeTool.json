@@ -2,7 +2,7 @@
   "format": "call-of-slop-construct-tool/1",
   "name": "Nudge Tool",
   "tool": "nudge",
-  "display": { "mount": [0.0, 0.05, 0.0] },
+  "display": {},
   "description": "Moves and turns whole constructs precisely, by a triad and arcs.",
   "boxes": [
     { "size": [0.056, 0.056, 0.16], "at": [0, 0, 0], "color": "#34383f" },

@@ -398,7 +398,7 @@ public static class ToolRender
                 n += b.Hidden ? 0 : 1;
         if (f.Model is { } m)
         {
-            n += m.Boxes.Length + (m.Display != null ? 2 : 0);
+            n += m.Boxes.Length + (m.Display != null ? ToolDisplay.Boxes : 0);
             if (f.Using && m.Sparks != null)
                 n += Sparks;
             if (f.Using && m.Beam != null)
@@ -426,22 +426,7 @@ public static class ToolRender
                     o.Box(local * f.Pose, b.Color, 0);
             }
             if (m.Display is { } ds)
-            {
-                // The screen's case and its stalk: the card itself is the first person's (Program.DrawSandboxTool).
-                var right = Vector3.Cross(ds.Up, ds.Normal);
-                const float depth = 0.012f, rim = 0.006f;
-                var case0 = Frame(right, ds.Up, ds.Normal, ds.At - ds.Normal * (depth * 0.5f + 0.0015f));
-                o.Box(Matrix4x4.CreateScale(ds.Size.X + rim * 2, ds.Size.Y + rim * 2, depth) * case0 * f.Pose, new Vector3(0.1f, 0.11f, 0.125f), 0);
-                var back = ds.At - ds.Normal * depth;
-                var along = back - ds.Mount;
-                var len = along.Length();
-                if (len > 0.005f)
-                {
-                    var z = along / len;
-                    var x = Vector3.Normalize(Vector3.Cross(MathF.Abs(z.Y) < 0.9f ? Vector3.UnitY : Vector3.UnitX, z));
-                    o.Box(Matrix4x4.CreateScale(0.014f, 0.014f, len) * Frame(x, Vector3.Cross(z, x), z, (back + ds.Mount) * 0.5f) * f.Pose, new Vector3(0.16f, 0.17f, 0.18f), 0);
-                }
-            }
+                EmitScreen(ref o, ds, f.Pose);
             if (f.Using && m.Sparks is { } sc)
             {
                 var t = f.Now * 7.0;
@@ -474,6 +459,38 @@ public static class ToolRender
                         o.Box(b.Model(0, b.Center) * f.HeldPose, b.Color, 0, b.Shape, b.Glass);
         }
     }
+
+    /// <summary>
+    /// The screen built into the tool (<see cref="ToolDisplay.Boxes"/> boxes, ToolDisplay.cs): its housing sunk into the body behind it in
+    /// the body's colour, the dark glass, and a bezel standing proud of the card, so the card sits recessed. The card is drawn on the
+    /// card's plane by Program.DrawToolCard (first person only: others see the dark glass). No two faces share a plane (z-fighting.md).
+    /// </summary>
+    private static void EmitScreen<T>(ref T o, ToolDisplay ds, in Matrix4x4 pose) where T : struct, IToolBoxOut
+    {
+        var n = ds.Normal;
+        var u = ds.Up;
+        var r = Vector3.Cross(u, n);
+        float w = ds.Size.X, h = ds.Size.Y;
+        const float rim = ToolDisplay.Rim;
+        // Housing: from just behind the glass back into the body, showing round the bezel in the body's colour and running across into the tool.
+        var hd = ds.Depth - ToolDisplay.HousingFront;
+        var span = ds.HousingHi - ds.HousingLo;
+        var mid2 = (ds.HousingHi + ds.HousingLo) * 0.5f;
+        Slab(ref o, r, u, n, ds.At + r * mid2.X + u * mid2.Y - n * (ToolDisplay.HousingFront + hd * 0.5f), span.X, span.Y, hd, ds.Housing, pose);
+        // Glass: runs under the bezel, its face a little behind the card.
+        const float gd = ToolDisplay.GlassBack - ToolDisplay.GlassFront;
+        Slab(ref o, r, u, n, ds.At - n * (ToolDisplay.GlassFront + gd * 0.5f), w + 2 * ToolDisplay.GlassOver, h + 2 * ToolDisplay.GlassOver, gd, new Vector3(0.025f, 0.03f, 0.035f), pose);
+        // Bezel: top and bottom across the whole width, the sides between them.
+        const float bd = ToolDisplay.Proud + ToolDisplay.BezelBack;
+        var mid = ds.At + n * ((ToolDisplay.Proud - ToolDisplay.BezelBack) * 0.5f);
+        Slab(ref o, r, u, n, mid + u * ((h + rim) * 0.5f), w + 2 * rim, rim, bd, ds.Bezel, pose);
+        Slab(ref o, r, u, n, mid - u * ((h + rim) * 0.5f), w + 2 * rim, rim, bd, ds.Bezel, pose);
+        Slab(ref o, r, u, n, mid + r * ((w + rim) * 0.5f), rim, h, bd, ds.Bezel, pose);
+        Slab(ref o, r, u, n, mid - r * ((w + rim) * 0.5f), rim, h, bd, ds.Bezel, pose);
+    }
+
+    private static void Slab<T>(ref T o, Vector3 r, Vector3 u, Vector3 n, Vector3 at, float sx, float sy, float sz, Vector3 colour, in Matrix4x4 pose) where T : struct, IToolBoxOut =>
+        o.Box(Matrix4x4.CreateScale(sx, sy, sz) * Frame(r, u, n, at) * pose, colour, 0);
 
     private static Matrix4x4 Frame(Vector3 x, Vector3 y, Vector3 z, Vector3 at) => new(x.X, x.Y, x.Z, 0, y.X, y.Y, y.Z, 0, z.X, z.Y, z.Z, 0, at.X, at.Y, at.Z, 1);
 
