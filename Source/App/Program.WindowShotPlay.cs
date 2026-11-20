@@ -298,7 +298,7 @@ public static partial class Program
                         g.SandboxFaction(pv == "take" ? FactionOp.ContractTake : FactionOp.ContractDrop, g.ContractsView[n].Body, g.ContractsView[n].Serial);
                         break;
                 }
-                Console.WriteLine($"[windowshot] crewpolitics: {g.PoliticsLine()}; standing: {g.CrewStandingLine(me)}; {g.CreditsLine}");
+                Console.WriteLine($"[windowshot] crewpolitics: {g.PoliticsLine()}; standing: {g.CrewStandingLine(me)}; {g.TabLine}");
                 return true;
             }
             case "crewterritory": // "crewterritory [near|leave]": host: planets, sites and far groups (near: a far Take group put 3.5 km from this player; leave: the far ranges shrunk so nobody counts as near: its bodies collapse); a client: its map (faction-controllers.md phase 4)
@@ -687,6 +687,25 @@ public static partial class Program
                         g.Constructs.StructureDirty.Add(mb.Id);
                         WsSay($"modsock: body {mb.Id} socket part {i} set to style {style}");
                     }
+                return true;
+            }
+            case "modsock" when arg.StartsWith("beside ", StringComparison.OrdinalIgnoreCase): // host, a test state: "modsock beside A | B | DX DY DZ": B's construct set still, turned as A's, with part B DX DY DZ (A's frame) from part A: a ship pulled in beside a dock's Module Fitter
+            {
+                var w = arg[7..].Split('|', StringSplitOptions.TrimEntries);
+                var d = w.Length == 3 ? w[2].Split(' ', StringSplitOptions.RemoveEmptyEntries) : [];
+                var (ac, ap) = d.Length == 3 ? WsFind(g, w[0]) : (null, -1);
+                var (bc, bp) = d.Length == 3 ? WsFind(g, w[1]) : (null, -1);
+                if (!g.IsServer || ac == null || bc == null || ac == bc)
+                {
+                    WsFail("modsock beside: A | B | DX DY DZ, two parts on two constructs, on the host");
+                    return true;
+                }
+                var off = new Vector3(float.Parse(d[0], ci), float.Parse(d[1], ci), float.Parse(d[2], ci));
+                bc.Rot = bc.PrevRot = bc.NetRot = bc.NetFromRot = ac.Rot;
+                bc.Pos = bc.PrevPos = bc.NetPos = bc.NetFromPos = ac.ToWorld(ac.Parts[ap].Pos + off) - Vector3.Transform(bc.Parts[bp].Pos, bc.Rot);
+                bc.Vel = bc.AngVel = Vector3.Zero;
+                bc.Wake();
+                WsSay($"modsock: body {bc.Id} set beside body {ac.Id}: part {bp} at {bc.ToWorld(bc.Parts[bp].Pos):0.00}");
                 return true;
             }
             case "modsock" when arg.StartsWith("use ", StringComparison.OrdinalIgnoreCase): // host: "modsock use PART": F on that plate or module part (take off, or fit what is near), whatever the crosshair finds

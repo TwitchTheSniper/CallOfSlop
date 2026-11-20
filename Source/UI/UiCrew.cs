@@ -3,16 +3,16 @@ using Brutal.ImGuiApi;
 namespace CallOfSlop;
 
 /// <summary>
-/// The Crew section at the top of the Faction window (docs/sandbox/design/bot-brain.md section 9, phase 6): your credits, each of your ships'
+/// The Crew section at the top of the Faction window (docs/sandbox/design/bot-brain.md section 9, phase 6): what the powers owe you (GameTabs.cs), each of your ships'
 /// hired crew (job, what they are doing, health) with Dismiss and Hold fire / Fire at will, and the prisoners on ships you took, with Release,
-/// Put off and Hire. Everything is the host's (Msg.CrewRoster, Msg.Credits); each button sends a crew order (CActKind.Crew).
+/// Put off and Hire. Everything is the host's (Msg.CrewRoster, Msg.Tabs); each button sends a crew order (CActKind.Crew).
 /// </summary>
 public sealed partial class Ui
 {
     private void DrawCrewSection(Game game, Player me)
     {
         ImGuiSafe.TextColored(Orange, "Crew");
-        ImGuiSafe.TextWrapped(game.CreditsLine.Length > 0 ? game.CreditsLine : "Credits: 0");
+        ImGuiSafe.TextWrapped(game.TabLine.Length > 0 ? game.TabLine : "Owed to you: nothing");
         var any = false;
         foreach (var (body, v) in game.CrewRosters)
         {

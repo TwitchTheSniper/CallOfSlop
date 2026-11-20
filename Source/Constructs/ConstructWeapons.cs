@@ -694,6 +694,8 @@ public static class ConstructWeapons
         }
         if (g.RoundV > 0)
             g.Kick *= w.ChargeV;
+        if (g.Pierce <= 0 && !c.Parts[g.Part].D.IsReceiverGun)
+            g.Pierce = ConstructBores.Implied(g.Effects, w.Damage, g.RoundV, g.Fx); // (a heavy round's penetration by its calibre: ConstructBores.cs)
         if ((g.Effects & GunEffect.Explosive) != 0 && g.Blast <= 0)
         {
             g.Blast = 2.5f; // an explosive round: a small splash
@@ -1452,7 +1454,7 @@ public static class ConstructWeapons
                 if (what != 0 || arc + 1 >= pieces)
                 {
                     if (what == 0 && g.RoundV > 0 && (g.Effects & (GunEffect.Flame | GunEffect.Harpoon)) == 0 && pierce == 0)
-                        world.RoundFlies(pos + dir * seg, vel, left * g.Def!.DamageMultAt(travelled + seg), g.RoundV, own.Owner, g.Def.Id, own.Id); // (nothing in its reach: it flies on, ConstructRounds.cs)
+                        world.RoundFlies(pos + dir * seg, vel, left * g.Def!.DamageMultAt(travelled + seg), g.RoundV, own.Owner, g.Def.Id, own.Id, (g.Effects & GunEffect.Explosive) == 0 ? g.Pierce : 0f); // (nothing in its reach: it flies on, a bore's budget with it, ConstructRounds.cs)
                     break;
                 }
                 pos += dir * seg;
@@ -1494,7 +1496,15 @@ public static class ConstructWeapons
             if (g.Pierce > 0 && ConstructBores.On && !ch.Glass)
             {
                 // A bore: through part after part on its budget, out into whatever is next (ConstructBores.cs).
-                hit |= ConstructBores.Through(world, own.Id, ch, dir, dealt, g.Pierce, g.RoundV, g.RoundV, 0f, own.Owner, g.Def.Id, out end, query);
+                // An explosive round's stops where its budget runs out (or at the last part it came out of) and bursts there, below.
+                var flies = (g.Effects & GunEffect.Explosive) == 0 ? g.RoundV : 0f;
+                if ((g.Effects & GunEffect.Incendiary) != 0)
+                {
+                    world.Ignite(body, part); // (what it went in through burns, as a round that stops there would light it)
+                    if (body.SealCount > 0)
+                        ConstructSeal.IgniteAt(world, body, at);
+                }
+                hit |= ConstructBores.Through(world, own.Id, ch, dir, dealt, g.Pierce, g.RoundV, flies, 0f, own.Owner, g.Def.Id, out end, query);
                 break;
             }
             if (ch.TrackPlus1 > 0)

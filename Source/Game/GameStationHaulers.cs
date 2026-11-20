@@ -364,7 +364,7 @@ public sealed partial class Game
                 pw.Earned += value;
             }
             StationsVersion++;
-            Log($"[haul] construct {c.Id} ({h.Power}) sold {StationGoodsText(m, sold)} to {where} for {value:0} credits");
+            Log($"[haul] construct {c.Id} ({h.Power}) sold {StationGoodsText(m, sold)} to {where} for {value:0} (value)");
         }
         var goods = StationMarkets.All[def].Goods;
         Span<int> bought = stackalloc int[goods.Length];
@@ -373,17 +373,17 @@ public sealed partial class Game
             for (var k = 0; k < goods.Length; k++)
                 if (goods[k].Material == mat && goods[k].Sell > 0)
                 {
-                    var afford = pw is { Fallen: false } ? (int)Math.Min(int.MaxValue, Math.Max(0, Math.Floor((pw.Stock - cost) / goods[k].Sell))) : 0;
-                    var n = StationLoadCargo(m, c, k, afford);
+                    var afford = pw is { Fallen: false } ? m.Afford(k, Math.Max(0, pw.Stock - cost)) : 0; // (priced across the stock the load moves)
+                    var n = StationLoadCargo(m, c, k, afford, out var paid);
                     bought[k] += n;
-                    cost += n * (double)goods[k].Sell;
+                    cost += paid;
                     break;
                 }
         if (cost > 0 && pw != null)
         {
             pw.Stock -= cost;
             pw.Spent += cost;
-            Log($"[haul] construct {c.Id} ({h.Power}) bought {StationGoodsText(m, bought)} at {where} for {cost:0} credits");
+            Log($"[haul] construct {c.Id} ({h.Power}) bought {StationGoodsText(m, bought)} at {where} for {cost:0} (value)");
         }
         else if (value <= 0)
             Log($"[haul] construct {c.Id} ({h.Power}) traded nothing at {where}");

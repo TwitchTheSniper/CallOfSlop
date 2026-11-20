@@ -257,8 +257,8 @@ public static partial class SelfTest
 
         /// <summary>
         /// Windows counts the thread's CPU cycles: ns per cycle from a few short busy loops against the wall clock (the
-        /// least wall time per cycle, i.e. a loop the OS didn't interrupt). Only the ms in the log depend on it; the
-        /// ratios don't.
+        /// least wall time per cycle, i.e. a loop the OS didn't interrupt). The ms depend on it, the log's and those judged
+        /// against a fixed budget (the dug-ground ray in SelfTestTerrainDig.cs); the ratios don't.
         /// </summary>
         private static void CalibrateCycles()
         {

@@ -286,7 +286,7 @@ public sealed partial class Game : ICrewHost
     {
         var lines = new List<string>();
         var bodies = Players.Values.Count(p => p.CrewSlot >= 0 || !IsServer && p.Name.StartsWith('['));
-        lines.Add($"{(IsServer ? "host" : "client")}: {CreditsLine}; rosters known: {string.Join("; ", CrewRosters.Values.Select(v => $"{v.Body} owner {v.Owner}{(v.Own ? " own" : "")}{(v.Prize ? " prize" : "")}: {string.Join(", ", v.Members.Select(m => $"{m.Name} {m.Job} {m.State}"))}"))}");
+        lines.Add($"{(IsServer ? "host" : "client")}: {TabLine}; rosters known: {string.Join("; ", CrewRosters.Values.Select(v => $"{v.Body} owner {v.Owner}{(v.Own ? " own" : "")}{(v.Prize ? " prize" : "")}: {string.Join(", ", v.Members.Select(m => $"{m.Name} {m.Job} {m.State}"))}"))}");
         lines.Add($"{(IsServer ? "host" : "client")}: {bodies} crew bodies among the players, stand-ins on {CrewStandIns.Count} bodies ({CrewStandIns.Values.Sum(a => a.Length)} seats: {string.Join(", ", CrewStandIns.Select(kv => $"{kv.Key}: {string.Join("/", kv.Value)}"))})");
         for (var i = 0; i < Crew.ShipHigh; i++)
             if (Crew.Ships[i] is { } s && Constructs.Get(s.Body) is { } c)

@@ -224,7 +224,7 @@ public sealed partial class Game
                 prisoners++;
         if (def != null && by != 255)
             ((ICrewHost)this).Deed(RelEvent.Capture, s, by, 0);
-        CrewBounty(by, prisoners); // (credits: GameCrewHire.cs)
+        CrewBounty(by, prisoners, s.Faction); // (a tab: GameCrewHire.cs)
         CrewOfficersTaken(c, s, by); // (an admiral or a captain among them: GameCrewFleet.cs)
         s.RosterDirty = true;
         Console.WriteLine($"[crew] construct {c.Id}: taken by player {by}{(c.Owner == by ? "" : " (who can't own another: it stays nobody's)")}, {prisoners} prisoners");

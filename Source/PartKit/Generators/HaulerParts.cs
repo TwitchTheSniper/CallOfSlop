@@ -58,11 +58,14 @@ public sealed class HaulerParts : IPartGenerator
     private const int RailN = 7;
 
     private static readonly Rect Well = new(Cx - 1.45, 26.8, Cx + 1.45, 33.2); // the belly well under the middle lane of row 3
-    private static readonly Rect BellyHatch = new(Cx + 1.8, 11.4, Cx + 3.05, 12.65); // the airlock's boarding shaft (2026-11-18: in from 2.4 m, so it stays inside the keel's flat, which is 3.15 m wide at its front: the sloped plate beside the flat sealed its outboard edge)
+    private static readonly Rect BellyHatch = new(Cx + 2.3, 11.4, Cx + 3.05, 12.65); // the airlock's boarding shaft (2026-11-18: in from 2.4 m, so it stays inside the keel's flat, which is 3.15 m wide at its front: the sloped plate beside the flat sealed its outboard edge)
+    // (2026-11-20: 0.75 m wide, from 1.25: the airlock's inner door, in the passage's wall at Cx + 1.25, opened onto 0.47 m between
+    // its face and the shaft's rail, too narrow for a standing body (0.8 m), and the rail's aft end stood 0.78 m from the airlock's
+    // inboard wall, so nobody got from the ladder's head into the ship. Now 0.97 m and 0.88 m; the ladder (0.6 m) still fits.)
     // The belly hatch and the boarding ladder on it (BellyHatchPart): the plate's faces, how far it slides down (its underside to the
     // ground), the ladder's back (2 cm in front of the strut) and its rise from the plate to the deck.
     private const string BellyHatchName = "Dray Belly Hatch";
-    private static double HatchX => BellyHatch.X0 + 0.625;
+    private static double HatchX => (BellyHatch.X0 + BellyHatch.X1) * 0.5;
     private static double HatchBottom => At(BellyHatch.Z1)[0].Y - 0.012;
     private static double HatchTop => HatchBottom + 0.08;
     // (2026-11-18, the leg pods: the keel stands higher than the stowed ladder is long, so the hatch stops short of the ground, its plate
@@ -70,7 +73,9 @@ public sealed class HaulerParts : IPartGenerator
     private static double HatchTravel => Math.Min(HatchBottom - Ground - 0.005, Ceil0 - 0.03 - Ft0);
     private static double LadderZ => BellyHatch.Z1 - 0.03;
     private static double BoardRise => Ft0 - (HatchTop - HatchTravel);
-    private static readonly Rect LadderHatch = new(Cx - 3.4, 11.8, Cx - 2.15, 13.05); // the suit room up to the aft hall (room behind it for the ladder's landing, before the hold's wall)
+    private static readonly Rect LadderHatch = new(Cx - 3.4, 11.7, Cx - 2.15, 12.95); // the suit room up to the aft hall (room behind it for the ladder's landing, before the hold's wall)
+    // (2026-11-20: 0.1 m further forward: the landing between the ladder's head and the hold's wall was 0.82 m, a standing body's
+    // width with 1 cm to spare, so nobody walked off it; now 0.92 m)
     private const double TrackY = -1.26; // the well doors' tracks' underside
 
     /// <summary>The side doors beside the well (row 3), one a side: the opening's ends along the ship, its head, and the hinge socket.</summary>
@@ -81,7 +86,9 @@ public sealed class HaulerParts : IPartGenerator
     /// between them and one outboard of each; the Engineer's Panel on the port wall forward of them.</summary>
     private static readonly double[] DriveX = [-2.0, 2.0];
     // (Karl, 2026-11-17: the drives on the ship's middle line: the engines stand on a raised floor, a stair flight up from the door)
-    private const double Fe = Ft0 + 1.5, CeilE = 4.75, ZPlat = 48.0; // the engine floor's top, the drive room's ceiling, the engine floor's front
+    private const double Fe = Ft0 + 1.5, CeilE = 4.75, ZPlat = 48.1; // the engine floor's top, the drive room's ceiling, the engine floor's front
+    // (2026-11-20: from 48.0: the stair up to it starts just through the hold's aft door, and a standing head going up its second
+    // step met the door's lintel 4 cm short of clearing it; 10 cm further aft it clears by 6 cm)
     private static double DriveY => Fe + ShipWorksParts.AxisOver(2); // (the engines' saddles stand on the engine floor)
     private const string StairPart = "Steel Stair Flight 1.5 m";
     private static readonly double[] EngineFrameZ = [52.6, 49.55, 48.35]; // (over each engine's core coil, pump volute and exchanger: clear of gauges, panels and the pump's motor)

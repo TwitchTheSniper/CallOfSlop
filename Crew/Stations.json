@@ -3,7 +3,9 @@
   // The stations' markets (docs/sandbox/constructs/station.md "Markets"; Karl, 2026-11-18: "The first gameplay loop is being able to dock with
   // it and sell mined ores" and "as a logistics point, it should show up on the friendly market as whatever goods are there to trade").
   // A station is matched by its name (its pieces' section). "power": the NPC power that holds it (Crew/Factions, or a Powers folder): a power
-  // hostile to a player doesn't trade with them. Each good: "buy", what the station pays a unit (credits); "sell", what it asks a unit; "stock",
+  // hostile to a player doesn't trade with them. There are no credits (Karl, 2026-11-20: barter, option C): what a station pays goes on the seller's tab
+  // with its power, spendable only with that power, and what it asks comes off it (Game/GameTabs.cs). Each good: "buy", what the station pays a unit
+  // (value on a tab); "sell", what it asks a unit; "stock",
   // what it holds at the start; "most", what it holds at most (it buys no more past that). "margin": the share of what a station pays that its
   // power counts in its stock (the trade it does on it).
   // "haulers" (phase S2; Karl, 2026-11-18: "Haulers from other neutral factions can then send ships to buy goods and take them back to their
@@ -12,9 +14,29 @@
   // "back" goods and runs home: the stock moves, and the power's books pay and earn it. "ship" is a blueprint with bins; "count" ships run
   // the route, "wait" seconds moored at each end. A hauler sets out from whichever of its stations is in the world being played
   // (Game/GameStationHaulers.cs); a station's "orbit" (km) is where it meets one at a station in another world.
+  // Needs (Karl, 2026-11-20: "we start incorporating needs to the world"): a good's "uses" and "makes" are units an hour of play, taken from and added
+  // to its stock (inside 0 and "most") whether its world is being played or not; "want" is the stock it aims for (default half of "most"). Its prices
+  // follow the stock: as listed at the want, up to 1.6 times as it runs out, down to 0.6 times at twice the want. A used good under half its want shows
+  // SHORT on the card. The Traders (phase 2 of the trade world, docs/sandbox/design/faction-controllers.md "No credits"): Caledon Highport, their hub,
+  // burns fuel and steel; Cinder Fuel Depot cracks hydrogen, helium and oxidiser out of Cinder's ground; Slopolis Exchange makes circuits from copper
+  // and gold. The Militia's Glacier Watch makes steel from iron ore at the refinery below.
   "margin": 0.25,
+  // What things are worth (value, in the old credit prices): a unit of each material, and a part from its Assembling recipe (its materials at these values
+  // and the parts in it at theirs) times "work". A part with no recipe is worth "noRecipe". A station's part trades at its value times "partBuy" (what
+  // it pays) and "partSell" (what it asks) unless the station's own row says "buy" or "sell". A material not listed is worth 0.5.
+  "values": {
+    "work": 1.25, "noRecipe": 2, "partBuy": 0.8, "partSell": 1.25,
+    "dirt": 0.01, "stone": 0.03, "sand": 0.03, "wood": 0.1, "planks": 0.2, "concrete": 0.1,
+    "iron ore": 0.15, "copper ore": 0.25, "gold ore": 1.1, "levite ore": 2,
+    "metal": 0.65, "steel": 1.2, "copper": 0.8, "gold": 3, "bronze": 1, "levite": 6,
+    "glass": 0.3, "rubber": 0.4, "cloth": 0.3, "laminate": 0.6, "circuits": 3.75,
+    "hydrogen": 0.4, "helium": 0.6, "oxidiser": 0.4, "ammo": 1.8
+  },
+  // The Traders' first supply lines (phase 2; the ships are placeholders until Karl's Traders ships are in: change "ship" to swap one in).
   "haulers": [
-    { "power": "Traders", "ship": "Magpie Mining Ship", "count": 1, "from": "Caledon Highport", "to": "Glacier Watch", "goods": ["iron ore", "copper ore"], "back": ["steel"], "wait": 30 }
+    { "power": "Traders", "ship": "Magpie Mining Ship", "count": 1, "from": "Caledon Highport", "to": "Glacier Watch", "goods": ["iron ore", "copper ore"], "back": ["steel"], "wait": 30 },
+    { "power": "Traders", "ship": "Magpie Mining Ship", "count": 1, "from": "Cinder Fuel Depot", "to": "Caledon Highport", "goods": ["hydrogen", "helium"], "back": ["metal"], "wait": 30 },
+    { "power": "Traders", "ship": "Magpie Mining Ship", "count": 1, "from": "Caledon Highport", "to": "Slopolis Exchange", "goods": ["copper ore", "gold ore"], "back": ["circuits"], "wait": 30 }
   ],
   "stations": [
     {
@@ -29,10 +51,20 @@
         { "good": "levite ore", "buy": 1.6, "sell": 2.4, "stock": 200, "most": 20000 },
         { "good": "stone", "buy": 0.02, "sell": 0.04, "stock": 5000, "most": 100000 },
         { "good": "sand", "buy": 0.02, "sell": 0.04, "stock": 5000, "most": 100000 },
-        { "good": "helium", "buy": 0.5, "sell": 0.75, "stock": 2000, "most": 50000 },
+        { "good": "helium", "buy": 0.5, "sell": 0.75, "stock": 2000, "most": 50000, "uses": 150, "want": 8000 },
+        { "good": "hydrogen", "buy": 0.3, "sell": 0.45, "stock": 6000, "most": 60000, "uses": 600, "want": 20000 },
         { "good": "metal", "buy": 0.5, "sell": 0.8, "stock": 3000, "most": 30000 },
-        { "good": "steel", "buy": 1.05, "sell": 1.4, "stock": 4000, "most": 30000 },
-        { "good": "circuits", "buy": 3, "sell": 4.5, "stock": 500, "most": 5000 }
+        { "good": "steel", "buy": 1.05, "sell": 1.4, "stock": 4000, "most": 30000, "uses": 200, "want": 8000 },
+        { "good": "circuits", "buy": 3, "sell": 4.5, "stock": 500, "most": 5000, "uses": 20, "want": 1500 }
+      ],
+      // Parts (physical: taken into your inventory one at a time, and every one you carry traded at once), priced from their value.
+      "parts": [
+        { "part": "Battery", "stock": 6, "most": 20 },
+        { "part": "Fuel Tank", "stock": 4, "most": 12 },
+        { "part": "Cold Gas Thruster", "stock": 8, "most": 24 },
+        { "part": "Light Rocket Engine", "stock": 2, "most": 6 },
+        { "part": "Docking Hatch", "stock": 2, "most": 6 },
+        { "part": "Bulkhead Light", "stock": 10, "most": 30 }
       ]
     },
     {
@@ -46,13 +78,58 @@
       "blueprint": "Caledon Highport",
       "orbit": 40,
       "goods": [
-        { "good": "iron ore", "buy": 0.24, "sell": 0.3, "stock": 2000, "most": 150000 },
+        { "good": "iron ore", "buy": 0.24, "sell": 0.3, "stock": 2000, "most": 150000, "uses": 1200, "want": 30000 },
         { "good": "copper ore", "buy": 0.34, "sell": 0.42, "stock": 1000, "most": 80000 },
         { "good": "gold ore", "buy": 1.0, "sell": 1.5, "stock": 200, "most": 20000 },
-        { "good": "steel", "buy": 0.6, "sell": 0.85, "stock": 20000, "most": 60000 },
+        { "good": "steel", "buy": 0.6, "sell": 0.85, "stock": 20000, "most": 60000, "makes": 400 },
         { "good": "metal", "buy": 0.45, "sell": 0.7, "stock": 6000, "most": 30000 },
         { "good": "ammo", "buy": 1.5, "sell": 2.2, "stock": 3000, "most": 10000 },
-        { "good": "hydrogen", "buy": 0.3, "sell": 0.45, "stock": 8000, "most": 40000 }
+        { "good": "hydrogen", "buy": 0.3, "sell": 0.45, "stock": 8000, "most": 40000, "uses": 200 }
+      ]
+    },
+    {
+      // The Traders' fuel depot over Cinder (Karl, 2026-11-20: "give the factions physical space in the star system"): they hold Ash Refinery and
+      // the mines below (Crew/Territory.json). Built from the Highport's blueprint for now, 40 km up, the first time Cinder's world is played.
+      "name": "Cinder Fuel Depot",
+      "power": "Traders",
+      "planet": "Cinder",
+      "blueprint": "Caledon Highport",
+      "orbit": 40,
+      "goods": [
+        { "good": "hydrogen", "buy": 0.2, "sell": 0.3, "stock": 30000, "most": 120000, "makes": 2000 },
+        { "good": "helium", "buy": 0.35, "sell": 0.5, "stock": 12000, "most": 60000, "makes": 800 },
+        { "good": "oxidiser", "buy": 0.25, "sell": 0.38, "stock": 10000, "most": 60000, "makes": 600 },
+        { "good": "metal", "buy": 0.7, "sell": 0.95, "stock": 2000, "most": 20000, "uses": 120, "want": 6000 },
+        { "good": "circuits", "buy": 3.6, "sell": 5, "stock": 100, "most": 2000, "uses": 8, "want": 600 },
+        { "good": "iron ore", "buy": 0.15, "sell": 0.22, "stock": 2000, "most": 40000 }
+      ],
+      "parts": [
+        { "part": "Fuel Tank", "stock": 10, "most": 30 },
+        { "part": "Large Fuel Tank", "stock": 3, "most": 10 }
+      ]
+    },
+    {
+      // The Traders' exchange over Slopolis, Glacier's moon (they hold Slopolis Port): a workshop that makes circuits from copper and gold, and
+      // sells parts. Built from the Highport's blueprint for now, 25 km up (Slopolis is small: its pull reaches about 200 km).
+      "name": "Slopolis Exchange",
+      "power": "Traders",
+      "planet": "Slopolis",
+      "blueprint": "Caledon Highport",
+      "orbit": 25,
+      "goods": [
+        { "good": "copper ore", "buy": 0.3, "sell": 0.4, "stock": 4000, "most": 80000, "uses": 800, "want": 20000 },
+        { "good": "gold ore", "buy": 1.2, "sell": 1.6, "stock": 400, "most": 10000, "uses": 50, "want": 2000 },
+        { "good": "hydrogen", "buy": 0.4, "sell": 0.55, "stock": 4000, "most": 30000, "uses": 300, "want": 10000 },
+        { "good": "circuits", "buy": 2.6, "sell": 3.8, "stock": 1500, "most": 8000, "makes": 60 },
+        { "good": "copper", "buy": 0.7, "sell": 1, "stock": 2000, "most": 20000 },
+        { "good": "steel", "buy": 1.1, "sell": 1.5, "stock": 1000, "most": 10000 }
+      ],
+      "parts": [
+        { "part": "Battery", "stock": 10, "most": 30 },
+        { "part": "Capacitor Bank S", "stock": 4, "most": 12 },
+        { "part": "Docking Hatch", "stock": 3, "most": 8 },
+        { "part": "Cold Gas Thruster", "stock": 12, "most": 30 },
+        { "part": "Light Rocket Engine", "stock": 3, "most": 8 }
       ]
     }
   ]

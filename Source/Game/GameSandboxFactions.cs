@@ -30,7 +30,9 @@ public enum FactionOp : byte
     // Protocol 361 (stations: GameStationMarket.cs).
     StationSell, // u16 ship: sell the ore and goods in the bins of the moored ship you are aboard to its station
     // Protocol 366.
-    StationBuy, // u16 ship, u8 good: buy as much of one of its station's goods as the moored ship's bins and your credits take
+    StationBuy, // u16 ship, u8 good: buy as much of one of its station's goods as the moored ship's bins and your tab with its power take (a good past its goods: one of its parts, into your inventory)
+    // Protocol 389 (barter and tabs: GameTabs.cs).
+    StationSellPart, // u16 ship, u8 good: trade every one of a station's part (by its index past the goods) you carry to it, for your tab
 }
 
 /// <summary>
@@ -335,6 +337,8 @@ public sealed partial class Game
                 return StationSellAct(p, r.U16()); // (GameStationMarket.cs)
             case FactionOp.StationBuy:
                 return StationBuyAct(p, r.U16(), r.U8());
+            case FactionOp.StationSellPart:
+                return StationSellPartAct(p, r.U16(), r.U8());
         }
         return "unknown faction action";
     }
@@ -867,6 +871,7 @@ public sealed partial class Game
                 w.U16((ushort)a);
                 break;
             case FactionOp.StationBuy:
+            case FactionOp.StationSellPart:
                 w.U16((ushort)a).U8((byte)b);
                 break;
         }
