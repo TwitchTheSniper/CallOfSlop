@@ -480,16 +480,24 @@ public sealed class Assembling : IPartGenerator
 
     /// <summary>
     /// Folders added after saves held Assembler recipes by number (an Assembler's recipe setting is 1 + its place in its family's list): their
-    /// rows go at the end of the file, in this order, so no older row moves. A new folder of parts goes at the end of this list.
+    /// rows go at the end of the file, in this order, so no older row moves. Closed: a new folder of parts goes at the end of <see cref="Tail"/>.
     /// </summary>
     private static readonly string[] LateFolders = ["LinkSupports", "LegPods"];
 
-    /// <summary>Folders added after the hand-written late rows (LateHand): their rows go after those, in this order. A new folder goes at the end.</summary>
-    private static readonly string[] LaterFolders = ["Modules"];
+    /// <summary>
+    /// Every recipe added from the module sockets on (2026-11-20), in the order added: a folder of parts (its rows in file order) or a
+    /// hand-written row. LateFolders and LateHand are closed: a new folder or a new hand row goes at the END of this list, never into
+    /// them, so no row already in a saved world moves (an Assembler's recipe setting is 1 + its row's place in its family's list).
+    /// </summary>
+    private static List<(string? Folder, PyDict? Row)> Tail() =>
+    [
+        ("Modules", null), // (module sockets: plates, plugs and stands, docs/sandbox/design/module-sockets.md)
+    ];
 
     /// <summary>
     /// Hand-written recipes added after the table's rows were saved in worlds: they go after every older row, in the order
-    /// added, since an Assembler's recipe choice is saved by its index in its machine's family (WorldSaveBodies.cs).
+    /// added, since an Assembler's recipe choice is saved by its index in its machine's family (WorldSaveBodies.cs). Closed: a
+    /// hand row added now goes at the end of <see cref="Tail"/>.
     /// </summary>
     private static List<PyDict> LateHand() =>
     [
@@ -545,10 +553,12 @@ public sealed class Assembling : IPartGenerator
         recipes.AddRange(UpgradeParts.Recipes.Select(r => Rec(r.Output, r.Seconds, r.Tier, m: r.Materials, p: r.Parts)));
         recipes.AddRange(AirWeaponsParts.OrdnanceRacks.Select(r => RackRecipe(r.Name, r.Layout, r.A, r.B, r.Length, r.Diameter)));
         var lateHand = LateHand();
-        var hand = recipes.Concat(lateHand).Select(r => (string)r["output"]!).ToHashSet();
+        var tailSpec = Tail();
+        var tailFolders = tailSpec.Where(t => t.Folder != null).Select(t => t.Folder!).ToHashSet(StringComparer.Ordinal);
+        var hand = recipes.Concat(lateHand).Concat(tailSpec.Where(t => t.Row != null).Select(t => t.Row!)).Select(r => (string)r["output"]!).ToHashSet();
         var tail = new List<PyDict>();
         var late = new List<PyDict>();
-        var later = new List<PyDict>();
+        var byFolder = new Dictionary<string, List<PyDict>>(StringComparer.Ordinal);
         foreach (var (p, folder) in known)
         {
             var name = (string)p["name"]!;
@@ -557,13 +567,17 @@ public sealed class Assembling : IPartGenerator
                 continue;
             if (Py.Truthy(p.Get("retired"))) // (a retired part loads and runs but has no recipe: the tier cylinders, sized-parts answer 8)
                 continue;
-            (LaterFolders.Contains(folder) ? later : LateFolders.Contains(folder) ? late : tail).Add(MachineOf(p, folder) != "" ? FlightRecipe(p, folder) : LongTail(p));
+            (tailFolders.Contains(folder) ? (byFolder.TryGetValue(folder, out var fl) ? fl : byFolder[folder] = []) : LateFolders.Contains(folder) ? late : tail).Add(MachineOf(p, folder) != "" ? FlightRecipe(p, folder) : LongTail(p));
         }
         // (stable: a family's recipes are in file order, and the plain Assembler's keep their places)
         recipes.AddRange(tail.OrderBy(r => r.Get("machine") as string ?? "", StringComparer.Ordinal));
         recipes.AddRange(late); // (after every older row: a saved Assembler keeps the number of its recipe)
         recipes.AddRange(lateHand); // (and the hand-written rows added since)
-        recipes.AddRange(later); // (then the folders added after those, last)
+        foreach (var (folder, row) in tailSpec) // (then everything added from the module sockets on, in the order added)
+            if (row != null)
+                recipes.Add(row);
+            else if (byFolder.TryGetValue(folder!, out var rows))
+                recipes.AddRange(rows);
         var byName = new Dictionary<string, PyDict>();
         foreach (var (p, _) in known)
             byName[(string)p["name"]!] = p;

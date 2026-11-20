@@ -102,11 +102,16 @@ public static class ConstructBuild
         c.SocketAt(part, socket, out var at, out var dir);
         Span<byte> turns = stackalloc byte[4];
         var n = SpinTurns(ds.Dir, dir, turns);
-        if (ts.Kind == SocketKind.Module)
-            n = ModuleTurns(c, part, def, turns, n);
         if (n == 0)
             return "no turn fits";
         var rot = turns[((spin % n) + n) % n];
+        if (ts.Kind == SocketKind.Module && ModuleTurn(c, part, def, turns, n, spin) is var mt)
+        {
+            // (a spin always counts over the full list, as blueprints write it: a turn the footprint doesn't allow moves on to the next one that it does)
+            if (mt < 0)
+                return "no turn fits";
+            rot = (byte)mt;
+        }
         var scale = ConstructMerge.ScaleFor(c, part, socket, def);
         var pos = ConstructWorld.Quantise(at - Rot24.Apply(rot, ds.At * scale));
         var seg = c.Parts[part].Seg;
@@ -123,23 +128,26 @@ public static class ConstructBuild
         return null;
     }
 
-    /// <summary>Of the turns a part may take onto a Module socket, those its footprint allows (4.5: an oblong one 2, a keyed socket 1): how many are left, first in <paramref name="turns"/>.</summary>
-    private static int ModuleTurns(Construct c, int part, ConstructPartDef def, Span<byte> turns, int n)
+    /// <summary>
+    /// The turn a part takes onto a Module socket for this spin (module-sockets.md 2.1: 4 square, 2 oblong, 1 keyed): the spin's
+    /// own turn in the full list when the footprint allows it, else the next allowed one after it; -1 when none is.
+    /// </summary>
+    private static int ModuleTurn(Construct c, int part, ConstructPartDef def, ReadOnlySpan<byte> turns, int n, int spin)
     {
         var target = c.DefOf(part);
         var plateIsTarget = target.ModPart == ModPart.Socket;
-        var plateRot = plateIsTarget ? c.Parts[part].Rot : (byte)0;
         var keyed = plateIsTarget && ModuleSockets.SocketOfPlate(c, part) is var si and >= 0 && c.ModSockets[si].Keyed;
-        var k = 0;
-        for (var i = 0; i < n; i++)
+        var at = ((spin % n) + n) % n;
+        for (var k = 0; k < n; k++)
         {
+            var r = turns[(at + k) % n];
             var ok = plateIsTarget
-                ? ModuleSockets.TurnFits(target, plateRot, def, turns[i], keyed)
-                : ModuleSockets.TurnFits(def, turns[i], target, c.Parts[part].Rot, false);
+                ? ModuleSockets.TurnFits(target, c.Parts[part].Rot, def, r, keyed)
+                : ModuleSockets.TurnFits(def, r, target, c.Parts[part].Rot, false);
             if (ok)
-                turns[k++] = turns[i];
+                return r;
         }
-        return k;
+        return -1;
     }
 
     /// <summary>

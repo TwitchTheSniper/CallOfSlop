@@ -62,8 +62,8 @@ public sealed partial class ConstructEdits
             var t = ModuleSocketTable.Current;
             if (!t.HandSize(s.W, s.L))
                 return $"a {ModuleSocketTable.SizeText(s.W, s.L)} module is taken off by a Module Fitter: by hand, up to {ModuleSocketTable.SizeText(t.HandUpToW, t.HandUpToL)}";
-            if (m.Mass > ConstructGrab.SurvivalMaxMass)
-                return $"the module weighs {m.Mass / 1000f:0.#} t: by hand up to {ConstructGrab.SurvivalMaxMass / 1000f:0.#} t";
+            if (m.Mass > LiftOf(player, false))
+                return $"the module weighs {m.Mass / 1000f:0.#} t: by hand up to {LiftOf(player, false) / 1000f:0.#} t (a Module Fitter lifts more)";
         }
         var of = c.ModuleOf!;
         // The module and every submodule on it (a turret on a turret bay): modules whose plug sits on a plate of one taken.
@@ -189,7 +189,7 @@ public sealed partial class ConstructEdits
         }
         var mi = ModuleSockets.ModuleOfPart(best, bestPlug);
         // The fit's rules before anything moves (a module on a stand is judged by its own parts).
-        if ((PoseOf(best, bestPlug, out _, out _, out var rot0, out var pos0) ?? ModuleSockets.FitRefusal(c, si, best, mi, rot0, pos0, byHand: true, world.Creative, moduleOnly: true)) is { } early)
+        if ((PoseOf(best, bestPlug, out _, out _, out var rot0, out var pos0) ?? ModuleSockets.FitRefusal(c, si, best, mi, rot0, pos0, byHand: true, world.Creative, moduleOnly: true, lift: LiftOf(player, world.Creative))) is { } early)
             return early;
         // Off a stand (or anything else it stands on) first: its parts as a body of their own.
         var of = best.ModuleOf!;
@@ -231,7 +231,7 @@ public sealed partial class ConstructEdits
         if (PoseOf(best, bestPlug, out var bodyTurn, out var rel, out var rot, out var pos) is { } noTurn)
             return noTurn;
         var plugDef = best.DefOf(bestPlug);
-        if (ModuleSockets.FitRefusal(c, si, best, mi, rot, pos, byHand: true, world.Creative) is { } why)
+        if (ModuleSockets.FitRefusal(c, si, best, mi, rot, pos, byHand: true, world.Creative, lift: LiftOf(player, world.Creative)) is { } why)
             return why;
         if (world.CanMerge(c, best) is { } merge)
             return merge;

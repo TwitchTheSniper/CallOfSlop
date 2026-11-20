@@ -278,7 +278,7 @@ it, so new forms grow: a reactor with a 1x1 sensor socket on its flank, a turret
 
 | Module | Way | Time |
 | --- | --- | --- |
-| Up to 2x2 and the physics gun's Survival mass (5 t, `ConstructGrab.SurvivalMaxMass`) | **By hand**: carry it with the physics gun and Socket attach it, or set it down within 2.5 m of a free socket and press F on the socket (the tool dock's pull, `ConstructEditsDock.cs`, past its 8 parts) | 5 s + 1 s a tonne |
+| Up to 2x2 and the physics gun's Survival lift (3 t, `ConstructEdits.LiftOf`, capped by `ConstructGrab.SurvivalLiftCap`) | **By hand**: carry it with the physics gun and Socket attach it, or set it down within 2.5 m of a free socket and press F on the socket (the tool dock's pull, `ConstructEditsDock.cs`, past its 8 parts) | 5 s + 1 s a tonne |
 | Bigger or heavier | **A Module Fitter** that reaches both the module and the socket (section 7), or a Building Station's fitter | the fitter's cycle (7.4) |
 | Creative, any size | the Modules tab: aim at a free socket, the ghost stands on it at the first turn that fits, R the next turn, LMB fits it at once (built from nothing) | instant |
 
@@ -725,7 +725,7 @@ Defaults taken (no questions asked):
   record, and nothing new is sent or saved for it. Saved designs are plain blueprints with a `"module"` block.
 - A module is saved as a module automatically when the selection is exactly one module (no separate "Save as module" button).
 - F fits and takes off at once (no 5 s + 1 s a tonne timer); the attach tool's socket weld keeps its own fit time.
-- The hand's mass limit is `ConstructGrab.SurvivalMaxMass` (the physics gun's Survival lift), so it follows that constant.
+- The hand's mass limit is the player's physics gun lift, `ConstructEdits.LiftOf(player, creative)` (3 t in Survival, `ConstructGrab.SurvivalLiftCap`); the attach tool's socket weld, which knows no player there, uses the cap.
 - `turret` is any gun on the module, fixed or on a joint.
 - A Module Stand is the bench as well; F on a socket also fits a module stored on a stand of the same construct.
 - A late refusal after a module was lifted off its stand (someone standing where it goes) leaves it loose beside the stand.

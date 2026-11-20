@@ -435,8 +435,11 @@ public static class ModuleSockets
         var shrink = new Vector3(0.01f);
         Vector3 lo = s.RoomMin + shrink, hi = s.RoomMax - shrink;
         var of = c.ModuleOf;
-        for (var j = 0; j < c.PartCount; j++)
+        var hits = Construct.PartScratch; // (the parts near the room only: the part tree, as the build's overlap test asks)
+        var near = c.PartsInBox(lo, hi, hits);
+        for (var h = 0; h < near; h++)
         {
+            var j = hits[h];
             if (j == s.Plate || c.Parts[j].Seg != seg || module >= 0 && of != null && of[j] == module)
                 continue;
             c.PartBounds(j, out var mn, out var mx);
@@ -497,7 +500,7 @@ public static class ModuleSockets
     /// the size and turn, the room clear, the module inside the room, its rating, the restricted kind, and in Survival the
     /// hand's limits (<paramref name="byHand"/>). Null, or why not.
     /// </summary>
-    public static string? FitRefusal(Construct ship, int si, Construct mover, int mi, Quaternion moverRot, Vector3 moverPos, bool byHand, bool creative, bool moduleOnly = false)
+    public static string? FitRefusal(Construct ship, int si, Construct mover, int mi, Quaternion moverRot, Vector3 moverPos, bool byHand, bool creative, bool moduleOnly = false, float lift = ConstructGrab.SurvivalLiftCap)
     {
         if ((uint)si >= (uint)ship.ModSockets.Length || (uint)mi >= (uint)mover.Modules.Length)
             return "no module there";
@@ -529,8 +532,8 @@ public static class ModuleSockets
         {
             if (!t.HandSize(s.W, s.L))
                 return $"a {ModuleSocketTable.SizeText(s.W, s.L)} module is fitted by a Module Fitter: by hand, up to {ModuleSocketTable.SizeText(t.HandUpToW, t.HandUpToL)}";
-            if (m.Mass > ConstructGrab.SurvivalMaxMass)
-                return $"the module weighs {m.Mass / 1000f:0.#} t: by hand up to {ConstructGrab.SurvivalMaxMass / 1000f:0.#} t (a Module Fitter lifts more)";
+            if (m.Mass > lift)
+                return $"the module weighs {m.Mass / 1000f:0.#} t: by hand up to {lift / 1000f:0.#} t (a Module Fitter lifts more)";
         }
         // The turn: the plug's turn in the ship's frame.
         var inv = Quaternion.Conjugate(ship.Rot);
