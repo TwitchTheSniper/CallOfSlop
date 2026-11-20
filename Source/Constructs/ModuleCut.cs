@@ -67,6 +67,9 @@ public static class ModuleCut
             c.ModCutPending = false;
             Start(world, wj, c);
         }
+        foreach (var j in wj.Jobs)
+            if (world.Get(j.Body) is { } jc)
+                jc.ModCutWatts = 0; // (each burning job adds its ring's draw again below: two cuts on one body draw both)
         for (var k = wj.Jobs.Count - 1; k >= 0; k--)
             if (Burn(world, wj.Jobs[k]))
                 wj.Jobs.RemoveAt(k);
@@ -80,7 +83,14 @@ public static class ModuleCut
         for (var si = 0; si < c.ModSockets.Length; si++)
         {
             var s = c.ModSockets[si];
-            if (!Wants(s) || wj.Jobs.Exists(j => j.Body == c.Id && j.Plate == s.Plate))
+            var running = wj.Jobs.Exists(j => j.Body == c.Id && j.Plate == s.Plate);
+            if (!running && !s.Stand && ConstructConfig.Get(c.Parts[s.Plate], c.DefOf(s.Plate), CfgKey.ModCut, 0) > 0)
+            {
+                ref var sp = ref c.Parts[s.Plate];
+                ConstructConfig.Put(ref sp, sp.D, CfgKey.ModCut, 0); // (a stale cut: a save made mid-cut, or a plate that came off a body; started again below if it still wants one)
+                world.StructureDirty.Add(c.Id);
+            }
+            if (!Wants(s) || running)
                 continue;
             var plan = PlanOf(c, si);
             if (plan.Blocker >= 0)
@@ -105,8 +115,12 @@ public static class ModuleCut
         var c = world.Get(j.Body);
         if (c == null || j.Plate >= c.PartCount || c.Parts[j.Plate].Def != j.PlateDef || c.Parts[j.Plate].Broken)
         {
-            if (c != null)
-                c.ModCutWatts = 0;
+            if (c != null && j.Plate < c.PartCount && ConstructConfig.Get(c.Parts[j.Plate], c.DefOf(j.Plate), CfgKey.ModCut, 0) > 0)
+            {
+                ref var bp = ref c.Parts[j.Plate];
+                ConstructConfig.Put(ref bp, bp.D, CfgKey.ModCut, 0); // (a plate shot off or changed: its ring stops; a copy that left with a detached plate is cleared by Start)
+                world.StructureDirty.Add(c.Id);
+            }
             return true;
         }
         if (c.Dirty)
@@ -119,14 +133,13 @@ public static class ModuleCut
         {
             if (!c.Electrical || !c.PowerOn)
             {
-                c.ModCutWatts = 0;
                 if (!j.Waiting)
                     world.Events.Add(FormattableString.Invariant($"construct {c.Id}: socket part {j.Plate}'s cut waits: it needs {j.Watts / 1000:0.#} kW"));
                 j.Waiting = true;
                 return false;
             }
             j.Waiting = false;
-            c.ModCutWatts = j.Watts; // (ConstructPower counts it with the circuit's draw)
+            c.ModCutWatts += j.Watts; // (ConstructPower counts it with the circuit's draw; reset each look before the jobs burn)
             j.Done += dt;
             if (j.Done < j.Seconds)
                 return false;
@@ -140,7 +153,6 @@ public static class ModuleCut
 
     private static bool Stop(ConstructWorld world, Construct c, Job j, string? why)
     {
-        c.ModCutWatts = 0;
         ref var p = ref c.Parts[j.Plate];
         ConstructConfig.Put(ref p, p.D, CfgKey.ModCut, 0);
         c.Dirty = true;
@@ -206,7 +218,7 @@ public static class ModuleCut
             var mx = d.HasSkin ? Vector3.Max(d.BoundsMax, d.SkinMax) : d.BoundsMax;
             if (!HullHoles.ReachesBounds(mn, mx, local))
                 continue;
-            if (c.Parts[j].Seg != 0)
+            if (!c.Rigid(c.Parts[j].Seg))
                 return new Plan(cuts, j, $"the {d.Name} (part {j}) is on a joint", 0, 0, 0);
             if (Array.Exists(HullHoles.HolesOf(d), h => h.Text == local.Text))
                 continue; // (cut already: this well's hole)
@@ -214,7 +226,7 @@ public static class ModuleCut
             {
                 cuts.Add((j, holed));
                 // The hull's thickness here: the part's extent along the normal inside the well.
-                c.PartBounds(j, out var bmn, out var bmx);
+                ModuleSockets.RestBounds(c, j, out var bmn, out var bmx);
                 var rn = Vector3.Abs(Vector3.Transform(n, inv));
                 var ext = Vector3.Dot(bmx - bmn, rn);
                 thick += MathF.Min(ext, depth);
@@ -226,7 +238,7 @@ public static class ModuleCut
             if (why == HullHoles.NothingLeft && HullHoles.Refusal(HullHoles.BaseOf(d)) == null)
             {
                 cuts.Add((j, null)); // (wholly inside the well: burned away)
-                c.PartBounds(j, out var bmn, out var bmx);
+                ModuleSockets.RestBounds(c, j, out var bmn, out var bmx);
                 thick += MathF.Min(Vector3.Dot(bmx - bmn, Vector3.Abs(Vector3.Transform(n, inv))), depth);
                 continue;
             }
@@ -324,21 +336,26 @@ public static class ModuleCut
         world.Events.Add($"construct {c.Id}: the well's slug fell away ({kg:0} kg) -> construct {slug.Id}");
     }
 
-    private static readonly Dictionary<(ushort, int), double> FirstSeen = new();
+    private static readonly Dictionary<(Construct, int), double> FirstSeen = new(); // (by the body itself, so another world's body of the same id is another key; at most MaxSeen)
+    private const int MaxSeen = 64;
 
     /// <summary>Any peer: seconds since this plate's cut was first seen running here (its <c>ModCut</c> setting over 0), else 0.</summary>
     public static double Seen(Construct c, int plate)
     {
         var now = System.Diagnostics.Stopwatch.GetTimestamp() / (double)System.Diagnostics.Stopwatch.Frequency;
         var on = ConstructConfig.Get(c.Parts[plate], c.DefOf(plate), CfgKey.ModCut, 0) > 0;
-        var key = (c.Id, plate);
+        var key = (c, plate);
         if (!on)
         {
             FirstSeen.Remove(key);
             return 0;
         }
         if (!FirstSeen.TryGetValue(key, out var t0))
+        {
+            if (FirstSeen.Count >= MaxSeen)
+                FirstSeen.Clear(); // (bodies gone or worlds left while cutting: the next look starts their clocks again)
             FirstSeen[key] = t0 = now;
+        }
         return now - t0;
     }
 
@@ -353,7 +370,7 @@ public static class ModuleCut
         if (s.InTheWay < 0 || s.Module >= 0)
             return null;
         var d = c.DefOf(s.InTheWay);
-        if (c.Parts[s.InTheWay].Seg != 0)
+        if (!c.Rigid(c.Parts[s.InTheWay].Seg))
             return $"the {d.Name} is in its well, on a joint: it can't be cut";
         return HullHoles.Refusal(HullHoles.BaseOf(d)) is { } why
             ? $"the {HullHoles.Shown(d)} is in its well and can't be cut ({why}): move it"

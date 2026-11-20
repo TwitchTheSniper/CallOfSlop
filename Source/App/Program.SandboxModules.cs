@@ -25,8 +25,8 @@ public static unsafe partial class Program
             for (var i = 0; i < c.ModSockets.Length; i++)
             {
                 var s = c.ModSockets[i];
-                if (s.Stand || s.Plate >= c.PartCount)
-                    continue;
+                if (s.Stand || s.Plate >= c.PartCount || !ModuleCut.Wants(s))
+                    continue; // (a ring burns only while its well has hull in it: a stale setting draws nothing)
                 var total = ConstructConfig.Get(c.Parts[s.Plate], c.DefOf(s.Plate), CfgKey.ModCut, 0);
                 if (total <= 0)
                     continue;

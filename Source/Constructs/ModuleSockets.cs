@@ -373,7 +373,7 @@ public static class ModuleSockets
             var s = sockets[si];
             s.InTheWay = InRoom(c, s, s.Module);
             sockets[si] = s;
-            pending |= ModuleCut.Wants(s);
+            pending |= ModuleCut.Wants(s) || !s.Stand && ConstructConfig.Get(c.Parts[s.Plate], c.DefOf(s.Plate), CfgKey.ModCut, 0) > 0; // (a cut to start, or a stale one to clear)
         }
         c.ModCutPending = pending; // (the server's ModuleCut looks at this body: a well wants cutting)
         c.ModSockets = [.. sockets];
@@ -404,47 +404,89 @@ public static class ModuleSockets
     }
 
     /// <summary>
-    /// The pipe pass-through (2.5): route <paramref name="k"/> leaves a fitted plug's pipe port; the pipe that ends at the plate's
-    /// port of the same name is what it carries on, so its source (a tank of the ship) is this route's source, and it is fed when that
-    /// one is. A plug on a stand passes nothing. Through nested modules (a plug on a plate on a module) up to <see cref="PassDepth"/>.
-    /// At the routes' rebuild only.
+    /// The pipe pass-through (2.5), after the routes' rebuild: a pipe leaving a fitted plug's port carries what the pipe ending at the
+    /// plate's port of the same name carries: its source (a tank of the ship), fed only when that pipe is fed to its end. A plug on a
+    /// stand passes nothing. Repeated for modules in modules (up to <see cref="PassDepth"/>), then the branches of each pipe changed
+    /// take their root's source again. Pipes only; nothing allocated; a body with no plug pipes costs one pass over its routes.
     /// </summary>
-    public static void PassSource(Construct c, int k, ref ushort source, ref byte sourcePort, ref bool fed, int depth = 0)
+    public static void PassThrough(Construct c)
     {
-        var plug = source;
-        var pd = c.DefOf(plug);
-        if (ConstructRoutes.PortOf(pd, RouteType.Pipe, sourcePort) is not { } port || PlateOf(c, plug) is var plate && plate < 0 || c.DefOf(plate).ModStand)
+        var any = false;
+        for (var k = 0; k < c.RouteCount && !any; k++)
+            any = c.Routes[k].Type == RouteType.Pipe && c.Routes[k].Parent == 255 && c.Routes[k].From < c.PartCount && c.DefOf(c.Routes[k].From).ModPart == ModPart.Plug;
+        if (!any)
             return;
-        var plateDef = c.DefOf(plate);
-        byte want = 0;
-        var found = false;
-        foreach (var np in plateDef.NamedPorts)
-            if (np.Type == RouteType.Pipe && string.Equals(np.Name, port.Name, StringComparison.OrdinalIgnoreCase))
-                (want, found) = (np.Byte, true);
-        if (!found)
-            return;
-        for (var j = 0; j < c.RouteCount; j++)
+        for (var pass = 0; pass < PassDepth; pass++)
         {
-            ref var o = ref c.Routes[j];
-            if (o.Type != RouteType.Pipe || o.To != plate || o.ToPort != want)
-                continue;
-            if (j < k)
+            var changed = false;
+            for (var k = 0; k < c.RouteCount; k++)
             {
-                (source, sourcePort, fed) = (o.Source, o.SourcePort, o.FedEnd);
-                return;
+                ref var r = ref c.Routes[k];
+                if (r.Type != RouteType.Pipe || r.Parent != 255 || r.From >= c.PartCount || c.DefOf(r.From).ModPart != ModPart.Plug)
+                    continue;
+                var j = PlatePipe(c, r.From, r.FromPort);
+                ushort src = r.From;
+                byte port = r.FromPort;
+                var fed = true;
+                if (j >= 0 && j != k)
+                    (src, port, fed) = (c.Routes[j].Source, c.Routes[j].SourcePort, c.Routes[j].FedEnd);
+                if (src != r.Source || port != r.SourcePort || fed != r.Fed)
+                {
+                    (r.Source, r.SourcePort, r.Fed) = (src, port, fed);
+                    changed = true;
+                }
             }
-            // (laid later than this one: its root, from the parts alone)
-            var root = j;
-            for (var guard = 0; c.Routes[root].Parent != 255 && c.Routes[root].Parent < root && guard < c.RouteCount; guard++)
-                root = c.Routes[root].Parent;
-            ref var rr = ref c.Routes[root];
-            if (rr.From >= c.PartCount)
-                return;
-            (source, sourcePort) = (rr.From, rr.FromPort);
-            if (depth < PassDepth && c.DefOf(source).ModPart == ModPart.Plug)
-                PassSource(c, root, ref source, ref sourcePort, ref fed, depth + 1);
-            return;
+            for (var k = 0; k < c.RouteCount; k++)
+            {
+                ref var r = ref c.Routes[k];
+                if (r.Type != RouteType.Pipe || r.Parent == 255 || r.Parent >= k)
+                    continue;
+                ref var p = ref c.Routes[r.Parent];
+                (r.Source, r.SourcePort, r.Fed) = (p.Source, p.SourcePort, p.Fed && p.FirstCut > r.ParentNode);
+            }
+            if (!changed)
+                break;
         }
+    }
+
+    /// <summary>The pipe that ends at the plate plug <paramref name="plug"/> is fitted to, at the plate's port named as the plug's port <paramref name="port"/>, or -1.</summary>
+    private static int PlatePipe(Construct c, int plug, byte port)
+    {
+        if (ConstructRoutes.PortOf(c.DefOf(plug), RouteType.Pipe, port) is not { } np || PlateOf(c, plug) is var plate && plate < 0 || c.DefOf(plate).ModStand)
+            return -1;
+        foreach (var pp in c.DefOf(plate).NamedPorts)
+            if (pp.Type == RouteType.Pipe && string.Equals(pp.Name, np.Name, StringComparison.OrdinalIgnoreCase))
+                for (var j = 0; j < c.RouteCount; j++)
+                    if (c.Routes[j].Type == RouteType.Pipe && c.Routes[j].To == plate && c.Routes[j].ToPort == pp.Byte)
+                        return j;
+        return -1;
+    }
+
+    /// <summary>A box of segment <paramref name="seg"/>'s frame as an axis-aligned box of the body's rest frame (a freeform weld turns it; RestPose).</summary>
+    public static void RestAabb(Construct c, int seg, ref Vector3 centre, ref Vector3 half)
+    {
+        if (seg == 0)
+            return;
+        c.RestPose(seg, out var q, out var t);
+        if (q == Quaternion.Identity && t == Vector3.Zero)
+            return;
+        var m = Matrix4x4.CreateFromQuaternion(q);
+        centre = t + Vector3.Transform(centre, q);
+        half = new Vector3(
+            MathF.Abs(m.M11) * half.X + MathF.Abs(m.M21) * half.Y + MathF.Abs(m.M31) * half.Z,
+            MathF.Abs(m.M12) * half.X + MathF.Abs(m.M22) * half.Y + MathF.Abs(m.M32) * half.Z,
+            MathF.Abs(m.M13) * half.X + MathF.Abs(m.M23) * half.Y + MathF.Abs(m.M33) * half.Z);
+    }
+
+    /// <summary>Part <paramref name="part"/>'s bounds in the body's rest frame.</summary>
+    public static void RestBounds(Construct c, int part, out Vector3 min, out Vector3 max)
+    {
+        c.PartBounds(part, out min, out max);
+        var mid = (min + max) * 0.5f;
+        var half = (max - min) * 0.5f;
+        RestAabb(c, c.Parts[part].Seg, ref mid, ref half);
+        min = mid - half;
+        max = mid + half;
     }
 
     /// <summary>The plate plug <paramref name="plug"/> is fitted to when it is an engine socket's (a ship-works mount: ConstructWorks.FindMount), else -1.</summary>
@@ -484,6 +526,7 @@ public static class ModuleSockets
         var hi = new Vector3(face.X + d.ModW * 0.5f + side, face.Y + above, face.Z + d.ModL * 0.5f + side);
         var mid = p.Pos + Rot24.Apply(p.Rot, (lo + hi) * 0.5f);
         var half = Rot24.ApplyHalf(p.Rot, (hi - lo) * 0.5f);
+        RestAabb(c, p.Seg, ref mid, ref half); // (the body's rest frame, as every part's bounds are compared)
         min = mid - half;
         max = mid + half;
     }
@@ -491,7 +534,6 @@ public static class ModuleSockets
     /// <summary>The first part of <paramref name="c"/> (not the plate, not module <paramref name="module"/>'s) whose solid is in socket <paramref name="s"/>'s room, or -1.</summary>
     private static int InRoom(Construct c, in CModSocket s, int module)
     {
-        var seg = c.Parts[s.Plate].Seg;
         var shrink = new Vector3(0.01f);
         Vector3 lo = s.RoomMin + shrink, hi = s.RoomMax - shrink;
         var of = c.ModuleOf;
@@ -500,15 +542,16 @@ public static class ModuleSockets
         for (var h = 0; h < near; h++)
         {
             var j = hits[h];
-            if (j == s.Plate || c.Parts[j].Seg != seg || module >= 0 && of != null && of[j] == module)
-                continue;
-            c.PartBounds(j, out var mn, out var mx);
+            if (j == s.Plate || !c.Rigid(c.Parts[j].Seg) || module >= 0 && of != null && of[j] == module)
+                continue; // (a joint's moving parts move out of the way; a freeform weld's are rigid: in the rest frame)
+            RestBounds(c, j, out var mn, out var mx);
             if (mn.X >= hi.X || mx.X <= lo.X || mn.Y >= hi.Y || mx.Y <= lo.Y || mn.Z >= hi.Z || mx.Z <= lo.Z)
                 continue;
             var d = c.DefOf(j);
             for (var k = 0; k < d.SolidBoxes; k++)
             {
                 c.BoxOf(j, k, out var oc, out var oh);
+                RestAabb(c, c.Parts[j].Seg, ref oc, ref oh);
                 if (oc.X - oh.X < hi.X && oc.X + oh.X > lo.X && oc.Y - oh.Y < hi.Y && oc.Y + oh.Y > lo.Y && oc.Z - oh.Z < hi.Z && oc.Z + oh.Z > lo.Z)
                     return j;
             }
@@ -615,9 +658,9 @@ public static class ModuleSockets
         {
             if (moduleOnly && of != null && of[j] != mi)
                 continue; // (what it stands on: it comes off that first)
-            if (mover.Parts[j].Seg != 0)
+            if (!mover.Rigid(mover.Parts[j].Seg))
                 continue; // (a joint's moving parts: their sweep is ModuleSweep's; their rest pose is checked with the body by the overlap test)
-            mover.PartBounds(j, out var mn, out var mx);
+            RestBounds(mover, j, out var mn, out var mx);
             var c0 = rel + Rot24.Apply(bodyTurn, (mn + mx) * 0.5f);
             var h0 = Rot24.ApplyHalf(bodyTurn, (mx - mn) * 0.5f);
             var a = c0 - h0;

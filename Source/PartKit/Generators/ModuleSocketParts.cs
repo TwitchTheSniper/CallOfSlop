@@ -145,11 +145,14 @@ public sealed class ModuleSocketParts : IPartGenerator
             for (var j = 0; j < l; j++)
             {
                 p.Sock($"top.{i}.{j}", [i, y1, j], "+y");
-                p.Sock($"s{i}.{j}", [i, y1, j], "+y", Small); // (a Small part in the cell's middle: one 0.5 m wide clears the corner lugs)
                 for (var a = 0; a < 2; a++)
                     for (var b = 0; b < 2; b++)
                         p.Sock($"t{i}{a}.{j}{b}", [i - 0.25 + a * 0.5, y1, j - 0.25 + b * 0.5], "+y", Small);
             }
+        // A Small part in each cell's middle (one 0.5 m wide clears the corner lugs): after every older socket, since saves keep links by socket index.
+        for (var i = 0; i < w; i++)
+            for (var j = 0; j < l; j++)
+                p.Sock($"s{i}.{j}", [i, y1, j], "+y", Small);
         var area = w * l;
         p.Stats(area * 60, 100 + area * Medium.HealthM2, Medium.Armour, seconds: 3.0 + area);
         p.Set(("onBreak", "detach"), ("modulePlug", Kw(("w", w), ("l", l))), ("ports", PipePorts(w, l, y1, "out", "+y")));

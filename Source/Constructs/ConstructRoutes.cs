@@ -791,8 +791,6 @@ public static partial class ConstructRoutes
                 r.Source = r.From;
                 r.SourcePort = r.FromPort;
                 r.Fed = r.From < c.PartCount;
-                if (r.Type == RouteType.Pipe && r.Fed && c.DefOf(r.From).ModPart == ModPart.Plug)
-                    ModuleSockets.PassSource(c, k, ref r.Source, ref r.SourcePort, ref r.Fed); // (a fitted module's plug passes on what reaches its plate: module-sockets.md 2.5)
                 arrive = 1f;
             }
             r.Share0 = arrive;
@@ -849,6 +847,7 @@ public static partial class ConstructRoutes
                     break;
             }
         }
+        ModuleSockets.PassThrough(c); // (a fitted module's plug passes on what reaches its plate's pipe ports: module-sockets.md 2.5)
     }
 
     /// <summary>Does an intact pipe carry fuel from a working tank to engine <paramref name="engine"/>?</summary>
