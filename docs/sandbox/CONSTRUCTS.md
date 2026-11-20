@@ -44,10 +44,6 @@ The Zero Day's 8-person boarding pod, docked under its keel: the command view's 
 
 A cargo ship round a hold of fourteen container slots, an overhead crane on rails and a belly well with sliding doors, two big drives with their engines in a drive room aft, and attitude jets; no legs, lamps or fittings yet.
 
-## [The Mainframe capital ship](constructs/mainframe.md), 8 KB
-
-The first capital ship, a kilometre long and built of plate the production line extrudes and laser-cuts: a Zero Day's berth in its keel, a hangar for three Shuttles, four Limpet pockets, a robot shell vault, two missile fields, four reactors and six drives, decks of rooms joined by lifts, airlocks along both flanks; its zones, flight, carried craft and what is not wired yet.
-
 ## [Ship works](design/ship-works.md), 48 KB (the design)
 
 Engines and turrets with insides: a ship's drive over 500 kN has works behind it through the hull (Drive Core, Fuel Pump,

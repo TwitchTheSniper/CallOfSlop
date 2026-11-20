@@ -1,5 +1,16 @@
 # The Mainframe capital ship
 
+**Archived (Karl, 2026-11-20): capital ships are on the back burner** (the game isn't ready for them and they have no purpose
+yet; the Zero Day is a medium ship). The ship, its parts and the Capital duel start were taken out of the game; the engine work
+it drove stays (merged far detail and occlusion for big ships, reversed float depth, railgun bores and scrap, readouts that
+don't wake a body, the 4096-handle store pool, the openings' `"hold"`). To bring it back, restore these from commit `d2c4dbb4`
+(main before the removal): `git checkout d2c4dbb4 -- Source/PartKit/Generators/MainframeParts*.cs Constructs/Parts/Mainframe
+Constructs/Blueprints/Mainframe.json Story/Starts/CapitalDuel.json Story/Opening/CapitalDuel.json`, then put back its line in
+`PartKit.cs`, its rows in `Generators/Assembling.cs` (then `--gen-parts assembling`), "Mainframe" in `Categories.json`'s Ship
+name rule, `ConstructPreview.GalleryAboard` (the gallery's berthed Zero Day), and bump the protocol (the part ids move).
+The paused lighter variant is `/mnt/project-files/mainframe/lighter-mainframe.patch` (project files); Karl's ruling was
+"stop simplifying": keep the detail, get the speed from the renderer.
+
 Karl (2026-11-20): "the first capital ship ... taking aspects from Day Zero but a new, capital-ship style hull ... multiple
 reactors, thrusters, multiple levels", an internal berth for a Zero Day, a shuttle bay with a large hangar, four Limpets, a
 huge store of robot shells, missile bays, "dozens if not hundreds of airlocks, hatches", "an elevator system within", about

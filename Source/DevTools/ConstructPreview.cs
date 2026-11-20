@@ -80,9 +80,6 @@ public static partial class ConstructPreview
             Console.WriteLine($"REFUSED {bp.Name}: it doesn't build: {why}");
             return null;
         }
-        foreach (var (name, at, turn) in GalleryAboard(bp.Name))
-            if (ConstructBuild.FindBlueprint(name) is not { } sub || ConstructBuild.Build(world, sub, c.ToWorld(at), Quaternion.Normalize(c.Rot * Rot24.Quat(turn)), out _) is null)
-                Console.WriteLine($"preview {bp.Name}: the {name} the gallery shows aboard doesn't build");
         var aboard = world.Bodies.Where(b => b != c && b.PartCount > 0).Select(b => (b, CraftName(b))).ToList(); // (what it carries, its cargo, anything it tows)
         parts = c.PartCount;
         var counts = new Dictionary<string, int>(StringComparer.Ordinal);
@@ -97,14 +94,6 @@ public static partial class ConstructPreview
         uses = uses.Select(u => (u.Name, counts[u.Name])).ToList();
         return Model(c, bp, aboard);
     }
-
-    /// <summary>
-    /// Craft the gallery shows aboard a ship beyond what the game builds it carrying (by the ship's blueprint name): each one's blueprint,
-    /// place (the ship's body metres) and turn. The Mainframe's berth: a craft it carries can't yet carry its own Shuttle and Limpet, so the
-    /// game builds the berth empty, and the gallery shows the Zero Day in it with its own craft aboard.
-    /// </summary>
-    private static IEnumerable<(string Blueprint, Vector3 At, byte Turn)> GalleryAboard(string ship) =>
-        ship == PartKit.Generators.MainframeParts.ShipName ? [PartKit.Generators.MainframeParts.GalleryBerthed] : [];
 
     /// <summary>A body's name in the model's parts list: the shipped blueprint it was built from (by its first part), else that part.</summary>
     private static string CraftName(Construct b)
