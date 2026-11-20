@@ -472,6 +472,21 @@ public static class ConstructWorks
         return -1;
     }
 
+    /// <summary>
+    /// An engine socket's plate bolted onto a mount (a retrofit's plate on a pod's tail plate, module-sockets.md 11) passes the mount
+    /// through: the drive's engine is behind that tail plate, on its line. A plate on anything else is the mount itself.
+    /// </summary>
+    private static int MountUnder(Construct c, int plate)
+    {
+        for (var e = c.FirstLink(plate); e >= 0; e = c.NextLink(e))
+        {
+            var o = c.OtherEnd(e);
+            if (c.Parts[o].D.WorksKind == WorksKind.Mount)
+                return o;
+        }
+        return plate;
+    }
+
     /// <summary>From a head down the joints it stands on (a gun's hinge and ring) to the first mount it touches, or -1.</summary>
     private static int FindMount(Construct c, int head, Span<ushort> queue)
     {
@@ -488,7 +503,7 @@ public static class ConstructWorks
                     if (d.WorksKind == WorksKind.Mount)
                         return o;
                     if (d.ModPart == ModPart.Plug && ModuleSockets.EngineMountOf(c, o) is var plate and >= 0)
-                        return plate; // (a module's thruster on its plug: an engine socket's plate is its mount, module-sockets.md 2.2)
+                        return MountUnder(c, plate); // (a module's thruster on its plug: an engine socket's plate is its mount, module-sockets.md 2.2)
                     if (d.HasJoint && n < queue.Length && queue[..n].IndexOf((ushort)o) < 0)
                         queue[n++] = (ushort)o;
                 }

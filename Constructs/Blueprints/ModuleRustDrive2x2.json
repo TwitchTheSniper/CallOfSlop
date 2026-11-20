@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Module Rust Drive 2x2",
+  "description": "A 2x2 module: the rust bucket's main drive, for a keyed engine socket on a pod's tail plate (its Drive Core stays in the pod). Written by the part kit (ship).",
+  "module": { "w": 2, "l": 2, "primary": "engine", "tags": ["engine"] },
+  "steps": [
+    { "part": "Module Plug 2x2" },
+    { "part": "Rust Bucket Drive", "on": 0, "socket": "tc", "by": "front" }
+  ]
+}

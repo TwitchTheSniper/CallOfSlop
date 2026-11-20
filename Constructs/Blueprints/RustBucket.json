@@ -187,9 +187,25 @@
       "by": "hull"
     },
     {
-      "part": "Rust Bucket Drive",
+      "part": "Module Socket 2x2",
       "on": 27,
       "socket": "drive",
+      "by": "bc",
+      "config": {
+        "modKind": 1,
+        "modKeyed": 1
+      }
+    },
+    {
+      "part": "Module Plug 2x2",
+      "on": 31,
+      "socket": "module",
+      "by": "module"
+    },
+    {
+      "part": "Rust Bucket Drive",
+      "on": 32,
+      "socket": "tc",
       "by": "front"
     },
     {
@@ -212,9 +228,25 @@
       "by": "top"
     },
     {
-      "part": "Rust Bucket Drive",
+      "part": "Module Socket 2x2",
       "on": 28,
       "socket": "drive",
+      "by": "bc",
+      "config": {
+        "modKind": 1,
+        "modKeyed": 1
+      }
+    },
+    {
+      "part": "Module Plug 2x2",
+      "on": 37,
+      "socket": "module",
+      "by": "module"
+    },
+    {
+      "part": "Rust Bucket Drive",
+      "on": 38,
+      "socket": "tc",
       "by": "front"
     },
     {
@@ -388,9 +420,21 @@
       "by": "bottom"
     },
     {
-      "part": "Long Range Sensor",
+      "part": "Module Socket 1x1",
       "on": 13,
       "socket": "sensor",
+      "by": "bc"
+    },
+    {
+      "part": "Module Plug 1x1",
+      "on": 68,
+      "socket": "module",
+      "by": "module"
+    },
+    {
+      "part": "Long Range Sensor",
+      "on": 69,
+      "socket": "s0.0",
       "by": "-y"
     },
     {
@@ -451,7 +495,7 @@
     },
     {
       "part": "Robot Shell",
-      "on": 72,
+      "on": 78,
       "socket": "dock",
       "by": "back"
     },
@@ -487,7 +531,7 @@
     },
     {
       "part": "Manned Manoeuvring Unit",
-      "on": 78,
+      "on": 84,
       "socket": "mmu",
       "by": "mount"
     },
@@ -504,9 +548,24 @@
       "by": "-y"
     },
     {
-      "part": "Ship Engine Block",
+      "part": "Module Socket 3x3",
       "on": 0,
       "socket": "engine",
+      "by": "bc",
+      "config": {
+        "modAbove": 2.5
+      }
+    },
+    {
+      "part": "Module Plug 3x3",
+      "on": 88,
+      "socket": "module",
+      "by": "module"
+    },
+    {
+      "part": "Ship Engine Block",
+      "on": 89,
+      "socket": "s1.1",
       "by": "bottom"
     },
     {
@@ -863,71 +922,71 @@
   ],
   "wires": [
     [
-      89,
-      87
+      97,
+      95
     ],
     [
-      89,
-      88
+      97,
+      96
     ],
     [
-      92,
-      90
-    ],
-    [
-      92,
-      91
-    ],
-    [
-      95,
-      93
-    ],
-    [
-      95,
-      94
-    ],
-    [
-      96,
+      100,
       98
     ],
     [
-      123,
-      119
+      100,
+      99
     ],
     [
-      123,
-      120
+      103,
+      101
     ],
     [
-      123,
-      121
+      103,
+      102
     ],
     [
-      123,
-      122
+      104,
+      106
     ],
     [
-      128,
-      124
-    ],
-    [
-      128,
-      125
-    ],
-    [
-      128,
-      126
-    ],
-    [
-      128,
+      131,
       127
+    ],
+    [
+      131,
+      128
+    ],
+    [
+      131,
+      129
+    ],
+    [
+      131,
+      130
+    ],
+    [
+      136,
+      132
+    ],
+    [
+      136,
+      133
+    ],
+    [
+      136,
+      134
+    ],
+    [
+      136,
+      135
     ]
   ],
   "links": [
     {
       "type": "pipe",
       "from": 30,
-      "to": 78,
+      "to": 84,
       "fromPort": "Fuel out",
       "toPort": "Fuel in"
     }

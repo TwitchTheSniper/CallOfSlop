@@ -689,6 +689,18 @@ public static partial class Program
                     }
                 return true;
             }
+            case "modsock" when arg.StartsWith("fit ", StringComparison.OrdinalIgnoreCase): // host: "modsock fit PART": the nearest loose module of that plate's size held 0.6 m off its face, then F on the plate
+            {
+                var (fc, fpart) = WsFind(g, arg[4..].Trim());
+                if (!g.IsServer || fc == null)
+                {
+                    WsFail($"modsock fit: {(fc == null ? $"no part \"{arg[4..].Trim()}\"" : "on the host")}");
+                    return true;
+                }
+                WsSay($"modsock: fit on {fc.DefOf(fpart).Name} part {fpart}: {g.SandboxHands.ModuleFitNear(g.Constructs, me.Id, fc, fpart) ?? "done"}");
+                _wsWait = 20;
+                return true;
+            }
             case "modsock": // "modsock state": every body's module sockets and modules as this peer has them, and the notice on screen (module-sockets.md 15)
                 foreach (var mb in g.Constructs.Bodies)
                 {
