@@ -35,10 +35,14 @@ public sealed partial class Ui
                 _upSeen[s] = seen;
                 var name = ToolUpgrades.ToolName(st.Tool);
                 var tool = char.ToUpperInvariant(name[0]) + name[1..];
-                var now = table.Show(stat, table.Value(stat, level, creative));
+                var value = table.Value(stat, level, creative);
+                var lift = stat == ToolStat.Lift && !creative; // (survival's lift stops at 3 t: a Lift module raises the beam's pull: ConstructEdits.LiftOf)
+                var now = lift ? $"{table.Show(stat, MathF.Min(value, ConstructGrab.SurvivalLiftCap))} at most, pull {value * ToolUpgrades.PullPerKg / 1000f:0} kN" : table.Show(stat, value);
                 var mk = st.Function || creative ? "" : $" (Mk {Math.Min(level, st.Levels.Length) + 1} of {st.Levels.Length + 1})";
                 _upLine[s] = $"{tool}: {st.Name}: {now}{mk}";
-                _upNext[s] = creative ? "" : level >= st.Levels.Length ? "at its best" : $"next: {st.Levels[level].Part}, {table.Show(stat, st.Levels[level].Value)}";
+                _upNext[s] = creative ? "" : level >= st.Levels.Length ? "at its best"
+                    : lift ? $"next: {st.Levels[level].Part}, pull {st.Levels[level].Value * ToolUpgrades.PullPerKg / 1000f:0} kN"
+                    : $"next: {st.Levels[level].Part}, {table.Show(stat, st.Levels[level].Value)}";
             }
             ImGui.Text(_upLine[s]);
             if (ImGui.IsItemHovered() && st.About.Length > 0)

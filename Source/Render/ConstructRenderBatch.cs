@@ -100,7 +100,7 @@ public static partial class ConstructRender
     internal static void ForgetRuntime() => _defBoxes.Clear();
 
     /// <summary>Drawn boxes of a type that never moves or changes on its own, or -1.</summary>
-    private static int StaticBoxes(ConstructPartDef d)
+    internal static int StaticBoxes(ConstructPartDef d) // (also the preview export's cost line)
     {
         if (_defBoxes.TryGetValue(d, out var n))
             return n;
