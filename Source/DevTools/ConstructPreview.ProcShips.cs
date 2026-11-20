@@ -72,7 +72,8 @@ public static partial class ConstructPreview
             ships.Add(new JsonObject
             {
                 ["code"] = spec.Code, ["title"] = spec.Title, ["seed"] = spec.Seed, ["class"] = spec.Class.ToString().ToLowerInvariant(),
-                ["hull"] = ship.Hull.Style.ToString().ToLowerInvariant(), ["decks"] = ship.Hull.Decks, ["length"] = Math.Round(ship.Hull.Length, 1),
+                ["hull"] = ship.Hull.Style.ToString().ToLowerInvariant(), ["role"] = ship.Hull.Role.ToString().ToLowerInvariant(), ["nacelles"] = ship.Hull.Nacelles.Count > 0,
+                ["decks"] = ship.Hull.Decks, ["length"] = Math.Round(ship.Hull.Length, 1),
                 ["file"] = "models/" + file, ["kb"] = json.Length / 1024, ["parts"] = parts, ["steps"] = ship.Steps, ["tris"] = _tris, ["traits"] = traits,
             });
             Console.WriteLine($"{spec.Title} ({spec.Code}): {parts} parts, {_tris} triangles, {json.Length / 1024} KB");
@@ -172,7 +173,12 @@ public static partial class ConstructPreview
         }
         var rooms = new JsonArray();
         foreach (var r in p.Rooms)
-            rooms.Add(new JsonObject { ["deck"] = r.Deck, ["name"] = r.Name, ["kind"] = r.Kind, ["box"] = Bx(r.X0, ProcHullShape.FloorTop(r.Deck), r.Z0, r.X1, ProcHullShape.Ceil(r.Deck), r.Z1) });
+        {
+            var room = new JsonObject { ["deck"] = r.Deck, ["name"] = r.Name, ["kind"] = r.Kind, ["box"] = Bx(r.X0, ProcHullShape.FloorTop(r.Deck), r.Z0, r.X1, ProcHullShape.Ceil(r.Top), r.Z1) };
+            if (r.Top > r.Deck)
+                room["top"] = r.Top;
+            rooms.Add(room);
+        }
         var doors = new JsonArray();
         foreach (var d in p.Doors)
         {
@@ -204,7 +210,7 @@ public static partial class ConstructPreview
         foreach (var s in p.Sockets)
             sockets.Add(new JsonObject
             {
-                ["name"] = s.Name, ["where"] = s.Where, ["kind"] = ProcShip.KindName(s.Kind), ["size"] = $"{s.W}x{s.L}", ["keyed"] = s.Keyed,
+                ["name"] = s.Name, ["where"] = s.Where, ["kind"] = s.Use, ["size"] = $"{s.W}x{s.L}", ["keyed"] = s.Keyed,
                 ["box"] = Bx(s.Min[0], s.Min[1], s.Min[2], s.Max[0], s.Max[1], s.Max[2]),
             });
         var decks = new JsonArray();

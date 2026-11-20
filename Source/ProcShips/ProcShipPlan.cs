@@ -21,8 +21,18 @@ public sealed class ProcWall(int deck, bool alongX, double a0, double a1, double
 /// <summary>A door hung in a doorway: on its wall's centre line at the doorway's start (it slides back into the wall before A).</summary>
 public sealed record ProcDoor(int Deck, string Group, bool AlongX, double A, double C, double Floor, string Kind);
 
-/// <summary>A room's clear floor (for the gallery's labels and the sockets), on deck Deck.</summary>
-public sealed record ProcRoom(int Deck, string Name, string Kind, double X0, double Z0, double X1, double Z1);
+/// <summary>A room's clear floor (for the gallery's labels and the sockets), on deck Deck; one that spans decks (a hold, a hangar, an atrium) is open up to deck DeckTop's ceiling.</summary>
+public sealed record ProcRoom(int Deck, string Name, string Kind, double X0, double Z0, double X1, double Z1, int DeckTop = -1)
+{
+    /// <summary>The highest deck it is open through.</summary>
+    public int Top => DeckTop < 0 ? Deck : DeckTop;
+}
+
+/// <summary>
+/// A room over decks D0 to D1 at one end of the block, aft of Z (Aft) or fore of it: the slabs between its decks are open over it and
+/// its walls stand deck over deck, so a hold, a hangar, a drive hall, a torpedo bay or an atrium is two decks tall or more.
+/// </summary>
+public sealed record ProcSpan(string Name, string Kind, int D0, int D1, double Z, bool Aft);
 
 /// <summary>A hole in slab level Slab (0 the lowest deck's floor, Decks the roof), with a rail round it on the deck above (open at its aft edge).</summary>
 public sealed record ProcHole(int Slab, double X0, double Z0, double X1, double Z1, bool Rail);
@@ -47,12 +57,13 @@ public sealed record ProcLock(int Side, int Deck, double A, double XIn, double X
 /// it is fitted with, its plate's box (ship metres), the socket its b00.00 goes on and the pad under it (none on a floor).
 /// </summary>
 public sealed record ProcSocket(string Name, string Where, int Kind, int W, int L, int Style, double Above, bool Keyed, int Rot,
-    double[] Min, double[] Max, double[] Sock, string Dir, double[]? PadMin, double[]? PadMax, int Deck);
+    double[] Min, double[] Max, double[] Sock, string Dir, double[]? PadMin, double[]? PadMax, int Deck, string Use);
 
 /// <summary>
 /// The interior and its ways out (docs/procships/PROCSHIPS.md): each deck's room block (stepped to stay a seeded gap inside the
-/// skin), its rooms (a fore room, a corridor with side rooms, a lobby amidships, an aft room), walls and doors, the ladders between
-/// the lobbies, the side airlocks, the docking hatches and the module sockets. Ship metres as <see cref="ProcHullShape"/>.
+/// skin), its rooms by the ship's role (a fore room, a corridor with side rooms or one hall, a lobby amidships, an aft room; at
+/// either end a room that spans decks), walls and doors, the ladders between the lobbies, the side airlocks, the docking hatches,
+/// the nacelles' pylons and the module sockets. Ship metres as <see cref="ProcHullShape"/>.
 /// </summary>
 public sealed class ProcShipPlan
 {
@@ -62,8 +73,21 @@ public sealed class ProcShipPlan
     public const double DoorSlide = 1.5; // (a Bulkhead Door's leaf slides 1.48 m into the wall before its doorway)
 
     public required ProcHullShape Hull { get; init; }
+    public required ProcRole Role { get; init; }
     public double Gap, Ch, AftGap, Zl, Ll;
     public int LockDeck;
+
+    /// <summary>The rooms that span decks at the block's ends (null: none).</summary>
+    public ProcSpan? AftSpan, ForeSpan;
+
+    /// <summary>Engineering: the aft room of this deck (-1: a hall amidships, or the aft span is the drive hall).</summary>
+    public int EngDeck;
+
+    /// <summary>Middle parts that are one hall, not a corridor with side rooms: by deck and part ('f' fore of the lobby, 'a' aft), its name and kind.</summary>
+    public readonly Dictionary<(int Deck, char Part), (string Name, string Kind)> Halls = [];
+
+    /// <summary>The halls made (middle parts that are one room).</summary>
+    public readonly List<ProcRoom> HallRooms = [];
     public List<ProcRun>[] Runs = [];
     public double[] Front = [], Back = [];
     public readonly List<ProcWall> Walls = [];
@@ -116,9 +140,9 @@ public sealed class ProcShipPlan
 
     // ---- making one
 
-    public static ProcShipPlan Make(ProcShipSpec spec, ProcHullShape h, ProcDice dice, List<(string Key, string Value)> traits)
+    public static ProcShipPlan Make(ProcShipSpec spec, ProcRole role, ProcHullShape h, ProcDice dice, List<(string Key, string Value)> traits)
     {
-        var p = new ProcShipPlan { Hull = h };
+        var p = new ProcShipPlan { Hull = h, Role = role };
         var r = dice.For("rooms.layout");
         p.Gap = Q(r.Range(0.5, 0.9), 0.05);
         p.Ch = r.Chance(0.55) ? 0.75 : 1.0;
@@ -149,9 +173,15 @@ public sealed class ProcShipPlan
         }
         if (hi < lo)
             throw new ProcShipException($"no room amidships for the lobby ({h.MidZ0:0.#} to {h.MidZ1:0.#} m)");
-        p.Zl = Math.Clamp(Q(lo + (hi - lo) * lob.Range(0.25, 0.75)), Math.Ceiling(lo / Grid) * Grid, Math.Floor(hi / Grid) * Grid);
+        // Clear of the nacelles where it can be: the side airlocks (amidships in the lobby) a metre or more fore of their noses.
+        var lockAft = p.Ll / 2 + DoorW / 2 + 0.2 + 1.0;
+        if (h.Nacelles.Count > 0 && h.Nacelles.Min(q => q.Z0) - lockAft >= lo)
+            hi = Math.Min(hi, h.Nacelles.Min(q => q.Z0) - lockAft);
+        var zlU = lob.Range(0.25, 0.75);
+        p.Zl = Math.Clamp(Q(lo + (hi - lo) * zlU), Math.Ceiling(lo / Grid) * Grid, Math.Floor(hi / Grid) * Grid);
         if (p.Zl < lo - 1e-6 || p.Zl > hi + 1e-6)
             p.Zl = Math.Ceiling(lo / Grid) * Grid;
+        p.Nacelles(dice, lockAft, traits);
         // The ways out, by class: side airlocks (both sides on a frigate or a destroyer), a belly hatch and a dorsal hatch.
         var locks = dice.For("locks");
         var sides = spec.Class == ProcClass.Corvette && !locks.Chance(0.3) ? new[] { locks.Chance(0.5) ? -1 : 1 } : new[] { -1, 1 };
@@ -163,12 +193,22 @@ public sealed class ProcShipPlan
             belly = h.Mid[0].H >= 0.85;
         if (h.Decks == 1 && belly && dorsal)
             dorsal = false; // (one lobby: one shaft through its middle)
+        if (h.HasWell)
+            dorsal = false; // (the well is its way out on top: the lobby's ladder climbs into it)
+        p.ChooseSpans(dice);
+        foreach (var sp in new[] { p.AftSpan, p.ForeSpan })
+            if (sp != null)
+                p.SpanHoles(sp);
         for (var d = 0; d < h.Decks; d++)
             p.Layout(d, dice, sides, belly && d == 0, dorsal && d == h.Decks - 1);
         p.Fit(spec, dice);
         traits.Add(("Void gap", $"{p.Gap.ToString("0.0#", CultureInfo.InvariantCulture)} m"));
         traits.Add(("Corridor", $"{(p.Ch * 2).ToString("0.#", CultureInfo.InvariantCulture)} m"));
         traits.Add(("Rooms", p.Rooms.Count(q => q.Kind != "corridor").ToString(CultureInfo.InvariantCulture)));
+        var tall = p.Rooms.Where(q => q.Top > q.Deck).Select(q => $"{q.Name} over decks {q.Deck + 1}-{q.Top + 1}").ToList();
+        traits.Add(("Tall rooms", tall.Count == 0 ? "none" : string.Join(", ", tall)));
+        traits.Add(("Halls", p.HallRooms.Count == 0 ? "none" : string.Join(", ", p.HallRooms.Select(q => $"{q.Name} (deck {q.Deck + 1})"))));
+        traits.Add(("Engineering", p.Rooms.FirstOrDefault(q => q.Kind == "engineering") is { } eng ? $"{eng.Name}, deck {eng.Deck + 1}{(eng.Top > eng.Deck ? $"-{eng.Top + 1}" : "")}" : "none"));
         traits.Add(("Side locks", sides.Length == 2 ? "both sides" : sides[0] < 0 ? "port" : "starboard"));
         traits.Add(("Belly hatch", belly ? "yes" : "no"));
         traits.Add(("Dorsal hatch", dorsal ? "yes" : "no"));
@@ -291,6 +331,248 @@ public sealed class ProcShipPlan
 
     private double[] _foreEnd = [], _aftStart = [];
 
+    /// <summary>Where deck d's fore room ends (its aft wall's fore face) and its aft room starts (its fore wall's aft face).</summary>
+    public double ForeEnd(int d) => _foreEnd[d];
+
+    public double AftStart(int d) => _aftStart[d];
+
+    /// <summary>
+    /// The nacelles' pylons, now the lobby is placed: a nacelle whose nose would hang by an airlock is shortened (dropped when that
+    /// leaves it under 8 m); its pylon a third of the way along it, from inside the skin (past the rooms) out to its core.
+    /// </summary>
+    private void Nacelles(ProcDice dice, double lockAft, List<(string Key, string Value)> traits)
+    {
+        var h = Hull;
+        if (h.Nacelles.Count == 0)
+            return;
+        var clearZ = Math.Ceiling((Zl + lockAft) / Grid - 1e-9) * Grid;
+        if (h.Nacelles[0].Z0 < clearZ)
+        {
+            if (h.Nacelles[0].Z1 - clearZ < 8.0)
+            {
+                h.Nacelles.Clear();
+                var i = traits.FindIndex(t => t.Key == "Nacelles");
+                traits[i] = ("Nacelles", "none (no room for them clear of the airlocks)");
+                return;
+            }
+            foreach (var q in h.Nacelles)
+                q.Z0 = clearZ;
+        }
+        var pl = dice.For("hull.pylons");
+        var n = h.Nacelles[0];
+        var pz0 = Q(Math.Max(n.Body + 0.2, n.Z0 + (n.Z1 - n.Z0) * pl.Range(0.3, 0.42)));
+        var pz1 = Math.Min(pz0 + Q(pl.Range(2.0, 3.5)), Math.Floor(Math.Min(n.Z1 - 1.0, h.Length - 1.0) / Grid) * Grid);
+        if (pz1 - pz0 < 1.5)
+            pz0 = pz1 - 1.5;
+        var pt = Math.Round(pl.Range(0.3, 0.42), 2);
+        var skin = double.MaxValue;
+        foreach (var z in new[] { pz0, (pz0 + pz1) / 2, pz1 })
+            foreach (var y in new[] { n.Y - pt, n.Y + pt })
+                skin = Math.Min(skin, h.SkinHalf(z, y));
+        var pin = Math.Floor((skin - 0.25) * 100) / 100;
+        var rooms = Enumerable.Range(0, Decks).Where(d => FloorLo(d) < n.Y + pt + 0.3 && (d == Decks - 1 ? h.Roof : FloorLo(d + 1)) > n.Y - pt - 0.3)
+            .Select(d => WMax(d, pz0 - 0.1, pz1 + 0.1)).DefaultIfEmpty(0).Max();
+        if (pin < rooms + 0.1)
+            throw new ProcShipException($"no room for the nacelles' pylons between the rooms ({rooms:0.##} m) and the skin ({skin:0.##} m)");
+        foreach (var q in h.Nacelles)
+            (q.PZ0, q.PZ1, q.PT, q.PIn) = (pz0, pz1, pt, pin);
+    }
+
+    /// <summary>
+    /// The rooms that span decks, by role: aft, a cargo hold, an ore hold, a hangar or a drive hall over two decks or three (and
+    /// where engineering goes then: the deck over a hold, else a hall amidships); fore, a torpedo bay or an atrium under the bridge.
+    /// </summary>
+    private void ChooseSpans(ProcDice dice)
+    {
+        var sp = dice.For("rooms.spans");
+        var sideMin = Ch + Wall + SideMinRoom + Wall;
+        var (aName, aKind, aChance) = Role switch
+        {
+            ProcRole.Freighter => ("Cargo hold", "hold", 0.85),
+            ProcRole.Miner => ("Ore hold", "hold", 0.75),
+            ProcRole.Tender => ("Hangar", "hangar", 0.85),
+            ProcRole.Gunship => ("Drive hall", "engineering", 0.5),
+            _ => ("Drive hall", "engineering", 0.3),
+        };
+        double aRoll = sp.U(), aLow = sp.U(), aTall = sp.U(), aLen = sp.Range(0.2, 0.32);
+        EngDeck = 0;
+        if (Decks >= 2 && aRoll < aChance)
+        {
+            int d0 = 0, d1 = 1;
+            if (aKind != "engineering")
+            {
+                d0 = Decks >= 3 && aLow < 0.4 ? 1 : 0; // (over the upper decks: engineering keeps the lowest deck's aft room)
+                d1 = Math.Min(Decks - 1, d0 + (Decks - d0 >= 3 && aTall < 0.45 ? 2 : 1));
+            }
+            var engHall = aKind != "engineering" && d0 == 0 && d1 == Decks - 1;
+            double back = double.MaxValue, narrow = double.MaxValue;
+            for (var d = d0; d <= d1; d++)
+            {
+                back = Math.Min(back, Back[d]);
+                foreach (var rr in Runs[d])
+                    if (rr.W < sideMin && rr.Z0 >= Zl + Ll - 1e-6)
+                        narrow = Math.Min(narrow, rr.Z0);
+            }
+            var zs = Math.Min(Q(back - Math.Max(5.0, aLen * Hull.Length)), narrow);
+            var least = Zl + Ll + (engHall ? 5.0 : 0);
+            if (zs < least)
+                zs = least;
+            else if (!engHall && zs - (Zl + Ll) < MinRoomLen + Wall + 0.25)
+                zs = Zl + Ll;
+            if (back - zs >= 4.5 && zs <= narrow + 1e-6)
+            {
+                AftSpan = new ProcSpan(aName, aKind, d0, d1, zs, true);
+                if (aKind == "engineering")
+                    EngDeck = -1;
+                else if (d0 == 0 && engHall)
+                {
+                    Halls[(0, 'a')] = ("Engineering", "engineering");
+                    EngDeck = -1;
+                }
+                else if (d0 == 0)
+                    EngDeck = d1 + 1;
+            }
+        }
+        var (fName, fKind, fChance) = Role switch
+        {
+            ProcRole.Gunship => ("Torpedo bay", "torpedo", 0.6),
+            ProcRole.Liner => ("Atrium", "atrium", 0.7),
+            _ => ("", "", 0.0),
+        };
+        double fRoll = sp.U(), fLen = sp.Range(0.12, 0.2);
+        if (Decks >= 3 && fRoll < fChance)
+        {
+            int d0 = 0, d1 = Decks - 2; // (the bridge stays on the top deck, over it)
+            double front = 0, narrow = 0;
+            for (var d = d0; d <= d1; d++)
+            {
+                front = Math.Max(front, Front[d]);
+                foreach (var rr in Runs[d])
+                    if (rr.W < sideMin && rr.Z1 <= Zl + 1e-6)
+                        narrow = Math.Max(narrow, rr.Z1);
+            }
+            var ze = Math.Max(Q(front + Math.Max(5.0, fLen * Hull.Length)), narrow);
+            if (Zl - ze < MinRoomLen + Wall + 0.25)
+                ze = Zl;
+            if (ze - front >= 4.5)
+                ForeSpan = new ProcSpan(fName, fKind, d0, d1, ze, false);
+        }
+    }
+
+    /// <summary>
+    /// A span's holes in the slabs between its decks: between the run boundaries of the decks under and over each, as wide as both
+    /// rooms are; the slab stays as a beam across under each step's wall on the deck over it.
+    /// </summary>
+    private void SpanHoles(ProcSpan sp)
+    {
+        for (var j = sp.D0 + 1; j <= sp.D1; j++)
+        {
+            var z0 = sp.Aft ? sp.Z : Math.Max(Front[j - 1], Front[j]) + Wall;
+            var z1 = sp.Aft ? Math.Min(Back[j - 1], Back[j]) - Wall : sp.Z;
+            var keep = Runs[j].Skip(1).Select(rr => AtBoundary(j, rr.Z0)).ToList();
+            var stops = new SortedSet<double> { z0, z1 };
+            foreach (var dd in new[] { j - 1, j })
+                foreach (var rr in Runs[dd])
+                    foreach (var z in new[] { rr.Z0, rr.Z1 })
+                        if (z > z0 + 1e-6 && z < z1 - 1e-6)
+                            stops.Add(z);
+            foreach (var (lo, hi) in keep)
+                foreach (var z in new[] { lo, hi })
+                    if (z > z0 + 1e-6 && z < z1 - 1e-6)
+                        stops.Add(z);
+            var list = stops.ToList();
+            for (var i = 0; i + 1 < list.Count; i++)
+            {
+                double a = list[i], b = list[i + 1], zm = (a + b) / 2;
+                if (b - a < 0.05 || keep.Any(k => zm > k.Lo && zm < k.Hi))
+                    continue;
+                var w = Math.Min(W(j - 1, zm), W(j, zm)) - Wall;
+                if (w > 0.3)
+                    Holes.Add(new ProcHole(j, -w, a, w, b, false));
+            }
+        }
+    }
+
+    /// <summary>A span's room: from its boundary to the block's end on every deck it spans, as wide as the narrowest of them.</summary>
+    private ProcRoom SpanRoom(ProcSpan sp, double edge)
+    {
+        var decks = Enumerable.Range(sp.D0, sp.D1 - sp.D0 + 1).ToList();
+        double z0 = sp.Aft ? edge : decks.Max(dd => Front[dd]) + Wall, z1 = sp.Aft ? decks.Min(dd => Back[dd]) - Wall : edge;
+        var w = decks.Min(dd => WMinOr(dd, z0, z1)) - Wall;
+        return new ProcRoom(sp.D0, sp.Name, sp.Kind, -w, z0, w, z1, sp.D1);
+    }
+
+    private (string Name, string Kind) ForeName(int d) => (Role, d == 0 && Decks > 1) switch
+    {
+        (ProcRole.Gunship, true) => ("Forward magazine", "magazine"),
+        (ProcRole.Gunship, false) => ("Sensor room", "fore"),
+        (ProcRole.Miner, true) => ("Drill store", "fore"),
+        (ProcRole.Liner, false) => ("Observation lounge", "fore"),
+        (_, true) => ("Fore store", "fore"),
+        _ => ("Fore compartment", "fore"),
+    };
+
+    private (string Name, string Kind) AftName() => Role switch
+    {
+        ProcRole.Gunship => ("Aft magazine", "magazine"),
+        ProcRole.Liner => ("Luggage hold", "hold"),
+        _ => ("Hold", "hold"),
+    };
+
+    /// <summary>A middle part as one hall, by role (and on a stepped hull's long low deck, most often): null for a corridor with side rooms.</summary>
+    private (string Name, string Kind)? HallFor(int d, char part, double len, double u)
+    {
+        if (Halls.TryGetValue((d, part), out var set))
+            return set;
+        if (Hull.Style == ProcHull.Stepped && d == 0 && len >= 12 && part == (Hull.TowerAft ? 'f' : 'a'))
+            return u < 0.7 ? Role switch
+            {
+                ProcRole.Freighter => ("Cargo deck", "hold"),
+                ProcRole.Miner => ("Ore deck", "hold"),
+                ProcRole.Gunship => ("Vehicle deck", "hangar"),
+                ProcRole.Tender => ("Hangar deck", "hangar"),
+                _ => ("Promenade", "hall"),
+            } : null;
+        var (name, kind, chance) = (Role, d == 0 && Decks > 1, part) switch
+        {
+            (ProcRole.Freighter, true, 'a') => ("Cargo hall", "hold", 0.4),
+            (ProcRole.Freighter, true, _) => ("Cargo hall", "hold", 0.25),
+            (ProcRole.Miner, true, 'a') => ("Refinery", "works", 0.5),
+            (ProcRole.Miner, true, _) => ("Drill bay", "drill", 0.35),
+            (ProcRole.Tender, true, _) => ("Workshop", "works", 0.35),
+            (ProcRole.Gunship, true, 'f') => ("Magazine", "magazine", 0.25),
+            (ProcRole.Liner, _, 'f') when d < Decks - 1 => ("Lounge", "hall", 0.3),
+            (ProcRole.Liner, _, 'a') when d < Decks - 1 => ("Mess hall", "hall", 0.35),
+            _ => ("", "", 0.0),
+        };
+        return u < chance ? (name, kind) : null;
+    }
+
+    /// <summary>The side rooms' names by role, for the lowest deck (stores, works), the top deck (command, cabins) and the ones between (crew).</summary>
+    private string[] Pool(int d)
+    {
+        var lower = d == 0 && Decks > 1;
+        var top = d == Decks - 1;
+        return Role switch
+        {
+            ProcRole.Gunship => lower ? ["Magazine", "Armoury", "Machine room", "Store", "Locker room", "Pump room"]
+                : top ? ["Fire control", "Ops room", "Captain's cabin", "Comms room", "Crew quarters"]
+                : ["Mess", "Galley", "Med bay", "Crew quarters", "Gym", "Armoury"],
+            ProcRole.Freighter => lower ? ["Cargo store", "Store", "Pump room", "Machine room", "Locker room"]
+                : top ? ["Cabin", "Captain's cabin", "Comms room", "Office", "Purser's office"]
+                : ["Mess", "Galley", "Cabin", "Crew quarters", "Store"],
+            ProcRole.Miner => lower ? ["Ore store", "Drill store", "Machine room", "Workshop", "Locker room", "Pump room"]
+                : top ? ["Bunk room", "Captain's cabin", "Survey room", "Comms room"]
+                : ["Mess", "Galley", "Bunk room", "Med bay", "Assay lab"],
+            ProcRole.Tender => lower ? ["Workshop", "Spares store", "Machine room", "Fuel store", "Locker room"]
+                : top ? ["Flight control", "Ops room", "Captain's cabin", "Comms room", "Crew quarters"]
+                : ["Mess", "Galley", "Crew quarters", "Med bay", "Workshop"],
+            _ => lower ? ["Store", "Laundry", "Machine room", "Galley store", "Luggage room"]
+                : top ? ["Suite", "Cabin", "Captain's cabin", "Purser's office", "Lounge"]
+                : ["Cabin", "Suite", "Cabin", "Bar", "Galley", "Med bay"],
+        };
+    }
+
     private void Layout(int d, ProcDice dice, int[] lockSides, bool belly, bool dorsal)
     {
         var h = Hull;
@@ -298,35 +580,44 @@ public sealed class ProcShipPlan
         double F = Front[d], B = Back[d];
         var sideMin = Ch + Wall + SideMinRoom + Wall;
         var top = d == Decks - 1;
+        var fs = ForeSpan is { } fsp && d >= fsp.D0 && d <= fsp.D1 ? fsp : null;
+        var asp = AftSpan is { } asq && d >= asq.D0 && d <= asq.D1 ? asq : null;
+        bool upperFore = fs != null && d > fs.D0, upperAft = asp != null && d > asp.D0; // (a span's upper levels: no doorway into it)
         if (_foreEnd.Length != Decks)
             (_foreEnd, _aftStart) = (new double[Decks], new double[Decks]);
-        // The fore room: the narrow runs at the front, at least 3.5 to 5 m long; it reaches the lobby if what is left is too short for side rooms.
+        // The fore room: the narrow runs at the front, at least 3.5 to 5 m long; it reaches the lobby if what is left is too short
+        // for side rooms. On a fore span's decks it ends at the span's boundary.
         var fEnd = Q(F + r.Range(3.5, 5.0));
         foreach (var rr in Runs[d])
             if (rr.W < sideMin && rr.Z1 <= Zl + 1e-6)
                 fEnd = Math.Max(fEnd, rr.Z1);
         if (Zl - fEnd < MinRoomLen + Wall + 0.25)
             fEnd = Zl;
-        // The aft room: engineering on the lowest deck (5.5 to 7.5 m, the reactor's), a hold above (4.5 to 7 m); it takes the narrow runs at the back.
+        if (fs != null)
+            fEnd = fs.Z;
+        // The aft room: engineering on the lowest deck (5.5 to 7.5 m, the reactor's), a hold above (4.5 to 7 m); it takes the narrow
+        // runs at the back. On an aft span's decks it starts at the span's boundary.
         var aStart = Q(B - (d == 0 ? r.Range(5.5, 7.5) : r.Range(4.5, 7.0)));
         foreach (var rr in Runs[d])
             if (rr.W < sideMin && rr.Z0 >= Zl + Ll - 1e-6)
                 aStart = Math.Min(aStart, rr.Z0);
         if (aStart - (Zl + Ll) < MinRoomLen + Wall + 0.25 || aStart > B - 3.0)
             aStart = Zl + Ll;
-        // The transverse walls, full width, fore to aft (each with a doorway on the centreline but the ends).
+        if (asp != null)
+            aStart = asp.Z;
+        // The transverse walls, full width, fore to aft (each with a doorway on the centreline but the ends and a span's upper levels).
         var tw = new List<(double Lo, double Hi, bool Door, string Group)> { (F, F + Wall, false, $"d{d}.fore") };
         if (fEnd < Zl - 1e-6)
         {
-            var (lo, hi) = Span(d, fEnd, true);
-            tw.Add((lo, hi, true, $"d{d}.fore"));
+            var (lo, hi) = fs != null ? (fEnd, fEnd + Wall) : Span(d, fEnd, true);
+            tw.Add((lo, hi, !upperFore, $"d{d}.fore"));
         }
-        tw.Add((Zl, Zl + Wall, true, $"d{d}.lobby"));
-        tw.Add((Zl + Ll - Wall, Zl + Ll, true, $"d{d}.lobby"));
+        tw.Add((Zl, Zl + Wall, !(upperFore && fEnd >= Zl - 1e-6), $"d{d}.lobby"));
+        tw.Add((Zl + Ll - Wall, Zl + Ll, !(upperAft && aStart <= Zl + Ll + 1e-6), $"d{d}.lobby"));
         if (aStart > Zl + Ll + 1e-6)
         {
-            var (lo, hi) = Span(d, aStart, false);
-            tw.Add((lo, hi, true, $"d{d}.aft"));
+            var (lo, hi) = asp != null ? (aStart - Wall, aStart) : Span(d, aStart, false);
+            tw.Add((lo, hi, !upperAft, $"d{d}.aft"));
         }
         tw.Add((B - Wall, B, false, $"d{d}.aft"));
         _foreEnd[d] = tw[1].Lo;
@@ -347,15 +638,27 @@ public sealed class ProcShipPlan
             Walls.Add(w);
         }
         var foreHi = tw[1].Lo;
-        var fw = WMinOr(d, F + Wall, foreHi) - Wall;
-        Rooms.Add(new ProcRoom(d, top ? "Bridge" : d == 0 && Decks > 1 ? "Fore store" : "Fore compartment", top ? "bridge" : "fore", -fw, F + Wall, fw, foreHi));
+        if (fs == null)
+        {
+            var fw = WMinOr(d, F + Wall, foreHi) - Wall;
+            var (fn, fk) = top ? ("Bridge", "bridge") : ForeName(d);
+            Rooms.Add(new ProcRoom(d, fn, fk, -fw, F + Wall, fw, foreHi));
+        }
+        else if (d == fs.D0)
+            Rooms.Add(SpanRoom(fs, foreHi));
         var aftLo = tw[^2].Hi;
-        var aw = WMinOr(d, aftLo, B - Wall) - Wall;
-        Rooms.Add(new ProcRoom(d, d == 0 ? "Engineering" : "Hold", d == 0 ? "engineering" : "hold", -aw, aftLo, aw, B - Wall));
+        if (asp == null)
+        {
+            var aw = WMinOr(d, aftLo, B - Wall) - Wall;
+            var (an, ak) = d == EngDeck ? ("Engineering", "engineering") : AftName();
+            Rooms.Add(new ProcRoom(d, an, ak, -aw, aftLo, aw, B - Wall));
+        }
+        else if (d == asp.D0)
+            Rooms.Add(SpanRoom(asp, aftLo));
         var lw = W(d, Zl + Ll / 2) - Wall;
         Rooms.Add(new ProcRoom(d, d == LockDeck ? "Airlock lobby" : "Lobby", "lobby", -lw, Zl + Wall, lw, Zl + Ll - Wall));
 
-        // The middle parts: a corridor down the centreline with side rooms either side, fore and aft of the lobby.
+        // The middle parts: one hall, or a corridor down the centreline with side rooms either side, fore and aft of the lobby.
         var cuts = new Dictionary<int, List<(double Lo, double Hi)>> { [-1] = [], [1] = [] }; // (per side: what the outer walls stop at)
         foreach (var (lo, hi, _, _) in tw)
         {
@@ -363,14 +666,22 @@ public sealed class ProcShipPlan
             cuts[1].Add((lo, hi));
         }
         var names = dice.For($"rooms.names{d}");
-        string[] pool = d == 0 && Decks > 1 ? ["Workshop", "Store", "Armoury", "Machine room", "Magazine", "Locker room", "Pump room"]
-            : top ? ["Cabin", "Crew quarters", "Captain's cabin", "Ops room", "Comms room", "Office", "Med bay"]
-            : ["Mess", "Galley", "Med bay", "Cabin", "Crew quarters", "Gym", "Store"];
+        var pool = Pool(d);
         var named = names.Int(0, pool.Length - 1);
+        var hd = dice.For($"rooms.halls{d}");
         foreach (var (p0, p1, grp) in new[] { (tw[1].Hi, Zl, "f"), (Zl + Ll, tw[^2].Lo, "a") })
         {
+            var hu = hd.U();
             if (p1 - p0 < MinRoomLen - 1e-6)
                 continue;
+            if (HallFor(d, grp[0], p1 - p0, hu) is { } hall)
+            {
+                var hw = WMinOr(d, p0, p1) - Wall;
+                var room = new ProcRoom(d, hall.Name, hall.Kind, -hw, p0, hw, p1);
+                Rooms.Add(room);
+                HallRooms.Add(room);
+                continue;
+            }
             var n = Math.Max(1, (int)Math.Round((p1 - p0) / r.Range(3.0, 5.0)));
             while (n > 1 && (p1 - p0) / n < MinRoomLen)
                 n--;
@@ -457,6 +768,19 @@ public sealed class ProcShipPlan
             Ladders.Add(new ProcLadder(d, xl, hz1 - 0.095, false, ProcHullShape.Storey, ProcHullShape.Storey + 1.0, $"the lobby, deck {d + 1} to {d + 2}"));
             Holes.Add(new ProcHole(d + 1, xl - 0.625, hz0, xl + 0.625, hz1, true));
         }
+        else if (h.Well(Zl + Ll / 2) > 0)
+        {
+            // A barge's top lobby: the same ladder up through the roof into the open well (the way to the containers from inside).
+            var side = d % 2 == 0 ? 1 : -1;
+            var room = Math.Min(W(d, Zl + Ll / 2), h.WellHalf) - Wall - 0.695;
+            double hz0 = Zl + Wall, hz1 = hz0 + 1.25;
+            if (room >= 1.52 && hz0 > h.WellZ0 + 0.3 && hz1 < h.WellZ1 - 1.5)
+            {
+                var xl = side * Math.Min(1.75, Math.Floor(room * 20) / 20);
+                Ladders.Add(new ProcLadder(d, xl, hz1 - 0.095, false, ProcHullShape.Storey, ProcHullShape.Storey + 1.0, $"the lobby, deck {d + 1} up into the well"));
+                Holes.Add(new ProcHole(Decks, xl - 0.625, hz0, xl + 0.625, hz1, true));
+            }
+        }
         var zc0 = Zl + Ll / 2;
         if (belly)
         {
@@ -501,22 +825,25 @@ public sealed class ProcShipPlan
     // ---- the module sockets
 
     /// <summary>
-    /// The sockets (module-sockets.md): engine sockets across the transom (keyed), turret sockets along the spine, a reactor socket in
-    /// engineering, a cargo socket in each hold, and on a frigate or a destroyer sometimes a flank socket each side at the beam.
+    /// The sockets (module-sockets.md), by role: engine sockets across the transom (keyed; fewer with nacelles, which carry one on
+    /// each tail), turret sockets along the spine (more on a gunship), a reactor socket in engineering, cargo sockets in the holds (a
+    /// grid in a freighter's and in a tall hold), containers in a barge's well, a miner's drill under the keel, and flank sockets.
     /// </summary>
     private void Fit(ProcShipSpec spec, ProcDice dice)
     {
         var h = Hull;
         var e = dice.For("sockets.engines");
+        var nac = h.Nacelles.Count > 0;
         // Engines: keyed plates across the transom facing aft, a row (two rows on a destroyer of four or more), the first layout that fits.
         (int Size, int N)[] options = spec.Class switch
         {
-            ProcClass.Corvette => [(2, e.Pick(2, 2, 3)), (2, 2), (2, 1)],
-            ProcClass.Frigate => e.Chance(0.6) ? [(2, e.Pick(3, 4, 4)), (2, 2), (2, 1)] : [(3, 2), (2, 3), (2, 2), (2, 1)],
-            _ => e.Chance(0.7) ? [(3, e.Pick(3, 4)), (3, 2), (2, 4), (2, 2)] : [(2, e.Pick(4, 6)), (2, 4), (2, 2)],
+            ProcClass.Corvette => nac ? [(2, 1)] : [(2, e.Pick(2, 2, 3)), (2, 2), (2, 1)],
+            ProcClass.Frigate => nac ? [(2, e.Pick(1, 2)), (2, 1)] : e.Chance(0.6) ? [(2, e.Pick(3, 4, 4)), (2, 2), (2, 1)] : [(3, 2), (2, 3), (2, 2), (2, 1)],
+            _ => nac ? [(2, 2), (2, 1)] : e.Chance(0.7) ? [(3, e.Pick(3, 4)), (3, 2), (2, 4), (2, 2)] : [(2, e.Pick(4, 6)), (2, 4), (2, 2)],
         };
         var rot = PartKit.Generators.BuildingParts.Turn("+x", "+z");
         var ring = h.Stations[^1].P;
+        var ei = 0;
         foreach (var (size, n) in options)
         {
             var rows = n >= 4 && spec.Class == ProcClass.Destroyer ? 2 : 1;
@@ -530,22 +857,32 @@ public sealed class ProcShipPlan
                     plates.Add((Math.Round((-span / 2 + k * (size + 0.5)) * 20) / 20, tops[row]));
             if (plates.Any(q => new[] { (q.X0, q.Top), (q.X0 + size, q.Top), (q.X0, q.Top - size), (q.X0 + size, q.Top - size) }.Any(c => Math.Abs(c.Item1) + 0.12 > h.SkinHalf(h.Length, c.Item2))))
                 continue;
-            var i = 0;
             foreach (var (x0, topY) in plates)
             {
                 double[] padMin = [x0 - 0.05, topY - size - 0.05, h.Length - 0.45], padMax = [x0 + size + 0.05, topY + 0.05, h.Length + 0.04];
-                Add($"engine{i++}", "transom", 1, size, size, 0, 0, true, rot, [x0, topY - size, padMax[2]], padMin, padMax, -1);
+                Add($"engine{ei++}", "transom", 1, size, size, 0, 0, true, rot, [x0, topY - size, padMax[2]], padMin, padMax, -1, "engine");
             }
             break;
         }
-        // Turrets: along the spine's flat in the midbody, clear of the dorsal hatch and the slot its lid slides into.
+        // The nacelles' main engines: a keyed plate on each tail, on a pad standing out of it.
+        foreach (var q in h.Nacelles)
+        {
+            var es = q.Engine;
+            double x0 = q.Side * q.X - es / 2.0, yb = q.Y - es / 2.0;
+            double[] padMin = [x0 - 0.05, yb - 0.05, q.Z1 - 0.45], padMax = [x0 + es + 0.05, yb + es + 0.05, q.Z1 + 0.04];
+            Add($"engine{ei++}", "nacelle", 1, es, es, 0, 0, true, rot, [x0, yb, padMax[2]], padMin, padMax, -1, "engine");
+        }
+        // Turrets: along the spine's flat in the midbody, clear of the dorsal hatch (and the slot its lid slides into) and the well.
         var t = dice.For("sockets.turrets");
         var tn = spec.Class switch { ProcClass.Corvette => t.Pick(1, 2, 2), ProcClass.Frigate => t.Pick(2, 3, 3), _ => t.Pick(3, 4, 4) };
+        tn = Math.Max(1, tn + (Role == ProcRole.Gunship ? 1 : -1));
         var flat = h.Mid[4].H;
-        var ts = spec.Class == ProcClass.Destroyer && flat >= 1.75 ? 3 : 2;
+        var ts = spec.Class == ProcClass.Destroyer && flat >= 1.75 || Role == ProcRole.Gunship && spec.Class == ProcClass.Frigate && flat >= 1.75 ? 3 : 2;
         if (flat >= ts / 2.0 + 0.12)
         {
             var keep = Hatches.Where(x => x.Kind == "dorsal").Select(x => (x.Z0 - 0.6, x.Z1 + 1.8)).ToList();
+            if (h.HasWell)
+                keep.Add((h.WellZ0 - 0.6, h.WellZ1 + 0.6));
             double z0 = h.MidZ0 + 0.5, z1 = h.MidZ1 - 0.5;
             var spots = new List<double>();
             var step = (z1 - z0 - ts) / Math.Max(1, tn - 1);
@@ -555,7 +892,7 @@ public sealed class ProcShipPlan
                 foreach (var (a, b) in keep)
                     if (za < b && za + ts > a)
                         za = za + ts / 2.0 < (a + b) / 2 ? Q(a - ts - 0.25, 0.25) : Q(b + 0.25, 0.25);
-                if (za < z0 - 1e-6 || za + ts > z1 + 1e-6 || spots.Any(o => Math.Abs(o - za) < ts + 1.0))
+                if (za < z0 - 1e-6 || za + ts > z1 + 1e-6 || spots.Any(o => Math.Abs(o - za) < ts + 1.0) || keep.Any(kp => za < kp.Item2 && za + ts > kp.Item1))
                     continue;
                 spots.Add(za);
             }
@@ -566,30 +903,67 @@ public sealed class ProcShipPlan
                 var topY = h.TopY;
                 var padMin = new[] { x0 - 0.05, topY - 0.3, za - 0.05 };
                 var padMax = new[] { x0 + ts + 0.05, topY + 0.04, za + ts + 0.05 };
-                Add($"turret{i++}", "spine", 3, ts, ts, 0, 0, false, 0, [x0, padMax[1], za], padMin, padMax, -1);
+                Add($"turret{i++}", "spine", 3, ts, ts, 0, 0, false, 0, [x0, padMax[1], za], padMin, padMax, -1, "turret");
             }
         }
-        // The reactor: on engineering's floor, in its aft part, room to stand over it.
-        var eng = Rooms.First(q => q.Kind == "engineering");
-        var rs = eng.X1 - eng.X0 >= 3.6 && eng.Z1 - eng.Z0 >= 4.5 ? 3 : 2;
-        if (eng.X1 - eng.X0 >= rs + 0.4 && eng.Z1 - eng.Z0 >= rs + 1.5)
+        // The reactor: on engineering's floor (wherever engineering is), in its aft part, room to stand over it.
+        if (Rooms.FirstOrDefault(q => q.Kind == "engineering") is { } eng)
         {
-            var za = Q(eng.Z1 - 0.4 - rs, 0.05);
-            Add("reactor", "floor", 2, rs, rs, 0, 2.5, false, 0, [-rs / 2.0, FloorTop(0), za], null, null, 0);
+            var rs = eng.X1 - eng.X0 >= 3.6 && eng.Z1 - eng.Z0 >= 4.5 ? 3 : 2;
+            if (eng.X1 - eng.X0 >= rs + 0.4 && eng.Z1 - eng.Z0 >= rs + 1.5)
+            {
+                var za = Q(eng.Z1 - (HallRooms.Contains(eng) ? 1.2 : 0.4) - rs, 0.05);
+                Add("reactor", "floor", 2, rs, rs, 0, eng.Top > eng.Deck ? 4.5 : 2.5, false, 0, [-rs / 2.0, FloorTop(eng.Deck), za], null, null, eng.Deck, "reactor");
+            }
         }
-        // Cargo: a plate on each hold's floor.
-        foreach (var hold in Rooms.Where(q => q.Kind == "hold"))
+        // Cargo: a grid of plates in a freighter's holds and in a tall hold, one plate in any other hold.
+        var ci = 0;
+        foreach (var hold in Rooms.Where(q => q.Kind == "hold").ToList())
         {
-            var hw = hold.X1 - hold.X0;
-            var (cw, cl) = hw >= 3.6 && hold.Z1 - hold.Z0 >= 4.5 ? (3, 3) : hw >= 2.6 ? (2, 3) : (2, 2);
-            if (hw < cw + 0.4 || hold.Z1 - hold.Z0 < cl + 1.5)
-                continue;
-            var za = Q(hold.Z1 - 0.4 - cl, 0.05);
-            Add($"hold{hold.Deck}", "floor", 0, cw, cl, 0, 2.5, false, 0, [-cw / 2.0, FloorTop(hold.Deck), za], null, null, hold.Deck);
+            var above = Math.Round(Ceil(hold.Top) - FloorTop(hold.Deck) - 0.5, 2);
+            var most = Role == ProcRole.Freighter ? 12 : hold.Top > hold.Deck ? 6 : 1;
+            CargoGrid(hold, ref ci, above, most, HallRooms.Contains(hold));
+        }
+        // A barge's well: container plates on its floor (the roof) in rows, clear of the ladder up into it and where it lands people.
+        if (h.HasWell)
+        {
+            const int cs = 3;
+            var keepOut = Holes.Where(q => q.Slab == Decks).Select(q => (X0: q.X0 - 0.3, Z0: q.Z0 - 0.3, X1: q.X1 + 0.3, Z1: q.Z1 + 1.5)).ToList();
+            var nx = (int)Math.Floor((2 * h.WellHalf - 0.6 + 0.5) / (cs + 0.5));
+            var total = nx * cs + (nx - 1) * 0.5;
+            var n = 0;
+            for (var za = h.WellZ0 + 0.4; za + cs <= h.WellZ1 - 0.4 + 1e-6 && n < 12; za += cs + 0.5)
+                for (var i = 0; i < nx && n < 12; i++)
+                {
+                    var xa = Math.Round((-total / 2 + i * (cs + 0.5)) * 20) / 20;
+                    if (keepOut.Any(k => xa < k.X1 && xa + cs > k.X0 && za < k.Z1 && za + cs > k.Z0))
+                        continue;
+                    Add($"container{n++}", "well", 0, cs, cs, 0, 2.4, false, 0, [xa, h.Roof, Q(za, 0.05)], null, null, Decks, "container");
+                }
+        }
+        // A miner's drill: a plate under the keel's flat at the midbody's fore end (or aft of the belly hatch), facing down.
+        if (Role == ProcRole.Miner)
+        {
+            var ds = spec.Class == ProcClass.Destroyer && h.Mid[0].H >= 1.75 ? 3 : 2;
+            if (h.Mid[0].H >= ds / 2.0 + 0.15)
+            {
+                var spots = new List<double> { Q(h.MidZ0 + 0.5, 0.25) };
+                spots.AddRange(Hatches.Where(q => q.Kind == "belly").Select(q => Q(q.Z1 + 2.0, 0.25)));
+                foreach (var z0 in spots)
+                {
+                    if (z0 + ds > h.MidZ1 - 0.5 || Hatches.Any(q => q.Kind == "belly" && q.Z0 - 0.4 < z0 + ds + 0.1 && q.Z1 + 1.9 > z0 - 0.1))
+                        continue;
+                    var x0 = -ds / 2.0;
+                    var padMin = new[] { x0 - 0.05, h.KeelY - 0.04, z0 - 0.05 };
+                    var padMax = new[] { x0 + ds + 0.05, h.KeelY + 0.45, z0 + ds + 0.05 };
+                    Add("drill", "keel", 0, ds, ds, 0, 0, false, PartKit.Generators.BuildingParts.Turn("+x", "-y"), [x0, padMin[1], z0], padMin, padMax, -1, "drill");
+                    break;
+                }
+            }
         }
         // Flank sockets: a 2 x 3 m plate each side on the beam line, fore of the lobby, standing out of the skin on a pad.
         var f = dice.For("sockets.flank");
-        if (spec.Class != ProcClass.Corvette && f.Chance(0.55))
+        if ((Role == ProcRole.Gunship || spec.Class != ProcClass.Corvette) && f.Chance(Role == ProcRole.Gunship ? 0.8 : 0.4))
         {
             var za = Q(Zl - 1.5 - 3.0, 0.25);
             var zb = za + 3.0;
@@ -609,17 +983,47 @@ public sealed class ProcShipPlan
                     var padMin = new[] { s > 0 ? xi : -xo - 0.04, y0 - 0.05, za - 0.05 };
                     var padMax = new[] { s > 0 ? xo + 0.04 : -xi, y1 + 0.05, zb + 0.05 };
                     var face = s > 0 ? padMax[0] : padMin[0];
-                    Add($"flank{(s < 0 ? "P" : "S")}", "flank", 0, 2, 3, 0, 0, false, rr, [face, y0, za], padMin, padMax, -1);
+                    Add($"flank{(s < 0 ? "P" : "S")}", "flank", 0, 2, 3, 0, 0, false, rr, [face, y0, za], padMin, padMax, -1, "flank");
                 }
             }
         }
     }
 
     /// <summary>
+    /// Cargo plates on a hold's floor: rows from its aft end forward (a hall's leave a walkway at both doors), as many across as fit,
+    /// at most <paramref name="most"/>; the plate 3 x 3 m where the hold is big enough, else 2 x 3 or 2 x 2.
+    /// </summary>
+    private void CargoGrid(ProcRoom hold, ref int ci, double above, int most, bool hall)
+    {
+        var hw = hold.X1 - hold.X0;
+        var hl = hold.Z1 - hold.Z0;
+        var (cw, cl) = hw >= 3.6 && hl >= 4.5 ? (3, 3) : hw >= 2.6 ? (2, 3) : (2, 2);
+        var aftMargin = hall ? 1.2 : 0.4;
+        if (hw < cw + 0.4 || hl < cl + aftMargin + 1.1)
+            return;
+        var nx = Math.Max(1, (int)Math.Floor((hw - 0.8 + 0.5) / (cw + 0.5)));
+        var rows = new List<double>();
+        for (var za = Q(hold.Z1 - aftMargin - cl, 0.05); rows.Count == 0 || za >= hold.Z0 + 1.2 - 1e-6; za = Q(za - cl - 0.5, 0.05))
+            rows.Add(za);
+        while (rows.Count > 1 && rows.Count * nx > most)
+            rows.RemoveAt(rows.Count - 1);
+        while (nx > 1 && rows.Count * nx > most)
+            nx--;
+        var total = nx * cw + (nx - 1) * 0.5;
+        foreach (var za in rows)
+            for (var i = 0; i < nx; i++)
+            {
+                var x0 = Math.Round((-total / 2 + i * (cw + 0.5)) * 20) / 20;
+                Add($"cargo{ci++}", "floor", 0, cw, cl, 0, above, false, 0, [x0, FloorTop(hold.Deck), za], null, null, hold.Deck, "cargo");
+            }
+    }
+
+    /// <summary>
     /// A socket plate W x L turned <paramref name="rot"/>, its box's corner at <paramref name="corner"/>: the plate's own back face (y -0.5
     /// in its frame) on the surface. Works out where its b00.00 goes and which way that socket faces.
     /// </summary>
-    private void Add(string name, string where, int kind, int w, int l, int style, double above, bool keyed, int rot, double[] corner, double[]? padMin, double[]? padMax, int deck)
+    private void Add(string name, string where, int kind, int w, int l, int style, double above, bool keyed, int rot, double[] corner, double[]? padMin, double[]? padMax, int deck, string use)
+
     {
         // The plate's box in its own frame (ModuleSocketParts): x -0.5..w-0.5, y -0.5..-0.399, z -0.5..l-0.5; b00.00 at (-0.25, -0.5, -0.25) facing -y.
         double[] lo = [-0.5, -0.5, -0.5], hi = [w - 0.5, -0.399, l - 0.5];
@@ -638,7 +1042,7 @@ public sealed class ProcShipPlan
         double[] at = [Math.Round((origin[0] + sock[0]) * 100) / 100, Math.Round((origin[1] + sock[1]) * 100) / 100, Math.Round((origin[2] + sock[2]) * 100) / 100];
         var dir = PartKit.Generators.BuildingParts.Dirs[backDir ^ 1];
         Sockets.Add(new ProcSocket(name, where, kind, w, l, style, above, keyed, rot,
-            [origin[0] + mn[0], origin[1] + mn[1], origin[2] + mn[2]], [origin[0] + mx[0], origin[1] + mx[1], origin[2] + mx[2]], at, dir, padMin, padMax, deck));
+            [origin[0] + mn[0], origin[1] + mn[1], origin[2] + mn[2]], [origin[0] + mx[0], origin[1] + mx[1], origin[2] + mx[2]], at, dir, padMin, padMax, deck, use));
     }
 }
 

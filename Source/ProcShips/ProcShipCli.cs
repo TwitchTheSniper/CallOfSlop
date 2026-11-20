@@ -8,7 +8,8 @@ namespace CallOfSlop.ProcShips;
 /// The procedural ship generator's commands (docs/procships/PROCSHIPS.md):
 /// <c>--gen-procship SPEC [--out DIR]</c> makes one ship ("F17", "frigate 17 dart"), prints its traits, checks its pieces never
 /// overlap, fits every step by the game's build rules (each refusal listed, not only the first) and writes its blueprint;
-/// <c>--gen-procship sweep [--per N]</c> makes N seeds of each class and counts the ones that can't be made, by reason;
+/// <c>--gen-procship sweep [--per N] [--fit] [--hull H] [--role R] [--nacelles]</c> makes N seeds of each class (with that hull, role
+/// or nacelles fixed) and counts the ones that can't be made, by reason, and what the rest came out as;
 /// <c>--procship-gallery DIR [--seeds "F17,C3d"] [--per N]</c> writes the Procedural gallery (ConstructPreview.ProcShips.cs).
 /// </summary>
 public static class ProcShipCli
@@ -18,7 +19,12 @@ public static class ProcShipCli
     public static int Gen(string what, string[] args)
     {
         if (what.Equals("sweep", StringComparison.OrdinalIgnoreCase))
-            return Sweep(int.TryParse(Flag(args, "--per"), out var per) ? per : 40, args.Any(a => a.Equals("--fit", StringComparison.OrdinalIgnoreCase)));
+        {
+            ProcHull? hull = Flag(args, "--hull") is { } hs ? Enum.TryParse<ProcHull>(hs, true, out var hv) ? hv : throw new ArgumentException($"--hull: no hull \"{hs}\"") : null;
+            ProcRole? role = Flag(args, "--role") is { } rs ? Enum.TryParse<ProcRole>(rs, true, out var rv) ? rv : throw new ArgumentException($"--role: no role \"{rs}\"") : null;
+            return Sweep(int.TryParse(Flag(args, "--per"), out var per) ? per : 40, args.Any(a => a.Equals("--fit", StringComparison.OrdinalIgnoreCase)),
+                hull, role, args.Any(a => a.Equals("--nacelles", StringComparison.OrdinalIgnoreCase)));
+        }
         if (ProcShipSpec.Parse(what) is not { } spec)
         {
             Console.WriteLine($"--gen-procship: \"{what}\" names no ship: a code (F17, c4d, D12b3) or words (frigate 17 dart 3 decks)");
@@ -50,8 +56,8 @@ public static class ProcShipCli
         return bad;
     }
 
-    /// <summary>Seeds 1..per of each class made (and with <paramref name="fit"/>, checked and fitted step by step): how many can't be, by reason.</summary>
-    private static int Sweep(int per, bool fit)
+    /// <summary>Seeds 1..per of each class made (and with <paramref name="fit"/>, checked and fitted step by step): how many can't be, by reason, and the made ones' roles, hulls and tall rooms.</summary>
+    private static int Sweep(int per, bool fit, ProcHull? hull, ProcRole? role, bool nacelles)
     {
         var fails = 0;
         foreach (var cls in Enum.GetValues<ProcClass>())
@@ -59,14 +65,25 @@ public static class ProcShipCli
             var why = new Dictionary<string, List<int>>(StringComparer.Ordinal);
             double ms = 0;
             var pieces = new List<int>();
+            var kinds = new Dictionary<string, int>(StringComparer.Ordinal);
+            void Count(string k) => kinds[k] = kinds.GetValueOrDefault(k) + 1;
             for (var seed = 1; seed <= per; seed++)
             {
                 var problems = new List<string>();
                 try
                 {
-                    var ship = ProcShip.Make(new ProcShipSpec(seed, cls));
+                    var ship = ProcShip.Make(new ProcShipSpec(seed, cls, hull, null, role, nacelles));
                     ms += ship.MakeMs;
                     pieces.Add(ship.Pieces);
+                    Count(ship.Hull.Role.ToString().ToLowerInvariant());
+                    Count(ship.Hull.Style.ToString().ToLowerInvariant());
+                    Count($"{ship.Hull.Decks} decks");
+                    if (ship.Hull.Nacelles.Count > 0)
+                        Count("nacelles");
+                    foreach (var r in ship.Plan.Rooms.Where(q => q.Top > q.Deck))
+                        Count($"{r.Name.ToLowerInvariant()} ({r.Top - r.Deck + 1} decks)");
+                    foreach (var r in ship.Plan.HallRooms)
+                        Count(r.Name.ToLowerInvariant());
                     if (fit)
                     {
                         Overlaps(ship, 0, problems);
@@ -90,6 +107,7 @@ public static class ProcShipCli
                     fails++;
             }
             Console.WriteLine($"{cls}: {pieces.Count} of {per} made{(fit ? "" : " (not fitted)")}, {(pieces.Count > 0 ? ms / pieces.Count : 0):0} ms each, pieces {(pieces.Count > 0 ? $"{pieces.Min()}-{pieces.Max()}" : "-")}");
+            Console.WriteLine("  " + string.Join(", ", kinds.OrderByDescending(kv => kv.Value).Select(kv => $"{kv.Value} {kv.Key}")));
             foreach (var (k, seeds) in why.OrderByDescending(kv => kv.Value.Count))
                 Console.WriteLine($"  {seeds.Count}x {k} (seeds {string.Join(", ", seeds.Take(8))}{(seeds.Count > 8 ? ", ..." : "")})");
         }

@@ -77,8 +77,29 @@ public sealed class ProcShip
         var clock = Stopwatch.StartNew();
         var dice = DiceOf(spec);
         var traits = new List<(string Key, string Value)>();
-        var hull = ProcHullShape.Make(spec, dice, traits);
-        var plan = ProcShipPlan.Make(spec, hull, dice, traits);
+        var role = ProcShipSpec.RoleOf(spec, dice);
+        ProcHullShape hull = null!;
+        ProcShipPlan plan = null!;
+        // A hull too small for its rooms (a lobby that doesn't fit amidships, a deck too narrow for its ladder) is made again a size
+        // up, at most three times: the same choices, longer and wider. The first refusal is the one reported.
+        string? refusal = null;
+        for (var grow = 0; ; grow++)
+        {
+            traits.Clear();
+            try
+            {
+                hull = ProcHullShape.Make(spec, role, dice, traits, grow);
+                plan = ProcShipPlan.Make(spec, role, hull, dice, traits);
+                break;
+            }
+            catch (ProcShipException e)
+            {
+                string T(string k) => traits.FirstOrDefault(t => t.Key == k).Value ?? "?";
+                refusal ??= traits.Count > 0 ? $"{e.Message} (a {T("Role")}, {T("Hull")} hull, {T("Length")}, {T("Beam")} beam, {T("Decks")} decks)" : e.Message;
+                if (grow == ProcHullShape.MostGrown || traits.Count == 0)
+                    throw new ProcShipException(refusal);
+            }
+        }
         var draw = new ProcShipDraw(hull, plan, spec.Code);
         List<Part> parts;
         try
@@ -188,7 +209,7 @@ public sealed class ProcShip
             ["description"] = Describe(spec, traits),
             ["steps"] = steps,
         };
-        traits.Add(("Sockets", plan.Sockets.Count == 0 ? "none" : string.Join(", ", plan.Sockets.GroupBy(s => s.Kind).Select(g => $"{g.Count()} {KindName(g.Key)}"))));
+        traits.Add(("Sockets", plan.Sockets.Count == 0 ? "none" : string.Join(", ", plan.Sockets.GroupBy(s => s.Use).Select(g => $"{g.Count()} {g.Key}"))));
         traits.Add(("Pieces", files.Count.ToString(CultureInfo.InvariantCulture)));
         return new ProcShip
         {
@@ -204,8 +225,9 @@ public sealed class ProcShip
     private static string Describe(ProcShipSpec spec, List<(string Key, string Value)> traits)
     {
         string T(string k) => traits.FirstOrDefault(t => t.Key == k).Value ?? "";
-        return $"A procedural {spec.Class.ToString().ToLowerInvariant()} ({spec.Code}, generator {ProcShipSpec.Version}): a {T("Hull")} hull {T("Length")} long with a {T("Bow")} bow, " +
-               $"{T("Decks")} deck{(T("Decks") == "1" ? "" : "s")} of rooms inside it, side airlocks ({T("Side locks")}), a belly hatch: {T("Belly hatch")}, a dorsal hatch: {T("Dorsal hatch")}.";
+        return $"A procedural {T("Role")} {spec.Class.ToString().ToLowerInvariant()} ({spec.Code}, generator {ProcShipSpec.Version}): a {T("Hull")} hull {T("Length")} long with a {T("Bow")} bow, " +
+               $"{T("Decks")} deck{(T("Decks") == "1" ? "" : "s")} of rooms inside it (tall rooms: {T("Tall rooms")}), nacelles: {T("Nacelles")}, side airlocks ({T("Side locks")}), " +
+               $"a belly hatch: {T("Belly hatch")}, a dorsal hatch: {T("Dorsal hatch")}.";
     }
 
     /// <summary>A hang step turned <paramref name="rot"/>: its spin, the index of that turn in the game's list for the socket pair (ConstructBuild.SpinTurns, as BuildingParts.HangTurned).</summary>

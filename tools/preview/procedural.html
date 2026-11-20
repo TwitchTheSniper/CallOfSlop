@@ -123,6 +123,8 @@ table.traits td:first-child { color: var(--muted); width: 42%; padding-right: 8p
     <span>Class</span><div class="seg" id="fClass"></div>
     <span>Hull</span><div class="seg" id="fHull"></div>
     <span>Decks</span><div class="seg" id="fDecks"></div>
+    <span>Role</span><div class="seg" id="fRole"></div>
+    <span>Drive</span><div class="seg" id="fDrive"></div>
   </div>
   <div class="row">
     <button class="primary" id="roll" title="Show a ship that matches, one nobody has graded first">Roll a ship</button>
@@ -132,10 +134,12 @@ table.traits td:first-child { color: var(--muted); width: 42%; padding-right: 8p
     <h3>Ask the generator for a ship</h3>
     <div class="field">
       <span>Class</span><select id="aClass"><option value="C">Corvette</option><option value="F" selected>Frigate</option><option value="D">Destroyer</option></select>
-      <span>Hull</span><select id="aHull"><option value="">Any</option><option value="c">Chisel</option><option value="d">Dart</option><option value="b">Block</option></select>
-      <span>Decks</span><select id="aDecks"><option value="">Any</option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select>
+      <span>Hull</span><select id="aHull"><option value="">Any</option><option value="c">Chisel</option><option value="d">Dart</option><option value="b">Block</option><option value="a">Barge (open cargo well)</option><option value="s">Stepped (tall over long)</option></select>
+      <span>Decks</span><select id="aDecks"><option value="">Any</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select>
+      <span>Role</span><select id="aRole"><option value="">Any</option><option value="g">Gunship</option><option value="f">Freighter</option><option value="m">Miner</option><option value="t">Tender</option><option value="l">Liner</option></select>
       <span>Seed</span><input id="aSeed" type="number" min="1" max="99999" step="1" inputmode="numeric" placeholder="any">
     </div>
+    <label class="row hint" for="aNacelles"><input type="checkbox" id="aNacelles"> Engines out on nacelles (pylons off the flanks)</label>
     <textarea id="aNote" rows="2" placeholder="Anything to look for in it (optional)"></textarea>
     <div class="row"><button class="primary" id="aSend" type="submit">Queue it</button><button id="aCancel" type="button">Cancel</button></div>
     <p class="status" id="aState"></p>
@@ -250,22 +254,31 @@ matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { sk
 new MutationObserver(() => { sky(); paint(); }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
 
 // ---- what the plan's marks look like
-const ROOM_USE = { "Bridge": "command", "Ops room": "command", "Comms room": "command", "Office": "command",
-  "Cabin": "living", "Crew quarters": "living", "Captain's cabin": "living", "Mess": "living", "Galley": "living", "Gym": "living", "Locker room": "living", "Med bay": "living",
-  "Workshop": "work", "Machine room": "work", "Pump room": "work", "Engineering": "work",
-  "Store": "stores", "Fore store": "stores", "Hold": "stores", "Fore compartment": "stores", "Armoury": "weapons", "Magazine": "weapons",
+const ROOM_USE = { "Bridge": "command", "Ops room": "command", "Comms room": "command", "Office": "command", "Purser's office": "command",
+  "Fire control": "command", "Flight control": "command", "Sensor room": "command", "Survey room": "command",
+  "Cabin": "living", "Suite": "living", "Bunk room": "living", "Crew quarters": "living", "Captain's cabin": "living", "Mess": "living", "Galley": "living", "Gym": "living",
+  "Locker room": "living", "Med bay": "living", "Bar": "living", "Lounge": "living", "Observation lounge": "living", "Laundry": "living",
+  "Workshop": "work", "Machine room": "work", "Pump room": "work", "Engineering": "work", "Assay lab": "work",
+  "Store": "stores", "Fore store": "stores", "Hold": "stores", "Fore compartment": "stores", "Cargo store": "stores", "Ore store": "stores", "Drill store": "stores",
+  "Spares store": "stores", "Fuel store": "stores", "Galley store": "stores", "Luggage room": "stores",
+  "Armoury": "weapons", "Magazine": "weapons",
   "Corridor": "passage", "Lobby": "passage", "Airlock lobby": "passage" };
-const KIND_USE = { corridor: "passage", lobby: "passage", engineering: "work", hold: "stores", fore: "stores", bridge: "command" };
-const USES = { command: ["Command", "#3b78dc"], living: ["Living", "#37a055"], work: ["Work", "#d9702b"], stores: ["Stores", "#9563d1"], weapons: ["Weapons", "#d3344a"], passage: ["Passage", "#7f8a93"], other: ["Other", "#a89668"] };
+const KIND_USE = { corridor: "passage", lobby: "passage", engineering: "work", works: "work", drill: "work", hold: "stores", fore: "stores", bridge: "command",
+  magazine: "weapons", torpedo: "weapons", atrium: "living", hall: "living", hangar: "bays" };
+const USES = { command: ["Command", "#3b78dc"], living: ["Living", "#37a055"], work: ["Work", "#d9702b"], stores: ["Stores", "#9563d1"], weapons: ["Weapons", "#d3344a"], bays: ["Bays and hangars", "#c4a21c"], passage: ["Passage", "#7f8a93"], other: ["Other", "#a89668"] };
 const useOf = r => ROOM_USE[r.name] || KIND_USE[r.kind] || "other";
 const WAYS = { door: ["Door", "#14a9bd"], lock: ["Airlock", "#ef8a17"], hatch: ["Hatch", "#d0347f"], ladder: ["Ladder", "#d9b310"] };
-const SOCKETS = { engine: ["Engine", "#f26419"], turret: ["Turret", "#d92f2f"], reactor: ["Reactor", "#2f9e48"], cargo: ["Cargo", "#3478e8"] };
+const SOCKETS = { engine: ["Engine", "#f26419"], turret: ["Turret", "#d92f2f"], reactor: ["Reactor", "#2f9e48"], cargo: ["Cargo", "#3478e8"],
+  container: ["Container", "#5b5fd6"], drill: ["Drill", "#a8682a"], flank: ["Flank", "#a24fc4"] };
+const WHERE = { transom: "transom", nacelle: "nacelle's tail", spine: "spine", floor: "floor", well: "cargo well's floor, open to space", keel: "keel, facing down", flank: "flank" };
+// (a room over several decks: "decks 1 to 2"; else the deck's name)
+const roomDecks = r => r.top != null && r.top > r.deck ? `decks ${r.deck + 1} to ${r.top + 1}` : P && P.decks[r.deck] ? P.decks[r.deck].name.toLowerCase() : "deck " + (r.deck + 1);
 const ROLE_TEXT = { keel: "outer hull: the keel, its plating and the void over it", spine: "outer hull: the spine, its plating and the void under it",
   hull: "outer hull: a side, its skin, chine rail and the void inside it", stern: "outer hull: the transom and its engine pads",
   floor: "interior: a floor", ceiling: "interior: a ceiling", roof: "interior: the roof over the top deck", walls: "interior: walls and door frames",
-  lock: "an airlock housing, through the void and the skin" };
+  lock: "an airlock housing, through the void and the skin", nacelle: "outer hull: an engine nacelle, its core and its pylon to the hull" };
 const LAYERS = ["skin", "interior", "ways", "sockets"];
-const ROLE_LAYER = { keel: "skin", spine: "skin", hull: "skin", stern: "skin", floor: "interior", ceiling: "interior", roof: "interior", walls: "interior", lock: "ways" };
+const ROLE_LAYER = { keel: "skin", spine: "skin", hull: "skin", stern: "skin", nacelle: "skin", floor: "interior", ceiling: "interior", roof: "interior", walls: "interior", lock: "ways" };
 function layerOf(name, roles) {
   const r = roles[name]; if (r) return ROLE_LAYER[r] || "interior";
   return /^Module Socket/.test(name) ? "sockets" : "ways"; // (the hung parts: doors, hatches, ladders)
@@ -374,7 +387,7 @@ function buildMarks() {
     const use = useOf(r), [label, colour] = USES[use], b = r.box;
     boxMark(marks.rooms, b, colour, 0.14, null, 0.04);
     rooms.push({ r, use, box: new THREE.Box3(new THREE.Vector3(b[0], b[1], b[2]), new THREE.Vector3(b[3], b[4], b[5])) });
-    addLabel(r.name, new THREE.Vector3((b[0] + b[3]) / 2, b[1] + 1.1, (b[2] + b[5]) / 2), "rooms", colour, true, r);
+    addLabel(r.top != null && r.top > r.deck ? `${r.name} (${r.top - r.deck + 1} decks)` : r.name, new THREE.Vector3((b[0] + b[3]) / 2, b[1] + 1.1, (b[2] + b[5]) / 2), "rooms", colour, true, r);
   }
   for (const d of P.doors) {
     const lock = d.kind !== "door", [, colour] = WAYS[lock ? "lock" : "door"], a = d.at;
@@ -396,8 +409,8 @@ function buildMarks() {
   }
   for (const s of P.sockets) {
     const [label, colour] = SOCKETS[s.kind] || ["Socket", "#888"], b = s.box, e = 0.03;
-    const c = boxMark(marks.sockets, [b[0] - e, b[1] - e, b[2] - e, b[3] + e, b[4] + e, b[5] + e], colour, 0.6, { kind: "socket", title: `${label} socket ${s.size}`, sub: `on the ${s.where}${s.keyed ? ", keyed to its kind" : ""} (${s.name})` });
-    addLabel(`${label} ${s.size}`, new THREE.Vector3(c.x, Math.max(b[4], c.y) + 0.35, c.z), "sockets", colour, s.where === "floor");
+    const c = boxMark(marks.sockets, [b[0] - e, b[1] - e, b[2] - e, b[3] + e, b[4] + e, b[5] + e], colour, 0.6, { kind: "socket", title: `${label} socket ${s.size}`, sub: `on the ${WHERE[s.where] || s.where}${s.keyed ? ", keyed to its kind" : ""} (${s.name})` });
+    addLabel(`${label} ${s.size}`, new THREE.Vector3(c.x, s.where === "keel" ? b[1] - 0.35 : Math.max(b[4], c.y) + 0.35, c.z), "sockets", colour, s.where === "floor");
   }
   applyVisibility();
 }
@@ -576,7 +589,7 @@ function hit(ev) {
 function describe(hh) {
   if (hh.mark) return [hh.mark.title, hh.mark.sub];
   const what = partText(hh.name, P ? P.roles : {});
-  return [short(hh.name), [what, hh.room ? `in the ${hh.room.name.toLowerCase()}, ${P.decks[hh.room.deck] ? P.decks[hh.room.deck].name.toLowerCase() : ""}` : ""].filter(Boolean).join("; ")];
+  return [short(hh.name), [what, hh.room ? `in the ${hh.room.name.toLowerCase()}, ${roomDecks(hh.room)}` : ""].filter(Boolean).join("; ")];
 }
 function showTip(hh, x, y) {
   const [a, b] = describe(hh); tip.textContent = ""; tip.append(el("b", null, a)); if (b) tip.append(el("small", null, b));
@@ -607,15 +620,18 @@ renderer.setAnimationLoop(() => { controls.update(); renderer.render(scene, came
 // ---- the gallery: models/index.json lists the ships made (and the ones that couldn't be); #CODE or #CODE--section names a view
 let index = null;
 const cache = new Map();
-const filters = { cls: store.get("cls") || "", hull: store.get("hull") || "", decks: store.get("decks") || "" };
+const filters = { cls: store.get("cls") || "", hull: store.get("hull") || "", decks: store.get("decks") || "", role: store.get("role") || "", drive: store.get("drive") || "" };
 const CLASSES = [["", "Any"], ["corvette", "Corvette"], ["frigate", "Frigate"], ["destroyer", "Destroyer"]];
-const HULLS = [["", "Any"], ["chisel", "Chisel"], ["dart", "Dart"], ["block", "Block"]];
-const DECKS = [["", "Any"], ["1", "1"], ["2", "2"], ["3", "3"]];
+const HULLS = [["", "Any"], ["chisel", "Chisel"], ["dart", "Dart"], ["block", "Block"], ["barge", "Barge"], ["stepped", "Stepped"]];
+const DECKS = [["", "Any"], ["1", "1"], ["2", "2"], ["3", "3"], ["4", "4"], ["5", "5"]];
+const ROLES = [["", "Any"], ["gunship", "Gunship"], ["freighter", "Freighter"], ["miner", "Miner"], ["tender", "Tender"], ["liner", "Liner"]];
+const DRIVES = [["", "Any"], ["hull", "In the hull"], ["nacelles", "On nacelles"]];
 function seg(boxId, opts, key) {
   const box = $(boxId); box.textContent = "";
   for (const [v, text] of opts) { const b = el("button", null, text); b.type = "button"; b.setAttribute("aria-pressed", filters[key] === v); b.onclick = () => { filters[key] = v; store.set(key, v); seg(boxId, opts, key); fillList(); }; box.appendChild(b); }
 }
-const matches = s => (!filters.cls || s.class === filters.cls) && (!filters.hull || s.hull === filters.hull) && (!filters.decks || String(s.decks) === filters.decks);
+const matches = s => (!filters.cls || s.class === filters.cls) && (!filters.hull || s.hull === filters.hull) && (!filters.decks || String(s.decks) === filters.decks)
+  && (!filters.role || s.role === filters.role) && (!filters.drive || (filters.drive === "nacelles") === !!s.nacelles);
 function pips(n) { const s = el("span", "pips"); s.setAttribute("aria-label", n ? `graded ${n} of 5` : "not graded"); for (let i = 1; i <= 5; i++) s.appendChild(el("i", i <= n ? "on" : null)); return s; }
 function fillList() {
   const ul = $("list"); ul.textContent = "";
@@ -623,7 +639,8 @@ function fillList() {
   if (index && !list.length) { const li = el("li", "empty", "No ship made yet matches. Ask for one, or widen the filter."); ul.appendChild(li); }
   for (const s of list) {
     const li = el("li"), b = el("button"); b.type = "button";
-    const mid = el("span"); mid.append(el("span", null, s.title)); mid.appendChild(el("small", null, `${s.hull}, ${s.decks} deck${s.decks === 1 ? "" : "s"}, ${s.length} m`));
+    const mid = el("span"); mid.append(el("span", null, s.title));
+    mid.appendChild(el("small", null, [s.role, s.hull + " hull" + (s.nacelles ? " on nacelles" : ""), `${s.decks} deck${s.decks === 1 ? "" : "s"}`, `${s.length} m`].filter(Boolean).join(", ")));
     const g = latestGrade(s.code), right = el("span"); right.appendChild(pips(g)); if (notesFor(s.code).length) right.appendChild(el("span", "dot"));
     b.append(el("b", null, s.code), mid, right);
     b.setAttribute("aria-current", ship && ship.code === s.code);
@@ -669,7 +686,7 @@ async function open(hash) {
   setLook(lk || "outside", true); fillList();
 }
 addEventListener("hashchange", () => open(location.hash.slice(1)));
-seg("fClass", CLASSES, "cls"); seg("fHull", HULLS, "hull"); seg("fDecks", DECKS, "decks");
+seg("fClass", CLASSES, "cls"); seg("fHull", HULLS, "hull"); seg("fDecks", DECKS, "decks"); seg("fRole", ROLES, "role"); seg("fDrive", DRIVES, "drive");
 fetch("models/index.json").then(r => { if (!r.ok) throw new Error(r.status + " " + r.statusText); return r.json(); }).then(idx => {
   index = idx;
   const n = idx.ships.length, byClass = c => idx.ships.filter(s => s.class === c).length;
@@ -682,7 +699,7 @@ function tab(t) { document.body.dataset.tab = t; $("tabShips").setAttribute("ari
 $("tabShips").onclick = () => tab("ships"); $("tabShip").onclick = () => tab("ship"); tab("ships");
 
 // ---- feedback and requests, kept in the artifact's database (absent when the page runs outside claude.ai)
-const TAGS = ["Hull", "Rooms", "Corridors", "Airlocks", "Hatches", "Ladders", "Sockets", "Size", "Looks"];
+const TAGS = ["Hull", "Role", "Rooms", "Tall rooms", "Corridors", "Airlocks", "Hatches", "Ladders", "Sockets", "Nacelles", "Size", "Looks"];
 const STATES = { new: "New", taken: "Taken up", done: "Done", declined: "Not changed", queued: "Queued", made: "Made", refused: "Refused" };
 let db = null, users = null, me = null, writable = null, notes = [], requests = [], dataState = "off", busy = false, grade = 0, lastSent = 0;
 const tagOn = new Set();
@@ -731,21 +748,29 @@ function writeFailed(e, where) {
 $("fb").onsubmit = e => { e.preventDefault(); sendNote(false); };
 $("sendRoll").onclick = () => sendNote(true);
 
-// Asking for a ship: a code the game understands (class letter, seed, then the hull letter and the deck count when fixed).
+// Asking for a ship: a code the game understands (class letter, seed, then what is fixed: the hull's letter, n for nacelles, the
+// deck count and the role's letter, as ProcShipSpec.Code writes it).
+const HULL_LETTER = { chisel: "c", dart: "d", block: "b", barge: "a", stepped: "s" }, HULL_OF = { c: "chisel", d: "dart", b: "block", a: "barge", s: "stepped" };
+const ROLE_LETTER = { gunship: "g", freighter: "f", miner: "m", tender: "t", liner: "l" }, ROLE_OF = { g: "gunship", f: "freighter", m: "miner", t: "tender", l: "liner" };
 $("askOpen").onclick = () => {
   const f = $("ask"), opening = f.hidden; f.hidden = !opening; $("askOpen").setAttribute("aria-expanded", opening);
-  if (opening) { $("aClass").value = { corvette: "C", frigate: "F", destroyer: "D" }[filters.cls] || $("aClass").value; $("aHull").value = (filters.hull || "")[0] || ""; $("aDecks").value = filters.decks; say("aState", db ? "" : "Asking needs the gallery on claude.ai, signed in."); }
+  if (opening) {
+    $("aClass").value = { corvette: "C", frigate: "F", destroyer: "D" }[filters.cls] || $("aClass").value; $("aHull").value = HULL_LETTER[filters.hull] || "";
+    $("aNacelles").checked = filters.drive === "nacelles"; $("aDecks").value = filters.decks; $("aRole").value = ROLE_LETTER[filters.role] || "";
+    say("aState", db ? "" : "Asking needs the gallery on claude.ai, signed in.");
+  }
 };
 $("aCancel").onclick = () => { $("ask").hidden = true; $("askOpen").setAttribute("aria-expanded", "false"); };
 $("ask").onsubmit = async e => {
   e.preventDefault(); if (!db || busy) return;
   const seedIn = parseInt($("aSeed").value, 10), seed = seedIn >= 1 && seedIn <= 99999 ? seedIn : 1 + Math.floor(Math.random() * 99999);
-  const cls = $("aClass").value, hull = $("aHull").value, decks = $("aDecks").value, code = cls + seed + hull + decks;
+  const cls = $("aClass").value, hull = $("aHull").value, decks = $("aDecks").value, role = $("aRole").value, nacelles = $("aNacelles").checked;
+  const code = cls + seed + hull + (nacelles ? "n" : "") + decks + role;
   if (index && index.ships.some(s => s.code === code)) { say("aState", code + " is made already: showing it.", "ok"); setHash(code, ""); return; }
   if (requests.some(r => r.code === code && r.state === "queued")) { say("aState", code + " is queued already."); return; }
   busy = true; say("aState", "Queueing...");
   try {
-    await db.collection("requests").add({ code, class: { C: "corvette", F: "frigate", D: "destroyer" }[cls], hull: { c: "chisel", d: "dart", b: "block" }[hull] || null, decks: decks ? +decks : null, seed,
+    await db.collection("requests").add({ code, class: { C: "corvette", F: "frigate", D: "destroyer" }[cls], hull: HULL_OF[hull] || null, decks: decks ? +decks : null, role: ROLE_OF[role] || null, nacelles, seed,
       note: $("aNote").value.trim().slice(0, 2000), by: me, at: new Date().toISOString(), state: "queued" });
     say("aState", `Queued ${code}. It is made the next time a session works on the gallery.`, "ok"); $("aNote").value = ""; $("aSeed").value = "";
   } catch (err) { writeFailed(err, "aState"); }
