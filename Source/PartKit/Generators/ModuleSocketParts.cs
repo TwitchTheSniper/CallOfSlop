@@ -202,6 +202,39 @@ public sealed class ModuleSocketParts : IPartGenerator
         WriteParts(o, Out + "/Fitters", [("", LifterParts.ModuleFitter())]); // (phase 4: its own folder, after every older Modules row in the Assembling tail)
         foreach (var a in Adapters)
             o.File($"Constructs/Blueprints/ModuleAdapter{Size(a.W, a.L)}to{Size(a.SW, a.SL)}.json", AdapterText(a));
+        foreach (var m in Shipped)
+            o.File($"Constructs/Blueprints/Module{m.File}.json", ShippedText(m));
+    }
+
+    /// <summary>
+    /// The shipped module designs (module-sockets.md 9 and 10, phase 5): a plug of a size with stock parts welded on, one or two of
+    /// each kind, so faction choice (ModuleChoice) has candidates with trade-offs to weigh and players have modules to buy and fit.
+    /// Each part is (name, the plug's socket, its own socket). Later: --gen-module's faction-styled designs.
+    /// </summary>
+    private static readonly (string File, string Name, int W, int L, string Primary, string[] Tags, string About, (string Part, string On, string By)[] Parts)[] Shipped =
+    [
+        ("Rcs1x1", "Module RCS 1x1", 1, 1, "engine", ["engine"], "one RCS Thruster: a small push, a small draw", [("RCS Thruster", "s0.0", "base")]),
+        ("RcsQuad2x2", "Module RCS Quad 2x2", 2, 2, "engine", ["engine"], "four RCS Thrusters: four times the push and the mass", [("RCS Thruster", "s0.0", "base"), ("RCS Thruster", "s1.0", "base"), ("RCS Thruster", "s0.1", "base"), ("RCS Thruster", "s1.1", "base")]),
+        ("Gun1x1", "Module Gun 1x1", 1, 1, "turret", ["turret"], "an AA Gun: feed it through the socket's Ammo A", [("AA Gun", "s0.0", "bottom")]),
+        ("TwinGun2x2", "Module Twin Gun 2x2", 2, 2, "turret", ["turret"], "two AA Guns", [("AA Gun", "s0.0", "bottom"), ("AA Gun", "s1.1", "bottom")]),
+        ("Tank1x1", "Module Tank 1x1", 1, 1, "cargo", ["cargo"], "a Fuel Tank", [("Fuel Tank", "s0.0", "-y")]),
+        ("Battery1x1", "Module Battery 1x1", 1, 1, "power-store", ["power-store"], "a Battery", [("Battery", "s0.0", "-y")]),
+        ("Reactor3x3", "Module Reactor 3x3", 3, 3, "reactor", ["reactor"], "a Magpie Power Plant: 400 kW", [("Magpie Power Plant", "top.1.1", "bottom")]),
+        ("BigReactor3x3", "Module Big Reactor 3x3", 3, 3, "reactor", ["reactor"], "a Zero Day Reactor: 3 MW, heavy", [("Zero Day Reactor", "top.1.1", "bottom")]),
+    ];
+
+    private static string ShippedText((string File, string Name, int W, int L, string Primary, string[] Tags, string About, (string Part, string On, string By)[] Parts) m)
+    {
+        var steps = new List<string> { $"    {{ \"part\": \"Module Plug {Size(m.W, m.L)}\" }}" };
+        foreach (var (part, on, by) in m.Parts)
+            steps.Add($"    {{ \"part\": \"{part}\", \"on\": 0, \"socket\": \"{on}\", \"by\": \"{by}\" }}");
+        return "{\n" +
+            "  \"format\": \"call-of-slop-construct-blueprint/1\",\n" +
+            $"  \"name\": \"{m.Name}\",\n" +
+            $"  \"description\": \"A {Size(m.W, m.L)} module: {m.About}. Written by the part kit (module_sockets).\",\n" +
+            $"  \"module\": {{ \"w\": {m.W}, \"l\": {m.L}, \"primary\": \"{m.Primary}\", \"tags\": [{string.Join(", ", m.Tags.Select(t => $"\"{t}\""))}] }},\n" +
+            "  \"steps\": [\n" + string.Join(",\n", steps) + "\n  ]\n" +
+            "}\n";
     }
 
     /// <summary>

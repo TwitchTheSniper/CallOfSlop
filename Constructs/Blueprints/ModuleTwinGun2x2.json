@@ -1,0 +1,11 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Module Twin Gun 2x2",
+  "description": "A 2x2 module: two AA Guns. Written by the part kit (module_sockets).",
+  "module": { "w": 2, "l": 2, "primary": "turret", "tags": ["turret"] },
+  "steps": [
+    { "part": "Module Plug 2x2" },
+    { "part": "AA Gun", "on": 0, "socket": "s0.0", "by": "bottom" },
+    { "part": "AA Gun", "on": 0, "socket": "s1.1", "by": "bottom" }
+  ]
+}
