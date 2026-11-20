@@ -42,12 +42,12 @@ public static class ShellPodRender
                 int part = c.Pods[q];
                 if (part >= c.PartCount || c.DefOf(part).ShellPod is not { } pd)
                     continue;
-                DrawPod(gfx, world, c, part, pd, now);
+                DrawPod(gfx, world, c, part, pd, now, q < c.PodSurface.Length ? c.PodSurface[q] : -1f);
             }
         }
     }
 
-    private static void DrawPod(Renderer gfx, ConstructWorld world, Construct c, int part, ShellPodDef pd, double now)
+    private static void DrawPod(Renderer gfx, ConstructWorld world, Construct c, int part, ShellPodDef pd, double now, float surface)
     {
         ref var pp = ref c.Parts[part];
         Freeform.PartWorld(c, part, out var pos, out var rot);
@@ -124,6 +124,8 @@ public static class ShellPodRender
         var status = pp.Broken ? LampBroken : shell || ConstructShellPod.Holds(pp) ? LampBusy : LampEmpty;
         gfx.Draw(Matrix4x4.CreateScale(0.066f, 0.01f, 0.066f) * Matrix4x4.CreateTranslation(lampAt, rimTop + 0.003f, -lampAt) * m, Cap); // its dark bezel, so it reads on the hazard paint
         gfx.Draw(Matrix4x4.CreateScale(0.05f, 0.014f, 0.05f) * Matrix4x4.CreateTranslation(lampAt, rimTop + 0.011f, -lampAt) * m, status, mode: 2); // a glowing lens, 5 cm
+        if (pd.Flush && surface >= 0 && surface < pd.Depth - pd.Top - 0.03f)
+            Flange(gfx, m, pd, surface);
         // The platform: from the pod's floor up to the lid.
         var plat = bot + 0.08f + lift * (pd.Top - 0.012f - (bot + 0.08f));
         if (lift > 0.01f || shell)
@@ -192,6 +194,26 @@ public static class ShellPodRender
             gfx.Draw(Matrix4x4.CreateScale(0.035f, 0.006f, zh * 2 - 0.1f) * Matrix4x4.CreateTranslation(-s * 0.045f, Thick + 0.002f, 0) * hinge, Hazard);
             gfx.Draw(Matrix4x4.CreateScale(0.03f, 0.006f, MathF.Min(0.24f, zh)) * Matrix4x4.CreateTranslation(-s * (len - 0.05f), Thick + 0.002f, 0) * hinge, Post);
         }
+    }
+
+    /// <summary>
+    /// A shallow flush pod (the user, 2026-11-19: "Shallow flush"): its surface is thinner than its body, so the body stands proud on
+    /// the far side as a housing, and a flange with a bolt at each corner rings it 3 mm off that face, where it comes through.
+    /// </summary>
+    private static void Flange(Renderer gfx, in Matrix4x4 m, ShellPodDef pd, float surface)
+    {
+        var w = pd.Half;
+        var y = -surface - 0.014f; // (from 3 mm to 25 mm past the far face)
+        const float H = 0.022f, Out = 0.04f;
+        var span = (w + Out) * 2;
+        foreach (var s in (ReadOnlySpan<float>)[-1f, 1f])
+        {
+            Box(gfx, m, new Vector3(s * (w + Out * 0.5f - 0.0015f), y, 0), new Vector3(Out + 0.003f, H, span), Post); // (its inner edge in the wall)
+            Box(gfx, m, new Vector3(0, y, s * (w + Out * 0.5f - 0.0015f)), new Vector3((w - 0.005f) * 2, H, Out + 0.003f), Post);
+        }
+        foreach (var sx in (ReadOnlySpan<float>)[-1f, 1f])
+            foreach (var sz in (ReadOnlySpan<float>)[-1f, 1f])
+                Box(gfx, m, new Vector3(sx * (w + 0.02f), y - H * 0.5f - 0.003f, sz * (w + 0.02f)), new Vector3(0.024f, 0.012f, 0.024f), Plate);
     }
 
     /// <summary>A rotation whose +y is <paramref name="up"/> and -z is <paramref name="fwd"/> (made square to up).</summary>

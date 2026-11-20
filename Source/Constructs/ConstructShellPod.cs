@@ -96,6 +96,8 @@ public static class ConstructShellPod
                 c.PocketHost = [];
             return;
         }
+        if (c.PodSurface.Length < c.PodCount)
+            c.PodSurface = new float[c.Pods.Length];
         if (c.PocketHost.Length != c.PartCount)
             c.PocketHost = new byte[c.PartCount]; // (its length is the part count it was found for: a reader checks it, so a removal before the rebuild reads nothing)
         else
@@ -106,6 +108,7 @@ public static class ConstructShellPod
             if (k >= c.PartCount || c.Parts[k].D.ShellPod is not { Flush: true } pd)
                 continue;
             ref var pp = ref c.Parts[k];
+            c.PodSurface[q] = SurfaceDepth(c, pp.Pos, pp.Rot, k);
             Pocket(pd, out var centre, out var half);
             var at = pp.Pos + Rot24.Apply(pp.Rot, centre);
             var h = Rot24.ApplyHalf(pp.Rot, half);
@@ -122,33 +125,76 @@ public static class ConstructShellPod
     }
 
     /// <summary>
-    /// Why a flush pod can't go where placing puts it (<paramref name="pos"/>, <paramref name="rot"/> in <paramref name="c"/>'s rest
-    /// frame), or null: its body sinks <see cref="ShellPodDef.Depth"/> under the surface, and a surface thinner than that leaves it
-    /// sticking out of the far side (the coordinator, 2026-11-19). Points down the body's middle and its corners must each be inside
-    /// a part of the body (a floor, a stack of them, a foundation, a hull). Allocates nothing.
+    /// How deep the surface under a flush pod at <paramref name="pos"/>, <paramref name="rot"/> (rest frame) is down its middle:
+    /// through the parts of the body that touch end to end, from the socket. A pod whose body is deeper than that is shallow
+    /// flush (the user, 2026-11-19): its lid is flush and its pocket cut as ever, and the rest of its body stands proud on the far
+    /// side as a housing, with a flange where it comes through (ShellPodRender.cs). Allocates nothing.
     /// </summary>
-    public static string? DepthRefusal(Construct c, ConstructPartDef def, Vector3 pos, byte rot)
+    public static float SurfaceDepth(Construct c, Vector3 pos, byte rot, int skip = -1)
+    {
+        var down = Rot24.Apply(rot, -Vector3.UnitY);
+        var axis = MathF.Abs(down.X) > 0.5f ? 0 : MathF.Abs(down.Y) > 0.5f ? 1 : 2;
+        var sign = down[axis];
+        var depth = 0f;
+        for (var guard = 0; guard < 64; guard++)
+        {
+            var at = pos + down * (depth + 0.002f);
+            var deepest = -1f;
+            for (var i = 0; i < c.PartCount; i++)
+            {
+                if (i == skip || c.Parts[i].D.ShellPod != null)
+                    continue;
+                c.PartBounds(i, out var mn, out var mx);
+                if (at.X > mn.X && at.X < mx.X && at.Y > mn.Y && at.Y < mx.Y && at.Z > mn.Z && at.Z < mx.Z)
+                    deepest = MathF.Max(deepest, sign < 0 ? pos[axis] - mn[axis] : mx[axis] - pos[axis]);
+            }
+            if (deepest <= depth)
+                break;
+            depth = deepest;
+        }
+        return depth;
+    }
+
+    /// <summary>
+    /// Why a flush pod can't go where placing puts it, or null. A surface thinner than its body is fine (shallow flush: the body
+    /// stands proud on the far side); it is refused only when that body would run into another part of the body beyond the
+    /// surface: points down its middle and corners past the surface's depth must be clear. Allocates nothing.
+    /// </summary>
+    public static string? BodyRefusal(Construct c, ConstructPartDef def, Vector3 pos, byte rot)
     {
         if (def.ShellPod is not { Flush: true } pd)
             return null;
         var below = pd.Depth - pd.Top; // (the body's depth under the surface)
+        var deep = SurfaceDepth(c, pos, rot);
+        if (deep >= below - 0.01f)
+            return null;
         var down = Rot24.Apply(rot, -Vector3.UnitY);
-        var ax = Rot24.Apply(rot, Vector3.UnitX) * (pd.Half - Wall);
-        var az = Rot24.Apply(rot, Vector3.UnitZ) * (pd.Half - Wall);
-        var covered = 0f;
-        const int Steps = 8;
-        for (var k = 1; k <= Steps; k++)
+        var ax = Rot24.Apply(rot, Vector3.UnitX) * (pd.Half - 0.01f);
+        var az = Rot24.Apply(rot, Vector3.UnitZ) * (pd.Half - 0.01f);
+        const int Steps = 6;
+        for (var k = 0; k <= Steps; k++)
         {
-            var at = pos + down * (below * k / Steps - 0.01f);
-            if (!Covered(c, at) || !Covered(c, at + ax + az) || !Covered(c, at - ax - az) || !Covered(c, at + ax - az) || !Covered(c, at - ax + az))
+            var d = deep + 0.03f + (below - deep - 0.04f) * k / Steps; // (past the surface's far face and its flange, to the body's foot)
+            if (d >= below)
                 break;
-            covered = below * k / Steps;
+            var at = pos + down * d;
+            var hit = Inside(c, at);
+            if (hit < 0)
+                hit = Inside(c, at + ax + az);
+            if (hit < 0)
+                hit = Inside(c, at - ax - az);
+            if (hit < 0)
+                hit = Inside(c, at + ax - az);
+            if (hit < 0)
+                hit = Inside(c, at - ax + az);
+            if (hit >= 0)
+                return $"the {def.Name}'s body ({below:0.##} m deep) would run into the {c.DefOf(hit).Name} past the surface ({deep:0.##} m): leave it room on the far side";
         }
-        return covered >= below - 0.011f ? null
-            : $"a {def.Name} sinks {below:0.##} m into what it goes on, and this is about {covered:0.##} m deep: set it in something thicker (stacked floors, a foundation) or use the bolted-on {ClassNames[pd.Class]} Shell Pod";
+        return null;
     }
 
-    private static bool Covered(Construct c, Vector3 at)
+    /// <summary>The first part of the body (not a pod) whose bounds hold <paramref name="at"/>, or -1.</summary>
+    private static int Inside(Construct c, Vector3 at)
     {
         for (var i = 0; i < c.PartCount; i++)
         {
@@ -156,9 +202,9 @@ public static class ConstructShellPod
                 continue;
             c.PartBounds(i, out var mn, out var mx);
             if (at.X > mn.X && at.X < mx.X && at.Y > mn.Y && at.Y < mx.Y && at.Z > mn.Z && at.Z < mx.Z)
-                return true;
+                return i;
         }
-        return false;
+        return -1;
     }
 
     public static readonly string[] ClassNames = ["Tiny", "Small", "Medium", "Large", "Huge"];
@@ -531,5 +577,6 @@ public sealed partial class Construct
 {
     public ushort[] Pods = []; // its shell pods (made with the caches: ConstructConveyor.BuildRacks), for drawing their frames and the pods' tick
     public int PodCount;
+    public float[] PodSurface = []; // by pod (Pods' order): a flush pod's surface depth (ConstructShellPod.SurfaceDepth; FindHosts), for its flange
     public byte[] PocketHost = []; // by part: 1 when it is a surface a flush pod's pocket opens (ConstructShellPod.FindHosts; empty with no flush pod)
 }
