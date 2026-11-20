@@ -200,6 +200,47 @@ public static class SocketWeldRender
             }
             Bar(gfx, t + Vector3.Transform(a, q), t + Vector3.Transform(b, q), thick, col, 0.95f * fade);
         }
+        DrawSeamStitches(gfx, q, t, size, col, fade);
+    }
+
+    /// <summary>Spacing of the stitch ticks along a seam's edge (m), and the fewest and most on one edge.</summary>
+    private const float StitchSpacing = 0.2f;
+    private const int StitchMin = 2, StitchMax = 16;
+
+    /// <summary>The stitches that tell a seam to break from the attach ghost (user, 2026-11-19): short ticks across the
+    /// seam's plane, evenly spaced round its outline and standing just proud of the parts' sides, like a perforated line.</summary>
+    private static void DrawSeamStitches(Renderer gfx, Quaternion q, Vector3 t, Vector3 size, Vector3 col, float fade)
+    {
+        var n = size.X <= size.Y && size.X <= size.Z ? 0 : size.Y <= size.Z ? 1 : 2; // (the slab's thin axis: the seam's normal)
+        var thick = SeamOk ? 0.014f : 0.01f;
+        var reach = 0.07f; // (each side of the seam's plane)
+        var off = thick * 0.5f + 0.004f; // (clear of the parts' side faces: no z-fighting)
+        var tick = Vector3.Lerp(col, Vector3.One, 0.35f);
+        var mid = (SeamMin + SeamMax) * 0.5f;
+        for (var e = 0; e < 3; e++)
+        {
+            if (e == n)
+                continue;
+            var o = 3 - n - e; // (the other in-plane axis: the edge's outward side)
+            var len = size[e];
+            if (len < 0.02f)
+                continue;
+            var count = Math.Clamp((int)MathF.Round(len / StitchSpacing), StitchMin, StitchMax);
+            for (var side = 0; side < 2; side++)
+            {
+                var p = mid;
+                p[o] = side == 0 ? SeamMin[o] - off : SeamMax[o] + off;
+                for (var i = 0; i < count; i++)
+                {
+                    p[e] = SeamMin[e] + len * (i + 0.5f) / count;
+                    var a = p;
+                    var b = p;
+                    a[n] -= reach;
+                    b[n] += reach;
+                    Bar(gfx, t + Vector3.Transform(a, q), t + Vector3.Transform(b, q), thick, tick, 0.95f * fade);
+                }
+            }
+        }
     }
 
     /// <summary>A thin box from <paramref name="a"/> to <paramref name="b"/>.</summary>
