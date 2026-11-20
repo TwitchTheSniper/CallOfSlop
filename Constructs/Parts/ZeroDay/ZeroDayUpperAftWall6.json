@@ -263,7 +263,7 @@
         4.408,
         29.76
       ],
-      "color": "#57524b",
+      "color": "#4b5359",
       "detail": true,
       "shape": "bevel",
       "radius": 0.4,
@@ -280,7 +280,7 @@
         5.895,
         29.76
       ],
-      "color": "#8e8a81",
+      "color": "#7d8589",
       "detail": true,
       "shape": "bevel",
       "radius": 0.4,
@@ -312,7 +312,7 @@
         4.408,
         29.76
       ],
-      "color": "#57524b",
+      "color": "#4b5359",
       "detail": true,
       "shape": "bevel",
       "radius": 0.4,
@@ -329,7 +329,7 @@
         5.895,
         29.76
       ],
-      "color": "#8e8a81",
+      "color": "#7d8589",
       "detail": true,
       "shape": "bevel",
       "radius": 0.4,
@@ -518,7 +518,7 @@
         4.568,
         30.022
       ],
-      "color": "#3d9a5c",
+      "color": "#2c5aa0",
       "detail": true,
       "finish": "painted plating"
     },
@@ -571,7 +571,7 @@
         4.408,
         30.025
       ],
-      "color": "#a7b1b0",
+      "color": "#4b5359",
       "detail": true,
       "shape": "bevel",
       "radius": 0.4,
@@ -588,10 +588,25 @@
         5.895,
         30.025
       ],
-      "color": "#d3d9d7",
+      "color": "#7d8589",
       "detail": true,
       "shape": "bevel",
       "radius": 0.4,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        3.085,
+        5.735,
+        30.019
+      ],
+      "max": [
+        3.265,
+        5.815,
+        30.031
+      ],
+      "color": "#d6d9d2",
+      "detail": true,
       "finish": "painted plating"
     },
     {
@@ -605,7 +620,7 @@
         4.408,
         30.025
       ],
-      "color": "#a7b1b0",
+      "color": "#4b5359",
       "detail": true,
       "shape": "bevel",
       "radius": 0.4,
@@ -622,7 +637,7 @@
         4.408,
         30.025
       ],
-      "color": "#a7b1b0",
+      "color": "#4b5359",
       "detail": true,
       "shape": "bevel",
       "radius": 0.4,
@@ -639,7 +654,7 @@
         5.895,
         30.025
       ],
-      "color": "#d3d9d7",
+      "color": "#7d8589",
       "detail": true,
       "shape": "bevel",
       "radius": 0.4,
