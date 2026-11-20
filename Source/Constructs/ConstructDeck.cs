@@ -73,6 +73,28 @@ public static partial class ConstructPhysics
         return found;
     }
 
+    /// <summary>
+    /// How far under world point <paramref name="at"/> (along <paramref name="down"/>, within <paramref name="len"/>) a deck of world
+    /// <paramref name="world"/> is that <paramref name="c"/> would stand on (an anchored body or a far heavier one: a station's deck,
+    /// a carrier's), or null. Outside the physics step (the gear key: ConstructDoors.ToggleGear).
+    /// </summary>
+    internal static float? DeckUnder(ConstructWorld world, Construct c, Vector3 at, Vector3 down, float len)
+    {
+        if (world.Bodies.Count < 2)
+            return null;
+        float? best = null;
+        var near = world.NearRay(at, down, len, _deckNear);
+        for (var k = 0; k < near.Count; k++)
+        {
+            var b = near[k];
+            if (b == c || b.CarriedBy == c.Id || !b.Anchored && b.Mass < c.Mass * DeckMassShare)
+                continue;
+            if (DeckRay(b, at, down, best ?? len, out var d, out _, out _) && d >= 1e-3f && !world.Coupled(c.Id, b.Id))
+                best = d;
+        }
+        return best;
+    }
+
     /// <summary>The nearest of <paramref name="b"/>'s solid boxes along a ray, through its part tree (a carrier has thousands of parts). <see cref="_rayPart"/> names the part.</summary>
     private static bool DeckRay(Construct b, Vector3 origin, Vector3 dir, float maxDist, out float dist, out Vector3 normal, out int seg)
     {

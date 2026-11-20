@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Leg Pod Foot M",
-  "description": "A landing leg pod's foot (M): a broad rectangular pad on a clevis round the strut's ankle. It rides the ankle down and back without turning, so the pad stays level, and stands 1.94 m under the pod's top. A generic ship fitting: it fits any ship.",
+  "description": "A landing leg pod's foot (M): a broad rectangular pad on a sprung oleo under a clevis round the strut's ankle. It rides the ankle down and back without turning, so the pad stays level; on the ground its spring gives up to 8 cm and it stands 1.94 m under the pod's top. A generic ship fitting: it fits any ship.",
   "group": "Ship",
   "section": "Ship fittings",
   "role": "door",
@@ -27,6 +27,11 @@
         0.9225
       ],
       "ride": true
+    },
+    "spring": {
+      "travel": 0.0825,
+      "hz": 2.947,
+      "damping": 0.6
     }
   },
   "mass": 96.6,
@@ -38,13 +43,13 @@
   "boxes": [
     {
       "min": [
-        -0.1705,
-        -0.537,
+        -0.1725,
+        -0.4657,
         0.8175
       ],
       "max": [
         -0.129,
-        -0.435,
+        -0.315,
         1.0275
       ],
       "color": "#1f2226",
@@ -54,12 +59,12 @@
     {
       "min": [
         0.129,
-        -0.537,
+        -0.4657,
         0.8175
       ],
       "max": [
         0.1725,
-        -0.435,
+        -0.315,
         1.0275
       ],
       "color": "#1f2226",
@@ -87,13 +92,13 @@
     {
       "min": [
         -0.1725,
-        -0.537,
-        0.7875
+        -0.4913,
+        0.8025
       ],
       "max": [
-        0.1705,
-        -0.5025,
-        1.0575
+        0.1725,
+        -0.4688,
+        1.0425
       ],
       "color": "#30353b",
       "detail": true,
@@ -101,44 +106,14 @@
     },
     {
       "min": [
-        -0.375,
-        -0.645,
-        0.6075
+        -0.177,
+        -0.4883,
+        0.798
       ],
       "max": [
-        0.375,
-        -0.54,
-        1.2375
-      ],
-      "color": "#3b4148",
-      "detail": true,
-      "finish": "plated steel"
-    },
-    {
-      "min": [
-        -0.33,
-        -0.54,
-        0.6525
-      ],
-      "max": [
-        0.33,
-        -0.5145,
-        1.1925
-      ],
-      "color": "#30353b",
-      "detail": true,
-      "finish": "plated steel"
-    },
-    {
-      "min": [
-        -0.3795,
-        -0.645,
-        0.603
-      ],
-      "max": [
-        0.3795,
-        -0.6187,
-        1.242
+        0.177,
+        -0.4763,
+        1.047
       ],
       "color": "#e0b020",
       "detail": true,
@@ -146,44 +121,113 @@
     },
     {
       "min": [
+        -0.0338,
+        -0.5775,
+        0.8888
+      ],
+      "max": [
+        0.0338,
+        -0.4763,
+        0.9562
+      ],
+      "color": "#9aa0a4",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+y",
+      "finish": "chrome",
+      "rig": "oleo"
+    },
+    {
+      "min": [
+        -0.375,
+        -0.705,
+        0.6075
+      ],
+      "max": [
+        0.375,
+        -0.6,
+        1.2375
+      ],
+      "color": "#3b4148",
+      "detail": true,
+      "finish": "plated steel",
+      "rig": "oleo"
+    },
+    {
+      "min": [
+        -0.33,
+        -0.6,
+        0.6525
+      ],
+      "max": [
+        0.33,
+        -0.5745,
+        1.1925
+      ],
+      "color": "#30353b",
+      "detail": true,
+      "finish": "plated steel",
+      "rig": "oleo"
+    },
+    {
+      "min": [
+        -0.3795,
+        -0.705,
+        0.603
+      ],
+      "max": [
+        0.3795,
+        -0.6787,
+        1.242
+      ],
+      "color": "#e0b020",
+      "detail": true,
+      "finish": "hazard paint",
+      "rig": "oleo"
+    },
+    {
+      "min": [
         -0.3525,
-        -0.675,
+        -0.735,
         0.63
       ],
       "max": [
         0.3525,
-        -0.645,
+        -0.705,
         1.215
       ],
       "color": "#1a1b1d",
       "detail": true,
-      "finish": "rubber"
+      "finish": "rubber",
+      "rig": "oleo"
     },
     {
       "min": [
         -0.15,
-        -0.5145,
+        -0.5745,
         1.2
       ],
       "max": [
         0.15,
-        -0.5025,
+        -0.5625,
         1.2225
       ],
       "color": "#5ac8ff",
       "detail": true,
       "glow": true,
-      "paintable": false
+      "paintable": false,
+      "rig": "oleo"
     },
     {
       "min": [
         -0.375,
-        -0.675,
+        -0.735,
         0.6075
       ],
       "max": [
         0.375,
-        -0.54,
+        -0.6,
         1.2375
       ],
       "hidden": true
@@ -191,13 +235,13 @@
     {
       "min": [
         -0.1725,
-        -0.54,
-        0.7875
+        -0.4913,
+        0.8025
       ],
       "max": [
         0.1725,
-        -0.5025,
-        1.0575
+        -0.4688,
+        1.0425
       ],
       "hidden": true
     }
@@ -207,7 +251,7 @@
       "name": "hang",
       "at": [
         0.0,
-        -0.6075,
+        -0.6675,
         1.2375
       ],
       "dir": "+z"

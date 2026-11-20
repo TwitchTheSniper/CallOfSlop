@@ -115,6 +115,7 @@ public enum CActKind : byte
     LandingGear, // u16 body (the seat's): the seated player lowers or raises that craft's landing leg pods (protocol 367; ConstructDoors.ToggleGear)
     Fleet, // u8 FleetOp, u8 group slot, u16 body, u32 uid, vec at, u8 arg, f32 value: a player's fleet group from the command view (protocol 368; GameCrewFleetPlayers.cs)
     Gantry, // u16 body, u16 part, u8 slot, u8 module index: a Shell Gantry fits that module to its shell (protocol 370; GameShellGantry.cs)
+    SeamBreak, // u16 body, u16 part, u16 other part: the attach tool's RMB breaks the seam between the two (protocol 373; ConstructSeams.cs)
 }
 
 /// <summary>
@@ -1117,6 +1118,12 @@ public sealed partial class Game
                 var part = r.U16();
                 return hands.FreeformCut(Constructs, p.Id, eye, body, part, r.U8());
             }
+            case CActKind.SeamBreak:
+            {
+                var body = r.U16();
+                var part = r.U16();
+                return hands.BreakSeam(Constructs, p.Id, eye, body, part, r.U16());
+            }
             case CActKind.SocketWeld:
             {
                 var body = r.U16();
@@ -1619,6 +1626,9 @@ public sealed partial class Game
                 break;
             case CActKind.FreeformCut:
                 w.U16(body).U16(part).U8((byte)socket); // (socket: the weld)
+                break;
+            case CActKind.SeamBreak:
+                w.U16(body).U16(part).U16(socket); // (socket: the other part)
                 break;
             case CActKind.Dampeners:
             case CActKind.MouseSteer:
@@ -2159,7 +2169,7 @@ public sealed partial class Game
         if (p.Sim.Noclip)
             return "not while noclipping";
         // (it moved on since the player aimed: a little more reach the faster it goes)
-        var slack = c.Anchored || c.Asleep ? 0 : MathF.Min((c.Vel - p.Sim.Velocity).Length(), 12f) * 0.15f;
+        var slack = !c.MovesNow ? 0 : MathF.Min((c.Vel - p.Sim.Velocity).Length(), 12f) * 0.15f;
         using var body = World.Body(p.Sim); // (a robot shell's size on the rungs)
         var why = ladder ? ConstructRide.ClimbLadder(ref p.Sim, c, part, World.HeightOf(Stance.Stand), frame: p.FramedRider)
             : ConstructRide.GrabOn(ref p.Sim, c, part, World.HeightOf(p.Sim.Stance), slack, frame: p.FramedRider);

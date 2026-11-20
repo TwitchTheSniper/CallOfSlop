@@ -71,6 +71,7 @@ public static class PlayerRender
             1 => (new Vector3(0.3f, 0.82f, -0.3f), 1.45f),
             _ => (new Vector3(0.3f, 1.3f, -0.25f), 2.05f),
         };
+        gunAt.X += ThirdPersonArms.ShellSpread(p); // (as PlayerRig)
         var gunPose = (p.RenderSeat != SeatKind.None ? ThirdPersonArms.SeatedGun(p) : Matrix4x4.CreateScale(1.3f) * Matrix4x4.CreateRotationX(p.RenderPitch) * Matrix4x4.CreateTranslation(gunAt)) * up;
         if (BackpackRender.Wears(p, out var pack))
         {

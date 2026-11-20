@@ -374,6 +374,28 @@ public sealed partial class Construct
     /// it is fused, do its unit's members linked to it still meet each other without it within a short walk over members? The
     /// next refresh then knows the unit didn't come apart without flooding it.
     /// </summary>
+    /// <summary>
+    /// A weld seam between parts <paramref name="a"/> and <paramref name="b"/> was broken (ConstructSeams.cs): a fused unit either
+    /// belongs to keeps its part count, so the next refresh would take it as unchanged; it is marked new, so its members are
+    /// flooded again over their links and it splits (or is fitted again) as the cut left it.
+    /// </summary>
+    internal void FuseNoteCut(int a, int b)
+    {
+        for (var k = 0; k < 2; k++)
+        {
+            var i = k == 0 ? a : b;
+            if ((uint)i >= (uint)PartCount || Parts[i].Fuse == 0)
+                continue;
+            for (var u = 0; u < _unitCount; u++)
+                if (_units[u].Tag == Parts[i].Fuse)
+                {
+                    _units[u].Members = -1;
+                    _units[u].NeedFit = true;
+                    _units[u].SumsOk = false;
+                }
+        }
+    }
+
     internal void FuseNoteRemoval(int gone)
     {
         var tag = Parts[gone].Fuse;

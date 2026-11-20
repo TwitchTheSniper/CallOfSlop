@@ -6,7 +6,7 @@ namespace CallOfSlop;
 /// <summary>A body's own fields in a <see cref="WorldSnapshot"/>; its parts, links, joints and routes are slices of the snapshot's arrays.</summary>
 public struct BodySnap
 {
-    public ushort Id, CarriedBy, CarryTag, CarryPart, SpaceShip;
+    public ushort Id, CarriedBy, CarryTag, CarryPart, SpaceShip, Frame; // (Frame: the moving construct whose frame it is in, ConstructFrames.cs)
     public byte Owner, FrozenBy, CarrySeg;
     public bool Wreck, Asleep, Damaged, Pinned, Frozen, HoverOn;
     public int Root, Gear;
@@ -14,7 +14,8 @@ public struct BodySnap
     public sbyte HaulRoute;
     public bool HaulAtTo;
     public float Fuel, Charge, Cap, HoverY; // (Cap: its Capacitor Banks' kJ, saved as a setting of its first part an older reader skips)
-    public Vector3 Pos, Vel, AngVel, CarryPos;
+    public Vector3 Pos, Vel, AngVel, CarryPos, FramePos; // (FramePos, FrameRot: its pose in Frame's frame)
+    public Quaternion FrameRot;
     public Quaternion Rot, CarryRot;
     public int Parts, PartCount, Links, LinkCount, Joints, JointCount, Routes, RouteCount, Nodes, Tracks, TrackCount, TrackParts;
     public CRider[]? Conveyed; // pieces riding its conveyors (ConstructConveyor.cs; written after the brief)

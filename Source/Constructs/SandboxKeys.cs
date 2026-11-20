@@ -138,10 +138,10 @@ public static class SandboxKeys
         GunnerTurrets = $"{Fire}: shoot, {Aim}: next turret, {GetOut}";
         const string spin = "mouse or wheel: spin (Shift: free, Ctrl: 5 deg)";
         var back = $"{Aim}: back, Esc: cancel";
-        SocketWeld1 = $"Socket attach 1/3: {Fire} a socket on the piece to move, up to {SocketWeld.PullReach:0} m away, {Sprint}: point attach";
+        SocketWeld1 = $"Socket attach 1/3: {Fire} a socket on the piece to move, up to {SocketWeld.PullReach:0} m away, {Sprint}: point attach, {Aim}: break the seam lit, {Sprint}+{Aim}: take the part off";
         SocketWeld2 = $"Socket attach 2/3: {Fire} a socket or flat face, {back}";
         SocketWeld3 = $"Socket attach 3/3: {spin}, {Reload}: next facing, {Fire}: attach, {back}";
-        PointWeld1 = $"Point attach 1/3 ({Sprint} held): {Fire} a point on the piece to move, up to {SocketWeld.PullReach:0} m away";
+        PointWeld1 = $"Point attach 1/3 ({Sprint} held): {Fire} a point on the piece to move, up to {SocketWeld.PullReach:0} m away, {Sprint}+{Aim}: take the part off";
         PointWeld2 = $"Point attach 2/3: {Fire} a point on the construct, {back}";
         PointWeld3 = $"Point attach 3/3: {spin}, {Reload}: flip, {Fire}: attach, {back}";
         ConfigHint = $"Shift+{Fire}: select more of a kind";

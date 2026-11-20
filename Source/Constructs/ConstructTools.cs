@@ -45,6 +45,12 @@ public sealed class ToolModel
     public Vector3? Sparks, Light, Beam;
     public float BeamLength = 2.5f;
     public int SpinBoxes, GlowBoxes;
+
+    /// <summary>A shell module's own model (ShellKitNodes.ViewModel): it is the arm, so the person's right arm isn't drawn with it.</summary>
+    public bool Arm;
+
+    /// <summary>Where its grip stands in first person (camera space), or null: <see cref="ToolDisplay.ViewGrip"/>.</summary>
+    public Vector3? ViewAt;
 }
 
 /// <summary>A tool's screen in tool space: its centre, the way it faces, its top, its size, its text rows, and where its stalk meets the tool.</summary>
