@@ -110,10 +110,10 @@ public static class ConstructBuild
         if (newJoint && LeafRefusal(c, part) is { } full)
             return full;
         g = new ConstructGhost { Part = part, Socket = socket, DefSocket = defSocket, Variant = spin, Pos = pos, Rot = rot, Seg = seg, NewJoint = newJoint, Scale = scale };
-        if (ConstructShellPod.BodyRefusal(c, def, pos, rot, seg) is { } blocked)
-            return blocked; // (a flush pod whose body, proud of a thin surface's far side, would run into another part)
         if (Blocked(c, def, pos, rot, scale, seg))
             return InTheWay;
+        if (def.ShellPod is { Flush: true } && ConstructShellPod.BodyRefusal(c, def, pos, rot, seg) is { } blocked)
+            return blocked; // (a flush pod whose body, proud of a thin surface's far side, would run into another part: after the overlap test, the dearer one)
         return null;
     }
 
@@ -184,7 +184,8 @@ public static class ConstructBuild
     /// <summary>The first part a part there would overlap (the same boxes and slack as <see cref="Blocked"/>, every part looked at: a reason's, never per frame), or -1.</summary>
     public static int BlockerOf(Construct c, ConstructPartDef def, Vector3 pos, byte rot, float scale = 1f)
     {
-        for (var b = 0; b < def.SolidBoxes; b++)
+        var solids = def.ShellPod is { Flush: true } ? Math.Min(1, def.SolidBoxes) : def.SolidBoxes; // (a flush pod's body sinks into what it goes on: its lid alone is tested; its body box blocks what comes after, ShellParts.Pod)
+        for (var b = 0; b < solids; b++)
         {
             var bc = pos + Rot24.Apply(rot, def.Boxes[b].Center * scale);
             var bh = Rot24.ApplyHalf(rot, def.Boxes[b].Half * scale) - new Vector3(0.01f);

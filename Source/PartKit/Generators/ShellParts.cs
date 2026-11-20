@@ -567,6 +567,7 @@ public sealed class ShellParts : IPartGenerator
     private static readonly (string Name, string Class, double W, double D, int Bin)[] PodSizes =
         [("Tiny", "tiny", 0.35, 0.55, 0), ("Small", "small", 0.62, 1.0, 0), ("Medium", "medium", 0.95, 1.5, HopperUnits)];
 
+    private const string Housing = "#3b4148"; // a flush pod's body
     private const string Trim = "#155a64"; // a pod's rim trim (deep teal: a brighter one goes near-white on its sunlit side)
 
     private static Part Pod((string Name, string Class, double W, double D, int Bin) z, bool flush)
@@ -586,12 +587,15 @@ public sealed class ShellParts : IPartGenerator
         var rimTop = flush ? top + 0.003 : top - 0.003; // (ConstructShellPod.RimTop: flush, a coaming 3 mm over the closed flaps)
         // The solid: the closed pod (flush: a 3 cm slab over the surface, where its lid is: a thinner box would be only a detail).
         p.Add(Box([-w, 0, -w], [w, top, w], hidden: true));
+        if (flush)
+            p.Add(Box([-w, bot, -w], [w, -0.003, w], hidden: true)); // (its body, solid: proud of a thin surface it is a housing a player bumps into, and nothing goes into it; placing tests the lid alone, ConstructBuild.Blocked)
+        var shell = flush ? Housing : MachineLook.Base; // (a flush pod's body, seen from the far side of a thin surface: mid steel, not a hole)
         // The body: four walls, a floor inside, a dark lining (3 mm in from the walls), the rim round the opening in hazard.
-        p.Add(MachineLook.D([-w, bot, -w], [w, bot + t, w], MachineLook.Base)); // floor
+        p.Add(MachineLook.D([-w, bot, -w], [w, bot + t, w], shell)); // floor
         foreach (var s in new[] { -1.0, 1.0 })
         {
-            p.Add(MachineLook.D([Math.Min(s * w, s * (w - t)), bot + t + 0.003, -w], [Math.Max(s * w, s * (w - t)), top - rim * 0.5, w], MachineLook.Base)); // the x walls
-            p.Add(MachineLook.D([-w + t + 0.003, bot + t + 0.003, Math.Min(s * w, s * (w - t))], [w - t - 0.003, top - rim * 0.5, Math.Max(s * w, s * (w - t))], MachineLook.Base)); // the z walls
+            p.Add(MachineLook.D([Math.Min(s * w, s * (w - t)), bot + t + 0.003, -w], [Math.Max(s * w, s * (w - t)), top - rim * 0.5, w], shell)); // the x walls
+            p.Add(MachineLook.D([-w + t + 0.003, bot + t + 0.003, Math.Min(s * w, s * (w - t))], [w - t - 0.003, top - rim * 0.5, Math.Max(s * w, s * (w - t))], shell)); // the z walls
         }
         var lining = bot + ConstructShellPod.Lining; // (the lining floor's top)
         p.Add(MachineLook.D([-w + t + 0.006, bot + t + 0.003, -w + t + 0.006], [w - t - 0.006, lining, w - t - 0.006], "#22262b", "tread plate")); // the lining's floor, under the platform: deck plate

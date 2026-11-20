@@ -14,7 +14,9 @@ public static class ShellPodRender
 {
     public const float DrawNear = 80f;
     private static readonly Vector3 Cap = new(0.13f, 0.15f, 0.17f), Post = new(0.34f, 0.38f, 0.42f), Plate = new(0.2f, 0.22f, 0.25f),
-        Hazard = new(0.95f, 0.69f, 0.12f), Button = new(0.82f, 0.16f, 0.12f), Lamp = new(0.22f, 0.82f, 0.9f),
+        Hazard = new(0.95f, 0.69f, 0.12f), Button = new(0.82f, 0.16f, 0.12f),
+        StrutCap = new(0.082f, 0.353f, 0.392f), Stage = new(0.55f, 0.58f, 0.62f), TrussMetal = new(0.66f, 0.69f, 0.72f),
+        Flange22 = new(0.133f, 0.149f, 0.169f), Bolt = new(0.596f, 0.631f, 0.663f),
         LampEmpty = new(0.3f, 0.92f, 0.38f), LampBusy = new(1f, 0.62f, 0.12f), LampBroken = new(0.95f, 0.18f, 0.12f);
 
     private static readonly (Vector3 At, byte Frame)[] _wearers = new (Vector3, byte)[64];
@@ -104,19 +106,31 @@ public static class ShellPodRender
             Box(gfx, m, new Vector3(0, capTop - 0.03f, 0), new Vector3(capHalf * 2 - 0.01f, 0.06f, capHalf * 2 - 0.01f), Cap);
             Box(gfx, m, new Vector3(0, capTop + 0.002f, -capHalf + 0.06f), new Vector3(capHalf * 2 - 0.12f, 0.006f, 0.05f), Hazard);
         }
+        var px = pd.Half - 0.16f; // the frame's two sides
         if (extend > 0.01f && (!pd.Flush || open >= 1f))
         {
-            var px = pd.Half - 0.16f;
-            var y0 = pd.Top - 0.06f;
-            var y1 = pd.Flush ? capTop - 0.002f : capTop - 0.06f; // (a flush pod's posts run up beside its head: it reads as held)
+            // Each side: two telescoping pistons, stowed in the pod and drawn out stage by stage, a lighting truss between them;
+            // the head rides on their tops (the user, 2026-11-20).
+            var bot0 = pd.Top - pd.Depth + ConstructShellPod.Lining + 0.006f;
+            var headBottom = (pd.Flush ? capTop - 0.002f : capTop - 0.06f) + 0.003f; // (3 mm into the head: a flush pod's pistons flank it)
+            var pz = MathF.Min((pd.Half - 0.1f) * 0.6f, pd.Half - 0.13f);
+            var full = (pd.Flush ? pd.Top + length - 0.004f : pd.Top + length - 0.062f) + 0.003f; // (the head's underside risen)
+            var top = 0f;
             foreach (var s in (ReadOnlySpan<float>)[-1f, 1f])
-                Box(gfx, m, new Vector3(s * px, (y0 + y1) * 0.5f, 0), new Vector3(0.08f, MathF.Max(0.01f, y1 - y0), 0.08f), Post);
-            // The button panel on the right post, at a hand's height in the frame, and a lamp on each post's head.
-            var by = MathF.Min(y1 - 0.1f, pd.Top + MathF.Min(length * 0.55f, 1.1f));
-            Box(gfx, m, new Vector3(px - 0.07f, by, -0.06f), new Vector3(0.06f, 0.16f, 0.12f), Post);
-            Box(gfx, m, new Vector3(px - 0.105f, by, -0.06f), new Vector3(0.012f, 0.06f, 0.06f), Button);
-            foreach (var s in (ReadOnlySpan<float>)[-1f, 1f])
-                Box(gfx, m, new Vector3(s * px, y1 - 0.04f, -0.045f), new Vector3(0.05f, 0.03f, 0.012f), Lamp);
+            {
+                foreach (var sz in (ReadOnlySpan<float>)[-1f, 1f])
+                    top = Piston(gfx, m, new Vector3(s * px, 0, sz * pz), pd.Top, bot0, headBottom, full);
+                Truss(gfx, m, s * px, top - 0.085f, pz);
+                foreach (var sz in (ReadOnlySpan<float>)[-1f, 1f])
+                    Box(gfx, m, new Vector3(s * px, top + 0.004f, sz * pz), new Vector3(0.07f, 0.012f, 0.07f), StrutCap); // (its top stage's cap, 2 mm down over it)
+            }
+            // The button panel on the right side's front piston, at a hand's height in the frame.
+            var by = MathF.Min(top - 0.15f, pd.Top + MathF.Min(length * 0.55f, 1.1f));
+            if (by > pd.Top + 0.1f)
+            {
+                Box(gfx, m, new Vector3(px - 0.072f, by, -pz), new Vector3(0.06f, 0.16f, 0.12f), Post);
+                Box(gfx, m, new Vector3(px - 0.107f, by, -pz), new Vector3(0.012f, 0.06f, 0.06f), Button);
+            }
         }
         // The status lamp on the rim's corner: green empty, amber with a shell in it or at work, red broken.
         var rimTop = ConstructShellPod.RimTop(pd);
@@ -129,7 +143,7 @@ public static class ShellPodRender
         // The platform: from the pod's floor up to the lid.
         var plat = bot + 0.08f + lift * (pd.Top - 0.012f - (bot + 0.08f));
         if (lift > 0.01f || shell)
-            gfx.Draw(Matrix4x4.CreateScale(inner * 2 - 0.06f, 0.04f, inner * 2 - 0.06f) * Matrix4x4.CreateTranslation(0, plat - 0.02f, 0) * m, Plate,
+            gfx.Draw(Matrix4x4.CreateScale((px - 0.05f) * 2, 0.04f, inner * 2 - 0.06f) * Matrix4x4.CreateTranslation(0, plat - 0.02f, 0) * m, Plate, // (narrower than the frame's sides: it rises between the pistons)
                 surface: Surfaces.Code(Surfaces.Id("tread plate"), 0f)); // (dark tread plate: the pocket reads deep)
         if (!shell || ConstructParts.Find(ShellFrames.Of(frame).Part) is not { } sd)
             return;
@@ -197,6 +211,93 @@ public static class ShellPodRender
     }
 
     /// <summary>
+    /// A telescoping piston at <paramref name="at"/> (x, z in the pod's frame): its stages nested in the pod, 4 mm apart in height
+    /// so no two faces meet on a plane, the stowed tops under the lid; drawn out to <paramref name="head"/> (where the head's
+    /// underside is), the thinnest stage first. The stages are as many as the full rise (<paramref name="full"/>) needs, each
+    /// keeping 6 cm in the one below. Returns the top of its top stage. Allocates nothing.
+    /// </summary>
+    private static float Piston(Renderer gfx, in Matrix4x4 m, Vector3 at, float lid, float floor, float head, float full)
+    {
+        const float Lift = 0.004f, Overlap = 0.06f;
+        int n;
+        float y0 = 0, len = 0;
+        for (n = 2; n < 7; n++)
+        {
+            y0 = lid - 0.04f - Lift * (n - 1); // (the stowed tops: under a flush pod's flaps, inside a bolted-on pod's head)
+            len = MathF.Max(0.05f, y0 - floor);
+            if (y0 + Lift * (n - 1) + (n - 1) * (len - Overlap - Lift) >= full)
+                break;
+        }
+        var reach = MathF.Max(0.04f, len - Overlap - Lift); // (the most a stage draws out of the one below)
+        var rest = MathF.Max(0, head - (y0 + Lift * (n - 1)));
+        Span<float> off = stackalloc float[8];
+        for (var k = n - 1; k >= 1; k--)
+        {
+            off[k] = MathF.Min(rest, reach); // (the thinnest goes first)
+            rest -= off[k];
+        }
+        var step = MathF.Min(0.012f, 0.04f / (n - 1));
+        var sum = 0f;
+        var top = y0;
+        for (var k = 0; k < n; k++)
+        {
+            sum += k > 0 ? off[k] : 0;
+            var lo = y0 - len + Lift * k + sum;
+            var hi = y0 + Lift * k + sum;
+            var w = 0.08f - step * k;
+            Box(gfx, m, new Vector3(at.X, (lo + hi) * 0.5f, at.Z), new Vector3(w, hi - lo, w), (k & 1) == 0 ? Post : Stage);
+            top = hi;
+        }
+        return top;
+    }
+
+    /// <summary>
+    /// A lighting truss between a side's two pistons at x <paramref name="x"/>, its lower chords at <paramref name="y"/>: three chords
+    /// along z (two below, one above) and zig-zag webbing on each of its three faces, the struts of a face alternately 2 mm either
+    /// side of it so where they meet no faces share a plane. Allocates nothing.
+    /// </summary>
+    private static void Truss(Renderer gfx, in Matrix4x4 m, float x, float y, float pz)
+    {
+        const float Half = 0.022f, Rise = 0.04f, Chord = 0.014f, Web = 0.007f;
+        var a = new Vector3(x - Half, y, 0);
+        var b = new Vector3(x + Half, y, 0);
+        var c = new Vector3(x, y + Rise, 0);
+        foreach (var p in (ReadOnlySpan<Vector3>)[a, b, c])
+            Box(gfx, m, p, new Vector3(Chord, Chord, pz * 2), TrussMetal); // (their ends in the pistons)
+        var bays = Math.Max(2, (int)MathF.Round(pz * 2 / 0.1f));
+        for (var f = 0; f < 3; f++)
+        {
+            var (p0, p1) = f switch { 0 => (a, b), 1 => (b, c), _ => (c, a) };
+            var normal = Vector3.Normalize(Vector3.Cross(p1 - p0, Vector3.UnitZ));
+            for (var k = 0; k < bays; k++)
+            {
+                var z0 = -pz + pz * 2 * k / bays;
+                var z1 = -pz + pz * 2 * (k + 1) / bays;
+                var shift = normal * ((k & 1) == 0 ? 0.002f : -0.002f);
+                var from = ((k & 1) == 0 ? p0 : p1) + new Vector3(0, 0, z0) + shift;
+                var to = ((k & 1) == 0 ? p1 : p0) + new Vector3(0, 0, z1) + shift;
+                Strut(gfx, m, from, to, Web, TrussMetal);
+            }
+        }
+    }
+
+    /// <summary>A thin square strut from <paramref name="from"/> to <paramref name="to"/> in the frame <paramref name="m"/>.</summary>
+    private static void Strut(Renderer gfx, in Matrix4x4 m, Vector3 from, Vector3 to, float thick, Vector3 colour)
+    {
+        var d = to - from;
+        var len = d.Length();
+        if (len < 1e-4f)
+            return;
+        var z = d / len;
+        var t = MathF.Abs(z.Y) < 0.9f ? Vector3.UnitY : Vector3.UnitX;
+        var x = Vector3.Normalize(Vector3.Cross(t, z));
+        var y = Vector3.Cross(z, x);
+        var mid = (from + to) * 0.5f;
+        var basis = new Matrix4x4(x.X, x.Y, x.Z, 0, y.X, y.Y, y.Z, 0, z.X, z.Y, z.Z, 0, mid.X, mid.Y, mid.Z, 1);
+        gfx.Draw(Matrix4x4.CreateScale(thick, thick, len) * basis * m, colour);
+    }
+
+    /// <summary>
     /// A shallow flush pod (the user, 2026-11-19: "Shallow flush"): its surface is thinner than its body, so the body stands proud on
     /// the far side as a housing, and a flange with a bolt at each corner rings it 3 mm off that face, where it comes through.
     /// </summary>
@@ -208,12 +309,12 @@ public static class ShellPodRender
         var span = (w + Out) * 2;
         foreach (var s in (ReadOnlySpan<float>)[-1f, 1f])
         {
-            Box(gfx, m, new Vector3(s * (w + Out * 0.5f - 0.0015f), y, 0), new Vector3(Out + 0.003f, H, span), Post); // (its inner edge in the wall)
-            Box(gfx, m, new Vector3(0, y, s * (w + Out * 0.5f - 0.0015f)), new Vector3((w - 0.005f) * 2, H, Out + 0.003f), Post);
+            Box(gfx, m, new Vector3(s * (w + Out * 0.5f - 0.0015f), y, 0), new Vector3(Out + 0.003f, H, span), Flange22); // (its inner edge in the wall)
+            Box(gfx, m, new Vector3(0, y, s * (w + Out * 0.5f - 0.0015f)), new Vector3((w - 0.005f) * 2, H, Out + 0.003f), Flange22);
         }
         foreach (var sx in (ReadOnlySpan<float>)[-1f, 1f])
             foreach (var sz in (ReadOnlySpan<float>)[-1f, 1f])
-                Box(gfx, m, new Vector3(sx * (w + 0.02f), y - H * 0.5f - 0.003f, sz * (w + 0.02f)), new Vector3(0.024f, 0.012f, 0.024f), Plate);
+                Box(gfx, m, new Vector3(sx * (w + 0.02f), y - H * 0.5f - 0.003f, sz * (w + 0.02f)), new Vector3(0.024f, 0.012f, 0.024f), Bolt);
     }
 
     /// <summary>A rotation whose +y is <paramref name="up"/> and -z is <paramref name="fwd"/> (made square to up).</summary>

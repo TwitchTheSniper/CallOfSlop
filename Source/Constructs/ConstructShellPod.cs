@@ -108,15 +108,17 @@ public static class ConstructShellPod
             if (k >= c.PartCount || c.Parts[k].D.ShellPod is not { Flush: true } pd)
                 continue;
             ref var pp = ref c.Parts[k];
-            c.PodSurface[q] = SurfaceDepth(c, pp.Seg, pp.Pos, pp.Rot, k);
+            c.PodSurface[q] = SurfaceDepth(c, pd, pp.Seg, pp.Pos, pp.Rot, k);
             Pocket(pd, out var centre, out var half);
             PodAxes(c, pp.Seg, pp.Pos, pp.Rot, out var at0, out var down, out var x, out var z);
             var at = at0 + x * centre.X - down * centre.Y + z * centre.Z; // (in the body's frame: a freeform weld's parts sit on segments of their own)
             var h = Vector3.Abs(x) * half.X + Vector3.Abs(down) * half.Y + Vector3.Abs(z) * half.Z;
             Vector3 lo = at - h, hi = at + h;
-            for (var i = 0; i < c.PartCount; i++)
+            Gather(c, lo, hi);
+            for (var n = 0; n < _nearCount; n++)
             {
-                if (i == k || c.Parts[i].D.ShellPod != null)
+                var i = _near[n];
+                if (i == k || i >= c.PartCount || c.Parts[i].D.ShellPod != null)
                     continue;
                 BodyBounds(c, i, out var mn, out var mx);
                 if (mn.X < hi.X && mx.X > lo.X && mn.Y < hi.Y && mx.Y > lo.Y && mn.Z < hi.Z && mx.Z > lo.Z)
@@ -125,14 +127,31 @@ public static class ConstructShellPod
         }
     }
 
-    /// <summary>Part <paramref name="i"/>'s bounds in the body's frame: its segment's pose applied (a freeform weld's part sits in its own segment's frame).</summary>
+    // The parts near a pod's column (Gather): a big body's part tree, so a held pod's ghost doesn't scan every part each frame.
+    private static readonly int[] _near = new int[Construct.MaxParts];
+    private static int _nearCount;
+
+    /// <summary>The parts whose bounds may meet the box <paramref name="lo"/>..<paramref name="hi"/> (body frame) into _near; every part when the body has freeform welds (their frames differ: as ConstructBuild.Blocked).</summary>
+    private static void Gather(Construct c, Vector3 lo, Vector3 hi)
+    {
+        if (c.FreeformCount > 0)
+        {
+            _nearCount = 0;
+            for (var i = 0; i < c.PartCount; i++)
+                _near[_nearCount++] = i;
+            return;
+        }
+        _nearCount = c.PartsInBox(lo, hi, _near);
+    }
+
+    /// <summary>Part <paramref name="i"/>'s bounds in the body's rest frame: its segment's rest pose applied (a freeform weld's part sits in its own segment's frame; a hinge at rest, whatever its angle now).</summary>
     private static void BodyBounds(Construct c, int i, out Vector3 mn, out Vector3 mx)
     {
         c.PartBounds(i, out mn, out mx);
         var seg = c.Parts[i].Seg;
         if (seg <= 0)
             return;
-        c.SegPose(seg, out var q, out var t);
+        c.RestPose(seg, out var q, out var t);
         var mid = t + Vector3.Transform((mn + mx) * 0.5f, q);
         var h = (mx - mn) * 0.5f;
         var r = Matrix4x4.CreateFromQuaternion(q);
@@ -144,10 +163,10 @@ public static class ConstructShellPod
         mx = mid + wh;
     }
 
-    /// <summary>A pod at <paramref name="pos"/>, <paramref name="rot"/> on segment <paramref name="seg"/>, in the body's frame: its socket point and its axes.</summary>
+    /// <summary>A pod at <paramref name="pos"/>, <paramref name="rot"/> on segment <paramref name="seg"/>, in the body's rest frame: its socket point and its axes.</summary>
     private static void PodAxes(Construct c, int seg, Vector3 pos, byte rot, out Vector3 at, out Vector3 down, out Vector3 x, out Vector3 z)
     {
-        c.SegPose(seg, out var q, out var t);
+        c.RestPose(seg, out var q, out var t);
         at = t + Vector3.Transform(pos, q);
         down = Vector3.Transform(Rot24.Apply(rot, -Vector3.UnitY), q);
         x = Vector3.Transform(Rot24.Apply(rot, Vector3.UnitX), q);
@@ -160,19 +179,24 @@ public static class ConstructShellPod
     /// How deep the surface under a flush pod at <paramref name="pos"/>, <paramref name="rot"/> on segment <paramref name="seg"/> is
     /// down its middle: through the parts of the body that touch end to end, from the socket. A pod whose body is deeper than that
     /// is shallow flush (the user, 2026-11-19): its lid is flush and its pocket cut as ever, and the rest of its body stands proud
-    /// on the far side as a housing, with a flange where it comes through (ShellPodRender.cs). Allocates nothing.
+    /// on the far side as a housing, with a flange where it comes through (ShellPodRender.cs). Leaves the parts near its column in
+    /// _near for <see cref="BodyRefusal"/>. Allocates nothing.
     /// </summary>
-    public static float SurfaceDepth(Construct c, int seg, Vector3 pos, byte rot, int skip = -1)
+    public static float SurfaceDepth(Construct c, ShellPodDef pd, int seg, Vector3 pos, byte rot, int skip = -1)
     {
-        PodAxes(c, seg, pos, rot, out var at0, out var down, out _, out _);
+        PodAxes(c, seg, pos, rot, out var at0, out var down, out var x, out var z);
+        var foot = (Vector3.Abs(x) + Vector3.Abs(z)) * pd.Half + new Vector3(0.02f);
+        var end = at0 + down * pd.Depth;
+        Gather(c, Vector3.Min(at0, end) - foot, Vector3.Max(at0, end) + foot);
         var depth = 0f;
         for (var guard = 0; guard < 64; guard++)
         {
             var at = at0 + down * (depth + 0.002f);
             var deepest = -1f;
-            for (var i = 0; i < c.PartCount; i++)
+            for (var n = 0; n < _nearCount; n++)
             {
-                if (i == skip || c.Parts[i].D.ShellPod != null)
+                var i = _near[n];
+                if (i == skip || i >= c.PartCount || c.Parts[i].D.ShellPod != null)
                     continue;
                 BodyBounds(c, i, out var mn, out var mx);
                 if (!In(at, mn, mx))
@@ -192,16 +216,17 @@ public static class ConstructShellPod
     }
 
     /// <summary>
-    /// Why a flush pod can't go where placing puts it, or null. A surface thinner than its body is fine (shallow flush: the body
-    /// stands proud on the far side); it is refused only when that body would run into another part of the body beyond the
-    /// surface: points down its middle and corners past the surface's depth must be clear. Allocates nothing.
+    /// Why a flush pod can't go where placing puts it, or null (ConstructBuild.Place runs it after its overlap test). A surface
+    /// thinner than its body is fine (shallow flush: the body stands proud on the far side); it is refused only when that body would
+    /// run into another part of the body beyond the surface: points down its middle and corners past the surface's depth must be
+    /// clear. In the rest frame, among the parts near its column. Allocates nothing.
     /// </summary>
     public static string? BodyRefusal(Construct c, ConstructPartDef def, Vector3 pos, byte rot, int seg)
     {
         if (def.ShellPod is not { Flush: true } pd)
             return null;
         var below = pd.Depth - pd.Top; // (the body's depth under the surface)
-        var deep = SurfaceDepth(c, seg, pos, rot);
+        var deep = SurfaceDepth(c, pd, seg, pos, rot);
         if (deep >= below - 0.01f)
             return null;
         PodAxes(c, seg, pos, rot, out var at0, out var down, out var x, out var z);
@@ -229,12 +254,13 @@ public static class ConstructShellPod
         return null;
     }
 
-    /// <summary>The first part of the body (not a pod) whose bounds hold <paramref name="at"/> (body frame), or -1.</summary>
+    /// <summary>The first part near the column (_near, not a pod) whose bounds hold <paramref name="at"/> (rest frame), or -1.</summary>
     private static int Inside(Construct c, Vector3 at)
     {
-        for (var i = 0; i < c.PartCount; i++)
+        for (var n = 0; n < _nearCount; n++)
         {
-            if (c.Parts[i].D.ShellPod != null)
+            var i = _near[n];
+            if (i >= c.PartCount || c.Parts[i].D.ShellPod != null)
                 continue;
             BodyBounds(c, i, out var mn, out var mx);
             if (In(at, mn, mx))
