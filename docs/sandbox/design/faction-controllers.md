@@ -457,3 +457,21 @@ to start testing logistics runs with ships.
 - **Next:** haulers as Convoy missions of the controllers (escorts, routes chosen by what a station lacks), prices that follow stock, and
   stations and runs kept in saves.
 
+
+## No credits: barter and a tab per power (Karl, 2026-11-20)
+
+Karl chose option C of the "Trade without currency" study, credits removed everywhere at once: goods and parts are physical and carry a value;
+when a trade with a power is uneven, the power keeps a tab of what it owes the person, spendable only with that power; war with them (standing
+at or below `WarLine`) or the power's fall wipes it. `Game/GameTabs.cs` holds it (`TabOf`, `TabPay`, `TabGive`; `Msg.Credits` became `Msg.Tabs`;
+the Crew section is version 2, a person's tabs by power name). For TwitchTheSniper, what changed in the faction code (behaviour otherwise the same):
+
+- **Hire and wages** (GameCrewHire.cs): off the hirer's tab with the hand's own power (`Crew.Fac`, kept at the hire). No start balance.
+- **Capture bounty**: on the taker's tab with the power most hostile to the ship's power among those that trade with them (none: no bounty).
+- **Ransom** (GameCrewFleet.cs): on the asker's tab with the officer's power (usable once that power trades with them again).
+- **Pacts** (GameCrewPolitics.cs): tribute comes off the payer's tab with that power (short: it lapses); a trade pact's share goes on it.
+  The data keys keep their names (`tradeCredits`, `tributeCredits`, `ransomAdmiral`...): their numbers are value on a tab.
+- **Contracts**: `IContractHost.Pay(player, power, value)` puts the pay on the taker's tab with the power that offered it.
+- A power's own `Stock` and books are as before (a tab's value and a power's units count one for one).
+
+Next (the plan doc "Traders' trade and supply world", https://claude.ai/artifact/3LFN3aPTmfQcSNzu2XFqu5): the Traders' stations and needs, supply
+lines as convoys, contracts scaled to the value carried, raids and defence, and areas of influence with fog on the map.

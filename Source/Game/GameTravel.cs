@@ -493,8 +493,7 @@ public sealed partial class Game
         to.Held = from.Held;
         to.Builds = from.Builds;
         to.Health = from.Health;
-        to.Credits = from.Credits; // (credits and how the NPC kinds see them go where they go: GameCrewFactions.cs)
-        to.CreditsStarted = from.CreditsStarted || to.CreditsStarted;
+        to.Tabs = from.Tabs; // (tabs and how the NPC kinds see them go where they go: GameCrewFactions.cs, GameTabs.cs)
         to.NpcStanding = from.NpcStanding;
     }
 

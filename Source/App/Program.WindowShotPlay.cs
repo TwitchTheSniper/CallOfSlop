@@ -298,7 +298,7 @@ public static partial class Program
                         g.SandboxFaction(pv == "take" ? FactionOp.ContractTake : FactionOp.ContractDrop, g.ContractsView[n].Body, g.ContractsView[n].Serial);
                         break;
                 }
-                Console.WriteLine($"[windowshot] crewpolitics: {g.PoliticsLine()}; standing: {g.CrewStandingLine(me)}; {g.CreditsLine}");
+                Console.WriteLine($"[windowshot] crewpolitics: {g.PoliticsLine()}; standing: {g.CrewStandingLine(me)}; {g.TabLine}");
                 return true;
             }
             case "crewterritory": // "crewterritory [near|leave]": host: planets, sites and far groups (near: a far Take group put 3.5 km from this player; leave: the far ranges shrunk so nobody counts as near: its bodies collapse); a client: its map (faction-controllers.md phase 4)
