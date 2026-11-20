@@ -706,15 +706,34 @@ Tried by hand on a test rig, host and joined client: tags and look lines, fit fr
 a restricted socket's refusal, building on a fitted module and its room refusal. The window verb `modsock state` prints
 every socket and module.
 
-**Phase 2 (wells and cuts): partly.** Flush and opening styles work where the well's column is already open: the room is
-the well (and the room above for opening), a flush module fits when its face is within 1 cm of the depth, and anything in
-the column is named. Not built: the socket's own cutting ring (time, power, kerf, slug, salvage), cut parts made by the
-socket, the Module Well liner, the rim band and the joint sweep.
+**Phase 2 (wells and cuts): built** (builder, 2026-11-20, protocol 379). A flush or opening socket whose well has hull in it burns
+the well through with its own cutting ring (`ModuleCut.cs`): the rebuild flags the body (`Construct.ModCutPending`), the server
+plans the cut as a tunnel the footprint plus 7 cm a side from 5 cm over the surface to 1 cm over the plate's face, and every part it
+reaches becomes its holed part (`HullHoles`, the breaching cutter's cut: plain boxes and lofted hull facets alike, so the main ships'
+lofted hulls can be cut, which answers 18.1 better than the default); a part wholly inside the well burns away; one that can't be
+holed (a machine, a joint's part, a part made at run time such as a formed panel or an extruded plate) blocks the socket and is named
+on its look line. The part nearest the surface takes the well's liner (a `HullHoles` seal sleeve, 5 cm walls 1 cm outside the
+footprint, from 3 mm over the surface to 3 mm over the plate). Time and power from the table (2 s a metre of outline per 10 cm of
+hull, 4 kW a metre of the mean side, `Construct.ModCutWatts` in the circuit's draw); no power, it waits; Creative at once (the window
+verb `timed` makes a Creative world wait as Survival does). Survival drops the metal cut out as a loose steel plate (none when it would
+weigh more than what was lost). The plate's hidden `ModCut` setting (the job's seconds) tells every peer to draw the ring: four heads
+round the outline with sparks and the passed kerf glowing (`Program.SandboxModules.cs`, particles only), and the look line's percent.
+The joint sweep (`ModuleSweep.cs`): at a fit, each joint of the module swept through its range (turntables and free swivels a full
+turn, 15 degree steps; pistons every 0.25 m), the others at rest, its carried solids as oriented boxes against the ship's: refused in
+Survival with both parts and the angle named, logged in Creative. A well's room is the footprint plus 5 mm a side (inside the liner).
+Tried by hand: a Creative cut through a deck and frame blocks, a timed cut's progress and draw, the slug, a turntable module's sweep
+clash against the liner and a stand beside the well.
 
-**Phase 3 (couplings and submodules): partly.** Built: ratings, turret bays and adapters as modules a player builds (a
-plate welded onto a module is a submodule socket; the plug flood stops at its face; taking a module off takes its
-submodules with it). Not built: data, pipe, ammo and chute pass-throughs, the engine plate as a works mount, shipped
-adapter blueprints, the Modules tab.
+**Phase 3 (couplings and submodules): partly.** Built: pipe pass-throughs. Plates take "Fuel A" (every size), "Fuel B" and
+"Coolant A" (2x2 and up) and "Coolant B" (3x3) in at their back; plugs give the same names out of their top; at the routes' rebuild a
+pipe leaving a fitted plug's port takes its source from the pipe ending at the plate's port of that name (`ModuleSockets.PassSource`;
+nested modules up to 8 deep; a stand passes nothing), so a ship's tank feeds a module's thruster. An engine socket's plate is the
+ship-works mount of a thruster standing on the module's plug (`ConstructWorks.FindMount`, `ModuleSockets.EngineMountOf`). Shipped
+adapters written by the part kit (`Constructs/Blueprints/ModuleAdapter*.json`: 2x2 to 1x1 and 1x2, 3x3 to 1x1 and 2x2). Plugs gained
+a Small socket in each metre cell's middle (`s0.0`), since 0.5 m parts on the corner grid met the lugs. The Blueprints tab marks module
+designs ("module 2x2 engine", and the filter finds them) and lists the modules in the world and where each is (the Modules tab's
+"where are mine", in that tab). Tried: a tank's pipe through a fitted 1x1 engine module to an RCS thruster (sourced from the tank, fed),
+the four adapters spawned and read as modules. Not built: data, ammo and chute pass-throughs; a Modules tab of its own.
 
 **Phases 4 to 7: not started** (the S fitter, faction choice and generators, the retrofits, markets).
 
@@ -730,3 +749,12 @@ Defaults taken (no questions asked):
 - A Module Stand is the bench as well; F on a socket also fits a module stored on a stand of the same construct.
 - A late refusal after a module was lifted off its stand (someone standing where it goes) leaves it loose beside the stand.
 - Changing the room or style while a module is fitted is allowed; it is checked at the next fit.
+- (Phase 2) The hole is the footprint plus 7 cm a side, not 2 cm: the liner's 5 cm walls stand in it. A part beside the footprint
+  within 7 cm is notched.
+- (Phase 2) The cut's hull thickness is the sum of each cut part's extent along the normal inside the well.
+- (Phase 2) A save made mid-cut starts the cut again on load (the job is the server's; the plate keeps only its seconds).
+- (Phase 2) A well opened before the cut (nothing in the column) gets no liner; the sweep is checked at the fit, not for parts welded
+  onto a fitted module; each joint is swept alone with the others at rest.
+- (Phase 2) The rim band and seam cut of `Renderer.Cuts.cs` are not needed: `HullHoles` leaves out the detail the tunnel reaches.
+- (Phase 3) Pass-throughs run one way, ship to module (the plate's ports are inlets, the plug's outlets).
+- (Phase 3) A thruster finds an engine plate as its mount only when it stands on the plug itself (or on a joint on it).

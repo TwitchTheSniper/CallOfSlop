@@ -337,7 +337,7 @@ public sealed partial class Ui
                     SbPack(e);
                 if (e.Uses.Count > 0)
                     ImGui.SameLine();
-                ImGuiSafe.TextWrapped($"{e.Name}  ({e.Parts} part{(e.Parts == 1 ? "" : "s")}{(e.Version > 0 ? $", v{e.Version}" : "")})");
+                ImGuiSafe.TextWrapped($"{e.Name}  ({e.Parts} part{(e.Parts == 1 ? "" : "s")}{(e.Version > 0 ? $", v{e.Version}" : "")}{(e.Module.Length > 0 ? $", {e.Module}" : "")})");
                 if (e.Uses.Count > 0)
                     SbDrawUses(e);
                 ImGui.PopID();
@@ -346,6 +346,37 @@ public sealed partial class Ui
         ImGui.EndChild();
         if (_sbSavedSaid.Length > 0)
             ImGuiSafe.TextColoredWrapped(Dim, _sbSavedSaid);
+        SbDrawModulesHere(game);
+    }
+
+    private string _sbModulesHere = "";
+    private double _sbModulesAt = -10;
+
+    /// <summary>
+    /// Where the modules are (module-sockets.md 5: no counts in inventories): every module in the world this peer has, by the body it is
+    /// on and its socket or stand, worked out at most once a second while the tab is open. Filter "module" lists the module designs above.
+    /// </summary>
+    private void SbDrawModulesHere(Game game)
+    {
+        var now = ImGui.GetTime();
+        if (now - _sbModulesAt > 1)
+        {
+            _sbModulesAt = now;
+            var sb = new System.Text.StringBuilder();
+            var n = 0;
+            foreach (var c in game.Constructs.Bodies)
+                for (var mi = 0; mi < c.Modules.Length && n < 24; mi++, n++)
+                {
+                    var m = c.Modules[mi];
+                    var where = m.Socket >= 0 ? $"fitted to the {ModuleSocketTable.SizeText(c.ModSockets[m.Socket].W, c.ModSockets[m.Socket].L)} socket at part {c.ModSockets[m.Socket].Plate}" : m.OnStand ? "on a stand" : "loose";
+                    sb.Append($"{ModuleSockets.ModuleName(c, mi)}, {ModuleSockets.TagName(m.Primary)}: construct {c.Id}, {where}\n");
+                }
+            _sbModulesHere = n == 0 ? "" : sb.ToString();
+        }
+        if (_sbModulesHere.Length == 0)
+            return;
+        ImGui.TextColored(Dim, "Modules in the world"u8);
+        ImGuiSafe.TextWrapped(_sbModulesHere);
     }
 
     /// <summary>A saved blueprint's uses: the line, red when it no longer builds (with a lock to the version before), Live / Lock per blueprint used.</summary>
