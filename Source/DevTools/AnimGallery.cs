@@ -63,8 +63,8 @@ public static partial class ConstructPreview
             else if (name != "")
                 failed++;
         }
-        // Parts: every one with a box or a leaf that moves.
-        foreach (var d in ConstructParts.All.Where(d => d != null && !d.Retired && !d.Legacy).OrderBy(d => d.Name, StringComparer.Ordinal))
+        // Parts: every one with a box or a leaf that moves (not the style drafts: they show in their own assemblies).
+        foreach (var d in ConstructParts.All.Where(d => d != null && !d.Retired && !d.Legacy && d.Group != "Style").OrderBy(d => d.Name, StringComparer.Ordinal))
         {
             if (picked != null && !picked.Contains(d.Name))
                 continue;

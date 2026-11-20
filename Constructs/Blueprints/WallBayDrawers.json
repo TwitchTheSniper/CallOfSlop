@@ -1,0 +1,41 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Wall Bay Drawers",
+  "description": "An in-wall bay (draft) with four deep drawers.",
+  "steps": [
+    {
+      "part": "Wall Bay",
+      "spin": 2
+    },
+    {
+      "part": "Drawer Stack Insert",
+      "on": 0,
+      "socket": "insert",
+      "by": "bay"
+    },
+    {
+      "part": "Stow Drawer 1",
+      "on": 1,
+      "socket": "drawer0",
+      "by": "hang"
+    },
+    {
+      "part": "Stow Drawer 2",
+      "on": 1,
+      "socket": "drawer1",
+      "by": "hang"
+    },
+    {
+      "part": "Stow Drawer 3",
+      "on": 1,
+      "socket": "drawer2",
+      "by": "hang"
+    },
+    {
+      "part": "Stow Drawer 4",
+      "on": 1,
+      "socket": "drawer3",
+      "by": "hang"
+    }
+  ]
+}

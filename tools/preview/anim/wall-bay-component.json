@@ -1,0 +1,11 @@
+{
+  // In-wall bay draft (WallBayParts.cs): a cover flips up, then a sled runs out with a ship component (a power cell) on it.
+  "blueprint": "Wall Bay Component Sled",
+  "title": "In-wall bay: component sled",
+  "shelf": "In-wall bays",
+  "description": "Draft. The same bay with the component insert: the cover flips up on its top edge, then the sled runs out 0.45 m carrying a power cell, unplugging from the bay's socket at the back. Later components of the same size would ride the same sled.",
+  "steps": [
+    { "part": "Component Bay Cover", "at": 0, "label": "Cover flips up" },
+    { "part": "Component Sled", "at": 1.1, "label": "Sled runs out" }
+  ]
+}

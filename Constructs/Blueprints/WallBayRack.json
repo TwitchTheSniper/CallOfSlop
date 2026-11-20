@@ -1,0 +1,23 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Wall Bay Rack",
+  "description": "An in-wall bay (draft) with a rack that pulls out of the wall.",
+  "steps": [
+    {
+      "part": "Wall Bay",
+      "spin": 2
+    },
+    {
+      "part": "Pull-out Rack Insert",
+      "on": 0,
+      "socket": "insert",
+      "by": "bay"
+    },
+    {
+      "part": "Pull-out Rack",
+      "on": 1,
+      "socket": "rack",
+      "by": "hang"
+    }
+  ]
+}

@@ -1,0 +1,387 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Component Sled",
+  "description": "A sled in an in-wall component bay (draft): it runs out on the bay's rails with what it carries (here a power cell) and unplugs as it goes.",
+  "group": "Style",
+  "section": "In-wall bays",
+  "role": "door",
+  "tool": "wrench",
+  "finish": "painted steel",
+  "collider": "boxes",
+  "door": {
+    "kind": "slide",
+    "axis": "+z",
+    "travel": 0.45,
+    "seconds": 1.2,
+    "hang": "hang"
+  },
+  "mass": 60.0,
+  "health": 500,
+  "armour": 6,
+  "material": "steel",
+  "color": "#7c838c",
+  "attachSeconds": 2.0,
+  "boxes": [
+    {
+      "min": [
+        0.435,
+        0.7,
+        0.0
+      ],
+      "max": [
+        0.455,
+        0.72,
+        0.02
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.42,
+        0.712,
+        -0.44
+      ],
+      "max": [
+        0.42,
+        0.74,
+        -0.02
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "finish": "tread plate",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.418,
+        0.74,
+        -0.44
+      ],
+      "max": [
+        -0.395,
+        0.78,
+        -0.02
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.395,
+        0.74,
+        -0.44
+      ],
+      "max": [
+        0.418,
+        0.78,
+        -0.02
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.422,
+        0.71,
+        -0.03
+      ],
+      "max": [
+        0.422,
+        0.83,
+        -0.005
+      ],
+      "color": "#2a2e33",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -0.2,
+        0.76,
+        -0.006
+      ],
+      "max": [
+        0.2,
+        0.8,
+        0.03
+      ],
+      "color": "#e0b020",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+x",
+      "finish": "plastic",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.34,
+        0.74,
+        -0.42
+      ],
+      "max": [
+        0.34,
+        1.24,
+        -0.05
+      ],
+      "color": "#5d6450",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -0.345,
+        0.8,
+        -0.425
+      ],
+      "max": [
+        0.345,
+        0.82,
+        -0.045
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.345,
+        0.91,
+        -0.425
+      ],
+      "max": [
+        0.345,
+        0.93,
+        -0.045
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.345,
+        1.02,
+        -0.425
+      ],
+      "max": [
+        0.345,
+        1.04,
+        -0.045
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.345,
+        1.13,
+        -0.425
+      ],
+      "max": [
+        0.345,
+        1.15,
+        -0.045
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.3,
+        1.24,
+        -0.3
+      ],
+      "max": [
+        0.3,
+        1.26,
+        -0.1
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "plastic",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.235,
+        1.26,
+        -0.22
+      ],
+      "max": [
+        -0.165,
+        1.3,
+        -0.15
+      ],
+      "color": "#e0402c",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+y",
+      "finish": "plastic",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.22,
+        1.24,
+        -0.42
+      ],
+      "max": [
+        -0.18,
+        1.32,
+        -0.38
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.165,
+        1.26,
+        -0.22
+      ],
+      "max": [
+        0.235,
+        1.3,
+        -0.15
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+y",
+      "finish": "plastic",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.18,
+        1.24,
+        -0.42
+      ],
+      "max": [
+        0.22,
+        1.32,
+        -0.38
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.22,
+        1.32,
+        -0.42
+      ],
+      "max": [
+        0.22,
+        1.34,
+        -0.38
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "rubber",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.12,
+        0.86,
+        -0.45
+      ],
+      "max": [
+        0.12,
+        1.06,
+        -0.42
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "plastic",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.3,
+        1.12,
+        -0.055
+      ],
+      "max": [
+        0.3,
+        1.2,
+        -0.044
+      ],
+      "color": "#e0b020",
+      "detail": true,
+      "finish": "hazard paint",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.18,
+        0.82,
+        -0.054
+      ],
+      "max": [
+        0.3,
+        0.87,
+        -0.043
+      ],
+      "color": "#5ad070",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.42,
+        0.71,
+        -0.44
+      ],
+      "max": [
+        0.42,
+        0.74,
+        -0.02
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.34,
+        0.74,
+        -0.42
+      ],
+      "max": [
+        0.34,
+        1.24,
+        -0.05
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "hang",
+      "at": [
+        0.445,
+        0.71,
+        0.0
+      ],
+      "dir": "-z"
+    }
+  ]
+}

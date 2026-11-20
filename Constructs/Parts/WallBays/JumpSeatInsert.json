@@ -1,0 +1,453 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Jump Seat Insert",
+  "description": "An in-wall bay's jump seat insert (draft): a padded back with a four-point harness, a kick panel, the seat's hinge, and a helmet locker over it.",
+  "group": "Style",
+  "section": "In-wall bays",
+  "role": "frame",
+  "tool": "wrench",
+  "finish": "painted steel",
+  "collider": "boxes",
+  "mass": 40.0,
+  "health": 600,
+  "armour": 6,
+  "material": "steel",
+  "color": "#262a2f",
+  "attachSeconds": 3.0,
+  "boxes": [
+    {
+      "min": [
+        -0.45,
+        0.1,
+        -0.5
+      ],
+      "max": [
+        0.45,
+        2.0,
+        -0.485
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.435,
+        0.47,
+        -0.02
+      ],
+      "max": [
+        0.455,
+        0.49,
+        0.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.435,
+        1.63,
+        -0.02
+      ],
+      "max": [
+        0.455,
+        1.65,
+        0.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.45,
+        0.1,
+        -0.04
+      ],
+      "max": [
+        0.45,
+        0.46,
+        -0.012
+      ],
+      "color": "#c4c8ca",
+      "detail": true,
+      "finish": "wall panelling"
+    },
+    {
+      "min": [
+        -0.3,
+        0.18,
+        -0.017
+      ],
+      "max": [
+        0.3,
+        0.2,
+        -0.006
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.3,
+        0.23,
+        -0.017
+      ],
+      "max": [
+        0.3,
+        0.25,
+        -0.006
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.3,
+        0.28,
+        -0.017
+      ],
+      "max": [
+        0.3,
+        0.3,
+        -0.006
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.3,
+        0.33,
+        -0.017
+      ],
+      "max": [
+        0.3,
+        0.35,
+        -0.006
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.45,
+        0.47,
+        -0.16
+      ],
+      "max": [
+        0.45,
+        0.94,
+        -0.13
+      ],
+      "color": "#262a2f",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.36,
+        0.45,
+        0.0
+      ],
+      "max": [
+        -0.24,
+        0.49,
+        0.04
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+x",
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.24,
+        0.45,
+        0.0
+      ],
+      "max": [
+        0.36,
+        0.49,
+        0.04
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+x",
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.45,
+        0.1,
+        -0.16
+      ],
+      "max": [
+        0.45,
+        0.47,
+        -0.012
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.45,
+        0.94,
+        -0.06
+      ],
+      "max": [
+        0.45,
+        1.61,
+        -0.04
+      ],
+      "color": "#262a2f",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.36,
+        0.97,
+        -0.04
+      ],
+      "max": [
+        -0.01,
+        1.58,
+        0.03
+      ],
+      "color": "#4e5a66",
+      "detail": true,
+      "finish": "fabric"
+    },
+    {
+      "min": [
+        0.01,
+        0.97,
+        -0.04
+      ],
+      "max": [
+        0.36,
+        1.58,
+        0.03
+      ],
+      "color": "#4e5a66",
+      "detail": true,
+      "finish": "fabric"
+    },
+    {
+      "min": [
+        -0.16,
+        1.43,
+        -0.04
+      ],
+      "max": [
+        0.16,
+        1.6,
+        0.05
+      ],
+      "color": "#4e5a66",
+      "detail": true,
+      "finish": "fabric"
+    },
+    {
+      "min": [
+        -0.195,
+        1.03,
+        0.03
+      ],
+      "max": [
+        -0.145,
+        1.43,
+        0.042
+      ],
+      "color": "#c87a20",
+      "detail": true,
+      "finish": "fabric",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.145,
+        1.03,
+        0.03
+      ],
+      "max": [
+        0.195,
+        1.43,
+        0.042
+      ],
+      "color": "#c87a20",
+      "detail": true,
+      "finish": "fabric",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.05,
+        1.09,
+        0.035
+      ],
+      "max": [
+        0.05,
+        1.19,
+        0.05
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "finish": "chrome",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.2,
+        1.12,
+        0.029
+      ],
+      "max": [
+        0.2,
+        1.16,
+        0.04
+      ],
+      "color": "#c87a20",
+      "detail": true,
+      "finish": "fabric",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.45,
+        0.93,
+        -0.06
+      ],
+      "max": [
+        0.45,
+        1.61,
+        0.03
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.45,
+        1.63,
+        -0.5
+      ],
+      "max": [
+        0.45,
+        1.642,
+        -0.03
+      ],
+      "color": "#262a2f",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.3,
+        1.642,
+        -0.36
+      ],
+      "max": [
+        0.0,
+        1.9,
+        -0.08
+      ],
+      "color": "#dfe4e2",
+      "detail": true,
+      "finish": "gloss paint"
+    },
+    {
+      "min": [
+        -0.27,
+        1.73,
+        -0.083
+      ],
+      "max": [
+        -0.03,
+        1.82,
+        -0.072
+      ],
+      "color": "#3a6a80",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.1,
+        1.71,
+        -0.3
+      ],
+      "max": [
+        0.26,
+        1.85,
+        -0.18
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "rubber",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.16,
+        1.85,
+        -0.32
+      ],
+      "max": [
+        0.2,
+        1.93,
+        -0.28
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+y",
+      "finish": "steel",
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bay",
+      "at": [
+        0.0,
+        1.0,
+        -0.5
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "seat",
+      "at": [
+        0.445,
+        0.48,
+        0.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "helmet",
+      "at": [
+        0.445,
+        1.64,
+        0.0
+      ],
+      "dir": "+z"
+    }
+  ]
+}

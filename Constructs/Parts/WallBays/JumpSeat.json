@@ -1,0 +1,161 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Jump Seat",
+  "description": "An in-wall jump seat (draft): a lining panel that flips down on its foot to a cushioned seat. Press it and it drops.",
+  "group": "Style",
+  "section": "In-wall bays",
+  "role": "door",
+  "tool": "wrench",
+  "finish": "painted steel",
+  "collider": "boxes",
+  "door": {
+    "kind": "swing",
+    "axis": "+x",
+    "pivot": [
+      0.0,
+      0.47,
+      0.025
+    ],
+    "angle": 90.0,
+    "seconds": 0.9,
+    "hang": "hang"
+  },
+  "mass": 18.0,
+  "health": 300,
+  "armour": 4,
+  "material": "steel",
+  "color": "#c4c8ca",
+  "attachSeconds": 2.0,
+  "boxes": [
+    {
+      "min": [
+        0.435,
+        0.47,
+        0.0
+      ],
+      "max": [
+        0.455,
+        0.49,
+        0.02
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.43,
+        0.475,
+        0.0
+      ],
+      "max": [
+        0.43,
+        0.93,
+        0.025
+      ],
+      "color": "#c4c8ca",
+      "detail": true,
+      "finish": "wall panelling"
+    },
+    {
+      "min": [
+        -0.428,
+        0.477,
+        0.019
+      ],
+      "max": [
+        0.428,
+        0.53,
+        0.03
+      ],
+      "color": "#2c5aa0",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -0.08,
+        0.86,
+        0.022
+      ],
+      "max": [
+        0.08,
+        0.9,
+        0.034
+      ],
+      "color": "#e0b020",
+      "detail": true,
+      "finish": "hazard paint",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.05,
+        0.87,
+        0.027
+      ],
+      "max": [
+        0.05,
+        0.89,
+        0.038
+      ],
+      "color": "#5ad070",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.4,
+        0.49,
+        -0.02
+      ],
+      "max": [
+        0.4,
+        0.91,
+        0.0
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.37,
+        0.51,
+        -0.11
+      ],
+      "max": [
+        0.37,
+        0.89,
+        -0.02
+      ],
+      "color": "#4e5a66",
+      "detail": true,
+      "finish": "fabric"
+    },
+    {
+      "min": [
+        -0.43,
+        0.47,
+        -0.11
+      ],
+      "max": [
+        0.43,
+        0.93,
+        0.025
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "hang",
+      "at": [
+        0.445,
+        0.48,
+        0.0
+      ],
+      "dir": "-z"
+    }
+  ]
+}
