@@ -116,6 +116,8 @@ public static unsafe partial class Program
         _settings.StoryStart = start.Length > 0 ? start : Array.Find(StoryStarts.All, a => a.AnyMap)?.Id ?? "";
         _settings.Bots = 0;
         _settings.ShowFps = false;
+        if (args.SkipWhile(a => !a.Equals("--materials", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } mat && Enum.TryParse<VideoLevel>(mat, true, out var mq) && Enum.IsDefined(mq))
+            _settings.Materials = mq; // (--materials Low|Medium|High: the Video setting the picture is drawn with)
         WsTourSettings(args);
         LoadoutStore.ReadOnly = AppearanceStore.ReadOnly = BuildStore.ReadOnly = BlueprintStore.ReadOnly = true;
     }
