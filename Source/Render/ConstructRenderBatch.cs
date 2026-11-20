@@ -129,6 +129,8 @@ public static partial class ConstructRender
         ref var p = ref c.Parts[i];
         if (p.Burn > 0 || p.Store != 0 || c.GantryHold || c.MergeOf[i] != 0 || c.Rides(i) || c.PartScale[i] > 1 || c.EngineOf[i] != 0 || _wheelMark[i] == _wheelToken)
             return 0;
+        if (p.D.ShellBody && ShellFittedLooks.FittedMask(in p, p.D) != 0)
+            return 0; // (a standing shell with a fitted module: walked, its slot drawn from the module's part, ShellFittedLooks)
         if (c.DoorCount > 0 && c.DoorOfListed(i) >= 0)
             return 0; // (an event door's parts are always walked, at their moving pose while it moves: settling needs no remerge)
         return Math.Max(0, StaticBoxes(p.D));
@@ -144,7 +146,7 @@ public static partial class ConstructRender
         for (var i = 0; i < c.PartCount; i++)
         {
             ref var p = ref c.Parts[i];
-            h = Mix(h, RuntimeHelpers.GetHashCode(p.D) | (p.Burn > 0 ? 1L << 40 : 0) | (p.Store != 0 ? 1L << 41 : 0));
+            h = Mix(h, RuntimeHelpers.GetHashCode(p.D) | (p.Burn > 0 ? 1L << 40 : 0) | (p.Store != 0 ? 1L << 41 : 0) | (p.D.ShellBody ? (long)ShellFittedLooks.FittedMask(in p, p.D) << 42 : 0)); // (a shell's fitted modules: walked once one is)
         }
         return h;
     }

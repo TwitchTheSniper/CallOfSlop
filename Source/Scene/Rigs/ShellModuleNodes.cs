@@ -239,7 +239,8 @@ public sealed class ShellModuleNodes
             if (tool != null)
             {
                 anyKit = true;
-                Mirrored(_toolUpper[j], ToolShoulderLo, ToolShoulderHi, side, Joint);
+                Mirrored(_toolUpper[j], ToolShoulderLo, ToolShoulderHi, side, OwnColour(tool));
+                AddShoulderBoss(_toolUpper[j], side);
                 Mirrored(_toolUpper[j], ToolUpperLo, ToolUpperHi, side, Steel);
                 Mirrored(_toolUpper[j], ToolElbowLo, ToolElbowHi, side, Dark);
                 AddToolForearm(_toolFore[j], tool, side, ToolK);
@@ -327,6 +328,33 @@ public sealed class ShellModuleNodes
     }
 
     private static Vector3 ForearmAt(Vector3 c, float top, float side) => new(c.X * side, -c.Z, c.Y - top);
+
+    /// <summary>A tool arm's own colour: its part's first box, the elbow coupling (ShellParts.Elbow), which the shoulder takes.</summary>
+    private static Vector3 OwnColour(ConstructPartDef d)
+    {
+        foreach (var b in d.Boxes)
+            if (!b.Hidden)
+                return b.Color;
+        return Joint;
+    }
+
+    /// <summary>
+    /// The shoulder's pivot on its outer face: a steel boss (two crossed plates, near round), its bolt, and a ring of four bolts round it
+    /// (look review 2026-11-19: every arm had the same dark cap with a slot, which copied the head's visor). Faces 3 mm or more apart.
+    /// </summary>
+    private static void AddShoulderBoss(Pool pool, float side)
+    {
+        var face = ToolShoulderHi.X; // (the shoulder's outer face)
+        var mid = (ToolShoulderLo + ToolShoulderHi) * 0.5f;
+        Mirrored(pool, new Vector3(face - 0.004f, mid.Y - 0.045f, mid.Z - 0.035f), new Vector3(face + 0.016f, mid.Y + 0.045f, mid.Z + 0.035f), side, Steel);
+        Mirrored(pool, new Vector3(face - 0.004f, mid.Y - 0.035f, mid.Z - 0.045f), new Vector3(face + 0.018f, mid.Y + 0.035f, mid.Z + 0.045f), side, Steel);
+        Mirrored(pool, new Vector3(face + 0.01f, mid.Y - 0.014f, mid.Z - 0.014f), new Vector3(face + 0.026f, mid.Y + 0.014f, mid.Z + 0.014f), side, Dark);
+        for (var k = 0; k < 4; k++)
+        {
+            var (dy, dz) = (k < 2 ? -0.068f : 0.068f, k % 2 == 0 ? -0.08f : 0.08f);
+            Mirrored(pool, new Vector3(face - 0.004f, mid.Y + dy - 0.011f, mid.Z + dz - 0.011f), new Vector3(face + 0.009f, mid.Y + dy + 0.011f, mid.Z + dz + 0.011f), side, Dark);
+        }
+    }
 
     private static void Mirrored(Pool pool, Vector3 lo, Vector3 hi, float side, Vector3 colour)
     {

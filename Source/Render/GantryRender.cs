@@ -77,9 +77,9 @@ public static class GantryRender
             // The module is the shell's own slot (its boxes, in the shell's paint) where the shell is drawn without it: in the grip, set
             // down on the table, and the new one in the grip (its copy on the table hidden meanwhile: RouteRender.DrawRacks).
             if (carry is 1 or 2 or 3)
-                DrawSlot(gfx, shell, j.Slot, frame, carry == 1 ? hand : ConstructGantry.SetDownOf(table), turn);
+                DrawSlot(gfx, shell, j.Slot, j.Old - 1, frame, carry == 1 ? hand : ConstructGantry.SetDownOf(table), turn);
             if (carry == 3)
-                DrawSlot(gfx, shell, j.Slot, frame, hand, turn);
+                DrawSlot(gfx, shell, j.Slot, j.New - 1, frame, hand, turn);
         }
         if (bolting)
         {
@@ -89,8 +89,12 @@ public static class GantryRender
         }
     }
 
-    /// <summary>A shell's slot boxes (ConstructGantry.BoxSlots) with the slot's point at <paramref name="at"/> (the gantry part's frame), turned as the shell stands.</summary>
-    private static void DrawSlot(Renderer gfx, Construct shell, int slot, Matrix4x4 frame, Vector3 at, Quaternion turn)
+    /// <summary>
+    /// Module <paramref name="module"/> (its index) of a shell's slot with the slot's point at <paramref name="at"/> (the gantry part's
+    /// frame), turned as the shell stands: as the shell shows it, its own slot boxes (ConstructGantry.BoxSlots) for its frame's own module,
+    /// else the module part's look (ShellFittedLooks: a Runner Leg in the grip is a Runner Leg).
+    /// </summary>
+    private static void DrawSlot(Renderer gfx, Construct shell, int slot, int module, Matrix4x4 frame, Vector3 at, Quaternion turn)
     {
         ref var p = ref shell.Parts[0];
         var d = p.D;
@@ -99,6 +103,13 @@ public static class GantryRender
         var health = Math.Clamp(p.Health / MathF.Max(1, d.Health), 0, 1);
         var shade = p.Broken ? 0.25f : 0.55f + 0.45f * health; // (as the shell itself is drawn: ConstructRender.DrawPart, its tone, finish and wear)
         var wear = p.Broken ? 1f : 1f - health;
+        if (ShellFittedLooks.Fitted(d, slot, module) is { } look)
+        {
+            foreach (ref readonly var box in look.AsSpan())
+                gfx.Draw(box.Model(0, box.Center) * place, ConstructPaint.BoxColour(p.Paint, in box) * shade, 1f, mode: 0, shape: box.Shape,
+                    surface: Surfaces.Code(ConstructFinish.BoxRow(in box, p.Paint, p.Finish), wear));
+            return;
+        }
         for (var b = 0; b < map.Length; b++)
         {
             ref readonly var box = ref d.Boxes[b];
