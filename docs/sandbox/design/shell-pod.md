@@ -34,6 +34,15 @@ A place to park a robot shell when nobody wears it. Drafted with the user by cli
   red broken). The lid is two flaps at the solid's top inside a coaming 3 mm higher; they swing down against the walls over the
   first 30 % of the frame's rise, then the frame's head comes up between its posts (`ShellPodRender.Flaps`). Render only: no wire
   or save change. Not cut: the headless recorder's draws.
+- **The frame's pistons** (the user, 2026-11-20): each side of the rising frame is two telescoping pistons, not a plain post,
+  with a lighting truss between them (three chords along the side, zig-zag webbing on each face, alternate struts 2 mm either
+  side of the face so no two share a plane) and a teal cap on each top stage (`ShellPodRender.Piston`, `Truss`). The stages
+  are stowed nested in the pod, 4 mm apart in height, their tops under the lid; they draw out thinnest first, each keeping 6 cm
+  in the one below, as many as the full rise needs (2 to 7). Every size and mount; the platform rises between the two sides.
+- **A flush pod's body is solid** (round 5): its second hidden box is the body, so a player under a thin deck bumps into the
+  housing and no part goes into it; placing tests a flush pod's lid alone (`ConstructBuild.PlaceSolids`, also the clipboard's
+  paste). The far-side check (`BodyRefusal`) runs after the overlap test, among the parts near the pod's column (the part tree),
+  in the rest frame (`Construct.RestPose`: a hinge's angle now doesn't count).
 - **Shallow flush** (the user, 2026-11-19, over a refusal): a flush pod goes on a surface thinner than its body too (a Tiny one in
   a 0.25 m wooden floor). Its lid is flush and its pocket cut through the surface as ever; the rest of its body stands proud on
   the far side (below a floor, above a ceiling, behind a wall) as a housing, ringed by a flange with corner bolts 3 mm off the far

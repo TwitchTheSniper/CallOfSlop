@@ -181,10 +181,16 @@ public static class ConstructBuild
 
     private static float Upright(byte r) => Rot24.Apply(r, Vector3.UnitY).Y * 2 + Rot24.Apply(r, -Vector3.UnitZ).Z * -1 + Rot24.Apply(r, Vector3.UnitX).X * 0.1f;
 
+    /// <summary>
+    /// The solid boxes a part is tested with as it goes on: all of them, but a flush shell pod's lid alone, since its body sinks into
+    /// what it goes on (its body box, solid, then blocks what comes after it: ShellParts.Pod).
+    /// </summary>
+    public static int PlaceSolids(ConstructPartDef def) => def.ShellPod is { Flush: true } ? Math.Min(1, def.SolidBoxes) : def.SolidBoxes;
+
     /// <summary>The first part a part there would overlap (the same boxes and slack as <see cref="Blocked"/>, every part looked at: a reason's, never per frame), or -1.</summary>
     public static int BlockerOf(Construct c, ConstructPartDef def, Vector3 pos, byte rot, float scale = 1f)
     {
-        var solids = def.ShellPod is { Flush: true } ? Math.Min(1, def.SolidBoxes) : def.SolidBoxes; // (a flush pod's body sinks into what it goes on: its lid alone is tested; its body box blocks what comes after, ShellParts.Pod)
+        var solids = PlaceSolids(def);
         for (var b = 0; b < solids; b++)
         {
             var bc = pos + Rot24.Apply(rot, def.Boxes[b].Center * scale);
@@ -203,7 +209,8 @@ public static class ConstructBuild
     /// <summary>Would a part there overlap one already on (all compared in the rest frame, a centimetre of slack)?</summary>
     public static bool Blocked(Construct c, ConstructPartDef def, Vector3 pos, byte rot, float scale = 1f, int seg = -1, int except = -1)
     {
-        for (var b = 0; b < def.SolidBoxes; b++)
+        var solids = PlaceSolids(def);
+        for (var b = 0; b < solids; b++)
         {
             var bc = pos + Rot24.Apply(rot, def.Boxes[b].Center * scale);
             var bh = Rot24.ApplyHalf(rot, def.Boxes[b].Half * scale) - new Vector3(0.01f);

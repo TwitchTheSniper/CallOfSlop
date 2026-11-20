@@ -266,7 +266,7 @@ public sealed partial class ConstructClip
             ref var p = ref Body.Parts[i];
             var pos = offset + Rot24.Apply(turn, p.Pos);
             var rot = Rot24.Compose(turn, p.Rot);
-            for (var b = 0; b < d.SolidBoxes; b++)
+            for (var b = 0; b < ConstructBuild.PlaceSolids(d); b++) // (a flush pod: its lid)
             {
                 var bc = pos + Rot24.Apply(rot, d.Boxes[b].Center);
                 var bh = Rot24.ApplyHalf(rot, d.Boxes[b].Half) - new Vector3(0.01f);
