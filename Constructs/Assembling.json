@@ -2358,6 +2358,15 @@
     {"output": "Ceramic Bulkhead Door Left", "materials": {"steel": 20}, "parts": {"Bearing": 2}, "seconds": 6.0, "minTier": 2},
     {"output": "Ceramic Bulkhead Door Right", "materials": {"steel": 20}, "parts": {"Bearing": 2}, "seconds": 6.0, "minTier": 2},
     {"output": "Armoured Bulkhead Frame", "materials": {"steel": 180, "rubber": 6, "copper": 2}, "seconds": 40.0, "minTier": 2},
-    {"output": "Armoured Bulkhead Door", "materials": {"steel": 55}, "parts": {"Bearing": 3}, "seconds": 10.0, "minTier": 2}
+    {"output": "Armoured Bulkhead Door", "materials": {"steel": 55}, "parts": {"Bearing": 3}, "seconds": 10.0, "minTier": 2},
+    {"output": "Worn Ladder", "materials": {"steel": 8, "rubber": 1}, "seconds": 5},
+    {"output": "Water Tote", "materials": {"steel": 6, "planks": 2, "rubber": 4}, "seconds": 6},
+    {"output": "Oxygen Generator", "materials": {"steel": 16, "copper": 6, "rubber": 4, "glass": 4}, "parts": {"Control Unit": 1, "Wiring Loom": 1}, "seconds": 30, "minTier": 3},
+    {"output": "Radio Set", "materials": {"steel": 4, "copper": 4, "planks": 2, "glass": 1}, "seconds": 8},
+    {"output": "Sling Jump Seat", "materials": {"cloth": 3, "steel": 4}, "seconds": 5},
+    {"output": "Jacked Strut", "materials": {"steel": 16, "planks": 1}, "seconds": 6},
+    {"output": "Old Fridge", "materials": {"steel": 14, "rubber": 2}, "seconds": 10},
+    {"output": "Bucket Toilet", "materials": {"steel": 8, "rubber": 3, "planks": 1}, "seconds": 6},
+    {"output": "Parts Bins", "materials": {"steel": 6, "rubber": 4}, "seconds": 6}
   ]
 }
