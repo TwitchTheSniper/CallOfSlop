@@ -32,6 +32,30 @@ public sealed class ModuleSocketParts : IPartGenerator
 
     private static string Size(int w, int l) => $"{w}x{l}";
 
+    /// <summary>
+    /// The pipe couplings (module-sockets.md 2.5; the table's "couplings"): where each stands in the footprint's 0..1 square, the fluid, and
+    /// the smallest area that has it. The plate takes a pipe in at its back; the plug's port of the same name gives it out of its top
+    /// (ModuleSockets.PassSource): the pass-through. Coolant is carried and does nothing yet.
+    /// </summary>
+    private static readonly (string Name, string Fluid, double U, double V, int Area)[] Pipes =
+        [("Fuel A", "fuel", 0.85, 0.15, 1), ("Fuel B", "fuel", 0.15, 0.85, 4), ("Coolant A", "coolant", 0.85, 0.5, 4), ("Coolant B", "coolant", 0.15, 0.5, 9)];
+
+    private static List<object?> PipePorts(int w, int l, double y, string dir, string face)
+    {
+        var list = Py.L();
+        foreach (var c in Pipes)
+        {
+            if (w * l < c.Area)
+                continue;
+            var at = Py.L(Py.Round(-0.5 + c.U * w, 3), y, Py.Round(-0.5 + c.V * l, 3));
+            var port = c.Fluid == "coolant"
+                ? Kw(("name", c.Name), ("type", "pipe"), ("dir", dir), ("fluid", c.Fluid), ("at", at), ("face", face), ("noEffect", true))
+                : Kw(("name", c.Name), ("type", "pipe"), ("dir", dir), ("fluid", c.Fluid), ("at", at), ("face", face));
+            list.Add(port);
+        }
+        return list;
+    }
+
     /// <summary>The back's sockets: Medium at each metre cell, Small on the 0.5 m grid inside each.</summary>
     private static void BackSockets(Part p, int w, int l, double y, string dir)
     {
@@ -93,7 +117,7 @@ public sealed class ModuleSocketParts : IPartGenerator
         BackSockets(p, w, l, Back, "-y");
         var area = w * l;
         p.Stats(area * 85, 120 + area * Medium.HealthM2, Medium.Armour, seconds: 3.0 + area);
-        p.Set(("onBreak", "detach"), ("moduleSocket", Kw(("w", w), ("l", l))));
+        p.Set(("onBreak", "detach"), ("moduleSocket", Kw(("w", w), ("l", l))), ("ports", PipePorts(w, l, Back, "in", "-y")));
         return p;
     }
 
@@ -121,13 +145,14 @@ public sealed class ModuleSocketParts : IPartGenerator
             for (var j = 0; j < l; j++)
             {
                 p.Sock($"top.{i}.{j}", [i, y1, j], "+y");
+                p.Sock($"s{i}.{j}", [i, y1, j], "+y", Small); // (a Small part in the cell's middle: one 0.5 m wide clears the corner lugs)
                 for (var a = 0; a < 2; a++)
                     for (var b = 0; b < 2; b++)
                         p.Sock($"t{i}{a}.{j}{b}", [i - 0.25 + a * 0.5, y1, j - 0.25 + b * 0.5], "+y", Small);
             }
         var area = w * l;
         p.Stats(area * 60, 100 + area * Medium.HealthM2, Medium.Armour, seconds: 3.0 + area);
-        p.Set(("onBreak", "detach"), ("modulePlug", Kw(("w", w), ("l", l))));
+        p.Set(("onBreak", "detach"), ("modulePlug", Kw(("w", w), ("l", l))), ("ports", PipePorts(w, l, y1, "out", "+y")));
         return p;
     }
 

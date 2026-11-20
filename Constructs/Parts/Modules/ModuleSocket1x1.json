@@ -18,6 +18,20 @@
     "w": 1,
     "l": 1
   },
+  "ports": [
+    {
+      "name": "Fuel A",
+      "type": "pipe",
+      "dir": "in",
+      "fluid": "fuel",
+      "at": [
+        0.35,
+        -0.5,
+        -0.35
+      ],
+      "face": "-y"
+    }
+  ],
   "boxes": [
     {
       "min": [

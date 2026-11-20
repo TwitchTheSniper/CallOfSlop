@@ -697,6 +697,10 @@ public static partial class Program
                     foreach (var ms in mb.ModSockets)
                         WsSay($"modsock: body {mb.Id} socket part {ms.Plate} {ModuleSocketTable.SizeText(ms.W, ms.L)} {ms.Kind} {ms.Style}{(ms.Keyed ? " keyed" : "")}{(ms.Stand ? " stand" : "")} above {ms.Above:0.##}: module {ms.Module}, in the way {ms.InTheWay}{(ms.WrongKind ? ", wrong kind" : "")}; depth {ms.Depth:0.##}, cut {ConstructConfig.Get(mb.Parts[ms.Plate], mb.DefOf(ms.Plate), CfgKey.ModCut, 0):0.#} s; look \"{ModuleSockets.LookText(mb, ms.Plate)}\"");
                     if (mb.ModSockets.Length > 0)
+                        for (var rk = 0; rk < mb.RouteCount; rk++)
+                            if (mb.Routes[rk].Type == RouteType.Pipe)
+                                WsSay($"modsock: body {mb.Id} pipe {rk}: {mb.DefOf(mb.Routes[rk].From).Name} -> {mb.DefOf(mb.Routes[rk].To).Name}, source {mb.DefOf(mb.Routes[rk].Source).Name}, fed {mb.Routes[rk].FedEnd}");
+                    if (mb.ModSockets.Length > 0)
                         WsSay($"modsock: body {mb.Id}: {mb.PartCount} parts, power {(mb.PowerOn ? "on" : "off")}, draw {mb.PowerUse / 1000f:0.#} kW (cutting {mb.ModCutWatts / 1000f:0.#} kW)");
                     for (var mi = 0; mi < mb.Modules.Length; mi++)
                     {

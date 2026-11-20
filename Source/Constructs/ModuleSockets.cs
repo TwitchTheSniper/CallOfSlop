@@ -403,6 +403,62 @@ public static class ModuleSockets
         return -1;
     }
 
+    /// <summary>
+    /// The pipe pass-through (2.5): route <paramref name="k"/> leaves a fitted plug's pipe port; the pipe that ends at the plate's
+    /// port of the same name is what it carries on, so its source (a tank of the ship) is this route's source, and it is fed when that
+    /// one is. A plug on a stand passes nothing. Through nested modules (a plug on a plate on a module) up to <see cref="PassDepth"/>.
+    /// At the routes' rebuild only.
+    /// </summary>
+    public static void PassSource(Construct c, int k, ref ushort source, ref byte sourcePort, ref bool fed, int depth = 0)
+    {
+        var plug = source;
+        var pd = c.DefOf(plug);
+        if (ConstructRoutes.PortOf(pd, RouteType.Pipe, sourcePort) is not { } port || PlateOf(c, plug) is var plate && plate < 0 || c.DefOf(plate).ModStand)
+            return;
+        var plateDef = c.DefOf(plate);
+        byte want = 0;
+        var found = false;
+        foreach (var np in plateDef.NamedPorts)
+            if (np.Type == RouteType.Pipe && string.Equals(np.Name, port.Name, StringComparison.OrdinalIgnoreCase))
+                (want, found) = (np.Byte, true);
+        if (!found)
+            return;
+        for (var j = 0; j < c.RouteCount; j++)
+        {
+            ref var o = ref c.Routes[j];
+            if (o.Type != RouteType.Pipe || o.To != plate || o.ToPort != want)
+                continue;
+            if (j < k)
+            {
+                (source, sourcePort, fed) = (o.Source, o.SourcePort, o.FedEnd);
+                return;
+            }
+            // (laid later than this one: its root, from the parts alone)
+            var root = j;
+            for (var guard = 0; c.Routes[root].Parent != 255 && c.Routes[root].Parent < root && guard < c.RouteCount; guard++)
+                root = c.Routes[root].Parent;
+            ref var rr = ref c.Routes[root];
+            if (rr.From >= c.PartCount)
+                return;
+            (source, sourcePort) = (rr.From, rr.FromPort);
+            if (depth < PassDepth && c.DefOf(source).ModPart == ModPart.Plug)
+                PassSource(c, root, ref source, ref sourcePort, ref fed, depth + 1);
+            return;
+        }
+    }
+
+    /// <summary>The plate plug <paramref name="plug"/> is fitted to when it is an engine socket's (a ship-works mount: ConstructWorks.FindMount), else -1.</summary>
+    public static int EngineMountOf(Construct c, int plug)
+    {
+        var plate = PlateOf(c, plug);
+        if (plate < 0)
+            return -1;
+        var d = c.DefOf(plate);
+        return !d.ModStand && (ModKind)(int)ConstructConfig.Get(c.Parts[plate], d, CfgKey.ModKind, 0) == ModKind.Engine ? plate : -1;
+    }
+
+    public const int PassDepth = 8; // modules in modules a pass-through crosses (the use limit's depth)
+
     /// <summary>The primary tag: the plug's own setting when it is one of the module's tags, else the tag with the most mass.</summary>
     private static ModTag PrimaryOf(Construct c, int plug, ushort tags, float[] tagMass)
     {
