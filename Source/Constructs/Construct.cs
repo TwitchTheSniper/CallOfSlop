@@ -332,6 +332,11 @@ public sealed partial class Construct
 
     // Pose: the body frame's origin and turn in the world.
     public Vector3 Pos;
+    // Server: what of the physics' true position a float at this distance can't hold (m, under one float step of Pos): kept
+    // from step to step so a body far from the World's origin (a 32 km planet's ground, Karl's 4x worlds of 2026-11-19) moves by
+    // its true small steps and rests where it rests, instead of rounding to the 2-4 mm float grid each tick and never settling
+    // (ConstructPhysics.Place). A write to Pos from elsewhere leaves it stale but still under a float step: harmless.
+    public Vector3 PosRest;
     public Quaternion Rot = Quaternion.Identity;
     public Vector3 PrevPos;
     public Quaternion PrevRot = Quaternion.Identity;

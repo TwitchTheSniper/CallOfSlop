@@ -637,7 +637,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   ends its carried block with a u16 frame and, when set, the frame pose (vec, 4 f32); a digest's sleeping entry flag 2: the pose is the frame's, a u16 frame follows.
     // 373: weld seams (user, 2026-11-19; ConstructSeams.cs): CActKind.SeamBreak (u16 body, u16 part, u16 other part) at the end of CActKind: the attach tool's RMB breaks one seam.
     // 374: the physics gun's speed build-up in flight (docs/sandbox/design/manipulators.md): a Sandbox hand holding a body sends a u8 boost after its GrabSeg (ConstructGrab.BoostByte).
-    public const ushort ProtocolVersion = 374;
+    // 375: the 4x worlds (Karl, 2026-11-19): a snapshot's fast entry carries its world position and mantle target at 1/128 m (+-65 km), and
+    //   its velocity at 1/50 m/s (+-655 m/s), so Glacier's 37 km sky and a 460 m/s orbit fit (Snapshot.WorldPosScale, VelScale).
+    public const ushort ProtocolVersion = 375;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

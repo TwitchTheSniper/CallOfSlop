@@ -315,6 +315,61 @@ public sealed class Ragdoll
 
     private readonly List<ContactShape> _shapes = new(64);
 
+    // On a planetoid the World's origin is the planet's centre, so a body lies a radius out, where a float steps by 2-4 mm
+    // (Karl's 4x worlds of 2026-11-19: Glacier 32 km): a Verlet step's velocity (Pos - Prev) rounded to that grid each tick was
+    // 0.2-0.9 m/s of noise, more than SleepSpeed, so bodies there shook until MaxAwakeSteps put them to sleep. There Advance
+    // steps the particles relative to an anchor near the body (_anchor, whole metres; the gathered shapes are kept relative to
+    // it too), carrying what the world's floats can't hold of each particle from step to step (_posRest, _prevRest). Flat maps
+    // step in the world as ever.
+    private Vector3 _anchor;
+    private bool _local, _anchored;
+    private readonly Vector3[] _posRest = new Vector3[RagdollRig.Count];
+    private readonly Vector3[] _prevRest = new Vector3[RagdollRig.Count];
+
+    /// <summary>A body this far from its anchor (m) takes a new one (and gathers its shapes again).</summary>
+    private const float AnchorReach = 32f;
+
+    /// <summary>Into the anchor's frame, with each particle's rest (<see cref="Advance"/>).</summary>
+    private void ToLocal()
+    {
+        if (!_anchored || Vector3.DistanceSquared(Pos[0], _anchor) > AnchorReach * AnchorReach)
+        {
+            _anchor = new Vector3(MathF.Round(Pos[0].X), MathF.Round(Pos[0].Y), MathF.Round(Pos[0].Z));
+            _anchored = true;
+            _gathered = false; // (its shapes were kept relative to the old anchor)
+        }
+        for (var i = 0; i < RagdollRig.Count; i++)
+        {
+            Pos[i] = Pos[i] - _anchor + _posRest[i];
+            Prev[i] = Prev[i] - _anchor + _prevRest[i];
+        }
+        _local = true;
+    }
+
+    /// <summary>Back into the world, keeping what its floats round away for the next step.</summary>
+    private void ToWorld()
+    {
+        if (!_local)
+            return;
+        _local = false;
+        for (var i = 0; i < RagdollRig.Count; i++)
+        {
+            Pos[i] = Back(Pos[i], out _posRest[i]);
+            Prev[i] = Back(Prev[i], out _prevRest[i]);
+        }
+    }
+
+    private Vector3 Back(Vector3 local, out Vector3 rest)
+    {
+        double x = (double)_anchor.X + local.X, y = (double)_anchor.Y + local.Y, z = (double)_anchor.Z + local.Z;
+        var w = new Vector3((float)x, (float)y, (float)z);
+        rest = new Vector3((float)(x - w.X), (float)(y - w.Y), (float)(z - w.Z));
+        return w;
+    }
+
+    /// <summary>Where a point of this step is in the world (the anchor's frame while <see cref="Advance"/> runs on a planetoid).</summary>
+    private Vector3 W(Vector3 p) => _local ? p + _anchor : p;
+
     // The gathered shapes that reach the body this sub-step (indices into _shapes); -1 = use them all.
     private readonly int[] _near = new int[48];
     private int _nearCount;
@@ -367,7 +422,9 @@ public sealed class Ragdoll
             var p = Vector3.Transform(pose[i], toWorld);
             Pos[i] = Last[i] = p;
             Prev[i] = p - dv;
+            _posRest[i] = _prevRest[i] = Vector3.Zero;
         }
+        _anchored = false;
         Asleep = Broken = Driven = false;
         QuietSteps = AwakeSteps = RelaxSteps = 0;
         Touching = 0;
@@ -384,6 +441,7 @@ public sealed class Ragdoll
             return;
         var v = Clamp(Velocity(i) + dv);
         Prev[i] = Pos[i] - v * Step;
+        _prevRest[i] = _posRest[i];
         Wake();
     }
 
@@ -410,6 +468,8 @@ public sealed class Ragdoll
             return;
         Steps++;
         Array.Copy(Pos, Last, RagdollRig.Count);
+        if (world.Planet != null)
+            ToLocal(); // (back in the world before anything outside reads it: every return below)
         PrepareSoft();
 
         // Sub-steps: no particle moves more than MaxStepMove per sub-step.
@@ -431,7 +491,7 @@ public sealed class Ragdoll
             for (var i = 0; i < RagdollRig.Count; i++)
             {
                 var p = Pos[i];
-                Pos[i] = p + (p - Prev[i]) * AirDamping + (GravityFrames.Curved ? GravityFrames.GravityAt(p) * (h * h) : g); // (a planet: towards its centre)
+                Pos[i] = p + (p - Prev[i]) * AirDamping + (GravityFrames.Curved ? GravityFrames.GravityAt(W(p)) * (h * h) : g); // (a planet: towards its centre)
                 Prev[i] = p;
             }
             EnsureShapes(world, terrain);
@@ -455,8 +515,9 @@ public sealed class Ragdoll
         for (var i = 0; i < RagdollRig.Count; i++)
         {
             var p = Pos[i];
-            if (!float.IsFinite(p.X + p.Y + p.Z) || world.Underworld(p, 500f)) // (a planetoid: under its ground, not under Y 0)
+            if (!float.IsFinite(p.X + p.Y + p.Z) || world.Underworld(W(p), 500f)) // (a planetoid: under its ground, not under Y 0)
             {
+                ToWorld();
                 Broken = true;
                 return;
             }
@@ -465,7 +526,7 @@ public sealed class Ragdoll
             if (l2 > MaxSpeed * MaxSpeed * Step * Step)
                 Prev[i] = Pos[i] - v * (MaxSpeed * Step / MathF.Sqrt(l2));
             fastest2 = MathF.Max(fastest2, l2);
-            moved2 = MathF.Max(moved2, (p - Last[i]).LengthSquared());
+            moved2 = MathF.Max(moved2, (p - (_local ? Last[i] - _anchor : Last[i])).LengthSquared()); // (Last is the world's, for the drawing)
         }
         AwakeSteps++;
         // Still: every particle slow and something touching; while the relax pull works, also nothing still drifting
@@ -473,6 +534,7 @@ public sealed class Ragdoll
         var quietMove = RagdollTuning.Values[(int)RT.NeutralQuiet];
         var still = fastest2 < SleepSpeed * SleepSpeed * Step * Step && Touching != 0 && (!relaxing || moved2 < quietMove * quietMove);
         QuietSteps = still && !Driven ? QuietSteps + 1 : 0;
+        ToWorld();
         if (QuietSteps >= SleepSteps || AwakeSteps >= MaxAwakeSteps)
             Sleep();
     }
@@ -531,7 +593,7 @@ public sealed class Ragdoll
             // The drive: a velocity towards the target (capped), blended into the particle's own, across gravity only
             // (a limp limb is never lifted, and gravity keeps the say on falling). A limb something holds back just
             // stops: its velocity is what the solver left it, so nothing pumps.
-            var gUp = GravityFrames.Curved ? GravityFrames.UpAt(Pos[i]) : Vector3.UnitY;
+            var gUp = GravityFrames.Curved ? GravityFrames.UpAt(W(Pos[i])) : Vector3.UnitY;
             var want = (target - Pos[i]) * (pull * tune[(int)RelaxWeights[k]]);
             want -= gUp * Vector3.Dot(want, gUp);
             var l2 = want.LengthSquared();
@@ -574,6 +636,7 @@ public sealed class Ragdoll
     {
         Asleep = true;
         Array.Copy(Pos, Prev, RagdollRig.Count);
+        Array.Copy(_posRest, _prevRest, RagdollRig.Count); // (at rest to the last of its floats too: woken, it starts still)
         Array.Copy(Pos, Last, RagdollRig.Count);
     }
 
@@ -724,6 +787,23 @@ public sealed class Ragdoll
         back = Vector3.Cross(right, up);
     }
 
+    /// <summary>Moves gathered shapes by <paramref name="by"/> (into the anchor's frame: whole metres off nearby floats, so nothing is lost).</summary>
+    private static void Shift(List<ContactShape> shapes, Vector3 by)
+    {
+        var all = System.Runtime.InteropServices.CollectionsMarshal.AsSpan(shapes);
+        for (var k = 0; k < all.Length; k++)
+        {
+            ref var s = ref all[k];
+            s.A += by;
+            s.B += by;
+            s.C += by;
+            s.Min += by;
+            s.Max += by;
+            if (s.Type == ContactShape.TypeBox)
+                s.Box = new Obb(s.Box.Center + by, s.Box.Half, s.Box.AxisX, s.Box.AxisY, s.Box.AxisZ);
+        }
+    }
+
     /// <summary>Gathers the shapes around the body when it has left the region gathered last time (or the world changed).</summary>
     private void EnsureShapes(PhysicsWorld world, ITerrainCollision? terrain)
     {
@@ -741,7 +821,9 @@ public sealed class Ragdoll
         {
             _gatherMin = lo - new Vector3(GatherPad);
             _gatherMax = hi + new Vector3(GatherPad);
-            world.Gather(_gatherMin, _gatherMax, world.Planet != null ? PlanetFilter : Filter, _shapes);
+            world.Gather(W(_gatherMin), W(_gatherMax), world.Planet != null ? PlanetFilter : Filter, _shapes);
+            if (_local)
+                Shift(_shapes, -_anchor);
             _gathered = true;
             _gatheredFrom = world;
             _gatheredGeneration = WorldGeneration;
@@ -842,12 +924,14 @@ public sealed class Ragdoll
         for (var k = 0; k < OtherCount; k++)
         {
             var o = Others[k];
-            if (p.X + r < o.BoundsMin.X || p.X - r > o.BoundsMax.X || p.Y + r < o.BoundsMin.Y || p.Y - r > o.BoundsMax.Y || p.Z + r < o.BoundsMin.Z || p.Z - r > o.BoundsMax.Z)
+            var bw = W(p);
+            if (bw.X + r < o.BoundsMin.X || bw.X - r > o.BoundsMax.X || bw.Y + r < o.BoundsMin.Y || bw.Y - r > o.BoundsMax.Y || bw.Z + r < o.BoundsMin.Z || bw.Z - r > o.BoundsMax.Z)
                 continue;
             var op = o.Pos;
+            var pw = W(p); // (the other body is in the world)
             for (var j = 0; j < RagdollRig.Count; j++)
             {
-                var d = p - op[j];
+                var d = pw - op[j];
                 var sum = r + radius[j];
                 var d2 = d.LengthSquared();
                 if (d2 >= sum * sum)
