@@ -1,0 +1,240 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Packet Engineering",
+  "description": "The Packet's engineering block: the power plant, the Power Board and the batteries, the Engineer's Panel, the fuel manifold to the nacelles' pylons, and a suit locker for the space walk out to the nacelles.",
+  "group": "Ship",
+  "section": "Packet freighter",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 6400.0,
+  "health": 16000,
+  "armour": 30,
+  "material": "steel",
+  "color": "#d8d0b8",
+  "attachSeconds": 15.0,
+  "boxes": [
+    {
+      "min": [
+        -3.125,
+        -0.125,
+        17.625
+      ],
+      "max": [
+        2.875,
+        0.125,
+        26.375
+      ],
+      "color": "#5d6266",
+      "finish": "painted deck plate"
+    },
+    {
+      "min": [
+        -0.875,
+        0.125,
+        18.05
+      ],
+      "max": [
+        0.625,
+        0.137,
+        25.95
+      ],
+      "color": "#3d4144",
+      "detail": true,
+      "finish": "painted grating"
+    },
+    {
+      "min": [
+        -0.915,
+        0.129,
+        18.05
+      ],
+      "max": [
+        -0.875,
+        0.141,
+        25.95
+      ],
+      "color": "#f2c400",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        0.625,
+        0.129,
+        18.05
+      ],
+      "max": [
+        0.665,
+        0.141,
+        25.95
+      ],
+      "color": "#f2c400",
+      "detail": true,
+      "finish": "hazard paint"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "plant",
+      "at": [
+        1.725,
+        0.125,
+        24.725
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "battery0",
+      "at": [
+        2.375,
+        0.125,
+        18.875
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "battery1",
+      "at": [
+        2.375,
+        0.125,
+        19.575
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "battery2",
+      "at": [
+        2.375,
+        0.125,
+        20.275
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j0",
+      "at": [
+        -0.125,
+        -0.125,
+        19.745
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j1",
+      "at": [
+        -0.125,
+        -0.125,
+        24.125
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j2",
+      "at": [
+        -0.125,
+        -0.005,
+        17.625
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j3",
+      "at": [
+        -0.955,
+        -0.005,
+        17.625
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j4",
+      "at": [
+        0.705,
+        -0.005,
+        17.625
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j5",
+      "at": [
+        -2.005,
+        0.125,
+        17.755
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j6",
+      "at": [
+        -3.005,
+        0.125,
+        21.995
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j7",
+      "at": [
+        2.755,
+        0.125,
+        21.995
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j8",
+      "at": [
+        -0.125,
+        0.125,
+        26.255
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j9",
+      "at": [
+        -3.125,
+        -0.005,
+        19.745
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j10",
+      "at": [
+        -3.125,
+        -0.005,
+        24.125
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j11",
+      "at": [
+        2.875,
+        -0.005,
+        19.745
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "j12",
+      "at": [
+        2.875,
+        -0.005,
+        24.125
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "j13",
+      "at": [
+        -0.125,
+        -0.005,
+        26.375
+      ],
+      "dir": "+z"
+    }
+  ]
+}

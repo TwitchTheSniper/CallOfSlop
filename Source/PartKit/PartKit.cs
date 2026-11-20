@@ -116,6 +116,7 @@ public static class PartKit
         new Generators.MinerParts(), // (the Magpie mining ship)
         new Generators.TorpedoFrigateParts(), // (the Zero Day torpedo frigate: likewise)
         new Generators.HaulerParts(), // (the Dray container hauler: likewise)
+        new Generators.FreighterParts(), // (the Packet, the Traders' spine freighter: likewise)
         new Generators.SpaceStationParts(), // (space stations from the station kit: Caledon Highport; its blueprint hangs docking clamps and hatches)
         new Generators.MakeRv(),
         new Generators.MachineTiers(),

@@ -1,0 +1,769 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Packet Flight Computer",
+  "description": "The Packet's flight computer: a flight stabilizer with a freighter's gyro in a console between the couches. Fit it level, its arrow forward.",
+  "group": "Ship",
+  "section": "Packet freighter",
+  "role": "logic",
+  "tool": "wrench",
+  "logic": {
+    "kind": "flightstabilizer",
+    "gyro": 20000000
+  },
+  "config": [
+    {
+      "key": "keys",
+      "type": "choice",
+      "label": "Keys",
+      "group": "Control",
+      "options": [
+        "Auto",
+        "Rotorcraft",
+        "Plane",
+        "Rocket",
+        "Ship"
+      ],
+      "default": 0,
+      "tooltip": "What the keys mean. Auto: wings and a forward push make it a plane, nozzles a rocket, anything else a rotorcraft. Ship: turns every way, the nose follows the mouse. It finds what it can use by itself."
+    },
+    {
+      "key": "flightPreset",
+      "type": "choice",
+      "label": "Preset",
+      "group": "Control",
+      "options": [
+        "Normal",
+        "Docile",
+        "Sport"
+      ],
+      "default": 0,
+      "tooltip": "What auto means below: gentle, as it comes, or lively. Anything you set yourself stays."
+    },
+    {
+      "key": "strength",
+      "label": "Strength",
+      "group": "Control",
+      "unit": "%",
+      "min": 10,
+      "max": 300,
+      "step": 5,
+      "default": 100,
+      "tooltip": "How hard it corrects. Lower it if the craft shakes."
+    },
+    {
+      "key": "level",
+      "type": "toggle",
+      "label": "Stabilise level",
+      "group": "Control",
+      "default": true,
+      "tooltip": "Off: the keys ask for turning, and it stays at whatever angle you leave it."
+    },
+    {
+      "key": "mouseAim",
+      "type": "toggle",
+      "label": "Mouse aim",
+      "group": "Control",
+      "default": false,
+      "tooltip": "It flies where the seat looks."
+    },
+    {
+      "key": "invertPitch",
+      "type": "toggle",
+      "label": "Invert pitch",
+      "group": "Control",
+      "default": false,
+      "tooltip": "W lifts the nose and S drops it."
+    },
+    {
+      "key": "maxTilt",
+      "label": "Max lean",
+      "group": "Limits",
+      "unit": "deg",
+      "min": 0,
+      "max": 80,
+      "step": 1,
+      "default": 0,
+      "tooltip": "The most it leans. 0: the pattern's own."
+    },
+    {
+      "key": "maxTurn",
+      "label": "Max turn",
+      "group": "Limits",
+      "unit": "deg/s",
+      "min": 0,
+      "max": 360,
+      "step": 5,
+      "default": 0,
+      "tooltip": "The fastest it turns. 0: the pattern's own."
+    },
+    {
+      "key": "maxClimb",
+      "label": "Max climb",
+      "group": "Limits",
+      "unit": "m/s",
+      "min": 0,
+      "max": 200,
+      "step": 0.5,
+      "default": 0,
+      "tooltip": "The fastest it climbs. 0: the pattern's own."
+    },
+    {
+      "key": "maxSpeed",
+      "label": "Max speed",
+      "group": "Limits",
+      "unit": "m/s",
+      "min": 0,
+      "max": 1000,
+      "step": 1,
+      "default": 0,
+      "tooltip": "The speed the keys ask for. 0: the pattern's own."
+    },
+    {
+      "key": "maxDescent",
+      "label": "Max descent",
+      "group": "Limits",
+      "unit": "m/s",
+      "min": 0,
+      "max": 200,
+      "step": 0.5,
+      "default": 0,
+      "tooltip": "The fastest it comes down. 0: as Max climb."
+    },
+    {
+      "key": "trimPitch",
+      "label": "Trim, nose up",
+      "group": "Trim",
+      "unit": "deg",
+      "min": -30,
+      "max": 30,
+      "step": 0.5,
+      "default": 0,
+      "tooltip": "What it counts as level, nose up."
+    },
+    {
+      "key": "trimRoll",
+      "label": "Trim, right wing down",
+      "group": "Trim",
+      "unit": "deg",
+      "min": -30,
+      "max": 30,
+      "step": 0.5,
+      "default": 0,
+      "tooltip": "What it counts as level, right wing down."
+    },
+    {
+      "key": "autopilot",
+      "type": "toggle",
+      "label": "Autopilot",
+      "group": "Autopilot",
+      "default": false,
+      "tooltip": "On: it holds what the mode says. Its input and the Flight Panel set this too."
+    },
+    {
+      "key": "apMode",
+      "type": "choice",
+      "label": "Mode",
+      "group": "Autopilot",
+      "options": [
+        "Hold altitude",
+        "Hold heading",
+        "Hover",
+        "Waypoint",
+        "Return home"
+      ],
+      "default": 2,
+      "tooltip": "What it holds."
+    },
+    {
+      "key": "targetAlt",
+      "label": "Altitude",
+      "group": "Autopilot",
+      "unit": "m",
+      "min": 0,
+      "max": 20000,
+      "step": 1,
+      "default": 0,
+      "tooltip": "The height held. 0: where it was when engaged."
+    },
+    {
+      "key": "targetHeading",
+      "label": "Heading",
+      "group": "Autopilot",
+      "unit": "deg",
+      "min": -1,
+      "max": 360,
+      "step": 1,
+      "default": -1,
+      "tooltip": "The heading held, clockwise from north. -1: where it pointed when engaged."
+    },
+    {
+      "key": "waypointX",
+      "label": "Waypoint x",
+      "group": "Autopilot",
+      "unit": "m",
+      "min": -100000,
+      "max": 100000,
+      "step": 1,
+      "default": 0,
+      "tooltip": "The point it flies to, world x."
+    },
+    {
+      "key": "waypointZ",
+      "label": "Waypoint z",
+      "group": "Autopilot",
+      "unit": "m",
+      "min": -100000,
+      "max": 100000,
+      "step": 1,
+      "default": 0,
+      "tooltip": "The point it flies to, world z."
+    },
+    {
+      "key": "pitchRate",
+      "label": "Rate limit",
+      "group": "Pitch",
+      "unit": "deg/s",
+      "min": 0,
+      "max": 720,
+      "step": 5,
+      "default": 0,
+      "tooltip": "The fastest it turns this way. 0: Max turn.",
+      "advanced": true
+    },
+    {
+      "key": "pitchResponse",
+      "label": "Response (P)",
+      "group": "Pitch",
+      "unit": "%",
+      "min": 0,
+      "max": 400,
+      "step": 5,
+      "default": 0,
+      "tooltip": "How hard it goes for what is asked. Up: quicker; too much rocks. 0: auto.",
+      "advanced": true
+    },
+    {
+      "key": "pitchDamping",
+      "label": "Damping (D)",
+      "group": "Pitch",
+      "unit": "%",
+      "min": 0,
+      "max": 400,
+      "step": 5,
+      "default": 0,
+      "tooltip": "How hard it stops. Up: less overshoot; too much shakes. 0: auto.",
+      "advanced": true
+    },
+    {
+      "key": "pitchHold",
+      "label": "Hold (I)",
+      "group": "Pitch",
+      "unit": "%",
+      "min": 0,
+      "max": 400,
+      "step": 5,
+      "default": 0,
+      "tooltip": "How it works off a steady push. Up: it holds tighter; too much wanders. 0: auto.",
+      "advanced": true
+    },
+    {
+      "key": "pitchExpo",
+      "label": "Expo",
+      "group": "Pitch",
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "step": 5,
+      "default": 0,
+      "tooltip": "Soft around the middle of a wired stick. A key is all or nothing.",
+      "advanced": true
+    },
+    {
+      "key": "rollRate",
+      "label": "Rate limit",
+      "group": "Roll",
+      "unit": "deg/s",
+      "min": 0,
+      "max": 720,
+      "step": 5,
+      "default": 0,
+      "tooltip": "The fastest it turns this way. 0: Max turn.",
+      "advanced": true
+    },
+    {
+      "key": "rollResponse",
+      "label": "Response (P)",
+      "group": "Roll",
+      "unit": "%",
+      "min": 0,
+      "max": 400,
+      "step": 5,
+      "default": 0,
+      "tooltip": "How hard it goes for what is asked. Up: quicker; too much rocks. 0: auto.",
+      "advanced": true
+    },
+    {
+      "key": "rollDamping",
+      "label": "Damping (D)",
+      "group": "Roll",
+      "unit": "%",
+      "min": 0,
+      "max": 400,
+      "step": 5,
+      "default": 0,
+      "tooltip": "How hard it stops. Up: less overshoot; too much shakes. 0: auto.",
+      "advanced": true
+    },
+    {
+      "key": "rollHold",
+      "label": "Hold (I)",
+      "group": "Roll",
+      "unit": "%",
+      "min": 0,
+      "max": 400,
+      "step": 5,
+      "default": 0,
+      "tooltip": "How it works off a steady push. Up: it holds tighter; too much wanders. 0: auto.",
+      "advanced": true
+    },
+    {
+      "key": "rollExpo",
+      "label": "Expo",
+      "group": "Roll",
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "step": 5,
+      "default": 0,
+      "tooltip": "Soft around the middle of a wired stick. A key is all or nothing.",
+      "advanced": true
+    },
+    {
+      "key": "yawRate",
+      "label": "Rate limit",
+      "group": "Yaw",
+      "unit": "deg/s",
+      "min": 0,
+      "max": 720,
+      "step": 5,
+      "default": 0,
+      "tooltip": "The fastest it turns this way. 0: Max turn.",
+      "advanced": true
+    },
+    {
+      "key": "yawResponse",
+      "label": "Response (P)",
+      "group": "Yaw",
+      "unit": "%",
+      "min": 0,
+      "max": 400,
+      "step": 5,
+      "default": 0,
+      "tooltip": "How hard it goes for what is asked. Up: quicker; too much rocks. 0: auto.",
+      "advanced": true
+    },
+    {
+      "key": "yawDamping",
+      "label": "Damping (D)",
+      "group": "Yaw",
+      "unit": "%",
+      "min": 0,
+      "max": 400,
+      "step": 5,
+      "default": 0,
+      "tooltip": "How hard it stops. Up: less overshoot; too much shakes. 0: auto.",
+      "advanced": true
+    },
+    {
+      "key": "yawHold",
+      "label": "Hold (I)",
+      "group": "Yaw",
+      "unit": "%",
+      "min": 0,
+      "max": 400,
+      "step": 5,
+      "default": 0,
+      "tooltip": "How it works off a steady push. Up: it holds tighter; too much wanders. 0: auto.",
+      "advanced": true
+    },
+    {
+      "key": "yawExpo",
+      "label": "Expo",
+      "group": "Yaw",
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "step": 5,
+      "default": 0,
+      "tooltip": "Soft around the middle of a wired stick. A key is all or nothing.",
+      "advanced": true
+    },
+    {
+      "key": "climbResponse",
+      "label": "Response (P)",
+      "group": "Climb",
+      "unit": "%",
+      "min": 0,
+      "max": 400,
+      "step": 5,
+      "default": 0,
+      "tooltip": "How hard it goes for what is asked. Up: quicker; too much rocks. 0: auto.",
+      "advanced": true
+    },
+    {
+      "key": "climbDamping",
+      "label": "Damping (D)",
+      "group": "Climb",
+      "unit": "%",
+      "min": 0,
+      "max": 400,
+      "step": 5,
+      "default": 0,
+      "tooltip": "How hard it stops. Up: less overshoot; too much shakes. 0: auto.",
+      "advanced": true
+    },
+    {
+      "key": "climbHold",
+      "label": "Hold (I)",
+      "group": "Climb",
+      "unit": "%",
+      "min": 0,
+      "max": 400,
+      "step": 5,
+      "default": 0,
+      "tooltip": "How it works off a steady push. Up: it holds tighter; too much wanders. 0: auto.",
+      "advanced": true
+    },
+    {
+      "key": "climbExpo",
+      "label": "Expo",
+      "group": "Climb",
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "step": 5,
+      "default": 0,
+      "tooltip": "Soft around the middle of a wired stick. A key is all or nothing.",
+      "advanced": true
+    },
+    {
+      "key": "throttleCurve",
+      "label": "Throttle curve",
+      "group": "Feel",
+      "unit": "%",
+      "min": -100,
+      "max": 100,
+      "step": 5,
+      "default": 0,
+      "tooltip": "Above 0: finer low down. Below 0: finer high up.",
+      "advanced": true
+    },
+    {
+      "key": "maxBank",
+      "label": "Max bank",
+      "group": "Feel",
+      "unit": "deg",
+      "min": 0,
+      "max": 85,
+      "step": 1,
+      "default": 0,
+      "tooltip": "The most it banks. 0: Max lean.",
+      "advanced": true
+    },
+    {
+      "key": "maxPitchAngle",
+      "label": "Max pitch",
+      "group": "Feel",
+      "unit": "deg",
+      "min": 0,
+      "max": 85,
+      "step": 1,
+      "default": 0,
+      "tooltip": "The most it pitches. 0: Max lean.",
+      "advanced": true
+    },
+    {
+      "key": "turnCoord",
+      "label": "Turn coordination",
+      "group": "Feel",
+      "unit": "%",
+      "min": 0,
+      "max": 200,
+      "step": 5,
+      "default": 0,
+      "tooltip": "How much the rudder follows a bank. 0: auto, all of it.",
+      "advanced": true
+    },
+    {
+      "key": "autoLevel",
+      "label": "Auto-level",
+      "group": "Feel",
+      "unit": "%",
+      "min": 0,
+      "max": 400,
+      "step": 5,
+      "default": 0,
+      "tooltip": "How hard it comes level when let go. 0: auto.",
+      "advanced": true
+    },
+    {
+      "key": "windHold",
+      "label": "Wind hold",
+      "group": "Feel",
+      "unit": "%",
+      "min": 0,
+      "max": 400,
+      "step": 5,
+      "default": 0,
+      "tooltip": "How fast it leans into a steady drift. 0: auto.",
+      "advanced": true
+    },
+    {
+      "key": "landingAssist",
+      "label": "Landing assist",
+      "group": "Feel",
+      "unit": "m",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "default": 0,
+      "tooltip": "Below this height it comes down gently. 0: off.",
+      "advanced": true
+    },
+    {
+      "key": "collectiveRange",
+      "label": "Collective range",
+      "group": "Feel",
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "step": 5,
+      "default": 0,
+      "tooltip": "The most of its rotors' push it uses. 0: all of it.",
+      "advanced": true
+    },
+    {
+      "key": "thrustLimit",
+      "label": "Thrust limit",
+      "group": "Feel",
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "step": 5,
+      "default": 0,
+      "tooltip": "The most of its thrusters' push it uses. 0: all of it.",
+      "advanced": true
+    },
+    {
+      "key": "waypointY",
+      "label": "Waypoint y",
+      "group": "Autopilot",
+      "unit": "m",
+      "min": -100000,
+      "max": 100000,
+      "step": 1,
+      "default": 0,
+      "tooltip": "The point it flies to, world y: only on a round world, where x and z don't place it."
+    },
+    {
+      "key": "homeY",
+      "hidden": true,
+      "unit": "m",
+      "min": -100000,
+      "max": 100000,
+      "default": 0
+    },
+    {
+      "key": "homeX",
+      "hidden": true,
+      "unit": "m",
+      "min": -100000,
+      "max": 100000,
+      "default": 0
+    },
+    {
+      "key": "homeZ",
+      "hidden": true,
+      "unit": "m",
+      "min": -100000,
+      "max": 100000,
+      "default": 0
+    },
+    {
+      "key": "dampeners",
+      "type": "toggle",
+      "label": "Inertia dampeners",
+      "group": "Control",
+      "default": true,
+      "tooltip": "Ship keys: on, it cancels its drift and stops when let go. Off, it coasts and the keys only burn: match a ship by hand. The seat's dampener key flips it. The autopilot and orders fly with them on."
+    },
+    {
+      "key": "aiCrew",
+      "type": "choice",
+      "label": "AI crew",
+      "group": "Crew",
+      "options": [
+        "Off",
+        "Fights strangers",
+        "Fights everyone"
+      ],
+      "default": 0,
+      "tooltip": "A crew flies and fights it from its seats: it closes on the nearest target in 2.5 km, keeps its guns' range and fires. Strangers: outside its owner's faction. A player at the helm takes over."
+    }
+  ],
+  "faces": "forward",
+  "faceAxis": "-z",
+  "mass": 300.0,
+  "health": 600,
+  "armour": 8,
+  "material": "steel",
+  "color": "#22262b",
+  "attachSeconds": 3.0,
+  "boxes": [
+    {
+      "min": [
+        -0.4,
+        0.0,
+        -0.28
+      ],
+      "max": [
+        0.4,
+        0.75,
+        0.28
+      ],
+      "color": "#22262b",
+      "finish": "plastic"
+    },
+    {
+      "min": [
+        -0.34,
+        0.38,
+        0.28
+      ],
+      "max": [
+        0.34,
+        0.68,
+        0.298
+      ],
+      "color": "#78c8e8",
+      "detail": true,
+      "glow": true
+    },
+    {
+      "min": [
+        -0.28,
+        0.24,
+        0.28
+      ],
+      "max": [
+        -0.22,
+        0.3,
+        0.298
+      ],
+      "color": "#60e090",
+      "detail": true,
+      "glow": true
+    },
+    {
+      "min": [
+        -0.16,
+        0.24,
+        0.28
+      ],
+      "max": [
+        -0.1,
+        0.3,
+        0.298
+      ],
+      "color": "#f2c400",
+      "detail": true,
+      "glow": true
+    },
+    {
+      "min": [
+        -0.04,
+        0.24,
+        0.28
+      ],
+      "max": [
+        0.02,
+        0.3,
+        0.298
+      ],
+      "color": "#60e090",
+      "detail": true,
+      "glow": true
+    },
+    {
+      "min": [
+        0.08,
+        0.24,
+        0.28
+      ],
+      "max": [
+        0.14,
+        0.3,
+        0.298
+      ],
+      "color": "#f2c400",
+      "detail": true,
+      "glow": true
+    },
+    {
+      "min": [
+        0.2,
+        0.24,
+        0.28
+      ],
+      "max": [
+        0.26,
+        0.3,
+        0.298
+      ],
+      "color": "#60e090",
+      "detail": true,
+      "glow": true
+    },
+    {
+      "min": [
+        -0.05,
+        0.751,
+        -0.198
+      ],
+      "max": [
+        0.05,
+        0.767,
+        0.1
+      ],
+      "color": "#f2c400",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.12,
+        0.751,
+        -0.2
+      ],
+      "max": [
+        0.12,
+        0.765,
+        -0.12
+      ],
+      "color": "#f2c400",
+      "detail": true,
+      "finish": "hazard paint"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}
