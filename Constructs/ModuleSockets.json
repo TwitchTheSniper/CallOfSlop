@@ -7,7 +7,7 @@
   "styles": ["proud", "flush", "opening"],
   "tags": ["engine", "reactor", "turret", "turret-bay", "missile", "armour", "harvest", "cargo", "power-store", "sensor", "life-support", "utility"],
   "depth": { "step": 0.25, "most": 2 },
-  "above": { "step": 0.25, "most": 4 },
+  "above": { "step": 0.05, "most": 4 },
   "side": 0.05,
   "cut": { "secondsPerMetrePer10cm": 2, "wattsPerMetre": 4000, "ringUpTo": 3 },
   "hand": { "upTo": "2x2", "seconds": 5, "perTonne": 1, "pull": 2.5 },

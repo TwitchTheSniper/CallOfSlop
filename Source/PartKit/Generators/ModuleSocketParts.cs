@@ -145,10 +145,11 @@ public sealed class ModuleSocketParts : IPartGenerator
         double cx = (w - 1) * 0.5, cz = (l - 1) * 0.5;
         p.Add(Box([cx - 0.1, Back, cz - 0.1], [cx + 0.1, Back + 0.012, cz + 0.1], hidden: true)); // (the socket's solid face)
         // The lifting lugs: a block at each corner with an eye over it (inside the footprint, so never out of the room).
-        foreach (var (lx, lz) in new[] { (x0 + 0.02, z0 + 0.02), (x1 - 0.11, z0 + 0.02), (x0 + 0.02, z1 - 0.11), (x1 - 0.11, z1 - 0.11) })
+        // (each 7.5 cm square, 1 cm in from the plug's edge: a part 1.8 m across, as a Zero Day Reactor, stands between a 2x2 plug's lugs)
+        foreach (var (lx, lz) in new[] { (x0 + 0.01, z0 + 0.01), (x1 - 0.085, z0 + 0.01), (x0 + 0.01, z1 - 0.085), (x1 - 0.085, z1 - 0.085) })
         {
-            p.Add(Box([lx, y1, lz], [lx + 0.09, y1 + 0.06, lz + 0.09], LugC));
-            p.Add(Box([lx + 0.025, y1 + 0.06, lz + 0.03], [lx + 0.065, y1 + 0.1, lz + 0.06], BoltC, detail: true));
+            p.Add(Box([lx, y1, lz], [lx + 0.075, y1 + 0.06, lz + 0.075], LugC));
+            p.Add(Box([lx + 0.02, y1 + 0.06, lz + 0.025], [lx + 0.055, y1 + 0.1, lz + 0.05], BoltC, detail: true));
         }
         // The keying notch, matching the plate's corner.
         p.Add(Box([-0.5 + 0.13, y1 - 0.02, -0.5 + 0.13], [-0.5 + 0.25, y1 + 0.004, -0.5 + 0.25], LugC, detail: true));
