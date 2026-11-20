@@ -185,5 +185,27 @@ public sealed class ModuleSocketParts : IPartGenerator
             parts.Add(("", Stand(w, l)));
         }
         WriteParts(o, Out, parts);
+        foreach (var a in Adapters)
+            o.File($"Constructs/Blueprints/ModuleAdapter{Size(a.W, a.L)}to{Size(a.SW, a.SL)}.json", AdapterText(a));
     }
+
+    /// <summary>
+    /// The shipped adapters (module-sockets.md 4.4): a plug of one size with a Module Socket of a smaller one on its top, so a small
+    /// module goes in a bigger socket. Each is a module blueprint: the plug, then the plate on the plug's Small grid where its middle
+    /// lands on the plug's (<c>Plug</c> the plug's top socket, <c>By</c> the plate's back one).
+    /// </summary>
+    private static readonly (int W, int L, int SW, int SL, string Plug, string By)[] Adapters =
+        [(2, 2, 1, 1, "t01.01", "b00.00"), (2, 2, 1, 2, "t01.00", "b00.00"), (3, 3, 1, 1, "t10.10", "b00.00"), (3, 3, 2, 2, "t01.01", "b00.00")];
+
+    private static string AdapterText((int W, int L, int SW, int SL, string Plug, string By) a) =>
+        "{\n" +
+        "  \"format\": \"call-of-slop-construct-blueprint/1\",\n" +
+        $"  \"name\": \"Module Adapter {Size(a.W, a.L)} to {Size(a.SW, a.SL)}\",\n" +
+        $"  \"description\": \"A {Size(a.W, a.L)} module whose top is a {Size(a.SW, a.SL)} Module Socket: fit it, then fit a {Size(a.SW, a.SL)} module on it. Written by the part kit (module_sockets).\",\n" +
+        $"  \"module\": {{ \"w\": {a.W}, \"l\": {a.L}, \"primary\": \"utility\", \"tags\": [\"utility\"] }},\n" +
+        "  \"steps\": [\n" +
+        $"    {{ \"part\": \"Module Plug {Size(a.W, a.L)}\" }},\n" +
+        $"    {{ \"part\": \"Module Socket {Size(a.SW, a.SL)}\", \"on\": 0, \"socket\": \"{a.Plug}\", \"by\": \"{a.By}\" }}\n" +
+        "  ]\n" +
+        "}\n";
 }
