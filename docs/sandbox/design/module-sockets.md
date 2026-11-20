@@ -743,7 +743,10 @@ design asked of the Modules tab; Creative fitting from nothing is the Blueprints
 fitted 1x1 engine module to an RCS thruster; an Ammo Container's feed through a fitted 1x1 module to an AA Gun ("fed Ammo
 Container"); a Lever's wire into the plate's Data 1 and the plug's Data 1 wired to a Lamp on the module: the lever on, the lamp on.
 
-**Phase 4 (the S fitter): partly built** (builder, 2026-11-20, protocol 381). The **Module Fitter S** (`LifterParts.ModuleFitter`,
+**Phase 4 (the S fitter): partly built** (builder, 2026-11-20, protocol 381; review fixes the same day: a take-off reserves an idle
+fitter and a free stand before its cut, jobs hold their plate, stand and fitter by place across renumbers (`ModuleFitters.PartRef`),
+a weld waits while a player or a body is in the seat (`SocketWeld.Overlap`), a job stops when its fitter is wrecked or gone, a body a
+job holds is saved loose (WorldSaveBodies), and a fitter does module jobs only: no station or carry work, and ordinary carries skip it). The **Module Fitter S** (`LifterParts.ModuleFitter`,
 written by module_sockets to `Constructs/Parts/Modules/Fitters`; Tab inventory Ship Modules > Fitters; its Assembler recipe an
 explicit row at the end of `Assembling.Tail`): a Military Loader Arm's frame with the table's S numbers (reach 1.5 to 8 m, 20 t,
 modules up to 3.3 x 6.5 m, 8 kW) and `lifter.fitter`. **Jobs** (`ConstructModuleFitters.cs`): F on a free socket fits the nearest
@@ -781,13 +784,17 @@ Twin Gun 2x2, Tank 1x1, Battery 1x1, Reactor 3x3 (a Magpie Power Plant, 400 kW) 
 Tried: `--module-choice "Zz Module Choice Rig"` (a test rig, not committed: a 1x1 engine, a 1x1 generic, a 2x2 turret, a 3x3 reactor
 and a 2x2 generic socket on five Foundations) for Militia (the 400 kW reactor, guns in the generic 2x2), Traders and Salvagers (the
 tank, the 3 MW reactor, an adapter): the trade-offs show in the scores.
+Generators (builder, 2026-11-20): `BlueprintScript.Socket(on, socket, w, l, kind, style, depth, above, keyed, by, spin)` lays a plate by
+the kit's build rules with its settings, and `BlueprintScript.Module(plate, name, spin)` builds a module design onto it step by step
+(its wires and plain links too; designs with welds, placed steps or uses are refused), in `VehicleKit/BlueprintScript.Modules.cs`.
+`--gen-module TAG W L [--name NAME] [--out DIR]` writes a module design (engine: an RCS Thruster a cell; turret: an AA Gun a cell;
+cargo: a Fuel Tank a cell; power-store: a Battery a cell; reactor, 3x3: a Magpie Power Plant), its `"module"` block worked out from
+its parts as a save does. Tried: engine 2x2, turret 1x1, reactor 3x3, cargo 1x3 written. `Socket` and `Module` have no caller yet
+(the retrofits are theirs) and are untried.
 Not built in phase 5: the passes that act on the needs (a swap for power, acceleration or guns: the needs are only reported), the
-fuel term (a module's burn isn't summed), a bill from recipes (the bill is the mass), `BlueprintScript.Socket` / `Module` and a ship
-generator filling its sockets, `--gen-module` and faction-styled designs, and choice at a controller's refit.
+fuel term (a module's burn isn't summed), a bill from recipes (the bill is the mass), a ship generator filling its sockets by faction choice, faction-styled designs, and choice at a controller's refit.
 
-**Phases 6 and 7: not started** (the retrofits, markets). Where to resume: phase 5's `BlueprintScript.Socket(w, l, kind, style,
-depth, above, at, turn)` and `Module(socket, name)` (a socket laid by the kit's build rules, a module blueprint merged onto it as a
-use), then `--gen-module`, then phase 6 starting with the rust bucket (`ShipParts.cs`; read `git log` on the Zero Day's generator
+**Phases 6 and 7: not started** (the retrofits, markets). Where to resume: the needs passes of phase 5 (swap for power, acceleration, guns), then phase 6 starting with the rust bucket (`ShipParts.cs`; read `git log` on the Zero Day's generator
 first: it just got room cladding).
 
 Test rigs (not committed; in `bin/Release/net10.0/Constructs/Blueprints/`): `ZzModWellRig.json` (a 1x1 socket under a deck plate on
