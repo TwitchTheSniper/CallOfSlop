@@ -828,7 +828,7 @@ measured from its centre of mass (it was from the body's origin, which a module 
 off a big ship could be fitted again by hand). Plug lugs are 7.5 cm square, 1 cm in from the edge, so a 1.8 m part stands between a
 2x2 plug's lugs; the room's step is 5 cm (the table's `above.step`).
 Tried: each ship built (`--check-vehicle`, the same problems as before apart from part counts; the drives' works take their cores),
-flown (`--flight-check`: the rust bucket and the Zero Day as before; the Magpie's nose now reaches 54.6 of the 55 degrees in 6 s, the
+flown (`--flight-check`: the rust bucket and the Zero Day as before; the Magpie's nose now falls just short of 55 degrees in 6 s (it prints 55), the
 plates and plugs adding 2.6 t at its stern, so it is reported FAILS by a hair; the Zero Day and Dray failed that line before too),
 climbed (`--ladder-check`: 0 refused on the Magpie, Zero Day and Dray), and in a window run each module taken off and fitted again by
 the host (`modsock use PART`, then `modsock fit PLATE`: the nearest loose module of the size held 0.6 m off the face, then F): the rust
