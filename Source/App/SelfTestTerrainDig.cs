@@ -366,20 +366,29 @@ public static partial class SelfTest
         var coldUs = ThreadCpu.TimeMs(rays);
         GC.Collect(); // (a collection of the start-up's garbage running beside the rounds would share their cache)
         GC.WaitForPendingFinalizers();
-        for (var warm = Stopwatch.StartNew(); warm.Elapsed.TotalMilliseconds < 400;)
-            rays();
+        var quickest = double.MaxValue;
+        var warmFor = Stopwatch.StartNew();
+        for (var quiet = Stopwatch.StartNew(); quiet.Elapsed.TotalMilliseconds < 500 && warmFor.Elapsed.TotalMilliseconds < 3000;)
+        {
+            var ms = ThreadCpu.TimeMs(rays);
+            if (ms < quickest * 0.97)
+            {
+                quickest = ms;
+                quiet.Restart();
+            }
+        }
         var rayUs = double.MaxValue;
         for (var round = 0; round < 9; round++)
             rayUs = Math.Min(rayUs, ThreadCpu.TimeMs(rays));
         DigLine($"queries allocate {alloc} B; a crater takes {craterMs:0.000} ms; {t.Edits.TouchedCells} dug cells give {faces.N} faces in {faceMs:0.0} ms; " +
-                $"a ray across them {rayUs:0.00} us once warm ({ThreadCpu.Kind}; cold {coldUs:0.00} us) ({sum:0})");
+                $"a ray across them {rayUs:0.00} us once warm ({ThreadCpu.Kind}, warmed {warmFor.Elapsed.TotalSeconds:0.0} s; cold {coldUs:0.00} us) ({sum:0})");
         if (alloc > 0)
             Fail($"terrain queries on dug ground allocated {alloc} B");
         if (craterMs > 0.5)
             Fail($"a crater took {craterMs:0.000} ms (budget 0.5 ms)");
         if (rayUs > 60)
             Fail($"a ray across dug ground took {rayUs:0.00} us once warm (budget 60; cold {coldUs:0.00} us)");
-        Fail($"DIAG (temporary) dug-ground ray on the {ThreadCpu.Kind}: warm {rayUs:0.00} us, cold {coldUs:0.00} us");
+        Fail($"DIAG (temporary) dug-ground ray on the {ThreadCpu.Kind}: warm {rayUs:0.00} us after {warmFor.Elapsed.TotalSeconds:0.0} s, cold {coldUs:0.00} us");
         m.RestoreProps();
     }
 
