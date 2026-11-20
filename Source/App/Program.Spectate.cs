@@ -53,6 +53,11 @@ public static partial class Program
                 _scPitch = g.LookPitch;
                 _scOffset = Vector3.Zero;
                 _scHealth = me.Health;
+                PhysGunIdle(); // (the physics gun's local aids go; the trigger is off while the camera is out, Program.cs)
+                if (_toolWheel.Menu.IsOpen)
+                    _toolWheel.Menu.Close();
+                if (_snapWheel.Menu.IsOpen)
+                    _snapWheel.Menu.Close();
             }
         }
         if (!_scOn)

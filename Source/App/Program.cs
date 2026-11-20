@@ -1772,15 +1772,18 @@ public static unsafe partial class Program
         // Sandbox: the tool wheel takes the mouse while it is held open (Program.SandboxWheel.cs).
         var wheelOpen = SpectateMouse(delta); // (the spectate camera has the mouse: nothing else looks round)
         wheelOpen |= ToolWheelInput(delta);
-        wheelOpen |= PhysGunMouse(delta); // Sandbox: F held with the physics gun holding something: the mouse turns it (Program.PhysicsGun.cs)
-        wheelOpen |= NudgeMouse(delta); // Sandbox: a Nudge tool drag: the view holds still (Program.SandboxNudge.cs)
-        wheelOpen |= SocketWeldMouse(delta); // Sandbox: the welder's socket weld, step 3: mouse X spins the piece (Program.SandboxSocketWeld.cs)
-        wheelOpen |= PointWeldMouse(delta); // ...and the point weld's (Program.SandboxPointWeld.cs)
-        wheelOpen |= SelectMouse(delta); // ...and the selector's marquee (Program.SandboxSelect.cs)
-        wheelOpen |= GantryMouse(delta); // Sandbox: the Build Gantry's camera has the mouse (Program.SandboxGantry.cs)
-        wheelOpen |= LeverMouse(delta); // Sandbox: a hand on an Analog Lever: the mouse moves it (Program.SandboxLever.cs)
+        if (!SpectateOn) // (the spectate camera has the mouse: no held piece turns, no weld spins, no lever moves)
+        {
+            wheelOpen |= PhysGunMouse(delta); // Sandbox: F held with the physics gun holding something: the mouse turns it (Program.PhysicsGun.cs)
+            wheelOpen |= NudgeMouse(delta); // Sandbox: a Nudge tool drag: the view holds still (Program.SandboxNudge.cs)
+            wheelOpen |= SocketWeldMouse(delta); // Sandbox: the welder's socket weld, step 3: mouse X spins the piece (Program.SandboxSocketWeld.cs)
+            wheelOpen |= PointWeldMouse(delta); // ...and the point weld's (Program.SandboxPointWeld.cs)
+            wheelOpen |= SelectMouse(delta); // ...and the selector's marquee (Program.SandboxSelect.cs)
+            wheelOpen |= GantryMouse(delta); // Sandbox: the Build Gantry's camera has the mouse (Program.SandboxGantry.cs)
+            wheelOpen |= LeverMouse(delta); // Sandbox: a hand on an Analog Lever: the mouse moves it (Program.SandboxLever.cs)
+        }
 
-        if (_game.MmuSteering && Pressed(GameAction.SeatDampeners))
+        if (_game.MmuSteering && !SpectateOn && Pressed(GameAction.SeatDampeners))
             _game.MmuToggleDampers(); // (a worn MMU's inertia dampeners, on the seat's key: GameSandboxMmu.cs)
         var tpOrbit = ThirdPersonInput(); // Sandbox third person: the toggle, and whether the mouse orbits the seat camera (Program.ThirdPerson.cs)
 
