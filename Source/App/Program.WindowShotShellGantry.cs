@@ -81,6 +81,49 @@ public static partial class Program
                 WsSay($"shellgantry fit: asked gantry {gc.Id} for a {ShellFrames.Modules[mod].Name} in the {ShellFrames.Slots[slot]}");
                 return;
             }
+            case "look": // "shellgantry look DIST,UP,BEARING [HEIGHT]": the eye DIST m from another player's shell, UP m over its middle, BEARING degrees round from its front (90: its right side), looking at the point HEIGHT m (default 0.9 x its size) over its feet
+            {
+                var n = rest.Split([',', ' '], StringSplitOptions.RemoveEmptyEntries);
+                var v = new float[4];
+                v[3] = float.NaN;
+                if (n.Length < 3 || g.Players.Values.FirstOrDefault(o => o != me && o.InShell && o.Alive) is not { } who
+                    || !n.Select((t, i) => i < 4 && float.TryParse(t, System.Globalization.CultureInfo.InvariantCulture, out v[i])).All(b => b))
+                {
+                    WsFail($"shellgantry look DIST,UP,BEARING [HEIGHT]: \"{rest}\" (and someone else in a shell)");
+                    return;
+                }
+                var size = ShellFrames.ScaleOf(who);
+                var at = who.Position + Vector3.UnitY * (float.IsNaN(v[3]) ? 0.9f * size : v[3]);
+                var fwd = new Vector3(MathF.Sin(who.Yaw), 0, -MathF.Cos(who.Yaw));
+                var right = new Vector3(MathF.Cos(who.Yaw), 0, MathF.Sin(who.Yaw));
+                var b = v[2] * MathF.PI / 180;
+                var eye = at + (fwd * MathF.Cos(b) + right * MathF.Sin(b)) * v[0] + Vector3.UnitY * v[1];
+                g.NoclipShot = true;
+                me.NoclipWanted = g.NoclipAllowed(me);
+                WsEyeTo(g, me, eye);
+                g.LookFrame = me.Position;
+                var d = Vector3.Normalize(at - me.Eye);
+                (g.LookYaw, g.LookPitch) = (MathF.Atan2(d.X, -d.Z), MathF.Asin(Math.Clamp(d.Y, -1f, 1f)));
+                _wsWait = 3;
+                return;
+            }
+            case "waitworn": // "shellgantry waitworn [STANCE]": the script waits (up to 180 s) until another player wears a shell (and, given one, stands, crouches or lies prone)
+            {
+                var want = rest.Trim().ToLowerInvariant();
+                var ok = g.Players.Values.Any(o => o != me && o.InShell && o.Alive && (want.Length == 0 || o.RenderStance.ToString().Equals(want, StringComparison.OrdinalIgnoreCase)));
+                if (!ok && _wsWaitWornFrames++ < 180 * 60)
+                {
+                    _wsQueue.EnqueueFront("shellgantry waitworn " + want);
+                    _wsWait = 30;
+                }
+                else
+                {
+                    if (!ok)
+                        WsSay("shellgantry waitworn: nobody else came into a shell" + (want.Length > 0 ? " " + want : ""));
+                    _wsWaitWornFrames = 0;
+                }
+                return;
+            }
             case "clean": // "shellgantry clean": this window's pictures without name tags and the bars over heads (a test state for look reviews; play keeps both)
                 _settings.NameTags = NameTagMode.Off;
                 PlayerRig.HideBars = true;
@@ -137,6 +180,8 @@ public static partial class Program
             }
         }
     }
+
+    private static int _wsWaitWornFrames;
 
     private static Construct? Nearest(Game g, Player me)
     {
