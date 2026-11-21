@@ -1055,7 +1055,7 @@ public static partial class ConstructExtruder
         {
             var tip = ConstructEdits.TipMaterial(inv, d, st);
             if (tip != 0)
-                sb.Append($" - {SandboxKeys.Use}: tip in {Math.Min(inv.Materials[tip], d.BulkCapacity - st.Amount)} {names.NameOf(tip)}");
+                sb.Append($" - {SandboxKeys.Use}: tip in {Math.Max(0, Math.Min(inv.Materials[tip], ConstructStorage.Capacity(c, part) - st.Amount))} {names.NameOf(tip)}");
             else if (st.Amount > 0)
                 sb.Append($" - {SandboxKeys.Use}: take {Math.Min(ConstructStorage.TakeLoad, st.Amount)} {names.NameOf(st.Material)}");
             if (ExtruderPicks.Pickable(d) && ConstructEdits.HasRecipeButton(d))
