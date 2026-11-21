@@ -30,11 +30,6 @@ public static class VehicleFamilyNames
 
     public static readonly Dictionary<string, FamilyNameSet> ByStyle = new(StringComparer.OrdinalIgnoreCase)
     {
-        ["IT"] = new( // (the Traders: Crew/Factions/Traders.json)
-            ["Ledger", "Manifest", "Consignment", "Waybill", "Freightliner", "Packet", "Courier", "Bulk Carrier", "Clearance", "Invoice", "Tally", "Dispatch", "Tradewind"],
-            ["", "Plus", "Pro"],
-            ["The Counting House", "Cash on Delivery", "The Long Haul", "Net Thirty", "The Bottom Line"],
-            new() { [VehicleFamilies.UpArmoured] = "Hardened", [VehicleFamilies.GunTruck] = "Escort", [VehicleFamilies.TankerConversion] = "Bulk Tanker" }),
     };
 
     public static FamilyNameSet For(string style) => ByStyle.GetValueOrDefault(style) ?? Default;

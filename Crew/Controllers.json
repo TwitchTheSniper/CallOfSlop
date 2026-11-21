@@ -24,17 +24,17 @@
   "kinds": {
     "Traders": {
       "start": 4000, "income": 30, "ships": 8, "groups": 3, "places": 2,
-      "fleet": { "cargo": ["IT Box Truck 1"], "escort": ["IT Technical 2"] },
+      "fleet": { "cargo": ["4x4 Truck"], "escort": ["Hood Gun Buggy"] },
       "missions": { "convoy": { "cargo": 1, "escorts": 2 } }
     },
     "Raiders": {
       "start": 2500, "income": 10, "ships": 6, "groups": 2, "places": 1,
-      "fleet": { "raider": ["IT Buggy 1", "IT Technical 5"] },
+      "fleet": { "raider": ["Hood Gun Buggy"] },
       "missions": { "raid": { "ships": 2 } }
     },
     "Militia": {
       "start": 3500, "income": 25, "ships": 6, "groups": 2, "places": 1,
-      "fleet": { "warship": ["IT Technical 6", "IT Gun Wagon 1"] },
+      "fleet": { "warship": ["Hood Gun Buggy"] },
       "missions": { "defend": { "ships": 2 } }
     }
   }

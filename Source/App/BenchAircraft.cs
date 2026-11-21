@@ -14,7 +14,7 @@ public static partial class SelfTest
     public static int BenchAircraft(string[] args)
     {
         string? Arg(string name) => args.SkipWhile(a => !a.Equals(name, StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault();
-        var style = args.SkipWhile(a => !a.Equals("--bench-aircraft", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } first && !first.StartsWith("--", StringComparison.Ordinal) ? first : "IT";
+        var style = args.SkipWhile(a => !a.Equals("--bench-aircraft", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } first && !first.StartsWith("--", StringComparison.Ordinal) ? first : "Militia"; // (no style ships aircraft since IT went, 2026-11-21: name a style that has them)
         var seed = int.TryParse(Arg("--seed"), out var sd) ? sd : 7;
         var height = float.TryParse(Arg("--height"), out var h) ? h : 40;
         var seconds = float.TryParse(Arg("--seconds"), out var s) ? Math.Clamp(s, 2, 60) : 20;

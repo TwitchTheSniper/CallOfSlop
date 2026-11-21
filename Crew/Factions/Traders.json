@@ -2,9 +2,7 @@
   "format": "call-of-slop-npc-faction/1",
   "name": "Traders",
   "about": "Haulers and merchants: they run from a fight and only fight back when cornered.",
-  "styles": [
-    "IT"
-  ],
+  "styles": [],
   "modules": {
     "tags": {
       "cargo": 1.0,

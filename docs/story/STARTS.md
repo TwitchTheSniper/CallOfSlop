@@ -57,7 +57,7 @@ everything; stock guns kept): `SandboxStartKit` builds only the ship there. Code
 - `ZeroDay`: a captain waking in a cabin aboard their own Zero Day Frigate (docs/sandbox/constructs/torpedo-frigate.md)
   over Caledon, where the Magpie start wakes, its magazines full and its banks charged (as every ship the game spawns). A
   Traders' Zero Day, crewed, goes round 400 m behind on the same orbit (Karl, 2026-11-17: an NPC Zero Day of another faction,
-  neutral and nearby; the Traders are neutral to players and fly the IT style). Survival and Creative.
+  neutral and nearby; the Traders are neutral to players). Survival and Creative.
 - `Interactions` (Karl, 2026-11-20: the trade world, the Traders first): the Magpie start's ship and orbit over Caledon with
   Caledon Highport 40 km up, its own card (`Story/Opening/Interactions.json`). The Traders run their supply lines between
   their stations (`Crew/Stations.json`), each station uses and makes goods, and trade is barter with a tab (`Game/GameTabs.cs`).

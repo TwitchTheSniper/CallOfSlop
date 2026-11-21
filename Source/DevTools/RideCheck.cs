@@ -37,7 +37,7 @@ public static class RideCheck
                 .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
                 .Select(x => float.Parse(x, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
             if (names == "Rust Bucket,Zero Day Frigate,Magpie Mining Ship")
-                names += ",IT Box Truck 1";
+                names += ",4x4 Truck";
         }
         var bad = HeldOnly || LooseOnly ? 0 : Lift(speed);
         foreach (var name in names.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))

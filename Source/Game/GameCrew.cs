@@ -66,7 +66,7 @@ public sealed partial class Game : ICrewHost
 
     /// <summary>
     /// A nobody's generated craft's power (a menu or window-tool spawn; a power's own ships pass theirs): the Raiders, so what the menu
-    /// spawns fights. Since the old factions' styles went (2026-11-21) only IT ships vehicles, which the Traders fly as their own.
+    /// spawns fights. No style ships vehicles since the old factions' and IT's went (2026-11-21).
     /// </summary>
     public static byte CrewFactionFor(Construct c) => CrewPowers.ForKindName("Raiders");
 
