@@ -519,15 +519,15 @@ public sealed class WedgeFighterParts : IPartGenerator
         }
         // The cockpit: the pilot, the flight computer ahead of the pilot and the rocket pods' Turret Module beside it; the gunner behind at
         // the Gunnery Console. The cabin: lockers, the air, the battery and the power cell along the walls.
-        Sock(p, "pilot", 0, Ft, -4.5, "+y");
+        Sock(p, "pilot", 0, Ft, -4.72, "+y");
         Sock(p, "computer", 0, Ft, -5.3, "+y");
         Sock(p, "rocketModule", 0.58, Ft, -5.3, "+y");
-        Sock(p, "gunConsole", 0, Ft, -3.55, "+y");
-        Sock(p, "gunner", 0, Ft, -2.75, "+y");
+        Sock(p, "gunConsole", 0, Ft, -3.85, "+y");
+        Sock(p, "gunner", 0, Ft, -3.05, "+y"); // (a metre clear behind it, to stand in from the bulkhead door)
         Sock(p, "lockerL", -(CabW - 0.3), Ft, 1.0, "+y");
         Sock(p, "lifeSupport", -(CabW - 0.3), Ft, 2.05, "+y");
-        Sock(p, "lockerR", CabW - 0.3, Ft, 0.5, "+y");
-        Sock(p, "battery", CabW - 0.17, Ft, 1.45, "+y");
+        Sock(p, "lockerR", CabW - 0.3, Ft, 0.98, "+y"); // (aft of the belly hatch: the way forward past it runs along this wall)
+        Sock(p, "battery", CabW - 0.17, Ft, 1.68, "+y");
         Sock(p, "power", CabW - 0.33, Ft, 2.35, "+y");
         // (the wing turrets' Turret Module on the floor between the engines: a wire reaches 8 m, the console is too far from the
         // wing tips, and a seat aims one module, so one module takes both guns, about 6.6 m from each)
@@ -826,16 +826,14 @@ public sealed class WedgeFighterParts : IPartGenerator
         return p.Stats(900, 7000, 40, 10.0);
     }
 
-    /// <summary>The bulkhead between the cockpit and the cabin: a frame open in the middle.</summary>
+    /// <summary>The bulkhead between the cockpit and the cabin: a frame open in the middle, up to the canopy (no lintel: the sill is too low to walk under).</summary>
     private static Part Bulkhead()
     {
         var p = Big("Hatchet Bulkhead", "The frame between the Hatchet's cockpit and its cabin, open in the middle.", color: Wall);
         foreach (var s in new[] { -1, 1 })
             Solid(p, Math.Min(s * 0.45, s * CockW), Ft, BulkZ - WallT, Math.Max(s * 0.45, s * CockW), Sill, BulkZ, Wall, "painted plating");
-        Solid(p, -0.45, Ft + 1.95, BulkZ - WallT, 0.45, Sill, BulkZ, Wall, "painted plating");
         foreach (var s in new[] { -1, 1 })
             Detail(p, Math.Min(s * 0.45, s * 0.52), Ft, BulkZ - WallT - 0.02, Math.Max(s * 0.45, s * 0.52), Ft + 2.02, BulkZ + 0.02, Rib, "painted steel");
-        Detail(p, -0.45, Ft + 1.95, BulkZ - WallT - 0.02, 0.45, Ft + 2.02, BulkZ + 0.02, Hazard, "hazard paint");
         return p.Stats(150, 2500, 15, 6.0);
     }
 

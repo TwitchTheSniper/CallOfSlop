@@ -43,20 +43,6 @@
     },
     {
       "min": [
-        -0.575,
-        2.175,
-        -1.805
-      ],
-      "max": [
-        0.325,
-        2.525,
-        -1.725
-      ],
-      "color": "#c8c2b4",
-      "finish": "painted plating"
-    },
-    {
-      "min": [
         -0.645,
         0.577,
         -1.825
@@ -84,21 +70,6 @@
       "color": "#26282c",
       "detail": true,
       "finish": "painted steel"
-    },
-    {
-      "min": [
-        -0.575,
-        2.525,
-        -1.825
-      ],
-      "max": [
-        0.325,
-        2.595,
-        -1.705
-      ],
-      "color": "#e8a020",
-      "detail": true,
-      "finish": "hazard paint"
     }
   ],
   "sockets": [
