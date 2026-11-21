@@ -112,7 +112,7 @@ public sealed class NetPlan
                 continue;
             int part = m.NodePart[nd];
             var d = c.DefOf(part);
-            var kind = m.RouterOfNode[nd] >= 0 ? PlanNode.Router
+            var kind = m.IsRouterNode(nd) ? PlanNode.Router
                 : d.IsConveyorJunction ? (Outs(c, part) > 1 ? PlanNode.Splitter : PlanNode.Join)
                 : d.IsCraftTerminal ? PlanNode.Terminal
                 : StockTargets.IsStore(d) ? PlanNode.Store

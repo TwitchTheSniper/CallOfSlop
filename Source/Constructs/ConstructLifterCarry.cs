@@ -452,7 +452,7 @@ public static partial class ConstructLifters
         return false;
     }
 
-    /// <summary>The rack, pad or tray point whose store is <paramref name="dest"/> (a rider's destination), when it takes the piece now and is in reach; else -1.</summary>
+    /// <summary>The put point whose store is <paramref name="dest"/> (a rider's destination: a rack, pad, tray or machine's input), when it takes the piece now and is in reach; else -1.</summary>
     private static int DestPoint(ConstructWorld world, CLift l, LifterDef ld, Vector3 shoulder, Quaternion lr, ConstructPartDef d, ushort dest, out Vector3 at)
     {
         at = default;
@@ -462,10 +462,17 @@ public static partial class ConstructLifters
         for (var k = 0; k < l.PointN; k++)
         {
             ref readonly var pt = ref l.Points![k];
-            if (pt.Kind is not (LiftPointKind.Rack or LiftPointKind.Tray) || world.Get(pt.Body) is not { } b || pt.Part >= b.PartCount
-                || b.Parts[pt.Part].Store != dest || world.StoreOf(b, pt.Part) is not { } st || ConstructConveyor.RackCheck(b, pt.Part, st, d, ordered: true) != 0
-                || !RackSpot(b, pt.Part, ld, shoulder, lr, lift, lift, out var p))
+            if (pt.Kind is LiftPointKind.Out or LiftPointKind.RunEnd or LiftPointKind.None || world.Get(pt.Body) is not { } b || pt.Part >= b.PartCount
+                || b.Parts[pt.Part].Store != dest || world.StoreOf(b, pt.Part) is not { } st)
                 continue;
+            Vector3 p;
+            if (pt.Kind is LiftPointKind.Rack or LiftPointKind.Tray)
+            {
+                if (ConstructConveyor.RackCheck(b, pt.Part, st, d, ordered: true) != 0 || !RackSpot(b, pt.Part, ld, shoulder, lr, lift, lift, out p))
+                    continue;
+            }
+            else if (!Wants(world, b, pt, d) || Bound(world, l, pt) || !PointAt(b, pt, out p))
+                continue; // (a machine's input it was riding to: a chained order's piece, by its own rule)
             p.Y += (d.BoundsMax.Y - d.BoundsMin.Y) * 0.5f + 0.05f;
             if (!InReach(ld, shoulder, lr, p, lift, out _))
                 continue;
