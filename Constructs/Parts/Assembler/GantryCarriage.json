@@ -1,0 +1,187 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Gantry Carriage",
+  "description": "Weld it on an Assembly Bed Block's rail edge (the yellow rail): one more arm, so its Assembler builds one more part at once when the bed has room for them. One a bed block, 32 on a machine at most. Each working arm draws power.",
+  "group": "Production",
+  "section": "Assemblers",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 140.0,
+  "health": 600,
+  "armour": 6,
+  "material": "steel",
+  "color": "#f2b01e",
+  "attachSeconds": 4,
+  "machineBlock": {
+    "role": "carriage"
+  },
+  "centreSockets": false,
+  "collider": "boxes",
+  "power": 0,
+  "boxes": [
+    {
+      "min": [
+        -0.12,
+        0.0,
+        -0.42
+      ],
+      "max": [
+        0.12,
+        0.22,
+        0.42
+      ],
+      "color": "#f2b01e"
+    },
+    {
+      "min": [
+        -0.07,
+        0.22,
+        0.2
+      ],
+      "max": [
+        0.07,
+        1.4,
+        0.34
+      ],
+      "color": "#22262b"
+    },
+    {
+      "min": [
+        -0.14,
+        0.03,
+        -0.37
+      ],
+      "max": [
+        0.14,
+        0.17,
+        -0.23
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10,
+      "front": "+x",
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.14,
+        0.03,
+        0.23
+      ],
+      "max": [
+        0.14,
+        0.17,
+        0.37
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10,
+      "front": "+x",
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.06,
+        0.22,
+        -0.1
+      ],
+      "max": [
+        0.06,
+        0.32,
+        0.02
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10,
+      "front": "+y",
+      "paintable": false,
+      "finish": "steel",
+      "work": "spin",
+      "axis": "+y"
+    },
+    {
+      "min": [
+        -0.05,
+        1.2,
+        -0.75
+      ],
+      "max": [
+        0.05,
+        1.3,
+        0.2
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "work": "stroke",
+      "axis": "-z",
+      "travel": 0.3
+    },
+    {
+      "min": [
+        -0.04,
+        0.9,
+        -0.8
+      ],
+      "max": [
+        0.04,
+        1.2,
+        -0.7
+      ],
+      "color": "#22262b",
+      "detail": true,
+      "paintable": false,
+      "work": "stroke",
+      "axis": "-y",
+      "travel": 0.3
+    },
+    {
+      "min": [
+        -0.03,
+        0.84,
+        -0.78
+      ],
+      "max": [
+        0.03,
+        0.9,
+        -0.72
+      ],
+      "color": "#5a2414",
+      "detail": true,
+      "paintable": false,
+      "work": "glow"
+    },
+    {
+      "min": [
+        -0.124,
+        0.12,
+        -0.4
+      ],
+      "max": [
+        0.124,
+        0.18,
+        -0.38
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

@@ -307,7 +307,7 @@ public sealed partial class Ui
                 Inputs(t, ins);
                 t.Search = $"{r.Name} {r.Batch} {g}".ToLowerInvariant();
                 t.Tip = ok
-                    ? $"{r.Name}{(r.Count > 1 ? $" x{r.Count}" : "")}: {r.Batch}, {Secs(r.Seconds / speed)} a batch on this {d.Name}."
+                    ? $"{r.Name}{(r.Count > 1 ? $" x{r.Count}" : "")}: {r.Batch}, {Secs(r.Seconds / speed)} a batch on this {d.Name}.{(r.Needs != 0 ? $" Needs {AsmFit.ModuleWords(r.Needs)} on the Core." : "")}"
                     : $"{r.Name}: needs a tier {r.MinTier} assembler; this one is tier {d.Tier}.";
                 tiles.Add(t);
             }
