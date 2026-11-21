@@ -27,6 +27,7 @@ public sealed partial class Game
         public CrewJob Job;
         public long Since;
         public bool Bought;
+        public byte Faction; // its ship's crew's power (a ship id used again by another body isn't its home)
     }
 
     private sealed class StoreLife
@@ -80,6 +81,8 @@ public sealed partial class Game
         {
             _storeLife[st.Id] = life = new StoreLife { Dice = new Random(st.Id * 31 + 7), SayAt = ServerTick + 20 * World.TickRate };
             life.Stops = StoreStops(lay, aPos, aRot);
+            if (Crew.ShipOf(st.Id) is { } loaded)
+                StoreStranded(st, loaded); // (a loaded world: shoppers saved aboard with nobody to send them home)
             foreach (var (ship, part) in m.Moored)
                 life.Moored[ship] = part;
         }
@@ -136,7 +139,7 @@ public sealed partial class Game
             }
             var (name, skill, health, fac) = (Crew.Name[mem], Crew.Skill[mem], Crew.Health[mem], Crew.Fac[mem]);
             Crew.Release(mem, this);
-            if (Constructs.Get(ship) is { Wreck: false } back && Crew.ShipOf(ship) is { } home && Crew.Add(home, job, -1, uid, health, skill, name) is var h and >= 0)
+            if (Constructs.Get(ship) is { Wreck: false } back && Crew.ShipOf(ship) is { } home && home.Faction == v.Faction && Crew.Add(home, job, -1, uid, health, skill, name) is var h and >= 0)
             {
                 Crew.Fac[h] = fac;
                 Log($"[store] {StationName(st)}: {CrewNames.Of(name)} went back aboard construct {back.Id} ({(gone ? "it cast off" : done ? "done shopping" : "out of time")}, {(now - v.Since) / World.TickRate} s aboard the store)");
@@ -158,8 +161,8 @@ public sealed partial class Game
             {
                 var mem = from.Members[k];
                 var stn = Crew.Station[mem];
-                if (life.Shopped.ContainsKey(Crew.Uid[mem]) || Crew.State[mem] is not (CrewState.Station or CrewState.Free) || Crew.Job[mem] != CrewJob.Spare && !(stn >= 0 && stn < from.StCount && from.StKind[stn] == CrewStationKind.Rest))
-                    continue;
+                if (life.Shopped.ContainsKey(Crew.Uid[mem]) || Crew.State[mem] is not (CrewState.Station or CrewState.Free) || Crew.Job[mem] != CrewJob.Spare || stn >= 0 && stn < from.StCount && from.StKind[stn] != CrewStationKind.Rest)
+                    continue; // (spare hands only: never an admiral, an interrogator or anyone at a post)
                 var (uid, name, skill, health, fac, job) = (Crew.Uid[mem], Crew.Name[mem], Crew.Skill[mem], Crew.Health[mem], Crew.Fac[mem], Crew.Job[mem]);
                 Crew.Release(mem, this);
                 var here = Crew.Add(s, CrewJob.Spare, -1, uid, health, skill, name);
@@ -169,13 +172,34 @@ public sealed partial class Game
                     break;
                 }
                 Crew.Fac[here] = fac;
-                life.Visitors[uid] = new StoreVisitor { Ship = ship, Job = job, Since = ServerTick };
+                life.Visitors[uid] = new StoreVisitor { Ship = ship, Job = job, Since = ServerTick, Faction = from.Faction };
                 life.Shopped[uid] = ship;
                 have++;
-                Log($"[store] {StationName(st)}: {CrewNames.Of(name)} off construct {ship} came aboard to shop (tick {ServerTick})");
+                Log($"[store] {StationName(st)}: {CrewNames.Of(name)} off construct {ship} came aboard to shop");
                 k = Math.Min(k, from.MemberCount); // (the roster shrank)
             }
         }
+    }
+
+    /// <summary>
+    /// Host, a store's first step in this run with a crew already aboard (a loaded world, a landing): its shoppers' visits aren't saved, so a
+    /// member on a bench or with no station is one left from a visit: it goes (its ship's spare hands are a few short until it hires more).
+    /// </summary>
+    private void StoreStranded(Construct st, CrewShip s)
+    {
+        var gone = 0;
+        for (var k = s.MemberCount - 1; k >= 0; k--)
+        {
+            var mem = s.Members[k];
+            var stn = Crew.Station[mem];
+            var bench = stn >= 0 && stn < s.StCount && s.StPart[stn] is var bp && bp >= 0 && bp < st.PartCount && st.DefOf(bp).Name == CanteenBenchName;
+            if (Crew.Job[mem] != CrewJob.Spare || !(bench || stn < 0))
+                continue;
+            Crew.Release(mem, this);
+            gone++;
+        }
+        if (gone > 0)
+            Log($"[store] {StationName(st)}: {gone} shopper(s) saved aboard from a visit went home (visits aren't saved)");
     }
 
     private int StoreMember(CrewShip s, uint uid)
