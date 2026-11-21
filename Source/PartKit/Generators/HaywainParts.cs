@@ -1292,9 +1292,9 @@ public sealed class HaywainParts : IPartGenerator
                     foreach (var dz in new[] { -1, 1 })
                     {
                         double x = xc + dx * CastX, z = zc + dz * CastZ;
-                        Solid(p, x - 0.17, Ft, z - 0.17, x + 0.17, Ft + LockHt, z + 0.17, Latch, "worn paint");
-                        Detail(p, x - 0.05, Ft + LockHt, z - 0.09, x + 0.05, Ft + LockHt + 0.015, z + 0.09, Frame, "steel");
-                        p.Sock($"lock{n}{r}{k++}", P(x, Ft + LockHt, z), "+y", Medium); // (a container is a medium part)
+                        Solid(p, x - 0.17, Ft, z - 0.17, x + 0.17, Ft + LockH, z + 0.17, Latch, "worn paint");
+                        Detail(p, x - 0.05, Ft + LockH, z - 0.09, x + 0.05, Ft + LockH + 0.015, z + 0.09, Frame, "steel");
+                        p.Sock($"lock{n}{r}{k++}", P(x, Ft + LockH, z), "+y", Medium); // (a container is a medium part)
                     }
                 foreach (var dx in new[] { -1, 1 })
                     Detail(p, xc + dx * (CtW / 2 + 0.03) - 0.03, Ft, zc - CtL / 2 + 0.2, xc + dx * (CtW / 2 + 0.03) + 0.03, Ft + 0.008, zc + CtL / 2 - 0.2, Hazard, "hazard paint");
