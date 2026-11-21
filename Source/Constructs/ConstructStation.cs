@@ -40,7 +40,7 @@ public sealed partial class StationJob
     public readonly ushort[] ArmTicks = new ushort[ConstructStation.MaxArms];
     public readonly ushort[] ArmDef = new ushort[ConstructStation.MaxArms];
     public readonly Vector3[] ArmAt = new Vector3[ConstructStation.MaxArms];
-    public readonly bool[] ArmOffPad = new bool[ConstructStation.MaxArms]; // ...it takes its part off a pick pad of the station's own, not the hold (protocol 420)
+    public readonly bool[] ArmOffPad = new bool[ConstructStation.MaxArms]; // ...it takes its part off a pick pad of the station's own, not the hold (protocol 421)
     public readonly Vector3[] ArmPick = new Vector3[ConstructStation.MaxArms]; // ...and where the hook takes it there (the bay's frame)
 
     // ---- Server only.
@@ -2010,7 +2010,7 @@ public static partial class ConstructStation
                 w.U8((byte)a).U8(j.ArmSeq[a]).U16(j.ArmTicks[a]);
                 ConstructStorage.WriteDef(w, j.ArmDef[a]);
                 w.CmVec(j.ArmAt[a]);
-                w.U8((byte)(j.ArmOffPad[a] ? 1 : 0)); // (protocol 420: off a pick pad, and where)
+                w.U8((byte)(j.ArmOffPad[a] ? 1 : 0)); // (protocol 421: off a pick pad, and where)
                 if (j.ArmOffPad[a])
                     w.CmVec(j.ArmPick[a]);
             }

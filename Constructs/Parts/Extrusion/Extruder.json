@@ -80,10 +80,11 @@
         "Pipe",
         "Airfoil",
         "Symmetric foil",
-        "Thin foil"
+        "Thin foil",
+        "Sheet"
       ],
       "default": 0,
-      "tooltip": "The cross-section. Custom is the cell grid below; clicking a cell starts one from what is shown. Round and Pipe take their diameter from Width."
+      "tooltip": "The cross-section. Custom is the cell grid below. Round and Pipe take their diameter from Width. Sheet: a plate Width across, 1 to 10 cm thick by Wall / sheet."
     },
     {
       "key": "width",
@@ -130,14 +131,14 @@
     },
     {
       "key": "wall",
-      "label": "Pipe wall",
+      "label": "Wall / sheet",
       "group": "Shape",
       "unit": "m",
       "min": 0.01,
       "max": 2,
       "step": 0.01,
       "default": 0.03,
-      "tooltip": "A Pipe's wall thickness. It leaves a bore of at least 5 cm."
+      "tooltip": "A Pipe's wall thickness (it leaves a bore of at least 5 cm), or a Sheet's thickness (1 to 10 cm)."
     },
     {
       "key": "cutLength",

@@ -505,6 +505,8 @@ public static class MachineBlocks
                 }
                 if (Math.Abs(x) > maxSide || Math.Abs(z) > maxSide || Math.Abs(y) > 127)
                     continue; // (beyond the Core's reach, its "maxSide" either way: not part of this machine)
+                if (y > 0 && d.BlockRole == BlockRole.Block && cd.IsPanelFormer && !cd.IsLaserCutter)
+                    continue; // (a Bed Block stacked on a Panel Former's bed isn't a mast: only shared cells deepen its stroke, ConstructPanelFormer.PinDepth)
                 c.BlockAsmOf[o] = id;
                 c.BlockCellOf[o] = Pack(x, y, z);
                 cellCount++;
@@ -728,6 +730,8 @@ public static class MachineBlocks
             sb.Append($"  {c.Parts[asm.Core].D.Name} (part {asm.Core}, family {Families[asm.Family]}): {asm.Cells} cells, {Describe(c, asm)}");
             if (asm.W > 0)
                 sb.Append($", corner columns {CornerColumns(c, asm)}");
+            if (asm.W > 0 && c.Parts[asm.Core].D is { IsPanelFormer: true, IsLaserCutter: false })
+                sb.Append($", pins rise {ConstructPanelFormer.PinDepth(c, asm):0} m");
             var faces = 0;
             for (var i = 0; i < c.PartCount && i < c.BlockAsmOf.Length; i++)
                 if (c.BlockAsmOf[i] == a)
