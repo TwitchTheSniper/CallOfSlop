@@ -88,6 +88,31 @@
       ],
       "default": 1,
       "tooltip": "Auto: when idle it builds other stations' sub-blueprint uses on this construct. Linked: also uses sent over a logistics link (the module goes by cargo ship). Off: only your own builds."
+    },
+    {
+      "key": "dressSalt",
+      "label": "Dress salt",
+      "group": "Dress",
+      "min": 0,
+      "max": 99,
+      "step": 1,
+      "default": 0,
+      "tooltip": "Which of the style's panel patterns goes where: another number is another layout. Both sides of a ship match on one salt."
+    },
+    {
+      "key": "dressExtras",
+      "label": "Dress extras",
+      "group": "Dress",
+      "type": "choice",
+      "options": [
+        "All",
+        "No conduit",
+        "No lights",
+        "Bolts and vents",
+        "None"
+      ],
+      "default": 0,
+      "tooltip": "The extra bits it lays with the armour: A bolt rows and chevrons, B vents, D lights, F conduit. All: every one; None: armour, rails and the strip only."
     }
   ],
   "storage": {
