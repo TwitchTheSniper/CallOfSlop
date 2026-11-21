@@ -447,7 +447,7 @@ public sealed class ControlParts : IPartGenerator
                 D(("key", "profile"), ("label", "Profile"), ("group", "Bill line"), ("options", ExtrusionParts.Profiles()), ("default", 4), ("tooltip", "A piece's section. Round and Pipe take their diameter from Width; Custom needs a machine's cell grid.")),
                 D(("key", "width"), ("label", "Width"), ("group", "Bill line"), ("unit", "m"), ("min", 0.1), ("max", 32), ("step", 0.05), ("default", 0.25), ("tooltip", "Across a piece's section, or a wheel's width.")),
                 D(("key", "height"), ("label", "Height"), ("group", "Bill line"), ("unit", "m"), ("min", 0.1), ("max", 48), ("step", 0.05), ("default", 0.25), ("tooltip", "Up a piece's section, or a wheel's diameter.")),
-                D(("key", "wall"), ("label", "Pipe wall"), ("group", "Bill line"), ("unit", "m"), ("min", 0.01), ("max", 2), ("step", 0.01), ("default", 0.03), ("tooltip", "A Pipe's wall.")),
+                D(("key", "wall"), ("label", "Wall / sheet"), ("group", "Bill line"), ("unit", "m"), ("min", 0.01), ("max", 2), ("step", 0.01), ("default", 0.03), ("tooltip", "A Pipe's wall, or a Sheet's thickness (1 to 10 cm).")),
                 D(("key", "cutLength"), ("label", "Length"), ("group", "Bill line"), ("unit", "m"), ("min", 0.05), ("max", 192), ("step", 0.05), ("default", 1), ("tooltip", "A piece's length.")),
                 D(("key", "orderMaterial"), ("label", "Material"), ("group", "Bill line"), ("options", Py.L("Metal", "Steel", "Bronze", "Laminate", "Copper", "Wood", "Planks", "Stone", "Concrete", "Glass", "Rubber")), ("default", 0),
                     ("tooltip", "What it is made of. A machine takes an order only in the material it is fed: another material is another line.")),

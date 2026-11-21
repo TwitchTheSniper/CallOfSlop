@@ -49,16 +49,19 @@ public sealed partial class Construct
 /// plus any number of identical cells welded to it and to each other. Every peer finds the same assembly from the parts at the
 /// rebuild: from each Core, a flood through welds over cells of its family (and shared cells), each cell placed on the Core's
 /// lattice. Cells on the Core's own layer make the bed; the machine's size is the largest full rectangle of them, at most
-/// <see cref="MaxSide"/> cells a side and <see cref="MaxCells"/> in all. Cells stacked on a bed cell are its column (a press's
+/// <see cref="MaxSide"/> cells a side and <see cref="MaxCells"/> in all, unless its Core's file gives its own (<c>"maxSide"</c>,
+/// <c>"maxCells"</c>: the Building Station's bay, up to <see cref="GridHalf"/> and <see cref="MaxCellsAny"/>). Cells stacked on a bed cell are its column (a press's
 /// wall, a mast). A cell's faces welded to its own assembly are kept (<see cref="Construct.BlockJoined"/>) so a box marked
 /// "seam" on that face isn't drawn. Nothing here runs per tick, allocates in a steady state or goes on the wire.
 /// </summary>
 public static class MachineBlocks
 {
-    public const int MaxSide = 16; // cells along either side of a bed rectangle
-    public const int MaxCells = 128; // cells one machine takes in
-    public const int GridSide = 2 * MaxSide + 1; // the column grid's side: the Core's cell in the middle, MaxSide either way
-    private const int Mid = MaxSide;
+    public const int MaxSide = 16; // cells along either side of a bed rectangle (a Core's default: "maxSide" gives its own)
+    public const int MaxCells = 128; // cells one machine takes in (a Core's default: "maxCells" gives its own)
+    public const int GridHalf = 32; // the furthest a cell may lie from its Core's, either way, and the longest side any Core may ask for
+    public const int MaxCellsAny = 512; // the most cells any Core may ask for (the flood's scratch)
+    public const int GridSide = 2 * GridHalf + 1; // the column grid's side: the Core's cell in the middle, GridHalf either way
+    private const int Mid = GridHalf;
     public const float DefaultCell = 2f; // m: the lattice step (the 2 m grid)
     public const int MaxTier = 5; // the tiers of drawing 21: 1 a bare Core, 2 to 5 by its tier pieces
 
@@ -83,7 +86,7 @@ public static class MachineBlocks
         d.IsTurntable = ConstructParts.Opt(root, "turntable") is { ValueKind: JsonValueKind.True };
         if (ConstructParts.Opt(root, "machineBlock") is not { } mb)
             return;
-        ConstructParts.Known(mb, ["family", "role", "cell", "plane", "origin", "seed", "coreSeams", "tier"], $"{file}: \"machineBlock\"");
+        ConstructParts.Known(mb, ["family", "role", "cell", "plane", "origin", "seed", "coreSeams", "tier", "maxSide", "maxCells"], $"{file}: \"machineBlock\"");
         var role = ConstructParts.Str(ConstructParts.Need(mb, "role", $"{file}: \"machineBlock\""), file, "machineBlock.role");
         d.BlockRole = role switch
         {
@@ -131,6 +134,20 @@ public static class MachineBlocks
             if (d.BlockRole != BlockRole.Core && !d.BlockSeed)
                 throw new ConstructPartException($"{file}: only a Core or a seed block gives \"machineBlock.origin\" (its own cell's middle)");
             d.BlockOrigin = ConstructParts.Vec(origin, file, "machineBlock.origin");
+        }
+        if (ConstructParts.Opt(mb, "maxSide") is { } ms)
+        {
+            var v = ConstructParts.Num(ms, file, "machineBlock.maxSide");
+            if (d.BlockRole != BlockRole.Core || v != MathF.Round(v) || v < 1 || v > GridHalf)
+                throw new ConstructPartException($"{file}: only a Core says \"machineBlock.maxSide\", a whole number of cells, 1 to {GridHalf}");
+            d.BlockMaxSide = (byte)v;
+        }
+        if (ConstructParts.Opt(mb, "maxCells") is { } mc)
+        {
+            var v = ConstructParts.Num(mc, file, "machineBlock.maxCells");
+            if (d.BlockRole != BlockRole.Core || v != MathF.Round(v) || v < 1 || v > MaxCellsAny)
+                throw new ConstructPartException($"{file}: only a Core says \"machineBlock.maxCells\", a whole number of cells, 1 to {MaxCellsAny}");
+            d.BlockMaxCells = (short)v;
         }
         if (ConstructParts.Opt(mb, "coreSeams") is { } cs)
         {
@@ -298,7 +315,7 @@ public static class MachineBlocks
         if (asm.Idle > 0)
             s += $", {asm.Idle} idle";
         if (asm.Capped)
-            s += $", over {MaxCells} blocks";
+            s += $", over {c.Parts[asm.Core].D.BlockMaxCells} blocks";
         return s;
     }
 
@@ -362,11 +379,11 @@ public static class MachineBlocks
         if (c.BlockColumns.Length < cores * cells)
             Array.Resize(ref c.BlockColumns, Math.Max(cores * cells, c.BlockColumns.Length * 2));
         using var scratch = Scratch.Begin();
-        var queue = scratch.Take<ushort>(MaxCells + 1);
-        var cx = scratch.Take<sbyte>(MaxCells + 1);
-        var cy = scratch.Take<sbyte>(MaxCells + 1);
-        var cz = scratch.Take<sbyte>(MaxCells + 1);
-        var steps = scratch.Take<byte>(2 * (MaxCells + 1)); // (each cell's steps across and along: a shared cell may be several)
+        var queue = scratch.Take<ushort>(MaxCellsAny + 1);
+        var cx = scratch.Take<sbyte>(MaxCellsAny + 1);
+        var cy = scratch.Take<sbyte>(MaxCellsAny + 1);
+        var cz = scratch.Take<sbyte>(MaxCellsAny + 1);
+        var steps = scratch.Take<byte>(2 * (MaxCellsAny + 1)); // (each cell's steps across and along: a shared cell may be several)
         var sum = scratch.Take<short>((GridSide + 1) * (GridSide + 1));
         foreach (var i in c.Specials)
             if (c.Parts[i].D.BlockRole == BlockRole.Core && c.BlockAsmOf[i] < 0)
@@ -431,6 +448,7 @@ public static class MachineBlocks
         queue[count++] = (ushort)core;
         cx[0] = cy[0] = cz[0] = 0;
         var cellCount = 0;
+        int maxCells = cd.BlockMaxCells, maxSide = cd.BlockMaxSide; // (the Core's own limits: a seed block's are the defaults)
         while (at < count)
         {
             var i = queue[at++];
@@ -453,10 +471,10 @@ public static class MachineBlocks
                     if (os >= d.Sockets.Length || d.Sockets[os].Dir != 5)
                         continue;
                 }
-                if (cellCount >= MaxCells)
+                if (cellCount >= maxCells)
                 {
                     asm.Capped = true;
-                    Caps.Hit("cells in one block machine", MaxCells, cellCount + 1);
+                    Caps.Hit("cells in one block machine", maxCells, cellCount + 1);
                     continue;
                 }
                 // A block turned off the Core's lattice (its cell's square not in the Core's grid plane) isn't part of the machine.
@@ -485,16 +503,18 @@ public static class MachineBlocks
                     y = (int)MathF.Round(Rot24.Apply(unrot, Middle(c, o) - coreMid).Y / cell);
                     z = (int)MathF.Floor(rel.Z + 0.5f + 0.01f);
                 }
-                if (Math.Abs(x) > Mid || Math.Abs(z) > Mid || Math.Abs(y) > 127)
-                    continue; // (beyond the grid: not part of this machine)
+                if (Math.Abs(x) > maxSide || Math.Abs(z) > maxSide || Math.Abs(y) > 127)
+                    continue; // (beyond the Core's reach, its "maxSide" either way: not part of this machine)
+                if (y > 0 && d.BlockRole == BlockRole.Block && cd.IsPanelFormer && !cd.IsLaserCutter)
+                    continue; // (a Bed Block stacked on a Panel Former's bed isn't a mast: only shared cells deepen its stroke, ConstructPanelFormer.PinDepth)
                 c.BlockAsmOf[o] = id;
                 c.BlockCellOf[o] = Pack(x, y, z);
                 cellCount++;
                 cx[count] = (sbyte)x;
                 cy[count] = (sbyte)y;
                 cz[count] = (sbyte)z;
-                steps[2 * count] = (byte)Math.Clamp((int)MathF.Round(span.X), 1, MaxSide);
-                steps[2 * count + 1] = (byte)Math.Clamp((int)MathF.Round(spanAlong), 1, MaxSide);
+                steps[2 * count] = (byte)Math.Clamp((int)MathF.Round(span.X), 1, maxSide);
+                steps[2 * count + 1] = (byte)Math.Clamp((int)MathF.Round(spanAlong), 1, maxSide);
                 queue[count++] = (ushort)o;
             }
         }
@@ -507,7 +527,7 @@ public static class MachineBlocks
             if (cy[k] == 0 && c.Parts[queue[k]].D.BlockRole != BlockRole.End)
                 for (var sx = 0; sx < steps[2 * k]; sx++)
                     for (var sz = 0; sz < steps[2 * k + 1]; sz++)
-                        if (cx[k] + sx <= Mid && cz[k] + sz <= Mid)
+                        if (cx[k] + sx <= maxSide && cz[k] + sz <= maxSide) // (clipped at the Core's own reach, as before the grid grew)
                             grid[(cx[k] + sx + Mid) * GridSide + cz[k] + sz + Mid] |= 0x80;
         for (var k = 1; k < count; k++)
             if (cy[k] > 0 && c.Parts[queue[k]].D.BlockRole != BlockRole.End)
@@ -515,7 +535,7 @@ public static class MachineBlocks
                 ref var g = ref grid[(cx[k] + Mid) * GridSide + cz[k] + Mid];
                 g = (byte)((g & 0x80) | Math.Min(0x7F, Math.Max(g & 0x7F, cy[k])));
             }
-        LargestRectangle(grid, sum, ref asm, seeded);
+        LargestRectangle(grid, sum, ref asm, seeded, maxSide, maxCells);
         FindOut(c, ref asm, queue[..count], cx, cz, steps);
         if (asm.W > 0 && Families[asm.Family] == "press")
             ConstructPress.SwingCheck(c, ref asm, id); // (its shells' swing: a fixed part in the way stops it, and the screen names it)
@@ -575,8 +595,8 @@ public static class MachineBlocks
     /// <summary>The tier of the machine part <paramref name="part"/> is in (1 with no tier pieces, or not a block machine).</summary>
     public static int TierOf(Construct c, int part) => TryOf(c, part, out var asm) && asm.Tier > 0 ? asm.Tier : 1;
 
-    /// <summary>The largest full rectangle of bed cells beside the Core (holding a cell next to its own), at most MaxSide a side and MaxCells in all; of equals, the one nearest the Core.</summary>
-    private static void LargestRectangle(ReadOnlySpan<byte> grid, Span<short> sum, ref CMachineAsm asm, bool seeded)
+    /// <summary>The largest full rectangle of bed cells beside the Core (holding a cell next to its own), at most <paramref name="maxSide"/> a side and <paramref name="maxCells"/> in all; of equals, the one nearest the Core.</summary>
+    private static void LargestRectangle(ReadOnlySpan<byte> grid, Span<short> sum, ref CMachineAsm asm, bool seeded, int maxSide, int maxCells)
     {
         const int S = GridSide + 1;
         for (var x = 0; x <= GridSide; x++)
@@ -588,11 +608,11 @@ public static class MachineBlocks
             {
                 if ((grid[x0 * GridSide + z0] & 0x80) == 0)
                     continue;
-                for (var w = 1; w <= MaxSide && x0 + w <= GridSide; w++)
+                for (var w = 1; w <= maxSide && x0 + w <= GridSide; w++)
                 {
                     if ((grid[(x0 + w - 1) * GridSide + z0] & 0x80) == 0)
                         break;
-                    for (var l = 1; l <= MaxSide && z0 + l <= GridSide && w * l <= MaxCells; l++)
+                    for (var l = 1; l <= maxSide && z0 + l <= GridSide && w * l <= maxCells; l++)
                     {
                         var area = w * l;
                         int x1 = x0 + w, z1 = z0 + l;
@@ -710,11 +730,18 @@ public static class MachineBlocks
             sb.Append($"  {c.Parts[asm.Core].D.Name} (part {asm.Core}, family {Families[asm.Family]}): {asm.Cells} cells, {Describe(c, asm)}");
             if (asm.W > 0)
                 sb.Append($", corner columns {CornerColumns(c, asm)}");
+            if (asm.W > 0 && c.Parts[asm.Core].D is { IsPanelFormer: true, IsLaserCutter: false })
+                sb.Append($", pins rise {ConstructPanelFormer.PinDepth(c, asm):0} m");
             var faces = 0;
             for (var i = 0; i < c.PartCount && i < c.BlockAsmOf.Length; i++)
                 if (c.BlockAsmOf[i] == a)
                     faces += System.Numerics.BitOperations.PopCount(c.BlockJoined[i]);
             sb.Append($", {faces} welded faces");
+            if (c.Parts[asm.Core].D.IsBuildStation)
+            {
+                Span<ushort> pads = stackalloc ushort[ConstructStation.MaxOwnPads];
+                sb.Append($", {ConstructStation.Arms(c, asm.Core)} fitting arms, {ConstructStation.OwnPads(c, asm.Core, pads)} pick pads under its crane");
+            }
             if (asm.Out != ushort.MaxValue)
                 sb.Append($", out table {asm.OutCells} of {(asm.OutSide is 4 or 5 ? asm.W : asm.L)} cells");
             sb.AppendLine();

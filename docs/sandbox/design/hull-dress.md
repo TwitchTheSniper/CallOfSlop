@@ -5,7 +5,7 @@ Sean, 2026-11-21. The agreed design is the Claude Doc "Detailed hull pieces: des
 "Zero Day Hull Pieces" page (https://claude.ai/artifact/HLvEvfJwDuEB9vwMZJWcna). In short:
 
 - A formed skin is dressed with subparts (slabs, rails, strips and the extra bits), welded, and baked into one
-  `Baked (#hash)` part by the Bake Oven (built in its own thread).
+  `Baked (#hash)` part by the Bake Oven (production.md "Bake Oven and baked parts").
 - **Dress surfaces.** Every formed skin has one on each facet; subparts lie flush on it in 5 cm steps, slabs made
   tapered to their spot (the sleek look, not square on the grid).
 - **The Dress step is in the first version:** a setting on a skin (a style and a salt) that lays the style's pattern out
@@ -26,10 +26,36 @@ Sean, 2026-11-21. The agreed design is the Claude Doc "Detailed hull pieces: des
 | 2 | Dress styles as data: `Constructs/DressStyles.json` (`DressStyles`), IT from the Zero Day | Done (IT only) |
 | 3 | Hull sections: `Hull Section (...)`, a dressed skin made at run time from its key (`HullLoft.Section.cs`), the dress drawn into the part (Sean's choice between dress in the skin's key and separate subparts on facet welds, 2026-11-21: the separate parts would sit on slopes, which a grid-placed part can't, and each facet would cost a freeform weld) | Done; `--hull-section [KEY\|example]` |
 | 4 | Production: a machine makes sections (the Panel Former rework is another thread's; the factory layout is a separate set of agents) | Waits |
+| 4b | The bake: a welded group into one `Baked (#hash)` part and back, a design store per world (`BakedParts.cs`; production.md "Bake Oven and baked parts") | Done; `--bake-check` |
+| 6 | The Dress step (Sean's option B, 2026-11-21): a plain skin (`Hull Section` of style `-`) with dress anchors, `Hull Dress (...)` subparts, the dress blueprint, the Building Station's Dress job (`HullLoft.Dress.cs`, `ConstructStation.Dress.cs`) | Done; `--dress-skin [KEY\|example] [STYLE] [SALT] [EXTRAS]`. What makes plain skins (a Panel Former or Laser Cutter route) waits; a cut skin's key is not a plain one |
 | 5 | 32 render holes (`Renderer.CutMax`, `uCut[96]`, `CutRun` = first x 64 + count) | Done; the no-collide socket hole waits for the Bake Oven |
 
 The hull's void (the hidden boxes behind the Zero Day's skin) stays in its generator until open item 3 of the design is
 settled.
+
+## The dress station
+
+A **plain skin** is a Hull Section of style `-` (salt 0, extras `-`): its facets in bare steel (paintable, `#8f9196`), its
+void boxes and `a`/`b`/`i` sockets, and **dress anchors** `d{k}.{a}`: hidden 3 cm pads 6 mm off each facet's outer face, in
+two staggered rows (a third and two thirds across), one per 25 cm of length, 2 to 32 a facet (fewer when the facets would
+pass the part's 255 sockets). An anchor's socket points along the facet normal's largest axis.
+
+A **dress subpart** `Hull Dress (KIND ARGS [pN] @F.A | <the dressed section's head and profiles>)` is one piece of a
+style's pattern: `panel K.I`, `rail I`, `strip`, `run`, `nav`, `warn W`, `chev`, `vent I`, `pipe`. It is drawn in the
+skin's frame with the same arithmetic as a dressed Hull Section, so a dressed skin looks as the dressed section does, and
+it has one socket, `skin`, on its anchor: fitted, it sits at the skin's own place and turn. A player may take any off or
+put another on.
+
+The **dress blueprint** `Dress {style} {salt} {extras}: {skin key}` is made at run time (`HullLoft.DressBlueprint`): step
+0 the skin (painted the style's skin colour), then each subpart on the free anchor nearest its middle on its facet (none
+free: it is left out with a log line).
+
+The **Dress job** is the Building Station's blueprint `Dress skins` (first in its list). Started, the station waits for a
+plain skin lying loose in its bay or held in its hold, makes that skin's dress blueprint from its Dress settings
+(`dressStyle`, shown when there are two styles or more; `dressSalt` 0 to 99; `dressExtras` All, No conduit, No lights,
+Bolts and vents, None) and builds it, then waits for the next, as many as its build count. Dress subparts are **laid**,
+not ordered: an arm lays each from the station's linked steel, a unit per kilogram (free in creative); short, the build
+says so.
 
 ## Hull sections
 

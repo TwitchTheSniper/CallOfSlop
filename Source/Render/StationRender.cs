@@ -16,8 +16,8 @@ public static class StationRender
     public const float DrawNear = 160f;
     private static readonly Vector3 Yellow = new(0.94f, 0.76f, 0.1f), Dark = new(0.133f, 0.149f, 0.169f), Steel = new(0.6f, 0.63f, 0.66f),
         Out = new(0.94f, 0.47f, 0.09f), Hazard = new(0.95f, 0.69f, 0.12f), Cable = new(0.08f, 0.09f, 0.1f);
-    private const float RailW = 0.32f, RailH = 0.42f; // the runway's I-beam
-    private const float Girder = 0.5f; // a bridge girder's depth
+    private const float RailW = 0.32f; // the runway's I-beam's flange
+    private const float LegEvery = 12f; // m: the most a runway spans between its supports (masts, legs); a longer bay gets legs along its sides
 
     public static void Draw(Renderer gfx, ConstructWorld world)
     {
@@ -52,12 +52,26 @@ public static class StationRender
         ConstructRackPack.Hold(d, out var hlo, out var hhi);
         var hold = (hlo + hhi) * 0.5f - floorLocal;
         var holdTop = hhi.Y - floorLocal.Y;
-        // The runway: one rail along each end, over the end rows' masts (or on legs just outside the corners), from over the hold to the far side.
+        // The runway: one rail along each end, over the end rows' masts (or on legs just outside the corners), from over the hold to the far
+        // side, and on over the station's own pick pads past the bay (ConstructStationPads.cs).
         var top = size.Y; // (the masts' top: the rails sit on them)
         var railZ = masts ? hz - cell * 0.5f : hz + 0.25f;
         float xa = MathF.Min(-hx, hold.X) - 0.4f, xb = MathF.Max(hx, hold.X) + 0.4f; // (the runway's ends)
         if (MathF.Abs(hold.X) < hx)
             (xa, xb) = (-hx - 0.4f, hx + 0.4f);
+        Span<ushort> pads = stackalloc ushort[ConstructStation.MaxOwnPads];
+        var padN = ConstructStation.OwnPads(c, t, pads);
+        for (var p = 0; p < padN; p++)
+            if (ConstructStation.PadInBay(c, t, pads[p], out var pm, out var ph))
+            {
+                xa = MathF.Min(xa, pm.X - ph.X - 0.4f);
+                xb = MathF.Max(xb, pm.X + ph.X + 0.4f);
+            }
+        // A long runway is a deeper girder on legs along the bay's sides (outside it, braced across to the rail), never more than
+        // LegEvery between supports; a wide bay's bridge is a deeper truss (DrawBridge).
+        var legs = Math.Max(0, (int)MathF.Ceiling((xb - xa) / LegEvery) - 1);
+        var bayLegs = masts ? Math.Max(0, (int)MathF.Ceiling(size.X / LegEvery) - 1) : 0;
+        var RailH = Math.Clamp(0.42f + (xb - xa) / (legs + 1) * 0.03f, 0.42f, 0.9f); // (its depth by the span it carries)
         var y = top + RailH * 0.5f + 0.004f;
         for (var s = -1; s <= 1; s += 2)
         {
@@ -83,6 +97,15 @@ public static class StationRender
                     Box(gfx, bay, new Vector3(lx, top * 0.5f, z), new Vector3(0.2f, top, 0.2f), Dark); // (a leg at the corner)
                     Box(gfx, bay, new Vector3(lx, 0.6f, z), new Vector3(0.208f, 0.3f, 0.208f), Hazard);
                 }
+            // The legs between: spaced evenly along the runway, each outside the bay's side with a knee bracket in to the rail (on the
+            // masts' bays the ones over the bay; past it, over a pick pad, the runway's own reach is carried the same way).
+            for (var k = 1; k <= legs; k++)
+            {
+                var lx = xa + (xb - xa) * k / (legs + 1);
+                if (masts && bayLegs == 0 && MathF.Abs(lx) < hx - cell * 0.5f)
+                    continue; // (a short bay between its masts: its rail spans it)
+                Leg(gfx, bay, lx, top, z, s * (hz + 0.45f), RailH);
+            }
         }
         // The lamps on the masts' tops (on the runway's ends over the corners): the job's state.
         var j = c.Parts[t].Station;
@@ -104,10 +127,11 @@ public static class StationRender
         {
             var park = new Vector3(-hx + (a + 0.5f) * size.X / n, hookUp, 0);
             var carry = 0;
-            var at = j == null ? park : Pose(j, a, park, hold with { Y = holdTop - 0.05f }, hookUp, building, now, out carry);
+            var from = j != null && j.ArmOffPad[a] ? j.ArmPick[a] : hold with { Y = holdTop - 0.05f }; // (off a pick pad: the piece's top on its deck)
+            var at = j == null ? park : Pose(j, a, park, from, hookUp, building, now, out carry);
             at.X = Math.Clamp(at.X, xa + 0.6f, xb - 0.6f);
             at.Z = Math.Clamp(at.Z, -railZ + 0.7f, railZ - 0.7f);
-            DrawBridge(gfx, bay, at, top, railZ, carry > 0 && j != null ? j.ArmDef[a] : ushort.MaxValue, now, building && j != null && j.ArmTicks[a] > 0);
+            DrawBridge(gfx, bay, at, top, railZ, RailH, carry > 0 && j != null ? j.ArmDef[a] : ushort.MaxValue, now, building && j != null && j.ArmTicks[a] > 0);
         }
     }
 
@@ -147,8 +171,8 @@ public static class StationRender
         var dur = MathF.Max(1f, j.ArmTicks[a] / (float)World.TickRate);
         var u = (float)(now - j.ArmStart[a]) / dur;
         Vector3 at;
-        if (!building || j.ArmTicks[a] == 0 && u < 1)
-            at = j.ArmLast[a] with { Y = MathF.Min(up, j.ArmLast[a].Y + 0.02f) }; // (idle: where it was, the hook rising clear)
+        if (!building || j.ArmTicks[a] == 0)
+            at = j.ArmLast[a] with { Y = MathF.Min(up, j.ArmLast[a].Y + 0.02f) }; // (idle: where it was, the hook rising clear; an arm that never carried stays parked, not at its empty target, the bay's middle, where every idle bridge used to stack)
         else if (u < 0.2f)
             at = Vector3.Lerp(j.ArmFrom[a], hold with { Y = up }, Ease(u / 0.2f));
         else if (u < 0.3f)
@@ -184,7 +208,18 @@ public static class StationRender
     private static float Lerp(float a, float b, float t) => a + (b - a) * t;
 
     /// <summary>One bridge over the runway at its hook's x, its trolley over the hook's z, the hook at its height, the part it carries under the gripper.</summary>
-    private static void DrawBridge(Renderer gfx, Matrix4x4 bay, Vector3 hook, float top, float railZ, ushort carried, double now, bool moving)
+    /// <summary>A runway leg beside the bay: a column from the floor at (<paramref name="x"/>, <paramref name="zLeg"/>) up to the rail's underside, a knee across to the rail at <paramref name="zRail"/>.</summary>
+    private static void Leg(Renderer gfx, Matrix4x4 bay, float x, float top, float zRail, float zLeg, float railH)
+    {
+        Box(gfx, bay, new Vector3(x, top * 0.5f, zLeg), new Vector3(0.36f, top, 0.36f), Dark); // (the column)
+        Box(gfx, bay, new Vector3(x, 0.03f, zLeg), new Vector3(0.7f, 0.06f, 0.7f), Steel); // (its base plate)
+        Box(gfx, bay, new Vector3(x, 0.6f, zLeg), new Vector3(0.368f, 0.3f, 0.368f), Hazard);
+        Box(gfx, bay, new Vector3(x, top - 0.15f, (zLeg + zRail) * 0.5f), new Vector3(0.3f, 0.3f, MathF.Abs(zLeg - zRail) + 0.3f), Dark); // (the cap beam under the rail)
+        Beam(gfx, bay, new Vector3(x, top - 1.6f, zLeg), new Vector3(x, top - 0.3f, zRail), 0.14f, Dark); // (the knee)
+        Box(gfx, bay, new Vector3(x, top + railH * 0.5f, zRail), new Vector3(0.03f, railH - 0.1f, RailW - 0.04f), Steel); // (a stiffener on the web over it)
+    }
+
+    private static void DrawBridge(Renderer gfx, Matrix4x4 bay, Vector3 hook, float top, float railZ, float RailH, ushort carried, double now, bool moving)
     {
         var x = hook.X;
         var rail = top + RailH;
@@ -197,16 +232,44 @@ public static class StationRender
                 Box(gfx, bay, new Vector3(x + w * 0.55f, rail + 0.1f, z), new Vector3(0.3f, 0.2f, RailW - 0.06f), Steel);
             Box(gfx, bay, new Vector3(x, rail + 0.2f, z + s * (RailW * 0.5f + 0.096f)), new Vector3(1.2f, 0.12f, 0.012f), Hazard);
         }
-        // Two girders across, a walkway grating on one, the drive motor at one end.
+        // Two girders across, a walkway grating on one, the drive motor at one end. A wide bay's girders are deeper (a box girder to 12 m,
+        // a truss past it: a bottom chord, posts and diagonals, Sean 2026-11-21: the Zero Day's 24 m bay).
         var span = 2 * railZ + RailW + 0.3f;
+        var Girder = Math.Clamp(0.5f + (span - 8f) * 0.05f, 0.5f, 1.4f);
         var gy = rail + 0.35f + Girder * 0.5f;
+        var truss = span > 12f;
         var ribs = Math.Max(1, (int)(span / 2f)); // (a stiffener every 2 m or so, and a dark cap on each girder: no long plain yellow bar)
         for (var g = -1; g <= 1; g += 2)
         {
-            Box(gfx, bay, new Vector3(x + g * 0.34f, gy, 0), new Vector3(0.26f, Girder, span), Yellow);
-            Box(gfx, bay, new Vector3(x + g * 0.34f, gy + Girder * 0.5f + 0.012f, 0), new Vector3(0.3f, 0.024f, span + 0.004f), Dark); // (the top flange)
-            for (var r = 1; r < ribs; r++)
-                Box(gfx, bay, new Vector3(x + g * 0.34f, gy - 0.02f, -span * 0.5f + span * r / ribs), new Vector3(0.276f, Girder - 0.08f, 0.06f), Dark);
+            var gx = x + g * 0.34f;
+            if (!truss)
+            {
+                Box(gfx, bay, new Vector3(gx, gy, 0), new Vector3(0.26f, Girder, span), Yellow);
+                for (var r = 1; r < ribs; r++)
+                    Box(gfx, bay, new Vector3(gx, gy - 0.02f, -span * 0.5f + span * r / ribs), new Vector3(0.276f, Girder - 0.08f, 0.06f), Dark);
+            }
+            else
+            {
+                // The truss: a top chord (the trolley's rail), a bottom chord, a post every 2 m or so and a diagonal in each bay, all yellow.
+                float yt = gy + Girder * 0.5f - 0.12f, yb = gy - Girder * 0.5f + 0.12f;
+                Box(gfx, bay, new Vector3(gx, yt, 0), new Vector3(0.26f, 0.24f, span), Yellow);
+                Box(gfx, bay, new Vector3(gx, yb, 0), new Vector3(0.22f, 0.24f, span - 0.6f), Yellow);
+                for (var r = 0; r <= ribs; r++)
+                {
+                    var rz = -span * 0.5f + 0.3f + (span - 0.6f) * r / ribs;
+                    Box(gfx, bay, new Vector3(gx, gy, rz), new Vector3(0.18f, Girder - 0.36f, 0.14f), Yellow);
+                    if (r < ribs)
+                    {
+                        var nz = -span * 0.5f + 0.3f + (span - 0.6f) * (r + 1) / ribs;
+                        var up = (r & 1) == 0;
+                        Beam(gfx, bay, new Vector3(gx, up ? yb : yt, rz), new Vector3(gx, up ? yt : yb, nz), 0.12f, Yellow);
+                    }
+                }
+                // Its ends drop to the end trucks: a solid plate over the last metre each side.
+                for (var e = -1; e <= 1; e += 2)
+                    Box(gfx, bay, new Vector3(gx, gy, e * (span * 0.5f - 0.5f)), new Vector3(0.24f, Girder, 1.0f), Yellow);
+            }
+            Box(gfx, bay, new Vector3(gx, gy + Girder * 0.5f + 0.012f, 0), new Vector3(0.3f, 0.024f, span + 0.004f), Dark); // (the top flange)
         }
         Box(gfx, bay, new Vector3(x - 0.62f, gy + Girder * 0.5f - 0.03f, 0), new Vector3(0.5f, 0.04f, span - 0.4f), Dark); // (the walkway)
         Box(gfx, bay, new Vector3(x + 0.62f, rail + 0.55f, railZ - 0.2f), new Vector3(0.36f, 0.36f, 0.5f), Dark); // (the drive motor)
@@ -230,8 +293,21 @@ public static class StationRender
             Box(gfx, bay, hook + new Vector3(s * grip, -0.02f, 0), new Vector3(0.05f, 0.22f, 0.14f), Out);
         if (carried == ushort.MaxValue || PartOf(carried) is not { } d)
             return;
-        // The part it carries, its top at the hook, as it is drawn in its file (its own colours).
+        // The part it carries, its top at the hook, as it is drawn in its file (its own colours). A long piece (off a pick pad: up to 14 m)
+        // also hangs on a two-leg bridle from the hook block to shackles near its ends, so it reads as carried level, not on one jaw.
         var size = d.BoundsMax - d.BoundsMin;
+        var reach = MathF.Max(size.X, size.Z);
+        if (reach > 3f)
+        {
+            var along = size.X >= size.Z ? Vector3.UnitX : Vector3.UnitZ;
+            var half = MathF.Min(reach * 0.5f - 0.4f, 7f);
+            for (var e = -1; e <= 1; e += 2)
+            {
+                var end = hook + along * (e * half) + new Vector3(0, 0.06f, 0);
+                Box(gfx, bay, end, new Vector3(0.16f, 0.12f, 0.16f), Out); // (a shackle on the piece's top)
+                Beam(gfx, bay, block, end + new Vector3(0, 0.05f, 0), 0.04f, Cable); // (its sling up to the hook block)
+            }
+        }
         var m = Matrix4x4.CreateTranslation(-(d.BoundsMin.X + d.BoundsMax.X) * 0.5f, -d.BoundsMax.Y, -(d.BoundsMin.Z + d.BoundsMax.Z) * 0.5f) * Matrix4x4.CreateTranslation(hook - new Vector3(0, 0.004f, 0)) * bay;
         if (size.Y > 40f)
             return;

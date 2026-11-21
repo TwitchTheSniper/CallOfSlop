@@ -108,6 +108,13 @@ Self-test: "Extruder", "Extruder network" (`Source/App/SelfTestExtruder.cs`).
   bodies and players, who can walk inside a big one. Boxes don't turn, so the ring is stepped: true on the axes, about 9 % of the radius proud of the circle and into the bore on the diagonals. **Sockets.**
   `base` and `tip` in the middle of each end (a pipe's stand in the bore's air: a weld to them is a weld to the end), and the four faces at the same stations, at the compass points of the round.
   **For later machines.** The key holds all a die needs to read a piece: `Shape`, `W`, `H`, `Wall`, `Mask`, `L`, `Material`.
+- **Sheet** (the Profile's last choice, after the foils; factory gap 3, Sean 2026-11-21: a Sheet profile on the Extruder rather than a Rolling Mill).
+  A plate for a Panel Former's blank: a key of `Shape` Section with the solid mask (`solid`), `W` its width (0.1 to 32 m, 5 cm steps, up to the die's
+  width) and `H` its thickness, 1 to 10 cm in whole centimetres (`Extrusion.MinSheetCm`, `SheetMaxCm`; `Extrusion.IsSheet`). It is the only section
+  thinner than `MinSectionCm` (10 cm). The thickness is the machine's **Wall / sheet** setting (a Pipe's wall shares it; Height's 5 cm step can't hold
+  a centimetre); the recipe picker's Sheet tile shows a Thickness stepper. A Line Console's bill line takes Sheet the same way. Its name stays
+  `Extrusion solid 400x3x500 steel`; its look line says "Sheet 4 m wide, 3 cm thick". A chained Panel Former order still asks for 10 cm sheet
+  (`ConstructLogisticsPlan.SheetThickCm`) until the former takes sized blanks.
 - **A piece is a real part.** `Extrusion.Def(key)` makes a `ConstructPartDef` the first time a key is asked for and keeps it: ids from
   `Extrusion.RuntimeBase` (0x4000), resolved by `ConstructParts.Def`, never sent. So `Rebuild`, split, join, the renderer, rays, player
   blocking, ghosts, joins, damage and paint read a piece's boxes, sockets, mass and health as they read any part's, with no second path.
@@ -123,7 +130,7 @@ Self-test: "Extruder", "Extruder network" (`Source/App/SelfTestExtruder.cs`).
   without size classes", design page drawing 15): an **Extruder Core**, a 2 x 2 m face 1.5 m deep, with a bin (`any`, 32,000) and its own 0.5 m die
   low on its +z face, 0.2 m/s, 900 W while it runs. Material comes by chute or F; Run and power as a [production machine](#refining-decision-14)
   (`ConstructGatherer.HeldOff`, `ConstructRecycler.Powered`; creative needs no power but still needs material). Its output wire is the length so far,
-  in metres. Configure tool: Profile, Width, Height, Pipe wall, Cut every, and the cell grid (four `mask` settings drawn as one grid: click a cell and
+  in metres. Configure tool: Profile, Width, Height, Wall / sheet, Cut every, and the cell grid (four `mask` settings drawn as one grid: click a cell and
   what is shown becomes Custom; a Round or a Pipe shows on it too). A change of setting is for the next piece; the panel previews the section on the die.
   The four size classes, Die Frames and Die Extensions are gone, with no compatibility kept (tools/MIGRATING.md).
 - **Die Blocks** (`Die Block.json`, `"machineBlock": {"family": "extruder", "role": "block", "plane": "face"}`; MachineBlocks.cs,
@@ -365,13 +372,18 @@ the parts come from the part kit's `--gen-parts panel_former_parts`. Phase 1 (fe
   other, and **Out Tables** (role `end`) welded across the bed's last row, which carry **Piece out** (a conveyor off a table is its
   machine's: `MachineBlocks.Owner`). The bed is the largest full rectangle of blocks between Core and tables (at most 16 x 16, 128 in
   all). A panel fits when its longest side fits the bed's length and the next its width (it is laid along the bed) and it is no deeper
-  than the pins' 2 m travel (`ConstructPanelFormer.Bed`, `BedRefusal`; `BedFits` per step). One stroke is 4 s set and 8 s press at any
+  than the pins' travel: 2 m, or 4 m with **Mast Blocks** standing on all four of the bed's corner Bed Blocks (on their crossheads,
+  socket `top`; one level, past the deepest panel HullLoft allows; a Bed Block stacked there is not a mast and idles;
+  `ConstructPanelFormer.PinDepth`; the Zero Day's upper hull pieces need it) (`ConstructPanelFormer.Bed`, `BedRefusal`, which names the masts it needs; `BedFits`
+  per step). With corner masts the former draws its deep head (`PanelFormerRender.cs`): ring girders on the mast tops, a cross girder
+  over each row seam, an oil main with a drop hose to each row, a booster cylinder on each corner mast whose collar rides with the
+  stroke, and corner lamps lit while it forms; a corner block's ram head isn't drawn under its mast (seam `+y`). One stroke is 4 s set and 8 s press at any
   size. Seams between cells are hidden (`seam`, `seamFill` boxes), so a bed reads as one machine: one platen, posts at its corners, an
   oil manifold down one side, a hazard edge round the outside. Animations: the in rollers and table rollers spin, the pins rise in a
   wave from the Core's end to the head order's panel shape (`PinLift`, read from the key: work `pin`), the platen strokes (`PressAt`:
   work `press`). The Medium Panel Former is gone (2026-11-21). Recipes are the Assembling generator's.
 - **Stock** is its bin, fed two ways: loose material by chute or F, as an Extruder's hopper; and **extruded sheet by conveyor** into its
-  **Piece in**: an arriving extruded section no thicker than 10 cm (the thinnest a die makes) is taken whole and counted into the bin at
+  **Piece in**: an arriving extruded section no thicker than 10 cm (a Sheet is 1 to 10 cm) is taken whole and counted into the bin at
   what it holds (its mass at the material's weight); a thicker piece, another material than the bin's or more than its room waits on
   the conveyor. A panel costs its mass in units of its material, taken whole when its stroke starts; the kit's lofts are steel.
 - **Orders only** ([Work orders](#work-orders)). `WorkOrder.Name` is the panel's name; a former with no queue, or an empty one, waits
@@ -1410,8 +1422,9 @@ of a blueprint and builds it in a bay, part by part, where it can be seen. Phase
   network and orders are [the terminal's](#crafting-terminal). It is a block machine's Core (`"machineBlock"`, family `station`;
   `MachineBlocks.cs`), with sockets for Bay Blocks along both sides and under it.
 - **The bay** is built, not set (2026-11-21; the bay settings are gone). **Bay Blocks** (`BayBlock.json`, 2 x 2 m tread-plate floor tiles,
-  their recipe at the end of the Assembler's list) welded beside the Core make the bay: the largest full rectangle of them, up to 16 x 16
-  cells (`MachineBlocks`' assembly). **Mast Blocks** (the block machines' shared 2 m cube) stacked on its four corner tiles set its
+  their recipe at the end of the Assembler's list) welded beside the Core make the bay: the largest full rectangle of them, up to 32 cells a
+  side and 512 cells in all, masts included (the station's own limit, `"maxSide"` and `"maxCells"` in its `"machineBlock"`; Sean 2026-11-21,
+  so one station builds the whole 53 m Zero Day in a 30 x 12 bay, 60 x 24 m; every other block machine keeps 16 a side and 128). **Mast Blocks** (the block machines' shared 2 m cube) stacked on its four corner tiles set its
   height, 2 m a block, by the shortest mast; a bay with no masts builds up to 2 m. With masts the corner cells are theirs, so a build
   fits when it is no longer than the bay less two cells on one of its sides (`ConstructStation.FitRefusal(need, bay, BayCorner)`).
   `ConstructStation.Bay` gives the box over the rectangle (floor at the tiles' top); no rectangle, no bay, and Start says to weld Bay
@@ -1419,7 +1432,22 @@ of a blueprint and builds it in a bay, part by part, where it can be seen. Phase
   blueprint doesn't fit) and green while a build is on.
 - **The crane** (`Source/Render/StationRender.cs`, drawn on every peer, nothing of it a part): runway rails along the bay's two long
   sides on the masts (on short legs with none), reaching back over the Core's hold, and one bridge per **fitting arm**: one arm for
-  each 16 Bay Blocks, at least one, at most 8 (`ConstructStation.Arms`). Each bridge runs to the hold, lowers its hook for the part,
+  each 16 Bay Blocks, at least one, at most 8 (`ConstructStation.Arms`). A runway longer than 12 m between supports is a deeper girder on
+  legs along the bay's sides, each braced in to the rail, and a bay wider than 12 m gets truss bridges (a 24 m span reads as a truss, not a
+  plank). A piece longer than 3 m hangs on a two-leg bridle from the hook block.
+- **The Dress job** (`ConstructStation.Dress.cs`, Sean 2026-11-21): the blueprint `Dress skins` waits for a plain hull skin in the bay
+  or the hold and builds its dress blueprint (the station's `dressStyle`, `dressSalt`, `dressExtras`), laying the dress subparts from
+  linked steel rather than ordering them; then the next skin. Design: docs/sandbox/design/hull-dress.md "The dress station";
+  `--dress-skin` prints a skin's plan and builds it headless.
+- **Pick pads under its crane** (`ConstructStationPads.cs`, Sean 2026-11-21: "pick pads for pieces up to 14 t and 14 m long"). A Lay-down
+  Pad (or a Pad Tile pad) on the station's body whose deck lies within the bay's width, wholly past either end of the bay and within 20 m of
+  it, is a pick pad of the station itself (four at most, the nearest first). The runway is drawn on over it. Its fitting arms take a step's
+  part off it as they take one from the hold, up to `storage.pieces.lift` (14,000 kg on the station): the way a part too long or wide for
+  the 4.8 m hold (a 14 m stern on a Large Lay-down Pad) is built in without a Hall Crane. A large part is ordered onto it as onto a Loader
+  Arm's pick pad (`ConstructLifters.PickPadFor`), what lies there counts as held and is claimed for the build, and an arm's carry off a pad
+  goes on the wire (protocol 421) so a client's hook goes to the pad. With no pad the stuck note says to lay one; a part over 14 t says to
+  fit it by hand or with a Hall Crane. `--machine-blocks` names a station's arms and pick pads; the window tool's `station stock` puts
+  what is too big for the hold onto its pick pad. Each bridge runs to the hold, lowers its hook for the part,
   carries it to its place, lowers it and the weld flashes. The masts' tops carry lamps by the job: green building, amber costing,
   blinking red failed, white done, dark idle.
 - **The panel.** F on the station opens it: the blueprints on the left (shipped by group, then the player's own saved ones; a search box),
@@ -1747,6 +1775,35 @@ any piece that reaches a player standing on a construct (a floor slab, a pad, a 
 **Store parts on a pad**: a Lay-down Pad takes a store part (a Drill Module, an Ammo Container) as a station's hold does: by conveyor,
 arm or fetch as a new, empty one, and set down loose only when it holds nothing ("holds something: empty it first"). A Drill Module
 is 2.2 m tall: a Large pad, not a Medium one.
+
+## Bake Oven and baked parts (2026-11-21)
+
+The Bake Oven (`ConstructBakeOven.cs`, design page drawing 19) is an Oven Core, the Oven Bed Blocks welded beside it and a Mast Block
+column on each corner of the bed. A welded group set on the bed bakes into one part, or a baked part un-bakes back into its subparts
+(the Core's Mode setting: Bake or Un-bake). The code is `BakedParts.cs`.
+
+- **The cycle.** With power, the group on the clear cells, settled and under the hood, the hood drops, the bed heats (2 s a subpart times
+  12 over the bed's blocks), it cools and lifts. The bake or un-bake happens at the end of the heat. The screen then reads "Done: lift it
+  off" until the new body leaves the bed (or the mode is turned). Anyone under the hood is crushed or burned.
+- **What bakes.** Plain structure only: frames, panels and foundations, part files and run-time parts alike (formed skins, pressed slabs,
+  extrusions, hull sections, other baked parts), on the body or on freeform welds at a grid turn. Module Socket plates are never baked:
+  they stay real parts beside the baked one. A part that works, moves or holds, a joint, a weld at an angle, or more than 256 boxes in all
+  is refused before the hood drops ("Can't bake that"; the oven verb and the log say which part). Un-bake takes a body of one baked part
+  and its plates ("Not a baked part" otherwise).
+- **The part.** `Baked (#hash)`: every subpart's boxes turned and moved to its place, with its paint and finish drawn in (a shaped box
+  keeps its subpart's turn in `CPartBox.Turn`), so armour stays where the slabs were; the subparts' sockets less the pairs that met inside
+  the group; their mass, health and lamps summed. It recycles by its mass, so it costs what its subparts cost. Its health is the group's
+  share of the total; un-baking shares the damage out the same way.
+- **The design store.** The hash names a design: one text line a subpart (its name or key, its place in cm from the baked part's origin,
+  its turn, paint and finish), sorted, so a group bakes to the same hash anywhere. Every peer keeps designs by hash; a world keeps the
+  ones its ovens made (`ConstructWorld.Baked`), saves them in a `BAKE` section ahead of the part names, and sends them to a joiner before any
+  body and to everyone as each is made (`CBodyKind.Baked`, protocol 422). A design off the wire or a save is checked against its hash. A
+  player blueprint that holds a baked part only builds in a world that knows its design.
+- **Trying it.** `--bake-check ["PART;PART..."]` bakes a row of parts headless at mixed turns and checks the round trip: sums, every mesh
+  where its subpart drew it, the design through the wire and a save, un-baking back to the same parts and a second bake to the same hash.
+  In a window run, the `oven` verb prints each oven and every baked part; `oven put A+B+C` sets a new group of those parts on the bed and
+  `oven mode bake|unbake` turns the setting.
+- **Not yet.** The no-collide socket hole on a baked part (hull-dress.md), a Piece out conveyor, and baking by order from a line.
 
 ## Production Showcase
 

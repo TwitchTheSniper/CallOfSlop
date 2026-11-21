@@ -2760,6 +2760,17 @@
     {"output": "Power Coupling", "materials": {"steel": 30, "copper": 40, "rubber": 6}, "parts": {"Wiring Loom": 2}, "seconds": 40},
     {"output": "Coolant Loop", "materials": {"steel": 50, "copper": 20, "rubber": 10}, "parts": {"Gear Set": 1, "Wiring Loom": 1}, "seconds": 60},
     {"output": "Servo Rack", "materials": {"steel": 70, "copper": 20}, "parts": {"Servo Motor": 3, "Control Unit": 1}, "seconds": 90},
-    {"output": "Plasma Conditioner", "materials": {"steel": 50, "copper": 60, "gold": 6}, "parts": {"Control Unit": 2, "Wiring Loom": 2}, "seconds": 140}
+    {"output": "Plasma Conditioner", "materials": {"steel": 50, "copper": 60, "gold": 6}, "parts": {"Control Unit": 2, "Wiring Loom": 2}, "seconds": 140},
+    {"output": "Steel Catwalk 1.5 m", "materials": {"steel": 21, "concrete": 4}, "seconds": 5.2},
+    {"output": "Steel Catwalk 3 m", "materials": {"steel": 42, "concrete": 8}, "seconds": 8.3},
+    {"output": "Steel Catwalk 6 m", "materials": {"steel": 84, "concrete": 17}, "seconds": 14.6},
+    {"output": "Steel Catwalk Corner", "materials": {"steel": 28, "concrete": 6}, "seconds": 6.2},
+    {"output": "Steel Catwalk Tee", "materials": {"steel": 28, "concrete": 6}, "seconds": 6.2},
+    {"output": "Steel Catwalk Cross", "materials": {"steel": 28, "concrete": 6}, "seconds": 6.2},
+    {"output": "Steel Catwalk End", "materials": {"steel": 28, "concrete": 6}, "seconds": 6.2},
+    {"output": "Steel Catwalk Leg", "materials": {"steel": 9, "concrete": 2}, "seconds": 3.3},
+    {"output": "Steel Catwalk Hanger 2.5 m", "materials": {"steel": 10, "concrete": 2}, "seconds": 3.5},
+    {"output": "Steel Catwalk Hanger 4 m", "materials": {"steel": 12, "concrete": 2}, "seconds": 3.9},
+    {"output": "Steel Catwalk Hanger 6 m", "materials": {"steel": 16, "concrete": 3}, "seconds": 4.3}
   ]
 }
