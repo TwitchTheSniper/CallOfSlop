@@ -774,12 +774,14 @@ public static partial class ConstructExtruder
         return (p.State & CutPending) != 0 || CutDueCm(c, part, p, p.D) is var every and > 0 && c.Parts[product].D.ExKey.L >= every;
     }
 
+    private static bool OwnBlock(ConstructPartDef d) => d.BlockRole == BlockRole.Block && d.BlockFamily < MachineBlocks.Families.Count && MachineBlocks.Families[d.BlockFamily] == "extruder";
+
     internal static bool Hits(Construct b, int skip, in Obb obb, bool own = false)
     {
         var reach = obb.Half.Length();
         for (var i = 0; i < b.PartCount; i++)
         {
-            if (i == skip || own && b.Parts[i].D is { ExtRunOut: > 0 } or { BlockRole: BlockRole.Block }) // (an Extruder's own Run-out Tables and Die Blocks never block its piece)
+            if (i == skip || own && (b.Parts[i].D is { ExtRunOut: > 0 } || OwnBlock(b.Parts[i].D))) // (an Extruder's own Run-out Tables and Die Blocks never block its piece; another machine's blocks, a Press's, do)
                 continue;
             b.WorldFrame(b.Parts[i].Seg, out var q, out var t);
             b.PartBounds(i, out var mn, out var mx);
