@@ -24,7 +24,7 @@ public static partial class ConstructPress
     public const double ShellCycle = 3.0; // s: one swing cycle while the press works (open, slam, hold, open)
     private const double Ripple = 0.06; // of a cycle between one segment and the next down the bed
     public const double SlamAt = 0.12; // the cycle's fraction where a segment slams shut (closing from 0)
-    private const double HoldTo = 0.5, OpenTo = 0.8; // shut until HoldTo, swinging open until OpenTo, then open until the cycle ends
+    public const double HoldTo = 0.5, OpenTo = 0.8; // shut until HoldTo, swinging open until OpenTo, then open until the cycle ends
 
     /// <summary>A shell segment: where its hinge is and which way it opens, in the body frame.</summary>
     public struct ShellPose

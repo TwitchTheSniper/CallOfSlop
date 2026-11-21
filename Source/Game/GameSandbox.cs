@@ -456,6 +456,7 @@ public sealed partial class Game
         SandboxBeaconTick(); // (Inventory Beacons: what each player's reach, GameSandboxBeacon.cs)
         SandboxTerminalTick(); // (Smart Terminals: pulls under way and what each player stands at, GameSandboxTerminal.cs)
         SandboxOfficeTick(now); // (the IT Department's fax line: GameSandboxOffice.cs)
+        SandboxPressCrush(now); // (the clamshell Press's swing and slam: GameSandboxPress.cs)
         SandboxScamTick(now); // (the Scammers' adverts: GameSandboxScams.cs)
         SandboxAidsTick(); // (build stations: GameSandboxAids.cs)
         AllocProfile.Mark("sandbox: spawns, pilots, debris");

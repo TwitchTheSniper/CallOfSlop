@@ -868,6 +868,18 @@ public static partial class ConstructRender
                 var at = (float)(Now * 0.8 % 1.0); // (down fast, up slowly: a press.s stroke)
                 model *= Matrix4x4.CreateTranslation(axis * (box.RigTravel * (at < 0.25f ? at * 4f : (1f - at) / 0.75f)));
                 break;
+            case BoxWork.Hinge:
+                {
+                    // A clamshell leaf: it swings open toward its axis and slams shut in the press's cycle (ConstructPressShells.cs), its turn about the hinge line.
+                    var open = ConstructPress.Openness(true, 0, ConstructLifters.DrawTick);
+                    if (open > 0)
+                    {
+                        var up = Rot24.Apply(p.Rot, Vector3.UnitY);
+                        var pivot = p.Pos + Rot24.Apply(p.Rot, box.RigPivot);
+                        model = model * Matrix4x4.CreateTranslation(-pivot) * Matrix4x4.CreateFromAxisAngle(Vector3.Normalize(Vector3.Cross(up, axis)), open * box.RigTravel * MathF.PI / 180f) * Matrix4x4.CreateTranslation(pivot);
+                    }
+                    break;
+                }
             case BoxWork.Ram:
                 // An Extruder's ram: it pushes the billet as the piece grows and comes back for the next with each metre (drawing 11).
                 model *= Matrix4x4.CreateTranslation(axis * (box.RigTravel * (_pieceCm % 100 / 100f)));

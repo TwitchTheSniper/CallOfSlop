@@ -222,101 +222,122 @@ public sealed class PressParts : IPartGenerator
         var c = Small;
         var k = c.Cell;
         const int n = CoreCells;
-        var p = new Part("Press", c, Section, "A Press Core: stamps parts out of extruded pieces. Alone it takes blanks up to 0.45 m across; weld Press Blocks beside it for a bed (its width the widest blank), stack blocks on the bed's long edges for walls (1.6 m of daylight, 2 m more a block), and it works faster with every block. A die in its slot sets what it makes; blanks go in bay 1, a die's kit in bay 2. Needs power.",
+        var p = new Part("Press", c, Section, "A Press Core: stamps parts out of extruded pieces between two shells that slam shut over the blank. Alone it takes blanks up to 0.45 m across in its own small clamshell; weld Press Blocks beside it for a bed (along the flow from the Core; its width across the widest blank), stack blocks on the bed's two long edges for the shells (1.6 m of daylight, 2 m more a block; each side needs a clear strip as wide as its shells are tall), and it works faster with every block. The shells never stop for anyone. A die in its slot sets what it makes; blanks go in bay 1, a die's kit in bay 2. Needs power.",
             role: "storage", group: "Production", color: Blue);
-        var f = PressBody(p, n, n, n, 2, true);
-        BlockSockets(p, n, n, n, faces: "y", limit: Lim(3, "+y", "-y"));
-        var mid = (f.X0 + f.X1) / 2;
-        var my = (f.Y0 + f.Y1) / 2;
-        var zm = (f.Z0 + f.Z1) / 2;
-        p.Sock("+x", [R3(f.X1), R3(my), R3(zm)], "+x"); // (the first Press Block of its bed: beside it, on its layer)
-        p.Sock("-x", [R3(f.X0), R3(my), R3(zm)], "-x");
-        for (var i = 0; i < f.Centres.Count; i++)
-            p.Sock($"bay{i + 1}", [f.Centres[i], f.Y, f.Z0], "-z", kind: "die");
-        p.Sock("dieslot", [mid, f.Base, zm], "+y", kind: "pressdie");
+        double x0 = c.Lo(), x1 = c.Hi(n), y0 = c.Lo(), y1 = c.Hi(n), z0 = c.Lo(), z1 = c.Hi(n);
+        double mid = (x0 + x1) / 2, my = (y0 + y1) / 2, zm = (z0 + z1) / 2;
+        const double cabH = 1.2, rim = 0.06, deckT = 0.05, leafH = 0.6, leafT = 0.08;
+        var cab = y0 + cabH; // (the cabinet's top: the deck lies on it)
+        var deck = cab + deckT; // (the bed: the die and the tray stand on it)
+        var bayY = y0 + 0.6; // (the bays' sockets on the back: each Piece in 11 cm under, ConstructPorts.cs)
+        var mk = 0.015;
+        // The cabinet and the deck: the only collision (the leaves are looks that swing).
+        p.Add(Box([x0, y0, z0], [x1, cab, z1]));
+        p.Add(Box([x0 + rim, cab, z0 + rim], [x1 - rim, deck, z1 - rim], MachineLook.Base)!.Update(("paintable", false), ("finish", "tread plate")));
+        foreach (var px in new[] { x0, x1 - 0.06 }) // (a steel post up each corner to the cell's top: the Core fills its 2 m cell, and the leaves swing between them)
+            foreach (var pz in new[] { z0, z1 - 0.06 })
+                p.Add(Box([px, cab, pz], [px + 0.06, y1, pz + 0.06], MachineLook.Steel)!.Update(("paintable", false), ("finish", "steel")));
+        // The plinth and the cap band, front and back (a side's are seams: a Press Block welded there hides them).
+        foreach (var (zl, zh) in new[] { (z0 - mk, z0), (z1, z1 + mk) })
+        {
+            p.Add(MachineLook.D([x0 + 0.004, y0, zl], [x1 - 0.004, y0 + 0.15, zh], MachineLook.Base));
+            p.Add(MachineLook.D([x0 + 0.004, cab - 0.075, zl], [x1 - 0.004, cab - 0.01, zh], MachineLook.Base));
+        }
+        foreach (var (side, xl, xh) in new[] { ("+x", x1, x1 + mk), ("-x", x0 - mk, x0) })
+        {
+            p.Add(Seam(MachineLook.D([xl, y0, z0 + 0.004], [xh, y0 + 0.15, z1 - 0.004], MachineLook.Base)!, side));
+            p.Add(Seam(MachineLook.D([xl, cab - 0.075, z0 + 0.004], [xh, cab - 0.01, z1 - 0.004], MachineLook.Base)!, side));
+            for (var i = 0; i < 5; i++) // (louvres)
+            {
+                var ly = y0 + 0.4 + i * 0.09;
+                p.Add(Seam(MachineLook.D([side == "+x" ? x1 - 0.004 : x0 - 0.02, ly, z0 + 0.45], [side == "+x" ? x1 + 0.02 : x0 + 0.004, ly + 0.04, z1 - 0.45], MachineLook.Base)!, side));
+            }
+        }
+        // The small clamshell on the deck: two leaves hinged along the deck's front and back edges, each a side plate and a roof half that
+        // meet over the die; they swing open flat out and slam shut while it works ("hinge": ConstructPressShells.cs), shut at rest.
+        foreach (var sg in new[] { -1, 1 })
+        {
+            var edge = sg < 0 ? z0 + rim : z1 - rim; // (the hinge line, over the deck's edge)
+            var inner = edge - sg * leafT;
+            var top = deck + leafH;
+            double[] pivot = [R3(mid), R3(deck), R3(edge)];
+            var axis = sg < 0 ? "-z" : "+z";
+            PyDict Leaf(double[] lo, double[] hi, string colour, string? finish = null, bool paintable = false)
+            {
+                var bx = MachineLook.Work(MachineLook.D(lo, hi, colour, finish, paintable), "hinge", axis, 95)!;
+                bx["pivot"] = Py.L(pivot[0], pivot[1], pivot[2]);
+                return bx;
+            }
+            double Zs(double a, double b) => Math.Min(a, b);
+            double Zb(double a, double b) => Math.Max(a, b);
+            p.Add(Leaf([x0 + 0.1, deck + 0.004, Zs(inner, edge)], [x1 - 0.1, top - 0.04, Zb(inner, edge)], Blue, paintable: true)); // (its side plate)
+            var tip = zm + sg * 0.003; // (3 mm short of the middle: the two roof halves never share a face)
+            p.Add(Leaf([x0 + 0.1, top - leafT, Zs(edge - sg * 0.04, tip)], [x1 - 0.1, top, Zb(edge - sg * 0.04, tip)], MachineLook.Base)); // (its roof half)
+            var outer = sg < 0 ? edge - 0.012 : edge + 0.012;
+            p.Add(Leaf([x0 + 0.12, top - 0.2, Zs(edge - sg * 0.004, outer)], [x1 - 0.12, top - 0.1, Zb(edge - sg * 0.004, outer)], MachineLook.Accent, "hazard paint")); // (a hazard band on its outer face)
+            foreach (var rx in new[] { mid - 0.55, mid, mid + 0.55 })
+                p.Add(Leaf([rx - 0.03, deck + 0.04, Zs(edge - sg * 0.004, outer + sg * 0.004)], [rx + 0.03, top - 0.22, Zb(edge - sg * 0.004, outer + sg * 0.004)], MachineLook.Base)); // (its ribs)
+            for (var t = 0; t < 4; t++) // (red latch teeth along the roof half's leading edge)
+            {
+                var tx = x0 + 0.3 + t * 0.47;
+                p.Add(Leaf([tx - 0.06, top - leafT - 0.05, Zs(tip - sg * 0.06, tip - sg * 0.006)], [tx + 0.06, top - leafT + 0.004, Zb(tip - sg * 0.06, tip - sg * 0.006)], "#c0392b"));
+            }
+            p.Add(MachineLook.D([x0 + 0.14, deck - 0.02, edge - 0.03], [x1 - 0.14, deck + 0.04, edge + 0.03], MachineLook.Steel, "steel", shape: Kw(("shape", "cylinder"), ("segments", 10), ("front", "+x")))); // (its hinge pin, which stays)
+        }
+        // The front: the die screen (Panels), the status lamp over it, an orange band and arrow down to the Piece out, a run-off lip,
+        // a pressure gauge, the maker's plate and corner bolts.
+        p.Add(MachineLook.D([x0 + 0.12, y0 + 0.17, z1], [x1 - 0.12, y0 + 0.27, z1 + mk], MachineLook.Out));
+        MachineLook.Arrow(p, 2, z1 + mk, 1, 1, -1, y0 + 0.44, mid, k * 0.4, k * 0.6, MachineLook.Ink, mk);
+        p.Add(MachineLook.D([mid - k * 1.2, y0 + 0.004, z1 - 0.004], [mid + k * 1.2, y0 + 0.1 - 0.004, z1 + k * 0.2 - 0.003], MachineLook.Steel, "steel"));
+        p.Add(MachineLook.D([x0 + 0.1, y0 + 0.4, z1 - 0.004], [x0 + 0.28, y0 + 0.58, z1 + 0.036], "#e8e6df", shape: Kw(("shape", "cylinder"), ("segments", 12), ("front", "+z"))));
+        p.Add(MachineLook.D([x0 + 0.08, y0 + 0.38, z1 - 0.006], [x0 + 0.3, y0 + 0.6, z1 + 0.024], MachineLook.Base, shape: Kw(("shape", "cylinder"), ("segments", 12), ("front", "+z")))); // (its bezel)
+        p.Add(MachineLook.D([x1 - 0.42, y0 + 0.42, z1 - 0.004], [x1 - 0.12, y0 + 0.56, z1 + 0.02], MachineLook.In)); // (the maker's plate)
+        foreach (var bx in new[] { x0 + 0.035, x1 - 0.065 })
+            foreach (var by in new[] { y0 + 0.2, cab - 0.13 })
+                p.Add(MachineLook.D([bx, by, z1 - 0.004], [bx + 0.03, by + 0.03, z1 + 0.026], MachineLook.Steel, "steel"));
+        // The back: each bay's Piece in with the one port look (MachineLook.Port), a white band under the bays' cards, oil lines up its
+        // corners with a clamp each.
+        var span = x1 - x0 - k;
+        var centres = Enumerable.Range(0, 2).Select(i => R3(x1 - k * 0.5 - span * (i + 0.5) / 2)).ToList(); // (bay 1 on the left as you stand at the back)
+        foreach (var bx in centres)
+            MachineLook.Port(p, [bx, bayY - 0.11, z0], 2, -1, 0.13, 0.1, true);
+        p.Add(MachineLook.D([x0 + 0.1, y0 + 0.8, z0 - mk], [x1 - 0.1, y0 + 0.83, z0], MachineLook.In));
+        foreach (var hx in new[] { x0 + 0.03, x1 - 0.075 })
+        {
+            p.Add(MachineLook.D([hx, y0 + 0.17, z0 - 0.045], [hx + 0.045, cab - 0.09, z0 - 0.006], Hose, shape: Kw(("shape", "cylinder"), ("segments", 8), ("front", "+y"))));
+            p.Add(MachineLook.D([hx - 0.012, y0 + 0.55, z0 - 0.055], [hx + 0.057, y0 + 0.61, z0 - 0.002], MachineLook.Steel, "steel"));
+        }
+        // Sockets: its feet (and blocks under it), the first Press Block of its bed beside it, the bays, the die on the deck.
+        BlockSockets(p, n, n, n, faces: "y", limit: Lim(3, "+y", "-y"), skip: ["+y"]); // (nothing stands on its clamshell)
+        p.Sock("+x", [R3(x1), R3(my), R3(zm)], "+x");
+        p.Sock("-x", [R3(x0), R3(my), R3(zm)], "-x");
+        for (var i = 0; i < centres.Count; i++)
+            p.Sock($"bay{i + 1}", [centres[i], R3(bayY), R3(z0)], "-z", kind: "die");
+        p.Sock("dieslot", [R3(mid), R3(deck), R3(zm)], "+y", kind: "pressdie");
         p.Stats(CoreMass, CoreHealth, c.Armour, 4);
-        var bayList = f.Centres.Select((bx, i) => (object?)Kw(("socket", $"bay{i + 1}"), ("min", Py.L(R3(bx - k * 0.95), R3(f.Base), R3(f.Z0 - k * 1.5))), ("max", Py.L(R3(bx + k * 0.95), R3(f.Wall), R3(f.Z0 + k * 1.5))))).ToList();
-        var width = Min(k * 3.2, (f.X1 - f.X0 - k) / 2 - k * 0.1);
-        var tz0 = R3(zm + k * 1.3);
-        var tz1 = R3(f.Z1 - k * 0.55);
+        var bayList = centres.Select((bx, i) => (object?)Kw(("socket", $"bay{i + 1}"), ("min", Py.L(R3(bx - k * 0.95), R3(bayY - 0.3), R3(z0 - k * 1.5))), ("max", Py.L(R3(bx + k * 0.95), R3(bayY + 0.3), R3(z0 + k * 1.5))))).ToList();
+        // (a Frame for the shared screens: the bays' cards on the back over their mouths and the die's on the front, both 0.85 m up; the lamp over the die's)
+        var f = new Frame(x0, x1, y0, cab, z0, z1, deck, y0 + 0.75, cab, bayY, centres);
+        var width = Min(k * 3.2, (x1 - x0 - k) / 2 - k * 0.1);
         p.Set(("power", CorePower), ("config", Py.L(Kw(("key", "recipe"), ("label", "Pattern"), ("group", "Work"),
                 ("tooltip", "What its die makes of a blank: Auto lets the blank choose, or one of the die's patterns. On its die screen, Recipe opens a picker of them and Pattern steps through them.")))),
             ("storage", Kw(
-                ("slots", Tray(f.X0 + k * 0.55, f.X1 - k * 0.55, R3(f.Base + k * 0.01), tz0, tz1)),
+                ("slots", Tray(x0 + k * 0.55, x1 - k * 0.55, R3(deck + k * 0.01), R3(zm + k * 1.3), R3(z1 - rim - leafT - 0.02))),
                 ("press", Kw(("bays", bayList),
-                    ("die", Kw(("socket", "dieslot"), ("min", Py.L(R3(mid - k * 2), R3(f.Base), R3(zm))), ("max", Py.L(R3(mid + k * 2), R3(f.Wall), R3(f.Z1 + k * 2))))),
-                    ("maxAcross", MaxAcross(c)), ("speed", 1), ("outAt", Py.L(R3(mid), R3(f.Y0), R3(f.Z1 + k * 0.2))), ("outDir", "+z"))))),
+                    ("die", Kw(("socket", "dieslot"), ("min", Py.L(R3(mid - k * 2), R3(deck), R3(zm))), ("max", Py.L(R3(mid + k * 2), R3(deck + leafH - leafT), R3(z1 + k * 2))))),
+                    ("maxAcross", MaxAcross(c)), ("speed", 1), ("outAt", Py.L(R3(mid), R3(y0), R3(z1 + k * 0.2))), ("outDir", "+z"))))),
             ("machineBlock", BlockKey("core", [R3(mid), R3(my), R3(zm)])),
             ("panels", Panels(p, f, width, pattern: true)));
         p.Add(StatusLamp(p, f)); // (its line state over its own screen: ProductionLines)
-        CoreDetail(p, f);
         return p;
     }
 
-    /// <summary>
-    /// The Press Core's small production detail (Sean 2026-11-21: every machine gets bolts, plates, cables, gauges and vents, and the one
-    /// port look on its ports): the drive motor on the crown with its fan turning while it works and its cable down the crown's back, a
-    /// hex nut on each tie rod, oil lines down the back posts, a pressure gauge and the maker's plate on the crown's back, louvres in the
-    /// crown's sides, bolts at the crown's front corners, and the shared port fitting at each bay's Piece in. Anything on a side a Press
-    /// Block is welded to (the crown's sides, its top under a stacked block) is a seam, drawn only while that side is open.
-    /// </summary>
-    private static void CoreDetail(Part p, Frame f)
-    {
-        double x0 = f.X0, x1 = f.X1, y1 = f.Y1, z0 = f.Z0, z1 = f.Z1, cr = f.Crown;
-        static PyDict Cyl(string front, int seg = 12) => Kw(("shape", "cylinder"), ("segments", seg), ("front", front));
-        // The drive: a motor lying along the crown's back, its fan cap turning while it works, a terminal box and its cable.
-        double mz = z0 + 0.32, my = y1 + 0.004;
-        p.Add(Seam(MachineLook.D([x0 + 0.45, my, mz - 0.16], [x1 - 0.65, my + 0.05, mz + 0.16], MachineLook.Base)!, "+y")); // (its feet plate)
-        p.Add(Seam(MachineLook.D([x0 + 0.5, my + 0.042, mz - 0.14], [x1 - 0.7, my + 0.322, mz + 0.14], MachineLook.Base, shape: Cyl("+x"))!, "+y")); // (the motor)
-        for (var i = 0; i < 5; i++)
-        {
-            var rx = x0 + 0.6 + i * 0.12;
-            p.Add(Seam(MachineLook.D([rx, my + 0.026, mz - 0.157], [rx + 0.03, my + 0.338, mz + 0.157], MachineLook.Steel, "steel", shape: Cyl("+x"))!, "+y")); // (its cooling ribs)
-        }
-        p.Add(Seam(MachineLook.Work(MachineLook.D([x1 - 0.704, my + 0.062, mz - 0.12], [x1 - 0.6, my + 0.302, mz + 0.12], MachineLook.Steel, "steel", shape: Cyl("+x", 8)), "spin", "+x")!, "+y")); // (the fan cap: it turns while it works)
-        p.Add(Seam(MachineLook.D([x0 + 0.62, my + 0.29, mz - 0.07], [x0 + 0.82, my + 0.39, mz + 0.07], MachineLook.Base)!, "+y")); // (the terminal box)
-        p.Add(Seam(MachineLook.D([x0 + 0.68, my + 0.054, mz - 0.11], [x0 + 0.76, my + 0.3, mz - 0.07], CableDark)!, "+y")); // (its cable down off the box)
-        p.Add(Seam(MachineLook.D([x0 + 0.68, my + 0.012, z0 - 0.04], [x0 + 0.76, my + 0.058, mz - 0.074], CableDark)!, "+y")); // (and along the crown's top to its back edge)
-        p.Add(MachineLook.D([x0 + 0.68, cr + 0.4, z0 - 0.04], [x0 + 0.76, y1 + 0.012, z0 - 0.012], CableDark)); // (and down the crown's back)
-        // A hex nut on each tie rod, over the posts on the crown's top.
-        foreach (var x in new[] { x0, x1 - 0.125 })
-            foreach (var z in new[] { z0, z1 - 0.125 })
-                p.Add(Seam(MachineLook.D([x + 0.017, y1 - 0.006, z + 0.017], [x + 0.108, y1 + 0.045, z + 0.108], MachineLook.Steel, "steel", shape: Cyl("+y", 6))!, "+y"));
-        // Oil lines down the back posts from the crown to the bed, a clamp on each halfway.
-        foreach (var x in new[] { x0 + 0.04, x1 - 0.085 })
-        {
-            p.Add(MachineLook.D([x, f.Base + 0.02, z0 - 0.045], [x + 0.045, cr - 0.02, z0 - 0.006], Hose, shape: Cyl("+y", 8)));
-            p.Add(MachineLook.D([x - 0.012, (f.Base + cr) / 2 - 0.03, z0 - 0.055], [x + 0.057, (f.Base + cr) / 2 + 0.03, z0 - 0.002], MachineLook.Steel, "steel"));
-        }
-        // On the crown's back: a pressure gauge and the maker's plate, bolts along its top.
-        var gy = cr + 0.22;
-        p.Add(MachineLook.D([x1 - 0.5, gy - 0.09, z0 - 0.04], [x1 - 0.32, gy + 0.09, z0 + 0.004], "#e8e6df", shape: Cyl("-z")));
-        p.Add(MachineLook.D([x1 - 0.52, gy - 0.11, z0 - 0.028], [x1 - 0.3, gy + 0.11, z0 + 0.006], MachineLook.Base, shape: Cyl("-z"))); // (its bezel)
-        p.Add(MachineLook.D([x0 + 0.2, gy - 0.08, z0 - 0.024], [x0 + 0.52, gy + 0.08, z0 + 0.004], MachineLook.In)); // (the maker's plate)
-        for (var bx = x0 + 0.25; bx < x1 - 0.2; bx += 0.3)
-            if (bx < x0 + 0.66 || bx > x0 + 0.8) // (clear of the cable)
-                p.Add(MachineLook.D([bx - 0.015, y1 - 0.12, z0 - 0.022], [bx + 0.015, y1 - 0.09, z0 + 0.004], MachineLook.Steel, "steel"));
-        // Louvres in the crown's sides (seams: hidden under a welded block) and bolts at the crown's front corners.
-        foreach (var (side, sx, sg) in new[] { ("+x", x1, 1), ("-x", x0, -1) })
-            for (var i = 0; i < 4; i++)
-            {
-                var ly = cr + 0.1 + i * 0.07;
-                double a = sg > 0 ? sx - 0.004 : sx - 0.02, b = sg > 0 ? sx + 0.02 : sx + 0.004;
-                p.Add(Seam(MachineLook.D([a, ly, z0 + 0.55], [b, ly + 0.035, z1 - 0.55], MachineLook.Base)!, side));
-            }
-        foreach (var x in new[] { x0 + 0.045, x0 + 0.105, x1 - 0.135, x1 - 0.075 })
-            foreach (var y in new[] { cr + 0.16, cr + 0.36 })
-                p.Add(MachineLook.D([x, y, z1 - 0.004], [x + 0.03, y + 0.03, z1 + 0.02], MachineLook.Steel, "steel"));
-        // The one port look (MachineLook.Port) at each bay's Piece in, 11 cm under the bay's socket on the back plane (ConstructPorts.cs).
-        foreach (var bx in f.Centres)
-            MachineLook.Port(p, [bx, f.Y - 0.11, z0], 2, -1, 0.13, 0.1, true);
-    }
-
-    private const string Hose = "#1d1f22", CableDark = "#34383d";
+    private const string Hose = "#1d1f22";
 
     /// <summary>
     /// A Press Block: one 2 m cube of a press's bed or wall. Its bolted rims, skirt and hazard edge on a side are drawn only while no block
     /// of the same press is welded there (MachineBlocks: "seam"), so a bed reads as one plate with a hazard edge round it, and a wall as one.
+    /// A wall block on one of the bed's long edges is a clamshell segment: the game swings it about its hinge (ConstructPressShells.cs).
     /// </summary>
     private static Part PressBlock()
     {
