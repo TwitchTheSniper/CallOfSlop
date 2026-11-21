@@ -1262,7 +1262,8 @@
       "shape": "cylinder",
       "segments": 12,
       "front": "-z",
-      "paintable": false
+      "paintable": false,
+      "seam": "-y"
     },
     {
       "min": [
@@ -1277,7 +1278,8 @@
       ],
       "color": "#15171a",
       "detail": true,
-      "paintable": false
+      "paintable": false,
+      "seam": "-y"
     },
     {
       "min": [
@@ -1292,7 +1294,8 @@
       ],
       "color": "#ecebe4",
       "detail": true,
-      "paintable": false
+      "paintable": false,
+      "seam": "-y"
     },
     {
       "min": [
@@ -1307,7 +1310,8 @@
       ],
       "color": "#15171a",
       "detail": true,
-      "paintable": false
+      "paintable": false,
+      "seam": "-y"
     },
     {
       "min": [
@@ -1322,7 +1326,8 @@
       ],
       "color": "#f2b01e",
       "detail": true,
-      "paintable": false
+      "paintable": false,
+      "seam": "-y"
     },
     {
       "min": [
@@ -1337,7 +1342,8 @@
       ],
       "color": "#f2b01e",
       "detail": true,
-      "paintable": false
+      "paintable": false,
+      "seam": "-y"
     }
   ],
   "sockets": [

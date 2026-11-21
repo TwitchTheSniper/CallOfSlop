@@ -296,19 +296,19 @@ public sealed class ExtrusionParts : IPartGenerator
         // The skirt at its foot, a seam.
         p.Add(Seam(L([-0.94, 0, back + 0.25], [0.94, 0.14, front - 0.1], MachineLook.Base), "-y"));
         // The back: the ram's housing and its rod, which slides in as the piece grows and comes back for the next billet each metre;
-        // two hoses from the housing to the platen, a pressure gauge, grease points and a maker's plate.
+        // two hoses from the housing to the platen; on the bottom row only (a big bank's inner blocks draw less), a pressure gauge, grease points and a maker's plate.
         p.Add(L([-0.45, 0.55, BlockBack - 0.7], [0.45, 1.45, BlockBack + 0.006], MachineLook.Base, shape: Kw(("shape", "cylinder"), ("segments", 16), ("front", "-z"))));
         p.Add(L([-0.5, 0.5, BlockBack - 0.73], [0.5, 1.5, BlockBack - 0.69], MachineLook.Steel, "steel", shape: Kw(("shape", "cylinder"), ("segments", 16), ("front", "-z"))));
         p.Add(MachineLook.Work(L([-0.18, 0.82, BlockBack - 1.0], [0.18, 1.18, BlockBack - 0.66], MachineLook.Steel, "steel", shape: Kw(("shape", "cylinder"), ("segments", 12), ("front", "-z"))), "ram", "+z", 0.5));
         p.Add(MachineLook.Work(L([-0.24, 0.76, BlockBack - 1.06], [0.24, 1.24, BlockBack - 0.98], MachineLook.Base), "ram", "+z", 0.5)); // (the rod's end plate)
         foreach (var (x, colour) in new[] { (-0.32, "#b8322a"), (0.32, "#2f62b5") })
             p.Add(L([x - 0.025, 1.33, BlockBack - 0.6], [x + 0.025, 1.38, BlockBack + 0.006], colour)); // (a hose from the housing into the platen)
-        p.Add(L([0.62, 1.48, BlockBack - 0.036], [0.78, 1.64, BlockBack + 0.006], "#e8e6df", shape: Kw(("shape", "cylinder"), ("segments", 12), ("front", "-z")))); // (the gauge's face)
-        p.Add(L([0.68, 1.54, BlockBack - 0.048], [0.72, 1.62, BlockBack - 0.032], MachineLook.Ink)); // (its needle)
-        p.Add(L([-0.82, 1.5, BlockBack - 0.024], [-0.56, 1.66, BlockBack + 0.006], MachineLook.In)); // (the maker's plate)
-        p.Add(L([-0.79, 1.56, BlockBack - 0.036], [-0.59, 1.6, BlockBack - 0.02], MachineLook.Ink));
+        p.Add(Seam(L([0.62, 1.48, BlockBack - 0.036], [0.78, 1.64, BlockBack + 0.006], "#e8e6df", shape: Kw(("shape", "cylinder"), ("segments", 12), ("front", "-z"))), "-y")); // (the gauge's face)
+        p.Add(Seam(L([0.68, 1.54, BlockBack - 0.048], [0.72, 1.62, BlockBack - 0.032], MachineLook.Ink), "-y")); // (its needle)
+        p.Add(Seam(L([-0.82, 1.5, BlockBack - 0.024], [-0.56, 1.66, BlockBack + 0.006], MachineLook.In), "-y")); // (the maker's plate)
+        p.Add(Seam(L([-0.79, 1.56, BlockBack - 0.036], [-0.59, 1.6, BlockBack - 0.02], MachineLook.Ink), "-y"));
         foreach (var (x, y) in new[] { (-0.7, 0.3), (0.7, 0.3) })
-            p.Add(L([x - 0.02, y - 0.02, BlockBack - 0.03], [x + 0.02, y + 0.02, BlockBack + 0.006], MachineLook.Accent)); // (grease points)
+            p.Add(Seam(L([x - 0.02, y - 0.02, BlockBack - 0.03], [x + 0.02, y + 0.02, BlockBack + 0.006], MachineLook.Accent), "-y")); // (grease points)
         p.Sock("+x", [1, 1, 0], "+x");
         p.Sock("-x", [-1, 1, 0], "-x");
         p.Sock("top", [0, 2, 0], "+y");
