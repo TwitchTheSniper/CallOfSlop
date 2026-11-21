@@ -106,15 +106,16 @@ public static unsafe class Lighting
         uniform vec4 uOuterR[16]; // with uOuterFog: the fade's start radius per direction, 64 packed 4 to a vec4 (Map.OuterFogStarts)
 
         // wrap: 0 = plain Lambert (solid surfaces), ~0.5 = leaves (light leaks round the edges)
-        vec3 ApplyLight(vec3 albedo, vec3 n, float wrap)
+        vec3 ApplyLightVis(vec3 albedo, vec3 n, float wrap, vec3 sunColor)
         {
             // Lean the sky light towards the sky's hue (not its brightness, so dark skies don't darken everything).
             float skyLum = max(dot(uFog, vec3(0.3333)), 0.05);
             vec3 sky = mix(uAmbSky, uFog / skyLum * dot(uAmbSky, vec3(0.3333)), uSkyTint);
             vec3 amb = mix(uAmbGround, sky, n.y * 0.5 + 0.5);
             float diff = max((dot(n, uSunDir) + wrap) / (1.0 + wrap), 0.0);
-            return albedo * (amb + uSunColor * diff);
+            return albedo * (amb + sunColor * diff);
         }
+        vec3 ApplyLight(vec3 albedo, vec3 n, float wrap) { return ApplyLightVis(albedo, n, wrap, uSunColor); }
 
         // ---- Baked lighting (docs/render/LIGHTING.md, Source/Render/LightGrid.cs) ----
         // The map's light grid as three 3D textures, and one block of per-pass values shared by every program.
@@ -129,9 +130,14 @@ public static unsafe class Lighting
             vec4 uDynPos[12]; // dynamic lights: position, range (the size is LightGrid.MaxDynamic: its check below)
             vec4 uDynCol[12]; // colour * intensity
             vec4 uSurfQ;     // x: the materials setting (0 Low: the classic light, 1 Medium, 2 High; docs/render/MATERIALS.md); y: 1 while glow is marked for the bloom; z: edge bevels on; w: material contrast on
+            mat4 uShadowVP;  // world less uShadowC to the sun shadow map's u, v and stored depth (SunShadows.cs)
+            vec4 uShadowC;   // xyz: the map's centre; w: the normal offset (m)
+            vec4 uShadowQ;   // x: 1 while the map is live; y: the soft edge's radius (uv); z: the depth sign; w: the depth bias
+            vec4 uKeyQ;      // x: the key light's multiplier (0: not set, 1)
         };
         uniform sampler3D uLitA; // rgb: static light reaching the cell, a: the share that flickers
         uniform sampler3D uLitB; // xyz: the light's average direction (length: how one-sided), w: ambient left (sky seen)
+        uniform sampler2D uSunShadow; // the sun shadow map's depth (SunShadows.cs; read only while uShadowQ.x is 1)
         uniform sampler3D uLitC; // r: sun reaching the cell, g, b: flicker phasor (128/255 = 0), a: flicker pace
         float gLitAmb = 1.0;     // the ambient factor the last ApplyLightAt used (the box shaders scale their rim light by it)
         float gSunVis = 1.0;     // ...how much of the sun it let through (materials: the sun's highlight)
@@ -206,13 +212,40 @@ public static unsafe class Lighting
             c = texture(uLitC, uvw);
         }
 
-        // ApplyLight plus the baked light at world position p (mode 0: exactly ApplyLight).
+        // How much of the sun reaches world point p past the ships and vehicles near the camera (SunShadows.cs): 12 taps of the
+        // depth map round the point, offset along its normal, fading to 1 at the map's edge. 1 while the map is off.
+        float SunShadow(vec3 p, vec3 n)
+        {
+            if (uShadowQ.x < 0.5)
+                return 1.0;
+            vec3 s = (uShadowVP * vec4(p - uShadowC.xyz + n * uShadowC.w, 1.0)).xyz;
+            vec2 e = abs(s.xy - 0.5) * 2.0;
+            float edge = max(e.x, e.y);
+            if (edge >= 1.0 || s.z <= 0.0 || s.z >= 1.0) // (outside the map's square or its depth: nothing there was drawn)
+                return 1.0;
+            const vec2 taps[12] = vec2[12](vec2(-0.326, -0.406), vec2(-0.840, -0.074), vec2(-0.696, 0.457), vec2(-0.203, 0.621),
+                vec2(0.962, -0.195), vec2(0.473, -0.480), vec2(0.519, 0.767), vec2(0.185, -0.893), vec2(0.507, 0.064),
+                vec2(0.896, 0.412), vec2(-0.322, -0.933), vec2(-0.792, -0.598));
+            float a = fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715)))) * 6.2832;
+            mat2 r = mat2(cos(a), sin(a), -sin(a), cos(a)) * uShadowQ.y;
+            float lit = 0.0;
+            for (int i = 0; i < 12; i++)
+            {
+                float d = texture(uSunShadow, s.xy + r * taps[i]).r;
+                lit += step(-uShadowQ.w, uShadowQ.z * (d - s.z));
+            }
+            return mix(lit / 12.0, 1.0, smoothstep(0.8, 1.0, edge));
+        }
+
+        // ApplyLight plus the baked light at world position p (mode 0: ApplyLight, with the sun shadows and the key light).
         vec3 ApplyLightAt(vec3 albedo, vec3 n, float wrap, vec3 p)
         {
             gLitAmb = 1.0;
-            gSunVis = 1.0;
+            float key = uKeyQ.x > 0.0 ? uKeyQ.x : 1.0;
+            float shade = SunShadow(p, n);
+            gSunVis = shade;
             if (uLitMode.x < 0.5)
-                return ApplyLight(albedo, n, wrap);
+                return ApplyLightVis(albedo, n, wrap, uSunColor * key * shade);
             if (uLitMode.x > 4.5) // (an unlit map's classic light plus the frame's dynamic lights: lamps on constructs, ConstructLamps.cs)
             {
                 vec3 dl = vec3(0.0);
@@ -228,7 +261,8 @@ public static unsafe class Lighting
                 // A soft knee (2026-11-14): a lamp's pool stays strong, but a wall or a roof a metre or two from a lamp is no
                 // longer burnt white (ConstructLamps' strengths are set for it: a brightest channel of 1 comes out 0.69, 2 comes out 1.05).
                 dl = dl / (1.0 + 0.45 * max(max(dl.r, dl.g), dl.b)); // (on the brightest channel: the sodium's amber keeps its hue)
-                return ApplyLight(albedo, n, wrap) + albedo * dl;
+                gSunVis = shade;
+                return ApplyLightVis(albedo, n, wrap, uSunColor * key * shade) + albedo * dl;
             }
             vec4 a;
             vec4 b;
@@ -245,7 +279,7 @@ public static unsafe class Lighting
             float skyLum = max(dot(uFog, vec3(0.3333)), 0.05);
             vec3 sky = mix(uAmbSky, uFog / skyLum * dot(uAmbSky, vec3(0.3333)), uSkyTint);
             vec3 amb = mix(uAmbGround, sky, n.y * 0.5 + 0.5) * b.w;
-            float sunVis = min(c.r * (255.0 / 252.0), 1.0); // (its low two bits are flags: LightBaker.WriteFlags)
+            float sunVis = min(c.r * (255.0 / 252.0), 1.0) * shade; // (its low two bits are flags: LightBaker.WriteFlags; shade: the ships' shadows)
             gSunVis = sunVis;
             gLitDir = b.xyz;
             gLitCol = a.rgb;
@@ -263,7 +297,7 @@ public static unsafe class Lighting
             }
             if (uLitMode.x > 2.5) // (--light-debug's pictures: the grid's light alone, or its sky and sun visibility)
                 return uLitMode.x < 3.5 ? lit + vec3(0.02) : vec3(b.w * 0.6 + sunVis * 0.4, b.w * 0.6 + sunVis * 0.4, b.w * 0.6);
-            return albedo * (amb + uSunColor * diff + lit);
+            return albedo * (amb + uSunColor * key * diff + lit);
         }
 
         // The sky's colour in direction d (unit) without sun, moon, stars or clouds (SkySettings.Gradient in C#).
@@ -384,7 +418,7 @@ public static unsafe class Lighting
 
     /// <summary>The uniform names <see cref="Glsl"/> declares (the self-test checks the shader and the C# agree); the array uOuterR is apart.</summary>
     public static readonly string[] UniformNames =
-        ["uSunDir", "uSunColor", "uAmbSky", "uAmbGround", "uSkyTint", "uFogMax", "uCam", "uFog", "uFogRange", "uSkyFog", "uSkyZenith", "uSkyHorizon", "uSkyGround", "uSkyHazeDir", "uSkyHaze", "uOuterFog", "uLitA", "uLitB", "uLitC"];
+        ["uSunDir", "uSunColor", "uAmbSky", "uAmbGround", "uSkyTint", "uFogMax", "uCam", "uFog", "uFogRange", "uSkyFog", "uSkyZenith", "uSkyHorizon", "uSkyGround", "uSkyHazeDir", "uSkyHaze", "uOuterFog", "uLitA", "uLitB", "uLitC", "uSunShadow"];
 
     /// <summary>
     /// C# mirror of <see cref="Glsl"/>'s SkyGradient under <paramref name="l"/> (the self-test checks horizons with it).
