@@ -978,6 +978,15 @@ public sealed class Assembling : IPartGenerator
         (null, null, Rec("Coolant Loop", 60, 1, m: [("steel", 50), ("copper", 20), ("rubber", 10)], p: [("Gear Set", 1), ("Wiring Loom", 1)])),
         (null, null, Rec("Servo Rack", 90, 1, m: [("steel", 70), ("copper", 20)], p: [("Servo Motor", 3), ("Control Unit", 1)])),
         (null, null, Rec("Plasma Conditioner", 140, 1, m: [("steel", 50), ("copper", 60), ("gold", 6)], p: [("Control Unit", 2), ("Wiring Loom", 2)])),
+        // (steel catwalks in the Roamer Stair's style, Sean 2026-11-21: CatwalkParts; at the end so saved choices keep their index)
+        ("Catwalks", "Steel Catwalk 1.5 m", null),
+        ("Catwalks", "Steel Catwalk 3 m", null),
+        ("Catwalks", "Steel Catwalk 6 m", null),
+        ("Catwalks", "Steel Catwalk Corner", null),
+        ("Catwalks", "Steel Catwalk Tee", null),
+        ("Catwalks", "Steel Catwalk Cross", null),
+        ("Catwalks", "Steel Catwalk End", null),
+        ("Catwalks", "Steel Catwalk Leg", null),
     ];
 
     /// <summary>

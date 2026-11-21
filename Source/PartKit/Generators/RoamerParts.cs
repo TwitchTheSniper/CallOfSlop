@@ -1536,6 +1536,10 @@ public sealed class RoamerParts : IPartGenerator
         // Steel foot plates under the stringers, bolted to the floor: what the stair stands on. The sockets: its foot either side, its head.
         foreach (var (x0, x1) in new[] { (-0.11, -0.01), (1.51, 1.61) })
             LBox(p, x0, foot, z0 + 0.008, x1, foot + 0.02, 0.15, stringerC, "dirty steel");
+        // The header angle under the top tread's back edge, and on it the "head" socket: a Steel Catwalk's open end meets it level
+        // with the top tread (Sean, 2026-11-21: CatwalkParts).
+        LBox(p, -0.05, foot + rise * n - 0.11, z0 + StairRun - 0.075, 1.55, foot + rise * n - 0.05, z0 + StairRun - 0.005, stringerC, "dirty steel");
+        p.Sock("head", [0.75, foot + rise * n - 0.075, z0 + StairRun - 0.005], "+z");
         foreach (var x in new[] { 0.0, 1.5 })
         {
             p.Sock($"b{x * 4:0}_0", [x, foot, 0], "-y");
