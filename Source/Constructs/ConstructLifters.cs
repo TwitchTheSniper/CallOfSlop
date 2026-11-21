@@ -248,7 +248,11 @@ public static partial class ConstructLifters
         foreach (var c in world.Bodies)
         {
             if (server && (c.PadStamp != c.RebuildStamp || c.PadPartCount != c.PartCount))
+            {
                 NotePads(world, c); // (phase 5: the bodies with a Lay-down Pad, ConstructLifterPads.cs; its own stamp, as a host's drawing scans this world too)
+                if (HasPacked(c) && !world.PackedBodies.Contains(c.Id))
+                    world.PackedBodies.Add(c.Id); // (a packed group out of a store, or welded on before it was unpacked: its group again, PackedGroups.cs)
+            }
             if (c.LiftStamp != c.RebuildStamp || c.LiftPartCount != c.PartCount)
                 ScanBody(world, c, server);
         }
@@ -364,6 +368,8 @@ public static partial class ConstructLifters
             Scan(world, server: true); // (phase 4: always, so an arm with no station open finds its carries; a body is looked at only when its parts changed)
             LifterProbe.Cost(ref LifterProbe.ScanCost, System.Diagnostics.Stopwatch.GetTimestamp() - s0);
             PadsTakeIn(world); // (phase 5: a loose piece set down on a Lay-down Pad goes into its hold)
+            if (world.PackedBodies.Count > 0)
+                UnpackWaiting(world); // (a packed group out of a store is its group again: PackedGroups.cs; here, never inside another step's look over the bodies)
         }
         if (world.LiftBodies.Count == 0 || world.LiftTick % Every != 0)
             return;

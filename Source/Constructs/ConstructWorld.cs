@@ -585,7 +585,7 @@ public sealed partial class ConstructWorld
             c.AddFuel(def.FuelCapacity);
         if (def.Role == PartRole.Battery && c.PartCount > 1)
             c.Charge += def.BatteryCapacity; // (a new battery comes charged)
-        if (def.IsNamedRuntime && BakedParts.IsBaked(def))
+        if (def.IsNamedRuntime && BakedParts.IsName(def.Name))
             BakedParts.NoteInUse(this, def); // (a baked part from a blueprint or a hand: its design goes to everyone before the body)
         return i;
     }

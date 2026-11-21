@@ -25,8 +25,10 @@ PN79Syp1w9HwMJzfpEipQU) and its spike, draft PR 201 (not for merging). Test ship
   round stopped in it, by HullHoles (mesh and collision: you see and shoot through it), the part swapped for its holed self.
   The cuts wait in `ConstructWorld.HolesWaiting` and go in every `HoleEvery` (12) ticks, so a body under fire rebuilds at most 5
   times a second whatever the guns' rate; the swap rides the structure patch and saves with the part's key. A part HullHoles
-  refuses (a machine, a door, a lamp, a damaged-look wall), or one with its 4 holes already, keeps only the scorch. A mark on a
-  real hole draws as a scorched ring round it with the hot rim outside (`BoreMarkHoled`); `Mark` casts a second ray just past the
+  refuses (a machine, a door, a lamp, a damaged-look wall), or one with its 4 holes already, keeps only the scorch. The square is cut along the part's own axes (a box cut along a turned square
+  takes its bounding square). A mark on a real hole draws as a sooty hexagonal rim (Karl, 2026-11-21: "at least make it a
+  hexagon") whose inner corners sit on the square's side middles and outer edge covers its corners, so a hexagon shows, with the hot
+  rim outside (`BoreMarkHoled`, `Program.BoreHex`); `Mark` casts a second ray just past the
   hole's edge, since the middle one goes clean through a hole already cut. `--battle-check ... --no-bore-holes` turns the cuts
   off. Holes are not mended by welding yet.
 - **Break-up** (`Source/Constructs/ConstructBreakUp.cs`). A body of 1,024 parts or more keeps, across its long axis every 8 m,
