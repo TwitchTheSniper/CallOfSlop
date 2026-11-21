@@ -987,6 +987,9 @@ public sealed class Assembling : IPartGenerator
         ("Catwalks", "Steel Catwalk Cross", null),
         ("Catwalks", "Steel Catwalk End", null),
         ("Catwalks", "Steel Catwalk Leg", null),
+        ("Catwalks", "Steel Catwalk Hanger 2.5 m", null),
+        ("Catwalks", "Steel Catwalk Hanger 4 m", null),
+        ("Catwalks", "Steel Catwalk Hanger 6 m", null),
     ];
 
     /// <summary>

@@ -15,7 +15,8 @@ namespace CallOfSlop.PartKit.Generators;
 /// stands the deck 3 m over the floor its foot is on: a storey, the stair's climb.
 ///
 /// The pieces: straight runs (1.5, 3 and 6 m), and squares as wide as a run is: a Corner, a Tee, a Cross and an End (railed on three
-/// sides). The squares' open sides take a run's end.
+/// sides). The squares' open sides take a run's end. Or hung: a Catwalk Hanger (2.5, 4 or 6 m drop) takes a pair of leg sockets and
+/// bolts to the ceiling over it.
 /// </summary>
 public sealed class CatwalkParts : IPartGenerator
 {
@@ -267,6 +268,40 @@ public sealed class CatwalkParts : IPartGenerator
         return p.Stats(45, 260, 20, 3.0);
     }
 
+    /// <summary>The ceiling mount (Sean, 2026-11-21: "catwalks should also have an option for ceiling mounts, so they're hanging"): a
+    /// trapeze, a channel crossbar under both of the deck's channels on two rods that pass outside the rails up to plates bolted to the
+    /// ceiling. drop: from the ceiling to the deck's top (2.5 m at least, so a person stands under it). Built in the catwalk's frame:
+    /// its two deck sockets meet a pair of the catwalk's leg sockets (legL k and legR k), and its ceiling sockets face up.</summary>
+    private static Part Hanger(double drop)
+    {
+        var p = new Part($"Steel Catwalk Hanger {Fmt(drop)} m", Small, Section, $"A ceiling mount for a catwalk: a crossbar under its channels on two rods, the deck hanging {Fmt(drop)} m under the ceiling.", role: "frame", tool: "welder", material: "steel", color: ChannelC, group: Group);
+        double ceil = Top + drop, bar = Under - 0.08;
+        double[] rodX = [Mid - Half - 0.05, Mid + Half + 0.05]; // (outside the channels and the rails: x -0.14 and 1.64)
+        // The crossbar: a channel across under the deck, its ends past the rods.
+        Solid(p, rodX[0] - 0.06, bar, -0.035, rodX[1] + 0.06, Under, 0.035, ChannelC, "dirty steel");
+        Look(p, rodX[0] - 0.055, bar - 0.012, -0.03, rodX[1] + 0.055, bar - 0.003, 0.03, ChannelC, "dirty steel"); // (its lower flange)
+        foreach (var x in rodX)
+        {
+            // The rod, a nut and washer under the bar, a turnbuckle part way up, the clevis and the ceiling plate with its bolts.
+            Solid(p, x - 0.012, bar, -0.012, x + 0.012, ceil - 0.02, 0.012, RailC, "steel");
+            Look(p, x - 0.024, bar - 0.04, -0.024, x + 0.024, bar - 0.014, 0.024, RailC, "steel");
+            var tb = Math.Min(ceil - 0.6, Top + 1.6);
+            Look(p, x - 0.02, tb, -0.02, x + 0.02, tb + 0.22, 0.02, ChannelC, "dirty steel");
+            Look(p, x - 0.024, ceil - 0.12, -0.03, x + 0.024, ceil - 0.024, 0.03, ChannelC, "dirty steel");
+            Solid(p, x - 0.09, ceil - 0.02, -0.09, x + 0.09, ceil, 0.09, ChannelC, "dirty steel");
+            foreach (var (bx, bz) in new[] { (-0.06, -0.06), (0.06, -0.06), (-0.06, 0.06), (0.06, 0.06) })
+                Look(p, x + bx - 0.012, ceil - 0.034, bz - 0.012, x + bx + 0.012, ceil - 0.022, bz + 0.012, RailC, "steel");
+            // A hazard band at head height on the rod, so it is seen.
+            Look(p, x - 0.018, Top + 1.0, -0.018, x + 0.018, Top + 1.15, 0.018, Yellow, "hazard paint");
+        }
+        p.Sock("deckL", [Mid - Half + ChanW / 2, Under, 0], "+y");
+        p.Sock("deckR", [Mid + Half - ChanW / 2, Under, 0], "+y");
+        p.Sock("ceilL", [rodX[0], ceil, 0], "+y");
+        p.Sock("ceilR", [rodX[1], ceil, 0], "+y");
+        p.Set(("collider", "boxes"), ("centreSockets", false));
+        return p.Stats(Py.Round(30 + 8 * drop, 1), 200 + 30 * drop, 20, 3.0);
+    }
+
     public void Make(PartOutput o) => WriteParts(o, Out, new (string, Part)[]
     {
         ("", Straight(1.5)),
@@ -277,5 +312,8 @@ public sealed class CatwalkParts : IPartGenerator
         ("", Junction("Cross", "A catwalk crossing: open on all four sides.", Side.None)),
         ("", Junction("End", "A catwalk's dead end, railed on three sides. Or a lookout.", Side.NegX | Side.PosX | Side.PosZ)),
         ("", Leg()),
+        ("", Hanger(2.5)),
+        ("", Hanger(4)),
+        ("", Hanger(6)),
     });
 }

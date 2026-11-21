@@ -2768,6 +2768,9 @@
     {"output": "Steel Catwalk Tee", "materials": {"steel": 28, "concrete": 6}, "seconds": 6.2},
     {"output": "Steel Catwalk Cross", "materials": {"steel": 28, "concrete": 6}, "seconds": 6.2},
     {"output": "Steel Catwalk End", "materials": {"steel": 28, "concrete": 6}, "seconds": 6.2},
-    {"output": "Steel Catwalk Leg", "materials": {"steel": 9, "concrete": 2}, "seconds": 3.3}
+    {"output": "Steel Catwalk Leg", "materials": {"steel": 9, "concrete": 2}, "seconds": 3.3},
+    {"output": "Steel Catwalk Hanger 2.5 m", "materials": {"steel": 10, "concrete": 2}, "seconds": 3.5},
+    {"output": "Steel Catwalk Hanger 4 m", "materials": {"steel": 12, "concrete": 2}, "seconds": 3.9},
+    {"output": "Steel Catwalk Hanger 6 m", "materials": {"steel": 16, "concrete": 3}, "seconds": 4.3}
   ]
 }
