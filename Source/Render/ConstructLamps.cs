@@ -30,6 +30,11 @@ public static class ConstructLamps
     private const int Most = LightGrid.MaxDynamic + 1;
     private static readonly float[] BestD = new float[Most];
     private static readonly Vector3[] BestPos = new Vector3[Most], BestCol = new Vector3[Most];
+    // (who each kept lamp is, for its shadow: LampShadows.cs; sub -1: on a moving segment, unshadowed)
+    private static readonly Construct?[] BestBody = new Construct?[Most];
+    private static readonly int[] BestPart = new int[Most], BestSub = new int[Most];
+    private static readonly Vector3[] BestLocal = new Vector3[Most], BestBodyPos = new Vector3[Most];
+    private static readonly Quaternion[] BestRot = new Quaternion[Most];
 
     /// <summary>Lamps lit this frame and lamps in reach (the F9 window and the smoke log).</summary>
     public static int LastLit, LastNear;
@@ -65,11 +70,16 @@ public static class ConstructLamps
                 if (d.Logic == CLogic.Lamp)
                 {
                     if (d.Mains ? MainsLit(c, i) : p.Out >= 0.5f)
-                        Offer(c, i, (d.BoundsMin + d.BoundsMax) * 0.5f, Vector3.Lerp(new Vector3(1f, 0.93f, 0.6f), DarkColour, dark), pos, rot, eye, keep, reach, ref n);
+                        Offer(c, i, 0, (d.BoundsMin + d.BoundsMax) * 0.5f, Vector3.Lerp(new Vector3(1f, 0.93f, 0.6f), DarkColour, dark), pos, rot, eye, keep, reach, ref n);
                     continue;
                 }
+                var sub = 0;
                 foreach (var (at, colour) in d.Lamps)
-                    Offer(c, i, at, colour, pos, rot, eye, keep, reach, ref n);
+                    Offer(c, i, sub++, at, colour, pos, rot, eye, keep, reach, ref n);
+                // (a ship's light strips go out with its power; a hull with no battery keeps them, as they glow; a lined bay's lamps already light its panels)
+                if (d.Lamps.Length == 0 && (!c.HasBattery || c.PowerOn))
+                    foreach (var (at, colour) in StripLamps(d))
+                        Offer(c, i, sub++, at, colour, pos, rot, eye, keep, reach, ref n);
             }
         }
         LastNear = n;
@@ -81,18 +91,24 @@ public static class ConstructLamps
                 fade *= Math.Clamp((BestD[free] - BestD[k]) / 1.5f, 0f, 1f); // (the next one left out: a lamp handing over dims rather than pops)
             if (fade > 0.01f)
             {
+                var light = LightGrid.MaxDynamic - LightGrid.DynamicFree;
                 LightGrid.AddDynamic(BestPos[k], BestCol[k] * (strength * fade), range);
+                if (BestSub[k] >= 0 && BestBody[k] is { } body)
+                    LampShadows.Offer(light, body, BestPart[k], BestSub[k], BestLocal[k], BestBodyPos[k], BestRot[k]); // (its walls keep its light in: LampShadows.cs)
                 LastLit++;
             }
         }
+        for (var k = 0; k < Most; k++)
+            BestBody[k] = null; // (no references kept past the frame)
     }
 
-    /// <summary>A lamp at <paramref name="local"/> on part i: kept among the nearest <paramref name="keep"/> (sorted by distance).</summary>
-    private static void Offer(Construct c, int i, Vector3 local, Vector3 colour, Vector3 pos, Quaternion rot, Vector3 eye, int keep, float reach, ref int n)
+    /// <summary>Lamp <paramref name="sub"/> at <paramref name="local"/> on part i: kept among the nearest <paramref name="keep"/> (sorted by distance).</summary>
+    private static void Offer(Construct c, int i, int sub, Vector3 local, Vector3 colour, Vector3 pos, Quaternion rot, Vector3 eye, int keep, float reach, ref int n)
     {
         ref var p = ref c.Parts[i];
         var rest = p.Pos + Rot24.Apply(p.Rot, local);
-        var world = c.FrameOf(p.Seg) == 0 ? pos + Vector3.Transform(rest, rot) : c.SegToWorld(p.Seg, rest);
+        var still = c.FrameOf(p.Seg) == 0;
+        var world = still ? pos + Vector3.Transform(rest, rot) : c.SegToWorld(p.Seg, rest);
         var dist = Vector3.Distance(world, eye);
         if (dist > reach)
             return;
@@ -102,8 +118,12 @@ public static class ConstructLamps
         if (at >= keep)
             return;
         for (var k = Math.Min(n, keep - 1); k > at; k--)
+        {
             (BestD[k], BestPos[k], BestCol[k]) = (BestD[k - 1], BestPos[k - 1], BestCol[k - 1]);
+            (BestBody[k], BestPart[k], BestSub[k], BestLocal[k], BestBodyPos[k], BestRot[k]) = (BestBody[k - 1], BestPart[k - 1], BestSub[k - 1], BestLocal[k - 1], BestBodyPos[k - 1], BestRot[k - 1]);
+        }
         (BestD[at], BestPos[at], BestCol[at]) = (dist, world, colour);
+        (BestBody[at], BestPart[at], BestSub[at], BestLocal[at], BestBodyPos[at], BestRot[at]) = (c, i, still ? sub : -1, rest, pos, rot);
         n++;
     }
 
@@ -158,8 +178,8 @@ public static class ConstructLamps
         }
         var count = 0;
         for (var i = 0; i < c.PartCount; i++)
-            if (c.DefOf(i) is var d && (d.Lamps.Length > 0 || d.Logic == CLogic.Lamp))
-                count++;
+            if (c.DefOf(i) is var d && (d.Lamps.Length > 0 || d.Logic == CLogic.Lamp || StripLamps(d).Length > 0))
+                count++; // (StripLamps: once per part type, kept only while the type lives)
         if (count == 0)
         {
             c.LampParts = [];
@@ -168,8 +188,54 @@ public static class ConstructLamps
         var list = new int[count];
         count = 0;
         for (var i = 0; i < c.PartCount; i++)
-            if (c.DefOf(i) is var d && (d.Lamps.Length > 0 || d.Logic == CLogic.Lamp))
+            if (c.DefOf(i) is var d && (d.Lamps.Length > 0 || d.Logic == CLogic.Lamp || StripLamps(d).Length > 0))
                 list[count++] = i;
         c.LampParts = list;
+    }
+
+    /// <summary>A light strip's lamps: one every this far along it (m), this far under it.</summary>
+    public const float StripSpacing = 1.8f, StripDrop = 0.2f;
+
+    private sealed class StripSet(  (Vector3 At, Vector3 Colour)[] lamps) { public readonly (Vector3 At, Vector3 Colour)[] Lamps = lamps; }
+
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<ConstructPartDef, StripSet> Strips = new(); // (weak: a run-time part's type is let go)
+
+    /// <summary>
+    /// Karl, 2026-11-21: a ship's ceiling light strips glowed white but lit nothing round them (only its wall lamps were lights), so a
+    /// corridor under a bright bar stayed dark. A part's glowing boxes that are pale, flat and facing down (thin in the part's y, at
+    /// least 0.12 m2 and 0.6 m long: a ceiling strip, not a screen or a coloured stripe) light the room as a row of lamps, one every
+    /// <see cref="StripSpacing"/> along the strip, <see cref="StripDrop"/> under it, in its colour. Worked out once per part type.
+    /// </summary>
+    public static (Vector3 At, Vector3 Colour)[] StripLamps(ConstructPartDef d)
+    {
+        if (Strips.TryGetValue(d, out var have))
+            return have.Lamps;
+        List<(Vector3, Vector3)>? found = null;
+        foreach (var b in d.Boxes)
+        {
+            if (!b.Glow || b.Hidden || b.Glass > 0f)
+                continue;
+            var col = b.Color;
+            var lo = MathF.Min(col.X, MathF.Min(col.Y, col.Z));
+            var hi = MathF.Max(col.X, MathF.Max(col.Y, col.Z));
+            if (lo < 0.7f || hi - lo > 0.3f || b.Half.Y > 0.03f || b.Half.Y > MathF.Min(b.Half.X, b.Half.Z))
+                continue; // (only pale, flat, ceiling-wise strips)
+            float sx = b.Half.X * 2f, sz = b.Half.Z * 2f;
+            if (sx * sz < 0.12f || MathF.Max(sx, sz) < 0.6f)
+                continue;
+            var along = sx >= sz ? Vector3.UnitX : Vector3.UnitZ;
+            var len = MathF.Max(sx, sz);
+            var count = Math.Max(1, (int)MathF.Round(len / StripSpacing));
+            var colour = col / hi * 0.9f;
+            found ??= new List<(Vector3, Vector3)>();
+            for (var k = 0; k < count; k++)
+            {
+                var t = ((k + 0.5f) / count - 0.5f) * len;
+                found.Add((b.Center + along * t - Vector3.UnitY * (b.Half.Y + StripDrop), colour));
+            }
+        }
+        var r = found?.ToArray() ?? [];
+        Strips.AddOrUpdate(d, new StripSet(r));
+        return r;
     }
 }

@@ -48,6 +48,7 @@ public sealed partial class Construct
     public int GearFootCount; // sprung landing feet among them (CDoorDef.SpringTravel: ConstructPhysics.GearFeet)
     public int DoorHeldCount; // "held" doors (ConstructDoors.cs: drawn at their open pose while open, so the drawing looks them up)
     public int LaunchHatchHold; // server: ticks until the launch hatches opened for its launches shut (0: none is held open; ConstructDoors.OpenForLaunch)
+    public int DoorPoseStamp; // goes up whenever a door starts moving or settles (shadow casters drawn from the boxes follow it: SunShadows.CasterOf, LampShadows)
     public int DoorEpoch; // goes up whenever the door list is built again (the merged meshes plan again, leaving door parts out: ConstructRenderBatch.cs)
     private int _doorStamp = -1;
     private int[] _doorAt = [], _doorLinks = [];
