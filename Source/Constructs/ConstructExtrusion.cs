@@ -63,7 +63,7 @@ public static class Extrusion
     public const int MaxDefs = 48000; // distinct pieces in one run of the game (a length step of one line is one): past this no new shape can be made
     public const ushort RuntimeBase = 0x4000; // well above ConstructParts.MaxTypes
     public const ushort WireMark = 0xFFFE; // in a Full's part list: a key follows instead of a part id
-    public const int MinFanCm = 40, MaxFanCm = 9600; // a fan: 0.4 to 96 m across
+    public const int MinFanCm = 40, MaxFanCm = 6400; // a fan: 0.4 to 64 m across (Sean, 2026-11-20: the 96 m props went; the block-machine former tops out at 64 m)
     public const int MinChordCm = 10, MaxChordCm = 3200; // a wing: 0.1 to 32 m of chord
     private const float WingSkin = 0.0225f; // m of skin and ribs over its area, before chord's root
     public const int MaxBladeStyles = 8; // (three bits of a Fan's Wall)
