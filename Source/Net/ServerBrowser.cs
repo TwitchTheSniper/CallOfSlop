@@ -694,7 +694,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   their owner tile's store, worked out from the parts on each peer.
     // 413: Roller Tiles (Sean, 2026-11-21, drawing 23): Roller Tile and Turntable Tile part files come (ids move); a run's conveyor is
     //   an ordinary link the server lays from its tiles.
-    public const ushort ProtocolVersion = 413;
+    // 414: the Grapnel Salvage Tug (Karl, 2026-11-21): its 61 part files come in a new folder, Constructs/Parts/Grapnel (ids move).
+    public const ushort ProtocolVersion = 414;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;
