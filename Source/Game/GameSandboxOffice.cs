@@ -4,11 +4,11 @@ using Brutal.RakNetApi;
 namespace CallOfSlop;
 
 /// <summary>
-/// The IT Department's fax line (docs/archive/story/STORY.md, "The IT Department's fax"; the parts: Constructs/OfficeParts.cs; the words:
+/// The IT Department's fax line (the parts: Constructs/OfficeParts.cs; the words:
 /// Story/Office/IT.json). Server, once a second: a Fax Machine on a battery's circuit counts the seconds it has been plugged in, and when
 /// its next page is due (the first within the hour) it springs to life and prints it to the players near it. A player who types in chat
 /// at a plugged-in Computer emails the IT Department instead of chatting; its answer comes back on the nearest plugged-in fax.
-/// What a fax has printed is its own (saved with the world: the page shown, the story's step, the seconds towards the next).
+/// What a fax has printed is its own (saved with the world: the page shown, the page in order, the seconds towards the next).
 /// </summary>
 public sealed partial class Game
 {
@@ -62,7 +62,6 @@ public sealed partial class Game
                 }
             }
         }
-        FactionNoticesTick(desk, now); // (what the faction has to say about what was done to it: GameStoryFactions.cs)
         for (var m = _itMailCount - 1; m >= 0; m--)
         {
             ref var mail = ref _itMail[m];
@@ -81,20 +80,15 @@ public sealed partial class Game
     }
 
     /// <summary>
-    /// A story page comes due on a fax: who reads it (the fax's owner, else the nearest player), the page as it reads for
-    /// them (its alternatives ask the faction's standing and memory: Story/Office/IT.json), and the first one is the
-    /// faction noticing its fax on their circuit (a Keep). False: nobody is there to read it yet.
+    /// A page comes due on a fax: who reads it (the fax's owner, else the nearest player). False: nobody is there to read it yet.
     /// </summary>
     private bool FaxPrintStep(Construct c, int i, int step, ItDesk desk, double now)
     {
         var at = OfficePartAt(c, i);
         var reader = Players.TryGetValue(c.Owner, out var owner) && owner.Bot == null && Vector3.DistanceSquared(owner.Position, at) <= FaxHearing * FaxHearing ? owner : NearestPerson(at, FaxHearing);
-        var (us, them) = DeskParty(desk, reader);
-        var page = desk.PageFor(step, Story?.World, us, them);
+        var page = desk.PageFor(step);
         if (page < 0 || !FaxPrint(c, i, page, desk, now, reader))
             return page < 0;
-        if (step == 0)
-            StoryKeep(desk, reader, c, i); // (GameStoryFactions.cs)
         return true;
     }
 
@@ -153,7 +147,6 @@ public sealed partial class Game
             return false;
         c.Parts[i].State = (byte)(page + 1);
         FaxPagesPrinted++;
-        StoryFaxed(desk, reader ?? NearestPerson(at, FaxHearing)); // (the faction faxed them: "per my last fax")
         Console.WriteLine($"[office] fax page {page} prints: {lines[0]}");
         for (var k = 0; k < lines.Length; k++)
             OfficeLine(at, FaxHearing, k == 0 ? $"{OfficeParts.Prefix}{desk.From}: {lines[k]}" : OfficeParts.Prefix + lines[k], now, null);
@@ -202,9 +195,7 @@ public sealed partial class Game
         ItEmailsSent++;
         Console.WriteLine($"[office] {from.Name} emails IT: {text}");
         OfficeLine(at, 0, $"[EMAIL] To: {desk.From}. {text}", now, from);
-        StoryEmail(desk, from, text); // (the faction reads it: its deeds, GameStoryFactions.cs)
-        var (us, them) = DeskParty(desk, from);
-        var page = desk.ReplyTo(text, Story?.World, us, them);
+        var page = desk.ReplyTo(text);
         var fax = NearestFax(at, ReplyReach).C != null;
         OfficeLine(at, 0, fax ? desk.Sent : desk.NoFax, now, from);
         if (page >= 0 && _itMailCount < MaxMail)

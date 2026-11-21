@@ -67,7 +67,7 @@ public enum CActKind : byte
     NudgeBegin, // u8 n, n x u16 body, vec pivot: the Nudge tool takes these bodies (protocol 156; GameSandboxNudge.cs)
     NudgeSteer, // vec move, 4 x i16 turn: what the drag asks for now, since it began (protocol 156, unreliable)
     NudgeEnd, // vec move, 4 x f32 turn: the drag let go there (protocol 156)
-    Talk, // u8 the person's body (its player id), u8 TalkAsk: a player talks to one of the story's people (protocol 159; GameStoryChat.cs)
+    RemovedTalk, // was talking to one of the story's people (protocol 159); removed with the story (protocol 409), its slot kept
     Faction, // u8 FactionOp, then its fields: found, invite, accept, leave, give (protocol 161; GameSandboxFactions.cs)
     PanelTouch, // u16 body, u16 part, u8 panel, u8 button: a finger on a display panel's button (protocol 167; PanelTouch.cs)
     Media, // u16 body, u16 part, u8 MediaOp, u8 line, u32 seq (Seek: milliseconds), text: a Video Screen's or Music Player's list and transport (protocol 166; ConstructMedia.cs)
@@ -204,7 +204,6 @@ public sealed partial class Game
             return;
         if (SandboxOn)
             VehicleKit.VehicleGenJob.Warm(); // (once a process: the first faction vehicle's compile cost here, at the match's start, not on its ticks: VehicleSpawn.cs)
-        StoryReset(); // (a fresh story in Sandbox, none elsewhere; a saved world's comes with its load: GameStory.cs)
         if (had || SandboxOn)
         {
             ConstructNet.WriteClear(SbW);
@@ -443,7 +442,6 @@ public sealed partial class Game
         SandboxHands.CrewYield ??= CrewYield; // (a crew body stands up for a player who sits)
         SandboxHands.SeatRefusal ??= ShipSeatRefusal; // (an NPC power's helm and gun seats are its crew's: GameShipControl.cs; a Half Shell sits in none)
         Constructs.Hands ??= SandboxHandOf; // (a held hose follows its holder's hands)
-        Constructs.Taught ??= AssemblerTaught; // (parts a story faction must teach first: GameStoryTech.cs)
         if (Constructs.PlayerEndCount > 0)
             SandboxHarpoonTick(); // (lines on players: their ends and who still holds them, GameSandboxHarpoon.cs)
         SandboxCrewTick(); // (crews man and work their ships' seats: GameCrew.cs, Source/Crew/CrewWorld.cs)
@@ -481,11 +479,6 @@ public sealed partial class Game
         PodTick(); // (shell pods' folds, and their docked shells' charge: GameShellPod.cs)
         ShellWearTick(); // (...and wear a little: GameShellWear.cs)
         FirstsTick(); // (a first flight in a craft of your own: GameMilestones.cs)
-        StoryArmsTick(); // (no stock gun in a story world: GameStoryArms.cs)
-        perf.Dispose();
-        perf = Perf.Measure(PerfArea.Story);
-        AllocProfile.Mark("sandbox: story");
-        StoryTick(now); // (the story: who came and sat down, what happened to constructs; GameStory.cs)
         perf.Dispose();
         WorldTickPlaying(now); // (the autosave, on a finished tick: GameWorldSave.cs)
     }
@@ -1033,13 +1026,6 @@ public sealed partial class Game
                 return NavOrderAct(p, ref r); // an order for a ship from the command view (GameNav.cs)
             case CActKind.Fleet:
                 return FleetAct(p, ref r); // a player's fleet group (GameCrewFleetPlayers.cs)
-            case CActKind.Talk:
-            {
-                var person = r.U8();
-                var ask = (TalkAsk)r.U8();
-                var topic = ask == TalkAsk.Topic && r.Has(2) ? r.U16() : (ushort)0;
-                return StoryTalkAct(p, person, ask, topic); // talking to the story's people (GameStoryChat.cs; a topic: GameStoryTopics.cs)
-            }
             case CActKind.Track:
                 return SandboxTrackAct(p, ref r, eye);
             case CActKind.WorldRoute:
@@ -1064,7 +1050,7 @@ public sealed partial class Game
                 var asked = ConstructToolWire.From(r.U8());
                 if (ShellToolRefusal(p, asked) is { } only)
                     return only; // (a shell frame whose module is its only tool: the Mining Shell's drill arm, GameShellHopper.cs)
-                return hands.SetTool(p.Id, StoryArmsTool(p, asked), Constructs, eye, p.Yaw); // (no gun in a story world: GameStoryArms.cs)
+                return hands.SetTool(p.Id, asked, Constructs, eye, p.Yaw);
             }
             case CActKind.NudgeBegin:
             case CActKind.NudgeSteer:
@@ -1213,8 +1199,6 @@ public sealed partial class Game
             {
                 var body = r.U16();
                 var part = r.U16();
-                if (LoreUse(p, body, part, eye))
-                    return null; // (a lore item: looked at, GameStoryLore.cs)
                 if (SandboxEvaUse(p, body, part, out var evaHandled) is var evaWhy && evaHandled)
                     return evaWhy; // (a suit locker or an MMU dock: GameSandboxEva.cs)
                 if (ConstructAmmo.FillInHand(Constructs, ref hands.Hand(p.Id), eye, body, part, hands.InfiniteParts) is { } filled)
@@ -1669,11 +1653,6 @@ public sealed partial class Game
             case CActKind.KeyPress:
                 w.U16(body).U16(part).U8(flags);
                 break;
-            case CActKind.Talk:
-                w.U8((byte)body).U8(flags);
-                if (flags == (byte)TalkAsk.Topic)
-                    w.U16(part); // (the topic's index: GameStoryTopics.cs)
-                break;
             case CActKind.AnalogLever:
                 w.U16(body).U16(part).U16(socket).U8(flags).U16(body2); // (socket: the value, AnalogLever.ToWire; flags: 1 on letting go; body2: a Joystick's Y)
                 break;
@@ -1704,8 +1683,6 @@ public sealed partial class Game
             SandboxSay(only); // (the server refuses it the same way: GameShellHopper.cs)
             return true;
         }
-        if (part == (ushort)ConstructTool.None && Local is { } me && StoryUnarmed(me))
-            part = (ushort)ConstructTool.Hands; // (no gun in a story world: bare hands, shown at once as the server will; GameStoryArms.cs)
         return false;
     }
 
@@ -2017,7 +1994,6 @@ public sealed partial class Game
         if (SandboxBuildInFront(p, bp, null, out var why) is not { } c)
             return why;
         Constructs.Events.Add($"player {p.Id} spawned the {bp.Name} blueprint as construct {c.Id} (parts menu)");
-        StoryFound(p, c, bp.Name); // (GameStory.cs)
         return null;
     }
 
@@ -2033,10 +2009,7 @@ public sealed partial class Game
         }
         Constructs.Events.Add($"player {who} spawned the {name} blueprint as construct {c.Id} (parts menu)");
         if (Players.TryGetValue(who, out var p))
-        {
             SandboxHands.Notices.Add((who, $"the {name} is down"));
-            StoryFound(p, c, name); // (GameStory.cs)
-        }
     }
 
     /// <summary>Why the parts menu can't spawn a blueprint or a faction vehicle for this player now, or null.</summary>

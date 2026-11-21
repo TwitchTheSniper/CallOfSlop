@@ -507,7 +507,6 @@ public static class PanelSources
         ["logic.keypad"] = LogicDisplays.Keypad,
         ["office.fax"] = OfficeParts.FillFax,
         ["office.computer"] = OfficeParts.FillComputer,
-        ["story.terminal"] = FragmentScript.FillTerminal,
         ["flight.panel"] = ConstructFlight.FillPanel,
         ["flight.diagnostic"] = ConstructFlight.FillDiagnostic,
     };

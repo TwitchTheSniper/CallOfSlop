@@ -183,10 +183,6 @@ public sealed partial class Game
     /// </summary>
     private bool SandboxEnemies(Player a, Player b)
     {
-        if (a.Team == SbPeopleTeam)
-            return StoryFightsWith(a, b);
-        if (b.Team == SbPeopleTeam)
-            return a.Team != SbFriendlyTeam;
         var fa = a.Team == SbFriendlyTeam;
         var fb = b.Team == SbFriendlyTeam;
         var ha = a.Team == SbHostileTeam;
@@ -263,7 +259,7 @@ public sealed partial class Game
     {
         var n = 0;
         foreach (var p in Players.Values)
-            if (p.SbSpawned && p.Team != SbPeopleTeam) // (the story's people aren't spawns: GameStoryBodies.cs)
+            if (p.SbSpawned)
                 n++;
         for (var i = 0; i < _sbJobs.Count; i++)
             if (_sbJobs[i].Kind != SbSpawnKind.Zombies)
@@ -377,7 +373,7 @@ public sealed partial class Game
         Array.Clear(_sbBotsOf);
         Array.Clear(_sbZombiesOf);
         foreach (var p in Players.Values)
-            if (p.SbSpawned && p.Team != SbPeopleTeam)
+            if (p.SbSpawned)
                 _sbBotsOf[SbWhose(p.SbOwner, p.SbBody)]++;
         for (var i = 0; i < Horde.Count; i++)
             if (Horde[i].State != ZState.Dead)
@@ -421,7 +417,7 @@ public sealed partial class Game
                 _sbJobs.RemoveAt(i);
         var removed = false;
         for (var id = 0; id < 256; id++)
-            if (Players.TryGetValue((byte)id, out var p) && p.SbSpawned && p.Team != SbPeopleTeam && SbWhose(p.SbOwner, p.SbBody) == owner)
+            if (Players.TryGetValue((byte)id, out var p) && p.SbSpawned && SbWhose(p.SbOwner, p.SbBody) == owner)
             {
                 Players.Remove(p.Id);
                 OnModePlayerLeave(p);
@@ -468,7 +464,7 @@ public sealed partial class Game
         _sbJobs.Clear();
         var removed = false;
         for (var id = 0; id < 256; id++)
-            if (Players.TryGetValue((byte)id, out var p) && p.SbSpawned && p.Team != SbPeopleTeam) // (the story's people stay)
+            if (Players.TryGetValue((byte)id, out var p) && p.SbSpawned)
             {
                 Players.Remove(p.Id);
                 OnModePlayerLeave(p);
@@ -1001,12 +997,6 @@ public sealed partial class Game
     {
         if (!p.SbSpawned || !p.Alive)
             return false;
-        if (p.Team == SbPeopleTeam)
-        {
-            AllocProfile.Mark("bot: story body");
-            StoryBodyBot(p, b, now); // (a story person's body: GameStoryBodies.cs)
-            return false;
-        }
         if (p.Team == SbFriendlyTeam && Horde.Count > 0)
         {
             for (var i = 0; i < Horde.Count; i++)

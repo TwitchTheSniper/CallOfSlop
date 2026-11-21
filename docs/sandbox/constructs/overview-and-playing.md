@@ -746,8 +746,8 @@ Players group into factions and share what they own (`Source/Constructs/Factions
   using, driving and building on them needs no rank), `Give` (give a construct away), `Invite` (and answer those asking),
   `Remove` and `Promote` (only members of a lower rank, and only to ranks below one's own), `Relations` and `Looks`. Player
   factions use the `Player` set: Recruit (joins at it: may use and build on what is shared, nothing more), Member, Officer,
-  Leader. The leader can **Make leader** another member and steps down to the rank below. Sets are generic data, so a story
-  faction's ladder (the Ministry's colony, later) is one more set. A refused file falls back to the same ladder built in.
+  Leader. The leader can **Make leader** another member and steps down to the rank below. Sets are generic data, so another
+  faction's ladder is one more set. A refused file falls back to the same ladder built in.
 - **Other factions.** Toward each other faction a faction is neutral, offers an alliance, or declares war
   (`FactionTable.Stance`): two factions are **allied** when both want it and **at war** when either says so. For now this is
   shown in the window and told to both sides, and the story hears of it (below); it changes no rule of who may use what.

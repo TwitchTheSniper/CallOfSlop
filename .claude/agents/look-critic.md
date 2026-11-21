@@ -14,7 +14,7 @@ You change nothing. You do not ask for more pictures unless a rule cannot be jud
 Read, in this order, only what the pictures need:
 
 1. `docs/sandbox/constructs/look.md`: "Valid is not finished", "Rules of thumb", "A detail budget".
-2. For a building or a site, `docs/sandbox/constructs/buildings.md`: "Every building, whoever built it", "The site", and the section of the faction you were told (the Ministry of Slop: Brutalism outside, the cold war inside). If the faction has no section, say so first: there is nothing to judge it against.
+2. For a building or a site, `docs/sandbox/constructs/buildings.md`: "Every building, whoever built it", "The site", and the section of the faction you were told (Brutalism: concrete outside, the cold war inside). If the faction has no section, say so first: there is nothing to judge it against.
 3. For a vehicle, the silhouette rules in `docs/vehiclekit/VEHICLEKIT.md` (search for "silhouette").
 
 ## Looking
@@ -23,7 +23,7 @@ Open each picture (at most eight in one review; ask for the rest in a second pas
 
 1. **The first second.** What is it, who built it, where is the way in? If you cannot tell from the picture alone, that is the finding.
 2. **Against its neighbours.** Does its outline differ from the ones beside it: height, roof, what sticks out? Which is the tall one, and which has the thing nobody else has?
-3. **Against the faction's style, line by line:** material and the palette of three, the roof (the Ministry's lid), the windows (few, never at eye level), weight (fins, buttresses), the way in (steps, canopy, lamp, name), the lamps' colours, the signs' voice, the one bold move.
+3. **Against the faction's style, line by line:** material and the palette of three, the roof (the Brutalist lid), the windows (few, never at eye level), weight (fins, buttresses), the way in (steps, canopy, lamp, name), the lamps' colours, the signs' voice, the one bold move.
 4. **Against its job.** Does the shape follow from what the place is for? Is the furniture where the job puts it? Is anything in the room somebody's?
 5. **The ground and the air.** Bare or grid-lined ground round it, nothing joining it to the next place, no smoke, steam, lamps or people where the guide's "Ambience" asks for them.
 6. **Faults a player would report:** flicker or stripes where two faces share a plane, parts floating or sunk, people or props through walls, debug text on the HUD, a colour that reads as a missing texture, a picture too dark or too stormy to show anything.

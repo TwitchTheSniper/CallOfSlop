@@ -1944,23 +1944,6 @@ public sealed partial class BuildingParts : IPartGenerator
         bp.Hang("Fence Gate", hg, "leaf", "hang");
         o.Add(bp);
 
-        // Sealed Data Centre: the first of the five data centres (docs/archive/story/FRAGMENTS.md, Game/GameStoryFragments.cs), past the old
-        // mine (built only by the archived story). A 4 by 8 m concrete block with blank walls and a flat roof, its doorway at the front (z 0), two
-        // server racks down the middle and the Data Centre Terminal at the back facing the door. It has no battery: the player
-        // brings power. The game finds the terminal by its part, not by its place.
-        bp = new Blueprint("Sealed Data Centre", "A sealed data centre from before the records: server racks and a dead terminal.", defs);
-        bp.First(Pad);
-        bp.Put(Pad, Cell(0, 0, 16), R0);
-        RoomCorners(bp, "Concrete", 0, 2, 0, 16, 32, door: 1);
-        bp.Put("Concrete Wall 4 m", Cell(0, 2, 23), RY90);
-        bp.Put("Concrete Wall 4 m", Cell(15, 2, 8), RY270);
-        bp.Put("Concrete Floor 4x4 m", Cell(0, 2 + WallH, 0), R0);
-        bp.Put("Concrete Floor 4x4 m", Cell(0, 2 + WallH, 16), R0);
-        foreach (var z in new[] { 1.875, 4.125 }) // (two racks down the middle, on the pads' quarter sockets)
-            bp.Put("Server Rack", [1.875, 0.375, z], R0);
-        bp.Put("Data Centre Terminal", [2.0, 0.375, 6.0], RY180);
-        o.Add(bp);
-
         return o;
     }
 

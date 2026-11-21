@@ -191,7 +191,6 @@ public sealed partial class Game
         c.AngVel = Vector3.Zero;
         c.Wake();
         var sys = Galaxy.System(to);
-        StoryJump(c, sys.Name); // (GameStory.cs)
         Console.WriteLine(FormattableString.Invariant(
             $"[space] construct {c.Id} (ship {id}) jumped {ly:0.00} ly from {Galaxy.System(from).Name} to {sys.Name}: {Far(sys.Arrival)} from {sys.Bodies[sys.ArrivalBody].Name}, {cost:0} kJ"));
     }

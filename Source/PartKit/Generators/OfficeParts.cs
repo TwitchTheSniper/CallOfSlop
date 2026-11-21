@@ -176,32 +176,6 @@ public sealed class OfficeParts : IPartGenerator
         return p;
     }
 
-    /// <summary>
-    /// The terminal in a sealed data centre (docs/archive/story/FRAGMENTS.md; Game/GameStoryFragments.cs): a logic part, its kind "cipher".
-    /// It needs power (a battery on its construct's circuit), then puts out a carrier number and waits for the answer its screen asks
-    /// for on its key input, which a player builds out of logic blocks. Heavy and welder-fitted, so it isn't carried off.
-    /// </summary>
-    private static Part Terminal()
-    {
-        var p = new Part("Data Centre Terminal", Small, Office, "A sealed terminal older than anyone's records. Power it, then wire it the answer its screen asks for.", role: "logic", tool: "welder", color: Dark, group: "Logic");
-        double w = 0.45, d = 0.3, h = 1.3;
-        p.Add(Box([-w, 0, -d], [w, h, d], Dark)); // (the cabinet)
-        p.Add(Box([-0.4, 0.66, d + 0.004], [0.4, 1.16, d + 0.02], Screen, detail: true, shape: NoPaint)); // (the glass, 4 mm proud)
-        p.Add(Box([-0.4, 0.2, d + 0.004], [0.4, 0.5, d + 0.016], Grey, detail: true)); // (the key-in panel)
-        for (var k = 0; k < 4; k++) // (dead lamps over the screen)
-        {
-            var x = -0.3 + k * 0.2;
-            Lit(p, [x - 0.03, 1.2, d + 0.004], [x + 0.03, 1.24, d + 0.016], k == 0 ? LedA : LedG);
-        }
-        p.Add(Box([-0.06, 0.3, d + 0.018], [0.06, 0.4, d + 0.034], "#c0392b", detail: true, shape: NoPaint)); // (the key socket)
-        p.Add(Box([-w + 0.04, h + 0.002, -d + 0.04], [w - 0.04, h + 0.06, d - 0.04], Grey)); // (the vent on top)
-        Feet(p, [-0.25, 0.25], [0.0]);
-        p.Stats(160, 600, 4, 4.0);
-        p.Set(("power", 120), ("logic", Kw(("kind", "cipher"))), ("centreSockets", false),
-            ("panels", Py.L(Kw(("source", "story.terminal"), ("at", Py.L(0, 0.91, Py.Round(d + 0.024, 3))), ("size", Py.L(0.78, 0.48)), ("face", "+z"), ("up", "+y"), ("rows", 6), ("range", 14)))));
-        return p;
-    }
-
     private static Part Switch()
     {
         var p = new Part("Network Switch", Small, Section, "A network switch on a post, cables hanging out of it. Do not unplug the yellow one.", color: Dark, group: Group);
@@ -244,6 +218,6 @@ public sealed class OfficeParts : IPartGenerator
         ("", Plant()), ("", Fan()),
         ("", Antenna("Router Antenna", 0.3, "A router's antenna, bolted on. Full bars, no internet.", 0.5)),
         ("", Antenna("Wi-Fi Mast", 0.55, "A tall Wi-Fi antenna. The password is on a sticky note somewhere.", 1)),
-        ("", Switch()), ("", Dish()), ("", ServerRack()), ("", Computer()), ("", Fax()), ("", Terminal()),
+        ("", Switch()), ("", Dish()), ("", ServerRack()), ("", Computer()), ("", Fax()),
     ]);
 }
