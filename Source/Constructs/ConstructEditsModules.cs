@@ -140,7 +140,8 @@ public sealed partial class ConstructEdits
         if (count >= c.PartCount)
             return "that's the whole construct";
         var name = ModuleSockets.ModuleName(c, s.Module);
-        var normal = Vector3.Transform(Rot24.Apply(c.Parts[s.Plate].Rot, Vector3.UnitY), c.Rot);
+        ModuleSockets.PlateRest(c, s.Plate, out var plateRot, out _, out _); // (a plate welded on freeform: its turn in the body's frame)
+        var normal = Vector3.Transform(Rot24.Apply(plateRot, Vector3.UnitY), c.Rot);
         if (world.CutOut(c, marks, player) is not { } piece)
             return "the world is full";
         piece.Pos += normal * ModuleLift;
