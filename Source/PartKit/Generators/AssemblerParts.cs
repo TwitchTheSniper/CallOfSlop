@@ -304,7 +304,8 @@ public sealed class AssemblerParts : IPartGenerator
     {
         var p = new Part(name, Small, Section, desc, group: "Production", color: colour);
         const double t = BedTop;
-        p.Add(Box([-E, 0.003, -E], [E, t, E], MachineLook.Base)); // (the plinth)
+        p.Add(Box([-E, 0.003, -E], [E, 0.16, E], MachineLook.Base)); // (the plinth: its foot dark, its band in the block's own colour)
+        p.Add(Box([-E, 0.16, -E], [E, t, E]));
         MachineLook.Skirt(p, -1, 1, -1, 1, 0, 0.14, 0.012);
         // The dock on -x: a steel face plate, two locating pins into the Core's side, the clamp's jaw and its lever.
         p.Add(L([-E - 0.012, 0.06, -0.8], [-E + 0.002, t - 0.04, 0.8], MachineLook.Steel, "steel"));
@@ -339,21 +340,21 @@ public sealed class AssemblerParts : IPartGenerator
         // The thrust cradle: two saddles on a bed, the chamber lying across them, its bell towards the blast wall.
         p.Add(L([-0.36, t + 0.014, -0.12], [0.5, t + 0.05, 0.12], MachineLook.Steel, "steel"));
         foreach (var x in new[] { -0.2, 0.3 })
-            p.Add(L([x - 0.04, t + 0.05, -0.2], [x + 0.04, t + 0.2, 0.2], MachineLook.Accent));
-        p.Add(L([-0.34, t + 0.14, -0.13], [0.36, t + 0.4, 0.13], "#6f747a", "steel", shape: Cyl("+x", 14))); // (the chamber)
-        p.Add(L([0.36, t + 0.1, -0.18], [0.66, t + 0.44, 0.18], "#6f747a", "steel", shape: Cyl("+x", 16))); // (its bell)
-        p.Add(MachineLook.Work(L([0.62, t + 0.14, -0.14], [0.66, t + 0.4, 0.14], MachineLook.Hot, shape: Cyl("+x", 14)), "glow")); // (the throat, lit at work)
+            p.Add(L([x - 0.04, t + 0.05, -0.24], [x + 0.04, t + 0.22, 0.24], MachineLook.Accent));
+        p.Add(L([-0.34, t + 0.17, -0.175], [0.36, t + 0.52, 0.175], MachineLook.Steel, "steel", shape: Cyl("+x", 16))); // (the chamber)
+        p.Add(L([0.36, t + 0.07, -0.275], [0.7, t + 0.62, 0.275], MachineLook.Steel, "steel", shape: Cyl("+x", 20))); // (its bell)
+        p.Add(MachineLook.Work(L([0.7, t + 0.11, -0.235], [0.74, t + 0.58, 0.235], MachineLook.Hot, shape: Cyl("+x", 20)), "glow")); // (the throat, lit at work)
         // The thrust gauge on the blast wall's top, and its cable along the pit's rim.
         p.Add(L([0.79, t + 0.5, -0.3], [0.89, t + 0.62, -0.1], MachineLook.Steel, "steel", shape: Cyl("+y", 12)));
         p.Add(L([0.8, t + 0.62, -0.28], [0.88, t + 0.632, -0.12], MachineLook.In, shape: Cyl("+y", 12)));
         p.Add(L([-0.58, t + 0.1, -0.79], [0.86, t + 0.13, -0.75], MachineLook.Ink));
-        // The burn-off flue in the far +z corner: a stack with a hood and a rain cap.
-        p.Add(Box([0.62, t, 0.62], [0.92, 1.8, 0.92], MachineLook.Base));
-        p.Add(L([0.58, 1.8, 0.58], [0.96, 1.86, 0.96], MachineLook.Steel, "steel"));
-        p.Add(MachineLook.Work(L([0.66, 1.86, 0.66], [0.88, 1.9, 0.88], MachineLook.Ink), "smoke"));
-        p.Add(L([0.6, 1.93, 0.6], [0.94, 1.96, 0.94], MachineLook.Base));
+        // The burn-off flue in the far -z corner, thin, clear of the cradle: a stack with a hood and a rain cap.
+        p.Add(Box([0.74, t, -0.94], [0.94, 1.8, -0.74], MachineLook.Base));
+        p.Add(L([0.71, 1.8, -0.97], [0.97, 1.86, -0.71], MachineLook.Steel, "steel"));
+        p.Add(MachineLook.Work(L([0.77, 1.86, -0.91], [0.91, 1.9, -0.77], MachineLook.Ink), "smoke"));
+        p.Add(L([0.72, 1.93, -0.96], [0.96, 1.96, -0.72], MachineLook.Base));
         foreach (var y in new[] { 1.0, 1.4 })
-            p.Add(L([0.61, y, 0.61], [0.93, y + 0.03, 0.93], MachineLook.Steel, "steel")); // (its bands)
+            p.Add(L([0.73, y, -0.95], [0.95, y + 0.03, -0.73], MachineLook.Steel, "steel")); // (its bands)
         MachineLook.Hazard(p, [0.9, t + 0.38, -0.68], [0.914, t + 0.46, 0.68]);
         p.Stats(700, 1400, 8, 6);
         return p;
@@ -381,12 +382,12 @@ public sealed class AssemblerParts : IPartGenerator
         p.Add(MachineLook.Work(L([0.52, top + 0.12, -0.64], [0.8, top + 0.4, 0.64], "#b9b098", "fabric", shape: Cyl("+z", 16)), "spin", "+z"));
         // The sewing head on an arch over the middle of the table: posts, beam, head, needle (strokes) and its lamp (glows).
         foreach (var z in new[] { -0.8, 0.72 })
-            p.Add(Box([0.02, top, z], [0.14, 1.62, z + 0.08], MachineLook.Accent));
-        p.Add(Box([0.02, 1.62, -0.8], [0.14, 1.72, 0.8], MachineLook.Accent));
-        p.Add(L([-0.08, 1.3, -0.12], [0.2, 1.62, 0.12], MachineLook.Base));
+            p.Add(Box([0.02, top, z], [0.14, 1.62, z + 0.08])); // (the arch, in the block's own colour)
+        p.Add(Box([0.02, 1.62, -0.8], [0.14, 1.72, 0.8]));
+        p.Add(L([-0.1, 1.36, -0.15], [0.26, 1.62, 0.15], MachineLook.Accent)); // (the sewing head: what works)
         p.Add(MachineLook.Work(L([0.04, 1.06, -0.012], [0.07, 1.3, 0.012], MachineLook.Steel, "steel"), "stroke", "-y", 0.1)); // (the needle bar)
         p.Add(MachineLook.Work(L([-0.07, 1.24, -0.1], [-0.04, 1.28, -0.04], "#ffe9a8"), "glow")); // (its lamp)
-        p.Add(L([-0.1, 1.4, 0.06], [-0.08, 1.56, 0.11], MachineLook.Steel, "steel", shape: Cyl("-x", 10))); // (the handwheel)
+        p.Add(L([-0.14, 1.4, 0.04], [-0.1, 1.56, 0.11], MachineLook.Steel, "steel", shape: Cyl("-x", 10))); // (the handwheel)
         MachineLook.Hazard(p, [0.02, 1.72, -0.8], [0.14, 1.732, 0.8]);
         p.Stats(380, 1000, 6, 6);
         return p;

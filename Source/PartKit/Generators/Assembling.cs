@@ -1161,6 +1161,7 @@ public sealed class Assembling : IPartGenerator
     private static void Modules(List<PyDict> recipes)
     {
         var folded = new List<PyDict>();
+        var after = new List<PyDict>();
         for (var k = 0; k < recipes.Count; k++)
         {
             var r = recipes[k];
@@ -1190,9 +1191,21 @@ public sealed class Assembling : IPartGenerator
                 folded.Add(r);
                 recipes.RemoveAt(k--);
             }
+            else if (AfterFolded.Contains(output))
+            {
+                after.Add(r);
+                recipes.RemoveAt(k--);
+            }
         }
         recipes.AddRange(folded);
+        recipes.AddRange(after.OrderBy(r => Array.IndexOf(AfterFolded, (string)r["output"]!))); // (after the folded rows: a saved Assembler's number keeps)
     }
+
+    /// <summary>
+    /// Rows added since the thruster and tailor rows were folded to the end (Assembler PR 3 on), in the order added: they go after those
+    /// rows so no saved recipe number moves. Closed: a new row goes at the END of this list (its Tail entry stays where it is).
+    /// </summary>
+    private static readonly string[] AfterFolded = ["Thruster Jig Block", "Sewing Table Block", "Block Rack"];
 
     // ---- Press phase 5 (docs/sandbox/design/press-rework.md section 2, as the user's answers of section 12 cut it down)
 

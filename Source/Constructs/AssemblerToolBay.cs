@@ -35,12 +35,33 @@ public static class AssemblerToolBay
             if (s.ToBody == ct.Id && s.ToPart == to)
                 return false; // (one is on its way already)
         for (var k = 0; k < src.SlotCount; k++)
-            if (ConstructParts.Get(src.Def[k]) is { BlockRole: BlockRole.Tool } t && t.BlockTool == want && world.ToolSwaps.Count < world.ToolSwaps.Capacity && world.TakeOut(cf, from, k) is { } moved)
+            if (ConstructParts.Get(src.Def[k]) is { BlockRole: BlockRole.Tool } t && t.BlockTool == want && world.ToolSwaps.Count < world.ToolSwaps.Capacity && CanSwap(world, cf, from, src, k, ct, to, t) && world.TakeOut(cf, from, k) is { } moved)
             {
                 world.ToolSwaps.Add(new Swap(cf.Id, (ushort)from, ct.Id, (ushort)to, moved.Id));
                 return true;
             }
         return false;
+    }
+
+    /// <summary>
+    /// Would a swap of the block in slot <paramref name="slot"/> go through: the old block has a slot to go back to (that one, once
+    /// emptied, or another) and the new one a side to dock on? Asked before the block leaves the rack, so a swap that can't happen is
+    /// never started, undone and started again at every chute move.
+    /// </summary>
+    private static bool CanSwap(ConstructWorld world, Construct cf, int from, CStore src, int slot, Construct c, int core, ConstructPartDef tool)
+    {
+        if (c.Dirty)
+            return false; // (the next move asks again, after the rebuild)
+        if (MachineBlocks.TryOf(c, core, out var asm) && asm.ToolPart < c.PartCount)
+        {
+            var old = c.Parts[asm.ToolPart].D;
+            var cd = cf.DefOf(from);
+            var room = src.Count[slot] == 1 && ConstructStorage.Fits(cd.Slots[slot], old, out _) && (old.PhysicsOnly ? ConstructStorage.RackHolds(cd.Slots[slot], old) : true);
+            for (var t = 0; t < src.SlotCount && !room; t++)
+                room = ConstructStorage.Check(cd, src, t, old, out _) == SlotCheck.Ok;
+            return room; // (its side frees as it goes: the new one docks there)
+        }
+        return Dock(world, c, core, tool, place: false);
     }
 
     /// <summary>The swaps the chutes started, done now (the start of the Assemblers' step, every tick).</summary>
@@ -112,7 +133,7 @@ public static class AssemblerToolBay
     /// Docks a tool block on a free side socket of an Assembler Core (the one <paramref name="hint"/> names first): its "dock" socket
     /// against the Core's side, upright with the Core. False when no side is free and clear.
     /// </summary>
-    public static bool Dock(ConstructWorld world, Construct c, int core, ConstructPartDef tool, int hint = -1)
+    public static bool Dock(ConstructWorld world, Construct c, int core, ConstructPartDef tool, int hint = -1, bool place = true)
     {
         var dock = -1;
         for (var k = 0; k < tool.Sockets.Length && dock < 0; k++)
@@ -140,6 +161,8 @@ public static class AssemblerToolBay
                 var at = ConstructWorld.Quantise(p.Pos + Rot24.Apply(p.Rot, cd.Sockets[s].At) - Rot24.Apply((byte)rot, tool.Sockets[dock].At));
                 if (ConstructBuild.Blocked(c, tool, at, (byte)rot, seg: p.Seg))
                     continue;
+                if (!place)
+                    return true;
                 var i = world.AddPart(c, tool, at, (byte)rot, p.Seg);
                 if (i < 0)
                     return false;
