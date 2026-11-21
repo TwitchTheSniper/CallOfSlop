@@ -1,3 +1,18 @@
+# The IT vehicles (2026-11-21)
+
+Karl asked (2026-11-21) for the IT vehicles to go as well: "We will work on implementing new vehicles for the new factions
+down the line". Deleted: the IT style (`Styles.It`) and its 47 blueprints, its per-style tables in the vehicle kit
+(identity, context, family names, roles, cargo, body language, chassis, body and wear), its loot tables (`it`, `it 3`,
+`it 4`), its interior palette, its armoury names and the 8 recipes only it used. `Styles.Shipped` is empty; Militia is the
+kit's one style and still makes the ore loop's Ore Hauler and Excavators. The Traders' `"styles"` is empty.
+
+- **Kept for the new styles:** every generator and shape, the archetypes (their weights still name IT, so none is taken)
+  and the IT-flavoured parts (Office parts, the Server Rack), which the ships and the IT desk use.
+- **Placeholders:** the powers' fleets (`Crew/Controllers.json`) name the hand-built 4x4 Truck, Buggy and Hood Gun Buggy;
+  the crew checks fly the hand-built Small Helicopter and the convoy check drives the hand-built ground vehicles (its
+  followers now keep 9.7 m off their places, inside the 20 m limit). Warm-ups and help text name Militia.
+- **Left alone:** the ships' IT-style paint (the Zero Day, the Satchel, the Packet Spine) and the `it` dress style.
+
 # The story engine (2026-11-21)
 
 Karl asked (2026-11-21) for the original story elements to go with the old factions, files and notes too. It had been

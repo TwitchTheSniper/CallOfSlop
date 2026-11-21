@@ -199,18 +199,14 @@ public static class LayerTables
     public static readonly Dictionary<string, ChassisRange> Chassis = new(StringComparer.Ordinal)
     {
         // Fleet vans: matched corners, a forward cab now and then, an extra axle only on the long ones.
-        ["IT"] = DefaultChassis with { InsetMin = 1f, InsetMax = 2.25f, FrontAxles = [(-1.675f, 4), (-1.925f, 1), (-0.925f, 1.5)], FrontWings = [(0.5f, 3), (0.75f, 1)],
-            Single = 5, Tag = 1.5, Pusher = 0.4, Tandem = 0.8, Mix = 0.4, WheelSwap = 0.1, SpringSwap = 0.25, Rigid = 0 },
     };
 
     public static readonly Dictionary<string, BodyRange> Body = new(StringComparer.Ordinal)
     {
-        ["IT"] = new() { LengthBias = 0.15, Tall = 3, Low = 2, Narrow = 0.5, StepChance = 0.4, Rake = 0.25 },      // (tidy: low, not narrow; raked like a coach)
     };
 
     public static readonly Dictionary<string, WearProfile> Wear = new(StringComparer.Ordinal)
     {
-        ["IT"] = new() { Rust = 0.03, Dirt = 0.1, Scorch = 0.1, PatchesMin = 0, PatchesMax = 1, Missing = 0, AgeMin = 0.2, AgeMax = 0.8 },
     };
 
     public static ChassisRange ChassisOf(FactionStyle st) => Chassis.GetValueOrDefault(st.Name) ?? DefaultChassis;

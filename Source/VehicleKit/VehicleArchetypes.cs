@@ -114,6 +114,7 @@ public sealed record BodyArchetype(string Name, string Family, string Words, str
     private static readonly string[] Car = ["Car"], Rigid = ["Box Truck"], Bus = ["War Bus"];
     private static readonly string[] Buggy = ["Buggy"], Monster = ["Monster Truck"], Wagon = ["Wagon"], GiantTruck = ["Giant Truck"], Concept = ["Concept"];
 
+    // (Every archetype was the IT style's; since its vehicles went (Karl, 2026-11-21) no style takes one: a new style names them in its weights.)
     public static readonly BodyArchetype[] All =
     [
         // Supercars: low, wide, cab-forward wedges.

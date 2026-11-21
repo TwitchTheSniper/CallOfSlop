@@ -19,7 +19,7 @@ public sealed partial class Game
     public IReadOnlyList<AircraftPilot> Pilots => _pilots;
 
     /// <summary>
-    /// Server: asks for a faction aircraft (<paramref name="style"/> and <paramref name="shape"/>: "IT", "Drone", "Plane" or "Helicopter") made at spawn time, put in the
+    /// Server: asks for a faction aircraft (<paramref name="style"/> and <paramref name="shape"/>: "Militia", "Drone", "Plane" or "Helicopter") made at spawn time, put in the
     /// air <paramref name="height"/> m over the ground at <paramref name="over"/> heading <paramref name="yaw"/> (radians, as a player's), already flying, and handed to a bot
     /// pilot with <paramref name="order"/> about <paramref name="over"/> (a patrol's <paramref name="radius"/>). <paramref name="height"/> 0: it stands on the ground with no pilot.
     /// <paramref name="done"/> hears the craft and its pilot (both null when it wasn't made). Returns why it was refused, or null: queued.

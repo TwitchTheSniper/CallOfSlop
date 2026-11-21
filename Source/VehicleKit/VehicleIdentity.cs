@@ -107,9 +107,6 @@ public static class VehicleIdentity
 
     // ---- The styles' signatures ------------------------------------------------------------------------------------------
 
-    private static readonly string[] ItMasts = ["Satellite Dish", "Wi-Fi Mast", "Router Antenna"];
-    private static readonly string[] ItGear = ["Network Switch", "Office Plant", "Desk Fan", "Server Rack", "Computer", "Fax Machine"];
-
     private static readonly WeakPointRule Tyres = new("tyres", PartPick.ByRole("tyres"), MinSides: 2, MinBearings: 4, Min: 2, When: "");
     private static readonly WeakPointRule Fuel = new("fuel", PartPick.ByRole("fuel"), MinSides: 2, MinBearings: 2, When: ""); // (a trailer's barrel too)
 
@@ -130,23 +127,6 @@ public static class VehicleIdentity
     /// </summary>
     public static readonly Dictionary<string, StyleSignature> Signatures = new(StringComparer.Ordinal)
     {
-        // Masts and dishes on the roofs and the cab, monitors, switches and reels on the beds, racks, computers and fax machines in the rooms (VEHICLEKIT.md, "The IT style").
-        ["IT"] = new()
-        {
-            Marks =
-            [
-                new("mast or dish", PartPick.Of(ItMasts)),
-                new("office gear", PartPick.Of(ItGear)),
-            ],
-            Parts = Merge(W(1, ItMasts), W(1, ItGear), W(1, "trim fairing", "deco radome"), W(0.5, "Slat Grille", "Cab Over Shell", "Tin Roof Cab")),
-            Modules = new()
-            {
-                ["cab"] = new() { ["enclosed"] = 1, ["cab-over"] = 1, ["caged"] = 0.3, ["crew"] = 0.8, ["merged"] = 1 },
-                ["nose"] = new() { ["short hood"] = 1, ["flat"] = 1, ["long hood"] = 0.6, ["ram"] = 0.2 },
-                ["flank"] = new() { ["bare"] = 1, ["panniers"] = 0.5, ["loaded"] = 0.3 },
-            },
-            WeakPoints = [new("antenna", PartPick.Of(ItMasts), MinSides: 2, MinBearings: 2), Tyres, Fuel],
-        },
     };
 
     /// <summary>
