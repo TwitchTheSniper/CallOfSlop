@@ -16,8 +16,11 @@ public static unsafe partial class Program
     /// <summary>Once a frame.</summary>
     private static void UpdateModuleCutFx()
     {
+        ConstructRender.SocketHeld = null;
         if (_game is not { SandboxOn: true } g || g.Local is not { } me)
             return;
+        ref var hand = ref g.SandboxHands.Hand(me.Id);
+        ConstructRender.SocketHeld = hand.Tool == ConstructTool.PhysicsGun && hand.GrabBody != 0 && hand.GrabSeg == 0 ? g.Constructs.Get(hand.GrabBody) : null; // (its room and fit shown at a socket near: ConstructRenderSockets.cs)
         foreach (var c in g.Constructs.Bodies)
         {
             if (c.ModSockets.Length == 0 || Vector3.Distance(c.Pos, me.Eye) - c.Radius > CutFxRange)
@@ -112,5 +115,19 @@ public static unsafe partial class Program
             var colour = weld ? Vector3.Lerp(new Vector3(0.35f, 0.06f, 0.02f), Vector3.Lerp(new Vector3(1f, 0.5f, 0.12f), new Vector3(1f, 0.95f, 0.8f), heat * heat), heat) : new Vector3(1f, 0.55f, 0.15f) * (0.4f + 0.6f * heat);
             FrenzyParticles.Spark(OutlineAt(face, across, up, hw, hl, back), Vector3.Zero, colour, 0.025f, 0.3f, 0f, 0f, 0f);
         }
+    }
+
+    /// <summary>Which of a plate's frame controls the crosshair is on (1 eject, 2 lock; 0 none), and the point in the body's frame.</summary>
+    private static byte ModControlAt(in ConstructHit hit, out Vector3 bodyLocal)
+    {
+        bodyLocal = default;
+        if (hit.Body == null || (uint)hit.Part >= (uint)hit.Body.PartCount || hit.SlotPlus1 != 0 || hit.RoutePlus1 != 0)
+            return 0;
+        var d = hit.Body.DefOf(hit.Part);
+        if (d.ModPart != ModPart.Socket || d.ModStand)
+            return 0;
+        Freeform.PartWorld(hit.Body, hit.Part, out var pos, out var rot);
+        bodyLocal = hit.Body.ToLocal(hit.Point);
+        return ModuleSockets.ControlNear(d, Vector3.Transform(hit.Point - pos, Quaternion.Conjugate(rot)));
     }
 }

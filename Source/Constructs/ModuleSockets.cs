@@ -196,8 +196,8 @@ public static class ModuleSockets
     /// <summary>Which of a plate's side controls a point on it (its own frame) is at: 1 eject, 2 the lock slider, 0 neither.</summary>
     public static byte ControlNear(ConstructPartDef d, Vector3 local)
     {
-        if (d.ModPart != ModPart.Socket || d.ModStand)
-            return 0;
+        if (d.ModPart != ModPart.Socket || d.ModStand || d.ModNoHide)
+            return 0; // (a Wall Bay Socket is a wall section: no side controls)
         if (Vector3.Distance(local, ControlAt(d, EjectZ)) <= CtlReach)
             return 1;
         var a = ControlAt(d, LockZ0);
@@ -224,9 +224,9 @@ public static class ModuleSockets
             Add(new CConfigDef { Key = ConstructConfig.KeyName(CfgKey.ModKind), Id = CfgKey.ModKind, Type = CfgType.Choice, Options = ModuleSocketTable.KindLabels, Label = "Takes", Group = "Module socket",
                 Tooltip = "Any module of its size, or engines, reactors or turrets only (by the module's primary tag)." });
             Add(new CConfigDef { Key = ConstructConfig.KeyName(CfgKey.ModStyle), Id = CfgKey.ModStyle, Type = CfgType.Choice, Options = ModuleSocketTable.StyleLabels, Label = "Style", Group = "Module socket",
-                Tooltip = "Proud: the module stands on the hull. Flush and Well: the plate sits at the foot of a well it cuts out through the hull. Opening: the plate is a frame with a hole, and punches through whatever it is on, Depth deep, so the module can retract into it." });
+                Tooltip = "Proud: the module stands on the plate. Flush and Well: the plate is a frame on the hull and digs a well Depth deep into what it is on; the module sits in it, level with the frame (Flush) or standing up out of it (Well). Opening: the plate is a frame with a hole, and punches through whatever it is on, Depth on behind it, so the module can retract into it." });
             Add(new CConfigDef { Key = ConstructConfig.KeyName(CfgKey.ModDepth), Id = CfgKey.ModDepth, Type = CfgType.Number, Min = t.DepthStep, Max = MathF.Max(t.DepthStep * 2, t.MostDepth(d.ModW)), Step = t.DepthStep, Default = t.DepthStep, Unit = "m",
-                Label = "Depth", Group = "Module socket", Tooltip = "Flush and Well: how deep the well goes below the surface. Opening: how far the hole goes back behind the plate." });
+                Label = "Depth", Group = "Module socket", Tooltip = "Flush and Well: how deep the well goes, from the frame's face to its floor (a flush module is this tall). Opening: how far the hole goes on behind the plate." });
             Add(new CConfigDef { Key = ConstructConfig.KeyName(CfgKey.ModAbove), Id = CfgKey.ModAbove, Type = CfgType.Number, Min = 0, Max = t.MostAbove(d.ModL), Step = t.AboveStep, Default = 0, Unit = "m",
                 Label = "Room above", Group = "Module socket", Tooltip = "How tall a module may stand over the plate (0: twice its short side). Nothing of the ship may be in this room." });
             Add(new CConfigDef { Key = ConstructConfig.KeyName(CfgKey.ModCut), Id = CfgKey.ModCut, Type = CfgType.Number, Hidden = true, Min = 0, Max = 100000, Default = 0, Unit = "s",
@@ -1111,9 +1111,10 @@ public static class ModuleSockets
             if (s.Stand)
                 return s.Module >= 0 ? $"{size} stand: {ModuleName(c, s.Module)} stored (F: take it off)" : $"{size} stand: empty (F with a module near: set it on)";
             var kind = s.Kind == ModKind.Generic ? "any module" : $"{TagName(KindTag(s.Kind)!.Value)} modules only";
-            var head = $"{size} {ModuleSocketTable.StyleLabels[(int)s.Style].ToLowerInvariant()} socket, {kind}{(s.Keyed ? ", keyed" : "")}";
+            var locked = Locked(c, part);
+            var head = $"{size} {ModuleSocketTable.StyleLabels[(int)s.Style].ToLowerInvariant()} socket, {kind}{(s.Keyed ? ", keyed" : "")}{(locked ? ", LOCKED" : "")}";
             if (s.Module >= 0)
-                return $"{head}: {ModuleName(c, s.Module)} fitted{(s.WrongKind ? $" - not {Article(TagName(KindTag(s.Kind)!.Value))} any more: it does nothing here" : "")} (F: take it off)";
+                return $"{head}: {ModuleName(c, s.Module)} fitted{(s.WrongKind ? $" - not {Article(TagName(KindTag(s.Kind)!.Value))} any more: it does nothing here" : "")}{(locked ? " (unlock to take it off)" : " (F: take it off)")}";
             if (s.InTheWay >= 0)
                 return s.Style == ModStyle.Proud
                     ? $"{head}: blocked, the {c.DefOf(s.InTheWay).Name} is in its room"
