@@ -808,6 +808,8 @@ public static partial class ConstructRender
         }
         if (d.IsLaserCutter && world.StoreOf(c, i) is { OnBed: true } bedStore && ConstructLaserCutter.BlankOnBed(c, i, bedStore, out var blank, out var blankRot, out var blankAt))
             drawn += DrawBlank(gfx, blank, blankRot, blankAt, in p, seg * body, shade, opacity); // (a Laser Cutter's blank lying on its bed while it is cut)
+        else if (d.IsPanelFormer && !d.IsLaserCutter && world.StoreOf(c, i) is { OnBed: true } formStore && ConstructPanelFormer.BedLook(c, i, formStore, Now, out var sheet, out var sheetRot, out var sheetAt))
+            drawn += DrawBlank(gfx, sheet, sheetRot, sheetAt, in p, seg * body, shade, opacity); // (a Panel Former's blank on its bed, flat; the panel over the pins once they have set)
         if ((fitted & ~offSlots) != 0)
             drawn += DrawFitted(gfx, c, i, d, fitted & ~offSlots, seg * body, shade, wear, opacity);
         if (shellOn && shellPose.Top && shellPose.Gap > 0.05f)

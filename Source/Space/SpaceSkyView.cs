@@ -133,6 +133,12 @@ public sealed class SpaceSkyView
     /// <summary>The way to this system's star from the camera (unit, game axes), as of the last <see cref="Update"/>.</summary>
     public Vector3 StarDirection => _starDist > 0 ? (_starGame / _starDist).ToVector3() : Vector3.UnitY;
 
+    /// <summary>The star's angular radius from the camera (radians), as of the last <see cref="Update"/>: the sky's sun disc.</summary>
+    public double StarAngularRadius => _starAr;
+
+    /// <summary>The camera's place in the system (ecliptic), as of the last <see cref="Update"/>.</summary>
+    public SpacePos CameraInSystem => _pose.ToEcliptic(_cam);
+
     /// <summary>The galaxy's other stars from this system (the same from anywhere in it: light-years dwarf a system).</summary>
     private void UpdateStars(StarSystem sys)
     {

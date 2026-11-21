@@ -190,7 +190,12 @@
     {"part": "Roller Tile", "on": 111, "socket": "centre +y", "by": "bottom", "spin": 1, "paint": "#3d7ab8"},
     {"part": "Roller Tile", "on": 112, "socket": "centre +y", "by": "bottom", "spin": 1, "paint": "#3d7ab8"},
     {"part": "Turntable Tile", "on": 113, "socket": "centre +y", "by": "bottom", "paint": "#3d7ab8"},
-    {"part": "Roller Tile", "on": 101, "socket": "centre +y", "by": "bottom", "paint": "#3d7ab8"}
+    {"part": "Roller Tile", "on": 101, "socket": "centre +y", "by": "bottom", "paint": "#3d7ab8"},
+    {"part": "Roller Tile", "on": 114, "socket": "centre +y", "by": "bottom", "spin": 1, "paint": "#3d7ab8"},
+    {"part": "Pad Tile", "on": 115, "socket": "centre +y", "by": "bottom", "spin": 1, "paint": "#d8a020"},
+    {"part": "Roller Tile", "on": 50, "socket": "centre +y", "by": "bottom", "spin": 3, "paint": "#3d7ab8"},
+    {"part": "Roller Tile", "on": 62, "socket": "centre +y", "by": "bottom", "spin": 3, "paint": "#3d7ab8"},
+    {"part": "Roller Tile", "on": 74, "socket": "centre +y", "by": "bottom", "spin": 3, "paint": "#3d7ab8"}
   ],
   "links": [
     {"type": "chute", "from": 161, "to": 159, "fromPort": "Chute out", "paint": "#c9a24a"}

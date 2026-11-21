@@ -57,6 +57,38 @@ public static partial class Program
                     WsSay($"[logi]   {ConstructParts.Get(r.Def)?.Name} on {r.Route} ({path}) at {r.At:0.00}: dest {(dest < 0 ? "none" : $"{c.DefOf(dest).Name}#{dest}")} tag {r.Tag} flags {(LogiFlags)(r.Flags & 15)} reason {ConstructLogistics.ReasonOf(r)} - {ConstructLogistics.RiderNote(c, r) ?? "no note"}; length {(r.Route < c.RouteCount ? ConstructConveyor.Length(c, r.Route).ToString("0.00") : "?")}; jam {(r.Route < c.RouteCount ? ConstructConveyor.JamText(c, r.Route, ConstructConveyor.Jam(w, c, r.Route)) ?? "none" : "?")}");
                 }
                 return;
+            case "dest" when g.IsServer: // "logi dest PART#n": every rider on the body goes to that store from now on (a turntable's way by destination)
+            {
+                var (dc, dpart) = LogiFind(g, rest);
+                if (dc != c || dc == null || c.Parts[ConstructPads.Owner(c, dpart)].Store == 0)
+                {
+                    WsFail($"logi dest: no store \"{rest}\"");
+                    return;
+                }
+                var h = c.Parts[ConstructPads.Owner(c, dpart)].Store;
+                for (var i = 0; i < c.ConveyedCount; i++)
+                    (c.Conveyed[i].Dest, c.Conveyed[i].Tag, c.Conveyed[i].Flags) = (h, 0, (byte)LogiFlags.Storage);
+                w.RidersChanged(c);
+                WsSay($"[logi] dest: {c.ConveyedCount} riders to {c.DefOf(dpart).Name}@{dpart}");
+                return;
+            }
+            case "holds": // "logi holds PART#n": how many pieces a store (a pad: its owner's) holds
+            {
+                var (hc, hpart) = LogiFind(g, rest);
+                WsSay($"[logi] holds {rest}: {(hc != null && w.StoreOf(hc, ConstructPads.Owner(hc, hpart)) is { } hst ? hst.ItemCount.ToString() : "no store")}");
+                return;
+            }
+            case "runs": // "logi runs": each Roller Tile run's conveyor, its ends and whether a lifter can pick at its end
+            {
+                for (var k = 0; k < c.RouteCount; k++)
+                    if (RollerRuns.IsRun(c, k))
+                    {
+                        ref readonly var r = ref c.Routes[k];
+                        var last = c.RouteNodes[r.Start + 1].Host;
+                        WsSay($"[logi] run {k}: {(r.From < c.PartCount ? c.DefOf(r.From).Name : "?")}@{r.From} -> {(r.To < c.PartCount ? c.DefOf(r.To).Name : "?")}@{r.To}, {r.ConvW} cm wide, length {ConstructConveyor.Length(c, k):0.00}; end tile @{last} {(RollerRuns.EndRunAt(c, last) == k ? "a pick point" : "goes on")}");
+                    }
+                return;
+            }
             case "why":
             {
                 var (fc, part) = LogiFind(g, rest);
@@ -359,19 +391,21 @@ public static partial class Program
             }
             case "spawn" when g.IsServer:
             {
+                var sw = rest.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries); // ("spawn N PART#n": only onto the Roller Tile run that tile is in)
                 if (_wsSpawnLeft == 0)
-                    _wsSpawnLeft = int.TryParse(rest, out var sn) ? Math.Max(1, sn) : 50;
+                    _wsSpawnLeft = sw.Length > 0 && int.TryParse(sw[0], out var sn) ? Math.Max(1, sn) : 50;
+                var only = sw.Length > 1 && LogiFind(g, sw[1]) is { C: { } oc, Part: var op } && oc == c ? RollerRuns.RunOf(c, op) : -1;
                 var piece = ConstructParts.Find("Gear Set")!;
                 for (var k = 0; k < c.RouteCount && c.ConveyedCount < _wsSpawnLeft; k++)
-                    if (c.Routes[k].Type == RouteType.Conveyor && c.Routes[k].FirstCut > c.Routes[k].Count && c.Routes[k].From < c.PartCount && !c.DefOf(c.Routes[k].From).IsConveyorJunction)
+                    if (c.Routes[k].Type == RouteType.Conveyor && c.Routes[k].FirstCut > c.Routes[k].Count && c.Routes[k].From < c.PartCount && (only < 0 ? !c.DefOf(c.Routes[k].From).IsConveyorJunction : k == only))
                         ConstructConveyor.PutMade(w, c, k, piece, 1, out _);
                 if (c.ConveyedCount < _wsSpawnLeft && ++_wsSpawnTries < 300)
                 {
-                    _wsQueue.EnqueueFront("logi spawn");
+                    _wsQueue.EnqueueFront("logi spawn " + rest);
                     _wsWait = 6;
                     return;
                 }
-                WsSay($"[logi] spawn: {c.ConveyedCount} riding");
+                WsSay($"[logi] spawn: {c.ConveyedCount} riding{(sw.Length > 1 ? $" (onto run {only} of {sw[1]})" : "")}");
                 _wsSpawnLeft = _wsSpawnTries = 0;
                 return;
             }
@@ -516,6 +550,6 @@ public static partial class Program
                 return;
             }
         }
-        WsFail($"logi {arg}: riders, why PART, net PART; host: order NAME N, cut PART WAY, fill PART[|NAME], spawn N");
+        WsFail($"logi {arg}: riders, runs, why PART, net PART; host: order NAME N, cut PART WAY, fill PART[|NAME], spawn N [PART]");
     }
 }

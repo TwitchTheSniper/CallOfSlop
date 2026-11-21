@@ -891,6 +891,8 @@ public sealed partial class ConstructEdits
     /// <summary>The material a player would tip into this bin: the bin's own when it has some, else the first one they carry that it takes (0: none).</summary>
     public static byte TipMaterial(SandboxInventory inv, ConstructPartDef d, CStore st)
     {
+        if (d.IsPanelFormer)
+            return 0; // (a Panel Former's or a Laser Cutter's bin is its offcut: it only comes out; a former's stock is a blank a panel)
         if (st.Amount > 0)
             return inv.Materials[st.Material] > 0 ? st.Material : (byte)0;
         for (byte m = 1; m < SandboxInventory.MaxMaterials; m++)

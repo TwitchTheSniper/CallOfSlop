@@ -297,6 +297,8 @@ public sealed partial class ConstructWorld
         SnapshotNoCollides(s);
         s.NextTag = _nextTag;
         s.Designs = [.. Designs]; // (the world's shared panel designs: PanelDesigns.cs)
+        BakedParts.NoteInUse(this);
+        s.Baked = BakedParts.TextsOf(this); // (the baked designs: BakedParts.cs)
     }
 
     /// <summary>The setting key a part's texture (ConstructFinish.cs) is saved under, followed by the material's name.</summary>

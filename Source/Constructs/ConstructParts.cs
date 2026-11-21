@@ -308,6 +308,18 @@ public readonly record struct CPartBox(Vector3 Center, Vector3 Half, Vector3 Col
 
     public byte Front { get; init; }
 
+    /// <summary>
+    /// A Rot24 turn of a shaped box inside its part (0: none): a baked part's boxes come from subparts set down at a turn (BakedParts.cs), and
+    /// a shape's mesh is drawn turned by its subpart's turn as well as its part's. <see cref="Half"/> stays the box in the part's frame; the
+    /// mesh fills <see cref="ShapeHalf"/>, the box before the turn. A plain box needs none (its half is turned already).
+    /// </summary>
+    public byte Turn { get; init; }
+
+    /// <summary>The box a shape's mesh fills before its <see cref="Turn"/> (its own half when it has none).</summary>
+    public Vector3 ShapeHalf => Turn == 0 ? Half : Rot24.ApplyHalf(Rot24.Inverse(Turn), Half);
+
+    private Matrix4x4 TurnM => Turn == 0 ? Matrix4x4.Identity : Matrix4x4.CreateFromQuaternion(Rot24.Quat(Turn));
+
     /// <summary>What a key box types ("key": "7"; a Numpad's or Code Lock's: LogicInputs.cs); 0: not a key.</summary>
     public char Key { get; init; }
     /// <summary>"travel": how far a "slide" or "press" rig moves.</summary>
@@ -369,7 +381,8 @@ public readonly record struct CPartBox(Vector3 Center, Vector3 Half, Vector3 Col
     /// <summary>The box's model matrix in its part's frame turned by <paramref name="rot"/> and moved to <paramref name="centre"/> (a shape keeps its own way round).</summary>
     public Matrix4x4 Model(byte rot, Vector3 centre) => Shape == 0
         ? Matrix4x4.CreateScale(Rot24.ApplyHalf(rot, Half) * 2) * Matrix4x4.CreateTranslation(centre)
-        : Matrix4x4.CreateScale(MeshSize(Half * 2, Front)) * FrontTurns[Front] * Matrix4x4.CreateFromQuaternion(Rot24.Quat(rot)) * Matrix4x4.CreateTranslation(centre);
+        : Turn == 0 ? Matrix4x4.CreateScale(MeshSize(Half * 2, Front)) * FrontTurns[Front] * Matrix4x4.CreateFromQuaternion(Rot24.Quat(rot)) * Matrix4x4.CreateTranslation(centre)
+        : Matrix4x4.CreateScale(MeshSize(ShapeHalf * 2, Front)) * FrontTurns[Front] * TurnM * Matrix4x4.CreateFromQuaternion(Rot24.Quat(rot)) * Matrix4x4.CreateTranslation(centre); // (a baked part's shaped box: its subpart's turn too)
 
     /// <summary>
     /// A leg's model between two points of the frame the part sits in: its part-Y across the span from <paramref name="from"/> to
@@ -387,11 +400,11 @@ public readonly record struct CPartBox(Vector3 Center, Vector3 Half, Vector3 Col
         var mid = Matrix4x4.CreateTranslation(from + dir * ((SpanFrom + SpanTo) * 0.5f));
         return Shape == 0
             ? Matrix4x4.CreateScale(size) * basis * mid
-            : Matrix4x4.CreateScale(MeshSize(size, Front)) * FrontTurns[Front] * basis * mid;
+            : Matrix4x4.CreateScale(MeshSize(size, Front)) * FrontTurns[Front] * TurnM * basis * mid;
     }
 
     /// <summary>A point of the shape's own mesh (a unit box) in the part's frame, turned by <see cref="Front"/>.</summary>
-    public Vector3 ShapePoint(Vector3 mesh) => Center + Vector3.Transform(mesh * MeshSize(Half * 2, Front), FrontTurns[Front]);
+    public Vector3 ShapePoint(Vector3 mesh) => Center + Vector3.Transform(mesh * MeshSize(ShapeHalf * 2, Front), FrontTurns[Front] * TurnM);
 
     /// <summary>The size of a shape's own mesh that fills <paramref name="size"/> in the part's frame with its front that way.</summary>
     public static Vector3 MeshSize(Vector3 size, byte front) => ((front - 1) >> 1) switch
@@ -1296,6 +1309,8 @@ public static partial class ConstructParts
             return Extrusion.Parse(name); // (a piece names itself: a blueprint's extrusion)
         if (name.StartsWith(Pressed.Prefix, StringComparison.Ordinal))
             return Pressed.Parse(name); // (a pressed part names itself, a preset's key its catalogue part: Pressed.cs)
+        if (BakedParts.IsName(name))
+            return BakedParts.Parse(name); // (a Bake Oven's baked part names its design by hash: BakedParts.cs)
         if (name.StartsWith(HullHoles.Prefix, StringComparison.Ordinal))
             return HullHoles.Parse(name); // (a part a cutter holed names itself, its base and its holes: HullHoles.cs)
         if (name.StartsWith(HullLoft.Prefix, StringComparison.Ordinal) || HullLoft.IsPanelName(name) || HullLoft.IsCutName(name) || HullLoft.IsSectionName(name))
@@ -2764,6 +2779,15 @@ public static class Rot24
         for (byte r = 0; r < Count; r++)
             if (ApplyDir(r, 0) == x && ApplyDir(r, 2) == y)
                 return r;
+        return 0;
+    }
+
+    /// <summary>The turn that undoes <paramref name="r"/> (Apply(Inverse(r), Apply(r, v)) == v).</summary>
+    public static byte Inverse(byte r)
+    {
+        for (byte k = 0; k < Count; k++)
+            if (Compose(k, r) == 0)
+                return k;
         return 0;
     }
 
