@@ -253,7 +253,7 @@ public sealed class ClocheParts : IPartGenerator
         Detail(p, -4.84, Y0 - 0.025, z0 + 0.004, 4.84, Y0 - 0.003, z1 - 0.004, Rib, "dirty steel"); // (the belly)
         for (var z = z0 + 1.6; z < z1 - 1.2; z += 3.2)
             Detail(p, -2.9, 0.22, z - 0.1, 2.9, 0.36, z + 0.1, Rib, "dirty steel"); // (cross braces between the skids)
-        p.Set(("fuelTank", Kw(("capacity", 900))));
+        p.Set(("fuelTank", Kw(("capacity", 900))), ("ports", Py.L(BigDriveParts.PipePort("Fuel out", "out", [.. Sh([0, Y0, (z0 + z1) / 2]).Cast<object>()], "-y", "fuel")))); // (under the slab, by the lift jets it feeds)
         return p.Stats(aft ? 7000 : 6000, 9000, 30, 8.0);
     }
 
@@ -754,7 +754,7 @@ public sealed class ClocheParts : IPartGenerator
         Detail(p, pxa, yc + 1.05, pz0, pxb, 6.7, pz1, Pipe, "painted steel");
         Detail(p, pxa, yc + 1.05, pz0, s * (NacX - 0.2), yc + 1.3, pz1, Pipe, "painted steel");
         Detail(p, pxa - 0.05, 5.4, pz0 - 0.05, pxb + 0.05, 5.6, pz1 + 0.05, Rib, "painted steel");
-        p.Set(("fuelTank", Kw(("capacity", 1500))));
+        p.Set(("fuelTank", Kw(("capacity", 1500))), ("ports", Py.L(BigDriveParts.PipePort("Fuel out", "out", [.. Sh([xc, yc - 1.15, 16.6]).Cast<object>()], "-y", "fuel")))); // (under the pod, near the drive in its tail)
         return p.Stats(4000, 4000, 15, 6.0);
     }
 

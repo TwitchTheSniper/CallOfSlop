@@ -9,6 +9,20 @@
   "fuelTank": {
     "capacity": 900
   },
+  "ports": [
+    {
+      "name": "Fuel out",
+      "type": "pipe",
+      "dir": "out",
+      "fluid": "fuel",
+      "at": [
+        -0.125,
+        0.375,
+        5.625
+      ],
+      "face": "-y"
+    }
+  ],
   "mass": 6000.0,
   "health": 9000,
   "armour": 30,
