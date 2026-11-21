@@ -420,21 +420,15 @@ public static unsafe partial class Program
         leverTook |= ControlFrame(g, me, in h, aimed, hit, join); // (keys and signs too: Program.SandboxControls.cs)
         _scrTook = PointerFrame(g, me, in h, eye, dir, aimed, hit, now); // (Hands on a screen: a mouse on a page, a finger on a panel's buttons: Program.SandboxPointer.cs)
         ConstructRender.AimOnPage = _scrTook;
-        var talkTook = TalkFrame(g, me, eye, dir, aimed, aimed ? hit.Distance : float.MaxValue); // (one of the story's people under the crosshair: Program.StoryTalk.cs)
-        talkTook = talkTook || LoreFrame(g, aimed, hit); // (a lore item under the crosshair, when no person is in front of it: Program.StoryLore.cs)
-        var magFill = !talkTook && aimed && hit.Part >= 0 && hit.Part < hit.Body.PartCount && hit.Distance <= ConstructBuild.UseReach && ConstructParts.Get(h.Held) is { } magHeld && ConstructAmmo.IsMagazine(magHeld) && (ConstructAmmo.IsSource(hit.Body.DefOf(hit.Part)) || ConstructAmmo.IsMagazine(hit.Body.DefOf(hit.Part)));
+        var magFill = aimed && hit.Part >= 0 && hit.Part < hit.Body.PartCount && hit.Distance <= ConstructBuild.UseReach && ConstructParts.Get(h.Held) is { } magHeld && ConstructAmmo.IsMagazine(magHeld) && (ConstructAmmo.IsSource(hit.Body.DefOf(hit.Part)) || ConstructAmmo.IsMagazine(hit.Body.DefOf(hit.Part)));
         if (magFill)
         {
             g.SandboxLookText = SandboxKeys.Line(hit.Body.DefOf(hit.Part).Name, null, null, SandboxKeys.Do(SandboxKeys.Use, ConstructAmmo.IsSource(hit.Body.DefOf(hit.Part)) ? "fill the magazine" : "swap magazines"));
             if (Pressed(GameAction.Interact))
                 g.SandboxSend(CActKind.Use, body: hit.Body.Id, part: (ushort)hit.Part);
         }
-        if (podFrame.Body != null && Pressed(GameAction.Interact) && !talkTook && !magFill && !leverTook && !terminalTook && !_scrTook)
+        if (podFrame.Body != null && Pressed(GameAction.Interact) && !magFill && !leverTook && !terminalTook && !_scrTook)
             g.SandboxSend(CActKind.Use, body: podFrame.Body.Id, part: (ushort)podFrame.Part); // (the pod's button: the server folds the shell away)
-        else if (talkTook)
-        {
-            // (the use key went to a person, or would: nothing behind them takes it)
-        }
         else if (Pressed(GameAction.Interact) && !magFill && inMachine && storeNear && !(h.Tool == ConstructTool.PhysicsGun && h.GrabBody != 0))
             g.SandboxSend(CActKind.Bin, body: hit.Body.Id, part: (ushort)hit.Part); // (what a machine holds comes out: the server's UseBin)
         else if (Pressed(GameAction.Interact) && !magFill && aimed && hit.RiderPlus1 > 0 && hit.RiderPlus1 <= hit.Body.ConveyedCount && hit.Distance <= ConstructBuild.UseReach && !(h.Tool == ConstructTool.PhysicsGun && h.GrabBody != 0))
@@ -1334,7 +1328,6 @@ public static unsafe partial class Program
         AllocProfile.Mark("sb: beams, sounds, ambience");
         DrawPhysGunBeams(g, now); // the physics guns' beams (Program.PhysicsGun.cs)
         g.SandboxSounds(now); // horns (GameSandbox.cs)
-        g.StoryBabbleSounds(now); // the story people murmur their lines (GameStoryBabble.cs)
         PartAmbience.Frame(g.Constructs, Gfx.CameraPosition, now, g.TickAlpha, g.IsServer, g.Audio); // smoke, steam, a tannoy, snow along the ground (PartAmbience.cs)
         g.EngineAudio.Pick(g.Constructs, Gfx.CameraPosition);
         g.EngineAudio.Play(g.Audio); // (modular engines: EngineSounds.cs)

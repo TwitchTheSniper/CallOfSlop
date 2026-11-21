@@ -79,7 +79,7 @@
     <None Update="Constructs\**\*" CopyToOutputDirectory="PreserveNewest" />
     <!-- Star systems for the space layer: Systems\*.json (docs/space/SPACE.md). -->
     <None Update="Systems\**\*" CopyToOutputDirectory="PreserveNewest" />
-    <!-- The story layer's data: Story\Relations.json, Verbs.json, Patterns\, Scenarios\ (docs/story/STORY.md). -->
+    <!-- The starts (Story\Starts), their openings (Story\Opening) and the IT desk's fax and email (Story\Office\IT.json); the story engine went 2026-11-21. -->
     <None Update="Story\**\*" CopyToOutputDirectory="PreserveNewest" />
     <!-- The crews' data: Crew\Names.json (docs/sandbox/design/bot-brain.md). -->
     <None Update="Crew\**\*" CopyToOutputDirectory="PreserveNewest" />

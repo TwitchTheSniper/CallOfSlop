@@ -73,7 +73,7 @@ public sealed partial class Ui
     internal static float AppearancePanelContentH() => 34 + 14 + LookAxes.Length * LookAxisRowH + 100;
 
     /// <summary>The axes in screen order.</summary>
-    internal static readonly LookAxis[] LookAxes = Enum.GetValues<LookAxis>();
+    internal static readonly LookAxis[] LookAxes = Enum.GetValues<LookAxis>().Where(a => a != LookAxis.Uniform).ToArray(); // (the uniform choice: nothing issues one since the story went, 2026-11-21)
 
     /// <summary>Draws the APPEARANCE screen (main menu). <paramref name="name"/> is your player name (the Auto look comes from it).</summary>
     public void DrawAppearance(Audio audio, double now, string name)
@@ -126,7 +126,6 @@ public sealed partial class Ui
                 ImGui.Spacing();
                 ImGui.PushStyleColor(ImGuiCol.Text, Dim);
                 ImGui.TextWrapped("Team modes: your shirt, sleeves, trousers and a bandana wear the team colour so sides stay readable. Without teams (free-for-all, co-op, Zombies) they wear your outfit colour. Everything else (skin, hair, headwear, beard, helmet colour) shows in every mode."u8);
-                ImGui.TextWrapped("Faction uniform: in the story, the Ministry of Slop issues a uniform for your standing (a boiler suit for inmates, a donkey jacket for contractors, a bowler for Crown Servants). It replaces your outfit and headwear while worn. Own Clothes keeps your own look."u8);
                 ImGui.PopStyleColor();
             }
             ImGui.EndChild();

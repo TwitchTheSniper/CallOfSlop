@@ -1,3 +1,24 @@
+# The story engine (2026-11-21)
+
+Karl asked (2026-11-21) for the original story elements to go with the old factions, files and notes too. It had been
+switched off since 2026-11-14 (`Game.StoryOn`); now its code, data and docs are deleted:
+
+- **Code:** `Source/Story/` (the story world, sifter, patterns, people and their plans, drama, lines and radio, plays,
+  places, the roster, the story's factions, fragments, the IT and Salvager desks' story side), `Source/StandIns/`, the
+  game's side (`GameStory*.cs`, `GameUniforms.cs`), the windows (`UiStory*`, the Logbook, ranks, the Job Board), the
+  client's talk, lore, logbook and job board files, the talk camera, and the Data Centre Terminal and Sealed Data Centre.
+  The window tool's `talk`, `say` and `standing` verbs went; the rest of its script verbs are in
+  `Program.WindowShotScript.cs`. Every part counts as taught (no story faction teaches tool upgrades or recipes).
+- **Data:** `Story/` keeps only `Starts`, `Opening` and `Office`. The uniforms are the Space Suit alone.
+- **Wire:** protocol bumped; the story's messages keep their `Msg` slots as `Removed*`, `CActKind.Talk` is `RemovedTalk`.
+- **Keys:** the Story window, Logbook and Join talk actions keep their slots, unbound and hidden.
+- **Saves:** a world's Story section is no longer written; one saved before is read without it. Old saves don't matter
+  (Karl, 2026-11-15).
+- **Docs:** `docs/archive/story`, `docs/archive/colony`, the story-writing and world-site skills and the story rules file
+  were deleted; MANUAL, SURVIVAL, WORLDS, STARTS, OPENING, UNIFORMS, TOOL-UPGRADES and the building docs were cleaned.
+- **Left alone:** the maps' kept flat sites and survey posts (the map owner's), the building pieces of the colony's site
+  (`BuildingParts.Site.cs`), the crew powers' standing rows (`FactionTable.StoryNames`, which Twitch's powers use).
+
 # Old factions, part 2 (2026-11-21)
 
 Karl asked (2026-11-21) for the last of the old story factions to go: Scam, British, Scottish (Highland), Ministry of Slop, Bandit

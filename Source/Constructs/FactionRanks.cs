@@ -22,8 +22,7 @@ public sealed record FactionRank(string Name, FactionMay May);
 
 /// <summary>
 /// The ranks of a kind of faction (Constructs/FactionRanks.json; docs/sandbox/CONSTRUCTS.md, "Factions", "Ranks"): lowest
-/// first, the last one the leader's. A set is generic data, so a story faction's ladder (later the Ministry's colony:
-/// inmate, trusty, guard...) is one more set. Player factions use the set named <see cref="PlayerSet"/>.
+/// first, the last one the leader's. A set is generic data, so another faction's ladder is one more set. Player factions use the set named <see cref="PlayerSet"/>.
 /// </summary>
 public sealed class FactionRankSet
 {

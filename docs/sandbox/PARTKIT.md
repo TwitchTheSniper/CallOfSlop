@@ -104,7 +104,6 @@ Other Sandbox helper scripts ported the same way (byte-identical output, the Pyt
 | Command | Was | What |
 | --- | --- | --- |
 | `--check-builder-parts [DIR] [--receiver NAME] [--tol M]` | `tools/parts/floaters.py` | weapon-builder parts form one connected piece, alone and assembled; actions under or in front clear the handle, foregrips and magazines (`Source/Zombies/BuilderPartsCheck.cs`, shared with the self-test's Model connectivity). Exit code: problems |
-| `--story-map [OUT.html]` | `tools/story/story_map.py` | the story map page from `Story/Storylets` and the template `tools/story/story_map.html` (`Source/Story/StoryMapPage.cs`) |
 | `--zfight-props FILE...` | `tools/props/zfight_props.py` | coplanar faces in prop files corrected in place; only the moved parts' `size` and `offset` are rewritten (`PropTools.cs`) |
 | `--zfight-moves OLD_REV [NEW_REV] [--paths ...] [--files LIST] [--worst N] [--csv FILE]` | `tools/props/zfight_moves.py` | how far the boxes of props, construct parts and weapon parts moved between two git versions |
 

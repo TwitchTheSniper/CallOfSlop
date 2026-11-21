@@ -179,7 +179,7 @@ public sealed partial class Ui
     }
 
     /// <summary>
-    /// What the world's factions teach (docs/archive/story/STORY.md "Technologies"): the parts an Assembler builds only once a faction
+    /// What the world's factions teach (the removed story (docs/removals-notes.md)): the parts an Assembler builds only once a faction
     /// has taught them, at a tier of its standing. With a faction of yours, which ones it has learnt.
     /// </summary>
     private void DrawStoryTech(FactionTable t, byte mine, byte self)
@@ -207,24 +207,6 @@ public sealed partial class Ui
                 else
                     ImGuiSafe.TextWrapped($"  {techs[k]}");
             }
-        }
-    }
-
-    /// <summary>
-    /// Faction jobs (docs/archive/story/STORY.md "Jobs"): what each story faction offers work for, which you may take now, and the one
-    /// your party holds and how far along it is. No money: a job pays standing. One job of each faction at a time.
-    /// </summary>
-    private void DrawFactionJobs(Game game)
-    {
-        var view = game.JobsView;
-        if (view.Length == 0 || !ImGui.CollapsingHeader("Jobs for the world's factions##fajobs"u8, ImGuiTreeNodeFlags.DefaultOpen))
-            return;
-        ImGuiSafe.TextColored(Dim, "No money: a job pays standing, and standing is what the factions teach their technologies for. One job of each faction at a time. Supply jobs go in a Requisition Crate you own (fill its box: chute, hand, or lay a cut piece in it); the courier collects. Build jobs are inspected where they stand. The Ministry Work Board in the colony yard posts the same jobs.");
-        JobBoardBuild(game); // (the job board's rows: UiJobBoard.cs)
-        for (var f = 0; f < view.Length; f++)
-        {
-            ImGui.Spacing();
-            DrawJobFaction(game, f, true);
         }
     }
 
@@ -276,15 +258,8 @@ public sealed partial class Ui
                 ImGuiSafe.SetInput(_faName, "");
             }
             DrawFactionList(game, t, me);
-            if (game.FactionTable.PlayerStory[game.LocalId]) // (where the world's factions stand with you on your own: UiRanks.cs)
-            {
-                ImGui.Separator();
-                ImGuiSafe.TextColored(Orange, "How the world's factions see you");
-                DrawRankBars(game);
-            }
             DrawPowerRelations(game, t);
             DrawContracts(game, me); // (phase 5: UiFactionsPolitics.cs)
-            DrawFactionJobs(game);
             DrawStoryTech(t, 0, me.Id);
             return;
         }
@@ -417,16 +392,14 @@ public sealed partial class Ui
         {
             ImGui.Separator();
             ImGuiSafe.TextColored(Orange, "How the world's factions see you");
-            if (!DrawRankBars(game))
-                for (var f = 0; f < t.StoryNames.Length; f++)
-                {
-                    int v = t.StoryStanding[mine * FactionTable.MaxStory + f];
-                    ImGuiSafe.TextWrapped($"{t.StoryNames[f]}: {StandingWord(v)} ({v:+0;-0;0})");
-                }
+            for (var f = 0; f < t.StoryNames.Length; f++)
+            {
+                int v = t.StoryStanding[mine * FactionTable.MaxStory + f];
+                ImGuiSafe.TextWrapped($"{t.StoryNames[f]}: {StandingWord(v)} ({v:+0;-0;0})");
+            }
             DrawPartyPacts(game, t, me, mine); // (phase 5: UiFactionsPolitics.cs)
             DrawContracts(game, me);
             DrawPowerRelations(game, t);
-            DrawFactionJobs(game);
             DrawStoryTech(t, mine, me.Id);
         }
 

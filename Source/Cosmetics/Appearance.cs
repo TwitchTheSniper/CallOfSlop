@@ -145,7 +145,7 @@ public readonly record struct PlayerLook(byte Skin = 0, byte Hair = 0, byte Head
         LookAxis.Headwear => "Headwear",
         LookAxis.Beard => "Beard",
         LookAxis.Gear => "Helmet / Cap Colour",
-        LookAxis.Uniform => "Faction Uniform (Story)",
+        LookAxis.Uniform => "Faction Uniform",
         _ => "Outfit Colour",
     };
 

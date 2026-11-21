@@ -77,14 +77,14 @@ public enum GameAction
     SelectWeld,
     SelectSave, // ...save it as a blueprint (a Blueprint Desk's aid)
     SelectTool, // the selector itself, out or away (it has no slot on the tool wheel; the Tab inventory's Tools tab lists it too)
-    StoryWindow, // binds version 20: Sandbox, the story window (the story world, its chronicle, the stories in progress; Source/UI/UiStory.cs) on F4
+    StoryWindow, // binds version 20: the story window on F4; removed with the story (2026-11-21), its slot kept (binds are saved by index): Removed
     FactionWindow, // binds version 21: Sandbox, the faction window (found, invite, join, give; Source/UI/UiFactions.cs) on F2
     SeatRollLeft, // binds version 22: in a seat, roll left and right (the seat's Roll axis: ConstructParts.KeyRollLeft); on Q and E, which do this only in a seat (see Resolve)
     SeatRollRight,
     SeatHook, // binds version 23: in a seat, hook to a launch rail, launch, undock (ConstructCarrier.cs)
     SeatEject, // ...and an ejection seat's handle (PilotGear.cs)
-    Logbook, // binds version 25: Sandbox, the Logbook (the old records' fragments you hold, and your open leads; Source/UI/UiLogbook.cs) on F1
-    JoinTalk, // binds version 26: Sandbox, join the talk another player is having with one of the story's people, while its notice shows (Program.StoryTalk.cs) on Backspace
+    Logbook, // binds version 25: the Logbook on F1; removed with the story, its slot kept: Removed
+    JoinTalk, // binds version 26: joining a talk on Backspace; removed with the story, its slot kept: Removed
     SeatRadar, // binds version 27: in a seat, lock the radar contact nearest the look, the next one, or none (ConstructRadar.cs, Program.SandboxRadar.cs) on the middle mouse button
     CommandView, // binds version 28: Sandbox, the command view (the star system as a hologram, ships and their orders; Source/UI/UiCommand.cs) on Home
     SeatDampeners, // binds version 29: in a seat, a ship's inertia dampeners off or on (ConstructFlight.ToggleDampeners) on Z, which is Prone outside a seat
@@ -411,14 +411,14 @@ public static class Keybinds
         Key(GlfwKey.U), // Selector: weld it (shares Gantry's U)
         Key(GlfwKey.Comma), // Selector: save it as a blueprint
         Key(GlfwKey.Period), // The selector, out or away
-        Key(GlfwKey.F4), // Story window (Sandbox): binds version 20
+        Unbound, // (was the Story window on F4, binds version 20: removed with the story, 2026-11-21)
         Key(GlfwKey.F2), // Faction window (Sandbox): binds version 21
         Key(GlfwKey.Q), // Roll left, in a seat: binds version 22 (shares Swap weapon's Q: Overlap)
         Key(GlfwKey.E), // Roll right, in a seat (shares Equipment's E)
         Key(GlfwKey.G), // Hook, launch, undock, in a seat: binds version 23
         Key(GlfwKey.L), // Eject, in an ejection seat
-        Key(GlfwKey.F1), // Logbook (Sandbox): binds version 25
-        Key(GlfwKey.Backspace), // Join another player's talk (Sandbox): binds version 26
+        Unbound, // (was the Logbook on F1, binds version 25: removed with the story)
+        Unbound, // (was joining another player's talk on Backspace, binds version 26: removed with the story)
         Mouse(GlfwMouseButton.Middle), // Radar lock, in a seat: binds version 27 (shares the tool wheel's button, which a seat doesn't read)
         Key(GlfwKey.Home), // Command view (Sandbox): binds version 28
         Key(GlfwKey.Z), // Inertia dampeners, in a seat: binds version 29 (shares Prone's Z, which a seat doesn't read)
@@ -520,15 +520,15 @@ public static class Keybinds
         (19, (int)GameAction.SelectWeld, Unbound, Key(GlfwKey.U)),
         (19, (int)GameAction.SelectSave, Unbound, Key(GlfwKey.Comma)),
         (19, (int)GameAction.SelectTool, Unbound, Key(GlfwKey.Period)),
-        (20, (int)GameAction.StoryWindow, Unbound, Key(GlfwKey.F4)),
+        (20, (int)GameAction.StoryWindow, Unbound, Unbound), // (removed with the story, 2026-11-21)
         (21, (int)GameAction.FactionWindow, Unbound, Key(GlfwKey.F2)),
         (22, (int)GameAction.SeatRollLeft, Unbound, Key(GlfwKey.Q)),
         (22, (int)GameAction.SeatRollRight, Unbound, Key(GlfwKey.E)),
         (23, (int)GameAction.SeatHook, Unbound, Key(GlfwKey.G)),
         (23, (int)GameAction.SeatEject, Unbound, Key(GlfwKey.L)),
         (24, At(GameAction.ToolWheel, 1), Unbound, Key(GlfwKey.GraveAccent)), // (a second binding: the laptop's way to the wheel)
-        (25, (int)GameAction.Logbook, Unbound, Key(GlfwKey.F1)),
-        (26, (int)GameAction.JoinTalk, Unbound, Key(GlfwKey.Backspace)),
+        (25, (int)GameAction.Logbook, Unbound, Unbound), // (removed with the story)
+        (26, (int)GameAction.JoinTalk, Unbound, Unbound), // (removed with the story)
         (27, (int)GameAction.SeatRadar, Unbound, Mouse(GlfwMouseButton.Middle)),
         (28, (int)GameAction.CommandView, Unbound, Key(GlfwKey.Home)),
         (29, (int)GameAction.SeatDampeners, Unbound, Key(GlfwKey.Z)),
@@ -623,6 +623,9 @@ public static class Keybinds
         return true;
     }
 
+    /// <summary>An action whose feature was removed: its slot stays (binds are saved by index), nothing reads it and the controls menu leaves it out.</summary>
+    public static bool Removed(GameAction a) => a is GameAction.StoryWindow or GameAction.Logbook or GameAction.JoinTalk;
+
     public static string Label(GameAction a) =>
         a switch
         {
@@ -697,14 +700,14 @@ public static class Keybinds
             GameAction.SelectWeld => "Selector: attach the group",
             GameAction.SelectSave => "Selector: save the group as a blueprint",
             GameAction.SelectTool => "Selector: take it out or put it away (build stations)",
-            GameAction.StoryWindow => "Story window (Sandbox host: the story world, its chronicle, the stories in progress)",
+            GameAction.StoryWindow => "(removed: the story window)",
             GameAction.FactionWindow => "Faction window (Sandbox: found or join a faction, share and give what you own)",
             GameAction.SeatRollLeft => "Roll left (in a seat)",
             GameAction.SeatRollRight => "Roll right (in a seat)",
             GameAction.SeatHook => "Hook, launch or undock (in a seat)",
             GameAction.SeatEject => "Eject (in an ejection seat)",
-            GameAction.Logbook => "Logbook (Sandbox: the old records you have found, and your leads)",
-            GameAction.JoinTalk => "Join a chat (Sandbox: when another player talks to someone, while the notice shows)",
+            GameAction.Logbook => "(removed: the Logbook)",
+            GameAction.JoinTalk => "(removed: joining a talk)",
             GameAction.SeatRadar => "Radar lock (in a seat with a radar: the contact nearest your look, again for the next)",
             GameAction.CommandView => "Command view (Sandbox: the star system, your ships and their orders)",
             GameAction.SeatDampeners => "Inertia dampeners on or off (in a ship's seat: off, it coasts and the keys only burn)",

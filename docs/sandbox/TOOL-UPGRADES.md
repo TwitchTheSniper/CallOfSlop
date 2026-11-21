@@ -24,12 +24,8 @@ with the reason, on the look line and on F.
 
 **Where the modules come from.** Recipes are in `Constructs/Assembling.json` (from the part kit's `--gen-parts upgrade_parts`
 through the part kit's `assembling`): Mk 2 at a tier 1 or 2 Assembler from copper, steel, glass and bronze plus a component; Mk 4 and
-Mk 5 at tier 4 with gold, levite and Field Coils. Factions teach the top ones (`teaches` in `Story/Factions`):
-
-- Ministry of Slop, Contractor: **Heavy Lifting Permit** (Lift Coil Mk 4 and Mk 5).
-- IT Department, Registered: **Remote Access** (Tractor Emitter, Beam Lens Mk 5).
-- Clan MacSlop, Friend of the Clan: **The Caber Arm** (Kinetic Coil).
-- The Salvager, Valued Customer: **Productivity Drive** (Drill Motor Mk 4, Fitter Servo Mk 4).
+Mk 5 at tier 4 with gold, levite and Field Coils. The story's factions once taught the top ones; since the story went (2026-11-21, docs/removals-notes.md) every
+recipe is open.
 
 **Seeing them.** The Tab inventory's **Upgrades** tab lists every stat: what the player has now, its Mk, and the next
 module and what it gives. A loose module's look line says what it gives and "F: fit to your tools", or why it can't be

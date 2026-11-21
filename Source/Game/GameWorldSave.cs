@@ -217,7 +217,7 @@ public sealed partial class Game
         s.FactionOpen = (bool[])FactionTable.Open.Clone();
         s.FactionStances = (sbyte[])FactionTable.Stance.Clone();
         s.Opening = OpeningCapture(); // (GameSandboxOpening.cs)
-        s.Start = StartCapture(); // (GameStoryStart.cs)
+        s.Start = StartCapture(); // (GameStart.cs)
         s.CrewFactions = CrewFactionBytes(); // (the NPC powers' standings with player factions: GameCrewFactions.cs)
         s.Fleet = IsServer ? Crew.Fleet.SaveBytes() : null; // (groups and admirals: Crew/CrewFleet.cs)
         s.Controllers = ControllersBytes(); // (the powers' controllers: GameCrewPowers.cs)
@@ -233,7 +233,6 @@ public sealed partial class Game
         }
         s.Resources = World.Map.ResourcesIfMade?.Capture();
         s.PlanetCentre = World.Map.Planetoid?.Center;
-        StoryCapture(s); // (GameStory.cs)
         s.SpaceSystem = "";
         s.ShipCount = 0;
         if (Space?.Flight is { } f)
@@ -476,7 +475,7 @@ public sealed partial class Game
         Constructs.Resources = World.Map.Resources;
         var r = new SaveReader(body) { Shift = WorldShift(body) };
         ushort nextTag = 1;
-        StartLoad(""); // (a world from before starts plays StoryStarts.Legacy, no opening; its Start section says otherwise: GameStoryStart.cs)
+        StartLoad(""); // (a world from before starts plays StoryStarts.Legacy, no opening; its Start section says otherwise: GameStart.cs)
         while (r.Has(8))
         {
             var tag = r.U32();
@@ -598,7 +597,7 @@ public sealed partial class Game
             }
             // (TutorialTag, DepotTag and QuarryTag, the penal colony's, are skipped like any unknown section since 2026-11-17)
             case WorldSaveWriter.StartTag:
-                StartLoad(r.Str()); // (the story start it was made with: GameStoryStart.cs)
+                StartLoad(r.Str()); // (the story start it was made with: GameStart.cs)
                 break;
             case WorldSaveWriter.LinkTag:
                 if (Keep == null)
@@ -719,9 +718,6 @@ public sealed partial class Game
                 break;
             case WorldSaveWriter.SpaceAway:
                 WorldReadSpaceAway(r);
-                break;
-            case WorldSaveWriter.Story:
-                StoryRead(r, ws.Meta.Name); // (GameStory.cs)
                 break;
         }
     }

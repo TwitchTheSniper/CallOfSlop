@@ -1,7 +1,6 @@
 using System.Globalization;
 using System.Numerics;
 using System.Text;
-using CallOfSlop.Story;
 
 namespace CallOfSlop;
 
@@ -47,7 +46,6 @@ public static class BuildingWalkCheck
             : arg.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
         var map = new StringBuilder();
         var bad = 0;
-        var lore = StoryRules.LoadFolder().Lore.Items; // (the story's lore items stand in the buildings at run time: Story/Lore)
         foreach (var name in names)
         {
             var bp = ConstructBuild.FindBlueprint(name);
@@ -57,7 +55,7 @@ public static class BuildingWalkCheck
                 bad++;
                 continue;
             }
-            var (fails, notes) = Check(bp, map, lore.Where(t => t.In.Equals(bp.Name, StringComparison.OrdinalIgnoreCase)).ToList());
+            var (fails, notes) = Check(bp, map);
             Say($"[building] {bp.Name}: {(fails.Count == 0 ? "ok" : $"{fails.Count} FAIL")}");
             foreach (var f in fails)
                 Say($"[building]   FAIL {f}");
@@ -85,7 +83,7 @@ public static class BuildingWalkCheck
         return bp.Steps.Any(s => ConstructParts.Find(s.Part) is { } d && (d.Role == PartRole.Door || d.Walk is WalkKind.Stairs));
     }
 
-    public static (List<string> Fails, List<string> Notes) Check(ConstructBuild.Blueprint bp, StringBuilder map, List<LoreDef> lore)
+    public static (List<string> Fails, List<string> Notes) Check(ConstructBuild.Blueprint bp, StringBuilder map)
     {
         var fails = new List<string>();
         var notes = new List<string>();
@@ -158,33 +156,6 @@ public static class BuildingWalkCheck
                 lo = Vector3.Min(lo, wc - wh);
                 hi = Vector3.Max(hi, wc + wh);
             }
-        }
-        // The lore items the story stands in it (GameStoryLore: "at" in the building's frame, turned by -yaw), each as its bounds
-        // (part -2 - k: no part of the building).
-        var loreBox = new List<(Vector3 Min, Vector3 Max, string Name)>();
-        c.WorldFrame(0, out var bq, out var bt);
-        foreach (var t in lore)
-        {
-            if (ConstructParts.Find(t.Part) is not { } ld)
-                continue;
-            var turn = bq * Quaternion.CreateFromAxisAngle(Vector3.UnitY, -t.Yaw * MathF.PI / 180f);
-            var at = bt + Vector3.Transform(new Vector3(t.At[0], t.At[1], t.At[2]), bq);
-            Vector3 mn = new(float.MaxValue), mx = new(float.MinValue);
-            for (var k = 0; k < 8; k++)
-            {
-                var corner = new Vector3((k & 1) != 0 ? ld.BoundsMax.X : ld.BoundsMin.X, (k & 2) != 0 ? ld.BoundsMax.Y : ld.BoundsMin.Y, (k & 4) != 0 ? ld.BoundsMax.Z : ld.BoundsMin.Z);
-                var wpt = at + Vector3.Transform(corner, turn);
-                (mn, mx) = (Vector3.Min(mn, wpt), Vector3.Max(mx, wpt));
-            }
-            Vector3 imn = mn + new Vector3(0.01f, 0.03f, 0.01f), imx = mx - new Vector3(0.01f, 0, 0.01f);
-            foreach (var bb in boxes)
-                if (bb.Part >= 0 && bb.Min.X < imx.X && bb.Max.X > imn.X && bb.Min.Y < imx.Y && bb.Max.Y > imn.Y && bb.Min.Z < imx.Z && bb.Max.Z > imn.Z)
-                {
-                    fails.Add($"the lore item {t.Part} ({t.Id}) stands inside the {c.DefOf(bb.Part).Name}: move its \"at\" (Story/Lore)");
-                    break;
-                }
-            boxes.Add(new Box { Min = mn, Max = mx, Part = -2 - loreBox.Count });
-            loreBox.Add((mn, mx, $"{t.Part} ({t.Id})"));
         }
         var x0 = lo.X - Margin;
         var z0 = lo.Z - Margin;
@@ -627,10 +598,6 @@ public static class BuildingWalkCheck
             if (!ok)
                 fails.Add($"nobody reaches the {d.Name} at {Spot(c, (mn.X + mx.X) / 2, mn.Y, (mn.Z + mx.Z) / 2)}");
         }
-
-        for (var li = 0; li < loreBox.Count; li++)
-            if (loreBox[li] is var (mn, mx, name) && !Reached(mn, mx, -2 - li))
-                fails.Add($"nobody reaches the lore item {name} at {Spot(c, (mn.X + mx.X) / 2, mn.Y, (mn.Z + mx.Z) / 2)} (Story/Lore)");
 
         // (and seen: a clear line from the eyes to the thing's nearest point, so nothing is used through a hull, from the ground
         // beside it or a roof over it; the thing's own boxes don't count)
