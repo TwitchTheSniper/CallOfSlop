@@ -24,7 +24,7 @@ public sealed class SeatPanel
 /// The seat controls panel's contents (Karl, 2026-11-21: "when sitting in a seat, a UI on the bottom-right ... it grows with the amount of
 /// controls there are ... separate them into their relevant areas"; drawn by UI/UiSeatPanel.cs). Built from what the seat is linked to:
 /// its Flight Stabilizer or Driving Module (FLIGHT or DRIVING, by the keys it answers to), its Turret Modules and the radar (WEAPONS), the
-/// craft's landing legs, rail or dock and the seat's ejection handle (DOCKING AND LANDING), and every Input Reader that reads this seat,
+/// craft's landing legs, rail or dock and the seat's ejection handle (DOCKING AND LANDING), the pilot's reactor and thruster keys (POWER AND THRUST), and every Input Reader that reads this seat,
 /// followed through logic gates to what it works (MOTORS, LIGHTS, DOORS, OTHER DEVICES); Karl's sections, 2026-11-21: Flight, Driving, Motors, Weapons. Made again only when the seat, its links, a state it shows or
 /// a bind changes: nothing allocates a frame.
 /// </summary>
@@ -55,7 +55,8 @@ public sealed partial class Game
         var key = (long)c.Id << 48 ^ (long)seat << 36 ^ (long)c.RebuildStamp << 12 ^ (long)SandboxKeys.Stamp * 1000003L
                   ^ (ConstructFlight.DampenersOff(c) ? 1L : 0) ^ (ConstructFlight.MouseSteerOff(c) ? 2L : 0) ^ (long)gear << 2 ^ (long)hintKind << 4
                   ^ (RadarCraft == c && RadarCanLock ? 1L << 6 : 0) ^ (long)(turret + 1) << 7 ^ (c.DriveSeat == seat ? 1L << 62 : 0)
-                  ^ (c.EngineRunning ? 1L << 61 : 0) ^ (long)c.StabCount << 56;
+                  ^ (c.EngineRunning ? 1L << 61 : 0) ^ (long)c.StabCount << 56
+                  ^ (ConstructShutdown.ReactorOff(c) ? 1L << 59 : 0) ^ (ConstructShutdown.ThrustersOff(c) ? 1L << 60 : 0);
         if (key != _seatPanelKey)
         {
             _seatPanelKey = key;
@@ -148,6 +149,19 @@ public sealed partial class Game
             Row(SandboxKeys.KLeft, SandboxKeys.KRight, "turn");
             Row(SandboxKeys.KRollLeft, SandboxKeys.KRollRight, "strafe");
             Row(SandboxKeys.Sprint, SandboxKeys.KCrouch, "raise, lower");
+        }
+
+        // POWER AND THRUST: the pilot shuts the reactor (every power plant aboard) and the thrusters down or starts them (ConstructShutdown.cs).
+        if (driver)
+        {
+            var reactor = ConstructShutdown.HasReactor(c);
+            var thrust = ConstructShutdown.HasThrusters(c);
+            if (reactor || thrust)
+                Head("POWER AND THRUST", "");
+            if (reactor)
+                Lamp(SandboxKeys.KReactor, "reactor on", !ConstructShutdown.ReactorOff(c));
+            if (thrust)
+                Lamp(SandboxKeys.KThrusters, "thrusters on", !ConstructShutdown.ThrustersOff(c));
         }
 
         // WEAPONS: each Turret Module linked from the seat (Aim steps between them), a gun this seat works unwired, the radar's lock.
