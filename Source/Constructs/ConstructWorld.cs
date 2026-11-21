@@ -2397,6 +2397,8 @@ public sealed partial class ConstructWorld
         ConstructLifters.Step(this, query); // (Loader Arms fit parts at the stations they reach and carry between points: lifters phase 4)
         AllocProfile.Mark("machines: ConstructPress");
         ConstructPress.Step(this, query); // (Presses and Die Lathes take pieces in and stamp)
+        AllocProfile.Mark("machines: ConstructBakeOven");
+        ConstructBakeOven.Step(this); // (Bake Ovens: the group on the bed, the hood's cycle, the crush and burn boxes)
         AllocProfile.Mark("machines: ProductionLines");
         ProductionLines.Step(this); // (Line Consoles: their Alarm and Running outputs, a new Start, Stop after; 10 Hz)
         AllocProfile.Mark("machines: Beacons");
