@@ -56,6 +56,35 @@ public static partial class ConstructLifters
         return ld; // (its own def has RailWhy 1: no reach)
     }
 
+    /// <summary>
+    /// A Crane Rail Block's lamp (drawing 24): does it flash now? While a crane on its body moves (carrying or going back) with its bridge
+    /// within <see cref="LampNear"/> of the block's middle along the rails, on for half of each third of a second. Drawing only, either peer;
+    /// allocates nothing.
+    /// </summary>
+    public static bool RailLit(ConstructWorld world, Construct c, int rail, double now)
+    {
+        if (c.CraneN == 0 || now * 3 % 1 > 0.5)
+            return false;
+        var d = c.DefOf(rail);
+        Freeform.PartWorld(c, rail, out var rp, out var rr);
+        var mid = rp + Vector3.Transform((d.BoundsMin + d.BoundsMax) * 0.5f, rr);
+        for (var k = 0; k < c.CraneN; k++)
+        {
+            var (part, ld) = c.CraneDefs[k];
+            if (ld.RailWhy != 0 || Find(world, c.Id, part) is not { State: LiftState.Carry or LiftState.Return, Moved: true } l)
+                continue;
+            Freeform.PartWorld(c, part, out var bp, out var br);
+            var at = Vector3.Transform(mid - bp, Quaternion.Conjugate(br));
+            var hook = Pose(ld, l, AgeNow(l), out _);
+            if (MathF.Abs(at.Z - hook.Z) < LampNear && at.X > ld.Base.X - 1.5f && at.X < ld.Base.X + ld.Span + 1.5f)
+                return true;
+        }
+        return false;
+    }
+
+    public const float LampNear = 3f;
+    public const float HallBridgeTop = 1f; // m over the rails' top: the bridge's end trucks and cab roof (what a part over the span must clear)
+
     /// <summary>The window tool's "lifter cranepoints": the points a crane reaches, and each nearby part's middle in its box's frame.</summary>
     public static string CranePoints(ConstructWorld world, Construct c, int part)
     {
@@ -100,16 +129,19 @@ public static partial class ConstructLifters
     private static long CraneKeyOf(Construct c)
     {
         var h = 1000003L; // (not the part count: an Extruder's growing piece on the body changed it every cut, and each change walked the rails again: lifters phase 7)
+        var fixedParts = 0L; // (a Hall Crane's drop and its clearance check read every fixed part under it: their ids and places, never a run-time piece's)
         for (var i = 0; i < c.PartCount; i++)
         {
             var d = c.DefOf(i);
+            if (!d.RuntimeMade)
+                fixedParts = fixedParts * 17 + HashCode.Combine(d.Id, i, c.Parts[i].Pos, c.Parts[i].Rot, c.Parts[i].Broken); // (turned or broken in place: the drop and the clearance change)
             if (!d.CraneRail && d.Lifter is not { Bridge: true })
                 continue;
             ref readonly var p = ref c.Parts[i];
             var x = HashCode.Combine(i, d.Id, p.Pos, p.Rot, p.Seg, p.Broken);
             h = h * 31 + x;
         }
-        return h;
+        return h * 31 + fixedParts;
     }
 
     private static void Cranes(Construct c)
@@ -168,7 +200,18 @@ public static partial class ConstructLifters
         if (!Run(x[..m], y[..m], z0[..m], z1[..m], 0, 0, FarRail, 0, out var n0, out var n1, out var nx, out var ny))
             return; // (not on a crane rail)
         copy.RailWhy = 2;
-        if (!Run(x[..m], y[..m], z0[..m], z1[..m], nx + own.Span, ny, FarRail, (n0 + n1) * 0.5f, out var f0, out var f1, out _, out _, n0, n1))
+        var span = own.Span;
+        if (own.Hall)
+        {
+            // A Hall Crane's span is the gap to the nearest parallel run across (+x), at the same height, along the near run, within HallSpan.
+            span = float.MaxValue;
+            for (var k = 0; k < m; k++)
+                if (MathF.Abs(y[k] - ny) <= FarRail && x[k] - nx > HallMinSpan && x[k] - nx <= HallSpan + FarRail && z1[k] > n0 && z0[k] < n1)
+                    span = MathF.Min(span, x[k] - nx);
+            if (span == float.MaxValue)
+                return;
+        }
+        if (!Run(x[..m], y[..m], z0[..m], z1[..m], nx + span, ny, FarRail, (n0 + n1) * 0.5f, out var f0, out var f1, out var fx, out _, n0, n1))
             return; // (its far end has no rail)
         var lo = Math.Max(Math.Max(n0, f0), -MaxRun);
         var hi = Math.Min(Math.Min(n1, f1), MaxRun);
@@ -176,8 +219,71 @@ public static partial class ConstructLifters
             return;
         copy.RailWhy = 0;
         (copy.RunLo, copy.RunHi) = (lo, hi);
+        if (own.Hall)
+            HallWalk(c, part, own, copy, x[..m], z0[..m], z1[..m], nx, fx, lo, hi);
         var zz = MathF.Max(MathF.Abs(lo), MathF.Abs(hi));
-        copy.ReachMax = MathF.Sqrt(own.Span * own.Span + zz * zz); // (the box's horizontal radius: what the distance cuts read)
+        copy.ReachMax = MathF.Sqrt(copy.Span * copy.Span + zz * zz); // (the box's horizontal radius: what the distance cuts read)
+    }
+
+    public const float HallSpan = 32f, HallMinSpan = 3.5f; // a Hall Crane's widest span (16 cells: drawing 24) and its narrowest (one free cell between two rails)
+    public const float HallLift = 20000f, HallLiftPerBlock = 5000f; // kg: 20 t plus 5 t a rail block (drawing 24)
+    public const float HallMargin = 1f; // the hook's nearest to either rail's top line
+
+    /// <summary>
+    /// A Hall Crane's numbers from its rails (design page drawing 24): the span is the gap between its runs, the reach across stops
+    /// <see cref="HallMargin"/> short of each, the lift is <see cref="HallLift"/> plus <see cref="HallLiftPerBlock"/> a rail block in both
+    /// runs, the hook drops to the lowest foot of what stands under the rails (the masts' feet: the floor), and every other part under the
+    /// span must stay under the hook's highest point: the first that doesn't stops it (RailWhy 3, named on its screen). Rebuild only.
+    /// </summary>
+    private static void HallWalk(Construct c, int part, LifterDef own, LifterDef copy, Span<float> x, Span<float> z0, Span<float> z1, float nx, float fx, float lo, float hi)
+    {
+        var span = fx - nx;
+        copy.Span = span;
+        copy.AcrossMin = HallMargin;
+        copy.AcrossMax = MathF.Max(HallMargin + 0.5f, span - HallMargin);
+        var blocks = 0;
+        for (var k = 0; k < x.Length; k++)
+            if ((MathF.Abs(x[k] - nx) <= RailLine || MathF.Abs(x[k] - fx) <= RailLine) && z1[k] > lo + RailEnds && z0[k] < hi - RailEnds)
+                blocks++;
+        copy.Payload = MathF.Min(1e7f, HallLift + HallLiftPerBlock * blocks);
+        copy.PieceAcross = MathF.Max(0.5f, copy.AcrossMax - copy.AcrossMin);
+        copy.PieceLong = MathF.Max(copy.PieceAcross, MathF.Min(64f, hi - lo));
+        // The floor under it and anything standing up into the bridge's way, in the bridge's frame from the near rail's top line.
+        Freeform.PartWorld(c, part, out var bp, out var br);
+        var inv = Quaternion.Conjugate(br);
+        float floor = 0;
+        string? blocker = null;
+        var blockerTop = float.MinValue;
+        Span<Vector3> corner = stackalloc Vector3[8];
+        for (var i = 0; i < c.PartCount; i++)
+        {
+            var d = c.DefOf(i);
+            if (i == part || d.RuntimeMade || c.Parts[i].Broken)
+                continue;
+            Freeform.PartWorld(c, i, out var pp, out var pr);
+            Vector3 mn = new(float.MaxValue), mx = new(float.MinValue);
+            for (var k = 0; k < 8; k++)
+            {
+                var v = new Vector3((k & 1) == 0 ? d.BoundsMin.X : d.BoundsMax.X, (k & 2) == 0 ? d.BoundsMin.Y : d.BoundsMax.Y, (k & 4) == 0 ? d.BoundsMin.Z : d.BoundsMax.Z);
+                var q = Vector3.Transform(pp + Vector3.Transform(v, pr) - bp, inv) - own.Base;
+                mn = Vector3.Min(mn, q);
+                mx = Vector3.Max(mx, q);
+            }
+            if (mx.Z <= lo || mn.Z >= hi || mx.X <= -1f || mn.X >= span + 1f)
+                continue; // (not under the rails)
+            if (d.BlockRole == BlockRole.Shared)
+                floor = MathF.Min(floor, mn.Y); // (the masts' feet: the floor the rails stand on; with no mast, the file's drop)
+            if (d.CraneRail || d.BlockRole == BlockRole.Shared || d.Lifter is { Bridge: true })
+                continue; // (the rails, their masts and the cores: what the crane stands on)
+            if (mx.X <= HallMargin * 0.5f || mn.X >= span - HallMargin * 0.5f)
+                continue; // (beside the runs, outside the span)
+            if (mx.Y > -own.Depth + 0.01f && mn.Y < HallBridgeTop && mx.Y > blockerTop) // (up into the band the bridge sweeps: a roof or a lamp above it is no blocker)
+                (blocker, blockerTop) = (d.Name, mx.Y);
+        }
+        copy.Down = floor < 0 ? Math.Clamp(-floor, own.Depth + 1f, 64f) : own.Down;
+        copy.Blocker = blocker;
+        if (blocker != null)
+            copy.RailWhy = 3;
     }
 
     /// <summary>

@@ -840,6 +840,9 @@ public sealed class Assembling : IPartGenerator
         ("Dibber", "Dibber Upper Fore", null),
         ("Dibber", "Dibber Upper Port", null),
         ("Dibber", "Dibber Upper Starboard", null),
+        // (the Hall Crane, design page drawing 24: its rail blocks and its bridge's Core)
+        ("Lifters/HallCranes", "Crane Rail Block", null),
+        ("Lifters/HallCranes", "Crane Core", null),
     ];
 
     /// <summary>

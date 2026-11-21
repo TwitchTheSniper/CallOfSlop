@@ -2640,6 +2640,8 @@
     {"output": "Dibber Upper Aft", "materials": {"steel": 130, "concrete": 26}, "seconds": 21.5},
     {"output": "Dibber Upper Fore", "materials": {"steel": 130, "concrete": 26}, "seconds": 21.5},
     {"output": "Dibber Upper Port", "materials": {"steel": 130, "concrete": 26}, "seconds": 21.5},
-    {"output": "Dibber Upper Starboard", "materials": {"steel": 130, "concrete": 26}, "seconds": 21.5}
+    {"output": "Dibber Upper Starboard", "materials": {"steel": 130, "concrete": 26}, "seconds": 21.5},
+    {"output": "Crane Rail Block", "materials": {"steel": 280, "concrete": 56}, "seconds": 44.0},
+    {"output": "Crane Core", "materials": {"steel": 440}, "parts": {"Gear Set": 4, "Bearing": 4, "Control Unit": 1}, "seconds": 68.0, "minTier": 3}
   ]
 }
