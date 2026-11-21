@@ -196,13 +196,14 @@ public static class MachineBlocks
         var cx = scratch.Take<sbyte>(MaxCells + 1);
         var cy = scratch.Take<sbyte>(MaxCells + 1);
         var cz = scratch.Take<sbyte>(MaxCells + 1);
+        var steps = scratch.Take<byte>(2 * (MaxCells + 1)); // (each cell's steps across and along: a shared cell may be several)
         var sum = scratch.Take<short>((GridSide + 1) * (GridSide + 1));
         foreach (var i in c.Specials)
             if (c.Parts[i].D.BlockRole == BlockRole.Core && c.BlockAsmOf[i] < 0)
-                Assemble(c, i, queue, cx, cy, cz, sum);
+                Assemble(c, i, queue, cx, cy, cz, steps, sum);
     }
 
-    private static void Assemble(Construct c, int core, Span<ushort> queue, Span<sbyte> cx, Span<sbyte> cy, Span<sbyte> cz, Span<short> sum)
+    private static void Assemble(Construct c, int core, Span<ushort> queue, Span<sbyte> cx, Span<sbyte> cy, Span<sbyte> cz, Span<byte> steps, Span<short> sum)
     {
         var id = (short)c.MachineAsmCount++;
         ref var asm = ref c.MachineAsms[id];
@@ -236,9 +237,10 @@ public static class MachineBlocks
                     Caps.Hit("cells in one block machine", MaxCells, cellCount + 1);
                     continue;
                 }
-                // Its place on the Core's lattice: the cell its middle falls in (a shared cell wider than one step: its first cell).
-                var rel = Rot24.Apply(unrot, Middle(c, o) - coreMid) / cell;
-                int x = (int)MathF.Round(rel.X), y = (int)MathF.Round(rel.Y), z = (int)MathF.Round(rel.Z);
+                // Its place on the Core's lattice: the cell of its lowest corner's first step (a shared cell several steps wide marks
+                // its first step only; the Core's own middle is cell 0, so a cell's lowest corner sits half a step under its cell's middle).
+                var rel = Rot24.Apply(unrot, Corner(c, o, unrot) - coreMid) / cell;
+                int x = (int)MathF.Floor(rel.X + 0.5f + 0.01f), y = (int)MathF.Round(Rot24.Apply(unrot, Middle(c, o) - coreMid).Y / cell), z = (int)MathF.Floor(rel.Z + 0.5f + 0.01f);
                 if (Math.Abs(x) > Mid || Math.Abs(z) > Mid || Math.Abs(y) > 127)
                     continue; // (beyond the grid: not part of this machine)
                 c.BlockAsmOf[o] = id;
@@ -246,6 +248,9 @@ public static class MachineBlocks
                 cx[count] = (sbyte)x;
                 cy[count] = (sbyte)y;
                 cz[count] = (sbyte)z;
+                var span = Vector3.Abs(Rot24.Apply(unrot, Rot24.Apply(c.Parts[o].Rot, d.BoundsMax - d.BoundsMin))) / cell;
+                steps[2 * count] = (byte)Math.Clamp((int)MathF.Round(span.X), 1, MaxSide);
+                steps[2 * count + 1] = (byte)Math.Clamp((int)MathF.Round(span.Z), 1, MaxSide);
                 queue[count++] = (ushort)o;
             }
         }
@@ -253,7 +258,10 @@ public static class MachineBlocks
         // Columns: the bed layer is the Core's own (y 0); a cell above a bed cell adds to its column.
         for (var k = 1; k < count; k++)
             if (cy[k] == 0)
-                grid[(cx[k] + Mid) * GridSide + cz[k] + Mid] |= 0x80;
+                for (var sx = 0; sx < steps[2 * k]; sx++)
+                    for (var sz = 0; sz < steps[2 * k + 1]; sz++)
+                        if (cx[k] + sx <= Mid && cz[k] + sz <= Mid)
+                            grid[(cx[k] + sx + Mid) * GridSide + cz[k] + sz + Mid] |= 0x80;
         for (var k = 1; k < count; k++)
             if (cy[k] > 0)
             {
@@ -263,8 +271,8 @@ public static class MachineBlocks
         LargestRectangle(grid, sum, ref asm);
         // Bed cells outside the rectangle idle; each cell's welded faces to its own machine (for the seam boxes).
         var bed = 0;
-        for (var k = 1; k < count; k++)
-            if (cy[k] == 0)
+        foreach (var g in grid)
+            if ((g & 0x80) != 0)
                 bed++;
         asm.Idle = (short)(bed - asm.W * asm.L);
         for (var k = 0; k < count; k++)
@@ -321,6 +329,16 @@ public static class MachineBlocks
         asm.Z0 = (sbyte)(bz - Mid);
         asm.W = (byte)bw;
         asm.L = (byte)bl;
+    }
+
+    /// <summary>The corner of part <paramref name="part"/>'s bounds lowest in x and z of the Core's frame (<paramref name="unrot"/> turns into it), in the body frame.</summary>
+    private static Vector3 Corner(Construct c, int part, byte unrot)
+    {
+        ref readonly var p = ref c.Parts[part];
+        var d = p.D;
+        Vector3 a = Rot24.Apply(unrot, p.Pos + Rot24.Apply(p.Rot, d.BoundsMin)), b = Rot24.Apply(unrot, p.Pos + Rot24.Apply(p.Rot, d.BoundsMax));
+        var lo = Vector3.Min(a, b);
+        return Rot24.Apply(Rot24Inverse(unrot), lo);
     }
 
     private static Vector3 Middle(Construct c, int part)

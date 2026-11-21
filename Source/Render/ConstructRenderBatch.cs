@@ -372,7 +372,7 @@ public static partial class ConstructRender
             _partEntry[i] = e;
             _eCount[e]++;
             _eBoxes[e] += nb;
-            _eGeo[e] = Mix(_eGeo[e], PartGeo(in p));
+            _eGeo[e] = Mix(_eGeo[e], PartGeo(in p) ^ (p.D.HasSeams && i < c.BlockJoined.Length ? (long)c.BlockJoined[i] << 56 : 0)); // (a block machine's welded faces: its seam boxes change with them, MachineBlocks.cs)
             total += nb;
         }
         set.Boxes = total;
