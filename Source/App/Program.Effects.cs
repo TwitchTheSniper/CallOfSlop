@@ -12,6 +12,7 @@ public static unsafe partial class Program
     {
         LightGrid.SurfaceLevel = (float)_settings.Materials;
         LightGrid.Bevels = _settings.EdgeBevels && !LightGrid.BevelsForcedOff;
+        LightGrid.Contrast = _settings.MaterialContrast && !LightGrid.ContrastForcedOff;
         Fx.Level = _settings.Particles;
         Fx.On = !_smokeNoFx;
         (PostFx.Level, PostFx.BloomOn, PostFx.HazeOn, PostFx.AoOn) = (_settings.PostEffects, _settings.Bloom, _settings.HeatHaze, _settings.AmbientOcclusion);
