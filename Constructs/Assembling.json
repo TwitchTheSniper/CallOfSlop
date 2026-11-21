@@ -2761,6 +2761,9 @@
     {"output": "Medium Rocket Engine", "materials": {"steel": 833}, "parts": {"Thrust Chamber": 20, "Wiring Loom": 10}, "seconds": 127.0, "techTier": 2, "tool": "thruster", "needs": ["Power Coupling"]},
     {"output": "Medium Solid Booster", "materials": {"steel": 889}, "parts": {"Thrust Chamber": 20}, "seconds": 135.3, "techTier": 2, "tool": "thruster"},
     {"output": "Small Rocket Engine", "materials": {"steel": 56}, "parts": {"Thrust Chamber": 9, "Wiring Loom": 4}, "seconds": 10.3, "techTier": 2, "tool": "thruster", "needs": ["Power Coupling"]},
-    {"output": "Small Solid Booster", "materials": {"steel": 53}, "parts": {"Thrust Chamber": 9}, "seconds": 10.0, "tool": "thruster"}
+    {"output": "Small Solid Booster", "materials": {"steel": 53}, "parts": {"Thrust Chamber": 9}, "seconds": 10.0, "tool": "thruster"},
+    {"output": "Thruster Jig Block", "materials": {"steel": 140, "concrete": 28}, "seconds": 23.0},
+    {"output": "Sewing Table Block", "materials": {"steel": 76, "concrete": 15}, "seconds": 13.4},
+    {"output": "Block Rack", "materials": {"steel": 48, "rubber": 10}, "seconds": 9.2, "techTier": 2}
   ]
 }

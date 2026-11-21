@@ -140,6 +140,7 @@ public static class MachineScreens
                 case AsmState.NoOrders: Say(card, PanelState.Idle, "Waiting for orders"); break;
                 case AsmState.TierLow: card.State = PanelState.Refused; card.Add(0, "Needs tier ").Add(0, r!.MinTier); break;
                 case AsmState.NeedsModule: card.State = PanelState.Refused; card.Add(0, "Needs a module"); card.Add(2, FirstModule(fit.Missing(r!))); line = 3; break;
+                case AsmState.NeedsTool: card.State = PanelState.Refused; card.Add(0, "Needs a tool"); card.Add(2, AsmFit.ToolBlockName(r!.ToolId)); line = 3; break;
                 case AsmState.TooBig: card.State = PanelState.Refused; card.Add(0, "Too big"); card.Add(2, fit.W == 0 ? "Weld bed blocks" : "Bigger bed or masts"); line = 3; break;
                 case AsmState.Pressed: card.State = PanelState.Refused; card.Add(0, "Pressed now"); card.Add(2, "Use a Press: ").Add(2, r!.PressedDie()); line = 3; break;
                 case AsmState.Untaught: card.State = PanelState.Refused; card.Add(0, "Not taught"); card.Add(2, "A faction teaches it (F2)"); line = 3; break;

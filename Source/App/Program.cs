@@ -293,6 +293,8 @@ public static unsafe partial class Program
             return VehicleKit.BodyReportCli.Run(bodyStyle, args); // what a style's rooms are made of, and how their cross-sections differ (docs/vehiclekit/BODY-STYLES.md)
         if (args.SkipWhile(a => !a.Equals("--diversity-style", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } diversityStyle)
             return VehicleKit.VehicleQualityCli.DiversityStyle(diversityStyle, args); // the same for every shape of a style
+        if (args.Any(a => a.Equals("--press-sweep", StringComparison.OrdinalIgnoreCase)))
+            return PressSweep.Cli(args); // which Assembler recipes a Press could make instead (PressSweep.cs; Assembler PR 3): a list to approve
         if (args.Any(a => a.Equals("--machine-blocks", StringComparison.OrdinalIgnoreCase)))
             return MachineBlocks.Cli(args); // a blueprint's block machines: each Core's cells, bed rectangle and idle cells (MachineBlocks.cs)
         if (args.Any(a => a.Equals("--conduit-check", StringComparison.OrdinalIgnoreCase)))

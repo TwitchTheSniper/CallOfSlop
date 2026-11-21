@@ -17,6 +17,7 @@ public enum AsmState : byte
     Pressed, // (dead since Press phase 5b dropped the marker rows: nothing sets it; kept while MachineScreens.cs, another session's, names it)
     NeedsModule, // the recipe needs an upgrade module the Core hasn't got (AssembleRecipe.Needs)
     TooBig, // the part doesn't fit the bed or its clear height (AsmFit.Places)
+    NeedsTool, // the recipe needs a tool block in the Core's Tool Bay that isn't there (AssembleRecipe.Tool): a chute from a Block Rack swaps it in
 }
 
 /// <summary>
@@ -36,9 +37,11 @@ public readonly struct AsmFit
     public readonly byte W, L; // its bed in cells (0: a bare Core)
     public readonly float Cell; // a cell's side (m)
     public readonly float Clear; // the clear height over the bed (m)
+    public readonly byte Tool; // the tool block docked in its Tool Bay (AssemblingTable.Machines: 1 thruster, 2 tailor), 0 none
 
-    public AsmFit(byte modules, byte overdrive, byte buffers, byte carriages, byte w, byte l, float cell, float clear)
+    public AsmFit(byte modules, byte overdrive, byte buffers, byte carriages, byte w, byte l, float cell, float clear, byte tool = 0)
     {
+        Tool = tool;
         Limited = true;
         Modules = modules;
         Overdrive = overdrive;
@@ -63,6 +66,17 @@ public readonly struct AsmFit
 
     /// <summary>The modules a recipe needs that this one hasn't got (bits), 0 when it has them all.</summary>
     public byte Missing(AssembleRecipe r) => Limited ? (byte)(r.Needs & ~Modules) : (byte)0;
+
+    /// <summary>Does a recipe need a tool block this one hasn't docked?</summary>
+    public bool LacksTool(AssembleRecipe r) => Limited && r.ToolId != 0 && r.ToolId != Tool;
+
+    /// <summary>The tool block that gives a tool (AssemblingTable.Machines index).</summary>
+    public static string ToolBlockName(int tool) => tool switch
+    {
+        1 => "Thruster Jig Block",
+        2 => "Sewing Table Block",
+        _ => "tool block",
+    };
 
     /// <summary>A part's plan footprint in cells, its sides rounded up (either way round), and whether it stands under the clear height.</summary>
     public void Footprint(ConstructPartDef d, out int fx, out int fz, out bool tall)
@@ -166,7 +180,7 @@ public static class ConstructAssembling
             return AsmFit.Free; // (a Panel Former is an Assembler too: its own rules, ConstructPanelFormer)
         var carriages = (byte)Math.Min(MachineBlocks.MaxCarriages, 1 + asm.Carriages); // (the Core's own arm, and one a Gantry Carriage)
         var clear = d.BlockCell * Math.Max(1, (int)asm.Masts); // (2 m a mast block by the shortest corner column, 2 m with none: the Building Station's rule)
-        return new AsmFit(asm.TierPieces, asm.Overdrive, asm.Buffers, carriages, asm.W, asm.L, d.BlockCell, clear);
+        return new AsmFit(asm.TierPieces, asm.Overdrive, asm.Buffers, carriages, asm.W, asm.L, d.BlockCell, clear, asm.Tool);
     }
 
     /// <summary>Would this Assembler build the recipe as it stands: its modules and its bed (inputs aside)?</summary>
@@ -189,6 +203,8 @@ public static class ConstructAssembling
 
     public static void Step(ConstructWorld world, IWorldQuery query)
     {
+        if (world.ToolSwaps.Count > 0)
+            AssemblerToolBay.Deliver(world); // (a tool block a chute took from a rack last tick docks now)
         if (++world.AssembleTicks < ConstructRefining.Every)
             return;
         world.AssembleTicks = 0;
@@ -544,6 +560,8 @@ public static class ConstructAssembling
             return AsmState.TierLow;
         if (fit.Missing(r) != 0)
             return AsmState.NeedsModule;
+        if (fit.LacksTool(r))
+            return AsmState.NeedsTool;
         if (fit.AtOnce(r.Output) == 0)
             return AsmState.TooBig;
         if (st.Blocked != 0)
@@ -604,6 +622,7 @@ public static class ConstructAssembling
                 AsmState.TierLow => $" - needs a tier {r!.MinTier} assembler",
                 AsmState.NeedsModule => $" - the {r!.Name} needs {AsmFit.ModuleWords(fit.Missing(r))} on the Core",
                 AsmState.TooBig => $" - the {r!.Name} {fit.TooBigWhy(r.Output)}",
+                AsmState.NeedsTool => $" - the {r!.Name} needs the {AsmFit.ToolBlockName(r.ToolId)} in its Tool Bay: dock one on a free side of the Core, or chute one in from a Block Rack",
                 AsmState.Short => MissingOf(st, r!, out var m, out var p) ? $" - needs {(p != null ? $"{r!.CountOf(p.Id)} {p.Name}" : $"{r!.UnitsOf(m)} {names.NameOf(m)}")}" : "",
                 AsmState.Untaught => TaughtBy?.Invoke(r!.Output.Name) is { } who ? $" - not taught: {who}" : " - not taught: a faction must teach it first (F2)",
                 AsmState.OutputFull => " - tray full",

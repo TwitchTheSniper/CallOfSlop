@@ -14,6 +14,7 @@ public enum BlockRole : byte
     End, // a cell that closes a bed's far end (the Out Table): any family's machine takes it in, never as bed; nothing floods on past it
     Tier, // a tier piece bolted on a Core's tier slot (design page drawing 21): the Power Coupling (2) to the Plasma Conditioner (5); never a cell
     Carriage, // an Assembler's Gantry Carriage, welded on an Assembly Bed Block's rail edge: one more part built at once; never a cell
+    Tool, // an Assembler's tool block (Thruster Jig Block, Sewing Table Block) docked in its Core's Tool Bay, a side the bed doesn't use; never a cell
 }
 
 /// <summary>A Core's machine, found at the rebuild (MachineBlocks.Build): the cells joined to it and the bed rectangle they make.</summary>
@@ -36,6 +37,8 @@ public struct CMachineAsm
     public byte Overdrive, Buffers; // an Assembler's Overdrive Units and Feed Buffers on its upgrade slots (a tier piece with a "module")
     public byte Carriages; // an Assembler's Gantry Carriages on its bed's blocks (inside the rectangle), at most MachineBlocks.MaxCarriages
     public byte Masts; // an Assembler's masts outside its bed: the shortest of its four corner columns, in cells (0: a corner has none)
+    public byte Tool; // the tool block docked in an Assembler's Tool Bay: an index of AssemblingTable.Machines (1 thruster, 2 tailor), 0 none
+    public ushort ToolPart; // that block's part (ushort.MaxValue: none)
 }
 
 public sealed partial class Construct
@@ -92,7 +95,7 @@ public static class MachineBlocks
         d.IsTurntable = ConstructParts.Opt(root, "turntable") is { ValueKind: JsonValueKind.True };
         if (ConstructParts.Opt(root, "machineBlock") is not { } mb)
             return;
-        ConstructParts.Known(mb, ["family", "role", "cell", "plane", "origin", "seed", "coreSeams", "tier", "module", "maxSide", "maxCells"], $"{file}: \"machineBlock\"");
+        ConstructParts.Known(mb, ["family", "role", "cell", "plane", "origin", "seed", "coreSeams", "tier", "module", "maxSide", "maxCells", "tool"], $"{file}: \"machineBlock\"");
         var role = ConstructParts.Str(ConstructParts.Need(mb, "role", $"{file}: \"machineBlock\""), file, "machineBlock.role");
         d.BlockRole = role switch
         {
@@ -102,8 +105,23 @@ public static class MachineBlocks
             "end" => BlockRole.End,
             "tier" => BlockRole.Tier,
             "carriage" => BlockRole.Carriage,
-            _ => throw new ConstructPartException($"{file}: \"machineBlock.role\" is core, block, shared, end, tier or carriage, not \"{role}\""),
+            "tool" => BlockRole.Tool,
+            _ => throw new ConstructPartException($"{file}: \"machineBlock.role\" is core, block, shared, end, tier, carriage or tool, not \"{role}\""),
         };
+        if (d.BlockRole == BlockRole.Tool)
+        {
+            // An Assembler's tool block: docked on a side socket of its Core (the Tool Bay), it lets the Core build the recipes that name its tool.
+            var tool = ConstructParts.Opt(mb, "tool") is { } tv0 ? ConstructParts.Str(tv0, file, "machineBlock.tool") : "";
+            var k = Array.IndexOf(AssemblingTable.Machines, tool);
+            if (k < 1)
+                throw new ConstructPartException($"{file}: a tool block names its \"machineBlock.tool\": {string.Join(" or ", AssemblingTable.Machines.Skip(1))}");
+            d.BlockTool = (byte)k;
+            d.BlockFamily = 255;
+            d.BlockCell = DefaultCell;
+            return;
+        }
+        if (ConstructParts.Opt(mb, "tool") is not null)
+            throw new ConstructPartException($"{file}: only a tool block (role tool) says \"machineBlock.tool\"");
         if (d.BlockRole == BlockRole.Carriage)
         {
             // An Assembler's Gantry Carriage: counted on the bed blocks it is welded to (Carriages), never a cell of the lattice.
@@ -465,7 +483,7 @@ public static class MachineBlocks
         var id = (short)c.MachineAsmCount++;
         ref var asm = ref c.MachineAsms[id];
         var cd = c.Parts[core].D;
-        asm = new CMachineAsm { Core = (ushort)core, Family = cd.BlockFamily, Grid = id * GridSide * GridSide, Blocker = -1 };
+        asm = new CMachineAsm { Core = (ushort)core, Family = cd.BlockFamily, Grid = id * GridSide * GridSide, Blocker = -1, ToolPart = ushort.MaxValue };
         var grid = c.BlockColumns.AsSpan(asm.Grid, GridSide * GridSide);
         grid.Clear();
         var cell = cd.BlockCell;
@@ -620,6 +638,11 @@ public static class MachineBlocks
         {
             var o = c.OtherEnd(e);
             var d = c.Parts[o].D;
+            if (d.BlockRole == BlockRole.Tool)
+            {
+                ToolBay(c, core, id, ref asm, e, o);
+                continue;
+            }
             if (d.BlockRole != BlockRole.Tier || c.Parts[o].Broken || c.BlockAsmOf[o] >= 0)
                 continue;
             if (d.BlockModule != 0 && Families[asm.Family] != "assembler")
@@ -640,6 +663,24 @@ public static class MachineBlocks
         }
         while (asm.Tier < MaxTier && (asm.TierPieces & 1 << (asm.Tier + 1)) != 0)
             asm.Tier++;
+    }
+
+    /// <summary>The Core's side sockets that are its Tool Bay: a tool block docks on whichever of them the bed doesn't use.</summary>
+    public static bool IsToolBay(ConstructPartDef core, int socket) =>
+        (uint)socket < (uint)core.Sockets.Length && core.Sockets[socket].Kind == SocketKind.Struct && core.Sockets[socket].Dir is 0 or 1 or 4 or 5;
+
+    /// <summary>A tool block docked on one of an Assembler Core's side sockets (its Tool Bay): the first one met joins the assembly and names the Core's tool.</summary>
+    private static void ToolBay(Construct c, int core, short id, ref CMachineAsm asm, int e, int o)
+    {
+        if (Families[asm.Family] != "assembler" || asm.Tool != 0 || c.Parts[o].Broken || c.BlockAsmOf[o] >= 0)
+            return;
+        ref readonly var l = ref c.Links[e >> 1];
+        if (!IsToolBay(c.Parts[core].D, (e & 1) == 0 ? l.SA : l.SB))
+            return;
+        c.BlockAsmOf[o] = id;
+        c.BlockCellOf[o] = Pack(0, 0, 0);
+        asm.Tool = c.Parts[o].D.BlockTool;
+        asm.ToolPart = (ushort)o;
     }
 
     /// <summary>

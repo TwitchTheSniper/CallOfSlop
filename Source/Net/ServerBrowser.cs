@@ -720,7 +720,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   do (CBodyKind.Baked); an older peer would make a Frame Beam of one (PackedGroups.cs).
     // 428: plain hull skins on the Panel Former (Sean, 2026-11-21): a plain skin (Hull Section style -) weighs its 4 cm steel plate, worked out
     //      from the key on each peer (no new bytes; mass differs), and its key is a Panel Former's order.
-    public const ushort ProtocolVersion = 428;
+    // 429: the Assembler's Tool Bay (Assembler PR 3, Sean 2026-11-21): new parts Thruster Jig Block, Sewing Table Block and Block Rack
+    //      (part ids shift) and three Assembling rows at the end of the table.
+    public const ushort ProtocolVersion = 429;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

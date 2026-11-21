@@ -14,7 +14,8 @@ public sealed class AssembleRecipe
     public int MinTier = 1;
     public int TechTier = 1; // how advanced the part is (the old Assembler tier, "techTier"): faction vehicles and loot tables read it; the Assembler gates by Needs
     public byte Needs; // the upgrade modules an Assembler needs on its Core to build it: bits by MachineBlocks.TierPieceNames (2 Power Coupling to 5 Plasma Conditioner)
-    public string Tool = ""; // the tool block it will need in the Core's Tool Bay ("thruster", "tailor"; Assembler PR 3), "" none
+    public string Tool = ""; // the tool block it needs docked in the Core's Tool Bay ("thruster", "tailor"; Assembler PR 3), "" none
+    public byte ToolId; // the same as an index of AssemblingTable.Machines (1 thruster, 2 tailor), 0 none
     public byte Machine; // which family of Assembler builds it: an index of AssemblingTable.Machines
     public int Choice; // its value of the recipe setting: 1 + its index in its family's list (AssemblingTable.ByMachine)
     public string Batch = ""; // "4 steel + 2 copper + 1 Gear Set" (made once)
@@ -258,7 +259,10 @@ public sealed class AssemblingTable
             }
         }
         if (e.TryGetProperty("tool", out var tl))
+        {
             r.Tool = tl.ValueKind == JsonValueKind.String && tl.GetString() is "thruster" or "tailor" ? tl.GetString()! : throw new FormatException($"{at}: \"tool\" is thruster or tailor");
+            r.ToolId = (byte)Array.IndexOf(Machines, r.Tool);
+        }
         return r;
     }
 

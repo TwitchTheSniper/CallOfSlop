@@ -2367,6 +2367,8 @@ public static partial class ConstructRoutes
     /// </summary>
     private static bool IntoAssembler(ConstructWorld world, Construct cf, int from, CStore src, ConstructPartDef fd, Construct ct, int to)
     {
+        if (AssemblerToolBay.Chute(world, cf, from, src, ct, to))
+            return true; // (the tool block its head recipe needs, from a Block Rack: swapped in at the next step)
         if ((fd.IsBin || fd.IsTerminal) && src.Amount > 0)
         {
             var put = world.FeedAssembler(ct, to, Math.Min(Math.Max(fd.ChuteLoad, ct.DefOf(to).ChuteLoad), src.Amount), src.Material);
@@ -2377,8 +2379,8 @@ public static partial class ConstructRoutes
         var refused = ConstructParts.None;
         for (var s = 0; s < src.SlotCount; s++)
         {
-            if (src.Def[s] == ConstructParts.None)
-                continue;
+            if (src.Def[s] == ConstructParts.None || ConstructParts.Get(src.Def[s]) is { BlockRole: BlockRole.Tool })
+                continue; // (a tool block on a Block Rack waits there until a recipe needs it: AssemblerToolBay.Chute)
             if (!world.WantsPart(ct, to, src.Def[s]))
             {
                 refused = src.Def[s];

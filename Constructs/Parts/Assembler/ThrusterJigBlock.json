@@ -1,0 +1,576 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Thruster Jig Block",
+  "description": "An Assembler's tool block for thrusters, rocket engines and boosters: dock it on a free side of an Assembler Core (its Tool Bay: the dock face against the Core) and the Core builds the recipes that need a thruster jig. Store tool blocks on a Block Rack: a chute from the rack into the Core swaps in the one its recipe needs.",
+  "group": "Production",
+  "section": "Assemblers",
+  "role": "frame",
+  "tool": "welder",
+  "machineBlock": {
+    "role": "tool",
+    "tool": "thruster"
+  },
+  "centreSockets": false,
+  "collider": "boxes",
+  "mass": 700.0,
+  "health": 1400,
+  "armour": 8,
+  "material": "steel",
+  "color": "#5e6a72",
+  "attachSeconds": 6,
+  "boxes": [
+    {
+      "min": [
+        -0.997,
+        0.003,
+        -0.997
+      ],
+      "max": [
+        0.997,
+        0.16,
+        0.997
+      ],
+      "color": "#22262b"
+    },
+    {
+      "min": [
+        -0.997,
+        0.16,
+        -0.997
+      ],
+      "max": [
+        0.997,
+        0.4,
+        0.997
+      ]
+    },
+    {
+      "min": [
+        -1.012,
+        0.0,
+        -1.012
+      ],
+      "max": [
+        1.012,
+        0.14,
+        -1.0
+      ],
+      "color": "#22262b",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -1.012,
+        0.0,
+        1.0
+      ],
+      "max": [
+        1.012,
+        0.14,
+        1.012
+      ],
+      "color": "#22262b",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -1.012,
+        0.0,
+        -1.0
+      ],
+      "max": [
+        -1.0,
+        0.14,
+        1.0
+      ],
+      "color": "#22262b",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        1.0,
+        0.0,
+        -1.0
+      ],
+      "max": [
+        1.012,
+        0.14,
+        1.0
+      ],
+      "color": "#22262b",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -1.009,
+        0.06,
+        -0.8
+      ],
+      "max": [
+        -0.995,
+        0.36,
+        0.8
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -1.047,
+        0.165,
+        -0.655
+      ],
+      "max": [
+        -1.009,
+        0.235,
+        -0.585
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10,
+      "front": "-x",
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -1.047,
+        0.165,
+        0.585
+      ],
+      "max": [
+        -1.009,
+        0.235,
+        0.655
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10,
+      "front": "-x",
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -1.037,
+        0.365,
+        -0.22
+      ],
+      "max": [
+        -1.009,
+        0.46,
+        0.22
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.977,
+        0.402,
+        -0.3
+      ],
+      "max": [
+        -0.877,
+        0.45,
+        -0.24
+      ],
+      "color": "#22262b",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.957,
+        0.45,
+        -0.29
+      ],
+      "max": [
+        -0.897,
+        0.72,
+        -0.25
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "work": "stroke",
+      "axis": "+x",
+      "travel": 0.04
+    },
+    {
+      "min": [
+        -1.023,
+        0.37,
+        -0.8
+      ],
+      "max": [
+        -1.011,
+        0.395,
+        0.8
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.6,
+        0.4,
+        -0.8
+      ],
+      "max": [
+        0.9,
+        0.5,
+        -0.68
+      ],
+      "color": "#8b8a84"
+    },
+    {
+      "min": [
+        -0.6,
+        0.4,
+        0.68
+      ],
+      "max": [
+        0.9,
+        0.5,
+        0.8
+      ],
+      "color": "#8b8a84"
+    },
+    {
+      "min": [
+        -0.6,
+        0.4,
+        -0.68
+      ],
+      "max": [
+        -0.48,
+        0.5,
+        0.68
+      ],
+      "color": "#8b8a84"
+    },
+    {
+      "min": [
+        0.78,
+        0.4,
+        -0.68
+      ],
+      "max": [
+        0.9,
+        0.9,
+        0.68
+      ],
+      "color": "#8b8a84"
+    },
+    {
+      "min": [
+        -0.48,
+        0.402,
+        -0.68
+      ],
+      "max": [
+        0.78,
+        0.414,
+        0.68
+      ],
+      "color": "#15171a",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.36,
+        0.414,
+        -0.12
+      ],
+      "max": [
+        0.5,
+        0.45,
+        0.12
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.24,
+        0.45,
+        -0.24
+      ],
+      "max": [
+        -0.16,
+        0.62,
+        0.24
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.26,
+        0.45,
+        -0.24
+      ],
+      "max": [
+        0.34,
+        0.62,
+        0.24
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.34,
+        0.57,
+        -0.175
+      ],
+      "max": [
+        0.36,
+        0.92,
+        0.175
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+x",
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.36,
+        0.47,
+        -0.275
+      ],
+      "max": [
+        0.7,
+        1.02,
+        0.275
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 20,
+      "front": "+x",
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.7,
+        0.51,
+        -0.235
+      ],
+      "max": [
+        0.74,
+        0.98,
+        0.235
+      ],
+      "color": "#5a2414",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 20,
+      "front": "+x",
+      "paintable": false,
+      "work": "glow"
+    },
+    {
+      "min": [
+        0.79,
+        0.9,
+        -0.3
+      ],
+      "max": [
+        0.89,
+        1.02,
+        -0.1
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+y",
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.8,
+        1.02,
+        -0.28
+      ],
+      "max": [
+        0.88,
+        1.032,
+        -0.12
+      ],
+      "color": "#ecebe4",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+y",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.58,
+        0.5,
+        -0.79
+      ],
+      "max": [
+        0.86,
+        0.53,
+        -0.75
+      ],
+      "color": "#15171a",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.74,
+        0.4,
+        -0.94
+      ],
+      "max": [
+        0.94,
+        1.8,
+        -0.74
+      ],
+      "color": "#22262b"
+    },
+    {
+      "min": [
+        0.71,
+        1.8,
+        -0.97
+      ],
+      "max": [
+        0.97,
+        1.86,
+        -0.71
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.77,
+        1.86,
+        -0.91
+      ],
+      "max": [
+        0.91,
+        1.9,
+        -0.77
+      ],
+      "color": "#15171a",
+      "detail": true,
+      "paintable": false,
+      "work": "smoke"
+    },
+    {
+      "min": [
+        0.72,
+        1.93,
+        -0.96
+      ],
+      "max": [
+        0.96,
+        1.96,
+        -0.72
+      ],
+      "color": "#22262b",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.73,
+        1.0,
+        -0.95
+      ],
+      "max": [
+        0.95,
+        1.03,
+        -0.73
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.73,
+        1.4,
+        -0.95
+      ],
+      "max": [
+        0.95,
+        1.43,
+        -0.73
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.9,
+        0.78,
+        -0.68
+      ],
+      "max": [
+        0.914,
+        0.86,
+        0.68
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "dock",
+      "at": [
+        -1.0,
+        0.2,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}
