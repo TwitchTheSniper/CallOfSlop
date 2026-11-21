@@ -109,7 +109,7 @@ public static unsafe class LampShadows
     /// The frame's maps for the lamps offered since the last call (after the frame's lights and before the world is drawn); names
     /// each shadowed light's slot in the dynamic lights. Leaves the main target bound with its viewport.
     /// </summary>
-    public static void Render(Renderer gfx, ConstructWorld? world)
+    public static void Render(Renderer gfx, ConstructWorld? world, float alpha, bool blendTicks)
     {
         _frame++;
         Live = false;
@@ -175,7 +175,7 @@ public static unsafe class LampShadows
                 continue;
             ref var want = ref Wants[w];
             var sl = All[s];
-            var others = Gather(world, want.Body, want.Local, want.Pos, want.Rot);
+            var others = Gather(world, want.Body, want.Local, want.Pos, want.Rot, alpha, blendTicks);
             if (drawn < Budget && Stale(sl, want.Body, others))
             {
                 if (!bound)
@@ -252,7 +252,7 @@ public static unsafe class LampShadows
     }
 
     /// <summary>The other bodies whose sphere reaches the lamp's (into <see cref="Near"/>, with each one's pose in the lamp's body frame); how many.</summary>
-    private static int Gather(ConstructWorld world, Construct own, Vector3 local, Vector3 pos, Quaternion rot)
+    private static int Gather(ConstructWorld world, Construct own, Vector3 local, Vector3 pos, Quaternion rot, float alpha, bool blendTicks)
     {
         var at = pos + Vector3.Transform(local, rot);
         var inv = Matrix4x4.CreateFromQuaternion(Quaternion.Conjugate(rot));
@@ -262,12 +262,14 @@ public static unsafe class LampShadows
             if (c == own || c.PartCount == 0 || (ConstructRender.AwayOnly != 0 ? c.Id != ConstructRender.AwayOnly : c.SpaceAway != 0))
                 continue;
             var r = Store + c.Radius + 2f;
-            if (Vector3.DistanceSquared(c.Pos, at) > r * r)
+            var cpos = blendTicks ? Vector3.Lerp(c.PrevPos, c.Pos, alpha) : c.Pos; // (posed as drawn, as the lamp's own body is: ConstructLamps)
+            if (Vector3.DistanceSquared(cpos, at) > r * r)
                 continue;
             if (n == MaxOthers)
                 break;
             Near[n] = c;
-            NearRel[n] = Matrix4x4.CreateFromQuaternion(c.Rot) * Matrix4x4.CreateTranslation(c.Pos - pos) * inv; // (its frame to the lamp body's)
+            var crot = blendTicks ? Quaternion.Slerp(c.PrevRot, c.Rot, alpha) : c.Rot;
+            NearRel[n] = Matrix4x4.CreateFromQuaternion(crot) * Matrix4x4.CreateTranslation(cpos - pos) * inv; // (its frame to the lamp body's)
             n++;
         }
         return n;

@@ -76,7 +76,8 @@ public static class ConstructLamps
                 var sub = 0;
                 foreach (var (at, colour) in d.Lamps)
                     Offer(c, i, sub++, at, colour, pos, rot, eye, keep, reach, ref n);
-                if (!c.HasBattery || c.PowerOn) // (a ship's light strips go out with its power; a hull with no battery keeps them, as they glow)
+                // (a ship's light strips go out with its power; a hull with no battery keeps them, as they glow; a lined bay's lamps already light its panels)
+                if (d.Lamps.Length == 0 && (!c.HasBattery || c.PowerOn))
                     foreach (var (at, colour) in StripLamps(d))
                         Offer(c, i, sub++, at, colour, pos, rot, eye, keep, reach, ref n);
             }
@@ -178,7 +179,7 @@ public static class ConstructLamps
         var count = 0;
         for (var i = 0; i < c.PartCount; i++)
             if (c.DefOf(i) is var d && (d.Lamps.Length > 0 || d.Logic == CLogic.Lamp || StripLamps(d).Length > 0))
-                count++;
+                count++; // (StripLamps: once per part type, kept only while the type lives)
         if (count == 0)
         {
             c.LampParts = [];
@@ -195,7 +196,9 @@ public static class ConstructLamps
     /// <summary>A light strip's lamps: one every this far along it (m), this far under it.</summary>
     public const float StripSpacing = 1.8f, StripDrop = 0.2f;
 
-    private static readonly Dictionary<ConstructPartDef, (Vector3 At, Vector3 Colour)[]> Strips = new(ReferenceEqualityComparer.Instance as IEqualityComparer<ConstructPartDef>);
+    private sealed class StripSet(  (Vector3 At, Vector3 Colour)[] lamps) { public readonly (Vector3 At, Vector3 Colour)[] Lamps = lamps; }
+
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<ConstructPartDef, StripSet> Strips = new(); // (weak: a run-time part's type is let go)
 
     /// <summary>
     /// Karl, 2026-11-21: a ship's ceiling light strips glowed white but lit nothing round them (only its wall lamps were lights), so a
@@ -206,7 +209,7 @@ public static class ConstructLamps
     public static (Vector3 At, Vector3 Colour)[] StripLamps(ConstructPartDef d)
     {
         if (Strips.TryGetValue(d, out var have))
-            return have;
+            return have.Lamps;
         List<(Vector3, Vector3)>? found = null;
         foreach (var b in d.Boxes)
         {
@@ -232,7 +235,7 @@ public static class ConstructLamps
             }
         }
         var r = found?.ToArray() ?? [];
-        Strips[d] = r;
+        Strips.AddOrUpdate(d, new StripSet(r));
         return r;
     }
 }

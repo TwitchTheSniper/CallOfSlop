@@ -1181,7 +1181,7 @@ public static unsafe partial class Program
         {
             SunShadows.Render(Gfx, g.Constructs, Gfx.CameraPosition, -new Vector3(inv.M31, inv.M32, inv.M33), g.TickAlpha, g.IsServer);
             RoomShade.Render(Gfx, g.Constructs, Gfx.CameraPosition, g.TickAlpha, g.IsServer); // shut rooms in ships lose the sky's light (Source/Render/RoomShade.cs)
-            LampShadows.Render(Gfx, g.Constructs); // walls keep the frame's lamps' light in (Source/Render/LampShadows.cs)
+            LampShadows.Render(Gfx, g.Constructs, g.TickAlpha, g.IsServer); // walls keep the frame's lamps' light in (Source/Render/LampShadows.cs)
         }
     }
 
