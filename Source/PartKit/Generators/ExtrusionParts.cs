@@ -556,7 +556,7 @@ public sealed class ExtrusionParts : IPartGenerator
     {
         var p = new Part("Former Block", Small, Section,
             "Weld it on the floor beside a Grow Former Core, or beside another Former Block: 2 x 2 m more bed. The bed is the largest full rectangle of blocks next to the Core; a block outside it idles. A Run-out Table on its far end lets a wing run on.",
-            group: "Production", color: Violet);
+            group: "Production", color: "#22262b"); // (a bed is Base: only the Core wears the Formers' violet)
         const double e = 0.997, h = BedTile, lip = 0.06, sunk = 0.96;
         // The slab: a foot and a top lip whole, the side sunk between them; a hidden box keeps the whole cell solid (and its bounds the cell).
         p.Add(Box([-1, 0, -1], [1, h, 1], hidden: true));

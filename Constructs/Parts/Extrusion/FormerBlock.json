@@ -10,7 +10,7 @@
   "health": 1500,
   "armour": 8,
   "material": "steel",
-  "color": "#8050a8",
+  "color": "#22262b",
   "attachSeconds": 8,
   "machineBlock": {
     "family": "grower",
