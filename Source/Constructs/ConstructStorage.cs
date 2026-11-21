@@ -74,6 +74,7 @@ public sealed class CStore
     public byte OvenSeen; // a Bake Oven: the phase this peer last drew (never sent: BakeOvenRender.cs)
     public double OvenSince; // ...when it saw it change (ConstructRender.Now)
     public int OvenParts; // a Bake Oven: the parts in the group under way (server only, never sent or saved: ConstructBakeOven.cs)
+    public bool OvenFailed, OvenUnbaked; // a Bake Oven: its last bake or un-bake was refused at the end of the heat; that last was an un-bake (server only: ConstructBakeOven.cs)
     public bool OnBed; // a Laser Cutter: a blank lies on its bed (on the wire: its screen and look line; the server keeps it with JobAmount, ConstructLaserCutter.cs)
     public int JobFull; // a Recycler (server only): the ticks its job took at the start
     public byte Progress; // an Assembler's or a Recycler's job, 0 to 100 (on the wire about once a second: its screen, MachineScreens.cs)
@@ -539,7 +540,7 @@ public static class ConstructStorage
             // A Piece Rack (ConstructConveyor.cs): whole pieces by kind, the largest section and length it holds and how many.
             if (pc.ValueKind != JsonValueKind.Object)
                 throw new ConstructPartException($"{file}: storage \"pieces\" is an object (section, length, count)");
-            ConstructParts.Known(pc, ["section", "length", "count", "hold", "crafting", "station", "designer", "plinth", "open"], $"{bw}.pieces");
+            ConstructParts.Known(pc, ["section", "length", "count", "hold", "crafting", "station", "designer", "plinth", "open", "lift"], $"{bw}.pieces");
             var sec = ConstructParts.Need(pc, "section", $"{bw}.pieces");
             if (sec.ValueKind != JsonValueKind.Array || sec.GetArrayLength() != 2)
                 throw new ConstructPartException($"{file}: storage.pieces.section is [across, up] in metres");
@@ -564,6 +565,15 @@ public static class ConstructStorage
             d.IsLayDownPad = ConstructParts.Opt(pc, "open") is { ValueKind: JsonValueKind.True }; // (a Lay-down Pad: takes in a loose piece set down on it, ConstructLifterPads.cs)
             d.IsCraftTerminal = ConstructParts.Opt(pc, "crafting") is { ValueKind: JsonValueKind.True };
             d.IsBuildStation = d.IsCraftTerminal && ConstructParts.Opt(pc, "station") is { ValueKind: JsonValueKind.True };
+            if (ConstructParts.Opt(pc, "lift") is { } lift)
+            {
+                // A Building Station's crane: the heaviest piece (kg) it picks off a pick pad of its own, under its runway (ConstructStation.PadPick).
+                if (!d.IsBuildStation)
+                    throw new ConstructPartException($"{file}: only a Building Station (storage.pieces.station) says storage.pieces.lift");
+                d.StationLiftKg = ConstructParts.Num(lift, file, "storage.pieces.lift");
+                if (d.StationLiftKg is < 0 or > 1e6f)
+                    throw new ConstructPartException($"{file}: storage.pieces.lift is 0 to 1,000,000 kg, not {d.StationLiftKg}");
+            }
             d.IsPanelDesigner = d.IsCraftTerminal && ConstructParts.Opt(pc, "designer") is { ValueKind: JsonValueKind.True }; // (a Panel Designer: the terminal with the designer's panel, UiPanelDesigner.cs)
             if (d.IsPanelDesigner && ConstructParts.Opt(pc, "plinth") is { } pl)
             {

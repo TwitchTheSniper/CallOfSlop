@@ -308,6 +308,18 @@ public readonly record struct CPartBox(Vector3 Center, Vector3 Half, Vector3 Col
 
     public byte Front { get; init; }
 
+    /// <summary>
+    /// A Rot24 turn of a shaped box inside its part (0: none): a baked part's boxes come from subparts set down at a turn (BakedParts.cs), and
+    /// a shape's mesh is drawn turned by its subpart's turn as well as its part's. <see cref="Half"/> stays the box in the part's frame; the
+    /// mesh fills <see cref="ShapeHalf"/>, the box before the turn. A plain box needs none (its half is turned already).
+    /// </summary>
+    public byte Turn { get; init; }
+
+    /// <summary>The box a shape's mesh fills before its <see cref="Turn"/> (its own half when it has none).</summary>
+    public Vector3 ShapeHalf => Turn == 0 ? Half : Rot24.ApplyHalf(Rot24.Inverse(Turn), Half);
+
+    private Matrix4x4 TurnM => Turn == 0 ? Matrix4x4.Identity : Matrix4x4.CreateFromQuaternion(Rot24.Quat(Turn));
+
     /// <summary>What a key box types ("key": "7"; a Numpad's or Code Lock's: LogicInputs.cs); 0: not a key.</summary>
     public char Key { get; init; }
     /// <summary>"travel": how far a "slide" or "press" rig moves.</summary>
@@ -369,7 +381,8 @@ public readonly record struct CPartBox(Vector3 Center, Vector3 Half, Vector3 Col
     /// <summary>The box's model matrix in its part's frame turned by <paramref name="rot"/> and moved to <paramref name="centre"/> (a shape keeps its own way round).</summary>
     public Matrix4x4 Model(byte rot, Vector3 centre) => Shape == 0
         ? Matrix4x4.CreateScale(Rot24.ApplyHalf(rot, Half) * 2) * Matrix4x4.CreateTranslation(centre)
-        : Matrix4x4.CreateScale(MeshSize(Half * 2, Front)) * FrontTurns[Front] * Matrix4x4.CreateFromQuaternion(Rot24.Quat(rot)) * Matrix4x4.CreateTranslation(centre);
+        : Turn == 0 ? Matrix4x4.CreateScale(MeshSize(Half * 2, Front)) * FrontTurns[Front] * Matrix4x4.CreateFromQuaternion(Rot24.Quat(rot)) * Matrix4x4.CreateTranslation(centre)
+        : Matrix4x4.CreateScale(MeshSize(ShapeHalf * 2, Front)) * FrontTurns[Front] * TurnM * Matrix4x4.CreateFromQuaternion(Rot24.Quat(rot)) * Matrix4x4.CreateTranslation(centre); // (a baked part's shaped box: its subpart's turn too)
 
     /// <summary>
     /// A leg's model between two points of the frame the part sits in: its part-Y across the span from <paramref name="from"/> to
@@ -387,11 +400,11 @@ public readonly record struct CPartBox(Vector3 Center, Vector3 Half, Vector3 Col
         var mid = Matrix4x4.CreateTranslation(from + dir * ((SpanFrom + SpanTo) * 0.5f));
         return Shape == 0
             ? Matrix4x4.CreateScale(size) * basis * mid
-            : Matrix4x4.CreateScale(MeshSize(size, Front)) * FrontTurns[Front] * basis * mid;
+            : Matrix4x4.CreateScale(MeshSize(size, Front)) * FrontTurns[Front] * TurnM * basis * mid;
     }
 
     /// <summary>A point of the shape's own mesh (a unit box) in the part's frame, turned by <see cref="Front"/>.</summary>
-    public Vector3 ShapePoint(Vector3 mesh) => Center + Vector3.Transform(mesh * MeshSize(Half * 2, Front), FrontTurns[Front]);
+    public Vector3 ShapePoint(Vector3 mesh) => Center + Vector3.Transform(mesh * MeshSize(ShapeHalf * 2, Front), FrontTurns[Front] * TurnM);
 
     /// <summary>The size of a shape's own mesh that fills <paramref name="size"/> in the part's frame with its front that way.</summary>
     public static Vector3 MeshSize(Vector3 size, byte front) => ((front - 1) >> 1) switch
@@ -731,6 +744,8 @@ public sealed partial class ConstructPartDef
     public byte BlockTier; // ...a tier piece's tier, 2 to 5 (role "tier": it raises the Core it is bolted on to this tier when every lower piece is there too)
     public float BlockCell = MachineBlocks.DefaultCell; // ...its lattice step (m)
     public bool BlockCoreSeams = true; // ...a Core: a bed cell's seam boxes on a face welded to it or to an Out Table are hidden ("coreSeams": false keeps them)
+    public byte BlockMaxSide = MachineBlocks.MaxSide; // ...a Core: its bed's longest side in cells ("maxSide", up to MachineBlocks.GridHalf: the Building Station's 60 m bay)
+    public short BlockMaxCells = MachineBlocks.MaxCells; // ...a Core: the cells its machine takes in, masts included ("maxCells", up to MachineBlocks.MaxCellsAny)
     public Vector3? BlockOrigin; // ...a Core's own cell's middle in its frame ("origin"; else its bounds' middle): the lattice the cells sit on
     public bool SeamSame; // "seamSame": its seam boxes hide on faces welded to a part of its own kind, no machine needed (a Rack Side's end posts: MachineBlocks.SeamSame)
     public bool IsTurntable; // "turntable": a junction of Roller Tile runs (RollerRuns.cs); a piece from one run goes on to another, turned to its way
@@ -747,6 +762,7 @@ public sealed partial class ConstructPartDef
     public bool HasSeams; // its "seam" boxes (a block machine's: MachineBlocks.cs)
     public bool HasRouterBoxes; // its "way" lamps or "fence" (drawn by the Router's last choice)
     public bool IsConveyorJunction; // conveyor ports in and out (a Conveyor Splitter or Join): pieces pass through it from one conveyor to the next (ConstructConveyor.cs)
+    public float StationLiftKg; // a Building Station ("storage.pieces.lift"): the heaviest piece its crane picks off a pick pad of its own (0: none; ConstructStation.PadPick)
     public bool IsLayDownPad; // a Lay-down Pad (storage.pieces.open): a Piece Rack that takes in a loose piece set down on its deck (ConstructLifterPads.cs)
     public bool IsPieceRack; // a Piece Rack (ConstructConveyor.cs): holds whole pieces by kind, up to RackCount, each within RackSection x RackLength
     public bool IsCraftTerminal; // a Crafting Terminal (ConstructCrafting.cs): a Piece Rack whose hold is its tray (storage.pieces.crafting)
@@ -1293,6 +1309,8 @@ public static partial class ConstructParts
             return Extrusion.Parse(name); // (a piece names itself: a blueprint's extrusion)
         if (name.StartsWith(Pressed.Prefix, StringComparison.Ordinal))
             return Pressed.Parse(name); // (a pressed part names itself, a preset's key its catalogue part: Pressed.cs)
+        if (BakedParts.IsName(name))
+            return BakedParts.Parse(name); // (a Bake Oven's baked part names its design by hash: BakedParts.cs)
         if (name.StartsWith(HullHoles.Prefix, StringComparison.Ordinal))
             return HullHoles.Parse(name); // (a part a cutter holed names itself, its base and its holes: HullHoles.cs)
         if (name.StartsWith(HullLoft.Prefix, StringComparison.Ordinal) || HullLoft.IsPanelName(name) || HullLoft.IsCutName(name) || HullLoft.IsSectionName(name))
@@ -2761,6 +2779,15 @@ public static class Rot24
         for (byte r = 0; r < Count; r++)
             if (ApplyDir(r, 0) == x && ApplyDir(r, 2) == y)
                 return r;
+        return 0;
+    }
+
+    /// <summary>The turn that undoes <paramref name="r"/> (Apply(Inverse(r), Apply(r, v)) == v).</summary>
+    public static byte Inverse(byte r)
+    {
+        for (byte k = 0; k < Count; k++)
+            if (Compose(k, r) == 0)
+                return k;
         return 0;
     }
 
