@@ -10,7 +10,8 @@ public enum BlockRole : byte
     None,
     Core, // the machine's brain: its screen, ports, settings and store; an assembly is found from it
     Block, // one identical cell of one family's machine (an Extruder's Die Block, a Press Block)
-    Shared, // a cell any family's machine takes in (the 2 m cube used as masts and walls, the Out Table)
+    Shared, // a cell any family's machine takes in (the 2 m cube used as masts and walls)
+    End, // a cell that closes a bed's far end (the Out Table): any family's machine takes it in, never as bed; nothing floods on past it
 }
 
 /// <summary>A Core's machine, found at the rebuild (MachineBlocks.Build): the cells joined to it and the bed rectangle they make.</summary>
@@ -24,6 +25,9 @@ public struct CMachineAsm
     public byte W, L; // its size in cells (0: no rectangle)
     public bool Capped; // more cells were joined than MachineBlocks.MaxCells (the rest are idle)
     public int Grid; // the assembly's slot in the construct's column grid (MachineBlocks.GridSide squared bytes a slot)
+    public ushort Out; // the first "end" cell (Out Table) just past the bed's far edge, the side away from the Core (ushort.MaxValue: none)
+    public byte OutCells; // the bed's far edge cells that an end cell covers (W or L when the whole edge is closed)
+    public byte OutSide; // the far edge's side in the Core's frame (a direction, ConstructParts.DirVector: 0 +x, 1 -x, 4 +z, 5 -z)
 }
 
 public sealed partial class Construct
@@ -78,12 +82,13 @@ public static class MachineBlocks
             "core" => BlockRole.Core,
             "block" => BlockRole.Block,
             "shared" => BlockRole.Shared,
-            _ => throw new ConstructPartException($"{file}: \"machineBlock.role\" is core, block or shared, not \"{role}\""),
+            "end" => BlockRole.End,
+            _ => throw new ConstructPartException($"{file}: \"machineBlock.role\" is core, block, shared or end, not \"{role}\""),
         };
         if (ConstructParts.Opt(mb, "family") is { } fam)
             d.BlockFamily = FamilyOf(ConstructParts.Str(fam, file, "machineBlock.family"));
-        else if (d.BlockRole != BlockRole.Shared)
-            throw new ConstructPartException($"{file}: \"machineBlock\" names its \"family\" (only a shared cell goes with every family)");
+        else if (d.BlockRole is not (BlockRole.Shared or BlockRole.End))
+            throw new ConstructPartException($"{file}: \"machineBlock\" names its \"family\" (only a shared or an end cell goes with every family)");
         else
             d.BlockFamily = 255;
         d.BlockCell = ConstructParts.Opt(mb, "cell") is { } cell ? ConstructParts.Num(cell, file, "machineBlock.cell") : DefaultCell;
@@ -102,7 +107,7 @@ public static class MachineBlocks
                 "face" => true,
                 var v => throw new ConstructPartException($"{file}: \"machineBlock.plane\" is bed or face, not \"{v}\""),
             };
-        if (d.BlockRole is BlockRole.Block or BlockRole.Shared)
+        if (d.BlockRole is BlockRole.Block or BlockRole.Shared or BlockRole.End)
         {
             // A cell is one lattice step across and along (a shared cell may be any whole number of steps: an Out Table's width).
             var size = d.BoundsMax - d.BoundsMin;
@@ -158,6 +163,71 @@ public static class MachineBlocks
             return 0;
         int x1 = asm.X0 + asm.W - 1, z1 = asm.Z0 + asm.L - 1;
         return Math.Max(0, Math.Min(Math.Min(ColumnAt(c, asm, asm.X0, asm.Z0), ColumnAt(c, asm, x1, asm.Z0)), Math.Min(ColumnAt(c, asm, asm.X0, z1), ColumnAt(c, asm, x1, z1))));
+    }
+
+    /// <summary>
+    /// What a link from part <paramref name="part"/> counts as leaving: an end cell's (an Out Table's) Core, so a conveyor off a machine's
+    /// Out Table is that machine's Piece out for the logistics and the orders; any other part itself.
+    /// </summary>
+    public static int Owner(Construct c, int part) =>
+        (uint)part < (uint)c.PartCount && c.Parts[part].D.BlockRole == BlockRole.End && AsmOf(c, part) is var a and >= 0 ? c.MachineAsms[a].Core : part;
+
+    /// <summary>
+    /// The machine's Out Table (an "end" cell just past its bed's far edge, the side away from the Core), or -1: of several side by side,
+    /// the first with a conveyor on its Piece out, else the first. <see cref="CMachineAsm.OutCells"/> says how much of the edge they cover.
+    /// </summary>
+    public static int OutTable(Construct c, in CMachineAsm asm)
+    {
+        if (asm.Out == ushort.MaxValue || asm.Out >= c.PartCount)
+            return -1;
+        if (asm.OutCells > 1)
+        {
+            var id = AsmOf(c, asm.Core);
+            if (ConstructConveyor.Out(c, asm.Out) < 0)
+                for (var k = 0; k < c.RouteCount; k++) // (the links, not the parts: bounded by what is laid, as Out is)
+                {
+                    ref readonly var r = ref c.Routes[k];
+                    if (r.Type == RouteType.Conveyor && r.Parent == 255 && r.From < c.PartCount && r.From < c.BlockAsmOf.Length && c.BlockAsmOf[r.From] == id && c.Parts[r.From].D.BlockRole == BlockRole.End)
+                        return r.From;
+                }
+        }
+        return asm.Out;
+    }
+
+    /// <summary>The machine's far edge: the bed rectangle's side away from the Core, and the end cells (Out Tables) just past it.</summary>
+    private static void FindOut(Construct c, ref CMachineAsm asm, ReadOnlySpan<ushort> cells, ReadOnlySpan<sbyte> cx, ReadOnlySpan<sbyte> cz, ReadOnlySpan<byte> steps)
+    {
+        asm.Out = ushort.MaxValue;
+        asm.OutCells = 0;
+        asm.OutSide = 4;
+        if (asm.W == 0)
+            return;
+        int x0 = asm.X0, z0 = asm.Z0, x1 = asm.X0 + asm.W - 1, z1 = asm.Z0 + asm.L - 1;
+        // The Core is cell (0, 0), beside the rectangle on one side: the far edge is the other.
+        byte side = z0 > 0 ? (byte)4 : z1 < 0 ? (byte)5 : x0 > 0 ? (byte)0 : (byte)1;
+        asm.OutSide = side;
+        int lineAt = side switch { 4 => z1 + 1, 5 => z0 - 1, 0 => x1 + 1, _ => x0 - 1 }; // (the row or column of cells just past the edge)
+        bool alongX = side is 4 or 5; // (the edge runs along x)
+        var first = int.MaxValue;
+        var covered = 0;
+        for (var k = 1; k < cells.Length; k++)
+        {
+            if (c.Parts[cells[k]].D.BlockRole != BlockRole.End)
+                continue;
+            int across = steps[2 * k], along = steps[2 * k + 1];
+            int a0 = alongX ? cx[k] : cz[k], n = alongX ? across : along; // (its cells along the edge)
+            int b0 = alongX ? cz[k] : cx[k], depth = alongX ? along : across; // (and out from it)
+            if (lineAt < b0 || lineAt >= b0 + depth)
+                continue;
+            int lo = alongX ? x0 : z0, hi = alongX ? x1 : z1;
+            var on = Math.Min(hi, a0 + n - 1) - Math.Max(lo, a0) + 1;
+            if (on <= 0)
+                continue;
+            covered += on;
+            if (a0 < first)
+                (first, asm.Out) = (a0, cells[k]);
+        }
+        asm.OutCells = (byte)Math.Min(covered, alongX ? asm.W : asm.L);
     }
 
     /// <summary>What the screen and the look line say of a machine's size: "bed 3 x 2 (6.0 x 4.0 m), 2 idle".</summary>
@@ -239,14 +309,25 @@ public static class MachineBlocks
         while (at < count)
         {
             var i = queue[at++];
+            if (c.Parts[i].D.BlockRole == BlockRole.End)
+                continue; // (an Out Table closes the bed: what is welded past it is another machine's, a cutter's bed)
             for (var e = c.FirstLink(i); e >= 0; e = c.NextLink(e))
             {
                 var o = c.OtherEnd(e);
                 var d = c.Parts[o].D;
-                if (d.BlockRole is not (BlockRole.Block or BlockRole.Shared) || d.BlockRole == BlockRole.Block && d.BlockFamily != asm.Family || MathF.Abs(d.BlockCell - cell) > 0.01f || d.BlockFace != cd.BlockFace || c.Parts[o].Broken)
+                if (d.BlockRole is not (BlockRole.Block or BlockRole.Shared or BlockRole.End) || d.BlockRole == BlockRole.Block && d.BlockFamily != asm.Family || MathF.Abs(d.BlockCell - cell) > 0.01f || d.BlockFace != cd.BlockFace || c.Parts[o].Broken)
                     continue;
                 if (c.BlockAsmOf[o] >= 0)
                     continue; // (in this machine already, or another Core's; a broken cell idles until it is mended)
+                if (d.BlockRole == BlockRole.End)
+                {
+                    // An Out Table belongs to the machine on its in side (its -z face, where its rollers come from), whatever was built
+                    // first: in a line of former, table and cutter, the cutter's bed on the table's far side doesn't take it.
+                    ref readonly var lk = ref c.Links[e >> 1];
+                    var os = (e & 1) == 0 ? lk.SB : lk.SA; // (the table's own socket of the weld)
+                    if (os >= d.Sockets.Length || d.Sockets[os].Dir != 5)
+                        continue;
+                }
                 if (cellCount >= MaxCells)
                 {
                     asm.Capped = true;
@@ -262,7 +343,12 @@ public static class MachineBlocks
                 // its first step only; the Core's own middle is cell 0, so a cell's lowest corner sits half a step under its cell's middle).
                 var rel = Rot24.Apply(unrot, Corner(c, o, unrot) - coreMid) / cell;
                 int x = (int)MathF.Floor(rel.X + 0.5f + 0.01f), y, z;
-                if (cd.BlockFace)
+                if (d.BlockRole == BlockRole.End)
+                {
+                    y = 0; // (an end cell is a low table at the bed's work height: on the bed's layer whatever its height)
+                    z = (int)MathF.Floor((cd.BlockFace ? rel.Y : rel.Z) + 0.5f + 0.01f);
+                }
+                else if (cd.BlockFace)
                 {
                     // A face machine's cells stand in the Core's x-y face (an Extruder's Die Blocks beside its Core): the grid's "along" is up
                     // the face, and a cell's layer is how far its front stands out from the Core's (flush is the die's layer, 0).
@@ -289,18 +375,19 @@ public static class MachineBlocks
         asm.Cells = (short)cellCount;
         // Columns: the bed layer is the Core's own (y 0); a cell above a bed cell adds to its column.
         for (var k = 1; k < count; k++)
-            if (cy[k] == 0)
+            if (cy[k] == 0 && c.Parts[queue[k]].D.BlockRole != BlockRole.End)
                 for (var sx = 0; sx < steps[2 * k]; sx++)
                     for (var sz = 0; sz < steps[2 * k + 1]; sz++)
                         if (cx[k] + sx <= Mid && cz[k] + sz <= Mid)
                             grid[(cx[k] + sx + Mid) * GridSide + cz[k] + sz + Mid] |= 0x80;
         for (var k = 1; k < count; k++)
-            if (cy[k] > 0)
+            if (cy[k] > 0 && c.Parts[queue[k]].D.BlockRole != BlockRole.End)
             {
                 ref var g = ref grid[(cx[k] + Mid) * GridSide + cz[k] + Mid];
                 g = (byte)((g & 0x80) | Math.Min(0x7F, Math.Max(g & 0x7F, cy[k])));
             }
         LargestRectangle(grid, sum, ref asm);
+        FindOut(c, ref asm, queue[..count], cx, cz, steps);
         // Bed cells outside the rectangle idle; each cell's welded faces to its own machine (for the seam boxes).
         var bed = 0;
         foreach (var g in grid)
@@ -463,6 +550,8 @@ public static class MachineBlocks
                 if (c.BlockAsmOf[i] == a)
                     faces += System.Numerics.BitOperations.PopCount(c.BlockJoined[i]);
             sb.Append($", {faces} welded faces");
+            if (asm.Out != ushort.MaxValue)
+                sb.Append($", out table {asm.OutCells} of {(asm.OutSide is 4 or 5 ? asm.W : asm.L)} cells");
             sb.AppendLine();
         }
         return sb.ToString();

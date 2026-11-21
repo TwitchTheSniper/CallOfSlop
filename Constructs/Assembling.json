@@ -2479,6 +2479,7 @@
     {"output": "Mast Block", "materials": {"steel": 180, "concrete": 36}, "seconds": 29.0},
     {"output": "Bake Oven", "materials": {"steel": 900, "copper": 120, "rubber": 60}, "parts": {"Circuit Board": 2, "Wiring Loom": 2}, "seconds": 150, "minTier": 2},
     {"output": "Oven Bed Block", "materials": {"steel": 700, "copper": 80}, "parts": {"Wiring Loom": 1}, "seconds": 90},
+    {"output": "Out Table", "materials": {"steel": 160, "rubber": 40}, "parts": {"Gear Set": 1}, "seconds": 60},
     {"output": "Grow Former", "materials": {"steel": 900, "rubber": 120, "copper": 40}, "parts": {"Gear Set": 4, "Servo Motor": 2, "Control Unit": 1}, "seconds": 180},
     {"output": "Former Block", "materials": {"steel": 500, "rubber": 40}, "parts": {"Gear Set": 1}, "seconds": 90}
   ]
