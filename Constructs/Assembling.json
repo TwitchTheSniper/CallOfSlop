@@ -2632,6 +2632,10 @@
     {"output": "Crane Rail Block", "materials": {"steel": 280, "concrete": 56}, "seconds": 44.0},
     {"output": "Crane Core", "materials": {"steel": 440}, "parts": {"Gear Set": 4, "Bearing": 4, "Control Unit": 1}, "seconds": 68.0, "minTier": 3},
     {"output": "Grow Former", "materials": {"steel": 900, "rubber": 120, "copper": 40}, "parts": {"Gear Set": 4, "Servo Motor": 2, "Control Unit": 1}, "seconds": 180},
-    {"output": "Former Block", "materials": {"steel": 500, "rubber": 40}, "parts": {"Gear Set": 1}, "seconds": 90}
+    {"output": "Former Block", "materials": {"steel": 500, "rubber": 40}, "parts": {"Gear Set": 1}, "seconds": 90},
+    {"output": "Pad Tile", "materials": {"steel": 32, "rubber": 6}, "seconds": 6.8},
+    {"output": "Rack Side", "materials": {"steel": 8, "concrete": 2}, "seconds": 3.2},
+    {"output": "Roller Tile", "materials": {"steel": 52, "concrete": 10}, "seconds": 9.8},
+    {"output": "Turntable Tile", "materials": {"steel": 60, "concrete": 12}, "seconds": 11.0}
   ]
 }

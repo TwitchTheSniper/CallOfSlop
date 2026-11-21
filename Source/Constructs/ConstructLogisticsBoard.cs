@@ -167,8 +167,9 @@ public static class ConstructLogisticsBoard
             }
             else if (StockTargets.IsStore(d) && world.StoreOf(c, part) is { } st)
             {
-                ConstructRackPack.Ensure(d, st);
-                fill += ConstructRackPack.Fill(d, st);
+                var rd = ConstructPads.RackDef(c, part); // (a pad: its whole rectangle)
+                ConstructRackPack.Ensure(rd, st);
+                fill += ConstructRackPack.Fill(rd, st);
                 k.Stores++;
             }
             else if (d.Monitor == MonitorKind.Machine && world.StoreOf(c, part) is { } ms)
@@ -298,8 +299,9 @@ public static class ConstructLogisticsBoard
                 card.Add(line, ' ').Add(line, d.Name).Add(line, ' ');
                 if (world.StoreOf(c, e.Part) is { } st)
                 {
-                    ConstructRackPack.Ensure(d, st);
-                    var fill = ConstructRackPack.Fill(d, st);
+                    var rd = ConstructPads.RackDef(c, e.Part);
+                    ConstructRackPack.Ensure(rd, st);
+                    var fill = ConstructRackPack.Fill(rd, st);
                     var from = card.Length(line);
                     card.Add(line, (int)MathF.Round(fill * 100)).Add(line, '%');
                     if (fill >= 0.98f)

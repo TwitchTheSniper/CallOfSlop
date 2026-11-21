@@ -349,7 +349,7 @@ public static partial class ConstructLifters
         for (var k = 0; k < l.PointN; k++)
         {
             var pt = l.Points![k];
-            if (world.Get(pt.Body) is not { } b || pt.Part >= b.PartCount || b.DefOf(pt.Part) is not { IsLayDownPad: true } d)
+            if (world.Get(pt.Body) is not { } b || pt.Part >= b.PartCount || ConstructPads.RackDef(b, pt.Part) is not { IsLayDownPad: true } d)
                 continue;
             Freeform.PartWorld(b, pt.Part, out var pp, out var pr);
             var local = Vector3.Transform(at - pp, Quaternion.Conjugate(pr));
