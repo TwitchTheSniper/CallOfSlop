@@ -129,7 +129,9 @@
       "segments": 12,
       "front": "+x",
       "paintable": false,
-      "finish": "steel"
+      "finish": "steel",
+      "work": "spin",
+      "axis": "+x"
     },
     {
       "min": [
@@ -148,7 +150,9 @@
       "segments": 12,
       "front": "+x",
       "paintable": false,
-      "finish": "steel"
+      "finish": "steel",
+      "work": "spin",
+      "axis": "+x"
     },
     {
       "min": [
@@ -167,7 +171,9 @@
       "segments": 12,
       "front": "+x",
       "paintable": false,
-      "finish": "steel"
+      "finish": "steel",
+      "work": "spin",
+      "axis": "+x"
     },
     {
       "min": [
@@ -186,7 +192,9 @@
       "segments": 12,
       "front": "+x",
       "paintable": false,
-      "finish": "steel"
+      "finish": "steel",
+      "work": "spin",
+      "axis": "+x"
     },
     {
       "min": [

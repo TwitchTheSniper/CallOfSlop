@@ -112,7 +112,11 @@ station, arms and cranes to come) follows seven points. The shared pieces are `S
    with a big bare hub; the console a desk. A new machine picks a shape no other has.
 2. **Work is visible and moves, and stops when the machine stops.** A detail box may carry `"work"`: `"spin"` (about
    `"axis"`, through its own centre), `"stroke"` (`"travel"` metres along `"axis"` and back: a ram), `"glow"` (hot orange,
-   its own dull colour at rest: a die) or `"smoke"` (puffs from its top). Drawn only while `ProductionLines.Working` says
+   its own dull colour at rest: a die), `"smoke"` (puffs from its top), `"ram"` (an Extruder's: `"travel"` along `"axis"` by
+   the piece on its die, back each metre) or `"shear"` (over an Extruder's die: down and up as a new piece starts). A block
+   machine's cell shows its Core's work, a Run-out Table its Extruder's. A block machine's detail box may say `"seam"` (one
+   face or a list: not drawn while a cell of its machine is welded on any of them) or `"seamFill"` (drawn only while one is).
+   Drawn only while `ProductionLines.Working` says
    the machine runs, from the store each peer already has: nothing on the server or the wire. The status lamp's band and
    the bin's fill are the game's own.
 3. **Flow reads one way.** The in side has a white band and arrow, the out side an orange band and arrow, and every port

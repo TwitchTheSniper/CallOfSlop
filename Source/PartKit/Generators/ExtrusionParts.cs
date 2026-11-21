@@ -197,40 +197,118 @@ public sealed class ExtrusionParts : IPartGenerator
         // Cladding seams on its back (the body's own tone, so they take its paint).
         foreach (var x in new[] { -0.5, 0.5 })
             p.Add(L([x - 0.012, 0.16, -0.764], [x + 0.012, 1.6, -0.75], Trim, paintable: true));
+        // The shear over its die: a guillotine blade in two guides, down and up as each new piece starts (drawing 11).
+        foreach (var x in new[] { -0.4, 0.4 })
+            p.Add(L([x - 0.03, 0.14, Face - 0.004], [x + 0.03, 1.16, Face + 0.03], MachineLook.Base));
+        p.Add(MachineLook.Work(L([-0.37, CoreDieY + 0.33, Face + 0.006], [0.37, CoreDieY + 0.41, Face + 0.03], MachineLook.Steel, "steel"), "shear", "-y", 0.3));
+        p.Add(MachineLook.Work(L([-0.37, CoreDieY + 0.314, Face + 0.01], [0.37, CoreDieY + 0.33, Face + 0.026], MachineLook.Accent, "hazard paint"), "shear", "-y", 0.3));
+        // On top: the fume stack (it puffs while it works) and the feed screw's motor, its coupling turning.
+        p.Add(L([0.6, 1.996, 0.3], [0.8, 2.45, 0.5], MachineLook.Base, shape: Kw(("shape", "cylinder"), ("segments", 12), ("front", "+y"))));
+        p.Add(MachineLook.Work(L([0.58, 2.45, 0.28], [0.82, 2.5, 0.52], MachineLook.Base, shape: Kw(("shape", "cylinder"), ("segments", 12), ("front", "+y"))), "smoke"));
+        p.Add(L([-0.85, 1.996, 0.15], [-0.6, 2.25, 0.45], MachineLook.Base, shape: Kw(("shape", "cylinder"), ("segments", 12), ("front", "+x"))));
+        p.Add(MachineLook.Work(L([-0.6, 2.04, 0.21], [-0.5, 2.2, 0.39], MachineLook.Accent, shape: Kw(("shape", "cylinder"), ("segments", 8), ("front", "+x"))), "spin", "+x"));
+        p.Add(L([-0.5, 1.996, 0.25], [-0.36, 2.16, 0.35], MachineLook.Base)); // (the screw's bearing housing, into the hopper's side)
+        // On its back: a pressure gauge and the maker's plate.
+        p.Add(L([0.64, 1.2, -0.786], [0.84, 1.4, -0.744], "#e8e6df", shape: Kw(("shape", "cylinder"), ("segments", 12), ("front", "-z"))));
+        p.Add(L([0.72, 1.28, -0.798], [0.76, 1.37, -0.782], MachineLook.Ink));
+        p.Add(L([-0.86, 1.2, -0.774], [-0.6, 1.36, -0.744], MachineLook.In));
+        p.Add(L([-0.83, 1.26, -0.786], [-0.63, 1.3, -0.77], MachineLook.Ink));
         return p;
     }
 
     /// <summary>
-    /// A Die Block: one 2 x 2 m cell of an Extruder's die, 4 m deep, with its own die tile, container slice, heater and ram. Welded beside the
-    /// Core (or beside, above or below another block), flush with the die face; its flanges on a side are drawn only while no block of the
-    /// same machine is welded there (MachineBlocks: "seam"), so a bank of blocks reads as one die plate in one frame.
+    /// A Die Block: one 2 x 2 m cell of an Extruder's die, 4 m deep, with its own die tile, container slice, heater and ram (design page
+    /// drawings 10, 11 and 14). Built as a press frame: a front and a back platen, the container between them, a tie rod in each corner
+    /// with a nut at both ends. What is on a side is drawn only while no block of the same machine is welded there (MachineBlocks:
+    /// "seam"), and a corner's notch is filled where a block is ("seamFill"), so a bank of blocks reads as one machine: one outer
+    /// frame with a hazard edge at its foot, one die plate across the face, tie rods at its four corners, oil lines down its right
+    /// side, heater bands on its outer sides and top, a shear along its top edge, and a bank of rams behind that move as the piece grows.
     /// </summary>
     private static Part DieBlock()
     {
         var p = new Part("Die Block", Small, Section,
             "Weld it beside an Extruder Core, or beside, above or below another Die Block, flush with the die face: 2 x 2 m more die. The die is the largest full rectangle of blocks next to the Core; a block outside it idles.",
             group: "Production", color: Red);
-        const double e = 0.997; // (the body stops 3 mm short of the cell, so two blocks' faces never meet on one plane; the flanges make the cell)
-        p.Add(Box([-e, 0.003, BlockBack], [e, 1.997, Face]));
-        // The die tile across the whole face (one plate when blocks are welded), and the front flanges round it, each a seam.
-        p.Add(MachineLook.Work(L([-e, 0.003, Face - 0.01], [e, 1.997, Face + 0.006], MachineLook.Hot), "glow"));
+        const double e = 0.997, n = 0.09; // (the body stops 3 mm short of the cell, so two blocks' faces never meet on one plane; n: the corner notch the tie rods run in)
+        const double front = Face - 0.2, back = BlockBack + 0.2; // (the platens' inner faces: the container runs between them)
+        // The body: the container between the platens, its four long edges notched for the tie rods; the platens full square.
+        p.Add(Box([-e, n, back], [e, 2 - n, front]));
+        p.Add(Box([-e + n, 0.003, back], [e - n, 1.997, front]));
+        p.Add(Box([-e, 0.003, front], [e, 1.997, Face])); // (the front platen: its face is the die face, where the out bed socket sits)
+        p.Add(Box([-e, 0.003, BlockBack + 0.003], [e, 1.997, back]));
+        // The die plate across the whole face, one plate when blocks are welded (dull until it works), and the front frame round it, each side a seam.
+        p.Add(MachineLook.Work(L([-1, 0, Face - 0.01], [1, 2, Face + 0.006], MachineLook.Hot), "glow"));
         p.Add(Seam(L([0.94, 0, Face - 0.02], [1, 2, Face + 0.02], MachineLook.Steel, "steel"), "+x"));
         p.Add(Seam(L([-1, 0, Face - 0.02], [-0.94, 2, Face + 0.02], MachineLook.Steel, "steel"), "-x"));
         p.Add(Seam(L([-0.94, 1.94, Face - 0.02], [0.94, 2, Face + 0.02], MachineLook.Steel, "steel"), "+y"));
-        p.Add(Seam(L([-0.94, 0, Face - 0.02], [0.94, 0.06, Face + 0.02], MachineLook.Steel, "steel"), "-y"));
-        // The back flange, the same way: a dark frame round the back face.
+        p.Add(Seam(MachineLook.D([-0.94, 0, Face - 0.02], [0.94, 0.06, Face + 0.02], MachineLook.Accent, "hazard paint"), "-y")); // (the frame's foot: the hazard edge under the die)
+        // Bolt heads along the front frame, four a side.
+        foreach (var t in new[] { -0.6, -0.2, 0.2, 0.6 })
+        {
+            p.Add(Seam(L([0.958, 1 + t - 0.016, Face + 0.016], [0.982, 1 + t + 0.016, Face + 0.036], MachineLook.Base), "+x"));
+            p.Add(Seam(L([-0.982, 1 + t - 0.016, Face + 0.016], [-0.958, 1 + t + 0.016, Face + 0.036], MachineLook.Base), "-x"));
+            p.Add(Seam(L([t - 0.016, 1.958, Face + 0.016], [t + 0.016, 1.982, Face + 0.036], MachineLook.Base), "+y"));
+        }
+        // The back platen's frame, the same way: a dark frame round the back face.
         p.Add(Seam(L([0.94, 0, BlockBack - 0.02], [1, 2, BlockBack + 0.2], MachineLook.Base), "+x"));
         p.Add(Seam(L([-1, 0, BlockBack - 0.02], [-0.94, 2, BlockBack + 0.2], MachineLook.Base), "-x"));
         p.Add(Seam(L([-0.94, 1.94, BlockBack - 0.02], [0.94, 2, BlockBack + 0.2], MachineLook.Base), "+y"));
         p.Add(Seam(L([-0.94, 0, BlockBack - 0.02], [0.94, 0.06, BlockBack + 0.2], MachineLook.Base), "-y"));
-        // The heater bands round the container slice (hot while it works) and the skirt at its foot, each side a seam.
-        foreach (var (lo, hi, side) in new[] { (new[] { 0.97, 0.25, -2.1 }, new[] { 1.0, 1.75, -1.5 }, "+x"), (new[] { -1.0, 0.25, -2.1 }, new[] { -0.97, 1.75, -1.5 }, "-x") })
-            p.Add(Seam(MachineLook.Work(L(lo, hi, MachineLook.Hot), "glow")!, side));
-        p.Add(Seam(L([-0.85, 1.97, -2.1], [0.85, 2.0, -1.5], MachineLook.Hot), "+y"));
-        p.Add(Seam(L([-0.94, 0, BlockBack + 0.25], [0.94, 0.14, Face - 0.1], MachineLook.Base), "-y"));
-        // The ram out of the back: a bare steel rod in a dark cylinder, the bank of them showing the machine's size from behind.
-        p.Add(L([-0.45, 0.55, BlockBack - 0.7], [0.45, 1.45, BlockBack - 0.004], MachineLook.Base, shape: Kw(("shape", "cylinder"), ("segments", 16), ("front", "-z"))));
-        p.Add(L([-0.18, 0.82, BlockBack - 1.0], [0.18, 1.18, BlockBack - 0.7], MachineLook.Steel, "steel", shape: Kw(("shape", "cylinder"), ("segments", 12), ("front", "-z"))));
+        // The tie rods: one in each corner's notch, platen to platen, a hex nut proud of each platen; only at the machine's corners.
+        // Where a block is welded on either side, the notch is filled in the body's own tone instead, so no groove runs between blocks.
+        foreach (var (sx, sy) in new[] { (1, 1), (1, -1), (-1, 1), (-1, -1) })
+        {
+            var cx = sx * (1 - n / 2);
+            var cy = sy > 0 ? 2 - n / 2 : n / 2;
+            string[] sides = [sx > 0 ? "+x" : "-x", sy > 0 ? "+y" : "-y"];
+            var r = 0.032;
+            p.Add(Seam(L([cx - r, cy - r, back - 0.03], [cx + r, cy + r, front + 0.03], MachineLook.Steel, "steel", shape: Kw(("shape", "cylinder"), ("segments", 10), ("front", "+z"))), sides));
+            var h = 0.042;
+            p.Add(Seam(L([cx - h, cy - h, Face + 0.016], [cx + h, cy + h, Face + 0.062], MachineLook.Base, shape: Kw(("shape", "cylinder"), ("segments", 6), ("front", "+z"))), sides));
+            p.Add(Seam(L([cx - h, cy - h, BlockBack - 0.062], [cx + h, cy + h, BlockBack - 0.016], MachineLook.Base, shape: Kw(("shape", "cylinder"), ("segments", 6), ("front", "-z"))), sides));
+            double x0 = sx > 0 ? 1 - n - 0.004 : -e, x1 = sx > 0 ? e : -1 + n + 0.004, y0 = sy > 0 ? 2 - n - 0.004 : 0.003, y1 = sy > 0 ? 1.997 : n + 0.004;
+            p.Add(L([x0, y0, back + 0.004], [x1, y1, front - 0.004], Red, paintable: true)!.Update(("seamFill", Py.L(sides[0], sides[1]))));
+        }
+        // The heater bands round the container slice (hot while it works) on the machine's outer sides and top: a dark ceramic band, its
+        // glowing coils between ribs, and a terminal box with its cable.
+        foreach (var (sx, side) in new[] { (1, "+x"), (-1, "-x") })
+        {
+            double[] Xs(double a, double b) => sx > 0 ? [a, b] : [-b, -a]; // (a span out from the right side, mirrored to the left)
+            var band = Xs(0.993, 1.009);
+            p.Add(Seam(L([band[0], 0.3, -2.15], [band[1], 1.7, -1.45], MachineLook.Base), side));
+            var coil = Xs(1.005, 1.017);
+            foreach (var z in new[] { -2.05, -1.85, -1.65 })
+                p.Add(Seam(MachineLook.Work(L([coil[0], 0.36, z], [coil[1], 1.64, z + 0.1], MachineLook.Hot), "glow")!, side));
+            p.Add(Seam(L([coil[0], 1.5, -1.4], [coil[1], 1.68, -1.22], MachineLook.Base), side)); // (its terminal box)
+        }
+        p.Add(Seam(L([-0.85, 1.993, -2.15], [0.85, 2.009, -1.45], MachineLook.Base), "+y"));
+        foreach (var z in new[] { -2.05, -1.85, -1.65 })
+            p.Add(Seam(MachineLook.Work(L([-0.8, 2.005, z], [0.8, 2.017, z + 0.1], MachineLook.Hot), "glow")!, "+y"));
+        // The oil lines down the machine's right side, red feed and blue return, clipped to the body every metre; a junction block at the back.
+        foreach (var (y, colour) in new[] { (1.76, "#b8322a"), (1.83, "#2f62b5") })
+            p.Add(Seam(L([0.975, y - 0.02, back + 0.05], [1.015, y + 0.02, front - 0.05], colour, shape: Kw(("shape", "cylinder"), ("segments", 8), ("front", "+z"))), "+x"));
+        foreach (var z in new[] { -2.6, -0.9, 0.2 })
+            p.Add(Seam(L([0.993, 1.725, z - 0.03], [1.017, 1.865, z + 0.03], MachineLook.Base), "+x"));
+        p.Add(Seam(L([0.993, 1.71, back + 0.004], [1.017, 1.88, back + 0.2], MachineLook.Base), "+x"));
+        // The shear along the machine's top edge: a guillotine bar over the die plate, down and up after each cut.
+        p.Add(Seam(MachineLook.Work(L([-0.93, 1.86, Face + 0.022], [0.93, 1.935, Face + 0.046], MachineLook.Steel, "steel"), "shear", "-y", 0.3)!, "+y"));
+        p.Add(Seam(MachineLook.Work(L([-0.93, 1.835, Face + 0.026], [0.93, 1.86, Face + 0.044], MachineLook.Accent, "hazard paint"), "shear", "-y", 0.3)!, "+y"));
+        // The skirt at its foot, a seam.
+        p.Add(Seam(L([-0.94, 0, back + 0.25], [0.94, 0.14, front - 0.1], MachineLook.Base), "-y"));
+        // The back: the ram's housing and its rod, which slides in as the piece grows and comes back for the next billet each metre;
+        // two hoses from the housing to the platen, a pressure gauge, grease points and a maker's plate.
+        p.Add(L([-0.45, 0.55, BlockBack - 0.7], [0.45, 1.45, BlockBack + 0.006], MachineLook.Base, shape: Kw(("shape", "cylinder"), ("segments", 16), ("front", "-z"))));
+        p.Add(L([-0.5, 0.5, BlockBack - 0.73], [0.5, 1.5, BlockBack - 0.69], MachineLook.Steel, "steel", shape: Kw(("shape", "cylinder"), ("segments", 16), ("front", "-z"))));
+        p.Add(MachineLook.Work(L([-0.18, 0.82, BlockBack - 1.0], [0.18, 1.18, BlockBack - 0.66], MachineLook.Steel, "steel", shape: Kw(("shape", "cylinder"), ("segments", 12), ("front", "-z"))), "ram", "+z", 0.5));
+        p.Add(MachineLook.Work(L([-0.24, 0.76, BlockBack - 1.06], [0.24, 1.24, BlockBack - 0.98], MachineLook.Base), "ram", "+z", 0.5)); // (the rod's end plate)
+        foreach (var (x, colour) in new[] { (-0.32, "#b8322a"), (0.32, "#2f62b5") })
+            p.Add(L([x - 0.025, 1.33, BlockBack - 0.6], [x + 0.025, 1.38, BlockBack + 0.006], colour)); // (a hose from the housing into the platen)
+        p.Add(L([0.62, 1.48, BlockBack - 0.036], [0.78, 1.64, BlockBack + 0.006], "#e8e6df", shape: Kw(("shape", "cylinder"), ("segments", 12), ("front", "-z")))); // (the gauge's face)
+        p.Add(L([0.68, 1.54, BlockBack - 0.048], [0.72, 1.62, BlockBack - 0.032], MachineLook.Ink)); // (its needle)
+        p.Add(L([-0.82, 1.5, BlockBack - 0.024], [-0.56, 1.66, BlockBack + 0.006], MachineLook.In)); // (the maker's plate)
+        p.Add(L([-0.79, 1.56, BlockBack - 0.036], [-0.59, 1.6, BlockBack - 0.02], MachineLook.Ink));
+        foreach (var (x, y) in new[] { (-0.7, 0.3), (0.7, 0.3) })
+            p.Add(L([x - 0.02, y - 0.02, BlockBack - 0.03], [x + 0.02, y + 0.02, BlockBack + 0.006], MachineLook.Accent)); // (grease points)
         p.Sock("+x", [1, 1, 0], "+x");
         p.Sock("-x", [-1, 1, 0], "-x");
         p.Sock("top", [0, 2, 0], "+y");
@@ -242,6 +320,8 @@ public sealed class ExtrusionParts : IPartGenerator
     }
 
     private static PyDict Seam(PyDict? box, string face) => box!.Update(("seam", face));
+
+    private static PyDict Seam(PyDict? box, string[] faces) => box!.Update(("seam", Py.L(faces[0], faces[1])));
 
     private sealed record Head(double X0, double X1, double Y, double Y1, double Z0, double Z, double Z1, double T);
 
@@ -423,8 +503,8 @@ public sealed class ExtrusionParts : IPartGenerator
         MachineLook.Skirt(p, -hx, hx, 0.004, len, -h, -h + h * 0.25, 0.012);
         var r = h * 0.12;
         for (var z = 1.0; z < len; z += 2)
-            p.Add(MachineLook.D([-hx + h * 0.3 + 0.004, top - h * 0.3 - r, z - r], [hx - h * 0.3 - 0.004, top - h * 0.3 + r, z + r], MachineLook.Steel, "steel",
-                shape: Kw(("shape", "cylinder"), ("segments", 12), ("front", "+x"))));
+            p.Add(MachineLook.Work(MachineLook.D([-hx + h * 0.3 + 0.004, top - h * 0.3 - r, z - r], [hx - h * 0.3 - 0.004, top - h * 0.3 + r, z + r], MachineLook.Steel, "steel",
+                shape: Kw(("shape", "cylinder"), ("segments", 12), ("front", "+x"))), "spin", "+x")); // (they turn while the Extruder it serves works: drawing 11)
         p.Add(MachineLook.D([-hx - 0.004, top - h * 0.25, 0.1], [-hx, top - h * 0.05, len - 0.1], MachineLook.Out));
         p.Add(MachineLook.D([hx, top - h * 0.25, 0.1], [hx + 0.004, top - h * 0.05, len - 0.1], MachineLook.Out));
         p.Sock("in", [0, 0, 0.004], "-z", kind: "runOut");
