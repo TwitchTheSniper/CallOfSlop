@@ -23,6 +23,8 @@ public static unsafe partial class Program
             return true; // (Extruder expansion pieces: Program.WindowShotExtr.cs)
         if (WsCutterVerb(g, verb, arg))
             return true; // (the Laser Cutter: Program.WindowShotCutter.cs)
+        if (WsOvenVerb(g, verb, arg))
+            return true; // (Bake Ovens: Program.WindowShotOven.cs)
         if (verb is not ("ray" or "walk" or "side" or "put"))
             return false;
         var words = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);

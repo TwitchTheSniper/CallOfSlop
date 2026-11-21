@@ -148,6 +148,14 @@ public static class ConstructLogistics
         }
         if (m.NodeOf[part] >= 0)
             return m.NodeOf[part];
+        if (MachineBlocks.Owner(c, part) is var owner && owner != part)
+        {
+            // An Out Table is its machine's node: a conveyor off it leaves the machine (MachineBlocks.Owner).
+            var on = NodeFor(c, m, owner);
+            if (on >= 0)
+                m.NodeOf[part] = (short)on;
+            return on;
+        }
         if (m.NodeN >= LogiMap.MaxNodes)
             return -1;
         var n = m.NodeN++;

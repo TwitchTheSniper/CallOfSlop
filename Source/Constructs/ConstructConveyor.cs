@@ -503,9 +503,11 @@ public static class ConstructConveyor
 
     // ---- The link ------------------------------------------------------------------------------------------------
 
-    /// <summary>The conveyor leaving part <paramref name="part"/>'s Piece out, or -1.</summary>
+    /// <summary>The conveyor leaving part <paramref name="part"/>'s Piece out, or -1 (a bed machine's Core: its Out Table's, MachineBlocks.OutTable).</summary>
     public static int Out(Construct c, int part)
     {
+        if (c.MachineAsmCount > 0 && c.Parts[part].D.BlockRole == BlockRole.Core && MachineBlocks.TryOf(c, part, out var asm) && MachineBlocks.OutTable(c, asm) is var table and >= 0)
+            part = table;
         for (var k = 0; k < c.RouteCount; k++)
             if (c.Routes[k].Type == RouteType.Conveyor && c.Routes[k].Parent == 255 && c.Routes[k].From == part)
                 return k;
@@ -696,7 +698,7 @@ public static class ConstructConveyor
             Paint = pp.Paint,
         };
         WorldPose(c, route, rider, piece, out rider.LastPos, out rider.LastRot);
-        ConstructLogistics.AtSource(world, c, r.From, ref rider, piece); // (an order that asked this machine for it: its tray, when a Router is on the way)
+        ConstructLogistics.AtSource(world, c, MachineBlocks.Owner(c, r.From), ref rider, piece); // (an order that asked this machine for it: its tray, when a Router is on the way)
         Insert(c, rider);
         world.RemovePart(c, product);
         c.Wake();
@@ -745,7 +747,7 @@ public static class ConstructConveyor
             if (dest != 0)
                 (rider.Dest, rider.Tag, rider.Flags) = (dest, tag, (byte)LogiFlags.Fetched); // (a terminal's fetch: it knows where)
             else
-                ConstructLogistics.AtSource(world, c, r.From, ref rider, d);
+                ConstructLogistics.AtSource(world, c, MachineBlocks.Owner(c, r.From), ref rider, d);
             Insert(c, rider);
         }
         c.Wake();

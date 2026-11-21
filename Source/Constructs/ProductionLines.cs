@@ -45,6 +45,8 @@ public static partial class ProductionLines
             return PressRaw(world, c, part, st);
         if (d.IsRecycler)
             return ConstructRecycler.LineOf(world, c, part, st);
+        if (d.IsBakeOven)
+            return ConstructBakeOven.LineOf(world, c, part, st);
         if (d.IsGatherer)
             return ConstructGatherer.LineOf(world, c, part, st);
         if (!d.IsRefiner)
@@ -402,7 +404,7 @@ public static partial class ProductionLines
         if (md.IsExtruder)
         {
             if (why && world.StoreOf(c, m) is { } st)
-                card.Add(line, StallWord((ExtrudeStall)st.Refused)).Add(line, ", ");
+                card.Add(line, StallWord((ExtrudeStall)st.Refused, md.IsPanelFormer && md.BlockRole == BlockRole.Core)).Add(line, ", ");
             if (mp.Orders is { } q)
             {
                 if (q.Total == 0)
@@ -488,7 +490,7 @@ public static partial class ProductionLines
     }
 
     /// <summary>Why an Extruder or a Former waits, in a few words.</summary>
-    public static string StallWord(ExtrudeStall s) => s switch
+    public static string StallWord(ExtrudeStall s, bool bed = false) => s switch
     {
         ExtrudeStall.NoPower => "no power",
         ExtrudeStall.NoMaterial => "needs material",
@@ -504,6 +506,7 @@ public static partial class ProductionLines
         ExtrudeStall.ConveyorCut => "conveyor cut",
         ExtrudeStall.NoOrders => "waiting for orders",
         ExtrudeStall.OrderMaterial => "order needs other stock",
+        ExtrudeStall.OrderTooLong when bed => "its bed can't take the order", // (a Panel Former Core: no bed, no Out Table or too small: its look line says which)
         ExtrudeStall.OrderTooLong => "order longer than it makes",
         ExtrudeStall.OffcutFull => "offcut bin full",
         _ => "waiting",

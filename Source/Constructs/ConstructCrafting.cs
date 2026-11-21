@@ -117,7 +117,7 @@ public static class ConstructCrafting
             if (r.Type is not (RouteType.Conveyor or RouteType.Chute or RouteType.Data))
                 continue;
             h = (h ^ (uint)r.Type) * 16777619u;
-            h = (h ^ r.Source) * 16777619u;
+            h = (h ^ (r.Type == RouteType.Conveyor ? (uint)MachineBlocks.Owner(c, r.Source) : r.Source)) * 16777619u; // (an Out Table's machine: it changes as the table is welded on or off)
             h = (h ^ r.To) * 16777619u;
             h = (h ^ (r.FedEnd ? 1u : 0u)) * 16777619u;
         }
@@ -172,7 +172,8 @@ public static class ConstructCrafting
                 ref readonly var r = ref c.Routes[k];
                 if (r.Type is not (RouteType.Conveyor or RouteType.Chute) || !r.FedEnd || r.Source >= c.PartCount || r.To >= c.PartCount)
                     continue;
-                var other = r.Source == at ? r.To : r.To == at ? r.Source : -1;
+                var from = r.Type == RouteType.Conveyor ? MachineBlocks.Owner(c, r.Source) : r.Source; // (off an Out Table: its machine's)
+                var other = from == at ? r.To : r.To == at ? from : -1;
                 if (other >= 0 && n < seen.Length && !seen[..n].Contains(other))
                     seen[n++] = other;
             }
@@ -211,7 +212,7 @@ public static class ConstructCrafting
         for (var k = 0; k < c.RouteCount; k++)
         {
             ref readonly var r = ref c.Routes[k];
-            if (r.Source != s || !r.FedEnd)
+            if (r.Source != s && (r.Type != RouteType.Conveyor || MachineBlocks.Owner(c, r.Source) != s) || !r.FedEnd)
                 continue;
             if (r.Type == RouteType.Chute && r.To == t)
                 return -2;
