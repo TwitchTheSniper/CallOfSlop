@@ -94,7 +94,12 @@ public static class PackCheck
         Console.WriteLine($"a damaged group: {why ?? "taken"}");
         if (why == null || !why.Contains("damaged"))
             Fail("a damaged group should be refused as damaged");
-        world.Remove(bad, quiet: true);
+        bad.Parts[0].Health = bad.DefOf(0).Health; // (mended: no rebuild, so a reason kept from before mustn't stand)
+        Lay(bad);
+        why = ConstructLifters.PadWhy(world, pad, 0, bad);
+        Console.WriteLine($"the same group mended: {why ?? "taken"}");
+        if (why != null || ConstructLifters.PadTakeInNow(world, pad, 0) != 1)
+            Fail("a mended group should be taken in");
 
         if (st.KindN > 0)
         {
@@ -127,6 +132,23 @@ public static class PackCheck
                 if (back.LinkCount != links)
                     Fail($"{links} welds before, {back.LinkCount} after");
             }
+        }
+        if (st.KindN > 0)
+        {
+            // A packed piece welded onto another body before it was unpacked comes off as its group.
+            var pd = ConstructParts.Def(st.KindDef![0]);
+            world.StationTake(pad, 0, st, pd);
+            var host = world.Create(new Vector3(-20, 1, 0), Quaternion.Identity)!;
+            world.AddPart(host, ConstructParts.Need("Frame Block"), Vector3.Zero, 0);
+            world.AddPart(host, pd, new Vector3(0, 0, 0.25f - pd.BoundsMin.Z + 0.01f), 0);
+            world.AutoLinkMany(host, 0, host.PartCount);
+            host.Rebuild();
+            var n0 = world.Bodies.Count;
+            ConstructLifters.Scan(world, server: true);
+            ConstructLifters.UnpackNow(world);
+            Console.WriteLine($"a packed piece welded on: the host has {world.Get(host.Id)?.PartCount ?? 0} part(s), bodies {n0} -> {world.Bodies.Count}");
+            if (world.Get(host.Id) is not { PartCount: 1 } || world.Bodies.Count(b => b.PartCount == 3) < 1)
+                Fail("a welded-on packed piece should come off as its group");
         }
         Console.WriteLine(fails == 0 ? "pack check: passed" : $"pack check: {fails} failure(s)");
         return fails;

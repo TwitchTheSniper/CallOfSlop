@@ -250,8 +250,8 @@ public static partial class ConstructLifters
             if (server && (c.PadStamp != c.RebuildStamp || c.PadPartCount != c.PartCount))
             {
                 NotePads(world, c); // (phase 5: the bodies with a Lay-down Pad, ConstructLifterPads.cs; its own stamp, as a host's drawing scans this world too)
-                if (c.PartCount == 1 && BakedParts.IsPacked(c.DefOf(0)) && !world.PackedBodies.Contains(c.Id))
-                    world.PackedBodies.Add(c.Id); // (a packed group out of a store: its group again below, PackedGroups.cs)
+                if (HasPacked(c) && !world.PackedBodies.Contains(c.Id))
+                    world.PackedBodies.Add(c.Id); // (a packed group out of a store, or welded on before it was unpacked: its group again, PackedGroups.cs)
             }
             if (c.LiftStamp != c.RebuildStamp || c.LiftPartCount != c.PartCount)
                 ScanBody(world, c, server);

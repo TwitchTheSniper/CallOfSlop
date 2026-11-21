@@ -381,6 +381,8 @@ public static partial class BakedParts
     /// <summary>Why a part can't be baked into a group (null: it can): plain structure only, nothing that works, moves or holds.</summary>
     public static string? BakeRefusal(ConstructPartDef d, bool tell = true)
     {
+        if (IsPacked(d))
+            return "a packed group (out of a store: it is its group again within a second)";
         if (d.ModPart != ModPart.None)
             return "a module socket or plug (plates stay real parts)";
         if (d.Role is not (PartRole.Frame or PartRole.Panel or PartRole.Foundation))

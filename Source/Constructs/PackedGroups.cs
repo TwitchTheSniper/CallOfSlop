@@ -26,37 +26,37 @@ public static partial class BakedParts
     /// so each part must be as new, as a single piece must (whole, empty, no rounds, text, queue or fluid, settings at their defaults),
     /// though paint and finish are kept; and the group is rigid: no joints, every part at a grid turn, no wires.
     /// </summary>
-    public static string? GroupWhy(ConstructWorld world, Construct lo)
+    public static string? GroupWhy(ConstructWorld world, Construct lo, bool tell = true)
     {
         if (lo.PartCount < 2)
-            return "not a group";
+            return tell ? "not a group" : No;
         if (lo.PartCount > MaxSubparts)
-            return $"over {MaxSubparts} parts";
+            return tell ? $"over {MaxSubparts} parts" : No;
         if (lo.Anchored)
-            return "it is fixed in place";
+            return tell ? "it is fixed in place" : No;
         if (lo.JointCount > 0)
-            return "it has a joint (a hinge or a moving part): only a rigid group packs";
+            return tell ? "it has a joint (a hinge or a moving part): only a rigid group packs" : No;
         if (lo.WireCount > 0)
-            return "it is wired: a store keeps no wires";
+            return tell ? "it is wired: a store keeps no wires" : No;
         for (var i = 0; i < lo.PartCount; i++)
         {
             ref readonly var p = ref lo.Parts[i];
             var d = lo.DefOf(i);
             if (!Place(lo, i, out _))
-                return $"the {Shown(d)} isn't fixed at a grid turn";
+                return tell ? $"the {Shown(d)} isn't fixed at a grid turn" : No;
             if (d.Role == PartRole.Seat)
-                return $"the {Shown(d)}: a seat makes it a craft";
+                return tell ? $"the {Shown(d)}: a seat makes it a craft" : No;
             if (d.IsPieceRack || d.Lifter != null)
-                return $"the {Shown(d)}: a rack or a lifter";
+                return tell ? $"the {Shown(d)}: a rack or a lifter" : No;
             if (IsPacked(d))
-                return "a packed group in it";
+                return tell ? "a packed group in it" : No;
             if (p.Broken || p.Health < d.Health * 0.999f)
-                return $"the {Shown(d)} is damaged: mend it first";
+                return tell ? $"the {Shown(d)} is damaged: mend it first" : No;
             if (p.Store != 0 && world.StoreOf(lo, i) is { } st && (st.Amount > 0 || st.ItemCount > 0 || st.InAmount > 0 || st.KindN > 0))
-                return $"the {Shown(d)} {ConstructLifters.LoadedWhy}";
+                return tell ? $"the {Shown(d)} {ConstructLifters.LoadedWhy}" : No;
             if (p.Rounds != 0 || p.Text != null || p.Text2 != null || p.Orders != null || p.Craft != null || !ConstructConfig.AllDefault(p, d)
                 || d.Role == PartRole.FluidTank && ConstructFluid.Held(p, d) != null)
-                return $"the {Shown(d)} holds rounds, fluid, text or settings: empty or reset it first";
+                return tell ? $"the {Shown(d)} holds rounds, fluid, text or settings: empty or reset it first" : No;
         }
         return null;
     }
@@ -70,15 +70,23 @@ public static partial class BakedParts
     {
         if (lo.Dirty)
             lo.Rebuild();
-        var turn = Rot24.Nearest(Quaternion.Conjugate(storeRot) * lo.Rot, out _);
-        if (lo.PackStamp == lo.RebuildStamp && lo.PackParts == lo.PartCount && lo.PackTurn == turn)
+        // What a rebuild doesn't follow (a store's contents, damage, settings) is asked every time, without a word made; the reason is
+        // worked out once while it holds.
+        if (GroupWhy(world, lo, tell: false) != null)
         {
+            if (lo.PackWhy == null || lo.PackWhyStamp != lo.RebuildStamp)
+                (lo.PackWhy, lo.PackWhyStamp) = (GroupWhy(world, lo) ?? "it can't be packed", lo.RebuildStamp);
             why = lo.PackWhy;
-            return lo.PackDef;
+            return null;
         }
-        (lo.PackStamp, lo.PackParts, lo.PackTurn) = (lo.RebuildStamp, lo.PartCount, turn);
-        lo.PackDef = Pack(world, lo, turn, out why);
-        lo.PackWhy = why;
+        lo.PackWhy = null;
+        var turn = Rot24.Nearest(Quaternion.Conjugate(storeRot) * lo.Rot, out _);
+        if (lo.PackStamp != lo.RebuildStamp || lo.PackParts != lo.PartCount || lo.PackTurn != turn)
+        {
+            (lo.PackStamp, lo.PackParts, lo.PackTurn) = (lo.RebuildStamp, lo.PartCount, turn);
+            lo.PackDef = Pack(world, lo, turn, out lo.PackFail);
+        }
+        why = lo.PackFail;
         return lo.PackDef;
     }
 
@@ -205,7 +213,7 @@ public static partial class ConstructLifters
     {
         for (var k = world.PackedBodies.Count - 1; k >= 0; k--)
         {
-            if (world.Get(world.PackedBodies[k]) is not { } lo || lo.PartCount != 1 || !BakedParts.IsPacked(lo.DefOf(0)))
+            if (world.Get(world.PackedBodies[k]) is not { } lo || !HasPacked(lo))
             {
                 world.PackedBodies.RemoveAt(k);
                 continue;
@@ -213,10 +221,55 @@ public static partial class ConstructLifters
             if (lo.HeldBy != 0 || lo.GrabbedBy != 255 || lo.CarriedBy != 0 || lo.NudgeBy != 255 || lo.Frozen)
                 continue; // (someone has it: when they let go)
             world.PackedBodies.RemoveAt(k);
+            if (lo.PartCount > 1)
+            {
+                SplitPacked(world, lo);
+                continue;
+            }
             if (BakedParts.Unpack(world, lo) is { } nb)
                 Console.WriteLine($"[lifter] a packed group out of a store: construct {lo.Id} unpacked into {nb.PartCount} parts (construct {nb.Id})");
             else
                 Console.WriteLine($"[lifter] REFUSED unpacking construct {lo.Id} ({lo.DefOf(0).Name}): {BakedParts.LastRefusal}; it stays one piece");
+        }
+    }
+
+    /// <summary>Does the body hold a packed part (a store's kind out in the world)? Looked at only when its parts change.</summary>
+    private static bool HasPacked(Construct c)
+    {
+        for (var i = 0; i < c.PartCount; i++)
+            if (c.DefOf(i).IsNamedRuntime && BakedParts.IsPacked(c.DefOf(i)))
+                return true;
+        return false;
+    }
+
+    /// <summary>
+    /// Server: a packed part welded onto another body before it was its group again (taken out of a store and fitted at once) comes off
+    /// as its group where it was: a packed part is only ever a stored piece, never a part of a craft.
+    /// </summary>
+    private static void SplitPacked(ConstructWorld world, Construct c)
+    {
+        for (var i = c.PartCount - 1; i >= 0; i--)
+        {
+            if (i >= c.PartCount || c.DefOf(i) is not { IsNamedRuntime: true } pd || !BakedParts.IsPacked(pd))
+                continue;
+            Freeform.PartWorld(c, i, out var at, out var rot);
+            var health = c.Parts[i].Health;
+            if (world.Create(at, rot) is not { } nb || world.AddPart(nb, pd, Vector3.Zero, 0) < 0)
+            {
+                Console.WriteLine($"[lifter] REFUSED taking packed {pd.Name} off construct {c.Id}: the world is full");
+                return;
+            }
+            nb.Parts[0].Health = health;
+            nb.Rebuild();
+            var doomed = new bool[i + 1]; // (a rare path)
+            doomed[i] = true;
+            Console.WriteLine($"[lifter] construct {c.Id} part {i}: a packed group welded on comes off as its group (construct {nb.Id})");
+            var whole = c.PartCount == 1;
+            world.RemoveParts(c, doomed);
+            if (BakedParts.Unpack(world, nb) is null)
+                Console.WriteLine($"[lifter] REFUSED unpacking construct {nb.Id} ({pd.Name}): {BakedParts.LastRefusal}; it stays one piece");
+            if (whole || world.Get(c.Id) == null)
+                return;
         }
     }
 }
@@ -227,7 +280,8 @@ public sealed partial class Construct
     public int PackStamp = -1, PackParts = -1;
     public byte PackTurn;
     public ConstructPartDef? PackDef;
-    public string? PackWhy;
+    public string? PackWhy, PackFail;
+    public int PackWhyStamp = -1;
 }
 
 public sealed partial class ConstructWorld
