@@ -161,6 +161,8 @@ public static partial class ConstructRender
         ref var p = ref c.Parts[i];
         if (p.Burn > 0 || c.GantryHold || c.MergeOf[i] != 0 || c.Rides(i) || c.PartScale[i] > 1 || c.EngineOf[i] != 0 || _wheelMark[i] == _wheelToken)
             return -1;
+        if (ModulePullLook.Walks(c, i))
+            return -1; // (a fitted module the physics gun strains on: walked, rocking on its seat, ModulePullLook.cs)
         if (p.D.ModPart != ModPart.None && ModuleSockets.HiddenLook(c, i))
             return -1; // (a hidden socket connector: walked, and DrawPart draws nothing)
         if (p.D.HasMiddle && ModuleSockets.FrameLook(c, i))
@@ -200,6 +202,8 @@ public static partial class ConstructRender
     private static long DynKey(Construct c)
     {
         var h = (long)c.PartCount + (c.GantryHold ? 1L << 50 : 0); // (a shell in a gantry's clamp is walked: its modules come off)
+        if (ModulePullLook.Count > 0 && ModulePullLook.DynOf(c) is var pulled && pulled != 0)
+            h = Mix(h, pulled); // (a module strained on by the physics gun is walked while it is; other bodies' keys stay as they were)
         for (var i = 0; i < c.PartCount; i++)
         {
             ref var p = ref c.Parts[i];
@@ -248,7 +252,8 @@ public static partial class ConstructRender
         var d = p.D;
         if (p.Seg != 0 || p.Burn > 0 || d.HasWork && !d.WorkGlowOnly || d.Logic == CLogic.AnalogLever || d.Rotor != null || d.Role is PartRole.Joint or PartRole.Suspension || d.IsRail || d.HasRig || d.TrackRays > 0
             || _wheelMark[i] == _wheelToken || c.DoorCount > 0 && c.DoorOfListed(i) >= 0 || c.MergeOf[i] != 0 || c.EngineOf[i] != 0 || d.ShellBody
-            || d.BlockRole == BlockRole.Block && ConstructPress.Shell(c, i, out _)) // (a Press's shell swings out past its welded cell)
+            || d.BlockRole == BlockRole.Block && ConstructPress.Shell(c, i, out _) // (a Press's shell swings out past its welded cell)
+            || ModulePullLook.Walks(c, i)) // (a module rocking under the physics gun's pull)
             return new Vector4(0, 0, 0, -1);
         c.PartBounds(i, out var mn, out var mx);
         var r = (mx - mn).Length() * 0.5f + (p.Store != 0 ? 2f : 0.25f); // (stored parts pile on its slots: room for them)

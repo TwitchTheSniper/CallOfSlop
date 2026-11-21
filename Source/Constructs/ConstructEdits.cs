@@ -51,6 +51,11 @@ public struct SandboxHand
     public ushort GrabHinge; // ...and the joint's part, to tell it from another once the construct has changed
     public Quaternion GrabRel; // ...turned this way relative to the look's yaw (the held thing swings round with you)
     public double GrabAskedAt; // client: when it last asked to grab or let go (the 10 Hz tail doesn't undo it meanwhile)
+    public ushort PullShip; // the physics gun strains on a fitted module of this construct, or draws it out (ModuleGuide's pull; 0: none). Sent, for the beam and the wiggle (ModulePullLook.cs)
+    public ushort PullPlate; // ...on the socket of this plate part
+    public ushort PullBody; // ...out of its seat: the module's own body (0: still fitted)
+    public Vector3 PullLocal; // ...the beam's point: in PullBody's frame once out, the ship's before
+    public byte PullShake; // ...how hard it shakes (0-255: the strain, then pulling out or sliding back)
     // Contraption space (GameSandboxRide.cs; each machine's own, never sent): the frame this player stands in.
     public ushort RideBody; // 0: none
     public byte RideSeg; // the segment whose surface carries them (the body, or a lift, a ramp, a turntable they stand on: ConstructRide.Carrier); their frame is the body's

@@ -364,6 +364,8 @@ public sealed partial class Game
                 Constructs.PlayerSpots[Constructs.PlayerSpotCount++] = p.Position; // (proximity sensors)
             if (p.Alive && h.Tool == ConstructTool.PhysicsGun)
                 ModuleGuide.PlayerTick(Constructs, SandboxHands, p.Id, p.Eye, GravityFrames.Forward(p.Position, p.Yaw, p.Pitch), p.Yaw); // (a pull on a fitted module, a held one's pull-in: ModuleGuide.cs)
+            else if (h.PullShip != 0)
+                h.PullShip = h.PullBody = 0; // (no gun out, or dead: no pull to show)
             if ((p.Eva & Eva.Mmu) != 0 && (p.Sim.Gear & PilotGear.Mmu) == 0)
                 p.Sim.JetFuel = p.MmuFuel; // (a teleport made a new MoveState: the pack's tank is still the pack's)
             p.Sim.Gear = SandboxWorn(p);

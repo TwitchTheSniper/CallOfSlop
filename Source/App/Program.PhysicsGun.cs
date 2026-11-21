@@ -226,7 +226,14 @@ public static partial class Program
         if (_pgModPull && (holding || !Down(GameAction.Fire)))
         {
             if (!holding)
+            {
                 g.SandboxSend(CActKind.ModControl, variant: 4); // (let go before it came clear: it slides back and seats again, ModuleGuide.cs)
+                if (!g.IsServer)
+                {
+                    h.PullShip = h.PullBody = 0; // (the beam goes at once; the module still shakes as it slides back, as the server says)
+                    h.GrabAskedAt = g.SandboxNow;
+                }
+            }
             _pgModPull = false; // (clear of its frame, the server handed it to the beam: held as anything is)
         }
         if (_pgModPull)
@@ -301,6 +308,16 @@ public static partial class Program
                     {
                         g.SandboxSend(CActKind.ModControl, body: hit.Body.Id, part: (ushort)hit.Part, variant: 3, at: hit.Body.ToLocal(hit.Point));
                         _pgModPull = true;
+                        if (!g.IsServer)
+                        {
+                            // (the beam on the point clicked at once; the server's pull follows in the tail: ModuleGuide.ShowPull)
+                            h.PullShip = hit.Body.Id;
+                            h.PullPlate = (ushort)plate;
+                            h.PullBody = 0;
+                            h.PullLocal = hit.Body.ToLocal(hit.Point);
+                            h.PullShake = 0;
+                            h.GrabAskedAt = g.SandboxNow;
+                        }
                     }
                 }
                 return;
@@ -423,7 +440,10 @@ public static partial class Program
             if (!p.Alive)
                 continue;
             ref var h = ref g.SandboxHands.Hand(p.Id);
-            if (h.Tool != ConstructTool.PhysicsGun || h.GrabBody == 0 || g.Constructs.Get(h.GrabBody) is not { } c)
+            if (h.Tool != ConstructTool.PhysicsGun)
+                continue;
+            var pull = h.GrabBody == 0 && h.PullShip != 0; // (pulling a fitted module off: the beam on the point clicked, ModuleGuide's pull)
+            if (g.Constructs.Get(pull ? (h.PullBody != 0 ? h.PullBody : h.PullShip) : h.GrabBody) is not { } c)
                 continue;
             var local = p.Id == g.LocalId;
             var look = local ? g.LookDir(g.LookYaw, g.LookPitch) : World.Forward(p.RenderYaw, p.RenderPitch);
@@ -431,8 +451,8 @@ public static partial class Program
             var start = ToolRender.TipOf(local ? ToolRender.ViewSlot : p.Id, now) ?? eye + look * 0.5f + World.FlatRight(local ? g.LookYaw : p.RenderYaw) * 0.18f - new Vector3(0, 0.15f, 0);
             var pos = g.IsServer ? Vector3.Lerp(c.PrevPos, c.Pos, g.TickAlpha) : c.Pos;
             var rot = g.IsServer ? Quaternion.Slerp(c.PrevRot, c.Rot, g.TickAlpha) : c.Rot;
-            var end = pos + Vector3.Transform(h.GrabLocal, rot);
-            if (h.GrabSeg != 0 && h.GrabSeg <= c.JointCount)
+            var end = pos + Vector3.Transform(pull ? ModulePullLook.Point(c, h.PullLocal, h.PullBody != 0) : h.GrabLocal, rot); // (on a pulled module: where it is drawn, shaking)
+            if (!pull && h.GrabSeg != 0 && h.GrabSeg <= c.JointCount)
             {
                 c.WorldFrame(h.GrabSeg, out var sq, out var st); // (a free joint held on its own: the point is in its frame)
                 end = st + Vector3.Transform(h.GrabLocal, sq);
@@ -519,5 +539,25 @@ public static partial class Program
             return -1;
         var si = c.Modules[mi].Socket;
         return c.ModSockets[si].Stand ? -1 : si;
+    }
+
+    /// <summary>Every frame before the constructs are drawn: each physics gun pulling a fitted module off, for its shake (ModulePullLook.cs).</summary>
+    private static void GatherModulePulls(Game g, double now)
+    {
+        ModulePullLook.Begin();
+        if (!g.SandboxOn)
+            return;
+        foreach (var p in g.Players.Values)
+        {
+            if (!p.Alive)
+                continue;
+            ref var h = ref g.SandboxHands.Hand(p.Id);
+            if (h.Tool != ConstructTool.PhysicsGun || h.GrabBody != 0 || h.PullShip == 0 || g.Constructs.Get(h.PullShip) is not { } ship)
+                continue;
+            var body = h.PullBody != 0 ? g.Constructs.Get(h.PullBody) : null;
+            if (h.PullBody != 0 && body == null)
+                continue; // (the module's own body hasn't come yet)
+            ModulePullLook.Add(ship, h.PullPlate, body, h.PullShake, now);
+        }
     }
 }
