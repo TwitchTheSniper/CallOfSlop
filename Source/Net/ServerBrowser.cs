@@ -702,7 +702,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   CfgKey Shutdown in the unused Blade4's slot (the enum is full), a new setting on every power plant and thruster (ConstructShutdown.cs).
     // 419: the kill frenzy removed (Karl, 2026-11-21): snapshot slow entries lose the frenzy level and class (Snapshot.SlowBytes 20 -> 18),
     //   and the lobby state's frenzy-buffs flag (16) is no longer sent.
-    public const ushort ProtocolVersion = 419;
+    // 420: a Building Station's own pick pads (Sean 2026-11-21, the Zero Day works): each carrying arm in CBodyKind.Station's arms says
+    //   whether it takes its part off a pick pad (u8) and, when it does, where the hook takes it (CmVec, the bay's frame).
+    public const ushort ProtocolVersion = 420;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

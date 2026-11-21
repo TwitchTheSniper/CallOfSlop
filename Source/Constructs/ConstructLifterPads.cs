@@ -218,7 +218,7 @@ public static partial class ConstructLifters
     private static readonly LifterDef[] ServeDef = new LifterDef[MaxServing];
     private static readonly Vector3[] ServeShoulder = new Vector3[MaxServing];
     private static readonly Quaternion[] ServeRot = new Quaternion[MaxServing];
-    private static int[] _padHeld = new int[16], _padReach = new int[16];
+    private static int[] _padHeld = new int[16], _padReach = new int[16], _ownHeld = new int[16];
     private static StationJob? _padJob;
     private static int _padTick = int.MinValue;
 
@@ -237,8 +237,8 @@ public static partial class ConstructLifters
             world.PadScanTick = world.LiftTick;
             Scan(world, server: true); // (bodies whose parts changed only: the stations step before the lifters, and a loaded world's first orders would see no arm and no pad)
         }
-        if (world.PadBodies.Count == 0 || world.LiftBodies.Count == 0)
-            return 0;
+        if ((world.PadBodies.Count == 0 || world.LiftBodies.Count == 0) && !ConstructStation.HasOwnPad(sc, t))
+            return 0; // (no arm and no pad, nor a pick pad under the station's own crane: ConstructStationPads.cs)
         var kind = Array.IndexOf(j.KindDef, def, 0, j.KindN);
         if (kind < 0)
             return 0;
@@ -248,18 +248,36 @@ public static partial class ConstructLifters
             PadCounts(world, sc, t, j);
             LifterProbe.Cost(ref LifterProbe.PadCount, System.Diagnostics.Stopwatch.GetTimestamp() - t0);
         }
-        return Math.Min(_padHeld[kind], _padReach[kind]);
+        return Math.Min(_padHeld[kind], _padReach[kind]) + _ownHeld[kind];
     }
 
     private static void PadCounts(ConstructWorld world, Construct sc, int t, StationJob j)
     {
         (_padJob, _padTick) = (j, world.LiftTick);
         if (_padHeld.Length < j.KindN)
-            (_padHeld, _padReach) = (new int[j.KindN * 2], new int[j.KindN * 2]);
+            (_padHeld, _padReach, _ownHeld) = (new int[j.KindN * 2], new int[j.KindN * 2], new int[j.KindN * 2]);
         Array.Clear(_padHeld, 0, j.KindN);
         Array.Clear(_padReach, 0, j.KindN);
+        Array.Clear(_ownHeld, 0, j.KindN);
         ConstructStation.Bay(sc, t, out var floor, out _, out var bay);
         var seen = 0;
+        // The station's own pick pads first (ConstructStationPads.cs): its crane reaches every step, so all a pad holds of a kind it
+        // lifts counts as held; a pad an arm also serves is counted once, here.
+        Span<ushort> own = stackalloc ushort[ConstructStation.MaxOwnPads];
+        var ownN = ConstructStation.OwnPads(sc, t, own);
+        var liftKg = ConstructStation.LiftKg(sc, t);
+        for (var p = 0; p < ownN; p++)
+        {
+            if (world.StoreOf(sc, own[p]) is not { } st)
+                continue;
+            var key = (uint)sc.Id << 16 | own[p];
+            if (Array.IndexOf(world.PadSeen, key, 0, seen) >= 0 || seen >= world.PadSeen.Length)
+                continue;
+            world.PadSeen[seen++] = key;
+            for (var q = 0; q < j.KindN; q++)
+                if (ConstructParts.Get(j.KindDef[q]) is { } kd && kd.Mass <= liftKg)
+                    _ownHeld[q] += ConstructCrafting.Holds(st, j.KindDef[q]);
+        }
         var serving = 0;
         for (var bi = 0; bi < world.LiftBodies.Count; bi++)
         {

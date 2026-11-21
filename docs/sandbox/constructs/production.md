@@ -1410,8 +1410,9 @@ of a blueprint and builds it in a bay, part by part, where it can be seen. Phase
   network and orders are [the terminal's](#crafting-terminal). It is a block machine's Core (`"machineBlock"`, family `station`;
   `MachineBlocks.cs`), with sockets for Bay Blocks along both sides and under it.
 - **The bay** is built, not set (2026-11-21; the bay settings are gone). **Bay Blocks** (`BayBlock.json`, 2 x 2 m tread-plate floor tiles,
-  their recipe at the end of the Assembler's list) welded beside the Core make the bay: the largest full rectangle of them, up to 16 x 16
-  cells (`MachineBlocks`' assembly). **Mast Blocks** (the block machines' shared 2 m cube) stacked on its four corner tiles set its
+  their recipe at the end of the Assembler's list) welded beside the Core make the bay: the largest full rectangle of them, up to 32 cells a
+  side and 512 cells in all, masts included (the station's own limit, `"maxSide"` and `"maxCells"` in its `"machineBlock"`; Sean 2026-11-21,
+  so one station builds the whole 53 m Zero Day in a 30 x 12 bay, 60 x 24 m; every other block machine keeps 16 a side and 128). **Mast Blocks** (the block machines' shared 2 m cube) stacked on its four corner tiles set its
   height, 2 m a block, by the shortest mast; a bay with no masts builds up to 2 m. With masts the corner cells are theirs, so a build
   fits when it is no longer than the bay less two cells on one of its sides (`ConstructStation.FitRefusal(need, bay, BayCorner)`).
   `ConstructStation.Bay` gives the box over the rectangle (floor at the tiles' top); no rectangle, no bay, and Start says to weld Bay
@@ -1419,7 +1420,18 @@ of a blueprint and builds it in a bay, part by part, where it can be seen. Phase
   blueprint doesn't fit) and green while a build is on.
 - **The crane** (`Source/Render/StationRender.cs`, drawn on every peer, nothing of it a part): runway rails along the bay's two long
   sides on the masts (on short legs with none), reaching back over the Core's hold, and one bridge per **fitting arm**: one arm for
-  each 16 Bay Blocks, at least one, at most 8 (`ConstructStation.Arms`). Each bridge runs to the hold, lowers its hook for the part,
+  each 16 Bay Blocks, at least one, at most 8 (`ConstructStation.Arms`). A runway longer than 12 m between supports is a deeper girder on
+  legs along the bay's sides, each braced in to the rail, and a bay wider than 12 m gets truss bridges (a 24 m span reads as a truss, not a
+  plank). A piece longer than 3 m hangs on a two-leg bridle from the hook block.
+- **Pick pads under its crane** (`ConstructStationPads.cs`, Sean 2026-11-21: "pick pads for pieces up to 14 t and 14 m long"). A Lay-down
+  Pad (or a Pad Tile pad) on the station's body whose deck lies within the bay's width, wholly past either end of the bay and within 20 m of
+  it, is a pick pad of the station itself (four at most, the nearest first). The runway is drawn on over it. Its fitting arms take a step's
+  part off it as they take one from the hold, up to `storage.pieces.lift` (14,000 kg on the station): the way a part too long or wide for
+  the 4.8 m hold (a 14 m stern on a Large Lay-down Pad) is built in without a Hall Crane. A large part is ordered onto it as onto a Loader
+  Arm's pick pad (`ConstructLifters.PickPadFor`), what lies there counts as held and is claimed for the build, and an arm's carry off a pad
+  goes on the wire (protocol 420) so a client's hook goes to the pad. With no pad the stuck note says to lay one; a part over 14 t says to
+  fit it by hand or with a Hall Crane. `--machine-blocks` names a station's arms and pick pads; the window tool's `station stock` puts
+  what is too big for the hold onto its pick pad. Each bridge runs to the hold, lowers its hook for the part,
   carries it to its place, lowers it and the weld flashes. The masts' tops carry lamps by the job: green building, amber costing,
   blinking red failed, white done, dark idle.
 - **The panel.** F on the station opens it: the blueprints on the left (shipped by group, then the player's own saved ones; a search box),
