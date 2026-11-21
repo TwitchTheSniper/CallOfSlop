@@ -1,0 +1,292 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Cloche Fore Bulkhead",
+  "description": "The bulkhead between the Cloche's entry room and its grow hall: cream walls over the dado, a dark-framed way through.",
+  "group": "Ship",
+  "section": "Cloche greenhouse ship",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 1500.0,
+  "health": 2500,
+  "armour": 10,
+  "material": "steel",
+  "color": "#d6cfb8",
+  "attachSeconds": 4.0,
+  "boxes": [
+    {
+      "min": [
+        -4.825,
+        1.175,
+        -11.275
+      ],
+      "max": [
+        -0.825,
+        5.875,
+        -10.975
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.825,
+        3.375,
+        -11.275
+      ],
+      "max": [
+        0.575,
+        5.875,
+        -10.975
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.575,
+        1.175,
+        -11.275
+      ],
+      "max": [
+        4.575,
+        5.875,
+        -10.975
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -4.795,
+        1.2,
+        -11.295
+      ],
+      "max": [
+        -0.827,
+        5.865,
+        -11.275
+      ],
+      "color": "#d6cfb8",
+      "detail": true,
+      "finish": "wall panelling"
+    },
+    {
+      "min": [
+        -0.825,
+        3.373,
+        -11.295
+      ],
+      "max": [
+        0.575,
+        5.865,
+        -11.275
+      ],
+      "color": "#d6cfb8",
+      "detail": true,
+      "finish": "wall panelling"
+    },
+    {
+      "min": [
+        0.577,
+        1.2,
+        -11.295
+      ],
+      "max": [
+        4.545,
+        5.865,
+        -11.275
+      ],
+      "color": "#d6cfb8",
+      "detail": true,
+      "finish": "wall panelling"
+    },
+    {
+      "min": [
+        -0.965,
+        1.202,
+        -11.325
+      ],
+      "max": [
+        -0.825,
+        3.515,
+        -11.273
+      ],
+      "color": "#2e302e",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        0.575,
+        1.202,
+        -11.325
+      ],
+      "max": [
+        0.715,
+        3.515,
+        -11.273
+      ],
+      "color": "#2e302e",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -0.825,
+        3.375,
+        -11.325
+      ],
+      "max": [
+        0.575,
+        3.515,
+        -11.273
+      ],
+      "color": "#2e302e",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -4.795,
+        1.2,
+        -10.975
+      ],
+      "max": [
+        -0.827,
+        5.865,
+        -10.955
+      ],
+      "color": "#d6cfb8",
+      "detail": true,
+      "finish": "wall panelling"
+    },
+    {
+      "min": [
+        -0.825,
+        3.373,
+        -10.975
+      ],
+      "max": [
+        0.575,
+        5.865,
+        -10.955
+      ],
+      "color": "#d6cfb8",
+      "detail": true,
+      "finish": "wall panelling"
+    },
+    {
+      "min": [
+        0.577,
+        1.2,
+        -10.975
+      ],
+      "max": [
+        4.545,
+        5.865,
+        -10.955
+      ],
+      "color": "#d6cfb8",
+      "detail": true,
+      "finish": "wall panelling"
+    },
+    {
+      "min": [
+        -0.965,
+        1.202,
+        -10.977
+      ],
+      "max": [
+        -0.825,
+        3.515,
+        -10.925
+      ],
+      "color": "#2e302e",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        0.575,
+        1.202,
+        -10.977
+      ],
+      "max": [
+        0.715,
+        3.515,
+        -10.925
+      ],
+      "color": "#2e302e",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -0.825,
+        3.375,
+        -10.977
+      ],
+      "max": [
+        0.575,
+        3.515,
+        -10.925
+      ],
+      "color": "#2e302e",
+      "detail": true,
+      "finish": "painted steel"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "lampHallL",
+      "at": [
+        -2.525,
+        4.475,
+        -10.975
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "lampHallR",
+      "at": [
+        2.275,
+        4.475,
+        -10.975
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "j0",
+      "at": [
+        -2.825,
+        1.175,
+        -11.125
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j1",
+      "at": [
+        -4.825,
+        3.525,
+        -11.125
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j2",
+      "at": [
+        4.575,
+        3.525,
+        -11.125
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "j3",
+      "at": [
+        -2.825,
+        5.875,
+        -11.125
+      ],
+      "dir": "+y"
+    }
+  ]
+}

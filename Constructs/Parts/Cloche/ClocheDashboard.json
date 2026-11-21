@@ -1,0 +1,1268 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Cloche Dashboard",
+  "description": "The Cloche's dashboard: a bus driver's dash with a sloped panel of dials and screens and a steering wheel, the flight computer in it. Fit it level, facing the seat.",
+  "group": "Ship",
+  "section": "Cloche greenhouse ship",
+  "role": "logic",
+  "tool": "wrench",
+  "logic": {
+    "kind": "flightstabilizer",
+    "gyro": 40000000
+  },
+  "config": [
+    {
+      "key": "keys",
+      "type": "choice",
+      "label": "Keys",
+      "group": "Control",
+      "options": [
+        "Auto",
+        "Rotorcraft",
+        "Plane",
+        "Rocket",
+        "Ship"
+      ],
+      "default": 0,
+      "tooltip": "What the keys mean. Auto: wings and a forward push make it a plane, nozzles a rocket, anything else a rotorcraft. Ship: turns every way, the nose follows the mouse. It finds what it can use by itself."
+    },
+    {
+      "key": "flightPreset",
+      "type": "choice",
+      "label": "Preset",
+      "group": "Control",
+      "options": [
+        "Normal",
+        "Docile",
+        "Sport"
+      ],
+      "default": 0,
+      "tooltip": "What auto means below: gentle, as it comes, or lively. Anything you set yourself stays."
+    },
+    {
+      "key": "strength",
+      "label": "Strength",
+      "group": "Control",
+      "unit": "%",
+      "min": 10,
+      "max": 300,
+      "step": 5,
+      "default": 100,
+      "tooltip": "How hard it corrects. Lower it if the craft shakes."
+    },
+    {
+      "key": "level",
+      "type": "toggle",
+      "label": "Stabilise level",
+      "group": "Control",
+      "default": true,
+      "tooltip": "Off: the keys ask for turning, and it stays at whatever angle you leave it."
+    },
+    {
+      "key": "mouseAim",
+      "type": "toggle",
+      "label": "Mouse aim",
+      "group": "Control",
+      "default": false,
+      "tooltip": "It flies where the seat looks."
+    },
+    {
+      "key": "invertPitch",
+      "type": "toggle",
+      "label": "Invert pitch",
+      "group": "Control",
+      "default": false,
+      "tooltip": "W lifts the nose and S drops it."
+    },
+    {
+      "key": "maxTilt",
+      "label": "Max lean",
+      "group": "Limits",
+      "unit": "deg",
+      "min": 0,
+      "max": 80,
+      "step": 1,
+      "default": 0,
+      "tooltip": "The most it leans. 0: the pattern's own."
+    },
+    {
+      "key": "maxTurn",
+      "label": "Max turn",
+      "group": "Limits",
+      "unit": "deg/s",
+      "min": 0,
+      "max": 360,
+      "step": 5,
+      "default": 0,
+      "tooltip": "The fastest it turns. 0: the pattern's own."
+    },
+    {
+      "key": "maxClimb",
+      "label": "Max climb",
+      "group": "Limits",
+      "unit": "m/s",
+      "min": 0,
+      "max": 200,
+      "step": 0.5,
+      "default": 0,
+      "tooltip": "The fastest it climbs. 0: the pattern's own."
+    },
+    {
+      "key": "maxSpeed",
+      "label": "Max speed",
+      "group": "Limits",
+      "unit": "m/s",
+      "min": 0,
+      "max": 1000,
+      "step": 1,
+      "default": 0,
+      "tooltip": "The speed the keys ask for. 0: the pattern's own."
+    },
+    {
+      "key": "maxDescent",
+      "label": "Max descent",
+      "group": "Limits",
+      "unit": "m/s",
+      "min": 0,
+      "max": 200,
+      "step": 0.5,
+      "default": 0,
+      "tooltip": "The fastest it comes down. 0: as Max climb."
+    },
+    {
+      "key": "trimPitch",
+      "label": "Trim, nose up",
+      "group": "Trim",
+      "unit": "deg",
+      "min": -30,
+      "max": 30,
+      "step": 0.5,
+      "default": 0,
+      "tooltip": "What it counts as level, nose up."
+    },
+    {
+      "key": "trimRoll",
+      "label": "Trim, right wing down",
+      "group": "Trim",
+      "unit": "deg",
+      "min": -30,
+      "max": 30,
+      "step": 0.5,
+      "default": 0,
+      "tooltip": "What it counts as level, right wing down."
+    },
+    {
+      "key": "autopilot",
+      "type": "toggle",
+      "label": "Autopilot",
+      "group": "Autopilot",
+      "default": false,
+      "tooltip": "On: it holds what the mode says. Its input and the Flight Panel set this too."
+    },
+    {
+      "key": "apMode",
+      "type": "choice",
+      "label": "Mode",
+      "group": "Autopilot",
+      "options": [
+        "Hold altitude",
+        "Hold heading",
+        "Hover",
+        "Waypoint",
+        "Return home"
+      ],
+      "default": 2,
+      "tooltip": "What it holds."
+    },
+    {
+      "key": "targetAlt",
+      "label": "Altitude",
+      "group": "Autopilot",
+      "unit": "m",
+      "min": 0,
+      "max": 20000,
+      "step": 1,
+      "default": 0,
+      "tooltip": "The height held. 0: where it was when engaged."
+    },
+    {
+      "key": "targetHeading",
+      "label": "Heading",
+      "group": "Autopilot",
+      "unit": "deg",
+      "min": -1,
+      "max": 360,
+      "step": 1,
+      "default": -1,
+      "tooltip": "The heading held, clockwise from north. -1: where it pointed when engaged."
+    },
+    {
+      "key": "waypointX",
+      "label": "Waypoint x",
+      "group": "Autopilot",
+      "unit": "m",
+      "min": -100000,
+      "max": 100000,
+      "step": 1,
+      "default": 0,
+      "tooltip": "The point it flies to, world x."
+    },
+    {
+      "key": "waypointZ",
+      "label": "Waypoint z",
+      "group": "Autopilot",
+      "unit": "m",
+      "min": -100000,
+      "max": 100000,
+      "step": 1,
+      "default": 0,
+      "tooltip": "The point it flies to, world z."
+    },
+    {
+      "key": "pitchRate",
+      "label": "Rate limit",
+      "group": "Pitch",
+      "unit": "deg/s",
+      "min": 0,
+      "max": 720,
+      "step": 5,
+      "default": 0,
+      "tooltip": "The fastest it turns this way. 0: Max turn.",
+      "advanced": true
+    },
+    {
+      "key": "pitchResponse",
+      "label": "Response (P)",
+      "group": "Pitch",
+      "unit": "%",
+      "min": 0,
+      "max": 400,
+      "step": 5,
+      "default": 0,
+      "tooltip": "How hard it goes for what is asked. Up: quicker; too much rocks. 0: auto.",
+      "advanced": true
+    },
+    {
+      "key": "pitchDamping",
+      "label": "Damping (D)",
+      "group": "Pitch",
+      "unit": "%",
+      "min": 0,
+      "max": 400,
+      "step": 5,
+      "default": 0,
+      "tooltip": "How hard it stops. Up: less overshoot; too much shakes. 0: auto.",
+      "advanced": true
+    },
+    {
+      "key": "pitchHold",
+      "label": "Hold (I)",
+      "group": "Pitch",
+      "unit": "%",
+      "min": 0,
+      "max": 400,
+      "step": 5,
+      "default": 0,
+      "tooltip": "How it works off a steady push. Up: it holds tighter; too much wanders. 0: auto.",
+      "advanced": true
+    },
+    {
+      "key": "pitchExpo",
+      "label": "Expo",
+      "group": "Pitch",
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "step": 5,
+      "default": 0,
+      "tooltip": "Soft around the middle of a wired stick. A key is all or nothing.",
+      "advanced": true
+    },
+    {
+      "key": "rollRate",
+      "label": "Rate limit",
+      "group": "Roll",
+      "unit": "deg/s",
+      "min": 0,
+      "max": 720,
+      "step": 5,
+      "default": 0,
+      "tooltip": "The fastest it turns this way. 0: Max turn.",
+      "advanced": true
+    },
+    {
+      "key": "rollResponse",
+      "label": "Response (P)",
+      "group": "Roll",
+      "unit": "%",
+      "min": 0,
+      "max": 400,
+      "step": 5,
+      "default": 0,
+      "tooltip": "How hard it goes for what is asked. Up: quicker; too much rocks. 0: auto.",
+      "advanced": true
+    },
+    {
+      "key": "rollDamping",
+      "label": "Damping (D)",
+      "group": "Roll",
+      "unit": "%",
+      "min": 0,
+      "max": 400,
+      "step": 5,
+      "default": 0,
+      "tooltip": "How hard it stops. Up: less overshoot; too much shakes. 0: auto.",
+      "advanced": true
+    },
+    {
+      "key": "rollHold",
+      "label": "Hold (I)",
+      "group": "Roll",
+      "unit": "%",
+      "min": 0,
+      "max": 400,
+      "step": 5,
+      "default": 0,
+      "tooltip": "How it works off a steady push. Up: it holds tighter; too much wanders. 0: auto.",
+      "advanced": true
+    },
+    {
+      "key": "rollExpo",
+      "label": "Expo",
+      "group": "Roll",
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "step": 5,
+      "default": 0,
+      "tooltip": "Soft around the middle of a wired stick. A key is all or nothing.",
+      "advanced": true
+    },
+    {
+      "key": "yawRate",
+      "label": "Rate limit",
+      "group": "Yaw",
+      "unit": "deg/s",
+      "min": 0,
+      "max": 720,
+      "step": 5,
+      "default": 0,
+      "tooltip": "The fastest it turns this way. 0: Max turn.",
+      "advanced": true
+    },
+    {
+      "key": "yawResponse",
+      "label": "Response (P)",
+      "group": "Yaw",
+      "unit": "%",
+      "min": 0,
+      "max": 400,
+      "step": 5,
+      "default": 0,
+      "tooltip": "How hard it goes for what is asked. Up: quicker; too much rocks. 0: auto.",
+      "advanced": true
+    },
+    {
+      "key": "yawDamping",
+      "label": "Damping (D)",
+      "group": "Yaw",
+      "unit": "%",
+      "min": 0,
+      "max": 400,
+      "step": 5,
+      "default": 0,
+      "tooltip": "How hard it stops. Up: less overshoot; too much shakes. 0: auto.",
+      "advanced": true
+    },
+    {
+      "key": "yawHold",
+      "label": "Hold (I)",
+      "group": "Yaw",
+      "unit": "%",
+      "min": 0,
+      "max": 400,
+      "step": 5,
+      "default": 0,
+      "tooltip": "How it works off a steady push. Up: it holds tighter; too much wanders. 0: auto.",
+      "advanced": true
+    },
+    {
+      "key": "yawExpo",
+      "label": "Expo",
+      "group": "Yaw",
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "step": 5,
+      "default": 0,
+      "tooltip": "Soft around the middle of a wired stick. A key is all or nothing.",
+      "advanced": true
+    },
+    {
+      "key": "climbResponse",
+      "label": "Response (P)",
+      "group": "Climb",
+      "unit": "%",
+      "min": 0,
+      "max": 400,
+      "step": 5,
+      "default": 0,
+      "tooltip": "How hard it goes for what is asked. Up: quicker; too much rocks. 0: auto.",
+      "advanced": true
+    },
+    {
+      "key": "climbDamping",
+      "label": "Damping (D)",
+      "group": "Climb",
+      "unit": "%",
+      "min": 0,
+      "max": 400,
+      "step": 5,
+      "default": 0,
+      "tooltip": "How hard it stops. Up: less overshoot; too much shakes. 0: auto.",
+      "advanced": true
+    },
+    {
+      "key": "climbHold",
+      "label": "Hold (I)",
+      "group": "Climb",
+      "unit": "%",
+      "min": 0,
+      "max": 400,
+      "step": 5,
+      "default": 0,
+      "tooltip": "How it works off a steady push. Up: it holds tighter; too much wanders. 0: auto.",
+      "advanced": true
+    },
+    {
+      "key": "climbExpo",
+      "label": "Expo",
+      "group": "Climb",
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "step": 5,
+      "default": 0,
+      "tooltip": "Soft around the middle of a wired stick. A key is all or nothing.",
+      "advanced": true
+    },
+    {
+      "key": "throttleCurve",
+      "label": "Throttle curve",
+      "group": "Feel",
+      "unit": "%",
+      "min": -100,
+      "max": 100,
+      "step": 5,
+      "default": 0,
+      "tooltip": "Above 0: finer low down. Below 0: finer high up.",
+      "advanced": true
+    },
+    {
+      "key": "maxBank",
+      "label": "Max bank",
+      "group": "Feel",
+      "unit": "deg",
+      "min": 0,
+      "max": 85,
+      "step": 1,
+      "default": 0,
+      "tooltip": "The most it banks. 0: Max lean.",
+      "advanced": true
+    },
+    {
+      "key": "maxPitchAngle",
+      "label": "Max pitch",
+      "group": "Feel",
+      "unit": "deg",
+      "min": 0,
+      "max": 85,
+      "step": 1,
+      "default": 0,
+      "tooltip": "The most it pitches. 0: Max lean.",
+      "advanced": true
+    },
+    {
+      "key": "turnCoord",
+      "label": "Turn coordination",
+      "group": "Feel",
+      "unit": "%",
+      "min": 0,
+      "max": 200,
+      "step": 5,
+      "default": 0,
+      "tooltip": "How much the rudder follows a bank. 0: auto, all of it.",
+      "advanced": true
+    },
+    {
+      "key": "autoLevel",
+      "label": "Auto-level",
+      "group": "Feel",
+      "unit": "%",
+      "min": 0,
+      "max": 400,
+      "step": 5,
+      "default": 0,
+      "tooltip": "How hard it comes level when let go. 0: auto.",
+      "advanced": true
+    },
+    {
+      "key": "windHold",
+      "label": "Wind hold",
+      "group": "Feel",
+      "unit": "%",
+      "min": 0,
+      "max": 400,
+      "step": 5,
+      "default": 0,
+      "tooltip": "How fast it leans into a steady drift. 0: auto.",
+      "advanced": true
+    },
+    {
+      "key": "landingAssist",
+      "label": "Landing assist",
+      "group": "Feel",
+      "unit": "m",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "default": 0,
+      "tooltip": "Below this height it comes down gently. 0: off.",
+      "advanced": true
+    },
+    {
+      "key": "collectiveRange",
+      "label": "Collective range",
+      "group": "Feel",
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "step": 5,
+      "default": 0,
+      "tooltip": "The most of its rotors' push it uses. 0: all of it.",
+      "advanced": true
+    },
+    {
+      "key": "thrustLimit",
+      "label": "Thrust limit",
+      "group": "Feel",
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "step": 5,
+      "default": 0,
+      "tooltip": "The most of its thrusters' push it uses. 0: all of it.",
+      "advanced": true
+    },
+    {
+      "key": "waypointY",
+      "label": "Waypoint y",
+      "group": "Autopilot",
+      "unit": "m",
+      "min": -100000,
+      "max": 100000,
+      "step": 1,
+      "default": 0,
+      "tooltip": "The point it flies to, world y: only on a round world, where x and z don't place it."
+    },
+    {
+      "key": "homeY",
+      "hidden": true,
+      "unit": "m",
+      "min": -100000,
+      "max": 100000,
+      "default": 0
+    },
+    {
+      "key": "homeX",
+      "hidden": true,
+      "unit": "m",
+      "min": -100000,
+      "max": 100000,
+      "default": 0
+    },
+    {
+      "key": "homeZ",
+      "hidden": true,
+      "unit": "m",
+      "min": -100000,
+      "max": 100000,
+      "default": 0
+    },
+    {
+      "key": "dampeners",
+      "type": "toggle",
+      "label": "Inertia dampeners",
+      "group": "Control",
+      "default": true,
+      "tooltip": "Ship keys: on, it cancels its drift and stops when let go. Off, it coasts and the keys only burn: match a ship by hand. The seat's dampener key flips it. The autopilot and orders fly with them on."
+    },
+    {
+      "key": "aiCrew",
+      "type": "choice",
+      "label": "AI crew",
+      "group": "Crew",
+      "options": [
+        "Off",
+        "Fights strangers",
+        "Fights everyone"
+      ],
+      "default": 0,
+      "tooltip": "A crew flies and fights it from its seats: it closes on the nearest target in 2.5 km, keeps its guns' range and fires. Strangers: outside its owner's faction. A player at the helm takes over."
+    }
+  ],
+  "faces": "forward",
+  "faceAxis": "-z",
+  "mass": 260.0,
+  "health": 800,
+  "armour": 8,
+  "material": "steel",
+  "color": "#262a2d",
+  "attachSeconds": 3.0,
+  "boxes": [
+    {
+      "min": [
+        -1.1,
+        0.0,
+        -0.32
+      ],
+      "max": [
+        1.1,
+        0.78,
+        0.05
+      ],
+      "color": "#262a2d",
+      "finish": "plastic"
+    },
+    {
+      "min": [
+        -1.1,
+        0.7618,
+        -0.3284
+      ],
+      "max": [
+        1.1,
+        0.9682,
+        0.0584
+      ],
+      "color": "#262a2d",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          -1.1,
+          0.7618,
+          0.0416
+        ],
+        [
+          -1.1,
+          0.7982,
+          0.0584
+        ],
+        [
+          1.1,
+          0.7618,
+          0.0416
+        ],
+        [
+          1.1,
+          0.7982,
+          0.0584
+        ],
+        [
+          1.1,
+          0.9318,
+          -0.3284
+        ],
+        [
+          1.1,
+          0.9682,
+          -0.3116
+        ],
+        [
+          -1.1,
+          0.9318,
+          -0.3284
+        ],
+        [
+          -1.1,
+          0.9682,
+          -0.3116
+        ]
+      ],
+      "paintable": false,
+      "finish": "plastic"
+    },
+    {
+      "min": [
+        -0.7,
+        0.7773,
+        -0.2505
+      ],
+      "max": [
+        -0.2,
+        0.9427,
+        0.0305
+      ],
+      "color": "#5fc07a",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          -0.7,
+          0.7773,
+          0.0095
+        ],
+        [
+          -0.7,
+          0.8227,
+          0.0305
+        ],
+        [
+          -0.2,
+          0.7773,
+          0.0095
+        ],
+        [
+          -0.2,
+          0.8227,
+          0.0305
+        ],
+        [
+          -0.2,
+          0.8973,
+          -0.2505
+        ],
+        [
+          -0.2,
+          0.9427,
+          -0.2295
+        ],
+        [
+          -0.7,
+          0.8973,
+          -0.2505
+        ],
+        [
+          -0.7,
+          0.9427,
+          -0.2295
+        ]
+      ],
+      "paintable": false,
+      "glow": true
+    },
+    {
+      "min": [
+        -0.1,
+        0.7773,
+        -0.2505
+      ],
+      "max": [
+        0.3,
+        0.9427,
+        0.0305
+      ],
+      "color": "#e8c050",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          -0.1,
+          0.7773,
+          0.0095
+        ],
+        [
+          -0.1,
+          0.8227,
+          0.0305
+        ],
+        [
+          0.3,
+          0.7773,
+          0.0095
+        ],
+        [
+          0.3,
+          0.8227,
+          0.0305
+        ],
+        [
+          0.3,
+          0.8973,
+          -0.2505
+        ],
+        [
+          0.3,
+          0.9427,
+          -0.2295
+        ],
+        [
+          -0.1,
+          0.8973,
+          -0.2505
+        ],
+        [
+          -0.1,
+          0.9427,
+          -0.2295
+        ]
+      ],
+      "paintable": false,
+      "glow": true
+    },
+    {
+      "min": [
+        0.45,
+        0.7773,
+        -0.2505
+      ],
+      "max": [
+        0.95,
+        0.9427,
+        0.0305
+      ],
+      "color": "#78c8e8",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          0.45,
+          0.7773,
+          0.0095
+        ],
+        [
+          0.45,
+          0.8227,
+          0.0305
+        ],
+        [
+          0.95,
+          0.7773,
+          0.0095
+        ],
+        [
+          0.95,
+          0.8227,
+          0.0305
+        ],
+        [
+          0.95,
+          0.8973,
+          -0.2505
+        ],
+        [
+          0.95,
+          0.9427,
+          -0.2295
+        ],
+        [
+          0.45,
+          0.8973,
+          -0.2505
+        ],
+        [
+          0.45,
+          0.9427,
+          -0.2295
+        ]
+      ],
+      "paintable": false,
+      "glow": true
+    },
+    {
+      "min": [
+        -0.95,
+        0.55,
+        0.05
+      ],
+      "max": [
+        -0.85,
+        0.62,
+        0.07
+      ],
+      "color": "#f0a830",
+      "detail": true,
+      "finish": "plastic"
+    },
+    {
+      "min": [
+        -0.61,
+        0.552,
+        0.05
+      ],
+      "max": [
+        -0.51,
+        0.62,
+        0.07
+      ],
+      "color": "#d8d4c8",
+      "detail": true,
+      "finish": "plastic"
+    },
+    {
+      "min": [
+        -0.27,
+        0.55,
+        0.05
+      ],
+      "max": [
+        -0.17,
+        0.62,
+        0.07
+      ],
+      "color": "#f0a830",
+      "detail": true,
+      "finish": "plastic"
+    },
+    {
+      "min": [
+        0.07,
+        0.55,
+        0.05
+      ],
+      "max": [
+        0.17,
+        0.62,
+        0.07
+      ],
+      "color": "#d8d4c8",
+      "detail": true,
+      "finish": "plastic"
+    },
+    {
+      "min": [
+        0.41,
+        0.55,
+        0.05
+      ],
+      "max": [
+        0.51,
+        0.62,
+        0.07
+      ],
+      "color": "#f0a830",
+      "detail": true,
+      "finish": "plastic"
+    },
+    {
+      "min": [
+        0.75,
+        0.55,
+        0.05
+      ],
+      "max": [
+        0.85,
+        0.62,
+        0.07
+      ],
+      "color": "#d8d4c8",
+      "detail": true,
+      "finish": "plastic"
+    },
+    {
+      "min": [
+        -0.6,
+        0.55,
+        0.05
+      ],
+      "max": [
+        -0.5,
+        0.75,
+        0.3
+      ],
+      "color": "#2e302e",
+      "detail": true,
+      "finish": "plastic"
+    },
+    {
+      "min": [
+        -0.7818,
+        0.6417,
+        0.1991
+      ],
+      "max": [
+        -0.3182,
+        1.0413,
+        0.4857
+      ],
+      "color": "#2e302e",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          -0.3182,
+          0.9013,
+          0.3651
+        ],
+        [
+          -0.3803,
+          0.9901,
+          0.4258
+        ],
+        [
+          -0.4879,
+          1.0413,
+          0.4609
+        ],
+        [
+          -0.6121,
+          1.0413,
+          0.4609
+        ],
+        [
+          -0.7197,
+          0.9901,
+          0.4258
+        ],
+        [
+          -0.7818,
+          0.9013,
+          0.3651
+        ],
+        [
+          -0.7818,
+          0.7987,
+          0.2949
+        ],
+        [
+          -0.7197,
+          0.7099,
+          0.2342
+        ],
+        [
+          -0.6121,
+          0.6587,
+          0.1991
+        ],
+        [
+          -0.4879,
+          0.6587,
+          0.1991
+        ],
+        [
+          -0.3803,
+          0.7099,
+          0.2342
+        ],
+        [
+          -0.3182,
+          0.7987,
+          0.2949
+        ],
+        [
+          -0.3182,
+          0.8843,
+          0.3898
+        ],
+        [
+          -0.3803,
+          0.9731,
+          0.4506
+        ],
+        [
+          -0.4879,
+          1.0244,
+          0.4857
+        ],
+        [
+          -0.6121,
+          1.0244,
+          0.4857
+        ],
+        [
+          -0.7197,
+          0.9731,
+          0.4506
+        ],
+        [
+          -0.7818,
+          0.8843,
+          0.3898
+        ],
+        [
+          -0.7818,
+          0.7818,
+          0.3197
+        ],
+        [
+          -0.7197,
+          0.693,
+          0.2589
+        ],
+        [
+          -0.6121,
+          0.6417,
+          0.2239
+        ],
+        [
+          -0.4879,
+          0.6417,
+          0.2239
+        ],
+        [
+          -0.3803,
+          0.693,
+          0.2589
+        ],
+        [
+          -0.3182,
+          0.7818,
+          0.3197
+        ]
+      ],
+      "paintable": false,
+      "finish": "rubber"
+    },
+    {
+      "min": [
+        -0.6176,
+        0.7688,
+        0.2836
+      ],
+      "max": [
+        -0.4824,
+        0.9115,
+        0.4053
+      ],
+      "color": "#7d817e",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          -0.4824,
+          0.8706,
+          0.332
+        ],
+        [
+          -0.5005,
+          0.8965,
+          0.3497
+        ],
+        [
+          -0.5319,
+          0.9115,
+          0.3599
+        ],
+        [
+          -0.5681,
+          0.9115,
+          0.3599
+        ],
+        [
+          -0.5995,
+          0.8965,
+          0.3497
+        ],
+        [
+          -0.6176,
+          0.8706,
+          0.332
+        ],
+        [
+          -0.6176,
+          0.8407,
+          0.3115
+        ],
+        [
+          -0.5995,
+          0.8148,
+          0.2938
+        ],
+        [
+          -0.5681,
+          0.7998,
+          0.2836
+        ],
+        [
+          -0.5319,
+          0.7998,
+          0.2836
+        ],
+        [
+          -0.5005,
+          0.8148,
+          0.2938
+        ],
+        [
+          -0.4824,
+          0.8407,
+          0.3115
+        ],
+        [
+          -0.4824,
+          0.8395,
+          0.3774
+        ],
+        [
+          -0.5005,
+          0.8654,
+          0.3951
+        ],
+        [
+          -0.5319,
+          0.8804,
+          0.4053
+        ],
+        [
+          -0.5681,
+          0.8804,
+          0.4053
+        ],
+        [
+          -0.5995,
+          0.8654,
+          0.3951
+        ],
+        [
+          -0.6176,
+          0.8395,
+          0.3774
+        ],
+        [
+          -0.6176,
+          0.8096,
+          0.3569
+        ],
+        [
+          -0.5995,
+          0.7837,
+          0.3392
+        ],
+        [
+          -0.5681,
+          0.7688,
+          0.329
+        ],
+        [
+          -0.5319,
+          0.7688,
+          0.329
+        ],
+        [
+          -0.5005,
+          0.7837,
+          0.3392
+        ],
+        [
+          -0.4824,
+          0.8096,
+          0.3569
+        ]
+      ],
+      "paintable": false,
+      "finish": "painted steel"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

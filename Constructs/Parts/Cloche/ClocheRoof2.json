@@ -1,0 +1,612 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Cloche Roof 2",
+  "description": "A length of the Cloche's roof: dark red deck plate the greenhouses stand on, the cream ceiling of the grow hall under it.",
+  "group": "Ship",
+  "section": "Cloche greenhouse ship",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 5000.0,
+  "health": 5000,
+  "armour": 20,
+  "material": "steel",
+  "color": "#8e3029",
+  "attachSeconds": 6.0,
+  "boxes": [
+    {
+      "min": [
+        -5.125,
+        5.875,
+        -10.925
+      ],
+      "max": [
+        4.875,
+        6.475,
+        -8.125
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -5.125,
+        5.875,
+        -8.125
+      ],
+      "max": [
+        -2.925,
+        6.475,
+        -7.025
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -1.725,
+        5.875,
+        -8.125
+      ],
+      "max": [
+        1.475,
+        6.475,
+        -7.025
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        2.675,
+        5.875,
+        -8.125
+      ],
+      "max": [
+        4.875,
+        6.475,
+        -7.025
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -5.125,
+        5.875,
+        -7.025
+      ],
+      "max": [
+        4.875,
+        6.475,
+        -4.525
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -4.425,
+        6.455,
+        -10.923
+      ],
+      "max": [
+        4.175,
+        6.475,
+        -8.127
+      ],
+      "color": "#8e3029",
+      "detail": true,
+      "finish": "painted deck plate"
+    },
+    {
+      "min": [
+        -4.425,
+        6.455,
+        -8.123
+      ],
+      "max": [
+        -2.923,
+        6.475,
+        -7.027
+      ],
+      "color": "#8e3029",
+      "detail": true,
+      "finish": "painted deck plate"
+    },
+    {
+      "min": [
+        -1.725,
+        6.455,
+        -8.123
+      ],
+      "max": [
+        1.477,
+        6.475,
+        -7.027
+      ],
+      "color": "#8e3029",
+      "detail": true,
+      "finish": "painted deck plate"
+    },
+    {
+      "min": [
+        2.673,
+        6.455,
+        -8.123
+      ],
+      "max": [
+        4.175,
+        6.475,
+        -7.027
+      ],
+      "color": "#8e3029",
+      "detail": true,
+      "finish": "painted deck plate"
+    },
+    {
+      "min": [
+        -4.425,
+        6.455,
+        -7.023
+      ],
+      "max": [
+        4.175,
+        6.475,
+        -4.527
+      ],
+      "color": "#8e3029",
+      "detail": true,
+      "finish": "painted deck plate"
+    },
+    {
+      "min": [
+        -4.825,
+        5.855,
+        -10.923
+      ],
+      "max": [
+        4.575,
+        5.875,
+        -8.127
+      ],
+      "color": "#c4bfac",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -4.825,
+        5.855,
+        -8.123
+      ],
+      "max": [
+        -2.927,
+        5.875,
+        -7.027
+      ],
+      "color": "#c4bfac",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -1.725,
+        5.855,
+        -8.123
+      ],
+      "max": [
+        1.473,
+        5.875,
+        -7.027
+      ],
+      "color": "#c4bfac",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        2.677,
+        5.855,
+        -8.123
+      ],
+      "max": [
+        4.575,
+        5.875,
+        -7.027
+      ],
+      "color": "#c4bfac",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -4.825,
+        5.855,
+        -7.023
+      ],
+      "max": [
+        4.575,
+        5.875,
+        -4.527
+      ],
+      "color": "#c4bfac",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -2.945,
+        5.865,
+        -8.145
+      ],
+      "max": [
+        -2.925,
+        6.479,
+        -7.005
+      ],
+      "color": "#2e302e",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -1.723,
+        5.865,
+        -8.145
+      ],
+      "max": [
+        -1.705,
+        6.479,
+        -7.005
+      ],
+      "color": "#2e302e",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -2.925,
+        5.865,
+        -8.145
+      ],
+      "max": [
+        -1.725,
+        6.479,
+        -8.125
+      ],
+      "color": "#2e302e",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -2.925,
+        5.865,
+        -7.025
+      ],
+      "max": [
+        -1.725,
+        6.479,
+        -7.005
+      ],
+      "color": "#2e302e",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -3.025,
+        6.475,
+        -8.225
+      ],
+      "max": [
+        -1.625,
+        6.487,
+        -8.145
+      ],
+      "color": "#e8b317",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -3.025,
+        6.475,
+        -7.005
+      ],
+      "max": [
+        -1.625,
+        6.487,
+        -6.925
+      ],
+      "color": "#e8b317",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        1.455,
+        5.865,
+        -8.145
+      ],
+      "max": [
+        1.475,
+        6.479,
+        -7.005
+      ],
+      "color": "#2e302e",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        2.675,
+        5.865,
+        -8.145
+      ],
+      "max": [
+        2.695,
+        6.479,
+        -7.005
+      ],
+      "color": "#2e302e",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        1.475,
+        5.865,
+        -8.145
+      ],
+      "max": [
+        2.675,
+        6.479,
+        -8.125
+      ],
+      "color": "#2e302e",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        1.475,
+        5.865,
+        -7.025
+      ],
+      "max": [
+        2.675,
+        6.479,
+        -7.005
+      ],
+      "color": "#2e302e",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        1.375,
+        6.475,
+        -8.225
+      ],
+      "max": [
+        2.775,
+        6.487,
+        -8.145
+      ],
+      "color": "#e8b317",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        1.375,
+        6.475,
+        -7.005
+      ],
+      "max": [
+        2.775,
+        6.487,
+        -6.925
+      ],
+      "color": "#e8b317",
+      "detail": true,
+      "finish": "hazard paint"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bedP02",
+      "at": [
+        -1.125,
+        6.475,
+        -9.125
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "bedP03",
+      "at": [
+        -1.125,
+        6.475,
+        -7.125
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "bedP04",
+      "at": [
+        -1.125,
+        6.475,
+        -5.125
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "bedP12",
+      "at": [
+        -3.525,
+        6.475,
+        -9.125
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "bedP13",
+      "at": [
+        -3.525,
+        6.475,
+        -7.125
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "bedP14",
+      "at": [
+        -3.525,
+        6.475,
+        -5.125
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "bedS02",
+      "at": [
+        0.875,
+        6.475,
+        -9.125
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "bedS03",
+      "at": [
+        0.875,
+        6.475,
+        -7.125
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "bedS04",
+      "at": [
+        0.875,
+        6.475,
+        -5.125
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "bedS12",
+      "at": [
+        3.275,
+        6.475,
+        -9.125
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "bedS13",
+      "at": [
+        3.275,
+        6.475,
+        -7.125
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "bedS14",
+      "at": [
+        3.275,
+        6.475,
+        -5.125
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "hatchP",
+      "at": [
+        -2.325,
+        6.175,
+        -7.025
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "hatchS",
+      "at": [
+        2.075,
+        6.175,
+        -7.025
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j0",
+      "at": [
+        -4.975,
+        5.875,
+        -9.525
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j1",
+      "at": [
+        4.725,
+        5.875,
+        -9.525
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j2",
+      "at": [
+        -0.125,
+        6.175,
+        -10.925
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j3",
+      "at": [
+        -0.125,
+        6.175,
+        -4.525
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "j4",
+      "at": [
+        -0.545,
+        6.475,
+        -9.525
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j5",
+      "at": [
+        -0.545,
+        6.475,
+        -5.625
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j6",
+      "at": [
+        0.295,
+        6.475,
+        -9.525
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j7",
+      "at": [
+        0.295,
+        6.475,
+        -5.625
+      ],
+      "dir": "+y"
+    }
+  ]
+}

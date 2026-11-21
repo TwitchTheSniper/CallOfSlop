@@ -1,0 +1,242 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Cloche Roof 3",
+  "description": "A length of the Cloche's roof: dark red deck plate the greenhouses stand on, the cream ceiling of the grow hall under it.",
+  "group": "Ship",
+  "section": "Cloche greenhouse ship",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 5000.0,
+  "health": 5000,
+  "armour": 20,
+  "material": "steel",
+  "color": "#8e3029",
+  "attachSeconds": 6.0,
+  "boxes": [
+    {
+      "min": [
+        -5.125,
+        5.875,
+        -4.525
+      ],
+      "max": [
+        4.875,
+        6.475,
+        1.875
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -4.425,
+        6.455,
+        -4.523
+      ],
+      "max": [
+        4.175,
+        6.475,
+        1.873
+      ],
+      "color": "#8e3029",
+      "detail": true,
+      "finish": "painted deck plate"
+    },
+    {
+      "min": [
+        -4.825,
+        5.855,
+        -4.523
+      ],
+      "max": [
+        4.575,
+        5.875,
+        1.873
+      ],
+      "color": "#c4bfac",
+      "detail": true,
+      "finish": "painted plating"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bedP05",
+      "at": [
+        -1.125,
+        6.475,
+        -3.125
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "bedP06",
+      "at": [
+        -1.125,
+        6.475,
+        -1.125
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "bedP07",
+      "at": [
+        -1.125,
+        6.475,
+        0.875
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "bedP15",
+      "at": [
+        -3.525,
+        6.475,
+        -3.125
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "bedP16",
+      "at": [
+        -3.525,
+        6.475,
+        -1.125
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "bedP17",
+      "at": [
+        -3.525,
+        6.475,
+        0.875
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "bedS05",
+      "at": [
+        0.875,
+        6.475,
+        -3.125
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "bedS06",
+      "at": [
+        0.875,
+        6.475,
+        -1.125
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "bedS07",
+      "at": [
+        0.875,
+        6.475,
+        0.875
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "bedS15",
+      "at": [
+        3.275,
+        6.475,
+        -3.125
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "bedS16",
+      "at": [
+        3.275,
+        6.475,
+        -1.125
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "bedS17",
+      "at": [
+        3.275,
+        6.475,
+        0.875
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j0",
+      "at": [
+        -4.975,
+        5.875,
+        -1.325
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j1",
+      "at": [
+        4.725,
+        5.875,
+        -1.325
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j2",
+      "at": [
+        -0.125,
+        6.175,
+        -4.525
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j3",
+      "at": [
+        -0.125,
+        6.175,
+        1.875
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "j4",
+      "at": [
+        -0.545,
+        6.475,
+        -1.825
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j5",
+      "at": [
+        -0.545,
+        6.475,
+        1.375
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j6",
+      "at": [
+        0.295,
+        6.475,
+        -1.825
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j7",
+      "at": [
+        0.295,
+        6.475,
+        1.375
+      ],
+      "dir": "+y"
+    }
+  ]
+}

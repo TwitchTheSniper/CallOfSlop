@@ -1,0 +1,351 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Cloche Keel 3",
+  "description": "A length of the Cloche's keel: the deck slab, the dark chassis band under the red hull, the belly plate, two landing skids and a tank in the slab for the lift jets hung under it.",
+  "group": "Ship",
+  "section": "Cloche greenhouse ship",
+  "role": "fueltank",
+  "tool": "welder",
+  "fuelTank": {
+    "capacity": 900
+  },
+  "mass": 12000.0,
+  "health": 9000,
+  "armour": 30,
+  "material": "steel",
+  "color": "#242624",
+  "attachSeconds": 8.0,
+  "boxes": [
+    {
+      "min": [
+        -4.825,
+        0.375,
+        -4.525
+      ],
+      "max": [
+        4.575,
+        1.175,
+        1.875
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -4.821,
+        1.175,
+        -4.522
+      ],
+      "max": [
+        4.571,
+        1.195,
+        1.872
+      ],
+      "color": "#3e403c",
+      "detail": true,
+      "finish": "painted deck plate"
+    },
+    {
+      "min": [
+        -4.985,
+        0.375,
+        -4.525
+      ],
+      "max": [
+        -4.725,
+        0.979,
+        1.875
+      ],
+      "color": "#242624",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -3.625,
+        -0.125,
+        -4.175
+      ],
+      "max": [
+        -3.025,
+        0.375,
+        1.525
+      ],
+      "color": "#242624",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -3.675,
+        -0.065,
+        -4.025
+      ],
+      "max": [
+        -2.975,
+        0.015,
+        1.375
+      ],
+      "color": "#e8b317",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -4.525,
+        0.075,
+        -3.445
+      ],
+      "max": [
+        -3.625,
+        0.371,
+        -3.205
+      ],
+      "color": "#2e302e",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -4.525,
+        0.075,
+        -1.245
+      ],
+      "max": [
+        -3.625,
+        0.371,
+        -1.005
+      ],
+      "color": "#2e302e",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        4.475,
+        0.375,
+        -4.525
+      ],
+      "max": [
+        4.735,
+        0.979,
+        1.875
+      ],
+      "color": "#242624",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        2.775,
+        -0.125,
+        -4.175
+      ],
+      "max": [
+        3.375,
+        0.375,
+        1.525
+      ],
+      "color": "#242624",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        2.725,
+        -0.065,
+        -4.025
+      ],
+      "max": [
+        3.425,
+        0.015,
+        1.375
+      ],
+      "color": "#e8b317",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        3.375,
+        0.075,
+        -3.445
+      ],
+      "max": [
+        4.275,
+        0.371,
+        -3.205
+      ],
+      "color": "#2e302e",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        3.375,
+        0.075,
+        -1.245
+      ],
+      "max": [
+        4.275,
+        0.371,
+        -1.005
+      ],
+      "color": "#2e302e",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -4.965,
+        0.35,
+        -4.521
+      ],
+      "max": [
+        4.715,
+        0.372,
+        1.871
+      ],
+      "color": "#2e302e",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -3.025,
+        0.095,
+        -3.025
+      ],
+      "max": [
+        2.775,
+        0.235,
+        -2.825
+      ],
+      "color": "#2e302e",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -3.025,
+        0.095,
+        0.175
+      ],
+      "max": [
+        2.775,
+        0.235,
+        0.375
+      ],
+      "color": "#2e302e",
+      "detail": true,
+      "finish": "dirty steel"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "rackP-4.2",
+      "at": [
+        -4.275,
+        1.175,
+        -4.325
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "rackP-1.6",
+      "at": [
+        -4.275,
+        1.175,
+        -1.725
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "rackP1.0",
+      "at": [
+        -4.275,
+        1.175,
+        0.875
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "rackS-4.2",
+      "at": [
+        4.025,
+        1.175,
+        -4.325
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "rackS-1.6",
+      "at": [
+        4.025,
+        1.175,
+        -1.725
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "rackS1.0",
+      "at": [
+        4.025,
+        1.175,
+        0.875
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "rackM-2.8",
+      "at": [
+        -0.125,
+        1.175,
+        -2.925
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "rackM-0.2",
+      "at": [
+        -0.125,
+        1.175,
+        -0.325
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j0",
+      "at": [
+        -0.125,
+        0.775,
+        -4.525
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j1",
+      "at": [
+        -0.125,
+        0.775,
+        1.875
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "j2",
+      "at": [
+        -4.825,
+        0.775,
+        -1.325
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j3",
+      "at": [
+        4.575,
+        0.775,
+        -1.325
+      ],
+      "dir": "+x"
+    }
+  ]
+}
