@@ -688,7 +688,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 409: the Dibber Lander's 23 parts (Constructs/Parts/Dibber, Karl 2026-11-21): a new part folder shifts the ids after it.
     // 410: the Hall Crane (Sean, 2026-11-21): Crane Rail Block and Crane Core part files come (ids move); a hall crane's span, lift
     //   and drop are worked out from its rails on each peer.
-    public const ushort ProtocolVersion = 410;
+    // 411: the Grow Former (Sean, 2026-11-21): one Grow Former Core and its Former Block replace the twelve Wheel, Fan and Airframe Formers
+    //   (part files go and come, ids move); CfgKey GrowMakes at the end.
+    public const ushort ProtocolVersion = 411;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Fabric Flyer",
-  "description": "The plane a workshop can make: cloth off an Airframe Former, a wooden prop off a Fan Former, an Engine. Shift and Ctrl set the throttle, S lifts the nose, A and D bank and turn.",
+  "description": "The plane a workshop can make: a cloth wing and a wooden prop off a Grow Former, an Engine. Shift and Ctrl set the throttle, S lifts the nose, A and D bank and turn.",
   "steps": [
     {
       "part": "Frame Block"
