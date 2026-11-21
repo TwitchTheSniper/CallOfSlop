@@ -156,6 +156,12 @@ Press's or Die Lathe's Piece in a steel feed table in the bay's mouth, its Piece
 seat themselves: the implicit Power in slides from the middle of the bounds' face onto the nearest drawn face
 (`PortMounts.Seat`), and a data link ends on the body when the part's middle is in the air (`ConstructRoutes.DataSeat`).
 
+**One port look on every machine** (Sean 2026-11-21): a block machine's chute, pipe or conveyor port is drawn with
+`MachineLook.Port`: a dark collar standing proud of the body on a bolted flange, a band round it in the side's colour (white
+in, orange out) and the shared mouth at its top. The declared port's point stays on the body's face (a link leaves the surface
+straight out, through the collar), and the spout stops 3 cm short of it. The Extruder Core's chute is the first (on a grating over
+its hopper); each machine's rework PR moves its ports onto it.
+
 **The tiered buildings** (`TierMachine.cs`, over `TierStyle`'s bodies; phase 2). A tier keeps its own body and palette
 ([Machine tiers](production.md#machine-tiers)), so the language goes on as look boxes in metres, after the screen is
 mounted and the faces are settled: no solid box, socket, port or screen moves. `Site.Add` leaves out a box that would

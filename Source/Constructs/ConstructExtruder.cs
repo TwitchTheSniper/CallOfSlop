@@ -132,11 +132,18 @@ public static partial class ConstructExtruder
         mask = MaskOf(p, d);
         shape = Extrusion.ShapeOf((int)ConstructConfig.Get(p, d, CfgKey.Profile, 0));
         wall = 0;
+        var low = Blocks(c, part) > 0 ? centre.Y - size.Y * 0.5f : float.NaN; // (a block die's foot: its piece comes out along it, onto the Run-out Tables)
         if (shape == ExShape.Section)
+        {
+            if (!float.IsNaN(low))
+                centre.Y = low + h * 0.005f;
             return;
+        }
         mask = 0;
         var across = Math.Clamp((int)MathF.Floor(MathF.Min(MathF.Min(wide, size.X), size.Y) * 20 + 0.001f) * 5, Extrusion.MinSectionCm, Extrusion.MaxSectionCm);
         w = h = across;
+        if (!float.IsNaN(low))
+            centre.Y = low + h * 0.005f;
         if (shape == ExShape.Pipe)
             wall = (ushort)Math.Clamp((int)MathF.Round(ConstructConfig.Get(p, d, CfgKey.Wall, 0.03f) * 100), 1, Math.Min(Extrusion.MaxWallCm, (across - Extrusion.MinBoreCm) / 2));
     }
@@ -338,7 +345,11 @@ public static partial class ConstructExtruder
                 return ExtrudeStall.BadMaterial;
             Section(c, part, out var mask, out var w, out var h, out var centre, out var shape, out var wall);
             if (order)
-                (mask, w, h, shape, wall) = (head.Key.Mask, head.Key.W, head.Key.H, head.Key.Shape, head.Key.Wall); // (the die's centre stays the settings')
+            {
+                if (Blocks(c, part) > 0)
+                    centre.Y += (head.Key.H - h) * 0.005f; // (on a block die the order's piece sits on the die's foot too)
+                (mask, w, h, shape, wall) = (head.Key.Mask, head.Key.W, head.Key.H, head.Key.Shape, head.Key.Wall); // (across, the die's centre stays the settings')
+            }
             if (shape == ExShape.Section && Extrusion.Refusal(mask) != null)
                 return ExtrudeStall.BadShape;
             key = new ExtrusionKey(mask, (ushort)w, (ushort)h, 0, st.Material, true, shape, wall);
