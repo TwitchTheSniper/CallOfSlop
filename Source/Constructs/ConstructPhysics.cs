@@ -589,7 +589,7 @@ public static partial class ConstructPhysics
 
     /// <summary>What the held body's step never tests against: its cargo or carrier, and what it is coupled to (they move together).</summary>
     private static bool HeldIgnores(Construct c, Construct b) =>
-        b.CarriedBy == c.Id || c.CarriedBy == b.Id || _world != null && _world.CouplingCount > 0 && _world.Coupled(c.Id, b.Id);
+        b.CarriedBy == c.Id || c.CarriedBy == b.Id || c.HeldNear == b.Id || b.HeldNear == c.Id || _world != null && _world.CouplingCount > 0 && _world.Coupled(c.Id, b.Id);
 
     // ---- Wheels -------------------------------------------------------------------------------------------------
 

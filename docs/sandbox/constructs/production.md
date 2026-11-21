@@ -220,7 +220,7 @@ Choices made (the developer may change them): depth as the diameter; the `wheels
 
 The user's "complex parts made in the world, not in menus". A **Press** stamps parts out of extruded pieces; it sits beside the Extruder and the Wheel Former, and the [Assembler](#assembling) stays for everything no die covers yet. Code: `Source/Constructs/ConstructPress.cs`, `ConstructPressTable.cs` (`Constructs/Pressing.json`); the parts, the table and the Press Line blueprint come from the part kit's `--gen-parts press_parts`.
 
-- **Modular by size.** Press, Die Lathe and die each come in the four size classes, and a die fits a press of its own class (socket kind `pressdie`, the class of the socket). The Small press is 1.75 m wide with 2 bays and takes pieces to 0.45 m across; Medium, Large and Capital have 3 bays and take 1.8, 7.2 and 28.8 m, at speed x2, x4 and x8. Length sets count, so the player builds the smallest system for the job.
+- **Modular by size.** Since the block-system rework the Press is one Core and its Press Blocks ([the clamshell](#the-clamshell-block-system-2026-11-21)): its width, daylight and speed come from the blocks. Dies have no size classes (Press part 2, 2026-11-21): one die a family fits a press of any size, and one Die Lathe cuts them all. The table below is the old classed presses', kept for history.
 
   | Machine | Bays | Across | Stroke speed | Power |
   | --- | --- | --- | --- | --- |
@@ -250,11 +250,20 @@ The user's "complex parts made in the world, not in menus". A **Press** stamps p
 
   The rest of the Assembler's list stays with the Assembler. **Substitutions:** the game has no plastic or aluminium, so plastic is laminate and aluminium is bronze; a strip, sheet or copper wire is a plate or a 10 cm round (`Extrusion.MinSectionCm`). Laminate and bronze got rows in `Extrusion.json`.
 - **Tiers.** Material sets the tier only where the game has a part per tier. Housings do, since they are new. Bracket, Gear Set, Piston Set, Button, Circuit Board and Cylinder have one part each, so those rows take the materials that suit and give that part.
-- **Dies.** Parts in `Constructs/Parts/Press/Dies`, `"pressDie": "Button"`, first socket the mount. Small and Medium are items (on a Die Rack or a shelf, in hands); Large and Capital are physics-only. Starter set, free with a survival start (`SurvivalStart.json`): Button, Bracket, Gear. All the rest come from a Die Lathe, not the Assembler.
-- **The Die Lathe** (`"press": {"lathe": true}`) is the press's code with one bay and no slot: a setting chooses the die (`"config": {"recipe": "Board Die"}`). It takes a solid bar: metal or steel for a starter, steel otherwise, at least the die's own size across (0.25, 1, 4, 8 m), and a stroke uses that length, so a 1 m block cuts four Small dies. A lathe cuts dies of its own size class ("Wrong size of lathe").
+- **Dies.** Parts in `Constructs/Parts/Press/Dies`, `"pressDie": "Button"`, first socket the mount. One die a family, a 0.5 m cassette (lower and upper shoe on four guide posts, the family's coloured punch on top, grab handles, a label plate): an item, on a Die Rack or a shelf, or in hands. The press scales the stamping to the blank, so Housing's and Cylinder's four class dies became one each, and the Medium, Large and Capital dies and the Medium Die Rack went (Press part 2). Starter set, free with a survival start (`SurvivalStart.json`): Button, Bracket, Gear. All the rest come from a Die Lathe, not the Assembler.
+- **The Die Lathe** (`"press": {"lathe": true}`) is the press's code with one bay and no slot: a setting chooses the die (`"config": {"recipe": "Board Die"}`). There is one (Press part 2; the Medium, Large and Capital lathes went): a bench lathe on a cabinet, 1.75 x 1.5 x 1.25 m, with a headstock and chuck, two ways, a carriage and tool post, a tailstock and a lead screw. It takes a solid steel bar at least 0.25 m across in its bay at the back (the shared port look) and any die is a 0.25 m cut, so a 1 m bar cuts four dies; the die lands in the tray at the front. While it cuts, the chuck and the lead screw turn and the carriage feeds along the ways.
 - **Refusals.** A piece is turned away at the bay and stays where it is. The panel and the look line say why (`BayRefuse`: no die, wrong material, section, size, no room for its length, wrong die size, bulk). It rides in `CStore.Blocked` (reason x 4 + bay, 3 for the die slot) and clears after 5 s or when a die goes in.
 - **Performance.** `ConstructPress.Step` at 10 Hz looks only at constructs with `HasPress`; a bay's mouth is a `Near` query only while the bay is empty. Nothing allocates but the bodies it makes.
 - **Wire (protocol 144).** No new message. Parts and links carry what is in it, `CBodyKind.Extrude` a shorter piece; the stall is `Refused`, the refusal `Blocked`.
+
+### The clamshell (block system, 2026-11-21)
+
+Since the block-system rework (design page drawing 17b) the Press is one Core (2 m cell) and **Press Blocks** welded round it: the bed is the largest rectangle of blocks level with the Core (`CMachineAsm` X0, Z0, W along the Core's x, the flow; L along z), and its width and bites come from that rectangle. The Medium, Large and Capital presses are gone: a bigger press is more blocks. Code: `ConstructPressBlocks.cs` (sizes), `ConstructPressShells.cs` (the shells), `Game/GameSandboxPress.cs` (the crush test); parts from `--gen-parts press_parts`.
+
+- **Shells.** Blocks stacked on the bed's two long edges (z rows Z0 and Z0+L-1, L at least 2) are the shells: each wall column is one segment, hinged at the outer top edge of the bed block under it. The Core's own roof is two hinged leaves (box work `"hinge"`). While the press works the segments swing open flat out to their side and slam shut, one cycle every 3 s (`ShellCycle`), rippling down the bed 0.06 of a cycle a segment; the top block of each column draws a roof lip to the bed's centre line with red latch teeth. At rest they stand shut, where the blocks' collision is. The swing is drawn only, from the mover clock (`ConstructLifters.DrawTick`, the server tick on the server) and the line state: nothing on the wire.
+- **Swing strip.** Each side needs a clear strip as wide as its tallest column. At the machine's rebuild the first fixed part of the construct in a strip, not one of its own blocks, is kept as `CMachineAsm.Blocker`; the press stalls with "Shell swing blocked" (`PressStall.SwingBlocked`, a Fault on its line) and the look line names the part and how far to move it.
+- **No stopping for people.** At 10 Hz, for each working press, players are put in the Core's frame (`ShellSpace`): one between the shells as their segment's phase passes the slam (`SlamAt`) is crushed (killed); one in a side's strip while that side's segment is swinging is struck (35) and thrown out and up, at most once a second. Nothing allocates; nothing runs while no press works.
+- **Saves.** Old saved Medium, Large and Capital presses no longer load as presses, and their Assembling recipe rows went (recipes are saved by index within a family, so a saved Assembler on a later row of that family moves up; the Extruder rework did the same).
 
 ### Sized dies (the Press rework)
 
@@ -1388,18 +1397,28 @@ station's build see only that. One table a world, at most 1,024 claims.
 The end of the factory (the user, 2026-11-11: "fully automate the production of a vehicle"): a station that receives every exact part
 of a blueprint and builds it in a bay, part by part, where it can be seen. Phase 1 (2026-11-12). Code: `Source/Constructs/ConstructStation.cs`
 (the job, the bay, the wire, saves, `StationPreview`), `ConstructBuild.FitStep` (a blueprint's one step, shared with the loader),
-`Source/UI/UiStation.cs` (the panel), `RouteRender.DrawBays` (the outline and the effects); the part from the part kit's `build_station_parts`.
+`Source/UI/UiStation.cs` (the panel), `RouteRender.DrawBays` (the outline and the effects); the parts from the part kit's `BuildStationParts.cs`; the crane `StationRender.cs`.
 
-- **The part** (`Constructs/Parts/BuildingStation/BuildingStation.json`, 3 by 5 m, 150 W while it builds): a control pedestal with the screen at 1.5 m, an
-  intake cabinet with a chute hopper, a hold along its right, and a mast with a boom that points at the bay. It is a Crafting Terminal by
+- **The part** (`Constructs/Parts/BuildingStation/BuildingStation.json`, the station's Core, 2 by 6 m, 600 W while it builds; drawing 18 of
+  the block machines' design page, Sean 2026-11-21): an intake housing with the Piece in face and the chute lid, the hold down its
+  length, and a control cabinet with the screen, the work top and the power meter. It is a Crafting Terminal by
   data (`storage.pieces.crafting` and `station`: `ConstructPartDef.IsBuildStation`), so its hold is a Piece Rack's (packed by volume, F
   takes a stack), its ports are **Piece in**, **Piece in 2**, **Fluid in** (a pipe, phase 2), **Chute in** and **Orders**, and its
-  network and orders are [the terminal's](#crafting-terminal).
-- **The bay** is three settings on the station (configure tool, group Bay): `bayWidth` (away from the station), `bayDepth` (along it),
-  `bayHeight`, 2 to 64 m in 0.5 m steps, 6 x 8 x 4 by default. It is a box on the station's +x side, 0.5 m from it, its floor at the
-  station's foot (`ConstructStation.Bay`): on the ground or on a construct's floor, whichever the station stands on; nothing checks for a
-  floor under it. It is drawn (floor, four posts, top) while the station is looked at or its panel is open (amber; red when the picked
+  network and orders are [the terminal's](#crafting-terminal). It is a block machine's Core (`"machineBlock"`, family `station`;
+  `MachineBlocks.cs`), with sockets for Bay Blocks along both sides and under it.
+- **The bay** is built, not set (2026-11-21; the bay settings are gone). **Bay Blocks** (`BayBlock.json`, 2 x 2 m tread-plate floor tiles,
+  their recipe at the end of the Assembler's list) welded beside the Core make the bay: the largest full rectangle of them, up to 16 x 16
+  cells (`MachineBlocks`' assembly). **Mast Blocks** (the block machines' shared 2 m cube) stacked on its four corner tiles set its
+  height, 2 m a block, by the shortest mast; a bay with no masts builds up to 2 m. With masts the corner cells are theirs, so a build
+  fits when it is no longer than the bay less two cells on one of its sides (`ConstructStation.FitRefusal(need, bay, BayCorner)`).
+  `ConstructStation.Bay` gives the box over the rectangle (floor at the tiles' top); no rectangle, no bay, and Start says to weld Bay
+  Blocks. The box is drawn (floor, four posts, top) while the station is looked at or its panel is open (amber; red when the picked
   blueprint doesn't fit) and green while a build is on.
+- **The crane** (`Source/Render/StationRender.cs`, drawn on every peer, nothing of it a part): runway rails along the bay's two long
+  sides on the masts (on short legs with none), reaching back over the Core's hold, and one bridge per **fitting arm**: one arm for
+  each 16 Bay Blocks, at least one, at most 8 (`ConstructStation.Arms`). Each bridge runs to the hold, lowers its hook for the part,
+  carries it to its place, lowers it and the weld flashes. The masts' tops carry lamps by the job: green building, amber costing,
+  blinking red failed, white done, dark idle.
 - **The panel.** F on the station opens it: the blueprints on the left (shipped by group, then the player's own saved ones; a search box),
   and for the picked one whether it **fits** (its bounds, wheels' travel included, against the bay, with both sizes) and its **bill** by
   group: pieces, panels and catalogue parts, each with what the hold and the linked stores have, where the rest would be ordered, or
@@ -1412,8 +1431,9 @@ of a blueprint and builds it in a bay, part by part, where it can be seen. Phase
   machines. Every part that can be fitted on arrival (what it goes onto is fitted, or it is the first step) is asked for at once (2026-11-14, the user: no waiting for one part before the next order starts; four new orders a look), and the next level is ordered ahead, parts whose parent's part is held or on its way, one at a time while the hold, packed by its own rule with everything held and coming (a scratch copy, `OrderAhead`/`SimHold`), still has room for the largest ready part not yet in it (the user's choice: "order ahead, keep room"). Nothing deeper is ordered. When the next part can't come in (the hold full of parts left over or brought by hand), the station moves parts no step can take yet to a Piece Rack on its network with a road back, in one decision with a fit check, once per change of the hold (`ConstructStation.MakeRoomFor`); a moved kind is saved with the job and fetched back as stock. With no rack its note says to take one out; a part a player took out by hand isn't asked again while a player is within 16 m (`HandTook`); a part too long for the hold is never moved round: the note says to build a larger station or fit it by hand. A terminal's or station's ask goes first to a machine with a way to it (a conveyor through Joins and Routers, or a chute), then to any (`ConstructCrafting.StepTerminal`).
   What nothing holds or makes is named on the screen with the reason; only what hangs off it waits.
 - **Fitting.** The vehicle is an ordinary construct, frozen at its final pose in the bay and `HeldBy` the station: no physics, and every
-  edit, grab and seat refuses ("a Building Station is building it"). The station fits one part every `FitSeconds` (2 s) plus 0.02 s a kg,
-  10 s at most: the first unfitted step, in the blueprint's order, whose parent step (and the steps its `"also"` names) is in place and
+  edit, grab and seat refuses ("a Building Station is building it"). Each arm fits one part every `FitSeconds` (2 s) plus 0.02 s a kg,
+  10 s at most, the arms in parallel (one fit a tick in the world; an arm takes a step no other arm carries, and only while the hold has
+  more of its kind than the arms carry; an arm's carry is on the wire, `ArmSeq`, never saved: the part leaves the hold at the fit): the first unfitted step, in the blueprint's order, whose parent step (and the steps its `"also"` names) is in place and
   whose kind is in the hold, through `ConstructBuild.FitStep`, the loader's own step (socket, turn, `"at"`, weld, also-links, setting,
   config), then its paint and finish. Each fit flashes a shell round the new part and plays the weld's end on every peer.
 - **By hand.** F on a station that is building, with a part in the hands the build still needs: it is fitted at once when a step of
