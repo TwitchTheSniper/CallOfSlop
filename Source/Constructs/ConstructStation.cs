@@ -68,6 +68,7 @@ public sealed partial class StationJob
     public double CostMs, WorstMs;
     public readonly int[] ArmStep = [-1, -1, -1, -1, -1, -1, -1, -1]; // each arm's step on its way (-1: idle; MaxArms long)
     public readonly int[] ArmLeft = new int[ConstructStation.MaxArms]; // ...ticks until it goes on
+    public int ArmWait; // server: ticks before idle arms look again after a look found nothing (a long blueprint's scan isn't run every tick)
     public long Started; // Stopwatch ticks at Start (the log's start-to-drivable time)
 
     // ---- Client only: the effects it has shown.
@@ -1259,16 +1260,22 @@ public static partial class ConstructStation
                 continue; // (taken from the hold meanwhile: it is looked for again)
             world.CraftChanged(c);
             FitOne(world, c, t, j, k);
+            j.ArmWait = 0; // (a part in: the next may be ready now)
             if (j.State != StationState.Building)
                 return false;
         }
+        if (j.ArmWait > 0 && --j.ArmWait > 0)
+            return busy;
         for (var a = 0; a < n; a++)
         {
             if (j.ArmStep[a] >= 0)
                 continue;
             var k = ArmPick(j, tray);
             if (k < 0)
+            {
+                j.ArmWait = busy ? OrderEvery : 0; // (nothing to carry now: look again at the order pass's rate; with no arm busy the step itself waits that long)
                 break;
+            }
             var d = ConstructParts.Find(j.Bp!.Steps[k].Part)!;
             j.ArmStep[a] = k;
             j.ArmLeft[a] = FitTicksFor(d);
@@ -1300,6 +1307,7 @@ public static partial class ConstructStation
     /// <summary>Every arm idle (a job starts, stops or is done fitting).</summary>
     private static void ResetArms(ConstructWorld world, Construct c, StationJob j)
     {
+        j.ArmWait = 0;
         for (var a = 0; a < MaxArms; a++)
             if (j.ArmStep[a] >= 0)
                 Idle(world, c, j, a);

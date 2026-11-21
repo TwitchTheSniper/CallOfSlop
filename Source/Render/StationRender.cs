@@ -65,8 +65,9 @@ public static class StationRender
             Box(gfx, bay, new Vector3((xa + xb) * 0.5f, y, z), new Vector3(xb - xa, RailH - 0.08f, 0.06f), Dark); // (the web)
             Box(gfx, bay, new Vector3((xa + xb) * 0.5f, top + RailH - 0.02f, z), new Vector3(xb - xa + 0.004f, 0.04f, RailW), Steel); // (the top flange the wheels run on)
             Box(gfx, bay, new Vector3((xa + xb) * 0.5f, top + 0.024f, z), new Vector3(xb - xa + 0.008f, 0.04f, RailW + 0.006f), Dark); // (the bottom flange)
-            foreach (var e in new[] { xa, xb })
+            for (var ei = 0; ei < 2; ei++)
             {
+                var e = ei == 0 ? xa : xb;
                 var ex = e + (e < 0 ? 0.08f : -0.08f);
                 Box(gfx, bay, new Vector3(ex, top + RailH + 0.12f, z), new Vector3(0.16f, 0.22f, RailW + 0.04f), Hazard); // (the end stop)
             }
