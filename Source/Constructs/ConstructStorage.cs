@@ -517,7 +517,7 @@ public static class ConstructStorage
     internal static void ParseStorage(ConstructPartDef d, JsonElement b, string file)
     {
         var bw = $"{file}, storage";
-        ConstructParts.Known(b, ["ammoStore", "gasLitres", "slots", "bulk", "maxMass", "gunBench", "ordnanceBench", "recycler", "gather", "refine", "assemble", "extrude", "wheel", "panel", "cut", "beacon", "scoop", "terminal", "press", "pieces", "auger"], bw);
+        ConstructParts.Known(b, ["ammoStore", "gasLitres", "slots", "bulk", "maxMass", "gunBench", "ordnanceBench", "recycler", "gather", "refine", "assemble", "extrude", "wheel", "panel", "cut", "beacon", "scoop", "terminal", "press", "pieces", "auger", "bake"], bw);
         if (ConstructParts.Opt(b, "pieces") is { } pc)
         {
             // A Piece Rack (ConstructConveyor.cs): whole pieces by kind, the largest section and length it holds and how many.
@@ -737,6 +737,8 @@ public static class ConstructStorage
             ConstructLaserCutter.Parse(d, lc, file, bw);
         if (ConstructParts.Opt(b, "press") is { } pr)
             ConstructPress.Parse(d, pr, file, slots.Count);
+        if (ConstructParts.Opt(b, "bake") is { } bk)
+            ConstructBakeOven.Parse(d, bk, file, bw);
         if (ConstructParts.Opt(b, "beacon") is { } bc)
         {
             d.BeaconKind = ConstructParts.Str(bc, file, "storage.beacon");
@@ -755,7 +757,7 @@ public static class ConstructStorage
             d.IsTerminal = true;
             d.DataIn = [ConstructGatherer.RunPort];
         }
-        if (slots.Count == 0 && d.BulkCapacity == 0 && !d.IsBeacon && !d.IsPieceRack)
+        if (slots.Count == 0 && d.BulkCapacity == 0 && !d.IsBeacon && !d.IsPieceRack && !d.IsBakeOven)
             throw new ConstructPartException($"{file}: a storage part needs \"slots\", \"bulk\" or \"pieces\"");
         if (slots.Count > 0 && d.BulkCapacity > 0)
             throw new ConstructPartException($"{file}: a storage part has \"slots\" or \"bulk\", not both");

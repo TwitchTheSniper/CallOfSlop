@@ -745,6 +745,9 @@ public sealed class Assembling : IPartGenerator
         ("Modules/Round", "Round Module Socket 3 m", null),
         ("Modules/Round", "Round Module Plug 3 m", null),
         ("Modules/Round", "Round Module Stand 3 m", null),
+        // (the Bake Oven on the block system, design page drawing 19: its Core and its Bed Block; BakeOvenParts.cs)
+        (null, null, Rec("Bake Oven", 150, 2, m: [("steel", 900), ("copper", 120), ("rubber", 60)], p: [("Circuit Board", 2), ("Wiring Loom", 2)])),
+        (null, null, Rec("Oven Bed Block", 90, 1, m: [("steel", 700), ("copper", 80)], p: [("Wiring Loom", 1)])),
     ];
 
     /// <summary>
