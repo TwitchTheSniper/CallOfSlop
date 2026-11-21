@@ -1,8 +1,37 @@
 # What a full --preview-gallery run leaves out of the Ship gallery (Karl, 2026-11-21: the gallery is for trying a ship's
 # look while it is designed; once its look is settled, list it here). One name a line: a blueprint's name, or a part
 # section, whose loose parts then stay out too. The ships stay in the game.
-Zero Day Frigate (crewed)
-Shuttle
-Limpet
+# Karl, 2026-11-21: the gallery was emptied; every ship then in it is in the game (blueprint, Assembler recipes).
+# A ship being designed goes in with --only; list it here once its look is settled.
+
+# Ships
+Dibber Lander
+Docket Tug
 Dray Container Hauler
+Grapnel Salvage Tug
+Haywain Hauler
+Limpet
+Magpie Mining Ship
+Packet Spine Freighter
+Roamer
+Rust Bucket
+Satchel Courier
+Shuttle
+Zero Day Frigate
+Zero Day Frigate (crewed)
+
+# Part sections
+Dibber lander
+Docket tug
 Dray hauler
+Grapnel salvage tug
+Haywain hauler
+Limpet
+Magpie miner
+Packet freighter
+Roamer
+Rust bucket
+Satchel courier
+Ship fittings
+Shuttle
+Zero Day frigate
