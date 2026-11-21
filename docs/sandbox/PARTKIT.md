@@ -29,6 +29,15 @@ One class per old script in `Source/PartKit/Generators/`, implementing `IPartGen
 - `Part`, `Box`, `BlockSockets`, `Pick`, `FileName`, `R`, `Vec`, `Fmt` and the size classes (`Small`, `Medium`, `Large`, `Capital`) are
   the old `scale.py`'s; `Part.Json()` runs `PartZFight.Resolve` as the Python did.
 
+### Chunky details
+
+The ship generators (`PartChunky.Generators`: the rust bucket, Roamer, Magpie, Zero Day, Dray, Packet, Haywain, Satchel and
+Dibber) grow their thin drawn boxes in `Part.Json()` before the coplanar pass, as the Ship Render Bench's "Raised ribs" and
+"Chunkier greebles" switches did (Karl, 2026-11-21): a dark box (luma under 0.2) thinner than 0.35 m grows 2 cm on every side,
+and any box thinner than 12 cm grows by a fifth of its thickness. Only plain detail boxes change (no glow, screen, rig, work or
+points), never a solid box, a socket or a mass; a growth that would put a face on another box's plane is cut down or dropped.
+A new ship generator that wants the look joins the set; the numbers are `PartChunky`'s constants.
+
 ## Byte for byte
 
 Python and C# disagree on numbers, so the port keeps the Python's types and operations, not just its values:
