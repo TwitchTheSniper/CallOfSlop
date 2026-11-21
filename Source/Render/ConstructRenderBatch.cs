@@ -202,8 +202,8 @@ public static partial class ConstructRender
     private static long DynKey(Construct c)
     {
         var h = (long)c.PartCount + (c.GantryHold ? 1L << 50 : 0); // (a shell in a gantry's clamp is walked: its modules come off)
-        if (ModulePullLook.Count > 0)
-            h = Mix(h, ModulePullLook.DynOf(c)); // (a module strained on by the physics gun is walked while it is)
+        if (ModulePullLook.Count > 0 && ModulePullLook.DynOf(c) is var pulled && pulled != 0)
+            h = Mix(h, pulled); // (a module strained on by the physics gun is walked while it is; other bodies' keys stay as they were)
         for (var i = 0; i < c.PartCount; i++)
         {
             ref var p = ref c.Parts[i];

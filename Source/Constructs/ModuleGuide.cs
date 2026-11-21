@@ -460,7 +460,10 @@ public static class ModuleGuide
             PullTick(world, hands, wg, player, eye, look, yaw);
         if (h.GrabBody != 0 && h.GrabSeg == 0 && h.Tool == ConstructTool.PhysicsGun && world.Get(h.GrabBody) is { } held && held.GrabbedBy == player)
             PullIn(world, hands, wg, player, held);
-        ShowPull(ref h, in wg.Pulls[player]);
+        ref var pull = ref wg.Pulls[player];
+        if (pull.Phase != 0 && world.Get(pull.Ship) is { } pullShip && !pullShip.Dirty)
+            pull.Plate.Find(pullShip); // (the cut rebuilt the ship: its plate's index may have moved; cheap when it didn't)
+        ShowPull(ref h, in pull);
     }
 
     /// <summary>The pull as the hands send it to everyone (the beam to where the player clicked, the module's shake: ModulePullLook.cs).</summary>

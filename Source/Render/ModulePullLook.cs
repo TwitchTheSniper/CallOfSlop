@@ -112,10 +112,11 @@ public static class ModulePullLook
     /// <summary>A body's share of the merged plan's key: which of its modules is strained on now (0: none).</summary>
     public static long DynOf(Construct c)
     {
+        var h = 0L;
         for (var k = 0; k < Count; k++)
             if (_e[k].Body == 0 && _e[k].Ship == c.Id)
-                return (_e[k].Module + 1L) * 0x3779B97F4A7C15L;
-        return 0;
+                h ^= (_e[k].Module + 1L) * 0x3779B97F4A7C15L; // (two players straining on two modules of one ship: both walked)
+        return h;
     }
 
     /// <summary>A point in <paramref name="c"/>'s frame (the beam's grip) where it is drawn, wiggled with what it is on.</summary>
