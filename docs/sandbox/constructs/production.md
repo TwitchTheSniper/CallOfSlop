@@ -108,6 +108,13 @@ Self-test: "Extruder", "Extruder network" (`Source/App/SelfTestExtruder.cs`).
   bodies and players, who can walk inside a big one. Boxes don't turn, so the ring is stepped: true on the axes, about 9 % of the radius proud of the circle and into the bore on the diagonals. **Sockets.**
   `base` and `tip` in the middle of each end (a pipe's stand in the bore's air: a weld to them is a weld to the end), and the four faces at the same stations, at the compass points of the round.
   **For later machines.** The key holds all a die needs to read a piece: `Shape`, `W`, `H`, `Wall`, `Mask`, `L`, `Material`.
+- **Sheet** (the Profile's last choice, after the foils; factory gap 3, Sean 2026-11-21: a Sheet profile on the Extruder rather than a Rolling Mill).
+  A plate for a Panel Former's blank: a key of `Shape` Section with the solid mask (`solid`), `W` its width (0.1 to 32 m, 5 cm steps, up to the die's
+  width) and `H` its thickness, 1 to 10 cm in whole centimetres (`Extrusion.MinSheetCm`, `SheetMaxCm`; `Extrusion.IsSheet`). It is the only section
+  thinner than `MinSectionCm` (10 cm). The thickness is the machine's **Wall / sheet** setting (a Pipe's wall shares it; Height's 5 cm step can't hold
+  a centimetre); the recipe picker's Sheet tile shows a Thickness stepper. A Line Console's bill line takes Sheet the same way. Its name stays
+  `Extrusion solid 400x3x500 steel`; its look line says "Sheet 4 m wide, 3 cm thick". A chained Panel Former order still asks for 10 cm sheet
+  (`ConstructLogisticsPlan.SheetThickCm`) until the former takes sized blanks.
 - **A piece is a real part.** `Extrusion.Def(key)` makes a `ConstructPartDef` the first time a key is asked for and keeps it: ids from
   `Extrusion.RuntimeBase` (0x4000), resolved by `ConstructParts.Def`, never sent. So `Rebuild`, split, join, the renderer, rays, player
   blocking, ghosts, joins, damage and paint read a piece's boxes, sockets, mass and health as they read any part's, with no second path.
@@ -123,7 +130,7 @@ Self-test: "Extruder", "Extruder network" (`Source/App/SelfTestExtruder.cs`).
   without size classes", design page drawing 15): an **Extruder Core**, a 2 x 2 m face 1.5 m deep, with a bin (`any`, 32,000) and its own 0.5 m die
   low on its +z face, 0.2 m/s, 900 W while it runs. Material comes by chute or F; Run and power as a [production machine](#refining-decision-14)
   (`ConstructGatherer.HeldOff`, `ConstructRecycler.Powered`; creative needs no power but still needs material). Its output wire is the length so far,
-  in metres. Configure tool: Profile, Width, Height, Pipe wall, Cut every, and the cell grid (four `mask` settings drawn as one grid: click a cell and
+  in metres. Configure tool: Profile, Width, Height, Wall / sheet, Cut every, and the cell grid (four `mask` settings drawn as one grid: click a cell and
   what is shown becomes Custom; a Round or a Pipe shows on it too). A change of setting is for the next piece; the panel previews the section on the die.
   The four size classes, Die Frames and Die Extensions are gone, with no compatibility kept (tools/MIGRATING.md).
 - **Die Blocks** (`Die Block.json`, `"machineBlock": {"family": "extruder", "role": "block", "plane": "face"}`; MachineBlocks.cs,
@@ -373,13 +380,18 @@ the parts come from the part kit's `--gen-parts panel_former_parts`. Phase 1 (fe
   other, and **Out Tables** (role `end`) welded across the bed's last row, which carry **Piece out** (a conveyor off a table is its
   machine's: `MachineBlocks.Owner`). The bed is the largest full rectangle of blocks between Core and tables (at most 16 x 16, 128 in
   all). A panel fits when its longest side fits the bed's length and the next its width (it is laid along the bed) and it is no deeper
-  than the pins' 2 m travel (`ConstructPanelFormer.Bed`, `BedRefusal`; `BedFits` per step). One stroke is 4 s set and 8 s press at any
+  than the pins' travel: 2 m, or 4 m with **Mast Blocks** standing on all four of the bed's corner Bed Blocks (on their crossheads,
+  socket `top`; one level, past the deepest panel HullLoft allows; a Bed Block stacked there is not a mast and idles;
+  `ConstructPanelFormer.PinDepth`; the Zero Day's upper hull pieces need it) (`ConstructPanelFormer.Bed`, `BedRefusal`, which names the masts it needs; `BedFits`
+  per step). With corner masts the former draws its deep head (`PanelFormerRender.cs`): ring girders on the mast tops, a cross girder
+  over each row seam, an oil main with a drop hose to each row, a booster cylinder on each corner mast whose collar rides with the
+  stroke, and corner lamps lit while it forms; a corner block's ram head isn't drawn under its mast (seam `+y`). One stroke is 4 s set and 8 s press at any
   size. Seams between cells are hidden (`seam`, `seamFill` boxes), so a bed reads as one machine: one platen, posts at its corners, an
   oil manifold down one side, a hazard edge round the outside. Animations: the in rollers and table rollers spin, the pins rise in a
   wave from the Core's end to the head order's panel shape (`PinLift`, read from the key: work `pin`), the platen strokes (`PressAt`:
   work `press`). The Medium Panel Former is gone (2026-11-21). Recipes are the Assembling generator's.
 - **Stock** is its bin, fed two ways: loose material by chute or F, as an Extruder's hopper; and **extruded sheet by conveyor** into its
-  **Piece in**: an arriving extruded section no thicker than 10 cm (the thinnest a die makes) is taken whole and counted into the bin at
+  **Piece in**: an arriving extruded section no thicker than 10 cm (a Sheet is 1 to 10 cm) is taken whole and counted into the bin at
   what it holds (its mass at the material's weight); a thicker piece, another material than the bin's or more than its room waits on
   the conveyor. A panel costs its mass in units of its material, taken whole when its stroke starts; the kit's lofts are steel.
 - **Orders only** ([Work orders](#work-orders)). `WorkOrder.Name` is the panel's name; a former with no queue, or an empty one, waits

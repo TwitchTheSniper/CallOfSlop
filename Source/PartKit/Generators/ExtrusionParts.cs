@@ -21,7 +21,7 @@ public sealed class ExtrusionParts : IPartGenerator
     private const string Section = "Extrusion";
     private const string BodyC = "#55606b", Trim = "#3f4750", Dark = "#23272c", Gold = "#c8a13a";
 
-    internal static List<object?> Profiles() => Py.L("Solid bar", "Plate", "Wall", "Hollow box", "I-beam", "C-channel", "L-angle", "T-bar", "Cross", "Custom", "Round", "Pipe", "Airfoil", "Symmetric foil", "Thin foil");
+    internal static List<object?> Profiles() => Py.L("Solid bar", "Plate", "Wall", "Hollow box", "I-beam", "C-channel", "L-angle", "T-bar", "Cross", "Custom", "Round", "Pipe", "Airfoil", "Symmetric foil", "Thin foil", "Sheet"); // (a saved Profile is its index: a new one goes on the end, Extrusion.SheetProfile)
     private static List<object?> BladeStyles() => Py.L("Straight", "Scimitar", "Broad paddle", "Swept", "Narrow"); // (Air.json's "bladeStyles", in order)
     private static List<object?> FanKinds() => Py.L("Propeller", "Electric prop", "Helicopter rotor", "Ducted fan", "Tail rotor"); // (Extrusion.json's "fanKinds", in order)
     private static List<object?> Airframes() => Py.L("Wing", "Tail plane", "Fin", "Swept wing, left", "Swept wing, right", "Aileron", "Elevator", "Rudder", "Flap"); // (Extrusion.json's "airframes")
@@ -86,7 +86,7 @@ public sealed class ExtrusionParts : IPartGenerator
         var frames = die < Py.D(section) ? $": weld on {pieces}." : ".";
         return Py.L(
             Kw(("key", "profile"), ("label", "Profile"), ("group", "Shape"), ("options", Profiles()), ("default", 0),
-                ("tooltip", "The cross-section. Custom is the cell grid below; clicking a cell starts one from what is shown. Round and Pipe take their diameter from Width.")),
+                ("tooltip", "The cross-section. Custom is the cell grid below. Round and Pipe take their diameter from Width. Sheet: a plate Width across, 1 to 10 cm thick by Wall / sheet.")),
             Kw(("key", "width"), ("label", "Width"), ("group", "Shape"), ("unit", "m"), ("min", 0.1), ("max", section), ("step", 0.05), ("default", 0.25),
                 ("tooltip", "Across the section (a Round's or a Pipe's diameter). The die must be at least this wide" + frames)),
             Kw(("key", "height"), ("label", "Height"), ("group", "Shape"), ("unit", "m"), ("min", 0.1), ("max", section), ("step", 0.05), ("default", 0.25),
@@ -95,8 +95,8 @@ public sealed class ExtrusionParts : IPartGenerator
             Kw(("key", "maskB"), ("label", "Cells"), ("group", "Shape")),
             Kw(("key", "maskC"), ("label", "Cells"), ("group", "Shape")),
             Kw(("key", "maskD"), ("label", "Cells"), ("group", "Shape")),
-            Kw(("key", "wall"), ("label", "Pipe wall"), ("group", "Shape"), ("unit", "m"), ("min", 0.01), ("max", 2), ("step", 0.01), ("default", 0.03),
-                ("tooltip", "A Pipe's wall thickness. It leaves a bore of at least 5 cm.")),
+            Kw(("key", "wall"), ("label", "Wall / sheet"), ("group", "Shape"), ("unit", "m"), ("min", 0.01), ("max", 2), ("step", 0.01), ("default", 0.03),
+                ("tooltip", "A Pipe's wall thickness (it leaves a bore of at least 5 cm), or a Sheet's thickness (1 to 10 cm).")),
             Kw(("key", "cutLength"), ("label", "Cut every"), ("group", "Cutting"), ("unit", "m"), ("min", 0), ("max", length), ("step", 0.05), ("default", 0),
                 ("tooltip", "Cuts the piece off at the die by itself when it is this long. 0: only when a signal comes into Cut.")));
     }
