@@ -342,7 +342,7 @@ public sealed partial class Ui : IDisposable
                 ImGuiSafe.TextColored(Orange, $"Leave: {K(GameAction.Interact)}   Push it: hold {K(GameAction.Interact)}");
             else if (game.InteractHint() is { } hint)
                 ImGuiSafe.TextColored(Orange, $"[{K(GameAction.Interact)}] {hint}");
-            if (game.LocalGrenade != ThrowableKind.None)
+            if (game.LocalGrenade != ThrowableKind.None && !game.SeatPanelShown) // (seated: no throw, and G is the seat's hook key)
             {
                 var nadeCol = game.GrenadesLeft > 0 ? new float4(1, 1, 1, 1) : Dim;
                 if (game.LocalGrenade == ThrowableKind.Built && game.LocalGrenadeBuild is { } gb) // a built grenade (Zombies): its name, and the cook

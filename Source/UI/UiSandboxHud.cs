@@ -16,7 +16,7 @@ public sealed partial class Ui
             ImGuiSafe.TextColored(Dim, game.TabLine); // (what the powers owe you: GameTabs.cs)
         if (game.HarpoonHudLine(local) is { Length: > 0 } line)
             ImGuiSafe.TextColored(Orange, line); // (a line out or a head stuck in you: GameSandboxHarpoon.cs)
-        if (game.ArtilleryHudLine(local) is { Length: > 0 } arc)
+        if (!game.SeatPanelShown && game.ArtilleryHudLine(local) is { Length: > 0 } arc) // (seated: the panel's STATUS shows it, UiSeatPanel.cs)
             ImGuiSafe.TextColored(Orange, arc); // (a shell gun in your seat: where it lands, GameSandboxShells.cs)
         if (game.SandboxToolCardShown)
             return; // (on the tool's screen)
