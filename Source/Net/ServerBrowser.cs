@@ -674,9 +674,15 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 396: the Out Table (Sean, 2026-11-21): a new part file (Production/OutTable, the bed machines' far end) shifts part ids.
     // 397: the Panel Former on the block system (Sean, 2026-11-21): a new part file (PanelFormer/BedBlock) and the Medium Panel Former gone shift part ids.
     // 398: dressed hull sections (Sean, 2026-11-21): "Hull Section (...)" keys travel as run-time parts (HullLoft.Section.cs).
+    // 399: the Laser Cutter on the block system (Sean, 2026-11-21): one Laser Cutter Core and Laser Bed Blocks replace the Medium, Large
+    //   and Capital Laser Cutters (part files go and come, ids move); the bed, the heads and the bin are read from the blocks on each peer.
     // 400: the Press on the block system as a clamshell (Sean, 2026-11-21): the Medium, Large and Capital Press go (part ids shift), the
     //      Press Core's sockets change and the Press Block comes; PressStall gains SwingBlocked (it rides the press's store bytes).
-    public const ushort ProtocolVersion = 400;
+    // 401: CActKind.ModControl (a module socket's eject button, lock slider and the physics gun's pull on a fitted module), CfgKey.ModLock, and a plate's Attach, Eject and Lock in, Attached and Locked out (module sockets, Sean 2026-11-21)
+    // 402: the Building Station on the block system (Sean, 2026-11-21): a Core, Bay Blocks and masts replace its bay settings (a new part
+    //   file shifts ids); a station's record carries its fitting arms (each arm's carry: its part, its target and its length).
+    // 403: the clamshell Press (400 above) landed after 401 and 402, so the number moves on past them.
+    public const ushort ProtocolVersion = 403;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

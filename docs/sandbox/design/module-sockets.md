@@ -102,8 +102,8 @@ surface** (the outer face of the part the socket was placed on):
 | Style | Where the plate sits | The socket's room | What the module declares |
 | --- | --- | --- | --- |
 | **Proud** | on the surface | a box over the footprint, `above` metres tall (default twice the short side), plus `side` clearance (5 cm) | its height over the plug face |
-| **Flush** | at the foot of a well `depth` deep | the well only: nothing stands above the surface | its **face**: its outer face's height over the plug face. It fits when face = depth (1 cm grid); the face then stands 3 mm proud of the surface (z-fighting rule) |
-| **Opening** | at the foot of a well `depth` deep | the well, plus a box `above` metres over the surface (0: a closed bay) | how far below and above the surface it stands when seated at that depth |
+| **Flush** | on the surface, as a frame; its well is dug `depth` into what it is welded to | the well only: nothing stands above the surface | its **face**: its outer face's height over the plug face. It fits when face = depth (in the depth's 0.25 m steps); the face then stands 3 mm proud of the surface (z-fighting rule) |
+| **Well** (file name `opening`) | on the surface, as a frame; its well is dug `depth` into what it is welded to | the well, plus a box `above` metres over the surface (0: a closed bay) | how far below and above the surface it stands when seated at that depth |
 | **Opening** (through; Sean 2026-11-21) | on the surface, drawn as a frame with a hole in its middle | the box `above` over the face, plus the hole: back through the plate and `depth` metres behind its back | as proud; parts may also reach back into the hole (a rack that retracts into the wall) |
 
 The settings panel names the styles Proud, Flush, **Well** and **Opening**: the file and wire name `"opening"` is the Well above (the
@@ -115,6 +115,12 @@ are left out: `ModuleSockets.FrameLook`, walked by the render batch), and so doe
 through both; a plug's frame carries four Small sockets (`rz0`, `rz1`, `rx0`, `rx1`, round: `r.0`-`r.3`) for a piston's base or
 the like, its middle sockets standing in the air over the hole. Square and round alike.
 
+- **Dug wells (Sean, 2026-11-21).** Flush and Well sockets sit on the surface they were placed on, like a proud one, and
+  their well is dug into that surface: the cut (`ModuleCut.Tunnel`) runs from inside the plate's frame down `Seat` metres
+  (`CModSocket.Seat`: the depth, at least the plate's thickness plus 2 cm), and the module seats at the well's floor
+  (`ConstructEdits.SeatPose`). With a module fitted the plate's own boxes are not drawn (`ModuleSockets.DugFitted`): the
+  module fills its frame. A blueprint script can't fit a module on a dug socket yet (`BlueprintScript.Modules`).
+  Round holes in a dug well come later; a round socket's well is cut square for now.
 - **Depth** 0.25 m upward in 0.25 m steps, at most the short side x 2 (6 m for a 3x3; planned to 30 m); **above** 0 to
   4 x the long side in 0.5 m steps.
 - A well opens to the side of the surface the socket was placed on: a socket on an inner deck's top makes a floor well (a
@@ -326,7 +332,33 @@ under thrust stops pushing the tick it is cut free, a reactor taken off takes it
 seated in it puts the gunner out first (the seat's way out). The look line warns before the cut: "this is your only
 reactor: the ship goes dark".
 
-### 6.4 Detaching and damage
+### 6.4 The plate's controls, wires and the physics gun (Sean, 2026-11-21)
+
+- **Eject button** on the plate's rim, a red cap in a small housing (`ModuleSocketParts.Controls`): F on it ejects the
+  module. Out of a dug well it slides out along the normal at 0.5 m/s to 0.35 m clear of the surface and hovers there 8 s
+  for a physics gun to take (`ModuleGuide`, `Kind.Out`); off a proud socket it is lifted as F lifts it.
+- **Lock slider** beside the button (the `Locked` setting, `CfgKey.ModLock`, or a high Lock wire): a locked socket refuses
+  the button, the wires, the gun and F. A Module Fitter can still cut a module free.
+- **Wires.** After the Data pins the plate has inputs **Attach** (a rise ejects a fitted module, or draws in the nearest
+  loose matching module within the hand's pull: `ModuleGuide.AttachNear`), **Eject** (a rise ejects) and **Lock** (held
+  high: locked); outputs **Attached** and **Locked**. The levels are kept in the plate's `Mem` bits; at most one act a body a
+  step, every other tick.
+- **Pull-in.** A module held in the physics gun with its plug within 1.5 m of a free socket that takes it is caught: the
+  socket's pull builds over 0.9 s, turns it to the socket's nearest turn, draws it over the mouth and down onto its seat,
+  and fits it (`ModuleGuide.PullIn`). It is always weaker than the gun: holding the beam more than 2 m from the seat lets
+  it go within 0.35 s. A module just pulled out of a socket isn't caught by that socket again until it has been carried
+  out of range (`Construct.ModSkipShip`).
+- **Pull-off.** Fire on a fitted, unlocked module the gun can carry starts a strain: the player must hold Fire and pull the
+  beam 0.3 m out along the socket's normal for 0.6 s before it gives. It then slides out slowly (5 cm/s for the first
+  12 cm, then 0.5 m/s), only while they keep pulling; let go and it slides back at 0.2 m/s and seats again. Once its plug
+  is 12 cm past the surface the gun holds it as anything (`ModuleGuide`, `Kind.Pull`).
+- **Seen.** Within 18 m: the lock knob (red locked, green free), depth rings on a dug well's liner every 0.25 m (heavier
+  each metre), the floor of an empty well; with the configure panel open on the socket or a module held near, a ghost of
+  the well, the room as a wire box (green when the held module fits, red when not) and its overhang in red
+  (`ConstructRenderSockets`). Depth marks always show unless Hide connector is on. The configure panel shows the four
+  styles as pictures and a side view of the plate, the well and the room with their measures (`UiSandboxConfigSockets`).
+
+### 6.5 Detaching and damage
 
 - **Taking off** (cut free on the plug by hand, a fitter, a Creative remove): the plug-plate link is cut and the use's parts
   split into their own body (`ConstructWorld.SplitPieces`) with their links, wires and fuel; the pass-throughs go at the

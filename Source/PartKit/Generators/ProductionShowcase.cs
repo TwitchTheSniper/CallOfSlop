@@ -304,7 +304,8 @@ public sealed class ProductionShowcase : IPartGenerator
                     Finish(t, j == 0 ? "painted deck plate" : "concrete");
                 }
             var station = On("Building Station", 65.25f, -9.25f, Front, "-y.0.0");
-            Config(station, ("bayWidth", 4.0), ("bayDepth", 5.0), ("bayHeight", 3.0));
+            foreach (var cell in new[] { "+x.1", "+x.2" }) // (its bay, drawing 18: four Bay Blocks beside the Core, 4 x 4 m, 2 m high with no masts)
+                Onto(Onto(station, cell, "Bay Block", "-x"), "+x", "Bay Block", "-x");
             Link("data", orders, station, null, "Orders", Control, true, null,
                 new[] { V(24.25f, 0, -2.05f), V(31.75f, 0, -2.05f), V(39.25f, 0, -2.05f), V(46.75f, 0, -2.05f), V(54.25f, 0, -2.05f), V(60.5f, 0, -2.05f), V(64.6f, 0, -2.05f), V(64.6f, 0, -6.0f) }
                     .Select(p => V(p.X, FloorY + 0.03f, p.Z)).ToArray());
@@ -319,13 +320,13 @@ public sealed class ProductionShowcase : IPartGenerator
                 Store(kit, -1, part, n); // (the Swing Arm Buggy's 26 parts: the station reserves them here and they ride in)
             var from = PortAt(kit, "Piece out");
             var to = PortAt(station, "Piece in");
-            Convey(kit, "Piece out", station, "Piece in", Assembly, null, V(to.X, from.Y, from.Z)); // (out of the rack's end, then straight up to the hold's back)
+            Convey(kit, "Piece out", station, "Piece in", Assembly, null, V((from.X + to.X) * 0.5f, from.Y, from.Z), V(to.X, from.Y, from.Z), V(to.X, from.Y, (from.Z + to.Z) * 0.5f)); // (out of the rack's end, then straight up to the hold's back)
             Sign(68.75f, Posts1, Assembly, "F on the station: pick Swing Arm Buggy, Start. Parts ride in");
             // Loader Arms (production.md "The Loader Arm") at the bay's two corners by the hold (the window tool's "lifter place" slots 0 and 1),
             // on this body: its mains power them (a placed arm is a body of its own, with no battery: "No power" in a timed world). Each picks
             // along the hold's side. (Slots 2 and 3, 6 m further along the bay, are out of a Loader Arm's 4 m reach of the hold: "NoPoint".)
             On("Loader Arm", 68.75f, -10.75f, Front, "-y.0.0");
-            On("Loader Arm", 68.75f, -4.25f, Front, "-y.0.0");
+            // (its second arm stood where the bay's Bay Blocks are now, drawing 18: the station's own arms fit parts there)
             return station;
         }
 
@@ -338,7 +339,7 @@ public sealed class ProductionShowcase : IPartGenerator
             var o = PortAt(router, "Piece out 2");
             var i = PortAt(station, "Piece in 2");
             Convey(router, "Piece out 2", station, "Piece in 2", Assembly, null,
-                V(o.X, o.Y, -13.6f), V(59.0f, o.Y, -13.6f), V(64.6f, o.Y, -13.6f), V(64.6f, o.Y, i.Z));
+                V(o.X, o.Y, -13.6f), V(59.0f, o.Y, -13.6f), V(i.X - 0.6f, o.Y, -13.6f), V(i.X - 0.6f, o.Y, (i.Z - 13.6f) * 0.5f), V(i.X - 0.6f, o.Y, i.Z));
         }
 
         /// <summary>
@@ -351,6 +352,13 @@ public sealed class ProductionShowcase : IPartGenerator
         {
             for (var j = TilesZ; j < TilesZ + 3; j++)
                 for (var i = 28; i < 43; i++)
+                {
+                    var t = Put("Foundation", V(1 + 2 * i, 0.15f, -1 - 2 * j), Front);
+                    Paint(t, j == TilesZ ? Aisle : Floor);
+                    Finish(t, j == TilesZ ? "painted deck plate" : "concrete");
+                }
+            for (var j = TilesZ + 3; j < TilesZ + 5; j++) // (south of the cutter: its Out Table and its rack)
+                for (var i = 34; i < 42; i++)
                 {
                     var t = Put("Foundation", V(1 + 2 * i, 0.15f, -1 - 2 * j), Front);
                     Paint(t, j == TilesZ ? Aisle : Floor);
@@ -369,12 +377,17 @@ public sealed class ProductionShowcase : IPartGenerator
             Convey(plate, "Piece out", split, "Piece in", Cutter);
             var cutter = On("Laser Cutter", 75.25f, line, Flow); // (2 m of conveyor each side: a conveyor shorter than the piece jams the Router, "the conveyor after the junction is full")
             Convey(split, "Piece out", cutter, "Piece in", Cutter);
-            var spare = On("Piece Rack", 72.25f, -18.25f, Flow, "-y.0.0", Cutter);
+            var spare = On("Piece Rack", 66.75f, -18.75f, Flow, "-y.0.0", Cutter); // (west of the cutter's bed)
             var o2 = PortAt(split, "Piece out 2");
             var sIn = PortAt(spare, "Piece in");
             Convey(split, "Piece out 2", spare, "Piece in", Cutter, null, V(o2.X, o2.Y, sIn.Z));
-            var cut = On("Piece Rack", 78.75f, -15.75f, Flow, "-y.0.0", Cutter);
-            Convey(cutter, "Piece out", cut, "Piece in", Cutter);
+            var bed = Onto(cutter, "+x", "Laser Bed Block", by: "-x", spin: 0); // (the block system, Sean 2026-11-21: a 1 x 2 bed beside the Core's long side; the cut part lies on it)
+            Onto(bed, "+z", "Laser Bed Block", by: "-z", spin: 0);
+            var table = Onto(bed, "+x", "Out Table", by: "-z", spin: 0); // (the bed's far side, away from the Core: the cut part rides out over it)
+            var tOut = PortAt(table, "Piece out");
+            var cut = On("Piece Rack", 75.25f, -22.75f, Flow, "-y.0.0", Cutter);
+            var cIn = PortAt(cut, "Piece in");
+            Convey(table, "Piece out", cut, "Piece in", Cutter, null, V(tOut.X, tOut.Y, cIn.Z));
             Sign(66.25f, -15.25f, Cutter, "LASER CUTTER: order a cut plate; blank in, cut part out", false);
 
             var k = 0;

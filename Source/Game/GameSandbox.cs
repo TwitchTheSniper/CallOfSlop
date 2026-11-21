@@ -116,6 +116,7 @@ public enum CActKind : byte
     Fleet, // u8 FleetOp, u8 group slot, u16 body, u32 uid, vec at, u8 arg, f32 value: a player's fleet group from the command view (protocol 368; GameCrewFleetPlayers.cs)
     Gantry, // u16 body, u16 part, u8 slot, u8 module index: a Shell Gantry fits that module to its shell (protocol 370; GameShellGantry.cs)
     SeamBreak, // u16 body, u16 part, u16 other part: the attach tool's RMB breaks the seam between the two (protocol 373; ConstructSeams.cs)
+    ModControl, // u16 body, u16 part, u8 control (1 eject, 2 lock, 3 gun pull on, 4 off), vec point (body frame): a module socket's controls (protocol 394; ModuleGuide.cs)
 }
 
 /// <summary>
@@ -360,6 +361,8 @@ public sealed partial class Game
                 SandboxRiderGrab(p); // (the held thing follows the look)
             else if (Constructs.PlayerSpotCount < Constructs.PlayerSpots.Length)
                 Constructs.PlayerSpots[Constructs.PlayerSpotCount++] = p.Position; // (proximity sensors)
+            if (p.Alive && h.Tool == ConstructTool.PhysicsGun)
+                ModuleGuide.PlayerTick(Constructs, SandboxHands, p.Id, p.Eye, GravityFrames.Forward(p.Position, p.Yaw, p.Pitch), p.Yaw); // (a pull on a fitted module, a held one's pull-in: ModuleGuide.cs)
             if ((p.Eva & Eva.Mmu) != 0 && (p.Sim.Gear & PilotGear.Mmu) == 0)
                 p.Sim.JetFuel = p.MmuFuel; // (a teleport made a new MoveState: the pack's tank is still the pack's)
             p.Sim.Gear = SandboxWorn(p);
@@ -425,6 +428,7 @@ public sealed partial class Game
             if (c!.Parts[seat].D.ShellRange > 0)
                 SandboxShellChair(p, ref h, c, seat, now); // (a shell chair: GameRobotShell.cs)
         }
+        ModuleGuide.Step(Constructs, SandboxHands); // (sockets eject, reseat and draw in their modules; their plates' wires: ModuleGuide.cs)
         _sbEye ??= id => Players.TryGetValue(id, out var pl) && pl.Alive ? pl.Eye : null;
         SandboxHands.Tick(Constructs, now, _sbEye);
         SandboxHands.BeaconOf ??= SandboxBeacon;
@@ -1125,6 +1129,13 @@ public sealed partial class Game
                 var part = r.U16();
                 return hands.BreakSeam(Constructs, p.Id, eye, body, part, r.U16());
             }
+            case CActKind.ModControl:
+            {
+                var body = r.U16();
+                var part = r.U16();
+                var control = r.U8();
+                return hands.ModuleControl(Constructs, p.Id, body, part, control, eye, r.Vec());
+            }
             case CActKind.SocketWeld:
             {
                 var body = r.U16();
@@ -1630,6 +1641,9 @@ public sealed partial class Game
                 break;
             case CActKind.SeamBreak:
                 w.U16(body).U16(part).U16(socket); // (socket: the other part)
+                break;
+            case CActKind.ModControl:
+                w.U16(body).U16(part).U8(variant).Vec(at); // (variant: the control; at: the beam's point, body frame)
                 break;
             case CActKind.Dampeners:
             case CActKind.MouseSteer:

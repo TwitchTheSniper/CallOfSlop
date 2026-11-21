@@ -237,6 +237,7 @@ public enum CfgKey : byte
     ModCut, // Module Socket: its cutting ring's job, seconds while it burns its well, 0 idle (not on the panel; ModuleCut.cs)
     ModWeld, // Module Socket: a Module Fitter's job on it, seconds: welding a module on (positive) or cutting its seam (negative), 0 idle (not on the panel; ConstructModuleFitters.cs)
     ModHide, // Module Socket: on, the plate and a fitted module's plug aren't drawn (a clean flush mount; ModuleSockets.HiddenLook)
+    ModLock, // Module Socket: on, its module can't be ejected, pulled off by the physics gun or taken off by hand (its slider on the frame; a Module Fitter still cuts it free: ModuleGuide.cs)
     COUNT,
 }
 
@@ -803,7 +804,7 @@ public static class ConstructConfig
         CfgKey.Colour or CfgKey.Ink => "colour",
         CfgKey.Ramp => "choice",
         CfgKey.ModKind or CfgKey.ModStyle or CfgKey.ModPrimary => "choice",
-        CfgKey.ModKeyed => "toggle",
+        CfgKey.ModKeyed or CfgKey.ModLock => "toggle",
         CfgKey.Keys or CfgKey.ApMode or CfgKey.AiCrew or CfgKey.Setting or CfgKey.Mode or CfgKey.Operator or CfgKey.Units or CfgKey.Unit or CfgKey.Recipe or CfgKey.MirrorAxis or CfgKey.Fluid or CfgKey.Material => "choice",
         _ => "number",
     };
@@ -886,6 +887,7 @@ public static class ConstructConfig
                 CfgKey.ModCut => d.ModPart == ModPart.Socket && !d.ModStand,
                 CfgKey.ModWeld => d.ModPart == ModPart.Socket,
                 CfgKey.ModHide => d.ModPart == ModPart.Socket && !d.ModStand && !d.ModNoHide,
+                CfgKey.ModLock => d.ModPart == ModPart.Socket && !d.ModStand,
                 CfgKey.ToolsOut => d.IsToolRack, // (ToolRacks.cs)
                 CfgKey.RunMode => d.IsWheelFormer && !d.IsPanelFormer,
                 CfgKey.AmmoType => d.Role is PartRole.AmmoBox or PartRole.Storage,
@@ -968,6 +970,11 @@ public static class ConstructConfig
             var slot = Array.FindIndex(d.Config, e => e.Key.Equals(p.Name, StringComparison.OrdinalIgnoreCase));
             if (slot < 0 && d.Logic is CLogic.Display or CLogic.Instrument && p.Name.ToLowerInvariant() is "decimals" or "unit")
                 continue; // bar gauges and Graph Screens lost their numbers: a player's older blueprint still loads
+            if (slot < 0 && d.IsBuildStation && p.Name.ToLowerInvariant() is "baywidth" or "baydepth" or "bayheight")
+            {
+                Console.WriteLine($"[blueprint] {where}: the {d.Name}'s \"{p.Name}\" is dropped (the bay is Bay Blocks and masts now, 2026-11-21)");
+                continue; // (an older blueprint with a sized bay still loads)
+            }
             if (slot < 0)
                 throw new ConstructPartException($"{where}: a {d.Name} has no setting \"{p.Name}\" (it has: {(d.Config.Length == 0 ? "none" : string.Join(", ", d.Config.Select(e => e.Key)))})");
             var e = d.Config[slot];

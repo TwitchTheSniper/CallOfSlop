@@ -144,6 +144,7 @@ public sealed partial class ModuleSocketParts : IPartGenerator
             $"A standard {Size(w, l)} m socket: a Module Plug of its size fits it. F with a module near fits it; F again takes it off.",
             role: "frame", color: PlateC, group: Group);
         Plate(p, w, l, Back, PlateTop);
+        Controls(p, (z, out x) => x = w - 0.5);
         p.Add(Mid(Box([w - 0.5 - 0.2, PlateTop - Drawn - 0.01, -0.5 + 0.14], [w - 0.5 - 0.14, PlateTop + 0.003, -0.5 + 0.2], LampC, detail: true))); // the lamp: the last box
         BackSockets(p, w, l, Back, "-y");
         p.Sock("bc", [(w - 1) * 0.5, Back, (l - 1) * 0.5], "-y", Small); // (phase 6: the back's middle, so a plate goes centred on a Small mount: after every older socket)
@@ -151,6 +152,33 @@ public sealed partial class ModuleSocketParts : IPartGenerator
         p.Stats(area * 85, 120 + area * Medium.HealthM2, Medium.Armour, seconds: 3.0 + area);
         p.Set(("onBreak", "detach"), ("moduleSocket", Kw(("w", w), ("l", l))), ("ports", PipePorts(w, l, Back, "in", "-y")));
         return p;
+    }
+
+    private const string ButtonC = "#c8372d";
+
+    private delegate void SideAt(double z, out double x);
+
+    /// <summary>
+    /// The frame's controls on the plate's +x side, its -z end (Sean 2026-11-21; ModuleSockets.ControlAt, where F finds them): the eject
+    /// button, a red cap in a dark housing, and the lock slider's dark track (its knob is drawn by its state, ConstructRender.Sockets). They
+    /// stand out of the side a little (detail: drawn only, nothing collides with them).
+    /// </summary>
+    private static void Controls(Part p, SideAt side)
+    {
+        double y = ModuleSockets.CtlY;
+        side(-0.5 + ModuleSockets.EjectZ, out var bx);
+        var bz = -0.5 + ModuleSockets.EjectZ;
+        p.Add(Box([bx - 0.004, y - 0.034, bz - 0.034], [bx + 0.01, y + 0.034, bz + 0.034], LugC, detail: true));
+        p.Add(Box([bx + 0.008, y - 0.022, bz - 0.022], [bx + 0.02, y + 0.022, bz + 0.022], ButtonC, detail: true));
+        // The track: short pieces along the side (a round plate's side curves).
+        const int pieces = 4;
+        for (var k = 0; k < pieces; k++)
+        {
+            double z0 = -0.5 + ModuleSockets.LockZ0 - 0.02 + (ModuleSockets.LockZ1 - ModuleSockets.LockZ0 + 0.04) * k / pieces;
+            double z1 = -0.5 + ModuleSockets.LockZ0 - 0.02 + (ModuleSockets.LockZ1 - ModuleSockets.LockZ0 + 0.04) * (k + 1) / pieces;
+            side((z0 + z1) * 0.5, out var tx);
+            p.Add(Box([tx - 0.006, y - 0.016 - 0.001 * k, z0], [tx + 0.007 + 0.001 * (k & 1), y + 0.016 + 0.001 * k, z1 - 0.002], LugC, detail: true));
+        }
     }
 
     private static Part Plug(int w, int l)

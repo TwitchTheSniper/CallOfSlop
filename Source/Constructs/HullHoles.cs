@@ -179,6 +179,7 @@ public static class HullHoles
     {
         internal static readonly Dictionary<string, ConstructPartDef?> Interned = new(StringComparer.Ordinal);
         internal static readonly Dictionary<ConstructPartDef, Made> Info = new();
+        internal static readonly Dictionary<string, string> Refused = new(StringComparer.Ordinal); // (why a key interned as null was refused: asked again, it says so, not "the cut failed")
     }
 
     /// <summary>Set by the first <see cref="Parse"/>: until then there is nothing to look up or forget.</summary>
@@ -339,6 +340,8 @@ public static class HullHoles
             {
                 if (have != null)
                     have.Touched = Environment.TickCount64;
+                else
+                    LastRefusal = Store.Refused.GetValueOrDefault(name); // (a module well that swallows a part whole reads NothingLeft each time it plans: ModuleCut)
                 return have;
             }
             var clock = System.Diagnostics.Stopwatch.StartNew();
@@ -351,7 +354,11 @@ public static class HullHoles
             }
             BuildMs += clock.Elapsed.TotalMilliseconds;
             if (made == null)
+            {
                 Console.WriteLine($"[holes] REFUSED \"{name}\": {LastRefusal}");
+                if (LastRefusal != null)
+                    Store.Refused[name] = LastRefusal;
+            }
             Interned[name] = made;
             if (made != null)
             {
@@ -385,6 +392,7 @@ public static class HullHoles
         lock (Interned)
         {
             RuntimeParts.DropOrNull(Interned, d => d == null || doomed(d));
+            Store.Refused.Clear(); // (the null entries went with them)
             List<ConstructPartDef>? gone = null;
             foreach (var d in Info.Keys)
                 if (doomed(d))
