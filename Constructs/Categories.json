@@ -25,7 +25,7 @@
     { "group": "Ship", "notSection": "Ship fittings", "unlisted": true },
     { "group": "Station", "unlisted": true },
     { "group": "Style", "unlisted": true },
-    { "group": "Ship", "name": ["Magpie", "Zero Day", "Rust Bucket", "Roamer", "Dray", "Shuttle", "Limpet", "Packet", "Haywain", "Satchel", "Dibber"], "unlisted": true },
+    { "group": "Ship", "name": ["Magpie", "Zero Day", "Rust Bucket", "Roamer", "Dray", "Shuttle", "Limpet", "Packet", "Haywain", "Satchel", "Dibber", "Docket"], "unlisted": true },
     { "section": "Module sockets", "to": ["Ship Modules", "Sockets and plugs"] },
     { "section": "Module stands", "to": ["Ship Modules", "Stands"] },
     { "section": "Module fitters", "to": ["Ship Modules", "Fitters"] },

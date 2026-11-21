@@ -1,0 +1,1361 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Docket Tug",
+  "description": "The Traders' tug: a stubby head that does the work and the string it tows. A rubber-fendered push bow, the crew's rooms (bunks, a head, a galley, an airlock over the boarding shaft), engineering behind them and a raised glass wheelhouse over it, glass all round so the pilot watches the tow; four drive nacelles stacked two a side on outriggers. Behind the transom a tow yoke grips the string, an open steel truss three cells long, each taking a standard 2 m container on twist locks on its top for a dock's crane, a railed catwalk down each side to the end car with its legs and tail jets.",
+  "steps": [
+    {
+      "part": "Docket Keel"
+    },
+    {
+      "part": "Docket Cab",
+      "on": 0,
+      "socket": "j0",
+      "by": "j0"
+    },
+    {
+      "part": "Docket Keel 3",
+      "on": 1,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Docket Cab Wall 1",
+      "on": 1,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Docket Cab Wall 2",
+      "on": 1,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Docket Cab Wall 3",
+      "on": 1,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Docket Cab Wall 4",
+      "on": 1,
+      "socket": "j5",
+      "by": "j0"
+    },
+    {
+      "part": "Docket Cab Wall 5",
+      "on": 1,
+      "socket": "j6",
+      "by": "j0"
+    },
+    {
+      "part": "Docket Cab Wall 6",
+      "on": 1,
+      "socket": "j7",
+      "by": "j0"
+    },
+    {
+      "part": "Docket Cab Wall 7",
+      "on": 1,
+      "socket": "j8",
+      "by": "j0"
+    },
+    {
+      "part": "Docket Cab Hull Port 3",
+      "on": 1,
+      "socket": "j9",
+      "by": "j0"
+    },
+    {
+      "part": "Docket Cab Hull Port 4",
+      "on": 1,
+      "socket": "j10",
+      "by": "j0"
+    },
+    {
+      "part": "Docket Cab Hull Stbd 3",
+      "on": 1,
+      "socket": "j11",
+      "by": "j0"
+    },
+    {
+      "part": "Docket Cab Hull Stbd 4",
+      "on": 1,
+      "socket": "j12",
+      "by": "j0"
+    },
+    {
+      "part": "Docket Push Bow",
+      "on": 1,
+      "socket": "j13",
+      "by": "j2"
+    },
+    {
+      "part": "Docket Cab Wall 8",
+      "on": 4,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Docket Cab Ceiling",
+      "on": 4,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Docket Keel 1",
+      "on": 14,
+      "socket": "j0",
+      "by": "j0"
+    },
+    {
+      "part": "Docket Keel 2",
+      "on": 14,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Docket Eng Hull Port 5",
+      "on": 15,
+      "socket": "j6",
+      "by": "j0"
+    },
+    {
+      "part": "Docket Eng Hull Stbd 5",
+      "on": 15,
+      "socket": "j7",
+      "by": "j0"
+    },
+    {
+      "part": "Docket Roof",
+      "on": 16,
+      "socket": "j10",
+      "by": "j0"
+    },
+    {
+      "part": "Docket Roof 3",
+      "on": 16,
+      "socket": "j11",
+      "by": "j0"
+    },
+    {
+      "part": "Docket Engineering",
+      "on": 19,
+      "socket": "j1",
+      "by": "j4"
+    },
+    {
+      "part": "Docket Eng Ceiling",
+      "on": 19,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Docket Eng Hull Port 6",
+      "on": 19,
+      "socket": "j3",
+      "by": "j3"
+    },
+    {
+      "part": "Docket Eng Hull Stbd 6",
+      "on": 20,
+      "socket": "j3",
+      "by": "j3"
+    },
+    {
+      "part": "Docket Keel 5",
+      "on": 23,
+      "socket": "j0",
+      "by": "j0"
+    },
+    {
+      "part": "Docket Keel 6",
+      "on": 23,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Docket Keel 7",
+      "on": 23,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Docket Eng Wall 1",
+      "on": 23,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Docket Stern",
+      "on": 23,
+      "socket": "j8",
+      "by": "j1"
+    },
+    {
+      "part": "Docket Roof 5",
+      "on": 24,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Docket Roof 6",
+      "on": 24,
+      "socket": "j5",
+      "by": "j0"
+    },
+    {
+      "part": "Docket Roof 7",
+      "on": 24,
+      "socket": "j6",
+      "by": "j0"
+    },
+    {
+      "part": "Docket Wheelhouse",
+      "on": 24,
+      "socket": "j7",
+      "by": "j0"
+    },
+    {
+      "part": "Docket Eng Hull Port 7",
+      "on": 25,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Docket Eng Hull Stbd 7",
+      "on": 26,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Docket Keel 8",
+      "on": 31,
+      "socket": "j0",
+      "by": "j0"
+    },
+    {
+      "part": "Docket Roof 8",
+      "on": 31,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Docket Tow Yoke",
+      "on": 31,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Docket String Cell 1",
+      "on": 40,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Docket String Cell 2",
+      "on": 41,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Docket String Cell 3",
+      "on": 42,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Docket String End",
+      "on": 43,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Bulkhead Door 1.5x2.25 m",
+      "on": 15,
+      "socket": "doorAft",
+      "by": "hang",
+      "paint": "#f2c400",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Bulkhead Door 1.5x2.25 m",
+      "on": 6,
+      "socket": "doorBunk",
+      "by": "hang",
+      "paint": "#f2c400",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Bulkhead Door 1.5x2.25 m",
+      "on": 6,
+      "socket": "doorHead",
+      "by": "hang",
+      "paint": "#f2c400",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Bulkhead Door 1.5x2.25 m",
+      "on": 7,
+      "socket": "doorGalley",
+      "by": "hang",
+      "paint": "#f2c400",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Bulkhead Door 1.5x2.25 m",
+      "on": 7,
+      "socket": "doorAirlock",
+      "by": "hang",
+      "paint": "#f2c400",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Flight Couch",
+      "on": 35,
+      "socket": "pilot",
+      "by": "bottom"
+    },
+    {
+      "part": "Flight Couch",
+      "on": 35,
+      "socket": "copilot",
+      "by": "bottom"
+    },
+    {
+      "part": "Docket Flight Computer",
+      "on": 35,
+      "socket": "computer",
+      "by": "bottom",
+      "config": {
+        "keys": "Ship",
+        "mouseAim": true
+      }
+    },
+    {
+      "part": "Docket Wheelhouse Ladder",
+      "on": 23,
+      "socket": "ladderWh",
+      "by": "foot",
+      "paint": "#3b3f44",
+      "finish": "painted steel"
+    },
+    {
+      "part": "Bunk",
+      "on": 1,
+      "socket": "bunk0",
+      "by": "bottom"
+    },
+    {
+      "part": "Bunk",
+      "on": 1,
+      "socket": "bunk1",
+      "by": "bottom"
+    },
+    {
+      "part": "Service Locker",
+      "on": 8,
+      "socket": "lockerBunk",
+      "by": "wall",
+      "paint": "#1f4e8c"
+    },
+    {
+      "part": "Service Locker",
+      "on": 3,
+      "socket": "lockerHall",
+      "by": "wall",
+      "paint": "#1f4e8c"
+    },
+    {
+      "part": "Ship Toilet",
+      "on": 4,
+      "socket": "toilet",
+      "by": "wall"
+    },
+    {
+      "part": "Ship Basin",
+      "on": 4,
+      "socket": "basin",
+      "by": "wall"
+    },
+    {
+      "part": "Shower Stall",
+      "on": 15,
+      "socket": "shower",
+      "by": "wall"
+    },
+    {
+      "part": "Ship Galley Range",
+      "on": 3,
+      "socket": "range",
+      "by": "back"
+    },
+    {
+      "part": "Galley Coffee Station",
+      "on": 3,
+      "socket": "coffee",
+      "by": "wall"
+    },
+    {
+      "part": "Ship Mess Table",
+      "on": 1,
+      "socket": "table",
+      "by": "bottom",
+      "spin": 1
+    },
+    {
+      "part": "Space Suit Locker",
+      "on": 5,
+      "socket": "suit0",
+      "by": "wall"
+    },
+    {
+      "part": "Space Suit Locker",
+      "on": 5,
+      "socket": "suit1",
+      "by": "wall"
+    },
+    {
+      "part": "Life Support Unit",
+      "on": 15,
+      "socket": "lifeSupport",
+      "by": "wall"
+    },
+    {
+      "part": "Oxygen Tank",
+      "on": 15,
+      "socket": "o2Tank0",
+      "by": "wall"
+    },
+    {
+      "part": "Docket Belly Hatch",
+      "on": 1,
+      "socket": "boarding",
+      "by": "hang"
+    },
+    {
+      "part": "Docket Boarding Ladder",
+      "on": 68,
+      "socket": "ladder",
+      "by": "foot",
+      "paint": "#3b3f44",
+      "finish": "painted steel"
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 7,
+      "socket": "switchHatch",
+      "by": "back",
+      "config": {
+        "startOn": false
+      }
+    },
+    {
+      "part": "Engineer's Panel",
+      "on": 25,
+      "socket": "panel",
+      "by": "back"
+    },
+    {
+      "part": "Power Board",
+      "on": 15,
+      "socket": "board",
+      "by": "back"
+    },
+    {
+      "part": "Docket Power Plant",
+      "on": 23,
+      "socket": "plant",
+      "by": "bottom"
+    },
+    {
+      "part": "Battery",
+      "on": 23,
+      "socket": "battery0",
+      "by": "-y"
+    },
+    {
+      "part": "Battery",
+      "on": 23,
+      "socket": "battery1",
+      "by": "-y"
+    },
+    {
+      "part": "Battery",
+      "on": 23,
+      "socket": "battery2",
+      "by": "-y"
+    },
+    {
+      "part": "Space Suit Locker",
+      "on": 30,
+      "socket": "suit",
+      "by": "wall"
+    },
+    {
+      "part": "Pressure Locker",
+      "on": 30,
+      "socket": "locker",
+      "by": "wall",
+      "paint": "#1f4e8c"
+    },
+    {
+      "part": "MMU Dock",
+      "on": 30,
+      "socket": "mmuDock",
+      "by": "wall"
+    },
+    {
+      "part": "Manned Manoeuvring Unit",
+      "on": 79,
+      "socket": "mmu",
+      "by": "mount"
+    },
+    {
+      "part": "Tool Rack",
+      "on": 19,
+      "socket": "tools",
+      "by": "back"
+    },
+    {
+      "part": "Docket Nacelle Upper L",
+      "on": 19,
+      "socket": "nacUL",
+      "by": "hull"
+    },
+    {
+      "part": "Drive Nozzle M",
+      "on": 82,
+      "socket": "drive",
+      "by": "mount"
+    },
+    {
+      "part": "Drive Core M",
+      "on": 82,
+      "socket": "core",
+      "by": "front"
+    },
+    {
+      "part": "Fuel Pump M",
+      "on": 84,
+      "socket": "back",
+      "by": "front"
+    },
+    {
+      "part": "Service Hatch 1x0.8 m",
+      "on": 82,
+      "socket": "hatch",
+      "by": "hang",
+      "spin": 3,
+      "paint": "#1f4e8c",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Docket Retro Jet",
+      "on": 82,
+      "socket": "rcsFore",
+      "by": "top",
+      "paint": "#3b3f44",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 82,
+      "socket": "rcsUp",
+      "by": "base",
+      "paint": "#3b3f44",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Docket Nacelle Lower L",
+      "on": 19,
+      "socket": "nacDL",
+      "by": "hull"
+    },
+    {
+      "part": "Drive Nozzle M",
+      "on": 89,
+      "socket": "drive",
+      "by": "mount"
+    },
+    {
+      "part": "Drive Core M",
+      "on": 89,
+      "socket": "core",
+      "by": "front"
+    },
+    {
+      "part": "Fuel Pump M",
+      "on": 91,
+      "socket": "back",
+      "by": "front"
+    },
+    {
+      "part": "Service Hatch 1x0.8 m",
+      "on": 89,
+      "socket": "hatch",
+      "by": "hang",
+      "spin": 3,
+      "paint": "#1f4e8c",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Docket Retro Jet",
+      "on": 89,
+      "socket": "rcsFore",
+      "by": "top",
+      "paint": "#3b3f44",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 89,
+      "socket": "rcsDown",
+      "by": "base",
+      "paint": "#3b3f44",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Docket Nacelle Upper R",
+      "on": 20,
+      "socket": "nacUR",
+      "by": "hull"
+    },
+    {
+      "part": "Drive Nozzle M",
+      "on": 96,
+      "socket": "drive",
+      "by": "mount"
+    },
+    {
+      "part": "Drive Core M",
+      "on": 96,
+      "socket": "core",
+      "by": "front"
+    },
+    {
+      "part": "Fuel Pump M",
+      "on": 98,
+      "socket": "back",
+      "by": "front"
+    },
+    {
+      "part": "Service Hatch 1x0.8 m",
+      "on": 96,
+      "socket": "hatch",
+      "by": "hang",
+      "paint": "#1f4e8c",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Docket Retro Jet",
+      "on": 96,
+      "socket": "rcsFore",
+      "by": "top",
+      "paint": "#3b3f44",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 96,
+      "socket": "rcsUp",
+      "by": "base",
+      "paint": "#3b3f44",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Docket Nacelle Lower R",
+      "on": 20,
+      "socket": "nacDR",
+      "by": "hull"
+    },
+    {
+      "part": "Drive Nozzle M",
+      "on": 103,
+      "socket": "drive",
+      "by": "mount"
+    },
+    {
+      "part": "Drive Core M",
+      "on": 103,
+      "socket": "core",
+      "by": "front"
+    },
+    {
+      "part": "Fuel Pump M",
+      "on": 105,
+      "socket": "back",
+      "by": "front"
+    },
+    {
+      "part": "Service Hatch 1x0.8 m",
+      "on": 103,
+      "socket": "hatch",
+      "by": "hang",
+      "paint": "#1f4e8c",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Docket Retro Jet",
+      "on": 103,
+      "socket": "rcsFore",
+      "by": "top",
+      "paint": "#3b3f44",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 103,
+      "socket": "rcsDown",
+      "by": "base",
+      "paint": "#3b3f44",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 14,
+      "socket": "rcsUpL",
+      "by": "base",
+      "paint": "#3b3f44",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 14,
+      "socket": "rcsDownL",
+      "by": "base",
+      "paint": "#3b3f44",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 14,
+      "socket": "rcsOutL",
+      "by": "base",
+      "paint": "#3b3f44",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 44,
+      "socket": "rcsUpL",
+      "by": "base",
+      "paint": "#3b3f44",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 44,
+      "socket": "rcsDownL",
+      "by": "base",
+      "paint": "#3b3f44",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 44,
+      "socket": "rcsOutL",
+      "by": "base",
+      "paint": "#3b3f44",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 44,
+      "socket": "rcsAlongL",
+      "by": "base",
+      "paint": "#3b3f44",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 14,
+      "socket": "rcsUpR",
+      "by": "base",
+      "paint": "#3b3f44",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 14,
+      "socket": "rcsDownR",
+      "by": "base",
+      "paint": "#3b3f44",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 14,
+      "socket": "rcsOutR",
+      "by": "base",
+      "paint": "#3b3f44",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 44,
+      "socket": "rcsUpR",
+      "by": "base",
+      "paint": "#3b3f44",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 44,
+      "socket": "rcsDownR",
+      "by": "base",
+      "paint": "#3b3f44",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 44,
+      "socket": "rcsOutR",
+      "by": "base",
+      "paint": "#3b3f44",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 44,
+      "socket": "rcsAlongR",
+      "by": "base",
+      "paint": "#3b3f44",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Docket Lift Jet",
+      "on": 0,
+      "socket": "lift0",
+      "by": "top"
+    },
+    {
+      "part": "Docket Lift Jet",
+      "on": 0,
+      "socket": "lift1",
+      "by": "top"
+    },
+    {
+      "part": "Docket Lift Jet",
+      "on": 38,
+      "socket": "lift2",
+      "by": "top"
+    },
+    {
+      "part": "Docket Lift Jet",
+      "on": 38,
+      "socket": "lift3",
+      "by": "top"
+    },
+    {
+      "part": "Leg Pod Housing S",
+      "on": 2,
+      "socket": "leg0",
+      "by": "top"
+    },
+    {
+      "part": "Leg Pod Canopy Port S",
+      "on": 128,
+      "socket": "canopyL",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Canopy Stbd S",
+      "on": 128,
+      "socket": "canopyR",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Strut S",
+      "on": 128,
+      "socket": "strut",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Carriage S",
+      "on": 128,
+      "socket": "carriage",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Brace S",
+      "on": 132,
+      "socket": "brace",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Foot S",
+      "on": 128,
+      "socket": "foot",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Housing S",
+      "on": 2,
+      "socket": "leg1",
+      "by": "top"
+    },
+    {
+      "part": "Leg Pod Canopy Port S",
+      "on": 135,
+      "socket": "canopyL",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Canopy Stbd S",
+      "on": 135,
+      "socket": "canopyR",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Strut S",
+      "on": 135,
+      "socket": "strut",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Carriage S",
+      "on": 135,
+      "socket": "carriage",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Brace S",
+      "on": 139,
+      "socket": "brace",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Foot S",
+      "on": 135,
+      "socket": "foot",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Housing S",
+      "on": 28,
+      "socket": "leg2",
+      "by": "top"
+    },
+    {
+      "part": "Leg Pod Canopy Port S",
+      "on": 142,
+      "socket": "canopyL",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Canopy Stbd S",
+      "on": 142,
+      "socket": "canopyR",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Strut S",
+      "on": 142,
+      "socket": "strut",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Carriage S",
+      "on": 142,
+      "socket": "carriage",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Brace S",
+      "on": 146,
+      "socket": "brace",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Foot S",
+      "on": 142,
+      "socket": "foot",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Housing S",
+      "on": 28,
+      "socket": "leg3",
+      "by": "top"
+    },
+    {
+      "part": "Leg Pod Canopy Port S",
+      "on": 149,
+      "socket": "canopyL",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Canopy Stbd S",
+      "on": 149,
+      "socket": "canopyR",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Strut S",
+      "on": 149,
+      "socket": "strut",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Carriage S",
+      "on": 149,
+      "socket": "carriage",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Brace S",
+      "on": 153,
+      "socket": "brace",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Foot S",
+      "on": 149,
+      "socket": "foot",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Housing S",
+      "on": 44,
+      "socket": "leg0",
+      "by": "top"
+    },
+    {
+      "part": "Leg Pod Canopy Port S",
+      "on": 156,
+      "socket": "canopyL",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Canopy Stbd S",
+      "on": 156,
+      "socket": "canopyR",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Strut S",
+      "on": 156,
+      "socket": "strut",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Carriage S",
+      "on": 156,
+      "socket": "carriage",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Brace S",
+      "on": 160,
+      "socket": "brace",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Foot S",
+      "on": 156,
+      "socket": "foot",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Housing S",
+      "on": 44,
+      "socket": "leg1",
+      "by": "top"
+    },
+    {
+      "part": "Leg Pod Canopy Port S",
+      "on": 163,
+      "socket": "canopyL",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Canopy Stbd S",
+      "on": 163,
+      "socket": "canopyR",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Strut S",
+      "on": 163,
+      "socket": "strut",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Carriage S",
+      "on": 163,
+      "socket": "carriage",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Brace S",
+      "on": 167,
+      "socket": "brace",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Foot S",
+      "on": 163,
+      "socket": "foot",
+      "by": "hang"
+    },
+    {
+      "part": "Standard Container 2m",
+      "on": 41,
+      "socket": "lock0",
+      "by": "foot.0",
+      "paint": "#4f9a3e",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Standard Container 2m Hatch",
+      "on": 170,
+      "socket": "hatch",
+      "by": "hang",
+      "paint": "#4f9a3e",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Standard Container 2m Hatch",
+      "on": 170,
+      "socket": "hatch.1",
+      "by": "hang",
+      "paint": "#4f9a3e",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Container Cradle 2x2",
+      "on": 170,
+      "socket": "slot0",
+      "by": "base"
+    },
+    {
+      "part": "Container Cradle 2x2",
+      "on": 170,
+      "socket": "slot1",
+      "by": "base"
+    },
+    {
+      "part": "Container Cradle 2x2",
+      "on": 170,
+      "socket": "slot2",
+      "by": "base"
+    },
+    {
+      "part": "Standard Container 2m",
+      "on": 42,
+      "socket": "lock0",
+      "by": "foot.0",
+      "paint": "#d8b23a",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Standard Container 2m Hatch",
+      "on": 176,
+      "socket": "hatch",
+      "by": "hang",
+      "paint": "#d8b23a",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Standard Container 2m Hatch",
+      "on": 176,
+      "socket": "hatch.1",
+      "by": "hang",
+      "paint": "#d8b23a",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Container Cradle 2x2",
+      "on": 176,
+      "socket": "slot0",
+      "by": "base"
+    },
+    {
+      "part": "Container Cradle 2x2",
+      "on": 176,
+      "socket": "slot1",
+      "by": "base"
+    },
+    {
+      "part": "Container Cradle 2x2",
+      "on": 176,
+      "socket": "slot2",
+      "by": "base"
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 35,
+      "socket": "lampWhL",
+      "by": "back",
+      "config": {
+        "colour": "#ffd080"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 35,
+      "socket": "lampWhR",
+      "by": "back",
+      "config": {
+        "colour": "#ffd080"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 35,
+      "socket": "switchWh",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 4,
+      "socket": "lampBunk",
+      "by": "back",
+      "config": {
+        "colour": "#ffe0b0"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 6,
+      "socket": "switchBunk",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 4,
+      "socket": "lampHead",
+      "by": "back",
+      "config": {
+        "colour": "#fff0d0"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 6,
+      "socket": "switchHead",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 5,
+      "socket": "lampGalley",
+      "by": "back",
+      "config": {
+        "colour": "#ffe0b0"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 7,
+      "socket": "switchGalley",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 5,
+      "socket": "lampAirlock",
+      "by": "back",
+      "config": {
+        "colour": "#ffd040"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 6,
+      "socket": "lampHallA",
+      "by": "back",
+      "config": {
+        "colour": "#fff0d0"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 7,
+      "socket": "lampHallB",
+      "by": "back",
+      "config": {
+        "colour": "#fff0d0"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 19,
+      "socket": "lampEngL",
+      "by": "back",
+      "config": {
+        "colour": "#a0d0ff"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 26,
+      "socket": "lampEngR",
+      "by": "back",
+      "config": {
+        "colour": "#a0d0ff"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 15,
+      "socket": "switchEng",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    }
+  ],
+  "wires": [
+    [
+      50,
+      52
+    ],
+    [
+      70,
+      68
+    ],
+    [
+      184,
+      182
+    ],
+    [
+      184,
+      183
+    ],
+    [
+      186,
+      185
+    ],
+    [
+      188,
+      187
+    ],
+    [
+      190,
+      189
+    ],
+    [
+      196,
+      194
+    ],
+    [
+      196,
+      195
+    ]
+  ],
+  "conduit": true
+}
