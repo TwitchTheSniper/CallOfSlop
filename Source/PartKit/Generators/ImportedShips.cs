@@ -541,6 +541,14 @@ public sealed class ImportedShips : IPartGenerator
                 case "swingDoor":
                     one.Role = "door";
                     one.Door = true;
+                    if (Math.Abs(role!.Value.GetProperty("angle").GetDouble() % 90) > 0.01)
+                    {
+                        // A held door (open off the quarter turns) keeps its collider where it rests, so it collides nowhere but its
+                        // hinge (ConstructDoors "held"): drawn only, and the steps under it (below) are what a player walks on.
+                        one.Boxes.RemoveAll(b => b.Hidden);
+                        if (role.Value.TryGetProperty("steps", out var st) && st.GetBoolean())
+                            yield return Steps(ob, role.Value);
+                    }
                     break;
                 case "seat" or "bunk" or "medBed":
                     one.Role = "seat";
@@ -556,6 +564,32 @@ public sealed class ImportedShips : IPartGenerator
             if (one.Boxes.Count > 250)
                 throw new InvalidOperationException($"imported_ships: {ob.Name} has {one.Boxes.Count} boxes (250 at most): list it under \"pieces\"");
             yield return one;
+        }
+
+        /// <summary>
+        /// Hidden steps under a held ramp's open pose, from its hinge down to the ground (0.35 m rises at most): what a player walks
+        /// up when it is down. They stand there shut too (nothing draws them), so the shut ramp has a stair behind it.
+        /// </summary>
+        private Piece Steps(Obj ob, JsonElement role)
+        {
+            var pivot = ob.World.Translation;
+            var ang = role.GetProperty("angle").GetSingle() * MathF.PI / 180f;
+            var axis = DirVec(role.GetProperty("axis").GetString()!);
+            var pts = ob.Meshes.SelectMany(m => m.P).ToList();
+            float x0 = pts.Min(v => v.X) + 0.1f, x1 = pts.Max(v => v.X) - 0.1f;
+            var len = pts.Max(v => v.Y) - pivot.Y;
+            var down = Vector3.Transform(Vector3.UnitY, Matrix4x4.CreateFromAxisAngle(axis, ang)); // (where the ramp's top goes)
+            var run = MathF.Abs(down.Z) * len * MathF.Max(0.1f, MathF.Min(1, pivot.Y / MathF.Max(0.01f, -down.Y * len)));
+            var n = Math.Max(1, (int)MathF.Ceiling(pivot.Y / 0.35f));
+            var sign = MathF.Sign(down.Z);
+            var p = new Piece { Source = ob.Name + "_Steps", Group = ob.Path.Count > 0 ? ob.Path[^1] : ob.Name, Name = ob.Name + " Steps", From = null };
+            for (var i = 1; i < n; i++)
+            {
+                float za = pivot.Z + sign * run * i / n, zb = pivot.Z + sign * run * (i + 1) / n;
+                var top = pivot.Y * (1 - (float)i / n);
+                p.Boxes.Add(new Bx { Lo = new Vector3(x0, 0.03f, MathF.Min(za, zb)), Hi = new Vector3(x1, top, MathF.Max(za, zb)), Hidden = true });
+            }
+            return p;
         }
 
         private List<Bx> Boxes(MeshIn m, bool structure, string where)

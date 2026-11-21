@@ -28,7 +28,7 @@
   ],
   "roles": [
     { "match": "Bulkhead_Door_*", "role": "slideDoor", "leaf": [ 3, 4, 5 ], "travel": 1.02, "seconds": 1.0 },
-    { "match": "Rear_Loading_Ramp", "role": "swingDoor", "axis": "+x", "angle": 121, "seconds": 4.0 },
+    { "match": "Rear_Loading_Ramp", "role": "swingDoor", "axis": "+x", "angle": 121, "seconds": 4.0, "steps": true },
     { "match": "VTOL_Pod_*", "role": "swingDoor", "axis": "+x", "angle": -90, "seconds": 2.5, "switch": "VTOL" },
     { "match": "Pilot_Seat_Front", "role": "seat", "helm": true, "pilot": true },
     { "match": "Gunner_Seat_Aft", "role": "seat" },
