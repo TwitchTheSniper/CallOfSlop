@@ -32,10 +32,13 @@ One class per old script in `Source/PartKit/Generators/`, implementing `IPartGen
 ### Chunky details
 
 The ship generators (`PartChunky.Generators`: the rust bucket, Roamer, Magpie, Zero Day, Dray, Packet, Haywain, Satchel and
-Dibber) grow their thin drawn boxes in `Part.Json()` before the coplanar pass, as the Ship Render Bench's "Raised ribs" and
-"Chunkier greebles" switches did (Karl, 2026-11-21): a dark box (luma under 0.2) thinner than 0.35 m grows 2 cm on every side,
-and any box thinner than 12 cm grows by a fifth of its thickness. Only plain detail boxes change (no glow, screen, rig, work or
-points), never a solid box, a socket or a mass; a growth that would put a face on another box's plane is cut down or dropped.
+Dibber) grow their thin drawn boxes in `Part.Json()` before the coplanar pass, after the Ship Render Bench's "Raised ribs" and
+"Chunkier greebles" switches (Karl, 2026-11-21): a dark box (luma under 0.2) thinner than 0.35 m rises 2 cm, and any box thinner
+than 12 cm by a tenth of its thickness (each box 85-100% of that, by where it is, so two parts' details don't grow onto one plane).
+Only the faces that stand proud of the solid boxes a detail sits on move, outward, and never a face at the part's own end (where
+the next part meets it): a jamb rises off its wall but doesn't narrow its doorway. Only plain detail boxes change (no shape, glow,
+screen, rig or work), never a solid box, a socket or a mass; a growth that would leave a face on a plane it shares with a box it
+touches is cut down or dropped. `--check-vehicle` on the nine blueprints shows the same coplanar counts between parts as before.
 A new ship generator that wants the look joins the set; the numbers are `PartChunky`'s constants.
 
 ## Byte for byte
