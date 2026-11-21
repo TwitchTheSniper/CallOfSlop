@@ -315,7 +315,7 @@
     {
       "part": "Hexkey L0 Pick-up Counter",
       "on": 17,
-      "socket": "j6",
+      "socket": "j5",
       "by": "j0"
     },
     {
@@ -544,7 +544,7 @@
       "part": "Hexkey L0 Floor 6-3",
       "on": 30,
       "socket": "j5",
-      "by": "j7"
+      "by": "j6"
     },
     {
       "part": "Hexkey L0 Floor 7-3",
@@ -735,7 +735,7 @@
     {
       "part": "Hexkey L0 Reduced Sign",
       "on": 90,
-      "socket": "j5",
+      "socket": "j4",
       "by": "j0"
     },
     {

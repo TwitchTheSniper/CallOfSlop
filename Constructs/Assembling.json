@@ -2430,11 +2430,11 @@
     {"output": "Container Cradle 2x2", "materials": {"steel": 36, "concrete": 7}, "seconds": 7.4, "minTier": 2},
     {"output": "Container Cradle 3x3", "materials": {"steel": 81, "concrete": 16}, "seconds": 14.2, "minTier": 2},
     {"output": "Container Corner Clamp", "materials": {"steel": 3}, "parts": {"Bearing": 1}, "seconds": 2.4, "minTier": 2},
-    {"output": "Standard Container 1m", "materials": {"steel": 128, "concrete": 26}, "seconds": 21.1, "minTier": 2},
+    {"output": "Standard Container 1m", "materials": {"steel": 128, "rubber": 26}, "seconds": 21.1, "minTier": 2},
     {"output": "Standard Container 1m Hatch", "materials": {"steel": 16}, "parts": {"Bearing": 2}, "seconds": 4.5, "minTier": 2},
-    {"output": "Standard Container 2m", "materials": {"steel": 388, "concrete": 78}, "seconds": 60.1, "minTier": 2},
+    {"output": "Standard Container 2m", "materials": {"steel": 388, "rubber": 78}, "seconds": 60.1, "minTier": 2},
     {"output": "Standard Container 2m Hatch", "materials": {"steel": 59}, "parts": {"Bearing": 6}, "seconds": 10.9, "minTier": 2},
-    {"output": "Standard Container 3m", "materials": {"steel": 788, "concrete": 158}, "seconds": 120.1, "minTier": 2},
+    {"output": "Standard Container 3m", "materials": {"steel": 788, "rubber": 158}, "seconds": 120.1, "minTier": 2},
     {"output": "Standard Container 3m Hatch", "materials": {"steel": 128}, "parts": {"Bearing": 13}, "seconds": 21.2, "minTier": 2},
     {"output": "Roamer Air Unit", "materials": {"steel": 36, "concrete": 7}, "seconds": 7.4},
     {"output": "Roamer Canopy", "materials": {"steel": 500, "concrete": 100}, "seconds": 77.0},
@@ -2620,6 +2620,9 @@
     {"output": "Satchel Roof 7", "materials": {"steel": 257, "concrete": 51}, "seconds": 40.6},
     {"output": "Satchel Roof 8", "materials": {"steel": 257, "concrete": 51}, "seconds": 40.6},
     {"output": "Satchel Roof 9", "materials": {"steel": 257, "concrete": 51}, "seconds": 40.6},
-    {"output": "Satchel Stern", "materials": {"steel": 1200, "concrete": 240}, "seconds": 180.0}
+    {"output": "Satchel Stern", "materials": {"steel": 1200, "concrete": 240}, "seconds": 180.0},
+    {"output": "Hexkey Gondola Bay", "materials": {"planks": 4, "steel": 2}, "seconds": 5},
+    {"output": "Hexkey Rack Bay", "materials": {"planks": 30, "steel": 12}, "seconds": 12},
+    {"output": "Hexkey Trolley", "materials": {"planks": 3, "steel": 8, "rubber": 2}, "seconds": 6}
   ]
 }

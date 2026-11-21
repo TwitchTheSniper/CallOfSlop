@@ -28,6 +28,7 @@ public sealed partial class Game
         SandboxHands.NameOf = SandboxNameOf;
         SandboxHands.Aboard = _sbAboard ??= SandboxAboardRefusal;
         SandboxHands.IsFrame = _sbIsFrame ??= SandboxIsFrame;
+        SandboxHands.StoreMoved = StoreShopMoved; // (a store station's shelves: GameStoreShop.cs)
     }
 
     /// <summary>Client and host: is this construct the player's own reference frame (seated in it or standing on it)? The physics gun never takes or freezes it.</summary>
