@@ -10,8 +10,12 @@
     { "part": "Foundation", "on": 2, "socket": "z+0", "by": "z-0" },
     { "part": "Foundation", "on": 2, "socket": "x+0", "by": "x-0" },
     { "part": "Foundation", "on": 4, "socket": "x+0", "by": "x-0" },
-    { "part": "Building Station", "on": 0, "socket": "top01", "by": "-y.0.0", "config": { "bayWidth": 4, "bayDepth": 3, "bayHeight": 3 } },
-    { "part": "Building Station", "on": 3, "socket": "top01", "by": "-y.0.0", "config": { "bayWidth": 4, "bayDepth": 3, "bayHeight": 3 } },
-    { "part": "Loader Arm", "on": 5, "socket": "top12", "by": "-y.0.0" }
+    { "part": "Building Station", "on": 0, "socket": "top01", "by": "-y.0.0" },
+    { "part": "Building Station", "on": 3, "socket": "top01", "by": "-y.0.0" },
+    { "part": "Loader Arm", "on": 5, "socket": "top12", "by": "-y.0.0" },
+    { "part": "Bay Block", "on": 6, "socket": "+x.1", "by": "-x" },
+    { "part": "Bay Block", "on": 6, "socket": "+x.2", "by": "-x" },
+    { "part": "Bay Block", "on": 7, "socket": "+x.1", "by": "-x" },
+    { "part": "Bay Block", "on": 7, "socket": "+x.2", "by": "-x" }
   ]
 }

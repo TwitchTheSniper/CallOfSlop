@@ -678,7 +678,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   and Capital Laser Cutters (part files go and come, ids move); the bed, the heads and the bin are read from the blocks on each peer.
     // 400: kept for the clamshell Press (PR 404), which is on its way in.
     // 401: CActKind.ModControl (a module socket's eject button, lock slider and the physics gun's pull on a fitted module), CfgKey.ModLock, and a plate's Attach, Eject and Lock in, Attached and Locked out (module sockets, Sean 2026-11-21)
-    // 402: kept for the Building Station (PR 410), which is on its way in.
+    // 402: the Building Station on the block system (Sean, 2026-11-21): a Core, Bay Blocks and masts replace its bay settings (a new part
+    //   file shifts ids); a station's record carries its fitting arms (each arm's carry: its part, its target and its length).
     // 403: the Hall Crane (Sean, 2026-11-21): Crane Rail Block and Crane Core part files come (ids move); a hall crane's span, lift
     //   and drop are worked out from its rails on each peer.
     public const ushort ProtocolVersion = 403;

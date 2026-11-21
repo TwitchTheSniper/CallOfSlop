@@ -641,7 +641,7 @@
     {"output": "Roof Water Tank", "materials": {"steel": 180, "concrete": 36}, "seconds": 29.0},
     {"output": "Sliding Gate Leaf 4 m", "materials": {"steel": 90, "rubber": 18}, "seconds": 15.5},
     {"output": "Tannoy Mast", "materials": {"steel": 14, "concrete": 3}, "seconds": 4.1},
-    {"output": "Building Station", "materials": {"steel": 84, "rubber": 17}, "seconds": 14.6},
+    {"output": "Building Station", "materials": {"steel": 320, "rubber": 64}, "seconds": 50.0},
     {"output": "Bumper", "materials": {"steel": 4, "rubber": 1}, "seconds": 2.7},
     {"output": "Capital Box Frame 128 m", "materials": {"steel": 2000, "concrete": 500}, "seconds": 600.0, "minTier": 4},
     {"output": "Capital Box Frame 16 m", "materials": {"steel": 2000, "concrete": 500}, "seconds": 600.0, "minTier": 4},
@@ -2490,6 +2490,7 @@
     {"output": "Oven Bed Block", "materials": {"steel": 700, "copper": 80}, "parts": {"Wiring Loom": 1}, "seconds": 90},
     {"output": "Out Table", "materials": {"steel": 160, "rubber": 40}, "parts": {"Gear Set": 1}, "seconds": 60},
     {"output": "Laser Bed Block", "materials": {"steel": 480, "rubber": 60, "copper": 20}, "parts": {"Wiring Loom": 1, "Gear Set": 1}, "seconds": 90},
+    {"output": "Bay Block", "materials": {"steel": 420, "rubber": 20}, "parts": {"Wiring Loom": 1}, "seconds": 40},
     {"output": "Crane Rail Block", "materials": {"steel": 280, "concrete": 56}, "seconds": 44.0},
     {"output": "Crane Core", "materials": {"steel": 440}, "parts": {"Gear Set": 4, "Bearing": 4, "Control Unit": 1}, "seconds": 68.0, "minTier": 3}
   ]

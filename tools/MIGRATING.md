@@ -72,6 +72,10 @@ Each update unzips into its own folder (`CallOfSlop-<version>`) with a small `.c
 
 The game's built-in sound levels are now the **SeabMix2** mix: your own gun, other players' guns, explosions, bullet whizz and the hit sounds are louder, footsteps a little quieter (README, "Audio mixer", lists every level). If you never saved a mix, you get it straight away. If you have an `audio_mix.json` (or presets in `AudioMixes`), every level you changed in the F8 mixer stays as you set it, and every level you left at its old default moves to the new one the first time the file loads; press **Save** in the mixer to keep the result. To start over from the new defaults, use **Revert to defaults** and Save, or delete `audio_mix.json`.
 
+### Building Stations in a saved world (2026-11-21)
+
+A Building Station's bay is no longer three settings: weld **Bay Blocks** (2 x 2 m floor tiles, made at an Assembler) beside the station in a full rectangle, and stack **Mast Blocks** on its four corners for height (2 m a block; no masts: 2 m). A station in an older world or blueprint loads without its bay settings and says "has no bay" until you weld Bay Blocks to it. The station itself is now 2 x 6 m, so a station in an older blueprint may need its neighbours moved.
+
 ### Laser Cutters in a saved world (2026-11-21)
 
 The Laser Cutter is now one **Laser Cutter Core** plus **Laser Bed Blocks** welded beside it: the bed's size sets the largest plate it cuts, and each block across the bed adds a cutting head. The Medium, Large and Capital Laser Cutters are gone: a world saved before this version loads without them (its log says "left out"), and a blueprint naming one is refused at that step. A Laser Cutter you already have cuts nothing until you weld Laser Bed Blocks beside it. Two rows left the Assembler's recipe list: an Assembler in a world saved before this version may show **another recipe** than the one you set, or none: check your Assemblers and set their recipe again.
