@@ -678,10 +678,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   and Capital Laser Cutters (part files go and come, ids move); the bed, the heads and the bin are read from the blocks on each peer.
     // 400: kept for the clamshell Press (PR 404), which is on its way in.
     // 401: CActKind.ModControl (a module socket's eject button, lock slider and the physics gun's pull on a fitted module), CfgKey.ModLock, and a plate's Attach, Eject and Lock in, Attached and Locked out (module sockets, Sean 2026-11-21)
-    // 402, 403: kept for the Building Station (PR 410) and the Hall Crane (PR 408), on their way in.
-    // 404: the Grow Former (Sean, 2026-11-21): one Grow Former Core and its Former Block replace the twelve Wheel, Fan and Airframe Formers
+    // 402 to 404: kept for the Building Station (PR 410), the clamshell Press (PR 404) and the Hall Crane (PR 408), on their way in.
+    // 405: the Grow Former (Sean, 2026-11-21): one Grow Former Core and its Former Block replace the twelve Wheel, Fan and Airframe Formers
     //   (part files go and come, ids move); CfgKey GrowMakes at the end.
-    public const ushort ProtocolVersion = 404;
+    public const ushort ProtocolVersion = 405;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;
