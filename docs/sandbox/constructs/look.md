@@ -113,7 +113,8 @@ station, arms and cranes to come) follows seven points. The shared pieces are `S
 2. **Work is visible and moves, and stops when the machine stops.** A detail box may carry `"work"`: `"spin"` (about
    `"axis"`, through its own centre), `"stroke"` (`"travel"` metres along `"axis"` and back: a ram), `"glow"` (hot orange,
    its own dull colour at rest: a die), `"smoke"` (puffs from its top), `"ram"` (an Extruder's: `"travel"` along `"axis"` by
-   the piece on its die, back each metre) or `"shear"` (over an Extruder's die: down and up as a new piece starts). A block
+   the piece on its die, back each metre), `"shear"` (over an Extruder's die: down and up as a new piece starts) or `"hinge"` (a clamshell leaf: `"pivot"` on
+   the hinge line, `"axis"` the way it opens, `"travel"` degrees; it swings open and slams shut in the Press's shell cycle). A block
    machine's cell shows its Core's work, a Run-out Table its Extruder's. A block machine's detail box may say `"seam"` (one
    face or a list: not drawn while a cell of its machine is welded on any of them) or `"seamFill"` (drawn only while one is).
    Drawn only while `ProductionLines.Working` says

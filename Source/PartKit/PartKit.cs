@@ -83,6 +83,7 @@ public static class PartKit
         new Generators.HydraulicsParts(),
         new Generators.PressParts(),
         new Generators.ExtrusionParts(),
+        new Generators.MachineMastParts(), // (the block machines' shared cells: the Mast Block)
         new Generators.PieceRackParts(),
         new Generators.RecyclerParts(),
         new Generators.PanelFormerParts(),
