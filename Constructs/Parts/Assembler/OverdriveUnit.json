@@ -1,0 +1,239 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Overdrive Unit",
+  "description": "An Assembler's upgrade module: bolt it on an upgrade slot on the Core's back. Its Assembler builds twice as fast and draws 1.8 times the power, for each one fitted (4 count at most).",
+  "group": "Production",
+  "section": "Extrusion",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 45.0,
+  "health": 300,
+  "armour": 6,
+  "material": "steel",
+  "color": "#8a2a22",
+  "attachSeconds": 8,
+  "machineBlock": {
+    "role": "tier",
+    "module": "overdrive"
+  },
+  "centreSockets": false,
+  "collider": "boxes",
+  "boxes": [
+    {
+      "min": [
+        -0.19,
+        0.0,
+        -0.3
+      ],
+      "max": [
+        0.19,
+        0.5,
+        0.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.19,
+        0.003,
+        -0.022
+      ],
+      "max": [
+        0.19,
+        0.497,
+        -0.003
+      ],
+      "color": "#22262b",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.171,
+        0.019,
+        -0.04
+      ],
+      "max": [
+        -0.139,
+        0.051,
+        -0.022
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 6,
+      "front": "-z",
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.139,
+        0.019,
+        -0.04
+      ],
+      "max": [
+        0.171,
+        0.051,
+        -0.022
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 6,
+      "front": "-z",
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.171,
+        0.449,
+        -0.04
+      ],
+      "max": [
+        -0.139,
+        0.481,
+        -0.022
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 6,
+      "front": "-z",
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.139,
+        0.449,
+        -0.04
+      ],
+      "max": [
+        0.171,
+        0.481,
+        -0.022
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 6,
+      "front": "-z",
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.16,
+        0.04,
+        -0.27
+      ],
+      "max": [
+        0.16,
+        0.36,
+        -0.022
+      ],
+      "color": "#8a2a22",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.12,
+        0.08,
+        -0.29
+      ],
+      "max": [
+        0.12,
+        0.32,
+        -0.27
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "-z",
+      "paintable": false,
+      "finish": "steel",
+      "work": "spin",
+      "axis": "-z"
+    },
+    {
+      "min": [
+        -0.03,
+        0.17,
+        -0.302
+      ],
+      "max": [
+        0.03,
+        0.23,
+        -0.29
+      ],
+      "color": "#15171a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "-z",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.15,
+        0.38,
+        -0.2
+      ],
+      "max": [
+        0.15,
+        0.46,
+        -0.05
+      ],
+      "color": "#22262b",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.11,
+        0.4,
+        -0.24
+      ],
+      "max": [
+        0.16,
+        0.47,
+        -0.2
+      ],
+      "color": "#ff5a3a",
+      "detail": true,
+      "paintable": false,
+      "work": "glow"
+    },
+    {
+      "min": [
+        -0.15,
+        0.363,
+        -0.276
+      ],
+      "max": [
+        0.15,
+        0.378,
+        -0.26
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "mount",
+      "at": [
+        0.0,
+        0.25,
+        0.0
+      ],
+      "dir": "+z",
+      "kind": "tier"
+    }
+  ]
+}

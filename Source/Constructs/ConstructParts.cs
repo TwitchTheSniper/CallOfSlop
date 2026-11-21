@@ -728,6 +728,7 @@ public sealed partial class ConstructPartDef
     public bool IsRequisition; // a Requisition Crate ("requisition": true): a story faction's courier collects a Supply job from its box (Game/GameStoryJobs.cs)
     public BlockRole BlockRole; // a block machine's Core, block or shared cell ("machineBlock": MachineBlocks.cs)
     public byte BlockFamily = 255; // ...its family (MachineBlocks.Families; 255: a shared cell, any family)
+    public byte BlockModule; // ...an Assembler's upgrade module that is no tier: 1 an Overdrive Unit, 2 a Feed Buffer (role "tier" with "module")
     public byte BlockTier; // ...a tier piece's tier, 2 to 5 (role "tier": it raises the Core it is bolted on to this tier when every lower piece is there too)
     public float BlockCell = MachineBlocks.DefaultCell; // ...its lattice step (m)
     public bool BlockCoreSeams = true; // ...a Core: a bed cell's seam boxes on a face welded to it or to an Out Table are hidden ("coreSeams": false keeps them)

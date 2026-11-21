@@ -42,7 +42,7 @@ public static class MachineScreens
         else if (d.IsRefiner)
             Refiner(p, d, st, card);
         else if (d.IsAssembler)
-            Assembler(p, d, st, card);
+            Assembler(p, d, st, card, ConstructAssembling.FitOf(c, part));
         else if (d.IsExtruder)
         {
             if (d.IsLaserCutter)
@@ -112,10 +112,19 @@ public static class MachineScreens
         card.Bar = Math.Clamp(st.Amount / (float)Math.Max(1, d.BulkCapacity), 0, 1);
     }
 
-    private static void Assembler(in CPart p, ConstructPartDef d, CStore st, PanelCard card)
+    /// <summary>The first upgrade module in <paramref name="bits"/> (MachineBlocks.TierPieceNames), for a screen line.</summary>
+    private static string FirstModule(byte bits)
+    {
+        for (var k = 2; k <= MachineBlocks.MaxTier; k++)
+            if ((bits & 1 << k) != 0)
+                return MachineBlocks.TierPieceNames[k];
+        return "";
+    }
+
+    private static void Assembler(in CPart p, ConstructPartDef d, CStore st, PanelCard card, in AsmFit fit)
     {
         var r = ConstructAssembling.RecipeOf(AssemblingTable.Current, p, d);
-        var state = ConstructAssembling.StateOf(p, d, st, r);
+        var state = ConstructAssembling.StateOf(p, d, st, r, fit);
         var names = RecyclingTable.Current;
         var line = 2;
         if (st.Held)
@@ -128,6 +137,8 @@ public static class MachineScreens
                 case AsmState.NoRecipe: Say(card, PanelState.Wants, "No recipe set"); break; // (why it sits idle, plainly; line 1 says how to set one)
                 case AsmState.NoOrders: Say(card, PanelState.Idle, "Waiting for orders"); break;
                 case AsmState.TierLow: card.State = PanelState.Refused; card.Add(0, "Needs tier ").Add(0, r!.MinTier); break;
+                case AsmState.NeedsModule: card.State = PanelState.Refused; card.Add(0, "Needs a module"); card.Add(2, FirstModule(fit.Missing(r!))); line = 3; break;
+                case AsmState.TooBig: card.State = PanelState.Refused; card.Add(0, "Too big"); card.Add(2, fit.W == 0 ? "Weld bed blocks" : "Bigger bed or masts"); line = 3; break;
                 case AsmState.Pressed: card.State = PanelState.Refused; card.Add(0, "Pressed now"); card.Add(2, "Use a Press: ").Add(2, r!.PressedDie()); line = 3; break;
                 case AsmState.Untaught: card.State = PanelState.Refused; card.Add(0, "Not taught"); card.Add(2, "A faction teaches it (F2)"); line = 3; break;
                 case AsmState.Short:

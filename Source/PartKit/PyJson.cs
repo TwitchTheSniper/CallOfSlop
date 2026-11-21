@@ -37,6 +37,15 @@ public sealed class PyDict : IEnumerable<KeyValuePair<string, object?>>
     public object? Get(string key) => _values.TryGetValue(key, out var v) ? v : null;
     public bool Has(string key) => _values.ContainsKey(key);
 
+    /// <summary>del d[key] when present: true if it was there.</summary>
+    public bool Remove(string key)
+    {
+        if (!_values.Remove(key))
+            return false;
+        _keys.Remove(key);
+        return true;
+    }
+
     /// <summary>dict.update: new keys go at the end, known keys keep their place.</summary>
     public PyDict Update(PyDict other)
     {

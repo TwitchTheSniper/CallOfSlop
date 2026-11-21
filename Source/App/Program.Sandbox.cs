@@ -1148,7 +1148,7 @@ public static unsafe partial class Program
         if (cd.IsRefiner)
             return _sbStoreText = ConstructRefining.Look(cd, st, near, inv, ConstructRefining.SetOf(hit.Body.Parts[hit.Part], cd));
         if (cd.IsAssembler && hit.SlotPlus1 == 0)
-            return _sbStoreText = ConstructAssembling.Look(cd, st, ConstructAssembling.RecipeOf(AssemblingTable.Current, hit.Body.Parts[hit.Part], cd), near, inv, held, hit.Body.Parts[hit.Part].Orders is { Bill: false });
+            return _sbStoreText = ConstructAssembling.Look(cd, st, ConstructAssembling.RecipeOf(AssemblingTable.Current, hit.Body.Parts[hit.Part], cd), ConstructAssembling.FitOf(hit.Body, hit.Part), near, inv, held, hit.Body.Parts[hit.Part].Orders is { Bill: false });
         if (cd.IsPress && hit.SlotPlus1 == 0)
             return _sbStoreText = ConstructPress.Look(hit.Body, hit.Part, st, near, held, Gfx.CameraPosition);
         if (cd.IsExtruder)

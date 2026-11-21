@@ -1308,7 +1308,7 @@ public static class ConstructBill
                     none++;
                     noneParts += n;
                 }
-                var how = def == null ? "not a part of this build" : pressedBy != null ? $"pressed ({pressedBy.Die.Family} Die, blank {Pressed.BlankText(pressedBy.Blank)})" : formedAs is { } fa ? $"formed ({"Grow Former"}, {Extrusion.Name(fa)})" : r == null ? "no recipe" :$"{WorkOrders.FamilyName(r.Machine)} tier {r.MinTier}: {r.Batch}{(r.Count > 1 ? $" makes {r.Count}" : "")}";
+                var how = def == null ? "not a part of this build" : pressedBy != null ? $"pressed ({pressedBy.Die.Family} Die, blank {Pressed.BlankText(pressedBy.Blank)})" : formedAs is { } fa ? $"formed ({"Grow Former"}, {Extrusion.Name(fa)})" : r == null ? "no recipe" :$"{WorkOrders.FamilyName(r.Machine)}{(r.Needs != 0 ? $" with {AsmFit.ModuleWords(r.Needs)}" : "")}: {r.Batch}{(r.Count > 1 ? $" makes {r.Count}" : "")}";
                 sb.AppendLine($"   {n,4} x {part}  ({how})");
             }
         }
