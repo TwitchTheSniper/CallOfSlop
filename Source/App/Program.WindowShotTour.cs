@@ -31,7 +31,7 @@ public static partial class Program
     /// <summary>Once a frame, first: a running <c>perf</c> takes this frame's time.</summary>
     private static void WsTourFrame()
     {
-        WsTalkFrame();
+        WsScriptFrame();
         WsHeldFrame();
         var t = Stopwatch.GetTimestamp();
         if (_wsPerfLeft > 0 && _wsPerfLast != 0)
@@ -86,17 +86,12 @@ public static partial class Program
                 g.OpeningSkip();
                 _wsWait = 90;
                 return true;
-            case "open": // a window as its key opens it: "open logbook [Records|Paths|Technologies]", "open parts", "open factions"
+            case "open": // a window as its key opens it: "open parts", "open factions"
             {
                 var sp = arg.Split(' ', 2, StringSplitOptions.TrimEntries);
-                SetLogbookOpen(false);
                 SetFactionOpen(false);
                 switch (sp[0].ToLowerInvariant())
                 {
-                    case "logbook":
-                        Ui.LogbookPick = sp.Length > 1 ? sp[1] : null;
-                        SetLogbookOpen(true);
-                        break;
                     case "parts":
                         Ui.OpenSandboxParts(focusSearch: false);
                         SetMouseCaptured(false);
@@ -105,7 +100,7 @@ public static partial class Program
                         SetFactionOpen(true);
                         break;
                     default:
-                        WsFail("open logbook [TAB] | parts | factions");
+                        WsFail("open parts | factions");
                         return true;
                 }
                 _wsWait = 20;

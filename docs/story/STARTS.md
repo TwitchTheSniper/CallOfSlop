@@ -5,7 +5,7 @@ Karl (2026-11-13): "allow it such that there may be different starts to the game
 how a new world begins. The menus (Single player and Multiplayer) list the starts in order for both Survival and Creative.
 The penal colony start and its tutorial, the warden's induction, were removed (2026-11-17; docs/removals-notes.md, the old
 docs in docs/archive/colony).
-The story itself is archived (docs/sandbox/SURVIVAL.md): starts stay, the story engine doesn't run. Code: `Source/Game/StoryStarts.cs` (the files), `Source/Game/GameStoryStart.cs` (the
+The story was removed (2026-11-21, docs/removals-notes.md): starts stay. Code: `Source/Game/StoryStarts.cs` (the files), `Source/Game/GameStoryStart.cs` (the
 game's side). Check them with `--check-starts` (to `callofslop.log` next to the DLL).
 
 ## A start file
@@ -20,9 +20,8 @@ saved world keep. Text is ASCII.
 | `placeholder` | a rough start; the chooser says "(placeholder)" |
 | `character`, `background`, `about` | who you are, a line on who you were, the menus' paragraph |
 | `map` | the planetoid it begins on (a Sandbox map), or `"any"`: the map picked on the menu |
-| `opening` | a file in `Story/Opening` (docs/story/OPENING.md), or `"none"`. An opening with no `"ship"` wakes everyone at the start, with the wreck (when named) out past them and the cast (when named) in the story |
+| `opening` | a file in `Story/Opening` (docs/story/OPENING.md), or `"none"`. An opening with no `"ship"` wakes everyone at the start, with the wreck (when named) out past them |
 | `tutorial` | `"none"` or left out (the induction went with the penal colony; any other value is refused) |
-| `faction`, `standing` | a faction (Story/Factions, by name) and the standing each player starts on with it as they wake, when it isn't 0 and the faction has made nothing of them yet (needs the story layer: nothing while it is archived) |
 | `kit` | the start kit by blueprint or part name; left out: the shipped one (`Constructs/SurvivalStart.json`). A map's own `"survivalStart"` still wins |
 
 ## A ship start
@@ -68,4 +67,4 @@ everything; stock guns kept): `SandboxStartKit` builds only the ship there. Code
 - `Ground`: the map picked on the menu, the shipped start kit round its parts rack in Survival, no opening: what every
   Sandbox world was before the openings.
 - `PenalColony` was removed with the colony and its induction (2026-11-17): a world made with it plays the any-map start.
-- `Castaway` (PLACEHOLDER) is archived with the story: docs/archive/story/starts.
+- `Castaway` (PLACEHOLDER) went with the story (docs/removals-notes.md).

@@ -5,8 +5,7 @@ namespace CallOfSlop.PartKit.Generators;
 /// tools/constructs/upgrade_parts.py. <see cref="Assembling"/> takes the modules' recipes from <see cref="Recipes"/>: run it after this.
 ///
 /// Each stat (ToolStat in Source/Constructs/ToolUpgrades.cs, in that order) has a base value, what every survivor starts with, and levels,
-/// each made by fitting one module part (F on it lying loose). An Assembler builds the modules (<see cref="Recipes"/>). Some are taught by
-/// factions ("teaches" in Story/Factions), which this doesn't write.
+/// each made by fitting one module part (F on it lying loose). An Assembler builds the modules (<see cref="Recipes"/>).
 /// </summary>
 public sealed class UpgradeParts : IPartGenerator
 {

@@ -2,7 +2,6 @@
   // The Interactions start's opening (Story/Starts/Interactions.json): as the Magpie start's (Story/Opening/Magpie.json), with its own card.
   // The ship is a placeholder: any blueprint with a hold goes in "ship" (with "wake" points inside it).
   "format": "call-of-slop-opening/1",
-  "cast": "",
   "warden": "",
   "wreck": "",
   "ship": "Magpie Mining Ship", // the blueprint everyone wakes aboard (Source/PartKit/Generators/MinerParts.cs)

@@ -2,7 +2,6 @@
   // The rust bucket start's opening (Story/Starts/RustBucket.json, docs/story/STARTS.md "A ship start"): no colony, no cast and
   // no wreck; the ship is built in orbit over the start and everyone wakes aboard, standing in its frame (GameSpaceStart.cs).
   "format": "call-of-slop-opening/1",
-  "cast": "",
   "warden": "",
   "wreck": "",
   "ship": "Rust Bucket", // the blueprint everyone wakes aboard

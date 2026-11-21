@@ -45,7 +45,7 @@ public sealed partial class Game
     {
         if (!AreEnemies(who, aboard) && !AreEnemies(aboard, who))
             return true;
-        if (who.Team is SbHostileTeam or SbPeopleTeam || aboard.Team is SbHostileTeam or SbPeopleTeam)
+        if (who.Team is SbHostileTeam || aboard.Team is SbHostileTeam)
             return false;
         return SandboxInfiniteParts || Factions.Shares(c.Owner, who.Id) || Factions.Shares(aboard.Id, who.Id);
     }

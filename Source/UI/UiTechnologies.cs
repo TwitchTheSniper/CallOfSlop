@@ -4,13 +4,11 @@ using Brutal.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// What the player has learnt, and the moment they learn it (docs/archive/story/STORY.md "Technologies"): the Logbook's Technologies
-/// page (each story faction's technologies, learnt or locked, who teaches them and at what standing, then the player's own tool
-/// upgrades), and a short celebration in the middle of the screen when a faction teaches them something or they fit a tool
-/// upgrade. Both read what every peer has: the faction table's per-player masks (<see cref="FactionTable.PlayerLearnt"/>)
-/// and the hands state's tool levels, so each player in co-op sees their own. The watcher compares a few bytes a frame and
-/// only makes strings when something is learnt; the celebration waits out the opening, a story ride (a cinematic), the
-/// workbench and the menus, and plays one at a time. Nothing is drawn or made while there is nothing to show.
+/// A short celebration in the middle of the screen when a faction teaches the player a technology or they fit a tool upgrade. It
+/// reads what every peer has: the faction table's per-player masks (<see cref="FactionTable.PlayerLearnt"/>) and the hands state's
+/// tool levels, so each player in co-op sees their own. The watcher compares a few bytes a frame and only makes strings when
+/// something is learnt; the celebration waits out the opening, the workbench and the menus, and plays one at a time. (The
+/// Logbook's Technologies page went with the story, 2026-11-21.)
 /// </summary>
 public sealed partial class Ui
 {
@@ -28,8 +26,6 @@ public sealed partial class Ui
     private readonly byte[] _celLevels = new byte[(int)ToolStat.COUNT];
     private readonly (string Title, string Name, string Line, string Hint)[] _celQ = new (string, string, string, string)[8];
     private int _celHead, _celCount;
-    private int _celHintBind = int.MinValue;
-    private string _celHint = "";
     private readonly float[] _celWidth = new float[4]; // the current one's line widths at the font's own size (measured once)
 
     /// <summary>A technology's line as the table holds it ("Remote Control (Registered): Remote Transmitter, ..."), in its parts.</summary>
@@ -69,7 +65,7 @@ public sealed partial class Ui
     }
 
     /// <summary>Each frame in a game: what the local player has learnt since last frame goes in the queue.</summary>
-    private void CelWatch(Game game, double now, int logbookBind)
+    private void CelWatch(Game game, double now)
     {
         var self = game.LocalId;
         var t = game.FactionTable;
@@ -84,9 +80,7 @@ public sealed partial class Ui
         if (self == byte.MaxValue)
             return;
         var settling = now - _celFrom < CelSettle;
-        if (logbookBind != _celHintBind)
-            (_celHintBind, _celHint) = (logbookBind, $"Logbook ({Keybinds.Name(logbookBind)}): Technologies");
-        var hint = _celHint;
+        var hint = "";
         if (t.Version != _celVersion)
         {
             _celVersion = t.Version;
@@ -133,9 +127,9 @@ public sealed partial class Ui
     /// (the opening, a ride, the workbench) or a menu is up, when it waits where it is. Returns true when one began this frame
     /// (the caller plays its sound).
     /// </summary>
-    public bool DrawCelebration(Game game, double now, bool hold, int logbookBind)
+    public bool DrawCelebration(Game game, double now, bool hold)
     {
-        CelWatch(game, now, logbookBind);
+        CelWatch(game, now);
         var dt = _celLast < 0 ? 0 : Math.Clamp(now - _celLast, 0, 0.25);
         _celLast = now;
         if (_celCount == 0 || hold || PauseOpen || MenuOpen)
@@ -233,74 +227,5 @@ public sealed partial class Ui
         var off = MathF.Max(1f, px / 14f);
         dl.AddText(font, px, at + new float2(off, off), Hud.Colour(System.Numerics.Vector3.Zero, a * 0.8f), text);
         dl.AddText(font, px, at, Hud.Colour(rgb, a), text);
-    }
-
-    // ---- The Logbook's Technologies page ------------------------------------------------------------------------------
-
-    private readonly List<(string Text, byte Kind)> _techRows = new(64); // Kind: 0 heading, 1 learnt, 2 locked, 3 detail, 4 note
-    private int _techRowsVersion = -1;
-    private byte _techRowsSelf = byte.MaxValue;
-    private string _techSummary = "";
-
-    private void DrawLogbookTechnologies(Game game)
-    {
-        var t = game.FactionTable;
-        var self = game.LocalId;
-        if (_techRowsVersion != t.Version || _techRowsSelf != self)
-        {
-            (_techRowsVersion, _techRowsSelf) = (t.Version, self);
-            _techRows.Clear();
-            int have = 0, all = 0;
-            var count = Math.Min(t.StoryTech.Length, Math.Min(t.StoryNames.Length, FactionTable.MaxStory));
-            for (var f = 0; f < count; f++)
-            {
-                var techs = t.StoryTech[f];
-                if (techs.Length == 0)
-                    continue;
-                _techRows.Add((t.StoryNames[f], 0));
-                var mask = self == byte.MaxValue ? 0 : t.PlayerLearnt[self * FactionTable.MaxStory + f];
-                for (var k = 0; k < techs.Length; k++)
-                {
-                    var (name, tier, parts) = TechLine(techs[k]);
-                    var learnt = k < 8 && (mask & (1 << k)) != 0;
-                    all++;
-                    if (learnt)
-                    {
-                        have++;
-                        _techRows.Add(($"  [learnt] {name}", 1));
-                        _techRows.Add(($"      {MakersLine(parts)}", 3));
-                    }
-                    else
-                    {
-                        _techRows.Add(($"  [locked] {name}{(tier.Length > 0 ? $": taught at {tier}" : "")}", 2));
-                        _techRows.Add(($"      {parts}", 4));
-                    }
-                }
-            }
-            _techSummary = all == 0
-                ? "No faction teaches anything in this world."
-                : $"Technologies learnt: {have} of {all}. A faction teaches its technologies when its standing with you (or your faction) first reaches the tier shown; learnt for good. Earn standing with jobs and deeds (F2).";
-        }
-        ImGuiSafe.TextWrapped(_techSummary);
-        ImGui.Spacing();
-        foreach (var (text, kind) in _techRows)
-            switch (kind)
-            {
-                case 0:
-                    ImGui.Spacing();
-                    ImGuiSafe.TextColored(Orange, text);
-                    break;
-                case 1:
-                    ImGuiSafe.TextColoredWrapped(Green, text);
-                    break;
-                default:
-                    ImGuiSafe.TextColoredWrapped(Dim, text);
-                    break;
-            }
-        ImGui.Spacing();
-        ImGui.Separator();
-        ImGuiSafe.TextWrapped("Tool upgrades");
-        if (game.Local is { } me)
-            SbDrawUpgrades(game, me); // (the inventory's Upgrades tab, the same lines: UiSandboxUpgrades.cs)
     }
 }
