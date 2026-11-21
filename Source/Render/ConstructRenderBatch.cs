@@ -165,6 +165,8 @@ public static partial class ConstructRender
             return -1; // (a hidden socket connector: walked, and DrawPart draws nothing)
         if (p.D.HasMiddle && ModuleSockets.FrameLook(c, i))
             return -1; // (an Opening socket's frame, or the plug on one: walked, DrawPart leaves its middle out)
+        if (p.D.BlockRole == BlockRole.Block && ConstructPress.Shell(c, i, out _))
+            return -1; // (a Press's clamshell segment: walked, swung about its hinge while the press works, ConstructPressShells.cs)
         if (p.D.ShellBody)
             return -1; // (a standing shell: walked, drawn as a worn one (ConstructRenderShellRigs.cs) or with its fitted modules from their parts, ShellFittedLooks)
         if (c.DoorCount > 0 && c.DoorOfListed(i) >= 0)
@@ -245,7 +247,8 @@ public static partial class ConstructRender
         ref var p = ref c.Parts[i];
         var d = p.D;
         if (p.Seg != 0 || p.Burn > 0 || d.HasWork && !d.WorkGlowOnly || d.Logic == CLogic.AnalogLever || d.Rotor != null || d.Role is PartRole.Joint or PartRole.Suspension || d.IsRail || d.HasRig || d.TrackRays > 0
-            || _wheelMark[i] == _wheelToken || c.DoorCount > 0 && c.DoorOfListed(i) >= 0 || c.MergeOf[i] != 0 || c.EngineOf[i] != 0 || d.ShellBody)
+            || _wheelMark[i] == _wheelToken || c.DoorCount > 0 && c.DoorOfListed(i) >= 0 || c.MergeOf[i] != 0 || c.EngineOf[i] != 0 || d.ShellBody
+            || d.BlockRole == BlockRole.Block && ConstructPress.Shell(c, i, out _)) // (a Press's shell swings out past its welded cell)
             return new Vector4(0, 0, 0, -1);
         c.PartBounds(i, out var mn, out var mx);
         var r = (mx - mn).Length() * 0.5f + (p.Store != 0 ? 2f : 0.25f); // (stored parts pile on its slots: room for them)

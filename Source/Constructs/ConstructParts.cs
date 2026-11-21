@@ -319,7 +319,8 @@ public readonly record struct CPartBox(Vector3 Center, Vector3 Half, Vector3 Col
 
     /// <summary>"work": how a detail box shows its machine working (<see cref="BoxWork"/>; docs/sandbox/constructs/look.md "Machine look"): only while the machine runs, drawn only, nothing on the server.</summary>
     public BoxWork Work { get; init; }
-    /// <summary>"axis": the axis a "spin" box turns about or a "stroke" box slides along (a direction, 0..5); its travel is <see cref="RigTravel"/>.</summary>
+    /// <summary>"axis": the axis a "spin" box turns about or a "stroke" box slides along (a direction, 0..5); its travel is <see cref="RigTravel"/>. A "hinge" box
+    /// swings open toward it, about the line through its "pivot" (<see cref="RigPivot"/>) across the part's up and this axis, "travel" degrees (a Press Core's clamshell).</summary>
     public byte WorkAxis { get; init; }
 
     /// <summary>"status": true: a production machine's status lamp, drawn unlit in the colour of its line state (<see cref="ProductionLines"/>).</summary>
@@ -434,7 +435,7 @@ public enum BoxRig : byte { None, Hub, Arm, Leg, Oleo, Lever, Knob, Slide, Flip,
 /// lifts as a new piece starts, the moment after a cut. Both read the piece on the machine's die, which every peer has. Drawn from the store as
 /// this peer has it (ConstructRender): nothing on the server or the wire. A block machine's cell shows its Core's work.
 /// </summary>
-public enum BoxWork : byte { None, Spin, Stroke, Glow, Smoke, Ram, Shear, Pin, Press, Bridge, Head, Beam } // (Pin, Press: a Panel Former's bed, drawing 15: a pin rises to the panel's shape, the platen presses; Bridge, Head, Beam: a Laser Cutter's, ConstructLaserCutterBed.cs)
+public enum BoxWork : byte { None, Spin, Stroke, Glow, Smoke, Ram, Shear, Pin, Press, Bridge, Head, Beam, Hinge } // (Pin, Press: a Panel Former's bed, drawing 15: a pin rises to the panel's shape, the platen presses; Bridge, Head, Beam: a Laser Cutter's, ConstructLaserCutterBed.cs; Hinge: a clamshell leaf, the Press's)
 
 /// <summary>An attachment point: where on the part (on a face of its bounds) and which way it faces (an axis, 0..5: +X -X +Y -Y +Z -Z).</summary>
 /// <param name="Class">Its size class (<see cref="ConstructParts.Small"/> and up): a socket snaps only to one of its own class; docs/sandbox/CONSTRUCTS.md, "Size classes".</param>
@@ -1688,12 +1689,16 @@ public static partial class ConstructParts
                 {
                     "spin" => BoxWork.Spin, "stroke" => BoxWork.Stroke, "glow" => BoxWork.Glow, "smoke" => BoxWork.Smoke, "ram" => BoxWork.Ram, "shear" => BoxWork.Shear,
                     "pin" => BoxWork.Pin, "press" => BoxWork.Press,
-                    "bridge" => BoxWork.Bridge, "head" => BoxWork.Head, "beam" => BoxWork.Beam,
-                    _ => throw new ConstructPartException($"{file}: {where}.work is \"spin\", \"stroke\", \"glow\", \"smoke\", \"ram\", \"shear\", \"pin\", \"press\", \"bridge\", \"head\" or \"beam\""),
+                    "bridge" => BoxWork.Bridge, "head" => BoxWork.Head, "beam" => BoxWork.Beam, "hinge" => BoxWork.Hinge,
+                    _ => throw new ConstructPartException($"{file}: {where}.work is \"spin\", \"stroke\", \"glow\", \"smoke\", \"ram\", \"shear\", \"pin\", \"press\", \"bridge\", \"head\", \"beam\" or \"hinge\""),
                 };
+                if (kind == BoxWork.Hinge && (Opt(b, "pivot") is null || Opt(b, "axis") is null || Opt(b, "travel") is null))
+                    throw new ConstructPartException($"{file}: {where}: a \"hinge\" box names its \"pivot\" (a point on the hinge line), the \"axis\" it swings open toward and its \"travel\" (degrees open)");
                 if (!detail || glass != 0)
                     throw new ConstructPartException($"{file}: {where}: only an opaque detail box can show \"work\" (a moving box adds no collision)");
                 made = made with { Work = kind, WorkAxis = Opt(b, "axis") is { } wa ? DirOf(Str(wa, file, where + ".axis"), file, where + ".axis") : (byte)2, RigTravel = Opt(b, "travel") is { } wt ? Num(wt, file, where + ".travel") : 0f };
+                if (kind == BoxWork.Hinge)
+                    made = made with { RigPivot = Vec(Opt(b, "pivot")!.Value, file, where + ".pivot") }; // (the hinge line runs through it, across the part's up and the "axis" it opens toward)
             }
             if (Opt(b, "key") is { } keyBox)
                 made = made with { Key = Str(keyBox, file, where + ".key") is { Length: 1 } one ? one[0] : throw new ConstructPartException($"{file}: {where}.key is one character") };

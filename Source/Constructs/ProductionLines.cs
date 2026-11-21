@@ -103,7 +103,7 @@ public static partial class ProductionLines
         {
             PressStall.Wants or PressStall.TooShort or PressStall.NoDie or PressStall.NoRecipe or PressStall.Bay2Short => LineState.Starved,
             PressStall.TrayFull or PressStall.Blocked or PressStall.ConveyorFull or PressStall.ConveyorCut => LineState.Blocked,
-            PressStall.WrongClass or PressStall.ConveyorSmall => LineState.Fault,
+            PressStall.WrongClass or PressStall.ConveyorSmall or PressStall.SwingBlocked => LineState.Fault,
             _ => LineState.Idle, // (ready: nothing to say until a piece comes)
         };
     }

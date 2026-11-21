@@ -661,7 +661,7 @@
     {"type": "conveyor", "from": 250, "to": 252, "fromPort": "Piece out", "toPort": "Piece in", "paint": "#3d7ab8"},
     {"type": "conveyor", "from": 252, "to": 256, "fromPort": "Piece out 2", "toPort": "Piece in", "paint": "#3d7ab8"},
     {"type": "conveyor", "from": 252, "to": 261, "fromPort": "Piece out", "toPort": "Piece in", "paint": "#3d7ab8"},
-    {"type": "conveyor", "from": 256, "to": 261, "fromPort": "Piece out", "toPort": "Piece in 2", "nodes": [[30.875, 0.395, -9.675]], "paint": "#2f5f8f"},
+    {"type": "conveyor", "from": 256, "to": 261, "fromPort": "Piece out", "toPort": "Piece in 2", "nodes": [[30.875, 0.395, -10.175]], "paint": "#2f5f8f"},
     {"type": "conveyor", "from": 261, "to": 262, "fromPort": "Piece out", "toPort": "Piece in", "paint": "#3d7ab8"},
     {"type": "conveyor", "from": 262, "to": 263, "fromPort": "Piece out", "toPort": "Piece in", "paint": "#3d7ab8"},
     {"type": "chute", "from": 268, "to": 267, "fromPort": "Chute out", "paint": "#c9a24a"},
