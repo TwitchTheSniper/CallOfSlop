@@ -212,7 +212,7 @@ public static class ModuleFitters
     private static Vector3 FaceOf(Construct c, int plate)
     {
         c.SocketAt(plate, c.DefOf(plate).ModSocket, out var at, out _);
-        return c.ToWorld(at);
+        return c.SegToWorld(c.Parts[plate].Seg, at); // (a plate welded on freeform: its numbers are in its weld's frame)
     }
 
     /// <summary>
@@ -463,6 +463,7 @@ public static class ModuleFitters
                 m.HeldNear = 0;
                 m.Frozen = false;
                 var plan = new JoinPlan { Other = m, PartA = j.Plate.Part, SockA = plateDef.ModSocket, PartB = plug, SockB = plugDef.ModSocket, Turn = j.Turn, Offset = j.Rel };
+                ModuleSockets.PlanOnPlate(c, j.Plate.Part, ref plan);
                 var from = m.Id;
                 var parts = m.PartCount;
                 if (!world.Merge(c, plan))
