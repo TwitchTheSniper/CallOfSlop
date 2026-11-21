@@ -88,6 +88,12 @@ public static unsafe class GlDebug
     {
         if (!RenderCaps.Labels || id == 0)
             return;
+        // A name from glGen* is no object until it is first bound, and NVIDIA refuses to label it (GL_INVALID_VALUE): that
+        // error sat in the pending flag until PostFx's one-off back buffer check read it and turned every post effect off for
+        // the run on Karl's PC (2026-11-21). Skip a name that isn't an object yet.
+        if ((kind == GL_BUFFER && !Native.glIsBuffer(new GlBuffer(id))) || (kind == GL_VERTEX_ARRAY && !Native.glIsVertexArray(new GlVertexArray(id)))
+            || (kind == GL_TEXTURE && !Native.glIsTexture(id)))
+            return;
         var n = Math.Min(name.Length, 120);
         var buf = stackalloc byte[n + 1];
         for (var i = 0; i < n; i++)
