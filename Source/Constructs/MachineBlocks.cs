@@ -148,6 +148,9 @@ public static class MachineBlocks
         return (v & 0x80) == 0 ? -1 : v & 0x7F;
     }
 
+    /// <summary>The cells stacked on the Core's own cell (a Grow Former's masts, drawing 22): 0 with none.</summary>
+    public static int CoreColumn(Construct c, in CMachineAsm asm) => c.BlockColumns[asm.Grid + Mid * GridSide + Mid] & 0x7F;
+
     /// <summary>The lowest column among the bed rectangle's four corners (masts): 0 when any has none.</summary>
     public static int CornerColumns(Construct c, in CMachineAsm asm)
     {

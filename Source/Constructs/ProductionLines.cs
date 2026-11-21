@@ -620,7 +620,7 @@ public static partial class ProductionLines
     /// The setting the recipe picker sets on machine kind <paramref name="md"/>: a Fan Former's Makes, an Airframe Former's Cuts, else its
     /// recipe setting (an Assembler's or refiner's recipe, a Panel Former's preset, a press's Pattern, a Die Lathe's Cuts).
     /// </summary>
-    public static CfgKey RecipeKey(ConstructPartDef md) => md.IsFanFormer ? CfgKey.FanKind : md.IsAirframeFormer ? CfgKey.WingKind : CfgKey.Recipe;
+    public static CfgKey RecipeKey(ConstructPartDef md) => md.IsGrowFormer ? CfgKey.GrowMakes : md.IsFanFormer ? CfgKey.FanKind : md.IsAirframeFormer ? CfgKey.WingKind : CfgKey.Recipe;
 
     /// <summary>
     /// Why machine kind <paramref name="md"/> can't take recipe value <paramref name="value"/> from the recipe picker (its recipe setting's value: 0 Auto

@@ -117,8 +117,8 @@ public static class WorkOrders
             return $"the {d.Name} takes no panels: {o.Name} is a Panel Former's order";
         if (d.IsAssembler)
             return AssemblerRefusal(c, part, d, o);
-        if (IsWholeFormer(d))
-            return FormerRefusal(world, c, part, d, o);
+        if (IsWholeFormer(d) && !(d.IsGrowFormer && o.IsPiece && o.Key.Shape == ExShape.Wheel))
+            return FormerRefusal(world, c, part, d, o); // (a Grow Former's wheel goes on to the wheel's checks below)
         if (!o.IsPiece)
             return $"the {d.Name} makes pieces: {ConstructParts.Def(o.Part).Name} is an Assembler's order";
         if (o.Count is < 1 or > MaxCount)
@@ -134,10 +134,13 @@ public static class WorkOrders
                 return $"the {d.Name} forms wheels: a {Extrusion.Label(k)} is an Extruder's order";
             if (ExtrusionTable.Current.FindWheel(k.Material) == null)
                 return $"the {d.Name} can't form {mat}: takes {ExtrusionTable.Current.TakesWheels()}";
-            if (k.W > MathF.Round(d.ExtWheelMax.X * 100) || k.H > MathF.Round(d.ExtWheelMax.Y * 100))
-                return $"a wheel {k.W / 100f:0.##} m wide, {k.H / 100f:0.##} m across is beyond the {d.Name} ({d.ExtWheelMax.X:0.##} m wide, {d.ExtWheelMax.Y:0.##} m across)";
-            if (k.W < MathF.Round(d.ExtWheelStart.X * 100) || k.H < MathF.Round(d.ExtWheelStart.Y * 100))
-                return $"a wheel smaller than the {d.Name}'s first ({d.ExtWheelStart.X:0.##} x {d.ExtWheelStart.Y:0.##} m)";
+            ConstructExtruder.Sizes(c, part, d, ExShape.Wheel, out var first, out var most);
+            if (k.W > MathF.Round(most.X * 100) || k.H > MathF.Round(most.Y * 100))
+                return d.IsGrowFormer
+                    ? $"a wheel {k.W / 100f:0.##} m wide, {k.H / 100f:0.##} m across is beyond this Grow Former now ({most.X:0.##} m wide, {most.Y:0.##} m across): {ConstructExtruder.GrowFix(c, part, ExShape.Wheel, k.W / 100f, k.H / 100f)}"
+                    : $"a wheel {k.W / 100f:0.##} m wide, {k.H / 100f:0.##} m across is beyond the {d.Name} ({most.X:0.##} m wide, {most.Y:0.##} m across)";
+            if (k.W < MathF.Round(first.X * 100) || k.H < MathF.Round(first.Y * 100))
+                return $"a wheel smaller than the {d.Name}'s first ({first.X:0.##} x {first.Y:0.##} m)";
         }
         else
         {
@@ -214,14 +217,14 @@ public static class WorkOrders
     /// </summary>
     private static string? FormerRefusal(ConstructWorld world, Construct c, int part, ConstructPartDef d, in WorkOrder o)
     {
-        var fan = d.IsFanFormer;
         if (!FormerPresets.KeyFor(o, out var k))
             return o.Name != null ? $"the {d.Name} takes no panels or pressed parts: {o.Name} is another machine's order"
                 : AssemblingTable.Current.Of(o.Part) != null ? $"the {ConstructParts.Def(o.Part).Name} is an Assembler's order"
                 : $"no former's preset makes the {ConstructParts.Def(o.Part).Name}";
         if (o.Count is < 1 or > MaxCount)
             return $"an order is for 1 to {MaxCount} pieces";
-        if (k.Shape != (fan ? ExShape.Fan : ExShape.Wing))
+        var fan = d.IsGrowFormer ? k.Shape == ExShape.Fan : d.IsFanFormer;
+        if (d.IsGrowFormer ? k.Shape is not (ExShape.Fan or ExShape.Wing) : k.Shape != (fan ? ExShape.Fan : ExShape.Wing))
             return $"the {d.Name} {(fan ? "forms props and rotors" : "cuts wings and control surfaces")}: a {Extrusion.Label(k)} is {Maker(k)}'s order";
         var names = RecyclingTable.Current;
         var mat = names.NameOf(k.Material);
@@ -229,7 +232,7 @@ public static class WorkOrders
             return $"the {d.Name} can't form {mat}";
         if (fan ? Extrusion.FanKindOf(k.Wall) == null : Extrusion.AirframeOf(k.Wall) == null)
             return $"the {d.Name} doesn't know that kind";
-        if (FormerPresets.Fits(d, k) is { } size)
+        if (FormerPresets.Fits(c, part, d, k) is { } size)
             return size;
         if (k.H % Extrusion.StepCm != 0 || k.W % Extrusion.StepCm != 0 || k.L % Extrusion.StepCm != 0)
             return $"sizes go in {Extrusion.StepCm} cm steps";
@@ -248,9 +251,7 @@ public static class WorkOrders
     /// <summary>Which machine makes a piece: "an Extruder", "a Wheel Former"...</summary>
     public static string Maker(in ExtrusionKey k) => k.Shape switch
     {
-        ExShape.Wheel => "a Wheel Former",
-        ExShape.Fan or ExShape.Blade => "a Fan Former",
-        ExShape.Wing => "an Airframe Former",
+        ExShape.Wheel or ExShape.Fan or ExShape.Blade or ExShape.Wing => "a Grow Former",
         _ => "an Extruder",
     };
 
@@ -343,19 +344,21 @@ public static class WorkOrders
             return ConstructPanelFormer.FromSettings(c, part, count, "steel", out o);
         if (d.IsPress)
             return $"the {d.Name} takes its orders from a Crafting Terminal or a Line Console";
-        if (d.IsFanFormer)
+        if (ConstructExtruder.FanSet(p, d))
         {
             // A prop of its settings: what it makes, its blades and style, how far across.
-            var across = Cm(ConstructConfig.Get(p, d, CfgKey.FanDiameter, d.ExtWheelStart.Y));
+            ConstructExtruder.Sizes(null, -1, d, ExShape.Fan, out var f0, out _);
+            var across = Cm(ConstructConfig.Get(p, d, CfgKey.FanDiameter, f0.Y));
             var fanWall = Extrusion.FanWall((int)ConstructConfig.Get(p, d, CfgKey.FanKind, 0), (int)ConstructConfig.Get(p, d, CfgKey.BladeStyle, 0), (int)ConstructConfig.Get(p, d, CfgKey.FanBlades, 3));
             o = new WorkOrder { Key = new ExtrusionKey(0, 0, (ushort)across, 0, 0, false, ExShape.Fan, fanWall), Part = ConstructParts.None, Count = count };
             return null;
         }
-        if (d.IsAirframeFormer)
+        if (ConstructExtruder.WingSet(p, d))
         {
             // A wing or a control surface of its settings: what it cuts, its chord and its span.
-            var chord = Cm(ConstructConfig.Get(p, d, CfgKey.WingChord, d.ExtWheelStart.X));
-            var span = Cm(ConstructConfig.Get(p, d, CfgKey.WingSpan, d.ExtWheelStart.Y));
+            ConstructExtruder.Sizes(null, -1, d, ExShape.Wing, out var g0, out _);
+            var chord = Cm(ConstructConfig.Get(p, d, CfgKey.WingChord, g0.X));
+            var span = Cm(ConstructConfig.Get(p, d, CfgKey.WingSpan, g0.Y));
             o = new WorkOrder { Key = new ExtrusionKey(0, (ushort)chord, 0, (ushort)span, 0, false, ExShape.Wing, (ushort)ConstructConfig.Get(p, d, CfgKey.WingKind, 0)), Part = ConstructParts.None, Count = count };
             return null;
         }
@@ -384,7 +387,7 @@ public static class WorkOrders
             return st.Material;
         var names = RecyclingTable.Current;
         for (byte m = 1; m <= names.Materials.Length; m++)
-            if (d.IsFanFormer ? ExtrusionTable.Current.FindFan(m) != null : d.IsAirframeFormer ? ExtrusionTable.Current.FindWing(m) != null
+            if (ConstructExtruder.FanSet(c.Parts[part], d) ? ExtrusionTable.Current.FindFan(m) != null : ConstructExtruder.WingSet(c.Parts[part], d) ? ExtrusionTable.Current.FindWing(m) != null
                 : d.IsWheelFormer ? ExtrusionTable.Current.FindWheel(m) != null : ExtrusionTable.Current.Find(m) != null)
                 return m;
         return 1;
@@ -530,7 +533,7 @@ public static class WorkOrders
                     var md = c.DefOf(m);
                     var kind = md.IsLaserCutter ? bill.Items[i].Name != null && HullLoft.IsCutName(bill.Items[i].Name!)
                         : md.IsPress ? Pressed.SpecOf(bill.Items[i]) != null
-                        : IsWholeFormer(md) && FormerPresets.KeyFor(bill.Items[i], out var fk) ? fk.Shape == (md.IsFanFormer ? ExShape.Fan : ExShape.Wing)
+                        : IsWholeFormer(md) && FormerPresets.KeyFor(bill.Items[i], out var fk) ? ConstructExtruder.Can(md, fk.Shape)
                         : (md.IsPanelFormer && !md.IsLaserCutter ? 2 : md.IsAssembler ? 1 : 0) == bill.Items[i].Kind;
                     if (why == null || kind && !whyKind)
                         (why, whyKind) = ($"{c.DefOf(m).Name}: {no}", kind);
