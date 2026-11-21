@@ -451,6 +451,43 @@ public static class ConstructAssembling
         return AsmBlock.OutputBlocked;
     }
 
+    private const int ArmDamage = 1; // per 60 Hz game tick in a working place (60 a second): its arm swinging and its weld (GameMachineHazards)
+    private static int _family = -2;
+    private const int MostHazards = 60;
+
+    /// <summary>
+    /// Server, 10 Hz (from ConstructBakeOven.Step, after the ovens' boxes): a hazard box over the bed of each Assembler building on one, from
+    /// the bed's top to 1.9 m over it (its arms reach any place: a part goes to the first free one). Machines never stop for people: the kerb's
+    /// stripes are the warning. At most <see cref="MostHazards"/> in the shared list. Allocates nothing.
+    /// </summary>
+    public static void AddHazards(ConstructWorld world)
+    {
+        if (_family == -2)
+            _family = MachineBlocks.Families.IndexOf("assembler");
+        if (_family < 0)
+            return;
+        var bodies = world.Bodies;
+        for (var ci = 0; ci < bodies.Count; ci++)
+        {
+            var c = bodies[ci];
+            for (var a = 0; a < c.MachineAsmCount; a++)
+            {
+                ref readonly var asm = ref c.MachineAsms[a];
+                if (asm.Family != _family || asm.W == 0 || asm.Core >= c.PartCount || world.Hazards.Count >= MostHazards)
+                    continue;
+                ref readonly var p = ref c.Parts[asm.Core];
+                if (p.Broken || p.D.BlockRole != BlockRole.Core || world.StoreOf(c, asm.Core) is not { } st || !st.Busy || st.Held || st.Blocked != 0
+                    || !ConstructRecycler.Powered(world, c, asm.Core) || !Matrix4x4.Invert(ConstructBakeOven.CoreFrame(c, asm.Core), out var toCore))
+                    continue;
+                var o = p.D.BlockOrigin ?? Vector3.Zero;
+                var cell = p.D.BlockCell;
+                var bedTop = o.Y * 2f;
+                var min = new Vector3(o.X + (asm.X0 - 0.5f) * cell, bedTop, o.Z + (asm.Z0 - 0.5f) * cell);
+                world.Hazards.Add(new MachineHazard { ToLocal = toCore, Min = min, Max = min + new Vector3(asm.W * cell, 1.9f, asm.L * cell), Damage = ArmDamage });
+            }
+        }
+    }
+
     /// <summary>Where a recipe's output goes as the tray stands.</summary>
     public static AsmOut OutputOf(ConstructPartDef d, CStore st, AssembleRecipe r) => OutputOf(d, st, r.Output, r.Count);
 

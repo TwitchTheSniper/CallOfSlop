@@ -79,6 +79,8 @@ public sealed class CStore
     public int JobFull; // a Recycler (server only): the ticks its job took at the start
     public byte Progress; // an Assembler's or a Recycler's job, 0 to 100 (on the wire about once a second: its screen, MachineScreens.cs)
     public byte ProgressAge; // ...steps since it was last sent (server only)
+    public byte DrawnProgress; // the Progress the drawing last saw, and when (ConstructRender.Now): it runs the job on between sends (AssemblerRender)
+    public double DrawnAt;
     public int BeaconStores, BeaconParts; // an Inventory Beacon: its chute network's stores and parts (on the wire: the look line; Empty ignores them)
     public ushort PullId; // a Smart Terminal: what it is bringing now, a part or material id (on the wire: its panel; a pull is never saved)
     public bool PullMaterial; // ...the id is a material
