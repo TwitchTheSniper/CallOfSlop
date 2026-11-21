@@ -368,7 +368,7 @@ public sealed partial class Ui
                 for (var mi = 0; mi < c.Modules.Length && n < 24; mi++, n++)
                 {
                     var m = c.Modules[mi];
-                    var where = m.Socket >= 0 ? $"fitted to the {ModuleSocketTable.SizeText(c.ModSockets[m.Socket].W, c.ModSockets[m.Socket].L)} socket at part {c.ModSockets[m.Socket].Plate}" : m.OnStand ? "on a stand" : "loose";
+                    var where = m.Socket >= 0 ? $"fitted to the {ModuleSocketTable.SizeText(c.ModSockets[m.Socket].W, c.ModSockets[m.Socket].L, c.ModSockets[m.Socket].Round)} socket at part {c.ModSockets[m.Socket].Plate}" : m.OnStand ? "on a stand" : "loose";
                     sb.Append($"{ModuleSockets.ModuleName(c, mi)}, {ModuleSockets.TagName(m.Primary)}: construct {c.Id}, {where}\n");
                 }
             _sbModulesHere = n == 0 ? "" : sb.ToString();

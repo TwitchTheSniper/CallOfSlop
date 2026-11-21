@@ -283,7 +283,7 @@ public static class ModuleCut
         c.Dirty = true;
         world.StructureDirty.Add(c.Id);
         c.Wake();
-        world.Events.Add(FormattableString.Invariant($"construct {c.Id}: socket part {s.Plate} cut its {ModuleSocketTable.SizeText(s.W, s.L)} well, {s.Depth:0.##} m deep, through {plan.Cuts.Count} parts"));
+        world.Events.Add(FormattableString.Invariant($"construct {c.Id}: socket part {s.Plate} cut its {ModuleSocketTable.SizeText(s.W, s.L, s.Round)} well, {s.Depth:0.##} m deep, through {plan.Cuts.Count} parts"));
         if ((!world.Creative || world.TimedMachines) && lost > 1f)
             Slug(world, c, s, face, n, lost);
     }

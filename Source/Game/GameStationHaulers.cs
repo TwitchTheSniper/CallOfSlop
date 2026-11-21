@@ -50,6 +50,9 @@ public sealed partial class Game
     /// <summary>How near its escorts must be before a hauler sets out on a leg (m), and how much longer than its wait it waits for them (s).</summary>
     private const float EscortGather = 5000, EscortGatherMost = 120;
 
+    /// <summary>How far under or over the station's circle an escort waits while its hauler docks (m), and how near the station it keeps that circle whichever way it drifts (m).</summary>
+    private const float EscortCircle = 1000, EscortOffStation = 3000;
+
     /// <summary>The least of a good a hauler loads (units): less is left for the next run.</summary>
     private const int HaulLeastLot = 50;
 
@@ -420,24 +423,39 @@ public sealed partial class Game
             return;
         var d = StationMarkets.All[run.AtTo ? h.To : h.From];
         var st = StationBodyOf(run.AtTo ? h.To : h.From);
-        ushort ward = hauler.Id;
-        var gap = h.EscortGap;
-        if (st != 0 && Constructs.Get(st) is { SpaceAway: 0, SpaceShip: not 0 } sb && hauler.SpaceAway == 0
-            && (hauler.MooredTo == st || Vector3.DistanceSquared(sb.WorldCom, hauler.WorldCom) < HaulDockFrom * HaulDockFrom))
+        var o = NavOf(c.Id);
+        string? why;
+        string line;
+        var docking = st != 0 && Constructs.Get(st) is { SpaceAway: 0, SpaceShip: not 0 } stb && hauler.SpaceAway == 0
+            && (hauler.MooredTo == st || Vector3.DistanceSquared(stb.WorldCom, hauler.WorldCom) < HaulDockFrom * HaulDockFrom);
+        var resting = hauler.SpaceAway == 0 && NavOf(hauler.Id) is { Kind: NavKind.Orbit, Phase: NavPhase.Orbiting or NavPhase.Short } ho && ho.Body == s.Bubble.Body; // (on a circle, or waiting there for a trip in reach)
+        if ((docking || resting) && c.SpaceAway == 0 && GravityFrames.Point is { } gp && Constructs.Get(docking ? st : hauler.Id) is { } sb)
         {
-            ward = st; // (off the station while the hauler docks there: beside it, it would hold in the station's ring)
-            gap = h.EscortGap * 3;
+            // While the hauler docks (or rests on a circle), off the station (or it) on a circle of its own a kilometre under or over its (under when the station
+            // is ahead, so it gains on it; over when behind), its drive at rest: held beside a point by the station on a single drive it
+            // turned about all the while (2026-11-21), and beside the hauler it would hold inside the station's ring.
+            var stR = (sb.WorldCom - gp.Center).Length();
+            var off = sb.WorldCom - c.WorldCom;
+            var near = off.LengthSquared() < EscortOffStation * EscortOffStation;
+            var radius = stR + (Vector3.Dot(off, c.Vel) > 0 ? -1 : 1) * EscortCircle;
+            if (o is { Kind: NavKind.Orbit } && o.Body == s.Bubble.Body && (near || Math.Abs(o.Radius - radius) < EscortCircle))
+                return; // (on its circle; far off, it changes circle only when the station has passed it)
+            if (c.Dirty)
+                c.Rebuild();
+            why = NavApply(s, c, NavKind.Orbit, s.Bubble.Body, Vec3d.Zero, radius, 255, h.Power + " escort", null, out _);
+            var what = docking ? d.Name : "hauler " + hauler.Id;
+            line = why != null ? $"can't wait off {what}: {why}" : FormattableString.Invariant($"waits off {what} on a circle {(radius - stR) / 1000:+0.0;-0.0} km from its{(docking ? $" while hauler {hauler.Id} docks" : "")}");
         }
-        if (NavOf(c.Id) is { Kind: NavKind.Meet } o && o.Target == ward)
-            return; // (with it)
-        if (c.Dirty)
-            c.Rebuild();
-        var why = NavApply(s, c, NavKind.Meet, 0, Vec3d.Zero, gap, 255, h.Power + " escort", null, out var order, ward);
-        if (order != null)
-            order.MeetAbove = ward == st; // (over the station, out of its berths' lanes, which run along its X)
+        else
+        {
+            if (o is { Kind: NavKind.Meet } && o.Target == hauler.Id)
+                return; // (with it)
+            if (c.Dirty)
+                c.Rebuild();
+            why = NavApply(s, c, NavKind.Meet, 0, Vec3d.Zero, h.EscortGap, 255, h.Power + " escort", null, out _, hauler.Id);
+            line = why != null ? $"can't hold with hauler {hauler.Id}: {why}" : $"flies with hauler {hauler.Id}";
+        }
         e.RetryAt = ServerTick + 10 * World.TickRate;
-        var line = why != null ? $"can't hold with {(ward == st ? d.Name : "hauler " + ward)}: {why}"
-            : ward == st ? $"holds off {d.Name} while hauler {hauler.Id} docks" : $"flies with hauler {hauler.Id}";
         if (line != e.Last)
         {
             e.Last = line;

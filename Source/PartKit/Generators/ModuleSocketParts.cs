@@ -14,7 +14,7 @@ namespace CallOfSlop.PartKit.Generators;
 /// drawn face (z-fighting rule). A Module Stand W x L is a plate on a frame, 0.9 m off the floor: a module on it is stored or
 /// built (a bench), and nothing couples.
 /// </summary>
-public sealed class ModuleSocketParts : IPartGenerator
+public sealed partial class ModuleSocketParts : IPartGenerator
 {
     public string Name => "module_sockets";
 
@@ -204,6 +204,7 @@ public sealed class ModuleSocketParts : IPartGenerator
         }
         WriteParts(o, Out, parts);
         WriteParts(o, Out + "/Fitters", [("", LifterParts.ModuleFitter())]); // (phase 4: its own folder, after every older Modules row in the Assembling tail)
+        WriteParts(o, Out + "/Round", RoundParts()); // (round sockets, Sean 2026-11-21: their own folder, rows at the Assembling tail's end)
         foreach (var a in Adapters)
             o.File($"Constructs/Blueprints/ModuleAdapter{Size(a.W, a.L)}to{Size(a.SW, a.SL)}.json", AdapterText(a));
         foreach (var m in Shipped)

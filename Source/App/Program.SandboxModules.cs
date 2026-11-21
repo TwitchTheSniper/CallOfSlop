@@ -61,11 +61,10 @@ public static unsafe partial class Program
     private static void CutFx(Construct c, in CModSocket s, float f)
     {
         var d = c.DefOf(s.Plate);
-        ref var p = ref c.Parts[s.Plate];
-        c.SocketAt(s.Plate, d.ModSocket, out var at, out _);
-        var n = Vector3.Normalize(Vector3.Transform(Rot24.Apply(p.Rot, Vector3.UnitY), c.Rot));
-        var across = Vector3.Normalize(Vector3.Transform(Rot24.Apply(p.Rot, Vector3.UnitX), c.Rot));
-        var up = Vector3.Normalize(Vector3.Transform(Rot24.Apply(p.Rot, Vector3.UnitZ), c.Rot));
+        ModuleSockets.PlateRest(c, s.Plate, out var pr, out var at, out _); // (the body's rest frame: a plate welded on freeform is in its weld's)
+        var n = Vector3.Normalize(Vector3.Transform(Rot24.Apply(pr, Vector3.UnitY), c.Rot));
+        var across = Vector3.Normalize(Vector3.Transform(Rot24.Apply(pr, Vector3.UnitX), c.Rot));
+        var up = Vector3.Normalize(Vector3.Transform(Rot24.Apply(pr, Vector3.UnitZ), c.Rot));
         var top = c.ToWorld(at) + n * (s.Depth + 0.01f);
         float hw = s.W * 0.5f + ModuleCut.Margin * 0.5f, hl = s.L * 0.5f + ModuleCut.Margin * 0.5f;
         // The ring has heads at each corner: each runs a quarter of the outline.
@@ -92,11 +91,10 @@ public static unsafe partial class Program
     private static void WeldFx(Construct c, in CModSocket s, float f, bool weld)
     {
         var d = c.DefOf(s.Plate);
-        ref var p = ref c.Parts[s.Plate];
-        c.SocketAt(s.Plate, d.ModSocket, out var at, out _);
-        var n = Vector3.Normalize(Vector3.Transform(Rot24.Apply(p.Rot, Vector3.UnitY), c.Rot));
-        var across = Vector3.Normalize(Vector3.Transform(Rot24.Apply(p.Rot, Vector3.UnitX), c.Rot));
-        var up = Vector3.Normalize(Vector3.Transform(Rot24.Apply(p.Rot, Vector3.UnitZ), c.Rot));
+        ModuleSockets.PlateRest(c, s.Plate, out var pr, out var at, out _); // (the body's rest frame: a plate welded on freeform is in its weld's)
+        var n = Vector3.Normalize(Vector3.Transform(Rot24.Apply(pr, Vector3.UnitY), c.Rot));
+        var across = Vector3.Normalize(Vector3.Transform(Rot24.Apply(pr, Vector3.UnitX), c.Rot));
+        var up = Vector3.Normalize(Vector3.Transform(Rot24.Apply(pr, Vector3.UnitZ), c.Rot));
         var face = c.ToWorld(at) + n * 0.02f;
         float hw = s.W * 0.5f, hl = s.L * 0.5f;
         var head = OutlineAt(face, across, up, hw, hl, f);
