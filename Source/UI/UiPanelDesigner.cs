@@ -631,17 +631,12 @@ public sealed partial class Ui
                 _pdBig = $"the {d.Name} takes {bedL:0.##} x {bedW:0.##} m";
             maxL = MathF.Max(maxL, bedL);
             maxW = MathF.Max(maxW, bedW);
-            if (world.StoreOf(c, net.Machines[i]) is { Amount: > 0 } st && !_pdMats.Contains(st.Material) && ExtrusionTable.Current.Find(st.Material) != null)
-            {
-                _pdMats.Add(st.Material);
-                _pdMatFed.Add(true);
-            }
         }
         for (byte m = 1; m <= names.Materials.Length && _pdMats.Count < 8; m++)
             if (ExtrusionTable.Current.Find(m) != null && !_pdMats.Contains(m))
             {
                 _pdMats.Add(m);
-                _pdMatFed.Add(false);
+                _pdMatFed.Add(true); // (a former holds no stock: every material its blanks can be extruded in is offered alike)
             }
         _pdMaxL = _pdFormers > 0 ? (int)(maxL * 100 + 0.5f) / HullLoft.PanelStepCm * HullLoft.PanelStepCm : HullLoft.PanelMaxCm;
         _pdMaxW = _pdFormers > 0 ? (int)(maxW * 100 + 0.5f) / HullLoft.PanelStepCm * HullLoft.PanelStepCm : HullLoft.PanelMaxCm;
@@ -744,11 +739,7 @@ public sealed partial class Ui
             }
             else if (ConstructPanelFormer.BedRefusal(c, m, bd) is { } bed)
                 why = bed;
-            else if (HullLoft.FormedUnits(bd, _pdMat) > d.BulkCapacity)
-                why = $"needs {HullLoft.FormedUnits(bd, _pdMat)} sheet: its bin holds {d.BulkCapacity}";
-            else if (world.StoreOf(c, m) is { Amount: > 0 } st && st.Material != _pdMat)
-                why = $"is fed {RecyclingTable.Current.NameOf(st.Material)}: another line";
-            _pdFits.Add(why == null ? $"{d.Name} {seen}: yes" : $"{d.Name} {seen}: {why}");
+            _pdFits.Add(why == null ? $"{d.Name} {seen}: yes, from a {ConstructPanelFormer.BlankText(bd)}" : $"{d.Name} {seen}: {why}");
             _pdFitOk.Add(why == null);
         }
     }
@@ -1134,7 +1125,7 @@ public sealed partial class Ui
                             mat = _pdMats[k];
                         ImGui.PopID();
                         if (ImGui.IsItemHovered())
-                            ImGuiSafe.SetTooltip(_pdMatFed[k] ? $"{names.NameOf(_pdMats[k])}: a linked former is fed it" : $"{names.NameOf(_pdMats[k])}: no linked former holds it yet");
+                            ImGuiSafe.SetTooltip($"{names.NameOf(_pdMats[k])}: its blank is a sheet of it off an Extruder");
                         var p1 = new float2(at.X + s, at.Y + s);
                         dl.AddRectFilled(at, p1, _pdMats[k] == _pdMat ? SbCardSel : SbCard, 4 * _scale);
                         Picture(dl, SandboxTiles.ResourceSlot(_pdMats[k]), Col8(names.ColourOf(_pdMats[k])), new float2(at.X + 3, at.Y + 3), new float2(p1.X - 3, p1.Y - 3), _pdMatFed[k] ? new ImColor8(255, 255, 255, 255) : new ImColor8(150, 150, 160, 120), null);

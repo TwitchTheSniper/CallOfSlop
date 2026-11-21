@@ -222,10 +222,7 @@ public static partial class ConstructLifters
                     return false;
                 return ConstructPress.Refusal(PressTable.Current, b, pt.Part, pt.Bay, d.ExKey) == BayRefuse.None;
             case LiftPointKind.Former:
-                if (!d.IsExtrusion || d.ExKey.Shape != ExShape.Section || Math.Min(d.ExKey.W, d.ExKey.H) > ConstructPanelFormer.SheetMaxCm || world.StoreOf(b, pt.Part) is not { } st)
-                    return false;
-                var units = Math.Max(1, (int)MathF.Round(d.Mass / MathF.Max(0.01f, RecyclingTable.Current.WeightOf(d.ExKey.Material))));
-                return (st.Amount == 0 || st.Material == d.ExKey.Material) && st.Amount + units <= b.DefOf(pt.Part).BulkCapacity;
+                return ConstructPanelFormer.Wants(world, b, pt.Part, d); // (a blank for one of its orders, onto an empty bed)
             case LiftPointKind.Tray:
                 return TrayWant(world, b, pt.Part, d) != 0; // (phase 5b: an open order of its kind still waits for it)
             case LiftPointKind.Rack:
