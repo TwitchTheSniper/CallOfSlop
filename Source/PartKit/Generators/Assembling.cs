@@ -996,6 +996,10 @@ public sealed class Assembling : IPartGenerator
         ("Assembler", "Gantry Carriage", null),
         (null, null, Rec("Overdrive Unit", 60, 1, m: [("steel", 40), ("copper", 30), ("rubber", 6)], p: [("Gear Set", 2), ("Wiring Loom", 1)])),
         (null, null, Rec("Feed Buffer", 30, 1, m: [("steel", 45), ("rubber", 4)], p: [("Gear Set", 1)])),
+        // (Assembler PR 3: its tool blocks and the Block Rack, the Die Rack at 2 m bays)
+        ("Assembler", "Thruster Jig Block", null),
+        ("Assembler", "Sewing Table Block", null),
+        ("Assembler", "Block Rack", null),
     ];
 
     /// <summary>

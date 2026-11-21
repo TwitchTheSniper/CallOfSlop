@@ -295,5 +295,107 @@ public sealed class AssemblerParts : IPartGenerator
         return p;
     }
 
-    public void Make(PartOutput o) => WriteParts(o, Out, [("", Core()), ("", BedBlock()), ("", Carriage()), ("", Overdrive()), ("", Buffer())]);
+    /// <summary>
+    /// A tool block's dock (design doc "Tool Bay"): a 2 x 2 m plinth at the bed's height, a "dock" socket on its -x face that meets a
+    /// side socket of the Core (the Tool Bay, a side its bed doesn't use), two locating pins and a clamp on that face. What stands on it
+    /// stays under 0.9 m over its near half, clear of the Core's screen and chute out. Its tool is <paramref name="tool"/> (a recipe's "tool").
+    /// </summary>
+    private static Part ToolBlock(string name, string tool, string desc, string colour)
+    {
+        var p = new Part(name, Small, Section, desc, group: "Production", color: colour);
+        const double t = BedTop;
+        p.Add(Box([-E, 0.003, -E], [E, t, E], MachineLook.Base)); // (the plinth)
+        MachineLook.Skirt(p, -1, 1, -1, 1, 0, 0.14, 0.012);
+        // The dock on -x: a steel face plate, two locating pins into the Core's side, the clamp's jaw and its lever.
+        p.Add(L([-E - 0.012, 0.06, -0.8], [-E + 0.002, t - 0.04, 0.8], MachineLook.Steel, "steel"));
+        foreach (var z in new[] { -0.62, 0.62 })
+            p.Add(L([-E - 0.05, t * 0.5 - 0.035, z - 0.035], [-E - 0.012, t * 0.5 + 0.035, z + 0.035], MachineLook.Steel, "steel", shape: Cyl("-x", 10))); // (a locating pin)
+        p.Add(L([-E - 0.04, t - 0.035, -0.22], [-E - 0.012, t + 0.06, 0.22], MachineLook.Accent)); // (the clamp's jaw over the seam)
+        p.Add(L([-E + 0.02, t + 0.002, -0.3], [-E + 0.12, t + 0.05, -0.24], MachineLook.Base));
+        p.Add(MachineLook.Work(L([-E + 0.04, t + 0.05, -0.29], [-E + 0.1, t + 0.32, -0.25], MachineLook.Accent), "stroke", "+x", 0.04)); // (its lever)
+        MachineLook.Hazard(p, [-E - 0.026, t - 0.03, -0.8], [-E - 0.012, t - 0.005, 0.8]);
+        p.Sock("dock", [-1, OriginY, 0], "-x");
+        p.Sock("bottom", [0, 0, 0], "-y");
+        p.Set(("machineBlock", Kw(("role", "tool"), ("tool", tool))), ("centreSockets", false), ("collider", "boxes"));
+        return p;
+    }
+
+    /// <summary>
+    /// The Thruster Jig Block: a concrete test pit on the plinth with a thrust cradle holding the chamber under test (its throat glows while
+    /// its Assembler builds), a thrust gauge, and a burn-off flue in the far corner (smoke at work).
+    /// </summary>
+    private static Part ThrusterJig()
+    {
+        var p = ToolBlock("Thruster Jig Block", "thruster",
+            "An Assembler's tool block for thrusters, rocket engines and boosters: dock it on a free side of an Assembler Core (its Tool Bay: the dock face against the Core) and the Core builds the recipes that need a thruster jig. Store tool blocks on a Block Rack: a chute from the rack into the Core swaps in the one its recipe needs.",
+            "#5e6a72");
+        const double t = BedTop;
+        // The pit: a concrete ring on the plinth, its floor dark; solid walls, low on the dock side.
+        p.Add(Box([-0.6, t, -0.8], [0.9, t + 0.1, -0.68], "#8b8a84"));
+        p.Add(Box([-0.6, t, 0.68], [0.9, t + 0.1, 0.8], "#8b8a84"));
+        p.Add(Box([-0.6, t, -0.68], [-0.48, t + 0.1, 0.68], "#8b8a84"));
+        p.Add(Box([0.78, t, -0.68], [0.9, t + 0.5, 0.68], "#8b8a84")); // (the blast wall: the far side, higher)
+        p.Add(L([-0.48, t + 0.002, -0.68], [0.78, t + 0.014, 0.68], MachineLook.Ink));
+        // The thrust cradle: two saddles on a bed, the chamber lying across them, its bell towards the blast wall.
+        p.Add(L([-0.36, t + 0.014, -0.12], [0.5, t + 0.05, 0.12], MachineLook.Steel, "steel"));
+        foreach (var x in new[] { -0.2, 0.3 })
+            p.Add(L([x - 0.04, t + 0.05, -0.2], [x + 0.04, t + 0.2, 0.2], MachineLook.Accent));
+        p.Add(L([-0.34, t + 0.14, -0.13], [0.36, t + 0.4, 0.13], "#6f747a", "steel", shape: Cyl("+x", 14))); // (the chamber)
+        p.Add(L([0.36, t + 0.1, -0.18], [0.66, t + 0.44, 0.18], "#6f747a", "steel", shape: Cyl("+x", 16))); // (its bell)
+        p.Add(MachineLook.Work(L([0.62, t + 0.14, -0.14], [0.66, t + 0.4, 0.14], MachineLook.Hot, shape: Cyl("+x", 14)), "glow")); // (the throat, lit at work)
+        // The thrust gauge on the blast wall's top, and its cable along the pit's rim.
+        p.Add(L([0.79, t + 0.5, -0.3], [0.89, t + 0.62, -0.1], MachineLook.Steel, "steel", shape: Cyl("+y", 12)));
+        p.Add(L([0.8, t + 0.62, -0.28], [0.88, t + 0.632, -0.12], MachineLook.In, shape: Cyl("+y", 12)));
+        p.Add(L([-0.58, t + 0.1, -0.79], [0.86, t + 0.13, -0.75], MachineLook.Ink));
+        // The burn-off flue in the far +z corner: a stack with a hood and a rain cap.
+        p.Add(Box([0.62, t, 0.62], [0.92, 1.8, 0.92], MachineLook.Base));
+        p.Add(L([0.58, 1.8, 0.58], [0.96, 1.86, 0.96], MachineLook.Steel, "steel"));
+        p.Add(MachineLook.Work(L([0.66, 1.86, 0.66], [0.88, 1.9, 0.88], MachineLook.Ink), "smoke"));
+        p.Add(L([0.6, 1.93, 0.6], [0.94, 1.96, 0.94], MachineLook.Base));
+        foreach (var y in new[] { 1.0, 1.4 })
+            p.Add(L([0.61, y, 0.61], [0.93, y + 0.03, 0.93], MachineLook.Steel, "steel")); // (its bands)
+        MachineLook.Hazard(p, [0.9, t + 0.38, -0.68], [0.914, t + 0.46, 0.68]);
+        p.Stats(700, 1400, 8, 6);
+        return p;
+    }
+
+    /// <summary>
+    /// The Sewing Table Block: a long work table on the plinth, a cloth roll on its spindle at the far end (turning at work), and a sewing
+    /// head on an arch over the table whose needle strokes and lamp glows while its Assembler builds.
+    /// </summary>
+    private static Part SewingTable()
+    {
+        var p = ToolBlock("Sewing Table Block", "tailor",
+            "An Assembler's tool block for lift cells and other cloth work: dock it on a free side of an Assembler Core (its Tool Bay: the dock face against the Core) and the Core builds the recipes that need a sewing table. Store tool blocks on a Block Rack: a chute from the rack into the Core swaps in the one its recipe needs.",
+            "#4a5a4c");
+        const double t = BedTop, top = 0.86;
+        // The table: four legs, a top with a cutting rule and a cloth sheet laid on it.
+        foreach (var (x, z) in new[] { (-0.7, -0.7), (-0.7, 0.62), (0.62, -0.7), (0.62, 0.62) })
+            p.Add(Box([x, t, z], [x + 0.08, top - 0.04, z + 0.08], MachineLook.Base));
+        p.Add(Box([-0.74, top - 0.04, -0.74], [0.74, top, 0.74], "#6b5a44"));
+        p.Add(L([-0.7, top, -0.6], [0.4, top + 0.012, 0.6], "#c9c2a8", "fabric"));
+        p.Add(L([-0.72, top, 0.64], [0.72, top + 0.014, 0.68], MachineLook.Steel, "steel"));
+        // The cloth roll at the far end: two brackets, the roll turning on its spindle while it works.
+        foreach (var z in new[] { -0.72, 0.64 })
+            p.Add(L([0.62, top, z], [0.7, top + 0.3, z + 0.08], MachineLook.Base));
+        p.Add(MachineLook.Work(L([0.52, top + 0.12, -0.64], [0.8, top + 0.4, 0.64], "#b9b098", "fabric", shape: Cyl("+z", 16)), "spin", "+z"));
+        // The sewing head on an arch over the middle of the table: posts, beam, head, needle (strokes) and its lamp (glows).
+        foreach (var z in new[] { -0.8, 0.72 })
+            p.Add(Box([0.02, top, z], [0.14, 1.62, z + 0.08], MachineLook.Accent));
+        p.Add(Box([0.02, 1.62, -0.8], [0.14, 1.72, 0.8], MachineLook.Accent));
+        p.Add(L([-0.08, 1.3, -0.12], [0.2, 1.62, 0.12], MachineLook.Base));
+        p.Add(MachineLook.Work(L([0.04, 1.06, -0.012], [0.07, 1.3, 0.012], MachineLook.Steel, "steel"), "stroke", "-y", 0.1)); // (the needle bar)
+        p.Add(MachineLook.Work(L([-0.07, 1.24, -0.1], [-0.04, 1.28, -0.04], "#ffe9a8"), "glow")); // (its lamp)
+        p.Add(L([-0.1, 1.4, 0.06], [-0.08, 1.56, 0.11], MachineLook.Steel, "steel", shape: Cyl("-x", 10))); // (the handwheel)
+        MachineLook.Hazard(p, [0.02, 1.72, -0.8], [0.14, 1.732, 0.8]);
+        p.Stats(380, 1000, 6, 6);
+        return p;
+    }
+
+    /// <summary>The Block Rack: the Die Rack at 2 m bays (one rack piece, PressParts.Rack), two bays of a tool block each, on the medium lattice.</summary>
+    private static Part BlockRack() => PressParts.Rack(Medium, 5, 3, 3, "Block Rack",
+        "Holds an Assembler's tool blocks (Thruster Jig Block, Sewing Table Block) and press dies, two bays side by side, one kind a bay: the Die Rack at 2 m bays. A chute from it into an Assembler Core brings the tool block its recipe needs and takes the old one back; a chute into a press brings it a die.",
+        bays: 2, label: "Tools and dies", folder: Section);
+
+    public void Make(PartOutput o) => WriteParts(o, Out, [("", Core()), ("", BedBlock()), ("", Carriage()), ("", Overdrive()), ("", Buffer()), ("", ThrusterJig()), ("", SewingTable()), ("", BlockRack())]);
 }

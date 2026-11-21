@@ -528,21 +528,40 @@ public sealed class PressParts : IPartGenerator
         return p;
     }
 
-    private static Part Rack(Cls c, int nx, int ny, int nz)
+    /// <summary>
+    /// A rack of shelves on posts: the Die Rack, and the Assembler's Block Rack, the same piece at 2 m bays (Sean 2026-11-21: "the die
+    /// rack and the block rack the same piece"). <paramref name="bays"/> shelves side by side along x, each a slot of its own (a shelf holds
+    /// one kind), split by a post. Either rack holds dies and tool blocks alike, whatever fits a bay; a chute from it into a press brings
+    /// the press a die, and one into an Assembler brings the tool block its recipe needs.
+    /// </summary>
+    internal static Part Rack(Cls c, int nx, int ny, int nz, string? name = null, string? desc = null, int bays = 1, string label = "Dies", string folder = Section)
     {
         var k = c.Cell;
         double x0 = c.Lo(), x1 = c.Hi(nx), y0 = c.Lo(), y1 = c.Hi(ny), z0 = c.Lo(), z1 = c.Hi(nz);
-        var p = new Part(NameOf(c, "Die Rack"), c, Section, "Holds press dies on a shelf. A chute from it into a press brings a die to an empty slot.", role: "storage", group: "Production", color: Trim);
+        var p = new Part(name ?? NameOf(c, "Die Rack"), c, folder, desc ?? "Holds press dies on a shelf. A chute from it into a press brings a die to an empty slot.", role: "storage", group: "Production", color: Trim);
         var board = k * 0.12;
         var post = k * 0.14;
         p.Add(Box([x0, y0, z0], [x1, y0 + board, z1], Bed));
         foreach (var x in new[] { x0, x1 - post })
             foreach (var z in new[] { z0, z1 - post })
                 p.Add(Box([x, y0 + board, z], [x + post, y1, z + post]));
+        var bay = (x1 - x0 - 2 * post - (bays - 1) * post) / bays; // (each bay's inner width, between its posts)
+        for (var b = 1; b < bays; b++)
+        {
+            var x = x0 + post + b * bay + (b - 1) * post;
+            foreach (var z in new[] { z0, z1 - post })
+                p.Add(Box([x, y0 + board, z], [x + post, y1, z + post]));
+        }
         BlockSockets(p, nx, ny, nz, faces: "xy", limit: Lim(2, "+x", "-x", "+y", "-y"));
         p.Stats(60 * c.X, 200 * c.X, c.Armour, c == Small ? 3 : null);
         var gap = 0.015 * c.X;
-        p.Set(("storage", Kw(("slots", Py.L(Kw(("min", Py.L(R3(x0 + post + gap), R3(y0 + board + gap), R3(z0 + gap))), ("max", Py.L(R3(x1 - post - gap), R3(y1 - gap), R3(z1 - gap))), ("rack", true), ("label", "Dies")))))));
+        var slots = Py.L();
+        for (var b = 0; b < bays; b++)
+        {
+            var bx0 = x0 + post + b * (bay + post);
+            slots.Add(Kw(("min", Py.L(R3(bx0 + gap), R3(y0 + board + gap), R3(z0 + gap))), ("max", Py.L(R3(bx0 + bay - gap), R3(y1 - gap), R3(z1 - gap))), ("rack", true), ("label", label)));
+        }
+        p.Set(("storage", Kw(("slots", slots))));
         return p;
     }
 

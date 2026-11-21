@@ -127,7 +127,7 @@ public sealed partial class ConstructEdits
                 if (world.StoreOf(c, i) is not { } st)
                     continue;
                 for (var k = 0; k < st.SlotCount; k++)
-                    while (ConstructParts.Get(st.Def[k]) is { PhysicsOnly: true })
+                    while (ConstructParts.Get(st.Def[k]) is { PhysicsOnly: true } po && !(k < c.DefOf(i).Slots.Length && ConstructStorage.RackHolds(c.DefOf(i).Slots[k], po)))
                     {
                         if (world.TakeOut(c, i, k) is not { } d)
                             break;
