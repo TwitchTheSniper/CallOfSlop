@@ -644,7 +644,7 @@ already cut: the cut parts are steps, so a station builds the hole as it builds 
 - `SubBlueprints.cs`: a use may be a module joined at a plate.
 - `ConstructStation.cs`, `ConstructStationTree.cs`: station fitters fit uses; `StationOp` gains nothing (the fitter has its
   own ops).
-- `Renderer.Cuts.cs` (after `claude/flush-pod-pocket`): wells add their rim band; the 16-within-60-m budget is shared,
+- `Renderer.Cuts.cs` (after `claude/flush-pod-pocket`): wells add their rim band; the 32-within-60-m budget is shared (16 until 2026-11-21),
   nearest first, raised only if measured.
 - `Interiors/InteriorPlanner.cs`: a socket's column inside the hull is reserved volume.
 - `FactionStyle` / the faction files' loader: the `"modules"` block; Vehicle Kit `BlueprintScript.Socket(w, l, kind,
