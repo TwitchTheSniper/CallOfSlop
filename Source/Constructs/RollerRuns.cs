@@ -70,6 +70,40 @@ public static class RollerRuns
         return -1;
     }
 
+    /// <summary>
+    /// The run that ends at Roller Tile <paramref name="tile"/>'s own Run end with no way on (no conveyor off its Piece out): where its
+    /// pieces wait for a crane or an arm (ConstructLifters, LiftPointKind.RunEnd). Its conveyor, or -1. Either peer; allocates nothing.
+    /// </summary>
+    public static int EndRunAt(Construct c, int tile)
+    {
+        if ((uint)tile >= (uint)c.PartCount || !c.Parts[tile].D.IsRollerTile)
+            return -1;
+        var d = c.Parts[tile].D;
+        var run = -1;
+        for (var k = 0; k < c.RouteCount && run < 0; k++)
+        {
+            ref readonly var r = ref c.Routes[k];
+            if (r.Type == RouteType.Conveyor && r.Parent == 255 && r.Count == 2 && r.To == tile && IsRunPort(d, r.ToPort)
+                && c.RouteNodes[r.Start + 1].Host == tile && IsRun(c, k))
+                run = k;
+        }
+        if (run < 0)
+            return -1;
+        for (var k = 0; k < c.RouteCount; k++)
+            if (c.Routes[k].Type == RouteType.Conveyor && c.Routes[k].Parent == 255 && c.Routes[k].From == tile && !IsRunPort(d, c.Routes[k].FromPort))
+                return -1; // (it goes on along a conveyor linked from the tile's Piece out)
+        return run;
+    }
+
+    /// <summary>The lead rider of conveyor <paramref name="route"/> when it waits at the link's far end, or -1.</summary>
+    public static int WaitingLead(Construct c, int route)
+    {
+        for (var i = 0; i < c.ConveyedCount; i++)
+            if (c.Conveyed[i].Route == route)
+                return c.Conveyed[i].At >= ConstructConveyor.Length(c, route) - 0.02f ? i : -1; // (riders are kept grouped by link, the lead first)
+        return -1;
+    }
+
     private struct Want
     {
         public ushort From, To;

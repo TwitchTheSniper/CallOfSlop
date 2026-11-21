@@ -1707,8 +1707,13 @@ CLEAR on its sides), festoon loops along the girder and hazard stripes on the ho
 a bridge moves within 3 m of it (`ConstructLifters.RailLit`, drawing only). The classed cranes stay (the Medium for the Dray's hold;
 the Large and Capital keep their Assembler rows, which saved recipe numbers count). The **Hall Bay** blueprint (`HallShowcase.cs`) is
 a 24 x 20 m floor with a 16 m Hall Crane on two runs over three-mast columns, an Extruder with no conveyor and a 3 x 4 pad of Pad
-Tiles: the crane carries each angle from the Run-out Table to the pad. Not yet: a hall crane doesn't yet skip a machine bed that the
-machine's own crane serves (no machine has its own crane yet).
+Tiles: the crane carries each angle from the Run-out Table to the pad. A crane (or an arm) also picks from the end of a Roller Tile
+run that has no way on (`LiftPointKind.RunEnd`, `RollerRuns.EndRunAt`: the run ends at its own last tile's Run end and no conveyor
+leaves that tile's Piece out): the lead piece waiting there comes off the run into the hand and goes to the store it was riding to
+when that is in reach and takes it, else by the Routers' rule (a want, else storage); the run's look line says "waiting at the run's
+end for a crane or an arm". Hand orders don't pick from a run's end. Hall Bay has such a run: three tiles down the bay under the
+span (`logi spawn 3 Roller Tile@<tile>` puts Gear Sets on it; `logi runs` lists each run and whether its end is a pick point). Not
+yet: a hall crane doesn't yet skip a machine bed that the machine's own crane serves (no machine has its own crane yet).
 
 **Pad Tiles** (design page drawing 23, Sean 2026-11-21; parts from `PieceRackParts.cs`, `Constructs/Parts/Pads`; code
 `ConstructPads.cs`). A Pad Tile is a 2 m deck with no Core (`machineBlock` family `pad`, `"seed": true`). Tiles welded side by side are
@@ -1739,9 +1744,14 @@ or at its last tile's **Run end**, where pieces wait at the end for a crane, or 
 uses the `+x` twins of the run ports, on the line between its middle tiles. Tiles have sockets at 0.5 m (an Out Table's) and at 0.1 m
 (a Pad Tile's), so a run welds to either. The rollers turn while a piece is on the run (`RollerRuns.Moving`). The **Turntable Tile** is
 a junction: a run ending in it passes its pieces in turn to the runs that start at it, never back out the side they came in, turned
-to the new run's way (its disc turns while a piece crosses). Hall Bay has a line: a Pad Tile, two tiles, a turntable and one tile
-into the pad (`logi spawn 3` sends three Gear Sets along it). Not yet: a run doesn't carry a person along, and the Hall Crane doesn't
-pick from a run's end; a powered turntable doesn't choose the way by a piece's destination as a Router does.
+to the new run's way (its disc turns while a piece crosses). A turntable sends a piece that has a destination (a store, a tray
+or a machine's input it was given by a Router or its maker's order) the way to it, as a Router does: it is a Router slot on the
+logistics map (`LogiMap.Routers`, so a way may pass through it, and it counts towards `MaxRouters`), and `ConstructLogistics.TurntableWay`
+reads its next hop, never back out the side the piece came in; while that way is full the piece waits. It only follows a destination:
+a piece with none, or with no way from here, goes each way in turn as before, and a turntable never sets a piece off the line, holds
+it stuck or has an Alarm. Hall Bay has a line: a Pad Tile, two tiles, a turntable, then one tile north into the big pad and one
+tile east into a one-tile pad (`logi spawn 3` sends three Gear Sets along it; `logi dest Pad Tile@<tile>` gives every rider that
+pad as its destination). Not yet: a run doesn't carry a person along.
 
 **Hand orders** (phase 7, `ConstructLifterOrders.cs`, the panel `UI/UiLifter.cs`; notes `lifters-phase7-notes.md`). F on an arm, or
 on a crane's cabinet from anywhere on the floor under its rails, opens its panel: its points in reach with what each pick point holds
