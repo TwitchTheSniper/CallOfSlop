@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Hatchet Canopy",
-  "description": "The Hatchet's canopy: the long glass over the pilot and the gunner in its dark frame, from the nose to the cabin.",
+  "description": "The Hatchet's canopy: the long glass over the pilot in its dark frame, from the nose to the cabin.",
   "group": "Ship",
   "section": "Hatchet fighter",
   "role": "frame",

@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Hatchet Fighter",
-  "description": "The Raiders' wedge fighter: a pilot and a gunner in tandem under a long glass canopy, a twin cannon turret on each wing tip worked by the gunner, two rocket pods the pilot fires straight ahead, and two drives in the engine block at the stern with their engines in the small cabin behind the cockpit. Boarded up a ladder through a hatch in the cabin floor; lift jets and leg pods under the wings and the belly set it down.",
+  "description": "The Raiders' wedge fighter: a pilot under a long glass canopy and a gunner in the cabin behind, a twin cannon turret on each wing tip worked by the gunner, two rocket pods the pilot fires straight ahead, and two drives in the engine block at the stern with their engines in the small cabin behind the cockpit. Boarded up a ladder through a hatch in the cabin floor; lift jets and leg pods under the wings and the belly set it down.",
   "steps": [
     {
       "part": "Hatchet Belly"

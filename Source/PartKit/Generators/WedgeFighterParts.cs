@@ -9,9 +9,10 @@ namespace CallOfSlop.PartKit.Generators;
 /// fighter that dives on a convoy and runs is their trade. Original, not a copy: a lofted fuselage about 16 m long with a delta wing
 /// 13 m across, crimson over cream, grey panels, dark frame ribs (docs/sandbox/constructs/hatchet.md).
 ///
-/// Inside: a pilot and a gunner in tandem under the glass, a small cabin behind them with the boarding hatch and its ladder in the
-/// floor, suit lockers, the air, the battery and a power cell, and the two drives' engines (a Drive Core XS each) against the
-/// stern's plate. The gunner works both wing-tip turrets from a Gunnery Console; the pilot fires the two rocket pods (fixed
+/// Inside: the pilot alone under the glass (the power cell against the cockpit's wall, room to stand behind the couch), a small cabin
+/// behind with the boarding hatch and its ladder in the floor, suit lockers, the gunner's couch and console on the centreline, the
+/// air, the battery, and the two drives' engines (a Drive Core XS each) against the stern's plate. The gunner works both wing-tip
+/// turrets from a Gunnery Console; the pilot fires the two rocket pods (fixed
 /// forward) through a Turret Module. Lift jets and leg pods under the belly and the wings set it down.
 ///
 /// Built as the Zero Day's Shuttle is (TorpedoFrigateShuttle.cs, whose helpers this copies, and CourierParts.cs): a hull lofted
@@ -517,21 +518,23 @@ public sealed class WedgeFighterParts : IPartGenerator
             Solid(p, x - 0.3, LegY, z - 0.4, x + 0.3, ky + 0.11, z + 0.4, Frame, "dirty steel");
             Sock(p, $"leg{i}", x, LegY, z, "-y");
         }
-        // The cockpit: the pilot, the flight computer ahead of the pilot and the rocket pods' Turret Module beside it; the gunner behind at
-        // the Gunnery Console. The cabin: lockers, the air, the battery and the power cell along the walls.
+        // The cockpit: the pilot, the flight computer ahead of the pilot and the rocket pods' Turret Module beside it, the power cell on
+        // the starboard wall and floor behind the couch to stand on (a couch fills the cockpit's width: a second one there shut the pilot
+        // off). The cabin: lockers either side aft of the hatch, the gunner's console and couch on the centreline behind them (both used
+        // from the gap between the lockers), the air and the battery along the walls.
         Sock(p, "pilot", 0, Ft, -4.72, "+y");
         Sock(p, "computer", 0, Ft, -5.3, "+y");
         Sock(p, "rocketModule", 0.58, Ft, -5.3, "+y");
-        Sock(p, "gunConsole", 0, Ft, -3.85, "+y");
-        Sock(p, "gunner", 0, Ft, -3.05, "+y"); // (a metre clear behind it, to stand in from the bulkhead door)
+        Sock(p, "gunConsole", 0, Ft, 1.95, "+y");
+        Sock(p, "gunner", 0, Ft, 2.7, "+y");
         Sock(p, "lockerL", -(CabW - 0.3), Ft, 1.0, "+y");
-        Sock(p, "lifeSupport", -(CabW - 0.3), Ft, 2.05, "+y");
+        Sock(p, "lifeSupport", -(CabW - 0.3), Ft, 2.75, "+y"); // (beside the gunner's couch)
         Sock(p, "lockerR", CabW - 0.3, Ft, 0.98, "+y"); // (aft of the belly hatch: the way forward past it runs along this wall)
         Sock(p, "battery", CabW - 0.17, Ft, 1.68, "+y");
-        Sock(p, "power", CabW - 0.33, Ft, 2.35, "+y");
+        Sock(p, "power", CockW - 0.33, Ft, -3.2, "+y"); // (under the canopy's sill: 1 m tall)
         // (the wing turrets' Turret Module on the floor between the engines: a wire reaches 8 m, the console is too far from the
         // wing tips, and a seat aims one module, so one module takes both guns, about 6.6 m from each)
-        Sock(p, "gunModule", 0, Ft, 3.3, "+y");
+        Sock(p, "gunModule", 0, Ft, 3.35, "+y");
         foreach (var z in new[] { NoseZ, BulkZ })
             MustFit("cockpit floor", z, ckW, Ft);
         foreach (var z in new[] { BulkZ, AftZ })
@@ -594,7 +597,7 @@ public sealed class WedgeFighterParts : IPartGenerator
         // Lamps and switches.
         Sock(p, "lampCockpit", xc, Sill - 0.35, -2.2, s < 0 ? "+x" : "-x");
         Sock(p, "lampCabinF", xb, CeilY - 0.4, -0.6, s < 0 ? "+x" : "-x");
-        Sock(p, "lampCabinB", xb, CeilY - 0.4, 3.2, s < 0 ? "+x" : "-x");
+        Sock(p, "lampCabinB", xb, CeilY - 0.4, 3.65, s < 0 ? "+x" : "-x");
         Sock(p, "switch", xc, Ft + 1.1, -1.95, s < 0 ? "+x" : "-x");
         Sock(p, "switchCabin", xb, Ft + 1.3, -0.25, s < 0 ? "+x" : "-x");
         foreach (var (z, xh, top) in new[] { (NoseZ, CockW + WallT, Sill), (BulkZ, CockW + WallT, Sill), (BulkZ, CabW + WallT, CeilY), (AftZ, CabW + WallT, CeilY) })
@@ -609,7 +612,7 @@ public sealed class WedgeFighterParts : IPartGenerator
     /// that keep people in.</summary>
     private static Part Canopy()
     {
-        var p = Big("Hatchet Canopy", "The Hatchet's canopy: the long glass over the pilot and the gunner in its dark frame, from the nose to the cabin.", color: Rib);
+        var p = Big("Hatchet Canopy", "The Hatchet's canopy: the long glass over the pilot in its dark frame, from the nose to the cabin.", color: Rib);
         var (za, zb) = (NoseZ, BulkZ);
         foreach (var (a, b) in new[] { (NoseZ, -2.0), (-2.0, BulkZ) })
         {
@@ -826,14 +829,16 @@ public sealed class WedgeFighterParts : IPartGenerator
         return p.Stats(900, 7000, 40, 10.0);
     }
 
+    private const double DoorHalf = 0.55; // (1.1 m: a 0.9 m door let a body through only along a 10 cm band)
+
     /// <summary>The bulkhead between the cockpit and the cabin: a frame open in the middle, up to the canopy (no lintel: the sill is too low to walk under).</summary>
     private static Part Bulkhead()
     {
         var p = Big("Hatchet Bulkhead", "The frame between the Hatchet's cockpit and its cabin, open in the middle.", color: Wall);
         foreach (var s in new[] { -1, 1 })
-            Solid(p, Math.Min(s * 0.45, s * CockW), Ft, BulkZ - WallT, Math.Max(s * 0.45, s * CockW), Sill, BulkZ, Wall, "painted plating");
+            Solid(p, Math.Min(s * DoorHalf, s * CockW), Ft, BulkZ - WallT, Math.Max(s * DoorHalf, s * CockW), Sill, BulkZ, Wall, "painted plating");
         foreach (var s in new[] { -1, 1 })
-            Detail(p, Math.Min(s * 0.45, s * 0.52), Ft, BulkZ - WallT - 0.02, Math.Max(s * 0.45, s * 0.52), Ft + 2.02, BulkZ + 0.02, Rib, "painted steel");
+            Detail(p, Math.Min(s * DoorHalf, s * (DoorHalf + 0.07)), Ft, BulkZ - WallT - 0.02, Math.Max(s * DoorHalf, s * (DoorHalf + 0.07)), Sill - 0.01, BulkZ + 0.02, Rib, "painted steel");
         return p.Stats(150, 2500, 15, 6.0);
     }
 
@@ -1233,7 +1238,7 @@ public sealed class WedgeFighterParts : IPartGenerator
 
     private static PyDict Blueprint(Dictionary<string, PyDict> defs, List<string> order)
     {
-        var bp = new BuildingParts.Blueprint(ShipName, "The Raiders' wedge fighter: a pilot and a gunner in tandem under a long glass canopy, a twin cannon turret on each wing tip worked by the gunner, two rocket pods the pilot fires straight ahead, and two drives in the engine block at the stern with their engines in the small cabin behind the cockpit. Boarded up a ladder through a hatch in the cabin floor; lift jets and leg pods under the wings and the belly set it down.", defs, maxSteps: 160);
+        var bp = new BuildingParts.Blueprint(ShipName, "The Raiders' wedge fighter: a pilot under a long glass canopy and a gunner in the cabin behind, a twin cannon turret on each wing tip worked by the gunner, two rocket pods the pilot fires straight ahead, and two drives in the engine block at the stern with their engines in the small cabin behind the cockpit. Boarded up a ladder through a hatch in the cabin floor; lift jets and leg pods under the wings and the belly set it down.", defs, maxSteps: 160);
         bp.Conduit = true;
         double[] zero = [0, 0, 0];
         var st = new Dictionary<string, int>();
@@ -1276,7 +1281,7 @@ public sealed class WedgeFighterParts : IPartGenerator
             Paint(bp, bp.Hang("Ammo Box", pod, "back", "front"), Grey2, "worn paint");
             bp.Wires.Add((rocketModule, pod));
         }
-        bp.Hang("Gunnery Console", belly, "gunConsole", "bottom"); // (its screens; the turrets' modules are on the cabin walls)
+        bp.Hang("Gunnery Console", belly, "gunConsole", "bottom"); // (its screens; the turrets' module is on the cabin floor aft)
         var gunner = Paint(bp, bp.Hang("Flight Couch", belly, "gunner", "bottom"), "#3a2a2c", "fabric");
         // (the turrets' Turret Module on the cabin floor aft, within a wire's 8 m of both guns and of the gunner's couch)
         var gunModule = bp.Hang("Turret Module", belly, "gunModule", "-y");
