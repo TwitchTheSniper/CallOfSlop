@@ -125,7 +125,7 @@ public sealed partial class Ui
     /// Opens the picker on a Laser Cutter's Design button (laser cutter phase 4): a tile for each of the world's cut designs, dim when this cutter
     /// can't take it (its bed, a cut it refuses); a pick orders <paramref name="count"/> (its Order count) at the cutter.
     /// </summary>
-    public void OpenCutterPicker(ushort body, int machine, ConstructPartDef d, IReadOnlyList<PanelDesign> designs, int count)
+    public void OpenCutterPicker(Construct c, int machine, ConstructPartDef d, IReadOnlyList<PanelDesign> designs, int count)
     {
         _rcpCutKeys.Clear();
         var tiles = new List<RpTile>();
@@ -134,18 +134,18 @@ public sealed partial class Ui
             if (!HullLoft.IsCutName(dsg.Key))
                 continue;
             var job = ConstructLaserCutter.JobOf(dsg.Key);
-            var fits = job != null && ConstructLaserCutter.Fits(d, job);
+            var fits = job != null && ConstructLaserCutter.Fits(c, machine, job);
             var label = HullLoft.PanelLabel(dsg.Key);
             tiles.Add(new RpTile
             {
                 Value = fits ? _rcpCutKeys.Count : -1,
                 Name = dsg.Name,
                 Out = job != null ? $"{job.EdgeM:0.#} m cut" : "",
-                Time = job != null ? Secs(ConstructLaserCutter.Seconds(job, d)) : "",
+                Time = job != null ? Secs(ConstructLaserCutter.Seconds(job, c, machine)) : "",
                 Search = $"{dsg.Name} {label}".ToLowerInvariant(),
                 Tip = job == null ? $"{dsg.Name}: {HullLoft.CutRefusal(dsg.Key) ?? "its blank is no part this build makes"}."
                     : fits ? $"{dsg.Name}: {label}. Cut from {job.Blank}; {count} ordered at this {d.Name}."
-                    : $"{dsg.Name}: {label}. Too big for this {d.Name}'s bed: {ConstructLaserCutter.TierFor(job) ?? "no Laser Cutter"} takes it.",
+                    : $"{dsg.Name}: {label}. This {d.Name} {ConstructLaserCutter.Misfit(c, machine, job)}.",
                 Swatch = new ImColor8(168, 54, 94, 255),
             });
             _rcpCutKeys.Add(dsg.Key);
@@ -163,7 +163,7 @@ public sealed partial class Ui
         _rcpFilterVersion++;
         _rcpFocusSearch = tiles.Count > 12;
         RecipePickerOpen = true;
-        _rcpBody = body;
+        _rcpBody = c.Id;
         _rcpConsole = machine;
         _rcpMachine = machine;
         _rcpSame = 1;

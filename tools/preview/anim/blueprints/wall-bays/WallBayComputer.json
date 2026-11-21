@@ -1,0 +1,42 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Wall Bay Flight Computer (fitted)",
+  "description": "The Wall Bay Flight Computer module fitted in a Wall Bay Socket.",
+  "steps": [
+    {
+      "part": "Wall Bay Socket",
+      "spin": 7
+    },
+    {
+      "part": "Module Plug 1x2",
+      "on": 0,
+      "socket": "module",
+      "by": "module",
+      "spin": 3
+    },
+    {
+      "part": "Flight Computer Insert",
+      "on": 1,
+      "socket": "tc",
+      "by": "plug"
+    },
+    {
+      "part": "Twist Latch",
+      "on": 2,
+      "socket": "latch",
+      "by": "hang"
+    },
+    {
+      "part": "Memory Module Drawer",
+      "on": 2,
+      "socket": "supply",
+      "by": "hang"
+    },
+    {
+      "part": "Computer Card Cage",
+      "on": 2,
+      "socket": "wear",
+      "by": "hang"
+    }
+  ]
+}

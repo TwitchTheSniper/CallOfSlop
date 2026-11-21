@@ -561,10 +561,10 @@ public sealed partial class Ui
         static int Step(int v) => (int)MathF.Round(v / (float)HullLoft.PanelStepCm) * HullLoft.PanelStepCm;
         if (_pdPlate)
         {
-            // A plate: the Extruder's lengths go in 5 cm steps, and the largest Laser Cutter's bed takes 20 cm to 64 m along and 32 m across
-            // (HullLoft.StockRefusal); its section's height, whole cm, is four times its thickness, up to the largest bed's 2 m.
+            // A plate: the Extruder's lengths go in 5 cm steps, and the largest Laser Cutter's bed takes 20 cm to 32 m on one side and 16 m
+            // on the other (HullLoft.StockRefusal); its section's height, whole cm, is four times its thickness, up to the largest bed's 2 m.
             _pdL = Math.Clamp(Step(_pdL), HullLoft.PanelMinCm, HullLoft.CutPlateMaxCm);
-            _pdW = Math.Clamp(Step(_pdW), HullLoft.PanelMinCm, HullLoft.CutPlateAcrossCm);
+            _pdW = Math.Clamp(Step(_pdW), HullLoft.PanelMinCm, _pdL > HullLoft.CutPlateShortCm ? HullLoft.CutPlateShortCm : HullLoft.CutPlateAcrossCm);
             _pdPlateH = Math.Clamp(_pdPlateH, PlateMinH, PlateMaxH);
             return;
         }
@@ -626,10 +626,11 @@ public sealed partial class Ui
             if (!d.IsPanelFormer || d.IsLaserCutter) // (a cutter forms nothing: phase 4 lists it for cut designs)
                 continue;
             _pdFormers++;
-            if (d.ExtWheelMax.Y > maxL)
-                _pdBig = $"the {d.Name} takes {d.ExtWheelMax.Y:0.##} x {d.ExtWheelMax.X:0.##} m";
-            maxL = MathF.Max(maxL, d.ExtWheelMax.Y);
-            maxW = MathF.Max(maxW, d.ExtWheelMax.X);
+            ConstructPanelFormer.Bed(c, net.Machines[i], out var bedL, out var bedW, out _, out _); // (a Core's bed as its blocks make it now)
+            if (bedL > maxL)
+                _pdBig = $"the {d.Name} takes {bedL:0.##} x {bedW:0.##} m";
+            maxL = MathF.Max(maxL, bedL);
+            maxW = MathF.Max(maxW, bedW);
             if (world.StoreOf(c, net.Machines[i]) is { Amount: > 0 } st && !_pdMats.Contains(st.Material) && ExtrusionTable.Current.Find(st.Material) != null)
             {
                 _pdMats.Add(st.Material);
@@ -741,6 +742,8 @@ public sealed partial class Ui
                 ConstructPanelFormer.Sides(bd, out var a, out var b);
                 why = $"too large ({a:0.##} x {b:0.##} m): takes {d.ExtWheelMax.Y:0.##} x {d.ExtWheelMax.X:0.##} m";
             }
+            else if (ConstructPanelFormer.BedRefusal(c, m, bd) is { } bed)
+                why = bed;
             else if (HullLoft.FormedUnits(bd, _pdMat) > d.BulkCapacity)
                 why = $"needs {HullLoft.FormedUnits(bd, _pdMat)} sheet: its bin holds {d.BulkCapacity}";
             else if (world.StoreOf(c, m) is { Amount: > 0 } st && st.Material != _pdMat)
@@ -823,14 +826,15 @@ public sealed partial class Ui
         var seen = 0;
         for (var i = 0; i < net.MachineN && _pdCutFits.Count < 4; i++)
         {
-            var d = c.DefOf(net.Machines[i]);
+            var m = net.Machines[i];
+            var d = c.DefOf(m);
             if (!d.IsLaserCutter)
                 continue;
             seen++;
-            var ok = ConstructLaserCutter.Fits(d, job);
+            var ok = ConstructLaserCutter.Fits(c, m, job);
             _pdCutFitOk.Add(ok);
-            _pdCutFits.Add(ok ? $"{d.Name} {seen}: yes, {ConstructLaserCutter.Seconds(job, d):0.#} s a cut ({edge:0.##} m of edge through {mm:0} mm)"
-                : job.Least > d.CutMaxHeight + 0.005f ? $"{d.Name} {seen}: too tall for its bed: {job.Least:0.##} m" : $"{d.Name} {seen}: too large for its bed: {job.Longest:0.##} x {job.Next:0.##} m");
+            _pdCutFits.Add(ok ? $"{d.Name} {seen}: yes, {ConstructLaserCutter.Seconds(job, c, m):0.#} s a cut ({edge:0.##} m of edge through {mm:0} mm)"
+                : $"{d.Name} {seen}: {ConstructLaserCutter.Misfit(c, m, job)}");
         }
     }
 
@@ -1051,10 +1055,12 @@ public sealed partial class Ui
                 var longMax = Math.Min(HullLoft.PanelMaxCm, _pdMaxL);
                 if (_pdPlate)
                 {
-                    ImGui.SliderInt("Length"u8, ref l, HullLoft.PanelMinCm, HullLoft.CutPlateMaxCm, "%d cm"u8);
+                    ImGui.SliderInt("Length"u8, ref l, HullLoft.PanelMinCm, w > HullLoft.CutPlateShortCm ? HullLoft.CutPlateShortCm : HullLoft.CutPlateMaxCm, "%d cm"u8);
                     if (ImGui.IsItemHovered())
-                        ImGui.SetTooltip("Along the plate, as the Extruder makes it: 20 cm to the Capital Laser Cutter's 64 m bed."u8);
-                    ImGui.SliderInt("Width"u8, ref w, HullLoft.PanelMinCm, HullLoft.CutPlateAcrossCm, "%d cm"u8);
+                        ImGui.SetTooltip("Along the plate, as the Extruder makes it. The largest Laser Cutter bed takes 32 m one way and 16 m the other."u8);
+                    ImGui.SliderInt("Width"u8, ref w, HullLoft.PanelMinCm, l > HullLoft.CutPlateShortCm ? HullLoft.CutPlateShortCm : HullLoft.CutPlateAcrossCm, "%d cm"u8);
+                    if (ImGui.IsItemHovered())
+                        ImGui.SetTooltip("Across the plate. Past 16 m along, it is at most 16 m wide: the largest bed is 32 x 16 m."u8);
                     ImGui.SliderInt("Section height"u8, ref plateH, PlateMinH, Math.Min(PlateMaxH, 160), "%d cm"u8);
                     if (ImGui.IsItemHovered())
                         ImGui.SetTooltip("The Extruder's Plate section is a quarter of its height thick: 10 cm makes a 2.5 cm plate, 40 cm a 10 cm plate. A thicker plate cuts slower."u8);

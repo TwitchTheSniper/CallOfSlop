@@ -303,6 +303,13 @@ public sealed partial class Construct
     public Vector3 GrabFrameVel, GrabFrameSpin; // held by a rider: their deck's motion, on top of which the piece is moved (ConstructGrab.Drive)
     public float GrabBoost = 1f; // held: how much faster the beam moves it after a while carried in the air (ConstructGrab.FlightBoost; 1: none)
     public bool GrabTouch; // held: a contact pushed on it this tick (the physics step sets it; the boost reads and clears it)
+    // A held module caught by a free socket's pull (server; ModuleGuide.PullIn): the ship, its plate, how far the pull has it (0..1, 0: not caught) and the tick it is looked for again.
+    public ushort ModCatchShip;
+    public int ModCatchPlate = -1;
+    public float ModCatch;
+    public long ModCatchLook;
+    public ushort ModSkipShip; // server: the socket a gun just pulled this module out of, which won't catch it again until it has been carried out of the pull's range (ModuleGuide.FindSocket)
+    public int ModSkipPlate = -1;
     public bool Asleep;
     public int SleepTicks;
     /// <summary>Server: far from every person (ConstructFar.cs): its physics steps once every this many ticks, by that many ticks' time (0 or 1: every tick).</summary>
@@ -447,6 +454,7 @@ public sealed partial class Construct
     public string StationTitle = ""; // a station's own name when it isn't its pieces' (a second Highport built as Glacier Watch: Game.StationName); saved as a setting key (WorldSaveBodies.StationKey)
     public sbyte HaulRoute = -1; // a station hauler's route (Crew/Stations.json "haulers"; -1: none), saved so a loaded world's haulers go on (WorldSaveBodies.HaulKey)
     public bool HaulAtTo; // the hauler's leg: bound for its route's second station
+    public bool HaulEscort; // it is one of its route's escorts, not a hauler (phase 3: convoys)
     public bool IsStation; // built of space station pieces (part group "Station": docs/sandbox/constructs/station.md): the command view shows it as a station
     public bool HasVolumeStore; // a Storage Volume: its box is drawn with the cargo volumes' (ConstructRenderCargo.cs)
     public bool HasRecycler; // a Recycler part: the recycler step looks at it (ConstructRecycler.cs)
@@ -1324,6 +1332,7 @@ public sealed partial class Construct
         BuildDrivetrain();
         BuildPlants();
         ConstructWorks.Build(this); // (ship works: each head's cap, which the thrusters take: ConstructWorks.cs)
+        MachineBlocks.Build(this); // (block machines: each Core's cells, bed rectangle and welded faces: MachineBlocks.cs)
         ModuleSockets.Build(this); // (module sockets: which plug is on which plate, the plug flood, each socket's room)
         BuildThrusters();
         ConstructFluid.Build(this);

@@ -1,0 +1,268 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Haywain Cab Wall 2",
+  "description": "A wall of the Haywain's cab, with its door frames and what is fixed to it.",
+  "group": "Ship",
+  "section": "Haywain hauler",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 288.4,
+  "health": 3500,
+  "armour": 25,
+  "material": "steel",
+  "color": "#d6cfb8",
+  "attachSeconds": 6.0,
+  "boxes": [
+    {
+      "min": [
+        -3.625,
+        0.125,
+        -21.925
+      ],
+      "max": [
+        -3.375,
+        2.625,
+        -21.845
+      ],
+      "color": "#d6cfb8",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -3.625,
+        2.125,
+        -21.845
+      ],
+      "max": [
+        -3.375,
+        2.625,
+        -20.595
+      ],
+      "color": "#d6cfb8",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -3.645,
+        0.127,
+        -21.915
+      ],
+      "max": [
+        -3.355,
+        2.195,
+        -21.848
+      ],
+      "color": "#2e302d",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -3.645,
+        0.127,
+        -20.592
+      ],
+      "max": [
+        -3.355,
+        2.195,
+        -20.525
+      ],
+      "color": "#2e302d",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -3.645,
+        2.127,
+        -21.845
+      ],
+      "max": [
+        -3.355,
+        2.195,
+        -20.595
+      ],
+      "color": "#e8a317",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -3.625,
+        0.125,
+        -20.595
+      ],
+      "max": [
+        -3.375,
+        2.625,
+        -12.325
+      ],
+      "color": "#d6cfb8",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -3.637,
+        0.128,
+        -20.545
+      ],
+      "max": [
+        -3.363,
+        0.875,
+        -12.375
+      ],
+      "color": "#56654a",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -3.375,
+        2.275,
+        -21.495
+      ],
+      "max": [
+        -3.36,
+        2.425,
+        -21.295
+      ],
+      "color": "#c0392b",
+      "detail": true,
+      "glow": true
+    },
+    {
+      "min": [
+        -3.375,
+        2.275,
+        -21.145
+      ],
+      "max": [
+        -3.36,
+        2.425,
+        -20.945
+      ],
+      "color": "#40e070",
+      "detail": true,
+      "glow": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "doorLockOutL",
+      "at": [
+        -3.5,
+        1.125,
+        -20.595
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "lampBunk",
+      "at": [
+        -3.375,
+        2.325,
+        -17.825
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "toilet",
+      "at": [
+        -3.375,
+        0.25,
+        -14.925
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "basin",
+      "at": [
+        -3.375,
+        0.25,
+        -14.075
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "lampHead",
+      "at": [
+        -3.375,
+        2.425,
+        -13.525
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "j0",
+      "at": [
+        -3.505,
+        0.125,
+        -18.055
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j1",
+      "at": [
+        -3.505,
+        1.375,
+        -21.925
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j2",
+      "at": [
+        -3.375,
+        1.375,
+        -20.045
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "j3",
+      "at": [
+        -3.375,
+        1.375,
+        -15.605
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "j4",
+      "at": [
+        -3.505,
+        1.375,
+        -12.325
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "j5",
+      "at": [
+        -3.505,
+        2.625,
+        -16.465
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j6",
+      "at": [
+        -3.625,
+        0.755,
+        -18.435
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j7",
+      "at": [
+        -3.625,
+        0.755,
+        -14.375
+      ],
+      "dir": "-x"
+    }
+  ]
+}

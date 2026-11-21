@@ -233,7 +233,7 @@ The speed loop's drift integral is `k * k / 5 / g` for a speed gain `k`, and a d
 
 ## The Fan Former
 
-A Wheel Former whose piece is a whole rotor (`storage.wheel.fan`): `ExShape.Fan`, kept in `ConstructExtruder.GrowWhole`. Its settings say what it makes (`Extrusion.json`'s `"fanKinds"`), how many blades, which blade style and how far across. Fan Formers go 3, 12, 48 and 96 m by size class: the hub stands high enough for the prop it makes. The prop grows from the machine's first size, paid by volume from `Extrusion.json`'s `"fans"`, and parts off by itself at the size asked; a Cut signal parts it off early. What it can take and how fast it turns follow from its size by the kind's row. In survival this is where props come from: rotor parts get no Assembler recipe (the part kit's `assembling`); creative has the fixed sizes in the Tab menu.
+A Wheel Former whose piece is a whole rotor (`storage.wheel.fan`): `ExShape.Fan`, kept in `ConstructExtruder.GrowWhole`. Its settings say what it makes (`Extrusion.json`'s `"fanKinds"`), how many blades, which blade style and how far across. Fan Formers go 3, 12, 48 and 64 m by size class (96 m props were removed, Sean 2026-11-20): the hub stands high enough for the prop it makes. The prop grows from the machine's first size, paid by volume from `Extrusion.json`'s `"fans"`, and parts off by itself at the size asked; a Cut signal parts it off early. What it can take and how fast it turns follow from its size by the kind's row. In survival this is where props come from: rotor parts get no Assembler recipe (the part kit's `assembling`); creative has the fixed sizes in the Tab menu.
 
 ## The Airframe Former
 

@@ -1,6 +1,6 @@
 {
   // Standard cargo containers (ContainerParts.cs, --gen-parts containers): the corner clamps flip down, then both side hatches swing up to awnings.
-  "blueprint": "container-1m-loaded.blueprint.json",
+  "blueprint": "blueprints/container-1m-loaded.json",
   "title": "Standard container 1 m: side hatches",
   "shelf": "Cargo containers",
   "description": "1.5 x 1.5 x 3.5 m outside, three 1x1x1 m slots, each a cradle a module stands on. Each long side is one hatch hinged at the top: it swings out and up to an awning, never above the roof, so stacked or racked containers still open. A clamp on each foot casting locks it onto a container below. In the game the contents won't be drawn while the hatches are shut.",

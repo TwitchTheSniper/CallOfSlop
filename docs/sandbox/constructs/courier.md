@@ -8,4 +8,5 @@ The Traders' small fast courier (Karl, 2026-11-20): two standard containers ("St
 - Bay: a side passage each side outside the containers, the bay floor between, eight twist-lock pads (`lock{L|R}{0..3}`, medium sockets) with footprint lines; each container hangs on `lock{L|R}0` by its `foot.0`, its hatches face the passages. Containers are blueprint steps, not cargo, so the game spawns them in place.
 - Engineering: open to both passages; power plant (port), batteries (starboard), power board and tools, MMU dock, suit and Pressure Lockers on the aft wall.
 - Checks run: `--check-vehicle` (0 coplanar faces, 0 slivers; its wheel and drive lines are ground-vehicle checks), `--flight-check` (flies; hover tilt 0.2, lift 2.65x), `--ladder-check "Satchel Courier"`.
-- Not built: a dock crane that lifts the containers, the courier in the Traders' routes (Crew/Stations.json), recipes.
+- Recipes: one Assembling row per piece, at the end of Assembling.cs' Tail (Karl, 2026-11-21: "Add to build").
+- Not built: a dock crane that lifts the containers, the courier in the Traders' routes (Crew/Stations.json).

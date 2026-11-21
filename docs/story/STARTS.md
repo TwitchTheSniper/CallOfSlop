@@ -59,6 +59,10 @@ everything; stock guns kept): `SandboxStartKit` builds only the ship there. Code
   over Caledon, where the Magpie start wakes, its magazines full and its banks charged (as every ship the game spawns). A
   Traders' Zero Day, crewed, goes round 400 m behind on the same orbit (Karl, 2026-11-17: an NPC Zero Day of another faction,
   neutral and nearby; the Traders are neutral to players and fly the IT style). Survival and Creative.
+- `Interactions` (Karl, 2026-11-20: the trade world, the Traders first): the Magpie start's ship and orbit over Caledon with
+  Caledon Highport 40 km up, its own card (`Story/Opening/Interactions.json`). The Traders run their supply lines between
+  their stations (`Crew/Stations.json`), each station uses and makes goods, and trade is barter with a tab (`Game/GameTabs.cs`).
+  The ship is a placeholder: the opening's `"ship"` (and its `"wake"` points) take any blueprint. Survival and Creative.
 - `CapitalDuel` (two Mainframes held 10 km apart off Redrock) was removed with the Mainframe (Karl, 2026-11-20: capital ships
   on the back burner): docs/archive/capital/mainframe.md says how to bring both back. The openings' `"hold"` stays.
 - `Ground`: the map picked on the menu, the shipped start kit round its parts rack in Survival, no opening: what every

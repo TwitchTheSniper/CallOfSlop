@@ -33,8 +33,12 @@ public partial class BlueprintScript
             set.Add((ConstructConfig.KeyName(CfgKey.ModKeyed), 1));
         if (set.Count > 0)
             Config(p, [.. set]);
+        if (style != ModStyle.Proud)
+            (_dugSockets ??= []).Add(p);
         return p;
     }
+
+    private HashSet<VPart>? _dugSockets; // (sockets laid in a dug style: their module seats at the well's floor, which the kit's Onto can't place yet)
 
     /// <summary>
     /// The module design <paramref name="name"/> (a blueprint with a <c>"module"</c> block) built onto plate <paramref name="plate"/>:
@@ -46,8 +50,10 @@ public partial class BlueprintScript
         var bp = ConstructBuild.FindBlueprint(name) ?? throw new VehicleKitException($"no blueprint named \"{name}\"");
         if (bp.Module is not { } mb)
             throw new VehicleKitException($"the {name} blueprint isn't a module design (it has no \"module\" block)");
-        if (plate.Def.ModPart != ModPart.Socket || plate.Def.ModW != mb.W || plate.Def.ModL != mb.L)
-            throw new VehicleKitException($"the {name} is {ModuleSocketTable.SizeText(mb.W, mb.L)}: it goes on a Module Socket of that size, not a {plate.Def.Name}");
+        if (plate.Def.ModPart != ModPart.Socket || plate.Def.ModW != mb.W || plate.Def.ModL != mb.L || plate.Def.ModRound != mb.Round)
+            throw new VehicleKitException($"the {name} is {ModuleSocketTable.SizeText(mb.W, mb.L, mb.Round)}: it goes on a Module Socket of that size, not a {plate.Def.Name}");
+        if (_dugSockets?.Contains(plate) == true)
+            throw new VehicleKitException($"the {name}'s socket is dug (Flush, Well or Opening): a generator builds modules onto Proud sockets only, for now");
         if (bp.Uses.Count > 0 || bp.StepWeld.Any(x => x != null) || bp.StepAt.Any(x => x != null))
             throw new VehicleKitException($"the {name} has welds, placed steps or uses: a generator can't build it onto a socket yet");
         var made = new VPart[bp.Steps.Count];

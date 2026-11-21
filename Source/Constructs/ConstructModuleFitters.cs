@@ -212,7 +212,7 @@ public static class ModuleFitters
     private static Vector3 FaceOf(Construct c, int plate)
     {
         c.SocketAt(plate, c.DefOf(plate).ModSocket, out var at, out _);
-        return c.ToWorld(at);
+        return c.SegToWorld(c.Parts[plate].Seg, at); // (a plate welded on freeform: its numbers are in its weld's frame)
     }
 
     /// <summary>
@@ -312,7 +312,7 @@ public static class ModuleFitters
                     break;
                 foreach (var st in sb.ModSockets)
                 {
-                    if (!st.Stand || st.Module >= 0 || st.W != s.W || st.L != s.L || st.InTheWay >= 0 || Busy(world, sb, st.Plate))
+                    if (!st.Stand || st.Module >= 0 || st.W != s.W || st.L != s.L || st.Round != s.Round || st.InTheWay >= 0 || Busy(world, sb, st.Plate))
                         continue;
                     stands++;
                     var fitter = IdleFitter(world, wj, rig, face, FaceOf(sb, st.Plate), kg, out var no);
@@ -333,7 +333,7 @@ public static class ModuleFitters
             }
         }
         if (stands == 0 && why == null)
-            return $"no free {ModuleSocketTable.SizeText(s.W, s.L)} Module Stand on this construct or the fitter's to set it on (a fitter takes a module off onto a stand)";
+            return $"no free {ModuleSocketTable.SizeText(s.W, s.L, s.Round)} Module Stand on this construct or the fitter's to set it on (a fitter takes a module off onto a stand)";
         return why ?? "no Module Fitter on this construct or beside it";
     }
 
@@ -463,6 +463,7 @@ public static class ModuleFitters
                 m.HeldNear = 0;
                 m.Frozen = false;
                 var plan = new JoinPlan { Other = m, PartA = j.Plate.Part, SockA = plateDef.ModSocket, PartB = plug, SockB = plugDef.ModSocket, Turn = j.Turn, Offset = j.Rel };
+                ModuleSockets.PlanOnPlate(c, j.Plate.Part, ref plan);
                 var from = m.Id;
                 var parts = m.PartCount;
                 if (!world.Merge(c, plan))

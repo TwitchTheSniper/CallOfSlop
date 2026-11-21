@@ -1,0 +1,48 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Wall Bay Drawers (fitted)",
+  "description": "The Wall Bay Drawers module fitted in a Wall Bay Socket.",
+  "steps": [
+    {
+      "part": "Wall Bay Socket",
+      "spin": 7
+    },
+    {
+      "part": "Module Plug 1x2",
+      "on": 0,
+      "socket": "module",
+      "by": "module",
+      "spin": 3
+    },
+    {
+      "part": "Drawer Stack Insert",
+      "on": 1,
+      "socket": "tc",
+      "by": "plug"
+    },
+    {
+      "part": "Stow Drawer 1",
+      "on": 2,
+      "socket": "drawer0",
+      "by": "hang"
+    },
+    {
+      "part": "Stow Drawer 2",
+      "on": 2,
+      "socket": "drawer1",
+      "by": "hang"
+    },
+    {
+      "part": "Stow Drawer 3",
+      "on": 2,
+      "socket": "drawer2",
+      "by": "hang"
+    },
+    {
+      "part": "Stow Drawer 4",
+      "on": 2,
+      "socket": "drawer3",
+      "by": "hang"
+    }
+  ]
+}

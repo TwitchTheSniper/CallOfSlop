@@ -482,13 +482,31 @@ public static class ConstructGantry
         var map = new byte[d.Boxes.Length];
         for (var b = 0; b < map.Length; b++)
         {
-            var c = d.Boxes[b].Center / scale;
+            // A box of one of the frame's own modules (ShellParts.ModuleOnBody draws them from their parts): that slot, found by placement.
+            ref readonly var box = ref d.Boxes[b];
+            var found = (byte)255;
+            for (var s = 0; s < ShellFrames.SlotCount && found == 255; s++)
+                if (ShellFittedLooks.Own(d, s) is { } own)
+                    foreach (ref readonly var o in own.AsSpan())
+                        if (Vector3.DistanceSquared(o.Center, box.Center) < 25e-6f && Vector3.Distance(o.Half, box.Half) < 0.015f)
+                        {
+                            found = (byte)s;
+                            break;
+                        }
+            if (found != 255)
+            {
+                map[b] = found;
+                continue;
+            }
+            // Otherwise by where it is (a module with no part: the hopper, the drill arm); a slot whose module has a part keeps only its own boxes.
+            var c = box.Center / scale;
             var ax = MathF.Abs(c.X);
-            map[b] = c.Y > 1.55f && ax < 0.15f && c.Z < 0.13f ? (byte)0
+            var slot = c.Y > 1.55f && ax < 0.15f && c.Z < 0.13f ? (byte)0
                 : c.Z > 0.13f && ax < 0.2f && c.Y > 1.0f && c.Y < 1.5f ? (byte)1
                 : ax > 0.25f && ax < 0.4f && c.Y > 0.6f && c.Y < 1.02f && MathF.Abs(c.Z) < 0.1f ? (byte)(c.X < 0 ? 2 : 3)
                 : ax > 0.03f && ax < 0.2f && c.Y < 0.88f && MathF.Abs(c.Z) < 0.15f ? (byte)(c.X < 0 ? 4 : 5)
                 : (byte)255;
+            map[b] = slot != 255 && ShellFittedLooks.Own(d, slot) != null ? (byte)255 : slot;
         }
         d.ShellBoxSlots = map;
         return map;

@@ -44,6 +44,14 @@ The Zero Day's 8-person boarding pod, docked under its keel: the command view's 
 
 A cargo ship round a hold of fourteen container slots, an overhead crane on rails and a belly well with sliding doors, two big drives with their engines in a drive room aft, and attitude jets; no legs, lamps or fittings yet.
 
+## [The Packet spine freighter](constructs/freighter.md), 3 KB
+
+The Traders' freighter: a glass-nosed crew cab, a hull-only spine with three cargo racks a side (two standard 2.5 x 2.5 x 6.5 m containers each, open outboard), engineering and two drive nacelles on pylons.
+
+## [The Haywain hauler](constructs/haywain.md), 3 KB
+
+The farmers' medium hauler in a combine harvester's clothes: a glass cab room standing out on the nose, a crew block, six standard containers in a bay open to the sky inside a raised tank coaming, an engine box with exhaust stacks and two low drive pods.
+
 ## [The Satchel courier](constructs/courier.md), 2 KB
 
 The Traders' small fast courier: two standard containers side by side in a bay open to the sky, so a dock crane lifts them out; cab forward, engineering aft, two drive nacelles.

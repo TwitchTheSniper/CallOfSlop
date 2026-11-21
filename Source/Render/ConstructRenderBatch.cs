@@ -161,8 +161,14 @@ public static partial class ConstructRender
         ref var p = ref c.Parts[i];
         if (p.Burn > 0 || c.GantryHold || c.MergeOf[i] != 0 || c.Rides(i) || c.PartScale[i] > 1 || c.EngineOf[i] != 0 || _wheelMark[i] == _wheelToken)
             return -1;
-        if (p.D.ShellBody && ShellFittedLooks.FittedMask(in p, p.D) != 0)
-            return -1; // (a standing shell with a fitted module: walked, its slot drawn from the module's part, ShellFittedLooks)
+        if (p.D.ModPart != ModPart.None && ModuleSockets.HiddenLook(c, i))
+            return -1; // (a hidden socket connector: walked, and DrawPart draws nothing)
+        if (p.D.HasMiddle && ModuleSockets.FrameLook(c, i))
+            return -1; // (an Opening socket's frame, or the plug on one: walked, DrawPart leaves its middle out)
+        if (p.D.BlockRole == BlockRole.Block && ConstructPress.Shell(c, i, out _))
+            return -1; // (a Press's clamshell segment: walked, swung about its hinge while the press works, ConstructPressShells.cs)
+        if (p.D.ShellBody)
+            return -1; // (a standing shell: walked, drawn as a worn one (ConstructRenderShellRigs.cs) or with its fitted modules from their parts, ShellFittedLooks)
         if (c.DoorCount > 0 && c.DoorOfListed(i) >= 0)
             return -1; // (an event door's parts are always walked, at their moving pose while it moves: settling needs no remerge)
         if (p.D.Logic == CLogic.Lamp && ConstructConfig.Get(p, p.D, CfgKey.Blink, 0) > 0)
@@ -197,9 +203,13 @@ public static partial class ConstructRender
         for (var i = 0; i < c.PartCount; i++)
         {
             ref var p = ref c.Parts[i];
-            h = Mix(h, RuntimeHelpers.GetHashCode(p.D) | (p.Burn > 0 ? 1L << 40 : 0) | (p.Store != 0 ? 1L << 41 : 0) | (p.D.ShellBody ? (long)ShellFittedLooks.FittedMask(in p, p.D) << 42 : 0)); // (a shell's fitted modules: walked once one is)
+            h = Mix(h, RuntimeHelpers.GetHashCode(p.D) | (p.Burn > 0 ? 1L << 40 : 0) | (p.Store != 0 ? 1L << 41 : 0) | (p.D.ShellBody ? (long)ShellFittedLooks.FittedMask(in p, p.D) << 42 : 0) | (p.D.HasSeams && i < c.BlockJoined.Length ? (long)c.BlockJoined[i] << 50 : 0)); // (a shell's fitted modules: walked once one is)
             if (p.D.Logic == CLogic.Lamp && ConstructConfig.Get(p, p.D, CfgKey.Blink, 0) > 0)
                 h = Mix(h, i); // (a lamp set blinking is walked)
+            else if (p.D.ModPart != ModPart.None && ModuleSockets.HiddenLook(c, i))
+                h = Mix(h, ~i); // (a hidden socket connector is walked, drawing nothing)
+            else if (p.D.HasMiddle && ModuleSockets.FrameLook(c, i))
+                h = Mix(h, i * 7919L + 3); // (a frame is walked, its middle left out)
         }
         return h;
     }
@@ -237,7 +247,8 @@ public static partial class ConstructRender
         ref var p = ref c.Parts[i];
         var d = p.D;
         if (p.Seg != 0 || p.Burn > 0 || d.HasWork || d.Logic == CLogic.AnalogLever || d.Rotor != null || d.Role is PartRole.Joint or PartRole.Suspension || d.IsRail || d.HasRig || d.TrackRays > 0
-            || _wheelMark[i] == _wheelToken || c.DoorCount > 0 && c.DoorOfListed(i) >= 0 || c.MergeOf[i] != 0 || c.EngineOf[i] != 0 || d.ShellBody)
+            || _wheelMark[i] == _wheelToken || c.DoorCount > 0 && c.DoorOfListed(i) >= 0 || c.MergeOf[i] != 0 || c.EngineOf[i] != 0 || d.ShellBody
+            || d.BlockRole == BlockRole.Block && ConstructPress.Shell(c, i, out _)) // (a Press's shell swings out past its welded cell)
             return new Vector4(0, 0, 0, -1);
         c.PartBounds(i, out var mn, out var mx);
         var r = (mx - mn).Length() * 0.5f + (p.Store != 0 ? 2f : 0.25f); // (stored parts pile on its slots: room for them)
@@ -372,7 +383,7 @@ public static partial class ConstructRender
             _partEntry[i] = e;
             _eCount[e]++;
             _eBoxes[e] += nb;
-            _eGeo[e] = Mix(_eGeo[e], PartGeo(in p));
+            _eGeo[e] = Mix(_eGeo[e], PartGeo(in p) ^ (p.D.HasSeams && i < c.BlockJoined.Length ? (long)c.BlockJoined[i] << 56 : 0)); // (a block machine's welded faces: its seam boxes change with them, MachineBlocks.cs)
             total += nb;
         }
         set.Boxes = total;
@@ -571,6 +582,8 @@ public static partial class ConstructRender
             var m = box.Model(p.Rot, centre);
             if (p.D.IsOrdnance)
                 FoldWing(p.D, b, in box, p.Rot, centre, ref m); // (a designed weapon's wings, folded as it sits until it drops)
+            if (box.Seam != 0 && box.SeamHidden(i < c.BlockJoined.Length ? c.BlockJoined[i] : (byte)0))
+                m = Matrix4x4.CreateScale(0f) * Matrix4x4.CreateTranslation(centre); // (a block machine's seam box on a welded face: kept in the chunk at no size, so the counts stand: MachineBlocks.cs)
             var o = k * Renderer.MergeXformFloats;
             xf[o] = m.M11; xf[o + 1] = m.M12; xf[o + 2] = m.M13; xf[o + 3] = m.M41;
             xf[o + 4] = m.M21; xf[o + 5] = m.M22; xf[o + 6] = m.M23; xf[o + 7] = m.M42;

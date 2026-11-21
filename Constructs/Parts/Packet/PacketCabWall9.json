@@ -1,0 +1,84 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Packet Cab Wall 9",
+  "description": "A wall of the Packet's cab, with its door frames and what is fixed to it.",
+  "group": "Ship",
+  "section": "Packet freighter",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 486.3,
+  "health": 3500,
+  "armour": 25,
+  "material": "steel",
+  "color": "#cdcac0",
+  "attachSeconds": 6.0,
+  "boxes": [
+    {
+      "min": [
+        0.875,
+        0.125,
+        -14.125
+      ],
+      "max": [
+        2.875,
+        2.625,
+        -13.875
+      ],
+      "color": "#cdcac0",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        0.925,
+        0.128,
+        -14.137
+      ],
+      "max": [
+        2.825,
+        0.875,
+        -13.863
+      ],
+      "color": "#2a64a8",
+      "detail": true,
+      "finish": "painted plating"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "j0",
+      "at": [
+        1.875,
+        0.125,
+        -14.005
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j1",
+      "at": [
+        2.875,
+        1.375,
+        -14.005
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "j2",
+      "at": [
+        0.875,
+        1.375,
+        -14.005
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j3",
+      "at": [
+        1.875,
+        2.625,
+        -14.005
+      ],
+      "dir": "+y"
+    }
+  ]
+}

@@ -189,8 +189,8 @@ public sealed class ContainerParts : IPartGenerator
             foreach (var sz in new[] { -1, 1 })
             {
                 double cx = sx * (w - 0.085);
-                Solid(k, cx - 0.06, y0 + 0.075, sz * (l - 0.01), cx + 0.06, y0 + 0.095, sz * (l + ClampOff));
-                k.P.Sock($"clamp.{c++}", [Py.Round(cx, 3), y0 + 0.085, Py.Round(sz * (l + ClampOff), 4)], sz > 0 ? "+z" : "-z");
+                Solid(k, cx - 0.06, y0, sz * (l - 0.01), cx + 0.06, y0 + 0.02, sz * (l + ClampOff));
+                k.P.Sock($"clamp.{c++}", [Py.Round(cx, 3), y0 + 0.01, Py.Round(sz * (l + ClampOff), 4)], sz > 0 ? "+z" : "-z");
             }
         // The cradles' sockets on the floor, the spreader's reference on the roof, its feet under it and under each casting.
         for (var s = 0; s < 3; s++)
@@ -296,16 +296,16 @@ public sealed class ContainerParts : IPartGenerator
         var k = K(ClampName, "door",
             "A standard container's corner clamp: a steel jaw on each foot casting. Set on another container, it flips down over the casting under it and locks the two together; flip it up again to lift the top one off.",
             Medium, FrameC);
-        const double hx = 0.06, y0 = 0.004, y1 = 0.165, t = 0.028, sy = 0.085;
-        Solid(k, -hx, y0, 0, hx, y1, t);
-        k.Box(-hx, y0, 0, hx, y1, t - 0.004, FrameC, "dirty steel");
+        const double hx = 0.06, y0 = 0.004, y1 = 0.165, t = 0.028, sy = 0.01;
+        Solid(k, -hx, 0, 0, hx, 0.02, t); // (only the hinge block is solid, and it turns in place: an open clamp on a container on the ground lifts nothing)
+        k.Box(-hx, y0 + 0.02, 0, hx, y1, t - 0.004, FrameC, "dirty steel");
         k.Box(-hx + 0.012, y0 + 0.012, t - 0.004, hx - 0.012, y1 - 0.012, t + 0.008, Hazard, "hazard paint"); // (the face: yellow, so a locked stack shows it)
         k.Box(-0.025, y1 - 0.06, t + 0.008, 0.025, y1 - 0.02, t + 0.05, Steel, "steel"); // (the lever)
         foreach (var bx in new[] { -0.035, 0.035 })
             k.Box(bx - 0.012, y0 + 0.02, t + 0.008, bx + 0.012, y0 + 0.044, t + 0.02, HazardDark, "steel"); // (the bolt heads by the hinge)
-        Rod(k, -hx - 0.012, -0.012, 0.0, hx + 0.012, 0.012, 0.024, "+x", Steel, "steel", 8); // (the hinge pin along its foot)
+        Rod(k, -hx - 0.012, sy - 0.012, 0.002, hx + 0.012, sy + 0.012, t - 0.002, "+x", Steel, "steel", 8); // (the hinge pin along its foot)
         k.P.Sock("hang", [0, sy, 0], "-z");
-        k.P.Set(("door", Kw(("kind", "swing"), ("axis", "+x"), ("pivot", Py.L(0.0, 0.0, Py.Round(t / 2, 4))), ("angle", 180), ("seconds", 1.2), ("hang", "hang"))));
+        k.P.Set(("door", Kw(("kind", "swing"), ("axis", "+x"), ("pivot", Py.L(0.0, sy, Py.Round(t / 2, 4))), ("angle", 180), ("seconds", 1.2), ("hang", "hang"))));
         return k.P.Stats(14, 300, 20, 2.0);
     }
 
@@ -336,7 +336,8 @@ public sealed class ContainerParts : IPartGenerator
         Solid(k, x0, 0, x0, x1, face - 0.016, x1);
         k.P.Sock("module", [c, top, c], "+y", kind: "module");
         k.P.Sock("base", [c, 0, c], "-y");
-        k.P.Set(("moduleSocket", Kw(("w", N), ("l", N), ("stand", true))));
+        // (its room: a module N tall and a little over, under the container's roof; the table's default, 2N, would reach through the roof)
+        k.P.Set(("moduleSocket", Kw(("w", N), ("l", N), ("stand", true), ("above", Py.Round(N + 0.15, 2)))));
         return k.P.Stats(N * N * 45, 120 + N * N * 180, 20, 3.0 + N);
     }
 
@@ -395,7 +396,7 @@ public sealed class ContainerParts : IPartGenerator
     private static string Timing(bool stacked) =>
         "{\n" +
         $"  // Standard cargo containers (ContainerParts.cs, --gen-parts containers): the corner clamps flip down, then both side hatches swing up to awnings.\n" +
-        $"  \"blueprint\": \"container-{N}m-{(stacked ? "stacked" : "loaded")}.blueprint.json\",\n" +
+        $"  \"blueprint\": \"blueprints/container-{N}m-{(stacked ? "stacked" : "loaded")}.json\",\n" +
         $"  \"title\": \"Standard container {N} m: {(stacked ? "stacked and clamped" : "side hatches")}\",\n" +
         "  \"shelf\": \"Cargo containers\",\n" +
         $"  \"description\": \"{(stacked ? $"Two {N} m containers, one on the other: the top one's corner clamps flip down over the castings under it and lock the stack, then all four hatches swing up. " : "")}{Py.G(N + 0.5)} x {Py.G(N + 0.5)} x {Py.G(3 * N + 0.5)} m outside, three {N}x{N}x{N} m slots, each a cradle a module stands on. Each long side is one hatch hinged at the top: it swings out and up to an awning, never above the roof, so stacked or racked containers still open. A clamp on each foot casting locks it onto a container below. In the game the contents won't be drawn while the hatches are shut.\",\n" +
@@ -421,11 +422,11 @@ public sealed class ContainerParts : IPartGenerator
         foreach (var n in new[] { 1, 2, 3 })
         {
             Size(n);
-            o.File($"{AnimOut}/container-{n}m-loaded.blueprint.json", Blueprint(false));
+            o.File($"{AnimOut}/blueprints/container-{n}m-loaded.json", Blueprint(false)); // (a folder of their own: the gallery reads every .json beside the timing files as one)
             o.File($"{AnimOut}/container-{n}m.json", Timing(false));
             if (n == 2) // (the stack: the 2 m size, the one the freighters carry)
             {
-                o.File($"{AnimOut}/container-{n}m-stacked.blueprint.json", Blueprint(true));
+                o.File($"{AnimOut}/blueprints/container-{n}m-stacked.json", Blueprint(true));
                 o.File($"{AnimOut}/container-{n}m-stacked.json", Timing(true));
             }
         }

@@ -127,9 +127,9 @@ public static partial class ConstructParts
             list.Add(new NamedPort { Name = "Ammo out", Type = RouteType.Feed, Out = true, At = new Vector3(c.X, d.BoundsMax.Y, c.Z), Face = 2, Implicit = true });
         }
         // An Extruder and a Wheel Former put pieces out onto a conveyor: below the die, at its own die's bottom edge, facing out of the output face.
-        if (d.IsExtruder && !d.IsFanFormer && !d.IsAirframeFormer && !list.Any(x => x.Type == RouteType.Conveyor && x.Out))
+        if (d.IsExtruder && !d.IsFanFormer && !d.IsAirframeFormer && !(d.IsPanelFormer && d.BlockRole == BlockRole.Core) && !list.Any(x => x.Type == RouteType.Conveyor && x.Out)) // (a bed Core's Piece out is its Out Table's: MachineBlocks.OutTable)
         {
-            var die = d.IsWheelFormer ? new Vector2(d.ExtWheelMax.X, d.ExtWheelMax.Y) : ConstructExtruder.MostSection(d); // (with its Die Frames or Die Extensions)
+            var die = d.IsWheelFormer ? new Vector2(d.ExtWheelMax.X, d.ExtWheelMax.Y) : d.BlockRole == BlockRole.Core ? Vector2.Min(ConstructExtruder.MostSection(d), new Vector2(d.BlockCell)) : ConstructExtruder.MostSection(d); // (an Extruder Core's conveyor takes a block's die at most: a wider die's pieces go on Run-out Tables)
             if (d.IsPanelFormer)
                 die = new Vector2(d.ExtWheelMax.X, d.ExtWheelMax.X); // (a panel rides flat: its bed's width)
             var y = d.IsWheelFormer ? d.BoundsMin.Y + 0.1f : MathF.Max(d.BoundsMin.Y + 0.05f, d.ExtDieAt.Y - d.ExtDie.Y * 0.5f);
@@ -141,7 +141,7 @@ public static partial class ConstructParts
             for (var b = 0; b < d.PressBays.Length; b++)
             {
                 var s = d.Sockets[d.PressBays[b].Socket];
-                var open = Math.Max(0.1f, d.PressMaxCm / 100f);
+                var open = d.BlockRole == BlockRole.Core ? d.BlockCell : Math.Max(0.1f, d.PressMaxCm / 100f); // (a Press Core's bay takes what its walls take: up to its own cell across)
                 list.Add(new NamedPort { Name = b == 0 ? "Piece in" : $"Piece in {b + 1}", Type = RouteType.Conveyor, In = true, At = s.At - new Vector3(0, 0.11f, 0), Face = s.Dir, Opening = new Vector2(open, open), Implicit = true });
             }
         // And a Piece out after them (so the bays' port bytes stay as they were), where a stroke's body leaves (outAt, facing outDir) at the

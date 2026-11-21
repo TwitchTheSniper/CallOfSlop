@@ -16,8 +16,9 @@ namespace CallOfSlop;
 /// </summary>
 public sealed unsafe partial class Renderer
 {
-    /// <summary>The most openings a frame (the shader's <c>uCut</c> holds three rows each; a code's count fits in five bits).</summary>
-    public const int CutMax = 16;
+    /// <summary>The most openings a frame (the shader's <c>uCut</c> holds three rows each; a code's count fits in six bits). 32 since
+    /// Sean, 2026-11-21 (16 before): the socket holes in baked hull pieces share these with the flush pods (docs/sandbox/design/hull-dress.md).</summary>
+    public const int CutMax = 32;
 
     private readonly float[] _cuts = new float[CutMax * 12];
     private int _cutCount, _cutVersion = 1, _cutInst;
@@ -42,7 +43,7 @@ public sealed unsafe partial class Renderer
     public bool CanCut => Recorder == null && !_instBroken && (_instReady || InitInstanced());
 
     /// <summary>The cut code for openings first..first+count-1 (0: none).</summary>
-    public static int CutRun(int first, int count) => count <= 0 ? 0 : first * 32 + count;
+    public static int CutRun(int first, int count) => count <= 0 ? 0 : first * 64 + count;
 
     /// <summary>Starts a frame's (or a camera pass's) list of openings.</summary>
     public void ClearCuts()

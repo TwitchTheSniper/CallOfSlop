@@ -13,8 +13,15 @@ public sealed class StationDef
     public string Blueprint = ""; // built in its planet's world the first time that world is played without it (empty: a ship start builds it)
 }
 
-/// <summary>A good a station trades: what it pays and asks a unit (value on a tab: Game/GameTabs.cs), what it starts with and holds at most.</summary>
-public readonly record struct StationGood(byte Material, float Buy, float Sell, int Stock, int Most);
+/// <summary>
+/// A good a station trades: what it pays and asks a unit at its "want" (value on a tab: Game/GameTabs.cs), what it starts with and holds at most;
+/// what it uses and makes an hour of play (its needs: Karl, 2026-11-20, "incorporating needs to the world"), and the stock it wants (0: half its
+/// most). Prices follow the stock against the want (<see cref="Game.StationMarket.PriceFactor"/>).
+/// </summary>
+public readonly record struct StationGood(byte Material, float Buy, float Sell, int Stock, int Most, float Use = 0, float Make = 0, int Want = 0)
+{
+    public int Target => Want > 0 ? Want : Math.Max(1, Most / 2);
+}
 
 /// <summary>A part a station trades (a construct part by id): what it pays and asks for one (by default its value, <see cref="TradeValues.Part"/>, times the file's "partBuy" and "partSell").</summary>
 public readonly record struct StationPart(ushort Part, float Buy, float Sell, int Stock, int Most);
@@ -73,6 +80,10 @@ public sealed class StationHaulerDef
     public int From, To, Count = 1; // (stations by index in StationMarkets.All)
     public byte[] Goods = [], Back = []; // materials loaded at From, and at To for the run home
     public float Wait = 30; // seconds moored at each end
+    public bool Needs; // also loads any good its far station is short of that this one sells, most needed first (phase 3)
+    public string Escort = ""; // the blueprint of its escorts (phase 3: convoys): "" none
+    public int Escorts; // how many fly with each hauler
+    public float EscortGap = 150; // m they hold clear of it (and three times that off a station while it docks)
 }
 
 /// <summary>The stations' markets (Crew/Stations.json). A bad file is refused with a reason in the log, and no station has a market.</summary>
@@ -162,7 +173,9 @@ public static class StationMarkets
                         throw new FormatException($"{d.Name}: \"{good}\" is listed twice");
                     var most = Math.Clamp(g.TryGetProperty("most", out var mo) ? mo.GetInt32() : 100000, 0, 10_000_000);
                     goods.Add(new StationGood(mat, Math.Clamp(g.GetProperty("buy").GetSingle(), 0, 10000), Math.Clamp(g.GetProperty("sell").GetSingle(), 0, 10000),
-                        Math.Clamp(g.TryGetProperty("stock", out var st) ? st.GetInt32() : 0, 0, most), most));
+                        Math.Clamp(g.TryGetProperty("stock", out var st) ? st.GetInt32() : 0, 0, most), most,
+                        Math.Clamp(g.TryGetProperty("uses", out var us) ? us.GetSingle() : 0, 0, 1_000_000), Math.Clamp(g.TryGetProperty("makes", out var mk) ? mk.GetSingle() : 0, 0, 1_000_000),
+                        Math.Clamp(g.TryGetProperty("want", out var wa) ? wa.GetInt32() : 0, 0, most)));
                 }
                 var parts = new List<StationPart>();
                 if (s.TryGetProperty("parts", out var ps))
@@ -211,7 +224,16 @@ public static class StationMarkets
                         To = At("to"),
                         Count = Math.Clamp(h.TryGetProperty("count", out var cn) ? cn.GetInt32() : 1, 0, 8),
                         Wait = Math.Clamp(h.TryGetProperty("wait", out var wt) ? wt.GetSingle() : 30f, 5f, 600f),
+                        Needs = h.TryGetProperty("needs", out var nd) && nd.GetBoolean(),
                     };
+                    if (h.TryGetProperty("escort", out var es))
+                    {
+                        d.Escort = es.GetProperty("ship").GetString() ?? "";
+                        d.Escorts = Math.Clamp(es.TryGetProperty("count", out var ec) ? ec.GetInt32() : 1, 0, 4);
+                        d.EscortGap = Math.Clamp(es.TryGetProperty("gap", out var eg) ? eg.GetSingle() : 150f, Game.NavMeetGapLeast, Game.NavMeetGapMost / 3);
+                        if (d.Escort.Length == 0)
+                            throw new FormatException("haulers: an \"escort\" names no \"ship\"");
+                    }
                     if (d.From == d.To)
                         throw new FormatException("haulers: \"from\" and \"to\" are the same station");
                     d.Goods = Mats("goods", list[d.From]);
@@ -244,6 +266,114 @@ public sealed partial class Game
         public int Def;
         public int[] Stock = [];
         public readonly List<(ushort Ship, ushort Part)> Moored = new(16);
+        public double[] Frac = []; // host: what its needs used or made short of a whole unit, by good
+
+        /// <summary>
+        /// How a good's prices stand against its stock (Karl, 2026-11-20: needs in the world): 1 at the stock it wants, up to 1.6 as it runs
+        /// out, down to 0.6 at twice its want and past. Both sides work it from the stock they have, so no price goes on the wire.
+        /// </summary>
+        public float PriceFactor(int k)
+        {
+            var goods = StationMarkets.All[Def].Goods;
+            if (k < 0 || k >= goods.Length || k >= Stock.Length)
+                return 1;
+            var r = Stock[k] / (float)goods[k].Target;
+            return Math.Clamp(1.6f - 0.6f * r, 0.6f, 1.6f);
+        }
+
+        /// <summary>
+        /// The price factor of good <paramref name="k"/> averaged over its stock running from <paramref name="a"/> to <paramref name="b"/> (either
+        /// way): a trade is priced across the stock it moves, so a load bought whole and sold back a bin at a time come out the same.
+        /// </summary>
+        public double FactorOver(int k, double a, double b)
+        {
+            if (a > b)
+                (a, b) = (b, a);
+            if (b - a < 0.5)
+                return PriceFactor(k);
+            double t = StationMarkets.All[Def].Goods[k].Target;
+            var c = 5.0 / 3.0 * t; // (where the line 1.6 - 0.6 s / t meets the 0.6 floor)
+            double Line(double lo, double hi) => 1.6 * (hi - lo) - 0.3 * (hi * hi - lo * lo) / t;
+            double sum = 0;
+            if (a < c)
+                sum += Line(a, Math.Min(b, c));
+            if (b > c)
+                sum += 0.6 * (b - Math.Max(a, c));
+            return sum / (b - a);
+        }
+
+        /// <summary>What it pays for <paramref name="n"/> units of good <paramref name="k"/> taken in on its stock now.</summary>
+        public double BuyValue(int k, int n) => n <= 0 ? 0 : n * (double)StationMarkets.All[Def].Goods[k].Buy * FactorOver(k, Stock[k], Stock[k] + n);
+
+        /// <summary>What it asks for <paramref name="n"/> units of good <paramref name="k"/> taken out of its stock now.</summary>
+        public double SellCost(int k, int n) => n <= 0 ? 0 : n * (double)StationMarkets.All[Def].Goods[k].Sell * FactorOver(k, Stock[k] - n, Stock[k]);
+
+        /// <summary>The most units of good <paramref name="k"/> that <paramref name="budget"/> buys out of its stock now.</summary>
+        public int Afford(int k, double budget)
+        {
+            int lo = 0, hi = Math.Max(0, Stock[k]);
+            while (lo < hi)
+            {
+                var mid = lo + (hi - lo + 1) / 2;
+                if (SellCost(k, mid) <= budget)
+                    lo = mid;
+                else
+                    hi = mid - 1;
+            }
+            return lo;
+        }
+
+        /// <summary>What it pays for a unit of good <paramref name="k"/> now.</summary>
+        public float BuyAt(int k) => StationMarkets.All[Def].Goods[k].Buy * PriceFactor(k);
+
+        /// <summary>What it asks for a unit of good <paramref name="k"/> now.</summary>
+        public float SellAt(int k) => StationMarkets.All[Def].Goods[k].Sell * PriceFactor(k);
+
+        /// <summary>Is good <paramref name="k"/> one it uses and is short of (under half its want).</summary>
+        public bool Short(int k)
+        {
+            var goods = StationMarkets.All[Def].Goods;
+            return k < goods.Length && k < Stock.Length && goods[k].Use > goods[k].Make && Stock[k] < goods[k].Target / 2;
+        }
+    }
+
+    /// <summary>A minute of play (ticks) between the stations' needs steps.</summary>
+    private const int NeedsEvery = 60 * World.TickRate;
+    private long _needsAt;
+
+    /// <summary>
+    /// Host, once a minute: every station's needs (Crew/Stations.json "uses" and "makes" an hour): its stock of each good goes down by what it
+    /// uses and up by what it makes, inside 0 and its most, whether its world is the one being played or not (a market is kept by its entry).
+    /// </summary>
+    private void StationNeedsTick()
+    {
+        if (ServerTick < _needsAt)
+            return;
+        var first = _needsAt == 0;
+        _needsAt = ServerTick + NeedsEvery;
+        if (first)
+            return; // (the first minute starts the clock)
+        for (var d = 0; d < StationMarkets.All.Length; d++)
+        {
+            var goods = StationMarkets.All[d].Goods;
+            var m = MarketOfDef(d);
+            if (m.Frac.Length != goods.Length)
+                m.Frac = new double[goods.Length];
+            for (var k = 0; k < goods.Length; k++)
+            {
+                if (goods[k].Use == 0 && goods[k].Make == 0)
+                    continue;
+                m.Frac[k] += (goods[k].Make - goods[k].Use) / 60.0;
+                var whole = (int)Math.Truncate(m.Frac[k]);
+                if (whole == 0)
+                    continue;
+                m.Frac[k] -= whole;
+                var was = m.Stock[k];
+                m.Stock[k] = Math.Clamp(m.Stock[k] + whole, 0, goods[k].Most);
+                if (m.Stock[k] != was && m.Body != 0)
+                    StationsVersion++;
+            }
+        }
     }
 
     /// <summary>The markets by station body (on a client, the host's last word).</summary>
@@ -299,6 +429,7 @@ public sealed partial class Game
         if (!travel)
             _marketByDef = [];
         _hauls.Clear(); // (the haulers here went with the world left behind; this world's saved ones are taken up again: HaulAdopt)
+        _escorts.Clear(); // (and their escorts: an id kept from the old world would name another body here)
         _haulAdopt = true;
         _haulNext = [];
         _stationsBuilt = false;
@@ -312,6 +443,7 @@ public sealed partial class Game
     /// <summary>Host, once a second from the moor step: the moorings into the markets, and the markets to everyone when they changed.</summary>
     private void StationMarketTick()
     {
+        StationNeedsTick();
         foreach (var c in Constructs.Bodies)
             if (c.IsStation && !c.Wreck)
                 StationMarketOf(c);
@@ -428,7 +560,7 @@ public sealed partial class Game
         Span<int> room = stackalloc int[goods.Length];
         for (var k = 0; k < goods.Length; k++)
             room[k] = goods[k].Buy > 0 ? Math.Max(0, goods[k].Most - m.Stock[k]) : 0;
-        double value = 0;
+        Span<int> take = stackalloc int[goods.Length];
         for (var i = 0; i < ship.PartCount; i++)
         {
             if (!ship.DefOf(i).IsBin || Constructs.StoreOf(ship, i) is not { Amount: > 0 } st)
@@ -436,13 +568,16 @@ public sealed partial class Game
             for (var k = 0; k < goods.Length; k++)
                 if (goods[k].Material == st.Material)
                 {
-                    var take = Math.Min(st.Amount, room[k]);
-                    room[k] -= take;
-                    units += take;
-                    value += take * (double)goods[k].Buy;
+                    var n = Math.Min(st.Amount, room[k]);
+                    room[k] -= n;
+                    take[k] += n;
+                    units += n;
                     break;
                 }
         }
+        double value = 0;
+        for (var k = 0; k < goods.Length; k++)
+            value += m.BuyValue(k, take[k]); // (priced across the stock the sale moves, as the sale itself is)
         return value;
     }
 
@@ -453,7 +588,6 @@ public sealed partial class Game
     private double StationTakeCargo(StationMarket m, Construct ship, Span<int> sold)
     {
         var goods = StationMarkets.All[m.Def].Goods;
-        double value = 0;
         for (var i = 0; i < ship.PartCount; i++)
         {
             if (!ship.DefOf(i).IsBin || Constructs.StoreOf(ship, i) is not { Amount: > 0 } store)
@@ -461,12 +595,15 @@ public sealed partial class Game
             for (var k = 0; k < goods.Length; k++)
                 if (goods[k].Material == store.Material && goods[k].Buy > 0)
                 {
-                    var take = Constructs.Withdraw(ship, i, Math.Min(store.Amount, Math.Max(0, goods[k].Most - m.Stock[k])));
-                    m.Stock[k] += take;
-                    sold[k] += take;
-                    value += take * (double)goods[k].Buy;
+                    sold[k] += Constructs.Withdraw(ship, i, Math.Min(store.Amount, Math.Max(0, goods[k].Most - m.Stock[k] - sold[k])));
                     break;
                 }
+        }
+        double value = 0;
+        for (var k = 0; k < goods.Length && k < sold.Length; k++)
+        {
+            value += m.BuyValue(k, sold[k]); // (across the stock the sale moves: the card's offer counts it the same way)
+            m.Stock[k] += sold[k];
         }
         StationMargin(m, value);
         return value;
@@ -476,7 +613,7 @@ public sealed partial class Game
     /// Host: up to <paramref name="most"/> units of good <paramref name="k"/> from the station's stock into <paramref name="ship"/>'s bins (those that
     /// take it, an empty one or one holding it already). Returns the units loaded; they cost its asking price each.
     /// </summary>
-    private int StationLoadCargo(StationMarket m, Construct ship, int k, int most)
+    private int StationLoadCargo(StationMarket m, Construct ship, int k, int most, out double cost)
     {
         var good = StationMarkets.All[m.Def].Goods[k];
         var left = Math.Min(most, m.Stock[k]);
@@ -490,10 +627,11 @@ public sealed partial class Game
                 left -= n;
                 put += n;
             }
+        cost = m.SellCost(k, put); // (across the stock the load moves)
         m.Stock[k] -= put;
         if (put > 0)
         {
-            StationMargin(m, put * (double)good.Sell);
+            StationMargin(m, cost);
             StationsVersion++;
         }
         return put;
@@ -577,16 +715,16 @@ public sealed partial class Game
             return $"{name} doesn't sell that";
         if (m.Stock[k] <= 0)
             return $"{name} has none left";
-        var price = (double)goods[k].Sell;
+        var price = (double)m.SellAt(k);
         var power = StationPower(m);
-        var afford = SandboxInfiniteParts ? int.MaxValue : (int)Math.Min(int.MaxValue, Math.Floor(TabOf(p.Id, power) / price));
+        var afford = SandboxInfiniteParts ? int.MaxValue : m.Afford(k, TabOf(p.Id, power)); // (priced across the stock the load moves)
         if (afford <= 0)
             return $"a unit takes {price:0.00} off your tab with the {TabPowerName(power)}, who owe you {TabOf(p.Id, power)}: trade them goods first";
-        var units = StationLoadCargo(m, ship, k, afford);
+        var units = StationLoadCargo(m, ship, k, afford, out var paid);
         var good = RecyclingTable.Current.NameOf(goods[k].Material);
         if (units == 0)
             return $"no bin aboard has room for {good}";
-        var cost = (long)Math.Ceiling(units * price);
+        var cost = (long)Math.Ceiling(paid);
         if (TabPay(p.Id, power, Math.Min(cost, TabOf(p.Id, power))) is { } cant) // (it can't fail: afford was counted from the same tab; a rounding cent is let go)
             return cant;
         SandboxHands.Notices.Add((p.Id, $"Took {units:N0} {good} from {name} for {cost} off your tab."));

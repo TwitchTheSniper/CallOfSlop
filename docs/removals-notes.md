@@ -1,3 +1,12 @@
+# Old production blueprints (2026-11-21)
+
+Sean chose to delete them (2026-11-21) when the Press Core on the block system no longer fitted their old spots: the
+**Titan Walker Fitted** (`TitanWalkerFitted.json`, its Presses in workshop rooms), the **Factory Showcase**
+(`FactoryShowcase.json`, with its generator `Source/PartKit/Generators/FactoryShowcase.cs`) and the **Works Runabout** the
+showcase's station built (`WorksRunabout.json`, from the same generator). A new blueprint is built once the block-machine
+changes are in, and what still uses the old production pieces is cleaned up then. The bare Titan Walker stays;
+`--interior-walk` now defaults to it. A saved world that holds one of these keeps its bodies; only the blueprints are gone.
+
 # Removals (2026-11-17)
 
 The user approved a batch of three removals (2026-11-17), done on `claude/removals` in this order. The survey that listed

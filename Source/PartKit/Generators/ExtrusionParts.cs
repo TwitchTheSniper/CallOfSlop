@@ -8,8 +8,8 @@ namespace CallOfSlop.PartKit.Generators;
 /// Former"). Was tools/constructs/extrusion_parts.py.
 ///
 /// An Extruder pushes bulk material through a die; a Wheel Former builds a wheel up on its hub, wider or bigger; a Fan Former a whole prop,
-/// an Airframe Former a wing. Each comes in the four size classes: the small Extruder widens its die with Die Frames, the bigger ones are
-/// their die. The sizes are part data (storage.extrude, storage.wheel), so a new line of machines is a row here. Run
+/// an Airframe Former a wing. The Extruder is on the block system (MachineBlocks.cs): one Core, Die Blocks beside it for a bigger die, one
+/// Run-out Table; the Formers still come in the four size classes (until the Grow Former). The sizes are part data (storage.extrude, storage.wheel), so a new line of machines is a row here. Run
 /// the part kit's assembling (--gen-parts assembling) after it for the recipes.
 /// </summary>
 public sealed class ExtrusionParts : IPartGenerator
@@ -25,14 +25,6 @@ public sealed class ExtrusionParts : IPartGenerator
     private static List<object?> BladeStyles() => Py.L("Straight", "Scimitar", "Broad paddle", "Swept", "Narrow"); // (Air.json's "bladeStyles", in order)
     private static List<object?> FanKinds() => Py.L("Propeller", "Electric prop", "Helicopter rotor", "Ducted fan", "Tail rotor"); // (Extrusion.json's "fanKinds", in order)
     private static List<object?> Airframes() => Py.L("Wing", "Tail plane", "Fin", "Swept wing, left", "Swept wing, right", "Aileron", "Elevator", "Rudder", "Flap"); // (Extrusion.json's "airframes")
-
-    // (class, die across, longest piece, m/s, N of push, bin units, W, kg, health, cells x y z)
-    private static readonly (Cls, int, int, double, int, int, int, int, int, int[])[] Extruders =
-    [
-        (Medium, 8, 64, 0.4, 24000, 2000, 3600, 16000, 6000, [9, 9, 6]),
-        (Large, 16, 128, 0.8, 96000, 8000, 14400, 180000, 40000, [5, 5, 3]),
-        (Capital, 32, 192, 1.6, 384000, 32000, 57600, 1600000, 240000, [3, 3, 2]),
-    ];
 
     // Each row as the Python's tuple; numbers keep their Python type (int or float).
     // Wheel: (class, widest, biggest across, first width, first across, m/s, N of push, bin units, W, kg, health, cells x y z, the hub's row of cells)
@@ -50,7 +42,7 @@ public sealed class ExtrusionParts : IPartGenerator
         [Small, 3, 0.5, 0.1, 6000, 400, 900, 520, 700, null, null],
         [Medium, 12, 2, 0.2, 24000, 2000, 3600, 18000, 6000, new[] { 5, 14, 4 }, 6],
         [Large, 48, 4, 0.8, 96000, 8000, 14400, 240000, 48000, new[] { 3, 8, 3 }, 6],
-        [Capital, 96, 8, 1.6, 384000, 32000, 57600, 2400000, 300000, new[] { 3, 5, 2 }, 3],
+        [Capital, 64, 8, 1.6, 384000, 32000, 57600, 2400000, 300000, new[] { 3, 5, 2 }, 3],
     ];
 
     // Airframe: (class, longest span, widest chord, first span, first chord, m/s of span, N of push, bin units, W, kg, health, cells x y z, the hub's row of cells)
@@ -148,65 +140,275 @@ public sealed class ExtrusionParts : IPartGenerator
     private const string Red = "#b5452b"; // the Extruder family's body colour
     private const string Violet = "#8050a8"; // the Formers'
 
-    private static Part ExtruderSmall()
+    // ---- The Extruder on the block system (design page drawing 15; MachineBlocks.cs, ConstructExtruderGrowth.cs) ----------------------
+    // One Extruder Core, any number of identical 2 x 2 m Die Blocks welded beside it flush with its die face, and one Run-out Table.
+    // The die is the largest full rectangle of blocks that holds one welded to the Core; each block in it adds its push and its draw.
+    private const double CoreDieY = 0.5; // the Core's own 0.5 m die: low on its face, where a conveyor takes its pieces
+    private const double Face = 0.75; // the die face (z), flush on the Core and every block
+    private const double BlockBack = -3.25; // a Die Block is 4 m deep: container slice, heater and ram behind its die tile
+    private const int BlockPush = 6000, BlockPower = 900, CoreBin = 32000;
+    private const double TableLength = 8, TableDepth = 0.3; // a Run-out Table: 2 m wide, 8 m long, its top level with the machine's foot
+
+    private static PyDict BlockKey(string role) => role == "core"
+        ? Kw(("family", "extruder"), ("role", "core"), ("plane", "face"), ("origin", Py.L(0, 1, 0)))
+        : Kw(("family", "extruder"), ("role", role), ("plane", "face"));
+
+    private static Part ExtruderCore()
     {
-        var p = new Part("Extruder", Small, Section, "Pushes bulk material through a die as one long piece. Cut it with a signal or by length. Needs power.", role: "storage", group: "Production", color: Red);
-        p.Add(Box([-0.5, 0, -0.75], [0.5, 0.85, 0.75]));
-        p.Add(Box([-0.5, 0.85, -0.05], [0.5, 1, 0.75])!.Update(("finish", "tread plate")));
-        p.Add(Box([-0.5, 0.85, -0.75], [-0.46, 1, -0.05], Trim));
-        p.Add(Box([0.46, 0.85, -0.75], [0.5, 1, -0.05], Trim));
-        p.Add(Box([-0.46, 0.85, -0.75], [0.46, 1, -0.71], Trim));
-        // The control board (look.md, "Machine look"): it stands on the hopper's left wall, on the aisle side, so the screen is at a standing eye.
-        p.Add(MachineLook.D([-0.56, 0.2, -0.7], [-0.5, 1.0, -0.62], MachineLook.Base));
-        p.Add(MachineLook.D([-0.56, 0.2, 0.12], [-0.5, 1.0, 0.2], MachineLook.Base));
-        p.Add(MachineLook.D([-0.57, 1.0, -0.74], [-0.5, 1.86, 0.24], MachineLook.Base));
+        var p = new Part("Extruder", Small, Section,
+            "An Extruder Core: pushes bulk material through a die as one long piece. Alone it has a 0.5 m die; weld Die Blocks beside it, flush with its die face, and the die is their rectangle, up to 32 x 32 m. Cut by signal or by length. Needs power.",
+            role: "storage", group: "Production", color: Red);
+        // A 2 x 2 m face, 1.5 m deep: the hopper let into the back of its top, the control board on its left side, the die low on its face.
+        p.Add(Box([-1, 0, -0.75], [1, 1.7, 0.75]));
+        p.Add(Box([-1, 1.7, -0.05], [1, 2, 0.75])!.Update(("finish", "tread plate")));
+        p.Add(Box([-1, 1.7, -0.75], [-0.94, 2, -0.05], Trim));
+        p.Add(Box([0.94, 1.7, -0.75], [1, 2, -0.05], Trim));
+        p.Add(Box([-0.94, 1.7, -0.75], [0.94, 2, -0.69], Trim));
         p.Sock("bottom", [0, 0, 0], "-y");
-        p.Sock("+x", [0.5, 0.5, 0.35], "+x");
-        p.Sock("-x", [-0.5, 0.5, 0.35], "-x");
-        p.Sock("top", [0, 1, 0.35], "+y");
-        p.Sock("back", [0, 0.5, -0.75], "-z");
-        p.Sock("die", [0, 0.5, 0.75], "+z", kind: "die");
-        p.Sock("outBed", [0, 0.1, 0.75], "+z", kind: "runOut"); // (a Run-out Table: under the die, ExpansionParts)
-        p.Stats(380, 600, 6, 4);
-        p.Set(("power", 900), ("storage", Kw(
-                ("bulk", Kw(("material", "any"), ("capacity", 400), ("min", Py.L(-0.455, 0.855, -0.705)), ("max", Py.L(0.455, 0.995, -0.055)))),
-                ("extrude", Kw(("speed", 0.2), ("die", Py.L(0.5, 0.5)), ("at", Py.L(0, 0.5, 0.75)), ("maxSection", Py.L(8, 8)), ("maxLength", 48), ("pushForce", 6000), ("growLength", 64))))), // (Die Frames reach 8 m: a framed Small matches a plain Medium, leftovers 3)
-            ("config", ExtruderConfig(0.5, 8, 64)));
+        p.Sock("+x", [1, 1, 0], "+x"); // (the first Die Block: beside it, flush with the die face; more go beside and on top of that one)
+        p.Sock("back", [0, 0.85, -0.75], "-z");
+        p.Sock("die", [0, CoreDieY, Face], "+z", kind: "die");
+        p.Sock("outBed", [0, 0, Face], "+z", kind: "runOut"); // (a Run-out Table: under the die)
+        p.Stats(1500, 1500, 6, 8);
+        p.Set(("power", BlockPower), ("storage", Kw(
+                ("bulk", Kw(("material", "any"), ("capacity", CoreBin), ("min", Py.L(-0.935, 1.705, -0.685)), ("max", Py.L(0.935, 1.995, -0.055)))),
+                ("extrude", Kw(("speed", 0.2), ("die", Py.L(0.5, 0.5)), ("at", Py.L(0, CoreDieY, Face)), ("maxSection", Py.L(32, 32)), ("maxLength", 16), ("pushForce", BlockPush),
+                    ("growLength", 192), ("blockPush", BlockPush), ("blockPower", BlockPower))))),
+            ("machineBlock", BlockKey("core")),
+            ("config", ExtruderConfig(0.5, 32, 192, "Die Blocks")));
         WithScreen(p, orders: true, faces: ["-x"], width: 0.84, recipe: true);
-        MachineLook.Skirt(p, -0.5, 0.5, -0.75, 0.75, 0, 0.14, 0.012);
-        // The hopper, at the back: taller than the body, a white rim (the in side) and an arrow down each open side.
-        p.Add(L([0.455, 1.0, -0.755], [0.505, 1.24, -0.045], MachineLook.Base));
-        p.Add(L([-0.505, 1.0, -0.755], [0.455, 1.24, -0.705], MachineLook.Base));
-        p.Add(L([-0.5, 1.0, -0.095], [0.455, 1.24, -0.045], MachineLook.Base));
-        p.Add(L([0.45, 1.24, -0.76], [0.51, 1.3, -0.04], MachineLook.In));
-        p.Add(L([-0.51, 1.24, -0.76], [0.45, 1.3, -0.7], MachineLook.In));
-        p.Add(L([-0.5, 1.24, -0.1], [0.45, 1.3, -0.04], MachineLook.In));
-        MachineLook.Arrow(p, 0, 0.505, 1, 1, -1, 1.1, -0.4, 0.2, 0.2, MachineLook.In);
-        MachineLook.Arrow(p, 2, -0.755, -1, 1, -1, 1.1, 0, 0.2, 0.2, MachineLook.In);
-        // The die head, at the front: a bare steel collar round the die, the die plate dull until it works, hazard paint under the mouth,
-        // an orange band and arrow over it (the out side). Thin: Die Frames and the piece stand against this face.
-        p.Add(L([-0.31, 0.19, 0.75], [-0.25, 0.81, 0.766], MachineLook.Steel, "steel"));
-        p.Add(L([0.25, 0.19, 0.75], [0.31, 0.81, 0.766], MachineLook.Steel, "steel"));
-        p.Add(L([-0.25, 0.75, 0.75], [0.25, 0.81, 0.766], MachineLook.Steel, "steel"));
-        p.Add(L([-0.25, 0.19, 0.75], [0.25, 0.25, 0.766], MachineLook.Steel, "steel"));
-        p.Add(MachineLook.Work(L([-0.25, 0.25, 0.74], [0.25, 0.75, 0.758], MachineLook.Hot), "glow"));
-        MachineLook.Hazard(p, [-0.5, 0.02, 0.75], [0.5, 0.15, 0.764]);
-        p.Add(L([-0.5, 0.86, 0.75], [0.5, 0.99, 0.764], MachineLook.Out));
-        p.Add(L([-0.36, 1.0, 0.57], [0.36, 1.09, 0.756], MachineLook.Steel, "steel")); // (the head clamp over the die: the front end reads as a head from the side)
-        p.Add(L([-0.3, 1.09, 0.61], [-0.22, 1.13, 0.69], MachineLook.Base));
-        p.Add(L([0.22, 1.09, 0.61], [0.3, 1.13, 0.69], MachineLook.Base));
-        MachineLook.Arrow(p, 1, 1.0, 1, 2, 1, 0, 0.45, 0.4, 0.3, MachineLook.Out);
-        // The drive, on the right of the hopper end: a dark gearbox, a guard, and a pulley that turns while it runs.
-        p.Add(L([0.5, 0.2, -0.68], [0.6, 0.62, -0.2], MachineLook.Base));
-        p.Add(L([0.5, 0.62, -0.6], [0.57, 0.8, -0.28], MachineLook.Base));
-        p.Add(MachineLook.Work(L([0.6, 0.25, -0.6], [0.64, 0.57, -0.28], MachineLook.Accent, shape: Kw(("shape", "cylinder"), ("segments", 12), ("front", "+x"))), "spin", "+x"));
-        p.Add(MachineLook.Work(L([0.64, 0.38, -0.56], [0.655, 0.44, -0.32], MachineLook.Ink), "spin", "+x"));
-        // Cladding seams on the body's sides (the body's own tone, so they take its paint).
-        foreach (var z in new[] { -0.05, 0.38 })
-            p.Add(L([0.5, 0.16, z - 0.012], [0.514, 0.84, z + 0.012], Trim, paintable: true));
-        p.Add(L([-0.514, 0.16, 0.36], [-0.5, 0.84, 0.384], Trim, paintable: true));
+        MachineLook.Skirt(p, -1, 1, -0.75, 0.75, 0, 0.14, 0.012);
+        // The hopper's grating.
+        foreach (var x in new[] { -0.75, -0.45, 0.45, 0.75 })
+            p.Add(L([x - 0.015, 1.965, -0.7], [x + 0.015, 1.99, -0.04], MachineLook.Base));
+        foreach (var z in new[] { -0.6, -0.2 })
+            p.Add(L([-0.95, 1.965, z - 0.015], [0.95, 1.99, z + 0.015], MachineLook.Base));
+        // The chute's port on its back, under the hopper's arrow (the shared port look: MachineLook.Port; Sean 2026-11-21).
+        MachineLook.Port(p, [0, 0.8, -0.75], 2, -1, 0.2, 0.13, true);
+        p.Set(("ports", Py.L(Kw(("name", "Chute in"), ("type", "chute"), ("at", Py.L(0, 0.8, -0.75)), ("face", "-z")))));
+        // The hopper's rim, white (the in side), and an arrow down into it.
+        p.Add(L([0.94, 1.94, -0.75], [0.998, 1.998, -0.05], MachineLook.In));
+        p.Add(L([-0.998, 1.94, -0.75], [-0.94, 1.998, -0.05], MachineLook.In));
+        p.Add(L([-0.94, 1.94, -0.75], [0.94, 1.998, -0.69], MachineLook.In));
+        MachineLook.Arrow(p, 2, -0.75, -1, 1, -1, 1.35, 0, 0.3, 0.3, MachineLook.In);
+        // The die head: a bare steel collar round the die, the die plate dull until it works, hazard paint under the mouth, an orange
+        // band (the out side) along the top of the face.
+        p.Add(L([-0.31, CoreDieY - 0.31, Face], [-0.25, CoreDieY + 0.31, Face + 0.016], MachineLook.Steel, "steel"));
+        p.Add(L([0.25, CoreDieY - 0.31, Face], [0.31, CoreDieY + 0.31, Face + 0.016], MachineLook.Steel, "steel"));
+        p.Add(L([-0.25, CoreDieY + 0.25, Face], [0.25, CoreDieY + 0.31, Face + 0.016], MachineLook.Steel, "steel"));
+        p.Add(L([-0.25, CoreDieY - 0.31, Face], [0.25, CoreDieY - 0.25, Face + 0.016], MachineLook.Steel, "steel"));
+        p.Add(MachineLook.Work(L([-0.25, CoreDieY - 0.25, Face - 0.01], [0.25, CoreDieY + 0.25, Face + 0.008], MachineLook.Hot), "glow"));
+        MachineLook.Hazard(p, [-1, 0.02, Face], [1, 0.12, Face + 0.014]);
+        MachineLook.Hazard(p, [-0.9, 1.2, Face], [0.9, 1.5, Face + 0.014]); // (crush and burn: it never stops for anyone in front of it)
+        p.Add(L([-1, 1.72, Face], [1, 1.86, Face + 0.014], MachineLook.Out));
+        MachineLook.Arrow(p, 1, 1.98, 1, 2, 1, 0, 0.45, 0.6, 0.4, MachineLook.Out);
+        // Cladding seams on its back (the body's own tone, so they take its paint).
+        foreach (var x in new[] { -0.5, 0.5 })
+            p.Add(L([x - 0.012, 0.16, -0.764], [x + 0.012, 1.6, -0.75], Trim, paintable: true));
+        // The shear over its die: a guillotine blade in two guides, down and up as each new piece starts (drawing 11).
+        foreach (var x in new[] { -0.4, 0.4 })
+            p.Add(L([x - 0.03, 0.14, Face - 0.004], [x + 0.03, 1.16, Face + 0.03], MachineLook.Base));
+        p.Add(MachineLook.Work(L([-0.37, CoreDieY + 0.33, Face + 0.006], [0.37, CoreDieY + 0.41, Face + 0.03], MachineLook.Steel, "steel"), "shear", "-y", 0.3));
+        p.Add(MachineLook.Work(L([-0.37, CoreDieY + 0.314, Face + 0.01], [0.37, CoreDieY + 0.33, Face + 0.026], MachineLook.Accent, "hazard paint"), "shear", "-y", 0.3));
+        // On top: the fume stack (it puffs while it works) and the feed screw's motor, its coupling turning.
+        p.Add(L([0.6, 1.996, 0.3], [0.8, 2.45, 0.5], MachineLook.Base, shape: Kw(("shape", "cylinder"), ("segments", 12), ("front", "+y"))));
+        p.Add(MachineLook.Work(L([0.58, 2.45, 0.28], [0.82, 2.5, 0.52], MachineLook.Base, shape: Kw(("shape", "cylinder"), ("segments", 12), ("front", "+y"))), "smoke"));
+        p.Add(L([-0.85, 1.996, 0.15], [-0.6, 2.25, 0.45], MachineLook.Base, shape: Kw(("shape", "cylinder"), ("segments", 12), ("front", "+x"))));
+        p.Add(MachineLook.Work(L([-0.6, 2.04, 0.21], [-0.5, 2.2, 0.39], MachineLook.Accent, shape: Kw(("shape", "cylinder"), ("segments", 8), ("front", "+x"))), "spin", "+x"));
+        p.Add(L([-0.5, 1.996, 0.25], [-0.36, 2.16, 0.35], MachineLook.Base)); // (the screw's bearing housing, into the hopper's side)
+        // On its back: a pressure gauge and the maker's plate.
+        p.Add(L([0.64, 1.2, -0.786], [0.84, 1.4, -0.744], "#e8e6df", shape: Kw(("shape", "cylinder"), ("segments", 12), ("front", "-z"))));
+        p.Add(L([0.72, 1.28, -0.798], [0.76, 1.37, -0.782], MachineLook.Ink));
+        p.Add(L([-0.86, 1.2, -0.774], [-0.6, 1.36, -0.744], MachineLook.In));
+        p.Add(L([-0.83, 1.26, -0.786], [-0.63, 1.3, -0.77], MachineLook.Ink));
         return p;
     }
+
+    /// <summary>
+    /// A Die Block: one 2 x 2 m cell of an Extruder's die, 4 m deep, with its own die tile, container slice, heater and ram (design page
+    /// drawings 10, 11 and 14). Built as a press frame: a front and a back platen, the container between them, a tie rod in each corner
+    /// with a nut at both ends. What is on a side is drawn only while no block of the same machine is welded there (MachineBlocks:
+    /// "seam"), and a corner's notch is filled where a block is ("seamFill"), so a bank of blocks reads as one machine: one outer
+    /// frame with a hazard edge at its foot, one die plate across the face, tie rods at its four corners, oil lines down its right
+    /// side, heater bands on its outer sides and top, a shear along its top edge, and a bank of rams behind that move as the piece grows.
+    /// </summary>
+    private static Part DieBlock()
+    {
+        var p = new Part("Die Block", Small, Section,
+            "Weld it beside an Extruder Core, or beside, above or below another Die Block, flush with the die face: 2 x 2 m more die. The die is the largest full rectangle of blocks next to the Core; a block outside it idles.",
+            group: "Production", color: Red);
+        const double e = 0.997, n = 0.09; // (the body stops 3 mm short of the cell, so two blocks' faces never meet on one plane; n: the corner notch the tie rods run in)
+        const double front = Face - 0.2, back = BlockBack + 0.253; // (the front platen's inner face, and where the back's bevel ends: the container runs between them)
+        // The body: the container from the back's bevel to the front platen, its four long edges notched for the tie rods; the front platen full square.
+        // Its sides and top are sunk 7 cm between raised ribs (the heater collar is one), so the body reads as cast panels, not one slab;
+        // where a block is welded on, a fill in the body's tone closes the sunk panel so no slot runs between blocks.
+        const double d = 0.07;
+        p.Add(Box([-e + d, n, back], [e - d, 2 - n, front]));
+        p.Add(Box([-e + n, 0.003, back], [e - n, 1.997 - d, front]));
+        foreach (var (z0, z1) in new[] { (-2.22, -1.38), (-0.62, -0.5) })
+        {
+            p.Add(Box([-e, n, z0], [e, 2 - n, z1]));
+            p.Add(Box([-e + n, 0.003, z0], [e - n, 1.997, z1]));
+        }
+        p.Add(L([e - d - 0.01, n, back + 0.004], [e - 0.004, 2 - n, front - 0.004], Red, paintable: true)!.Update(("seamFill", "+x")));
+        p.Add(L([-e + 0.004, n, back + 0.004], [-e + d + 0.01, 2 - n, front - 0.004], Red, paintable: true)!.Update(("seamFill", "-x")));
+        p.Add(L([-e + n, 1.997 - d - 0.01, back + 0.004], [e - n, 1.993, front - 0.004], Red, paintable: true)!.Update(("seamFill", "+y")));
+        // In the sunk panels: a flat stiffener along each end panel, louvres in the middle one, a hot-surface plate by the heaters.
+        foreach (var (sx, side) in new[] { (1, "+x"), (-1, "-x") })
+        {
+            double[] Xs(double a, double b) => sx > 0 ? [a, b] : [-b, -a];
+            var bar = Xs(e - d - 0.006, e - d + 0.024);
+            foreach (var (z0, z1) in new[] { (back + 0.06, -2.24), (-0.48, front - 0.02) })
+                p.Add(Seam(L([bar[0], 0.94, z0], [bar[1], 1.04, z1], Red, paintable: true), side));
+            var slat = Xs(e - d - 0.006, e - d + 0.018);
+            foreach (var y in new[] { 0.55, 0.7, 0.85, 1.0, 1.15, 1.3 })
+                p.Add(Seam(L([slat[0], y, -1.3], [slat[1], y + 0.05, -0.7], MachineLook.Base), side));
+            var plate = Xs(e - d - 0.006, e - d + 0.012);
+            p.Add(Seam(L([plate[0], 1.3, -0.35], [plate[1], 1.5, 0.05], MachineLook.Accent, "hazard paint"), side));
+        }
+        foreach (var (z0, z1) in new[] { (back + 0.06, -2.24), (-0.48, front - 0.02) })
+            p.Add(Seam(L([-0.04, 1.997 - d - 0.006, z0], [0.04, 1.997 - d + 0.024, z1], Red, paintable: true), "+y"));
+        p.Add(Box([-e, 0.003, front], [e, 1.997, Face])); // (the front platen: its face is the die face, where the out bed socket sits)
+        Bevel(p, e, back);
+        // The die plate across the whole face, one plate when blocks are welded (dull until it works), and the front frame round it, each side a seam.
+        p.Add(MachineLook.Work(L([-1, 0, Face - 0.01], [1, 2, Face + 0.006], MachineLook.Hot), "glow"));
+        p.Add(Seam(L([0.94, 0, Face - 0.02], [1, 2, Face + 0.02], MachineLook.Steel, "steel"), "+x"));
+        p.Add(Seam(L([-1, 0, Face - 0.02], [-0.94, 2, Face + 0.02], MachineLook.Steel, "steel"), "-x"));
+        p.Add(Seam(L([-0.94, 1.94, Face - 0.02], [0.94, 2, Face + 0.02], MachineLook.Steel, "steel"), "+y"));
+        p.Add(Seam(MachineLook.D([-0.94, 0, Face - 0.02], [0.94, 0.06, Face + 0.02], MachineLook.Accent, "hazard paint"), "-y")); // (the frame's foot: the hazard edge under the die)
+        // Bolt heads along the front frame, four a side.
+        foreach (var t in new[] { -0.6, -0.2, 0.2, 0.6 })
+        {
+            p.Add(Seam(L([0.958, 1 + t - 0.016, Face + 0.016], [0.982, 1 + t + 0.016, Face + 0.036], MachineLook.Base), "+x"));
+            p.Add(Seam(L([-0.982, 1 + t - 0.016, Face + 0.016], [-0.958, 1 + t + 0.016, Face + 0.036], MachineLook.Base), "-x"));
+            p.Add(Seam(L([t - 0.016, 1.958, Face + 0.016], [t + 0.016, 1.982, Face + 0.036], MachineLook.Base), "+y"));
+        }
+        // The tie rods: one in each corner's notch, platen to platen, a hex nut proud of each platen; only at the machine's corners.
+        // Where a block is welded on either side, the notch is filled in the body's own tone instead, so no groove runs between blocks.
+        foreach (var (sx, sy) in new[] { (1, 1), (1, -1), (-1, 1), (-1, -1) })
+        {
+            var cx = sx * (1 - n / 2);
+            var cy = sy > 0 ? 2 - n / 2 : n / 2;
+            string[] sides = [sx > 0 ? "+x" : "-x", sy > 0 ? "+y" : "-y"];
+            var r = 0.032;
+            p.Add(Seam(L([cx - r, cy - r, back + 0.004], [cx + r, cy + r, front + 0.03], MachineLook.Steel, "steel", shape: Kw(("shape", "cylinder"), ("segments", 10), ("front", "+z"))), sides));
+            var h = 0.042;
+            p.Add(Seam(L([cx - h, cy - h, Face + 0.016], [cx + h, cy + h, Face + 0.062], MachineLook.Base, shape: Kw(("shape", "cylinder"), ("segments", 6), ("front", "+z"))), sides));
+            p.Add(Seam(L([cx - h, cy - h, back + 0.008], [cx + h, cy + h, back + 0.054], MachineLook.Base, shape: Kw(("shape", "cylinder"), ("segments", 6), ("front", "-z"))), sides)); // (on the bevel's top)
+            double x0 = sx > 0 ? 1 - n - 0.004 : -e, x1 = sx > 0 ? e : -1 + n + 0.004, y0 = sy > 0 ? 2 - n - 0.004 : 0.003, y1 = sy > 0 ? 1.997 : n + 0.004;
+            p.Add(L([x0, y0, back + 0.004], [x1, y1, front - 0.004], Red, paintable: true)!.Update(("seamFill", Py.L(sides[0], sides[1]))));
+        }
+        // The heater bands round the container slice (hot while it works) on the machine's outer sides and top: a dark ceramic band, its
+        // glowing coils between ribs, and a terminal box with its cable.
+        foreach (var (sx, side) in new[] { (1, "+x"), (-1, "-x") })
+        {
+            double[] Xs(double a, double b) => sx > 0 ? [a, b] : [-b, -a]; // (a span out from the right side, mirrored to the left)
+            var band = Xs(0.993, 1.009);
+            p.Add(Seam(L([band[0], 0.3, -2.15], [band[1], 1.7, -1.45], MachineLook.Base), side));
+            var coil = Xs(1.005, 1.017);
+            foreach (var z in new[] { -2.05, -1.85, -1.65 })
+                p.Add(Seam(MachineLook.Work(L([coil[0], 0.36, z], [coil[1], 1.64, z + 0.1], MachineLook.Hot), "glow")!, side));
+            var term = Xs(0.94, 1.017);
+            p.Add(Seam(L([term[0], 1.5, -1.4], [term[1], 1.68, -1.22], MachineLook.Base), side)); // (its terminal box, down to the sunk panel)
+        }
+        p.Add(Seam(L([-0.85, 1.993, -2.15], [0.85, 2.009, -1.45], MachineLook.Base), "+y"));
+        foreach (var z in new[] { -2.05, -1.85, -1.65 })
+            p.Add(Seam(MachineLook.Work(L([-0.8, 2.005, z], [0.8, 2.017, z + 0.1], MachineLook.Hot), "glow")!, "+y"));
+        // The oil lines down the machine's right side, red feed and blue return, clipped to the body every metre; a junction block at the back.
+        foreach (var (y, colour) in new[] { (1.76, "#b8322a"), (1.83, "#2f62b5") })
+            p.Add(Seam(L([0.975, y - 0.02, back + 0.05], [1.015, y + 0.02, front - 0.05], colour, shape: Kw(("shape", "cylinder"), ("segments", 8), ("front", "+z"))), "+x"));
+        foreach (var z in new[] { -2.6, -0.9, 0.2 })
+            p.Add(Seam(L([0.94, 1.725, z - 0.03], [1.017, 1.865, z + 0.03], MachineLook.Base), "+x")); // (reaching into the sunk panel)
+        p.Add(Seam(L([0.94, 1.71, back + 0.004], [1.017, 1.88, back + 0.2], MachineLook.Base), "+x"));
+        // The shear across the bottom row's top: a guillotine bar over the piece on the die's foot, down and up after each cut.
+        p.Add(Seam(MachineLook.Work(L([-0.93, 1.86, Face + 0.022], [0.93, 1.935, Face + 0.046], MachineLook.Steel, "steel"), "shear", "-y", 0.3)!, "-y")); // (bottom row only: the piece runs out along the die's foot)
+        p.Add(Seam(MachineLook.Work(L([-0.93, 1.835, Face + 0.026], [0.93, 1.86, Face + 0.044], MachineLook.Accent, "hazard paint"), "shear", "-y", 0.3)!, "-y"));
+        // The skirt at its foot, a seam.
+        p.Add(Seam(L([-0.94, 0, back + 0.25], [0.94, 0.14, front - 0.1], MachineLook.Base), "-y"));
+        // The back: the ram's housing and its rod, which slides in as the piece grows and comes back for the next billet each metre;
+        // two hoses from the housing to the platen; on the bottom row only (a big bank's inner blocks draw less), a pressure gauge, grease points and a maker's plate.
+        p.Add(L([-0.45, 0.55, BlockBack - 0.7], [0.45, 1.45, BlockBack + 0.006], MachineLook.Base, shape: Kw(("shape", "cylinder"), ("segments", 16), ("front", "-z"))));
+        p.Add(L([-0.5, 0.5, BlockBack - 0.73], [0.5, 1.5, BlockBack - 0.69], MachineLook.Steel, "steel", shape: Kw(("shape", "cylinder"), ("segments", 16), ("front", "-z"))));
+        p.Add(MachineLook.Work(L([-0.18, 0.82, BlockBack - 1.0], [0.18, 1.18, BlockBack - 0.66], MachineLook.Steel, "steel", shape: Kw(("shape", "cylinder"), ("segments", 12), ("front", "-z"))), "ram", "+z", 0.5));
+        p.Add(MachineLook.Work(L([-0.24, 0.76, BlockBack - 1.06], [0.24, 1.24, BlockBack - 0.98], MachineLook.Base), "ram", "+z", 0.5)); // (the rod's end plate)
+        // Gussets from the housing out to the bevel, stepped to taper, and bolts round the housing's flange.
+        foreach (var (a0, a1, b0, b1, deep) in new[] { (-0.03, 0.03, 1.43, 1.6, 0.3), (-0.03, 0.03, 1.6, 1.74, 0.14), (-0.03, 0.03, 0.4, 0.57, 0.3), (-0.03, 0.03, 0.26, 0.4, 0.14) })
+            p.Add(L([a0, b0, BlockBack - deep], [a1, b1, BlockBack + 0.006], MachineLook.Base));
+        foreach (var (a0, a1, deep) in new[] { (0.43, 0.6, 0.3), (0.6, 0.74, 0.14), (-0.6, -0.43, 0.3), (-0.74, -0.6, 0.14) })
+            p.Add(L([a0, 0.97, BlockBack - deep], [a1, 1.03, BlockBack + 0.006], MachineLook.Base));
+        for (var k = 0; k < 8; k++)
+        {
+            var (bx, by) = (0.43 * Math.Cos(k * Math.PI / 4 + Math.PI / 8), 1 + 0.43 * Math.Sin(k * Math.PI / 4 + Math.PI / 8));
+            p.Add(L([bx - 0.022, by - 0.022, BlockBack - 0.75], [bx + 0.022, by + 0.022, BlockBack - 0.72], MachineLook.Steel, "steel", shape: Kw(("shape", "cylinder"), ("segments", 6), ("front", "-z"))));
+        }
+        foreach (var (x, colour) in new[] { (-0.32, "#b8322a"), (0.32, "#2f62b5") })
+            p.Add(L([x - 0.025, 1.33, BlockBack - 0.6], [x + 0.025, 1.38, BlockBack + 0.006], colour)); // (a hose from the housing into the platen)
+        p.Add(Seam(L([0.5, 1.48, BlockBack - 0.036], [0.66, 1.64, BlockBack + 0.006], "#e8e6df", shape: Kw(("shape", "cylinder"), ("segments", 12), ("front", "-z"))), "-y")); // (the gauge's face)
+        p.Add(Seam(L([0.56, 1.54, BlockBack - 0.048], [0.6, 1.62, BlockBack - 0.032], MachineLook.Ink), "-y")); // (its needle)
+        p.Add(Seam(L([-0.7, 1.5, BlockBack - 0.024], [-0.44, 1.66, BlockBack + 0.006], MachineLook.In), "-y")); // (the maker's plate)
+        p.Add(Seam(L([-0.67, 1.56, BlockBack - 0.036], [-0.47, 1.6, BlockBack - 0.02], MachineLook.Ink), "-y"));
+        foreach (var (x, y) in new[] { (-0.7, 0.3), (0.7, 0.3) })
+            p.Add(Seam(L([x - 0.02, y - 0.02, BlockBack - 0.03], [x + 0.02, y + 0.02, BlockBack + 0.006], MachineLook.Accent), "-y")); // (grease points)
+        p.Sock("+x", [1, 1, 0], "+x");
+        p.Sock("-x", [-1, 1, 0], "-x");
+        p.Sock("top", [0, 2, 0], "+y");
+        p.Sock("bottom", [0, 0, 0], "-y");
+        p.Sock("outBed", [0, 0, Face], "+z", kind: "runOut"); // (a Run-out Table under this block's share of the die)
+        p.Stats(6000, 3000, 8, 20);
+        p.Set(("machineBlock", BlockKey("block")), ("centreSockets", false), ("collider", "boxes"));
+        return p;
+    }
+
+    private static PyDict Seam(PyDict? box, string face) => box!.Update(("seam", face));
+
+    /// <summary>
+    /// A Die Block's back end, bevelled in all round (Sean 2026-11-21) from the full outline at <paramref name="z1"/> to a face c smaller at the
+    /// block's back: a flat middle, a sloped strip on each side and a mitred corner, each drawn only on the machine's outer edges. Where a
+    /// block is welded on, its side's fill (and at a corner the other side's slope run on across it) carries the outline over, so a bank
+    /// reads as one bevelled machine. A hidden box keeps the whole end solid.
+    /// </summary>
+    private static void Bevel(Part p, double e, double z1)
+    {
+        const double c = 0.25, lo = 0.003, hi = 1.997;
+        var z0 = BlockBack + 0.003;
+        PyDict Prism(List<double[]> pts)
+        {
+            double[] mn = [.. Enumerable.Range(0, 3).Select(i => pts.Min(a => a[i]))];
+            double[] mx = [.. Enumerable.Range(0, 3).Select(i => pts.Max(a => a[i]))];
+            return Box(mn, mx, Red, detail: true, shape: Kw(("shape", "hull"), ("points", pts.Select(a => (object?)a.Select(x => (object?)x).ToList()).ToList()), ("paintable", true)))!;
+        }
+        p.Add(Box([-e, lo, z0], [e, hi, z1], hidden: true));
+        p.Add(Box([-e + c, lo + c, z0], [e - c, hi - c, z1]));
+        // A point on the end: u across x (-1..1 maps to -e..e), v up y, both pulled in by c at the back.
+        double X(int sx, bool inner) => sx * (inner ? e - c : e);
+        double Y(int sy, bool inner) => sy > 0 ? (inner ? hi - c : hi) : (inner ? lo + c : lo);
+        foreach (var sx in new[] { 1, -1 })
+        {
+            var side = sx > 0 ? "+x" : "-x";
+            double y0 = lo + c, y1 = hi - c, xo = X(sx, false), xi = X(sx, true);
+            p.Add(Prism([[xi, y0, z1], [xi, y1, z1], [xo, y0, z1], [xo, y1, z1], [xi, y0, z0], [xi, y1, z0]]).Update(("seam", side)));
+            p.Add(L([Math.Min(xi, xo), y0, z0], [Math.Max(xi, xo), y1, z1 - 0.004], Red, paintable: true)!.Update(("seamFill", side)));
+        }
+        foreach (var sy in new[] { 1, -1 })
+        {
+            var side = sy > 0 ? "+y" : "-y";
+            double x0 = -e + c, x1 = e - c, yo = Y(sy, false), yi = Y(sy, true);
+            p.Add(Prism([[x0, yi, z1], [x1, yi, z1], [x0, yo, z1], [x1, yo, z1], [x0, yi, z0], [x1, yi, z0]]).Update(("seam", side)));
+            p.Add(L([x0, Math.Min(yi, yo), z0], [x1, Math.Max(yi, yo), z1 - 0.004], Red, paintable: true)!.Update(("seamFill", side)));
+        }
+        foreach (var (sx, sy) in new[] { (1, 1), (1, -1), (-1, 1), (-1, -1) })
+        {
+            string xs = sx > 0 ? "+x" : "-x", ys = sy > 0 ? "+y" : "-y";
+            double xo = X(sx, false), xi = X(sx, true), yo = Y(sy, false), yi = Y(sy, true);
+            // Both sides open: the mitred corner. The x side welded: the y side's slope runs on across it; the y side welded: the x side's.
+            p.Add(Prism([[xi, yi, z1], [xo, yi, z1], [xi, yo, z1], [xo, yo, z1], [xi, yi, z0]]).Update(("seam", Py.L(xs, ys))));
+            double zb = z1 - 0.004, zc = z1 - 0.008; // (their joint faces 4 mm apart, so no two share a plane)
+            p.Add(Prism([[xi, yi, zb], [xo, yi, zb], [xi, yo, zb], [xo, yo, zb], [xi, yi, z0], [xo, yi, z0]]).Update(("seamFill", xs)));
+            p.Add(Prism([[xi, yi, zc], [xo, yi, zc], [xi, yo, zc], [xo, yo, zc], [xi, yi, z0], [xi, yo, z0]]).Update(("seamFill", ys)));
+        }
+    }
+
+    private static PyDict Seam(PyDict? box, string[] faces) => box!.Update(("seam", Py.L(faces[0], faces[1])));
 
     private sealed record Head(double X0, double X1, double Y, double Y1, double Z0, double Z, double Z1, double T);
 
@@ -247,32 +449,6 @@ public sealed class ExtrusionParts : IPartGenerator
     }
 
     private static Dictionary<string, (int, int)> Lim5() => new[] { "+x", "-x", "+y", "-y", "-z" }.ToDictionary(d => d, _ => (3, 3));
-
-    private static Part Extruder((Cls, int, int, double, int, int, int, int, int, int[]) row)
-    {
-        var (c, die, length, speed, push, units, power, mass, health, cells) = row;
-        var p = new Part(NameOf(c, "Extruder"), c, Section, $"Pushes bulk material through a {die} x {die} m die as one long piece, up to {length} m. Cut it with a signal or by length. Needs power.",
-            role: "storage", group: "Production", color: BodyC);
-        int nx = cells[0], ny = cells[1], nz = cells[2];
-        var hd = MakeHead(p, cells);
-        double cx = (nx - 1) / 2.0 * c.Cell, cy = (ny - 1) / 2.0 * c.Cell;
-        var (dh, cw, cm) = (die / 2.0, hd.T * 0.6, Math.Min(hd.T * 0.16, 0.04));
-        p.Add(MachineLook.Work(MachineLook.D([cx - dh, cy - dh, hd.Z1 - hd.T * 0.1], [cx + dh, cy + dh, hd.Z1 + cm * 0.6], MachineLook.Hot), "glow"));
-        p.Add(MachineLook.D([cx - dh - cw, cy - dh - cw, hd.Z1], [cx - dh, cy + dh + cw, hd.Z1 + cm], MachineLook.Steel, "steel"));
-        p.Add(MachineLook.D([cx + dh, cy - dh - cw, hd.Z1], [cx + dh + cw, cy + dh + cw, hd.Z1 + cm], MachineLook.Steel, "steel"));
-        p.Add(MachineLook.D([cx - dh, cy + dh, hd.Z1], [cx + dh, cy + dh + cw, hd.Z1 + cm], MachineLook.Steel, "steel"));
-        p.Add(MachineLook.D([cx - dh, cy - dh - cw, hd.Z1], [cx + dh, cy - dh, hd.Z1 + cm], MachineLook.Steel, "steel"));
-        BlockSockets(p, nx, ny, nz, limit: Lim5(), skip: ["+z"]);
-        p.Sock("die", [cx, cy, hd.Z1], "+z", kind: "die");
-        if (Grow(c) is not null)
-            p.Sock("outBed", [cx, c.Lo() / 2, hd.Z1], "+z", kind: "runOut"); // (a Run-out Table: under the die, ExpansionParts)
-        p.Stats(mass, health, c.Armour);
-        p.Set(("power", power), ("storage", Kw(
-                ("bulk", BinOf(units, hd)),
-                ("extrude", GrowKeys(c, Kw(("speed", speed), ("die", Py.L(die, die)), ("at", Py.L(cx, cy, hd.Z1)), ("maxSection", Py.L(die, die)), ("maxLength", length), ("pushForce", push)))))),
-            ("config", Grow(c) is { } gc ? ExtruderConfig(die, gc.Section, gc.Length, NameOf(c, "Die Extensions")) : ExtruderConfig(die, die, length)));
-        return WithScreen(p, orders: true, recipe: true);
-    }
 
     private static List<object?> FanConfig(object across, object start) => Py.L(
         Kw(("key", "fanKind"), ("type", "choice"), ("label", "Makes"), ("group", "Prop"), ("options", FanKinds()), ("default", 0),
@@ -397,113 +573,31 @@ public sealed class ExtrusionParts : IPartGenerator
         p.Add(MachineLook.Work(L([0.72, 1.44, -0.51], [0.76, 1.76, -0.19], MachineLook.Accent, shape: Kw(("shape", "cylinder"), ("segments", 12), ("front", "+x"))), "spin", "+x"));
     }
 
-    private static Part DieFrame(string name, double halfX, double halfY, string desc, int mass, int health, int armour, int seconds, double gold)
-    {
-        var p = new Part(name, Small, Section, desc, group: "Production", color: "#4a535c");
-        p.Add(Box([-halfX, -halfY, -0.4], [halfX, halfY, 0.4]));
-        p.Add(Box([-halfX - 0.01, -gold, -0.2], [halfX + 0.01, gold, 0.2], Gold, detail: true));
-        p.Sock("-x", [-halfX, 0, 0], "-x");
-        p.Sock("+x", [halfX, 0, 0], "+x");
-        p.Sock("-y", [0, -halfY, 0], "-y");
-        p.Sock("+y", [0, halfY, 0], "+y");
-        p.Stats(mass, health, armour, seconds);
-        p.Set(("dieFrame", true), ("centreSockets", false));
-        return p;
-    }
-
-    // ---- Expansion pieces (the user, 2026-11-13: build a bigger Extruder, or add expansion pieces to it, to print bigger things).
-    // A big machine's Die Extensions add a row or column of die up to the next class's die; Run-out Tables add to its longest piece up
-    // to the next class's. The Capital takes neither: its 32 m die and 192 m piece are the game's limits (Extrusion.MaxSectionCm, MaxLengthCm).
-    // (class, die with Die Extensions, longest with tables, a Die Extension's row, a table's length, a Die Extension's kg, a table's kg)
-    private static readonly (Cls Cls, double Section, double Length, double Step, double Table, int ExtKg, int TableKg)[] Growth =
-    [
-        (Small, 8, 64, 0, 8, 0, 450),
-        (Medium, 16, 128, 2, 16, 3000, 4000),
-        (Large, 32, 192, 4, 16, 30000, 40000),
-    ];
-
-    private static (double Section, double Length)? Grow(Cls c) =>
-        c != Small && Growth.FirstOrDefault(g => g.Cls == c) is { Cls: not null } g ? (g.Section, g.Length) : null;
-
-    private static PyDict GrowKeys(Cls c, PyDict extrude)
-    {
-        if (Grow(c) is { } g)
-            extrude.Update(("growSection", Py.L(g.Section, g.Section)), ("growLength", g.Length));
-        return extrude;
-    }
-
     /// <summary>
-    /// A Die Extension: a slab welded to a big Extruder's side, flush with its die face (the side's socket on the die face's row of cells).
-    /// Its in socket faces the machine, its out socket takes another one further out. Both faces along the die read as die: bare steel inserts
-    /// in a dark frame, an orange band (the out side) and hazard paint at the foot.
+    /// A Run-out Table: a roller bed 2 m wide and 8 m long under an Extruder's die (the Core's or a Die Block's out bed), or on another table's
+    /// far end; lay them side by side under a wide die. Its top is level with the machine's foot, so the machine stands on Foundations and the
+    /// tables on the ground in front. The longest piece reaches to the farthest table's end, up to 192 m.
     /// </summary>
-    private static Part DieExtension((Cls Cls, double Section, double Length, double Step, double Table, int ExtKg, int TableKg) g)
+    private static Part RunOutTable()
     {
-        var c = g.Cls;
-        var machine = Extruders.First(r => r.Item1 == c);
-        var cells = machine.Item10;
-        var thick = g.Step;
-        var hy = cells[1] * c.Cell / 2; // (as tall as the machine's side)
-        var hz = c.Half; // (one cell deep: the die face's row)
-        var t = c.Cell * 0.1;
-        var p = new Part(NameOf(c, "Die Extension"), c, Section,
-            $"Weld it to a {NameOf(c, "Extruder")}'s side, flush with its die face: {thick:0.#} m more die that way, up to {g.Section:0.#} x {g.Section:0.#} m. Chain them out.",
+        var p = new Part("Run-out Table", Small, Section,
+            $"Fit it under an Extruder's die (its Core or a Die Block), or on another table: its pieces run out to the far end, up to 192 m. Its top is level with the machine's foot.",
             group: "Production", color: Red);
-        p.Add(Box([0.004, -hy, -hz], [thick, hy, hz]));
-        foreach (var s in new[] { -1, 1 })
-        {
-            var z0 = s > 0 ? hz : -hz - 0.03;
-            var z1 = s > 0 ? hz + 0.03 : -hz;
-            p.Add(MachineLook.D([t, -hy + t * 3, z0], [thick - t, hy - t * 3, z1], MachineLook.Steel, "steel")); // (the die insert)
-            p.Add(MachineLook.D([0.004, hy - t * 1.6, z0 + s * 0.006], [thick, hy - t * 0.4, z1 + s * 0.006], MachineLook.Out));
-            MachineLook.Hazard(p, [0.004, -hy + t * 0.2, z0 + s * 0.006], [thick, -hy + t * 1.6, z1 + s * 0.006]);
-        }
-        p.Add(MachineLook.D([thick - t, -hy, -hz + t], [thick + 0.03, hy, hz - t], MachineLook.Base)); // (the outer frame rail)
-        p.Sock("in", [0, 0, 0], "-x");
-        p.Sock("out", [thick, 0, 0], "+x");
-        p.Stats(g.ExtKg, g.ExtKg / 2, c.Armour);
-        p.Set(("dieExtension", thick), ("centreSockets", false));
-        return p;
-    }
-
-    /// <summary>
-    /// A Run-out Table: a roller bed under an Extruder's die (its "outBed" socket), its top below the die's foot so a piece rides over it;
-    /// another table goes on its far end. Each adds its length to the machine's longest piece, up to the next class's.
-    /// </summary>
-    private static Part RunOutTable((Cls Cls, double Section, double Length, double Step, double Table, int ExtKg, int TableKg) g)
-    {
-        var c = g.Cls;
-        var len = g.Table;
-        // The bed's width and the drop from the socket to its top: the machine's width, and its foot below the die (Extruders above).
-        double hx, below, top;
-        if (c == Small)
-            (hx, below, top) = (0.5, 0.096, 0.1);
-        else
-        {
-            var cells = Extruders.First(r => r.Item1 == c).Item10;
-            hx = cells[0] * c.Cell / 2;
-            below = c.Half / 2 - 0.004;
-            top = c.Half / 2 - c.Half * 0.1;
-        }
-        var p = new Part(NameOf(c, "Run-out Table"), c, Section,
-            $"Fit it under a {NameOf(c, "Extruder")}'s die, or on another table: {len:0.#} m longer pieces, up to {g.Length:0.#} m.",
-            group: "Production", color: Red);
-        var h = top + below;
-        p.Add(Box([-hx, -below, 0.004], [hx, top - h * 0.3, len]));
+        const double hx = 0.996, top = -0.004, len = TableLength, h = TableDepth;
+        p.Add(Box([-hx, -h, 0.004], [hx, top - h * 0.3, len]));
         p.Add(Box([-hx, top - h * 0.3, 0.004], [-hx + h * 0.3, top, len])); // (the bed's two side rails; the rollers between them)
         p.Add(Box([hx - h * 0.3, top - h * 0.3, 0.004], [hx, top, len]));
-        MachineLook.Skirt(p, -hx, hx, 0.004, len, -below, -below + h * 0.25, Math.Min(h * 0.05, 0.03));
-        var step = c == Small ? 1.0 : 2.0;
+        MachineLook.Skirt(p, -hx, hx, 0.004, len, -h, -h + h * 0.25, 0.012);
         var r = h * 0.12;
-        for (var z = step / 2; z < len; z += step)
-            p.Add(MachineLook.D([-hx + h * 0.3 + 0.004, top - h * 0.3 - r, z - r], [hx - h * 0.3 - 0.004, top - h * 0.3 + r, z + r], MachineLook.Steel, "steel",
-                shape: Kw(("shape", "cylinder"), ("segments", 12), ("front", "+x"))));
-        p.Add(MachineLook.D([-hx - 0.02, top - h * 0.25, 0.1], [-hx, top - h * 0.05, len - 0.1], MachineLook.Out));
-        p.Add(MachineLook.D([hx, top - h * 0.25, 0.1], [hx + 0.02, top - h * 0.05, len - 0.1], MachineLook.Out));
+        for (var z = 1.0; z < len; z += 2)
+            p.Add(MachineLook.Work(MachineLook.D([-hx + h * 0.3 + 0.004, top - h * 0.3 - r, z - r], [hx - h * 0.3 - 0.004, top - h * 0.3 + r, z + r], MachineLook.Steel, "steel",
+                shape: Kw(("shape", "cylinder"), ("segments", 12), ("front", "+x"))), "spin", "+x")); // (they turn while the Extruder it serves works: drawing 11)
+        p.Add(MachineLook.D([-hx - 0.004, top - h * 0.25, 0.1], [-hx, top - h * 0.05, len - 0.1], MachineLook.Out));
+        p.Add(MachineLook.D([hx, top - h * 0.25, 0.1], [hx + 0.004, top - h * 0.05, len - 0.1], MachineLook.Out));
         p.Sock("in", [0, 0, 0.004], "-z", kind: "runOut");
         p.Sock("out", [0, 0, len], "+z", kind: "runOut");
-        p.Stats(g.TableKg, g.TableKg / 2, c.Armour);
-        p.Set(("runOut", len), ("centreSockets", false));
+        p.Stats(900, 450, 6, 10);
+        p.Set(("runOut", len), ("centreSockets", false), ("collider", "boxes"));
         return p;
     }
 
@@ -514,23 +608,19 @@ public sealed class ExtrusionParts : IPartGenerator
         ("description", "An Extruder with a bin, a battery and a timer that cuts: tip in material."),
         ("steps", Py.L(
             Kw(("part", "Foundation")),
-            Kw(("part", "Extruder"), ("on", 0), ("socket", "top21"), ("by", "bottom")),
-            Kw(("part", "Materials Bin"), ("on", 0), ("socket", "top01"), ("by", "bottom")),
-            Kw(("part", "Battery"), ("on", 0), ("socket", "top02"), ("by", "-y")),
-            Kw(("part", "Timer"), ("on", 0), ("socket", "top03"), ("by", "-y"), ("config", Kw(("period", 10), ("duty", 10)))))),
-        ("links", Py.L(Kw(("type", "chute"), ("from", 2), ("to", 1)), Kw(("type", "data"), ("from", 4), ("to", 1), ("toPort", "Cut")))));
+            Kw(("part", "Extruder"), ("on", 0), ("socket", "top11"), ("by", "bottom")),
+            Kw(("part", "Foundation"), ("on", 0), ("socket", "z-1"), ("by", "z+1")), // (behind it: its feed and power, clear of its 2 x 1.5 m)
+            Kw(("part", "Materials Bin"), ("on", 2), ("socket", "top01"), ("by", "bottom")),
+            Kw(("part", "Battery"), ("on", 2), ("socket", "top02"), ("by", "-y")),
+            Kw(("part", "Timer"), ("on", 2), ("socket", "top03"), ("by", "-y"), ("config", Kw(("period", 10), ("duty", 10)))))),
+        ("links", Py.L(Kw(("type", "chute"), ("from", 3), ("to", 1)), Kw(("type", "data"), ("from", 5), ("to", 1), ("toPort", "Cut")))));
 
     public void Make(PartOutput o)
     {
-        var parts = new List<(string, Part)> { ("", ExtruderSmall()) };
-        parts.AddRange(Extruders.Select(r => ("", Extruder(r))));
+        var parts = new List<(string, Part)> { ("", ExtruderCore()), ("", DieBlock()), ("", RunOutTable()) };
         parts.AddRange(Formers.Select(r => ("", Former(r))));
         parts.AddRange(FanFormers.Select(r => ("", Former(r, fan: true))));
         parts.AddRange(AirframeFormers.Select(r => ("", Former(r, air: true))));
-        parts.Add(("", DieFrame("Die Frame", 0.25, 0.5, "Attach it to an Extruder to widen the die, up to 8 x 8 m.", 90, 300, 6, 3, 0.3)));
-        parts.Add(("", DieFrame("Large Die Frame", 0.5, 1, "Attach it to an Extruder: 1 x 2 m more die.", 280, 700, 8, 5, 0.6)));
-        parts.AddRange(Growth.Where(g => g.Step > 0).Select(g => ("", DieExtension(g))));
-        parts.AddRange(Growth.Select(g => ("", RunOutTable(g))));
         WriteParts(o, Out, parts);
         o.File(Blueprint, PyJson.Dumps(Line(), 2) + "\n");
     }

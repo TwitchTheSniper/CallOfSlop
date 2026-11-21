@@ -419,12 +419,14 @@ public sealed partial class Ui
                     var e = d.Config[s];
                     if (e.Hidden || !ReferenceEquals(e.Group, group) && e.Group != group)
                         continue;
-                    var locked = CfLocked(game, e); // (shown, not changed; the server refuses it too)
+                    var locked = CfLocked(game, e) || SocketRowIdle(d, e); // (shown, not changed; the server refuses it too)
                     ImGui.BeginDisabled(locked);
                     SandboxConfigRow(game, d, e, s, labelW, now);
                     ImGui.EndDisabled();
                     lockedAny |= locked;
                 }
+                if (d.ModPart == ModPart.Socket && !d.ModStand && group == "Module socket")
+                    SocketSideView(d); // (what Depth and Room above mean, as they stand: UiSandboxConfigSockets.cs)
             }
 
             if (d.IsModularRack && d.CfgSlot[(int)CfgKey.RackRows] >= 0 && d.CfgSlot[(int)CfgKey.RackColumns] >= 0)
@@ -636,6 +638,16 @@ public sealed partial class Ui
             {
                 ImGui.SetNextItemWidth(fieldW);
                 var idx = (int)Math.Clamp(v, 0, Math.Max(0, e.Options.Length - 1));
+                if (e.Id == CfgKey.ModStyle && d.ModPart == ModPart.Socket)
+                {
+                    // A socket's style: four pictures (UiSandboxConfigSockets.cs).
+                    if (SocketStyleIcons(idx, fieldW, out var pick) && !CfLocked(game, e))
+                    {
+                        v = pick;
+                        changed = discrete = true;
+                    }
+                    break;
+                }
                 if (e.Id == ProductionLines.RecipeKey(d) && RecipePickable(d) && e.Options.Length > 0)
                 {
                     // A refiner's or an Assembler's recipe: the picker's tiles (UiRecipePicker.cs) in place of the list; it sets the

@@ -270,14 +270,14 @@ public static class ConstructPower
                         watts += d.PowerDraw; // (an Unloading Auger draws while it pours, nothing idle: ConstructAugers.cs)
                     continue;
                 }
-                var machine = d.IsRecycler || d.IsGatherer || d.IsRefiner || d.IsAssembler || d.IsPress || d.IsBeacon || d.IsTerminal || d.IsExtruder;
+                var machine = d.IsRecycler || d.IsGatherer || d.IsRefiner || d.IsAssembler || d.IsPress || d.IsBeacon || d.IsTerminal || d.IsExtruder || d.IsBakeOven;
                 if (machine && world.StoreOf(c, i) is not { Busy: true, Held: false, Drive: ShaftState.None })
                     continue; // (a Recycler, gathering module, production machine or beacon draws only while it works; one a wire holds off doesn't, even with a job in hand; a drill on a drive shaft never does)
                 if (d.Hyd == HydKind.Pump && !ConstructHydraulics.Pumping(c, i))
                     continue; // (a pump on power draws only while a valve is open on it)
                 if (d.IsJumpDrive ? (p.State & 1) != 0 // (a jump drive: while it charges)
                     : d.Role == PartRole.Joint ? JointMoving(c, i) : machine || !d.IsSignal || p.Out >= 0.5f || p.Out <= -0.5f) // (a working machine draws whatever its output says: an Extruder's is a length, a monitored machine's Data out is no on or off)
-                    watts += d.PowerDraw;
+                    watts += d.ExtBlockPower > 0 ? ConstructExtruder.PowerOf(c, i) : d.IsLaserCutter ? ConstructLaserCutter.PowerOf(c, i) : d.IsBakeOven ? ConstructBakeOven.PowerOf(world, c, i) : d is { IsPress: true, BlockRole: BlockRole.Core } ? ConstructPress.PowerOf(c, i) : d.PowerDraw; // (an Extruder Core: and each Die Block in its die; a Laser Cutter: each head on its bridge; a Bake Oven: each bed block while it heats; a Press Core: each of its cells)
             }
             watts += c.MotorWork / MotorEfficiency;
             watts += c.ModCutWatts; // (module sockets' cutting rings while they burn a well: ModuleCut.cs)

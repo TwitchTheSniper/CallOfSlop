@@ -2,17 +2,16 @@
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Wall Bay 1.5m Reactor Fuel",
   "group": "In-wall bays",
-  "description": "A reactor fuel loader in a 1.5 m in-wall bay: the control rod cassette wears, the shielded drawer under it holds fuel rods.",
+  "description": "A reactor fuel loader in a 1.5 m in-wall bay: the control rod cassette wears, the shielded drawer under it holds fuel rods. A 1x2 module: fit it with F to a Wall Bay Socket 1.5m.",
   "steps": [
     {
-      "part": "Wall Bay 1.5m",
-      "spin": 2
+      "part": "Module Plug 1x2"
     },
     {
       "part": "Reactor Fuel Insert 1.5m",
       "on": 0,
-      "socket": "insert",
-      "by": "bay"
+      "socket": "tc",
+      "by": "plug"
     },
     {
       "part": "Twist Latch",
@@ -32,5 +31,13 @@
       "socket": "wear",
       "by": "hang"
     }
-  ]
+  ],
+  "module": {
+    "w": 1,
+    "l": 2,
+    "primary": "utility",
+    "tags": [
+      "utility"
+    ]
+  }
 }

@@ -25,6 +25,7 @@ public static class ScenePresentation
     private static ViewModelRig? _vm;
     private static readonly PlayerRig?[] Players = new PlayerRig?[256];
     private static readonly PlayerRig?[] ShellBodies = new PlayerRig?[256]; // (a shell wearer's own body in the chair: its own rig, as the robot has theirs)
+    private static readonly PlayerRig?[] ShellStands = new PlayerRig?[ConstructRender.ShellRigMax]; // (robot shells nobody wears, drawn as worn ones: Game.DrawStandingShells)
     private static readonly TurretRig?[] Turrets = new TurretRig?[256];
     private static readonly DroneRig?[] Drones = new DroneRig?[256];
     private static MoverRigSet? _movers;
@@ -133,6 +134,15 @@ public static class ScenePresentation
         var t0 = Start();
         var rig = ShellBodies[body.Id] ??= NewPlayer(body.Id);
         rig.Pose(body, time);
+        Draw(g, rig.Root, t0);
+    }
+
+    /// <summary>A robot shell nobody wears, drawn as the robot a wearer is (Game.DrawStandingShells); <paramref name="slot"/> is its rig this frame.</summary>
+    public static void DrawShellStand(Renderer g, Player stand, int slot, double time)
+    {
+        var t0 = Start();
+        var rig = ShellStands[slot] ??= NewPlayer(stand.Id);
+        rig.Pose(stand, time, standIn: true);
         Draw(g, rig.Root, t0);
     }
 

@@ -9,7 +9,7 @@
     {
       "part": "Extruder",
       "on": 0,
-      "socket": "top21",
+      "socket": "top11",
       "by": "bottom",
       "config": {
         "profile": 1,
@@ -19,14 +19,20 @@
       }
     },
     {
-      "part": "Materials Bin",
+      "part": "Foundation",
       "on": 0,
+      "socket": "z-1",
+      "by": "z+1"
+    },
+    {
+      "part": "Materials Bin",
+      "on": 2,
       "socket": "top01",
       "by": "bottom"
     },
     {
       "part": "Battery",
-      "on": 0,
+      "on": 2,
       "socket": "top02",
       "by": "-y"
     },
@@ -38,7 +44,7 @@
     },
     {
       "part": "Press",
-      "on": 4,
+      "on": 5,
       "socket": "top00",
       "by": "-y.0.0"
     }
@@ -46,13 +52,13 @@
   "links": [
     {
       "type": "chute",
-      "from": 2,
+      "from": 3,
       "to": 1
     },
     {
       "type": "chute",
       "from": 1,
-      "to": 5
+      "to": 6
     }
   ]
 }

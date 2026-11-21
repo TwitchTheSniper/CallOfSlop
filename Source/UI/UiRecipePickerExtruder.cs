@@ -65,7 +65,7 @@ public sealed partial class Ui
             CloseRecipePicker();
             return false;
         }
-        var (dw, dh) = ExtruderPicks.DieCm(c, _rcpMachine); // (Die Frames welded on or shot off while it is open)
+        var (dw, dh) = ExtruderPicks.DieCm(c, _rcpMachine); // (Die Blocks welded on or shot off while it is open)
         _exDieW = dw;
         _exDieH = dh;
         _exLongCm = ConstructExtruder.MaxLengthCm(c, _rcpMachine); // (and Run-out Tables)
