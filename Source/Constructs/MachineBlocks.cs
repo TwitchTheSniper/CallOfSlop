@@ -75,7 +75,7 @@ public static class MachineBlocks
     {
         if (ConstructParts.Opt(root, "machineBlock") is not { } mb)
             return;
-        ConstructParts.Known(mb, ["family", "role", "cell", "plane", "origin"], $"{file}: \"machineBlock\"");
+        ConstructParts.Known(mb, ["family", "role", "cell", "plane", "origin", "coreSeams"], $"{file}: \"machineBlock\"");
         var role = ConstructParts.Str(ConstructParts.Need(mb, "role", $"{file}: \"machineBlock\""), file, "machineBlock.role");
         d.BlockRole = role switch
         {
@@ -99,6 +99,12 @@ public static class MachineBlocks
             if (d.BlockRole != BlockRole.Core)
                 throw new ConstructPartException($"{file}: only a Core gives \"machineBlock.origin\" (its own cell's middle)");
             d.BlockOrigin = ConstructParts.Vec(origin, file, "machineBlock.origin");
+        }
+        if (ConstructParts.Opt(mb, "coreSeams") is { } cs)
+        {
+            if (d.BlockRole != BlockRole.Core || cs.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
+                throw new ConstructPartException($"{file}: only a Core says \"machineBlock.coreSeams\" (true or false)");
+            d.BlockCoreSeams = cs.ValueKind == JsonValueKind.True;
         }
         if (ConstructParts.Opt(mb, "plane") is { } plane)
             d.BlockFace = ConstructParts.Str(plane, file, "machineBlock.plane") switch
@@ -398,8 +404,8 @@ public static class MachineBlocks
             for (var e = c.FirstLink(i); e >= 0; e = c.NextLink(e))
             {
                 var o = c.OtherEnd(e);
-                if (c.BlockAsmOf[o] != id)
-                    continue;
+                if (c.BlockAsmOf[o] != id || !cd.BlockCoreSeams && c.Parts[i].D.BlockRole == BlockRole.Block && (o == core || c.Parts[o].D.BlockRole == BlockRole.End))
+                    continue; // (a Core that says "coreSeams": false: only a weld to another bed cell hides a cell's seam, so a Laser Cutter's rail runs on past its Core and its Out Table)
                 ref readonly var l = ref c.Links[e >> 1];
                 var s = (e & 1) == 0 ? l.SA : l.SB; // (this part's own socket of the weld)
                 var socks = c.Parts[i].D.Sockets;

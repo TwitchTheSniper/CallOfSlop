@@ -35,7 +35,7 @@ public static partial class Program
         var d = c.DefOf(machine);
         if (d.IsLaserCutter && _game is { } gc && !c.Parts[machine].Broken)
         {
-            Ui.OpenCutterPicker(c.Id, machine, d, gc.Constructs.Designs, (int)ConstructConfig.Get(c.Parts[machine], d, CfgKey.OrderCount, 1)); // (its Design button: the world's cut designs, laser cutter phase 4)
+            Ui.OpenCutterPicker(c, machine, d, gc.Constructs.Designs, (int)ConstructConfig.Get(c.Parts[machine], d, CfgKey.OrderCount, 1)); // (its Design button: the world's cut designs, laser cutter phase 4)
             SetMouseCaptured(false);
             return true;
         }
