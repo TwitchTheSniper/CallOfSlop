@@ -148,7 +148,9 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
     private static double[] FacetNormal(int k, int s, double za, double zb) => HullDress.Normal(BandOf(k, s, za, zb), Cx, 3.0);
 
     /// <summary>The IT dress style (Constructs/DressStyles.json "it"): the armour's palette and panel patterns.</summary>
-    private static readonly DressStyle It = LoadIt();
+    private static DressStyle It => _it ??= LoadIt(); // (on first use, never in a static initializer: .claude/rules/constructs.md 2026-11-10)
+
+    private static DressStyle? _it;
 
     private static DressStyle LoadIt()
     {
