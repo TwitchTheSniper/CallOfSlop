@@ -1452,6 +1452,10 @@ of a blueprint and builds it in a bay, part by part, where it can be seen. Phase
   each 16 Bay Blocks, at least one, at most 8 (`ConstructStation.Arms`). A runway longer than 12 m between supports is a deeper girder on
   legs along the bay's sides, each braced in to the rail, and a bay wider than 12 m gets truss bridges (a 24 m span reads as a truss, not a
   plank). A piece longer than 3 m hangs on a two-leg bridle from the hook block.
+- **The Dress job** (`ConstructStation.Dress.cs`, Sean 2026-11-21): the blueprint `Dress skins` waits for a plain hull skin in the bay
+  or the hold and builds its dress blueprint (the station's `dressStyle`, `dressSalt`, `dressExtras`), laying the dress subparts from
+  linked steel rather than ordering them; then the next skin. Design: docs/sandbox/design/hull-dress.md "The dress station";
+  `--dress-skin` prints a skin's plan and builds it headless.
 - **Pick pads under its crane** (`ConstructStationPads.cs`, Sean 2026-11-21: "pick pads for pieces up to 14 t and 14 m long"). A Lay-down
   Pad (or a Pad Tile pad) on the station's body whose deck lies within the bay's width, wholly past either end of the bay and within 20 m of
   it, is a pick pad of the station itself (four at most, the nearest first). The runway is drawn on over it. Its fitting arms take a step's

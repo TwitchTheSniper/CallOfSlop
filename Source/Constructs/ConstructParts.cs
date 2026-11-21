@@ -1313,7 +1313,7 @@ public static partial class ConstructParts
             return BakedParts.Parse(name); // (a Bake Oven's baked part names its design by hash: BakedParts.cs)
         if (name.StartsWith(HullHoles.Prefix, StringComparison.Ordinal))
             return HullHoles.Parse(name); // (a part a cutter holed names itself, its base and its holes: HullHoles.cs)
-        if (name.StartsWith(HullLoft.Prefix, StringComparison.Ordinal) || HullLoft.IsPanelName(name) || HullLoft.IsCutName(name) || HullLoft.IsSectionName(name))
+        if (name.StartsWith(HullLoft.Prefix, StringComparison.Ordinal) || HullLoft.IsPanelName(name) || HullLoft.IsCutName(name) || HullLoft.IsSectionName(name) || HullLoft.IsDressName(name))
             return HullLoft.Parse(name); // (a lofted hull bay names itself too: HullLoft.cs)
         if (name.StartsWith(ModularRack.Prefix, StringComparison.OrdinalIgnoreCase) || name.StartsWith(ModularRack.LegacyPrefix, StringComparison.OrdinalIgnoreCase))
             return ModularRack.Parse(name); // (a rack of a shape no file has names itself too, an old Modular Bomb Rack's as well)

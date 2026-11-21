@@ -261,7 +261,7 @@ public static partial class HullLoft
     /// <summary>The part a key names, made the first time it is asked for. Null: a key no machine would write, or the run-time table is full.</summary>
     public static ConstructPartDef? Parse(string name)
     {
-        if (!name.StartsWith(Prefix, StringComparison.Ordinal) && !IsPanelName(name) && !IsCutName(name) && !IsSectionName(name) || !name.EndsWith(')') || name.Length > ConstructParts.MaxRuntimeName)
+        if (!name.StartsWith(Prefix, StringComparison.Ordinal) && !IsPanelName(name) && !IsCutName(name) && !IsSectionName(name) && !IsDressName(name) || !name.EndsWith(')') || name.Length > ConstructParts.MaxRuntimeName)
             return null; // (a formed panel comes through this door too: HullLoft.Panels.cs)
         lock (Interned)
         {
@@ -294,6 +294,8 @@ public static partial class HullLoft
     {
         if (MakeCut(name) is { } cut)
             return cut.Ok ? cut.Def : null; // (a Laser Cutter's cut panel or plate: HullLoft.Cuts.cs)
+        if (MakeDress(name) is { } dress)
+            return dress.Ok ? dress.Def : null; // (a hull dress subpart: HullLoft.Dress.cs)
         if (MakeSection(name) is { } section)
             return section.Ok ? section.Def : null; // (a dressed hull section: HullLoft.Section.cs)
         if (MakePanel(name) is { } panel)
@@ -356,7 +358,7 @@ public static partial class HullLoft
             return HullHoles.Read(name); // (protocol 352: a part a cutter holed travels the same way)
         if (BakedParts.IsName(name))
             return BakedParts.ReadWire(name); // (protocol 422: a baked part too; its design came first, CBodyKind.Baked)
-        if (!name.StartsWith(Prefix, StringComparison.Ordinal) && !IsPanelName(name) && !IsCutName(name) && !IsSectionName(name))
+        if (!name.StartsWith(Prefix, StringComparison.Ordinal) && !IsPanelName(name) && !IsCutName(name) && !IsSectionName(name) && !IsDressName(name))
             throw new MalformedPacketException($"a run-time part named \"{name}\"");
         return (FromWire(name) ?? Parse(name)) is { } d ? d.Id : ConstructParts.Need("Hull Bay T").Id; // (many new keys at once: stand-ins past the update's budget, HullLoft.FirstParts.cs)
     }

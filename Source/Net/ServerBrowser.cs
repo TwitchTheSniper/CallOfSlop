@@ -712,7 +712,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   chute port (a new port on the Core); its "Too wide: make strips" setting slot is gone (settings ride CBody by slot).
     // 424: an Extruder's run-out feeds a roller run (2026-11-21): new sockets appended on the Run-out Table ("roller"), Roller Tile
     //   ("-z table"), Panel Former and Laser Cutter Cores ("-z"); links carry socket indices past an old build's lists.
-    public const ushort ProtocolVersion = 424;
+    // 425: hull dress (Sean, 2026-11-21, option B): run-time part kinds Hull Dress (...) and plain skins (Hull Section style -),
+    //   the Building Station's Dress job ("Dress skins") and its settings dressStyle/dressSalt/dressExtras in the unused BayWidth/Depth/Height slots.
+    public const ushort ProtocolVersion = 425;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;
