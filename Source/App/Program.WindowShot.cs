@@ -521,7 +521,7 @@ public static unsafe partial class Program
     private static (Construct? C, int Part) WsNth(Construct c, string name, int nth)
     {
         for (var i = 0; i < c.PartCount; i++)
-            if (c.DefOf(i).Name.Equals(name, StringComparison.OrdinalIgnoreCase) && --nth == 0)
+            if (WsNamed(c, i, name) && --nth == 0)
                 return (c, i);
         return (null, -1);
     }
@@ -530,9 +530,16 @@ public static unsafe partial class Program
     {
         var n = 0;
         for (var i = 0; i < c.PartCount; i++)
-            if (c.DefOf(i).Name.Equals(name, StringComparison.OrdinalIgnoreCase))
+            if (WsNamed(c, i, name))
                 n++;
         return n;
+    }
+
+    /// <summary>Is part <paramref name="i"/> called <paramref name="name"/>? A holed part (HullHoles) by its file part's name too.</summary>
+    private static bool WsNamed(Construct c, int i, string name)
+    {
+        var d = c.DefOf(i);
+        return d.Name.Equals(name, StringComparison.OrdinalIgnoreCase) || HullHoles.IsHoled(d) && HullHoles.BaseOf(d).Name.Equals(name, StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>Where a part is looked at: the middle of its first screen, else the middle of the part.</summary>

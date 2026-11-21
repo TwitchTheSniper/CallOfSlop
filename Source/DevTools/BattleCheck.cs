@@ -287,7 +287,7 @@ public static class BattleCheck
         }
         Console.WriteLine($"{fired} shots in {volleys} volleys ({perTick} a tick): {throughs} went through a part, {damaged} volleys did damage");
         Console.WriteLine($"rounds {roundMs / Math.Max(1, fired):0.000} ms a shot (worst volley {worstRound:0.00} ms), rebuild {rebuildMs / Math.Max(1, volleys):0.00} ms a volley, marks (every PC) {markMs / Math.Max(1, fired):0.000} ms a shot, tick {tickMs / Math.Max(1, volleys):0.00} ms a volley (baseline {baseMs:0.00}), worst volley + tick {worstTick:0.00} ms");
-        Console.WriteLine($"parts {startParts} -> {ship.PartCount}, bodies {startBodies} -> {w.Bodies.Count}, holes marked {w.BoreMarkCount}, parts bored {ConstructBores.Bored}, spall hits {ConstructBores.Spalled}, break-ups {ConstructBreakUp.Snaps}");
+        Console.WriteLine($"parts {startParts} -> {ship.PartCount}, bodies {startBodies} -> {w.Bodies.Count}, holes marked {w.BoreMarkCount}, parts bored {ConstructBores.Bored}, spall hits {ConstructBores.Spalled}, holes cut {ConstructBores.HolesCut} ({HullHoles.BuildMs:0} ms making the holed parts), break-ups {ConstructBreakUp.Snaps}");
         foreach (var e in w.Events)
             if (e.Contains("broke up"))
                 Console.WriteLine(e);

@@ -2343,6 +2343,7 @@ public sealed partial class ConstructWorld
         part = Perf.Measure(PerfArea.CWeapons);
         ConstructWeapons.Step(this, query, dt); // (before the logic: a gun's wires carry last tick's values, its gunner's keys this tick's)
         ConstructBreakUp.Step(this, ++BreakTicks); // (big bodies hurt this tick: does one snap where its structure was shot away? ConstructBreakUp.cs)
+        ConstructBores.Step(this, BreakTicks); // (the holes this fifth of a second's bores cut: ConstructBores.Cut)
         part.Dispose();
         StepPart(2);
         part = Perf.Measure(PerfArea.CLinks);

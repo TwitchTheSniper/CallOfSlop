@@ -39,7 +39,15 @@ public static class ConstructBores
 
     public const int SameSteps = 6; // steps of SameReach at most through a part it just left and met again at once
     public const float SameReach = 0.25f;
-    public static long Bored, Spalled; // (counts, for the check)
+    public static long Bored, Spalled, HolesCut; // (counts, for the check)
+
+    /// <summary>Bores cut real holes through the parts they cross (false: scorch marks only; --no-bore-holes).</summary>
+    public static bool Holes = true;
+    public const int HoleEvery = 12; // ticks between cuts (a body is rebuilt at most this often by holes: 5 a second)
+    public const int MaxWaiting = 256; // holes waiting at most (more in one fifth of a second are left as scorch marks)
+    public const int MaxHoleParts = 12; // parts one shot holes at most (each a new holed def and its share of the body's rebuild)
+    public const float HoleScale = 1f; // the hole's half size, as a share of the calibre (the mark's radius)
+    public const float HoleBefore = 0.05f, HoleOver = 0.1f; // metres the tunnel starts before the face, and goes on past the far one
     public static bool Trace = Environment.GetEnvironmentVariable("BORE_TRACE") == "1";
 
     // Penetration by calibre (Karl, 2026-11-20: "add penetration for other shells, weapons etc as well where relevant"). A heavy gun
@@ -84,6 +92,7 @@ public static class ConstructBores
         end = at;
         var b0 = MathF.Max(1f, budget);
         var spalls = 0;
+        var holed = 0;
         if (calibre <= 0)
             calibre = Calibre(damage);
         for (var n = 0; n < MaxParts; n++)
@@ -108,6 +117,9 @@ public static class ConstructBores
             {
                 armour = body.Parts[h.Part].D.Armour;
                 exit = ConstructWeapons.ExitDistance(body, h.Part, at, dir); // (before the damage: the part may go)
+                if (Holes && holed < MaxHoleParts && !h.Glass && h.SlotPlus1 == 0 && body.Parts[h.Part].Health > dealt
+                    && Cut(world, body, h.Part, at, dir, calibre, budget - Cost(armour, exit) <= 0 ? exit * 0.5f : exit + HoleOver))
+                    holed++;
                 world.DamageAt = at;
                 if (h.SlotPlus1 > 0)
                     world.DamageStored(body, h.Part, h.SlotPlus1 - 1, dealt);
@@ -178,6 +190,61 @@ public static class ConstructBores
         return result;
     }
 
+    /// <summary>
+    /// Server: a real hole through part <paramref name="part"/> along the bore (Karl, 2026-11-21: "penetrating weapons do not leave
+    /// holes"): a square tunnel of half size <paramref name="calibre"/> from just before <paramref name="at"/>, <paramref name="depth"/> m
+    /// along <paramref name="dir"/>, cut by HullHoles (mesh and collision, so you see through it), the part swapped for its holed self.
+    /// A part HullHoles refuses (a machine, a door, a lamp), or one with all its holes already, keeps only the scorch mark. The cut
+    /// waits for <see cref="Step"/>, so a body under fire is rebuilt at most every <see cref="HoleEvery"/> ticks whatever the guns' rate;
+    /// the swap rides the structure patch and saves as the part's key.
+    /// </summary>
+    public static bool Cut(ConstructWorld world, Construct body, int part, Vector3 at, Vector3 dir, float calibre, float depth)
+    {
+        ref var p = ref body.Parts[part];
+        if (p.Broken || body.Rides(part) || world.HolesWaiting.Count >= MaxWaiting)
+            return false;
+        var d = body.DefOf(part);
+        if (HullHoles.Refusal(HullHoles.BaseOf(d)) != null || HullHoles.HolesOf(d).Length >= HullHoles.MaxHoles)
+            return false;
+        Freeform.PartWorld(body, part, out var pos, out var rot);
+        var iq = Quaternion.Conjugate(rot);
+        var up = Across(dir, out _);
+        var half = calibre * HoleScale;
+        var local = HullHoles.Hole.Of(Vector3.Transform(at - dir * HoleBefore - pos, iq), Vector3.Transform(dir, iq), Vector3.Transform(up, iq), half, half, depth + HoleBefore);
+        world.HolesWaiting.Add((body.Id, part, p.Pos, local));
+        return true;
+    }
+
+    /// <summary>Server, each tick: every <see cref="HoleEvery"/> ticks the holes waiting are cut, each part swapped for its holed self.</summary>
+    public static void Step(ConstructWorld world, long tick)
+    {
+        var list = world.HolesWaiting;
+        if (list.Count == 0 || tick % HoleEvery != 0)
+            return;
+        foreach (var (id, part, key, hole) in list)
+        {
+            if (world.Get(id) is not { } body || part >= body.PartCount || body.Parts[part].Pos != key || body.Parts[part].Broken)
+                continue; // (it broke off or was renumbered meanwhile: no hole)
+            var d = body.DefOf(part);
+            if (HullHoles.WithHole(d, hole) is not { } holedDef)
+                continue; // (it has all its holes, or the cut would leave nothing: the scorch mark stays)
+            body.Parts[part].Def = holedDef.Id;
+            body.Dirty = true;
+            world.StructureDirty.Add(body.Id);
+            HolesCut++;
+            if (Trace)
+                Console.WriteLine(FormattableString.Invariant($"    holed {HullHoles.BaseOf(d).Name}: {hole.HalfW * 200:0} cm square, {hole.Depth:0.00} m deep"));
+        }
+        list.Clear();
+    }
+
+    /// <summary>Two directions square to <paramref name="dir"/> and to each other, the same on every PC (a hole's up and across).</summary>
+    public static Vector3 Across(Vector3 dir, out Vector3 right)
+    {
+        right = MathF.Abs(dir.Y) < 0.95f ? Vector3.Normalize(Vector3.Cross(dir, Vector3.UnitY)) : Vector3.UnitX;
+        return Vector3.Normalize(Vector3.Cross(right, dir));
+    }
+
     /// <summary>A cone of spall out of where a bore left a part: a few short rays, each hurting the first part it meets.</summary>
     private static void Spall(ConstructWorld world, Construct? ownBody, Vector3 at, Vector3 dir, float damage, uint seed)
     {
@@ -216,9 +283,23 @@ public static class ConstructBores
         var pos = from - d * 0.05f;
         var left = len + 0.1f;
         var n = 0;
+        // A second ray just outside the hole's edge: the server may have cut the holes (Cut) before this PC marks them, and the middle
+        // ray then goes clean through. Whichever meets a part first is the one, its point taken back onto the middle line.
+        Across(d, out var right);
+        var aside = right * (radius * HoleScale * 1.35f + 0.01f);
         for (var k = 0; k < MaxParts && left > 0; k++)
         {
-            if (!world.Raycast(pos, d, left, out var hit) || hit.RoutePlus1 > 0 || hit.TrackPlus1 > 0)
+            var mid = world.Raycast(pos, d, left, out var hit);
+            if (world.Raycast(pos + aside, d, left, out var edge) && (!mid || edge.Distance < hit.Distance - 0.005f))
+            {
+                var dn = Vector3.Dot(d, edge.Normal);
+                var t = MathF.Abs(dn) > 0.2f ? MathF.Max(0f, Vector3.Dot(edge.Point - pos, edge.Normal) / dn) : edge.Distance;
+                edge.Point = pos + d * t;
+                edge.Distance = t;
+                hit = edge;
+                mid = true;
+            }
+            if (!mid || hit.RoutePlus1 > 0 || hit.TrackPlus1 > 0)
                 break;
             var c = hit.Body;
             if (!hit.Glass)
@@ -270,6 +351,7 @@ public sealed partial class ConstructWorld
     public const int MaxBoreMarks = 4096; // holes drawn at once, in every world (the oldest go first)
 
     public BoreMark[] BoreMarks = []; // (made with the first)
+    public readonly List<(ushort Body, int Part, Vector3 Key, HullHoles.Hole Hole)> HolesWaiting = new(); // (ConstructBores.Cut, cut by its Step)
     public int BoreMarkCount;
     private int _boreNext;
 
@@ -289,6 +371,38 @@ public sealed partial class ConstructWorld
         };
         _boreNext = (_boreNext + 1) % MaxBoreMarks;
         BoreMarkCount = Math.Min(BoreMarkCount + 1, MaxBoreMarks);
+    }
+
+    /// <summary>
+    /// Does mark <paramref name="k"/> (live, on <paramref name="c"/>) sit on a hole its part was cut with (<see cref="ConstructBores.Cut"/>)?
+    /// Then it is drawn as a ring round the opening, not over it. <paramref name="facing"/>: how square the hole meets the face (1: straight on).
+    /// </summary>
+    public bool BoreMarkHoled(int k, Construct c, out float facing)
+    {
+        facing = 1f;
+        ref var m = ref BoreMarks[k];
+        ref var p = ref c.Parts[m.Part];
+        var d = c.DefOf(m.Part);
+        if (!HullHoles.IsHoled(d))
+            return false;
+        var iq = Quaternion.Conjugate(Rot24.Quat(p.Rot));
+        var local = Vector3.Transform(m.Pos - p.Pos, iq);
+        var n = Vector3.Transform(m.Normal, iq);
+        foreach (var h in HullHoles.HolesOf(d))
+        {
+            var dir = h.Dir;
+            var up = h.Up;
+            var rel = local - h.Origin;
+            var along = Vector3.Dot(rel, dir);
+            if (along < -0.06f || along > h.Depth + 0.06f)
+                continue;
+            var slack = 0.02f + m.Radius * 0.5f;
+            if (MathF.Abs(Vector3.Dot(rel, up)) > h.HalfH + slack || MathF.Abs(Vector3.Dot(rel, Vector3.Cross(dir, up))) > h.HalfW + slack)
+                continue;
+            facing = MathF.Max(0.4f, MathF.Abs(Vector3.Dot(n, dir)));
+            return true;
+        }
+        return false;
     }
 
     /// <summary>Is mark <paramref name="k"/>'s part still on its body? Finds it again after a renumbering (parts keep their order); false (and the mark goes) when it is gone.</summary>

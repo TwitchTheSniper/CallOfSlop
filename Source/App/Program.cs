@@ -262,6 +262,8 @@ public static unsafe partial class Program
                 ConstructBores.On = false;
             if (args.Any(a => a.Equals("--no-break-up", StringComparison.OrdinalIgnoreCase)))
                 ConstructBreakUp.On = false;
+            if (args.Any(a => a.Equals("--no-bore-holes", StringComparison.OrdinalIgnoreCase)))
+                ConstructBores.Holes = false;
             return BattleCheck.Cli(args); // a capital ship under railgun fire headless: what each volley did and cost (Source/DevTools/BattleCheck.cs)
         }
         if (args.Any(a => a.Equals("--skin-check", StringComparison.OrdinalIgnoreCase)))

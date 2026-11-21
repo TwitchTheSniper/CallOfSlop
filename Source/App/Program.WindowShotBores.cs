@@ -61,7 +61,7 @@ public static unsafe partial class Program
             }
             var before = ConstructBores.Bored;
             ConstructBores.Through(w, 0, hit, dir, damage, budget, 1100f, 1100f, 0f, (byte)g.LocalId, 0, out var end);
-            WsSay($"bore {k}: in at {hit.Body.DefOf(hit.Part).Name}, through {ConstructBores.Bored - before} part(s), {Vector3.Distance(hit.Point, end):0.0} m");
+            WsSay($"bore {k}: in at {hit.Body.DefOf(hit.Part).Name}, through {ConstructBores.Bored - before} part(s), {Vector3.Distance(hit.Point, end):0.0} m, entering at {hit.Point.X.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)},{hit.Point.Y.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)},{hit.Point.Z.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)} (for view X,Y,Z | ...)");
         }
         return true;
     }
