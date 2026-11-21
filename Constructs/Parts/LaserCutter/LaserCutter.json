@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Laser Cutter",
-  "description": "A Laser Cutter Core: cuts openings, notches and corners out of a formed panel or a flat extruded piece, by order. Weld Laser Bed Blocks beside its long side: the bed is their rectangle, up to 32 x 32 m, and its bridge carries one head per block across, so a wider bed cuts faster. Blanks come in by conveyor; the offcut drops into its bin. Needs power.",
+  "description": "A Laser Cutter Core: cuts openings, notches and corners out of a formed panel or a flat extruded piece, by order. Weld Laser Bed Blocks beside its long side: the bed is their rectangle, up to 16 blocks a side and 128 in all (32 x 16 m), and its bridge carries one head per block across, so a wider bed cuts faster. Blanks come in by conveyor; the offcut drops into its bin. Needs power.",
   "group": "Production",
   "section": "Extrusion",
   "role": "storage",

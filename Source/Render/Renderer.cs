@@ -71,16 +71,16 @@ public sealed unsafe partial class Renderer
         out vec4 FragColor;
         // Openings (Renderer.Cuts.cs): only the CUTS variant of each box program has them (a discard costs early depth
         // testing, so the plain programs keep none). Up to CutMax boxes, three rows each taking a point from the render
-        // origin into the box's unit cube; a box drawn with the cut mark (mode + 4 x code, code = first x 32 + count: its
+        // origin into the box's unit cube; a box drawn with the cut mark (mode + 4 x code, code = first x 64 + count: its
         // body's own openings) is not drawn inside one of them: a flush pod's pocket.
         #ifdef CUTS
-        uniform vec4 uCut[48];
+        uniform vec4 uCut[96];
 
         bool InCut(int code)
         {
             vec4 p = vec4(vRel, 1.0);
-            int first = code / 32;
-            int last = min(first + code - first * 32, 16);
+            int first = code / 64;
+            int last = min(first + code - first * 64, 32);
             for (int i = first; i < last; i++)
             {
                 vec3 q = vec3(dot(uCut[i * 3], p), dot(uCut[i * 3 + 1], p), dot(uCut[i * 3 + 2], p));
