@@ -56,6 +56,10 @@ The farmers' medium hauler in a combine harvester's clothes: a glass cab room st
 
 The Traders' small fast courier: two standard containers side by side in a bay open to the sky, so a dock crane lifts them out; cab forward, engineering aft, two drive nacelles.
 
+## [The Docket tug](constructs/tug.md), 3 KB
+
+The Traders' tug: a stubby head (push bow, crew cab, a raised glass wheelhouse, four stacked drive nacelles) towing an open truss string of three cells, each taking one standard container on twist locks for a dock crane.
+
 ## [Ship works](design/ship-works.md), 48 KB (the design)
 
 Engines and turrets with insides: a ship's drive over 500 kN has works behind it through the hull (Drive Core, Fuel Pump,

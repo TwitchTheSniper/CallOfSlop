@@ -125,6 +125,7 @@ public static class PartKit
         new Generators.FreighterParts(), // (the Packet, the Traders' spine freighter: likewise)
         new Generators.HaywainParts(), // (the Haywain, the farmers' medium hauler: likewise)
         new Generators.CourierParts(), // (the Satchel, the Traders' courier: likewise)
+        new Generators.TugParts(), // (the Docket, the Traders' tug: likewise)
         new Generators.SpaceStationParts(), // (space stations from the station kit: Caledon Highport; its blueprint hangs docking clamps and hatches)
         new Generators.MakeRv(),
         new Generators.MachineTiers(),
