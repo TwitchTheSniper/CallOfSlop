@@ -729,31 +729,72 @@ public sealed partial class SpaceStationParts
         Finish(p);
     }
 
-    /// <summary>The freight pier east of the warehouse, at the Big-item pick-up: a deck 54 m out with a Docking Clamp Large on each
-    /// side for a ship alongside.</summary>
+    /// <summary>The freight pier east of the warehouse, at the Big-item pick-up: a deck 108 m out with a Docking Clamp Large on each side
+    /// near the store for a Magpie-sized hauler, and one on each side at the far end for a Zero Day-sized frigate (Karl, 2026-11-21: "make
+    /// sure NPC frigates can dock and supply the stations").</summary>
     private static void Pier(Kit k)
     {
         const double pz0 = 8, pz1 = 29;
-        foreach (var (name, x0, x1) in new[] { ("Pier 1", FW, FW + 27), ("Pier 2", FW + 27, FW + 54) })
+        for (var n = 0; n < 4; n++)
         {
+            double x0 = FW + 27 * n, x1 = FW + 27 * (n + 1);
+            var name = $"Pier {n + 1}";
             var p = k.Piece(name, "Hexkey Orbital's freight pier: a white deck with a charcoal kerb, ships berthed along both sides.", NWhite);
             Solid(p, X(x0), -0.6, Z(pz0), X(x1), 0, Z(pz1), NWhite, Matte);
             Detail(p, X(x0), 0, Z(pz0), X(x1), 0.008, Z(pz1), NDeck, "painted deck plate");
             foreach (var (a, b) in new[] { (pz0, pz0 + 0.3), (pz1 - 0.3, pz1) })
                 Detail(p, X(x0), 0.011, Z(a), X(x1), 0.25, Z(b), NChar, Matte);
             Lamp(p, X(x1) - 0.3, 0.011, Z(18) - 0.3, X(x1), 0.3, Z(19) + 0.3);
-            if (name == "Pier 2")
-                foreach (var (tag, py, sz) in new[] { ("berthN", pz0 + 0.6, -1), ("berthS", pz1 - 0.6, 1) })
+            var (ship, at, who) = n switch { 0 => (Magpie, FW + 24.0, "hauler"), 2 => (ZeroDay, FW + 78.0, "frigate"), _ => ((0.0, 0.0, 0.0), 0.0, "") };
+            if (who.Length > 0)
+                foreach (var (tag, py, sz) in new[] { ($"{who}N", pz0 + 0.6, -1), ($"{who}S", pz1 - 0.6, 1) })
                 {
-                    Sock(p, tag, X(FW + 30), 0, Z(py), "+y", Large);
-                    var (sw, sl, sh) = Magpie;
+                    Sock(p, tag, X(at), 0, Z(py), "+y", Large);
+                    var (sw, sl, sh) = ship;
                     k.Hangs.Add(new HangSpec((string)p.D["name"]!, tag, "Docking Clamp Large", "-y", new PyDict
                     {
-                        ["sizeX"] = Math.Min(96, sl + 6), ["sizeY"] = Math.Min(96, sh + 4), ["sizeZ"] = Math.Min(96, sw + 4),
+                        ["sizeX"] = Math.Min(96, R(sl + 6)), ["sizeY"] = Math.Min(96, R(sh + 4)), ["sizeZ"] = Math.Min(96, R(sw + 4)),
                         ["atX"] = 0, ["atY"] = 2, ["atZ"] = R(sz * (sw / 2 + 3)), ["startOn"] = true,
                     }, NPine, Matte));
                 }
             Finish(p);
         }
+    }
+
+    /// <summary>
+    /// The store file the game's stock filler reads (Constructs/Stores, Game/GameStoreFill.cs): the anchor piece and where its origin is in
+    /// the station frame, then every room-set bay in the route's order (lane A east, lane B west, lane C east, the north bay of each pair
+    /// first): its piece, its inside box (station frame, floor top to the bay's ceiling) and which way its open front faces.
+    /// </summary>
+    private static PyDict HexkeyStoreFile(double[] anchorOrigin)
+    {
+        var bays = new List<object?>();
+        for (var l = 0; l < LaneZ.Length; l++)
+        {
+            var lane = LaneZ[l];
+            var idx = Enumerable.Range(0, BayWalls.Length - 1).Where(i => BayWalls[i + 1] - BayWalls[i] >= 6).ToList();
+            if (l == 1)
+                idx.Reverse();
+            foreach (var i in idx)
+                foreach (var (row, z0, z1) in new[] { ('N', lane + 0.1, lane + RoomD), ('S', lane + RoomD + PathW, lane + 24 - 0.1) })
+                {
+                    double a = BayWalls[i] + PartT / 2, b = BayWalls[i + 1] - PartT / 2;
+                    bays.Add(new PyDict
+                    {
+                        ["piece"] = $"Hexkey L2 Bays {"ABC"[l]}{row}",
+                        ["min"] = new List<object?> { R(X(a)), R(HL2 + 0.008), R(Z(z0)) },
+                        ["max"] = new List<object?> { R(X(b)), R(HL2 + 3.2), R(Z(z1)) },
+                        ["open"] = row == 'N' ? "+z" : "-z",
+                    });
+                }
+        }
+        return new PyDict
+        {
+            ["format"] = "call-of-slop-store/1",
+            ["blueprint"] = HexkeyName,
+            ["anchor"] = "Hexkey L0 Floor 1-1",
+            ["origin"] = new List<object?> { anchorOrigin[0], anchorOrigin[1], anchorOrigin[2] },
+            ["bays"] = bays,
+        };
     }
 }

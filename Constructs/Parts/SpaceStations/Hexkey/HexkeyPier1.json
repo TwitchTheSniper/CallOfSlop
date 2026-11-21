@@ -92,6 +92,26 @@
   ],
   "sockets": [
     {
+      "name": "haulerN",
+      "at": [
+        9.875,
+        -0.125,
+        -9.525
+      ],
+      "dir": "+y",
+      "class": "large"
+    },
+    {
+      "name": "haulerS",
+      "at": [
+        9.875,
+        -0.125,
+        10.275
+      ],
+      "dir": "+y",
+      "class": "large"
+    },
+    {
       "name": "j0",
       "at": [
         -14.125,

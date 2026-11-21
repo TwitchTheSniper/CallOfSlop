@@ -859,6 +859,12 @@
       "by": "j0"
     },
     {
+      "part": "Hexkey Pier 3",
+      "on": 101,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
       "part": "Hexkey L1 Floor 3-4",
       "on": 103,
       "socket": "j2",
@@ -1093,290 +1099,296 @@
       "by": "j1"
     },
     {
-      "part": "Hexkey L1 Wall S3",
+      "part": "Hexkey Pier 4",
       "on": 143,
-      "socket": "j4",
+      "socket": "j1",
       "by": "j0"
     },
     {
-      "part": "Hexkey L1 Wall S4",
+      "part": "Hexkey L1 Wall S3",
       "on": 144,
       "socket": "j4",
       "by": "j0"
     },
     {
-      "part": "Hexkey L1 Wall S5",
+      "part": "Hexkey L1 Wall S4",
       "on": 145,
       "socket": "j4",
       "by": "j0"
     },
     {
-      "part": "Hexkey L1 Wall S6",
+      "part": "Hexkey L1 Wall S5",
       "on": 146,
       "socket": "j4",
       "by": "j0"
     },
     {
-      "part": "Hexkey L1 Wall S7",
+      "part": "Hexkey L1 Wall S6",
       "on": 147,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Hexkey L1 Wall S7",
+      "on": 148,
       "socket": "j4",
       "by": "j0"
     },
     {
       "part": "Hexkey L1 Wall E4",
-      "on": 147,
+      "on": 148,
       "socket": "j5",
       "by": "j0"
     },
     {
       "part": "Hexkey Market Stair",
-      "on": 147,
+      "on": 148,
       "socket": "j6",
       "by": "j0"
     },
     {
       "part": "Hexkey Roof 7-2",
-      "on": 149,
+      "on": 150,
       "socket": "j2",
       "by": "j3"
     },
     {
       "part": "Hexkey Roof 1-2",
-      "on": 151,
+      "on": 152,
       "socket": "j8",
       "by": "j6"
     },
     {
       "part": "Hexkey Roof 2-2",
-      "on": 151,
+      "on": 152,
       "socket": "j10",
       "by": "j5"
     },
     {
       "part": "Hexkey Roof 3-2",
-      "on": 151,
+      "on": 152,
       "socket": "j12",
       "by": "j5"
     },
     {
       "part": "Hexkey Roof 4-2",
-      "on": 151,
+      "on": 152,
       "socket": "j14",
       "by": "j5"
     },
     {
       "part": "Hexkey Roof 5-2",
-      "on": 151,
+      "on": 152,
       "socket": "j16",
       "by": "j5"
     },
     {
       "part": "Hexkey Roof 6-2",
-      "on": 151,
+      "on": 152,
       "socket": "j18",
       "by": "j5"
     },
     {
       "part": "Hexkey L2 Floor 6-4",
-      "on": 153,
+      "on": 154,
       "socket": "j2",
       "by": "j1"
     },
     {
       "part": "Hexkey L2 Wall S7",
-      "on": 154,
+      "on": 155,
       "socket": "j4",
       "by": "j0"
     },
     {
       "part": "Hexkey L2 Wall E4",
-      "on": 154,
+      "on": 155,
       "socket": "j5",
       "by": "j0"
     },
     {
       "part": "Hexkey L2 Hall Wall",
-      "on": 154,
+      "on": 155,
       "socket": "j6",
       "by": "j6"
     },
     {
       "part": "Hexkey Roof 7-3",
-      "on": 155,
+      "on": 156,
       "socket": "j2",
       "by": "j4"
     },
     {
       "part": "Hexkey Roof 1-3",
-      "on": 157,
+      "on": 158,
       "socket": "j8",
       "by": "j7"
     },
     {
       "part": "Hexkey Roof 2-3",
-      "on": 157,
+      "on": 158,
       "socket": "j10",
       "by": "j7"
     },
     {
       "part": "Hexkey Roof 3-3",
-      "on": 157,
+      "on": 158,
       "socket": "j12",
       "by": "j6"
     },
     {
       "part": "Hexkey Roof 4-3",
-      "on": 157,
+      "on": 158,
       "socket": "j14",
       "by": "j5"
     },
     {
       "part": "Hexkey Roof 5-3",
-      "on": 157,
+      "on": 158,
       "socket": "j16",
       "by": "j5"
     },
     {
       "part": "Hexkey Roof 6-3",
-      "on": 157,
+      "on": 158,
       "socket": "j18",
       "by": "j6"
     },
     {
       "part": "Hexkey L2 Floor 2-4",
-      "on": 158,
+      "on": 159,
       "socket": "j3",
       "by": "j7"
     },
     {
       "part": "Hexkey L2 Floor 3-4",
-      "on": 158,
+      "on": 159,
       "socket": "j5",
       "by": "j6"
     },
     {
       "part": "Hexkey L2 Floor 4-4",
-      "on": 158,
+      "on": 159,
       "socket": "j7",
       "by": "j6"
     },
     {
       "part": "Hexkey L2 Floor 5-4",
-      "on": 158,
+      "on": 159,
       "socket": "j9",
       "by": "j6"
     },
     {
       "part": "Hexkey L2 Wall W3",
-      "on": 160,
+      "on": 161,
       "socket": "j4",
       "by": "j0"
     },
     {
       "part": "Hexkey L2 Wall S1",
-      "on": 163,
+      "on": 164,
       "socket": "j4",
       "by": "j0"
     },
     {
       "part": "Hexkey L2 Wall W4",
-      "on": 163,
+      "on": 164,
       "socket": "j5",
       "by": "j0"
     },
     {
       "part": "Hexkey Arrivals Glass",
-      "on": 171,
+      "on": 172,
       "socket": "j11",
       "by": "j0"
     },
     {
       "part": "Hexkey Roof Name West",
-      "on": 173,
-      "socket": "j10",
-      "by": "j0"
-    },
-    {
-      "part": "Hexkey Roof Name East",
       "on": 174,
       "socket": "j10",
       "by": "j0"
     },
     {
+      "part": "Hexkey Roof Name East",
+      "on": 175,
+      "socket": "j10",
+      "by": "j0"
+    },
+    {
       "part": "Hexkey Departures Glass",
-      "on": 177,
+      "on": 178,
       "socket": "j11",
       "by": "j0"
     },
     {
       "part": "Hexkey L2 Wall S6",
-      "on": 196,
+      "on": 198,
       "socket": "j4",
       "by": "j0"
     },
     {
       "part": "Hexkey L2 Canteen Counter",
-      "on": 196,
+      "on": 198,
       "socket": "j7",
       "by": "j1"
     },
     {
       "part": "Hexkey L2 Staff Wall",
-      "on": 199,
+      "on": 201,
       "socket": "j15",
       "by": "j3"
     },
     {
       "part": "Hexkey L2 Wall S2",
-      "on": 201,
+      "on": 203,
       "socket": "j3",
       "by": "j1"
     },
     {
       "part": "Hexkey L2 Wall S3",
-      "on": 202,
+      "on": 204,
       "socket": "j4",
       "by": "j1"
     },
     {
       "part": "Hexkey L2 Wall S4",
-      "on": 203,
+      "on": 205,
       "socket": "j4",
       "by": "j1"
     },
     {
       "part": "Hexkey L2 Wall S5",
-      "on": 205,
+      "on": 207,
       "socket": "j3",
       "by": "j1"
     },
     {
       "part": "Hexkey L2 Planning Desks",
-      "on": 208,
+      "on": 210,
       "socket": "j7",
       "by": "j0"
     },
     {
       "part": "Hexkey Arrivals Roof",
-      "on": 214,
+      "on": 216,
       "socket": "j3",
       "by": "j0"
     },
     {
       "part": "Hexkey Departures Roof",
-      "on": 217,
+      "on": 219,
       "socket": "j3",
       "by": "j0"
     },
     {
       "part": "Docking Hatch",
-      "on": 172,
+      "on": 173,
       "socket": "pad1hatch",
       "by": "base"
     },
     {
       "part": "Docking Clamp Medium",
-      "on": 172,
+      "on": 173,
       "socket": "pad1clamp",
       "by": "-y",
       "config": {
@@ -1393,13 +1405,13 @@
     },
     {
       "part": "Docking Hatch",
-      "on": 173,
+      "on": 174,
       "socket": "pad2hatch",
       "by": "base"
     },
     {
       "part": "Docking Clamp Medium",
-      "on": 173,
+      "on": 174,
       "socket": "pad2clamp",
       "by": "-y",
       "config": {
@@ -1416,13 +1428,13 @@
     },
     {
       "part": "Docking Hatch",
-      "on": 174,
+      "on": 175,
       "socket": "pad3hatch",
       "by": "base"
     },
     {
       "part": "Docking Clamp Medium",
-      "on": 174,
+      "on": 175,
       "socket": "pad3clamp",
       "by": "-y",
       "config": {
@@ -1439,13 +1451,13 @@
     },
     {
       "part": "Docking Hatch",
-      "on": 175,
+      "on": 176,
       "socket": "pad4hatch",
       "by": "base"
     },
     {
       "part": "Docking Clamp Medium",
-      "on": 175,
+      "on": 176,
       "socket": "pad4clamp",
       "by": "-y",
       "config": {
@@ -1462,13 +1474,13 @@
     },
     {
       "part": "Docking Hatch",
-      "on": 176,
+      "on": 177,
       "socket": "pad5hatch",
       "by": "base"
     },
     {
       "part": "Docking Clamp Medium",
-      "on": 176,
+      "on": 177,
       "socket": "pad5clamp",
       "by": "-y",
       "config": {
@@ -1485,13 +1497,13 @@
     },
     {
       "part": "Docking Hatch",
-      "on": 191,
+      "on": 193,
       "socket": "pad6hatch",
       "by": "base"
     },
     {
       "part": "Docking Clamp Medium",
-      "on": 191,
+      "on": 193,
       "socket": "pad6clamp",
       "by": "-y",
       "config": {
@@ -1508,13 +1520,13 @@
     },
     {
       "part": "Docking Hatch",
-      "on": 192,
+      "on": 194,
       "socket": "pad7hatch",
       "by": "base"
     },
     {
       "part": "Docking Clamp Medium",
-      "on": 192,
+      "on": 194,
       "socket": "pad7clamp",
       "by": "-y",
       "config": {
@@ -1531,13 +1543,13 @@
     },
     {
       "part": "Docking Hatch",
-      "on": 193,
+      "on": 195,
       "socket": "pad8hatch",
       "by": "base"
     },
     {
       "part": "Docking Clamp Medium",
-      "on": 193,
+      "on": 195,
       "socket": "pad8clamp",
       "by": "-y",
       "config": {
@@ -1554,13 +1566,13 @@
     },
     {
       "part": "Docking Hatch",
-      "on": 194,
+      "on": 196,
       "socket": "pad9hatch",
       "by": "base"
     },
     {
       "part": "Docking Clamp Medium",
-      "on": 194,
+      "on": 196,
       "socket": "pad9clamp",
       "by": "-y",
       "config": {
@@ -1577,13 +1589,13 @@
     },
     {
       "part": "Docking Hatch",
-      "on": 195,
+      "on": 197,
       "socket": "pad10hatch",
       "by": "base"
     },
     {
       "part": "Docking Clamp Medium",
-      "on": 195,
+      "on": 197,
       "socket": "pad10clamp",
       "by": "-y",
       "config": {
@@ -1600,13 +1612,13 @@
     },
     {
       "part": "Docking Hatch",
-      "on": 202,
+      "on": 204,
       "socket": "pad11hatch",
       "by": "base"
     },
     {
       "part": "Docking Clamp Medium",
-      "on": 202,
+      "on": 204,
       "socket": "pad11clamp",
       "by": "-y",
       "config": {
@@ -1623,13 +1635,13 @@
     },
     {
       "part": "Docking Hatch",
-      "on": 203,
+      "on": 205,
       "socket": "pad12hatch",
       "by": "base"
     },
     {
       "part": "Docking Clamp Medium",
-      "on": 203,
+      "on": 205,
       "socket": "pad12clamp",
       "by": "-y",
       "config": {
@@ -1646,13 +1658,13 @@
     },
     {
       "part": "Docking Hatch",
-      "on": 204,
+      "on": 206,
       "socket": "pad13hatch",
       "by": "base"
     },
     {
       "part": "Docking Clamp Medium",
-      "on": 204,
+      "on": 206,
       "socket": "pad13clamp",
       "by": "-y",
       "config": {
@@ -1669,13 +1681,13 @@
     },
     {
       "part": "Docking Hatch",
-      "on": 205,
+      "on": 207,
       "socket": "pad14hatch",
       "by": "base"
     },
     {
       "part": "Docking Clamp Medium",
-      "on": 205,
+      "on": 207,
       "socket": "pad14clamp",
       "by": "-y",
       "config": {
@@ -1692,13 +1704,13 @@
     },
     {
       "part": "Docking Hatch",
-      "on": 206,
+      "on": 208,
       "socket": "pad15hatch",
       "by": "base"
     },
     {
       "part": "Docking Clamp Medium",
-      "on": 206,
+      "on": 208,
       "socket": "pad15clamp",
       "by": "-y",
       "config": {
@@ -1715,8 +1727,8 @@
     },
     {
       "part": "Docking Clamp Large",
-      "on": 101,
-      "socket": "berthN",
+      "on": 55,
+      "socket": "haulerN",
       "by": "-y",
       "config": {
         "sizeX": 40.9,
@@ -1732,8 +1744,8 @@
     },
     {
       "part": "Docking Clamp Large",
-      "on": 101,
-      "socket": "berthS",
+      "on": 55,
+      "socket": "haulerS",
       "by": "-y",
       "config": {
         "sizeX": 40.9,
@@ -1742,6 +1754,40 @@
         "atX": 0,
         "atY": 2,
         "atZ": 12.15,
+        "startOn": true
+      },
+      "paint": "#3e6b5a",
+      "finish": "painted plating"
+    },
+    {
+      "part": "Docking Clamp Large",
+      "on": 143,
+      "socket": "frigateN",
+      "by": "-y",
+      "config": {
+        "sizeX": 59.3,
+        "sizeY": 18.7,
+        "sizeZ": 21.1,
+        "atX": 0,
+        "atY": 2,
+        "atZ": -11.55,
+        "startOn": true
+      },
+      "paint": "#3e6b5a",
+      "finish": "painted plating"
+    },
+    {
+      "part": "Docking Clamp Large",
+      "on": 143,
+      "socket": "frigateS",
+      "by": "-y",
+      "config": {
+        "sizeX": 59.3,
+        "sizeY": 18.7,
+        "sizeZ": 21.1,
+        "atX": 0,
+        "atY": 2,
+        "atZ": 11.55,
         "startOn": true
       },
       "paint": "#3e6b5a",
