@@ -257,7 +257,7 @@ A plan (in `Crew/Controllers.json` "kinds", or a power file's "plan"):
 ```
 
 Roles are cargo, escort, raider and warship; missions convoy, raid, defend and patrol. A kind with no plan has no economy (fields and trades
-nothing; since the generated faction vehicles went, 2026-11-21, the placeholders are the hand-built 4x4 Truck, Buggy and Hood Gun Buggy). Bills then: IT Box Truck 1 516 units (109 parts), IT Technical 2 403, Raider Buggy 1 373, Raider Technical 1 371, Mercenary
+nothing; since the generated faction vehicles went, 2026-11-21, the placeholders are the hand-built 4x4 Truck for cargo and the Hood Gun Buggy for every armed role). Bills then: IT Box Truck 1 516 units (109 parts), IT Technical 2 403, Raider Buggy 1 373, Raider Technical 1 371, Mercenary
 Technical 2 393, Mercenary Gun Wagon 1 479.
 
 ### Saves and network

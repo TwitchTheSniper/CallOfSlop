@@ -8,7 +8,7 @@ kit's one style and still makes the ore loop's Ore Hauler and Excavators. The Tr
 
 - **Kept for the new styles:** every generator and shape, the archetypes (their weights still name IT, so none is taken)
   and the IT-flavoured parts (Office parts, the Server Rack), which the ships and the IT desk use.
-- **Placeholders:** the powers' fleets (`Crew/Controllers.json`) name the hand-built 4x4 Truck, Buggy and Hood Gun Buggy;
+- **Placeholders:** the powers' fleets (`Crew/Controllers.json`) name the hand-built 4x4 Truck (cargo) and Hood Gun Buggy (every armed role);
   the crew checks fly the hand-built Small Helicopter and the convoy check drives the hand-built ground vehicles (its
   followers now keep 9.7 m off their places, inside the 20 m limit). Warm-ups and help text name Militia.
 - **Left alone:** the ships' IT-style paint (the Zero Day, the Satchel, the Packet Spine) and the `it` dress style.
