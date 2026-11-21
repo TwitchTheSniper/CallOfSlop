@@ -714,7 +714,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   ("-z table"), Panel Former and Laser Cutter Cores ("-z"); links carry socket indices past an old build's lists.
     // 425: hull dress (Sean, 2026-11-21, option B): run-time part kinds Hull Dress (...) and plain skins (Hull Section style -),
     //   the Building Station's Dress job ("Dress skins") and its settings dressStyle/dressSalt/dressExtras in the unused BayWidth/Depth/Height slots.
-    public const ushort ProtocolVersion = 425;
+    // 426: the physics gun's pull on a fitted module is in each hand of the mode-state tail (Sean, 2026-11-21): u16 ship, then
+    //   u16 plate, u16 module body, CmVec beam point and u8 shake, so everyone sees its beam and the module shake (ModulePullLook.cs).
+    public const ushort ProtocolVersion = 426;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

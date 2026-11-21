@@ -1319,6 +1319,7 @@ public static unsafe partial class Program
         // (a client's constructs were blended to this frame's pose in Game.UpdateSandboxSeats, before the camera was set)
         ConstructRender.Now = now;
         ConstructRender.ShellRigs = ScenePresentation.Enabled; // (robot shells nobody wears: drawn as worn ones, below)
+        GatherModulePulls(g, now); // (a module the physics gun pulls on shakes: ModulePullLook.cs)
         ConstructRender.Draw(Gfx, g.Constructs, g.TickAlpha, blendTicks: g.IsServer);
         ConstructRender.ShellRigs = false;
         if (ConstructRender.ShellRigCount > 0)
