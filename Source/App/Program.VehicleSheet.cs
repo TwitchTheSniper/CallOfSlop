@@ -6,7 +6,7 @@ using CallOfSlop.VehicleKit;
 namespace CallOfSlop;
 
 /// <summary>
-/// <c>--vehicle-sheet "Bandit Box Truck" [--seeds N] [--from S] [--seed-list A,B] [--map NAME]</c>: a contact sheet for grading (docs/vehiclekit/VEHICLEKIT.md, "Quality tools"):
+/// <c>--vehicle-sheet "IT Box Truck" [--seeds N] [--from S] [--seed-list A,B] [--map NAME]</c>: a contact sheet for grading (docs/vehiclekit/VEHICLEKIT.md, "Quality tools"):
 /// one PNG next to the log, vehicle_sheet_&lt;Name&gt;.png, a cell a seed with its side and front three-quarter views (the same pictures as --vehicle-shots), labelled with the seed and any grade
 /// it has. A seed that doesn't generate gets a dark cell saying so. Default 12 seeds. Runs under a virtual X server, then the game quits. For the user to grade when they ask: never sent anywhere.
 /// </summary>

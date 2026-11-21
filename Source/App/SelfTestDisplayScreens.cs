@@ -283,9 +283,9 @@ public static partial class SelfTest
         Says(ex, "Working", "Extruding", "at work");
         est.Busy = false;
         Says(ex, "Idle", "Waiting", "stopped");
-        var former = ConstructEdits.DropLoose(w, ConstructParts.Need("Wheel Former"), new Vector3(9, 10, 12), Quaternion.Identity)!;
+        var former = ConstructEdits.DropLoose(w, ConstructParts.Need("Grow Former"), new Vector3(9, 10, 12), Quaternion.Identity)!;
         w.StoreOf(former, 0)!.Busy = true;
-        Says(former, "Working", "Forming", "a Wheel Former");
+        Says(former, "Working", "Forming", "a Grow Former");
         var rec = ConstructEdits.DropLoose(w, ConstructParts.Need("Recycler"), new Vector3(-9, 10, 12), Quaternion.Identity)!;
         var rst = w.StoreOf(rec, 0)!;
         Says(rec, "Fault", "No power", "no battery");

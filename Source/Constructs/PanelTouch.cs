@@ -40,7 +40,6 @@ public static class PanelTouch
         ["flight.strength"] = (w, c, part, player, tick) => ConstructFlight.Touch(w, c, "strength"),
         ["flight.altitude"] = (w, c, part, player, tick) => ConstructFlight.Touch(w, c, "altitude"),
         ["flight.heading"] = (w, c, part, player, tick) => ConstructFlight.Touch(w, c, "heading"),
-        ["office.advert"] = (w, c, part, player, tick) => OfficeParts.ClickAdvert(c, part, 0),
         ["line.run"] = (w, c, part, player, tick) => ProductionLines.Button1(w, c, part), // (on the bill page: Add, Send, Clear: WorkOrders.cs)
         ["line.next"] = (w, c, part, player, tick) => ProductionLines.Button2(w, c, part),
         ["line.recipe"] = (w, c, part, player, tick) => ProductionLines.Button3(w, c, part),
@@ -53,7 +52,6 @@ public static class PanelTouch
         ["machine.recipe"] = (w, c, part, player, tick) => ConstructEdits.NextRecipe(c, part), // (a machine's Recipe button: the picker opens on this PC, Program.MachineRecipePicker; this step only where it can't)
         ["router.spill"] = (w, c, part, player, tick) => RouterScreen.NextSpill(c, part), // (a Router's screen: where a piece with no order goes)
         ["router.hold"] = (w, c, part, player, tick) => RouterScreen.ToggleHold(c, part),
-        ["office.advert2"] = (w, c, part, player, tick) => OfficeParts.ClickAdvert(c, part, 1),
         ["view.up"] = (w, c, part, player, tick) => null, // (a list's Up and Down are this PC's own: Program.PointerFrame scrolls the panel and sends nothing)
         ["view.down"] = (w, c, part, player, tick) => null,
     };

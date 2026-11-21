@@ -1,11 +1,13 @@
 # Vehicle kit: shape grammar, variety and identity
 
+> The Raider, Salvager and Mercenary styles (once Bandit, Scam and British) and their 141 vehicles were removed on 2026-11-21 (docs/removals-notes.md). Only IT ships vehicles now, and Militia makes the ore loop's two. Where this page names the removed styles, it records measurements taken while they existed.
+
 Kit 2's shape grammar, kit 3's layered variety, identity and weak points. Part of the vehicle kit guide: index in VEHICLEKIT.md.
 
 ## Shape grammar
 
 Kit 1 made each shape with one generator: a Box Truck was always a hull on a chassis with the same nose, room and tail in the same places, so seeds differed in parts
-and hardly at all in outline (Bandit Box Truck, November 2026: silhouette 0.057 of the distance against 0.39 for parts). **Kit 2** (`VehicleGrammar.cs`) assembles the
+and hardly at all in outline (Raider Box Truck, November 2026: silhouette 0.057 of the distance against 0.39 for parts). **Kit 2** (`VehicleGrammar.cs`) assembles the
 heavy shapes from **modules** instead, so the outline varies with the seed while every part still comes from the style.
 
 **Which kit.** `VehicleKitVersion.For(generator, seed)`: `Force` (`--kit N`), else kit 1 for a shape with no recipe (the Fuel Trailer
@@ -64,21 +66,19 @@ planned again once, and the better of the two is kept.
 
 | | kit 1 | kit 2 |
 | --- | --- | --- |
-| Bandit Box Truck, seeds 1-20: silhouette part / nearest neighbour / mean pair | 0.057 / 0.066 / 0.162 | 0.116 / 0.128 / 0.222 |
-| Bandit Box Truck: seeds closer than 0.08 | 14 in 6 groups | 2 in 1 group |
-| Highland Box Truck, seeds 1-20: silhouette / nearest neighbour | 0.051 / 0.076 | 0.103 / 0.120 |
-| Bandit, every shape, 6 seeds each: nearest neighbour | 0.112 | 0.134 |
-| Highland, every shape: nearest neighbour; Box Truck and War Bus apart | 0.103; 0.212 | 0.126; 0.230 |
-| Generation failures, Bandit and Highland, 10 seeds of each recipe shape | 1 of 100 | 0 of 100 (with retries) |
-| Full check (`--sweep-vehicle`), Bandit Box Truck / War Bus / Flatbed Fort | 8 of 12 / 4 of 10 / 2 of 10 | 12 of 12 / 12 of 12 / 10 of 10 |
-| Generation, mean (worst) per seed, Bandit | 247 ms (652) | 242 ms (1196, a retry) |
+| Raider Box Truck, seeds 1-20: silhouette part / nearest neighbour / mean pair | 0.057 / 0.066 / 0.162 | 0.116 / 0.128 / 0.222 |
+| Raider Box Truck: seeds closer than 0.08 | 14 in 6 groups | 2 in 1 group |
+| Raider, every shape, 6 seeds each: nearest neighbour | 0.112 | 0.134 |
+| Generation failures, Raider and 10 seeds of each recipe shape | 1 of 100 | 0 of 100 (with retries) |
+| Full check (`--sweep-vehicle`), Raider Box Truck / War Bus / Flatbed Fort | 8 of 12 / 4 of 10 / 2 of 10 | 12 of 12 / 12 of 12 / 10 of 10 |
+| Generation, mean (worst) per seed, Raider | 247 ms (652) | 242 ms (1196, a retry) |
 
 Kit 1's check failures (a chest in a short room's middle, a crooked patch inside a hull, a boxy bus) are what the grammar's rules above avoid; kit 1's committed seeds
 passed, and its code is unchanged. The Silhouette rules are the grammar's rules: separate masses (a cab, a gap, a room, a bed or a tank, each its own height), a roofline
 that steps, wheels in the open, a room only for a crew and loot.
 
 **Adding to it.** A module is a row in `Catalogue` plus its body in `ShapeGrammar.Build` (reuse the kit-1 generator's code for it, put where the plan says); a recipe is a
-row in `Recipes`. Sweep the shapes it can appear in with `--sweep-vehicle "Bandit Box Truck" --seeds 12 --kit 2` (the full check) and measure with `--diversity ... --kit 2`.
+row in `Recipes`. Sweep the shapes it can appear in with `--sweep-vehicle "Raider Box Truck" --seeds 12 --kit 2` (the full check) and measure with `--diversity ... --kit 2`.
 
 ## Layered variety
 
@@ -100,13 +100,13 @@ layer by its name: name it for what it decides. A layer left unset takes the see
 
 **The API.** `VehicleLayers(Chassis, Body, Kit, Wear)`, each an optional seed. `VehicleRegistry.Make(g, seed, layers: new(Wear: 99))` is seed 7's truck with seed 99's wear;
 `new(Chassis: 42)` the same body on another chassis. `game.VehicleSpawn.Request(style, shape, seed, ground, yaw, ..., layers: new(Wear: 99))` does the same in game
-(nothing on the wire: only the server generates). A vehicle with overrides is named for them, "Bandit Box Truck 7 [wear 99]", so it never reads as a committed seed, and
+(nothing on the wire: only the server generates). A vehicle with overrides is named for them, "Raider Box Truck 7 [wear 99]", so it never reads as a committed seed, and
 `Vehicle.Layers`, `VehicleGenJob.Layers` and the kit line carry every layer's seed: `// kit 3; seeds chassis 42 body 7 kit 7 wear 7, chassis 3 axles, tandem 1.5 m, front
 under the hood, inset 1 m, coil/hydraulic, wing 0.5, wear age 0.64 (11 rusty, 15 dirty, 0 sooty, 1 patched, 1 rusted out), body room, ...`. Only the grammar's shapes
 have layers: the Technical, the trailers and the Tanker Rig refuse them (kit 1; the Double Decker has a recipe since body styles phase 5), and so does a request for them.
 
 **What "independent" means.** Each layer's dice are its own, but what it builds sits on the others: a new chassis moves the rear axle, so the guns' spots clear of it can move
-(kit decides which gun, the axles where it may stand), and a different kit puts panniers on, so the wear's rust lands on a different set of panels. Measured on Bandit Box
+(kit decides which gun, the axles where it may stand), and a different kit puts panniers on, so the wear's rust lands on a different set of panels. Measured on Raider Box
 Truck 5 with each layer varied over 8 seeds (`--vary`, mean pair distance): wear 0.000 (it moved no part and no trait, only paint, patches and deck edges, which the
 distance doesn't count); kit 0.068 (only the guns, stores and dressing: length, wheelbase, track, suspension, body and cab never varied); chassis 0.099 (wheelbase and
 track 4 and 3 values, 4 kinds of suspension; length, body, cab and guns never varied); body 0.191 (outline, length 6 values, cab 4; the axle layout 7 of 8 the same, and
@@ -120,8 +120,8 @@ the suspension follows the body where a body module limits the gear, as a walled
   front axle; a moved front axle keeps kit 2's track and leaves the hood's fenders off (`Vehicle.NoFenders`), which stand where kit 2's wheels are.
 - `BodyRange`: how segment lengths lean in the recipe's range, the room sections' height weights (tall, low, narrow), how often the roofline steps, how often a brow and
   a tail are raked down. The defaults are kit 2's rolls.
-- `WearProfile`: the shares of rusty, dirty and sooty panels, patch repairs, rusted-out deck edges, and the age range that scales them. Bandit heavy, the IT Department
-  light, the Clan "well loved" (mud and mended, little rust), the Ministry and the Call Centre between.
+- `WearProfile`: the shares of rusty, dirty and sooty panels, patch repairs, rusted-out deck edges, and the age range that scales them. Raider heavy, IT
+  light, the Mercenary and the Salvagers between.
 
 The corners come from the style's own `HeavyGear`: a chassis takes one of its recipes, then (by the table's odds) the front or the rear of another recipe (the rear with its
 differential and floor height: a swing arm's throw is what lets a floor sit low), a wheel of the same class (at the rear under a body, never a bigger one: a wheel's top meets
@@ -132,7 +132,7 @@ suspensions have no part of a size for these vehicles (the Bogie parts are track
 
 **Wear and the checks.** Wear never touches a room's hull (rays out of a room find no new hole), a fuel tank, a tyre, a gun, the frame (stacked beams of one colour don't
 fight) or anything with slots, and its paint is only ever one of the style's own colours, because the identity score counts a painted part as the style's only when its colour
-is in the palette: a mixed "rusty beige" read as foreign paint and cost the Bandit Box Truck 0.04 of identity before it was changed. So for every style but the Bandits, whose
+is in the palette: a mixed "rusty beige" read as foreign paint and cost the Raider Box Truck 0.04 of identity before it was changed. So for every style but the Raiders, whose
 "rust" role is rust, rust shows as their panel colours and the wear reads mostly as dirt, soot, patches and missing plates. A patch is a freeform weld, which the build rules
 don't check, so `Vehicle.ClearOf` tests its box against every part's bounds first. Deck cells only rust out on an open deck's edge (bed, porch, rack, plated hood) and never
 beside a hole or a whole plate. **Not done:** bent trim. (Kit 5's lofted cabs carry their windscreens and back windows as glass parts of their own since body styles phase 3, so a shot breaks the glass, not the cab.)
@@ -145,17 +145,15 @@ and plan fill limits, not half a point: one built at 62.0 % after measuring 61.6
 
 | | kit 2 | kit 3 |
 | --- | --- | --- |
-| Bandit Box Truck, seeds 1-20: mean pair / nearest neighbour / least | 0.222 / 0.128 / 0.074 | 0.238 / 0.179 / 0.157 |
+| Raider Box Truck, seeds 1-20: mean pair / nearest neighbour / least | 0.222 / 0.128 / 0.074 | 0.238 / 0.179 / 0.157 |
 | the same: layout part / silhouette part; seeds closer than 0.08 | 0.266 / 0.116; 2 | 0.306 / 0.118; none |
 | the same, traits: wheelbase / wheelbase share of length / track / wheel sets / suspension kinds (values) | 8 / 7 / 3 / 4 / 5 | 10 / 7 / 6 / 8 / 10 |
-| Highland Box Truck, seeds 1-12: mean pair / nearest / layout; suspension kinds, wheel sets, 3-axle share | 0.220 / 0.143 / 0.260; 4, 3, 33 % | 0.239 / 0.167 / 0.315; 8, 7, 58 % |
 | IT War Bus, seeds 1-12: mean pair / nearest / layout; suspension kinds, wheel sets | 0.180 / 0.128 / 0.210; 5, 4 | 0.203 / 0.143 / 0.227; 6, 5 |
-| Highland, every shape, 6 seeds each: mean pair / nearest neighbour | 0.328 / 0.126 | 0.333 / 0.140 |
 | IT, every shape, 6 seeds each: mean pair / nearest neighbour | 0.326 / 0.119 | 0.332 / 0.134 |
-| Identity mean by style, `--kit-report --seeds 4` (Bandit, IT, Highland, Call Centre, British, Militia) | 0.95, 0.90, 0.95, 0.88, 0.91, 0.91 | 0.96, 0.89, 0.95, 0.88, 0.91, 0.91 |
+| Identity mean by style, `--kit-report --seeds 4` (Raider, IT, Salvager, Mercenary, Militia) | 0.95, 0.90, 0.95, 0.88, 0.91, 0.91 | 0.96, 0.89, 0.95, 0.88, 0.91, 0.91 |
 | Weak points all there and hittable, same run | 31/31, 26/32, 32/32, 21/32, 34/34, 32/32 | 30/30, 24/32, 32/32, 21/32, 34/34, 32/32 |
-| Generation failures over every style and shape, 4 seeds | 3 of 196 (Technical, kit 1) | 4 of 196 (the same 3, a Bandit Scrap Tanker) |
-| Full check (`--sweep-vehicle --seeds 6`): Bandit Box Truck, IT War Bus, Highland Flatbed Fort, British Gun Wagon | 6, 6, 6, 6 of 6 | 6, 5, 6, 6 of 6 |
+| Generation failures over every style and shape, 4 seeds | 3 of 196 (Technical, kit 1) | 4 of 196 (the same 3, a Raider Scrap Tanker) |
+| Full check (`--sweep-vehicle --seeds 6`): Raider Box Truck, IT War Bus Flatbed Fort, Mercenary Gun Wagon | 6, 6, 6, 6 of 6 | 6, 5, 6, 6 of 6 |
 | Generation, mean over every style and shape (load varied) | 312 ms (worst 2182) | 348 ms (worst 1840) |
 
 Kit 3's one full-check failure (IT War Bus 5) is a Network Switch trophy on a Long Hood's top socket, coplanar with the V8 Engine under it: a pairing kit 2 can roll too, not
@@ -198,7 +196,7 @@ left out and the rest weighed up:
 | traits | 0.20 | Characteristic parts against `PartTarget`, and for a grammar vehicle the mean of its modules' weights; the mean of the two. |
 | silhouette | 0.10 (0.15) | Each of the five outline numbers in range scores 1, falling to 0 a quarter of the range (plus 0.05) outside it. |
 | weak points | 0.15 | Each rule that applies: 1 there and hittable, 0.25 there but covered, 0 missing. |
-| section | 0.10 (none) | Each room bay from the front (`FrontProfile`) against the nearest of the style's body languages as the style draws them (`BodyStyleRule`): within `SectionFloor` (0.008 mean difference) reads 1, `SectionScale` (0.03) further 0; the mean over the bays. No room: left out. A pod on a Bandit truck reads less Bandit; kit 3's fixed bays read about 0.45 on an IT bus. |
+| section | 0.10 (none) | Each room bay from the front (`FrontProfile`) against the nearest of the style's body languages as the style draws them (`BodyStyleRule`): within `SectionFloor` (0.008 mean difference) reads 1, `SectionScale` (0.03) further 0; the mean over the bays. No room: left out. A pod on a Raider truck reads less Raider; kit 3's fixed bays read about 0.45 on an IT bus. |
 
 The breakdown reads `0.78 as IT: marks 1/2 (no mast or dish); palette 100 % (4/4 roles); traits 0.92 (parts 1.00, modules 0.83); silhouette 5/5; weak points 2/3
 (antenna missing, tyres 6/6 hittable, fuel 1/1 hittable)`.
@@ -211,7 +209,7 @@ crate in a room's magazine or an antenna under a rack counts as covered. `Min` o
 are a geometric test: they don't know a part's health, armour or what a round does on the way, and a hit on a part's own other face counts as a hit.
 
 **Guaranteed marks (`Vehicle.GuaranteeMarks`, `VehicleMarks.cs`).** Kit 2 doesn't leave a mark to chance: after the dressing (`Trim`), every mark of the signature that
-applies and that the vehicle has too few parts of (`VehicleIdentity.Lacking`, by name; a mark picked by role, the Bandit's fuel in the open, is the shape's to carry) gets
+applies and that the vehicle has too few parts of (`VehicleIdentity.Lacking`, by name; a mark picked by role, the Raider's fuel in the open, is the shape's to carry) gets
 one, as the Pipe Box pass stands its box. Each mark rolls on its own fork of the seed (`"mark " + label`), so nothing else of a seed moves. Its parts are the mark's names
 the style lists in its `mast`, `spike`, `gear` and `trophy` slots, as often as it lists them, then the rest of the names; it tries them on a ranked list of spots:
 
@@ -234,25 +232,24 @@ costs at most one more plan (a shape that can't carry a mark would otherwise pay
 Kit 1, the committed seeds included, is never re-planned: it is only reported. `--no-identity-gate` turns the re-plan off.
 
 **Against every style.** `--identity` and the quality tools score each vehicle against every style in `Styles.All` and report any that reads more as another style than its own.
-Bandit is nearly always the runner-up: many styles start from the Bandit slots, every vehicle carries its fuel in the open, and an Iron Spike is a Bandit mark.
+Raider is nearly always the runner-up: many styles start from the Raider slots, every vehicle carries its fuel in the open, and an Iron Spike is a Raider mark.
 
 **Measured** (6 seeds of every shape a style ships, generation only, 2026-11-06; kit 1 for the Technical, the trailers, the Tanker Rig and the Double Decker, kit 2 for the
 rest; `--kit-report --seeds 6`):
 
 | Style | Mean identity | Weak points all pass | Read as another style | Kit 2 with every mark, gate off / on | Closest margin to another style |
 | --- | --- | --- | --- | --- | --- |
-| Bandit | 0.94 | 47/47 | 0 | 22/22 / 22/22 | 0.23 (Militia) |
-| IT | 0.89 | 35/48 | 0 | 19/26 / 22/26 | 0.11 (Bandit) |
-| Call Centre | 0.89 | 35/48 | 0 | 14/23 / 20/23 | 0.07 (Bandit) |
-| Highland | 0.96 | 48/48 | 0 | 20/20 / 20/20 | 0.18 (Bandit) |
-| British | 0.89 | 52/52 | 0 | 13/24 / 15/24 | 0.10 (Bandit) |
-| Militia | 0.91 | 48/48 | 0 | 30/30 / 30/30 | 0.10 (Bandit) |
+| Raider | 0.94 | 47/47 | 0 | 22/22 / 22/22 | 0.23 (Militia) |
+| IT | 0.89 | 35/48 | 0 | 19/26 / 22/26 | 0.11 (Raider) |
+| Salvager | 0.89 | 35/48 | 0 | 14/23 / 20/23 | 0.07 (Raider) |
+| Mercenary | 0.89 | 52/52 | 0 | 13/24 / 15/24 | 0.10 (Raider) |
+| Militia | 0.91 | 48/48 | 0 | 30/30 / 30/30 | 0.10 (Raider) |
 
-What it found: the IT and Call Centre vehicles carry no mast or dish on 16 and 19 of 42 vehicles with a seat, the most on the Technical (kit 1: one in six has one) and the
-War Bus (kit 2: its roof's sockets go to turrets first, and a re-plan doesn't always help: 2 of the 5 kit-2 IT seeds measured still have none); the British Scrap Tanker often has neither a flag nor
+What it found: the IT and Salvager vehicles carry no mast or dish on 16 and 19 of 42 vehicles with a seat, the most on the Technical (kit 1: one in six has one) and the
+War Bus (kit 2: its roof's sockets go to turrets first, and a re-plan doesn't always help: 2 of the 5 kit-2 IT seeds measured still have none); the Mercenary Scrap Tanker often has neither a flag nor
 anything for tea (no room, no cab shell to dress). Those were a generator's job, not the score's: the guaranteed marks pass above. Tyres and fuel are
-hittable on every vehicle; the only covered weak points seen are the rounds in a room's magazine, which is why the Bandit's "ammo crate" applies to light vehicles only.
-Generation with the gate cost IT and the Call Centre about a fifth more over all their shapes (a War Bus 1.2 s on average, 2.3 s at worst), the rest nothing measurable.
+hittable on every vehicle; the only covered weak points seen are the rounds in a room's magazine, which is why the Raider's "ammo crate" applies to light vehicles only.
+Generation with the gate cost IT and the Salvagers about a fifth more over all their shapes (a War Bus 1.2 s on average, 2.3 s at worst), the rest nothing measurable.
 The silhouette range is the same for every style: outlines come from the shapes, which every style shares, and the styles' 5th to 95th percentiles agreed to a few points,
 so for now the range keeps a style off a box or a sliver rather than telling one from another.
 
@@ -261,11 +258,11 @@ so for now the range keeps a style off a box or a sliver rather than telling one
 | Style | Kit 2 with every mark, before / after | Identity re-plans (kit 2) | Mean identity | Weak points all pass | Dynamic kit-1 Technicals with every mark (seeds 30 to 37) |
 | --- | --- | --- | --- | --- | --- |
 | IT | 22/26 / 26/26 | 7 / 0 | 0.89 / 0.93 | 35/48 / 42/48 | 7/7 |
-| Call Centre | 20/23 / 23/23 | 9 / 0 | 0.89 / 0.93 | 35/48 / 43/48 | 6/7 |
-| British | 15/24 / 24/24 | 11 / 0 | 0.89 / 0.95 | 52/52 / 52/52 | 7/7 |
+| Salvager | 20/23 / 23/23 | 9 / 0 | 0.89 / 0.93 | 35/48 / 43/48 | 6/7 |
+| Mercenary | 15/24 / 24/24 | 11 / 0 | 0.89 / 0.95 | 52/52 / 52/52 | 7/7 |
 
-Every vehicle still short of a mark is a committed kit-1 seed (the IT and Call Centre War Bus 6, Scrap Tanker 1, Gun Wagon 1 and their committed Technicals, the
-British Box Truck 1, Double Decker 1 and 5), which the pass never touches; the antenna weak points that fail are those seeds' missing antennas, and every mark the pass
-placed is hittable. The one dynamic Technical without a mark (Call Centre 32) has its only free spots under the gun's sweep. With no identity re-plans left, a kit-2 IT War
-Bus took 0.78 s on average and 1.2 s at worst in a run as quiet as the one before (its kit-1 shapes took the same time; 1.2 s and 2.2 s before), the Call Centre's
+Every vehicle still short of a mark is a committed kit-1 seed (the IT and Salvager War Bus 6, Scrap Tanker 1, Gun Wagon 1 and their committed Technicals, the
+Mercenary Box Truck 1, Double Decker 1 and 5), which the pass never touches; the antenna weak points that fail are those seeds' missing antennas, and every mark the pass
+placed is hittable. The one dynamic Technical without a mark (Salvager 32) has its only free spots under the gun's sweep. With no identity re-plans left, a kit-2 IT War
+Bus took 0.78 s on average and 1.2 s at worst in a run as quiet as the one before (its kit-1 shapes took the same time; 1.2 s and 2.2 s before), the Salvagers's
 0.60 s and 1.1 s (0.95 s and 1.8 s); later runs with other builds on the 2-core box read up to 1.3 s on average for both kits alike, so read the re-plan count as the cost.

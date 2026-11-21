@@ -77,6 +77,8 @@ public static class RouteRender
                 ref var r = ref c.Routes[k];
                 if (Concealed(c, r) && !ConstructRender.ShowWires)
                     continue; // (wired in the walls: seen with the linking tool)
+                if (r.Type == RouteType.Conveyor && r.Count == 2 && RollerRuns.IsRun(c, k))
+                    continue; // (a Roller Tile run's conveyor: its tiles' rollers are its bed, RollerRuns.cs)
                 var radius = ConstructRoutes.Radius(r.Type);
                 var a = At(c, k, -1);
                 var dirPrev = Vector3.Zero;
@@ -511,7 +513,7 @@ public static class RouteRender
             int part = c.PieceRacks[k];
             if (part >= c.PartCount || world.StoreOf(c, part) is not { ItemCount: > 0 } st)
                 continue;
-            var rd = c.DefOf(part);
+            var rd = ConstructPads.RackDef(c, part); // (a pad's owner tile draws the whole pad's pieces)
             ConstructRackPack.Ensure(rd, st);
             ref var p = ref c.Parts[part];
             var frame = Matrix4x4.CreateFromQuaternion(Rot24.Quat(p.Rot)) * Matrix4x4.CreateTranslation(p.Pos) * SegFrames[p.Seg <= c.JointCount && p.Seg <= Construct.MaxJoints ? p.Seg : 0];

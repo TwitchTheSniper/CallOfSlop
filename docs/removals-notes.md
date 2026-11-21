@@ -1,3 +1,29 @@
+# Old factions, part 2 (2026-11-21)
+
+Karl asked (2026-11-21) for the last of the old story factions to go: Scam, British, Scottish (Highland), Ministry of Slop, Bandit
+and Highland, with their parts, vehicles and references. The crew factions (Traders, Mercenaries, Raiders, Militia, Salvagers,
+Player Crew, Test Hostile) stay; Twitch's faction system runs them on ships.
+
+- **Bandit, British and Scam vehicles gone** (PR 434 first renamed them Raider, Mercenary and Salvager; Karl: remove them, not
+  rename them). The three styles, their 141 blueprints, their per-style tables in the vehicle kit (signature, body language,
+  chassis, wear, roles, cargo, family names, context, the archetypes only they built), loot tables, interior palettes and the 15
+  armoury recipes no other style used are deleted. The Raiders, Mercenaries and Salvagers name no style now (`"styles": []`, as
+  Player Crew). Only IT ships vehicles (51 blueprints with Militia's ore-loop pair); its parts and gear come from
+  `Styles.Base` (the old Bandit lists, never generated itself). Militia's loot table is `militia` (the old `raider` table). The
+  controllers' placeholder fleets (Crew/Controllers.json) for the Raiders and Militia use IT vehicles, as do the crew checks
+  that spawned Raider helicopters and convoys. The Double Decker, Monster Truck and Wagon generators stay, shipped by no style.
+- **Highland style gone:** its 50 blueprints, its slots, signature, body language, chassis, wear, family names, loot tables and
+  palette row. The Traders fly IT alone. Its hull-loft kinds (clinker trim, timber stakes, timber lining, ports) stay in
+  `HullLoft` unused. The vehicle armoury lost its Highland rows.
+- **The Scammers gone:** the Computer's two advert buttons, `GameSandboxScams`, `ScamDesk`, `Story/Office/Scammers.json`, the
+  inbox lines in chat and IT's malware fax. The Computer still emails IT.
+- **Parts moved, not removed** (their Parts tab categories were already by function and didn't change): the Bandit set is the
+  part kit's `scrap_parts` (`Constructs/Parts/Scrap`), the cone and gnome `street_parts` (`Constructs/Parts/Street`), the
+  loudhailer, phone mast and water cooler `signal_parts` (`Constructs/Parts/Signals`). The unused Ministry mine pieces
+  (`Constructs/Parts/Story`: Mine Face, Pit Prop, Rubble) were deleted. The cold war fittings lost their Ministry descriptions.
+- **Left alone:** `Props/British` and the London dev map (the map owner's); "highland" as a word for Caledon's ground; the old
+  vehicle kit history (`docs/archive/vehiclekit/BODY-STYLES-HISTORY.md`). The story engine is removed separately.
+
 # Old production blueprints (2026-11-21)
 
 Sean chose to delete them (2026-11-21) when the Press Core on the block system no longer fitted their old spots: the

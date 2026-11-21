@@ -289,7 +289,7 @@ public static partial class ProductionLines
                 FillLine(world, c, source, card);
                 break;
             case MonitorKind.Rack:
-                FillRack(world, c, source, sd, card);
+                FillRack(world, c, source, ConstructPads.RackDef(c, source), card);
                 break;
             case MonitorKind.Store:
                 StoreMonitor.Fill(world, c, source, sd, card);
@@ -464,8 +464,8 @@ public static partial class ProductionLines
         card.Add(line++, "Racks").Dim(line - 1);
         for (var k = 0; k < rackN && line < rows; k++, line++)
         {
-            var rk = racks[k];
-            var rd = c.DefOf(rk);
+            var rk = ConstructPads.Owner(c, racks[k]); // (a conveyor into a Pad Tile: its pad)
+            var rd = ConstructPads.RackDef(c, rk);
             card.Field(line, rd.Name, nameW, false, 0).Add(line, ' ');
             if (world.StoreOf(c, rk) is { } st)
                 RackLine(rd, st, card, line);

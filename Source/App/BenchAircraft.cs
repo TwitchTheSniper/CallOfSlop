@@ -5,7 +5,7 @@ namespace CallOfSlop;
 
 /// <summary>
 /// <c>--bench-aircraft [STYLE] [--seed N] [--height H] [--seconds S] [--map NAME]</c>: the AI aircraft by hand (docs/vehiclekit/AIRCRAFT.md, "Air spawn" and "Bot pilots").
-/// A command-line probe, not a self-test section: it fails nothing. An offline Sandbox host; a Drone, a Plane and a Helicopter of the style (Bandit by default) made through
+/// A command-line probe, not a self-test section: it fails nothing. An offline Sandbox host; a Drone, a Plane and a Helicopter of the style (IT by default) made through
 /// the real dynamic spawn: first one of each on the ground (it must stand), then each launched H m up (40 by default) on a patrol, flown for S seconds (20) with a line every
 /// 2 s, then the drone and the helicopter told to return and land (up to 30 s). Prints what the pilots' ticks cost and allocated.
 /// </summary>
@@ -14,7 +14,7 @@ public static partial class SelfTest
     public static int BenchAircraft(string[] args)
     {
         string? Arg(string name) => args.SkipWhile(a => !a.Equals(name, StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault();
-        var style = args.SkipWhile(a => !a.Equals("--bench-aircraft", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } first && !first.StartsWith("--", StringComparison.Ordinal) ? first : "Bandit";
+        var style = args.SkipWhile(a => !a.Equals("--bench-aircraft", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } first && !first.StartsWith("--", StringComparison.Ordinal) ? first : "IT";
         var seed = int.TryParse(Arg("--seed"), out var sd) ? sd : 7;
         var height = float.TryParse(Arg("--height"), out var h) ? h : 40;
         var seconds = float.TryParse(Arg("--seconds"), out var s) ? Math.Clamp(s, 2, 60) : 20;

@@ -35,8 +35,11 @@ public sealed partial class Game
         }
         DrawnFrame(c, me.Sim.RideSeg, out var q, out _);
         var rider = ConstructRide.RiderRot(q, me.Sim.RideUp);
-        if (_rideLookBody != me.Sim.RideBody || _rideLookSeg != me.Sim.RideSeg || _rideLookUp != me.Sim.RideUp)
+        if (_rideLookBody != me.Sim.RideBody || _rideLookSeg != me.Sim.RideSeg || _rideLookUp != me.Sim.RideUp || _mmuOn && MmuSteering)
         {
+            // (a worn MMU: its attitude is kept in the world and the mouse turned it about the spacewalker's own axes, so the
+            // look comes into the frame whole; the walker's way below adds yaw and pitch measured at the planet's up, which
+            // in a ship rolled or upside down against the planet turned and pitched the look the wrong way)
             ConstructRide.LookIn(rider, LookDir(LookYaw, LookPitch), out _rideYaw, out _ridePitch);
             _ridePitch = Math.Clamp(_ridePitch, -1.55f, 1.55f);
             (_rideLookBody, _rideLookSeg, _rideLookUp) = (me.Sim.RideBody, me.Sim.RideSeg, me.Sim.RideUp);
@@ -210,6 +213,22 @@ public sealed partial class Game
         var pos = Vector3.Lerp(c.PrevPos, c.Pos, _alpha);
         var rot = Quaternion.Normalize(Quaternion.Slerp(c.PrevRot, c.Rot, _alpha));
         return pos + Vector3.Transform(Vector3.Transform(tickPoint - c.Pos, Quaternion.Conjugate(c.Rot)), rot);
+    }
+
+    /// <summary>
+    /// <paramref name="c"/>'s pose as it is drawn this frame: the host draws between its last two ticks (a body RideDrawnPose
+    /// has posed is there already); a client where it is. For overlays worked out in the input, before the frame's ticks moved
+    /// the bodies (SocketWeldRender): at orbital speed that frame's travel put them a metre off the parts they mark.
+    /// </summary>
+    public void DrawnPose(Construct c, out Vector3 pos, out Quaternion rot)
+    {
+        if (!IsServer || RideDrawnHas(c))
+        {
+            (pos, rot) = (c.Pos, c.Rot);
+            return;
+        }
+        pos = Vector3.Lerp(c.PrevPos, c.Pos, _alpha);
+        rot = Quaternion.Normalize(Quaternion.Slerp(c.PrevRot, c.Rot, _alpha));
     }
 
     /// <summary>Is <paramref name="c"/> at its drawn pose now (RideDrawnPose's set)?</summary>

@@ -141,7 +141,7 @@ public static class VehicleArmoury
         return list.ToArray();
     }
 
-    /// <summary>The tier a vehicle made without a role is armed for: the bandits' rung of the ladder (zombies 1, bandits 2, military 3, high tech 4).</summary>
+    /// <summary>The tier a vehicle made without a role is armed for: the raiders' rung of the ladder (zombies 1, raiders 2, military 3, high tech 4).</summary>
     public const int PlainTier = 2;
 
     /// <summary>One of <paramref name="list"/> for a vehicle with no role: weighted by <see cref="TierWeight"/> at <see cref="PlainTier"/>, one roll as <see cref="Dice.Pick"/> takes.</summary>
@@ -260,7 +260,7 @@ public static class VehicleArmouryCli
         var shapes = shapeOnly != null ? [shapeOnly] : (string[])["Box Truck", "War Bus", "Flatbed Fort", "Gun Wagon", "Scrap Tanker"];
         try
         {
-            VehicleDiversity.Generate(VehicleRegistry.Find("Bandit Box Truck")!, 100); // (one throwaway, so the first seed timed doesn't carry the JIT)
+            VehicleDiversity.Generate(VehicleRegistry.Find("IT Box Truck")!, 100); // (one throwaway, so the first seed timed doesn't carry the JIT)
         }
         catch (Exception ex) when (ex is VehicleKitException or ConstructPartException)
         {

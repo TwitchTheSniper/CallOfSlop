@@ -2,9 +2,7 @@
   "format": "call-of-slop-npc-faction/1",
   "name": "Mercenaries",
   "about": "Guns for hire: they fight anyone not paying them, and fight well.",
-  "styles": [
-    "British"
-  ],
+  "styles": [],
   "modules": {
     "tags": {
       "turret": 1.0,

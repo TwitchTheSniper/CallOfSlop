@@ -908,6 +908,7 @@ public sealed partial class ConstructEdits
             return UsePress(world, player, eye, c, part);
         if (d.IsPieceRack)
         {
+            part = ConstructPads.Owner(c, part); // (a Pad Tile: its pad, the owner tile's store)
             // A Piece Rack: the top piece of the stack looked at (else the last in) comes off, into the hands (a physics-only piece: a body over the rack).
             if (!world.RackPick(c, part, world.StoreOf(c, part)!, eye, look, out var slab, out var lane) || world.RackTakeAt(c, part, slab, lane) is not { } piece)
                 return "the rack is empty";

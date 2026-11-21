@@ -760,7 +760,7 @@ fit: 4 a seed); section switching of the lamps (a wire per lamp still works, one
 
 User feedback (2026-11-11) on the generated interiors: they work, but "look flat and samey" (the same steel everywhere), are "empty and
 cavernous" and have "nothing to do in rooms". Decisions: the look is per faction (materials and colour, the faction's own trim parts, later
-its own layouts: cramped Bandit, orderly Militia). Materials and textures come first; rooms, machines and the ore hauler come after.
+its own layouts: cramped Raider, orderly Militia). Materials and textures come first; rooms, machines and the ore hauler come after.
 
 ### Survey: what an interior part looked like
 
@@ -803,8 +803,8 @@ its own layouts: cramped Bandit, orderly Militia). Materials and textures come f
   paint. Lamps' glow names none.
 - **Trim:** Kick Plate (a 3.6 m deck-plate skirting with a lip, on a wall's low face socket: every crew, work, plant and store kit, two or
   more in halls) and Lane Marking (two edge lines and a worn lane, 3.6 m, in the hangar, storage and production halls). One link each.
-- **Palettes** (`Constructs/Interiors/Palettes.json`, refused with a reason when bad): one per style (default, Bandit, IT, Scam, Highland,
-  British, Militia): wall colours (Bandit's don't match), floor material and colour, crew and plant floors, frame, trim, accent, hazard,
+- **Palettes** (`Constructs/Interiors/Palettes.json`, refused with a reason when bad): one per style (default, Raider, IT, Salvager,
+  Mercenary, Militia): wall colours (Raider's don't match), floor material and colour, crew and plant floors, frame, trim, accent, hazard,
   wear and lamp colour. Room types shift it: medical pale, bridge and workshop dark, quarters, mess and lockers warm, engineering and fuel
   dark with hazard trim, magazine, hangar and production hazard trim. Wear picks the walls' material (wall panelling, worn paint, rusty
   paint), the frames' (steel, dirty steel, soot in plant rooms) and the kick plates' (rusty paint when worn).
@@ -820,11 +820,11 @@ its own layouts: cramped Bandit, orderly Militia). Materials and textures come f
 | Dressing | 1,218 hung, 15 spots refused | 1,531 hung, 62 refused (low spots by doorways and stairs), 2 Jib Cranes (4 before) |
 | Build | 16.0 s (dressing 4.8 s) | 15.9 s (dressing 6.1 s, look 9 ms) |
 
-Bandit: walls rusty paint in five unmatched colours, deck plate floors everywhere, soot on plant rooms' ribs. IT: off-white wall
+Raider: walls rusty paint in five unmatched colours, deck plate floors everywhere, soot on plant rooms' ribs. IT: off-white wall
 panelling, rubber matting floors, teal trim, cool lamps. The same plan otherwise.
 
-**Tried by hand:** `--gen-interior Constructs/Blueprints/TitanWalker.json --seed 1 --style Bandit` and `--style IT` (0 refused, load back
-5,573 parts, drives from the bridge's helm); `--interior-walk` on the Bandit file passes; `--check-construct-parts` finishes.
+**Tried by hand:** `--gen-interior Constructs/Blueprints/TitanWalker.json --seed 1 --style Raider` and `--style IT` (0 refused, load back
+5,573 parts, drives from the bridge's helm); `--interior-walk` on the Raider file passes; `--check-construct-parts` finishes.
 **Not tried:** any picture (whether rooms read as floor, wall and trim at a glance, the new rows' look on Low, Medium and High, the
 lamps' colours), seeds 2 and 3, the other four styles' runs, the in-game spawn of a fitted file.
 

@@ -4,7 +4,7 @@ namespace CallOfSlop.VehicleKit;
 
 /// <summary>
 /// Body styles phase 3 (docs/vehiclekit/BODY-STYLES.md, section 9): one vehicle's roll of its cab and hood in its body's language. The section is the language's
-/// own (a Bandit's slab or ledge, an IT pod, a British bus) drawn with the style's facets at a cab's size; its proportions, the windscreen's rake, the belt line,
+/// own (a Raider's slab or ledge, an IT pod, a Mercenary bus) drawn with the style's facets at a cab's size; its proportions, the windscreen's rake, the belt line,
 /// the hood's width, crown and nose are the style's ranges (<see cref="BodyStyleRule"/>), each on a fork of its own, so nothing else of a seed moves.
 /// </summary>
 public sealed class CabLook

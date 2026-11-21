@@ -2013,7 +2013,15 @@ public sealed class ShipParts : IPartGenerator
     private static int Hang(BuildingParts.Blueprint bp, string part, int on, string sock, string by, int spin = 0) => bp.Hang(part, Holder(bp, on, sock), sock, by, spin);
 
     /// <summary>A ship's flight stabilizer settings: Ship keys (FlightPattern.Ship), the nose on the mouse.</summary>
-    internal static PyDict ShipFlight() => new() { ["keys"] = "Ship", ["mouseAim"] = true };
+    /// <summary>A ship's stabilizer on Ship keys, the nose on the mouse. <paramref name="pitchDamping"/> (percent, 0 the default) for a light ship on long-levered lift jets:
+    /// pointed down past what its jets can hold up, it sinks and comes back level slowly unless its pitch loop is stiffer (the Magpie, the Satchel).</summary>
+    internal static PyDict ShipFlight(int pitchDamping = 0)
+    {
+        var d = new PyDict { ["keys"] = "Ship", ["mouseAim"] = true };
+        if (pitchDamping > 0)
+            d["pitchDamping"] = pitchDamping;
+        return d;
+    }
 
     private static int Paint(BuildingParts.Blueprint bp, int step, string paint, string? finish = null)
     {

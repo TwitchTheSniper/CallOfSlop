@@ -7,9 +7,9 @@ namespace CallOfSlop.PartKit.Generators;
 /// The Extrusion parts (Constructs/Parts/Extrusion) and the Extruder Line blueprint (docs/sandbox/CONSTRUCTS.md, "Extrusion" and "The Wheel
 /// Former"). Was tools/constructs/extrusion_parts.py.
 ///
-/// An Extruder pushes bulk material through a die; a Wheel Former builds a wheel up on its hub, wider or bigger; a Fan Former a whole prop,
-/// an Airframe Former a wing. The Extruder is on the block system (MachineBlocks.cs): one Core, Die Blocks beside it for a bigger die, one
-/// Run-out Table; the Formers still come in the four size classes (until the Grow Former). The sizes are part data (storage.extrude, storage.wheel), so a new line of machines is a row here. Run
+/// An Extruder pushes bulk material through a die; a Grow Former builds a wheel, a prop or a wing up on its hub. Both are on the block system
+/// (MachineBlocks.cs): the Extruder a Core with Die Blocks beside it for a bigger die and Run-out Tables; the Grow Former a Core with Former
+/// Blocks on the floor for its bed and Mast Blocks stacked on it for its height (design page drawing 22). The sizes are part data (storage.extrude, storage.wheel). Run
 /// the part kit's assembling (--gen-parts assembling) after it for the recipes.
 /// </summary>
 public sealed class ExtrusionParts : IPartGenerator
@@ -25,34 +25,6 @@ public sealed class ExtrusionParts : IPartGenerator
     private static List<object?> BladeStyles() => Py.L("Straight", "Scimitar", "Broad paddle", "Swept", "Narrow"); // (Air.json's "bladeStyles", in order)
     private static List<object?> FanKinds() => Py.L("Propeller", "Electric prop", "Helicopter rotor", "Ducted fan", "Tail rotor"); // (Extrusion.json's "fanKinds", in order)
     private static List<object?> Airframes() => Py.L("Wing", "Tail plane", "Fin", "Swept wing, left", "Swept wing, right", "Aileron", "Elevator", "Rudder", "Flap"); // (Extrusion.json's "airframes")
-
-    // Each row as the Python's tuple; numbers keep their Python type (int or float).
-    // Wheel: (class, widest, biggest across, first width, first across, m/s, N of push, bin units, W, kg, health, cells x y z, the hub's row of cells)
-    private static readonly object?[][] Formers =
-    [
-        [Small, 1.5, 3, 0.1, 0.4, 0.1, 6000, 400, 900, 520, 700, null, null],
-        [Medium, 6, 12, 0.5, 2, 0.2, 24000, 2000, 3600, 18000, 6000, new[] { 5, 14, 4 }, 6],
-        [Large, 12, 24, 1, 4, 0.4, 96000, 8000, 14400, 200000, 40000, new[] { 3, 6, 3 }, 3],
-        [Capital, 20, 48, 2, 8, 0.8, 384000, 32000, 57600, 1800000, 240000, new[] { 3, 3, 2 }, 1],
-    ];
-
-    // Fan: (class, biggest across, first across, m/s across, N of push, bin units, W, kg, health, cells x y z, the hub's row of cells)
-    private static readonly object?[][] FanFormers =
-    [
-        [Small, 3, 0.5, 0.1, 6000, 400, 900, 520, 700, null, null],
-        [Medium, 12, 2, 0.2, 24000, 2000, 3600, 18000, 6000, new[] { 5, 14, 4 }, 6],
-        [Large, 48, 4, 0.8, 96000, 8000, 14400, 240000, 48000, new[] { 3, 8, 3 }, 6],
-        [Capital, 64, 8, 1.6, 384000, 32000, 57600, 2400000, 300000, new[] { 3, 5, 2 }, 3],
-    ];
-
-    // Airframe: (class, longest span, widest chord, first span, first chord, m/s of span, N of push, bin units, W, kg, health, cells x y z, the hub's row of cells)
-    private static readonly object?[][] AirframeFormers =
-    [
-        [Small, 6, 3, 0.5, 0.3, 0.25, 6000, 400, 900, 520, 700, null, null],
-        [Medium, 24, 8, 2, 1, 0.5, 24000, 2000, 3600, 18000, 6000, new[] { 5, 14, 4 }, 6],
-        [Large, 96, 24, 4, 2, 1, 96000, 8000, 14400, 240000, 48000, new[] { 3, 8, 3 }, 6],
-        [Capital, 192, 32, 8, 4, 2, 384000, 32000, 57600, 2400000, 300000, new[] { 3, 5, 2 }, 3],
-    ];
 
     private static string NameOf(Cls c, string b) => c.Name.Length > 0 ? $"{c.Name} {b}" : b;
 
@@ -410,46 +382,6 @@ public sealed class ExtrusionParts : IPartGenerator
 
     private static PyDict Seam(PyDict? box, string[] faces) => box!.Update(("seam", Py.L(faces[0], faces[1])));
 
-    private sealed record Head(double X0, double X1, double Y, double Y1, double Z0, double Z, double Z1, double T);
-
-    /// <summary>A big machine's block: origin the centre of cell 0, 0, 0, a hopper let into the back of its top.</summary>
-    private static Head MakeHead(Part p, int[] cells, int hopperCells = 1)
-    {
-        var c = p.Cls;
-        int nx = cells[0], ny = cells[1], nz = cells[2];
-        double x0 = c.Lo(), x1 = c.Hi(nx), y0 = c.Lo(), y1 = c.Hi(ny), z0 = c.Lo(), z1 = c.Hi(nz);
-        var t = c.Cell * 0.1;
-        var z = z0 + hopperCells * c.Cell;
-        var y = y1 - c.Cell * 0.5;
-        p.Add(Box([x0, y0, z0], [x1, y, z1]));
-        p.Add(Box([x0, y, z], [x1, y1, z1]));
-        p.Add(Box([x0, y, z0], [x0 + t, y1, z], Trim));
-        p.Add(Box([x1 - t, y, z0], [x1, y1, z], Trim));
-        p.Add(Box([x0 + t, y, z0], [x1 - t, y1, z0 + t], Trim));
-        // The shared look (look.md, "Machine look"): a dark skirt and side panels, the hopper's rim banded white (in), the die's face banded orange (out) over hazard paint.
-        var m = Math.Min(t * 0.2, 0.03); // (how far a marking stands off its face)
-        p.Add(MachineLook.D([x0 - m, y0 + t * 3, z0 + t], [x0, y - t, z1 - t], MachineLook.Base));
-        p.Add(MachineLook.D([x1, y0 + t * 3, z0 + t], [x1 + m, y - t, z1 - t], MachineLook.Base));
-        MachineLook.Skirt(p, x0, x1, z0, z1, y0, y0 + t * 2, m * 1.5);
-        p.Add(MachineLook.D([x0 - m, y1 - t * 1.6, z0 - m], [x1 + m, y1 - t * 0.4, z0], MachineLook.In));
-        p.Add(MachineLook.D([x0 - m, y1 - t * 1.6, z0], [x0, y1 - t * 0.4, z - t * 0.2], MachineLook.In));
-        p.Add(MachineLook.D([x1, y1 - t * 1.6, z0], [x1 + m, y1 - t * 0.4, z - t * 0.2], MachineLook.In));
-        MachineLook.Arrow(p, 2, z0 - m, -1, 1, -1, (x0 + x1) / 2, y1 - t * 3.6, t * 3, t * 3, MachineLook.In, m);
-        p.Add(MachineLook.D([x0, y1 - t * 1.6, z1], [x1, y1 - t * 0.4, z1 + m], MachineLook.Out));
-        MachineLook.Hazard(p, [x0, y0 + t * 0.2, z1], [x1, y0 + t * 1.6, z1 + m]);
-        return new Head(x0, x1, y, y1, z0, z, z1, t);
-    }
-
-    private static PyDict BinOf(int units, Head hd)
-    {
-        var m = 0.05 * hd.T + hd.T;
-        return Kw(("material", "any"), ("capacity", units),
-            ("min", Py.L(Py.Round(hd.X0 + m, 3), Py.Round(hd.Y + 0.05 * hd.T, 3), Py.Round(hd.Z0 + m, 3))),
-            ("max", Py.L(Py.Round(hd.X1 - m, 3), Py.Round(hd.Y1 - 0.05 * hd.T, 3), Py.Round(hd.Z - 0.05 * hd.T, 3))));
-    }
-
-    private static Dictionary<string, (int, int)> Lim5() => new[] { "+x", "-x", "+y", "-y", "-z" }.ToDictionary(d => d, _ => (3, 3));
-
     private static List<object?> FanConfig(object across, object start) => Py.L(
         Kw(("key", "fanKind"), ("type", "choice"), ("label", "Makes"), ("group", "Prop"), ("options", FanKinds()), ("default", 0),
             ("tooltip", "What it makes. A prop runs on a shaft, an electric one or a ducted fan on its own motor, a helicopter rotor takes collective and cyclic.")),
@@ -457,7 +389,7 @@ public sealed class ExtrusionParts : IPartGenerator
             ("tooltip", "How many blades, 2 to 16. Each has its own health: more take a little more power, push a little harder, and are steadier when one goes.")),
         Kw(("key", "bladeStyle"), ("type", "choice"), ("label", "Blade style"), ("group", "Prop"), ("options", BladeStyles()), ("default", 0),
             ("tooltip", "The blade's shape: a small trade of push, power and top speed. The prop keeps it.")),
-        Kw(("key", "fanDiameter"), ("label", "Across"), ("group", "Prop"), ("unit", "m"), ("min", start), ("max", across), ("step", 0.05), ("default", start),
+        Kw(("key", "fanDiameter"), ("label", "Across"), ("group", "Prop"), ("unit", "m"), ("min", start), ("max", across), ("step", 0.05), ("default", OMin(across, OMax(start, 2))),
             ("tooltip", "How far across. It parts off by itself at this size. Power and speed follow from the size.")));
 
     private static List<object?> AirframeConfig(object span, object chord, object s0, object c0) => Py.L(
@@ -468,109 +400,209 @@ public sealed class ExtrusionParts : IPartGenerator
         Kw(("key", "wingSpan"), ("label", "Span"), ("group", "Airframe"), ("unit", "m"), ("min", s0), ("max", span), ("step", 0.05), ("default", OMin(span, OMax(s0, 2))),
             ("tooltip", "How long. It parts off by itself at this length. Weld pieces along their span for a longer wing.")));
 
-    private static Part Former(object?[] row, bool fan = false, bool air = false)
+    // ---- The Grow Former on the block system (design page drawing 22; MachineBlocks.cs, ConstructGrowFormer.cs) ------------------------
+    // One Grow Former Core (2 x 2 x 2 m), Former Blocks on the floor beside it for its bed, and Mast Blocks (the shared 2 m cube) stacked on
+    // it for the height its hub rides up to. Its Makes setting picks a wheel, a prop or a wing; an order makes what it asks.
+    private const double GrowHubY = 1.2; // the hub's rest height on the Core's face
+    private const double GrowFace = 1.0; // the Core's front face (z), where the hub's plate is
+    private const double BedTile = 0.3, BedDeck = 0.012, BedKerb = 0.02; // a Former Block: its slab, the deck tiles on it and the hazard kerb round the bed
+    private const double GrowRide = 40; // m: how far the hub's carriage and chuck may ride up the slide (the masts' column; drawn only)
+    private const int GrowBlockPush = 1500, GrowBlockPower = 225, GrowBin = 13200; // each block's push (N) and draw (W); a bin of 400 and 100 a block for the biggest bed
+    private static List<object?> GrowMakesNames() => Py.L("Wheel", "Prop", "Wing");
+
+    private static PyDict GrowBlockKey(string role) => role == "core"
+        ? Kw(("family", "grower"), ("role", "core"), ("origin", Py.L(0, 1, 0)))
+        : Kw(("family", "grower"), ("role", role));
+
+    /// <summary>
+    /// The Grow Former Core: a 2 m cube on a frame (corner posts, a top and a foot slab, the body sunk 5 cm between them), its hub on a
+    /// carriage between two slide rails on its face, the part-off saw on an arm beside it, the hopper's port on its back, the drive and
+    /// its oil lines on the right, the screen on the left. The hub's plate and chuck turn while it grows a wheel or a prop and ride up the
+    /// slide as far as the piece's size asks; the wing root clamps glow while it works; the saw strokes.
+    /// </summary>
+    private static Part GrowFormerCore()
     {
-        Cls c;
-        object across, width, d0, w0, speed;
-        int push, units, power, mass, health;
-        int[]? cells;
-        int hubRow;
-        string desc;
-        int I(object? v) => (int)v!;
-        if (air)
+        var p = new Part("Grow Former", Small, Section,
+            "A Grow Former Core: grows a wheel, a prop or a wing on its hub, by its Makes setting or by order. Weld Former Blocks on the floor beside it for its bed and stack Mast Blocks on it for height: a wheel's width fits the bed's length and its diameter the bed's width and the masts plus 2 m; a prop is up to twice the bed's width; a wing's chord fits across the bed and its span runs along it and on over Run-out Tables. Needs power.",
+            role: "storage", group: "Production", color: Violet);
+        const double e = 1, post = 0.16, sunk = 0.95, foot = 0.16, top = 1.84;
+        // The frame: a foot slab and a top slab whole, a post up each corner, the body sunk 5 cm between them (cast panels, not one block).
+        p.Add(Box([-e, 0, -e], [e, foot, e]));
+        p.Add(Box([-e, top, -e], [e, 2, e]));
+        p.Add(Box([-sunk, foot, -sunk], [sunk, top, sunk]));
+        foreach (var (sx, sz) in new[] { (1, 1), (1, -1), (-1, 1), (-1, -1) })
         {
-            (c, across, width, d0, w0, speed) = ((Cls)row[0]!, row[1]!, row[2]!, row[3]!, row[4]!, row[5]!);
-            (push, units, power, mass, health, cells, hubRow) = (I(row[6]), I(row[7]), I(row[8]), I(row[9]), I(row[10]), (int[]?)row[11], row[12] is int h ? h : 0);
-            desc = $"Cuts a wing or a control surface from its settings, up to {Py.G(Py.D(across))} m of span and {Py.G(Py.D(width))} m of chord, of what is in its bin. It parts it off when it is done. Needs power.";
+            double x0 = sx > 0 ? e - post : -e, z0 = sz > 0 ? e - post : -e;
+            p.Add(Box([x0, foot, z0], [x0 + post, top, z0 + post]));
         }
-        else if (fan)
+        p.Sock("bottom", [0, 0, 0], "-y");
+        p.Sock("top", [0, 2, 0], "+y"); // (Mast Blocks: the column its hub rides up)
+        p.Sock("+z", [0, BedTile / 2, e], "+z"); // (Former Blocks: the bed in front of the hub, and beside it)
+        p.Sock("+x", [e, BedTile / 2, 0], "+x");
+        p.Sock("-x", [-e, BedTile / 2, 0], "-x");
+        p.Sock("back", [0, 1, -e], "-z");
+        p.Sock("die", [0, GrowHubY, GrowFace], "+z", kind: "die");
+        p.Stats(2400, 2000, 8, 12);
+        p.Set(("power", GrowBlockPower), ("storage", Kw(
+                ("bulk", Kw(("material", "any"), ("capacity", GrowBin), ("min", Py.L(-0.6, 0.9, -0.9)), ("max", Py.L(0.6, 1.7, -0.3)))),
+                ("wheel", Kw(("grow", true), ("speed", 0.1), ("at", Py.L(0, GrowHubY, GrowFace)), ("maxWidth", 20), ("maxDiameter", 32), ("startWidth", 0.1), ("startDiameter", 0.4),
+                    ("fanMax", 64), ("fanStart", 0.5), ("wingMax", Py.L(32, 192)), ("wingStart", Py.L(0.3, 0.5)), ("bedTop", BedTile + BedDeck + BedKerb),
+                    ("pushForce", GrowBlockPush), ("blockPush", GrowBlockPush), ("blockPower", GrowBlockPower))))),
+            ("machineBlock", GrowBlockKey("core")),
+            ("config", GrowConfig()),
+            ("collider", "boxes")); // (the hub and the saw are looks: their cylinders never become a hull)
+        WithScreen(p, orders: true, faces: ["-x"], width: 0.84, recipe: true);
+        // Its foot: a dark skirt, each side drawn only while no Former Block is welded there (where one is, the bed's kerb takes over).
+        foreach (var (side, mn, mx) in new[]
         {
-            (c, across, d0, speed) = ((Cls)row[0]!, row[1]!, row[2]!, row[3]!);
-            (push, units, power, mass, health, cells, hubRow) = (I(row[4]), I(row[5]), I(row[6]), I(row[7]), I(row[8]), (int[]?)row[9], row[10] is int h ? h : 0);
-            (width, w0) = (0.05, 0.05);
-            desc = $"Makes a whole prop on its hub from its settings, up to {Py.G(Py.D(across))} m across: a propeller, a rotor or a ducted fan. It parts it off when it is done. Needs power.";
-        }
-        else
+            ("+z", new[] { -e, 0.0, e }, new[] { e, foot - 0.02, e + 0.012 }), ("-z", new[] { -e, 0.0, -e - 0.012 }, new[] { e, foot - 0.02, -e }),
+            ("+x", new[] { e, 0.0, -e + 0.003 }, new[] { e + 0.012, foot - 0.02, e - 0.003 }), ("-x", new[] { -e - 0.012, 0.0, -e + 0.003 }, new[] { -e, foot - 0.02, e - 0.003 }),
+        })
+            p.Add(Seam(L(mn, mx, MachineLook.Base), side));
+        // Ribs across the sunk panels at mid height (the body's own tone, so they take its paint), and grease points on the posts.
+        foreach (var (sx, sz) in new[] { (1, 0), (-1, 0), (0, -1) })
         {
-            (c, width, across, w0, d0, speed) = ((Cls)row[0]!, row[1]!, row[2]!, row[3]!, row[4]!, row[5]!);
-            (push, units, power, mass, health, cells, hubRow) = (I(row[6]), I(row[7]), I(row[8]), I(row[9]), I(row[10]), (int[]?)row[11], row[12] is int h ? h : 0);
-            desc = $"Builds a wheel up on its hub: wider, or bigger across, up to {Py.G(Py.D(width))} m wide and {Py.G(Py.D(across))} m across. A Cut signal parts it off. Needs power.";
+            if (sx != 0)
+            {
+                var x0 = sx > 0 ? sunk : -sunk - 0.03;
+                if (sx > 0)
+                    p.Add(L([x0 - 0.004, 0.48, -e + post], [x0 + 0.03, 0.54, e - post], Violet, paintable: true));
+            }
+            else
+                p.Add(L([-e + post, 0.48, -sunk - 0.03], [e - post, 0.54, -sunk + 0.004], Violet, paintable: true));
         }
-        var p = new Part(NameOf(c, air ? "Airframe Former" : fan ? "Fan Former" : "Wheel Former"), c, Section, desc, role: "storage", group: "Production", color: Violet);
-        List<object?> hub;
-        PyDict bulk;
-        if (c == Small)
+        foreach (var (sx, sz) in new[] { (1, 1), (1, -1), (-1, 1), (-1, -1) })
+            p.Add(L([sx * (e - post / 2) - 0.02, top - 0.12, sz * e - (sz > 0 ? 0 : 0.012)], [sx * (e - post / 2) + 0.02, top - 0.08, sz * e + (sz > 0 ? 0.012 : 0)], MachineLook.Accent));
+        // The top: two lifting eyes and a hazard band, only while no Mast Block stands on it.
+        foreach (var x in new[] { -0.6, 0.6 })
+            p.Add(Seam(L([x - 0.1, 2, -0.06], [x + 0.1, 2.14, 0.06], MachineLook.Steel, "steel"), "+y"));
+        p.Add(Seam(MachineLook.D([-e + 0.003, 2, e - 0.12], [e - 0.003, 2.012, e - 0.003], MachineLook.Accent, "hazard paint"), "+y"));
+
+        // ---- The face: the slide, the carriage and the hub ----
+        const double f = GrowFace;
+        foreach (var x in new[] { -0.46, 0.46 })
         {
-            p.Add(Box([-0.6, 0, -0.75], [0.6, 2.05, 0.75]));
-            p.Add(Box([-0.6, 2.05, -0.05], [0.6, 2.2, 0.75]));
-            p.Add(Box([-0.6, 2.05, -0.75], [-0.56, 2.2, -0.05], Trim));
-            p.Add(Box([0.56, 2.05, -0.75], [0.6, 2.2, -0.05], Trim));
-            p.Add(Box([-0.56, 2.05, -0.75], [0.56, 2.2, -0.71], Trim));
-            hub = Py.L(0, 1.6, 0.75);
-            bulk = Kw(("material", "any"), ("capacity", units), ("min", Py.L(-0.555, 2.055, -0.705)), ("max", Py.L(0.555, 2.195, -0.055)));
-            SmallFormerLook(p, air || fan);
-            p.Sock("bottom", [0, 0, 0], "-y");
-            p.Sock("+x", [0.6, 0.75, 0], "+x");
-            p.Sock("-x", [-0.6, 0.75, 0], "-x");
-            p.Sock("top", [0, 2.2, 0.35], "+y");
-            p.Sock("back", [0, 0.75, -0.75], "-z");
-            p.Sock("die", [0, 1.6, 0.75], "+z", kind: "die");
-            p.Stats(mass, health, 6, 4);
+            p.Add(L([x - 0.05, foot + 0.02, sunk + 0.004], [x + 0.05, top - 0.02, f + 0.03], MachineLook.Steel, "steel")); // (a slide rail, from the sunk face out past the posts)
+            p.Add(L([x - 0.07, foot + 0.02, sunk + 0.004], [x + 0.07, foot + 0.1, f + 0.04], MachineLook.Base)); // (its foot clamp)
         }
-        else
+        // The carriage the hub is mounted on: it rides the rails ("slide"), with its two gibs on them and the slide's cable.
+        p.Add(MachineLook.Work(L([-0.4, GrowHubY - 0.38, f + 0.03], [0.4, GrowHubY + 0.38, f + 0.07], MachineLook.Base), "slide", "+y", GrowRide));
+        foreach (var x in new[] { -0.46, 0.46 })
+            p.Add(MachineLook.Work(L([x - 0.07, GrowHubY - 0.3, f + 0.03], [x + 0.07, GrowHubY + 0.3, f + 0.058], MachineLook.Accent), "slide", "+y", GrowRide));
+        // The hub's bearing collar: a wide dark housing behind the face plate with a yellow rim, so the hub reads from across a hall
+        // (look review 2026-11-21: "a painted box with a screen" without its masts). It rides the carriage and stands still while the hub turns.
+        p.Add(MachineLook.Work(L([-0.46, GrowHubY - 0.46, f + 0.072], [0.46, GrowHubY + 0.46, f + 0.094], MachineLook.Base, shape: Kw(("shape", "cylinder"), ("segments", 28))), "slide", "+y", GrowRide));
+        p.Add(MachineLook.Work(L([-0.49, GrowHubY - 0.49, f + 0.075], [0.49, GrowHubY + 0.49, f + 0.088], MachineLook.Accent, shape: Kw(("shape", "tube"), ("segments", 28), ("inner", 0.94))), "slide", "+y", GrowRide));
+        // The hub: a bare steel face plate, a yellow four-jaw chuck and a dark boss; all of it turns while a wheel or a prop grows, and rides the carriage.
+        p.Add(MachineLook.Work(L([-0.32, GrowHubY - 0.32, f + 0.07], [0.32, GrowHubY + 0.32, f + 0.1], MachineLook.Steel, "steel", shape: Kw(("shape", "cylinder"), ("segments", 24))), "spin", "+z", GrowRide));
+        p.Add(MachineLook.Work(L([-0.28, GrowHubY - 0.04, f + 0.1], [0.28, GrowHubY + 0.04, f + 0.13], MachineLook.Accent), "spin", "+z", GrowRide));
+        p.Add(MachineLook.Work(L([-0.04, GrowHubY - 0.28, f + 0.1], [0.04, GrowHubY + 0.28, f + 0.134], MachineLook.Accent), "spin", "+z", GrowRide));
+        p.Add(MachineLook.Work(L([-0.09, GrowHubY - 0.09, f + 0.1], [0.09, GrowHubY + 0.09, f + 0.15], MachineLook.Base, shape: Kw(("shape", "cylinder"), ("segments", 12))), "spin", "+z", GrowRide));
+        // The wing root clamps over and under the hub: dull until it works, then hot (they set a wing's skin at its root).
+        foreach (var y in new[] { GrowHubY + 0.46, GrowHubY - 0.46 })
         {
-            int nx = cells![0], ny = cells[1], nz = cells[2];
-            var hd = MakeHead(p, cells);
-            double hx = (nx - 1) / 2.0 * c.Cell, hy = hubRow * c.Cell;
-            hub = Py.L(hx, hy, hd.Z1);
-            bulk = BinOf(units, hd);
-            var r = c.Cell * 0.4;
-            var hm = Math.Min(hd.T * 0.2, 0.05);
-            p.Add(MachineLook.D([hx - r * 1.6, hy - r * 1.6, hd.Z1 - hd.T * 0.1], [hx + r * 1.6, hy + r * 1.6, hd.Z1 + hm], MachineLook.Steel, "steel", shape: Kw(("shape", "cylinder"), ("segments", 20))));
-            p.Add(MachineLook.Work(MachineLook.D([hx - r, hy - r * 0.16, hd.Z1 + hm * 0.5], [hx + r, hy + r * 0.16, hd.Z1 + hm * 1.6], MachineLook.Accent), "spin", "+z"));
-            p.Add(MachineLook.Work(MachineLook.D([hx - r * 0.16, hy - r, hd.Z1 + hm * 0.5], [hx + r * 0.16, hy + r, hd.Z1 + hm * 1.7], MachineLook.Accent), "spin", "+z"));
-            p.Add(MachineLook.D([hx - r * 0.3, hy - r * 0.3, hd.Z1 + hm * 0.4], [hx + r * 0.3, hy + r * 0.3, hd.Z1 + hm * 2], MachineLook.Base, shape: Kw(("shape", "cylinder"), ("segments", 12))));
-            BlockSockets(p, nx, ny, nz, limit: Lim5(), skip: ["+z"]);
-            p.Sock("die", [hx, hy, hd.Z1], "+z", kind: "die");
-            p.Stats(mass, health, c.Armour);
+            p.Add(L([-0.3, y - 0.05, sunk + 0.004], [0.3, y + 0.05, f + 0.03], MachineLook.Base));
+            p.Add(MachineLook.Work(L([-0.26, y - 0.03, f + 0.03], [0.26, y + 0.03, f + 0.046], MachineLook.Hot), "glow"));
         }
-        var wheel = Kw(("speed", speed), ("at", hub), ("maxWidth", width), ("maxDiameter", across), ("startWidth", w0), ("startDiameter", d0), ("pushForce", push));
-        if (fan)
-            wheel["fan"] = true;
-        if (air)
-            wheel["airframe"] = true;
-        p.Set(("power", power), ("storage", Kw(("bulk", bulk), ("wheel", wheel))),
-            ("config", air ? AirframeConfig(across, width, d0, w0) : fan ? FanConfig(across, d0) : FormerConfig(across, width, d0, w0)),
-            ("collider", "boxes")); // (the hub is a look: its cylinder must never become a hull)
-        return WithScreen(p, orders: true, recipe: fan || air, width: c == Small ? 0.97 : null); // (every former takes work orders; a Fan or Airframe Former keeps its Recipe button among them. A small one's screen keeps its 0.97 m: it was sized from bounds a misplaced arrow had widened, and shrank when the arrow was put right)
+        // The part-off saw on its arm by the hub's right: a dark arm down the post, a hazard-banded guard and the blade, which strokes in across the hub's face.
+        p.Add(L([0.62, 0.5, f], [0.78, 1.9, f + 0.08], MachineLook.Base));
+        MachineLook.Hazard(p, [0.6, 1.62, f + 0.08], [0.8, 1.76, f + 0.092]);
+        p.Add(MachineLook.Work(L([0.56, GrowHubY - 0.16, f + 0.08], [0.84, GrowHubY + 0.16, f + 0.11], MachineLook.Steel, "steel", shape: Kw(("shape", "cylinder"), ("segments", 20))), "stroke", "-x", 0.12));
+        p.Add(MachineLook.Work(L([0.66, GrowHubY - 0.05, f + 0.11], [0.74, GrowHubY + 0.05, f + 0.13], MachineLook.Base, shape: Kw(("shape", "cylinder"), ("segments", 8))), "stroke", "-x", 0.12));
+        // The face's foot in hazard paint (it never stops for anyone in front of it), and the out band along its top in orange.
+        MachineLook.Hazard(p, [-e + post, foot - 0.12, f], [e - post, foot - 0.02, f + 0.014]);
+        p.Add(L([-e, top + 0.02, f], [e, top + 0.14, f + 0.014], MachineLook.Out));
+        MachineLook.Arrow(p, 2, f + 0.014, 1, 1, 1, -0.75, 1.62, 0.36, 0.22, MachineLook.Out); // (up the face's left: the hub rises)
+
+        // ---- The back: the hopper's port, its rim and arrow, a gauge and the maker's plate ----
+        MachineLook.Port(p, [0, 1.3, -e], 2, -1, 0.2, 0.13, true);
+        p.Set(("ports", Py.L(Kw(("name", "Chute in"), ("type", "chute"), ("at", Py.L(0, 1.3, -e)), ("face", "-z")))));
+        p.Add(L([-0.5, 0.78, -e - 0.014], [0.5, 0.86, -e], MachineLook.In));
+        MachineLook.Arrow(p, 2, -e - 0.014, -1, 1, -1, 0, 1.72, 0.18, 0.18, MachineLook.In);
+        p.Add(L([0.52, 1.1, -e - 0.036], [0.72, 1.3, -e], "#e8e6df", shape: Kw(("shape", "cylinder"), ("segments", 12), ("front", "-z"))));
+        p.Add(L([0.6, 1.18, -e - 0.048], [0.64, 1.27, -e - 0.032], MachineLook.Ink));
+        p.Add(L([-0.74, 1.12, -e - 0.024], [-0.48, 1.28, -e], MachineLook.In));
+        p.Add(L([-0.71, 1.18, -e - 0.036], [-0.51, 1.22, -e - 0.02], MachineLook.Ink));
+        foreach (var x in new[] { -0.5, 0.5 })
+            p.Add(L([x - 0.012, foot + 0.04, -sunk - 0.016], [x + 0.012, 0.74, -sunk + 0.004], Trim, paintable: true)); // (cladding seams under the plate)
+
+        // ---- The right: the drive motor, its turning coupling, the oil lines and a cable down to the foot ----
+        p.Add(L([sunk - 0.004, 0.9, -0.55], [e + 0.16, 1.5, 0.05], MachineLook.Base, shape: Kw(("shape", "cylinder"), ("segments", 16), ("front", "+x"))));
+        p.Add(L([e + 0.16, 1.02, -0.43], [e + 0.2, 1.38, -0.07], MachineLook.Steel, "steel", shape: Kw(("shape", "cylinder"), ("segments", 16), ("front", "+x"))));
+        p.Add(MachineLook.Work(L([e + 0.2, 1.1, -0.35], [e + 0.26, 1.3, -0.15], MachineLook.Accent, shape: Kw(("shape", "cylinder"), ("segments", 8), ("front", "+x"))), "spin", "+x"));
+        foreach (var (y, colour) in new[] { (1.66, "#b8322a"), (1.74, "#2f62b5") })
+            p.Add(L([sunk + 0.006, y - 0.02, -e + post + 0.02], [sunk + 0.046, y + 0.02, e - post - 0.02], colour, shape: Kw(("shape", "cylinder"), ("segments", 8), ("front", "+z"))));
+        foreach (var z in new[] { -0.6, 0.0, 0.6 })
+            p.Add(L([sunk - 0.004, 1.63, z - 0.03], [sunk + 0.06, 1.77, z + 0.03], MachineLook.Base));
+        p.Add(L([sunk - 0.004, foot + 0.02, 0.4], [sunk + 0.05, 0.9, 0.46], MachineLook.Base)); // (the motor's cable to the foot)
+        p.Add(L([sunk - 0.004, 0.62, 0.3], [sunk + 0.07, 0.8, 0.56], MachineLook.Base)); // (its junction box)
+        return p;
     }
 
-    /// <summary>The small Formers' look: a headstock on a dark column, a big bare hub with a chuck that turns, the hopper banded white, hazard paint round the hub.</summary>
-    private static void SmallFormerLook(Part p, bool plain)
+    /// <summary>A Grow Former's settings: its Makes, a wheel's run mode and order size, a prop's kind and size, a wing's. (A new one goes on the end: a saved setting is found by its key.)</summary>
+    private static List<object?> GrowConfig()
     {
-        MachineLook.Skirt(p, -0.6, 0.6, -0.75, 0.75, 0, 0.16, 0.012);
-        // Dark columns up the front corners and a dark apron under the hub: the body colour is left as a headstock round it.
-        p.Add(L([-0.612, 0.16, 0.5], [-0.42, 2.04, 0.762], MachineLook.Base));
-        p.Add(L([0.42, 0.16, 0.5], [0.612, 2.04, 0.762], MachineLook.Base));
-        p.Add(L([-0.42, 0.16, 0.75], [0.42, 0.95, 0.763], MachineLook.Base));
-        MachineLook.Hazard(p, [-0.42, 0.95, 0.75], [0.42, 1.07, 0.764]);
-        p.Add(L([-0.42, 2.07, 0.75], [0.42, 2.19, 0.764], MachineLook.Out));
-        // The hub: a bare steel face plate, a boss, and a yellow chuck that turns while it runs.
-        p.Add(L([-0.4, 1.2, 0.74], [0.4, 2.0, 0.768], MachineLook.Steel, "steel", shape: Kw(("shape", "cylinder"), ("segments", 20))));
-        p.Add(MachineLook.Work(L([-0.3, 1.56, 0.76], [0.3, 1.64, 0.782], MachineLook.Accent), "spin", "+z"));
-        p.Add(MachineLook.Work(L([-0.04, 1.3, 0.76], [0.04, 1.9, 0.784], MachineLook.Accent), "spin", "+z"));
-        p.Add(L([-0.1, 1.5, 0.75], [0.1, 1.7, 0.79], MachineLook.Base, shape: Kw(("shape", "cylinder"), ("segments", 12))));
-        // The hopper's rim, white: the in side.
-        p.Add(L([-0.612, 2.08, -0.762], [0.612, 2.19, -0.75], MachineLook.In));
-        p.Add(L([0.6, 2.08, -0.75], [0.612, 2.19, -0.05], MachineLook.In));
-        p.Add(L([-0.612, 2.08, -0.75], [-0.6, 2.19, -0.05], MachineLook.In));
-        MachineLook.Arrow(p, 2, -0.75, -1, 1, -1, 1.8, 0, 0.3, 0.3, MachineLook.In); // (down into the hopper, under its rim: y 1.8, x 0. The two were swapped until 2026-11-14, so the arrow sat half in the floor at x 1.8, its top on the floor's plane)
-        // The drive on the right: a dark motor and a guard.
-        p.Add(L([0.6, 1.3, -0.6], [0.72, 1.9, -0.1], MachineLook.Base));
-        p.Add(L([0.6, 0.2, -0.36], [0.63, 1.3, -0.3], MachineLook.Base));
-        if (plain)
-            return;
-        p.Add(MachineLook.Work(L([0.72, 1.44, -0.51], [0.76, 1.76, -0.19], MachineLook.Accent, shape: Kw(("shape", "cylinder"), ("segments", 12), ("front", "+x"))), "spin", "+x"));
+        var list = Py.L(Kw(("key", "growMakes"), ("type", "choice"), ("label", "Makes"), ("group", "Makes"), ("options", GrowMakesNames()), ("default", 0),
+            ("tooltip", "What its own settings and its Queue button make: a wheel, a prop or a wing. An order makes what it asks; the piece on its hub is finished first.")));
+        list.AddRange(FormerConfig(32, 20, 0.4, 0.1));
+        list.AddRange(FanConfig(64, 0.5));
+        list.AddRange(AirframeConfig(192, 32, 0.5, 0.3));
+        return list;
+    }
+
+    /// <summary>
+    /// A Former Block: one 2 x 2 m cell of a Grow Former's bed, a 30 cm slab on the floor (design page drawing 22). Its top is four tread
+    /// plate tiles with clamping slots and bolts; its sides are sunk between a foot and a top lip. The hazard kerb round its top edge and the
+    /// skirt along its foot are drawn only on the machine's outer edges (MachineBlocks: "seam"), so a bed of blocks reads as one floor with
+    /// one kerb. A Run-out Table goes on its far end for a wing longer than the bed.
+    /// </summary>
+    private static Part FormerBlock()
+    {
+        var p = new Part("Former Block", Small, Section,
+            "Weld it on the floor beside a Grow Former Core, or beside another Former Block: 2 x 2 m more bed. The bed is the largest full rectangle of blocks next to the Core; a block outside it idles. A Run-out Table on its far end lets a wing run on.",
+            group: "Production", color: "#22262b"); // (a bed is Base: only the Core wears the Formers' violet)
+        const double e = 0.997, h = BedTile, lip = 0.06, sunk = 0.96;
+        // The slab: a foot and a top lip whole, the side sunk between them; a hidden box keeps the whole cell solid (and its bounds the cell).
+        p.Add(Box([-1, 0, -1], [1, h, 1], hidden: true));
+        p.Add(Box([-e, 0, -e], [e, 0.05, e]));
+        p.Add(Box([-e, h - lip, -e], [e, h, e]));
+        p.Add(Box([-sunk, 0.05, -sunk], [sunk, h - lip, sunk]));
+        // The deck: four tread plate tiles, a groove between them.
+        foreach (var (x0, x1) in new[] { (-e + 0.004, -0.006), (0.006, e - 0.004) })
+            foreach (var (z0, z1) in new[] { (-e + 0.004, -0.006), (0.006, e - 0.004) })
+                p.Add(L([x0, h, z0], [x1, h + BedDeck, z1], MachineLook.Steel, "tread plate"));
+        // Clamping slots along each tile (a wing's root and a wheel's chocks clamp in them), and a bolt at each tile's corners.
+        foreach (var x in new[] { -0.75, -0.25, 0.25, 0.75 })
+            foreach (var (z0, z1) in new[] { (-0.9, -0.1), (0.1, 0.9) })
+                p.Add(L([x - 0.02, h + BedDeck, z0], [x + 0.02, h + BedDeck + 0.012, z1], MachineLook.Base));
+        foreach (var x in new[] { -0.92, -0.08, 0.08, 0.92 })
+            foreach (var z in new[] { -0.92, -0.08, 0.08, 0.92 })
+                p.Add(L([x - 0.018, h + BedDeck, z - 0.018], [x + 0.018, h + BedDeck + 0.014, z + 0.018], MachineLook.Accent));
+        // The kerb along each outer edge: hazard paint on the sides, white at the Core's end, orange at the out end of the bed's top (the x sides 4 mm proud of the z sides at the corners, so no two share a plane).
+        var top = h + BedDeck;
+        p.Add(Seam(MachineLook.D([-e + 0.002, top, e - 0.08], [e - 0.002, top + BedKerb - 0.004, e], MachineLook.Out), "+z")); // (the out edge: orange, the way a piece leaves)
+        p.Add(Seam(MachineLook.D([-e + 0.002, top, -e], [e - 0.002, top + BedKerb - 0.004, -e + 0.08], MachineLook.In), "-z")); // (the Core side: white)
+        p.Add(Seam(MachineLook.D([e - 0.08, top, -e + 0.002], [e, top + BedKerb, e - 0.002], MachineLook.Accent, "hazard paint"), "+x"));
+        p.Add(Seam(MachineLook.D([-e, top, -e + 0.002], [-e + 0.08, top + BedKerb, e - 0.002], MachineLook.Accent, "hazard paint"), "-x"));
+        // The sunk sides: a dark skirt panel with two lifting slots, and a bolt row along the lip; only on the bed's outer edges.
+        foreach (var (side, n, sg) in new[] { ("+x", 0, 1), ("-x", 0, -1), ("+z", 2, 1), ("-z", 2, -1) })
+        {
+            int u = n == 0 ? 2 : 0;
+            double[] Mn(double a0, double y0, double out0) { var v = new double[3]; v[n] = sg > 0 ? sunk - 0.004 : -sunk - out0; v[u] = a0; v[1] = y0; return v; }
+            double[] Mx(double a1, double y1, double out0) { var v = new double[3]; v[n] = sg > 0 ? sunk + out0 : -sunk + 0.004; v[u] = a1; v[1] = y1; return v; }
+            p.Add(Seam(L(Mn(-0.9, 0.07, 0.014), Mx(0.9, h - lip - 0.02, 0.014), MachineLook.Base), side));
+            foreach (var a in new[] { -0.5, 0.5 })
+                p.Add(Seam(L(Mn(a - 0.12, 0.12, 0.026), Mx(a + 0.12, 0.18, 0.026), Trim), side));
+        }
+        p.Sock("+x", [1, h / 2, 0], "+x");
+        p.Sock("-x", [-1, h / 2, 0], "-x");
+        p.Sock("+z", [0, h / 2, 1], "+z");
+        p.Sock("-z", [0, h / 2, -1], "-z");
+        p.Sock("bottom", [0, 0, 0], "-y");
+        p.Sock("outBed", [0, 0, 1], "+z", kind: "runOut"); // (a Run-out Table on the bed's far end: a wing's span runs on over it)
+        p.Stats(1800, 1500, 8, 8);
+        p.Set(("machineBlock", GrowBlockKey("block")), ("centreSockets", false), ("collider", "boxes"));
+        return p;
     }
 
     /// <summary>
@@ -618,9 +650,8 @@ public sealed class ExtrusionParts : IPartGenerator
     public void Make(PartOutput o)
     {
         var parts = new List<(string, Part)> { ("", ExtruderCore()), ("", DieBlock()), ("", RunOutTable()) };
-        parts.AddRange(Formers.Select(r => ("", Former(r))));
-        parts.AddRange(FanFormers.Select(r => ("", Former(r, fan: true))));
-        parts.AddRange(AirframeFormers.Select(r => ("", Former(r, air: true))));
+        parts.Add(("", GrowFormerCore()));
+        parts.Add(("", FormerBlock()));
         WriteParts(o, Out, parts);
         o.File(Blueprint, PyJson.Dumps(Line(), 2) + "\n");
     }

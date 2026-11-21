@@ -68,8 +68,8 @@ public static class VehicleChassis
     public const float MaxHangDiff = 0.3f;
 
     /// <summary>
-    /// Can a front corner on <paramref name="front"/> go with a rear on <paramref name="rear"/>? Not when one hangs its wheel far lower than the other: Bandit
-    /// convoy 3's leader (<c>Bandit/command/3/553571/mk1</c>) mixed the stilt recipe's Heavy Pogo Struts in front with a rear on Heavy Suspension, stood nose up
+    /// Can a front corner on <paramref name="front"/> go with a rear on <paramref name="rear"/>? Not when one hangs its wheel far lower than the other: Raider
+    /// convoy 3's leader (<c>Raider/command/3/553571/mk1</c>) mixed the stilt recipe's Heavy Pogo Struts in front with a rear on Heavy Suspension, stood nose up
     /// 10.5 degrees with its tail rails on the ground and couldn't drive. A mix that would is not made (the roll is the same, so every other seed is unchanged).
     /// </summary>
     public static bool Level(string front, string rear) => MathF.Abs(Hang(front) - Hang(rear)) <= MaxHangDiff;

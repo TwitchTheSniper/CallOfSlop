@@ -105,8 +105,9 @@ public static partial class ConstructPreview
     /// <summary>
     /// <c>--preview-gallery DIR [--only "A,B"]</c>: every ship (a blueprint whose first part is in the "Ship" group), every part those
     /// ships use and every other "Ship" part, or only the names given, as one gallery: DIR/index.html (the viewer with a ship picker
-    /// and a deck-or-part picker), DIR/models/index.json and one DIR/models/NAME.json each. Models whose JSON didn't change are left
-    /// untouched and the changed ones are printed, so an agent republishes the gallery Artifact with only those (files it leaves out are kept).
+    /// and a deck-or-part picker), DIR/models/index.json, one DIR/models/NAME.json per ship and one DIR/models/parts/SECTION.json per
+    /// part section (<see cref="PartPacks"/>). Files whose JSON didn't change are left untouched and the changed ones are printed, so an
+    /// agent republishes the gallery Artifact with only those (files it leaves out are kept).
     /// <c>--group Station</c> makes the Station gallery the same way: every blueprint whose first part is in that group, and its parts.
     /// </summary>
     private static int Gallery(string dir, string? only, string group = "Ship")
@@ -122,7 +123,7 @@ public static partial class ConstructPreview
         var picked = only?.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries) ?? [];
         var shipNames = only != null
             ? picked.Where(n => ConstructBuild.FindBlueprint(n) != null || File.Exists(n)).ToList()
-            : ConstructBuild.Blueprints.Where(b => b.Steps.Count > 0 && ConstructParts.Find(b.Steps[0].Part)?.Group == group).OrderBy(b => b.Name, StringComparer.Ordinal).Select(b => b.Name).ToList();
+            : ConstructBuild.Blueprints.Where(b => b.Steps.Count >= MinWhole && ConstructParts.Find(b.Steps[0].Part)?.Group == group).OrderBy(b => b.Name, StringComparer.Ordinal).Select(b => b.Name).ToList();
         var looseNames = only != null
             ? picked.Where(n => !shipNames.Contains(n)).ToList()
             : ConstructParts.All.Where(d => d != null && d.Group == group).OrderBy(d => d.Section, StringComparer.Ordinal).ThenBy(d => d.Name, StringComparer.Ordinal).Select(d => d.Name).ToList();
@@ -150,11 +151,24 @@ public static partial class ConstructPreview
             return json;
         }
 
+        // Parts go into one file per section, keyed by the part's id (an Artifact version holds at most 511 files, and a part each
+        // filled the Ship gallery by 13 ships): the page fetches a section's file once and takes the part from it.
+        var packs = new SortedDictionary<string, SortedDictionary<string, string>>(StringComparer.Ordinal);
         void Part(string name)
         {
-            if (Runtime(name) || parts.ContainsKey(name) || Write(name, out var bp, out _, out _) is not { } json)
+            if (Runtime(name) || parts.ContainsKey(name))
                 return;
-            parts[name] = new { id = Slug(bp.Name), name = bp.Name, file = "models/" + Slug(bp.Name) + ".json", section = ConstructParts.Find(bp.Name)?.Section ?? "", tris = _tris, kb = json.Length / 1024 };
+            if (Export(name, out var bp, out _, out _) is not { } json)
+            {
+                failed++;
+                return;
+            }
+            var section = ConstructParts.Find(bp.Name)?.Section ?? "";
+            var file = "parts/" + PackName(section) + ".json";
+            if (!packs.TryGetValue(file, out var pack))
+                packs[file] = pack = new SortedDictionary<string, string>(StringComparer.Ordinal);
+            pack[Slug(bp.Name)] = json;
+            parts[name] = new { id = Slug(bp.Name), name = bp.Name, file = "models/" + file, key = Slug(bp.Name), section, tris = _tris, kb = json.Length / 1024 };
         }
 
         foreach (var name in shipNames)
@@ -169,6 +183,22 @@ public static partial class ConstructPreview
         foreach (var name in looseNames)
             Part(name);
         var loose = parts.Keys.Where(k => !usedByShips.Contains(k)).Select(Slug).ToArray();
+        Directory.CreateDirectory(Path.Combine(models, "parts"));
+        foreach (var (file, pack) in packs)
+        {
+            var path = Path.Combine(models, file);
+            if (only != null && File.Exists(path)) // (a run of a few names keeps the section's other parts as they were)
+                using (var old = JsonDocument.Parse(File.ReadAllText(path)))
+                    foreach (var p in old.RootElement.EnumerateObject())
+                        pack.TryAdd(p.Name, p.Value.GetRawText());
+            var json = PartPack(pack);
+            written.Add(file);
+            if (!File.Exists(path) || File.ReadAllText(path) != json)
+            {
+                File.WriteAllText(path, json);
+                changed.Add("models/" + file);
+            }
+        }
 
         // (a gallery other than the ships names its kind, which the page uses for "Whole station" and the like)
         var list = group == "Ship" ? JsonSerializer.Serialize(new { ships, parts = parts.Values, loose })
@@ -186,7 +216,10 @@ public static partial class ConstructPreview
             File.WriteAllText(pagePath, page);
             changed.Add("index.html");
         }
-        var stale = Directory.GetFiles(models, "*.json").Select(Path.GetFileName).Where(f => f != "index.json" && !written.Contains(f!)).ToList();
+        // (a run of a few names leaves the other section files alone; a full run deletes the ones it no longer writes)
+        var stale = Directory.GetFiles(models, "*.json").Select(Path.GetFileName)
+            .Concat(only != null ? [] : Directory.GetFiles(Path.Combine(models, "parts"), "*.json").Select(f => "parts/" + Path.GetFileName(f)))
+            .Where(f => f != "index.json" && !written.Contains(f!)).ToList();
         foreach (var f in stale)
             File.Delete(Path.Combine(models, f!));
         Console.WriteLine($"gallery {Path.GetFullPath(dir)}: {ships.Count} ships, {parts.Count} parts ({loose.Length} in no ship), {failed} refused; changed: {(changed.Count == 0 ? "nothing" : string.Join(" ", changed))}" +
@@ -197,6 +230,23 @@ public static partial class ConstructPreview
     /// <summary>A piece a machine makes at run time (an extruded plate, a cut plate, a pressed piece): its ship's model shows it, but it gets
     /// no model of its own (the Mainframe's hull is thousands of them).</summary>
     private static bool Runtime(string name) => name.StartsWith(Extrusion.Prefix, StringComparison.Ordinal) || HullLoft.IsCutName(name) || name.StartsWith(HullLoft.Prefix, StringComparison.Ordinal);
+
+    /// <summary>The fewest steps a blueprint of the gallery's group needs to be listed as a whole ship or station, as the Animation gallery
+    /// shelves them: a few parts that go together (a landing leg pod's seven) are an assembly, not a ship.</summary>
+    private const int MinWhole = 30;
+
+    /// <summary>A part section's file name in a gallery's models/parts/ (a part with no section goes in "other").</summary>
+    private static string PackName(string section) => Slug(section) is { Length: > 0 } s ? s : "other";
+
+    /// <summary>A section's parts as one JSON object, <c>{"part-id": model, ...}</c>, in id order, each model's JSON as
+    /// <see cref="Export"/> wrote it.</summary>
+    private static string PartPack(SortedDictionary<string, string> pack)
+    {
+        var sb = new StringBuilder("{");
+        foreach (var (id, json) in pack)
+            sb.Append(sb.Length > 1 ? "," : "").Append(JsonSerializer.Serialize(id)).Append(':').Append(json);
+        return sb.Append('}').ToString();
+    }
 
     /// <summary>A model's file and page name: lower-case ASCII letters, digits and hyphens (an Artifact's #name).</summary>
     private static string Slug(string s) => string.Join('-', new string(s.ToLowerInvariant().Select(ch => ch is >= 'a' and <= 'z' or >= '0' and <= '9' ? ch : ' ').ToArray()).Split(' ', StringSplitOptions.RemoveEmptyEntries));

@@ -26,7 +26,9 @@ public sealed class LifterDef
     public float Depth; // "depth": the hook's highest point under the rails' top line
     public float RunLo, RunHi; // (a copy's) the rails both runs share, along +z from Base
     public float AcrossMin, AcrossMax; // (a copy's) the reach across, from the file's "reach" (ReachMin and ReachMax become the box's horizontal radius)
-    public byte RailWhy = 1; // (a copy's) 0: on its rails; 1: not on a crane rail; 2: its far end has no rail
+    public byte RailWhy = 1; // (a copy's) 0: on its rails; 1: not on a crane rail; 2: its far end has no rail; 3: a part of its body stands up into the bridge's way (Blocker)
+    public bool Hall; // "hall": true: a Hall Crane's Crane Core (design page drawing 24): its span, lift, drop and piece come from its rails (ConstructCraneRails.HallWalk)
+    public string? Blocker; // (a copy's, RailWhy 3) the part that stands up into the bridge's way
     public LifterDef? Of; // (a copy's) the part file's own def
     public LifterDef CraneCopy() => (LifterDef)MemberwiseClone();
     public const float Fold = 0.6f; // the elbow never folds the wrist closer to the shoulder than this past the links' difference (no arm through itself)
@@ -39,7 +41,7 @@ public sealed class LifterDef
         if (e.ValueKind != JsonValueKind.Object)
             throw new ConstructPartException($"{file}: \"lifter\" is an object");
         foreach (var p in e.EnumerateObject())
-            if (p.Name is not ("kind" or "base" or "reach" or "up" or "down" or "payload" or "piece" or "speed" or "handle" or "arm" or "ring" or "look" or "span" or "hoist" or "depth" or "fitter"))
+            if (p.Name is not ("kind" or "base" or "reach" or "up" or "down" or "payload" or "piece" or "speed" or "handle" or "arm" or "ring" or "look" or "span" or "hoist" or "depth" or "fitter" or "hall"))
                 throw new ConstructPartException($"{file}: lifter.{p.Name}: no such key");
         var kind = e.TryGetProperty("kind", out var k) && k.ValueKind == JsonValueKind.String ? k.GetString() : null;
         if (kind is not ("arm" or "bridge"))
@@ -61,6 +63,7 @@ public sealed class LifterDef
             d.Span = Num(e, "span", 1, 128, file);
             d.Hoist = Num(e, "hoist", 0.05f, 50, file);
             d.Depth = Num(e, "depth", 0, 32, file);
+            d.Hall = e.TryGetProperty("hall", out var hl) && hl.ValueKind == JsonValueKind.True;
             (d.AcrossMin, d.AcrossMax) = (d.ReachMin, d.ReachMax);
             if (d.ReachMax > d.Span)
                 throw new ConstructPartException($"{file}: lifter.reach (across a bridge) ends inside its span");
@@ -1234,7 +1237,12 @@ public static partial class ConstructLifters
         else if (l is { Why: LiftWhy.PlayerStuck })
             what += " - stuck: a player has been in the way for over 10 s";
         if (ld.Bridge && ld.RailWhy != 0)
-            what += ld.RailWhy == 1 ? " - stopped: it is not on a Crane Rail" : " - stopped: its far end has no rail";
+            what += ld.RailWhy switch
+            {
+                1 => ld.Hall ? " - stopped: bolt it beside a Crane Rail Block" : " - stopped: it is not on a Crane Rail",
+                3 => $" - stopped: the {ld.Blocker} stands up into the bridge's way: the rails must clear every machine under them",
+                _ => ld.Hall ? " - stopped: no second run of Crane Rail Blocks within 32 m across" : " - stopped: its far end has no rail",
+            };
         else if (l is { Why: LiftWhy.RailsShort })
             what += " - stopped: its rails no longer reach where it was going";
         var carries = ld.Payload >= 1000 ? $"{ld.Payload / 1000f:0.#} t" : $"{ld.Payload:0} kg";
@@ -1254,7 +1262,7 @@ public static partial class ConstructLifters
         var d = c.DefOf(part);
         if (d.Lifter is not { } ld)
             return;
-        card.Add(0, ld.Bridge ? "BRIDGE CRANE" : ScreenName[Math.Clamp(ld.Tier, 1, 5)]);
+        card.Add(0, ld.Hall ? "HALL CRANE" : ld.Bridge ? "BRIDGE CRANE" : ScreenName[Math.Clamp(ld.Tier, 1, 5)]);
         if (c.Parts[part].Broken)
         {
             card.State = PanelState.Fault;

@@ -52,14 +52,14 @@ public static class PartKit
         new Generators.OutTableParts(), // (the Out Table: the bed machines' far end, MachineBlocks role "end")
         new Generators.FactoryShellParts(), // (the factory kit's parts: ore bunkers, later the shell)
         new Generators.LinkSupportParts(), // (trestles and link bridges: links up and over an aisle, conveyor-inclines.md)
-        new Generators.BanditParts(),
+        new Generators.ScrapParts(),
         new Generators.MediaParts(),
         new Generators.AmmoParts(),
         new Generators.ShellParts(),
         new Generators.PilotParts(),
-        new Generators.CallCentreParts(),
+        new Generators.SignalParts(),
         new Generators.OfficeParts(),
-        new Generators.BritishParts(),
+        new Generators.StreetParts(),
         new Generators.DoorParts(),
         new Generators.StationParts(),
         new Generators.ShelfParts(),
@@ -125,12 +125,14 @@ public static class PartKit
         new Generators.FreighterParts(), // (the Packet, the Traders' spine freighter: likewise)
         new Generators.HaywainParts(), // (the Haywain, the farmers' medium hauler: likewise)
         new Generators.CourierParts(), // (the Satchel, the Traders' courier: likewise)
+        new Generators.DibberParts(), // (the Dibber, the farmers' vertical lander: likewise)
         new Generators.SpaceStationParts(), // (space stations from the station kit: Caledon Highport; its blueprint hangs docking clamps and hatches)
         new Generators.MakeRv(),
         new Generators.MachineTiers(),
         new Generators.Assembling(),
         new Generators.ProductionShowcase(), // (a blueprint built through the game's rules from the part files: last)
         new Generators.SubmoduleShowcase(),
+        new Generators.HallShowcase(), // (the Hall Bay: the Hall Crane, pads and roller runs on the block rules)
         new Generators.LinkedLogisticsShowcase(), // (linked logistics: a works, a yard and a hauler) // (sub-blueprints: a pod, a skiff that uses it twice, a yard of two stations and an arm)
     ];
 

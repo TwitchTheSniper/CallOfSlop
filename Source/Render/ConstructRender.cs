@@ -278,6 +278,8 @@ public static partial class ConstructRender
             if (c.ModActive >= 0)
                 EngineFx.Frame(c, origin == Vector3.Zero ? body : rotM * Matrix4x4.CreateTranslation(pos), Now, alpha); // (a modular engine: its crank turns, it shakes, it smokes; seen from afar too)
             gfx.Relative = true;
+            if (level == 1 && !CameraFeeds.InPass)
+                PostFx.OfferContact(c, body, Vector3.DistanceSquared(pos, cam)); // (its shadow on the ground under it, after the opaque world: PostFx.Contact.cs)
             if (level == 2)
             {
                 n += DrawLod(gfx, c, body);
@@ -673,9 +675,12 @@ public static partial class ConstructRender
         var leafMoves = d.IsRail || d.Role == PartRole.Joint && d.JointType == JointType.Swivel;
         var railSeg = leafMoves && railShown && c.JointOf(i) is var rj and >= 0 ? SegMatrix(c, rj + 1, alpha) : seg;
         var workPart = d.HasWork ? WorkPart(c, i, d) : -1; // (a block machine's cell shows its Core's work, a Run-out Table its Extruder's)
-        var working = workPart >= 0 && !p.Broken && world.StoreOf(c, workPart) is { } workStore && ProductionLines.Working(world, c, workPart, workStore, Now); // (a machine at work: its "work" boxes move, glow and smoke)
+        var working = d.CraneRail ? d.HasWork && !p.Broken && ConstructLifters.RailLit(world, c, i, Now) // (a Crane Rail Block's lamp flashes while a bridge passes: drawing 24)
+            : d.IsRollerTile || d.IsTurntable ? d.HasWork && !p.Broken && RollerRuns.Moving(c, i) // (a Roller Tile's rollers turn while a piece rides its run, a turntable's disc while one crosses: drawing 23)
+            : workPart >= 0 && !p.Broken && world.StoreOf(c, workPart) is { } workStore && ProductionLines.Working(world, c, workPart, workStore, Now); // (a machine at work: its "work" boxes move, glow and smoke)
         _workCore = workPart; // (a Bed Block's pins read their Core's bed and order: ConstructPanelFormer.PinLift)
         _pieceCm = working && d.HasPieceWork && c.Parts[workPart].D.IsExtruder ? ConstructExtruder.PieceCm(c, workPart) : 0; // (its rams and shear move by the piece on its die)
+        _hubRise = d.HasHubSlide ? ConstructExtruder.HubRise(c, i) : 0; // (a Grow Former's hub stands raised on its slide while a piece is on it, working or not)
         var laserTip = Vector3.Zero;
         _laserOn = working && d.BlockRole == BlockRole.Block && c.Parts[workPart].D.IsLaserCutter
             && ConstructLaserCutter.LookPose(c, i, workPart, Now, out _laserBridge, out _laserHead, out _laserActive, out laserTip); // (a Laser Cutter's bridge and heads follow the cut's outline)
@@ -751,6 +756,8 @@ public static partial class ConstructRender
                 model = rig.Model(in box, in p, model);
             if (working && box.Work != BoxWork.None)
                 WorkMove(gfx, c, in box, in p, centre, seg * body, ref model);
+            if (_hubRise > 0 && box.RigTravel > 0 && box.Work is BoxWork.Slide or BoxWork.Spin)
+                model *= Matrix4x4.CreateTranslation(Rot24.Apply(p.Rot, Vector3.UnitY) * MathF.Min(_hubRise, box.RigTravel)); // (the hub's carriage and its chuck ride up the slide, up to their travel)
             if (box.Fence && routerOn && routerFence != 0)
             {
                 var pivot = p.Pos + Rot24.Apply(p.Rot, ((d.BoundsMin + d.BoundsMax) * 0.5f) with { Y = 0 });
@@ -874,6 +881,7 @@ public static partial class ConstructRender
     /// <summary>A "work" box of a machine that runs (<see cref="BoxWork"/>): a spin about its own centre, a ram.s stroke, a stack.s puffs. <paramref name="model"/> is in the body frame.</summary>
     private const int ShearCm = 25;
     private static int _pieceCm; // the piece on the working machine's die (cm), for the part being drawn: its "ram" and "shear" boxes
+    private static float _hubRise; // a Grow Former's hub raised on its slide (m), for the part being drawn: its "slide" boxes and riding chuck
     private static bool _laserOn, _laserActive; // a Laser Bed Block being drawn: its bridge and head move, its head the one cutting
     private static Vector3 _laserBridge, _laserHead; // ...how far (body frame)
 

@@ -41,7 +41,7 @@ public sealed class AirCargo : IPartGenerator
         return d;
     }
 
-    private const string FanPart = "Extrusion fan3.straight.6 0x200x0 metal"; // (a 2 m ducted fan off a Fan Former)
+    private const string FanPart = "Extrusion fan3.straight.6 0x200x0 metal"; // (a 2 m ducted fan off a Grow Former)
 
     /// <summary>A step list and add(**kw): each step's keys in the order given; returns its index.</summary>
     private sealed class Steps
@@ -186,7 +186,7 @@ public sealed class AirCargo : IPartGenerator
             Kw(("type", "data"), ("from", stab), ("fromPort", "left aileron"), ("to", ailL)),
             Kw(("type", "data"), ("from", stab), ("fromPort", "right aileron"), ("to", ailR)),
             Kw(("type", "pipe"), ("from", tank), ("to", engine), ("fromPort", "Fuel out"), ("toPort", "Fuel in")));
-        return Blueprint("Fabric Flyer", "The plane a workshop can make: cloth off an Airframe Former, a wooden prop off a Fan Former, an Engine. Shift and Ctrl set the throttle, S lifts the nose, A and D bank and turn.", s.S, links);
+        return Blueprint("Fabric Flyer", "The plane a workshop can make: a cloth wing and a wooden prop off a Grow Former, an Engine. Shift and Ctrl set the throttle, S lifts the nose, A and D bank and turn.", s.S, links);
     }
 
     public void Make(PartOutput o)

@@ -192,7 +192,7 @@ These override the text above where they differ.
 Phases 0 to 2 in one branch (`claude/local-frame-physics`), option B with the user's answers.
 
 **Phase 0: `--ride-check --loose`** (DevTools/RideCheck.cs, a dev check, not a self-test). On the Rust Bucket, the Zero Day,
-the Magpie and the British Box Truck 1, at 0, 60, 120 and 200 m/s, stepped (a driven ship in the bubble) and posed (out of
+the Magpie and the Mercenary Box Truck 1, at 0, 60, 120 and 200 m/s, stepped (a driven ship in the bubble) and posed (out of
 it, posed after the step): a Frame Block resting on a deck spot and one thrown across from another (3 m/s), through 3 s of
 cruise, 4 s of a 10 deg/s turn, 2 s of braking at 8 m/s2 and 2 s on. Per phase: the resting block's drift in the ship's frame,
 its largest drawn jump in the ship's frame (the host's blend of the two poses, four samples a tick), its ticks asleep, the
@@ -263,7 +263,7 @@ frame itself and not carried; the smallest wins. Walkers don't ride (their feet 
 
 **Tried by hand** (xvfb, host and joined client at `--lag=100`): the Zero Day start in orbit at 208 m/s, three loose blocks:
 host and client draw them on the deck at 0.0-1.1 mm a frame, asleep, at the same frame poses; a retro burn (208 to 94 m/s in
-5 s, 2.6 g) presses them into the bulkhead; a world save and load keeps them aboard. A British Flatbed Fort at 17 m/s with
+5 s, 2.6 g) presses them into the bulkhead; a world save and load keeps them aboard. A Mercenary Flatbed Fort at 17 m/s with
 three blocks on its bed: 0.1-0.4 mm a frame on both, a hard brake slides them 0.6-0.8 m forward on both, the same rest spots.
 
 **After the merge review (2026-11-19)**:
