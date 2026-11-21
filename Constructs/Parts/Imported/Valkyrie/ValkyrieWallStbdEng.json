@@ -1,0 +1,403 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Valkyrie Wall Stbd Eng",
+  "description": "Part of the Valkyrie IV, from its model's Wall Stbd Eng (Hull Bulkheads).",
+  "group": "Ship",
+  "section": "Valkyrie IV dropship",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 202.6,
+  "health": 810,
+  "armour": 20,
+  "material": "steel",
+  "color": "#a4a9af",
+  "attachSeconds": 6.0,
+  "boxes": [
+    {
+      "min": [
+        -3.53,
+        1.26,
+        5.29
+      ],
+      "max": [
+        -2.48,
+        3.78,
+        5.47
+      ],
+      "color": "#a4a9af",
+      "detail": true,
+      "finish": "painted plating",
+      "paintable": false
+    },
+    {
+      "min": [
+        -2.5757,
+        1.28,
+        5.29
+      ],
+      "max": [
+        -2.54,
+        3.78,
+        5.47
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -3.49,
+        1.28,
+        5.29
+      ],
+      "max": [
+        -2.5757,
+        3.78,
+        5.47
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -3.53,
+        1.32,
+        5.29
+      ],
+      "max": [
+        -3.49,
+        3.78,
+        5.47
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -3.53,
+        1.28,
+        5.29
+      ],
+      "max": [
+        -3.49,
+        1.32,
+        5.35
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -3.53,
+        1.28,
+        5.39
+      ],
+      "max": [
+        -3.49,
+        1.32,
+        5.47
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -5.62,
+        1.26,
+        5.292
+      ],
+      "max": [
+        -4.57,
+        3.78,
+        5.468
+      ],
+      "color": "#a4a9af",
+      "detail": true,
+      "finish": "painted plating",
+      "paintable": false
+    },
+    {
+      "min": [
+        -5.44,
+        1.28,
+        5.29
+      ],
+      "max": [
+        -4.57,
+        3.78,
+        5.47
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -5.48,
+        1.28,
+        5.29
+      ],
+      "max": [
+        -5.44,
+        3.78,
+        5.44
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -4.59,
+        3.42,
+        5.288
+      ],
+      "max": [
+        -3.51,
+        3.78,
+        5.472
+      ],
+      "color": "#a4a9af",
+      "detail": true,
+      "finish": "painted plating",
+      "paintable": false
+    },
+    {
+      "min": [
+        -4.59,
+        3.42,
+        5.29
+      ],
+      "max": [
+        -4.07,
+        3.78,
+        5.47
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -4.03,
+        3.42,
+        5.29
+      ],
+      "max": [
+        -3.51,
+        3.78,
+        5.47
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -4.07,
+        3.44,
+        5.29
+      ],
+      "max": [
+        -4.03,
+        3.78,
+        5.47
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -3.46,
+        3.465,
+        5.28
+      ],
+      "max": [
+        -2.55,
+        3.535,
+        5.48
+      ],
+      "color": "#d4a22a",
+      "detail": true,
+      "finish": "gloss paint",
+      "paintable": false
+    },
+    {
+      "min": [
+        -3.46,
+        3.465,
+        5.28
+      ],
+      "max": [
+        -2.55,
+        3.535,
+        5.48
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -3.46,
+        3.38,
+        5.28
+      ],
+      "max": [
+        -2.55,
+        3.44,
+        5.48
+      ],
+      "color": "#b83e32",
+      "detail": true,
+      "finish": "gloss paint",
+      "paintable": false
+    },
+    {
+      "min": [
+        -3.46,
+        3.38,
+        5.28
+      ],
+      "max": [
+        -2.55,
+        3.44,
+        5.48
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -5.55,
+        3.465,
+        5.28
+      ],
+      "max": [
+        -4.64,
+        3.535,
+        5.48
+      ],
+      "color": "#d4a22a",
+      "detail": true,
+      "finish": "gloss paint",
+      "paintable": false
+    },
+    {
+      "min": [
+        -5.44,
+        3.465,
+        5.28
+      ],
+      "max": [
+        -4.64,
+        3.535,
+        5.48
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -5.48,
+        3.465,
+        5.28
+      ],
+      "max": [
+        -5.44,
+        3.535,
+        5.44
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -5.55,
+        3.38,
+        5.28
+      ],
+      "max": [
+        -4.64,
+        3.44,
+        5.48
+      ],
+      "color": "#b83e32",
+      "detail": true,
+      "finish": "gloss paint",
+      "paintable": false
+    },
+    {
+      "min": [
+        -5.44,
+        3.38,
+        5.28
+      ],
+      "max": [
+        -4.64,
+        3.44,
+        5.48
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -5.48,
+        3.38,
+        5.28
+      ],
+      "max": [
+        -5.44,
+        3.44,
+        5.44
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -5.63,
+        3.72,
+        5.27
+      ],
+      "max": [
+        -2.47,
+        3.8,
+        5.49
+      ],
+      "color": "#24282e",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -5.44,
+        3.72,
+        5.27
+      ],
+      "max": [
+        -2.53,
+        3.8,
+        5.49
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -5.48,
+        3.72,
+        5.27
+      ],
+      "max": [
+        -5.44,
+        3.78,
+        5.44
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -3.02,
+        1.28,
+        5.35
+      ],
+      "max": [
+        -2.98,
+        1.32,
+        5.39
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "t0",
+      "at": [
+        -3.0,
+        1.28,
+        5.37
+      ],
+      "dir": "-y"
+    }
+  ]
+}

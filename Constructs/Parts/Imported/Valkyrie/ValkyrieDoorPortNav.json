@@ -1,0 +1,122 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Valkyrie Door Port Nav",
+  "description": "Part of the Valkyrie IV, from its model's Bulkhead Door Port Nav (Part Bulkhead Doors).",
+  "group": "Ship",
+  "section": "Valkyrie IV dropship",
+  "role": "door",
+  "tool": "welder",
+  "door": {
+    "kind": "slide",
+    "axis": "-x",
+    "travel": 1.02,
+    "seconds": 1.0,
+    "hang": "hang"
+  },
+  "mass": 31.5,
+  "health": 126,
+  "armour": 8,
+  "material": "steel",
+  "color": "#373e47",
+  "attachSeconds": 2.5,
+  "boxes": [
+    {
+      "min": [
+        3.56,
+        1.3,
+        -6.44
+      ],
+      "max": [
+        4.54,
+        3.4,
+        -6.36
+      ],
+      "color": "#373e47",
+      "detail": true,
+      "finish": "painted plating",
+      "paintable": false
+    },
+    {
+      "min": [
+        3.56,
+        1.3,
+        -6.44
+      ],
+      "max": [
+        4.54,
+        3.4,
+        -6.36
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        4.035,
+        1.34,
+        -6.4475
+      ],
+      "max": [
+        4.065,
+        3.36,
+        -6.3525
+      ],
+      "color": "#24282e",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        3.66,
+        2.0492,
+        -6.45
+      ],
+      "max": [
+        4.44,
+        2.1092,
+        -6.35
+      ],
+      "color": "#d4a22a",
+      "detail": true,
+      "finish": "gloss paint",
+      "paintable": false
+    },
+    {
+      "min": [
+        3.66,
+        2.0492,
+        -6.45
+      ],
+      "max": [
+        4.44,
+        2.1092,
+        -6.35
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        4.03,
+        3.36,
+        -6.42
+      ],
+      "max": [
+        4.07,
+        3.4,
+        -6.38
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "hang",
+      "at": [
+        4.05,
+        3.4,
+        -6.4
+      ],
+      "dir": "+y"
+    }
+  ]
+}

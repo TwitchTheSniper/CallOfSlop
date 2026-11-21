@@ -1,0 +1,86 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Valkyrie Tactical Data Rack",
+  "description": "Part of the Valkyrie IV, from its model's Tactical Data Rack (Part Consoles And Terminals).",
+  "group": "Ship",
+  "section": "Valkyrie IV dropship",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 119.2,
+  "health": 477,
+  "armour": 8,
+  "material": "steel",
+  "color": "#373e47",
+  "attachSeconds": 2.5,
+  "boxes": [
+    {
+      "min": [
+        -5.44,
+        1.28,
+        -7.8
+      ],
+      "max": [
+        -4.92,
+        2.68,
+        -6.9
+      ],
+      "color": "#373e47",
+      "detail": true,
+      "finish": "painted plating",
+      "paintable": false
+    },
+    {
+      "min": [
+        -5.44,
+        1.28,
+        -7.8
+      ],
+      "max": [
+        -4.92,
+        2.68,
+        -6.9
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -4.935,
+        2.25,
+        -7.66
+      ],
+      "max": [
+        -4.885,
+        2.47,
+        -7.04
+      ],
+      "color": "#38e8ff",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -5.2,
+        1.28,
+        -7.37
+      ],
+      "max": [
+        -5.16,
+        1.32,
+        -7.33
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "t0",
+      "at": [
+        -5.18,
+        1.28,
+        -7.35
+      ],
+      "dir": "-y"
+    }
+  ]
+}

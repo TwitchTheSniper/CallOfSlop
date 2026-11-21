@@ -1,0 +1,351 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Valkyrie Armory Lockers Bank",
+  "description": "Part of the Valkyrie IV, from its model's Armory Lockers Bank (Part Armory And Cargo).",
+  "group": "Ship",
+  "section": "Valkyrie IV dropship",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 458.4,
+  "health": 1834,
+  "armour": 8,
+  "material": "steel",
+  "color": "#a4a9af",
+  "attachSeconds": 2.5,
+  "boxes": [
+    {
+      "min": [
+        -5.43,
+        1.28,
+        -5.34
+      ],
+      "max": [
+        -4.89,
+        2.78,
+        -4.56
+      ],
+      "color": "#a4a9af",
+      "detail": true,
+      "finish": "painted plating",
+      "paintable": false
+    },
+    {
+      "min": [
+        -5.43,
+        1.28,
+        -5.34
+      ],
+      "max": [
+        -4.89,
+        2.78,
+        -4.56
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -4.905,
+        2.41,
+        -5.22
+      ],
+      "max": [
+        -4.855,
+        2.59,
+        -4.68
+      ],
+      "color": "#24282e",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -5.43,
+        1.28,
+        -4.44
+      ],
+      "max": [
+        -4.89,
+        2.78,
+        -3.66
+      ],
+      "color": "#a4a9af",
+      "detail": true,
+      "finish": "painted plating",
+      "paintable": false
+    },
+    {
+      "min": [
+        -4.99,
+        1.28,
+        -4.44
+      ],
+      "max": [
+        -4.89,
+        2.05,
+        -3.66
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -4.99,
+        2.27,
+        -4.44
+      ],
+      "max": [
+        -4.89,
+        2.78,
+        -3.66
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -4.99,
+        2.05,
+        -4.44
+      ],
+      "max": [
+        -4.89,
+        2.27,
+        -4.01
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -5.41,
+        1.28,
+        -4.44
+      ],
+      "max": [
+        -4.99,
+        1.78,
+        -3.66
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -5.41,
+        2.54,
+        -4.44
+      ],
+      "max": [
+        -4.99,
+        2.78,
+        -3.66
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -5.41,
+        1.78,
+        -4.44
+      ],
+      "max": [
+        -4.99,
+        2.54,
+        -4.225
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -4.905,
+        2.41,
+        -4.32
+      ],
+      "max": [
+        -4.855,
+        2.59,
+        -3.78
+      ],
+      "color": "#24282e",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -5.43,
+        1.28,
+        -3.54
+      ],
+      "max": [
+        -4.89,
+        2.78,
+        -2.76
+      ],
+      "color": "#a4a9af",
+      "detail": true,
+      "finish": "painted plating",
+      "paintable": false
+    },
+    {
+      "min": [
+        -4.99,
+        1.28,
+        -3.54
+      ],
+      "max": [
+        -4.89,
+        2.05,
+        -2.76
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -4.99,
+        2.27,
+        -3.54
+      ],
+      "max": [
+        -4.89,
+        2.78,
+        -2.76
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -4.99,
+        2.05,
+        -3.29
+      ],
+      "max": [
+        -4.89,
+        2.27,
+        -2.76
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -5.41,
+        1.28,
+        -3.54
+      ],
+      "max": [
+        -4.99,
+        1.78,
+        -2.76
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -5.41,
+        2.54,
+        -3.54
+      ],
+      "max": [
+        -4.99,
+        2.78,
+        -2.76
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -5.41,
+        1.78,
+        -3.075
+      ],
+      "max": [
+        -4.99,
+        2.54,
+        -2.76
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -4.905,
+        2.41,
+        -3.42
+      ],
+      "max": [
+        -4.855,
+        2.59,
+        -2.88
+      ],
+      "color": "#24282e",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -5.43,
+        1.28,
+        -2.64
+      ],
+      "max": [
+        -4.89,
+        2.78,
+        -1.86
+      ],
+      "color": "#a4a9af",
+      "detail": true,
+      "finish": "painted plating",
+      "paintable": false
+    },
+    {
+      "min": [
+        -5.43,
+        1.28,
+        -2.64
+      ],
+      "max": [
+        -4.89,
+        2.78,
+        -1.86
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -4.905,
+        2.41,
+        -2.52
+      ],
+      "max": [
+        -4.855,
+        2.59,
+        -1.98
+      ],
+      "color": "#24282e",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -5.18,
+        1.28,
+        -4.97
+      ],
+      "max": [
+        -5.14,
+        1.32,
+        -4.93
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "t0",
+      "at": [
+        -5.16,
+        1.28,
+        -4.95
+      ],
+      "dir": "-y"
+    }
+  ]
+}

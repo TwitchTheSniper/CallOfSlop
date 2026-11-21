@@ -1,0 +1,122 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Valkyrie Door Stbd Tac",
+  "description": "Part of the Valkyrie IV, from its model's Bulkhead Door Stbd Tac (Part Bulkhead Doors).",
+  "group": "Ship",
+  "section": "Valkyrie IV dropship",
+  "role": "door",
+  "tool": "welder",
+  "door": {
+    "kind": "slide",
+    "axis": "-x",
+    "travel": 1.02,
+    "seconds": 1.0,
+    "hang": "hang"
+  },
+  "mass": 31.5,
+  "health": 126,
+  "armour": 8,
+  "material": "steel",
+  "color": "#373e47",
+  "attachSeconds": 2.5,
+  "boxes": [
+    {
+      "min": [
+        -4.54,
+        1.3,
+        -6.04
+      ],
+      "max": [
+        -3.56,
+        3.4,
+        -5.96
+      ],
+      "color": "#373e47",
+      "detail": true,
+      "finish": "painted plating",
+      "paintable": false
+    },
+    {
+      "min": [
+        -4.54,
+        1.3,
+        -6.04
+      ],
+      "max": [
+        -3.56,
+        3.4,
+        -5.96
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -4.065,
+        1.34,
+        -6.0475
+      ],
+      "max": [
+        -4.035,
+        3.36,
+        -5.9525
+      ],
+      "color": "#24282e",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -4.44,
+        2.0492,
+        -6.05
+      ],
+      "max": [
+        -3.66,
+        2.1092,
+        -5.95
+      ],
+      "color": "#d4a22a",
+      "detail": true,
+      "finish": "gloss paint",
+      "paintable": false
+    },
+    {
+      "min": [
+        -4.44,
+        2.0492,
+        -6.05
+      ],
+      "max": [
+        -3.66,
+        2.1092,
+        -5.95
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -4.07,
+        3.36,
+        -6.02
+      ],
+      "max": [
+        -4.03,
+        3.4,
+        -5.98
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "hang",
+      "at": [
+        -4.05,
+        3.4,
+        -6.0
+      ],
+      "dir": "+y"
+    }
+  ]
+}

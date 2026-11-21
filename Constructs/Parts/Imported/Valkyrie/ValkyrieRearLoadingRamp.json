@@ -1,0 +1,419 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Valkyrie Rear Loading Ramp",
+  "description": "Part of the Valkyrie IV, from its model's Rear Loading Ramp (Hull Rear Ramp).",
+  "group": "Ship",
+  "section": "Valkyrie IV dropship",
+  "role": "door",
+  "tool": "welder",
+  "door": {
+    "kind": "swing",
+    "axis": "+x",
+    "pivot": [
+      0.0,
+      1.28,
+      11.3
+    ],
+    "angle": 121.0,
+    "seconds": 4.0,
+    "hang": "hang",
+    "held": true
+  },
+  "mass": 659.3,
+  "health": 2637,
+  "armour": 20,
+  "material": "steel",
+  "color": "#373e47",
+  "attachSeconds": 6.0,
+  "boxes": [
+    {
+      "min": [
+        -2.09,
+        1.27,
+        11.2
+      ],
+      "max": [
+        2.09,
+        3.79,
+        11.44
+      ],
+      "color": "#373e47",
+      "detail": true,
+      "finish": "painted plating",
+      "paintable": false
+    },
+    {
+      "min": [
+        -1.8,
+        1.28,
+        11.2
+      ],
+      "max": [
+        -1.504,
+        3.79,
+        11.44
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -1.504,
+        1.28,
+        11.2
+      ],
+      "max": [
+        -1.128,
+        3.79,
+        11.44
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        1.504,
+        1.28,
+        11.2
+      ],
+      "max": [
+        1.8,
+        3.79,
+        11.44
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        1.8,
+        1.28,
+        11.2
+      ],
+      "max": [
+        1.92,
+        3.79,
+        11.44
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        1.92,
+        1.28,
+        11.2
+      ],
+      "max": [
+        2.07,
+        3.79,
+        11.44
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        1.128,
+        1.28,
+        11.2
+      ],
+      "max": [
+        1.504,
+        3.79,
+        11.44
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -1.128,
+        1.28,
+        11.2
+      ],
+      "max": [
+        1.128,
+        3.79,
+        11.44
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -1.92,
+        1.28,
+        11.2
+      ],
+      "max": [
+        -1.8,
+        3.79,
+        11.44
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.07,
+        1.28,
+        11.2
+      ],
+      "max": [
+        -1.92,
+        3.79,
+        11.44
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -1.81,
+        1.43,
+        11.39
+      ],
+      "max": [
+        1.81,
+        3.63,
+        11.49
+      ],
+      "color": "#947e5c",
+      "detail": true,
+      "finish": "hazard paint",
+      "paintable": false
+    },
+    {
+      "min": [
+        -1.81,
+        1.43,
+        11.39
+      ],
+      "max": [
+        1.81,
+        3.63,
+        11.49
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        1.87,
+        1.32,
+        11.18
+      ],
+      "max": [
+        2.05,
+        3.74,
+        11.46
+      ],
+      "color": "#d4a22a",
+      "detail": true,
+      "finish": "gloss paint",
+      "paintable": false
+    },
+    {
+      "min": [
+        1.87,
+        1.32,
+        11.18
+      ],
+      "max": [
+        2.05,
+        3.74,
+        11.46
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.05,
+        1.32,
+        11.18
+      ],
+      "max": [
+        -1.87,
+        3.74,
+        11.46
+      ],
+      "color": "#d4a22a",
+      "detail": true,
+      "finish": "gloss paint",
+      "paintable": false
+    },
+    {
+      "min": [
+        -2.05,
+        1.32,
+        11.18
+      ],
+      "max": [
+        -1.87,
+        3.74,
+        11.46
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -1.69,
+        1.48,
+        11.145
+      ],
+      "max": [
+        1.69,
+        1.56,
+        11.215
+      ],
+      "color": "#24282e",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -1.69,
+        1.48,
+        11.145
+      ],
+      "max": [
+        1.69,
+        1.56,
+        11.215
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -1.69,
+        1.82,
+        11.145
+      ],
+      "max": [
+        1.69,
+        1.9,
+        11.215
+      ],
+      "color": "#24282e",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -1.69,
+        1.82,
+        11.145
+      ],
+      "max": [
+        1.69,
+        1.9,
+        11.215
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -1.69,
+        2.16,
+        11.145
+      ],
+      "max": [
+        1.69,
+        2.24,
+        11.215
+      ],
+      "color": "#24282e",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -1.69,
+        2.16,
+        11.145
+      ],
+      "max": [
+        1.69,
+        2.24,
+        11.215
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -1.69,
+        2.5,
+        11.145
+      ],
+      "max": [
+        1.69,
+        2.58,
+        11.215
+      ],
+      "color": "#24282e",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -1.69,
+        2.5,
+        11.145
+      ],
+      "max": [
+        1.69,
+        2.58,
+        11.215
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -1.69,
+        3.5,
+        11.145
+      ],
+      "max": [
+        1.69,
+        3.58,
+        11.215
+      ],
+      "color": "#24282e",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -1.69,
+        3.5,
+        11.145
+      ],
+      "max": [
+        1.69,
+        3.58,
+        11.215
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.02,
+        1.28,
+        11.3
+      ],
+      "max": [
+        0.02,
+        1.32,
+        11.34
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "hang",
+      "at": [
+        0.0,
+        1.28,
+        11.32
+      ],
+      "dir": "-y"
+    }
+  ]
+}

@@ -1,0 +1,122 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Valkyrie Door Troop Eng",
+  "description": "Part of the Valkyrie IV, from its model's Bulkhead Door Troop Eng (Part Bulkhead Doors).",
+  "group": "Ship",
+  "section": "Valkyrie IV dropship",
+  "role": "door",
+  "tool": "welder",
+  "door": {
+    "kind": "slide",
+    "axis": "-x",
+    "travel": 1.02,
+    "seconds": 1.0,
+    "hang": "hang"
+  },
+  "mass": 31.5,
+  "health": 126,
+  "armour": 8,
+  "material": "steel",
+  "color": "#373e47",
+  "attachSeconds": 2.5,
+  "boxes": [
+    {
+      "min": [
+        -0.49,
+        1.3,
+        5.34
+      ],
+      "max": [
+        0.49,
+        3.4,
+        5.42
+      ],
+      "color": "#373e47",
+      "detail": true,
+      "finish": "painted plating",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.49,
+        1.3,
+        5.34
+      ],
+      "max": [
+        0.49,
+        3.4,
+        5.42
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.015,
+        1.34,
+        5.3325
+      ],
+      "max": [
+        0.015,
+        3.36,
+        5.4275
+      ],
+      "color": "#24282e",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.39,
+        2.0492,
+        5.33
+      ],
+      "max": [
+        0.39,
+        2.1092,
+        5.43
+      ],
+      "color": "#d4a22a",
+      "detail": true,
+      "finish": "gloss paint",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.39,
+        2.0492,
+        5.33
+      ],
+      "max": [
+        0.39,
+        2.1092,
+        5.43
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.02,
+        3.36,
+        5.36
+      ],
+      "max": [
+        0.02,
+        3.4,
+        5.4
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "hang",
+      "at": [
+        0.0,
+        3.4,
+        5.38
+      ],
+      "dir": "+y"
+    }
+  ]
+}

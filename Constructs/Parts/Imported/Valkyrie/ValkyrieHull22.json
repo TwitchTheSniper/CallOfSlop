@@ -1,0 +1,563 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Valkyrie Hull 22",
+  "description": "Part of the Valkyrie IV, from its model's Hull Lower Chassis (Ship Hull Structure).",
+  "group": "Ship",
+  "section": "Valkyrie IV dropship",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 619.1,
+  "health": 2476,
+  "armour": 8,
+  "material": "steel",
+  "color": "#d4a22a",
+  "attachSeconds": 2.5,
+  "boxes": [
+    {
+      "min": [
+        1.7417,
+        1.2995,
+        10.84
+      ],
+      "max": [
+        2.09,
+        1.3345,
+        11.2
+      ],
+      "color": "#d4a22a",
+      "detail": true,
+      "finish": "gloss paint",
+      "paintable": false
+    },
+    {
+      "min": [
+        1.3933,
+        1.2995,
+        10.84
+      ],
+      "max": [
+        1.7417,
+        1.3345,
+        11.2
+      ],
+      "color": "#24282e",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        1.045,
+        1.2995,
+        10.84
+      ],
+      "max": [
+        1.3933,
+        1.3345,
+        11.2
+      ],
+      "color": "#d4a22a",
+      "detail": true,
+      "finish": "gloss paint",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.6967,
+        1.2995,
+        10.84
+      ],
+      "max": [
+        1.045,
+        1.3345,
+        11.2
+      ],
+      "color": "#24282e",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.3483,
+        1.2995,
+        10.84
+      ],
+      "max": [
+        0.6967,
+        1.3345,
+        11.2
+      ],
+      "color": "#d4a22a",
+      "detail": true,
+      "finish": "gloss paint",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.0,
+        1.2995,
+        10.84
+      ],
+      "max": [
+        0.3483,
+        1.3345,
+        11.2
+      ],
+      "color": "#24282e",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        1.91,
+        1.2995,
+        8.8167
+      ],
+      "max": [
+        2.13,
+        1.3345,
+        9.1833
+      ],
+      "color": "#24282e",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        1.91,
+        1.2995,
+        9.1833
+      ],
+      "max": [
+        2.13,
+        1.3345,
+        9.55
+      ],
+      "color": "#d4a22a",
+      "detail": true,
+      "finish": "gloss paint",
+      "paintable": false
+    },
+    {
+      "min": [
+        1.91,
+        1.2995,
+        9.55
+      ],
+      "max": [
+        2.13,
+        1.3345,
+        9.9167
+      ],
+      "color": "#24282e",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        1.91,
+        1.2995,
+        9.9167
+      ],
+      "max": [
+        2.13,
+        1.3345,
+        10.2833
+      ],
+      "color": "#d4a22a",
+      "detail": true,
+      "finish": "gloss paint",
+      "paintable": false
+    },
+    {
+      "min": [
+        1.91,
+        1.2995,
+        10.2833
+      ],
+      "max": [
+        2.13,
+        1.3345,
+        10.65
+      ],
+      "color": "#24282e",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        2.13,
+        1.18,
+        11.14
+      ],
+      "max": [
+        5.75,
+        3.78,
+        11.42
+      ],
+      "color": "#373e47",
+      "detail": true,
+      "finish": "painted plating",
+      "paintable": false
+    },
+    {
+      "min": [
+        5.47,
+        1.28,
+        11.36
+      ],
+      "max": [
+        5.5,
+        3.78,
+        11.42
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        5.47,
+        1.23,
+        11.38
+      ],
+      "max": [
+        5.51,
+        1.27,
+        11.42
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        5.47,
+        1.18,
+        11.38
+      ],
+      "max": [
+        5.51,
+        1.23,
+        11.42
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        2.5757,
+        1.28,
+        11.14
+      ],
+      "max": [
+        5.44,
+        3.78,
+        11.42
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        5.44,
+        1.28,
+        11.36
+      ],
+      "max": [
+        5.47,
+        3.78,
+        11.42
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        2.5757,
+        1.18,
+        11.38
+      ],
+      "max": [
+        5.47,
+        1.28,
+        11.42
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        2.37,
+        1.28,
+        11.14
+      ],
+      "max": [
+        2.5757,
+        3.78,
+        11.42
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        2.37,
+        1.18,
+        11.38
+      ],
+      "max": [
+        2.5757,
+        1.28,
+        11.42
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        2.35,
+        1.28,
+        11.14
+      ],
+      "max": [
+        2.37,
+        3.78,
+        11.42
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        2.35,
+        1.18,
+        11.38
+      ],
+      "max": [
+        2.37,
+        1.28,
+        11.42
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        2.33,
+        1.28,
+        11.14
+      ],
+      "max": [
+        2.35,
+        3.78,
+        11.42
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        2.33,
+        1.18,
+        11.38
+      ],
+      "max": [
+        2.35,
+        1.28,
+        11.42
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        2.13,
+        1.28,
+        11.14
+      ],
+      "max": [
+        2.33,
+        3.78,
+        11.42
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        2.13,
+        1.18,
+        11.38
+      ],
+      "max": [
+        2.33,
+        1.28,
+        11.42
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        2.17,
+        1.28,
+        11.09
+      ],
+      "max": [
+        5.71,
+        3.78,
+        11.15
+      ],
+      "color": "#a4a9af",
+      "detail": true,
+      "finish": "painted plating",
+      "paintable": false
+    },
+    {
+      "min": [
+        2.17,
+        1.28,
+        11.09
+      ],
+      "max": [
+        5.44,
+        3.78,
+        11.15
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        2.12,
+        3.72,
+        11.12
+      ],
+      "max": [
+        5.76,
+        3.8,
+        11.44
+      ],
+      "color": "#24282e",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        2.12,
+        3.72,
+        11.12
+      ],
+      "max": [
+        5.44,
+        3.8,
+        11.44
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        5.44,
+        3.72,
+        11.36
+      ],
+      "max": [
+        5.5,
+        3.78,
+        11.44
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        5.5,
+        3.72,
+        11.42
+      ],
+      "max": [
+        5.5243,
+        3.78,
+        11.44
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        2.07,
+        1.25,
+        11.11
+      ],
+      "max": [
+        2.23,
+        3.81,
+        11.45
+      ],
+      "color": "#24282e",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        2.07,
+        1.28,
+        11.11
+      ],
+      "max": [
+        2.23,
+        3.81,
+        11.45
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        2.07,
+        1.25,
+        11.38
+      ],
+      "max": [
+        2.23,
+        1.28,
+        11.45
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        3.92,
+        1.28,
+        11.26
+      ],
+      "max": [
+        3.96,
+        1.32,
+        11.3
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        3.93,
+        2.14,
+        11.38
+      ],
+      "max": [
+        3.97,
+        2.18,
+        11.42
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "t0",
+      "at": [
+        3.94,
+        1.28,
+        11.28
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "t1",
+      "at": [
+        3.95,
+        2.16,
+        11.42
+      ],
+      "dir": "+z"
+    }
+  ]
+}

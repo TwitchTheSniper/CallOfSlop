@@ -1,0 +1,246 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Valkyrie Gear Fwd Stbd",
+  "description": "Part of the Valkyrie IV, from its model's LandingGear Fwd Stbd (Part Landing Gear).",
+  "group": "Ship",
+  "section": "Valkyrie IV dropship",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 137.2,
+  "health": 549,
+  "armour": 8,
+  "material": "steel",
+  "color": "#947e5c",
+  "attachSeconds": 2.5,
+  "boxes": [
+    {
+      "min": [
+        -4.775,
+        0.0,
+        -9.475
+      ],
+      "max": [
+        -3.325,
+        0.16,
+        -8.125
+      ],
+      "color": "#947e5c",
+      "detail": true,
+      "finish": "hazard paint",
+      "paintable": false
+    },
+    {
+      "min": [
+        -4.775,
+        0.0,
+        -9.475
+      ],
+      "max": [
+        -3.325,
+        0.16,
+        -8.125
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -4.575,
+        0.15,
+        -9.275
+      ],
+      "max": [
+        -3.525,
+        0.29,
+        -8.325
+      ],
+      "color": "#24282e",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -4.575,
+        0.15,
+        -9.275
+      ],
+      "max": [
+        -3.525,
+        0.29,
+        -8.325
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -4.26,
+        0.25,
+        -9.01
+      ],
+      "max": [
+        -3.84,
+        0.99,
+        -8.59
+      ],
+      "color": "#c6c2b8",
+      "detail": true,
+      "finish": "painted plating",
+      "paintable": false
+    },
+    {
+      "min": [
+        -4.26,
+        0.25,
+        -9.01
+      ],
+      "max": [
+        -3.84,
+        0.96,
+        -8.59
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -4.1453,
+        0.1682,
+        -9.4154
+      ],
+      "max": [
+        -3.9547,
+        0.9518,
+        -8.9046
+      ],
+      "color": "#474f5b",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          -4.05,
+          0.9518,
+          -9.1055
+        ],
+        [
+          -4.1453,
+          0.9294,
+          -9.0553
+        ],
+        [
+          -4.1453,
+          0.8845,
+          -8.9548
+        ],
+        [
+          -4.05,
+          0.8621,
+          -8.9046
+        ],
+        [
+          -3.9547,
+          0.8845,
+          -8.9548
+        ],
+        [
+          -3.9547,
+          0.9294,
+          -9.0553
+        ],
+        [
+          -4.05,
+          0.2579,
+          -9.4154
+        ],
+        [
+          -4.1453,
+          0.2355,
+          -9.3652
+        ],
+        [
+          -4.1453,
+          0.1906,
+          -9.2647
+        ],
+        [
+          -4.05,
+          0.1682,
+          -9.2145
+        ],
+        [
+          -3.9547,
+          0.1906,
+          -9.2647
+        ],
+        [
+          -3.9547,
+          0.2355,
+          -9.3652
+        ],
+        [
+          -4.05,
+          0.907,
+          -9.0051
+        ],
+        [
+          -4.05,
+          0.213,
+          -9.3149
+        ]
+      ],
+      "finish": "steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -4.42,
+        0.74,
+        -9.17
+      ],
+      "max": [
+        -3.68,
+        1.02,
+        -8.43
+      ],
+      "color": "#24282e",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -4.42,
+        0.74,
+        -9.17
+      ],
+      "max": [
+        -3.68,
+        0.96,
+        -8.43
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -4.07,
+        0.92,
+        -8.82
+      ],
+      "max": [
+        -4.03,
+        0.96,
+        -8.78
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "t0",
+      "at": [
+        -4.05,
+        0.96,
+        -8.8
+      ],
+      "dir": "+y"
+    }
+  ]
+}

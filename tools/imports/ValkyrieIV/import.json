@@ -1,0 +1,52 @@
+{
+  // The Valkyrie-IV twin-boom dropship, made by another AI as a three.js page and exported as ship.glb (Karl, 2026-11-21:
+  // "inputting ship designs from another AI"). The importer (Source/PartKit/Generators/ImportedShips.cs, --gen-parts
+  // imported_ships) turns each named object of the model into a part of its own and the whole into a blueprint.
+  "name": "Valkyrie IV",
+  "prefix": "Valkyrie",
+  "section": "Valkyrie IV dropship",
+  "blueprint": "ValkyrieIV.json",
+  "description": "A twin-boom dropship: two armoured hulls joined by a central assault bay, a tandem glass cockpit between the noses, a VTOL pod on each stub wing and a cargo ramp at the stern. Inside: the cockpit, sensor and tactical stations, five troop jump seats, a med bay, crew quarters, an armory, an engineering bay with twin reactors and an overhead gantry.",
+  "model": "ship.glb",
+  // The model's bow is +z; the game's is -z.
+  "turn": 180,
+  // Its rooms were 1.84 m floor to roof and its doors 1.48 m: everything above 2.6 m (1.32 m over the deck at 1.28) goes up
+  // 0.66 m, so the rooms are 2.5 m and the doors 2.14 m. A rigid object moves whole, by where its middle is.
+  "raise": { "above": 2.6, "by": 0.66 },
+  "rigid": [ "Ship_Modular_Parts" ],
+  "stretch": [ "Part_Bulkhead_Doors", "Part_Overhead_Gantry", "Part_Landing_Gear" ],
+  // Objects split into pieces that break off one at a time: the cell size in metres across the deck.
+  "pieces": { "Hull_Lower_Chassis": 4.5, "Hull_Roof_Shell": 5.0 },
+  // What the parts are named after (the prefix goes in front): a long object name is shortened by these, in order.
+  "shorten": [
+    [ "Bulkhead_Door_", "Door " ], [ "Hull_Lower_Chassis", "Hull" ], [ "Hull_Roof_Shell", "Roof" ], [ "Hull_Cockpit_Canopy", "Canopy" ],
+    [ "Starboard", "Stbd" ], [ "Operator_", "" ], [ "Wing_Pylon_", "Wing " ], [ "LandingGear_", "Gear " ], [ "Diagnostic_", "" ],
+    [ "_Autocannon", "" ], [ "Turret_", "Turret " ], [ "Coolant_Manifold_", "Coolant " ], [ "Main_Thruster_", "Thruster " ],
+    [ "Reactor_Core_", "Reactor " ], [ "Cockpit_", "" ], [ "Comms_Mast_", "Mast " ], [ "Nose_Optical_Sensor_", "Nose Eye " ],
+    [ "_Console", " Console" ], [ "Wall_", "Wall " ], [ "MedBay_", "Med " ], [ "Armory_", "Armory " ], [ "Cargo_Crate_", "Crate " ],
+    [ "Gantry_", "Gantry " ], [ "Nav_Beacon_", "Beacon " ], [ "_", " " ]
+  ],
+  "roles": [
+    { "match": "Bulkhead_Door_*", "role": "slideDoor", "leaf": [ 3, 4, 5 ], "travel": 1.02, "seconds": 1.0 },
+    { "match": "Rear_Loading_Ramp", "role": "swingDoor", "axis": "+x", "angle": 121, "seconds": 4.0 },
+    { "match": "VTOL_Pod_*", "role": "swingDoor", "axis": "+x", "angle": -90, "seconds": 2.5, "switch": "VTOL" },
+    { "match": "Pilot_Seat_Front", "role": "seat", "helm": true, "pilot": true },
+    { "match": "Gunner_Seat_Aft", "role": "seat" },
+    { "match": "*_Chair", "role": "seat" },
+    { "match": "JumpSeat_*", "role": "seat" },
+    { "match": "Crew_Double_Bunk", "role": "bunk" },
+    { "match": "MedBay_Diagnostic_Bed", "role": "medBed" },
+    { "match": "Cockpit_Main_Console", "role": "flightComputer" },
+    { "match": "Reactor_Core_*", "role": "generator", "rate": 4500 },
+    { "match": "Main_Thruster_*", "role": "thruster", "exhaust": "+z", "share": 0.35 }
+  ],
+  // Lift jets under the VTOL pods' pivots (hidden in the pod's nozzle in its VTOL pose): together they lift this share of the ship's weight.
+  "lift": { "under": "VTOL_Pod_*", "share": 3.6 },
+  // The VTOL pods' switch, on the troop bay's starboard wall, and an OR gate on the port wall that passes it on (a wire reaches 8 m,
+  // and the pods are 17 m apart).
+  "fittings": [
+    { "id": "vtol", "part": "Bakelite Switch", "by": "back", "on": "Wall_Stbd_Troop", "face": "+x", "z": 2.4, "config": { "startOn": false } },
+    { "id": "relay", "part": "OR Gate", "by": "-x", "on": "Wall_Port_Troop", "face": "-x", "z": 3.2, "y": 2.2 }
+  ],
+  "wires": [ [ "vtol", "VTOL_Pod_Starboard" ], [ "vtol", "relay" ], [ "relay", "VTOL_Pod_Port" ] ]
+}

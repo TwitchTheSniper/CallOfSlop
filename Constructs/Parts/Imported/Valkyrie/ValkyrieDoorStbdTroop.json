@@ -1,0 +1,122 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Valkyrie Door Stbd Troop",
+  "description": "Part of the Valkyrie IV, from its model's Bulkhead Door Stbd Troop (Part Bulkhead Doors).",
+  "group": "Ship",
+  "section": "Valkyrie IV dropship",
+  "role": "door",
+  "tool": "welder",
+  "door": {
+    "kind": "slide",
+    "axis": "+z",
+    "travel": 1.02,
+    "seconds": 1.0,
+    "hang": "hang"
+  },
+  "mass": 31.5,
+  "health": 126,
+  "armour": 8,
+  "material": "steel",
+  "color": "#373e47",
+  "attachSeconds": 2.5,
+  "boxes": [
+    {
+      "min": [
+        -2.46,
+        1.3,
+        0.01
+      ],
+      "max": [
+        -2.38,
+        3.4,
+        0.99
+      ],
+      "color": "#373e47",
+      "detail": true,
+      "finish": "painted plating",
+      "paintable": false
+    },
+    {
+      "min": [
+        -2.46,
+        1.3,
+        0.01
+      ],
+      "max": [
+        -2.38,
+        3.4,
+        0.99
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.4675,
+        1.34,
+        0.485
+      ],
+      "max": [
+        -2.3725,
+        3.36,
+        0.515
+      ],
+      "color": "#24282e",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -2.47,
+        2.0492,
+        0.11
+      ],
+      "max": [
+        -2.37,
+        2.1092,
+        0.89
+      ],
+      "color": "#d4a22a",
+      "detail": true,
+      "finish": "gloss paint",
+      "paintable": false
+    },
+    {
+      "min": [
+        -2.47,
+        2.0492,
+        0.11
+      ],
+      "max": [
+        -2.37,
+        2.1092,
+        0.89
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.44,
+        3.36,
+        0.48
+      ],
+      "max": [
+        -2.4,
+        3.4,
+        0.52
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "hang",
+      "at": [
+        -2.42,
+        3.4,
+        0.5
+      ],
+      "dir": "+y"
+    }
+  ]
+}

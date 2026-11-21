@@ -1,0 +1,57 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Valkyrie Nose Eye Stbd",
+  "description": "Part of the Valkyrie IV, from its model's Nose Optical Sensor Starboard (Part Antennas And Sensors).",
+  "group": "Ship",
+  "section": "Valkyrie IV dropship",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 5.0,
+  "health": 120,
+  "armour": 8,
+  "material": "steel",
+  "color": "#38e8ff",
+  "attachSeconds": 2.5,
+  "boxes": [
+    {
+      "min": [
+        -4.19,
+        2.445,
+        -13.34
+      ],
+      "max": [
+        -3.91,
+        2.595,
+        -13.22
+      ],
+      "color": "#38e8ff",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -4.07,
+        2.5,
+        -13.32
+      ],
+      "max": [
+        -4.03,
+        2.54,
+        -13.28
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "t0",
+      "at": [
+        -4.05,
+        2.52,
+        -13.28
+      ],
+      "dir": "+z"
+    }
+  ]
+}

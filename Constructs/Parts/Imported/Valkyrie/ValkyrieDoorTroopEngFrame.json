@@ -1,0 +1,577 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Valkyrie Door Troop Eng Frame",
+  "description": "Part of the Valkyrie IV, from its model's Bulkhead Door Troop Eng (Part Bulkhead Doors).",
+  "group": "Ship",
+  "section": "Valkyrie IV dropship",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 24.1,
+  "health": 120,
+  "armour": 8,
+  "material": "steel",
+  "color": "#24282e",
+  "attachSeconds": 2.5,
+  "boxes": [
+    {
+      "min": [
+        -0.59,
+        3.395,
+        5.253
+      ],
+      "max": [
+        0.59,
+        3.485,
+        5.507
+      ],
+      "color": "#24282e",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.02,
+        3.395,
+        5.255
+      ],
+      "max": [
+        0.02,
+        3.44,
+        5.505
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.02,
+        3.44,
+        5.255
+      ],
+      "max": [
+        0.02,
+        3.485,
+        5.29
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.02,
+        3.44,
+        5.47
+      ],
+      "max": [
+        0.02,
+        3.485,
+        5.505
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.02,
+        3.395,
+        5.255
+      ],
+      "max": [
+        0.52,
+        3.42,
+        5.505
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.02,
+        3.42,
+        5.255
+      ],
+      "max": [
+        0.52,
+        3.485,
+        5.29
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.02,
+        3.42,
+        5.47
+      ],
+      "max": [
+        0.52,
+        3.485,
+        5.505
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.52,
+        3.395,
+        5.255
+      ],
+      "max": [
+        -0.02,
+        3.42,
+        5.505
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.52,
+        3.42,
+        5.255
+      ],
+      "max": [
+        -0.02,
+        3.485,
+        5.29
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.52,
+        3.42,
+        5.47
+      ],
+      "max": [
+        -0.02,
+        3.485,
+        5.505
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.59,
+        3.395,
+        5.255
+      ],
+      "max": [
+        -0.52,
+        3.485,
+        5.29
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.59,
+        3.395,
+        5.47
+      ],
+      "max": [
+        -0.52,
+        3.485,
+        5.505
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.52,
+        3.395,
+        5.255
+      ],
+      "max": [
+        0.56,
+        3.485,
+        5.29
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.52,
+        3.395,
+        5.47
+      ],
+      "max": [
+        0.56,
+        3.485,
+        5.505
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.56,
+        3.395,
+        5.255
+      ],
+      "max": [
+        0.59,
+        3.485,
+        5.29
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.56,
+        3.395,
+        5.47
+      ],
+      "max": [
+        0.59,
+        3.485,
+        5.505
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.495,
+        1.28,
+        5.255
+      ],
+      "max": [
+        0.585,
+        3.42,
+        5.505
+      ],
+      "color": "#24282e",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.495,
+        1.28,
+        5.255
+      ],
+      "max": [
+        0.52,
+        3.42,
+        5.505
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.52,
+        1.28,
+        5.255
+      ],
+      "max": [
+        0.56,
+        1.32,
+        5.29
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.52,
+        1.28,
+        5.36
+      ],
+      "max": [
+        0.56,
+        1.32,
+        5.4
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.52,
+        1.28,
+        5.47
+      ],
+      "max": [
+        0.56,
+        1.32,
+        5.505
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.52,
+        1.32,
+        5.255
+      ],
+      "max": [
+        0.56,
+        3.42,
+        5.29
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.52,
+        1.32,
+        5.47
+      ],
+      "max": [
+        0.56,
+        3.42,
+        5.505
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.56,
+        1.28,
+        5.255
+      ],
+      "max": [
+        0.585,
+        3.42,
+        5.29
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.56,
+        1.28,
+        5.47
+      ],
+      "max": [
+        0.585,
+        3.42,
+        5.505
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.585,
+        1.28,
+        5.257
+      ],
+      "max": [
+        -0.495,
+        3.42,
+        5.503
+      ],
+      "color": "#24282e",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.52,
+        1.28,
+        5.255
+      ],
+      "max": [
+        -0.495,
+        3.42,
+        5.505
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.585,
+        1.28,
+        5.255
+      ],
+      "max": [
+        -0.52,
+        3.42,
+        5.29
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.585,
+        1.28,
+        5.47
+      ],
+      "max": [
+        -0.52,
+        3.42,
+        5.505
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.715,
+        2.225,
+        5.26
+      ],
+      "max": [
+        -0.605,
+        2.375,
+        5.3
+      ],
+      "color": "#24282e",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.69,
+        2.265,
+        5.247
+      ],
+      "max": [
+        -0.63,
+        2.355,
+        5.297
+      ],
+      "color": "#38e8ff",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.715,
+        2.225,
+        5.46
+      ],
+      "max": [
+        -0.605,
+        2.375,
+        5.5
+      ],
+      "color": "#24282e",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.69,
+        2.265,
+        5.463
+      ],
+      "max": [
+        -0.63,
+        2.355,
+        5.513
+      ],
+      "color": "#2ee67a",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.28,
+        1.2895,
+        5.26
+      ],
+      "max": [
+        0.56,
+        1.3245,
+        5.5
+      ],
+      "color": "#d4a22a",
+      "detail": true,
+      "finish": "gloss paint",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.0,
+        1.2895,
+        5.26
+      ],
+      "max": [
+        0.28,
+        1.3245,
+        5.5
+      ],
+      "color": "#24282e",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.28,
+        1.2895,
+        5.26
+      ],
+      "max": [
+        0.0,
+        1.3245,
+        5.5
+      ],
+      "color": "#d4a22a",
+      "detail": true,
+      "finish": "gloss paint",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.56,
+        1.2895,
+        5.26
+      ],
+      "max": [
+        -0.28,
+        1.3245,
+        5.5
+      ],
+      "color": "#24282e",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.52,
+        1.28,
+        5.36
+      ],
+      "max": [
+        0.56,
+        1.32,
+        5.4
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.02,
+        3.4,
+        5.36
+      ],
+      "max": [
+        0.02,
+        3.44,
+        5.4
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "t0",
+      "at": [
+        0.54,
+        1.28,
+        5.38
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "t1",
+      "at": [
+        0.0,
+        3.4,
+        5.38
+      ],
+      "dir": "-y"
+    }
+  ]
+}

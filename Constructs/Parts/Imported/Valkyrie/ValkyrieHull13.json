@@ -1,0 +1,403 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Valkyrie Hull 13",
+  "description": "Part of the Valkyrie IV, from its model's Hull Lower Chassis (Ship Hull Structure).",
+  "group": "Ship",
+  "section": "Valkyrie IV dropship",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 197.6,
+  "health": 790,
+  "armour": 8,
+  "material": "steel",
+  "color": "#947e5c",
+  "attachSeconds": 2.5,
+  "boxes": [
+    {
+      "min": [
+        -5.84,
+        1.8,
+        -1.05
+      ],
+      "max": [
+        -5.76,
+        3.58,
+        1.95
+      ],
+      "color": "#947e5c",
+      "detail": true,
+      "finish": "hazard paint",
+      "paintable": false
+    },
+    {
+      "min": [
+        -5.84,
+        1.8,
+        -1.05
+      ],
+      "max": [
+        -5.76,
+        3.58,
+        1.95
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -5.84,
+        1.71,
+        2.45
+      ],
+      "max": [
+        -5.76,
+        3.31,
+        5.05
+      ],
+      "color": "#373e47",
+      "detail": true,
+      "finish": "painted plating",
+      "paintable": false
+    },
+    {
+      "min": [
+        -5.84,
+        1.75,
+        2.45
+      ],
+      "max": [
+        -5.775,
+        3.31,
+        5.05
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -5.92,
+        1.79,
+        3.175
+      ],
+      "max": [
+        -5.8,
+        1.89,
+        4.325
+      ],
+      "color": "#24282e",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -5.92,
+        1.79,
+        3.175
+      ],
+      "max": [
+        -5.8,
+        1.89,
+        4.325
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -5.92,
+        2.01,
+        3.175
+      ],
+      "max": [
+        -5.8,
+        2.11,
+        4.325
+      ],
+      "color": "#24282e",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -5.92,
+        2.01,
+        3.175
+      ],
+      "max": [
+        -5.8,
+        2.11,
+        4.325
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -5.92,
+        2.23,
+        3.175
+      ],
+      "max": [
+        -5.8,
+        2.33,
+        4.325
+      ],
+      "color": "#24282e",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -5.92,
+        2.23,
+        3.175
+      ],
+      "max": [
+        -5.8,
+        2.33,
+        4.325
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -5.92,
+        2.45,
+        3.175
+      ],
+      "max": [
+        -5.8,
+        2.55,
+        4.325
+      ],
+      "color": "#24282e",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -5.92,
+        2.45,
+        3.175
+      ],
+      "max": [
+        -5.8,
+        2.55,
+        4.325
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -5.865,
+        1.37,
+        2.2
+      ],
+      "max": [
+        -5.775,
+        1.47,
+        4.8
+      ],
+      "color": "#d4a22a",
+      "detail": true,
+      "finish": "gloss paint",
+      "paintable": false
+    },
+    {
+      "min": [
+        -5.865,
+        1.37,
+        2.2
+      ],
+      "max": [
+        -5.775,
+        1.47,
+        4.8
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -5.95,
+        1.13,
+        1.33
+      ],
+      "max": [
+        -5.67,
+        3.85,
+        1.67
+      ],
+      "color": "#24282e",
+      "detail": true,
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        -5.95,
+        1.13,
+        1.33
+      ],
+      "max": [
+        -5.865,
+        3.85,
+        1.67
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -5.865,
+        1.13,
+        1.33
+      ],
+      "max": [
+        -5.81,
+        1.57,
+        1.67
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -5.81,
+        1.13,
+        1.33
+      ],
+      "max": [
+        -5.775,
+        1.23,
+        1.67
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -5.81,
+        1.27,
+        1.33
+      ],
+      "max": [
+        -5.775,
+        1.57,
+        1.67
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -5.81,
+        1.23,
+        1.33
+      ],
+      "max": [
+        -5.775,
+        1.27,
+        1.63
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -5.865,
+        1.75,
+        1.33
+      ],
+      "max": [
+        -5.8,
+        3.85,
+        1.67
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -5.8,
+        1.75,
+        1.33
+      ],
+      "max": [
+        -5.775,
+        3.72,
+        1.67
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -5.8,
+        3.8,
+        1.33
+      ],
+      "max": [
+        -5.775,
+        3.85,
+        1.67
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -5.76,
+        1.28,
+        1.48
+      ],
+      "max": [
+        -5.72,
+        1.32,
+        1.52
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -5.76,
+        3.8,
+        1.33
+      ],
+      "max": [
+        -5.72,
+        3.85,
+        1.67
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -5.72,
+        3.8,
+        1.33
+      ],
+      "max": [
+        -5.67,
+        3.85,
+        1.67
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -5.76,
+        1.28,
+        1.48
+      ],
+      "max": [
+        -5.72,
+        1.32,
+        1.52
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "t0",
+      "at": [
+        -5.74,
+        1.28,
+        1.5
+      ],
+      "dir": "-y"
+    }
+  ]
+}

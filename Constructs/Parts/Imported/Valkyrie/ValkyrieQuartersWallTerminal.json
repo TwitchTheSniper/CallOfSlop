@@ -1,0 +1,86 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Valkyrie Quarters Wall Terminal",
+  "description": "Part of the Valkyrie IV, from its model's Quarters Wall Terminal (Part Consoles And Terminals).",
+  "group": "Ship",
+  "section": "Valkyrie IV dropship",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 69.3,
+  "health": 277,
+  "armour": 8,
+  "material": "steel",
+  "color": "#373e47",
+  "attachSeconds": 2.5,
+  "boxes": [
+    {
+      "min": [
+        2.59,
+        1.28,
+        -2.06
+      ],
+      "max": [
+        3.09,
+        2.02,
+        -1.04
+      ],
+      "color": "#373e47",
+      "detail": true,
+      "finish": "painted plating",
+      "paintable": false
+    },
+    {
+      "min": [
+        2.59,
+        1.28,
+        -2.06
+      ],
+      "max": [
+        3.09,
+        2.02,
+        -1.04
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        2.69,
+        2.06,
+        -1.78
+      ],
+      "max": [
+        2.75,
+        2.34,
+        -1.32
+      ],
+      "color": "#38e8ff",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        2.82,
+        1.28,
+        -1.57
+      ],
+      "max": [
+        2.86,
+        1.32,
+        -1.53
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "t0",
+      "at": [
+        2.84,
+        1.28,
+        -1.55
+      ],
+      "dir": "-y"
+    }
+  ]
+}

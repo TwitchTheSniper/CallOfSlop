@@ -1,0 +1,130 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Valkyrie Mast Port 02",
+  "description": "Part of the Valkyrie IV, from its model's Comms Mast Port 02 (Part Antennas And Sensors).",
+  "group": "Ship",
+  "section": "Valkyrie IV dropship",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 5.0,
+  "health": 120,
+  "armour": 8,
+  "material": "steel",
+  "color": "#24282e",
+  "attachSeconds": 2.5,
+  "boxes": [
+    {
+      "min": [
+        0.6067,
+        4.665,
+        2.85
+      ],
+      "max": [
+        0.6933,
+        6.015,
+        2.95
+      ],
+      "color": "#24282e",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          0.65,
+          6.015,
+          2.87
+        ],
+        [
+          0.624,
+          6.015,
+          2.885
+        ],
+        [
+          0.624,
+          6.015,
+          2.915
+        ],
+        [
+          0.65,
+          6.015,
+          2.93
+        ],
+        [
+          0.676,
+          6.015,
+          2.915
+        ],
+        [
+          0.676,
+          6.015,
+          2.885
+        ],
+        [
+          0.65,
+          4.665,
+          2.85
+        ],
+        [
+          0.6067,
+          4.665,
+          2.875
+        ],
+        [
+          0.6067,
+          4.665,
+          2.925
+        ],
+        [
+          0.65,
+          4.665,
+          2.95
+        ],
+        [
+          0.6933,
+          4.665,
+          2.925
+        ],
+        [
+          0.6933,
+          4.665,
+          2.875
+        ],
+        [
+          0.65,
+          6.015,
+          2.9
+        ],
+        [
+          0.65,
+          4.665,
+          2.9
+        ]
+      ],
+      "finish": "dirty steel",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.63,
+        4.72,
+        2.88
+      ],
+      "max": [
+        0.67,
+        4.76,
+        2.92
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "t0",
+      "at": [
+        0.65,
+        4.72,
+        2.9
+      ],
+      "dir": "-y"
+    }
+  ]
+}

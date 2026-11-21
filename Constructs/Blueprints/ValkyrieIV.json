@@ -1,0 +1,882 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Valkyrie IV",
+  "description": "A twin-boom dropship: two armoured hulls joined by a central assault bay, a tandem glass cockpit between the noses, a VTOL pod on each stub wing and a cargo ramp at the stern. Inside: the cockpit, sensor and tactical stations, five troop jump seats, a med bay, crew quarters, an armory, an engineering bay with twin reactors and an overhead gantry.",
+  "steps": [
+    {
+      "part": "Valkyrie Hull 10"
+    },
+    {
+      "part": "Valkyrie Hull 1",
+      "on": 0,
+      "socket": "t0",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Hull 2",
+      "on": 0,
+      "socket": "t1",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Hull 5",
+      "on": 0,
+      "socket": "t2",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Hull 6",
+      "on": 0,
+      "socket": "t3",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Hull 7",
+      "on": 2,
+      "socket": "t1",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Hull 3",
+      "on": 5,
+      "socket": "t1",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Hull 4",
+      "on": 5,
+      "socket": "t2",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Hull 8",
+      "on": 5,
+      "socket": "t3",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Hull 9",
+      "on": 0,
+      "socket": "t4",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Hull 11",
+      "on": 5,
+      "socket": "t4",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Hull 12",
+      "on": 5,
+      "socket": "t5",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Hull 13",
+      "on": 0,
+      "socket": "t5",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Hull 14",
+      "on": 0,
+      "socket": "t6",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Hull 15",
+      "on": 0,
+      "socket": "t7",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Hull 16",
+      "on": 10,
+      "socket": "t1",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Hull 17",
+      "on": 0,
+      "socket": "t8",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Hull 18",
+      "on": 0,
+      "socket": "t9",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Hull 19",
+      "on": 0,
+      "socket": "t10",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Hull 20",
+      "on": 10,
+      "socket": "t2",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Hull 21",
+      "on": 14,
+      "socket": "t1",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Hull 22",
+      "on": 14,
+      "socket": "t2",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Wall Rear",
+      "on": 4,
+      "socket": "t1",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Wall Port Troop",
+      "on": 5,
+      "socket": "t6",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Wall Stbd Troop",
+      "on": 0,
+      "socket": "t11",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Wall Port Nav Med",
+      "on": 5,
+      "socket": "t7",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Wall Port Med Quarters",
+      "on": 10,
+      "socket": "t3",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Wall Port Quarters Util",
+      "on": 10,
+      "socket": "t4",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Wall Port Eng",
+      "on": 10,
+      "socket": "t5",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Wall Stbd Tac Armory",
+      "on": 0,
+      "socket": "t12",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Wall Stbd Armory Mech",
+      "on": 0,
+      "socket": "t13",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Wall Stbd Eng",
+      "on": 0,
+      "socket": "t14",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Wall Troop Eng",
+      "on": 0,
+      "socket": "t15",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Roof 1",
+      "on": 1,
+      "socket": "t1",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Roof 2",
+      "on": 5,
+      "socket": "t8",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Roof 3",
+      "on": 3,
+      "socket": "t1",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Roof 4",
+      "on": 5,
+      "socket": "t9",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Roof 5",
+      "on": 1,
+      "socket": "t2",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Roof 6",
+      "on": 5,
+      "socket": "t10",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Roof 7",
+      "on": 9,
+      "socket": "t1",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Roof 8",
+      "on": 4,
+      "socket": "t2",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Roof 9",
+      "on": 9,
+      "socket": "t2",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Roof 10",
+      "on": 9,
+      "socket": "t3",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Canopy",
+      "on": 2,
+      "socket": "t2",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Wing Port",
+      "on": 10,
+      "socket": "t6",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Wing Stbd",
+      "on": 0,
+      "socket": "t16",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Rear Loading Ramp",
+      "on": 14,
+      "socket": "t3",
+      "by": "hang"
+    },
+    {
+      "part": "Valkyrie Reactor Port",
+      "on": 14,
+      "socket": "t4",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Coolant Port",
+      "on": 27,
+      "socket": "t1",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Thruster Port",
+      "on": 21,
+      "socket": "t1",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Reactor Stbd",
+      "on": 14,
+      "socket": "t5",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Thruster Stbd",
+      "on": 20,
+      "socket": "t1",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Main Console",
+      "on": 4,
+      "socket": "t3",
+      "by": "t0",
+      "config": {
+        "keys": "Ship",
+        "mouseAim": false
+      }
+    },
+    {
+      "part": "Valkyrie Side Console Port",
+      "on": 4,
+      "socket": "t4",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Side Console Stbd",
+      "on": 4,
+      "socket": "t5",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Nav Sensor Console",
+      "on": 5,
+      "socket": "t11",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Nav Server Rack 01",
+      "on": 5,
+      "socket": "t12",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Nav Server Rack 02",
+      "on": 5,
+      "socket": "t13",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Tactical Weapons Consol",
+      "on": 0,
+      "socket": "t17",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Tactical Data Rack",
+      "on": 0,
+      "socket": "t18",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Med Terminal",
+      "on": 5,
+      "socket": "t14",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Quarters Wall Terminal",
+      "on": 10,
+      "socket": "t7",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Turret Chin",
+      "on": 2,
+      "socket": "t3",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Turret Stbd Blister",
+      "on": 9,
+      "socket": "t4",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Gear Fwd Port",
+      "on": 10,
+      "socket": "t8",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Gear Fwd Stbd",
+      "on": 0,
+      "socket": "t19",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Gear Mid Port",
+      "on": 10,
+      "socket": "t9",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Gear Mid Stbd",
+      "on": 0,
+      "socket": "t20",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Gear Rear Port",
+      "on": 18,
+      "socket": "t1",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Gear Rear Stbd",
+      "on": 18,
+      "socket": "t2",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Door Cockpit Frame",
+      "on": 4,
+      "socket": "t6",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Door Cockpit",
+      "on": 4,
+      "socket": "t7",
+      "by": "hang"
+    },
+    {
+      "part": "Valkyrie Door Port Troop Frame",
+      "on": 10,
+      "socket": "t10",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Door Port Troop",
+      "on": 72,
+      "socket": "t1",
+      "by": "hang"
+    },
+    {
+      "part": "Valkyrie Door Stbd Troop Frame",
+      "on": 0,
+      "socket": "t21",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Door Stbd Troop",
+      "on": 74,
+      "socket": "t1",
+      "by": "hang"
+    },
+    {
+      "part": "Valkyrie Door Port Nav Frame",
+      "on": 5,
+      "socket": "t15",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Door Port Nav",
+      "on": 76,
+      "socket": "t1",
+      "by": "hang"
+    },
+    {
+      "part": "Valkyrie Door Port Med Frame",
+      "on": 10,
+      "socket": "t11",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Door Port Med",
+      "on": 78,
+      "socket": "t1",
+      "by": "hang"
+    },
+    {
+      "part": "Valkyrie Door Port Util Frame",
+      "on": 10,
+      "socket": "t12",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Door Port Util",
+      "on": 80,
+      "socket": "t1",
+      "by": "hang"
+    },
+    {
+      "part": "Valkyrie Door Port Eng Frame",
+      "on": 10,
+      "socket": "t13",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Door Port Eng",
+      "on": 82,
+      "socket": "t1",
+      "by": "hang"
+    },
+    {
+      "part": "Valkyrie Door Stbd Tac Frame",
+      "on": 0,
+      "socket": "t22",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Door Stbd Tac",
+      "on": 84,
+      "socket": "t1",
+      "by": "hang"
+    },
+    {
+      "part": "Valkyrie Door Stbd Mech Frame",
+      "on": 0,
+      "socket": "t23",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Door Stbd Mech",
+      "on": 86,
+      "socket": "t1",
+      "by": "hang"
+    },
+    {
+      "part": "Valkyrie Door Stbd Eng Frame",
+      "on": 0,
+      "socket": "t24",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Door Stbd Eng",
+      "on": 88,
+      "socket": "t1",
+      "by": "hang"
+    },
+    {
+      "part": "Valkyrie Door Troop Eng Frame",
+      "on": 14,
+      "socket": "t6",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Door Troop Eng",
+      "on": 90,
+      "socket": "t1",
+      "by": "hang"
+    },
+    {
+      "part": "Valkyrie Crew Double Bunk",
+      "on": 10,
+      "socket": "t14",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Crew Locker",
+      "on": 10,
+      "socket": "t15",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Med Bed",
+      "on": 5,
+      "socket": "t16",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Med Wall Cabinet",
+      "on": 5,
+      "socket": "t17",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Armory Weapon Rack",
+      "on": 0,
+      "socket": "t25",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Armory Lockers Bank",
+      "on": 0,
+      "socket": "t26",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Armory Workbench",
+      "on": 0,
+      "socket": "t27",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Troop Storage Bench",
+      "on": 14,
+      "socket": "t7",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Utility Storage Rack",
+      "on": 10,
+      "socket": "t16",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Crate 01",
+      "on": 0,
+      "socket": "t28",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Crate 02",
+      "on": 0,
+      "socket": "t29",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Crate 03",
+      "on": 101,
+      "socket": "t1",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Crate 04",
+      "on": 0,
+      "socket": "t30",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Crate 05",
+      "on": 0,
+      "socket": "t31",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Crate 06",
+      "on": 14,
+      "socket": "t8",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Crate 07",
+      "on": 14,
+      "socket": "t9",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Crate 08",
+      "on": 107,
+      "socket": "t1",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Gantry Crane Rails",
+      "on": 14,
+      "socket": "t10",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Coolant Stbd",
+      "on": 109,
+      "socket": "t1",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Gantry Hoist Trolley",
+      "on": 109,
+      "socket": "t2",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Dorsal Radar Dome",
+      "on": 40,
+      "socket": "t1",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Mast Port 01",
+      "on": 40,
+      "socket": "t2",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Mast Port 02",
+      "on": 40,
+      "socket": "t3",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Sensor Mast Stbd",
+      "on": 40,
+      "socket": "t4",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Beacon Port",
+      "on": 8,
+      "socket": "t1",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Nose Eye Port",
+      "on": 6,
+      "socket": "t1",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Beacon Stbd",
+      "on": 3,
+      "socket": "t2",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Nose Eye Stbd",
+      "on": 2,
+      "socket": "t4",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie VTOL Pod Port",
+      "on": 44,
+      "socket": "t1",
+      "by": "hang"
+    },
+    {
+      "part": "Valkyrie VTOL Pod Stbd",
+      "on": 45,
+      "socket": "t1",
+      "by": "hang"
+    },
+    {
+      "part": "Valkyrie Pilot Seat Front",
+      "on": 4,
+      "socket": "t8",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Gunner Seat Aft",
+      "on": 4,
+      "socket": "t9",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Turret Dorsal PointDefe",
+      "on": 39,
+      "socket": "t1",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie JumpSeat 02",
+      "on": 72,
+      "socket": "t2",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie JumpSeat 03",
+      "on": 72,
+      "socket": "t3",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie JumpSeat 04",
+      "on": 23,
+      "socket": "t1",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie JumpSeat 05",
+      "on": 23,
+      "socket": "t2",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie JumpSeat 01",
+      "on": 23,
+      "socket": "t3",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Nav Chair",
+      "on": 5,
+      "socket": "t18",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Tactical Chair",
+      "on": 0,
+      "socket": "t32",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Lift Jet Stbd 4",
+      "on": 44,
+      "socket": "t2",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Lift Jet Port 4",
+      "on": 45,
+      "socket": "t2",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Lift Jet Port 3",
+      "on": 133,
+      "socket": "t1",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Lift Jet Port 2",
+      "on": 134,
+      "socket": "t1",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Lift Jet Stbd 3",
+      "on": 132,
+      "socket": "t1",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Lift Jet Stbd 2",
+      "on": 136,
+      "socket": "t1",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Lift Jet Port 1",
+      "on": 135,
+      "socket": "t1",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Lift Jet Stbd 1",
+      "on": 137,
+      "socket": "t1",
+      "by": "t0"
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 24,
+      "socket": "fit vtol",
+      "by": "back",
+      "config": {
+        "startOn": false
+      }
+    },
+    {
+      "part": "OR Gate",
+      "on": 23,
+      "socket": "fit relay",
+      "by": "-x"
+    }
+  ],
+  "wires": [
+    [
+      122,
+      52
+    ],
+    [
+      140,
+      121
+    ],
+    [
+      140,
+      141
+    ],
+    [
+      141,
+      120
+    ]
+  ],
+  "conduit": true
+}

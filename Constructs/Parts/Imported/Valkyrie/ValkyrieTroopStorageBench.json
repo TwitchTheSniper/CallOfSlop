@@ -1,0 +1,144 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Valkyrie Troop Storage Bench",
+  "description": "Part of the Valkyrie IV, from its model's Troop Storage Bench (Part Armory And Cargo).",
+  "group": "Ship",
+  "section": "Valkyrie IV dropship",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 408.7,
+  "health": 1635,
+  "armour": 8,
+  "material": "steel",
+  "color": "#373e47",
+  "attachSeconds": 2.5,
+  "boxes": [
+    {
+      "min": [
+        -2.24,
+        1.28,
+        -2.725
+      ],
+      "max": [
+        -1.68,
+        1.72,
+        0.825
+      ],
+      "color": "#373e47",
+      "detail": true,
+      "finish": "painted plating",
+      "paintable": false
+    },
+    {
+      "min": [
+        -2.24,
+        1.28,
+        -2.725
+      ],
+      "max": [
+        -1.68,
+        1.72,
+        0.825
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.21,
+        1.72,
+        -2.675
+      ],
+      "max": [
+        -1.71,
+        1.8,
+        0.775
+      ],
+      "color": "#947e5c",
+      "detail": true,
+      "finish": "hazard paint",
+      "paintable": false
+    },
+    {
+      "min": [
+        -2.26,
+        1.28,
+        2.13
+      ],
+      "max": [
+        -1.74,
+        2.72,
+        2.97
+      ],
+      "color": "#a4a9af",
+      "detail": true,
+      "finish": "painted plating",
+      "paintable": false
+    },
+    {
+      "min": [
+        -2.26,
+        1.28,
+        2.13
+      ],
+      "max": [
+        -1.74,
+        2.72,
+        2.97
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.26,
+        1.28,
+        3.13
+      ],
+      "max": [
+        -1.74,
+        2.72,
+        3.97
+      ],
+      "color": "#a4a9af",
+      "detail": true,
+      "finish": "painted plating",
+      "paintable": false
+    },
+    {
+      "min": [
+        -2.26,
+        1.28,
+        3.13
+      ],
+      "max": [
+        -1.74,
+        2.72,
+        3.97
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -1.98,
+        1.28,
+        -0.97
+      ],
+      "max": [
+        -1.94,
+        1.32,
+        -0.93
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "t0",
+      "at": [
+        -1.96,
+        1.28,
+        -0.95
+      ],
+      "dir": "-y"
+    }
+  ]
+}
