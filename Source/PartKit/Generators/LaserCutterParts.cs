@@ -53,7 +53,7 @@ public sealed class LaserCutterParts : IPartGenerator
     private static Part Core()
     {
         var p = new Part("Laser Cutter", Small, "Extrusion",
-            "A Laser Cutter Core: cuts openings, notches and corners out of a formed panel or a flat extruded piece, by order. Weld Laser Bed Blocks beside its long side: the bed is their rectangle, up to 32 x 32 m, and its bridge carries one head per block across, so a wider bed cuts faster. Blanks come in by conveyor; the offcut drops into its bin. Needs power.",
+            "A Laser Cutter Core: cuts openings, notches and corners out of a formed panel or a flat extruded piece, by order. Weld Laser Bed Blocks beside its long side: the bed is their rectangle, up to 16 blocks a side and 128 in all (32 x 16 m), and its bridge carries one head per block across, so a wider bed cuts faster. Blanks come in by conveyor; the offcut drops into its bin. Needs power.",
             role: "storage", group: "Production", color: Body);
         const double e = 0.497, cz = 0.06; // (its body stops 3 mm inside its half cell; cz: where the cabinet meets the bin)
         // Solid: the plinth, the source cabinet (to 2.25 m) and the bin and extractor (to 2.0 m).
@@ -161,7 +161,8 @@ public sealed class LaserCutterParts : IPartGenerator
         p.Add(L([-0.14, 2.15, 0.46], [0.14, 3.4, 0.74], MachineLook.Steel, "steel", shape: Cyl("+y", 14)));
         foreach (var y in new[] { 2.6, 3.1 })
             p.Add(L([-0.16, y, 0.44], [0.16, y + 0.04, 0.76], MachineLook.Base, shape: Cyl("+y", 14))); // (its bands)
-        p.Add(MachineLook.Work(L([-0.17, 3.4, 0.43], [0.17, 3.46, 0.77], MachineLook.Base, shape: Cyl("+y", 14)), "smoke"));
+        p.Add(MachineLook.Work(L([-0.17, 3.4, 0.43], [0.17, 3.46, 0.77], MachineLook.Base, "soot", shape: Cyl("+y", 14)), "smoke"));
+        p.Add(L([-0.146, 3.3, 0.454], [0.146, 3.396, 0.746], "#2b2b2b", "soot", shape: Cyl("+y", 14))); // (soot round the stack's top)
         // Bolts along its plinth, both long sides.
         foreach (var z in new[] { -0.8, -0.4, 0.0, 0.4, 0.8 })
             foreach (var x in new[] { -e - 0.024, e + 0.004 })
@@ -222,7 +223,14 @@ public sealed class LaserCutterParts : IPartGenerator
             p.Add(Seam(Look(0.014, 0.026, 0.59, 0.75, 0.54, 0.58, MachineLook.Ink), face));
             // The rim's hazard edge round the outside, the skirt at its foot, and bolts along the rim.
             p.Add(Seam(Look(d - 0.004, d + 0.01, -e, e, rim + 0.02, top - 0.02, MachineLook.Accent, "hazard paint"), face));
-            p.Add(Seam(Look(d - 0.004, d + 0.012, -e, e, 0.0, plinth - 0.02, MachineLook.Base), face));
+            p.Add(Seam(Look(d - 0.004, d + 0.012, -e, e, 0.0, plinth - 0.02, MachineLook.Base, "dirty steel"), face));
+            // A rib at each end of the side (where the next block's side meets it) with bolt heads up it.
+            foreach (var t in new[] { -e + post + 0.04, e - post - 0.04 })
+            {
+                p.Add(Seam(Look(-0.006, 0.04, t - 0.025, t + 0.025, plinth + 0.004, rim - 0.004, Trim, paint: true), face));
+                foreach (var y in new[] { 0.3, 0.55 })
+                    p.Add(Seam(Look(0.04, 0.054, t - 0.012, t + 0.012, y, y + 0.024, MachineLook.Steel, "steel"), face));
+            }
             foreach (var t in new[] { -0.75, -0.25, 0.25, 0.75 })
                 p.Add(Seam(Look(d + 0.01, d + 0.026, t - 0.02, t + 0.02, top - 0.02, top - 0.004, MachineLook.Steel, "steel"), face)); // (bolt heads on the rim's top edge)
         }
@@ -241,7 +249,7 @@ public sealed class LaserCutterParts : IPartGenerator
         for (var k = 0; k < 7; k++)
         {
             var x = -0.81 + k * 0.27;
-            p.Add(L([x - 0.012, top + 0.05, -0.985], [x + 0.012, Slat, 0.985], MachineLook.Steel, "steel"));
+            p.Add(L([x - 0.012, top + 0.05, -0.985], [x + 0.012, Slat, 0.985], MachineLook.Steel, "dirty steel"));
         }
         // The rails: a girder on a post along each long edge, its running strip bare steel; the post's foot hazard-painted, a laser
         // warning sign on its outer face. On the far side (+x) the cable chain's tray lies along the rail, and the fume duct runs along the frame.
@@ -284,6 +292,17 @@ public sealed class LaserCutterParts : IPartGenerator
         p.Add(Seam(Work(MachineLook.D([-1, by0 - 0.03, bz0 + 0.03], [1, by0, bz1 - 0.03], MachineLook.Accent, "hazard paint"), "bridge"), "-z")); // (hazard paint under it: it runs over the bed)
         foreach (var x in new[] { -0.5, 0.5 })
             p.Add(Seam(Work(L([x - 0.025, by0 + 0.02, bz0 - 0.014], [x + 0.025, by1 - 0.02, bz0], Trim, paintable: true), "bridge"), "-z")); // (its stiffeners, on the back)
+        // Its back broken into sunk panels between the stiffeners, a steel rib along its top edge, and the cable chain's tray on top
+        // (the chain from the drive end out to the heads).
+        foreach (var (x0, x1) in new[] { (-0.96, -0.54), (-0.46, 0.46), (0.54, 0.96) })
+        {
+            p.Add(Seam(Work(L([x0, by0 + 0.06, bz0 - 0.008], [x1, by1 - 0.08, bz0], Trim, "worn paint", paintable: true), "bridge"), "-z"));
+            foreach (var x in new[] { x0 + 0.03, x1 - 0.03 })
+                p.Add(Seam(Work(L([x - 0.012, by1 - 0.13, bz0 - 0.02], [x + 0.012, by1 - 0.106, bz0 - 0.006], MachineLook.Steel, "steel"), "bridge"), "-z")); // (its bolts)
+        }
+        p.Add(Seam(Work(L([-1, by1 - 0.05, bz0 - 0.012], [1, by1 - 0.016, bz0], MachineLook.Steel, "steel"), "bridge"), "-z")); // (the rib)
+        p.Add(Seam(Work(L([-0.97, by1 + 0.026, -0.81], [0.97, by1 + 0.045, -0.67], MachineLook.Base), "bridge"), "-z"));
+        p.Add(Seam(Work(L([-0.96, by1 + 0.042, -0.8], [0.96, by1 + 0.09, -0.68], "#2b3036"), "bridge"), "-z")); // (the chain)
         p.Add(Seam(Work(L([-0.94, by1 - 0.12, bz1], [0.94, by1 - 0.06, bz1 + 0.012], MachineLook.Base), "bridge"), "-z")); // (the heads' rail on its front)
         p.Add(Seam(Work(L([-0.94, by0 + 0.06, bz1], [0.94, by0 + 0.12, bz1 + 0.012], MachineLook.Base), "bridge"), "-z"));
         // Its end trucks on the rails: the truck, two wheels on the running strip, buffers at both ends; on the far end the drive motor
@@ -293,6 +312,8 @@ public sealed class LaserCutterParts : IPartGenerator
             double[] Xs(double a, double b) => sx > 0 ? [a, b] : [-b, -a];
             var t = Xs(e - 0.14, e);
             p.Add(Seam(Work(L([t[0], 3.3, -0.98], [t[1], by1 + 0.02, -0.44], Trim, paintable: true), "bridge"), "-z", face));
+            foreach (var (z0, z1) in new[] { (-0.992, -0.976), (-0.444, -0.428) })
+                p.Add(Seam(Work(L([t[0] + 0.004, 3.3, z0], [t[1] - 0.004, 3.5, z1], MachineLook.Accent, "hazard paint"), "bridge"), "-z", face)); // (hazard ends on the truck)
             var w = Xs(e - 0.1, e - 0.02);
             foreach (var z in new[] { -0.88, -0.54 })
                 p.Add(Seam(Work(L([w[0], RailTop + 0.003, z - 0.055], [w[1], RailTop + 0.113, z + 0.055], MachineLook.Base, shape: Cyl(sx > 0 ? "+x" : "-x", 12)), "bridge"), "-z", face));

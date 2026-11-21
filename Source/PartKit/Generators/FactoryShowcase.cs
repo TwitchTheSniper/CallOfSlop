@@ -494,7 +494,7 @@ public sealed class FactoryShowcase : IPartGenerator
 
         // ---- 6. Panels and the cutter (main floor east, row 1) ----------------------------------------------------------------------
 
-        private sealed record Panels(VPart Sheet, VPart Former, VPart Glass, VPart Cutter, VPart RouterP);
+        private sealed record Panels(VPart Sheet, VPart Former, VPart Glass, VPart Cutter, VPart CutterOut, VPart RouterP); // (CutterOut: its Out Table, where its parts leave)
 
         /// <summary>
         /// The panel line: an Extruder with a Die Block (a 2 m die) makes steel sheet into the Panel Former; a Router after it sends a panel
@@ -512,7 +512,11 @@ public sealed class FactoryShowcase : IPartGenerator
             Convey(former, "Piece out", rp, "Piece in", PanelGreen, Small);
             var jc = On("Conveyor Join", 62.25f, -4.25f, Flow, "-y.0.0", CutterRed);
             Convey(rp, "Piece out", jc, "Piece in", PanelGreen, Small);
-            var cutter = On("Laser Cutter", 67.75f, Row1, Flow);
+            // The cutter on the block system (Sean, 2026-11-21): its Core faces the walkway, one Laser Bed Block east of it and the Out Table
+            // beyond (the bed's far side), whose Piece out goes on to the station line.
+            var cutter = On("Laser Cutter", 67.75f, Row1, Front);
+            var bed = Onto(cutter, "+x", "Laser Bed Block", "-x", 0);
+            var table = Onto(bed, "+x", "Out Table", "-z", 0);
             Convey(jc, "Piece out", cutter, "Piece in", CutterRed, Small);
             var offcut = Bin(70.75f, -7.75f, CutterRed); // (off the walkway)
             Link("chute", cutter, offcut, "Offcut", null, CutterRed);
@@ -522,7 +526,7 @@ public sealed class FactoryShowcase : IPartGenerator
             Sign(50.25f, Posts1, PanelGreen, "SHEET IN, PANELS OUT");
             Sign(64.75f, Posts1, CutterRed, "LASER CUTTER");
             Sign(56.25f, Posts2, GlassBlue, "GLASS SHEET");
-            return new Panels(sheet, former, glass, cutter, rp);
+            return new Panels(sheet, former, glass, cutter, table, rp);
         }
 
         // ---- 7. Wheels, the station line and the station ----------------------------------------------------------------------------
@@ -542,7 +546,7 @@ public sealed class FactoryShowcase : IPartGenerator
             ConveyVia(pn.RouterP, "Piece out 2", j1, "Piece in 3", PanelGreen, -7.6f, Small);
             var j2 = On("Conveyor Join", 73.75f, -10.75f, Flow, "-y.0.0", CutterRed);
             Convey(j1, "Piece out", j2, "Piece in", Wheels, Small);
-            Corner(pn.Cutter, "Piece out", j2, "Piece in 3", CutterRed, Small);
+            Corner(pn.CutterOut, "Piece out", j2, "Piece in 3", CutterRed, Small);
             var rs = On("Conveyor Router", 78.75f, -10.75f, Flow, "-y.0.0", StationTeal);
             Convey(j2, "Piece out", rs, "Piece in", StationTeal, Small);
             var station = On("Building Station", 92.25f, -9.25f, Front, "-y.0.0");

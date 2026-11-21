@@ -404,8 +404,8 @@ public static class MachineBlocks
             for (var e = c.FirstLink(i); e >= 0; e = c.NextLink(e))
             {
                 var o = c.OtherEnd(e);
-                if (c.BlockAsmOf[o] != id || o == core && !cd.BlockCoreSeams)
-                    continue; // (a Core that says "coreSeams": false hides no cell's seam: a Laser Cutter's rail runs on past it)
+                if (c.BlockAsmOf[o] != id || !cd.BlockCoreSeams && c.Parts[i].D.BlockRole == BlockRole.Block && (o == core || c.Parts[o].D.BlockRole == BlockRole.End))
+                    continue; // (a Core that says "coreSeams": false: only a weld to another bed cell hides a cell's seam, so a Laser Cutter's rail runs on past its Core and its Out Table)
                 ref readonly var l = ref c.Links[e >> 1];
                 var s = (e & 1) == 0 ? l.SA : l.SB; // (this part's own socket of the weld)
                 var socks = c.Parts[i].D.Sockets;

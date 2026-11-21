@@ -2037,7 +2037,27 @@
       "segments": 14,
       "front": "+y",
       "paintable": false,
+      "finish": "soot",
       "work": "smoke"
+    },
+    {
+      "min": [
+        -0.146,
+        3.3,
+        0.454
+      ],
+      "max": [
+        0.146,
+        3.396,
+        0.746
+      ],
+      "color": "#2b2b2b",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 14,
+      "front": "+y",
+      "paintable": false,
+      "finish": "soot"
     },
     {
       "min": [

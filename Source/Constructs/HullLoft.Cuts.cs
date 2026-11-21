@@ -21,7 +21,7 @@ public static partial class HullLoft
     private const string CutSplit = " | ";
     public const int MaxCuts = 6, CutMaxFacets = 96, CutWebCm = 3, CutSnapCm = 2, CutMinCm = 5, CutMaxCm = 600;
     /// <summary>
-    /// A cut plate's sheet: up to 64 m along (a bed of Laser Bed Blocks takes 32 m) and 32 m across (the Extruder's widest plate), with openings up
+    /// A cut plate's sheet: up to 64 m along (the largest bed of Laser Bed Blocks takes 32 x 16 m) and 32 m across (the Extruder's widest plate), with openings up
     /// to 32 m a side, so a capital hull's plates, decks and bulkheads come off the line whole (Karl, 2026-11-20: the capital ship). A cut
     /// panel stays within <see cref="CutMaxCm"/>, the largest Panel Former's panel.
     /// </summary>
@@ -208,7 +208,7 @@ public static partial class HullLoft
             return $"too thick for any Laser Cutter's bed: {mm / 1000f:0.##} m, the largest takes {CutMaxThickMm / 1000} m";
         var across = OnEdge(k) ? k.H : k.W; // (a bar on edge is cut through its width: its sheet is its length by its height)
         if (k.L < PanelMinCm || k.L > CutPlateMaxCm || across < PanelMinCm || across > CutPlateAcrossCm)
-            return k.L > CutPlateMaxCm ? $"cut it to length at the Extruder: the largest Laser Cutter's bed is {CutPlateMaxCm / 100} m" : $"a cut piece is {PanelMinCm} to {CutPlateMaxCm} cm long and {PanelMinCm} to {CutPlateAcrossCm} cm {(OnEdge(k) ? "high" : "wide")}";
+            return k.L > CutPlateMaxCm ? $"cut it to length at the Extruder: a cut piece is at most {CutPlateMaxCm / 100} m" : $"a cut piece is {PanelMinCm} to {CutPlateMaxCm} cm long and {PanelMinCm} to {CutPlateAcrossCm} cm {(OnEdge(k) ? "high" : "wide")}";
         return null;
     }
 

@@ -80,10 +80,10 @@ public sealed class CStore
     public bool PullMaterial; // ...the id is a material
     public byte PullWaiting, PullSeconds; // ...pulls under way here, the one coming first among them, and whole seconds until it lands
     /// <summary>How full it is, 0 to 1 (a Level Sensor): its bulk, or the share of its slots in use.</summary>
-    public float Fullness(ConstructPartDef d)
+    public float Fullness(ConstructPartDef d, int capacity = -1)
     {
         if (d.BulkCapacity > 0)
-            return Math.Clamp(Amount / (float)d.BulkCapacity, 0, 1);
+            return Math.Clamp(Amount / (float)(capacity > 0 ? capacity : d.BulkCapacity), 0, 1);
         var used = 0;
         for (var k = 0; k < SlotCount; k++)
             used += Def[k] != ConstructParts.None ? 1 : 0;
@@ -489,8 +489,12 @@ public static class ConstructStorage
         return FillBox(c.Parts[part], d, st.Amount, out centre, out half);
     }
 
-    /// <summary>What a bin of this part takes in all: its file's capacity, or a Storage Volume's from its box.</summary>
-    public static int Capacity(Construct c, int part) => c.DefOf(part).IsVolumeStore ? ConstructStoreVolume.Capacity(c, part) : c.DefOf(part).BulkCapacity;
+    /// <summary>What a bin of this part takes in all: its file's capacity, a Storage Volume's from its box, or a Laser Cutter's offcut bin from its bed.</summary>
+    public static int Capacity(Construct c, int part)
+    {
+        var d = c.DefOf(part);
+        return d.IsVolumeStore ? ConstructStoreVolume.Capacity(c, part) : d.IsLaserCutter ? ConstructLaserCutter.BinOf(c, part) : d.BulkCapacity;
+    }
 
     /// <summary>A production machine's input fill, as <see cref="FillBox"/>; false when empty.</summary>
     public static bool InputBox(in CPart container, ConstructPartDef cd, int amount, out Vector3 centre, out Vector3 half)

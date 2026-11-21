@@ -725,7 +725,7 @@ public sealed partial class ConstructPartDef
     public BlockRole BlockRole; // a block machine's Core, block or shared cell ("machineBlock": MachineBlocks.cs)
     public byte BlockFamily = 255; // ...its family (MachineBlocks.Families; 255: a shared cell, any family)
     public float BlockCell = MachineBlocks.DefaultCell; // ...its lattice step (m)
-    public bool BlockCoreSeams = true; // ...a Core: a cell's seam boxes on a face welded to it are hidden ("coreSeams": false keeps them)
+    public bool BlockCoreSeams = true; // ...a Core: a bed cell's seam boxes on a face welded to it or to an Out Table are hidden ("coreSeams": false keeps them)
     public Vector3? BlockOrigin; // ...a Core's own cell's middle in its frame ("origin"; else its bounds' middle): the lattice the cells sit on
     public bool BlockFace; // ...its cells stand in its x-y face, not on its x-z bed ("plane": "face": an Extruder's Die Blocks beside its Core)
     public float ExtRunOut; // a Run-out Table ("runOut": metres): under an Extruder's die (its Core's or a Die Block's out bed, or another table), it takes the longest piece out to its far end

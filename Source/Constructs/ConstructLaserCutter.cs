@@ -87,7 +87,7 @@ public static partial class ConstructLaserCutter
             return null;
         var (w, l) = BedNeeded(j, d.BlockCell);
         var has = MachineBlocks.TryOf(c, part, out var asm) && asm.W > 0 ? $"this one is {Math.Max(asm.W, asm.L)} x {Math.Min(asm.W, asm.L)}" : "this one has no bed: weld Laser Bed Blocks beside it";
-        return l > MachineBlocks.MaxSide || w * l > MachineBlocks.MaxCells ? $"too large for any bed: {j.Longest:0.##} x {j.Next:0.##} m (a bed is at most {MachineBlocks.MaxSide} x {MachineBlocks.MaxSide} blocks)"
+        return l > MachineBlocks.MaxSide || w * l > MachineBlocks.MaxCells ? $"too large for any bed: {j.Longest:0.##} x {j.Next:0.##} m (a bed is at most {MachineBlocks.MaxSide} blocks a side and {MachineBlocks.MaxCells} in all)"
             : $"needs a {l} x {w} bed ({l * d.BlockCell:0.#} x {w * d.BlockCell:0.#} m), {has}";
     }
 
@@ -101,7 +101,7 @@ public static partial class ConstructLaserCutter
         var cell = MachineBlocks.DefaultCell;
         var (w, l) = BedNeeded(j, cell);
         return j.Least > MaxHeight + 0.005f ? $"no bed: {j.Least:0.##} m tall, a bridge clears {MaxHeight:0.##} m"
-            : l > MachineBlocks.MaxSide ? "no bed: longer than 16 blocks" : $"a {l} x {w} bed";
+            : l > MachineBlocks.MaxSide || w * l > MachineBlocks.MaxCells ? $"no bed: {j.Longest:0.##} x {j.Next:0.##} m is past any bed's {MachineBlocks.MaxSide} blocks a side and {MachineBlocks.MaxCells} in all" : $"a {l} x {w} bed";
     }
 
     /// <summary>The bridge's clearance over every Laser Cutter's bed (m), from the catalogue's cutter.</summary>
