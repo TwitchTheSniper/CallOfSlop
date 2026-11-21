@@ -241,13 +241,8 @@ public sealed class Assembling : IPartGenerator
         Rec("Frame Beam", 6, 1, m: [("steel", 14)]),
         Rec("Panel", 3, 1, m: [("steel", 4)]),
         Rec("Wood Panel", 2, 1, m: [("laminate", 4)]),
-        // Extruder expansion pieces (ExtrusionParts.Growth): each about 30% of the next machine's recipe, so a row or a table is cheaper than the
-        // next Extruder and the whole jump to its size dearer (docs/sandbox/design/extruder-expansion-notes.md).
+        // The Extruder's Run-out Table (ExtrusionParts; its Die Block's row is at the end of Tail).
         Rec("Run-out Table", 60, 1, m: [("steel", 600), ("rubber", 150)], p: [("Gear Set", 2)]),
-        Rec("Medium Run-out Table", 120, 2, m: [("steel", 600), ("rubber", 150)], p: [("Gear Set", 4), ("Bearing", 2)]),
-        Rec("Large Run-out Table", 180, 3, m: [("steel", 600), ("rubber", 150)], p: [("Bearing", 4), ("Control Unit", 1)]),
-        Rec("Medium Die Extension", 120, 2, m: [("steel", 600), ("rubber", 150)], p: [("Gear Set", 2), ("Wiring Loom", 2)]),
-        Rec("Large Die Extension", 180, 3, m: [("steel", 600), ("rubber", 150)], p: [("Wiring Loom", 4), ("Control Unit", 1)]),
         // Linked logistics (docs/sandbox/design/linked-logistics.md section 3): the link ends, the dock and port, the ship's and the factory's computers.
         Rec("Logistics Transmitter", 12, 2, m: [("steel", 20), ("copper", 6)], p: [("Circuit Board", 4), ("Copper Coil", 2)]),
         Rec("Logistics Receiver", 12, 2, m: [("steel", 20), ("copper", 6)], p: [("Circuit Board", 4), ("Copper Coil", 2)]),
@@ -739,6 +734,8 @@ public sealed class Assembling : IPartGenerator
         ("Packet", "Packet Spine Hull Stbd 8", null),
         ("Packet", "Packet Spine Hull Stbd 9", null),
         ("Packet", "Packet Stern", null),
+        // (the Extruder on the block system, Sean 2026-11-21: its Die Block; the Core keeps the Extruder's row and the Run-out Table its own)
+        (null, null, Rec("Die Block", 120, 1, m: [("steel", 600), ("rubber", 150)], p: [("Gear Set", 2), ("Wiring Loom", 2)])),
     ];
 
     /// <summary>

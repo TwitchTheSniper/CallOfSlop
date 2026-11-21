@@ -56,7 +56,7 @@ public static class StockTargets
             Add(CfgKey.StoreTakes, CfgType.Choice, "Takes", 0, 2, 0, "What it takes as storage. Orders and what it keeps always come in.", TakesNames);
         }
         if (d.IsPanelFormer && !d.IsLaserCutter)
-            Add(CfgKey.FormerStrips, CfgType.Toggle, "Too wide: make strips", 0, 1, 0, "A panel wider than any Extruder on the network makes. Off: its order waits and says which Extruder or Die Frames would make it. On: it is formed of equal-width strips the widest one makes.");
+            Add(CfgKey.FormerStrips, CfgType.Toggle, "Too wide: make strips", 0, 1, 0, "A panel wider than any Extruder on the network makes. Off: its order waits and says which Extruder or Die Blocks would make it. On: it is formed of equal-width strips the widest one makes.");
         if (d.IsCraftTerminal)
             Add(CfgKey.FeedPriority, CfgType.Choice, "Order priority", 0, 2, 1, "Its orders' class: High orders take shared parts and machines first, then the oldest order.", PriorityNames);
     }

@@ -27,7 +27,7 @@ public sealed class LaserCutterParts : IPartGenerator
         new(Small, 1.1, 3.2, 0.8, 1.8, 2.5, 0.6, 2.4, 200, 2400, 480, 700),
         new(Medium, 2.7, 7.0, 0.9, 4.5, 6.0, 2.0, 9.6, 1200, 9600, 5600, 3800),
         new(Large, 6.6, 26.0, 1.0, 12.0, 24.0, 2.0, 40, 6000, 40000, 40000, 20000), // (Karl, 2026-11-20: the capital ship's walls and decks)
-        new(Capital, 17.0, 67.0, 1.2, 32.0, 64.0, 2.0, 160, 40000, 160000, 400000, 120000), // (its hull plates: the Capital Extruder's widest plate)
+        new(Capital, 17.0, 67.0, 1.2, 32.0, 64.0, 2.0, 160, 40000, 160000, 400000, 120000), // (its hull plates: the widest plate an Extruder's Die Blocks make)
     ];
 
     private static List<object?> Buttons() => Py.L(

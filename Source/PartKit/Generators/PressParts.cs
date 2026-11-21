@@ -1005,12 +1005,13 @@ public sealed class PressParts : IPartGenerator
         ("description", "An Extruder chuted into a Press, with a bin and a battery: fit a die and tip in material."),
         ("steps", Py.L(
             Kw(("part", "Foundation")),
-            Kw(("part", "Extruder"), ("on", 0), ("socket", "top21"), ("by", "bottom"), ("config", Kw(("profile", 1), ("width", 0.3), ("height", 0.3), ("cutLength", 2)))),
-            Kw(("part", "Materials Bin"), ("on", 0), ("socket", "top01"), ("by", "bottom")),
-            Kw(("part", "Battery"), ("on", 0), ("socket", "top02"), ("by", "-y")),
+            Kw(("part", "Extruder"), ("on", 0), ("socket", "top11"), ("by", "bottom"), ("config", Kw(("profile", 1), ("width", 0.3), ("height", 0.3), ("cutLength", 2)))),
+            Kw(("part", "Foundation"), ("on", 0), ("socket", "z-1"), ("by", "z+1")), // (behind the Extruder: its feed and power, clear of its 2 x 1.5 m)
+            Kw(("part", "Materials Bin"), ("on", 2), ("socket", "top01"), ("by", "bottom")),
+            Kw(("part", "Battery"), ("on", 2), ("socket", "top02"), ("by", "-y")),
             Kw(("part", "Foundation"), ("on", 0), ("socket", "x+1"), ("by", "x-1")),
-            Kw(("part", "Press"), ("on", 4), ("socket", "top00"), ("by", "-y.0.0")))),
-        ("links", Py.L(Kw(("type", "chute"), ("from", 2), ("to", 1)), Kw(("type", "chute"), ("from", 1), ("to", 5)))));
+            Kw(("part", "Press"), ("on", 5), ("socket", "top00"), ("by", "-y.0.0")))),
+        ("links", Py.L(Kw(("type", "chute"), ("from", 3), ("to", 1)), Kw(("type", "chute"), ("from", 1), ("to", 6)))));
 
     public void Make(PartOutput o)
     {

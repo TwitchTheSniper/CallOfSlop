@@ -815,7 +815,7 @@
     {"part": "Text Sign", "on": 807, "socket": "y+3", "by": "back", "paint": "#23272b", "text": ["BLANKS IN, PARTS OUT"]},
     {"part": "Conveyor Join", "on": 449, "socket": "top31", "by": "-y.0.0", "spin": 1, "paint": "#6b7177"},
     {"part": "Extruder", "on": 53, "socket": "top02", "by": "bottom", "spin": 1, "paint": "#5d7f3c", "ordersOnly": true},
-    {"part": "Die Frame", "on": 810, "socket": "+x", "by": "-x", "paint": "#5d7f3c"},
+    {"part": "Die Block", "on": 810, "socket": "+x", "by": "-x", "paint": "#5d7f3c"},
     {"part": "Panel Former", "on": 16, "socket": "top02", "by": "bottom", "spin": 1, "paint": "#5d7f3c", "ordersOnly": true},
     {"part": "Conveyor Router", "on": 40, "socket": "top13", "by": "-y.0.0", "spin": 1, "paint": "#6b7177"},
     {"part": "Conveyor Join", "on": 68, "socket": "top03", "by": "-y.0.0", "spin": 1, "paint": "#6b7177"},

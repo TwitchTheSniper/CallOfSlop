@@ -151,7 +151,7 @@ public sealed class ProductionShowcase : IPartGenerator
             Sign(40.25f, Posts1, LineA, "Take a piece with F (aim at the one you want)");
 
             // ---- 5. Extrusion line B (planks): another material is another line; it meets line A at the join. --------------------
-            var exB = On("Extruder", 31.75f, Row2, Flow, paint: LineB);
+            var exB = On("Extruder", 32.75f, Row2, Flow, paint: LineB); // (east of the press's conveyor to the join: the Extruder is 2 m across)
             Config(exB, ("profile", "Solid bar"), ("width", 0.2), ("height", 0.1), ("cutLength", 2.0));
             Feed(StockOf("planks", 30.75f, -12.75f), exB);
             var bOut = PortAt(exB, "Piece out");

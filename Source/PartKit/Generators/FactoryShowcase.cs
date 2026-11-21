@@ -497,14 +497,14 @@ public sealed class FactoryShowcase : IPartGenerator
         private sealed record Panels(VPart Sheet, VPart Former, VPart Glass, VPart Cutter, VPart RouterP);
 
         /// <summary>
-        /// The panel line: an Extruder with a Die Frame (a 1 m die) makes steel sheet into the Panel Former; a Router after it sends a panel
+        /// The panel line: an Extruder with a Die Block (a 2 m die) makes steel sheet into the Panel Former; a Router after it sends a panel
         /// the cutter ordered ahead through a Join into the Laser Cutter, the rest (way 2) south to the station line. A second Panel Former
         /// fed glass by chute forms glass sheet for the panes, into the Join's side. The cutter's parts go on to the station line.
         /// </summary>
         private Panels PanelHall(Refined r)
         {
             var sheet = On("Extruder", 48.25f, Row1, Flow, paint: PanelGreen);
-            Paint(Onto(sheet, "+x", "Die Frame", "-x"), PanelGreen); // (a frame joined to it widens the die across its bounds: ConstructExtruder.Reach)
+            Paint(Onto(sheet, "+x", "Die Block", "-x", 0), PanelGreen); // (a Die Block beside it makes its die 2 x 2 m: ConstructExtruder.Reach; its pieces still hand off to the Core's conveyor)
             ChuteVia(r.Steel, sheet, -7.0f);
             var former = On("Panel Former", 54.25f, Row1, Flow, paint: PanelGreen);
             Convey(sheet, "Piece out", former, "Piece in", PanelGreen);

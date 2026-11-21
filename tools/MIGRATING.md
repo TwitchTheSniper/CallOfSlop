@@ -72,6 +72,10 @@ Each update unzips into its own folder (`CallOfSlop-<version>`) with a small `.c
 
 The game's built-in sound levels are now the **SeabMix2** mix: your own gun, other players' guns, explosions, bullet whizz and the hit sounds are louder, footsteps a little quieter (README, "Audio mixer", lists every level). If you never saved a mix, you get it straight away. If you have an `audio_mix.json` (or presets in `AudioMixes`), every level you changed in the F8 mixer stays as you set it, and every level you left at its old default moves to the new one the first time the file loads; press **Save** in the mixer to keep the result. To start over from the new defaults, use **Revert to defaults** and Save, or delete `audio_mix.json`.
 
+### Extruders in a saved world (2026-11-21)
+
+The Extruder is now one **Extruder Core** plus **Die Blocks** welded beside it for a bigger die, and one **Run-out Table**. The Medium, Large and Capital Extruders, the Die Frames, the Die Extensions and the Medium and Large Run-out Tables are gone: a world saved before this version loads without them (its log says "left out"), and a blueprint naming one is refused at that step. An Extruder or a Run-out Table you already have becomes the new one, which is bigger (2 m across), so check that nothing stands in its way. Nine rows left the Assembler's recipe list: an Assembler in a world saved before this version may show **another recipe** than the one you set, or none: check your Assemblers and set their recipe again.
+
 ### Bigger planets (2026-11-20)
 
 The Frostreach planets are four times their old size (Glacier is 32 km in radius, Caledon 24 km). A Sandbox world saved on them before this build is not moved to the new ground: its bases and ships would be inside the planet. Start a new world.

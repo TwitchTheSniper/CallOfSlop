@@ -73,7 +73,7 @@ public static partial class SelfTest
 
     /// <summary>A part kind for the sweep's "one of each": what makes the input and use code take a different path.</summary>
     private static string SweepKind(ConstructPartDef d) =>
-        $"{d.Role}|{d.Logic}|{d.Generated}|{(d.Role == PartRole.GunPart ? Parts.Find(d.GunPartName)?.Category.ToString() : "")}|{d.IsReceiverGun}|{d.HasJoint}|{d.Slots.Length > 0}|{d.IsBin}|{d.IsGunBench}|{d.Boarding}|{d.HoseEnd}|{d.Configurable}|{d.PhysicsOnly}|{d.Tool}|{ConstructCargo.IsVolume(d)}|{d.Settings.Length > 0}|{d.IsExtrusion}|{d.IsDieFrame}|{d.Piece}";
+        $"{d.Role}|{d.Logic}|{d.Generated}|{(d.Role == PartRole.GunPart ? Parts.Find(d.GunPartName)?.Category.ToString() : "")}|{d.IsReceiverGun}|{d.HasJoint}|{d.Slots.Length > 0}|{d.IsBin}|{d.IsGunBench}|{d.Boarding}|{d.HoseEnd}|{d.Configurable}|{d.PhysicsOnly}|{d.Tool}|{ConstructCargo.IsVolume(d)}|{d.Settings.Length > 0}|{d.IsExtrusion}|{d.BlockRole}|{d.Piece}";
 
     private enum SweepState { Mounted, Loose, Frozen, Moving, WithParts, Merged }
 

@@ -271,7 +271,7 @@
     {"part": "Frame Beam", "on": 52, "socket": "top03", "by": "end-", "spin": 3, "paint": "#3d7ab8", "finish": "painted plating"},
     {"part": "Text Sign", "on": 264, "socket": "y+3", "by": "back", "paint": "#23272b", "text": ["Take a piece with F (aim at the one you want)"]},
     {"part": "Lamp", "on": 264, "socket": "end+", "by": "-y", "config": {"colour": "#ffb347", "brightness": 120}},
-    {"part": "Extruder", "on": 175, "socket": "top31", "by": "bottom", "spin": 1, "config": {"profile": "Solid bar", "width": 0.2, "height": 0.1, "cutLength": 2}, "paint": "#4f8f45"},
+    {"part": "Extruder", "on": 176, "socket": "top11", "by": "bottom", "spin": 1, "config": {"profile": "Solid bar", "width": 0.2, "height": 0.1, "cutLength": 2}, "paint": "#4f8f45"},
     {"part": "Storage Volume", "on": 207, "socket": "top12", "by": "-y", "config": {"sizeX": 1.2, "sizeY": 1, "sizeZ": 1.2, "atY": 0.35, "material": "planks", "fill": 24}, "paint": "#c9a24a"},
     {"part": "Frame Beam", "on": 144, "socket": "top22", "by": "end-", "spin": 3, "paint": "#4f8f45", "finish": "painted plating"},
     {"part": "Text Sign", "on": 269, "socket": "y+3", "by": "back", "paint": "#23272b", "text": ["Line B (planks) meets line A at the join: one rack"]},

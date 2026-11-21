@@ -665,7 +665,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   station markets list parts after their goods (Msg.Stations' stock runs over both); FactionOp.StationSellPart (u16 ship, u8 good) at its end.
     // 390: in-wall bays on the module socket standard (Sean, 2026-11-21): CfgKey ModHide at the end (a Module Socket's Hide connector);
     //   new part files (Wall Bay Socket, three depths) shift part ids.
-    public const ushort ProtocolVersion = 390;
+    // 391: the Extruder on the block system (Sean, 2026-11-21): one Extruder Core, Die Blocks and one Run-out Table replace the four
+    //   Extruders, the Die Frames, the Die Extensions and the classed tables (part files go and come, ids move); the die is read from the blocks on each peer.
+    public const ushort ProtocolVersion = 391;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;
