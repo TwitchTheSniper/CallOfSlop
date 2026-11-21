@@ -35,8 +35,11 @@ public sealed partial class Game
         }
         DrawnFrame(c, me.Sim.RideSeg, out var q, out _);
         var rider = ConstructRide.RiderRot(q, me.Sim.RideUp);
-        if (_rideLookBody != me.Sim.RideBody || _rideLookSeg != me.Sim.RideSeg || _rideLookUp != me.Sim.RideUp)
+        if (_rideLookBody != me.Sim.RideBody || _rideLookSeg != me.Sim.RideSeg || _rideLookUp != me.Sim.RideUp || _mmuOn && MmuSteering)
         {
+            // (a worn MMU: its attitude is kept in the world and the mouse turned it about the spacewalker's own axes, so the
+            // look comes into the frame whole; the walker's way below adds yaw and pitch measured at the planet's up, which
+            // in a ship rolled or upside down against the planet turned and pitched the look the wrong way)
             ConstructRide.LookIn(rider, LookDir(LookYaw, LookPitch), out _rideYaw, out _ridePitch);
             _ridePitch = Math.Clamp(_ridePitch, -1.55f, 1.55f);
             (_rideLookBody, _rideLookSeg, _rideLookUp) = (me.Sim.RideBody, me.Sim.RideSeg, me.Sim.RideUp);
