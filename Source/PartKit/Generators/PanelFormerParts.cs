@@ -5,8 +5,8 @@ namespace CallOfSlop.PartKit.Generators;
 
 /// <summary>
 /// The Panel Former on the block system: Constructs/Parts/PanelFormer (design page drawing 15; docs/sandbox/constructs/production.md "The
-/// Panel Former"; MachineBlocks.cs). A Panel Former Core holds the machine's brain (screen and queue, Orders, Run, power, the sheet hopper,
-/// Piece in and the in rollers); identical 2 x 2 m Bed Blocks welded on its far side make the bed, and an Out Table (OutTableParts) closes
+/// Panel Former"; MachineBlocks.cs). A Panel Former Core holds the machine's brain (screen and queue, Orders, Run, power, the offcut bin,
+/// Piece in, where one blank a panel comes in, and the in rollers); identical 2 x 2 m Bed Blocks welded on its far side make the bed, and an Out Table (OutTableParts) closes
 /// the bed's far end. The largest panel is the rectangle of blocks. Each Bed Block is a pin bed: a field of steel pins below that rise in a
 /// wave to the panel's shape, an upper platen above that comes down and presses the sheet over them (the renderer's "pin" and "press"
 /// work: ConstructPanelFormer.PinLift, PressAt). A block's skirts, posts, platen rims and side fittings are drawn only where no cell of its
@@ -26,7 +26,8 @@ public sealed class PanelFormerParts : IPartGenerator
     private const double DeckY = 0.86; // the lower bed's deck the pins come up through
     private const double Head = 2.96; // the crosshead's underside
     private const double PlatenLo = 2.4, PlatenHi = 2.62, PressTravel = 1.0, PinMost = 0.38; // (the platen's pins at 1.34 at the bottom of its stroke: clear of the risen bed pins)
-    private const int BlockPower = 900, CorePower = 1200, CoreBin = 60000;
+    private const int BlockPower = 900, CorePower = 1200, CoreBin = 60000; // (the Core's bin is its offcut: what blanks leave over their panels)
+    private const double OffX = -0.5, OffY = 2.8; // the Offcut port, on the bin's back wall
 
     private static PyDict Seam(PyDict? box, string face) => box!.Update(("seam", face));
     private static PyDict Seam(PyDict? box, string a, string b) => box!.Update(("seam", Py.L(a, b)));
@@ -43,17 +44,17 @@ public sealed class PanelFormerParts : IPartGenerator
     private static PyDict Cyl(string front, int segments = 12) => Kw(("shape", "cylinder"), ("segments", segments), ("front", front));
 
     /// <summary>
-    /// The Panel Former Core: one 2 x 2 m cell, 3.2 m tall, at the bed's in end. The sheet hopper on its back half (loose stock by chute or
-    /// by hand), Piece in low on its back (extruded sheet off a conveyor), the control face on its left (the aisle side), and on its front,
-    /// where the first Bed Block welds, a slot at the work height with the in rollers that feed the sheet onto the bed.
+    /// The Panel Former Core: one 2 x 2 m cell, 3.2 m tall, at the bed's in end. The offcut bin on its back half (the trim a blank leaves:
+    /// out by chute from its Offcut port), Piece in low on its back (a blank a panel off a conveyor), the control face on its left (the
+    /// aisle side), and on its front, where the first Bed Block welds, a slot at the work height with the in rollers that feed the blank onto the bed.
     /// </summary>
     private static Part Core()
     {
         var p = new Part("Panel Former", Small, "Extrusion",
-            "A Panel Former Core: forms body panels from sheet, by order, on the bed of Bed Blocks welded to its front (2 x 2 m each, up to 32 x 32 m), an Out Table on the bed's far end. The largest panel is the bed's rectangle. Sheet comes in by conveyor at the white end or loose into its hopper. Needs power.",
+            "A Panel Former Core: forms body panels by order, each from one blank, on the bed of Bed Blocks welded to its front (2 x 2 m each, up to 32 x 32 m), an Out Table on the bed's far end. The largest panel is the bed's rectangle. A blank is a flat extruded sheet of the panel's material and thickness, its flat size to 25% over, in by conveyor at the white end; the trim drops into its offcut bin. Needs power.",
             role: "storage", group: "Production", color: Green);
         const double slotLo = WorkY - 0.16, slotHi = WorkY + 0.16, slotD = 0.32, cab = 2.4; // (the in slot's height and depth, the cabinet's top)
-        // Solid: the cabinet (its front slotted for the in rollers), the hopper's walls on the back half of its top, a deck on the front half.
+        // Solid: the cabinet (its front slotted for the in rollers), the offcut bin's walls on the back half of its top, a deck on the front half.
         p.Add(Box([-E, 0.003, -E], [E, slotLo, E]));
         p.Add(Box([-E, slotLo, -E], [E, slotHi, E - slotD]));
         p.Add(Box([-E, slotLo, E - slotD], [-E + 0.08, slotHi, E])); // (the slot's two cheeks)
@@ -75,10 +76,11 @@ public sealed class PanelFormerParts : IPartGenerator
             ("machineBlock", Kw(("family", "panel"), ("role", "core"), ("origin", Py.L(0, 1.6, 0)))),
             ("config", Py.L(
                 Kw(("key", "recipe"), ("label", "Preset"), ("group", "Orders"), ("options", Py.L([.. HullLoft.PanelPresets.Select(x => (object?)x.Label)])), ("default", 0),
-                    ("tooltip", "The panel its Queue button orders, at the preset's own size, in what its bin holds. The Preset button on its screen opens a picker of them.")),
+                    ("tooltip", "The panel its Queue button orders, at the preset's own size, in steel; Queue also asks a linked Extruder for its blanks. The Preset button on its screen opens a picker of them.")),
                 ExtrusionParts.OrderCount,
                 Kw(("key", "ink"), ("type", "colour"), ("label", "Screen colour"), ("group", "Display"), ("default", "#000000"), ("tooltip", "The colour of what its screen shows. Black: its own colours.")))),
-            ("ports", Py.L(Kw(("name", "Piece in"), ("type", "conveyor"), ("dir", "in"), ("at", Py.L(0, 0.5, -E)), ("face", "-z"), ("opening", Py.L(1.8, 0.6))))),
+            ("ports", Py.L(Kw(("name", "Piece in"), ("type", "conveyor"), ("dir", "in"), ("at", Py.L(0, 0.5, -E)), ("face", "-z"), ("opening", Py.L(32, 0.6))), // (a blank as wide as the widest bed's panel)
+                Kw(("name", "Offcut"), ("type", "chute"), ("dir", "out"), ("at", Py.L(OffX, OffY, -E)), ("face", "-z")))),
             ("collider", "boxes"));
         // The control face on its left: screen at a standing eye, a lamp over it, the button shelf under it.
         var keepClear = p.Sockets.Select(k => (new[] { Py.D(((List<object?>)k["at"]!)[0]), Py.D(((List<object?>)k["at"]!)[1]), Py.D(((List<object?>)k["at"]!)[2]) }, (string)k["dir"]!)).ToList();
@@ -91,16 +93,22 @@ public sealed class PanelFormerParts : IPartGenerator
         p.Set(("panels", Py.L(panel)));
         // ---- The look ----
         MachineLook.Skirt(p, -E, E, -E, E, 0.003, 0.14, 0.012);
-        // Piece in on its back, the shared port look; the hopper's rim white and an arrow down into it (the in side).
+        // Piece in on its back, the shared port look, an arrow in at its mouth and the in band (the white side).
         MachineLook.Port(p, [0, 0.5, -E], 2, -1, 0.3, 0.12, true);
-        p.Add(L([-E - 0.004, H - 0.06, -E - 0.006], [E + 0.004, H + 0.004, -E + wall], MachineLook.In));
-        p.Add(L([-E - 0.006, H - 0.06, -E + wall], [-E + wall, H + 0.004, hz1 + 0.004], MachineLook.In));
-        p.Add(L([E - wall, H - 0.06, -E + wall], [E + 0.006, H + 0.004, hz1 + 0.004], MachineLook.In));
-        MachineLook.Arrow(p, 2, -E, -1, 1, -1, 0, 1.75, 0.5, 0.45, MachineLook.In);
+        MachineLook.Arrow(p, 2, -E - 0.02, -1, 0, -1, 0.64, 0.5, 0.36, 0.22, MachineLook.In); // (beside the mouth, pointing at it: in)
         p.Add(L([-E - 0.014, 1.1, -E - 0.014], [E + 0.014, 1.22, -E], MachineLook.In)); // (the in band across its back)
-        // The hopper's grating and the sheet guide that runs from it down into the cabinet.
+        // The offcut bin: a dark rim with a hazard edge, its grating, a level gauge, its Offcut port (the shared port look, orange: out) and its label.
+        p.Add(L([-E - 0.004, H - 0.06, -E - 0.006], [E + 0.004, H + 0.004, -E + wall], MachineLook.Base));
+        p.Add(L([-E - 0.006, H - 0.06, -E + wall], [-E + wall, H + 0.004, hz1 + 0.004], MachineLook.Base));
+        p.Add(L([E - wall, H - 0.06, -E + wall], [E + 0.006, H + 0.004, hz1 + 0.004], MachineLook.Base));
+        MachineLook.Hazard(p, [-E - 0.006, H - 0.12, -E - 0.012], [E + 0.006, H - 0.064, -E - 0.006]);
         foreach (var x in new[] { -0.5, 0, 0.5 })
             p.Add(L([x - 0.015, H - 0.04, -E + wall], [x + 0.015, H - 0.012, hz1 - wall], MachineLook.Base));
+        MachineLook.Port(p, [OffX, OffY, -E], 2, -1, 0.14, 0.12, false);
+        p.Add(L([0.12, cab + 0.12, -E - 0.02], [0.16, H - 0.16, -E], MachineLook.Base)); // (its level gauge's tube, the bin's height)
+        p.Add(L([0.105, cab + 0.16, -E - 0.032], [0.175, cab + 0.36, -E - 0.02], MachineLook.Accent)); // (its float)
+        p.Add(L([0.3, cab + 0.3, -E - 0.016], [0.8, cab + 0.5, -E], MachineLook.Out)); // (its label: "OFFCUT", out)
+        p.Add(L([0.34, cab + 0.37, -E - 0.028], [0.76, cab + 0.43, -E - 0.016], MachineLook.Ink));
         // The in rollers in the slot: lower rollers level with the bed's pins, pinch rollers over them; they turn while it works.
         var rr = 0.06;
         foreach (var z in new[] { E - 0.24, E - 0.09 })

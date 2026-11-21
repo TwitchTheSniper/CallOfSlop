@@ -860,7 +860,7 @@ public static class ConstructConfig
                 CfgKey.StoreKeep or CfgKey.StorePriority or CfgKey.StoreTakes => StockTargets.IsStore(d),
                 CfgKey.LiftMode or CfgKey.CarryHeight => d.Lifter != null, // (a Loader Arm: ConstructLifters.cs)
                 CfgKey.FeedPriority => d.IsCraftTerminal,
-                CfgKey.FormerStrips => d.IsPanelFormer && !d.IsLaserCutter,
+                CfgKey.FormerStrips => false, // (gone with the Panel Former's bin: a panel is one blank; the key stays so later keys keep their numbers)
                 CfgKey.Period or CfgKey.Duty => d.Logic == CLogic.Timer,
                 CfgKey.StartOn => d.Logic is CLogic.Timer or CLogic.Switch or CLogic.Toggle or CLogic.Cargo || d.IsSpawner,
                 CfgKey.SizeX or CfgKey.SizeY or CfgKey.SizeZ or CfgKey.AtX or CfgKey.AtY or CfgKey.AtZ => ConstructCargo.HasBox(d),

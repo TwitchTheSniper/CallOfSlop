@@ -183,7 +183,8 @@ public sealed unsafe class FoliageRenderer
     public void Draw(Map map, Renderer gfx, FoliageQuality quality, double now)
     {
         var field = map.Resources; // (a Sandbox world's forests: ResourceField.cs)
-        field?.DrawAround(gfx.CameraPosition);
+        if (field != null)
+            KeepField(map, field, quality, gfx.CameraPosition);
         if (quality == FoliageQuality.Off || map.FoliageInstances.Length == 0 && field is not { Drawn.Count: > 0 } || _broken)
         {
             if (_batches.Count > 0)
@@ -492,6 +493,15 @@ public sealed unsafe class FoliageRenderer
         if (field is { Drawn.Count: > 0 })
             plants = [.. map.FoliageInstances, .. field.Drawn];
         _batches = FoliageBatches.Build(plants, map.HalfX, map.HalfZ, quality);
+        Upload(map, quality, fieldVersion);
+        var c = _batches.TypeCount;
+        Console.WriteLine($"[foliage] built {map.Name} at {quality}: {_batches.Count} plants (grass {c[0]}, bushes {c[1]}, shrubs {c[2]}, trees {c[3]}, pines {c[4]}) "
+            + $"in {_batches.Chunks.Length} chunks, {_batches.Instances.Length * sizeof(float) / 1024} KB, {sw.Elapsed.TotalMilliseconds:0.0} ms");
+        _log = new Stats();
+    }
+
+    private void Upload(Map map, FoliageQuality quality, int fieldVersion)
+    {
         _builtField = fieldVersion;
         _map = map;
         _quality = quality;
@@ -499,10 +509,63 @@ public sealed unsafe class FoliageRenderer
         Native.glBindBuffer(GL_ARRAY_BUFFER, _instVbo);
         fixed (float* p = _batches.Instances)
             Native.glBufferData(GL_ARRAY_BUFFER, Math.Max(_batches.Instances.Length, 1) * sizeof(float), _batches.Count > 0 ? p : null, GL_STATIC_DRAW);
-        var c = _batches.TypeCount;
-        Console.WriteLine($"[foliage] built {map.Name} at {quality}: {_batches.Count} plants (grass {c[0]}, bushes {c[1]}, shrubs {c[2]}, trees {c[3]}, pines {c[4]}) "
-            + $"in {_batches.Chunks.Length} chunks, {_batches.Instances.Length * sizeof(float) / 1024} KB, {sw.Elapsed.TotalMilliseconds:0.0} ms");
-        _log = new Stats();
+    }
+
+    // ---- The resource field's trees and outcrops, built off the main thread ----------------------------------------------
+
+    // Karl's F9 (2026-11-21, a Zero Day's orbit over Caledon at 470 m/s): the field's list round the camera was made again
+    // each 150 m and the whole buffer sorted and built on the main thread, 9-11 ms a frame three times a second. Now a worker
+    // makes the list and the batches; the frame that finds them done only uploads (a few hundred KB).
+    private Task<FoliageBatches>? _fieldBuild;
+    private List<FoliageInstance> _fieldList = new(); // the list the worker fills (never the one the field holds)
+    private ResourceField? _buildField;
+    private Map? _buildMap;
+    private FoliageQuality _buildQuality;
+    private Vector3 _buildCam;
+    private int _buildGen;
+    private bool _buildFailLogged;
+
+    /// <summary>Takes a finished build of the field's drawn list, and starts the next when the camera has moved far enough.</summary>
+    private void KeepField(Map map, ResourceField field, FoliageQuality quality, Vector3 cam)
+    {
+        if (_fieldBuild is { IsCompleted: true })
+            TakeFieldBuild(map, field, quality);
+        if (_fieldBuild == null && quality != FoliageQuality.Off && !_broken && field.WantsDraw(cam))
+            StartFieldBuild(map, field, quality, cam);
+    }
+
+    private void TakeFieldBuild(Map map, ResourceField field, FoliageQuality quality)
+    {
+        var t = _fieldBuild!;
+        _fieldBuild = null;
+        if (!t.IsCompletedSuccessfully)
+        {
+            if (!_buildFailLogged)
+                Console.WriteLine($"[foliage] building the resource field's plants failed: {t.Exception?.GetBaseException().Message}");
+            _buildFailLogged = true;
+            return;
+        }
+        if (_buildField != field || _buildMap != map || _buildQuality != quality || !_ready && !Init())
+            return; // (made for another map or quality: the next move builds again)
+        if (field.TakeDrawn(_buildCam, _buildGen, _fieldList) is not { } old)
+            return; // (a tree fell or grew meanwhile: built again next frame)
+        _fieldList = old; // (the field holds the new one now; its old one is filled next time)
+        _batches = t.Result;
+        Upload(map, quality, field.DrawVersion);
+    }
+
+    private void StartFieldBuild(Map map, ResourceField field, FoliageQuality quality, Vector3 cam)
+    {
+        (_buildField, _buildMap, _buildQuality, _buildCam, _buildGen) = (field, map, quality, cam, field.DrawGen);
+        var list = _fieldList;
+        var mapPlants = map.FoliageInstances;
+        var (halfX, halfZ) = (map.HalfX, map.HalfZ);
+        _fieldBuild = Task.Run(() =>
+        {
+            field.FillDrawn(cam, list);
+            IReadOnlyList<FoliageInstance> plants = mapPlants.Length == 0 ? list : [.. mapPlants, .. list];
+            return FoliageBatches.Build(plants, halfX, halfZ, quality);
+        });
     }
 
     /// <summary>Releases the per-map instance data (quality Off, or a map without foliage). The small shared meshes stay.</summary>

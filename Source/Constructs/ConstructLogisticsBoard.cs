@@ -147,7 +147,7 @@ public static class ConstructLogisticsBoard
             if (part >= c.PartCount)
                 continue;
             var d = c.DefOf(part);
-            if (m.RouterOfNode[nd] is var s and >= 0)
+            if (m.RouterOfNode[nd] is var s and >= 0 && !m.Turn[s])
             {
                 k.Routers++;
                 routerNo++;
@@ -197,7 +197,7 @@ public static class ConstructLogisticsBoard
         var mark = n;
         var routerNo = 0;
         for (var nd = 0; nd < m.NodeN; nd++)
-            if (m.NodeNet[nd] == net && m.RouterOfNode[nd] is var s and >= 0)
+            if (m.NodeNet[nd] == net && m.RouterOfNode[nd] is var s and >= 0 && !m.Turn[s])
             {
                 routerNo++;
                 if (m.ShowStuck[s] && m.NodePart[nd] < c.PartCount)
@@ -237,7 +237,7 @@ public static class ConstructLogisticsBoard
         {
             routerNo = 0;
             for (var nd = 0; nd < m.NodeN; nd++)
-                if (m.NodeNet[nd] == net && m.RouterOfNode[nd] >= 0 && m.NodePart[nd] < c.PartCount)
+                if (m.NodeNet[nd] == net && m.IsRouterNode(nd) && m.NodePart[nd] < c.PartCount)
                     Add(Row.Router, m.NodePart[nd], ++routerNo);
             Heading(mark, ref n, 5, medium);
         }
@@ -331,7 +331,7 @@ public static class ConstructLogisticsBoard
             return 0;
         var no = 0;
         for (var nd = 0; nd <= at; nd++)
-            if (m.NodeNet[nd] == m.NodeNet[at] && m.RouterOfNode[nd] >= 0 && m.NodePart[nd] < c.PartCount)
+            if (m.NodeNet[nd] == m.NodeNet[at] && m.IsRouterNode(nd) && m.NodePart[nd] < c.PartCount)
                 no++;
         return no;
     }
