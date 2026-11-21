@@ -249,8 +249,70 @@ public sealed class PressParts : IPartGenerator
             ("machineBlock", BlockKey("core", [R3(mid), R3(my), R3(zm)])),
             ("panels", Panels(p, f, width, pattern: true)));
         p.Add(StatusLamp(p, f)); // (its line state over its own screen: ProductionLines)
+        CoreDetail(p, f);
         return p;
     }
+
+    /// <summary>
+    /// The Press Core's small production detail (Sean 2026-11-21: every machine gets bolts, plates, cables, gauges and vents, and the one
+    /// port look on its ports): the drive motor on the crown with its fan turning while it works and its cable down the crown's back, a
+    /// hex nut on each tie rod, oil lines down the back posts, a pressure gauge and the maker's plate on the crown's back, louvres in the
+    /// crown's sides, bolts at the crown's front corners, and the shared port fitting at each bay's Piece in. Anything on a side a Press
+    /// Block is welded to (the crown's sides, its top under a stacked block) is a seam, drawn only while that side is open.
+    /// </summary>
+    private static void CoreDetail(Part p, Frame f)
+    {
+        double x0 = f.X0, x1 = f.X1, y1 = f.Y1, z0 = f.Z0, z1 = f.Z1, cr = f.Crown;
+        static PyDict Cyl(string front, int seg = 12) => Kw(("shape", "cylinder"), ("segments", seg), ("front", front));
+        // The drive: a motor lying along the crown's back, its fan cap turning while it works, a terminal box and its cable.
+        double mz = z0 + 0.32, my = y1 + 0.004;
+        p.Add(Seam(MachineLook.D([x0 + 0.45, my, mz - 0.16], [x1 - 0.65, my + 0.05, mz + 0.16], MachineLook.Base)!, "+y")); // (its feet plate)
+        p.Add(Seam(MachineLook.D([x0 + 0.5, my + 0.042, mz - 0.14], [x1 - 0.7, my + 0.322, mz + 0.14], MachineLook.Base, shape: Cyl("+x"))!, "+y")); // (the motor)
+        for (var i = 0; i < 5; i++)
+        {
+            var rx = x0 + 0.6 + i * 0.12;
+            p.Add(Seam(MachineLook.D([rx, my + 0.026, mz - 0.157], [rx + 0.03, my + 0.338, mz + 0.157], MachineLook.Steel, "steel", shape: Cyl("+x"))!, "+y")); // (its cooling ribs)
+        }
+        p.Add(Seam(MachineLook.Work(MachineLook.D([x1 - 0.704, my + 0.062, mz - 0.12], [x1 - 0.6, my + 0.302, mz + 0.12], MachineLook.Steel, "steel", shape: Cyl("+x", 8)), "spin", "+x")!, "+y")); // (the fan cap: it turns while it works)
+        p.Add(Seam(MachineLook.D([x0 + 0.62, my + 0.29, mz - 0.07], [x0 + 0.82, my + 0.39, mz + 0.07], MachineLook.Base)!, "+y")); // (the terminal box)
+        p.Add(Seam(MachineLook.D([x0 + 0.68, my + 0.054, mz - 0.11], [x0 + 0.76, my + 0.3, mz - 0.07], CableDark)!, "+y")); // (its cable down off the box)
+        p.Add(Seam(MachineLook.D([x0 + 0.68, my + 0.012, z0 - 0.04], [x0 + 0.76, my + 0.058, mz - 0.074], CableDark)!, "+y")); // (and along the crown's top to its back edge)
+        p.Add(MachineLook.D([x0 + 0.68, cr + 0.4, z0 - 0.04], [x0 + 0.76, y1 + 0.012, z0 - 0.012], CableDark)); // (and down the crown's back)
+        // A hex nut on each tie rod, over the posts on the crown's top.
+        foreach (var x in new[] { x0, x1 - 0.125 })
+            foreach (var z in new[] { z0, z1 - 0.125 })
+                p.Add(Seam(MachineLook.D([x + 0.017, y1 - 0.006, z + 0.017], [x + 0.108, y1 + 0.045, z + 0.108], MachineLook.Steel, "steel", shape: Cyl("+y", 6))!, "+y"));
+        // Oil lines down the back posts from the crown to the bed, a clamp on each halfway.
+        foreach (var x in new[] { x0 + 0.04, x1 - 0.085 })
+        {
+            p.Add(MachineLook.D([x, f.Base + 0.02, z0 - 0.045], [x + 0.045, cr - 0.02, z0 - 0.006], Hose, shape: Cyl("+y", 8)));
+            p.Add(MachineLook.D([x - 0.012, (f.Base + cr) / 2 - 0.03, z0 - 0.055], [x + 0.057, (f.Base + cr) / 2 + 0.03, z0 - 0.002], MachineLook.Steel, "steel"));
+        }
+        // On the crown's back: a pressure gauge and the maker's plate, bolts along its top.
+        var gy = cr + 0.22;
+        p.Add(MachineLook.D([x1 - 0.5, gy - 0.09, z0 - 0.04], [x1 - 0.32, gy + 0.09, z0 + 0.004], "#e8e6df", shape: Cyl("-z")));
+        p.Add(MachineLook.D([x1 - 0.52, gy - 0.11, z0 - 0.028], [x1 - 0.3, gy + 0.11, z0 + 0.006], MachineLook.Base, shape: Cyl("-z"))); // (its bezel)
+        p.Add(MachineLook.D([x0 + 0.2, gy - 0.08, z0 - 0.024], [x0 + 0.52, gy + 0.08, z0 + 0.004], MachineLook.In)); // (the maker's plate)
+        for (var bx = x0 + 0.25; bx < x1 - 0.2; bx += 0.3)
+            if (bx < x0 + 0.66 || bx > x0 + 0.8) // (clear of the cable)
+                p.Add(MachineLook.D([bx - 0.015, y1 - 0.12, z0 - 0.022], [bx + 0.015, y1 - 0.09, z0 + 0.004], MachineLook.Steel, "steel"));
+        // Louvres in the crown's sides (seams: hidden under a welded block) and bolts at the crown's front corners.
+        foreach (var (side, sx, sg) in new[] { ("+x", x1, 1), ("-x", x0, -1) })
+            for (var i = 0; i < 4; i++)
+            {
+                var ly = cr + 0.1 + i * 0.07;
+                double a = sg > 0 ? sx - 0.004 : sx - 0.02, b = sg > 0 ? sx + 0.02 : sx + 0.004;
+                p.Add(Seam(MachineLook.D([a, ly, z0 + 0.55], [b, ly + 0.035, z1 - 0.55], MachineLook.Base)!, side));
+            }
+        foreach (var x in new[] { x0 + 0.045, x0 + 0.105, x1 - 0.135, x1 - 0.075 })
+            foreach (var y in new[] { cr + 0.16, cr + 0.36 })
+                p.Add(MachineLook.D([x, y, z1 - 0.004], [x + 0.03, y + 0.03, z1 + 0.02], MachineLook.Steel, "steel"));
+        // The one port look (MachineLook.Port) at each bay's Piece in, 11 cm under the bay's socket on the back plane (ConstructPorts.cs).
+        foreach (var bx in f.Centres)
+            MachineLook.Port(p, [bx, f.Y - 0.11, z0], 2, -1, 0.13, 0.1, true);
+    }
+
+    private const string Hose = "#1d1f22", CableDark = "#34383d";
 
     /// <summary>
     /// A Press Block: one 2 m cube of a press's bed or wall. Its bolted rims, skirt and hazard edge on a side are drawn only while no block
@@ -278,6 +340,26 @@ public sealed class PressParts : IPartGenerator
             hl[axis] = sign > 0 ? 0.996 : -1.008;
             hh[axis] = sign > 0 ? 1.008 : -0.996; // (into the frame, so no face of it lies on the frame's)
             p.Add(Seam(MachineLook.D(hl, hh, MachineLook.Accent, "hazard paint")!, side));
+            // Its production detail (Sean 2026-11-21), on the side's plate and gone with it when a block is welded there: two
+            // stiffener ribs up the plate, a row of bolt heads along its foot and one under the hazard band.
+            var u = axis == 0 ? 2 : 0;
+            double n0 = sign > 0 ? 0.994 : -1.016, n1 = sign > 0 ? 1.016 : -0.994;
+            foreach (var c in new[] { -0.5, 0.5 })
+            {
+                double[] rl = new double[3], rh = new double[3];
+                (rl[axis], rh[axis], rl[1], rh[1], rl[u], rh[u]) = (n0, n1, 0.16, 1.78, c - 0.03, c + 0.03);
+                p.Add(Seam(MachineLook.D(rl, rh, MachineLook.Base)!, side));
+            }
+            double b0 = sign > 0 ? 0.992 : -1.022, b1 = sign > 0 ? 1.022 : -0.992;
+            foreach (var c in new[] { -0.8, -0.25, 0.0, 0.25, 0.8 })
+                foreach (var by in new[] { 0.08, 1.74 })
+                {
+                    if (c == 0.0 && by > 1)
+                        continue;
+                    double[] bl = new double[3], bh = new double[3];
+                    (bl[axis], bh[axis], bl[1], bh[1], bl[u], bh[u]) = (b0, b1, by, by + 0.035, c - 0.0175, c + 0.0175);
+                    p.Add(Seam(MachineLook.D(bl, bh, MachineLook.Steel, "steel")!, side));
+                }
         }
         foreach (var (x, z) in new[] { (-1.0, -1.0), (1 - t, -1.0), (-1.0, 1 - t), (1 - t, 1 - t) })
             p.Add(MachineLook.D([x, 0, z], [x + t, 2, z + t], MachineLook.Base)); // (the corner posts)
