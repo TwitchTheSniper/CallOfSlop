@@ -1,0 +1,1161 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Large Press",
+  "description": "Stamps parts out of extruded pieces. 3 bays and a die slot: the die sets what it makes. Set pieces in the bays with the physics gun or by chute. Needs power.",
+  "group": "Production",
+  "section": "Presses",
+  "role": "storage",
+  "tool": "welder",
+  "sizeClass": "large",
+  "mass": 200000.0,
+  "health": 40000,
+  "armour": 32,
+  "material": "steel",
+  "color": "#2f5f8f",
+  "attachSeconds": 8.0,
+  "power": 14400,
+  "config": [
+    {
+      "key": "recipe",
+      "label": "Pattern",
+      "group": "Work",
+      "tooltip": "What its die makes of a blank: Auto lets the blank choose, or one of the die's patterns. On its die screen, Recipe opens a picker of them and Pattern steps through them."
+    }
+  ],
+  "storage": {
+    "slots": [
+      {
+        "min": [
+          0.436,
+          2.84,
+          15.2
+        ],
+        "max": [
+          11.764,
+          7.44,
+          19.8
+        ],
+        "stack": 12,
+        "label": "Tray"
+      },
+      {
+        "min": [
+          12.236,
+          2.84,
+          15.2
+        ],
+        "max": [
+          23.564,
+          7.44,
+          19.8
+        ],
+        "stack": 12,
+        "label": "Tray"
+      }
+    ],
+    "press": {
+      "bays": [
+        {
+          "socket": "bay1",
+          "min": [
+            16.2,
+            2.8,
+            -8.0
+          ],
+          "max": [
+            23.8,
+            15.2,
+            4.0
+          ]
+        },
+        {
+          "socket": "bay2",
+          "min": [
+            8.2,
+            2.8,
+            -8.0
+          ],
+          "max": [
+            15.8,
+            15.2,
+            4.0
+          ]
+        },
+        {
+          "socket": "bay3",
+          "min": [
+            0.2,
+            2.8,
+            -8.0
+          ],
+          "max": [
+            7.8,
+            15.2,
+            4.0
+          ]
+        }
+      ],
+      "die": {
+        "socket": "dieslot",
+        "min": [
+          4.0,
+          2.8,
+          10.0
+        ],
+        "max": [
+          20.0,
+          15.2,
+          30.0
+        ]
+      },
+      "maxAcross": 7.2,
+      "speed": 4,
+      "outAt": [
+        12.0,
+        -2.0,
+        22.8
+      ],
+      "outDir": "+z"
+    }
+  },
+  "panels": [
+    {
+      "source": "press.bay",
+      "slot": 0,
+      "at": [
+        20.0,
+        18.6,
+        -2.016
+      ],
+      "size": [
+        7.6,
+        2.0
+      ],
+      "face": "-z",
+      "up": "+y",
+      "rows": 5
+    },
+    {
+      "source": "press.bay",
+      "slot": 1,
+      "at": [
+        12.0,
+        18.6,
+        -2.016
+      ],
+      "size": [
+        7.6,
+        2.0
+      ],
+      "face": "-z",
+      "up": "+y",
+      "rows": 5
+    },
+    {
+      "source": "press.bay",
+      "slot": 2,
+      "at": [
+        4.0,
+        18.6,
+        -2.016
+      ],
+      "size": [
+        7.6,
+        2.0
+      ],
+      "face": "-z",
+      "up": "+y",
+      "rows": 5
+    },
+    {
+      "source": "press.die",
+      "at": [
+        12.0,
+        26.0,
+        22.016
+      ],
+      "size": [
+        23.2,
+        4.8
+      ],
+      "face": "+z",
+      "up": "+y",
+      "rows": 4,
+      "touch": [
+        {
+          "action": "machine.recipe",
+          "at": [
+            0.44,
+            0.02,
+            0.7,
+            0.24
+          ],
+          "label": "Recipe"
+        },
+        {
+          "action": "press.pattern",
+          "at": [
+            0.72,
+            0.02,
+            0.98,
+            0.24
+          ],
+          "label": "Pattern"
+        }
+      ]
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -2.0,
+        -2.0,
+        -2.0
+      ],
+      "max": [
+        26.0,
+        2.8,
+        22.0
+      ],
+      "color": "#22262b",
+      "paintable": false,
+      "finish": "tread plate"
+    },
+    {
+      "min": [
+        -2.0,
+        2.8,
+        -2.0
+      ],
+      "max": [
+        0.0,
+        22.0,
+        0.0
+      ]
+    },
+    {
+      "min": [
+        -2.0,
+        2.8,
+        20.0
+      ],
+      "max": [
+        0.0,
+        22.0,
+        22.0
+      ]
+    },
+    {
+      "min": [
+        24.0,
+        2.8,
+        -2.0
+      ],
+      "max": [
+        26.0,
+        22.0,
+        0.0
+      ]
+    },
+    {
+      "min": [
+        24.0,
+        2.8,
+        20.0
+      ],
+      "max": [
+        26.0,
+        22.0,
+        22.0
+      ]
+    },
+    {
+      "min": [
+        -2.0,
+        22.0,
+        -2.0
+      ],
+      "max": [
+        26.0,
+        30.0,
+        22.0
+      ]
+    },
+    {
+      "min": [
+        0.0,
+        15.2,
+        -2.0
+      ],
+      "max": [
+        24.0,
+        22.0,
+        -1.52
+      ]
+    },
+    {
+      "min": [
+        7.6,
+        20.0,
+        5.6
+      ],
+      "max": [
+        16.4,
+        22.08,
+        14.4
+      ],
+      "color": "#22262b",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "paintable": false
+    },
+    {
+      "min": [
+        9.2,
+        15.6,
+        7.2
+      ],
+      "max": [
+        14.8,
+        21.8,
+        12.8
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "paintable": false,
+      "finish": "steel",
+      "work": "stroke",
+      "axis": "-y",
+      "travel": 5.2
+    },
+    {
+      "min": [
+        6.0,
+        14.2,
+        5.2
+      ],
+      "max": [
+        18.0,
+        15.6,
+        14.8
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel",
+      "work": "stroke",
+      "axis": "-y",
+      "travel": 5.2
+    },
+    {
+      "min": [
+        5.92,
+        14.4,
+        5.12
+      ],
+      "max": [
+        18.08,
+        15.28,
+        14.88
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint",
+      "work": "stroke",
+      "axis": "-y",
+      "travel": 5.2
+    },
+    {
+      "min": [
+        -2.03,
+        28.8,
+        -2.03
+      ],
+      "max": [
+        26.03,
+        29.84,
+        22.03
+      ],
+      "color": "#22262b",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.0,
+        21.92,
+        21.92
+      ],
+      "max": [
+        24.0,
+        23.12,
+        22.03
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        0.0,
+        0.6,
+        22.0
+      ],
+      "max": [
+        24.0,
+        2.4,
+        22.03
+      ],
+      "color": "#f07818",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        11.568,
+        1.48,
+        22.03
+      ],
+      "max": [
+        12.432,
+        2.28,
+        22.06
+      ],
+      "color": "#15171a",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        10.8,
+        1.208,
+        22.03
+      ],
+      "max": [
+        13.2,
+        1.48,
+        22.06
+      ],
+      "color": "#15171a",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        11.208,
+        0.936,
+        22.03
+      ],
+      "max": [
+        12.792,
+        1.208,
+        22.06
+      ],
+      "color": "#15171a",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        11.616,
+        0.68,
+        22.03
+      ],
+      "max": [
+        12.384,
+        0.936,
+        22.06
+      ],
+      "color": "#15171a",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.0,
+        0.6,
+        -2.03
+      ],
+      "max": [
+        24.0,
+        2.4,
+        -2.0
+      ],
+      "color": "#ecebe4",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -1.32,
+        2.8,
+        21.92
+      ],
+      "max": [
+        -0.68,
+        22.0,
+        22.48
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+y",
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        24.68,
+        2.8,
+        21.92
+      ],
+      "max": [
+        25.32,
+        22.0,
+        22.48
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+y",
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        16.2,
+        14.72,
+        -2.192
+      ],
+      "max": [
+        23.8,
+        15.2,
+        -1.52
+      ],
+      "color": "#ecebe4",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        16.2,
+        2.8,
+        -2.192
+      ],
+      "max": [
+        23.8,
+        3.28,
+        -1.52
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        8.2,
+        14.72,
+        -2.192
+      ],
+      "max": [
+        15.8,
+        15.2,
+        -1.52
+      ],
+      "color": "#ecebe4",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        8.2,
+        2.8,
+        -2.192
+      ],
+      "max": [
+        15.8,
+        3.28,
+        -1.52
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        0.2,
+        14.72,
+        -2.192
+      ],
+      "max": [
+        7.8,
+        15.2,
+        -1.52
+      ],
+      "color": "#ecebe4",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.2,
+        2.8,
+        -2.192
+      ],
+      "max": [
+        7.8,
+        3.28,
+        -1.52
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        16.6,
+        8.246,
+        -1.996
+      ],
+      "max": [
+        23.4,
+        8.886,
+        0.4
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        16.604,
+        2.796,
+        -1.992
+      ],
+      "max": [
+        17.084,
+        8.249,
+        0.396
+      ],
+      "color": "#22262b",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        22.916,
+        2.796,
+        -1.992
+      ],
+      "max": [
+        23.396,
+        8.249,
+        0.396
+      ],
+      "color": "#22262b",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        8.6,
+        8.246,
+        -1.996
+      ],
+      "max": [
+        15.4,
+        8.886,
+        0.4
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        8.604,
+        2.796,
+        -1.992
+      ],
+      "max": [
+        9.084,
+        8.249,
+        0.396
+      ],
+      "color": "#22262b",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        14.916,
+        2.796,
+        -1.992
+      ],
+      "max": [
+        15.396,
+        8.249,
+        0.396
+      ],
+      "color": "#22262b",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.6,
+        8.246,
+        -1.996
+      ],
+      "max": [
+        7.4,
+        8.886,
+        0.4
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.604,
+        2.796,
+        -1.992
+      ],
+      "max": [
+        1.084,
+        8.249,
+        0.396
+      ],
+      "color": "#22262b",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        6.916,
+        2.796,
+        -1.992
+      ],
+      "max": [
+        7.396,
+        8.249,
+        0.396
+      ],
+      "color": "#22262b",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        7.2,
+        -1.996,
+        21.996
+      ],
+      "max": [
+        16.8,
+        -1.904,
+        22.797
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        2.0,
+        28.804,
+        22.026
+      ],
+      "max": [
+        22.0,
+        29.836,
+        22.039
+      ],
+      "color": "#2b3036",
+      "detail": true,
+      "paintable": false,
+      "status": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "-x.0.0",
+      "at": [
+        -2.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "-x.0.2",
+      "at": [
+        -2.0,
+        0.0,
+        8.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "-x.0.5",
+      "at": [
+        -2.0,
+        0.0,
+        20.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "-x.4.0",
+      "at": [
+        -2.0,
+        16.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "-x.4.2",
+      "at": [
+        -2.0,
+        16.0,
+        8.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "-x.4.5",
+      "at": [
+        -2.0,
+        16.0,
+        20.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "-x.7.0",
+      "at": [
+        -2.0,
+        28.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "-x.7.2",
+      "at": [
+        -2.0,
+        28.0,
+        8.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "-x.7.5",
+      "at": [
+        -2.0,
+        28.0,
+        20.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+x.0.0",
+      "at": [
+        26.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "+x.0.2",
+      "at": [
+        26.0,
+        0.0,
+        8.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "+x.0.5",
+      "at": [
+        26.0,
+        0.0,
+        20.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "+x.4.0",
+      "at": [
+        26.0,
+        16.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "+x.4.2",
+      "at": [
+        26.0,
+        16.0,
+        8.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "+x.4.5",
+      "at": [
+        26.0,
+        16.0,
+        20.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "+x.7.0",
+      "at": [
+        26.0,
+        28.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "+x.7.2",
+      "at": [
+        26.0,
+        28.0,
+        8.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "+x.7.5",
+      "at": [
+        26.0,
+        28.0,
+        20.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-y.0.0",
+      "at": [
+        0.0,
+        -2.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.0.2",
+      "at": [
+        0.0,
+        -2.0,
+        8.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.0.5",
+      "at": [
+        0.0,
+        -2.0,
+        20.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.3.0",
+      "at": [
+        12.0,
+        -2.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.3.2",
+      "at": [
+        12.0,
+        -2.0,
+        8.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.3.5",
+      "at": [
+        12.0,
+        -2.0,
+        20.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.6.0",
+      "at": [
+        24.0,
+        -2.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.6.2",
+      "at": [
+        24.0,
+        -2.0,
+        8.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.6.5",
+      "at": [
+        24.0,
+        -2.0,
+        20.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+y.0.0",
+      "at": [
+        0.0,
+        30.0,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "+y.0.2",
+      "at": [
+        0.0,
+        30.0,
+        8.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "+y.0.5",
+      "at": [
+        0.0,
+        30.0,
+        20.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "+y.3.0",
+      "at": [
+        12.0,
+        30.0,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "+y.3.2",
+      "at": [
+        12.0,
+        30.0,
+        8.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "+y.3.5",
+      "at": [
+        12.0,
+        30.0,
+        20.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "+y.6.0",
+      "at": [
+        24.0,
+        30.0,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "+y.6.2",
+      "at": [
+        24.0,
+        30.0,
+        8.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "+y.6.5",
+      "at": [
+        24.0,
+        30.0,
+        20.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "bay1",
+      "at": [
+        20.0,
+        9.0,
+        -2.0
+      ],
+      "dir": "-z",
+      "kind": "die"
+    },
+    {
+      "name": "bay2",
+      "at": [
+        12.0,
+        9.0,
+        -2.0
+      ],
+      "dir": "-z",
+      "kind": "die"
+    },
+    {
+      "name": "bay3",
+      "at": [
+        4.0,
+        9.0,
+        -2.0
+      ],
+      "dir": "-z",
+      "kind": "die"
+    },
+    {
+      "name": "dieslot",
+      "at": [
+        12.0,
+        2.8,
+        10.0
+      ],
+      "dir": "+y",
+      "kind": "pressdie"
+    }
+  ]
+}

@@ -719,7 +719,7 @@ public static class ConstructCrafting
             }
             for (var i = 0; i < net.MachineN; i++)
                 if (c.DefOf(net.Machines[i]) is { IsPress: true, IsLathe: false } pd && ReferenceEquals(ConstructPress.SizedDieOf(PressTable.Current, c, net.Machines[i]), spec.Die)
-                    && ConstructPress.Fits(c, net.Machines[i], spec.Blank))
+                    && Pressed.Across(spec.Blank) <= pd.PressMaxCm)
                     return pd.Name;
             return null;
         }
