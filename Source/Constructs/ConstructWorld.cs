@@ -1038,12 +1038,16 @@ public sealed partial class ConstructWorld
             ConstructBreakUp.Hit(this, c, part, taken, DamageAt); // (a big body: where it was hurt weakens its structure there, ConstructBreakUp.cs)
         ConstructEngine.HealthChanging(c, part, p.Health - taken); // (a modular engine's cylinder starting to misfire)
         p.Health -= taken;
-        c.Wake();
+        if (!raw || p.Health <= 0)
+            c.Wake(); // (a fire's damage moves nothing until the part goes: a wreck burning for minutes still sleeps, and costs no physics)
         if (p.Health > 0)
         {
             HealthDirty.Add((c.Id, (ushort)part));
             if (d.DamagedTo >= 0 && p.Health < d.DamagedBelow * d.Health)
+            {
+                c.Wake(); // (its shape changes)
                 LoseChunk(c, part);
+            }
             return false;
         }
         p.Health = 0;

@@ -338,6 +338,23 @@ public static partial class ConstructPhysics
         Lap(4, ref t0);
     }
 
+    /// <summary>Dev (BattleCheck --nuke): this tick's body-to-body contacts, overlap at least <paramref name="deep"/> m, by pair names.</summary>
+    public static void DevContacts(Dictionary<string, (int n, float worst, float jn)> into, float deep)
+    {
+        for (var k = 0; k < _contactCount; k++)
+        {
+            ref var ct = ref _contacts[k];
+            if (ct.Bilateral || ct.Soft || ct.Beam > 0 || ct.A < 0)
+                continue;
+            var a = _bodies[ct.A].DefOf(0).Name;
+            var b = ct.B < 0 ? "ground" : _bodies[ct.B].DefOf(0).Name;
+            var key = string.CompareOrdinal(a, b) < 0 ? a + " / " + b : b + " / " + a;
+            var deepNow = -ct.Gap >= deep;
+            var e = into.GetValueOrDefault(key);
+            into[key] = (e.n + (deepNow ? 1 : 0), MathF.Max(e.worst, -ct.Gap), e.jn + ct.Jn);
+        }
+    }
+
     /// <summary>Where the physics' time goes (ms in all; a tool reads and clears it): the list, each body's forces and ground, the contacts between bodies, the solver, the rest.</summary>
     public static readonly double[] PartMs = new double[5];
 

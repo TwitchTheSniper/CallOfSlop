@@ -95,7 +95,7 @@ public sealed class PerfCaptureBodies
     }
 
     /// <summary>What keeps a body awake now: the tests <c>ConstructPhysics.Sleep</c> makes (None: still, about to sleep).</summary>
-    private static Why WhyAwake(Construct c)
+    internal static Why WhyAwake(Construct c)
     {
         var why = Why.None;
         var framed = c.Framed;
