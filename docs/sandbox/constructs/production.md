@@ -1802,6 +1802,18 @@ any piece that reaches a player standing on a construct (a floor slab, a pad, a 
 **Store parts on a pad**: a Lay-down Pad takes a store part (a Drill Module, an Ammo Container) as a station's hold does: by conveyor,
 arm or fetch as a new, empty one, and set down loose only when it holds nothing ("holds something: empty it first"). A Drill Module
 is 2.2 m tall: a Large pad, not a Medium one.
+**Welded groups on a pad** (Sean, 2026-11-21, in place of Cargo Volumes; `PackedGroups.cs`): a welded group set down at rest on a
+Lay-down Pad or a Pad Tile pad goes in as one kind, `Packed (#hash)`, and packs as any piece does. Its design is a baked part's
+(`BakedParts.cs`: one line a part, its place, turn, paint and finish; the same store, wire message and save section), written in the
+pad's frame with the group's longest side along the pad, so the same group set down either way round is one kind and stacks. Any part
+may be in it, but each as new (whole, empty, settings at their defaults; paint and finish are kept), and the group rigid: no joint,
+every part at a grid turn, no wires, no seat. Whatever takes it out (a crane, an arm, a hand, a spill) makes a body of the one packed
+part, which the server turns back into the group at its next lifters' look (each second), welded again where its sockets meet; a body
+someone holds waits until they let go. A packed part is physics-only (never in the hands) and only drawn while stored: a group over
+256 boxes loses its detail boxes there first. A Lifter Cab carries a welded group whole on its hook, as it does a container (F over
+it; its size and mass as packed), so a Hall Crane can set one on a pad. `--pack-check` tries it headless: two groups built in
+different orders and turns go in as one kind, a damaged one is refused, one taken out is its group again. Not yet: arms and cranes
+carrying a group by order (only the cab does), and a stock target naming a packed kind.
 
 ## Bake Oven and baked parts (2026-11-21)
 

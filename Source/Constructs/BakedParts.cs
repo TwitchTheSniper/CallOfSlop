@@ -28,7 +28,7 @@ namespace CallOfSlop;
 /// by health, and the plates with them.
 /// </para>
 /// </summary>
-public static class BakedParts
+public static partial class BakedParts
 {
     public const string Prefix = "Baked (#";
     public const string Format = "call-of-slop-baked/1";
@@ -61,19 +61,23 @@ public static class BakedParts
     /// <summary>Why the last <see cref="Bake"/>, <see cref="Unbake"/> or <see cref="Register"/> gave nothing.</summary>
     [ThreadStatic] public static string? LastRefusal;
 
-    public static bool IsName(string name) => name.StartsWith(Prefix, StringComparison.Ordinal);
+    /// <summary>A key that names a design: a baked part's, or a packed group's (PackedGroups.cs).</summary>
+    public static bool IsName(string name) => name.StartsWith(Prefix, StringComparison.Ordinal) || name.StartsWith(PackedPrefix, StringComparison.Ordinal);
 
-    public static bool IsBaked(ConstructPartDef d) => d.IsNamedRuntime && IsName(d.Name);
+    public static bool IsBaked(ConstructPartDef d) => d.IsNamedRuntime && d.Name.StartsWith(Prefix, StringComparison.Ordinal);
 
     public static string KeyOf(string hash) => Prefix + hash + ")";
 
-    private static string? HashOfKey(string name) =>
-        IsName(name) && name.EndsWith(')') && name.Length == Prefix.Length + 17 ? name[Prefix.Length..^1] : null;
+    private static string? HashOfKey(string name)
+    {
+        var pre = name.StartsWith(Prefix, StringComparison.Ordinal) ? Prefix.Length : name.StartsWith(PackedPrefix, StringComparison.Ordinal) ? PackedPrefix.Length : -1;
+        return pre > 0 && name.EndsWith(')') && name.Length == pre + 17 ? name[pre..^1] : null;
+    }
 
     /// <summary>The design a baked part was made from (null: not a baked part).</summary>
     public static Design? DesignOf(ConstructPartDef d)
     {
-        if (!IsBaked(d))
+        if (!d.IsNamedRuntime || !IsName(d.Name))
             return null;
         lock (Interned)
             return Info.GetValueOrDefault(d);
@@ -195,7 +199,7 @@ public static class BakedParts
             }
         }
         // The subparts are found outside the lock (the first ask loads the parts; a subpart may be a baked part itself).
-        var made = Build(design, name);
+        var made = Build(design, name, name.StartsWith(PackedPrefix, StringComparison.Ordinal));
         lock (Interned)
         {
             if (Interned.TryGetValue(name, out var raced))
@@ -251,7 +255,7 @@ public static class BakedParts
          "sockets":[{"name":"back","at":[0,-0.01,0],"dir":"-y"}]}
         """;
 
-    private static ConstructPartDef? Build(Design design, string name)
+    private static ConstructPartDef? Build(Design design, string name, bool packed)
     {
         var outer = PartShapes.BeginCollect();
         ConstructPartDef? d = null;
@@ -272,7 +276,7 @@ public static class BakedParts
                     LastRefusal = $"no part \"{s.Name}\" in this build";
                     return null;
                 }
-                if (BakeRefusal(sd) is { } why)
+                if (!packed && BakeRefusal(sd) is { } why)
                 {
                     LastRefusal = $"\"{s.Name}\" can't be baked: {why}";
                     return null;
@@ -303,6 +307,8 @@ public static class BakedParts
                 if (sd.Mass > heaviest)
                     (heaviest, material) = (sd.Mass, sd.Material);
             }
+            if (packed && solid.Count + detail.Count > ConstructParts.MaxBoxes && solid.Count <= ConstructParts.MaxBoxes)
+                detail.RemoveRange(Math.Max(0, ConstructParts.MaxBoxes - solid.Count), detail.Count - Math.Max(0, ConstructParts.MaxBoxes - solid.Count)); // (a packed group is only seen in a store: its small detail goes first)
             if (solid.Count + detail.Count > ConstructParts.MaxBoxes)
             {
                 LastRefusal = $"{solid.Count + detail.Count} boxes, at most {ConstructParts.MaxBoxes} a part";
@@ -331,7 +337,9 @@ public static class BakedParts
             d = t.ShallowCopy();
             d.Name = name;
             d.File = "";
-            d.Description = $"A baked part: {design.Subs.Length} subparts made one in a Bake Oven. An oven set to Un-bake turns it back.";
+            d.Description = packed
+                ? $"A welded group of {design.Subs.Length} parts, kept as one piece in a store. It is the group again as soon as it leaves the store."
+                : $"A baked part: {design.Subs.Length} subparts made one in a Bake Oven. An oven set to Un-bake turns it back.";
             d.Boxes = [.. solid, .. detail];
             d.SolidBoxes = solid.Count;
             d.HasGlass = d.Boxes.Any(x => x.IsGlass);
@@ -354,7 +362,10 @@ public static class BakedParts
             d.SurfaceOverride = 0;
             d.MatBase = null;
             d.IsNamedRuntime = true;
-            d.ExHash = uint.Parse(design.Hash[8..], NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+            d.ExHash = uint.Parse(design.Hash[8..], NumberStyles.HexNumber, CultureInfo.InvariantCulture) ^ (packed ? 0x9E3779B9u : 0u); // (a group packed and the same group baked are two parts)
+            d.PhysicsOnly = true; // (never into the hands or a backpack: a body in the world, or a count in a store)
+            if (string.IsNullOrEmpty(d.PhysicsWhy))
+                d.PhysicsWhy = "structural";
             return d;
         }
         finally
