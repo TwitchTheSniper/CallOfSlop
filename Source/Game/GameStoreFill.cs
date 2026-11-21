@@ -245,9 +245,10 @@ public sealed partial class Game
         var hi = StoreLocal(anchorPos, anchorRot, lay, bay.Max);
         var mn = Vector3.Min(lo, hi) - new Vector3(0.01f);
         var mx = Vector3.Max(lo, hi) + new Vector3(0.01f);
+        var jobs = StoreRooms.Current.JobOf;
         for (var i = st.PartCount - 1; i >= 0; i--)
         {
-            if (st.DefOf(i).IsStationPiece)
+            if (st.DefOf(i).IsStationPiece || !jobs.ContainsKey((ushort)st.DefOf(i).Id)) // (only the store's own furniture: anything else a player put in a bay stays)
                 continue;
             var p = st.Parts[i].Pos;
             if (p.X >= mn.X && p.X <= mx.X && p.Y >= mn.Y && p.Y <= mx.Y && p.Z >= mn.Z && p.Z <= mx.Z)
@@ -258,16 +259,29 @@ public sealed partial class Game
             if (st.DefOf(i).Name == bay.Piece)
                 host = i;
         if (host < 0)
+        {
+            Log($"[store] bay {b}: no piece {bay.Piece} on the station, left empty");
             return;
+        }
+        var unlinked = 0;
         foreach (var (d, pos, rot) in plan)
         {
             if (ConstructParts.Get(d) is not { } pd)
                 continue;
             var i = Constructs.AddPart(st, pd, StoreLocal(anchorPos, anchorRot, lay, pos), Rot24.Compose(anchorRot, rot)); // (the plan's turn is the station frame's)
             if (i < 0)
+            {
+                Log($"[store] bay {b}: the station took no more parts ({st.PartCount}); {pd.Name} and the rest of the bay left out");
                 break;
-            Constructs.AddLink(st, i, 0, host, 0);
+            }
+            if (!Constructs.AddLink(st, i, 0, host, 0))
+            {
+                Constructs.RemovePart(st, i); // (an unlinked piece would come off as a loose body)
+                unlinked++;
+            }
         }
+        if (unlinked > 0)
+            Log($"[store] bay {b}: {unlinked} piece(s) left out, the station took no more links");
     }
 
     /// <summary>The anchor piece's place on the station (its origin and turn), from which the layout's station-frame points are found.</summary>

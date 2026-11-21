@@ -681,7 +681,7 @@ public sealed partial class Game
         {
             pw.Stock -= cost;
             pw.Spent += cost;
-            Log($"[haul] construct {c.Id} ({h.Power}) bought {StationGoodsText(m, bought)} at {where} for {cost:0} (value)");
+            Log($"[haul] construct {c.Id} ({h.Power}) bought {(StationGoodsText(m, bought) is { Length: > 0 } t ? t : "parts")} at {where} for {cost:0} (value)");
         }
         else if (value <= 0)
             Log($"[haul] construct {c.Id} ({h.Power}) traded nothing at {where}");
@@ -705,6 +705,17 @@ public sealed partial class Game
         foreach (var b in Constructs.Bodies)
             if (b.CarriedBy == c.Id && !b.Wreck)
                 holds.Add(b);
+        // their stores and volumes, found once a stop (not once per part kind or unit)
+        var stores = new List<(Construct B, int P)>();
+        var vols = new List<(Construct B, int P)>();
+        foreach (var b in holds)
+            for (var i = 0; i < b.PartCount; i++)
+            {
+                if (Constructs.StoreOf(b, i) is not null)
+                    stores.Add((b, i));
+                if (b.DefOf(i).IsVolumeStore)
+                    vols.Add((b, i));
+            }
         for (var j = 0; j < parts.Length; j++)
         {
             if (parts[j].Buy <= 0 || ng + j >= m.Stock.Length)
@@ -714,10 +725,9 @@ public sealed partial class Game
                 continue;
             var what = new CHolding(true, parts[j].Part, 0);
             var took = 0;
-            foreach (var b in holds)
-                for (var i = 0; i < b.PartCount && took < room; i++)
-                    if (Constructs.StoreOf(b, i) is not null)
-                        took += Constructs.TakeHolding(b, i, what, room - took);
+            foreach (var (b, i) in stores)
+                if (took < room)
+                    took += Constructs.TakeHolding(b, i, what, room - took);
             if (took == 0)
                 continue;
             m.Stock[ng + j] += took;
@@ -764,7 +774,7 @@ public sealed partial class Game
                 (pick[k], pick[k - 1]) = (pick[k - 1], pick[k]);
                 (short_[k], short_[k - 1]) = (short_[k - 1], short_[k]);
             }
-        var loaded = 0;
+        int loaded = 0, vi = 0;
         string? refusal = null;
         for (var i = 0; i < np; i++)
         {
@@ -777,15 +787,17 @@ public sealed partial class Game
                 if (pw is not { Fallen: false } || pw.Stock - spent - cost < parts[j].Sell)
                     break;
                 var put = false;
-                foreach (var b in holds)
-                    for (var p = 0; p < b.PartCount && !put; p++)
-                        if (b.DefOf(p).IsVolumeStore)
-                        {
-                            if (Constructs.PutPart(b, p, pd) is { } why)
-                                refusal ??= why;
-                            else
-                                put = true;
-                        }
+                for (var t = 0; t < vols.Count && !put; t++)
+                {
+                    var (b, p) = vols[(vi + t) % vols.Count]; // (from the volume that took the last one)
+                    if (Constructs.PutPart(b, p, pd) is { } why)
+                        refusal ??= why;
+                    else
+                    {
+                        put = true;
+                        vi = (vi + t) % vols.Count;
+                    }
+                }
                 if (!put)
                     break;
                 m.Stock[ng + j]--;
