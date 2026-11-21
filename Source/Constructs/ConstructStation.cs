@@ -74,7 +74,9 @@ public sealed partial class StationJob
     public byte SeenFit, SeenLink;
     public readonly byte[] ArmSeen = new byte[ConstructStation.MaxArms];
     public readonly double[] ArmStart = new double[ConstructStation.MaxArms]; // when each arm's carry began, on this peer's clock
-    public readonly Vector3[] ArmRest = new Vector3[ConstructStation.MaxArms]; // where each arm stood when its carry began (the bay's frame)
+    public readonly Vector3[] ArmFrom = new Vector3[ConstructStation.MaxArms]; // where each arm stood when its carry began (the bay's frame: x, the hook's height, z)
+    public readonly Vector3[] ArmLast = new Vector3[ConstructStation.MaxArms]; // ...and where it was drawn last
+    public readonly bool[] ArmDrawn = new bool[ConstructStation.MaxArms]; // ...once it has been
     public byte HeardFit, HeardLink;
     public double FitAt, LinkAt2;
 }
@@ -140,16 +142,21 @@ public static partial class ConstructStation
     {
         size = BaySize(c, part);
         Freeform.PartWorld(c, part, out var pos, out rot);
+        floor = pos + Vector3.Transform(BayFloor(c, part), rot);
+    }
+
+    /// <summary>The middle of the bay's floor in the station's own frame (the bay turns with it): beside the Core, on the Bay Blocks' top.</summary>
+    public static Vector3 BayFloor(Construct c, int part)
+    {
         var d = c.DefOf(part);
-        var origin = d.BlockOrigin ?? (d.BoundsMin + d.BoundsMax) * 0.5f;
-        var local = origin;
+        var local = d.BlockOrigin ?? (d.BoundsMin + d.BoundsMax) * 0.5f;
         if (MachineBlocks.TryOf(c, part, out var asm) && asm.W > 0)
         {
             var cell = d.BlockCell;
             local += new Vector3((asm.X0 + (asm.W - 1) * 0.5f) * cell, 0, (asm.Z0 + (asm.L - 1) * 0.5f) * cell);
         }
         local.Y = d.BlockOrigin is { } o ? o.Y * 2 : d.BoundsMin.Y; // (the Bay Blocks' top: twice the floor cell's middle)
-        floor = pos + Vector3.Transform(local, rot);
+        return local;
     }
 
     /// <summary>
