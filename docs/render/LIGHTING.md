@@ -118,6 +118,14 @@ lighting" checks the key and the grid change). `LightBake.BakeMs` is `[NotBaked]
   `Lighting.Glsl` (12 taps, rotated per pixel, fading out at the map's edge) multiplies the sun in every mode but the gun's probe;
   `Off()` and the gun's pass leave it off. Settings > Video > Sun shadows (Low off), Key light (0.7-1.6x); `--no-sun-shadows`.
   Moving parts cast at rest, glass doesn't cast, and wedge shapes cast as their whole box.
+- **Dark interiors** (`RoomShade.cs`, Karl 2026-11-21: a Zero Day room with no lamp on was lit like day). The sky's ambient
+  reached every surface whatever stood round it. Before each world pass, right after the sun's map, the same nearest bodies'
+  boxes are drawn into eight 1024 depth maps (a 2D array on texture unit 21, `uRoomShade`, compared in hardware), one from each
+  diagonal of a cube, each a 48 m square round the camera. `RoomShade(p, n)` in `Lighting.Glsl` gives the share of those
+  directions in front of the surface (weighted by facing) that see past every box: it scales the ambient in every mode (and so
+  `gLitAmb`: the rim light and sky reflections), down to 3% in a shut room; the share towards the sun scales the sun when the
+  sun's own map is off. The gun's pass reads it at the eye. Lamps (dynamic lights) are not shaded by it. Block fields `uRoomVP[8]`,
+  `uRoomC`, `uRoomQ` after `uKeyQ`. Settings > Video > Dark interiors; `--no-dark-interiors`.
 - `LitGrid(p, n)` reads the grid for a surface (C# twin: `LightBake.SampleSurface`): a little over half a cell along the
   normal, with the GPU's own trilinear filtering, unless the 8 cells round that point are a mixed block (one texel
   fetch of the low corner's flags). Then it filters them itself, leaving out cells inside boxes, cells behind the

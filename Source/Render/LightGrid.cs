@@ -41,6 +41,13 @@ public static unsafe class LightGrid
     /// <summary>Is the shader's block the same size as <see cref="FrameBlock"/> (its arrays sized <see cref="MaxDynamic"/>)? Checked when the block is made.</summary>
     public static bool ShaderAgrees => Lighting.Glsl.Contains($"uDynPos[{MaxDynamic}]", StringComparison.Ordinal) && Lighting.Glsl.Contains($"uDynCol[{MaxDynamic}]", StringComparison.Ordinal);
 
+    /// <summary>The dark interiors' lookups (RoomShade.cs), one mat4 each, as the std140 array lays them out.</summary>
+    [System.Runtime.CompilerServices.InlineArray(RoomShade.Layers)]
+    public struct RoomArray
+    {
+        private Matrix4x4 _first;
+    }
+
     /// <summary>The block's dynamic lights, one vec4 each, as the std140 array lays them out.</summary>
     [System.Runtime.CompilerServices.InlineArray(MaxDynamic)]
     public struct DynArray
@@ -77,6 +84,9 @@ public static unsafe class LightGrid
         public Vector4 ShadowC;   // xyz: the map's centre; w: the normal offset (m)
         public Vector4 ShadowQ;   // x: 1 while the map is live; y: the soft edge's radius (uv); z: the depth sign; w: the depth bias
         public Vector4 Key;       // x: the key light's multiplier (Video: Key light)
+        public RoomArray RoomVP;  // world (less RoomC) to each dark-interiors map's u, v and stored depth (RoomShade.cs)
+        public Vector4 RoomC;     // xyz: the maps' centre (the camera); w: the normal offset (m)
+        public Vector4 RoomQ;     // x: 1 while the maps are live; y: the ambient a shut room keeps; z: 1 in the gun's pass (read at the eye); w: the signed depth bias
     }
 
     /// <summary>Settings > Video > Materials: 0 Low (the classic light), 1 Medium, 2 High.</summary>
@@ -92,7 +102,7 @@ public static unsafe class LightGrid
     public static bool MarkGlow;
 
     private static float _lastMark;
-    private static bool _shadowSent;
+    private static bool _shadowSent, _roomSent;
 
     private static FrameBlock _block;
     private static readonly Vector4[] DynPos = new Vector4[MaxDynamic], DynCol = new Vector4[MaxDynamic];
@@ -124,6 +134,7 @@ public static unsafe class LightGrid
         SetSampler(program, "uLitB\0"u8, UnitB);
         SetSampler(program, "uLitC\0"u8, UnitC);
         SetSampler(program, "uSunShadow\0"u8, SunShadows.Unit);
+        SetSampler(program, "uRoomShade\0"u8, RoomShade.Unit);
     }
 
     private static void SetSampler(GlProgram program, ReadOnlySpan<byte> nameZ, int unit)
@@ -256,6 +267,7 @@ public static unsafe class LightGrid
         if (!Init())
             return;
         SunShadows.EndWorld(); // (camera space: the world's shadow map means nothing here, and an unlit map's probe is mode 0)
+        RoomShade.BeginProbe(); // (the dark interiors' maps are read at the eye: the gun is as dark as the room)
         FillProbe(ref _block, bake, eye, view, time);
         Send();
     }
@@ -264,7 +276,8 @@ public static unsafe class LightGrid
     public static void Off()
     {
         SunShadows.EndWorld();
-        if (!_ready || (_lastMode == 0f && _lastMark == 0f && !_shadowSent))
+        RoomShade.EndWorld();
+        if (!_ready || (_lastMode == 0f && _lastMark == 0f && !_shadowSent && !_roomSent))
             return;
         _block.Mode = Vector4.Zero;
         MarkGlow = false;
@@ -304,6 +317,16 @@ public static unsafe class LightGrid
         else
             _block.ShadowQ = Vector4.Zero;
         _shadowSent = _block.ShadowQ.X > 0f;
+        if (RoomShade.Live)
+        {
+            for (var i = 0; i < RoomShade.Layers; i++)
+                _block.RoomVP[i] = RoomShade.Lookup[i];
+            _block.RoomC = new Vector4(RoomShade.Centre, RoomShade.NormalOffset);
+            _block.RoomQ = new Vector4(1f, RoomShade.Floor, RoomShade.Probe ? 1f : 0f, RoomShade.SignedBias);
+        }
+        else
+            _block.RoomQ = Vector4.Zero;
+        _roomSent = _block.RoomQ.X > 0f;
         Native.glBindBuffer(GL_UNIFORM_BUFFER, _ubo);
         fixed (FrameBlock* p = &_block)
             Native.glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(FrameBlock), p);

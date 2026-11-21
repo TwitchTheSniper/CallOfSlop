@@ -116,6 +116,15 @@ public static unsafe class Lighting
             return albedo * (amb + sunColor * diff);
         }
         vec3 ApplyLight(vec3 albedo, vec3 n, float wrap) { return ApplyLightVis(albedo, n, wrap, uSunColor); }
+        // The same with its ambient scaled by ambK (the dark interiors: RoomShade below).
+        vec3 ApplyLightVisAmb(vec3 albedo, vec3 n, float wrap, vec3 sunColor, float ambK)
+        {
+            float skyLum = max(dot(uFog, vec3(0.3333)), 0.05);
+            vec3 sky = mix(uAmbSky, uFog / skyLum * dot(uAmbSky, vec3(0.3333)), uSkyTint);
+            vec3 amb = mix(uAmbGround, sky, n.y * 0.5 + 0.5) * ambK;
+            float diff = max((dot(n, uSunDir) + wrap) / (1.0 + wrap), 0.0);
+            return albedo * (amb + sunColor * diff);
+        }
 
         // ---- Baked lighting (docs/render/LIGHTING.md, Source/Render/LightGrid.cs) ----
         // The map's light grid as three 3D textures, and one block of per-pass values shared by every program.
@@ -134,10 +143,14 @@ public static unsafe class Lighting
             vec4 uShadowC;   // xyz: the map's centre; w: the normal offset (m)
             vec4 uShadowQ;   // x: 1 while the map is live; y: the soft edge's radius (uv); z: the depth sign; w: the depth bias
             vec4 uKeyQ;      // x: the key light's multiplier (0: not set, 1)
+            mat4 uRoomVP[8]; // world less uRoomC to each dark-interiors map's u, v and stored depth (RoomShade.cs; the size is RoomShade.Layers)
+            vec4 uRoomC;     // xyz: the maps' centre (the camera); w: the normal offset (m)
+            vec4 uRoomQ;     // x: 1 while the maps are live; y: the ambient a shut room keeps; z: 1 in the gun's pass (read at the eye); w: the signed depth bias
         };
         uniform sampler3D uLitA; // rgb: static light reaching the cell, a: the share that flickers
         uniform sampler3D uLitB; // xyz: the light's average direction (length: how one-sided), w: ambient left (sky seen)
         uniform sampler2D uSunShadow; // the sun shadow map's depth (SunShadows.cs; read only while uShadowQ.x is 1)
+        uniform sampler2DArrayShadow uRoomShade; // the dark interiors' eight depth maps, compared in hardware (RoomShade.cs; read only while uRoomQ.x is 1)
         uniform sampler3D uLitC; // r: sun reaching the cell, g, b: flicker phasor (128/255 = 0), a: flicker pace
         float gLitAmb = 1.0;     // the ambient factor the last ApplyLightAt used (the box shaders scale their rim light by it)
         float gSunVis = 1.0;     // ...how much of the sun it let through (materials: the sun's highlight)
@@ -237,15 +250,60 @@ public static unsafe class Lighting
             return mix(lit / 12.0, 1.0, smoothstep(0.8, 1.0, edge));
         }
 
+        // How open the sky is round world point p facing n, past the ships and vehicles near the camera (RoomShade.cs): amb, the
+        // share of the eight diagonal directions in front of the surface (weighted by how squarely it faces each) that reach the
+        // edge of their map without meeting a box; sun, the same share towards the sun. A shut room: 0 (the floor, for amb). 1 while
+        // the maps are off. In the gun's pass every pixel reads the point at the eye with no normal.
+        void RoomShade(vec3 p, vec3 n, out float amb, out float sun)
+        {
+            amb = 1.0;
+            sun = 1.0;
+            if (uRoomQ.x < 0.5)
+                return;
+            bool probe = uRoomQ.z > 0.5;
+            vec4 q = vec4(probe ? vec3(0.0) : p - uRoomC.xyz + n * uRoomC.w, 1.0);
+            float sa = 0.0, wa = 0.0, ss = 0.0, ws = 0.0;
+            for (int i = 0; i < 8; i++) // (RoomShade.Dir: bit 0 x, bit 1 y, bit 2 z, set: +)
+            {
+                vec3 d = vec3((i & 1) == 0 ? -0.57735 : 0.57735, (i & 2) == 0 ? -0.57735 : 0.57735, (i & 4) == 0 ? -0.57735 : 0.57735);
+                float w = probe ? 1.0 : max(dot(n, d), 0.0);
+                float wsun = max(dot(uSunDir, d), 0.0);
+                if (w <= 0.0 && wsun <= 0.0)
+                    continue;
+                vec3 s = (uRoomVP[i] * q).xyz;
+                vec2 e = abs(s.xy - 0.5) * 2.0;
+                float edge = max(e.x, e.y);
+                float lit = 1.0;
+                if (edge < 1.0 && s.z > 0.0 && s.z < 1.0)
+                    lit = mix(texture(uRoomShade, vec4(s.xy, float(i), s.z - uRoomQ.w)), 1.0, smoothstep(0.85, 1.0, edge));
+                sa += lit * w;
+                wa += w;
+                ss += lit * wsun;
+                ws += wsun;
+            }
+            float open = wa > 0.0 ? sa / wa : 1.0;
+            sun = ws > 0.0 ? ss / ws : 1.0;
+            if (probe) // (the gun has no normal: half the directions open, beside a hull outside or in a doorway, is fully lit)
+            {
+                open = min(open * 2.0, 1.0);
+                sun = min(sun * 2.0, 1.0);
+            }
+            amb = mix(uRoomQ.y, 1.0, open);
+        }
+
         // ApplyLight plus the baked light at world position p (mode 0: ApplyLight, with the sun shadows and the key light).
         vec3 ApplyLightAt(vec3 albedo, vec3 n, float wrap, vec3 p)
         {
-            gLitAmb = 1.0;
             float key = uKeyQ.x > 0.0 ? uKeyQ.x : 1.0;
+            float room, roomSun;
+            RoomShade(p, n, room, roomSun);
+            gLitAmb = room;
             float shade = SunShadow(p, n);
+            if (uShadowQ.x < 0.5)
+                shade *= roomSun; // (no sun map: the dark interiors' share towards the sun keeps it out of shut rooms)
             gSunVis = shade;
             if (uLitMode.x < 0.5)
-                return ApplyLightVis(albedo, n, wrap, uSunColor * key * shade);
+                return ApplyLightVisAmb(albedo, n, wrap, uSunColor * key * shade, room);
             if (uLitMode.x > 4.5) // (an unlit map's classic light plus the frame's dynamic lights: lamps on constructs, ConstructLamps.cs)
             {
                 vec3 dl = vec3(0.0);
@@ -262,7 +320,7 @@ public static unsafe class Lighting
                 // longer burnt white (ConstructLamps' strengths are set for it: a brightest channel of 1 comes out 0.69, 2 comes out 1.05).
                 dl = dl / (1.0 + 0.45 * max(max(dl.r, dl.g), dl.b)); // (on the brightest channel: the sodium's amber keeps its hue)
                 gSunVis = shade;
-                return ApplyLightVis(albedo, n, wrap, uSunColor * key * shade) + albedo * dl;
+                return ApplyLightVisAmb(albedo, n, wrap, uSunColor * key * shade, room) + albedo * dl;
             }
             vec4 a;
             vec4 b;
@@ -275,6 +333,7 @@ public static unsafe class Lighting
                 b = uProbeB;
                 c = uProbeC;
             }
+            b.w *= room;
             gLitAmb = b.w;
             float skyLum = max(dot(uFog, vec3(0.3333)), 0.05);
             vec3 sky = mix(uAmbSky, uFog / skyLum * dot(uAmbSky, vec3(0.3333)), uSkyTint);
