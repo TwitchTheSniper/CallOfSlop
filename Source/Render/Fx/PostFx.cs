@@ -652,11 +652,17 @@ public static unsafe partial class PostFx
                 Native.glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depthTex, 0);
             Native.glBindFramebuffer(GL_FRAMEBUFFER, Renderer.MainFbo);
         }
-        while (GlDebug.Error() != 0) { }
+        // glGetError only: GlDebug.Error also returns the debug callback's first error since its last call, and a driver that
+        // reports asynchronously (NVIDIA) hands an error from earlier in the frame to whoever asks next, which turned ambient
+        // occlusion and contact shadows off for the whole run on Karl's PC (2026-11-21).
+        for (var k = 0; k < 16 && Native.glGetError() != 0; k++) { }
         Native.glBindFramebuffer(GL_READ_FRAMEBUFFER, Renderer.MainFbo);
         Native.glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _depthFbo);
         Native.glBlitFramebuffer(0, 0, w, h, 0, 0, w, h, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
-        return GlDebug.Error() == 0;
+        var e = (uint)Native.glGetError();
+        if (e != 0)
+            Console.WriteLine($"[postfx] depth copy failed: GL error 0x{e:x} ({w}x{h}, scene target {(floatDepth ? "on" : "off")})");
+        return e == 0;
     }
 
     /// <summary>Haze and bloom over the frame so far (after the effects, before the first-person gun and the HUD).</summary>
@@ -669,6 +675,8 @@ public static unsafe partial class PostFx
             return;
         }
         Resize(w, h);
+        if (!_copied)
+            while (GlDebug.Error() != 0) { } // (only the blit's own error counts: an earlier one left pending turned post effects off, 2026-11-21)
         Native.glBindFramebuffer(GL_READ_FRAMEBUFFER, Renderer.MainFbo);
         Native.glBindFramebuffer(GL_DRAW_FRAMEBUFFER, Scene.Fbo);
         Native.glBlitFramebuffer(0, 0, w, h, 0, 0, w, h, GL_COLOR_BUFFER_BIT, GL_NEAREST);
