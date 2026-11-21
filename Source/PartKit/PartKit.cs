@@ -187,7 +187,9 @@ public static class PartKit
         foreach (var gen in gens)
         {
             var o = new PartOutput(root);
-            gen.Make(o);
+            PartChunky.On = PartChunky.Generators.Contains(gen.Name);
+            try { gen.Make(o); }
+            finally { PartChunky.On = false; }
             var have = new Dictionary<string, string>(StringComparer.Ordinal);
             foreach (var folder in o.Owned)
             {
