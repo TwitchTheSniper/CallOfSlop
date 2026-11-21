@@ -1,0 +1,88 @@
+using System.Numerics;
+using CallOfSlop.VehicleKit;
+
+namespace CallOfSlop.PartKit.Generators;
+
+/// <summary>
+/// The Hall Bay (design page drawings 20, 23 and 24): a concrete floor with a Hall Crane over it, two runs of Crane Rail Blocks on Mast
+/// Block columns and a Crane Core beside the near run. Built through the game's own rules (<see cref="BlueprintScript"/>), so a step
+/// they refuse fails here with their reason. Reads the part files as the game loads them: run after the part generators.
+/// </summary>
+public sealed class HallShowcase : IPartGenerator
+{
+    public string Name => "hall_showcase";
+
+    public const string File = "Constructs/Blueprints/HallBay.json";
+
+    public void Make(PartOutput o) => o.File(File, Script.Build().Text());
+
+    private sealed class Script : BlueprintScript
+    {
+        private Script() : base("Hall Bay")
+        {
+        }
+
+        public const float FloorY = 0.3f; // the Foundations' tops
+        public const int TilesX = 12, TilesZ = 10; // 2 m Foundations: 24 by 20 m
+        public const int Masts = 3; // a column's height in Mast Blocks: the rails' foot 6 m over the floor
+        public const float NearX = 3f, Span = 16f; // the near run's line and the gap to the far one (8 cells)
+        private const string Floor = "#8c8576", Mast = "#4a5058", Rail = "#22262b", Crane = "#f0c21a";
+
+        private static readonly Orient Up = new(Vector3.UnitY, Vector3.UnitY, Vector3.UnitZ, Vector3.UnitZ);
+
+        public static Script Build()
+        {
+            var s = new Script { Description = "A Hall Crane over a 24 x 20 m floor: two runs of Crane Rail Blocks on Mast Block columns, 16 m apart, and a Crane Core. F on the Core's screen for orders." };
+            s.Group = "Production";
+            s.Lay();
+            return s;
+        }
+
+        private static Vector3 V(float x, float y, float z) => new(x, y, z);
+
+        private void Lay()
+        {
+            var tiles = new VPart[TilesX, TilesZ];
+            for (var j = 0; j < TilesZ; j++)
+                for (var i = 0; i < TilesX; i++)
+                {
+                    var at = V(1 + 2 * i, 0.15f, -1 - 2 * j);
+                    var t = i == 0 && j == 0 ? Root("Foundation", at, Up) : Put("Foundation", at, Up);
+                    tiles[i, j] = t;
+                    Paint(t, Floor);
+                    Finish(t, "concrete");
+                }
+            // The two runs: a column of masts at each end and in the middle, rail blocks end to end along -z over the whole floor.
+            var foot = FloorY + 2 * Masts;
+            VPart? near = null;
+            for (var side = 0; side < 2; side++)
+            {
+                var x = NearX + side * Span;
+                VPart? prev = null;
+                for (var k = 0; k < TilesZ; k++)
+                {
+                    var z = -1 - 2 * k;
+                    VPart? column = null;
+                    if (k is 0 or TilesZ / 2 or TilesZ - 1)
+                    {
+                        column = Stand("Mast Block", V(x, FloorY, z), Up, tiles[(int)(x / 2), k], "bottom");
+                        Paint(column, Mast);
+                        for (var m = 1; m < Masts; m++)
+                        {
+                            column = Stand("Mast Block", V(x, FloorY + 2 * m, z), Up, column, "bottom");
+                            Paint(column, Mast);
+                        }
+                    }
+                    var rail = column != null ? Stand("Crane Rail Block", V(x, foot, z), Up, column, "bottom") : Stand("Crane Rail Block", V(x, foot + 0.5f, z + 1), Up, prev, "+z");
+                    Paint(rail, Rail);
+                    prev = rail;
+                    if (side == 0 && k == 2)
+                        near = rail;
+                }
+            }
+            // The Crane Core on the near run's outer (-x) side, its +x onto the rail's -x: its frame's +x across the span.
+            var core = Stand("Crane Core", V(NearX - 1, foot + 0.5f, -5), Up, near, "+x");
+            Paint(core, Crane);
+        }
+    }
+}

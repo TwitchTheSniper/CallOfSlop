@@ -280,6 +280,159 @@ public sealed class LifterParts : IPartGenerator
         return p;
     }
 
+    // ---- The Hall Crane (design page drawing 24): Crane Rail Blocks on mast columns and a Crane Core per bridge. --------------------
+
+    /// <summary>
+    /// A Crane Rail Block: 2 m of runway girder, one 2 m cell across and along and 1 m deep, for the top of a mast column (the shared Mast
+    /// Block). An I-beam (sole plate, bottom flange, web, top flange) with the steel rail on top, whose top is the block's top: the line a
+    /// Hall Crane's end trucks run on. Web stiffeners, rail clips, a splice plate at each end, a conductor bar for the bridge's power on its
+    /// +x side, an amber lamp on its -x side that flashes while a bridge passes (ConstructLifters.RailLit). Blocks in line end to end make a
+    /// run (ConstructCraneRails.cs); two parallel runs up to 32 m apart make a crane.
+    /// </summary>
+    private static Part HallRail()
+    {
+        var p = new Part("Crane Rail Block", Small, "Bridge cranes",
+            "2 m of crane runway for the top of a Mast Block column. Lay two parallel runs of them, end to end, up to 32 m apart at one height; a Crane Core bolted beside one run drives a bridge over both. Each block in the runs adds 5 t to what it lifts.",
+            role: "frame", color: CraneBase, group: "Production");
+        const double e = 0.997, top = 1.0;
+        p.Add(Box([-1, 0, -1], [1, top, 1], hidden: true)); // (the collider and the sockets' faces)
+        p.Add(Box([-0.62, 0.003, -e], [0.62, 0.05, e], CraneBase)); // (the sole plate on the mast)
+        p.Add(Box([-0.46, 0.046, -e + 0.003], [0.46, 0.13, e - 0.003], CraneBase)); // (the bottom flange)
+        p.Add(Box([-0.065, 0.126, -e + 0.006], [0.065, 0.824, e - 0.006], CraneWeb)); // (the web)
+        p.Add(Box([-0.4, 0.82, -e + 0.003], [0.4, 0.9, e - 0.003], CraneBase)); // (the top flange)
+        p.Add(MachineLook.D([-0.085, 0.896, -0.999], [0.085, top, 0.999], CraneSteel, "steel")); // (the rail: its top is the run's line)
+        // Web stiffeners every half metre, both sides, flange to flange; at each end a splice plate with six bolts.
+        foreach (var z in new[] { -0.75, -0.25, 0.25, 0.75 })
+            foreach (var sx in new[] { -1, 1 })
+            {
+                double a = sx * 0.069, b = sx * 0.36;
+                p.Add(MachineLook.D([Math.Min(a, b), 0.134, z - 0.014], [Math.Max(a, b), 0.816, z + 0.014], CraneWeb));
+            }
+        foreach (var sz in new[] { -1, 1 })
+            foreach (var sx in new[] { -1, 1 })
+            {
+                double za = sz * (e - 0.006), zb = sz * (e - 0.26), xa = sx * 0.069, xb = sx * 0.092;
+                p.Add(MachineLook.D([Math.Min(xa, xb), 0.25, Math.Min(za, zb)], [Math.Max(xa, xb), 0.7, Math.Max(za, zb)], CraneBase));
+                foreach (var y in new[] { 0.33, 0.475, 0.62 })
+                    foreach (var dz in new[] { 0.07, 0.18 })
+                    {
+                        var bz = sz * (e - dz);
+                        p.Add(MachineLook.D([Math.Min(xb, sx * 0.112), y - 0.018, bz - 0.018], [Math.Max(xb, sx * 0.112), y + 0.018, bz + 0.018], CraneSteel, "steel"));
+                    }
+            }
+        // Rail clips along the rail's foot every 40 cm, both sides; anchor bolts through the sole plate into the mast.
+        foreach (var z in new[] { -0.8, -0.4, 0.0, 0.4, 0.8 })
+            foreach (var sx in new[] { -1, 1 })
+            {
+                double a = sx * 0.089, b = sx * 0.16;
+                p.Add(MachineLook.D([Math.Min(a, b), 0.898, z - 0.05], [Math.Max(a, b), 0.935, z + 0.05], CraneSteel, "steel"));
+            }
+        foreach (var (bx, bz) in new[] { (0.54, 0.8), (0.54, -0.8), (-0.54, 0.8), (-0.54, -0.8), (0.54, 0.0), (-0.54, 0.0) })
+            p.Add(MachineLook.D([bx - 0.025, 0.05, bz - 0.025], [bx + 0.025, 0.085, bz + 0.025], CraneSteel, "steel", shape: Kw(("shape", "cylinder"), ("segments", 6), ("front", "+y"))));
+        // Hazard paint on the bottom flange's edges: overhead work.
+        p.Add(MachineLook.D([-0.472, 0.06, -0.92], [-0.458, 0.12, 0.92], CraneYellow, "hazard paint"));
+        p.Add(MachineLook.D([0.458, 0.06, -0.92], [0.472, 0.12, 0.92], CraneYellow, "hazard paint"));
+        // The conductor bar on the +x side: insulator brackets off the web, a dark carrier and its copper face (the bridge's collector runs on it).
+        foreach (var z in new[] { -0.6, 0.0, 0.6 })
+        {
+            p.Add(MachineLook.D([0.069, 0.6, z - 0.03], [0.29, 0.64, z + 0.03], CraneBase));
+            p.Add(MachineLook.D([0.27, 0.56, z - 0.035], [0.33, 0.66, z + 0.035], "#c9c4b2"));
+        }
+        p.Add(MachineLook.D([0.33, 0.57, -0.98], [0.37, 0.65, 0.98], CraneBase));
+        p.Add(MachineLook.D([0.37, 0.59, -0.97], [0.384, 0.63, 0.97], "#b87333", "copper"));
+        // The lamp on the -x side under the top flange: a dark housing and its amber lens, which flashes while a bridge passes.
+        p.Add(MachineLook.D([-0.24, 0.62, -0.09], [-0.069, 0.78, 0.09], CraneBase));
+        p.Add(MachineLook.Work(MachineLook.D([-0.27, 0.64, -0.07], [-0.236, 0.76, 0.07], MachineLook.Accent), "glow"));
+        p.Add(MachineLook.D([-0.11, 0.3, -0.6], [-0.069, 0.42, -0.3], MachineLook.In)); // (the maker's plate on the web)
+        p.Add(MachineLook.D([-0.118, 0.34, -0.57], [-0.106, 0.38, -0.33], MachineLook.Ink));
+        p.Sock("bottom", [0, 0, 0], "-y");
+        p.Sock("+z", [0, 0.5, 1], "+z");
+        p.Sock("-z", [0, 0.5, -1], "-z");
+        p.Sock("+x", [1, 0.5, 0], "+x");
+        p.Sock("-x", [-1, 0.5, 0], "-x");
+        p.Stats(1400, 3000, 10, 12);
+        p.Set(("craneRail", true), ("centreSockets", false), ("collider", "boxes"));
+        return p;
+    }
+
+    /// <summary>
+    /// The Crane Core: one Hall Crane bridge's drive, power and controls, a 2 m cabinet bolted beside a Crane Rail Block by its +x socket
+    /// (the rail's foot at its middle height, the rail's top level with its own). Everything else of the crane (end trucks, girders, the
+    /// trolley, the cab under the girder, the hook) is drawn from the hook's place (LifterRender.DrawCrane). Its span, lift and drop come
+    /// from its rails ("hall": ConstructCraneRails.HallWalk). More Cores on the same rails make more bridges, each with its own queue.
+    /// </summary>
+    private static Part HallCore()
+    {
+        var p = new Part("Crane Core", Small, "Bridge cranes",
+            "A Hall Crane's bridge: bolt it beside a run of Crane Rail Blocks with a second run up to 32 m across. Carries 20 t plus 5 t a rail block between machines, pads and roller runs under it. The rails must clear every machine under them. Needs power while it moves.",
+            role: "frame", color: CraneYellow, group: "Production");
+        const double e = 0.997, h = 2.0;
+        p.Add(Box([-1, 0, -1], [1, h, 1], hidden: true));
+        // The cabinet: a dark plinth, the yellow body in two stacked sections with a dark band between, a lid with a lip.
+        p.Add(Box([-e, 0.003, -e], [e, 0.14, e], CraneBase));
+        p.Add(Box([-0.94, 0.136, -0.94], [0.94, 1.02, 0.94], CraneYellow));
+        p.Add(Box([-0.955, 1.016, -0.955], [0.955, 1.07, 0.955], CraneBase));
+        p.Add(Box([-0.94, 1.066, -0.94], [0.94, 1.84, 0.94], CraneYellow));
+        p.Add(Box([-0.97, 1.836, -0.97], [0.97, 1.9, 0.97], CraneBase));
+        MachineLook.Hazard(p, [-0.985, 0.03, -0.985], [0.985, 0.11, -0.95]);
+        MachineLook.Hazard(p, [-0.985, 0.03, 0.95], [0.985, 0.11, 0.985]);
+        // The -x face (the aisle): the screen over a door, its handle and hinges; the button shelf under the screen.
+        p.Add(MachineLook.D([-0.952, 0.2, -0.7], [-0.94, 0.98, 0.7], CraneSteel, "steel")); // (the lower door)
+        p.Add(MachineLook.D([-0.972, 0.5, 0.5], [-0.952, 0.7, 0.56], CraneBase)); // (its handle)
+        foreach (var y in new[] { 0.3, 0.88 })
+            p.Add(MachineLook.D([-0.968, y - 0.04, -0.68], [-0.952, y + 0.04, -0.62], CraneBase)); // (its hinges)
+        double sx = -1.004, sy = 1.48;
+        p.Add(MachineLook.D([sx - 0.006, sy - 0.24, -0.5], [sx + 0.06, sy + 0.24, 0.5], CraneBase)); // (the screen's bezel)
+        p.Add(MachineLook.D([sx - 0.012, sy - 0.2, -0.45], [sx - 0.004, sy + 0.2, 0.45], Screen));
+        p.Set(("panels", Py.L(Kw(("source", "lifter"), ("at", Py.L(Py.Round(sx - 0.015, 3), sy, 0.0)), ("size", Py.L(0.9, 0.4)),
+            ("face", "-x"), ("up", "+y"), ("rows", 6), ("range", 14.0)))));
+        p.Add(MachineLook.D([-1.06, 1.12, -0.45], [-0.94, 1.17, 0.45], CraneBase)); // (the button shelf)
+        foreach (var z in new[] { -0.3, -0.1, 0.1 })
+            p.Add(MachineLook.D([-1.05, 1.17, z - 0.04], [-1.0, 1.2, z + 0.04], MachineLook.Accent));
+        p.Add(MachineLook.D([-1.05, 1.17, 0.27], [-0.99, 1.215, 0.37], MachineLook.Stop));
+        // The -z face: KEEP CLEAR (a pale plate with dark lettering bars inside a hazard border) and louvres.
+        p.Add(MachineLook.D([-0.6, 1.3, -0.956], [0.6, 1.7, -0.94], CraneBase));
+        MachineLook.Hazard(p, [-0.58, 1.32, -0.968], [0.58, 1.68, -0.954]);
+        p.Add(MachineLook.D([-0.5, 1.38, -0.98], [0.5, 1.62, -0.966], MachineLook.In));
+        foreach (var (y, w) in new[] { (1.55, 0.36), (1.45, 0.42) })
+            p.Add(MachineLook.D([-w, y - 0.03, -0.992], [w, y + 0.03, -0.978], MachineLook.Ink));
+        foreach (var y in new[] { 0.3, 0.42, 0.54, 0.66, 0.78 })
+            p.Add(MachineLook.D([-0.5, y, -0.96], [0.5, y + 0.05, -0.94], CraneBase));
+        // The +z face: the main isolator (a grey box, a red handle) and louvres.
+        p.Add(MachineLook.D([-0.3, 1.25, 0.94], [0.3, 1.7, 1.0], "#8d9399"));
+        p.Add(MachineLook.D([-0.06, 1.38, 1.0], [0.06, 1.6, 1.05], MachineLook.Stop));
+        foreach (var y in new[] { 0.3, 0.42, 0.54, 0.66, 0.78 })
+            p.Add(MachineLook.D([-0.5, y, 0.94], [0.5, y + 0.05, 0.96], CraneBase));
+        // The +x face against the rail: the drive's conduit up to the rail's conductor bar, and a bolted flange where it bolts on.
+        p.Add(MachineLook.D([0.94, 1.1, -0.5], [0.985, 1.9, 0.5], CraneBase));
+        foreach (var (y, z) in new[] { (1.2, -0.4), (1.2, 0.4), (1.8, -0.4), (1.8, 0.4) })
+            p.Add(MachineLook.D([0.985, y - 0.025, z - 0.025], [0.997, y + 0.025, z + 0.025], CraneSteel, "steel"));
+        // On the lid: the drive motor and gearbox, the festoon's cable drum, the beacon. Everything stays under the rail's top line (2 m).
+        p.Add(MachineLook.D([-0.7, 1.9, -0.6], [0.1, 1.98, 0.2], CraneBase)); // (the drive's bed)
+        p.Add(MachineLook.D([-0.6, 1.9, -0.5], [-0.1, 1.995, 0.1], "#3b4148", shape: Kw(("shape", "cylinder"), ("segments", 12), ("front", "+z")))); // (the motor)
+        p.Add(MachineLook.D([0.2, 1.9, -0.7], [0.8, 1.995, -0.1], CraneSteel, "steel", shape: Kw(("shape", "cylinder"), ("segments", 14), ("front", "+x")))); // (the cable drum)
+        p.Add(MachineLook.D([0.3, 1.9, 0.4], [0.5, 1.95, 0.6], CraneBase)); // (the beacon's foot)
+        p.Add(MachineLook.Work(MachineLook.D([0.33, 1.95, 0.43], [0.47, 1.995, 0.57], MachineLook.Accent), "glow"));
+        p.Add(MachineLook.D([-0.85, 0.2, 0.94], [-0.55, 0.36, 1.0], MachineLook.In)); // (the maker's plate)
+        p.Add(MachineLook.D([-0.82, 0.25, 1.0], [-0.58, 0.31, 1.012], MachineLook.Ink));
+        p.Sock("+x", [1, 1.5, 0], "+x"); // (onto a Crane Rail Block's -x: the rail's foot at this cabinet's middle height)
+        p.Sock("-x", [-1, 1, 0], "-x");
+        p.Sock("+z", [0, 1, 1], "+z");
+        p.Sock("-z", [0, 1, -1], "-z");
+        p.Sock("bottom", [0, 0, 0], "-y");
+        p.Stats(2200, 3600, 10, 16);
+        p.Set(("power", 12000), ("onBreak", "disable"), ("centreSockets", false), ("collider", "boxes"));
+        p.Set(("lifter", Kw(("kind", "bridge"), ("hall", true), ("base", Py.L(2.0, 2.0, 0.0)), ("span", 32.0), ("depth", 1.6),
+            ("reach", Py.L(1.0, 31.0)), ("up", 0.0), ("down", 8.0), ("payload", 20000), ("piece", Py.L(30.0, 64.0)),
+            ("speed", 1.5), ("hoist", 0.75), ("handle", 3.0))));
+        p.Set(("config", Py.L(
+            Kw(("key", "liftMode"), ("type", "choice"), ("label", "Works"), ("group", "Lifter"), ("options", Py.L("Auto", "Station only", "Carry only", "Off")), ("default", 0),
+                ("tooltip", "Auto: every job under it. Station only: fits parts at Building Stations. Carry only: carries between machines, pads and roller runs. Off: stands still.")),
+            Kw(("key", "carryHeight"), ("label", "Carry height"), ("group", "Lifter"), ("unit", "m"), ("min", 0.0), ("max", 32.0), ("step", 0.1), ("default", 1.5),
+                ("tooltip", "How high it hoists a piece over the higher end of its move before it travels. Never past the hook's highest point.")))));
+        return p;
+    }
+
     // ---- The Lifter Cab (arms-and-cranes.md 3.7, phase 8): a seat that steers one lifter by hand. ----------------------------------
 
     /// <summary>
@@ -333,5 +486,6 @@ public sealed class LifterParts : IPartGenerator
     }
 
     public void Make(PartOutput o) => WriteParts(o, Out, Enumerable.Range(1, 5).Select(t => ("", Arm(t))).Append(("", Cab()))
-        .Concat(new[] { Medium, Large, Capital }.SelectMany(c => new[] { ("Cranes", Rail(c)), ("Cranes", Bridge(c)) })));
+        .Concat(new[] { ("Cranes", Rail(Medium)), ("Cranes", Bridge(Medium)) }) // (the Medium classed crane stays for the Dray's hold; the hall's is the Hall Crane: drawing 24)
+        .Concat(new[] { ("Cranes", HallRail()), ("Cranes", HallCore()) }));
 }
