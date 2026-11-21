@@ -130,7 +130,7 @@ public sealed partial class ResourceField
     }
 
     /// <summary>A planetoid's outcrops near the camera: each deposit's streak of rocks, set on the round ground.</summary>
-    private void AddSphereOutcrops(Vector3 cam)
+    private void AddSphereOutcrops(Vector3 cam, List<FoliageInstance> into)
     {
         var pl = _planet!;
         var rel = cam - pl.Center;
@@ -148,7 +148,7 @@ public sealed partial class ResourceField
             var reach = (SphereDrawRadius + d.Rx * 1.25f) / r; // (as an angle)
             if (Vector3.Dot(_dirs[di], up) < MathF.Cos(MathF.Min(reach, MathF.PI)))
                 continue;
-            AddStreak(di, d, kind, ref left);
+            AddStreak(di, d, kind, ref left, into);
         }
     }
 
