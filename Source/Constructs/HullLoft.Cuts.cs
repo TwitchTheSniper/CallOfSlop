@@ -21,12 +21,12 @@ public static partial class HullLoft
     private const string CutSplit = " | ";
     public const int MaxCuts = 6, CutMaxFacets = 96, CutWebCm = 3, CutSnapCm = 2, CutMinCm = 5, CutMaxCm = 600;
     /// <summary>
-    /// A cut plate's sheet: up to the Capital Laser Cutter's bed, 64 m along and 32 m across (the Extruder's widest plate), with openings up
+    /// A cut plate's sheet: up to 64 m along (the largest bed of Laser Bed Blocks takes 32 x 16 m) and 32 m across (the Extruder's widest plate), with openings up
     /// to 32 m a side, so a capital hull's plates, decks and bulkheads come off the line whole (Karl, 2026-11-20: the capital ship). A cut
     /// panel stays within <see cref="CutMaxCm"/>, the largest Panel Former's panel.
     /// </summary>
     public const int CutPlateMaxCm = 6400, CutPlateAcrossCm = 3200, CutPlateOpeningCm = 3200;
-    /// <summary>The thickest stock any cutter's bed takes (the Medium Laser Cutter's 2 m, design section 5): no rule of its own, only the bed (the user, 2026-11-13).</summary>
+    /// <summary>The thickest stock any cutter's bed takes (2 m, under the bridge): no rule of its own, only the bed (the user, 2026-11-13).</summary>
     public const int CutMaxThickMm = 2000;
     /// <summary>An opening this wide both ways or more opens its collision (shots, bodies and players pass) and gets an <c>o</c> socket; a smaller one is drawn and weighed only.</summary>
     public const int CutOpenCm = 10;
@@ -208,7 +208,7 @@ public static partial class HullLoft
             return $"too thick for any Laser Cutter's bed: {mm / 1000f:0.##} m, the largest takes {CutMaxThickMm / 1000} m";
         var across = OnEdge(k) ? k.H : k.W; // (a bar on edge is cut through its width: its sheet is its length by its height)
         if (k.L < PanelMinCm || k.L > CutPlateMaxCm || across < PanelMinCm || across > CutPlateAcrossCm)
-            return k.L > CutPlateMaxCm ? $"cut it to length at the Extruder: the largest Laser Cutter's bed is {CutPlateMaxCm / 100} m" : $"a cut piece is {PanelMinCm} to {CutPlateMaxCm} cm long and {PanelMinCm} to {CutPlateAcrossCm} cm {(OnEdge(k) ? "high" : "wide")}";
+            return k.L > CutPlateMaxCm ? $"cut it to length at the Extruder: a cut piece is at most {CutPlateMaxCm / 100} m" : $"a cut piece is {PanelMinCm} to {CutPlateMaxCm} cm long and {PanelMinCm} to {CutPlateAcrossCm} cm {(OnEdge(k) ? "high" : "wide")}";
         return null;
     }
 
@@ -571,6 +571,31 @@ public static partial class HullLoft
         }
         (blank, plate, stock, edgeM, mm) = (plan.Blank, plan.Plate, plan.Stock, (float)(cm / 100), plan.Thick * 1000);
         return true;
+    }
+
+    /// <summary>
+    /// The Laser Cutter's head path for a cut key (its look: ConstructLaserCutterBed.cs): each cut's outline on the sheet in turn, closed, in
+    /// metres (x along the sheet, y across), the moves between them straight. A pane's, or a key with no outlines, is its sheet's own edge.
+    /// Null: not a cut key. Allocates: read once per key, by the cutter's job cache.
+    /// </summary>
+    public static Vector2[]? CutOutline(string name, float longest, float next)
+    {
+        Vector2[] Edge() => [new(0, 0), new(longest, 0), new(longest, next), new(0, next), new(0, 0)];
+        if (IsPaneName(name))
+            return Edge();
+        if (ReadCut(name, out _) is not { } plan)
+            return null;
+        double l = plan.Sheet.L, w = plan.Sheet.W;
+        var pts = new List<Vector2>();
+        foreach (var poly in plan.Polys)
+        {
+            var on = ClipRect(poly, 0, l, 0, w);
+            if (on.Length < 2)
+                continue;
+            for (var i = 0; i <= on.Length; i++)
+                pts.Add(new Vector2((float)(on[i % on.Length].U / 100), (float)(on[i % on.Length].V / 100)));
+        }
+        return pts.Count >= 2 ? [.. pts] : Edge();
     }
 
     /// <summary>

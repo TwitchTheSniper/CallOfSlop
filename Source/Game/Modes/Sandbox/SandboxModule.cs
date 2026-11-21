@@ -224,6 +224,7 @@ public sealed class SandboxModule : GameModeModule
             SocketWeldRender.Draw(gfx, now); // (the welder's socket weld: markers and the ghost; Program.SandboxSocketWeld.cs)
             ConstructRender.DrawWires(gfx, game.Constructs); // (only while the linking tool is out)
             ConstructRender.DrawConfigPreview(gfx, game.Constructs); // (only while a part's settings panel is open)
+            ConstructRender.DrawSockets(gfx, game.Constructs); // (module sockets near: their lock knob, depth marks, ghost well and room: ConstructRenderSockets.cs)
             ConstructRender.DrawSpawnGhost(gfx, game, now); // (only while placing a spawn: GameSandboxSpawns.cs)
         }
         finally
