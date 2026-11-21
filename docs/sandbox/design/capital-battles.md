@@ -19,8 +19,16 @@ PN79Syp1w9HwMJzfpEipQU) and its spike, draft PR 201 (not for merging). Test ship
   the part's position when the parts are renumbered (`ConstructWorld.BoreMarkLive`). Drawn by `Program.SandboxBores.cs`: a
   dark scorch octagon 6 mm proud of the face, its rim glowing white-hot to orange to dull red over 30 s, between the face
   and the scorch so only the rim shows; plus sparks at each exit and a short hot streak along the way through. At most 4,096
-  holes at once (the oldest go), drawn to 900 m. Looks only: not saved, no shape changes (HullHoles stays for person-sized
-  breaches).
+  holes at once (the oldest go), drawn to 900 m. The marks are looks, not saved.
+- **Real holes (Karl, 2026-11-21: "penetrating weapons do not leave holes").** The server also cuts each part a bore crosses
+  (`ConstructBores.Cut`, at most `MaxHoleParts` (12) a shot): a square tunnel the calibre wide, through the part or to where the
+  round stopped in it, by HullHoles (mesh and collision: you see and shoot through it), the part swapped for its holed self.
+  The cuts wait in `ConstructWorld.HolesWaiting` and go in every `HoleEvery` (12) ticks, so a body under fire rebuilds at most 5
+  times a second whatever the guns' rate; the swap rides the structure patch and saves with the part's key. A part HullHoles
+  refuses (a machine, a door, a lamp, a damaged-look wall), or one with its 4 holes already, keeps only the scorch. A mark on a
+  real hole draws as a scorched ring round it with the hot rim outside (`BoreMarkHoled`); `Mark` casts a second ray just past the
+  hole's edge, since the middle one goes clean through a hole already cut. `--battle-check ... --no-bore-holes` turns the cuts
+  off. Holes are not mended by welding yet.
 - **Break-up** (`Source/Constructs/ConstructBreakUp.cs`). A body of 1,024 parts or more keeps, across its long axis every 8 m,
   each plane's strength: the parts spanning it and the links crossing it, each by the health of a 4 m2 patch of it (a 60 m
   hull plate's whole health, often 400,000 to 1,000,000, would never give way to a hole), less the damage that landed in
