@@ -366,22 +366,37 @@ public sealed class SkySettings
     public LightSetup Light()
     {
         var sun = SunDir;
-        var day = Smooth(-0.04f, 0.10f, sun.Y); // how much of the key light is the sun
+        // In a star system the star is the light from wherever you are (SpaceSky.StarFrame): "up" is the camera's own
+        // (a planetoid's ground turns under it), the sun sets behind the limb of the ground below (lower the higher you
+        // are) and other bodies in front of the star dim it. Any other sky: world up, as it always was.
+        SpaceSky.StarFrame(this, out var up, out var dip, out var seen);
+        var el = Vector3.Dot(sun, up);
+        var day = Smooth(-0.04f - dip, 0.10f - dip, el) * seen; // how much of the key light is the sun
         Vector3 keyDir, keyColor;
         if (day >= 0.5f || !Moon)
         {
-            keyDir = Vector3.Normalize(sun with { Y = MathF.Max(sun.Y, 0.05f) }); // a set sun still grazes the ground
+            keyDir = Grazing(sun, up, el, 0.05f - dip); // a set sun still grazes the ground
             keyColor = SunColor * (SunIntensity * Lighting.DefaultSunStrength * day);
         }
         else
         {
             var m = MoonDir;
-            keyDir = Vector3.Normalize(m with { Y = MathF.Max(m.Y, 0.05f) });
+            keyDir = Grazing(m, up, Vector3.Dot(m, up), 0.05f);
             keyColor = MoonColor * (MoonIntensity * Lighting.DefaultSunStrength * (1f - day));
         }
         var skyAmb = Vector3.Lerp(Lighting.DefaultSkyAmbient, Hue(Zenith, Lighting.DefaultSkyAmbient), 0.3f) * Ambient;
         var groundAmb = Vector3.Lerp(Lighting.DefaultGroundAmbient, Hue(Ground, Lighting.DefaultGroundAmbient), 0.3f) * Ambient;
-        return new LightSetup(keyDir, keyColor, skyAmb, groundAmb, FogMax, FogFromSky, Zenith, Horizon, Ground, sun, new Vector4(HazeColor, HazeNow));
+        var haze = HazeStrength * Smooth(-0.3f, 0.0f, el);
+        return new LightSetup(keyDir, keyColor, skyAmb, groundAmb, FogMax, FogFromSky, Zenith, Horizon, Ground, sun, new Vector4(HazeColor, haze), Up: up);
+    }
+
+    /// <summary><paramref name="d"/> (its height over level along <paramref name="up"/> is <paramref name="el"/>) raised to at least <paramref name="floor"/>.</summary>
+    private static Vector3 Grazing(Vector3 d, Vector3 up, float el, float floor)
+    {
+        if (el >= floor)
+            return d;
+        var r = d + up * (floor - el);
+        return r.LengthSquared() > 1e-8f ? Vector3.Normalize(r) : up;
     }
 
     /// <summary><paramref name="c"/>'s hue at <paramref name="like"/>'s average brightness.</summary>

@@ -175,7 +175,7 @@ physics; the sky does. `StarSystems` loads every `Systems/*.json` once and finds
 - **The sky** (`Source/Render/Sky/SpaceSky.cs`): each frame the map's sky takes the star's real direction
   (`SpaceBubble.SunDirection`, from the camera) and draws every other body and the nearest ships (phase 4, "Seeing
   space" below; the moonlet is about 1.9 degrees across from the pole). Light and fog follow the same sun, so a planetoid
-  has day and night as it turns (24 h on the Planetoid at 1x), and seasons. The map's own sun and moon come back when the
+  has day and night as it turns (24 h on the Planetoid at 1x), and seasons. The star is the scene's one key light from wherever you are (Karl, 2026-11-21; `SpaceSky.StarFrame`, `SkySettings.Light`): on a planetoid "up" is away from its centre at the camera, so day and night, the ambient's sky and ground halves and the ship shadows follow the ground you stand on, not the map's +Y; in orbit the star shines from any side until the limb covers it (`PlanetRenderer.HorizonDip`), other bodies in front of it dim it (`SpaceSkyView.SunVisible`), and its disc is its real size from there (at least `SpaceSky.MinSunSize`). The map's own sun and moon come back when the
   game leaves the bubble. Everything is a pure function of the system and the clock, so each peer works it out itself.
 - **The wire** (`Msg.Space`, protocol 125): `Bubble` (reliable, to each joiner and on a map change: map, system file and
   hash, body, the clock), `Clock` (tick, time, time speed: once a second unreliable, at once and reliable on a change) and
