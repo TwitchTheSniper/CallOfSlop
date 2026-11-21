@@ -116,6 +116,8 @@ public sealed class SweptMover : IMover
         var gLen = g.Length();
         var up = gLen > 1e-6f ? -g / gLen : Vector3.UnitY;
         _up = up;
+        if (inOrbit)
+            g += GravityFrames.Point!.FrameTurnPull(s.Position, s.Velocity); // (after up: the turning frame's pulls, Coriolis and centrifugal, so a free fall keeps the ships' orbits)
         _terrain = up == Vector3.UnitY ? phys.Terrain?.Layer(s.Position.Y) : null; // (in a cave: its floor)
         var dt = World.TickDt;
 
