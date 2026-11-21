@@ -45,6 +45,11 @@ already has, with no textures:
   box at random; a box's own edges show through the edge wear. Painted steel has no seams (a faint orange peel instead).
 - A part's health comes in the fraction of the row's code (`Surfaces.Code`): rust and scorch grow from noise as it falls.
 
+- **Material contrast** (Karl, 2026-11-21, the bench's roughness per material): Settings > Video > Material contrast (on by default,
+  Medium and High; `--no-contrast` forces it off). Non-metals with a roughness from 0.3 to 0.58 (painted steel 0.38, painted plating 0.4,
+  hazard paint 0.45...) draw at a satin 0.6; anything dark (albedo luminance under 0.14, easing out by 0.22) at 0.86 or rougher, so
+  frames, rubber and soot read flat beside the paint. Gloss paint, tiles, chrome and glass keep their own. Glass already takes a
+  grazing-angle sheen in `ConstructRender.DrawGlass`. `uSurfQ.w` carries the switch.
 - **Edge bevels** (Karl, 2026-11-21, from the Ship Render Bench artifact RC5DA1XgTZ5PJUhMb8HBoB): Settings > Video > Edge bevels (on by
   default, Medium and High only; `--no-bevels` forces it off for a before picture). A band along each face edge takes a 45-degree chamfer's
   normal (2 cm, or 1.2 pixels where wider, at most half the face) and its albedo goes up 20%, so every box edge catches a sliver of light.

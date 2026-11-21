@@ -212,6 +212,16 @@ public static class Surfaces
             vec3 albedo = mix(rb.rgb, base, rb.a);
             float rough = ra.x;
             float metal = ra.y;
+            if (uSurfQ.w > 0.5)
+            {
+                // Material contrast (Settings > Video, the Ship Render Bench's roughness per material): paint, plating and other
+                // non-metals between 0.3 and 0.58 go to a satin 0.6 (gloss paint, tiles and glass stay glossy), and dark framing,
+                // rubber and soot go rough, so a hull's paint, its frames and its bare metal answer the light differently.
+                if (metal < 0.3 && rough >= 0.3 && rough < 0.58)
+                    rough = 0.6;
+                float lum = dot(albedo, vec3(0.2126, 0.7152, 0.0722));
+                rough = mix(max(rough, 0.86), rough, smoothstep(0.14, 0.22, lum));
+            }
             vec3 toEye = uCam - p;
             float dist = length(toEye);
             vec3 v = toEye / max(dist, 1e-3);
