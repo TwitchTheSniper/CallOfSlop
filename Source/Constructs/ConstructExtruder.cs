@@ -945,6 +945,20 @@ public static partial class ConstructExtruder
         return roundOrWheel ? null : Extrusion.Refusal(MaskOf(c.Parts[part], d));
     }
 
+    /// <summary>A Panel Former's "conveyor full": a conveyor out shorter than the panel never takes it, which says so (the length to lay).</summary>
+    static string FormerOutFull(Construct c, int part)
+    {
+        if (ConstructConveyor.Out(c, part) is var route and >= 0 && WorkOrders.HeadOf(c.Parts[part], out var h) && h.Name != null
+            && ConstructParts.Find(h.Name) is { } panel)
+        {
+            ConstructConveyor.Size(panel, out _, out _, out var along);
+            var len = ConstructConveyor.Length(c, route);
+            if (along > len + 0.01f)
+                return $" - its conveyor out is {len:0.0#} m, shorter than the {along:0.0#} m panel: lay a longer one";
+        }
+        return " - blocked: its conveyor is full";
+    }
+
     /// <summary>What it is doing, or why not. Read by the look line on either side.</summary>
     public static string Status(Construct c, int part, CStore st)
     {
@@ -964,7 +978,7 @@ public static partial class ConstructExtruder
                 ExtrudeStall.BadShape => " - not a panel: nothing makes its order (Cancel it)",
                 ExtrudeStall.Blocked => " - blocked: no room on its out bed",
                 ExtrudeStall.ConveyorSmall => $" - conveyor too narrow for the panel - aim the linking tool at it: wheel or {SandboxKeys.Reload} to widen",
-                ExtrudeStall.ConveyorFull => " - blocked: its conveyor is full",
+                ExtrudeStall.ConveyorFull => FormerOutFull(c, part),
                 ExtrudeStall.ConveyorCut => " - blocked: its conveyor is cut: mend it",
                 ExtrudeStall.OrderTooLong => " - " + (WorkOrders.HeadOf(c.Parts[part], out var bh) && bh.Name != null && ConstructParts.Find(bh.Name) is { } bp ? ConstructPanelFormer.BedRefusal(c, part, bp) ?? "its bed changed" : "its bed changed") + ", or Cancel it",
                 ExtrudeStall.NoOrders => ", waiting for orders (Queue on its screen, or a Line Console's bill)",

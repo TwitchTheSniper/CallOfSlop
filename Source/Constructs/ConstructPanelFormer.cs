@@ -446,9 +446,12 @@ public static class ConstructPanelFormer
             return null;
         var order = new WorkOrder { Key = key, Part = ConstructParts.None, Count = o.Count };
         var net = ConstructCrafting.NetOf(world, c, part);
-        for (var i = 0; i < net.MachineN; i++)
+        for (var i = 0; i < net.MachineN * 2; i++)
         {
-            var m = net.Machines[i];
+            // (two passes: first the Extruders with a conveyor way to this former, then any: a terminal's ask ranks them the same way)
+            var m = net.Machines[i % net.MachineN];
+            if ((i < net.MachineN) != net.MachineWay[i % net.MachineN])
+                continue;
             if (m != part && ConstructLogisticsPlan.IsSheetExtruder(c.DefOf(m)) && WorkOrders.Queue(world, c, m, order) == null)
                 return c.DefOf(m).Name;
         }
