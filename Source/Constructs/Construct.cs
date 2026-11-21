@@ -282,6 +282,7 @@ public sealed partial class Construct
     public int WireCount;
     public int Root;
     public bool Wreck; // cut off from a root (no seat or foundation of its own)
+    public int WreckShed; // server: wreck pieces of one part knocked off it so far (past ConstructBreakUp.ShedPieces a medium body sheds scrap instead)
     public byte Owner = 255; // the player who built it (set down its first part, or spawned its blueprint); 255: nobody's (the map's). A sentry's kills are theirs (milestone 3)
     public bool Damaged; // a part of it has been wrecked (broken off or stopped working): disabled, so anyone may salvage it
     public double IdleSince = -1; // server: a wreck's last time with a player near or salvaging it (debris expiry; -1: not yet looked at)

@@ -22,6 +22,16 @@ public static class ConstructBreakUp
     /// <summary>A body that sheds small parts as scrap: capital-sized and free (an anchored base keeps its parts to salvage).</summary>
     public static bool Big(Construct c) => c.PartCount >= MinParts && !c.Anchored;
 
+    /// <summary>
+    /// A medium body (<see cref="ShedParts"/> parts or more) that has shed <see cref="ShedPieces"/> wreck pieces already sheds the rest of its
+    /// light, plain parts as scrap too. A nuked Zero Day kept cooking off for a minute and shed a hundred pieces into a pile that never slept
+    /// (Karl's PC, 2026-11-21: 219 bodies, a 13 ms tick; the headless test 105 bodies and 7 ms, with this 37 and about 1.5 ms). The first
+    /// pieces stay to salvage.
+    /// </summary>
+    public static bool Sheds(Construct c) => Big(c) || !c.Anchored && c.PartCount >= ShedParts && c.WreckShed >= ShedPieces;
+
+    public const int ShedParts = 60, ShedPieces = 30;
+
     /// <summary>A body that breaks up by planes: a capital ship, or a medium ship of no wheels (a truck's axles and suspension aren't cut by a plane), free.</summary>
     public static bool BreaksUp(Construct c) => !c.Anchored && (c.PartCount >= MinParts || c.PartCount >= MinBreakParts && c.WheelCount == 0);
 
