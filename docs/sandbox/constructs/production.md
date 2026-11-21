@@ -1670,7 +1670,7 @@ conveyor's and pieces ride at `ConstructConveyor.Speed`. It starts at what is bu
 out table, which the former or cutter hands its piece to; a Turntable Tile; a Pad Tile's Piece out; any conveyor out port there) or at
 its own first tile's **Run start** port, and ends at what is butted on its out end (a machine's or a pad's Piece in, a Turntable Tile)
 or at its last tile's **Run end**, where pieces wait at the end for a crane, or go on along a conveyor linked from the tile's
-**Piece out**. A conveyor linked into a tile's **Piece in** goes onto its run (`RollerRuns.Passes`). A run an even number of tiles wide
+**Piece out**. A conveyor linked into any tile's **Piece in** puts its pieces on the run at its start (`ConstructConveyor.Pass`, `RollerRuns.RunOf`). A run butted on another run's tile doesn't join it: crossing runs meet at a Turntable Tile. Tiles on a freeform weld make no run, and a body keeps at most 128 runs laid. A run an even number of tiles wide
 uses the `+x` twins of the run ports, on the line between its middle tiles. Tiles have sockets at 0.5 m (an Out Table's) and at 0.1 m
 (a Pad Tile's), so a run welds to either. The rollers turn while a piece is on the run (`RollerRuns.Moving`). The **Turntable Tile** is
 a junction: a run ending in it passes its pieces in turn to the runs that start at it, never back out the side they came in, turned

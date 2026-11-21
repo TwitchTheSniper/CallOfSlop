@@ -865,6 +865,8 @@ public static class ConstructConveyor
         for (var o = 0; o < c.RouteCount && n < outs.Length; o++)
             if (c.Routes[o].Type == RouteType.Conveyor && c.Routes[o].Parent == 255 && c.Routes[o].From == j && (!rollers || RollerRuns.Passes(c, j, k, o)))
                 outs[n++] = (byte)o;
+        if (n < outs.Length && jd.IsRollerTile && !RollerRuns.IsRunPort(jd, c.Routes[k].ToPort) && RollerRuns.RunOf(c, j) is var run and >= 0)
+            outs[n++] = (byte)run; // (a link into any tile's Piece in: onto its run, at the run's start)
         for (var t = 0; t < n; t++)
         {
             var pick = (c.Routes[k].Cursor + t) % n;

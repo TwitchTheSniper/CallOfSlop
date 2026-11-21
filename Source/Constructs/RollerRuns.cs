@@ -50,7 +50,24 @@ public static class RollerRuns
         if (r.Type != RouteType.Conveyor || r.Parent != 255 || r.Count != 2)
             return false;
         int h0 = c.RouteNodes[r.Start].Host, h1 = c.RouteNodes[r.Start + 1].Host;
-        return h0 < c.PartCount && h1 < c.PartCount && c.Parts[h0].D.IsRollerTile && c.Parts[h1].D.IsRollerTile;
+        if (h0 >= c.PartCount || h1 >= c.PartCount || !c.Parts[h0].D.IsRollerTile || !c.Parts[h1].D.IsRollerTile)
+            return false;
+        if (h0 >= c.BlockAsmOf.Length || h1 >= c.BlockAsmOf.Length || c.BlockAsmOf[h0] != c.BlockAsmOf[h1])
+            return false; // (a player's link from one run's tile to another's)
+        // A run starts at its tile's Run start or at what is butted on it, never at a tile's Piece out; it ends at Run end, never a Piece in.
+        return !(r.From < c.PartCount && c.Parts[r.From].D.IsRollerTile && !IsRunPort(c.Parts[r.From].D, r.FromPort))
+            && !(r.To < c.PartCount && c.Parts[r.To].D.IsRollerTile && !IsRunPort(c.Parts[r.To].D, r.ToPort));
+    }
+
+    /// <summary>The conveyor of the run Roller Tile <paramref name="part"/> is in, or -1.</summary>
+    public static int RunOf(Construct c, int part)
+    {
+        if (part >= c.BlockAsmOf.Length || c.BlockAsmOf[part] < 0)
+            return -1;
+        for (var k = 0; k < c.RouteCount; k++)
+            if (c.Routes[k].Type == RouteType.Conveyor && c.Routes[k].Count == 2 && IsRun(c, k) && c.BlockAsmOf[c.RouteNodes[c.Routes[k].Start].Host] == c.BlockAsmOf[part])
+                return k;
+        return -1;
     }
 
     private struct Want
@@ -63,7 +80,7 @@ public static class RollerRuns
         public bool Have;
     }
 
-    private const int MaxRuns = 64;
+    private const int MaxRuns = 128;
     private static readonly Want[] _wants = new Want[MaxRuns];
 
     /// <summary>Server, on the conveyor step after a rebuild that noted rollers: each run's conveyor as its tiles and ends are now.</summary>
@@ -74,6 +91,9 @@ public static class RollerRuns
         for (var a = 0; a < c.MachineAsmCount && n < MaxRuns; a++)
             if (c.Parts[c.MachineAsms[a].Core].D.IsRollerTile && Wanted(c, a, out _wants[n]))
                 n++;
+        var full = n >= MaxRuns;
+        if (full)
+            Console.WriteLine($"[rollers] {c.Id}: more than {MaxRuns} Roller Tile runs: the rest keep the links they have");
         Span<bool> gone = stackalloc bool[Construct.MaxRoutes];
         gone.Clear();
         var drop = false;
@@ -88,6 +108,8 @@ public static class RollerRuns
                     match = w;
             if (match < 0)
             {
+                if (full)
+                    continue; // (perhaps one of the runs past the cap)
                 gone[k] = drop = true;
                 continue;
             }
@@ -208,8 +230,8 @@ public static class RollerRuns
                     continue;
                 var o = c.OtherEnd(e);
                 var od = c.DefOf(o);
-                if (od.IsRollerTile && c.BlockAsmOf[o] == a)
-                    continue;
+                if (od.IsRollerTile)
+                    continue; // (its own tiles; another run's side or end goes through a Turntable Tile, not straight in)
                 if (wantOut && od.BlockRole == BlockRole.End && MachineBlocks.TryOf(c, o, out var oa) && MachineBlocks.OutTable(c, oa) is var table and >= 0)
                 {
                     if (PortByte(c.DefOf(table), "Piece out") is var tp and >= 0)
@@ -240,7 +262,7 @@ public static class RollerRuns
         return -1;
     }
 
-    private static bool IsRunPort(ConstructPartDef d, byte port) =>
+    internal static bool IsRunPort(ConstructPartDef d, byte port) =>
         ConstructRoutes.PortOf(d, RouteType.Conveyor, port) is { } np && np.Name.StartsWith("Run ", StringComparison.Ordinal);
 
     /// <summary>
@@ -252,7 +274,7 @@ public static class RollerRuns
     {
         var d = c.DefOf(j);
         if (d.IsRollerTile)
-            return IsRunPort(d, c.Routes[from].ToPort) != IsRunPort(d, c.Routes[onto].FromPort);
+            return IsRunPort(d, c.Routes[from].ToPort) && !IsRunPort(d, c.Routes[onto].FromPort);
         if (d.IsTurntable)
             return ConstructRoutes.PortOf(d, RouteType.Conveyor, c.Routes[from].ToPort) is not { } a
                 || ConstructRoutes.PortOf(d, RouteType.Conveyor, c.Routes[onto].FromPort) is not { } b || a.Face != b.Face;
