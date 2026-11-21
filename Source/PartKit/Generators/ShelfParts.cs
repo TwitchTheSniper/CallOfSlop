@@ -20,14 +20,46 @@ public sealed class ShelfParts : IPartGenerator
     private const string BoardC = "#8a6b45", PostC = "#46525e", Brace = "#5a6672", Lip = "#c9a21c";
     private const string Case = "#3f4c5a", Dark = "#2a3036", Screen = "#14323a", Lamp = "#39465a";
     private const double Gap = 0.015; // slots stand this clear of the boxes round them
+    private const string HexWhite = "#eceeea", HexBirch = "#d6bf96", HexAsh = "#b5b9b7", HexChar = "#2b2e30", HexPine = "#3e6b5a", HexRubber = "#1e2022"; // (SpaceStationHexkey's palette)
+
+    /// <summary>
+    /// The Hexkey Trolley: a flatbed shop trolley, 2 x 1 m, a birch bed on four castors with a pine-gripped handle at one end. Its bed is two
+    /// shelf slots, so a part set on it from the hands or let go over it from the physics gun stays put while the trolley moves; it is
+    /// pushed with the physics gun (or walked into). Hexkey Orbital stands a row of them at Arrivals.
+    /// </summary>
+    private static Part Trolley()
+    {
+        var p = new Part("Hexkey Trolley", Medium, "Shelves", "Hexkey Orbital's flatbed shop trolley: set parts on its bed, push it with the physics gun, through a trade arch to pay.",
+            role: "storage", tool: "welder", color: HexChar, group: "Storage");
+        const double hx = 1.0, hz = 0.5, deck0 = 0.16, deck1 = 0.22;
+        foreach (var x in new[] { -hx + 0.1, hx - 0.1 }) // castors: a fork and a black wheel under each corner, solid, so it stands on them
+            foreach (var z in new[] { -hz + 0.1, hz - 0.1 })
+            {
+                p.Add(Box([x - 0.05, 0.004, z - 0.03], [x + 0.05, 0.1, z + 0.03], HexRubber));
+                p.Add(Box([x - 0.04, 0.104, z - 0.045], [x + 0.04, deck0 - 0.004, z + 0.045], HexChar));
+            }
+        p.Add(Box([-hx, deck0, -hz], [hx, deck1, hz], HexChar)); // the frame
+        p.Add(Box([-hx + 0.02, deck1 + 0.004, -hz + 0.02], [hx - 0.02, deck1 + 0.024, hz - 0.02], HexBirch)); // the bed
+        foreach (var z in new[] { -hz + 0.02, hz - 0.05 }) // the handle: two uprights, a pine grip
+            p.Add(Box([hx - 0.06, deck1 + 0.004, z], [hx - 0.03, 0.996, z + 0.03], HexChar));
+        p.Add(Box([hx - 0.075, 1.0, -hz + 0.004], [hx - 0.015, 1.06, hz - 0.004], HexPine));
+        p.Sock("bottom", [0, 0, 0], "-y");
+        p.Stats(32, 150, 3, seconds: 3.0);
+        double floor = deck1 + 0.024 + Gap, roof = 1.04; // (inside the part: its handle is its top)
+        p.Set(("storage", Kw(("slots", Py.L(
+            Kw(("min", Py.L(-hx + 0.03, floor, -hz + 0.03)), ("max", Py.L(-0.01, roof, hz - 0.03)), ("rack", true), ("label", "bed")),
+            Kw(("min", Py.L(0.01, floor, -hz + 0.03)), ("max", Py.L(hx - 0.09, roof, hz - 0.03)), ("rack", true), ("label", "bed")))))));
+        return p;
+    }
 
     /// <summary>
     /// One bay: nx x ny x nz cells of its class, a cabinet of two sides, a back and a top, with tiers boards inside. Each tier has slots
     /// split evenly across it; the bottom tier's slots come first, so a save from before the tiers keeps its stacks where they were.
     /// </summary>
-    private static Part Bay(string name, Cls cls, int nx, int ny, int nz, int slots, string desc, int tiers = 1)
+    private static Part Bay(string name, Cls cls, int nx, int ny, int nz, int slots, string desc, int tiers = 1,
+        string postC = PostC, string boardC = BoardC, string braceC = Brace, string lipC = Lip)
     {
-        var p = new Part(name, cls, "Shelves", desc, role: "storage", tool: "welder", color: PostC, group: "Storage");
+        var p = new Part(name, cls, "Shelves", desc, role: "storage", tool: "welder", color: postC, group: "Storage");
         double x0 = cls.Lo(), x1 = cls.Hi(nx), y0 = cls.Lo(), y1 = cls.Hi(ny), z0 = cls.Lo(), z1 = cls.Hi(nz);
         var small = cls == Small;
         var board = small ? 0.03 : 0.05;
@@ -37,7 +69,7 @@ public sealed class ShelfParts : IPartGenerator
         // The carcass: two sides the full height and depth, a back between them, open only at the front.
         p.Add(Box([x0, y0, z0], [x0 + side, y1, z1]));
         p.Add(Box([x1 - side, y0, z0], [x1, y1, z1]));
-        p.Add(Box([x0 + side, y0, z0], [x1 - side, y1, z0 + back], Brace));
+        p.Add(Box([x0 + side, y0, z0], [x1 - side, y1, z0 + back], braceC));
         double bx0 = x0 + side, bx1 = x1 - side, bz0 = z0 + back, bz1 = z1 - inset;
         // Boards: one at the bottom, one under the top, and one between each pair of tiers.
         var floors = new List<(double Lo, double Hi)>(); // (top of the board under a tier, bottom of the board over it)
@@ -46,9 +78,9 @@ public sealed class ShelfParts : IPartGenerator
             var y = y0 + (y1 - y0) * k / tiers;
             var lo0 = k == 0 ? y : (k == tiers ? y - board : y - board / 2);
             var hi0 = lo0 + board;
-            p.Add(Box([bx0, lo0, bz0], [bx1, hi0, bz1], BoardC));
+            p.Add(Box([bx0, lo0, bz0], [bx1, hi0, bz1], boardC));
             if (k < tiers) // a lip along the board's front that a stack sits behind
-                p.Add(Box([bx0, hi0, bz1 - 0.02], [bx1, hi0 + 0.03, bz1 - 0.005], Lip, detail: true));
+                p.Add(Box([bx0, hi0, bz1 - 0.02], [bx1, hi0 + 0.03, bz1 - 0.005], lipC, detail: true));
             floors.Add((lo0, hi0));
         }
         BlockSockets(p, nx, ny, nz, skip: ["+z"], limit: new() { ["-y"] = (4, 2), ["+y"] = (4, 2), ["-x"] = (2, 2), ["+x"] = (2, 2), ["-z"] = (4, 2) });
@@ -129,6 +161,12 @@ public sealed class ShelfParts : IPartGenerator
         foreach (var (name, nx, ny, nz, slots, tiers) in medium)
             parts.Add(("Medium", Bay(name, Medium, nx, ny, nz, slots, $"Rack for a store room. {Say(slots, tiers)}: parts stack as they fit.", tiers)));
         parts.Add(("", Terminal()));
+        // Hexkey Orbital's own (the Traders' flat-pack store, phase 5): white gondolas in the market hall, charcoal racks in the warehouse, the trolley
+        parts.Add(("Hexkey", Bay("Hexkey Gondola Bay", Small, 4, 4, 2, 2, "Hexkey Orbital's market-hall shelf: white, birch boards. 4 shelf slots on 2 tiers: parts stack as they fit.", 2,
+            postC: HexWhite, boardC: HexBirch, braceC: HexAsh, lipC: HexPine)));
+        parts.Add(("Hexkey", Bay("Hexkey Rack Bay", Medium, 4, 2, 1, 4, "Hexkey Orbital's warehouse rack: charcoal uprights, birch boards. 8 shelf slots on 2 tiers: parts stack as they fit.", 2,
+            postC: HexChar, boardC: HexBirch, braceC: HexAsh, lipC: HexPine)));
+        parts.Add(("Hexkey", Trolley()));
         return parts;
     }
 

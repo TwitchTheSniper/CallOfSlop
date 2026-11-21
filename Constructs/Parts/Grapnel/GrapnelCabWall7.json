@@ -1,0 +1,84 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Grapnel Cab Wall 7",
+  "description": "A wall of the Grapnel's cab, with its door frames and what is fixed to it.",
+  "group": "Ship",
+  "section": "Grapnel salvage tug",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 271.0,
+  "health": 3500,
+  "armour": 25,
+  "material": "steel",
+  "color": "#cfcdc4",
+  "attachSeconds": 6.0,
+  "boxes": [
+    {
+      "min": [
+        0.875,
+        0.125,
+        -10.025
+      ],
+      "max": [
+        3.125,
+        2.625,
+        -9.775
+      ],
+      "color": "#cfcdc4",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        0.925,
+        0.128,
+        -10.037
+      ],
+      "max": [
+        3.075,
+        0.875,
+        -9.763
+      ],
+      "color": "#5b5f63",
+      "detail": true,
+      "finish": "painted plating"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "j0",
+      "at": [
+        1.995,
+        0.125,
+        -9.905
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j1",
+      "at": [
+        3.125,
+        1.375,
+        -9.905
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "j2",
+      "at": [
+        0.875,
+        1.375,
+        -9.905
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j3",
+      "at": [
+        1.995,
+        2.625,
+        -9.905
+      ],
+      "dir": "+y"
+    }
+  ]
+}
