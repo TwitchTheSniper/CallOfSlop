@@ -24,38 +24,51 @@
       "min": [
         -0.05,
         0.3,
-        -0.05
+        2.37
       ],
       "max": [
         2.05,
         0.417,
-        2.05
+        2.5
       ],
       "hidden": true
     },
     {
       "min": [
-        -0.38,
+        -0.05,
         0.3,
-        0.43
+        -0.5
       ],
       "max": [
-        2.38,
+        2.05,
         0.417,
-        1.57
+        -0.37
       ],
       "hidden": true
     },
     {
       "min": [
-        0.43,
+        2.37,
         0.3,
-        -0.38
+        -0.37
       ],
       "max": [
-        1.57,
+        2.5,
         0.417,
-        2.38
+        2.37
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.5,
+        0.3,
+        -0.37
+      ],
+      "max": [
+        -0.37,
+        0.417,
+        2.37
       ],
       "hidden": true
     },
@@ -72,9 +85,28 @@
       ],
       "color": "#2b2f34",
       "detail": true,
+      "shape": "tube",
+      "segments": 40,
+      "inner": 0.9133,
+      "front": "+y"
+    },
+    {
+      "min": [
+        -0.37,
+        0.3,
+        -0.37
+      ],
+      "max": [
+        2.37,
+        0.335,
+        2.37
+      ],
+      "color": "#2b2f34",
+      "detail": true,
       "shape": "cylinder",
       "segments": 40,
-      "front": "+y"
+      "front": "+y",
+      "middle": true
     },
     {
       "min": [
@@ -89,9 +121,28 @@
       ],
       "color": "#3d444c",
       "detail": true,
+      "shape": "tube",
+      "segments": 40,
+      "inner": 0.9257,
+      "front": "+y"
+    },
+    {
+      "min": [
+        -0.37,
+        0.335,
+        -0.37
+      ],
+      "max": [
+        2.37,
+        0.401,
+        2.37
+      ],
+      "color": "#3d444c",
+      "detail": true,
       "shape": "cylinder",
       "segments": 40,
-      "front": "+y"
+      "front": "+y",
+      "middle": true
     },
     {
       "min": [
@@ -126,7 +177,8 @@
       "detail": true,
       "shape": "cylinder",
       "segments": 40,
-      "front": "+y"
+      "front": "+y",
+      "middle": true
     },
     {
       "min": [
@@ -608,7 +660,8 @@
       "shape": "tube",
       "segments": 40,
       "inner": 0.9738,
-      "front": "+y"
+      "front": "+y",
+      "middle": true
     },
     {
       "min": [
@@ -626,7 +679,8 @@
       "shape": "tube",
       "segments": 16,
       "inner": 0.6,
-      "front": "+y"
+      "front": "+y",
+      "middle": true
     },
     {
       "min": [
@@ -640,18 +694,19 @@
         0.1803
       ],
       "color": "#2b2f34",
-      "detail": true
+      "detail": true,
+      "middle": true
     },
     {
       "min": [
-        0.9,
+        0.97,
         0.408,
-        0.9
+        0.97
       ],
       "max": [
-        1.1,
+        1.03,
         0.42,
-        1.1
+        1.03
       ],
       "hidden": true
     },

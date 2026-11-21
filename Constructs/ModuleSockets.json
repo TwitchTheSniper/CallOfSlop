@@ -4,7 +4,7 @@
   "sizes": { "most": 30, "built": ["1x1", "1x2", "1x3", "2x2", "2x3", "3x3"] },
   "rating": { "massPerM2": 3000, "thrustPerM2": 250000 },
   "kinds": ["generic", "engine", "reactor", "turret"],
-  "styles": ["proud", "flush", "opening"],
+  "styles": ["proud", "flush", "opening", "through"],
   "tags": ["engine", "reactor", "turret", "turret-bay", "missile", "armour", "harvest", "cargo", "power-store", "sensor", "life-support", "utility"],
   "depth": { "step": 0.25, "most": 2 },
   "above": { "step": 0.05, "most": 4 },
