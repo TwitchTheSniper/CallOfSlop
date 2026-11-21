@@ -331,7 +331,7 @@ public static class LogicSensors
             return cap > 0 ? Math.Clamp(c.FuelLeft / cap, 0, 1) : 0;
         }
         if (world.StoreOf(c, part) is { } s)
-            return s.Fullness(d);
+            return s.Fullness(d, ConstructStorage.Capacity(c, part));
         return 0;
     }
 

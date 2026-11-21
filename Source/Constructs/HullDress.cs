@@ -155,8 +155,35 @@ public sealed class DressStyle
     public double PanelLength = 3.2, PanelGap = 0.03;
     public List<DressLayer[]> Patterns = [];
 
+    /// <summary>A hull section's rails, light strip and extra bits (Constructs/DressStyles.json "trim"; defaults are the Zero Day's look).</summary>
+    public DressTrim Trim = new();
+
     /// <summary>A palette name's colour (a "#rrggbb" stands for itself).</summary>
     public string Color(string name) => Palette.TryGetValue(name, out var c) ? c : name;
+}
+
+/// <summary>
+/// The rest of a style's dress on a hull section (<c>Hull Section</c> keys, HullLoft.Section.cs): chine rails at the section's corners (the beam's
+/// own size at its widest point), the light strip just over the beam, and the extra bits Sean chose for the first run: A bolt rows on the slabs
+/// and hazard chevrons, B vents, D navigation, running and warning lights, F a conduit along the top chine. Sizes in metres, colours palette names.
+/// </summary>
+public sealed class DressTrim
+{
+    public double RailW = 0.25, RailH = 0.12, BeamW = 0.3, BeamH = 0.14;
+    public string Rail = "armour", BeamRail = "armour2";
+    public double StripW = 0.025, StripOff = 0.04;
+    public string Strip = "glow";
+    public double BoltEvery = 0.4, BoltSize = 0.035, BoltInset = 0.06;
+    public string Bolt = "frame";
+    public double ChevronLength = 0.8, ChevronWidth = 0.22;
+    public string Chevron = "hazard", ChevronDark = "frame";
+    public double VentW = 0.7, VentH = 0.32, VentEvery = 6.0;
+    public int VentSlats = 4;
+    public string Vent = "frame", VentSlat = "skin2";
+    public double RunEvery = 3.0, LampSize = 0.07;
+    public string Port = "#e0402c", Starboard = "#40d060", Running = "#f4f4ec", Warning = "#f0a830";
+    public double PipeR = 0.045, BracketEvery = 1.5;
+    public string Pipe = "#a8402c", Bracket = "frame";
 }
 
 /// <summary>The dress styles (Constructs/DressStyles.json). A refused file logs a REFUSED line and leaves no styles.</summary>
@@ -206,7 +233,7 @@ public static class DressStyles
     private static DressStyle ReadStyle(JsonElement e)
     {
         foreach (var p in e.EnumerateObject())
-            if (p.Name is not ("name" or "label" or "_comment" or "palette" or "panel" or "patterns"))
+            if (p.Name is not ("name" or "label" or "_comment" or "palette" or "panel" or "patterns" or "trim"))
                 throw new FormatException($"a style: unknown key \"{p.Name}\"");
         var s = new DressStyle { Name = e.GetProperty("name").GetString() ?? "", Label = e.TryGetProperty("label", out var lb) ? lb.GetString() ?? "" : "" };
         if (s.Name.Length is 0 or > 24 || !s.Name.All(c => char.IsAsciiLetterOrDigit(c) || c == '-'))
@@ -232,7 +259,67 @@ public static class DressStyles
         }
         if (s.Patterns.Count is 0 or > MostPatterns)
             throw new FormatException($"{s.Name}: {s.Patterns.Count} patterns (1 to {MostPatterns})");
+        if (e.TryGetProperty("trim", out var tr))
+            s.Trim = ReadTrim(tr, s);
         return s;
+    }
+
+    /// <summary>A style's "trim": every key optional (the Zero Day's look for any left out), each checked.</summary>
+    private static DressTrim ReadTrim(JsonElement e, DressStyle s)
+    {
+        var t = new DressTrim();
+        foreach (var p in e.EnumerateObject())
+        {
+            double N(double lo, double hi)
+            {
+                var v = p.Value.GetDouble();
+                return v >= lo && v <= hi ? v : throw new FormatException($"{s.Name}: trim \"{p.Name}\" is {v} ({lo} to {hi})");
+            }
+            string C()
+            {
+                var v = p.Value.GetString() ?? "";
+                return s.Palette.ContainsKey(v) || v.Length == 7 && v[0] == '#' && v.Skip(1).All(char.IsAsciiHexDigit) ? v : throw new FormatException($"{s.Name}: trim \"{p.Name}\" is \"{v}\": a palette name or #rrggbb");
+            }
+            switch (p.Name)
+            {
+                case "_comment": break;
+                case "railW": t.RailW = N(0.05, 1); break;
+                case "railH": t.RailH = N(0.02, 0.6); break;
+                case "beamW": t.BeamW = N(0.05, 1); break;
+                case "beamH": t.BeamH = N(0.02, 0.6); break;
+                case "rail": t.Rail = C(); break;
+                case "beamRail": t.BeamRail = C(); break;
+                case "stripW": t.StripW = N(0.012, 0.2); break;
+                case "stripOff": t.StripOff = N(0, 0.5); break;
+                case "strip": t.Strip = C(); break;
+                case "boltEvery": t.BoltEvery = N(0.15, 2); break;
+                case "boltSize": t.BoltSize = N(0.016, 0.1); break;
+                case "boltInset": t.BoltInset = N(0.02, 0.3); break;
+                case "bolt": t.Bolt = C(); break;
+                case "chevronLength": t.ChevronLength = N(0.2, 3); break;
+                case "chevronWidth": t.ChevronWidth = N(0.05, 1); break;
+                case "chevron": t.Chevron = C(); break;
+                case "chevronDark": t.ChevronDark = C(); break;
+                case "ventW": t.VentW = N(0.2, 3); break;
+                case "ventH": t.VentH = N(0.1, 2); break;
+                case "ventEvery": t.VentEvery = N(1, 40); break;
+                case "ventSlats": t.VentSlats = (int)N(2, 8); break;
+                case "vent": t.Vent = C(); break;
+                case "ventSlat": t.VentSlat = C(); break;
+                case "runEvery": t.RunEvery = N(1, 20); break;
+                case "lampSize": t.LampSize = N(0.03, 0.3); break;
+                case "port": t.Port = C(); break;
+                case "starboard": t.Starboard = C(); break;
+                case "running": t.Running = C(); break;
+                case "warning": t.Warning = C(); break;
+                case "pipeR": t.PipeR = N(0.015, 0.3); break;
+                case "bracketEvery": t.BracketEvery = N(0.5, 6); break;
+                case "pipe": t.Pipe = C(); break;
+                case "bracket": t.Bracket = C(); break;
+                default: throw new FormatException($"{s.Name}: trim: unknown key \"{p.Name}\"");
+            }
+        }
+        return t;
     }
 
     private static DressLayer ReadLayer(JsonElement l, DressStyle s)
