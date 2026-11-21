@@ -68,6 +68,14 @@ The Traders' tug: a stubby head (push bow, crew cab, a raised glass wheelhouse, 
 
 The Salvagers' salvage tug from Karl's picture: boxy yellow hull, glass cockpit, three tool mounts (sockets) on the chin, tank racks on the flanks, two hull drives on the stern; the Satchel's cab and container bay.
 
+## [The ship kit](constructs/ship-kit.md), 4 KB
+
+The base new lofted ships are written on (`Source/PartKit/ShipKit`): a faction's `ShipStyle`, the loft, the split into welded pieces and fittings drawn from each ship's own specs. Method shared, looks not.
+
+## [The Folio shuttle](constructs/folio.md), 2 KB
+
+The Traders' shuttle and the first ship on the kit: a glass cockpit in a blunt nose, a cabin of six couches under a blue glasshouse band, a utility room with the belly hatch, two drives in office-case housings, four lift jets.
+
 ## [Ship works](design/ship-works.md), 48 KB (the design)
 
 Engines and turrets with insides: a ship's drive over 500 kN has works behind it through the hull (Drive Core, Fuel Pump,
