@@ -1,6 +1,6 @@
 # Body styles (vehicle kit)
 
-> The Raider, Salvager and Mercenary styles (once Bandit, Scam and British) and their 141 vehicles were removed on 2026-11-21 (docs/removals-notes.md). Only IT ships vehicles now, and Militia makes the ore loop's two. Where this page names the removed styles, it records measurements taken while they existed.
+> The Raider, Salvager and Mercenary styles (once Bandit, Scam and British) and their 141 vehicles were removed on 2026-11-21 (docs/removals-notes.md). IT's 47 vehicles went the same day (Karl: new factions' vehicles come later), so no style ships vehicles now; Militia makes the ore loop's two. Where this page names the removed styles, it records measurements taken while they existed.
 
 History (phase records): BODY-STYLES-HISTORY.md. Read it only when you need why something was built this way.
 

@@ -6,7 +6,7 @@ namespace CallOfSlop.VehicleKit;
 /// <summary>
 /// A faction model line's member (docs/vehiclekit/VEHICLEKIT.md, "Families and convoys"): a base (style, role, the family's base tier, seed and layer seeds) and a mark
 /// (1 to 3) or a variant. The same model always makes the same vehicle, so this small record is all a world, a log or a convoy needs to keep to spawn it again:
-/// <see cref="Key"/> writes it ("IT/carrier/2/733786/mk2/box truck/scheme 55/wear 9"), <see cref="TryParse"/> reads it back.
+/// <see cref="Key"/> writes it ("Militia/carrier/2/733786/mk2/box truck/scheme 55/wear 9"), <see cref="TryParse"/> reads it back.
 /// </summary>
 /// <param name="Tier">The family's base tier: Mk1's. A later mark is asked at a tier more each (to 4), on Mk1's body and chassis.</param>
 /// <param name="Scheme">A convoy's shared paint (<see cref="VehicleConvoys.SchemeOf"/>); null: the style's whole palette.</param>
@@ -127,7 +127,7 @@ public static class VehicleFamilies
         return VehicleRegistry.Make(g, m.Seed, layers: layers.Any ? layers : null, role: ask, context: context); // (a context changes a model's kit only: VehicleContext.cs)
     }
 
-    /// <summary>The model's name, as players read it: "IT Mk2 Box Truck".</summary>
+    /// <summary>The model's name, as players read it: "Militia Mk2 Box Truck".</summary>
     public static string DisplayName(VehicleModel m)
     {
         var names = VehicleFamilyNames.For(m.Style);

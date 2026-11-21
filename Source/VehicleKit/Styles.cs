@@ -4,11 +4,11 @@ namespace CallOfSlop.VehicleKit;
 public static class Styles
 {
     /// <summary>Every style a generator can be run in.</summary>
-    public static IReadOnlyList<FactionStyle> All => [It, Militia];
+    public static IReadOnlyList<FactionStyle> All => [Militia];
 
 
-    /// <summary>The styles whose vehicles ship as blueprints.</summary>
-    public static IReadOnlyList<FactionStyle> Shipped => [It];
+    /// <summary>The styles whose vehicles ship as blueprints: none since IT's went (Karl, 2026-11-21: new factions' vehicles come later).</summary>
+    public static IReadOnlyList<FactionStyle> Shipped => [];
 
     /// <summary>
     /// The parts and running gear every style starts from (never generated itself): a style copies these and changes what is its own.
@@ -84,74 +84,6 @@ public static class Styles
             new("crawler", "Heavy Swing Arm", "Spiked Wheel", "Heavy Trailing Arm", "Spiked Wheel"),
             new("monster", "Heavy Pogo Strut", "Monster Wheel", "Heavy Pogo Strut", "Monster Wheel"), // (phase 8b: the Monster Truck's only gear; ShapeGrammar.SpecialGears)
         ],
-    };
-
-    /// <summary>
-    /// IT: office kit on wheels, and the first style everything is tried with (the Traders fly it: Crew/Factions/Traders.json). Beige
-    /// cases, carpet grey and corporate blue, a hazard stripe of lanyard yellow; dishes, switches, plants and fans where raiders hang
-    /// skulls, router antennas and dishes down the flanks, server racks, computers and fax machines in the rooms, neat plates. It is
-    /// the tech style: what it carries and drops is electronics (Constructs/Loot.json "it"). (The IT Department's joke pieces, the
-    /// CRT monitor, the cable reel and the plaque, went with the old factions, 2026-11-17.)
-    /// </summary>
-    public static readonly FactionStyle It = new()
-    {
-        Name = "IT",
-        Extra = ["Car", "Buggy", "Concept", "Giant Truck", "Drone", "Plane", "Helicopter"], // (phase 8a: its archetypes' cars; 8b: buggies, monster trucks, wagons, concepts, giants)
-        Group = "IT",
-        Palette = new()
-        {
-            ["rust"] = ["#d8d0b8", "#cfc6aa", "#d8d0b8", "#8e9296", "#a7abae"], // (the panels: old beige cases, carpet tile grey)
-            ["body"] = ["#1f4e8c", "#2a64a8", "#1f4e8c", "#e6e2d6"],            // (corporate blue, letterhead white)
-            ["frame"] = ["#3b3f44"],
-            ["war"] = ["#f2c400", "#0f7bd8", "#e6e2d6", "#c0392b"],            // (lanyard yellow, link blue, paper, the red of a failed build)
-        },
-        Parts = new(Base.Parts)
-        {
-            ["engine"] = ["Engine", "V8 Engine"],
-            ["wall"] = ["Sheet Steel", "Plate Steel"],
-            ["deck"] = ["Plate Steel", "Tread Plate"],
-            ["bed"] = ["Plate Steel", "Tread Plate"],
-            ["sheet"] = ["Sheet Steel", "Sheet Steel", "Plate Steel"],
-            ["patch"] = ["Sheet Steel 0.5 m", "Plate Steel 0.5 m"],
-            ["hood"] = ["Snub Hood", "Slab Nose", "Long Hood"],
-            ["nose"] = ["Slat Grille", "Bar Grille", "none"],
-            ["fender"] = ["Arch Fender"], // (phase 9a: slim arches, the skirt fairing does the rest)
-            ["cab"] = ["Windscreen Frame", "Chop Top Cab", "Roll Cage", "Roll Bar"],
-            ["heavyCab"] = ["Cab Over Shell", "Tin Roof Cab", "Chop Top Cab"],
-            ["spike"] = ["Router Antenna", "Router Antenna", "Wi-Fi Mast", "Satellite Dish"],                 // (Constructs/Parts/Office, Source/PartKit/Generators/OfficeParts.cs)
-            ["trophy"] = ["Network Switch", "Satellite Dish", "Network Switch", "Office Plant", "Desk Fan", "Office Plant"],
-            ["bunk"] = ["Crew Bench"],                                                   // (nobody sleeps here, officially)
-            ["workbench"] = ["Scrap Workbench"],                                         // (the hot desk)
-            ["mast"] = ["Satellite Dish", "Wi-Fi Mast", "Satellite Dish", "Router Antenna"],          // (on the roofs: Vehicle.Kit)
-            ["gear"] = ["Network Switch", "Satellite Dish", "Office Plant", "Network Switch"], // (on open beds and porches)
-            ["rack"] = ["Server Rack"],                                                  // (loot on its shelves)
-            ["computer"] = ["Computer"],                                                 // (emails IT: GameSandboxOffice.cs)
-            ["fax"] = ["Fax Machine"],                                                   // (the office desk answers on it: GameSandboxOffice.cs)
-            ["layout"] = ["open plan", "server room", "stationery cupboard", "break room"],
-            ["layout open plan"] = ["computer", "computer", "fax", "rack"],
-            ["layout server room"] = ["rack", "rack", "computer", "fax"],
-            ["layout stationery cupboard"] = ["fax", "computer", "crates", "shelf"],
-            ["layout break room"] = ["bench", "computer", "fax", "crates"],
-        },
-        LightGear = Base.LightGear,
-        HeavyGear = Base.HeavyGear,
-        // The weapon slot: named for the trade.
-        Weapons =
-        [
-            new("Bill of Sale", "Courier Carbine Receiver{barrel:Standard Barrel,feed:Box Mag}"),
-            new("Bill of Sale", "Courier Carbine Receiver{barrel:Stub Barrel{muzzle:Flash Hider},feed:Box Mag}"),
-            new("Bulk Order", "Workhorse Receiver{barrel:Standard Barrel,feed:Extended Mag,action:Full-Auto Sear}"),
-            new("Final Offer", "Farmhand Pump Receiver{barrel:Scattermouth Barrel,feed:Shell Box,action:Pump Slide}"),
-        ],
-        // (the shapes' own seeds fail in this style's dice; these are --sweep-vehicle's most different passing seeds)
-        Seeds = new()
-        {
-            ["Technical"] = [2, 5, 6, 8, 11], ["Buggy"] = [1, 3, 6], ["Concept"] = [1, 8, 3], ["Giant Truck"] = [3, 6, 7], ["Car"] = [1, 2, 8], ["Box Truck"] = [1, 5, 3], ["War Bus"] = [1, 5, 10], ["Flatbed Fort"] = [1, 2, 7],
-            ["Gun Wagon"] = [1, 9, 7], ["Scrap Tanker"] = [1, 2, 5], ["Tanker Rig"] = [1, 20], ["Fuel Trailer"] = [1, 2],
-            ["Drone"] = [3, 8, 11], ["Plane"] = [3, 6, 9], ["Helicopter"] = [3, 5, 8], // (aircraft, docs/vehiclekit/AIRCRAFT.md "In the game": passing seeds of a 12-seed sweep, a different three per style)
-        },
-        LootTable = "it",
-        Limits = new() { ["crookedPlates"] = 1, ["tiltDegrees"] = 1, ["thirdSeat"] = 1, ["slits"] = 0 },
     };
 
     /// <summary>A second look over the same shapes, to prove a style swaps without touching a generator: run <c>--gen-vehicle "Militia Box Truck" --out DIR</c>. Nothing of it ships.</summary>

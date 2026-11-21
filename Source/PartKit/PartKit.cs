@@ -85,6 +85,7 @@ public static class PartKit
         new Generators.PressParts(),
         new Generators.ExtrusionParts(),
         new Generators.MachineMastParts(), // (the block machines' shared cells: the Mast Block)
+        new Generators.MachineTierParts(), // (the block machines' tier pieces, drawing 21: the Power Coupling to the Plasma Conditioner)
         new Generators.PieceRackParts(),
         new Generators.RecyclerParts(),
         new Generators.PanelFormerParts(),
@@ -127,6 +128,7 @@ public static class PartKit
         new Generators.CourierParts(), // (the Satchel, the Traders' courier: likewise)
         new Generators.DibberParts(), // (the Dibber, the farmers' vertical lander: likewise)
         new Generators.GrapnelParts(), // (the Grapnel, the Salvagers' salvage tug: likewise)
+        new Generators.TugParts(), // (the Docket, the Traders' tug: likewise)
         new Generators.SpaceStationParts(), // (space stations from the station kit: Caledon Highport; its blueprint hangs docking clamps and hatches)
         new Generators.MakeRv(),
         new Generators.MachineTiers(),
@@ -187,7 +189,9 @@ public static class PartKit
         foreach (var gen in gens)
         {
             var o = new PartOutput(root);
-            gen.Make(o);
+            PartChunky.On = PartChunky.Generators.Contains(gen.Name);
+            try { gen.Make(o); }
+            finally { PartChunky.On = false; }
             var have = new Dictionary<string, string>(StringComparer.Ordinal);
             foreach (var folder in o.Owned)
             {

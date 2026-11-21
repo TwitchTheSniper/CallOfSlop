@@ -1,6 +1,6 @@
 # The Engine Kit (Source/EngineKit)
 
-> The Raider, Salvager and Mercenary styles (once Bandit, Scam and British) and their 141 vehicles were removed on 2026-11-21 (docs/removals-notes.md). Only IT ships vehicles now, and Militia makes the ore loop's two. Where this page names the removed styles, it records measurements taken while they existed.
+> The Raider, Salvager and Mercenary styles (once Bandit, Scam and British) and their 141 vehicles were removed on 2026-11-21 (docs/removals-notes.md). IT's 47 vehicles went the same day (Karl: new factions' vehicles come later), so no style ships vehicles now; Militia makes the ore loop's two. Where this page names the removed styles, it records measurements taken while they existed.
 
 A request for an engine (power, torque, fit, mass, layout, tier, seed) and a built modular engine back: the modular engine's
 own pieces (docs/sandbox/CONSTRUCTS.md "Modular engines") put together through the game's build rules (the vehicle kit's

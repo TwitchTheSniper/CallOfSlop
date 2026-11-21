@@ -12,7 +12,7 @@ public static class StoreMonitor
     {
         if (d.IsBin)
         {
-            room = d.IsVolumeStore ? ConstructStoreVolume.Capacity(c, part) : d.BulkCapacity;
+            room = ConstructStorage.Capacity(c, part); // (a Storage Volume's from its box, a Laser Cutter's or a Grow Former's from its bed and tier)
             have = st.Amount;
         }
         else

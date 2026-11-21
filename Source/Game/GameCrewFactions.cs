@@ -28,8 +28,8 @@ public sealed partial class Game : IPowerSight
         }
     }
 
-    /// <summary>The NPC rows hold the crews' powers (the story is off and they are read).</summary>
-    private bool CrewStandingOn => !StoryOn && CrewPowers.Count > 0;
+    /// <summary>The NPC rows hold the crews' powers (once they are read).</summary>
+    private bool CrewStandingOn => CrewPowers.Count > 0;
 
     /// <summary>Server, each tick: the factions table names the powers (once, and again after a new world cleared it); the powers think; clients get the grid, pacts and news.</summary>
     private void CrewFactionsTick()

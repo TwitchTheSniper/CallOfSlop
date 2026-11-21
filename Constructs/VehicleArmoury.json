@@ -14,7 +14,7 @@
       "inspired": ["Firing Squad", "Reaper Marksman"],
       "build": "Reaper Battle Rifle Receiver{barrel:Long Barrel{muzzle:Muzzle Brake},feed:Extended Mag,action:Semi-Auto Trigger}", "merge": 2,
       "class": "heavy", "tier": 2, "tags": ["heavy", "anti-armour"], "mount": "shield",
-      "factions": {"Militia": [3, "Service Cannon"], "IT": [1, "Hard Stop"]}
+      "factions": {"Militia": [3, "Service Cannon"]}
     },
     {
       "id": "heavy-lmg-block", "about": "Four LMG actions merged into a heavy machine gun on a heatsink barrel: the standard heavy MG.",
@@ -22,20 +22,6 @@
       "build": "Bastille LMG Receiver{barrel:Heatsink Barrel,feed:Drum Mag,action:Full-Auto Sear}", "merge": 2,
       "class": "heavy", "tier": 2, "tags": ["heavy", "suppress"], "mount": "shield",
       "factions": {"Militia": [2, "Heavy Service MG"]}
-    },
-    {
-      "id": "carbine-block", "about": "Four carbines merged on a standard barrel: a quick, light cannon a small crew can afford.",
-      "inspired": ["Heavy Pockets", "Road Rage"],
-      "build": "Courier Carbine Receiver{barrel:Standard Barrel{muzzle:Flash Hider},feed:Extended Mag,action:Carbine Sear}", "merge": 2,
-      "class": "medium", "tier": 1, "tags": ["medium"], "mount": "pintle",
-      "factions": {"IT": [1, "Batch Job"]}
-    },
-    {
-      "id": "marksman-cannon", "about": "Four marksman actions merged behind a fluted barrel: a precise long-range anti-armour gun.",
-      "inspired": ["Lighthouse Keeper", "Longbow Marksman"],
-      "build": "Longbow DMR Receiver{barrel:Fluted Match Barrel,feed:Box Mag,action:Marksman Trigger}", "merge": 2,
-      "class": "heavy", "tier": 3, "tags": ["heavy", "anti-armour"], "mount": "shield",
-      "factions": {"IT": [3, "Root Cause"]}
     },
     {
       "id": "chaingun-block", "about": "Four chain gun receivers merged: a boss gun, twice the size of a heavy MG and as slow as a cannon.",
@@ -63,14 +49,14 @@
       "inspired": ["Totem Pole"],
       "build": "Bastille LMG Receiver{barrel:Totem Splitter{barrel_1:Stub Barrel,barrel_2:Stub Barrel,barrel_3:Stub Barrel,barrel_4:Stub Barrel},feed:Drum Mag,action:Full-Auto Sear}",
       "class": "medium", "tier": 2, "tags": ["medium", "aa", "suppress"], "mount": "pintle",
-      "factions": {"Militia": [2, "Quad AA"], "IT": [1, "Firewall"]}
+      "factions": {"Militia": [2, "Quad AA"]}
     },
     {
       "id": "fire-escape", "about": "An autocannon through a ladder splitter: six heavy stub barrels in two rows.",
       "inspired": ["Fire Escape"],
       "build": "Hammerfall Autocannon Receiver{barrel:Ladder Splitter{barrel_1:Stub Barrel,barrel_2:Stub Barrel,barrel_3:Stub Barrel,barrel_4:Stub Barrel,barrel_5:Stub Barrel,barrel_6:Stub Barrel},feed:Heavy Box,action:Autocannon Drive}",
       "class": "heavy", "tier": 4, "tags": ["boss", "heavy", "aa"], "mount": "shield",
-      "factions": {"IT": [1, "Cascade Failure"], "Militia": [1, "Battery Six"]}
+      "factions": {"Militia": [1, "Battery Six"]}
     },
     {
       "id": "bunk-bed", "about": "A battle rifle with its barrels over and under.",
@@ -84,7 +70,7 @@
       "inspired": ["Auto Shotgun", "Tumble Dryer"],
       "build": "Gravedigger Auto Receiver{barrel:Scattermouth Barrel{muzzle:Tumbler Ring},feed:Shell Drum,action:Heavy Auto Sear}",
       "class": "medium", "tier": 2, "tags": ["medium", "close"], "mount": "shield",
-      "factions": {"Militia": [1, "Riot Gun"], "IT": [1, "Purge"]}
+      "factions": {"Militia": [1, "Riot Gun"]}
     },
     {
       "id": "twin-chaingun", "about": "Two belt-fed chain guns side by side on one cradle, one gunner: the convoy's fire support.",
@@ -98,28 +84,14 @@
       "inspired": ["Conga Line", "Double-Tap Twins"],
       "build": "Bastille LMG Receiver{barrel:Heatsink Barrel,feed:Drum Mag,action:Full-Auto Sear}", "mount": "twin",
       "class": "medium", "tier": 2, "tags": ["medium", "suppress", "aa"],
-      "factions": {"Militia": [2, "Twin Service MG"], "IT": [1, "Redundant Pair"]}
-    },
-    {
-      "id": "forked-tongue", "about": "Two battle rifles side by side, each through a fork crown.",
-      "inspired": ["Forked Bar"],
-      "build": "Reaper Battle Rifle Receiver{barrel:Long Barrel{muzzle:Fork Crown},feed:Extended Mag,action:Hair Trigger}", "mount": "twin",
-      "class": "medium", "tier": 3, "tags": ["medium", "oddity"],
-      "factions": {"IT": [1, "Split Horizon"]}
-    },
-    {
-      "id": "twin-carbines", "about": "Two carbines side by side on one cradle: the cheapest twin.",
-      "inspired": ["Double-Tap Twins", "Heavy Pockets"],
-      "build": "Courier Carbine Receiver{barrel:Standard Barrel,feed:Box Mag,action:Carbine Sear}", "mount": "twin",
-      "class": "light", "tier": 1, "tags": ["light"],
-      "factions": {"IT": [1, "Pair Programmer"]}
+      "factions": {"Militia": [2, "Twin Service MG"]}
     },
     {
       "id": "hammerfall", "about": "The autocannon receiver on a stub barrel: even the stub comes out the size of a drainpipe.",
       "inspired": ["Hammerfall Cannon"],
       "build": "Hammerfall Autocannon Receiver{barrel:Stub Barrel,feed:Heavy Box,action:Autocannon Drive}",
       "class": "heavy", "tier": 3, "tags": ["heavy", "anti-armour"], "mount": "shield",
-      "factions": {"Militia": [2, "Hammerfall"], "IT": [1, "Patch Tuesday"]}
+      "factions": {"Militia": [2, "Hammerfall"]}
     },
     {
       "id": "ground-breaker", "about": "A bunker buster through a cannon sleeve: a round the size of a fist.",
@@ -136,13 +108,6 @@
       "factions": {"Militia": [2, "Chain Gun"]}
     },
     {
-      "id": "elephant-gun", "about": "A .50 bolt action on a big iron barrel: slow, loud, and it goes through.",
-      "inspired": ["Elephant Gun", "Clap Back"],
-      "build": "Longreach Bolt Receiver{barrel:Big Iron Barrel,feed:Heavy Box,action:Turn Bolt}",
-      "class": "heavy", "tier": 2, "tags": ["heavy", "anti-armour"], "mount": "pintle",
-      "factions": {"IT": [1, "Hard Delete"]}
-    },
-    {
       "id": "squad-lmg", "about": "An LMG on a long compensated barrel: holds a road on its own.",
       "inspired": ["Bastille Squad LMG", "Steady Eddie"],
       "build": "Bastille LMG Receiver{barrel:Long Barrel{muzzle:Compensator},feed:Drum Mag,action:Full-Auto Sear}",
@@ -150,32 +115,11 @@
       "factions": {"Militia": [2, "Squad MG"]}
     },
     {
-      "id": "coil-lance", "about": "A coil receiver on a coil barrel off an energy cell: the high-tech rifle.",
-      "inspired": ["Rail Battery", "The Oracle"],
-      "build": "Railspike Coil Receiver{barrel:Coil Barrel,feed:Capacitor Pack,action:Turn Bolt}",
-      "class": "heavy", "tier": 3, "tags": ["heavy", "anti-armour"], "mount": "shield",
-      "factions": {"IT": [3, "Rail Spike"]}
-    },
-    {
-      "id": "spark-carbine", "about": "An energy carbine on a coil barrel: what the tech crews mount on everything.",
-      "inspired": ["Power Grid", "Zap Happy"],
-      "build": "Sparkplug Energy Receiver{barrel:Coil Barrel,feed:Capacitor Pack,action:Carbine Sear}",
-      "class": "medium", "tier": 3, "tags": ["medium"], "mount": "pintle",
-      "factions": {"IT": [3, "Power Cycle"]}
-    },
-    {
-      "id": "spark-block", "about": "Four energy carbines merged: a big blue cannon off one cell.",
-      "inspired": ["Power Grid", "Bouquet"],
-      "build": "Sparkplug Energy Receiver{barrel:Coil Barrel,feed:Capacitor Pack,action:Carbine Sear}", "merge": 2,
-      "class": "heavy", "tier": 4, "tags": ["boss", "heavy", "anti-armour"], "mount": "shield",
-      "factions": {"IT": [2, "Blue Screen"]}
-    },
-    {
       "id": "marksman", "about": "A DMR on a marksman barrel with a velocity booster: the precise one.",
       "inspired": ["Lighthouse Keeper", "Sewing Kit"],
       "build": "Longbow DMR Receiver{barrel:Marksman Barrel{muzzle:Velocity Booster},feed:Extended Mag,action:Marksman Trigger}",
       "class": "medium", "tier": 1, "tags": ["medium", "anti-armour"], "mount": "pintle",
-      "factions": {"IT": [2, "Code Review"], "Militia": [1, "Designated Gun"]}
+      "factions": {"Militia": [1, "Designated Gun"]}
     },
     {
       "id": "grenade-lobber", "about": "A bucket launcher on a tube: one long, careful lob at a time.",

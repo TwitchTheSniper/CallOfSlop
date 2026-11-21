@@ -355,29 +355,6 @@ public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int F
                 ],
             },
         // (long, low, even: tapered pods, smooth flares, the door kerbside)
-        ["IT"] = new([(BodyLanguage.Pod, 2), (BodyLanguage.Van, 1.5)], 8, 12)
-            {
-                Scales = [(BodyScale.Standard, 2), (BodyScale.Heavy, 1)], TallMin = 0.92f, TallMax = 1.16f, FlareShare = 0.8f, Brows = [(1.25f, 1.5), (1.5f, 1.5), (1f, 1)], Tails = [(1f, 1), (1.25f, 1.5), (0.75f, 0.5)], DoorLeft = 0.3, Ride = (1.6, 1, 0.3), DoorRear = 0.35,
-                // (capsules in the body's panels, raked screens, rounded and wedge noses)
-                Cabs = [("enclosed", 1.5), ("cab-over", 1.2), ("crew", 0.9), ("merged", 0.8)], Noses = [('r', 2), ('w', 1.5)],
-                // (phase 4: a smooth skirt fairing, a stripe and vents; a radome on the cab)
-                Trims = [("f", 1)], Decos = [('R', 0.75)],
-                // (phase 5: a short pod storey set in on the roof, smooth blisters on the flanks)
-                Uppers = [("none", 2), ("saloon", 1)], UpperShareMin = 0.3f, UpperShareMax = 0.55f, UpperTallMin = 2.06f, UpperTallMax = 2.14f, UpperNarrow = 0.84f, Pods = [('b', 0.5)], PodMax = 2,
-                // (phase 7a: clean pale panels, inset, light panels; minimal: a plant now and then)
-                Lining = 'c', Window = 'b', WindowChance = 0.9, LiningInset = 0.9, Clutter = 0.12f, Props = ["Office Plant", "Network Switch", "Desk Fan"], Fill = 0.35f, Gear = 1,
-                // (phase 6: faired balconies are data, left at 0; nearly always even)
-                Balcony = 0, BalconyKind = 'f', BalconyLenMin = 1.3f, Asym = 0.1, AsymAmount = 0.4f,
-                CabTallMin = 1.66f, CabTallMax = 1.8f, RakeMin = 0.2f, RakeMax = 0.24f, CapsuleRakeMin = 0.6f, CapsuleRakeMax = 0.78f, HoodHalfMin = 0.5f, HoodHalfMax = 0.55f, BeltMin = 0.92f, BeltMax = 0.97f,
-                // (phase 9a: the cab family: a glasshouse under a raked screen, or a pod capsule; rounded noses)
-                CabStyles =
-                [
-                    CabStyle.Of("glasshouse", 2, r => r with { RakeMin = 0.22f, RakeMax = 0.26f, Noses = [('r', 2), ('w', 1)] }, r => r with { CabTallMin = 1.7f, CabTallMax = 1.8f, BeltMin = 0.88f, BeltMax = 0.93f },
-                        r => r with { Cabs = [("enclosed", 2), ("crew", 1)], CabLanguage = BodyLanguage.Pod }),
-                    CabStyle.Of("pod", 1.5, r => r with { RakeMin = 0.22f, RakeMax = 0.26f, CapsuleRakeMin = 0.65f, CapsuleRakeMax = 0.8f, Noses = [('r', 1)] }, r => r with { BeltMin = 0.9f, BeltMax = 0.94f },
-                        r => r with { Cabs = [("cab-over", 2), ("merged", 1), ("enclosed", 0.3)] }),
-                ],
-            },
     };
 
     /// <summary>A style not named: military armour, faceted, one language.</summary>

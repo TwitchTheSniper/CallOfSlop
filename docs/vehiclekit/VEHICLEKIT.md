@@ -30,7 +30,7 @@ namespace CallOfSlop.VehicleKit.Generators;
 
 public sealed class GunWagon(FactionStyle style) : HeavyShape(style)
 {
-    public override string Shape => "Gun Wagon";            // "IT Gun Wagon 3", ITGunWagon3.json
+    public override string Shape => "Gun Wagon";            // "Militia Gun Wagon 3", MilitiaGunWagon3.json
 
     public override void Build(Vehicle v)
     {
@@ -104,7 +104,7 @@ New shapes: a "hull" box (`"shape": "hull"`, `"points"`: corners in the part's f
 
 ### Looking at one
 
-`--plan` draws real meshes, so slopes show in it. For shaded pictures from the side, three quarters, above and inside: `xvfb-run -a -s "-screen 0 1280x720x24" dotnet bin/Release/net10.0/CallOfSlop.dll --vehicle-shots "IT Box Truck 1" "IT War Bus 10"` writes `smoke_vehicle_*.bmp` next to the log. Look at them before calling a shape done; they are for you, not for review.
+`--plan` draws real meshes, so slopes show in it. For shaded pictures from the side, three quarters, above and inside: `xvfb-run -a -s "-screen 0 1280x720x24" dotnet bin/Release/net10.0/CallOfSlop.dll --vehicle-shots "Militia Box Truck 1" "IT War Bus 10"` writes `smoke_vehicle_*.bmp` next to the log. Look at them before calling a shape done; they are for you, not for review.
 
 ### Guns by their parts
 
@@ -243,17 +243,17 @@ cab-over, the Raiders' anything. `--diversity` lists the modules a seed chose as
 
 Every style copies `Styles.Base` (never generated itself) and changes what is its own: its wheels, springs, engines, gearboxes, plates, cabs and hoods, its rooms' layouts, and its light and heavy running gear. It was the Bandits' style until the old factions went (2026-11-21, docs/removals-notes.md). The part kit's `--gen-parts scrap_parts` (Source/PartKit/Generators/ScrapParts.cs) still writes the Fuel Drum, spikes, skulls and the Scrap Ladder it named (`Constructs/Parts/Scrap`), which the base dressing slots keep and the styles replace.
 
-Loot: a style names its table in `Constructs/Loot.json` (docs/sandbox/CONSTRUCTS.md, "Loot"): `it` for IT, `militia` for Militia, with `3` and `4` for the higher tiers. **Ammo Crates stay out of it on purpose:** a stored item doesn't cook off.
+Loot: a style names its table in `Constructs/Loot.json` (docs/sandbox/CONSTRUCTS.md, "Loot"): `militia` for Militia, with `3` and `4` for the higher tiers. **Ammo Crates stay out of it on purpose:** a stored item doesn't cook off.
 
-### The IT style
+### The IT style (removed)
 
-IT (`Styles.It`, group "IT"; the Traders fly it, Crew/Factions/Traders.json): office kit on wheels, and the first style to try faction work with. Beige cases and carpet-tile grey on the panels, corporate blue on the hoods, war paint in lanyard yellow, link blue, paper white and red; plates that line up. `Source/PartKit/Generators/OfficeParts.cs` writes its dressing (`Constructs/Parts/Office`): a Network Switch, a Satellite Dish, an Office Plant and a Desk Fan as trophies, Router Antennas, a Wi-Fi Mast and a Satellite Dish as spikes. Rooms are an open plan, a server room, a stationery cupboard or a break room, furnished with Server Racks (loot on their shelves), Computers and Fax Machines (the office desk's line: GameSandboxOffice.cs). Guns are named for the trade: the Bill of Sale (a carbine), Bulk Order (a machine gun) and Final Offer (a pump gun). Loot rolls from the `it` table: circuit boards, wiring, controls and readouts up to tier 3, Fax Machines, Computers and Server Racks, common and uncommon weapon parts. Every IT shape ships its own seeds. **Signature**: marks, mast or dish (Satellite Dish, Wi-Fi Mast, Router Antenna) and office gear (switches, plants, fans, racks, computers, fax machines); modules enclosed and cab-over cabs, short and flat noses, bare flanks. Weak points: the antenna (two sides, two bearings), two tyres, the fuel. (The IT Department's joke pieces, the CRT Monitor, the Cable Reel and the Employee of the Month plaque, and its old faction name went 2026-11-17: docs/removals-notes.md.)
+IT, the old IT Department's office kit on wheels, was the last shipped style; it and its 47 vehicles went on 2026-11-21 at Karl's word (docs/removals-notes.md). The generators, the shapes, the archetypes (BODY-STYLES.md; their weights still name IT, so no style takes one) and the dressing passes below stay for the new factions' styles.
 
 **More dressing (`Vehicle.Kit`).** A style with a `"mast"` slot gets a last pass of its own (its own fork, so nothing else of a seed moves, and a style without the slot never rolls it): masts on the rooms' roofs and the cab, spikes down the rooms' outer walls, and its `"gear"` standing on open beds and porches. The IT style's masts are dishes and antennas, its gear switches, plants and dishes. The dressing rolls how many; the guaranteed marks pass ("Identity and weak points") then puts a mast and a piece of office gear on any kit-2 vehicle still without one, on a post at the back when the roof went to turrets.
 
 ### Extra shapes
 
-Shapes a style ships only when it names them in `FactionStyle.Extra` (IT: Car, Buggy, Concept, Giant Truck, Drone, Plane, Helicopter). The Double Decker, the Monster Truck and the Wagon are no style's now: `--gen-vehicle "Militia Wagon"` still makes one.
+Shapes a style ships only when it names them in `FactionStyle.Extra` (IT named Car, Buggy, Concept, Giant Truck, Drone, Plane and Helicopter). Every extra shape is no style's now: `--gen-vehicle "Militia Wagon"` still makes one.
 
 **The Double Decker (`Generators/DoubleDecker.cs`).** An open-top double-decker bus: a long walk-in hull below (side door, loot, the seats that work the guns) and a railed top deck on the tall bays' roofs, with the two roof guns standing up through holes in it. The deck is laid from the bays' `top` sockets (each sits on a deck cell's centre), stops where the tail slopes down (a stepped roof), and a ladder hangs from its back edge, else down the right side. It is an **extra shape**: `VehicleRegistry.Extras` holds shapes a style ships only when it names them in `FactionStyle.Extra` (`Extra = ["Double Decker"]`), so no other faction's committed files change; any style can still run one by name (`--gen-vehicle "Raider Double Decker" --out DIR`).
 

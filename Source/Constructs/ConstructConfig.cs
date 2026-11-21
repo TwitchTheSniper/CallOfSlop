@@ -134,7 +134,8 @@ public enum CfgKey : byte
     TorqueMix, // rotor: it adds what cancels the other rotors' torque (a tail rotor)
     BladeLost, // rotor: the blades gone, a bit each (not on the panel; ConstructRotor.cs)
     Blade0, Blade1, Blade2, Blade3, // rotor: its blades' wear, four blades a setting, 4 bits each (not on the panel; ConstructRotor.Wear)
-    Blade4, Blade5, // (no longer used: their numbers stay)
+    Shutdown, // power plant or thruster: on, it is shut down and makes nothing (the seat's reactor and thruster keys flip every one aboard: ConstructShutdown.cs; was the unused Blade4, 2026-11-21: the enum is full)
+    Blade5, // (no longer used: its number stays)
     FanKind, // Fan Former: what it makes
     FanBlades, // Fan Former, rotor: how many blades
     FanDiameter, // Fan Former: how far across, m
@@ -580,6 +581,7 @@ public static class ConstructConfig
             list.Add(new CConfigDef { Key = KeyName(CfgKey.TextSize), Id = CfgKey.TextSize, Type = CfgType.Number, Label = "Text size", Group = "Display", Unit = "%",
                 Min = ConstructPanels.MinTextSize, Max = ConstructPanels.MaxTextSize, Step = 25, Default = 100, Tooltip = "How big its screen's text is. Smaller shows more rows and longer lines." });
         StockTargets.AddSettings(d, list); // (the Logistics group: after every other, so older settings keep their slots)
+        ConstructShutdown.AddSettings(d, list); // (a power plant's or thruster's Shut down: last, so every older setting keeps its slot)
         Finish(d, list, file);
     }
 
@@ -892,6 +894,7 @@ public static class ConstructConfig
                 CfgKey.ToolsOut => d.IsToolRack, // (ToolRacks.cs)
                 CfgKey.RunMode => d.IsWheelFormer && !d.IsPanelFormer,
                 CfgKey.GrowMakes => d.IsGrowFormer,
+                CfgKey.Shutdown => ConstructShutdown.Takes(d),
                 CfgKey.AmmoType => d.Role is PartRole.AmmoBox or PartRole.Storage,
                 CfgKey.Charge => d.IsReceiverGun,
                 CfgKey.SteerKind => d.Diff == DiffKind.Steering,

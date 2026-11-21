@@ -93,9 +93,6 @@ public static unsafe partial class Program
         System.Runtime.GCSettings.LatencyMode = System.Runtime.GCLatencyMode.SustainedLowLatency;
         Console.WriteLine($"Call of Slop - built with the BRUTAL framework, Copyright (c) 2024 Ahwoo Limited. {DateTime.Now}");
 
-        // --story: the archived story layer back on for this run (Game.StoryOn, docs/archive/story); its own tools want it.
-        if (args.Any(a => a.Equals("--story", StringComparison.OrdinalIgnoreCase) || a.Equals("--traffic-check", StringComparison.OrdinalIgnoreCase) || a.Equals("--outpost-check", StringComparison.OrdinalIgnoreCase)))
-            Game.StoryOn = true;
         if (args.Any(a => a.Equals("--net-client", StringComparison.OrdinalIgnoreCase)))
             return NetClientProcess.Run(args); // a headless client in its own process (NetClientProcess.cs; the "Two-process lobby" self-test)
         if (args.Any(a => a.Equals("--selftest-list", StringComparison.OrdinalIgnoreCase)))
@@ -122,16 +119,6 @@ public static unsafe partial class Program
             return Maps.CheckAll(checkDir); // the same for every map file in a folder (a pack)
         if (args.Any(a => a.Equals("--weather-sim", StringComparison.OrdinalIgnoreCase)))
             return WeatherCli.Run(args); // headless: run the weather simulation for some days and print its storms (Source/Weather)
-        if (args.Any(a => a.Equals("--story-sim", StringComparison.OrdinalIgnoreCase)))
-            return Story.StoryCli.Sim(args); // headless: play a story scenario and print the chronicle and the sifter (docs/archive/story/STORY.md)
-        if (args.Any(a => a.Equals("--storylet-sim", StringComparison.OrdinalIgnoreCase)))
-            return Story.StoryCli.StoryletSim(args); // headless: a player in a cast's world, the storylets on the story's clock (docs/archive/story/STORY.md "Storylets")
-        if (args.Any(a => a.Equals("--talk-sim", StringComparison.OrdinalIgnoreCase)))
-            return Story.StoryCli.TalkSim(args); // headless: a player asks a cast's people about their topics (docs/archive/story/STORY.md "Topics")
-        if (args.Any(a => a.Equals("--story-map", StringComparison.OrdinalIgnoreCase)))
-            return Story.StoryMapPage.Cli(args); // the story map page from Story/Storylets (docs/archive/story/STORY.md; was tools/story/story_map.py)
-        if (args.Any(a => a.Equals("--check-story", StringComparison.OrdinalIgnoreCase)))
-            return Story.StoryCli.Check(args); // the story data (relations, verbs, patterns, scenarios): what loads, what's refused and why
         if (args.Any(a => a.Equals("--trip-check", StringComparison.OrdinalIgnoreCase)))
             return Space.SpaceCli.Trips(args); // headless: the trips an order would plan between a system's planets (Source/Space/NavTrip.cs)
         if (args.Any(a => a.Equals("--space-ships", StringComparison.OrdinalIgnoreCase)))
@@ -275,6 +262,8 @@ public static unsafe partial class Program
                 ConstructBores.On = false;
             if (args.Any(a => a.Equals("--no-break-up", StringComparison.OrdinalIgnoreCase)))
                 ConstructBreakUp.On = false;
+            if (args.Any(a => a.Equals("--no-bore-holes", StringComparison.OrdinalIgnoreCase)))
+                ConstructBores.Holes = false;
             return BattleCheck.Cli(args); // a capital ship under railgun fire headless: what each volley did and cost (Source/DevTools/BattleCheck.cs)
         }
         if (args.Any(a => a.Equals("--skin-check", StringComparison.OrdinalIgnoreCase)))
@@ -459,6 +448,8 @@ public static unsafe partial class Program
             LightGrid.ContrastForcedOff = true; // each material's own roughness whatever the Video setting (a before picture of material contrast)
         if (args.Any(a => a.Equals("--no-sun-shadows", StringComparison.OrdinalIgnoreCase)))
             SunShadows.ForcedOff = true; // no ship shadows from the sun whatever the Video setting (a before picture)
+        if (args.Any(a => a.Equals("--no-dark-interiors", StringComparison.OrdinalIgnoreCase)))
+            RoomShade.ForcedOff = true; // ship rooms keep the sky's light whatever the Video setting (a before picture)
         if (args.Any(a => a.Equals("--no-contact", StringComparison.OrdinalIgnoreCase)))
             PostFx.ContactForcedOff = true; // no contact shadows under bodies whatever the Video setting (a before picture)
         if (args.Any(a => a.Equals("--no-bevels", StringComparison.OrdinalIgnoreCase)))
@@ -979,7 +970,7 @@ public static unsafe partial class Program
                     Ui.DrawHud(g, now, _joinAddress, _settings);
                 }
                 // What the player has just learnt, in the middle of the screen; it waits out the opening, a ride and the bench (UiTechnologies.cs).
-                if (Ui.DrawCelebration(g, now, benchCovers || g.OpeningActive, _settings.Bind(GameAction.Logbook)))
+                if (Ui.DrawCelebration(g, now, benchCovers || g.OpeningActive))
                     AudioSystem.Effect(Sfx.LevelUp, 0.6f);
                 uiPart.Dispose();
                 uiPart = Perf.Measure(PerfArea.UiMenus);
@@ -1064,10 +1055,7 @@ public static unsafe partial class Program
             Ui.DrawAudioMixer(AudioSystem, now, _session?.Local?.WeaponDef ?? Weapons.All[0], _settings.Bind(GameAction.AudioMixer)); // over everything; closed it only turns the meters off (Program.AudioMixer.cs)
             Ui.DrawWeaponTweaks(_session, now, _session?.Local?.WeaponDef ?? Weapons.All[0], _settings.Bind(GameAction.WeaponTweaks)); // dev window over everything; closed one bool check (Program.WeaponTweaks.cs)
             DrawWeatherUi(); // the weather map (F11; Program.Weather.cs): closed one check
-            DrawStoryUi(); // the Story window (F4; Program.Story.cs): closed one check
             DrawFactionUi(); // the Faction window (F2; Program.Factions.cs): closed one check
-            DrawJobBoardUi(); // the job board (the use key on the colony's work board; Program.JobBoard.cs): closed one check
-            DrawLogbookUi(); // the Logbook (F1; Program.Logbook.cs): closed one check
             DrawCommandUi(now); // the command view (Home; Program.Command.cs): closed one check
             DrawDevTools(now); // the look-at inspector and prop editor (F6 / F10; Program.DevTools.cs): closed two checks
             uiPart.Dispose();
@@ -1186,10 +1174,14 @@ public static unsafe partial class Program
         if (_game is not { } g || !Matrix4x4.Invert(Gfx.View, out var inv))
         {
             SunShadows.EndWorld();
+            RoomShade.EndWorld();
             return;
         }
         using (Perf.Measure(PerfArea.ConstructDraw))
+        {
             SunShadows.Render(Gfx, g.Constructs, Gfx.CameraPosition, -new Vector3(inv.M31, inv.M32, inv.M33), g.TickAlpha, g.IsServer);
+            RoomShade.Render(Gfx, g.Constructs, Gfx.CameraPosition, g.TickAlpha, g.IsServer); // shut rooms in ships lose the sky's light (Source/Render/RoomShade.cs)
+        }
     }
 
     private static void DrawArena()
@@ -1228,7 +1220,6 @@ public static unsafe partial class Program
                         Gfx.DrawBox(map.Solid[i], map.Colors[i], mode: 1, material: map.Materials[i]);
             BenchPass(1);
             DrawMovers(map); // moving platforms at this frame's pose
-            StandInRender.Draw(Gfx, _session); // STAND-IN: the story's placeholder craft (Source/StandIns)
         }
         using (Perf.Pass(PerfArea.City, PerfGpuPass.City))
             CityGfx.Draw(map, Gfx, Glfw.Time, _game is { } cg ? cg.MoverRenderTick / World.TickRate : Glfw.Time); // a planetoid's city: one draw a chunk (Source/Render/CityRenderer.cs)
@@ -1267,7 +1258,7 @@ public static unsafe partial class Program
     // Input
     // =====================================================================
 
-    private static bool MenusOpen => DimmingMenusOpen || Ui.WeatherMapOpen || Ui.StoryOpen || Ui.FactionsOpen || Ui.JobBoardOpen || Ui.LogbookOpen || Ui.CommandOpen || Ui.SandboxPartsOpen || Ui.SandboxConfigOpen || Ui.ConnectorPanelOpen || Ui.ToolWheelEditorOpen || Ui.SandboxTrackOpen || Ui.SandboxPaintPickerOpen || Ui.SandboxTexturePickerOpen || Ui.SandboxMaterialPickerOpen || Ui.ReplacePickerOpen || Ui.BlueprintSaveOpen || Ui.OrdnanceBenchOpen || Ui.RecipePickerOpen || Ui.CraftingOpen || Ui.DesignerOpen || Ui.LifterOpen || Ui.LinkedOpen || Ui.ShellGantryOpen; // (and the Sandbox parts menu and settings panel, which free the mouse but don't dim the scene)
+    private static bool MenusOpen => DimmingMenusOpen || Ui.WeatherMapOpen || Ui.FactionsOpen || Ui.CommandOpen || Ui.SandboxPartsOpen || Ui.SandboxConfigOpen || Ui.ConnectorPanelOpen || Ui.ToolWheelEditorOpen || Ui.SandboxTrackOpen || Ui.SandboxPaintPickerOpen || Ui.SandboxTexturePickerOpen || Ui.SandboxMaterialPickerOpen || Ui.ReplacePickerOpen || Ui.BlueprintSaveOpen || Ui.OrdnanceBenchOpen || Ui.RecipePickerOpen || Ui.CraftingOpen || Ui.DesignerOpen || Ui.LifterOpen || Ui.LinkedOpen || Ui.ShellGantryOpen; // (and the Sandbox parts menu and settings panel, which free the mouse but don't dim the scene)
 
     /// <summary>The menus that dim the scene behind them (Ui.SceneDim): a Zombies workbench too; the lobby room; the Audio mixer, weapon tweak, perf and prop editor windows.</summary>
     private static bool DimmingMenusOpen => Ui.MenuOpen || Ui.PauseOpen || Ui.BenchRun != null || Ui.InventoryOpen || InLobbyRoom || Ui.AudioMixerOpen || Ui.WeaponTweaksOpen || Ui.PerfWindowOpen || Ui.PropEditorOpen;
@@ -1453,10 +1444,6 @@ public static unsafe partial class Program
         }
         if (_session != null && key == GlfwKey.Escape && TypingEsc())
             return; // (Esc leaves a sign or a keypad's typing box: Program.SandboxControls.cs)
-        if (_session != null && key == GlfwKey.Escape && TalkEsc())
-            return; // (Esc closes the talk panel: Program.StoryTalk.cs)
-        if (_session != null && key == GlfwKey.Escape && LoreEsc())
-            return; // (Esc puts a lore item down: Program.StoryLore.cs)
         if (_session != null && key == GlfwKey.Escape && !Ui.ChatOpen && SandboxLinkEsc())
             return; // (Esc cancels the link being routed, not the match: Program.SandboxLinks.cs)
         if (_session != null && key == GlfwKey.Escape && !Ui.ChatOpen && (RemoverEsc() || SelectEsc() || BlueprintGhostEsc()))
@@ -1479,17 +1466,9 @@ public static unsafe partial class Program
             return;
         if (WeatherMapKey(key)) // F11 (rebindable) or Esc: the weather map window (Program.Weather.cs)
             return;
-        if (StoryKey(key)) // F4 (rebindable) or Esc: the Story window (Program.Story.cs)
-            return;
-        if (JobBoardKey(key)) // Esc or the use key: the job board (Program.JobBoard.cs)
-            return;
         if (FactionKey(key)) // F2 (rebindable) or Esc: the Faction window (Program.Factions.cs)
             return;
-        if (LogbookKey(key)) // F1 (rebindable) or Esc: the Logbook (Program.Logbook.cs)
-            return;
         if (CommandKey(key)) // Home (rebindable) or Esc: the command view (Program.Command.cs)
-            return;
-        if (TalkJoinKey(key)) // Backspace (rebindable): join another player's talk while its notice shows (Program.StoryTalk.cs)
             return;
         if (PerfKey(key)) // F9 (rebindable) cycles the perf window, overlay, off; Esc closes the window (Program.Perf.cs)
             return;
@@ -2170,9 +2149,6 @@ public static unsafe partial class Program
             pilotView = PilotCamera(ref eye, ref fwd, ref camUp); // (at a console with a drone on the link: the drone's view, Program.CameraFeeds.cs)
             _game.Audio.SetListener(eye, fwd);
         }
-        var talkView = TalkCamera(local, ref eye, ref fwd, ref fov); // (talking to someone: eases to a shot over your shoulder at them, Program.TalkCamera.cs)
-        if (_talkCamT > 0)
-            _game.Audio.SetListener(eye, fwd);
         var openingView = local != null && OpeningCamera(local, now, ref eye, ref fwd, ref camUp); // (the survival opening: waking aboard or at the start; Program.Opening.cs)
         if (openingView)
             _game.Audio.SetListener(eye, fwd);
@@ -2181,7 +2157,7 @@ public static unsafe partial class Program
         // from 40 m and more). The near plane's corners stay inside the sphere at wide views.
         var near = tp ? ThirdPerson.CameraRadius * 0.48f : 0.05f;
         var proj = Matrix4x4.CreatePerspectiveFieldOfView(fov, w / h, near, World.Map.FarPlane);
-        RenderOrigin(local, tp || pilotView || openingView || talkView, eye, shake, out var origin, out var eyeFromOrigin);
+        RenderOrigin(local, tp || pilotView || openingView, eye, shake, out var origin, out var eyeFromOrigin);
         var viewFromOrigin = Matrix4x4.CreateLookAt(eyeFromOrigin, eyeFromOrigin + fwd, camUp);
         Gfx.SetCameraAt(origin, viewFromOrigin, proj);
         var view = Gfx.View; // (the world's view, for everything that isn't the box renderer)
@@ -2210,7 +2186,7 @@ public static unsafe partial class Program
         ToolRender.Hands = _game.SandboxOn ? _game.SandboxHands : null; // Sandbox: tools in everyone's hands instead of guns (Source/Render/ToolRender.cs)
         foreach (var p in _game.Players.Values)
         {
-            if (p.Id == _game.LocalId && p.Alive && !tp && !pilotView && !talkView) // (third person, the talk camera, or looking through a drone: your whole body is drawn like anyone's)
+            if (p.Id == _game.LocalId && p.Alive && !tp && !pilotView) // (third person, or looking through a drone: your whole body is drawn like anyone's)
             {
                 if (ScenePresentation.Enabled && ScenePresentation.FirstPersonLegs && !_wsNoHands) // (--no-hands: a picture from the flying camera shows the scene, not your legs)
                     ScenePresentation.DrawLocalLegs(Gfx, p, Glfw.Time); // your own legs, seen when looking down
@@ -2366,7 +2342,7 @@ public static unsafe partial class Program
 
         // ---- First-person gun -----------------------------------------------
         pass = Perf.Pass(PerfArea.ViewModel, PerfGpuPass.ViewModel);
-        if (local is { Alive: true } && !tp && !talkView && !Ui.CommandOpen && !_game.OpeningActive && !_wsNoHands && !DrawLadderHands(now, eye, fwd, camUp) && !DrawSandboxTool(now, eye, fwd)) // (_wsNoHands: the window tool's --no-hands, for pictures) // (Sandbox: the wrench or welder instead, or nothing in a seat; nothing in hand in the opening or on a ride)
+        if (local is { Alive: true } && !tp && !Ui.CommandOpen && !_game.OpeningActive && !_wsNoHands && !DrawLadderHands(now, eye, fwd, camUp) && !DrawSandboxTool(now, eye, fwd)) // (_wsNoHands: the window tool's --no-hands, for pictures) // (Sandbox: the wrench or welder instead, or nothing in a seat; nothing in hand in the opening or on a ride)
         {
             GunModel.AdsCutaway = SightLens.Cutaway(_game.Active.Def, _game.AimT); // reflex dots hand over to the lens pass as you aim
             DrawViewModel(now, proj);
@@ -2638,7 +2614,7 @@ public static unsafe partial class Program
         if (local is { Alive: true })
         {
             // Aimed through an optic, its lens has the reticle (Source/Render/SightLens.cs); otherwise the crosshair.
-            if (!SightLens.HidesCrosshair(_game.Active.Def, _game.AimT) && !GantryOn && !SpectateOn && _talkCamT <= 0) // (the spectate camera has no crosshair; the gantry's camera draws its cursor: the build bar; the talk camera's shot has none)
+            if (!SightLens.HidesCrosshair(_game.Active.Def, _game.AimT) && !GantryOn && !SpectateOn) // (the spectate camera has no crosshair; the gantry's camera draws its cursor: the build bar; the talk camera's shot has none)
             {
                 // Dynamic crosshair: gap matches the real spread cone at this FOV.
                 var spread = _game.CurrentSpread();

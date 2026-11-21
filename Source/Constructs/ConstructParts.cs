@@ -211,7 +211,7 @@ public enum CLogic : byte
     AntiGrav, // on power cancels a share of its construct's weight, within its radius (ConstructBoost.cs)
     Mooring, // a mast: on (unwired: always), it ropes a balloon in reach; off or Interact casts it off (ConstructCarrier.cs)
     BombRack, // lets go of the explosive parts bolted to it, one at a time while its input is on (ConstructOrdnance.cs)
-    Cipher, // a data centre's terminal (Game/GameStoryFragments.cs, docs/archive/story/FRAGMENTS.md): puts out the carrier the server gives it (CPart.Mem); its key input is what the decode reads
+    Cipher, // a data centre's terminal (Game/GameStoryFragments.cs, the removed story (docs/removals-notes.md)): puts out the carrier the server gives it (CPart.Mem); its key input is what the decode reads
 }
 
 /// <summary>The tool a part is attached and removed with (decision 2: editing always needs a tool in hand).</summary>
@@ -267,6 +267,7 @@ public enum SocketKind : byte
     PressDie, // a press's die slot and a die's mount: only a die of its size class goes there (ConstructPress.cs)
     RunOut, // an Extruder's (or a Die Block's) out bed and a Run-out Table's ends: only a Run-out Table goes there (ConstructExtruderGrowth.cs)
     Module, // a Module Socket's face and a Module Plug's: only a plug of the plate's footprint goes there, at the turns it allows (ModuleSockets.cs)
+    Tier, // a block machine Core's tier slot and a tier piece's mount: only a tier piece goes there (MachineBlocks.cs, design page drawing 21)
 }
 
 /// <summary>
@@ -727,6 +728,7 @@ public sealed partial class ConstructPartDef
     public bool IsRequisition; // a Requisition Crate ("requisition": true): a story faction's courier collects a Supply job from its box (Game/GameStoryJobs.cs)
     public BlockRole BlockRole; // a block machine's Core, block or shared cell ("machineBlock": MachineBlocks.cs)
     public byte BlockFamily = 255; // ...its family (MachineBlocks.Families; 255: a shared cell, any family)
+    public byte BlockTier; // ...a tier piece's tier, 2 to 5 (role "tier": it raises the Core it is bolted on to this tier when every lower piece is there too)
     public float BlockCell = MachineBlocks.DefaultCell; // ...its lattice step (m)
     public bool BlockCoreSeams = true; // ...a Core: a bed cell's seam boxes on a face welded to it or to an Out Table are hidden ("coreSeams": false keeps them)
     public Vector3? BlockOrigin; // ...a Core's own cell's middle in its frame ("origin"; else its bounds' middle): the lattice the cells sit on
@@ -768,6 +770,7 @@ public sealed partial class ConstructPartDef
     public bool IsGrowFormer; // the Grow Former Core (storage.wheel.grow; also IsWheelFormer, IsFanFormer and IsAirframeFormer: ConstructGrowFormer.cs): wheels, props or wings by its Makes setting or its order, sized by its Former Blocks and Mast Blocks
     public float ExtFanMax, ExtFanStart; // ...its biggest and first prop across (m), with every block
     public Vector2 ExtWingMax, ExtWingStart; // ...its widest and first wing (chord, span; m), with every block and table
+    public int GrowBin, GrowBinBlock; // ...its bin: its own and each bed block's share, times its tier's capacity (ConstructGrowFormer.BinOf)
     public float GrowBedTop; // ...its Former Blocks' top over its foot (m): a wheel's or a prop's hub rides up its slide to clear it
     public bool IsExtrusion; // a piece an Extruder made (ConstructExtrusion.cs): not from a file
     public ExtrusionKey ExKey; // ...what it is

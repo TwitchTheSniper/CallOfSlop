@@ -17,7 +17,6 @@ What went wrong before, why, and the rule that prevents it. Since 2026-11-13 the
 | `render.md` | `Source/Render/`, `Materials/`: shared materials, the bloom's alpha, OpenGL 4.6 / 4.1, baked lighting |
 | `ui-and-input.md` | `Source/UI/`, `Program*.cs`: ImGui, frame state, tools, keys, panels that hold the mouse |
 | `saves.md` | `Source/Worlds/`, `SavePaths.cs`, `tools/package.ps1`, `tools/MIGRATING.md` |
-| `story-and-colony.md` | `Source/Story/`, `Story/`, the colony, the tutorial, stand-ins |
 | `props-and-weapon-parts.md` | `Props/`, `Parts/`, the weapon builder, the crowd, the Browser helper |
 | `tests-and-ci.md` | `Source/App/SelfTest*.cs`, the workflows (the old "When a test is asked for" and "Checks and CI") |
 

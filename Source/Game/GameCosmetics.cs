@@ -16,7 +16,7 @@ public sealed partial class Game
     private static void WriteRosterCosmetics(PacketWriter w, Player p)
     {
         (p.Bot != null ? default : p.Look).Pack(w); // protocol 45: the look (Appearance.cs; bots: Auto)
-        w.U8(p.Uniform); // protocol 257: the uniform the server dresses them in (GameUniforms.cs; bots too: the colony's staff)
+        w.U8(p.Uniform); // protocol 257: the uniform the server dresses them in (none since the story went; the space suit is Eva)
         w.U8(p.Eva); // protocol 336: their spacewalk gear (a space suit, an MMU on it: GameSandboxEva.cs)
     }
 

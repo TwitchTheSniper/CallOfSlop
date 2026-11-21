@@ -1,0 +1,512 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Docket String End",
+  "description": "The Docket's string end car: a squat frame at the string's tail with its legs, the stern's attitude jets, the tail lights and the stern beacon.",
+  "group": "Ship",
+  "section": "Docket tug",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 3500.0,
+  "health": 20000,
+  "armour": 40,
+  "material": "steel",
+  "color": "#d8d0b8",
+  "attachSeconds": 8.0,
+  "boxes": [
+    {
+      "min": [
+        -1.475,
+        -0.925,
+        22.075
+      ],
+      "max": [
+        1.225,
+        0.725,
+        24.275
+      ],
+      "color": "#3b3f44",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -1.505,
+        -0.825,
+        22.175
+      ],
+      "max": [
+        -1.479,
+        0.625,
+        24.175
+      ],
+      "color": "#d8d0b8",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -1.519,
+        -0.225,
+        22.225
+      ],
+      "max": [
+        -1.505,
+        0.025,
+        24.125
+      ],
+      "color": "#1f4e8c",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -1.175,
+        0.175,
+        24.279
+      ],
+      "max": [
+        -0.875,
+        0.475,
+        24.315
+      ],
+      "color": "#c0392b",
+      "detail": true,
+      "glow": true
+    },
+    {
+      "min": [
+        -0.485,
+        -0.825,
+        24.279
+      ],
+      "max": [
+        -0.325,
+        -0.425,
+        24.295
+      ],
+      "color": "#f2c400",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.865,
+        -0.825,
+        24.279
+      ],
+      "max": [
+        -0.705,
+        -0.425,
+        24.295
+      ],
+      "color": "#f2c400",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -1.245,
+        -0.825,
+        24.279
+      ],
+      "max": [
+        -1.085,
+        -0.425,
+        24.295
+      ],
+      "color": "#f2c400",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        1.229,
+        -0.825,
+        22.175
+      ],
+      "max": [
+        1.255,
+        0.625,
+        24.175
+      ],
+      "color": "#d8d0b8",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        1.255,
+        -0.225,
+        22.225
+      ],
+      "max": [
+        1.269,
+        0.025,
+        24.125
+      ],
+      "color": "#1f4e8c",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        0.625,
+        0.175,
+        24.279
+      ],
+      "max": [
+        0.925,
+        0.475,
+        24.315
+      ],
+      "color": "#c0392b",
+      "detail": true,
+      "glow": true
+    },
+    {
+      "min": [
+        0.075,
+        -0.825,
+        24.279
+      ],
+      "max": [
+        0.235,
+        -0.425,
+        24.295
+      ],
+      "color": "#f2c400",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        0.455,
+        -0.825,
+        24.279
+      ],
+      "max": [
+        0.615,
+        -0.425,
+        24.295
+      ],
+      "color": "#f2c400",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        0.835,
+        -0.825,
+        24.279
+      ],
+      "max": [
+        0.995,
+        -0.425,
+        24.295
+      ],
+      "color": "#f2c400",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -1.375,
+        0.729,
+        22.175
+      ],
+      "max": [
+        1.125,
+        0.755,
+        24.175
+      ],
+      "color": "#c4bca3",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -0.375,
+        0.525,
+        24.279
+      ],
+      "max": [
+        0.125,
+        0.675,
+        24.325
+      ],
+      "color": "#ffe0a0",
+      "detail": true,
+      "glow": true
+    },
+    {
+      "min": [
+        -0.175,
+        0.755,
+        23.725
+      ],
+      "max": [
+        -0.075,
+        2.325,
+        23.825
+      ],
+      "color": "#e6e2d6",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -0.215,
+        2.325,
+        23.685
+      ],
+      "max": [
+        -0.035,
+        2.475,
+        23.865
+      ],
+      "color": "#c0392b",
+      "detail": true,
+      "glow": true
+    },
+    {
+      "min": [
+        -1.225,
+        0.615,
+        22.875
+      ],
+      "max": [
+        -0.625,
+        0.785,
+        23.475
+      ],
+      "color": "#3b3f44",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.725,
+        -0.975,
+        22.375
+      ],
+      "max": [
+        -0.125,
+        -0.815,
+        22.975
+      ],
+      "color": "#3b3f44",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -1.535,
+        0.075,
+        22.875
+      ],
+      "max": [
+        -1.365,
+        0.675,
+        23.475
+      ],
+      "color": "#3b3f44",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -1.175,
+        -0.425,
+        24.165
+      ],
+      "max": [
+        -0.575,
+        0.175,
+        24.335
+      ],
+      "color": "#3b3f44",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        0.375,
+        0.615,
+        22.875
+      ],
+      "max": [
+        0.975,
+        0.785,
+        23.475
+      ],
+      "color": "#3b3f44",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.125,
+        -0.975,
+        22.375
+      ],
+      "max": [
+        0.475,
+        -0.815,
+        22.975
+      ],
+      "color": "#3b3f44",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        1.115,
+        0.075,
+        22.875
+      ],
+      "max": [
+        1.285,
+        0.675,
+        23.475
+      ],
+      "color": "#3b3f44",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        0.325,
+        -0.425,
+        24.165
+      ],
+      "max": [
+        0.925,
+        0.175,
+        24.335
+      ],
+      "color": "#3b3f44",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -1.473,
+        -1.085,
+        23.125
+      ],
+      "max": [
+        -0.775,
+        -0.815,
+        23.825
+      ],
+      "color": "#3b3f44",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        0.525,
+        -1.085,
+        23.125
+      ],
+      "max": [
+        1.223,
+        -0.815,
+        23.825
+      ],
+      "color": "#3b3f44",
+      "finish": "dirty steel"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "rcsUpL",
+      "at": [
+        -0.925,
+        0.785,
+        23.175
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "rcsDownL",
+      "at": [
+        -0.425,
+        -0.975,
+        22.675
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "rcsOutL",
+      "at": [
+        -1.535,
+        0.375,
+        23.175
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "rcsAlongL",
+      "at": [
+        -0.875,
+        -0.125,
+        24.335
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "rcsUpR",
+      "at": [
+        0.675,
+        0.785,
+        23.175
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "rcsDownR",
+      "at": [
+        0.175,
+        -0.975,
+        22.675
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "rcsOutR",
+      "at": [
+        1.285,
+        0.375,
+        23.175
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "rcsAlongR",
+      "at": [
+        0.625,
+        -0.125,
+        24.335
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "leg0",
+      "at": [
+        -1.125,
+        -1.085,
+        23.475
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "leg1",
+      "at": [
+        0.875,
+        -1.085,
+        23.475
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j0",
+      "at": [
+        -1.375,
+        -0.525,
+        22.075
+      ],
+      "dir": "-z"
+    }
+  ]
+}

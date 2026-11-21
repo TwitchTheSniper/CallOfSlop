@@ -140,8 +140,6 @@ public static unsafe partial class Program
             DrawNoclipHud();
             DrawSpectateHud();
             DrawTyping();
-            DrawTalkInMatch(now); // (the talk panel: Program.StoryTalk.cs)
-            DrawLoreInMatch(); // (a lore item's words: Program.StoryLore.cs)
             DrawSelectInMatch();
             DrawReplaceInMatch();
             DrawBuildBar();
@@ -160,13 +158,9 @@ public static unsafe partial class Program
 
     // ---- Self-test seam ("Interaction sweep") -------------------------------------------------------------
 
-    /// <summary>
-    /// The end of the sweep: the Job Board's window, which F on a board opens and only its own Close shuts, is closed, so the
-    /// sections after it don't find a menu open (2026-11-13: "Nudge tool" and "Custom bins network" lost their clicks to it).
-    /// </summary>
+    /// <summary>The end of the sweep: no click is left swallowed for the sections after it.</summary>
     internal static void SweepEnd()
     {
-        SetJobBoardOpen(false);
         _swallowClick = false;
     }
 

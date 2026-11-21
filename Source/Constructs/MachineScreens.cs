@@ -286,7 +286,7 @@ public static class MachineScreens
                     card.AddFixed(3, on.ExKey.W / 100f, 2).Add(3, " x ").AddFixed(3, on.ExKey.L / 100f, 2).Add(3, " m");
                 else
                     card.AddFixed(3, on.ExKey.W / 100f, 2).Add(3, " x ").AddFixed(3, on.ExKey.H / 100f, 2).Add(3, " m");
-                card.Bar = Math.Clamp(st.Amount / (float)Math.Max(1, d.BulkCapacity), 0, 1);
+                card.Bar = Math.Clamp(st.Amount / (float)Math.Max(1, ConstructStorage.Capacity(c, part)), 0, 1);
             }
             else
             {
@@ -296,7 +296,7 @@ public static class MachineScreens
             }
         }
         else
-            card.Bar = Math.Clamp(st.Amount / (float)Math.Max(1, d.BulkCapacity), 0, 1);
+            card.Bar = Math.Clamp(st.Amount / (float)Math.Max(1, ConstructStorage.Capacity(c, part)), 0, 1);
     }
 
     private static void Recycler(ConstructWorld world, Construct c, int part, ConstructPartDef d, CStore st, PanelCard card)

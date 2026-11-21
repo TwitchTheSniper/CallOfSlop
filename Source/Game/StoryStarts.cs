@@ -25,8 +25,6 @@ public sealed class StoryStart
     public string Map = ""; // the planetoid it begins on (a Sandbox map), or "any": the map picked on the menu
     public bool AnyMap => Map.Equals("any", StringComparison.OrdinalIgnoreCase);
     public string Opening = ""; // a file in Story/Opening ("" none: no card, no wake)
-    public string Faction = ""; // a faction (Story/Factions, by name) whose standing...
-    public int Standing; // ...each player starts with, when it isn't 0 (else as the faction rules leave it)
     public string[]? Kit; // the start kit by name, or null: the shipped one (Constructs/SurvivalStart.json)
     public string Problem = "";
 
@@ -69,9 +67,6 @@ public sealed class StoryStart
                 throw new FormatException($"\"opening\": no file Story/Opening/{t.Opening}");
             if (!Text(root, "tutorial", "none").Equals("none", StringComparison.OrdinalIgnoreCase))
                 throw new FormatException("\"tutorial\": \"none\" (the warden's induction went with the penal colony, 2026-11-17)");
-            t.Faction = Text(root, "faction", "");
-            if (root.TryGetProperty("standing", out var st))
-                t.Standing = Math.Clamp(st.GetInt32(), -100, 100);
             if (root.TryGetProperty("order", out var o))
                 t.Order = o.GetInt32();
             t.Default = root.TryGetProperty("default", out var d) && d.GetBoolean();
@@ -187,7 +182,7 @@ public static class StoryStarts
         {
             Console.WriteLine($"{s.Id}: \"{s.Name}\"{(s.Default ? " (default)" : "")}{(s.Placeholder ? " (placeholder)" : "")} on {s.Map}, {s.Character}; "
                               + $"opening {(s.Opening.Length > 0 ? s.Opening : "none")}"
-                              + (s.Faction.Length > 0 ? $", {s.Faction} {s.Standing}" : "") + (s.Kit != null ? $", kit of {s.Kit.Length}" : ""));
+                              + (s.Kit != null ? $", kit of {s.Kit.Length}" : ""));
             if (!s.AnyMap && Maps.Find(s.Map) is not { Sandbox: not null })
             {
                 Console.WriteLine($"  problem: no Sandbox map named {s.Map}");

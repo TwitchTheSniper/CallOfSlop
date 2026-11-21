@@ -580,7 +580,7 @@ public static partial class ConstructPhysics
 
     private static bool Live(Construct c, ref CThruster t, in CPart p)
     {
-        if (!p.Working)
+        if (!p.Working || ConstructShutdown.Off(p)) // (shut down from a seat or its panel)
             return false;
         if (p.D.ThrustKind == ThrustKind.Solid)
             return ConstructConfig.Get(p, p.D, CfgKey.Grain, 0) < p.D.BurnTime;

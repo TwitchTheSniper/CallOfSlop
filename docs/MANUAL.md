@@ -60,8 +60,7 @@ Main menu > **APPEARANCE** is who you are in a match: the look of your soldier. 
 - **The model:** on the left your soldier stands on a plinth holding a gun, turning slowly, wearing everything picked here (hat included). **Drag** it to turn it yourself. It's drawn with the same model code as players in a match.
 - **The look:** one picker per thing bots vary on, with only looks bots already use: **Skin Tone** (6 tones), **Hair Colour** (6), **Headwear** (Hair, Buzz Cut, Helmet, Patrol Cap, Bandana), **Beard** (Clean-Shaven or Beard), **Helmet / Cap Colour** (Olive, Tan, Black, Grey-Green) and **Outfit Colour** (the 8 free-for-all player colours). Colours are swatches, the rest named buttons; the picked one has an orange outline.
 - **Auto** on every axis is the look the game picks from your name, as it always has (and as bots get theirs), so nothing changes for you until you pick something. The heading says what Auto gives you, e.g. *Skin Tone - Auto (Medium)*. A hat replaces the headwear (hair keeps its back part under it), as before.
-- **Faction Uniform (Story):** in a story world (the archived story, `--story`; the penal colony start that issued them was removed 2026-11-17) the Ministry of Slop issues you a uniform for your standing with it: the Ministry Issue Boiler Suit and watch cap as an Inmate, an orange High-Visibility Boiler Suit as a Person of Interest, the boiler suit with a red armband and a flat cap as a Trusty, a donkey jacket and hard hat as a Contractor, and an overcoat and bowler as a Crown Servant (an Enemy of the State gets nothing). A memo in the chat says when one is issued or withdrawn. It replaces your outfit colours and your hat while worn. **Own Clothes** turns it off; **Auto** and **Issued Uniform** wear it. See docs/sandbox/UNIFORMS.md.
-- **RANDOM** picks a random option on every axis (your hat and the uniform choice stay). **RESET** puts every axis back to Auto (your hat stays).
+- **RANDOM** picks a random option on every axis (your hat stays). **RESET** puts every axis back to Auto (your hat stays).
 - **Team modes:** the team colour still goes where it always did: shirt, sleeves, shoulders, trousers, the team patch and a bandana. That keeps sides readable, so in team modes the **Outfit Colour** is ignored. Without teams (free-for-all, Gun Game, co-op and Zombies, where players already wore their slot colour) your outfit colour replaces the slot colour, on the body and wherever the slot colour showed (name tag, kill feed). Skin, hair, headwear, beard, helmet colour and hat show in every mode.
 - **Everyone sees it:** your client sends the look with every loadout (on joining and each respawn), the server checks it and puts it in the roster, which everyone (joiners too) gets. 4 bytes per player, a nibble per axis (0 = Auto). Bots always wear their name's look. Protocol 45; the uniform choice and the uniform worn (one more byte, bots too) protocol 257.
 - **Saved** in `appearance.txt` in the [save folder](#where-your-saves-live): `skin=tan`, `hair=auto`, `headwear=helmet`, `beard=beard`, `gear=olive`, `outfit=green`, `uniform=own_clothes`. **Older saves:** the first time this build runs, the hat comes from `loadout.txt`'s old `hat=` line (that line is no longer written there) and the look is all Auto. A word the game doesn't know (a removed variant, a typo) loads as Auto for that axis; the same goes for unknown values from the network.
@@ -182,7 +181,7 @@ The choice is saved in `settings.txt` (`map_pack=<pack name>`, `map=<map>`, `map
 A map is where a game takes place: its ground, buildings, props, sky and gravity. **Sandbox** uses:
 
 - **Sandbox pack** (`Maps/Sandbox`): **Construct Yard**, a test yard with buggies, gates, a lift, turrets, guns, targets, a parts rack, loose parts and room to drive; **Proving Ground**, a 384 x 384 m vehicle test field with a drag strip, a banked oval and hill-climb ramps.
-- **Planetoids pack** (`Maps/Planetoids`): the story's worlds, whole planetoids a few km across, each with its own ground, sky, gravity and faction: **Redrock**, **Caledon**, **Cinder**, **Glacier** and **Mille**. Land on them by ship, or start a Sandbox on one (docs/planets/WORLDS.md). The Dev pack's **Planetoid** is a 10 km test world.
+- **Planetoids pack** (`Maps/Planetoids`): the worlds, whole planetoids a few km across, each with its own ground, sky and gravity: **Redrock**, **Caledon**, **Cinder**, **Glacier** and **Mille**. Land on them by ship, or start a Sandbox on one (docs/planets/WORLDS.md). The Dev pack's **Planetoid** is a 10 km test world.
 
 The Zombies pack was made for the archived Zombies mode; it still loads and can be picked. The Legacy, Cluttered, World Tour and Space packs, made for the archived arena modes, were removed on 2026-11-12 (they are in git history, last in commit 7748ca82); Proto Box and Pocket Planet moved to the Dev pack. Their old map lists are in [archive/MANUAL-ARENA.md](archive/MANUAL-ARENA.md#maps).
 
@@ -233,7 +232,6 @@ These are the defaults; everything except Esc and the mouse wheel can be rebound
 | F9 | Performance window: press to cycle the full window, the corner overlay and off (see Performance window) |
 | F6 / F5 / F10 | Dev tools: look-at inspector, copy its reference line, prop editor (see Look-at inspector and prop editor) |
 | F11 | Weather map, on maps with weather (Streamed Terrain): storms, their tracks, time speed (see Weather) |
-| F4 | Sandbox host: the Story window: the story world as a graph, the stories in progress, the chronicle (see Story window) |
 | T | Zombies: drop the gun in your hands on the floor for a teammate (never your last gun) |
 | I | Zombies: the parts inventory (pick loose parts and how many to drop; I or Esc closes it) |
 | Tab | Sandbox: the inventory (parts, blueprints, tools; Tab again or Esc closes it). Sandbox has no scoreboard |
@@ -399,36 +397,6 @@ every storm with its class, wind, pressure and heading, where you are, the weath
 (paused to 6 hours a second). Right-click the map, or press **Seed a storm**, to start a tropical depression there.
 F11 or Esc closes it. Each PC runs its own copy from the map's seed (not synced between players yet). Design and
 numbers: docs/weather/WEATHER.md.
-
-### Story window
-
-Sandbox keeps a story of what happens in a world: who joined, who killed whom, whose construct was wrecked, stripped or
-towed, who launched, jumped and discovered what. Patterns over those events (in `Story/Patterns/`) spot stories as they
-happen: a score settled, vultures stripping a wreck, a good turn returned. The story is saved with the world.
-It can also hold people with a mind of their own: they have needs, choose goals, plan with the same verbs as players,
-gossip about what they see and hold grudges about what they hear (`Story/People/`, casts in `Story/Casts/`). Those in
-the host's world walk about it as bots of their own side: they arrive and leave along their roads, work, rest and go
-to whoever they talk to. They fight nobody, but anyone can kill them, and a killed person is dead for good: the
-witnesses fear the killer and keep away, and word of it gets around.
-They talk, too (`Story/Lines/`): what they say as they greet, chat, trade, pass on news or insult each other, what they
-shout when they see a killing, and a word to a player walking up to them. Players within 30 m see it in the chat and
-over the speaker's head. The landing's radio operator puts the news out on the radio, and every player hears it as a
-[RADIO] line in the chat. Now and then a short play is cast from how they stand (`Story/Plays/`): two with bad blood
-meet and it comes out, someone owed money asks for it, a friend of the dead raises a glass, someone friendly welcomes a
-stranger. Places change with what happens in them (`Story/Places/`): a killing puts a place in mourning, thefts make it
-wary, trade makes it busy, and the people and the radio talk about it.
-
-Press **F4** (rebindable as *Story window*; also the *Story* button in the F7 toolbar) as the host for the Story window:
-the story world as a graph (players, people, places and constructs, with their relationships), each pattern's matches
-in progress and the stories told, the people (their needs, goals, plans and what they know; **Add cast** puts a cast
-into this world), the drama manager's nudges (which person it is steering towards which story in progress, and why), the
-plays under way and lately with each place's state, the roster of everyone the story has known (their deeds, stories and
-how they are remembered), the chronicle of events, and the data loaded. **Data > Play** puts a scripted scenario into the live
-world to watch it work. F4 or Esc closes it. Joined players don't see the story window; they hear the people and the radio.
-`--story-sim FILE` plays a scenario headless (`--trace` prints what the people choose, `--lines` what they say,
-`--drama=compare` counts the stories with and without the drama manager, `--roster` prints the roster),
-`--check-story` checks the data. Design and
-code: docs/archive/story/STORY.md.
 
 ### Performance window
 
@@ -633,7 +601,7 @@ button), a lift, a turret on a turntable, a parts rack (the yellow shelf) and so
 - **Drones**: a Drone Receiver is the seat of a thing with no seat. Sit at a **Remote Console**, or wire a **Remote Transmitter** from any seat, set both to one channel, and you drive or fly it from up to 800 m (3 km with the Medium one), seeing through its camera. Out of range it holds where it is until the signal is back. The **Scout Drone** and **Control Post** blueprints are a ready pair.
 - **Cameras and screens**: a **Camera** on any construct, a **Camera Screen** on the same channel. A screen shows a small live picture only while someone stands near and looks at it; otherwise the camera does nothing at all.
 - **Tool screens**: each tool you hold has a small screen beside it with its name, mode and keys, following your rebinds; long lists turn a page every few seconds. What the crosshair is on still shows on screen, and Hands keep their hints on the HUD.
-- **Grow Former**: grows a wheel, a prop or a wing on its hub from rubber, metal, wood, cloth and the rest. Its **Makes** setting picks which (an order makes what it asks); a signal into **Cut** parts the piece off. Weld **Former Blocks** on the floor in front of it for a bed and stack **Mast Blocks** on it: a wheel is at most as wide as the bed is long and as big across as the bed is wide (and the masts plus 2 m), a prop up to twice the bed's width, a wing as long as the bed and any Run-out Tables past it. More blocks also grow faster. For wheels, the **Run mode** setting or a wire into **Mode** picks **Width** or **Depth** (the diameter).
+- **Grow Former**: grows a wheel, a prop or a wing on its hub from rubber, metal, wood, cloth and the rest. Its **Makes** setting picks which (an order makes what it asks); a signal into **Cut** parts the piece off. Weld **Former Blocks** on the floor in front of it for a bed and stack **Mast Blocks** on it: a wheel is at most as wide as the bed is long and as big across as the bed is wide (and the masts plus 2 m), a prop up to twice the bed's width, a wing as long as the bed and any Run-out Tables past it. More blocks also grow faster and hold more in its bin (400, and 100 a block). Bolt **tier pieces** on the four slots on its back to raise its tier: a **Power Coupling** for tier 2, then a **Coolant Loop** (3), a **Servo Rack** (4) and a **Plasma Conditioner** (5). Each tier needs every piece below it; tier 2 works twice as fast and holds twice as much, tier 5 sixteen times, and draws more power. Its look line says its tier and which piece to add next. For wheels, the **Run mode** setting or a wire into **Mode** picks **Width** or **Depth** (the diameter).
 - **Shelf Bays** snap together, up and along, in small and medium sizes (Storage and Logistics, Shelves). Click a lit slot, or drop a loose part just above a board, and it stands there in a visible stack, as many of one kind as fit, held in place even on something that moves.
 - **Smart Terminal**: link chutes from its **Network** port to your shelves, bins and Storage Volumes (the **Smart Depot** blueprint is ready to try) and give it power. Stand close and its screen lists what the stores hold, with counts and what it is pulling. Look at it: the wheel picks an item, **F** brings it to your hands and **R** sends it to the tray and down its **Chute out**, a second for each chute it travels.
 - **Inventory Beacon**: a survival build aid. Attach one to a battery and link it by chute to your stores (the **Beacon Depot** blueprint is ready to try). Within 60 m, Tab opens the inventory on everything the chute network holds, with real counts: a click takes a part by radio, placing one uses the next, the Materials tab takes loads from its bins, and parts you take off go back to the network first (your hands if it has no room). Off, out of range or unpowered, survival works as ever and the HUD says why.

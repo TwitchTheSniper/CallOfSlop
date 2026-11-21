@@ -115,6 +115,7 @@ public sealed class Settings
     public bool MaterialContrast = true; // Materials Medium and High: paint a satin 0.6 roughness, dark framing and rubber rough (Surfaces.cs)
     public VideoLevel SunShadows = VideoLevel.Medium; // ships and vehicles shade the sun: Low off, Medium a 2048 map, High 4096 (SunShadows.cs)
     public float KeyLight = 1f; // the sun's (key light's) strength, 0.7-1.6x (SunShadows.KeyLight)
+    public bool DarkInteriors = true; // rooms shut inside ships and vehicles lose the sky's light: dark but for their lamps (RoomShade.cs)
     public bool ContactShadows = true; // at any Post effects level: a soft shadow on the ground under ships and vehicles (PostFx.Contact.cs)
     public bool EdgeBevels = true; // Materials Medium and High: every box edge drawn as a thin chamfer that catches the light (Surfaces.cs)
     public bool HiddenCulling = true; // big ships: parts hidden behind hulls and walls aren't drawn (ConstructRenderOcclusion.cs)
@@ -588,6 +589,7 @@ public sealed class Settings
                     case "sun_shadows" when Enum.TryParse<VideoLevel>(v, out var shq) && Enum.IsDefined(shq): s.SunShadows = shq; break;
                     case "key_light" when float.TryParse(v, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var keyL): s.KeyLight = Math.Clamp(keyL, 0.7f, 1.6f); break;
                     case "contact_shadows" when bool.TryParse(v, out var contactOn): s.ContactShadows = contactOn; break;
+                    case "dark_interiors" when bool.TryParse(v, out var darkIn): s.DarkInteriors = darkIn; break;
                     case "edge_bevels" when bool.TryParse(v, out var bevelOn): s.EdgeBevels = bevelOn; break;
                     case "hidden_culling" when bool.TryParse(v, out var hcOn): s.HiddenCulling = hcOn; break;
                     case "far_detail" when Enum.TryParse<VideoLevel>(v, out var fd) && Enum.IsDefined(fd): s.FarDetail = fd; break;
@@ -747,6 +749,7 @@ public sealed class Settings
                     $"ao_radius={AoRadius.ToString(System.Globalization.CultureInfo.InvariantCulture)}",
                     $"edge_bevels={EdgeBevels}",
                     $"contact_shadows={ContactShadows}",
+                    $"dark_interiors={DarkInteriors}",
                     $"sun_shadows={SunShadows}",
                     $"key_light={KeyLight.ToString(System.Globalization.CultureInfo.InvariantCulture)}",
                     $"material_contrast={MaterialContrast}",

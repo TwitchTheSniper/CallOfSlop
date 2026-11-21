@@ -181,6 +181,10 @@ public static unsafe partial class Program
                 g.SandboxSend(CActKind.MouseSteer, body: h.SeatBody); // (the mouse takes the nose or lets it go: ConstructFlight.ToggleMouseSteer)
             if (Pressed(GameAction.SeatGear) && g.Constructs.Get(h.SeatBody) is { } legged && ConstructDoors.HasGear(legged))
                 g.SandboxSend(CActKind.LandingGear, body: h.SeatBody); // (the landing leg pods out or in: ConstructDoors.ToggleGear)
+            if (Pressed(GameAction.SeatReactor) && g.Constructs.Get(h.SeatBody) is { } powered && h.SeatPart == powered.DriveSeat && ConstructShutdown.HasReactor(powered))
+                g.SandboxSend(CActKind.Reactor, body: h.SeatBody); // (every power plant aboard down or up: ConstructShutdown.ToggleReactor)
+            if (Pressed(GameAction.SeatThrusters) && g.Constructs.Get(h.SeatBody) is { } thrust && h.SeatPart == thrust.DriveSeat && ConstructShutdown.HasThrusters(thrust))
+                g.SandboxSend(CActKind.Thrusters, body: h.SeatBody); // (every thruster aboard down or up: ConstructShutdown.ToggleThrusters)
             return true;
         }
         if (_sbSeatKeys > 0)
@@ -420,21 +424,15 @@ public static unsafe partial class Program
         leverTook |= ControlFrame(g, me, in h, aimed, hit, join); // (keys and signs too: Program.SandboxControls.cs)
         _scrTook = PointerFrame(g, me, in h, eye, dir, aimed, hit, now); // (Hands on a screen: a mouse on a page, a finger on a panel's buttons: Program.SandboxPointer.cs)
         ConstructRender.AimOnPage = _scrTook;
-        var talkTook = TalkFrame(g, me, eye, dir, aimed, aimed ? hit.Distance : float.MaxValue); // (one of the story's people under the crosshair: Program.StoryTalk.cs)
-        talkTook = talkTook || LoreFrame(g, aimed, hit); // (a lore item under the crosshair, when no person is in front of it: Program.StoryLore.cs)
-        var magFill = !talkTook && aimed && hit.Part >= 0 && hit.Part < hit.Body.PartCount && hit.Distance <= ConstructBuild.UseReach && ConstructParts.Get(h.Held) is { } magHeld && ConstructAmmo.IsMagazine(magHeld) && (ConstructAmmo.IsSource(hit.Body.DefOf(hit.Part)) || ConstructAmmo.IsMagazine(hit.Body.DefOf(hit.Part)));
+        var magFill = aimed && hit.Part >= 0 && hit.Part < hit.Body.PartCount && hit.Distance <= ConstructBuild.UseReach && ConstructParts.Get(h.Held) is { } magHeld && ConstructAmmo.IsMagazine(magHeld) && (ConstructAmmo.IsSource(hit.Body.DefOf(hit.Part)) || ConstructAmmo.IsMagazine(hit.Body.DefOf(hit.Part)));
         if (magFill)
         {
             g.SandboxLookText = SandboxKeys.Line(hit.Body.DefOf(hit.Part).Name, null, null, SandboxKeys.Do(SandboxKeys.Use, ConstructAmmo.IsSource(hit.Body.DefOf(hit.Part)) ? "fill the magazine" : "swap magazines"));
             if (Pressed(GameAction.Interact))
                 g.SandboxSend(CActKind.Use, body: hit.Body.Id, part: (ushort)hit.Part);
         }
-        if (podFrame.Body != null && Pressed(GameAction.Interact) && !talkTook && !magFill && !leverTook && !terminalTook && !_scrTook)
+        if (podFrame.Body != null && Pressed(GameAction.Interact) && !magFill && !leverTook && !terminalTook && !_scrTook)
             g.SandboxSend(CActKind.Use, body: podFrame.Body.Id, part: (ushort)podFrame.Part); // (the pod's button: the server folds the shell away)
-        else if (talkTook)
-        {
-            // (the use key went to a person, or would: nothing behind them takes it)
-        }
         else if (Pressed(GameAction.Interact) && !magFill && inMachine && storeNear && !(h.Tool == ConstructTool.PhysicsGun && h.GrabBody != 0))
             g.SandboxSend(CActKind.Bin, body: hit.Body.Id, part: (ushort)hit.Part); // (what a machine holds comes out: the server's UseBin)
         else if (Pressed(GameAction.Interact) && !magFill && aimed && hit.RiderPlus1 > 0 && hit.RiderPlus1 <= hit.Body.ConveyedCount && hit.Distance <= ConstructBuild.UseReach && !(h.Tool == ConstructTool.PhysicsGun && h.GrabBody != 0))
@@ -1127,7 +1125,7 @@ public static unsafe partial class Program
         if (hit.Body.DefOf(hit.Part).IsBuildStation)
             key ^= RouteRender.BayLook(hit.Body, hit.Part) * 2654435761L; // (a Building Station: its bay is outlined while it is looked at, and its line follows its job)
         if (hit.Body.DefOf(hit.Part).IsExtruder)
-            key ^= (long)(ConstructExtruder.SizeKey(hit.Body, hit.Part) + 1) * 2654435761L; // (the piece's length, which the store doesn't change with)
+            key ^= (long)(ConstructExtruder.SizeKey(hit.Body, hit.Part) + 1) * 2654435761L ^ (long)(MachineBlocks.TierOf(hit.Body, hit.Part) + 8 * ConstructStorage.Capacity(hit.Body, hit.Part)) * 0x9E3779B97F4AL; // (the piece's length, which the store doesn't change with; its tier and bin, which go with its tier pieces and bed)
         if (hit.Body.DefOf(hit.Part) is { IsRecycler: true } or { IsGatherer: true })
             key ^= (long)(ProductionLines.Raw(g.Constructs, hit.Body, hit.Part, st) ?? 0) * 0x9E3779B97F4AL; // (its line state: the mains or a shaft change it, not the store)
         if (key == _sbStoreKey)
@@ -1334,7 +1332,6 @@ public static unsafe partial class Program
         AllocProfile.Mark("sb: beams, sounds, ambience");
         DrawPhysGunBeams(g, now); // the physics guns' beams (Program.PhysicsGun.cs)
         g.SandboxSounds(now); // horns (GameSandbox.cs)
-        g.StoryBabbleSounds(now); // the story people murmur their lines (GameStoryBabble.cs)
         PartAmbience.Frame(g.Constructs, Gfx.CameraPosition, now, g.TickAlpha, g.IsServer, g.Audio); // smoke, steam, a tannoy, snow along the ground (PartAmbience.cs)
         g.EngineAudio.Pick(g.Constructs, Gfx.CameraPosition);
         g.EngineAudio.Play(g.Audio); // (modular engines: EngineSounds.cs)

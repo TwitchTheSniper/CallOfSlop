@@ -311,8 +311,8 @@ public sealed class Assembling : IPartGenerator
     };
 
     private static readonly string[] SkipFolders = ["Spawn", "Components", "Press/Dies", "Wings", "Lore", "ShipWorks", "Shells/Spares", "SpaceStations"]; // (dies come from a Die Lathe, or the start kit; the colony's lore items are its own)
-    // (the old ammo modules: a box's setting does it now) (a data centre's terminal is found, never made: docs/archive/story/FRAGMENTS.md)
-    private static readonly string[] SkipNames = ["Material Bundle", "Construct Core", "Data Centre Terminal", "Chest Lid", "Lid Hinge", "FMJ Rounds", "AP Rounds", "HE Rounds", "Incendiary Rounds"];
+    // (the old ammo modules: a box's setting does it now) (a data centre's terminal is found, never made: the removed story (docs/removals-notes.md))
+    private static readonly string[] SkipNames = ["Material Bundle", "Construct Core", "Chest Lid", "Lid Hinge", "FMJ Rounds", "AP Rounds", "HE Rounds", "Incendiary Rounds"];
     private const int MaxUnits = 2000;
     // The lowest Assembler for a size class; a part's cost tops out at MaxUnits, its time at 600 s.
     private static readonly Dictionary<string, int> ClassTier = new() { ["small"] = 1, ["medium"] = 2, ["large"] = 3, ["capital"] = 4 };
@@ -916,6 +916,68 @@ public sealed class Assembling : IPartGenerator
         (null, null, Rec("Hexkey Gondola Bay", 5, 1, m: [("planks", 4), ("steel", 2)])),
         (null, null, Rec("Hexkey Rack Bay", 12, 1, m: [("planks", 30), ("steel", 12)])),
         (null, null, Rec("Hexkey Trolley", 6, 1, m: [("planks", 3), ("steel", 8), ("rubber", 2)])),
+        // (the Docket, the Traders' tug, Karl 2026-11-21: TugParts; in the folder's file order of 2026-11-21)
+        ("Docket", "Docket Belly Hatch", null),
+        ("Docket", "Docket Boarding Ladder", null),
+        ("Docket", "Docket Cab", null),
+        ("Docket", "Docket Cab Ceiling", null),
+        ("Docket", "Docket Cab Hull Port 3", null),
+        ("Docket", "Docket Cab Hull Port 4", null),
+        ("Docket", "Docket Cab Hull Stbd 3", null),
+        ("Docket", "Docket Cab Hull Stbd 4", null),
+        ("Docket", "Docket Cab Wall 1", null),
+        ("Docket", "Docket Cab Wall 2", null),
+        ("Docket", "Docket Cab Wall 3", null),
+        ("Docket", "Docket Cab Wall 4", null),
+        ("Docket", "Docket Cab Wall 5", null),
+        ("Docket", "Docket Cab Wall 6", null),
+        ("Docket", "Docket Cab Wall 7", null),
+        ("Docket", "Docket Cab Wall 8", null),
+        ("Docket", "Docket Eng Ceiling", null),
+        ("Docket", "Docket Eng Hull Port 5", null),
+        ("Docket", "Docket Eng Hull Port 6", null),
+        ("Docket", "Docket Eng Hull Port 7", null),
+        ("Docket", "Docket Eng Hull Stbd 5", null),
+        ("Docket", "Docket Eng Hull Stbd 6", null),
+        ("Docket", "Docket Eng Hull Stbd 7", null),
+        ("Docket", "Docket Eng Wall 1", null),
+        ("Docket", "Docket Engineering", null),
+        ("Docket", "Docket Flight Computer", null),
+        ("Docket", "Docket Keel", null),
+        ("Docket", "Docket Keel 1", null),
+        ("Docket", "Docket Keel 2", null),
+        ("Docket", "Docket Keel 3", null),
+        ("Docket", "Docket Keel 5", null),
+        ("Docket", "Docket Keel 6", null),
+        ("Docket", "Docket Keel 7", null),
+        ("Docket", "Docket Keel 8", null),
+        ("Docket", "Docket Lift Jet", null),
+        ("Docket", "Docket Nacelle Lower L", null),
+        ("Docket", "Docket Nacelle Lower R", null),
+        ("Docket", "Docket Nacelle Upper L", null),
+        ("Docket", "Docket Nacelle Upper R", null),
+        ("Docket", "Docket Power Plant", null),
+        ("Docket", "Docket Push Bow", null),
+        ("Docket", "Docket Retro Jet", null),
+        ("Docket", "Docket Roof", null),
+        ("Docket", "Docket Roof 3", null),
+        ("Docket", "Docket Roof 5", null),
+        ("Docket", "Docket Roof 6", null),
+        ("Docket", "Docket Roof 7", null),
+        ("Docket", "Docket Roof 8", null),
+        ("Docket", "Docket Stern", null),
+        ("Docket", "Docket String Cell 1", null),
+        ("Docket", "Docket String Cell 2", null),
+        ("Docket", "Docket String Cell 3", null),
+        ("Docket", "Docket String End", null),
+        ("Docket", "Docket Tow Yoke", null),
+        ("Docket", "Docket Wheelhouse", null),
+        ("Docket", "Docket Wheelhouse Ladder", null),
+        // (the block machines' tier pieces, design page drawing 21: MachineTierParts; Sean 2026-11-21)
+        (null, null, Rec("Power Coupling", 40, 1, m: [("steel", 30), ("copper", 40), ("rubber", 6)], p: [("Wiring Loom", 2)])),
+        (null, null, Rec("Coolant Loop", 60, 1, m: [("steel", 50), ("copper", 20), ("rubber", 10)], p: [("Gear Set", 1), ("Wiring Loom", 1)])),
+        (null, null, Rec("Servo Rack", 90, 1, m: [("steel", 70), ("copper", 20)], p: [("Servo Motor", 3), ("Control Unit", 1)])),
+        (null, null, Rec("Plasma Conditioner", 140, 1, m: [("steel", 50), ("copper", 60), ("gold", 6)], p: [("Control Unit", 2), ("Wiring Loom", 2)])),
     ];
 
     /// <summary>

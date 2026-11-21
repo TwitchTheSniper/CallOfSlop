@@ -123,7 +123,7 @@ public static class WorldSaveWriter
                 // after this; the colony is gone, so nothing more is written and a reader stops here)
             });
         if (s.Start.Length > 0)
-            w.Section(StartTag, () => w.Str(s.Start)); // (the story start, GameStoryStart.cs: a section of its own, so an older reader skips it; none for a world from before starts)
+            w.Section(StartTag, () => w.Str(s.Start)); // (the start, GameStart.cs: a section of its own, so an older reader skips it; none for a world from before starts)
         // (TutorialTag, DepotTag and QuarryTag were the penal colony's induction, Orbital Depot and first duty: no longer
         // written since 2026-11-17, and skipped like any unknown section in an older world)
         if (Array.Exists(s.Players, p => p.Fallen || p.Died || p.BunkBody != 0))
@@ -246,10 +246,6 @@ public static class WorldSaveWriter
                 foreach (ref var ship in s.AwayShips.AsSpan(0, s.AwayCount))
                     w.Str(ship.System).U16(ship.Id).I32(ship.Primary).F64(ship.R.X).F64(ship.R.Y).F64(ship.R.Z).F64(ship.V.X).F64(ship.V.Y).F64(ship.V.Z);
             });
-        if (s.Story is { } story)
-            w.Section(Story, () => story.Write(w));
-        else if (s.StoryKept is { } kept)
-            w.Section(Story, () => w.Bytes(kept)); // (the story archived: the world's own story kept as it was, Game.StoryOn) // (the story layer, docs/archive/story/STORY.md: its own format inside)
         head.Section(Names, () => names.Write(head));
         head.Bytes(w.Span);
         return head.Span;

@@ -77,14 +77,14 @@ public enum GameAction
     SelectWeld,
     SelectSave, // ...save it as a blueprint (a Blueprint Desk's aid)
     SelectTool, // the selector itself, out or away (it has no slot on the tool wheel; the Tab inventory's Tools tab lists it too)
-    StoryWindow, // binds version 20: Sandbox, the story window (the story world, its chronicle, the stories in progress; Source/UI/UiStory.cs) on F4
+    StoryWindow, // binds version 20: the story window on F4; removed with the story (2026-11-21), its slot kept (binds are saved by index): Removed
     FactionWindow, // binds version 21: Sandbox, the faction window (found, invite, join, give; Source/UI/UiFactions.cs) on F2
     SeatRollLeft, // binds version 22: in a seat, roll left and right (the seat's Roll axis: ConstructParts.KeyRollLeft); on Q and E, which do this only in a seat (see Resolve)
     SeatRollRight,
     SeatHook, // binds version 23: in a seat, hook to a launch rail, launch, undock (ConstructCarrier.cs)
     SeatEject, // ...and an ejection seat's handle (PilotGear.cs)
-    Logbook, // binds version 25: Sandbox, the Logbook (the old records' fragments you hold, and your open leads; Source/UI/UiLogbook.cs) on F1
-    JoinTalk, // binds version 26: Sandbox, join the talk another player is having with one of the story's people, while its notice shows (Program.StoryTalk.cs) on Backspace
+    Logbook, // binds version 25: the Logbook on F1; removed with the story, its slot kept: Removed
+    JoinTalk, // binds version 26: joining a talk on Backspace; removed with the story, its slot kept: Removed
     SeatRadar, // binds version 27: in a seat, lock the radar contact nearest the look, the next one, or none (ConstructRadar.cs, Program.SandboxRadar.cs) on the middle mouse button
     CommandView, // binds version 28: Sandbox, the command view (the star system as a hologram, ships and their orders; Source/UI/UiCommand.cs) on Home
     SeatDampeners, // binds version 29: in a seat, a ship's inertia dampeners off or on (ConstructFlight.ToggleDampeners) on Z, which is Prone outside a seat
@@ -92,6 +92,8 @@ public enum GameAction
     SeatGear, // binds version 31: in a seat, a craft's landing leg pods out or in (ConstructDoors.ToggleGear) on B
     NoclipBoard, // binds version 32: creative Sandbox, set down inside the construct aimed at (Source/Constructs/ConstructRideInterior.cs) on End
     SpectateCam, // binds version 33: creative Sandbox, a free camera that leaves the body where it stands, within a radius of it (Source/App/Program.Spectate.cs) on Insert
+    SeatReactor, // binds version 34: in the pilot's seat, shut the craft's reactor (its power plants) down or start it (ConstructShutdown.ToggleReactor) on P, which is Replace outside a seat
+    SeatThrusters, // ...and its thrusters (ConstructShutdown.ToggleThrusters) on I
     COUNT,
 }
 
@@ -214,7 +216,7 @@ public static class Keybinds
                 or GameAction.ThirdPerson or GameAction.ThirdPersonSide or GameAction.SandboxDrop or GameAction.Noclip or GameAction.BuildMirror or GameAction.BuildLine or GameAction.BuildReplace
                 or GameAction.BuildGantry or GameAction.BuildPlaneUp or GameAction.BuildPlaneDown or GameAction.GantryOrbit or GameAction.SelectMove or GameAction.SelectCopy or GameAction.SelectPaint or GameAction.SelectWeld or GameAction.SelectSave or GameAction.SelectTool or GameAction.StoryWindow or GameAction.FactionWindow or GameAction.Logbook or GameAction.NoclipBoard or GameAction.SpectateCam => BindContext.Sandbox,
             // (Sandbox has no scoreboard at all; its inventory is GameAction.SandboxInventory, the Zombies parts inventory stays on its own key)
-            GameAction.SeatRollLeft or GameAction.SeatRollRight or GameAction.SeatHook or GameAction.SeatEject or GameAction.SeatRadar or GameAction.SeatDampeners or GameAction.SeatMouseSteer or GameAction.SeatGear => BindContext.Seat,
+            GameAction.SeatRollLeft or GameAction.SeatRollRight or GameAction.SeatHook or GameAction.SeatEject or GameAction.SeatRadar or GameAction.SeatDampeners or GameAction.SeatMouseSteer or GameAction.SeatGear or GameAction.SeatReactor or GameAction.SeatThrusters => BindContext.Seat,
             GameAction.SpectateNext or GameAction.SpectatePrev or GameAction.Scoreboard or GameAction.Inventory or GameAction.DropItem => BindContext.NotSandbox,
             _ => BindContext.Any,
         };
@@ -411,14 +413,14 @@ public static class Keybinds
         Key(GlfwKey.U), // Selector: weld it (shares Gantry's U)
         Key(GlfwKey.Comma), // Selector: save it as a blueprint
         Key(GlfwKey.Period), // The selector, out or away
-        Key(GlfwKey.F4), // Story window (Sandbox): binds version 20
+        Unbound, // (was the Story window on F4, binds version 20: removed with the story, 2026-11-21)
         Key(GlfwKey.F2), // Faction window (Sandbox): binds version 21
         Key(GlfwKey.Q), // Roll left, in a seat: binds version 22 (shares Swap weapon's Q: Overlap)
         Key(GlfwKey.E), // Roll right, in a seat (shares Equipment's E)
         Key(GlfwKey.G), // Hook, launch, undock, in a seat: binds version 23
         Key(GlfwKey.L), // Eject, in an ejection seat
-        Key(GlfwKey.F1), // Logbook (Sandbox): binds version 25
-        Key(GlfwKey.Backspace), // Join another player's talk (Sandbox): binds version 26
+        Unbound, // (was the Logbook on F1, binds version 25: removed with the story)
+        Unbound, // (was joining another player's talk on Backspace, binds version 26: removed with the story)
         Mouse(GlfwMouseButton.Middle), // Radar lock, in a seat: binds version 27 (shares the tool wheel's button, which a seat doesn't read)
         Key(GlfwKey.Home), // Command view (Sandbox): binds version 28
         Key(GlfwKey.Z), // Inertia dampeners, in a seat: binds version 29 (shares Prone's Z, which a seat doesn't read)
@@ -426,6 +428,8 @@ public static class Keybinds
         Key(GlfwKey.B), // Landing gear out or in, in a seat: binds version 31
         Key(GlfwKey.End), // Board inside (creative Sandbox): binds version 32
         Key(GlfwKey.Insert), // Spectate camera (creative Sandbox): binds version 33
+        Key(GlfwKey.P), // Reactor shut down or start, in the pilot's seat: binds version 34 (shares Replace's and the selector's P, which a seat doesn't read)
+        Key(GlfwKey.I), // Thrusters shut down or start, in the pilot's seat (I is the Zombies inventory, outside Sandbox)
     ];
 
     /// <summary>
@@ -466,8 +470,9 @@ public static class Keybinds
     /// 30: Mouse steering in a seat on M added (same rule; it shares Mirror's and the selector's M, which a seat doesn't read).
     /// 31: Landing gear in a seat on B added (same rule). 32: Board inside (creative Sandbox) on End added (same rule).
     /// 33: Spectate camera (creative Sandbox) on Insert added (same rule).
+    /// 34: Reactor P and Thrusters I in the pilot's seat added (same rule; P shares Replace's and the selector's key, which a seat doesn't read).
     /// </summary>
-    public const int DefaultsVersion = 33;
+    public const int DefaultsVersion = 34;
 
     /// <summary>Default keys that changed, per binds version: (version that changed it, action, old default, new default).</summary>
     private static readonly (int Version, int Index, int Old, int New)[] Changes =
@@ -520,15 +525,15 @@ public static class Keybinds
         (19, (int)GameAction.SelectWeld, Unbound, Key(GlfwKey.U)),
         (19, (int)GameAction.SelectSave, Unbound, Key(GlfwKey.Comma)),
         (19, (int)GameAction.SelectTool, Unbound, Key(GlfwKey.Period)),
-        (20, (int)GameAction.StoryWindow, Unbound, Key(GlfwKey.F4)),
+        (20, (int)GameAction.StoryWindow, Unbound, Unbound), // (removed with the story, 2026-11-21)
         (21, (int)GameAction.FactionWindow, Unbound, Key(GlfwKey.F2)),
         (22, (int)GameAction.SeatRollLeft, Unbound, Key(GlfwKey.Q)),
         (22, (int)GameAction.SeatRollRight, Unbound, Key(GlfwKey.E)),
         (23, (int)GameAction.SeatHook, Unbound, Key(GlfwKey.G)),
         (23, (int)GameAction.SeatEject, Unbound, Key(GlfwKey.L)),
         (24, At(GameAction.ToolWheel, 1), Unbound, Key(GlfwKey.GraveAccent)), // (a second binding: the laptop's way to the wheel)
-        (25, (int)GameAction.Logbook, Unbound, Key(GlfwKey.F1)),
-        (26, (int)GameAction.JoinTalk, Unbound, Key(GlfwKey.Backspace)),
+        (25, (int)GameAction.Logbook, Unbound, Unbound), // (removed with the story)
+        (26, (int)GameAction.JoinTalk, Unbound, Unbound), // (removed with the story)
         (27, (int)GameAction.SeatRadar, Unbound, Mouse(GlfwMouseButton.Middle)),
         (28, (int)GameAction.CommandView, Unbound, Key(GlfwKey.Home)),
         (29, (int)GameAction.SeatDampeners, Unbound, Key(GlfwKey.Z)),
@@ -536,6 +541,8 @@ public static class Keybinds
         (31, (int)GameAction.SeatGear, Unbound, Key(GlfwKey.B)),
         (32, (int)GameAction.NoclipBoard, Unbound, Key(GlfwKey.End)),
         (33, (int)GameAction.SpectateCam, Unbound, Key(GlfwKey.Insert)),
+        (34, (int)GameAction.SeatReactor, Unbound, Key(GlfwKey.P)),
+        (34, (int)GameAction.SeatThrusters, Unbound, Key(GlfwKey.I)),
     ];
 
     /// <summary>
@@ -559,6 +566,11 @@ public static class Keybinds
     public static List<GameAction> Migrate(int[] binds, int fromVersion)
     {
         var moved = new List<GameAction>();
+        // A removed action's keys go free in every file, whatever its version: hidden from the controls menu, it would
+        // still clash with a key a player binds (ClashAt) and block a later default (FreeFor).
+        for (var i = 0; i < binds.Length; i++)
+            if (Removed(ActionAt(i)))
+                binds[i] = Unbound;
         // Every binding added after the file's version that sits on its new default is unbound first (and checked like a
         // move at its own version), so an action added later can't hold a key while an earlier version's carry asks
         // whether that key is free (a v12 file's rebound inventory key K and v15's SnapSwitch on K).
@@ -622,6 +634,9 @@ public static class Keybinds
                 return false;
         return true;
     }
+
+    /// <summary>An action whose feature was removed: its slot stays (binds are saved by index), nothing reads it and the controls menu leaves it out.</summary>
+    public static bool Removed(GameAction a) => a is GameAction.StoryWindow or GameAction.Logbook or GameAction.JoinTalk;
 
     public static string Label(GameAction a) =>
         a switch
@@ -697,14 +712,14 @@ public static class Keybinds
             GameAction.SelectWeld => "Selector: attach the group",
             GameAction.SelectSave => "Selector: save the group as a blueprint",
             GameAction.SelectTool => "Selector: take it out or put it away (build stations)",
-            GameAction.StoryWindow => "Story window (Sandbox host: the story world, its chronicle, the stories in progress)",
+            GameAction.StoryWindow => "(removed: the story window)",
             GameAction.FactionWindow => "Faction window (Sandbox: found or join a faction, share and give what you own)",
             GameAction.SeatRollLeft => "Roll left (in a seat)",
             GameAction.SeatRollRight => "Roll right (in a seat)",
             GameAction.SeatHook => "Hook, launch or undock (in a seat)",
             GameAction.SeatEject => "Eject (in an ejection seat)",
-            GameAction.Logbook => "Logbook (Sandbox: the old records you have found, and your leads)",
-            GameAction.JoinTalk => "Join a chat (Sandbox: when another player talks to someone, while the notice shows)",
+            GameAction.Logbook => "(removed: the Logbook)",
+            GameAction.JoinTalk => "(removed: joining a talk)",
             GameAction.SeatRadar => "Radar lock (in a seat with a radar: the contact nearest your look, again for the next)",
             GameAction.CommandView => "Command view (Sandbox: the star system, your ships and their orders)",
             GameAction.SeatDampeners => "Inertia dampeners on or off (in a ship's seat: off, it coasts and the keys only burn)",
@@ -712,6 +727,8 @@ public static class Keybinds
             GameAction.SeatGear => "Landing gear out or in (in a seat of a craft with landing leg pods: the canopy opens, then the legs come down)",
             GameAction.NoclipBoard => "Board inside (creative Sandbox: set down on a floor inside the ship or vehicle you aim at, riding with it)",
             GameAction.SpectateCam => "Spectate camera (creative Sandbox: fly the view round your body to look at things; Sprint for faster)",
+            GameAction.SeatReactor => "Reactor shut down or start (in the pilot's seat: every power plant aboard; the batteries carry the circuit while it is down)",
+            GameAction.SeatThrusters => "Thrusters shut down or start (in the pilot's seat: every thruster aboard; shut down, it falls or coasts)",
             _ => a.ToString(),
         };
 

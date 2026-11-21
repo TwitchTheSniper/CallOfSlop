@@ -324,7 +324,7 @@ TwitchTheSniper first.
    and stamps a ghost. Or: never, factories stay hand-built by players and generated only for factions and creative.
 5. **Which styles first.** Recommend Militia for phase 1 (the vehicle kit's test style, so its trucks match), then the
    first power kinds from faction-controllers (Traders, Raiders) in phase 2. Or: start from the archived factions'
-   building styles (Ministry Brutalism, MacSlop stone and tin), which buildings.md already describes.
+   building styles (Brutalism), which buildings.md already describes.
 6. **The hauler in the ore loop.** Recommend a road and tipping bay for a player-driven ground hauler in phase 1 (works
    now), with a Cargo Dock variant once linked logistics ships are flying on main. Or: a Cargo Dock and route ship from
    the start.
