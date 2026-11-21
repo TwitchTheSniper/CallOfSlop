@@ -103,8 +103,8 @@ public static partial class HullLoft
 
     public static bool IsPanelName(string name) => name.StartsWith(PanelPrefix, StringComparison.Ordinal);
 
-    /// <summary>A named part a Panel Former makes: a formed panel or one of the vehicle kit's lofted parts.</summary>
-    public static bool IsFormedName(string name) => IsPanelName(name) || name.StartsWith(Prefix, StringComparison.Ordinal);
+    /// <summary>A named part a Panel Former makes: a formed panel, one of the vehicle kit's lofted parts, or a plain hull skin (HullLoft.Section.cs).</summary>
+    public static bool IsFormedName(string name) => IsPanelName(name) || name.StartsWith(Prefix, StringComparison.Ordinal) || IsPlainSectionName(name);
 
     public static string PanelKey(in PanelShape s) => s.Kind == PanelLoft
         ? string.Create(CultureInfo.InvariantCulture, $"{PanelPrefix}loft {s.L}x{s.W}x{s.NoseW} t{s.Mm} b{ProfileText(s.Back)} f{ProfileText(s.Nose)} {s.Material})")
@@ -832,7 +832,11 @@ public static partial class HullLoft
             Console.WriteLine($"  pane: edge {paneEdge:0.00} m; glass {d.HasGlass}; blank {paneBlank}: {blank?.Mass ?? 0:0.#} kg; offcut {off:0.0} {RecyclingTable.Current.NameOf(mat)}");
         }
         else
+        {
             Console.WriteLine($"  cost {FormedUnits(d, mat)} {RecyclingTable.Current.NameOf(mat)}; made by: {ConstructPanelFormer.TierFor(d) ?? "no Panel Former is big enough"}");
+            if (ConstructPanelFormer.FlatOf(d, out var flat))
+                Console.WriteLine($"  flat {flat.Length:0.##} x {flat.Width:0.##} m, {flat.ThickCm} cm; blank {(ConstructPanelFormer.BlankFor(d) is { W: > 0 } bk ? Extrusion.Name(bk) : "none")}; depth {ConstructPanelFormer.Depth(d):0.##} m (pins {ConstructPanelFormer.PinTravel:0} m, {ConstructPanelFormer.PinTravel * (1 + ConstructPanelFormer.MastLevelsMost):0} m with corner masts); laid turn {ConstructPanelFormer.LayOf(d)}");
+        }
         Console.WriteLine($"  hash {PanelHash(d):x8} (boxes, sockets, mass and health: the same on every peer); first make {madeMs:0.0} ms (the first part a process makes also pays the JIT)");
         // A second make from the name alone (the table forgotten) gives the same part.
         var first = PanelHash(d);
