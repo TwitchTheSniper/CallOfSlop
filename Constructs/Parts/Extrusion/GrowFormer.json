@@ -160,7 +160,7 @@
       "min": 0.5,
       "max": 64,
       "step": 0.05,
-      "default": 0.5,
+      "default": 2,
       "tooltip": "How far across. It parts off by itself at this size. Power and speed follow from the size."
     },
     {

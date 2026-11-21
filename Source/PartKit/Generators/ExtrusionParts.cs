@@ -389,7 +389,7 @@ public sealed class ExtrusionParts : IPartGenerator
             ("tooltip", "How many blades, 2 to 16. Each has its own health: more take a little more power, push a little harder, and are steadier when one goes.")),
         Kw(("key", "bladeStyle"), ("type", "choice"), ("label", "Blade style"), ("group", "Prop"), ("options", BladeStyles()), ("default", 0),
             ("tooltip", "The blade's shape: a small trade of push, power and top speed. The prop keeps it.")),
-        Kw(("key", "fanDiameter"), ("label", "Across"), ("group", "Prop"), ("unit", "m"), ("min", start), ("max", across), ("step", 0.05), ("default", start),
+        Kw(("key", "fanDiameter"), ("label", "Across"), ("group", "Prop"), ("unit", "m"), ("min", start), ("max", across), ("step", 0.05), ("default", OMin(across, OMax(start, 2))),
             ("tooltip", "How far across. It parts off by itself at this size. Power and speed follow from the size.")));
 
     private static List<object?> AirframeConfig(object span, object chord, object s0, object c0) => Py.L(
