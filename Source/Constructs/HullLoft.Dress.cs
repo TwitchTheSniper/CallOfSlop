@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Globalization;
 using System.Numerics;
 using System.Text;
@@ -152,6 +153,28 @@ public static partial class HullLoft
             r[a] = (new Vector3(Cm(q[0] + n[0] * d), Cm(q[1] + n[1] * d), Cm(q[2] + n[2] * d)), dir, u, v);
         }
         return r;
+    }
+
+    /// <summary>
+    /// Would a subpart's pad on this anchor (3 cm out from it) overlap one of the skin's own solid boxes, with the centimetre of slack the
+    /// station's placing check gives? On a sloped or twisted skin a neighbouring facet's anchor or void can lie there; such an anchor takes no subpart.
+    /// </summary>
+    private static bool PadBlocked(ConstructPartDef? skin, Vector3 at, string dir)
+    {
+        if (skin == null)
+            return false;
+        var v = dir switch { "+x" => Vector3.UnitX, "-x" => -Vector3.UnitX, "+y" => Vector3.UnitY, "-y" => -Vector3.UnitY, "+z" => Vector3.UnitZ, _ => -Vector3.UnitZ };
+        var half = new Vector3(AnchorPad);
+        var centre = at + v * AnchorPad;
+        var bh = half - new Vector3(0.01f);
+        for (var b = 0; b < skin.SolidBoxes; b++)
+        {
+            var oc = skin.Boxes[b].Center;
+            var oh = skin.Boxes[b].Half;
+            if (MathF.Abs(centre.X - oc.X) < bh.X + oh.X && MathF.Abs(centre.Y - oc.Y) < bh.Y + oh.Y && MathF.Abs(centre.Z - oc.Z) < bh.Z + oh.Z)
+                return true;
+        }
+        return false;
     }
 
     private static string Opposite(string dir) => (dir[0] == '+' ? "-" : "+") + dir[1];
@@ -443,7 +466,7 @@ public static partial class HullLoft
     /// free anchor of its facet nearest its own middle. A piece that draws nothing on this section is left out; one with no anchor left is left out
     /// with a log line.
     /// </summary>
-    public static List<DressKey> DressPlan(SectionShape dressed)
+    public static List<DressKey> DressPlan(SectionShape dressed, ConstructPartDef? skinDef)
     {
         var sh = dressed;
         var style = DressStyles.Find(sh.Style)!;
@@ -487,7 +510,7 @@ public static partial class HullLoft
             want.Add(("pipe", 0, 0, sh.K1, 0.5, 0.2));
         var free = new Dictionary<int, List<(int Index, double U, double V)>>();
         for (var k = sh.K0; k <= sh.K1; k++)
-            free[k] = [.. Anchors(sh, k).Select((x, a) => (a, x.U, x.V))];
+            free[k] = [.. Anchors(sh, k).Select((x, a) => (a, x.U, x.V, x.At, x.Out)).Where(x => !PadBlocked(skinDef, x.At, x.Out)).Select(x => (x.a, x.U, x.V))];
         var plan = new List<DressKey>();
         foreach (var w in want)
         {
@@ -513,10 +536,23 @@ public static partial class HullLoft
     }
 
     /// <summary>
-    /// The dress blueprint for a plain skin: the skin (painted the style's skin colour) and each subpart on its anchor. Null with the reason when
-    /// it can't be made (not a plain skin, no such style, a key too long for a part's name or the station's).
+    /// A dress blueprint being made (<see cref="DressBegin"/>, then <see cref="DressPlanOf"/> on any thread, <see cref="DressMakeSome"/> on the
+    /// game thread until it says done, then <see cref="DressFinish"/>): the plan's 20 ms and each subpart's 2 ms of making stay off a server tick.
     /// </summary>
-    public static ConstructBuild.Blueprint? DressBlueprint(string skin, string style, int salt, string extras, out string why)
+    public sealed class DressWork
+    {
+        public required string Skin, Name;
+        public required SectionShape Dressed;
+        public required DressStyle Style;
+        public required ConstructPartDef SkinDef;
+        public List<DressKey>? Plan;
+        public List<string>? Keys;
+        public int Made;
+        public int Count => Plan?.Count ?? 0;
+    }
+
+    /// <summary>Game thread: the checks a dress blueprint needs before its plan. Null with the reason when it can't be made.</summary>
+    public static DressWork? DressBegin(string skin, string style, int salt, string extras, out string why)
     {
         why = "";
         var plain = SectionOf(skin, out var swhy);
@@ -537,22 +573,52 @@ public static partial class HullLoft
             why = "that skin's key is too long to name its dress job";
             return null;
         }
-        var plan = DressPlan(dressed);
-        var skinDef = ConstructParts.Find(skin);
-        if (skinDef == null)
+        if (ConstructParts.Find(skin) is not { } skinDef)
         {
             why = "the skin's part couldn't be made (callofslop.log has the REFUSED line)";
             return null;
         }
+        return new DressWork { Skin = skin, Name = name, Dressed = dressed, Style = st, SkinDef = skinDef };
+    }
+
+    /// <summary>Any thread: the plan and its subparts' keys (it reads only the shape, the style and the skin's def, which nothing changes).</summary>
+    public static void DressPlanOf(DressWork w)
+    {
+        var plan = DressPlan(w.Dressed, w.SkinDef);
+        w.Keys = [.. plan.Select(dk => dk.Key())];
+        w.Plan = plan;
+    }
+
+    /// <summary>Game thread: makes the subparts' run-time parts, as many as fit in <paramref name="ms"/> milliseconds. True when all are made.</summary>
+    public static bool DressMakeSome(DressWork w, double ms)
+    {
+        var t0 = Stopwatch.GetTimestamp();
+        while (w.Made < w.Count)
+        {
+            var key = w.Keys![w.Made++];
+            if (key.Length <= ConstructParts.MaxRuntimeName)
+                ConstructParts.Find(key);
+            if (Stopwatch.GetElapsedTime(t0).TotalMilliseconds >= ms)
+                break;
+        }
+        return w.Made >= w.Count;
+    }
+
+    /// <summary>Game thread, once every subpart is made: the blueprint (the skin, painted the style's skin colour, then each subpart on its anchor).</summary>
+    public static ConstructBuild.Blueprint? DressFinish(DressWork w, out string why)
+    {
+        why = "";
+        var (skin, st, skinDef) = (w.Skin, w.Style, w.SkinDef);
         var steps = new JsonArray { new JsonObject { ["part"] = skin, ["paint"] = st.Color("skin") } };
         Span<byte> turns = stackalloc byte[4];
-        foreach (var dk in plan)
+        for (var i = 0; i < w.Count; i++)
         {
-            var key = dk.Key();
+            var dk = w.Plan![i];
+            var key = w.Keys![i];
             if (key.Length > ConstructParts.MaxRuntimeName)
             {
-                Console.WriteLine($"[dress] {key[..60]}...: left out, its key is {key.Length} characters (the most {ConstructParts.MaxRuntimeName})");
-                continue;
+                why = $"that skin's key is too long for its dress subparts' names ({key.Length} characters, the most {ConstructParts.MaxRuntimeName})";
+                return null;
             }
             if (ConstructParts.Find(key) is not { } d)
                 continue; // (refused: its REFUSED line is in the log)
@@ -566,11 +632,16 @@ public static partial class HullLoft
                 continue;
             steps.Add(new JsonObject { ["part"] = key, ["on"] = 0, ["socket"] = sock, ["by"] = "skin", ["spin"] = spin });
         }
+        if (steps.Count == 1)
+        {
+            why = "no dress subpart fits that skin (callofslop.log says why)";
+            return null;
+        }
         var json = new JsonObject
         {
             ["format"] = ConstructBuild.BlueprintFormat,
-            ["name"] = name,
-            ["description"] = $"A plain hull skin dressed in {st.Label} (salt {dressed.Salt}), {steps.Count - 1} subparts.",
+            ["name"] = w.Name,
+            ["description"] = $"A plain hull skin dressed in {st.Label} (salt {w.Dressed.Salt}), {steps.Count - 1} subparts.",
             ["steps"] = steps,
         }.ToJsonString();
         try
@@ -582,6 +653,19 @@ public static partial class HullLoft
             why = e.Message;
             return null;
         }
+    }
+
+    /// <summary>
+    /// The dress blueprint for a plain skin, made at once (a load, the CLI): <see cref="DressBegin"/> to <see cref="DressFinish"/>. Null with the
+    /// reason when it can't be made (not a plain skin, no such style, a key too long for a part's name or the station's).
+    /// </summary>
+    public static ConstructBuild.Blueprint? DressBlueprint(string skin, string style, int salt, string extras, out string why)
+    {
+        if (DressBegin(skin, style, salt, extras, out why) is not { } w)
+            return null;
+        DressPlanOf(w);
+        DressMakeSome(w, double.PositiveInfinity);
+        return DressFinish(w, out why);
     }
 
     /// <summary>A dress blueprint by its name (<see cref="DressBlueprintName"/>), as a saved job names it. Null: not one, or it can't be made.</summary>
@@ -624,6 +708,20 @@ public static partial class HullLoft
         }
         var ms = System.Diagnostics.Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
         Console.WriteLine($"  {bp.Name[..Math.Min(bp.Name.Length, 40)]}...: {bp.Steps.Count - 1} subparts, planned and made in {ms:0} ms");
+        t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+        DressBlueprint(skin, style, (salt + 1) % (SectionMaxSalt + 1), extras, out _);
+        {
+            var t1 = System.Diagnostics.Stopwatch.GetTimestamp();
+            var pl = DressPlan(sh with { Style = style, Salt = (salt + 2) % (SectionMaxSalt + 1), Extras = extras }, sd);
+            var pm = System.Diagnostics.Stopwatch.GetElapsedTime(t1).TotalMilliseconds;
+            t1 = System.Diagnostics.Stopwatch.GetTimestamp();
+            var ks = pl.Select(x => x.Key()).ToList();
+            var km = System.Diagnostics.Stopwatch.GetElapsedTime(t1).TotalMilliseconds;
+            t1 = System.Diagnostics.Stopwatch.GetTimestamp();
+            foreach (var key in ks) ConstructParts.Find(key);
+            Console.WriteLine($"  split (salt +2): plan {pm:0.0} ms, keys {km:0.0} ms, {ks.Count} defs {System.Diagnostics.Stopwatch.GetElapsedTime(t1).TotalMilliseconds:0.0} ms");
+        }
+        Console.WriteLine($"  again with salt {(salt + 1) % (SectionMaxSalt + 1)} (warm, new subpart keys): {System.Diagnostics.Stopwatch.GetElapsedTime(t0).TotalMilliseconds:0} ms");
         var bad = 0;
         foreach (var g in bp.Steps.Skip(1).GroupBy(x => x.Part[DressPrefix.Length..].Split(' ')[0]))
             Console.WriteLine($"    {g.Key}: {g.Count()}");

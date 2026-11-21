@@ -80,37 +80,47 @@ public static partial class ConstructStation
     }
 
     /// <summary>
-    /// Server, 2 Hz while a Dress job waits with its bay clear: the next plain skin (loose in the bay, else in the hold) gets its dress blueprint,
-    /// which is costed and built as any blueprint. True when one started.
+    /// Server, 2 Hz while a Dress job waits with its bay clear: the first plain skin (loose in the bay, then in the hold) whose dress blueprint
+    /// can be made and fits the bay gets it, costed and built as any blueprint. True when one started. A skin refused once is remembered with its
+    /// settings (<see cref="DressMade"/>), so a refused skin costs nothing on later looks and the next skin in the hold is tried.
     /// </summary>
     private static bool DressNext(ConstructWorld world, Construct c, int t, StationJob j)
     {
-        var skin = SkinInBay(world, c, t) ?? (world.StoreOf(c, t) is { } hold ? SkinInHold(hold) : null);
-        if (skin == null)
-        {
-            if (j.Note != WaitNote)
-            {
-                j.Note = WaitNote;
-                world.StationChanged(c);
-            }
-            return false;
-        }
         var (style, salt, extras) = DressSettings(c, t);
-        if (HullLoft.DressBlueprint(skin.Name, style, salt, extras, out var why) is not { } bp)
+        var skins = _dressSkins;
+        skins.Clear();
+        SkinsInBay(world, c, t, skins);
+        if (world.StoreOf(c, t) is { } hold)
+            SkinsInHold(hold, skins);
+        string? refusal = null;
+        ConstructBuild.Blueprint? bp = null;
+        ConstructPartDef? skin = null;
+        foreach (var d in skins)
         {
-            var note = $"can't dress that skin: {why}";
+            var (b, why, done) = DressMade(d.Name, style, salt, extras);
+            if (!done)
+            {
+                refusal = why; // (being made: the next look goes on with it)
+                break;
+            }
+            if (b != null && QuickRefusal(b, BaySize(c, t)) is { } small)
+                (b, why) = (null, small);
+            if (b != null)
+            {
+                (bp, skin) = (b, d);
+                break;
+            }
+            refusal ??= $"can't dress that skin: {why}";
+        }
+        skins.Clear();
+        if (bp == null || skin == null)
+        {
+            var note = refusal ?? WaitNote;
+            if (note.Length > 160)
+                note = note[..160];
             if (j.Note != note)
             {
-                j.Note = note.Length > 160 ? note[..160] : note;
-                world.StationChanged(c);
-            }
-            return false;
-        }
-        if (QuickRefusal(bp, BaySize(c, t)) is { } small)
-        {
-            if (j.Note != small)
-            {
-                j.Note = small;
+                j.Note = note;
                 world.StationChanged(c);
             }
             return false;
@@ -135,11 +145,70 @@ public static partial class ConstructStation
         return true;
     }
 
-    private static bool IsPlainSkin(ConstructPartDef d) =>
-        HullLoft.IsSectionName(d.Name) && HullLoft.SectionOf(d.Name, out _) is { Plain: true };
+    private static readonly List<ConstructPartDef> _dressSkins = new(64);
 
-    /// <summary>A plain skin lying loose in the bay (a body of one part that nobody holds or grabs), or null.</summary>
-    private static ConstructPartDef? SkinInBay(ConstructWorld world, Construct c, int t)
+    private sealed class DressEntry
+    {
+        public required string Skin, Style, Extras;
+        public required int Salt;
+        public HullLoft.DressWork? Work;
+        public Task? Planning;
+        public ConstructBuild.Blueprint? Bp;
+        public string Why = "";
+        public bool Done;
+    }
+
+    private static readonly DressEntry?[] _dressMade = new DressEntry?[32];
+    private static int _dressNext;
+    private const double DressMs = 3; // (game-thread milliseconds a look spends making a dress's subparts)
+
+    /// <summary>
+    /// A skin's dress blueprint for these settings, kept once made (the last 32 asked). Not done yet: its plan is made off the game thread, then
+    /// its subparts a few milliseconds a look; null with the reason (Done) when it can't be made, and Why says how far it is while it's made.
+    /// </summary>
+    private static (ConstructBuild.Blueprint? Bp, string Why, bool Done) DressMade(string skin, string style, int salt, string extras)
+    {
+        DressEntry? e = null;
+        foreach (var x in _dressMade)
+            if (x != null && x.Salt == salt && x.Skin == skin && x.Style == style && x.Extras == extras)
+            {
+                e = x;
+                break;
+            }
+        if (e == null)
+        {
+            e = new DressEntry { Skin = skin, Style = style, Salt = salt, Extras = extras };
+            if (HullLoft.DressBegin(skin, style, salt, extras, out var why) is { } w)
+            {
+                e.Work = w;
+                e.Planning = Task.Run(() => HullLoft.DressPlanOf(w));
+            }
+            else
+                (e.Why, e.Done) = (why, true);
+            _dressMade[_dressNext] = e;
+            _dressNext = (_dressNext + 1) % _dressMade.Length;
+        }
+        if (!e.Done && e.Work is { } work && e.Planning is { IsCompleted: true } planning)
+        {
+            if (planning.IsFaulted)
+                (e.Why, e.Done, e.Work) = ($"its dress plan failed: {planning.Exception?.InnerException?.Message}", true, null);
+            else if (HullLoft.DressMakeSome(work, DressMs))
+            {
+                e.Bp = HullLoft.DressFinish(work, out var why);
+                (e.Why, e.Done, e.Work) = (why, true, null);
+            }
+        }
+        if (!e.Done)
+            return (null, e.Work is { Count: > 0 } wk ? $"makes that skin's dress ({wk.Made} of {wk.Count} subparts)" : "plans that skin's dress", false);
+        return (e.Bp, e.Why, true);
+    }
+
+    private static bool IsPlainSkin(ConstructPartDef d) =>
+        HullLoft.IsSectionName(d.Name) && d.Name.Contains(" - 0 - |", StringComparison.Ordinal) // (a cheap look first: this runs over every body twice a second)
+        && HullLoft.SectionOf(d.Name, out _) is { Plain: true };
+
+    /// <summary>The plain skins lying loose in the bay (bodies of one part that nobody holds or grabs), added to <paramref name="into"/>.</summary>
+    private static void SkinsInBay(ConstructWorld world, Construct c, int t, List<ConstructPartDef> into)
     {
         Bay(c, t, out var floor, out var rot, out var bay);
         var inv = System.Numerics.Quaternion.Conjugate(rot);
@@ -148,21 +217,19 @@ public static partial class ConstructStation
             if (b.PartCount != 1 || b.HeldBy != 0 || b.GrabbedBy != 255 || !IsPlainSkin(b.DefOf(0)))
                 continue;
             var local = System.Numerics.Vector3.Transform(b.WorldCom - floor, inv);
-            if (MathF.Abs(local.X) <= bay.X * 0.5f && MathF.Abs(local.Z) <= bay.Z * 0.5f && local.Y >= -0.5f && local.Y <= bay.Y)
-                return b.DefOf(0);
+            if (MathF.Abs(local.X) <= bay.X * 0.5f && MathF.Abs(local.Z) <= bay.Z * 0.5f && local.Y >= -0.5f && local.Y <= bay.Y && into.Count < 64)
+                into.Add(b.DefOf(0));
         }
-        return null;
     }
 
-    /// <summary>A plain skin in the station's hold, or null.</summary>
-    private static ConstructPartDef? SkinInHold(CStore st)
+    /// <summary>The plain skins in the station's hold, added to <paramref name="into"/>.</summary>
+    private static void SkinsInHold(CStore st, List<ConstructPartDef> into)
     {
-        for (var k = 0; k < st.KindN; k++)
+        for (var k = 0; k < st.KindN && into.Count < 64; k++)
             if (st.KindCount![k] > 0 && ConstructParts.Get(st.KindDef![k]) is { } d && IsPlainSkin(d))
-                return d;
-        for (var k = 0; k < st.SlotCount; k++)
+                into.Add(d);
+        for (var k = 0; k < st.SlotCount && into.Count < 64; k++)
             if (st.Count[k] > 0 && ConstructParts.Get(st.Def[k]) is { } d && IsPlainSkin(d))
-                return d;
-        return null;
+                into.Add(d);
     }
 }
