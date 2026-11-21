@@ -746,7 +746,7 @@ public sealed class Assembling : IPartGenerator
         ("Modules/Round", "Round Module Plug 3 m", null),
         ("Modules/Round", "Round Module Stand 3 m", null),
         // (the block machines' shared 2 m cube, design page drawings 19 to 24: masts for pads, ovens, stations and crane rails)
-        (null, null, Rec("Mast Block", 40, 1, m: [("steel", 450), ("rubber", 20)], p: [("Wiring Loom", 1)])),
+        ("Machines", "Mast Block", null), // (a named row: a new part file in Machines is refused until it has its own row here)
     ];
 
     /// <summary>
