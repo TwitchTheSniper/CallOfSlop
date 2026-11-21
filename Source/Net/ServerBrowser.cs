@@ -669,9 +669,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   Extruders, the Die Frames, the Die Extensions and the classed tables (part files go and come, ids move); the die is read from the blocks on each peer.
     // 392: round module sockets (Sean, 2026-11-21): new part files (Modules/Round: Round Module Socket, Plug and Stand 1-3 m) shift part ids.
     // 393: the see-through Opening socket style (Sean, 2026-11-21): ModStyle Through at the end of the Style choice; plugs gain rim sockets.
-    // 394: the Building Station on the block system (Sean, 2026-11-21): a Core, Bay Blocks and masts replace its bay settings (a new part
+    // 394: the Mast Block (Sean, 2026-11-21): a new part file (Machines/MastBlock, the block machines' shared 2 m cube) shifts part ids.
+    // 395: the Building Station on the block system (Sean, 2026-11-21): a Core, Bay Blocks and masts replace its bay settings (a new part
     //   file shifts ids); a station's record carries its fitting arms (each arm's carry: its part, its target and its length).
-    public const ushort ProtocolVersion = 394;
+    public const ushort ProtocolVersion = 395;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;
