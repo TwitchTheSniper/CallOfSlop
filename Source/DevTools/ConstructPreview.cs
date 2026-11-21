@@ -123,7 +123,7 @@ public static partial class ConstructPreview
         var picked = only?.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries) ?? [];
         var shipNames = only != null
             ? picked.Where(n => ConstructBuild.FindBlueprint(n) != null || File.Exists(n)).ToList()
-            : ConstructBuild.Blueprints.Where(b => b.Steps.Count > 0 && ConstructParts.Find(b.Steps[0].Part)?.Group == group).OrderBy(b => b.Name, StringComparer.Ordinal).Select(b => b.Name).ToList();
+            : ConstructBuild.Blueprints.Where(b => b.Steps.Count >= MinWhole && ConstructParts.Find(b.Steps[0].Part)?.Group == group).OrderBy(b => b.Name, StringComparer.Ordinal).Select(b => b.Name).ToList();
         var looseNames = only != null
             ? picked.Where(n => !shipNames.Contains(n)).ToList()
             : ConstructParts.All.Where(d => d != null && d.Group == group).OrderBy(d => d.Section, StringComparer.Ordinal).ThenBy(d => d.Name, StringComparer.Ordinal).Select(d => d.Name).ToList();
@@ -230,6 +230,10 @@ public static partial class ConstructPreview
     /// <summary>A piece a machine makes at run time (an extruded plate, a cut plate, a pressed piece): its ship's model shows it, but it gets
     /// no model of its own (the Mainframe's hull is thousands of them).</summary>
     private static bool Runtime(string name) => name.StartsWith(Extrusion.Prefix, StringComparison.Ordinal) || HullLoft.IsCutName(name) || name.StartsWith(HullLoft.Prefix, StringComparison.Ordinal);
+
+    /// <summary>The fewest steps a blueprint of the gallery's group needs to be listed as a whole ship or station, as the Animation gallery
+    /// shelves them: a few parts that go together (a landing leg pod's seven) are an assembly, not a ship.</summary>
+    private const int MinWhole = 30;
 
     /// <summary>A part section's file name in a gallery's models/parts/ (a part with no section goes in "other").</summary>
     private static string PackName(string section) => Slug(section) is { Length: > 0 } s ? s : "other";

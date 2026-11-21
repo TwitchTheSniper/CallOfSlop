@@ -3,8 +3,8 @@
 Two commands write web pages that show constructs in 3D, built through the game's own build rules from the data next to
 the DLL (rebuild after `--gen-parts`). The summary line goes to `callofslop.log`.
 
-- `--preview-gallery DIR [--only "A,B"]`: **the usual one.** Every ship (a blueprint whose first part is in the `Ship`
-  group), every part those ships use and every other `Ship` part, or only the names given, as one gallery: `DIR/index.html` (the viewer with a picker),
+- `--preview-gallery DIR [--only "A,B"]`: **the usual one.** Every ship (a blueprint of 30 parts or more whose first part is in the `Ship`
+  group, as the Animation gallery counts them), every part those ships use and every other `Ship` part, or only the names given, as one gallery: `DIR/index.html` (the viewer with a picker),
   `DIR/models/index.json`, one `DIR/models/NAME.json` per ship and one `DIR/models/parts/SECTION.json` per part section (the part's
   `"section"`, such as `zero-day-frigate` or `ship-fittings`: an object of models keyed by part id, which the page fetches once and takes
   the part from; a part's index entry names its `file` and `key`). An Artifact version holds at most 511 files, and a file a part
