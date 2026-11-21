@@ -185,7 +185,7 @@ public sealed class ExtrusionParts : IPartGenerator
             p.Add(L([-0.95, 1.965, z - 0.015], [0.95, 1.99, z + 0.015], MachineLook.Base));
         // The chute's port on its back, under the hopper's arrow (the shared port look: MachineLook.Port; Sean 2026-11-21).
         MachineLook.Port(p, [0, 0.8, -0.75], 2, -1, 0.2, 0.13, true);
-        p.Set(("ports", Py.L(Kw(("name", "Chute"), ("type", "chute"), ("at", Py.L(0, 0.8, -0.75)), ("face", "-z")))));
+        p.Set(("ports", Py.L(Kw(("name", "Chute in"), ("type", "chute"), ("at", Py.L(0, 0.8, -0.75)), ("face", "-z")))));
         // The hopper's rim, white (the in side), and an arrow down into it.
         p.Add(L([0.94, 1.94, -0.75], [0.998, 1.998, -0.05], MachineLook.In));
         p.Add(L([-0.998, 1.94, -0.75], [-0.94, 1.998, -0.05], MachineLook.In));

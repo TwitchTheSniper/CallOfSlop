@@ -161,6 +161,8 @@ public static partial class ConstructRender
         var round = Extrusion.ShapeOf(profile) != ExShape.Section;
         if (round)
             w = h = MathF.Min(w, MathF.Min(size.X, size.Y));
+        if (ConstructExtruder.Blocks(c, i) > 0)
+            centre.Y = ConstructExtruder.PieceY(c, i, centre.Y, size.Y, h); // (a block die's piece runs along its foot: ConstructExtruder.Section)
         var mask = round ? ConstructExtruder.RoundMaskOf(profile, w, PreviewValue(d, CfgKey.Wall, 0.03f))
             : profile < Extrusion.Presets.Length ? Extrusion.Presets[profile].Mask
             : (ulong)(ushort)PreviewValue(d, CfgKey.MaskA, 0) | (ulong)(ushort)PreviewValue(d, CfgKey.MaskB, 0) << 16 | (ulong)(ushort)PreviewValue(d, CfgKey.MaskC, 0) << 32 | (ulong)(ushort)PreviewValue(d, CfgKey.MaskD, 0) << 48;

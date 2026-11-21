@@ -251,7 +251,7 @@
   ],
   "ports": [
     {
-      "name": "Chute",
+      "name": "Chute in",
       "type": "chute",
       "at": [
         0,
