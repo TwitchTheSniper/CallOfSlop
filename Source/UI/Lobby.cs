@@ -1010,6 +1010,8 @@ public sealed partial class Ui
                 }
             }
             ImGui.TextColored(Dim, "Low: none. Medium: a glow round lamps, flames and screens, and heat haze over flames. High: a wider glow, and soft shade in corners."u8);
+            ImGui.Checkbox("Contact shadows##post"u8, ref s.ContactShadows);
+            ImGui.TextColored(Dim, "A soft shadow on the ground under ships and vehicles, darker the closer they sit."u8);
 
             ImGui.Spacing();
             ImGui.Text("Big ships"u8);

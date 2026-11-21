@@ -457,6 +457,8 @@ public static unsafe partial class Program
             ConstructRender.MergeOn = false; // constructs drawn box by box, as before merged meshes (docs/render/MERGED-MESHES.md)
         if (args.Any(a => a.Equals("--no-contrast", StringComparison.OrdinalIgnoreCase)))
             LightGrid.ContrastForcedOff = true; // each material's own roughness whatever the Video setting (a before picture of material contrast)
+        if (args.Any(a => a.Equals("--no-contact", StringComparison.OrdinalIgnoreCase)))
+            PostFx.ContactForcedOff = true; // no contact shadows under bodies whatever the Video setting (a before picture)
         if (args.Any(a => a.Equals("--no-bevels", StringComparison.OrdinalIgnoreCase)))
             LightGrid.BevelsForcedOff = true; // box edges drawn sharp whatever the Video setting (a before picture of edge bevels)
         if (args.Any(a => a.Equals("--no-occlusion", StringComparison.OrdinalIgnoreCase)))
@@ -2249,6 +2251,7 @@ public static unsafe partial class Program
         pass.Dispose();
         pass = Perf.Pass(PerfArea.PostFx, PerfGpuPass.Occlusion);
         PostFx.ApplyAo(Gfx, fb.X, fb.Y, Gfx.Proj); // (the projection as the GPU took it: reversed depth reads back by it; High: over the opaque world, under the effects)
+        PostFx.ApplyContact(Gfx, fb.X, fb.Y, Gfx.Proj); // (the shadows under bodies near the ground: PostFx.Contact.cs)
         pass.Dispose();
 
         // ---- Tracers --------------------------------------------------------

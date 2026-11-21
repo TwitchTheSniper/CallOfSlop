@@ -14,7 +14,7 @@ namespace CallOfSlop;
 /// <b>Ambient occlusion</b> (High only; <see cref="ApplyAo"/>, before the effects) reads a resolved depth buffer at half size, 8 samples.
 /// Low costs nothing: no pass runs and nothing is made. The 4.1 and 4.6 paths share all of this.
 /// </summary>
-public static unsafe class PostFx
+public static unsafe partial class PostFx
 {
     public const int MaxHaze = 32;
     private const int Unit0 = 17, Unit1 = 18; // (0-16 are taken: VideoFeeds.Unit, SurfaceGpu.Unit)
@@ -441,9 +441,44 @@ public static unsafe class PostFx
     /// <summary>Ambient occlusion over what is drawn so far (the opaque world): before the blended effects, so smoke and flames aren't darkened.</summary>
     public static void ApplyAo(Renderer gfx, int w, int h, in Matrix4x4 proj)
     {
+        _depthFresh = false;
         if (!Ao || _aoBroken || !Init())
             return;
         Resize(w, h);
+        if (!(_depthFresh = CopyDepth(w, h)))
+        {
+            Console.WriteLine("[postfx] ambient occlusion off: the depth buffer could not be read");
+            _aoBroken = true;
+            End(gfx, w, h);
+            return;
+        }
+        Begin();
+        _ao.Use();
+        Native.glUniform4f(_lAoProj, proj.M33, proj.M43, 1f / proj.M11, 1f / proj.M22);
+        Native.glUniform2f(_lAoTexel, 1f / AoA.W, 1f / AoA.H);
+        Bind(Unit0, _depthTex);
+        Pass(AoA);
+        _aoBlur.Use();
+        Native.glUniform2f(_lAoBlurTexel, 1f / AoA.W, 1f / AoA.H);
+        Bind(Unit0, AoA.Tex);
+        Pass(AoB);
+        Native.glBindFramebuffer(GL_DRAW_FRAMEBUFFER, Renderer.MainFbo);
+        Viewport(0, 0, w, h);
+        Native.glEnable(GlCapability.Blend);
+        Native.glBlendFunc(GL_ZERO, GL_SRC_COLOR);
+        Native.glColorMask(true, true, true, false);
+        _copy.Use();
+        Native.glUniform1f(_lCopyMix, 0f);
+        Native.glUniform1f(_lCopyGain, 1f);
+        Bind(Unit0, AoB.Tex);
+        Bind(Unit1, AoB.Tex);
+        Native.glDrawArrays(GL_TRIANGLES, 0, 3);
+        End(gfx, w, h);
+    }
+
+    /// <summary>The depth drawn so far copied into <c>_depthTex</c> (made at this size and format on first use): ambient occlusion and contact shadows read it. False when the blit failed.</summary>
+    private static bool CopyDepth(int w, int h)
+    {
         var floatDepth = Renderer.SceneTargetOn; // (the scene target's depth is 32-bit float: a depth blit wants the same format)
         if (_depthTex != 0 && _depthFloat != floatDepth)
         {
@@ -481,36 +516,7 @@ public static unsafe class PostFx
         Native.glBindFramebuffer(GL_READ_FRAMEBUFFER, Renderer.MainFbo);
         Native.glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _depthFbo);
         Native.glBlitFramebuffer(0, 0, w, h, 0, 0, w, h, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
-        var err = GlDebug.Error();
-        if (err != 0)
-        {
-            Console.WriteLine($"[postfx] ambient occlusion off: the depth buffer could not be read (GL error 0x{err:X})");
-            _aoBroken = true;
-            End(gfx, w, h);
-            return;
-        }
-        Begin();
-        _ao.Use();
-        Native.glUniform4f(_lAoProj, proj.M33, proj.M43, 1f / proj.M11, 1f / proj.M22);
-        Native.glUniform2f(_lAoTexel, 1f / AoA.W, 1f / AoA.H);
-        Bind(Unit0, _depthTex);
-        Pass(AoA);
-        _aoBlur.Use();
-        Native.glUniform2f(_lAoBlurTexel, 1f / AoA.W, 1f / AoA.H);
-        Bind(Unit0, AoA.Tex);
-        Pass(AoB);
-        Native.glBindFramebuffer(GL_DRAW_FRAMEBUFFER, Renderer.MainFbo);
-        Viewport(0, 0, w, h);
-        Native.glEnable(GlCapability.Blend);
-        Native.glBlendFunc(GL_ZERO, GL_SRC_COLOR);
-        Native.glColorMask(true, true, true, false);
-        _copy.Use();
-        Native.glUniform1f(_lCopyMix, 0f);
-        Native.glUniform1f(_lCopyGain, 1f);
-        Bind(Unit0, AoB.Tex);
-        Bind(Unit1, AoB.Tex);
-        Native.glDrawArrays(GL_TRIANGLES, 0, 3);
-        End(gfx, w, h);
+        return GlDebug.Error() == 0;
     }
 
     /// <summary>Haze and bloom over the frame so far (after the effects, before the first-person gun and the HUD).</summary>
