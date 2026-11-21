@@ -47,6 +47,23 @@ public static class ConstructPanelFormer
         (along, across) = (nAlong * d.BlockCell, nAcross * d.BlockCell);
     }
 
+    /// <summary>Server, per step: does this former's bed take <paramref name="panel"/> now? <see cref="BedRefusal"/>'s test with no text (no allocation).</summary>
+    public static bool BedFits(Construct c, int part, ConstructPartDef panel)
+    {
+        var d = c.Parts[part].D;
+        Bed(c, part, out var along, out var across, out _, out var nAcross);
+        Sides(panel, out var a, out var b);
+        if (d.BlockRole == BlockRole.Core)
+        {
+            if (along <= 0 || !MachineBlocks.TryOf(c, part, out var asm) || asm.Out == ushort.MaxValue || asm.OutCells < nAcross)
+                return false;
+            var deep = MathF.Min(panel.BoundsMax.X - panel.BoundsMin.X, MathF.Min(panel.BoundsMax.Y - panel.BoundsMin.Y, panel.BoundsMax.Z - panel.BoundsMin.Z));
+            if (deep > PinTravel + 0.005f)
+                return false;
+        }
+        return a <= MathF.Max(along, across) + 0.005f && b <= MathF.Min(along, across) + 0.005f;
+    }
+
     /// <summary>
     /// Server and client: why this former can't form <paramref name="panel"/> now, or null. A Core: no bed, no Out Table on its far end, a
     /// panel bigger than its bed (in blocks: "needs a 4 x 3 bed, this one is 3 x 2") or deeper than its pins rise.
@@ -195,7 +212,7 @@ public static class ConstructPanelFormer
             return;
         }
         var mat = head.Key.Material;
-        if (st.JobAmount == 0 && BedRefusal(c, part, panel) != null)
+        if (st.JobAmount == 0 && !BedFits(c, part, panel))
         {
             Idle(world, st, ExtrudeStall.OrderTooLong); // (no bed, no Out Table, or the panel is bigger than the bed: the look line says which)
             return;
@@ -357,8 +374,22 @@ public static class ConstructPanelFormer
 
     private static float Smooth(float t) => t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t);
 
-    private static string? _pinName; // the order whose shape the pins show (its name, compared by reference: read once a change)
-    private static HullLoft.PanelShape? _pinShape;
+    // The orders whose shapes the pins show (names compared by reference, read once a change): a few slots, so formers working different
+    // panels in one view don't read their keys again every frame.
+    private static readonly string?[] _pinName = new string?[8];
+    private static readonly HullLoft.PanelShape?[] _pinShape = new HullLoft.PanelShape?[8];
+    private static int _pinNext;
+
+    private static HullLoft.PanelShape? PinShape(string name)
+    {
+        for (var k = 0; k < _pinName.Length; k++)
+            if (ReferenceEquals(_pinName[k], name))
+                return _pinShape[k];
+        var at = _pinNext;
+        _pinNext = (_pinNext + 1) % _pinName.Length;
+        (_pinName[at], _pinShape[at]) = (name, HullLoft.PanelOf(name));
+        return _pinShape[at];
+    }
 
     /// <summary>
     /// How far a Bed Block's pin at <paramref name="at"/> (the body frame) stands up (m, at most <paramref name="most"/>) on Core
@@ -388,9 +419,7 @@ public static class ConstructPanelFormer
         float height;
         if (WorkOrders.HeadOf(p, out var head) && head.Name is { } name)
         {
-            if (!ReferenceEquals(name, _pinName))
-                (_pinName, _pinShape) = (name, HullLoft.PanelOf(name));
-            if (_pinShape is { } sh)
+            if (PinShape(name) is { } sh)
             {
                 float pl = sh.L / 100f, pw = sh.Kind == HullLoft.PanelLoft ? MathF.Max(sh.W, sh.NoseW) / 100f : sh.W / 100f;
                 var s = ((u - 0.5f) * bedLong + pl * 0.5f) / MathF.Max(0.01f, pl);
