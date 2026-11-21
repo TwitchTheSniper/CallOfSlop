@@ -1,0 +1,106 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Hexkey L1 Stock Wall W",
+  "description": "A partition of Hexkey Orbital: white, with charcoal-framed doorways.",
+  "group": "Station",
+  "section": "Hexkey Orbital",
+  "role": "frame",
+  "tool": "welder",
+  "collider": "boxes",
+  "mass": 8713.8,
+  "health": 14457,
+  "armour": 40,
+  "material": "steel",
+  "color": "#eceeea",
+  "attachSeconds": 20.0,
+  "boxes": [
+    {
+      "min": [
+        -0.225,
+        -2.125,
+        -31.025
+      ],
+      "max": [
+        -0.025,
+        2.575,
+        30.775
+      ],
+      "color": "#eceeea",
+      "finish": "painted plating"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "j0",
+      "at": [
+        -0.125,
+        -2.125,
+        -23.075
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j1",
+      "at": [
+        -0.125,
+        -2.125,
+        -3.125
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j2",
+      "at": [
+        -0.125,
+        -2.125,
+        19.825
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j3",
+      "at": [
+        -0.125,
+        2.575,
+        -23.075
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j4",
+      "at": [
+        -0.125,
+        2.575,
+        -3.125
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j5",
+      "at": [
+        -0.125,
+        2.575,
+        19.825
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j6",
+      "at": [
+        -0.125,
+        0.225,
+        -31.025
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j7",
+      "at": [
+        -0.125,
+        0.225,
+        30.775
+      ],
+      "dir": "+z"
+    }
+  ]
+}

@@ -1,14 +1,14 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Hexkey Warehouse Stair",
-  "description": "A stair of Hexkey Orbital: birch treads on a charcoal stringer.",
+  "description": "A stair of Hexkey Orbital: birch treads on a charcoal stringer, wide enough for two.",
   "group": "Station",
   "section": "Hexkey Orbital",
   "role": "frame",
   "tool": "welder",
   "collider": "boxes",
-  "mass": 1370.2,
-  "health": 5644,
+  "mass": 1755.0,
+  "health": 6106,
   "armour": 40,
   "material": "steel",
   "color": "#d6bf96",
@@ -23,7 +23,7 @@
       "max": [
         -4.825,
         -3.875,
-        0.875
+        1.875
       ],
       "color": "#d6bf96",
       "finish": "painted plating"
@@ -37,7 +37,7 @@
       "max": [
         -4.525,
         -3.625,
-        0.875
+        1.875
       ],
       "color": "#d6bf96",
       "finish": "painted plating"
@@ -51,7 +51,7 @@
       "max": [
         -4.225,
         -3.375,
-        0.875
+        1.875
       ],
       "color": "#d6bf96",
       "finish": "painted plating"
@@ -65,7 +65,7 @@
       "max": [
         -3.925,
         -3.125,
-        0.875
+        1.875
       ],
       "color": "#d6bf96",
       "finish": "painted plating"
@@ -79,7 +79,7 @@
       "max": [
         -3.625,
         -2.875,
-        0.875
+        1.875
       ],
       "color": "#d6bf96",
       "finish": "painted plating"
@@ -93,7 +93,7 @@
       "max": [
         -3.325,
         -2.625,
-        0.875
+        1.875
       ],
       "color": "#d6bf96",
       "finish": "painted plating"
@@ -107,7 +107,7 @@
       "max": [
         -3.025,
         -2.375,
-        0.875
+        1.875
       ],
       "color": "#d6bf96",
       "finish": "painted plating"
@@ -121,7 +121,7 @@
       "max": [
         -2.725,
         -2.125,
-        0.875
+        1.875
       ],
       "color": "#d6bf96",
       "finish": "painted plating"
@@ -135,7 +135,7 @@
       "max": [
         -2.425,
         -1.875,
-        0.875
+        1.875
       ],
       "color": "#d6bf96",
       "finish": "painted plating"
@@ -149,7 +149,7 @@
       "max": [
         -2.125,
         -1.625,
-        0.875
+        1.875
       ],
       "color": "#d6bf96",
       "finish": "painted plating"
@@ -163,7 +163,7 @@
       "max": [
         -1.825,
         -1.375,
-        0.875
+        1.875
       ],
       "color": "#d6bf96",
       "finish": "painted plating"
@@ -177,7 +177,7 @@
       "max": [
         -1.525,
         -1.125,
-        0.875
+        1.875
       ],
       "color": "#d6bf96",
       "finish": "painted plating"
@@ -191,7 +191,7 @@
       "max": [
         -1.225,
         -0.875,
-        0.875
+        1.875
       ],
       "color": "#d6bf96",
       "finish": "painted plating"
@@ -205,7 +205,7 @@
       "max": [
         -0.925,
         -0.625,
-        0.875
+        1.875
       ],
       "color": "#d6bf96",
       "finish": "painted plating"
@@ -219,7 +219,7 @@
       "max": [
         -0.625,
         -0.375,
-        0.875
+        1.875
       ],
       "color": "#d6bf96",
       "finish": "painted plating"
@@ -233,7 +233,7 @@
       "max": [
         -0.325,
         -0.125,
-        0.875
+        1.875
       ],
       "color": "#d6bf96",
       "finish": "painted plating"
@@ -247,7 +247,7 @@
       "max": [
         -0.025,
         0.125,
-        0.875
+        1.875
       ],
       "color": "#d6bf96",
       "finish": "painted plating"
@@ -261,7 +261,7 @@
       "max": [
         0.275,
         0.375,
-        0.875
+        1.875
       ],
       "color": "#d6bf96",
       "finish": "painted plating"
@@ -275,7 +275,7 @@
       "max": [
         0.575,
         0.625,
-        0.875
+        1.875
       ],
       "color": "#d6bf96",
       "finish": "painted plating"
@@ -289,7 +289,7 @@
       "max": [
         0.875,
         0.875,
-        0.875
+        1.875
       ],
       "color": "#d6bf96",
       "finish": "painted plating"
@@ -303,7 +303,7 @@
       "max": [
         1.175,
         1.125,
-        0.875
+        1.875
       ],
       "color": "#d6bf96",
       "finish": "painted plating"
@@ -317,7 +317,7 @@
       "max": [
         1.475,
         1.375,
-        0.875
+        1.875
       ],
       "color": "#d6bf96",
       "finish": "painted plating"
@@ -331,7 +331,7 @@
       "max": [
         1.775,
         1.625,
-        0.875
+        1.875
       ],
       "color": "#d6bf96",
       "finish": "painted plating"
@@ -345,7 +345,7 @@
       "max": [
         2.075,
         1.875,
-        0.875
+        1.875
       ],
       "color": "#d6bf96",
       "finish": "painted plating"
@@ -359,7 +359,7 @@
       "max": [
         2.375,
         2.125,
-        0.875
+        1.875
       ],
       "color": "#d6bf96",
       "finish": "painted plating"
@@ -373,7 +373,7 @@
       "max": [
         2.675,
         2.375,
-        0.875
+        1.875
       ],
       "color": "#d6bf96",
       "finish": "painted plating"
@@ -387,7 +387,7 @@
       "max": [
         2.975,
         2.625,
-        0.875
+        1.875
       ],
       "color": "#d6bf96",
       "finish": "painted plating"
@@ -401,7 +401,7 @@
       "max": [
         3.275,
         2.875,
-        0.875
+        1.875
       ],
       "color": "#d6bf96",
       "finish": "painted plating"
@@ -415,7 +415,7 @@
       "max": [
         3.575,
         3.125,
-        0.875
+        1.875
       ],
       "color": "#d6bf96",
       "finish": "painted plating"
@@ -429,7 +429,7 @@
       "max": [
         3.875,
         3.375,
-        0.875
+        1.875
       ],
       "color": "#d6bf96",
       "finish": "painted plating"
@@ -443,7 +443,7 @@
       "max": [
         4.175,
         3.625,
-        0.875
+        1.875
       ],
       "color": "#d6bf96",
       "finish": "painted plating"
@@ -455,9 +455,9 @@
         -2.125
       ],
       "max": [
-        5.075,
+        4.675,
         3.875,
-        0.875
+        1.875
       ],
       "color": "#d6bf96",
       "finish": "painted plating"
@@ -524,12 +524,12 @@
       "min": [
         -5.1442,
         -3.948,
-        0.885
+        1.885
       ],
       "max": [
         4.4942,
         4.098,
-        0.945
+        1.945
       ],
       "color": "#2b2e30",
       "detail": true,
@@ -538,42 +538,42 @@
         [
           -5.1442,
           -3.902,
-          0.885
+          1.885
         ],
         [
           -5.1058,
           -3.948,
-          0.885
+          1.885
         ],
         [
           -5.1442,
           -3.902,
-          0.945
+          1.945
         ],
         [
           -5.1058,
           -3.948,
-          0.945
+          1.945
         ],
         [
           4.4558,
           4.098,
-          0.885
+          1.885
         ],
         [
           4.4942,
           4.052,
-          0.885
+          1.885
         ],
         [
           4.4558,
           4.098,
-          0.945
+          1.945
         ],
         [
           4.4942,
           4.052,
-          0.945
+          1.945
         ]
       ],
       "finish": "painted plating"
@@ -585,16 +585,16 @@
       "at": [
         -4.975,
         -4.125,
-        -0.625
+        -0.125
       ],
       "dir": "-y"
     },
     {
       "name": "j1",
       "at": [
-        5.075,
+        4.675,
         3.725,
-        -0.625
+        -0.125
       ],
       "dir": "+x"
     }
