@@ -60,8 +60,8 @@ No new Python generator: a change to a part family goes in its C# generator.
 
 ## What there is
 
-Generators (`--gen-parts` lists them): `free_parts`, `bandit_parts`, `media_parts`, `ammo_parts`, `highland_parts`, `shell_parts`,
-`pilot_parts`, `callcentre_parts`, `office_parts`, `british_parts`, `door_parts`, `station_parts`, `shelf_parts`, `linear_parts`,
+Generators (`--gen-parts` lists them): `free_parts`, `scrap_parts`, `media_parts`, `ammo_parts`, `shell_parts`,
+`pilot_parts`, `signal_parts`, `office_parts`, `street_parts`, `door_parts`, `station_parts`, `shelf_parts`, `linear_parts`,
 `scoop_parts`, `big_drive_parts`, `fluid_tank_parts`, `air_parts`, `boost_parts`, `suspension_parts`, `flight_parts`, `drone_parts`,
 `air_cargo`, `air_weapons_parts`, `ordnance_parts`, `hull_parts`, `body_parts`, `wing_parts`, `actuator_parts`, `make_joint_sides`,
 `control_parts`, `hydraulics_parts`, `press_parts`, `extrusion_parts`, `panel_former_parts`, `panel_designer_parts`, `recycler_parts` (one file in the hand-made Storage folder, by `o.File`), `structure_parts`, `capital_parts`, `large_systems`,

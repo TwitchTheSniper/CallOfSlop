@@ -221,9 +221,10 @@ public sealed class SandboxModule : GameModeModule
             ConstructRender.DrawGhosts(gfx, now);
             SnapRender.Draw(gfx, now); // (snappy building's connection points; only while a part is held)
             NudgeRender.Draw(gfx); // (the Nudge tool's triad or arcs: Program.SandboxNudge.cs)
-            SocketWeldRender.Draw(gfx, now); // (the welder's socket weld: markers and the ghost; Program.SandboxSocketWeld.cs)
+            SocketWeldRender.Draw(gfx, game, now); // (the welder's socket weld: markers and the ghost; Program.SandboxSocketWeld.cs)
             ConstructRender.DrawWires(gfx, game.Constructs); // (only while the linking tool is out)
             ConstructRender.DrawConfigPreview(gfx, game.Constructs); // (only while a part's settings panel is open)
+            ConstructRender.DrawSockets(gfx, game.Constructs); // (module sockets near: their lock knob, depth marks, ghost well and room: ConstructRenderSockets.cs)
             ConstructRender.DrawSpawnGhost(gfx, game, now); // (only while placing a spawn: GameSandboxSpawns.cs)
         }
         finally

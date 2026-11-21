@@ -16,6 +16,15 @@ public static class SandboxKeys
     /// <summary>The build stations' keys (the build bar).</summary>
     public static string BuildMirror = "M", BuildLine = "O", BuildReplace = "P", BuildGantry = "U", GantryKeys = "";
 
+    /// <summary>Single keys, as the seat controls panel shows them (Game/GameSeatControls.cs).</summary>
+    public static string KForward = "W", KBack = "S", KLeft = "A", KRight = "D", KCrouch = "Left Ctrl", KRollLeft = "Q", KRollRight = "E", KHook = "G", KEject = "L", KRadar = "MMB", KDampeners = "Z", KMouseSteer = "M", KGear = "B";
+
+    /// <summary>The key an input reader's key name stands for (ConstructParts.ReaderKeys).</summary>
+    public static string ReaderKey(string name) => name switch
+    {
+        "fire" => Fire, "aim" => Aim, "reload" => Reload, "forward" => KForward, "back" => KBack, "left" => KLeft, "right" => KRight, "jump" => JumpKey, "sprint" => Sprint, _ => name,
+    };
+
     /// <summary>The key lines a seat shows.</summary>
     public static string Drive = "", DriveStart = "", DriveShift = "", Fly = "", FlyPlane = "", FlyRotor = "", FlyRocket = "", FlyShip = "", FlyShipKeys = "", DampenersOff = "", DampenersHeld = "", MouseSteerOff = "", GearLower = "", GearRaise = "", Gunner = "", GunnerTurrets = "", GetOut = "";
 
@@ -77,7 +86,8 @@ public static class SandboxKeys
             GameAction.CrouchHold => "Left Ctrl", GameAction.Sprint or GameAction.FreeRouting => "Left Shift", GameAction.Interact => "F", GameAction.Fire => "LMB",
             GameAction.Aim => "RMB", GameAction.Reload => "R", GameAction.SandboxDrop => "Delete", GameAction.SandboxInventory => "Tab", GameAction.ToolWheel => "MMB", GameAction.Weapon3 => "3",
             GameAction.BuildMirror => "M", GameAction.BuildLine => "O", GameAction.BuildReplace => "P", GameAction.BuildGantry => "U", GameAction.BuildPlaneUp => "Page Up", GameAction.BuildPlaneDown => "Page Down", GameAction.GantryOrbit => "Left Alt",
-            GameAction.SelectMove => "M", GameAction.SelectCopy => "O", GameAction.SelectPaint => "P", GameAction.SelectWeld => "U", GameAction.SelectSave => ",", GameAction.SelectTool => ".", GameAction.SeatRollLeft => "Q", GameAction.SeatRollRight => "E", GameAction.SnapSwitch => "K", _ => "?",
+            GameAction.SelectMove => "M", GameAction.SelectCopy => "O", GameAction.SelectPaint => "P", GameAction.SelectWeld => "U", GameAction.SelectSave => ",", GameAction.SelectTool => ".", GameAction.SeatRollLeft => "Q", GameAction.SeatRollRight => "E", GameAction.SnapSwitch => "K",
+            GameAction.SeatHook => "G", GameAction.SeatEject => "L", GameAction.SeatRadar => "MMB", GameAction.SeatDampeners => "Z", GameAction.SeatMouseSteer => "M", GameAction.SeatGear => "B", _ => "?",
         };
         Use = K(GameAction.Interact);
         Fire = K(GameAction.Fire);
@@ -97,6 +107,19 @@ public static class SandboxKeys
         SelTool = K(GameAction.SelectTool);
         Switch = K(GameAction.SnapSwitch);
         GetOut = $"{Use}: get out";
+        KForward = K(GameAction.MoveForward);
+        KBack = K(GameAction.MoveBack);
+        KLeft = K(GameAction.MoveLeft);
+        KRight = K(GameAction.MoveRight);
+        KCrouch = K(GameAction.CrouchHold);
+        KRollLeft = K(GameAction.SeatRollLeft);
+        KRollRight = K(GameAction.SeatRollRight);
+        KHook = K(GameAction.SeatHook);
+        KEject = K(GameAction.SeatEject);
+        KRadar = K(GameAction.SeatRadar);
+        KDampeners = K(GameAction.SeatDampeners);
+        KMouseSteer = K(GameAction.SeatMouseSteer);
+        KGear = K(GameAction.SeatGear);
         BuildMirror = K(GameAction.BuildMirror);
         BuildLine = K(GameAction.BuildLine);
         BuildReplace = K(GameAction.BuildReplace);

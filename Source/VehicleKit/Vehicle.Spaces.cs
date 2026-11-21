@@ -155,7 +155,7 @@ public sealed partial class Vehicle
                     if (!bd.Chance(lean != 0 ? Math.Max(chance, rule.AsymPod) : chance))
                         continue;
                     var (a, b) = side > 0 ? (sh.A, sh.B) : (sh.B, sh.A);
-                    // Each faction's pods at the heights its trim reads at (a kiosk high where Scam's signboards are, a locker low where Highland's laps are).
+                    // Each faction's pods at the heights its trim reads at (a kiosk high where Salvager's signboards are).
                     var low = MathF.Max(0.12f, TrimLow(bay, outward, room.FloorTop));
                     var waist = (a.WaistY + b.WaistY) / 2;
                     if (kind == 'k')

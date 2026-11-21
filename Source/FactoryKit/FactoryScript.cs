@@ -7,7 +7,7 @@ namespace CallOfSlop.FactoryKit;
 /// The builder (factory-generator.md 3.5 to 3.7): lays a plan as an ordinary blueprint, every part, link and setting a real step through the game's rules
 /// (<see cref="BlueprintScript"/>), so a step the rules refuse fails here with their reason. The floor first (2 m Foundations grown tile by tile), then the
 /// cells, the chutes on their lanes, power, the console and its cables, signs, lamps and the mast. Helpers taken from the Factory Showcase
-/// (FactoryShowcase.cs: Tiles, the signs, Heap, ChuteVia, Along, Lamp), its look rules kept: one steel for every link by kind, the floor carries the zone.
+/// (the removed FactoryShowcase.cs: Tiles, the signs, Heap, ChuteVia, Along, Lamp), its look rules kept: one steel for every link by kind, the floor carries the zone.
 /// Places are metres: x along the flow (west to east), y up, z towards the road (z 0 is the road's front edge).
 /// </summary>
 public sealed class FactoryScript : BlueprintScript

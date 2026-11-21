@@ -333,7 +333,14 @@ public static partial class ConstructFlight
             ways[k % R] |= a[k] > 0 ? 1 : a[k] < 0 ? 2 : 0;
         var rotor = pattern == FlightPattern.Rotorcraft;
         var forces = MathF.Max(scale[0], MathF.Max(scale[1], scale[2]));
-        var torques = MathF.Max(scale[3], MathF.Max(scale[4], scale[5]));
+        // The strongest turn of anything but a gyro: a gyro turns about one axis only, so a big one (the Docket's) made roll and pitch
+        // look like crumbs beside its yaw and switched them off (Q/E did nothing). A row is left out when it is small beside the turns
+        // the jets make; a row a gyro answers is kept by its own scale.
+        var torques = 0f;
+        for (var k = 0; k < n; k++)
+            if (f.Items[k].Kind != EffectorKind.Gyro)
+                for (var r = 3; r < 6; r++)
+                    torques = MathF.Max(torques, MathF.Abs(a[k * R + r]));
         f.Can = 0;
         for (var r = 0; r < R; r++)
         {

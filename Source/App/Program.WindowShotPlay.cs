@@ -68,7 +68,7 @@ public static partial class Program
                     var bits = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
                     var fwd = GravityFrames.FlatForward(me.Position, me.Yaw);
                     var at = g.SandboxGroundAt(me.Position + fwd * 60);
-                    var asked = g.VehicleSpawn.RequestConvoy(bits.Length > 0 ? bits[0] : "Bandit", bits.Length > 1 && int.TryParse(bits[1], out var cn) ? cn : 3, 1, null, at, me.Yaw + MathF.PI * 0.5f);
+                    var asked = g.VehicleSpawn.RequestConvoy(bits.Length > 0 ? bits[0] : "Raider", bits.Length > 1 && int.TryParse(bits[1], out var cn) ? cn : 3, 1, null, at, me.Yaw + MathF.PI * 0.5f);
                     Console.WriteLine($"[windowshot] crewconvoy: {asked ?? "asked"}");
                 }
                 return true;
@@ -720,6 +720,34 @@ public static partial class Program
                 _wsWait = 20;
                 return true;
             }
+            case "modsock" when arg.StartsWith("ctl ", StringComparison.OrdinalIgnoreCase): // host: "modsock ctl PART N": a plate's control (1 eject, 2 lock, 3 the gun's pull on that module part begins, 4 ends), as F or the gun sends it (ModuleGuide.cs)
+            {
+                var cw = arg[4..].Trim();
+                var sp = cw.LastIndexOf(' ');
+                var (cc, cpart) = sp > 0 ? WsFind(g, cw[..sp].Trim()) : (null, -1);
+                if (!g.IsServer || cc == null || !byte.TryParse(cw[(sp + 1)..], out var ctl))
+                {
+                    WsFail("modsock ctl: PART N, on the host");
+                    return true;
+                }
+                var cat = cc.ToLocal(cc.SegToWorld(cc.Parts[cpart].Seg, cc.Parts[cpart].Pos));
+                WsSay($"modsock: control {ctl} on {cc.DefOf(cpart).Name} part {cpart}: {g.SandboxHands.ModuleControl(g.Constructs, me.Id, cc.Id, cpart, ctl, me.Eye, cat) ?? "done"}");
+                _wsWait = 10;
+                return true;
+            }
+            case "modsock" when arg.StartsWith("attach ", StringComparison.OrdinalIgnoreCase): // host: "modsock attach PLATE": as a rise on its Attach wire (the nearest loose module drawn in, or the fitted one ejected)
+            {
+                var (ac2, apart) = WsFind(g, arg[7..].Trim());
+                var asi = ac2 != null ? ModuleSockets.SocketOfPlate(ac2, apart) : -1;
+                if (!g.IsServer || ac2 == null || asi < 0)
+                {
+                    WsFail("modsock attach: a socket's plate, on the host");
+                    return true;
+                }
+                WsSay($"modsock: attach on part {apart}: {(ac2.ModSockets[asi].Module >= 0 ? g.SandboxHands.ModuleEject(g.Constructs, 255, ac2, asi) : ModuleGuide.AttachNear(g.Constructs, ac2, asi)) ?? "done"}");
+                _wsWait = 10;
+                return true;
+            }
             case "modsock" when arg.StartsWith("fit ", StringComparison.OrdinalIgnoreCase): // host: "modsock fit PART": the nearest loose module of that plate's size held 0.6 m off its face, then F on the plate
             {
                 var (fc, fpart) = WsFind(g, arg[4..].Trim());
@@ -754,7 +782,7 @@ public static partial class Program
                     for (var mi = 0; mi < mb.Modules.Length; mi++)
                     {
                         var mm = mb.Modules[mi];
-                        WsSay($"modsock: body {mb.Id} module {mi}: plug part {mm.Plug}, socket {mm.Socket}{(mm.OnStand ? " (on a stand)" : "")}{(mm.Bridged ? " BRIDGED" : "")}, {mm.Parts} parts, {mm.Mass:0} kg, tags {ModuleSockets.TagsText(mm.Tags)}, primary {ModuleSockets.TagName(mm.Primary)}{ModuleSockets.StatsText(mm)}; bounds {mm.Min:0.00} to {mm.Max:0.00}");
+                        WsSay($"modsock: body {mb.Id} module {mi}: plug part {mm.Plug}, socket {mm.Socket}{(mm.OnStand ? " (on a stand)" : "")}{(mm.Bridged ? " BRIDGED" : "")}, {mm.Parts} parts, {mm.Mass:0} kg, tags {ModuleSockets.TagsText(mm.Tags)}, primary {ModuleSockets.TagName(mm.Primary)}{ModuleSockets.StatsText(mm)}; bounds {mm.Min:0.00} to {mm.Max:0.00}; plug at {mb.ToWorld(mb.Parts[mm.Plug].Pos):0.00}, held by {mb.GrabbedBy}");
                     }
                 }
                 WsSay($"modsock: notice \"{g.SandboxNotice}\"");

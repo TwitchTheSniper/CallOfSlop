@@ -33,9 +33,10 @@ public struct CModSocket
     public ModStyle Style;
     public bool Keyed, Stand;
     public float Above; // the room's height over the plate face (proud), or over the surface (opening) (m)
-    public float Depth; // flush and opening: the well's depth, plate face to the surface (m)
-    public float Height; // the room's whole height over the plate face: proud Above, flush Depth, opening Depth + Above, through Above
-    public float Behind; // through: how far the room goes back behind the plate's face (its thickness and Depth); else 0
+    public float Depth; // flush and Well: the well's depth from the plate's face to its floor; Opening: how far it punches on behind the plate's back (m)
+    public float Height; // the room's height over the plate face: proud, Well and Opening Above, flush FlushStand (its detail)
+    public float Behind; // flush, Well, Opening: how far the room goes back behind the plate's face (its thickness and Depth); proud 0
+    public float Seat; // flush and Well: how far behind the plate's face the module's plug seats (the well's floor, Depth); else 0
     public int Module; // the module fitted to it (an index into Construct.Modules), or -1
     public int InTheWay; // the first part of the ship whose solid is in its room (-1: clear)
     public Vector3 RoomMin, RoomMax; // its room in the plate's segment rest frame
@@ -130,6 +131,11 @@ public static class ModuleSockets
         {
             d.ModData = (byte)DataPorts(w, l);
             d.DataIn = d.DataOut = DataNames[..d.ModData];
+            if (plate != null) // (a plate's own controls after its pass-throughs, Sean 2026-11-21: ModuleGuide.WireStep, PortValue)
+            {
+                d.DataIn = [.. DataNames[..d.ModData], .. ControlIns];
+                d.DataOut = [.. DataNames[..d.ModData], .. ControlOuts];
+            }
         }
     }
 
@@ -137,6 +143,68 @@ public static class ModuleSockets
     public static int DataPorts(int w, int l) => w * l >= 4 ? 4 : 2;
 
     private static readonly string[] DataNames = ["Data 1", "Data 2", "Data 3", "Data 4"];
+
+    /// <summary>A plate's control inputs after its Data ports: a rise on Attach fits a module near (or ejects the fitted one), a rise on Eject ejects, a high Lock locks.</summary>
+    public static readonly string[] ControlIns = ["Attach", "Eject", "Lock"];
+    /// <summary>A plate's outputs after its Data ports: 1 while a module is fitted, 1 while it is locked.</summary>
+    public static readonly string[] ControlOuts = ["Attached", "Locked"];
+    public const int AttachIn = 0, EjectIn = 1, LockIn = 2, AttachedOut = 0, LockedOut = 1; // (offsets after ModData)
+
+    /// <summary>A plate's control port <paramref name="port"/> (a wire's FromPort): its value. A Data port's is the wire it passes (PassWires), so 0 here.</summary>
+    public static float PortValue(Construct c, int plate, int port)
+    {
+        var d = c.DefOf(plate);
+        var k = port - d.ModData;
+        if (k < 0 || d.ModStand)
+            return 0;
+        var si = SocketOfPlate(c, plate);
+        if (si < 0)
+            return 0;
+        return k switch
+        {
+            AttachedOut => c.ModSockets[si].Module >= 0 ? 1 : 0,
+            LockedOut => Locked(c, plate) ? 1 : 0,
+            _ => 0,
+        };
+    }
+
+    /// <summary>Is plate <paramref name="plate"/> locked: its slider on, or a high Lock wire (the server's last wire step, kept in the plate's Mem)?</summary>
+    public static bool Locked(Construct c, int plate)
+    {
+        ref var p = ref c.Parts[plate];
+        var d = c.DefOf(plate);
+        return d.ModPart == ModPart.Socket && !d.ModStand && (ConstructConfig.Get(p, d, CfgKey.ModLock, 0) >= 0.5f || ((int)p.Mem & ModuleGuide.MemLockHigh) != 0);
+    }
+
+    // The frame's controls (Sean 2026-11-21): an eject button and a lock slider on the plate's +x side, its -z end, standing out of it; the
+    // part kit draws them (ModuleSocketParts.Controls) and the client finds F on them by these. In the plate's own frame.
+    public const float CtlY = -0.44f; // the controls' height: the middle of the plate's side (its back at -0.5, its face at -0.38)
+    public const float EjectZ = 0.22f, LockZ0 = 0.38f, LockZ1 = 0.58f; // from the -z edge: the button's middle, the slider's track
+    public const float CtlReach = 0.09f; // m: F this near a control's middle uses it
+
+    /// <summary>Where a plate's side controls stand, in its own frame: the side's x at a point <paramref name="fromEdge"/> m along it (a round plate's: on its circle).</summary>
+    public static Vector3 ControlAt(ConstructPartDef d, float fromEdge)
+    {
+        var z = -0.5f + fromEdge;
+        if (!d.ModRound)
+            return new Vector3(d.ModW - 0.5f, CtlY, z);
+        float c = (d.ModW - 1) * 0.5f, r = d.ModW * 0.5f;
+        var dz = z - c;
+        return new Vector3(c + MathF.Sqrt(MathF.Max(0, r * r - dz * dz)), CtlY, z);
+    }
+
+    /// <summary>Which of a plate's side controls a point on it (its own frame) is at: 1 eject, 2 the lock slider, 0 neither.</summary>
+    public static byte ControlNear(ConstructPartDef d, Vector3 local)
+    {
+        if (d.ModPart != ModPart.Socket || d.ModStand || d.ModNoHide)
+            return 0; // (a Wall Bay Socket is a wall section: no side controls)
+        if (Vector3.Distance(local, ControlAt(d, EjectZ)) <= CtlReach)
+            return 1;
+        var a = ControlAt(d, LockZ0);
+        var b = ControlAt(d, LockZ1);
+        var t = Math.Clamp(Vector3.Dot(local - a, b - a) / MathF.Max(1e-4f, (b - a).LengthSquared()), 0, 1);
+        return Vector3.Distance(local, a + (b - a) * t) <= CtlReach ? (byte)2 : (byte)0;
+    }
     public const int DataWires = 4; // wires each data port takes in (ConstructPartDef.MaxInputs)
 
     /// <summary>The footprint's middle along a side of n metres: the part's origin is the middle of its first metre cell.</summary>
@@ -156,9 +224,9 @@ public static class ModuleSockets
             Add(new CConfigDef { Key = ConstructConfig.KeyName(CfgKey.ModKind), Id = CfgKey.ModKind, Type = CfgType.Choice, Options = ModuleSocketTable.KindLabels, Label = "Takes", Group = "Module socket",
                 Tooltip = "Any module of its size, or engines, reactors or turrets only (by the module's primary tag)." });
             Add(new CConfigDef { Key = ConstructConfig.KeyName(CfgKey.ModStyle), Id = CfgKey.ModStyle, Type = CfgType.Choice, Options = ModuleSocketTable.StyleLabels, Label = "Style", Group = "Module socket",
-                Tooltip = "Proud: the module stands on the hull. Flush and Well: the plate sits at the foot of a well it cuts out through the hull. Opening: the plate is a frame with a hole, and punches through whatever it is on, Depth deep, so the module can retract into it." });
+                Tooltip = "Proud: the module stands on the plate. Flush and Well: the plate is a frame on the hull and digs a well Depth deep into what it is on; the module sits in it, level with the frame (Flush) or standing up out of it (Well). Opening: the plate is a frame with a hole, and punches through whatever it is on, Depth on behind it, so the module can retract into it." });
             Add(new CConfigDef { Key = ConstructConfig.KeyName(CfgKey.ModDepth), Id = CfgKey.ModDepth, Type = CfgType.Number, Min = t.DepthStep, Max = MathF.Max(t.DepthStep * 2, t.MostDepth(d.ModW)), Step = t.DepthStep, Default = t.DepthStep, Unit = "m",
-                Label = "Depth", Group = "Module socket", Tooltip = "Flush and Well: how deep the well goes below the surface. Opening: how far the hole goes back behind the plate." });
+                Label = "Depth", Group = "Module socket", Tooltip = "Flush and Well: how deep the well goes, from the frame's face to its floor (a flush module is this tall). Opening: how far the hole goes on behind the plate." });
             Add(new CConfigDef { Key = ConstructConfig.KeyName(CfgKey.ModAbove), Id = CfgKey.ModAbove, Type = CfgType.Number, Min = 0, Max = t.MostAbove(d.ModL), Step = t.AboveStep, Default = 0, Unit = "m",
                 Label = "Room above", Group = "Module socket", Tooltip = "How tall a module may stand over the plate (0: twice its short side). Nothing of the ship may be in this room." });
             Add(new CConfigDef { Key = ConstructConfig.KeyName(CfgKey.ModCut), Id = CfgKey.ModCut, Type = CfgType.Number, Hidden = true, Min = 0, Max = 100000, Default = 0, Unit = "s",
@@ -172,6 +240,9 @@ public static class ModuleSockets
         if (d.ModPart == ModPart.Socket && !d.ModStand && !d.ModNoHide) // (Sean, 2026-11-21: decorative flush mounts; after every older setting, so saved slots keep)
             Add(new CConfigDef { Key = ConstructConfig.KeyName(CfgKey.ModHide), Id = CfgKey.ModHide, Type = CfgType.Toggle, Label = "Hide connector", Group = "Module socket",
                 Tooltip = "On: the plate and a fitted module's plug aren't drawn (they still hold, collide and take hits), for a clean flush mount." });
+        if (d.ModPart == ModPart.Socket && !d.ModStand) // (Sean, 2026-11-21: the lock slider on the frame; after every older setting)
+            Add(new CConfigDef { Key = ConstructConfig.KeyName(CfgKey.ModLock), Id = CfgKey.ModLock, Type = CfgType.Toggle, Label = "Locked", Group = "Module socket",
+                Tooltip = "On: the fitted module can't be ejected, pulled off with the physics gun or taken off by hand (a Module Fitter still cuts it free). The slider on the plate's side, or a high Lock wire, does the same." });
         if (d.ModPart == ModPart.Plug)
         {
             var opts = new string[1 + (int)ModTag.COUNT];
@@ -194,14 +265,35 @@ public static class ModuleSockets
         ref var p = ref c.Parts[i];
         var d = p.D;
         if (d.ModPart == ModPart.Socket)
-            return !d.ModStand && !d.ModNoHide && ConstructConfig.Get(p, d, CfgKey.ModHide, 0) >= 0.5f;
+            return HideSet(c, i) || DugFitted(c, i);
         if (d.ModPart != ModPart.Plug || c.ModuleOf is not { } of || i >= of.Length || of[i] is var m && (m < 0 || m >= c.Modules.Length))
             return false;
         var s = c.Modules[m].Socket;
         if (c.Modules[m].Plug != i || s < 0 || s >= c.ModSockets.Length || c.ModSockets[s].Plate >= c.PartCount)
             return false;
         var plate = c.ModSockets[s].Plate;
-        return c.Parts[plate].D.ModPart == ModPart.Socket && HiddenLook(c, plate);
+        return c.Parts[plate].D.ModPart == ModPart.Socket && HideSet(c, plate);
+    }
+
+    /// <summary>Has the player hidden plate <paramref name="i"/>'s connector (its Hide connector setting)?</summary>
+    public static bool HideSet(Construct c, int i)
+    {
+        ref var p = ref c.Parts[i];
+        var d = p.D;
+        return d.ModPart == ModPart.Socket && !d.ModStand && !d.ModNoHide && ConstructConfig.Get(p, d, CfgKey.ModHide, 0) >= 0.5f;
+    }
+
+    /// <summary>
+    /// Is plate <paramref name="i"/> a Flush or Well socket with its module fitted? Its module seats on the well's floor and fills the frame,
+    /// so the plate isn't drawn (its side controls are: ConstructRender.Sockets) and nothing of it is judged in the module's way.
+    /// </summary>
+    public static bool DugFitted(Construct c, int i)
+    {
+        var socks = c.ModSockets;
+        for (var k = 0; k < socks.Length; k++)
+            if (socks[k].Plate == i)
+                return socks[k].Seat > 0 && socks[k].Module >= 0;
+        return false;
     }
 
     public static string TagName(ModTag t) => ModuleSocketTable.TagNames[(int)t];
@@ -321,10 +413,23 @@ public static class ModuleSockets
                 Keyed = !d.ModStand && ConstructConfig.Get(p, d, CfgKey.ModKeyed, 0) > 0.5f,
             };
             var above = d.ModStand ? d.ModStandAbove : ConstructConfig.Get(p, d, CfgKey.ModAbove, 0); // (a stand: its file's room, if it gives one)
-            s.Above = above > 0 ? above : s.Style == ModStyle.Opening ? 0 : ModuleSocketTable.DefaultAbove(d.ModW);
+            s.Above = above > 0 ? above : ModuleSocketTable.DefaultAbove(d.ModW);
             s.Depth = s.Style == ModStyle.Proud ? 0 : MathF.Max(ModuleSocketTable.Current.DepthStep, ConstructConfig.Get(p, d, CfgKey.ModDepth, ModuleSocketTable.Current.DepthStep));
-            s.Behind = s.Style == ModStyle.Through ? Thickness(d) + s.Depth : 0; // (the room goes back through the frame and the hole it punched)
-            s.Height = s.Style switch { ModStyle.Flush => s.Depth + FlushStand, ModStyle.Opening => s.Depth + s.Above, _ => s.Above };
+            // Every style but Proud digs into what the plate is welded to (module-sockets.md 2.3, Sean 2026-11-21): the plate stays on the
+            // surface as a frame, and the room goes back through it and the well it cut. Flush and Well seat the module at the well's floor,
+            // Depth behind the plate's face (the frame's thickness is part of it); an Opening punches Depth on behind the plate's back.
+            s.Behind = s.Style switch { ModStyle.Proud => 0, ModStyle.Through => Thickness(d) + s.Depth, _ => MathF.Max(s.Depth, Thickness(d) + 0.02f) };
+            s.Seat = s.Style is ModStyle.Flush or ModStyle.Opening ? s.Behind : 0;
+            s.Height = s.Style switch { ModStyle.Flush => FlushStand, ModStyle.Proud => s.Above, _ => s.Above };
+            if (d.ModNoHide && s.Style is ModStyle.Flush or ModStyle.Opening)
+            {
+                // A Wall Bay Socket is a wall section whose bay is built: its plate is the bay's back, the well stands over its face and
+                // nothing is dug behind it (the rule before dug wells, kept for the shipped bays).
+                if (above <= 0 && s.Style == ModStyle.Opening)
+                    s.Above = 0;
+                s.Behind = s.Seat = 0;
+                s.Height = s.Style == ModStyle.Flush ? s.Depth + FlushStand : s.Depth + s.Above;
+            }
             Room(c, i, s.Height, out s.RoomMin, out s.RoomMax, s.Style == ModStyle.Proud ? ModuleSocketTable.Current.Side : ModuleCut.WellSide, s.Behind);
             sockets.Add(s);
         }
@@ -564,8 +669,8 @@ public static class ModuleSockets
             for (var w = 0; w < c.WireCount; w++)
             {
                 ref var x = ref c.Wires[w];
-                if (x.From >= c.PartCount || c.DefOf(x.From).ModData == 0)
-                    continue;
+                if (x.From >= c.PartCount || c.DefOf(x.From).ModData == 0 || x.FromPort >= c.DefOf(x.From).ModData)
+                    continue; // (a plate's own outputs, Attached and Locked, after its Data ports: its own values)
                 var d = c.DefOf(x.From);
                 var other = d.ModPart == ModPart.Plug ? PlateOf(c, x.From) : PlugOn(c, x.From);
                 if (other < 0 || c.DefOf(other).ModStand || d.ModPart == ModPart.Plug && c.DefOf(other).ModStand)
@@ -781,7 +886,7 @@ public static class ModuleSockets
         {
             for (var k = 0; k < socks.Length; k++)
                 if (socks[k].Plate == i)
-                    return socks[k].Style == ModStyle.Through;
+                    return socks[k].Style != ModStyle.Proud; // (every dug style: the plate is the well's rim)
             return false;
         }
         var mi = ModuleOfPart(c, i);
@@ -830,6 +935,37 @@ public static class ModuleSockets
         if (plate.ModW != plug.ModW || plate.ModL != plug.ModL || plate.ModRound != plug.ModRound)
             return $"that's a {ModuleSocketTable.SizeText(plate.ModW, plate.ModL, plate.ModRound)} socket and a {ModuleSocketTable.SizeText(plug.ModW, plug.ModL, plug.ModRound)} module: sizes and shapes match exactly (an adapter module takes a smaller one)";
         return null;
+    }
+
+    /// <summary>
+    /// Why a module's part (bounds <paramref name="a"/> to <paramref name="b"/>) is out of a socket's room (<paramref name="lo"/> to
+    /// <paramref name="hi"/>), in the rest frame: how far it sticks out, past which side, and the setting that would change it
+    /// (module-sockets.md 2.4, Sean 2026-11-21).
+    /// </summary>
+    public static string OutOfRoom(in CModSocket s, string part, Vector3 a, Vector3 b, Vector3 lo, Vector3 hi, int axis, float sign)
+    {
+        float up = 0, down = 0, side = 0;
+        for (var k = 0; k < 3; k++)
+        {
+            var under = lo[k] - a[k];
+            var over = b[k] - hi[k];
+            if (k == axis)
+            {
+                up = MathF.Max(up, sign > 0 ? over : under);
+                down = MathF.Max(down, sign > 0 ? under : over);
+            }
+            else
+                side = MathF.Max(side, MathF.Max(under, over));
+        }
+        if (side >= up && side >= down)
+            return $"the {part} sticks out {side:0.00} m past the socket's side ({ModuleSocketTable.SizeText(s.W, s.L, s.Round)}): use a bigger socket";
+        if (down >= up)
+            return s.Style == ModStyle.Proud
+                ? $"the {part} goes {down:0.00} m below the plate's face: a proud module stands on its plate"
+                : $"the {part} goes {down:0.00} m past the well's floor ({s.Behind:0.00} m deep): set Depth {MathF.Ceiling(down / ModuleSocketTable.Current.DepthStep) * ModuleSocketTable.Current.DepthStep:0.00} m more";
+        return s.Style == ModStyle.Flush
+            ? $"the {part} stands {up:0.00} m out of the flush well: a flush module ends level with the hull (set Depth {MathF.Ceiling(up / ModuleSocketTable.Current.DepthStep) * ModuleSocketTable.Current.DepthStep:0.00} m more, or use a Well socket)"
+            : $"the {part} sticks out {up:0.00} m over the socket's room ({s.Height:0.##} m over the face): set Room above {MathF.Ceiling(up / ModuleSocketTable.Current.AboveStep) * ModuleSocketTable.Current.AboveStep:0.##} m more";
     }
 
     /// <summary>
@@ -901,13 +1037,16 @@ public static class ModuleSockets
             var a = c0 - h0;
             var b = c0 + h0;
             if (a.X < lo.X || a.Y < lo.Y || a.Z < lo.Z || b.X > hi.X || b.Y > hi.Y || b.Z > hi.Z)
-                return s.Style == ModStyle.Flush
-                    ? $"the {mover.DefOf(j).Name} stands out of the flush well ({s.W} x {s.L} m, {s.Depth:0.##} m deep): a flush module ends level with the hull"
-                    : $"the {mover.DefOf(j).Name} sticks out of the socket's room ({s.W} x {s.L} m, {s.Height:0.#} m tall: the plate's Room above and Depth set it)";
+                return OutOfRoom(s, mover.DefOf(j).Name, a, b, lo, hi, axis, sign);
             top = MathF.Max(top, sign > 0 ? b[axis] - faceAt[axis] : faceAt[axis] - a[axis]);
         }
-        if (s.Style == ModStyle.Flush && top < s.Depth - FlushTolerance)
-            return $"a flush module's face is level with the hull: this one stands {top:0.00} m and the well is {s.Depth:0.00} m deep (set Depth to {MathF.Round(top / ModuleSocketTable.Current.DepthStep) * ModuleSocketTable.Current.DepthStep:0.00} m, or use a Well socket)";
+        if (s.Style == ModStyle.Flush && top < -FlushTolerance)
+        {
+            var tall = top + s.Seat; // (the module's height over the well's floor)
+            var step = ModuleSocketTable.Current.DepthStep;
+            var depthWant = MathF.Max(step, MathF.Round(tall / step) * step);
+            return $"a flush module's face is level with the hull: this one is {tall:0.00} m tall and the well {s.Seat:0.00} m deep, so it ends {-top:0.00} m down (set Depth to {depthWant:0.00} m, or use a Well socket)";
+        }
         // Its joints swept through their ranges against the ship (3.3): refused in Survival, a warning in Creative.
         if (ModuleSweep.Clash(ship, si, mover, mi, bodyTurn, rel, moduleOnly) is { } clash)
         {
@@ -1002,9 +1141,10 @@ public static class ModuleSockets
             if (s.Stand)
                 return s.Module >= 0 ? $"{size} stand: {ModuleName(c, s.Module)} stored (F: take it off)" : $"{size} stand: empty (F with a module near: set it on)";
             var kind = s.Kind == ModKind.Generic ? "any module" : $"{TagName(KindTag(s.Kind)!.Value)} modules only";
-            var head = $"{size} {ModuleSocketTable.StyleLabels[(int)s.Style].ToLowerInvariant()} socket, {kind}{(s.Keyed ? ", keyed" : "")}";
+            var locked = Locked(c, part);
+            var head = $"{size} {ModuleSocketTable.StyleLabels[(int)s.Style].ToLowerInvariant()} socket, {kind}{(s.Keyed ? ", keyed" : "")}{(locked ? ", LOCKED" : "")}";
             if (s.Module >= 0)
-                return $"{head}: {ModuleName(c, s.Module)} fitted{(s.WrongKind ? $" - not {Article(TagName(KindTag(s.Kind)!.Value))} any more: it does nothing here" : "")} (F: take it off)";
+                return $"{head}: {ModuleName(c, s.Module)} fitted{(s.WrongKind ? $" - not {Article(TagName(KindTag(s.Kind)!.Value))} any more: it does nothing here" : "")}{(locked ? " (unlock to take it off)" : " (F: take it off)")}";
             if (s.InTheWay >= 0)
                 return s.Style == ModStyle.Proud
                     ? $"{head}: blocked, the {c.DefOf(s.InTheWay).Name} is in its room"

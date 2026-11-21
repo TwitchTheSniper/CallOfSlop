@@ -302,7 +302,7 @@ public sealed partial class Vehicle
         PanelList("hood").Add(hood);
         var nose = noseOf != null ? FactionStyle.Noted("nose", d.Pick(noseOf)) : Style.Part(d, "nose");
         if (CabLook != null && nose is "none" or "Bar Grille" or "Slat Grille" && ChromeGrille(hood))
-            nose = "none"; // (phase 4: a Highland's chrome grille in its place)
+            nose = "none"; // (phase 4: a chrome grille in its place)
         if (nose != "none")
             PanelList("hoodsides").Add(Onto(hood, "front", nose, "back", 0));
         var fender = Style.Part(d, "fender");
@@ -510,7 +510,7 @@ public sealed partial class Vehicle
     /// <summary>
     /// A style that has "mast" and "gear" slots dresses more than the flanks and the hood (the Traders' dishes and masts): masts on
     /// the rooms' roofs, spikes down the rooms' outer walls, and gear standing on open beds and porches. Its own fork, so the rest of a
-    /// seed's vehicle is as it was, and a style without the slots (bandits) never rolls it.
+    /// seed's vehicle is as it was, and a style without the slots (raiders) never rolls it.
     /// </summary>
     private void Kit()
     {

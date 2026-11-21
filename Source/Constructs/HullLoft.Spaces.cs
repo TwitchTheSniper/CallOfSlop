@@ -9,8 +9,8 @@ namespace CallOfSlop;
 /// Body styles phase 5 (docs/vehiclekit/BODY-STYLES.md, section 11): new spaces, made at run time and named by their keys as a lofted bay is.
 /// <list type="bullet">
 /// <item>A <b>caged bay</b> (a bay's key with the fourth word <c>c</c> and a pattern): the bay's two sections drawn as a frame of bars you can see and shoot through, rails
-/// along every point of the section and between them, bows at its ends and middle, and the faction's infill: <c>w</c> welded diagonals (Bandit), <c>s</c> slats low down
-/// and a mesh of rails above (Militia), <c>t</c> timber stakes (Highland). Its hidden boxes are the bars' own, so a player is held in by the rails and a round passes
+/// along every point of the section and between them, bows at its ends and middle, and the faction's infill: <c>w</c> welded diagonals (Raider), <c>s</c> slats low down
+/// and a mesh of rails above (Militia), <c>t</c> timber stakes (no style uses it since 2026-11-21). Its hidden boxes are the bars' own, so a player is held in by the rails and a round passes
 /// between them.</item>
 /// <item>An <b>upper floor</b> (<c>u</c>): a level roof whose slab is walked on, with sockets on the quarter grid for an upper storey's feet and its furniture, cut
 /// round a hatch where a stair comes up (<c>uX0,X1,Z0,Z1</c>); an <b>open top</b> (<c>o</c>): a bay with no roof row, the bulwark round an open upper deck.</item>
@@ -21,12 +21,12 @@ namespace CallOfSlop;
 /// </summary>
 public static partial class HullLoft
 {
-    /// <summary>A caged bay's patterns: <c>w</c> welded diagonals (Bandit), <c>s</c> slats and a mesh (Militia), <c>t</c> timber stakes (Highland).</summary>
+    /// <summary>A caged bay's patterns: <c>w</c> welded diagonals (Raider), <c>s</c> slats and a mesh (Militia), <c>t</c> timber stakes (no style uses it since 2026-11-21).</summary>
     public const string CageKinds = "wst";
 
     public const string StairWord = "stair", PodWord = "pod";
 
-    /// <summary>A pod's kinds: <c>w</c> a welded box with a sloped lid (Bandit), <c>b</c> a smooth blister (IT), <c>k</c> a kiosk with a window and a sign band (Scam), <c>l</c> a clinker locker (Highland), <c>a</c> an armoured stowage pod (Militia), <c>g</c> a luggage locker (British).</summary>
+    /// <summary>A pod's kinds: <c>w</c> a welded box with a sloped lid (Raider), <c>b</c> a smooth blister (IT), <c>k</c> a kiosk with a window and a sign band (Salvager), <c>l</c> a clinker locker (no style uses it since 2026-11-21), <c>a</c> an armoured stowage pod (Militia), <c>g</c> a luggage locker (Mercenary).</summary>
     public const string PodKinds = "wbklag";
 
     private const string BarSteel = "#55524c", Timber = "#6b4a2b", SlatGreen = "#56604a", Tread = "#5d6268", Window = "#29343c";

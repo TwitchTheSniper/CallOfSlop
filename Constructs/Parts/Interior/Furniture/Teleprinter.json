@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Teleprinter",
-  "description": "A teleprinter on a stand. It prints the Ministry's wires, in capitals, eventually.",
+  "description": "A teleprinter on a stand. It prints the wires, in capitals, eventually.",
   "group": "Interior",
   "section": "Furniture",
   "role": "frame",

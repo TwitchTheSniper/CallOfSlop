@@ -319,7 +319,8 @@ public readonly record struct CPartBox(Vector3 Center, Vector3 Half, Vector3 Col
 
     /// <summary>"work": how a detail box shows its machine working (<see cref="BoxWork"/>; docs/sandbox/constructs/look.md "Machine look"): only while the machine runs, drawn only, nothing on the server.</summary>
     public BoxWork Work { get; init; }
-    /// <summary>"axis": the axis a "spin" box turns about or a "stroke" box slides along (a direction, 0..5); its travel is <see cref="RigTravel"/>.</summary>
+    /// <summary>"axis": the axis a "spin" box turns about or a "stroke" box slides along (a direction, 0..5); its travel is <see cref="RigTravel"/>. A "hinge" box
+    /// swings open toward it, about the line through its "pivot" (<see cref="RigPivot"/>) across the part's up and this axis, "travel" degrees (a Press Core's clamshell).</summary>
     public byte WorkAxis { get; init; }
 
     /// <summary>"status": true: a production machine's status lamp, drawn unlit in the colour of its line state (<see cref="ProductionLines"/>).</summary>
@@ -434,7 +435,7 @@ public enum BoxRig : byte { None, Hub, Arm, Leg, Oleo, Lever, Knob, Slide, Flip,
 /// lifts as a new piece starts, the moment after a cut. Both read the piece on the machine's die, which every peer has. Drawn from the store as
 /// this peer has it (ConstructRender): nothing on the server or the wire. A block machine's cell shows its Core's work.
 /// </summary>
-public enum BoxWork : byte { None, Spin, Stroke, Glow, Smoke, Ram, Shear, Pin, Press } // (Pin, Press: a Panel Former's bed, drawing 15: a pin rises to the panel's shape, the platen presses)
+public enum BoxWork : byte { None, Spin, Stroke, Glow, Smoke, Ram, Shear, Pin, Press, Bridge, Head, Beam, Hinge } // (Pin, Press: a Panel Former's bed, drawing 15: a pin rises to the panel's shape, the platen presses; Bridge, Head, Beam: a Laser Cutter's, ConstructLaserCutterBed.cs; Hinge: a clamshell leaf, the Press's)
 
 /// <summary>An attachment point: where on the part (on a face of its bounds) and which way it faces (an axis, 0..5: +X -X +Y -Y +Z -Z).</summary>
 /// <param name="Class">Its size class (<see cref="ConstructParts.Small"/> and up): a socket snaps only to one of its own class; docs/sandbox/CONSTRUCTS.md, "Size classes".</param>
@@ -726,6 +727,7 @@ public sealed partial class ConstructPartDef
     public BlockRole BlockRole; // a block machine's Core, block or shared cell ("machineBlock": MachineBlocks.cs)
     public byte BlockFamily = 255; // ...its family (MachineBlocks.Families; 255: a shared cell, any family)
     public float BlockCell = MachineBlocks.DefaultCell; // ...its lattice step (m)
+    public bool BlockCoreSeams = true; // ...a Core: a bed cell's seam boxes on a face welded to it or to an Out Table are hidden ("coreSeams": false keeps them)
     public Vector3? BlockOrigin; // ...a Core's own cell's middle in its frame ("origin"; else its bounds' middle): the lattice the cells sit on
     public bool SeamSame; // "seamSame": its seam boxes hide on faces welded to a part of its own kind, no machine needed (a Rack Side's end posts: MachineBlocks.SeamSame)
     public bool IsTurntable; // "turntable": a junction of Roller Tile runs (RollerRuns.cs); a piece from one run goes on to another, turned to its way
@@ -758,7 +760,8 @@ public sealed partial class ConstructPartDef
     public float BakeBedTop, BakeKwBlock, BakeHoodSpeed, BakePartSeconds; // ...the bed's top (m), each bed block's heat (kW), the hood's speed (m/s), seconds a subpart on 12 blocks
     public int BakePartsBlock, BakeMaxParts; // ...subparts a bed block takes, and the most any bed takes
     public bool IsLaserCutter; // a Laser Cutter (also IsPanelFormer, IsExtruder and IsWheelFormer; ConstructLaserCutter.cs): it cuts a formed panel or flat stock to a cut key, by order; its bin is its offcut
-    public float CutKw, CutMaxHeight; // ...its cutting power (kW, the time law's) and the tallest blank its bed takes (m)
+    public float CutKw, CutMaxHeight; // ...its cutting power (kW, the time law's: one head's on a Core) and the tallest blank its bed takes (m)
+    public int CutBin, CutBinBlock; // ...its offcut bin: its own and each Bed Block's share (ConstructLaserCutterBed.cs)
     public bool IsWheelFormer; // a Wheel Former (also IsExtruder; ConstructExtruder.cs): its die is a hub and its piece a wheel
     public Vector2 ExtWheelMax, ExtWheelStart; // ...the biggest and the first wheel (metres wide, across)
     public bool IsExtrusion; // a piece an Extruder made (ConstructExtrusion.cs): not from a file
@@ -923,7 +926,7 @@ public sealed partial class ConstructPartDef
     public bool Settable => Configurable || TextSlots > 0; // the configure tool opens a panel on it (settings, or only its text)
 
     /// <summary>How many wires may come into it (0: it takes no input).</summary>
-    public int MaxInputs => IsSpeaker || Surface is { Control: > 0 } ? 1 : ModData > 0 ? ModData * ModuleSockets.DataWires : Role switch // (a speaker's one cable comes from what it repeats; a control surface's angle)
+    public int MaxInputs => IsSpeaker || Surface is { Control: > 0 } ? 1 : ModData > 0 ? DataIn.Length * ModuleSockets.DataWires : Role switch // (a speaker's one cable comes from what it repeats; a control surface's angle)
     {
         PartRole.Joint or PartRole.Hinge or PartRole.Engine or PartRole.Gun => 4,
         PartRole.Door => Door != null ? 3 : 0, // an event door: Open (high open, low shut), Toggle, Lock (ConstructDoors.cs)
@@ -1284,7 +1287,7 @@ public static partial class ConstructParts
             return Pressed.Parse(name); // (a pressed part names itself, a preset's key its catalogue part: Pressed.cs)
         if (name.StartsWith(HullHoles.Prefix, StringComparison.Ordinal))
             return HullHoles.Parse(name); // (a part a cutter holed names itself, its base and its holes: HullHoles.cs)
-        if (name.StartsWith(HullLoft.Prefix, StringComparison.Ordinal) || HullLoft.IsPanelName(name) || HullLoft.IsCutName(name))
+        if (name.StartsWith(HullLoft.Prefix, StringComparison.Ordinal) || HullLoft.IsPanelName(name) || HullLoft.IsCutName(name) || HullLoft.IsSectionName(name))
             return HullLoft.Parse(name); // (a lofted hull bay names itself too: HullLoft.cs)
         if (name.StartsWith(ModularRack.Prefix, StringComparison.OrdinalIgnoreCase) || name.StartsWith(ModularRack.LegacyPrefix, StringComparison.OrdinalIgnoreCase))
             return ModularRack.Parse(name); // (a rack of a shape no file has names itself too, an old Modular Bomb Rack's as well)
@@ -1690,11 +1693,16 @@ public static partial class ConstructParts
                 {
                     "spin" => BoxWork.Spin, "stroke" => BoxWork.Stroke, "glow" => BoxWork.Glow, "smoke" => BoxWork.Smoke, "ram" => BoxWork.Ram, "shear" => BoxWork.Shear,
                     "pin" => BoxWork.Pin, "press" => BoxWork.Press,
-                    _ => throw new ConstructPartException($"{file}: {where}.work is \"spin\", \"stroke\", \"glow\", \"smoke\", \"ram\", \"shear\", \"pin\" or \"press\""),
+                    "bridge" => BoxWork.Bridge, "head" => BoxWork.Head, "beam" => BoxWork.Beam, "hinge" => BoxWork.Hinge,
+                    _ => throw new ConstructPartException($"{file}: {where}.work is \"spin\", \"stroke\", \"glow\", \"smoke\", \"ram\", \"shear\", \"pin\", \"press\", \"bridge\", \"head\", \"beam\" or \"hinge\""),
                 };
+                if (kind == BoxWork.Hinge && (Opt(b, "pivot") is null || Opt(b, "axis") is null || Opt(b, "travel") is null))
+                    throw new ConstructPartException($"{file}: {where}: a \"hinge\" box names its \"pivot\" (a point on the hinge line), the \"axis\" it swings open toward and its \"travel\" (degrees open)");
                 if (!detail || glass != 0)
                     throw new ConstructPartException($"{file}: {where}: only an opaque detail box can show \"work\" (a moving box adds no collision)");
                 made = made with { Work = kind, WorkAxis = Opt(b, "axis") is { } wa ? DirOf(Str(wa, file, where + ".axis"), file, where + ".axis") : (byte)2, RigTravel = Opt(b, "travel") is { } wt ? Num(wt, file, where + ".travel") : 0f };
+                if (kind == BoxWork.Hinge)
+                    made = made with { RigPivot = Vec(Opt(b, "pivot")!.Value, file, where + ".pivot") }; // (the hinge line runs through it, across the part's up and the "axis" it opens toward)
             }
             if (Opt(b, "key") is { } keyBox)
                 made = made with { Key = Str(keyBox, file, where + ".key") is { Length: 1 } one ? one[0] : throw new ConstructPartException($"{file}: {where}.key is one character") };

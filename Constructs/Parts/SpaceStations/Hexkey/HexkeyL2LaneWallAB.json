@@ -1,0 +1,305 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Hexkey L2 Lane Wall AB",
+  "description": "A partition of Hexkey Orbital: white, with charcoal-framed doorways.",
+  "group": "Station",
+  "section": "Hexkey Orbital",
+  "role": "frame",
+  "tool": "welder",
+  "collider": "boxes",
+  "mass": 25633.8,
+  "health": 34761,
+  "armour": 40,
+  "material": "steel",
+  "color": "#eceeea",
+  "attachSeconds": 20.0,
+  "boxes": [
+    {
+      "min": [
+        -75.825,
+        -3.125,
+        -0.225
+      ],
+      "max": [
+        2.075,
+        2.575,
+        -0.025
+      ],
+      "color": "#eceeea",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        2.075,
+        -0.125,
+        -0.225
+      ],
+      "max": [
+        5.675,
+        2.575,
+        -0.025
+      ],
+      "color": "#eceeea",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        1.955,
+        -3.125,
+        -0.241
+      ],
+      "max": [
+        2.075,
+        -0.005,
+        -0.225
+      ],
+      "color": "#2b2e30",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        1.955,
+        -3.125,
+        -0.025
+      ],
+      "max": [
+        2.075,
+        -0.005,
+        -0.009
+      ],
+      "color": "#2b2e30",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        5.675,
+        -3.125,
+        -0.241
+      ],
+      "max": [
+        5.795,
+        -0.005,
+        -0.225
+      ],
+      "color": "#2b2e30",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        5.675,
+        -3.125,
+        -0.025
+      ],
+      "max": [
+        5.795,
+        -0.005,
+        -0.009
+      ],
+      "color": "#2b2e30",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        2.075,
+        -0.125,
+        -0.241
+      ],
+      "max": [
+        5.675,
+        -0.005,
+        -0.225
+      ],
+      "color": "#2b2e30",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        2.075,
+        -0.125,
+        -0.025
+      ],
+      "max": [
+        5.675,
+        -0.005,
+        -0.009
+      ],
+      "color": "#2b2e30",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        5.675,
+        -3.125,
+        -0.225
+      ],
+      "max": [
+        75.975,
+        2.575,
+        -0.025
+      ],
+      "color": "#eceeea",
+      "finish": "painted plating"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "j0",
+      "at": [
+        -64.475,
+        -3.125,
+        -0.125
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j1",
+      "at": [
+        -41.625,
+        -3.125,
+        -0.125
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j2",
+      "at": [
+        -18.625,
+        -3.125,
+        -0.125
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j3",
+      "at": [
+        10.775,
+        -3.125,
+        -0.125
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j4",
+      "at": [
+        27.375,
+        -3.125,
+        -0.125
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j5",
+      "at": [
+        50.375,
+        -3.125,
+        -0.125
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j6",
+      "at": [
+        68.925,
+        -3.125,
+        -0.125
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j7",
+      "at": [
+        -62.975,
+        2.575,
+        -0.125
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j8",
+      "at": [
+        -39.125,
+        2.575,
+        -0.125
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j9",
+      "at": [
+        -17.125,
+        2.575,
+        -0.125
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j10",
+      "at": [
+        10.775,
+        2.575,
+        -0.125
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j11",
+      "at": [
+        26.875,
+        2.575,
+        -0.125
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j12",
+      "at": [
+        48.875,
+        2.575,
+        -0.125
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j13",
+      "at": [
+        67.925,
+        2.575,
+        -0.125
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j14",
+      "at": [
+        -75.825,
+        -0.275,
+        -0.125
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j15",
+      "at": [
+        -56.125,
+        -0.275,
+        -0.225
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j16",
+      "at": [
+        -56.125,
+        -0.275,
+        -0.025
+      ],
+      "dir": "+z"
+    }
+  ]
+}

@@ -1,0 +1,129 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Haywain Eng Ceiling",
+  "description": "The ceiling of the Haywain's eng.",
+  "group": "Ship",
+  "section": "Haywain hauler",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 793.7,
+  "health": 5000,
+  "armour": 25,
+  "material": "steel",
+  "color": "#c4bfac",
+  "attachSeconds": 6.0,
+  "boxes": [
+    {
+      "min": [
+        -4.125,
+        2.625,
+        10.325
+      ],
+      "max": [
+        3.875,
+        2.875,
+        16.925
+      ],
+      "color": "#c4bfac",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -0.245,
+        2.6,
+        10.925
+      ],
+      "max": [
+        -0.005,
+        2.625,
+        16.45
+      ],
+      "color": "#d8f0ff",
+      "detail": true,
+      "glow": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "j0",
+      "at": [
+        -0.125,
+        2.755,
+        10.325
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j1",
+      "at": [
+        -3.625,
+        2.675,
+        10.325
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j2",
+      "at": [
+        -4.125,
+        2.755,
+        11.995
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j3",
+      "at": [
+        -4.125,
+        2.755,
+        15.305
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j4",
+      "at": [
+        3.875,
+        2.755,
+        11.995
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "j5",
+      "at": [
+        3.875,
+        2.755,
+        15.305
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "j6",
+      "at": [
+        -0.125,
+        2.875,
+        10.525
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j7",
+      "at": [
+        -0.125,
+        2.875,
+        12.195
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j8",
+      "at": [
+        -0.125,
+        2.875,
+        15.305
+      ],
+      "dir": "+y"
+    }
+  ]
+}

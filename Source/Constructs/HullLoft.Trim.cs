@@ -17,9 +17,9 @@ public static partial class HullLoft
     public const string TrimWord = "trim", DecoWord = "deco";
 
     /// <summary>
-    /// A trim's kinds: <c>p</c> welded plates, <c>c</c> cage bars over the upper wall (Bandit); <c>s</c> slat armour, <c>b</c> stowage bins (Militia); <c>f</c> a
-    /// smooth skirt fairing, a stripe and vents (IT); <c>g</c> a signboard and a kick strip (Scam); <c>r</c> clinker laps and a strake (Highland); <c>l</c> a livery
-    /// band and chrome strips (British).
+    /// A trim's kinds: <c>p</c> welded plates, <c>c</c> cage bars over the upper wall (Raider); <c>s</c> slat armour, <c>b</c> stowage bins (Militia); <c>f</c> a
+    /// smooth skirt fairing, a stripe and vents (IT); <c>g</c> a signboard and a kick strip (Salvager); <c>r</c> clinker laps and a strake (no style uses it since 2026-11-21); <c>l</c> a livery
+    /// band and chrome strips (Mercenary).
     /// </summary>
     public const string TrimKinds = "pcsbfgrl";
 
@@ -272,7 +272,7 @@ public static partial class HullLoft
         const float ends = 0.015f; // (a trim stops this short of its bay's ends: the next bay's trim is its own part)
         switch (s.Kind)
         {
-            case 'p': // Bandit: welded plates, two or three a side, never on each other's planes (each a little further out than the last)
+            case 'p': // Raider: welded plates, two or three a side, never on each other's planes (each a little further out than the last)
             {
                 var slots = new List<(float Y0, float Y1)> { (low + 0.04f, MathF.Min(waist - 0.08f, low + 0.5f)), (MathF.Max(low + 0.55f, waist + 0.05f), MathF.Min(1.45f, wallTop)), (1.5f, wallTop) };
                 var n = 2 + (int)(roll.Next() * 2);
@@ -290,7 +290,7 @@ public static partial class HullLoft
                 }
                 break;
             }
-            case 'c': // Bandit: cage bars over the upper wall, on rails stood off on brackets
+            case 'c': // Raider: cage bars over the upper wall, on rails stood off on brackets
             {
                 var (yb, yt) = (MathF.Max(low, MathF.Max(1.05f, waist + 0.15f)), wallTop - 0.02f);
                 if (yt - yb < 0.4f || len < 0.7f)
@@ -353,7 +353,7 @@ public static partial class HullLoft
                         B(1.5f + 0.045f * i, 1.525f + 0.045f * i, len * 0.55f, len * 0.55f + 0.24f, skin, 0.012f, Dark, false);
                 break;
             }
-            case 'g': // Scam: a signboard on brackets (painted the faction's loudest), a kick strip low down
+            case 'g': // Salvager: a signboard on brackets (painted the faction's loudest), a kick strip low down
             {
                 B(low + 0.02f, low + 0.14f, ends, len - ends, skin, 0.012f, Dark, false);
                 var (y0, y1) = (MathF.Max(1.15f, waist + 0.25f), MathF.Min(1.75f, wallTop - 0.03f));
@@ -364,7 +364,7 @@ public static partial class HullLoft
                     B(y0 + 0.06f, y1 - 0.06f, z - 0.03f, z + 0.03f, skin + 0.002f, 0.036f, Dark, false, 1f); // (one piece each, through the board: a bolt head proud of its face, no face on its planes)
                 break;
             }
-            case 'r': // Highland: clinker laps over the lower hull, each over the one below, and a wooden strake along the waist
+            case 'r': // (No style uses it since 2026-11-21.) Clinker laps over the lower hull, each over the one below, and a wooden strake along the waist
             {
                 var y = low + 0.03f;
                 for (var i = 0; y + 0.12f <= MathF.Min(waist - 0.04f, wallTop) && i < 5; i++, y += 0.176f)
@@ -377,7 +377,7 @@ public static partial class HullLoft
                     B(wallTop - 0.08f, wallTop - 0.05f, ends, len - ends, skin, 0.03f, Wood, false);
                 break;
             }
-            case 'l': // British: a waistband in a second colour (a bus's cream band), a chrome rubbing strip over it and one under the windows
+            case 'l': // Mercenary: a waistband in a second colour (a bus's cream band), a chrome rubbing strip over it and one under the windows
             {
                 var bandTop = MathF.Min(waist - 0.02f, wallTop);
                 B(MathF.Max(low + 0.02f, bandTop - 0.3f), bandTop, ends, len - ends, skin, 0.011f, Steel, true);

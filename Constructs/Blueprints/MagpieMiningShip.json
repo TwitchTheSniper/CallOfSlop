@@ -728,7 +728,8 @@
       "by": "bottom",
       "config": {
         "keys": "Ship",
-        "mouseAim": true
+        "mouseAim": true,
+        "pitchDamping": 200
       }
     },
     {

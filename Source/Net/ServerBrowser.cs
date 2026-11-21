@@ -673,13 +673,26 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 395: the Bake Oven on the block system (Sean, 2026-11-21): new part files (BakeOven: Bake Oven, Oven Bed Block) shift part ids.
     // 396: the Out Table (Sean, 2026-11-21): a new part file (Production/OutTable, the bed machines' far end) shifts part ids.
     // 397: the Panel Former on the block system (Sean, 2026-11-21): a new part file (PanelFormer/BedBlock) and the Medium Panel Former gone shift part ids.
-    // 398: the Hall Crane (Sean, 2026-11-21): Crane Rail Block and Crane Core part files come (ids move); a hall crane's span, lift
+    // 398: dressed hull sections (Sean, 2026-11-21): "Hull Section (...)" keys travel as run-time parts (HullLoft.Section.cs).
+    // 399: the Laser Cutter on the block system (Sean, 2026-11-21): one Laser Cutter Core and Laser Bed Blocks replace the Medium, Large
+    //   and Capital Laser Cutters (part files go and come, ids move); the bed, the heads and the bin are read from the blocks on each peer.
+    // 400: the Press on the block system as a clamshell (Sean, 2026-11-21): the Medium, Large and Capital Press go (part ids shift), the
+    //      Press Core's sockets change and the Press Block comes; PressStall gains SwingBlocked (it rides the press's store bytes).
+    // 401: CActKind.ModControl (a module socket's eject button, lock slider and the physics gun's pull on a fitted module), CfgKey.ModLock, and a plate's Attach, Eject and Lock in, Attached and Locked out (module sockets, Sean 2026-11-21)
+    // 402: the Building Station on the block system (Sean, 2026-11-21): a Core, Bay Blocks and masts replace its bay settings (a new part
+    //   file shifts ids); a station's record carries its fitting arms (each arm's carry: its part, its target and its length).
+    // 403: the clamshell Press (400 above) landed after 401 and 402, so the number moves on past them.
+    // 407: Press part 2 (Sean, 2026-11-21): dies lose their size classes and one Die Lathe cuts them all (the Medium, Large and Capital dies,
+    //      lathes and the Medium Die Rack go: part ids shift). 404 to 406 are kept for the Hall Crane, the Grow Former and the Laser Cutter's follow-up.
+    // 408: cut plates fit the largest Laser Cutter bed (Sean, 2026-11-21): a plate key over 32 m, or over 16 m both ways, is refused (HullLoft.StockRefusal), so peers must agree.
+    // 409: the Dibber Lander's 23 parts (Constructs/Parts/Dibber, Karl 2026-11-21): a new part folder shifts the ids after it.
+    // 410: the Hall Crane (Sean, 2026-11-21): Crane Rail Block and Crane Core part files come (ids move); a hall crane's span, lift
     //   and drop are worked out from its rails on each peer.
-    // 399: Pad Tiles (Sean, 2026-11-21, drawing 23): Pad Tile and Rack Side part files come (ids move); tiles welded into a pad share
+    // 411: Pad Tiles (Sean, 2026-11-21, drawing 23): Pad Tile and Rack Side part files come (ids move); tiles welded into a pad share
     //   their owner tile's store, worked out from the parts on each peer.
-    // 400: Roller Tiles (Sean, 2026-11-21, drawing 23): Roller Tile and Turntable Tile part files come (ids move); a run's conveyor is
+    // 412: Roller Tiles (Sean, 2026-11-21, drawing 23): Roller Tile and Turntable Tile part files come (ids move); a run's conveyor is
     //   an ordinary link the server lays from its tiles.
-    public const ushort ProtocolVersion = 400;
+    public const ushort ProtocolVersion = 412;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

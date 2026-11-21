@@ -261,7 +261,7 @@ public static partial class HullLoft
     /// <summary>The part a key names, made the first time it is asked for. Null: a key no machine would write, or the run-time table is full.</summary>
     public static ConstructPartDef? Parse(string name)
     {
-        if (!name.StartsWith(Prefix, StringComparison.Ordinal) && !IsPanelName(name) && !IsCutName(name) || !name.EndsWith(')') || name.Length > ConstructParts.MaxRuntimeName)
+        if (!name.StartsWith(Prefix, StringComparison.Ordinal) && !IsPanelName(name) && !IsCutName(name) && !IsSectionName(name) || !name.EndsWith(')') || name.Length > ConstructParts.MaxRuntimeName)
             return null; // (a formed panel comes through this door too: HullLoft.Panels.cs)
         lock (Interned)
         {
@@ -294,6 +294,8 @@ public static partial class HullLoft
     {
         if (MakeCut(name) is { } cut)
             return cut.Ok ? cut.Def : null; // (a Laser Cutter's cut panel or plate: HullLoft.Cuts.cs)
+        if (MakeSection(name) is { } section)
+            return section.Ok ? section.Def : null; // (a dressed hull section: HullLoft.Section.cs)
         if (MakePanel(name) is { } panel)
             return panel.Ok ? panel.Def : null; // (a Panel Former's formed panel: HullLoft.Panels.cs)
         if (MakeFront(name) is { } front)
@@ -352,7 +354,7 @@ public static partial class HullLoft
             return Pressed.Read(name); // (protocol 258: a pressed part travels as a named run-time part does)
         if (name.StartsWith(HullHoles.Prefix, StringComparison.Ordinal))
             return HullHoles.Read(name); // (protocol 352: a part a cutter holed travels the same way)
-        if (!name.StartsWith(Prefix, StringComparison.Ordinal) && !IsPanelName(name) && !IsCutName(name))
+        if (!name.StartsWith(Prefix, StringComparison.Ordinal) && !IsPanelName(name) && !IsCutName(name) && !IsSectionName(name))
             throw new MalformedPacketException($"a run-time part named \"{name}\"");
         return (FromWire(name) ?? Parse(name)) is { } d ? d.Id : ConstructParts.Need("Hull Bay T").Id; // (many new keys at once: stand-ins past the update's budget, HullLoft.FirstParts.cs)
     }
@@ -586,7 +588,7 @@ public static partial class HullLoft
         if (!flatRoof && !open && a.P[^1].X == 0 && b.P[^1].X == 0)
         {
             // A strip along a pitched roof's ridge, just clear of the two halves' outer faces: they meet on the centreline's plane, and a ray straight up the
-            // middle would pass along their seam (the Gaps check's hole, Scam Box Truck, 2026-11-07).
+            // middle would pass along their seam (the Gaps check's hole, Salvager Box Truck, 2026-11-07).
             float Apex(Section sec) => sec.Top + T / 2 / MathF.Max(0.3f, RowNormal(sec.P[^2], sec.P[^1]).Y) + 0.011f;
             var (ya, yb) = (Apex(a), Apex(b));
             p.Facet([new(-0.02f, ya, z0), new(0.02f, ya, z0), new(0.02f, yb, z1), new(-0.02f, yb, z1)], Vector3.UnitY, Roof, 0.02f, paint: false);

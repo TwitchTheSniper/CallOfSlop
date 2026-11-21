@@ -52,13 +52,13 @@ The shipped vehicles carry these recipes. A hand-built gun changes the same way:
   Auto makes the Cannon Sleeve).
 - `--press-part`: needle `10x10x160` (16 calibres, preset 11) gives range x1.23 and spread x0.915. Coil `10x10x160` gives range x1, held
   there because the Coil is already at the catalogue's x2; spread x0.812. Tube `20x20x135` gives range x1.25 and spread x0.9.
-- `--check-vehicle` on copies of the Bandit Flatbed Fort 1, which has a 2x2 merged Courier Carbine Receiver:
+- `--check-vehicle` on copies of the Raider Flatbed Fort 1, which has a 2x2 merged Courier Carbine Receiver:
   - Gun Barrel: 6 shots a second, range 300 m, spread 0.704 deg.
   - Pressed `round 20x20x100` and `round 30x30x150` (bore 2 and 3 on bore 2): exactly the same numbers.
   - Pressed `pipe2 10x10x50` and `round 10x10x70`: refused, with `the barrel is 0.10 m across: this receiver takes 0.14 to 0.30 m`.
   - `round 35x35x175`: refused, with `0.35 m ... 0.14 to 0.30 m`.
   - Long Gun Barrel: range 420 m, spread 0.598.
-- Splitter: the Highland Turret 1 (a Heavy Receiver and a Cross Splitter) with one pressed needle `10x10x160` and three Gun Barrels
+- Splitter: a turret blueprint (a Heavy Receiver and a Cross Splitter) with one pressed needle `10x10x160` and three Gun Barrels
   fires 8 shots a second, range 319.8 m.
 - **Host and client in two processes** (`--window-shot --net host` and `--net join:127.0.0.1`), with the Fort's 2x2 gun on a pressed
   `round 20x20x140` barrel: both print `Courier Carbine Receiver: fires, reach 360 m, spread 0.6512 deg, damage 92, every 10 ticks`.

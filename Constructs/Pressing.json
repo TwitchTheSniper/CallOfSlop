@@ -7,36 +7,16 @@
    "seconds": 15,
    "bays": [
     {
-     "label": "Block",
+     "label": "Bar",
      "sections": [
       "solid"
      ],
      "materials": [
-      "metal",
       "steel"
      ],
      "minAcross": 0.25,
      "maxAcross": 0.45,
      "use": 0.25
-    }
-   ]
-  },
-  {
-   "output": "Medium Button Die",
-   "seconds": 30,
-   "bays": [
-    {
-     "label": "Block",
-     "sections": [
-      "solid"
-     ],
-     "materials": [
-      "metal",
-      "steel"
-     ],
-     "minAcross": 1.0,
-     "maxAcross": 1.8,
-     "use": 1.0
     }
    ]
   },
@@ -45,12 +25,11 @@
    "seconds": 15,
    "bays": [
     {
-     "label": "Block",
+     "label": "Bar",
      "sections": [
       "solid"
      ],
      "materials": [
-      "metal",
       "steel"
      ],
      "minAcross": 0.25,
@@ -60,73 +39,15 @@
    ]
   },
   {
-   "output": "Medium Bracket Die",
-   "seconds": 30,
-   "bays": [
-    {
-     "label": "Block",
-     "sections": [
-      "solid"
-     ],
-     "materials": [
-      "metal",
-      "steel"
-     ],
-     "minAcross": 1.0,
-     "maxAcross": 1.8,
-     "use": 1.0
-    }
-   ]
-  },
-  {
-   "output": "Large Bracket Die",
-   "seconds": 45,
-   "bays": [
-    {
-     "label": "Block",
-     "sections": [
-      "solid"
-     ],
-     "materials": [
-      "metal",
-      "steel"
-     ],
-     "minAcross": 4.0,
-     "maxAcross": 7.2,
-     "use": 4.0
-    }
-   ]
-  },
-  {
-   "output": "Capital Bracket Die",
-   "seconds": 60,
-   "bays": [
-    {
-     "label": "Block",
-     "sections": [
-      "solid"
-     ],
-     "materials": [
-      "metal",
-      "steel"
-     ],
-     "minAcross": 8.0,
-     "maxAcross": 28.8,
-     "use": 8.0
-    }
-   ]
-  },
-  {
    "output": "Gear Die",
    "seconds": 15,
    "bays": [
     {
-     "label": "Block",
+     "label": "Bar",
      "sections": [
       "solid"
      ],
      "materials": [
-      "metal",
       "steel"
      ],
      "minAcross": 0.25,
@@ -140,7 +61,7 @@
    "seconds": 30,
    "bays": [
     {
-     "label": "Block",
+     "label": "Bar",
      "sections": [
       "solid"
      ],
@@ -158,7 +79,7 @@
    "seconds": 30,
    "bays": [
     {
-     "label": "Block",
+     "label": "Bar",
      "sections": [
       "solid"
      ],
@@ -176,7 +97,7 @@
    "seconds": 30,
    "bays": [
     {
-     "label": "Block",
+     "label": "Bar",
      "sections": [
       "solid"
      ],
@@ -186,60 +107,6 @@
      "minAcross": 0.25,
      "maxAcross": 0.45,
      "use": 0.25
-    }
-   ]
-  },
-  {
-   "output": "Medium Housing Die",
-   "seconds": 60,
-   "bays": [
-    {
-     "label": "Block",
-     "sections": [
-      "solid"
-     ],
-     "materials": [
-      "steel"
-     ],
-     "minAcross": 1.0,
-     "maxAcross": 1.8,
-     "use": 1.0
-    }
-   ]
-  },
-  {
-   "output": "Large Housing Die",
-   "seconds": 90,
-   "bays": [
-    {
-     "label": "Block",
-     "sections": [
-      "solid"
-     ],
-     "materials": [
-      "steel"
-     ],
-     "minAcross": 4.0,
-     "maxAcross": 7.2,
-     "use": 4.0
-    }
-   ]
-  },
-  {
-   "output": "Capital Housing Die",
-   "seconds": 120,
-   "bays": [
-    {
-     "label": "Block",
-     "sections": [
-      "solid"
-     ],
-     "materials": [
-      "steel"
-     ],
-     "minAcross": 8.0,
-     "maxAcross": 28.8,
-     "use": 8.0
     }
    ]
   },
@@ -248,7 +115,7 @@
    "seconds": 45,
    "bays": [
     {
-     "label": "Block",
+     "label": "Bar",
      "sections": [
       "solid"
      ],
@@ -258,60 +125,6 @@
      "minAcross": 0.25,
      "maxAcross": 0.45,
      "use": 0.25
-    }
-   ]
-  },
-  {
-   "output": "Medium Cylinder Die",
-   "seconds": 90,
-   "bays": [
-    {
-     "label": "Block",
-     "sections": [
-      "solid"
-     ],
-     "materials": [
-      "steel"
-     ],
-     "minAcross": 1.0,
-     "maxAcross": 1.8,
-     "use": 1.0
-    }
-   ]
-  },
-  {
-   "output": "Large Cylinder Die",
-   "seconds": 135,
-   "bays": [
-    {
-     "label": "Block",
-     "sections": [
-      "solid"
-     ],
-     "materials": [
-      "steel"
-     ],
-     "minAcross": 4.0,
-     "maxAcross": 7.2,
-     "use": 4.0
-    }
-   ]
-  },
-  {
-   "output": "Capital Cylinder Die",
-   "seconds": 180,
-   "bays": [
-    {
-     "label": "Block",
-     "sections": [
-      "solid"
-     ],
-     "materials": [
-      "steel"
-     ],
-     "minAcross": 8.0,
-     "maxAcross": 28.8,
-     "use": 8.0
     }
    ]
   },
@@ -320,74 +133,16 @@
    "seconds": 15,
    "bays": [
     {
-     "label": "Block",
+     "label": "Bar",
      "sections": [
       "solid"
      ],
      "materials": [
-      "metal",
       "steel"
      ],
      "minAcross": 0.25,
      "maxAcross": 0.45,
      "use": 0.25
-    }
-   ]
-  },
-  {
-   "output": "Medium Plate Die",
-   "seconds": 30,
-   "bays": [
-    {
-     "label": "Block",
-     "sections": [
-      "solid"
-     ],
-     "materials": [
-      "metal",
-      "steel"
-     ],
-     "minAcross": 1.0,
-     "maxAcross": 1.8,
-     "use": 1.0
-    }
-   ]
-  },
-  {
-   "output": "Large Plate Die",
-   "seconds": 45,
-   "bays": [
-    {
-     "label": "Block",
-     "sections": [
-      "solid"
-     ],
-     "materials": [
-      "metal",
-      "steel"
-     ],
-     "minAcross": 4.0,
-     "maxAcross": 7.2,
-     "use": 4.0
-    }
-   ]
-  },
-  {
-   "output": "Capital Plate Die",
-   "seconds": 60,
-   "bays": [
-    {
-     "label": "Block",
-     "sections": [
-      "solid"
-     ],
-     "materials": [
-      "metal",
-      "steel"
-     ],
-     "minAcross": 8.0,
-     "maxAcross": 28.8,
-     "use": 8.0
     }
    ]
   },
@@ -396,7 +151,7 @@
    "seconds": 30,
    "bays": [
     {
-     "label": "Block",
+     "label": "Bar",
      "sections": [
       "solid"
      ],
@@ -406,60 +161,6 @@
      "minAcross": 0.25,
      "maxAcross": 0.45,
      "use": 0.25
-    }
-   ]
-  },
-  {
-   "output": "Medium Drive Die",
-   "seconds": 60,
-   "bays": [
-    {
-     "label": "Block",
-     "sections": [
-      "solid"
-     ],
-     "materials": [
-      "steel"
-     ],
-     "minAcross": 1.0,
-     "maxAcross": 1.8,
-     "use": 1.0
-    }
-   ]
-  },
-  {
-   "output": "Large Drive Die",
-   "seconds": 90,
-   "bays": [
-    {
-     "label": "Block",
-     "sections": [
-      "solid"
-     ],
-     "materials": [
-      "steel"
-     ],
-     "minAcross": 4.0,
-     "maxAcross": 7.2,
-     "use": 4.0
-    }
-   ]
-  },
-  {
-   "output": "Capital Drive Die",
-   "seconds": 120,
-   "bays": [
-    {
-     "label": "Block",
-     "sections": [
-      "solid"
-     ],
-     "materials": [
-      "steel"
-     ],
-     "minAcross": 8.0,
-     "maxAcross": 28.8,
-     "use": 8.0
     }
    ]
   },
@@ -468,7 +169,7 @@
    "seconds": 30,
    "bays": [
     {
-     "label": "Block",
+     "label": "Bar",
      "sections": [
       "solid"
      ],
@@ -478,24 +179,6 @@
      "minAcross": 0.25,
      "maxAcross": 0.45,
      "use": 0.25
-    }
-   ]
-  },
-  {
-   "output": "Medium Shaft Die",
-   "seconds": 60,
-   "bays": [
-    {
-     "label": "Block",
-     "sections": [
-      "solid"
-     ],
-     "materials": [
-      "steel"
-     ],
-     "minAcross": 1.0,
-     "maxAcross": 1.8,
-     "use": 1.0
     }
    ]
   },
@@ -504,7 +187,7 @@
    "seconds": 45,
    "bays": [
     {
-     "label": "Block",
+     "label": "Bar",
      "sections": [
       "solid"
      ],
@@ -514,42 +197,6 @@
      "minAcross": 0.25,
      "maxAcross": 0.45,
      "use": 0.25
-    }
-   ]
-  },
-  {
-   "output": "Medium Actuator Die",
-   "seconds": 90,
-   "bays": [
-    {
-     "label": "Block",
-     "sections": [
-      "solid"
-     ],
-     "materials": [
-      "steel"
-     ],
-     "minAcross": 1.0,
-     "maxAcross": 1.8,
-     "use": 1.0
-    }
-   ]
-  },
-  {
-   "output": "Large Actuator Die",
-   "seconds": 135,
-   "bays": [
-    {
-     "label": "Block",
-     "sections": [
-      "solid"
-     ],
-     "materials": [
-      "steel"
-     ],
-     "minAcross": 4.0,
-     "maxAcross": 7.2,
-     "use": 4.0
     }
    ]
   },
@@ -558,7 +205,7 @@
    "seconds": 30,
    "bays": [
     {
-     "label": "Block",
+     "label": "Bar",
      "sections": [
       "solid"
      ],
@@ -568,42 +215,6 @@
      "minAcross": 0.25,
      "maxAcross": 0.45,
      "use": 0.25
-    }
-   ]
-  },
-  {
-   "output": "Medium Spring Die",
-   "seconds": 60,
-   "bays": [
-    {
-     "label": "Block",
-     "sections": [
-      "solid"
-     ],
-     "materials": [
-      "steel"
-     ],
-     "minAcross": 1.0,
-     "maxAcross": 1.8,
-     "use": 1.0
-    }
-   ]
-  },
-  {
-   "output": "Large Spring Die",
-   "seconds": 90,
-   "bays": [
-    {
-     "label": "Block",
-     "sections": [
-      "solid"
-     ],
-     "materials": [
-      "steel"
-     ],
-     "minAcross": 4.0,
-     "maxAcross": 7.2,
-     "use": 4.0
     }
    ]
   },
@@ -612,36 +223,16 @@
    "seconds": 15,
    "bays": [
     {
-     "label": "Block",
+     "label": "Bar",
      "sections": [
       "solid"
      ],
      "materials": [
-      "metal",
       "steel"
      ],
      "minAcross": 0.25,
      "maxAcross": 0.45,
      "use": 0.25
-    }
-   ]
-  },
-  {
-   "output": "Medium Cable Die",
-   "seconds": 30,
-   "bays": [
-    {
-     "label": "Block",
-     "sections": [
-      "solid"
-     ],
-     "materials": [
-      "metal",
-      "steel"
-     ],
-     "minAcross": 1.0,
-     "maxAcross": 1.8,
-     "use": 1.0
     }
    ]
   },
@@ -650,7 +241,7 @@
    "seconds": 30,
    "bays": [
     {
-     "label": "Block",
+     "label": "Bar",
      "sections": [
       "solid"
      ],
@@ -660,42 +251,6 @@
      "minAcross": 0.25,
      "maxAcross": 0.45,
      "use": 0.25
-    }
-   ]
-  },
-  {
-   "output": "Medium Control Die",
-   "seconds": 60,
-   "bays": [
-    {
-     "label": "Block",
-     "sections": [
-      "solid"
-     ],
-     "materials": [
-      "steel"
-     ],
-     "minAcross": 1.0,
-     "maxAcross": 1.8,
-     "use": 1.0
-    }
-   ]
-  },
-  {
-   "output": "Large Control Die",
-   "seconds": 90,
-   "bays": [
-    {
-     "label": "Block",
-     "sections": [
-      "solid"
-     ],
-     "materials": [
-      "steel"
-     ],
-     "minAcross": 4.0,
-     "maxAcross": 7.2,
-     "use": 4.0
     }
    ]
   },
@@ -704,7 +259,7 @@
    "seconds": 30,
    "bays": [
     {
-     "label": "Block",
+     "label": "Bar",
      "sections": [
       "solid"
      ],
@@ -714,60 +269,6 @@
      "minAcross": 0.25,
      "maxAcross": 0.45,
      "use": 0.25
-    }
-   ]
-  },
-  {
-   "output": "Medium Tank Die",
-   "seconds": 60,
-   "bays": [
-    {
-     "label": "Block",
-     "sections": [
-      "solid"
-     ],
-     "materials": [
-      "steel"
-     ],
-     "minAcross": 1.0,
-     "maxAcross": 1.8,
-     "use": 1.0
-    }
-   ]
-  },
-  {
-   "output": "Large Tank Die",
-   "seconds": 90,
-   "bays": [
-    {
-     "label": "Block",
-     "sections": [
-      "solid"
-     ],
-     "materials": [
-      "steel"
-     ],
-     "minAcross": 4.0,
-     "maxAcross": 7.2,
-     "use": 4.0
-    }
-   ]
-  },
-  {
-   "output": "Capital Tank Die",
-   "seconds": 120,
-   "bays": [
-    {
-     "label": "Block",
-     "sections": [
-      "solid"
-     ],
-     "materials": [
-      "steel"
-     ],
-     "minAcross": 8.0,
-     "maxAcross": 28.8,
-     "use": 8.0
     }
    ]
   },
@@ -776,74 +277,16 @@
    "seconds": 15,
    "bays": [
     {
-     "label": "Block",
+     "label": "Bar",
      "sections": [
       "solid"
      ],
      "materials": [
-      "metal",
       "steel"
      ],
      "minAcross": 0.25,
      "maxAcross": 0.45,
      "use": 0.25
-    }
-   ]
-  },
-  {
-   "output": "Medium Beam Die",
-   "seconds": 30,
-   "bays": [
-    {
-     "label": "Block",
-     "sections": [
-      "solid"
-     ],
-     "materials": [
-      "metal",
-      "steel"
-     ],
-     "minAcross": 1.0,
-     "maxAcross": 1.8,
-     "use": 1.0
-    }
-   ]
-  },
-  {
-   "output": "Large Beam Die",
-   "seconds": 45,
-   "bays": [
-    {
-     "label": "Block",
-     "sections": [
-      "solid"
-     ],
-     "materials": [
-      "metal",
-      "steel"
-     ],
-     "minAcross": 4.0,
-     "maxAcross": 7.2,
-     "use": 4.0
-    }
-   ]
-  },
-  {
-   "output": "Capital Beam Die",
-   "seconds": 60,
-   "bays": [
-    {
-     "label": "Block",
-     "sections": [
-      "solid"
-     ],
-     "materials": [
-      "metal",
-      "steel"
-     ],
-     "minAcross": 8.0,
-     "maxAcross": 28.8,
-     "use": 8.0
     }
    ]
   },
@@ -852,7 +295,7 @@
    "seconds": 30,
    "bays": [
     {
-     "label": "Block",
+     "label": "Bar",
      "sections": [
       "solid"
      ],
@@ -862,42 +305,6 @@
      "minAcross": 0.25,
      "maxAcross": 0.45,
      "use": 0.25
-    }
-   ]
-  },
-  {
-   "output": "Medium Barrel Die",
-   "seconds": 60,
-   "bays": [
-    {
-     "label": "Block",
-     "sections": [
-      "solid"
-     ],
-     "materials": [
-      "steel"
-     ],
-     "minAcross": 1.0,
-     "maxAcross": 1.8,
-     "use": 1.0
-    }
-   ]
-  },
-  {
-   "output": "Large Barrel Die",
-   "seconds": 90,
-   "bays": [
-    {
-     "label": "Block",
-     "sections": [
-      "solid"
-     ],
-     "materials": [
-      "steel"
-     ],
-     "minAcross": 4.0,
-     "maxAcross": 7.2,
-     "use": 4.0
     }
    ]
   },
@@ -906,7 +313,7 @@
    "seconds": 30,
    "bays": [
     {
-     "label": "Block",
+     "label": "Bar",
      "sections": [
       "solid"
      ],
@@ -916,24 +323,6 @@
      "minAcross": 0.25,
      "maxAcross": 0.45,
      "use": 0.25
-    }
-   ]
-  },
-  {
-   "output": "Medium Receiver Die",
-   "seconds": 60,
-   "bays": [
-    {
-     "label": "Block",
-     "sections": [
-      "solid"
-     ],
-     "materials": [
-      "steel"
-     ],
-     "minAcross": 1.0,
-     "maxAcross": 1.8,
-     "use": 1.0
     }
    ]
   },
@@ -942,7 +331,7 @@
    "seconds": 45,
    "bays": [
     {
-     "label": "Block",
+     "label": "Bar",
      "sections": [
       "solid"
      ],
@@ -952,60 +341,6 @@
      "minAcross": 0.25,
      "maxAcross": 0.45,
      "use": 0.25
-    }
-   ]
-  },
-  {
-   "output": "Medium Engine Die",
-   "seconds": 90,
-   "bays": [
-    {
-     "label": "Block",
-     "sections": [
-      "solid"
-     ],
-     "materials": [
-      "steel"
-     ],
-     "minAcross": 1.0,
-     "maxAcross": 1.8,
-     "use": 1.0
-    }
-   ]
-  },
-  {
-   "output": "Large Engine Die",
-   "seconds": 135,
-   "bays": [
-    {
-     "label": "Block",
-     "sections": [
-      "solid"
-     ],
-     "materials": [
-      "steel"
-     ],
-     "minAcross": 4.0,
-     "maxAcross": 7.2,
-     "use": 4.0
-    }
-   ]
-  },
-  {
-   "output": "Capital Engine Die",
-   "seconds": 180,
-   "bays": [
-    {
-     "label": "Block",
-     "sections": [
-      "solid"
-     ],
-     "materials": [
-      "steel"
-     ],
-     "minAcross": 8.0,
-     "maxAcross": 28.8,
-     "use": 8.0
     }
    ]
   }

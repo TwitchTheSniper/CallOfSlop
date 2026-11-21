@@ -116,6 +116,7 @@ public enum CActKind : byte
     Fleet, // u8 FleetOp, u8 group slot, u16 body, u32 uid, vec at, u8 arg, f32 value: a player's fleet group from the command view (protocol 368; GameCrewFleetPlayers.cs)
     Gantry, // u16 body, u16 part, u8 slot, u8 module index: a Shell Gantry fits that module to its shell (protocol 370; GameShellGantry.cs)
     SeamBreak, // u16 body, u16 part, u16 other part: the attach tool's RMB breaks the seam between the two (protocol 373; ConstructSeams.cs)
+    ModControl, // u16 body, u16 part, u8 control (1 eject, 2 lock, 3 gun pull on, 4 off), vec point (body frame): a module socket's controls (protocol 394; ModuleGuide.cs)
 }
 
 /// <summary>
@@ -360,6 +361,8 @@ public sealed partial class Game
                 SandboxRiderGrab(p); // (the held thing follows the look)
             else if (Constructs.PlayerSpotCount < Constructs.PlayerSpots.Length)
                 Constructs.PlayerSpots[Constructs.PlayerSpotCount++] = p.Position; // (proximity sensors)
+            if (p.Alive && h.Tool == ConstructTool.PhysicsGun)
+                ModuleGuide.PlayerTick(Constructs, SandboxHands, p.Id, p.Eye, GravityFrames.Forward(p.Position, p.Yaw, p.Pitch), p.Yaw); // (a pull on a fitted module, a held one's pull-in: ModuleGuide.cs)
             if ((p.Eva & Eva.Mmu) != 0 && (p.Sim.Gear & PilotGear.Mmu) == 0)
                 p.Sim.JetFuel = p.MmuFuel; // (a teleport made a new MoveState: the pack's tank is still the pack's)
             p.Sim.Gear = SandboxWorn(p);
@@ -425,6 +428,7 @@ public sealed partial class Game
             if (c!.Parts[seat].D.ShellRange > 0)
                 SandboxShellChair(p, ref h, c, seat, now); // (a shell chair: GameRobotShell.cs)
         }
+        ModuleGuide.Step(Constructs, SandboxHands); // (sockets eject, reseat and draw in their modules; their plates' wires: ModuleGuide.cs)
         _sbEye ??= id => Players.TryGetValue(id, out var pl) && pl.Alive ? pl.Eye : null;
         SandboxHands.Tick(Constructs, now, _sbEye);
         SandboxHands.BeaconOf ??= SandboxBeacon;
@@ -456,7 +460,7 @@ public sealed partial class Game
         SandboxBeaconTick(); // (Inventory Beacons: what each player's reach, GameSandboxBeacon.cs)
         SandboxTerminalTick(); // (Smart Terminals: pulls under way and what each player stands at, GameSandboxTerminal.cs)
         SandboxOfficeTick(now); // (the IT Department's fax line: GameSandboxOffice.cs)
-        SandboxScamTick(now); // (the Scammers' adverts: GameSandboxScams.cs)
+        SandboxPressCrush(now); // (the clamshell Press's swing and slam: GameSandboxPress.cs)
         SandboxAidsTick(); // (build stations: GameSandboxAids.cs)
         AllocProfile.Mark("sandbox: spawns, pilots, debris");
         var perf = Perf.Measure(PerfArea.SandboxWorld);
@@ -1124,6 +1128,13 @@ public sealed partial class Game
                 var part = r.U16();
                 return hands.BreakSeam(Constructs, p.Id, eye, body, part, r.U16());
             }
+            case CActKind.ModControl:
+            {
+                var body = r.U16();
+                var part = r.U16();
+                var control = r.U8();
+                return hands.ModuleControl(Constructs, p.Id, body, part, control, eye, r.Vec());
+            }
             case CActKind.SocketWeld:
             {
                 var body = r.U16();
@@ -1630,6 +1641,9 @@ public sealed partial class Game
             case CActKind.SeamBreak:
                 w.U16(body).U16(part).U16(socket); // (socket: the other part)
                 break;
+            case CActKind.ModControl:
+                w.U16(body).U16(part).U8(variant).Vec(at); // (variant: the control; at: the beam's point, body frame)
+                break;
             case CActKind.Dampeners:
             case CActKind.MouseSteer:
             case CActKind.LandingGear:
@@ -1755,8 +1769,6 @@ public sealed partial class Game
     /// <summary>Client (or the host itself): a finger on a panel's button. The server checks it as the configure tool's.</summary>
     public void SandboxPanelTouch(ushort body, int part, int panel, int region)
     {
-        if (Constructs.Get(body) is { } tc && part < tc.PartCount && tc.Parts[part].D.Office == OfficeKind.Computer)
-            OfficeParts.Clicked(tc, part, region); // (an advert: this screen shows the scam: GameSandboxScams.cs)
         var w = SbW;
         w.Begin(Msg.CAct).U8((byte)CActKind.PanelTouch).U16(body).U16((ushort)part).U8((byte)panel).U8((byte)region);
         if (IsServer)
@@ -2911,7 +2923,8 @@ public sealed partial class Game
         if (h.Seated && Constructs.Get(h.SeatBody) is { } gunship && gunship.SeatKindOf(h.SeatPart) == SeatKind.Gunner && GunOfSeat(gunship, h.SeatPart) is var gk and >= 0)
         {
             lines.Add(new HudLine(GunLine(gunship, gk), gunship.Guns[gk].Problem.Length > 0 ? red : white));
-            lines.Add(new HudLine(ConstructModules.TurretsOf(gunship, h.SeatPart) > 1 ? SandboxKeys.GunnerTurrets : SandboxKeys.Gunner, dim));
+            if (!SeatPanelShown) // (the seat controls panel lists the keys: UI/UiSeatPanel.cs)
+                lines.Add(new HudLine(ConstructModules.TurretsOf(gunship, h.SeatPart) > 1 ? SandboxKeys.GunnerTurrets : SandboxKeys.Gunner, dim));
             return;
         }
         if (h.Seated && Constructs.Get(h.SeatBody) is { } ride && h.SeatPart != ride.DriveSeat && ride.SeatOf(me.Id) != ride.DriveSeat)
@@ -2920,7 +2933,8 @@ public sealed partial class Game
                 lines.Add(new HudLine($"Won't go: {seatWhy}", red));
             else
                 lines.Add(new HudLine("Passenger", white));
-            lines.Add(new HudLine(SandboxKeys.GetOut, dim));
+            if (!SeatPanelShown)
+                lines.Add(new HudLine(SandboxKeys.GetOut, dim));
             return;
         }
         if (me.Sim.Canopy == PilotGear.OpenChute || me.Sim.Canopy == PilotGear.OpenGlider)
@@ -2961,23 +2975,26 @@ public sealed partial class Game
             {
                 lines.Add(new HudLine(jump, jump.StartsWith("Jump drive: ") && !jump.Contains(" ly, ") ? orange : white)); // (GameSpaceJump.cs)
             }
-            if (ConstructDoors.GearState(car) is var gear and > 0)
+            if (ConstructDoors.GearState(car) is var gear and > 0 && !SeatPanelShown)
                 lines.Add(new HudLine(gear == 2 ? SandboxKeys.GearRaise : SandboxKeys.GearLower, dim)); // (the landing leg pods: ConstructDoors.ToggleGear)
             if (car.GunCount > 0)
             {
                 var carGun = Math.Max(0, GunOfSeat(car, h.SeatPart));
                 lines.Add(new HudLine(GunLine(car, carGun), car.Guns[carGun].Problem.Length > 0 ? red : white));
             }
-            if (ConstructCarrier.Hint(Constructs, car) is { } pilotKey)
+            if (!SeatPanelShown && ConstructCarrier.Hint(Constructs, car) is { } pilotKey)
                 lines.Add(new HudLine(pilotKey, white));
-            if (h.SeatPart < car.PartCount && car.Parts[h.SeatPart].D.SeatEject)
+            if (h.SeatPart < car.PartCount && car.Parts[h.SeatPart].D.SeatEject && !SeatPanelShown)
                 lines.Add(new HudLine(SandboxKeys.PilotEject, dim));
             if (ConstructFlight.DampenersOff(car))
                 lines.Add(ConstructFlight.AutopilotOn(car) || car.NavThrottle >= 0 || car.CrewAims ? new HudLine(SandboxKeys.DampenersHeld, dim) : new HudLine(SandboxKeys.DampenersOff, orange)); // (ConstructFlight.Coasts)
             if (ConstructFlight.MouseSteerOff(car))
                 lines.Add(new HudLine(SandboxKeys.MouseSteerOff, orange)); // (the mouse looks round; the nose holds, A and D turn it)
             if (car.StabCount > 0 && !car.CanDrive)
-                lines.Add(new HudLine(ConstructFlight.KeyHint(car), dim));
+            {
+                if (!SeatPanelShown)
+                    lines.Add(new HudLine(ConstructFlight.KeyHint(car), dim));
+            }
             else if (car.CanDrive && car.StarterFailed)
                 lines.Add(new HudLine(car.Electrical ? "Won't start: no charged battery reaches the engine" : ConstructDrive.NoteText(DriveNote.NeedsStarter), red));
             else if (car.CanDrive)
@@ -2985,12 +3002,19 @@ public sealed partial class Game
                 if (car.Note != DriveNote.None)
                     lines.Add(new HudLine(ConstructDrive.NoteText(car.Note), car.Note is DriveNote.Shifting or DriveNote.Spooling ? dim : orange));
                 var shifts = gears is { Trans: TransKind.Manual or TransKind.Sequential } && gears.Settings.Length > 1 && car.Parts[car.Transmission].InCount == 0;
-                lines.Add(new HudLine(car.Electrical && !car.EngineRunning ? SandboxKeys.DriveStart : shifts ? SandboxKeys.DriveShift : SandboxKeys.Drive, dim));
+                if (!SeatPanelShown)
+                    lines.Add(new HudLine(car.Electrical && !car.EngineRunning ? SandboxKeys.DriveStart : shifts ? SandboxKeys.DriveShift : SandboxKeys.Drive, dim));
             }
             else if (car.HasHubMotor)
-                lines.Add(new HudLine(car.Electrical ? SandboxKeys.Drive : "Won't go: the hub motors need power on the circuit", car.Electrical ? dim : red));
+            {
+                if (!car.Electrical || !SeatPanelShown)
+                    lines.Add(new HudLine(car.Electrical ? SandboxKeys.Drive : "Won't go: the hub motors need power on the circuit", car.Electrical ? dim : red));
+            }
             else if (car.ThrusterCount > 0 || car.RotorCount > 0)
-                lines.Add(new HudLine(SandboxKeys.Fly, dim));
+            {
+                if (!SeatPanelShown)
+                    lines.Add(new HudLine(SandboxKeys.Fly, dim));
+            }
             else if (car.LegCount > 0)
             {
                 // A walker (docs/sandbox/GIANTS.md): what stops it, else its keys.

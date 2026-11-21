@@ -596,6 +596,7 @@ public static unsafe partial class Program
         BenchPass(10);
         var fb = _window.FramebufferSize;
         PostFx.ApplyAo(Gfx, fb.X, fb.Y, Gfx.Proj);
+        PostFx.ApplyContact(Gfx, fb.X, fb.Y, Gfx.Proj); // (the shadows under bodies near the ground: PostFx.Contact.cs)
         PostFx.Apply(Gfx, fb.X, fb.Y, frame / 60.0);
         BenchPass(11);
     }

@@ -66,11 +66,11 @@ Working notes for docs/sandbox/design/bot-brain.md, kept current after every ste
   convoy is now a nobody's crewed convoy (its asker still hears of each member); a single faction vehicle from the menu stays the asker's.
 - `--crew-check --crew-convoy "A,B,C,D" [--seconds S]`; window verb `crewconvoy STYLE N`.
 
-Verified (2026-11-16): `--crew-convoy "Bandit Gun Wagon 1,Bandit Buggy 1,Bandit Car 1,Bandit Monster Truck 1"`: the leader drives 400 m in
+Verified (2026-11-16): `--crew-convoy "Raider Gun Wagon 1,Raider Buggy 1,Raider Car 1,Raider Monster Truck 1"`: the leader drives 400 m in
 60 s, followers 14 m off their places on average (the two behind the stopped one steer round it and catch up), 518 shots at the target;
 the second's driver shot, its gunner takes the wheel 2 s later; everyone aboard shot, it stops (0.0 m/s). Crew cost 39 us a tick, worst
-4.1 ms once (driving, at 17 s: not seen again; taken for JIT), 0 bytes. `--crew-scale 5000` on Bandit Buggy 1: 92 us a tick, worst 0.86 ms,
-0 bytes. A window run (`crewconvoy Bandit 3`): three generated vehicles crewed, eight bodies in seats, the convoy drives and fires.
+4.1 ms once (driving, at 17 s: not seen again; taken for JIT), 0 bytes. `--crew-scale 5000` on Raider Buggy 1: 92 us a tick, worst 0.86 ms,
+0 bytes. A window run (`crewconvoy Raider 3`): three generated vehicles crewed, eight bodies in seats, the convoy drives and fires.
 
 Unverified: walkers through the Driving Module (the same keys); a convoy's own gunners hit their own convoy (no friends yet: phase 3).
 
@@ -336,7 +336,7 @@ and fight with their sidearms where they are.
   orders at range, Robot Shells on the roster (the next kind, answer 4), a brig part (prisoners are held aboard without one), ransom.
 - Earning credits beyond the start balance and the capture bounty (a placeholder: trade comes later).
 
-Scale after phase 6 (2026-11-16): `--crew-scale 5000` on Zero Day frigates 11 us a tick (worst 93 us), on Bandit Buggy 1 as Raiders 55 us
+Scale after phase 6 (2026-11-16): `--crew-scale 5000` on Zero Day frigates 11 us a tick (worst 93 us), on Raider Buggy 1 as Raiders 55 us
 (worst 0.69 ms), 0 bytes; the fight check 26-29 us a tick, worst 0.7 to 4.1 ms once (driving: Karl's rays or JIT), and a few hundred bytes
 in 6 of 7200 ticks (none in the scale runs: taken for tier-up JIT, unproven). Self-test sections by name after merging main (protocol
 332): Sandbox spawns, Sandbox body sync, Frame allocations, World links, Space ships, Save folder: all pass.

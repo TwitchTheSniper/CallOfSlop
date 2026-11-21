@@ -1105,7 +1105,7 @@ public static class Pressed
             if (ok && TryParse(key, out var d, out _, out var blank, out _) && d != null)
             {
                 var cls = PressClass(Across(blank));
-                while (cls >= 0 && cls < PressMaxCm.Length && !ConstructParts.All.Any(x => x.IsPressDie && x.DieFamily.Equals(d.Family, StringComparison.OrdinalIgnoreCase) && ConstructPress.DieClassOf(x) == DieSocketClass[cls]))
+                while (cls >= 0 && cls < PressMaxCm.Length && !ConstructParts.All.Any(x => x.IsPressDie && x.DieFamily.Equals(d.Family, StringComparison.OrdinalIgnoreCase)))
                     cls++;
                 if (cls < 0 || cls >= PressMaxCm.Length)
                     why = $": no press with a {d.Family} Die takes a blank {Across(blank) / 100f:0.00} m across";

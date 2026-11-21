@@ -77,7 +77,7 @@ public sealed partial class Ui
             _bstFilledAt = now;
             _bstPreview.Fill(world, c, part);
             var bay = ConstructStation.BaySize(c, part);
-            _bstFit = _bstPreview.Why.Length > 0 ? $"It doesn't build: {_bstPreview.Why}" : ConstructStation.FitRefusal(_bstPreview.Size, bay) is { } no ? $"DOESN'T FIT: {no}"
+            _bstFit = _bstPreview.Why.Length > 0 ? $"It doesn't build: {_bstPreview.Why}" : ConstructStation.FitRefusal(_bstPreview.Size, bay, ConstructStation.BayCorner(c, part)) is { } no ? $"DOESN'T FIT: {no}"
                 : $"FITS: {_bstPreview.Size.X:0.0} x {_bstPreview.Size.Z:0.0} m, {_bstPreview.Size.Y:0.0} m high, in a bay {bay.X:0.0} x {bay.Z:0.0} m, {bay.Y:0.0} m high";
             _bstHead = $"{_bstPreview.Name}: {_bstPreview.Parts} parts of {_bstPreview.Kinds} kinds{(_bstPreview.Unmade > 0 ? $", {_bstPreview.Unmade} that nothing linked makes" : "")}";
         }

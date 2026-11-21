@@ -94,6 +94,7 @@ public static partial class Program
         var n = SocketWeld.Markers(world, eye, dir, reachHit ? hit.Body : null, SocketWeldRender.Markers, flow.Source, flow.SourcePart, flow.SourceSocket,
             targets: !picking, range: MathF.Max(SocketWeld.ShowRange, aimReach));
         SocketWeldRender.MarkerCount = n;
+        SocketWeldRender.FollowMarkers(world); // (drawn where their bodies are drawn: the frame's ticks move them after this)
         var marks = SocketWeldRender.Markers.AsSpan(0, n);
         // RMB: one step back (step 1: RMB is the welder's usual cut free).
         if (flow.Step != SocketWeldFlow.Stage.Source && Pressed(GameAction.Aim))
@@ -234,6 +235,10 @@ public static partial class Program
         _swReach = WeldReachNow(g, mover, _swFlow.Src, target, w);
         g.SandboxLookText = _swReach ?? _swText;
         SocketWeldRender.Ghost = mover;
+        SocketWeldRender.OnBody = target.Id;
+        SocketWeldRender.FromBody = mover.Id;
+        SocketWeldRender.Follow(target);
+        SocketWeldRender.Follow(mover);
         SocketWeldRender.GhostPos = pos;
         SocketWeldRender.GhostRot = rot;
         SocketWeldRender.Valid = (_swReach ?? _swWhy) == null;

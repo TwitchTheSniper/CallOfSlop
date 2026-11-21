@@ -212,6 +212,22 @@ public sealed partial class Game
         return pos + Vector3.Transform(Vector3.Transform(tickPoint - c.Pos, Quaternion.Conjugate(c.Rot)), rot);
     }
 
+    /// <summary>
+    /// <paramref name="c"/>'s pose as it is drawn this frame: the host draws between its last two ticks (a body RideDrawnPose
+    /// has posed is there already); a client where it is. For overlays worked out in the input, before the frame's ticks moved
+    /// the bodies (SocketWeldRender): at orbital speed that frame's travel put them a metre off the parts they mark.
+    /// </summary>
+    public void DrawnPose(Construct c, out Vector3 pos, out Quaternion rot)
+    {
+        if (!IsServer || RideDrawnHas(c))
+        {
+            (pos, rot) = (c.Pos, c.Rot);
+            return;
+        }
+        pos = Vector3.Lerp(c.PrevPos, c.Pos, _alpha);
+        rot = Quaternion.Normalize(Quaternion.Slerp(c.PrevRot, c.Rot, _alpha));
+    }
+
     /// <summary>Is <paramref name="c"/> at its drawn pose now (RideDrawnPose's set)?</summary>
     private bool RideDrawnHas(Construct c)
     {

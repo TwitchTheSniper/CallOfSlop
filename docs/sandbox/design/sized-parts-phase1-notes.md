@@ -30,7 +30,7 @@ Protocol 282. The design itself was first revised for the user's answers 6 and 8
 - `--press-part presets`: 0 problems (the three barrels come off a Small Press). `sweep barrel --samples 60`: 62 blanks,
   0 problems; 200 new keys made in one go in 6 ms.
 - `--gen-parts all --check`, `--check-construct-parts`: clean.
-- **Fired** with `--check-vehicle` on copies of the Highland Turret 1 (a Heavy Receiver, a Cross Splitter and four barrels,
+- **Fired** with `--check-vehicle` on copies of a turret blueprint (a Heavy Receiver, a Cross Splitter and four barrels,
   a gunner's seat): pressed barrels of 20, 70 and 160 cm fit, the gun has no problem, and it fires 8 shots a second. Spread:
   Gun Barrel 1.5 deg, Long Gun Barrel 1.241, and the pipe blanks 10x10x50 and 10x10x90 (sized parts, not presets) give exactly
   1.5 and 1.241; 70 cm 1.371, 160 cm 0.789. So at a knot a sized barrel is the catalogue barrel, and between knots it follows

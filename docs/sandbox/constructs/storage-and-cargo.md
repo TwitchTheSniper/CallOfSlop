@@ -357,6 +357,7 @@ into the castings' top pockets, Karl: "a box where they grab the container as a 
 
 - **The rule.** Size N (1, 2 or 3 m) holds three N x N x N slots in a row; outside N + 0.5 m across and high, 3N + 0.5 m long
   (2 m: 2.5 x 2.5 x 6.5 m). Origin the roof's middle (as the Dray's Cargo Container 20 ft), +x the hatch side, z along.
+- **Hold** (Karl, 2026-11-21, for the Traders' furniture runs): each `Standard Container Nm` is a storage part with a Storage Volume's box inside it (between the floor, the roof and the ends; `"container": true`), so it takes parts or bulk like any Storage Volume, and a crane carries it whole, contents and all. A parts hauler (Crew/Stations.json `"parts": true`) loads and unloads the Storage Volumes of the cargo it carries as well as its own (`HaulParts`, GameStationHaulers.cs): the Packet Spine Freighter's twelve containers carry Hexkey Orbital's stock.
 - **Parts.** `Standard Container Nm` (Medium class: sockets `top` +y, the roof's middle, a spreader's reference, `-y`, `foot.0`..`foot.3` under the corner
   castings and `head.0`..`head.3` on top of them (stacking: foot k on head k), `slot0`..`slot2` on the floor, `hatch` (+x) and
   `hatch.1` (-x), `clamp.0`..`clamp.3` on the foot castings' end faces), `Standard Container Nm Hatch` (an event door: one leaf the
