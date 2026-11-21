@@ -1522,7 +1522,8 @@
       "shape": "cylinder",
       "segments": 16,
       "front": "+y",
-      "paintable": false
+      "paintable": false,
+      "seam": "+y"
     },
     {
       "min": [
@@ -1541,7 +1542,8 @@
       "segments": 16,
       "front": "+y",
       "paintable": false,
-      "finish": "steel"
+      "finish": "steel",
+      "seam": "+y"
     },
     {
       "min": [
@@ -1556,7 +1558,8 @@
       ],
       "color": "#22262b",
       "detail": true,
-      "paintable": false
+      "paintable": false,
+      "seam": "+y"
     },
     {
       "min": [
@@ -1571,7 +1574,8 @@
       ],
       "color": "#22262b",
       "detail": true,
-      "paintable": false
+      "paintable": false,
+      "seam": "+y"
     },
     {
       "min": [
@@ -1586,7 +1590,8 @@
       ],
       "color": "#22262b",
       "detail": true,
-      "paintable": false
+      "paintable": false,
+      "seam": "+y"
     },
     {
       "min": [
@@ -1601,7 +1606,8 @@
       ],
       "color": "#22262b",
       "detail": true,
-      "paintable": false
+      "paintable": false,
+      "seam": "+y"
     },
     {
       "min": [
@@ -3000,6 +3006,15 @@
         0.0
       ],
       "dir": "-y"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        3.2,
+        0.0
+      ],
+      "dir": "+y"
     }
   ]
 }

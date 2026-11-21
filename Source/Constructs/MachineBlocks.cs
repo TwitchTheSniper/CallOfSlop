@@ -710,6 +710,8 @@ public static class MachineBlocks
             sb.Append($"  {c.Parts[asm.Core].D.Name} (part {asm.Core}, family {Families[asm.Family]}): {asm.Cells} cells, {Describe(c, asm)}");
             if (asm.W > 0)
                 sb.Append($", corner columns {CornerColumns(c, asm)}");
+            if (asm.W > 0 && c.Parts[asm.Core].D is { IsPanelFormer: true, IsLaserCutter: false })
+                sb.Append($", pins rise {ConstructPanelFormer.PinDepth(c, asm):0} m");
             var faces = 0;
             for (var i = 0; i < c.PartCount && i < c.BlockAsmOf.Length; i++)
                 if (c.BlockAsmOf[i] == a)
