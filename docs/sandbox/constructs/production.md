@@ -1780,6 +1780,35 @@ any piece that reaches a player standing on a construct (a floor slab, a pad, a 
 arm or fetch as a new, empty one, and set down loose only when it holds nothing ("holds something: empty it first"). A Drill Module
 is 2.2 m tall: a Large pad, not a Medium one.
 
+## Bake Oven and baked parts (2026-11-21)
+
+The Bake Oven (`ConstructBakeOven.cs`, design page drawing 19) is an Oven Core, the Oven Bed Blocks welded beside it and a Mast Block
+column on each corner of the bed. A welded group set on the bed bakes into one part, or a baked part un-bakes back into its subparts
+(the Core's Mode setting: Bake or Un-bake). The code is `BakedParts.cs`.
+
+- **The cycle.** With power, the group on the clear cells, settled and under the hood, the hood drops, the bed heats (2 s a subpart times
+  12 over the bed's blocks), it cools and lifts. The bake or un-bake happens at the end of the heat. The screen then reads "Done: lift it
+  off" until the new body leaves the bed (or the mode is turned). Anyone under the hood is crushed or burned.
+- **What bakes.** Plain structure only: frames, panels and foundations, part files and run-time parts alike (formed skins, pressed slabs,
+  extrusions, hull sections, other baked parts), on the body or on freeform welds at a grid turn. Module Socket plates are never baked:
+  they stay real parts beside the baked one. A part that works, moves or holds, a joint, a weld at an angle, or more than 256 boxes in all
+  is refused before the hood drops ("Can't bake that"; the oven verb and the log say which part). Un-bake takes a body of one baked part
+  and its plates ("Not a baked part" otherwise).
+- **The part.** `Baked (#hash)`: every subpart's boxes turned and moved to its place, with its paint and finish drawn in (a shaped box
+  keeps its subpart's turn in `CPartBox.Turn`), so armour stays where the slabs were; the subparts' sockets less the pairs that met inside
+  the group; their mass, health and lamps summed. It recycles by its mass, so it costs what its subparts cost. Its health is the group's
+  share of the total; un-baking shares the damage out the same way.
+- **The design store.** The hash names a design: one text line a subpart (its name or key, its place in cm from the baked part's origin,
+  its turn, paint and finish), sorted, so a group bakes to the same hash anywhere. Every peer keeps designs by hash; a world keeps the
+  ones its ovens made (`ConstructWorld.Baked`), saves them in a `BAKE` section ahead of the part names, and sends them to a joiner before any
+  body and to everyone as each is made (`CBodyKind.Baked`, protocol 422). A design off the wire or a save is checked against its hash. A
+  player blueprint that holds a baked part only builds in a world that knows its design.
+- **Trying it.** `--bake-check ["PART;PART..."]` bakes a row of parts headless at mixed turns and checks the round trip: sums, every mesh
+  where its subpart drew it, the design through the wire and a save, un-baking back to the same parts and a second bake to the same hash.
+  In a window run, the `oven` verb prints each oven and every baked part; `oven put A+B+C` sets a new group of those parts on the bed and
+  `oven mode bake|unbake` turns the setting.
+- **Not yet.** The no-collide socket hole on a baked part (hull-dress.md), a Piece out conveyor, and baking by order from a line.
+
 ## Production Showcase
 
 One shipped blueprint, **Production Showcase** (`Constructs/Blueprints/ProductionShowcase.json`, group Production), with every machine

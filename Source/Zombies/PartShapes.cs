@@ -109,6 +109,17 @@ public static class PartShapes
         }
     }
 
+    /// <summary>
+    /// One more holder of a shape another part made (a baked part keeps its subparts' shapes: BakedParts.cs): inside a collection it is counted
+    /// and listed for the part being made, as <see cref="For"/> does; outside, it is kept for good.
+    /// </summary>
+    internal static void Keep(ushort id)
+    {
+        lock (Gate)
+            if (id > 0 && id < Meshes.Count && KeyOfId[id] != null)
+                Hold(id);
+    }
+
     /// <summary>Goes up whenever a new mesh is added (the renderer re-uploads its vertex buffer when it changes).</summary>
     public static int Version { get; private set; }
 

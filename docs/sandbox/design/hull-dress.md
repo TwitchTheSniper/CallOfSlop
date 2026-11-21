@@ -5,7 +5,7 @@ Sean, 2026-11-21. The agreed design is the Claude Doc "Detailed hull pieces: des
 "Zero Day Hull Pieces" page (https://claude.ai/artifact/HLvEvfJwDuEB9vwMZJWcna). In short:
 
 - A formed skin is dressed with subparts (slabs, rails, strips and the extra bits), welded, and baked into one
-  `Baked (#hash)` part by the Bake Oven (built in its own thread).
+  `Baked (#hash)` part by the Bake Oven (production.md "Bake Oven and baked parts").
 - **Dress surfaces.** Every formed skin has one on each facet; subparts lie flush on it in 5 cm steps, slabs made
   tapered to their spot (the sleek look, not square on the grid).
 - **The Dress step is in the first version:** a setting on a skin (a style and a salt) that lays the style's pattern out
@@ -26,6 +26,7 @@ Sean, 2026-11-21. The agreed design is the Claude Doc "Detailed hull pieces: des
 | 2 | Dress styles as data: `Constructs/DressStyles.json` (`DressStyles`), IT from the Zero Day | Done (IT only) |
 | 3 | Hull sections: `Hull Section (...)`, a dressed skin made at run time from its key (`HullLoft.Section.cs`), the dress drawn into the part (Sean's choice between dress in the skin's key and separate subparts on facet welds, 2026-11-21: the separate parts would sit on slopes, which a grid-placed part can't, and each facet would cost a freeform weld) | Done; `--hull-section [KEY\|example]` |
 | 4 | Production: a machine makes sections (the Panel Former rework is another thread's; the factory layout is a separate set of agents) | Waits |
+| 4b | The bake: a welded group into one `Baked (#hash)` part and back, a design store per world (`BakedParts.cs`; production.md "Bake Oven and baked parts") | Done; `--bake-check` |
 | 5 | 32 render holes (`Renderer.CutMax`, `uCut[96]`, `CutRun` = first x 64 + count) | Done; the no-collide socket hole waits for the Bake Oven |
 
 The hull's void (the hidden boxes behind the Zero Day's skin) stays in its generator until open item 3 of the design is
