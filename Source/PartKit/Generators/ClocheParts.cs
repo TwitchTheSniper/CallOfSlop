@@ -46,7 +46,7 @@ public sealed class ClocheParts : IPartGenerator
     private static readonly double[] Ribs = [-15.6, -12.4, -9.2, -6.0, -2.8, 0.4, 3.6, 6.8];
 
     // The cab: a bus front on the bow, its floor level with the deck, a walkable roof behind a visor.
-    private const double CabX = 2.9, CabZ0 = -22.0, CabY0 = 0.6, CabRoof0 = 4.45, CabRoof1 = 4.6, BalZ = -17.7;
+    private const double CabX = 2.9, CabZ0 = -22.0, CabY0 = 0.6, CabRoof0 = 4.45, CabRoof1 = 4.6, BalZ = -18.1;
     private const double StepZ0 = -20.6, StepY0 = 1.15;
     private const double DoorX0 = -4.1, DoorX1 = -3.05, DoorTop = 3.4, CabDoor = 0.6;
     private const double FbZ0 = -11.15, FbZ1 = -10.85, PassX = 0.7, PassTop = 3.5;
@@ -265,12 +265,12 @@ public sealed class ClocheParts : IPartGenerator
         var za = Math.Max(z0, BowZ + Ch);
         var zb = Math.Min(z1, RoofEnd);
         Detail(p, s * (Hw - 0.02), PlinthY, za, s * Hw, Eave, zb, Red, "painted plating");
-        Plate(p, [[s * Hw, Eave, za], [s * Hw, Eave, zb], [s * (Hw - Ch), RoofY, zb], [s * (Hw - Ch), RoofY, za]], Red);
+        Plate(p, [[s * Hw, Eave, za + 0.006], [s * Hw, Eave, zb - 0.006], [s * (Hw - Ch), RoofY, zb - 0.006], [s * (Hw - Ch), RoofY, za + 0.006]], Red);
         foreach (var rz in Ribs.Where(r => r > z0 + 0.2 && r < z1 - 0.2))
         {
             Detail(p, s * (Hw - 0.03), 0.75, rz - 0.18, s * (Hw + 0.13), Eave + 0.06, rz + 0.18, Rib, "worn paint");
             const double o = 0.065;
-            Plate(p, [[s * (Hw + o), Eave + o, rz - 0.18], [s * (Hw + o), Eave + o, rz + 0.18], [s * (Hw - Ch + o), RoofY + o, rz + 0.18], [s * (Hw - Ch + o), RoofY + o, rz - 0.18]], Rib, "worn paint", thick: 0.13);
+            Plate(p, [[s * (Hw + o), Eave + o, rz - 0.174], [s * (Hw + o), Eave + o, rz + 0.174], [s * (Hw - Ch + o), RoofY + o, rz + 0.174], [s * (Hw - Ch + o), RoofY + o, rz - 0.174]], Rib, "worn paint", thick: 0.13);
             // (a hazard mark high on the bay after the rib, and a cream plate on every other bay)
             for (var k = 0; k < 4; k++)
                 Detail(p, s * (Hw - 0.004), 5.32, rz + 0.36 + k * 0.16, s * (Hw + 0.012), 5.46, rz + 0.44 + k * 0.16, k % 2 == 0 ? Hazard : HazDark, "hazard paint");
@@ -496,15 +496,15 @@ public sealed class ClocheParts : IPartGenerator
         Hidden(p, s * In, Y0, AftZ, s * Hw, AftCeil, SternIn);
         const double z0 = RoofEnd, zr = SternZ - Ch;
         Detail(p, s * (Hw - 0.016), PlinthY, z0, s * (Hw + 0.004), AftEave, zr, Red, "painted plating");
-        Plate(p, [[s * Hw, AftEave, z0], [s * Hw, AftEave, zr], [s * (Hw - Ch), AftTop, zr], [s * (Hw - Ch), AftTop, z0 + Ch]], Red);
-        Plate(p, [[s * (Hw - Ch), PlinthY, SternZ], [s * Hw, PlinthY, zr], [s * Hw, AftEave, zr], [s * (Hw - Ch), AftEave, SternZ]], Red);
+        Plate(p, [[s * Hw, AftEave, z0], [s * Hw, AftEave, zr - 0.006], [s * (Hw - Ch), AftTop, zr - 0.006], [s * (Hw - Ch), AftTop, z0 + Ch]], Red);
+        Plate(p, [[s * (Hw - Ch), PlinthY + 0.006, SternZ], [s * Hw, PlinthY + 0.006, zr], [s * Hw, AftEave - 0.003, zr], [s * (Hw - Ch), AftEave - 0.003, SternZ]], Red);
         Plate(p, [[s * (Hw - Ch), AftEave, SternZ], [s * Hw, AftEave, zr], [s * (Hw - Ch), AftTop, zr]], Red);
         foreach (var rz in new[] { z0 + 0.2, zr - 0.3 })
         {
             Detail(p, s * (Hw - 0.03), 0.75, rz - 0.18, s * (Hw + 0.13), AftEave + 0.06, rz + 0.18, Rib, "worn paint");
             const double o = 0.065;
             if (rz - 0.18 > z0 + Ch)
-                Plate(p, [[s * (Hw + o), AftEave + o, rz - 0.18], [s * (Hw + o), AftEave + o, rz + 0.18], [s * (Hw - Ch + o), AftTop + o, rz + 0.18], [s * (Hw - Ch + o), AftTop + o, rz - 0.18]], Rib, "worn paint", thick: 0.13);
+                Plate(p, [[s * (Hw + o), AftEave + o, rz - 0.174], [s * (Hw + o), AftEave + o, rz + 0.174], [s * (Hw - Ch + o), AftTop + o, rz + 0.174], [s * (Hw - Ch + o), AftTop + o, rz - 0.174]], Rib, "worn paint", thick: 0.13);
         }
         Detail(p, s * (Hw - 0.02), 5.95, z0 + 0.38, s * (Hw + 0.1), 6.3, zr - 0.48, Rib, "worn paint"); // (the band at the hull's eave)
         // The louvred vent (cream, dark slats) and the grille (dark, lighter bars).
@@ -527,7 +527,7 @@ public sealed class ClocheParts : IPartGenerator
         var p = Piece("Cloche Aft Roof", "The roof of the Cloche's aft block: two dark stacks with caps, masts with lamps, a radome on a yellow lattice tower and a dark grille over the engine room.");
         Hidden(p, -Hw, AftCeil, AftZ, Hw, AftTop, SternIn);
         const double z0 = RoofEnd, zr = SternZ - Ch;
-        Detail(p, -(Hw - Ch), AftTop - 0.02, z0 + Ch, Hw - Ch, AftTop, zr, Red, "painted plating");
+        Detail(p, -(Hw - Ch) + 0.006, AftTop - 0.02, z0 + Ch + 0.006, Hw - Ch - 0.006, AftTop, zr - 0.006, Red, "painted plating");
         Plate(p, [[-Hw, AftEave, z0], [Hw, AftEave, z0], [Hw - Ch, AftTop, z0 + Ch], [-(Hw - Ch), AftTop, z0 + Ch]], Rib, "worn paint");
         Plate(p, [[-(Hw - Ch), AftEave, SternZ], [Hw - Ch, AftEave, SternZ], [Hw - Ch, AftTop, zr], [-(Hw - Ch), AftTop, zr]], Red);
         Detail(p, -(Hw - Ch), AftTop, zr - 0.48, Hw - Ch, AftTop + 0.03, zr - 0.12, Rib, "worn paint");
@@ -631,11 +631,12 @@ public sealed class ClocheParts : IPartGenerator
         {
             var (ax, ay) = Vault(xc, k);
             var (bx, by) = Vault(xc, k + 1);
-            Plate(p, [[ax, ay, ga], [bx, by, ga], [bx, by, gb], [ax, ay, gb]], GlassC, glass: true, thick: 0.02);
+            var st = k % 2 == 1 ? 0.006 : 0.0; // (alternate facets stop short, so neighbours' ends never share a plane)
+            Plate(p, [[ax, ay, ga + st], [bx, by, ga + st], [bx, by, gb - st], [ax, ay, gb - st]], GlassC, glass: true, thick: 0.02);
             if (k > 0)
-                Detail(p, ax - 0.045, ay - 0.045, ga, ax + 0.045, ay + 0.045, gb, Cream, "painted steel");
+                Detail(p, ax - 0.045, ay - 0.045, ga + 0.03 + 0.004 * (k % 2), ax + 0.045, ay + 0.045, gb - 0.03 - 0.004 * (k % 2), Cream, "painted steel");
         }
-        Detail(p, xc - 0.06, GWall + GRise - 0.03, ga, xc + 0.06, GWall + GRise + 0.07, gb, Cream, "painted steel"); // (the ridge)
+        Detail(p, xc - 0.06, GWall + GRise - 0.03, ga + 0.02, xc + 0.06, GWall + GRise + 0.07, gb - 0.02, Cream, "painted steel"); // (the ridge)
         // The arched frames across it.
         var frames = new List<double>();
         for (var z = za; z < zb - 0.5; z += (zb - za) / 4)
@@ -650,7 +651,13 @@ public sealed class ClocheParts : IPartGenerator
             {
                 var (ax, ay) = Vault(xc, k);
                 var (bx, by) = Vault(xc, k + 1);
-                Plate(p, [[ax, ay, zf - 0.05], [bx, by, zf - 0.05], [bx, by, zf + 0.05], [ax, ay, zf + 0.05]], Cream, "painted steel", thick: 0.1);
+                var w = k % 2 == 1 ? 0.046 : 0.05;
+                // (the frame stands out from the glass along the facet's normal, so the two never share its plane)
+                double nx = by - ay, ny = -(bx - ax), nl = Math.Sqrt(nx * nx + ny * ny);
+                if (ny < 0) { nx = -nx; ny = -ny; }
+                double ox = nx / nl * 0.035, oy = ny / nl * 0.035;
+                double dx = (bx - ax) * 0.03, dy = (by - ay) * 0.03; // (and stops short of the joints, where the purlins run)
+                Plate(p, [[ax + dx + ox, ay + dy + oy, zf - w], [bx - dx + ox, by - dy + oy, zf - w], [bx - dx + ox, by - dy + oy, zf + w], [ax + dx + ox, ay + dy + oy, zf + w]], Cream, "painted steel", thick: 0.06 - 0.006 * (k % 2));
             }
         }
         // The gable ends: glass in the arch, mullions and a transom.
@@ -705,7 +712,7 @@ public sealed class ClocheParts : IPartGenerator
         foreach (var zs in new[] { z0 + 1.55, z1 - 1.8 })
         {
             CylZ(p, xc, yc, zs, zs + 0.25, r + 0.06, r + 0.06, Rib, "dirty steel");
-            Solid(p, s * Hw, yc - 0.45, zs, s * (Hw + 0.4), yc + 0.45, zs + 0.25, Rib, "dirty steel"); // (a saddle to the hull)
+            Solid(p, s * Hw, yc - 0.45, zs + 0.012, s * (Hw + 0.4), yc + 0.45, zs + 0.238, Rib, "dirty steel"); // (a saddle to the hull)
         }
         // A dark label on the band, and the pipe: out of the aft end, up the hull, in under the eave.
         var face = Math.Abs(xc) + (r + 0.012) * Math.Cos(Math.PI / 8);
@@ -741,7 +748,7 @@ public sealed class ClocheParts : IPartGenerator
         Detail(p, s * (face + 0.006), yc - 0.1, 14.75, s * (face + 0.022), yc + 0.05, 15.4, Rib, "matte paint");
         // The pylon and the pipe from the block (out under the eave band, down, into the pod's top).
         Solid(p, s * Hw, yc - 0.45, 12.7, s * (NacX - 1.0), yc + 0.45, 15.9, Rib, "dirty steel");
-        Plate(p, [[s * Hw, yc + 0.45, 12.7], [s * Hw, yc + 0.45, 15.9], [s * (NacX - 1.0), yc + 0.45, 15.6], [s * (NacX - 1.0), yc + 0.45, 13.0]], Rib, "worn paint", thick: 0.06);
+        Plate(p, [[s * (Hw + 0.006), yc + 0.47, 12.71], [s * (Hw + 0.006), yc + 0.47, 15.89], [s * (NacX - 1.006), yc + 0.47, 15.6], [s * (NacX - 1.006), yc + 0.47, 13.0]], Rib, "worn paint", thick: 0.06);
         double pz0 = 11.85, pz1 = 12.1, pxa = s * (Hw + 0.6), pxb = s * (Hw + 0.85);
         Detail(p, s * (Hw - 0.01), 6.45, pz0, pxb, 6.7, pz1, Pipe, "painted steel");
         Detail(p, pxa, yc + 1.05, pz0, pxb, 6.7, pz1, Pipe, "painted steel");
@@ -795,7 +802,7 @@ public sealed class ClocheParts : IPartGenerator
     {
         var p = Fitting("Cloche Dashboard", "The Cloche's dashboard: a bus driver's dash with a sloped panel of dials and screens and a steering wheel, the flight computer in it. Fit it level, facing the seat.", "logic", Console);
         Solid(p, -1.1, 0, -0.32, 1.1, 0.78, 0.05, Console, "plastic", raw: true);
-        Plate(p, [[-1.1, 0.78, 0.05], [1.1, 0.78, 0.05], [1.1, 0.95, -0.32], [-1.1, 0.95, -0.32]], Console, "plastic", thick: 0.04, raw: true);
+        Plate(p, [[-1.094, 0.78, 0.05], [1.094, 0.78, 0.05], [1.094, 0.95, -0.32], [-1.094, 0.95, -0.32]], Console, "plastic", thick: 0.04, raw: true);
         // The panel's screens and dials (green and yellow, as the picture's), and switches.
         Plate(p, [[-0.7, 0.8, 0.02], [-0.2, 0.8, 0.02], [-0.2, 0.92, -0.24], [-0.7, 0.92, -0.24]], "#5fc07a", glow: true, thick: 0.05, raw: true);
         Plate(p, [[-0.1, 0.8, 0.02], [0.3, 0.8, 0.02], [0.3, 0.92, -0.24], [-0.1, 0.92, -0.24]], "#e8c050", glow: true, thick: 0.05, raw: true);
