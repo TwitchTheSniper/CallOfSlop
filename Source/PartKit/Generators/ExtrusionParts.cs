@@ -178,13 +178,14 @@ public sealed class ExtrusionParts : IPartGenerator
             ("config", ExtruderConfig(0.5, 32, 192, "Die Blocks")));
         WithScreen(p, orders: true, faces: ["-x"], width: 0.84, recipe: true);
         MachineLook.Skirt(p, -1, 1, -0.75, 0.75, 0, 0.14, 0.012);
-        // The hopper's grating, and the chute's port standing on it (the shared port look: MachineLook.Port), where a chute connects.
+        // The hopper's grating.
         foreach (var x in new[] { -0.75, -0.45, 0.45, 0.75 })
             p.Add(L([x - 0.015, 1.965, -0.7], [x + 0.015, 1.99, -0.04], MachineLook.Base));
         foreach (var z in new[] { -0.6, -0.2 })
             p.Add(L([-0.95, 1.965, z - 0.015], [0.95, 1.99, z + 0.015], MachineLook.Base));
-        MachineLook.Port(p, [0, 2, -0.4], 1, 1, 0.2, 0.13, true);
-        p.Set(("ports", Py.L(Kw(("name", "Chute"), ("type", "chute"), ("at", Py.L(0, 2, -0.4)), ("face", "+y")))));
+        // The chute's port on its back, under the hopper's arrow (the shared port look: MachineLook.Port; Sean 2026-11-21).
+        MachineLook.Port(p, [0, 0.8, -0.75], 2, -1, 0.2, 0.13, true);
+        p.Set(("ports", Py.L(Kw(("name", "Chute"), ("type", "chute"), ("at", Py.L(0, 0.8, -0.75)), ("face", "-z")))));
         // The hopper's rim, white (the in side), and an arrow down into it.
         p.Add(L([0.94, 1.94, -0.75], [0.998, 1.998, -0.05], MachineLook.In));
         p.Add(L([-0.998, 1.94, -0.75], [-0.94, 1.998, -0.05], MachineLook.In));
